@@ -884,7 +884,7 @@ c       elseif (io.eq.0) then
       subroutine vlocal_sub(is,r,v,grv)
       integer, intent(in) :: is      ! Species index
       real*8, intent(in)  :: r(3)    ! Point vector, relative to atom
-      real*8, intent(out) :: v(3)    ! Value of local pseudopotential
+      real*8, intent(out) :: v       ! Value of local pseudopotential
       real*8, intent(out) :: grv(3)  ! Gradient of local pseudopotential
 
 C Returns local part of neutral-atom Kleynman-Bylander pseudopotential.

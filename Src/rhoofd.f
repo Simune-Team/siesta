@@ -58,7 +58,7 @@ C Internal variables and arrays
      .  maxoa  = 100   ! Max # of orbitals per atom
 
       integer
-     .  i, ia, ic, ii, il, imp, in, ind,
+     .  i, ia, ic, ii, il, imp, in, ind, io,
      .  iop, ip, iphi, is, isp, iu, iul, ix,
      .  j, jc, jl, jn, jmp,
      .  last, lasta, lastop, maxloc, maxloc2, maxndl, nc, nphiloc
@@ -107,11 +107,13 @@ C Redistribute Dscf to DscfL form
      .    Dscf, DscfL )
       endif
 
-C  Find atomic cutoff radiae
-      do i = 1,no
+C  Find atomic cutoff radii
+      r2cut(:) = 0.0d0
+      do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
-        r2cut(is) = rcut(is,0)**2
+        io = iphorb(i)
+        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
       enddo
 
 C  Initializations

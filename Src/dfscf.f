@@ -68,7 +68,7 @@ C Internal variables
      .   minb  = 100,  ! Min buffer size for local copy of Dscf
      .   maxoa = 100   ! Max # of orbitals per atom
       integer
-     .   i, ia, ib, ibuff(no), ic, ii, imp, in, ind, iop, ip, iphi,
+     .   i, ia, ib, ibuff(no), ic, ii, imp, in, ind, iop, ip, iphi, io,
      .   is, isp, ispin, iu, iua, iul, ix, ix1, ix2, iy,
      .   j, jb, jc, jmp, last, lasta, lastop, maxb, maxc, maxndl,
      .   nc, nphiloc
@@ -146,11 +146,13 @@ C  Initialise variables
       iob(:) = 0
       last = 0
 
-C  Find atomic cutoff radiae
-      do i = 1,no
+C  Find atomic cutoff radii
+      r2cut(:) = 0.0d0
+      do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
-        r2cut(is) = rcut(is,0)**2
+        io = iphorb(i)
+        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
       enddo
 
 C  Evaluate constants
@@ -357,4 +359,3 @@ C  Restore old allocation defaults
 
       call timer('dfscf',2)
       end
-

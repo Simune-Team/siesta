@@ -1,6 +1,43 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.1.1
+Date: 2002/04/19
+Title: SIESTA-1.1f1 (bugfix 1)
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Bugfixes since 1.1 release:
+
+Summary: (See bug page on http://www.uam.es/siesta for more details)
+
+* The "electrostatic correction" tables were not updated correctly.
+  (basis_io.F)
+* The extension of the NetCDF file was wrong.
+  (basis_specs.f)
+* The default mass assigned to "floating atoms" (which provide
+  just their orbitals) was too big, and it led to overflows.
+* (Parallel version) If the number of processors was greater than 1, 
+  then the values in qspin() were wrong because the array was not 
+  globally reduced. Hence the total spin difference was incorrectly printed.
+  (siesta.F)
+* In module atom.f, messages relating to the size of seldom-changed
+  parameters pointed the user to file "atom.h". The correct reference
+  is to file "atmparams.f".
+  (atom.f)
+* In routine pdos.f, the output of data pertaining to the PDOS in the
+  spin-polarized case mistakenly included an energy field.
+  (pdos.f)
+* In routine vlocal_sub in file old_atmfuncs.f, the declaration of the
+  dummy argument v was incorrect.
+  (old_atmfuncs.f)
+* Wrong edit descriptor in atom.f
+  (atom.f)
+* If the longest orbital of a given species was unoccupied in the
+  free atom, then some points were wrongly skipped while calculating the
+  integrals. This could lead to loss of accuracy.
+  (dfscf.f, vmat.f, rhoofd.f)
+
+=======================================================================
 Version: 1.1.0
 Date: 2001/09/26
 Title: SIESTA-1.1 release

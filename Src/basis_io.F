@@ -69,7 +69,7 @@
          spp => species(is)
          spp%label = species_label(is)
          spp%read_from_file = .true.
-         write(filename,'(a,a)') trim(spp%label), ".ion_nc"
+         write(filename,'(a,a)') trim(spp%label), ".ion.nc"
          iret = nf90_open(trim(filename),NF90_NOWRITE,ncid)
 
          iret = nf90_inq_dimid(ncid,'norbs',norbs_id)
@@ -323,6 +323,7 @@ c
                func%cutoff = rchloc + rchloc2 + 0.2_dp
                func%delta =  func%cutoff / (NTBMAX - 1)
                call ch_overlap(is,is2,func%cutoff,func%f)
+               call rad_setup_d2(func)
             endif
          enddo
       enddo

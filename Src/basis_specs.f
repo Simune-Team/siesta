@@ -184,7 +184,8 @@
          basp%basis_size = basis_size
          basp%basis_type = basistype_generic
          if (basp%floating) then
-            basp%mass = huge(1.d0)
+            basp%mass = 1.d40   ! big but not too big, as it is used
+                                ! later in computations
          else
             basp%mass = atmass(abs(basp%z))
          endif
