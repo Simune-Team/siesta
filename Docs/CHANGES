@@ -1,6 +1,37 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+ARCH: WILL be cvs 1.4.31
+Creator: Toby White <tow21@cam.ac.uk>
+Modified-files: Src/cdiag.F Src/scalapack_extra.f
+Summary: bugfixes for Julian's diagon improvements
+Keywords: scalapack blas ztrsm
+
+* scalapack_extra needs an extra couple of routines now. With
+  these siesta will now compile with Sun's S3L library for 
+  its blas/scalapack.
+* In cdiag.F, ztrsm was being called with an incorrectly typed
+  7th argument. This silently introduced random numbers into the
+  energy.
+
+=======================================================================
+Version: 1.4.30
+Date: 2004/12/10  15:45 GMT
+Title: Add missing autoconf files (no arch change)
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+While committing patch-10 from arch, CVS did not flag
+some files as "not added". They are added now.
+These files should have been part of 1.4.28.
+
+Files:
+
+aclocal.m4 arch.make.in config.guess 
+config.sub configure configure.ac       : New files
+
+ARCH info:  No change (new files were part of
+                       siesta-devel--reference--1.4--patch-10)
+=======================================================================
 Version: 1.4.29
 Date: 2004/12/10  7:30 GMT
 Title: New parallel denmat 

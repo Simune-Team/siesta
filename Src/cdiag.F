@@ -633,7 +633,8 @@ C*******************************************************************************
         call timer('cdiag4',1)
         if (Serial) then
           if (neigvec.gt.0) then
-            call ztrsm('Left','U','N','Non-unit',n,neigvec,one,S,n,Z,n)
+            call ztrsm('Left', 'U', 'N', 'Non-unit', 
+     .                 n, neigvec, cmplx(one,dp), S, n, Z, n)
           endif
 #ifdef MPI
         else

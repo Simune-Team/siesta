@@ -3380,3 +3380,908 @@
 *     End of PDLAEDZ
 *
       END
+      SUBROUTINE PZHEEVD( JOBZ, UPLO, N, A, IA, JA, DESCA, W, Z, IZ, JZ,
+     $                    DESCZ, WORK, LWORK, RWORK, LRWORK, IWORK,
+     $                    LIWORK, INFO )
+*
+*  -- ScaLAPACK routine (version 1.7) --
+*     University of Tennessee, Knoxville, Oak Ridge National Laboratory,
+*     and University of California, Berkeley.
+*     March 25, 2002
+*
+*     .. Scalar Arguments ..
+      CHARACTER          JOBZ, UPLO
+      INTEGER            IA, INFO, IZ, JA, JZ, LIWORK, LRWORK, LWORK, N
+*     ..
+*     .. Array Arguments ..
+      INTEGER            DESCA( * ), DESCZ( * ), IWORK( * )
+      DOUBLE PRECISION   RWORK( * ), W( * )
+      COMPLEX*16         A( * ), WORK( * ), Z( * )
+*     
+*
+*  Purpose
+*  =======
+*
+*  PZHEEVD computes all the eigenvalues and eigenvectors of a Hermitian
+*  matrix A by using a divide and conquer algorithm.
+*
+*  Arguments
+*  =========
+*
+*     NP = the number of rows local to a given process.
+*     NQ = the number of columns local to a given process.
+*
+*  JOBZ    (input) CHARACTER*1
+*          = 'N':  Compute eigenvalues only;    (NOT IMPLEMENTED YET)
+*          = 'V':  Compute eigenvalues and eigenvectors.
+*
+*  UPLO    (global input) CHARACTER*1
+*          Specifies whether the upper or lower triangular part of the
+*          symmetric matrix A is stored:
+*          = 'U':  Upper triangular
+*          = 'L':  Lower triangular
+*
+*  N       (global input) INTEGER
+*          The number of rows and columns of the matrix A.  N >= 0.
+*
+*  A       (local input/workspace) block cyclic COMPLEX*16 array,
+*          global dimension (N, N), local dimension ( LLD_A,
+*          LOCc(JA+N-1) )
+*
+*          On entry, the symmetric matrix A.  If UPLO = 'U', only the
+*          upper triangular part of A is used to define the elements of
+*          the symmetric matrix.  If UPLO = 'L', only the lower
+*          triangular part of A is used to define the elements of the
+*          symmetric matrix.
+*
+*          On exit, the lower triangle (if UPLO='L') or the upper
+*          triangle (if UPLO='U') of A, including the diagonal, is
+*          destroyed.
+*
+*  IA      (global input) INTEGER
+*          A's global row index, which points to the beginning of the
+*          submatrix which is to be operated on.
+*
+*  JA      (global input) INTEGER
+*          A's global column index, which points to the beginning of
+*          the submatrix which is to be operated on.
+*
+*  DESCA   (global and local input) INTEGER array of dimension DLEN_.
+*          The array descriptor for the distributed matrix A.
+*          If DESCA( CTXT_ ) is incorrect, PZHEEV cannot guarantee
+*          correct error reporting.
+*
+*  W       (global output) DOUBLE PRECISION array, dimension (N)
+*          If INFO=0, the eigenvalues in ascending order.
+*
+*  Z       (local output) COMPLEX*16 array,
+*          global dimension (N, N),
+*          local dimension ( LLD_Z, LOCc(JZ+N-1) )
+*          Z contains the orthonormal eigenvectors of the matrix A.
+*
+*  IZ      (global input) INTEGER
+*          Z's global row index, which points to the beginning of the
+*          submatrix which is to be operated on.
+*
+*  JZ      (global input) INTEGER
+*          Z's global column index, which points to the beginning of
+*          the submatrix which is to be operated on.
+*
+*  DESCZ   (global and local input) INTEGER array of dimension DLEN_.
+*          The array descriptor for the distributed matrix Z.
+*          DESCZ( CTXT_ ) must equal DESCA( CTXT_ )
+*
+*  WORK    (local workspace/output) COMPLEX*16 array,
+*          dimension (LWORK)
+*          On output, WORK(1) returns the workspace needed for the
+*          computation.
+*
+*  LWORK   (local input) INTEGER
+*          If eigenvectors are requested:
+*            LWORK = N + ( NP0 + MQ0 + NB ) * NB,
+*          with  NP0 = NUMROC( MAX( N, NB, 2 ), NB, 0, 0, NPROW )
+*                MQ0 = NUMROC( MAX( N, NB, 2 ), NB, 0, 0, NPCOL )
+*
+*          If LWORK = -1, then LWORK is global input and a workspace
+*          query is assumed; the routine calculates the size for all
+*          work arrays. Each of these values is returned in the first
+*          entry of the corresponding work array, and no error message
+*          is issued by PXERBLA.
+*
+*  RWORK   (local workspace/output) DOUBLE PRECISION array,
+*          dimension (LRWORK)
+*          On output RWORK(1) returns the real workspace needed to
+*          guarantee completion.  If the input parameters are incorrect,
+*          RWORK(1) may also be incorrect.
+*
+*  LRWORK  (local input) INTEGER
+*          Size of RWORK array.
+*          LRWORK >= 1 + 9*N + 3*NP*NQ,
+*          NP = NUMROC( N, NB, MYROW, IAROW, NPROW )
+*          NQ = NUMROC( N, NB, MYCOL, IACOL, NPCOL )
+*
+*  IWORK   (local workspace/output) INTEGER array, dimension (LIWORK)
+*          On output IWORK(1) returns the integer workspace needed.
+*
+*  LIWORK  (input) INTEGER
+*          The dimension of the array IWORK.
+*          LIWORK = 7*N + 8*NPCOL + 2
+*
+*  INFO    (global output) INTEGER
+*          = 0:  successful exit
+*          < 0:  If the i-th argument is an array and the j-entry had
+*                an illegal value, then INFO = -(i*100+j), if the i-th
+*                argument is a scalar and had an illegal value, then
+*                INFO = -i.
+*          > 0:  If INFO = 1 through N, the i(th) eigenvalue did not
+*                converge in PDLAED3.
+*
+*  Alignment requirements
+*  ======================
+*
+*  The distributed submatrices sub( A ), sub( Z ) must verify
+*  some alignment properties, namely the following expression
+*  should be true:
+*  ( MB_A.EQ.NB_A.EQ.MB_Z.EQ.NB_Z .AND. IROFFA.EQ.ICOFFA .AND.
+*    IROFFA.EQ.0 .AND.IROFFA.EQ.IROFFZ. AND. IAROW.EQ.IZROW)
+*    with IROFFA = MOD( IA-1, MB_A )
+*     and ICOFFA = MOD( JA-1, NB_A ).
+*
+*  Further Details
+*  ======= =======
+*
+*  Contributed by Francoise Tisseur, University of Manchester.
+*
+*  Reference:  F. Tisseur and J. Dongarra, "A Parallel Divide and
+*              Conquer Algorithm for the Symmetric Eigenvalue Problem
+*              on Distributed Memory Architectures",
+*              SIAM J. Sci. Comput., 6:20 (1999), pp. 2223--2236.
+*              (see also LAPACK Working Note 132)
+*                http://www.netlib.org/lapack/lawns/lawn132.ps
+*
+*  =====================================================================
+*
+*     .. Parameters ..
+      INTEGER            BLOCK_CYCLIC_2D, DLEN_, DTYPE_, CTXT_, M_, N_,
+     $                   MB_, NB_, RSRC_, CSRC_, LLD_
+      PARAMETER          ( BLOCK_CYCLIC_2D = 1, DLEN_ = 9, DTYPE_ = 1,
+     $                   CTXT_ = 2, M_ = 3, N_ = 4, MB_ = 5, NB_ = 6,
+     $                   RSRC_ = 7, CSRC_ = 8, LLD_ = 9 )
+      DOUBLE PRECISION               ZERO, ONE
+      PARAMETER          ( ZERO = 0.0D+0, ONE = 1.0D+0 )
+      COMPLEX*16            CZERO, CONE
+      PARAMETER          ( CZERO = ( 0.0D+0, 0.0D+0 ),
+     $                   CONE = ( 1.0D+0, 0.0D+0 ) )
+*     ..
+*     .. Local Scalars ..
+      LOGICAL            LOWER, LQUERY
+      INTEGER            CSRC_A, I, IACOL, IAROW, ICOFFA, IINFO, IIZ,
+     $                   INDD, INDE, INDE2, INDRWORK, INDTAU, INDWORK,
+     $                   INDZ, IPR, IPZ, IROFFA, IROFFZ, ISCALE, IZCOL,
+     $                   IZROW, J, JJZ, LDR, LDZ, LIWMIN, LLRWORK,
+     $                   LLWORK, LRWMIN, LWMIN, MB_A, MYCOL, MYROW, NB,
+     $                   NB_A, NN, NP0, NPCOL, NPROW, NQ, NQ0, OFFSET,
+     $                   RSRC_A
+      DOUBLE PRECISION   ANRM, BIGNUM, EPS, RMAX, RMIN, SAFMIN, SIGMA,
+     $                   SMLNUM
+*     ..
+*     .. Local Arrays ..
+      INTEGER            DESCRZ( 9 ), IDUM1( 2 ), IDUM2( 2 )
+*     ..
+*     .. External Functions ..
+      LOGICAL            LSAME
+      INTEGER            INDXG2L, INDXG2P, NUMROC
+      DOUBLE PRECISION   PZLANHE, PDLAMCH
+      EXTERNAL           LSAME, INDXG2L, INDXG2P, NUMROC, PZLANHE,
+     $                   PDLAMCH
+*     ..
+*     .. External Subroutines ..
+      EXTERNAL           BLACS_GRIDINFO, CHK1MAT, DESCINIT, INFOG2L,
+     $                   PZELGET, PZHETRD, PCHK2MAT, PZLASCL, PZLASET,
+     $                   PZUNMTR, PDLARED1D, PDLASET, PDSTEDC, PXERBLA,
+     $                   DSCAL
+*     ..
+*     .. Intrinsic Functions ..
+      INTRINSIC          DCMPLX, ICHAR, MAX, MIN, MOD, DBLE, SQRT
+*     ..
+*     .. Executable Statements ..
+*       This is just to keep ftnchek and toolpack/1 happy
+      IF( BLOCK_CYCLIC_2D*CSRC_*CTXT_*DLEN_*DTYPE_*LLD_*MB_*M_*NB_*N_*
+     $    RSRC_.LT.0 )RETURN
+*
+      INFO = 0
+*
+*     Quick return
+*
+      IF( N.EQ.0 )
+     $   RETURN
+*
+*     Test the input arguments.
+*
+      CALL BLACS_GRIDINFO( DESCA( CTXT_ ), NPROW, NPCOL, MYROW, MYCOL )
+*
+      IF( NPROW.EQ.-1 ) THEN
+         INFO = -( 700+CTXT_ )
+      ELSE 
+         CALL CHK1MAT( N, 2, N, 2, IA, JA, DESCA, 6, INFO )
+         CALL CHK1MAT( N, 2, N, 2, IZ, JZ, DESCZ, 11, INFO )
+         IF( INFO.EQ.0 ) THEN
+            LOWER = LSAME( UPLO, 'L' )
+            NB_A = DESCA( NB_ )
+            MB_A = DESCA( MB_ )
+            NB = NB_A
+            RSRC_A = DESCA( RSRC_ )
+            CSRC_A = DESCA( CSRC_ )
+            IROFFA = MOD( IA-1, MB_A )
+            ICOFFA = MOD( JA-1, NB_A )
+            IAROW = INDXG2P( IA, NB_A, MYROW, RSRC_A, NPROW )
+            IACOL = INDXG2P( JA, MB_A, MYCOL, CSRC_A, NPCOL )
+            NP0 = NUMROC( N, NB, MYROW, IAROW, NPROW )
+            NQ0 = NUMROC( N, NB, MYCOL, IACOL, NPCOL )
+            IROFFZ = MOD( IZ-1, MB_A )
+            CALL INFOG2L( IZ, JZ, DESCZ, NPROW, NPCOL, MYROW, MYCOL,
+     $                    IIZ, JJZ, IZROW, IZCOL )
+            LQUERY = ( LWORK.EQ.-1 .OR. LIWORK.EQ.-1 .OR. LRWORK.EQ.-1 )
+*
+*           Compute the total amount of space needed
+*
+            NN = MAX( N, NB, 2 )
+            NQ = NUMROC( NN, NB, 0, 0, NPCOL )
+            LWMIN = N + ( NP0+NQ+NB )*NB
+            LRWMIN = 1 + 9*N + 3*NP0*NQ0
+            LIWMIN = 7*N + 8*NPCOL + 2
+            WORK( 1 ) = DCMPLX( LWMIN )
+            RWORK( 1 ) = DBLE( LRWMIN )
+            IWORK( 1 ) = LIWMIN
+            IF( .NOT.LSAME( JOBZ, 'V' ) ) THEN
+               INFO = -1
+            ELSE IF( .NOT.( LOWER .OR. LSAME( UPLO, 'U' ) ) ) THEN
+               INFO = -2
+            ELSE IF( LWORK.LT.LWMIN .AND. LWORK.NE.-1 ) THEN
+               INFO = -14
+            ELSE IF( LRWORK.LT.LRWMIN .AND. LRWORK.NE.-1 ) THEN
+               INFO = -16
+            ELSE IF( IROFFA.NE.0 ) THEN
+               INFO = -4
+            ELSE IF( DESCA( MB_ ).NE.DESCA( NB_ ) ) THEN
+               INFO = -( 700+NB_ )
+            ELSE IF( IROFFA.NE.IROFFZ ) THEN
+               INFO = -10
+            ELSE IF( IAROW.NE.IZROW ) THEN
+               INFO = -10
+            ELSE IF( DESCA( M_ ).NE.DESCZ( M_ ) ) THEN
+               INFO = -( 1200+M_ )
+            ELSE IF( DESCA( N_ ).NE.DESCZ( N_ ) ) THEN
+               INFO = -( 1200+N_ )
+            ELSE IF( DESCA( MB_ ).NE.DESCZ( MB_ ) ) THEN
+               INFO = -( 1200+MB_ )
+            ELSE IF( DESCA( NB_ ).NE.DESCZ( NB_ ) ) THEN
+               INFO = -( 1200+NB_ )
+            ELSE IF( DESCA( RSRC_ ).NE.DESCZ( RSRC_ ) ) THEN
+               INFO = -( 1200+RSRC_ )
+            ELSE IF( DESCA( CTXT_ ).NE.DESCZ( CTXT_ ) ) THEN
+               INFO = -( 1200+CTXT_ )
+            END IF
+         END IF
+         IF( LOWER ) THEN
+            IDUM1( 1 ) = ICHAR( 'L' )
+         ELSE
+            IDUM1( 1 ) = ICHAR( 'U' )
+         END IF
+         IDUM2( 1 ) = 2
+         IF( LWORK.EQ.-1 ) THEN
+            IDUM1( 2 ) = -1
+         ELSE
+            IDUM1( 2 ) = 1
+         END IF
+         IDUM2( 2 ) = 14
+         CALL PCHK2MAT( N, 3, N, 3, IA, JA, DESCA, 7, N, 3, N, 3, IZ,
+     $                  JZ, DESCZ, 11, 2, IDUM1, IDUM2, INFO )
+      END IF
+*
+      IF( INFO.NE.0 ) THEN
+         CALL PXERBLA( DESCA( CTXT_ ), 'PZHEEVD', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+*
+*     Get machine constants.
+*
+      SAFMIN = PDLAMCH( DESCA( CTXT_ ), 'Safe minimum' )
+      EPS = PDLAMCH( DESCA( CTXT_ ), 'Precision' )
+      SMLNUM = SAFMIN / EPS
+      BIGNUM = ONE / SMLNUM
+      RMIN = SQRT( SMLNUM )
+      RMAX = MIN( SQRT( BIGNUM ), ONE / SQRT( SQRT( SAFMIN ) ) )
+*
+*     Set up pointers into the WORK array
+*
+      INDTAU = 1
+      INDWORK = INDTAU + N
+      LLWORK = LWORK - INDWORK + 1
+*
+*     Set up pointers into the RWORK array
+*
+      INDE = 1
+      INDD = INDE + N
+      INDE2 = INDD + N
+      INDRWORK = INDE2 + N
+      LLRWORK = LRWORK - INDRWORK + 1
+*
+*     Scale matrix to allowable range, if necessary.
+*
+      ISCALE = 0
+*
+      ANRM = PZLANHE( 'M', UPLO, N, A, IA, JA, DESCA,
+     $       RWORK( INDRWORK ) )
+*
+*
+      IF( ANRM.GT.ZERO .AND. ANRM.LT.RMIN ) THEN
+         ISCALE = 1
+         SIGMA = RMIN / ANRM
+      ELSE IF( ANRM.GT.RMAX ) THEN
+         ISCALE = 1
+         SIGMA = RMAX / ANRM
+      END IF
+*
+      IF( ISCALE.EQ.1 ) THEN
+         CALL PZLASCL( UPLO, ONE, SIGMA, N, N, A, IA, JA, DESCA, IINFO )
+      END IF
+*
+*     Reduce Hermitian matrix to tridiagonal form.
+*
+      CALL PZHETRD( UPLO, N, A, IA, JA, DESCA, RWORK( INDD ),
+     $              RWORK( INDE2 ), WORK( INDTAU ), WORK( INDWORK ),
+     $              LLWORK, IINFO )
+*
+*     Copy the values of D, E to all processes
+*
+*     Here PxLARED1D is used to redistribute the tridiagonal matrix.
+*     PxLARED1D, however, doesn't yet workMx Mawith arbritary matrix
+*     distributions so we have PxELGET as a backup.
+*
+      OFFSET = 0
+      IF( IA.EQ.1 .AND. JA.EQ.1 .AND. RSRC_A.EQ.0 .AND. CSRC_A.EQ.0 )
+     $     THEN
+         CALL PDLARED1D( N, IA, JA, DESCA, RWORK( INDD ), W,
+     $                   RWORK( INDRWORK ), LLRWORK )
+*
+         CALL PDLARED1D( N, IA, JA, DESCA, RWORK( INDE2 ),
+     $                   RWORK( INDE ), RWORK( INDRWORK ), LLRWORK )
+         IF( .NOT.LOWER )
+     $      OFFSET = 1
+      ELSE
+         DO 10 I = 1, N
+            CALL PZELGET( 'A', ' ', WORK( INDWORK ), A, I+IA-1, I+JA-1,
+     $                    DESCA )
+            W( I ) = DBLE( WORK( INDWORK ) )
+   10    CONTINUE
+         IF( LSAME( UPLO, 'U' ) ) THEN
+            DO 20 I = 1, N - 1
+               CALL PZELGET( 'A', ' ', WORK( INDWORK ), A, I+IA-1, I+JA,
+     $                       DESCA )
+               RWORK( INDE+I-1 ) = DBLE( WORK( INDWORK ) )
+   20       CONTINUE
+         ELSE
+            DO 30 I = 1, N - 1
+               CALL PZELGET( 'A', ' ', WORK( INDWORK ), A, I+IA, I+JA-1,
+     $                       DESCA )
+               RWORK( INDE+I-1 ) = DBLE( WORK( INDWORK ) )
+   30       CONTINUE
+         END IF
+      END IF
+*
+*     Call PDSTEDC to compute eigenvalues and eigenvectors.
+*
+      INDZ = INDE + N
+      INDRWORK = INDZ + NP0*NQ0
+      LLRWORK = LRWORK - INDRWORK + 1
+      LDR = MAX( 1, NP0 )
+      CALL DESCINIT( DESCRZ, DESCZ( M_ ), DESCZ( N_ ), DESCZ( MB_ ),
+     $               DESCZ( NB_ ), DESCZ( RSRC_ ), DESCZ( CSRC_ ),
+     $               DESCZ( CTXT_ ), LDR, INFO )
+      CALL PZLASET( 'Full', N, N, CZERO, CONE, Z, IZ, JZ, DESCZ )
+      CALL PDLASET( 'Full', N, N, ZERO, ONE, RWORK( INDZ ), 1, 1,
+     $              DESCRZ )
+      CALL PDSTEDC( 'I', N, W, RWORK( INDE+OFFSET ), RWORK( INDZ ), IZ,
+     $              JZ, DESCRZ, RWORK( INDRWORK ), LLRWORK, IWORK,
+     $              LIWORK, IINFO )
+*
+      LDZ = DESCZ( LLD_ )
+      LDR = DESCRZ( LLD_ )
+      IIZ = INDXG2L( IZ, NB, MYROW, MYROW, NPROW )
+      JJZ = INDXG2L( JZ, NB, MYCOL, MYCOL, NPCOL )
+      IPZ = IIZ + ( JJZ-1 )*LDZ
+      IPR = INDZ - 1 + IIZ + ( JJZ-1 )*LDR
+      DO 50 J = 0, NQ0 - 1
+         DO 40 I = 0, NP0 - 1
+            Z( IPZ+I+J*LDZ ) = RWORK( IPR+I+J*LDR )
+   40    CONTINUE
+   50 CONTINUE
+*
+*     Z = Q * Z
+*
+      CALL PZUNMTR( 'L', UPLO, 'N', N, N, A, IA, JA, DESCA,
+     $              WORK( INDTAU ), Z, IZ, JZ, DESCZ, WORK( INDWORK ),
+     $              LLWORK, IINFO )
+*
+*     If matrix was scaled, then rescale eigenvalues appropriately.
+*
+      IF( ISCALE.EQ.1 ) THEN
+         CALL DSCAL( N, ONE / SIGMA, W, 1 )
+      END IF
+*
+      WORK( 1 ) = DCMPLX( LWMIN )
+      RWORK( 1 ) = DBLE( LRWMIN )
+      IWORK( 1 ) = LIWMIN
+*
+      RETURN
+*
+*     End of PZHEEVD
+*
+      END
+      SUBROUTINE PZHENGST( IBTYPE, UPLO, N, A, IA, JA, DESCA, B, IB, JB,
+     $                     DESCB, SCALE, WORK, LWORK, INFO )
+*
+*  -- ScaLAPACK routine (version 1.7) --
+*     University of Tennessee, Knoxville, Oak Ridge National Laboratory,
+*     and University of California, Berkeley.
+*     October 15, 1999
+*
+*     .. Scalar Arguments ..
+      CHARACTER          UPLO
+      INTEGER            IA, IB, IBTYPE, INFO, JA, JB, LWORK, N
+      DOUBLE PRECISION   SCALE
+*     ..
+*     .. Array Arguments ..
+      INTEGER            DESCA( * ), DESCB( * )
+      COMPLEX*16         A( * ), B( * ), WORK( * )
+*     ..
+*
+*  Purpose
+*
+*  =======
+*
+*  PZHENGST reduces a complex Hermitian-definite generalized
+*  eigenproblem to standard form.
+*
+*  PZHENGST performs the same function as PZHEGST, but is based on
+*  rank 2K updates, which are faster and more scalable than
+*  triangular solves (the basis of PZHENGST).
+*
+*  PZHENGST calls PZHEGST when UPLO='U', hence PZHENGST provides
+*  improved performance only when UPLO='L', IBTYPE=1.
+*
+*  PZHENGST also calls PZHEGST when insufficient workspace is
+*  provided,  hence PZHENGST provides improved
+*  performance only when LWORK >= 2 * NP0 * NB + NQ0 * NB + NB * NB
+*
+*  In the following sub( A ) denotes A( IA:IA+N-1, JA:JA+N-1 ) and
+*  sub( B ) denotes B( IB:IB+N-1, JB:JB+N-1 ).
+*
+*  If IBTYPE = 1, the problem is sub( A )*x = lambda*sub( B )*x,
+*  and sub( A ) is overwritten by inv(U**H)*sub( A )*inv(U) or
+*  inv(L)*sub( A )*inv(L**H)
+*
+*  If IBTYPE = 2 or 3, the problem is sub( A )*sub( B )*x = lambda*x or
+*  sub( B )*sub( A )*x = lambda*x, and sub( A ) is overwritten by
+*  U*sub( A )*U**H or L**H*sub( A )*L.
+*
+*  sub( B ) must have been previously factorized as U**H*U or L*L**H by
+*  PZPOTRF.
+*
+*  Notes
+*  =====
+*
+*  Each global data object is described by an associated description
+*  vector.  This vector stores the information required to establish
+*  the mapping between an object element and its corresponding process
+*  and memory location.
+*
+*  Let A be a generic term for any 2D block cyclicly distributed array.
+*  Such a global array has an associated description vector DESCA.
+*  In the following comments, the character _ should be read as
+*  "of the global array".
+*
+*  NOTATION        STORED IN      EXPLANATION
+*  --------------- -------------- --------------------------------------
+*  DTYPE_A(global) DESCA( DTYPE_ )The descriptor type.  In this case,
+*                                 DTYPE_A = 1.
+*  CTXT_A (global) DESCA( CTXT_ ) The BLACS context handle, indicating
+*                                 the BLACS process grid A is distribu-
+*                                 ted over. The context itself is glo-
+*                                 bal, but the handle (the integer
+*                                 value) may vary.
+*  M_A    (global) DESCA( M_ )    The number of rows in the global
+*                                 array A.
+*  N_A    (global) DESCA( N_ )    The number of columns in the global
+*                                 array A.
+*  MB_A   (global) DESCA( MB_ )   The blocking factor used to distribute
+*                                 the rows of the array.
+*  NB_A   (global) DESCA( NB_ )   The blocking factor used to distribute
+*                                 the columns of the array.
+*  RSRC_A (global) DESCA( RSRC_ ) The process row over which the first
+*                                 row of the array A is distributed.
+*  CSRC_A (global) DESCA( CSRC_ ) The process column over which the
+*                                 first column of the array A is
+*                                 distributed.
+*  LLD_A  (local)  DESCA( LLD_ )  The leading dimension of the local
+*                                 array.  LLD_A >= MAX(1,LOCr(M_A)).
+*
+*  Let K be the number of rows or columns of a distributed matrix,
+*  and assume that its process grid has dimension p x q.
+*  LOCr( K ) denotes the number of elements of K that a process
+*  would receive if K were distributed over the p processes of its
+*  process column.
+*  Similarly, LOCc( K ) denotes the number of elements of K that a
+*  process would receive if K were distributed over the q processes of
+*  its process row.
+*  The values of LOCr() and LOCc() may be determined via a call to the
+*  ScaLAPACK tool function, NUMROC:
+*          LOCr( M ) = NUMROC( M, MB_A, MYROW, RSRC_A, NPROW ),
+*          LOCc( N ) = NUMROC( N, NB_A, MYCOL, CSRC_A, NPCOL ).
+*  An upper bound for these quantities may be computed by:
+*          LOCr( M ) <= ceil( ceil(M/MB_A)/NPROW )*MB_A
+*          LOCc( N ) <= ceil( ceil(N/NB_A)/NPCOL )*NB_A
+*
+*  Arguments
+*  =========
+*
+*  IBTYPE   (global input) INTEGER
+*          = 1: compute inv(U**H)*sub( A )*inv(U) or
+*               inv(L)*sub( A )*inv(L**H);
+*          = 2 or 3: compute U*sub( A )*U**H or L**H*sub( A )*L.
+*
+*  UPLO    (global input) CHARACTER
+*          = 'U':  Upper triangle of sub( A ) is stored and sub( B ) is
+*                  factored as U**H*U;
+*          = 'L':  Lower triangle of sub( A ) is stored and sub( B ) is
+*                  factored as L*L**H.
+*
+*  N       (global input) INTEGER
+*          The order of the matrices sub( A ) and sub( B ).  N >= 0.
+*
+*  A       (local input/local output) COMPLEX*16 pointer into the
+*          local memory to an array of dimension (LLD_A, LOCc(JA+N-1)).
+*          On entry, this array contains the local pieces of the
+*          N-by-N Hermitian distributed matrix sub( A ). If UPLO = 'U',
+*          the leading N-by-N upper triangular part of sub( A ) contains
+*          the upper triangular part of the matrix, and its strictly
+*          lower triangular part is not referenced.  If UPLO = 'L', the
+*          leading N-by-N lower triangular part of sub( A ) contains
+*          the lower triangular part of the matrix, and its strictly
+*          upper triangular part is not referenced.
+*
+*          On exit, if INFO = 0, the transformed matrix, stored in the
+*          same format as sub( A ).
+*
+*  IA      (global input) INTEGER
+*          A's global row index, which points to the beginning of the
+*          submatrix which is to be operated on.
+*
+*  JA      (global input) INTEGER
+*          A's global column index, which points to the beginning of
+*          the submatrix which is to be operated on.
+*
+*  DESCA   (global and local input) INTEGER array of dimension DLEN_.
+*          The array descriptor for the distributed matrix A.
+*
+*  B       (local input) COMPLEX*16 pointer into the local memory
+*          to an array of dimension (LLD_B, LOCc(JB+N-1)). On entry,
+*          this array contains the local pieces of the triangular factor
+*          from the Cholesky factorization of sub( B ), as returned by
+*          PZPOTRF.
+*
+*  IB      (global input) INTEGER
+*          B's global row index, which points to the beginning of the
+*          submatrix which is to be operated on.
+*
+*  JB      (global input) INTEGER
+*          B's global column index, which points to the beginning of
+*          the submatrix which is to be operated on.
+*
+*  DESCB   (global and local input) INTEGER array of dimension DLEN_.
+*          The array descriptor for the distributed matrix B.
+*
+*  SCALE   (global output) DOUBLE PRECISION
+*          Amount by which the eigenvalues should be scaled to
+*          compensate for the scaling performed in this routine.
+*          At present, SCALE is always returned as 1.0, it is
+*          returned here to allow for future enhancement.
+*
+*  WORK    (local workspace/local output) COMPLEX*16 array,
+*                                                  dimension (LWORK)
+*          On exit, WORK( 1 ) returns the minimal and optimal LWORK.
+*
+*  LWORK   (local or global input) INTEGER
+*          The dimension of the array WORK.
+*          LWORK is local input and must be at least
+*          LWORK >= MAX( NB * ( NP0 +1 ), 3 * NB )
+*
+*          When IBTYPE = 1 and UPLO = 'L', PZHENGST provides improved
+*          performance when LWORK >= 2 * NP0 * NB + NQ0 * NB + NB * NB
+*
+*          where NB = MB_A = NB_A,
+*          NP0 = NUMROC( N, NB, 0, 0, NPROW ),
+*          NQ0 = NUMROC( N, NB, 0, 0, NPROW ),
+*
+*          NUMROC ia a ScaLAPACK tool functions
+*          MYROW, MYCOL, NPROW and NPCOL can be determined by calling
+*          the subroutine BLACS_GRIDINFO.
+*
+*          If LWORK = -1, then LWORK is global input and a workspace
+*          query is assumed; the routine only calculates the
+*          optimal size for all work arrays. Each of these
+*          values is returned in the first entry of the corresponding
+*          work array, and no error message is issued by PXERBLA.
+*
+*  INFO    (global output) INTEGER
+*          = 0:  successful exit
+*          < 0:  If the i-th argument is an array and the j-entry had
+*                an illegal value, then INFO = -(i*100+j), if the i-th
+*                argument is a scalar and had an illegal value, then
+*                INFO = -i.
+*
+*  =====================================================================
+*
+*
+*
+*     .. Parameters ..
+      COMPLEX*16         ONEHALF, ONE, MONE
+      DOUBLE PRECISION   RONE
+      PARAMETER          ( ONEHALF = ( 0.5D0, 0.0D0 ),
+     $                   ONE = ( 1.0D0, 0.0D0 ),
+     $                   MONE = ( -1.0D0, 0.0D0 ), RONE = 1.0D0 )
+      INTEGER            DLEN_, CTXT_, MB_, NB_, RSRC_, CSRC_, LLD_
+      PARAMETER          ( DLEN_ = 9, CTXT_ = 2, MB_ = 5, NB_ = 6,
+     $                   RSRC_ = 7, CSRC_ = 8, LLD_ = 9 )
+*     ..
+*     .. Local Scalars ..
+      LOGICAL            LQUERY, UPPER
+      INTEGER            I, IACOL, IAROW, IBCOL, IBROW, ICOFFA, ICOFFB,
+     $                   ICTXT, INDAA, INDG, INDR, INDRT, IROFFA,
+     $                   IROFFB, J, K, KB, LWMIN, LWOPT, MYCOL, MYROW,
+     $                   NB, NP0, NPCOL, NPK, NPROW, NQ0, POSTK
+*     ..
+*     .. Local Arrays ..
+      INTEGER            DESCAA( DLEN_ ), DESCG( DLEN_ ),
+     $                   DESCR( DLEN_ ), DESCRT( DLEN_ ), IDUM1( 2 ),
+     $                   IDUM2( 2 )
+*     ..
+*     .. External Functions ..
+      LOGICAL            LSAME
+      INTEGER            INDXG2P, NUMROC
+      EXTERNAL           LSAME, INDXG2P, NUMROC
+*     ..
+*     .. External Subroutines ..
+      EXTERNAL           BLACS_GRIDINFO, CHK1MAT, DESCSET, PCHK2MAT,
+     $                   PXERBLA, PZGEMM, PZHEGST, PZHEMM, PZHER2K,
+     $                   PZLACPY, PZTRSM
+*     ..
+*     .. Intrinsic Functions ..
+      INTRINSIC          DBLE, DCMPLX, DCONJG, ICHAR, MAX, MIN, MOD
+*     ..
+*     .. Executable Statements ..
+      ICTXT = DESCA( CTXT_ )
+      CALL BLACS_GRIDINFO( ICTXT, NPROW, NPCOL, MYROW, MYCOL )
+      SCALE = 1.0D0
+*
+      NB = DESCA( MB_ )
+*
+*
+*     Test the input parameters
+*
+      INFO = 0
+      IF( NPROW.EQ.-1 ) THEN
+         INFO = -( 700+CTXT_ )
+      ELSE
+         UPPER = LSAME( UPLO, 'U' )
+         CALL CHK1MAT( N, 3, N, 3, IA, JA, DESCA, 7, INFO )
+         CALL CHK1MAT( N, 3, N, 3, IB, JB, DESCB, 11, INFO )
+         IF( INFO.EQ.0 ) THEN
+            IAROW = INDXG2P( IA, DESCA( MB_ ), MYROW, DESCA( RSRC_ ),
+     $              NPROW )
+            IBROW = INDXG2P( IB, DESCB( MB_ ), MYROW, DESCB( RSRC_ ),
+     $              NPROW )
+            IACOL = INDXG2P( JA, DESCA( NB_ ), MYCOL, DESCA( CSRC_ ),
+     $              NPCOL )
+            IBCOL = INDXG2P( JB, DESCB( NB_ ), MYCOL, DESCB( CSRC_ ),
+     $              NPCOL )
+            IROFFA = MOD( IA-1, DESCA( MB_ ) )
+            ICOFFA = MOD( JA-1, DESCA( NB_ ) )
+            IROFFB = MOD( IB-1, DESCB( MB_ ) )
+            ICOFFB = MOD( JB-1, DESCB( NB_ ) )
+            NP0 = NUMROC( N, NB, 0, 0, NPROW )
+            NQ0 = NUMROC( N, NB, 0, 0, NPCOL )
+            LWMIN = MAX( NB*( NP0+1 ), 3*NB )
+            IF( IBTYPE.EQ.1 .AND. .NOT.UPPER ) THEN
+               LWOPT = 2*NP0*NB + NQ0*NB + NB*NB
+            ELSE
+               LWOPT = LWMIN
+            END IF
+            WORK( 1 ) = DCMPLX( DBLE( LWOPT ) )
+            LQUERY = ( LWORK.EQ.-1 )
+            IF( IBTYPE.LT.1 .OR. IBTYPE.GT.3 ) THEN
+               INFO = -1
+            ELSE IF( .NOT.UPPER .AND. .NOT.LSAME( UPLO, 'L' ) ) THEN
+               INFO = -2
+            ELSE IF( N.LT.0 ) THEN
+               INFO = -3
+            ELSE IF( IROFFA.NE.0 ) THEN
+               INFO = -5
+            ELSE IF( ICOFFA.NE.0 ) THEN
+               INFO = -6
+            ELSE IF( DESCA( MB_ ).NE.DESCA( NB_ ) ) THEN
+               INFO = -( 700+NB_ )
+            ELSE IF( IROFFB.NE.0 .OR. IBROW.NE.IAROW ) THEN
+               INFO = -9
+            ELSE IF( ICOFFB.NE.0 .OR. IBCOL.NE.IACOL ) THEN
+               INFO = -10
+            ELSE IF( DESCB( MB_ ).NE.DESCA( MB_ ) ) THEN
+               INFO = -( 1100+MB_ )
+            ELSE IF( DESCB( NB_ ).NE.DESCA( NB_ ) ) THEN
+               INFO = -( 1100+NB_ )
+            ELSE IF( ICTXT.NE.DESCB( CTXT_ ) ) THEN
+               INFO = -( 1100+CTXT_ )
+            ELSE IF( LWORK.LT.LWMIN .AND. .NOT.LQUERY ) THEN
+               INFO = -13
+            END IF
+         END IF
+         IDUM1( 1 ) = IBTYPE
+         IDUM2( 1 ) = 1
+         IF( UPPER ) THEN
+            IDUM1( 2 ) = ICHAR( 'U' )
+         ELSE
+            IDUM1( 2 ) = ICHAR( 'L' )
+         END IF
+         IDUM2( 2 ) = 2
+         CALL PCHK2MAT( N, 3, N, 3, IA, JA, DESCA, 7, N, 3, N, 3, IB,
+     $                  JB, DESCB, 11, 2, IDUM1, IDUM2, INFO )
+      END IF
+*
+      IF( INFO.NE.0 ) THEN
+         CALL PXERBLA( ICTXT, 'PZHENGST', -INFO )
+         RETURN
+      ELSE IF( LQUERY ) THEN
+         RETURN
+      END IF
+*
+*     Quick return if possible
+*
+      IF( N.EQ.0 )
+     $   RETURN
+*
+*
+      IF( IBTYPE.NE.1 .OR. UPPER .OR. LWORK.LT.LWOPT ) THEN
+         CALL PZHEGST( IBTYPE, UPLO, N, A, IA, JA, DESCA, B, IB, JB,
+     $                 DESCB, SCALE, INFO )
+         RETURN
+      END IF
+*
+      CALL DESCSET( DESCG, N, NB, NB, NB, IAROW, IACOL, ICTXT, NP0 )
+      CALL DESCSET( DESCR, N, NB, NB, NB, IAROW, IACOL, ICTXT, NP0 )
+      CALL DESCSET( DESCRT, NB, N, NB, NB, IAROW, IACOL, ICTXT, NB )
+      CALL DESCSET( DESCAA, NB, NB, NB, NB, IAROW, IACOL, ICTXT, NB )
+*
+      INDG = 1
+      INDR = INDG + DESCG( LLD_ )*NB
+      INDAA = INDR + DESCR( LLD_ )*NB
+      INDRT = INDAA + DESCAA( LLD_ )*NB
+*
+      DO 30 K = 1, N, NB
+*
+         KB = MIN( N-K+1, NB )
+         POSTK = K + KB
+         NPK = N - POSTK + 1
+*
+*
+         CALL PZLACPY( 'A', N-POSTK+1, KB, B, POSTK+IB-1, K+JB-1, DESCB,
+     $                 WORK( INDG ), POSTK, 1, DESCG )
+         CALL PZLACPY( 'A', N-POSTK+1, KB, A, POSTK+IA-1, K+JA-1, DESCA,
+     $                 WORK( INDR ), POSTK, 1, DESCR )
+         CALL PZLACPY( 'A', KB, K-1, A, K+IA-1, JA, DESCA,
+     $                 WORK( INDRT ), 1, 1, DESCRT )
+*
+         CALL PZLACPY( 'L', KB, KB, A, K+IA-1, K+JA-1, DESCA,
+     $                 WORK( INDR ), K, 1, DESCR )
+         CALL PZTRSM( 'Right', 'L', 'N', 'N', NPK, KB, MONE, B, K+IB-1,
+     $                K+JB-1, DESCB, WORK( INDG ), POSTK, 1, DESCG )
+*
+         CALL PZHEMM( 'Right', 'L', NPK, KB, ONEHALF, A, K+IA-1, K+JA-1,
+     $                DESCA, WORK( INDG ), POSTK, 1, DESCG, ONE,
+     $                WORK( INDR ), POSTK, 1, DESCR )
+*
+         CALL PZHER2K( 'Lower', 'No T', NPK, KB, ONE, WORK( INDG ),
+     $                 POSTK, 1, DESCG, WORK( INDR ), POSTK, 1, DESCR,
+     $                 RONE, A, POSTK+IA-1, POSTK+JA-1, DESCA )
+*
+         CALL PZGEMM( 'No T', 'No Conj', NPK, K-1, KB, ONE,
+     $                WORK( INDG ), POSTK, 1, DESCG, WORK( INDRT ), 1,
+     $                1, DESCRT, ONE, A, POSTK+IA-1, JA, DESCA )
+*
+         CALL PZHEMM( 'Right', 'L', NPK, KB, ONE, WORK( INDR ), K, 1,
+     $                DESCR, WORK( INDG ), POSTK, 1, DESCG, ONE, A,
+     $                POSTK+IA-1, K+JA-1, DESCA )
+*
+         CALL PZTRSM( 'Left', 'Lower', 'No Conj', 'Non-unit', KB, K-1,
+     $                ONE, B, K+IB-1, K+JB-1, DESCB, A, K+IA-1, JA,
+     $                DESCA )
+*
+         CALL PZLACPY( 'L', KB, KB, A, K+IA-1, K+JA-1, DESCA,
+     $                 WORK( INDAA ), 1, 1, DESCAA )
+*
+         IF( MYROW.EQ.DESCAA( RSRC_ ) .AND. MYCOL.EQ.DESCAA( CSRC_ ) )
+     $        THEN
+            DO 20 I = 1, KB
+               DO 10 J = 1, I
+                  WORK( INDAA+J-1+( I-1 )*DESCAA( LLD_ ) )
+     $               = DCONJG( WORK( INDAA+I-1+( J-1 )*
+     $               DESCAA( LLD_ ) ) )
+   10          CONTINUE
+   20       CONTINUE
+         END IF
+*
+         CALL PZTRSM( 'Left', 'Lower', 'No Conj', 'Non-unit', KB, KB,
+     $                ONE, B, K+IB-1, K+JB-1, DESCB, WORK( INDAA ), 1,
+     $                1, DESCAA )
+*
+         CALL PZTRSM( 'Right', 'Lower', 'Conj', 'Non-unit', KB, KB, ONE,
+     $                B, K+IB-1, K+JB-1, DESCB, WORK( INDAA ), 1, 1,
+     $                DESCAA )
+*
+         CALL PZLACPY( 'L', KB, KB, WORK( INDAA ), 1, 1, DESCAA, A,
+     $                 K+IA-1, K+JA-1, DESCA )
+*
+         CALL PZTRSM( 'Right', 'Lower', 'Conj', 'Non-unit', NPK, KB,
+     $                ONE, B, K+IB-1, K+JB-1, DESCB, A, POSTK+IA-1,
+     $                K+JA-1, DESCA )
+*
+         DESCR( CSRC_ ) = MOD( DESCR( CSRC_ )+1, NPCOL )
+         DESCG( CSRC_ ) = MOD( DESCG( CSRC_ )+1, NPCOL )
+         DESCRT( RSRC_ ) = MOD( DESCRT( RSRC_ )+1, NPROW )
+         DESCAA( RSRC_ ) = MOD( DESCAA( RSRC_ )+1, NPROW )
+         DESCAA( CSRC_ ) = MOD( DESCAA( CSRC_ )+1, NPCOL )
+   30 CONTINUE
+*
+      WORK( 1 ) = DCMPLX( DBLE( LWOPT ) )
+*
+      RETURN
+      END
+*
+      DOUBLE PRECISION FUNCTION DLAMC3( A, B )
+*
+*  -- LAPACK auxiliary routine (version 3.0) --
+*     Univ. of Tennessee, Univ. of California Berkeley, NAG Ltd.,
+*     Courant Institute, Argonne National Lab, and Rice University
+*     October 31, 1992
+*
+*     .. Scalar Arguments ..
+      DOUBLE PRECISION   A, B
+*     ..
+*
+*  Purpose
+*  =======
+*
+*  DLAMC3  is intended to force  A  and  B  to be stored prior to doing
+*  the addition of  A  and  B ,  for use in situations where optimizers
+*  might hold one of these in a register.
+*
+*  Arguments
+*  =========
+*
+*  A, B    (input) DOUBLE PRECISION
+*          The values A and B.
+*
+* =====================================================================
+*
+*     .. Executable Statements ..
+*
+      DLAMC3 = A + B
+*
+      RETURN
+*
+*     End of DLAMC3
+*
+      END
+***********************************************************
