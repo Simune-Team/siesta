@@ -71,7 +71,7 @@ C ****************************************************************************
       use on_main
       use neighbour
       use sys,      only : die
-      use spatial,  only : nL2G, natomsNode
+      use spatial,  only : nL2G
 
       implicit none
 

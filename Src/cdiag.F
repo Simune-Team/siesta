@@ -132,7 +132,6 @@ C Matrices for 2D
       logical,           save :: Serial = .true.
       logical                 :: ChangeAlgorithm
       real(dp)                :: abstol
-      real(dp)                :: one
       real(dp)                :: orfac
       real(dp)                :: vl
       real(dp)                :: vu
@@ -140,6 +139,9 @@ C Matrices for 2D
       real(dp), pointer, save :: work(:)
       real(dp), pointer, save :: Zsave(:,:,:)
 
+      complex(dp), parameter  :: 
+     .             zero_z = (0.0_dp, 0.0_dp)
+     .           , one_z  = (1.0_dp, 0.0_dp)
 C Start time count
       call timer('cdiag',1)
 
@@ -270,7 +272,6 @@ C NB: Divide and conquer doesnot have eigenvalue only case in Scalapack
       ibtype = 1
       abstol = 1.0d-8
       orfac  = 1.0d-3
-      one = 1.0d0
 
 C Set BFG parameters
       iter = - 1
@@ -496,20 +497,20 @@ C*******************************************************************************
         if (PreRotate.and.ChangeAlgorithm) then
           if (Serial) then
 C Rotate according to eigenvectors from previous cycle
-            call zhemm('L','U',n,n,1.0d0,H,n,Zsave,n,0.0d0,Z,n)
-            call zgemm('T','N',n,n,n,1.0d0,Zsave,n,Z,n,0.0d0,H,n)
+            call zhemm('L','U',n,n,one_z,H,n,Zsave,n,zero_z,Z,n)
+            call zgemm('T','N',n,n,n,one_z,Zsave,n,Z,n,zero_z,H,n)
 #ifdef MPI
           else
             if (Use2D) then
-              call pzhemm('L','U',n,n,1.0d0,h2d,1,1,desc_h2d,Zsave,1,1,
-     .                     desc_h2d,0.0d0,z2d,1,1,desc_h2d)
-              call pzgemm('T','N',n,n,n,1.0d0,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desch,0.0d0,h2d,1,1,desc_h2d)
+              call pzhemm('L','U',n,n,one_z,h2d,1,1,desc_h2d,Zsave,1,1,
+     .                     desc_h2d,zero_z,z2d,1,1,desc_h2d)
+              call pzgemm('T','N',n,n,n,one_z,Zsave,1,1,desc_h2d,z2d,1,
+     .                     1,desch,zero_z,h2d,1,1,desc_h2d)
             else
-              call pzhemm('L','U',n,n,1.0d0,H,1,1,desch,Zsave,1,1,desch,
-     .                     0.0d0,Z,1,1,desch)
-              call pzgemm('T','N',n,n,n,1.0d0,Zsave,1,1,desch,Z,1,1,
-     .                     desch,0.0d0,H,1,1,desch)
+              call pzhemm('L','U',n,n,one_z,H,1,1,desch,Zsave,1,1,desch,
+     .                     zero_z,Z,1,1,desch)
+              call pzgemm('T','N',n,n,n,one_z,Zsave,1,1,desch,Z,1,1,
+     .                     desch,zero_z,H,1,1,desch)
             endif
 #endif
           endif
@@ -597,17 +598,17 @@ C Post-rotate using trial eigenvectors                                         *
 C*******************************************************************************
         if (PreRotate.and.ChangeAlgorithm) then
           if (Serial) then
-            call zgemm('N','N',n,n,n,1.0d0,Zsave,n,Z,n,0.0d0,H,n)
+            call zgemm('N','N',n,n,n,one_z,Zsave,n,Z,n,zero_z,H,n)
             call zcopy(n*nm,H(1,1,1),1,Z(1,1,1),1)
 #ifdef MPI
           else
             if (Use2D) then
-              call pzgemm('N','N',n,n,n,1.0d0,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desc_h2d,0.0d0,h2d,1,1,desc_h2d)
+              call pzgemm('N','N',n,n,n,one_z,Zsave,1,1,desc_h2d,z2d,1,
+     .                     1,desc_h2d,zero_z,h2d,1,1,desc_h2d)
               call zcopy(n*nm,h2d(1,1,1),1,z2d(1,1,1),1)
             else
-              call pzgemm('N','N',n,n,n,1.0d0,Zsave,1,1,desch,Z,1,1,
-     .                     desch,0.0d0,H,1,1,desch)
+              call pzgemm('N','N',n,n,n,one_z,Zsave,1,1,desch,Z,1,1,
+     .                     desch,zero_z,H,1,1,desch)
               call zcopy(n*nm,H(1,1,1),1,Z(1,1,1),1)
             endif
 #endif
@@ -634,23 +635,21 @@ C*******************************************************************************
         if (Serial) then
           if (neigvec.gt.0) then
             call ztrsm('Left', 'U', 'N', 'Non-unit', 
-     .                 n, neigvec, cmplx(one,kind=dp), S, n, Z, n)
+     .                 n, neigvec, one_z, S, n, Z, n)
           endif
 #ifdef MPI
         else
           if (neigvec.gt.0) then
             if (Use2D) then
               call pztrsm('Left','U','N','Non-unit',n,neigvec,
-     .                     cmplx(one,kind=dp),
-     .                     s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
+     .                     one_z,s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
               call pzgemr2d(n,n,z2d,1,1,desc_h2d,Z,1,1,desch,ictxt)
             else
               call pztrsm('Left','U','N','Non-unit',n,neigvec,
-     .                     cmplx(one,kind=dp),
-     .                     S,1,1,desch,Z,1,1,desch)
+     .                     one_z,S,1,1,desch,Z,1,1,desch)
             endif
           endif
-          if (dscale.ne.one) then
+          if (dscale.ne.1.0_dp) then
             call dscal(n,dscale,w,1)
           endif
 #endif

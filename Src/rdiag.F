@@ -160,6 +160,10 @@ C*******************************************************************************
 C Initialise error flag
       ierror = 0
 
+! vl and vu are not currently used, but they must be initialized
+      vl = 0
+      vu = n
+
 C Set algorithm logicals
       if (DoRead) then
         DoRead = .false.

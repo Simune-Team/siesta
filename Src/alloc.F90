@@ -322,7 +322,7 @@ call MPI_Bcast(REPORT_UNIT,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 call MPI_Bcast(REPORT_FILE,50,MPI_character,0,MPI_Comm_World,MPIerror)
 
 if (node > 0) then
-  open( REPORT_UNIT, file=REPORT_FILE, status='unknown')
+  open( REPORT_UNIT, file=REPORT_FILE )
 end if
 #endif
 
@@ -1558,6 +1558,9 @@ character(len=*), optional, intent(in) :: routine
 integer, dimension(:,:),    intent(in) :: bounds
 
 integer i
+#ifdef MPI
+integer mpierror
+#endif
 
 if (ierr/=0) then
   print*, 'alloc_err: allocate status error', ierr
@@ -1574,7 +1577,11 @@ if (ierr/=0) then
   print '(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
                       i,bounds(i,1),bounds(i,2),         &
                       i=1,size(bounds,dim=1))
+#ifdef MPI
+  call mpi_abort(mpi_comm_world,ierr,mpierror)
+#else
   stop 'alloc_err: allocate error'
+#endif
 end if
 
 END SUBROUTINE alloc_err

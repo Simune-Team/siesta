@@ -22,9 +22,10 @@ C  natomsNode(na)             = pointer to node responsible for each atom
 C
 C  Julian Gale, NRI, Curtin University, March 2004
 C
+      use alloc
+      use ionew, only : ionode
       use precision
       use spatial
-      use alloc
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
       use mpi_siesta, only: mpi_integer, mpi_max
@@ -96,6 +97,8 @@ C
       real(dp)                                 :: targetratioxy
       real(dp)                                 :: targetratioxz
       real(dp)                                 :: targetratioyz
+      integer, dimension(:), allocatable       :: ncellpernodelist
+      integer, dimension(:), allocatable       :: natompernodelist
 #ifdef MPI
       integer                                  :: MPIerror
       integer, dimension(:), allocatable, save :: ntmp
@@ -356,7 +359,7 @@ C
             natomold = natomnow
           endif
         enddo
-        npgridxptr(npgrid(1)) = nspcell(1) - nbufferx
+        npgridxptr(ii+1:npgrid(1)) = nspcell(1) - nbufferx
 C
 C  Assign cells to nodes based on cumulative numbers of atoms : Y
 C
@@ -379,7 +382,7 @@ C
             natomold = natomnow
           endif
         enddo
-        npgridyptr(npgrid(2)) = nspcell(2) - nbuffery
+        npgridyptr(ii+1:npgrid(2)) = nspcell(2) - nbuffery
 C
 C  Assign cells to nodes based on cumulative numbers of atoms : Z
 C
@@ -402,7 +405,7 @@ C
             natomold = natomnow
           endif
         enddo
-        npgridzptr(npgrid(3)) = nspcell(3) - nbufferz
+        npgridzptr(ii+1:npgrid(3)) = nspcell(3) - nbufferz
 C
 C  Build lists linking cells to nodes
 C
@@ -481,10 +484,37 @@ C
             enddo
           enddo
         enddo
-        if (ldebug) then
-          write(6,'(''  Cells per Processor = '',2(i8,1x))') 
-     .      Node,ncellpernode
+        
+        if (ionode) then
+           allocate(ncellpernodelist(nodes))
+        else
+           allocate(ncellpernodelist(0))
         endif
+#ifdef MPI
+        call mpi_gather(ncellpernode,1,mpi_integer,
+     .       ncellpernodelist,1,mpi_integer,
+     .       0,mpi_comm_world,mpierror)
+#else
+        ncellpernodelist=ncellpernode
+#endif
+        if (ionode) then
+           write(6,*)
+           do i=0,nodes-1
+              write(6,'(''  Cells per Processor = '',2(i8,1x))') 
+     .             i,ncellpernodelist(i+1)
+           enddo
+           if (any(ncellpernodelist==0)) then
+              write(6,*)
+              write(6,*) "Warning: Bad load balancing: ",
+     .                   "no cells allocated to node",
+     .                   minloc(ncellpernodelist)-1
+              write(6,*) "Try specifying a number of nodes that is ", 
+     .                   "an exact factor of the number of cells:"
+     .                   ,product(nspcell)
+           endif
+        endif
+        deallocate(ncellpernodelist)
+
 C
 C  Find size for atom link array and then allocate
 C
@@ -513,10 +543,27 @@ C
             enddo
           endif
         enddo
-        if (ldebug) then
-          write(6,'(''  Atoms per Processor = '',2(i8,1x))') 
-     .      Node,natompernode
+
+        if (ionode) then
+           allocate(natompernodelist(nodes))
+        else
+           allocate(natompernodelist(0))
         endif
+#ifdef MPI
+        call mpi_gather(natompernode,1,mpi_integer,
+     .       natompernodelist,1,mpi_integer,
+     .       0,mpi_comm_world,mpierror)
+#else
+        natompernodelist=natompernode
+#endif
+        if (ionode) then
+           write(6,*)
+           do i=0,nodes-1
+              write(6,'(''  Atoms per Processor = '',2(i8,1x))') 
+     .             i,natompernodelist(i+1)
+           enddo
+        endif
+        deallocate(natompernodelist)
 C
 C  Build lists linking atoms with parallel structure
 C
@@ -603,5 +650,6 @@ C
         deallocate(npgridzptr)
       endif
 C
+
       return
       end

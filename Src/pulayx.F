@@ -480,11 +480,15 @@ C Read former matrices for mixing .........
          enddo
        enddo
 
-       do is=1,nspin
-         do ii=1,listdptr(nbasis)+numd(nbasis)
-           dmold(ii,is)=dmnew(ii,is)
+       ! Test in case processor has no orbitals.
+       ! 
+       if (nbasis>0) then
+         do is=1,nspin
+           do ii=1,listdptr(nbasis)+numd(nbasis)
+             dmold(ii,is)=dmnew(ii,is)
+           enddo
          enddo
-       enddo
+       endif
 C ........
        if (pulfile) then
          call io_close(jtape)

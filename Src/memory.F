@@ -101,6 +101,7 @@ C Passed arguments
 C Local arguments
       integer
      .  MaxMemory, n
+      integer, allocatable :: maxmemlist(:)
 
 #ifdef MPI
       integer
@@ -125,19 +126,28 @@ C Output memory use information
      .      '' MB'')') (MaxMemory/1000000)+1
         endif
       else
-        do n = 0,Nodes-1
-          if (Node.eq.n) then
-            write(Unit,'(''* Maximum dynamic memory allocated : Node '',
-     .        i4,'' = '',i5,'' MB'')') n,(PeakMemory/1000000)+1
-          endif
-#ifdef MPI
-          call MPI_Barrier(MPI_Comm_World,MPIerror)
-#endif
-        enddo
-        if (Node.eq.0) then
-          write(Unit,'(''* Maximum memory occured during '',a30)')
-     .      PeakRoutine
+        if (node==0) then
+          allocate(maxmemlist(nodes))
+        else
+          allocate(maxmemlist(0))
         endif
+#ifdef MPI
+        call mpi_gather(peakmemory,1,mpi_integer,
+     .                  maxmemlist,1,mpi_integer,
+     .                  0,mpi_comm_world,mpierror)
+#else
+        maxmemlist=peakmemory
+#endif
+        if (node==0) then
+          do n=0,Nodes-1
+            write(Unit,'(''* Maximum dynamic memory allocated : Node ''
+     .          ,i4,'' = '',i5,'' MB'')') n,(maxmemlist(n+1)/1000000)+1
+          enddo
+          write(Unit,*)
+          write(Unit,'(''* Maximum memory occured during '',a30)')
+     .               PeakRoutine
+        endif
+        deallocate(maxmemlist)
       endif
 
       end subroutine printmemory

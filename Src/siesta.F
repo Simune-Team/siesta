@@ -13,7 +13,7 @@ C ***
 
 C  Modules
       use precision, only: dp
-      use parallel, only: BlockSize, Node, Nodes, ProcessorY
+      use parallel, only: Node, Nodes
       use atmfuncs, only: rcut, uion
       use atomlist, only: xa, xalast, indxuo, na_u
       use atomlist, only: isa, indxua, iza, lastkb, lasto
@@ -46,9 +46,7 @@ C  Modules
       use m_ordern,     only: ordern
       use m_hsparse,    only: hsparse
 
-      use parallelsubs, only: set_processory, getnodeorbs,
-     .                        set_processorydefault, 
-     .                        set_blocksizedefault
+      use parallelsubs, only: getnodeorbs
       use writewave,    only: initwave, wwave
       use iopipes,      only: forcestopipe, coordsfrompipe
 
@@ -63,7 +61,7 @@ C  Modules
      .  isolve, ispin, istp, istpsave, istart, istep, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
      .  j, ja, jamin, jo, jx, kscell(3,3),
-     .  level, maxbk, maxk, maxnh, maxnhold,
+     .  level, maxbk, maxk, maxnh, 
      .  maxna, maxsav, maxwk, mscell(3,3), mullipop, 
      .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
      .  nkpnt, nmove, nnia, ns, nsc(3), nscold(3), nscf, nspin, 
@@ -135,7 +133,7 @@ C  Modules
      .  auxchanged, chebef, dminit, default, dumpcharge, 
      .  first, fixauxcell, fixspin, found, foundxv, gamma,
      .  initdmaux, inspn, itest, last, lastst, mix, mmix, negl, noeta, 
-     .  outlng, overflow, pulfile, relaxd,
+     .  outlng, overflow, overflowed, pulfile, relaxd,
      .  same, savehs, savevh, savevt, savdrh, savrho,
      .  savepsch, savetoch,
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
@@ -176,7 +174,10 @@ C  Modules
      .  relaxd /.false./
      .  tiny /1.e-15_dp/
      .  ihuge /1073741823/
-     .  maxnh / 0 /
+      ! maxnh is (initially) the minimum size of all the sparse arrays.
+      ! It must be 1 (not 0) since we frequently use the F77 idiom of
+      ! passing the first element of the array instead of all of it.
+     .  maxnh / 1 /
      .  maxna / 200 /
      .  tempion / 0.0_dp /
      .  no_l, nnamax /2*1/
@@ -360,7 +361,6 @@ C Read simulation data ................................................
      .            pulfile, tempinit, dumpcharge, varcel, harrisfun,
      .            occtol)
 
-
 C Find some switches ..................................................
       if (IOnode) then
         writek    = fdf_boolean('WriteKpoints'    , outlng )
@@ -403,6 +403,8 @@ C Find some switches ..................................................
       call MPI_Bcast(savehs,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(fixauxcell,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(initdmaux,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+      call MPI_Bcast(muldeb,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+      if (.Not.IONode) signat=.false.
 #ifdef NODAT
       call MPI_Bcast(rijmin,1,MPI_double_precision,0,MPI_Comm_World,
      .  MPIerror)
@@ -412,7 +414,7 @@ C Find some switches ..................................................
 #endif
 
 C Initialise file SIG for Signature records (whatever they are...) ...
-      if (IOnode .and. signat) then
+      if (signat) then
         call io_assign(io_sig)
         call sig_setup(io_sig)
       endif
@@ -980,49 +982,51 @@ C           Check that it is not the same atom
 C ..................
 
 C List of nonzero Hamiltonian matrix elements .........................
-      nh = max(1,maxnh)
-      call re_alloc(listh,1,nh,name='listh',routine='siesta',
-     .              shrink=.false.)
-   44 nh = max(1,maxnh)
-      maxnhold = maxnh
-      call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
-     .              iphorb, iphKB, nh, numh, listhptr, listh )
-      overflow = .false.
-      if (nh .gt. maxnh) then
-C Increase maxnh with safety margin when atoms move
-        maxnh = 1.05 * nh + 40
-        overflow = .true.
+      overflow=.true.
+      overflowed=.false.
+      do while (overflow)
+         nh = maxnh
+         call re_alloc(listh,1,maxnh,name='listh',routine='siesta',
+     .                 shrink=.false.)
+         call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
+     .                 iphorb, iphKB, nh, numh, listhptr, listh )
+         if (nh .gt. maxnh) then
+      ! Increase maxnh with safety margin for when atoms move
+            maxnh = 1.05 * nh + 40
+            overflowed=.true.
+         else
+            overflow=.false.
+         endif
+      enddo
+      ! In first step, allocate anyway (to catch corner case
+      ! where one node has nh=0, and doesn't overflow)
+      if (istp==1) then
+        call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
+     .                routine='siesta',copy=.false.)
+        call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
+     .                routine='siesta',copy=.false.)
+        call re_alloc(listhold,1,maxnh,name='listhold',
+     .                routine='siesta',copy=.false.)
+        ! Initialise Dscfsave to avoid problems in extrapol
+        Dscfsave(1:maxnh,1:nspin) = 0.0_dp
+        listhold(1:maxnh) = 0
+      elseif (overflowed) then
+        ! We need to preserve the contents of these arrays
+        ! when reallocating.
+        call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
+     .                routine='siesta',copy=.true.)
+        call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
+     .                routine='siesta',copy=.true.)
+        call re_alloc(listhold,1,maxnh,name='listhold',
+     .                routine='siesta',copy=.true.)
       endif
-      if (overflow) then
-C For the first step there is no need to preserve the contents
-C but for subsequent steps listhold, Dscf and Dscfsave must be conserved
-        if (istp.eq.1) then
-          call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .                  routine='siesta',copy=.false.)
-          call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     .                  routine='siesta',copy=.false.)
-          call re_alloc(listhold,1,maxnh,name='listhold',
-     .                  routine='siesta',copy=.false.)
-C Initialise Dscfsave to avoid problems in extrapol
-          Dscfsave(1:maxnh,1:nspin) = 0.0_dp
-          listhold(1:maxnh) = 0
-        else
-          call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .                  routine='siesta',copy=.true.)
-          call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     .                  routine='siesta',copy=.true.)
-          call re_alloc(listhold,1,maxnh,name='listhold',
-     .                  routine='siesta',copy=.true.)
-        endif
+      if (istp==1.or.overflowed) then
         call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .                routine='siesta',copy=.false.)
         call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',
      .                routine='siesta',copy=.false.)
         call re_alloc(Escf,1,maxnh,1,nspin,name='Escf',
      .                routine='siesta',copy=.false.)
-        call re_alloc(listh,1,maxnh,name='listh',
-     .                routine='siesta',copy=.false.)
-        goto 44
       endif
 
 C Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
@@ -1082,7 +1086,7 @@ C set density matrix for first step
       if (istp .ne. 1 .and. (idyn .eq. 7)
      $         .and. usesavedm)  dminit = .true.
 
-C If auxillary cell has changed, optionally reset density matrix
+C If auxiliary cell has changed, optionally reset density matrix
 C and set usesavedata to false to avoid reading back saved copy
       if (initdmaux.and.auxchanged) then
         dminit = .true.
