@@ -21,19 +21,20 @@ c Written by E. Artacho. November 1998.
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
 c real*8 fa(3,na)       : Atomic forces
-c real*8 stress(3,3)    : Stress tensor components
 c real*8 volume         : unit cell volume
 c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
-c real*8 strtol         : Maximum stress tolerance
 c logical varcel        : true if variable cell optimization
+c logical usesavecg     : true if we're using saved CG files.
 c *************************** INPUT AND OUTPUT ******************************
 c real*8 xa(3,na)       : Atomic coordinates
 c                         input: current step; output: next step
 c real*8 cell(3,3)      : Matrix of the vectors defining the unit cell 
 c                         input: current step; output: next step
 c                         cell(ix,ja) is the ix-th component of ja-th vector
+c real*8 stress(3,3)    : Stress tensor components
+c real*8 strtol         : Maximum stress tolerance
 c ******************************** OUTPUT ***********************************
 c logical relaxd        : True when converged
 c ***************************************************************************
@@ -41,50 +42,65 @@ c ***************************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision, only : dp
       use parallel,    only : Node
-      use fdf
+      use fdf, only : fdf_block, fdf_physical
 #ifdef MPI
       use mpi_siesta
 #endif
 
-      implicit          none
+      implicit none
 
-      integer           na
+! Subroutine arguments:
 
-      logical           relaxd, varcel, usesavecg
+      integer, intent(in) :: na
+      real(dp), intent(in) :: fa(3,na),
+     .                        volume,
+     .                        dxmax,
+     .                        tp,
+     .                        ftol
+      logical, intent(in) :: varcel,
+     .                       usesavecg
+    
+      real(dp), intent(inout) :: xa(3,na),
+     .                           stress(3,3),
+     .                           strtol,
+     .                           cell(3,3)
 
-      real(dp)          cell(3,3), stress(3,3), 
-     .                  xa(3,na), fa(3,na),
-     .                  tp, ftol, strtol, volume, dxmax
-
-      external          memory
-c ---------------------------------------------------------------------------
+      logical, intent(out) :: relaxd
 
 c Internal variables and arrays
 
-      logical           tarstr, frstme, found
+      real(dp), parameter :: kBar = 1.d0/1.47108d5
 
-      integer           iu, ia, ndeg, i, j, n, indi, linmin
+      logical           found
+
+      integer           iu, ia, i, j, n, indi
 
 #ifdef MPI
       integer           MPIerror
 #endif
 
-      real(dp)          
-     .                  cgcntr(0:20), tstres(3,3), celli(3,3), 
-     .                  modcel(3), kBar, precon, strain(3,3), 
-     .                  sxx, syy, szz, sxy, sxz, syz, cellin(3,3)
+      real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
 
-      real(dp), dimension(:), allocatable, save :: gxa, gfa
-      real(dp), dimension(:), allocatable, save :: cgaux
+      real(dp), dimension(:), allocatable :: gxa, gfa
+      real(dp), dimension(:), allocatable :: cgaux
 
-      save              frstme, ndeg, tstres, cgcntr, kBar,
-     .                  modcel, precon, strain, cellin, linmin
-    
+! Saved internal variables:
 
-      data              frstme      /.true./,
-     .                  tarstr      /.false./
+      logical, save :: frstme = .true.
+      logical, save :: tarstr = .false.
+      real(dp), save :: cgcntr(0:20) = 0.0_dp
+
+      integer, save :: ndeg,
+     .                 linmin
+
+      real(dp), save :: tstres(3,3),
+     .                  modcel(3),
+     .                  precon,
+     .                  strain(3,3),
+     .                  cellin(3,3)
+      
 
 c ---------------------------------------------------------------------------
 
@@ -105,8 +121,6 @@ c If first call to cgvc, check dim and get target stress --------------------
 c look for target stress and read it if found, otherwise generate it --------
 
         if ( varcel ) then
-     
-          kBar = 1.d0/1.47108d5
 
           if (Node.eq.0) then
             tarstr = fdf_block('MD.TargetStress',iu)
@@ -130,7 +144,7 @@ c look for target stress and read it if found, otherwise generate it --------
      .                'assuming hydrostatic MD.TargetPressure.'
               do i = 1, 3
                 do j = 1, 3
-                  tstres(i,j) = 0.d0
+                  tstres(i,j) = 0._dp
                 enddo
                 tstres(i,i) = - tp
               enddo
@@ -164,7 +178,7 @@ c globalise information
 c moduli of original cell vectors for fractional coor scaling back to au ---
 
           do n = 1, 3
-             modcel(n) = 0.0d0
+             modcel(n) = 0.0_dp
              do j = 1, 3
                 modcel(n) = modcel(n) + cell(j,n)*cell(j,n)
              enddo
@@ -199,7 +213,7 @@ c initialization to 1. for numerical reasons, later substracted ------------
 
           do i = 1, 3
             do j = 1, 3
-              strain(i,j) = 1.d0
+              strain(i,j) = 1._dp
               cellin(i,j) = cell(i,j)
             enddo
           enddo
@@ -270,12 +284,12 @@ c convergence is checked here for input forces as compared with ftol --------
         do ia = 1, na
           do n = 1, 3
             indi = 3*(ia - 1) + n
-            gxa(indi) = 0.0d0
-            gfa(indi) = 0.0d0
+            gxa(indi) = 0.0_dp
+            gfa(indi) = 0.0_dp
             do i = 1, 3
               gxa(indi) = gxa(indi) + celli(i,n) * xa(i,ia) * modcel(n)
               gfa(indi) = gfa(indi) + cell(i,n) * fa(i,ia) / modcel(n)
-              relaxd = relaxd .and. ( dabs(fa(i,ia)) .lt. ftol )
+              relaxd = relaxd .and. ( abs(fa(i,ia)) .lt. ftol )
             enddo
           enddo
         enddo
@@ -284,7 +298,7 @@ c symmetrizing the stress tensor --------------------------------------------
 
         do i = 1, 3
            do j = i+1, 3
-              stress(i,j) = 0.5d0*( stress(i,j) + stress(j,i) )
+              stress(i,j) = 0.5_dp*( stress(i,j) + stress(j,i) )
               stress(j,i) = stress(i,j)
            enddo
         enddo
@@ -303,18 +317,18 @@ c preconditioning: scale stress and strain so as to behave similarly to x,f -
 
 c check stress convergence --------------------------------------------------
 
-        strtol = dabs(strtol)
+        strtol = abs(strtol)
         do i = 1, 3
            do j = 1, 3
               relaxd = relaxd .and. 
-     .          ( dabs(stress(i,j)-tstres(i,j)) .lt. strtol )
+     .          ( abs(stress(i,j)-tstres(i,j)) .lt. strtol )
            enddo
         enddo
 
 c call conjugate gradient minimization -------------------------------------- 
 
         if ( .not. relaxd )
-     .     call conjgr( ndeg, gxa, gfa, dxmax, 0.d0, cgcntr, cgaux )
+     .     call conjgr( ndeg, gxa, gfa, dxmax, 0._dp, cgcntr, cgaux )
 
 
 c fixed cell ----------------------------------------------------------------
@@ -356,7 +370,7 @@ c new cell ------------------------------------------------------------------
            do i = 1, 3
               cell(i,n) = cellin(i,n)
               do j = 1, 3
-                 cell(i,n) = cell(i,n) + (strain(i,j)-1.d0)*cellin(j,n)         
+                 cell(i,n) = cell(i,n) + (strain(i,j)-1._dp)*cellin(j,n)         
               enddo
            enddo
         enddo
@@ -365,7 +379,7 @@ c output fractional coordinates to cartesian Bohr, and copy to xa -----------
 
         do ia = 1, na
           do i = 1, 3
-            xa(i,ia) = 0.0d0
+            xa(i,ia) = 0.0_dp
             do n = 1, 3
               indi = 3*(ia - 1) + n
               xa(i,ia) = xa(i,ia) + cell(i,n) * gxa(indi) / modcel(n)
