@@ -80,7 +80,7 @@ C
       integer           indxuo(no), listh(maxnh), numh(nuo), nkpol
       integer           listhptr(nuo), isa(na), iphorb(no), iaorb(no) 
       integer           nua, maxna, jna(maxna), lasto(0:na)
-      real(dp)          dot, 
+      real(dp)          ddot, 
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
      .                  polR(3,nspin), polxyz(3,nspin), ucell(3,3),
@@ -115,7 +115,7 @@ C Internal variables
 
       character         paste*30, shape*10
 
-      external          dot, io_assign, io_close,
+      external          ddot, io_assign, io_close,
      .                  paste, volcel, reclat, memory
 
       real(dp), dimension(:), allocatable, save ::
@@ -234,7 +234,7 @@ C  polarization
 C Nuclear component
 
       do igrd=1,3
-        dmod=dot(ucell(1,igrd),ucell(1,igrd),3)
+        dmod=ddot(3,ucell(1,igrd),1,ucell(1,igrd),1)
         dmod=dsqrt(dmod)
         do ix=1,3
           uR(ix,igrd)=ucell(ix,igrd)/dmod
@@ -250,9 +250,9 @@ C Nuclear component
         polion(ix) = 0.0d0
         do ia = 1,nua
           is = isa(ia)
-          dmod = dot(rcell(1,ix),xa(1,ia),3)*izvalfis(is)/nspin
+          dmod = ddot(3,rcell(1,ix),1,xa(1,ia),1)*izvalfis(is)/nspin
           polion(ix) = polion(ix) + 
-     .     dmod*dsqrt(dot(ucell(1,ix),ucell(1,ix),3))/(2.0d0*pi) 
+     .     dmod*dsqrt(ddot(3,ucell(1,ix),1,ucell(1,ix),1))/(2.0d0*pi) 
         enddo 
       enddo 
     
@@ -350,7 +350,7 @@ C In the first point we just store the wavefunctions
                   do io = 1,nuo
                     do jo = 1,nuotot
                       ia = iaorb(jo)
-                      dkxij = dot(dk,xa(1,ia),3)
+                      dkxij = ddot(3,dk,1,xa(1,ia),1)
                       ckxij = dcos(npl*dkxij)
                       skxij = dsin(npl*dkxij)
                       psi1(iuo+1) = psi(iuo+1)*ckxij + psi(iuo+2)*skxij 

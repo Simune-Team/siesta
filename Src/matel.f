@@ -77,6 +77,7 @@ C *******************************************************************
 C    6  10        20        30        40        50        60        7072
 
 C Modules -----------------------------------------------------------
+      use precision, only : dp
       USE ALLOC
       USE ATMFUNCS, ONLY: 
      .  LOFIO, PHIATM, RCUT, XPHIATM, YPHIATM, ZPHIATM
@@ -88,7 +89,7 @@ C Argument types and dimensions -------------------------------------
       IMPLICIT          NONE
       CHARACTER         OPERAT
       INTEGER           IO1, IO2, IS1, IS2
-      DOUBLE PRECISION  DSDR(3), R12(3), S12
+      real(dp)          DSDR(3), R12(3), S12
 C -------------------------------------------------------------------
 
 C Internal precision parameters  ------------------------------------
@@ -102,10 +103,10 @@ C    two orbitals.
 C  TINY is a small number to add to a zero denominator
       INTEGER,          PARAMETER :: NR     =  128
       INTEGER,          PARAMETER :: NQ     =  1024
-      DOUBLE PRECISION, PARAMETER :: EXPAND =  1.20D0
-      DOUBLE PRECISION, PARAMETER :: Q2CUT  =  2.50D3
-      DOUBLE PRECISION, PARAMETER :: FFTOL  =  1.D-8
-      DOUBLE PRECISION, PARAMETER :: TINY   =  1.D-12
+      real(dp),         PARAMETER :: EXPAND =  1.20D0
+      real(dp),         PARAMETER :: Q2CUT  =  2.50D3
+      real(dp),         PARAMETER :: FFTOL  =  1.D-8
+      real(dp),         PARAMETER :: TINY   =  1.D-12
       CHARACTER(LEN=*), PARAMETER :: MYNAME =  'MATEL '
 C -------------------------------------------------------------------
 
@@ -114,7 +115,7 @@ C Internal variable types and dimensions ----------------------------
      .  I, IF1, IF2, IFF, IFFY, IFLM1, IFLM2, 
      .  IO, IOPER, IQ, IR, IS, IX,
      .  JF1, JF2, JFF, JFFR, JFFY, JFLM1, JFLM2, JLM, 
-     .  JO, JO1, JO2, JR,
+     .  JO1, JO2, JR,
      .  L, L1, L2, L3, LMAX,
      .  N, NILM, NILM1, NILM2, NJLM1, NJLM2
       INTEGER, SAVE ::
@@ -125,14 +126,14 @@ C Internal variable types and dimensions ----------------------------
      .  IFFR(:), ILM(:), ILMFF(:), INDF(:,:,:), INDFF(:,:,:),
      .  INDFFR(:), INDFFY(:), NLM(:,:,:)
 
-      DOUBLE PRECISION ::
+      real(dp) ::
      .  C, CPROP, DFFR0, DFFRMX, DSRDR, FFL(0:NQ), FFQ(0:NQ),
      .  Q, R, SR, X12(3)
 
-      DOUBLE PRECISION, SAVE ::
+      real(dp), SAVE ::
      .  PI, QMAX, RMAX
 
-      DOUBLE PRECISION, POINTER, SAVE ::
+      real(dp), POINTER, SAVE ::
      .  CFFR(:), DYDR(:,:), F(:,:), FFR(:,:,:), FFY(:), Y(:)
 
       LOGICAL ::
@@ -159,6 +160,8 @@ C Nullify pointers
         NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
      .           CFFR, DYDR, F, FFR, FFY, Y )
         ALLOCATE( INDF(0,0,0) )
+        CALL RE_ALLOC( INDFFY, 0,MFF, MYNAME//'INDFFY' )
+        INDFFY(0) = 0
         NULLIFIED = .TRUE.
       ENDIF
 
@@ -190,6 +193,8 @@ C Check if tables must be re-initialized
         NFF  = 0
         NFFR = 0
         NFFY = 0
+        CALL RE_ALLOC( INDFFY, 0,MFF, MYNAME//'INDFFY' )
+        INDFFY(0) = 0
       ENDIF
 
 C Check argument OPERAT 
@@ -430,7 +435,8 @@ C         Reallocate some arrays
 
 C         Expand the product of two spherical harmonics (SH) also in SH
           CALL YLMEXP( L1+L2, RLYLM, YLMYLM, ILM(IFLM1), ILM(IFLM2),
-     .                 1, 1, 1.D0, NILM, ILMFF(NFFY+1:), FFY(NFFY+1:) )
+     .                 1, 1, 1.D0, NILM, ILMFF(NFFY+1:MFFY), 
+     .                 FFY(NFFY+1:MFFY))
 
 C         Loop on possible lm values of orbital product
           DO I = 1,NILM

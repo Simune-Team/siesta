@@ -42,8 +42,10 @@ C
       real(dp)  dm(maxnd,nspin)
 
 C Internal variables and arrays
-      character fname*33, sname*30
-      logical   exist1, exist2, exist3, frstme
+      character(len=33), save :: fname
+      character(len=30)       :: sname
+      logical   exist1, exist2, exist3
+      logical,           save :: frstme = .true.
       integer   im, is, unit1, unit2, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
       integer, dimension(:), allocatable, save :: numdg
@@ -54,9 +56,6 @@ C Internal variables and arrays
       integer,  dimension(:), allocatable, save :: ibuffer
 #endif
       external          chkdim, paste, timer,  memory
-
-      save      frstme, fname
-      data      frstme /.true./
 
 *     call timer( 'iodm', 1 )
 
@@ -84,7 +83,6 @@ C Find total number of basis functions over all Nodes
 #else
       nbasistot = nbasis
 #endif
-
 
 C Allocate local buffer array for globalised numd
       allocate(numdg(nbasistot))

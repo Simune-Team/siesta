@@ -29,9 +29,9 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	denmat.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o dynamics.o \
-	efield.o egandd.o ener3.o extrapol.o extrapolon.o \
+	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
 	fixed.o forhar.o gradient.o grdsam.o \
-	hsparse.o idiag.o  electrostatic.o initatom.o initdm.o inver.o \
+	hsparse.o idiag.o  initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o iorho.o ioxv.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
@@ -48,8 +48,10 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         ofc.o poison.o readsp.o radfft.o \
 	siesta.o io.o \
         spin_init.o coor.o transfer.o \
-        broadcast_basis.o sig.o eggbox.o dsyevds.o \
-        optical.o phirphi_opt.o reoptical.o transition_rate.o
+        broadcast_basis.o sig.o eggbox.o dsyevds.o zheevds.o \
+        optical.o phirphi_opt.o reoptical.o transition_rate.o \
+        initparallel.o setspatial.o setatomnodes.o uncell.o \
+        cart2frac.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -79,12 +81,13 @@ gen-basis.o: $(FDF)
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o parallel.o parallelsubs.o atom.o atmparams.o atmfuncs.o listsc.o \
+MOD_OBJS=precision.o spatial.o parallel.o parallelsubs.o atom.o atmparams.o atmfuncs.o listsc.o \
          memoryinfo.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o parsing.o\
          alloc.o phonon.o spher_harm.o periodic_table.o version.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o sys.o basis_io.o\
-         chemical.o densematrix.o writewave.o on_subs.o fermid.o
+         onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o \
+	 electrostatic.o mneighb.o globalise.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
@@ -118,6 +121,11 @@ atm_types.o: radial.o
 transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
 atmfuncs.o: atm_types.o radial.o
 old_atmfuncs.o atmfuncs.o matel.o: spher_harm.o
+siesta.o parallel.o initparallel.o setspatial.o setatomnodes.o : spatial.o
+ener3.o ener3lomem.o denmat.o gradient.o globalise : spatial.o
+ordern.o atomlwf.o cgwf.o egandd.o ener3.o ener3lomem.o gradient.o denmat.o on_subs.o iolwf.o : onmod.o
+atomlwf.o : mneighb.o
+gradient.o ener3.o ener3lomem.o denmat.o : globalise.o
 #
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o ionew.o: sys.o
 atmfuncs.o atom.o basis_specs.o: sys.o
@@ -127,7 +135,6 @@ propor.o spher_harm.o pseudopotential.o: sys.o
 redata.o dhscf.o: sys.o
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o: fermid.o
 optical.o transition_rate.o: fermid.o
-sys.o: parallel.o
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
 #
@@ -171,7 +178,7 @@ version:
 	@echo
 
 siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\
-                $(COMP_LIBS) $(ALL_OBJS)
+                $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(MPI_INTERFACE)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 

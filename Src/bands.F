@@ -285,7 +285,7 @@ C This is the only exit point
 
       subroutine bands( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
-     .                  writeb, nk, kpoint, ek, nuotot )
+     .                  writeb, nk, kpoint, ek, nuotot, occtol )
 C *********************************************************************
 C Finds band energies at selected k-points.
 C Written by J.Soler, August 1997 and August 1998.
@@ -319,6 +319,7 @@ C logical writeb              : This routine must write bands?
 C integer nuotot              : Total number of orbitals in unit cell
 C integer nk                  : Number of band k points
 C real*8  kpoint(3,maxk)      : k point vectors
+C real*8  occtol              : Occupancy threshold for DM build
 C *************************** OUTPUT **********************************
 C real*8  ek(maxo,maxspn,maxk) : Eigenvalues
 C *************************** UNITS ***********************************
@@ -346,11 +347,11 @@ C
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
       logical           writeb
-      real(dp)          dot, ef, ek(maxo,maxspn,maxk),
+      real(dp)          ef, ek(maxo,maxspn,maxk),
      .                  H(maxnh,nspin), kpoint(3,maxk), 
-     .                  S(maxnh), xij(3,maxnh)
+     .                  S(maxnh), xij(3,maxnh), occtol
       character         paste*30
-      external          dot, io_assign, io_close, paste, memory
+      external          io_assign, io_close, paste, memory
 C *********************************************************************
 
       character 
@@ -363,15 +364,9 @@ C *********************************************************************
      .  ik, il, io, ispin, iu, iuo, 
      .  naux, nuo, nhs
 
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
-
       real(dp)
-     .  Dnew, qs(2),
-     .  e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot, path, pi,
-     .  temp, wk, Entropy
+     .  Dnew, qs(2), e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot,
+     .  path, temp, wk, Entropy
 
 C Dynamic arrays
       real(dp), dimension(:), allocatable, save :: aux
@@ -456,7 +451,7 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              nuotot )
+     .              nuotot, occtol, 1 )
       elseif (nspin.eq.4) then
         call diag2k(nuo, no, maxuo, maxnh, maxnh, maxo,
      .              numh, listhptr, listh, numh, listhptr, 
@@ -464,7 +459,7 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              nuotot )
+     .              nuotot, occtol, 1 )
       else
         if (Node.eq.0) then
           stop 'bands: ERROR: incorrect value of nspin'

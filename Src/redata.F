@@ -9,7 +9,7 @@
      .                  usesavelwf, usesavedm, usesavecg,
      .                  mullipop, inspn, maxsav, nkick, wmixkick, 
      .                  pulfile, tempinit, dumpcharge, varcel, 
-     .                  harrisfun )
+     .                  harrisfun, occtol )
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
@@ -42,7 +42,7 @@ C integer ncgmax           : Maximum number of CG steps for
 C                            band structure energy minimization
 C real*8 etol              : Relative tolerance in CG minimization
 C                            of band structure energy
-C real*8 eta               : Fermi level parameter of Kim functional
+C real*8 eta(2)            : Fermi level parameter of Kim functional
 C real*8 rcoor             : Cutoff radius of LWF's (Bohr)
 C integer ioptlwf          : Option to build LWF's according to:
 C                             0 = Read blindly from disk
@@ -113,6 +113,7 @@ C     (This is now obsolete: info will appear in .RHO file)
 C logical varcel           : variable shape for CG optimization or dynamics
 C logical harrisfun        : swith that indicates if harris functional will
 C                            be used or not
+C real*8  occtol           : Occupancy threshold for DM build
 C **********************************************************************
 
 C
@@ -123,9 +124,15 @@ C
       use fdf
       use sys
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only : MPI_Comm_World, MPI_logical, MPI_integer,
+     .                       MPI_character
+#ifdef NODAT
+      use mpi_siesta, only: mpi_double_precision
+#else
+      use mpi_siesta, only: DAT_double
 #endif
-      use diagmemory, only: memoryfactor, memoryscale, trymemoryincrease
+#endif
+      use diagmemory, only: memoryfactor
       use phonon, only: phonon_check
 
       implicit none
@@ -138,8 +145,8 @@ C
 
       real(dp)
      .  beta, bulkm, charnet,
-     .  dDtol, dt, dx, dxmax, eta, etol, ftol, g2max,
-     .  mn, mpr, rcoor, rcoorcp, strtol,
+     .  dDtol, dt, dx, dxmax, eta(2), etol, ftol, g2max,
+     .  mn, mpr, occtol, rcoor, rcoorcp, strtol,
      .  taurelax, temp, tempinit, tcp, tp, ts, tt, wmix, wmixkick
 
       logical
@@ -336,7 +343,7 @@ C     Maximum number of SCF iterations
       call MPI_Bcast(nscf,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-C     Pulay mixing, numer of iterations for one Pulay mixing (maxsav)
+C Pulay mixing, numer of iterations for one Pulay mixing (maxsav)
       maxsv_default = 0
       if (Node.eq.0) then
         maxsav = fdf_integer('DM.NumberPulay',maxsv_default)
@@ -368,8 +375,8 @@ C Global broadcast of values
      .  MPIerror)
 #endif
 
-C     Use disk or memory to store intermediate Pulay miximg vectors
-C     (pulfile)
+C Use disk or memory to store intermediate Pulay miximg vectors
+C (pulfile)
       pul_default = .false.
       if (Node.eq.0) then
         pulfile  = fdf_boolean('DM.PulayOnFile',pul_default)
@@ -381,8 +388,7 @@ C     (pulfile)
 #endif
 C ...
 
-
-C     Density Matrix Mixing  (proportion of output DM in new input DM)
+C Density Matrix Mixing  (proportion of output DM in new input DM)
       wmix_default = 0.25d0
       if (Node.eq.0) then
         wmix = fdf_double('DM.MixingWeight',wmix_default)
@@ -400,8 +406,25 @@ C Global broadcast of values
 #endif
 #endif
 
-C     Perform linear mixing each nkick SCF iterations (to kick system
-C     when it is pinned in a poorly convergent SCF loop)
+C Density Matrix occupancy tolerance
+      if (Node.eq.0) then
+        occtol = fdf_double('DM.OccupancyTolerance',1.0d-12)
+        write(6,'(a,f14.12)') 
+     .   'redata: New DM Occupancy tolerance       = ',occtol
+      endif
+C Global broadcast of values
+#ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(occtol,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
+      call MPI_Bcast(occtol,1,DAT_double,0,MPI_Comm_World,
+     .  MPIerror)
+#endif
+#endif
+
+C Perform linear mixing each nkick SCF iterations (to kick system
+C when it is pinned in a poorly convergent SCF loop)
       nkick_default = 0
       if (Node.eq.0) then
         nkick = fdf_integer('DM.NumberKick',nkick_default)
@@ -528,14 +551,14 @@ C Method to Solve LDA Hamitonian ...
      .     'redata: Method of Calculation            = ',
      .     'Order-N'
         endif
-        if (nspin .gt. 1) then
+        if (nspin .gt. 2) then
           if (Node.eq.0) then
            write(6,100) 
            write(6,101) 
            write(6,'(a)') 
      .     'redata:    You chose the Order-N solution option'
            write(6,'(a)') 
-     .     'redata:    together with nspin>1.  This is not  '
+     .     'redata:    together with nspin>2.  This is not  '
            write(6,'(a)') 
      .     'redata:    allowed in this version of siesta    '
            write(6,102)
@@ -557,7 +580,7 @@ C Method to Solve LDA Hamitonian ...
 
 C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
       if (Node.eq.0) then
-        MemoryFactor = fdf_double('DiagMemory', 1.2d0 )
+        MemoryFactor = fdf_double('Diag.Memory', 1.0d0 )
         MemoryFactor = max(MemoryFactor,1.0d0)
       endif
 #ifdef MPI
@@ -569,31 +592,6 @@ C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
      .  MPIerror)
 #endif
 #endif
-
-C Memory scale factor for rdiag/cdiag - cannot be less than 1.0
-      if (Node.eq.0) then
-        MemoryScale = fdf_double('DiagScale', 1.0d0 )
-        MemoryScale = max(MemoryScale,1.0d0)
-      endif
-#ifdef MPI
-#ifdef NODAT
-      call MPI_Bcast(MemoryScale,1,MPI_double_precision,0,
-     .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_Bcast(MemoryScale,1,DAT_double,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
-#endif
-
-C Memory increasing allowed if diagonalisation fails to converge?
-      if (Node.eq.0) then
-        TryMemoryIncrease = fdf_boolean('TryMemoryIncrease', .true. )
-      endif
-#ifdef MPI
-      call MPI_Bcast(TryMemoryIncrease,1,MPI_logical,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
-C ...
 
 C Electronic temperature for Fermi Smearing ...
       if (Node.eq.0) then
@@ -612,7 +610,6 @@ C Electronic temperature for Fermi Smearing ...
      .  MPIerror)
 #endif
 #endif
-C ...
 
 C Fix the spin of the system to a given value 
       fs_default = .false.
@@ -686,16 +683,19 @@ C     Relative tolerance in total band structure energy
 #endif
 
 C     Fermi level parameter
-      eta_default = 0.d0
+      eta_default = 0.0d0
       if (Node.eq.0) then
-        eta = fdf_physical('ON.eta',eta_default,'Ry')
+        eta(1) = fdf_physical('ON.eta',eta_default,'Ry')
+        eta(2) = eta(1)
+        eta(1) = fdf_physical('ON.eta_alpha',eta(1),'Ry')
+        eta(2) = fdf_physical('ON.eta_beta',eta(2),'Ry')
       endif
 #ifdef MPI
 #ifdef NODAT
-      call MPI_Bcast(eta,1,MPI_double_precision,0,MPI_Comm_World,
+      call MPI_Bcast(eta,2,MPI_double_precision,0,MPI_Comm_World,
      .  MPIerror)
 #else
-      call MPI_Bcast(eta,1,DAT_double,0,MPI_Comm_World,
+      call MPI_Bcast(eta,2,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
 #endif
 #endif
@@ -817,8 +817,15 @@ C ...
      .  'redata: Maximum number of iterations     = ',ncgmax
         write(6,'(a,d12.2)') 
      .  'redata: Relative tolerance               = ',etol
-        write(6,'(a,f10.4,a)') 
-     .  'redata: Eta (Fermi level parameter)      = ',eta,'  Ry'
+        if (nspin.eq.2) then
+          write(6,'(a,f10.4,a)') 
+     .    'redata: Eta (Fermi level) Alpha spin     = ',eta(1),'  Ry'
+          write(6,'(a,f10.4,a)') 
+     .    'redata: Eta (Fermi level) Beta spin      = ',eta(2),'  Ry'
+        else
+          write(6,'(a,f10.4,a)') 
+     .    'redata: Eta (Fermi level parameter)      = ',eta(1),'  Ry'
+        endif
         write(6,'(a,f10.4,a)') 
      .  'redata: Radius of LWFs                   = ',rcoor,
      .  '  Bohr'

@@ -32,13 +32,14 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use atmfuncs,  only: rcut, phiatm, all_phi
-      use atm_types, only: nsmax=>nspecies
-      use atomlist,  only: indxuo
+      use atmfuncs,      only: rcut, phiatm, all_phi
+      use atm_types,     only: nsmax=>nspecies
+      use atomlist,      only: indxuo
       use listsc_module, only: listsc
       use mesh, only: dxa, nsp, xdop, xdsp
       use meshdscf
       use meshphi
+      use parallel,      only: Nodes
 
       implicit none
 
@@ -48,7 +49,7 @@ C Argument types and dimensions
      .   iphorb(*), isa(*), numVs(nuo), listVsptr(nuo), listVs(nvmax)
       real
      .   V(nsp,np,nspin)
-      real*8
+      real(dp)
      .   dvol, Vs(nvmax,nspin)
 
 C Internal variables and arrays
@@ -64,19 +65,19 @@ C Internal variables and arrays
       integer, dimension(:), allocatable, save ::
      .  ilc, ilocal, iorb
       logical
-     .  Parallel
-      real*8
+     .  ParallelLocal
+      real(dp)
      .  Vij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
-      real*8, dimension(:),   allocatable, save :: 
+      real(dp), dimension(:),   allocatable, save :: 
      .  VClocal
-      real*8, dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable, save :: 
      .  Clocal, Vlocal
 
 C  Start time counter
       call timer('vmat',1)
 
 C  Set algorithm logical
-      Parallel = (nuo .ne. nuotot)
+      ParallelLocal = (Nodes.gt.1)
 
 C  Find value of maxloc
 
@@ -99,7 +100,7 @@ C  Allocate local memory
       allocate(VClocal(nsp))
       call memory('A','D',nsp,'vmat')
 
-      if (Parallel) then
+      if (ParallelLocal) then
         nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
         allocate(DscfL(nvmaxl,nspin))
         call memory('A','D',nvmaxl*nspin,'meshdscf')
@@ -112,7 +113,7 @@ C  Full initializations done only once
       Vlocal(:,:) = 0.0
       last = 0
 
-C  Find atomic cutoff radiae
+C  Find atomic cutoff radii
       r2cut(:) = 0.0d0
       do i = 1,nuotot
         ia = iaorb(i)
@@ -140,7 +141,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
           do il = 1,last
             i = iorb(il)
             iu = indxuo(i)
-            if (Parallel) then
+            if (ParallelLocal) then
               iul = NeedDscfL(iu)
               if (i .eq. iu) then
                 do ii = 1, numdl(iul)
@@ -228,8 +229,8 @@ C  Look for required orbitals not yet in Vlocal
         endif
 
 C  Loop on first orbital of mesh point
-        lasta=0
-        lastop=0
+        lasta = 0
+        lastop = 0
         do ic = 1,nc
           imp = endpht(ip-1) + ic
           i = lstpht(imp)
@@ -253,7 +254,7 @@ C  Generate or retrieve phi values
                 if (r2sp.lt.r2cut(is)) then
                   call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
                 else
-                  phia(:,isp) = 0.d0
+                  phia(:,isp) = 0.0d0
                 endif
               enddo
             endif
@@ -277,7 +278,7 @@ C  Loop on second orbital of mesh point (only for jc.le.ic)
             do jc = 1,ic
               jl = ilc(jc)
 
-C             Loop over sub-points
+C  Loop over sub-points
               Vij = 0.0d0
               do isp = 1,nsp
                 Vij = Vij + VClocal(isp) * Clocal(isp,jc)
@@ -303,7 +304,7 @@ C  Add final Vlocal to Vs
       do il = 1,last
         i = iorb(il)
         iu = indxuo(i)
-        if (Parallel) then
+        if (ParallelLocal) then
           iul = NeedDscfL(iu)
           if (i .eq. iu) then
             do ii = 1, numdl(iul)
@@ -371,7 +372,9 @@ C  Add final Vlocal to Vs
         endif
       enddo
 
-      if (Parallel) then
+  999 continue
+
+      if (ParallelLocal) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
      .      nuotot, nspin, DscfL, Vs )

@@ -1,14 +1,9 @@
-      subroutine iolwf( task, maxc, ncmax, maxoloc, nbasis, nspin,
-     .                  numc, listc, c, found )
-
+      subroutine iolwf( task, nbasis, nbasisCloc, maxnc, found, nspin)
 C *******************************************************************
 C Reads/writes localized wave functions from/to file
 C Written by P.Ordejon and J.M.Soler. May 1997.
 C ********* INPUT ***************************************************
 C character task*3 : 'read' or 'write'
-C integer   maxc   : First dimension of listd and c
-C integer   maxoloc: Second dimension of c/listc 
-C                  : (must be maxoloc.ge.nbasisloc)
 C integer   nbasis : Number of atomic orbitals
 C integer   nspin  : Number of spins (1 or 2)
 C ********* INPUT OR OUTPUT (depending on task) *********************
@@ -16,55 +11,61 @@ C integer numc(nbasis)       : Control vector of c matrix
 C                              (number of nonzero elements of each row)
 C integer listc(maxc,maxoloc): Control vector of c matrix
 C                              (list of nonzero elements of each row)
+C integer maxnc              : Dimension of C matrix
 C real*8  c(maxc,maxoloc,nspin) : Density matrix
 C ********* OUTPUT *************************************************
-C integer ncmax : actual value of maxc needed
 C logical found : Have LWF's been found in disk? (Only when task='read')
 C ******************************************************************
 
 C
 C  Modules
 C
-      use precision
-      use parallel
+      use precision,     only : dp
+      use parallel,      only : Node, Nodes
       use parallelsubs
       use fdf
+      use on_main,       only : c, cold, numc, numcold, listc, listcold
+      use on_main,       only : xi, g, hg
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta,    only : MPI_logical, MPI_Status_Size
+      use mpi_siesta,    only : MPI_Comm_World, MPI_integer
+#ifdef NODAT
+      use mpi_siesta,    only : MPI_double_precision
+#else
+      use mpi_siesta,    only : DAT_double
 #endif
+#endif
+      use alloc
 
       implicit  none
 
       character task*(*), paste*33
       logical   found
-      integer   maxc, maxoloc, nbasis, nspin, ncmax
-      integer   listc(maxc,maxoloc), numc(nbasis)
-      real*8    c(maxc,maxoloc,nspin)
-      external  chkdim, io_assign, io_close, paste, timer,
-     .          memory
+      integer   nbasis, nbasisCloc, nspin, maxnc
+      external  chkdim, io_assign, io_close, paste, timer, memory
 
 C Internal variables and arrays
       character fname*33, sname*30
-      logical   exist1, exist2, exist3, frstme
-      integer   im, is, unit1, unit2, m, nb, ns, 
-     .          ml, BNode
+      logical   exist3
+      integer   im, is, unit1, m, nb, ncmax, ns 
+      logical, save :: frstme = .true.
+      integer,  dimension(:), allocatable, save :: numcg
 #ifdef MPI
-      integer   MPIerror, Request, Status(MPI_Status_Size)
-      real*8,  dimension(:), allocatable, save :: bdens
-      integer, dimension(:), allocatable, save :: idens
+      integer   MPIerror, n, ndata, Request, Status(MPI_Status_Size)
+      real(dp), dimension(:), allocatable, save :: bdens
+      integer,  dimension(:), allocatable, save :: idens
 #endif
 
-      save      frstme, fname
-      data      frstme /.true./
+      save      fname
 
 *     call timer( 'iolwf', 1 )
 
 #ifdef MPI
 C Allocate local buffer array
-      allocate(bdens(maxc))
-      call memory('A','D',maxc,'iolwf')
-      allocate(idens(maxc))
-      call memory('A','I',maxc,'iolwf')
+      allocate(idens(nbasis))
+      call memory('A','I',nbasis,'iolwf')
+      allocate(bdens(nbasis))
+      call memory('A','D',nbasis,'iolwf')
 #endif
       
 C Find file name
@@ -78,261 +79,186 @@ C Find file name
 
       if (task.eq.'read' .or. task.eq.'READ') then
         if (Node.eq.0) then
-          inquire (file='SAVE.LWF',     exist=exist1)
-          inquire (file='SAVE.ctrlLWF', exist=exist2)
-          inquire (file=fname,          exist=exist3)
+          inquire(file=fname,exist=exist3)
         endif
 
 #ifdef MPI
 C Broadcast logicals
-        call MPI_Bcast(exist1,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(exist2,1,MPI_logical,0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(exist3,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-C First look for old-format files
-        if (exist1 .and. exist2) then
+C Look now for new-format files
+        if (exist3) then
+
+C Allocate local workspace
+          allocate(numcg(nbasis))
+
           if (Node.eq.0) then
-            write(6,'(/,a)') 'iolwf: Reading LWFs from file'
-
-            call io_assign(unit1)
-            call io_assign(unit2)
-            open( unit1, file='SAVE.LWF', status='unknown')
-            open( unit2, file='SAVE.ctrlLWF', status='unknown')
-            rewind(unit1)
-            rewind(unit2)
-          endif
-          ncmax = 0
-          if (Node.eq.0) then
-            do m = 1,nbasis
-              read(unit2,*) numc(m)
-              ncmax = max( ncmax, numc(m) )
-            enddo
-          endif
-#ifdef MPI
-          call MPI_Bcast(numc,nbasis,MPI_integer,0,MPI_Comm_World,
-     .      MPIerror)
-          call MPI_Bcast(ncmax,1,MPI_integer,0,MPI_Comm_World,
-     .      MPIerror)
-#endif
-C Check dimensions are OK
-          if (ncmax.le.maxc) then
-            do m = 1,nbasis
-              call WhichNodeOrb(m,Nodes,BNode)
-
-#ifdef MPI
-              if (Node.eq.0.and.BNode.eq.Node) then
-C Local read
-#endif
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-                do im = 1,numc(m)
-                  read(unit2,*) listc(im,ml)
-                enddo
-
-#ifdef MPI
-              elseif (Node.eq.0) then
-C Read then send to node where density matrix row is stored
-                do im = 1,numc(m)
-                  read(unit2,*) idens(im)
-                enddo
-                call MPI_ISend(idens,numc(m),MPI_integer,
-     .            BNode,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-
-              elseif (Node.eq.BNode) then
-C Receive density matrix row
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-                call MPI_IRecv(listc(1,ml),numc(m),MPI_integer,
-     .            0,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-
-              endif
-
-              if (BNode.ne.0) then
-                call MPI_Barrier(MPI_Comm_World,MPIerror)
-              endif
-#endif
-            enddo
-
-            do is = 1,nspin
-              do m = 1,nbasis
-                call WhichNodeOrb(m,Nodes,BNode)
-
-#ifdef MPI
-                if (Node.eq.0.and.BNode.eq.Node) then
-C Local read
-#endif
-                  call GlobalToLocalOrb(m,Node,Nodes,ml)
-                  do im = 1,numc(m)
-                    read(unit1,*) c(im,ml,is)
-                  enddo
-
-#ifdef MPI
-                elseif (Node.eq.0) then
-C Read then send to node where density matrix row is stored
-                  do im = 1,numc(m)
-                    read(unit1,*) bdens(im)
-                  enddo
-#ifdef NODAT
-                  call MPI_ISend(bdens,numc(m),MPI_double_precision,
-     .              BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-                  call MPI_ISend(bdens,numc(m),DAT_double,
-     .              BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
-                  call MPI_Wait(Request,Status,MPIerror)
-
-                elseif (Node.eq.BNode) then
-C Receive density matrix row
-                  call GlobalToLocalOrb(m,Node,Nodes,ml)
-#ifdef NODAT
-                  call MPI_IRecv(c(1,ml,is),numc(m),
-     .              MPI_double_precision,0,1,MPI_Comm_World,
-     .              Request,MPIerror)
-#else
-                  call MPI_IRecv(c(1,ml,is),numc(m),DAT_double,
-     .              0,1,MPI_Comm_World,Request,MPIerror)
-#endif
-                  call MPI_Wait(Request,Status,MPIerror)
-
-                endif
-
-                if (BNode.ne.0) then
-                  call MPI_Barrier(MPI_Comm_World,MPIerror)
-                endif
-#endif
-
-              enddo
-            enddo
-          endif
-          if (Node.eq.0) then
-            call io_close(unit1)
-            call io_close(unit2)
-          endif
-          found = .true.
-
-c       Look now for new-format files
-        elseif (exist3) then
-          if (Node.eq.0) then
-            write(6,'(/,a)') 'iolwf: Reading LWFs from files'
             call io_assign(unit1)
             open( unit1, file=fname,
      .          form='unformatted', status='unknown' )
             rewind(unit1)
             read(unit1) nb, ns
           endif
-#ifdef MPI
+
+#ifdef MPI        
+C Broadcast values for basis set and spin so that cross-checks can be performed
           call MPI_Bcast(nb,1,MPI_integer,0,MPI_Comm_World,MPIerror)
           call MPI_Bcast(ns,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
           call chkdim( 'iolwf', 'nbasis', nbasis, nb, 0 )
           call chkdim( 'iolwf', 'nspin',  nspin,  ns, 0 )
+
+C Read in global numc array
           if (Node.eq.0) then
-            read(unit1) (numc(m), m=1,nbasis)
+            read(unit1) (numcg(m),m=1,nbasis)
           endif
-#ifdef MPI
-          call MPI_Bcast(numc,nbasis,MPI_integer,0,MPI_Comm_World,
-     .      MPIerror)
-#endif
-          ncmax = 0
-          do m = 1,nbasis
-            ncmax = max( ncmax, numc(m) )
-          enddo
-          if (ncmax.le.maxc) then
-            do m = 1,nbasis
-              call WhichNodeOrb(m,Nodes,BNode)
 
-#ifdef MPI
-              if (Node.eq.0.and.BNode.eq.Node) then
-C Local read
-#endif
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-                read(unit1) (listc(im,ml), im=1,numc(m))
-
-#ifdef MPI
-              elseif (Node.eq.0) then
-C Read density matrix row and send to node where it is to be stored
-                read(unit1) (idens(im), im=1,numc(m))
-                call MPI_ISend(idens,numc(m),MPI_integer,
-     .            BNode,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-
-              elseif (Node.eq.BNode) then
-C Receive density matrix row
-                call GlobalToLocalOrb(m,Node,Nodes,ml)
-                call MPI_IRecv(listc(1,ml),numc(m),MPI_integer,
-     .            0,1,MPI_Comm_World,Request,MPIerror)
-                call MPI_Wait(Request,Status,MPIerror)
-
-              endif
-
-              if (BNode.ne.0) then
-                call MPI_Barrier(MPI_Comm_World,MPIerror)
-              endif
-#endif
+C Collect elements of numc array on IO node from self
+          if (Node.eq.0) then
+            do m = 1,nOrbPerNode(1)
+              numcold(m) = numcg(nL2G(m,1))
             enddo
+          endif
 
-            do is = 1,nspin
+#ifdef MPI
+C Collect elements of numc array on IO node from other nodes
+          do n = 1,Nodes-1
+            if (Node.eq.0) then
+              ndata = 0
               do m = 1,nbasis
-                call WhichNodeOrb(m,Nodes,BNode)
-
-#ifdef MPI
-                if (Node.eq.0.and.BNode.eq.Node) then
-C Local read
-#endif
-                  call GlobalToLocalOrb(m,Node,Nodes,ml)
-                  read(unit1) (c(im,ml,is), im=1,numc(m))
-
-#ifdef MPI
-                elseif (Node.eq.0) then
-C Read density matrix row and send to node where it is to be stored
-                  read(unit1) (bdens(im), im=1,numc(m))
-#ifdef NODAT
-                  call MPI_ISend(bdens,numc(m),MPI_double_precision,
-     .              BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-                  call MPI_ISend(bdens,numc(m),DAT_double,
-     .              BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
-                  call MPI_Wait(Request,Status,MPIerror)
-
-                elseif (Node.eq.BNode) then
-C Receive density matrix row
-                  call GlobalToLocalOrb(m,Node,Nodes,ml)
-#ifdef NODAT
-                  call MPI_IRecv(c(1,ml,is),numc(m),
-     .              MPI_double_precision,0,1,MPI_Comm_World,
-     .              Request,MPIerror)
-#else
-                  call MPI_IRecv(c(1,ml,is),numc(m),DAT_double,
-     .              0,1,MPI_Comm_World,Request,MPIerror)
-#endif
-                  call MPI_Wait(Request,Status,MPIerror)
-
+                if (nNode(m).eq.n) then
+                  ndata = ndata + 1
+                  idens(ndata) = numcg(m)
                 endif
-
-                if (BNode.ne.0) then
-                  call MPI_Barrier(MPI_Comm_World,MPIerror)
-                endif
-#endif
               enddo
-            enddo
+              call MPI_ISend(idens,ndata,MPI_integer,
+     .          n,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            elseif (Node.eq.n) then
+              ndata = 0
+              do m = 1,nbasis
+                if (nNode(m).eq.n) then
+                  ndata = ndata + 1
+                endif
+              enddo
+              call MPI_IRecv(idens,ndata,MPI_integer,
+     .          0,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+              ndata = 0
+              do m = 1,nbasis
+                if (nNode(m).eq.n) then
+                  ndata = ndata + 1
+                  numcold(nG2L(m)) = idens(ndata)
+                endif
+              enddo
+            endif
+          enddo
+#endif
 
+C Check size of arrays
+          ncmax = 0
+          do m = 1,nOrbPerNode(Node+1)
+            ncmax = max(ncmax,numc(m))
+          enddo
+          if (ncmax.gt.maxnc) then
+            maxnc = ncmax 
+            call re_alloc(listc,1,maxnc,1,nbasisCloc,name='listc')
+            call re_alloc(listcold,1,maxnc,1,nbasisCloc,name='listcold')
+            call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,name='c')
+            call re_alloc(cold,1,maxnc,1,nbasisCloc,1,nspin,name='cold')
+            call re_alloc(xi,1,maxnc,1,nbasisCloc,1,nspin,name='xi')
+            call re_alloc(g,1,maxnc,1,nbasisCloc,1,nspin,name='g')
+            call re_alloc(hg,1,maxnc,1,nbasisCloc,1,nspin,name='hg')
           endif
+
+C Initialise C before reading
+          cold(1:maxnc,1:nbasisCloc,1:nspin) = 0.0d0
+
+C Loop over basis functions reading in rows of listc and distributing
+          do m = 1,nbasis 
+#ifdef MPI
+            if (nNode(m).eq.0.and.Node.eq.0) then
+#endif
+C Data is on IO node so just read it in
+              read(unit1)(listcold(im,nG2L(m)),im=1,numcg(m))
+#ifdef MPI
+            elseif (Node.eq.0) then
+C Send data to IO node
+              read(unit1)(idens(im),im=1,numcg(m))
+              call MPI_ISend(idens,numcg(m),MPI_integer,
+     .          nNode(m),m,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            elseif (Node.eq.nNode(m)) then
+C Receive data on IO node
+              ndata = numcold(nG2L(m))
+              call MPI_IRecv(idens,ndata,MPI_integer,
+     .          0,m,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+              do im = 1,ndata
+                listcold(im,nG2L(m)) = idens(im)
+              enddo
+            endif
+#endif
+          enddo
+
+C Loop over basis functions reading in rows of c and distributing
+          do is = 1,nspin
+            do m = 1,nbasis 
+#ifdef MPI 
+              if (nNode(m).eq.0.and.Node.eq.0) then
+#endif    
+C Data is on IO node so just read it in
+                read(unit1)(cold(im,nG2L(m),is),im=1,numcg(m))
+#ifdef MPI  
+              elseif (Node.eq.0) then
+C Send data to IO node
+                read(unit1)(bdens(im),im=1,numcg(m))
+#ifdef NODAT
+                call MPI_ISend(bdens,numcg(m),MPI_double_precision,
+     .            nNode(m),m,MPI_Comm_World,Request,MPIerror)
+#else
+                call MPI_ISend(bdens,numcg(m),DAT_double,
+     .            nNode(m),m,MPI_Comm_World,Request,MPIerror)
+#endif
+                call MPI_Wait(Request,Status,MPIerror)
+              elseif (Node.eq.nNode(m)) then
+C Receive data on IO node
+                ndata = numcold(nG2L(m))
+#ifdef NODAT
+                call MPI_IRecv(bdens,ndata,MPI_double_precision,
+     .            0,m,MPI_Comm_World,Request,MPIerror)
+#else
+                call MPI_IRecv(bdens,ndata,DAT_double,
+     .            0,m,MPI_Comm_World,Request,MPIerror)
+#endif
+                call MPI_Wait(Request,Status,MPIerror)
+                do im = 1,ndata
+                  cold(im,nG2L(m),is) = bdens(im)
+                enddo
+              endif
+#endif    
+            enddo
+          enddo
 
           if (Node.eq.0) then
             call io_close(unit1)
           endif
+
+C Free local workspace
+          deallocate(numcg)
           found = .true.
 
         else
 
           found = .false.
-          ncmax = 0
 
         endif
 
       elseif (task.eq.'write' .or. task.eq.'WRITE') then
+
+C Allocate local workspace
+        allocate(numcg(nbasis))
 
         if (Node.eq.0) then
           call io_assign(unit1)
@@ -340,94 +266,127 @@ C Receive density matrix row
      .        form='unformatted', status='unknown' )
           rewind(unit1)
           write(unit1) nbasis, nspin
-          write(unit1) (numc(m), m=1,nbasis)
         endif
 
-        do m = 1,nbasis
-          call WhichNodeOrb(m,Nodes,BNode)
+C Collect elements of numc array on IO node from self
+        if (Node.eq.0) then
+          do m = 1,nOrbPerNode(1)
+            numcg(nL2G(m,1)) = numc(m)
+          enddo
+        endif
 
 #ifdef MPI
-          if (Node.eq.0.and.BNode.eq.Node) then
-C Local write
-#endif
-            call GlobalToLocalOrb(m,Node,Nodes,ml)
-            write(unit1)(listc(im,ml), im=1,numc(m))
-
-#ifdef MPI
+C Collect elements of numc array on IO node from other nodes
+        do n = 1,Nodes-1
+          if (Node.eq.n) then
+            ndata = 0
+            do m = 1,nbasis
+              if (nNode(m).eq.n) then
+                ndata = ndata + 1
+                idens(ndata) = numc(nG2L(m))
+              endif
+            enddo
+            call MPI_ISend(idens,ndata,MPI_integer,
+     .        0,n,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
           elseif (Node.eq.0) then
-C Receive density matrix row
-            call MPI_IRecv(idens,numc(m),MPI_integer,
-     .        BNode,1,MPI_Comm_World,Request,MPIerror)
+            ndata = 0
+            do m = 1,nbasis
+              if (nNode(m).eq.n) then
+                ndata = ndata + 1
+              endif
+            enddo
+            call MPI_IRecv(idens,ndata,MPI_integer,
+     .        n,n,MPI_Comm_World,Request,MPIerror)
             call MPI_Wait(Request,Status,MPIerror)
-
-          elseif (Node.eq.BNode) then
-C Send density matrix row
-            call GlobalToLocalOrb(m,Node,Nodes,ml)
-            call MPI_ISend(listc(1,ml),numc(m),MPI_integer,
-     .        0,1,MPI_Comm_World,Request,MPIerror)
-            call MPI_Wait(Request,Status,MPIerror)
-
+            ndata = 0
+            do m = 1,nbasis
+              if (nNode(m).eq.n) then
+                ndata = ndata + 1
+                numcg(m) = idens(ndata)
+              endif
+            enddo
           endif
+        enddo
+#endif
 
-          if (BNode.ne.0) then
-            call MPI_Barrier(MPI_Comm_World,MPIerror)
-            if (Node.eq.0) then
-              write(unit1) (idens(im),im=1,numc(m))
-            endif
+C Write out numc array
+        if (Node.eq.0) then
+          write(unit1) (numcg(m),m=1,nbasis)
+        endif
+
+C Loop over basis functions collecting rows of listc and writing out
+        do m = 1,nbasis 
+#ifdef MPI
+          if (nNode(m).eq.0.and.Node.eq.0) then
+#endif
+C Data is on IO node so just write it out
+            write(unit1)(listc(im,nG2L(m)),im=1,numcg(m))
+#ifdef MPI
+          elseif (Node.eq.nNode(m)) then
+C Send data to IO node
+            ndata = numc(nG2L(m))
+            do im = 1,ndata
+              idens(im) = listc(im,nG2L(m))
+            enddo
+            call MPI_ISend(idens,ndata,MPI_integer,
+     .        0,m,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          elseif (Node.eq.0) then
+C Receive data on IO node
+            call MPI_IRecv(idens,numcg(m),MPI_integer,
+     .        nNode(m),m,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+            write(unit1)(idens(im),im=1,numcg(m))
           endif
 #endif
         enddo
 
+C Loop over basis functions collecting rows of c and writing out
         do is = 1,nspin
-          do m = 1,nbasis
-            call WhichNodeOrb(m,Nodes,BNode)
-
-#ifdef MPI
-            if (Node.eq.0.and.BNode.eq.Node) then
-C Local write
+          do m = 1,nbasis 
+#ifdef MPI 
+            if (nNode(m).eq.0.and.Node.eq.0) then
+#endif    
+C Data is on IO node so just write it out
+              write(unit1)(c(im,nG2L(m),is),im=1,numcg(m))
+#ifdef MPI  
+            elseif (Node.eq.nNode(m)) then
+C Send data to IO node
+              ndata = numc(nG2L(m))
+              do im = 1,ndata
+                bdens(im) = c(im,nG2L(m),is)
+              enddo
+#ifdef NODAT
+              call MPI_ISend(bdens,ndata,MPI_double_precision,
+     .          0,m,MPI_Comm_World,Request,MPIerror)
+#else
+              call MPI_ISend(bdens,ndata,DAT_double,
+     .          0,m,MPI_Comm_World,Request,MPIerror)
 #endif
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-              write(unit1)(c(im,ml,is), im=1,numc(m))
-
-#ifdef MPI
+              call MPI_Wait(Request,Status,MPIerror)
             elseif (Node.eq.0) then
-C Receive density matrix row
+C Receive data on IO node
 #ifdef NODAT
-              call MPI_IRecv(bdens,numc(m),MPI_double_precision,
-     .          BNode,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_IRecv(bdens,numcg(m),MPI_double_precision,
+     .          nNode(m),m,MPI_Comm_World,Request,MPIerror)
 #else
-              call MPI_IRecv(bdens,numc(m),DAT_double,
-     .          BNode,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_IRecv(bdens,numcg(m),DAT_double,
+     .          nNode(m),m,MPI_Comm_World,Request,MPIerror)
 #endif
               call MPI_Wait(Request,Status,MPIerror)
-
-            elseif (Node.eq.BNode) then
-C Send density matrix row
-              call GlobalToLocalOrb(m,Node,Nodes,ml)
-#ifdef NODAT
-              call MPI_ISend(c(1,ml,is),numc(m),MPI_double_precision,
-     .          0,1,MPI_Comm_World,Request,MPIerror)
-#else
-              call MPI_ISend(c(1,ml,is),numc(m),DAT_double,
-     .          0,1,MPI_Comm_World,Request,MPIerror)
-#endif
-              call MPI_Wait(Request,Status,MPIerror)
-
+              write(unit1)(bdens(im),im=1,numcg(m))
             endif
-
-            if (BNode.ne.0) then
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-              if (Node.eq.0) then
-                write(unit1) (bdens(im),im=1,numc(m))
-              endif
-            endif
-#endif
+#endif    
           enddo
         enddo
 
         if (Node.eq.0) then
           call io_close(unit1)
         endif
+
+C Free local workspace
+        deallocate(numcg)
 
       else
         if (Node.eq.0) then
@@ -447,4 +406,3 @@ C Free local buffer memory
 
 *     call timer( 'iolwf', 2 )
       end
-

@@ -67,12 +67,12 @@ C Passed variables
       character*12      option
 
 C Internal variables 
-      character         line*130, names*80, yiorno
+      character         line*130, names*80
       integer           ni, nn, nr, nv, iu, ix
       integer           integs(4), lastc, lc(0:3)
       logical           offset
       logical           present
-      real(dp)          reals(4), values(4), factor
+      real(dp)          reals(4), values(4)
 #ifdef MPI
       integer           MPIerror
 #endif

@@ -38,13 +38,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 1.3}}
+{\Huge {\bf S I E S T A \, \, 1.4}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large 30 July 2003 }
+{\Large 22 November 2004 }
 
 \vspace{1.5cm}
 
@@ -55,7 +55,7 @@
    \Large{\it University of Cambridge} \\ \\
 
 {\Large Julian D. Gale} &
-   \Large{\it Imperial College, London} \\ \\
+   \Large{\it Curtin University of Technology, Perth} \\ \\
 
 {\Large Alberto Garc\'{\i}a} &
    \Large{\it Universidad del Pa\'{\i}s Vasco, Bilbao} \\ \\
@@ -86,9 +86,9 @@
 
 \vspace{1cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
-E.Artacho, J.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
+E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
 D.S\'anchez-Portal
-and J.M.Soler, 1996-2003
+and J.M.Soler, 1996-2004
 
 \end{center}
 
@@ -211,7 +211,7 @@ Improved, soft-confined NAOs.
 
 \item
 ``The {\sc Siesta} method for ab initio order-$N$ materials simulation"
-J. M. Soler, E. Artacho, J. Gale, A. Garc\'{\i}a, J. Junquera, P. Ordej\'on,
+J. M. Soler, E. Artacho, J.D. Gale, A. Garc\'{\i}a, J. Junquera, P. Ordej\'on,
 and D. S\'anchez-Portal, J. Phys.: Condens. Matter {\bf 14}, 2745-2779 (2002) 
 
 Extensive description of the {\sc Siesta} method.
@@ -1644,7 +1644,7 @@ pretty crude for some systems. The forces are computed within the
 Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
 
-When this option is chosen, the values of DM.UseSaveDM,
+When this option is choosen, the values of DM.UseSaveDM,
 MaxSCFIterations, and DM.MixSCF1 are automatically set up to False, 1
 and False respectively, no matter whatever other specification are in
 the INPUT file.
@@ -2168,7 +2168,6 @@ like:
 {\it Default value:} Empty.
 
 
-
 \item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect} 
 \index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
 For improving grid-cutoff convergence. It specifies points within
@@ -2374,13 +2373,60 @@ of the LDA Hamiltonian.
 {\it Default value:} {\tt diagon} for 100 atoms or less in the 
 {\bf unit} cell, {\tt OrderN} for more than 100 atoms.
 
-\item[{\bf DivideAndConquer}] ({\it logical}): 
-\index{DivideAndConquer@{\bf DivideAndConquer}} 
-Logical to select whether the normal or Divide and Conquer algorithms are
-used within the Lapack diagonalisation routines. Note that this option
-cannot be used in parallel.
+%Diagonalisation options
 
+\item[{\bf NumberOfEigenStates}] ({\it integer}): 
+\index{NumberOfEigenStates@{\bf NumberOfEigenStates}} 
+This parameter allows the user to reduce the number of eigenstates
+that are calculated from the maximum possible. The benefit is that,
+for a gamma point calculation, the cost of the diagonalisation is
+reduced by finding fewer eigenvectors. For example, during a geometry
+optimisation, only the occupied states are required rather than the
+full set of virtual orbitals. Note, that if the electronic temperature
+is greater than zero then the number of partially occupied states
+increases, depending on the band gap.
+The value specified must greater than the number of occupied states
+and less than the number of basis functions.
+{\it Default value:} {\tt all orbitals}
+
+\item[{\bf Diag.DivideAndConquer}] ({\it logical}): 
+\index{Diag.DivideAndConquer@{\bf Diag.DivideAndConquer}} 
+Logical to select whether the normal or Divide and Conquer algorithms are
+used within the Lapack diagonalisation routines. 
 {\it Default value:} {\tt false}
+
+\item[{\bf Diag.AllInOne}] ({\it logical}): 
+\index{Diag.AllInOne@{\bf Diag.AllInOne}} 
+Logical to select whether a single call to lapack/scalapack is made to 
+perform the diagonalisation or whether the individual steps are controlled
+by SIESTA. Normally this option should not need to be used.
+{\it Default value:} {\tt false}
+
+\item[{\bf Diag.NoExpert}] ({\it logical}): 
+\index{Diag.NoExpert@{\bf Diag.NoExpert}} 
+Logical to select whether the simple or expert versions of the lapack/
+scalapack routines are used. Usually the expert routines are faster, but
+may require slightly more memory.
+{\it Default value:} {\tt false}
+
+\item[{\bf Diag.PreRotate}] ({\it logical}): 
+\index{Diag.PreRotate@{\bf Diag.PreRotate}} 
+Logical to select whether the eigensystem is transformed according to 
+previously saved eigenvectors to create a near diagonal matrix and then 
+back transformed afterwards. This is included for future options, but
+currently should not make any difference except to increase the 
+computational work!
+{\it Default value:} {\tt false}
+
+\item[{\bf Diag.Use2D}] ({\it logical}): 
+\index{Diag.Use2D@{\bf Diag.Use2D}} 
+Logical to select whether a 1-D or 2-D data decomposition should be used
+when calling scalapack. The use of 2-D leads to superior scaling to 
+large numbers of processors and is therefore the default. This option 
+only influences the parallel performance.
+{\it Default value:} {\tt true}
+
+%End diagonalisation options
 
 \item[{\bf OccupationFunction}]({\it string}):
 \index{OccupationFunction@{\bf OccupationFunction}}
@@ -2504,7 +2550,32 @@ energy. The minimization finishes if
 \index{ON.eta@{\bf ON.eta}} 
 Fermi level parameter of Kim 
 {\it et al.}. This should be in the energy gap, and tuned to obtain
-the correct number of electrons.
+the correct number of electrons. If the calculation is spin polarised,
+then separate Fermi levels for each spin can be specified.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
+
+{\it Default value:} {\tt 0.0 eV}
+
+\item[{\bf ON.eta_alpha}] ({\it real energy}): 
+\index{ON.eta_alpha@{\bf ON.eta_alpha}} 
+Fermi level parameter of Kim {\it et al.} for alpha spin electrons. 
+This should be in the energy gap, and tuned to obtain
+the correct number of electrons. Note that if the Fermi
+level is not specified individually for each spin then the
+same global eta will be used.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
+
+{\it Default value:} {\tt 0.0 eV}
+
+\item[{\bf ON.eta_beta}] ({\it real energy}): 
+\index{ON.eta_beta@{\bf ON.eta_beta}} 
+Fermi level parameter of Kim {\it et al.} for beta spin electrons. 
+This should be in the energy gap, and tuned to obtain
+the correct number of electrons. Note that if the Fermi
+level is not specified individually for each spin then the
+same global eta will be used.
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
 
@@ -2560,7 +2631,7 @@ it to {\tt .true.}.
 
 {\it Default value:} {\tt .false.}
 
-\item[{\bf ON.ChemicalPotentialRc}]  ({\it real legth}):
+\item[{\bf ON.ChemicalPotentialRc}]  ({\it real length}):
 \index{ON.ChemicalPotentialRc@{\bf ON.ChemicalPotentialRc}}
 \index{Chemical Potential} 
 Defines the cutoff radius for the density matrix or Fermi
@@ -2600,6 +2671,16 @@ and {\bf ON.ChemicalPotential} or  {\bf ON.ChemicalPotentialUse} =
 
 {\it Default value:} {\tt 100}
 
+\item[{\bf ON.LowerMemory}] ({\it logical}): 
+\index{ON.LowerMemory@{\bf ON.LowerMemory}}\index{Lower order N memory} 
+If .true., then a slightly reduced memory algorithm is used in the 
+3-point line search during the order N minimisation. Only affects
+parallel runs.
+
+{\it Use:} Used only if  {\bf SolutionMethod} = {\tt OrderN}
+
+{\it Default value:} {\tt .false.}
+        
 \end{description}
 
 
@@ -2977,7 +3058,7 @@ optimised by varying this parameter until a suitable value is found.
 {\it Use:} Controls the blocksize used for distributing orbitals over
 processors
 
-{\it Default value:} 24
+{\it Default value:}  8
 
 \item[{\bf ProcessorY}] ({\it integer}): \index{ProcessorY@{\bf
 ProcessorY}} The mesh points are divided in the Y and Z directions
@@ -2993,47 +3074,19 @@ distribution
 {\it Default value:} Variable - chosen using multiples of factors of
   the total number of processors
 
-\item[{\bf DiagMemory}] ({\it real no units}):
-\index{DiagMemory@{\bf DiagMemory}}
+\item[{\bf Diag.Memory}] ({\it real no units}):
+\index{Diag.Memory@{\bf Diag.Memory}}
 Whether the parallel diagonalisation of a matrix is successful or not can 
 depend on how much workspace is available to the routine when there are
-clusters of eigenvalues. {\bf DiagMemory} allows the user to increase
+clusters of eigenvalues. {\bf Diag.Memory} allows the user to increase
 the memory available, when necessary, to achieve successful diagonalisation
 and is a scale factor relative to the minimum amount of memory that
-SCALAPACK might need. Failure due to this parameter being too small
-can potentially be avoid if the option {\bf TryMemoryIncrease} is true.
-The larger the number of processors being used, the larger the value of
-{\bf DiagMemory} that will be needed.
+SCALAPACK might need. 
 
 {\it Use:} Controls the amount of workspace available to parallel
 matrix diagonalisation
 
-{\it Default value:}  1.2
-
-\item[{\bf DiagScale}] ({\it real no units}): \index{DiagScale@{\bf
-DiagScale}} Whether the parallel diagonalisation of a matrix is
-successful or not can depend on how much workspace is available to the
-routine when there are clusters of eigenvalues. {\bf DiagScale} is the
-scale factor by which the memory available is increased in
-diagonalisation when {\bf TryMemoryIncrease} is true.
-
-{\it Use:} Controls the rate of increase of workspace available to
-parallel matrix diagonalisation
-
-{\it Default value:}  1.5
-
-\item[{\bf TryMemoryIncrease}] ({\it logical}):
-\index{TryMemoryIncrease@{\bf TryMemoryIncrease}} If true, this option
-allows the program to increase the value of {\bf DiagMemory}
-automatically by an a scale factor given by {\bf DiagScale} until
-enough memory is obtained to be able to run a successful matrix
-diagonalisation in parallel.
-
-{\it Use:} Determines whether the program is able to iteratively
-  increase the memory available to SCALAPACK until diagonalisation is
-  successful
-
-{\it Default value:}  true
+{\it Default value:}  1.0
 
 \item[{\bf ParallelOverK}] ({\it logical}): \index{ParallelOverK@{\bf
 ParallelOverK}} For the diagonalisation there is a choice in strategy
@@ -3050,6 +3103,23 @@ respect to orbitals or K points - not allowed for non-co-linear spin
 case.
 
 {\it Default value:}  false
+
+\item[{\bf RcSpatial}] ({\it real distance}):
+\index{RcSpatial@{\bf RcSpatial}}
+When performing a parallel order N calculation, a domain/spatial
+decomposition algorithm is used in which the system is divided into
+cells, which are then assigned to the nodes. The size of the cells
+is, by default, equal to the maximum distance at which there is a non-zero 
+matrix element in the Hamiltonian between two orbitals, or the
+radius of the Wannier function - which ever is the larger. If this is 
+the case, then an orbital will only interact with other orbitals in the same
+or neighbouring cells. However, by decreasing the cell size and searching
+over more cells it is possible to achieve better load balance in some
+cases.
+
+{\it Use:} Controls the domain size during the spatial decomposition
+
+{\it Default value:}  maximum of the matrix element range or the Wannier radius
 
 \end{description}
 

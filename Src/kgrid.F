@@ -165,25 +165,23 @@ C Find k points and weights
      .         abs(d(ir)-0.5d0*ng(ir)) .lt. tiny) then
             weight(nk) = w1
           else
-            weight(nk) = 2.d0 * w1
+            weight(nk) = 2.0d0 * w1
           endif
         endif
       enddo
       enddo
       enddo
 
-C A couple of tests for debugging
-c     if (Node.eq.0) then
-c       if (nk .ne. nkr(ir))
-c    .    write(6,*) 'kgrid: ERROR: nk, nkr(ir) =', nk, nkr(ir)
-c     endif
-      wtot = 0.d0
+C Check that weight is normalised
+      wtot = 0.0d0
       do ik = 1,nk
         wtot = wtot + weight(ik)
       enddo
-      if (Node.eq.0) then
-        if (abs(wtot-1.d0) .gt. nk*tiny)
-     .    write(6,*) 'kgrid: ERROR: wtot =', wtot
+      if (abs(wtot-1.0d0) .gt. nk*tiny) then
+        w1 = dble(nk)/wtot
+        do ik = 1,nk
+          weight(ik) = w1*weight(ik)
+        enddo
       endif
 
       return

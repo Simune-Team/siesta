@@ -23,7 +23,7 @@ C *************************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,   only : dp
       use parallel,    only : Node
 #ifdef MPI
       use mpi_siesta
@@ -233,12 +233,15 @@ C integer               : Total number of position constraints imposed
 C ************************* OUTOPUT *******************************************
 C real*8 tempe          : Instantaneous system temperature 
 C *****************************************************************************
+
+      use precision, only : dp
+
       implicit none
 
       integer 
      .   natoms,iunit,ntcon
 
-      double precision
+      real(dp)
      .  ma(natoms),tempe,va(3,natoms)
 
 C Internal variables ..........................................................
@@ -246,7 +249,7 @@ C Internal variables ..........................................................
       integer
      .  i,ia
 
-      double precision
+      real(dp)
      .  Ang,eV,fovermp,kin
 
 C ........................
@@ -258,8 +261,8 @@ C ........................
 
 C Define constants and conversion factors .....................................
 
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
+      Ang = 1.0d0 / 0.529177d0
+      eV  = 1.0d0 / 13.60580d0
 
       if (iunit .eq. 1) then
 C  convert F/m in (eV/Amstrong)/amu  to  Amstrong/fs**2

@@ -1,7 +1,8 @@
-      subroutine denmat(c,eta,h,s,enum,nbasis,nbands,ncmax,nctmax,
-     .                  nfmax,nftmax,maxnh,numc,listc,numct,listct,
-     .                  cttoc,numf,listf,numft,listft,fttof,numh,
-     .                  listhptr,listh,dm,edm,nbasisloc)
+      subroutine denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
+     .                  nctmax,nfmax,nftmax,nhmax,nhijmax,numc,listc,
+     .                  numct,listct,cttoc,numf,listf,numft,listft,
+     .                  fttof,numh,listh,listhptr,numhij,listhij,chcc,
+     .                  cscc,dm,edm,nbasisCloc,nspin,Node)
 C *******************************************************************
 C Subroutine to compute the Density and Energy Density matrices
 C for the Order-N functional of Kim et al. (PRB 52, 1640 (95))
@@ -21,14 +22,14 @@ C The DM is normalized to the exact number of electrons!!!
 C
 C Written by P.Ordejon, Noviembre'96
 C Modified by J.M.Soler, May'97
-C Parallelisation introduced by J.D. Gale, April'99
 C ************************** INPUT **********************************
-C real*8 c(ncmax,nbasisloc)   : Localized Wave Functions (sparse)
+C real*8 c(ncmax,nbasis)      : Localized Wave Functions (sparse)
 C real*8 eta                  : Fermi level parameter of Kim et al.
-C real*8 h(maxnh)             : Hamiltonian matrix (sparse)
-C real*8 s(maxnh)             : Overlap matrix (sparse)
-C real*8 enum                 : Total number of electrons
-C integer nbasis              : Number of atomic orbitals
+C real*8 h(nhmax)             : Hamiltonian matrix (sparse)
+C real*8 s(nhmax)             : Overlap matrix (sparse)
+C real*8 qs(nspin)            : Total number of electrons
+C integer nbasis              : Global number of atomic orbitals
+C integer nbasisloc           : Local number of atomic orbitals
 C integer nbands              : Number of Localized Wave Functions
 C integer ncmax               : First dimension of listc and C, and maximum
 C                               number of nonzero elements of each row of C
@@ -36,8 +37,10 @@ C integer nctmax              : Max num of <>0 elements of each col of C
 C integer nfmax               : Max num of <>0 elements of each row of 
 C                               F = Ct x H
 C integer nftmax              : Max num of <>0 elements of each col of F
-C integer maxnh               : First dimension of listh and H, and maximum
-C                               number of nonzero elements of H
+C integer nhmax               : First dimension of listh and H, and maximum
+C                               number of nonzero elements of each row of H
+C integer nhijmax             : Maximum number of non-zero elements of each
+C                               row of Hij
 C integer numc(nbasis)        : Control vector of C matrix
 C                               (number of nonzero elements of each row of C)
 C integer listc(ncmax,nbasis) : Control vector of C matrix
@@ -53,51 +56,70 @@ C integer listf(nfmax,nbands) : Control vector of F matrix
 C                               (list of <>0  elements of each row of F)
 C integer numft(nbasis)       : Control vector of F transpose matrix
 C                               (number of <>0  elements of each col of F)
-C integer listft(nfmax,nbasisloc) : Control vector of F transpose matrix
+C integer listft(nfmax,nbasis): Control vector of F transpose matrix
 C                               (list of <>0  elements of each col of F)
-C integer fttof(nfmax,nbasisloc)  : Map from Ft to F indexing
-C integer numh(nbasisloc)     : Control vector of H matrix
+C integer fttof(nfmax,nbasis) : Map from Ft to F indexing
+C integer numh(nbasis)        : Control vector of H matrix
 C                               (number of nonzero elements of each row of H)
-C integer listhptr(nbasisloc) : Control vector of H matrix
-C                               (pointer to the start of each row of H)
-C integer listh(maxnh)        : Control vector of H matrix
+C integer listh(nhmax)        : Control vector of H matrix
 C                               (list of nonzero elements of each row of H)
+C integer listhptr(nbasis)    : Control vector of H matrix
+C                               (pointer to start of row in listh/h/s)
+C integer numhij(nbands)      : Control vector of Hij matrix
+C                                (number of <>0  elements of each row of Hij)
+C integer listhij(nhijmax,nbands): Control vector of Hij matrix 
+C                                (list of <>0  elements of each row of Hij)
+C real*8 chcc(nfmax,nbands)   : Auxiliary space
+C real*8 cscc(nfmax,nbands)   : Auxiliary space
 C ************************* OUTPUT **********************************
-C real*8 dm(maxnh)            : Density Matrix
-C real*8 edm(maxnh)           : Energy density matrix
+C real*8 dm(nhmax,nbasis)     : Density Matrix
+C real*8 edm(nhmax,nbasis)    : Energy density matrix
 C *******************************************************************
-C
-C  Modules
-C
+
       use precision
-      use parallel
-      use parallelsubs
+      use spatial,   only : nG2L, nL2G, nNode
+      use on_main,   only : ncG2L, ncP2T, ncT2P, nbL2G, nbandsloc,
+     .                      nbNode, ncL2G, nbG2L
+
 #ifdef MPI
-      use mpi_siesta
+      use globalise, only: setglobalise, maxft2, numft2, listft2,
+     .                     globalinitb, globalloadb2, globalcommb,
+     .                     globalreloadb2, globalrezerob2,
+     .                     globalisef
+      use mpi_siesta, only: mpi_comm_world, mpi_sum
+#ifdef NODAT
+      use mpi_siesta, only: mpi_double_precision
+#else
+      use mpi_siesta, only: DAT_double
+#endif
 #endif
 
       implicit none
 
       integer
-     .  nbasis,nbands,ncmax,nctmax,nfmax,maxnh,nbasisloc
+     .  nbasis,nbasisloc,nbands,ncmax,nctmax,nfmax,nhmax,nhijmax,
+     .  nbasisCloc,Node,nspin
 
       integer
-     .  cttoc(nctmax,*),listc(ncmax,nbasis),listct(nctmax,*),
-     .  listf(nfmax,*),listh(maxnh),numc(nbasis),numct(*),
-     .  numf(*),numh(nbasisloc),listhptr(nbasisloc)
+     .  cttoc(nctmax,nbandsloc),listc(ncmax,nbasisCloc),
+     .  listct(nctmax,nbandsloc),listf(nfmax,nbandsloc),
+     .  listh(nhmax),listhptr(nbasisloc),listhij(nhijmax,nbandsloc),
+     .  numc(nbasisCloc),numct(nbandsloc),numf(nbandsloc),
+     .  numh(nbasisloc),numhij(nbandsloc)
      
       integer
-     .  nftmax,fttof(nftmax,nbasisloc),listft(nftmax,nbasisloc),
-     .  numft(nbasis)
+     .  nftmax,fttof(nftmax,nbasisCloc),
+     .  listft(nftmax,nbasisCloc), numft(nbasisCloc)
 
-      double precision
-     .  c(ncmax,nbasisloc),dm(maxnh),edm(maxnh),enum,eta,
-     .  h(maxnh),s(maxnh)
+      real(dp) ::
+     .  c(ncmax,nbasisCloc,nspin),dm(nhmax,nspin),edm(nhmax,nspin),
+     .  qs(nspin),eta(nspin),h(nhmax,nspin),s(nhmax),
+     .  chcc(nfmax,nbandsloc),cscc(nfmax,nbandsloc)
      
       external
-     .  timer, memory
+     .  iodm, timer
 
-C Internal variables .................................................
+C Internal variales ..................................................
 C   Notation hints:
 C     m,n : basis orbital inexes (mu,nu)
 C     i,j : band (and LWF) indexes
@@ -106,742 +128,352 @@ C     mi  : index for basis orbitals of LWF i
 C     nm  : index for basis orbitals connected to basis orbital m
 
       integer 
-     .  i, ii, in, ind, im, il, iloc, j, jm, jn, m, mi, mn, n, nh, ni,
-     .  nl, nm, nn, nbandsmin, nbandsmax, nbandspernode,
-     .  nbl, nbandsloc, nrow, nrowmax, nsize, nfmaxl, nfmaxg
-#ifdef MPI
-      integer
-     .  MPIerror, ml, nremainder, nloc, nbmin, nbmax, maxnhg
-      integer, dimension(:), allocatable ::
-     .  listhlptr, listhl, numhl
-      double precision
-     .  rtmp
-      double precision, dimension(:), allocatable, save :: 
-     .  hl, sl
-      double precision, dimension(:,:), allocatable, save :: 
-     .  cl, chccl
-#endif
-      integer, dimension(:), allocatable, save :: 
-     .  iptrgtol, iptrltog, numr
+     .  i, il, in, indm, indn, im, is, j, jm, jn, m, mi, mm, mn, 
+     .  n, nh, ni, nm, nn
 
-      integer, dimension(:,:), allocatable, save :: 
-     .  listr
+      real(dp), allocatable, save ::
+     .  cHrow(:), cSrow(:), chcrow(:), cscrow(:), chccCol(:),
+     .  csccCol(:), ft(:,:), fst(:,:)
 
-      logical, dimension(:), allocatable, save :: 
-     .  lneeded
-
-      double precision, dimension(:), allocatable, save ::
-     .  cHl, cSl
-
-      double precision, dimension(:,:), allocatable, save :: 
-     .  cHrow, cSrow, chcrow, cscrow, chccCol, csccCol,
-     .  chcc, cscc
-
-      double precision
+      real(dp) ::
      .  cim, cnj, chin, csin, chccim, csccim, cchccmn, ccsccmn,
-     .  Hmn, Smn, qout, fact, cSn, cHn
+     .  Hmn, Smn, qout(2), fact, spinfct
 
-C ........................
+#ifdef MPI
+      real(dp) ::
+     .  qtmp(2)
+      real(dp), allocatable, save ::
+     .  ctmp(:,:), chcrowsave(:,:), cscrowsave(:,:), 
+     .  ftG(:,:), fstG(:,:)
+      integer ::
+     .  MPIerror
+#endif
 
-C Start time counter .....................................................
+C Start time counter
       call timer('denmat',1)
 
+      if (nspin.eq.1) then
+        spinfct = 2.0d0
+      else
+        spinfct = 1.0d0
+      endif
+
+C Allocate local arrays
+      allocate(cHrow(nbasis))
+      call memory('A','D',size(cHrow),'denmat')
+      allocate(cSrow(nbasis))
+      call memory('A','D',size(cSrow),'denmat')
+      allocate(chcrow(nbands))
+      call memory('A','D',size(chcrow),'denmat')
+      allocate(cscrow(nbands))
+      call memory('A','D',size(cscrow),'denmat')
+      allocate(chccCol(nbands))
+      call memory('A','D',size(chccCol),'denmat')
+      allocate(csccCol(nbands))
+      call memory('A','D',size(csccCol),'denmat')
+      allocate(ft(nftmax,nbasisCloc))
+      call memory('A','D',size(ft),'denmat')
+      allocate(fst(nftmax,nbasisCloc))
+      call memory('A','D',size(fst),'denmat')
 #ifdef MPI
-C Get global sizes for first dimension of H/S
-      call MPI_AllReduce(maxnh,maxnhg,1,MPI_integer,MPI_max,
-     .  MPI_Comm_World,MPIerror)
+      allocate(chcrowsave(nhijmax,nbandsloc))
+      call memory('A','D',size(chcrowsave),'denmat')
+      allocate(cscrowsave(nhijmax,nbandsloc))
+      call memory('A','D',size(cscrowsave),'denmat')
+      allocate(ctmp(nbands,2))
+      call memory('A','D',size(ctmp),'denmat')
+      allocate(ftG(MaxFt2,nbasisCloc))
+      call memory('A','D',size(ftG),'denmat')
+      allocate(fstG(MaxFt2,nbasisCloc))
+      call memory('A','D',size(fstG),'denmat')
+#endif
 
-C Allocate local memory for c/h/s
-      call GetNodeOrbs(nbasis,0,Nodes,nbl)
-      allocate(cl(ncmax,nbl))
-      call memory('A','D',ncmax*nbl,'denmat')
-      allocate(hl(maxnhg))
-      call memory('A','D',maxnhg,'denmat')
-      allocate(sl(maxnhg))
-      call memory('A','D',maxnhg,'denmat')
-
-C Work out range of bands for this Node
-      nbandspernode = ((nbands-1)/Nodes)
-      nremainder = nbands - nbandspernode*Nodes
-      nbandsmin = Node*nbandspernode + min(nremainder,Node) + 1
-      nbandsmax = nbandsmin + nbandspernode - 1
-      if (Node.lt.nremainder) nbandsmax = nbandsmax + 1
-      nbandsloc = nbandsmax - nbandsmin + 1
-
-C Find true value of nfmax
-      nfmaxl = 0
+C Initialize temporary arrays
+      do m = 1,nbasis
+        cHrow(m) = 0.0d0
+        cSrow(m) = 0.0d0
+      enddo
+      do i = 1,nbands
+        csccCol(i) = 0.0d0
+        chccCol(i) = 0.0d0
+        cscrow(i) = 0.0d0
+        chcrow(i) = 0.0d0
+      enddo
+#ifdef MPI
       do i = 1,nbandsloc
-        nfmaxl = max(nfmaxl,numf(i))
-      enddo
-      call MPI_AllReduce(nfmaxl,nfmaxg,1,MPI_integer,MPI_max,
-     .  MPI_Comm_World,MPIerror)
-#else
-      nbandsmin = 1
-      nbandsmax = nbands
-      nbandspernode = nbands
-      nbandsloc = nbands
-      nfmaxg = nfmax
-#endif
-
-C .......................
-
-C Allocate workspace arrays
-      nsize = max(nbasis,nbands)
-      allocate(cHl(nsize))
-      call memory('A','D',nsize,'denmat')
-      allocate(cSl(nsize))
-      call memory('A','D',nsize,'denmat')
-      allocate(cHrow(nfmaxg,nbandspernode+1))
-      call memory('A','D',nfmaxg*(nbandspernode+1),'denmat')
-      allocate(cSrow(nfmaxg,nbandspernode+1))
-      call memory('A','D',nfmaxg*(nbandspernode+1),'denmat')
-
-#ifdef MPI
-C Allocate local storage for H/S control vectors
-      call GetNodeOrbs(nbasis,Node,Nodes,nbl)
-      allocate(numhl(nbasis))
-      call memory('A','I',nbasis,'denmat')
-      allocate(listhlptr(nbasis))
-      call memory('A','I',nbasis,'denmat')
-      allocate(listhl(maxnhg))
-      call memory('A','I',maxnhg,'denmat')
-#endif
-
-C Initialize temporary arrays ..............................................
-      cHl(1:nsize) = 0.0d0
-      cSl(1:nsize) = 0.0d0
-      cHrow(1:nfmaxg,1:nbandspernode+1) = 0.d0
-      cSrow(1:nfmaxg,1:nbandspernode+1) = 0.d0
-
-C Build pointer for local to global
-      allocate(iptrgtol(nbasis))
-      call memory('A','I',nbasis,'denmat')
-      allocate(iptrltog(nbasis))
-      call memory('A','I',nbasis,'denmat')
-      do i = 1,nbasisloc
-        call LocalToGlobalOrb(i,Node,Nodes,il)
-        iptrltog(i) = il
-      enddo
-
-C ........................
-
-C Loop over Nodes for broadcasting of c,h and s
-      do nn = 1,Nodes
-
-#ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-
-C Distribute control vectors for H/S for this node
-        if (Node.eq.nn-1) then
-          numhl(1:nbl) = numh(1:nbl)
-        endif
-        call MPI_Bcast(numhl,nbl,MPI_integer,nn-1,
-     .    MPI_Comm_World,MPIerror)
-        listhlptr(1) = 0
-        do in = 2,nbl
-          listhlptr(in) = listhlptr(in-1) + numhl(in-1)
+        do j = 1,nhijmax
+          cscrowsave(j,i) = 0.0d0
+          chcrowsave(j,i) = 0.0d0
         enddo
-        nh = listhlptr(nbl) + numhl(nbl)
-        if (Node.eq.nn-1) then
-          listhl(1:nh) = listh(1:nh)
-        endif
-        call MPI_Bcast(listhl,nh,MPI_integer,nn-1,
-     .    MPI_Comm_World,MPIerror)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          cl(1:ncmax,1:nbl) = c(1:ncmax,1:nbl)
-          hl(1:nh) = h(1:nh)
-          sl(1:nh) = s(1:nh)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(hl,maxnhg,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sl,maxnhg,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(hl,maxnhg,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sl,maxnhg,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
+      enddo
 #endif
+
+C Loop over spins
+      do is = 1,nspin
+
+#ifdef MPI
+C Initialise communication arrays
+        call globalinitB(2)
 #endif
 
 C Find cscc=(2-ct*S*c)*ct and chcc=(ct*H*c+2eta(1-ct*S*c))*ct.
-        do i = 1,nbandsloc
+        do il = 1,nbandsloc
+          i = nbL2G(il)
       
 C Find row i of cS=ct*S and cH=ct*H
-          do mi = 1,numct(i)
-            m = listct(mi,i)
-#ifdef MPI
-            call GlobalToLocalOrb(m,nn-1,Nodes,ml)
-            if (ml.gt.0) then
-              im = cttoc(mi,i)
-              cim = cl(im,ml)
-              do nm = 1,numhl(ml)
-                ind = listhlptr(ml)+nm
-                n = listhl(ind)
-                Smn = sl(ind)
-                Hmn = hl(ind)
-                cSl(n) = cSl(n) + cim * Smn
-                cHl(n) = cHl(n) + cim * Hmn
+          do mi = 1,numct(il)
+            m = listct(mi,il)
+            mm = ncT2P(m)
+            if (mm.gt.0) then
+              im = cttoc(mi,il)
+              cim = c(im,m,is)
+              indm = listhptr(mm)
+              do nm = 1,numh(mm)
+                n = listh(indm+nm)
+                Hmn = H(indm+nm,is)
+                Smn = S(indm+nm)
+                cHrow(n) = cHrow(n) + cim * Hmn
+                cSrow(n) = cSrow(n) + cim * Smn
               enddo
             endif
-#else
-            im = cttoc(mi,i)
-            cim = c(im,m)
-            do nm = 1,numh(m)
-              ind = listhptr(m)+nm
-              n = listh(ind)
-              Smn = S(ind)
-              Hmn = H(ind)
-              cSl(n) = cSl(n) + cim * Smn
-              cHl(n) = cHl(n) + cim * Hmn
-            enddo
-#endif
           enddo
-
-C Transfer local vectors to cHrow/cSrow
-          do ni = 1,numf(i)
-            n = listf(ni,i)
-            cHrow(ni,i) = cHrow(ni,i) + cHl(n)
-            cSrow(ni,i) = cSrow(ni,i) + cSl(n)
-            cHl(n) = 0.0d0
-            cSl(n) = 0.0d0
-          enddo
-
-        enddo
-
-C End loop over Nodes
-      enddo
-
-#ifdef MPI
-C Deallocate hl and sl as these arrays are no longer needed
-      call memory('D','D',size(hl),'denmat')
-      deallocate(hl)
-      call memory('D','D',size(sl),'denmat')
-      deallocate(sl)
-#endif
-
-C Create indexing arrays for chcrow/cscrow
-C First find maximum dimension
-      allocate(lneeded(nbands))
-      call memory('A','L',nbands,'denmat')
-      nrowmax = 0
-      do i = 1,nbandsloc
-        lneeded(1:nbands) = .false.
-        do ni = 1,numf(i)
-          n = listf(ni,i)
-          do jn = 1,numc(n)
-            j = listc(jn,n)
-            lneeded(j) = .true.
-          enddo
-        enddo
-        nrow = 0
-        do ni = 1,nbands
-          if (lneeded(ni)) nrow = nrow + 1
-        enddo
-        nrowmax = max(nrowmax,nrow)
-      enddo
-
-C Allocate indexing arrays
-      allocate(numr(nbandsloc))
-      call memory('A','I',nbandsloc,'denmat')
-      allocate(listr(nrowmax,nbandsloc))
-      call memory('A','I',nrowmax*nbandsloc,'denmat')
-
-C Build indexing lists
-      do i = 1,nbandsloc
-        lneeded(1:nbands) = .false.
-        do ni = 1,numf(i)
-          n = listf(ni,i)
-          do jn = 1,numc(n)
-            j = listc(jn,n)
-            lneeded(j) = .true.
-          enddo
-        enddo
-        nrow = 0
-        do ni = 1,nbands
-          if (lneeded(ni)) then
-            nrow = nrow + 1
-            listr(nrow,i) = ni
-          endif
-        enddo
-        numr(i) = nrow
-      enddo
-      call memory('D','L',size(lneeded),'denmat')
-      deallocate(lneeded)
-
-C Allocate and initialise chcrow/cscrow
-      allocate(chcrow(nrowmax,nbandspernode+1))
-      call memory('A','D',nrowmax*(nbandspernode+1),'denmat')
-      allocate(cscrow(nrowmax,nbandspernode+1))
-      call memory('A','D',nrowmax*(nbandspernode+1),'denmat')
-      cscrow(1:nrowmax,1:nbandspernode+1) = 0.0d0
-      chcrow(1:nrowmax,1:nbandspernode+1) = 0.0d0
-
-C Loop over Nodes for broadcasting of c
-      do nn = 1,Nodes
-
-#ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          cl(1:ncmax,1:nbasisloc) = c(1:ncmax,1:nbasisloc)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#endif
-#endif
-
-        do i = 1,nbandsloc
-
-          iloc = i + nbandsmin - 1
 
 C Find row i of csc=2-ct*S*c and chc=ct*H*c+2eta(1-ct*S*c)
+
 C Now use the list of nonzero elements of f=ct*H
-          do ni = 1,numf(i)
-            n = listf(ni,i)
-#ifdef MPI
-            call GlobalToLocalOrb(n,nn-1,Nodes,nl)
-            if (nl.gt.0) then
-#endif
-              cSn = cSrow(ni,i)
-              cHn = cHrow(ni,i)
-              csin = - cSn
-              chin = cHn - 2.d0*eta*cSn
-              do jn = 1,numc(n)
-                j = listc(jn,n)
-#ifdef MPI
-                cnj = cl(jn,nl)
-#else
-                cnj = c(jn,n)
-#endif
-                cSl(j) = cSl(j) + csin * cnj
-                cHl(j) = cHl(j) + chin * cnj
-              enddo
-#ifdef MPI
-            endif
-#endif
+          do ni = 1,numf(il)
+            n = listf(ni,il)
+            nn = ncG2L(n)
+            csin = - cSrow(n)
+            chin = cHrow(n) - 2.0d0*eta(is)*cSrow(n)
+            do jn = 1,numc(nn)
+              j = listc(jn,nn)
+              cnj = c(jn,nn,is)
+              chcrow(j) = chcrow(j) + chin * cnj
+              cscrow(j) = cscrow(j) + csin * cnj
+            enddo
+
+C Restore cSrow and cHrow for next row
+            cSrow(n) = 0.0d0
+            cHrow(n) = 0.0d0
           enddo
 
-C Add on diagonal terms 2 and 2eta
-          if (Node.eq.nn-1) then
-            cSl(iloc) = cSl(iloc) + 2.0d0
-            cHl(iloc) = cHl(iloc) + 2.0d0 * eta
-          endif
+#ifdef MPI
+C Load data into globalisation arrays
+          call globalloadB2(il,nbands,chcrow,cscrow)
 
-C Compress rows down to elements needed and re-zero workspace
-          do jn = 1,numr(i)
-            j = listr(jn,i)
-            chcrow(jn,i) = chcrow(jn,i) + cHl(j)
-            cscrow(jn,i) = cscrow(jn,i) + cSl(j)
-            cHl(j) = 0.0d0
-            cSl(j) = 0.0d0
+C Reinitialise bux1/2 and save for later in sparse form
+          do jn = 1,numhij(il)
+            j = listhij(jn,il)       
+            chcrowsave(jn,il) = chcrow(j)
+            cscrowsave(jn,il) = cscrow(j)
+            chcrow(j) = 0.0d0
+            cscrow(j) = 0.0d0
           enddo
 
         enddo
 
-C End loop over Nodes
-      enddo
+C Globalise chc/csc
+        call globalcommB(Node)
 
-C Deallocate cHrow/cSrow as they are no longer needed
-      call memory('D','D',size(cHrow),'denmat')
-      deallocate(cHrow)
-      call memory('D','D',size(cSrow),'denmat')
-      deallocate(cSrow)
-
-C Allocate chcc/cscc
-      allocate(chcc(nfmaxg,nbandspernode+1))
-      call memory('A','D',nfmaxg*(nbandspernode+1),'denmat')
-      allocate(cscc(nfmaxg,nbandspernode+1))
-      call memory('A','D',nfmaxg*(nbandspernode+1),'denmat')
-        
-C Loop over Nodes for broadcasting of c
-      do nn = 1,Nodes
-
-#ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          cl(1:ncmax,1:nbasisloc) = c(1:ncmax,1:nbasisloc)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#endif
-#endif
-
-        do i = 1,nbandsloc
-
-          iloc = i + nbandsmin - 1
-
-C Expand rows 
-          do jn = 1,numr(i)
-            j = listr(jn,i)
-            cHl(j) = chcrow(jn,i)
-            cSl(j) = cscrow(jn,i)
+C Restore local chc/csc terms
+        do il = 1,nbandsloc
+          i = nbL2G(il)
+          do jn = 1,numhij(il)
+            j = listhij(jn,il)
+            chcrow(j) = chcrowsave(jn,il)
+            cscrow(j) = cscrowsave(jn,il)
           enddo
+          
+C Reload data after globalisation
+          call globalreloadB2(il,nbands,chcrow,cscrow,ctmp)
+
+C Add diagonal terms - 2 and 2eta
+          ctmp(i,1) = ctmp(i,1) + 2.0d0 * eta(is)
+          ctmp(i,2) = ctmp(i,2) + 2.0d0
+#else
+          chcrow(i) = chcrow(i) + 2.0d0 * eta(is)
+          cscrow(i) = cscrow(i) + 2.0d0
+#endif
 
 C Find row i of cscc=csc*ct and chcc=chc*ct. 
 C Only the nonzero elements of f=cH will be required.
-          do mi = 1,numf(i)
-            m = listf(mi,i)
+          do mi = 1,numf(il)
+            m = listf(mi,il)
+            mm = ncG2L(m)
+            csccim = 0.0d0
+            chccim = 0.0d0
+            if (nbNode(i).eq.Node) then
+              do jm = 1,numc(mm)
+                j = listc(jm,mm)
 #ifdef MPI
-            call GlobalToLocalOrb(m,nn-1,Nodes,ml)
-            if (ml.gt.0) then
-#endif
-              csccim = 0.d0
-              chccim = 0.d0
-              do jm = 1,numc(m)
-                j = listc(jm,m)
-#ifdef MPI
-                csccim = csccim + cSl(j) * cl(jm,ml)
-                chccim = chccim + cHl(j) * cl(jm,ml)
+                chccim = chccim + ctmp(j,1) * c(jm,mm,is)
+                csccim = csccim + ctmp(j,2) * c(jm,mm,is)
 #else
-                csccim = csccim + cSl(j) * c(jm,m)
-                chccim = chccim + cHl(j) * c(jm,m)
+                chccim = chccim + chcrow(j) * c(jm,mm,is)
+                csccim = csccim + cscrow(j) * c(jm,mm,is)
 #endif
               enddo
-#ifdef MPI
-              cscc(mi,i) = csccim
-              chcc(mi,i) = chccim
             endif
-#else
-            cscc(mi,iloc) = csccim
-            chcc(mi,iloc) = chccim
+            cscc(mi,il) = csccim
+            chcc(mi,il) = chccim
+          enddo
+
+C Reinitialise chcrow/cscrow
+          do jn = 1,numhij(il)
+            j = listhij(jn,il)
+            chcrow(j) = 0.0d0
+            cscrow(j) = 0.0d0
+          enddo
+#ifdef MPI
+C Reinitialise ctmp
+          call globalrezeroB2(il,nbands,ctmp)
 #endif
-          enddo
-
-C Re-zero workspace
-          do jn = 1,numr(i)
-            j = listr(jn,i)
-            cHl(j) = 0.0d0
-            cSl(j) = 0.0d0
-          enddo
-
+        
         enddo
 
-C End loop over Nodes
-      enddo
-
-C Deallocate chcrow/cscrow as they are no longer needed
-      call memory('D','D',size(chcrow),'denmat')
-      deallocate(chcrow)
-      call memory('D','D',size(cscrow),'denmat')
-      deallocate(cscrow)
-      call memory('D','I',size(numr),'denmat')
-      deallocate(numr)
-      call memory('D','I',size(listr),'denmat')
-      deallocate(listr)
-
-C ........................
-
-      call GetNodeOrbs(nbasis,0,Nodes,nbl)
-#ifdef MPI
-C Allocate workspace for dm and edm on local node
-      allocate(chccl(nfmaxg,nbl))
-      call memory('A','D',nfmaxg*nbl,'denmat')
-#endif
-
-C Allocate column vectors and initialise
-      allocate(chccCol(nftmax,nbl))
-      call memory('A','D',nftmax*nbl,'denmat')
-      allocate(csccCol(nftmax,nbl))
-      call memory('A','D',nftmax*nbl,'denmat')
-
-      csccCol(1:nftmax,1:nbl) = 0.0d0
-      chccCol(1:nftmax,1:nbl) = 0.0d0
-
-C Loop over Nodes
-      do nn = 1,Nodes
+C Find global sum of ft/fst
+        do nn = 1,nbasisCloc
+          do in = 1,numft(nn)
+            i = listft(in,nn)
+            il = nbG2L(i)
+            if (il.gt.0) then
+              ni = fttof(in,nn)
+              ft(in,nn) = chcc(ni,il)
+              fst(in,nn) = cscc(ni,il)
+            endif
+          enddo
+        enddo
 
 #ifdef MPI
-C Broadcast chcc
-        nbmin = (nn-1)*nbandspernode + min(nremainder,(nn-1)) + 1
-        nbmax = nbmin + nbandspernode - 1
-        if ((nn-1).lt.nremainder) nbmax = nbmax + 1
-        nloc = (nbmax-nbmin+1)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          chccl(1:nfmaxg,1:nloc) = chcc(1:nfmaxg,1:nloc)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(chccl(1,1),nfmaxg*nloc,MPI_double_precision,
-     .    nn-1,MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(chccl(1,1),nfmaxg*nloc,DAT_double,
-     .    nn-1,MPI_Comm_World,MPIerror)
-#endif
+C Globalise ft/fst
+        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
+     .                  ft,ftG,Node)
+        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
+     .                  fst,fstG,Node)
 #endif
 
 C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
         do n = 1,nbasisloc
-          nl = iptrltog(n)
-
+          nn = ncP2T(n)
+      
 C Use listft to expand a column of cscc
-          do in = 1,numft(nl)
-            i = listft(in,n) 
-            ni = fttof(in,n)
 #ifdef MPI
-            iloc = i - nbmin + 1
-            if (iloc.ge.1.and.iloc.le.nloc) then
-              chccCol(in,n) = chccl(ni,iloc)
-            endif
-#else
-            csccCol(in,n) = cscc(ni,i)
-            chccCol(in,n) = chcc(ni,i)
-#endif
+          do in = 1,numft2(nn)
+            i = listft2(in,nn)
+            chccCol(i) = ftG(in,nn)
+            csccCol(i) = fstG(in,nn)
           enddo
-        enddo
-
-C End loop over Nodes
-      enddo
-
-#ifdef MPI
-C Loop over Nodes
-      do nn = 1,Nodes
-
-C Broadcast cscc
-        nbmin = (nn-1)*nbandspernode + min(nremainder,(nn-1)) + 1
-        nbmax = nbmin + nbandspernode - 1
-        if ((nn-1).lt.nremainder) nbmax = nbmax + 1
-        nloc = (nbmax-nbmin+1)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          chccl(1:nfmaxg,1:nloc) = cscc(1:nfmaxg,1:nloc)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(chccl(1,1),nfmaxg*nloc,MPI_double_precision,
-     .    nn-1,MPI_Comm_World,MPIerror)
 #else
-        call MPI_Bcast(chccl(1,1),nfmaxg*nloc,DAT_double,
-     .    nn-1,MPI_Comm_World,MPIerror)
-#endif
-
-C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
-        do n = 1,nbasisloc
-          nl = iptrltog(n)
-
-C Use listft to expand a column of cscc
-          do in = 1,numft(nl)
-            i = listft(in,n)
-            ni = fttof(in,n)
-            iloc = i - nbmin + 1
-            if (iloc.ge.1.and.iloc.le.nloc) then
-              csccCol(in,n) = chccl(ni,iloc)
-            endif
+          do in = 1,numft(nn)
+            i = listft(in,nn)
+            chccCol(i) = ft(in,nn)
+            csccCol(i) = fst(in,nn)
           enddo
-        enddo
-
-C End loop over Nodes
-      enddo
-
-C Deallocate chccl as this is no longer needed
-      call memory('D','D',size(chccl),'denmat')
-      deallocate(chccl)
 #endif
-
-C Zero dm and edm
-      nh = listhptr(nbasisloc) + numh(nbasisloc)
-      dm(1:nh) = 0.0d0
-      edm(1:nh) = 0.0d0
-
-C Loop over Nodes
-      do nn = 1,Nodes
-
-#ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-
-C Distribute control vectors for H/S for this node
-        if (Node.eq.nn-1) then
-          numhl(1:nbl) = numh(1:nbl)
-        endif
-        call MPI_Bcast(numhl,nbl,MPI_integer,nn-1,
-     .    MPI_Comm_World,MPIerror)
-        listhlptr(1) = 0
-        do in = 2,nbl
-          listhlptr(in) = listhlptr(in-1) + numhl(in-1)
-        enddo
-        nh = listhlptr(nbl) + numhl(nbl)
-        if (Node.eq.nn-1) then
-          listhl(1:nh) = listh(1:nh)
-        endif
-        call MPI_Bcast(listhl,nh,MPI_integer,nn-1,
-     .    MPI_Comm_World,MPIerror)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          cl(1:ncmax,1:nbl) = c(1:ncmax,1:nbl)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
-     .    MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .    MPI_Comm_World,MPIerror)
-#endif
-
-C Build pointer to local orbitals for current working Node
-        do m = 1,nbasis
-          call GlobalToLocalOrb(m,nn-1,Nodes,ml)
-          iptrgtol(m) = ml
-        enddo
-#endif
-
-        do n = 1,nbasisloc
-
-C Expand chccCol/csccCol
-          nl = iptrltog(n)
-          do in = 1,numft(nl)
-            i = listft(in,n)
-            cHl(i) = chccCol(in,n)
-            cSl(i) = csccCol(in,n)
-          enddo
 
 C Find column n of c*cscc and c*chcc
 C Use that H is symmetric to determine required elements
+          indn = listhptr(n)
           do mn = 1,numh(n)
-            ind = listhptr(n)+mn
-            m = listh(ind)
-#ifdef MPI
-            ml = iptrgtol(m)
-            if (ml.gt.0) then
+            m = listh(indn+mn)
+            mm = ncG2L(m)
+            if (mm.gt.0) then
 C Find element (m,n) of c*cscc and c*chcc
               ccsccmn = 0.0d0
               cchccmn = 0.0d0
-              do im = 1,numc(m)
-                i = listc(im,m)
-                ccsccmn = ccsccmn + cl(im,ml) * cSl(i)
-                cchccmn = cchccmn + cl(im,ml) * cHl(i)
+              do im = 1,numc(mm)
+                i = listc(im,mm)
+                ccsccmn = ccsccmn + c(im,mm,is)*csccCol(i)
+                cchccmn = cchccmn + c(im,mm,is)*chccCol(i)
               enddo
-C Use fact that dm and edm are symmetric
-              dm(ind)  = dm(ind) + 2.0d0 * ccsccmn
-              edm(ind) = edm(ind) + 2.0d0 * cchccmn
+C Use that dm and edm are symmetric
+              dm(indn+mn,is)  = spinfct*ccsccmn
+              edm(indn+mn,is) = spinfct*cchccmn
             endif
-#else
-C Find element (m,n) of c*cscc and c*chcc
-            ccsccmn = 0.0d0
-            cchccmn = 0.0d0
-            do im = 1,numc(m)
-              i = listc(im,m)
-              ccsccmn = ccsccmn + c(im,m) * cSl(i)
-              cchccmn = cchccmn + c(im,m) * cHl(i)
-            enddo
-C Use fact that dm and edm are symmetric
-            dm(ind)  = dm(ind) + 2.0d0 * ccsccmn
-            edm(ind) = edm(ind) + 2.0d0 * cchccmn
-#endif
           enddo
-
-C Re-zero cHl/cSl
-          do in = 1,numft(nl)
-            i = listft(in,n)
-            cHl(i) = 0.0d0
-            cSl(i) = 0.0d0
+        
+C Restore csccCol and chccCol for next column
+          do in = 1,numft(nn)
+            i = listft(in,nn)
+            csccCol(i) = 0.0d0
+            chccCol(i) = 0.0d0
           enddo
         enddo
 
-C End loop over Nodes
+C End of loop over spins
       enddo
-
-C ........................
 
 C Normalize DM to exact charge .........................
 C Calculate total output charge ...
-      qout = 0.0d0
-      nh = listhptr(nbasisloc) + numh(nbasisloc)
-      do i = 1,nh
-        qout = qout + dm(i) * s(i)
-      enddo
-#ifdef MPI
-#ifdef NODAT
-      call MPI_AllReduce(qout,rtmp,1,MPI_double_precision,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(qout,rtmp,1,DAT_double,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
-      qout = rtmp
-#endif
-      if (Node.eq.0) then
-      write(6,"(/a,f12.4)") 'denmat: qtot (before DM normalization) = ',
-     .              qout
+      qout(1:2) = 0.0d0
+      if (nbasisloc.gt.0) then
+        nh = listhptr(nbasisloc) + numh(nbasisloc)
+      else
+        nh = 0
       endif
-C ...
-
-      if (dabs(enum-qout) .gt. 0.05d0) then
-        fact = enum / qout
-      
-C Normalize ...
-        do i = 1,nh
-          dm(i) = dm(i) * fact
-          edm(i) = edm(i) * fact
+      do is = 1,nspin
+        do in = 1,nh
+          qout(is) = qout(is) + dm(in,is) * s(in)
         enddo
-C ...
-      endif
-C ........................
+      enddo
 
-C Free local memory
-      call memory('D','D',size(cHl),'denmat')
-      deallocate(cHl)
-      call memory('D','D',size(cSl),'denmat')
-      deallocate(cSl)
-      call memory('D','I',size(iptrgtol),'denmat')
-      deallocate(iptrgtol)
-      call memory('D','I',size(iptrltog),'denmat')
-      deallocate(iptrltog)
-      call memory('D','D',size(chcc),'denmat')
-      deallocate(chcc)
-      call memory('D','D',size(cscc),'denmat')
-      deallocate(cscc)
-      call memory('D','D',size(chccCol),'denmat')
-      deallocate(chccCol)
+#ifdef MPI
+C Globalise total charge
+      qtmp(1:2) = qout(1:2)
+#ifdef NODAT
+      call MPI_AllReduce(qtmp,qout,nspin,MPI_double_precision,
+     .  MPI_sum,MPI_Comm_World,MPIerror)
+#else
+      call MPI_AllReduce(qtmp,qout,nspin,DAT_double,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#endif
+#endif
+
+      if (Node.eq.0) then
+        write(6,"(/a,2f12.4)") 
+     .    'denmat: qtot (before DM normalization) = ',qout(1:nspin)
+      endif
+
+C Normalize ...
+      do is = 1,nspin
+        if (dabs(qs(is)-qout(is)) .gt. 0.05d0) then
+          fact = qs(is) / qout(is)
+          call dscal(nh,fact,dm(1,is),1)
+          call dscal(nh,fact,edm(1,is),1)
+        endif
+      enddo
+
+C Deallocate local arrays
+#ifdef MPI
+      call memory('D','D',size(fstG),'denmat')
+      deallocate(fstG)
+      call memory('D','D',size(ftG),'denmat')
+      deallocate(ftG)
+      call memory('D','D',size(ctmp),'denmat')
+      deallocate(ctmp)
+      call memory('D','D',size(cscrowsave),'denmat')
+      deallocate(cscrowsave)
+      call memory('D','D',size(chcrowsave),'denmat')
+      deallocate(chcrowsave)
+#endif
+      call memory('D','D',size(fst),'denmat')
+      deallocate(fst)
+      call memory('D','D',size(ft),'denmat')
+      deallocate(ft)
       call memory('D','D',size(csccCol),'denmat')
       deallocate(csccCol)
-#ifdef MPI
-      call memory('D','D',size(cl),'denmat')
-      deallocate(cl)
-      call memory('D','I',size(numhl),'denmat')
-      deallocate(numhl)
-      call memory('D','I',size(listhlptr),'denmat')
-      deallocate(listhlptr)
-      call memory('D','I',size(listhl),'denmat')
-      deallocate(listhl)
-#endif
+      call memory('D','D',size(chccCol),'denmat')
+      deallocate(chccCol)
+      call memory('D','D',size(cscrow),'denmat')
+      deallocate(cscrow)
+      call memory('D','D',size(chcrow),'denmat')
+      deallocate(chcrow)
+      call memory('D','D',size(cSrow),'denmat')
+      deallocate(cSrow)
+      call memory('D','D',size(cHrow),'denmat')
+      deallocate(cHrow)
 
 C Stop time counter and return ..................
       call timer('denmat',2)
       end
-

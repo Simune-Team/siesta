@@ -165,7 +165,7 @@ c Initialize atomic lists
       enddo
       
       if (IOnode)
-     $   write(6,'(/a,3(1x,i5))')
+     $   write(6,'(/a,3(1x,i8))')
      $   'initatomlists: Number of atoms, orbitals, and projectors: ',
      $     na_u, no_u, nokb_u
 

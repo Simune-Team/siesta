@@ -33,7 +33,7 @@ C REAL*8  R2IJ(NNA)  : Squared distances to neighbours
 C *********** UNITS **************************************************
 C Units of CELL, RANGE and XA are arbitrary but must be equal
 C *********** SUBROUTINES USED ***************************************
-C CHKDIM, DISMIN, DOT, PRMEM, RECLAT
+C CHKDIM, DISMIN, PRMEM, RECLAT
 C *********** BEHAVIOUR **********************************************
 C CPU time and memory scale linearly with the number of atoms, for
 C   sufficiently large numbers.
@@ -218,7 +218,7 @@ C *********** UNITS **************************************************
 C Units of CELL, RANGE, XA and X0 are arbitrary but must be equal.
 C All vectors in cartesian coordinates.
 C *********** SUBROUTINES USED ***************************************
-C DISMIN, DOT, RECCEL, VOLCEL
+C DISMIN, RECCEL, VOLCEL
 C *********** BEHAVIOUR **********************************************
 C This is a 'remembering' routine, that saves a single copy of required 
 C   information on the system. Therefore, it cannot be used
@@ -413,7 +413,6 @@ C          2     upper bound or square
 C Internal functions, variables and arrays
 C REAL*8  CELMSH(MX*MX) Mesh-cell vectors
 C REAL*8  DMX(MX)       In-cell atomic position in mesh coordinates 
-C REAL*8  DOT()         Finds the scalar product of two vectors
 C REAL*8  DPLANE        Distance between lattice or mesh planes
 C REAL*8  DRM           Minimum distance between two mesh cells
 C REAL*8  DX(3)         Vector between two atoms
@@ -494,7 +493,7 @@ c
      .  NEMX, NMX, NNX, IA1M, IMESH, IDNM
 
       DOUBLE PRECISION
-     .  DISMIN, DOT, DPLANE, 
+     .  DISMIN, DDOT, DPLANE, 
      .  R2, RANGE2, RNGMAX, RRANGE,
      .  XDIFF, XMARG, XMAX, XMIN
 
@@ -511,7 +510,7 @@ c
      .  FRSTME, INSIDE, MOVALL, NULCEL
 
       EXTERNAL
-     .  DISMIN, DOT, memory
+     .  DISMIN, DDOT, memory
 
       SAVE
      .  FRSTME, IAM, IEM, IM, 
@@ -656,7 +655,7 @@ C       Find number of mesh divisions
         NM = 1
         DO 50 IX = 1,NX
           IXX = 1 + NX * (IX-1)
-          DPLANE = 1.D0 / SQRT( DOT( RCELL(IXX), RCELL(IXX), NX ) )
+          DPLANE = 1.D0 / SQRT(DDOT(NX,RCELL(IXX),1,RCELL(IXX),1) )
           NMX(IX) = 0.999D0 * DPLANE / (RRANGE / NCR)
           IF (NMX(IX) .LE. 0) NMX(IX) = 1
           NM = NM * NMX(IX)
@@ -677,7 +676,7 @@ C       Find index-range of neighbour mesh cells and of extended mesh
         NEM = 1
         DO 80 IX = 1,NX
           IXX = 1 + NX * (IX-1)
-          DPLANE = 1.D0 / SQRT( DOT(RMCELL(IXX),RMCELL(IXX),NX) )
+          DPLANE = 1.D0 / SQRT(DDOT(NX,RMCELL(IXX),1,RMCELL(IXX),1) )
           NNX(IX) = RRANGE / DPLANE + 1
           J1NX(IX) = 0
           J2NX(IX) = 1
@@ -824,7 +823,7 @@ C           Supress atom from its previous mesh-cell
 C         Find mesh-cell in which atom is
           DO 220 IX = 1,NX
             IXX = 1 + NX * (IX-1)
-            DMX(IX) = DOT( RMCELL(IXX), XA(1,IA), NX )
+            DMX(IX) = DDOT(NX,RMCELL(IXX),1,XA(1,IA),1)
             IMX(IX) = INT( DMX(IX) + 1000.D0 ) - 1000
             DMX(IX) = DMX(IX) - IMX(IX)
             IMX(IX) = MOD( IMX(IX) + 1000 * NMX(IX), NMX(IX) )
@@ -865,7 +864,7 @@ C       Find the mesh cell of the center of the sphere
 C         Find mesh cell of position X0
           DO 250 IX = 1,NX
             IXX = 1 + NX * (IX-1)
-            DMX(IX) = DOT( RMCELL(IXX), X0, NX )
+            DMX(IX) = DDOT(NX,RMCELL(IXX),1,X0,1)
             IMX(IX) = INT( DMX(IX) + 1000.D0 ) - 1000
             DMX(IX) = DMX(IX) - IMX(IX)
             IMX(IX) = MOD( IMX(IX) + 1000 * NMX(IX), NMX(IX) )

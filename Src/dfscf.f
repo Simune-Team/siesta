@@ -48,6 +48,7 @@ C  Modules
       use meshphi, only: endpht, lstpht, listp2
       use meshdscf
       use alloc
+      use parallel, only: Nodes
 
       implicit none
 
@@ -60,7 +61,7 @@ C  Passed arguments
       real
      .   Vscf(nsp,np,nspin), Vatm(nsp,np)
 
-      real*8
+      real(dp)
      .   Datm(nuotot), Dscf(maxnd,nspin), dvol,
      .   Fal(3,*), Stressl(9), VolCel
 
@@ -73,13 +74,13 @@ C Internal variables
      .   is, isp, ispin, iu, iua, iul, ix, ix1, ix2, iy,
      .   j, jb, jc, last, lasta, lastop, maxb, maxc, maxndl,
      .   nc, nphiloc
-      real*8
+      real(dp)
      .   CD(nsp), CDV(nsp), DF(12), Dji, dxsp(3,nsp),  
      .   gCi(12,nsp), grada(3,maxoa,nsp),
      .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,nspin)
       integer, pointer, save ::
      .   ibc(:), iob(:)
-      real*8, pointer, save ::
+      real(dp), pointer, save ::
      .   C(:,:), D(:,:,:), gC(:,:,:), xgC(:,:,:)
       logical ::
      .   Parallel_Run, nullified=.false.
@@ -111,7 +112,7 @@ C  Allocate buffers to store partial copies of Dscf and C
       call re_alloc( xgC, 1,9,    1,nsp,  1,maxc,  name='xgC' )
 
 C  Set logical that determines whether we need to use parallel or serial mode
-      Parallel_Run = (nuo .ne. nuotot)
+      Parallel_Run = (Nodes.gt.0)
 
 C  If parallel, allocate temporary storage for Local Dscf
       if (Parallel_Run) then
@@ -179,9 +180,9 @@ C  Look for required rows of Dscf not yet stored in D
           i = lstpht(imp)
           if (ibuff(i) .eq. 0) then
 
-C           Look for an available row in D
+C  Look for an available row in D
             do ib = 1,maxb
-C             last runs circularly over rows of D
+C  last runs circularly over rows of D
               last = last + 1
               if (last .gt. maxb) last = 1
               if (iob(last) .le. 0) goto 10

@@ -62,7 +62,7 @@ C Internal variables and arrays
      .  maxoa  = 100   ! Max # of orbitals per atom
 
       integer
-     .  i, ia, iua, ic, ii, ijl, il, imp, ind, ispin, io, ix,
+     .  i, ia, ic, ii, ijl, il, imp, ind, ispin, io, ix,
      .  iop, ip, iphi, is, isp, iu, iul, j, jc, jl, nsd, 
      .  last, lasta, lastop, maxloc, maxloc2, maxndl, nc, nphiloc,
      .  iii(3)
@@ -75,7 +75,7 @@ C Internal variables and arrays
 
       real*8
      .  Cij(nsp), Dij, Dij1, Dij2, Dij3, Dij4,
-     .  dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp, mod,
+     .  dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp,
      .  xr(3), Rdi(3), qRdi, cqRdi, sqRdi
 
       real*8, dimension(:,:), allocatable ::

@@ -26,7 +26,7 @@ C *********************************************************************
 
 C Internal variables 
       integer
-     .  ix, i, iy, kscell(3,3), igrd, nk, nmeshk(3,3)
+     .  ix, iy, kscell(3,3), igrd, nk, nmeshk(3,3)
          
       double precision
      .  rcell(3,3), displ(3), dsp(3), cutoff

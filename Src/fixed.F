@@ -109,11 +109,11 @@ c Internal variables
       integer MPIerror
 #endif
       real(dp)
-     .  dot, fxc, reals(maxw), values(maxw), xnorm, xs(6)
+     .  ddot, fxc, reals(maxw), values(maxw), xnorm, xs(6)
       real(dp), dimension(:,:), allocatable, save ::
      .  xc, dpbuffer2
       external
-     .  dot, constr, memory
+     .  ddot, constr, memory
       save
      .  frstme, nc, xs
 
@@ -391,7 +391,7 @@ c Apply constraints
         elseif (ctype(ic) .eq. 'position') then
           ntcon = ntcon + 1
           ia = iac(ic)
-          fxc = dot( cfa(1,ia), xc(1,ic), 3 )
+          fxc = ddot(3,cfa(1,ia),1,xc(1,ic),1)
           do ix = 1,3
             cfa(ix,ia) = cfa(ix,ia) - fxc * xc(ix,ic)
           enddo

@@ -1,8 +1,9 @@
-      subroutine gradient(c,eta,enum,h,s,nbasis,nbands,ncmax,nctmax,
-     .                    nfmax,nftmax,maxnh,nhijmax,numc,listc,
-     .                    numct,listct,cttoc,numf,listf,numft,listft,
-     .                    fttof,numh,listhptr,listh,numhij,listhij,
-     .                    indgf,grad,ener,nbasisloc)
+      subroutine gradient(c,eta,qs,h,s,nbasis,nbasisloc,nbands,ncmax,
+     .                    nctmax,nfmax,nftmax,nhmax,nhijmax,
+     .                    numc,listc,numct,listct,cttoc,numf,listf,
+     .                    numft,listft,fttof,numh,listh,
+     .                    listhptr,numhij,listhij,f,fs,grad,ener,
+     .                    nbasisCloc,nspin,Node)
 
 C ************************************************************************
 C Finds the energy and gradient at point C.
@@ -10,22 +11,22 @@ C Uses the functional of Kim et al (PRB 52, 1640 (95))
 C Works only with spin-unpolarized systems
 C Written by P.Ordejon. October'96
 C Last modified: J.M.Soler. 30/04/97
-C Parallelisation introduced by J.D. Gale, April'99
 C ****************************** INPUT ***********************************
-C real*8 c(ncmax,nbasisloc)    : Current point (wave function coeff.
+C real*8 c(ncmax,nbasis)       : Current point (wave function coeff.
 C                                  in sparse form)
-C real*8 eta                   : Fermi level parameter of Kim et al.
-C real*8 enum                  : Total number of electrons
-C real*8 h(maxnh)              : Hamiltonian matrix (sparse)
-C real*8 s(maxnh)              : Overlap matrix (sparse)
-C integer nbasis               : Number of basis orbitals
+C real*8 eta(nspin)            : Fermi level parameter of Kim et al.
+C real*8 qs(nspin)             : Total number of electrons
+C real*8 h(nhmax)              : Hamiltonian matrix (sparse)
+C real*8 s(nhmax)              : Overlap matrix (sparse)
+C integer nbasis               : Global number of basis orbitals
+C integer nbasisloc            : Local number of basis orbitals
 C integer nbands               : Number of LWF's
 C integer ncmax                : Max num of <>0 elements of each row of C
 C integer nctmax               : Max num of <>0 elements of each col of C
 C integer nfmax                : Max num of <>0 elements of each row of 
 C                                   F = Ct x H
 C integer nftmax               : Max num of <>0 elements of each col of F
-C integer maxnh                : Max num of <>0 elements of H
+C integer nhmax                : Max num of <>0 elements of each row of H
 C integer nhijmax              : Max num of <>0 elements of each row of 
 C                                   Hij=Ct x H x C
 C integer numc(nbasis)         : Control vector of C matrix
@@ -43,790 +44,361 @@ C integer listf(nfmax,nbands)  : Control vector of F matrix
 C                                (list of <>0  elements of each row of F)
 C integer numft(nbasis)        : Control vector of F transpose matrix
 C                               (number of <>0  elements of each col of F)
-C integer listft(nfmax,nbasisloc): Control vector of F transpose matrix
+C integer listft(nfmax,nbasis) : Control vector of F transpose matrix
 C                               (list of <>0  elements of each col of F)
-C integer fttof(nfmax,nbasisloc): Map from Ft to F indexing
-C integer numh(nbasisloc)      : Control vector of H matrix
+C integer fttof(nfmax,nbasis)  : Map from Ft to F indexing
+C integer numh(nbasis)         : Control vector of H matrix
 C                                (number of <>0  elements of each row of H)
-C integer listhptr(nbasisloc)  : Control vector of H matrix
-C                                (pointer to the start of each row of H)
-C integer listh(maxnh)         : Control vector of H matrix 
+C integer listh(nhmax)         : Control vector of H matrix 
 C                               (list of <>0  elements of each row of H)
-C integer numhij(nbasis)       : Control vector of Hij matrix
+C integer listhptr(nbasis)     : Control vector of H matrix 
+C                               (pointer to start of rows in listh/h/s)
+C integer numhij(nbands)       : Control vector of Hij matrix
 C                                (number of <>0  elements of each row of Hij)
-C integer listhij(nhijmax,nbandsloc):Control vector of Hij matrix 
+C integer listhij(nhijmax,nbands): Control vector of Hij matrix 
 C                                (list of <>0  elements of each row of Hij)
-C integer indgf(ncmax,nbasisloc): Maps elements of GRAD and F
+C real*8 f(nfmax,nbands)       : Auxiliary space
+C real*8 fs(nfmax,nbands)      : Auxiliary space
 C ***************************** OUTPUT ***********************************
 C real*8 ener                  : Energy at point C
-C real*8 grad(ncmax,nbasisloc) : Gradient of functional (sparse)
+C real*8 grad(ncmax,nbasis)    : Gradient of functional (sparse)
 C ************************************************************************
-C
-C  Modules
-C
+
       use precision
-      use parallel
-      use parallelsubs
+      use on_main,   only : ncG2L, ncT2P, nbL2G, nbG2L, nbandsloc
+      use globalise
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: mpi_comm_world, mpi_sum
+#ifdef NODAT
+      use mpi_siesta, only: mpi_double_precision
+#else
+      use mpi_siesta, only: DAT_double
+#endif
 #endif
 
       implicit none
 
       integer
-     .  nbasis,nbands,ncmax,nctmax,nfmax,nftmax,maxnh,nhijmax,nbasisloc
+     .  nbasis,nbasisloc,nbands,ncmax,nctmax,nfmax,nftmax,nhmax,
+     .  nhijmax,nbasisCloc,nspin,Node
 
       integer
-     .  cttoc(nctmax,*),indgf(ncmax,nbasisloc),
-     .  listc(ncmax,nbasis),listct(nctmax,*),listf(nfmax,*),
-     .  listft(nftmax,nbasisloc),listh(maxnh),listhij(nhijmax,*),
-     .  numc(nbasis),numct(*),numf(*),numft(nbasis),numh(nbasisloc),
-     .  listhptr(nbasisloc),numhij(*),fttof(nftmax,nbasisloc)
+     .  cttoc(nctmax,nbandsloc),fttof(nftmax,nbasisCloc),
+     .  listc(ncmax,nbasisCloc),listct(nctmax,nbandsloc),
+     .  listf(nfmax,nbandsloc),listft(nftmax,nbasisCloc),
+     .  listh(nhmax),listhptr(nbasisloc),listhij(nhijmax,nbandsloc),
+     .  numc(nbasisCloc),numct(nbandsloc),numf(nbandsloc),
+     .  numft(nbasisCloc),numh(nbasisloc),numhij(nbandsloc)
 
-      double precision
-     .  c(ncmax,nbasisloc),ener,eta,enum,grad(ncmax,nbasisloc),
-     .  h(maxnh),s(maxnh)
+      real(dp) ::
+     .  c(ncmax,nbasisCloc,nspin),ener,eta(nspin),qs(nspin),
+     .  grad(ncmax,nbasisCloc,nspin),h(nhmax,nspin),s(nhmax),
+     .  f(nfmax,nbandsloc),fs(nfmax,nbandsloc)
 
 C Internal variables ......................................................
 
       integer
-     .  i,ik,in,ind,j,jk,jn,k,kl,kn,knk,knlh,mu,muk,
-     .  nn, nbandsmin, nbandsmax, nbandspernode, iloc, 
-     .  nbandsloc, nfmaxg, nhijmaxg
-      integer, dimension(:), allocatable, save :: 
-     .  iptr, iptrlg
-#ifdef MPI
-      integer
-     .  MPIerror, ii, il, jloc, mul, nh, nremainder, 
-     .  nbmin, nbmax, maxnhg, nloc, nbl, nfmaxl,
-     .  nhijmaxl
-      integer, dimension(:), allocatable ::
-     .  listhlptr, listhl, numhl
-      integer, dimension(:,:), allocatable, save :: 
-     .  listftl, indgfl
-      double precision
-     .  rtmp1(2),rtmp2(2)
-      double precision, dimension(:), allocatable, save :: 
-     .  hl, sl
-      double precision, dimension(:,:), allocatable, save :: 
-     .  cl, gl, ftl, ftl2
-#endif
-      double precision, dimension(:), allocatable, save :: 
-     .  aux1, aux2
-      double precision, dimension(:,:), allocatable, save :: 
-     .  f, ft, fs, fst, bux1, bux2
+     .  i,ik,il,in,indk,is,j,jk,jl,jn,k,kk,kn,mu,muk
 
-      double precision
-     .  a0,b0,p0,func1,func2
-     
+#ifdef MPI
+      integer ::
+     .  MPIerror
+      real(dp) ::
+     .  ftmp(2), ftmp2(2)
+      real(dp), allocatable, save ::
+     .  bux2g(:),bux1save(:,:),bux2save(:,:), ftG(:,:), fstG(:,:)
+#endif
+
+      real(dp), allocatable, save ::
+     .  aux1(:), aux2(:), bux1(:), bux2(:), ft(:,:), fst(:,:)
+
+      real(dp) ::
+     .  a0,b0,p0,func1,func2,spinfct
+
 C..................
 
       call timer('gradient',1)
       
-C Get Node number
-#ifdef MPI
-C Get global sizes for first dimension of H/S
-      call MPI_AllReduce(maxnh,maxnhg,1,MPI_integer,MPI_max,
-     .  MPI_Comm_World,MPIerror)
-
-C Allocate local arrays for c/h/s
-      call GetNodeOrbs(nbasis,0,Nodes,nbl)
-      allocate(cl(ncmax,nbl))
-      call memory('A','D',ncmax*nbl,'gradient')
-      allocate(hl(maxnhg))
-      call memory('A','D',maxnhg,'gradient')
-      allocate(sl(maxnhg))
-      call memory('A','D',maxnhg,'gradient')
-
-C Initialise hl/sl to prevent possible problems during transfer
-      hl(1:maxnhg) = 0.0d0
-      sl(1:maxnhg) = 0.0d0
-
-C Work out range of bands for this Node
-      nbandspernode = ((nbands-1)/Nodes)
-      nremainder = nbands - nbandspernode*Nodes
-      nbandsmin = Node*nbandspernode + min(nremainder,Node) + 1
-      nbandsmax = nbandsmin + nbandspernode - 1
-      if (Node.lt.nremainder) nbandsmax = nbandsmax + 1
-      nbandsloc = nbandsmax - nbandsmin + 1
-
-C Get global maximum number of non-zero elements in a given row
-      nfmaxl = 0
-      do i = 1,nbandsloc
-        nfmaxl = max(nfmaxl,numf(i))
-      enddo
-      call MPI_AllReduce(nfmaxl,nfmaxg,1,MPI_integer,MPI_max,
-     .  MPI_Comm_World,MPIerror)
-
-C Find true value of nhijmax
-      nhijmaxl = 0
-      do i = 1,nbandsloc
-        nhijmaxl = max(nhijmaxl,numhij(i))
-      enddo
-      call MPI_AllReduce(nhijmaxl,nhijmaxg,1,MPI_integer,MPI_max,
-     .  MPI_Comm_World,MPIerror)
-#else
-      nbandsmin = 1
-      nbandsmax = nbands
-      nbandspernode = nbands
-      nbandsloc = nbands
-      nfmaxg = nfmax
-      nhijmaxg = nhijmax
-#endif
-
-C Allocate aux arrays
+C Allocate local arrays
       allocate(aux1(nbasis))
-      call memory('A','D',nbasis,'gradient')
+      call memory('A','D',size(aux1),'gradient')
       allocate(aux2(nbasis))
-      call memory('A','D',nbasis,'gradient')
-      aux1(1:nbasis) = 0.0d0
-      aux2(1:nbasis) = 0.0d0
-
-C Allocate dynamic memory
-      allocate(iptr(nbasis))
-      call memory('A','I',nbasis,'gradient')
-      allocate(iptrlg(nbasis))
-      call memory('A','I',nbasisloc,'gradient')
-
-C Setup local to global pointer
-      do i = 1,nbasisloc
-        call LocalToGlobalOrb(i,Node,Nodes,iptrlg(i))
-      enddo
-
+      call memory('A','D',size(aux2),'gradient')
+      allocate(bux1(nbands))
+      call memory('A','D',size(bux1),'gradient')
+      allocate(bux2(nbands))
+      call memory('A','D',size(bux2),'gradient')
+      allocate(ft(nftmax,nbasisCloc))
+      call memory('A','D',size(ft),'gradient')
+      allocate(fst(nftmax,nbasisCloc))
+      call memory('A','D',size(fst),'gradient')
 #ifdef MPI
-C Allocate local storage for H/S control vectors
-      call GetNodeOrbs(nbasis,Node,Nodes,nbl)
-      allocate(numhl(nbasis))
-      call memory('A','I',nbasis,'gradient')
-      allocate(listhlptr(nbasis))
-      call memory('A','I',nbasis,'gradient')
-      allocate(listhl(maxnhg))
-      call memory('A','I',maxnhg,'gradient')
+      allocate(ftG(MaxFt2,nbasisCloc))
+      call memory('A','D',size(ftG),'gradient')
+      allocate(fstG(MaxFt2,nbasisCloc))
+      call memory('A','D',size(fstG),'gradient')
+      allocate(bux1save(nhijmax,nbandsloc))
+      call memory('A','D',size(bux1save),'gradient')
+      allocate(bux2save(nhijmax,nbandsloc))
+      call memory('A','D',size(bux2save),'gradient')
+      allocate(bux2g(nbands))
+      call memory('A','D',size(bux2g),'gradient')
 #endif
 
 C Initialize output and auxiliary varialbles ...............................
 
+      if (nspin.eq.1) then
+        spinfct = 2.0d0
+      else
+        spinfct = 1.0d0
+      endif
+
       ener = 0.0d0
-      func1 = 0.0d0
-      func2 = 0.0d0
 
-      allocate(f(nfmaxg,nbandspernode+1))
-      call memory('A','D',nfmaxg*(nbandspernode+1),'gradient')
-      allocate(fs(nfmaxg,nbandspernode+1))
-      call memory('A','D',nfmaxg*(nbandspernode+1),'gradient')
-      allocate(bux1(nhijmaxg,nbandspernode+1))
-      call memory('A','D',nhijmaxg*(nbandspernode+1),'gradient')
-      allocate(bux2(nhijmaxg,nbandspernode+1))
-      call memory('A','D',nhijmaxg*(nbandspernode+1),'gradient')
+      do i = 1,nbasis
+        aux1(i) = 0.0d0
+        aux2(i) = 0.0d0
+      enddo
 
-      f(1:nfmaxg,1:nbandspernode+1) = 0.0d0
-      fs(1:nfmaxg,1:nbandspernode+1) = 0.0d0
-      bux1(1:nhijmaxg,1:nbandspernode+1) = 0.0d0
-      bux2(1:nhijmaxg,1:nbandspernode+1) = 0.0d0
+      do i = 1,nbands
+        bux1(i) = 0.0d0
+        bux2(i) = 0.0d0
+#ifdef MPI
+        bux2g(i) = 0.0d0
+#endif
+      enddo
 
-C..................
+#ifdef MPI
+      do i = 1,nbandsloc
+        do j = 1,nhijmax
+          bux1save(j,i) = 0.0d0
+          bux2save(j,i) = 0.0d0
+        enddo
+      enddo
+#endif
+
+C Initialise gradient vector
+      grad = 0.0d0
 
 C Calculate Functional .....................................................
 
-C Start loop over Nodes
-      do nn = 1,Nodes
+C Loop over spin
+      do is = 1,nspin
 
 #ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-
-C Distribute control vectors for H/S for this node
-        if (Node.eq.nn-1) then
-          numhl(1:nbl) = numh(1:nbl)
-        endif
-        call MPI_Bcast(numhl,nbl,MPI_integer,nn-1,
-     .    MPI_Comm_World,MPIerror)
-        listhlptr(1) = 0
-        do in = 2,nbl
-          listhlptr(in) = listhlptr(in-1) + numhl(in-1)
-        enddo
-        nh = listhlptr(nbl) + numhl(nbl)
-        if (Node.eq.nn-1) then
-          listhl(1:nh) = listh(1:nh)
-        endif
-        call MPI_Bcast(listhl,nh,MPI_integer,nn-1,
-     .    MPI_Comm_World,MPIerror)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          cl(1:ncmax,1:nbl) = c(1:ncmax,1:nbl)
-          hl(1:nh) = h(1:nh)
-          sl(1:nh) = s(1:nh)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(hl,maxnhg,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sl,maxnhg,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(hl,maxnhg,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sl,maxnhg,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
+C Initialise communication arrays
+        call globalinitB(1)
 #endif
 
-C Build pointer to local orbitals for current working Node
-        do k = 1,nbasis
-          call GlobalToLocalOrb(k,nn-1,Nodes,iptr(k))
-        enddo
-#endif
+C Initialise variables
+        func1 = 0.0d0
+        func2 = 0.0d0
 
 C F=CtH  ---> JMS: F=Ct*(H-eta*S)
 C Fs=CtS
-        do i = 1,nbandsloc
-          do in = 1,numct(i)
-            k = listct(in,i)
-#ifdef MPI
-            kl = iptr(k)
-            if (kl.gt.0) then
-              ik = cttoc(in,i)
-              p0 = cl(ik,kl)
-              ind = listhlptr(kl)
-              do kn = 1,numhl(kl)
-                ind = ind + 1
-                aux1(listhl(ind)) = aux1(listhl(ind)) +
-     .            p0 * (hl(ind)-eta*sl(ind))
-                aux2(listhl(ind)) = aux2(listhl(ind)) +
-     .            p0 * sl(ind)
+        do il = 1,nbandsloc
+          do in = 1,numct(il)
+            k = listct(in,il)
+            kk = ncT2P(k)
+            if (kk.gt.0) then
+              ik = cttoc(in,il)
+              p0 = c(ik,k,is)
+              indk = listhptr(kk)
+              do kn = 1,numh(kk)
+                aux1(listh(indk+kn)) = aux1(listh(indk+kn)) + 
+     .            p0*( h(indk+kn,is) - eta(is)*s(indk+kn) )
+                aux2(listh(indk+kn)) = aux2(listh(indk+kn)) + 
+     .            p0*s(indk+kn)
               enddo
             endif
-#else
-            ik = cttoc(in,i)
-            p0 = c(ik,k)
-            ind = listhptr(k)
-            do kn = 1,numh(k)
-              ind = ind + 1
-              aux1(listh(ind)) = aux1(listh(ind)) +
-     .          p0 * (h(ind)-eta*s(ind))
-              aux2(listh(ind)) = aux2(listh(ind)) +
-     .          p0 * s(ind)
-            enddo
-#endif
           enddo
-          do in = 1,numf(i)
-            k = listf(in,i)
-            f(in,i) = f(in,i) + aux1(k)
-            fs(in,i) = fs(in,i) + aux2(k)
+          do in = 1,numf(il)
+            k = listf(in,il)
+            f(in,il) = aux1(k)
+            fs(in,il) = aux2(k)
             aux1(k) = 0.0d0
             aux2(k) = 0.0d0
           enddo
         enddo
 
-C End loop over Nodes
-      enddo
-
-#ifdef MPI
-C Deallocate memory for hl and sl as no longer needed
-      call memory('D','D',size(hl),'gradient')
-      deallocate(hl)
-      call memory('D','D',size(sl),'gradient')
-      deallocate(sl)
-      call memory('D','I',size(numhl),'gradient')
-      deallocate(numhl)
-      call memory('D','I',size(listhlptr),'gradient')
-      deallocate(listhlptr)
-      call memory('D','I',size(listhl),'gradient')
-      deallocate(listhl)
-#endif
-
-C Start loop over Nodes
-      do nn = 1,Nodes
-
-#ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          cl(1:ncmax,1:nbl) = c(1:ncmax,1:nbl)
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#endif
-
-C Build pointer to local orbitals for current working Node
-        do k = 1,nbasis
-          call GlobalToLocalOrb(k,nn-1,Nodes,kl)
-          iptr(k) = kl
+C-JMS Find transpose of F and Fs
+        do mu = 1,nbasisCloc
+          do muk = 1,numft(mu)
+            j = listft(muk,mu)
+            jl = nbG2L(j)
+            if (jl.gt.0) then
+              jk = fttof(muk,mu)
+              ft(muk,mu) = f(jk,jl)
+              fst(muk,mu) = fs(jk,jl)
+            endif
+          enddo
         enddo
+
+#ifdef MPI
+C Globalise ft/fst
+        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
+     .                  ft,ftG,Node)
+        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
+     .                  fst,fstG,Node)
 #endif
 
 C Hij=CtHC
 C Sij=CtSC
 C multiply FxC and FsxC row by row
-
-        do i = 1,nbandsloc
-
-          iloc = i + nbandsmin - 1
-
-          do in = 1,numf(i)
-            k = listf(in,i)
-#ifdef MPI
-            kl = iptr(k)
-            if (kl.gt.0) then
-#endif
-              a0 = f(in,i)
-              b0 = fs(in,i)
-              do kn = 1,numc(k)
-                knk = listc(kn,k)
-#ifdef MPI
-                aux1(knk) = aux1(knk) + a0 * cl(kn,kl)
-                aux2(knk) = aux2(knk) + b0 * cl(kn,kl)
-#else
-                aux1(knk) = aux1(knk) + a0 * c(kn,k)
-                aux2(knk) = aux2(knk) + b0 * c(kn,k)
-#endif
-              enddo
-#ifdef MPI
-            endif
-#endif
-          enddo
-
-C Evaluate first energy terms
-          func1 = func1 + aux1(iloc)
-
-C Condense aux down to bux and zero aux again
-          do jn = 1,numhij(i)
-            j = listhij(jn,i)
-            bux1(jn,i) = bux1(jn,i) + aux1(j)
-            bux2(jn,i) = bux2(jn,i) + aux2(j)
-            aux1(j) = 0.0d0
-            aux2(j) = 0.0d0
-          enddo
-
-        enddo
-
-C End loop over Nodes
-      enddo
-
-C Calculate second part of energy
-      do i = 1,nbandsloc
-        do jn = 1,numhij(i)
-          func2 = func2 + bux1(jn,i) * bux2(jn,i)
-        enddo
-      enddo
-
-#ifdef MPI
-C Allocate local storage for broadcast copy of indgf
-      call GetNodeOrbs(nbasis,0,Nodes,nbl)
-      allocate(indgfl(ncmax,nbl))
-      call memory('A','I',ncmax*nbl,'gradient')
-
-C Add contribution from f to grad
-      do nn = 1,Nodes
-
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-        cl(1:ncmax,1:nbl) = 0.0
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          indgfl(1:ncmax,1:nbl) = indgf(1:ncmax,1:nbl)
-        endif
-
-C Broadcast arrays
-        call MPI_Bcast(indgfl(1,1),ncmax*nbl,MPI_integer,nn-1,
-     .    MPI_Comm_World,MPIerror)
-
-        do kl = 1,nbl
-          call LocalToGlobalOrb(kl,nn-1,Nodes,k)
-          do ik = 1,numc(k)
-            i = indgfl(ik,kl)
-            j = listc(ik,k)
-            if (j.ge.nbandsmin.and.j.le.nbandsmax) then
-              jloc = j - nbandsmin + 1
-              cl(ik,kl) = 4.d0 * f(i,jloc) + cl(ik,kl)
-            endif
-          enddo
-        enddo
-
-C Global reduction of grad
-#ifdef NODAT
-        call MPI_Reduce(cl(1,1),grad(1,1),ncmax*nbl,
-     .    MPI_double_precision,MPI_sum,nn-1,
-     .    MPI_Comm_World,MPIerror)
-#else
-        call MPI_Reduce(cl(1,1),grad(1,1),ncmax*nbl,
-     .    DAT_double,MPI_sum,nn-1,
-     .    MPI_Comm_World,MPIerror)
-#endif
-
-      enddo
-
-C Free local storage for indgf
-      call memory('D','I',size(indgfl),'gradient')
-      deallocate(indgfl)
-#else
-      do k = 1,nbasis
-        do ik = 1,numc(k)
-          i = indgf(ik,k)
-          j = listc(ik,k)
-          grad(ik,k) = 4.d0 * f(i,j)
-        enddo
-      enddo
-#endif
-
-C Build pointer to local orbitals for current working Node
-      do k = 1,nbasis
-        call GlobalToLocalOrb(k,Node,Nodes,kl)
-        iptr(k) = kl
-      enddo
-
-C Allocate memory for transpose arrays ft and fst
-      allocate(ft(nftmax,nbasisloc))
-      call memory('A','D',nftmax*nbasisloc,'gradient')
-#ifdef MPI
-      allocate(ftl(nfmaxg,nbandspernode+1))
-      call memory('A','D',nfmaxg*(nbandspernode+1),'gradient')
-#endif
-
-C Calculate transpose of f and fs
-#ifdef MPI
-      do nn = 1,Nodes
-
-C Get local size on broadcast node
-        nbmin = (nn-1)*nbandspernode + min(nremainder,(nn-1)) + 1
-        nbmax = nbmin + nbandspernode - 1
-        if ((nn-1).lt.nremainder) nbmax = nbmax + 1
-        nloc = (nbmax-nbmin+1)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          do i = 1,nloc
-            do kn = 1,numf(i)
-              ftl(kn,i) = f(kn,i)
+        do il = 1,nbandsloc
+          do in = 1,numf(il)
+            k = listf(in,il)
+            kk = ncG2L(k)
+            a0 = f(in,il)
+            b0 = fs(in,il)
+            do kn = 1,numc(kk)
+              bux1(listc(kn,kk)) = bux1(listc(kn,kk)) + a0 * c(kn,kk,is)
+              bux2(listc(kn,kk)) = bux2(listc(kn,kk)) + b0 * c(kn,kk,is)
             enddo
           enddo
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(ftl(1,1),nfmaxg*nloc,MPI_double_precision,nn-1,
-     .    MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(ftl(1,1),nfmaxg*nloc,DAT_double,nn-1,
-     .    MPI_Comm_World,MPIerror)
-#endif
-
-        do mu = 1,nbasisloc
-          do muk = 1,numft(iptrlg(mu))
-            j = listft(muk,mu)
-            if (j.ge.nbmin.and.j.le.nbmax) then
-              iloc = j - nbmin + 1
-              jk = fttof(muk,mu)
-              ft(muk,mu) = ftl(jk,iloc)
-            endif
-          enddo
-        enddo
-      enddo
-#else
-      do mu = 1,nbasis
-        do muk = 1,numft(mu)
-          j = listft(muk,mu)
-          jk = fttof(muk,mu)
-          ft(muk,mu) = f(jk,j)
-        enddo
-      enddo
-#endif
-
-C Deallocate f
-      call memory('D','D',size(f),'gradient')
-      deallocate(f)
-
-C Allocate transpose of fs
-      allocate(fst(nftmax,nbasisloc))
-      call memory('A','D',nftmax*nbasisloc,'gradient')
 
 #ifdef MPI
-      do nn = 1,Nodes
-
-C Get local size on broadcast node
-        nbmin = (nn-1)*nbandspernode + min(nremainder,(nn-1)) + 1
-        nbmax = nbmin + nbandspernode - 1
-        if ((nn-1).lt.nremainder) nbmax = nbmax + 1
-        nloc = (nbmax-nbmin+1)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          do i = 1,nloc
-            do kn = 1,numf(i)
-              ftl(kn,i) = fs(kn,i)
-            enddo
-          enddo
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(ftl(1,1),nfmaxg*nloc,MPI_double_precision,nn-1,
-     .    MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(ftl(1,1),nfmaxg*nloc,DAT_double,nn-1,
-     .    MPI_Comm_World,MPIerror)
+C Load data into globalisation arrays
+          call globalloadB1(il,nbands,bux2)
 #endif
 
-        do mu = 1,nbasisloc
-          do muk = 1,numft(iptrlg(mu))
-            j = listft(muk,mu)
-            if (j.ge.nbmin.and.j.le.nbmax) then
-              iloc = j - nbmin + 1
-              jk = fttof(muk,mu)
-              fst(muk,mu) = ftl(jk,iloc)
-            endif
-          enddo
-        enddo
-      enddo
-
-C Free ftl with old dimensions 
-      call memory('D','D',size(ftl),'gradient')
-      deallocate(ftl)
-#else
-      do mu = 1,nbasis
-        do muk = 1,numft(mu)
-          j = listft(muk,mu)
-          jk = fttof(muk,mu)
-          fst(muk,mu) = fs(jk,j)
-        enddo
-      enddo
-#endif
-
-C Deallocate fs as it is not used again
-      call memory('D','D',size(fs),'gradient')
-      deallocate(fs)
-
-#ifdef MPI
-C Create local storage memory for transpose arrays
-      call GetNodeOrbs(nbasis,0,Nodes,nbl)
-      allocate(ftl2(nftmax,nbl))
-      call memory('A','D',nftmax*nbl,'gradient')
-      allocate(listftl(nftmax,nbl))
-      call memory('A','I',nftmax*nbl,'gradient')
-      allocate(gl(ncmax,nbl))
-      call memory('A','D',ncmax*nbl,'gradient')
-#endif
-
-C Re-zero aux arrays
-      aux1(1:nbasis) = 0.0d0
-      aux2(1:nbasis) = 0.0d0
-
-      do nn = 1,Nodes
-
-#ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-        cl(1:ncmax,1:nbl) = 0.0
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          ftl2(1:nftmax,1:nbasisloc) = ft(1:nftmax,1:nbasisloc)
-          do i = 1,nbasisloc
-            call LocalToGlobalOrb(i,Node,Nodes,il)
-            do ii = 1,numft(il)
-              listftl(ii,i) = listft(ii,i)
-            enddo
-            do ii = numft(il)+1,nftmax
-              listftl(ii,i) = 0
-            enddo
-          enddo
-        endif
-
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(ftl2(1,1),nftmax*nbl,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(ftl2(1,1),nftmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#endif
-        call MPI_Bcast(listftl(1,1),nftmax*nbl,MPI_integer,
-     .        nn-1,MPI_Comm_World,MPIerror)
-
-C Build pointer to local orbitals for current working Node
-        do k = 1,nbasis
-          call GlobalToLocalOrb(k,nn-1,Nodes,kl)
-          iptr(k) = kl
-        enddo
-#endif
-        do i = 1,nbandsloc
-
-C Expand bux into aux
-          do jn = 1,numhij(i)
-            j = listhij(jn,i)
-            aux1(j) = bux1(jn,i)
-            aux2(j) = bux2(jn,i)
-          enddo
-
-C multiply Hij x Fs and Sij x F row by row
+C Multiply Hij x Fs and Sij x F row by row
 C (only products of neccesary elements)
+          do ik = 1,numct(il)
+            mu = listct(ik,il)
+            a0 = 0.0d0
 #ifdef MPI
-          do ik = 1,numct(i)
-            mu = listct(ik,i)
-            mul = iptr(mu)
-            if (mul.gt.0) then
-              a0 = 0.d0
-              do muk = 1,numft(mu)
-                j = listftl(muk,mul)
-                a0 = a0 + aux2(j) * ftl2(muk,mul)
-              enddo
-              cl(cttoc(ik,i),mul) = cl(cttoc(ik,i),mul) -2.0d0*a0
-            endif
-          enddo
+            do muk = 1,numft2(mu)
+              j = listft2(muk,mu)
+              a0 = a0 + bux1(j)*fstG(muk,mu) 
+     .                + bux2(j)*ftG(muk,mu)
 #else
-          do ik = 1,numct(i)
-            mu = listct(ik,i)
-            a0 = 0.d0
             do muk = 1,numft(mu)
               j = listft(muk,mu)
-              a0 = a0 + aux1(j) * fst(muk,mu) + aux2(j) * ft(muk,mu)
-            enddo
-            grad(cttoc(ik,i),mu) = grad(cttoc(ik,i),mu) -2.0d0*a0
-          enddo
+              a0 = a0 + bux1(j)*fst(muk,mu) 
+     .                + bux2(j)*ft(muk,mu)
 #endif
+            enddo
+            grad(cttoc(ik,il),mu,is) = - spinfct*a0
+          enddo
 
-C Re-zero aux arrays
-          do jn = 1,numhij(i)
-            j = listhij(jn,i)
-            aux1(j) = 0.0d0
-            aux2(j) = 0.0d0
+#ifdef MPI
+C Reinitialise bux1/2 and save for later in sparse form
+          do jn = 1,numhij(il)
+            j = listhij(jn,il)
+            bux1save(jn,il) = bux1(j)
+            bux2save(jn,il) = bux2(j)
+            bux1(j) = 0.0d0
+            bux2(j) = 0.0d0
           enddo
 
         enddo
 
-#ifdef MPI
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          ftl2(1:nftmax,1:nbl) = fst(1:nftmax,1:nbl)
-        endif
+C Globalise Hij/Sij
+        call globalcommB(Node)
 
-C Broadcast arrays
-#ifdef NODAT
-        call MPI_Bcast(ftl2(1,1),nftmax*nbl,MPI_double_precision,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(ftl2(1,1),nftmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
+C Restore local bux1/2 terms
+        do il = 1,nbandsloc
+          do jn = 1,numhij(il)
+            j = listhij(jn,il)
+            bux1(j) = bux1save(jn,il)
+            bux2(j) = bux2save(jn,il)
+          enddo
+
+C Reload data after globalisation
+          call globalreloadB1(il,nbands,bux2,bux2g)
 #endif
 
-        do i = 1,nbandsloc
-
-C Expand bux into aux
-          do jn = 1,numhij(i)
-            j = listhij(jn,i)
-            aux1(j) = bux1(jn,i)
+C Calculate energy terms & reinitialise bux1/2
+          i = nbL2G(il)
+          func1 = func1 + bux1(i)
+  
+          do jn = 1,numhij(il)
+            j = listhij(jn,il)
+#ifdef MPI
+            func2 = func2 + bux1(j)*bux2g(j)
+#else
+            func2 = func2 + bux1(j)*bux2(j)
+#endif
+            bux1(j) = 0.0d0
+            bux2(j) = 0.0d0
           enddo
 
-C multiply Hij x Fs and Sij x F row by row
-C (only products of neccesary elements)
-          do ik = 1,numct(i)
-            mu = listct(ik,i)
-            mul = iptr(mu)
-            if (mul.gt.0) then
-              a0 = 0.d0
-              do muk = 1,numft(mu)
-                j = listftl(muk,mul)
-                a0 = a0 + aux1(j) * ftl2(muk,mul)
-              enddo
-              cl(cttoc(ik,i),mul) = cl(cttoc(ik,i),mul) -2.0 * a0
-            endif
-          enddo
-
-C Rezero aux1
-          do jn = 1,numhij(i)
-            j = listhij(jn,i)
-            aux1(j) = 0.0d0
-          enddo
+#ifdef MPI
+C Reinitialise bux2g
+          call globalrezeroB1(il,nbands,bux2g)
+#endif
 
         enddo
-#endif
 
 #ifdef MPI
-C Global reduction of grad
+C Global reduction of func1/2
+        ftmp(1) = func1
+        ftmp(2) = func2
 #ifdef NODAT
-        call MPI_Reduce(cl(1,1),gl(1,1),ncmax*nbl,
-     .    MPI_double_precision,MPI_sum,nn-1,
+        call MPI_AllReduce(ftmp,ftmp2,2,MPI_double_precision,MPI_sum,
      .    MPI_Comm_World,MPIerror)
 #else
-        call MPI_Reduce(cl(1,1),gl(1,1),ncmax*nbl,
-     .    DAT_double,MPI_sum,nn-1,
+        call MPI_AllReduce(ftmp,ftmp2,2,DAT_double,MPI_sum,
      .    MPI_Comm_World,MPIerror)
 #endif
-        if (Node.eq.nn-1) then
-          do kl = 1,nbasisloc
-            call LocalToGlobalOrb(kl,nn-1,Nodes,k)
-            do ik = 1,numc(k)
-              grad(ik,kl) = gl(ik,kl) + grad(ik,kl)
-            enddo
-          enddo
-        endif
+        func1 = ftmp2(1)
+        func2 = ftmp2(2)
 #endif
 
-C End loop over Nodes
+        bux1(1:nbands) = 0.0d0
+        do k = 1,nbasisCloc
+          do ik = 1,numft(k)
+            j = listft(ik,k)
+            bux1(j) = 2.0d0*spinfct*ft(ik,k) + bux1(j)
+          enddo
+          do ik = 1,numc(k)
+            j = listc(ik,k)
+            grad(ik,k,is) = bux1(j) + grad(ik,k,is)
+          enddo
+          do ik = 1,numft(k)
+            j = listft(ik,k)
+            bux1(j) = 0.0d0
+          enddo
+        enddo
+
+        ener = ener + spinfct*(func1 - 0.5d0*func2) 
+     .              + 0.5d0*eta(is)*qs(is)
+
+C End loop over spins
       enddo
 
 #ifdef MPI
-C Global reduction of func1 and func2
-      rtmp1(1)=func1
-      rtmp1(2)=func2
-#ifdef NODAT
-      call MPI_AllReduce(rtmp1,rtmp2,2,MPI_double_precision,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(rtmp1,rtmp2,2,DAT_double,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
+      call globaliseC(nbasisCloc,ncmax,numc,grad,nspin,Node)
 #endif
-      func1 = rtmp2(1)
-      func2 = rtmp2(2)
+
+C Deallocate local arrays
+#ifdef MPI
+      call memory('D','D',size(bux2g),'gradient')
+      deallocate(bux2g)
+      call memory('D','D',size(bux2save),'gradient')
+      deallocate(bux2save)
+      call memory('D','D',size(bux1save),'gradient')
+      deallocate(bux1save)
+      call memory('D','D',size(fstG),'gradient')
+      deallocate(fstG)
+      call memory('D','D',size(ftG),'gradient')
+      deallocate(ftG)
 #endif
-      ener = 2.d0 * func1 - func2 + eta * enum / 2.d0
-C ...................
-
-C Deallocate aux1/aux2
-      call memory('D','D',size(aux1),'gradient')
-      deallocate(aux1)
-      call memory('D','D',size(aux2),'gradient')
-      deallocate(aux2)
-
-C Free dynamic memory
-      call memory('D','I',size(iptr),'gradient')
-      deallocate(iptr)
-      call memory('D','I',size(iptrlg),'gradient')
-      deallocate(iptrlg)
-      call memory('D','D',size(ft),'gradient')
-      deallocate(ft)
       call memory('D','D',size(fst),'gradient')
       deallocate(fst)
-      call memory('D','D',size(bux1),'gradient')
-      deallocate(bux1)
+      call memory('D','D',size(ft),'gradient')
+      deallocate(ft)
       call memory('D','D',size(bux2),'gradient')
       deallocate(bux2)
-#ifdef MPI
-      call memory('D','D',size(cl),'gradient')
-      deallocate(cl)
-      call memory('D','D',size(gl),'gradient')
-      deallocate(gl)
-      call memory('D','D',size(ftl2),'gradient')
-      deallocate(ftl2)
-      call memory('D','I',size(listftl),'gradient')
-      deallocate(listftl)
-#endif
+      call memory('D','D',size(bux1),'gradient')
+      deallocate(bux1)
+      call memory('D','D',size(aux2),'gradient')
+      deallocate(aux2)
+      call memory('D','D',size(aux1),'gradient')
+      deallocate(aux1)
 
       call timer('gradient',2)
+
       return
       end
-

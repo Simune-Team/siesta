@@ -317,6 +317,7 @@ end if
 
 #ifdef MPI
 ! Distribute information to other nodes and open REPORT_UNIT
+call MPI_Bcast(REPORT_LEVEL,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 call MPI_Bcast(REPORT_UNIT,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 call MPI_Bcast(REPORT_FILE,50,MPI_character,0,MPI_Comm_World,MPIerror)
 
@@ -664,7 +665,6 @@ integer,                    intent(in) :: i1min,i1max, i2min,i2max, &
 character(len=*), optional, intent(in) :: name, routine
 logical,          optional, intent(in) :: copy, shrink
 integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
-integer :: i1, i2, i3
 ASSOCIATED_ARRAY = associated(array)
 if (ASSOCIATED_ARRAY) then
   old_array => array 
@@ -1257,9 +1257,6 @@ logical             :: newPeak
 logical,  save      :: header_written = .false.
 logical,  save      :: tree_nullified = .false.
 integer             :: memSize
-#ifdef MPI
-integer             :: MPIerror
-#endif
 
 ! Set routine name
 if (present(routine)) then
@@ -1325,10 +1322,10 @@ end if
 ! Print report - only do this if number of nodes is 1 as
 ! not all processors made follow the same route here
 if (newPeak .and. (REPORT_LEVEL==1 .or. REPORT_LEVEL==3) .and. &
-    nodes == 1) then
+    node == 0) then
   call print_report
 end if
-if (REPORT_LEVEL == 4 .and. nodes == 1) then
+if (REPORT_LEVEL == 4 .and. node == 0) then
   if (.not.header_written) then
     write(REPORT_UNIT,'(/,a7,9x,1x,a4,28x,1x,2a15)') &
      'Routine', 'Name', 'Incr. (MB)', 'Total (MB)'

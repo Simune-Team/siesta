@@ -1,5 +1,4 @@
       subroutine outcoor(cell, xa, isa, na, cohead, writec) 
-
 c *******************************************************************
 c Writes atomic coordinates in format given by fdf:AtomCoorFormatOut
 c Default: same format as was used for the reading.
@@ -20,15 +19,17 @@ c inversion of lattice vectors for fractional coordinates is done
 c through subroutine reclat.
 c *******************************************************************
 
-      use atmfuncs, only: labelfis
+      use atmfuncs,  only : labelfis
       use fdf
+      use precision, only : dp
 
       implicit          none
+
       integer           na
       integer           isa(na)
       logical           writec
       character         cohead*(*)
-      double precision  xa(3,na), cell(3,3)
+      real(dp)          xa(3,na), cell(3,3)
 
 c Internal variables and arrays
 
@@ -36,9 +37,9 @@ c Internal variables and arrays
      .                  pieceh*20, titl*60, pasteb*60
       logical           leqi, frstme
       integer           ia, ix
-      double precision  xac(3), recell(3,3), alat
+      real(dp)          xac(3), recell(3,3), alat
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .                  xap
 
       external          pasteb, memory

@@ -85,54 +85,54 @@ C
       use mpi_siesta
 #endif
 
-       implicit none
+      implicit none
 
-       integer 
+      integer 
      .  dimaux,iscf,maxsav,maxo,maxnd,nbasis,nkick,nspin
 
-       integer  
+      integer  
      .  numd(*),listdptr(*)
 
-       real(dp) 
+      real(dp) 
      .  alpha,alphakick,dmax,
      .  dmnew(maxnd,nspin),dmold(maxnd,nspin)
 
-       real(dp)
+      real(dp)
      .  savedm(dimaux), savere(dimaux)
 
-       logical
+      logical
      .  pulfile, mix
 
-       character
+      character
      .  paste*33
 
-       external
+      external
      .  io_assign, io_close, paste, memory
 
 C Internal variables ....................................................
-       integer
+      integer
      .  i0,i,ii,in,is,isite,j,jj,jtape,jtap1,numel,ind,info,maxmix
 
 #ifdef MPI
-       integer
+      integer
      .  MPIerror
 #endif
 
-       real(dp) 
+      real(dp) 
      .  sum
-       real(dp), dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  b, bi
-       real(dp), dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  buffer
-       real(dp), dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  coeff
 
-       character
+      character
      .  fname1*33, fname2*33, sname*30
 
-       logical, save :: frstme = .true.
+      logical, save :: frstme = .true.
 
-       save sname
+      save sname
 
 C ........................
 

@@ -5,14 +5,15 @@ c A SIG file is a series of lines of the form:
 c
 c                 [50-character-long string, 1x, g25.15]
 c
+      use precision, only : dp
+
       implicit none
 c
-      integer unit
-      double precision x
+      integer  unit
+      real(dp) x
       character*(*) str
 
-      character*50 string
-      logical first
+      character(len=50) string
 
       string = str
 

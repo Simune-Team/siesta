@@ -5,7 +5,7 @@
      .                  listdptr, listd, 
      .                  Dscf, datm, maxnh, numh, listhptr, listh, Hmat,
      .                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
-     .                  Exc, Dxc, dipol, Fa, stress, fal, stressl )
+     .                  Exc, Dxc, dipol, Fa, stress, Fal, stressl )
 
 C
 C Calculates the self-consistent field contributions to Hamiltonian
@@ -98,17 +98,7 @@ C real*8  G2max      : Effective planewave cutoff in Ry. determines
 C                        the mesh density and the precision of integrals
 C                          on input : value required
 C                          on output: value used, which may be larger
-C real*8  Fa(3,nua)  : Atomic forces, to which the SCF contribution
-C                        is added by this routine when ifa=1.
-C                        the SCF contribution is minus the derivative
-C                        of ( Enascf - Enaatm + DUscf + Exc ) with
-C                        respect to atomic positions, in Ry/Bohr
-C real*8 stress(3,3) : Stress tensor, to which the SCF contribution
-C                      is added by this routine when ifa=1.
-C                      the SCF contribution is minus the derivative of
-C                         ( Enascf - Enaatm + DUscf + Exc ) / volume
-C                      with respect to the strain tensor, in Ry.
-C real*8  fal(3,nua) : Atomic forces, to which the SCF contribution
+C real*8  Fal(3,nua) : Atomic forces, to which the SCF contribution
 C                        is added by this routine when ifa=1.
 C                        the SCF contribution is minus the derivative
 C                        of ( Enascf - Enaatm + DUscf + Exc ) with
@@ -148,13 +138,11 @@ C
      .  istr, listd(*), listh(maxnh), listdptr(nuo), listhptr(nuo),
      .  mscell(3,3), ntm(3), numd(nuo), numh(nuo)
 
-      real*8
+      real(dp)
      .  datm(norb), dipol(3), Dscf(maxnd,nspin),
-     .  DUext, DUscf, Dxc,
-     .  Enaatm, Enascf, Exc, Fa(3,nua), G2max, G2mesh,
-     .  Hmat(maxnh,nspin),
-     .  stress(3,3), Uatm, ucell(3,3), Uscf, xa(3,na),
-     .  fal(3,nua), stressl(3,3)
+     .  DUext, DUscf, Dxc, Enaatm, Enascf, Exc, G2max, G2mesh,
+     .  Hmat(maxnh,nspin), Uatm, ucell(3,3), Uscf, xa(3,na),
+     .  Fa(3,nua), stress(3,3), Fal(3,nua), stressl(3,3)
 
       character
      .  filevh*(*), filevt*(*), fildrh*(*), filrho*(*), 
@@ -167,8 +155,6 @@ C        cellxc(...)    : Finds total exch-corr energy and potential
 C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
 C        dipole(...)    : Finds electric dipole moment
-C real*8 dot(v1,v2,n)   : Finds the dot product of vectors V1 and V2
-C                         of length N.
 C        efield(...)    : Adds potential of an external electric field
 C        iorho(...)     : Saves electron density on a file
 C        poison(...)    : Solves Poisson equation
@@ -190,9 +176,6 @@ C real*8  cell(3,3)     : Auxiliary lattice vectors (same as ucell)
 C real*8  const         : Auxiliary variable (constant within a loop)
 C real*8  DEc           : Auxiliary variable to call cellxc
 C real*8  DEx           : Auxiliary variable to call cellxc
-C real*8  DFa(3)        : Auxiliary variable to call dfscf
-C real*8  DFaatm(3)     : Auxiliary variable to call dfscf
-C real*8  DFascf(3)     : Auxiliary variable to call dfscf
 C real*8  dvol          : Mesh-cell volume
 C real*8  Ec            : Correlation energy
 C real*8  Ex            : Exchange energy
@@ -244,7 +227,7 @@ C
 C Internal variables
 C
       integer
-     .  i, ia, io, ip, iphi, is, ispin, j, ifor, iu, 
+     .  i, ia, io, ip, iphi, is, ispin, j, ifor, 
      .  nbcell, nm(3), npcc, nsd, nzero(3), 
      .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3)
 
@@ -272,39 +255,40 @@ C
 !
       real aux1(1), aux3(3,1)
 
-      real*8
+      real(dp)
      .  bcell(3,3), b1Xb2(3), cell(3,3), const,
-     .  DEc, DEx, DFa(3), DFaatm(3), DFascf(3),
-     .  dot, DStres(3,3), dvol, Ec, Ex, field(3),
+     .  DEc, DEx, ddot, DStres(3,3), dvol, Ec, Ex, field(3),
      .  rhotot, rmax, scell(3,3), tiny,
-     .  Uharrs, volume, volcel, x0(3), qspiral(3)
+     .  Uharrs, volume, volcel, x0(3)
+
+      real(dp), save :: qspiral(3)
 
 #ifdef MPI
-      real*8
+      real(dp)
      .  Eloc
 #endif
 
       logical
-     .  found, frstme, IsDiag, IsEfld, samesh, samexa,
-     .  harrisfun, leqi, spiral
+     .  found, leqi
 
-      character
+      logical, save :: 
+     .  frstme, harrisfun, IsDiag, IsEfld, samesh, samexa, spiral
+
+      character, save ::
      .  shape*10, XCauth*10, XCfunc*10
 
       external
      .  cellxc, cross,
-     .  dfscf,  dipole, dot,  
+     .  dfscf,  dipole, ddot,  
      .  efield, iorho, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
      .  memory, readsp
 
       save
-     .  bcell, cell, dvol, field, frstme, G2mesh,
-     .  IsDiag, IsEfld, nm, nml, ntml,
-     .  npcc, nzero, nmpl, ntpl, ntopl,
-     .  rmax, samesh, samexa, scell, shape, 
-     .  tiny, Uharrs, volume, XCauth, XCfunc, harrisfun
+     .  bcell, cell, dvol, field, G2mesh,
+     .  nm, nml, ntml, npcc, nzero, nmpl, ntpl, ntopl,
+     .  rmax, scell, tiny, Uharrs, volume
 
       data
      .  G2mesh / 0.0d0 /
@@ -327,15 +311,25 @@ C Start time counter
         endif
 #ifdef MPI
         call MPI_Bcast(XCfunc,10,MPI_character,0,MPI_Comm_World,
-     *    MPIerror)
+     .    MPIerror)
         call MPI_Bcast(XCauth,10,MPI_character,0,MPI_Comm_World,
-     *    MPIerror)
+     .    MPIerror)
         call MPI_Bcast(harrisfun,1,MPI_logical,0,MPI_Comm_World,
-     *    MPIerror)
+     .    MPIerror)
 #endif
+
+C Read spin-spiral wavevector (if defined)
+        call readsp( qspiral, spiral )
+        if (spiral .and. nspin.lt.4) then
+          if (Node.eq.0) then
+            write(6,*) 'dhscf: ERROR: spiral defined but nspin < 4'
+          endif
+          stop
+        endif
+
       endif
 
-      if( .not. harrisfun) then
+      if (.not.harrisfun) then
         ifor = 0
       else if (harrisfun) then
         ifor = 1
@@ -344,22 +338,13 @@ C Start time counter
              write(6,100)
              write(6,101)
              write(6,'(a)')
-     .        'dhscf:   Harris forces for a XC functional different of'      
+     .        'dhscf:   Harris forces for a XC functional different of'
              write(6,'(a)')
      .        'dhscf:   Perdew-Zunger has not been implemented yet'
              write(6,102)
            endif
            call die
         endif
-      endif
-
-C Read spin-spiral wavevector (if defined)
-      call readsp( qspiral, spiral )
-      if (spiral .and. nspin.lt.4) then
-        if (Node.eq.0) then
-        write(6,*) 'dhscf: ERROR: spiral is only defined for nspin = 4'
-        endif
-        stop
       endif
 
 C ----------------------------------------------------------------------
@@ -412,7 +397,7 @@ C Find system volume
 C ----------------------------------------------------------------------
 C Mesh initialization 
 C ----------------------------------------------------------------------
-        call InitMesh( na, xa, cell, norb, iaorb, iphorb, isa, rmax, 
+        call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
      .                 G2max, G2mesh, nsc, nmpl, nm,
      .                 nml, ntm, ntml, ntpl, ntopl, dvol)
 
@@ -469,8 +454,6 @@ C Allocate local memory
 C Initialization of DVxcdn
       DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0
 
-
-
       if (.not.samexa) then
 C ----------------------------------------------------------------------
 C Initialize atomic orbitals, density and potential
@@ -485,23 +468,23 @@ C Initialise quantities relating to the atom-mesh positioning
 C Find partial-core-correction energy density
         if (npcc .eq. 1) then
           call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
-     .      nsd, dvol, volume, Vscf, Vaux, fal, stressl, .false.,
+     .      nsd, dvol, volume, Vscf, Vaux, Fal, stressl, .false.,
      .      .false. )
         endif
 
 C Find neutral-atom potential
         call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
-     .                          volume, DRho, fal, stressl, 
+     .                          volume, DRho, Fal, stressl, 
      .                          .false., .false. )
 
 C Calculate orbital values on mesh
-        call PhiOnMesh( nmpl, ntopl, norb, iaorb, iphorb, isa )
+        call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa )
 
 C ----------------------------------------------------------------------
 C Create sparse indexing for Dscf as needed for local mesh
 C ----------------------------------------------------------------------
 
-        if (nuo .ne. nuotot) then
+        if (nuo .ne. nuotot .and. nuo .gt. 0) then
           call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
      .      listd )
         endif
@@ -653,11 +636,11 @@ C Find dipole
 
 C Orthogonalize dipole to bulk directions
         if (shape .eq. 'chain') then
-          const = dot( dipol, bcell, 3 ) / dot( bcell, bcell, 3 )
+          const = ddot(3,dipol,1,bcell,1) / ddot(3,bcell,1,bcell,1)
           dipol(1:3) = dipol(1:3) - const * bcell(1:3,1)
         elseif (shape .eq. 'slab') then
           call cross( bcell(1,1), bcell(1,2), b1Xb2 )
-          const = dot( dipol, b1Xb2, 3 ) / dot( b1Xb2, b1Xb2, 3 )
+          const = ddot(3,dipol,1,b1Xb2,1) / ddot(3,b1Xb2,1,b1Xb2,1)
           dipol(1:3) = const * b1Xb2(1:3)
         endif
       endif
@@ -758,13 +741,13 @@ C ----------------------------------------------------------------------
       if (frstme) then
         call efield( cell, nua, isa, xa, nzero, nsm, Vscf, field )
         IsEfld = .false.
-        if (sqrt(dot(field,field,3)) .gt. tiny) IsEfld = .true.
+        if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
       endif
       if (IsEfld) then
         call reord( Vscf, Vscf, nml, nsm, +1)
         call efield( cell, nua, isa, xa, ntm, nsm, Vscf, field )
         call reord( Vscf, Vscf, nml, nsm, -1)
-        DUext = - dot( field, dipol, 3 )
+        DUext = - ddot(3,field,1,dipol,1)
       endif
 
 C ----------------------------------------------------------------------
@@ -879,7 +862,7 @@ C Start time counter for force calculation part
 C Find contribution of partial-core-correction
         if (npcc .eq. 1) then
           call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
-     .      nsd, dvol, volume, Vscf, Vaux, fal, stressl, ifa.ne.0,
+     .      nsd, dvol, volume, Vscf, Vaux, Fal, stressl, ifa.ne.0,
      .      istr.ne.0 )
         endif
 
@@ -899,7 +882,7 @@ C Transform spin density into sum and difference
 
 C Find contribution of neutral-atom potential
         call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
-     .                          volume, DRho, fal, stressl, 
+     .                          volume, DRho, Fal, stressl, 
      .                          ifa.ne.0, istr.ne.0 )
 
 C Vaux is (minus) the potential which multiplies rhoatm
@@ -907,15 +890,10 @@ C Vaux is (minus) the potential which multiplies rhoatm
 *         Vaux(1:ntpl) = 0.5d0 * Vaux(1:ntpl)
 *       endif
 
-*       call dfscf( norb, nuo, nuotot, ifa, istr, nmpl, maxnd,
-*    .              numd, listdptr, listd, Dscf, datm, dvol, volume, 
-*    .              Vscf, Vaux, DFascf, DFaatm, iaorb, indxua, iphorb, 
-*    .              isa, nspin, fal, stressl )
-
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
      .              indxua, isa, iaorb, iphorb,
      .              maxnd, numd, listdptr, listd, Dscf, datm,
-     .              Vscf, Vaux, dvol, volume, fal, stressl )
+     .              Vscf, Vaux, dvol, volume, Fal, stressl )
 
 C Stop time counter for force calculation part
         call timer( 'DHSCF4', 2 )

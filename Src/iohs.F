@@ -54,7 +54,7 @@ C
 
 c Internal variables and arrays
       character  sname*30, fname*33
-      integer    im, is, iu, j, ju, k, mnh, ns
+      integer    im, is, iu, ju, k, mnh, ns
       integer    ih,hl,nuo,maxnhtot,maxhg
       integer, dimension(:), allocatable :: numhg
 #ifdef MPI

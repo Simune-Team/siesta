@@ -25,7 +25,7 @@ C REAL*8  R2IJ(NNA)  : Squared distances to neighbours
 C *********** UNITS **************************************************
 C Units of CELL, RANGE and XA are arbitrary but must be equal
 C *********** SUBROUTINES USED ***************************************
-C CHKDIM, DISMIN, DOT, RECLAT
+C CHKDIM, DISMIN, RECLAT
 C *********** BEHAVIOUR **********************************************
 C CPU time and memory scale linearly with the number of atoms, for
 C   sufficiently large numbers.

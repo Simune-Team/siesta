@@ -1,9 +1,9 @@
       subroutine diagon(no, nspin, maxspn, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, 
-     .                  listdptr, listd, H, S,
-     .                  qtot, fixspin, qs, temp, e1, e2,
-     .                  gamma, xij, indxuo, nk, kpoint, wk,
-     .                  eo, qo, Dnew, Enew, ef, efs, Entropy, nuotot)
+     .                  listdptr, listd, H, S, qtot, fixspin, 
+     .                  qs, temp, e1, e2, gamma, xij, indxuo, nk, 
+     .                  kpoint, wk, eo, qo, Dnew, Enew, ef, efs, 
+     .                  Entropy, nuotot, occtol, iscf, neigwanted )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -54,6 +54,9 @@ C real*8  kpoint(3,nk)        : k point vectors
 C real*8  wk(nk)              : k point weights (must sum one)
 C integer nuotot              : total number of orbitals in unit cell 
 C                               over all processors
+C real*8  occtol              : Occupancy threshold for DM build
+C integer iscf                : SCF cycle number
+C integer neigwanted          : Number of eigenvalues wanted
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,maxspn,nk)   : Eigenvalues
 C real*8 qo(maxo,maxspn,nk)   : Occupations of eigenstates
@@ -93,20 +96,26 @@ C
       implicit none
 
       integer
-     .  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin, nuotot
+     .  iscf, maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin, nuotot,
+     .  neigwanted
 
       integer 
      .  indxuo(no), listh(maxnh), numh(*), listd(maxnd), numd(*),
      .  listhptr(*), listdptr(*)
 
       real(dp)
-     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), Entropy,
-     .  eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
-     .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), 
-     .  xij(3,maxnh), qs(nspin), efs(nspin), qspiral(3)
+     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
+     .  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
+     .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), occtol,
+     .  xij(3,maxnh), qs(nspin), efs(nspin)
      
+      real(dp), save :: qspiral(3)
+
       logical
-     .  fixspin, gamma, spiral
+     .  fixspin, gamma, getD, getPSI
+
+      logical, save :: spiral 
+      logical, save :: frstme = .true.
 
       external
      .  diagg, diagk, diag2g, diag2k, io_assign, io_close, memory,
@@ -119,11 +128,8 @@ C
      .  diagkp
 #endif
 
-      logical
-     .  getD, getPSI
-
       integer
-     .  io, iuo, iu, naux, nhs, npsi, nuo
+     .  io, iuo, naux, nhs, npsi, nuo
 
 C Dynamic arrays
       real(dp), dimension(:), allocatable, save :: aux
@@ -131,38 +137,40 @@ C Dynamic arrays
 
 #ifdef MPI
       logical, save :: ParallelOverK
-      logical, save :: frstme = .true.
 #endif
 C  ....................
+
+C First call initialisation
+      if (frstme) then
+#ifdef MPI
+        if (Node.eq.0) then
+          ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
+        endif
+        call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,
+     .    MPIerror)
+#endif
+
+C Read spin-spiral wavevector (if defined)
+        call readsp( qspiral, spiral )
+        if (spiral.and.Node.eq.0) then
+          if (gamma) write(6,*) 
+     .      'diagon: WARNING: spin-spiral requires k sampling'
+          if (nspin.ne.4) write(6,*)
+     .      'diagon: WARNING: spin-spiral requires nspin=4'
+        endif
+
+        frstme = .false.
+      endif
 
 C Get Node number and calculate local orbital range
 #ifdef MPI
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
-      if (frstme) then
-        if (Node.eq.0) then
-          ParallelOverK = fdf_boolean( 'ParallelOverK', .false. )
-        endif
-        call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,
-     .    MPIerror)
-        frstme = .false.
-      endif
 #else
       nuo = nuotot
 #endif
 
 C Start time counter ................................................
       call timer( 'diagon', 1 )
-C ......................
-
-C Read spin-spiral wavevector (if defined)..........................
-      call readsp( qspiral, spiral )
-      if (spiral.and.Node.eq.0) then
-        if (gamma) write(6,*) 
-     .    'diagon: WARNING: spin-spiral requires k sampling'
-        if (nspin.ne.4) write(6,*)
-     .    'diagon: WARNING: spin-spiral requires nspin=4'
-      endif
-C ......................
 
 C Check internal dimensions ..........................................
       if (nspin.le.2 .and. gamma) then
@@ -241,7 +249,8 @@ C Call apropriate routine
      .              numh, listhptr, listh, numd, listdptr, listd, 
      .              H, S, getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .              Haux, Saux, psi, aux, nuotot )
+     .              Haux, Saux, psi, aux, nuotot, occtol, iscf,
+     .              neigwanted )
       elseif (nspin.le.2 .and. .not.gamma) then
 #ifdef MPI
         if (ParallelOverK) then
@@ -251,7 +260,7 @@ C Call apropriate routine
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
-     .              nuotot )
+     .              nuotot, occtol, iscf )
         else
 #endif
           call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
@@ -260,31 +269,31 @@ C Call apropriate routine
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
-     .              nuotot )
+     .              nuotot, occtol, iscf )
 #ifdef MPI
         endif
 #endif
       elseif (nspin.eq.4 .and. gamma) then
-        call diag2g( nuo, no, maxuo, maxnh, maxnd, maxo,
-     .               numh, listhptr, listh, numd, listdptr,
-     .               listd, H, S, getD, qtot, temp, e1, e2,
-     .               eo, qo, Dnew, Enew, ef, Entropy,
-     .               Haux, Saux, psi, aux, nuotot )
+        call diag2g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
+     .               listhptr, listh, numd, listdptr, listd,
+     .               H, S, getD, qtot, temp, e1, e2, eo, qo, 
+     .               Dnew, Enew, ef, Entropy, Haux, Saux, psi,
+     .               aux, nuotot, occtol, iscf, neigwanted )
       elseif (nspin.eq.4 .and. spiral) then
         call diagsprl( nuo, no, maxuo, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
-     .               xij, indxuo, nk, kpoint, wk,
-     .               eo, qo, Dnew, Enew, ef, Entropy, qspiral,
-     .               Haux, Saux, psi, Haux, Saux, aux, nuotot )
+     .               xij, indxuo, nk, kpoint, wk, eo, qo,
+     .               Dnew, Enew, ef, Entropy, qspiral, Haux,
+     .               Saux, psi, Haux, Saux, aux, nuotot, occtol,
+     .               iscf )
       elseif (nspin.eq.4 .and. .not.gamma) then
-        call diag2k( nuo, no, maxuo, maxnh, maxnd, maxo,
-     .               numh, listhptr, listh, numd, listdptr,
-     .               listd, H, S, getD, qtot, temp, e1, e2,
-     .               xij, indxuo, nk, kpoint, wk,
-     .               eo, qo, Dnew, Enew, ef, Entropy,
-     .               Haux, Saux, psi, Haux, Saux, aux, 
-     .               nuotot )
+        call diag2k( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
+     .               listhptr, listh, numd, listdptr, listd,
+     .               H, S, getD, qtot, temp, e1, e2, xij,
+     .               indxuo, nk, kpoint, wk, eo, qo, Dnew,
+     .               Enew, ef, Entropy, Haux, Saux, psi, Haux, 
+     .               Saux, aux, nuotot, occtol, iscf )
       endif
 
 C Free local arrays

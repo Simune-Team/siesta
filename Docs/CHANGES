@@ -1,6 +1,278 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.24
+Date: 2004/11/28 12:00 GMT
+Title: Zero work on nodes fixes
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+A few changes have been made to handle the case where a spatial
+decomposition is used but there are no orbitals assigned to a
+given node. 
+
+Files:
+denmat.F     Trap for nbasisloc = 0 in referencing arrays
+dfscf.f      Local parallel variables set based on number of nodes
+ordern.F     Trap for nbasisloc = 0 in referencing arrays
+rhoofd.f     Local parallel variables set based on number of nodes
+vmat.f       Local parallel variables set based on number of nodes
+version.F90, CHANGES
+=======================================================================
+Version: 1.4.23
+Date: 2004/11/24 12:00 GMT
+Title: Increased maxclustersize in diagonalisation
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The default value of maxclustersize in rdiag/cdiag has been increased
+from 0 to 12. In the case of degenerate eigenvalue clusters, this will
+save one call to the diag routines if the number is less than 12.
+
+Files:
+
+cdiag.F      maxclustersize initialised to 12
+rdiag.F      maxclustersize initialised to 12
+version.F90, CHANGES
+=======================================================================
+Version: 1.4.22
+Date: 2004/11/23 1:00 GMT
+Title: Fix to setting of neigwanted for spin polarisation
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+Small fix to siesta.F in the setting of neigwanted. Previous
+version failed for spin polarisation because qtot needed to
+be replaced by qs(is) in the calculation of neigmin. Check
+against neigmin moved to last for safety too.
+
+Files:
+
+siesta.F      Setting of neigmin corrected for nspin>1
+version.F90, CHANGES
+=======================================================================
+Version: 1.4.21
+Date: 2004/11/22 8:40 GMT
+Title: New spin polarised order N and diagonalisation routines
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+Three major changes and lots of small ones. The key changes are:
+
+(A) Matrix diagonalisation:
+
+Matrix diagonalisation routines have been rewritten to give greater 
+control over diagonalisation algorithms. Changes include:
+
+(1) Option to use expert or simple interface
+(2) Option to use "all in one" call of diagonaliser or components
+(3) Parallel divide and conquer added
+(4) Option for pre- and post- rotation of standard eigensolutions added
+(5) SIESTA specific lapack calls added to reduce memory usage in
+    divide and conquer algorithms
+(6) Work space sizes now set to value that is likely to give the
+    best performance rather than the minimum
+(7) Names of control options now pre-fixed with "Diag."
+(8) Facility for changing algorithm as a function of no. of SCF
+    cycle included
+(9) A 2-D decomposition is now the default for scalapack since this
+    is found to give radically improved scaling in the parallel
+    performance.
+
+(B) Order N:
+
+Parallel code has been rewritten based on 0.15 version, with a spatial
+decomposition strategy. This is based on an approach that minimises
+communication at the expense of memory by only passing between two
+nodes once per array during the key order N routines. The routines
+are designed to be efficient for large problems - i.e. when the size
+of the interaction range is small compared to region size stored on
+each node.
+
+(C) Spin-polarised order N:
+
+Separate Fermi lelvels can now be set for alpha and beta spin so as
+to perform spin polarised order N. Look forward to double the
+convergence problems though!
+
+Files:
+
+Docs/
+
+siesta.tex         Modified to reflect the option changes for the 
+                   new version.
+
+Src/
+
+alloc.F90          Unused variables removed
+                   REPORT_LEVEL now broadcast to all nodes
+                   Output now enable for level 4 case in parallel
+atmfuncs.f         lmxkbfis accessed from module
+atmparams.f        Default value of nsmx now = 2, rather than 1.
+atomlist.f         Size of variable in write statement increased
+atomlwf.F          New order N version with spin polarisation
+bands.F            Reference to dot removed
+                   occtol pased through to diag routines
+                   Unused variables removed
+cart2frac.f        Routine added to convert Cartesian to fractional coordinates
+                   for use in spatial decomposition.
+cdiag.F            Blacs communicators now only setup once
+                   Rewritten to allow access to full (sca)lapack functionality
+                   Parallel divide and conquer added
+                   2-D decomposition added
+cellxc.F           Double precision -> real(dp)
+                   Unused variables removed
+chkgmx.f           Function dot replaced by blas routine ddot
+cgwf.F             New order N version with spin polarisation
+chempot.F          Double precision -> real(dp) + module use onlys added
+                   Order of dense matrix initialise loop swaped for efficiency
+                   Timing calls placed in chempot rather than calling routine
+chkgmx.f           Function dot replaced by blas routine ddot
+conjgr.f           Function dot replaced by blas routine ddot
+denmat.F           New order N version with spin polarisation
+detover.F          Unused variables removed
+dfscf.f            Double precision -> real(dp)
+                   Small modifications of some operations to try to achieve
+                   better performance.
+dhscf.F            Function dot replaced by blas routine ddot
+                   Modifications made for spatial decomposition when nuo = 0
+                   Double precision -> real(dp)
+                   Call to readsp moved to frstme section and results saved
+                   Calls to mesh subroutines - arguments changed
+diagg.F            Handling of small occupancies in DM build revised
+diagk.F            Handling of small occupancies in DM build revised
+                   Calculation of eigenvectors now restricted to the minimum needed
+diagkp.F           Handling of small occupancies in DM build revised
+                   Calculation of eigenvectors now restricted to the minimum needed
+diag2g.F           Handling of small occupancies in DM build revised
+diag2k.F           Handling of small occupancies in DM build revised
+                   Calculation of eigenvectors now restricted to the minimum needed
+diagg.F            Handling of small occupancies in DM build revised
+diagsprl.F         Handling of small occupancies in DM build revised
+                   Calculation of eigenvectors now restricted to the minimum needed
+                   Note that it appeared that twice as many eigenvectors as possible
+                   were being calculated.
+                   calculated previous
+diagon.F           New parameters passed through - iscf & occtol
+                   Call to readsp moved to frstme section and results saved
+diagpol.f          Call to cdiag modified
+                   Memory handling modified
+                   Local array aux removed
+dsyevds.f          Setting of LOPT modified on return from dsytrd
+efield.F           Function dot replaced by blas routine ddot
+egandd.F           New order N version with spin polarisation
+eggbox.F           Unused variables removed
+ener3.F            New order N version with spin polarisation
+ener3lomem.F       Lower memory version of ener3
+extrapol.F         Trapped added for parallel case where nuo is zero
+extrapolon.F       New order N version with spin polarisation
+fermid.F           Unused variables removed
+fft3d.F            MPI sub groups only created on first call 
+fixed.F            Function dot replaced by blas routine ddot
+globalise.F        Routine for communication in order N added
+gradient.F         New order N version with spin polarisation
+grdsam.F           Fa / stress removed and order of dealloc improved
+hsparse.f          Calculation of numh & listh separated
+initdm.F           Trap added for parallel case where nuo is zero
+initparallel.F     Routine added to initialise parallel parameters
+iodm.F             Variable declaration made more f90 like
+iohs.F             Unused variables removed
+iolwf.F            New order N version. Only new format files supported
+iorho.F            Variable declarations moved to ifdef MPI block
+                   Unused variables removed
+kgrid.F            Error message for non-normalised weights replaced by
+                   correction of weights.
+ksv.f              Function dot replaced by blas routine ddot
+ksvinit.f          Unused variables removed
+linpack.F          Unused variables removed
+Makefile           New routines added
+matel.f            Double precision -> real(dp)
+                   Unused variables removed
+                   Upper bounds for arrays specified on call to ylmexp to
+                   avoid out of bounds error messages when debugging. 
+memoryinfo.F       DiagScale & TryMemoryIncrease removed
+meshmatrix.F       Variable declarations moved to ifdef MPI block
+meshsubs.F         Function dot replaced by blas routine ddot
+                   Unused variables removed
+minvec.f           Function dot replaced by blas routine ddot
+                   Unused variables removed
+mneighb.f          Module version of neighb added for order N
+m_denchar_neighb.f Function dot replaced by blas routine ddot
+mulliken.F         Minor tidy
+onmod.F            New order N version with spin polarisation
+on_subs.F          New order N version with spin polarisation
+ordern.F           New order N version with spin polarisation
+outcell.f          Double precision -> real(dp)
+outcoor.f          Double precision -> real(dp)
+overfsm.f          Double precision -> real(dp)
+parallel.f         Default blocksize set to 24
+parallelsubs.f     Support for spatial decomposition added
+pdos.F             Unused variables removed, including array aux
+pdosg.F            Call to rdiag modified
+                   Unused variables removed
+                   Memory handling for diagonalisation changed
+pdosk.F            Call to cdiag modified
+                   Unused variables removed
+                   Memory handling for diagonalisation changed
+phirphi_opt.f      Reference to dot removed
+phonon.F           Double precision -> real(dp)
+plcharge.F         Declaration of maxnhg moved to MPI block
+poison.F           Style changed (partly) to resemble rest of code
+propor.f           Convert to lower case style
+pulayx.F           Indenting standardised
+radfft.f           Unused variables removed
+                   Double precision -> real(dp)
+                   Order of memory allocation/deallocation optimised
+ranger.f           Double precision -> real(dp)
+                   Function dot replaced by blas routine ddot
+rdiag.F            2-D decomposition added
+                   Blacs communicators now only setup once
+                   Rewritten to allow access to full (sca)lapack functionality
+                   Parallel divide and conquer added
+readsp.F           Duplicate definition of 'use parallel' removed
+redata.F           Separate eta values for alpha & beta spin added
+                   Occupancy tolerance made an input parameter
+                   DiagScale & TryMemoryIncrease removed
+                   DiagMemory option -> Diag.Memory for consistency
+                   with new options in cdiag.F / rdiag.F
+redcel.F           Double precision -> real(dp)
+reoptical.F        Unused variables removed
+rhoofd.f           Modifications made for spatial decomposition when nuo = 0
+rhoofdsp.f         Unused variables removed
+parallelsubs.f     Spatial decomposition included
+propor.f           Numbered do loops removed
+setatomnodes.F     Routine added to assign atoms to Nodes
+setspatial.f       Spatial decomposition included
+shaper.f           Double precision -> real(dp)
+sig.f              Double precision -> real(dp)
+                   Unused variables removed
+siesta.F           New parameters passed to diagon / bands
+                   Unused variables removed
+                   Trap on error message for order N / PDOS combination added
+                   so that it is only output if do_pdos is actually true.
+                   Variable neigwanted added to restrict eigenstate computation
+                   for gamma point case.
+spatial.F          Spatial decomposition included
+spher_harm.f       Function dot replaced by blas routine ddot
+                   Referencing of passed arrays in YLMYLM shifted by 1 (Y &
+                   DYDR now start at 0)
+siesta.F           Call to ordern changed & eta now eta(2)
+                   Pressure now output for variable cell optimisation
+sys.F              Unused variables removed
+transition_rate.F  Unused variables removed
+typecell.f         Double precision -> real(dp)
+uncell.f           Routine added for conversion of vectors to cell parameters
+vmat.f             Trap for nuo = 0 added in parallel
+                   Double precision -> real(dp)
+vmatsp.f           Unused variables removed
+vmb.F              Double precision -> real(dp)
+writewave.F        Reference to dot removed
+                   Calls to diag routines modified
+                   Unused variables removed
+xc.f               Double precision -> real(dp)
+                   Unused variables removed
+zheevds.f          Lower memory version of lapack routine zheevd
+
+Src/Libs/
+
+lapack.f           Routines required for new rdiag/cdiag added
+=======================================================================
 Version: 1.4.20
 Date: 2004/11/19 8:40 GMT
 Title: Fixed import of symbols from basis_types and basis_specs modules

@@ -1,7 +1,4 @@
-c $Id: typecell.f,v 1.1 1999/03/11 19:28:01 ordejon Exp $
-
       subroutine typecell(cell,ctype,lv) 
-
 c *******************************************************************
 c Finds out if cell is cubic, fcc or bcc
 c
@@ -14,15 +11,18 @@ c character        ctype:   : Type of cell (sc, fcc, bcc or none)
 c double precision lv       : Lattice vector
 c *******************************************************************
 
-      implicit          none
-      double precision  cell(3,3), lv
+      use precision, only : dp
 
-      character         ctype*4
+      implicit none
+
+      real(dp)         :: cell(3,3), lv
+
+      character(len=4) :: ctype
 
 c Internal variables and arrays
 
-      integer           iv, ix
-      double precision  cellm(3), celang(3), tol, pi
+      integer          :: iv, ix
+      real(dp)         :: cellm(3), celang(3), tol, pi
 
       parameter (tol=1.d-4)
 
@@ -90,6 +90,5 @@ C Check if angles are 109.47122 deg, in which case the cell is bcc
         return
       endif
       
-
       return
       end

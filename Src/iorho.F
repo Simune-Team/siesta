@@ -64,10 +64,10 @@ C Internal variables and arrays
       integer    i, ip, iu, is, j, np, ns, 
      .           npmax, BlockSizeY, BlockSizeZ, ProcessorZ,
      .           meshnsm(3), npl, NRemY, NRemZ,
-     .           iy, iz, izm, Ind, Ind2, ir
+     .           iy, iz, izm, Ind, ir
 
 #ifdef MPI
-      integer    MPIerror, Request, meshl(3),
+      integer    Ind2, MPIerror, Request, meshl(3),
      .           Status(MPI_Status_Size), BNode, NBlock
       logical    ltmp
       real, dimension(:), allocatable, save :: bdens

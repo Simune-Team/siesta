@@ -253,9 +253,9 @@ C Compute and print Mulliken Orbital and Atomic Populations ..........
               if(is .eq. 2) write(6,'(/,a)') 'mulliken: Spin DOWN '
             endif
             qtot = 0.0d0
-            do ispec =1, ns  
+            do ispec = 1,ns  
 
-             atm_label=labelfis(ispec)
+             atm_label = labelfis(ispec)
              if (Node.eq.0) then
                write(6,'(/2a)')'Species: ', atm_label 
                write(6,'(a4,a7,a6)') 'Atom', 'Qatom', 'Qorb'

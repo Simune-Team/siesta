@@ -55,8 +55,8 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use parallelsubs
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GlobalToLocalOrb
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -71,7 +71,7 @@ C
      .  lasto(0:natoms), listh(maxnh), numh(nbasisloc), 
      .  listhptr(nbasisloc)
 
-      double precision
+      real(dp)
      .  beta, cell(3,3), chpot, emin, emax, enum, 
      .  h(maxnh), rcoor, s(maxnh), xa(3,natoms)
 C    .  homo, lumo, gap
@@ -93,7 +93,7 @@ C nvmax = maximum number of non-zero elements within a sparse vector v
 C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       parameter(ipmax = 200)
 
-      double precision 
+      real(dp)
      .  mu1,mu2
       parameter(mu1=-1.2d0,mu2=1.2d0)
 
@@ -104,7 +104,7 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       integer, dimension(:), allocatable, save ::
      .  listvt, numhp, indexloc, jan, ibuffer, listv
 
-      double precision
+      real(dp)
      .  betap, chpotsh, deltae, emean,
      .  numb, rmax, rrmod, ri(3), tol,
      .  zbrent
@@ -113,16 +113,16 @@ C    .  delta, eref2, eref1, eig2, eig1
       integer, dimension(:,:), allocatable, save ::
      .  listhp, listhpp
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  paux, vec
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  hbar, Hdense, Sdense
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      . r2ij, dpbuffer1
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      . xij, v, dpbuffer2
 
 C ...
@@ -135,6 +135,9 @@ C ...
       data nnmax / 1000 /
       data nvmax / 1000 /
 C ...
+
+C Start timer
+      call timer( 'chempot', 1 )
 
 C Assign information for Chebyshev expansion .................
 C Total charge
@@ -203,20 +206,20 @@ C cutoff radii, this must be done carefully, since the list of
 C neighbors is not the same for all orbitals.
 
 
-c  Loop over atoms.............
-      do ia=1,natoms
+C  Loop over atoms.............
+      do ia = 1,natoms
 
 C   form S and S-1 matrices in reduced space...
 
 C   first determine which is the longer range orbital of atom ia
 C   (which will determine the reduce space) -
-        num=0
-        mu=0
-        do i=lasto(ia-1)+1, lasto(ia)
+        num = 0
+        mu = 0
+        do i = lasto(ia-1)+1,lasto(ia)
           call GlobalToLocalOrb(i,Node,Nodes,ii)
           if (numh(ii) .gt. num) then
-            mu=ii
-            num=numh(ii)
+            mu = ii
+            num = numh(ii)
           endif
         enddo
         if (mu .eq. 0) then
@@ -225,35 +228,33 @@ C   (which will determine the reduce space) -
           endif
           stop
         endif
-        nu=numh(mu) 
-C -
+        nu = numh(mu) 
 
 C Initialize overlap and interaction in reduced space -
-        do i=1,nu
-          do j=1,nu
-            Sdense(i,j)=0.0d0
-            Hdense(i,j)=0.0d0
+        do i = 1,nu
+          do j = 1,nu
+            Sdense(j,i) = 0.0d0
+            Hdense(j,i) = 0.0d0
           enddo
         enddo
-C -
 
 C Construct S and H in reduced space  -
 C  loop over orbitals ii in reduced space
-        do i=1,nu
+        do i = 1,nu
           ii = listh(listhptr(mu)+i)
           call GlobalToLocalOrb(ii,Node,Nodes,iil)
           if (iil.gt.0) then
 C  loop over orbitals jj in reduced space
-            do j=i,nu
+            do j = i,nu
               jj = listh(listhptr(mu)+j)
 C  see if orbitals ii and jj interact
               do k = 1,numh(iil)
-                ind = listhptr(iil)+k
+                ind = listhptr(iil) + k
                 if (listh(ind) .eq. jj) then
-                  Sdense(i,j)=s(ind)
-                  Sdense(j,i)=Sdense(i,j)
-                  Hdense(i,j)=h(ind)
-                  Hdense(j,i)=Hdense(i,j)
+                  Sdense(i,j) = s(ind)
+                  Sdense(j,i) = Sdense(i,j)
+                  Hdense(i,j) = h(ind)
+                  Hdense(j,i) = Hdense(i,j)
                 endif
               enddo
             enddo
@@ -264,7 +265,7 @@ C  see if orbitals ii and jj interact
 C  Globalise Hdense and Sdense for now
         allocate(dpbuffer1(nu))
         call memory('A','D',nu,'chempot')
-        do i=1,nu
+        do i = 1,nu
 #ifdef NODAT
           call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
@@ -272,7 +273,7 @@ C  Globalise Hdense and Sdense for now
           call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
 #endif
-          do j=1,nu
+          do j = 1,nu
             Sdense(j,i) = dpbuffer1(j)
           enddo
 #ifdef NODAT
@@ -282,7 +283,7 @@ C  Globalise Hdense and Sdense for now
           call MPI_AllReduce(Hdense(1:,i),dpbuffer1,nu,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
 #endif
-          do j=1,nu
+          do j = 1,nu
             Hdense(j,i) = dpbuffer1(j)
           enddo
         enddo
@@ -292,17 +293,14 @@ C  Globalise Hdense and Sdense for now
 
 C  Cholesky factorization:
         call choldc(Sdense,nu,nhmax,paux)
-C ...
 
-C loop over orbitals of atom ia ....
-C 
-        do i=1,nu
-          ii=listh(listhptr(mu)+i)
-C  check if ii is in atom ia
+C Loop over orbitals of atom ia ....
+        do i = 1,nu
+          ii = listh(listhptr(mu)+i)
+C  Check if ii is in atom ia
           if (ii .ge. (lasto(ia-1)+1) .and. ii .le. lasto(ia)) then
-
-            do j=1,nu
-              vec(j) = Hdense(i,j)
+            do j = 1,nu
+              vec(j) = Hdense(j,i)
             enddo
             call cholsl(Sdense,nu,nhmax,paux,vec,vec)
 
@@ -312,18 +310,16 @@ C  now H' must be formed in sparse format -
 c  global indes of orbital i of reduced space
             ii = listh(listhptr(mu)+i)
             call GlobalToLocalOrb(ii,Node,Nodes,iil)
-            do j=1,nu
+            do j = 1,nu
 c  global indes of orbital j of reduced space
               jj = listh(listhptr(mu)+j)
               do k = 1, numh(iil)
-                if (listh(listhptr(iil)+k) .eq. jj) hbar(k,ii)=vec(j)
+                if (listh(listhptr(iil)+k) .eq. jj) hbar(k,ii) = vec(j)
               enddo
             enddo
 
           endif
-C -
         enddo
-C ...
 
       enddo
 C ............
@@ -335,8 +331,8 @@ C *** Compute smallest and largest eigenvalues (Lanczos Method) ***
       call lanc1(1,hbar,nhmax,numh,listhptr,listh,maxnh,nbasis,
      .  emax,Node)
 
-      emean=0.5d0*(emax+emin)
-      deltae=0.55d0*(emax-emin)
+      emean = 0.5d0*(emax+emin)
+      deltae = 0.55d0*(emax-emin)
 
 C *** Calculate Chemical Potential using the Projection Method of
 C              Goedecker (PRB 51,9455 (95)). ***
@@ -348,17 +344,15 @@ C electrons.
 
 C  First scale and shift the hamiltonian ...
 
-      do j=1,nbasis
-        do i=1,numh(j)
+      do j = 1,nbasis
+        do i = 1,numh(j)
           if (listh(listhptr(j)+i).eq.j) then
-            hbar(i,j)=(hbar(i,j)-emean)/deltae
+            hbar(i,j) = (hbar(i,j)-emean)/deltae
           else
-            hbar(i,j)=hbar(i,j)/deltae
+            hbar(i,j) = hbar(i,j)/deltae
           endif
         enddo
       enddo     
-
-C ...
 
 C Calculate maximum length in unit cell ...
       rmax = 0.0d0
@@ -373,9 +367,8 @@ C Calculate maximum length in unit cell ...
           enddo
         enddo
       enddo
-C ...
 
-C initialize routine for neighbour search
+C Initialize routine for neighbour search
       if (2.*rcoor .lt. rmax) then
         nna = nnmax
         call neighb(cell,rcoor,natoms,xa,0,0,nna,jan,xij,r2ij)
@@ -431,7 +424,7 @@ C initialize control vectors to zero
 C Loop over atoms ...............
       do ia = 1,natoms
 
-        if (2.*rcoor .lt. rmax) then
+        if (2.0*rcoor .lt. rmax) then
 C  look for neighbors of atom ia
           nna = nnmax
           call neighb(cell,rcoor,natoms,xa,ia,0,nna,jan,xij,r2ij)
@@ -486,29 +479,26 @@ C
           enddo
         endif
 
-C build structure of sparse vector v ...
+C Build structure of sparse vector v ...
 
-c clear list ot atoms considered within loc. range ...
+C Clear list ot atoms considered within loc. range ...
         indexloc(1:nna) = 0
         numloc = 0
-c ...
 
-        numv=0
+        numv = 0
         do 30 j = 1,nna
           ja = jan(j)
 
-c check if ja has already been included in current vector ...
+C Check if ja has already been included in current vector ...
           do jj = 1,numloc
             if (ja .eq. indexloc(jj)) goto 30
           enddo
-          numloc = numloc+1
-          indexloc(numloc)=ja
-c ...
-
+          numloc = numloc + 1
+          indexloc(numloc) = ja
 
           do jorb = 1,lasto(ja) - lasto(ja-1)
             nu = jorb + lasto(ja-1)
-            numv=numv+1
+            numv = numv + 1
             if (numv .gt. nvmax) then
               nvmaxnew = numv + nint(0.1*numv)
 C
@@ -548,59 +538,56 @@ c loop over orbitals of atom ia ...
         do iorb = 1,norb
           mu = iorb + lasto(ia-1)
 
-          v(1:numv,1:2)=0.0d0
+          v(1:numv,1:2) = 0.0d0
 
           imu = listvt(mu)
 
-          v(imu,1)=1.0d0
-          rr(mu,0)=v(imu,1)
+          v(imu,1) = 1.0d0
+          rr(mu,0) = v(imu,1)
 
-          do j=1,numv
+          do j = 1,numv
             ji = listv(j)
-            numhp(ji)=0
-            do i=1,numh(ji)
-              m=listh(listhptr(ji)+i)
+            numhp(ji) = 0
+            do i = 1,numh(ji)
+              m = listh(listhptr(ji)+i)
               jj = listvt(m)
               if (jj .ne. 0) then
-                numhp(ji)=numhp(ji)+1
-                listhp(numhp(ji),ji)=jj
-                listhpp(numhp(ji),ji)=i
-                v(j,2)=v(j,2)+hbar(i,ji)*v(jj,1)
+                numhp(ji) = numhp(ji) + 1
+                listhp(numhp(ji),ji) = jj
+                listhpp(numhp(ji),ji) = i
+                v(j,2) = v(j,2) + hbar(i,ji)*v(jj,1)
               endif
             enddo
           enddo
 
-          rr(mu,1)=v(imu,2)
+          rr(mu,1) = v(imu,2)
 
-          do 40 k=2,p-1
+          do 40 k = 2,p-1
 
-            do j=1,numv
-              v(j,3)=-v(j,1)
+            do j = 1,numv
+              v(j,3) = - v(j,1)
               ji = listv(j)
-              do i=1,numhp(ji)
-                jj=listhp(i,ji)
-                ii=listhpp(i,ji)
-                v(j,3)=v(j,3)+2.*hbar(ii,ji)*v(jj,2)
+              do i = 1,numhp(ji)
+                jj = listhp(i,ji)
+                ii = listhpp(i,ji)
+                v(j,3) = v(j,3) + 2.0*hbar(ii,ji)*v(jj,2)
               enddo
             enddo
 
+            rr(mu,k) = v(imu,3)
 
-            rr(mu,k)=v(imu,3)
-
-            j=0
-            do i=1,numv
-              v(i,1)=v(i,2)
-              v(i,2)=v(i,3)
+            j = 0
+            do i = 1,numv
+              v(i,1) = v(i,2)
+              v(i,2) = v(i,3)
             enddo
 
  40       continue  
 
-
         enddo
-c ...
 
-c reset control vectors to cero
-        do i=1,numv
+C Reset control vectors to cero
+        do i = 1,numv
           imu = listv(i)
           listvt(imu) = 0
         enddo
@@ -608,7 +595,7 @@ c reset control vectors to cero
       enddo
 C ............
 
-      tol=0.0001d0
+      tol = 0.0001d0
 C Calculate chemical potential as the root of Nel - Tr(rho) = 0 ...
 
 C Inverse temperature (in units of energy scaled so that the spectrum
@@ -667,6 +654,9 @@ C Deallocate local arrays
       deallocate(v)
 
 C  CALCULATION OF THE GAP DISABLED; IT DOES NOT WORK PROPERLY
+
+C Stop timer
+      call timer( 'chempot', 2 )
 
       return
 
@@ -760,7 +750,6 @@ C      return
       end        
 
 
-
       function numb(mu)
 C **********************************************************************
 C This function calculates the difference between the true number of
@@ -770,10 +759,11 @@ C
 C Written by Maider Machado and P.Ordejon, June'98
 C **********************************************************************
       use numbvect
+      use precision, only : dp
 
       implicit none
 
-      double precision mu,Ne,numb
+      real(dp) mu,Ne,numb
       integer k,n
 
       call chebfd(p,mu,c) 
@@ -1031,6 +1021,8 @@ C ******************************* OUTPUT *******************************
 C real*8 ener                     : Eigenvalue
 C **********************************************************************
 
+      use precision, only : dp
+
       implicit none
 
       integer
@@ -1039,7 +1031,7 @@ C **********************************************************************
       integer 
      .  listh(maxnh), numh(nbasis), listhptr(nbasis)
 
-      double precision
+      real(dp)
      .  ener, hbar(nhmax,nbasis)
 
 C  Internal variables ...
@@ -1055,11 +1047,11 @@ C  Internal variables ...
       integer
      .  i, ii, j, k
 
-      double precision
+      real(dp)
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr(2)
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  hv0, u0, v0
 
       external
@@ -1274,6 +1266,8 @@ C ******************************* OUTPUT *******************************
 C real*8 ener                     : Eigenvalue of H
 C **********************************************************************
 
+      use precision, only : dp
+
       implicit none
 
       integer
@@ -1282,7 +1276,7 @@ C **********************************************************************
       integer 
      .  listh(maxnh), numh(nbasis), listhptr(nbasis)
 
-      double precision
+      real(dp)
      .  ener, hbar(nhmax,nbasis)
 
 C  Internal variables ...
@@ -1298,11 +1292,11 @@ C  Internal variables ...
       integer
      .  i, ii, ij, j, k
 
-      double precision
+      real(dp)
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  hv0, u0, v0, v00
 
       external

@@ -13,6 +13,8 @@ C
 C
 C Stores quantities that are connected with the mesh
 C
+      use precision, only : dp
+
       implicit none
 
 C ----------------------------------------------------------------------
@@ -51,18 +53,18 @@ C ----------------------------------------------------------------------
       integer, dimension(:), allocatable, save :: indexp
       integer, dimension(:), allocatable, save :: ipa
 
-      real*8,  dimension(:,:), allocatable, save :: dxa
-      real*8,  dimension(:,:), allocatable, save :: xdop
+      real(dp),  dimension(:,:), allocatable, save :: dxa
+      real(dp),  dimension(:,:), allocatable, save :: xdop
 
-      integer, save :: mop
-      integer, dimension(3), save :: ne
-      integer, dimension(3), save :: nem
-      integer, dimension(3), save :: nmsc
-      integer, dimension(3), save :: nmeshg
+      integer,  save :: mop
+      integer,  dimension(3), save :: ne
+      integer,  dimension(3), save :: nem
+      integer,  dimension(3), save :: nmsc
+      integer,  dimension(3), save :: nmeshg
 
-      real*8,  dimension(3,3),   save :: cmesh
-      real*8,  dimension(3,3),   save :: rcmesh
-      real*8,  dimension(3,nsp), save :: xdsp
+      real(dp),  dimension(3,3),   save :: cmesh
+      real(dp),  dimension(3,3),   save :: rcmesh
+      real(dp),  dimension(3,nsp), save :: xdsp
 
       end module mesh
 
@@ -95,7 +97,7 @@ C ----------------------------------------------------------------------
 
       end module meshphi
 
-      subroutine InitMesh( na, xa, cell, norb, iaorb, iphorb, isa,
+      subroutine InitMesh( na, cell, norb, iaorb, iphorb, isa,
      .                     rmax, G2max, G2mesh, nsc, nmpl, 
      .                     nm, nml, ntm, ntml, ntpl, ntopl, dvol)
 C
@@ -105,7 +107,6 @@ C ----------------------------------------------------------------------
 C Input :
 C ----------------------------------------------------------------------
 C integer na            : Number of atoms in supercell
-C real*8  xa(3,na)      : Atomic positions of all atoms in supercell
 C real*8  cell(3,3)     : Auxillary lattice vectors
 C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
@@ -187,7 +188,7 @@ C
      .  iphorb(norb), isa(na)
 
       real(dp)
-     .  cell(3,3), dvol, G2max, G2mesh, rmax, xa(3,na)
+     .  cell(3,3), dvol, G2max, G2mesh, rmax
 
 C
 C Local variables
@@ -214,10 +215,10 @@ C
 C Functions
 C
       real(dp)
-     .  dismin, dot, volcel
+     .  dismin, ddot, volcel
 
       external
-     .  chkgmx, dismin, dot,  nfft, reclat, 
+     .  chkgmx, dismin, ddot,  nfft, reclat, 
      .  timer, volcel, memory
 
       data
@@ -310,7 +311,7 @@ C Loop over cell vectors
 C The reciprocal vectors of the mesh unit cell (cell/ntm)
 C are rcell*ntm, and must be larger than 2*G2max
 
-        vecmod = sqrt( dot( rcell(1,i), rcell(1,i), 3 ) )
+        vecmod = sqrt( ddot( 3, rcell(1,i), 1, rcell(1,i), 1 ) )
         ntm(i) = 2 * sqrt(G2max) / vecmod + 1
 
       enddo
@@ -376,7 +377,7 @@ c      call chkgmx( k0, rcell, ntm, G2mesh )
 C Find mesh-cell vectors
       do i = 1,3
         do j= 1,3
-          cmesh(J,I) = cell(J,I) / nm(I)
+          cmesh(j,i) = cell(j,i) / nm(i)
         enddo
       enddo
 
@@ -388,7 +389,7 @@ C Loop over mesh directions
       do i = 1,3
 
 C pldist is the distance between mesh planes
-        pldist = 1.0d0 / sqrt( dot( rcmesh(1,i), rcmesh(1,i), 3 ) )
+        pldist = 1.0d0 / sqrt(ddot(3,rcmesh(1,i),1,rcmesh(1,i),1))
 
 C Find number of planes spanned by rmax
         ne(i) = rmax / pldist + dble( nsm-1 ) / dble( nsm )
@@ -607,26 +608,28 @@ C real*8  lastra       : Rmax from last call
 C real*8  lastc(3,3)   : Unit cell from last call
 C ----------------------------------------------------------------------
 
+      use precision, only : dp
+
       implicit none
 
 C Passed arguments
-      integer, intent(in)  :: na
-      real*8,  intent(in)  :: G2max, G2mesh
-      real*8,  intent(in)  :: rmax
-      real*8,  intent(in)  :: ucell(3,3)
-      real*8,  intent(in)  :: xa(3,na)
-      logical, intent(out) :: samesh, samexa
+      integer,   intent(in)  :: na
+      real(dp),  intent(in)  :: G2max, G2mesh
+      real(dp),  intent(in)  :: rmax
+      real(dp),  intent(in)  :: ucell(3,3)
+      real(dp),  intent(in)  :: xa(3,na)
+      logical,   intent(out) :: samesh, samexa
 
 C Local variables
       integer
      .  i, ia, j
       integer, save ::
      .  lastna
-      real*8, save ::
+      real(dp), save ::
      .  tiny
-      real*8, save ::
+      real(dp), save ::
      .  lastc(3,3), lastra
-      real*8, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  lastxa
 
       data lastna / 0 /
@@ -704,6 +707,7 @@ C ----------------------------------------------------------------------
 C integer lastna        : Number of atoms on last call
 C ----------------------------------------------------------------------
 
+      use precision, only : dp
       use mesh
 
       implicit none
@@ -711,8 +715,8 @@ C ----------------------------------------------------------------------
 C
 C Passed arguments
 C
-      integer, intent(in) :: na
-      real*8,  intent(in) :: xa(3,na)
+      integer,  intent(in) :: na
+      real(dp),  intent(in) :: xa(3,na)
 
 C
 C Internal variables
@@ -723,11 +727,11 @@ C
       integer, save ::
      .  lastna
 
-      real*8
-     .  dot, dx(3)
+      real(dp)
+     .  ddot, dx(3)
 
       external
-     .  dot
+     .  ddot
 
 C Check size of atom-mesh arrays nad reallocate if necessary
       if (na.ne.lastna) then
@@ -755,7 +759,7 @@ C Find atomic positions relative to mesh
 
 C Find index of extended-mesh cell in which atom is
         do i = 1,3
-          dx(i) = dot( xa(1,ia), rcmesh(1,i), 3)
+          dx(i) = ddot(3,xa(1,ia),1,rcmesh(1,i),1)
           ix(i) = int( dx(i) + 100000 ) - 100000
           dx(i) = dx(i) - ix(i)
           ix(i) = mod( ix(i) + 1000*nmsc(i), nmsc(i) )
@@ -806,6 +810,7 @@ C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
+      use precision, only : dp
       use atmfuncs, only: rcore, chcore_sub
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
 
@@ -814,17 +819,17 @@ C ----------------------------------------------------------------------
 C
 C Passed arguments
 C
-      integer, intent(in)    :: na, isa(na), ntpl
-      integer, intent(in)    :: indxua(*)
-      integer, intent(in)    :: nsd
-      real*8,  intent(in)    :: dvol, volume
-      real,    intent(in)    :: Vscf(ntpl,*)
-      real,    intent(in)    :: Vaux(ntpl)
-      logical, intent(in)    :: Forces
-      logical, intent(in)    :: Stress
-      real,    intent(out)   :: rhopcc(ntpl)
-      real*8,  intent(inout) :: fal(3,*)
-      real*8,  intent(inout) :: stressl(3,3)
+      integer,  intent(in)    :: na, isa(na), ntpl
+      integer,  intent(in)    :: indxua(*)
+      integer,  intent(in)    :: nsd
+      real(dp), intent(in)    :: dvol, volume
+      real,     intent(in)    :: Vscf(ntpl,*)
+      real,     intent(in)    :: Vaux(ntpl)
+      logical,  intent(in)    :: Forces
+      logical,  intent(in)    :: Stress
+      real,     intent(out)   :: rhopcc(ntpl)
+      real(dp), intent(inout) :: fal(3,*)
+      real(dp), intent(inout) :: stressl(3,3)
 
 C
 C Internal variables
@@ -832,10 +837,10 @@ C
       integer
      .  i, ia, iop, ip, ip0, is, isp, ispin, iua
 
-      real*8
+      real(dp)
      .  dfa(3), dx(3), grrho(3), r, ra, rhop, vxc
 
-      real*8, save ::
+      real(dp), save ::
      .  tiny
 
       logical
@@ -843,8 +848,8 @@ C
 C
 C Functions
 C
-      real*8
-     .  dot
+      real(dp)
+     .  ddot
 
       data tiny / 1.0d-12 /
 
@@ -868,7 +873,7 @@ C Loop over mesh points inside rmax
 C Loop over sub-points
               do isp = 1,nsp
                 dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
-                r = sqrt( dot( dx, dx, 3 ) )
+                r = sqrt( ddot(3,dx,1,dx,1) )
 c                if (r .lt. ra .and. r .gt. tiny) then
                 if (r .lt. ra) then
                   ip = isp + nsp * (ip0 - 1)
@@ -930,6 +935,7 @@ C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
+      use precision, only : dp
       use atmfuncs, only: rcut, phiatm
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
 
@@ -938,14 +944,14 @@ C ----------------------------------------------------------------------
 C
 C Passed arguments
 C
-      integer, intent(in)  :: na, isa(na), ntpl
-      integer, intent(in)  :: indxua(*)
-      real*8,  intent(in)  :: dvol, volume
-      real,    intent(in)  :: drho(*)
-      logical, intent(in)  :: Forces, Stress
-      real,    intent(out) :: vna(ntpl)
-      real*8,  intent(inout) :: fal(3,*)
-      real*8,  intent(inout) :: stressl(3,3)
+      integer,  intent(in)    :: na, isa(na), ntpl
+      integer,  intent(in)    :: indxua(*)
+      real(dp), intent(in)    :: dvol, volume
+      real,     intent(in)    :: drho(*)
+      logical,  intent(in)    :: Forces, Stress
+      real,     intent(out)   :: vna(ntpl)
+      real(dp), intent(inout) :: fal(3,*)
+      real(dp), intent(inout) :: stressl(3,3)
 
 C
 C Internal variables
@@ -953,7 +959,7 @@ C
       integer
      .  i, ia, iop, ip, ip0, is, isp, iua
 
-      real*8
+      real(dp)
      .  dx(3), grva(3), r, ra, va
 
       logical 
@@ -962,8 +968,8 @@ C
 C
 C Functions
 C
-      real*8
-     .  dot
+      real(dp)
+     .  ddot
 
 C Check whether forces and/or stress has been requested based on arguments
       Gradients = (Forces.or.Stress)
@@ -984,7 +990,7 @@ C Loop over mesh points inside rmax
 C Loop over sub-points
             do isp = 1,nsp
               dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
-              r = sqrt( dot( dx, dx, 3 ) )
+              r = sqrt( ddot(3,dx,1,dx,1) )
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
                 call phiatm( is, 0, dx, va, grva )
@@ -1028,6 +1034,7 @@ C ----------------------------------------------------------------------
 C real    Chlocal(ntpl)     : Sum of diffuse ionic charge densities
 C ----------------------------------------------------------------------
  
+       use precision, only : dp
       use atmfuncs, only: rcut, psch
       use atm_types
       use radial
@@ -1046,9 +1053,9 @@ C
 C Internal variables
 C
       integer
-     .  i, ia, iop, ip, ip0, is, isp, iua
+     .  ia, iop, ip, ip0, is, isp, iua
  
-      real*8
+      real(dp)
      .  dx(3), grpsch(3), r, ra, pschloc
 
       type(rad_func), pointer            :: func   
@@ -1056,8 +1063,8 @@ C
 C
 C Functions
 C
-      real*8
-     .  dot
+      real(dp)
+     .  ddot
  
 C Initialise array to zero 
       Chlocal(1:ntpl) = 0.0d0
@@ -1076,7 +1083,7 @@ C Loop over mesh points inside rmax
 C Loop over sub-points
             do isp = 1,nsp
               dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
-              r = sqrt( dot( dx, dx, 3 ) )
+              r = sqrt( ddot(3,dx,1,dx,1) )
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
                 call psch( is, dx, pschloc, grpsch )
@@ -1091,7 +1098,7 @@ C Loop over sub-points
  
       end subroutine LocalChargeOnMesh
 
-      subroutine PhiOnMesh( nmpl, ntopl, norb, iaorb, iphorb, isa)
+      subroutine PhiOnMesh( nmpl, norb, iaorb, iphorb, isa)
 C
 C Calculates the values of the orbitals at the mesh points
 C
@@ -1103,7 +1110,6 @@ C integer iphorb(norb)  : Orbital index (within atom)
 C integer isa(na)       : Species index of all atoms in supercell
 C integer nmpl          : Number of mesh points in unit cell locally
 C integer norb          : Total number of basis orbitals in supercell
-C integer ntopl         : Total number of nonzero orbital points locally
 C ----------------------------------------------------------------------
 C Output :
 C ----------------------------------------------------------------------
@@ -1128,7 +1134,7 @@ C
 C
 C Passed arguments
 C
-      integer, intent(in) :: nmpl, ntopl
+      integer, intent(in) :: nmpl
       integer, intent(in) :: norb
       integer, intent(in) :: iaorb(norb)
       integer, intent(in) :: iphorb(norb)

@@ -1,5 +1,4 @@
-      SUBROUTINE MINVEC(B0,BMIN)
-
+      subroutine minvec(B0,BMIN)
 C *******************************************************************
 C  FINDS THE LATTICE BASIS OF MINIMUM LENGTH, I.E. SUCH TAHT ANY 
 C  OTHER BASIS (NOT EQUIVALENT BY SYMMETRY) HAS ONE VECTOR LONGER.
@@ -17,12 +16,12 @@ C
       use sorting
       use sys
 
-      IMPLICIT         NONE
+      implicit         none
 
-      real(dp)         B0(3,3),BMIN(3,3),DOT,VOLCEL
-      EXTERNAL         DOT,RECLAT,VOLCEL
+      real(dp)         B0(3,3),BMIN(3,3),ddot,VOLCEL
+      external         ddot,RECLAT,VOLCEL
 
-      INTEGER          I,I1,I2,I3,ITER,J,NITER,IAUX(3)
+      integer          I,I1,I2,I3,ITER,J,NITER,IAUX(3)
       real(dp)         AUX(3,3),B(3,3),B2(1,3),BNEW(3),BNEW2,
      .                 C(3,3),EPS,VNEW,V0
 
@@ -35,7 +34,7 @@ C
         DO J=1,3
           B(J,I)=B0(J,I)
         ENDDO
-        B2(1,I)=DOT(B(1,I),B(1,I),3)
+        B2(1,I)=ddot(3,B(1,I),1,B(1,I),1)
       ENDDO
 
       DO 50 ITER=1,NITER
@@ -50,7 +49,7 @@ C
               BNEW(1)=B(1,1)*I1+B(1,2)*I2+B(1,3)*I3
               BNEW(2)=B(2,1)*I1+B(2,2)*I2+B(2,3)*I3
               BNEW(3)=B(3,1)*I1+B(3,2)*I2+B(3,3)*I3
-              BNEW2=DOT(BNEW,BNEW,3)
+              BNEW2=ddot(3,BNEW,1,BNEW,1)
               DO I=3,1,-1
                 IF (BNEW2+EPS.GE.B2(1,I)) GO TO 40
                 CALL VOLNEW(B,BNEW,I,VNEW)
@@ -81,7 +80,7 @@ C
       CALL RECLAT(B0,AUX,0)
       DO I=1,3
         DO J=1,3
-          C(J,I)=NINT(DOT(AUX(1,J),B(1,I),3))
+          C(J,I)=NINT(ddot(3,AUX(1,J),1,B(1,I),1))
         ENDDO
       ENDDO
       DO I=1,3
@@ -97,12 +96,12 @@ C
       
       CONTAINS
 
-      SUBROUTINE VOLNEW(A,ANEW,INEW,VOL)
-      INTEGER          I,INEW,J
+      subroutine volnew(A,ANEW,INEW,VOL)
+      integer          INEW
       real(dp)         A(3,3),ANEW(3),AUX(3,3),VOL
       AUX(1:3,1:3)=A(1:3,1:3)
       AUX(1:3,INEW)=ANEW(1:3)
       VOL=ABS(VOLCEL(AUX))
-      END subroutine volnew
+      end subroutine volnew
 
-      END subroutine minvec
+      end subroutine minvec

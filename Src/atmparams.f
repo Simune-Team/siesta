@@ -19,7 +19,7 @@ C                     for each angular momentum
 C INTEGER  NSMX    : Maximum number of semicore shells for each angular
 C                    momentum present in the atom ( for normal atom nsmx=0)
 
-         integer, parameter  :: nsmx  =    1  
+         integer, parameter  :: nsmx  =    2  
          integer, parameter  :: nsemx = 1 + nsmx  
 
 C INTEGER NTBMAX    : Maximum number of points in the tables defining

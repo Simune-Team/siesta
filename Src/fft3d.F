@@ -30,11 +30,6 @@ C
 
       implicit none
 
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
-
 C
 C  Passed arguments
 C
@@ -259,9 +254,6 @@ C
 
       implicit none
 
-      integer
-     .  MPIerror, ZCommunicator, RequestR, RequestS,
-     .  Status(MPI_Status_Size)
 C
 C  Passed arguments
 C
@@ -273,24 +265,42 @@ C
 C  Local variables
 C
       integer
-     .  i, j, k, jl, kl, BNode, ProcessorZ, Py, Pz, 
-     .  ZNode, ZNodes, BlockSizeY, jmin, jmax, jloc,
-     .  INode, n1lmax, SNode, jminS, jmaxS, NRemY,
-     .  BlockSizeYMax
+     .  BlockSizeY, BlockSizeYMax, jmin, jmax, jloc, n1lmax, NRemY,
+     .  i, j, k, jl, kl, BNode, INode, SNode, jminS, jmaxS
+
+      integer
+     .  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
+
+      integer, save ::
+     .  ProcessorZ, Py, Pz, ZCommunicator, ZNode, ZNodes
+
+      logical, save :: firsttimeZ = .true.
 
       real, dimension(:,:,:,:), allocatable, save :: 
      .  ftmp,ftmp2
+
+      if (firsttimeZ) then
 C
 C  Determine processor grid coordinates
 C
-      ProcessorZ = Nodes/ProcessorY
-      if (ProcessorY*ProcessorZ.ne.Nodes) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
+        ProcessorZ = Nodes/ProcessorY
+        if (ProcessorY*ProcessorZ.ne.Nodes) then
+          write(6,'(''ERROR: ProcessorY must be a factor of the'',
+     .      '' number of processors!'')')
+          stop
+        endif
+        Py = (Node/ProcessorZ) + 1
+        Pz = Node - (Py - 1)*ProcessorZ + 1
+C
+C  Group processors into subsets by Z
+C
+        call MPI_Comm_Split(MPI_Comm_World, Pz, Py, ZCommunicator,
+     .    MPIerror)
+        call MPI_Comm_Rank(ZCommunicator,ZNode,MPIerror)
+        call MPI_Comm_Size(ZCommunicator,ZNodes,MPIerror)
+        firsttimeZ = .false.
       endif
-      Py = (Node/ProcessorZ) + 1
-      Pz = Node - (Py - 1)*ProcessorZ + 1
+
       BlockSizeY = ((n2/nsm)/ProcessorY)*nsm
       NRemY = (n2 - ProcessorY*BlockSizeY)/nsm
       if (NRemY.gt.0) then
@@ -300,12 +310,13 @@ C
       endif
       n1lmax = ((n1-1)/ProcessorY) + 1
 C
-C  Group processors into subsets by Z
+C  Work out local dimensions
 C
-      call MPI_Comm_Split(MPI_Comm_World, Pz, Py, ZCommunicator,
-     .  MPIerror)
-      call MPI_Comm_Rank(ZCommunicator,ZNode,MPIerror)
-      call MPI_Comm_Size(ZCommunicator,ZNodes,MPIerror)
+      jmin = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY) + 1
+      jmax = jmin + BlockSizeY - 1
+      if (Py-1.lt.NRemY) jmax = jmax + nsm
+      jmax = min(jmax,n2)
+      jloc = jmax - jmin + 1
 C
 C  Allocate local memory and initialise
 C
@@ -323,14 +334,6 @@ C
           enddo
         enddo
       enddo
-C
-C  Work out local dimensions
-C
-      jmin = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY) + 1
-      jmax = jmin + BlockSizeY - 1
-      if (Py-1.lt.NRemY) jmax = jmax + nsm
-      jmax = min(jmax,n2)
-      jloc = jmax - jmin + 1
 
       if (idir.gt.0) then
 C***********
@@ -496,14 +499,10 @@ C
 C
 C  Free local memory
 C
-      call memory('D','S',size(ftmp),'redistribXZ')
-      deallocate(ftmp)
       call memory('D','S',size(ftmp2),'redistribXZ')
       deallocate(ftmp2)
-C
-C  Free communicator
-C
-      call MPI_Comm_Free(ZCommunicator, MPIerror)
+      call memory('D','S',size(ftmp),'redistribXZ')
+      deallocate(ftmp)
 
       return
       end
@@ -533,9 +532,6 @@ C
 
       implicit none
 
-      integer
-     .  MPIerror, YCommunicator, RequestR, RequestS,
-     .  Status(MPI_Status_Size)
 C
 C  Passed arguments
 C
@@ -547,24 +543,42 @@ C
 C  Local variables
 C
       integer
-     .  i, j, k, il, kl, BNode, ProcessorZ, Py, Pz, 
-     .  YNode, YNodes, BlockSizeZ, imin, imax, iloc,
-     .  INode, n1lmax, SNode, iminS, imaxS, NRemZ,
-     .  BlockSizeZMax
+     .  i, j, k, il, kl, BNode, BlockSizeZ, imin, imax, iloc,
+     .  INode, n1lmax, SNode, iminS, imaxS, NRemZ, BlockSizeZMax
+
+      integer
+     .  MPIerror, RequestR, RequestS, Status(MPI_Status_Size)
+
+      integer, save ::
+     .  ProcessorZ, Py, Pz, YCommunicator, YNode, YNodes
+
+      logical, save :: firsttimeY = .true.
 
       real, dimension(:,:,:,:), allocatable, save :: 
      .  ftmp,ftmp2
+
+      if (firsttimeY) then
 C
 C  Determine processor grid coordinates
 C
-      ProcessorZ = Nodes/ProcessorY
-      if (ProcessorY*ProcessorZ.ne.Nodes) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
+        ProcessorZ = Nodes/ProcessorY
+        if (ProcessorY*ProcessorZ.ne.Nodes) then
+          write(6,'(''ERROR: ProcessorY must be a factor of the'',
+     .      '' number of processors!'')')
+          stop
+        endif
+        Py = (Node/ProcessorZ) + 1
+        Pz = Node - (Py - 1)*ProcessorZ + 1
+C
+C  Group processors into subsets by Y
+C
+        call MPI_Comm_Split(MPI_Comm_World, Py, Pz, YCommunicator,
+     .    MPIerror)
+        call MPI_Comm_Rank(YCommunicator,YNode,MPIerror)
+        call MPI_Comm_Size(YCommunicator,YNodes,MPIerror)
+        firsttimeY = .false.
       endif
-      Py = (Node/ProcessorZ) + 1
-      Pz = Node - (Py - 1)*ProcessorZ + 1
+
       BlockSizeZ = ((n3/nsm)/ProcessorZ)*nsm
       NRemZ = (n3 - ProcessorZ*BlockSizeZ)/nsm
       if (NRemZ.gt.0) then
@@ -573,13 +587,6 @@ C
         BlockSizeZMax = BlockSizeZ
       endif
       n1lmax = ((n1-1)/ProcessorZ) + 1
-C
-C  Group processors into subsets by Y
-C
-      call MPI_Comm_Split(MPI_Comm_World, Py, Pz, YCommunicator,
-     .  MPIerror)
-      call MPI_Comm_Rank(YCommunicator,YNode,MPIerror)
-      call MPI_Comm_Size(YCommunicator,YNodes,MPIerror)
 C
 C  Allocate local memory and initialise
 C
@@ -771,13 +778,9 @@ C
 C  Free local memory
 C
       call memory('D','S',size(ftmp2),'redistribXY')
-      deallocate(ftmp)
-      call memory('D','S',size(ftmp2),'redistribXY')
       deallocate(ftmp2)
-C
-C  Free communicator
-C
-      call MPI_Comm_Free(YCommunicator, MPIerror)
+      call memory('D','S',size(ftmp2),'redistribXY')
+      deallocate(ftmp)
 
       return
       end

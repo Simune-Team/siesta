@@ -65,12 +65,12 @@ C *********************************************************************
 C**** Internal variables ***********************************************
 
       integer 
-     .  iuo, juo, j, ie, je, jo, i, ind
+     .  iuo, juo, j, ie, je, jo, ind
       integer, dimension(:), allocatable, save ::
      .  Auxint
 #ifdef MPI
       integer 
-     .  MPIerror, iuog, jeg, juog, n, noccloc, noccmax
+     .  MPIerror, jeg, n, noccloc, noccmax
       real(dp), dimension(:,:,:), allocatable, save ::
      .  psitmp
 #endif

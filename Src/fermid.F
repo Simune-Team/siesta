@@ -245,23 +245,18 @@ C *********************************************************************
       logical          conv
       parameter (TOL=1.0D-10,NITMAX=150)
 
-C Local variables
-#ifdef MPI
-      integer MPIerror
-#endif
-
       conv = .FALSE.
 
-      DO ispin = 1,nspin
+      do ispin = 1,nspin
        sumq(ispin)=0.0D0
-      ENDDO
-      DO ispin = 1,nspin
+      enddo
+      do ispin = 1,nspin
         emin(ispin)=E(1,ispin,1)
         emax(ispin)=E(1,ispin,1)
-      ENDDO
-      DO IK=1,NK
-        DO ispin=1,nspin
-          DO IE=1,NE
+      enddo
+      do IK=1,NK
+        do ispin=1,nspin
+          do IE=1,NE
             WKE(IE,ispin,IK)=WK(IK)*2.D0/nspin
             sumq(ispin)=sumq(ispin)+WKE(IE,ispin,IK)
             emin(ispin)=MIN(emin(ispin),E(IE,ispin,IK))
@@ -269,13 +264,13 @@ C Local variables
           enddo
         enddo
       enddo
-      DO ispin=1,nspin
+      do ispin=1,nspin
         EF(ispin)=emax(ispin)
-      ENDDO
+      enddo
       conv = .TRUE.
-      DO ispin = 1,nspin
-        IF (ABS(sumq(ispin)-qtot(ispin)).GT.TOL) conv = .FALSE.
-      ENDDO
+      do ispin = 1,nspin
+        if (ABS(sumq(ispin)-qtot(ispin)).GT.TOL) conv = .FALSE.
+      enddo
 
       IF (conv) GOTO 100
 

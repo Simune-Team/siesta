@@ -12,7 +12,7 @@
       character(len=*), intent(in), optional   :: str
 
 #ifdef MPI
-      integer MPIerror, rc
+      integer MPIerror
 #endif
 
       if (Node.eq.0) then
@@ -23,7 +23,6 @@
       endif
 #ifdef MPI
       call MPI_Abort(MPI_Comm_World,1,MPIerror)
-!!      call MPI_Finalize(rc)
       stop
 #else
       stop
@@ -40,7 +39,7 @@
       character(len=*), intent(in), optional   :: str
 
 #ifdef MPI
-      integer MPIerror, rc
+      integer rc
 #endif
 
       if (Node.eq.0) then

@@ -3,7 +3,8 @@
      .                  listdptr, listd, H, S,
      .                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
      .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, aux, nuotot )
+     .                  Haux, Saux, psi, aux, nuotot, occtol,
+     .                  iscf, neigwanted )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -46,6 +47,9 @@ C                               (to find local density of states)
 C                               Not used if e1 > e2
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
+C integer iscf                : SCF cycle number
+C real*8  occtol              : Occupancy threshold for DM build
+C integer neigwanted          : Number of eigenvalues wanted
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,nspn)        : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
@@ -60,7 +64,7 @@ C *************************** AUXILIARY *******************************
 C real*8 Haux(nuotot,nuo)     : Auxiliary space for the hamiltonian matrix
 C real*8 Saux(nuotot,nuo)     : Auxiliary space for the overlap matrix
 C real*8 psi(nuotot,maxuo,nspin) : Auxiliary space for the eigenvectors
-C real*8 aux(nuotot*5)        : Extra auxiliary space
+C real*8 aux(nuotot)          : Extra auxiliary space
 C *************************** UNITS ***********************************
 C eo, Enew and ef returned in the units of H.
 C *************************** PARALLEL ********************************
@@ -89,20 +93,21 @@ C
 #endif
 
       integer
-     .  maxnd, maxnh, maxuo, maxo, nuo, no, nspin, nuotot
+     .  iscf, maxnd, maxnh, maxuo, maxo, nuo, no, nspin, nuotot,
+     .  neigwanted
 
       integer 
      .  listh(maxnh), numh(nuo), listhptr(nuo),
      .  listd(maxnd), numd(nuo), listdptr(nuo)
 
       real(dp)
-     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), Entropy,
-     .  eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
-     .  qtot, qs(nspin), S(maxnh), temp, efs(nspin)
+     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
+     .  Entropy, eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
+     .  qtot, qs(nspin), S(maxnh), temp, efs(nspin), occtol
      
       real(dp)
      .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin), 
-     .  aux(5*nuotot)
+     .  aux(nuotot)
 
       logical
      .  getD, getPSI, fixspin
@@ -112,14 +117,11 @@ C
 C  Internal variables .............................................
       integer           ie, io, iio, ispin, ix, j, jo, BNode, iie, ind,
      .                  BTest, ierror, nd
-      integer, allocatable, save :: HighestOccupiedBand(:)
-      logical           lfound
-      real*8            ee, pipj, qe, t, k(3)
-C  ....................
+      real(dp)          ee, eei, qe, qei, rt, t, k(3)
 
-C Solve eigenvalue problem .........................................
+C Solve eigenvalue problem
       do ispin = 1,nspin
-   10   do io = 1,nuo
+        do io = 1,nuo
           do jo = 1,nuotot
             Saux(jo,io) = 0.0d0
             Haux(jo,io) = 0.0d0
@@ -133,12 +135,30 @@ C Solve eigenvalue problem .........................................
             Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
         enddo
-        call rdiag( Haux, Saux, nuotot, nuo, nuotot, maxuo,
-     .              eo(1,ispin), psi(1,1,ispin), nuotot, ierror )
+        call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
+     .              psi(1,1,ispin), neigwanted, iscf, ierror )
+
+C Check error flag and take appropriate action
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
-        elseif (ierror.eq.-1) then
-          goto 10
+        elseif (ierror.lt.0) then
+C Repeat diagonalisation with increased memory to handle clustering
+          do io = 1,nuo
+            do jo = 1,nuotot
+              Saux(jo,io) = 0.0d0
+              Haux(jo,io) = 0.0d0
+            enddo
+          enddo
+          do io = 1,nuo
+            do j = 1,numh(io)
+              ind = listhptr(io) + j
+              jo = listh(ind)
+              Saux(jo,io) = Saux(jo,io) + S(ind)
+              Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
+            enddo
+          enddo
+          call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
+     .                psi(1,1,ispin), nuotot, iscf, ierror )
         endif
 
         if (getPSI) then
@@ -156,11 +176,11 @@ C Check if we are done ................................................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( nspin, nspin, 1, (/1.d0/), maxo, no, eo,
-     .               temp, qs, qo, efs, Entropy )
+        call fermispin( nspin, nspin, 1, (/1.d0/), maxo, neigwanted, 
+     .                  eo, temp, qs, qo, efs, Entropy )
       else
-        call fermid( nspin, nspin, 1, (/1.d0/), maxo, no, eo, 
-     .             temp, qtot, qo, ef, Entropy )
+        call fermid( nspin, nspin, 1, (/1.d0/), maxo, neigwanted, eo, 
+     .               temp, qtot, qo, ef, Entropy )
       endif
 
 C Find weights for local density of states ............................
@@ -168,26 +188,16 @@ C Find weights for local density of states ............................
 *       e1 = e1 - ef
 *       e2 = e2 - ef
         t = max( temp, 1.d-6 )
+        rt = 1.0d0/t
         do ispin = 1,nspin
           do io = 1,nuotot
-            qo(io,ispin) = ( stepf((eo(io,ispin)-e2)/t) -
-     .                       stepf((eo(io,ispin)-e1)/t)) * 2.0d0/nspin
+            qo(io,ispin) = ( stepf((eo(io,ispin)-e2)*rt) -
+     .                       stepf((eo(io,ispin)-e1)*rt)) * 
+     .                       2.0d0/dble(nspin)
           enddo
         enddo
       endif
       
-C Create pointer to highest occupied band
-      allocate(HighestOccupiedBand(nspin))
-      do ispin = 1,nspin
-        io = nuotot + 1
-        lfound = .false.
-        do while (io.gt.1.and..not.lfound)
-          io = io - 1
-          lfound = (abs(qo(io,ispin)).lt.1.0d-12)
-        enddo
-        HighestOccupiedBand(ispin) = io
-      enddo
-
 C New density and energy-density matrices of unit-cell orbitals .......
       nd = listdptr(nuo) + numd(nuo)
       Dnew(1:nd,1:nspin) = 0.0d0
@@ -197,34 +207,37 @@ C Global operation to form new density matrix
       do ispin = 1,nspin
         BNode = 0
         iie = 0
-        do ie = 1,HighestOccupiedBand(ispin)
+        do ie = 1,nuotot
+          qe = qo(ie,ispin)
           if (Node.eq.BNode) then
             iie = iie + 1
-            do j = 1,nuotot
-              aux(j) = psi(j,iie,ispin)
-            enddo
           endif
+          if (qe.gt.occtol) then
+            if (Node.eq.BNode) then
+              call dcopy(nuotot,psi(1,iie,ispin),1,aux,1)
+            endif
 #ifdef MPI
 #ifdef NODAT
-          call MPI_Bcast(aux,nuotot,MPI_double_precision,BNode,
-     .      MPI_Comm_World,MPIerror)
+            call MPI_Bcast(aux,nuotot,MPI_double_precision,BNode,
+     .        MPI_Comm_World,MPIerror)
 #else
-          call MPI_Bcast(aux,nuotot,DAT_double,BNode,
-     .      MPI_Comm_World,MPIerror)
+            call MPI_Bcast(aux,nuotot,DAT_double,BNode,
+     .        MPI_Comm_World,MPIerror)
 #endif
 #endif
-          qe = qo(ie,ispin)
-          ee = qo(ie,ispin) * eo(ie,ispin)
-          do io = 1,nuo
-            call LocalToGlobalOrb(io,Node,Nodes,iio)
-            do j = 1,numd(io)
-              ind = listdptr(io) + j
-              jo = listd(ind)
-              pipj = aux(iio) * aux(jo)
-              Dnew(ind,ispin) = Dnew(ind,ispin) + qe * pipj
-              Enew(ind,ispin) = Enew(ind,ispin) + ee * pipj
+            ee = qe * eo(ie,ispin)
+            do io = 1,nuo
+              call LocalToGlobalOrb(io,Node,Nodes,iio)
+              qei = qe*aux(iio)
+              eei = ee*aux(iio)
+              do j = 1,numd(io)
+                ind = listdptr(io) + j
+                jo = listd(ind)
+                Dnew(ind,ispin) = Dnew(ind,ispin) + qei*aux(jo)
+                Enew(ind,ispin) = Enew(ind,ispin) + eei*aux(jo)
+              enddo
             enddo
-          enddo
+          endif
           BTest = ie/BlockSize
           if (BTest*BlockSize.eq.ie) then
             BNode = BNode + 1
@@ -232,8 +245,5 @@ C Global operation to form new density matrix
           endif
         enddo
       enddo
-
-C Free local memory
-      deallocate(HighestOccupiedBand)
 
       end

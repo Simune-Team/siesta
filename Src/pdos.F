@@ -74,13 +74,12 @@ C **********************************************************************
      .  GAMMA
 
 C Dynamic arrays -------------------------------------------------------
-      real(dp), DIMENSION(:), ALLOCATABLE, SAVE :: AUX
       real(dp), DIMENSION(:,:)  , ALLOCATABLE :: DTOT
       real(dp), DIMENSION(:,:,:), ALLOCATABLE :: DPR
 
 C Internal variables ---------------------------------------------------
       INTEGER
-     .  NUO, NHS, NPSI, NAUX, IUO, IHIST, ISPIN, 
+     .  NUO, NHS, NPSI, IUO, IHIST, ISPIN, 
      .  IUNIT1, IUNIT2, I
 
       integer iat, spec, ii, iorb
@@ -122,19 +121,15 @@ C Check internal dimensions --------------------------------------------
       IF ( NSPIN.LE.2 .AND. GAMMA) THEN
         NHS  = NUOTOT * NUO
         NPSI = NUOTOT * MAXUO * NSPIN
-        NAUX = 1
       ELSE IF ( NSPIN.LE.2 .AND. .NOT.GAMMA) THEN
         NHS  = 2 * NUOTOT * NUO
         NPSI = 2 * NUOTOT * NUO
-        NAUX = 2 * NUOTOT * 5
       ENDIF
 
 C Allocate local arrays ------------------------------------------------
       call re_alloc(Haux,1,nhs,name='Haux',routine='pdos')
       call re_alloc(Saux,1,nhs,name='Saux',routine='pdos')
       call re_alloc(psi,1,npsi,name='psi',routine='pdos')
-      ALLOCATE(AUX(NAUX))
-      CALL MEMORY('A','D',NAUX,'pdos')
       ALLOCATE(DTOT(NHIST,2))
       CALL MEMORY('A','D',2*NHIST,'pdos')
       ALLOCATE(DPR(NHIST,NUOTOT,2))
@@ -161,7 +156,7 @@ C Call appropiate routine ----------------------------------------------
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, 
      .              XIJ, INDXUO, NK, KPOINT, WK, EO,
-     .              HAUX, SAUX, PSI, AUX, DTOT, DPR, NUOTOT )
+     .              HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
       ENDIF
 
       if (IOnode) then
@@ -284,8 +279,6 @@ C Free local arrays ----------------------------------------------------
       DEALLOCATE(DPR)
       CALL MEMORY('D','D',SIZE(DTOT),'pdos')
       DEALLOCATE(DTOT)
-      CALL MEMORY('D','D',SIZE(AUX),'pdos')
-      DEALLOCATE(AUX)
 
       deallocate(tmp)
 

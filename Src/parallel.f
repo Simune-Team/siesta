@@ -20,11 +20,9 @@ C                       must be a factor of the total number of processors.
 C                       Furthermore on many parallel machines (e.g. T3E)
 C                       this number must also be a power of 2.
 C
-
-
       implicit none
 
-      integer, save :: BlockSize  = 8
+      integer, save :: BlockSize  = 24
       integer, save :: Node = 0
       integer, save :: Nodes = 1
       integer, save :: ProcessorY = 1

@@ -54,19 +54,13 @@ C *********************************************************************
      .  xij(3,maxnh), psi(2,nuotot,nuo), Haux(2,nuotot,nuo),
      .  Saux(2,nuotot,nuo)
 
-      external          cdiag, memory
+      external          cdiag
 
 C  Internal variables .............................................
       integer
      .  ierror, ind, ispin, iuo, j, jo, juo
       real(dp)
      .  ckxij, kxij, skxij
-      real(dp), dimension(:), allocatable, save :: aux
-C  ....................
-
-C Allocate local memory
-      allocate(aux(2*nuotot*5))
-      call memory('A','D',2*nuotot*5,'diagpol')
 
 C Solve eigenvalue problem .........................................
       Saux = 0.0d0
@@ -87,16 +81,34 @@ C Solve eigenvalue problem .........................................
           Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
         enddo
       enddo
-      call cdiag( Haux, nuotot, Saux, nuotot, nuo,
-     .            eo, psi, nuotot, nuo, ierror )
+      call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+     .            nuotot, 1, ierror)
 
-C Deallocate local memory
-      call memory('D','D',size(aux),'diagpol')
-      deallocate(aux)
-
-C Trap error flag from cdiag
+C Check error flag and take appropriate action
       if (ierror.gt.0) then
         call die('Terminating due to failed diagonalisation')
+      elseif (ierror.lt.0) then
+C Repeat diagonalisation with increased memory to handle clustering
+        Saux = 0.0d0
+        Haux = 0.0d0
+        do iuo = 1,nuo
+          do j = 1,numh(iuo)
+            ind = listhptr(iuo) + j
+            jo = listh(ind)
+            juo = indxuo(jo)
+            kxij = kpoint(1) * xij(1,ind) +
+     .             kpoint(2) * xij(2,ind) +
+     .             kpoint(3) * xij(3,ind)
+            ckxij = cos(kxij)
+            skxij = sin(kxij)
+            Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
+            Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
+            Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
+            Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
+          enddo
+        enddo
+        call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+     .              nuotot, 1, ierror)
       endif
 
       end

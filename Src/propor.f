@@ -9,38 +9,38 @@ C **********************************************************************
 
       implicit none
 
-      integer           I, IMAX, N
-      real(dp)          A(N), AOVERB, B(N), BMAX, TOL
+      integer           i, imax, n
+      real(dp)          a(n), aoverb, b(n), bmax, tol
 
-      BMAX = 0.D0
-      IMAX = 0
-      DO 10 I = 1,N
-        IF ( ABS(B(I)) .GT. BMAX ) THEN
-          IMAX = I
-          BMAX = ABS(B(I))
-        ENDIF
-   10 CONTINUE
-      IF (IMAX .EQ. 0) call die("propor: ERROR:  IMAX = 0")
+      bmax = 0.0d0
+      imax = 0
+      do i = 1,n
+        if ( abs(b(i)) .gt. bmax ) then
+          imax = i
+          bmax = abs(b(i))
+        endif
+      enddo
+      if (imax .eq. 0) call die("propor: ERROR:  IMAX = 0")
 
-      PROPOR = .TRUE.
-      IF (BMAX .EQ. 0.D0) THEN
-        AOVERB = 0.D0
-        DO 20 I = 1,N
-          IF ( ABS(A(I)) .GT. TOL ) THEN
-            PROPOR = .FALSE.
-            RETURN
-          ENDIF
-   20   CONTINUE
-      ELSE
-        AOVERB = A(IMAX) / B(IMAX)
-        DO 30 I = 1,N
-          IF ( ABS(A(I)-B(I)*AOVERB) .GT. TOL ) THEN
-            PROPOR = .FALSE.
-            RETURN
-          ENDIF
-   30   CONTINUE
-      ENDIF
-      END
+      propor = .true.
+      if (bmax .eq. 0.0d0) then
+        aoverb = 0.0d0
+        do i = 1,n
+          if ( abs(a(i)) .gt. tol ) then
+            propor = .false.
+            return
+          endif
+        enddo
+      else
+        aoverb = a(imax) / b(imax)
+        do i = 1,n
+          if ( abs(a(i)-b(i)*aoverb) .gt. tol ) then
+            propor = .false.
+            return
+          endif
+        enddo
+      endif
+      end
 
 
 

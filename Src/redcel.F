@@ -14,7 +14,7 @@ c *********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision, only : dp
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -23,11 +23,11 @@ C
       implicit          none
 
       integer           mscell(3,3)
-      double precision  alat, scell(3,3), ucell(3,3)
+      real(dp)          alat, scell(3,3), ucell(3,3)
 
 C Internal variables
       integer           i, iunit, ix, j
-      double precision  alp, alplp, betlp, blp, cell(3,3), clp,
+      real(dp)          alp, alplp, betlp, blp, cell(3,3), clp,
      .                  gamlp, pi, xxx
 #ifdef MPI
       integer           MPIerror

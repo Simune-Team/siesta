@@ -128,6 +128,7 @@ C ********* ROUTINES CALLED *****************************************
 C GGAXC, LDAXC, RECLAT, TIMER, VOLCEL
 C *******************************************************************
 
+      use precision,    only : dp
 #ifdef MPI
 C  Modules
       use parallel,     only : Node, Nodes, ProcessorY
@@ -142,7 +143,7 @@ C Argument types and dimensions
       CHARACTER*(*)     FUNCTL, AUTHOR
       INTEGER           IREL, IDER, MAXAUX, MAXP, MTYPE, 
      .                  NMESH(3), NSPAN(3), NSPIN
-      DOUBLE PRECISION  CELL(3,3), DC, DX, EC, EX, STRESSL(3,3)
+      real(dp)          CELL(3,3), DC, DX, EC, EX, STRESSL(3,3)
 C     If you change next line, please change also the argument
 C     explanations in the header comments
 *     DOUBLE PRECISION
@@ -160,12 +161,12 @@ C i.e. a total of 6*NN neighbour points is used to find the gradients
 C Fix energy unit:  EUNIT=1.0 => Hartrees,
 C                   EUNIT=0.5 => Rydbergs,
 C                   EUNIT=0.03674903 => eV
-      DOUBLE PRECISION EUNIT
+      real(dp)      EUNIT
       PARAMETER ( EUNIT = 0.5D0 )
 
 C Fix switch to skip points with zero density
       LOGICAL SKIP0
-      DOUBLE PRECISION DENMIN
+      real(dp) DENMIN
       PARAMETER ( SKIP0  = .TRUE. )
       PARAMETER ( DENMIN = 1.D-15 )
 
@@ -177,11 +178,10 @@ C MPI related variables
      .  Py, Pz
       integer 
      .  NSwap, NDummy, IDen1, IDen2, IOut, INN, MeshDum(3), 
-     .  Requests(4), Request, Status(MPI_Status_Size), NReq,
-     .  Statuss(MPI_Status_Size,4), Tag, Pleft2, Pright2,
+     .  Requests(4), Statuss(MPI_Status_Size,4), Tag, Pleft2, Pright2,
      .  Pleft3, Pright3, PzMod, PyMod, NMeshPN, JPNN(3,-NN:NN),
      .  nmax, nrleft, nrright, nsleft, nsright
-      double precision 
+      real(dp)
      .  Buffer(4),Buffer2(4)
       logical 
      .  NoLocalPoints
@@ -202,7 +202,7 @@ C Parameter MSPIN must be equal or larger than NSPIN
       INTEGER           I1, I2, I3, IC, IN, IP, IS, IX,
      .                  J1, J2, J3, JN, JP(3,-NN:NN), JS, JX,
      .                  KS, NPG
-      DOUBLE PRECISION  D(MSPIN), DECDD(MSPIN), DECDGD(3,MSPIN),
+      real(dp)          D(MSPIN), DECDD(MSPIN), DECDGD(3,MSPIN),
      .                  DENTOT, DEXDD(MSPIN), DEXDGD(3,MSPIN),
      .                  DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
      .                  DMDX(3,3), DVOL, DXDM(3,3),

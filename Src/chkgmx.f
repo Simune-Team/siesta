@@ -27,8 +27,8 @@ C
               G(1)=BM(1,1)*I1+BM(1,2)*I2+BM(1,3)*I3
               G(2)=BM(2,1)*I1+BM(2,2)*I2+BM(2,3)*I3
               G(3)=BM(3,1)*I1+BM(3,2)*I2+BM(3,3)*I3
-              GMOD=SQRT(DOT(G,G,3))
-              R=HALF*GMOD-DOT(K,G,3)/GMOD
+              GMOD=SQRT(ddot(3,G,1,G,1))
+              R=HALF*GMOD-ddot(3,K,1,G,1)/GMOD
               GMAX=MIN(GMAX,R)
   20        CONTINUE
           ENDDO

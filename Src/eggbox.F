@@ -37,7 +37,7 @@ C External
       implicit          none
 
       integer           na, isa(na), ntm(3)
-      real(dp)          cell(3,3), fa(3,na), fanew(3,na), xa(3,na), Etot
+      real(dp)          cell(3,3), fa(3,na), xa(3,na), Etot
       character task*6 
       logical eggbox_block
 
@@ -57,7 +57,7 @@ C Internal variables
 
       logical, save :: frstme = .true.
 
-      integer  n, j, ni, nn, nr, nv, integers(maxw), lc(0:maxw),
+      integer  ni, nn, nr, nv, integers(maxw), lc(0:maxw),
      .     ia, ix, i, iu, a, b, c
       real(dp) reals(maxw), values(maxw),
      .     pi, xac(3), k(3), xa_frac(3,na), 

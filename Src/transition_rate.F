@@ -69,7 +69,7 @@ C Passed variables
 
 C Internal variables
       integer 
-     .  ind, iuo, juo, j, io, ie, iie, iio, jje, je, iu, ju, jo, 
+     .  ind, iuo, juo, j, ie, iie, iio, jje, je, jo, 
      .  BNodei, Bnodej, BTest
       real(dp)
      .  kxij, skxij, ckxij, pipj1, pipj2,

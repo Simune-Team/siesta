@@ -1,5 +1,4 @@
       subroutine efield( cell, na, isa, xa, mesh, nsm, v, field )
-
 c **********************************************************************
 c Adds the potential created by an external electric field, whose value
 c is readed from the FDF block ExternalElectricField.
@@ -58,8 +57,8 @@ C
 
       integer           na, isa(na), mesh(3), nsm
       real              v(*)
-      real(dp)          cell(3,3), dot, field(3), xa(3,na)
-      external          cross, dot, reclat, shaper
+      real(dp)          cell(3,3), ddot, field(3), xa(3,na)
+      external          cross, ddot, reclat, shaper
 
 C Internal parameters
 C tol : tolerance for bulk components of the electric field
@@ -126,7 +125,7 @@ C Check that the field is orthogonal to the bulk directions
           call shaper( cell, na, isa, xa, shape, nbcell, bcell )
           orthog = .true.
           if (nbcell .eq. 1) then
-            eb1 = dot(e,bcell,3) / dot(bcell,bcell,3)
+            eb1 = ddot(3,e,1,bcell,1) / ddot(3,bcell,1,bcell,1)
             if (abs(eb1) .gt. tol) then
               orthog = .false.
               do ix = 1,3
@@ -134,12 +133,14 @@ C Check that the field is orthogonal to the bulk directions
               enddo
             endif
           elseif (nbcell .eq. 2) then
-            eb1 = dot(e,bcell(1,1),3) / dot(bcell(1,1),bcell(1,1),3)
-            eb2 = dot(e,bcell(1,2),3) / dot(bcell(1,2),bcell(1,2),3)
+            eb1 = ddot(3,e,1,bcell(1,1),1)/
+     .            ddot(3,bcell(1,1),1,bcell(1,1),1)
+            eb2 = ddot(3,e,1,bcell(1,2),1)/
+     .            ddot(3,bcell(1,2),1,bcell(1,2),1)
             if (abs(eb1).gt.tol .or. abs(eb2).gt.tol) then
               orthog = .false.
               call cross( bcell(1,1), bcell(1,2), b1xb2 )
-              eb3 = dot(e,b1xb2,3) / dot(b1xb2,b1xb2,3)
+              eb3 = ddot(3,e,1,b1xb2,1)/ddot(3,b1xb2,1,b1xb2,1)
               do ix = 1,3
                 e(ix) = eb3 * b1xb2(ix)
               enddo
@@ -171,7 +172,7 @@ C This is done at every call, because of possible atomic movements
 C Find reciprocal unit cell and distance between lattice planes
         call reclat( cell, rcell, 0 )
         do ix = 1,3
-          dplane(ix) = sqrt( dot(rcell(1,ix),rcell(1,ix),3) )
+          dplane(ix) = sqrt(ddot(3,rcell(1,ix),1,rcell(1,ix),1))
         enddo
 
 C Find the geometric center of the system
@@ -183,7 +184,7 @@ C Find the geometric center of the system
           is = isa(ia)
           rc = rcut(is,0)
           do ix = 1,3
-            xfrac = dot( xa(1,ia), rcell(1,ix), 3 )
+            xfrac = ddot(3,xa(1,ia),1,rcell(1,ix),1)
             xmin(ix) = min( xmin(ix), xfrac-rc/dplane(ix) )
             xmax(ix) = max( xmax(ix), xfrac+rc/dplane(ix) )
           enddo
@@ -198,7 +199,7 @@ C Find the mesh index of the origin of the shifted cell
 C Find the electric field in mesh coordinates, so that
 C v = e*x = f*index
         do ix = 1,3
-          f(ix) = dot( e, cell(1,ix), 3 ) / max( mesh(ix), 1 )
+          f(ix) = ddot(3,e,1,cell(1,ix),1) / max( mesh(ix), 1 )
         enddo
 
 C Find the potential at the origin of the shifted cell, so that

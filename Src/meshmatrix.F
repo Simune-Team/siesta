@@ -233,11 +233,11 @@ C Argument types and dimensions
 
 C Internal variables and arrays
       integer
-     .  ii, io, iio, il, ispin
+     .  io, il, ispin
 
 #ifdef MPI
       integer 
-     .  BNode, maxno, maxnog, MPIerror
+     .  BNode, ii, iio, maxno, maxnog, MPIerror
       real(dp), dimension(:), allocatable, save :: 
      .  buffer
 #endif
@@ -367,11 +367,11 @@ C Argument types and dimensions
 
 C Internal variables and arrays
       integer
-     .  i, iu, ii, ispin
+     .  i, iu, ispin
 
 #ifdef MPI
       integer 
-     .  in, iul, maxnvg, MPIerror, nVsL, nVsLmax
+     .  ii, in, iul, maxnvg, MPIerror, nVsL, nVsLmax
       real(dp), dimension(:), allocatable, save :: 
      .  Vi
       integer, dimension(:), allocatable, save :: 

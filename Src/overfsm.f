@@ -61,7 +61,7 @@ C
      . listd(*), numd(*), listh(maxnh), numh(*), listdptr(*),
      . listhptr(*)
 
-      double precision
+      real(dp)
      . scell(3,3), Emat(maxnd,nspin), 
      . fa(3,nua), r2ij(maxna), rmaxo, 
      . stress(3,3), S(maxnh), xa(3,na), xij(3,maxna)
@@ -72,10 +72,10 @@ C Internal variables ......................................................
      .  ia, ind, io, ioa, is, ispin, ix, iio, 
      .  j, ja, jn, jo, joa, js, jua, jx, nnia
 
-      double precision
+      real(dp)
      .  fij(3), grSij(3) , rij, Sij, volcel, volume
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  Di, Si
 
       external
@@ -146,7 +146,7 @@ C Valid orbital
             enddo
             do j = 1,numd(iio)
               jo = listd(listdptr(iio)+j)
-              Di(jo) = 0.d0
+              Di(jo) = 0.0d0
             enddo
             do j = 1,numh(iio)
               ind = listhptr(iio)+j

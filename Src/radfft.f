@@ -64,18 +64,20 @@ C *********************************************************************
 C Written by J.M.Soler. August 1996.
 C *********************************************************************
 
+      use precision, only : dp
+
 C Next line is non-standard and may be suppressed -------------------
       IMPLICIT NONE
 C -------------------------------------------------------------------
 
 C Declare argument types and dimensions -----------------------------
       INTEGER           L, NR
-      DOUBLE PRECISION  F(0:), G(0:), RMAX
+      real(dp)          F(0:), G(0:), RMAX
 !      DOUBLE PRECISION  F(0:NR), G(0:NR), RMAX
 C -------------------------------------------------------------------
 
 C ERRFFT is the typical truncation error in the FFT routine ---------
-      DOUBLE PRECISION  ERRFFT
+      real(dp)          ERRFFT
       PARAMETER ( ERRFFT = 1.D-8 )
 C -------------------------------------------------------------------
 
@@ -83,16 +85,16 @@ C Internal variable types and dimensions ----------------------------
 
       INTEGER
      .  I, IQ, IR, JR, M, MQ, N, NQ
-      DOUBLE PRECISION
-     .  BESSPH, C, DQ, DR, FR, GSUM, PI, R, RN, Q, QMAX
+      real(dp)
+     .  BESSPH, C, DQ, DR, FR, PI, R, RN, Q, QMAX
 
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE ::
+      real(dp), DIMENSION(:), ALLOCATABLE, SAVE ::
      .  GG
 
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE ::
+      real(dp), DIMENSION(:,:), ALLOCATABLE, SAVE ::
      .  FN
 
-      DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE, SAVE ::
+      real(dp), DIMENSION(:,:,:), ALLOCATABLE, SAVE ::
      .  P
 
       external
@@ -104,12 +106,12 @@ C Start time counter ------------------------------------------------
 C -------------------------------------------------------------------
 
 C Allocate local memory ---------------------------------------------
-      allocate(GG(0:2*NR))
-      call memory('A','D',2*NR+1,'radfft')
-      allocate(FN(2,0:2*NR))
-      call memory('A','D',2*(2*NR+1),'radfft')
       allocate(P(2,0:l,0:l))
       call memory('A','D',2*(l+1)*(l+1),'radfft')
+      allocate(FN(2,0:2*NR))
+      call memory('A','D',2*(2*NR+1),'radfft')
+      allocate(GG(0:2*NR))
+      call memory('A','D',2*NR+1,'radfft')
 
 C Find some constants -----------------------------------------------
       PI = 4.D0 * ATAN( 1.D0 )
@@ -255,5 +257,5 @@ C Stop time counter ------------------------------------------------
 *     CALL TIMER( 'RADFFT', 2 )
 C -------------------------------------------------------------------
 
-      END subroutine radfft
+      end subroutine radfft
       end module m_radfft

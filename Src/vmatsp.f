@@ -61,8 +61,8 @@ C Internal variables and arrays
      .  minloc = 100,  ! Min buffer size for local copy of Dscf
      .  maxoa  = 100   ! Max # of orbitals per atom
       integer
-     .  i, ia, iua, ic, ii, ijl, il, imp, ind, iop, ip, iphi, io,
-     .  is, isp, ispin, iu, iul, ix, j, jc, jl, iv, nsd,
+     .  i, ia, ic, ii, ijl, il, imp, ind, iop, ip, iphi, io,
+     .  is, isp, ispin, iu, iul, ix, j, jc, jl, nsd,
      .  last, lasta, lastop, maxloc, maxloc2, nc, nlocal, 
      .  nphiloc, nvmaxl, iii(3)
       integer, dimension(:), allocatable, save ::
@@ -70,8 +70,8 @@ C Internal variables and arrays
       logical
      .  Parallel
       real*8
-     .  Vij, Vij1, Vij2, Vij3, Vij4, dxsp(3), phia(maxoa,nsp),
-     .  r2cut(nsmax), r2sp, mod, xr(3), Rdi(3), qRdi, cqRdi, sqRdi
+     .  Vij1, Vij2, Vij3, Vij4, dxsp(3), phia(maxoa,nsp),
+     .  r2cut(nsmax), r2sp, xr(3), Rdi(3), qRdi, cqRdi, sqRdi
       real*8, dimension(:),   allocatable, save :: 
      .  VClocal, VClocal1, VClocal2, VClocal3, VClocal4    
       real*8, dimension(:,:), allocatable, save :: 

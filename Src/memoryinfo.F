@@ -45,17 +45,11 @@ C  By increasing this value it is possible to avoid failure to
 C  converge eigenvalues.
 C
 C  real*8  MemoryFactor      : factor by which memory is scaled
-C  real*8  MemoryScale       : factor by which memory is increased
-C  logical TryMemoryIncrease : if .true. then diagonalisation will
-C                            : run iteratively until enough memory
-C                            : is obtained for convergence
 C
+      use precision, only : dp
+
       implicit none
 
-      real*8, save ::
-     .  MemoryFactor, MemoryScale
-
-      logical, save ::
-     .  TryMemoryIncrease
+      real(dp), save :: MemoryFactor
 
       end module diagmemory

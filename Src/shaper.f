@@ -1,5 +1,3 @@
-C $Id: shaper.f,v 1.11 2004/07/13 09:23:53 jgale Exp $
-
       SUBROUTINE SHAPER( CELL, NA, ISA, XA, SHAPE, NV, VECS )
 
 C **********************************************************************
@@ -33,11 +31,13 @@ C will fail if one atom evaporates from one slab and reaches another
 C image of the slab, reporting the system as bulk.
 C **********************************************************************
 
-      use atmfuncs, only: rcut
+      use atmfuncs,  only : rcut
+      use precision, only : dp
 
-      IMPLICIT          NONE
+      implicit          none
+
       INTEGER           NA, ISA(NA), NV
-      DOUBLE PRECISION  CELL(3,3), XA(3,NA), VECS(3,3)
+      real(dp)          CELL(3,3), XA(3,NA), VECS(3,3)
       EXTERNAL          NEIGHB, LIVEC
       CHARACTER         SHAPE*(*)
 
@@ -51,13 +51,13 @@ C Internal variables and arrays
       integer, dimension(:), allocatable, save :: 
      .  JAN
 
-      double precision
+      real(dp)
      .  RI, RIJ, RJ, RMAX, XXJ(3)
 
-      double precision, dimension(:), allocatable, save :: 
+      real(dp), dimension(:), allocatable, save :: 
      .  R2IJ
 
-      double precision, dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable, save :: 
      .  XIJ
 
       logical
@@ -67,10 +67,10 @@ C Internal variables and arrays
 
 C Find maximum interaction range
       RMAX = 0.0D0
-      DO 10 IA = 1,NA
+      do IA = 1,NA
         IS = ISA(IA)
         RMAX = MAX( RMAX, RCUT(IS,0) )
-   10 CONTINUE
+      enddo
 
 C Allocate local memory
   100 if (.not.allocated(jan)) then

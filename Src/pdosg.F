@@ -50,6 +50,7 @@ C **********************************************************************
 #ifdef MPI
       use mpi_siesta
 #endif
+      use sys,          only : die
 
       implicit none
 
@@ -68,15 +69,14 @@ C **********************************************************************
 
 C Internal variables ---------------------------------------------------
       integer
-     .  ispin, iuo, juo, io, j, jo, ihist, iband, ind,
-     .  ierror, ibandg
+     .  ispin, iuo, juo, j, jo, ihist, iband, ind, ierror
 
       real(dp)
      .  delta, ener, diff, pi, pipj1, gauss, norm
 
 #ifdef MPI
       integer ::
-     .  BNode, Bnuo, maxnuo, MPIerror
+     .  BNode, Bnuo, ibandg, maxnuo, MPIerror
       real(dp), dimension(:,:), allocatable, save ::
      .  Sloc
       real(dp), dimension(:,:,:), allocatable, save ::
@@ -96,8 +96,8 @@ C Solve eigenvalue problem for each k-point
 C Initialize auxiliary variables 
         do iuo = 1, nuo
           do juo = 1, nuotot
-            saux(juo,iuo) = 0.D0
-            haux(juo,iuo) = 0.D0
+            saux(juo,iuo) = 0.0d0
+            haux(juo,iuo) = 0.0d0
           enddo
         enddo
 
@@ -114,18 +114,42 @@ C Build the full Hamiltonian and overlap matrix
         enddo
 
 C Diagonalize at the Gamma point
-        call rdiag( haux, saux, nuotot, nuo, nuotot, maxuo,
-     .              eo(1,ispin), psi, nuotot, ierror )
+        call rdiag( haux, saux, nuotot, nuo, nuotot, eo(1,ispin), 
+     .              psi, nuotot, 1, ierror )
+
+C Check error flag and take appropriate action
+        if (ierror.gt.0) then
+          call die('Terminating due to failed diagonalisation')
+        elseif (ierror.lt.0) then
+C Repeat diagonalisation with increased memory to handle clustering
+          do iuo = 1, nuo
+            do juo = 1, nuotot
+              saux(juo,iuo) = 0.0d0
+              haux(juo,iuo) = 0.0d0
+            enddo
+          enddo
+          do iuo = 1, nuo
+            do j = 1, numh(iuo)
+              ind = listhptr(iuo) + j
+              jo  = listh(ind)
+              juo = indxuo(jo)
+              saux(juo,iuo) = saux(juo,iuo) + S(ind)
+              haux(juo,iuo) = haux(juo,iuo) + H(ind,ispin)
+            enddo
+          enddo
+          call rdiag( haux, saux, nuotot, nuo, nuotot, eo(1,ispin),
+     .                psi, nuotot, 1, ierror )
+        endif
 
 C Rebuild the full overlap matrix
         do iuo = 1, nuo
           do juo = 1, nuotot
-            saux(juo,iuo) = 0.d0
+            saux(juo,iuo) = 0.0d0
           enddo
           do j = 1, numh(iuo)
             ind = listhptr(iuo) + j
-            jo = listh(ind)
-            juo= indxuo(jo)
+            jo  = listh(ind)
+            juo = indxuo(jo)
             saux(juo,iuo) = saux(juo,iuo) + S(ind)
           enddo
         enddo

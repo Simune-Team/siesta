@@ -331,10 +331,10 @@ C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
       DOUBLE PRECISION  THETA, PHI, D(NSPIN), DECDD(NSPIN),
      .                  DECDGD(3,NSPIN), DEXDD(NSPIN), DEXDGD(3,NSPIN),
      .                  EPSC, EPSX, GD(3,NSPIN),
-     .                  DD(2), DTOT, DPOL, GDTOT(3), GDPOL(3),
+     .                  DD(2), DTOT, DPOL,
      .                  GDD(3,2), TINY, DECDN(2), DEXDN(2),
      .                  VPOL, DECDGN(3,2), DEXDGN(3,2),
-     .                  VGPOLX, VGPOLC, C2, S2, ST, CP, SP
+     .                  C2, S2, ST, CP, SP
 
       PARAMETER ( TINY = 1.D-12 )
 
@@ -355,12 +355,12 @@ C       Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
         CP = COS(PHI)
         SP = SIN(PHI)
 C       Find diagonal elements of the gradient
-        DO 10 IX = 1,3
+        DO IX = 1,3
           GDD(IX,1) = GD(IX,1)*C2**2 + GD(IX,2)*S2**2 +
      .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
           GDD(IX,2) = GD(IX,1)*S2**2 + GD(IX,2)*C2**2 -
      .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
-   10   CONTINUE 
+        ENDDO
       ELSE
         NS = NSPIN
         DO 20 IS = 1,NSPIN
@@ -1394,25 +1394,28 @@ c Energies in Hartrees
 c Gradient vectors in cartesian coordinates
 c ********************************************************************
  
+      use precision, only : dp
+
       implicit none
+
       integer nspin
-      double precision  dens(nspin), gdens(3,nspin), EX, EC,
-     .                  dEXdd(nspin), dECdd(nspin), dEXdgd(3,nspin),
-     .                  dECdgd(3,nspin)
+      real(dp)   dens(nspin), gdens(3,nspin), EX, EC,
+     .           dEXdd(nspin), dECdd(nspin), dEXdgd(3,nspin),
+     .           dECdgd(3,nspin)
 
 c Internal variables
-      integer is,ix,ois
-      double precision pi, beta, thd, tthd, thrhlf, half, fothd,
-     .                 d(2),gd(3,2),dmin, ash,gdm(2),denmin,dt, 
-     .                 g(2),x(2),a,b,c,dd,onzthd,gdmin, 	     
-     .                 ga, gb, gc,becke,dbecgd(3,2),
-     .                 dgdx(2), dgdxa, dgdxb, dgdxc,dgdxd,dbecdd(2),
-     .                 den,omega, domega, delta, ddelta,cf,
-     .                 gam11, gam12, gam22, LYPa, LYPb1,
-     .                 LYPb2,dLYP11,dLYP12,dLYP22,LYP,
-     .                 dd1g11,dd1g12,dd1g22,dd2g12,dd2g11,dd2g22,
-     .                 dLYPdd(2),dg11dd(3,2),dg22dd(3,2),
-     .                 dg12dd(3,2),dLYPgd(3,2)
+      integer is,ix
+      real(dp)   pi, beta, thd, tthd, thrhlf, half, fothd,
+     .           d(2),gd(3,2),dmin, ash,gdm(2),denmin,dt, 
+     .           g(2),x(2),a,b,c,dd,onzthd,gdmin, 	     
+     .           ga, gb, gc,becke,dbecgd(3,2),
+     .           dgdx(2), dgdxa, dgdxb, dgdxc,dgdxd,dbecdd(2),
+     .           den,omega, domega, delta, ddelta,cf,
+     .           gam11, gam12, gam22, LYPa, LYPb1,
+     .           LYPb2,dLYP11,dLYP12,dLYP22,LYP,
+     .           dd1g11,dd1g12,dd1g22,dd2g12,dd2g11,dd2g22,
+     .           dLYPdd(2),dg11dd(3,2),dg22dd(3,2),
+     .           dg12dd(3,2),dLYPgd(3,2)
   
 c Lower bounds of density and its gradient to avoid divisions by zero
       parameter ( denmin=1.d-8 )

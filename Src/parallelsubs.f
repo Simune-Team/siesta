@@ -3,6 +3,8 @@ C
 C  Parallelisation related subroutines
 C
       use parallel, only : BlockSize, ProcessorY
+      use spatial,  only : lspatial, nNode, nL2G, nG2L,
+     .                     nOrbPerNode
 
       implicit none
 
@@ -14,7 +16,6 @@ C
       end subroutine set_processorY
 
       subroutine GetNodeOrbs( NOrb, Node, Nodes, NOrbNode)
-      
 C
 C  Calculates the number of orbitals stored on the local Node.
 C
@@ -54,20 +55,32 @@ C Values are the same as last call - no need to recalculate
         NOrbNode = NOrbNodeLast
 
       else
+
+        if (lspatial) then
+C-------------------------
+C  Spatial distribution  -
+C-------------------------
+          NOrbNode = nOrbPerNode(Node+1)
+
+        else
+C-----------------------------
+C  Blockcyclic distribution  -
+C-----------------------------
 C Calculate the minimum number of orbitals per node
-        MinPerNode = NOrb / (Nodes*BlockSize)
+          MinPerNode = NOrb / (Nodes*BlockSize)
 
 C Find the remainder of unassigned orbitals
-        Remainder = NOrb - MinPerNode * Nodes * BlockSize
+          Remainder = NOrb - MinPerNode * Nodes * BlockSize
 
 C Find number of complete blocks in the remainder
-        RemainderBlocks = Remainder / BlockSize
-        Remainder = Remainder - RemainderBlocks * BlockSize
+          RemainderBlocks = Remainder / BlockSize
+          Remainder = Remainder - RemainderBlocks * BlockSize
 
 C Workout the local number of orbitals
-        NOrbNode = MinPerNode*BlockSize
-        if (Node.lt.RemainderBlocks) NOrbNode = NOrbNode + BlockSize
-        if (Node.eq.RemainderBlocks) NOrbNode = NOrbNode + Remainder
+          NOrbNode = MinPerNode*BlockSize
+          if (Node.lt.RemainderBlocks) NOrbNode = NOrbNode + BlockSize
+          if (Node.eq.RemainderBlocks) NOrbNode = NOrbNode + Remainder
+        endif
 
 C Save value for next call
         NOrbNodeLast = NOrbNode
@@ -77,7 +90,6 @@ C Save value for next call
       end subroutine GetNodeOrbs
 
       subroutine GlobalToLocalOrb( GOrb, Node, Nodes, LOrb)
-      
 C
 C  Converts an orbital index in the global frame to the local frame
 C  if the orbital is local to this node. Otherwise the pointer is
@@ -108,29 +120,43 @@ C
 C  Local variables
       integer OrbCheck, GBlock, LEle, LBlock
 
+      if (lspatial) then 
+C-------------------------
+C  Spatial distribution  -
+C-------------------------
+        if (Node.eq.nNode(GOrb)) then
+          LOrb = nG2L(GOrb)
+        else
+          LOrb = 0
+        endif
+
+      else           
+C-----------------------------
+C  Blockcyclic distribution  -
+C-----------------------------
 C  Find global block number
-      GBlock = ((GOrb -1)/BlockSize)
+        GBlock = ((GOrb -1)/BlockSize)
 
 C  Substract global base line to find element number within the block
-      LEle = GOrb - GBlock*BlockSize
+        LEle = GOrb - GBlock*BlockSize
 
 C  Find the block number on the local node
-      LBlock = ((GBlock - Node)/Nodes)
+        LBlock = ((GBlock - Node)/Nodes)
 
 C  Generate the local orbital pointer based on the local block number
-      LOrb = LEle + LBlock*Blocksize
+        LOrb = LEle + LBlock*Blocksize
 
 C  Check that this is consistent - if it isn't then this
 C  local orbital is not on this node and so we return 0
 C  to indicate this.
-      OrbCheck = (LBlock*Nodes + Node)*BlockSize + LEle
-      if (OrbCheck.ne.GOrb) LOrb = 0
+        OrbCheck = (LBlock*Nodes + Node)*BlockSize + LEle
+        if (OrbCheck.ne.GOrb) LOrb = 0
+      endif
 
       end  subroutine GlobalToLocalOrb
 
 
       subroutine LocalToGlobalOrb( LOrb, Node, Nodes, GOrb)
-      
 C
 C  Converts an orbital index in the local frame to the global frame
 C
@@ -158,20 +184,31 @@ C
 C  Local variables
       integer LEle, LBlock
 
+      if (lspatial) then 
+C-------------------------
+C  Spatial distribution  - 
+C-------------------------
+        GOrb = nL2G(LOrb,Node+1)
+          
+      else   
+C-----------------------------
+C  Blockcyclic distribution  -
+C-----------------------------
 C  Find local block number
-      LBlock = ((LOrb -1)/BlockSize)
+        LBlock = ((LOrb -1)/BlockSize)
 
 C  Substract local base line to find element number within the block
-      LEle = LOrb - LBlock*BlockSize
+        LEle = LOrb - LBlock*BlockSize
 
 C  Calculate global index
-      GOrb = (LBlock*Nodes + Node)*BlockSize + LEle
+        GOrb = (LBlock*Nodes + Node)*BlockSize + LEle
 
+      endif
+  
       return
       end  subroutine LocalToGlobalOrb
 
       subroutine WhichNodeOrb( GOrb, Nodes, Node)
-      
 C
 C  Given the global orbital pointer, this routine
 C  returns the Node number where this is stored.
@@ -193,24 +230,33 @@ C  Output :
 C
 C  integer Node   = Node where this orbital is stored locally
 C
-
       integer GOrb, Node, Nodes
 
 C  Local variables
       integer GBlock
 
+      if (lspatial) then 
+C-------------------------
+C  Spatial distribution  - 
+C-------------------------
+        Node = nNode(GOrb)
+          
+      else   
+C-----------------------------
+C  Blockcyclic distribution  -
+C-----------------------------
 C  Find global block number
-      GBlock = ((GOrb -1)/BlockSize)
+        GBlock = ((GOrb -1)/BlockSize)
 
 C  Find the Node number that has this block
-      Node = mod(GBlock,Nodes)
+        Node = mod(GBlock,Nodes)
+      endif
 
       return
       end  subroutine WhichNodeOrb
 
 
       subroutine WhichMeshNode( GMesh, Nxyz, Nodes, Node)
-      
 C
 C  Given the global mesh pointer, this routine
 C  returns the Node number where this is stored.
@@ -255,7 +301,6 @@ C  Call subroutine to find node number from global XYZ index
       end   subroutine WhichMeshNode
 
       subroutine HowManyMeshPerNode(Nxyz, Node, Nodes, NMeshPN, NxyzL)
-      
 C
 C  Given the total dimensions of the grid of points it works
 C  out how many of the points are on the current node.
@@ -330,7 +375,6 @@ C  Calculate total number of grid points by multiplying dimensions
 
 
       subroutine GlobalToLocalMesh( GMesh, Nxyz, Node, Nodes, LMesh)
-      
 C
 C  Converts an orbital index in the global frame to the local frame
 C  if the orbital is local to this node. Otherwise the pointer is
@@ -393,7 +437,6 @@ C  Generate the local mesh pointer based on the local element and blocks
 
 
       subroutine WhichMeshXYZNode( Mesh, Nxyz, Nodes, Node)
-      
 C
 C  Given the global mesh pointer, this routine
 C  returns the Node number where this is stored.
@@ -469,7 +512,6 @@ C  Calculate processor number for this grid point
 
 
       subroutine GlobalToLocalXYZMesh( Mesh, Nxyz, Node, Nodes, LMesh)
-      
 C
 C  Converts an orbital index in the global frame to the local frame
 C  if the orbital is local to this node. Otherwise the pointer is

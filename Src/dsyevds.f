@@ -234,14 +234,14 @@
 *
       CALL DSYTRD( UPLO, N, A, LDA, W, WORK( INDE ), WORK( INDTAU ),
      $             Z, LLWORK, IINFO )
-      LOPT = 2*N + WORK( INDWRK )
+      LOPT = 2*N + Z( 1, 1 )
 *
 *     For eigenvalues only, call DSTERF.  For eigenvectors, first call
 *     DSTEDC to generate the eigenvector matrix, WORK(INDWRK), of the
 *     tridiagonal matrix, then call DORMTR to multiply it by the
 *     Householder transformations stored in A.
 *
-      IF( .NOT.WANTZ ) THEN
+      IF ( .NOT.WANTZ ) THEN
          CALL DSTERF( N, W, WORK( INDE ), INFO )
       ELSE
          CALL DSTEDC( 'I', N, W, WORK( INDE ), Z, LDZ,
@@ -261,6 +261,6 @@
 *
       RETURN
 *
-*     End of DSYEVD
+*     End of DSYEVDS
 *
       END

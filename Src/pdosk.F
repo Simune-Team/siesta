@@ -1,8 +1,8 @@
-      SUBROUTINE PDOSK( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH, 
-     .                  MAXO, NUMH, LISTHPTR, LISTH, H, S,
-     .                  E1, E2, NHIST, SIGMA, 
-     .                  XIJ, INDXUO, NK, KPOINT, WK, EO, 
-     .                  HAUX, SAUX, PSI, AUX, DTOT, DPR, NUOTOT )
+      subroutine pdosk( nspin, nuo, no, maxspn, maxuo, maxnh, 
+     .                  maxo, numh, listhptr, listh, H, S,
+     .                  E1, E2, nhist, sigma, 
+     .                  xij, indxuo, nk, kpoint, wk, eo, 
+     .                  Haux, Saux, psi, dtot, dpr, nuotot )
 
 C **********************************************************************
 C Find the density of states projected onto the atomic orbitals
@@ -10,44 +10,43 @@ C     D_mu(E) = Sum(n,k,nu) C(mu,n,k) C(nu,n,k) S(mu,nu,k) Delta(E-E(n,k))
 C where n run over all the bands between two given energies
 C Written by J. Junquera and E. Artacho. Nov' 99
 C ****  INPUT  *********************************************************
-C INTEGER NSPIN             : Number of spin components (1 or 2)
-C INTEGER NUO               : Number of atomic orbitals in the unit cell
+C INTEGER nspin             : Number of spin components (1 or 2)
+C INTEGER nuo               : Number of atomic orbitals in the unit cell
 C INTEGER NO                : Number of atomic orbitals in the supercell
-C INTEGER MAXSPN            : Second dimension of eo and qo 
+C INTEGER maxspn            : Second dimension of eo and qo 
 C                             (maximum number of differents spin polarizations)
-C INTEGER MAXUO             : Maximum number of atomic orbitals in the unit cell
-C INTEGER MAXNH             : Maximum number of orbitals interacting
+C INTEGER maxuo             : Maximum number of atomic orbitals in the unit cell
+C INTEGER maxnh             : Maximum number of orbitals interacting
 C                             with any orbital
-C INTEGER MAXO              : First dimension of eo
-C INTEGER NUMH(NUO)         : Number of nonzero elements of each row
+C INTEGER maxo              : First dimension of eo
+C INTEGER numh(nuo)         : Number of nonzero elements of each row
 C                             of hamiltonian matrix
-C INTEGER LISTHPTR(NUO)     : Pointer to each row (-1) of the
+C INTEGER listhptr(nuo)     : Pointer to each row (-1) of the
 C                             hamiltonian matrix
-C INTEGER LISTH(MAXNH)      : Nonzero hamiltonian-matrix element
+C INTEGER listh(maxnh)      : Nonzero hamiltonian-matrix element
 C                             column indexes for each matrix row
-C REAL*8  H(MAXNH,NSPIN)    : Hamiltonian in sparse format
-C REAL*8  S(MAXNH)          : Overlap in sparse format
+C REAL*8  H(maxnh,nspin)    : Hamiltonian in sparse format
+C REAL*8  S(maxnh)          : Overlap in sparse format
 C REAL*8  E1, E2            : Energy range for density-matrix states
 C                             (to find local density of states)
 C                             Not used if e1 > e2
-C INTEGER NHIST             : Number of the subdivisions of the histogram
-C REAL*8  SIGMA             : Width of the gaussian to expand the eigenvectors
-C REAL*8  XIJ(3,MAXNH)      : Vectors between orbital centers (sparse)
+C INTEGER nhist             : Number of the subdivisions of the histogram
+C REAL*8  sigma             : Width of the gaussian to expand the eigenvectors
+C REAL*8  xij(3,maxnh)      : Vectors between orbital centers (sparse)
 C                             (not used if only gamma point)
-C INTEGER INDXUO(NO)        : Index of equivalent orbital in unit cell
+C INTEGER indxuo(no)        : Index of equivalent orbital in unit cell
 C INTEGER NK                : Number of k points
-C REAL*8  KPOINT(3,NK)      : k point vectors
-C REAL*8  WK(NK)            : Weights for k points
-C REAL*8  EO(MAXO,MAXSPN,NK): Eigenvalues
-C INTEGER NUOTOT            : Total number of orbitals per unit cell
+C REAL*8  kpoint(3,nk)      : k point vectors
+C REAL*8  WK(nk)            : Weights for k points
+C REAL*8  EO(maxo,maxspn,nk): Eigenvalues
+C INTEGER nuotot            : Total number of orbitals per unit cell
 C ****  AUXILIARY  *****************************************************
-C REAL*8  HAUX(2,NUO,NUO)   : Auxiliary space for the hamiltonian matrix
-C REAL*8  SAUX(2,NUO,NUO)   : Auxiliary space for the overlap matrix
-C REAL*8  PSI(2,NUO,NUO)    : Auxiliary space for the eigenvectors
-C REAL*8  AUX(2*NUO*5)      : Extra auxiliary space
+C REAL*8  Haux(2,nuo,nuo)   : Auxiliary space for the hamiltonian matrix
+C REAL*8  Saux(2,nuo,nuo)   : Auxiliary space for the overlap matrix
+C REAL*8  psi(2,nuo,nuo)    : Auxiliary space for the eigenvectors
 C ****  OUTPUT  ********************************************************
-C REAL*8  DTOT(NHIST,2)   : Total density of states
-C REAL*8  DPR(NHIST,NUO,2): Proyected density of states
+C REAL*8  dtot(nhist,2)   : Total density of states
+C REAL*8  dpr(nhist,nuo,2): Proyected density of states
 C **********************************************************************
 
       use precision
@@ -56,110 +55,143 @@ C **********************************************************************
 #ifdef MPI
       use mpi_siesta
 #endif
+      use sys,          only : die
 
-      IMPLICIT NONE
+      implicit none
 
-      INTEGER
-     .  NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH, NK, 
-     .  MAXO, NHIST, NUOTOT
+      integer
+     .  nspin, nuo, no, maxspn, maxuo, maxnh, NK, 
+     .  maxo, nhist, nuotot
 
-      INTEGER
-     .  NUMH(NUO), LISTHPTR(NUO), LISTH(MAXNH),
-     .  INDXUO(NO)
+      integer
+     .  numh(nuo), listhptr(nuo), listh(maxnh),
+     .  indxuo(no)
 
       real(dp)
-     .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA, 
-     .  XIJ(3,MAXNH), KPOINT(3,NK), EO(MAXO,MAXSPN,NK),
-     .  HAUX(2,NUOTOT,NUO), SAUX(2,NUOTOT,NUO), PSI(2,NUOTOT,NUO),
-     .  AUX(2*NUOTOT*5), DTOT(NHIST,2), DPR(NHIST,NUOTOT,2), WK(NK)
+     .  H(maxnh,nspin), S(maxnh), E1, E2, sigma, 
+     .  xij(3,maxnh), kpoint(3,nk), eo(maxo,maxspn,nk),
+     .  Haux(2,nuotot,nuo), Saux(2,nuotot,nuo), psi(2,nuotot,nuo),
+     .  dtot(nhist,2), dpr(nhist,nuotot,2), wk(nk)
 
 C Internal variables ---------------------------------------------------
-      INTEGER
-     .  IK, ISPIN, IUO, JUO, IO, J, JO, IHIST, IBAND, JOTY, IND,
-     .  IERROR, IBANDG
+      integer
+     .  ik, ispin, iuo, juo, J, JO, ihist, iband, ind, ierror
 
       real(dp)
-     .  KXIJ, CKXIJ, SKXIJ, DELTA, ENER, DIFF, PI, PIPJ1, PIPJ2, 
-     .  PIPJS1, PIPJS2, GAUSS, NORM, WKSUM
+     .  kxij, Ckxij, Skxij, delta, ener, diff, PI, pipj1, pipj2, 
+     .  pipjS1, pipjS2, gauss, norm, wksum
 
 #ifdef MPI
       integer ::
-     .  BNode, Bnuo, maxnuo, MPIerror
+     .  BNode, Bnuo, ibandg, maxnuo, MPIerror
       real(dp), dimension(:,:,:), allocatable, save ::
      .  Sloc
 #endif
 
-      EXTERNAL
-     .  CDIAG
+      external
+     .  cdiag
 
 C Initialize some variables
-      DELTA = (E2 - E1)/NHIST
-      PI = 4.0D0 * ATAN(1.0D0)
+      delta = (E2 - E1)/nhist
+      pi = 4.0d0 * atan(1.0D0)
 
 C Solve eigenvalue problem for each k-point
-      DO ISPIN = 1, NSPIN
+      do ispin = 1, nspin
 
-        DO IK = 1, NK
+        do IK = 1, NK
 
 C Initialize auxiliary variables 
-          DO IUO = 1, NUO
-            DO JUO = 1, NUOTOT
-              SAUX(1,JUO,IUO) = 0.D0
-              SAUX(2,JUO,IUO) = 0.D0
-              HAUX(1,JUO,IUO) = 0.D0
-              HAUX(2,JUO,IUO) = 0.D0
-            ENDDO
-          ENDDO
+          do iuo = 1,nuo
+            do juo = 1,nuotot
+              Saux(1,juo,iuo) = 0.0d0
+              Saux(2,juo,iuo) = 0.0d0
+              Haux(1,juo,iuo) = 0.0d0
+              Haux(2,juo,iuo) = 0.0d0
+            enddo
+          enddo
 
-          DO IUO = 1, NUO
-            DO J = 1, NUMH(IUO)
-              IND = LISTHPTR(IUO) + J
-              JO = LISTH(IND)
-              JUO= INDXUO(JO)
+          do iuo = 1, nuo
+            do j = 1, numh(iuo)
+              ind = listhptr(iuo) + j
+              jo  = listh(ind)
+              juo = indxuo(jo)
 C Calculate the phases k*r_ij
-              KXIJ = KPOINT(1,IK) * XIJ(1,IND) +
-     .               KPOINT(2,IK) * XIJ(2,IND) +
-     .               KPOINT(3,IK) * XIJ(3,IND) 
-              CKXIJ = COS(KXIJ)
-              SKXIJ = SIN(KXIJ)
+              kxij = kpoint(1,IK) * xij(1,ind) +
+     .               kpoint(2,IK) * xij(2,ind) +
+     .               kpoint(3,IK) * xij(3,ind) 
+              Ckxij = cos(kxij)
+              Skxij = sin(kxij)
 C Calculate the Hamiltonian and the overlap in k space
 C H(k) = Sum(R) exp(i*k*R) * H(R)
-              SAUX(1,JUO,IUO) = SAUX(1,JUO,IUO) + S(IND) * CKXIJ
-              SAUX(2,JUO,IUO) = SAUX(2,JUO,IUO) - S(IND) * SKXIJ
-              HAUX(1,JUO,IUO) = HAUX(1,JUO,IUO) + H(IND,ISPIN) * CKXIJ
-              HAUX(2,JUO,IUO) = HAUX(2,JUO,IUO) - H(IND,ISPIN) * SKXIJ
-            ENDDO
-          ENDDO
+              Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind) * Ckxij
+              Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind) * Skxij
+              Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin) * Ckxij
+              Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin) * Skxij
+            enddo
+          enddo
 
 C Diagonalize for each k point
-          CALL CDIAG( HAUX, NUOTOT, SAUX, NUOTOT, NUO,
-     .                EO(1,ISPIN,IK), PSI, NUOTOT, NUOTOT, IERROR )
+          call cdiag( Haux, Saux, nuotot, nuo, nuotot,
+     .                eo(1,ispin,IK), psi, nuotot, 1, ierror )
+
+C Check error flag and take appropriate action
+          if (ierror.gt.0) then
+            call die('Terminating due to failed diagonalisation')
+          elseif (ierror.lt.0) then
+C Repeat diagonalisation with increased memory to handle clustering
+            do iuo = 1,nuo
+              do juo = 1,nuotot
+                Saux(1,juo,iuo) = 0.0d0
+                Saux(2,juo,iuo) = 0.0d0
+                Haux(1,juo,iuo) = 0.0d0
+                Haux(2,juo,iuo) = 0.0d0
+              enddo
+            enddo
+            do iuo = 1, nuo
+              do j = 1, numh(iuo)
+                ind = listhptr(iuo) + J
+                jo  = listh(ind)
+                juo = indxuo(jo)
+                kxij = kpoint(1,IK) * xij(1,ind) +
+     .                 kpoint(2,IK) * xij(2,ind) +
+     .                 kpoint(3,IK) * xij(3,ind) 
+                Ckxij = cos(kxij)
+                Skxij = sin(kxij)
+                Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind) * Ckxij
+                Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind) * Skxij
+                Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin) * Ckxij
+                Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin) * Skxij
+              enddo
+            enddo
+            call cdiag( Haux, Saux, nuotot, nuo, nuotot,
+     .                  eo(1,ispin,IK), psi, nuotot, 1, ierror )
+          endif
 
 C Recalculate again the overlap matrix in k-space
-          DO IUO = 1, NUO
-            DO JUO = 1, NUOTOT
-              SAUX(1,JUO,IUO) = 0.D0
-              SAUX(2,JUO,IUO) = 0.D0
-            ENDDO
-          ENDDO
+          do iuo = 1, nuo
+            do juo = 1, nuotot
+              Saux(1,juo,iuo) = 0.0d0
+              Saux(2,juo,iuo) = 0.0d0
+            enddo
+          enddo
 
-          DO IUO = 1, NUO
-            DO  J = 1, NUMH(IUO)
-              IND = LISTHPTR(IUO) + J
-              JO = LISTH(IND)
-              JUO= INDXUO(JO)
+          do iuo = 1,nuo
+            do  j = 1,numh(iuo)
+              ind = listhptr(iuo) + j
+              jo  = listh(ind)
+              juo = indxuo(jo)
 C Calculates the phases k*r_ij
-              KXIJ = KPOINT(1,IK) * XIJ(1,IND) +
-     .               KPOINT(2,IK) * XIJ(2,IND) +
-     .               KPOINT(3,IK) * XIJ(3,IND) 
-              CKXIJ = COS(KXIJ)
-              SKXIJ = SIN(KXIJ)
+              kxij = kpoint(1,IK) * xij(1,ind) +
+     .               kpoint(2,IK) * xij(2,ind) +
+     .               kpoint(3,IK) * xij(3,ind) 
+              ckxij = cos(kxij)
+              skxij = sin(kxij)
 C Calculates the hamiltonian and the overlap in k space
 C H(k) = Sum(R) exp(i*k*R) * H(R)
-              SAUX(1,JUO,IUO) = SAUX(1,JUO,IUO) + S(IND) * CKXIJ
-              SAUX(2,JUO,IUO) = SAUX(2,JUO,IUO) - S(IND) * SKXIJ
-            ENDDO
-          ENDDO
+              Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind) * ckxij
+              Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind) * skxij
+            enddo
+          enddo
 
 #ifdef MPI
 C Find maximum number of orbitals per node
@@ -189,37 +221,37 @@ C Transfer data
 #endif
 
 C Loop over all the energy range
-            DO IHIST = 1, NHIST
-              ENER = E1 + (IHIST - 1) * DELTA
-              DO 170 IBAND = 1, NUO
-                call LocalToGlobalOrb(IBAND,Node,Nodes,IBANDG)
-                DIFF = (ENER - EO(IBANDG,ISPIN,IK))**2 / (SIGMA ** 2)
-                IF (DIFF .GT. 15.0D0) THEN
-                  GOTO 170
-                ELSE
-                  GAUSS = ( EXP(-DIFF) )
+            do ihist = 1, nhist
+              ener = E1 + (ihist - 1) * delta
+              do 170 iband = 1, nuo
+                call LocalToGlobalOrb(iband,Node,Nodes,ibandg)
+                diff = (ener - EO(ibandg,ispin,IK))**2 / (sigma ** 2)
+                if (diff .gt. 15.0D0) then
+                  goto 170
+                else
+                  gauss = ( EXP(-diff) )
                   if (Node.eq.BNode) then
-C Only add once to DTOT - not everytime loop over processors is executed
-                    DTOT(IHIST,ISPIN) = DTOT(IHIST,ISPIN) + GAUSS*WK(IK)
+C Only add once to dtot - not everytime loop over processors is executed
+                    dtot(ihist,ispin) = dtot(ihist,ispin) + gauss*WK(IK)
                   endif
-                  DO jo = 1, Bnuo
+                  do jo = 1, Bnuo
                     call LocalToGlobalOrb(jo,BNode,Nodes,juo)
-                    DO IUO = 1, NUOTOT
+                    do iuo = 1, nuotot
 C Solo para los Juo que satisfagan el criterio del record...
-                      PIPJ1 = PSI(1,IUO,IBAND) * PSI(1,JUO,IBAND) +
-     .                        PSI(2,IUO,IBAND) * PSI(2,JUO,IBAND)
-                      PIPJ2 = PSI(1,IUO,IBAND) * PSI(2,JUO,IBAND) -
-     .                        PSI(2,IUO,IBAND) * PSI(1,JUO,IBAND)
-                      PIPJS1= PIPJ1*Sloc(1,IUO,JO)-PIPJ2*Sloc(2,IUO,JO)
-                      PIPJS2= PIPJ1*Sloc(2,IUO,JO)+PIPJ2*Sloc(1,IUO,JO)
-                      DPR(IHIST,JUO,ISPIN)= DPR(IHIST,JUO,ISPIN) + 
-     .                                       PIPJS1*GAUSS*WK(IK)
-                    ENDDO
-                  ENDDO
-                ENDIF
- 170          ENDDO
+                      pipj1 = psi(1,iuo,iband) * psi(1,juo,iband) +
+     .                        psi(2,iuo,iband) * psi(2,juo,iband)
+                      pipj2 = psi(1,iuo,iband) * psi(2,juo,iband) -
+     .                        psi(2,iuo,iband) * psi(1,juo,iband)
+                      pipjS1= pipj1*Sloc(1,iuo,JO)-pipj2*Sloc(2,iuo,JO)
+                      pipjS2= pipj1*Sloc(2,iuo,JO)+pipj2*Sloc(1,iuo,JO)
+                      dpr(ihist,juo,ispin)= dpr(ihist,juo,ispin) + 
+     .                                       pipjS1*gauss*WK(IK)
+                    enddo
+                  enddo
+                endif
+ 170          enddo
 
-            ENDDO
+            enddo
 
 C End loop over broadcast nodes
           enddo
@@ -230,32 +262,32 @@ C Free workspace array for overlap
 
 #else
 C Loop over all the energy range
-          DO IHIST = 1, NHIST
-            ENER = E1 + (IHIST - 1) * DELTA
-            DO 170 IBAND = 1, NUO
-              DIFF = (ENER - EO(IBAND,ISPIN,IK))**2 / (SIGMA ** 2)
-              IF (DIFF .GT. 15.0D0) THEN
-                GOTO 170
-              ELSE
-                GAUSS = ( EXP(-DIFF) )
-                DTOT(IHIST,ISPIN) = DTOT(IHIST,ISPIN) + GAUSS*WK(IK)
-                DO IUO = 1, NUOTOT
+          do ihist = 1, nhist
+            ener = E1 + (ihist - 1) * delta
+            do 170 iband = 1,nuo
+              diff = (ener - EO(iband,ispin,IK))**2 / (sigma ** 2)
+              if (diff .gt. 15.0d0) then
+                goto 170
+              else
+                gauss = ( EXP(-diff) )
+                dtot(ihist,ispin) = dtot(ihist,ispin) + gauss*WK(IK)
+                do iuo = 1, nuotot
 C Solo para los Juo que satisfagan el criterio del record...
-                  DO JUO = 1, NUOTOT
-                    PIPJ1 = PSI(1,IUO,IBAND) * PSI(1,JUO,IBAND) +
-     .                      PSI(2,IUO,IBAND) * PSI(2,JUO,IBAND)
-                    PIPJ2 = PSI(1,IUO,IBAND) * PSI(2,JUO,IBAND) -
-     .                      PSI(2,IUO,IBAND) * PSI(1,JUO,IBAND)
-                    PIPJS1= PIPJ1*SAUX(1,IUO,JUO)-PIPJ2*SAUX(2,IUO,JUO)
-                    PIPJS2= PIPJ1*SAUX(2,IUO,JUO)+PIPJ2*SAUX(1,IUO,JUO)
-                    DPR(IHIST,JUO,ISPIN)= DPR(IHIST,JUO,ISPIN) + 
-     .                                     PIPJS1*GAUSS*WK(IK)
-                  ENDDO
-                ENDDO
-              ENDIF
- 170        ENDDO
+                  do juo = 1, nuotot
+                    pipj1 = psi(1,iuo,iband) * psi(1,juo,iband) +
+     .                      psi(2,iuo,iband) * psi(2,juo,iband)
+                    pipj2 = psi(1,iuo,iband) * psi(2,juo,iband) -
+     .                      psi(2,iuo,iband) * psi(1,juo,iband)
+                    pipjS1= pipj1*Saux(1,iuo,juo)-pipj2*Saux(2,iuo,juo)
+                    pipjS2= pipj1*Saux(2,iuo,juo)+pipj2*Saux(1,iuo,juo)
+                    dpr(ihist,juo,ispin)= dpr(ihist,juo,ispin) + 
+     .                                     pipjS1*gauss*WK(IK)
+                  enddo
+                enddo
+              endif
+ 170        enddo
 
-          ENDDO
+          enddo
 #endif
 
         enddo
@@ -267,7 +299,7 @@ C Allocate workspace array for global reduction
       allocate(Sloc(nhist,max(nuotot,nspin),nspin))
       call memory('A','D',nhist*nuotot*nspin,'pdosk')
 
-C Global reduction of DPR matrix
+C Global reduction of dpr matrix
       Sloc(1:nhist,1:nuotot,1:nspin) = 0.0d0
 #ifdef NODAT
       call MPI_AllReduce(dpr(1,1,1),Sloc(1,1,1),nhist*nuotot*nspin,
@@ -278,7 +310,7 @@ C Global reduction of DPR matrix
 #endif
       dpr(1:nhist,1:nuotot,1:nspin) = Sloc(1:nhist,1:nuotot,1:nspin)
 
-C Global reduction of DTOT matrix
+C Global reduction of dtot matrix
       Sloc(1:nhist,1:nspin,1) = 0.0d0
 #ifdef NODAT
       call MPI_AllReduce(dtot(1,1),Sloc(1,1,1),nhist*nspin,
@@ -294,21 +326,21 @@ C Free workspace array for global reduction
       deallocate(Sloc)
 #endif
 
-      WKSUM = 0.0d0
-      DO IK = 1,NK
-        WKSUM = WKSUM + WK(IK)
-      ENDDO
+      wksum = 0.0d0
+      do IK = 1,NK
+        wksum = wksum + WK(IK)
+      enddo
 
-      NORM = SIGMA * SQRT(PI) * WKSUM
+      norm = sigma * sqrt(PI) * wksum
 
-      DO IHIST = 1, NHIST
-        DO ISPIN = 1, NSPIN
-          DTOT(IHIST,ISPIN) = DTOT(IHIST,ISPIN) / NORM
-          DO IUO = 1, NUOTOT
-            DPR(IHIST,IUO,ISPIN) = DPR(IHIST,IUO,ISPIN) /NORM
-          ENDDO
-        ENDDO
-      ENDDO
+      do ihist = 1, nhist
+        do ispin = 1, nspin
+          dtot(ihist,ispin) = dtot(ihist,ispin) / norm
+          do iuo = 1, nuotot
+            dpr(ihist,iuo,ispin) = dpr(ihist,iuo,ispin) /norm
+          enddo
+        enddo
+      enddo
 
-      RETURN
-      END
+      return
+      end

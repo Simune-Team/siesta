@@ -3,15 +3,18 @@
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
-     .                   Haux, Saux, psi, Dk, Ek, aux, nuotot )
+     .                   Haux, Saux, psi, Dk, Ek, aux, nuotot,
+     .                   occtol, iscf )
 C *********************************************************************
 C Calculates the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
 C eigenvector, for given Hamiltonian and Overlap matrices.
 C This version is for non-colinear spin with k-sampling and time 
 C reversal symmetry.
-C Writen by J.Soler, August 1998.
+C Written by J.Soler, August 1998.
 C Modified by V.M.Garcia, June 2002.
+C Density matrix build and computation of eigenvectors restricted
+C by J.D. Gale November 2004.
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -50,6 +53,8 @@ C real*8  kpoint(3,nk)        : k point vectors
 C real*8  wk(nk)              : k point weights (must sum one)
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
+C real*8  occtol              : Occupancy threshold for DM build
+C integer iscf                : SCF cycle number
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo*4,nk)        : Eigenvalues
 C real*8 qo(maxo*4,nk)        : Occupations of eigenstates
@@ -92,14 +97,14 @@ C
 #endif
 
       integer
-     .  maxuo, maxnd, maxnh, maxo, nk, no, nuo, nuotot
+     .  maxuo, maxnd, maxnh, maxo, nk, no, nuo, nuotot, iscf
 
       integer 
      .  indxuo(no), listh(maxnh), numh(nuo), listd(maxnd), numd(nuo),
      .  listhptr(*), listdptr(*)
 
       real(dp)
-     .  Dnew(maxnd,4),
+     .  Dnew(maxnd,4), occtol,
      .  e1, e2, ef, Enew(maxnd,4), eo(maxo*4,nk), Entropy,
      .  H(maxnh,4), kpoint(3,nk), qo(maxo*4,nk), qtot,
      .  S(maxnh), temp, wk(nk), xij(3,maxnh)
@@ -116,11 +121,8 @@ C
 
 C  Internal variables .............................................
       integer
-     .  BNode, BTest, i, ie, ierror, iie, ik, ind, io, iio,
-     .  iuo, j, jo, juo, nd
-      integer, allocatable, save :: HighestOccupiedBand(:)
-      logical
-     .  lfound
+     .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
+     .  iuo, j, jo, juo, nd, neigneeded
       real(dp)
      .  ckx, ee, kxij, pipj1, pipj2, qe, skx, t
 C  ....................
@@ -168,15 +170,15 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
 C Hermiticity
         do iuo = 1,nuo
           do juo = 1,nuo
-            Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
-            Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
+            Haux(1,2,juo,1,iuo) =   Haux(1,1,iuo,2,juo)
+            Haux(2,2,juo,1,iuo) = - Haux(2,1,iuo,2,juo)
           enddo
         enddo
 
 C Find eigenvalues
 C Possible memory optimization: equivalence Haux and psi
-        call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
-     .              eo(1,ik), psi, 2*nuotot, 0, ierror )
+        call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,eo(1,ik),psi,
+     .             0,iscf,ierror)
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
@@ -210,24 +212,21 @@ C Find weights for local density of states ............................
         enddo
       endif
       
-C Create pointer to highest occupied band
-      allocate(HighestOccupiedBand(nk))
-      do ik = 1,nk
-        io = 2*nuotot  + 1
-        lfound = .false.
-        do while (io.gt.1.and..not.lfound)
-          io = io - 1
-          lfound = (abs(qo(io,ik)).gt.1.0d-12)
-        enddo
-        HighestOccupiedBand(ik) = io
-      enddo
-
 C New density and energy-density matrices of unit-cell orbitals .......
       nd = listdptr(nuo) + numd(nuo)
       Dnew(1:nd,1:4) = 0.0d0
       Enew(1:nd,1:4) = 0.0d0
 
       do ik = 1,nk
+
+C Find maximum eigenvector that is required for this k point 
+        neigneeded = 0
+        ie = nuotot
+        do while (ie.gt.0.and.neigneeded.eq.0)
+          qe = qo(ie,ik)
+          if (qe.gt.occtol) neigneeded = ie
+          ie = ie - 1
+        enddo
 
 C Find eigenvectors 
         Saux = 0.0d0
@@ -260,15 +259,53 @@ C Find eigenvectors
 C Hermiticity
         do iuo = 1,nuo
           do juo = 1,nuo
-            Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
-            Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
+            Haux(1,2,juo,1,iuo) =   Haux(1,1,iuo,2,juo)
+            Haux(2,2,juo,1,iuo) = - Haux(2,1,iuo,2,juo)
           enddo
         enddo
 
-        call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
-     .              eo(1,ik), psi, 2*nuotot, 2*nuo, ierror )
-        if (ierror.ne.0) then
+        call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,aux,psi,
+     .             neigneeded,iscf,ierror)
+
+C Check error flag and take appropriate action
+        if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
+        elseif (ierror.lt.0) then
+C Repeat diagonalisation with increased memory to handle clustering
+          Saux = 0.0d0
+          Haux = 0.0d0
+          do iuo = 1,nuo
+            do j = 1,numh(iuo)
+              ind = listhptr(iuo) + j
+              jo = listh(ind)
+              juo = indxuo(jo)
+              kxij = kpoint(1,ik) * xij(1,ind) +
+     .               kpoint(2,ik) * xij(2,ind) +
+     .               kpoint(3,ik) * xij(3,ind)
+              ckx = cos(kxij)
+              skx = sin(kxij)
+              Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(ind)*ckx
+              Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(ind)*skx
+              Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(ind)*ckx
+              Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(ind)*skx
+              Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(ind,1)*ckx
+              Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(ind,1)*skx
+              Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(ind,2)*ckx
+              Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(ind,2)*skx
+              Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(ind,3)*ckx
+     .                                                  + H(ind,4)*skx
+              Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
+     .                                                  + H(ind,3)*skx
+            enddo
+          enddo
+          do iuo = 1,nuo
+            do juo = 1,nuo
+              Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
+              Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
+            enddo
+          enddo
+          call cdiag(Haux,Saux,2*nuotot,2*nuotot,2*nuo,aux,psi,
+     .               neigneeded,iscf,ierror)
         endif
 
 C Store the products of eigenvectors in matrices Dk and Ek
@@ -278,60 +315,64 @@ C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
 
         BNode = 0
         iie = 0
-        do ie = 1,HighestOccupiedBand(ik)
+        do ie = 1,nuotot
           if (Node.eq.BNode) then
             iie = iie + 1
-            do j = 1,nuotot
-              aux(1,j) = psi(1,1,j,iie)
-              aux(2,j) = psi(2,1,j,iie)
-              aux(3,j) = psi(1,2,j,iie)
-              aux(4,j) = psi(2,2,j,iie)
-            enddo
           endif
+          qe = qo(ie,ik)
+          if (qe.gt.occtol) then
+            if (Node.eq.BNode) then
+              do j = 1,nuotot
+                aux(1,j) = psi(1,1,j,iie)
+                aux(2,j) = psi(2,1,j,iie)
+                aux(3,j) = psi(1,2,j,iie)
+                aux(4,j) = psi(2,2,j,iie)
+              enddo
+            endif
 #ifdef MPI
 #ifdef NODAT
-          call MPI_Bcast(aux(1,1),4*nuotot,MPI_double_precision,BNode,
-     .      MPI_Comm_World,MPIerror)
+            call MPI_Bcast(aux(1,1),4*nuotot,MPI_double_precision,BNode,
+     .        MPI_Comm_World,MPIerror)
 #else
-          call MPI_Bcast(aux(1,1),4*nuotot,DAT_double,BNode,
-     .      MPI_Comm_World,MPIerror)
+            call MPI_Bcast(aux(1,1),4*nuotot,DAT_double,BNode,
+     .        MPI_Comm_World,MPIerror)
 #endif
 #endif
-          qe = qo(ie,ik)
-          ee = qo(ie,ik) * eo(ie,ik)
-          do iuo = 1,nuo
-            call LocalToGlobalOrb(iuo,Node,Nodes,iio)
-            do juo = 1,nuotot
+            ee = qo(ie,ik) * eo(ie,ik)
+            do iuo = 1,nuo
+              call LocalToGlobalOrb(iuo,Node,Nodes,iio)
+              do juo = 1,nuotot
 
-              pipj1 = aux(1,iio) * aux(1,juo) +
-     .                aux(2,iio) * aux(2,juo)
-              pipj2 = aux(1,iio) * aux(2,juo) -
-     .                aux(2,iio) * aux(1,juo)
-              Dk(1,1,juo,1,iuo) = Dk(1,1,juo,1,iuo) + qe * pipj1
-              Dk(2,1,juo,1,iuo) = Dk(2,1,juo,1,iuo) + qe * pipj2
-              Ek(1,1,juo,1,iuo) = Ek(1,1,juo,1,iuo) + ee * pipj1
-              Ek(2,1,juo,1,iuo) = Ek(2,1,juo,1,iuo) + ee * pipj2
+                pipj1 = aux(1,iio) * aux(1,juo) +
+     .                  aux(2,iio) * aux(2,juo)
+                pipj2 = aux(1,iio) * aux(2,juo) -
+     .                  aux(2,iio) * aux(1,juo)
+                Dk(1,1,juo,1,iuo) = Dk(1,1,juo,1,iuo) + qe * pipj1
+                Dk(2,1,juo,1,iuo) = Dk(2,1,juo,1,iuo) + qe * pipj2
+                Ek(1,1,juo,1,iuo) = Ek(1,1,juo,1,iuo) + ee * pipj1
+                Ek(2,1,juo,1,iuo) = Ek(2,1,juo,1,iuo) + ee * pipj2
 
-              pipj1 = aux(3,iio) * aux(3,juo) +
-     .                aux(4,iio) * aux(4,juo)
-              pipj2 = aux(3,iio) * aux(4,juo) -
-     .                aux(4,iio) * aux(3,juo)
-              Dk(1,2,juo,2,iuo) = Dk(1,2,juo,2,iuo) + qe * pipj1
-              Dk(2,2,juo,2,iuo) = Dk(2,2,juo,2,iuo) + qe * pipj2
-              Ek(1,2,juo,2,iuo) = Ek(1,2,juo,2,iuo) + ee * pipj1
-              Ek(2,2,juo,2,iuo) = Ek(2,2,juo,2,iuo) + ee * pipj2
+                pipj1 = aux(3,iio) * aux(3,juo) +
+     .                  aux(4,iio) * aux(4,juo)
+                pipj2 = aux(3,iio) * aux(4,juo) -
+     .                  aux(4,iio) * aux(3,juo)
+                Dk(1,2,juo,2,iuo) = Dk(1,2,juo,2,iuo) + qe * pipj1
+                Dk(2,2,juo,2,iuo) = Dk(2,2,juo,2,iuo) + qe * pipj2
+                Ek(1,2,juo,2,iuo) = Ek(1,2,juo,2,iuo) + ee * pipj1
+                Ek(2,2,juo,2,iuo) = Ek(2,2,juo,2,iuo) + ee * pipj2
 
-              pipj1 = aux(1,iio) * aux(3,juo) +
-     .                aux(2,iio) * aux(4,juo)
-              pipj2 = aux(1,iio) * aux(4,juo) -
-     .                aux(2,iio) * aux(3,juo)
-              Dk(1,1,juo,2,iuo) = Dk(1,1,juo,2,iuo) + qe * pipj1
-              Dk(2,1,juo,2,iuo) = Dk(2,1,juo,2,iuo) + qe * pipj2
-              Ek(1,1,juo,2,iuo) = Ek(1,1,juo,2,iuo) + ee * pipj1
-              Ek(2,1,juo,2,iuo) = Ek(2,1,juo,2,iuo) + ee * pipj2
+                pipj1 = aux(1,iio) * aux(3,juo) +
+     .                  aux(2,iio) * aux(4,juo)
+                pipj2 = aux(1,iio) * aux(4,juo) -
+     .                  aux(2,iio) * aux(3,juo)
+                Dk(1,1,juo,2,iuo) = Dk(1,1,juo,2,iuo) + qe * pipj1
+                Dk(2,1,juo,2,iuo) = Dk(2,1,juo,2,iuo) + qe * pipj2
+                Ek(1,1,juo,2,iuo) = Ek(1,1,juo,2,iuo) + ee * pipj1
+                Ek(2,1,juo,2,iuo) = Ek(2,1,juo,2,iuo) + ee * pipj2
 
+              enddo
             enddo
-          enddo
+          endif
           BTest = ie/BlockSize
           if (BTest*BlockSize.eq.ie) then
             BNode = BNode + 1
@@ -361,7 +402,7 @@ C Add contribution to density matrices of unit-cell orbitals
             Enew(ind,2) = Enew(ind,2) + Ek(1,2,juo,2,iuo) * ckx
      .                                + Ek(2,2,juo,2,iuo) * skx
 
-            ! Average k and -k solutions because time-reversal sym
+C Average k and -k solutions because time-reversal sym
             Dnew(ind,3) = Dnew(ind,3) + 0.5d0 * 
      .       ((Dk(1,1,juo,2,iuo) + Dk(1,1,iuo,2,juo)) * ckx
      .       +(Dk(2,1,juo,2,iuo) - Dk(2,1,iuo,2,juo)) * skx)
@@ -380,8 +421,5 @@ C Add contribution to density matrices of unit-cell orbitals
         enddo
 
       enddo
-
-C Free local memory
-      deallocate(HighestOccupiedBand)
 
       end

@@ -64,10 +64,10 @@ C Internal variables ---------------------------------------------------
      .  SNAME, FNAME1, FNAME2
 
       INTEGER
-     .  UNIT1, UNIT2, IL, IA, J, MAXNHG
+     .  UNIT1, UNIT2, IL, IA, J
 
 #ifdef MPI
-      INTEGER MPIerror
+      INTEGER MPIerror, MAXNHG
 #endif
 
       EXTERNAL

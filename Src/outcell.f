@@ -1,5 +1,3 @@
-c $Id: outcell.f,v 1.3 1999/01/31 11:20:11 emilio Exp $
-
       subroutine outcell(cell) 
 
 c *******************************************************************
@@ -10,14 +8,17 @@ c ********* INPUT ***************************************************
 c double precision cell(3,3): Lattice (supercell) vectors
 c *******************************************************************
 
-      implicit          none
-      double precision  cell(3,3)
+      use precision, only : dp
+
+      implicit none
+
+      real(dp)   :: cell(3,3)
 
 c Internal variables and arrays
 
-      integer           iv, ix
-      double precision  cellm(3), celang(3), 
-     .                  volume, volcel, Ang, pi
+      integer    :: iv, ix
+      real(dp)   :: cellm(3), celang(3), 
+     .              volume, volcel, Ang, pi
 
       external volcel
 
@@ -31,28 +32,28 @@ c Writing cell vectors
 
 c Cell-vector modules
 
-      do iv = 1, 3
-         cellm(iv) = 0.d0
-         do ix = 1, 3
-            cellm(iv) = cellm(iv) + cell(ix,iv)*cell(ix,iv)
-         enddo
-         cellm(iv) = sqrt(cellm(iv))
+      do iv = 1,3
+        cellm(iv) = 0.0d0
+        do ix = 1,3
+          cellm(iv) = cellm(iv) + cell(ix,iv)*cell(ix,iv)
+        enddo
+        cellm(iv) = sqrt(cellm(iv))
       enddo
 
 c Cell-vector angles
 
-      celang(1) = 0.d0
-      do ix = 1, 3
+      celang(1) = 0.0d0
+      do ix = 1,3
          celang(1) = celang(1) + cell(ix,1)*cell(ix,2)
       enddo
       celang(1) = acos(celang(1)/(cellm(1)*cellm(2)))*180.d0/pi
-      celang(2) = 0.d0
-      do ix = 1, 3
+      celang(2) = 0.0d0
+      do ix = 1,3
          celang(2) = celang(2) + cell(ix,1)*cell(ix,3)
       enddo
       celang(2) = acos(celang(2)/(cellm(1)*cellm(3)))*180.d0/pi
-      celang(3) = 0.d0
-      do ix = 1, 3
+      celang(3) = 0.0d0
+      do ix = 1,3
          celang(3) = celang(3) + cell(ix,2)*cell(ix,3)
       enddo
       celang(3) = acos(celang(3)/(cellm(2)*cellm(3)))*180.d0/pi
@@ -68,7 +69,6 @@ c Cell volume
       volume = volcel( cell )
       write(6,'(a,f12.4)')
      .  'outcell: Cell volume (Ang**3)        :', volume*Ang**3
-
 
       return
       end

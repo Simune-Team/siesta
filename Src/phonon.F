@@ -8,7 +8,7 @@
       use mpi_siesta
 #endif
       use parallel,     only : Node
-      use precision
+      use precision,    only : dp
       use sys
 
       implicit none
@@ -181,7 +181,7 @@ C Forces written to file are in  eV/Ang
 
       integer           na            ! Number of atoms
       integer           ns            ! Number of species
-      double precision  fa(3,na)      ! Forces in Ry/Bohr
+      real(dp)          fa(3,na)      ! Forces in Ry/Bohr
       real(dp)          ucell(3,3)    ! Unit cell vectors in Bohrs
       integer           istep         ! PHONON step
 
@@ -190,11 +190,11 @@ C integer atnum               : number in list of displaced atom
 C real*8 disp(3)              : fractional displacement
 
       integer           atnum
-      double precision  disp(3)
+      real(dp)          disp(3)
 
 
-      double precision, allocatable, save ::   xa(:,:)
-      integer, allocatable, save          ::   isa(:)
+      real(dp), allocatable, save ::   xa(:,:)
+      integer,  allocatable, save ::   isa(:)
       character(len=1), allocatable, save ::   phonon_label(:)
 
       logical           leqi
@@ -205,7 +205,7 @@ c     Internal variables and arrays
       character fname*33, sname*40, paste*33, atname*2
       logical   frstme
       integer   i, j, ix, unit1, ia, isp, iunit
-      double precision Ang, eV
+      real(dp)  Ang, eV
       character acf*50
 
       save      frstme, fname

@@ -1,5 +1,3 @@
-C $Id: conjgr.f,v 1.5 2004/07/15 17:16:55 wdpgaara Exp $
-
       SUBROUTINE CONJGR (N,X,G,DXMAX,GTOL,CNTROL,H)
 
       use precision
@@ -32,8 +30,8 @@ C WRITTEN BY J.SOLER. JAN/91. BASED ON ROUTINES IN 'NUMERICAL RECIPES'
       real(dp) :: gmax, gg, gamma
       integer  :: i, j
 
-      real(dp) :: dot
-      external  dot
+      real(dp) :: ddot
+      external  ddot
 
 C     IF GRADIENT IS SMALLER THAN TOLERENCE, RETURN
       GMAX=ABS(G(1))
@@ -55,7 +53,7 @@ C     FIRST-CALL INITIALIZATIONS
    30   CONTINUE
         CNTROL(0)=1
         CNTROL(1)=1
-        CNTROL(2)=DOT(G,G,N)
+        CNTROL(2)=ddot(n,G,1,G,1)
         CNTROL(10)=0
         CNTROL(18)=DXMAX
       ENDIF
@@ -65,15 +63,15 @@ C     LINE MINIMIZATION IS ALWAYS CALLED
 
 C     IF LINE MINIMIZATION IS FINISHED, FIND NEW LINE DIRECTION
       IF (NINT(CNTROL(10)).EQ.0) THEN
-        GG=DOT(G,G,N)
-        IF (IOPT.EQ.2) GG=GG-DOT(G,H(1,2),N)
+        GG=ddot(n,G,1,G,1)
+        IF (IOPT.EQ.2) GG=GG-ddot(n,G,1,H(1,2),1)
         GAMMA=GG/CNTROL(2)
         DO 50 J=1,N
           H(J,1)=G(J)+GAMMA*H(J,1)
           IF (IOPT.EQ.2) H(J,2)=G(J)
    50   CONTINUE
         CNTROL(1)=CNTROL(1)+1
-        CNTROL(2)=DOT(G,G,N)
+        CNTROL(2)=ddot(n,G,1,G,1)
 *       WRITE(6,'(A,I4,F15.6)')
 *    .     ' CONJGR: NEW LINE DIRECTION. N,DX=',N,CNTROL(18)
         GOTO 40
@@ -95,8 +93,8 @@ C     IF LINE MINIMIZATION IS FINISHED, FIND NEW LINE DIRECTION
       integer  :: i, icntrl
       real(dp) :: x1, x2, y1, y2, x0, hmod, hmax, dx, x, y
 
-      real(dp) :: dot
-      external  dot
+      real(dp) :: ddot
+      external  ddot
 
 C     TRANSLATE CONTROL PARAMETERS
       ICNTRL=NINT(CNTROL(0))
@@ -109,7 +107,7 @@ C     TRANSLATE CONTROL PARAMETERS
       HMAX=CNTROL(7)
       DX=CNTROL(8)
       X=X0
-      Y=DOT(GVEC,HVEC,N)
+      Y=ddot(n,GVEC,1,HVEC,1)
 *     WRITE(6,'(A,I4,2F12.6)') ' LINMIN: ICNTRL,X,Y=',ICNTRL,X,Y
 
       IF (ICNTRL.EQ.0) THEN
@@ -120,7 +118,7 @@ C       PREPARE SECOND POINT
         ICNTRL=1
         X0=0.D0
         IF (DX.EQ.0.D0) DX=DXMAX
-        HMOD=SQRT(DOT(HVEC,HVEC,N))
+        HMOD=SQRT(ddot(n,HVEC,1,HVEC,1))
         HMAX=0.D0
         DO 10 I=1,N
           HMAX=MAX(HMAX,ABS(HVEC(I)))

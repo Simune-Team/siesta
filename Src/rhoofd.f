@@ -1,6 +1,5 @@
-      subroutine rhoofd( no, np, maxnd, numd, listdptr, 
-     .                   listd, nspin, Dscf, rhoscf, nuo, nuotot, 
-     .                   iaorb, iphorb, isa )
+      subroutine rhoofd( no, np, maxnd, numd, listdptr, listd, nspin, 
+     .                   Dscf, rhoscf, nuo, nuotot, iaorb, iphorb, isa )
 C ********************************************************************
 C Finds the SCF density at the mesh points from the density matrix.
 C Written by P.Ordejon and J.M.Soler. May'95.
@@ -34,9 +33,10 @@ C  Modules
       use atm_types, only: nsmax=>nspecies
       use atomlist,  only: indxuo
       use listsc_module, only: listsc
-      use mesh,     only: nsp, dxa, xdop, xdsp
+      use mesh,      only: nsp, dxa, xdop, xdsp
       use meshdscf
       use meshphi
+      use parallel,  only: Node, Nodes
 
       implicit none
 
@@ -48,7 +48,7 @@ C Argument types and dimensions
       real
      .   rhoscf(nsp,np,nspin)
 
-      real*8
+      real(dp)
      .   Dscf(maxnd,nspin)
 
       external
@@ -68,19 +68,19 @@ C Internal variables and arrays
      .  ilc, ilocal, iorb
 
       logical
-     .  Parallel
+     .  ParallelLocal
 
-      real*8
+      real(dp)
      .  Cij(nsp), Dij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
 
-      real*8, dimension(:,:), allocatable ::
+      real(dp), dimension(:,:), allocatable ::
      .  Clocal, Dlocal
 
 C  Start time counter
       call timer('rhoofd',1)
 
 C  Set algorithm logical
-      Parallel = (nuo .ne. nuotot)
+      ParallelLocal = (Nodes.gt.1)
 
 C  Find size of buffers to store partial copies of Dscf and C
       maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
@@ -100,7 +100,7 @@ C  Allocate local memory
       allocate(Clocal(nsp,maxloc2))
       call memory('A','D',nsp*maxloc2,'rhoofd')
 
-      if (Parallel) then
+      if (ParallelLocal) then
         maxndl = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)
         allocate(DscfL(maxndl,nspin))
         call memory('A','D',maxndl*nspin,'meshdscf')
@@ -165,7 +165,7 @@ C  Copy row i of Dscf into row last of Dlocal
             iorb(last) = i
             il = last
             iu = indxuo(i)
-            if (Parallel) then
+            if (ParallelLocal) then
               iul = NeedDscfL(iu)
               if (i .eq. iu) then
                 do ii = 1, numdl(iul)
@@ -235,8 +235,8 @@ C  Copy row i of Dscf into row last of Dlocal
         enddo
 
 C  Loop on first orbital of mesh point
-        lasta=0
-        lastop=0
+        lasta = 0
+        lastop = 0
         do ic = 1,nc
           imp = endpht(ip-1) + ic
           i = lstpht(imp)
@@ -287,7 +287,7 @@ C  Loop on second orbital of mesh point
               endif
 
 C  Loop over sub-points
-              do isp = 1, nsp
+              do isp = 1,nsp
                 rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + 
      .            Dij*Cij(isp)
               enddo
@@ -307,8 +307,10 @@ C  Restore iorb for next point
 
       enddo
 
+  999 continue
+
 C  Free local memory
-      if (Parallel) then
+      if (ParallelLocal) then
         call memory('D','D',size(DscfL),'meshdscf')
         deallocate(DscfL)
       endif

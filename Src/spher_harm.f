@@ -6,7 +6,7 @@
 
       CONTAINS
 
-      SUBROUTINE RLYLM( LMAX, R, RLY, GRLY )
+      subroutine rlylm( LMAX, R, RLY, GRLY )
       integer, intent(in)   :: lmax
       real(dp), intent(in)  :: r(3)
       real(dp), intent(out) :: rly(0:)
@@ -242,22 +242,22 @@ C *********************************************************************
       L = MAX( LOFILM(ILM1), LOFILM(ILM2) )
       MAXLM = (L+1)*(L+1)
 
-      allocate(Y(MAXLM))
-      call memory('A','D',MAXLM,'ylmylm')
-      allocate(DYDR(3,MAXLM))
-      call memory('A','D',3*MAXLM,'ylmylm')
+      allocate(Y(0:MAXLM))
+      call memory('A','D',MAXLM+1,'ylmylm')
+      allocate(DYDR(3,0:MAXLM))
+      call memory('A','D',3*MAXLM+3,'ylmylm')
 
       CALL RLYLM( L, R, Y, DYDR )
 
-      YY = Y(ILM1) * Y(ILM2)
-      DO 10 I = 1,3
-        DYYDR(I) = DYDR(I,ILM1) * Y(ILM2) + Y(ILM1) * DYDR(I,ILM2)
-   10 CONTINUE
+      YY = Y(ILM1-1) * Y(ILM2-1)
+      do I = 1,3
+        DYYDR(I) = DYDR(I,ILM1-1)*Y(ILM2-1) + Y(ILM1-1)*DYDR(I,ILM2-1)
+      enddo
 
-      call memory('D','D',size(Y),'ylmylm')
-      deallocate(Y)
       call memory('D','D',size(DYDR),'ylmylm')
       deallocate(DYDR)
+      call memory('D','D',size(Y),'ylmylm')
+      deallocate(Y)
 
       END subroutine ylmylm
 
@@ -355,13 +355,13 @@ C Declare internal variables ----------------------------------------
       INTEGER
      .  IM, IR, ISP, IZ, JLM, JR, JY, NLM, NSP
       REAL(DP)
-     .  DFDX(3), DOT, DYDX(3,MAXLM),
+     .  DFDX(3), DDOT, DYDX(3,MAXLM), 
      .  F(MAXSP), FY, PHI, PI, R, RX(3), THETA, 
      .  W(MAXL+1), WSP,
      .  X(3,MAXSP), Y(MAXLM), YSP(MAXSP,MAXLM),
      .  Z(MAXL+1)
       EXTERNAL
-     .  CHKDIM, DOT, TIMER
+     .  CHKDIM, DDOT, TIMER
 C -------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------
@@ -414,7 +414,7 @@ C       Find function at points on a sphere of radius R
 
 C       Expand F(R) in spherical harmonics
         DO 70 JLM = 1,NLM
-          FY = DOT( F, YSP(1,JLM), NSP )
+          FY = DDOT(NSP,F,1,YSP(1,JLM),1)
           IF ( ABS(FY) .GT. FTOL ) THEN
 
 C           Find JY corresponding to JLM
@@ -452,14 +452,14 @@ C Stop time counter -------------------------------------------------
 *     CALL TIMER( 'YLMEXP', 2 )
 C -------------------------------------------------------------------
 
-      END subroutine ylmexp
+      end subroutine ylmexp
 
-      SUBROUTINE GAULEG(X1,X2,X,W,N)
+      subroutine gauleg(X1,X2,X,W,N)
 !
 !     Abscissas and weights for Gauss-Legendre quadrature formula
 !
       integer, intent(in)   :: N
-      REAL(dp), intent(in)  :: X1,X2
+      real(dp), intent(in)  :: X1,X2
       real(dp), intent(out) :: X(N),W(N)
 
       real(dp), PARAMETER :: EPS=3.e-14_dp
@@ -467,9 +467,9 @@ C -------------------------------------------------------------------
       integer m, i, j
       real(dp) xm, xl, z, p1, p2, p3, pp, z1
 
-      M=(N+1)/2
-      XM=0.5_DP*(X2+X1)
-      XL=0.5_DP*(X2-X1)
+      M = (N+1)/2 
+      XM = 0.5_DP*(X2+X1)
+      XL = 0.5_DP*(X2-X1)
       DO 12 I=1,M
         Z=COS(3.141592654_DP*(I-.25_DP)/(N+.5_DP))
 1       CONTINUE
@@ -485,19 +485,11 @@ C -------------------------------------------------------------------
           Z=Z1-P1/PP
         IF(ABS(Z-Z1).GT.EPS)GO TO 1
         X(I)=XM-XL*Z
-        X(N+1-I)=XM+XL*Z
         W(I)=2._DP*XL/((1._DP-Z*Z)*PP*PP)
+        X(N+1-I)=XM+XL*Z
         W(N+1-I)=W(I)
 12    CONTINUE
 
-      END subroutine gauleg
+      end subroutine gauleg
 
       end module spher_harm
-
-
-
-
-
-
-
-

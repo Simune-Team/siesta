@@ -80,10 +80,9 @@ C
 
 c ---------------------------------------------------------------------
 
-c Internal variables and arrays
+C Internal variables and arrays
  
       character         updo*1, line*130, names*80
-c     character         fname*24
       logical           noncol, peratm
       integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,
      .                  i1, i2, in, ind, ispin, jo, io, 
@@ -123,8 +122,10 @@ C If found update Dold, otherwise initialize with neutral atoms
 
       if (found) then
 
-        nh = listhptrold(nuo) + numhold(nuo)
-        Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
+        if (nuo.gt.0) then
+          nh = listhptrold(nuo) + numhold(nuo)
+          Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
+        endif
 
       else
 
@@ -224,8 +225,8 @@ C Read value of spin
               if (nr .eq. 3) then
 C Read spin value and direction
                 spin(nat)  = reals(1)
-                theta(nat) = reals(2) * pi/180.d0
-                phi(nat)   = reals(3) * pi/180.d0
+                theta(nat) = reals(2) * pi/180.0d0
+                phi(nat)   = reals(3) * pi/180.0d0
               elseif (nr .eq. 1) then
 C Read spin value. Default direction.
                 spin(nat)  = reals(1)
@@ -245,8 +246,8 @@ C Read spin as + or - (maximun value)
                 goto 40
               endif
               if (nr .eq. 2) then
-                theta(nat) = reals(1) * pi/180.d0
-                phi(nat)   = reals(2) * pi/180.d0
+                theta(nat) = reals(1) * pi/180.0d0
+                phi(nat)   = reals(2) * pi/180.0d0
               elseif (nr .eq. 0) then
                 theta(nat) = 0.d0
                 phi(nat)   = 0.d0

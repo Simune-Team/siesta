@@ -84,9 +84,8 @@ C *********************************************************************
 
 
       integer
-     .  i, ik, il, iu, ix, iw, iw1, iw2, iw3,
-     .  lastc, lc(0:3), mscell(3,3),
-     .  ni, nkl, nn, nr, nv, nmk
+     .  i, il, iu, ix, iw, iw1, iw2, iw3,
+     .  lastc, lc(0:3), mscell(3,3), ni, nn, nr, nv, nmk
 
 #ifdef MPI
       integer
@@ -467,7 +466,7 @@ C This is the only exit point
 
       subroutine wwave( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
-     .                  nk, kpoint, nuotot, gamma)
+     .                  nk, kpoint, nuotot, gamma, occtol)
 C *********************************************************************
 C Finds wavefunctions at selected k-points.
 C Written by P. Ordejon, June 2003
@@ -500,6 +499,7 @@ C integer nk                  : Number of band k points
 C real*8  kpoint(3,maxk)      : k point vectors
 C integer nuotot              : Total number of orbitals in unit cell
 C logical gamma               : Indicates if this is a Gamma point run
+C real*8  occtol              : Occupancy threshold for DM build
 C *************************** OUTPUT **********************************
 C None; output is dumped to wave functions file SystemLabel.WFS
 C *************************** UNITS ***********************************
@@ -524,27 +524,20 @@ C
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
       logical           gamma
-      real(dp)          dot, ef, 
-     .                  H(maxnh,nspin), kpoint(3,maxk), 
-     .                  S(maxnh), xij(3,maxnh)
+      real(dp)          ef, H(maxnh,nspin), kpoint(3,maxk), 
+     .                  S(maxnh), xij(3,maxnh), occtol
       character         paste*30
-      external          dot, io_assign, io_close, paste, memory
+      external          io_assign, io_close, paste, memory
 C *********************************************************************
 
       logical
      .  getD, getPSI, fixspin
 
       integer
-     .  ik, il, io, ispin, iu, iuo, naux, nuo
-
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
+     .  io, iu, iuo, naux, nuo
 
       real(dp)
-     .  Dnew, qs(2),
-     .  e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot, path, pi,
+     .  Dnew, qs(2), e1, e2, efs(2), Enew, eV, qk, qtot, 
      .  temp, wk, Entropy
 
 C Dynamic arrays
@@ -681,7 +674,6 @@ c fixspin and qs are not used in diagk, since getD=.false. ...
       fixspin = .false.
       qs(1) = 0.0d0
       qs(2) = 0.0d0
-c
 
 C Call appropriate diagonalization routine
 
@@ -691,7 +683,7 @@ C Call appropriate diagonalization routine
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
      .               e1, e2, ek, qk, Dnew, Enew, ef, efs, Entropy,
-     .               Haux, Saux, psi, aux, nuotot )
+     .               Haux, Saux, psi, aux, nuotot, occtol, 1 )
       else
          call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
@@ -699,9 +691,9 @@ C Call appropriate diagonalization routine
      .               fixspin, qtot, qs, temp,
      .               e1, e2, xij, indxuo, nk, kpoint, wk,
      .               ek, qk, Dnew, Enew, ef, efs, Entropy,
-     .               Haux, Saux, psi, Haux, Saux, aux, nuotot )
+     .               Haux, Saux, psi, Haux, Saux, aux, nuotot,
+     .               occtol, 1 )
       endif
- 
 
 C Free local arrays 
       call memory('D','I',size(muo),'writewave')
@@ -747,10 +739,9 @@ C This is the only exit point
 
 C  Internal variables .............................................
       integer
-     .  BNode, BTest, ntot, iie, ie, iw, indwf, j, ind, iu
+     .  BNode, ntot, iie, iw, indwf, j, ind, iu
 
       logical, save :: frstime = .true.
-      logical       :: writeie
 
       character sname*30, fname*33, paste*33, fform*11
 

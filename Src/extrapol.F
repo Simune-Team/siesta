@@ -94,6 +94,8 @@ C  Internal variables .......................................................
 C ...........................................................................
 
 C Find the maximum number of non-zero elements in matrices
+      if (nmrowl.eq.0) goto 999
+
       nh = listptr(nmrowl) + num(nmrowl)
 
       if (iord .ne. 0 .and. iord . ne. 1) then
@@ -231,6 +233,9 @@ C Extrapolate matrix M ......................................................
 C ....................
 
       endif
+
+C Common exit point
+  999 continue
 
       return
       end

@@ -90,10 +90,10 @@ C tol    = tolerance for comparing vector-coordinates
      .  ia, iio, ikb, inkb, io, ioa, is, isel, 
      .  j, ja, jna, jo, joa, js, 
      .  ka, kna, ko, koa, ks, maxnain,
-     .  ncells, nna, nnkb, no, nua, nuo, nuotot
+     .  ncells, nlh, nna, nnkb, no, nua, nuo, nuotot
 
       integer, dimension(:), allocatable, save ::
-     .  jana, index, knakb, ibuffer
+     .  jana, index, knakb, ibuffer, listhtmp
 
       real(dp)
      .  rci, rcj, rck, rij, rik, rjk,
@@ -108,7 +108,7 @@ C tol    = tolerance for comparing vector-coordinates
       logical, dimension(:), allocatable, save :: conect
 
       logical
-     .  overflow
+     .  overflow, lfillH
 
       data maxna  / 1000 /
       data maxnkb / 2000 /
@@ -127,10 +127,12 @@ C Check size of internal arrays
 C Allocate local arrays
       allocate(conect(no))
       call memory('A','L',no,'hsparse')
+      allocate(listhtmp(no))
+      call memory('A','I',no,'hsparse')
 
 C Find maximum range of basis orbitals and KB projectors
-      rmaxo = 0.d0
-      rmaxkb = 0.d0
+      rmaxo = 0.0d0
+      rmaxkb = 0.0d0
       do ia = 1,na
         is = isa(ia)
         do ikb = lastkb(ia-1)+1,lastkb(ia)
@@ -143,9 +145,9 @@ C Find maximum range of basis orbitals and KB projectors
         enddo
       enddo
       if (negl) then
-        rmax = 2.d0 * rmaxo
+        rmax = 2.0d0 * rmaxo
       else
-        rmax = 2.d0 * (rmaxo+rmaxkb)
+        rmax = 2.0d0 * (rmaxo+rmaxkb)
       endif
 
 C Allocate local arrays that depend on parameters
@@ -191,15 +193,19 @@ C Initialize neighb subroutine
       endif
 
 C Initialize number of neighbour orbitals
-      do io= 1,nuo 
-        numh(io)=0
+      do io = 1,nuo 
+        numh(io) = 0
       enddo 
 
 C Initialize vector switch only once
       do io = 1,no
         conect(io) = .false.
+        listhtmp(io) = 0
       enddo
 
+C----------------------------------
+C  Find number of non-zeros in H  _
+C----------------------------------
 C Loop on atoms in unit cell
       overflow = .false.
       maxnain = maxna
@@ -227,12 +233,6 @@ C Loop on orbitals of atom ia
 
             call GlobalToLocalOrb(io,Node,Nodes,iio)
             if (iio.gt.0) then
-
-              if (iio.gt.1) then
-                listhptr(iio) = listhptr(iio-1) + numh(iio-1)
-              else
-                listhptr(iio) = 0
-              endif
 
               is = isa(ia)
               ioa = iphorb(io)
@@ -313,27 +313,17 @@ C Find if jo overlaps with a KB projector
                     endif
                     if (conect(jo)) then
                       numh(iio) = numh(iio) + 1
-                      if (listhptr(iio)+numh(iio).le.nlhmax) 
-     .                    listh(listhptr(iio)+numh(iio)) = jo
+                      listhtmp(numh(iio)) = jo
                     endif
                   endif
                 enddo
               enddo
 
 C Restore conect array for next orbital io
-              if (listhptr(iio)+numh(iio).gt.nlhmax) then
-                do jna = 1,nna
-                  ja = jana(jna)
-                  do jo = lasto(ja-1)+1,lasto(ja)
-                    conect(jo) = .false.
-                  enddo
-                enddo
-              else
-                do j = 1,numh(iio)
-                  jo = listh(listhptr(iio)+j)
-                  conect(jo) = .false.
-                enddo
-              endif
+              do j = 1,numh(iio)
+                jo = listhtmp(j)
+                conect(jo) = .false.
+              enddo
 
             endif
 
@@ -359,15 +349,146 @@ C If maxna dimension was no good then reset arrays and start again
 
 C Find optimum value for nlhmax
       if (nuo .gt. 0) then
-        nlhmax = listhptr(nuo)+numh(nuo)
-      else
-        nlhmax = 0
+        nlh = 0 
+        do io = 1,nuo
+          nlh = nlh + numh(io)
+        enddo
+      else    
+        nlh = 0 
+      endif     
+      if (nlh.le.nlhmax) then
+        lfillH = .true.
+      else  
+        lfillH = .false.
       endif
+
+      if (lfillH) then
+C Set up listhptr
+        do io = 1,nuo
+          if (io.gt.1) then
+            listhptr(io) = listhptr(io-1) + numh(io-1)
+          else
+            listhptr(io) = 0
+          endif
+        enddo
+C---------------------------------
+C  Find full H sparsity pattern  -
+C---------------------------------
+C Loop on atoms in unit cell
+        maxnain = maxna
+        do ia = 1,nua
+
+C Find neighbour atoms within maximum range
+          nna = maxnain
+          call neighb( cell, rmax, na, xa, ia, isel,
+     .                 nna, jana, xij, r2ij )
+
+C Order neighbours in a well defined way
+          call ordvec( tol, 3, nna, xij, index )
+          call iorder( jana, 1, nna, index )
+          call order(  r2ij, 1, nna, index )
+
+C Loop on orbitals of atom ia
+          do io = lasto(ia-1)+1,lasto(ia)
+
+            call GlobalToLocalOrb(io,Node,Nodes,iio)
+            if (iio.gt.0) then
+              numh(iio) = 0
+
+              is = isa(ia)
+              ioa = iphorb(io)
+              rci = rcut(is,ioa)
+
+C Find overlaping KB projectors
+              if (.not.negl) then
+                nnkb = 0 
+                do kna = 1,nna
+                  ka = jana(kna)
+                  rik = sqrt( r2ij(kna) )
+                  do ko = lastkb(ka-1)+1,lastkb(ka)
+                    ks = isa(ka)
+                    koa = iphkb(ko)
+                    rck = rcut(ks,koa)
+                    if (rci+rck .gt. rik) then
+                      nnkb = nnkb + 1
+                      knakb(nnkb) = kna
+                      rckb(nnkb) = rck
+                    endif
+                  enddo
+                enddo
+              endif
+          
+C Find orbitals connected by direct overlap or
+C through a KB projector
+              do jna = 1,nna
+                ja = jana(jna)
+                rij = sqrt( r2ij(jna) )
+                do jo = lasto(ja-1)+1,lasto(ja)
+            
+C If not yet connected 
+                  if (.not.conect(jo)) then
+                    js = isa(ja)
+                    joa = iphorb(jo)
+                    rcj = rcut(js,joa)
+C Find if there is direct overlap
+                    if (rci+rcj .gt. rij) then
+                      conect(jo) = .true.
+                    elseif (.not.negl) then
+C Find if jo overlaps with a KB projector
+                      do inkb = 1,nnkb
+                        rck = rckb(inkb)
+                        kna = knakb(inkb)
+                        rjk = sqrt( (xij(1,kna)-xij(1,jna))**2 +
+     .                              (xij(2,kna)-xij(2,jna))**2 +
+     .                              (xij(3,kna)-xij(3,jna))**2 )
+                        if (rcj+rck .gt. rjk) then
+                          conect(jo) = .true.
+                          goto 55
+                        endif
+                      enddo
+   55                 continue
+                    endif
+                    if (conect(jo)) then
+                      numh(iio) = numh(iio) + 1
+                      if (listhptr(iio)+numh(iio).le.nlhmax)
+     .                    listh(listhptr(iio)+numh(iio)) = jo
+                    endif
+                  endif
+                enddo
+              enddo
+
+C Restore conect array for next orbital io
+              if (listhptr(iio)+numh(iio).gt.nlhmax) then
+                do jna = 1,nna
+                  ja = jana(jna)
+                  do jo = lasto(ja-1)+1,lasto(ja)
+                    conect(jo) = .false.
+                  enddo
+                enddo
+              else    
+                do j = 1,numh(iio)
+                  jo = listh(listhptr(iio)+j)
+                  conect(jo) = .false.
+                enddo   
+              endif     
+                        
+            endif                   
+     
+          enddo         
+                          
+        enddo             
+                        
+      endif           
+   
+C Set optimal value of nlhmax for return
+      nlhmax = nlh
 
 C Initialize listsc
       call listsc_init( nsc, nuotot )
 
 C Deallocate local arrays
+      call memory('D','I',size(listhtmp),'hsparse')
+      deallocate(listhtmp)
       call memory('D','L',size(conect),'hsparse')
       deallocate(conect)
       call memory('D','I',size(jana),'hsparse')

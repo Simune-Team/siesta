@@ -278,7 +278,6 @@ c
       integer :: ix, i
       complex*16 zx(1)
       double precision smax
-      complex*16 zdum
       double precision sdcabs1
 c
       izamax = 1
