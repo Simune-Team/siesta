@@ -1,3 +1,4 @@
+C $Id: dot.f,v 1.2 1999/01/31 10:53:54 emilio Exp $
 
       DOUBLE PRECISION FUNCTION DOT(A,B,N)
 C

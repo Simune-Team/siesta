@@ -1,3 +1,5 @@
+C $Id: cross.f,v 1.2 1999/01/31 10:53:49 emilio Exp $
+
       SUBROUTINE CROSS(A,B,AXB)
 C Finds the cross product AxB of vectors A and B
 C Written by J.M.Soler

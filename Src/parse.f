@@ -1,3 +1,4 @@
+c $Id: parse.f,v 1.6 1999/01/31 11:20:12 emilio Exp $
 
       subroutine parse( line, nn, lc, names, nv, values,
      .                  ni, integers, nr, reals )

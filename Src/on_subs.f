@@ -1,3 +1,5 @@
+C $Id: on_subs.f,v 1.2 1999/01/31 11:20:10 emilio Exp $
+
       subroutine ctrans(nr,nc,nmax,ntmax,
      .              num,list,numt,listt,cttoc)
 C ********************************************************************

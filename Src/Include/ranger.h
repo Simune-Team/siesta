@@ -1,3 +1,5 @@
+C $Id: ranger.h,v 1.3 1999/01/31 11:56:52 emilio Exp $
+
 C Dimension parameters for ranger:
 C INTEGER MAXA   Maximum number of atoms
 C INTEGER MAXM   Maximum number of mesh cells

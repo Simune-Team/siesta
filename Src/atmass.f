@@ -1,3 +1,5 @@
+C $Id: atmass.f,v 1.2 1999/01/31 10:50:47 emilio Exp $
+
       DOUBLE PRECISION FUNCTION ATMASS(IZ)
 
 C Returns the average atomic mass from the atomic number IZ.

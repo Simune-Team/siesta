@@ -1,3 +1,5 @@
+C $Id: minvec.f,v 1.6 1999/03/04 16:21:09 jose Exp $
+
       SUBROUTINE MINVEC(B0,BMIN)
 
 C *******************************************************************
@@ -14,7 +16,7 @@ C *******************************************************************
       DOUBLE PRECISION B0(3,3),BMIN(3,3),DOT,VOLCEL
       EXTERNAL         DOT,ORDIX,ORDER,RECLAT,VOLCEL,VOLNEW
 
-      INTEGER          I,I1,I2,I3,ITER,J,NITER
+      INTEGER          I,I1,I2,I3,IAUX(3),ITER,J,NITER
       DOUBLE PRECISION AUX(3,3),B(3,3),B2(3),BNEW(3),BNEW2,
      .                 C(3,3),EPS,VNEW,V0
 
@@ -33,9 +35,9 @@ C *******************************************************************
   20  CONTINUE
 
       DO 50 ITER=1,NITER
-        CALL ORDIX(B2,1,3,AUX)
-        CALL ORDER(B2,1,3,AUX)
-        CALL ORDER(B ,3,3,AUX)
+        CALL ORDIX(B2,1,3,IAUX)
+        CALL ORDER(B2,1,3,IAUX)
+        CALL ORDER(B ,3,3,IAUX)
         DO 40 I1=0,1
         DO 40 I2=-1,1
         DO 40 I3=-1,1

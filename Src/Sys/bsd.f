@@ -1,5 +1,10 @@
-      include '../poison.f'
-      include '../rdiag.f'
+C $Id: bsd.f,v 1.9 1999/02/26 18:04:47 wdpgaara Exp $
+
+      include 'cdiag_general.f'
+      include 'cft.f'
+      include 'eispack.f'
+      include 'poison_general.f'
+      include 'rdiag_general.f'
 
       SUBROUTINE CPUTIM (TIME)
 

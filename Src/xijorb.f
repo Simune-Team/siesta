@@ -1,4 +1,6 @@
-      subroutine xijorb( negl, cell, nua, na, xa,
+C $Id: xijorb.f,v 1.7 1999/05/05 17:25:34 emilio Exp $
+
+      subroutine xijorb( negl, scell, nua, na, xa,
      .                   lasto, lastkb, rco, rckb,
      .                   nomax, numh, listh, xijo )
 C *********************************************************************
@@ -7,7 +9,7 @@ C Writen by J.Soler. July 1997
 C **************************** INPUT **********************************
 C logical negl         : Working option: Neglect interactions
 C                        between non-overlaping orbitals
-C real*8  cell(3,3)    : Unit cell vectors CELL(IXYZ,IVECT)
+C real*8  scell(3,3)   : Supercell vectors SCELL(IXYZ,IVECT)
 C integer nua          : Number of atoms in unit cell (first of list)
 C integer na           : Total number of atoms
 C real*8  xa(3,na)     : Atomic positions in cartesian coordinates
@@ -30,7 +32,7 @@ C *********************************************************************
       integer           na, nomax
       integer           lastkb(0:na), lasto(0:na), listh(nomax,*),
      .                  nua, numh(*)
-      double precision  cell(3,3), rckb(*), rco(*), xa(3,na),
+      double precision  scell(3,3), rckb(*), rco(*), xa(3,na),
      .                  xijo(3,nomax,*)
       logical           negl
       external          chkdim, neighb, timer
@@ -40,9 +42,9 @@ C maxna  = maximum number of neighbour atoms of any atom
 C maxnkb = maximum number of neighbour KB projectors of any orbital
 C maxo   = maximum number of basis orbitals
       integer maxna, maxnkb, maxo
-      parameter ( maxna  =   500 )
-      parameter ( maxnkb =  1000 )
-      parameter ( maxo   = 10000 )
+      parameter ( maxna  =  1000 )
+      parameter ( maxnkb =  2000 )
+      parameter ( maxo   = 20000 )
 
       integer
      .  ia, ikb, inkb, io, isel, 
@@ -88,7 +90,7 @@ c     Initialize neighb subroutine
       isel = 0
       ia = 0
       nna = maxna
-      call neighb( cell, rmax, na, xa, ia, isel,
+      call neighb( scell, rmax, na, xa, ia, isel,
      .             nna, jana, xija, r2ij )
 
 c     Initialize vector jnao only once
@@ -101,7 +103,7 @@ c     Loop on atoms (only within unit cell)
 
 c       Find neighbour atoms within maximum range
         nna = maxna
-        call neighb( cell, rmax, na, xa, ia, isel,
+        call neighb( scell, rmax, na, xa, ia, isel,
      .               nna, jana, xija, r2ij )
         call chkdim( 'xijorb', 'maxna', maxna, nna, 1 )
 

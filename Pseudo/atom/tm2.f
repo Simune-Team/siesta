@@ -1,15 +1,5 @@
 c
-c $Id: tm2.f,v 1.2 1997/05/22 17:32:34 wdpgaara Exp $
-c
-c $Log: tm2.f,v $
-c Revision 1.2  1997/05/22 17:32:34  wdpgaara
-c Moving from RCSfiles to ATM_1_0
-c
-c Revision 1.1.1.1  1997/01/07 08:38:55  wdpgaara
-c Froyen-Troullier-Martins-AG atom code
-c
-c Revision 1.1  1991/12/14  00:34:49  alberto
-c Initial revision
+c $Id: tm2.f,v 1.3 1999/02/26 14:26:48 wdpgaara Exp $
 c
       subroutine tm2(i,wfr,br)
 c
@@ -37,11 +27,11 @@ c
       double precision work(5)
 c
 C     .. Local Scalars ..
-      double precision ac, arp, arpm, bc, bj1, bj2, bj3, bj4, bj5, cdcp,
-     &                 cdps, ddelta, expd, fcut, fdnew, fdold, gamma,
+      double precision arp, bj1, bj2, bj3, bj4, bj5,
+     &                 cdps, ddelta, expd, fdnew, fdold, gamma,
      &                 poly, polyr, r2, rc10, rc9, rp, vj, x1, x2,
      &                 xlamda, rcond
-      integer ierr, ist, j, jj, k, ka, ll, noi, l, m
+      integer ierr, ist, j, k, ka, ll
       logical spin_down, bracketed
 C     ..
 C     .. Local Arrays ..
@@ -49,7 +39,6 @@ C     .. Local Arrays ..
       double precision aa(nrmax), aap(nrmax), aapp(nrmax), 
      &                 wspl(3*nrmax)
 c
-      double precision v(nrmax), vstore(nrmax)
       integer indx(5)
 C     ..
       integer isrchfgt

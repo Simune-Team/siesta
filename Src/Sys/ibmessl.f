@@ -1,4 +1,44 @@
-      include '../rdiag.f'
+C $Id: ibmessl.f,v 1.10 1999/02/26 10:29:00 wdpgaara Exp $
+
+      include 'cdiag_general.f'
+      include 'eispack.f'
+
+
+      subroutine rdiag (h,s,n,nm,w,z,aux)
+C ***************************************************************************
+C Subroutine  to solve all eigenvalues and eigenvectors of the
+C real general eigenvalue problem  H z = w S z,  with H and S
+C real symmetric matrices, by calling the appropriate ESSL routine (DSYGV)
+C
+C Writen by  J. Kohanoff August 1998.
+C ************************** INPUT ******************************************
+C real*8 h(nm,nm)                 : Symmetric H matrix
+C real*8 s(nm,nm)                 : Symmetric S matrix
+C integer n                       : Order of  the generalized  system
+C integer nm                      : Dimension of H and S matrices
+C ************************** OUTPUT *****************************************
+C real*8 w(nm)                    : Eigenvalues
+C real*8 z(nm,nm)                 : Eigenvectros
+C ************************* AUXILIARY ***************************************
+C real*8 aux(2*nm)                : Auxiliary array 
+C ***************************************************************************
+      implicit          none
+      integer           ierr, n, nm, k, i, j
+      double precision  h(nm,nm), s(nm,nm), w(nm),  z(nm,nm) 
+      double precision  aux(2*nm)
+C ......................
+
+C  start time count
+      call timer('rdiag',1)
+
+C  call ESSL routine DSYGV for solving the generalized real symmetric eigenvalue
+C  problem with H real symmetric, and S real positive definite symmetric.
+      call dsygv(1,h,nm,s,nm,w,z,nm,n,aux,2*nm)
+c
+c  stop time count
+      call timer('rdiag',2)
+      end
+
 
 
       SUBROUTINE POISON( CELL, N1, N2, N3, RHO, U, V, STRESS, NCG, CG )
@@ -67,7 +107,7 @@ C     FIND UNIT CELL VOLUME
 C     FIND RECIPROCAL LATTICE VECTORS
       CALL RECLAT (CELL, B, 1 )
 
-C     FIND MAXIMUN PLANEWAVE CUTOFF
+C     FIND MAXIMUM PLANEWAVE CUTOFF
       MESH(1) = N1
       MESH(2) = N2
       MESH(3) = N3

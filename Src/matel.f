@@ -1,3 +1,5 @@
+C $Id: matel.f,v 1.13 1999/05/05 17:25:33 emilio Exp $
+
       SUBROUTINE MATEL( OPERAT, IS1, IS2, IO1, IO2, R12, S12, DSDR )
 C *******************************************************************
 C Finds the overlap or laplacian matrix elements between two atomic
@@ -19,7 +21,7 @@ C ************************* OUTPUT **********************************
 C REAL*8 S12      : Matrix element between orbitals.
 C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
 C ************************* ROUTINES CALLED *************************
-C The following two functions must exist:
+C The following functions must exist:
 C
 C REAL*8 FUNCTION RCUT(IS,IO)
 C   Returns cutoff radius of orbitals and KB projectors.
@@ -32,14 +34,32 @@ C    Finds values and gradients of:
 C    a) basis orbitals (IO > 0)
 C    b) KB proyectors  (IO < 0)
 C    c) Local part of screened pseudopotential (IO = 0) ( b) and c) are
-C       not required if MATEL is called only with IO > 0 )
+C       not required if MATEL is called only with IO > 0 ) 
 C Input:
 C   INTEGER IS   : Species index
 C   INTEGER IO   : Orbital index
 C   REAL*8  R(3) : Position with respect to atom
 C Output:
 C   REAL*8  PHI      : Value of orbital or KB projector at point R
-C   REAL*8  GRPHI(3) : Gradient of PHI at point R
+C   REAL*8  GRPHI(3) : Gradient of PHI at point R  
+C
+C INTEGER FUNCTION LOMAXFIS(IS)
+C    Returns the maximum angular momentum of orbitals 
+C Input:
+C     INTEGER IS : Species index
+C 
+C INTEGER FUNCTION LMXKBFIS(IS)
+C    Returns the maximum angular momentum of KB projectors
+C Input:
+C     INTEGER IS : Species index
+C
+C INTEGER FUNCTION NZTFL(IS,L)
+C    Returns the number of different basis functions with the
+C    same angular momentum L.
+C Input:
+C     INTEGER IS : Species index
+C     INTEGER L  : Angular momentum
+C
 C ************************* UNITS ***********************************
 C Length units are arbitrary, but must be consistent in MATEL, RCUT
 C   and PHIATM. The laplacian unit is (length unit)**(-2).
@@ -61,8 +81,8 @@ C Argument types and dimensions -------------------------------------
 C -------------------------------------------------------------------
 
 C Argument types and dimensions for entry MATEL0 --------------------
-      INTEGER  MAXLS, NS
-      INTEGER  LMAXS(NS), LMXKBS(NS), NZLS(0:MAXLS,NS)
+       INTEGER  NS, LOMAXFIS, LMXKBFIS, NZTFL
+       EXTERNAL LOMAXFIS, LMXKBFIS, NZTFL        
 C -------------------------------------------------------------------
 
 C Internal precision parameters  ------------------------------------
@@ -76,7 +96,7 @@ C  TINY is a small number to add to a zero denominator
       INTEGER           NR, NQ
       DOUBLE PRECISION  Q2CUT, FFTOL, TINY
       PARAMETER ( NR     =  128    )
-      PARAMETER ( NQ     =  512    )
+      PARAMETER ( NQ     =  1024   )
       PARAMETER ( Q2CUT  =  2.5D3  )
       PARAMETER ( FFTOL  =  1.D-8  )
       PARAMETER ( TINY   =  1.D-12 )
@@ -88,7 +108,7 @@ C  MAXL  : Maximum angular momentum of atomic basis orbitals and
 C          Kleinman-Bylander projectors.
 C  MAXZ  : Maximum number of atomic basis orbitals per angular momentum
 C          symmetry (number of 'zetas')
-C  MAXY  : Maximun number of spherical-harmonic components of one
+C  MAXY  : Maximum number of spherical-harmonic components of one
 C          basis orbital or KB projector 
 C  MAXR  : Maximum number of radial points.
 C  MAXQ  : Maximum number of radial points in k-space.
@@ -117,7 +137,7 @@ C Ref: J.M.Soler notes of 4/4/96.
       PARAMETER ( MAXO   = MAXZO  * (MAXLO+1)  * (MAXLO+1)  )
       PARAMETER ( MAXKB  = MAXZKB * (MAXLKB+1) * (MAXLKB+1) )
       PARAMETER ( MAXSS  = MAXS * (MAXS+1) / 2 )
-      PARAMETER ( MAXZZ  = MAXZO * (MAXZO+MAXZKB) * 2 + 1 )
+      PARAMETER ( MAXZZ  = MAXZO * (2*MAXZO+MAXZKB) + 2 )
       PARAMETER ( MAXF   = MAXS * (MAXO+MAXKB+1) )
       PARAMETER ( MAXFF  = MAXSS * MAXZZ * MAXLM * MAXLM )
       PARAMETER ( MAXFFR = MAXSS * MAXZZ *
@@ -329,7 +349,7 @@ C         Select NR out of NQ points
 C         Find if radial function is already in table
           FOUND = .FALSE.
           DO 150 JO1 = -MAXKB,MAXO
-          DO 140 JO2 = JO1,MAXO
+          DO 140 JO2 = -MAXKB,MAXO
             JF1 = INDF(IS1,JO1)
             JF2 = INDF(IS2,JO2)
             IF (JF1.NE.0 .AND. JF2.NE.0) THEN
@@ -337,7 +357,7 @@ C         Find if radial function is already in table
               IF (JFF .NE. 0) THEN
                 DO 130 JFFY = INDFFY(JFF-1)+1, INDFFY(JFF)
                   JFFR = INDFFR(JFFY)
-                  IF ( PROPOR(NR+1,FFL,FFR(0,1,JFFR),
+                  IF ( PROPOR(NR,FFL(1),FFR(1,1,JFFR),
      .                        FFTOL,CPROP)           ) THEN
                     FOUND = .TRUE.
                     IFFR(L3) = JFFR
@@ -450,24 +470,22 @@ C -------------------------------------------------------------------
       RETURN
 
 
-      ENTRY MATEL0( NS, LMAXS, LMXKBS, MAXLS, NZLS )
+      ENTRY MATEL0( NS )
 C *******************************************************************
 C Checks if the array dimensions in MATEL are sufficient. If not,
 C writes a new file matel.h with the correct ones, prints an error
-C message and stops.
+C message and stops. 
+C Modified by DSP, Aug. 1998
 C *********** INPUT *************************************************
 C INTEGER NS              : Number of species
-C INTEGER LMAXS(NS)       : Maximun angular momentum for orbitals
-C INTEGER LMXKBS(NS)      : Max. angular momentum for KB projectors
-C INTEGER NZLS(0:MAXLS,NS): Number of zetas for each L and species
 C *******************************************************************
 
       LMAX = 0
       NZMAX = 0
       DO 320 IS = 1,NS
-        LMAX = MAX( LMAX, LMAXS(IS), LMXKBS(IS) )
-        DO 310 L = 0,LMAXS(IS)
-          NZMAX = MAX( NZMAX, NZLS(L,IS) )
+        LMAX = MAX( LMAX, LOMAXFIS(IS), LMXKBFIS(IS) )
+        DO 310 L = 0,LOMAXFIS(IS)
+          NZMAX = MAX( NZMAX, NZTFL(IS,L) )
   310   CONTINUE
   320 CONTINUE
       NY = (LMAX+1)**2
@@ -490,7 +508,7 @@ C *******************************************************************
         WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXQ   =', NQ,   ' )'
         CLOSE( 1 )
         
-        WRITE(6,*) 'MATEL: Dimensions too small. RECOMPILE.'
+        WRITE(6,'(a)') 'MATEL: Dimensions too small. RECOMPILE.'
         STOP 'MATEL: Dimensions too small. RECOMPILE.'
       ENDIF
 

@@ -38,7 +38,7 @@ c
      &                 yp(nrmax), ypp(nrmax)
 C     ..
 C     .. Local Scalars ..
-      double precision a1, an, b1, bn, cdsum, ehart, x, xlo, xnorm,
+      double precision a1, an, b1, bn, ehart, xlo, xnorm,
      &                 ec, exc, vc, vxc, pi, dx, dc, ex, xccor
       integer i, ierr, isx, ll, nrm, relflag, nspin
 C     ..
@@ -204,6 +204,9 @@ c
      .           ex,ec,dx,dc,vxcarr)
          elseif(icorr .eq. 'pb') then
             call atomxc('GGA','pbe',relflag,nr,nrmax,r,nspin,dens,   
+     .           ex,ec,dx,dc,vxcarr)
+         elseif(icorr .eq. 'bl') then
+            call atomxc('GGA','lyp',relflag,nr,nrmax,r,nspin,dens,
      .           ex,ec,dx,dc,vxcarr)
          else
             stop 'XC'

@@ -1,0 +1,882 @@
+ 
+prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
+prdate: DATE = Tue Apr 20 14:31:39 MET DST 1999
+ 
+              SIESTA Version 0.11    (Apr 20, 1999, 12:00:00)             
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+redata: ****************** Dump of input data file ****************************
+# Interstitial H in cubic silicon supercell with 64 atoms
+SystemName       H in 64-atom silicon
+SystemLabel      sih
+NumberOfAtoms   65
+NumberOfSpecies  2
+%block ChemicalSpeciesLabel
+ 1  14  Si
+ 2   1  H
+%endblock ChemicalSpeciesLabel
+PAO.BasisSize     SZ
+PAO.EnergyShift   300 meV
+%block PAO.Basis
+  H  1
+  0  1
+  0.
+  0.8
+%endblock PAO.Basis
+LatticeConstant   5.430 Ang
+%block LatticeVectors
+  2.000  0.000  0.000
+  0.000  2.000  0.000
+  0.000  0.000  2.000
+%endblock LatticeVectors
+MeshCutoff        40.0 Ry
+MaxSCFIterations       50
+DM.MixingWeight        0.3
+DM.NumberPulay         3
+DM.Tolerance          1.d-3
+DM.UseSaveDM
+SolutionMethod        diagon
+ElectronicTemperature  25 meV
+MD.TypeOfRun            cg
+MD.NumCGsteps           50
+MD.MaxCGDispl         0.1  Ang
+MD.MaxForceTol        0.04 eV/Ang
+AtomicCoordinatesFormat  ScaledCartesian
+%block AtomicCoordinatesAndAtomicSpecies
+    0.000    0.000    0.000   1 #  Si  1
+    0.250    0.250    0.250   1 #  Si  2
+    0.000    0.500    0.500   1 #  Si  3
+    0.250    0.750    0.750   1 #  Si  4
+    0.500    0.000    0.500   1 #  Si  5
+    0.750    0.250    0.750   1 #  Si  6
+    0.500    0.500    0.000   1 #  Si  7
+    0.750    0.750    0.250   1 #  Si  8
+    1.000    0.000    0.000   1 #  Si  9
+    1.250    0.250    0.250   1 #  Si 10
+    1.000    0.500    0.500   1 #  Si 11
+    1.250    0.750    0.750   1 #  Si 12
+    1.500    0.000    0.500   1 #  Si 13
+    1.750    0.250    0.750   1 #  Si 14
+    1.500    0.500    0.000   1 #  Si 15
+    1.750    0.750    0.250   1 #  Si 16
+    0.000    1.000    0.000   1 #  Si 17
+    0.250    1.250    0.250   1 #  Si 18
+    0.000    1.500    0.500   1 #  Si 19
+    0.250    1.750    0.750   1 #  Si 20
+    0.500    1.000    0.500   1 #  Si 21
+    0.750    1.250    0.750   1 #  Si 22
+    0.500    1.500    0.000   1 #  Si 23
+    0.750    1.750    0.250   1 #  Si 24
+    0.000    0.000    1.000   1 #  Si 25
+    0.250    0.250    1.250   1 #  Si 26
+    0.000    0.500    1.500   1 #  Si 27
+    0.250    0.750    1.750   1 #  Si 28
+    0.500    0.000    1.500   1 #  Si 29
+    0.750    0.250    1.750   1 #  Si 30
+    0.500    0.500    1.000   1 #  Si 31
+    0.750    0.750    1.250   1 #  Si 32
+    1.000    1.000    0.000   1 #  Si 33
+    1.250    1.250    0.250   1 #  Si 34
+    1.000    1.500    0.500   1 #  Si 35
+    1.250    1.750    0.750   1 #  Si 36
+    1.500    1.000    0.500   1 #  Si 37
+    1.750    1.250    0.750   1 #  Si 38
+    1.500    1.500    0.000   1 #  Si 39
+    1.750    1.750    0.250   1 #  Si 40
+    1.000    0.000    1.000   1 #  Si 41
+    1.250    0.250    1.250   1 #  Si 42
+    1.000    0.500    1.500   1 #  Si 43
+    1.250    0.750    1.750   1 #  Si 44
+    1.500    0.000    1.500   1 #  Si 45
+    1.750    0.250    1.750   1 #  Si 46
+    1.500    0.500    1.000   1 #  Si 47
+    1.750    0.750    1.250   1 #  Si 48
+    0.000    1.000    1.000   1 #  Si 49
+    0.250    1.250    1.250   1 #  Si 50
+    0.000    1.500    1.500   1 #  Si 51
+    0.250    1.750    1.750   1 #  Si 52
+    0.500    1.000    1.500   1 #  Si 53
+    0.750    1.250    1.750   1 #  Si 54
+    0.500    1.500    1.000   1 #  Si 55
+    0.750    1.750    1.250   1 #  Si 56
+    1.000    1.000    1.000   1 #  Si 57
+    1.250    1.250    1.250   1 #  Si 58
+    1.000    1.500    1.500   1 #  Si 59
+    1.250    1.750    1.750   1 #  Si 60
+    1.500    1.000    1.500   1 #  Si 61
+    1.750    1.250    1.750   1 #  Si 62
+    1.500    1.500    1.000   1 #  Si 63
+    1.750    1.750    1.250   1 #  Si 64
+    1.125    1.125    1.125   2 #  H  65  between Si 33 and Si 34
+%endblock AtomicCoordinatesAndAtomicSpecies
+redata: ****************** End of input data file *****************************
+
+redata: ****************** Simulation parameters ******************************
+redata:
+redata: The following are some of the parameters of the simulation.
+redata: A complete list of the parameters used, including defect values,
+redata: can be found in file out.fdf             
+redata:
+redata: -----------------------------------------------------------------------
+redata: System Name: H in 64-atom silicon                                       
+redata: -----------------------------------------------------------------------
+redata: System Label                     =     sih                 
+redata: Long output                      =     F
+redata: Number of Atoms                  =    65
+redata: Number of Atomic Species         =     2
+redata: Write minimum siesta dimensions  =     F
+redata: Dump information for DENCHAR     =     F
+redata: Write Mulliken Pop.              =     NO
+redata: Lattice Constant                 =    10.2612  Bohr
+redata: Lattice vectors (in units of Lattice Constant)
+redata:     2.000000    0.000000    0.000000
+redata:     0.000000    2.000000    0.000000
+redata:     0.000000    0.000000    2.000000
+redata: Lattice vectors (in Bohr)
+redata:    20.522434    0.000000    0.000000
+redata:     0.000000   20.522434    0.000000
+redata:     0.000000    0.000000   20.522434
+redata: Number of spin components        =     1
+redata: Mesh Cutoff                      =    40.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Max. number of SCF Iter          =    50
+redata: Pulay mixing using               =     3 iterations
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk         =     F
+redata: New DM Mixing Weight             =     0.3000
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.001000
+redata: Use continuation files for DM    =     T
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Electronic Temperature           =     0.0018  Ry
+redata: Dynamics option                  =     CG coord. optimization
+redata: Variable cell                    =     F
+redata: Use continuation files for CG    =     F
+redata: Maximum number of CG moves       =    50
+redata: Max atomic displ per move        =     0.1890  Bohr
+redata: Force tolerance                  =     0.0016  Ry/Bohr
+recoor: Atomic-coordinates input format  =     Cartesian coordinates
+recoor:                                        (in units of alat)
+redata: ***********************************************************************
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1      1
+siesta:      2.56530   2.56530   2.56530  1      2
+siesta:      0.00000   5.13061   5.13061  1      3
+siesta:      2.56530   7.69591   7.69591  1      4
+siesta:      5.13061   0.00000   5.13061  1      5
+siesta:      7.69591   2.56530   7.69591  1      6
+siesta:      5.13061   5.13061   0.00000  1      7
+siesta:      7.69591   7.69591   2.56530  1      8
+siesta:     10.26122   0.00000   0.00000  1      9
+siesta:     12.82652   2.56530   2.56530  1     10
+siesta:     10.26122   5.13061   5.13061  1     11
+siesta:     12.82652   7.69591   7.69591  1     12
+siesta:     15.39183   0.00000   5.13061  1     13
+siesta:     17.95713   2.56530   7.69591  1     14
+siesta:     15.39183   5.13061   0.00000  1     15
+siesta:     17.95713   7.69591   2.56530  1     16
+siesta:      0.00000  10.26122   0.00000  1     17
+siesta:      2.56530  12.82652   2.56530  1     18
+siesta:      0.00000  15.39183   5.13061  1     19
+siesta:      2.56530  17.95713   7.69591  1     20
+siesta:      5.13061  10.26122   5.13061  1     21
+siesta:      7.69591  12.82652   7.69591  1     22
+siesta:      5.13061  15.39183   0.00000  1     23
+siesta:      7.69591  17.95713   2.56530  1     24
+siesta:      0.00000   0.00000  10.26122  1     25
+siesta:      2.56530   2.56530  12.82652  1     26
+siesta:      0.00000   5.13061  15.39183  1     27
+siesta:      2.56530   7.69591  17.95713  1     28
+siesta:      5.13061   0.00000  15.39183  1     29
+siesta:      7.69591   2.56530  17.95713  1     30
+siesta:      5.13061   5.13061  10.26122  1     31
+siesta:      7.69591   7.69591  12.82652  1     32
+siesta:     10.26122  10.26122   0.00000  1     33
+siesta:     12.82652  12.82652   2.56530  1     34
+siesta:     10.26122  15.39183   5.13061  1     35
+siesta:     12.82652  17.95713   7.69591  1     36
+siesta:     15.39183  10.26122   5.13061  1     37
+siesta:     17.95713  12.82652   7.69591  1     38
+siesta:     15.39183  15.39183   0.00000  1     39
+siesta:     17.95713  17.95713   2.56530  1     40
+siesta:     10.26122   0.00000  10.26122  1     41
+siesta:     12.82652   2.56530  12.82652  1     42
+siesta:     10.26122   5.13061  15.39183  1     43
+siesta:     12.82652   7.69591  17.95713  1     44
+siesta:     15.39183   0.00000  15.39183  1     45
+siesta:     17.95713   2.56530  17.95713  1     46
+siesta:     15.39183   5.13061  10.26122  1     47
+siesta:     17.95713   7.69591  12.82652  1     48
+siesta:      0.00000  10.26122  10.26122  1     49
+siesta:      2.56530  12.82652  12.82652  1     50
+siesta:      0.00000  15.39183  15.39183  1     51
+siesta:      2.56530  17.95713  17.95713  1     52
+siesta:      5.13061  10.26122  15.39183  1     53
+siesta:      7.69591  12.82652  17.95713  1     54
+siesta:      5.13061  15.39183  10.26122  1     55
+siesta:      7.69591  17.95713  12.82652  1     56
+siesta:     10.26122  10.26122  10.26122  1     57
+siesta:     12.82652  12.82652  12.82652  1     58
+siesta:     10.26122  15.39183  15.39183  1     59
+siesta:     12.82652  17.95713  17.95713  1     60
+siesta:     15.39183  10.26122  15.39183  1     61
+siesta:     17.95713  12.82652  17.95713  1     62
+siesta:     15.39183  15.39183  10.26122  1     63
+siesta:     17.95713  17.95713  12.82652  1     64
+siesta:     11.54387  11.54387  11.54387  2     65
+
+initatom: Reading input for the pseudopotentials and atomic orbitals
+rechemsp: Read atomic number and label for species   1 as   14  Si
+rechemsp: Read atomic number and label for species   2 as    1  H
+
+ATOM: *************************************************************************
+
+ATOM: CALLED FOR Si  (Z =  14)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Valence configuration (pseudopotential generation):
+ 3s( 2.00)
+ 3p( 2.00)
+ 3d( 0.00)
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+
+ATOM: Estimated core radius    2.54944
+
+ATOM: Include non-local core corrections could be a good idea
+ATOM: Maximum radius for local-pseudopot. charge    2.85303
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.936440   el= -0.796617   kbcos=  4.661340
+   l= 1   rc=  1.936440   el= -0.307040   kbcos=  1.494238
+   l= 2   rc=  1.936440   el=  0.002313   kbcos= -2.808672
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+ATOM: -------------------------------------------------------------------------
+
+ATOM: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.022049 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.883716
+                 energy =   -0.773554
+                kinetic =    0.585471
+    potential(screened) =   -1.359025
+       potential(ionic) =   -3.840954
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.022049 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.116033
+                 energy =   -0.285742
+                kinetic =    0.892202
+    potential(screened) =   -1.177944
+       potential(ionic) =   -3.446720
+ATOM: Total number of Sankey-type orbitals:  4
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+        3s( 2.00)
+        3p( 2.00)
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.116033
+
+ATOM: *************************************************************************
+
+ATOM: CALLED FOR H   (Z =   1)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Valence configuration (pseudopotential generation):
+ 1s( 1.00)
+ 2p( 0.00)
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+
+VLOCAL1: 99.0% of the norm of Vloc inside     28.493 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     64.935 Ry
+ATOM: Maximum radius for local-pseudopot. charge    1.45251
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.364359   el= -0.467325   kbcos= -2.005361
+   l= 1   rc=  1.434438   el=  0.001430   kbcos= -0.501708
+
+KBgen: Total number of  Kleinman-Bylander projectors:    4
+ATOM: -------------------------------------------------------------------------
+
+ATOM: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.022049 Ry
+
+   izeta = 1
+                 lambda =    0.800000
+                     rc =    4.718242
+                 energy =   -0.396561
+                kinetic =    1.341628
+    potential(screened) =   -1.738188
+       potential(ionic) =   -2.295884
+ATOM: Total number of Sankey-type orbitals:  1
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+        1s( 1.00)
+
+Vna:  Cut-off radius for the neutral-atom potential:   4.708991
+
+prinput: ************************* Basis input ********************************
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+   1  14 Si                      # Species index, atomic number, species label
+   2   1 H                       # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Si          2                    # Species label, number of l-shells
+   0   1                         # l, Nzeta 
+   4.884   
+   1.000   
+   1   1                         # l, Nzeta 
+   6.116   
+   1.000   
+H           1                    # Species label, number of l-shells
+   0   1                         # l, Nzeta 
+   4.718   
+   0.800   
+%endblock PAO.Basis
+
+prinput: **********************************************************************
+ATOM: *************************************************************************
+
+siesta: System type = bulk      
+
+siesta:    ===============================
+siesta:        Begin CG move =      0
+siesta:    ===============================
+
+DHSCF: MESH =    48 x    48 x    48 =      110592
+DHSCF: Mesh cutoff (required, used) =    40.000    53.991 Ry
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =   12205.375266
+siesta: Ena     =    3677.559810
+siesta: Ekin    =    2591.199534
+siesta: Enl     =    1150.369196
+siesta: DEna    =      -0.000173
+siesta: DUscf   =       0.000000
+siesta: DUext   =       0.000000
+siesta: Exc     =   -2083.290357
+siesta: eta*DQ  =       0.000000
+siesta: Emadel  =       0.000000
+siesta: Eharris =   -6847.400922
+siesta: Etot    =   -6869.537257
+siesta: FreeEng =   -6869.537257
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6847.4009    -6869.5373    -6869.5373  1.0409 -2.0995
+timer: Routine,Calls,Time,% = IterSCF        1      12.608  84.89
+siesta:    2    -6848.5249    -6844.5826    -6844.6452  0.7386 -3.6120
+siesta:    3    -6846.0081    -6845.8216    -6845.8563  0.1880 -2.2220
+siesta:    4    -6845.5605    -6844.8922    -6844.9490  0.1452 -2.4521
+siesta:    5    -6845.5431    -6845.3341    -6845.3688  0.1230 -2.4204
+siesta:    6    -6845.5419    -6845.2521    -6845.2869  0.1079 -2.4155
+siesta:    7    -6845.5299    -6845.4150    -6845.4497  0.0227 -2.3372
+siesta:    8    -6845.5282    -6845.4111    -6845.4467  0.0061 -2.3613
+siesta:    9    -6845.5278    -6845.4606    -6845.4957  0.0067 -2.3538
+siesta:   10    -6845.5279    -6845.4812    -6845.5164  0.0026 -2.3574
+siesta:   11    -6845.5278    -6845.5036    -6845.5388  0.0014 -2.3573
+siesta:   12    -6845.5279    -6845.5263    -6845.5615  0.0007 -2.3583
+siesta:   13    -6845.5279    -6845.5254    -6845.5606  0.0002 -2.3578
+
+siesta: E_KS(eV) =     -6845.5254
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot    0.001713    0.001717    0.001724
+----------------------------------------
+ Max    9.574214
+ Res    1.680495    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    9.574214    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =      1
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6847.7361    -6846.8771    -6846.9123  0.3090 -2.3159
+siesta:    2    -6850.1203    -6846.8253    -6846.8604  0.4730 -3.7341
+siesta:    3    -6847.5391    -6847.0129    -6847.0520  0.1170 -2.5369
+siesta:    4    -6847.5384    -6847.1447    -6847.1794  0.0903 -2.5408
+siesta:    5    -6847.5361    -6847.5709    -6847.6056  0.0116 -2.5163
+siesta:    6    -6847.5358    -6847.5511    -6847.5858  0.0078 -2.5259
+siesta:    7    -6847.5358    -6847.5705    -6847.6051  0.0033 -2.5233
+siesta:    8    -6847.5358    -6847.5537    -6847.5883  0.0023 -2.5258
+siesta:    9    -6847.5358    -6847.5421    -6847.5768  0.0010 -2.5255
+siesta:   10    -6847.5358    -6847.5366    -6847.5712  0.0004 -2.5260
+
+siesta: E_KS(eV) =     -6847.5366
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.023124   -0.011588   -0.002298
+----------------------------------------
+ Max    6.926761
+ Res    1.216081    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    6.926761    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =      2
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6849.8956    -6848.6087    -6848.6434  0.3256 -2.4834
+siesta:    2    -6853.2750    -6848.6775    -6848.7121  0.5416 -3.8200
+siesta:    3    -6849.6246    -6848.8044    -6848.8680  0.1424 -2.7550
+siesta:    4    -6849.6191    -6849.0552    -6849.0898  0.0844 -2.7959
+siesta:    5    -6849.6180    -6849.6110    -6849.6456  0.0094 -2.8157
+siesta:    6    -6849.6173    -6849.6348    -6849.6694  0.0029 -2.7970
+siesta:    7    -6849.6173    -6849.6300    -6849.6647  0.0015 -2.7964
+siesta:    8    -6849.6173    -6849.6204    -6849.6551  0.0010 -2.7943
+siesta:    9    -6849.6172    -6849.6192    -6849.6538  0.0006 -2.7955
+
+siesta: E_KS(eV) =     -6849.6192
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.014074   -0.007022   -0.001329
+----------------------------------------
+ Max    3.843718
+ Res    0.681323    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    3.843718    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =      3
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.0475    -6849.9830    -6850.0176  0.2393 -2.8893
+siesta:    2    -6852.2792    -6850.5196    -6850.5542  0.3395 -3.8709
+siesta:    3    -6850.9277    -6850.2628    -6850.3321  0.1071 -3.0361
+siesta:    4    -6850.9147    -6850.5579    -6850.5926  0.0295 -3.0944
+siesta:    5    -6850.9133    -6850.7344    -6850.7690  0.0079 -3.1092
+siesta:    6    -6850.9129    -6850.8787    -6850.9134  0.0047 -3.1290
+siesta:    7    -6850.9128    -6850.9097    -6850.9443  0.0015 -3.1230
+siesta:    8    -6850.9128    -6850.9172    -6850.9518  0.0010 -3.1281
+siesta:    9    -6850.9128    -6850.9175    -6850.9521  0.0005 -3.1273
+
+siesta: E_KS(eV) =     -6850.9175
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.006994   -0.003420   -0.000539
+----------------------------------------
+ Max    0.787159
+ Res    0.241446    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.787159    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =      4
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6850.8189    -6850.6726    -6850.7073  0.0807 -3.4798
+siesta:    2    -6850.9429    -6850.7435    -6850.7782  0.0565 -3.0883
+siesta:    3    -6850.7969    -6850.7306    -6850.7652  0.0288 -3.3874
+siesta:    4    -6850.7942    -6850.7674    -6850.8021  0.0070 -3.3470
+siesta:    5    -6850.7939    -6850.7783    -6850.8130  0.0021 -3.3568
+siesta:    6    -6850.7939    -6850.7838    -6850.8185  0.0008 -3.3571
+siesta:    7    -6850.7939    -6850.7890    -6850.8236  0.0003 -3.3585
+
+siesta: E_KS(eV) =     -6850.7890
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.004130   -0.001934   -0.000166
+----------------------------------------
+ Max    0.924634
+ Res    0.325325    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.924634    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =      5
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.0145    -6851.0740    -6851.1086  0.0323 -3.1156
+siesta:    2    -6851.1854    -6850.9275    -6850.9621  0.0707 -3.5858
+siesta:    3    -6850.9907    -6851.0154    -6851.0501  0.0204 -3.2287
+siesta:    4    -6850.9901    -6850.9842    -6851.0189  0.0086 -3.2514
+siesta:    5    -6850.9900    -6850.9835    -6851.0181  0.0027 -3.2436
+siesta:    6    -6850.9899    -6850.9861    -6851.0208  0.0011 -3.2431
+siesta:    7    -6850.9899    -6850.9880    -6851.0226  0.0002 -3.2417
+siesta:    8    -6850.9899    -6850.9887    -6851.0234  0.0001 -3.2421
+
+siesta: E_KS(eV) =     -6850.9887
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.005356   -0.002580   -0.000337
+----------------------------------------
+ Max    0.773503
+ Res    0.240534    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.773503    constrained
+
+cgvc: Finished line minimization    1.  Mean atomic displacement =    0.1024
+
+siesta:    ===============================
+siesta:        Begin CG move =      6
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.0328    -6851.2761    -6851.3108  0.2047 -3.3751
+siesta:    2    -6852.4689    -6850.1312    -6850.1658  0.3282 -2.2727
+siesta:    3    -6850.7499    -6850.9419    -6851.0229  0.0656 -3.0022
+siesta:    4    -6850.7364    -6850.8397    -6850.8744  0.0346 -2.9567
+siesta:    5    -6850.7336    -6850.6685    -6850.7031  0.0067 -2.9344
+siesta:    6    -6850.7326    -6850.6958    -6850.7305  0.0016 -2.9352
+siesta:    7    -6850.7325    -6850.7100    -6850.7446  0.0014 -2.9424
+siesta:    8    -6850.7325    -6850.7189    -6850.7536  0.0005 -2.9381
+siesta:    9    -6850.7325    -6850.7269    -6850.7616  0.0005 -2.9388
+
+siesta: E_KS(eV) =     -6850.7269
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.002951   -0.004028   -0.004907
+----------------------------------------
+ Max    1.073727
+ Res    0.363673    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    1.073727    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =      7
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.3682    -6850.9703    -6851.0050  0.1235 -2.8568
+siesta:    2    -6851.8899    -6851.0276    -6851.0623  0.1689 -3.8014
+siesta:    3    -6851.2646    -6851.0645    -6851.1032  0.0288 -3.0880
+siesta:    4    -6851.2626    -6851.1712    -6851.2058  0.0136 -3.1102
+siesta:    5    -6851.2618    -6851.2703    -6851.3050  0.0030 -3.0936
+siesta:    6    -6851.2618    -6851.2749    -6851.3095  0.0017 -3.0977
+siesta:    7    -6851.2618    -6851.2709    -6851.3056  0.0007 -3.0963
+siesta:    8    -6851.2617    -6851.2679    -6851.3025  0.0002 -3.0973
+
+siesta: E_KS(eV) =     -6851.2679
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot    0.003903    0.001997    0.000454
+----------------------------------------
+ Max    0.212167
+ Res    0.103605    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.212167    constrained
+
+cgvc: Finished line minimization    2.  Mean atomic displacement =    0.0461
+
+siesta:    ===============================
+siesta:        Begin CG move =      8
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.2600    -6851.3467    -6851.3814  0.0291 -3.1125
+siesta:    2    -6851.4079    -6851.1407    -6851.1753  0.0472 -2.8406
+siesta:    3    -6851.2195    -6851.2783    -6851.3129  0.0109 -3.0511
+siesta:    4    -6851.2178    -6851.2430    -6851.2776  0.0043 -3.0445
+siesta:    5    -6851.2173    -6851.2294    -6851.2640  0.0016 -3.0569
+siesta:    6    -6851.2173    -6851.2243    -6851.2590  0.0008 -3.0542
+siesta:    7    -6851.2173    -6851.2213    -6851.2559  0.0004 -3.0551
+
+siesta: E_KS(eV) =     -6851.2213
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.002823   -0.002678   -0.002509
+----------------------------------------
+ Max    0.334431
+ Res    0.157475    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.334431    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =      9
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.3257    -6851.2527    -6851.2874  0.0170 -3.0435
+siesta:    2    -6851.3781    -6851.2835    -6851.3182  0.0265 -3.2196
+siesta:    3    -6851.3114    -6851.2757    -6851.3104  0.0062 -3.0803
+siesta:    4    -6851.3108    -6851.3042    -6851.3388  0.0023 -3.0819
+siesta:    5    -6851.3107    -6851.3124    -6851.3470  0.0010 -3.0762
+siesta:    6    -6851.3107    -6851.3127    -6851.3473  0.0004 -3.0782
+
+siesta: E_KS(eV) =     -6851.3127
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot    0.003731   -0.000381   -0.003687
+----------------------------------------
+ Max    0.113162
+ Res    0.054150    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.113162    constrained
+
+cgvc: Finished line minimization    3.  Mean atomic displacement =    0.0190
+
+siesta:    ===============================
+siesta:        Begin CG move =     10
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.3190    -6851.3081    -6851.3428  0.0229 -3.0668
+siesta:    2    -6851.3258    -6851.2995    -6851.3342  0.0211 -3.1450
+siesta:    3    -6851.3102    -6851.3076    -6851.3423  0.0041 -3.0993
+siesta:    4    -6851.3101    -6851.3091    -6851.3438  0.0011 -3.0941
+siesta:    5    -6851.3100    -6851.3097    -6851.3443  0.0005 -3.0976
+siesta:    6    -6851.3100    -6851.3098    -6851.3444  0.0004 -3.0960
+
+siesta: E_KS(eV) =     -6851.3098
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.004583   -0.001444    0.001071
+----------------------------------------
+ Max    0.207783
+ Res    0.071245    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.207783    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =     11
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.3280    -6851.3272    -6851.3619  0.0114 -3.1016
+siesta:    2    -6851.3297    -6851.3230    -6851.3577  0.0108 -3.0622
+siesta:    3    -6851.3258    -6851.3259    -6851.3606  0.0020 -3.0855
+siesta:    4    -6851.3257    -6851.3256    -6851.3602  0.0006 -3.0876
+siesta:    5    -6851.3257    -6851.3256    -6851.3602  0.0003 -3.0861
+
+siesta: E_KS(eV) =     -6851.3256
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot   -0.003491    0.000531    0.002917
+----------------------------------------
+ Max    0.052253
+ Res    0.025266    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.052253    constrained
+
+cgvc: Finished line minimization    4.  Mean atomic displacement =    0.0095
+
+siesta:    ===============================
+siesta:        Begin CG move =     12
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.3284    -6851.3445    -6851.3791  0.0040 -3.0698
+siesta:    2    -6851.3309    -6851.3241    -6851.3588  0.0076 -3.1027
+siesta:    3    -6851.3266    -6851.3339    -6851.3686  0.0018 -3.0848
+siesta:    4    -6851.3266    -6851.3277    -6851.3623  0.0004 -3.0829
+siesta:    5    -6851.3266    -6851.3269    -6851.3615  0.0002 -3.0855
+
+siesta: E_KS(eV) =     -6851.3269
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot    0.004198   -0.000272   -0.004097
+----------------------------------------
+ Max    0.080133
+ Res    0.029366    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.080133    constrained
+
+siesta:    ===============================
+siesta:        Begin CG move =     13
+siesta:    ===============================
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6851.3292    -6851.3210    -6851.3557  0.0018 -3.0918
+siesta:    2    -6851.3297    -6851.3284    -6851.3631  0.0033 -3.0777
+siesta:    3    -6851.3289    -6851.3254    -6851.3600  0.0008 -3.0853
+siesta:    4    -6851.3289    -6851.3282    -6851.3629  0.0002 -3.0861
+
+siesta: E_KS(eV) =     -6851.3282
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot    0.012642    0.008692    0.005255
+----------------------------------------
+ Max    0.034068
+ Res    0.014173    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.034068    constrained
+
+outcoor: Relaxed atomic coordinates (scaled):               
+   -0.00034823   -0.00034822   -0.00034821   1  Si        1
+    0.25034843    0.25034843    0.25034843   1  Si        2
+    0.00024797    0.50094753    0.50094751   1  Si        3
+    0.25175875    0.75040474    0.75040472   1  Si        4
+    0.50094752    0.00024794    0.50094745   1  Si        5
+    0.75040478    0.25175877    0.75040469   1  Si        6
+    0.50094751    0.50094745    0.00024794   1  Si        7
+    0.75040474    0.75040471    0.25175880   1  Si        8
+    1.00040323    0.00148134    0.00148134   1  Si        9
+    1.24959794    0.24851786    0.24851785   1  Si       10
+    1.00024077    0.49630465    0.49630466   1  Si       11
+    1.25574062    0.74031011    0.74031012   1  Si       12
+    1.50000177    0.00094638    0.49880315   1  Si       13
+    1.75119741    0.24905431    0.74999946   1  Si       14
+    1.50000170    0.49880320    0.00094631   1  Si       15
+    1.75119739    0.74999943    0.24905428   1  Si       16
+    0.00148099    1.00040336    0.00148099   1  Si       17
+    0.24851750    1.24959810    0.24851751   1  Si       18
+    0.00094641    1.50000181    0.49880322   1  Si       19
+    0.24905439    1.75119737    0.74999957   1  Si       20
+    0.49630386    1.00024016    0.49630389   1  Si       21
+    0.74030982    1.25574096    0.74030988   1  Si       22
+    0.49880327    1.50000162    0.00094631   1  Si       23
+    0.74999948    1.75119732    0.24905429   1  Si       24
+    0.00148069    0.00148069    1.00040345   1  Si       25
+    0.24851720    0.24851722    1.24959820   1  Si       26
+    0.00094642    0.49880327    1.50000178   1  Si       27
+    0.24905442    0.74999962    1.75119733   1  Si       28
+    0.49880331    0.00094635    1.50000166   1  Si       29
+    0.74999956    0.24905435    1.75119729   1  Si       30
+    0.49630285    0.49630285    1.00023680   1  Si       31
+    0.74030963    0.74030967    1.25574121   1  Si       32
+    0.99971018    0.99971021    0.00133883   1  Si       33
+    1.25029036    1.25029041    0.24866158   1  Si       34
+    1.00153467    1.50114317    0.49775691   1  Si       35
+    1.24846695    1.75224336    0.74885779   1  Si       36
+    1.50114324    1.00153480    0.49775691   1  Si       37
+    1.75224342    1.24846694    0.74885778   1  Si       38
+    1.49959623    1.49959616   -0.00175815   1  Si       39
+    1.74905344    1.74905340    0.24975290   1  Si       40
+    0.99971014    0.00133884    0.99971021   1  Si       41
+    1.25028782    0.24866607    1.25028790   1  Si       42
+    1.00153459    0.49775694    1.50114309   1  Si       43
+    1.24846702    0.74885786    1.75224332   1  Si       44
+    1.49959624   -0.00175817    1.49959615   1  Si       45
+    1.74905345    0.24975290    1.74905341   1  Si       46
+    1.50114322    0.49775694    1.00153480   1  Si       47
+    1.75224343    0.74885782    1.24846703   1  Si       48
+    0.00133883    0.99971013    0.99971018   1  Si       49
+    0.24866608    1.25028784    1.25028786   1  Si       50
+   -0.00175821    1.49959621    1.49959619   1  Si       51
+    0.24975291    1.74905346    1.74905346   1  Si       52
+    0.49775699    1.00153462    1.50114306   1  Si       53
+    0.74885793    1.24846710    1.75224334   1  Si       54
+    0.49775700    1.50114312    1.00153469   1  Si       55
+    0.74885792    1.75224337    1.24846712   1  Si       56
+    0.95149269    0.95149316    0.95149353   1  Si       57
+    1.29848969    1.29849015    1.29849055   1  Si       58
+    0.99426115    1.50968875    1.50968878   1  Si       59
+    1.24976039    1.75369537    1.75369539   1  Si       60
+    1.50968851    0.99426147    1.50968853   1  Si       61
+    1.75369460    1.24975976    1.75369461   1  Si       62
+    1.50968829    1.50968830    0.99426175   1  Si       63
+    1.75369397    1.75369398    1.24975928   1  Si       64
+    1.12498993    1.12499805    1.12500460   2  H        65
+
+siesta: Program's energy decomposition (eV):
+siesta:-Eions   =  -12205.375266
+siesta: Ena     =    3675.796846
+siesta: Ekin    =    2573.422651
+siesta: Enl     =     951.660331
+siesta: DEna    =     213.820246
+siesta: DUscf   =       5.345217
+siesta: DUext   =       0.000000
+siesta: Exc     =   -2065.998235
+siesta: eta*DQ  =       0.000000
+siesta: Emadel  =       0.000000
+siesta: Ekinion =       0.000000
+siesta: Eharris =   -6851.328859
+siesta: Etot    =   -6851.328210
+siesta: FreeEng =   -6851.362868
+
+siesta: Final energy (eV):
+siesta:       Kinetic =    2573.422651
+siesta:       Hartree =     405.722764
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -2065.998235
+siesta:  Ion-electron =   -3075.634278
+siesta:       Ion-ion =   -4688.841111
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -6851.328210
+
+siesta: Stress tensor (eV/Ang**3):
+siesta:    -0.043632   -0.001739   -0.001739
+siesta:    -0.001739   -0.043632   -0.001739
+siesta:    -0.001739   -0.001739   -0.043632
+
+siesta: Cell volume =       1280.824056 Ang**3
+
+siesta: Pressure:
+siesta:                Solid            Molecule  Units
+siesta:           0.00047521          0.00047228  Ry/Bohr**3
+siesta:           0.04363215          0.04336328  eV/Ang**3
+siesta:          69.90716128         69.47639265  kBar
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1    1267.374    1267.374   100.00
+timer:  bands             2       0.002       0.005     0.00
+timer:  IterMD           14      90.438    1266.134    99.90
+timer:  hsparse          14       0.978      13.690     1.08
+timer:  IterSCF         106      11.809    1251.720    98.76
+timer:  nlefsm           28       1.137      31.844     2.51
+timer:  DHSCF           106       9.328     988.804    78.02
+timer:  POISON          121       0.056       6.726     0.53
+timer:  DHSCF2           14       5.376      75.263     5.94
+timer:  REORD           664       0.003       2.108     0.17
+timer:  RFFT            240       0.017       4.133     0.33
+timer:  DHSCF3          106       3.061     324.452    25.60
+timer:  rhoofd          106       1.424     150.917    11.91
+timer:  CELLXC          106       0.204      21.610     1.71
+timer:  vmat            106       1.319     139.817    11.03
+timer:  diagon          106       1.883     199.624    15.75
+timer:  rdiag           106       1.053     111.604     8.81
+timer:  DHSCF4           14      42.072     589.014    46.48
+timer:  dfscf          7196       0.068     491.561    38.79
+  
+ 
+prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
+prdate: DATE = Tue Apr 20 15:15:32 MET DST 1999
+ 

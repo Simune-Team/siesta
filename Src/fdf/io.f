@@ -1,4 +1,6 @@
 c
+c Copyright Alberto Garcia, 1996, 1997, 1998
+c
 c This module implements an interface to the FORTRAN logical unit
 c system. Based on code by Richard Maine.
 c

@@ -1,4 +1,7 @@
-      subroutine rhooda( NO, endC,  listC,  C, NSPmax, NSP, NP, Datm,
+C $Id: rhooda.f,v 1.4 1999/01/31 11:43:38 emilio Exp $
+
+      subroutine rhooda( NO, indxuo, endC,  listC,  C,
+     .                   NSPmax, NSP, NP, Datm,
      .                   RHOatm )
 
 C ********************************************************************
@@ -7,6 +10,7 @@ C occupations.
 C Written by P.Ordejon and J.M.Soler. May'95.
 C *********************** INPUT **************************************
 C integer NO              : Number of basis orbitals
+C integer indxuo(NO)      : Index of equivalent atom in unit cell
 C integer endC(NO)        : Accumulated umber of nonzero elements in
 C                           each row of C
 C integer listC(*)        : List of nonzero elements in each row of C
@@ -21,11 +25,12 @@ C *********************************************************************
 
       implicit none
 
-      integer          NO, NP, NSP, NSPmax, endC(0:NO), listC(*)
+      integer          NO, NP, NSP, NSPmax
+      integer          endC(0:NO), indxuo(NO), listC(*)
       real             C(NSPmax,*), RHOatm(NSP,NP)
       double precision Datm(NO)
 
-      integer          i, in, ip, isp
+      integer          i, in, ip, isp, iu
       double precision Ci
 
 C     Initialize RHOatm
@@ -37,6 +42,7 @@ C     Initialize RHOatm
 
 C     Loop on orbitals
       do 50 i = 1, NO
+        iu = indxuo(i)
 
 C       Loop on mesh points of orbital i
         do 40 in = 1+endC(i-1), endC(i)
@@ -45,7 +51,7 @@ C       Loop on mesh points of orbital i
 C         Loop over sub-points
           do 30 isp = 1, NSP
             Ci = C(isp,in)
-            RHOatm(isp,ip) = RHOatm(isp,ip) + Datm(i) * Ci * Ci
+            RHOatm(isp,ip) = RHOatm(isp,ip) + Datm(iu) * Ci * Ci
    30     continue
 
    40   enddo

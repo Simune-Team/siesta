@@ -1,3 +1,5 @@
+C $Id: gauleg.f,v 1.2 1999/01/31 11:14:54 emilio Exp $
+
       SUBROUTINE GAULEG(X1,X2,X,W,N)
       IMPLICIT REAL*8 (A-H,O-Z)
 *     REAL*4 X1,X2,X(N),W(N)

@@ -1,3 +1,5 @@
+C $Id: chkdim.f,v 1.4 1999/01/31 10:50:52 emilio Exp $
+
       SUBROUTINE CHKDIM (SUB,VAR,ND,N,IOPT)
 C **********************************************************************
 C Checks a dimension parameter, warning and stopping if it is too small

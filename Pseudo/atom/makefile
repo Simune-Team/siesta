@@ -2,25 +2,15 @@
 # Makefile for ATM
 # ---------------------------------------------------------------
 #
-FC=f77
-LDR=f77
+.SUFFIXES: .f .o .a .prj .smb .log
 #
-# EXTRA: Options that must be consistent for the compiler AND linker
-# eg: -g for debugging,  -p or -pg for profiling...
+#----------------------------------------------$$$$$
+# EDIT the following lines to suit your system
 #
-EXTRA=  
-FFLAGS=  $(EXTRA)
-LDFLAGS= $(EXTRA) 
-#
-# System differences are hopefully accounted for in the "aux???.f file
-#
-AUX=osf
-#
-# scilib.f emulates Cray's SCILIB. In particular, the LINPACK routines
-# have single precision names but are actually double precision 
-# implementations.
-#
-AUX_OBJS= aux$(AUX).o
+FC= f77
+FFLAGS= -O
+AUX_OBJS= aux_general.o
+#----------------------------------------------$$$$$
 #
 SRCS=   atm.f  nucl_z.f   difnrl.f   difrel.f   dmixp.f   dsolv1.f   \
         pseudo.f  wf.f  hsc.f  excorr.f \
@@ -30,17 +20,17 @@ SRCS=   atm.f  nucl_z.f   difnrl.f   difrel.f   dmixp.f   dsolv1.f   \
         potran.f   potrv.f   potrw.f   prdiff.f  string.f  root.f  \
         genrhs.f  logder.f ode.f denplot.f scilib.f  recipes.f \
 	atomxc.f  ldaxc.f ggaxc.f pbexc.f pw92xc.f pzxc.f \
-	pw92c.f exchng.f compat_params.f
+	pw92c.f exchng.f compat_params.f blypxc.f
 #
 OBJS=$(SRCS:.f=.o)
 #
 atm:  $(OBJS) $(AUX_OBJS)   
-	$(LDR) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS)
+	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS)
 #
 clean:	
 	rm -f *.o atm
 #
-atm.o: banner.h radial.h orbital.h param.h charge.h elecpot.h energy.h
+atm.o: radial.h orbital.h param.h charge.h elecpot.h energy.h
 #
 chg_mism.o: radial.h nonlinear.h linear.h coeffs.h
 compat_params.o: compat.h
@@ -66,6 +56,40 @@ wf.o hsc.o ker.o : radial.h orbital.h ion.h param.h elecpot.h energy.h
 wrapup.o: radial.h orbital.h param.h ion.h charge.h elecpot.h energy.h \
           compat.h
 wtrans.o potran.o: plot.h
+#
+# FTNCHEK and FORCHECK section
+#
+FILES=$(OBJS) $(AUX_OBJS)
+#
+# set up macro PRJS containing project filenames
+#
+PRJS= $(FILES:.o=.prj)
+SMBS= $(FILES:.o=.smb)
+#
+.f.smb:
+	-spag log=$*.log $<
+#
+chk:    $(SMBS)
+	-gxchk $(SMBS)
+#
+
+# tell make how to create a .prj file from a .f file
+#
+.f.prj:
+	ftnchek -project -noextern -library -array=0 \
+		-quiet -sixchar  -output=$*.ana $<
+
+# "make check" will check everything that has been changed.
+check: $(PRJS)
+	ftnchek -output=Global.chk -quiet $(PRJS)
+#
+clean_check:
+	rm -f *.prj *.ana Global.chk
+clean_chk:
+	rm -f *.log *.smb *.spg Global.chk gxchk.out gxchk.sav
+#
+veryclean:  clean clean_check clean_chk
+
 
 
 

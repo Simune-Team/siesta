@@ -1,14 +1,17 @@
-      subroutine vmat( NO, endC,  listC, C, NSPmax, NSP,
+      subroutine vmat( NO, indxuo, endC, listC, C, NSPmax, NSP,
      .                 NP, endCt, listCt, CtoCt,
      .                 VolCel, V, NVmax, numVs, listVs, Vs,
-     .                 MaxVi, Vi )
+     .                 MaxAux, ilocal )
 
 C ********************************************************************
 C Finds the matrix elements of the potential.
-C Written by P.Ordejon.
-C Name and interfase modified by J.M.Soler. May'95.
+C First version written by P.Ordejon.
+C Name and interface modified by J.M.Soler. May'95.
+C Re-ordered so that mesh is the outer loop and the orbitals are
+C handled as lower-half triangular. J.D.Gale and J.M.Soler, Feb'99
 C *********************** INPUT **************************************
 C integer NO              : Number of basis orbitals
+C integer indxuo(NO)      : Index of equivalent atom in unit cell
 C integer endC(NO)        : Accumulated umber of nonzero elements in
 C                           each row of C
 C integer listC(*)        : List of nonzero elements in each row of C
@@ -27,89 +30,158 @@ C integer NVmax           : First dimension of listV and Vs, and maxim.
 C                           number of nonzero elements in any row of Vs
 C integer numVs(NO)       : Number of nonzero elements in each row of Vs
 C integer listVs(NVmax,NO): List of nonzero elements in each row of Vs
-C integer MaxVi           : Dimension of auxiliary array Vi
+C integer MaxAux          : Dimension of auxiliary array ilocal
 C ******************** INPUT AND OUTPUT *******************************
 C real*8  Vs(NVmax,NO)    : Value of nonzero elements in each row of Vs
 C                           to which the potential matrix elements are
 C                           summed up
 C ********************* AUXILIARY *************************************
-C real*8  Vi(MaxVi)       : Space that can be used freely between calls
-C                           MaxVi must be at least NO
+C integer ilocal(MaxAux)  : Space that can be used freely between calls
+C                           MaxAux must be at least NO
 C *********************************************************************
 
       implicit none
 
       integer
-     .   NO, NP, NVmax, NSP, NSPmax, MaxVi,
+     .   NO, NP, NVmax, NSP, NSPmax, MaxAux,
      .   endC(0:NO),  listC(*),
      .   endCt(0:NP), listCt(*), CtoCt(*),
-     .   numVs(NO), listVs(NVmax,NO)
+     .   numVs(NO), listVs(NVmax,NO), ilocal(MaxAux), indxuo(NO)
 
       real
      .  C(NSPmax,*), V(NSPmax,NP)
 
       double precision
-     .   VolCel, Vs(NVmax,NO), Vi(NO)
+     .   VolCel, Vs(NVmax,NO)
 
-      integer i, in, ip, isp, j, jn, kn
-      double precision dVol
+      integer maxloc
+      parameter ( maxloc = 300 )
+
+      integer i, ii, il, imp, in, iorb(0:maxloc), ip, isp, iu,
+     .        j, jl, jmp, jn, last, nlocal
+      double precision Ci, Cj, dVol, Vlocal(0:maxloc,0:maxloc)
       
       call timer('vmat',1)
 
-C     Check size of auxiliary array
-      if (NO .gt. MaxVi) stop 'VMAT: dimension MaxVi too small'
+C  Check size of auxiliary array
+      if (NO .gt. MaxAux) then
+        stop 'VMAT: dimension MaxAux too small'
+      endif
 
-C     Find volume per mesh point
+C  Find volume per mesh point
       dVol = VolCel / (NP*NSP)
 
-C     Full initialization of array Vi done only once (care!)
-      do 90 j = 1, NO
-        Vi(j) = 0.d0
-   90 continue
+C  Initialize iorb and Vlocal
+      do il = 0,maxloc
+        iorb(il) = 0
+        do jl = 0,maxloc
+          Vlocal(jl,il) = 0.d0
+        enddo
+      enddo
+      last = 0
 
-C     Loop on orbitals
-      do 160 i = 1, NO
+C  Full initialization of array ilocal done only once
+      do j = 1, NO
+        ilocal(j) = 0
+      enddo
 
-C       Loop on mesh points of orbital i
-        do 120 in = 1+endC(i-1), endC(i)
-          ip = listC(in)
+C  Loop over grid points
+      do ip = 1,np
 
-C         Loop on other non-zero orbitals in mesh point
-          do 110 kn = 1+endCt(ip-1), endCt(ip)
-            j = listCt(kn)
-            jn = CtoCt(kn)
+C  Check that Vlocal can contain Vij for this point.
+        if (endCt(ip)-endCt(ip-1) .gt. maxloc)
+     .    stop 'VMAT: parameter maxloc too small'
 
-C           Loop over sub-points
-            do 100 isp = 1, NSP
-C             Accumulate <Ci|V|Cj> in prod(j) in full-row format
-              Vi(j) = Vi(j) + V(isp,ip) * C(isp,in) * C(isp,jn)
-  100       enddo
+C  Find new required size of Vlocal
+        nlocal = last
+        do imp = 1+endCt(ip-1), endCt(ip)
+          i = listCt(imp)
+          if (ilocal(i) .eq. 0) nlocal = nlocal + 1
+        enddo
 
-  110     enddo
+C  If overflooded, add Vlocal to Vs and reinitialize it
+        if (nlocal .gt. maxloc) then
+          do il = 1,last
+            i = iorb(il)
+            iu = indxuo(i)
+            do ii = 1, numVs(i)
+              j = listVs(ii,i)
+              if (j .eq. i) then
+                Vs(ii,iu) = Vs(ii,iu) + dVol * Vlocal(il,il) 
+              else
+                jl = ilocal(j)
+C                 The sum Vlocal(jl,il)+Vlocal(il,jl) is used because
+C                 matrix elements are added below only to one of them
+                Vs(ii,iu) = Vs(ii,iu) + dVol *
+     .                      ( Vlocal(jl,il) + Vlocal(il,jl) )
+              endif
+            enddo
+          enddo
+          do il = 1,last
+            i = iorb(il)
+            ilocal(i) = 0
+            iorb(il) = 0
+            do jl = 1,last
+              Vlocal(jl,il) = 0.d0
+            enddo
+          enddo
+          last = 0
+        endif
 
-  120   enddo
+C  Look for required orbitals not yet in Vlocal
+        if (nlocal .gt. last) then
+          do imp = 1+endCt(ip-1), endCt(ip)
+            i = listCt(imp)
+            if (ilocal(i) .eq. 0) then
+              last = last + 1
+              ilocal(i) = last
+              iorb(last) = i
+            endif
+          enddo
+        endif
 
-C       Collect <Ci|V|Cj> and store in sparse matrix format
-C       Notice that in this version Vs is NOT initialized
-        do 130 in = 1, numVs(i)
-          j = listVs(in,i)
-*         Vs(in,i) = Vi(j) * dVol
-          Vs(in,i) = Vs(in,i) + Vi(j) * dVol
-C         Restore Vi(j) for next orbital i
-C         It is critical that listVs and listC are fully consistent!
-*         Vi(j) = 0.d0
-  130   enddo
+C  Loop on first orbital of mesh point
+        do imp = 1+endCt(ip-1), endCt(ip)
+          i = listCt(imp)
+          il = ilocal(i)
+          iu = indxuo(i)
+          in = CtoCt(imp)
 
-C       A safer (but longer) restoration of Vi(j)
-        do 150 in = 1+endC(i-1), endC(i)
-          ip = listC(in)
-          do 140 kn = 1+endCt(ip-1), endCt(ip)
-            j = listCt(kn)
-            Vi(j) = 0.d0
-  140     enddo
-  150   enddo
+C  Loop on second orbital of mesh point
+C  Notice that the loop runs only for jmp.le.imp
+          do jmp = 1+endCt(ip-1), imp
+            j = listCt(jmp)
+            jl = ilocal(j)
+            jn = CtoCt(jmp)
 
-  160 enddo
+C  Loop over sub-points
+            do isp = 1, nsp
+              Ci = C(isp,in)
+              Cj = C(isp,jn)
+C               Notice that each term is added only once to 
+C               Vlocal(jl,il) + Vlocal(il,jl)
+              Vlocal(jl,il) = Vlocal(jl,il) + V(isp,ip) * Ci * Cj
+            enddo
+
+          enddo
+        enddo
+      enddo
+
+C  Add final Vlocal to Vs
+      do il = 1,last
+        i = iorb(il)
+        iu = indxuo(i)
+        do ii = 1, numVs(i)
+          j = listVs(ii,i)
+          if (j .eq. i) then
+            Vs(ii,iu) = Vs(ii,iu) + dVol * Vlocal(il,il) 
+          else
+            jl = ilocal(j)
+            Vs(ii,iu) = Vs(ii,iu) + dVol *
+     .                  ( Vlocal(jl,il) + Vlocal(il,jl) )
+          endif
+        enddo
+      enddo
 
       call timer('vmat',2)
       end

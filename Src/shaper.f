@@ -1,3 +1,5 @@
+C $Id: shaper.f,v 1.8 1999/05/05 17:25:34 emilio Exp $
+
       SUBROUTINE SHAPER( CELL, NA, ISA, XA, SHAPE, NV, VECS )
 
 C **********************************************************************
@@ -25,6 +27,10 @@ C                      if their interaction spheres overlap, ie if
 C                      RIJ < RCUT(ISA(I),0) + RCUT(ISA(J),0)
 C ************ UNITS ***************************************************
 C CELL and XA must be in the same units
+C ************ BEHAVIOR ************************************************
+C Assumes that all the atoms in one unit cell are connected, i.e. it
+C will fail if one atom evaporates from one slab and reaches another
+C image of the slab, reporting the system as bulk.
 C **********************************************************************
 
       IMPLICIT          NONE
@@ -35,7 +41,7 @@ C **********************************************************************
 
 C Internal variables and arrays
       INTEGER MAXNA
-      PARAMETER (MAXNA = 500)
+      PARAMETER (MAXNA = 1000)
       INTEGER          IA, IN, IS, JA, JAN(MAXNA), JS, NNA
       DOUBLE PRECISION RI, RIJ, RJ, RMAX, R2IJ(MAXNA),
      .                 XIJ(3,MAXNA), XXJ(3)
@@ -106,7 +112,7 @@ C Written by J.M.Soler. July 1997.
       INTEGER           LV, NV
       DOUBLE PRECISION  TOL, V(3,3), VV(3), VV2, VVX, X(3), X2
 
-      PARAMETER  ( TOL = 1.D-10 ) 
+      PARAMETER  ( TOL = 1.D-6 ) 
 
       LV = NV
       IF (NV .EQ. 0) THEN

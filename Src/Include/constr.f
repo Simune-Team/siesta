@@ -1,3 +1,5 @@
+c $Id: constr.f,v 1.3 1999/04/26 16:28:47 jose Exp $
+
       subroutine constr( cell, na, isa, amass, xa, stress, fa )
 c *****************************************************************
 c User-written routine to implement specific geometric constraints,
@@ -14,7 +16,7 @@ c *****************************************************************
       implicit         none
       integer          na, isa(na)
       double precision amass(na), cell(3,3), fa(3,na),
-     .                 stress(3,3), xa(3,na), fz
+     .                 stress(3,3), xa(3,na)
 
 c Write here your problem-specific code.
 

@@ -92,10 +92,11 @@ C     ..
       SUBROUTINE ODEINT(YSTART,NVAR,X1,X2,EPS,H1,HMIN,NOK,NBAD,DERIVS,
      +                  RKQC)
 C
-C
+      include 'ode_path.h'
+C     ..
 C     .. Parameters ..
-      INTEGER MAXSTP,NMAX
-      PARAMETER (MAXSTP=10000,NMAX=10)
+      INTEGER MAXSTP
+      PARAMETER (MAXSTP=10000)
       DOUBLE PRECISION TWO
       PARAMETER (TWO=2.0D0)
       DOUBLE PRECISION ZERO
@@ -113,13 +114,6 @@ C     ..
 C     .. Subroutine Arguments ..
       EXTERNAL DERIVS,RKQC
 C     ..
-C     .. Scalars in Common ..
-      DOUBLE PRECISION DXSAV
-      INTEGER KMAX,KOUNT
-C     ..
-C     .. Arrays in Common ..
-      DOUBLE PRECISION XP(200),YP(10,200)
-C     ..
 C     .. Local Scalars ..
       DOUBLE PRECISION H,HDID,HNEXT,X,XSAV
       INTEGER I,NSTP
@@ -129,9 +123,6 @@ C     .. Local Arrays ..
 C     ..
 C     .. Intrinsic Functions ..
       INTRINSIC ABS,SIGN
-C     ..
-C     .. Common blocks ..
-      COMMON /PATH/KMAX,KOUNT,DXSAV,XP,YP
 C     ..
       X = X1
       H = SIGN(H1,X2-X1)

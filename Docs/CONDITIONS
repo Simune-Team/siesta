@@ -1,6 +1,7 @@
+$Id: CONDITIONS,v 1.4 1999/04/08 15:04:04 emilio Exp $
 
-   POLICY FOR THE USE, DISTRIBUTION, AND MODIFICATION OF SIESTA
-   ============================================================
+   POLICY FOR THE USE, DISTRIBUTION, AND MODIFICATION OF SIESTA 0.11
+   =================================================================
 
 MOTIVATION:
 
@@ -33,24 +34,34 @@ code.
 
 USE:
 
-Because of the two points mentioned in the motivation, the use of SIESTA
-by any group will be considered a collaboration with the authors,
-until the authors consider it approriate to stop collaborating.
+Because of the two points mentioned in the motivation, the use of 
+SIESTA by any group will be IN COLLABORATION (co-authoring) WITH 
+AT LEAST ONE of the authors or developers of the code (see names below), 
+until the author(s)/developer(s) consider it approriate to stop the 
+collaboration. This condition applies to new SIESTA 0.11 users, and 
+does not invalidate the conditions previously agreed in collaborations
+that started with earlier versions.
 
-The user collaborating with the authors may have SIESTA installed
-in whatever computer facilities he/she may consider appropriate
-for the particular project, as long as it does not imply any
-relation of SIESTA with the institution to which the user is adscribed.
-SIESTA is given to the user personally, for a collaboration, not
-to her/his institution.
+In addition, the author of any new substantial development of 
+the code will receive credit by co-authoring the first publication
+using that development. This circumstance will be clarified at
+the beginning of any new project.
 
-Future releases will require less program support and input, and a
-collaboration with just some author(s) or developer(s) of SIESTA 
-could be considered. The final goal is to have a version
-valid for distribution that will not require support.
-The collaboration with authors or developers will not be
-needed at that stage (the conditions for distribution of the
-code at that point are yet to be defined).
+The user may have SIESTA installed in whatever computer 
+facilities he/she may consider appropriate for the particular 
+project, as long as it does not imply any relation of SIESTA 
+with the institution to which the user is adscribed.
+SIESTA is given to the user personally, for an open scientific 
+collaboration, not to her/his institution. This point has to be
+observed with special care in private or military institutions.
+The code will be ONLY accesible to the persons involved in the
+collaboration, as agreed with the SIESTA developer, and whose names 
+have been communicated to the authors.
+
+The final goal is to have a version valid for distribution 
+that will not require support. The collaboration with authors 
+or developers will not be needed at that stage (the conditions 
+for distribution of the code at that point are yet to be defined).
  
 In any case, proper credit to SIESTA by appropriate citation
 should be observed. 
@@ -81,7 +92,7 @@ we need to consider that possibility now.
 
 From the above considerations:
 
-1) The present authors of siesta are:
+1) The authors of siesta are:
 
       Emilio Artacho,        Autonomous Univ. of Madrid
       Pablo Ordejon,         University of Oviedo
@@ -94,9 +105,9 @@ subroutines written by) other authors
 we consider that the implementation of all the basic
 algorithms of the SIESTA program are ours.
 
-Alberto Garcia, of the Basque Country Univ., Spain, has been
-lately collaborating in the development and maintenance of
-SIESTA, and has been incorporated to the SIESTA developers team.
+   The developers of SIESTA are the authors and:
+
+      Alberto Garcia,        Basque Country Univ., Bilbao
 
 2) As authors of the initial version of siesta, we reserve
 to ourselves all the rights to resolve any conflicts in its 
@@ -125,9 +136,5 @@ rest of the program, or difficult its maintainance or
 other future developments. Therefore, we decidedly
 encourage to discuss previously with us any projected
 developments.
-
-
-
-
 
 

@@ -2,9 +2,8 @@ c----------------------------------------------------------
 c
 c FDF (Flexible Data Format) routine package
 c
-c Jose Soler, Alberto Garcia Dec 1996
+c Copyright Alberto Garcia, Jose Soler, 1996, 1997, 1998
 c
-c $Id: fdf.f,v 1.17 1998/03/07 10:38:21 wdpgaara Exp $
 c------------------
 c
 c     Notes: 
@@ -842,11 +841,13 @@ c
       implicit none
       
       character*(*) label
+      include 'fdf.h'
 
       logical fdf_locate
       external fdf_locate
       
       fdf_defined = fdf_locate(label)
+      if (fdf_defined) write(fdf_out,'(a)') label
 
       return
       end

@@ -1,22 +1,18 @@
+# $Id: Makefile,v 1.47 1999/05/18 17:17:33 ordejon Exp $
+#
 # Makefile for siesta
 #
-# J.M.Soler. November 1996, June 1997
-# Alberto Garcia, December 1996
-# Pablo Ordejon, December 1996
-#
-# Restructured by Alberto Garcia, July 1997
-#
-.SUFFIXES: .f .o .a .prj
+.SUFFIXES: .f .o .a .prj .smb .log
 #
 default: what siesta
 #
 # System dependencies are dealt with by an include file. See Sys directory
-# for examples and instructions. The variable ARCH should be in the 
+# for examples and instructions. The variable SIESTA_SYS should be in the 
 # shell environment. 
 #
-ARCH?=unknown
+SIESTA_SYS?=unknown
 #
-include Sys/${ARCH}.make
+include Sys/${SIESTA_SYS}.make
 #
 # Uncomment the following line for debugging support
 #
@@ -24,9 +20,9 @@ include Sys/${ARCH}.make
 #
 what:
 	@echo
-	@echo "Compilation architecture to be used:  $(ARCH)"
+	@echo "Compilation architecture to be used:  $(SIESTA_SYS)"
 	@echo "If that is not what you want, give the correct"
-	@echo "value to the variable ARCH in your shell environment."
+	@echo "value to the variable SIESTA_SYS in your shell environment."
 	@echo $(COMMENTS)
 	@echo
 #
@@ -38,20 +34,22 @@ $(SYSOBJ): Sys/$(SYS).f
 #  in a library. Note that only changed .o files need to be re-inserted
 #  in it.
 #
-SUBS =  atmass.f atomlwf.f bessph.f cgwf.f chkdim.f chkgmx.f \
-	coceri.f conjgr.f constr.f coxmol.f cross.f \
-	dfscf.f dismin.f dnaefs.f dot.f dynamics.f efield.f ener3.f \
-	extrapol.f fermid.f fixed.f four1.f gauleg.f hsparse.f \
-	idiag.f initatom.f initdm.f inver.f iodm.f iolwf.f iorder.f \
-	kinefsm.f lofilm.f \
-	minvec.f mixing.f mulliken.f naefs.f neighb.f \
-	on_subs.f order.f ordix.f ordvec.f outcell.f outcoor.f overfsm.f \
-        parse.f prmem.f propor.f prversion.f recoor.f radfft.f ran3.f \
-	reclat.f redata.f remass.f reord.f rhoofd.f rhooda.f rlylm.f \
-	splin.f timer.f transp.f vmb.f vlist.f vmat.f volcel.f \
-	xc.f ylmexp.f ylmylm.f \
-	cdiag.f dipole.f iohs.f ioxv.f iorho.f kgrid.f nlefsm.f \
-	prdate.f shaper.f xijorb.f pulayx.f
+SUBS =  arw.f atmass.f atomlwf.f bessph.f cgwf.f chkdim.f chkgmx.f \
+	cgvc.f coceri.f conjgr.f constr.f coxmol.f cross.f \
+	dfscf.f diagg.f diagk.f diag2g.f diag2k.f digcel.f  \
+	dipole.f dismin.f dnaefs.f dot.f dynamics.f \
+	efield.f ener3.f extrapol.f \
+	fermid.f fermispin.f fixed.f gauleg.f grdsam.f hsparse.f \
+	idiag.f initdm.f inver.f iocg.f iodm.f ioeig.f iofa.f iohs.f \
+	iokp.f iolwf.f iomd.f iorder.f iorho.f ioxv.f \
+	kgrid.f kinefsm.f listsc.f lofilm.f madelung.f\
+	minvec.f mulliken.f naefs.f neighb.f nlefsm.f \
+	ofc.f on_subs.f order.f ordvec.f outcell.f outcoor.f overfsm.f \
+	parse.f paste.f prdate.f prmem.f propor.f prversion.f pulayx.f  \
+	pixmol.f radfft.f ran3.f recipes.f reclat.f recoor.f redata.f \
+	redcel.f remass.f reord.f rhoofd.f rhooda.f rlylm.f \
+	shaper.f superc.f superx.f timer.f transp.f typecell.f \
+	vmb.f vlist.f vmat.f volcel.f xc.f xijorb.f ylmexp.f ylmylm.f
 #
 LIBOBJS=$(SUBS:.f=.o)
 libsiesta.a: $(LIBOBJS)
@@ -60,36 +58,37 @@ libsiesta.a: $(LIBOBJS)
 #
 #  These modules are dimensioned.
 #
-DIM_SRCS= atom.f atom_subs.f bands.f chcore.f epskb.f \
-          phiatm.f psover.f rcore.f rcut.f uion.f \
-          dhscf.f diagon.f ordern.f denmat.f \
-          egandd.f gradient.f ranger.f matel.f siesta.f
+DIM_SRCS= atom.f atom_subs.f atom_functions.f bands.f \
+          dhscf.f diagon.f ordern.f chempot.f denmat.f \
+          egandd.f gradient.f initatom.f matel.f \
+          plcharge.f ranger.f redbasis.f redbasis_subs.f siesta.f
 DIM_OBJS=$(DIM_SRCS:.f=.o)
 #
-atom.o      : atom.f      atom.h
-atom_subs.o : atom_subs.f atom.h
-chcore.o    : chcore.f    atom.h
-epskb.o     : epskb.f     atom.h
-phiatm.o    : phiatm.f    atom.h
-psover.o    : psover.f    atom.h
-rcore.o     : rcore.f     atom.h
-rcut.o      : rcut.f      atom.h
-uion.o      : uion.f      atom.h
-dhscf.o     : dhscf.f     dhscf.h
-diagon.o    : diagon.f    diagon.h
-bands.o     : bands.f     diagon.h
-ordern.o    : ordern.f    ordern.h
-denmat.o    : denmat.f    ordern.h
-egandd.o    : egandd.f    ordern.h
-gradient.o  : gradient.f  ordern.h
-ranger.o    : ranger.f    ranger.h
-matel.o     : matel.f     matel.h
-siesta.o    : siesta.f    siesta.h
+atom.o           : atom.f      atom.h
+plcharge.o       : plcharge.f  atom.h
+atom_subs.o      : atom_subs.f atom.h
+atom_functions.o : atom_functions.f atom.h 
+initatom.o       : initatom.f atom.h
+redbasis.o       : redbasis.f atom.h
+redbasis_subs.o  : redbasis_subs.f atom.h
+dhscf.o          : dhscf.f     dhscf.h
+diagon.o         : diagon.f    diagon.h
+bands.o          : bands.f     diagon.h
+ordern.o         : ordern.f    ordern.h
+chempot.o        : chempot.f   ordern.h
+denmat.o         : denmat.f    ordern.h
+egandd.o         : egandd.f    ordern.h
+gradient.o       : gradient.f  ordern.h
+ranger.o         : ranger.f    ranger.h
+matel.o          : matel.f     matel.h
+siesta.o         : siesta.f    siesta.h
 #
 # Routines using fdf calls.
 #
-atom.o dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o : fdf/fdfdefs.h
-recoor.o redata.o remass.o outcoor.o ioxv.o kgrid.o siesta.o : fdf/fdfdefs.h
+atom.o dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : fdf/fdfdefs.h
+plcharge.o recoor.o redata.o remass.o outcoor.o ioeig.o kgrid.o : fdf/fdfdefs.h
+siesta.o redbasis.o redbasis_subs.o iomd.o ioxv.o iokp.o iofa.o : fdf/fdfdefs.h
+cgvc.o iocg.o ofc.o : fdf/fdfdefs.h
 #
 FDF= fdf/fdf.o fdf/io.o
 $(FDF):
@@ -115,14 +114,25 @@ pristine:  clean
 	@echo "==> Copying original .h files from Include/"
 	cp -fp Include/*.h .
 	cp -fp Include/constr.f .
+setup:
+	@echo "==> Copying standard .h files from Include/"
+	cp -fp Include/*.h .
 #
-# FTNCHEK section
+# FTNCHEK and plusFORT section
 #
 FILES=$(SUBS) $(DIM_SRCS)
 #
 # set up macro PRJS containing project filenames
 #
 PRJS= $(FILES:.f=.prj)
+SMBS= $(FILES:.f=.smb)
+#
+.f.smb:
+	-spag log=$*.log $<
+#
+chk:    $(SMBS)
+	-gxchk $(SMBS)
+#
 
 # tell make how to create a .prj file from a .f file
 #
@@ -136,7 +146,12 @@ check: $(PRJS)
 #
 clean_check:
 	rm -f *.prj *.ana Global.chk
+clean_chk:
+	rm -f *.log *.smb *.spg gxchk.sav gxchk.out
+#
 veryclean:  clean clean_check
+
+
 
 
 

@@ -44,7 +44,7 @@ c
 c
       double precision y(2)
 c
-      integer i, j, jr0, k, lp, llp, iflag, nok, nbad, m
+      integer i, j, jr0, k, lp, llp, nok, nbad
       double precision emin, emax, eigv, step, r0, ld, h1, hmin
       character filename*9
 c

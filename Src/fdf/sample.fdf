@@ -1,5 +1,7 @@
 fdf-debug 1
 
+new-style		# Just a label by itself
+
 NumberOfAtoms              3            # Set an integer parameter
 MeshCutoff                 500.0 eV     # Example of physical magnitude 
 factor-Value	3.14e10			# Alternate label appearance 
@@ -14,3 +16,5 @@ AtomicCoordinatesAndAtomicSpecies < coords.fdf        # Search in file
 debug		faLSE			# Case insensitive!!
 
 %include Otherfile
+
+

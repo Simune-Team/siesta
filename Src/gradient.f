@@ -1,3 +1,5 @@
+C $Id: gradient.f,v 1.6 1999/02/26 14:37:07 wdpgaara Exp $
+
       subroutine gradient(c,eta,enum,h,s,
      .                 nbasis,nbands,ncmax,nctmax,
      .                 nfmax,nftmax,nhmax,nhijmax,
@@ -220,7 +222,7 @@ C (only products of neccesary elements)
 
       do k = 1,nbasis
         do ik = 1,numc(k)
-	  i = indgf(ik,k)
+          i = indgf(ik,k)
           j = listc(ik,k)
 *         grad(ik,k) = 4.d0 * (f(i,j) - eta * fs(i,j)) + grad(ik,k)
           grad(ik,k) = 4.d0 * f(i,j) + grad(ik,k)

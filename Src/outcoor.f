@@ -1,19 +1,22 @@
-      subroutine outcoor(cell, xa, isa, na, atm_label, cohead) 
+c $Id: outcoor.f,v 1.9 1999/04/13 17:03:25 emilio Exp $
+
+      subroutine outcoor(cell, xa, isa, na, cohead, writec) 
 
 c *******************************************************************
 c Writes atomic coordinates in format given by fdf:AtomCoorFormatOut
 c Default: same format as was used for the reading.
 c
 c Written by E. Artacho, December 1997, on the original piece of the
-c redata subroutine written by P. Ordejon in December 1996.
+c redata subroutine written by P. Ordejon in December 1996. 
+C Modified by DSP, Aug. 1998.
 c ********* INPUT ***************************************************
 c integer na                : number of atoms
 c double precision cell(3,3): Lattice (supercell) vectors
 c double precision alat     : Lattice constant (in Bohr) 
 c double precision xa(3,na) : atomic coordinates in Bohr cartesian
 c integer isa(na)           : atomic species of different atoms
-c character(ns)*20          : atomic labels
 c character*(*) cohead      : special phrase to include in heading
+c logical writec            : writing coor only if true
 c *******************************************************************
 c inversion of lattice vectors for fractional coordinates is done
 c through subroutine reclat.
@@ -22,7 +25,8 @@ c *******************************************************************
       implicit          none
       integer           na
       integer           isa(na)
-      character         atm_label(*)*20, cohead*(*)
+      logical           writec
+      character         cohead*(*)
       double precision  xa(3,na), cell(3,3)
 
 c Internal variables and arrays
@@ -32,30 +36,34 @@ c Internal variables and arrays
       parameter (namax=2000)
 
       character         acf*22, acf_defect*22, acfout*22, 
-     .                  pieceh*20, titl*60, pasteb*60
-      logical           leqi
+     .                  pieceh*20, titl*60, pasteb*60,
+     .                  labelfis*20
+      logical           leqi, frstme
       integer           ia, ix
       double precision  xac(3), xap(3,namax), recell(3,3), alat
 
-      external          pasteb
-
-c enable FDF input/output
-
+      external          pasteb, labelfis
       include 'fdf/fdfdefs.h'
+      save              frstme, acfout
 
+      data              frstme /.true./
+c--------------------------------------------------------------------
 
-C Check dimensions ..........................................................
-      if (na .gt. namax) then
-        write(6,*) 'coceri: Wrong namax; Must be at least ',na
-        stop
-      endif
+      if (frstme) then
+
+C Check dimensions ..................................................
+        if (na .gt. namax) then
+           write(6,*) 
+     .        'outcoor: ERROR: Insufficient NAMAX; It must be at least ',na
+           stop
+         endif
 C ..................
 
-C format for output of atomic coordinates
+C read format for output of atomic coordinates
 
-      acf_defect = 'NotScaledCartesianBohr'
-      acf = fdf_string('AtomicCoordinatesFormat',acf_defect)
-      acfout = fdf_string('AtomCoorFormatOut',acf)
+        acf_defect = 'NotScaledCartesianBohr'
+        acf = fdf_string('AtomicCoordinatesFormat',acf_defect)
+        acfout = fdf_string('AtomCoorFormatOut',acf)
 
 c Scale atomic coordinates
 c   Coord. option Bohr       => Do nothing
@@ -63,23 +71,34 @@ c   Coord. option Ang        => Multiply by 0.529177 (Bohr --> Ang)
 c   Coord. option Scaled     => Divide by lattice constant
 c   Coord. option Fractional => Multiply by inverse of lattice vectors
 
-      alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
-      if (alat.eq.0.d0 .and. leqi(acfout,'ScaledCartesian')) then
-         write(6,"(/,2a)") 'recoor: WARNING: Explicit lattice ',
-     .       'constant is needed for ScaledCartesian output.'
-         write(6,"(2a)")   'recoor:          NotScaledCartesianAng',
-     .       'format being used instead.'
-         acfout = 'NotScaledCartesianAng'
+        alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
+        if (alat.eq.0.d0 .and. leqi(acfout,'ScaledCartesian')) then
+           write(6,"(/,2a)") 'outcoor: WARNING: Explicit lattice ',
+     .         'constant is needed for ScaledCartesian output.'
+           write(6,"(2a)")   'outcoor:          NotScaledCartesianAng',
+     .         'format being used instead.'
+           acfout = 'NotScaledCartesianAng'
+        endif
+
+        frstme = .false.
       endif
 
-      if (leqi(acfout,'NotScaledCartesianBohr')) then
+c Write coordinates at every time or relaxation step?
+
+      if ( (cohead .eq. ' ') .and. ( .not. writec) ) return
+
+c write coordinates according to format 
+
+      if (leqi(acfout,'NotScaledCartesianBohr') .or. 
+     .    leqi(acfout,'Bohr') ) then
         pieceh = '(Bohr):'
         do ia = 1,na
           do ix = 1,3
             xap(ix,ia) = xa(ix,ia)
           enddo
         enddo
-      else if (leqi(acfout,'NotScaledCartesianAng')) then
+      else if (leqi(acfout,'NotScaledCartesianAng') .or.
+     .         leqi(acfout,'Ang') ) then
         pieceh = '(Ang):'
         do ia = 1,na
           do ix = 1,3
@@ -102,9 +121,9 @@ c   Coord. option Fractional => Multiply by inverse of lattice vectors
             xac(ix) = xa(ix,ia)
           enddo
           do ix = 1,3
-            xap(ix,ia) = recell(ix,1) * xac(1) +
-     .                   recell(ix,2) * xac(2) +
-     .                   recell(ix,3) * xac(3)
+            xap(ix,ia) = recell(1,ix) * xac(1) +
+     .                   recell(2,ix) * xac(2) +
+     .                   recell(3,ix) * xac(3)
           enddo
         enddo
       else
@@ -113,8 +132,8 @@ c   Coord. option Fractional => Multiply by inverse of lattice vectors
         write(6,'(a)') 'outcoor: '
         write(6,'(2a)') 'outcoor: You must use one of the following',
      .                            ' coordinate output options:'
-        write(6,'(a)') 'outcoor:     - NotScaledCartesianBohr         '
-        write(6,'(a)') 'outcoor:     - NotScaledCartesianAng          '
+        write(6,'(a)') 'outcoor:     - NotScaledCartesianBohr (or Bohr)'
+        write(6,'(a)') 'outcoor:     - NotScaledCartesianAng (or Ang) '
         write(6,'(a)') 'outcoor:     - ScaledCartesian                '
         write(6,'(2a)') 'outcoor:     - ScaledByLatticeVectors ',
      .                                               '(or Fractional)'
@@ -137,7 +156,7 @@ c writing a heading for the coordinates
 c writing the coordinates
 
       write(6,'(3f14.8,i4,2x,a6,i5)')
-     .  ((xap(ix,ia),ix=1,3),isa(ia),atm_label(isa(ia)),ia,ia=1,na)
+     .  ((xap(ix,ia),ix=1,3),isa(ia),labelfis(isa(ia)),ia,ia=1,na)
 
       return
       end

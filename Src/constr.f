@@ -1,3 +1,5 @@
+c $Id: constr.f,v 1.5 1999/02/23 12:05:22 wdpgaara Exp $
+
       subroutine constr( cell, na, isa, amass, xa, stress, fa )
 c *****************************************************************
 c User-written routine to implement specific geometric constraints,

@@ -1,8 +1,6 @@
+C $Id: uion.f,v 1.2 1999/01/31 11:45:15 emilio Exp $
 
-
-
-
-         DOUBLE PRECISION FUNCTION UION ( IS )
+      double precision function uion(is)
 
 C**************************************************************************
 C  Returns electrostatic self-energy of the 'ions', assigned by routine PSEUDO
@@ -19,33 +17,21 @@ C     by calling ATOM for each atomic species required.
 C  1) Prints a message and stops when no data exists for IS.
 C**************************************************************************
 
-         include 'atom.h'
+      include 'atom.h'
 
-         double precision 
-     .    slfe(nsmax)
+      double precision  slfe(nsmax)
+      integer           is,ismax
+
+      common/cmslfe/slfe
+      common/control/ismax
+
+      if ((is.lt.1).or.(is.gt.ismax)) then 
+         write(6,*) 'UION: THERE ARE NO DATA FOR IS=',IS
+         write(6,*) 'UION: ISMIN= 1, ISMAX= ',ismax
+         STOP
+      endif
  
-         integer
-     .    is,ismax
+      uion=slfe(is)
 
-          
-
-         common/cmslfe/slfe
-         common/control/ismax
-
-         if ((is.lt.1).or.(is.gt.ismax)) then 
-            write(6,*) 'UION: THERE ARE NO DATA FOR IS=',IS
-            write(6,*) 'UION: ISMIN= 1, ISMAX= ',ismax
-            STOP
-         endif
-
-
- 
-         uion=slfe(is)
-
-
-         return
-
-         end
-
-
-
+      return
+      end

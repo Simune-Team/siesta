@@ -1,0 +1,100 @@
+
+k            =     0.000000    0.000000    0.000000
+Eigenvector  =     1
+Frequency    =    -0.000004
+Eigenmode (real part)
+  0.7029E+00  0.7689E-01 -0.6328E-10
+  0.7029E+00  0.7689E-01 -0.6328E-10
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     2
+Frequency    =     0.000006
+Eigenmode (real part)
+  0.7689E-01 -0.7029E+00  0.5755E-09
+  0.7689E-01 -0.7029E+00  0.5755E-09
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     3
+Frequency    =     0.126855
+Eigenmode (real part)
+  0.3302E-12  0.5790E-09  0.7071E+00
+  0.3302E-12  0.5790E-09  0.7071E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     4
+Frequency    =   614.216803
+Eigenmode (real part)
+ -0.4087E+00 -0.4082E+00 -0.4078E+00
+  0.4087E+00  0.4082E+00  0.4078E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     5
+Frequency    =   614.333191
+Eigenmode (real part)
+ -0.5768E+00  0.3015E+00  0.2764E+00
+  0.5768E+00 -0.3015E+00 -0.2764E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     6
+Frequency    =   614.333341
+Eigenmode (real part)
+  0.1434E-01  0.4925E+00 -0.5072E+00
+ -0.1434E-01 -0.4925E+00  0.5072E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+
+k            =     0.000000    0.000000    0.000000
+Eigenvector  =     1
+Frequency    =    -0.000004
+Eigenmode (real part)
+  0.7029E+00  0.7689E-01 -0.6328E-10
+  0.7029E+00  0.7689E-01 -0.6328E-10
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     2
+Frequency    =     0.000006
+Eigenmode (real part)
+  0.7689E-01 -0.7029E+00  0.5755E-09
+  0.7689E-01 -0.7029E+00  0.5755E-09
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     3
+Frequency    =     0.126855
+Eigenmode (real part)
+  0.3302E-12  0.5790E-09  0.7071E+00
+  0.3302E-12  0.5790E-09  0.7071E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     4
+Frequency    =   614.216803
+Eigenmode (real part)
+ -0.4087E+00 -0.4082E+00 -0.4078E+00
+  0.4087E+00  0.4082E+00  0.4078E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     5
+Frequency    =   614.333191
+Eigenmode (real part)
+ -0.5768E+00  0.3015E+00  0.2764E+00
+  0.5768E+00 -0.3015E+00 -0.2764E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00
+Eigenvector  =     6
+Frequency    =   614.333341
+Eigenmode (real part)
+  0.1434E-01  0.4925E+00 -0.5072E+00
+ -0.1434E-01 -0.4925E+00  0.5072E+00
+Eigenmode (imaginary part)
+  0.0000E+00  0.0000E+00  0.0000E+00
+  0.0000E+00  0.0000E+00  0.0000E+00

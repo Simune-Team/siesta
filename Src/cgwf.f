@@ -1,3 +1,5 @@
+C $Id: cgwf.f,v 1.7 1999/02/26 14:37:06 wdpgaara Exp $
+
       subroutine cgwf(iscf,itmax,ftol,eta,enum,nbasis,nbands,
      .                nhmax,numh,listh,ncmax,numc,listc,h,s,c,
      .                g,hg,xi,
@@ -87,7 +89,7 @@ C Set step for line minim: lam (empirically 1.0e-1 works fine)
 
 C Calculate control vectors only if in first SCF step ....................
       if (iscf .eq. 1) then
-	iopt = 0
+        iopt = 0
         call eandg(iopt,eta,enum,lam,
      .             nhmax,numh,listh,ncmax,numc,listc,h,s,c,
      .             nbasis,nbands,
@@ -117,7 +119,7 @@ C .....................
 C Loop for the CG minimization ____________________________________________
       do 14 its = 1,itmax
         iter = its
-	numit = numit + 1
+        numit = numit + 1
 
         iout = .true.
         
@@ -127,15 +129,15 @@ C Check if the gradient at current point is negative, and sufficiently
 C large to avoid problems. Otherwise, set a fixed lambda
 C to CG iteration cycle with iout = .false.  ................................
         if (abs(partial) .le. 1.5e-8) then
-  	  lambda = lm*0.4
-	  if (lm .eq. 0.0) lambda=0.4
-C	  iout = .false.
-	  goto 1000
+          lambda = lm*0.4
+          if (lm .eq. 0.0) lambda=0.4
+C         iout = .false.
+          goto 1000
         endif
         if (partial .gt. 0.0e0) then
-	  lambda = -0.0001
-	  iout = .false.
-	  goto 1000
+          lambda = -0.0001
+          iout = .false.
+          goto 1000
         endif
 C ...........................
 
@@ -159,11 +161,11 @@ C cycle with iout = .false.  ................................
           lambda = lm * 0.3
           if (lm .eq. 0.0) lambda = 0.01
           iout = .false.
-	  goto 1000
+          goto 1000
         endif
 C ...........................
 
-	iout = .true.
+        iout = .true.
 
 1000    continue
 
@@ -192,10 +194,10 @@ C ...........................
 
 C Check if minimization has converged ......................................
         if (2.*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
-	  if (iout) then
-	  write(6,"(/a)") 'cgwf:  CG tolerance reached'
+          if (iout) then
+          write(6,"(/a)") 'cgwf:  CG tolerance reached'
           goto 16
-	  endif
+          endif
         endif
 C ...........................
 
@@ -205,7 +207,7 @@ C Continue if tol not reached ..............................................
         gg = 0.0d0
         dgg = 0.0d0
         do 12 i = 1,nbasis
-	do 12 j = 1,numc(i)
+        do 12 j = 1,numc(i)
           gg = gg+g(j,i)**2
 C         dgg = dgg + xi(j,i)**2
           dgg = dgg + (xi(j,i) + g(j,i)) * xi(j,i)
@@ -213,9 +215,9 @@ C         dgg = dgg + xi(j,i)**2
         if (gg .eq. 0.0d0) goto 16
         gam = dgg / gg
         do 13 i = 1,nbasis
-	do 13 j = 1,numc(i)
+        do 13 j = 1,numc(i)
           g(j,i) = -xi(j,i)
-	  if (itest) gam = 0.0d0
+          if (itest) gam = 0.0d0
           hg(j,i) = g(j,i) + gam * hg(j,i)
           partial = partial + hg(j,i) * xi(j,i)
           xi(j,i) = hg(j,i)
@@ -223,8 +225,8 @@ C         dgg = dgg + xi(j,i)**2
 
       itest = .false.
       if (numit .eq. irestart) then
-	itest = .true.
-	numit = 0
+        itest = .true.
+        numit = 0
       endif
 
 14    continue

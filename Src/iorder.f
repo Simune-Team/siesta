@@ -1,3 +1,5 @@
+C $Id: iorder.f,v 1.2 1999/01/31 11:14:57 emilio Exp $
+
       SUBROUTINE IORDER( IA, M, N, INDEX )
 C *******************************************************************
 C Orders integer array IA(M,N) according to array INDEX(N), which

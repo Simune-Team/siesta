@@ -1,3 +1,5 @@
+c $Id: coxmol.f,v 1.3 1999/01/31 10:50:54 emilio Exp $
+
       subroutine coxmol(iza, xa, na, slabel)
 
 c *******************************************************************

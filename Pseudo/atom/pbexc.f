@@ -45,17 +45,18 @@ C ********************************************************************
 C Internal variables
       INTEGER
      .  IS, IX
+      double precision ds(2), vxunif(2)
       DOUBLE PRECISION
      .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
      .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
      .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
      .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
-     .  DS, DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
+     .  DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
      .  EC, ECUNIF, EX, EXUNIF,
      .  F, F1, F2, F3, F4, FC, FX, FOUTHD,
      .  GAMMA, GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
      .  H, HALF, KAPPA, KF, KFS, KS, MU, PHI, PI, RS, S,
-     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF, ZETA
+     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2),  ZETA
 
 C Lower bounds of density and its gradient to avoid divisions by zero
       PARAMETER ( DENMIN = 1.D-12 )
@@ -150,27 +151,27 @@ C Find correlation energy derivatives
 C Find exchange energy and potential
       FX = 0
       DO 60 IS = 1,2
-        DS   = MAX( DENMIN, 2 * D(IS) )
+        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
         GDMS = MAX( GDMIN, 2 * GDM(IS) )
-        KFS = (3 * PI**2 * DS)**THD
-        S = GDMS / (2 * KFS * DS)
+        KFS = (3 * PI**2 * DS(IS))**THD
+        S = GDMS / (2 * KFS * DS(IS))
         F1 = 1 + MU * S**2 / KAPPA
         F = 1 + KAPPA - KAPPA / F1
-        CALL EXCHNG( IREL, 1, DS, EXUNIF, VXUNIF )
-        FX = FX + DS * EXUNIF * F
+        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS))
+        FX = FX + DS(IS) * EXUNIF * F
 
-        DKFDD = THD * KFS / DS
-        DSDD = S * ( -DKFDD/KFS - 1/DS )
+        DKFDD = THD * KFS / DS(IS)
+        DSDD = S * ( -DKFDD/KFS - 1/DS(IS) )
         DF1DD = 2 * (F1-1) * DSDD / S
         DFDD = KAPPA * DF1DD / F1**2
-        DFXDD(IS) = VXUNIF * F + DS * EXUNIF * DFDD
+        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
 
         DO 50 IX = 1,3
           GDS = 2 * GD(IX,IS)
           DSDGD = (S / GDMS) * GDS / GDMS
           DF1DGD = 2 * MU * S * DSDGD / KAPPA
           DFDGD = KAPPA * DF1DGD / F1**2
-          DFXDGD(IX,IS) = DS * EXUNIF * DFDGD
+          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
    50   CONTINUE
    60 CONTINUE
       FX = HALF * FX / DT
@@ -188,3 +189,4 @@ C Set output arguments
    90 CONTINUE
 
       END
+

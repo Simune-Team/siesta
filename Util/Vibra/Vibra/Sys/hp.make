@@ -1,0 +1,11 @@
+#
+FC=f77
+FFLAGS= +U77 +O3
+FFLAGS_DEBUG= -g +U77 
+LDFLAGS= +U77 +O3
+LIBS= 
+SYS=general
+RANLIB=ranlib
+#
+
+

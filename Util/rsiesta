@@ -5,14 +5,14 @@
 # Example: rsiesta H2O
 #
 # Environment variable $SIESTA_DIR should be previously defined,
-# If it is not defined, it assumes SIESTA_DIR = ../Src
+# If it is not defined, it assumes SIESTA_DIR = ../siesta/Src
 #
 # Data file name.fdf must exist in working directory.
 # Written by J.M.Soler. August 1997.
 # Modified by Alberto Garcia. March 1998.
 #-------------------------------------------------------------
 
-SIESTA_DIR=${SIESTA_DIR:=../Src}
+SIESTA_DIR=${SIESTA_DIR:=../siesta/Src}
 
 if [ $# -ne 1 ] ; then
       echo "rsiesta: Usage: rsiesta jobname"

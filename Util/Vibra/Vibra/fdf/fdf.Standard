@@ -1,6 +1,4 @@
-$Id: fdf.Standard,v 1.3 1997/02/03 15:40:29 wdpgaara Exp $
-
-FDF Standard. Version 0.6, February 1997
+FDF Standard. Version 0.6.5, September 1998
 
 Input lines are parsed and a token list is created. A token is:
 
@@ -9,7 +7,7 @@ Input lines are parsed and a token list is created. A token is:
 	  The quotes are removed by the parsing routine.
 
 	* A string of characters from the set [A-Z,a-z,0-9] of
-	  alphanumeric characters plus $%&@_.- (and any adjacent
+	  alphanumeric characters plus $%&@_.-*/^+~ (and any adjacent
           unmatched quotes, as in apostrophes)
 
 	* The character '<' by itself.
@@ -35,19 +33,19 @@ Label   [  Value ]
 	'Numerical' routines such as fdf_integer will only use the first 
 	token, but fdf_string will return the whole list. 
 
-%block Label [ Label ] 
+%block Label 
 ====
 =====
 ====
 # Optional comments
-%endblock [ Label [Label] ]
+%endblock [ Label ]
 
 	This construct specifies a block of data that is to be read
 	by the calling program after a call to fdf_block. The contents
 	of the block are dumped to fdf_out. %block and %endblock must
 	be the first tokens in their respective lines.
 
-%block Label [ Label ]  < Filename  [ %dump ]
+%block Label  < Filename  [ %dump ]
 
 	Opens Filename in order to read the block. If %dump appears
 	anywhere (except as the first token), the contents of Filename
@@ -57,10 +55,10 @@ Label   [  Value ]
 
 	Opens Filename and continues reading from it.
 
-Label [ Label ...]   < Filename   # Comments
+Label   < Filename   # Comments
 
 	Opens Filename and continues reading from it, ONLY if searching
-	for one of the Labels.
+	for Label.
 
 	There is a maximum number of files that can be opened at the
 	same time for fdf processing.

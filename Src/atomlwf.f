@@ -1,5 +1,6 @@
-      subroutine cspa(ioptlwf,iopt,ns,natoms,nbasis,lasto,lmax,
-     .        lmaxs,nzls,isa,
+C $Id: atomlwf.f,v 1.10 1999/03/11 19:26:36 ordejon Exp $
+
+      subroutine cspa(ioptlwf,iopt,natoms,nbasis,lasto,isa,
      .        qa,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
      .        c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,nbands,
      .        overflow)
@@ -26,7 +27,8 @@ C    electrons.
 C
 C Writen by P.Ordejon, 1993. 
 C Re-writen by P.Ordejon, November'96.
-C Corrected by P.Ordejon, April'97,  May'97
+C Corrected by P.Ordejon, April'97,  May'97  
+C lmax, lmaxs and nzls erased from the input by DSP, Aug 1998.
 C ******************************* INPUT ***************************************
 C integer ioptlwf           : Build LWF's according to:
 C                             0 = Read blindly from disk
@@ -35,14 +37,9 @@ C                             2 = Functional of Ordejon-Mauri
 C integer iopt              : 0 = Find structure of sparse C matrix and
 C                                  build initial guess
 C                             1 = Just find structure of C matrix
-C integer ns                : Number of species
 C integer natoms            : Number of atoms
 C integer nbasis            : Number of basis orbitals
 C integer lasto(0:natoms)   : Index of last orbital of each atom
-C integer lmax              : Maximum angular momentum of the basis
-C integer lmaxs(ns)         : Maximum angular momentum of each species
-C integer nzls(0:lmax,ns)   : Number of shells of each angular momentum
-C                             for each species
 C integer isa(natoms)       : Species index of each atom
 C real*8 qa(natoms)         : Neutral atom charge
 C real*8 rcoor              : Cutoff radius of Localized Wave Functions
@@ -71,14 +68,15 @@ C integer nbands            : Number of LWF's
 C ************************** INPUT AND OUTPUT ********************************
 C logical overflow          : True: Maximum dimensions too small
 C ****************************************************************************
+
       implicit none
 
       integer 
-     .  iopt,ioptlwf,lmax,maxnc,natoms,nbands,nbasis,ncmax,nctmax,
-     .  nfmax,nftmax,nhmax,nhijmax,ns
+     .  iopt,ioptlwf,maxnc,natoms,nbands,nbasis,ncmax,nctmax,
+     .  nfmax,nftmax,nhmax,nhijmax
 
       integer 
-     .  isa(natoms),lasto(0:natoms),lmaxs(ns),nzls(0:lmax,ns),
+     .  isa(natoms),lasto(0:natoms),
      .  numc(nbasis),listc(maxnc,nbasis),numh(nbasis),
      .  listh(nhmax,nbasis)
 
@@ -171,7 +169,7 @@ C determine maximum cell length
             rr(2) = i*cell(1,2) + j*cell(2,2) + k*cell(3,2)
             rr(3) = i*cell(1,3) + j*cell(2,3) + k*cell(3,3)
             rrmod = sqrt( rr(1)**2 + rr(2)**2 + rr(3)**2 )
-	    if (rrmod .gt. rmax) rmax = rrmod
+            if (rrmod .gt. rmax) rmax = rrmod
           enddo
         enddo
       enddo
@@ -199,11 +197,8 @@ C Build control vectors of sparse LWF
 C loop over the localized wave funcions (centered at atoms)..................
 
 C Initialize routine for neighbour search
-
-      if (2.*rcoor .lt. rmax) then
         nna = nnmax
         call neighb(cell,rcoor,natoms,xa,0,0,nna,jan,xij,r2ij)
-      endif
 
       index = 0
       do ia = 1,natoms
@@ -248,10 +243,10 @@ C  (or the number of electrons)
           write(6,*) 'cspa: Wrong functional option in cspa'
           stop
         endif
-	
+
 C loop over LWF's centered on atom ia
-	do indexb = 1,indexi
-	  index = index + 1
+        do indexb = 1,indexi
+          index = index + 1
 
 c clear list of atoms considered within loc. range
           do indexa = 1, nna
@@ -271,7 +266,7 @@ C ...
 c  loop over the neighbors of ia within rcoor
           do  jj = 1,nna
             ja = jan(jj)
-	    norb = lasto(ja)-lasto(ja-1)
+            norb = lasto(ja)-lasto(ja-1)
 
 c  check if ja has already been included in current lwf
             do indexa = 1,numloc
@@ -282,11 +277,11 @@ c  check if ja has already been included in current lwf
 
 C  loop over orbitals of ja
             do iorb = 1,norb
-	      mu = iorb + lasto(ja-1)
-	      nm = numc(mu)
-	      numc(mu) = nm + 1
+              mu = iorb + lasto(ja-1)
+              nm = numc(mu)
+              numc(mu) = nm + 1
               if (numc(mu) .gt. maxnc) overflow = .true.
-	      if (.not.overflow) listc(nm+1,mu) = index
+              if (.not.overflow) listc(nm+1,mu) = index
               nct = nct + 1
 
 C Find out structure of F and Ft matrices
@@ -304,7 +299,7 @@ C  Assign ramdom guess for orbitals in atom ia if iopt = 0
               if (.not.overflow) then
                 if (iopt .eq. 0) then
                   if (ja .eq. ia) then
-                    call initguess(ia,iorb,ns,lmax,lmaxs,nzls,isa(ia),
+                    call initguess(ia,iorb,isa(ia),
      .                             nelectr,iseed,cg)
                     c(nm+1,mu) = cg
                     snor = snor + cg**2
@@ -351,16 +346,16 @@ C ..........
       nbands = index
 
       if (index .gt. nbasis) then
-	write(6,*) 'cspa: Number of LWFs larger than  basis set size'
-	write(6,*) '      Increase basis set, or use less LWFs'
-	stop
+        write(6,*) 'cspa: Number of LWFs larger than  basis set size'
+        write(6,*) '      Increase basis set, or use less LWFs'
+        stop
       endif
 
       if ((ioptlwf .eq. 2) .and. (nbands .ne. nqtot/2)) then
-	write(6,*) 'cspa: Number of LWFs incorrectly calculated'
-	write(6,*) '      Something went wrong in generating the'
-	write(6,*) '      LWFs for the Ordejon-Mauri functional'
-	stop
+        write(6,*) 'cspa: Number of LWFs incorrectly calculated'
+        write(6,*) '      Something went wrong in generating the'
+        write(6,*) '      LWFs for the Ordejon-Mauri functional'
+        stop
       endif
 
 
@@ -391,6 +386,7 @@ C Look for neighbours of atom ia within maximum interaction range
           nhij = 0
 c  loop over the neighbors of ia within rcoor
           do  jj = 1,nna
+            ja=jan(jj)
             alist(ja) = 0
           enddo
           do  jj = 1,nna
@@ -414,6 +410,7 @@ C  (or the number of electrons)
 20          continue
           enddo
           do  jj = 1,nna
+            ja=jan(jj)
             alist(ja) = 0
           enddo
           nhijmax = max ( nhijmax , nhij )
@@ -426,7 +423,7 @@ C ............
 
 
 
-      subroutine initguess(ia,iorb,ns,lmax,lmaxs,nzls,is,ne,iseed,cg)
+      subroutine initguess(ia,iorb,is,ne,iseed,cg)
 C *****************************************************************************
 C Routine to assign an initial guess for an atomic orbital iorb in a localized
 C wave function centered on atom ia. 
@@ -434,28 +431,38 @@ C Assigns a random guess if the orbital belongs to the first 'zeta' of the
 C atom (lowest energy shell of its angular momentum), and if the angular
 C momentum is populated in the free atom. Otherwise, sets coefficient to cero.
 C
-C Written by P.Ordejon, November'96
+C Written by P.Ordejon, November'96 
+C lmax, lmaxs and nzls erased from the input by DSP, Aug. 1998.
 C ******************************* INPUT ***************************************
 C integer ia                   : Atom to which orbital belongs
 C integer mu                   : Orbital index within atom ia
-C integer ns                   : Number of species
-C integer lmax                 : Maximum angular momentum of the basis
-C integer lmaxs(ns)            : Maximum angular momentum of each species
-C integer nzls(0:lmax,ns)      : Number of shells of each angular momentum
-C                                for each species
 C integer is                   : Species index of atom ia
 C integer ne                   : Number of electrons of atom ia
 C integer iseed                : Seed for random number generator
 C ***************************** OUTPUT ****************************************
 C real*8 cg                    : Initial guess for WF coefficient
-C *****************************************************************************
+C ***************************************************************************** 
+C The following functions must exist:
+C
+C INTEGER FUNCTION LOMAXFIS(IS)
+C    Returns the maximum angular momentum of orbitals
+C Input:
+C     INTEGER IS : Species index
+C
+C INTEGER FUNCTION NZTFL(IS,L)
+C    Returns the number of different basis functions with the
+C    same angular momentum L.
+C Input:
+C     INTEGER IS : Species index
+C     INTEGER L  : Angular momentum
+C
+C ***************************************************************************** 
+
       implicit none
 
       integer 
-     .  ia,iorb,is,iseed,lmax,ne,ns
+     .  ia,iorb,is,iseed,ne
 
-      integer 
-     .  lmaxs(ns),nzls(0:lmax,ns)
 
       double precision
      .  cg,ran3
@@ -464,7 +471,10 @@ C *****************************************************************************
 
 C Internal variables .........................................................
       integer
-     . index,iz,l,lmaxp,m
+     . index,iz,l,lmaxp,m, lomaxfis,nztfl
+      
+      external 
+     . lomaxfis, nztfl
 C .......................
 
 C Initialize cg to cero
@@ -473,8 +483,8 @@ C Initialize cg to cero
 C Find out angular momentum of orbital iorb
 
       index = 0
-      do l = 0,lmaxs(is)
-        do iz = 1,nzls(l,is)
+      do l = 0,lomaxfis(is)
+        do iz = 1,nztfl(is,l)
           do m = -l,l
             index = index + 1
           enddo
@@ -494,12 +504,18 @@ C If 8 or less electrons, populate lowest s and p  orbitals
 C If 18 or less electrons, populate lowest s, p and d orbitals
 C If 32 or less electrons, populate lowest s, p, d and f orbitals
 
+      lmaxp = 0
       if (ne .le. 32) lmaxp = 3
       if (ne .le. 18) lmaxp = 2
       if (ne .le. 8) lmaxp = 1
       if (ne .le. 2) lmaxp = 0
+      if (ne .gt. 32) then
+        write(6,*) 'cspa: Cannot build initial guess in initguess.'
+        write(6,*) '      Reason: Too many electrons for this routine'
+        stop
+      endif 
 
-      if (lmaxp .gt. lmaxs(is)) then
+      if (lmaxp .gt. lomaxfis(is)) then
         write(6,*) 'cspa: Cannot build initial guess in initguess.'
         write(6,*) '      Reason: Max. angular moment for atom ',ia,
      .             '      is not large enough'

@@ -1,23 +1,29 @@
 
 C PRMEM: Memory for internal arrays in siesta
+C PRMEM:      siesta      auxpul       0.000 MBytes
 C PRMEM:      siesta        Dold       0.012 MBytes
 C PRMEM:      siesta        Dscf       0.012 MBytes
 C PRMEM:      siesta    Dscfsave       0.012 MBytes
 C PRMEM:      siesta        Eold       0.012 MBytes
+C PRMEM:      siesta         ebk       0.000 MBytes
+C PRMEM:      siesta          eo       0.000 MBytes
 C PRMEM:      siesta        Escf       0.012 MBytes
 C PRMEM:      siesta           H       0.012 MBytes
 C PRMEM:      siesta          H0       0.012 MBytes
 C PRMEM:      siesta       listh       0.006 MBytes
 C PRMEM:      siesta    listhold       0.006 MBytes
 C PRMEM:      siesta           S       0.012 MBytes
-C PRMEM:      siesta        xijo       0.036 MBytes
-C PRMEM:      siesta       Total       0.144 MBytes
+C PRMEM:      siesta        xijo       0.000 MBytes
+C PRMEM:      siesta       Total       0.108 MBytes
   
-C PRMEM:       bands         aux       0.001 MBytes
-C PRMEM:       bands        Haux       0.008 MBytes
-C PRMEM:       bands         psi       0.008 MBytes
-C PRMEM:       bands        Saux       0.008 MBytes
-C PRMEM:       bands       Total       0.026 MBytes
+C PRMEM:        atom       table       0.450 MBytes
+C PRMEM:        atom        tab2       0.448 MBytes
+C PRMEM:        atom     tab2pol       0.281 MBytes
+C PRMEM:        atom     tab2pol       0.280 MBytes
+C PRMEM:        atom     coretab       0.056 MBytes
+C PRMEM:        atom     corrtab       0.224 MBytes
+C PRMEM:        atom    chloctab       0.056 MBytes
+C PRMEM:        atom       Total       1.796 MBytes
   
 C PRMEM:       matel         ILM       0.000 MBytes
 C PRMEM:       matel       ILMFF       0.105 MBytes
@@ -97,5 +103,5 @@ C PRMEM:    gradient          ft       0.004 MBytes
 C PRMEM:    gradient         fst       0.004 MBytes
 C PRMEM:    gradient       Total       0.008 MBytes
   
-C PRMEM:       Total       Total       7.911 MBytes
+C PRMEM:       Total       Total       9.645 MBytes
   

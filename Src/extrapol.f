@@ -1,3 +1,5 @@
+C $Id: extrapol.f,v 1.3 1999/01/31 11:14:53 emilio Exp $
+
       subroutine extrapol(istep,iord,nspin,nrow,nmrow,nmax,num,list,aux,
      .                numold,listold,mm2,mnew)
 C ******************************************************************************

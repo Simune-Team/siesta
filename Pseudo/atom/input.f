@@ -43,7 +43,8 @@ c
       data nc /1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 4, 5, 6, 6/
       data lc /0, 0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1/
 c
-      data il /'s', 'p', 'd', 'f', 'g'/
+c     This statement now goes in a block data subprogram  
+cccc      data il /'s', 'p', 'd', 'f', 'g'/
 C     ..
 c
       do 10 i = 0, 4
@@ -354,3 +355,10 @@ c
       return
 c
       end
+c
+      block data orb_init
+      implicit none
+      include 'orbital.h'
+      data il /'s', 'p', 'd', 'f', 'g'/
+      end
+

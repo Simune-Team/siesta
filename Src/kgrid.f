@@ -1,3 +1,5 @@
+c $Id: kgrid.f,v 1.7 1999/01/31 11:20:06 emilio Exp $
+
       subroutine kgrid( cell, kscell, displ,
      .                  cutoff, nk, points, weight )
 
@@ -93,23 +95,6 @@ c Look for kscell or cutoff in input fdf file
         else
 c         The second argument is the default value
           cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
-        endif
-      endif
-
-c If no k-grid is defined and the system is a supercell, use the
-c gamma point of the supercell
-      if (nktot.eq.0 .and. cutoff.eq.defcut) then
-        if ( fdf_block('SuperCell',iu) ) then
-          do i = 1,3
-            read(iu,*) (kscell(j,i),j=1,3)
-            displ(i) = 0.d0
-          enddo
-          nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
-     .                 kscell(2,1) * kscell(3,2) * kscell(1,3) +
-     .                 kscell(3,1) * kscell(1,2) * kscell(2,3) -
-     .                 kscell(1,1) * kscell(3,2) * kscell(2,3) -
-     .                 kscell(2,1) * kscell(1,2) * kscell(3,3) -
-     .                 kscell(3,1) * kscell(2,2) * kscell(1,3) )
         endif
       endif
 

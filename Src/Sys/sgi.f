@@ -1,4 +1,10 @@
-      include '../poison.f'
+C $Id: sgi.f,v 1.7 1999/04/26 13:11:49 wdpgaara Exp $
+
+      include 'poison_general.f'
+      include 'cft.f'
+      include 'rdiag_general.f'
+      include 'cdiag_general.f'
+      include 'eispack.f'
 
       SUBROUTINE CPUTIM (TIME)
 
@@ -30,60 +36,6 @@ C  NEXT LINE FOR ANYTHING ELSE
 
       END
 
-      subroutine rdiag (h,s,n,nm,w,z,fv)
-C ***************************************************************************
-C Subroutine  to solve all eigenvalues and eigenvectors of the
-C real general eigenvalue problem  H z = w S z,  with H and S
-C real symmetric matrices, by calling the  LAPACK routine DSYGV
-C Writen by G.Fabricius and J.Soler, March 1998
-C ************************** INPUT ******************************************
-C real*8 h(nm,nm)                 : Symmetric H matrix
-C real*8 s(nm,nm)                 : Symmetric S matrix
-C integer n                       : Order of  the generalized  system
-C integer nm                      : Dimension of H and S matrices
-C ************************** OUTPUT *****************************************
-C real*8 w(nm)                    : Eigenvalues
-C real*8 z(nm,nm)                 : Eigenvectros
-C ************************* AUXILIARY ***************************************
-C real*8  fv(nm,2)                : Auxiliary storage array
-C ***************************************************************************
-      implicit          none
-      integer           i1,i2,INFO,LWORK,n,nm
-      character         JOBZ,UPLO
-      double precision  h(nm,nm), s(nm,nm), w(nm),  z(nm,nm), fv(nm,3)
-C ......................
 
-C  start time count
-      call timer('rdiag',1)
 
-       JOBZ='V'
-       UPLO='U'
-       LWORK=3*n
-       call dsygv(1,JOBZ,UPLO,n,h,nm,s,nm,w,fv,LWORK,INFO)
-       do i1=1,n
-         do i2=1,n
-           z(i1,i2)=h(i1,i2)
-         enddo
-       enddo
-
-      if (info .ne. 0) then
-        write(6,*) 'rdiag: ERROR in routine dsygv:'
-        if (info.lt.0) then
-          write(6,*) -info,'-th argument had an illegal value'
-        elseif (info.le.n)   then
-          write(6,*) 'DSYEV failed to converge. ',info,
-     .               ' off-diagonal elements of an intermediate '
-          write(6,*) 'tridiagonal form did not converge to zero'
-        else
-          write(6,*)'The leading minor of order ',info-n,
-     .              ' of B is not positive definite.'
-          write(6,*)'The factorization of B could not be completed',
-     .              ' and no eigenvalues or eigenvectors were computed.'
-        endif
-        stop 'rdiag: ERROR in routine dsygv'
-      endif
-
-c  stop time count
-      call timer('rdiag',2)
-      end
 

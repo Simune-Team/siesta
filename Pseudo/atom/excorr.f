@@ -1,15 +1,5 @@
 c
-c $Id: excorr.f,v 1.2 1997/05/22 17:32:12 wdpgaara Exp $
-c
-c $Log: excorr.f,v $
-c Revision 1.2  1997/05/22 17:32:12  wdpgaara
-c Moving from RCSfiles to ATM_1_0
-c
-c Revision 1.1.1.1  1997/01/07 08:38:54  wdpgaara
-c Froyen-Troullier-Martins-AG atom code
-c
-c Revision 1.1  1991/12/14  00:34:49  alberto
-c Initial revision
+c $Id: excorr.f,v 1.3 1999/02/26 14:26:43 wdpgaara Exp $
 c
       subroutine excorr(id,cdd,cdu,cdc,vod,vou,vxc,vc,exc,ec)
 c
@@ -70,9 +60,9 @@ C     .. Array Arguments ..
      &                 vod(nrmax), vou(nrmax)
 c
 C     .. Local Scalars ..
-      double precision a0, a1, alb, aln, alp, an, b1, be, beta, bn,
-     &                 cdsum, ecf, ecp, ect, ehart, excf, excp,
-     &                 exct, exf, exp, ftrd, fz, fzp, pi, rs,
+      double precision a0, alb, aln, alp,  be, beta,
+     &                 cdsum, ecf, ecp, ect, excf, excp,
+     &                 exct, exf, exp_var, ftrd, fz, fzp, pi, rs,
      &                 rslog, sb, sqrs, te, tftm, trd, vcd, vcf,
      &                 vcp, vcu, vxcd, vxcf, vxcp, vxcu, vxf, 
      &                 lda_xpot, x, z
@@ -82,7 +72,7 @@ C     .. External Subroutines ..
       external ext
 C     ..
 C     .. Intrinsic Functions ..
-      intrinsic abs, atan, log, sqrt
+      intrinsic atan, log, sqrt
 C     ..
       logical leqi
       external leqi
@@ -141,7 +131,7 @@ c
 c      exchange (only use (xa))
 c
          lda_xpot = -3*alp/(pi*a0*rs)
-         exp = 3*lda_xpot/4
+         exp_var = 3*lda_xpot/4
 c
 c        Relativistic correction to exchange
 c
@@ -150,13 +140,13 @@ c
             sb = sqrt(1+beta*beta)
             alb = log(beta+sb)
             lda_xpot = lda_xpot*(-pfive+opf*alb/(beta*sb))
-            exp = exp*(one-opf*((beta*sb-alb)/beta**2)**2)
+            exp_var = exp_var*(one-opf*((beta*sb-alb)/beta**2)**2)
          end if
 c
    60    continue
 c
          vxf = 2**trd*lda_xpot
-         exf = 2**trd*exp
+         exf = 2**trd*exp_var
          vcp = zero
          ecp = zero
          vcf = zero
@@ -254,7 +244,7 @@ c
          vxcf = vxf + vcf
          vxcd = vxcp
          vxcu = vxcp
-         excp = exp + ecp
+         excp = exp_var + ecp
          excf = exf + ecf
          vcd = vcp
          vcu = vcp

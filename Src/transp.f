@@ -1,3 +1,5 @@
+C $Id: transp.f,v 1.3 1999/01/31 11:45:15 emilio Exp $
+
       subroutine transp( NO, endC, listC,
      .                   NP, endCt, listCt, CtoCt,
      .                   MaxNCt, numCt )

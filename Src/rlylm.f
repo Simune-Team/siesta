@@ -1,3 +1,5 @@
+C $Id: rlylm.f,v 1.4 1999/01/31 11:43:38 emilio Exp $
+
       SUBROUTINE RLYLM( LMAX, R, RLY, GRLY )
 C *********************************************************************
 C FINDS REAL SPHERICAL HARMONICS MULTIPLIED BY R**L: RLY=R**L*YLM,

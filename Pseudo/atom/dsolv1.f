@@ -1,17 +1,7 @@
 C
-c $Id: dsolv1.f,v 1.2 1997/05/22 17:32:08 wdpgaara Exp $
+c $Id: dsolv1.f,v 1.3 1999/02/25 13:49:13 wdpgaara Exp $
 c
-c $Log: dsolv1.f,v $
-c Revision 1.2  1997/05/22 17:32:08  wdpgaara
-c Moving from RCSfiles to ATM_1_0
-c
-c Revision 1.1.1.1  1997/01/07 08:38:54  wdpgaara
-c Froyen-Troullier-Martins-AG atom code
-c
-c Revision 1.1  1991/12/14  00:34:49  alberto
-c Initial revision
-c
-      subroutine dsolv1(nfirst,nlast,n_of_core_orbs,nn)
+      subroutine dsolv1(nfirst,nlast,nn)
 c
       implicit none
 c
@@ -31,7 +21,7 @@ C     .. Parameters ..
       parameter (zero=0.D0,one=1.D0,pone=0.1D0,opf=1.5D0)
 C     ..
 C     .. Scalar Arguments ..
-      integer nfirst, nlast, n_of_core_orbs
+      integer nfirst, nlast
 C     ..
 c     nn will generally be 'no'
 c

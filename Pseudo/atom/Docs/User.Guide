@@ -146,9 +146,9 @@ is an example for Si using the Hamann-Schluter-Chiang scheme:
     3    0      2.00
     3    1      0.50
     3    2      0.50
-      1.12      1.35      1.17       0.0       0.0
+   1.12      1.35      1.17      0.0       0.0       0.0
 
-12345678901234567890123456789012345678901234567890      Ruler
+123456789012345678901234567890123456789012345678901234567890   Ruler
 ---------------------------------------
 
 Apart from the "pg" job code in the first line, there are two
@@ -176,11 +176,11 @@ in atomic units (bohrs) for the s, p, d, and f orbitals (it is a good
 practice to input the valence orbitals in the order of increasing
 angular momentum, so that there is no possible confusion).
 
-(format 6f10.5)  (The two extra slots are a bit technical and should
-be set to zero or left blank). In the example above, only s,p, and d
-rc's are given. Here is an example for Silicon in which we are only
-interested in the s and p channels for our pseudopotential, and use
-the Kerker scheme:
+(format 6f10.5)  (see 'Partial core' below for the two extra slots,
+and should be set to zero or left blank if no partial core is used). 
+In the example above, only s,p, and d rc's are given. Here is an example 
+for Silicon in which we are only interested in the s and p channels for 
+our pseudopotential, and use the Kerker scheme:
 
 -----------------------------
    pg Si Kerker generation
@@ -190,10 +190,128 @@ the Kerker scheme:
     3    3
     3    0      2.00
     3    1      2.00
-      1.80      1.80      0.00       0.0       0.0
+   1.80      1.80      0.00      0.0       0.0       0.0
 
-12345678901234567890123456789012345678901234567890      Ruler
+123456789012345678901234567890123456789012345678901234567890   Ruler
 ------------------------------------------
+
+
+
+Partial core
+------------
+
+The program can generate a 'partial core' (or 'pseudocore') 
+for the partial-core non-linear exchange-correlation correction as
+proposed in
+
+S. G. Louie, S. Froyen, and M. L. Cohen, Phys. Rev. B 26, 1738 (1982).
+
+The pseudocore charge density equals the charge density outside
+a given radius r_pc, and has the smooth form
+
+pc(r) = ac*r * sin(bc*r)
+
+inside that radius. A smooth matching is provided with suitable ac and bc
+parameters calculated by the program.
+
+To generate the partial core in addition to the pseudopotential,
+the jobcode at the first line should be 'pe' instead of 'pg'.
+
+The radius r_pc is given in the sixth slot in the last
+input line (see above). If it is negative or zero (or blank), the
+radius is then computed using the fifth number in that line (pc_weight)
+and the following criterion: at r_c the core charge density 
+equals pc_weight*(valence charge density).
+
+If pc_weight is input as negative, the full core charge is used.
+If pc_weight is input as zero, it is set equal to one, which will be
+thus the default if 'pe' is given but no numbers are given for these
+two variables.
+
+The output file contains the radius used and the ac and bc 
+parameters used for the matching.
+
+The vps file contains the partial core in addition to the 
+pseudopotential.
+
+
+Output Files
+------------
+
+The program generates several files, which, if using the
+provided shell scripts (pg.sh, ae.sh, pt.sh ...), appear in 
+a subdirectory named as the input file, without the .inp suffix.
+
+INP: Original input file.
+
+VPSIN; Input pseudopotential (if testing, with 'pt' option).
+
+VPSOUT: (if pseudopotential generation was used, pg) It contains
+     the pseudopotential itself and related information.
+
+OUT: The general output (log) of the run, offering information about
+     the atomic calculations, energies, eigenvalues, generation
+     procedure, etc. First file to look at. Always, and specially
+     if there are problems with the run or with the obtained vps.
+
+
+For plotting:
+-------------
+
+RHO: Atomic (all-electron) charge density as a funtion of radius.
+     It is not integrated angularly (no 4 pi r^2 factor)
+     Columns:
+              r    Rho(r)_up    Rho(r)_down      Rho(r)_core
+      
+     Up and down are for LSD calculations, but also for relativistic ones.
+     The Rho_core is for only core electrons, but both spin components.
+
+CHARGE: Same as RHO, but Rhos's are angularly integrated (x 4 pi r^2)
+
+PSCHARGE: Same as CHARGE but Rho_up and Rho_down refer to valence electrons,
+     and Rho_core is the  pseudocore generated (if) through 'pe' for
+     non-linear partial-core exchange-correlation correction.
+      
+     To ckeck the pseudocore (partial core) the 4th column of this file
+     should be compared with the 4th column of CHARGE.
+
+
+If generating pseudopotential:
+
+AEWFNR0...AEWFNR3 : all-electron wavefunctions as function of radius,
+     for s, p, d, and f valence orbitals (0, 1, 2, 3, respectively,
+     or less if less channels were generated).
+     Columns:
+              r    Psi(r)_l    0.
+
+     They have angular integration, the s orbitals also going to zero.
+
+PSWFNR0...PSWFNR3 : Same as above but for the pseudowavefunctions.
+     They should fit the corresponding AEWFNRs outside of the chosen 
+     core radii (r_c). 
+     Columns:
+              r    Psi(r)_l    r_c
+       
+PSWFNQ0...PSWFNQ3 : Fourier transforms of the PSWFNR0...PSWFNR4.
+     Columns:
+              r    Psi(q)_l 
+
+PSPOTR0...PSPOTR3 : Pseudopotential as function of radius, 
+     one per l-channel
+     Columns:
+              r    Vps(r)_l    -2*Z_ion/r
+ 
+     Last column is just the coulombic atraction of the core ion. It should
+     fit the Vps when the charge of the core electrons has died out. 
+
+PSPOTQ0...PSPOTQ3 : Pseudopotential as function of radius, 
+     one per l-channel
+     Columns:
+              r    Vps(q)_l     0.
+
+-------------------------------------------------------------------------       
+
+
 
 
 Enjoy!

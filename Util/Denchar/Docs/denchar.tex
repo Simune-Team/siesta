@@ -1,0 +1,433 @@
+%denchar.tex
+%
+%   Javier Junquera  Feb 16, 1999
+%
+%   Manual for the DENCHAR program
+
+
+%\documentstyle[twocolumn,prb,aps]{revtex}
+%\documentstyle[prb,aps]{revtex}
+\documentstyle[11pt]{article}
+%\documentstyle{article}
+
+\tolerance 10000
+\textheight 22cm
+\textwidth 16cm
+\oddsidemargin 1mm
+\topmargin -15mm
+
+\baselineskip=14pt
+\parskip 5pt
+\parindent 1em
+
+\begin{document}
+
+% TITLE PAGE --------------------------------------------------------------
+
+\begin{titlepage}
+
+\begin{center}
+
+\vspace{1cm}
+
+{\huge {\sc User's Guide}}
+
+\vspace{4cm}
+
+{\Huge {\bf DENCHAR 0.1.1} }
+
+\vspace{3cm}
+
+{\Large {\it February 16, 1999. 18:00:00} }
+
+\vspace{3cm}
+
+{\Large Javier Junquera}
+
+\vspace{5pt}
+
+{\it Departamento de F\'{\i}sica, Universidad de
+Oviedo, 33007 Oviedo, Spain}
+
+\vspace{7mm}
+
+\vspace{3cm}
+{\bf junquera@condmat01.geol.uniovi.es}
+
+\end{center}
+
+\end{titlepage}
+
+% END TITLE PAGE --------------------------------------------------------------
+
+\tableofcontents
+
+\newpage
+
+
+
+\section{INTRODUCTION}
+
+DENCHAR program calculates the charge density at the points of a plane
+in real space. It is a program contained in the utilities package of
+SIESTA program and shares with it many subroutines. Its principal 
+features are:
+
+\begin{itemize}
+
+\item
+Flexibility for defining the plane in which we are going to calculate
+the charge density. Possible options are: the normal vector, 
+two lines contained in the plane,
+three points belonging to it or three atoms contained in it.
+
+\item
+For spin-unpolarized calculations, the fully self-consistent charge and
+the difference between the SCF charge density and the superposition of atomic
+densities are calculated. In this way, we can study how the chemical bonds 
+changes the distribution of the charge.
+ 
+\item
+For spin-polarized calculations, the magnetization (difference between
+the charge density for spin up and down) is calculated.
+
+\item 
+Many of the subroutines used by DENCHAR are taken from SIESTA. These are:
+
+chkdim.f, dot.f, io.f, iodm.f, fdf.f, neighb.f, paste.f, phiatm.f, ranger.f,
+rlylm.f, splint.f, volcel.f
+
+I would like to thank the authors of these subroutines for allowing me 
+to use them.
+
+\end{itemize}
+
+This is a short description of the compilation procedures
+and of the datafile format for the DENCHAR code.
+This version is a very preliminary release of the code.
+Please report problems, bugs and suggestions to
+junquera@condmat01.geol.uniovi.es
+
+\section{HOW TO COMPILE AND RUN THE PROGRAM}
+
+\noindent
+In this section we give all the steps required to install
+and run the program. 
+We assume that you use UNIX and that you will install DENCHAR in 
+$\sim$/siesta/Util/Denchar/Src, where $\sim$ indicates your home directory.
+The commands that you must type are in {\tt typewriter} font, 
+and {\tt \#} indicates the prompt.
+
+DENCHAR needs some information that will be supplied by SIESTA. Suppose 
+we are running SIESTA, for say Si, in directory $\sim$/siesta/Si and the
+source directory is $\sim$/siesta/Src. 
+
+The first thing we must do is to run SIESTA for the system we are interested in,
+setting up variable WriteDenchar to true. In this way SIESTA will generate
+a file called {\it SystemLabel}.PLD where will be stored all the information 
+needed to plot the charge density at the points of a plane.
+
+Then we must copy the parameters files {\bf siesta.h, atom.h}
+and {\bf ranger.h} to
+the source directory of DENCHAR. In the case of our hypothetical simulation:
+
+{\tt \# cd $\sim$/siesta/Util/Denchar/Src}
+
+{\tt \# cp $\sim$/siesta/Src/atom.h .}
+
+{\tt \# cp $\sim$/siesta/Src/siesta.h .}
+
+{\tt \# cp $\sim$/siesta/Src/ranger.h .}
+
+Edit Makefile and choose the flags to optimize the compilation in your
+computational system.
+
+Execute make
+
+{\tt \# make}
+
+Then the program should compile and an executable file, called plden.x, 
+should be created.
+
+Create a new directory to run the simulations (for example, 
+we can call it rundir).
+
+{\tt \# cd ..}
+
+{\tt \# mkdir rundir }
+
+{\tt \# cd rundir }
+
+Create a link to the executable file:
+
+{\tt \# ln -s ../Src/plden.x . }
+
+Copy the data files from the directory when SIESTA was runned to this new 
+directory:
+
+{\tt \# cp $\sim$/siesta/Si/{\it SystemLabel}.PLD . } 
+
+{\tt \# cp $\sim$/siesta/Si/{\it SystemLabel}.DM . } 
+
+Execute plden.x
+
+{\tt \# plden.x < {\it input}.fdf } 
+
+Where {\it input}.fdf is the input data file that will be explained in 
+following section INPUT DATA FILES.
+
+The output is dumped in files which will be described
+in Section 4.
+
+\section{INPUT DATA FILE}
+
+The input data file is written in an special format called FDF, developed
+by Alberto Garcia and Jos\'e M. Soler (see SIESTA USER'S GUIDE).
+It contains all the parameters needed to define the plane.
+Here follows a description of the variables that you can define in your 
+DENCHAR input files,
+with their data types and default values.
+
+\vspace{5pt}
+\subsection{General system descriptors}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf SystemLabel}] ({\it string}): 
+A {\bf single} word (max. 20 characters {\bf without blanks})
+containing a nickname of the system, used to name output files. 
+{\bf It must be the same that you use when you run SIESTA!!}
+
+{\it Default value:} siesta
+
+\item[{\bf 2D.CoorUnits}] ({\it string}): 
+Character string to specify the format of the position of the points that
+define the plane in input.
+These can be expressed in two forms:
+
+\begin{itemize}
+\item[-] Ang        : Angstroms 
+\item[-] Bohr       : Bohrs
+\end{itemize}
+
+\item[{\bf 2D.DensityUnits}] ({\it string}): 
+Character string to specify the units of the charge density in output. 
+These can be expressed in three forms:
+
+\begin{itemize}
+\item[-] Ele/Bohr**3      : Electrons per bohr**3
+\item[-] Ele/Ang**3       : Electrons per angstrom**3
+\item[-] Ele/UnitCell     : Electrons per Unit Cell (The volume is the volume
+                            of the Supercell generated by SIESTA).
+\end{itemize}
+
+
+\item[{\bf 2D.NumberPointsX}] ({\it integer}):
+ Number of subdivision of the plane in the x-direction. Together
+ with 2D.NumberPointsY, will define the 
+ number of points in which we are going to compute the charge density.
+
+{\it Default value:} 50
+
+\item[{\bf 2D.NumberPointsY}] ({\it integer}):
+ Number of subdivision of the plane in the y-direction. Together
+ with 2D.NumberPointsX, will define the 
+ number of points in which we are going to compute the charge density.
+
+{\it Default value:} 50
+
+ The total number of points where we are going to calculate the charge density
+ will be 2D.NumberPointsX $\times$ 2D.NumberPointsY.
+
+\noindent 
+ The next four variables define the size of the window inside the plane where
+ will focuss our attention.
+
+\item[{\bf 2D.MinX}] ({\it real length}):
+ Define the minimum value of the x-component of the window, in a system 
+ of reference in which the third component is normal to the plane.
+{\it Default value:} -3.0 bohrs
+
+\item[{\bf 2D.MaxX}] ({\it real length}):
+ Define the maximum value of the x-component of the window, in a system 
+ of reference in which the third component is normal to the plane.
+{\it Default value:} +3.0 bohrs
+
+\item[{\bf 2D.MinY}] ({\it real length}):
+ Define the minimum value of the y-component of the window, in a system 
+ of reference in which the third component is normal to the plane.
+{\it Default value:} -3.0 bohrs
+
+\item[{\bf 2D.MaxY}] ({\it real length}):
+ Define the maximum value of the y-component of the window, in a system 
+ of reference in which the third component is normal to the plane.
+{\it Default value:} +3.0 bohrs
+
+\item[{\bf 2D.PlaneGeneration}] ({\it string}): 
+ Select the option to generate the plane:
+
+\begin{itemize}
+\item[-] NormalVector : If we want to choose the normal vector to describe the
+                        surface.
+\item[-] TwoLines       : If we want to specify two vectors contained in the 
+                        plane.
+\item[-] ThreePoints  : If we want to give the coordinates of three points 
+                        of the plane.
+\item[-] ThreeAtomicIndices : If we want the plane that contains three 
+                        given atoms.
+\end{itemize}
+\noindent
+{\it Default value:} {\tt NormalVector}
+
+
+\item[{\bf 2D.CompNormalVector}] ({\it data block}): 
+Components of the normal vector. A normal vector defines a family of parallel
+planes. So we must specify which of these planes is that we are interested in.
+So, when we select the option {\it NormalVector} to generate the plane, we must 
+also input the origin of our plane (one point belonging to it), and another
+point to define the x direction inside the plane (see below).
+
+{\it Use:} Used only if 2D.PlaneGeneration is {\tt NormalVector}
+    
+{\it Default value:} 
+\begin{verbatim}
+  0.000   0.000   1.000
+\end{verbatim}
+
+\item[{\bf 2D.Comp2Vectors}] ({\it data block}): 
+Components of two vectors containes in the plane. 
+When we select the option {\it TwoLines} we must also supply the origin 
+of the plane, it is said, the coordinates of one point inside the plane (see
+below). The first vector will define the x direction inside the plane.
+
+{\it Use:} Used only if 2D.PlaneGeneration is {\tt TwoLines}
+    
+{\it Default value:} 
+\begin{verbatim}
+  1.000   0.000   0.000
+  0.000   1.000   0.000
+\end{verbatim}
+
+\item[{\bf 2D.Coor3Points}] ({\it data block}): 
+Coordinates of three points inside the plane. The first one will be taken
+as the origin of the plane. The vector between the first and the second one 
+will determine the x-direction inside the surface.
+
+{\it Use:} Used only if 2D.PlaneGeneration is {\tt ThreePoints}
+    
+{\it Default value:} 
+\begin{verbatim}
+  1.000   0.000   0.000
+  0.000   1.000   0.000
+  0.000   0.000   1.000
+\end{verbatim}
+
+\item[{\bf 2D.Indices3Atoms}] ({\it data block}): 
+Indices of three atoms that will belong to the plane. In this way, we
+define the plane that contains three given atoms. The coordinates
+of the first atom are taken as the origin of the plane, 
+and the vector between
+the first and second atom will define the x-direction within
+the plane.
+
+{\it Use:} Used only if 2D.PlaneGeneration is {\tt ThreeAtomicIndices}
+    
+{\it Default value:} 
+\begin{verbatim}
+  1 2 3
+\end{verbatim}
+
+\item[{\bf 2D.PlaneOrigin}] ({\it data block}): 
+Coordinates of one point inside the plane that will be taken as the origin. 
+This is neccesary if we want to define the surface from the normal vector or
+from two lines, because we must select one of the plane of the family of
+parallel planes.
+
+{\it Use:} Used only if 2D.PlaneGeneration is {\tt NormalVector} or
+{\tt TwoLines}. If 2D.PlaneGeneration is {\tt ThreePoints}
+or {\tt ThreeAtomicIndices}, the 2D.PlaneOrigin is
+automatically chosen (see description of variables 2D.Coor3Points
+and 2D.Indices3Atoms).
+    
+{\it Default value:} 
+\begin{verbatim}
+  0.000   0.000   0.000
+\end{verbatim}
+        
+\item[{\bf 2D.X-Axis}] ({\it data block}): 
+Coordinates of one point inside the plane needed to define the x-direction,
+when the normal vector is selected to define the plane. The vector between 
+the origin and this new point will define the x-direction.
+
+{\it Units:} bohrs.
+
+{\it Use:} Used only if 2D.PlaneGeneration is {\tt NormalVector} 
+    
+{\it Default value:} 
+\begin{verbatim}
+  1.000   0.000   0.000
+\end{verbatim}
+
+\end{description}
+
+\section{OUTPUT FILES}
+
+Several output files are produced, with quantities related
+with the system charge densities.
+Each file is defined in the following paragraph.
+For all of them, the output format is the same: there are three 
+columns in each file; the first two columns give the coordinates of the points
+in the plane (in the reference frame in which the third axis is normal  
+to the plane);
+the third column gives the corresponding charge density at that
+point.
+
+If we are not taking into account the spin polarization in out calculation 
+two output files will be generated by DENCHAR:
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf {\it SystemLabel}.CON.SCF}]: 
+Fully Self-Consistent Charge Density at the points of the plane in real space.
+
+\item[{\bf {\it SystemLabel}.CON.DEL}]: 
+Difference between fully self-consistent charge density and the superposition
+of atomic densities. 
+ 
+\end{description}
+
+If the spin is taken into account then there are four output files, named:
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+
+\item[{\bf {\it SystemLabel}.CON.UP}]: 
+Fully self-consistent charge density for electrons with spin {\bf UP}.
+
+\item[{\bf {\it SystemLabel}.CON.DOWN}]: 
+Fully self-consistent charge density for electrons with spin {\bf DOWN}.
+
+\item[{\bf {\it SystemLabel}.CON.MAG}]: 
+{\bf Magnetization}. Difference between fully self-consistent charge density 
+with spin up and with spin down.
+
+\item[{\bf {\it SystemLabel}.CON.DEL}]: 
+Difference between fully self-consistent charge density (equal to the 
+sum of charge density for both spines) and the superposition
+of atomic densities. 
+
+\end{description}
+
+\section{EXAMPLES}
+
+In directory {\tt $\sim$/siesta/Util/Denchar/Examples} you will find some
+examples of input files for the different options. The physical system is a
+cell of Si in the diamond structure at the experimental lattice constant.
+
+\end{document}

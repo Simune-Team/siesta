@@ -1,5 +1,7 @@
+C $Id: dynamics.f,v 1.9 1999/02/26 14:37:07 wdpgaara Exp $
+
       subroutine npr(istep,iunit,natoms,fa,stress,tp,tt,dt,
-     .               ma,mn,mpr,va,xa,h,kin,kn,kpr,vn,vpr,
+     .               ma,mn,mpr,va,xa,hdot,h,kin,kn,kpr,vn,vpr,
      .               temp,pressin)
 C *************************************************************************
 C Subroutine for MD simulations with CONTROLLED PRESSURE AND TEMPERATURE.
@@ -45,11 +47,12 @@ C real*8 dt             : Length of the time step
 C real*8 ma(natoms)     : Atomic masses
 C real*8 mn             : Mass of Nose thermostat
 C real*8 mpr            : Mass of Parrinello-Rahman variables
-C real*8 va(3,natoms)   : Atomic velocities
-C                         (used only if istep = 1)
 C ******************* INPUT AND OUTPUT ****************************************
+C real*8 va(3,natoms)   : Atomic velocities
 C real*8 xa(3,natoms)   : Atomic coordinates
 C                        (input: current time step; output: next time step)
+C real*8 hdot(3,3)      : Matrix of time derivatives of
+C                         the vectors defining the unit cell
 C real*8 h(3,3)         : Matrix of the vectors defining the unit
 C                         cell at the current time step
 C                         h(i,j) is the ith component of jth basis vector
@@ -69,7 +72,7 @@ C *****************************************************************************
      .   natoms,istep, iunit
 
       double precision
-     .  dt,fa(3,natoms),h(3,3),kin,kn,kpr,
+     .  dt,fa(3,natoms),h(3,3),hdot(3,3),kin,kn,kpr,
      .  ma(natoms),mn,mpr,stress(3,3),tp,tt,
      .  va(3,natoms),vn,vpr,xa(3,natoms)
 
@@ -79,7 +82,7 @@ C nmax = maximum number of atoms
       parameter (nmax = 2000)
 
       integer
-     .  i,ia,j,k
+     .  ct,i,ia,j,k
 
       save x,xold,sold,hold
 
@@ -87,7 +90,7 @@ C nmax = maximum number of atoms
      .  Ang,aux1(3,3),aux2(3,3),diff,dt2,dtby2,
      .  eV,f(3,3),fi(3,3),fovermp,
      .  g(3,3),gdot(3,3),gi(3,3),
-     .  hdot(3,3),hi(3,3),hnew(3,3),hlast(3,3),hold(3,3),hs(3),
+     .  hi(3,3),hnew(3,3),hlast(3,3),hold(3,3),hs(3),
      .  pgas,press(3,3),pressin,
      .  s(3,nmax),sdot(3,nmax),snew(3,nmax),sold(3,nmax),
      .  sunc(3,nmax),suncdot(3,nmax),
@@ -103,6 +106,8 @@ C ..............................................................................
         write(6,*) 'npr: Wrong iunit option;  must be 1 or 2'
         stop
       endif
+      ct = 3
+      if (natoms .eq. 1) ct = 0
       call chkdim('npr','nmax',nmax,natoms,1)
 
 C Define constants and conversion factors .......................................
@@ -117,13 +122,13 @@ C Define constants and conversion factors ......................................
       if (iunit .eq. 1) then
 C  convert target temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in eV if Temp is in Kelvin)
-        tekin = 0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5 * tt
+        tekin = 0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * tt
 C  convert F/m in (eV/Angstrom)/amu  to  Angstrom/fs**2
         fovermp = 0.009579038
       else
 C  convert target temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in Ry if Temp is in Kelvin)
-        tekin = eV * 0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5 * tt
+        tekin = eV * 0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * tt
 C  convert F/m in (Ry/Bohr)/amu  to  Bohr/fs**2
         fovermp = 0.009579038 * Ang**2 / eV
       endif
@@ -163,7 +168,7 @@ C Initialize variables if current time step is the first of the simulation
       xold = 0.0
       do i = 1,3
         do j = 1,3
-          hold(i,j) = h(i,j)
+          hold(i,j) = h(i,j) - dt*hdot(i,j)
         enddo
       enddo
       do ia = 1,natoms
@@ -445,9 +450,9 @@ C Potential energy of Parrinello-Rahman variables
 
 C Instantaneous temperature (Kelvin)
       if (iunit .eq. 1) then
-        temp = 3.0d0*vol*pgas/(3.0d0*natoms-3)/8.617d-5
+        temp = 3.0d0*vol*pgas/(3.0d0*natoms-ct)/8.617d-5
       else
-        temp = 3.0d0*vol*pgas/(3.0d0*natoms-3)/8.617d-5/eV
+        temp = 3.0d0*vol*pgas/(3.0d0*natoms-ct)/8.617d-5/eV
       endif
 
 C .....................
@@ -456,7 +461,7 @@ C .....................
       end
     
       subroutine pr(istep,iunit,iquench,natoms,fa,stress,tp,dt,
-     .               ma,mpr,va,xa,h,kin,kpr,vpr,
+     .               ma,mpr,va,xa,hdot,h,kin,kpr,vpr,
      .               temp,pressin)
 C *************************************************************************
 C Subroutine for MD simulations with CONTROLLED PRESSURE.
@@ -503,11 +508,12 @@ C real*8 tp             : Target pressure
 C real*8 dt             : Length of the time step 
 C real*8 ma(natoms)     : Atomic masses
 C real*8 mpr            : Mass of Parrinello-Rahman variables
-C real*8 va(3,natoms)   : Atomic velocities
-C                         (used only if istep = 1)
 C ******************* INPUT AND OUTPUT ****************************************
+C real*8 va(3,natoms)   : Atomic velocities
 C real*8 xa(3,natoms)   : Atomic coordinates
 C                        (input: current time step; output: next time step)
+C real*8 hdot(3,3)      : Matrix of time derivatives of
+C                         the vectors defining the unit cell
 C real*8 h(3,3)         : Matrix of the vectors defining the unit
 C                         cell at the current time step 
 C                         h(i,j) is the ith component of jth basis vector
@@ -525,7 +531,7 @@ C *****************************************************************************
      .   natoms,istep,iquench,iunit
 
       double precision
-     .  dt,fa(3,natoms),h(3,3),kin,kpr,
+     .  dt,fa(3,natoms),h(3,3),hdot(3,3),kin,kpr,
      .  ma(natoms),mpr,stress(3,3),tp,
      .  va(3,natoms),vpr,xa(3,natoms)
 
@@ -535,7 +541,7 @@ C nmax = maximum number of atoms
       parameter (nmax = 2000)
 
       integer
-     .  i,ia,j,k
+     .  ct,i,ia,j,k
 
       save sold,hold
 
@@ -543,7 +549,7 @@ C nmax = maximum number of atoms
      .  a1,a2,Ang,aux1(3,3),aux2(3,3),diff,dot,dt2,dtby2,
      .  eV,f(3,3),fi(3,3),fovermp,
      .  g(3,3),gdot(3,3),gi(3,3),
-     .  hdot(3,3),hi(3,3),hnew(3,3),hlast(3,3),hold(3,3),hs(3),
+     .  hi(3,3),hnew(3,3),hlast(3,3),hold(3,3),hs(3),
      .  pgas,press(3,3),pressin,
      .  s(3,nmax),sdot(3,nmax),snew(3,nmax),sold(3,nmax),
      .  sunc(3,nmax),suncdot(3,nmax),
@@ -555,9 +561,11 @@ C nmax = maximum number of atoms
 C ...............................................................................
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
-        write(6,*) 'npr: Wrong iunit option;  must be 1 or 2'
+        write(6,*) 'pr: Wrong iunit option;  must be 1 or 2'
         stop
       endif
+      ct = 3
+      if (natoms .eq. 1) ct = 0
       call chkdim('pr','nmax',nmax,natoms,1)
 
 
@@ -609,7 +617,7 @@ C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
       do i = 1,3
         do j = 1,3
-          hold(i,j) = h(i,j)
+          hold(i,j) = h(i,j) - dt*hdot(i,j)
         enddo
       enddo
       do ia = 1,natoms
@@ -921,9 +929,9 @@ C Potential energy of Parrinello-Rahman variables
 
 C Instantaneous temperature (Kelvin)
       if (iunit .eq. 1) then
-        temp = 3.0d0*vol*pgas/(3.0d0*natoms-3)/8.617d-5
+        temp = 3.0d0*vol*pgas/(3.0d0*natoms-ct)/8.617d-5
       else
-        temp = 3.0d0*vol*pgas/(3.0d0*natoms-3)/8.617d-5/eV
+        temp = 3.0d0*vol*pgas/(3.0d0*natoms-ct)/8.617d-5/eV
       endif
 C .....................
 
@@ -994,7 +1002,7 @@ C nmax = maximum number of atoms
       parameter (nmax = 2000)
 
       integer
-     .  i,ia
+     .  ct,i,ia
 
       save x,xold,xaold
 
@@ -1006,9 +1014,11 @@ C nmax = maximum number of atoms
 C .............................................................................
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
-        write(6,*) 'npr: Wrong iunit option;  must be 1 or 2'
+        write(6,*) 'nose: Wrong iunit option;  must be 1 or 2'
         stop
       endif
+      ct = 3
+      if (natoms .eq. 1) ct = 0
       call chkdim('nose','nmax',nmax,natoms,1)
 
 
@@ -1024,13 +1034,13 @@ C Define constants and conversion factors .....................................
       if (iunit .eq. 1) then
 C  convert target ionic temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in eV if Temp is in Kelvin)
-         tekin = 0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5 * tt
+         tekin = 0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * tt
 C  convert F/m in (eV/Angstrom)/amu  to  Angstrom/fs**2
         fovermp = 0.009579038
       else
 C  convert target temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in Ry if Temp is in Kelvin)
-        tekin = eV * 0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5 * tt
+        tekin = eV * 0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * tt
 C  convert F/m in (Ry/Bohr)/amu  to  Bohr/fs**2
         fovermp = 0.009579038 * Ang**2 / eV
       endif
@@ -1124,9 +1134,9 @@ C Potential energy of Nose variable (in eV)
 
 C Instantaneous temperature (Kelvin)
       if (iunit .eq. 1) then
-        temp = kin / (0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5)
+        temp = kin / (0.5d0 * (3.d0 * natoms - ct) * 8.617d-5)
       else
-        temp = kin / (0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5 * eV)
+        temp = kin / (0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * eV)
       endif
  
 
@@ -1214,7 +1224,7 @@ C nmax = maximum number of atoms
       parameter (nmax = 2000)
 
       integer
-     .  i,ia,j,k
+     .  ct,i,ia,j,k
 
       save sold
 
@@ -1233,9 +1243,11 @@ C nmax = maximum number of atoms
 C ...............................................................................
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
-        write(6,*) 'npr: Wrong iunit option;  must be 1 or 2'
+        write(6,*) 'anneal: Wrong iunit option;  must be 1 or 2'
         stop
       endif
+      ct = 3
+      if (natoms .eq. 1) ct = 0
       call chkdim('anneal','nmax',nmax,natoms,1)
 
 C Define constants and conversion factors .......................................
@@ -1250,13 +1262,13 @@ C Define constants and conversion factors ......................................
       if (iunit .eq. 1) then
 C  convert target ionic temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in eV if Temp is in Kelvin)
-        tekin = 0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5 * tt
+        tekin = 0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * tt
 C  convert F/m in (eV/Angstrom)/amu  to  Angstrom/fs**2
         fovermp = 0.009579038
       else
 C  convert target temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in Ry if Temp is in Kelvin)
-        tekin = eV * 0.5d0 * (3.d0 * natoms - 3.d0) * 8.617d-5 * tt
+        tekin = eV * 0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * tt
 C  convert F/m in (Ry/Bohr)/amu  to  Bohr/fs**2
         fovermp = 0.009579038 * Ang**2 / eV
       endif
@@ -1422,10 +1434,10 @@ C Correct cell shape to reach target pressure
         do j = 1,3
           if (i .ne. j) then
             rfac2 = 1.0 + (dt / taurelax) * press(i,j) 
-     .                    / (3.0 * bulkm)
+     .                    / (0.5 * bulkm)
           else
             rfac2 = 1.0 + (dt / taurelax) * (press(i,i) - tp) 
-     .                    / (3.0 * bulkm)
+     .                    / (0.5 * bulkm)
           endif
           if (rfac2 .le. 0.0) then
             write(6,*) 'Wrong anneal parameter'
@@ -1450,7 +1462,7 @@ C Transform back to absolute coordinates
       do ia = 1,natoms
         do i = 1,3
           xa(i,ia) = 0.0d0
-	  va(i,ia) = 0.0d0
+          va(i,ia) = 0.0d0
           do j = 1,3
             xa(i,ia) = xa(i,ia) + h(i,j) * s(j,ia)
             va(i,ia) = va(i,ia) + h(i,j) * sdot(j,ia)
@@ -1465,9 +1477,9 @@ C Kinetic energy of atoms
 
 C Instantaneous temperature (Kelvin)
       if (iunit .eq. 1) then
-        temp = 3.0d0*vol*pgas/(3.0d0*natoms-3)/8.617d-5
+        temp = 3.0d0*vol*pgas/(3.0d0*natoms-ct)/8.617d-5
       else
-        temp = 3.0d0*vol*pgas/(3.0d0*natoms-3)/8.617d-5/eV
+        temp = 3.0d0*vol*pgas/(3.0d0*natoms-ct)/8.617d-5/eV
       endif
 
 C .....................
@@ -1532,7 +1544,7 @@ C nmax = maximum number of atoms
       parameter (nmax = 2000)
  
       integer
-     .  i,ia
+     .  ct,i,ia
 
       double precision
      .  Ang,dot,dt2,dtby2,eV,fovermp,temp,twodt,
@@ -1545,6 +1557,8 @@ C ........................
         write(6,*) 'verlet1: Wrong iunit option;  must be 1 or 2'
         stop
       endif
+      ct = 3
+      if (natoms .eq. 1) ct = 0
       call chkdim('verlet1','nmax',nmax,natoms,1)
 
 C Define constants and conversion factors .....................................
@@ -1630,9 +1644,9 @@ C Kinetic energy of atoms
 
 C Instantaneous temperature (Kelvin)
       if (iunit .eq. 1) then
-        temp = 2.0d0*kin/(3.0d0*natoms-3)/8.617d-5
+        temp = 2.0d0*kin/(3.0d0*natoms-ct)/8.617d-5
       else
-        temp = 2.0d0*kin/(3.0d0*natoms-3)/8.617d-5/eV
+        temp = 2.0d0*kin/(3.0d0*natoms-ct)/8.617d-5/eV
       endif
 
 C .....................
@@ -1695,7 +1709,7 @@ C nmax = maximum number of atoms
       parameter (nmax = 2000)
  
       integer
-     .  i,ia
+     .  ct,i,ia
 
       double precision
      .  accold(3,nmax),Ang,
@@ -1706,9 +1720,11 @@ C nmax = maximum number of atoms
 C ........................
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
-        write(6,*) 'npr: Wrong iunit option;  must be 1 or 2'
+        write(6,*) 'verlet2: Wrong iunit option;  must be 1 or 2'
         stop
       endif
+      ct = 3
+      if (natoms .eq. 1) ct = 0
       call chkdim('verlet2','nmax',nmax,natoms,1)
 
 
@@ -1792,9 +1808,9 @@ C Kinetic energy of atoms
 
 C Instantaneous temperature (Kelvin)
       if (iunit .eq. 1) then
-        temp = 2.0d0*kin/(3.0d0*natoms-3)/8.617d-5
+        temp = 2.0d0*kin/(3.0d0*natoms-ct)/8.617d-5
       else
-        temp = 2.0d0*kin/(3.0d0*natoms-3)/8.617d-5/eV
+        temp = 2.0d0*kin/(3.0d0*natoms-ct)/8.617d-5/eV
       endif
 
 C .....................

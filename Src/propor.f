@@ -1,3 +1,5 @@
+C $Id: propor.f,v 1.3 1999/03/11 19:26:35 ordejon Exp $
+
       LOGICAL FUNCTION PROPOR( N, A, B, TOL, AOVERB )
 C **********************************************************************
 C Checks if two vectors are proportional within a tolerance.
@@ -10,12 +12,14 @@ C **********************************************************************
       DOUBLE PRECISION  A(N), AOVERB, B(N), BMAX, TOL
 
       BMAX = 0.D0
+      IMAX = 0
       DO 10 I = 1,N
         IF ( ABS(B(I)) .GT. BMAX ) THEN
           IMAX = I
           BMAX = ABS(B(I))
         ENDIF
    10 CONTINUE
+      IF (IMAX .EQ. 0) STOP 'propor: ERROR:  IMAX = 0'
 
       PROPOR = .TRUE.
       IF (BMAX .EQ. 0.D0) THEN

@@ -2,31 +2,6 @@
 c
 c     Shows fdf capabilities..
 c
-c $Id: sample.f,v 1.6 1997/04/02 17:31:57 wdpgaara Exp $
-c-------
-c $Log: sample.f,v $
-c Revision 1.6  1997/04/02 17:31:57  wdpgaara
-c Modifications to support change to fdf_block. Minor cosmetic
-c improvements.
-c
-c Revision 1.5  1997/03/20 17:38:26  wdpgaara
-c Support for declarations file.
-c
-c Revision 1.4  1997/03/03 08:33:23  wdpgaara
-c Fixed a bug in fdf_physical (the default value was always used...)
-c fdf_setdebug is now called from fdf_init: it looks for fdf-debug in the
-c fdf file itsel.
-c Added fdf_enabled and fdf_shutdown.
-c Removed fdf_unit.
-c Removed some unused variables.
-c
-c Revision 1.3  1997/02/03 15:40:30  wdpgaara
-c Version 0.6 of fdf package.
-c
-c Revision 1.2  1997/01/03 19:44:10  wdpgaara
-c Adapted to the new version of fdf.
-c
-c-------
 
       implicit none
       integer  maxa
@@ -42,6 +17,8 @@ c-------
       include 'fdfdefs.h'
 c
       call fdf_init('sample.fdf','sample.out')
+
+      if (fdf_defined('new-style')) write(6,*) 'New-style stuff'
 
       na_default = 0
       na = fdf_integer('NumberOfAtoms', na_default )

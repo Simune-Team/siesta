@@ -1,23 +1,26 @@
-      subroutine bands( no, nspin, maxno, maxo, maxk,
-     .                  numh, listh, H, S, xij, maxuo, indxuo,
-     .                  ef, writeb, nk, kpoint, ek )
+C $Id: bands.f,v 1.10 1999/05/25 13:56:03 ordejon Exp $
+
+      subroutine bands( no, nspin, maxspn, maxuo, maxno, maxk,
+     .                  numh, listh, H, S, ef, xij, indxuo,
+     .                  writeb, nk, kpoint, ek )
 C *********************************************************************
 C Finds band energies at selected k-points.
-C Written by J.Soler, August 1997.
+C Written by J.Soler, August 1997 and August 1998.
 C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
-C integer nspin               : Spin polarizations (1 or 2)
+C integer nspin               : Number of spin components
+C integer maxspn              : Second dimension of ek
 C integer maxno               : Maximum number of orbitals interacting  
 C                               with any orbital
-C integer maxo                : Maximum number of basis  orbitals
 C integer maxk                : Last dimension of kpoint and ek
 C integer numh(no)            : Number of nonzero elements of each row 
 C                               of hamiltonian matrix
 C integer listh(maxno,no)     : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C real*8  H(maxno,maxo,nspin) : Hamiltonian in sparse form
-C real*8  S(maxno,maxo)       : Overlap in sparse form
-C real*8  xij(3,maxno,maxo)   : Vectors between orbital centers (sparse)
+C real*8  H(maxno,maxuo,nspin): Hamiltonian in sparse form
+C real*8  S(maxno,maxuo)      : Overlap in sparse form
+C real*8  ef                  : Fermi energy
+C real*8  xij(3,maxno,maxuo)  : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C integer maxuo               : First dimension of ek
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
@@ -27,10 +30,10 @@ C                               nuo the number of orbitals in unit cell
 C real*8                      : Fermi energy
 C logical writeb              : This routine must write bands?
 C *************************** INPUT OR OUTPUT *************************
-C integer nk                  : Number of band k points
-C real*8  kpoint(3,maxk)      : k point vectors
+C integer nk             : Number of band k points
+C real*8  kpoint(3,maxk) : k point vectors
 C *************************** OUTPUT **********************************
-C real*8  ek(maxuo,maxk,nspin): Eigenvalues
+C real*8  ek(maxuo,maxspn,maxk) : Eigenvalues
 C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
@@ -91,56 +94,56 @@ C If only given points (not lines) are desired, simply specify 1 as
 C the number of points along the line.
 C *********************************************************************
       implicit          none
-      integer           maxk, maxo, maxno, maxuo, nk, no, nspin
+      integer           maxk, maxno, maxspn, maxuo, nk, no, nspin
       integer           indxuo(no), listh(maxno,no), numh(no)
       logical           writeb
-      double precision  dot, ef, ek(maxuo,maxk,nspin),
-     .                  H(maxno,maxo,nspin), kpoint(3,maxk), 
-     .                  S(maxno,maxo), xij(3,maxno,maxo)
+      double precision  dot, ef, ek(maxuo,maxspn,maxk),
+     .                  H(maxno,maxuo,nspin), kpoint(3,maxk), 
+     .                  S(maxno,maxuo), xij(3,maxno,maxuo)
       character         paste*30
       external          cdiag, dot, io_assign, io_close,
-     .                  parse, paste, prmem, rdiag
+     .                  parse, paste, prmem, rdiag, redcel
       include          'fdf/fdfdefs.h'
 C *********************************************************************
 
-C  Internal variables 
+C Internal variables 
       include 'diagon.h'
+
       integer maxlin
       parameter (maxlin = 1000)
-
-      integer
-     .  i, ik, il, integs(4), io, ispin, iu, iuo, ix, 
-     .  j, jo, juo, lastc, lastk(maxlin), lc(0:3), muo(maxorb),
-     .  naux, ni, nkl, nlines, nn, nr, nuo, nv
-
-      double precision
-     .  alat, aux(maxaux), emax, emin, eV,
-     .  Haux(2,maxorb,maxorb), kxij,
-     .  path, pi, psi(2,maxorb,maxorb), rcell(3,3), reals(4),
-     .  Saux(2,maxorb,maxorb), ucell(3,3), values(4)
 
       character 
      .  fname*30, label(maxlin)*8, line*130, names*80,
      .  scale*30, sname*25, string*10
 
       logical
-     .  found, frstme
+     .  fixspin, found, frstme, getD
+
+      integer
+     .  ik, il, integs(4), io, ispin, iu, iuo, ix, 
+     .  lastc, lastk(maxlin), lc(0:3), 
+     .  mscell(3,3), muo(maxorb),
+     .  naux, ni, nkl, nlines, nn, nr, nuo, nv
+
+      double precision
+     .  alat, Dnew, e1, e2, efs(2), emax, emin, Enew, eV,
+     .  qk, qs(2), qtot, path, pi, rcell(3,3), reals(4),
+     .  scell(3,3), temp, ucell(3,3), values(4), wk
+
+C     Common auxiliary arrays shared with routine diagon
+      double precision
+     .  Haux(maxhs), Saux(maxhs), psi(maxpsi), aux(maxaux)
+      common /diacom/ Haux, Saux, psi, aux
 
       parameter ( eV = 1.d0 / 13.60580d0 )
-      save frstme
+      save frstme, getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data frstme /.true./
+      data getD /.false./
+      data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
 C Start time counter 
       call timer( 'bands', 1 )
-
-C Print array sizes 
-      if (frstme) then
-        call prmem( 0, 'bands', 'aux',  'd', maxaux          )
-        call prmem( 0, 'bands', 'Haux', 'd', 2*maxorb*maxorb )
-        call prmem( 0, 'bands', 'psi',  'd', 2*maxorb*maxorb )
-        call prmem( 0, 'bands', 'Saux', 'd', 2*maxorb*maxorb )
-        call prmem( 0, 'bands', ' ',    ' ', 0               )     
-      endif
+      pi = 4.d0 * atan(1.d0)
 
 C Find k points if they are not given in argument 
       if (nk .le. 0) then
@@ -160,21 +163,7 @@ C         Find scale used in k point data
           if (scale .eq. 'pi/a') then
             pi = 4.d0 * atan(1.d0)
           elseif (scale .eq. 'ReciprocalLatticeVectors') then
-            if ( fdf_block('LatticeVectors',iu) ) then
-              do i = 1,3
-                read(iu,*) (ucell(ix,i),ix=1,3)
-                do ix = 1,3
-                  ucell(ix,i) = alat * ucell(ix,i)
-                enddo
-              enddo
-            else
-              do i = 1,3
-                do ix = 1,3
-                  ucell(ix,i) = 0.d0
-                enddo
-                ucell(i,i) = alat
-              enddo
-            endif
+            call redcel( alat, ucell, scell, mscell )
             call reclat( ucell, rcell, 1 )
           else
             write(6,'(a,/,2a,/,a)')
@@ -265,7 +254,6 @@ C Find number of orbitals per unit cell and check argument sizes
         nuo = max( nuo, indxuo(io) )
       enddo
       call chkdim( 'bands', 'maxuo', maxuo, nuo, 1 )
-      call chkdim( 'bands', 'maxo',  maxo,  no,  1 )
 
 C Check internal dimensions 
       naux  = nuo*5
@@ -294,54 +282,28 @@ C Check indxuo
       enddo
 
 C Find the band energies 
-      do ispin = 1,nspin
-        do ik = 1,nk
-          do iuo = 1,nuo
-            do juo = 1,nuo
-              Saux(1,juo,iuo) = 0.d0
-              Saux(2,juo,iuo) = 0.d0
-              Haux(1,juo,iuo) = 0.d0
-              Haux(2,juo,iuo) = 0.d0
-            enddo
-          enddo
-          do io = 1,nuo
-            do j = 1,numh(io)
-              jo = listh(j,io)
-              iuo = indxuo(io)
-              juo = indxuo(jo)
-              kxij = dot( kpoint(1,ik), xij(1,j,io), 3 )
-              Saux(1,iuo,juo) = Saux(1,iuo,juo) +
-     .                          S(j,io) * cos(kxij)
-              Saux(2,iuo,juo) = Saux(2,iuo,juo) +
-     .                          S(j,io) * sin(kxij)
-              Haux(1,iuo,juo) = Haux(1,iuo,juo) +
-     .                          H(j,io,ispin) * cos(kxij)
-              Haux(2,iuo,juo) = Haux(2,iuo,juo) +
-     .                          H(j,io,ispin) * sin(kxij)
-            enddo
-          enddo
-          do iuo = 1,nuo
-            do juo = 1,iuo-1
-              Saux(1,juo,iuo) = 0.5d0 * ( Saux(1,juo,iuo) +
-     .                                    Saux(1,iuo,juo) )
-              Saux(1,iuo,juo) = Saux(1,juo,iuo)
-              Saux(2,juo,iuo) = 0.5d0 * ( Saux(2,juo,iuo) -
-     .                                    Saux(2,iuo,juo) )
-              Saux(2,iuo,juo) = -Saux(2,juo,iuo)
-              Haux(1,juo,iuo) = 0.5d0 * ( Haux(1,juo,iuo) +
-     .                                    Haux(1,iuo,juo) )
-              Haux(1,iuo,juo) = Haux(1,juo,iuo)
-              Haux(2,juo,iuo) = 0.5d0 * ( Haux(2,juo,iuo) -
-     .                                    Haux(2,iuo,juo) )
-              Haux(2,iuo,juo) = -Haux(2,juo,iuo)
-            enddo
-            Saux(2,iuo,iuo) = 0.d0
-            Haux(2,iuo,iuo) = 0.d0
-          enddo
-          call cdiag( Haux, maxorb, Saux, maxorb, nuo,
-     .                ek(1,ik,ispin), psi, maxorb, aux )
-        enddo
-      enddo
+      if (nspin.le.2) then
+c fixspin and qs are not used in diagk, since getD=.false. ...
+        fixspin = .false.
+        qs(1)=0.0d0
+        qs(2)=0.0d0
+c ...
+        call diagk( nspin, nuo, no, maxspn, maxuo, maxno, maxno, 
+     .              numh, listh, numh, listh, H, S,
+     .              getD, fixspin, qtot, qs, temp, e1, e2, 
+     .              xij, indxuo, nk, kpoint, wk,
+     .              ek, qk, Dnew, Enew, ef, efs,
+     .              Haux, Saux, psi, Haux, Saux, aux )
+      elseif (nspin.eq.4) then
+        call diag2k( nuo, no, maxuo, maxno, maxno, 
+     .               numh, listh, numh, listh, H, S,
+     .               getD, qtot, temp, e1, e2,
+     .               xij, indxuo, nk, kpoint, wk,
+     .               ek, qk, Dnew, Enew, ef,
+     .               Haux, Saux, psi, Haux, Saux, aux )
+      else
+        stop 'bands: ERROR: incorrect value of nspin'
+      endif
 
 C Write bands 
       if (writeb) then
@@ -365,10 +327,10 @@ C       Find and write the ranges of k and ek
      .      path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
-          do ispin = 1,nspin
+          do ispin = 1,min(nspin,2)
             do io = 1, nuo
-              emax = max( emax, ek(io,ik,ispin) )
-              emin = min( emin, ek(io,ik,ispin) )
+              emax = max( emax, ek(io,ispin,ik) )
+              emin = min( emin, ek(io,ispin,ik) )
             enddo
           enddo
         enddo
@@ -376,15 +338,15 @@ C       Find and write the ranges of k and ek
         write(iu,*) emin/eV, emax/eV
 
 C       Write eigenvalues
-        write(iu,*) nuo, nspin, nk
+        write(iu,*) nuo, min(nspin,2), nk
         path = 0.d0
         do ik = 1,nk
           if (ik .gt. 1)
      .      path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
-          write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
-     .      path, ((ek(io,ik,ispin)/eV,io=1,nuo),ispin=1,nspin)
+          write(iu,'(f10.6,10f12.5,/,(10x,10f12.5))')
+     .      path, ((ek(io,ispin,ik)/eV,io=1,nuo),ispin=1,min(nspin,2))
         enddo
 
 C       Write abscisas of line ends and their labels

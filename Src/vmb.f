@@ -1,3 +1,5 @@
+C $Id: vmb.f,v 1.5 1999/02/26 14:39:35 wdpgaara Exp $
+
       subroutine vmb(nat,ttemp,mass,va)
 C *************************************************************************
 C This routine creates a velocity distribution according to the
@@ -50,28 +52,30 @@ C Loop over atoms to assing velocities .................
         va(2,i) = velo(iseed,ttemp,massi)
         va(3,i) = velo(iseed,ttemp,massi)
 
-	vtot(1) = vtot(1) + va(1,i)
-	vtot(2) = vtot(2) + va(2,i)
-	vtot(3) = vtot(3) + va(3,i)
+        vtot(1) = vtot(1) + va(1,i)
+        vtot(2) = vtot(2) + va(2,i)
+        vtot(3) = vtot(3) + va(3,i)
       enddo
 C ...............
-	
+        
 C Impose constraint on zero center of mass velocity ....................
       do i = 1,Nat
         do ix=1,3
           va(ix,i) = va(ix,i) - vtot(ix)/nat
-	enddo
+        enddo
       enddo
 C ...............
+
+      if (nat .le. 1) return
 
 C Correct velocity to exact temperature .....................
       call temp(2,Nat,mass,va,tempe)
 
       if (abs(tempe-ttemp) .ge. 1.e-4 .and. tempe .ge. 1.e-4) then
         do i = 1,Nat
-	  do ix=1,3
+          do ix=1,3
             va(ix,i) = va(ix,i) * dsqrt(ttemp/tempe)
-	  enddo
+          enddo
         enddo
       endif
 
@@ -116,7 +120,7 @@ C Internal variables .................
       
       external
      .  ran3
-	
+        
 C ...........
 
 C  For other distributions med may be different from cero.
@@ -127,7 +131,7 @@ C  conversion factor to bohr/fs
       var = var * 0.00172309
  
       arg1 = sqrt((-2.) * log(ran3(iseed)))
-	
+        
       arg2 = 2. * pi * ran3(iseed)
       gauss = arg1 * cos(arg2)
 

@@ -1,4 +1,6 @@
 c
+c Copyright Alberto Garcia, Jose Soler, 1996, 1997, 1998
+c
 c     Declarations for external fdf functions
 c
       integer fdf_integer

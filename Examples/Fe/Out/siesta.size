@@ -1,0 +1,88 @@
+
+C PRMEM: Memory for internal arrays in siesta
+C PRMEM:      siesta      auxpul       1.386 MBytes
+C PRMEM:      siesta        Dold       0.391 MBytes
+C PRMEM:      siesta        Dscf       0.391 MBytes
+C PRMEM:      siesta    Dscfsave       0.391 MBytes
+C PRMEM:      siesta        Eold       0.391 MBytes
+C PRMEM:      siesta         ebk       0.031 MBytes
+C PRMEM:      siesta          eo       0.284 MBytes
+C PRMEM:      siesta        Escf       0.391 MBytes
+C PRMEM:      siesta           H       0.391 MBytes
+C PRMEM:      siesta          H0       0.195 MBytes
+C PRMEM:      siesta       listh      33.525 MBytes
+C PRMEM:      siesta    listhold      33.525 MBytes
+C PRMEM:      siesta           S       0.195 MBytes
+C PRMEM:      siesta        xijo       0.586 MBytes
+C PRMEM:      siesta       Total      72.074 MBytes
+  
+C PRMEM:        atom       table       0.450 MBytes
+C PRMEM:        atom        tab2       0.448 MBytes
+C PRMEM:        atom     tab2pol       0.281 MBytes
+C PRMEM:        atom     tab2pol       0.280 MBytes
+C PRMEM:        atom     coretab       0.056 MBytes
+C PRMEM:        atom     corrtab       0.224 MBytes
+C PRMEM:        atom    chloctab       0.056 MBytes
+C PRMEM:        atom       Total       1.796 MBytes
+  
+C PRMEM:       matel         ILM       0.000 MBytes
+C PRMEM:       matel       ILMFF       0.035 MBytes
+C PRMEM:       matel        INDF       0.000 MBytes
+C PRMEM:       matel       INDFF       0.019 MBytes
+C PRMEM:       matel      INDFFR       0.035 MBytes
+C PRMEM:       matel      INDFFY       0.013 MBytes
+C PRMEM:       matel        IFFR       0.000 MBytes
+C PRMEM:       matel        DYDR       0.002 MBytes
+C PRMEM:       matel           F       0.267 MBytes
+C PRMEM:       matel         FFR       0.805 MBytes
+C PRMEM:       matel         FFQ       0.004 MBytes
+C PRMEM:       matel         FFY       0.070 MBytes
+C PRMEM:       matel          RI       0.001 MBytes
+C PRMEM:       matel           Y       0.001 MBytes
+C PRMEM:       matel       Total       1.252 MBytes
+  
+C PRMEM:      nlefsm        iano       0.004 MBytes
+C PRMEM:      nlefsm        iana       0.002 MBytes
+C PRMEM:      nlefsm       grSki       0.384 MBytes
+C PRMEM:      nlefsm        r2ki       0.004 MBytes
+C PRMEM:      nlefsm         Ski       1.280 MBytes
+C PRMEM:      nlefsm          Vi       0.080 MBytes
+C PRMEM:      nlefsm         xki       0.012 MBytes
+C PRMEM:      nlefsm         xno       0.008 MBytes
+C PRMEM:      nlefsm       Total       1.774 MBytes
+  
+C PRMEM:       DHSCF         AUX       0.041 MBytes
+C PRMEM:       DHSCF         DXA       0.008 MBytes
+C PRMEM:       DHSCF       ENDPH       0.021 MBytes
+C PRMEM:       DHSCF      ENDPHT       0.002 MBytes
+C PRMEM:       DHSCF       GRPHI       1.516 MBytes
+C PRMEM:       DHSCF        IDOP       0.032 MBytes
+C PRMEM:       DHSCF      INDEXP       2.287 MBytes
+C PRMEM:       DHSCF      INDPHT       0.228 MBytes
+C PRMEM:       DHSCF         IPA       0.001 MBytes
+C PRMEM:       DHSCF       IPHTY       0.000 MBytes
+C PRMEM:       DHSCF        ISTY       0.000 MBytes
+C PRMEM:       DHSCF      LASTXA       0.008 MBytes
+C PRMEM:       DHSCF      LISTPH       0.228 MBytes
+C PRMEM:       DHSCF      LSTPHT       0.228 MBytes
+C PRMEM:       DHSCF        NOTY       0.000 MBytes
+C PRMEM:       DHSCF         PHI       1.822 MBytes
+C PRMEM:       DHSCF        RCTY       0.001 MBytes
+C PRMEM:       DHSCF        DRHO       0.037 MBytes
+C PRMEM:       DHSCF      RHOATM       0.018 MBytes
+C PRMEM:       DHSCF      RHOPCC       0.000 MBytes
+C PRMEM:       DHSCF        VAUX       0.018 MBytes
+C PRMEM:       DHSCF         VNA       0.018 MBytes
+C PRMEM:       DHSCF        VSCF       0.037 MBytes
+C PRMEM:       DHSCF        XDOP       0.190 MBytes
+C PRMEM:       DHSCF      XGRPHI       4.549 MBytes
+C PRMEM:       DHSCF       Total      11.291 MBytes
+  
+C PRMEM:      diagon         aux       0.001 MBytes
+C PRMEM:      diagon        Haux       0.004 MBytes
+C PRMEM:      diagon         psi       0.004 MBytes
+C PRMEM:      diagon        Saux       0.004 MBytes
+C PRMEM:      diagon       Total       0.011 MBytes
+  
+C PRMEM:       Total       Total      88.199 MBytes
+  

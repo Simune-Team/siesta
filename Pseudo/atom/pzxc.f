@@ -73,7 +73,7 @@ C      Other variables converted into parameters by J.M.Soler
        PARAMETER ( CXF  = 1.25992104989487319D0 )
 
        integer isp
-       real*8 d, ex, ec, z, fz, fzp, rs, vxp, exp, beta, sb,
+       real*8 d, ex, ec, z, fz, fzp, rs, vxp, exp_var, beta, sb,
      $        alb, vxf, exf, sqrs, te, be, ecp, vcp, ecf, vcf,
      $        rslog
 
@@ -110,16 +110,16 @@ c      Find density and polarization
 
 C      Exchange
        VXP = CXP / RS
-       EXP = 0.75D0 * VXP
+       EXP_VAR = 0.75D0 * VXP
        IF (IREL .EQ. 1) THEN
          BETA = C014/RS
          SB = SQRT(1+BETA*BETA)
          ALB = LOG(BETA+SB)
          VXP = VXP * (-PFIVE + OPF * ALB / (BETA*SB))
-         EXP = EXP *(ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
+         EXP_VAR = EXP_VAR *(ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
        ENDIF
        VXF = CXF * VXP
-       EXF = CXF * EXP
+       EXF = CXF * EXP_VAR
 
 C      Correlation 
        IF (RS .GT. ONE) THEN  
@@ -142,14 +142,14 @@ C      Correlation
 
 C      Find up and down potentials
        IF (NSP .EQ. 2) THEN
-         EX    = EXP + FZ*(EXF-EXP)
+         EX    = EXP_VAR + FZ*(EXF-EXP_VAR)
          EC    = ECP + FZ*(ECF-ECP)
-         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP)
-         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP)
+         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP_VAR)
+         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP_VAR)
          VC(1) = VCP + FZ*(VCF-VCP) + (1-Z)*FZP*(ECF-ECP)
          VC(2) = VCP + FZ*(VCF-VCP) - (1+Z)*FZP*(ECF-ECP)
        ELSE
-         EX    = EXP
+         EX    = EXP_VAR
          EC    = ECP
          VX(1) = VXP
          VC(1) = VCP

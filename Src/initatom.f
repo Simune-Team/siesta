@@ -1,9 +1,6 @@
-      subroutine initatom(ns, na, izs, smass, lmxkbs, 
-     .                    lmaxs, maxl, lmax, 
-     .                    nzls, maxos, maxzet, zetmax, maxo, maxkb,
-     .                    rcls, contrf, isa, atm_label,
-     .                    overflow, omax, osmax, kbmax,
-     .                    nkbs, nos, qos,
+C $Id: initatom.f,v 1.11 1999/01/31 11:14:55 emilio Exp $
+
+      subroutine initatom(ns, na, maxo, maxkb, isa, overflow,
      .                    no, nokb, qtot, rmaxv, rmaxo, rmaxkb,
      .                    lasto, lastkb, iza, amass,
      .                    iaorb, iphorb, Datm, qa, iaKB, iphKB)
@@ -11,35 +8,16 @@ C *********************************************************************
 C Routine to initialize the Pseudopotentials and Atomic Orbitals,
 C and the atomic lists.
 C
-C Writen by J.Soler and P.Ordejon, August-October'96
+C Writen by J.Soler and P.Ordejon, August-October'96 
+C Strongly modified by D. Sanchez-Portal, Oct. 1998 
 C **************************** INPUT **********************************
 C integer ns                : Number of species
 C integer na                : Number of atoms
-C integer izs(ns)           : Atomic number of each species
-C real*8 smass(ns)          : Atomic mass of each species
-C integer maxl              : Maximum angular momentum for orbitals
-C integer maxos             : Maximum num. of basis orbs of any atom
-C integer maxzet            : Maximum number of orbital zetas
 C integer maxo              : Maximum number of orbitals
 C integer maxkb             : Maximum number of KB projectors
 C integer isa(na)           : Species index of each atom
-C character*20 atm_label(ns): Label for the atomic-files (i.e. pseudopot.
-C                              files, input/output basis-sets files, etc..)
 C **************************** OUTPUT *********************************
-C integer lmxkbs(ns)        : L cutoff for KB projectors for each species
-C integer lmaxs(ns)         : L cutoff for orbitals for each species
-C integer nzls(0:maxl,ns)   : Number of zetas per L, for each species
-C real*8 rcls(maxzet,0:maxl,ns) 
-C                           : Cutoff radius for each atomic orbital
-C real*8 contrf(maxzet,0:maxl,ns)
-C                           : Scaling factor for each atomic orbital
 C logical overflow          : True if dimensions are too small
-C integer omax              : Actual value needed for maxo
-C integer osmax             : Actual value needed for maxos
-C integer kbmax             : Actual value needed for maxkb
-C integer nkbs(ns)          : Tot num of KB projectors for each species
-C integer nos(ns)           : Tot num of orbitals for each species
-C real*8 qos(maxos,ns)      : Neutral atom occup. of each orbital
 C integer no                : Total number of orbitals
 C integer nokb              : Total number of KB projectors
 C real*8 qtot               : Total number of electrons
@@ -61,64 +39,80 @@ C *********************************************************************
       implicit none
 
       integer
-     .  maxkb, maxl, maxo, maxos, maxzet, na, no, nokb, ns,
-     .  kbmax, omax, osmax, lmax, zetmax
+     .  maxkb, maxo, na, no, nokb, ns
 
       integer
      .  iaKB(*), iaorb(*), iphKB(*), iphorb(*), 
-     .  isa(na), iza(na), izs(ns), 
-     .  lastkb(0:na), lasto(0:na), lmaxs(ns), 
-     .  lmxkbs(ns), nkbs(ns), nos(ns),
-     .  nzls(0:maxl,ns)
+     .  isa(na), iza(na),
+     .  lastkb(0:na), lasto(0:na)
 
       double precision
-     .  amass(na), contrf(maxzet,0:maxl,ns), Datm(*), epskb,
-     .  qa(na), qos(maxos,ns), qtot,
-     .  rcls(maxzet,0:maxl,ns), rcut, rmaxv, rmaxo, rmaxkb, 
-     .  smass(ns)
+     .  amass(na), Datm(*), epskb,
+     .  qa(na), qtot,
+     .  rcut, rmaxv, rmaxo, rmaxkb 
 
       logical
      .  overflow
-
-      character 
-     .   atm_label(ns)*20
 
       external
      .  atom, chkdime, epskb, rcut
 
 C Internal variables ...................................................
+      include 'atom.h'
+      integer
+     .  ia, io, is, js, kbmax, nkba, noa, omax, maxos 
+         parameter (maxos=2*nzetmx*lmx2)
 
       integer
-     .  ia, io, is, js, nkba, noa, maxzetout
+     . lmxkbs(nsmax), lmaxs(nsmax), nzls(0:lmaxd,nsmax),
+     . izs(nsmax), polorb(lmaxd,nsmax),
+     . lsemic(nsmax),nkbs(nsmax),nos(nsmax)
+
+      double precision
+     . contrf(nzetmx,0:lmaxd,nsmax), rcls(nzetmx,0:lmaxd,nsmax),
+     . smass(nsmax), charge(nsmax), qos(maxos,nsmax)
+
+      logical
+     .  semic(nsmax)
+
+      character
+     .   atm_label(nsmax)*20, basistype(nsmax)*10
+
+C ...................
+
 C ...................
 
       overflow = .false.
       kbmax = 1
       omax = 1
-      osmax = 1
 
-c Initialize pseudopotentials and atomic orbitals
+c Reading input for the pseudopotentials and atomic orbitals 
+
+       write(6,'(/2a)') 
+     .   'initatom: Reading input for the pseudopotentials ',
+     .   'and atomic orbitals'
+
+       call read_basis(ns,izs,lmxkbs,lmaxs,nzls,rcls,contrf,
+     .   atm_label,polorb,semic,lsemic,charge,smass,basistype)
+
+C .....................
+c Initialize pseudopotentials and atomic orbitals 
       do is = 1,ns
-        call atom( ns, izs(is), lmxkbs(is), lmaxs(is), maxl,
-     .             nzls(0,is), maxzet, maxzetout, rcls(1,0,is), 
-     .             contrf(1,0,is),
-     .             js, atm_label(is),  nkbs(is), nos(is), 
-     .             qos(1,is), maxos)
+        call atom( ns, izs(is), lmxkbs(is), lmaxs(is), 
+     .             nzls(0,is), rcls(1,0,is), contrf(1,0,is), 
+     .             atm_label(is), polorb(1,is), semic(is), lsemic(is),
+     .             charge(is), smass(is), basistype(is), 
+     .             js, nkbs(is), nos(is), qos(1,is))
         if (js .ne. is)
      .    stop 'initatom: Unexpected species index returned by atom'
-        call chkdime(maxl, lmaxs(is), overflow, lmax)
-        call chkdime(maxos, nos(is), overflow, osmax )
-        call chkdime(maxzet,maxzetout, overflow, zetmax)
       enddo 
-      if (overflow) return
 
 c Print some information on atomic orbitals
-      if (.not.overflow) then
         do is = 1,ns
 c         write(6,'(/,a,2i4)') 'initatom: is,iz =', is, izs(is)
           do io = 1,nos(is)
 c           write(6,'(a,i4,2f12.6)') 'initatom: io,rcut,q   =',
-c    .        io, rcut(is,io), qos(io,is)
+c    .        io, rcut(is,io), qos(io,is) 
           enddo
 c         write(6,'(a,i4,2f12.6)')   'initatom: io,rcut     =',
 c    .       0, rcut(is,0)
@@ -127,7 +121,6 @@ c           write(6,'(a,i4,2f12.6)') 'initatom: io,rcut,eps =',
 c    .       -io, rcut(is,-io), epskb(is,-io)
           enddo
         enddo
-      endif
 
 c Initialize atomic lists
       no = 0

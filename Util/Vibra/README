@@ -1,0 +1,63 @@
+
+
+
+INSTALLATION
+
+There are three directories in this package:
+
+Vibra:       Contains the sources of the codes
+Docs:        Contains a user guide of the VIBRA package
+Examples:    Contains several examples of input and output files
+
+
+
+There are two programs included in this package (in Vibra directory):
+
+* fcbuild.f
+  Builds the supercell, in FDF format, to be read by your Forces
+  program (typically, SIESTA)
+
+* vibra.f 
+  Reads the force constants matrix, calculated by your Forces program
+  (typically SIESTA), and computes the phonon spectrum.
+
+Makefile will generate the executables for both programs.
+Use make if you wish to compile both codes. 
+Use make fcbuild if you only wish to compile fcbuild
+Use make vibra if you only wish to compile vibra
+
+The Makefile is prepared to work in several architectures and operating
+systems, with a minimum of tuning required from the user.  The following
+options are defined in Vibra/Sys directory:
+
+         linux.make     (for Linux systems),
+         osf.make       (for DEC alphas), 
+         osfdxml.make   (for DEC alphas with the dxml math library), 
+         ibm.make       (for IBM RISC), 
+         ibmessl.make   (for IBM RISC with the ESSL math library), 
+         freebsd.make   (for FreeBSD), 
+         sgi.make       (for SGI) 
+         cray.make      (for Cray machines).
+         hp.make        (for HP-UX).
+         unknown.make   (for the most general options and codes).
+
+If none of these fit your needs, you will have to build one by your own. 
+Once you have decided which *.make you want to use, you just need to define 
+an environment variable in your shell; for instance, for Linux:
+
+within sh, ksh or bash:
+    $ ARCH=linux ; export ARCH 
+
+within csh:
+    $ setenv ARCH linux 
+
+Usually it is better to define these variables in your .login, .profile or 
+.cshrc, so that they are defined whenever you log in. 
+Then, just compile using the make utility, as usual.
+
+
+Please send bug reports and comments to ordejon@condmat01.geol.uniovi.es
+
+
+
+

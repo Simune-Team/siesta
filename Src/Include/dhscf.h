@@ -1,3 +1,5 @@
+C $Id: dhscf.h,v 1.3 1999/01/31 11:56:51 emilio Exp $
+
 C DHSCF: Dimension parameters for DHSCF
 C INTEGER MAXA   : MAXimum number of Atoms
 C INTEGER MAXAUX : MAXimum size of AUXiliary array

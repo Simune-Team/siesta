@@ -1,3 +1,5 @@
+C $Id: ylmexp.f,v 1.5 1999/01/31 11:45:18 emilio Exp $
+
       SUBROUTINE YLMEXP( LMAX, RLYLM, FUNC, IS, IO, IR1, NR, RMAX,
      .                   NY, ILM, FLM )
 C *******************************************************************
@@ -43,8 +45,8 @@ C -------------------------------------------------------------------
 
 C Dimension parameters for internal variables -----------------------
       INTEGER MAXL, MAXLM, MAXSP
-      PARAMETER ( MAXL  = 6 )
-      PARAMETER ( MAXLM = MAXL * MAXL )
+      PARAMETER ( MAXL  = 8 )
+      PARAMETER ( MAXLM = (MAXL+1) * (MAXL+1) )
       PARAMETER ( MAXSP = (MAXL+1) * (2*MAXL+1) )
 C -------------------------------------------------------------------
 

@@ -1328,8 +1328,8 @@ C     .. Scalar Arguments ..
       integer job, lda, n
 C     ..
 C     .. Array Arguments ..
-      double precision a(lda,1), b(1)
-      integer ipvt(1)
+      double precision a(lda,*), b(*)
+      integer ipvt(*)
 C     ..
 C     .. Local Scalars ..
       double precision t
@@ -1415,7 +1415,7 @@ C     .. Scalar Arguments ..
       integer inc, n
 C     ..
 C     .. Array Arguments ..
-      double precision array(1)
+      double precision array(*)
 C     ..
 C     .. Local Scalars ..
       integer i, ix

@@ -1,29 +1,16 @@
-%siesta.tex
-%
-%   Pablo Ordejon. Dec 21, 1996
-%   Jose M. Soler. Jul 15, 1997
-%   Emilio Artacho Jul 21, 1997
-%   Emilio Artacho Aug 16, 1997
-%   Jose M. Soler  Aug 25, 1997
-%   Jose M. Soler  Dec 11, 1997
-%   Emilio Artacho Dec 22, 1997
-%   Pablo Ordejon  Dec 23, 1997
-%   Emilio Artacho Dec 27, 1997
-%   Jose M. Soler  Feb 13, 1998
-%
-%   Manual for the SIESTA program
+% $Id: siesta.tex,v 1.84 1999/05/26 09:50:02 emilio Exp $ 
+ 
+% Manual for the SIESTA program
 
-
-%\documentstyle[twocolumn,prb,aps]{revtex}
-%\documentstyle[prb,aps]{revtex}
 \documentstyle[11pt]{article}
-%\documentstyle{article}
 
 \tolerance 10000
 \textheight 22cm
 \textwidth 16cm
 \oddsidemargin 1mm
 \topmargin -15mm
+
+\makeindex
 
 \baselineskip=14pt
 \parskip 5pt
@@ -43,15 +30,11 @@
 
 \vspace{3cm}
 
-{\Huge {\bf SIESTA}}
-
-\vspace{1cm}
-
-{\Huge 0.9}
+{\Huge {\bf SIESTA 0.12}}
 
 \vspace{3cm}
 
-{\Large {\it May 7, 1998} }
+{\Large {\it May 26, 1999} }
 
 \vspace{3cm}
 
@@ -100,7 +83,7 @@ Universidad del Pa\'{\i}s Vasco, 48080 Bilbao, Spain}
 
 \section{INTRODUCTION}
 
-SIESTA (Spanish Initiative for Electronic Simulations with
+SIESTA\index{SIESTA} (Spanish Initiative for Electronic Simulations with
 Thousands of Atoms) is a computer code to perform electronic
 structure calculations and {\it ab initio} molecular dynamics
 simulations of molecules and solids.
@@ -129,10 +112,14 @@ time and memory scale linearly with the number of atoms.
 Simulations with several hundred atoms are feasible with
 modest workstations.
 \item
-It is written in Fortran77, with some widespread extensions over
+It is written in Fortran 77, with some widespread extensions over
 the ANSI standard. No parallel version is yet available at this
 moment. Accessory tools like shell scripts and makefiles are now
 available only for the UNIX operating system.
+
+WARNING: The next version of SIESTA (version 0.13) will be partially
+or totally written in Fortran 90/95, since we consider that
+f90 compilers are already available for any platform.
 \end{itemize}
 
 It routinely provides:
@@ -158,7 +145,7 @@ It also allows (though not all options are compatible):
 \begin{itemize}
 
 \item
-P. Ordejon, D. A. Drabold, M. P. Grumbach and R. M. Martin, 
+P. Ordej\'on, D. A. Drabold, M. P. Grumbach and R. M. Martin, 
 Phys. Rev. B {\bf 48}, 14646 (1993); {\bf 51} 1456 (1995),
 and references therein.
 
@@ -166,16 +153,23 @@ Description of the order-{\it N}
 methods implemented in this code.
 
 \item
-P. Ordejon, E. Artacho and J. M. Soler,
+P. Ordej\'on, E. Artacho and J. M. Soler,
 Phys. Rev. B {\bf 53}, 10441, (1996).
 
 Description of a previous version of this program.
 
 \item
-D. Sanchez-Portal, P. Ordejon, E. Artacho and J. M. Soler,
+D. S\'anchez-Portal, P. Ordej\'on, E. Artacho and J. M. Soler,
 Int. J. Quantum Chem., {\bf 65}, 453 (1997).
 
 Most updated description of the present code.
+
+\item
+E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
+J. M. Soler, cond-mat/9904159 (1999).
+
+Description of numerical atomic orbitals used in the code,
+and brief review of applications as of March 1999.
 
 \end{itemize}
 
@@ -183,7 +177,7 @@ This is a short description of the compilation procedures
 and of the datafile format for the SIESTA code.
 This version is a very preliminary release of the code.
 Please report problems, bugs and suggestions to
-siesta@polar.fmc.uam.es
+{\bf siesta@polar.fmc.uam.es}
 
 
 
@@ -195,81 +189,113 @@ and run the program for the first example, the water molecule.
 We assume that you use UNIX and that you will install SIESTA in 
 $\sim$/siesta, where $\sim$ indicates your home directory.
 The commands that you must type are in {\tt typewriter} font, 
-and {\tt \#} indicates the prompt.
+and {\tt \$} indicates the prompt.
 
 The first two steps depend on the shell you use:
 
-{\tt \# SIESTA\_DIR=$\sim$/siesta/Src ; export SIESTA\_DIR}
+{\tt \$ SIESTA\_DIR=$\sim$/siesta/Src ; 
+export SIESTA\_DIR}\index{SIESTA\_DIR@{\tt SIESTA\_DIR}}
 
-{\tt \# ARCH=unknown ; export ARCH}
+{\tt \$ SIESTA\_SYS=unknown ; 
+      export SIESTA\_SYS}\index{SIESTA\_SYS@{\tt SIESTA\_SYS}}
 \hspace{1cm} within sh, ksh or bash,
 
+\noindent
 or alternatively: 
 
 \vspace{1pt}
-{\tt \# setenv SIESTA\_DIR $\sim$/siesta/Src}
+{\tt \$ setenv SIESTA\_DIR $\sim$/siesta/Src}
 
-{\tt \# setenv ARCH unknown}
-\hspace{2.5cm} if you use csh.
+{\tt \$ setenv SIESTA\_SYS unknown}
+\hspace{2.5cm} if you use csh or descendants.
 
-This specifies where is the SIESTA program and which is 
+\noindent
+This specifies where the SIESTA program is and  
 the system architecture (see the compilation section for
-other alternatives). {\bf You must type these two lines
+better alternatives for production runs). {\bf You must type these two lines
 each time you log in} or, alternatively, you may put them
 in your .profile or .login file.
 
-{\tt \# cd}
+{\tt \$ cd}
 
+\noindent
 Change to your home directory, where you will install SIESTA.
 If you have received the program by Email, use your editor to
 cut below the line of dots and make a file called siesta.uu
 with that part of the note (if you got the program by ftp,
 skip this step):
 
-{\tt \# uudecode siesta.uu}
+{\tt \$ uudecode siesta.uu}
 
-Now you should have a file $\sim$/siesta.tar.Z
+\noindent
+Now you should have a file $\sim$/siesta.tar.Z or $\sim$/siesta.tar.gz
 
-{\tt \# uncompress siesta.tar}
+{\tt \$ uncompress siesta.tar} , if $\sim$/siesta.tar.Z , or
 
-{\tt \# tar -xf siesta.tar}
+{\tt \$ gunzip siesta.tar.gz} . 
 
+\noindent
+Then,
+
+{\tt \$ tar -xf siesta.tar}
+
+\noindent
 Now you should have a new directory: $\sim$/siesta
 
-{\tt \# cd siesta}
+{\tt \$ cd siesta}
 
-{\tt \# mkdir h2o}
+Before SIESTA can be built for the first time, a few 
+standard parameter files need to be copied 
+from $\sim$/siesta/Src/Include to $\sim$/siesta/Src :
 
-Create a new pristine directory (to do it inside the siesta
-directory is optional). You need not open a new directory
+{\tt \$ cp Src/Include/*.h Src}
+
+Create a new pristine directory. It is recommended not to
+do it within the siesta directory, keeping siesta with just
+the distribution files. This way, a SIESTA upgrade is done
+easily by replacing the whole siesta directory by a new one.
+
+{\tt cd ~/mysystems} (for example)
+
+\noindent
+You need not open a new directory
 for each new system you try, but it is a good practice.
 
-{\tt \# cd h2o}
+{\tt \$ mkdir h2o}
 
-{\tt \# cp $\sim$/siesta/Util/msiesta .}
+{\tt \$ cd h2o}
 
-{\tt \# cp $\sim$/siesta/Util/rsiesta .}
+{\tt \$ cp $\sim$/siesta/Util/msiesta .}\index{msiesta@{\tt msiesta}}
 
-{\tt \# cp $\sim$/siesta/Util/rrsiesta .}
+{\tt \$ cp $\sim$/siesta/Util/rsiesta .}\index{rsiesta@{\tt rsiesta}}
 
-{\tt \# cp $\sim$/siesta/Util/prdate .}
+{\tt \$ cp $\sim$/siesta/Util/rrsiesta .}\index{rrsiesta@{\tt rrsiesta}}
 
-Get four script files that will help you to compile and
+{\tt \$ cp $\sim$/siesta/Util/prdate .}\index{prdate@{\tt prdate}}
+
+\noindent
+Get the four script\index{scripts} files that will help you to compile and
 run the program (if you know the script language, have a
 look at them; they are rather simple). Alternatively, you
 may copy them once and for all to a directory included in 
-your path, or add $\sim$/siesta/Util to your path.
+your path, or add $\sim$/siesta/Util to your path, or introduce
+symbolic links ({\tt ln -s}) to these script files into a
+directory included in your path.
+
 The last script is called by SIESTA to print the date, time
 and hostname at the beginning and end of each run.
 To see how it works, write
 
-{\tt \# prdate my\_test}
+{\tt \$ prdate my\_test .}
 
-{\tt \# cp $\sim$/siesta/Examples/H2O/h2o.fdf .}
+\noindent
+As input file retrieve the one provided in the Examples directory:
 
-{\tt \# cat h2o.fdf}
+{\tt \$ cp $\sim$/siesta/Examples/H2O/h2o.fdf}
 
-This is the data file. 
+{\tt \$ cat h2o.fdf}
+
+\noindent
 It looks like this:
 \begin{verbatim}
 ----------------------------------------------------------
@@ -283,7 +309,7 @@ NumberOfSpecies     2
  2  1  H
 %endblock ChemicalSpeciesLabel
 
-AtomicCoordinatesFormat  NotScaledCartesianAng
+AtomicCoordinatesFormat  Ang
 %block AtomicCoordinatesAndAtomicSpecies
  0.000  0.000  0.000  1
  0.757  0.586  0.000  2
@@ -293,22 +319,25 @@ AtomicCoordinatesFormat  NotScaledCartesianAng
 \end{verbatim}
 
 Now we will generate the required pseudopotentials.
+\index{pseudopotential!example generation}
 We are going to streamline this process for this time, but
 you must realize that this is a tricky business that you 
 must master before using SIESTA responsibly. Every 
 pseudopotential must be thoroughly checked before using it.
 
-{\tt \# cd $\sim$/siesta/Pseudo/atom}
+{\tt \$ cd $\sim$/siesta/Pseudo/atom}
 
-{\tt \# make}
+{\tt \$ make}
 
+\noindent
 Now the pseudopotential-generation program, called atm, 
 should be compiled.
 
-{\tt \# cd Samples}
+{\tt \$ cd Samples}
 
-{\tt \# cat o.tm2.inp}
+{\tt \$ cat o.tm2.inp}
 
+\noindent
 This is the input file, for the oxygen pseudopotential, 
 that we have prepared for you. 
 It is in a standard (but obscure) format that
@@ -328,23 +357,27 @@ you will need to understand in the future:
 ------------------------------------------------------------
 \end{verbatim}
 
-{\tt \# pg.sh o.tm2.inp}
+{\tt \$ pg.sh o.tm2.inp}
 
+\noindent
 Now there should be a new subdirectory called o.tm2 (o for o-xygen)
 
-{\tt \# cp o.tm2/VPSOUT $\sim$/siesta/h2o/O.vps}
+{\tt \$ cp o.tm2/VPSOUT $\sim$/siesta/h2o/O.vps}
 
-Copy the generated pseudopotential file to your working directory, 
+\noindent
+copies the generated pseudopotential file to your working directory, 
 changing its name to accommodate it to the SIESTA naming convention.
 
-{\tt \# pg.sh h.tm2.inp}
+{\tt \$ pg.sh h.tm2.inp}
 
-{\tt \# cp h.tm2/VPSOUT $\sim$/siesta/h2o/H.vps}
+{\tt \$ cp h.tm2/VPSOUT $\sim$/siesta/h2o/H.vps}
 
-Repeat the process for hydrogen.
+\noindent
+repeats the process for hydrogen.
 
-{\tt \# cd $\sim$/siesta/h2o}
+{\tt \$ cd $\sim$/siesta/h2o}
 
+\noindent
 Return to your working directory, where there should now be
 the following files:
 \begin{itemize}
@@ -357,8 +390,9 @@ the following files:
 \item H.vps
 \end{itemize}
 
-{\tt \# msiesta init}
+{\tt \$ msiesta init}
 
+\noindent
 Make (compile) SIESTA for the first time. 
 The compiled program
 is in the working directory and is called simply siesta.
@@ -366,31 +400,41 @@ If there is a problem at this
 stage it may be related to the particulars of your operating system.
 See 'Compiling the program' to adapt SIESTA to your system.
 
-{\tt \# rrsiesta h2o}
+{\tt \$ rrsiesta h2o}
 
+\noindent
 Really-run siesta for h2o. This shell script invokes the
 rsiesta (run siesta) and msiesta (make siesta) scripts, 
 alternatively running the program, readjusting the array dimensions,
 and recompiling until the program really runs up to the end
 (actually, both previous steps could be done in one
-step: {\tt \# rrsiesta h2o init}).
+step: {\tt \$ rrsiesta h2o init}).
 Now there should be the following new files:
 \begin{itemize}
-\item siesta.h, dhscf.h, and diagon.h
- (include files with array-dimension parameters)
-\item out.fdf
+\item siesta.h,\index{siesta.h} dhscf.h,\index{dhscf.h} 
+diagon.h,\index{diagon.h} diagnc.h,\index{diagnc.h} 
+ordern.h,\index{ordern.h} atom.h,\index{atom.h} ranger.h,\index{ranger.h},
+and matel.h\index{matel.h} (include files with array-dimension parameters)
+\item out.fdf\index{out.fdf}
  (contains all the data used, explicit or default-ed) 
-\item O.vlocal and H.vlocal
+\item O.vlocal and H.vlocal\index{species.vlocal@{\it species.}vlocal}
  (the local pseudopotentials used)
-\item O.PAO.basis and H.PAO.basis
+\item O.PAO.basis and 
+H.PAO.basis\index{species.PAO.basis@{\it species.}PAO.basis}
  (the numerical basis orbitals used)
-\item siesta.size
+\item siesta.size\index{siesta.size}
  (contains the memory use of some subroutines and arrays)
-\item h2o.XV
+\item h2o.XV\index{Systemname.XV@{\it Systemname.}XV}
  (contains the final positions and velocities)
-\item h2o.DM
+\item h2o.DM\index{Systemname.DM@{\it Systemname.}DM}
  (contains the density matrix to allow a restart)
-\item h2o.out
+\item h2o.ANI\index{Systemname.ANI@{\it Systemname.}.ANI}
+ (contains the coordinates of every MD step, in this case only one)
+\item h2o.FA\index{Systemname.FA@{\it Systemname.}.FA}
+ (contains the forces on the atoms)
+\item h2o.EIG\index{Systemname.EIG@{\it Systemname.}.EIG}
+ (contains the eigenvalues of the Kohn-Sham Hamiltonian)
+\item h2o.out\index{Systemname.out@{\it Systemname.}out}
  (standard output)
 \end{itemize}
 
@@ -403,23 +447,28 @@ studying the input-explanation section and start changing them.
 
 Now look at the other data files in $\sim$/siesta/Examples
 (all with and .fdf suffix) choose one and repeat the process for it.
-You need not recompile the entire program: simply use rrsiesta.
+You need not recompile the entire program: simply use 
+rrsiesta.\index{rrsiesta@{\tt rrsiesta}}
 
 
 
 \section{PSEUDOPOTENTIAL GENERATION}
+
+\index{pseudopotential!generation}
 
 The data of the atomic pseudopotentials and the potential
 of the neutral atom are stored in binary files, and
 are read at the beginning of the execution, for each
 species defined in the input file. The data files must
 be named *.vps (or *.psatom.data), where * is the symbol of the
-element (H, C, Si,...) or any label (see the {\bf ChemicalSpeciesLabel}
+element (H, C, Si,...) or any label (see the 
+{\bf ChemicalSpeciesLabel}\index{ChemicalSpeciesLabel@{\bf 
+ChemicalSpeciesLabel}}
 descriptor below).
 
 These files are generated by a standard and {\bf completely independent}
 program. This program was {\bf not} written by us, but mainly by 
-Alberto Garcia, who also maintains it
+Alberto Garc\'{\i}a,\index{pseudopotential!atom program} who also maintains it
 (read siesta/Pseudo/atom/README for more complete authorship and 
 copyright acknowledgements).
 It is included (with permission) in siesta/Pseudo/atom only for
@@ -427,7 +476,7 @@ completeness. Its input and output is in a very standard format and,
 if you are already familiar with pseudopotential generation, you may want 
 to use your own programs instead. If you are not familiar, you should
 be {\bf very} careful before relying in a pseudopotential that you
-have generated, since {\bf all pseudopotentials should be thorougly
+have generated, since {\bf all pseudopotentials should be thoroughly
 tested} before using them. We refer you to the standard literature
 and to the siesta/Pseudo/atom/User.Guide.
 
@@ -442,8 +491,8 @@ and to the siesta/Pseudo/atom/User.Guide.
 \section{COMPILING THE PROGRAM}
 
 Usually you will compile and run the program using the
-shell scripts msiesta, rsiesta, rrsiesta, provided in
-directory siesta/Util, or other similar ones that you may write.
+shell scripts msiesta, rsiesta, and rrsiesta, provided in
+directory siesta/Util, or similar ones that you may write.
 However, we give you here a general description of how
 the siesta program is structured, how it determines the
 array dimensions it requires for each case, and how it
@@ -452,39 +501,50 @@ what is going on when you use rrsiesta, in order to help
 you to find a fix if something goes wrong.
 
 The compilation of the program is done using a Makefile
-that is provided with the code.
+that is provided with the code.\index{Makefile}
 This Makefile will generate the executable in several
 architectures, with a  minimum of tuning required from the
 user. The instructions are in directory siesta/Src/Sys.
 There are a few files  in this directory,
 already prepared for several architectures and
-operating sistems: 
+operating sistems:\index{platforms}\index{architectures} 
 \begin{itemize}
-\item[-] linux.make (for Linux systems),
-\item[-] osf.make (for DEC alphas), 
+\item[-] g77.make (for systems, including Linux, running modern
+versions of g77),\index{g77}
+\item[-] g77-libs.make (for systems, including Linux, running modern
+versions of g77 and with BLAS and LAPACK libraries installed),\index{g77-libs}
+\item[-] linux.make (for systems with older versions of g77, lacking
+timing routines ---obsolescent),\index{Linux}
+\item[-] osf.make (for DEC Alphas),\index{OSF}\index{DEC Alpha}\index{dxml} 
 \item[-] osfdxml.make (for DEC alphas with the dxml math library), 
-\item[-] ibm.make (for IBM RISC), 
-\item[-] ibmessl.make (for IBM RISC with the ESSL math library), 
-\item[-] freebsd.make (for FreeBSD), 
-\item[-] sgi.make (for SGI) 
+\item[-] ibm.make (for IBM RISC),\index{AIX}\index{IBM RISC} 
+\item[-] ibmessl.make (for IBM RISC with the ESSL math library),\index{ESSL} 
+\item[-] ibmesslp3.make (for IBM RISC with the ESSL math library, and
+Power3 processor),
+\item[-] sgi.make (for SGI)\index{SGI} 
       (check that the options are right for your machine).
-\item[-] cray.make (for Cray machines).
-\item[-] hp.make (for HP-UX).
-\item[-] unknown.make (for the most general options and codes).
+\item[-] sgimath.make (for SGI, using SGI's math library)\index{SGI} 
+      (check that the options are right for your machine).
+\item[-] cray.make (for CRAY machines).\index{CRAY}
+\item[-] hp.make (for HP-UX).\index{HP-UX}
+\item[-] unknown.make (for the most general and least optimized 
+options and codes).\index{unknown}
 \end{itemize}
 \noindent
 If none of these fit your needs, you will have to build
-one by your own. Note that some systems require running
-ranlib (or versions thereof) and others don't.
+one on your own. Note that some systems require running a program such as
+ranlib\index{ranlib} to index object code libraries.
 Once you have decided which *.make you want to use,
 you just need to define an environment variable
-in your shell; for instance, for Linux:
+in your shell; for instance, for a Linux running a modern version of
+g77:
 
 \vspace{2pt}
-{\tt ARCH=linux ; export ARCH} \hspace{1cm} within sh, ksh or bash,
+{\tt SIESTA\_SYS=g77 ; export SIESTA\_SYS} \hspace{1cm} within sh, ksh or bash,
+\index{SIESTA\_SYS@{\tt SIESTA\_SYS}}
 
 \vspace{1pt}
-{\tt setenv ARCH linux} \hspace{2.5cm} if you use csh.
+{\tt setenv SIESTA\_SYS g77} \hspace{2.5cm} if you use csh.
 
 \vspace{2pt}
 \noindent
@@ -494,16 +554,22 @@ whenever you log in.
 Then, just compile using the make utility, as usual.
 
 
-There are six parameter files which contain
-parameters necessary for different parts of the code:
+There are eight parameter files which contain
+dimensioning parameters\index{dimension parameters} necessary 
+for different parts of the code. Standard versions
+of these files can be found in the Src/Include subdirectory, and
+need to be copied to Src before SIESTA is compiled for the first time
+(see below).
+
 
 \begin{itemize}
 
-\item[$\bullet$] {\bf siesta.h:}
+\item[$\bullet$] {\bf siesta.h:}\index{siesta.h}
 This file contains parameters which are used
 to defile the dimensions of the variables defined by the
 main program (siesta.f).  They represent physical parameters
-like maximum number of atoms, species, etc. that the executable
+like maximum number of atoms, neighbours of any atom, etc... 
+that the executable
 program can handle. The parameters specified should be larger than
 those of the physical system under study.  However, if you 
 specify numbers smaller than needed, siesta will stop, after
@@ -515,10 +581,11 @@ you can initialize them to 1, run siesta and re-compile again with
 the siesta.h generated.  It may be necessary to repeat this five or six
 times, since some of the parameters can only be determined by siesta
 if other parameters are correct. To alleviate this, you may start by
-copying Src/Include/siesta.h into siesta.h 
+copying Src/Include/siesta.h into siesta.h\index{Include/} 
 
 \item[$\bullet$] 
-{\bf dhscf.h:} Contains parameters to define variables dimensions for
+{\bf dhscf.h:}\index{dhscf.h} 
+It contains parameters to define variables dimensions for
 dhscf.f and related grid and FFT routines. Like with siesta.h,
 you can initialize all variables to 1 (as in Src/Include/dhscf.h), 
 run siesta and recompile with the generated dhscf.h file.  
@@ -526,7 +593,8 @@ This is HIGHLY recommended, since the amount of memory usage of the
 executable will be optimized for the system under study.
 
 \item[$\bullet$] 
-{\bf ordern.h:} Contains parameters to define variables dimensions for
+{\bf ordern.h:}\index{ordern.h} 
+It contains parameters to define variables dimensions for
 ordern.f and related Order-N functional routines. Like with siesta.h
 and dhscf.h, you can initialize all variables to 1 
 (as in Src/Include/ordern.h), run siesta and
@@ -538,7 +606,8 @@ it is convenient to compile siesta with all the ordern.h parameters
 set to 1, since this will open the least possible memory. 
 
 \item[$\bullet$] 
-{\bf diagon.h:} Contains parameters to define variables dimensions for
+{\bf diagon.h:}\index{diagon.h}
+It contains parameters to define variables dimensions for
 rdiagon.f and related diagonalization routines. Like with the *.h
 files above, you can initialize all variables to 1, run siesta and
 recompile with the generated diagon.h file.  This is HIGHLY recommended,
@@ -547,25 +616,89 @@ for the system under study.  {\bf NOTE:} if you run the program
 with the Order-N option, the diagonalization routines will not be used, so
 it is convenient to compile siesta with all the diagon.h parameters
 set to 1, since this will open the least possible memory. Otherwise, 
-you will be memory-bound, since some $O(N^2)$ matrices will be open!!!
+you will be memory-bound, since some $O(N^2)$ matrices will be open!
+
+\item[$\bullet$]
+{\bf diagnc.h:}\index{diagnc.h}
+Equivalent to diagon.h but for the non-colinear spin\index{non-colinear spin}
+case, which requires matrices four times larger in each dimension, 
+as compared with the non-polarized case, and twice the polarized colinear
+case. As above, it can be generated automatically if insufficient, 
+and care should be taken for the dimensions to be 1 if diagnc.f is
+not used (non-colinear magnetism not used).
+
+\item[$\bullet$]
+{\bf matel.h:}\index{matel.h}
+It contains parameters to define dimensions for
+matel.f that calculates matrix elements which are not to be obtained
+through the grid. Again, automatically generated.
+
+\item[$\bullet$]
+{\bf ranger.h:}\index{ranger.h}
+It contains parameters for ranger.f which finds the
+neighbors of any atom. Automatically generated as well.
 
 \item[$\bullet$] 
-{\bf atom.h:} Contains parameters for the generation of the atomic
+{\bf atom.h:}\index{atom.h}
+It contains parameters for the generation of the atomic
 orbitals and the pseudopotentials. These parameters are not very likely
 to need modification, and they do not affect much the memory use.
-You may need to change them if the program complains about some
-of its dimensions being too small, but siesta will NOT generate
-a new atom.h for you!!.
+You may need to change them if the program complaints about some
+of its dimensions being too small, but SIESTA will NOT generate
+a new atom.h for you.
 
 \end{itemize}
 
-At the end of a succesful compilation, these files will be 
-there (except for {\bf atom.h} adapted to your system. 
-You can keep them in the working
-directory for the system for future compilations if needed
-(it is a good idea to do {\tt touch *.h} on them before
-calling to {\tt msiesta} or {\tt rrsiesta} for a new compilation after
-some time).
+At the end of a succesful compilation cycle, these files contain
+parameters adapted to the problem at hand will (except for {\bf
+atom.h}).  You should keep them in the working
+directory for the system for future compilations if needed.
+
+The first time that SIESTA is compiled for a particular
+system, it should be done with
+\index{msiesta@{\tt msiesta}}\index{rrsiesta@{\tt rrsiesta}}
+
+{\tt msiesta init} 
+
+\noindent
+and then
+
+{\tt rrsiesta} {\it your\_system}
+
+\noindent
+or directly 
+
+{\tt rrsiesta} {\it your\_system} {\tt init} .
+
+\noindent
+This copies the standard versions of the {\tt *.h} files to the source
+and working directories and starts the compilation/run cycle. At the
+end, the {\tt *.h} files in both the source and working directory will
+be appropriately dimensioned, so further run cycles should not use 
+the {\tt init} modifier.
+
+If some time has elapsed since the {\tt *.h} files were
+generated, and SIESTA has been compiled for other systems
+in the meantime, use
+
+{\tt msiesta touch}
+
+\noindent
+or 
+
+{\tt rrsiesta} {\it your\_system} {\tt touch}.
+
+\noindent
+This form of the commands will copy the {\tt *.h} files in the working
+directory to the source directory, with a modified timestamp that
+will trick {\tt make} into re-builing the program appropriately.
+
+The {\tt atom.h} file is rarely to be changed.
+If you ever need to modify it, it will have
+to be manually. And also manual should be its activation for
+{\tt msiesta} or {\tt rrsiesta} by means of
+
+{\tt touch atom.h} .
 
 % \vspace{0.8truecm}
 % \item The parameters in siesta.h, dhscf.h and ordern.h 
@@ -602,24 +735,22 @@ some time).
 
 \section{INPUT DATA FILE}
 
-\subsection{The Flexible Data Format (FDF)}
+\subsection{The Flexible Data Format (FDF)}\index{FDF}
 
-The main input file, which is read as the standard input (unit 5),
+The main input file,\index{input file}
+which is read as the standard input (unit 5),
 contains all the physical data of the system and the parameters of 
 the simulation to be performed (the assignment of the standard
 input to this file is usually done by the rsiesta shell script).
 This file is written in a special format called FDF, developed by 
-Alberto Garcia and Jos\'e M. Soler. This format allows data to be 
+Alberto Garc\'{\i}a and Jos\'e M. Soler. This format allows data to be 
 given in any order, or to be omitted in favor of default values.
-
-In the current version of SIESTA, data are 
-supplied in FDF-0.6 language.
-Please, refer to documentation in $\sim$/siesta/Src/fdf for details.
+Refer to documentation in $\sim$/siesta/Src/fdf for details.
 Here we offer a glimpse of it through the following rules:
 
 \begin{itemize}
 
-\item[$\bullet$] The FDF sintaxis is a 'data label' followed by its value.
+\item[$\bullet$] The FDF syntax is a 'data label' followed by its value.
 Values that are not specified in the datafile are assigned
 a default value. 
 
@@ -639,8 +770,8 @@ followed by its units. Look at function fdf\_convfac in
 file $\sim$/siesta/Src/fdf/fdf.f for the units that are currently supported.
 
 \item[$\bullet$] Complex data structures are called blocks and are
-placed between `\%block label' and a `\%endblock label' (without the
-quotes).
+placed between `\%block label'\index{block@\%block} and a `\%endblock label' 
+(without the quotes).
 
 \item[$\bullet$] You may `include' other FDF files and redirect the search
 for a particular data label to another file. 
@@ -700,23 +831,28 @@ default values.
 \parsep 0pt
 
 \item[{\bf SystemName}] ({\it string}): 
+\index{Systemname@{\bf SystemName}}
 A string of one or several words containing a descriptive
 name of the system (max. 150 characters). 
 
 {\it Default value:} blank
 
 \item[{\bf SystemLabel}] ({\it string}): 
+\index{SystemLabel@{\bf SystemLabel}}
 A {\bf single} word (max. 20 characters {\bf without blanks})
 containing a nickname of the system, used to name output files.
 
-{\it Default value:} siesta
+{\it Default value:} {\tt siesta}\index{siesta}
 
-\item[{\bf NumberOfAtoms}] ({\it integer}):
- Number of atoms in the simulation.
+\item[{\bf NumberOfAtoms}] ({\it integer}): 
+\index{NumberOfAtoms@{\bf NumberOfAtoms}}
+Number of atoms in the simulation.
+
 {\it Default value:} There is no default. You must supply this variable.
 
 
-\item[{\bf NumberOfSpecies}] ({\it integer}):
+\item[{\bf NumberOfSpecies}] ({\it integer}): 
+\index{NumberOfSpecies@{\bf NumberOfSpecies}}
 Number of different atomic species in the simulation. 
 Atoms of the same species, but with a different 
 pseudopotential or basis set are counted as different species.
@@ -724,10 +860,11 @@ pseudopotential or basis set are counted as different species.
 {\it Default value:} There is no default. You must supply this variable.
 
 
-\item[{\bf ChemicalSpecieslabel}] ({\it data block}): It specifies the
-different chemical species that are present, assigning them a number for
-further identification. SIESTA recognizes the different atoms by the given
-atomic number.
+\item[{\bf ChemicalSpeciesLabel}] ({\it data block}): 
+\index{ChemicalSpeciesLabel@{\bf ChemicalSpeciesLabel}} 
+It specifies the different chemical species\index{species} that are present, 
+assigning them a number for further identification. 
+SIESTA recognizes the different atoms by the given atomic number.
 
 \begin{verbatim}
          %block Chemical_Species_label
@@ -742,22 +879,27 @@ atomic number, and then by the desired label. This label will be used
 to identify corresponding files, namely, pseudopotential file, user basis
 file, basis output file, and local pseudopotential output file.
 
-This construction allows to have a same kind of atom described differently
-in the program, different basis or pseudopotential for an atom, say, at a
-surface, etc.
+This construction allows you to have atoms of the same species but with
+different basis or pseudopotential, for example.
 
-Negative atomic numbers are used for {\it ghost} atoms (see
-{\bf PAO.basis\_and\_PS\_lmax}).
+Negative atomic numbers are used for {\it ghost} atoms\index{ghost atoms} 
+(see {\bf PAO.basis}).
 
-{\it Default:} This block is optional. However, either this block or the block
-{\bf PAO\_basis\_and\_PS\_lmax} should be present. If omitted, 
-the atomic numbers will be taken from {\bf PAO\_basis\_and\_PS\_lmax}
-and the customary atomic symbols will be taken as labels.
+{\it Use:} This block is mandatory.
+
+{\it Default:} No default. 
+
+%This block is optional. However, either this block or the block
+%{\bf PAO\_basis\_and\_PS\_lmax} should be present. If omitted, 
+%the atomic numbers will be taken from {\bf PAO\_basis\_and\_PS\_lmax}
+%and the customary atomic symbols will be taken as labels.
 
 
-\item[{\bf AtomicMass}] ({\it data block}): It allows the user to introduce
+\item[{\bf AtomicMass}] ({\it data block}): 
+\index{AtomicMass@{\bf AtomicMass}} 
+It allows the user to introduce
 the atomic masses of the different species used in the calculation, useful
-for the dynamics with isotopes, for example. If
+for the dynamics with isotopes,\index{isotopes} for example. If
 a species index is not found within the block, the natural mass for the 
 corresponding atomic number is assumed. If the block is absent all masses
 are the natural ones. One line per species with the species index (integer)
@@ -771,7 +913,31 @@ integer and/or no real numbers within the line, the line is disregarded.
          %endblock AtomicMass
 \end{verbatim}
 
-{\it Default:} (Block absent or empty) Natural masses assumed.
+{\it Default:} (Block absent or empty) Natural masses assumed. For 
+{\it ghost} atoms (i.e. floating orbitals), a default of 1.d30 a.u. is 
+assigned.
+
+
+\item[{\bf NetCharge}] ({\it real}): 
+\index{NetCharge@{\bf NetCharge}}\index{Charge of the system}
+Specify the net charge of the system (in units of $|e|$). 
+For charged systems, the energy converges very slowly
+versus cell size. For molecules or atoms, a Madelung
+correction term is applied to the energy to make it converge
+much faster with cell size (this is done only if
+the cell is SC, FCC or BCC). For other cells, or for 
+periodic systems (chains, slabs or bulk), this energy
+correction term can not be applied, and the user is warned
+by the program.   It is not advised to do charged systems
+other than atoms and molecules in SC, FCC or BCC cells,
+unless you know what you are doing.
+
+{\it Use:} 
+For example, the F$^-$ ion would have {\bf NetCharge} = {\tt -1},
+and the Na$^+$ ion would have {\bf NetCharge} = {\tt 1}.
+Fractional charges can also be used.
+
+{\it Default value:} {\tt 0.0} 
 
 
 \end{description}
@@ -780,75 +946,124 @@ integer and/or no real numbers within the line, the line is disregarded.
 \vspace{5pt}
 \subsection{Basis definition}
 
+\noindent 
+The format for the input of the basis described in this manual
+has experienced important changes respect to 
+previous versions of the program. Although old fashioned 
+input files are
+still readable by SIESTA, we highly recommend the use of this
+new format, which allows a much more flexible input.
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
 
 \item[{\bf PAO.BasisType}] ({\it string}): 
+\index{PAO.BasisType@{\bf PAO.BasisType}}\index{basis!PAO} 
 The kind of basis is chosen. It can be provided by the user, and read from 
-a file, or they can be automatically generated. The latter are all based
-on finite-range pseudo-atomic orbitals [PAO's of Sankey and Niklevsky, 
-PRB 40, 3979 (1989)]
+a file, or it can be automatically generated. The latter are all based
+on finite-range pseudo-atomic 
+orbitals\index{finite-range pseudo-atomic orbitals}
+[PAO's of Sankey and Niklewsky, PRB 40, 3979 (1989)]
 The original PAO's were described only for minimal bases. SIESTA generates 
-extended bases (multiple-zeta, polarization, and diffuse orbitals) applying
-different schemes of choice:
+extended bases (multiple-$\zeta$,\index{multiple-$\zeta$} 
+polarization,\index{polarization orbitals} and diffuse 
+orbitals\index{diffuse orbitals} applying different schemes of choice:
 \begin{itemize}
 \item[-] Generalization of the PAO's: uses the excited orbitals of the
-finite-range pseudo-atomic problem, both for multiple-zeta and for
+finite-range pseudo-atomic problem, both for multiple-$\zeta$ and for
 polarization [see S\'anchez-Portal, Artacho, and Soler, JPCM {\bf 8}, 3859
 (1996)]. Adequate for short-range orbitals.
-\item[-] Multiple-zeta in the spirit of split valence, decomposing the original
+\item[-] Multiple-$\zeta$ in the spirit of split valence,\index{split valence} 
+decomposing the original
 PAO in several pieces of different range, either defining more (and smaller)
-confining radii, or introducing gaussians from known bases (Huzinaga's book).
+confining radii, or introducing gaussians\index{gaussians} from known 
+bases (Huzinaga's book).
 \end{itemize}
 \noindent
 Note that, except for the user-provided bases, all the remaining options
-give the same minimal basis. 
+give the same minimal basis\index{minimal basis}. 
 The different options and their FDF descriptors are the following:
 \begin{itemize}
-\item {\tt user:} User-provided orbitals read numerically from a file in
+\item {\tt user:}\index{user@{\tt user}}\index{basis!user provided} 
+User-provided orbitals read numerically from a file in
 a specific format described at the end of this subsection (same format 
-as it is written by SIESTA). The use of this option requires the
-introduction of the $l$-shells and the number of zetas wanted by the user.
-Even though the file has that information, SIESTA can take the orbitals
-wanted by the user from the file. This required information can be provided
-through {\bf PAO.BasisSize} or through the {\bf PAO\_basis\_and\_PS\_lmax}.
-The file should be named {\it Corresponding\_label.}{\tt user.basis}.
+as written by SIESTA). The use of this option requires the
+introduction of the $l$-shells and the number of zetas wanted by the user. 
+These data {\bf must} be provided through the {\bf PAO.Basis} block, 
+even though the file has that information. This 
+allows for the use of cutoff radii\index{cutoff radius} 
+different to those specified in the file, to compress or to 
+expand the orbital using the scale factor,\index{scale factor}
+and the construction of perturbative 
+polarization\index{perturbative polarization} orbitals 
+from the ones read from the file. 
+%Even though the file has that information, SIESTA can take the orbitals
+%wanted by the user from the file. This required information can be provided
+%through {\bf PAO.BasisSize} or through the {\bf PAO\_basis\_and\_PS\_lmax}.
+The file should be named 
+{\it Corresponding\_label.}{\tt 
+user.basis}.\index{label.user.basis@{\it label.}{\tt user.basis}}
 \item {\tt split:} Split-valence scheme for multiple-zeta.
 The split is based on different radii. 
-\item {\tt splitgauss:} Same as {\tt split} but using gaussian functions
+\item {\tt splitgauss:}\index{splitgauss@{\tt splitgauss}}
+Same as {\tt split} but using gaussian functions
 $e^{-(x/\alpha_i)^2}$. The gaussian widths $\alpha_i$ are read instead 
 of the scale factors (see below). There is no cutting algorithm, so that
 a large enough $r_c$ should be defined for the gaussian to have decayed
 sufficiently.
-\item {\tt nodes:} Generalized PAO's.
-\item {\tt nonodes:} The original PAO's are used, multiple-zeta is generated
+\item {\tt nodes:}\index{nodes@{\tt nodes}} Generalized PAO's.
+\item {\tt nonodes:}\index{nonodes@{\tt nonodes}} 
+The original PAO's are used, multiple-zeta is generated
 by changing the scale-factors, instead of using the excited orbitals. 
 \end{itemize}
 \noindent
 Note that, for the {\tt split} and {\tt nodes} cases
-the whole basis can be generated by SIESTA, no further information
-required, using default values defined in the following ({\bf PAO.BasisSize},
+the whole basis can be generated by SIESTA with no further information
+required. SIESTA will use default values as defined in the following 
+({\bf PAO.BasisSize},
 {\bf PAO.EnergyShift}, and {\bf PAO.SplitNorm}, see below).
 
 {\it Default value:} {\tt split}
 
 
-\item[{\bf PAO.BasisSize}] ({\it string}): It defines usual
-basis sizes. It has effect only if there is no 
-block {\bf PAO\_basis\_and\_PS\_lmax} present.
+\item[{\bf PAO.BasisSize}] ({\it string}): 
+\index{PAO.BasisSize@{\bf PAO.BasisSize}}\index{basis!PAO} 
+It defines usual basis sizes. It has effect only if there is no 
+block {\bf PAO.Basis} present.
 \begin{itemize}
-\item {\tt SZ} or {\tt MINIMAL}: minimal or single-zeta basis.
-\item {\tt DZ}: Double zeta basis, in the scheme defined by 
+\item {\tt SZ}\index{SZ@{\tt SZ}} or 
+{\tt MINIMAL}:\index{MINIMAL@{\tt MINIMAL}} 
+minimal or single-$\zeta$ basis.\index{basis!minimal}\index{single-$\zeta$}
+\item {\tt DZ}:\index{DZ@{\tt DZ}} Double zeta basis, in the scheme defined by 
 {\bf PAO.BasisType}.
-\item {\tt DZP} or {\tt STANDARD}: Like {\tt DZ} plus
-polarization orbitals. {\bf PAO.PolarizationOrbitals} is then 
-assumed {\tt true}i, giving thus perturbative polarization orbitals
-(it can be set to {\tt false} if wanted).
+\item {\tt SZP}:\index{SZP@{\tt SZP}} Single-zeta basis plus polarization 
+orbitals.
+\item {\tt DZP}\index{DZP@{\tt DZP}} or 
+{\tt STANDARD}:\index{STANDARD@{\tt STANDARD}} 
+Like {\tt DZ} plus polarization orbitals. 
+
+Polarization orbitals are constructed from 
+perturbation theory,\index{perturbative polarization} 
+and they are defined so they have\index{basis!polarization} 
+the minimum angular momentum $l$ such that there are not occupied orbitals
+with the same $l$ in the valence shell of the ground-state atomic 
+configuration. They polarize the corresponding $l-1$ shell. 
 \end{itemize}
 
 {\it Default value:} {\tt STANDARD}
 
+\item[{\bf PAO.BasisSizes}]({\it data block}): 
+\index{PAO.BasisSizes@{\bf PAO.BasisSizes}}\index{basis!PAO}
+Block which allows to specifie a different value of the variable 
+PAO.BasisSize for each species. 
+\begin{verbatim}
+          %block    PAO.BasisSizes
+               Si      DZ
+               H       DZP
+               O       SZP 
+          %endblock PAO.BasisSizes
+\end{verbatim} 
 
 
 \item[{\bf PAO.EnergyShift}] ({\it real energy}): A standard for 
@@ -857,131 +1072,256 @@ of the PAO's due to the confinement to a finite-range. It offers a
 general procedure for defining the confining radii of the original
 (first-zeta) PAO's for all the species guaranteeing the compensation 
 of the basis. It has only effect when the block
-{\bf PAO\_basis\_and\_PS\_lmax} is not present or when the radii
+{\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for the first zeta.
 
 {\it Use:} It has to be positive.
 
-{\it Default value:} 0.02 Ry
+{\it Default value:} {\tt 0.02 Ry}
 
 
-\item[{\bf PAO.SplitNorm}] ({\it real}): A standard to define default sensible
+\item[{\bf PAO.SplitNorm}] ({\it real}): 
+\index{PAO.SplitNorm@{\bf PAO.SplitNorm}}\index{basis!split valence} 
+A standard to define default sensible
 radii for the split-valence type of basis. It gives the amount of norm that
-the second-zeta split-off piece has to carry. The split radius is defined
-accordingly. If multiple-zeta is used, the corresponding radii are obtained
+the second-$\zeta$ split-off piece has to carry. The split radius is defined
+accordingly. If multiple-$\zeta$\index{multiple-$\zeta$} 
+is used, the corresponding radii are obtained
 by imposing smaller fractions of the SplitNorm (1/2, 1/4 ...) value as
-norm carried by the higher zetas.
+norm carried by the higher zetas. It has only effect when the block
+{\bf PAO.Basis} is not present or when the radii
+specified in that block are zero for zetas higher than one.
 
-{\it Default value:} 0.15 (sensible values range between 0.05 and 0.5).
-
-
-\item[{\bf PAO.PolarizationOrbitals}] ({\it logical}): If {\tt true} 
-polarization orbitals (orbitals with a higher $l$ than the highest 
-occupied $l$-shell in the isolated atom)
-are generated by solving the atomic problem in the presence of a 
-polarizing electric field. The orbitals are generated from perturbation
-theory. They have the same cutoff radius as the highest $l$ valence
-orbital.
-
-When using this scheme and introducing information in 
-{\bf PAO\_basis\_and\_PS\_lmax} it should be remembered to change
-{\tt lmxkbs} to be one higher than the $l$ of the polarization
-orbitals.
-
-There is a different possibility of generating polarization orbitals:
-by introducing them explicitly in the {\bf PAO\_basis\_and\_PS\_lmax} block.
-It has to be remembered, however, that they usually correspond to 
-unbound states of the atom, their shape depending very much on the
-cutoff radius, not converging by increasing it, similarly to the
-multiple-zeta orbitals generated with the {\tt nodes} option. 
-Using {\bf PAO.EnergyShift} makes no sense.
-
-{\it Use:} It should not be accompanied by a definition of polarization
-orbitals in the block {\bf PAO\_basis\_and\_PS\_lmax}. 
-
-{\it Default value:} false (unless {\bf PAO.BasisSize} = {\tt DZP})
+{\it Default value:} {\tt 0.15} (sensible values range between 0.05 and 0.5).
 
 
-\item[{\bf PAO.SplitPolarizationOrbitals}] ({\it integer}): 
-For a possible splitting of the polarization orbital (defined as
-in {\bf PAO.PolarizationOrbitals}). Its value gives how many zetas
-to construct.
+%\item[{\bf PAO.PolarizationOrbitals}] ({\it logical}): If {\tt .true.} 
+%polarization orbitals (orbitals with a higher $l$ than the highest 
+%occupied $l$-shell in the isolated atom)
+%are generated by solving the atomic problem in the presence of a 
+%polarizing electric field. The orbitals are generated from perturbation
+%theory. They have the same cutoff radius as the highest $l$ valence
+%orbital.
 
-{\it Default value:} 1
+%When using this scheme and introducing information in 
+%{\bf PAO\_basis\_and\_PS\_lmax} it should be remembered to change
+%{\tt lmxkbs} to be one higher than the $l$ of the polarization
+%orbitals.
+
+%There is a different possibility of generating polarization orbitals:
+%by introducing them explicitly in the {\bf PAO\_basis\_and\_PS\_lmax} block.
+%It has to be remembered, however, that they usually correspond to 
+%unbound states of the atom, their shape depending very much on the
+%cutoff radius, not converging by increasing it, similarly to the
+%multiple-zeta orbitals generated with the {\tt nodes} option. 
+%Using {\bf PAO.EnergyShift} makes no sense.
+
+%{\it Use:} It should not be accompanied by a definition of polarization
+%orbitals in the block {\bf PAO\_basis\_and\_PS\_lmax}. 
+
+%{\it Default value:} {\tt .false.} (unless {\bf PAO.BasisSize} = {\tt DZP})
 
 
-\item[{\bf PAO\_basis\_and\_PS\_lmax}] ({\it data block}): 
+%\item[{\bf PAO.SplitPolarizationOrbitals}] ({\it integer}): 
+%For a possible splitting of the polarization orbital (defined as
+%in {\bf PAO.PolarizationOrbitals}). Its value gives how many zetas
+%to construct.
+
+%{\it Default value:} {\tt 1}
+
+
+%\item[{\bf PAO\_basis\_and\_PS\_lmax}] ({\it data block}): 
+
+\item[{\bf PS.lmax}]  ({\it data block}): 
+\index{PS.lmax@{\bf PS.lmax}}
+Block with the maximum angular momentum of the Kleinman-Bylander 
+projectors,\index{Kleinman-Bylander projectors} {\tt lmxkb}. 
+This information is optional. If the block 
+is absent, or for a species which is not mentioned inside 
+it, SIESTA will take {\tt lmxkb(is) = lmxo(is) + 1}, where {\tt lmxo(is)}
+is the maximum angular momentum of the basis orbitals of species {\tt is}.
+\begin{verbatim}
+         %block Ps.lmax
+              Al_adatom   3
+              H           1
+              O           2
+         %endblock Ps.lmax
+\end{verbatim}
+{\it Default:} (Block absent or empty). Maximum angular momentum 
+of the basis orbitals plus one.
+\noindent
+
+\item[{\bf PAO.Basis}] ({\it data block}): 
+\index{PAO.Basis@{\bf PAO.Basis}\index{basis!PAO}} 
 Block with data to define explicitly the basis to be used. 
 It allows the definition by hand of all the parameters that
-are used to construct the atomic basis. It can be used 
-leaving some parameters to zero, and their value will be
-generated from the magnitudes defined above (the radii from
-{\bf PAO.EnergyShift} or from {\bf PAO.SplitNorm}, the scale
-factors will be put to 1, if they are zero).
+are used to construct the atomic basis. There is no need
+to enter information for all the species present in the calculation,
+basis\index{basis!PAO} for the species not mentioned in this block will be 
+generated automatically using the parameter {\bf PAO.BasisSize},
+{\bf PAO.BasisType}, {\bf PAO.EnergyShift} and {\bf PAO.SplitNorm}.
+It can be used 
+leaving some parameters to zero, or completely ignoring some of them, 
+which are optional and do not need to appear.
+In these cases the values will be
+generated from the magnitudes defined above, or from the appropriate 
+defaults values. For example, the radii\index{cutoff radius} 
+will be obtained from
+{\bf PAO.EnergyShift} or from {\bf PAO.SplitNorm} if they are zero,  
+the scale
+factors will be put to 1, if they are zero or not given in the input. 
 An example block for a two-species calculation (H and O) is the following:
+%\begin{verbatim}
+%     %block PAO_basis_and_PS_lmax        # Define Basis set
+%       1   8   1   2                 is, Z, Lmax, LmaxPS
+%         0   1                         l, Nzeta
+%           3.50  3.50                    rc(izeta=1,Nzeta)(Bohr)
+%          1.00  1.00                    scaleFactor(izeta=1,Nzeta)
+%        1   1                         l, Nzeta
+%          3.50  3.50                    rc(izeta=1,Nzeta)(Bohr)
+%          1.00  1.00                    scaleFactor(izeta=1,Nzeta)
+%      2   1   0   1                 is, Z, Lmax, LmaxPS
+%        0   1                         l, Nzeta
+%          5.00  5.00                    rc(izeta=1,Nzeta)(Bohr)
+%          1.00  1.00                    scaleFactor(izeta=1,Nzeta)
+%    %endblock PAO_basis_and_PS_lmax
+%end{verbatim}
 \begin{verbatim}
-     %block PAO_basis_and_PS_lmax        # Define Basis set
-       1   8   1   2                 is, Z, Lmax, LmaxPS
-         0   1                         l, Nzeta
-           3.50  3.50                    rc(izeta=1,Nzeta)(Bohr)
-           1.00  1.00                    scaleFactor(izeta=1,Nzeta)
-         1   1                         l, Nzeta
-           3.50  3.50                    rc(izeta=1,Nzeta)(Bohr)
-           1.00  1.00                    scaleFactor(izeta=1,Nzeta)
-       2   1   0   1                 is, Z, Lmax, LmaxPS
-         0   1                         l, Nzeta
-           5.00  5.00                    rc(izeta=1,Nzeta)(Bohr)
-           1.00  1.00                    scaleFactor(izeta=1,Nzeta)
-     %endblock PAO_basis_and_PS_lmax
+  %block PAO.Basis       # Define Basis set
+   O    2  nodes  1.0    # Label, l_shells, type (optional), ionic_charge (optional)
+        0   2            # l, Nzeta
+          3.50  3.50     #     rc(izeta=1,Nzeta)(Bohr)
+          0.95  1.00     #     scaleFactor(izeta=1,Nzeta) (optional)
+        1   1   P   2    # l, Nzeta, PolOrb (optional), NzetaPol (optional)
+          3.50           #     rc(izeta=1,Nzeta)(Bohr)
+   H    1                # Label, l_shells, type (optional), ionic_charge (optional)
+        0   2            # l, Nzeta
+          5.00  0.00     #     rc(izeta=1,Nzeta)(Bohr)
+ %endblock PAO.Basis
 \end{verbatim}
 
+%\noindent
+%The reading is done this way:
+
+%\begin{verbatim}
+%     From is = 1 to  nspecies 
+%          read: is, izs(is), lmaxs(is), lmxkbs(is)
+%          From il = 0 to lmaxs(is) 
+%               read: il, nzls(il,is)
+%               read: rcls(izeta,il,is), from izeta = 1 to nzls(il,is)
+%               read: contrf(izeta,il,is), from izeta = 1 to nzls(il,is)
+%\end{verbatim}
 \noindent
-The reading is done this way:
+The reading is done this way (those variables in brackets are optional, 
+therefore they are only read if
+present):
 
 \begin{verbatim}
-      From is = 1 to  nspecies 
-           read: is, izs(is), lmaxs(is), lmxkbs(is)
-           From il = 0 to lmaxs(is) 
-                read: il, nzls(il,is)
-                read: rcls(izeta,il,is), from izeta = 1 to nzls(il,is)
-                read: contrf(izeta,il,is), from izeta = 1 to nzls(il,is)
+    From js = 1 to  nspecies 
+         read: label(is), l_shells(is), { type(is) }, { ionic_charge(is) }
+         From lsh=1 to l_shells(is)
+              read: l, nzls(l,is), { PolOrb(l+1) }, { NzetaPol(l+1) }
+              read: rcls(izeta,il,is), from izeta = 1 to nzls(l,is)
+              read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
+
+
+
+%\noindent
+%And here is the variable description:
+%\begin{itemize}
+%\item[-] {\tt is}: Index of species
+%\item[-] {\tt izs(is)}: Atomic number of species {\tt is}
+%\item[-] {\tt lmaxs(is)}: Maximum angular momentum of 
+%basis orbitals of species {\tt is}
+%\item[-] {\tt lmxkbs(is)}: Maximum angular momentum 
+%of KB projectors of species {\tt is}
+%\item[-] {\tt nzls(il,is)}: Number of 'Zetas' for angular 
+%momentum il of species {\tt is}
+%\item[-] {\tt rcls(izeta,il,is)}: Cutoff radius (Bohr) of 
+%each 'Zeta' for each angular momentum {\tt il} of species {\tt is}
+%\item[-] {\tt contrf(izeta,il,is)}: Contraction factor of 
+%each 'Zeta' for each angular momentum {\tt il} of species {\tt is}
+%\end{itemize} 
 
 \noindent
 And here is the variable description:
 \begin{itemize}
-\item[-] {\tt is}: Index of species
-\item[-] {\tt izs(is)}: Atomic number of species {\tt is}
-\item[-] {\tt lmaxs(is)}: Maximum angular momentum of 
-basis orbitals of species {\tt is}
-\item[-] {\tt lmxkbs(is)}: Maximum angular momentum 
-of KB projectors of species {\tt is}
-\item[-] {\tt nzls(il,is)}: Number of 'Zetas' for angular 
-momentum il of species {\tt is}
-\item[-] {\tt rcls(izeta,il,is)}: Cutoff radius (Bohr) of 
-each 'Zeta' for each angular momentum {\tt il} of species {\tt is}
-\item[-] {\tt contrf(izeta,il,is)}: Contraction factor of 
-each 'Zeta' for each angular momentum {\tt il} of species {\tt is}
-\end{itemize}
+\item[-] {\tt Label}: Species label, this label determines 
+the species index {\tt is} according to the block {\bf ChemicalSpecieslabel}
+\item[-] {\tt l\_shells(is)}: Number of shells of orbitals 
+with different angular momentum for species {\tt is}  
+\item[-] {\tt type(is)}: {\it Optional input}.
+Kind of basis set generation procedure for species {\tt is}. 
+Same options as {\bf PAO.BasisType}
+\item[-] {\tt ionic\_charge(is)}: {\it Optional input}. 
+Net charge of species {\tt is}. This is  only used for
+basis set generation purposes. {\it Default value}: {\tt 0.0} (neutral atom)
+\item[-] {\tt l}: Angular momentum of 
+basis orbitals of this shell
+\item[-] {\tt nzls(l,is)}: Number of 'zetas' for angular 
+momentum l of species {\tt is}
+\item[-] {\tt PolOrb(l+1)}: {\it Optional input}. If set equal to {\tt P}, a 
+shell of  
+polarization functions (with angular momentum $l+1$)  will be constructed 
+from the first-zeta orbital of angular momentum $l$. {\it Default value}: ' ' 
+(blank = No polarization orbitals). 
+\item[-] {\tt NzetaPol(l+1)}: {\it Optional input}. Number of
+'zetas' for the 
+polarization shell (generated automatically in a split valence fashion). 
+Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1} 
+\item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of 
+each 'zeta' for each angular momentum {\tt l} of species {\tt is}
+\item[-] {\tt contrf(izeta,l,is)}: {\it Optional input}. 
+Contraction factor\index{scale factor} of 
+each 'zeta' for each angular momentum {\tt l} of species {\tt is}.
+{\it Default value}: {\tt 1.0}
+\end{itemize} 
+
+Polarization orbitals\index{perturbative 
+polarization}\index{basis!polarization} 
+are generated by solving the atomic problem in the presence of a 
+polarizing electric field. The orbitals are generated applying perturbation
+theory to the first-zeta orbital of lower angular momentum. 
+They have the same cutoff radius than the orbitals from which
+they are constructed. 
+
+There is a different possibility of generating polarization orbitals:
+by introducing them explicitly in the {\bf PAO.Basis} block.
+It has to be remembered, however, that they sometimes correspond to 
+unbound states of the atom, their shape depending very much on the
+cutoff radius, not converging by increasing it, similarly to the
+multiple-zeta orbitals generated with the {\tt nodes} option. 
+Using {\bf PAO.EnergyShift} makes no sense, and a cut off 
+radius different from zero must be explicitely given (the same cutoff radius
+as the orbitals they polarize is usually a sensible choice).
+
+%When using this scheme and introducing information in 
+%{\bf PAO\_basis\_and\_PS\_lmax} it should be remembered to change
+%{\tt lmxkbs} to be one higher than the $l$ of the polarizatio
 
 A species with atomic number = -100 will be considered by SIESTA as
 a constant-pseudopotential atom, {\it i.e.}, the basis functions
-generated will be spherical Bessel functions with the specified
-$r_c$. In this case, $r_c$ has to be given, {\bf EnergyShift} will
-not calculate it.
+generated will be spherical Bessel functions\index{Bessel functions}
+with the specified $r_c$. In this case, $r_c$ has to be given, 
+{\bf EnergyShift} will not calculate it.\index{basis!Bessel functions}
 
 Other negative atomic numbers will be interpreted by SIESTA as 
-{\it ghosts} of the corresponding positive value: the orbitals
+{\it ghosts}\index{ghost atoms}\index{basis!ghost atoms} 
+of the corresponding positive value: the orbitals
 are generated and put in position as determined by the coordinates,
 but neither pseudopotential nor electrons are considered for that
-ghost atom. Useful for BSSE correction.
+ghost atom. Useful for BSSE\index{basis!basis set superposition 
+error (BSSE)} correction.
 
-{\it Use:} If polarization orbitals are used of the perturbative kind,
-they are not to be described in this block. Polarization orbitals of
-the PAO kind should be generated within this block. 
+%{\it Use:} If polarization orbitals are used of the perturbative kind,
+%they are not to be described in this block. Polarization orbitals of
+%the PAO kind should be generated within this block. 
 
-{\it Default:} This block is optional. However, either this block or the block
-{\bf ChemicalSpeciesLabel} should be present.
+{\it Use:} This block is optional, except when Bessel functions are present. 
+
+{\it Default:} Basis characteristics defined by global definitions given
+above.
 
 \end{description}
 
@@ -994,13 +1334,15 @@ the PAO kind should be generated within this block.
 \parsep 0pt
 
 
-\item[{\bf LatticeConstant}] ({\it real length}): Lattice constant.
-This is just to define the scale of the lattice vectors.
+\item[{\bf LatticeConstant}] ({\it real length}): 
+\index{LatticeConstant@{\bf LatticeConstant}} 
+Lattice constant. This is just to define the scale of the lattice vectors.
 
 {\it Default value:} Minimum size to include the system (assumed to be a 
 molecule) without intercell interactions, plus 10\%. 
 
-\item[{\bf LatticeParameters}] ({\it data block}):
+\item[{\bf LatticeParameters}] ({\it data block}): 
+\index{LatticeParameters@{\bf LatticeParameters}}
 Crystallographic way of specifying the lattice vectors, by giving
 six real numbers: the three vector modules, $a$, $b$, and $c$, and
 the three angles $\alpha$ (angle between $\vec b$ and $\vec c$),
@@ -1008,35 +1350,41 @@ $\beta$, and $\gamma$. The three modules are in units of
 {\bf LatticeConstant}, the three angles are in degrees.
 
 {\it Default value:}
+{\tt
 \begin{verbatim}
            1.0   1.0   1.0    90.   90.  90.
 \end{verbatim}
+}
 \noindent
 (see the following)
 
 \item[{\bf LatticeVectors}] ({\it data block}): 
+\index{LatticeVectors@{\bf LatticeVectors}} 
 The cell vectors are read in units of the lattice constant defined above. 
 They are read as a matrix {\tt CELL(ixyz,ivector)}, each vector being
 one line.
 
 {\it Default value:} 
+{\tt 
 \begin{verbatim}
             1.0    0.0    0.0 
             0.0    1.0    0.0 
             0.0    0.0    1.0 
 \end{verbatim}
+}
 \noindent
 If the {\bf LatticeConstant} default is used, the default of 
 {\bf LatticeVectors} is still diagonal but not necessarily cubic.
 
 \item[{\bf AtomicCoordinatesFormat}] ({\it string}): 
+\index{AtomicCoordinatesFormat@{\bf AtomicCoordinatesFormat}} 
 Character string to specify the format of the atomic positions in
 input. These can be expressed in four forms:
 \begin{itemize}
-\item {\tt NotScaledCartesianBohr} (atomic positions are given directly in
-Bohr, in cartesian coordinates)
-\item {\tt NotScaledCartesianAng} (atomic positions are given directly in
-Angstrom, in cartesian coordinates)
+\item {\tt Bohr} or {\tt NotScaledCartesianBohr} (atomic positions 
+are given directly in Bohr, in cartesian coordinates)
+\item {\tt Ang} or {\tt NotScaledCartesianAng} (atomic positions 
+are given directly in {\AA}ngstr\"om, in cartesian coordinates)
 \item {\tt ScaledCartesian} (atomic positions are given 
 in cartesian coordinates, in units of the lattice constant)
 \item {\tt Fractional} or {\tt ScaledByLatticeVectors} (atomic positions 
@@ -1046,7 +1394,8 @@ are given referred to the lattice vectors)
 {\it Default value:} {\tt NotScaledCartesianBohr}
 
 
-\item[{\bf AtomCoorFormatOut}] ({\it string}):
+\item[{\bf AtomCoorFormatOut}] ({\it string}): 
+\index{AtomCoorFormatOut@{\bf AtomCoorFormatOut}}
 Character string to specify the format of the atomic positions in output.
 Same possibilities as for input ({\bf AtomicCoordinatesFormat}).
 
@@ -1054,6 +1403,7 @@ Same possibilities as for input ({\bf AtomicCoordinatesFormat}).
 
 
 \item[{\bf AtomicCoordinatesOrigin}] ({\it data block}): 
+\index{AtomicCoordinatesOrigin@{\bf AtomicCoordinatesOrigin}} 
 Vector specifying a rigid shift to apply to the atomic coordinates,
 given in the same format and units as these. Notice that the atomic
 positions (shifted or not) need not be within the cell formed by
@@ -1061,12 +1411,16 @@ positions (shifted or not) need not be within the cell formed by
 assumed.
 
 {\it Default value:} 
+{\tt
 \begin{verbatim}
   0.000   0.000   0.000
 \end{verbatim}
+}
 
 
 \item[{\bf AtomicCoordinatesAndAtomicSpecies}] ({\it data block}): 
+\index{AtomicCoordinatesAndAtomicSpecies@{\bf 
+AtomicCoordinatesAndAtomicSpecies}} 
 The reading is done this way:
 \begin{verbatim}
        From ia = 1 to natoms
@@ -1075,8 +1429,10 @@ The reading is done this way:
 where {\tt xa(ix,ia)} is the {\tt ix} coordinate of atom 
 {\tt iai}, and {\tt isa(ia)} is the species index of atom {\tt ia}.
 
+
 \item[{\bf SuperCell}] ({\it data block}): 
-Integer 3x3 matrix defining the supercell in terms of the unit cell: 
+\index{SuperCell@{\bf SuperCell}} 
+Integer 3x3 matrix defining a supercell in terms of the unit cell: 
 
 \begin{verbatim}
      %block SuperCell
@@ -1094,11 +1450,16 @@ specifies one supercell vector.
 {\it Use:} The atomic positions must be given only for the unit cell,
 and they are 'cloned' automatically in the rest of the supercell.
 The {\bf NumberOfAtoms} given must also be that in a single unit cell.
-However, notice that many values in the output are given for the
-entire supercell. In fact, inside the program, CELL is redefined
-as the whole supercell and most subroutines do not know the existence
-of a smaller underlying unit cell.
-Important: It cannot be used in dynamics nor relaxations!
+However, all values in the output are given for the entire supercell. 
+In fact, CELL is inmediately redefined as the whole supercell and the 
+program no longer knows the existence of an underlying unit cell.
+All other input (apart from NumberOfAtoms and atomic positions), 
+including {\bf kgridMonkhorstPack} must refer to the supercell 
+(this is a change over the previous version). Therefore, to avoid
+confusions, we recommend to use {\bf SuperCell} only to
+generate atomic positions, and then to copy them from the output
+to a new input file with all the atoms specified explicitly and
+with the supercell given as a normal unit cell.
 
 {\it Default value:} No supercell (supercell equal to unit cell).
 
@@ -1203,7 +1564,8 @@ original (void) constr.f, you simply invoke {\it msiesta init}.
 {\it Default value:} No constraints
 
 
-\item[{\bf kgrid\_cutoff}] ({\it real length}):
+\item[{\bf kgrid\_cutoff}] ({\it real length}): 
+\index{kgrid\_cutoff@{\bf kgrid\_cutoff}}
 Parameter which determines
 the fineness of the k-grid used for Brillouin zone sampling.
 It is half the length of the smallest lattice vector of the supercell 
@@ -1216,10 +1578,11 @@ Monkhorst and Pack (diagonal), and it is displaced for even numbers
 of mesh divisions.
 This parameter is not used if {\bf kgrid\_Monkhorst\_Pack} is specified.
 
-{\it Default value:} 0.0 Bohr
+{\it Default value:} {\tt 0.0 Bohr}
         
 
 \item[{\bf kgrid\_Monkhorst\_Pack}] ({\it data block}): 
+\index{kgrid\_Monkhorst\_Pack@{\bf kgrid\_Monkhorst\_Pack}} 
 Real-space supercell, whose reciprocal unit cell is that of the
 k-sampling grid, and grid displacement for each grid coordinate.
 Specified as an integer matrix an a real vector:
@@ -1245,12 +1608,13 @@ If {\tt Mk} is the identity matrix and {\tt dk}
 is zero, only the $\Gamma$ point of the {\bf unit} cell is used. 
 Overrides {\bf kgrid\_cutoff}
 
-{\it Default value:} $\Gamma$ point of the {\bf super}cell.
+{\it Default value:} $\Gamma$ point of the (super)cell.
 (Default used only when {\bf kgrid\_cutoff} is not defined).
         
 
 
 \item[{\bf BandLinesScale}] ({\it string}): 
+\index{BandLinesScale@{\bf BandLinesScale}} 
 Specifies the scale of the k vectors given in {\bf BandLines} below.
 The options are:
 \begin{itemize}
@@ -1264,6 +1628,7 @@ reciprocal-lattice-vector coordinates)
 
 
 \item[{\bf BandLines}] ({\it data block}): 
+\index{BandLines@{\bf BandLines}} 
 Specifies the lines along which band energies are calculated
 (usually along high-symmetry directions).
 An example for an FCC lattice is:
@@ -1300,8 +1665,10 @@ to calculate the total energy and charge density.
 \itemsep 10pt
 \parsep 0pt
 
-\item[{\bf XC.functional}] ({\it string}): Exchange-correlation functional type.
-May be {\tt LDA} (local density approximation, equivalent to {\tt LSD}) or 
+\item[{\bf XC.functional}] ({\it string}): 
+\index{XC.functional@{\bf XC.functional}} 
+Exchange-correlation functional type. May be {\tt LDA} 
+(local density approximation, equivalent to {\tt LSD}) or 
 {\tt GGA} (Generalized Gradient Approximation). 
 
 {\it Use:} Spin polarization is defined by SpinPolarized label for both
@@ -1310,17 +1677,19 @@ May be {\tt LDA} (local density approximation, equivalent to {\tt LSD}) or
 {\it Default value:} {\tt LDA}
         
 
-\item[{\bf XC.authors}] ({\it string}): Particular parametrization of the
+\item[{\bf XC.authors}] ({\it string}): 
+\index{XC.authors@{\bf XC.authors}} 
+Particular parametrization of the
 exchange-correlation functional. Options are:
 \begin{itemize}
 \item {\tt CA} (Ceperley-Alder) equivalent to {\tt PZ} (Perdew-Zunger).
 Local density approximation.
 Ref: Perdew and Zunger, PRB 23, 5075 (1981)
 \item {\tt PW92} (Perdew-Wang-92). 
-Local density approximation.
+Local density approximation.\index{LDA}\index{LSD}
 Ref: Perdew and Wang, PRB, 45, 13244 (1992)
 \item {\tt PBE} (Perdew-Burke-Ernzerhof). Generalized gradients approximation.
-Ref: Perdew, Burke and Ernzerhof, PRL 77, 3865 (1996)
+Ref: Perdew, Burke and Ernzerhof, PRL 77, 3865 (1996)\index{GGA}
 \end{itemize}
 
 {\it Use:} {\bf XC.functional} and {\bf XC.authors} must be compatible.
@@ -1328,44 +1697,105 @@ Ref: Perdew, Burke and Ernzerhof, PRL 77, 3865 (1996)
 {\it Default value:} {\tt PZ}
 
 
-\item[{\bf SpinPolarized}] ({\it logical}): Logical variable to 
-choose between spin unpolarized (false) 
-or spin polarized (true) calculation.
+\item[{\bf SpinPolarized}] ({\it logical}): 
+\index{SpinPolarized@{\bf SpinPolarized}} 
+Logical variable to choose between spin unpolarized ({\tt .false.}) 
+or spin polarized ({\tt .true.}) calculation.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
 
-        
+
+\item[{\bf NonCollinearSpin}] ({\it logical}): 
+\index{NonCollinearSpin@{\bf NonCollinearSpin}}\index{spin}
+\index{spin!non-collinear}\index{LSD}
+If {\tt .true.}, non-collinear spin is described using spinor wavefunctions
+and $(2 \times 2)$ spin density matrices at every grid point.
+Ref: T. Oda et al, PRL, {\bf 80}, 3622 (1998).
+Not compatible with GGA because non-collinear density functional
+theory has been developped only for a local functional.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf FixSpin}] ({\it logical}): 
+\index{FixSpin@{\bf FixSpin}}\index{spin}
+\index{fixed spin state}\index{LSD}
+If {\tt .true.}, the calculation is done with a fixed value of the
+spin of the system, defined by variable  {\bf TotalSpin}.
+This option can only be used for collinear spin polarized
+calculations.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf TotalSpin}] ({\it real}):
+\index{TotalSpin@{\bf TotalSpin}}
+\index{spin} 
+\index{fixed spin state}\index{LSD}
+Value of the imposed total spin polarization of the system (in units of the
+electron spin, 1/2). It is only used
+if {\bf FixSpin} = {\tt .true.}
+
+{\it Default value:} 0.0
+
 \item[{\bf MeshCutoff}] ({\it real energy}): 
+\index{MeshCutoff@{\bf MeshCutoff}}\index{grid}\index{mesh}  
 Defines the equivalent plane wave cutoff for the grid.
 
-{\it Default value:} 50 Ry.
+{\it Default value:} {\tt 50 Ry}
 
-\item[{\bf MaxSCFIterations}] ({\it integer}): Maximum number of 
-SCF iterations per time step.
+\item[{\bf MaxSCFIterations}] ({\it integer}): 
+\index{MaxSCFIterations@{\bf MaxSCFIterations}}
+Maximum number of SCF\index{SCF} iterations per time step.
 
-{\it Default value:} 50
+{\it Default value:} {\tt 50}
 
-\item[{\bf DM.MixingWeight}] ({\it real}): Proportion $\alpha$ of 
+\item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
+\index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear} 
+Proportion $\alpha$ of 
 output Density Matrix to be used for the input Density Matrix of 
 next SCF cycle (linear mixing):
 $\rho^{n+1}_{in} = \alpha \rho^{n}_{out} 
 +(1 - \alpha) \rho^{n}_{in}$.
 
-{\it Default value:} 0.25
+{\it Default value:} {\tt 0.25}
 
-\item[{\bf DM.NumberPulay}] ({\it integer}): It controls the 
-Pulay convergence accelerator. Pulay mixing generally
+\item[{\bf DM.NumberPulay}] ({\it integer}):\index{Pulay mixing} 
+\index{DM.NumberPulay@{\bf DM.NumberPulay}}\index{SCF!mixing!Pulay} 
+It controls the Pulay convergence accelerator. Pulay mixing generally
 accelerates convergence quite significantly, and can
 reach convergence in cases where linear mixing cannot.
-One Pulay mixing will be performed every {\bf DM.NumberPulay} SCF
-iterations, the other iterations using linear mixing. If 
-it is less than 2, only linear mixing is used.
+%One Pulay mixing will be performed every {\bf DM.NumberPulay} SCF
+%iterations, the other iterations using linear mixing. If 
+%it is less than 2, only linear mixing is used.
+The guess for the $n+1$ iteration is constructed using the
+input and output matrices of the {\bf DM.NumberPulay} former
+SCF cycles, in the following way:
+$\rho^{n+1}_{in} = \alpha \bar{\rho}^{n}_{out} 
++(1 - \alpha) \bar{\rho}^{n}_{in}$, where $\bar{\rho}^{n}_{out}$
+and $\bar{\rho}^{n}_{in}$ are constructed from the previous
+$N=${\bf DM.NumberPulay} cycles:
+%
+\begin{equation}
+\bar{\rho}^{n}_{out} = \sum_{i=1}^N
+\beta_i \rho_{out}^{(n-N+i)} \hspace{0.5truecm}; \hspace{0.5truecm}
+\bar{\rho}^{n}_{in} = \sum_{i=1}^N
+\beta_i \rho_{in}^{(n-N+i)}.
+\nonumber
+\end{equation}
+%
+The values of $\beta_i$ are obtained by minimizing the distance
+between $\bar{\rho}^{n}_{out}$ and $\bar{\rho}^{n}_{in}$.
+The value of $\alpha$ is given by variable {\bf DM.MixingWeight}.
 
-{\it Default value:} 0
+If {\bf DM.NumberPulay} is 0 or 1, simple linear mixing is
+performed.
 
-\item[{\bf DM.PulayOnFile}] ({\it logical}): Store
-intermediate information of Pulay mixing in files
-({\tt true}) or in memory ({\tt false}).
+{\it Default value:} {\tt 0}
+
+\item[{\bf DM.PulayOnFile}] ({\it logical}): 
+\index{DM.PulayOnFile@{\bf DM.PulayOnFile}} 
+Store intermediate information of Pulay mixing in files
+({\tt .true.}) or in memory ({\tt .false.}).
 Memory storage can increase considerably the
 memory requirements for large systems.
 If files are used, the filenames will be 
@@ -1374,34 +1804,82 @@ If files are used, the filenames will be
 where SystemLabel is the name associated
 to parameter {\tt SystemLabel}.
 
-{\it Default value:} {\tt false}
+{\it Default value:} {\tt .false.}
 
-\item[{\bf DM.Tolerance}] ({\it real}): Tolerance of Density Matrix.
+\item[{\bf DM.NumberKick}] ({\it integer}):\index{Linear mixing kick} 
+\index{DM.NumberKick@{\bf DM.NumberKick}}
+%\index{SCF!mixing!linear!Pulay} 
+\index{SCF!mixing!linear} 
+Option to skip the Pulay mixing earch certain number of iterations,
+and use a linear mixing instead. Linear mixing is done
+every {\bf DM.NumberKick} iterations, using a mixing coefficient
+$\alpha$ given by variable {\bf DM.KickMixingWeight} 
+(instead of the usual mixing {\bf DM.MixingWeight}).
+This allows in some difficult cases to bring the SCF out of
+loops in which the selfconsistency is stocked.
+If {\bf DM.MixingWeight}=0, no linear mix is used.
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf DM.KickMixingWeight}] ({\it real}):\index{SCF!mixing!Pulay}
+\index{DM.KickMixingWeight@{\bf DM.KickMixingWeight}}
+%\index{SCF!mixing!linear!Pulay} 
+\index{SCF!mixing!linear} 
+Proportion $\alpha$ of 
+output Density Matrix to be used for the input Density Matrix of 
+next SCF cycle (linear mixing):
+$\rho^{n+1}_{in} = \alpha \rho^{n}_{out} 
++(1 - \alpha) \rho^{n}_{in}$, for linear mixing kicks within the
+Pulay mixing. This mixing is done every {\bf DM.NumberKick} cycles.
+
+{\it Default value:} {\tt 0.50}
+
+
+
+\item[{\bf DM.MixSCF1}] ({\it logical}):\index{SCF!mixing}
+\index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{SCF!mixing}
+Logical variable to indicate whether mixing is done in the
+first SCF cycle or not. Usually, mixing should not be done in
+the first cycle, to avoid non-idempotency in density matrix
+from Harris or previous steps. It can be useful, though,
+for restarts of selfconsistency runs.
+
+{\it Default value:} {\tt .false.}
+
+
+
+\item[{\bf DM.Tolerance}] ({\it real}): 
+\index{DM.Tolerance@{\bf DM.Tolerance}} 
+Tolerance of Density Matrix.
 When the maximum difference between the output and the
 input on each element of the DM 
 in a SCF cycle is smaller than DM.Tolerance,
 the selfconsistency has been achieved.
 
-{\it Default value:} $10^{-4}$
+{\it Default value:} {${\tt 10^{-4}}$}
 
-\item[{\bf DM.InitSpinAF}] ({\it logical}): It defines the 
-initial spin density for a spin polarized calculation. The spin
-density is initially constructed with the maximum possible
+\item[{\bf DM.InitSpinAF}] ({\it logical}):\index{spin}
+\index{spin!initialization}\index{ferromagnetic initial DM}
+\index{antiferromagnetic initial DM} 
+\index{DM.InitSpinAF@{\bf DM.InitSpinAF}} 
+It defines the initial spin density for a spin polarized calculation. 
+The spin density is initially constructed with the maximum possible
 spin polarization for each atom in its atomic configuration.
 This variable defines the relative orientation of the atomic
 spins: 
 
 \begin{itemize}
-\item {\tt false} gives ferromagnetic order (all spins up).
-\item {\tt true} gives antiferromagnetic order. Up and down are
+\item {\tt .false.} gives ferromagnetic order (all spins up).
+\item {\tt .true.} gives antiferromagnetic order. Up and down are
 assigned according to order in the block 
 {\bf AtomicCoordinatesAndAtomicSpecies}: up for the odd atoms, down for even.
 \end{itemize}
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
 
 
-\item[{\bf DM.InitSpin}] ({\it data block}): It defines the
+\item[{\bf DM.InitSpin}] ({\it data block}): 
+\index{DM.InitSpin@{\bf DM.InitSpin}} It defines the
 initial spin density for a spin polarized calculation atom by atom.
 In the block there is one line per atom to be spin-polarized, 
 containing the atom index (integer, ordinal in the block
@@ -1414,16 +1892,18 @@ symbol {\tt +} or {\tt -} instead of the polarization value.
 There is no need to include a line for every atom, only for
 those to be polarized. The atoms not contemplated in the block will
 be given non-polarized initialization.
+For non-collinear spin, the spin direction may be specified for
+each atom by the polar angles theta and phi, given as the last
+two arguments in degrees. If not specified, theta=0 is assumed.
+{\bf NonCollinearSpin} must be {\tt .true.} to use the spin direction.
 
 Example:
 
 \begin{verbatim}
      %block DM.InitSpin
-        5  -1.
-        3   +
+        5  -1.   90.   0.   # Atom index, spin, theta, phi (deg)
+        3   +    45. -90.
         7   -
-        +   1
-       -.5  2
      %endblock DM.InitSpin
 \end{verbatim}
 
@@ -1431,21 +1911,24 @@ Example:
 If absent, {\bf DM.InitSpinAF} defines the polarization.
 
 
-\item[{\bf NeglNonOverlapInt}] ({\it logical}): Logical variable
-to neglect or compute interactions between orbitals
+\item[{\bf NeglNonOverlapInt}] ({\it logical}): 
+\index{NeglNonOverlapInt@{\bf NeglNonOverlapInt}} 
+Logical variable to neglect or compute interactions between orbitals
 which do not overlap. These come from the KB projectors.
 Neglecting them makes the Hamiltonian more sparse, and
 the Order-N calculation faster.  USE WITH CARE!!!
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
         
-\item[{\bf ExternalElectricField}] ({\it data block}):
-Specifies an external electric field for molecules, chains and slabs.
+\item[{\bf ExternalElectricField}] ({\it data block}): 
+\index{ExternalElectricField@{\bf ExternalElectricField}}
+It specifies an external electric field for molecules, chains and slabs.
 The electric field should be orthogonal to `bulk directions', like
 those parallel to a slab (bulk electric fields, like in
 dielectrics or ferroelectrics, are not allowed). If it is not, an
 error message is issued and the components of the field in bulk
-directions are suppressed automatically. Example:
+directions are suppressed automatically. The input is a
+vector in cartesian coordinates, in the specified units. Example:
 
 \begin{verbatim}
      %block ExternalElectricField
@@ -1454,6 +1937,89 @@ directions are suppressed automatically. Example:
 \end{verbatim}
 
 {\it Default value:} zero field
+
+
+\item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect} 
+\index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
+For improving grid-cutoff convergence. It specifies points within
+the grid cell for a symmetrization sampling: the space 
+homogeneity (traslational invariance)
+is broken by the grid. This symmetry breaking is clear
+when moving one single atom in an otherwise empty simulation cell.
+The total energy oscillates with the grid periodicity when moving
+it around, like on an egg-box. This effect tends to disappear with 
+finer grids. For a given grid it can be eliminated
+by recovering the lost symmetry: by symmetrizing the sensitive
+quantities. The full symmetrization implies an integration (averaging)
+over the grid cell. Instead, a finite sampling can be performed.
+
+It is a sampling of rigid displacements of the system with respect
+to the grid. The original grid-system setup (one point of the grid
+at the origin) is always calculated. It is the (0,0,0) displacement. 
+The block {\bf GridCellSampling} gives the additional displacements
+wanted for the sampling. They are given relative to the grid-cell 
+vec0tors, i.e., (1,1,1) would displace to the next grid point across
+the body diagonal, giving an equivalent grid-system situation
+(a useless displacement for a sampling).
+
+Examples: Assume a cubic cell, and therefore a (smaller) cubic grid cell.
+If there is no block or the block is empty, then the original (0,0,0)
+will be used only. The block: 
+
+\begin{verbatim}
+     %block GridCellSampling
+        0.5    0.5    0.5
+     %endblock GridCellSampling
+\end{verbatim}
+
+would use the body center as a second point in the sampling. Or:
+
+
+\begin{verbatim}
+     %block GridCellSampling
+        0.5    0.5    0.0
+        0.5    0.0    0.5
+        0.0    0.5    0.5
+     %endblock GridCellSampling
+\end{verbatim}
+
+gives an fcc kind of sampling, and
+
+
+\begin{verbatim}
+     %block GridCellSampling
+        0.5    0.0    0.0
+        0.0    0.5    0.0
+        0.0    0.0    0.5
+        0.0    0.5    0.5
+        0.5    0.0    0.5
+        0.5    0.5    0.0
+        0.5    0.5    0.5
+     %endblock GridCellSampling
+\end{verbatim}
+
+gives again a cubic sampling with half the original side length.
+It is not trivial to choose a right set of displacements so as
+to maximize the new 'effective' cutoff. It depends on the 
+kind of cell. It may be automatized in the future, but it 
+is now left to the user, who introduces the displacements
+manually through this block.
+
+The quantities which are symmetrized are: ($i$) energy terms
+that depend on the grid, ($ii$) forces, ($iii$) stress
+tensor, and ($iv$) electric dipole.
+
+The symmetrization is performed at the end of every SCF cycle. The 
+whole cycle is done for the (0,0,0) displacement, and, when the
+density matrix is converged, the same (now fixed)
+density matrix is used to obtain the desired quantities at the 
+other displacements (the density matrix itself is {\it not}
+symmetrized as it gives a much smaller egg-box effect).
+The CPU time needed for each displacement
+in the {\bf GridCellSampling} block
+is of the order of one extra SCF iteration.
+
+{\it Default value:} Empty.
 
 \end{description}
 
@@ -1466,64 +2032,162 @@ directions are suppressed automatically. Example:
 \itemsep 10pt
 \parsep 0pt
 
-\item[{\bf SolutionMethod}] ({\it string}): Character string to chose between
+\item[{\bf SolutionMethod}] ({\it string}): 
+\index{SolutionMethod@{\bf SolutionMethod}} 
+Character string to chose between
 diagonalization ({\tt diagon}) or Order-N ({\tt OrderN}) solution
 of the LDA Hamiltonian.
 
 {\it Default value:} {\tt diagon} for 100 atoms or less in the 
 {\bf unit} cell, {\tt OrderN} for more than 100 atoms.
 
-\item[{\bf ElectronicTemperature}] ({\it real temperature or energy}):
+\item[{\bf ElectronicTemperature}] ({\it real temperature or energy}): 
+\index{ElectronicTemperature@{\bf ElectronicTemperature}}
 Temperature for Fermi-Dirac distribution. Useful specially for
 metals, and to accelerate selfconsistency in some cases.
 
-{\it Use:} Used only if SolutionMethod = {\tt diagon}
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}
 
-{\it Default value:} 300. K.
+{\it Default value:} {\tt 300.0 K}
 
 
-\item[{\bf ON.functional}] ({\it string}): Choice of order-N minimization
-functionals:
+\item[{\bf ON.functional}] ({\it string}): 
+\index{ON.functional@{\bf ON.functional}} 
+Choice of order-N minimization functionals: 
 \begin{itemize}
-\item {\tt Kim}: Functional of Kim, Mauri and Galli, PRB 52, 1640 (1995).
-\item {\tt Ordejon-Mauri}: Functional of Ordejon et al, or Mauri et al,
-see PRB 51, 1456 (1995).
-\item {\tt files}: Reads localized-function information from a file and 
-chooses automatically. NOT COMPLETELY READY YET!
+\item {\tt Kim}:\index{Kim@{\tt Kim}} 
+Functional of Kim, Mauri and Galli, PRB 52, 1640 (1995).
+\item {\tt Ordejon-Mauri}:\index{Ordejon-Mauri@{\tt Ordejon-Mauri}} 
+Functional of Ordej\'on et al, or Mauri et al, see PRB 51, 1456 (1995).
+\item {\tt files}:\index{files (ON.functional)@{\tt files} (ON.functional)} 
+Reads localized-function information from a file and 
+chooses automatically the functional to be used. 
 \end{itemize}
 
-\item[{\bf ON.MaxNumIter}] ({\it integer}): Maximum number of iterations
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt ordern}
+
+{\it Default value:} {\tt Kim}
+
+\item[{\bf ON.MaxNumIter}] ({\it integer}): 
+\index{ON.MaxNumIter@{\bf ON.MaxNumIter}} 
+Maximum number of iterations
 in the conjugate minimization of the electronic
 energy, in each SCF cycle.
 
-{\it Use:} Used only if SolutionMethod = {\tt OrderN}
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
 
-{\it Default value:} 1000
+{\it Default value:} {\tt 1000}
 
-\item[{\bf ON.etol}] ({\it real}): Relative-energy tolerance in the 
-conjugate minimization of the electronic
+\item[{\bf ON.etol}] ({\it real}): 
+\index{ON.etol@{\bf ON.etol}} 
+Relative-energy tolerance in the conjugate minimization of the electronic
 energy. The minimization finishes if 
 \hspace{0.2truecm} $2 (E_n - E_{n-1}) / (E_n + E_{n-1}) \leq $ ON.etol.
 
-{\it Use:} Used only if SolutionMethod = {\tt OrderN}
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
 
-{\it Default value:} $10^{-8}$
+{\it Default value:} ${\tt 10^{-8}}$
 
-\item[{\bf ON.eta}] ({\it real energy}): Fermi level parameter of Kim 
+\item[{\bf ON.eta}] ({\it real energy}): 
+\index{ON.eta@{\bf ON.eta}} 
+Fermi level parameter of Kim 
 {\it et al.}. This should be in the energy gap, and tuned to obtain
 the correct number of electrons.
 
-{\it Use:} Used only if SolutionMethod = {\tt OrderN}
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
 
-{\it Default value:} 0.0 eV
+{\it Default value:} {\tt 0.0 eV}
 
-\item[{\bf ON.RcLWF}] ({\it real legth}): Localization redius for the
-Localized Wave Functions (LWF's).
+\item[{\bf ON.RcLWF}] ({\it real legth}): 
+\index{ON.RcLWF@{\bf ON.RcLWF}}\index{Localized Wave Functions} 
+Localization redius for the Localized Wave Functions (LWF's).
 
-{\it Use:} Used only if SolutionMethod = {\tt OrderN}
+{\it Use:} Used only if  {\bf SolutionMethod} = {\tt OrderN}
 
-{\it Default value:} 9.5 Bohr.
+{\it Default value:} {\tt 9.5 Bohr}
         
+\item[{\bf ON.ChemicalPotential}] ({\it logical}): 
+\index{ON.ChemicalPotential@{\bf ON.ChemicalPotential}}
+\index{Chemical Potential} 
+Specifies whether to calculate an order-{\it N} estimate of the
+Chemical Potential, by the projetion method 
+(Goedecker and Teter, PRB {\bf 51}, 9455 (1995); 
+Stephan, Drabold and Martin, PRB {\bf 58}, 13472 
+(1998)). This is
+done by expanding the Fermi function (or density matrix)
+at a given temperature, by means of Chebishev
+polynomials\index{Chebishev Polynomials}, and imposing a
+real space truncation on the density matrix.
+To obtain a realistic estimate, the temperature 
+should be small enough (typically, smaller than
+the energy gap), the localization range large enough
+(of the order of the one you would use for the Localized Wannier
+Functions), and the order of the polynomial expansion
+sufficiently large (how large depends on the temperature; 
+typically, 50-100).
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf ON.ChemicalPotentialUse}] ({\it logical}): 
+\index{ON.ChemicalPotentialUse@{\bf ON.ChemicalPotentialUse}}
+\index{Chemical Potential} 
+Specifies whether to use the calculated estimate of the
+Chemical Potential, instead of the parameter 
+{\bf ON.eta}\index{ON.eta@{\bf ON.eta}} 
+for the order-{\it N} energy functional minimization.
+This is useful if you do not know the position
+of the Fermi level, typically in the beginning
+of an order-{\em N} run.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}.
+Overrides the value of {\bf ON.eta}.
+Overrides the value of {\bf ON.ChemicalPotential}, setting
+it to {\tt .true.}.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf ON.ChemicalPotentialRc}]  ({\it real legth}):
+\index{ON.ChemicalPotentialRc@{\bf ON.ChemicalPotentialRc}}
+\index{Chemical Potential} 
+Defines the cutoff radius for the density matrix or Fermi
+operator in the calculation of the estimate of the
+Chemical Potential.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN}
+and {\bf ON.ChemicalPotential} or  {\bf ON.ChemicalPotentialUse} 
+= {\tt .true.}
+
+{\it Default value:} {\tt 9.5 Bohr}.
+
+\item[{\bf ON.ChemicalPotentialTemperature}]  ({\it real temperature 
+or energy}):
+\index{ON.ChemicalPotentialTemperature@{\bf ON.ChemicalPotentialTemperature}}
+\index{Chemical Potential} 
+Defines the temperature to be used in the Fermi function expansion
+in the calculation of the estimate of the Chemical Potential.
+To have an accurate results, this temperature should be smaller 
+than the gap of the system.
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN},
+and {\bf ON.ChemicalPotential} or  {\bf ON.ChemicalPotentialUse} = 
+{\tt .true.}
+
+{\it Default value:} {\tt 0.05 Ry}.
+
+\item[{\bf ON.ChemicalPotentialOrder}] ({\it integer}):
+\index{ON.ChemicalPotentialOrder@{\bf ON.ChemicalPotentialOrder}}
+\index{Chemical Potential}
+Order of the Chebishev expansion to calculate the estimate
+of the Chemical Potential. 
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt OrderN},
+and {\bf ON.ChemicalPotential} or  {\bf ON.ChemicalPotentialUse} = 
+{\tt .true.}
+
+{\it Default value:} {\tt 100}
+
 \end{description}
 
 
@@ -1535,10 +2199,14 @@ Localized Wave Functions (LWF's).
 \itemsep 10pt
 \parsep 0pt
 
-\item[{\bf MD.TypeOfRun}] ({\it string}): Type of Molecular Dynamics (MD)  run. 
+\item[{\bf MD.TypeOfRun}] ({\it string}): 
+\index{MD.TypeOfRun@{\bf MD.TypeOfRun}} 
+Type of Molecular Dynamics (MD)  run. 
 Several options for MD and structural optimizations are 
 implemented. Note that some options specified in later variables
 (like quenching) modify the behavior of these MD options.
+If the system contains just one atom, {\tt CG} is the only 
+available dynamics option.
 \begin{itemize}
 \item {\tt CG} (Coordinate optimization by conjugate gradients)
 \item {\tt Verlet} (Standard Verlet algorithm MD)
@@ -1551,58 +2219,122 @@ by means of a Nos\'e thermostat and pressure controlled by
 the Parrinello-Rahman method)
 \item {\tt Anneal}  (MD with annealing to a desired
 temperature and/or pressure (see variable MD.AnnealOption below))
+\item {\tt FC}  (Compute force constants matrix\index{Force Constants
+Matrix} for phonon
+calculations))
 \end{itemize}
     
-{\it Default value:} {\tt Verlet}
+{\it Default value:} {\tt Verlet} ({\tt CG} for one atom systems)
+
+
+\item[{\bf MD.VariableCell}] ({\it logical}):
+\index{MD.VariableCell@{\bf MD.VariableCell}}
+\index{cell relaxation}
+If true, the lattice is relaxed together with the atomic coordinates
+in the conjugate gradient minimization. It allows to target 
+hydrostatic pressures or arbitrary stress tensors.
+See {\bf MD.MaxStressTol}, {\bf MD.TargetPressure}, {\bf MD.TargetStress}, and 
+{\bf MD.PreconditionVariableCell}.
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG}. 
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf MD.NumCGsteps}] ({\it integer}): 
+\index{MD.NumCGsteps@{\bf MD.NumCGsteps}} 
 Maximum number of conjugate gradient minimization
-moves (the minimization will stop before reaching this value
-if tolerance is reach; see MD.MaxForceTol below).
+moves (the minimization will stop
+if tolerance is reached before; see MD.MaxForceTol below).
 
 {\it Use:} Used only if MD.TypeOfRun is {\tt CG}
     
-{\it Default value:} 0
+{\it Default value:} {\tt 0}
 
-\item[{\bf MD.MaxCGDispl}] ({\it real length}): Maximum atomic displacements
-on a {\tt CG} optimization move.
+\item[{\bf MD.MaxCGDispl}] ({\it real length}): 
+\index{MD.MaxCGDispl@{\bf MD.MaxCGDispl}} 
+Maximum atomic displacements on a {\tt CG} optimization move.
 
 {\it Use:} Used only if MD.TypeOfRun is {\tt CG}
     
-{\it Default value:} 0.2 Bohr
+{\it Default value:} {\tt 0.2 Bohr}
 
-\item[{\bf MD.MaxForceTol}] ({\it real force}): Force tolerance
-in CG coordinate optimization.  
+
+\item[{\bf MD.PreconditionVariableCell}] ({\it real length}):
+\index{MD.PreconditionVariableCell@{\bf MD.PreconditionVariableCell}}
+A length to multiply to the strain components in a variable-cell conjugate
+gradient minimization. The strain components enter the minimization
+on the same footing as the coordinates. For a good CG efficiency, 
+this length should make
+the scale of energy variation with strain similar to the one 
+due to atomic displacements. It is also
+used for the application of the {\bf MD.MaxCGDispl} value to
+the strain components.
+ 
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} and Md.VariableCell
+is {\tt .true.}
+   
+{\it Default value:} {\tt 5.0 Ang}
+ 
+ 
+\item[{\bf MD.MaxForceTol}] ({\it real force}): 
+\index{MD.MaxForceTol@{\bf MD.MaxForceTol}} 
+Force tolerance in CG coordinate optimization.  
 Run stops if the maximum atomic force is
-smaller than MD.MaxForceTol
+smaller than {\bf MD.MaxForceTol} (see {\bf MD.MaxStressTol}
+for variable cell).
 
 {\it Use:} Used only if MD.TypeOfRun is {\tt CG}
     
-{\it Default value:} 0.01 Ry/Bohr
+{\it Default value:} {\tt 0.04 eV/Ang}
+
+
+\item[{\bf MD.MaxStressTol}] ({\it real pressure}):
+\index{MD.MaxStressTol@{\bf MD.MaxStressTol}}
+Stress tolerance in variable-cell CG optimization. Run stops
+if the maximum atomic force is smaller than {\bf MD.MaxForceTol}
+and the maximum stress component is smaller than {\bf MD.MaxStressTol}.
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} and Md.VariableCell
+is {\tt .true.}
+Special consideration is needed if used with Sankey-type basis sets, since 
+the combination of orbital kinks at the cutoff radii and the finite-grid
+integration originate discontinuities in the
+stress components, whose magnitude depends on the cutoff radii (or 
+energy shift) and the mesh cutoff. The tolerance has to be larger
+than the discontinuities to avoid endless optimizations if the target
+stress happens to be in a discontinuity.
+   
+{\it Default value:} {\tt 1.0 GPa}
+ 
    
 \item[{\bf MD.InitialTimeStep}] ({\it integer}): 
+\index{MD.InitialTimeStep@{\bf MD.InitialTimeStep}} 
 Initial time step of the MD simulation.
 In the current version of SIESTA it must be 1.
 
 {\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
     
-{\it Default value:} 1
+{\it Default value:} {\tt 1}
 
-\item[{\bf MD.FinalTimeStep}] ({\it integer}): Final time step of 
-the MD simulation.
-
-{\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
-    
-{\it Default value:} 1
-
-\item[{\bf MD.LengthTimeStep}] ({\it real time}): Length of the time step
-of the MD simulation.
+\item[{\bf MD.FinalTimeStep}] ({\it integer}): 
+\index{MD.FinalTimeStep@{\bf MD.FinalTimeStep}} 
+Final time step of the MD simulation.
 
 {\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
     
-{\it Default value:} 1.0 fs.
+{\it Default value:} {\tt 1}
+
+\item[{\bf MD.LengthTimeStep}] ({\it real time}): 
+\index{MD.LengthTimeStep@{\bf MD.LengthTimeStep}} 
+Length of the time step of the MD simulation.
+
+{\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
+    
+{\it Default value:} {\tt 1.0 fs}
 
 \item[{\bf MD.InitialTemperature}] ({\it real temperature or energy}): 
+\index{MD.InitialTemperature@{\bf MD.InitialTemperature}} 
 Initial temperature for MD run. The atoms are assigned random 
 velocities drawn from the Maxwell-Bolzmann distribution with the
 corresponding temperature. The constraint of zero center of
@@ -1612,10 +2344,11 @@ mass velocity is imposed.
 ParrinelloRahman, NoseParrinelloRahman}
 or {\tt Anneal}.
 
-{\it Default value:} 0.0 K
+{\it Default value:} {\tt 0.0 K}
 
-\item[{\bf MD.Quench}] ({\it logical}): Logical option to perform a
-power quench during the molecular dynamics. 
+\item[{\bf MD.Quench}] ({\it logical}): 
+\index{MD.Quench@{\bf MD.Quench}} 
+Logical option to perform a power quench during the molecular dynamics. 
 In the power quench, each velocity component is set to
 zero if it is opposite to the corresponding force
 of that component. This affects atomic velocities,
@@ -1629,27 +2362,54 @@ only atomic coordinates (with {\bf MD.TypeOfRun} = {\tt Verlet})
 or atomic coordinates AND cell shape 
 (with {\bf MD.TypeOfRun} = {\tt ParrinelloRahman}).
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
 
 \item[{\bf MD.TargetTemperature}] ({\it real temperature or energy}): 
+\index{MD.TargetTemperature@{\bf MD.TargetTemperature}} 
 Target temperature for Nose thermostat and annealing options.
 
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Nose, NoseParrinelloRahman}
 or {\tt Anneal} (if {\bf MD.AnnealOption} = {\tt Temperature} or 
 {\tt TemperatureandPressure})
 
-{\it Default value:} 0.0 K
+{\it Default value:} {\tt 0.0 K}
 
-\item[{\bf MD.TargetPressure}] ({\it real pressure}): Target pressure
-for Parrinello-Rahman method and annealing options.
+\item[{\bf MD.TargetPressure}] ({\it real pressure}): 
+\index{MD.TargetPressure@{\bf MD.TargetPressure}} 
+Target pressure for Parrinello-Rahman method, variable cell CG optimizations,
+and annealing options.
 
-{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt ParrinelloRahman, 
-NoseParrinelloRahman} or {\tt Anneal} (if {\bf MD.AnnealOption} = 
-{\tt Pressure} or {\tt TemperatureandPressure})
+{\it Use:} Used only if MD.TypeOfRun = 
+{\tt ParrinelloRahman}, {\tt NoseParrinelloRahman},
+{\tt CG} (variable cell), or {\tt Anneal} 
+(if MD.AnnealOption = {\tt Pressure} or {\tt TemperatureandPressure})
 
-{\it Default value:} 0.0 Ry/Bohr**3
+{\it Default value:} {\tt 0.0 GPa}
+
+
+\item[{\bf MD.TargetStress}] ({\it data block}):
+External or target stress tensor for variable cell optimizations.
+Stress components are given in a line, in the order {\tt
+xx, yy, zz, xy, xz, yz}. In units of {\bf MD.TargetPressure},
+but with the opposite sign. For example, a uniaxial compressive stress 
+of 2 GPa along the 100 direction would be given by
+\begin{verbatim}
+       MD.TargetPressure  2. GPa
+       %block MD.TargetStress
+           -1.0  0.0  0.0  0.0  0.0  0.0
+       %endblock MD.TargetStress
+\end{verbatim}
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} and 
+MD.VariableCell is {\tt .true.} 
+ 
+{\it Default value:} Hydrostatic target pressure: 
+{\tt -1., -1., -1., 0., 0., 0.}
+
+
 
 \item[{\bf MD.NoseMass}] ({\it real moment of inertia}): 
+\index{MD.NoseMass@{\bf MD.NoseMass}} 
 Generalized mass of Nose variable.
 This determines the time scale of the Nose variable
 dynamics, and the coupling of the thermal bath to
@@ -1658,9 +2418,10 @@ the physical system.
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Nose} or 
 {\tt NoseParrinelloRahman}
 
-{\it Default value:} 100.0 Ry*fs**2
+{\it Default value:} {\tt 100.0 Ry*fs**2}
 
 \item[{\bf MD.ParrinelloRahmanMass}] ({\it real moment of inertia}): 
+\index{MD.ParrinelloRahmanMass@{\bf MD.ParrinelloRahmanMass}} 
 Generalized mass of Parrinello-Rahman variable.
 This determines the time scale 
 of the Parrinello-Rahman variable
@@ -1670,10 +2431,11 @@ the physical system.
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt ParrinelloRahman} 
 or {\tt NoseParrinelloRahman}
 
-{\it Default value:} 100.0 Ry*fs**2
+{\it Default value:} {\tt 100.0 Ry*fs**2}
 
-\item[{\bf MD.AnnealOption}] ({\it string}): Type of annealing MD to
-perform. The target temperature or pressure are
+\item[{\bf MD.AnnealOption}] ({\it string}): 
+\index{MD.AnnealOption@{\bf MD.AnnealOption}} 
+Type of annealing MD to perform. The target temperature or pressure are
 achieved by velocity and unit cell rescaling, 
 in a given time determined by the variable
 {\bf MD.TauRelax} below.
@@ -1690,24 +2452,53 @@ cell size and shape)
 
 {\it Default value:} {\tt TemperatureAndPressure}
 
-\item[{\bf MD.TauRelax}] ({\it real time}): Relaxation time
-to reach target temperature
+\item[{\bf MD.TauRelax}] ({\it real time}): 
+\index{MD.TauRelax@{\bf MD.TauRelax}} 
+Relaxation time to reach target temperature
 and/or pressure in annealing MD.
 
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Anneal}
 
-{\it Default value:} 100.0 fs
+{\it Default value:} {\tt 100.0 fs}
 
-\item[{\bf MD.BulkModulus}] ({\it real pressure}): Estimate (may be rough) of
-the bulk modulus of the system.
+\item[{\bf MD.BulkModulus}] ({\it real pressure}): 
+\index{MD.BulkModulus@{\bf MD.BulkModulus}} 
+Estimate (may be rough) of the bulk modulus of the system.
 This is needed to set the rate of change of cell shape
 to reach target pressure in annealing MD.
 
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Anneal}, when
 {\bf MD.AnnealOption} = {\tt Pressure} or {\tt TemperatureAndPressure}
 
-{\it Default value:} 100.0 Ry/Bohr**3
+{\it Default value:}  {\tt 100.0 Ry/Bohr**3}
         
+\item[{\bf MD.FCDispl}] ({\it real length}): 
+\index{MD.FCDispl@{\bf MD.FCDispl}} 
+Displacement to use for the computation of the force constant
+matrix\index{Force Constants Matrix} for phonon calculations.
+
+{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
+
+{\it Default value:}  {\tt 0.04 Bohr}
+
+\item[{\bf MD.FCfirst}] ({\it integer}): 
+\index{MD.FCfirst@{\bf MD.FCfirst}} 
+Index of first atom to displace for the computation of the force constant
+matrix\index{Force Constants Matrix} for phonon calculations.
+
+{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
+
+{\it Default value:}  {\tt 1}
+
+\item[{\bf MD.FClast}] ({\it integer}): 
+\index{MD.FClast@{\bf MD.FClast}} 
+Index of last atom to displace for the computation of the force constant
+matrix\index{Force Constants Matrix} for phonon calculations.
+
+{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt FC}.
+
+{\it Default value:}  Same as {\bf NumberOfAtoms}
+
 \end{description}
 
 
@@ -1719,9 +2510,149 @@ to reach target pressure in annealing MD.
 \itemsep 10pt
 \parsep 0pt
 
+\item[{\bf LongOutput}] ({\it logical}):
+\index{LongOutput@{\bf LongOutput}}\index{output!long}
+SIESTA can write to standard output different data sets
+depending on the values for output options described below.
+By default SIESTA will not write most of them. They can be
+large for large systems (coordinates, eigenvalues, forces, etc.)
+and, if written to standard output, they accumulate for all the steps of 
+the dynamics. SIESTA writes the information in other files
+(see Output Files) in addition to the standard output, and these
+can be accumulative or not.
+
+Setting {\bf LongOutput} to {\tt .true.} changes the default of
+some options, obtaining more information in the output (verbose).
+In particular, it redefines the defaults for the following:
+
+\begin{itemize}
+
+\item
+{\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}:
+\index{output!atomic coordinates!in a dynamics step} {\tt .true.}
+\item
+{\bf WriteForces}\index{WriteForces@{\bf WriteForces}}:
+\index{output!forces} {\tt .true.}
+\item
+{\bf WriteKpoints}\index{WriteKpoints@{\bf WriteKpoints}}:
+\index{output!grid $\vec k$ points} {\tt .true.}
+\item
+{\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}:
+\index{output!eigenvalues} {\tt .true.}
+\item
+{\bf WriteKbands}\index{WriteKbands@{\bf WriteKbands}}:
+\index{output!band $\vec k$ points} {\tt .true.}
+\item
+{\bf WriteBands}\index{WriteBands@{\bf WriteBands}}:
+\index{output!band structure} {\tt .true.}
+\item
+{\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}} 
+\index{output!Mulliken analysis}\index{Mulliken population analysis} 1
+
+\end{itemize}
+
+The specific changing of any of these options overrides the
+{\bf LongOutput} setting for it.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf WriteCoorInitial}] ({\it logical}):
+\index{WriteCoorInitial@{\bf WriteCoorInitial}}
+\index{output!atomic coordinates!initial}
+It determines whether the initial atomic coordinates of the simulation are
+dumped into the main output file. These coordinates correspond to the
+ones actually used in the first step, i.e., after reading (if pertinent)
+the {\it Systemlabel}.XV file. It is not affected by the {\bf LongOutput}
+flag.
+
+{\it Default value:} {\tt .true.}
+
+ 
+\item[{\bf WriteCoorStep}] ({\it logical}):
+\index{WriteCoorStep@{\bf WriteCoorStep}}
+\index{output!atomic coordinates!in a dynamics step}
+If {\tt .true.} it writes the atomic coordinates at every 
+time or relaxation step. Otherwise it does not. They are
+always written in the {\it Systemlabel}.XV file, but
+overriden at every step. They can be also accumulated
+in the {\it Systemlabel}.MD or {\it Systemlabel}.MDX files
+depending on {\bf WriteMDhistory}. Unless the contrary is specified
+(see {\bf WriteMDXmol}), if {\bf WriteCoorStep} is {\tt .false.}, 
+the coordinates are accumulated in {\sc XMol} {\tt xyz} format in the
+{\it Systemlabel}.ANI file.
+\index{WriteMDhistory@{\bf WriteMDhistory}}
+\index{output!atomic coordinates!history}
+For using the SIES2ARC utility\index{SIES2ARC}
+for generating a CERIUS .arc animation file,
+WriteCoorStep should be {\tt .true.}
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+ 
+ 
+\item[{\bf WriteForces}] ({\it logical}):
+\index{WriteForces@{\bf WriteForces}}\index{output!forces}
+If {\tt .true.} it writes the atomic forces at every
+time or relaxation step. Otherwise it does not. In this case,
+the forces of the last step can be found in the file {\it Systemlabel}.FA .
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+\item[{\bf WriteKpoints}] ({\it logical}):
+\index{WriteKpoints@{\bf WriteKpoints}}\index{output!grid $\vec k$ points}
+If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
+used in the grid for $k$-sampling, into the main output file.
+Otherwise, it does not.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+ 
+\item[{\bf WriteEigenvalues}] ({\it logical}):
+\index{WriteEigenvalues@{\bf WriteEigenvalues}}\index{output!eigenvalues}
+If {\tt .true.} it writes the Hamiltonian eigenvalues for the sampling
+$\vec k$ points, in the main output file.
+Otherwise it does not, but writes them in the file {\it Systemlabel}.EIG
+to be used by the EIG2DOS\index{EIG2DOS} postprocessing utility 
+(in the Util/ directory) for obtaining the density of
+states.\index{density of states}
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\item[{\bf WriteKbands}] ({\it logical}):
+\index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
+If {\tt .true.} it writes the coordinates of the $\vec k$ vectors
+defined for band plotting, into the main output file.
+Otherwise, it does not.
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+
+\item[{\bf WriteBands}] ({\it logical}):
+\index{WriteBands@{\bf WriteBands}}\index{output!band structure}
+If {\tt .true.} it writes the Hamiltonian eigenvalues corresponding to
+the $\vec k$ vectors defined for band plotting, in the main output file.
+Otherwise it does not. They are, however, dumped into the file 
+{\it Systemlabel}.bands to be used by postprocessing utilities for 
+plotting the band structure.\index{band structure} The GNUBANDS\index{GNUBANDS}
+program (found in the Util/ directory) reads the {\it Systemlabel}.bands
+from standard input and dumps to standard output a file directly
+plotable by {\sc Gnuplot}.\index{Gnuplot@{\sc Gnuplot}}
+\footnote{{\sc Gnuplot} is under \copyright copyright of GNU software}
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
 
 \item[{\bf WriteMullikenPop}] ({\it integer}): 
-Determines the level of Mulliken population analysis printed:
+\index{WriteMullikenPop@{\bf WriteMullikenPop}}\index{Mulliken population
+analysis}\index{output!Mulliken analysis} 
+It determines the level of Mulliken population analysis printed:
 \begin{itemize}
 \item 0 = None
 \item 1 = atomic and orbital charges
@@ -1729,20 +2660,23 @@ Determines the level of Mulliken population analysis printed:
 \item 3 = 2 + orbital overlap pop.
 \end{itemize}
 The order of the orbitals in the population lists is defined
-by the order of atoms and the order of orbital shells given in
-input. Within a $l$-shell be aware that the order is not
+by the order of atoms. For each atom, populations for PAO orbitals and
+double-$z$, triple-$z$, etc... derived from them are displayed first for 
+all the angular momenta. Then, populations for perturbative polarization
+orbitals are written.
+Within a $l$-shell be aware that the order is not
 conventional, being $y$, $z$, $x$ for $p$ orbitals, and
-$xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals.
+$xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals. 
+
+{\it Default value:} {\tt 0} (see {\bf LongOutput})
 
 
-{\it Default value:} 0
-
-
-\item[{\bf WriteCoorXmol}] ({\it logical}):
+\item[{\bf WriteCoorXmol}] ({\it logical}): 
+\index{WriteCoorXmol@{\bf WriteCoorXmol}}\index{XMol@{\sc XMol}}
 If {\tt .true.} it originates the writing of an extra file
 named {\it SystemLabel}{\tt .xyz} containing the final atomic
-coordinates in a format directly readable by XMol.\footnote{XMol
-is under copyright of Research Equipment Inc., dba Minnesota
+coordinates in a format directly readable by {\sc XMol}.\footnote{XMol
+is under \copyright copyright of Research Equipment Inc., dba Minnesota
 Supercomputer Center Inc.} Coordinates come out in {\AA}ngstr\"om
 independently of what specified in {\bf AtomicCoordinatesFormat} and
 in {\bf AtomCoorFormatOut}.
@@ -1750,11 +2684,13 @@ in {\bf AtomCoorFormatOut}.
 {\it Default value:} {\tt .false.}
         
 
-\item[{\bf WriteCoorCerius}] ({\it logical}):
+\item[{\bf WriteCoorCerius}] ({\it logical}): 
+\index{WriteCoorCerius@{\bf WriteCoorCerius}}\index{Cerius2@{\sc Cerius2}}
 If {\tt .true.} it originates the writing of an extra file
 named {\it SystemLabel}{\tt .xtl} containing the final atomic
 coordinates in a format directly readable by CERIUS.\footnote{CERIUS
-is under copyright of Molecular Simulations Inc.} Coordinates come out in 
+is under \copyright copyright of Molecular Simulations Inc.} 
+Coordinates come out in 
 {\tt Fractional} format (the same as {\tt ScaledByLatticeVectors})
 independently of what specified in {\bf AtomicCoordinatesFormat} and
 in {\bf AtomCoorFormatOut}.
@@ -1764,12 +2700,51 @@ to have them positive, by using {\bf AtomicCoordinatesOrigin}.
 
 {\it Default value:} {\tt .false.}
 
+ 
+\item[{\bf WriteMDXmol}] ({\it logical}):
+\index{WriteMDXmol@{\bf WriteMDXmol}}\index{XMol@{\sc XMol}}
+If {\tt .true.} it originates the writing of an extra file
+named {\it SystemLabel}{\tt .ANI} containing all the atomic
+coordinates of the simulation in a format directly readable by 
+{\sc XMol} for animation.\index{animation} Coordinates come out in 
+{\AA}ngstr\"om independently of what specified in 
+{\bf AtomicCoordinatesFormat} and in {\bf AtomCoorFormatOut}.
+This file is accumulative even for different runs.
+There is the alternative for animation by generating a .arc file for 
+CERIUS. It is through the SIES2ARC\index{SIES2ARC} postprocessing utility 
+in the Util/ directory, and it requires the coordinates to be
+accumulated in the output file, i.e., WriteCoorStep = {\tt .true.}
+ 
+{\it Default value:} {\tt .false.} if WriteCoorStep is {\tt .true.}
+and vice-versa.
 
-\item[{\bf WarningMinimumAtomicDistance}] ({\it physical}):
+ 
+\item[{\bf WriteMDhistory}] ({\it logical}):
+\index{WriteMDhistory@{\bf WriteMDhistory}}
+\index{output!molecular dynamics!history}
+If {\tt .true.} SIESTA accumulates the molecular dynamics
+trajectory in the following files:
+\begin{itemize}
+\item
+{\it Systemlabel}.MD : atomic coordinates and velocities (and
+lattice vectors and their time derivatives, if the dynamics implies
+variable cell). The information is stored unformatted for postprocessing
+with utility programs to analyze the MD trajectory. 
+\item
+{\it Systemlabel}.MDE : shorter description of the run, with energy,
+temperature, etc., per time step.
+\end{itemize}
+These files are accumulative even for different runs.
+ 
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf WarningMinimumAtomicDistance}] ({\it physical}): 
+\index{WarningMinimumAtomicDistance@{\bf WarningMinimumAtomicDistance}}
 Fixes a threshold interatomic distance below which a warning
 message is printed.
 
-{\it Default value:} 1.0 Bohr
+{\it Default value:} {\tt 1.0 Bohr}
 
         
 \end{description}
@@ -1778,6 +2753,7 @@ message is printed.
 
 \vspace{5pt}
 \subsection{Options for saving/reading information}
+\index{reading saved data}
 
 \begin{description}
 \itemsep 10pt
@@ -1785,6 +2761,8 @@ message is printed.
 
 
 \item[{\bf UseSaveData}] ({\it logical}): 
+\index{UseSaveData@{\bf UseSaveData}} 
+\index{reading saved data!all}
 Instructs to use as much information as possible stored from
 previous runs in files {\tt SystemLabel}.XV, {\tt SystemLabel}.DM and
 {\tt SystemLabel}.LWF, where SystemLabel is the name associated
@@ -1793,20 +2771,24 @@ to parameter {\tt SystemLabel}.
 {\it Use:} If the required files do not exist, warnings are
 printed but the program does not stop.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf DM.UseSaveDM}] ({\it logical}): 
+\index{DM.UseSaveDM@{\bf DM.UseSaveDM}} 
+\index{reading saved data!density matrix}
 Instructs to read the density matrix stored in file
 {\tt SystemLabel}.DM by a previous run.
 
 {\it Use:} If the required file does not exist, a warning is
 printed but the program does not stop. Overrides {\bf UseSaveData}.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
 
 
 \item[{\bf ON.UseSaveLWF}] ({\it logical}): 
+\index{ON.UseSaveLWF@{\bf ON.UseSaveLWF}} 
+\index{reading saved data!localized wave functions (order-$N$)}
 Instructs to read the localized wave functions stored in file
 {\tt SystemLabel}.LWF by a previous run.
 
@@ -1814,20 +2796,38 @@ Instructs to read the localized wave functions stored in file
 If the required file does not exist, a warning is
 printed but the program does not stop. Overrides {\bf UseSaveData}.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
 
-
-\item[{\bf MD.UseSaveXV}] ({\it logical}): 
-Instructs to read the atomic positions and velocities stored 
+ 
+\item[{\bf MD.UseSaveXV}] ({\it logical}):
+\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}
+\index{reading saved data!XV}
+Instructs to read the atomic positions and velocities stored
 in file {\tt SystemLabel}.XV by a previous run.
+ 
+{\it Use:} If the required file does not exist, a warning is
+printed but the program does not stop. Overrides {\bf UseSaveData}.
+ 
+{\it Default value:} {\tt .false.}
 
-{\it Use:} Use: If the required file does not exist, a warning is
+
+\item[{\bf MD.UseSaveCG}] ({\it logical}): 
+\index{MD.UseSaveCG@{\bf MD.UseSaveCG}} 
+\index{reading saved data!CG}
+Instructs to read the conjugate-gradient hystory information stored
+in file {\tt SystemLabel}.CG by a previous run.
+
+{\it Use:} To get actual continuation of iterrupted CG runs, use
+together with {\bf MD.UseSaveXV} = {\tt .true.} with the XV
+file generated in the same run as the CG file.
+If the required file does not exist, a warning is
 printed but the program does not stop. Overrides {\bf UseSaveData}.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf SaveHS}] ({\it logical}): 
+\index{SaveHS@{\bf SaveHS}}\index{output!Hamiltonian \& overlap} 
 Instructs to write the hamiltonian and overlap matrices, as well
 as other data required to generate bands and density of states,
 in file {\tt SystemLabel}.HS. This file can be read by routine IOHS,
@@ -1835,10 +2835,11 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.HS is only written, not read, by siesta.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf SaveRho}] ({\it logical}): 
+\index{SaveRho@{\bf SaveRho}}\index{output!charge density} 
 Instructs to write the valence pseudocharge density at the
 mesh used by DHSCF,
 in file {\tt SystemLabel}.RHO. This file can be read by routine IORHO,
@@ -1846,10 +2847,25 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.RHO is only written, not read, by siesta.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
+        
+
+\item[{\bf SaveDeltaRho}] ({\it logical}): 
+\index{SaveDeltaRho@{\bf SaveDeltaRho}}\index{output!$\delta \rho(\vec r)$} 
+Instructs to write $\delta \rho(\vec r) = \rho(\vec r) - \rho_{atm}(\vec r)$,
+i.e., the valence pseudocharge density minus the sum of atomic valence
+pseudocharge densities. It is done for the mesh points used by DHSCF and it
+comes in file {\tt SystemLabel}.DRHO. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+
+{\it Use:} File {\tt SystemLabel}.DRHO is only written, not read, by siesta.
+
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf SaveElectrostaticPotential}] ({\it logical}): 
+\index{SaveElectrostaticPotential@{\bf SaveElectrostaticPotential}}
+\index{output!electrostatic potential} 
 Instructs to write the total electrostatic potential, defined as the
 sum of the hartree potential plus the local pseudopotential, at the
 mesh used by DHSCF,
@@ -1858,10 +2874,12 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.VH is only written, not read, by siesta.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf SaveTotalPotential}] ({\it logical}): 
+\index{SaveTotalPotential@{\bf SaveTotalPotential}} 
+\index{output!total potential}
 Instructs to write the valence total effective local potential
 (local pseudopotential + Hartree + Vxc), at the
 mesh used by DHSCF,
@@ -1870,10 +2888,12 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.VT is only written, not read, by siesta.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf LocalDensityOfStates}] ({\it block}): 
+\index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
+\index{output!local density of states}
 Instructs to write the LDOS, integrated between two given energies,
 at the mesh used by DHSCF,
 in file {\tt SystemLabel}.LDOS. This file can be read by routine IORHO,
@@ -1898,10 +2918,22 @@ File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
         
 
 \item[{\bf WriteSiestaDim}] ({\it logical}): 
+\index{WriteSiestaDim@{\bf WriteSiestaDim}} 
 Instructs siesta to write the correct dimension parameters in
 file siesta.h and stop.
 
-{\it Default value:} false
+{\it Default value:} {\tt .false.}
+
+\item[{\bf WriteDenchar}] ({\it logical}): 
+\index{WriteDenchar@{\bf WriteDenchar}}
+\index{output!charge density for DENCHAR code} 
+Instructs to write information needed by the utility program
+DENCHAR (by J. Junquera) to plot the valence charge density
+contours. The information is written in file {\tt SystemLabel}.PLD.
+
+{\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
+
+{\it Default value:} {\tt .false.}
 
 \end{description}
         
@@ -1911,17 +2943,20 @@ file siesta.h and stop.
 The atomic basis orbitals can be introduced by the user if using
 the option {\bf PAO.BasisType} = {\tt user}. They are to be stored in
 a file that will be read as explained below. 
+\index{basis!user provided}\index{user@{\tt user}}
 
 Even though information
 about the $l$-shells and number of zetas is provided in the file,
-SIESTA will have that information independently, either through the
-{\bf PAO\_basis\_and\_PS\_lmax} block, or through {\bf PAO.BasisSize}
-and related information. This allows the reading of specific orbitals
+SIESTA will have that information independently through the
+{\bf PAO.Basis} block.
+This allows the reading of specific orbitals
 out of a more general file.
 
-SIESTA will also define cutoff radii for all
-the orbitals introduced, according to the block {\bf PAO\_basis\_and\_PS\_lmax}
-or the {\bf PAO.EnergyShift} and {\bf PAO.SplitNorm} descriptors.
+SIESTA will also use for all
+the orbitals the cutoff radii introduced 
+according to the block {\bf PAO.Basis}. Only if 
+this cutoff radius is set to zero the programme will use 
+the values read form the file.
 It is responsibility of the user to ensure that the orbitals have
 died out by those radii.
 
@@ -1936,10 +2971,11 @@ The file should have the following structure:
 the file. Greater or equal than the one expected by SIESTA.
 \item Per $l$-shell: 
 \begin{itemize}
-\item One line with $l$ value and number of zetas for this $l$
+\item One line with $l$ value and number of zetas for this $l$. 
+This last number can be zero if there are not orbitals for the correspoding $l$.
 \item Per zeta
 \begin{itemize}
-\item One line with index of zeta, $n$ (number of pointsi), and cutoff radius 
+\item One line with index of zeta, $n$ (number of points), and cutoff radius 
 (not used)
 \item $n$ lines, each with the values of $r$ and $r \phi$ for each point
 (last $r$ has to be larger or equal than the cutoff known by SIESTA) 
@@ -1952,11 +2988,12 @@ the file. Greater or equal than the one expected by SIESTA.
 
 The pseudopotentials will be read by SIESTA from different files, one
 for each defined species (species defined either in block
-{\bf ChemicalSpeciesLabel} or in block {\bf PAO\_basis\_and\_PS\_lmax}).
+{\bf ChemicalSpeciesLabel}).\index{pseudopotential!files}
 The name of the files should be:
 
 {\it Chemical\_label}{\tt .vps}
 
+\noindent 
 where {\it Chemical\_label} corresponds to the label defined in the
 {\bf ChemicalSpeciesLabel} block or the chemical symbol corresponding to
 the atomic number specified in {\bf PAO\_basis\_and\_PS\_lmax}.
@@ -1967,17 +3004,96 @@ There is also the possibility (historical) to use the file
         
 \section{OUTPUT FILES}
 
-\subsection{Standard output}
-To be described here (see the cases in the siesta/Examples directory 
-for the time being).
-It is redirected to file case.out by the rsiesta shell script, 
-where 'case' is the name of the input data file (case.fdf). 
+\subsection{Standard output} \index{output!main output file}
+
+SIESTA writes its main output into standard output. 
+It is redirected to file {\it case}.out by the {\tt rsiesta} shell script, 
+where {\it case} is the name of the input data file ({\it case}.{\tt fdf}). 
 This name may be different from the value of {\bf SystemLabel}, 
 which is used to name several other output files.
 However, using the same name is recommended for clarity.
 
+A brief description follows. See the example cases in the 
+siesta/Examples directory for illustration. 
 
-\subsection{Used parameters}
+Before the actual run of SIESTA, the shell-script {\tt prdate} writes 
+the time, date and name of the computer. The same script is called
+at the end of the run. The program starts writing the version of
+the code which is used. Then, the input FDF file is dumped into
+the output file as is (except for empty lines). The program does
+part of the reading and digesting of the data at the beginning
+within the {\tt redata} subroutine. It prints some of the information
+it digests. It is important to note that it is only part of it,
+some other information being accessed by the different subroutines
+when they need it during the run (in the spirit of FDF input).
+A complete list of the input used by the code can be found at the
+end in the file {\tt out.fdf}, including defaults used by the code
+in the run.
+
+After that, the subroutine ATOM perrforms atomic duties, i.e., 
+reads the needed pseudopotentials, factorizes them into Kleinman-Bylander
+form, and generates (or reads) the atomic basis set to be used in the
+simulation. These stages are documented in the output file.
+
+The simulation begins after that, the output showing information
+of the MD (or CG) steps and the SCF cycles within.
+Basic descriptions of the process and results are
+presented. The user has the option to customize it,
+however,\index{output!customization} by defining different
+options that control the printing of informations
+like coordinates, forces, $\vec k$ points, etc.
+Here is a list of useful options: 
+ 
+\begin{itemize}
+\item
+{\bf WriteCoorInitial}\index{WriteCoorInitial@{\bf WriteCoorInitial}}
+\index{output!atomic coordinates!initial}
+for writing the initial atomic coordinates,
+\item
+{\bf WriteCoorStep}\index{WriteCoorStep@{\bf WriteCoorStep}}
+\index{output!atomic coordinates!in a dynamics step}
+for writing the atomic coordinates at every step,
+\item
+{\bf WriteForces}\index{WriteForces@{\bf WriteForces}}
+\index{output!forces}
+for writing the forces on the atoms at every step,
+\item
+{\bf WriteKpoints}\index{WriteKpoints@{\bf WriteKpoints}}
+\index{output!grid $\vec k$ points}
+for writing the coordinates of the $\vec k$ points used for the sampling,
+\item
+{\bf WriteEigenvalues}\index{WriteEigenvalues@{\bf WriteEigenvalues}}
+\index{output!eigenvalues}
+for writing the eigenvalues of the Hamiltonian at those $\vec k$ points,
+\item
+{\bf WriteKbands}\index{WriteKbands@{\bf WriteKbands}}
+\index{output!band $\vec k$ points}
+for writing the $\vec k$ points used to band-structure plots,
+\item
+{\bf WriteBands}\index{WriteBands@{\bf WriteBands}}
+\index{output!band structure} 
+for writing the band structure at those $\vec k$ points,
+\item
+{\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
+\index{output!Mulliken analysis}\index{Mulliken population analysis} 
+for writing the Mulliken population analysis at different levels of detail.
+\end{itemize}
+
+Except for the first one, which is {\tt .true.} by default, the
+default of SIESTA for this options is {\tt .false.} (or 0 for the last)
+which means no writing. That gives the short output format.
+
+There is a long output possibility (verbose) defined in SIESTA, which is
+obtained by setting {\bf LongOutput} to {\tt .true.} . It changes 
+the default of the previous flags to {\tt .true.} (to 1 for 
+Mulliken), with the consequent appearance of the 
+corresponding information in the output file.
+Of course, the explicit setting of any of these options overrides the
+{\bf LongOutput} setting of it.
+
+
+
+\subsection{Used parameters}\index{out.fdf@{\tt out.fdf}}
 The file {\it out.fdf} contains all the parameters used by SIESTA
 in a given run, both those specified in the input fdf file and
 those taken by default. They are written in fdf format, so that
@@ -1987,12 +3103,15 @@ for them.
 
 
 \subsection{Array sizes}
+\index{siesta.size@{\tt siesta.size}} \index{memory required}
+\index{array sizes}
 The file {\it siesta.size} contains the memory required by the
 large arrays of most subroutines. Generally, only problem-dependent
 arrays are considered, since fixed-size arrays are generally much smaller.
 
 
 \subsection{Basis}
+\index{basis}\index{output!basis}
 SIESTA generates the files
 {\it Chemical\_label.}{\tt PAO.basis}
 one per species, where the used basis orbitals are written in the 
@@ -2000,11 +3119,12 @@ same format as described for reading the {\tt user} type orbitals.
 
 
 \subsection{Pseudopotentials}
+\index{Pseudopotentials}
 SIESTA uses as local pseudopotential a smooth function up the core cutoff
 radius (normally the potential generated by the core positive charge 
 spread with a gaussian form). The Kleinman-Bylander pseudopotentials
-are generated accordingly. The files
-{\it Chemical\_label.}{\tt vlocal}
+are generated accordingly.\index{pseudopotential!writing vlocal} The files
+{\it Chemical\_label.}{\tt vlocal}\index{species.vlocal@{\it species.}vlocal}
 \noindent
 (one per species) contain that information. They are ASCII files, every
 line containing the radius, the local pseudopotential, and the radial
@@ -2015,8 +3135,24 @@ part of the Kleinman-Bylander projectors in order of increasing $l$.
 (file SystemLabel.HS) See the {\bf SaveHS} data descriptor above.
 
 
-\subsection{Charge density}
-(file SystemLabel.RHO) See {\bf SaveRho} data descriptor above.
+\subsection{Forces on the atoms}
+\index{output!forces}
+The atomic forces of the last step are stored in the file
+SystemLabel.FA if they are not written to the main output.
+See the {\bf WriteForces} data descriptor above.
+
+
+\subsection{Sampling $\vec k$ points}
+\index{output!grid $\vec k$ points}
+The coordinates of the $\vec k$ points used in the sampling
+are stored in the file SystemLabel.KP .
+See the {\bf WriteKpoints} data descriptor above.
+
+
+\subsection{Charge densities and potentials}
+(files SystemLabel.RHO, SystemLabel.DRHO, SystemLabel.VH, SystemLabel.VT) 
+See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf SaveElectrostaticPotential},
+and {\bf SaveTotalPotential} data descriptors above.
 
 
 \subsection{Energy bands}
@@ -2042,7 +3178,20 @@ kAtEndOfLine1, kPointLabel \\
 kAtEndOfLastLine, kPointLabel \\
 
 \noindent
+The GNUBANDS\index{GNUBANDS} postprocessing utility
+program (found in the Util/ directory) reads the {\it Systemlabel}.bands
+for plotting.
 See the {\bf BandLines} data descriptor above for more information.
+
+\subsection{Eigenvalues}
+\index{output!eigenvalues}
+The Hamiltonian eigenvalues for the sampling $\vec k$ points are
+dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
+but without the kmin, kmax, emin, emax information, and without
+the abscissa. The EIG2DOS\index{EIG2DOS}
+postprocessing utility can be then used to obtain the density of
+states.\index{density of states} 
+See the {\bf WriteEigenvalues} descriptor above.
 
 
 \subsection{Coordinates in specific formats}
@@ -2050,17 +3199,51 @@ See the {\bf BandLines} data descriptor above for more information.
 \begin{itemize}
 \item{\bf XMol:}\footnote[1]{XMol is under \copyright copyright of Research 
 Equipment Inc., dba Minnesota Supercomputer Center Inc.}
+\index{XMol@{\sc XMol}}
 See {\bf WriteCoorXmol} data descriptor in subsection {\bf Output options}
 above for obtaining a {\tt .xyz} file with coordinates in 
 XMol-readable format.
 
 \item{\bf CERIUS:}\footnote[2]{CERIUS is under \copyright copyright of 
-Molecular Simulations Inc.}
+Molecular Simulations Inc.}\index{Cerius2@{\sc Cerius2}}
 See {\bf WriteCoorCerius} data descriptor in subsection {\bf Output options}
 above for obtaining a {\tt .xtl} file with coordinates in 
-CERIUS-readable format.
+CERIUS-readable format. See the SIES2ARC\index{SIES2ARC}
+utility in Util/ directory
+for generating .arc files for CERIUS animation.
 
 \end{itemize}
+
+
+\subsection{Dynamics history files}
+\index{output!molecular dynamics!history}
+The trajectory of a molecular dynamics run (or a conjugate gradient
+minimization) can be accumulated in different files: SystemLabel.MD,
+SystemLabel.MDE, and SystemLabel.ANI. The first keeps the whole trajectory
+information, meaning positions and velocities at every time step, 
+including lattice vectors if the cell varies. In an unformatted form.
+The second gives global infomation (energy, temperature, etc),
+and the third has the coordintes in a form suited for XMol animation.
+See the {\bf WriteMDhistory} and {\bf WriteMDXmol} data descriptors 
+above for information. SIESTA always append new information on these
+files, making them accumulative even for different runs.
+
+The {\tt iomd} subroutine is prepared for the changing of the 
+unformatted file SystemLabel.MD towards the ASCII formatted files
+SystemLabel.MDX and SystemLabel.MDC carrying the atomic and lattice
+trajectories. respectively.
+
+\subsection{Force Constant Matrix file}
+\index{output!molecular dynamics!Force Constants Matrix}
+
+If the dynamics option is set to the calculation 
+of the force constants ({\bf MD.TypeOfRun}={\tt FC}),
+the force constants matrix is written in file {\it SystemLabel}.{\tt FC}.
+The format is the following: for the displacement of
+each atom in each direction, the forces on each of the other
+atoms is writen (divided by the value of the displacement),
+in units of eV/\AA$^2$. Each line has the forces in the $x$, $y$
+and $z$ direction for one of the atoms.
 
 
 \subsection{Intermediate and restart files}
@@ -2074,6 +3257,12 @@ is the value of that FDF descriptor (or siesta by default).
 The shape of the
 unit cell and its associated 'velocity' (in Parrinello-Rahman
 dynamics) are also stored in this file.
+
+\item {\bf Conjugate-gradient history information:}
+Together with the SystemLabel.XV file, the information
+stored in the SystemLabel.CG file allows a smooth
+continuation of an interrupted conjugate-gradient relaxation
+process.
 
 \item {\bf Localized Wave Functions:} 
 At the end of each conjugate gradient
@@ -2150,33 +3339,33 @@ corresponding parameter.
 After running the program, look at the siesta.size file to check that
 the memory use is still acceptable.
 
-\item[{\tt xijorb: WARNING: orbital pair ... is multiply connected}].
-
-{\it Description:}
-In order to calculate the hamiltonian for an arbitrary k point, 
-without using complex arithmetics, siesta calculates the hamiltonian 
-matrix elements (at gamma) in a (super)cell so large that two atomic
-orbitals interact only with one of the repeated `images' of each of
-them. Then the matrix elements are multiplied by the appropriate
-structure factor and added for all `images'.
-This message means that you are using k-sampling with a (super)cell
-which is too small, so that a basis orbital interacts with different
-images of some other orbital. The message is printed only for the
-first pair found, but the problem probably occurs for many or all pairs.
-If the interactions are small, the results may still be good, but you
-must be careful.
-In particular, {\it this problem does not exist when k points are 
-generated automatically} (even though
-the warning will still appear), or when the supercells given by
-{\bf SuperCell} and {\bf kgrid.MonkhorstPack} are equal, 
-because in these cases the phase factors
-of the different images are identical.
-
-{\it Fix:}
-Think again if you really need k-sampling.
-Increase the unit cell or use a {\bf SuperCell} of it.
-Then specify the {\bf NeglNonOverlapInt} option and, if the change in
-the results is small enough, try to reduce again the unit cell or supercell.
+% \item[{\tt xijorb: WARNING: orbital pair ... is multiply connected}].
+% 
+% {\it Description:}
+% In order to calculate the hamiltonian for an arbitrary k point, 
+% without using complex arithmetics, siesta calculates the hamiltonian 
+% matrix elements (at gamma) in a (super)cell so large that two atomic
+% orbitals interact only with one of the repeated `images' of each of
+% them. Then the matrix elements are multiplied by the appropriate
+% structure factor and added for all `images'.
+% This message means that you are using k-sampling with a (super)cell
+% which is too small, so that a basis orbital interacts with different
+% images of some other orbital. The message is printed only for the
+% first pair found, but the problem probably occurs for many or all pairs.
+% If the interactions are small, the results may still be good, but you
+% must be careful.
+% In particular, {\it this problem does not exist when k points are 
+% generated automatically} (even though
+% the warning will still appear), or when the supercells given by
+% {\bf SuperCell} and {\bf kgrid.MonkhorstPack} are equal, 
+% because in these cases the phase factors
+% of the different images are identical.
+% 
+% {\it Fix:}
+% Think again if you really need k-sampling.
+% Increase the unit cell or use a {\bf SuperCell} of it.
+% Then specify the {\bf NeglNonOverlapInt} option and, if the change in
+% the results is small enough, try to reduce again the unit cell or supercell.
 
 \end{description}
 
@@ -2204,19 +3393,31 @@ Find which .h file is causing the problem. Then edit
 this file and set the parameters to the maximum value acquired
 during the run-compile loop.
 
-\item[{\bf Dynamics with a SuperCell}].
+% \item[{\bf Insufficient dimensions in matel.h after compilation loop}].
+%
+% {\it Description:}
+% The subroutine matel.f generates its own dimension in the recursive
+% process described above. In rare occasions it still asks for manual
+% increase in dimensions. Specifically MAXFFR can ask for larger dimensions.
+%
+% {\it Fix:}
+% In that case the problem is solved by increasing MAXL by one in matel.h
+% by hand.
 
-{\it Description:}
-The {\bf SuperCell} block should not be used (unless as the trivial 
-identity matrix, which is the default) in conjunction with any kind
-of dynamics or relaxation. It is not prepared for that and can cause 
-different kinds of trouble. 
 
-{\it Fix:}
-Introduce all the atoms explicitly in the fdf file: the number of atoms,
-the supercell vectors as cell vectors, and all the coordinates.
-You can run SIESTA with no dynamics a first time using SuperCell
-and get the all the coordinates from the output.
+% \item[{\bf Dynamics with a SuperCell}].
+%
+% {\it Description:}
+% The {\bf SuperCell} block should not be used (unless as the trivial 
+% identity matrix, which is the default) in conjunction with any kind
+% of dynamics or relaxation. It is not prepared for that and can cause 
+% different kinds of trouble. 
+%
+% {\it Fix:}
+% Introduce all the atoms explicitly in the fdf file: the number of atoms,
+% the supercell vectors as cell vectors, and all the coordinates.
+% You can run SIESTA with no dynamics a first time using SuperCell
+% and get the all the coordinates from the output.
 
 \end{description}
 
@@ -2242,9 +3443,10 @@ is conserved, may be notably difficult for small-gap systems.
 \end{itemize}
 
 
+
 %\begin{thebibliography}{19}
 %
-%\bibitem{ORDE} P. Ordejon, D. A. Drabold, M. P. Grumbach and
+%\bibitem{ORDE} P. Ordej\'on, D. A. Drabold, M. P. Grumbach and
 %R. M. Martin, Phys. Rev. B {\bf 48}, 14646 (1993); {\bf 51} 1456 (1995)
 %
 %\end{thebibliography}
@@ -2260,43 +3462,120 @@ The implementation dates are only temptative and very approximate.
 \begin{itemize}
 
 \item
-Possibility to calculate the final energies and forces (after the 
-convergence of the SCF iteration) using an extended grid cutoff.
-Projected for May 1998.
+Subtraction of the energy and forces of the isolated atoms placed
+on the uniform real-space grid, in order to partially cancel the
+'energy rippling' (eggbox effect) introduced by that grid.
+Projected for August 1999.
 
 \item
-Automatic determination of the $\eta$ parameter (chemical potential)
-of the order $N$ method of Kim et al, using projection methods.
-Projected for June 1998.
+Ability to calculate the atomic forces and stress from Harris density 
+functional, for fast non-selfconsistent calculations.
+Projected for August 1999.
 
 \item
 Spectral analysis of DOS weighted for different orbitals or atoms
 (just for the diagonalization option). The information is now
-available only through {\bf SaveHS}. Projected for September 1998.
-
-\item
-More flexible input scheme for the basis-orbital generation, both in the
-automatic (SZ, DZ, DZP) and manual ways. Projected for September 1998.
-
-\item
-Implementation of the SuperCell option with dynamics and relaxation.
-Projected for September 1998.
+available only through {\bf SaveHS}. Projected for August 1999.
 
 \item
 Solution of the Poisson-Boltzman equation for molecules in solution,
 using multigrid methods.
-Projected for September 1998.
+Projected for August 1999.
 
 \item
 Implementation of the Li-Nunes-Vanderbilt order-$N$ functional
 (R. W. Nunes and D. Vanderbilt, PRB {\bf 50}, 17611 (1994)).
-Projected for December 1998.
+Projected for August 1999.
 
 \item
 Parallelization of the entire SIESTA code or of part of it.
-Projected for December 1998.
+Projected for June 1999 (Juilan D. Gale).
+
+\item 
+Migration to Fortran 90. Projected for December 1999.
 
 \end{itemize}
+
+
+
+
+
+\section{ACKNOWLEDGMENTS}
+
+We want to acknowledge the use of a small number of routines,
+written by other authors, in developing the siesta code.
+In most cases, these routines were adquired from now-forgotten 
+routes, and the reported authorships are based on their headings.
+If you detect any incorrect or incomplete attribution, or suspect
+that other routines may be due to different authors, please
+let us know.
+
+\begin{itemize}
+\item
+The main nonpublic contribution, that we thank thoroughly, are a number 
+of routines, written by {\bf A. R.\ Williams} in 1985, for the solution 
+of the radial Schr\"odinger and Poisson equations in the APW code of 
+Soler and Williams (PRB {\bf 42}, 9728 (1990)).
+Within SIESTA, they are kept in file arw.f, and they are used for the 
+generation of the basis orbitals and the screened pseudopotentials.
+\item
+The efficient implementation of k-sampling, which involves many routines, 
+was done in collaboration with {\bf J.\ Junquera} in 1998.
+\item
+Routine pulayx, used for the SCF mixing, was originally written by
+{\bf In-Ho Lee} in 1997.
+\item
+The exchange-correlation routines contained in file xc.f were written
+by J.M.Soler in 1996 and 1997, in collaboration with {\bf C.\ Balb\'as} 
+and {\bf J. L.\ Martins}.
+Routine pzxc (in the same file), which implements the Perdew-Zunger
+LDA parametrization of xc, is based on routine velect, written by
+{\bf S.\ Froyen}.
+\item
+A number of routines (some of them modified or with name changed)
+from {\em Numerical Recipes. The Art of Scientific Computing}
+by {\bf W. H.\ Press, S. A.\ Teukolsky, W. T.\ Veterling and B. P.\ Flannery}
+(Cambridge U.P. 1987-1992) are kept in file recipes.f
+\item
+Some standard diagonalization routines by {\bf B. S. Garbow} are kept
+in files rdiag.f and cdiag.f. Other diagonalization routines from
+the {\bf EISPACK} package are in file eispack.f
+\item
+The multivariate fast fourier transform in cft.f was written by
+{\bf R. C. Singleton} in 1968. It is used to solve Poisson's equation.
+\item 
+Subroutine plcharge.f (that writes information
+to be used by the utility program DENCHAR to plot density
+contours) was writen by {\bf J. Junquera}. 
+\item
+Subroutine iomd.f for writing MD history in files was originally written
+by {\bf J. Kohanoff}.
+\end{itemize}
+
+We want to thank very specially {\bf O. F.\ Sankey, D. J.\ Niklewski} and 
+{\bf D. A.\ Drabold} for making the FIREBALL code available to P.\ Ordej\'on. 
+Although we no longer use the routines in that code, it 
+was essential in the initial development of the SIESTA project,
+which still uses many of the algorithms developed by them.
+
+Also, we thank {\bf N.\ Troullier} and {\bf J. L.\ Martins} for
+making available to us their pseudopotential-generation program
+(which is based on the original code by {\bf S.\ Froyen}).
+This program is, however, completely separated from SIESTA.
+
+Besides his (impressive) current work on the parallelization of the program,
+{\bf J. D. Gale} has also contributed to the present scalar version
+with some ideas for improving the efficiency of the program 
+which are very useful.
+
+We thank {\bf V. Heine} for his supporting and encouraging us in this
+project. Finally, we want to thank very specially {\bf R. M.\ Martin} 
+for his continuous support, without which the SIESTA project would have 
+been very difficult or even impossible.
+
+The SIESTA project has been supported by Spanish DGES
+through project PB95-0202.
+
 
 \section{APPENDIX: Physical unit names recognized by FDF}
 
@@ -2366,5 +3645,7 @@ Efield   & Har/Bohr/e & 5.1422546E11 \\
 \hline
 \end{tabular}
 \end{center}
+
+\input{siesta.ind}
 
 \end{document}

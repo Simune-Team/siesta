@@ -1,3 +1,5 @@
+C $Id: egandd.f,v 1.5 1999/01/31 11:14:51 emilio Exp $
+
       subroutine eandg(iopt,eta,enum,lam,
      .                 nhmax,numh,listh,ncmax,numc,listc,h,s,c,
      .                 nbasis,nbands,

@@ -1,3 +1,5 @@
+C $Id: dipole.f,v 1.3 1999/01/31 10:53:53 emilio Exp $
+
       SUBROUTINE DIPOLE( CELL, M1, M2, M3, RHO, X0, DIPOL )
 C ********************************************************************
 C Finds the electric dipole

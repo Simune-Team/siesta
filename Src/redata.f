@@ -1,67 +1,53 @@
-      subroutine redata(maxa, maxl, maxs, maxspn, maxzet,
-     .                  amax, lmax, smax, spnmax, zetmax, overflow,
-     .                  slabel, sname,
-     .                  na, ns, nspin, isa, izs, lmaxs, lmxkbs, 
-     .                  nzls, rcls, contrf, atm_label,
-     .                  cell, ucell, indxua, xa, smass, g2max, negl, 
-     .                  nscf, dDtol, wmix, isolve,
-     .                  temp, ncgmax, ftol, eta, etol, rcoor, ioptlwf,
+C $Id: redata.f,v 1.45 1999/05/25 13:56:03 ordejon Exp $
+
+      subroutine redata(maxa, maxspn, na, ns, nspin, overflow,
+     .                  slabel, sname, isa, cell, xa, outlng, g2max,
+     .                  charnet, negl, nscf, dDtol, mix, wmix, isolve, 
+     .                  temp, fixspin, ts, ncgmax, ftol, strtol, eta, 
+     .                  etol, rcoor, 
+     .                  ioptlwf, chebef, noeta, rcoorcp, beta, pmax,
      .                  idyn, istart, ifinal, nmove, ianneal, iquench,
-     .                  dt,  dxmax, tt, tp, mn, mpr, bulkm, taurelax, 
-     .                  writedim, usesavelwf, usesavedm, mullipop,
-     .                  inspn, maxsav, pulfile, tempinit)
+     .                  dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
+     .                  bulkm, taurelax, 
+     .                  writedim, usesavelwf, usesavedm, usesavecg,
+     .                  mullipop, inspn, maxsav, nkick, wmixkick, 
+     .                  pulfile, tempinit, dumpcharge, varcel )
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
 C     It uses the FDF (Flexible Data Fromat) package 
 C     of J.M.Soler and A.Garcia
 C
-C     This routine is compatible with fdf Version 0.6.1.5
-C 
 C Writen by P.Ordejon, December'96
 C ***************************** INPUT *********************************
 C integer maxa             : Maximum number of atoms
-C integer maxl             : Maximum angular momentum of basis orbitals
-C integer maxs             : Maximum number of species
-C integer maxspn           : Maximum number of spins (1 or 2)
-C integer maxzet           : Maximum number of Zetas of any atom
+C integer maxspn           : Max. number of spin components (1,2 or 4)
 C **************************** OUTPUT *********************************
-C integer amax             : Actual maxa for this system
-C integer lmax             : Actual maxl for this system
-C integer smax             : Actual maxs for this system
-C integer spnmax           : Actual maxspn for this system
-C integer zetmax           : Actual maxzet for this system
-C logical overflow         : True = Some of the dimensions is too small
-C character*20 slabel      : System Label (to name output files)
-C character*150 sname      : System Name
 C integer na               : Number of atoms
 C integer ns               : Number of species
 C integer nspin            : Spin polarization
+C logical overflow         : True = Some of the dimensions is too small
+C character*20 slabel      : System Label (to name output files)
+C character*59 sname       : System Name
 C integer isa(maxa)        : Species index of each atom
-C integer izs(maxs)        : Atomic Number of each species
-C integer lmaxs(maxs)      : Angular momentum cutoff for the orbitals 
-C                            of each species
-C integer lmxkbs(maxs)     : Angular momentum cutoff for the KB proj.
-C                            of each species
-C integer nzls(0:maxl,maxs): Number of zetas for each l of each species
-C real*8 rcls(maxzet,0:maxl,maxs) : Cutoff R of atomic orbitals (Bohr)
-C real*8 contrf(maxzet,0:maxl,maxs) : Scaling factor for orbitals
 C real*8 cell(3,3)         : (Super) lattice vectors CELL(ixyz,ivector)
 C                            (in Bohr)
-C real*8 ucell(3,3)        : Unit-cell vectors (Bohr)
-C integer indxua(maxa)     : Index of equivalent atom in unit cell
 C real*8 xa(3,maxa)        : Atomic coordinates (Bohr)
-C real*8 smass(maxs)       : Atmic masses of each species (amu)
+C real*8 charnet           : Net charge (in units of |e|)
+C logical outlng           : Long (true) or short (false) output
 C real*8 g2max             : PW cutoff energy (Ry)
 C logical negl             : True = Neglect interactions between
 C                            non-overlaping orbitals (coming from
 C                            KB projectors)
 C integer nscf             : Maximum number of SCF cycles per time step
 C real*8 dDtol             : Maximum Density Matrix tolerance
+C logical mix              : Perform mix in first SCF step
 C real*8 wmix              : Amount of output DM for new DM
 C integer isolve           : Method of solution.  0 = Diagonalization
 C                                                 1 = Order-N
 C real*8 temp              : Temperature for Fermi smearing (Ry)
+C logical fixspin          : Fix the spin of the system?
+C real*8  ts               : Total spin of the system
 C integer ncgmax           : Maximum number of CG steps for 
 C                            band structure energy minimization
 C real*8 etol              : Relative tolerance in CG minimization
@@ -72,6 +58,11 @@ C integer ioptlwf          : Option to build LWF's according to:
 C                             0 = Read blindly from disk
 C                             1 = Functional of Kim et al.
 C                             2 = Functional of Ordejon-Mauri
+C logical chebef          : Compute the chemical potential 
+C logical noeta            : Use computed Chem.pot. instead of eta
+C real*8 rcoorcp           : Cutoff (Bohr) to compute the chem.pot.
+C real*8 beta              : Inverse temperature to compute chem.pot.
+C integer pmax             : Order of Chebi expansion for chem.pot.
 C integer idyn             : Atomic dynamics option:
 C                             0 = CG geometry optimization
 C                             1 = Standard MD run (Verlet)
@@ -83,12 +74,17 @@ C integer istart           : Initial time step for MD
 C integer ifinal           : Final time step for MD
 C integer nmove            : Number of CG steps in CG optimization
 C real*8 ftol              : Maximum force for CG structure optimization
+C real*8 strtol            : Maximum stress for CG structure optimization
 C integer ianneal          : Annealing option for idyn = 5
 C                             1 = Temperature 
 C                             2 = Pressure
 C                             3 = Temperature and Pressure
 C integer iquench          : Quench option: 0 = No;  1 = Yes
 C real*8 dt                : Length of time step (fs)
+C real*8 dx                : Atomic displacement for Force Constants
+C                             calculation
+C integer ia1              : First atom to displace for force constants
+C integer ia2              : Last atom to displace for force constants
 C real*8 dxmax             : Maximum atomic displacement in one CG move
 C real*8 tt                : Target temperature (Kelvin)
 C real*8 tp                : Target Pressure (Ry/Bohr**3)
@@ -102,6 +98,8 @@ C logical usesavelwf       : True = try to use continuation LWF files
 C                              from disk
 C logical usesavedm        : True = try to use continuation DM files 
 C                              from disk
+C logical usesavecg        : True = try to use continuation CG files
+C                              from disk
 C integer mullipop         : Option for Mulliken Pop. analisys
 C logical inspn            : Spin initialization for spin-polarized
 C                              .true.  -> Antiferro
@@ -111,99 +109,95 @@ C                            mixing. Pulay mixing is done every maxsav
 C                            iterations, the rest is linear mixing.
 C                              .lt.2 => linear mixing only
 C                              .ge.2 => pulay mixing
+C integer nkick            : Perform a linear mixing eack nkick scf cycles
+C real*8 wmixkick          : Mixing parameter for linear mixing each nkick scf
+C                            cycles
 C logical pulfile          : Use file (.true.) or memory (.false.)
 C                            to store Pulay miximg intermediate vectors
 C                            Default: .false.
 C real*8 tempinit          : Initial temperature (Kelvin) of the MD simulation
+C logical dumpcharge       : True: Dump information to plot charge contours
+C                            by the external DENCHAR application program.
+C logical varcel           : variable shape for CG optimization or dynamics
 C **********************************************************************
 
       implicit none
 
       integer
-     .  maxa, maxl, maxs, maxspn, maxzet
+     .  maxa, maxspn
 
       character
-     .  slabel*20, sname*150, atm_label(*)*20
+     .  slabel*20, sname*59
 
       integer
-     .  amax, lmax, smax, spnmax, zetmax
-
-      integer
-     .  ianneal, idyn, ifinal, ioptlwf,
-     .  iquench, isolve, istart, maxsav,
-     .  mullipop, na, ncgmax, nmove, ns, nscf, nspin
-
-      integer 
-     .  indxua(maxa), isa(maxa), izs(maxs), lmaxs(maxs), 
-     .  lmxkbs(maxs), nzls(0:maxl,maxs)
+     .  ia1, ia2, ianneal, idyn, ifinal, ioptlwf,
+     .  iquench, isa(maxa), isolve, istart, maxsav,
+     .  mullipop, na, ncgmax, nkick, nmove, ns, nscf, nspin,
+     .  pmax
 
       double precision
-     .  bulkm, cell(3,3), contrf(maxzet,0:maxl,maxs), 
-     .  dcell(3,3), dDtol, dt, dxmax, eta, etol, ftol, g2max,
-     .  mn, mpr, rcoor, rcls(maxzet,0:maxl,maxs), smass(maxs),
-     .  taurelax, temp, tempinit, tp, tt, ucell(3,3), wmix, 
+     .  beta, bulkm, cell(3,3), charnet,
+     .  dDtol, dt, dx, dxmax, eta, etol, ftol, g2max,
+     .  mn, mpr, rcoor, rcoorcp, strtol,
+     .  taurelax, temp, tempinit, tcp, tp, ts, tt, wmix, wmixkick,
      .  xa(3,maxa)
 
       logical
-     .  inspn, negl, overflow, pulfile,
-     .  usesavelwf, usesavedm, writedim
+     .  chebef, dumpcharge, fixspin, inspn, mix, negl, noeta, overflow, 
+     .  outlng, pulfile, usesavecg, usesavelwf, usesavedm, varcel, 
+     .  writedim
 
 C Internal parameters ................................................
-C na_diag      : maximun number of atoms with diagon as default method
-C g2max_defect : Mesh cutoff default, in Ry
-C temp_defect  : Electronic temperature default, in Ry
+C na_diag      : maximum number of atoms with diagon as default method
+C g2max_default : Mesh cutoff default, in Ry
+C temp_default  : Electronic temperature default, in Ry
       integer na_diag
-      double precision g2max_defect, temp_defect
-      parameter ( na_diag      = 100      )
-      parameter ( g2max_defect = 50.d0    )
-      parameter ( temp_defect  = 1.900d-3 )
+      double precision g2max_default, temp_default
+      parameter ( na_diag       = 100      )
+      parameter ( g2max_default = 50.d0    )
+      parameter ( temp_default  = 1.900d-3 )
 C ................
 
 C  Internal variables .................................................
       character
      .  annop*22, dyntyp*22, 
      .  filein*20, fileout*20, 
-     .  method*6, line*150, names_parse*150,
+     .  method*6, line*150, 
      .  lwfopt*13
 
       character
-     .  annop_defect*22, dyntyp_defect*22, 
-     .  lwfopt_defect*13,  slabel_defect*150, 
-     .  sname_defect*20, atomic_label*20,symbol*2
+     .  annop_default*22, dyntyp_default*22, 
+     .  lwfopt_default*13,  slabel_default*59, 
+     .  sname_default*20
 
       integer 
-     .  ifinal_defect, istart_defect, maxsv_defect, mpop_defect,
-     .  na_defect, ncgmax_defect, nmove_defect,
-     .  ns_defect, nscf_defect
+     .  ia1_default, ia2_default,
+     .  ifinal_default, istart_default, maxsv_default, mpop_default,
+     .  na_default, ncgmax_default, nkick_default, nmove_default,
+     .  ns_default, nscf_default, pmax_default
 
       integer 
-     .  i, i1, i2, i3, ia, ic, il, is, iunit, ix, izeta, izsr, 
-     .  j, js, l, lmaxsr, lmxkbsr, maux(3,3,2), ml(3,3), mr(3,3),
-     .  ncells, ni, nn, nr, nscell(3,3), nsd(3,3), nua, nv, nzlsr,
-     .  integers_parse(20),lc(0:20),lastc
+     .  i, ic, ix, mscell(3,3), ncells
 
       double precision
-     .  alat, atmass
+     .  alat, ucell(3,3), volcel
 
       double precision
-     .  bulkm_defect, 
-     .  dDtol_defect, dt_defect, dxmax_defect,
-     .  eta_defect, etol_defect, ftol_defect,
-     .  mn_defect, mpr_defect, rcoor_defect, 
-     .  taurelax_defect, ti_defect, tp_defect, 
-     .  tt_defect, wmix_defect, values_parse(20),
-     .  reals_parse(20), volcel
-
-      double precision
-     .  alp, blp, clp, alplp, betlp, gamlp, pi, xxx
+     .  bulkm_default, cnet_default,
+     .  dDtol_default, dt_default, dx_default, dxmax_default,
+     .  eta_default, etol_default, ftol_default,
+     .  mn_default, mpr_default, rccp_default, rcoor_default, 
+     .  taurelax_default, tcp_default, ti_default, tp_default, 
+     .  tt_default, wmix_default, wmixk_default
 
       logical
-     .  leqi, qnch, sppol,chemblock 
+     .  leqi, noncol, qnch, sppol
 
       logical
-     .  inspn_defect, negl_defect, pul_defect,
-     .  qnch_defect, sppol_defect, 
-     .  usdm_defect, uslwf_defect, wd_defect
+     .  chebef_default, dc_default, fs_default, inspn_default, 
+     .  negl_default, mix_default, noeta_default, pul_default, 
+     .  qnch_default, usdm_default, uslwf_default,  wd_default, 
+     .  uscg_default
 
 C ................
 
@@ -211,14 +205,10 @@ C Define FDF calls ....................................................
       include 'fdf/fdfdefs.h'
 C ................
 
-      data pi / 3.1415926d0 /
-
       overflow = .false.
-      amax = 1
-      lmax = 0
-      smax = 1
-      spnmax = 1
-      zetmax = 1
+      na = 1
+      ns = 1
+      nspin = 1
 
 C Print Welcome and Presentation .......................................
       write(6,'(/a)') 
@@ -241,7 +231,7 @@ C Dump data file to output file .......................................
    15   if (ic .gt. 0) write(6,'(a)') line(1:ic)
       goto 10
    20 continue
-      write(6,'(a,18(1h*),a,29(1h*),/)')
+      write(6,'(a,18(1h*),a,29(1h*))')
      .  'redata: ', ' End of input data file '
 C ..................
 
@@ -256,30 +246,37 @@ C ...
       write(6,'(/,a,18(1h*),a,30(1h*))')
      .  'redata: ', ' Simulation parameters '
       write(6,'(a)')  'redata:'
-      write(6,'(a)')  'redata:  The following are some of the '//
+      write(6,'(a)')  'redata: The following are some of the '//
      .                         'parameters of the simulation.'
-      write(6,'(a)')  'redata:  A complete list of the parameters '//
+      write(6,'(a)')  'redata: A complete list of the parameters '//
      .                         'used, including defect values,'
-      write(6,'(a,a)')'redata:  can be found in file ',fileout
+      write(6,'(a,a)')'redata: can be found in file ',fileout
       write(6,'(a)')  'redata:'
 
 C Defile Name of the system ...
-      sname_defect = ' '
-      sname = fdf_string('SystemName',sname_defect)
+      sname_default = ' '
+      sname = fdf_string('SystemName',sname_default)
+      write(6,'(a,71(1h-))') 'redata: '
       write(6,'(a,a)') 
-     . 'redata: System Name                      = ',sname
+     . 'redata: System Name: ',sname
+      write(6,'(a,71(1h-))') 'redata: '
 C ...
 
 C Defile System Label (short name to label files) ...
-      slabel_defect  = 'siesta'
-      slabel = fdf_string('SystemLabel',slabel_defect)
-      write(6,'(a,a)') 
+      slabel_default  = 'siesta'
+      slabel = fdf_string('SystemLabel',slabel_default)
+      write(6,'(a,4x,a)') 
      . 'redata: System Label                     = ',slabel
 C ...
 
+C Type of output
+      outlng = fdf_boolean( 'LongOutput', .false. )
+      write(6,'(a,4x,l1)')
+     . 'redata: Long output                      = ',outlng
+
 C Read Number of Atoms ...
-      na_defect = 0
-      na = fdf_integer('NumberOfAtoms',na_defect)
+      na_default = 0
+      na = fdf_integer('NumberOfAtoms',na_default)
       write(6,'(a,i5)') 
      . 'redata: Number of Atoms                  = ',na
       if (na .le. 0) then
@@ -291,12 +288,12 @@ C Read Number of Atoms ...
         stop
       endif
 C     check if dimension of number of atomos is large enough
-      call chkdime(maxa, na, overflow, amax)
+      call chkdime(maxa, na, overflow, na)
 C ...
 
 C Defile Number of species ...
-      ns_defect = 0
-      ns = fdf_integer('NumberOfSpecies',ns_defect)
+      ns_default = 0
+      ns = fdf_integer('NumberOfSpecies',ns_default)
       write(6,'(a,3x,i2)') 
      . 'redata: Number of Atomic Species         = ',ns
       if (ns .le. 0) then
@@ -307,344 +304,186 @@ C Defile Number of species ...
         write(6,102)
         stop
       endif
-C     check if dimension of number of species is large enough
-      call chkdime(maxs, ns, overflow, smax)
-C ...
 
 C Dump minimum sizes to siesta.h and stop
-      wd_defect = .false.
-      writedim  = fdf_boolean('WriteSiestaDim',wd_defect)
+      wd_default = .false.
+      writedim  = fdf_boolean('WriteSiestaDim',wd_default)
       write(6,'(a,4x,l1)') 
-     . 'redata: Write minimum siesta.h dimensions  = ',writedim
+     . 'redata: Write minimum siesta dimensions  = ',writedim
+C ...
+
+C Dump information to plot charge contours
+C by the external DENCHAR application program.
+      dc_default = .false.
+      dumpcharge  = fdf_boolean('WriteDenchar',dc_default)
+      write(6,'(a,4x,l1)') 
+     . 'redata: Dump information for DENCHAR     = ',dumpcharge
 C ...
 
 C Perform Mulliken Population Analisys
-      mpop_defect = 0
-      mullipop = fdf_integer('WriteMullikenPop',mpop_defect)
+      mpop_default = 0
+      if ( outlng ) mpop_default = 1
+      mullipop = fdf_integer('WriteMullikenPop',mpop_default)
       if (mullipop .eq. 0) then
-      write(6,'(a,4x,l1)') 
-     . 'redata: Write Mulliken Pop. = NO'
+      write(6,'(a)') 
+     . 'redata: Write Mulliken Pop.              =     NO'
       elseif (mullipop .eq. 1) then
-      write(6,'(a,4x,l1)') 
-     . 'redata: Write Mulliken Pop. = Atomic and Orbital charges'
+      write(6,'(a,a)') 
+     . 'redata: Write Mulliken Pop.              =     ',
+     . 'Atomic and Orbital charges'
       elseif (mullipop .eq. 2) then
-      write(6,'(a,4x,l1)') 
-     . 'redata: Write Mulliken Pop. = Atomic and Orbital charges'
-      write(6,'(a,4x,l1)') 
-     . '                              plus Atomic Overlap Populations'
+      write(6,'(a,a/45x,a)') 
+     . 'redata: Write Mulliken Pop.              =     ',
+     . 'Atomic and Orbital charges','plus Atomic Overlap Populations'
       elseif (mullipop .eq. 3) then
-      write(6,'(a,4x,l1)') 
-     . 'redata: Write Mulliken Pop. = Atomic and Orbital charges'
-      write(6,'(a,4x,l1)') 
-     . '                              plus Atomic Overlap Populations'
-      write(6,'(a,4x,l1)') 
-     . '                              plus Overlap Overlap Populations'
+      write(6,'(a,a/45x,a/45x,a)') 
+     . 'redata: Write Mulliken Pop.              =     ',
+     . 'Atomic and Orbital charges','plus Atomic Overlap Populations',
+     . 'plus Oorbital Overlap Populations'
       else
         stop 'redata: Wrong value for WriteMullikenPop'
       endif
+C ...
 
-C Next lines added by D. Sanchez-Portal. 8-4-1997.
-C Define the chemical especies of the atoms.
-
-      chemblock=fdf_block('PAO_basis_and_PS_lmax',i)
-      if (fdf_block('Chemical_species_label',
-     .         iunit)) then 
-        do js=1,ns
-          read(iunit,'(a)') line
-          lastc = index(line,'#') - 1
-          if(lastc.eq.-1) lastc=150
-          call parse( line(1:lastc), 
-     .         nn, lc, names_parse, 
-     .            nv, values_parse,
-     .            ni, integers_parse,
-     .            nr, reals_parse )
-          if (nn.gt.1) then 
-             write(6,'(a,i3)') 
-     .       'redata: More than one label for species',js
-              write(6,'(a,/,(2x,a))')
-     .       'label =', (names_parse(lc(i-1)+1:lc(i)),i=1,nn)
-              stop 
-          endif 
-          if (ni.ne.2) then 
-             write(6,'(a)') 
-     .         'redata: ERROR: number of integer read in '
-             write(6,'(a)')
-     .        '%block  Chemical_species_label, ni=',ni
-              stop 
-         endif
-
-          is=integers_parse(1) 
-          izsr=integers_parse(2)
-        
-          if (is .ne. js)
-     .    stop 'redata: Unexp. index is. Order species consecutively.'
-          izs(is) = izsr
-
-C  Floating orbitals have negative atomic numbers.
-          if(izsr.gt.0) then 
-            smass(is) = atmass(izsr)
-          else
-            smass(is) = 0.0d0
-          endif 
-C  At this  moment the atomic_label is not read......    
-           atomic_label=names_parse(1:lc(1))
-           atm_label(is)=atomic_label
-           write(6,'(a,i3,3x,a)')
-     .      'redata: label for specie ',is,atomic_label
-        enddo  
+C Lattice constant and lattice vectors .........
+      call redcel( alat, ucell, cell, mscell )
+      if (alat .ne. 0.d0) then
+        write(6,'(a,f10.4,a)')
+     . 'redata: Lattice Constant                 = ',alat,'  Bohr'
+          write(6,'(a,/,(a,1x,3f12.6))')
+     .     'redata: Lattice vectors (in units of Lattice Constant)',
+     .     ('redata:',(cell(ix,i)/alat,ix=1,3),i=1,3)
+      endif
+      if (volcel(ucell) .lt. 1.d-8) then
+        ncells = 1
       else
-       if(.not.chemblock)then 
-         write(6,100)
-          write(6,101)
-          write(6,'(a)')
-     .   'redata: ERROR: The chemical species must be specified.'
-          write(6,102)
-          stop
+        ncells = nint( volcel(cell) / volcel(ucell) )
+        if (ncells.gt.1) then
+          write(6,'(a,/,(8x,3f12.6))')
+     .      'redata: Total-cell (supercell) vectors (Bohr)', cell
+          write(6,'(a,i6)') 'redata: Number of unit cells  =', ncells
+          write(6,'(a,i6)') 'redata: Total number of atoms =', na*ncells
+        else
+          write(6,'(a,/,(a,1x,3f12.6))')
+     .     'redata: Lattice vectors (in Bohr)', 
+     .     ('redata:',(cell(ix,i),ix=1,3),i=1,3)
         endif
-      endif 
-       
-
-C Define Basis Set and Pseudopotentials...
-  
-      chemblock=fdf_block('Chemical_species_label',i)
-      if ( fdf_block('PAO_basis_and_PS_lmax',iunit) ) then
-        do js = 1,ns
-          read(iunit,*) is, izsr, lmaxsr, lmxkbsr
-          if(izsr.eq.-100) lmxkbsr=0
-C  Check if there are previously read atomic numbers.
-          if(chemblock) then
-             if(izs(js).ne.izsr) then 
-               write(6,'(2a)') 'redata: ERROR:',
-     .  ' Atomic numbers specified in Chemical_species_label block'
-               write(6,'(3a)') 'redata: ERROR:',
-     .  ' are NOT consistent with those specified in',
-     .  ' PAO_basis_and_PS_lmax block'
-             stop 
-             endif 
-          endif 
-
-          if (is .ne. js)
-     .    stop 'redata: Unexp. index is. Order species consecutively.'
-          call chkdime(maxl, lmaxsr, overflow, lmax)
-          if (.not.overflow) then
-            izs(is)=izsr
-            lmaxs(is) = lmaxsr
-            lmxkbs(is) = lmxkbsr
-          endif
-          do il = 0,lmaxsr
-            read(iunit,*) l, nzlsr
-            if (l .ne. il) stop 'redata: Unexpected index l'
-            call chkdime(maxzet, nzlsr, overflow, zetmax)
-            if (.not.overflow) then
-              nzls(l,is) = nzlsr
-              read(iunit,*) (rcls(izeta,l,is),izeta=1,nzls(l,is))
-              read(iunit,*) (contrf(izeta,l,is),izeta=1,nzls(l,is))
-            else
-              read(iunit,*)
-              read(iunit,*)
-            endif
-          enddo
-        enddo
-        if(.not.chemblock) then 
-          do js=1,ns
-            if(izs(js).ne.-100) then 
-                atm_label(js)=symbol(abs(izs(js))) 
-            else
-                atm_label(js)='Bessel'
-            endif 
-
-C  Floating orbitals have negative atomic numbers.
-            if(izs(js).gt.0) then 
-              smass(js) = atmass(izs(js))
-            else
-              smass(js) = 0.0d0
-            endif 
-          enddo 
-        endif 
-
-      else
-C    Next lines modified by D. Sanchez-Portal. 8-4-1997.
-C    Now  it is not necessary to specify the basis set. 
-C    The program is able to provided you a 'default' basis-set.
-C    Anyway, the performance of this basis should be tested.
-C    There is no guarantee that this is the 'best' basis!!!!
-
-      do js=1,ns 
-        lmaxs(js)=-1
-        lmxkbs(js)=-1
-          
-        do il=0,maxl
-          nzls(il,js)=0     
-          do izeta=1,maxzet
-             rcls(izeta,il,js)=0.0d0 
-             contrf(izeta,il,js)=1.0d0
-          enddo 
-        enddo 
-      enddo 
-      endif
-C ...
-
-C Read atomic masses from fdf if a change is wanted 
-
-      call remass(smass,maxs,ns)
-
-C Lattice constant
-      alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
-      if (alat .eq. 0.d0) then
-        write(6,'(a,3(/,a))') 
-     .   'redata:',
-     .   'redata: WARNING: No valid lattice constant specified',
-     .   'redata: WARNING: Cell will be generated automatically',
-     .   'redata:'
-      endif
-
-C Lattice vectors
-
-      if ( fdf_block('LatticeParameters',iunit) .and.
-     .     fdf_block('LatticeVectors',iunit) ) then
-         write(6,'(2a)')'redata: ERROR: Lattice vectors doubly ',
-     .     'specified: by LatticeVectors and by LatticeParameters.' 
-         stop 'redata: ERROR: Double input for lattice vectors'
-      endif
-
-      if ( fdf_block('LatticeParameters',iunit) ) then
-         read(iunit,*) alp, blp, clp, alplp, betlp, gamlp
-         write(6,'(a)')
-     .    'redata: Lattice Parameters (units of Lattice Constant) ='
-         write(6,'(a,3f10.5,3f9.3)')
-     .    'redata: ',alp,blp,clp,alplp,betlp,gamlp
-         alplp = alplp * pi/180.d0
-         betlp = betlp * pi/180.d0
-         gamlp = gamlp * pi/180.d0
-         cell(1,1) = alp
-         cell(2,1) = 0.d0
-         cell(3,1) = 0.d0
-         cell(1,2) = blp * cos(gamlp)
-         cell(2,2) = blp * sin(gamlp)
-         cell(3,2) = 0.d0
-         cell(1,3) = clp * cos(betlp)
-         xxx = (cos(alplp) - cos(betlp)*cos(gamlp))/sin(gamlp)
-         cell(2,3) = clp * xxx
-         cell(3,3) = clp * sqrt(sin(betlp)*sin(betlp) - xxx*xxx)
-      elseif ( fdf_block('LatticeVectors',iunit) ) then
-        do i = 1,3
-          read(iunit,*) (cell(j,i), j=1,3)
-        enddo
-      else
-        do i = 1,3
-          do j  = 1,3
-            cell(i,j) = 0.d0
-          enddo
-          cell(i,i) = 1.d0
-        enddo
-      endif
-
-      if (alat .ne. 0.d0) then
-        write(6,'(a,f10.4,a)') 
-     .   'redata: Lattice Constant                 = ',alat,'  Bohr'
-        write(6,'(a)') 
-     .   'redata: Lattice vectors (in units of Lattice Constant) ='
-        do i = 1,3
-          write(6,'(a,3f10.5)')
-     .   '        ',(cell(j,i), j=1,3)
-        enddo
-      endif
-C ...
-
-C Multiply cell vectors by by lattice constant ........................
-      do i = 1,3
-        do ix = 1,3
-          cell(ix,i) = alat * cell(ix,i)
-        enddo
-      enddo
-      if (alat .ne. 0.d0) then
-        write(6,'(a)') 
-     .   'redata: Lattice vectors (in Bohr) ='
-        do i = 1,3
-          write(6,'(a,3f10.5)') '        ',(cell(j,i), j=1,3)
-        enddo
       endif
 C ..................
 
 C Spin Polarization ...
-      sppol_defect = .false.
-      sppol = fdf_boolean('SpinPolarized',sppol_defect)
-      if (sppol) then
+      sppol  = fdf_boolean('SpinPolarized',.false.)
+      noncol = fdf_boolean('NonCollinearSpin',.false.)
+      if (noncol) then
+        nspin = 4
+      elseif (sppol) then
         nspin = 2
       else 
         nspin = 1
       endif
       write(6,'(a,4x,i1)') 
-     . 'redata: Spin Polarization                = ',nspin
-      call chkdime(maxspn, nspin, overflow, spnmax)
+     . 'redata: Number of spin components        = ',nspin
+      call chkdime(maxspn, nspin, overflow, nspin)
 C ...
  
 C Planewave cutoff of the real space mesh ...
-      g2max = fdf_physical('MeshCutoff',g2max_defect,'Ry')
+      g2max = fdf_physical('MeshCutoff',g2max_default,'Ry')
       write(6,'(a,f10.4,a)') 
      . 'redata: Mesh Cutoff                      = ',g2max,'  Ry'
+C ...
+
+C Net charge in the cell ...
+      cnet_default = 0.0d0
+      charnet=fdf_double('NetCharge',cnet_default)
+      write(6,'(a,f10.4,a)') 
+     . 'redata: Net charge of the system         = ',charnet,' |e|'
 C ...
        
 C SCF Loop parameters ...
 C     Maximum number of SCF iterations
-      nscf_defect = 50
-      nscf = fdf_integer('MaxSCFIterations',nscf_defect)
+      nscf_default = 50
+      nscf = fdf_integer('MaxSCFIterations',nscf_default)
       write(6,'(a,i5)') 
      . 'redata: Max. number of SCF Iter          = ',nscf
 
 C     Pulay mixing, numer of iterations for one Pulay mixing (maxsav)
-      maxsv_defect = 0
-      maxsav = fdf_integer('DM.NumberPulay',maxsv_defect)
+      maxsv_default = 0
+      maxsav = fdf_integer('DM.NumberPulay',maxsv_default)
       if(maxsav .gt. 1) then
         write(6,'(a,i5,a)') 
-     .   'redata: One Pulay mixing every           = ',maxsav,
+     .   'redata: Pulay mixing using               = ',maxsav,
      .   ' iterations'
       else
          write(6,'(a)')'redata: Mixing is linear'
       endif
+ 
+C     Mix density matrix on first SCF step
+C     (mix)
+      mix_default = .false.
+      mix  = fdf_boolean('DM.MixSCF1',mix_default)
+      write(6,'(a,4x,l1)')
+     .  'redata: Mix DM in first SCF step ?       = ',mix
 
 C     Use disk or memory to store intermediate Pulay miximg vectors
 C     (pulfile)
-      pul_defect = .false.
-      pulfile  = fdf_boolean('DM.PulayOnFile',pul_defect)
+      pul_default = .false.
+      pulfile  = fdf_boolean('DM.PulayOnFile',pul_default)
       write(6,'(a,4x,l1)')
-     .  'redata: Write Pulay info on disk?       = ',pulfile
+     . 'redata: Write Pulay info on disk         = ',pulfile
 C ...
 
 
 C     Density Matrix Mixing  (proportion of output DM in new input DM)
-      wmix_defect = 0.25d0
-      wmix = fdf_double('DM.MixingWeight',wmix_defect)
+      wmix_default = 0.25d0
+      wmix = fdf_double('DM.MixingWeight',wmix_default)
       write(6,'(a,f10.4,a)') 
      . 'redata: New DM Mixing Weight             = ',wmix
 
+C     Perform linear mixing each nkick SCF iterations (to kick system
+C     when it is pinned in a poorly convergent SCF loop)
+      nkick_default = 0
+      nkick = fdf_integer('DM.NumberKick',nkick_default)
+      if(nkick .ge. 1) then
+        write(6,'(a,i5,a)')
+     .   'redata: Kick with linear mixing every    = ',nkick,
+     .   ' iterations'
+      else
+         write(6,'(a)')'redata: No kicks to SCF'
+      endif
+ 
+C     Density Matrix Mixing each nkick SCF iterations
+      wmixk_default = 0.50d0
+      wmixkick = fdf_double('DM.KickMixingWeight',wmixk_default)
+      write(6,'(a,f10.4,a)')
+     . 'redata: DM Mixing Weight for Kicks       = ',wmixkick
+
 C     Density Matrix Tolerance for achieving Self-Consistency
-      dDtol_defect = 1.d-4
-      dDtol = fdf_double('DM.Tolerance',dDtol_defect)
+      dDtol_default = 1.d-4
+      dDtol = fdf_double('DM.Tolerance',dDtol_default)
       write(6,'(a,f12.6,a)') 
      . 'redata: DM Tolerance for SCF             = ',dDtol
 
 C     Initial spin density: Maximum polarization, Ferro (false), AF (true)
       if(sppol) then
-        inspn_defect = .false.
-        inspn = fdf_boolean('DM.InitSpinAF',inspn_defect)
+        inspn_default = .false.
+        inspn = fdf_boolean('DM.InitSpinAF',inspn_default)
         write(6,'(a,4x,l1)')
      .   'redata: Antiferro initial spin density   = ',inspn
       endif
 C ...
 
 C Use continumation DM files
-*     usdm_defect = .true.
-      usdm_defect = fdf_boolean('UseSaveData',.false.)
-      usesavedm  = fdf_boolean('DM.UseSaveDM',usdm_defect)
+*     usdm_default = .true.
+      usdm_default = fdf_boolean('UseSaveData',.false.)
+      usesavedm  = fdf_boolean('DM.UseSaveDM',usdm_default)
       write(6,'(a,4x,l1)') 
      . 'redata: Use continuation files for DM    = ',
      . usesavedm
 C ...
 
 C Neglect Interactions between non-overlapping orbitals ...
-      negl_defect = .false.
-      negl  = fdf_boolean('NeglNonOverlapInt',negl_defect)
+      negl_default = .false.
+      negl  = fdf_boolean('NeglNonOverlapInt',negl_default)
       write(6,'(a,4x,l1)') 
      . 'redata: Neglect nonoverlap interactions  = ',negl
 C ...
@@ -659,19 +498,19 @@ C Method to Solve LDA Hamitonian ...
         isolve = 0
         write(6,'(a,a)') 
      .   'redata: Method of Calculation            = ',
-     .   'Diagonalization'
+     .   '    Diagonalization'
       else if (leqi(method,'ordern')) then
         isolve = 1
         write(6,'(a,a)') 
      .   'redata: Method of Calculation            = ',
-     .   'Order-N'
-        if (nspin .eq. 2) then
+     .   '    Order-N'
+        if (nspin .gt. 1) then
          write(6,100) 
          write(6,101) 
          write(6,'(a)') 
      .   'redata:    You chose the Order-N solution option'
          write(6,'(a)') 
-     .   'redata:    together with nspin=2.  This is not  '
+     .   'redata:    together with nspin>1.  This is not  '
          write(6,'(a)') 
      .   'redata:    allowed in this version of siesta    '
          write(6,102)
@@ -690,38 +529,64 @@ C Method to Solve LDA Hamitonian ...
 C ...
 
 C Electronic temperature for Fermi Smearing ...
-      temp = fdf_physical('ElectronicTemperature',temp_defect,'Ry')
+      temp = fdf_physical('ElectronicTemperature',temp_default,'Ry')
       if (isolve .eq. 0) then
         write(6,'(a,f10.4,a)') 
      .  'redata: Electronic Temperature           = ',temp,'  Ry'
       endif
 C ...
 
+C Fix the spin of the system to a given value 
+      fs_default = .false.
+      fixspin  = fdf_boolean('FixSpin',fs_default)
+      if (fixspin .and. nspin .ne. 2) then
+        write(6,'(a)') 
+     . 'redata: ERROR: You can only fix the spin of the system' 
+        write(6,'(a)') 
+     . 'redata:        for collinear spin polarized calculations.'
+        write(6,102)
+        stop
+      endif
+      write(6,'(a,4x,l1)') 
+     . 'redata: Fix the spin of the system       = ',fixspin 
+C ...
+
+C Value of the Spin of the system (only used if fixspin = TRUE
+      if (fixspin) then
+        ts = fdf_double('TotalSpin',0.0d0)
+        write(6,'(a,f10.4)') 
+     .   'redata: Value of the Spin of the System  = ',ts
+      else
+        ts = 0.0
+      endif
+C ...
+        
+
 C Order-N solution parameters ...
 C     Maximum number of CG minimization iterations
-      ncgmax_defect = 1000
-      ncgmax = fdf_integer('ON.MaxNumIter',ncgmax_defect)
+      ncgmax_default = 1000
+      ncgmax = fdf_integer('ON.MaxNumIter',ncgmax_default)
 
 C     Relative tolerance in total band structure energy
-      etol_defect = 1.d-8
-      etol = fdf_double('ON.etol',etol_defect)
+      etol_default = 1.d-8
+      etol = fdf_double('ON.etol',etol_default)
 
 C     Fermi level parameter
-      eta_defect = 0.d0
-      eta = fdf_physical('ON.eta',eta_defect,'Ry')
+      eta_default = 0.d0
+      eta = fdf_physical('ON.eta',eta_default,'Ry')
 
 C     Cutoff radius for Localized Wave Functions
-      rcoor_defect = 9.5d0
-      rcoor = fdf_physical('On.RcLWF',rcoor_defect,'Bohr')
+      rcoor_default = 9.5d0
+      rcoor = fdf_physical('On.RcLWF',rcoor_default,'Bohr')
 
 C     Use continumation LWF files
-*     uslwf_defect = .true.
-      uslwf_defect = fdf_boolean('UseSaveData',.false.)
-      usesavelwf  = fdf_boolean('ON.UseSaveLWF',uslwf_defect)
+*     uslwf_default = .true.
+      uslwf_default = fdf_boolean('UseSaveData',.false.)
+      usesavelwf  = fdf_boolean('ON.UseSaveLWF',uslwf_default)
 
 C     Option on how to build LWF's (disk or functionals)
-      lwfopt_defect = 'kim'
-      lwfopt  = fdf_string('ON.functional',lwfopt_defect)
+      lwfopt_default = 'kim'
+      lwfopt  = fdf_string('ON.functional',lwfopt_default)
       if (leqi(lwfopt,'files')) then
         ioptlwf = 0
       else if (leqi(lwfopt,'kim')) then
@@ -732,6 +597,34 @@ C     Option on how to build LWF's (disk or functionals)
         write(6,'(a)') 'redata: wrong ON.funcional option'
         stop
       endif
+
+C     Option to calculate the Chemical potential in O(N)
+      chebef_default = .false.
+      chebef = fdf_boolean('ON.ChemicalPotential',chebef_default)
+      
+C     Option to use the Chemical Potential calculated instead
+C     of the eta variable of the input
+      noeta_default = .false.
+      noeta = fdf_boolean('ON.ChemicalPotentialUse',noeta_default)
+
+      if (noeta) chebef = .true.
+
+C     Cutoff radius to calculate the Chemical Potential by projection
+      rccp_default = 9.5d0
+      rcoorcp = fdf_physical('ON.ChemicalPotentialRc',
+     .                        rccp_default,'Bohr')
+
+C     Temperature of the Fermi distribution to calculate the
+C     Chemical potential by projection
+      tcp_default = 0.05
+      tcp = fdf_physical('ON.ChemicalPotentialTemperature',
+     .                   tcp_default,'Ry')
+      beta = 1.0d0/tcp
+
+C     Order of the Chebishev expansion to calculate the Chemical
+C     potential
+      pmax_default = 100
+      pmax = fdf_integer('ON.ChemicalPotentialOrder',pmax_default)
 C ...
 
 
@@ -742,51 +635,84 @@ C ...
      .  'redata: Relative tolerance               = ',etol
         write(6,'(a,f10.4,a)') 
      .  'redata: Eta (Fermi level parameter)      = ',eta,'  Ry'
-        write(6,'(a,f8.2,a)') 
+        write(6,'(a,f10.4,a)') 
      .  'redata: Radius of LWFs                   = ',rcoor,
-     .  '    Bohr'
+     .  '  Bohr'
         write(6,'(a,4x,l1)') 
-     .  'redata: Use continuation files for LWF = ',
+     .  'redata: Use continuation files for LWF   = ',
      .  usesavelwf
         write(6,'(a,a)') 
-     .  'redata: Method to build LWFs = ',lwfopt
+     .  'redata: Method to build LWFs             =     ',lwfopt
+
+        if (chebef) then
+        write(6,'(a,l1)')
+     .  'redata: Compute Chemical Potential       =     ',chebef
+        write(6,'(a)')
+     .  'redata: Use the calculated Chemical ..'
+        write(6,'(a,l1)')
+     .  'redata: ..Potential instead of eta       =     ',noeta
+        write(6,'(a,f10.4,a)') 
+     .  'redata: Radius to compute the Chem. Pot. = ',rcoorcp,
+     .  '  Bohr'
+        write(6,'(a)')
+     .  'redata: Temp. for Fermi distribution ..'
+        write(6,'(a,f10.4,a)') 
+     .  'redata: .. to compute the Chem. Pot.     = ',tcp,
+     .  '    Ry'
+        write(6,'(a,i5)') 
+     .  'redata: Order of the Chebishev expansion = ',pmax
+        endif
+        
       endif
 C ...
 
 C Dynamics parameters ...
-C     Type of dynamics
-      dyntyp_defect = 'verlet'
-      dyntyp = fdf_string('MD.TypeOfRun',dyntyp_defect)
+      varcel = fdf_boolean('MD.VariableCell', .false. )
+C     Type of dynamics 
+      dyntyp_default = 'verlet'   
+      dyntyp = fdf_string('MD.TypeOfRun',dyntyp_default)
       if (leqi(dyntyp,'cg')) then
         idyn = 0
         write(6,'(a,a)') 
      .   'redata: Dynamics option                  = ',
-     .   'CG coord. optimization'
+     .   '    CG coord. optimization'
+        write(6,'(a,4x,l1)')
+     .   'redata: Variable cell                    = ', varcel
+        uscg_default = fdf_boolean('UseSaveData',.false.)
+        usesavecg  = fdf_boolean('MD.UseSaveCG',uscg_default)
+        write(6,'(a,4x,l1)')
+     .   'redata: Use continuation files for CG    = ',
+     .   usesavecg
       else if (leqi(dyntyp,'verlet')) then
         idyn = 1
         write(6,'(a,a)') 
      .   'redata: Dynamics option                  = ',
-     .   'Verlet MD run'
+     .   '    Verlet MD run'
       else if (leqi(dyntyp,'nose')) then
         idyn = 2
         write(6,'(a,a)') 
      .   'redata: Dynamics option                  = ',
-     .   'Nose termostat MD run'
+     .   '    Nose termostat MD run'
       else if (leqi(dyntyp,'parrinellorahman')) then
         idyn = 3
         write(6,'(a,a)') 
      .   'redata: Dynamics option                  = ',
-     .   'Parrinello-Rahman MD run'
+     .   '    Parrinello-Rahman MD run'
       else if (leqi(dyntyp,'noseparrinellorahman')) then
         idyn = 4
         write(6,'(a,a)') 
      .   'redata: Dynamics option                  = ',
-     .   'Nose-Parrinello-Rahman MD run'
+     .   '    Nose-Parrinello-Rahman MD run'
       else if (leqi(dyntyp,'anneal')) then
         idyn = 5
         write(6,'(a,a)') 
      .   'redata: Dynamics option                  = ',
-     .   'Annealing MD run'
+     .   '    Annealing MD run'
+      else if (leqi(dyntyp,'fc')) then
+        idyn = 6
+        write(6,'(a,a)')
+     .   'redata: Dynamics option                  = ',
+     .   '    Force Constants Matrix Calculation'
       else
         write(6,100) 
         write(6,101) 
@@ -799,21 +725,26 @@ C     Type of dynamics
         write(6,'(a)') 'redata:      - Parrinello-Rahman              '
         write(6,'(a)') 'redata:      - Nose-Parrinello-Rahman         '
         write(6,'(a)') 'redata:      - Anneal                         '
+        write(6,'(a)') 'redata:      - FC                             '
         write(6,102)
         stop
-      endif
-    
+      endif 
+
+
 C     Maximum number of steps in CG coordinate optimization
-      nmove_defect = 0
-      nmove = fdf_integer('MD.NumCGsteps',nmove_defect)
+      nmove_default = 0
+      nmove = fdf_integer('MD.NumCGsteps',nmove_default)
 
 C     Maximum atomic displacement in one CG step
-      dxmax_defect = 0.2d0
-      dxmax = fdf_physical('MD.MaxCGDispl',dxmax_defect,'Bohr')
+      dxmax_default = 0.2d0
+      dxmax = fdf_physical('MD.MaxCGDispl',dxmax_default,'Bohr')
 
-C     Tolerance in the maximum atomic force
-      ftol_defect = 0.01d0 
-      ftol = fdf_physical('MD.MaxForceTol',ftol_defect,'Ry/Bohr')
+C     Tolerance in the maximum atomic force (def 0.04 eV/Ang)
+      ftol_default = 0.00155574d0 
+      ftol = fdf_physical('MD.MaxForceTol',ftol_default,'Ry/Bohr')
+
+C     Tolerance in the maximum residual stress (var cell) def = 1 GPa 
+      strtol = fdf_physical('MD.MaxStressTol',6.79773d-5,'Ry/Bohr**3')
 
       if (idyn .eq. 0) then
         write(6,'(a,i5)') 
@@ -822,23 +753,30 @@ C     Tolerance in the maximum atomic force
      .  'redata: Max atomic displ per move        = ',dxmax,'  Bohr'
         write(6,'(a,f10.4,a)') 
      .  'redata: Force tolerance                  = ',ftol,'  Ry/Bohr'
+        if ( varcel ) then
+           strtol = dabs(strtol)
+           write(6,'(a,f10.4,a)')
+     .  'redata: Stress tolerance                 = ',strtol/6.79773d-5,
+     .                                              '  GPa'
+        endif
+
       endif
   
 C     Initial time step for MD
-      istart_defect = 1
-      istart = fdf_integer('MD.InitialTimeStep',istart_defect)
+      istart_default = 1
+      istart = fdf_integer('MD.InitialTimeStep',istart_default)
 
 C     Final time step for MD
-      ifinal_defect = 1
-      ifinal = fdf_integer('MD.FinalTimeStep',ifinal_defect)
+      ifinal_default = 1
+      ifinal = fdf_integer('MD.FinalTimeStep',ifinal_default)
 
 C     Length of time step for MD
-      dt_defect = 1.d0
-      dt = fdf_physical('MD.LengthTimeStep',dt_defect,'fs')
+      dt_default = 1.d0
+      dt = fdf_physical('MD.LengthTimeStep',dt_default,'fs')
 
 C     Quench Option
-      qnch_defect = .false.
-      qnch = fdf_boolean('MD.Quench',qnch_defect)
+      qnch_default = .false.
+      qnch = fdf_boolean('MD.Quench',qnch_default)
       if (qnch .and. (idyn .eq. 2 .or. idyn .eq. 4)) then
         write(6,100) 
         write(6,101) 
@@ -855,8 +793,8 @@ C     Quench Option
 C     Initial Temperature of MD simulation
 C     (draws random velocities from the Maxwell-Boltzmann distribition
 C      at the given temperature)
-      ti_defect = 0.d0
-      tempinit = fdf_physical('MD.InitialTemperature',ti_defect,'K')
+      ti_default = 0.d0
+      tempinit = fdf_physical('MD.InitialTemperature',ti_default,'K')
 
       if (idyn .ge. 1 .and. idyn .le. 5) then
         write(6,'(a,i5)') 
@@ -876,21 +814,21 @@ C      at the given temperature)
       endif
 
 C     Target Temperature
-      tt_defect = 0.d0
-      tt = fdf_physical('MD.TargetTemperature',tt_defect,'K')
+      tt_default = 0.d0
+      tt = fdf_physical('MD.TargetTemperature',tt_default,'K')
       
 C     Target Pressure
-      tp_defect = 0.d0
-      tp = fdf_physical('MD.TargetPressure',tp_defect,'Ry/Bohr**3')
+      tp_default = 0.d0
+      tp = fdf_physical('MD.TargetPressure',tp_default,'Ry/Bohr**3')
 
 C     Mass of Nose variable
-      mn_defect = 1.d2
-      mn = fdf_physical('MD.NoseMass',mn_defect,'Ry*fs**2')
+      mn_default = 1.d2
+      mn = fdf_physical('MD.NoseMass',mn_default,'Ry*fs**2')
 
 C     Mass of Parrinello-Rahman variables
-      mpr_defect = 1.d2
+      mpr_default = 1.d2
       mpr = fdf_physical('MD.ParrinelloRahmanMass',
-     .                    mpr_defect,'Ry*fs**2')
+     .                    mpr_default,'Ry*fs**2')
 
       if (idyn .eq. 2 .or. idyn .eq. 4) then
         write(6,'(a,f10.4,a)') 
@@ -903,8 +841,8 @@ C     Mass of Parrinello-Rahman variables
       endif
 
 C     Annealing option
-      annop_defect = 'TemperatureAndPressure'
-      annop = fdf_string('MD.AnnealOption',annop_defect)
+      annop_default = 'TemperatureAndPressure'
+      annop = fdf_string('MD.AnnealOption',annop_default)
       if (idyn .eq. 5) then
         if (leqi(annop,'Temperature')) then
           ianneal = 1
@@ -948,12 +886,12 @@ C     Annealing option
       if (idyn .eq. 3 .or. idyn .eq. 4 .or. 
      .   (idyn .eq. 5 .and. (ianneal .eq. 2 .or. ianneal .eq. 3))) then
         write(6,'(a,f10.4,a)') 
-     .  'redata: Target Pressure                  = ',tt,'  Ry/Bohr**3'
+     .  'redata: Target Pressure                  = ',tp,'  Ry/Bohr**3'
       endif
 
 C     Relaxation Time for Annealing
-      taurelax_defect = 1.d2
-      taurelax = fdf_physical('MD.TauRelax',taurelax_defect,'fs')
+      taurelax_default = 1.d2
+      taurelax = fdf_physical('MD.TauRelax',taurelax_default,'fs')
       if (idyn .eq. 5) then
         write(6,'(a,f10.4,a)') 
      .  'redata: Annealing Relaxation Time        = ',
@@ -961,109 +899,46 @@ C     Relaxation Time for Annealing
       endif
         
 C     Estimated Bulk modulus (for Pressure annealing)
-      bulkm_defect = 1.d2
-      bulkm = fdf_double('MD.BulkModulus',bulkm_defect)
+      bulkm_default = 1.d2
+      bulkm = fdf_physical('MD.BulkModulus',bulkm_default,'Ry/Bohr**3')
       if (idyn .eq. 5 .and. (ianneal .eq. 2 .or. ianneal .eq. 3)) then
         write(6,'(a,f10.4,a)') 
      .  'redata: Approx. Bulk Modulus             = ',
      .   bulkm,'  Ry/Bohr**3'
       endif
+
+C     Atomic displacement for force constant calculation
+      dx_default = 0.04d0
+      dx = fdf_physical('MD.FCDispl',dx_default,'Bohr')
+
+C     First and last atoms to displace for calculation of force constants
+      ia1_default = 1
+      ia1 = fdf_integer('MD.FCfirst',ia1_default)
+      ia2_default = na
+      ia2 = fdf_integer('MD.FClast',ia2_default)
+
+      if (idyn .eq. 6) then
+        write(6,'(a,f10.4,a)')
+     .  'redata: Atomic displ for force constans  = ',dx,'  Bohr'
+        write(6,'(a,i8)')
+     .  'redata: First atom to move               = ',ia1
+        write(6,'(a,i8)')
+     .  'redata: Last atom to move                = ',ia1
+      endif
 C ...
 
-C Atomic Coordinates ..................................
-      call recoor(overflow, cell, alat, xa, isa, na)
-      
-C Super cell ..........................................
-      if ( fdf_block('SuperCell',iunit) ) then
-        if ( alat .eq. 0.d0 ) then
-          write(6,*) 'redata: ERROR: LatticeConstant required',
-     .                      ' to define SuperCell'
-          stop 'redata: ERROR: LatticeConstant required'
-        endif
-        do i = 1,3
-          read(iunit,*) (nscell(j,i),j=1,3)
-        enddo
-      else
-        do i = 1,3
-          do j = 1,3
-            nscell(j,i) = 0
-          enddo
-          nscell(i,i) = 1
-        enddo
-      endif
-      do i = 1,3
-        do ix = 1,3
-          ucell(ix,i) = cell(ix,i)
-        enddo
-      enddo
-      do i = 1,3
-        do ix = 1,3
-          cell(ix,i) = ucell(ix,1) * nscell(1,i) +
-     .                 ucell(ix,2) * nscell(2,i) +
-     .                 ucell(ix,3) * nscell(3,i)
-        enddo
-      enddo
-      if ( volcel(cell) .lt. 1.d-12 ) then
-        ncells = 1
-      else
-        ncells = nint( volcel(cell) / volcel(ucell) )
-      endif
-      nua = na
-      na = nua * ncells
-      call chkdime(maxa, na, overflow, amax)
-      if (ncells.gt.1) then
-        write(6,'(a,/,(a,3f12.6))')
-     .    'redata: Total-cell (supercell) vectors (Bohr)',
-     .    ('redata:',(cell(ix,i),ix=1,3),i=1,3)
-        write(6,'(a,i6)') 'redata: Number of unit cells  =', ncells
-        write(6,'(a,i6)') 'redata: Total number of atoms =', na
-      endif
-      if (.not.overflow) then
-*       do i = 1,3
-*         do j = 1,3
-*           if (j.ne.i .and. nscell(j,i).ne.0) then
-*             write(6,*) 'redata: ERROR: Non-diagonal supercells',
-*    .                   ' are not implemented yet'
-*             stop 'redata: ERROR: Non-diagonal supercell.'
-*           endif
-*         enddo
-*       enddo
-        call idiag( 3, nscell, nsd, ml, mr, maux )
-        do i = 1,3
-          do ix = 1,3
-            dcell(ix,i) = ( cell(ix,1) * mr(1,i) +
-     .                      cell(ix,2) * mr(2,i) +
-     .                      cell(ix,3) * mr(3,i) ) / nsd(i,i)
-          enddo
-        enddo
-        na = 0
-        do ia = 1,nua
-          na = na + 1
-          indxua(na) = ia
-        enddo
-        do i3 = 0,nsd(3,3)-1
-        do i2 = 0,nsd(2,2)-1
-        do i1 = 0,nsd(1,1)-1
-          if (i1.ne.0 .or. i2.ne.0 .or. i3.ne.0) then
-            do ia = 1,nua
-              na = na + 1
-              isa(na) = isa(ia)
-              indxua(na) = ia
-              do ix = 1,3
-                xa(ix,na) = xa(ix,ia) + dcell(ix,1) * i1 +
-     .                                  dcell(ix,2) * i2 +
-     .                                  dcell(ix,3) * i3
-              enddo
-            enddo
-          endif
-        enddo
-        enddo
-        enddo
-      endif
-C ..................
+C Variable cell shape? Depending on input and type of dynamics
+      varcel = varcel .or. (idyn.eq.3) .or. (idyn.eq.4) 
+     .                .or. (idyn.eq.5 .and. ianneal.ne.1)
+      varcel = varcel .and. (idyn.ne.1) .and. (idyn.ne.2) 
+     .                .and. (idyn.ne.6)
+     .                .and. (.not. (idyn.eq.5 .and. ianneal.ne.1) )
 
+C Atomic Coordinates ..................................
+      call recoor( maxa, na, isa, xa )
+      call chkdime(maxa, na, overflow, na)
+      
       write(6,102)
-      write(6,*) ' '
 
 100   format(/,'redata: ',71(1h*))
 101   format('redata:                  INPUT ERROR')

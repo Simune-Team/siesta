@@ -25,7 +25,7 @@ C *****************************************************************
 
       real*8 pi, trd, ftrd, tftm, a0, alp
 
-      real*8 d, z, fz, fzp, rs, vxp, exp, beta, sb, alb, vxf, exf
+      real*8 d, z, fz, fzp, rs, vxp, exp_var, beta, sb, alb, vxf, exf
 
        PI=4*ATAN(ONE)
        TRD = ONE/3
@@ -60,22 +60,22 @@ C      X-alpha parameter:
        ENDIF
        RS = (3 / (4*PI*D) )**TRD
        VXP = -3*ALP/(2*PI*A0*RS)
-       EXP = 3*VXP/4
+       EXP_VAR = 3*VXP/4
        IF (IREL .EQ. 1) THEN
          BETA = C014/RS
          SB = SQRT(1+BETA*BETA)
          ALB = LOG(BETA+SB)
          VXP = VXP * (-PFIVE + OPF * ALB / (BETA*SB))
-         EXP = EXP * (ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
+         EXP_VAR = EXP_VAR * (ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
        ENDIF
        VXF = 2**TRD*VXP
-       EXF = 2**TRD*EXP
+       EXF = 2**TRD*EXP_VAR
        IF (NSP .EQ. 2) THEN
-         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP)
-         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP)
-         EX    = EXP + FZ*(EXF-EXP)
+         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP_VAR)
+         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP_VAR)
+         EX    = EXP_VAR + FZ*(EXF-EXP_VAR)
        ELSE
          VX(1) = VXP
-         EX    = EXP
+         EX    = EXP_VAR
        ENDIF
       END

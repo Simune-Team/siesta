@@ -1,3 +1,5 @@
+c $Id: fixed.f,v 1.4 1999/01/31 11:51:38 emilio Exp $
+
       subroutine fixed( cell, stress, na, isa, amass, xa, fa,
      .                  cstress, cfa )
 
@@ -66,9 +68,9 @@ c **********************************************************************
      .                  fa(3,na), stress(3,3), xa(3,na)
 
 c Internal parameters
-c maxc  : maximun number of constraints
-c maxl  : maximun number of input constraint lines
-c maxw  : maximun number of items in an input constraint line
+c maxc  : maximum number of constraints
+c maxl  : maximum number of input constraint lines
+c maxw  : maximum number of items in an input constraint line
       integer maxc, maxl, maxw
       parameter ( maxc  =  1000 )
       parameter ( maxl  = 10000 )
@@ -89,10 +91,11 @@ c Internal variables
      .  chkdim, dot, constr, parse
       save
      .  ctype, frstme, iac, nc, xc
-      data
-     .  frstme /.true./
 
       include 'fdf/fdfdefs.h'
+
+      data
+     .  frstme /.true./
 
 C Read constraint data only the first time
       if (frstme) then

@@ -1,3 +1,5 @@
+C $Id: fermid.f,v 1.5 1999/01/31 11:14:53 emilio Exp $
+
       SUBROUTINE FERMID( NSPIN, MAXSPN, NK, WK, MAXE, NE, E, 
      .                   TEMP, QTOT, WKE, EF )
 

@@ -1,18 +1,5 @@
 c
-c $Id: pseudo.f,v 1.3 1997/05/22 17:32:27 wdpgaara Exp $
-c
-c $Log: pseudo.f,v $
-c Revision 1.3  1997/05/22 17:32:27  wdpgaara
-c Moving from RCSfiles to ATM_1_0
-c
-c Revision 1.1.1.1  1997/01/07 08:38:55  wdpgaara
-c Froyen-Troullier-Martins-AG atom code
-c
-c Revision 1.2  1994/02/18  01:20:34  garcia
-c *** empty log message ***
-c
-c Revision 1.1  1991/12/14  00:34:49  alberto
-c Initial revision
+c $Id: pseudo.f,v 1.4 1999/02/26 14:26:46 wdpgaara Exp $
 c
       subroutine Pseudo(pot_id,headline,ps_generator)
 c
@@ -34,16 +21,13 @@ C     .. Parameters ..
       parameter (zero=0.D0,one=1.D0)
 C     ..
 C     .. Local Scalars ..
-      integer i, j, ll, llp, lp
+      integer i, llp, lp
 C     ..
 C     .. Local Arrays ..
       double precision ar(nrmax), br(nrmax)
 C     ..
 C     .. External Subroutines ..
       external ext, wf, wrapup
-C     ..
-C     .. Intrinsic Functions ..
-      intrinsic abs, exp
 C     ..
 c
       do 10 i = 1, 5

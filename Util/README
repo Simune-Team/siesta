@@ -10,4 +10,7 @@ prdate:      Prints the date and host (used by rsiesta)
 vpsa2bin:    Converts formatted pseudopotential files to unformatted.
 vpsb2asc:    Converts unformatted pseudopotential files to formatted.
 Plrho/plrho: Plots in 3D the electron density and other functions 
-             calculated by siesta
+             calculated by siesta (by Jose M. Soler)
+Denchar:     2D contour plots of charge and spin density (by J. Junquera)
+Coutour:     2D contour plots of charge and spin density (by E. Artacho)
+Vibra:       Package to compute phonon frequencies and modes (by P. Ordejon)

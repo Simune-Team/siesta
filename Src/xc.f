@@ -1,3 +1,5 @@
+C $Id: xc.f,v 1.13 1999/03/04 16:21:11 jose Exp $
+
       SUBROUTINE ATOMXC( FUNCTL, AUTHOR, IREL,
      .                   NR, MAXR, RMESH, NSPIN, DENS,
      .                   EX, EC, DX, DC, VXC )
@@ -52,12 +54,15 @@ C Argument types and dimensions
       DOUBLE PRECISION  DENS(MAXR,NSPIN), RMESH(MAXR), VXC(MAXR,NSPIN)
       DOUBLE PRECISION  DC, DX, EC, EX
 
-C Fix the order of the numerical derivatives: the number of radial 
-C points used is 2*NN+1
-C MAXAUX must be larger than the number of radial mesh points
-      INTEGER NN, MAXAUX
+C Internal parameters
+C NN     : order of the numerical derivatives: the number of radial 
+C          points used is 2*NN+1
+C MAXAUX : must be larger than the number of radial mesh points
+C MAXSPN : maximum number of spin values (4 for non-collinear spin)
+      INTEGER NN, MAXAUX, MAXSPN
       PARAMETER ( NN     =    5 )
       PARAMETER ( MAXAUX = 2000 )
+      PARAMETER ( MAXSPN =    4 )
 
 C Fix energy unit:  EUNIT=1.0 => Hartrees,
 C                   EUNIT=0.5 => Rydbergs,
@@ -75,9 +80,10 @@ C Local variables and arrays
       INTEGER
      .  IN, IN1, IN2, IR, IS, JN
       DOUBLE PRECISION
-     .  AUX(MAXAUX), D(2), DECDD(2), DECDGD(3,2), DEXDD(2), DEXDGD(3,2),
+     .  AUX(MAXAUX), D(MAXSPN), DECDD(MAXSPN), DECDGD(3,MAXSPN),
+     .  DEXDD(MAXSPN), DEXDGD(3,MAXSPN),
      .  DGDM(-NN:NN), DGIDFJ(-NN:NN), DRDM, DVOL, 
-     .  EPSC, EPSX, F1, F2, GD(3,2), PI
+     .  EPSC, EPSX, F1, F2, GD(3,MAXSPN), PI
       EXTERNAL
      .  GGAXC, LDAXC
 
@@ -379,14 +385,19 @@ C Fix switch to skip points with zero density
       PARAMETER ( DENMIN = 1.D-15 )
 
 C Local variables and arrays
+      INTEGER MAXSPN
+      PARAMETER ( MAXSPN = 4 )
       LOGICAL           GGA
       INTEGER           I1, I2, I3, IC, IN, IP, IS, IX,
      .                  J1, J2, J3, JN, JP(3,-NN:NN), JX, NP
-      DOUBLE PRECISION  D(2), DECDD(2), DECDGD(3,2), DENTOT, DEXDD(2),
-     .                  DEXDGD(3,2), DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
+      DOUBLE PRECISION  D(MAXSPN), DECDD(MAXSPN), DECDGD(3,MAXSPN),
+     .                  DENTOT, DEXDD(MAXSPN), DEXDGD(3,MAXSPN),
+     .                  DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
      .                  DMDX(3,3), DVOL, DXDM(3,3),
-     .                  EPSC, EPSX, F1, F2, GD(3,2), VOLCEL, VOLUME
+     .                  EPSC, EPSX, F1, F2, GD(3,MAXSPN),
+     .                  VOLCEL, VOLUME
       EXTERNAL          GGAXC, LDAXC, RECLAT, VOLCEL
+
 
 C Start time counter (intended only for debugging and development)
       CALL TIMER( 'CELLXC', 1 )
@@ -482,7 +493,7 @@ C       Skip point if density=0
         IF (SKIP0) THEN
           DENTOT = 0.D0
           DO 75 IS = 1,NSPIN
-            DENTOT = DENTOT + DENS(IP,IS)
+            DENTOT = DENTOT + ABS(DENS(IP,IS))
    75     CONTINUE
           IF (DENTOT .LT. DENMIN) THEN
             DO 76 IS = 1,NSPIN
@@ -551,7 +562,7 @@ C       Find density and gradient of density at this point
           D(IS) = DENS(IP,IS)
   145   CONTINUE
         IF (GGA) THEN
-          DO 170 IS = 1,NSPIN
+          DO 165 IS = 1,NSPIN
             DO 160 IX = 1,3
               GD(IX,IS) = 0
               DO 150 IN = -NN,NN
@@ -561,7 +572,7 @@ C       Find density and gradient of density at this point
      .                      DGIDFJ(IX,3,IN) * DENS(JP(3,IN),IS)
   150         CONTINUE
   160       CONTINUE
-  170     CONTINUE
+  165     CONTINUE
         ENDIF
 
 C       Find exchange and correlation energy densities and their 
@@ -575,11 +586,15 @@ C       derivatives with respect to density and density gradient
 
 C       Add contributions to exchange-correlation energy and its
 C       derivatives with respect to density at all points
-        DO 200 IS = 1,NSPIN
+        DO 170 IS = 1,MIN(NSPIN,2)
           EX = EX + DVOL * D(IS) * EPSX
           EC = EC + DVOL * D(IS) * EPSC
-          DX = DX + DVOL * D(IS) * (EPSX - DEXDD(IS))
-          DC = DC + DVOL * D(IS) * (EPSC - DECDD(IS))
+          DX = DX + DVOL * D(IS) * EPSX
+          DC = DC + DVOL * D(IS) * EPSC
+  170   CONTINUE
+        DO 200 IS = 1,NSPIN
+          DX = DX - DVOL * D(IS) * DEXDD(IS)
+          DC = DC - DVOL * D(IS) * DECDD(IS)
           IF (GGA) THEN
             VXC(IP,IS) = VXC(IP,IS) + DVOL * ( DEXDD(IS) + DECDD(IS) )
             DO 190 IN = -NN,NN
@@ -761,8 +776,11 @@ C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
       IMPLICIT          NONE
       CHARACTER*(*)     AUTHOR
       INTEGER           IREL, NSPIN
-      DOUBLE PRECISION  D(NSPIN), DECDD, DECDGD, DEXDD, DEXDGD,
+      DOUBLE PRECISION  D(NSPIN), DECDD(NSPIN), DECDGD(3,NSPIN),
+     .                  DEXDD(NSPIN), DEXDGD(3,NSPIN),
      .                  EPSC, EPSX, GD(3,NSPIN)
+
+      IF (NSPIN .GT. 2) STOP 'GGAXC: Not prepared for this NSPIN'
 
       IF (AUTHOR.EQ.'PBE' .OR. AUTHOR.EQ.'pbe') THEN
         CALL PBEXC( IREL, NSPIN, D, GD,
@@ -778,24 +796,84 @@ C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
 
       SUBROUTINE LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, VX, VC )
 
+C ******************************************************************
 C Finds the exchange and correlation energies and potentials, in the
 C Local (spin) Density Approximation.
+C Written by L.C.Balbas and J.M.Soler, Dec'96.
+C Non-collinear spin added by J.M.Soler, May'98
+C *********** INPUT ************************************************
+C CHARACTER*(*) AUTHOR : Parametrization desired:
+C     'CA' or 'PZ' => LSD Perdew & Zunger, PRB 23, 5075 (1981)
+C           'PW92' => LSD Perdew & Wang, PRB, 45, 13244 (1992)
+C                     Uppercase is optional
+C INTEGER IREL     : Relativistic exchange? (0=>no, 1=>yes)
+C INTEGER NSPIN    : NSPIN=1 => unpolarized; NSPIN=2 => polarized;
+C                    NSPIN=4 => non-collinear polarization
+C REAL*8  D(NSPIN) : Local (spin) density. For non-collinear
+C                    polarization, the density matrix is given by:
+C                    D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
+C *********** OUTPUT ***********************************************
+C REAL*8 EPSX, EPSC : Exchange and correlation energy densities
+C REAL*8 VX(NSPIN), VC(NSPIN) : Exchange and correlation potentials,
+C                               defined as dExc/dD(ispin)
+C *********** UNITS ************************************************
 C Lengths in Bohr, energies in Hartrees
-C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
+C ******************************************************************
 
       IMPLICIT          NONE
       CHARACTER*(*)     AUTHOR
       INTEGER           IREL, NSPIN
       DOUBLE PRECISION  D(NSPIN), EPSC, EPSX, VX(NSPIN), VC(NSPIN)
 
+      INTEGER           IS, NS
+      DOUBLE PRECISION  DD(2), DPOL, DTOT, TINY, VCD(2), VPOL, VXD(2)
+
+      PARAMETER ( TINY = 1.D-12 )
+
+      IF (NSPIN .EQ. 4) THEN
+C       Find eigenvalues of density matrix (up and down densities
+C       along the spin direction)
+C       Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
+        NS = 2
+        DTOT = D(1) + D(2)
+        DPOL = SQRT( (D(1)-D(2))**2 + 4.D0*(D(3)**2+D(4)**2) )
+        DD(1) = 0.5D0 * ( DTOT + DPOL )
+        DD(2) = 0.5D0 * ( DTOT - DPOL )
+      ELSE
+        NS = NSPIN
+        DO 10 IS = 1,NSPIN
+          DD(IS) = D(IS)
+   10   CONTINUE
+      ENDIF
+
       IF ( AUTHOR.EQ.'CA' .OR. AUTHOR.EQ.'ca' .OR.
      .     AUTHOR.EQ.'PZ' .OR. AUTHOR.EQ.'pz') THEN
-        CALL PZXC( IREL, NSPIN, D, EPSX, EPSC, VX, VC )
+        CALL PZXC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
       ELSEIF ( AUTHOR.EQ.'PW92' .OR. AUTHOR.EQ.'pw92' ) THEN
-        CALL PW92XC( IREL, NSPIN, D, EPSX, EPSC, VX, VC )
+        CALL PW92XC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
       ELSE
-        WRITE(6,*) 'GGAXC: Unknown author ', AUTHOR
+        WRITE(6,*) 'LDAXC: Unknown author ', AUTHOR
         STOP
+      ENDIF
+
+      IF (NSPIN .EQ. 4) THEN
+C       Find dE/dD(ispin) = dE/dDup * dDup/dD(ispin) +
+C                           dE/dDdown * dDown/dD(ispin)
+        VPOL  = (VXD(1)-VXD(2)) * (D(1)-D(2)) / (DPOL+TINY)
+        VX(1) = 0.5D0 * ( VXD(1) + VXD(2) + VPOL )
+        VX(2) = 0.5D0 * ( VXD(1) + VXD(2) - VPOL )
+        VX(3) = (VXD(1)-VXD(2)) * D(3) / (DPOL+TINY)
+        VX(4) = (VXD(1)-VXD(2)) * D(4) / (DPOL+TINY)
+        VPOL  = (VCD(1)-VCD(2)) * (D(1)-D(2)) / (DPOL+TINY)
+        VC(1) = 0.5D0 * ( VCD(1) + VCD(2) + VPOL )
+        VC(2) = 0.5D0 * ( VCD(1) + VCD(2) - VPOL )
+        VC(3) = (VCD(1)-VCD(2)) * D(3) / (DPOL+TINY)
+        VC(4) = (VCD(1)-VCD(2)) * D(4) / (DPOL+TINY)
+      ELSE
+        DO 20 IS = 1,NSPIN
+          VX(IS) = VXD(IS)
+          VC(IS) = VCD(IS)
+   20   CONTINUE
       ENDIF
       END
 
@@ -848,17 +926,18 @@ C ********************************************************************
 C Internal variables
       INTEGER
      .  IS, IX
+
       DOUBLE PRECISION
      .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
      .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
      .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
      .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
-     .  DS, DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
+     .  DS(2), DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
      .  EC, ECUNIF, EX, EXUNIF,
      .  F, F1, F2, F3, F4, FC, FX, FOUTHD,
      .  GAMMA, GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
      .  H, HALF, KAPPA, KF, KFS, KS, MU, PHI, PI, RS, S,
-     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF, ZETA
+     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF(2), ZETA
 
 C Lower bounds of density and its gradient to avoid divisions by zero
       PARAMETER ( DENMIN = 1.D-12 )
@@ -953,27 +1032,30 @@ C Find correlation energy derivatives
 C Find exchange energy and potential
       FX = 0
       DO 60 IS = 1,2
-        DS   = MAX( DENMIN, 2 * D(IS) )
+        DS(IS)   = MAX( DENMIN, 2 * D(IS) )
         GDMS = MAX( GDMIN, 2 * GDM(IS) )
-        KFS = (3 * PI**2 * DS)**THD
-        S = GDMS / (2 * KFS * DS)
+        KFS = (3 * PI**2 * DS(IS))**THD
+        S = GDMS / (2 * KFS * DS(IS))
         F1 = 1 + MU * S**2 / KAPPA
         F = 1 + KAPPA - KAPPA / F1
-        CALL EXCHNG( IREL, 1, DS, EXUNIF, VXUNIF )
-        FX = FX + DS * EXUNIF * F
+c
+c       Note nspin=1 in call to exchng...
+c
+        CALL EXCHNG( IREL, 1, DS(IS), EXUNIF, VXUNIF(IS) )
+        FX = FX + DS(IS) * EXUNIF * F
 
-        DKFDD = THD * KFS / DS
-        DSDD = S * ( -(DKFDD/KFS) - 1/DS )
+        DKFDD = THD * KFS / DS(IS)
+        DSDD = S * ( -(DKFDD/KFS) - 1/DS(IS) )
         DF1DD = 2 * (F1-1) * DSDD / S
         DFDD = KAPPA * DF1DD / F1**2
-        DFXDD(IS) = VXUNIF * F + DS * EXUNIF * DFDD
+        DFXDD(IS) = VXUNIF(IS) * F + DS(IS) * EXUNIF * DFDD
 
         DO 50 IX = 1,3
           GDS = 2 * GD(IX,IS)
           DSDGD = (S / GDMS) * GDS / GDMS
           DF1DGD = 2 * MU * S * DSDGD / KAPPA
           DFDGD = KAPPA * DF1DGD / F1**2
-          DFXDGD(IX,IS) = DS * EXUNIF * DFDGD
+          DFXDGD(IX,IS) = DS(IS) * EXUNIF * DFDGD
    50   CONTINUE
    60 CONTINUE
       FX = HALF * FX / DT
@@ -1037,13 +1119,13 @@ C Fix some numerical constants
      .            THD=1.D0/3.D0, THRHLF=1.5D0 )
 
 C Parameters from Table I of Perdew & Wang, PRB, 45, 13244 (92)
-      DATA P      / 1.00,     1.00,     1.00     /
-      DATA A      / 0.031091, 0.015545, 0.016887 /
-      DATA ALPHA1 / 0.21370,  0.20548,  0.11125  /
-      DATA BETA   / 7.5957,  14.1189,  10.357,
-     .              3.5876,   6.1977,   3.6231,
-     .              1.6382,   3.3662,   0.88026,
-     .              0.49294,  0.62517,  0.49671 /
+      DATA P      / 1.00d0,     1.00d0,     1.00d0     /
+      DATA A      / 0.031091d0, 0.015545d0, 0.016887d0 /
+      DATA ALPHA1 / 0.21370d0,  0.20548d0,  0.11125d0  /
+      DATA BETA   / 7.5957d0,  14.1189d0,  10.357d0,
+     .              3.5876d0,   6.1977d0,   3.6231d0,
+     .              1.6382d0,   3.3662d0,   0.88026d0,
+     .              0.49294d0,  0.62517d0,  0.49671d0 /
 
 C Find rs and zeta
       PI = 4 * ATAN(1.D0)

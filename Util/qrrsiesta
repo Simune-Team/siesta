@@ -10,11 +10,11 @@
 # A detailed log of the whole cycle goes to name.qlog.
 #
 # Environment variable $SIESTA_DIR should be previously defined.
-# If it is not defined, it assumes SIESTA_DIR = ../Src
+# If it is not defined, it assumes SIESTA_DIR = ../siesta/Src
 #
 # Environment variable $SIESTA_BIN can be defined to locate
 # the utility scripts called by this one.
-# If it is not defined, it assumes SIESTA_BIN = ../Util
+# If it is not defined, it assumes SIESTA_BIN = ../siesta/Util
 #
 # Data file name.fdf must exist in working directory.
 # rrsiesta et al must be in user's path.
@@ -24,14 +24,14 @@
 
 WDIR=`pwd`
 
-SIESTA_BIN=${SIESTA_BIN:=../Util}
+SIESTA_BIN=${SIESTA_BIN:=../siesta/Util}
 
 if [ $# -lt 2 ] ; then
-      echo "qrrsiesta: Usage: qrrsiesta name queue [init]"
+      echo "qrrsiesta: Usage: qrrsiesta name queue [init | touch]"
       exit 1
 fi
 init=""
-if [ $# -eq 3  -a "$3" = "init" ] ; then
+if [ $# -eq 3 ] ; then
       init=$3
 fi
 #

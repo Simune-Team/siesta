@@ -1,4 +1,6 @@
-      subroutine iohs( task, no, nspin, maxo, maxno,
+C $Id: iohs.f,v 1.4 1999/01/31 11:14:57 emilio Exp $
+
+      subroutine iohs( task, gamma, no, nspin, maxo, maxno,
      .                 numh, listh, H, S, qtot, temp, xij )
 C *********************************************************************
 C Saves the hamiltonian and overlap matrices, and other data required
@@ -6,6 +8,7 @@ C to obtain the bands and density of states
 C Writen by J.Soler July 1997.
 C *************************** INPUT **********************************
 C character*(*) task          : 'read'/'READ' or 'write'/'WRITE'
+C logical       gamma         : Is only gamma point used?
 C ******************** INPUT or OUTPUT (depending on task) ***********
 C integer no                  : Number of basis orbitals
 C integer nspin               : Spin polarization (1 or 2)
@@ -21,13 +24,14 @@ C real*8  S(maxno,maxo)       : Overlap in sparse form
 C real*8  qtot                : Total number of electrons
 C real*8  temp                : Electronic temperature for Fermi smearing
 C real*8  xij(3,maxno,maxo)   : Vectors between orbital centers (sparse)
-C                               (not used if only gamma point)
+C                               (not read/written if only gamma point)
 C *************************** UNITS ***********************************
 C Units should be consistent between task='read' and 'write'
 C *********************************************************************
 
       implicit          none
       character         task*(*), paste*33
+      logical           gamma
       integer           maxo, maxno, no, nspin
       integer           listh(maxno,no), numh(no)
       double precision  H(maxno,maxo,nspin), S(maxno,maxo),
@@ -80,7 +84,8 @@ c         Check dimensions
           endif
 
 c         Read data
-          read(iu) numh, listh, H, S, qtot, temp, xij
+          read(iu) numh, listh, H, S, qtot, temp
+          if (.not.gamma) read(iu) xij
 
 c         Close file
           call io_close( iu )
@@ -98,7 +103,8 @@ c       Open file
 
 c       Write data
         write(iu) no, nspin, maxo, maxno
-        write(iu) numh, listh, H, S, qtot, temp, xij
+        write(iu) numh, listh, H, S, qtot, temp
+        if (.not.gamma) write(iu) xij
 
 c       Close file
         call io_close( iu )

@@ -1,6 +1,1345 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 ========================================================================
+Version: 0.11.0 0.12.0
+Date: 1999/05/26 12:00:00
+Title: Fixed bug in siesta.f, iomd was called with idyn instead of varcel
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Files:
+   Src/siesta.f
+   (plus customary)
+========================================================================
+Version: 0.11.0 0.12.0
+Date: 1999/05/25 16:00:00
+Title:  Bug fixes
+Author: Pablo Ordejon (ordejon@icmab.es)
+
+Files:
+   Src/bands.f           Call to diagk corrected
+   Src/redata.f          fs_dafault defined as logical
+   Src/version.h, Docs/CHANGES    Usual changes
+========================================================================
+Version: 0.11.0 0.12.0
+Date: 1999/05/17 21:00:00
+Title: Option to calculate a fixed spin state
+Author: Pablo Ordejon (ordejon@icmab.es)
+
+Files:
+   Src/fermispin.f       New. Calculates occupations with fixed spin
+   Src/diagg.f           Calls fermispin if spin is fixed
+   Src/diagk.f           Calls fermispin if spin is fixed
+   Src/diagon.f          Pass fixed spin info to diag routines
+   Src/redata.f          Read new variables FixSpin and TotalSpin
+   Src/siesta.f          Changes for fixed spin calcs.
+   Docs/CHANGES          Changes for fixed spin calcs.
+   Docs/siesta.tex       Changes for fixed spin calcs.
+   Docs/siesta.ind       Changes for fixed spin calcs.
+   Docs/release.notes_0.11       Changes for fixed spin calcs.
+========================================================================
+Version: 0.11.0 0.12.0
+Date: 1999/05/17 20:00:00
+Title: Fixed bug in cgvc.f 
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Files:
+  cgvc.f : It was using inver.f for matrix inversion, not good
+           changed for reclat
+  version.h, CHANGES, siesta.tex as usual
+========================================================================
+Version: 0.11.0 0.12.0
+Date: 1999/05/05 17:15:00
+Title: Fixed bug in madelung (mulecule) + fixed dim enlargement
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Files:
+  madelung         : bug: it checked whether it was a mUlecule (fixed)
+  rhoofd, vmat     : maxloc: 200 -> 300
+  matel            : NQ: 512 -> 1024
+  kinefsm, overfsm : nomax: 10000 -> 20000
+  nlefsm           : maxna:   500 ->  1000
+                     maxno:  1000 ->  2000
+                     maxo:  10000 -> 20000
+  hsparse, xijorb  : maxna:   500 ->  1000
+                     maxnkb: 1000 ->  2000
+                     maxo:  10000 -> 20000
+  shaper           : maxna:   500 ->  1000
+  initdm           : maxat:   500 ->  1000
+========================================================================
+Version: 0.12.0 <=> 0.11.0 <=> 0.10.32
+========================================================================
+Version: 0.10.32
+Date: 1999/04/26 18:30:00
+Title: Corrected a bug which produced too large values of NFFR in MATEL
+Author: Jose M. Soler (jose.soler@uam.es)
+ 
+Description:
+  A bug in searching previously stored functions produced too large 
+  tables of FFR, with the same function repeated  two times.
+  Value IR=0 was also excluded from the comparison.
+  After these changes, the dimension of FFR could even be reduced.
+
+Files:
+  matel.f : Bug corrected
+  Docs/siesta.tex  : Removed the description of the now-solved problem
+  Docs/siesta.ind    (correpondingly) 1999/04/27 10:45
+  Include/constr.f : Updated as in Src (unrelated to matel)
+========================================================================
+Version: 0.10.31
+Date: 1999/04/26 16:00:00
+Title: Reorganization of Sys. New environment variable SIESTA_SYS
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+ 
+Description:
+  * New, deleted, and modified files in Sys.
+  * The environmental variable determining system/compiler/library
+    settings is now SIESTA_SYS, instead of ARCH.
+  * Some additions to the manual section dealing with compilation.
+  (Changed version number since SIESTA_SYS is a 'major' change)
+
+Files:
+
+  Src/Sys/
+  sgi.make    : Now uses sgi.f.
+  sgi.f       : Includes timing routine.
+  sgimath.make: Now uses sgimath.f.
+  sgimath.f   : New file.
+  g77-libs.make : (New file) For g77 systems with -llapack and -lblas.
+  freebsd.make: (Deleted) Use g77 or g77-libs instead.
+  diag_lapack.f: (New file) Included by relevant .f files.
+ 
+  Util/
+  msiesta     : Added comments. Changed ARCH to SIESTA_SYS
+  rrsiesta    : Added comments.
+
+  Src/
+  Makefile    : Changed ARCH to SIESTA_SYS
+  
+  Docs/
+  siesta.tex  : Re-wrote section on compilation. Updated to 0.10.31
+========================================================================
+Version: 0.10.30
+Date: 1999/04/23 12:30:00
+Title: SGI system-dependent makefile options
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  Some problems with the mathematical library of SGI were found by
+  Julian Gale for the diagonalization. Also, some compiler options
+  had to be changed for some SGI's OS flavors.
+
+Files:
+  sgi.make    : No libraries, uses general.f, and some flags changed
+  sgimath.make: The previous version, with old flags and the math library
+========================================================================
+Version: 0.10.30
+Date: 1999/04/20 17:00:00
+Title: Revision and actualization of examples
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  Siesta examples are now:
+   * H2O molecules as simplest, first contact. Plus ordern possibility.
+     (unchanged, only updated)
+   * Interstitial H in bulk Si, with a supercell of 64+1 atoms. SZ.
+     Relaxation (40 Mb and 20 cefeo minutes).
+   * bcc ferromagnetic bulk Fe, with GGA and partial core correction.
+     Band structure and magnetic moment.
+  Previous Si64 supercell example has been removed.
+ 
+Files:
+  Examples/H2O : h2o.fdf Out/h2o.out, out.fdf, siesta.size
+           Fe  : analogous
+           SiH : analogous plus sih.ANI (Xmol movie)
+           Vps : Fe.inp and Fe.vps added
+  Customary siesta.tex, version.h and CHANGES
+========================================================================
+Version: 0.10.29
+Date: 1999/04/16 19:30:00
+Title: sies2arc utility
+Author: Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+  Utility for extracting the coordinates from a SIESTA output file and 
+  converting them into an arc file Movie for Cerius2/InsightII.
+
+Files:
+  Util/sies2arc/sies2arc.f  main program
+                linepro.f   parses input lines
+                wtof.f      converts word to a floating point number
+                cell.f      converts cell parameters to cell vectors
+                constants   contains fundamental constants
+========================================================================
+Version: 0.10.29
+Date: 1999/04/14 21:45:00
+Title: Cosmetics in redata + printing Max constrained forces
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Files:
+  siesta.f, redata.f, siesta.tex, version.h, CHANGES
+========================================================================
+Version: 0.10.29
+Date: 1999/04/13 19:00:00
+Title: Changes in scripts + manual
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  Hopefully last changes for 0.11:
+  - Scripts (msiesta etc) to avoid compilation of atom.f and related
+    everytime
+  - Manual: revision of explanations of scripts, and other details
+  - Options Ang and Bohr as synonims of NotScaledCartesianAng etc.
+  - Slight changes in siesta.f, outcoor.f, pulayx.f to avoid multiple
+    fdf reading.
+
+Files:
+  msiesta, rsiesta, rrsiesta, qsiesta, qrrsiesta
+  siesta.f, outcoor.f, recoor.f, pulayx.f
+  siesta.tex, siesta.ind, CHANGES, version.h
+========================================================================
+Version: 0.10.28
+Date: 1999/04/13 13:15:00
+Title: Output: append in MD files + various in manual and siesta.f
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  - MD history files are now accumulative for different runs (so that 
+    a restart of rrsiesta does not leaves us with a stupid face).
+  - If coordinates are not written to standard output, they are by
+    default accumulated in XMol format in file.ANI
+  - Output of max constrained force in standard output
+  - Manual describes it, plus inclusion of cond-mat ref ICSSS.
+
+Files:
+  pixmol.f iomd.f : accumulative (incorporates winding to end with
+                    routines windu and windf in iomd.f)
+  siesta.f : ANI default and writing constrained max force
+  siesta.tex siesta.ind : manual
+  CHANGES, version.h
+========================================================================
+Version: 0.10.28
+Date: 1999/04/09 19:45:00
+Title: Variable cell CG optimization
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  Variable cell CG optimization activated and described in the manual.
+  See MD.VariableCell. It allows external pressure and non-hydrostatic
+  stresses.
+
+Files:
+  cgvc.f : activated variable cell (before was shortcut)
+  redata.f : changed some names and defaults.
+  siesta.tex, siesta.ind
+  Customary version.h, CHANGES
+========================================================================
+Version: 0.10.27
+Date: 1999/04/08 15:40:00
+Title: Minimal description of partial-core included in atom's User.Guide
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Files:
+  Pseudo/atom/Docs/User.guide
+========================================================================
+Version: 0.10.27
+Date: 1999/04/08 13:00:00
+Title: EIG2DOS utility for DOS & acknowl in manual & coceri to Ang
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Files:
+  Util/eig2dos.f
+  Docs/siesta.tex, siesta.ind
+  coceri.f : output for cerius has now lattice parameters in Ang.
+  Customary version.h, CHANGES
+========================================================================
+Version: 0.10.27
+Date: 1999/03/11 20:30:00
+Title: Capability for charged systems, and minor corrections
+Author: P. Ordejon (ordejon@condmat01.geol.uniovi.es)
+ 
+Description:
+  The capability to deal with charged systems is implemented.
+  For atoms and molecules, the energy is corrected with
+  a standard Madeliung term, for faster convergence vs cell size.
+
+  Also, some minor changes in some routines have been made, 
+  to avoid compilation warning due to non-initialized or
+  not used variables.
+
+Files:
+  Src/Makefile       
+  Src/atomlwf.f     Corrections to avoid compilation warnings 
+  Src/bands.f       Corrections to avoid compilation warnings 
+  Src/chempot.f     Corrections to avoid compilation warnings 
+  Src/madelung.f    New file. Calculates Madelung correction
+  Src/mulliken.f    Corrections to avoid compilation warnings 
+  Src/ordern.f      Corrections to avoid compilation warnings 
+  Src/propor.f      Corrections to avoid compilation warnings 
+  Src/siesta.f      Changes to allow for charged systems
+  Src/redata.f      Introduce new variable (NetCharge) for charged systems
+  Src/typecell.f    New file. Identifies SC, FCC and BCC cells
+  Src/version.h       
+  Src/Sys/cdiag_general.f
+                    Corrections to avoid compilation warnings
+  Src/Sys/rdiag_general.f
+                    Corrections to avoid compilation warnings
+  Docs/CHANGES      This file
+  Docs/siesta.ind   Index for 0.10.27 version
+  Docs/siesta.tex   Manual for 0.10.27 version
+========================================================================
+Version: 0.10.26
+Date: 1999/03/05 14:30:00
+Title: Description of output files of atomic program in User.Guide
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  The contents of the different files generated by Alberto's atomic
+  program are described in his User.Guide file.
+
+Flies:
+  Pseudo/atom/Docs/User.Guide
+========================================================================
+Version: 0.10.26
+Date: 1999/03/04 17:20:00
+Title: Re-introduced arguments listC and endC in rhoofd and vmat
+Author: Jose M. Soler (jose.soler@uam.es)
+ 
+Description:
+  Although unused in the present version, arguments listC and endC
+  are used in a special version of J.Junquera to save memory with
+  k-sampling. Also changed the dimensions of some arrays to avoid
+  compilation warnings.
+ 
+Files:
+  dhscf.f  : Calls to rhoofd and vmat
+  minvec.f : New array iaux
+  neighb.f : Dimension of iamove
+  ranger.f : Dimension of iamove
+  rhoofd.f : Restored arguments listC, endC
+  vmat.f   : Restored arguments listC, endC
+  xc.f     : Dimensions of ds and vxunif in pbxc
+========================================================================
+Version: 0.10.26
+Date: 1999/03/02 01:31:00 (local time at Oviedo)
+Title: Change definition of variables in ordern.f
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  Variables g and hg, which were defined as real*8 in ordern.f,
+  are changed to real*4, to concord with their definition
+  in cgwf.f (which is called by ordern.f).
+  This change does not affect the results, but saves a
+  little bit of memory.
+
+Files:
+  Src/ordern.f:   change definition of variables g and hg to real*4
+  Src/version.h:  version 0.10.26
+  Docs/CHANGES:   describe changes.
+========================================================================
+Version: 0.10.26
+Date: 1999/02/28 20:15:00 (local time at Oviedo)
+Title: Package VIBRA to compute phonons.
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description: 
+  Package VIBRA to compute phonon frequencies and
+  normal modes has been incorporated into the SIESTA
+  distribution.  Changes in Siesta to compute the
+  force constant matrix (used by VIBRA) have also
+  been introduced, as a new MD option (to displace
+  atoms one by one and compute the force constants)
+
+Files:
+  Util/Vibra:      New directory, with VIBRA sources, docs and examples
+  Util/README:     List new packages
+  Src/siesta.f:    Modified to compute the force constant matrix
+  Src/ofc.f:       New file. Writes the force constant matrix to a file
+  Src/redata.f:    Modified to read new dynamics variables
+  Src/Makefile:    Modified to include ofc.f
+  Src/version.h:   Tag version 0.10.26
+  Docs/siesta.tex: Description of new variables
+  Docs/siesta.ind: Update of index
+  Docs/CHANGES:    Describe changes
+========================================================================
+Version: 0.10.25
+Date: 1999/02/27 14:30:00 (local time at Oviedo)
+Title: Incorporate O(N) automatic calculation of Chemical Potential 
+       and correct bug in former siesta.f commit.
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  The automatic estimate of the Chemical Potential, in Order-N
+  operation, is now incorporated in the Order-N routines.
+  The estimate is done by the projection method of Goedecker,
+  (PRB 51, 9455 (1995)), modified for non-orthogonal basis like 
+  proposed by Stephan et al. (PRB 57, 6391 (1998), PRB 58, 13472
+  (1998)).  
+  Also, a small bug in the last siesta.f version was
+  fixed (ns elliminated from call to ordern.f).
+
+Files:
+  chempot.f:         New file
+  ordern.f:          Modified to call chempot.f
+  redata.f:          Modified to read Chemical Potential related information
+  siesta.f:          Modified to include calculation of Chemical Potential,
+                     and small bug fixed (ellimination of ns from call to 
+                     ordern)
+  version.h:         Tag version 0.10.25
+  Include/ordern.h:  Modified to include maxnh in the parameters list.
+  Docs/siesta.tex    Description of new variables
+  Docs/siesta.ind    Update of index
+  Docs/CHANGES       Describe changes
+========================================================================
+Version: 0.10.24
+Date: 1999/02/26 15:45:00 MET
+Title: Various structural and cosmetic changes
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+Structural changes:
+
+* .h files now reside in Src/Include, and need to be copied to the Src
+directory before the first compilation. (Manual updated)
+
+* System-dependent code now resides completely in Sys. Some files
+(e.g., cdiag_general.f, rdiag_general.f, poison_general.f) have been
+created from their counterparts in Src, and the latter removed. File
+inclusion in architecture-dependent files is now kept to just one
+level.
+
+* Removed Sys/osf.f. Its functionality was identical to bsd.f
+* Added g77.make and modified freebsd.make in Sys.	
+
+* Makefile updated to include support for plusFORT-style checks and
+to remove an spurious mention to cdiag.
+
+Code changes:
+
+* Array config in atm_pot dimensioned to (0:4) instead of (0:3)
+* Some variables should be arrays in ggaxc and pbexc (fixed)
+
+* (Daniel Sanchez-Portal) Various fixes in atomic routines.
+
+* Gave explicit lenghts to "x" output descriptors and 
+Hollerith variables.
+
+* Removal of unused variables (too many files to list).
+
+* Removal of unused arguments:
+
+	Pulayx : listd
+	Rhoofd : listc, endc
+	Vmat   : listc, endc
+	Polarization: b
+	Initguess, cspa: ns
+
+* Expansion of TABs in some files (tabs could cause problems with
+some compilers).
+========================================================================
+Version: 0.10.23
+Date: 1999/02/25 23:45:00
+Title: Bug corrected in plcharge.f and DENCHAR 
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description:
+    Program DENCHAR used an obsolote version of the atomic 
+    subroutines. In fact, the version used was obsolete even 
+    the first time that the program was added to the SIESTA 
+    program. I doubt that the program had ever properly run, 
+    due to this mismatch in versions.
+    By passing I added a couple of format statements in some
+    write sentences in the routines grid2d.f and rhoofr.f 
+
+Files:
+   plcharge.f (in SIESTA)
+   redata.f, phiatm.f, rhoofr.f (in DENCHAR).
+   grid2d.f (in Contour)
+========================================================================
+Version: 0.10.23
+Date: 1999/02/24 24:00:00
+Title: Bug corrected in atom_subs.f
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description:
+   Bug corrected in atom_subs.f. In the previous versions
+   the variable norb in the routine atm_pop was not initialized.
+   Dimesions for the arrays in subroutines polarization and rc_vs_e
+   are now provided by the file atom.h
+   Minor semi-cosmetic changes in atom_subs.f atom.f and atom_functions.f
+
+Files:
+  atom_subs.f, atom.f, atom_functions.f
+========================================================================
+Version: 0.10.23
+Date: 1999/02/21 22:05:00
+Title: Conjugate gradient continuation file and flag
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  The conjugate gradient relaxation is no longer controlled by siesta
+  but by cgvc. It stores auxiliary CG arrays in file belovedsystem.CG .
+  Restarting with MD.UseSaveCG and MD.UseSaveXV and the .CG and .XV
+  files from a previously interrupted CG relaxation, allows a smooth
+  continuation of it. An irrelevant bug has been corrected.
+    It is prepared for variable cell relaxation. In fact the code is
+  there, ready, just called by MD.VariableCell true, but I am not still
+  sure whether there is a bug in it, and I have disabled it 
+  provisionally.
+
+Files:
+  cgvc.f, iocg.f : new
+  siesta.f, redata.f, Makefile
+  siesta.tex, siesta.ind, version.h, CHANGES
+========================================================================
+Version: 0.10.23
+Date: 1999/02/21 18:15:00
+Title: Introduction of k-sampling artillery into MD for variable cell
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  the calls within siesta prior to the MD cycle, related to k-sampling
+  (kgrid, superc, etc) havev been introduced within for variabel cell
+  MD, in which such things have to be recalculated.
+
+Files:
+  siesta.f, iomd.f
+  CHANGES, siesta.tex version.h
+=======================================================================
+Version: 0.10.22
+Date: 1999/02/21 17:15:00
+Title: Description in the manual of previous changes; ibmesslp3.make; 
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  Actualization of siesta.tex with the new output features.
+  New Sys file; ibmesslp3, adapted to the Power3 processor at Lyon
+
+Files;
+  siesta.tex, siesta.ind
+  CHANGES, version.h
+  Sys/ibmesslp3.make
+========================================================================
+Version: 0.10.22
+Date: 1999/02/21 1:15:00
+Title: Substantial output change; Gnubands utility; 
+Author: Emilio Artacho (emilio.artacho@uam.es)
+ 
+Description:
+  Output has been made flexibler by the addition of several flags
+  for optional printing of some (typically long) pieces: forces,
+  k-points, bands, eigenvalues, coordinates etc, can now be switched
+  on and off independently. 
+    The default is now NOT to print most of those. A general FDF flag 
+  "LongOutput" has been devised for turning on the printing of most of 
+  them at once. Some cosmetics has been added to the output.
+    The initial atomic coordinates are now written after ioxv. Before
+  the fdf coordinates were always written, independent of whether the
+  XV file was read or not.
+    Several new files are now generated, in some cases only if the
+  information does not go to standard output. Others keep the history
+  of MD simulations (one of them for Xmol animation).
+
+    Utility program GNUBANDS reads from standard input the .bands
+  file grnerated by SIESTA and writes in standard output in a format
+  directly readablo by Gnuplot.
+
+Files:
+  Makefile, siesta.f, redata.f, outcoor.f, recoor.f : modified
+  atom.f, atom_subs.f, bands.f, superx.f            : cosmetics
+  iokp.f, iomd.f, iofa.f, ioeig.f, pixmol.f         : new
+  Util/gnubands.f                                   : new
+  version.h, CHANGES
+  siesta.tex, siesta.ind
+========================================================================
+Version: 0.10.22
+Date: 1999/02/21 1:15:00
+Title: BUG FIXED in atomlwf.f
+Author:  Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  Program would crash on IBMs when dimensioning ordern subroutines.
+  Alphas would behave strangely (ask for more dimensions after having
+  been dimensioned) but not crash.
+
+Files:
+  atomlwf.f
+========================================================================
+Version: 0.10.21
+Date: 1999/02/20 15:20:00
+Title: Modifications mixing algorithms
+Author:  Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  Fixed errors of version 0.10.21.  
+  Changed output of si64 example.
+
+Files:
+  Src/Makefile
+  Src/pulayx.f
+  Examples/Si64/Out/si64.out
+  Examples/Si64/Out/out.fdf
+  Examples/Si64/Out/siesta.size
+========================================================================
+Version: 0.10.21
+Date: 1999/02/20 14:45:00
+Title: Modifications mixing algorithms
+Author:  Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  The Pulay mixing algorithms have been modified and improved,
+  and some new imput variables related to the mixing have been introduced.
+  The Pulay mixing is now done mixing parts of both the input and
+  output matrices of former steps (whereas in the previous versions
+  only input matrices were used). This allows to perform the
+  Pulay mixing on EVERY SCF cycle.  The algorithm and use is described 
+  in the user guide siesta.tex.
+  New input variables are defined, to:
+  1) Skip the Pulay mixing once in a while, and use linear mixing with
+     a different alpha (suggested by G. Fabricius). New variables: 
+     DM.NumberKick, DM.KickMixingWeight
+  2) Define whether mixing is done in first SCF iteration (usually it
+     should not be done, but can be useful for SCF restarts). 
+     New variable: DM.MixSCF1
+  Also, the mixing.f routine for linear mixing has been elliminated.
+  Now, linear mixing is also done by pulayx.f
+  
+Files:
+  Src/siesta.f:     Modifications for new variables, ellimination of
+                    mixing.f and new behavior of pulayx.f
+  Src/redata.f:     New mixing variables
+  Src/pulay.f:      New algorithm for mixing
+  Src/mixing.f:     SUPPRESSED
+  Src/version.h:    new version
+  Docs/siesta.tex:  new variables explained
+  Docs/siesta.ind:  new version
+========================================================================
+Version: 0.10.20
+Date: 1999/02/19 20:15:00
+Title: New version of DENCHAR (0.1.1)
+Author:  Javier Junquera (junquera@condmat01.geol.uniovi.es)
+
+Description:
+Changes to the input of charge, suggested by E. Artacho.
+The names of the variables have been changed: all variable
+names are added a '2D.' in the beginning of the variable name
+(in order to distinguish variables proper of DENCHAR in fdf
+input files) and some names have been reduced.
+Also, the fdf input file is now dumped at the beginning
+of the output.
+Also, version number has been added, and will be maintained
+and upgraded in future versions.
+
+Files:
+  Util/Denchar/Src:       Makefile:  New file (dropped somehow in past version)
+                          denchar.f: Small input changes
+                          iodm.f:    Small output changes
+                          readpla.f: Small input changes
+                          rhoofr.f:  Small input and output changes
+                          wrout.f:   New file
+  Util/Denchar/Examples:  AtomicIndex.fdf:   Removed
+                          AtomicIndices.fdf: New (old AtomicIndex.fdf, modified
+                                                  for now input variables)
+                          ThreePoints.fdf:   modified for now input variables
+                          TwoLines.fdf:      modified for now input variables
+                          NormalVector.fdf:  modified for now input variables
+  Util/Denchar/Docs:      denchar.tex:  New version manual.
+========================================================================
+Version: 0.10.20
+Date: 1999/02/18 14:15:00
+Title: Scalar rhoofd, vmat, triangular but not inverted
+Author: Jose M. Soler (jose.soler@uam.es)
+ 
+Description:
+  After some checks on ibms, decs, and sgi, there was an important
+  variability on architecture for the inverted loops in rhoofd and vmat.
+  This version recovers old structure (suited for scalar) but 
+  incorporates triangularizations that increase spped in a factor of 2
+  compared with the old version.
+ 
+Files:
+  rhoofd.f, vmat.f
+  version.h, siesta.tex, CHANGES
+========================================================================
+Version: 0.10.19 
+Date: 1999/02/16 14:30:00
+Title: Structure for vmat more efficient on some platforms
+Author: Julian D. Gale (j.gale@ic.ac.uk)
+
+Description:
+  Analogous (to some extent) to rhoofd 
+
+Files:
+  vmat.f
+  version.h, siesta.tex, CHANGES
+========================================================================
+Version: 0.10.19 
+Date: 1999/02/4  12:45:00
+Title: Structure for rhoofd more efficient on some platforms
+Author: Julian D. Gale (j.gale@ic.ac.uk)
+
+Description:
+ *Triangular sum instead of whole square-matrix sum: it doubles speed
+ *Inverted order in do-loops, for a better parallelisation
+
+Files:
+  rhoofd.f
+  version.h, siesta.tex, CHANGES
+========================================================================
+Version: 0.10.18 
+Date: 1999/01/31  19:15:00
+Title: Bug fixed in atom + saving mixed DM + correcting spellings
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+ *DM is now saved after mixing and mixing is done even in last iteration!
+  Useful for O(N) scf step by step, and for achieving convergence with 
+  small mixings in different steps.
+ *BUG FIXED: basis type = user had a wrong output format.
+ *Misspellings corrected
+
+Files:
+  siesta.f, denmat.f: mixing and DM saving
+  atom_subs.f: bug fix
+  several for misspellings
+  version.h, CHANGES 
+========================================================================
+Version: 0.10.18 
+Date: 1999/01/31  11:45:00
+Title: RCS Id label inclusion in every file of Src/ and Docs/ (fdf excl.)
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  A first line in every SIESTA file (in the Src and Docs directories)
+  has been added with the RCS Id information which tells the version
+  number of each file for developer and user information.
+Note: It originally stores emilio in that line since I made the commit,
+  but it does not mean anything on authorship nor responsilbility on the
+  particular files. It will be changing to more adequate names with
+  future changes.
+
+Files:
+  Src/ (incl. Include/ and Sys/, but not fdf/)
+  Docs/
+========================================================================
+Version: 0.10.18 
+Date: 1999/01/19  10:00:00
+Title: IBM-ESSL version of rdiag (continued)
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  include 'eispack.f', previously in cdiag.f has been moved also to 
+  bsd.f, cray.f, general.f, ibm.f, and osf.f.
+
+Files:
+  Sys/bsd.f     : Added include '../eispack.f'
+  Sys/cray.f    : Added include '../eispack.f'
+  Sys/general.f : Added include '../eispack.f'
+  Sys/ibm.f     : Added include '../eispack.f'
+  Sys/osf.f     : Added include '../eispack.f'
+========================================================================
+Version: 0.10.18 
+Date: 1999/01/18  18:30:00
+Title: IBM-ESSL version of rdiag
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  A new version of rdiag, written by Jorge Kohanoff, which calls the
+  IBM-ESSL library routine DSYGV, was added. Additionally, the line
+  include 'eispack.f' in cdiag.f has been moved to ibmessl.f, which
+  is the file actually compiled.
+
+Files:
+  Sys/ibmessl.f : Added new version of rdiag
+                  Added include '../eispack.f'
+  cdiag.f       : Removed include 'eispack.f'
+========================================================================
+Version: 0.10.17
+Date: 1998/12/10  23:00:00
+Title: Several fixes to dynamics subroutines.
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  This version patches several problems detected in the molecular
+  dynamics routines:
+  1) problems with natoms=1
+  2) output of cell velocities for several variable cell shape 
+     dynamics options
+  3) error of reading of MD.BulkModulus variable (units included
+     in the reading)
+  Also, problems with DENCHAR program by J.Junquera are fixed
+Files:
+  Src/siesta.f   : Calls to dynamics rutines: print out pressure.
+  Src/redata.f   : Correct reading of MD.BulkModulus
+  Src/dynamics.f : Correct bug for natoms=1
+  Util/Denchar/Src/denchar.f  : fdf_init declared as external
+  Util/Denchar/Src/colinear.f : Bug fixed
+========================================================================
+Version: 0.10.16
+Date: 1998/12/02  16:00:00
+Title: New utility DENCHAR for 2D charge density plotting 
+       (Alternative to Contour by E. Artacho)
+Author: Javier Junquera (junquera@condmat01.geol.uniovi.es)
+
+Description:
+  Utility to read the density matrix and other information generated by 
+  SIESTA and generate 2D grids in arbitrary planes for 2D contour drawing. 
+  The SIESTA package has been modified to dump the necessary information
+  to new output files.  This package is an alternative to the program
+  Coutour (By E. Artacho). 
+  DENCHAR  allows to plot the charge in an arbitrary plane using 
+  a grid of arbitrary fineness (independent of the grid used in SIESTA). 
+  The total charge density, the spin components, the magnetization 
+  (difference of charges of spin up and down) and the difference between 
+  the selfconsistent charge and the sum of atomic densities can be plotted.
+  DENCHAR uses FDF to read the data of the plane in which the contours
+  are plotted, and some other information (like names of the density
+  matrix and other output files from SIESTA).  A manual is provided,
+  as well as a directory with examples.
+  DENCHAR contains the FDF package from A. Garcia and J. Soler,
+  and many routines from SIESTA.
+
+Files: 
+  Util/Denchar/Docs/denchar.tex            : NEW. user guide
+
+  Util/Denchar/Examples/AtomicIndex.fdf  | 
+  Util/Denchar/Examples/NormalVector.fdf | 
+  Util/Denchar/Examples/TwoLines.fdf     |
+  Util/Denchar/Examples/ThreePoints.fdf  | : NEW. example input files
+
+  Util/Denchar/Src/Makefile              |
+  Util/Denchar/Src/chkdim.f              |
+  Util/Denchar/Src/colinear.f            |
+  Util/Denchar/Src/denchar.f             |
+  Util/Denchar/Src/dmna.f                |
+  Util/Denchar/Src/dot.f                 |
+  Util/Denchar/Src/fdf.f                 |
+  Util/Denchar/Src/fdf.h                 |
+  Util/Denchar/Src/fdfdefs.h             |
+  Util/Denchar/Src/io.f                  |
+  Util/Denchar/Src/iodm.f                |
+  Util/Denchar/Src/length.f              |
+  Util/Denchar/Src/matvect.f             |
+  Util/Denchar/Src/neighb.f              |
+  Util/Denchar/Src/paste.f               |
+  Util/Denchar/Src/phiatm.f              |
+  Util/Denchar/Src/planed.f              |
+  Util/Denchar/Src/prmem.f               |
+  Util/Denchar/Src/ranger.f              |
+  Util/Denchar/Src/readpla.f             |
+  Util/Denchar/Src/redata.f              |
+  Util/Denchar/Src/rhoofr.f              |
+  Util/Denchar/Src/rlylm.f               |
+  Util/Denchar/Src/splint.f              |
+  Util/Denchar/Src/volcel.f              | : NEW. code sources and makefiles
+========================================================================
+Version: 0.10.15 
+Date: 1998/12/01  15:30:00
+Title: Three bug corrections related with k-sampling
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  If bands were asked without k-sampling for energy, a conflict occurred
+  between routines diagon and bands, which share common blocks. Argument
+  gamma has been added to diagon, in order to ensure that it uses complex
+  diagonalization (even only for gamma) when the bands routine is used.
+  Also, an incorrect call to redcel in bands produced a core dump when
+  using the option BandLinesScale=ReciprocalLatticeVectors.
+  Finally, a bug in dhscf has been corrected, which produced an incorrect
+  value of the dipole moment when k-sampling was used.
+Files:
+  bands.f  : Corrected call to redcell
+  dhscf.f  : Corrected calculation of x0 before calling dipole
+  diagon.f : Added argument gamma
+  siesta.f : Call to diagon
+========================================================================
+Version: 0.10.14 
+Date: 1998/11/23  17:30:00
+Title: Placing imported routines in separated files
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Routines not written by us, which were scattered across many files,
+  have been placed in separated files, for copyright reasons.
+  Apropriate acknowledgements have been added in the manual.
+Files:
+  arw.f      : NEW. Contains routines bcorgn, bcrmax, cnfig, egofb, 
+               lmxofz, numin, numout, nrmlzg,  polint, qvlofz, 
+               vhrtre, yofe, previously in atom_subs.f:
+  atom_subs.f: Routines bcorgn, bcrmax, cnfig, egofb, lmxofz,
+               numin, numout, nrmlzg,  polint, qvlofz, 
+               vhrtre, yofe, moved to arw.f
+               Routines ratint, spline, splint moved to recipes.f
+               Routines paste, pasteb moved to paste.f
+  cft.f      : NEW. Contains routine cft, previously in poison.f
+  cdiag.f    : Routines eisch1, tql2c, htribk moved to eispack.f
+  eispack.f  : NEW. Contains eisch1, tql2c, htribk, previosly in cdiag.f
+  four1.f    : SUPRESSED. Routine four1 now in recipes.f
+  ordix.f    : SUPRESSED. Routine ordix now in recipes.f
+  paste.f    : NEW. Contains routines paste, pasteb, previously in
+               atom_subs.f
+  poison.f   : Routine cft moved to file cft.f
+  recipes.f  : NEW. Contains routines four1, ordix, ratint, splin, 
+               spline, splint, splinu, previously in other files.
+  splin.f    : SUPRESSED. Routines splin, splinu now in recipes.f
+  Makefile   : Adapted to the changes above
+  Docs/siesta.tex : New section of acknowledgements, plus some update
+                    of the Projected Changes and Additions section
+========================================================================
+Version: 0.10.14
+Date: 1998/11/17  21:15:00
+Title: New utility: 2D contour plotting
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  Utility to read 3D-grid functions information generated by SIESTA
+  (.RHO, .DRHO, etc.) and generate 2D grids in arbitrary planes for
+  2D contour drawing. It does not affect the rest of the SIESTA pack.
+
+Files: 
+  Util/Contour/grid2d.f          : the program
+  Util/Contour/raw.in, noraw.in  : input examples
+  Util/Contour/gnux11, gnups     : gnuplot use examples
+  Util/Contour/README            : short explanation
+========================================================================
+Version: 0.10.14
+Date: 1998/10/23  21:00:00
+Title: Alphabetic index at the end of the manual (please check and keep)
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  An alphabetic index is added at the end of the manual. It is made by
+  introducing \index{whatever} commands in the siesta.tex file, 
+  running 'latex siesta', then 'makeindex siesta', and then 'latex
+  siesta' again. 
+Files:
+  siesta.tex
+  siesta.ind (index generated by makeindex)
+========================================================================
+Version: 0.10.14 
+Date: 1998/10/23  18:30:00
+Title: Bug corrections, mainly with k-sampling
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Parameters maxna and maxno were reduced to their minimun acceptable
+    values (without margin for atom movements) when other parameters
+    were changed, increasing the number of recompilations.
+  Array conect in hsparse was incorrectly initialized with k-sampling.
+  Array listno in listsc was written out-of-bounds when its dimension
+    was too small.
+Files:
+  siesta.f  : avoid reducing maxna and maxno
+  hsparse.f : corrected initialization of array conect
+  listsc.f  : conditional writting of listno
+========================================================================
+Version: 0.10.13 
+Date: 1998/10/18  14:00:00
+Title: Plotting DeltaRho (Rho-Rho_atoms), msiesta, and manual revision *.h
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  New SaveDeltaRho FDF option to save the electronic density minus the
+  sum of the atomic densities. File SystemLabel.DRHO
+Files:
+  dhscf.f:      Does the icalculating and calling to iorho (who writes).
+                New argument at interface: fildrh, name of file to write.
+  siesta.f:     Adapt to new dhscf.f interface and generate new name.
+  grdsam.f:     Adapt to new dhscf.f interface.
+  Util/msiesta: If init, cp *.h to working directory
+  siesta.tex:   Documented + redocumenting .h files and generation.
+  version.h and CHANGES
+========================================================================
+Version: 0.10.12 
+Date: 1998/10/14  21:00:00
+Title: One more optional input in block PAO.Basis
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+
+Description:
+      -Now variable PAO.BasisType can assume different values for 
+       different species. New optional input in data block PAO.Basis
+Files:
+  atom.f         :
+  atom_subs.f    : 
+  redbasis_subs.f:  
+  redbasis.f     : 
+  initatom.f     :
+  version.h      : Changed the date but not the number of last version,
+                   which is still 0.10.12
+  Docs/siesta.tex  : Added description of the new parameter
+========================================================================
+Version: 0.10.12 
+Date: 1998/10/13  17:00:00
+Title: BUG FIX  in siesta, atom_subs and redbasis_subs 
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+
+Description:
+     -New version of subroutine mulliken did not work properly because
+      new arguments were not included in its call in main program
+     -Corrected some bugs (lack of initialization for some variables)  
+      in some subroutines from atom_subs.f, redbasis_subs.f (detected
+      while runing in a Linux machine).
+     -Corrected length of common blocks in atom_subs.f to avoid 
+      errors in some compilers (detected while compiling in a  Linux
+      machine).
+      
+Files:
+  siesta.f       : Corrected call of subroutine mulliken
+  atom_subs.f    : Bug fix
+  redbasis_subs.f: Bug fix 
+  version.h      : Changed the date but not the number of last version,
+                   which is still 0.10.12
+  Examples/H2O/Out : Updated outputs
+  Examples/H2O/OrderN/Out : Updated outputs
+  Examples/Si64/Out : Updated outputs
+  Docs/siesta.tex  : Added description of the data block PAO.BasisSizes
+========================================================================
+Version: 0.10.12
+Date: 1998/10/10  20:00:00
+Title: BUG FIX in outcoor + New flag in outcoor + Cosmetics
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  - outcoor would generate wrong fractional coordinates because of a
+    matrix transposition (fixed).
+  - New 'WriteCoorStepNot' for not writing coordinates at each time step
+  - Cosmetics for output in various files.
+  - Output formats in new atom-related: it should be '1x' instead of 'x'
+
+Files:
+  outcoor.f   : bug + flag
+  mulliken.f  : formats to 1x
+  matel.f     : cosmetics (Estee Lauder)
+  redata.f    :   "
+  atom.f      :   "
+  atom_subs.f :   "
+  siesta.tex  : new flag + some small changes
+  version.h
+========================================================================
+Version: 0.10.11
+Date: 1998/10/9  19:00:00
+Title: New implementation of the subroutine atom, and more flexible input
+       for the basis set 
+Author: Daniel Sanchez-Portal(daniel@polar.fmc.uam.es)
+
+Description:
+  General restructuring of atom subroutine(s), cutting it to pieces,
+  redefining functions for interface with SIESTA, and redefining the
+  input for the basis, being now much more flexible.
+
+  Semicore states (in a simple version) can be now introduced.
+
+  A BUG was FIXED for perturbative polarization orbitals.
+
+Files:
+
+atom.f: 
+  Strongly modified. The routine has been completely restructured. Different
+  calculations (local pseudopot., basis set, neutral-potential, etc...) are now
+  performed by different routines which are called by the 'main' routine atom.
+  These new routines are included in the file atom_subs.f.
+  Semicore states can be automatically included, though in a quite naive way.
+atom_functions.f: 
+  NEW. Include all the 'atom dependent' functions. Most of the old ones
+ (phiatm, rcut, ...) have been modified, and new functions have been coded.
+atom.h: 
+  Type declaration for the parameters included in the file. Parameter 
+  ntbmax increased to 500.
+atomlwf.f: 
+  subroutine atomlwf: lmax, lmaxs and nzls erased from the input
+  subroutine initguess: lmax, lmaxs and nzls erased from the input, information
+  now provided by functions lomaxfis and nztfl
+atom_subs.f: 
+  32 new subrotuines have been added. Fixed a BUG in the interpolation of
+  polarization orbitals. As a consecuence, the contribution to the forces
+  coming from this orbitals, in spite of being consitent with energy, show 
+  an oscillatory behaviour which could worse the convergence with the grid 
+  spacing.
+  The effect could be more important only for H, or other elements having 
+  'p' polarization orbitals.
+chcore.f: 
+  Deleted (now included in atom_functions.f)
+dnaefs.f: 
+  Argument izs removed, information now provided by izofis function
+epskb.f : 
+  Deleted (now included in atom_functions.f)
+initatom.f: 
+  Several arguments have been removed from the call to this routine.
+  Included a call to subroutine redbasis (before calling subroutine atom).
+  Checks for several dimensions have been deleted.
+Makefile: 
+  Added files: atom_functions.f, redbasis.f redbasis_subs.f
+  Deleted files: chcore.f epskb.f phiatm.f psover.f rcore.f rcut.f uion.f
+  All the deteled routines, together with other 'atom depedent' functions,
+  now included in the file atom_functions.f
+  File initatom.f now depends on dimensions in atom.h
+matel.f : 
+  Deleted arguments lmaxs, lmxkbs, maxls and nzls in subroutine matel0.
+  The information is now provided by functions lomaxfis, lmxkbfis and nztfl.
+mulliken.f : 
+  Added arguments isa, iphorb and iaorb. Changes in the ouput
+  format for the population analisys: Now a label with the
+  symmetry of each orbital is also printed.
+naefs.f: 
+  Argument izs removed, information now provided by izofis function
+ordern.f: 
+  lmax, lmaxs and nzls erased from the input
+outcoor.f:  
+  Argument atm_label removed, information now provided by
+phiatm.f : 
+  Deleted (now included in atom_functions.f)
+rcore.f :  
+  Deleted (now included in atom_functions.f)
+rcut.f  :  
+  Deleted (now included in atom_functions.f)
+redata.f :  
+  Several arguments have been removed from the call to this routine.
+  All the information about atomic orbitals, pseudopotentials and atomic
+  masses is now read by subroutine redbasis called by subroutine initatom. 
+  Default masses for floating Bessel functions set to 1.0d30 a.u.
+  Dynamics type is always set to 'cg' if the system contains just one atom.
+redbasis.f: 
+  NEW. Reads the information about atomic orbitals, pseudopotentials and atomic
+  masses. Called by subroutine initatom.
+redbasis_subs.f: 
+  NEW. This file include nine routines used by redbasis to read the input (fdf)
+  file in several possible formats.
+siesta.f : 
+  Several arrays containing information about the chemical
+  species and the basis set have been removed. Calls
+  of routines redata, initatom, matel0,naefs, dnaefs, ordern,
+  and outcoor have also been modified.
+Include/atom.h:
+  Type declaration for the parameters included in the file. Parameter
+  ntbmax increased to 500.
+Include/siesta.h : 
+  Parameters maxl, maxos, maxs, maxzet have been suppressed.
+Examples/H2O/Out : Updated outputs 
+Examples/H2O/OrderN/Out : Updated outputs 
+Examples/Si64/Out : Updated outputs
+Docs/siesta.tex  : Updated basis set description
+========================================================================
+Version: 0.10.10 
+Date: 1998/08/28  19:00:00
+Title: Efficient k-sampling implementation
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  The need to use very large supercells, in order to do k-sampling,
+  has been eliminated, making k-sampling efficient. Other canges are:
+  - BUG corrected in dhscf => now finds more adjusted cutoffs.
+  - Now k-sampling and bands are compatible with non-collinear spin
+  - Suppressed automatic k-sampling when using SuperCell
+  - Auxiliary arrays now shared by diagon and bands
+  - Optimized matrix multiplication algorithm in diagon
+  - Added LAPACK complex diagonalization routine for osfdxml systems
+  - neighb initialized before each use
+  - Suppressed writting the density matrix in denmat
+  - Avoid decreasing array dimensions in ranger
+  - Array xijo now dimensioned only when necessary
+
+Files:
+  Makefile  : Added routines diagg, diagk, diag2g, diag2k, digcel,
+                             redcel, superc, and superx
+              Suppressed routine diagnc
+  atomlwf.f : Initialization of neighb done always
+  bands.f   : Calls diagk and diag2k
+              Auxiliary space shared with diagon trough common block
+  denmat.f  : Suppressed writting the density matrix
+  dfscf.f   : Added argument indxuo to add forces to atom in unit cell
+  dhscf.f   : Calculate things only in the unit cell (many changes)
+              Corrected a BUG to find the mesh cutoff for nonothorhombic cells
+  dynamics.f: Corrected the name of the routines in error message
+  diagnc.f  : SUPRESSED (now diag2g)
+  diagg.f   : NEW. Diagonalization for gamma only
+  diagk.f   : NEW. Diagonalization with k sampling
+              Optimized matrix multiplication algorithm
+  diag2g.f  : NEW. Same as diagg for non-collinear spin
+  diag2k.f  : NEW. Same as diagk for non-collinear spin
+  diagon.f  : Calls diagg, diagk, diag2g and diag2k to do the work
+              Auxiliary space shared with bands trough common block
+  diagon.h  : Suppressed maxspn. Added maxhs and maxpsi
+  digcel.f  : NEW. Finds diagonal unit cell and supercell combination
+  dnaefs.f  : Distiction of unit cell and supercell. neighb initialized
+  grdsam.f  : Call to dhscf
+  hsparse.f : Slight comment corrections (code not changed)
+  initatom.f: Suppress repeated arguments
+  iohs.f    : Array xij not written when only gamma point is used
+  kgrid.f   : Suppressed automatic k-sampling for SuperCell use
+  kinefsm.f : Distiction of unit cell and supercell. neighb initialized
+  listsc.f  : NEW. Expands neighbour lists from unit cell to supercell
+  naefs.f   : Distiction of unit cell and supercell. neighb initialized
+  nlefsm.f  : Distiction of unit cell and supercell. neighb initialized
+  overfsm.f : Distiction of unit cell and supercell. neighb initialized
+  ranger.f  : Avoid decreasing array dimensions
+  recoor.f  : Expand coordinates to supercell
+  redata.f  : Supercell atomic coord. now done by new supcel routine
+              Specified SuperCell now becomes operative unit cell
+  redcel.f  : NEW. Reads the unit-cell/supercell vectors
+  rhooda.f  : Added argument indxuo to work only within unit cell
+  rhoofd.f  : Added argument indxuo to work only within unit cell
+  siesta.f  : Calculate things only in the unit cell (many changes)
+  siesta.h  : Suppressed parameter maxkba
+              Added parameter maxxij to dimension array xijo
+              Name of parameter dimaux changed to maxpul
+  superc.f  : NEW. Finds the required supercell and expands arrays to it.
+  superx.f  : NEW. Expands coordinates from unit cell to supercell.
+  version.h : New version 0.10.10
+  vmat.f    : Added argument indxuo to work only within unit cell
+  vmb.f     : Return if nat=1
+  xijorb.f  : Name of argument 'cell' changed to 'scell'.
+  Include/siesta.h : Suppressed parameter maxkba
+  Include/diagon.h : Suppressed maxspn. Added maxhs and maxpsi
+  Sys/bsd.f     : cdiag added to system-dependent routines
+  Sys/cray.f    : cdiag added to system-dependent routines
+  Sys/general.f : cdiag added to system-dependent routines
+  Sys/ibm.f     : cdiag added to system-dependent routines
+  Sys/ibmessl.f : cdiag added to system-dependent routines
+  Sys/osf.f     : cdiag added to system-dependent routines
+  Sys/osfdxml.f : New version of cdiag to use LAPACK routine zhegv
+  Sys/sgi.f     : cdiag added to system-dependent routines
+  Docs/siesta.tex     : Updated k-sampling instructions
+  Docs/siesta/CHANGES
+  Examples/H2O/Out/*  : Updated outputs
+  Examples/Si64/Out/* : Updated outputs
+========================================================================
+Version: 0.10.9 
+Date: 1998/07/14  11:30:00
+Title: Increased tolerance in shaper routine
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  In some cases, the system shape was incorrectly reported as bulk
+  because the tolerance in routine linvec (1.e-10) was too small.
+
+Files:
+  shaper.f : Tolerance in routine linvec increased to 1.e-6
+========================================================================
+Version: 0.10.8 
+Date: 1998/07/13  16:15:00
+Title: Corrected calculation of local density of states
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  After previous change, LDOS was incorrectly calculated, because the
+  hamiltonian was reinitialized but the dhscf part was not included
+  before calling diagon to find the LDOS density matrix.
+
+Files:
+  siesta.f : Eliminate the reinitialization of H
+========================================================================
+Version: 0.10.7
+Date: 1998/06/26  17:30:00
+Title: Grid-cell sampling for accelerated grid convergence
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  Sampling displacements of the system with respect to the grid
+  across the grid cell is used to symmetrize energies, forces, stresses
+  and dipoles. It allows a better convergence with grid cutoff by
+  reducing the egg-box effect. The displacements are introduced 
+  within the block GridCellSampling (see the manual)
+
+Files:
+  grdsam.f : new subroutine doing the sampling at the end of an SCF cycle
+  siesta.f
+  dhscf.f  : sampling is done by calling dhscf for each displacement
+  Makefile
+  siesta.tex
+========================================================================
+Version: 0.10.6  and  0.9.2
+Date: 1998/06/22  21:45:00
+Title: Corrected MAXL dimension in ylmexp. (SEVERE BUG for L>2)
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Due to an insuficient dimension, the overlap was incorrect for L>2,
+  including the f Kleinman-Bylander operators.
+
+Files:
+  ylmexp.f : maxLM = maxL**2 changed to (maxL+1)**2
+  ylmylm.f : Same correction
+========================================================================
+Version: 0.10.5
+Date: 1998/06/22  21:45:00
+Title: Corrected supercell hamiltonian symmetrization
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  The condition if (ncells .lt. 1) was incorrect, because ncells must
+  be at least one. As a consecuence, no supercell symmetrization was
+  done. Now it has been corrected to if (ncells .gt. 1)
+
+Files:
+  diagon.f : if (ncells .lt. 1) changed to if (ncells .gt. 1)
+  Examples/Si64/Out/si64.out    : Updated output
+  Examples/Si64/Out/out.fdf     : Updated output
+  Examples/Si64/Out/siesta.size : Updated output
+========================================================================
+Version: 0.10.4
+Title: Remove unused subroutine ylmr
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Files:
+  atom_subs.f : Subroutine ylmr removed
+=======================================================================
+Version: 0.10.3
+Date: 1998/06/22  21:45:00
+Title: No mixing in last iteration and when wmix=0
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  An unexpected behavior occurred when only one iteration was done,
+  because in the first iteration, the whole new density matrix is
+  taken, irrespective of the mixing weight (this is because the first
+  density matrix is not idenpotent). Now, the mixing subroutines are 
+  not called in the last iteration, even if it is also the first one.
+
+Files:
+  siesta.f : Conditions to call mixing and pulayx
+========================================================================
+Version: 0.10.2
+Date: 1998/06/22  21:45:00
+Title: Added non-collinear spin
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  In the non-collinear-spin density functional, spinor wavefunctions
+  and 2x2 spin density matrices allow the spin to change direction
+  at every point. Ref: T. Oda et al, PRL 80, 3622 (1998).
+  Non-collinear-spin density matrix has 4 components (nspin=4).
+  No k-sampling allowed in this version for non-collinear-spin.
+
+Files:
+  bands.f    : Return if nspin=4
+  dfscf.f    : Free-atom and SCF contributions separated and initialized
+  dhscf.f    : Handle the nspin=4 case
+  diagnc.f   : (New) Eigenvalue problem in spinor space (doubled)
+  diagnc.h   : (New) Dimension parameters for diagnc
+  initdm.f   : Initialize the non-collinear-spin density matrix
+  mulliken.f : Handle the nspin=4 case
+  redata.f   : Read the NonCollinearSpin fdf label
+  rdiag.f    : Word ERROR added in error message
+  siesta.f   : Handle the nspin=4 case. Call diagnc
+  xc.f       : Diagonalize the spin density matrix in routine ldaxc
+  Makefile   : Add diagnc
+  siesta.tex : Add NonCollinearSpin and modify DM.InitSpin options
+========================================================================
+Version: 0.10.1  and  0.9.1
+Date: 1998/05/18  13:21:16
+Title: msiesta not to find .h files in subdirectories
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+  An unexpected behavior of msiesta was that it could find (and use
+  to replace) .h files in subdirectories of the working directory.
+  This was due to the use of 'find' by msiesta, now supressed.
+
+Files:
+  Util/msiesta : use of find supressed.
+========================================================================
+Version: 0.10.0 <=> 0.9.0 <=> 0.8.53
+========================================================================
 Version: 0.8.53
 Date: 1998/05/5  21:30:00
 Title: Revising script files + comment on them in the manual

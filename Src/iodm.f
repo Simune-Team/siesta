@@ -1,3 +1,5 @@
+C $Id: iodm.f,v 1.4 1999/01/31 11:14:56 emilio Exp $
+
       subroutine iodm( task, maxnd, maxo, nbasis, nspin,
      .                 numd, listd, dm, found )
 C *******************************************************************

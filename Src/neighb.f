@@ -1,3 +1,5 @@
+C $Id: neighb.f,v 1.9 1999/03/04 16:21:09 jose Exp $
+
       SUBROUTINE NEIGHB( CELL, RANGE, NA, XA, IA, ISC,
      .                   NNA, JAN, XIJ, R2IJ )
 
@@ -93,7 +95,7 @@ C Argument types and dimensions
 
 C Internal variables
       LOGICAL           FRSTME, SAMCEL
-      INTEGER           IAMOVE, IX, JX
+      INTEGER           IAMOVE(1), IX, JX
       DOUBLE PRECISION  CELAST(NX,NX), RGLAST, X0(NX)
       SAVE
       DATA FRSTME / .TRUE. /

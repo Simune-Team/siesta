@@ -1,3 +1,5 @@
+C $Id: vlist.f,v 1.3 1999/01/31 11:45:16 emilio Exp $
+
       subroutine vlist( iOpt, NO, endC, listC, NP, endCt, listCt,
      .                  NVmax, numVs, listVs, MaxInd, ind )
 

@@ -1,3 +1,5 @@
+C $Id: reord.f,v 1.5 1999/01/31 11:43:37 emilio Exp $
+
       SUBROUTINE REORD( FCLUST, FSEQ, NM, NSM, ITR, MAXAUX, AUX )
 
 C ********************************************************************

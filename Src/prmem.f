@@ -1,3 +1,5 @@
+C $Id: prmem.f,v 1.5 1999/01/31 11:20:14 emilio Exp $
+
       SUBROUTINE PRMEM( IUNIT, PROG, VAR, TYPE, DIM )
 C ********************************************************************
 C Prints memory used by arrays

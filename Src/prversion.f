@@ -1,4 +1,5 @@
-c
+c $Id: prversion.f,v 1.3 1999/01/31 11:20:15 emilio Exp $
+
       subroutine prversion
 c
 c     Simple routine to print the version string. Could be extended to

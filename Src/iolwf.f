@@ -1,3 +1,5 @@
+C $Id: iolwf.f,v 1.4 1999/01/31 11:14:57 emilio Exp $
+
       subroutine iolwf( task, maxc, maxo, nbasis, nspin,
      .                  numc, listc, c, found )
 

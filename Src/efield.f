@@ -1,3 +1,5 @@
+c $Id: efield.f,v 1.4 1999/01/31 11:14:51 emilio Exp $
+
       subroutine efield( cell, na, isa, xa, mesh, v, field )
 
 c **********************************************************************
@@ -60,13 +62,14 @@ c Internal variables
      .                  f(3), rc, rcell(3,3), v0,
      .                  xfrac, xmax(3), xmean, xmin(3)
       save              e, f, frstme, isfield, i0, v0
-      data frstme /.true./
-*     data eunits /'          '/
 
 c FDF-related declarations
       double precision fdf_convfac
       external fdf_convfac
       include 'fdf/fdfdefs.h'
+
+      data frstme /.true./
+*     data eunits /'          '/
 
 c Find and store the electric field only the first time
       if (frstme) then

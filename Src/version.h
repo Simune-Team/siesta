@@ -1,4 +1,5 @@
-c
+c $Id: version.h,v 1.63 1999/05/26 09:49:58 emilio Exp $
+ 
 c     Version.h
 c
 c     This file MUST be updated after every self-consistent commit,
@@ -19,23 +20,12 @@ c     of this file at the end of the declaration section, and before any
 c     other data statements.
 c
       character*60 version
-      data version
-     .  /"SIESTA Version 0.9    (May  7, 1998, 14:00:00)"/
-*    .  /"SIESTA Version 0.8.53 (May  5, 1998, 21:30:00)"/
-*    .  /"SIESTA Version 0.8.52 (May  4, 1998, 20:30:00)"/
-*    .  /"SIESTA Version 0.8.51 (May  3, 1998, 22:30:00)"/
-*    .  /"SIESTA Version 0.8.50 (Apr 15, 1998, 16:00:00)"/
-*    .  /"SIESTA Version 0.8.49 (Apr 14, 1998, 21:40:00)"/
-*    .  /"SIESTA Version 0.8.48 (Apr 04, 1998, 17:15:00)"/
-*    .  /"SIESTA Version 0.8.47 (Mar 25, 1998, 13:00:00)"/
-*    .  /"SIESTA Version 0.8.46 (Mar 18, 1998, 13:45:00)"/
-*    .  /"SIESTA Version 0.8.44 (Mar 13, 1998, 13:30:00)"/
-
-
-
-
-
-
-
+      data version  
+     .  /"SIESTA Version 0.12.0  (May 26, 1999, 12:00:00)"/
+*    .  /"SIESTA Version 0.12.0  (May 25, 1999, 16:00:00)"/
+*    .  /"SIESTA Version 0.12.0  (May 18, 1999, 19:00:00)"/
+*    .  /"SIESTA Version 0.12.0  (May 17, 1999, 20:00:00)"/
+*    .  /"SIESTA Version 0.12.0  (May  5, 1999, 19:15:00)"/
+*    .  /"SIESTA Version 0.11    (Apr 27, 1999, 11:00:00)"/
 
 

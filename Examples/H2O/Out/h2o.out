@@ -1,14 +1,14 @@
  
 prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
-prdate: DATE = Fri Mar 13 13:24:44 MET 1998
+prdate: DATE = Mon Apr 19 16:53:27 MET DST 1999
  
-SIESTA Version 0.8.44 (Mar 13, 1998, 13:30:00)                        
+              SIESTA Version 0.11    (Apr 20, 1999, 12:00:00)             
 
-redata:               ***********************                 
-redata:               *  WELCOME TO SIESTA  *                 
-redata:               ***********************                 
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
 
-redata: *********************** Dump of input data file ***********************
+redata: ****************** Dump of input data file ****************************
 SystemName          Water molecule
 SystemLabel         h2o
 NumberOfAtoms       3
@@ -17,100 +17,105 @@ NumberOfSpecies     2
  1  8  O      # Species index, atomic number, species label
  2  1  H
 %endblock ChemicalSpeciesLabel
-AtomicCoordinatesFormat  NotScaledCartesianAng
+AtomicCoordinatesFormat  Ang
 %block AtomicCoordinatesAndAtomicSpecies
  0.000  0.000  0.000  1
  0.757  0.586  0.000  2
 -0.757  0.586  0.000  2
 %endblock AtomicCoordinatesAndAtomicSpecies
-redata: ************************ End of input data file ************************
+redata: ****************** End of input data file *****************************
 
-
-redata: ************************************************************************
-redata:               SIMULATION PARAMETERS
+redata: ****************** Simulation parameters ******************************
 redata:
-redata:  The following are some of the parameters of the simulation.
-redata:  A complete list of the parameters used, including defect values,
-redata:  can be found in file out.fdf             
+redata: The following are some of the parameters of the simulation.
+redata: A complete list of the parameters used, including defect values,
+redata: can be found in file out.fdf             
 redata:
-redata: System Name                      = Water molecule                                                                                                                                        
-redata: System Label                     = h2o                 
+redata: -----------------------------------------------------------------------
+redata: System Name: Water molecule                                             
+redata: -----------------------------------------------------------------------
+redata: System Label                     =     h2o                 
+redata: Long output                      =     F
 redata: Number of Atoms                  =     3
 redata: Number of Atomic Species         =     2
-redata: Write minimum siesta.h dimensions  =     F
-redata: Write Mulliken Pop. = NO
-redata: label for specie   1   O                   
-redata: label for specie   2   H                   
-redata:
-redata: WARNING: No valid lattice constant specified
-redata: WARNING: Cell will be generated automatically
-redata:
-redata: Spin Polarization                =     1
+redata: Write minimum siesta dimensions  =     F
+redata: Dump information for DENCHAR     =     F
+redata: Write Mulliken Pop.              =     NO
+redata: Number of spin components        =     1
 redata: Mesh Cutoff                      =    50.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
 redata: Max. number of SCF Iter          =    50
 redata: Mixing is linear
-redata: Write Pulay info on disk?       =     F
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk         =     F
 redata: New DM Mixing Weight             =     0.2500
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
 redata: DM Tolerance for SCF             =     0.000100
 redata: Use continuation files for DM    =     F
 redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            = Diagonalization
+redata: Method of Calculation            =     Diagonalization
 redata: Electronic Temperature           =     0.0019  Ry
-redata: Dynamics option                  = Verlet MD run
+redata: Dynamics option                  =     Verlet MD run
 redata: Initial MD time step             =     1
 redata:   Final MD time step             =     1
 redata: Length of MD time step           =     1.0000  fs
 redata: Length of MD time step           =     1.0000  fs
 redata: Initial Temperature of MD run    =     0.0000  K
 redata: Perform a MD quench              =     F
-recoor: Atomic-coordinates input format  = Cartesian coordinates
-recoor:                                    (in Angstroms)
-recoor: Atomic coordinates (Bohr) and species
-recoor:    1     0.00000   0.00000   0.00000  1
-recoor:    2     1.43052   1.10738   0.00000  2
-recoor:    3    -1.43052   1.10738   0.00000  2
-redata: ************************************************************************
-  
+recoor: Atomic-coordinates input format  =     Cartesian coordinates
+recoor:                                        (in Angstroms)
+redata: ***********************************************************************
 
-ATOM: ************************************************************************
-ATOM: Called for O   (Z =   8)
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1      1
+siesta:      1.43052   1.10738   0.00000  2      2
+siesta:     -1.43052   1.10738   0.00000  2      3
 
+initatom: Reading input for the pseudopotentials and atomic orbitals
+rechemsp: Read atomic number and label for species   1 as    8  O
+rechemsp: Read atomic number and label for species   2 as    1  H
 
-ATOM: Pseudopotential generation method:
-ATOM: ATM3      Troullier-Martins                       
+ATOM: *************************************************************************
 
-ATOM: Valence configuration (pseudopotential generation):
-       2s 2.00  r
-       4.00  r= 1
-       0  r= 1.14
-       r= 1.14/  
+ATOM: CALLED FOR O   (Z =   8)
 
-ATOM: Exchange-correlation functional:
-ATOM: Ceperley-Alder
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
 
-ATOM: 99.0% of the norm of Vloc inside     34.126 Ry
-ATOM: 99.9% of the norm of Vloc inside     77.774 Ry
+read_vps: Valence configuration (pseudopotential generation):
+ 2s( 2.00)
+ 2p( 4.00)
+ 3d( 0.00)
+ 4f( 0.00)
 
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+
+VLOCAL1: 99.0% of the norm of Vloc inside     34.126 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     77.774 Ry
 ATOM: Maximum radius for local-pseudopot. charge    1.37759
-ATOM: No ghost state for L =  0
-ATOM: No ghost state for L =  1
-ATOM: No ghost state for L =  2
-ATOM: No ghost state for L =  3
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+GHOST: No ghost state for L =  3
 
-ATOM: Kleinman-Bylander projectors: 
+KBgen: Kleinman-Bylander projectors: 
    l= 0   rc=  1.294105   el= -1.742414   kbcos=  9.135903
    l= 1   rc=  1.294105   el= -0.676589   kbcos= -8.124878
    l= 2   rc=  1.448233   el=  0.002386   kbcos= -2.039267
    l= 3   rc=  1.561052   el=  0.003508   kbcos= -0.799329
-ATOM: Total number of KB projectors: 16
 
-ATOM: Sankey-type orbitals:
-ATOM: Selected multiple-zeta basis: split          
+KBgen: Total number of  Kleinman-Bylander projectors:   16
+ATOM: -------------------------------------------------------------------------
 
-ATOM: Orbitals with angular momentum L= 0
+ATOM: SANKEY-TYPE ORBITALS:
+ATOM: Selected multiple-zeta basis: split     
 
-ATOM: PAO cut-off radius determinated from an
-ATOM: energy shift=  0.020000 Ry
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
                  lambda =    1.000000
@@ -128,17 +133,17 @@ ATOM: energy shift=  0.020000 Ry
     potential(screened) =   -3.917818
        potential(ionic) =  -12.476310
 
-ATOM: Orbitals with angular momentum L= 1
+SPLIT: Orbitals with angular momentum L= 1
 
-ATOM: PAO cut-off radius determinated from an
-ATOM: energy shift=  0.020000 Ry
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
                  lambda =    1.000000
                      rc =    3.937239
                  energy =   -0.658841
                 kinetic =    5.005986
-    potential(screened) =   -5.664826
+    potential(screened) =   -5.664827
        potential(ionic) =  -13.452360
 
    izeta = 2
@@ -149,12 +154,9 @@ ATOM: energy shift=  0.020000 Ry
     potential(screened) =   -7.897525
        potential(ionic) =  -16.611418
 
-ATOM: Orbitals with angular momentum L= 2
-
-   izeta= 1   Perturbative polarization orbital
+POLgen: Perturbative polarization orbital with L=  2
 
    izeta = 1
-                 lambda =    1.000000
                      rc =    3.937239
                  energy =    2.471848
                 kinetic =    4.716729
@@ -162,48 +164,50 @@ ATOM: Orbitals with angular momentum L= 2
        potential(ionic) =   -8.529842
 ATOM: Total number of Sankey-type orbitals: 13
 
-ATOM: Valence configuration(local Pseudopot. screening):
+atm_pop: Valence configuration(local Pseudopot. screening):
         2s( 2.00)
         2p( 4.00)
         3d( 0.00)
 
-ATOM:  Cut-off radius for vlocal:  3.937239
-ATOM: ************************************************************************
-ATOM: Called for H   (Z =   1)
+Vna:  Cut-off radius for the neutral-atom potential:   3.937239
 
+ATOM: *************************************************************************
 
-ATOM: Pseudopotential generation method:
-ATOM: ATM3      Troullier-Martins                       
+ATOM: CALLED FOR H   (Z =   1)
 
-ATOM: Valence configuration (pseudopotential generation):
-       1s 1.00  r
-       0.00  r= 1
-       0  r= 1.25
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
 
-ATOM: Exchange-correlation functional:
-ATOM: Ceperley-Alder
+read_vps: Valence configuration (pseudopotential generation):
+ 1s( 1.00)
+ 2p( 0.00)
+ 3d( 0.00)
 
-ATOM: 99.0% of the norm of Vloc inside     28.493 Ry
-ATOM: 99.9% of the norm of Vloc inside     64.935 Ry
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
 
+VLOCAL1: 99.0% of the norm of Vloc inside     28.493 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     64.935 Ry
 ATOM: Maximum radius for local-pseudopot. charge    1.45251
-ATOM: No ghost state for L =  0
-ATOM: No ghost state for L =  1
-ATOM: No ghost state for L =  2
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
 
-ATOM: Kleinman-Bylander projectors: 
+KBgen: Kleinman-Bylander projectors: 
    l= 0   rc=  1.364359   el= -0.467325   kbcos= -2.005361
    l= 1   rc=  1.434438   el=  0.001430   kbcos= -0.501708
    l= 2   rc=  1.470814   el=  0.002365   kbcos= -0.190555
-ATOM: Total number of KB projectors:  9
 
-ATOM: Sankey-type orbitals:
-ATOM: Selected multiple-zeta basis: split          
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+ATOM: -------------------------------------------------------------------------
 
-ATOM: Orbitals with angular momentum L= 0
+ATOM: SANKEY-TYPE ORBITALS:
+ATOM: Selected multiple-zeta basis: split     
 
-ATOM: PAO cut-off radius determinated from an
-ATOM: energy shift=  0.020000 Ry
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
                  lambda =    1.000000
@@ -221,109 +225,47 @@ ATOM: energy shift=  0.020000 Ry
     potential(screened) =   -1.841620
        potential(ionic) =   -2.413776
 
-ATOM: Orbitals with angular momentum L= 1
-
-   izeta= 1   Perturbative polarization orbital
+POLgen: Perturbative polarization orbital with L=  1
 
    izeta = 1
-                 lambda =    1.000000
                      rc =    4.828263
                  energy =    0.717182
-                kinetic =    1.396396
+                kinetic =    1.396397
     potential(screened) =   -0.679215
        potential(ionic) =   -1.159582
 ATOM: Total number of Sankey-type orbitals:  5
 
-ATOM: Valence configuration(local Pseudopot. screening):
+atm_pop: Valence configuration(local Pseudopot. screening):
         1s( 1.00)
         2p( 0.00)
 
-ATOM:  Cut-off radius for vlocal:  4.828263
+Vna:  Cut-off radius for the neutral-atom potential:   4.828263
 
-************************************************************************
+prinput: ************************* Basis input ********************************
 
-ATOM: Basis sets have been generated automatically
-ATOM: using the options:
-ATOM: PAO.BasisSize dzp            
-ATOM: PAO.BasisType  split          
-ATOM: PAO.EnergyShift    0.020000 Ry 
-ATOM: An alternative input to obtain the same basis set:
+PAO.BasisType split     
 
-INPUT: ************************************************************************
-PAO.BasisType  split          
-PAO.EnergyShift    0.020000 Ry 
-PAO.SplitNorm    0.150000
-PAO.PolarizationOrbitals true
-PAO.SplitPolarizationOrbitals   1
-%block PAO_basis_and_PS_lmax        # Define Basis set
+%block ChemicalSpeciesLabel
+   1   8 O                       # Species index, atomic number, species label
+   2   1 H                       # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
 
-  1  8 2 3                   # Index, Z, LmaxPAO, LmaxPS
-           0           2              # l, Nzeta  
-   3.30509334104827        2.51038227137638       # rc(izeta=1,Nzeta)(Bohr)
-   1.00000000000000        1.00000000000000       # scaleFactor(izeta=1,Nzeta)
-           1           2              # l, Nzeta  
-   3.93723919457141        2.54196289048337       # rc(izeta=1,Nzeta)(Bohr)
-   1.00000000000000        1.00000000000000       # scaleFactor(izeta=1,Nzeta)
+%block PAO.Basis                 # Define Basis set
+O           2                    # Species label, number of l-shells
+   0   2                         # l, Nzeta 
+   3.305      2.510   
+   1.000      1.000   
+   1   2 P   1                   # l, Nzeta, Polarization, NzetaPol
+   3.937      2.542   
+   1.000      1.000   
+H           1                    # Species label, number of l-shells
+   0   2 P   1                   # l, Nzeta, Polarization, NzetaPol
+   4.828      3.855   
+   1.000      1.000   
+%endblock PAO.Basis
 
-  2  1 1 2                   # Index, Z, LmaxPAO, LmaxPS
-           0           2              # l, Nzeta  
-   4.82826286593361        3.85494677852031       # rc(izeta=1,Nzeta)(Bohr)
-   1.00000000000000        1.00000000000000       # scaleFactor(izeta=1,Nzeta)
-%endblock PAO_basis_and_PS_lmax     
-ATOM: ************************************************************************
-
-initatom: is,iz =   1   8
-initatom: io,rcut,q   =   1    3.305093    2.000000
-initatom: io,rcut,q   =   2    2.510382    0.000000
-initatom: io,rcut,q   =   3    3.937239    1.333333
-initatom: io,rcut,q   =   4    3.937239    1.333333
-initatom: io,rcut,q   =   5    3.937239    1.333333
-initatom: io,rcut,q   =   6    2.541963    0.000000
-initatom: io,rcut,q   =   7    2.541963    0.000000
-initatom: io,rcut,q   =   8    2.541963    0.000000
-initatom: io,rcut,q   =   9    3.937239    0.000000
-initatom: io,rcut,q   =  10    3.937239    0.000000
-initatom: io,rcut,q   =  11    3.937239    0.000000
-initatom: io,rcut,q   =  12    3.937239    0.000000
-initatom: io,rcut,q   =  13    3.937239    0.000000
-initatom: io,rcut     =   0    3.937239
-initatom: io,rcut,eps =  -1    1.294105    9.135903
-initatom: io,rcut,eps =  -2    1.294105   -8.124878
-initatom: io,rcut,eps =  -3    1.294105   -8.124878
-initatom: io,rcut,eps =  -4    1.294105   -8.124878
-initatom: io,rcut,eps =  -5    1.448233   -2.039267
-initatom: io,rcut,eps =  -6    1.448233   -2.039267
-initatom: io,rcut,eps =  -7    1.448233   -2.039267
-initatom: io,rcut,eps =  -8    1.448233   -2.039267
-initatom: io,rcut,eps =  -9    1.448233   -2.039267
-initatom: io,rcut,eps = -10    1.561052   -0.799329
-initatom: io,rcut,eps = -11    1.561052   -0.799329
-initatom: io,rcut,eps = -12    1.561052   -0.799329
-initatom: io,rcut,eps = -13    1.561052   -0.799329
-initatom: io,rcut,eps = -14    1.561052   -0.799329
-initatom: io,rcut,eps = -15    1.561052   -0.799329
-initatom: io,rcut,eps = -16    1.561052   -0.799329
-
-initatom: is,iz =   2   1
-initatom: io,rcut,q   =   1    4.828263    1.000000
-initatom: io,rcut,q   =   2    3.854947    0.000000
-initatom: io,rcut,q   =   3    4.828263    0.000000
-initatom: io,rcut,q   =   4    4.828263    0.000000
-initatom: io,rcut,q   =   5    4.828263    0.000000
-initatom: io,rcut     =   0    4.828263
-initatom: io,rcut,eps =  -1    1.364359   -2.005361
-initatom: io,rcut,eps =  -2    1.434438   -0.501708
-initatom: io,rcut,eps =  -3    1.434438   -0.501708
-initatom: io,rcut,eps =  -4    1.434438   -0.501708
-initatom: io,rcut,eps =  -5    1.470814   -0.190555
-initatom: io,rcut,eps =  -6    1.470814   -0.190555
-initatom: io,rcut,eps =  -7    1.470814   -0.190555
-initatom: io,rcut,eps =  -8    1.470814   -0.190555
-initatom: io,rcut,eps =  -9    1.470814   -0.190555
-  
-initatom: ia, is, iz, lasto, lastkb =   1   1   8    13    16
-initatom: ia, is, iz, lasto, lastkb =   2   2   1    18    25
-initatom: ia, is, iz, lasto, lastkb =   3   2   1    23    34
+prinput: **********************************************************************
+ATOM: *************************************************************************
 
 siesta: Automatic unit cell vectors (Ang):
 siesta:    7.286412    0.000000    0.000000
@@ -336,146 +278,135 @@ siesta:    ===============================
 siesta:        Begin MD step =      1
 siesta:    ===============================
 
-outcoor: Atomic coordinates (Ang):                          
-    0.00000000    0.00000000    0.00000000   1  O         1
-    0.75700000    0.58600000    0.00000000   2  H         2
-   -0.75700000    0.58600000    0.00000000   2  H         3
-
 DHSCF: MESH =    32 x    30 x    24 =       23040
-
-siesta: dhscf mesh cutoff =    50.384 Ry
+DHSCF: Mesh cutoff (required, used) =    50.000    50.384 Ry
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =     815.854478
-siesta: Ena     =     175.155512
-siesta: Ekin    =     341.667255
-siesta: Enl     =     -52.736808
-siesta: DEna    =      -0.000013
+siesta: Ena     =     175.155496
+siesta: Ekin    =     341.667410
+siesta: Enl     =     -52.736807
+siesta: DEna    =      -0.000020
 siesta: DUscf   =       0.000000
 siesta: DUext   =       0.000000
-siesta: Exc     =    -109.951279
+siesta: Exc     =    -109.951267
 siesta: eta*DQ  =       0.000000
-siesta: Eharris =    -466.427808
-siesta: Etot    =    -461.719811
-siesta: FreeEng =    -461.719811
+siesta: Emadel  =       0.000000
+siesta: Eharris =    -466.429034
+siesta: Etot    =    -461.719667
+siesta: FreeEng =    -461.719667
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
-siesta:    1     -466.4278     -461.7198     -461.7198  1.4382 -4.2445
-timer: Routine,Calls,Time,% = IterSCF        1       8.314  89.69
-siesta:    2     -466.8680     -465.2399     -465.2399  0.1756 -0.1448
-siesta:    3     -465.9240     -465.4631     -465.4631  0.0515 -1.5836
-siesta:    4     -465.8448     -465.5631     -465.5631  0.0176 -1.9909
-siesta:    5     -465.8373     -465.6322     -465.6322  0.0087 -2.1090
-siesta:    6     -465.8365     -465.6833     -465.6833  0.0083 -2.1421
-siesta:    7     -465.8363     -465.7215     -465.7215  0.0067 -2.1505
-siesta:    8     -465.8363     -465.7502     -465.7502  0.0051 -2.1519
-siesta:    9     -465.8362     -465.7717     -465.7717  0.0038 -2.1517
-siesta:   10     -465.8362     -465.7878     -465.7878  0.0028 -2.1513
-siesta:   11     -465.8362     -465.8000     -465.8000  0.0021 -2.1509
-siesta:   12     -465.8363     -465.8090     -465.8090  0.0016 -2.1506
-siesta:   13     -465.8363     -465.8159     -465.8159  0.0012 -2.1505
-siesta:   14     -465.8363     -465.8210     -465.8210  0.0009 -2.1504
-siesta:   15     -465.8363     -465.8248     -465.8248  0.0006 -2.1504
-siesta:   16     -465.8362     -465.8276     -465.8276  0.0005 -2.1504
-siesta:   17     -465.8363     -465.8298     -465.8298  0.0004 -2.1503
-siesta:   18     -465.8363     -465.8314     -465.8314  0.0003 -2.1503
-siesta:   19     -465.8363     -465.8326     -465.8326  0.0002 -2.1503
-siesta:   20     -465.8363     -465.8335     -465.8335  0.0001 -2.1503
-siesta:   21     -465.8363     -465.8342     -465.8342  0.0001 -2.1503
-siesta:   22     -465.8363     -465.8348     -465.8348  0.0001 -2.1503
-siesta:   23     -465.8363     -465.8351     -465.8351  0.0001 -2.1504
+siesta:    1     -466.4290     -461.7197     -461.7197  1.4384 -4.2486
+timer: Routine,Calls,Time,% = IterSCF        1       8.372  88.29
+siesta:    2     -466.8690     -465.2413     -465.2413  0.1755 -0.1485
+siesta:    3     -465.9252     -465.4643     -465.4643  0.0515 -1.5873
+siesta:    4     -465.8460     -465.5644     -465.5644  0.0176 -1.9946
+siesta:    5     -465.8385     -465.6334     -465.6334  0.0087 -2.1127
+siesta:    6     -465.8377     -465.6845     -465.6845  0.0083 -2.1458
+siesta:    7     -465.8375     -465.7228     -465.7228  0.0067 -2.1542
+siesta:    8     -465.8375     -465.7515     -465.7515  0.0051 -2.1556
+siesta:    9     -465.8375     -465.7730     -465.7730  0.0038 -2.1554
+siesta:   10     -465.8375     -465.7891     -465.7891  0.0028 -2.1550
+siesta:   11     -465.8375     -465.8012     -465.8012  0.0021 -2.1546
+siesta:   12     -465.8375     -465.8103     -465.8103  0.0016 -2.1544
+siesta:   13     -465.8375     -465.8171     -465.8171  0.0012 -2.1542
+siesta:   14     -465.8375     -465.8222     -465.8222  0.0009 -2.1541
+siesta:   15     -465.8375     -465.8260     -465.8260  0.0006 -2.1541
+siesta:   16     -465.8375     -465.8289     -465.8289  0.0005 -2.1541
+siesta:   17     -465.8375     -465.8311     -465.8311  0.0004 -2.1541
+siesta:   18     -465.8375     -465.8327     -465.8327  0.0003 -2.1541
+siesta:   19     -465.8375     -465.8338     -465.8338  0.0002 -2.1541
+siesta:   20     -465.8375     -465.8348     -465.8348  0.0001 -2.1541
+siesta:   21     -465.8375     -465.8354     -465.8354  0.0001 -2.1541
+siesta:   22     -465.8375     -465.8360     -465.8360  0.0001 -2.1541
+siesta:   23     -465.8375     -465.8363     -465.8363  0.0001 -2.1541
+
+siesta: E_KS(eV) =      -465.8363
 
 siesta: Atomic forces (eV/Ang):
-   1   -0.000002   -0.468743    0.000000
-   2    0.820026    0.280291    0.000000
-   3   -0.820025    0.280291    0.000000
 ----------------------------------------
- Tot    0.000000    0.091839    0.000000
+ Tot   -0.000003    0.054746   -0.000001
 ----------------------------------------
- Max    0.820026
- Res    0.437382    [ sqrt( Sum f_i^2 / 3N ) ]
+ Max    0.694915
+ Res    0.382994    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.694915    constrained
 
-siesta: Eigenvalues (eV):
- ik is    eps
-  1  1 -24.74 -12.70  -8.71  -6.23   1.68   4.09   9.86  11.56  12.26  13.35
-        14.68  21.97  24.23  27.21  28.65  32.21  42.83  42.95  46.16  48.84
-        49.90  70.67  96.19
+siesta: Temp_ion =       0.000 K
 
 siesta: Program's energy decomposition (eV):
 siesta:-Eions   =    -815.854478
-siesta: Ena     =     175.155512
-siesta: Ekin    =     350.786890
-siesta: Enl     =     -61.958800
-siesta: DEna    =      -1.778710
-siesta: DUscf   =       0.727038
+siesta: Ena     =     175.155496
+siesta: Ekin    =     350.784601
+siesta: Enl     =     -61.958604
+siesta: DEna    =      -1.777794
+siesta: DUscf   =       0.727270
 siesta: DUext   =       0.000000
-siesta: Exc     =    -112.912570
+siesta: Exc     =    -112.912840
 siesta: eta*DQ  =       0.000000
+siesta: Emadel  =       0.000000
 siesta: Ekinion =       0.000000
-siesta: Eharris =    -465.836269
-siesta: Etot    =    -465.835119
-siesta: FreeEng =    -465.835119
+siesta: Eharris =    -465.837499
+siesta: Etot    =    -465.836350
+siesta: FreeEng =    -465.836350
 
 siesta: Final energy (eV):
-siesta:       Kinetic =     350.786890
-siesta:       Hartree =     382.614885
+siesta:       Kinetic =     350.784601
+siesta:       Hartree =     382.616396
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -112.912570
-siesta:  Ion-electron =   -1072.819800
-siesta:       Ion-ion =     -13.504524
+siesta:   Exch.-corr. =    -112.912840
+siesta:  Ion-electron =   -1072.819790
+siesta:       Ion-ion =     -13.504717
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -465.835119
+siesta:         Total =    -465.836350
 
 siesta: Atomic forces (eV/Ang):
-siesta:    1   -0.000002   -0.468743    0.000000
-siesta:    2    0.820026    0.280291    0.000000
-siesta:    3   -0.820025    0.280291    0.000000
+siesta:    1   -0.000003   -0.467103   -0.000001
+siesta:    2    0.694915    0.260925    0.000000
+siesta:    3   -0.694914    0.260925    0.000000
 siesta: ----------------------------------------
-siesta:  Tot    0.000000    0.091839    0.000000
+siesta:  Tot   -0.000003    0.054746   -0.000001
 
 siesta: Stress tensor (eV/Ang**3):
-siesta:    -0.012540    0.000000    0.000000
-siesta:     0.000000   -0.002218    0.000000
-siesta:     0.000000    0.000000    0.014002
+siesta:    -0.012463    0.000000    0.000000
+siesta:     0.000000   -0.002215    0.000000
+siesta:     0.000000    0.000000    0.014000
 
-siesta: Cell volume =  235.378012 Ang**3
+siesta: Cell volume =        235.378012 Ang**3
 
 siesta: Pressure:
 siesta:                Solid            Molecule  Units
-siesta:           0.00000274         -0.00002103  Ry/Bohr**3
-siesta:           0.00025203         -0.00193063  eV/Ang**3
-siesta:           0.40377897         -3.09308067  kBar
+siesta:           0.00000246         -0.00001823  Ry/Bohr**3
+siesta:           0.00022599         -0.00167417  eV/Ang**3
+siesta:           0.36207365         -2.68234648  kBar
 
-siesta: Electric dipole (a.u.)  =    0.000000    0.558129    0.000000
-siesta: Electric dipole (Debye) =    0.000000    1.418624    0.000000
+siesta: Electric dipole (a.u.)  =    0.000000    0.558086    0.000000
+siesta: Electric dipole (Debye) =    0.000000    1.418515    0.000000
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      14.114      14.114   100.00
-timer:  bands             2       0.001       0.002     0.01
-timer:  IterMD            1      13.166      13.166    93.29
-timer:  IterSCF          23       0.572      13.148    93.15
-timer:  nlefsm            2       2.114       4.228    29.96
-timer:  DHSCF            23       0.220       5.062    35.86
-timer:  POISON           25       0.030       0.759     5.38
-timer:  DHSCF2            1       0.220       0.220     1.56
-timer:  REORD           186       0.001       0.103     0.73
-timer:  RFFT             48       0.014       0.674     4.78
-timer:  DHSCF3           23       0.175       4.017    28.46
-timer:  rhoofd           23       0.055       1.269     8.99
-timer:  CELLXC           23       0.018       0.417     2.95
-timer:  vmat             23       0.053       1.229     8.71
-timer:  diagon           23       0.003       0.066     0.47
-timer:  rdiag            23       0.002       0.051     0.36
-timer:  DHSCF4            1       0.791       0.791     5.60
-timer:  dfscf            46       0.012       0.560     3.97
+timer:  siesta            1      13.245      13.245    99.99
+timer:  bands             2       0.000       0.001     0.01
+timer:  IterMD            1      12.139      12.139    91.64
+timer:  hsparse           1       0.010       0.010     0.07
+timer:  IterSCF          23       0.526      12.109    91.42
+timer:  nlefsm            2       2.094       4.188    31.62
+timer:  DHSCF            23       0.171       3.924    29.63
+timer:  POISON           25       0.030       0.758     5.73
+timer:  DHSCF2            1       0.244       0.244     1.84
+timer:  REORD           186       0.001       0.097     0.73
+timer:  RFFT             48       0.014       0.671     5.07
+timer:  DHSCF3           23       0.124       2.847    21.49
+timer:  rhoofd           23       0.028       0.651     4.91
+timer:  CELLXC           23       0.020       0.450     3.40
+timer:  vmat             23       0.028       0.634     4.79
+timer:  diagon           23       0.003       0.067     0.51
+timer:  rdiag            23       0.002       0.051     0.38
+timer:  DHSCF4            1       0.795       0.795     6.01
+timer:  dfscf            46       0.012       0.545     4.11
   
  
-rsiesta: Run-time errors and warnings:
-redata: WARNING: No valid lattice constant specified
-redata: WARNING: Cell will be generated automatically
- 
- 
 prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
-prdate: DATE = Fri Mar 13 13:25:11 MET 1998
+prdate: DATE = Mon Apr 19 16:53:53 MET DST 1999
  

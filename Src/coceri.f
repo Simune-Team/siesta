@@ -1,10 +1,12 @@
+c $Id: coceri.f,v 1.5 1999/04/08 10:57:34 emilio Exp $
+
       subroutine coceri(iza, xa, cell, na, sname, slabel)
 
 c *******************************************************************
 c Writes coordinates in format to be read by CERIUS
 c
 c It implies atomic symbols, atomic coordinates (fractional format)
-c and lattice parameters (modules (in Bohr) and angles)
+c and lattice parameters (modules (in Ang) and angles)
 c
 c Written by E. Artacho. December 1997.
 c ********* INPUT ***************************************************
@@ -32,9 +34,9 @@ c Internal variables and arrays
       character         fname*24, symbol*2
       integer           unit,ix, iv,  i, ia
       double precision  celang(3), cellm(3), recell(3,3),
-     .                  xap(3,namax), xac(3), pi 
+     .                  xap(3,namax), xac(3), pi, Ang 
 
-      data pi / 3.1415926d0 /
+      data pi, Ang      / 3.1415926d0, 0.529177d0 /
 
 C Check dimensions ..........................................................
       if (na .gt. namax) then
@@ -102,7 +104,7 @@ c Write file
       write(unit,'(a,a70)') 'TITLE ', sname
       write(unit,'(a)')  'DIMENSION 3'
       write(unit,'(a,6f11.5)') 
-     .          'CELL', (cellm(iv),iv=1,3), (celang(i),i=1,3)
+     .          'CELL', (cellm(iv)*Ang,iv=1,3), (celang(i),i=1,3)
       write(unit,'(a)') 'SYMMETRY  NUMBER 1  LABEL P1'
       write(unit,'(3a)') 
      .       'SYM MAT  1.000000  0.000000  0.000000  0.000000',

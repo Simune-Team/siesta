@@ -1,3 +1,4 @@
+/* $Id: glib.c,v 1.2 1999/01/31 12:05:51 emilio Exp $ */
 /*
   Auxiliary routines
 */

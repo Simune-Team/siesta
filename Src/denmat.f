@@ -1,3 +1,5 @@
+C $Id: denmat.f,v 1.12 1999/02/23 12:05:22 wdpgaara Exp $
+
       subroutine denmat(c,eta,h,s,enum,
      .                 nbasis,nbands,ncmax,nctmax,
      .                 nfmax,nftmax,nhmax,nhijmax,
@@ -117,8 +119,6 @@ C     nm  : index for basis orbitals connected to basis orbital m
      .  cim, cnj, chin, csin, chccim, csccim, cchccmn, ccsccmn,
      .  Hmn, Smn, qout, fact
 
-      logical
-     .  found
 C ........................
 
 C Start time counter .....................................................
@@ -267,9 +267,8 @@ C ...
       endif
 C ........................
 
-C Save DM to disk .........................................................
-      call iodm( 'write', nhmax, nbasis, nbasis, 1,
-     .           numh, listh, dm, found )
+C Save DM to disk: now it is done at top level ............................
+C     call iodm('write',nhmax,nbasis,nbasis,1,numh,listh,dm,found )
 C ......................
 
 C Stop time counter and return ..................

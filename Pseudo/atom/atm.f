@@ -3,7 +3,6 @@ c
 c
       implicit none
 c
-      include 'banner.h'
       include 'radial.h'
       include 'orbital.h'
       include 'param.h'
@@ -19,9 +18,9 @@ C     .. Parameters ..
 C     ..
 C     .. Local Scalars ..
       double precision aa, dv, dvmax, t1, t2, xmixo, zsold
-      integer i, icon2, iconv, iiter, isize, iter, 
+      integer i, icon2, iconv, iiter, iter, 
      &        itsm, maxit, nconf
-      character icold*2, naold*2, plotfile*10, pseudofile*12
+      character icold*2, naold*2
       character pot_id*40, headline*79
 C     ..
 C     .. Local Arrays ..
@@ -153,7 +152,7 @@ c
 c  compute orbitals
 c
          if (icon2 .lt. 2) then
-            call dsolv1(1,norb,ncore,no)
+            call dsolv1(1,norb,no)
          else
             call dsolv2(iter,iconv,ispp,1,norb,ncore,no)
          end if

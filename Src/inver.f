@@ -1,4 +1,5 @@
-*************************************************************
+C $Id: inver.f,v 1.2 1999/01/31 11:14:56 emilio Exp $
+
         SUBROUTINE INVER(A,B,N)
         implicit double precision (a-h,o-z)
         double precision A(N,N),B(N,N),X

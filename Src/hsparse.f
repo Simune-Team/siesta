@@ -1,4 +1,6 @@
-      subroutine hsparse( negl, cell, na, isa, xa,
+C $Id: hsparse.f,v 1.13 1999/05/05 17:25:33 emilio Exp $
+
+      subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
      .                    nomax, numh, listh )
 C *********************************************************************
@@ -7,8 +9,9 @@ C Writen by J.Soler and P.Ordejon, June 1997
 C **************************** INPUT **********************************
 C logical negl         : Working option: Neglect interactions
 C                        between non-overlaping orbitals
-C integer na           : Total number of atoms
-C real*8  cell(3,3)    : Unit cell vectors CELL(IXYZ,IVECT)
+C real*8  cell(3,3)    : Supercell vectors CELL(IXYZ,IVECT)
+C integer nsc(3)       : Num. of unit cells in each supercell direction
+C integer na           : Number of atoms in supercell
 C real*8  xa(3,na)     : Atomic positions in cartesian coordinates
 C integer lasto(0:na)  : Last orbital of each atom in array iphorb
 C integer lastkb(0:na) : Last KB proj. of each atom in array iphkb
@@ -31,7 +34,7 @@ C                           (only if input_nomax.ge.output_nomax)
 C **************************** BEHAVIOR *******************************
 C Equivalent pairs of atoms are assigned the same sparse index, i.e.
 C if atoms i1 and j1 are equivalent, and so are i2 and j2, and the
-C vector from i1 to i2 is the same as that from i2 to j2, and if
+C vector from i1 to i2 is the same as that from j1 to j2, and if
 C listh(i,i1)=i2, then listh(i,j1)=j2. It is thus also implied that
 C the matrix elements must be equal, i.e. H(i,i1)=H(i,i2).
 C *********************************************************************
@@ -39,10 +42,10 @@ C *********************************************************************
       integer           na, nomax
       integer           iphkb(*), iphorb(*), isa(na),
      .                  lastkb(0:na), lasto(0:na), listh(nomax,*),
-     .                  numh(*)
+     .                  nsc(3), numh(*)
       double precision  cell(3,3), rcut, xa(3,na)
       logical           negl
-      external          chkdim, neighb, ordvec, rcut, timer
+      external          chkdim, listsc, neighb, ordvec, rcut, timer
 
 C Internal variables -----------------
 C maxna  = maximum number of neighbour atoms of any atom
@@ -51,16 +54,16 @@ C maxo   = maximum number of basis orbitals
 C tol    = tolerance for comparing vector-coordinates
       integer maxna, maxnkb, maxo
       double precision tol
-      parameter ( maxna  =   500 )
-      parameter ( maxnkb =  1000 )
-      parameter ( maxo   = 10000 )
+      parameter ( maxna  =  1000 )
+      parameter ( maxnkb =  2000 )
+      parameter ( maxo   = 20000 )
       parameter ( tol    = 1.d-8 )
 
       integer
      .  ia, ikb, index(maxna), inkb, io, ioa, is, isel, 
      .  j, ja, jna, jana(maxna), jo, joa, js, 
      .  ka, kna, knakb(maxnkb), ko, koa, ks,
-     .  nna, nnkb, no
+     .  ncells, nna, nnkb, no, nua, nuo
 
       double precision
      .  r2ij(maxna), rci, rcj, rck, rckb(maxnkb), rij, rik, rjk,
@@ -71,10 +74,13 @@ C tol    = tolerance for comparing vector-coordinates
 C -------------------------------------
 
 C     Start time counter
-*     call timer( 'hsparse', 1 )
+      call timer( 'hsparse', 1 )
 
 C     Check size of internal arrays
-      no = lasto(na)
+      ncells = nsc(1) * nsc(2) * nsc(3)
+      nua = na / ncells
+      nuo = lasto(nua)
+      no = nuo * ncells
       call chkdim( 'hsparse', 'maxo', maxo, no, 1 )
 
 C     Find maximum range of basis orbitals and KB projectors
@@ -105,7 +111,7 @@ c     Initialize neighb subroutine
      .             nna, jana, xij, r2ij )
 
 c     Initialize number of neighbour orbitals
-      do io= 1,no 
+      do io= 1,nuo 
         numh(io)=0
       enddo 
 
@@ -114,8 +120,8 @@ c     Initialize vector switch only once
         conect(io) = .false.
       enddo
 
-c     Loop on atoms
-      do ia = 1,na
+c     Loop on atoms in unit cell
+      do ia = 1,nua
 
 c       Find neighbour atoms within maximum range
         nna = maxna
@@ -209,11 +215,14 @@ c         Restore conect array for next orbital io
         enddo
       enddo
 
+C     Expand numh and listh to whole supercell
+      call listsc( nsc, nuo, no, nomax, numh, listh )
+
 C     Find optimum value for nomax
       nomax = 0
-      do io = 1,no
+      do io = 1,nuo
         nomax = max( nomax, numh(io) )
       enddo
 
-*     call timer( 'hsparse', 2 )
+      call timer( 'hsparse', 2 )
       end

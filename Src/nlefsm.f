@@ -1,17 +1,22 @@
-      subroutine nlefsm( cell, na, isa, xa, nomax, nnomax, ndmax,
+C $Id: nlefsm.f,v 1.10 1999/05/05 17:25:35 emilio Exp $
+
+      subroutine nlefsm( scell, nua, na, isa, xa, indxua,
+     .                   nomax, nnomax, ndmax,
      .                   lasto, lastkb, iphorb, iphKB,
      .                   numd, listd, numh, listh, nspin, Dscf, 
      .                   Enl, fa, stress, H )
 C *********************************************************************
 C Calculates non-local (NL) pseudopotential contribution to total 
 C energy, atomic forces, stress and hamiltonian matrix elements.
-C (Energies in Ry.; distances in Bohr)
+C Energies in Ry. Lengths in Bohr.
 C Writen by J.Soler and P.Ordejon, June 1997.
 C **************************** INPUT **********************************
-C real*8  cell(3,3)        : Unit cell vectors CELL(IXYZ,IVECT)
-C integer na               : Total number of atoms
+C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
+C integer nua              : Number of atoms in unit cell
+C integer na               : Number of atoms in supercell
 C integer isa(na)          : Species index of each atom
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
+c integer indxua(na)       : Index of equivalent atom in unit cell
 C integer nomax            : Maximum number of atomic orbitals
 C integer nnomax           : Maximum number of basis orbitals interacting
 C                            either directly or thru a KB projector
@@ -31,29 +36,29 @@ C integer numh(no)         : Number of nonzero elements of each row of the
 C                            hamiltonian matrix
 C integer listh(nnomax,no) : Nonzero hamiltonian-matrix element column 
 C                            indexes for each matrix row
-C integer nspin            : Spin polarization (1 or 2)
+C integer nspin            : Number of spin components
 C real*8  Dscf(ndmax,nomax,nspin) : Density matrix
 C ******************* INPUT and OUTPUT *********************************
-C real*8 fa(3,na)          : NL forces (Ry/Bohr) (added to input fa)
-C real*8 stress(3,3)       : NL stress (Ry/Bohr) (added to input stress)
+C real*8 fa(3,na)          : NL forces (added to input fa)
+C real*8 stress(3,3)       : NL stress (added to input stress)
 C real*8 H(nnomax,nomax,nspin) : NL Hamiltonian (added to input H)
 C **************************** OUTPUT *********************************
-C real*8 Enl               : Kinetic energy (Ry)
+C real*8 Enl               : NL energy
 C *********************************************************************
       implicit none
 
       integer
-     . na, ndmax, nnomax, nomax, nspin
+     . na, ndmax, nnomax, nomax, nspin, nua
 
       integer
-     . iphKB(*), iphorb(*), isa(na),  
+     . indxua(na), iphKB(*), iphorb(*), isa(na),  
      . lasto(0:na), lastkb(0:na), listd(ndmax,*), listh(nnomax,*),
      . numd(*), numh(*)
 
       double precision
-     . cell(3,3), Dscf(ndmax,nomax,nspin), Enl, epskb,
-     . fa(3,na), H(nnomax,nomax,nspin),
-     . rcut, volcel, stress(3,3), xa(3,na)
+     . scell(3,3), Dscf(ndmax,nomax,nspin), Enl, epskb,
+     . fa(3,nua), H(nnomax,nomax,nspin),
+     . rcut, stress(3,3), xa(3,na), volcel
 
       external
      . chkdim, epskb, matel, neighb, rcut, timer, volcel
@@ -65,14 +70,14 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
 C maxo   = maximum total number of basis orbitals
       integer maxkba, maxna, maxno, maxo
       parameter ( maxkba =    16 )
-      parameter ( maxna  =   500 )
-      parameter ( maxno  =  1000 )
-      parameter ( maxo   = 10000 )
+      parameter ( maxna  =  1000 )
+      parameter ( maxno  =  2000 )
+      parameter ( maxo   = 20000 )
   
       integer
      .  ia, iano(maxno), ikb, ina, iana(maxna), ino,
-     .  io, ioa, iono(maxno), is, isel, ispin, ix, 
-     .  j, jno, jo, jx, ka, ko, koa, ks,
+     .  io, ioa, iono(maxno), is, ispin, ix, 
+     .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no
 
       double precision
@@ -105,7 +110,7 @@ C     Print array sizes
       endif
       
 C     Find unit cell volume
-      volume = volcel( cell )
+      volume = volcel( scell ) * nua / na
 
 C     Find maximum range
       rmaxo = 0.d0
@@ -123,6 +128,11 @@ C     Find maximum range
       enddo
       rmax = rmaxo + rmaxkb
 
+C     Initialize neighb subroutine
+      nna = maxna
+      call neighb( scell, rmax, na, xa, 0, 0,
+     .             nna, iana, xki, r2ki )
+
 C     Initialize arrays Di and Vi only once
       no = lasto(na)
       call chkdim( 'nlefsm', 'maxo', maxo, no, 1 )
@@ -135,14 +145,14 @@ C     Initialize arrays Di and Vi only once
 
 C     Loop on atoms with KB projectors      
       do ka = 1,na
+        kua = indxua(ka)
         ks = isa(ka)
         nkb = lastkb(ka) - lastkb(ka-1)
         call chkdim( 'nlefsm', 'maxkba', maxkba, nkb, 1 )
 
 C       Find neighbour atoms
-        isel = 0
         nna = maxna
-        call neighb( cell, rmax, na, xa, ka, isel,
+        call neighb( scell, rmax, na, xa, ka, 0,
      .               nna, iana, xki, r2ki )
         call chkdim( 'nlefsm', 'maxna', maxna, nna, 1 )
 
@@ -187,64 +197,67 @@ C       Loop on neighbour orbitals
         do ino = 1,nno
           io = iono(ino)
           ia = iano(ino)
+          if (ia .le. nua) then
 
-C         Scatter density matrix row of orbital io
-          do j = 1,numd(io)
-            jo = listd(j,io)
-            do ispin = 1,nspin
-              Di(jo) = Di(jo) + Dscf(j,io,ispin)
+C           Scatter density matrix row of orbital io
+            do j = 1,numd(io)
+              jo = listd(j,io)
+              do ispin = 1,nspin
+                Di(jo) = Di(jo) + Dscf(j,io,ispin)
+              enddo
             enddo
-          enddo
           
-C         Scatter filter of desired matrix elements
-          do j = 1,numh(io)
-            jo = listh(j,io)
-            listed(jo) = .true.
-          enddo
+C           Scatter filter of desired matrix elements
+            do j = 1,numh(io)
+              jo = listh(j,io)
+              listed(jo) = .true.
+            enddo
 
-C         Find matrix elements with other neighbour orbitals
-          do jno = 1,nno
-            jo = iono(jno)
-            if (listed(jo)) then
+C           Find matrix elements with other neighbour orbitals
+            do jno = 1,nno
+              jo = iono(jno)
+              if (listed(jo)) then
 
-C             Loop on KB projectors
-              ikb = 0
-              do ko = lastkb(ka-1)+1,lastkb(ka)
-                ikb = ikb + 1
-                koa = iphKB(ko)
-                epsk = epskb(ks,koa)
-                Sik = Ski(ikb,ino)
-                Sjk = Ski(ikb,jno)
-                Vi(jo) = Vi(jo) + epsk * Sik * Sjk
-                Cijk = Di(jo) * epsk
-                Enl = Enl + Cijk * Sik * Sjk
-                do ix = 1,3
-                  fik = 2.d0 * Cijk * Sjk * grSki(ix,ikb,ino)
-                  fa(ix,ia) = fa(ix,ia) - fik
-                  fa(ix,ka) = fa(ix,ka) + fik
-                  do jx = 1,3
-                    stress(jx,ix) = stress(jx,ix) +
-     .                              xno(jx,ino) * fik / volume
+C               Loop on KB projectors
+                ikb = 0
+                do ko = lastkb(ka-1)+1,lastkb(ka)
+                  ikb = ikb + 1
+                  koa = iphKB(ko)
+                  epsk = epskb(ks,koa)
+                  Sik = Ski(ikb,ino)
+                  Sjk = Ski(ikb,jno)
+                  Vi(jo) = Vi(jo) + epsk * Sik * Sjk
+                  Cijk = Di(jo) * epsk
+                  Enl = Enl + Cijk * Sik * Sjk
+                  do ix = 1,3
+                    fik = 2.d0 * Cijk * Sjk * grSki(ix,ikb,ino)
+                    fa(ix,ia)  = fa(ix,ia)  - fik
+                    fa(ix,kua) = fa(ix,kua) + fik
+                    do jx = 1,3
+                      stress(jx,ix) = stress(jx,ix) +
+     .                                xno(jx,ino) * fik / volume
+                    enddo
                   enddo
                 enddo
-              enddo
 
-            endif
-          enddo
-
-C         Pick up contributions to H and restore Di and Vi
-          do j = 1,numh(io)
-            jo = listh(j,io)
-            do ispin = 1,nspin
-              H(j,io,ispin) = H(j,io,ispin) + Vi(jo)
+              endif
             enddo
-            Vi(jo) = 0.d0
-            listed(jo) = .false.
-          enddo
-          do j = 1,numd(io)
-            jo = listd(j,io)
-            Di(jo) = 0.d0
-          enddo
+
+C           Pick up contributions to H and restore Di and Vi
+            do j = 1,numh(io)
+              jo = listh(j,io)
+              do ispin = 1,nspin
+                H(j,io,ispin) = H(j,io,ispin) + Vi(jo)
+              enddo
+              Vi(jo) = 0.d0
+              listed(jo) = .false.
+            enddo
+            do j = 1,numd(io)
+              jo = listd(j,io)
+              Di(jo) = 0.d0
+            enddo
+
+          endif
         enddo
       enddo
 

@@ -1,3 +1,5 @@
+C $Id: ranger.f,v 1.7 1999/03/04 16:21:10 jose Exp $
+
       SUBROUTINE RANGER( MODE, NX, CELL, RANGE, NA, XA,
      .                   NAMOVE, IAMOVE,
      .                   IA0, ISC, X0,
@@ -209,7 +211,7 @@ C Next line is non-standard but may be supressed
 C Argument types and dimensions
       CHARACTER         MODE*4
       INTEGER           NA, NAMOVE, NNA, NX
-      INTEGER           IA0, IAMOVE(NAMOVE), ISC, JAN(*)
+      INTEGER           IA0, IAMOVE(*), ISC, JAN(*)
       DOUBLE PRECISION  CELL(*), RANGE, R2IJ(*),
      .                  X0(NX), XA(NX,NA), XIJ(NX,*)
 
@@ -339,6 +341,7 @@ C REAL*8  XMIN          Minimum atom coordinate
      .  IM, IMX(MAXX), I1MX(MAXX), I2MX(MAXX), IMESH(MAXEM),
      .  IN, INX(MAXX), I1NX(MAXX), I2NX(MAXX), IX, IXX,
      .  JA, JEM, JM, J1NX(MAXX), J2NX(MAXX), JX,
+     .  MA, MEM, MM, MNM, MX,
      .  NAM, NM, NEM, NEMX(MAXX), NMX(MAXX),
      .  NNAMAX, NNM, NNMMAX, NNX(MAXX)
 C     INTEGER 
@@ -456,15 +459,21 @@ C       Check dimensions and print good ones
         IF ( MAXA  .LT. NA  .OR.
      .       MAXM  .LT. NM  .OR.
      .       MAXEM .LT. NEM .OR.
-     .       MAXNM .LT. NNM     ) THEN
+     .       MAXNM .LT. NNM .OR.
+     .       MAXX  .LT. NX      ) THEN
+          MA  = MAX( NA,  MAXA  )
+          MEM = MAX( NEM, MAXEM )
+          MM  = MAX( NM,  MAXM  )
+          MNM = MAX( NNM, MAXNM )
+          MX  = MAX( NX,  MAXX  )
           OPEN( 1, FILE='ranger.h', STATUS='UNKNOWN' )
           WRITE(1,'(A)') 'C Internal parameters for ranger.f'
           WRITE(1,'(A)') '      INTEGER MAXA,MAXEM,MAXM,MAXNM,MAXX'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXA   =', NA,  ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXEM  =', NEM, ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXM   =', NM,  ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXNM  =', NNM, ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXX   =', NX,  ' )'
+          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXA   =', MA,  ' )'
+          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXEM  =', MEM, ' )'
+          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXM   =', MM,  ' )'
+          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXNM  =', MNM, ' )'
+          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXX   =', MX,  ' )'
           CALL PRMEM( 1, 'ranger', 'DXNM',   'D', NX*NNM )
           CALL PRMEM( 1, 'ranger', 'DXAM',   'D', NX*NA  )
           CALL PRMEM( 1, 'ranger', 'IA1M',   'I', NM     )

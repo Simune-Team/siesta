@@ -1,0 +1,32 @@
+SystemLabel          Si64         # Short name for naming files
+2D.CoorUnits         bohr         # Format for coordinate of the points
+                                  # Bohr
+                                  # Ang
+
+2D.DensityUnits     Ele/bohr**3   # Units of Charge Density
+                                  # Ele/bohr**3
+                                  # Ele/Ang**3
+                                  # Ele/UnitCell
+
+
+2D.MinX            -5.0  bohr     # Minimum coordinate of the window in X-dir
+2D.MaxX             5.0  bohr     # Maximum coordinate of the window in X-dir
+
+2D.MinY            -5.0  bohr     # Minimum coordinate of the window in Y-dir
+2D.MaxY             5.0  bohr     # Maximum coordinate of the window in Y-dir
+
+2D.NumberPointsX       70         # Number of points in X-axis
+2D.NumberPointsY       70         # Number of points in Y-axis
+
+2D.PlaneGeneration   ThreePoints  # Option to generate the plane
+                                  # NormalVector
+                                  # TwoLines
+                                  # ThreePoints
+                                  # ThreeAtomicIndices
+
+%block 2D.Coor3Points             # Coordinates of three points of the plane
+0.00000   0.00000   0.00000                    
+2.56530   2.56530   2.56530                    
+0.00000   5.13061   5.13061                    
+%endblock 2D.Coor3Points
+

@@ -16,7 +16,7 @@ C     .. Local Scalars ..
       double precision bj1, bj2, bj2a, bj3, bj3a, bj4, bj5, cdps,
      &                 ddelta, fdnew, fdold, polyr, r2, rc10, rc11,
      &                 rc12, rc9, rp, rcond
-      integer j, k, ll, l, m
+      integer j, k, ll
 C     ..
 C     .. Local Arrays ..
       double precision aj(5,5), bj(5), work(5)

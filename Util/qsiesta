@@ -9,11 +9,11 @@
 # SIESTA output goes to name.out, and complete log file to name.qlog
 #
 # Environment variable $SIESTA_DIR should be previously defined.
-# If it is not defined, it assumes SIESTA_DIR = ../Src
+# If it is not defined, it assumes SIESTA_DIR = ../siesta/Src
 #
 # Environment variable $SIESTA_BIN can be defined to locate
 # the utility scripts called by this one (prdate).
-# If it is not defined, it assumes SIESTA_BIN = ../Util
+# If it is not defined, it assumes SIESTA_BIN = ../siesta/Util
 #
 # Data file name.fdf must exist in working directory.
 #
@@ -23,7 +23,7 @@
 
 WDIR=`pwd`
 
-SIESTA_BIN=${SIESTA_BIN:=../Util}
+SIESTA_BIN=${SIESTA_BIN:=../siesta/Util}
 
 if [ $# -ne 2 ] ; then
       echo "qsiesta: Usage: qsiesta name queue"
@@ -50,10 +50,4 @@ siesta < $name.fdf >> $name.out
 prdate siesta | tee -a $name.out
 EOF
 #
-
-
-
-
-
-
 

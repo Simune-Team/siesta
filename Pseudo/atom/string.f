@@ -1,8 +1,11 @@
 c
-c $Id: string.f,v 1.2 1997/05/22 17:32:33 wdpgaara Exp $
+c $Id: string.f,v 1.3 1999/02/26 14:26:47 wdpgaara Exp $
 c
 c $Log: string.f,v $
-c Revision 1.2  1997/05/22 17:32:33  wdpgaara
+c Revision 1.3  1999/02/26 14:26:47  wdpgaara
+c Cosmetic changes.
+c
+c Revision 1.2  1997/05/22  17:32:33  wdpgaara
 c Moving from RCSfiles to ATM_1_0
 c
 c Revision 1.1.1.1  1997/01/07 08:38:55  wdpgaara
@@ -18,7 +21,6 @@ C
 C  CHRLEN accepts a STRING of NCHAR characters and returns LCHAR,
 C  the length of the string up to the last nonblank, nonnull.
 C
-      CHARACTER CHAR*1
       CHARACTER STRING*(*)
       Integer nchar, lchar
 c

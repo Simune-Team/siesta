@@ -1,16 +1,5 @@
 c------
-c $Id: orbital.h,v 1.2 1997/05/22 17:32:23 wdpgaara Exp $
-c
-c $Log: orbital.h,v $
-c Revision 1.2  1997/05/22 17:32:23  wdpgaara
-c Moving from RCSfiles to ATM_1_0
-c
-c Revision 1.1.1.1  1997/01/07 08:38:55  wdpgaara
-c Froyen-Troullier-Martins-AG atom code
-c
-c Revision 1.1  1991/12/14  00:34:49  alberto
-c Initial revision
-c
+c $Id: orbital.h,v 1.3 1999/02/26 14:26:44 wdpgaara Exp $
 c
       integer norbmx
       parameter (norbmx=40)

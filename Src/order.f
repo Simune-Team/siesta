@@ -1,3 +1,5 @@
+C $Id: order.f,v 1.2 1999/01/31 11:20:10 emilio Exp $
+
       SUBROUTINE ORDER( X, M, N, INDEX )
 C *******************************************************************
 C Orders array X(M,N) according to array INDEX(N), which may be

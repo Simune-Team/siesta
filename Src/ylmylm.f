@@ -1,3 +1,5 @@
+C $Id: ylmylm.f,v 1.3 1999/01/31 11:45:19 emilio Exp $
+
       SUBROUTINE YLMYLM( ILM1, ILM2, R, YY, DYYDR )
 
 C *********************************************************************
@@ -17,11 +19,12 @@ C *********************************************************************
       INTEGER           ILM1, ILM2
       DOUBLE PRECISION  DYYDR(3), R(3), YY
 
-      INTEGER MAXL
-      PARAMETER (MAXL = 6)
+      INTEGER MAXL, MAXLM
+      PARAMETER ( MAXL  = 4 )
+      PARAMETER ( MAXLM = (MAXL+1)*(MAXL+1) )
 
       INTEGER           I, L, LOFILM
-      DOUBLE PRECISION  DYDR(3,MAXL*MAXL), Y(MAXL*MAXL)
+      DOUBLE PRECISION  DYDR(3,MAXLM), Y(MAXLM)
       EXTERNAL          CHKDIM, LOFILM
 
       L = MAX( LOFILM(ILM1), LOFILM(ILM2) )

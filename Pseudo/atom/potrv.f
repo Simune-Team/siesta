@@ -1,16 +1,6 @@
 c
       subroutine potrv(vd,r,nr,k,zion)
 c
-c ***********************************************************
-c *                                                         *
-c *    This is a plotting routine; the user should          *
-c *  adjust for their own needs.  Prints                    *
-c *  out the potential to the current plot.dat              *
-c *  file (unit=3) for later ploting.  A marker (marker)    *
-c *  is placed at the end of each group of data.            *
-c *                                                         *
-c ***********************************************************
-c
 c  Step size of 0.05 is adjustable as seen fit to give
 c  a reasonable plot.
 c
@@ -24,7 +14,7 @@ C     ..
 C     .. Local Scalars ..
       double precision step
       integer j
-      character marker*3, filename*7
+      character filename*7
 C     ..
 cag
       write(filename,9900) k

@@ -1,3 +1,5 @@
+C $Id: iorho.f,v 1.5 1999/01/31 11:14:58 emilio Exp $
+
       subroutine iorho( task, fname, cell, mesh, maxp, nspin, rho,
      .                  found )
 

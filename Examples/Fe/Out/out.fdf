@@ -1,0 +1,208 @@
+
+#FDF: Opened stdin                for input. Unit:  5
+
+fdf-debug              0     # Default value
+SystemName     bcc Fe ferro GGA                                                                
+SystemLabel     Fe                                                                              
+LongOutput              F     # Default value
+NumberOfAtoms                        1
+NumberOfSpecies                        1
+WriteSiestaDim              F     # Default value
+WriteDenchar              F     # Default value
+WriteMullikenPop                        1
+LatticeConstant          5.423516139           Bohr
+# Above item originally: LatticeConstant          2.870000000     Ang       
+
+%block LatticeVectors                                                          
+ 0.50000   0.500000  0.500000                                                  
+ 0.50000  -0.500000  0.500000                                                  
+ 0.50000   0.500000 -0.500000                                                  
+%endblock LatticeVectors                                                       
+
+SpinPolarized              T
+NonCollinearSpin              F     # Default value
+MeshCutoff          150.0000000             Ry
+# Above item originally: MeshCutoff          150.0000000     Ry        
+NetCharge         0.0000000000E+00     # Default value
+MaxSCFIterations                       40
+DM.NumberPulay                        3
+DM.MixSCF1              F     # Default value
+DM.PulayOnFile              F     # Default value
+DM.MixingWeight         0.1000000000    
+DM.NumberKick              0     # Default value
+DM.KickMixingWeight         0.5000000000         # Default value
+DM.Tolerance         0.1000000000E-02
+DM.InitSpinAF              F     # Default value
+UseSaveData              F     # Default value
+DM.UseSaveDM              T
+NeglNonOverlapInt              F     # Default value
+SolutionMethod     diagon                                                                          
+ElectronicTemperature         0.1837449711E-02         Ry
+# Above item originally: ElectronicTemperature          25.00000000     meV       
+ON.MaxNumIter           1000     # Default value
+ON.etol         0.1000000000E-07     # Default value
+ON.eta         0.0000000000E+00 Ry     # Default value
+On.RcLWF          9.500000000     Bohr     # Default value
+UseSaveData              F     # Default value
+ON.UseSaveLWF              F     # Default value
+ON.functional     kim               # Default value
+ON.ChemicalPotential              F     # Default value
+ON.ChemicalPotentialUse              F     # Default value
+ON.ChemicalPotentialRc          9.500000000     Bohr     # Default value
+ON.ChemicalPotentialTemperature         0.5000000000E-01 Ry     # Default value
+ON.ChemicalPotentialOrder            100     # Default value
+MD.VariableCell              F     # Default value
+MD.TypeOfRun     cg                                                                              
+UseSaveData              F     # Default value
+MD.UseSaveCG              F     # Default value
+MD.NumCGsteps                        0
+MD.MaxCGDispl         0.1889726878           Bohr
+# Above item originally: MD.MaxCGDispl         0.1000000000     Ang       
+MD.MaxForceTol         0.1555739508E-02    Ry/Bohr
+# Above item originally: MD.MaxForceTol         0.4000000000E-01 eV/Ang    
+MD.MaxStressTol         0.6797730000E-04 Ry/Bohr**3     # Default value
+MD.InitialTimeStep              1     # Default value
+MD.FinalTimeStep              1     # Default value
+MD.LengthTimeStep          1.000000000     fs     # Default value
+MD.Quench              F     # Default value
+MD.InitialTemperature         0.0000000000E+00 K     # Default value
+MD.TargetTemperature         0.0000000000E+00 K     # Default value
+MD.TargetPressure         0.0000000000E+00 Ry/Bohr**3     # Default value
+MD.NoseMass          100.0000000     Ry*fs**2     # Default value
+MD.ParrinelloRahmanMass          100.0000000     Ry*fs**2     # Default value
+MD.AnnealOption     TemperatureAndPressure     # Default value
+MD.TauRelax          100.0000000     fs     # Default value
+MD.BulkModulus          100.0000000     Ry/Bohr**3     # Default value
+MD.FCDispl         0.4000000000E-01 Bohr     # Default value
+MD.FCfirst              1     # Default value
+MD.FClast              1     # Default value
+LatticeConstant          5.423516139           Bohr
+# Above item originally: LatticeConstant          2.870000000     Ang       
+
+%block LatticeVectors                                                          
+ 0.50000   0.500000  0.500000                                                  
+ 0.50000  -0.500000  0.500000                                                  
+ 0.50000   0.500000 -0.500000                                                  
+%endblock LatticeVectors                                                       
+
+AtomicCoordinatesFormat     Fractional                                                                      
+NumberOfAtoms                        1
+
+%block AtomicCoordinatesAndAtomicSpecies                                       
+  0.000000000000    0.000000000000    0.000000000000  1                        
+%endblock AtomicCoordinatesAndAtomicSpecies                                    
+
+WriteKpoints              F     # Default value
+WriteForces              F     # Default value
+WriteEigenvalues              F     # Default value
+WriteBands              F     # Default value
+WriteKbands              F     # Default value
+WriteCoorStep              T     # Label by itself
+WriteCoorInitial              T     # Default value
+WriteMDhistory              F     # Default value
+WriteMDXmol              F     # Default value
+UseSaveData              F     # Default value
+MD.UseSaveXV              F     # Default value
+SaveHS              F     # Default value
+WarningMinimumAtomicDistance          1.000000000     Bohr     # Default value
+NumberOfSpecies                        1
+
+%block PAO.Basis                                                               
+  Fe  2                                                                        
+  0  2  P                                                                      
+  6. 0.                                                                        
+  2  2                                                                         
+  0. 0.                                                                        
+%endblock PAO.Basis                                                            
+
+
+%block ChemicalSpeciesLabel                                                    
+  1  26  Fe                                                                    
+%endblock ChemicalSpeciesLabel                                                 
+
+
+%block ChemicalSpeciesLabel                                                    
+  1  26  Fe                                                                    
+%endblock ChemicalSpeciesLabel                                                 
+
+PAO.BasisType     split          # Default value
+PAO.BasisSize     DZP                                                                             
+
+%block PAO.Basis                                                               
+  Fe  2                                                                        
+  0  2  P                                                                      
+  6. 0.                                                                        
+  2  2                                                                         
+  0. 0.                                                                        
+%endblock PAO.Basis                                                            
+
+xc.functional     GGA                                                                             
+xc.authors     PBE                                                                             
+PAO.EnergyShift         0.3674899422E-02         Ry
+# Above item originally: PAO.EnergyShift          50.00000000     meV       
+PAO.SplitNorm         0.1500000000         # Default value
+PAO.SplitNorm         0.1500000000         # Default value
+PAO.BasisType     split          # Default value
+kgrid_cutoff          28.34590317           Bohr
+# Above item originally: kgrid_cutoff          15.00000000     Ang       
+
+%block BandLines                                                               
+  1  0.00000   0.000000  0.000000  \Gamma                                      
+ 40  2.00000   0.000000  0.000000  H                                           
+ 28  1.00000   1.000000  0.000000  N                                           
+ 28  0.00000   0.000000  0.000000  \Gamma                                      
+ 34  1.00000   1.000000  1.000000  P                                           
+%endblock BandLines                                                            
+
+LatticeConstant          5.423516139           Bohr
+# Above item originally: LatticeConstant          2.870000000     Ang       
+BandLinesScale     pi/a     # Default value
+
+%block BandLines                                                               
+  1  0.00000   0.000000  0.000000  \Gamma                                      
+ 40  2.00000   0.000000  0.000000  H                                           
+ 28  1.00000   1.000000  0.000000  N                                           
+ 28  0.00000   0.000000  0.000000  \Gamma                                      
+ 34  1.00000   1.000000  1.000000  P                                           
+%endblock BandLines                                                            
+
+SystemLabel     Fe                                                                              
+AtomicCoordinatesFormat     Fractional                                                                      
+AtomCoorFormatOut     Fractional                 # Default value
+LatticeConstant          5.423516139           Bohr
+# Above item originally: LatticeConstant          2.870000000     Ang       
+SystemLabel     Fe                                                                              
+xc.functional     GGA                                                                             
+xc.authors     PBE                                                                             
+SystemLabel     Fe                                                                              
+SystemLabel     Fe                                                                              
+SystemLabel     Fe                                                                              
+WriteCoorXmol              F     # Default value
+WriteCoorCerius              F     # Default value
+
+%block BandLines                                                               
+  1  0.00000   0.000000  0.000000  \Gamma                                      
+ 40  2.00000   0.000000  0.000000  H                                           
+ 28  1.00000   1.000000  0.000000  N                                           
+ 28  0.00000   0.000000  0.000000  \Gamma                                      
+ 34  1.00000   1.000000  1.000000  P                                           
+%endblock BandLines                                                            
+
+LatticeConstant          5.423516139           Bohr
+# Above item originally: LatticeConstant          2.870000000     Ang       
+BandLinesScale     pi/a     # Default value
+
+%block BandLines                                                               
+  1  0.00000   0.000000  0.000000  \Gamma                                      
+ 40  2.00000   0.000000  0.000000  H                                           
+ 28  1.00000   1.000000  0.000000  N                                           
+ 28  0.00000   0.000000  0.000000  \Gamma                                      
+ 34  1.00000   1.000000  1.000000  P                                           
+%endblock BandLines                                                            
+
+SystemLabel     Fe                                                                              
+SystemLabel     Fe                                                                              
+SaveRho              F     # Default value
+SaveDeltaRho              F     # Default value
+SaveElectrostaticPotential              F     # Default value
+SaveTotalPotential              F     # Default value

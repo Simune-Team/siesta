@@ -1,18 +1,5 @@
 C
-c $Id: dmixp.f,v 1.3 1997/09/17 17:33:38 wdpgaara Exp $
-c
-c $Log: dmixp.f,v $
-c Revision 1.3  1997/09/17 17:33:38  wdpgaara
-c nrmax updated to 1500... shame!
-c
-c Revision 1.2  1997/05/22  17:32:08  wdpgaara
-c Moving from RCSfiles to ATM_1_0
-c
-c Revision 1.1.1.1  1997/01/07 08:38:54  wdpgaara
-c Froyen-Troullier-Martins-AG atom code
-c
-c Revision 1.1  1991/12/14  00:34:49  alberto
-c Initial revision
+c $Id: dmixp.f,v 1.4 1999/02/25 13:48:42 wdpgaara Exp $
 c
       subroutine dmixp(a,b,beta,icy,id,nmsh,c,d,vn1,vn12,vn2,vn22)
 c
@@ -39,8 +26,6 @@ c
 C     .. Parameters ..
       double precision uze, um, detol
       parameter (uze=0.0D0,um=1.0D0,detol=1.D-9)
-      integer nrmax
-      parameter (nrmax=1500)
 C     ..
 C     .. Scalar Arguments ..
       double precision beta
@@ -146,3 +131,10 @@ c
       return
 c
       end
+
+
+
+
+
+
+

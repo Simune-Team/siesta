@@ -1,3 +1,5 @@
+C $Id: ener3.f,v 1.3 1999/01/31 11:14:52 emilio Exp $
+
       subroutine ener3(c,grad,lam,eta,enum,h,s,
      .                 nbasis,nbands,ncmax,nctmax,
      .                 nfmax,nhmax,nhijmax,

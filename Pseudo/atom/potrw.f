@@ -1,17 +1,6 @@
 c
       subroutine potrw(vd,r,nr,k,kj,ist,rc)
 c
-c ***********************************************************
-c *                                                         *
-c *    This is a plotting routine; the user should          *
-c *  adjust/eliminate for their own needs.  Prints          *
-c *  out the wave functions to the current plot.dat         *
-c *  file (unit=3) for later ploting.  A marker (marker)    *
-c *  is placed at the end of each group of data.            *
-c *                                                         *
-c ***********************************************************
-c
-c
 c  Step size of 0.05 is adjustable as seen fit to give
 c  a reasonalble plot.
 c
@@ -29,7 +18,7 @@ C     ..
 C     .. Local Scalars ..
       double precision step
       integer j
-      character marker*3, filename*7
+      character filename*7
 C     ..
       if (kj .eq. 0) then
          write(filename,9900) k

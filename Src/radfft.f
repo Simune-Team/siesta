@@ -1,3 +1,5 @@
+C $Id: radfft.f,v 1.7 1999/01/31 11:43:32 emilio Exp $
+
       SUBROUTINE RADFFT( L, NR, RMAX, F, G )
 C *********************************************************************
 C Makes a fast Fourier transform of a radial function.

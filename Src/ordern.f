@@ -1,7 +1,9 @@
-      subroutine ordern(usesavelwf,ioptlwf,ns,natoms,nbasis,
-     .                  lasto,lmax,lmaxs,nzls,isa,qa,rcoor,rh,
-     .                  cell,xa,iscf,istep,itmax,
+C $Id: ordern.f,v 1.16 1999/03/11 19:26:35 ordejon Exp $
+
+      subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,lasto,
+     .                  isa,qa,rcoor,rh,cell,xa,iscf,istep,itmax,
      .                  ftol,eta,enum,nhmax,numh,listh,h,s,
+     .                  chebef,noeta,rcoorcp,beta,ipcheb,
      .                  dm,edm,Ecorrec)
 C ****************************************************************************
 C Order-N solver of the Hamiltonian problem.
@@ -16,14 +18,9 @@ C integer ioptlwf              : Build LWF's according to:
 C                                0 = Read blindly from disk
 C                                1 = Functional of Kim et al.
 C                                2 = Functional of Ordejon-Mauri
-C integer ns                   : Number of species
 C integer natoms               : Number of atoms
 C integer nbasis               : Number of basis orbitals
 C integer lasto(0:natoms)      : Index of last orbital of each atom
-C integer lmax                 : Maximum angular momentum of the basis
-C integer lmaxs(ns)            : Maximum angular momentum of each species
-C integer nzls(0:lmax,ns)      : Number of shells of each angular momentum
-C                                for each species
 C integer isa(natoms)          : Species index of each atom
 C real*8 qa(natoms)            : Neutral atom charge
 C real*8 rcoor                 : Cutoff radius of Localized Wave Functions
@@ -46,6 +43,12 @@ C integer listh(nhmax,nbasis)  : Control vector of H matrix
 C                                (list of nonzero elements of each row of H)
 C real*8 h(nhmax,nbasis)       : Hamiltonian matrix (sparse)
 C real*8 s(nhmax,nbasis)       : Overlap matrix (sparse)
+C logical chebef               : Compute the chemical potential
+C logical noeta                : Use computed Chem.pot. instead of eta
+C real*8 rcoorcp               : Cutoff radius to compute Fermi level by
+C                                projection.
+C integer ipcheb               : Order of Chebishev expansion to compute Ef
+C real*8 beta                  : Inverse Temperature for Chebishev expansion
 C **************************** OUTPUT **************************************
 C real*8 dm(nhmax,nbasis)      : Density matrix (sparse)
 C real*8 edm(nhmax,nbasis)     : Energy Density matrix (sparse)
@@ -55,25 +58,27 @@ C                                of the Order-N solution
 C **************************** BEHAVIOUR ***********************************
 C If istep=1 and iscf=1, an initial guess is build. Otherwise, the LWF's of
 C the former time steps are used,  extrapolated between MD steps.
-C ****************************************************************************
+C **************************************************************************** 
+
       implicit none
 
       include 'ordern.h'
 
       integer 
-     .  ioptlwf, iscf, istep, itmax, lmax, ns, natoms, nbasis, nhmax
+     .  ioptlwf, ipcheb, iscf, istep, itmax, natoms, 
+     .  nbasis, nhmax
 
       integer
-     .  isa(natoms), lasto(0:natoms), listh(nhmax,nbasis), lmaxs(ns), 
-     .  numh(nbasis), nzls(0:lmax,ns)
+     .  isa(natoms), lasto(0:natoms), listh(nhmax,nbasis), 
+     .  numh(nbasis)
 
       double precision
-     .  cell(3,3), dm(nhmax,nbasis), Ecorrec, edm(nhmax,nbasis), 
-     .  enum, eta, ftol, h(nhmax,nbasis), qa(natoms), rcoor, rh, 
-     .  s(nhmax,nbasis), xa(3,natoms)
+     .  beta, cell(3,3), dm(nhmax,nbasis), Ecorrec, edm(nhmax,nbasis), 
+     .  enum, eta, ftol, h(nhmax,nbasis), qa(natoms), rcoor, rcoorcp,
+     .  rh, s(nhmax,nbasis), xa(3,natoms)
 
       logical
-     .  usesavelwf
+     .  chebef, noeta, usesavelwf
 
 C Internal variables ..........................................................
 C maxoc = maximum number of atomic orbitals, needed to open numc, to be able
@@ -90,7 +95,14 @@ C         to find correct values for maxo and other dimensions
 
       double precision
      .  aux(2,maxo), c(maxnc,maxo), cold(maxnc,maxo), 
-     .  fe, g(maxnc,maxo), hg(maxnc,maxo), qtot, xi(maxnc,maxo)
+     .  fe, qtot, xi(maxnc,maxo)
+
+      real*4
+     .  g(maxnc,maxo), hg(maxnc,maxo)
+
+      double precision
+     .  chpot,emax,emin,eV
+C    .  gap,homo,lumo
 
       logical
      .  overflow, itest, found, frstme
@@ -103,6 +115,8 @@ C         to find correct values for maxo and other dimensions
 C ...................
 
 *     call timer( 'ordern', 1 )
+
+      eV = 1.d0 / 13.60580d0
 
       overflow = .false.
 C Check dimensions ......................................................
@@ -162,14 +176,16 @@ C             Find out number of bands
         if (nbasis .gt. maxo)  overflow = .true.
 
         if (ioptlwf .ne. 0) then
-          call cspa(ioptlwf,iopt,ns,natoms,nbasis,
-     .        lasto,lmax,lmaxs,nzls,isa,
+C   This call was modified by DSP, Aug. 1998.
+          call cspa(ioptlwf,iopt,natoms,nbasis,
+     .        lasto,isa,
      .        qa,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
      .        c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,nbands,
      .        overflow)
 
 C         Check that dimensios are large enough 
           if (nbasis   .gt. maxo)    overflow = .true.
+          if (nhmax    .gt. maxnh)   overflow = .true.
           if (nbands   .gt. maxlwf)  overflow = .true.
           if (ncmax    .gt. maxnc)   overflow = .true.
           if (nctmax   .gt. maxnct)  overflow = .true.
@@ -182,9 +198,10 @@ C         Print good dimensions
           if (overflow) then
           open( 1, file='ordern.h', status='unknown' )
           write(1,'(A)') 'C ordern: Dimension parameters for ordern'
-          write(1,'(6X,A)')'integer maxnc,maxnct,maxnf,maxnft,maxnhij'
-          write(1,'(6X,A)')'integer maxnhf,maxlwf,maxo'
+          write(1,'(6X,A)')'integer maxnc,maxnct,maxnf,maxnft,maxnh'
+          write(1,'(6X,A)')'integer maxnhij,maxnhf,maxlwf,maxo'
           write(1,'(6X,A,I10,A)') 'parameter ( maxo   = ',  nbasis, ' )'
+          write(1,'(6X,A,I10,A)') 'parameter ( maxnh  = ',  nhmax,  ' )'
           write(1,'(6X,A,I10,A)') 'parameter ( maxlwf = ',  nbands, ' )'
           write(1,'(6X,A,I10,A)') 'parameter ( maxnc  = ',   ncmax, ' )'
           write(1,'(6X,A,I10,A)') 'parameter ( maxnct = ',  nctmax, ' )'
@@ -201,6 +218,34 @@ C         Print good dimensions
         endif
       endif
 C ..................
+
+C Calculate Chemical Potential, Max and Min eigenvalues, energy gap
+C and HOMO and LUMO levels ..........
+
+      if (chebef) then
+
+        call timer( 'chempot', 1 )
+        call chempot(h,s,listh,numh,rcoorcp,ipcheb,beta,lasto,
+     .               cell,xa,enum,nbasis,natoms,nhmax,
+     .               chpot,emax,emin)
+C     . ,gap,homo,lumo)
+        call timer( 'chempot', 2 )
+
+        eV  = 1.d0 / 13.60580d0
+
+        write(6,'(a,f8.4,a)') 'ordern:   Chemical Potential = ',
+     .                         chpot/eV,' eV'
+        write(6,'(a,f8.4,a)') 'ordern:   Maximum Eigenvalue = ',
+     .                         emax/eV,' eV'
+        write(6,'(a,f8.4,a)') 'ordern:   Minimum Eigenvalue = ',
+     .                         emin/eV,' eV'
+c      write(6,*) 'Gap energy         = ',gap/eV,' eV'
+c      write(6,*) 'HOMO               = ',homo/eV,' eV'
+c      write(6,*) 'LUMO               = ',lumo/eV,' eV'
+
+        if (noeta) eta=chpot
+      endif
+
 
 C  Extrapolate wave funcions from those of former time steps if 
 C  iscf = 1 (that is, if we are in a new MD step) ...................

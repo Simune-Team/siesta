@@ -1,11 +1,8 @@
-c Dimension parameters for diagon
-c maxaux  : size of auxiliary array
-c maxorb  : maximum number of orbitals
-c maxspin : maximum number of spin polarizations (1 or 2)
-c max1or2 : real (=1) or complex (=2) wavefunctions
+C $Id: diagon.h,v 1.4 1999/01/31 11:56:51 emilio Exp $
 
-      integer maxaux, maxorb, maxspin, max1or2
-      parameter ( maxaux  = 1 )
-      parameter ( maxorb  = 1 )
-      parameter ( maxspin = 1 )
-      parameter ( max1or2 = 1 )
+C rdiagon: Dimension parameters for diagon
+      integer maxaux,maxhs,maxorb,maxpsi
+      parameter ( maxaux = 1 )
+      parameter ( maxhs  = 1 )
+      parameter ( maxorb = 1 )
+      parameter ( maxpsi = 1 )

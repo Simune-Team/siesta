@@ -1,5 +1,5 @@
 C
-      subroutine orban(iorb,id,ar,br,n,l,occup,spin,eigv,ekin,epot)
+      subroutine orban(id,ar,br,n,l,occup,spin,eigv,ekin,epot)
 c
       implicit none
 c
@@ -16,7 +16,7 @@ C     .. Parameters ..
       parameter (ai=2*137.0360411D0,zero=0.D0)
 C     ..
 C     .. Scalar Arguments ..
-      integer iorb, l, n
+      integer l, n
       double precision spin, occup, eigv, ekin, epot 
       character id*1
 C     ..
