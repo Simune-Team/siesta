@@ -132,6 +132,12 @@ C Internal variables and arrays
 c ----------------------------------------------------------------------------
 
 C Allocate local memory
+      if (.not.allocated(dpt)) then
+        allocate(pt(3,maxpt+1))
+        call memory('A','D',3*(maxpt+1),'grdsam')
+        allocate(dpt(3,maxpt+1))
+        call memory('A','D',3*(maxpt+1),'grdsam')
+      endif
       allocate(avfa(3,na))
       call memory('A','D',3*na,'grdsam')
       allocate(avfa2(3,na))
@@ -142,12 +148,6 @@ C Allocate local memory
       call memory('A','D',3*na,'grdsam')
       allocate(xanew(3,na))
       call memory('A','D',3*na,'grdsam')
-      if (.not.allocated(dpt)) then
-        allocate(pt(3,maxpt+1))
-        call memory('A','D',3*(maxpt+1),'grdsam')
-        allocate(dpt(3,na))
-        call memory('A','D',3*na,'grdsam')
-      endif
 
 C Check whether GridCellSampling block has been looked for ------------------
 
@@ -333,16 +333,16 @@ c final averages ------------------------------------------------------------
       endif
 
 C Deallocate local memory
-      call memory('D','D',size(avfa),'grdsam')
-      deallocate(avfa)
-      call memory('D','D',size(avfa2),'grdsam')
-      deallocate(avfa2)
-      call memory('D','D',size(faold),'grdsam')
-      deallocate(faold)
-      call memory('D','D',size(faold2),'grdsam')
-      deallocate(faold2)
       call memory('D','D',size(xanew),'grdsam')
       deallocate(xanew)
+      call memory('D','D',size(faold2),'grdsam')
+      deallocate(faold2)
+      call memory('D','D',size(faold),'grdsam')
+      deallocate(faold)
+      call memory('D','D',size(avfa2),'grdsam')
+      deallocate(avfa2)
+      call memory('D','D',size(avfa),'grdsam')
+      deallocate(avfa)
 
       return
       end
