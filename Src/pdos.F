@@ -1,4 +1,4 @@
-      SUBROUTINE PDOS( NO, NSPIN, MAXSPN, MAXUO, MAXNH, 
+      subroutine pdos( NO, NSPIN, MAXSPN, MAXUO, MAXNH, 
      .                 MAXO, NUMH, LISTHPTR, LISTH, H, S, 
      .                 E1, E2, SIGMA, NHIST,
      .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO, NUOTOT )
@@ -56,59 +56,72 @@ C **********************************************************************
       use alloc
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
+      use mpi_siesta,   only : MPI_logical, MPI_Comm_World
 #endif
 
       implicit none
 
-      INTEGER
+      integer
      .  NO, NSPIN, MAXSPN, MAXUO, MAXNH, NK, NHIST, MAXO, NUOTOT
 
-      INTEGER 
+      integer 
      .  NUMH(*), LISTH(MAXNH), LISTHPTR(*), INDXUO(NO)
 
       real(dp)
      .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA,  
      .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), EO(MAXO,MAXSPN,NK)
 
-      LOGICAL
-     .  GAMMA
+      logical
+     .  gamma
 
 C Dynamic arrays -------------------------------------------------------
       real(dp), DIMENSION(:,:)  , ALLOCATABLE :: DTOT
       real(dp), DIMENSION(:,:,:), ALLOCATABLE :: DPR
 
 C Internal variables ---------------------------------------------------
-      INTEGER
-     .  NUO, NHS, NPSI, IUO, IHIST, ISPIN, 
-     .  IUNIT1, IUNIT2, I
+      integer
+     .  nuo, nhs, npsi, iuo, ihist, ispin, 
+     .  iunit1, iunit2, i
 
       integer iat, spec, ii, iorb
+
+      logical, save :: ParallelOverK = .false.
 
       real(dp), dimension(:), allocatable  :: tmp
 
       character*40 pos_string
 
-      CHARACTER
-     .  SNAME*30, FNAMETOT*37, FNAMEPRO*37, PASTE*53,  POINT
+      character
+     .  sname*30, fnametot*37, fnamepro*37, paste*53,  point
 
       real(dp)
-     .  DELTA, ENER, EV
+     .  delta, ENER, eV
 
-      EXTERNAL
-     .  IO_ASSIGN, IO_CLOSE, PASTE, 
-     .  PDOSK, TIMER
+#ifdef MPI
+      integer :: MPIerror
+#endif
+
+      external
+     .  io_assign, io_close, paste, 
+     .  pdosk, timer, pdoskp
 
       type(xmlf_t) :: xf            ! For new XML output
 
-      CALL TIMER( 'pdos', 1)
+      call timer( 'pdos', 1)
 
 C Find the intervals between the subdivisions in the energy scale ------
-      DELTA = (E2 - E1) / (NHIST-1)
-      EV = 13.6058D0
+      delta = (E2 - E1) / (NHIST-1)
+      eV = 13.6058d0
       if (Node.eq.0) then
-        SNAME = FDF_STRING('SystemLabel','siesta')
+        sname = fdf_string('SystemLabel','siesta')
+        ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
+        if (Nodes.eq.1) ParallelOverK = .false.
       endif
-      POINT = '.'
+#ifdef MPI
+      call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,
+     .               MPIerror)
+#endif
+      point = '.'
 
 C Find number of orbitals per unit cell 
 #ifdef MPI
@@ -118,63 +131,76 @@ C Find number of orbitals per unit cell
 #endif
 
 C Check internal dimensions --------------------------------------------
-      IF ( NSPIN.LE.2 .AND. GAMMA) THEN
-        NHS  = NUOTOT * NUO
-        NPSI = NUOTOT * MAXUO * NSPIN
-      ELSE IF ( NSPIN.LE.2 .AND. .NOT.GAMMA) THEN
-        NHS  = 2 * NUOTOT * NUO
-        NPSI = 2 * NUOTOT * NUO
-      ENDIF
+      if ( nspin.le.2 .and. gamma) then
+        nhs  = nuotot * nuo
+        npsi = nuotot * maxuo * nspin
+      elseif ( nspin.le.2 .and. .not.gamma) then
+        if (ParallelOverK) then
+          nhs  = 2 * nuotot * nuotot
+          npsi = 2 * nuotot * nuotot
+        else
+          nhs  = 2 * nuotot * nuo
+          npsi = 2 * nuotot * nuo
+        endif
+      endif
 
 C Allocate local arrays ------------------------------------------------
       call re_alloc(Haux,1,nhs,name='Haux',routine='pdos')
       call re_alloc(Saux,1,nhs,name='Saux',routine='pdos')
       call re_alloc(psi,1,npsi,name='psi',routine='pdos')
-      ALLOCATE(DTOT(NHIST,2))
-      CALL MEMORY('A','D',2*NHIST,'pdos')
-      ALLOCATE(DPR(NHIST,NUOTOT,2))
-      CALL MEMORY('A','D',2*NHIST*NUOTOT,'pdos')
+      allocate(dtot(nhist,2))
+      call memory('A','D',2*nhist,'pdos')
+      allocate(dpr(nhist,nuotot,2))
+      call memory('A','D',2*nhist*nuotot,'pdos')
 
 C Initialize the projected density of states ---------------------------
-      DO ISPIN = 1, 2
-        DO IHIST = 1, NHIST
-          DTOT(IHIST,ISPIN) = 0.D0
-          DO IUO = 1, NUOTOT
-            DPR(IHIST,IUO,ISPIN) = 0.D0
-          ENDDO
-        ENDDO
-      ENDDO
+      do ispin = 1, 2
+        do ihist = 1,nhist
+          dtot(ihist,ispin) = 0.d0
+          do iuo = 1,nuotot
+            dpr(ihist,iuo,ispin) = 0.d0
+          enddo
+        enddo
+      enddo
 
 C Call appropiate routine ----------------------------------------------
-      IF (NSPIN.LE.2 .AND. GAMMA) THEN
-        CALL PDOSG( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
+      if (nspin.le.2 .and. gamma) then
+        call pdosg( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, INDXUO, EO,
      .              HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
-      ELSE IF ( NSPIN.LE.2 .AND. .NOT.GAMMA) THEN
-        CALL PDOSK( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
-     .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
-     .              E1, E2, NHIST, SIGMA, 
-     .              XIJ, INDXUO, NK, KPOINT, WK, EO,
-     .              HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
-      ENDIF
+      elseif ( nspin.le.2 .and. .not.gamma) then
+        if (ParallelOverK) then
+          call pdoskp( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
+     .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
+     .                E1, E2, NHIST, SIGMA, 
+     .                XIJ, INDXUO, NK, KPOINT, WK, EO,
+     .                HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
+        else
+          call pdosk( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
+     .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
+     .                E1, E2, NHIST, SIGMA, 
+     .                XIJ, INDXUO, NK, KPOINT, WK, EO,
+     .                HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
+        endif
+      endif
 
       if (IOnode) then
 C Open file for write on I/O node
-        FNAMETOT = PASTE(SNAME,'.DOS')
-        CALL IO_ASSIGN(IUNIT1)
-        OPEN(UNIT=IUNIT1, FILE=FNAMETOT, FORM='formatted', 
-     .       STATUS='unknown') 
+        fnametot = paste(sname,'.DOS')
+        call io_assign(iunit1)
+        open(unit=iunit1, file=fnametot, form='formatted', 
+     .       statuS='unknown') 
 
 C Output histogram
-        DO IHIST = 1, NHIST
-          ENER = E1 + (IHIST-1) * DELTA
-          WRITE(IUNIT1,'(3f20.5)') ENER*EV,DTOT(IHIST,1)/EV,
-     .         DTOT(IHIST,2)/EV
-        ENDDO
+        do ihist = 1,nhist
+          ENER = E1 + (ihist-1) * delta
+          write(iunit1,'(3f20.5)') ener*ev,dtot(ihist,1)/ev,
+     .         dtot(ihist,2)/eV
+        enddo
 
 C Close file for write
-        CALL IO_CLOSE(IUNIT1)
+        call io_close(iunit1)
       endif
 
 C New writing
@@ -182,9 +208,9 @@ C New writing
          call xml_OpenFile("pdos.xml",xf)
          call xml_AddXMLDeclaration(xf,"UTF-8")
 
-        FNAMEPRO = PASTE(SNAME,'.PDOS')
-        CALL IO_ASSIGN(IUNIT2)
-        open(iunit2,file=FNAMEPRO,form='formatted',status='unknown')
+        fnamepro = paste(sname,'.PDOS')
+        call io_assign(iunit2)
+        open(iunit2,file=fnamepro,form='formatted',status='unknown')
         call xml_NewElement(xf,"pdos")
         call xml_NewElement(xf,"nspin")
         call xml_AddPcdata(xf,str(nspin), line_feed=.false.)
@@ -199,7 +225,7 @@ C New writing
 
         allocate(tmp(2*nhist))
         do ihist = 1,nhist
-           ENER = E1 + (IHIST-1) * DELTA
+           ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener*eV
            write(iunit2,'(f20.5)') ener*eV
         enddo
@@ -271,16 +297,15 @@ C Free local workspace array
         deallocate(tmp)
 
       endif
-            
 
 C Free local arrays ----------------------------------------------------
-      CALL MEMORY('D','D',SIZE(DPR),'pdos')
-      DEALLOCATE(DPR)
-      CALL MEMORY('D','D',SIZE(DTOT),'pdos')
-      DEALLOCATE(DTOT)
+      call memory('D','D',size(dpr),'pdos')
+      deallocate(dpr)
+      call memory('D','D',size(dtot),'pdos')
+      deallocate(dtot)
 
-      CALL TIMER( 'pdos', 2)
+      call timer( 'pdos', 2)
 
-      RETURN
-      END
+      return
+      end
 

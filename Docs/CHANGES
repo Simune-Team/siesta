@@ -1,6 +1,22 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.46
+Date: 2005/03/11 07:30 GMT 
+Title: PDOS - Parallel over K points
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The option to parallelise a calculation by distributing K points
+over processors has been extended to the partial density of states
+calculation.
+
+Changes:
+
+pdos.F     Option Diag.ParallelOverK checked for in fdf and if true
+           the routine now calls pdoskp instead of pdosk
+pdoskp.F   New routine added to perform parallel PDOS over K points
+version.F90 / CHANGES
+=======================================================================
 Version: 1.4.45
 Date: 2005/03/10 03:00 GMT 
 Title: Diag tag snag
