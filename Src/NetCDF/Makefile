@@ -19,4 +19,4 @@ netcdf.o: netcdf.f90 netcdf_sizes.f90 netcdf_sizesOK.f90 \
           netcdf_variables.f90 netcdf_text_variables.f90 netcdf_expanded.f90
 	$(FC) -c netcdf.f90
 clean:
-	/bin/rm -f *.o *.mod *.MOD
+	/bin/rm -f *.o *.mod *.MOD module_built

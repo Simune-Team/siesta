@@ -10,7 +10,7 @@ C
 C  Modules
 C
       use precision
-      use fdf2
+      use fdf
 
       implicit none
 

@@ -50,8 +50,10 @@ C Argument types and dimensions
      .   dvol, Vs(nvmax)
 
 C Internal variables and arrays
+
       integer, parameter ::
-     .  maxoa = 100            ! Max # of orbitals per atom
+     .  minloc = 100,  ! Min buffer size for local copy of Dscf
+     .  maxoa  = 100   ! Max # of orbitals per atom
       integer
      .  i, ia, ic, ii, il, imp, in, ind, iop, ip, iphi, 
      .  is, isp, iu, iul, ix, j, jc, jl, jmp, jn, 
@@ -63,6 +65,8 @@ C Internal variables and arrays
      .  Parallel
       real*8
      .  Vij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
+      real*8, dimension(:),   allocatable, save :: 
+     .  VClocal
       real*8, dimension(:,:), allocatable, save :: 
      .  Clocal, Vlocal
 
@@ -73,7 +77,10 @@ C  Set algorithm logical
       Parallel = (nuo .ne. nuotot)
 
 C  Find value of maxloc
-      maxloc = max( 100, maxval(endpht(1:np)-endpht(0:np-1)) )
+
+      maxloc = maxval(endpht(1:np)-endpht(0:np-1))
+      maxloc = maxloc + minloc
+      maxloc = min( maxloc, no )
 
 C  Allocate local memory
       allocate(ilocal(no))
@@ -86,6 +93,8 @@ C  Allocate local memory
       call memory('A','D',(maxloc+1)*(maxloc+1),'vmat')
       allocate(Clocal(nsp,maxloc))
       call memory('A','D',nsp*maxloc,'vmat')
+      allocate(VClocal(nsp))
+      call memory('A','D',nsp,'vmat')
 
       if (Parallel) then
         nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
@@ -199,7 +208,9 @@ C  Generate or retrieve phi values
               lasta = ia
               lastop = iop
               do isp = 1,nsp
-                dxsp(:) = xdsp(:,isp) + xdop(:,iop) - dxa(:,ia)
+                do ix = 1,3
+                  dxsp(ix) = xdsp(ix,isp) + xdop(ix,iop) - dxa(ix,ia)
+                enddo
                 r2sp = sum(dxsp**2)
                 if (r2sp.lt.r2cut(is)) then
                   call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
@@ -209,17 +220,29 @@ C  Generate or retrieve phi values
               enddo
             endif
             iphi = iphorb(i)
-            Clocal(:,ic) = phia(iphi,:)
+            do isp = 1,nsp
+              Clocal(isp,ic) = phia(iphi,isp)
+            enddo
           else
-            Clocal(:,ic) = phi(:,imp)
+            do isp = 1,nsp
+              Clocal(isp,ic) = phi(isp,imp)
+            enddo
           endif
+
+C  Pre-multiply V and Clocal(,ic)
+          do isp = 1,nsp
+            VClocal(isp) = V(isp,ip) * Clocal(isp,ic)
+          enddo
 
 C  Loop on second orbital of mesh point (only for jc.le.ic)
           do jc = 1,ic
             jl = ilc(jc)
 
 C           Loop over sub-points
-            Vij = sum( V(:,ip) * Clocal(:,ic) * Clocal(:,jc) )
+            Vij = 0.0d0
+            do isp = 1,nsp
+              Vij = Vij + VClocal(isp) * Clocal(isp,jc)
+            enddo
 
             Vlocal(jl,il) = Vlocal(jl,il) + Vij
             if (ic .ne. jc) then
@@ -281,6 +304,8 @@ C  Free local memory
       deallocate(ilc)
       call memory('D','D',size(Clocal),'vmat')
       deallocate(Clocal)
+      call memory('D','D',size(VClocal),'vmat')
+      deallocate(VClocal)
 
       if (Parallel) then
 C Redistribute Hamiltonian from mesh to orbital based distribution

@@ -799,7 +799,7 @@ C real*4  rhopcc(ntpl)  : Partial-core-correction density for xc
 C ----------------------------------------------------------------------
 C Output : (gradient case)
 C ----------------------------------------------------------------------
-C real*8  fal(3,na)     : Local copy of atomic forces
+C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
@@ -820,7 +820,7 @@ C
       logical, intent(in)    :: Forces
       logical, intent(in)    :: Stress
       real,    intent(out)   :: rhopcc(ntpl)
-      real*8,  intent(inout) :: fal(3,na)
+      real*8,  intent(inout) :: fal(3,*)
       real*8,  intent(inout) :: stressl(3,3)
 
 C
@@ -830,7 +830,7 @@ C
      .  i, ia, iop, ip, ip0, is, isp, ispin, iua
 
       real*8
-     .  dx(3), grrho(3), r, ra, rhop, vxc
+     .  dfa(3), dx(3), grrho(3), r, ra, rhop, vxc
 
       real*8, save ::
      .  tiny
@@ -866,6 +866,7 @@ C Loop over sub-points
               do isp = 1,nsp
                 dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
                 r = sqrt( dot( dx, dx, 3 ) )
+c                if (r .lt. ra .and. r .gt. tiny) then
                 if (r .lt. ra) then
                   ip = isp + nsp * (ip0 - 1)
                   call chcore_sub( is, dx, rhop, grrho )
@@ -874,10 +875,10 @@ C Calculate gradients of PCC
                     do ispin = 1,nsd
                       vxc = Vscf(ip,ispin) - Vaux(ip)
                       do i = 1,3
-                        grrho(i) = dvol * vxc * grrho(i) / nsd
-                        if (Forces) fal(i,iua) = fal(i,iua) + grrho(i)
+                        dfa(i) = dvol * vxc * grrho(i) / nsd
+                        if (Forces) fal(i,iua) = fal(i,iua) + dfa(i)
                         if (Stress) stressl(1:3,i) = stressl(1:3,i) + 
-     .                    dx(1:3)*grrho(i)/volume
+     .                    dx(1:3)*dfa(i)/volume
                       enddo
                     enddo
                   else
@@ -922,7 +923,7 @@ C real    vna(ntpl)     : Sum of neutral-atom potentials
 C ----------------------------------------------------------------------
 C Output : (gradient call)
 C ----------------------------------------------------------------------
-C real*8  fal(3,na)     : Local copy of atomic forces
+C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
@@ -940,7 +941,7 @@ C
       real,    intent(in)  :: drho(*)
       logical, intent(in)  :: Forces, Stress
       real,    intent(out) :: vna(ntpl)
-      real*8,  intent(inout) :: fal(3,na)
+      real*8,  intent(inout) :: fal(3,*)
       real*8,  intent(inout) :: stressl(3,3)
 
 C

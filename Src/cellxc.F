@@ -1,7 +1,8 @@
-      SUBROUTINE CELLXC( FUNCTL, AUTHOR, IREL,
+      SUBROUTINE CELLXC( FUNCTL, AUTHOR, IREL, IDER, 
      .                   CELL, NMESH, NSPAN, MAXP, MTYPE, XMESH,
      .                   NSPIN, DENS,
-     .                   EX, EC, DX, DC, VXC, STRESSL, MAXAUX, AUX,
+     .                   EX, EC, DX, DC, VXC, IAUXDER, DVXCDN,
+     .                   STRESSL, MAXAUX, AUX,
      .                   NMESHG, NSM, Node, Nodes )
 
 C *******************************************************************
@@ -26,6 +27,8 @@ C                     the local density limit of the next:
 C            'PBE' => GGA Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
 C                     Uppercase is optional
 C INTEGER IREL         : Relativistic exchange? (0=>no, 1=>yes)
+C INTEGER IDER         : Store derivatives of exchange-correlation potential?
+C                        (0=>no, 1=>yes)
 C REAL*8  CELL(3,3)    : Unit cell vectors CELL(ixyz,ivector)
 C INTEGER NMESH(3)     : Number of mesh divisions of each vector
 C INTEGER NSPAN(3)     : Physical dimensions of arrays XMESH, DENS and
@@ -56,6 +59,8 @@ C                        MAXAUX .GE. NSPAN(1)*NSPAN(2)*NSPAN(3)
 C                        Not used otherwise
 C INTEGER NMESHG(3)    : Global number of mesh divisions of each vector
 C INTEGER NSM          : Number of sub-mesh points along each axis
+C INTEGER IAUXDER      : First dimension of DVXCDN,
+C                        1 if Khon-Sham forces or ntpl if Harris forces.
 C ************************* OUTPUT **********************************
 C REAL*8  EX              : Total exchange energy
 C REAL*8  EC              : Total correlation energy
@@ -63,6 +68,8 @@ C REAL*8  DX              : IntegralOf( rho * (eps_x - v_x) )
 C REAL*8  DC              : IntegralOf( rho * (eps_c - v_c) )
 C REAL    VXC(MAXP,NSPIN) : (Spin) exch-corr potential
 C                           Notice single precision in this version
+C REAL    DVXCDN(MAXP,NSPIN,NSPIN) : Derivatives of exchange-correlation
+C                           potential respect the charge density
 C REAL*8  STRESSL(3,3)    : xc contribution to the stress tensor,
 C                           assuming constant density (not charge),
 C                           i.e. r->r' => rho'(r') = rho(r)
@@ -135,15 +142,20 @@ C
 
 C Argument types and dimensions
       CHARACTER*(*)     FUNCTL, AUTHOR
-      INTEGER           IREL, MAXAUX, MAXP, MTYPE, NMESHG(3), NSM,
-     .                  NMESH(3), NSPAN(3), NSPIN, Node, Nodes
+      INTEGER           IREL, IDER, MAXAUX, MAXP, MTYPE, NMESHG(3), NSM,
+     .                  NMESH(3), NSPAN(3), NSPIN, Node, Nodes, IAUXDER
       DOUBLE PRECISION  CELL(3,3), DC, DX, EC, EX, STRESSL(3,3)
 C     If you change next line, please change also the argument
 C     explanations in the header comments
 *     DOUBLE PRECISION
       REAL
-     .                  AUX(MAXAUX), DENS(MAXP,NSPIN),
-     .                  VXC(MAXP,NSPIN), XMESH(3,MAXP)
+     .                  AUX(*), DENS(MAXP,NSPIN),
+     .                  VXC(MAXP,NSPIN), XMESH(3,*)
+      REAL, DIMENSION(IAUXDER,NSPIN,NSPIN) :: DVXCDN
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
+     .                  DVXDN, DVCDN
+      INTEGER 
+     .                  IS2
 
 C Fix the order of the numerical derivatives
 C NN is the number of points used in each coordinate and direction,
@@ -198,10 +210,12 @@ C Local variables and arrays
      .                  D, DECDD, DEXDD
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE ::
      .                  DECDGD, DEXDGD, GD
+
       EXTERNAL          GGAXC, LDAXC, RECLAT, VOLCEL, memory
 
 C Start time counter (intended only for debugging and development)
       CALL TIMER( 'CELLXC', 1 )
+
 
 C Allocate local memory
       allocate(D(nspin))
@@ -216,6 +230,10 @@ C Allocate local memory
       call memory('A','D',3*nspin,'cellxc')
       allocate(GD(3,nspin))
       call memory('A','D',3*nspin,'cellxc')
+      allocate(DVXDN(NSPIN,NSPIN))
+      call memory('A','D',nspin*nspin,'cellxc')
+      allocate(DVCDN(NSPIN,NSPIN))
+      call memory('A','D',nspin*nspin,'cellxc')
 
 C Set GGA switch
       IF ( FUNCTL.EQ.'LDA' .OR. FUNCTL.EQ.'lda' .OR.
@@ -557,11 +575,11 @@ C       Skip point if density=0
         IF (SKIP0) THEN
           DENTOT = 0.D0
           DO IS = 1,MIN(NSPIN,2)
-            DENTOT = DENTOT + MAX(0.D0,DENS(IP,IS))
+            DENTOT = DENTOT + MAX(0.0,DENS(IP,IS))
           ENDDO
           IF (DENTOT .LT. DENMIN) THEN
             DO IS = 1,NSPIN
-              VXC(IP,IS) = 0.0D0
+              VXC(IP,IS) = 0.0
             ENDDO
             GOTO 210
           ENDIF
@@ -757,7 +775,8 @@ C       derivatives with respect to density and density gradient
           CALL GGAXC( AUTHOR, IREL, NSPIN, D, GD,
      .                EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
         ELSE
-          CALL LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, DEXDD, DECDD )
+          CALL LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, DEXDD, DECDD,
+     .                DVXDN, DVCDN )
         ENDIF
 
 C       Add contributions to exchange-correlation energy and its
@@ -878,6 +897,11 @@ C Z-direction
 #endif
           ELSE
             VXC(IP,IS) = DEXDD(IS) + DECDD(IS)
+            IF (IDER .EQ. 1) THEN
+              DO IS2 = 1, NSPIN
+                DVXCDN(IP,IS2,IS) = DVXDN(IS2,IS) + DVCDN(IS2,IS)
+              ENDDO
+            ENDIF
           ENDIF
   200   CONTINUE
 
@@ -897,6 +921,7 @@ C       originated by the deformation of the mesh with strain
   210 CONTINUE
   220 CONTINUE
   230 CONTINUE
+
 
 #ifdef MPI
 C Return buffer region contributions to VXC to their correct nodes
@@ -1057,6 +1082,14 @@ C Divide by energy unit
           STRESSL(IX,JX) = STRESSL(IX,JX) + (STRESS(IX,JX) / EUNIT)
   320   CONTINUE
   330 CONTINUE
+      
+      DO IS = 1, NSPIN
+        DO IS2 = 1, NSPIN
+          DO IP = 1, IAUXDER
+            DVXCDN(IP,IS2,IS) = DVXCDN(IP,IS2,IS) / EUNIT
+          ENDDO
+        ENDDO
+      ENDDO
 
 C Re-entry point for nodes with no mesh points stored locally
   999 continue
@@ -1104,6 +1137,10 @@ C Deallocate local memory
       deallocate(DEXDGD)
       call memory('D','D',size(GD),'cellxc')
       deallocate(GD)
+      call memory('D','D',size(DVXDN),'cellxc')
+      deallocate(DVXDN)
+      call memory('D','D',size(DVCDN),'cellxc')
+      deallocate(DVCDN)
 
 C Stop time counter
       CALL TIMER( 'CELLXC', 2 )

@@ -1256,7 +1256,7 @@ END SUBROUTINE count
 INTEGER FUNCTION type_mem( var_type )
 
 implicit none
-character, intent(in) :: var_type
+character(len=*), intent(in) :: var_type
 
 select case( var_type )
 case('I')

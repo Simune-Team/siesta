@@ -17,13 +17,16 @@ DEFS_MPI=
 LIBS= -ldxml $(NETCDF_LIBS)
 SYS=bsd
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
+CPP=/bin/cpp -P
 #
 .F.o:
 	$(FC) -c $(FFLAGS)  $(DEFS) $<
 .f.o:
 	$(FC) -c $(FFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(CPP) $(DEFS) $< > $*.f90
+	$(FC) -c $(FFLAGS) $*.f90
+	@rm -f $*.f90
 .f90.o:
 	$(FC) -c $(FFLAGS)   $<
 #

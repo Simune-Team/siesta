@@ -54,7 +54,8 @@ contains
   include "netcdf_dims.f90"
   include "netcdf_attributes.f90"
   include "netcdf_variables.f90"
-  include "netcdf_text_variables.f90"
+! Avoid bug in (old) Compaq compiler (see README)
+!  include "netcdf_text_variables.f90"
   include "netcdf_expanded.f90"
 end module netcdf
 

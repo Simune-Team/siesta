@@ -72,6 +72,7 @@ C
 C  Modules
 C
       use precision
+      use sys
       use parallel
 #ifdef MPI
       use mpi

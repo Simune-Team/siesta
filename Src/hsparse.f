@@ -54,9 +54,7 @@ C
       use parallel
       use atmfuncs, only: rcut
       use listsc_module, only: listsc_init
-#ifdef MPI
-      use mpi
-#endif
+      use sorting
 
       implicit          none
       integer, intent(in)          ::  na
@@ -71,7 +69,7 @@ C
       integer, intent(out)         ::  listh(:), listhptr(:)
       integer, intent(out)         ::  numh(:)
 
-      external          neighb, ordvec, timer, memory
+      external          neighb, timer, memory
 
 C Internal variables -----------------
 C maxna  = maximum number of neighbour atoms of any atom
@@ -82,9 +80,6 @@ C tol    = tolerance for comparing vector-coordinates
       double precision tol
       parameter ( tol    = 1.d-8 )
 
-#ifdef MPI
-      integer MPIerror, BNode, Bio
-#endif
       integer
      .  ia, iio, ikb, inkb, io, ioa, is, isel, 
      .  j, ja, jna, jo, joa, js, 
@@ -386,3 +381,7 @@ C Deallocate local arrays
 
       return
       end
+
+
+
+

@@ -1,5 +1,474 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
+=======================================================================
+Version: 1.0.49
+Date: 2001/01/29  19:00 GMT
+Title: Merge of 'newatom' branch
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+The basis-generation subsystem has been improved by rationalizing some 
+data structures and making some code simpler. A major simplification 
+involves doing the work in serial mode and broadcasting only the final
+data structures. A more powerful 'parse' mechanism has been implemented 
+to help with the complex processing of data blocks which define the
+basis. A complete list of changes follows.
+
+Files:
+   atom.f: Back to serial mode. Streamlined somewhat, but still basically
+           unchanged. Lots of more work needed.
+   atom.F: Removed.
+   atm_types.f: Data structures to hold PAO, KB proj, and vlocal info.
+   atminit.F: Removed. Its functionality is now in...
+   initatom.f: Includes logic to deal with user-defined bases (new format).
+   atomlist.f: Now computes total number of orbitals and KB projectors. 
+               Includes superx.
+   base.F: A new, standalone, program for basis generation.
+   basis_io.F: Reads and writes basis information in two formats: pure
+               ASCII and NetCDF (if compiled in). Note that the .F suffix
+               does not have anything to do with MPI... it is needed to
+               preprocess NetCDF blocks.
+   basis_specs.f: New routines for basis definition. See documentation
+                  in the file itself.
+   basis_types.f : Data structures for basis specification, and routines
+                 to interface with the old-style arrays needed by 'atom'.
+   broadcast_basis.F: New file.
+   cdiag.F: Make H and S real arrays with an extra dimension, so that
+            the (formal) interface errors do not stop the program in
+            debugging runs. Now the interface mismatch is passed on
+            to the library side.
+   cellxc.F: Arrays xmesh and aux are now assumed size to avoid 
+             interface mismatches.
+   chkdim.F chkdim.f: Calls routine 'die' to avoid explicit MPI code.
+   coceri.f: Uses 'periodic_table' module (q.v.) and automatic arrays.
+   coor.f coxmol.f pixmol.f: Use 'periodic_table'
+   dfscf.F: fal array dimensioned to na instead of nua.
+   diagon.F: Aux array size was too small for 'diagk' case.
+   diag*.{f,F} propor.f: Use new module 'sys' (q.v.)
+   die.F: Removed. Functionality in module sys.F (q.v.)
+   dump2cdf.F dump_ascii.f: Removed. Functionality now in basis_io.F
+   gauleg.f lofilm.F
+   rlylm.f ylmexp.f 
+   ylmylm.f: Removed and integrated into new module 'spher_harm.f', to
+             make the interfaces explicit.
+   ionew.F: New prototype module to deal with logical unit numbers and
+            the variable IOnode (to simplify MPI I/O).
+   matel.f: Array syntax explicit in some calls to match the interfaces
+            in spher_harm.
+   meshsubs.F: Dummy argument fal was wrongly dimensioned (to na instead
+               of nua) in routine neutralatomonmesh. Inocuous but wrong.
+   old_atmfuncs.f: It now does the allocation and clearing of the
+                   old-style atomic tables which use to be done in 'atom'.
+   periodic_table.f: New module with purely 'atomic' routines, taken from...
+   arw.F: 'atomic' routines moved to module 'periodic_table'.
+   plcharge.F: Removed. Functionality provided by .RHO files and the 
+               helper programs in Util/Contour and Util/Plrho
+   pseudopotential.f: New module to read and hold the data from ps files.
+                      (Currently, the data is recopied in 'atom')
+   radial.f: Dynamic table size.
+   recipes.f: Use automatic arrays when needed.
+   redata.F: Issues note about .RHO file substituting denchar info.
+   redbasis.f: Removed.
+   siesta.F: New initatom interface. PDOS stub (not implemented yet).
+             Remove call to plcharge. Use 'parse' module. Initialize
+             array listhold after allocation. Explicit calls to
+             routine superx after every kind of atomic move.
+   sorting.f: New module, which includes:
+   ordix.f ordvec.f order.f iorder.f: removed
+   superx.f: put in module atomlist (and also as internal sub in coor.f)
+   hsparse.f minvec.f: Changed to .f extension. Use 'sorting'.
+   spher_harm.f: New module holding the Spherical Harmonics routines, 
+                 with explicit interfaces.
+   symbol.f: Removed. Included in module 'periodic_table'.
+   sys.F: New module. Implements routines 'die' and 'bye'. These can
+          be called to terminate an MPI job from anywhere in the program.
+   transfer.f: Streamlined.
+   types.f: Removed. Now called atm_types.f
+   Makefile: Changed to reflect the additions and deletions.
+   NetCDF/README: New file explaining some compatibility issues.
+   fdf/fdf.f: Change name of block data.
+   fdf/fdf_mod.f: New features. See documentation in file.
+   fdf/fdf2.f fdf3.f: removed.
+   fdf/parse.f: New file. A more powerful parser. See docs in file.
+   fdf/makefile: updated.
+   Docs/siesta.tex: Use makeidx package. Updated to reflect new changes.
+=======================================================================
+Version: 1.0.48
+Date: 2001/01/23  17:30 GMT
+Title: Bug Fix (nlcc + spin)
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description:
+
+Fixed bug reported by J. Junquera (on Jan 20 2001) and 
+G. Canto (Jan 22 2001). The bug produced wrong values
+of the stress and forces for calculations with spin
+polarization and non-linear core corrections (simultaneously).
+
+Files:
+   meshsubs.F : Routine PartialCoreOnMesh corrected.
+   Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.47
+Date: 2001/01/12  19:30 GMT
+Title: Dynamic (re)allocation in MATEL
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+As a leftover of f77 static allocation requirement, the array
+dimensions in MATEL are found using obscure formulas. F90 and the 
+alloc module allow a simpler and cheaper reallocation on the fly.
+
+Files:
+   matel.f   : Arrays reallocated on the fly, using alloc module
+               Suppressed matel_init and matel_module
+               Removed pure-spherical-harmonic requirement for orbitals
+   atmfuncs.f: Allowed IO=0 in LOFIO and MOFIO (with result L=0)
+   kinefsm.f : Removed 'use matel_module' statement
+   naefs.f   :  "
+   nlefsm.f  :  "
+   overfsm.f :  "
+   phirphi.f :  "
+   radfft.f  : G(NK) returns spilling of G(k) beyond Kmax
+   siesta.F  : Supressed call to matel init
+               Added alloc_report initialization and printout
+   Makefile  : matel moved from module to normal routine
+               Added dependence of matel.o on alloc.o
+               Supressed dependences on matel_module
+   siesta.tex: Added documentation of new option AllocReportLevel
+========================================================================
+Version: 1.0.46
+Date: 2001/01/09  11:00 GMT
+Title: Bug fis in iomd.f
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description:
+
+A problem with the reading/writing in the MD files is solved.
+The problem consisted in the inability of some compilers
+to write once the EOF character was reached.
+
+
+Files:
+   iomd.f:    Backspace command added
+   Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.45
+Date: 2000/12/13  12:00 GMT
+Title: Interface to K. Parlinski's PHONON program
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+K. Parlinski's program PHONON can analyze the crystal structure and
+provide a set of symmetry-irreducible atomic displacements with which
+to compute the dynamical matrix and obtain the phonon dispersion
+relations and other lattice-dynamical magnitudes.  Siesta can now read
+PHONON-provided information (basically in the MD.ATforPhonon and
+PhononLabels blocks), carry out the required calculations (in a form
+similar to that used for brute-force FC approach) and write a
+SystemLabel.PHONON file that can be post-processed by PHONON.
+
+Files:
+   phonon.F:  Module implementing the interface routines.
+   redata.F:  Logic to decide when a PHONON calculation (idyn=7) is
+              to be undertaken.
+   siesta.F:  Calls to phonon.F routines.
+   Makefile:  Addition of phonon.F.
+   siesta.tex: Brief documentation of the interface.
+   Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.44
+Date: 2000/12/12  19:46 GMT
+Title: BUG FIXED. Ref. br-20001209-002
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+Corrected bug reported by P. Ordejon:
+Siesta was not parsing correctly the valence configuration
+information if the pseudopotential file was generated in
+a spin-polarized calculation.
+
+Files:
+   atom.F: New code to process configuration string.
+   Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.43
+Date: 2000/12/12  19:00 GMT
+Title: Eigenvalue-only diagonalization for k-sampling
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+In the case of k-sampling, an initial diagonalization is now performed to 
+find the eigenvalues, the Fermi level and the occupation weights. 
+Since the eigenvectors cannot be stored because of memory limitations,
+the diagonalization is later repeated to find them and the density matrix.
+By calling the LAPACK diagonalization routine with an eigenvalue-only flag,
+a major part of the CPU time of the first diagonalization can be saved.
+
+Files:
+   cdiag.F:  Add argument NEVEC with the number of desired eigenvectors
+             If NEVEC==0, call ZHEGV with job='N' (eigenvalues only).
+             Otherwise, find all eigenvectors, like previously.
+             Supress FV argument in CDIAG and allocate it internally.
+             Use realloc to allocate arrays.
+   diag2g.F:  "
+   diagpol.f: "
+   diagk.F:  First call to CDIAG with NEVEC=0. Second with NEVEC=NUO
+   diag2k.F:   "
+   diagkp.F:   "
+   Customary Docs/CHANGES, Docs/siesta.tex, and Src/version.F changes.
+========================================================================
+Version: 1.0.42
+Date: 2000/12/12  15:30 GMT
+Title: BUG FIXED. Siesta 1.X. Ref. br-20001209-001
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description:
+
+Bug fixed: Siesta 1.X. Ref. br-20001209-001 
+
+Corrected bug reported by A. Garcia:
+Extrapolation of the density matrix for FC calculations,
+when no DM file was present. Besides, an error was detected
+in extrapol.F for the case of k-point sampling (where maxo
+is different from maxuo)
+
+Files:
+   siesta.F: Treat differently the extrapolation for FC calcs. with 
+             no DM files.
+   extrapol.F: Fix bug (dimensions of aux matrix were wrong for
+               k-point sampling calculations).
+   Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.41
+Date: 2000/11/29  18:00 CET
+Title: BUG FIXED. Routines 'initbands' in bands.F and 'fixed' in fixed.F
+Author: Daniel Sanchez-Portal <sanchezp@uiuc.edu>
+
+Description:
+
+Two bugs corrected in 'initbands':
+* Variable scale, defined as character*30, was broadcast and character*1
+* switch added so kpoints are only broadcast to the other nodes if
+  there is enough space to calculate and store them (nk.le.maxk)
+One bug in subroutine 'fixed':
+* The node reading the input was not specified
+
+Files:
+   fixed.F: Fix bug
+   bands.F: Fix bug
+   Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.40
+Date: 2000/11/25  11:30 GMT
+Title: BUG FIXED. Routine 'parabola' in atom.F
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+ 
+Updated routine 'parabola' which deals with multiple zeta orbital
+matching and was updated on branch siesta-0 after the fork (for some
+reason the change was not detected earlier). This fix will cause
+noticeable numerical differences in the 'split' routine output
+concerning the kinetic, potential, and total energy of zeta>1 orbitals
+in some limited cases (Fe in the Examples directory being one of
+them). The orbital itself seems not to be noticeably affected.
+
+Files: 
+  atom.F : Updated routine parabola.
+  Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.39
+Date: 2000/11/24  13:15 CET
+Title: BUGS FIXED. endif missing in MPI part of cellxc.F
+Author: Pablo Ordejon <ordejonicmab.es>
+
+Description:
+ 
+Bug fixed: endif missing in MPI part of cellxc.F
+
+Files: 
+  cellxc.F : Fix bug
+  Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.39
+Date: 2000/11/23  16:15 CET
+Title: BUGS FIXED: supercell call in dynamics loop + update of k-points
+Author: Pablo Ordejon <ordejonicmab.es>
+
+Description:
+ 
+Several bugs have been corrected, that produced wrong results for 
+dynamics runs with k-points. The first affected the case of fixed
+cells, and the second the case of variable cells:
+  - The supercel setup for k-points was wrongly done only out of the 
+    dynamics loop for fixed dell. Corrected to setup within te loop.
+  - The k-points were not updated for the variable cell case.
+    Corrected to update them.
+
+Files: 
+  siesta.F : Fix bugs for supercell and k-points updates.
+  Customary  Docs/CHANGES and Src/version.F changes.
+========================================================================
+Version: 1.0.38
+Date: 2000/11/1	 21:30 CET
+Title: adding Harris forces for the first SCF step.
+Author: Javier Junquera <javier.junquera@uam.es>
+
+Description:
+
+ When Harris functional is being used in a molecular
+ dynamics simulation, the initial charge density of each step
+ is always the sum of atomic charges.
+
+Files:
+  siesta.F : Skip the extrapolation of the density matrix
+             Initialize the density matrix in each SCF step
+  redata.F:  New variable harrisfun. Switch that fixes if
+             Harris functional is going to be used.
+  Customary  Docs/CHANGES
+========================================================================
+Version: 1.0.38
+Date: 2000/11/1  13:00 CET
+Title: adding Harris forces for the first SCF step.
+Author: Javier Junquera <javier.junquera@uam.es>
+
+Description:
+ 
+ The computation of the forces for the Harris functional
+ in the first SCF step has been implemented. This functional 
+ is a not self-consistent version of DFT. It is extremly
+ cheap but not very accurate for system which involves
+ great charge transfer. Suitable for long runs of 
+ molecular dynamics simulations.
+
+Files: 
+  siesta.F : Skip the diagonalization in the last step. 
+  meshsubs.F : Bug corrected in PartialCoreonMesh subroutine.
+               Problem related with the distance of a given point
+               of the grid to a given atom. If that distant is zero
+               the point is not considered, and that's wrong.
+  cellxc.F, xc.f : Derivatives of exchange-correlation potential 
+                   respect the charge density. Only implemented
+                   for Perdew-Zunger parametrization (LDA)
+  dfscf.f : Improved efficiency.
+  dhscf.F : Reads the functional in which the computation of the forces
+            will be based. Call to cellxc updated. Call to dfscf updated.
+            New call to forhar.
+  forhar.f: New subroutine where the potentials needed by dfscf for
+            the Harris functional forces are built.
+  redata.F: Automatic set up of DM.UseSaveDM, MaxSCFIterations and
+            DM.MixSCF1 when Harris' forces are selected.
+  Makefile: Added forhar.f
+  Customary version.F, Docs/CHANGES and Docs/siesta.tex
+========================================================================
+Version: 1.0.37
+Date: 2000/10/09  20:15 CET
+Title: correcting ibmp3.make and version.F
+Author: Emilio Artacho <Emilio.Artacho@uam.es>
+
+Files: Sys/ibmp3.make
+       version.F, CHANGES, siesta.tex
+========================================================================
+Version: 1.0.37
+Date: 2000/10/05  19:15 CET
+Title: Improved efficiency vmat & rhoofd (buffer) / various for compiling
+Author: Emilio Artacho <Emilio.Artacho@uam.es>
+
+Description:
+
+(1) vmat and rhoofd were less efficient than 0.12 corresponding ones
+at least for some systems. The 'buffer' that keeps a piece of a matrix
+in a non-sparse form has been increased (by 100) so that fewer unpdates
+of this buffer have to be done in the whole procedure (J.M.Soler).
+The efficiency is comparable now (even better).
+
+(2) Siesta has been compiled in the IBM SP2 machine in Lyon, both
+parallel and scalar. Parallel compilation has also been done for
+a large parallel Compaq machine in Grenoble. Makefiles and related.
+
+NOTE: The IBM didn't know about complex.2double, I removed it from mpi.F
+      (not used)
+
+Files:
+  rhoofd.f, vmat.f : improved efficiency
+  ibmp3.make, ibmp3-mpi.make, compaq-mpi.make : (in Sys/)
+  MPI/mpi.F, MPI/Makefile 
+  Customary version.F, Docs/CHANGES and Docs/siesta.tex 
+========================================================================
+Version: 1.0.36
+Date: 2000/09/13  11:00 GMT
+Title: Fix for plotting files / vmat speed up
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+The format of files for use in Plrho was changed due to necessity for
+the parallelisation because the density matrix was not stored on any
+one node in a complete form. Hence Plrho has had to be modified to
+reflect this. Also a bug in iorho relating to this change has been 
+fixed.
+Also the implicit loops have been removed from several places in vmat
+to improve performance with current compilers. In addition, a few
+other performance enhancements have been introduced through the use
+of local variables to reduce the number of multiplications in important
+parts of the code.
+
+Files:
+
+   iorho.F    : The wrong dimension was being used in the inner loop
+              : and has therefore been corrected.
+   plrho.f    : Format of files from iorho changed to new form.
+   vmat.f     : Implicit loops / sum function removed + VClocal added
+              : to reduce number of multiplications.
+========================================================================
+Version: 1.0.35
+Date: 2000/08/10  13:00 GMT
+Title: Change in .DM format
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+The main change is to the way in which the .DM file is written. The
+form of the statements has been changed to something much closer to
+how it used to be written before the parallelisation forced some
+changes. This was done because of poor performance during disk writes
+on a cluster of machines with a remote mounted disk and will generally
+benefit the speed of writes, though not always quite as dramatically
+as in this case. Also a couple of minor changes were made to avoid
+compiler hiccups and warning messages.
+
+Files:
+   alloc.F90  : argument "type" declared as (len=*) in type_mem for
+              : the benefit of the PG compiler
+   cellxc.F   : 0.0d0 -> 0.0 in a couple of places to avoid type
+              : conversion warnings
+   iodm.F     : form of write statements adjusted to maximum number
+              : of writes per statement within parallel constraints
+========================================================================
+Version: 1.0.34
+Date: 2000/07/29  17:30 GMT
+Title: Change to PCC to remove spurious forces
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+Certain runs on a high symmetry system were found to give large
+symmetry breaking forces for some atoms on a special position
+but not all when using partial core corrections in the pseudo
+potential. The problem was trace back to very small values of
+the distance between the mesh points and atoms.
+
+Files:
+   meshsubs.F : r > tiny check has been added to trap small distances
+              : that lead to spurious forces
+   siesta.F   : comments stating that KSV_pol is not sorted for parallel
+              : use have been removed as this is no longer true
 ========================================================================
 Version: 1.0.33
 Date: 2000/07/05  16:00 GMT

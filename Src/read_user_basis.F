@@ -1,13 +1,10 @@
       subroutine read_user_basis
 
-                                !
-!   NEEDS LOGIC FOR FLOATING ORBITALS  ******************
-                                !
 #ifndef CDF
 
       call die(
-     $     '*** You need netCDF to read the new user-defined basis files...'
-     $     )
+     $ '*** You need netCDF to read the new user-defined basis files...'
+     $ )
       end subroutine  read_user_basis
 #else 
 

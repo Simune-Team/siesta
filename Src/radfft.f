@@ -24,7 +24,7 @@ C                   FFT routine used.
 C REAL*8  RMAX    : Maximum radius
 C REAL*8  F(0:NR) : Function to be tranformed, in a radial mesh
 C *************** OUTPUT **********************************************
-C REAL*8  G(0:NR) : Fourier transform of F
+C REAL*8  G(0:NR) : Fourier transform of F (but see point 5 below)
 C *************** UNITS ***********************************************
 C Units of RMAX and F are arbitrary.
 C Units of k_max and G are related with those of RMAX and F in the
@@ -43,6 +43,15 @@ C    components are calculated by direct integration rather than FFT.
 C    Parameter ERRFFT is the typical truncation error in the FFT, and
 C    controls which k's are integrated directly. A good value is 1e-8.
 C    If you will not divide by k**l, make ERRFFT=1.e-30.
+C 4) The function F is assumed to be zero at and beyond RMAX. The last
+C    point F(NR) is not used to find G, except G(0) for L=0 (see 5)
+C 5) Because of the 'uncertainty principle', if f(r) is strictly zero
+C    for r>RMAX, then g(k) cannot be strictly zero for k>kmax.
+C    Therefore G(NR), which should be exactly zero, is used (for L=0)
+C    as a 'reminder' term for the integral of G beyond kmax, to ensure 
+C    that F(0)=Sum[4*pi*r**2*dr*G(IR)] (this allows to recover F(0)
+C    when called again in the inverse direction). Thus, the last value
+C    G(NR) should be replaced by zero for any other use.
 C *********************************************************************
 C Written by J.M.Soler. August 1996.
 C *********************************************************************
@@ -66,7 +75,7 @@ C Internal variable types and dimensions ----------------------------
       INTEGER
      .  I, IQ, IR, JR, M, MQ, N, NQ
       DOUBLE PRECISION
-     .  BESSPH, C, DQ, DR, FR, PI, R, RN, Q
+     .  BESSPH, C, DQ, DR, FR, GSUM, PI, R, RN, Q, QMAX
 
       DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE ::
      .  GG
@@ -78,7 +87,6 @@ C Internal variable types and dimensions ----------------------------
      .  P
 
       EXTERNAL
-*    .  BESSPH, CFT, CHKDIM, TIMER
      .  BESSPH, CHKDIM, TIMER, MEMORY
 C -------------------------------------------------------------------
 
@@ -99,6 +107,7 @@ C Find some constants -----------------------------------------------
       NQ = NR
       DR = RMAX / NR
       DQ = PI / RMAX
+      QMAX = NQ * DQ
       C = DR / SQRT( 2.D0*PI )
 C -------------------------------------------------------------------
 
@@ -140,10 +149,14 @@ C       Set up function to be fast fourier transformed
         FN(2,0) = 0.D0
         DO JR = 1, 2*NR-1
 
-          IF (JR .LE. NR) THEN
+          IF (JR .LT. NR) THEN
             IR = JR
             R = IR * DR
             FR = F(IR)
+          ELSEIF (JR .EQ. NR) THEN
+            IR = JR
+            R = IR * DR
+            FR = 0.D0
           ELSE
             IR = 2*NR - JR
             R = - (IR * DR)
@@ -195,6 +208,19 @@ C Direct integration for the smallest Q's ---------------------------
         ENDDO
         GG(IQ) = GG(IQ) * 2.D0 * C
       ENDDO
+C -------------------------------------------------------------------
+
+C Special case for Q=QMAX -------------------------------------------
+      IF (L.EQ.0) THEN
+        GSUM = 0.D0
+        DO IQ = 1,NQ-1
+          Q = IQ * DQ
+          GSUM = GSUM + Q*Q * GG(IQ)
+        ENDDO
+        GSUM = GSUM * 4.D0 * PI * DQ
+        GG(NQ) = (2.D0*PI)**1.5D0 * F(0) - GSUM
+        GG(NQ) = GG(NQ) / (4.D0 * PI * DQ * QMAX**2)
+      ENDIF
 C -------------------------------------------------------------------
 
 C Copy from local to output array -----------------------------------

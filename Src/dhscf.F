@@ -130,6 +130,7 @@ C
       use parallel
       use atmfuncs, only: rcut, rcore
       use fdf
+      use sys
       use mesh
 #ifdef MPI
       use mpi
@@ -210,6 +211,9 @@ C integer nzero(3)      : Auxiliary array with zeros, to call efield
 C real*4  rhoatm(ntpl)  : Harris electron density
 C real*4  rhopcc(ntpl)  : Partial-core-correction density for xc
 C real*4  DRho(ntpl)    : Selfconsistent electron density difference
+C real*4  DVxcdn(ntpl,nspin,nspin): Derivatice of exchange-correlation
+C                         potential respect charge density (see forhar.f)
+C                         DVxcdn(ip,spin1,spin2) = D Vxc(spin2) / D n(spin1)
 C real*8  rhotot        : Total density at one point
 C real*8  rmax          : Maximum orbital radius
 C logical samesh        : Same mesh of last call?
@@ -225,13 +229,14 @@ C real*4  Vscf(ntpl)    : Hartree potential of selfconsistent density
 C character XCauth*10   : Initials of xc version authors
 C character XCfunc*10   : Name of xc functional
 C real*8  x0(3)         : Center of molecule
+C logical harrisfun     : Harris functional or Kohn-Sham?
 C ----------------------------------------------------------------------
 
 C
 C Internal variables
 C
       integer
-     .  i, ia, io, ip, iphi, is, ispin, j,
+     .  i, ia, io, ip, iphi, is, ispin, j, ifor, 
      .  nbcell, nm(3), npcc, nsd, nzero(3), 
      .  Node, Nodes, ntopl, nmpl, nsc(3), ntpl, 
      .  nml(3), ntml(3)
@@ -250,8 +255,15 @@ C
       real, dimension(:,:), allocatable, save ::
      .  DRho, Vscf
 
+      real, dimension(:,:,:), allocatable, save ::
+     .  DVxcdn
+!
+!     Dummy arrays for cellxc call
+!
+      real aux1(1), aux3(3,1)
+
       real*8
-     .  aux, bcell(3,3), b1Xb2(3), cell(3,3), const,
+     .  bcell(3,3), b1Xb2(3), cell(3,3), const,
      .  DEc, DEx, DFa(3), DFaatm(3), DFascf(3),
      .  dot, DStres(3,3), dvol, Ec, Ex, field(3),
      .  rhotot, rmax, scell(3,3), tiny,
@@ -263,7 +275,8 @@ C
 #endif
 
       logical
-     .  found, frstme, IsDiag, IsEfld, samesh, samexa
+     .  found, frstme, IsDiag, IsEfld, samesh, samexa,
+     .  harrisfun, leqi
 
       character
      .  shape*10, XCauth*10, XCfunc*10
@@ -281,7 +294,7 @@ C
      .  IsDiag, IsEfld, nm, nml, ntml,
      .  npcc, nzero, nmpl, ntpl, ntopl,
      .  rmax, samesh, samexa, scell, shape, 
-     .  tiny, Uharrs, volume, XCauth, XCfunc
+     .  tiny, Uharrs, volume, XCauth, XCfunc, harrisfun
 
       data
      .  G2mesh / 0.0d0 /
@@ -311,13 +324,34 @@ C Start time counter
         if (Node.eq.0) then
           XCfunc = fdf_string('xc.functional','LDA')
           XCauth = fdf_string('xc.authors','PZ')
+          harrisfun = fdf_boolean('Harris_functional',.false.)
         endif
 #ifdef MPI
         call MPI_Bcast(XCfunc,10,MPI_character,0,MPI_Comm_World,
      *    MPIerror)
         call MPI_Bcast(XCauth,10,MPI_character,0,MPI_Comm_World,
      *    MPIerror)
+        call MPI_Bcast(harrisfun,1,MPI_logical,0,MPI_Comm_World,
+     *    MPIerror)
 #endif
+      endif
+
+      if( .not. harrisfun) then
+        ifor = 0
+      else if (harrisfun) then
+        ifor = 1
+        if (.not. ( leqi(XCauth,'PZ') .or. leqi(XCauth,'CA') ) ) then
+           if (Node .eq. 0) then
+             write(6,100)
+             write(6,101)
+             write(6,'(a)')
+     .        'dhscf:   Harris forces for a XC functional different of'      
+             write(6,'(a)')
+     .        'dhscf:   Perdew-Zunger has not been implemeted yet'
+             write(6,102)
+           endif
+           call die
+        endif
       endif
 
 C ----------------------------------------------------------------------
@@ -421,6 +455,13 @@ C Allocate local memory
       call memory('A','S',ntpl*nspin,'dhscf')
       allocate(Vaux(ntpl))
       call memory('A','S',ntpl,'dhscf')
+      allocate(DVxcdn(1,nspin,nspin))
+      call memory('A','S',1*nspin*nspin,'dhscf')
+
+C Initialization of DVxcdn
+      DVxcdn(:,:,:) = 0.0
+
+
 
       if (.not.samexa) then
 C ----------------------------------------------------------------------
@@ -692,9 +733,14 @@ C ----------------------------------------------------------------------
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,+1)
       enddo
 
-      call cellxc( XCfunc, XCauth, 0, cell, ntml, ntml, ntpl, 0, 
-     .             aux, nspin, DRho, Ex, Ec, DEx, DEc, Vscf, 
-     .             stressl, 1, aux, ntm, nsm, Node, Nodes )
+*      call cellxc( XCfunc, XCauth, 0, cell, ntml, ntml, ntpl, 0, 
+*     .             aux3, nspin, DRho, Ex, Ec, DEx, DEc, Vscf, 
+*     .             stressl, 1, aux1, ntm, nsm, Node, Nodes )
+
+      call cellxc( XCfunc, XCauth, 0, 0, cell, ntml, ntml, ntpl, 0, 
+     .             aux3, nspin, DRho, Ex, Ec, DEx, DEc, Vscf, 
+     .             1, DVxcdn, stressl,
+     .             1, aux1, ntm, nsm, Node, Nodes )
 
       do ispin = 1,nspin
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,-1)
@@ -758,6 +804,19 @@ C ----------------------------------------------------------------------
 C Start time counter for force calculation part
         call timer( 'DHSCF4', 1 )
 
+C Find contribution of partial-core-correction
+        if (npcc .eq. 1) then
+          call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
+     .      nsd, dvol, volume, Vscf, Vaux, fal, stressl, ifa.ne.0,
+     .      istr.ne.0 )
+        endif
+
+        if ( ifor .eq. 1)
+     .    call forhar( ntpl, nspin, nml, ntml, ntm, npcc,
+     .                 XCfunc, XCauth, cell, rhoatm, rhopcc,
+     .                 Vna, DRho,
+     .                 Vscf, Vaux, Node, Nodes )
+
 C Transform spin density into sum and difference
         if (nsd .eq. 2) then
           do ip = 1,ntpl
@@ -772,22 +831,20 @@ C Find contribution of neutral-atom potential
      .                          volume, DRho, fal, stressl, 
      .                          ifa.ne.0, istr.ne.0 )
 
-C Find contribution of partial-core-correction
-        if (npcc .eq. 1) then
-          call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
-     .      nsd, dvol, volume, Vscf, Vaux, fal, stressl, ifa.ne.0,
-     .      istr.ne.0 )
-        endif
-
 C Vaux is (minus) the potential which multiplies rhoatm
-        if (nsd .eq. 2) then
-          Vaux(1:ntpl) = 0.5d0 * Vaux(1:ntpl)
-        endif
+*       if (nsd .eq. 2) then
+*         Vaux(1:ntpl) = 0.5d0 * Vaux(1:ntpl)
+*       endif
 
-        call dfscf( norb, nuo, nuotot, indxuo, ifa, istr, nmpl, maxnd,
-     .              numd, listdptr, listd, Dscf, datm, dvol, volume, 
-     .              Vscf, Vaux, DFascf, DFaatm, iaorb, indxua, iphorb, 
-     .              isa, nspin, fal, stressl )
+*       call dfscf( norb, nuo, nuotot, indxuo, ifa, istr, nmpl, maxnd,
+*    .              numd, listdptr, listd, Dscf, datm, dvol, volume, 
+*    .              Vscf, Vaux, DFascf, DFaatm, iaorb, indxua, iphorb, 
+*    .              isa, nspin, fal, stressl )
+
+        call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
+     .              indxua, isa, indxuo, iaorb, iphorb,
+     .              maxnd, numd, listdptr, listd, Dscf, datm,
+     .              Vscf, Vaux, dvol, volume, fal, stressl )
 
 C Stop time counter for force calculation part
         call timer( 'DHSCF4', 2 )
@@ -795,6 +852,7 @@ C ----------------------------------------------------------------------
 C End of force and stress calculation
 C ----------------------------------------------------------------------
       endif
+
 
 C Stop time counter
       call timer( 'DHSCF', 2 )
@@ -814,7 +872,15 @@ C ----------------------------------------------------------------------
         call memory('D','S',size(Vaux),'dhscf')
         deallocate(Vaux)
       endif
+      if (allocated(DVxcdn)) then
+        call memory('D','S',size(DVxcdn),'dhscf')
+        deallocate(DVxcdn)
+      endif
 
       frstme = .false.
+
+100   format(/,'dhscf: ',71(1h*))
+101   format('dhscf:                  INPUT ERROR')
+102   format('dhscf: ',71(1h*))
 
       end

@@ -24,7 +24,7 @@ C
       character*2 asym
       character*4 wtype1,lab2
       character*5 lab,label
-      character*20 words
+      character*30 words
       character*80 line
       logical eof,fractional,first
       iout = 6
@@ -69,18 +69,26 @@ C######################
             ndimen = 3
           endif
           if (index(words(2),'Cart').ne.0) fractional = .false.
-          if (index(words(2),'NotSc').ne.0) fractional = .false.
+          if (index(words(2),'NotSc').ne.0) then
+            fractional = .false.
+            scale = 1.0d0
+          endif
+          if (index(words(2),'Bohr').ne.0) then
+            scale = autoangs*scale
+          endif
         endif
 C#########################
 C  Lattice Scale Factor  #
 C#########################
         if (index(words(1),'LatticeCon').ne.0) then
           scale = floats(1)
+          if (index(words(2),'Bohr').ne.0) scale=scale*autoangs
         endif
 C#######################
 C  Lattice Parameters  #
 C#######################
         if (index(words(2),'LatticePar').ne.0) then
+          ndimen = 3
           read(5,'(a)',err=10) line
           call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *      maxword)
@@ -95,6 +103,35 @@ C  Generate cell in standard orientation for coordinate output
 C
           call cell(rvl,a,b,c,alpha,beta,gamma)
           ndimen = 3
+          read(5,'(a)',err=10) line
+        endif
+C####################
+C  Lattice Vectors  #
+C####################
+        if (index(words(2),'LatticeVec').ne.0) then
+          ndimen = 3
+          read(5,'(a)',err=10) line
+          call linepro(line,nword,words,nfloat,floats,nlorder,iline,
+     *      maxword)
+          rvl(1,1)=floats(1)*scale
+          rvl(2,1)=floats(2)*scale
+          rvl(3,1)=floats(3)*scale
+          read(5,'(a)',err=10) line
+          call linepro(line,nword,words,nfloat,floats,nlorder,iline,
+     *      maxword)
+          rvl(1,2)=floats(1)*scale
+          rvl(2,2)=floats(2)*scale
+          rvl(3,2)=floats(3)*scale
+          read(5,'(a)',err=10) line
+          call linepro(line,nword,words,nfloat,floats,nlorder,iline,
+     *      maxword)
+          rvl(1,3)=floats(1)*scale
+          rvl(2,3)=floats(2)*scale
+          rvl(3,3)=floats(3)*scale
+          print *,' Rv : ',rvl(1,1),rvl(2,1),rvl(3,1)
+          print *,' Rv : ',rvl(1,2),rvl(2,2),rvl(3,2)
+          print *,' Rv : ',rvl(1,3),rvl(2,3),rvl(3,3)
+          call uncell(rvl,a,b,c,alpha,beta,gamma)
           read(5,'(a)',err=10) line
         endif
 C####################

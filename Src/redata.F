@@ -8,7 +8,8 @@
      .                  bulkm, taurelax, 
      .                  usesavelwf, usesavedm, usesavecg,
      .                  mullipop, inspn, maxsav, nkick, wmixkick, 
-     .                  pulfile, tempinit, dumpcharge, varcel )
+     .                  pulfile, tempinit, dumpcharge, varcel,
+     .                  harrisfun )      
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
@@ -59,6 +60,8 @@ C                             2 = Nose thermostat MD
 C                             3 = Parrinello-Rahman MD
 C                             4 = Nose thermostat + Parrinello-Rahman MD
 C                             5 = Annealing MD
+C                             6 = Force constants
+C                             7 = Forces for PHONON program
 C integer istart           : Initial time step for MD
 C integer ifinal           : Final time step for MD
 C integer nmove            : Number of CG steps in CG optimization
@@ -105,7 +108,10 @@ C                            Default: .false.
 C real*8 tempinit          : Initial temperature (Kelvin) of the MD simulation
 C logical dumpcharge       : True: Dump information to plot charge contours
 C                            by the external DENCHAR application program.
+C     (This is now obsolete: info will appear in .RHO file)
 C logical varcel           : variable shape for CG optimization or dynamics
+C logical harrisfun        : swith that indicates if harris functional will
+C                            be used or not
 C **********************************************************************
 
 C
@@ -113,10 +119,12 @@ C  Modules
 C
       use precision
       use fdf
+      use sys
 #ifdef MPI
       use mpi
 #endif
       use diagmemory
+      use phonon
 
       implicit none
 
@@ -134,7 +142,8 @@ C
 
       logical
      .  chebef, dumpcharge, fixspin, inspn, mix, negl, noeta, 
-     .  outlng, pulfile, usesavecg, usesavelwf, usesavedm, varcel
+     .  outlng, pulfile, usesavecg, usesavelwf, usesavedm, varcel,
+     .  harrisfun, phonon_calculation
 
 C Internal parameters ................................................
 C na_diag      : maximum number of atoms with diagon as default method
@@ -237,8 +246,8 @@ C by the external DENCHAR application program.
       dc_default = .false.
       if (Node.eq.0) then
         dumpcharge  = fdf_boolean('WriteDenchar',dc_default)
-        write(6,'(a,4x,l1)') 
-     .   'redata: Dump information for DENCHAR     = ',dumpcharge
+        write(6,'(a)') 
+     .   'redata: Charge density info will appear in .RHO file'
       endif
 C Global broadcast of values
 #ifdef MPI
@@ -786,7 +795,17 @@ C     Type of dynamics
       call MPI_Bcast(dyntyp,22,MPI_character,0,MPI_Comm_World,
      .  MPIerror)
 #endif
-      if (leqi(dyntyp,'cg')) then
+
+      phonon_calculation = phonon_check(dyntyp)
+
+      if (phonon_calculation) then
+        idyn = 7
+        if (Node.eq.0) then
+          write(6,'(a,a)') 
+     .     'redata: Dynamics option                  = ',
+     .     '    PHONON forces calculation'
+        endif
+      else if (leqi(dyntyp,'cg')) then
         idyn = 0
         if (Node.eq.0) then
           write(6,'(a,a)') 
@@ -860,9 +879,10 @@ C     Type of dynamics
         write(6,'(a)') 'redata:      - Nose-Parrinello-Rahman         '
         write(6,'(a)') 'redata:      - Anneal                         '
         write(6,'(a)') 'redata:      - FC                             '
+        write(6,'(a)') 'redata:      - Phonon                         '
         write(6,102)
         endif
-        stop
+        call die
       endif 
 
 
@@ -1182,7 +1202,7 @@ C     First and last atoms to displace for calculation of force constants
         write(6,'(a,i8)')
      .  'redata: First atom to move               = ',ia1
         write(6,'(a,i8)')
-     .  'redata: Last atom to move                = ',ia1
+     .  'redata: Last atom to move                = ',ia2
       endif
 C ...
 
@@ -1190,13 +1210,33 @@ C Variable cell shape? Depending on input and type of dynamics
       varcel = varcel .or. (idyn.eq.3) .or. (idyn.eq.4) 
      .                .or. (idyn.eq.5 .and. ianneal.ne.1)
       varcel = varcel .and. (idyn.ne.1) .and. (idyn.ne.2) 
-     .                .and. (idyn.ne.6)
+     .                .and. (idyn.ne.6) .and. (idyn.ne.7)
      .                .and. (.not. (idyn.eq.5 .and. ianneal.ne.1) )
 
       
       if (Node.eq.0) then
         write(6,102)
       endif
+
+C Harris Forces?. Then DM.UseSaveDM should be ever false (use always
+C Harris density in the first SCF step of each MD step), and
+C MaxSCFIter should be ever 2, in the second one the SCF 
+C Iteration are computed.
+
+      if (Node.eq.0) then
+         harrisfun = fdf_boolean('Harris_functional',.false.)
+      endif
+#ifdef MPI
+      call MPI_Bcast(harrisfun,1,MPI_logical,0,MPI_Comm_World,
+     $               MPIerror)
+#endif
+
+      if (harrisfun) then
+        usesavedm = .false.
+        nscf = 2
+        mix = .false.
+      endif
+      
 
 100   format(/,'redata: ',71(1h*))
 101   format('redata:                  INPUT ERROR')

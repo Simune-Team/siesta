@@ -76,6 +76,7 @@ C
 C  Modules
 C
       use precision
+      use sys
       use parallel
 #ifdef MPI
       use mpi
@@ -114,8 +115,8 @@ C
 
 C  Internal variables .............................................
       integer
-     .  i, ie, ik, io, iio, is, ispin, iuo, j, jo, js, juo, 
-     .  BNode, iie, BTest, ierror, ind, nd
+     .  BNode, BTest, i, ie, ierror, iie, ik, ind, io, iio,
+     .  is, ispin, iuo, j, jo, js, juo, nd
       double precision
      .  ckx, ee, kxij, pipj1, pipj2, qe, skx, t
 C  ....................
@@ -128,7 +129,7 @@ C       Index i is for real/imag parts
 C       Indices is and js are for spin components
 C       Indices iuo and juo are for orbital components:
 C       Haux(i,js,juo,is,iuo) = <js,juo|H|is,iuo>
-   10   Saux = 0.0d0
+        Saux = 0.0d0
         Haux = 0.0d0
 
 C       Transfer S,H matrices from sparse format in supercell to
@@ -164,15 +165,12 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
           enddo
         enddo
 
-C       Solve the eigenvalue problem 
-C       Possible CPU-time optimization: only eigenvalues, not eigvect
+C       Find eigenvalues
 C       Possible memory optimization: equivalence Haux and psi
         call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
-     .              eo(1,ik), psi, 2*nuotot, aux, ierror )
-        if (ierror.gt.0) then
+     .              eo(1,ik), psi, 2*nuotot, 0, ierror )
+        if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
-        elseif (ierror.eq.-1) then
-          goto 10
         endif
       enddo
 C ....................
@@ -215,8 +213,8 @@ c New density and energy-density matrices of unit-cell orbitals .......
 
       do ik = 1,nk
 
-C       Find eigenvectors again (were stored only for one k point)
-   20   Saux = 0.0d0
+C       Find eigenvectors 
+        Saux = 0.0d0
         Haux = 0.0d0
         do iuo = 1,nuo
           do j = 1,numh(iuo)
@@ -247,11 +245,9 @@ C       Find eigenvectors again (were stored only for one k point)
           enddo
         enddo
         call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
-     .              eo(1,ik), psi, 2*nuotot, aux, ierror )
-        if (ierror.gt.0) then
+     .              eo(1,ik), psi, 2*nuotot, 2*nuo, ierror )
+        if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
-        elseif (ierror.eq.-1) then
-          goto 20
         endif
 
 C       Store the products of eigenvectors in matrices Dk and Ek

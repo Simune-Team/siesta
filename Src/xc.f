@@ -80,6 +80,7 @@ C Local variables and arrays
      .                  D, DECDD, DEXDD, AUX
       DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE ::
      .                  DECDGD, DEXDGD, GD
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE :: DVXDN, DVCDN
       EXTERNAL
      .  GGAXC, LDAXC
 
@@ -109,6 +110,10 @@ C Allocate local memory
       call memory('A','D',3*nspin,'atomxc')
       allocate(AUX(NR))
       call memory('A','D',nr,'atomxc')
+      allocate(DVXDN(NSPIN,NSPIN))
+      call memory('A','D',nspin*nspin,'atomxc')
+      allocate(DVCDN(NSPIN,NSPIN))
+      call memory('A','D',nspin*nspin,'atomxc')
 
 C Initialize output
       EX = 0
@@ -192,7 +197,8 @@ C       derivatives with respect to density and density gradient
           CALL GGAXC( AUTHOR, IREL, NSPIN, D, GD,
      .                EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
         ELSE
-          CALL LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, DEXDD, DECDD )
+          CALL LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, DEXDD, DECDD,
+     .                DVXDN, DVCDN )
         ENDIF
 
 C       Add contributions to exchange-correlation energy and its
@@ -253,6 +259,10 @@ C Deallocate local memory
       deallocate(GD)
       call memory('D','D',size(AUX),'atomxc')
       deallocate(AUX)
+      call memory('D','D',size(DVXDN),'atomxc')
+      deallocate(DVXDN)
+      call memory('D','D',size(DVCDN),'atomxc')
+      deallocate(DVCDN)
 
       END
 
@@ -367,7 +377,8 @@ C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
 
 
 
-      SUBROUTINE LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, VX, VC )
+      SUBROUTINE LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, VX, VC,
+     .                  DVXDN, DVCDN )
 
 C ******************************************************************
 C Finds the exchange and correlation energies and potentials, in the
@@ -389,6 +400,12 @@ C *********** OUTPUT ***********************************************
 C REAL*8 EPSX, EPSC : Exchange and correlation energy densities
 C REAL*8 VX(NSPIN), VC(NSPIN) : Exchange and correlation potentials,
 C                               defined as dExc/dD(ispin)
+C REAL*8 DVXDN(NSPIN,NSPIN)  :  Derivative of exchange potential
+C                               respect the charge density, defined 
+C                               as DVx(spin1)/Dn(spin2)
+C REAL*8 DVCDN(NSPIN,NSPIN)  :  Derivative of correlation potential
+C                               respect the charge density, defined 
+C                               as DVc(spin1)/Dn(spin2)
 C *********** UNITS ************************************************
 C Lengths in Bohr, energies in Hartrees
 C ******************************************************************
@@ -396,9 +413,10 @@ C ******************************************************************
       IMPLICIT          NONE
       CHARACTER*(*)     AUTHOR
       INTEGER           IREL, NSPIN
-      DOUBLE PRECISION  D(NSPIN), EPSC, EPSX, VX(NSPIN), VC(NSPIN)
+      DOUBLE PRECISION  D(NSPIN), EPSC, EPSX, VX(NSPIN), VC(NSPIN),
+     .                  DVXDN(NSPIN,NSPIN), DVCDN(NSPIN,NSPIN)
 
-      INTEGER           IS, NS
+      INTEGER           IS, NS, ISPIN1, ISPIN2
       DOUBLE PRECISION  DD(2), DPOL, DTOT, TINY, VCD(2), VPOL, VXD(2)
 
       PARAMETER ( TINY = 1.D-12 )
@@ -419,9 +437,17 @@ C       Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
    10   CONTINUE
       ENDIF
 
+
+      DO ISPIN2 = 1, NSPIN
+        DO ISPIN1 = 1, NSPIN
+          DVXDN(ISPIN1,ISPIN2) = 0.D0
+          DVCDN(ISPIN1,ISPIN2) = 0.D0
+        ENDDO
+      ENDDO
+
       IF ( AUTHOR.EQ.'CA' .OR. AUTHOR.EQ.'ca' .OR.
      .     AUTHOR.EQ.'PZ' .OR. AUTHOR.EQ.'pz') THEN
-        CALL PZXC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
+        CALL PZXC( IREL, NS, DD, EPSX, EPSC, VXD, VCD, DVXDN, DVCDN )
       ELSEIF ( AUTHOR.EQ.'PW92' .OR. AUTHOR.EQ.'pw92' ) THEN
         CALL PW92XC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
       ELSE
@@ -798,7 +824,7 @@ C ********************************************************************
 
 
 
-      SUBROUTINE PZXC( IREL, NSP, DS, EX, EC, VX, VC )
+      SUBROUTINE PZXC( IREL, NSP, DS, EX, EC, VX, VC, DVXDN, DVCDN )
 
 C *****************************************************************
 C  Perdew-Zunger parameterization of Ceperley-Alder exchange and 
@@ -810,17 +836,24 @@ C INTEGER IREL    : relativistic-exchange switch (0=no, 1=yes)
 C INTEGER NSP     : spin-polarizations (1=>unpolarized, 2=>polarized)
 C REAL*8  DS(NSP) : total (nsp=1) or spin (nsp=2) electron density
 C **** Output *****************************************************
-C REAL*8  EX      : exchange energy density
-C REAL*8  EC      : correlation energy density
-C REAL*8  VX(NSP) : (spin-dependent) exchange potential
-C REAL*8  VC(NSP) : (spin-dependent) correlation potential
+C REAL*8  EX            : exchange energy density
+C REAL*8  EC            : correlation energy density
+C REAL*8  VX(NSP)       : (spin-dependent) exchange potential
+C REAL*8  VC(NSP)       : (spin-dependent) correlation potential
+C REAL*8  DVXDN(NSP,NSP): Derivative of the exchange potential
+C                         respect the charge density, 
+C                         Dvx(spin1)/Dn(spin2)
+C REAL*8  DVCDN(NSP,NSP): Derivative of the correlation potential
+C                         respect the charge density, 
+C                         Dvc(spin1)/Dn(spin2)
 C **** Units *******************************************************
 C Densities in electrons/Bohr**3
 C Energies in Hartrees
 C *****************************************************************
 
        IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-       DIMENSION DS(NSP), VX(NSP), VC(NSP)
+       DIMENSION DS(NSP), VX(NSP), VC(NSP), 
+     .           DVXDN(NSP,NSP), DVCDN(NSP,NSP)
 
        PARAMETER (ZERO=0.D0,ONE=1.D0,PFIVE=.5D0,OPF=1.5D0,PNN=.99D0)
        PARAMETER (PTHREE=0.3D0,PSEVF=0.75D0,C0504=0.0504D0) 
@@ -886,6 +919,7 @@ C      Find density and polarization
          Z = (D1 - D2) / D
          FZ = ((ONEZ+Z)**FTRD+(ONEZ-Z)**FTRD-2)/TFTM
          FZP = FTRD*((ONEZ+Z)**TRD-(ONEZ-Z)**TRD)/TFTM 
+         DFZPDN = FTRD*TRD*((ONEZ+Z)**(-ALP) + (ONEZ-Z)**(-ALP))/TFTM
        ELSE
          D = DS(1)
          IF (D .LE. ZERO) THEN
@@ -913,6 +947,8 @@ C      Exchange
        ENDIF
        VXF = CXF * VXP
        EXF = CXF * EXP
+       DVXPDN = TRD * VXP / D
+       DVXFDN = TRD * VXF / D
 
 C      Correlation 
        IF (RS .GT. ONE) THEN  
@@ -921,17 +957,34 @@ C      Correlation
          BE = ONE+C1P053*SQRS+C3334*RS
          ECP = -(C2846/BE)
          VCP = ECP*TE/BE
+         DTEDN = ((CON10 * SQRS *HALF) + CON11 * RS)*(-TRD/D)
+         BE2 = BE * BE
+         DBEDN = ((C1P053 * SQRS *HALF) + C3334 * RS)*(-TRD/D)
+         DVCPDN = -(C2846/BE2)*(DTEDN - 2.0D0 * TE * DBEDN/BE)
+         DECPDN = (C2846/BE2)*DBEDN
          TE = ONE+CON8*SQRS+CON9*RS
          BE = ONE+C1P398*SQRS+C2611*RS
          ECF = -(C1686/BE)
          VCF = ECF*TE/BE
+         DTEDN = ((CON8 * SQRS * HALF) + CON9 * RS)*(-TRD/D)
+         BE2 = BE * BE
+         DBEDN = ((C1P398 * SQRS * HALF) + C2611 * RS)*(-TRD/D)
+         DVCFDN = -(C1686/BE2)*(DTEDN - 2.0D0 * TE * DBEDN/BE)
+         DECFDN = (C1686/BE2)*DBEDN
        ELSE
          RSLOG=LOG(RS)
          ECP=(C0622+C004*RS)*RSLOG-C096-C0232*RS
          VCP=(C0622+CON2*RS)*RSLOG-CON3-CON4*RS
+         DVCPDN = (CON2*RS*RSLOG + (CON2-CON4)*RS + C0622)*(-TRD/D)
+         DECPDN = (C004*RS*RSLOG + (C004-C0232)*RS + C0622)*(-TRD/D)
          ECF=(C0311+C0014*RS)*RSLOG-C0538-C0096*RS
          VCF=(C0311+CON5*RS)*RSLOG-CON6-CON7*RS
+         DVCFDN = (CON5*RS*RSLOG + (CON5-CON7)*RS + C0311)*(-TRD/D)
+         DECPDN = (C0014*RS*RSLOG + (C0014-C0096)*RS + C0311)*(-TRD/D)
        ENDIF
+
+       ISP1 = 1
+       ISP2 = 2
 
 C      Find up and down potentials
        IF (NSP .EQ. 2) THEN
@@ -941,11 +994,60 @@ C      Find up and down potentials
          VX(2) = VXP + FZ*(VXF-VXP) - (ONEZ+Z)*FZP*(EXF-EXP)
          VC(1) = VCP + FZ*(VCF-VCP) + (ONEZ-Z)*FZP*(ECF-ECP)
          VC(2) = VCP + FZ*(VCF-VCP) - (ONEZ+Z)*FZP*(ECF-ECP)
+
+C        Derivatives of exchange potential respect the density
+
+         DVXDN(ISP1,ISP1) =
+     .             DVXPDN
+     .              +  FZP*(VXF-VXP-EXF+EXP)*( 2.D0*D2/(D*D) )
+     .              +  FZ*(DVXFDN-DVXPDN)+(1-Z)*FZP*(VXF-VXP)/(4.D0*D)
+     .              +  (1-Z)*DFZPDN*(EXF-EXP)*( 2.D0*D2/(D*D) )
+         DVXDN(ISP1,ISP2) =
+     .                 DVXPDN
+     .              +  FZP*(VXF-VXP-EXF+EXP)*(-2.D0*D1/(D*D) )
+     .              +  FZ*(DVXFDN-DVXPDN)+(1-Z)*FZP*(VXF-VXP)/(4.D0*D)
+     .              +  (1-Z)*DFZPDN*(EXF-EXP)*( -2.D0*D1/(D*D) )
+         DVXDN(ISP2,ISP1) =
+     .                 DVXPDN
+     .              +  FZP*(VXF-VXP-EXF+EXP)*( 2.D0*D2/(D*D) )
+     .              +  FZ*(DVXFDN-DVXPDN)-(1+Z)*FZP*(VXF-VXP)/(4.D0*D)
+     .              -  (1+Z)*DFZPDN*(EXF-EXP)*( 2.D0*D2/(D*D) )
+         DVXDN(ISP2,ISP2) =
+     .                 DVXPDN
+     .              +  FZP*(VXF-VXP-EXF+EXP)*(-2.D0*D1/(D*D) )
+     .              +  FZ*(DVXFDN-DVXPDN)-(1+Z)*FZP*(VXF-VXP)/(4.D0*D)
+     .              -  (1+Z)*DFZPDN*(EXF-EXP)*( -2.D0*D1/(D*D) )
+
+C        Derivatives of correlation potential respect the density
+
+         DVCDN(ISP1,ISP1) =
+     .                DVCPDN
+     .              + FZP*(VCF-VCP-ECF+ECP)*( 2.D0*D2/(D*D) )
+     .              + FZ*(DVCFDN-DVCPDN)+ (1-Z)*FZP*(DECFDN-DECPDN)
+     .              + (1-Z)*DFZPDN*(ECF-ECP)*( 2.D0*D2/(D*D) )
+         DVCDN(ISP1,ISP2) =
+     .                DVCPDN
+     .              + FZP*(VCF-VCP-ECF+ECP)*(-2.D0*D1/(D*D) )
+     .              + FZ*(DVCFDN-DVCPDN)+ (1-Z)*FZP*(DECFDN-DECPDN)
+     .              + (1-Z)*DFZPDN*(ECF-ECP)*( -2.D0*D1/(D*D) )
+         DVCDN(ISP2,ISP1) =
+     .                DVCPDN
+     .              + FZP*(VCF-VCP-ECF+ECP)*( 2.D0*D2/(D*D) )
+     .              + FZ*(DVCFDN-DVCPDN)- (1+Z)*FZP*(DECFDN-DECPDN)
+     .              - (1+Z)*DFZPDN*(ECF-ECP)*( 2.D0*D2/(D*D) )
+         DVCDN(ISP2,ISP2) =
+     .                DVCPDN
+     .              + FZP*(VCF-VCP-ECF+ECP)*(-2.D0*D1/(D*D) )
+     .              + FZ*(DVCFDN-DVCPDN)- (1+Z)*FZP*(DECFDN-DECPDN)
+     .              - (1+Z)*DFZPDN*(ECF-ECP)*( -2.D0*D1/(D*D) )
+
        ELSE
          EX    = EXP
          EC    = ECP
          VX(1) = VXP
          VC(1) = VCP
+         DVXDN(1,1) = DVXPDN
+         DVCDN(1,1) = DVCPDN
        ENDIF
 
 C      Change from Rydbergs to Hartrees
@@ -954,5 +1056,9 @@ C      Change from Rydbergs to Hartrees
        DO 10 ISP = 1,NSP
          VX(ISP) = HALF * VX(ISP)
          VC(ISP) = HALF * VC(ISP)
+         DO 5 ISP2 = 1,NSP
+           DVXDN(ISP,ISP2) = HALF * DVXDN(ISP,ISP2)
+           DVCDN(ISP,ISP2) = HALF * DVCDN(ISP,ISP2)
+    5    CONTINUE
    10  CONTINUE
       END

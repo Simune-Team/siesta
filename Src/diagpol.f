@@ -36,6 +36,10 @@ C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
 C eo H.
 C *********************************************************************
+
+      use sys
+      use precision
+
       implicit          none
       integer
      .  maxnh, nuotot, no, nspin, nuo, indxuo(no), listh(maxnh), 
@@ -49,7 +53,7 @@ C *********************************************************************
 
 C  Internal variables .............................................
       integer
-     .  ind, io, ispin, iuo, j, jo, juo, ierror
+     .  ierror, ind, io, ispin, iuo, j, jo, juo
       double precision
      .  ckxij, kxij, skxij
       double precision, dimension(:,:,:), allocatable, save ::
@@ -86,7 +90,7 @@ C Solve eigenvalue problem .........................................
         enddo
       enddo
       call cdiag( Haux, nuotot, Saux, nuotot, nuo,
-     .            eo, psi, nuotot, aux, ierror )
+     .            eo, psi, nuotot, nuo, ierror )
 
 C Deallocate local memory
       call memory('D','D',size(Haux),'diagpol')
@@ -102,3 +106,11 @@ C Trap error flag from cdiag
       endif
 
       end
+
+
+
+
+
+
+
+

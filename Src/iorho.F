@@ -114,11 +114,11 @@ c         Open file
 c         Read cell vectors and number of points
             ffor = 'formatted'
             if (fform .eq. ffor) then
-              read(iu) cell
-              read(iu) mesh, ns
-            else
               read(iu,*) cell
               read(iu,*) mesh, ns
+            else
+              read(iu) cell
+              read(iu) mesh, ns
             endif
           endif
 #ifdef MPI
@@ -210,13 +210,13 @@ C  Work out which node block is stored on
 C  If density sub-matrix is local Node 0 then just read it in
                   if (fform .eq. ffor) then
                     do ir = 1,RemainderY
-                      read(iu,*) (rho(Ind+ip,is),ip=1,mesh(3))
-                      Ind = Ind + mesh(3)
+                      read(iu,*) (rho(Ind+ip,is),ip=1,mesh(1))
+                      Ind = Ind + mesh(1)
                     enddo
                   else
                     do ir = 1,RemainderY
-                      read(iu) (rho(Ind+ip,is),ip=1,mesh(3))
-                      Ind = Ind + mesh(3)
+                      read(iu) (rho(Ind+ip,is),ip=1,mesh(1))
+                      Ind = Ind + mesh(1)
                     enddo
                   endif
 
@@ -226,13 +226,13 @@ C  If this is Node 0 then read and send density sub-matrix
                   Ind = 0
                   if (fform .eq. ffor) then
                     do ir = 1,RemainderY
-                      read(iu,*) (bdens(Ind+ip),ip=1,mesh(3))
-                      Ind = Ind + mesh(3)
+                      read(iu,*) (bdens(Ind+ip),ip=1,mesh(1))
+                      Ind = Ind + mesh(1)
                     enddo
                   else
                     do ir = 1,RemainderY
-                      read(iu) (bdens(Ind+ip),ip=1,mesh(3))
-                      Ind = Ind + mesh(3)
+                      read(iu) (bdens(Ind+ip),ip=1,mesh(1))
+                      Ind = Ind + mesh(1)
                     enddo
                   endif
                   call MPI_ISend(bdens,NBlock,DAT_single,BNode,1,
@@ -330,13 +330,13 @@ C  If density sub-matrix is local Node 0 then just write it out
                   if (fform .eq. ffor) then
                     do ir = 1,RemainderY
                       write(iu,'(e15.6)') (rho(Ind+ip,is),
-     .                  ip=1,mesh(3))
-                      Ind = Ind + mesh(3)
+     .                  ip=1,mesh(1))
+                      Ind = Ind + mesh(1)
                     enddo
                   else
                     do ir = 1,RemainderY
-                      write(iu) (rho(Ind+ip,is),ip=1,mesh(3))
-                      Ind = Ind + mesh(3)
+                      write(iu) (rho(Ind+ip,is),ip=1,mesh(1))
+                      Ind = Ind + mesh(1)
                     enddo
                   endif
 
@@ -363,13 +363,13 @@ C  If this is the Node where the density sub-matrix is, then send
                     if (fform .eq. ffor) then
                       do ir = 1,RemainderY
                         write(iu,'(e15.6)') (bdens(Ind+ip),ip=1,
-     .                    mesh(3))
-                        Ind = Ind + mesh(3)
+     .                    mesh(1))
+                        Ind = Ind + mesh(1)
                       enddo
                     else
                       do ir = 1,RemainderY
-                        write(iu) (bdens(Ind+ip),ip=1,mesh(3))
-                        Ind = Ind + mesh(3)
+                        write(iu) (bdens(Ind+ip),ip=1,mesh(1))
+                        Ind = Ind + mesh(1)
                       enddo
                     endif
                   endif

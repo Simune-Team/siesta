@@ -1,5 +1,5 @@
 #
-.SUFFIXES: .o .f90 .F .a 
+.SUFFIXES: .o .F90 .f90 .F .f .a 
 #
 include ../arch.make
 #
@@ -17,7 +17,7 @@ generated: $(TEMPLATES)
 	@touch generated
 #
 $(OBJS): generated  mpi__include.o
-	$(FC) -c Interfaces.f90
+	$(FC) -c $(FREE_F90) Interfaces.f90
 #
 mpi.o:  $(OBJS) mpi__include.o
 	$(FC) -c mpi.F
@@ -29,7 +29,7 @@ module_built: mpi.o $(OBJS) mpi__include.o
 	@touch module_built
 #
 mpi__include.o: mpi__include.f90
-	$(FC) -c -I$(MPI_INCLUDE) mpi__include.f90
+	$(FC) -c $(FREE_F90) -I$(MPI_INCLUDE) mpi__include.f90
 #
 clean:
 	@rm -f $(SOURCES) $(OBJS) mpi.o mpi__include.o

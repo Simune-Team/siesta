@@ -1,17 +1,32 @@
       module radial
 
       use precision
-      use types
 
       implicit none
 
-      real(dp)             :: rad_rvals(nrtmax)
-      real(dp)             :: rad_fvals(nrtmax)
-
       private 
-      public rad_get, rad_setup_d2, rad_zero
+      public rad_func, rad_alloc, rad_get, rad_setup_d2, rad_zero
 
-      contains
+      type rad_func
+         integer          n
+         double precision cutoff         
+         double precision delta
+         double precision, dimension(:), pointer :: f   ! Actual data
+         double precision, dimension(:), pointer :: d2  ! Second derivative
+      end type rad_func
+
+
+      CONTAINS
+
+      subroutine rad_alloc(func,n)
+!
+!     Sets the 'size' n of the arrays and allocates f and d2.
+!
+      type(rad_func), intent(inout)    :: func
+      integer, intent(in)        :: n
+      func%n = n
+      allocate(func%f(n),func%d2(n))
+      end subroutine rad_alloc
 
       subroutine rad_get(func,r,fr,dfdr)
       type(rad_func), intent(in) :: func
@@ -19,9 +34,12 @@
       real(dp), intent(out)        :: fr
       real(dp), intent(out)        :: dfdr
 
-      external splint
-
-      call splint(func%delta,func%f,func%d2,nrtmax,r,fr,dfdr)
+      if (func%n .eq. 0) then
+          fr = 0._dp
+          dfdr = 0._dp
+       else
+          call splint(func%delta,func%f,func%d2,func%n,r,fr,dfdr)
+       endif
       
       end subroutine rad_get
 !
@@ -30,63 +48,35 @@
       subroutine rad_setup_d2(func)
       type(rad_func), intent(inout) :: func
 
-      real(dp) aux(nrtmax)
       real(dp) yp1, ypn
-      external spline
 
+      if (func%n .eq. 0) return
       yp1 = huge(1._dp)
       ypn = huge(1._dp)
-      call spline(func%delta,func%f,nrtmax,yp1,ypn,func%d2,aux)
+      call spline(func%delta,func%f,func%n,yp1,ypn,func%d2)
       
       end subroutine rad_setup_d2
 
       subroutine rad_zero(func)
       type(rad_func), intent(inout) :: func
-
-      func%delta  = 0._dp
-      func%cutoff = 0._dp
-      func%f(:)   = 0._dp
-      func%d2(:)  = 0._dp
-      
+      func%n      = 0
       end subroutine rad_zero
 !
-!     Fill in a radial function
+!     Do not use yet... interface in need of fuller specification
 !
-      subroutine rad_put(func,delta,cutoff,vals)
-      type(rad_func), intent(inout) :: func
-      real(dp), intent(in)         :: delta
-      real(dp), intent(in)         :: cutoff
-      real(dp), intent(in)         :: vals(:)
-
-      real(dp) aux(nrtmax)
-      real(dp) yp1, ypn
-      integer i
-
-      external spline
-
-      yp1 = huge(1._dp)
-      ypn = huge(1._dp)
-      func%delta = delta
-      func%cutoff = cutoff
-      do i=1,nrtmax-1
-         func%f(i) = vals(i)
-      enddo
-
-      call spline(delta,func%f,nrtmax,yp1,ypn,func%d2,aux)
-      
-      end subroutine rad_put
-!
-!
-!
-      subroutine rad_getrvals(func)
+      function rad_rvals(func) result (r)
+      real(dp), dimension(:), pointer :: r
       type(rad_func), intent(in) :: func
 
       integer i
 
-      do i=1,nrtmax
-         rad_rvals(i) = func%delta *(i-1)
+      nullify(r)
+      if (func%n .eq. 0) return
+      allocate(r(func%n))
+      do i=1,func%n
+         r(i) = func%delta *(i-1)
       enddo
-      end subroutine rad_getrvals
+      end function rad_rvals
 
 
       SUBROUTINE SPLINT(DELT,YA,Y2A,N,X,Y,DYDX) 
@@ -120,7 +110,7 @@ C Adapted from Numerical Recipes for a uniform grid.
 
       end subroutine splint
 
-      SUBROUTINE SPLINE(DELT,Y,N,YP1,YPN,Y2,U) 
+      SUBROUTINE SPLINE(DELT,Y,N,YP1,YPN,Y2) 
 
 C Cubic Spline Interpolation.
 C Adapted from Numerical Recipes routines for a uniform grid
@@ -133,10 +123,12 @@ C D. Sanchez-Portal, Oct. 1996.
       real(dp), intent(in)   :: delt
       real(dp), intent(in)   :: yp1, ypn
       real(dp), intent(in)   :: Y(:)
-      real(dp), intent(out)  :: Y2(:),U(:)
-
+      real(dp), intent(out)  :: Y2(:)
+ 
       integer i, k
       real(dp) sig, p, qn, un
+
+      real(dp)  :: u(n)            ! Automatic array
 
       IF (YP1.eq. huge(1._dp)) THEN
         Y2(1)=0.0_dp

@@ -1,4 +1,4 @@
-c $Id: grid2d.f,v 1.2 1999/02/26 05:27:07 daniel Exp $
+c $Id: grid2d.f,v 1.3 2001/01/19 15:58:43 wdpgaara Exp $
 
       program grid2d
 
@@ -44,6 +44,7 @@ c****************************************************************************
 
       integer           maxp
       parameter         (maxp = 10000000)
+      integer           ind, i1, i2
 
       real              rho(maxp,2)
 
@@ -193,13 +194,31 @@ c read function from the 3D grid --------------------------------------------
          read(1,*) mesh, nspin
          np = mesh(1) * mesh(2) * mesh(3)
          if (np .gt. maxp) stop 'grid2d: Parameter MAXP too small'
-         read(1,*) ( (rho(ip,is), ip = 1, np), is = 1, nspin)
+         ind = 0
+         do is = 1,nspin
+            do i1 = 1,mesh(3)
+               do i2 = 1,mesh(2)
+                  read(1,*) (rho(ind+ip,is),ip=1,mesh(1))
+                  ind = ind + mesh(1)
+               enddo
+            enddo
+         enddo
+!!! OLD         read(1,*) ( (rho(ip,is), ip = 1, np), is = 1, nspin)
       else
          read(1) cell
          read(1) mesh, nspin
          np = mesh(1) * mesh(2) * mesh(3)
          if (np .gt. maxp) stop 'grid2d: Parameter MAXP too small'
-         read(1) ( (rho(ip,is), ip = 1, np), is = 1,nspin)
+        ind = 0
+        do is = 1,nspin
+          do i1 = 1,mesh(3)
+            do i2 = 1,mesh(2)
+              read(1) (rho(ind+ip,is),ip=1,mesh(1))
+              ind = ind + mesh(1)
+            enddo
+          enddo
+        enddo
+!!! OLD         read(1) ( (rho(ip,is), ip = 1, np), is = 1,nspin)
       endif
       close(1)
 
@@ -373,7 +392,7 @@ c write down ----------------------------------------------------------------
             write(6,"(3f14.6)") x, y, rhoxy
 
          enddo
-         write(6,'(\)')
+         write(6,*)
       enddo
 
       stop

@@ -82,7 +82,9 @@ C  Set algorithm logical
       Parallel = (nuo .ne. nuotot)
 
 C  Find size of buffers to store partial copies of Dscf and C
-      maxloc = max( minloc, maxval(endpht(1:np)-endpht(0:np-1)) )
+      maxloc = maxval(endpht(1:np)-endpht(0:np-1))
+      maxloc = maxloc + minloc
+      maxloc = min( maxloc, no )
 
 C  Allocate local memory
       allocate(ilocal(no))

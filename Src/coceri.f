@@ -16,29 +16,27 @@ c character slabel*20 : Label for file naming
 c character sname*150 : Label for the title  
 c ******************************************************************
 
+      use periodic_table, only: symbol
+
       implicit          none
       character         slabel*20, sname*150, paste*24
       integer           na
       integer           iza(na)
       double precision  xa(3,na), cell(3,3)
-      external          io_assign, io_close, paste, symbol
+      external          io_assign, io_close, paste
 
 c Internal variables and arrays
  
-      character         fname*24, symbol*2
+      character         fname*24
       integer           unit,ix, iv,  i, ia
       double precision  celang(3), cellm(3), recell(3,3),
      .                  xac(3), pi, Ang 
 
-      double precision, dimension(:,:), allocatable, save ::
-     .                  xap
+!     automatic array
+
+      double precision        :: xap(3,na)
 
       data pi, Ang      / 3.1415926d0, 0.529177d0 /
-
-C Allocate local memory
-      allocate(xap(3,na))
-      call memory('A','D',3*na,'coceri')
-C ..................
 
 c Find lattice parameters out of lattice vectors: first modules:
 
@@ -115,10 +113,5 @@ c Write file
 
       call io_close(unit)
       
-C Deallocate local memory
-      call memory('D','D',size(xap),'coceri')
-      deallocate(xap)
-
-      return
       end
 

@@ -14,36 +14,25 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi
-#endif
-C
-#ifdef MPI
-      integer 
-     .  MPIerror,MPIstop
-#endif
-      character SUB*(*),VAR*(*)
+      use sys
+
+      implicit none
+
+      character(len=*), intent(in) ::  SUB ,VAR
+      integer, intent(in)          ::  nd, n, iopt
+
+      character(len=132) message
 
       IF ( IOPT.EQ.0 ) THEN
         IF ( ND.EQ.N ) RETURN
-        WRITE (6,'(/5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
+        WRITE (message,'(5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
      .        ', dimension ',VAR,' =',ND,'. It must be exactly ',N
-#ifdef MPI
-        MPIstop = 1
-        call MPI_Abort(MPI_Comm_World,MPIstop,MPIerror)
-#else
-        STOP
-#endif
+        call die(message)
       ELSE
         IF ( ND.GE.N ) RETURN
-        WRITE (6,'(/5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
+        WRITE (message,'(5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
      .        ', dimension ',VAR,' =',ND,'. It must be at least ',N
-#ifdef MPI
-        MPIstop = 1
-        call MPI_Abort(MPI_Comm_World,MPIstop,MPIerror)
-#else
-        STOP
-#endif
+        call die(message)
       ENDIF
       END
 
@@ -51,9 +40,12 @@ C
 
       SUBROUTINE CHKDIME (ND,N,OVERFLOW,NM)
       LOGICAL OVERFLOW
+      integer nd, n, nm
+
       NM = MAX(N,NM)
       IF ( ND.GE.N ) RETURN
       OVERFLOW = .TRUE.
       RETURN
       END
+
 

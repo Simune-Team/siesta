@@ -18,7 +18,7 @@ c Internal variables
       character
      .  name*75, fform*12, fname*80, output*20, paste*80, task*15
       integer
-     .  i, i1, i2, i3, icmin, icmax, ip, is, j,
+     .  i, i1, i2, i3, icmin, icmax, ip, is, j, ind,
      .  mesh(3), ncolor, np, nspin, nt, pgopen
       real
      .  alpha, beta, cell(3,3), colavg, colmax, colmin,
@@ -61,13 +61,29 @@ c Read density
         read(1,*) mesh, nspin
         np = mesh(1) * mesh(2) * mesh(3)
         if (np .gt. maxp) stop 'plrho: parameter maxp too small'
-        read(1,*) ((f(ip,is),ip=1,np),is=1,nspin)
+        ind = 0
+        do is = 1,nspin
+          do i1 = 1,mesh(3)
+            do i2 = 1,mesh(2)
+              read(1,*) (f(ind+ip,is),ip=1,mesh(1))
+              ind = ind + mesh(1)
+            enddo
+          enddo
+        enddo
       else
         read(1) dcell
         read(1) mesh, nspin
         np = mesh(1) * mesh(2) * mesh(3)
         if (np .gt. maxp) stop 'plrho: parameter maxp too small'
-        read(1) ((f(ip,is),ip=1,np),is=1,nspin)
+        ind = 0
+        do is = 1,nspin
+          do i1 = 1,mesh(3)
+            do i2 = 1,mesh(2)
+              read(1) (f(ind+ip,is),ip=1,mesh(1))
+              ind = ind + mesh(1)
+            enddo
+          enddo
+        enddo
         do i = 1,3
           do j= 1,3
             cell(j,i) =dcell(j,i)
@@ -101,12 +117,24 @@ c Read potential
           read(1,*) cell
           read(1,*) mesh
           np = mesh(1) * mesh(2) * mesh(3)
-          read(1,*) (f(ip,2),ip=1,np)
+          ind = 0
+          do i1 = 1,mesh(3)
+            do i2 = 1,mesh(2)
+              read(1,*) (f(ind+ip,2),ip=1,mesh(1))
+              ind = ind + mesh(1)
+            enddo
+          enddo
         else
           read(1) dcell
           read(1) mesh
           np = mesh(1) * mesh(2) * mesh(3)
-          read(1) (f(ip,2),ip=1,np)
+          ind = 0
+          do i1 = 1,mesh(3)
+            do i2 = 1,mesh(2)
+              read(1) (f(ind+ip,2),ip=1,mesh(1))
+              ind = ind + mesh(1)
+            enddo
+          enddo
         endif
         close(1)
       endif

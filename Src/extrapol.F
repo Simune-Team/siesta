@@ -81,7 +81,7 @@ C
 C  Internal variables .......................................................
 
       integer
-     .  i,in,ind,ispin,j,Node,nh
+     .  i,in,ind,ispin,j,Node,nh,nrmax
       logical
      .  changed
       double precision
@@ -149,8 +149,23 @@ C It is now necessary to use a buffer array during changes to mnew and mm2
 C because boundaries between rows may change in either direction
 
 C Allocate local scratch arrays
-          allocate(aux(nrow))
-          call memory('A','D',nrow,'extrapol')
+          nrmax = nrow
+C Determine size of auxiliary matrix
+          do i = 1,nmrowl
+            do in = 1,numold(i)
+              ind = listptrold(i)+in
+              j = listold(ind)
+              nrmax = max(nrmax,j)
+            enddo
+            do in = 1,num(i)
+              ind = listptr(i)+in
+              j = list(ind)
+              nrmax = max(nrmax,j)
+            enddo
+          enddo
+
+          allocate(aux(nrmax))
+          call memory('A','D',nrmax,'extrapol')
           allocate(mtmp(nh))
           call memory('A','D',nh,'extrapol')
 

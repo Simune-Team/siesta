@@ -2,10 +2,11 @@
 !
 !     Globalizes the basis and potentials data structures
 !
-!     Alberto Garcia, June 2000
+!     Alberto Garcia, June 2000--
 
-      use types
-      use atmfuncs
+      use atm_types
+      use radial
+
 #ifdef MPI
       use mpi
 #endif
@@ -13,11 +14,16 @@
       implicit none
 
 #ifndef MPI
+!
+!     Do nothing...
+!
       end subroutine broadcast_basis
 #else
       integer MPIerror, Node, Nodes
 
       integer is, i
+      type(species_info), pointer  :: spp
+      type(rad_func), pointer      :: func
 
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
@@ -105,61 +111,25 @@
          
          do i=1,spp%n_orbnl
             func=>spp%orbnl(i)
-            call MPI_Bcast(func%cutoff,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-            call MPI_Bcast(func%delta,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-            call MPI_Bcast(func%f,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-            call MPI_Bcast(func%d2,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
+            call broadcast_radial(func,Node)
          enddo
 
          do i=1,spp%n_pjnl
             func=>spp%pjnl(i)
-            call MPI_Bcast(func%cutoff,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-            call MPI_Bcast(func%delta,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-            call MPI_Bcast(func%f,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-            call MPI_Bcast(func%d2,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
+            call broadcast_radial(func,Node)
          enddo
 
          func=>spp%vlocal
-         call MPI_Bcast(func%cutoff,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%delta,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%f,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%d2,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
+         call broadcast_radial(func,Node)
 
          func=>spp%chlocal
-         call MPI_Bcast(func%cutoff,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%delta,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%f,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%d2,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-
+         call broadcast_radial(func,Node)
 
          call MPI_Bcast(spp%there_is_core,1,MPI_logical,
      $                  0,MPI_Comm_World,MPIerror)
          
          func=>spp%core
-         call MPI_Bcast(func%cutoff,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%delta,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%f,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%d2,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
+         call broadcast_radial(func,Node)
 
       enddo
 !
@@ -169,20 +139,39 @@
 
       do i = 1, npairs
          func=>elec_corr(i)
-         call MPI_Bcast(func%cutoff,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%delta,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%f,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%d2,nrtmax,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
+         call broadcast_radial(func,Node)
       enddo
          
 !
 !     Done
 !
+      CONTAINS
+
+      subroutine broadcast_radial(func,Node)
+
+      type(rad_func), pointer   :: func
+      integer, intent(in)       :: Node
+
+      call MPI_Bcast(func%n,1,MPI_integer,
+     $                  0,MPI_Comm_World,MPIerror)
+      if (func%n .eq. 0) then
+         call rad_zero(func)
+      else
+         if (Node.ne.0) call rad_alloc(func,func%n)
+         call MPI_Bcast(func%cutoff,1,DAT_double,
+     $        0,MPI_Comm_World,MPIerror)
+         call MPI_Bcast(func%delta,1,DAT_double,
+     $        0,MPI_Comm_World,MPIerror)
+         call MPI_Bcast(func%f,func%n,DAT_double,
+     $        0,MPI_Comm_World,MPIerror)
+         call MPI_Bcast(func%d2,func%n,DAT_double,
+     $        0,MPI_Comm_World,MPIerror)
+      endif
+      end subroutine broadcast_radial
+
       end subroutine broadcast_basis
+
+
 #endif
 
 

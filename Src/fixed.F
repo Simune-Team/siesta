@@ -151,8 +151,14 @@ C       Loop on data lines
         do 20 il = 1,maxl
 
 C         Read and parse data line
-          read(iu,'(a)',end=30) line
-          lastch = index(line,'#') - 1
+          if(Node.eq.0) then
+            read(iu,'(a)',end=30) line
+            lastch = index(line,'#') - 1
+          endif
+#ifdef MPI
+       call MPI_Bcast(line,130,MPI_character,0,MPI_Comm_World,MPIerror)
+       call MPI_Bcast(lastch,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+#endif
           if (lastch .le. 0) lastch = len(line)
           call parse( line(1:lastch), nn, lch, names, nv, values,
      .                ni, integs, nr, reals )

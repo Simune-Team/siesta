@@ -1,4 +1,4 @@
-C $Id: naefs.f,v 1.6 1999/11/26 18:28:23 wdpgaara Exp $
+C $Id: naefs.f,v 1.7 2001/01/12 18:30:29 jose Exp $
 
       subroutine naefs(nua, na, scell, xa, indxua, rmaxv,
      .                maxna, isa,
@@ -37,7 +37,6 @@ C
 C *********************************************************************
 
       use atmfuncs, only: izofis
-      use matel_module, only: matel
 
       implicit none
 

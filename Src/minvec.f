@@ -14,42 +14,28 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi
-#endif
+      use sorting
+      use sys
 
       IMPLICIT         NONE
 
-#ifdef MPI
-      integer          MPIerror
-#endif
       DOUBLE PRECISION B0(3,3),BMIN(3,3),DOT,VOLCEL
-      EXTERNAL         DOT,ORDIX,ORDER,RECLAT,VOLCEL,VOLNEW
+      EXTERNAL         DOT,RECLAT,VOLCEL
 
       INTEGER          I,I1,I2,I3,ITER,J,NITER,Node,IAUX(3)
-      DOUBLE PRECISION AUX(3,3),B(3,3),B2(3),BNEW(3),BNEW2,
+      DOUBLE PRECISION AUX(3,3),B(3,3),B2(1,3),BNEW(3),BNEW2,
      .                 C(3,3),EPS,VNEW,V0
 
       PARAMETER (EPS=1.D-8,NITER=100)
 
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
       V0=ABS(VOLCEL(B0))
-      IF (V0.LT.EPS) THEN
-        if (Node.eq.0) then
-          WRITE(6,*) 'MINVEC: BASIS VECTORS ARE LINEARLY DEPENDENT'
-        endif
-        STOP
-      ENDIF
+      IF (V0.LT.EPS)
+     $     call die('MINVEC: BASIS VECTORS ARE LINEARLY DEPENDENT')
       DO I=1,3
         DO J=1,3
           B(J,I)=B0(J,I)
         ENDDO
-        B2(I)=DOT(B(1,I),B(1,I),3)
+        B2(1,I)=DOT(B(1,I),B(1,I),3)
       ENDDO
 
       DO 50 ITER=1,NITER
@@ -66,13 +52,13 @@ C Get Node number
               BNEW(3)=B(3,1)*I1+B(3,2)*I2+B(3,3)*I3
               BNEW2=DOT(BNEW,BNEW,3)
               DO I=3,1,-1
-                IF (BNEW2+EPS.GE.B2(I)) GO TO 40
+                IF (BNEW2+EPS.GE.B2(1,I)) GO TO 40
                 CALL VOLNEW(B,BNEW,I,VNEW)
                 IF (ABS((VNEW-V0)/V0).LT.EPS) THEN
                   B(1,I)=BNEW(1)
                   B(2,I)=BNEW(2)
                   B(3,I)=BNEW(3)
-                  B2(I)=BNEW2
+                  B2(1,I)=BNEW2
                   GO TO 50
                 END IF
               ENDDO
@@ -82,12 +68,9 @@ C Get Node number
         ENDDO
         GOTO 55
   50  CONTINUE
-      if (Node.eq.0) then
-        WRITE(6,*) 'MINVEC: ERROR: Iteration has not converged'
-        STOP 'MINVEC: ERROR: Iteration has not converged'
-      else
-        STOP
-      endif
+
+      call die('MINVEC: ERROR: Iteration has not converged')
+
   55  CONTINUE
 
       IF (VOLCEL(B).LT.0.D0) THEN
@@ -111,14 +94,19 @@ C Get Node number
           BMIN(J,I)=B(J,I)
         ENDDO
       ENDDO
-      END
-
+      
+      CONTAINS
 
       SUBROUTINE VOLNEW(A,ANEW,INEW,VOL)
-      IMPLICIT         NONE
       INTEGER          I,INEW,J
-      DOUBLE PRECISION A(3,3),ANEW(3),AUX(3,3),VOL,VOLCEL
+      DOUBLE PRECISION A(3,3),ANEW(3),AUX(3,3),VOL
       AUX(1:3,1:3)=A(1:3,1:3)
       AUX(1:3,INEW)=ANEW(1:3)
       VOL=ABS(VOLCEL(AUX))
-      END
+      END subroutine volnew
+
+      END subroutine minvec
+
+
+
+

@@ -1,4 +1,4 @@
-c $Id: coxmol.f,v 1.3 1999/01/31 10:50:54 emilio Exp $
+c $Id: coxmol.f,v 1.4 2001/01/29 18:02:05 wdpgaara Exp $
 
       subroutine coxmol(iza, xa, na, slabel)
 
@@ -12,16 +12,18 @@ c integer   na        : Number of atoms
 c character slabel*20 : Label for file naming
 c ******************************************************************
 
+      use periodic_table, only: symbol
+
       implicit          none
       character         slabel*20, paste*24
       integer           na
       integer           iza(na)
       double precision  xa(3,na)
-      external          io_assign, io_close, paste, symbol
+      external          io_assign, io_close, paste
 
 c Internal variables and arrays
  
-      character         fname*24, symbol*2
+      character         fname*24
       integer           unit, i, ia
       double precision  Ang
 
@@ -47,4 +49,7 @@ c Find file name
       
       return
       end
+
+
+
 

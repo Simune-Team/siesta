@@ -27,7 +27,7 @@ c     This version needs the io module for logical unit management.
 c
 c-------------------------------------------------------------------
 c
-      block data fdf
+      block data fdf_data
       implicit none
       include 'fdf.h'
       data fdf_started, fdf_debug, fdf_debug2, fdf_donothing

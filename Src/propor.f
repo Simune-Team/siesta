@@ -4,6 +4,8 @@ C Checks if two vectors are proportional within a tolerance.
 C Written by J.M.Soler. August 1996.
 C **********************************************************************
 
+      use sys
+
       IMPLICIT NONE
 
       INTEGER           I, IMAX, N, Node

@@ -52,7 +52,6 @@ C
       use precision
       use parallel
       use atmfuncs, only: rcut
-      use matel_module, only: matel
 
       implicit none
 

@@ -160,7 +160,7 @@ C         Find scale used in k point data
             scale = fdf_string( 'BandLinesScale', 'pi/a' )
           endif
 #ifdef MPI
-          call MPI_Bcast(scale,1,DAT_double,0,
+          call MPI_Bcast(scale,30,DAT_double,0,
      .      MPI_Comm_World,MPIerror)
 #endif
           if (scale .eq. 'pi/a') then
@@ -256,8 +256,10 @@ C         No k-point data available => go to exit point
 C Global broadcast of values
 #ifdef MPI
       call MPI_Bcast(nk,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(kpoint(1,1),3*nk,DAT_double,0,
-     .  MPI_Comm_World,MPIerror)
+      if(nk.le.maxk) then
+         call MPI_Bcast(kpoint(1,1),3*nk,DAT_double,0,
+     .     MPI_Comm_World,MPIerror)
+      endif
 #endif
 
 C This is the only exit point 

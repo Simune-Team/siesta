@@ -1,7 +1,6 @@
-      module types
+      module atm_types
 
-      use atmparams, only: nrtmax => ntbmax
-                   !       Number of points in tables
+      use radial
 !
 !     Derived types for orbitals and KB projectors
 !
@@ -12,14 +11,6 @@
 !     characteristics
 !
          
-      type rad_func
-         double precision cutoff         
-         double precision delta
-         double precision, dimension(nrtmax) :: f   ! Actual data
-         double precision, dimension(nrtmax) :: d2  ! Second derivative
-      end type rad_func
-
-
 !
 !     These parameters are over-dimensioned, but there is no storage
 !     penalty, as the real information is packed and indexed.
@@ -110,5 +101,11 @@
       end type species_info
 
 !
+      integer, save             :: nspecies
+      integer, save             :: npairs
 
-      end module types
+      type(species_info), target, allocatable, save   ::  species(:)
+      type(rad_func), allocatable, target, save     ::  elec_corr(:)
+!
+
+      end module atm_types

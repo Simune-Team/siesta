@@ -12,14 +12,15 @@ C     are initialized by calling the subroutine 'atom' for all the
 C     different chemical species in the calculation:
 
       use precision
+      use sys
       use atmparams
       use ionew, only: IOnode
+      use spher_harm, only: rlylm
 
       implicit none 
 !
 !      integer, save      :: Node     ! To be initialized by calling atom
 
-      integer, save                   ::  ismax
       integer, save                   ::  nsmax
       integer, save, allocatable      ::  izsave(:)
       integer, save, allocatable      ::  nomax(:)
@@ -62,17 +63,131 @@ C     different chemical species in the calculation:
       character(len=10), save    :: basistype_save(40)  
 
 
-      contains
+      CONTAINS
+!
+      subroutine allocate_old_arrays
+
+      integer ns2
+
+        ns2=((nsmax+1)*nsmax)/2
+        allocate(rcotb(nzetmx,0:lmaxd,nsemx,nsmax))
+        call memory('A','D',nzetmx*(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(rcpoltb(nzetmx,0:lmaxd,nsemx,nsmax))
+        call memory('A','D',nzetmx*(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(lambdatb(nzetmx,0:lmaxd,nsemx,nsmax))
+        call memory('A','D',nzetmx*(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(qtb(maxos,nsmax))
+        call memory('A','D',maxos*nsmax,'atom')
+        allocate(slfe(nsmax))
+        call memory('A','D',nsmax,'atom')
+        allocate(rctb(nkbmx,0:lmaxd,nsmax))
+        call memory('A','D',nkbmx*(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(smasstb(nsmax))
+        call memory('A','D',nsmax,'atom')
+        allocate(chargesave(nsmax))
+        call memory('A','D',nsmax,'atom')
+!
+!       Table: This is a hybrid
+!            negative values of the second index correspond to KB projectors
+!            positive values of the second index correspond to orbitals
+!            A second index of zero (0) corresponds to the local potential
+! 
+!            The first index has ntbmax "real points" and two extra
+!            entries for bookeeping
+!            The total number of angular momentum entries is lmaxd+1 (since
+!            s=0, p=1, etc)
 !
 !
+        allocate(table((ntbmax+2),-nkbmx*(lmaxd+1):nzetmx*nsemx*
+     .    (lmaxd+1),nsmax))
+        call memory('A','D',(ntbmax+2)*(lmaxd+1)*(nkbmx+nzetmx*nsemx+1)
+     .    *nsmax,'atom')
+        allocate(tab2(ntbmax,-nkbmx*(lmaxd+1):nzetmx*nsemx*
+     .    (lmaxd+1),nsmax))
+        call memory('A','D',ntbmax*(lmaxd+1)*(nkbmx+nzetmx*nsemx+1)
+     .    *nsmax,'atom')
+!
+        allocate(tabpol((ntbmax+2),nzetmx*nsemx*(lmaxd+1),nsmax))
+        call memory('A','D',(ntbmax+2)*(lmaxd+1)*nzetmx*nsemx*nsmax,
+     .    'atom')
+        allocate(tab2pol(ntbmax,nzetmx*nsemx*(lmaxd+1),nsmax))
+        call memory('A','D',ntbmax*nzetmx*(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(coretab(ntbmax+1,2,nsmax))
+        call memory('A','D',2*(ntbmax+1)*nsmax,'atom')
+        allocate(corrtab((ntbmax+1),2,ns2))
+        call memory('A','D',(ntbmax+1)*2*ns2,'atom')
+        allocate(chloctab((ntbmax+1),2,nsmax))
+        call memory('A','D',(ntbmax+1)*2*nsmax,'atom')
+        allocate(izsave(nsmax))
+        call memory('A','I',nsmax,'atom')
+        allocate(lmxkbsave(nsmax))
+        call memory('A','I',nsmax,'atom')
+        allocate(lmxosave(nsmax))
+        call memory('A','I',nsmax,'atom')
+        allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
+        call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(nsemicsave(0:nsemx,nsmax))
+        call memory('A','I',(nsemx+1)*nsmax,'atom')
+        allocate(nzetasave(0:lmaxd,nsemx,nsmax))
+        call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(nomax(nsmax))
+        call memory('A','I',nsmax,'atom')
+        allocate(nkbmax(nsmax))
+        call memory('A','I',nsmax,'atom')
+        allocate(izvaltb(nsmax))
+        call memory('A','I',nsmax,'atom')
+        allocate(cnfigtb(0:lmaxd,nsemx,nsmax))
+        call memory('A','D',(lmaxd+1)*nsemx*nsmax,'atom')
+        allocate(nkblsave(0:lmaxd,nsmax))
+        call memory('A','I',(lmaxd+1)*nsmax,'atom')
+!
+!       PGI compiler cannot allocate these...
+!        allocate(label_save(nsmax))
+!        allocate(basistype_save(nsmax))
+!
+        allocate(semicsave(nsmax))
+        call memory('A','L',nsmax,'atom')
+
+        end subroutine allocate_old_arrays
+!
+      subroutine clear_tables
+
+      integer is
+
+           do is=1,nsmax
+              izsave(is)=0
+              lmxosave(is)=0
+              lmxkbsave(is)=0
+              label_save(is)='  '
+              nkbmax(is)=0
+              nomax(is)=0  
+              semicsave(is)=.false.
+              
+              nsemicsave(:,is) = 0
+              nzetasave(:,:,is) = 0
+              rcotb(:,:,:,is) = 0.d0
+              lambdatb(:,:,:,is) = 0.d0
+              rcpoltb(:,:,:,is) = 0.d0
+
+              table(:,:,is) = 0.d0
+              tab2(:,:,is) = 0.d0
+             tabpol(:,:,is) = 0.d0
+             tab2pol(:,:,is) = 0.d0
+
+             qtb(1:maxos,is)=0.0d0
+
+           enddo 
+       end subroutine clear_tables
+
+!!!!!!!
       subroutine check_is(name,is)
       character(len=*), intent(in) :: name
       integer, intent(in) :: is
 
-      if ((is.lt.1).or.(is.gt.ismax)) then 
+      if ((is.lt.1).or.(is.gt.nsmax)) then 
          if (IOnode) then
             write(6,*) trim(name),': THERE ARE NO DATA FOR IS=',IS
-            write(6,*) trim(name),': ISMIN= 1, ISMAX= ',ismax
+            write(6,*) trim(name),': ISMIN= 1, NSMAX= ',nsmax
          endif
          call die
       endif

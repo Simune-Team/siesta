@@ -9,17 +9,12 @@ C     are initialized by calling the subroutine 'atom' for all the
 C     different chemical species in the calculation:
 
       use precision
-      use atmparams, only: nrtmax=> ntbmax
-      use types
+      use sys
+      use atm_types
       use radial, only: rad_get
+      use spher_harm, only: rlylm
 
       implicit none 
-!
-      integer, save             :: nspecies
-      integer, save             :: npairs
-
-      type(species_info), target, allocatable, save   ::  species(:)
-      type(rad_func), allocatable, target, save     ::  elec_corr(:)
 !
       type(species_info), pointer        :: spp
       type(rad_func), pointer            :: op
@@ -200,6 +195,7 @@ C   basis orbital or Kleynman-Bylander projector.
 C    INTEGER  IO   : Orbital index (within atom)
 C                    IO > 0 => Basis orbitals
 C                    IO < 0 => Kleynman-Bylander projectors
+C                    IO = 0 => Local pseudopotential
 C************************OUTPUT*****************************************
 C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
 
@@ -213,7 +209,7 @@ C   INTEGER LOFIO  : Quantum number L of orbital or KB projector
          if (-io.gt.spp%nprojs)  call die("No such projector")
          lofio = spp%pj_l(-io)
       else
-         call die("lofio: Requested l of vlocal!!!")
+         lofio = 0
       endif
 
       end function lofio
@@ -229,6 +225,7 @@ C   basis orbital or Kleynman-Bylander projector.
 C    INTEGER  IO   : Orbital index (within atom)
 C                    IO > 0 => Basis orbitals
 C                    IO < 0 => Kleynman-Bylander projectors
+C                    IO = 0 => Local pseudopotential
 C************************OUTPUT*****************************************
 C   INTEGER MOFIO  : Quantum number m of orbital or KB projector
 
@@ -242,7 +239,7 @@ C   INTEGER MOFIO  : Quantum number m of orbital or KB projector
          if (-io.gt.spp%nprojs)  call die("No such projector")
          mofio = spp%pj_m(-io)
       else
-         call die("mofio: Requested m of vlocal!!!")
+         mofio = 0
       endif
 
       end function mofio
@@ -782,7 +779,7 @@ C    value of nphi
       if (.not.any(within(1:nphi))) return
 
 !     Find spherical harmonics
-      maxlm = maxval( ilm(1:nphi), mask=within )
+      maxlm = maxval( ilm(1:nphi), mask=within(1:nphi) )
       lmax=nint(sqrt(real(maxlm,dp)))-1
       call rlylm(lmax,r,rly,grly)
 

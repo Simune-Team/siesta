@@ -3,7 +3,7 @@
 #
 FC?=f77
 CFLAGS= 
-FFLAGS=       $(CFLAGS)
+FFLAGS=  -g -O0     $(CFLAGS)
 LDFLAGS=      $(CFLAGS)
 #
 OBJS=	sample.o fdf.o io.o
@@ -21,21 +21,16 @@ io_check: io_sample
 	io_sample
 #
 module:  libfdf.a
-libfdf.a:	fdf.o fdf_mod.o fdf2.o
-	ar qv libfdf.a fdf.o fdf_mod.o fdf2.o
+libfdf.a:	fdf.o fdf_mod.o parse.o
+	ar qv libfdf.a fdf.o fdf_mod.o parse.o
 	cp libfdf.a ..
-fdf_mod.o: fdf_mod.f
+fdf_mod.o: fdf_mod.f parse.o
 	$(FC) $(FFLAGS) -c fdf_mod.f
-	@cp -p *.mod ..
-fdf2.o: fdf2.f
-	$(FC) $(FFLAGS) -c fdf2.f
 	@cp -p *.mod ..
 fdf.o:  fdf.f 
 	$(FC) $(FFLAGS) -c fdf.f
-#
 clean:
-	rm -f $(OBJS) libfdf.a *.mod fdf_mod.o io_sample.o sample io_sample
-	rm -f fdf2.o 
+	rm -f *.o libfdf.a *.mod fdf_mod.o io_sample.o sample io_sample
 	rm -f OUTPUT FDF.debug file2 file3 sample.out
 #
 .f.o:

@@ -64,6 +64,7 @@ C
 C  Modules
 C
       use precision
+      use sys
       use parallel
 #ifdef MPI
       use mpi
@@ -98,8 +99,8 @@ C
      .  cdiag, fermid, stepf
 
 C  Internal variables .............................................
-      integer           i, ie, io, iio, is, ispin, j, jo, js, 
-     .                  BNode, iie, BTest, ierror, ind, nd
+      integer           BNode, BTest, i, ie, ierror, iie, iio,
+     .                  ind, io, is, ispin, j, jo, js, nd
       double precision  ee, pipj, qe, t
 C  ....................
 
@@ -108,7 +109,7 @@ C Index i is for real/imag parts
 C Indices is and js are for spin components
 C Indices iuo and juo are for orbital components:
 C Haux(i,js,juo,is,iuo) = <js,juo|H|is,iuo>
-   10 Saux = 0.0d0
+      Saux = 0.0d0
       Haux = 0.0d0
 C  ....................
 
@@ -133,11 +134,9 @@ C ....................
 
 C Solve the eigenvalue problem .......................................
       call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
-     .            eo, psi, 2*nuotot, aux, ierror )
-      if (ierror.gt.0) then
+     .            eo, psi, 2*nuotot, 2*nuo, ierror )
+      if (ierror.ne.0) then
         call die('Terminating due to failed diagonalisation')
-      elseif (ierror.eq.-1) then
-        goto 10
       endif
 C ....................
 

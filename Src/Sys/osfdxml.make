@@ -7,13 +7,16 @@ LIBS= -ldxml
 SYS=bsd
 DEFS=
 MPILIB=
+CPP=/bin/cpp -P
 #
 .F.o:
 	$(FC) -c $(FFLAGS)  $(DEFS) $<
 .f.o:
 	$(FC) -c $(FFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(CPP) $(DEFS) $< > $*.f90
+	$(FC) -c $(FFLAGS) $*.f90
+	@rm -f $*.f90
 .f90.o:
 	$(FC) -c $(FFLAGS)   $<
 #

@@ -123,9 +123,7 @@ C Old-format files
           endif
 
           if (Node.eq.0) then
-            do m = 1,nbasistot
-              read(unit2,*) numdg(m)
-            enddo
+            read(unit2,*) (numdg(m),m=1,nbasistot)
           endif
 #ifdef MPI
           call MPI_Bcast(numdg,nbasistot,MPI_integer,0,MPI_Comm_World,
@@ -168,9 +166,7 @@ C Create buffer arrays for transfering density matrix between nodes and lists
 #else
               ml = m
 #endif
-              do im = 1,numd(ml)
-                read(unit2,*) listd(listdptr(ml)+im)
-              enddo
+              read(unit2,*) (listd(listdptr(ml)+im),im=1,numd(ml))
 #ifdef MPI
             elseif (Node.eq.0) then
               do im = 1,numdg(m)
@@ -264,9 +260,7 @@ C Check dimensions
           call chkdim( 'iodm', 'nspin',  nspin,  ns, 0 )
 
           if (Node.eq.0) then
-            do m = 1,nbasistot
-              read(unit1) numdg(m)
-            enddo
+            read(unit1) (numdg(m),m=1,nbasistot)
           endif
 #ifdef MPI
           call MPI_Bcast(numdg,nbasistot,MPI_integer,0,MPI_Comm_World,
@@ -309,14 +303,10 @@ C Create buffer arrays for transfering density matrix between nodes and lists
 #else
               ml = m
 #endif
-              do im = 1,numd(ml)
-                read(unit1) listd(listdptr(ml)+im)
-              enddo
+              read(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
 #ifdef MPI
             elseif (Node.eq.0) then
-              do im = 1,numdg(m)
-                read(unit1) ibuffer(im)
-              enddo
+              read(unit1) (ibuffer(im),im=1,numdg(m))
               call MPI_ISend(ibuffer,numdg(m),MPI_integer,
      .          BNode,1,MPI_Comm_World,Request,MPIerror)
               call MPI_Wait(Request,Status,MPIerror)
@@ -346,14 +336,10 @@ C Create buffer arrays for transfering density matrix between nodes and lists
 #else
                 ml = m
 #endif
-                do im = 1,numd(ml)
-                  read(unit1) dm(listdptr(ml)+im,is)
-                enddo
+                read(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
 #ifdef MPI
               elseif (Node.eq.0) then
-                do im = 1,numdg(m)
-                  read(unit1) buffer(im)
-                enddo
+                read(unit1) (buffer(im),im=1,numdg(m))
                 call MPI_ISend(buffer,numdg(m),DAT_double,
      .            BNode,1,MPI_Comm_World,Request,MPIerror)
                 call MPI_Wait(Request,Status,MPIerror)
@@ -430,9 +416,7 @@ C Write out numd array
           do m = 1,nbasistot
             ndmaxg = max(ndmaxg,numdg(m))
           enddo
-          do m=1,nbasistot
-            write(unit1) numdg(m)
-          enddo
+          write(unit1) (numdg(m),m=1,nbasistot)
 #ifdef MPI
           allocate(buffer(ndmaxg))
           call memory('A','D',ndmaxg,'iodm')
@@ -450,9 +434,7 @@ C Write out listd array
 #else
             ml = m
 #endif
-            do im = 1,numd(ml)
-              write(unit1) listd(listdptr(ml)+im)
-            enddo
+            write(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
 #ifdef MPI
           elseif (Node.eq.0) then
             call MPI_IRecv(ibuffer,numdg(m),MPI_integer,BNode,1,
@@ -467,9 +449,7 @@ C Write out listd array
           if (BNode.ne.0) then
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
-              do im = 1,numdg(m)
-                write(unit1) ibuffer(im)
-              enddo
+              write(unit1) (ibuffer(im),im=1,numdg(m))
             endif
           endif
 #endif
@@ -492,9 +472,7 @@ C Write density matrix
 #else
               ml = m
 #endif
-              do im=1,numd(ml)
-                write(unit1) dm(listdptr(ml)+im,is)
-              enddo
+              write(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
 #ifdef MPI
             elseif (Node.eq.0) then
               call MPI_IRecv(buffer,numdg(m),DAT_double,
@@ -509,9 +487,7 @@ C Write density matrix
             if (BNode.ne.0) then
               call MPI_Barrier(MPI_Comm_World,MPIerror)
               if (Node.eq.0) then
-                do im=1,numdg(m)
-                  write(unit1) buffer(im)
-                enddo
+                write(unit1) (buffer(im),im=1,numdg(m))
               endif
             endif
 #endif

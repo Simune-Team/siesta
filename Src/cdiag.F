@@ -1,9 +1,9 @@
-      subroutine cdiag(h,nh,s,ns,n,w,z,nz,fv,ierror)
+      subroutine cdiag(h_2,nh,s_2,ns,n,w,z_2,nz,nevec,ierror)
 C ***************************************************************************
 C Subroutine  to solve all eigenvalues and eigenvectors of the
 C real general eigenvalue problem  H z = w S z,  with H and S
 C complex hermitian matrices, by calling the  LAPACK routine ZHEGV
-C Writen by G.Fabricius and J.Soler, August 1998
+C Writen by G.Fabricius, J.Soler, and J.Gale. Dec. 2000
 C ************************** INPUT ******************************************
 C complex*16 h(nh,n)   : Hermitian H matrix (destroyed on output)
 C integer    nh        : First dimension of H matrix
@@ -11,15 +11,15 @@ C complex*16 s(ns,n)   : Hermitian S matrix (destroyed on output)
 C integer    ns        : First dimension of S matrix
 C integer    n         : Order of the generalized system
 C integer    nz        : First dimension of Z matrix
+C integer    nevec     : Number of lowest eigenvectors required
+C                      : (if nevec.ne.0 all eigenvectors are returned)
 C ************************** OUTPUT *****************************************
 C real*8     w(nh)     : Eigenvalues
-C complex*16 z(nz,n)   : Eigenvectors
+C complex*16 z(nz,n)   : Eigenvectors (if nevec=0, they are not calculated,
+C                        but the array is still required)
 C integer    ierror    : Flag indicating success code for routine
 C                      :  0 = success
-C                      : -1 = repeat call as memory has been increased
 C                      :  1 = fatal error
-C ************************* AUXILIARY ***************************************
-C real*8     fv(5*nh)  : Auxiliary storage array
 C ************************* PARALLEL ****************************************
 C When running in parallel this routine now uses Scalapack to perform a
 C parallel matrix diagonalisation. This requires Scalapack and Blacs to
@@ -36,33 +36,38 @@ C Error flag and check to see whether parallel form is necessary or
 C not added by Julian Gale, November 1999
 C ***************************************************************************
 C
-C  Modules
-C
+C Modules
       use precision
 #ifdef MPI
       use mpi
       use parallel
 #endif
       use diagmemory
+      use alloc
 
       implicit          none
 
-      integer           i1,i2,info,lwork,n,nh,ns,nz,Node,Nodes,ierror
-      character         jobz,uplo
-      double precision  w(nh), fv(5*nh)
-      double complex    h(nh,n), s(ns,n), z(nz,n)
+C Arguments
+      integer           ierror,n,nevec,nh,ns,nz
+      double precision  w(nh)
+!
+!     AG: To avoid type checking errors at runtime
+!
+      real*8 h_2(2,nh,n), s_2(2,ns,n), z_2(2,nz,n)
 
+C Internal varables and arrays
+      integer           i1,i2,info,lwork,lrwork,Node,Nodes
+      character         jobz,uplo
+      double precision, pointer, save :: rwork(:)
+      logical, save  :: nullified=.false.
+      type(allocDefaults) oldDefaults
 #ifdef MPI
       integer           MPIerror, desch(9), descs(9), descz(9)
-      integer           nprow, npcol, ictxt, lrwork, liwork,
+      integer           nprow, npcol, ictxt, liwork,
      .                  mfound, mvfound
-      integer,          dimension(:), allocatable, save :: 
-     .                  iwork,iclustr,ifail
+      integer, pointer, save :: iclustr(:),ifail(:),iwork(:)
       double precision  abstol,orfac
-      double precision, dimension(:), allocatable, save :: 
-     .                  gap, rwork
-      double complex,   dimension(:), allocatable, save :: 
-     .                  work
+      double precision, pointer, save :: gap(:), work(:,:)
       double complex    dwork(1)
       double precision  drwork(1)
       integer           diwork(1)
@@ -74,6 +79,20 @@ C ......................
 C Start time count
       call timer('cdiag',1)
 
+C Nullify pointers
+      if (.not.nullified) then
+        nullify( rwork )
+#ifdef MPI
+        nullify( gap, iclustr,ifail, iwork, work )
+#endif
+        nullified = .true.
+      end if
+
+C Get old allocation defaults and set new ones
+      call alloc_default( old=oldDefaults,
+     .                    copy=.false., shrink=.true.,
+     .                    imin=1, routine='cdiag' )
+      
 C Initialise error code
       ierror = 0
 
@@ -88,7 +107,11 @@ C Get Node number
 #endif
 
 C Set general Lapack parameters
-      jobz='V'
+      if (nevec.le.0) then
+        jobz='N'
+      else
+        jobz='V'
+      endif
       uplo='U'
 #ifdef MPI
       if (.not.Serial) then
@@ -101,12 +124,9 @@ C Accuracy for eigenvalues
 C Accuracy for orthogonalisation
         orfac=1.0d-3
 C Allocate workspace arrays
-        allocate(iclustr(2*Nodes))
-        call memory('A','I',2*Nodes,'cdiag')
-        allocate(gap(Nodes))
-        call memory('A','D',Nodes,'cdiag')
-        allocate(ifail(nh))
-        call memory('A','I',nh,'cdiag')
+        call realloc( gap,     1,Nodes,   name='gap'     )
+        call realloc( iclustr, 1,2*Nodes, name='iclustr' )
+        call realloc( ifail,   1,nh,      name='ifail'   )
 
 C Get Blacs context and initialise Blacs grid
         nprow = 1
@@ -140,22 +160,24 @@ C Call Scalapack to get sizes
 #else
         call pzhegvx
 #endif
-     .   (1,jobz,range,uplo,nh,h,1,1,desch,s,1,1,descs,0.0d0,0.0d0,
-     .    0,0,abstol,mfound,mvfound,w,orfac,z,1,1,descz,dwork,lwork,
+     .   (1,jobz,range,uplo,nh,h_2,1,1,desch,s_2,1,1,descs,0.0d0,0.0d0,
+     .    0,0,abstol,mfound,mvfound,w,orfac,z_2,1,1,descz,dwork,lwork,
      .    drwork,lrwork,diwork,liwork,ifail,iclustr,gap,info)
         lwork=nint(MemoryFactor*real(dwork(1)))
         lrwork=nint(MemoryFactor*drwork(1))
         liwork=diwork(1)
 
 C Allocate arrays to correct sizes
-        allocate(work(lwork))
-        call memory('A','Z',lwork,'cdiag')
-        allocate(rwork(lrwork))
-        call memory('A','D',lrwork,'cdiag')
-        allocate(iwork(liwork))
-        call memory('A','I',liwork,'cdiag')
+        call realloc( work, 1,2, 1,lwork,  name='work'  )
+        call realloc( rwork,     1,lrwork, name='rwork' )
+        call realloc( iwork,     1,liwork, name='iwork' )
+
 C Repeated here as some machines corrupt these parameters
-        jobz='V'
+        if (nevec.le.0) then
+          jobz='N'
+        else
+          jobz='V'
+        endif
         uplo='U'
         range='A'
 
@@ -165,26 +187,20 @@ C Call Scalapack to run
 #else
         call pzhegvx
 #endif
-     .   (1,jobz,range,uplo,nh,h,1,1,desch,s,1,1,descs,0.0d0,0.0d0,
-     .    0,0,abstol,mfound,mvfound,w,orfac,z,1,1,descz,work,lwork,
+     .   (1,jobz,range,uplo,nh,h_2,1,1,desch,s_2,1,1,descs,0.0d0,0.0d0,
+     .    0,0,abstol,mfound,mvfound,w,orfac,z_2,1,1,descz,work,lwork,
      .    rwork,lrwork,iwork,liwork,ifail,iclustr,gap,info)
 
 C Exit Blacs
         call blacs_gridexit( ictxt )
 
 C Deallocate workspace arrays
-        call memory('D','Z',size(work),'cdiag')
-        deallocate(work)
-        call memory('D','D',size(rwork),'cdiag')
-        deallocate(rwork)
-        call memory('D','I',size(iwork),'cdiag')
-        deallocate(iwork)
-        call memory('D','I',size(iclustr),'cdiag')
-        deallocate(iclustr)
-        call memory('D','D',size(gap),'cdiag')
-        deallocate(gap)
-        call memory('D','I',size(ifail),'cdiag')
-        deallocate(ifail)
+        call dealloc( iwork,   name='iwork'  )
+        call dealloc( rwork,   name='rwork'  )
+        call dealloc( work,    name='work'   )
+        call dealloc( ifail,   name='ifail'  )
+        call dealloc( iclustr, name='iclustr')
+        call dealloc( gap,     name='gap'    )
       else
 #endif
 C***************************
@@ -193,18 +209,24 @@ C***************************
 C Serial: call lapack routine chegv/zhegv
 C Matrix z used for auxiliary space 
 
-        lwork=5*nh
+        lwork=nh*n
+        lrwork=3*n-2
+        call realloc( rwork, 1,lrwork, name='rwork' )
+
 #ifdef CRAY
         call chegv
 #else
         call zhegv
 #endif
-     .    (1,jobz,uplo,n,h,nh,s,ns,w,z,lwork,fv,info)
+     .    (1,jobz,uplo,n,h_2,nh,s_2,ns,w,z_2,lwork,rwork,info)
+
+        call dealloc( rwork, name='rwork' )
 
 C Move eigenvectors to correct storage location
         do i2=1,n
           do i1=1,nh
-            z(i1,i2)=h(i1,i2)
+            z_2(1,i1,i2)=h_2(1,i1,i2)
+            z_2(2,i1,i2)=h_2(2,i1,i2)
           enddo
         enddo
 #ifdef MPI
@@ -255,6 +277,9 @@ C Move eigenvectors to correct storage location
           endif
         endif
       endif
+
+C  Restore old allocation defaults
+      call alloc_default( restore=oldDefaults )
 
 c  stop time count
       call timer('cdiag',2)

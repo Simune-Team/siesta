@@ -1,4 +1,4 @@
-c $Id: iomd.f,v 1.4 1999/11/26 18:28:17 wdpgaara Exp $
+c $Id: iomd.f,v 1.5 2001/01/09 10:01:52 ordejon Exp $
 
       subroutine iomd( na, isa, iza, xa, va, cell, vcell, varcel,
      .                 istep, istep0, istepf, temp, eks, getot)
@@ -128,4 +128,5 @@ c Wind to end of file of an unformatted file
  1    read(iu,end=2)
       goto 1
  2    continue
+      backspace iu
       end

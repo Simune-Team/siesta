@@ -23,30 +23,29 @@
 !       One way to do this is to use the "DAT_single" and "DAT_double" tags
 !       as symbolic datatypes, and have them point to the appropriate
 !       data type.
-!       Thus, you will have to choose one of the two options below:
 !
-#ifndef CRAY
       USE MPI__INCLUDE,
+#ifndef CRAY
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
      &     DAT_double => MPI_double_precision,                          &
      &     DAT_2double => MPI_2double_precision,                        &
      &     DAT_complex => MPI_complex,                                  &
-     &     DAT_2complex => MPI_2complex,                                &
-     &     DAT_dcomplex => MPI_double_complex,                          &
-     &     DAT_2dcomplex => MPI_2double_complex
+!!     &     DAT_2complex => MPI_2complex,                                &
+     &     DAT_dcomplex => MPI_double_complex
+!!     &     DAT_2dcomplex => MPI_double_complex
+c    &     DAT_2dcomplex => MPI_2double_complex
 #else
-! For Crays:
-
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
      &     DAT_double => MPI_real,                                      &
      &     DAT_2double => MPI_2real,                                    &
      &     DAT_complex => MPI_complex,                                  &
-     &     DAT_2complex => MPI_2complex,                                &
+     &     DAT_2complex => MPI_complex,                                 &
      &     DAT_dcomplex => MPI_complex,                                 &
-     &     DAT_2dcomplex => MPI_2complex
+     &     DAT_2dcomplex => MPI_complex  
 #endif
+!!****      NOTE fudging of "2complex" on CRAY!!!
 
 !       ... generic overloads for <choice> argument routines ...
 

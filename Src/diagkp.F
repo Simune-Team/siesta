@@ -95,6 +95,7 @@ C
 C  Modules
 C
       use precision
+      use sys
       use parallel
       use mpi
 
@@ -122,8 +123,8 @@ C
 
 C  Internal variables .............................................
       integer
-     .  ie, ik, io, iio, ispin, iuo, j, jo, juo, BNode, is,
-     .  maxnhg, nuog, ierror, ind
+     .  BNode, ie, ierror, ik, io, iio, ind, is, ispin, iuo,
+     .  j, jo, juo, maxnhg, nuog 
       integer, dimension(:), allocatable, save ::
      .  numhg, listhptrg, listhg
       double precision
@@ -211,7 +212,7 @@ C Create new distribution of H and S
      .      BNode,MPI_Comm_World,MPIerror)
       enddo
 
-C Solve eigenvalue problem .........................................
+C Find eigenvalues .........................................
       do ik = 1+Node,nk,Nodes
         do ispin = 1,nspin
           do iuo = 1,nuog
@@ -241,7 +242,7 @@ C Note : sign of complex part changed to match change in order of iuo/juo
             enddo
           enddo
           call cdiag( Haux, nuotot, Saux, nuotot, nuog,
-     .                eo(1,ispin,ik), psi, nuotot, aux, ierror )
+     .                eo(1,ispin,ik), psi, nuotot, 0, ierror )
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -303,7 +304,7 @@ c New density and energy-density matrices of unit-cell orbitals .......
       do ik = 1+Node,nk,Nodes
         do ispin = 1,nspin
 
-C         Find eigenvectors again (were stored only for one k point)
+C         Find eigenvectors 
           Saux = 0.0d0
           Haux = 0.0d0
           do io = 1,nuog
@@ -324,7 +325,7 @@ C         Find eigenvectors again (were stored only for one k point)
             enddo
           enddo
           call cdiag( Haux, nuotot, Saux, nuotot, nuog,
-     .                eo(1,ispin,ik), psi, nuotot, aux, ierror )
+     .                eo(1,ispin,ik), psi, nuotot, nuog, ierror )
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif

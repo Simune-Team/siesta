@@ -12,6 +12,8 @@ c     since most of the "typical" files (output, etc) use them.
 c
 c     Logical units min_lun to min_max are managed by this module.
 
+      use sys
+
 #ifdef MPI
       use mpi
 #endif

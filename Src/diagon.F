@@ -165,7 +165,7 @@ C Check internal dimensions ..........................................
       elseif (nspin.le.2 .and. .not.gamma) then
         nhs  = 2 * nuotot * nuo
         npsi = 2 * nuotot * nuo
-        naux = nuotot * 5
+        naux = 2 * nuotot * 5            !!!! AG: Put factor 2 !!
 #ifdef MPI
         if (ParallelOverK) then
           nhs  = 2 * nuotot * nuotot

@@ -40,7 +40,6 @@ C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 C *********************************************************************
       use atmfuncs, only: rcut
-      use matel_module, only: matel
       use parallel
       implicit none
 

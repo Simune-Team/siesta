@@ -82,6 +82,7 @@ C
 C  Modules
 C
       use precision
+      use sys
       use parallel
 #ifdef MPI
       use mpi
@@ -113,16 +114,16 @@ C
 
 C  Internal variables .............................................
       integer
-     .  ie, ik, io, iio, ispin, iuo, j, jo, juo, BNode, iie,
-     .  BTest, ierror, ind, nd
+     .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
+     .  ispin, iuo, j, jo, juo, nd
       double precision
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
 C  ....................
 
-C Solve eigenvalue problem .........................................
+C Find eigenvalues ................................................
       do ik = 1,nk
         do ispin = 1,nspin
-   10     Saux = 0.0d0
+          Saux = 0.0d0
           Haux = 0.0d0
           do iuo = 1,nuo
             do j = 1,numh(iuo)
@@ -142,11 +143,9 @@ C Note : sign of complex part changed to match change in order of iuo/juo
             enddo
           enddo
           call cdiag( Haux, nuotot, Saux, nuotot, nuo,
-     .                eo(1,ispin,ik), psi, nuotot, aux, ierror )
-          if (ierror.gt.0) then
+     .                eo(1,ispin,ik), psi, nuotot, 0, ierror )
+          if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
-          elseif (ierror.eq.-1) then
-            goto 10
           endif
         enddo
       enddo
@@ -192,8 +191,8 @@ c New density and energy-density matrices of unit-cell orbitals .......
       do ik = 1,nk
         do ispin = 1,nspin
 
-C         Find eigenvectors again (were stored only for one k point)
-   20     Saux = 0.0d0
+C         Find eigenvectors 
+          Saux = 0.0d0
           Haux = 0.0d0
           do iuo = 1,nuo
             do j = 1,numh(iuo)
@@ -212,11 +211,9 @@ C         Find eigenvectors again (were stored only for one k point)
             enddo
           enddo
           call cdiag( Haux, nuotot, Saux, nuotot, nuo,
-     .                eo(1,ispin,ik), psi, nuotot, aux, ierror )
-          if (ierror.gt.0) then
+     .                eo(1,ispin,ik), psi, nuotot, nuo, ierror )
+          if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
-          elseif (ierror.eq.-1) then
-            goto 20
           endif
 
 C         Add contribution to density matrices of unit-cell orbitals

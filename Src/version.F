@@ -15,9 +15,9 @@ c     included for reference.)
 c
 c     After it is done, this file should be commited.
 c
-      integer, dimension(3), save  :: num_version = (/1,0,33/)
-      character(len=80), parameter ::  version_str =
-     .  "SIESTA 1.0.33 -- [struct reorg, NetCDF] (July 5, 2000)"
+      integer, dimension(3), save  :: num_version = (/1,0,49/)
+      character(len=80), parameter :: version_str =
+     . "SIESTA 1.0.49 -- [newatom merged] (Jan 29, 2001)"
 
       end module version_info
 

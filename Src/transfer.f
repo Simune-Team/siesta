@@ -1,11 +1,12 @@
       subroutine transfer
 
-      use types
+      use atm_types
+      use radial
+      use atmparams, only:NTBMAX
       use old_atmfuncs
-      use atmfuncs, only: nspecies, species, npairs, elec_corr
+      use periodic_table, only: symbol
 
       implicit none
-
 
       type(species_info), pointer        :: spp
       type(rad_func), pointer            :: op
@@ -20,12 +21,9 @@
      $     nsm_normal, index_pol, z_pol, nsm_pol
       integer, dimension(maxnorbs) :: mark  ! overkill
 
-      character*2 symbol
-      external symbol
-
 !     Allocate main structures for new atmfuncs -----------
 
-      nspecies = nsmax
+      nspecies = nsmax           ! From old_atmfuncs
       npairs = ((nspecies+1)*nspecies)/2
 
       allocate(species(nspecies))
@@ -39,7 +37,11 @@
 
          spp%label = labelfis(is)
          spp%z     = izofis(is)
-         spp%symbol = symbol(spp%z)
+         if (spp%z.eq.-100) then
+            spp%symbol = 'BS'
+         else
+            spp%symbol = symbol(abs(spp%z))
+         endif
          spp%zval  = izvalfis(is)
          spp%mass  = massfis(is)
          spp%self_energy  = slfe(is)
@@ -126,9 +128,9 @@
 
             op => spp%orbnl(i)
 
-
+            call rad_alloc(op,NTBMAX)
             op%delta  =   table(1,i,is)
-            op%cutoff =   op%delta *  (nrtmax - 1)
+            op%cutoff =   op%delta *  (NTBMAX - 1)
             op%f(1:)    = table(3:,i,is)
             op%d2(1:)   = tab2(1:,i,is)
 
@@ -154,9 +156,9 @@
             spp%orbnl_ispol(i) = .true.
 
             op => spp%orbnl(i)
-
+            call rad_alloc(op,NTBMAX)
             op%delta  =   tabpol(1,j,is)
-            op%cutoff =   op%delta *  (nrtmax - 1)
+            op%cutoff =   op%delta *  (NTBMAX - 1)
             op%f(1:)    = tabpol(3:,j,is)
             op%d2(1:)   = tab2pol(1:,j,is)
          enddo
@@ -199,6 +201,7 @@
 
          do i = 1, spp%n_pjnl
             pp => spp%pjnl(i)
+            call rad_alloc(pp,NTBMAX)
             pp%delta  =   table(1,-i,is)
             pp%f(1:)    = table(3:,-i,is)
             pp%d2(1:)   = tab2(1:,-i,is)
@@ -217,21 +220,23 @@
 
 
 
-
+         call rad_alloc(spp%vlocal,NTBMAX)
          spp%vlocal%f(1:)       = table(3:,0,is)
          spp%vlocal%cutoff      = table(2,0,is)
          spp%vlocal%delta       = table(1,0,is)
          spp%vlocal%d2(1:)      = tab2(1:,0,is)
 
+         call rad_alloc(spp%chlocal,NTBMAX)
          spp%chlocal%delta      = chloctab(1,1,is)
-         spp%chlocal%cutoff     = chloctab(1,1,is)*(nrtmax-1)
+         spp%chlocal%cutoff     = chloctab(1,1,is)*(NTBMAX-1)
          spp%chlocal%f(1:)      = chloctab(2:,1,is)
          spp%chlocal%d2(1:)     = chloctab(2:,2,is)
 
          spp%there_is_core      = (coretab(1,2,is) .eq. 1)
 
+         call rad_alloc(spp%core,NTBMAX)
          spp%core%delta         = coretab(1,1,is)
-         spp%core%cutoff        = coretab(1,1,is)*(nrtmax-1)
+         spp%core%cutoff        = coretab(1,1,is)*(NTBMAX-1)
          spp%core%f(1:)         = coretab(2:,1,is)
          spp%core%d2(1:)        = coretab(2:,2,is)
 
@@ -242,12 +247,18 @@
 !
       do i = 1, npairs
          func => elec_corr(i)
+         call rad_alloc(func,NTBMAX)
          func%delta = corrtab(1,1,i)
-         func%cutoff = corrtab(1,1,i)*(nrtmax-1)
+         func%cutoff = corrtab(1,1,i)*(NTBMAX-1)
          func%f(1:) = corrtab(2:,1,i)
          func%d2(1:) = corrtab(2:,2,i)
       enddo
 
       end subroutine transfer
+
+
+
+
+
 
 
