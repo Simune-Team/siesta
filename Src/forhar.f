@@ -1,8 +1,7 @@
 
       SUBROUTINE FORHAR( NTPL, NSPIN, NML, NTML, NTM, NPCC,
      .                   XCFUNC, XCAUTH, CELL, RHOATM, RHOPCC,
-     .                   VNA, DRHOOUT, 
-     .                   VHARRIS1, VHARRIS2, Node, Nodes )
+     .                   VNA, DRHOOUT, VHARRIS1, VHARRIS2 )
 
 C **********************************************************************
 C Build the potentials needed for computing Harris forces:
@@ -27,7 +26,7 @@ C **********************************************************************
       CHARACTER XCFUNC*10, XCAUTH*10
 
       INTEGER, INTENT(IN) :: NTPL, NSPIN, 
-     .                       NPCC, Node, Nodes
+     .                       NPCC
       INTEGER, DIMENSION(3), INTENT(IN) :: NML, NTML, NTM
  
       REAL*8, DIMENSION(3,3), INTENT(IN) :: CELL(3,3) 
@@ -107,8 +106,7 @@ C ----------------------------------------------------------------------
 
       CALL CELLXC( XCFUNC, XCAUTH, 0, 1, CELL, NTML, NTML, NTPL, 0,
      .             AUX3, NSPIN, DRHOIN, EX, EC, DEX, DEC, VHARRIS1,
-     .             NTPL, DVXCDN, STRESSL, 
-     .             1, AUX1, NTM, NSM, Node, Nodes )
+     .             DVXCDN, STRESSL, 1, AUX1 )
 
       DO ISPIN = 1, NSPIN
         CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,-1)

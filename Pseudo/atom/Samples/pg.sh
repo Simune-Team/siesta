@@ -28,9 +28,10 @@ mkdir $name ; cd $name
 cp ../$file ./INP
 $prog
 cp VPSOUT ../$name.vps
+cp VPSFMT ../$name.psf
 #
 echo "Calculation for $name completed. Output data in directory $name..."
-echo ".... and pseudopotential in $name.vps"
+echo ".... and pseudopotential in $name.vps and $name.psf (formatted)"
 #
 
 

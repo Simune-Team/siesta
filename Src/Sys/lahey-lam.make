@@ -12,12 +12,13 @@ DEFS_CDF=-DCDF
 #
 MPI_INTERFACE=libmpi_f90.a
 MPI_INCLUDE=/usr/local/lam/include
+MPI_LIBS= -L/usr/local/lam/lib -llamf77mpi -lmpi -llam -lnsl
+BLACS_LIBS=/usr/local/lib/lahey/libblacs.lam.a
+SCALAPACK_LIBS=-L/usr/local/lib/lahey -lscalapack -lpblas -ltools -lredist
 DEFS_MPI=-DMPI
 #
-LIBS=  -L/usr/local/lib/lahey \
-       -lscalapack -lpblas -ltools -lredist \
-       -lblacs.lam  -llapack -lblas \
-       -L/usr/local/lam/lib -lmpi -ltstdio -ltrillium -largs -lt
+LIBS=   $(SCALAPACK_LIBS) $(BLACS_LIBS) -llapack -lblas \
+	$(MPI_LIBS) $(NETCDF_LIBS)
 SYS=bsd
 DEFS= $(DEFS_MPI) $(DEFS_CDF)
 #
@@ -30,3 +31,5 @@ DEFS= $(DEFS_MPI) $(DEFS_CDF)
 .f90.o:
 	$(FC) -c $(FFLAGS)   $<
 #
+
+

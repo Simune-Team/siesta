@@ -2,7 +2,7 @@
      .                    listhptr,listh,s,dm,isa,lasto,iaorb,
      .                    iphorb)
 C ********************************************************************
-C Subroutine to perform Mulliken population analisys.
+C Subroutine to perform Mulliken population analysis.
 C (Overlap and total populations, both for orbitals and for atoms)
 C The density matrix (d.m.) and overlap matrix are passed in sparse form
 C (both with the same sparse structure)
@@ -155,7 +155,7 @@ C Loop over the following section so that each Node can print
 C the terms relating to the local orbitals in sequence. Not
 C the most efficient algorithm, but preserves order and keeps
 C memory usage the same as in the serial version.
-          do iNode = 1,Nodes
+          do iNode = 0,Nodes-1
             if (iNode.eq.Node) then
               do i = 1,nbasis 
                 call LocalToGlobalOrb(i,Node,Nodes,itot)
@@ -362,7 +362,7 @@ C Global sum of total charge
            do ia = 1,natoms 
             if (isa(ia).eq.ispec) then 
             qas(1:nspin) = 0.d0
-            do iNode = 1,Nodes
+            do iNode = 0,Nodes-1
               if (iNode.eq.Node) then
                 do io = lasto(ia-1)+1,lasto(ia)  
                   call GlobalToLocalOrb(io,Node,Nodes,itot)

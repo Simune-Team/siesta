@@ -25,7 +25,6 @@
             write(6,'(a)') trim(str)
          endif
          write(6,'(a)') 'Stopping Program'
-         write(6,*) 1.0/real(Node)
       endif
 #ifdef MPI
       call MPI_Abort(MPI_Comm_World,1,MPIerror)

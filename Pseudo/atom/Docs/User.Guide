@@ -1,8 +1,8 @@
 ATM --- Density-functional atomic calculations and pseudopotential generation
 
 User guide
-Alberto Garcia, wdpgaara@lg.ehu.es
-Updated 16 Feb 2000
+Alberto Garcia <wdpgaara@lg.ehu.es>
+Updated 16 Sep 2001
 
 This brief document mainly describes the input format for the atm
 program, whose basic capabilities are:
@@ -265,8 +265,8 @@ two variables.
 The output file contains the radius used and the ac and bc (and cc)
 parameters used for the matching.
 
-The vps file contains the partial core in addition to the 
-pseudopotential.
+The VPSOUT and VPSFMT files contain the partial core in addition to the 
+pseudopotential and the valence charge density.
 
 It is possible to override the default (new scheme for GGA
 calculations, old scheme for LDA calculations) by using the directives
@@ -286,10 +286,11 @@ a subdirectory named as the input file, without the .inp suffix.
 
 INP: Original input file.
 
-VPSIN; Input pseudopotential (if testing, with 'pt' option).
+VPSIN: Input pseudopotential (if testing, with 'pt' option).
 
 VPSOUT: (if pseudopotential generation was used, pg) It contains
      the pseudopotential itself and related information.
+VPSFMT: Same as VPSOUT, but in ASCII form, for better transportability.
 
 OUT: The general output (log) of the run, offering information about
      the atomic calculations, energies, eigenvalues, generation

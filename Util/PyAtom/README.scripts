@@ -1,5 +1,5 @@
 The scripts in this directory are examples of how to access and plot
-the contents of a Species.dump.nc SIESTA file from Python, a very
+the contents of a Species.ion.nc SIESTA file from Python, a very
 powerful yet simple scripting language. See http://www.python.org for
 a description of Python, tutorials, and software.
 
@@ -10,7 +10,7 @@ scientific computing, it pays off very quickly.
 Here are some crib notes:
 
 1. Get Python from www.python.org  (1.6 or 2.0)      
-2. (Optional) Get the readline from www.gnu.org.
+2. (Optional) Get the readline library from www.gnu.org.
   2.1 Compile and install the readline library.         
 
 3. Compile and install Python (edit the Setup file to indicate that
@@ -38,7 +38,8 @@ http://sourceforge.net/projects/biggles and install them.
 
 Script usage:
 
-python -i scriptname.py Species.dump.nc
+python -i scriptname.py Species.ion.nc
 
 Alberto Garcia <wdpgaara@lg.ehu.es>
+
 

@@ -11,15 +11,14 @@ NETCDF_INTERFACE=libnetcdf_f90.a
 DEFS_CDF=-DCDF
 #
 MPI_INTERFACE=libmpi_f90.a
-MPI_INCLUDE=/usr/local/mpich-1.2/lahey/include
+MPI_INCLUDE=/usr/local/mpich/lahey/include
+MPI_LIBS= /usr/local/mpich/lahey/lib/libmpich.a
+BLACS_LIBS=/usr/local/lib/lahey/libblacs.mpich.a
+SCALAPACK_LIBS=-L/usr/local/lib/lahey -lscalapack -lpblas -ltools -lredist
 DEFS_MPI=-DMPI
 #
-LIBS= -L/usr/local/lib/lahey \
-      -lscalapack -lpblas \
-      -ltools -lredist \
-      -lblacs.mpich  \
-      -llapack -lblas \
-      /usr/local/mpich-1.2/lahey/lib/libmpich.a $(NETCDF_LIBS)
+LIBS=  $(SCALAPACK_LIBS) $(BLACS_LIBS) -llapack -lblas \
+       $(MPI_LIBS)  $(NETCDF_LIBS)
 SYS=bsd
 DEFS= $(DEFS_MPI) $(DEFS_CDF)
 #

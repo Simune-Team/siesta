@@ -24,8 +24,8 @@ C
 
       implicit none
 
-      integer, save :: BlockSize
-      integer, save :: ProcessorY
+      integer, save :: BlockSize  = 8
+      integer, save :: ProcessorY = 1
 
       contains
 
@@ -662,7 +662,41 @@ C Choose default value as lowest of Nx and Ny
         procYdefault = Nx
       endif
 
-      print *,' Default processor Y = ',procYdefault
-
       end subroutine set_processorYdefault
+
+      subroutine set_blocksizedefault(Nodes,nuotot,blocksizedefault)
+C
+C Finds a sensible default value for the blocksize default.
+C When the number of orbitals is less than the blocksize
+C typically used then lower the blocksize to ensure that 
+C some work is done on all nodes.
+C
+C Input :
+C
+C integer Nodes        : total number of processors
+C integer nuotot       : total number of orbitals
+C
+C Output :
+C
+C integer blocksizedefault : default value of blocksize
+C
+C Written by Julian Gale, March 2001
+C
+C Passed arguments
+      integer
+     .  Nodes, nuotot, blocksizedefault
+C Local variables
+      integer
+     .  Nx, Ny, Nrem
+      logical
+     .  factor
+
+C Compare number of orbitals against sensible number
+      if (nuotot.gt.8*Nodes) then
+        blocksizedefault = 8
+      else
+        blocksizedefault = ( (nuotot - 1) / Nodes) + 1
+      endif
+
+      end subroutine set_blocksizedefault
 

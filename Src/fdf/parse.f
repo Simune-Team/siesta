@@ -13,7 +13,7 @@
 !       type parsed_line
 !       private
 !           integer                            ::  ntokens
-!           character(len=max_length), pointer ::  tokens(:) 
+!           character(len=max_length), pointer ::  token_arr(:) 
 !           character(len=1), pointer          ::  id(:)
 !       end type parsed_line
 ! 
@@ -162,9 +162,11 @@ c
       integer, parameter :: dp = selected_real_kind(14,100)
 
       type parsed_line
+      ! use 'token_arr' instead of 'tokens' to work around a 
+      ! bug in pgf90
       private
           integer                            ::  ntokens
-          character(len=max_length), pointer ::  tokens(:) 
+          character(len=max_length), pointer ::  token_arr(:) 
           character(len=1), pointer          ::  id(:)
       end type parsed_line
           
@@ -175,14 +177,14 @@ c
 
       if (associated(p)) call destroy_lp(p)
       allocate(p)
-      nullify(p%tokens,p%id)
+      nullify(p%token_arr,p%id)
       end subroutine create
 
       subroutine destroy_lp(p)
       type(parsed_line), pointer     :: p
 
       if (.not. associated(p)) return
-      if (associated(p%tokens)) deallocate(p%tokens)
+      if (associated(p%token_arr)) deallocate(p%token_arr)
       if (associated(p%id)) deallocate(p%id)
       deallocate(p)
       end subroutine destroy_lp
@@ -302,7 +304,7 @@ c
       integer, intent(in), optional  :: after
       integer ntokens
 
-      integer i, starting_pos
+      integer starting_pos
 
       starting_pos = 0
       if (present(after)) then
@@ -337,7 +339,7 @@ c
       do i=starting_pos+1, p%ntokens
          if (leqi(p%id(i),'i'))  j = j + 1
          if (j.eq.ind) then
-            integers  = s2i(p%tokens(i))
+            integers  = s2i(p%token_arr(i))
             return
          endif
       enddo
@@ -362,7 +364,7 @@ c
       do i=starting_pos+1, p%ntokens
          if (leqi(p%id(i),'r'))  j = j + 1
          if (j.eq.ind) then
-            reals  = s2r(p%tokens(i))
+            reals  = s2r(p%token_arr(i))
             return
          endif
       enddo
@@ -388,7 +390,7 @@ c
       do i=starting_pos+1, p%ntokens
          if (leqi(p%id(i),'i').or.leqi(p%id(i),'r'))  j = j + 1
          if (j.eq.ind) then
-            values  = s2r(p%tokens(i))
+            values  = s2r(p%token_arr(i))
             return
          endif
       enddo
@@ -413,7 +415,7 @@ c
       do i=starting_pos+1, p%ntokens
          if (leqi(p%id(i),'n'))  j = j + 1
          if (j.eq.ind) then
-            names  = p%tokens(i)
+            names  = p%token_arr(i)
             return
          endif
       enddo
@@ -426,7 +428,7 @@ c
       integer, intent(in)            :: ind
       integer, intent(in), optional  :: after
 
-      integer i, starting_pos, j
+      integer starting_pos
 
       starting_pos = 0
       if (present(after)) then
@@ -435,7 +437,7 @@ c
          starting_pos = after
       endif
 
-      tokens = p%tokens(starting_pos+ind)
+      tokens = p%token_arr(starting_pos+ind)
       end function tokens
 !-----------------------------------------------------------------------
 
@@ -468,10 +470,10 @@ c
       pline%ntokens = ntokens
 
       if (ntokens.ne.0) then
-         allocate(pline%tokens(ntokens))
+         allocate(pline%token_arr(ntokens))
          allocate(pline%id(ntokens))
          do i=1,ntokens
-            pline%tokens(i) = line(first(i):last(i))
+            pline%token_arr(i) = line(first(i):last(i))
             pline%id(i) = token_id(i)
          enddo
       endif
@@ -763,7 +765,7 @@ c
 !
       if (present(eq_func)) then
          do i = starting_pos+1, p%ntokens
-            if (eq_func(string,p%tokens(i))) then
+            if (eq_func(string,p%token_arr(i))) then
                ind = i
                found = .true.
                return
@@ -771,7 +773,7 @@ c
          enddo
       else
          do i = starting_pos+1, p%ntokens
-            if (leqi(string,p%tokens(i))) then
+            if (leqi(string,p%token_arr(i))) then
                ind = i
                found = .true.
                return

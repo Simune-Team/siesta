@@ -17,23 +17,31 @@ C *************************** INPUT **********************************
 C character*(*) task      : 'read'/'READ' or 'write'/'WRITE'
 C character*(*) fname     : File name for input or output
 C integer nsm             : Number of sub-mesh points per mesh point
+C                           (not used in this version)
 C integer maxp            : First dimension of array rho
+C integer nspin           : Second dimension of array rho
+C ************************** OUTPUT **********************************
+C integer maxp            : Required first dimension of array rho,
+C                           equal to mesh(1)*mesh(2)*mesh(3)
+C                           Set only when task='read' and required
+C                           value is larger than input value
 C integer nspin           : Number of spin polarizations (1 or 2)
+C logical found           : Were data found? (only when task='read')
 C ******************** INPUT or OUTPUT (depending on task) ***********
 C real*8  cell(3,3)       : Lattice vectors
 C integer mesh(3)         : Number of mesh divisions of each
 C                           lattice vector
 C real    rho(maxp,nspin) : Electron density
 C                           Notice single precision in this version
-C ******************** OUTPUT *****************************************
-C logical found           : Were data found? (only when task='read')
 C *************************** UNITS ***********************************
 C Units should be consistent between task='read' and 'write'
+C ******************** BEHAVIOUR **************************************
+C If task='read', and the values of maxp or nspin on input are less than
+C those required to copy the array f from the file, then the required
+C values of maxp and nspin are returned on output, but f is not read.
 C *********************************************************************
 
-C
 C  Modules
-C
       use precision
       use parallel
       use fdf
@@ -43,6 +51,7 @@ C
 
       implicit          none
 
+C Arguments
       character*(*)     fname, task
       integer           maxp, mesh(3), nspin, nsm
       real              rho(maxp,nspin)
@@ -50,7 +59,7 @@ C
       external          io_assign, io_close, paste, memory
 
 c Internal variables and arrays
-      character  paste*33, ffor*9, fform*(*)
+      character  paste*33, fform*11
       integer    i, ip, iu, is, j, ju, np, ns, Node, 
      .           npmax, BlockSizeY, RemainderY, ProcessorZ,
      .           BlockSizeZ, npl,
@@ -66,7 +75,7 @@ c Internal variables and arrays
       logical    baddim, found
 
 c Fix whether formatted or unformatted files wil be used
-      parameter ( fform = 'unformatted' )
+      fform = 'unformatted'
 
 C Get Node number
 #ifdef MPI
@@ -112,8 +121,7 @@ c         Open file
             open( iu, file=fname, form=fform, status='old' )      
 
 c         Read cell vectors and number of points
-            ffor = 'formatted'
-            if (fform .eq. ffor) then
+            if (fform .eq. 'formatted') then
               read(iu,*) cell
               read(iu,*) mesh, ns
             else
@@ -121,6 +129,7 @@ c         Read cell vectors and number of points
               read(iu) mesh, ns
             endif
           endif
+
 #ifdef MPI
           call MPI_Bcast(cell(1,1),9,DAT_double,0,
      .      MPI_Comm_World,MPIerror)
@@ -141,7 +150,7 @@ C  Get local dimensions
 
 c  Check dimensions
           baddim = .false.
-          if (ns .ne. nspin) baddim = .true.
+          if (ns .gt. nspin) baddim = .true.
           if (npl .gt. maxp) baddim = .true.
 
 #ifdef MPI
@@ -159,18 +168,12 @@ C  Find largest value of npl
 #else
             npmax = np
 #endif
-            if (Node.eq.0) then
-              call io_assign( ju )
-              open( ju, file='iorho.h', status='unknown' )
-              write(ju,'(a)') 'C Dimensions for input to iorho'
-              write(ju,'(6x,a,i8,a)') 'parameter ( nspin =', ns, ' )'
-              write(ju,'(6x,a,i8,a)') 'parameter ( maxp  =', npmax,')'
-              call io_close( ju )
-              write(6,'(a)') 'iorho: ERROR: BAD DIMENSIONS'
-              stop           'iorho: ERROR: BAD DIMENSIONS'
-            else
-              stop
-            endif
+            maxp = npmax
+            nspin = ns
+            if (Node.eq.0) call io_close( iu )
+            return
+          else
+            nspin = ns
           endif
 
 C  Outer loop over spins
@@ -208,7 +211,7 @@ C  Work out which node block is stored on
                 if (BNode.eq.0.and.Node.eq.BNode) then
 #endif
 C  If density sub-matrix is local Node 0 then just read it in
-                  if (fform .eq. ffor) then
+                  if (fform .eq. 'formatted') then
                     do ir = 1,RemainderY
                       read(iu,*) (rho(Ind+ip,is),ip=1,mesh(1))
                       Ind = Ind + mesh(1)
@@ -224,7 +227,7 @@ C  If density sub-matrix is local Node 0 then just read it in
                 elseif (Node.eq.0) then
 C  If this is Node 0 then read and send density sub-matrix
                   Ind = 0
-                  if (fform .eq. ffor) then
+                  if (fform .eq. 'formatted') then
                     do ir = 1,RemainderY
                       read(iu,*) (bdens(Ind+ip),ip=1,mesh(1))
                       Ind = Ind + mesh(1)
@@ -279,9 +282,8 @@ c  Open file
         np = mesh(1) * mesh(2) * mesh(3)
 
 c       Write data
-        ffor = 'formatted'
         if (Node.eq.0) then
-          if (fform .eq. ffor) then
+          if (fform .eq. 'formatted') then
             do i = 1,3
               write(iu,*) (cell(j,i),j=1,3)
             enddo
@@ -327,7 +329,7 @@ C  Work out which node block is stored on
                 if (BNode.eq.0.and.Node.eq.BNode) then
 #endif
 C  If density sub-matrix is local Node 0 then just write it out
-                  if (fform .eq. ffor) then
+                  if (fform .eq. 'formatted') then
                     do ir = 1,RemainderY
                       write(iu,'(e15.6)') (rho(Ind+ip,is),
      .                  ip=1,mesh(1))
@@ -360,7 +362,7 @@ C  If this is the Node where the density sub-matrix is, then send
                   call MPI_Barrier(MPI_Comm_World,MPIerror)
                   if (Node.eq.0) then
                     Ind = 0
-                    if (fform .eq. ffor) then
+                    if (fform .eq. 'formatted') then
                       do ir = 1,RemainderY
                         write(iu,'(e15.6)') (bdens(Ind+ip),ip=1,
      .                    mesh(1))

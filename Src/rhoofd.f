@@ -61,7 +61,7 @@ C Internal variables and arrays
      .  i, ia, ic, ii, il, imp, in, ind,
      .  iop, ip, iphi, is, isp, iu, iul, ix,
      .  j, jc, jl, jn, jmp,
-     .  last, lasta, lastop, maxloc, maxndl, nc, nphiloc
+     .  last, lasta, lastop, maxloc, maxloc2, maxndl, nc, nphiloc
 
       integer, dimension(:), allocatable, save :: 
      .  ilc, ilocal, iorb
@@ -82,21 +82,21 @@ C  Set algorithm logical
       Parallel = (nuo .ne. nuotot)
 
 C  Find size of buffers to store partial copies of Dscf and C
-      maxloc = maxval(endpht(1:np)-endpht(0:np-1))
-      maxloc = maxloc + minloc
+      maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
+      maxloc = maxloc2 + minloc
       maxloc = min( maxloc, no )
 
 C  Allocate local memory
       allocate(ilocal(no))
       call memory('A','I',no,'rhoofd')
-      allocate(ilc(maxloc))
-      call memory('A','I',maxloc,'rhoofd')
+      allocate(ilc(maxloc2))
+      call memory('A','I',maxloc2,'rhoofd')
       allocate(iorb(0:maxloc))
       call memory('A','I',maxloc+1,'rhoofd')
       allocate(Dlocal(0:maxloc,0:maxloc))
       call memory('A','D',(maxloc+1)*(maxloc+1),'rhoofd')
-      allocate(Clocal(nsp,maxloc))
-      call memory('A','D',nsp*maxloc,'rhoofd')
+      allocate(Clocal(nsp,maxloc2))
+      call memory('A','D',nsp*maxloc2,'rhoofd')
 
       if (Parallel) then
         maxndl = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)

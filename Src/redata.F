@@ -90,7 +90,7 @@ C logical usesavedm        : True = try to use continuation DM files
 C                              from disk
 C logical usesavecg        : True = try to use continuation CG files
 C                              from disk
-C integer mullipop         : Option for Mulliken Pop. analisys
+C integer mullipop         : Option for Mulliken Pop. analysis
 C logical inspn            : Spin initialization for spin-polarized
 C                              .true.  -> Antiferro
 C                              .false. -> Ferro
@@ -256,7 +256,7 @@ C Global broadcast of values
 #endif
 C ...
 
-C Perform Mulliken Population Analisys
+C Perform Mulliken Population Analysis
       mpop_default = 0
       if ( outlng ) mpop_default = 1
       if (Node.eq.0) then
@@ -371,7 +371,7 @@ C     (pulfile)
       if (Node.eq.0) then
         pulfile  = fdf_boolean('DM.PulayOnFile',pul_default)
         write(6,'(a,4x,l1)')
-     .    'redata: Write Pulay info on disk?       = ',pulfile
+     .    'redata: Write Pulay info on disk?        = ',pulfile
       endif
 #ifdef MPI
       call MPI_Bcast(pulfile,1,MPI_logical,0,MPI_Comm_World,MPIerror)
@@ -450,7 +450,7 @@ C     Initial spin density: Maximum polarization, Ferro (false), AF (true)
       endif
 C ...
 
-C Use continumation DM files
+C Use continuation DM files
 *     usdm_default = .true.
       if (Node.eq.0) then
         usdm_default = fdf_boolean('UseSaveData',.false.)
@@ -490,14 +490,14 @@ C Method to Solve LDA Hamitonian ...
       if (leqi(method,'diagon')) then
         isolve = 0
         if (Node.eq.0) then
-          write(6,'(a,a)') 
+          write(6,'(a,4x,a)') 
      .     'redata: Method of Calculation            = ',
      .     'Diagonalization'
         endif
       else if (leqi(method,'ordern')) then
         isolve = 1
         if (Node.eq.0) then
-          write(6,'(a,a)') 
+          write(6,'(a,4x,a)') 
      .     'redata: Method of Calculation            = ',
      .     'Order-N'
         endif

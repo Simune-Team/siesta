@@ -35,6 +35,8 @@
       do is=1,nspecies
          spp => species(is)
 
+         spp%read_from_file = .false.
+
          spp%label = labelfis(is)
          spp%z     = izofis(is)
          if (spp%z.eq.-100) then

@@ -194,7 +194,7 @@ C Allocate local memory
       npsi = 2*nuotot*nuo*nspin
       allocate(muo(nuotot))
       call memory('A','I',nuotot,'ksv_pol')
-      allocate(ek(nuo))
+      allocate(ek(nuotot))
       call memory('A','D',nuo,'ksv_pol')
       allocate(psi(npsi))
       call memory('A','D',npsi,'ksv_pol')

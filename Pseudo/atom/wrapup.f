@@ -105,8 +105,11 @@ C    the 'mons' compatibility mode for GGA calculations.
 C
 
             new_scheme = .false.
-            if (is_gga) new_scheme = .true.
-            
+            if (is_gga) then
+               write(6,'(a)') 'Note: GGA calculation ==> New CC scheme'
+               new_scheme = .true.
+            endif
+
             if ( (use_old_cc) .and. (is_gga)) then
 
                write(6,'(/,2a,/a)')
@@ -457,32 +460,60 @@ c
 
       open(unit=1,file='VPSOUT',status='unknown',form='unformatted')
       rewind 1
+      open(unit=2,file='VPSFMT',status='unknown',form='formatted')
+      rewind 2
       write(1) nameat, icorr, irel, nicore, (ray(i),i=1,6), title,
      &         npotd, npotu, nr - 1, a, b, zion
       write(1) (r(i),i=2,nr)
+c
+      write(2,8005) nameat, icorr, irel, nicore
+      write(2,8010) (ray(j),j=1,6), title
+      write(2,8015) npotd, npotu, nr-1, a, b, zion
+      write(2,8040) 'Radial grid follows' 
+      write(2,8030) (r(j),j=2,nr)
+c
+ 8000 format(1x,i2)
+ 8005 format(1x,a2,1x,a2,1x,a3,1x,a4)
+ 8010 format(1x,6a10,/,1x,a70)
+ 8015 format(1x,2i3,i5,3g20.12)
+ 8030 format(4(g20.12))
+ 8040 format(1x,a)
 c
 c  Write the potentials to file (unit=1).
 c
       do 300 i = 1, lmax
          if (indd(i) .eq. 0) go to 300
          write(1) i - 1, (viod(i,j),j=2,nr)
+         write(2,8040) 'Down Pseudopotential follows (l on next line)'
+         write(2,8000) i-1
+         write(2,8030) (viod(i,j),j=2,nr)
   300 continue
       do 310 i = 1, lmax
          if (indu(i) .eq. 0) go to 310
          write(1) i - 1, (viou(i,j),j=2,nr)
-  310 continue
+         write(2,8040) 'Up Pseudopotential follows (l on next line)'
+         write(2,8000) i-1
+         write(2,8030) (viou(i,j),j=2,nr)
+ 310  continue
 c
 c  Write the charge densities to units 1 and 3(formatted).
 c  Note that this charge density is the "pseudo" one.
 c
+      write(2,8040) 'Core charge follows'
+
       if (ifcore .ne. 1) then
          write(1) (zero,i=2,nr)
+         write(2,8030) (zero,i=2,nr)
       else
          write(1) (cdc(i),i=2,nr)
+         write(2,8030) (cdc(i),i=2,nr)
       end if
       write(1) (zratio*(cdd(i)+cdu(i)),i=2,nr)
+      write(2,8040) 'Valence charge follows'
+      write(2,8030) (zratio*(cdd(i)+cdu(i)),i=2,nr)
 
       close(1)
+      close(2)
 c
       open(unit=3,file='PSCHARGE',form='formatted',status='unknown')
 c

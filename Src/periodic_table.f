@@ -12,7 +12,7 @@
 C Returns an array with the atomic ground states 
 C populations.
 C Input: IZ atomic number
-C By J. Soler 
+C Written by A.R.Williams 
 
       integer, intent(in)  :: iz
       real(dp), intent(out) :: qval(0:)
@@ -84,7 +84,7 @@ C Returns the maximum angular mometum populated in the
 C atomic ground state configuration LMXATM, and for the 
 C valence shell LMXCHM
 C Input: Z atomic number
-C By J. Soler
+C Written by A.R.Williams 
 
       integer, intent(in)  ::  z
       integer, intent(out) ::  lmxchm, lmxatm
@@ -111,13 +111,13 @@ C By J. Soler
       SUBROUTINE CNFIG (Z,CONFIG) 
 C Returns the valence configuration for atomic ground state
 C Input: Z Atomic number
-C By J. Soler
+C Written by A.R.Williams 
 
       integer, intent(in)  :: z
       integer, intent(out) :: config(0:)
 
       integer lmax, nchng
-      PARAMETER (LMAX=4,NCHNG=15)
+      PARAMETER (LMAX=3,NCHNG=15)
       INTEGER ZCHNG(NCHNG),LCHNG(NCHNG)
       integer l, ichng
 

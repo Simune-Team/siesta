@@ -409,16 +409,6 @@ c    .          'ATOM: The above configuration will be used ',
 
             call  comlocal(is,a,b,rofi,chcore,nchloc,flting)
 ! 
-! Write a file to plot the local potential**
-! 
-           call io_assign(lun)
-           open(lun,file=paste(atm_label,'.vlocal'),
-     .       status='unknown')
-           do ir=1,nrval
-             write(lun,*) rofi(ir),vlocal(ir),chcore(ir)
-           enddo
-           call io_close(lun) 
-
 ! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION** 
 ! 
          s(2:nrval)=drdi(2:nrval)*drdi(2:nrval)
@@ -2675,7 +2665,7 @@ C
              if (ikb.eq.1)
      .        write(6,'(a,i3,/a)') 
      .         'KBgen: More than one KB projector for l=',l,
-     .         'KBgen: ghost states analisys will be not performed'
+     .         'KBgen: ghost states analysis will be not performed'
             endif
 
 C***KB Projectors

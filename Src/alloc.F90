@@ -163,9 +163,9 @@ PUBLIC ::             &
 PRIVATE      ! Nothing is declared public beyond this point
 
 interface dealloc
-  module procedure dealloc_d1, dealloc_d2, dealloc_d3, &
-                   dealloc_i1, dealloc_i2, dealloc_i3, &
-                   dealloc_l1, dealloc_l2, dealloc_l3, &
+  module procedure dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
+                   dealloc_i1, dealloc_i2, dealloc_i3,             &
+                   dealloc_l1, dealloc_l2, dealloc_l3,             &
 ! JMS: Next line commented to fix an apparet bug in the DEC compiler
                    dealloc_s1,                         &
                    dealloc_r1, dealloc_r2, dealloc_r3
@@ -178,12 +178,14 @@ interface realloc
     realloc_d1,  realloc_i1,  realloc_l1,  realloc_r1,  &
     realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  &
     realloc_d3,  realloc_i3,  realloc_l3,  realloc_r3,  &
+    realloc_d4,                                         &
 ! JMS: Next line commented due to apparent bugs in DEC & SGI compilers
 !   realloc_s1s,                                        &
 ! JMS: Next line commented due to an apparent bug in the SGI compiler
 !   realloc_d1s, realloc_i1s, realloc_l1s, realloc_r1s, &
     realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
-    realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s
+    realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
+    realloc_d4s
 end interface
 
 !$$$! Real kinds
@@ -663,6 +665,7 @@ integer,                    intent(in) :: i1min,i1max, i2min,i2max, &
 character(len=*), optional, intent(in) :: name, routine
 logical,          optional, intent(in) :: copy, shrink
 integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+integer :: i1, i2, i3
 ASSOCIATED_ARRAY = associated(array)
 if (ASSOCIATED_ARRAY) then
   old_array => array 
@@ -685,10 +688,57 @@ end if
 if (NEEDS_COPY) then
       array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3)) =  &
   old_array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3))
+!  do i3 = c(1,3),c(2,3)
+!  do i2 = c(1,2),c(2,2)
+!  do i1 = c(1,1),c(2,1)
+!    array(i1,i2,i3) = old_array(i1,i2,i3)
+!  end do
+!  end do
+!  end do
   call count( -size(old_array), type, name, routine ) 
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_d3
+! ------------------------------------------------------------------
+SUBROUTINE realloc_d4( array, i1min,i1max, i2min,i2max, &
+                              i3min,i3max, i4min,i4max, &
+                       name, routine, copy, shrink )
+implicit none
+character, parameter                   :: type='D'
+integer, parameter                     :: rank=4
+real(DP), dimension(:,:,:,:), pointer  :: array, old_array
+integer,                    intent(in) :: i1min,i1max, i2min,i2max, &
+                                          i3min,i3max, i4min,i4max
+character(len=*), optional, intent(in) :: name, routine
+logical,          optional, intent(in) :: copy, shrink
+integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+ASSOCIATED_ARRAY = associated(array)
+if (ASSOCIATED_ARRAY) then
+  old_array => array 
+  old_bounds(1,:) = lbound(old_array)
+  old_bounds(2,:) = ubound(old_array)
+end if
+new_bounds(1,:) = (/ i1min, i2min, i3min, i4min /)
+new_bounds(2,:) = (/ i1max, i2max, i3max, i4max /)
+call options( b, c, old_bounds, new_bounds, copy, shrink )
+if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
+  call count( -size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+if (NEEDS_ALLOC) then
+  allocate(array(b(1,1):b(2,1),b(1,2):b(2,2), &
+                 b(1,3):b(2,3),b(1,4):b(2,4)),stat=IERR)
+  call alloc_err( IERR, name, routine, new_bounds )
+  call count( size(array), type, name, routine )
+  array = 0._dp
+end if
+if (NEEDS_COPY) then
+      array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3),c(1,4):c(2,4))= &
+  old_array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3),c(1,4):c(2,4))
+  call count( -size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+END SUBROUTINE realloc_d4
 ! ------------------------------------------------------------------
 SUBROUTINE realloc_l1( array, i1min,i1max,  &
                        name, routine, copy, shrink )
@@ -911,6 +961,18 @@ call realloc_d3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_d3s
 ! ------------------------------------------------------------------
+SUBROUTINE realloc_d4s( array, i1max, i2max, i3max, i4max, &
+                        name, routine, copy, shrink )
+implicit none
+real(DP), dimension(:,:,:,:), pointer  :: array
+integer,                    intent(in) :: i1max, i2max, i3max, i4max
+character(len=*), optional, intent(in) :: name, routine
+logical,          optional, intent(in) :: copy, shrink
+call realloc_d4( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
+                        DEFAULT%imin, i3max, DEFAULT%imin, i4max, &
+                 name, routine, copy, shrink )
+END SUBROUTINE realloc_d4s
+! ------------------------------------------------------------------
 SUBROUTINE realloc_l1s( array, i1max, &
                         name, routine, copy, shrink )
 implicit none
@@ -1047,6 +1109,16 @@ if (associated(array)) then
 end if
 END SUBROUTINE dealloc_d3
 ! ------------------------------------------------------------------
+SUBROUTINE dealloc_d4( array, name, routine )
+implicit none
+real(DP), dimension(:,:,:,:), pointer  :: array
+character(len=*), optional, intent(in) :: name, routine
+if (associated(array)) then
+  call count( -size(array), 'D', name, routine ) 
+  deallocate(array)
+end if
+END SUBROUTINE dealloc_d4
+! ------------------------------------------------------------------
 SUBROUTINE dealloc_l1( array, name, routine )
 implicit none
 logical, dimension(:),      pointer    :: array
@@ -1171,18 +1243,21 @@ SUBROUTINE count( delta_size, type, name, routine )
 implicit none
 
 integer, intent(in)          :: delta_size  ! +/-size(array)
-character(len=*), intent(in) :: type        ! 'I' => integer
+character, intent(in)        :: type        ! 'I' => integer
                                             ! 'R' => real*4
                                             ! 'D' => real*8
+                                            ! 'L' => logical
+                                            ! 'S' => character (string)
 character(len=*), optional, intent(in) :: name
 character(len=*), optional, intent(in) :: routine
 
 character(len=32)   :: aname, rname
+character(len=1)    :: memType, task
 real(DP)            :: delta_mem
 logical             :: newPeak
 logical,  save      :: header_written = .false.
 logical,  save      :: tree_nullified = .false.
-integer nodes
+integer             :: memSize, nodes
 #ifdef MPI
 integer             :: MPIerror
 #endif
@@ -1249,24 +1324,55 @@ if (REPORT_LEVEL == 4 .and. nodes == 1) then
      rname, aname, delta_mem/MBYTE, TOT_MEM/MBYTE
 end if
 
+! Call siesta counting routine 'memory'
+if (delta_size > 0) then
+  task = 'A'
+else
+  task = 'D'
+end if
+select case( type )
+case ('R')         ! Real --> single
+  memType = 'S'
+  memSize = abs(delta_size)
+case ('S')         ! Character (string) --> integer/4
+  memType = 'I'
+  memSize = abs(delta_size) / type_mem('I')
+case default
+  memType = type
+  memSize = abs(delta_size)
+end select
+call memory( task, memType, memSize, trim(rname) )
+
 END SUBROUTINE count
 
 ! ------------------------------------------------------------------
 
 INTEGER FUNCTION type_mem( var_type )
-
+!
+! It is not clear that the sizes assumed are universal for
+! non-Cray machines...
+!
 implicit none
-character(len=*), intent(in) :: var_type
+character, intent(in) :: var_type
 
 select case( var_type )
-case('I')
-  type_mem = 4
-case('R')
-  type_mem = 4
+#ifdef CRAY
+  case('I')
+    type_mem = 8
+  case('R')
+    type_mem = 8
+  case('L')
+    type_mem = 8
+#else
+  case('I')
+    type_mem = 4
+  case('R')
+    type_mem = 4
+  case('L')
+    type_mem = 4
+#endif
 case('D')
   type_mem = 8
-case('L')
-  type_mem = 4
 case('S')
   type_mem = 1
 case default

@@ -13,7 +13,16 @@ SOURCES=$(OBJS:.o=.f90)
 #
 generated: $(TEMPLATES) 
 	@make clean
+#
+#       Warning!!!! This assumes that the 'kind' numbers for
+#       single and double precision real are 4 and 8, respectively.
+#
+#	This is the case for all compilers we have dealt with so far,
+#       but you should change it if the assumption does not hold for
+#       your compiler
+
 	@sh generate.sh "4 8"
+
 	@touch generated
 #
 $(OBJS): generated  mpi__include.o

@@ -1,12 +1,12 @@
       module basis_specs
 ! 
-! Alberto Garcia, August 2000, perspired by 'classic' redbasis.
+! Alberto Garcia, August 2000, based on 'classic' redbasis.
 ! 
 ! Processes the basis information in an fdf file and populates
 ! the "basis specifications" data structures. This new version
 ! makes use of a new "parse" module for increased clarity. 
 ! 
-! Here is a guide to the behavior of the main routine "basis_read":
+! Here is a guide to the behavior of the main routine "read_basis_specs":
 ! 
 ! * Find out the number of species
 ! * Allocate storage for the data structures
@@ -114,6 +114,7 @@
       use basis_types
       use pseudopotential
       use periodic_table
+      use chemical
       use sys
 
       Use fdf
@@ -145,7 +146,8 @@
 
       CONTAINS
 
-      subroutine basis_read
+!---
+      subroutine read_basis_specs
 
       character(len=15), parameter  :: basis_size_default='standard'
       character(len=10), parameter  :: basistype_default='split'
@@ -154,25 +156,34 @@
       character(len=10) :: basistype_generic
 
 
-      nsp = fdf_get('Number_of_species',0)
-      if (nsp.eq.0) call die("No species found!!!")
+      basis_size=fdf_get('PAO.BasisSize',basis_size_default)
+      call size_name(basis_size)
+      basistype_generic=fdf_get('PAO.BasisType',basistype_default)
+      call type_name(basistype_generic)
+
+!
+!     Use standard routine in chemical module to process the
+!     chemical species
+!
+      call read_chemical_types
+      nsp = number_of_species()
 
       allocate(basis_parameters(nsp))
       do isp=1,nsp
          call initialize(basis_parameters(isp))
       enddo
 
-      basis_size=fdf_get('PAO.BasisSize',basis_size_default)
-      call size_name(basis_size)
-      basistype_generic=fdf_get('PAO.BasisType',basistype_default)
-      call type_name(basistype_generic)
-
-      call rechemsp
       do isp=1,nsp
          basp=>basis_parameters(isp)
+
+         basp%label = species_label(isp)
+         basp%z = atomic_number(isp)
+         basp%floating = is_floating(isp)
+         basp%bessel = is_bessel(isp)
+
          basp%basis_size = basis_size
          basp%basis_type = basistype_generic
-         if (basp%z.le.0) then
+         if (basp%floating) then
             basp%mass = huge(1.d0)
          else
             basp%mass = atmass(abs(basp%z))
@@ -195,8 +206,9 @@
 !         call print_basis_def(basis_parameters(isp))
 !      enddo
 
-      end subroutine basis_read
+      end subroutine read_basis_specs
 !-----------------------------------------------------------------------
+
       function label2species(str) result(index)
       integer index
       character(len=*), intent(in) ::  str
@@ -210,50 +222,6 @@
       end function label2species
 !-----------------------------------------------------------------------
 
-      subroutine rechemsp
-
-      integer ns_read
-
-      nullify(bp)
-      if (.not. fdf_block('Chemical_species_label',bp) )
-     $     call die("Block Chemical_species_label does not exist.")
-
-      ns_read = 0
-      loop: DO
-        if (.not. fdf_bline(bp,line)) exit loop
-        ns_read = ns_read + 1
-        p => digest(line)
-        if (.not. match(p,"iin"))
-     $       call die("Wrong format in Chemical_species_label")
-        isp = integers(p,1)
-        if (isp .gt. nsp .or. isp .lt. 1)
-     $       call die("Wrong specnum in Chemical_species_label")
-        basp=>basis_parameters(isp)
-        basp%label = names(p,1)
-        basp%z = integers(p,2)
-        basp%floating = (basp%z .le. 0)
-        basp%bessel = (basp%z .eq. -100)
-        if (.not.basp%floating) then
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(basp%label),
-     $             ' Atomic number:',  basp%z    
-        elseif (basp%bessel) then
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(basp%label),
-     $             ' (floating Bessel functions)'
-        else
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(basp%label),
-     $             ' Atomic number:',  basp%z,
-     $             ' (floating PAOs)'
-        endif
-        call destroy(p)
-      enddo loop
-      if (ns_read .ne. nsp) call die("Not enough species in block")
-      call destroy(bp)
-
-      end subroutine rechemsp
-!---------------------------------------------------------------
       subroutine ground_state(z,gs)
       integer, intent(in)               ::  z
       type(ground_state_t), intent(out) :: gs
@@ -274,13 +242,16 @@
       enddo
       call cnfig(z,gs%n(0:3))
 
-      write(6,'(a)') 'Ground state valence configuration:'
+      write(6,'(a,i2)',advance='no')
+     $     'Ground state valence configuration: '
       gs%occupied(4) = .false.         !! always
       do l=0,3
         gs%occupied(l) =  (gs%occupation(l).gt.0.1d0)
         if (gs%occupied(l))
-     $   write(6,*) gs%n(l),sym(l),nint(gs%occupation(l))
+     $   write(6,'(2x,i1,a1,i2.2)',advance='no')
+     $       gs%n(l),sym(l),nint(gs%occupation(l))
       enddo
+      write(6,*)
 
       end subroutine ground_state
 

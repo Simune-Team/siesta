@@ -227,7 +227,6 @@ c     Declarations for fdf procedures
 !-------------------------------------------------------------------
       subroutine destroy_bp(bp)
       type(block), pointer       :: bp
-      type(line_dlist), pointer       :: dlp, dlp2
       if (associated(bp%txt)) call destroy_dl(bp%txt)
       deallocate(bp)
       end subroutine destroy_bp
@@ -276,7 +275,9 @@ c     Declarations for fdf procedures
          real(sp) fdf_sp
          character(len=*), intent(in) :: label
          real(sp), intent(in) ::  default
-         fdf_sp = fdf_single(label,default)
+         real                 ::  default2
+         default2 = default
+         fdf_sp = fdf_single(label,default2)
          end function fdf_sp
 
 !-------------------------------------------------------------------
@@ -304,20 +305,25 @@ c     Declarations for fdf procedures
          end function fdf_str
 
 !-------------------------------------------------------------------
+!        To be able to use a generic fdf_block, the two instances
+!        (old and new interface) have to be module procedures.
+!        Here is fdf_blockf. Note that, to avoid a scope bug in
+!        pgf90, we need to use a new name for the f77 routine.
+!
          function fdf_blockf(label,unit)
          logical fdf_blockf
          character(len=*), intent(in) :: label
          integer, intent(out) ::  unit
 
          interface
-            function fdf_block(label,unit)
-            logical fdf_block
+            function fdf_block_old(label,unit)
+            logical fdf_block_old
             character(len=*), intent(in) :: label
             integer, intent(out)  :: unit
-            end function fdf_block
+            end function fdf_block_old
          end interface
 
-         fdf_blockf = fdf_block(label,unit)
+         fdf_blockf = fdf_block_old(label,unit)
          end function fdf_blockf
 !
 !-------------------------------------------------------------------

@@ -1,4 +1,4 @@
-$Id: CONDITIONS,v 1.4 1999/04/08 15:04:04 emilio Exp $
+$Id: CONDITIONS,v 1.5 2001/09/20 12:04:07 wdpgaara Exp $
 
    POLICY FOR THE USE, DISTRIBUTION, AND MODIFICATION OF SIESTA 0.11
    =================================================================
@@ -38,7 +38,7 @@ Because of the two points mentioned in the motivation, the use of
 SIESTA by any group will be IN COLLABORATION (co-authoring) WITH 
 AT LEAST ONE of the authors or developers of the code (see names below), 
 until the author(s)/developer(s) consider it approriate to stop the 
-collaboration. This condition applies to new SIESTA 0.11 users, and 
+collaboration. This condition applies to new SIESTA 1.1 users, and 
 does not invalidate the conditions previously agreed in collaborations
 that started with earlier versions.
 
@@ -81,7 +81,7 @@ with their own ideas and improvements.
 
 2) Proper credit and benefits to all contributors.
 
-3) We do not plan to comercialize siesta, and we expect 
+3) We do not plan to comercialize SIESTA, and we expect 
 to make it nearly freely available in the near future, 
 at least to the academic community. However, we are aware 
 that, if its usage becomes very widespread, it may
@@ -92,29 +92,29 @@ we need to consider that possibility now.
 
 From the above considerations:
 
-1) The authors of siesta are:
+1) The authors of SIESTA are:
 
-      Emilio Artacho,        Autonomous Univ. of Madrid
-      Pablo Ordejon,         University of Oviedo
-      Daniel Sanchez-Portal, Autonomous Univ. of Madrid
+      Emilio Artacho,        University of Cambridge
+      Pablo Ordejon,         ICMAB-CSIC, Barcelona
+      Daniel Sanchez-Portal, Universidad del Pais Vasco, San Sebastian
       Jose M. Soler,         Autonomous Univ. of Madrid
 
-Although we acknowledge that a limited number of auxiliary
-subroutines were written by (or are based on previous
-subroutines written by) other authors 
-we consider that the implementation of all the basic
+Although we acknowledge that a limited number of auxiliary subroutines
+were written by (or are based on previous subroutines written by)
+other authors we consider that the implementation of all the basic
 algorithms of the SIESTA program are ours.
 
    The developers of SIESTA are the authors and:
 
-      Alberto Garcia,        Basque Country Univ., Bilbao
+      Julian Gale,        Imperial College, London
+      Alberto Garcia,     Universidad del Pais Vasco, Bilbao
 
-2) As authors of the initial version of siesta, we reserve
+2) As authors of the initial version of SIESTA, we reserve
 to ourselves all the rights to resolve any conflicts in its 
 development and distribution policies. Any others receiving
-siesta for use or development are implicitly accepting this.
+SIESTA for use or development are implicitly accepting this.
 
-3) As far as possible, further developments of siesta
+3) As far as possible, further developments of SIESTA
 should be as modular as possible (interacting by files or
 well-defined interface calls), allowing its independent
 maintainance by their respective authors and, eventually,
@@ -122,8 +122,8 @@ its isolation for purposes of distribution. However, if
 any developments need to be intertwined with the rest
 of the program, their authors must delegate their
 distribution rights to us, and they must rennounce to
-distribute any alternative or modified version of siesta,
-or of another program using parts of siesta, without our 
+distribute any alternative or modified version of SIESTA,
+or of another program using parts of SIESTA, without our 
 previous written permission. This resignation does not
 affect any rights to receive proper credit (and eventually
 other possible benefits) for their developments.

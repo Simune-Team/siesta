@@ -1,11 +1,14 @@
       module radial
 
       use precision
+      use xml
 
       implicit none
 
       private 
       public rad_func, rad_alloc, rad_get, rad_setup_d2, rad_zero
+      public radial_read_ascii, radial_dump_ascii
+      public radial_dump_xml
 
       type rad_func
          integer          n
@@ -161,6 +164,50 @@ C D. Sanchez-Portal, Oct. 1996.
 
       END subroutine spline
 
+      subroutine radial_read_ascii(op,lun)
+      type(rad_func)    :: op
+      integer lun
+      integer j, npts
+      real(dp) dummy
+
+      read(lun,'(i4,2g25.15)') npts, op%delta, op%cutoff
+      call rad_alloc(op,npts)
+      do j=1,npts
+         read(lun,'(2g25.15)') dummy, op%f(j)
+      enddo
+      call rad_setup_d2(op)
+      end subroutine radial_read_ascii
+!
+!
+      subroutine radial_dump_ascii(op,lun)
+      type(rad_func)    :: op
+      integer lun
+      integer j
+
+      write(lun,'(i4,2g25.15,a)') op%n,
+     $     op%delta, op%cutoff, " # npts, delta, cutoff"
+      do j=1,op%n
+         write(lun,'(2g25.15)') (j-1)*op%delta, op%f(j)
+      enddo
+      end subroutine radial_dump_ascii
+!
+      subroutine radial_dump_xml(op,lun)
+      type(rad_func)    :: op
+      integer lun
+      integer j
+
+      write(lun,'(a)') '<radfunc>'
+      call xml_dump_element(lun,'npts',str(op%n))
+      call xml_dump_element(lun,'delta',str(op%delta))
+      call xml_dump_element(lun,'cutoff',str(op%cutoff))
+      write(lun,'(a)') '<data>'
+      do j=1,op%n
+         write(lun,'(2g25.15)') (j-1)*op%delta, op%f(j)
+      enddo
+      write(lun,'(a)') '</data>'
+      write(lun,'(a)') '</radfunc>'
+      end subroutine radial_dump_xml
+!
       end module radial
 
 

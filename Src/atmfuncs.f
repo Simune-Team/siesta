@@ -244,6 +244,31 @@ C   INTEGER MOFIO  : Quantum number m of orbital or KB projector
 
       end function mofio
 
+      FUNCTION ZETAFIO (IS,IO)
+      integer zetafio
+      integer, intent(in) :: is    ! Species index
+      integer, intent(in) :: io    ! Orbital index (within atom)
+
+C   Returns zeta number of a
+C   basis orbital 
+
+C    INTEGER  IO   : Orbital index (within atom)
+C                    IO > 0 => Basis orbitals
+C************************OUTPUT*****************************************
+C   INTEGER ZETAFIO  : Zeta number of orbital
+
+      call chk('mofio',is)
+
+      spp => species(is)
+      if (io.gt.0) then
+         if (io.gt.spp%norbs)  call die("No such orbital")
+         zetafio = spp%orbnl_z(spp%orb_index(io))
+      else 
+         call die('zetafio only deals with orbitals')
+      endif
+
+      end function zetafio
+
       function rcut(is,io)
       real(dp) rcut
       integer, intent(in) :: is    ! Species index

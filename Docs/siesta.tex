@@ -1,5 +1,13 @@
 % Manual for the SIESTA program
-
+%
+% To generate the printed version:
+%
+% latex siesta
+% makeindex siesta    (Optional if you have a current siesta.ind)
+% latex siesta
+% [ dvips siesta ]
+%
+%
 \documentclass[11pt]{article}
 \usepackage{makeidx}
 
@@ -30,21 +38,21 @@
 
 \vspace{3cm}
 
-{\Huge {\bf SIESTA 1.0.49}}
+{\Huge {\bf SIESTA 1.0.62}}
 
 \vspace{3cm}
 
-{\Large {\it January 29, 2001} }
+{\Large {\it September 24, 2001} }
 
 \vspace{3cm}
 
 \begin{tabular}{rl}
 
 {\Large Emilio Artacho} &
-   \Large{\it Universidad Aut\'onoma de Madrid} \\
+   \Large{\it Cambridge University, UK} \\
 
 {\Large Julian Gale} &
-   \Large{\it Imperial College, London} \\
+   \Large{\it Imperial College, London, UK} \\
 
 {\Large Alberto Garc\'{\i}a} &
    \Large{\it Universidad del Pais Vasco, Bilbao} \\
@@ -56,7 +64,7 @@
    \Large{\it Spanish Research Council, Barcelona} \\
 
 {\Large Daniel S\'anchez-Portal} &
-   \Large{\it University of Illinois at Urbana-Champain} \\
+   \Large{\it Universidad del Pais Vasco, San Sebastian} \\
 
 {\Large Jos\'e M. Soler} &
    \Large{\it Universidad Aut\'onoma de Madrid}
@@ -64,7 +72,7 @@
 \end{tabular}
 
 \vspace{2cm}
-{\bf siesta@polar.fmc.uam.es}
+{\bf siesta@wm.lc.ehu.es}
 
 \end{center}
 
@@ -113,7 +121,7 @@ It is written in Fortran 90.
 It may be compiled for serial or parallel execution (under MPI).
 The selection is performed by standard preprocessor compiler
 directives, switched by the appropriate makefiles.
-Accessory tools like shell scripts and makefiles are now
+Auxiliary tools such shell scripts and makefiles are now
 available only for the UNIX operating system.
 \end{itemize}
 
@@ -172,7 +180,7 @@ This is a short description of the compilation procedures
 and of the datafile format for the SIESTA code.
 This version is a very preliminary release of the code.
 Please report problems, bugs and suggestions to
-{\bf siesta@polar.fmc.uam.es}
+{\bf siesta@wm.lc.ehu.es}
 
 
 
@@ -184,15 +192,15 @@ and take a look at the files there. If one of them suits your
 platform, copy it or link it to {\tt Src/arch.make}. If you intend
 to create a parallel version of SIESTA, make sure you have all
 the extra support libraries ({\tt MPI, scalapack, blacs...}).
-Type make. The executable should work for any job (This is not exactly
+Type {\tt make}. The executable should work for any job (This is not exactly
 true, since some of the parameters in the atomic routines are still
 hardwired, but those would seldom need to be changed.)
 
 \noindent
-Some example fdf files are provided in the {\tt Examples}
-directory. Probably the simplest to start with is the
-water-molecule example. It is advisable to create independent subdirectories for
-each job, so that everything is clean and neat:
+Some example FDF files are provided in the {\tt Examples}
+directory. Probably the simplest to start with is the water-molecule
+example. It is advisable to create independent subdirectories for each
+job, so that everything is clean and neat:
 
 {\tt mkdir h2o}
 
@@ -202,7 +210,7 @@ We need to generate the required pseudopotentials
 (We are going to streamline this process for this time, but
 you must realize that this is a tricky business that you 
 must master before using SIESTA responsibly. Every 
-pseudopotential must be thoroughly checked before using it.)
+pseudopotential must be thoroughly checked before use.)
 
 {\tt \$ cd $\sim$/siesta/Pseudo/atom}
 
@@ -240,16 +248,19 @@ you will need to understand in the future:
 
 \noindent
 Now there should be a new subdirectory called o.tm2 (o for o-xygen)
+and {\tt o.tm2.vps} (unformatted) and {\tt o.tm2.psf} (ASCII) files.
 
-{\tt \$ cp o.tm2/VPSOUT $\sim$/siesta/h2o/O.vps}
+{\tt \$ cp o.tm2.psf $\sim$/siesta/h2o/}
 
 \noindent
-copies the generated pseudopotential file to your working directory, 
-changing its name to accommodate it to the SIESTA naming convention.
+copies the generated pseudopotential file to your working directory. 
+(The unformatted and ASCII files are functionally equivalent, but
+the latter is more transportable and easier to look at, if you so
+desire.)
 
 {\tt \$ pg.sh h.tm2.inp}
 
-{\tt \$ cp h.tm2/VPSOUT $\sim$/siesta/h2o/H.vps}
+{\tt \$ cp h.tm2.psf $\sim$/siesta/h2o/}
 
 \noindent
 repeats the process for hydrogen.
@@ -272,11 +283,8 @@ files in your directory:
 
 \item out.fdf\index{out.fdf}
  (contains all the data used, explicit or default-ed) 
-\item O.vlocal and H.vlocal\index{species.vlocal@{\it species.}vlocal}
- (the local pseudopotentials used)
-\item O.PAO.basis and 
-H.PAO.basis\index{species.PAO.basis@{\it species.}PAO.basis}
- (the numerical basis orbitals used)
+\item O.ion and H.ion\index{species.ionl@{\it species.}ion}
+ (complete information about the basis and KB projectors)
 \item siesta.size\index{siesta.size}
  (contains the memory use of some subroutines and arrays)
 \item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
@@ -308,27 +316,20 @@ Now look at the other data files in {\tt Examples}
 
 \index{pseudopotential!generation}
 
-The data of the atomic pseudopotentials and the potential
-of the neutral atom are stored in binary files, and
-are read at the beginning of the execution, for each
-species defined in the input file. The data files must
-be named *.vps (or *.psatom.data), where * is the symbol of the
-element (H, C, Si,...) or any label (see the 
-{\bf ChemicalSpeciesLabel}\index{ChemicalSpeciesLabel@{\bf 
-ChemicalSpeciesLabel}}
-descriptor below).
+The atomic pseudopotentials are stored either in binary files (with
+extension {\tt .vps}) or in ASCII files (with extension {\tt .psf}),
+and are read at the beginning of the execution, for each species
+defined in the input file. The data files must be named {\tt *.vps}
+(or {\tt *.psf}), where {\tt *} is the label of the chemical species
+(see the {\bf ChemicalSpeciesLabel}\index{ChemicalSpeciesLabel@{\bf
+ChemicalSpeciesLabel}} descriptor below).
 
-These files are generated by a standard and {\bf completely independent}
-program (read {\tt siesta/Pseudo/atom/README} for more complete authorship and 
-copyright acknowledgements).
-It is included (with permission) in siesta/Pseudo/atom only for
-completeness. Its input and output is in a very standard format and,
-if you are already familiar with pseudopotential generation, you may want 
-to use your own programs instead. If you are not familiar, you should
-be {\bf very} careful before relying in a pseudopotential that you
-have generated, since {\bf all pseudopotentials should be thoroughly
-tested} before using them. We refer you to the standard literature
-and to {\tt siesta/Pseudo/atom/User.Guide}.
+These files are generated by the ATOM program (read {\tt
+siesta/Pseudo/atom/README} for more complete authorship and copyright
+acknowledgements).  It is included (with permission) in
+siesta/Pseudo/atom. Remember that {\bf all pseudopotentials should be
+thoroughly tested} before using them. We refer you to the standard
+literature and to {\tt siesta/Pseudo/atom/User.Guide}.
 
 
 %\section{ATOMIC-ORBITAL BASES IMPLEMENTED IN SIESTA}
@@ -350,10 +351,10 @@ operating sistems:\index{platforms}\index{architectures}
 If none of these fit your needs, you will have to build
 one on your own. Note that some systems require running a program such as
 ranlib\index{ranlib} to index object code libraries.
-Once you have decided which *.make you want to use,
+Once you have decided which {\tt *.make} you want to use,
 you just need to copy or link it to the {\tt Src} directory 
 as {\tt arch.make}.
-Then, just compile using the make utility, as usual.
+Then, just compile using the {\tt make} utility, as usual.
 
 \section{INPUT DATA FILE}
 
@@ -600,13 +601,11 @@ new format, which allows a much more flexible input.
 \index{User.Basis@{\bf User.Basis}}\index{basis!User basis} 
 
 If true, the basis, KB projector, and other information is read from
-files {\it Atomlabel}.PAOs.data, {\it Atomlabel}.KBs.data, {\it
-Atomlabel}.Vlocal.data, {\it Atomlabel}.Chlocal.data, and {\it
-Atomlabel}.Core.data, where {\it Atomlabel} is the atomic label
-specified in block {\it ChemicalSpeciesLabel}. These files can be
-generated by a previous SIESTA run or by the standalone program BASE.
-\index{BASE@{\bf BASE}}\index{basis!BASE standalone program} 
-No pseudopotential files are necessary.
+files {\it Atomlabel}{\tt .ion}, where {\it Atomlabel} is the atomic
+species label specified in block {\it ChemicalSpeciesLabel}. These
+files can be generated by a previous SIESTA run or by the standalone
+program BASE.  \index{BASE@{\bf BASE}}\index{basis!BASE standalone
+program} No pseudopotential files are necessary.
 
 \item[{\bf User.Basis.NetCDF}] ({\it logical}): 
 \index{User.Basis.NetCDF@{\bf User.Basis.NetCDF}}
@@ -614,12 +613,12 @@ No pseudopotential files are necessary.
 \index{NetCDF format} 
 
 If true, the basis, KB projector, and other information is read from
-NetCDF files {\it Atomlabel}.input.nc, where {\it Atomlabel} is the atomic
-label specified in block {\it ChemicalSpeciesLabel}. These files can
-be generated by a previous SIESTA run or by the standalone program
-BASE.  \index{BASE@{\bf BASE}}\index{basis!BASE standalone program}
-See an Appendix for information on the optional NetCDF package.
-No pseudopotential files are necessary.
+NetCDF files {\it Atomlabel}{\tt .ion.nc}, where {\it Atomlabel} is
+the atomic label specified in block {\it ChemicalSpeciesLabel}. These
+files can be generated by a previous SIESTA run or by the standalone
+program BASE.  \index{BASE@{\bf BASE}}\index{basis!BASE standalone
+program} See an Appendix for information on the optional NetCDF
+package.  No pseudopotential files are necessary.
 
 
 \item[{\bf PAO.BasisType}] ({\it string}): 
@@ -2891,6 +2890,60 @@ File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
 {\it Default value:} LDOS not calculated nor written.
         
 
+\item[{\bf ProjectedDensityOfStates}] ({\it block}): 
+\index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}} 
+\index{output!projected density of states}
+Instructs to write the Total Density Of States (Total DOS) and the 
+Projected Density Of States (PDOS) on the basis orbitals,
+between two given energies,
+in files {\tt SystemLabel}.TOT.DOS and 
+{\tt SystemLabel}.PDOS, respectively. 
+The block must be a single line with the energies of the range for 
+PDOS projection,
+(relative to the program's zero, i.e. the same as the eigenvalues
+printed by the program), the peak width (an energy) for broadening
+the eigenvalues, the number of points in the energy window, 
+and the energy units.
+An example is:
+
+\begin{verbatim}
+     %block ProjectedDensityOfStates
+        -20.00  10.00  0.200  500  eV
+     %endblock ProjectedDensityOfStates
+\end{verbatim}
+
+{\it Use:} The two energies of the range must be ordered,
+with lowest first.
+The PDOS is only implemented when the
+hamiltonian is solved by diagonalization with k-points.
+The PDOS is not parallelized yet, so an
+error message is issued when we try to use it in a parallel 
+execution.
+
+{\it Output:} The Total DOS is dumped into a file
+called {\tt SystemLabel}.TOT.DOS. The format of this file is:
+
+Energy value, Total DOS (spin up), Total DOS (spin down)
+
+The Projected Density Of States for all the orbitals in the unit cell
+is dumped sequentially into a file called 
+{\tt SystemLabel}.PDOS. The format of this file, for each atomic orbital,
+is the same as in the case of the Total DOS. 
+
+In all the cases, the units for the DOS are 
+(number of states/eV),
+and the Total DOS, $g \left(\epsilon\right)$, 
+is normalized as follows:
+
+\begin{eqnarray}
+   \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon = 
+   number \;\; of \;\; basis \;\; orbitals \;\; in \;\;  unit \;\; cell \;\;
+   \nonumber \\
+\end{eqnarray}
+
+
+{\it Default value:} PDOS not calculated nor written.
+        
 \item[{\bf WriteSiestaDim}] ({\it logical}): 
 \index{WriteSiestaDim@{\bf WriteSiestaDim}} 
 Instructs siesta to write the correct dimension parameters in
@@ -2912,16 +2965,13 @@ for each defined species (species defined either in block
 {\bf ChemicalSpeciesLabel}).\index{pseudopotential!files}
 The name of the files should be:
 
-{\it Chemical\_label}{\tt .vps}
+{\it Chemical\_label}{\tt .vps} (unformatted) or
+{\it Chemical\_label}{\tt .psf} (ASCII)
 
 \noindent 
 where {\it Chemical\_label} corresponds to the label defined in the
 {\bf ChemicalSpeciesLabel} block or the chemical symbol corresponding to
 the atomic number specified in {\bf PAO\_basis\_and\_PS\_lmax}.
-There is also the possibility (historical) to use the file 
-{\it Chemical\_label}{\tt .psatom.data} instead.
-
-
         
 \section{OUTPUT FILES}
 
@@ -2944,19 +2994,18 @@ A complete list of the input used by the code can be found at the
 end in the file {\tt out.fdf}, including defaults used by the code
 in the run.
 
-After that, the subroutine ATOM perrforms atomic duties, i.e., 
-reads the needed pseudopotentials, factorizes them into Kleinman-Bylander
-form, and generates (or reads) the atomic basis set to be used in the
-simulation. These stages are documented in the output file.
+After that, the program reads the pseudopotentials, factorizes them
+into Kleinman-Bylander form, and generates (or reads) the atomic basis
+set to be used in the simulation. These stages are documented in the
+output file.
 
-The simulation begins after that, the output showing information
-of the MD (or CG) steps and the SCF cycles within.
-Basic descriptions of the process and results are
-presented. The user has the option to customize it,
-however,\index{output!customization} by defining different
-options that control the printing of informations
-like coordinates, forces, $\vec k$ points, etc.
-Here is a list of useful options: 
+The simulation begins after that, the output showing information of
+the MD (or CG) steps and the SCF cycles within.  Basic descriptions of
+the process and results are presented. The user has the option to
+customize it, however,\index{output!customization} by defining
+different options that control the printing of informations like
+coordinates, forces, $\vec k$ points, etc.  Here is a list of useful
+options:
  
 \begin{itemize}
 \item
@@ -3029,38 +3078,21 @@ arrays are considered, since fixed-size arrays are generally much smaller.
 SIESTA (and the standalone program BASE) 
 \index{BASE@{\bf BASE}}\index{basis!BASE standalone program}.
 always generate the files
-{\it Atomlabel}.PAOs.data, {\it Atomlabel}.KBs.data, {\it
-Atomlabel}.Vlocal.data, {\it Atomlabel}.Chlocal.data, and {\it
-Atomlabel}.Core.data, where {\it Atomlabel} is the atomic label
+{\it Atomlabel}{\tt .ion}, where {\it Atomlabel} is the atomic label
 specified in block {\it ChemicalSpeciesLabel}.  Optionally, if
 the NetCDF support subsystem is compiled in, the programs generate
-NetCDF files 
-\index{NetCDF format}
-{\it Atomlabel}.dump.nc
+NetCDF files \index{NetCDF format}
+{\it Atomlabel}{\tt .ion.nc}.
 See an Appendix for information on the optional NetCDF package.
 
 \subsection{Pseudopotentials}
 \index{Pseudopotentials} SIESTA uses as local pseudopotential a smooth
-function up the core cutoff radius (normally the potential generated
+function up to the core cutoff radius (normally the potential generated
 by the core positive charge spread with a gaussian form). The
 Kleinman-Bylander pseudopotentials are generated
 accordingly.
 \index{pseudopotential!writing vlocal} 
 \index{pseudopotential!writing KB projectors} 
-
-The files {\it
-Chemical\_label.}{\tt Vlocal.data}\index{species.vlocal.data@{\it
-species.}vlocal.data}
-\noindent
-(one per species) contain information about the local potential,
-and {\it
-Chemical\_label.}{\tt KBs.data}\index{species.KBs.data@{\it
-species.}KBs.data}
-\noindent
-hold the Kleinman-Bylander projectors.
-
-They are ASCII files, and their content is indicated by comments
-interspeded with the data.
 
 
 \subsection{Hamiltonian and overlap matrices}
@@ -3255,7 +3287,7 @@ the calculation would most probably not converge.
 And other similar messages.
 
 {\it Description:}
-Some array dimensions which change unfrequently, and do not lead to
+Some array dimensions which change infrequently, and do not lead to
 much memory use, are fixed to oversized values. This message means that
 one of this parameters is too small and neads to be increased.
 However, if this occurs and your system is not very large, or unusual in
@@ -3336,14 +3368,79 @@ Implementation of the Li-Nunes-Vanderbilt order-$N$ functional
 \end{itemize}
 
 
+\section{REPORTING BUGS}
+\index{bug reports}
+Your assistance is essential to help improve the program. If you find
+any problem, please report it back to us using the {\tt send-bug}
+script in the top {\tt SIESTA} directory, or (better) the bug
+reporting Web interface at {\tt http://www.uam.es/siesta} (log in as
+{\tt user}, with any non-empty password). There is online
+documentation available on the web page itself. Please keep in mind
+the following guidelines:
+
+\begin{itemize}
+
+\item To be useful, bug reports should be as detailed as possible, yet
+concise and to the point.
+
+\item Describe the exact steps you followed to see the problem. You
+might want to include a copy of the fdf file you used in the
+calculation, details about the pseudopotentials, etc, or provide a
+means for us to download the information.
+
+\item Be specific. Describe what happened and how it differs from what
+should have happened.
+
+\item If you have any idea about how to fix the problem, by all means
+tell us!
+
+\item Please make sure that your bug report includes:
+
+\begin{itemize}
+
+\item Your name and email address.  This is essential for a proper
+followup of the problem.
+
+\item A brief one-line synopsis of the problem.
+
+\item The SIESTA version in which the problem was found. We can't
+assume that you have the very latest version, and a problem that exists in
+one version may not exist in another. Use the version number printed
+at the top of any output file (also found in file Src/version.F).
+
+\item The platform on which the problem was found, and the operating
+system and compiler version.
+
+\item The bug database is open so that SIESTA users can look at the
+known problems (this, by the way, is useful to avoid receiving
+duplicate bug reports). If for some reason you do not want your report
+to be seen by others, please set the {\tt Confidential} flag to {\tt
+yes}.
+
+\end{itemize}
+
+\item The other fields in the form can be left in their default
+values, but if your report concerns a documentation bug or a request
+for new functionality, please set the {\tt Class} field
+accordingly. (The default is {\tt sw-bug} which stands for ``software
+bug''.)
 
 
+\item Whether using the Web form or e-mail to submit your bug report,
+please limit your communication to one bug report per form or message.
+
+\end{itemize}
+
+You will receive an acknowledgement of your report by email, and
+notifications of any progress in the solution. If you want to browse
+the bug database, simply use the Web interface and request a
+``query''.
 
 \section{ACKNOWLEDGMENTS}
 
 We want to acknowledge the use of a small number of routines,
 written by other authors, in developing the siesta code.
-In most cases, these routines were adquired from now-forgotten 
+In most cases, these routines were acquired from now-forgotten 
 routes, and the reported authorships are based on their headings.
 If you detect any incorrect or incomplete attribution, or suspect
 that other routines may be due to different authors, please
@@ -3578,3 +3675,4 @@ See the Utils/PyAtom directory for some example scripts.
 
 
 \end{document}
+

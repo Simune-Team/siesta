@@ -3,12 +3,15 @@
 !     Support for dumping and reading PAO and KB information from
 !     ASCII or NetCDF files.
 !
-!     Alberto Garcia, 2000
+!     Alberto Garcia, 2000, 2001
 !
+      use chemical
       use sys
       use precision
       use atmparams, only:NTBMAX
       use atm_types
+      use basis_types
+      use pseudopotential
       use radial
       use fdf
 
@@ -16,6 +19,7 @@
 
       private
       public :: dump_basis_ascii, read_basis_ascii
+      public :: dump_basis_xml
       public :: dump_basis_netcdf, read_basis_netcdf
 
       type(species_info), pointer        :: spp
@@ -35,6 +39,7 @@
 #else 
 
       use netcdf
+
       implicit none
 
 
@@ -55,24 +60,16 @@
       character(len=20) filename
       character(len=20) dummy
                                 !
-                                !     Automatic arrays
-                                !
-      character(len=20)              :: species_name(20)
-      integer                        :: z(20)
-
-      nspecies = fdf_integer('NumberOfSpecies',0)
-      if (nspecies.eq.0) call die("Please specify number of species!!")
-      if (nspecies.GT.20)
-     $     call die("read_user_basis: Please increase bounds!!")
+      call read_chemical_types
+      nspecies = number_of_species()
 
       allocate(species(nspecies))
 
-      call get_species_names(nspecies,species_name,z)
-
       do is = 1, nspecies
          spp => species(is)
-         spp%label = species_name(is)
-         write(filename,'(a,a)') trim(species_name(is)), ".input.nc"
+         spp%label = species_label(is)
+         spp%read_from_file = .true.
+         write(filename,'(a,a)') trim(spp%label), ".ion_nc"
          iret = nf90_open(trim(filename),NF90_NOWRITE,ncid)
 
          iret = nf90_inq_dimid(ncid,'norbs',norbs_id)
@@ -103,7 +100,8 @@
                                 !! Sanity check here??
 
          iret = nf90_get_att(ncid,nf90_global,'Atomic_number',spp%z)
-         if (z(is) .ne. spp%z) call die("Atomic number mismatch")
+         if (atomic_number(is) .ne. spp%z)
+     $                            call die("Atomic number mismatch")
 
          iret = nf90_get_att(ncid,nf90_global,'Valence_charge',spp%zval)
          iret = nf90_get_att(ncid,nf90_global,'Mass',spp%mass)
@@ -333,67 +331,6 @@ c
 !----------------------------------------------------------------
 #ifdef CDF
 #endif
-      subroutine get_species_names(nsp,atm_label,z)
-
-      use parse
-
-      implicit          none
-
-
-c     Reads the 'long_names' for different species. 
-c     The labels are neccesary to 
-c     identify the files which contain the information about the 
-c     basis.
-
-      integer, intent(in)  ::    nsp ! Number of species
-      integer, intent(out) ::    z(:) ! Atomic numbers
-      character(len=*)     ::    atm_label(:) ! Names for the species
-
-
-      type(block), pointer  :: bp
-      type(parsed_line), pointer  :: p
-      character(len=70) line
-      integer ns_read, isp
-      logical floating, bessel
-
-      nullify(bp)
-      if (.not. fdf_block('Chemical_species_label',bp) )
-     $     call die("Block Chemical_species_label does not exist.")
-
-      ns_read = 0
-      loop: DO
-        if (.not. fdf_bline(bp,line)) exit loop
-        ns_read = ns_read + 1
-        p => digest(line)
-        if (.not. match(p,"iin"))
-     $       call die("Wrong format in Chemical_species_label")
-        isp = integers(p,1)
-        if (isp .gt. nsp .or. isp .lt. 1)
-     $       call die("Wrong specnum in Chemical_species_label")
-        atm_label(isp) = names(p,1)
-        z(isp) = integers(p,2)
-        floating = (z(isp) .le. 0)
-        bessel = (z(isp) .eq. -100)
-        if (.not.floating) then
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', atm_label(isp),
-     $             ' Atomic number:',  z(isp)    
-        elseif (bessel) then
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', atm_label(isp),
-     $             ' (floating Bessel functions)'
-        else
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', atm_label(isp),
-     $             ' Atomic number:',  z(isp),
-     $             ' (floating PAOs)'
-        endif
-        call destroy(p)
-      enddo loop
-      if (ns_read .ne. nsp) call die("Not enough species in block")
-      call destroy(bp)
-
-      end subroutine get_species_names
 !=======================================================================
 
       subroutine read_basis_ascii
@@ -403,46 +340,48 @@ c     basis.
       integer aux(maxnorbs), lun
       character*20 filename
 
-      character(len=20)              :: species_name(20)
-      integer                        :: z(20)
-
 
       integer is, j, i, l, ispol, nor, nk, m, npts
       real(dp) dummy
 
-      nspecies = fdf_integer('NumberOfSpecies',0)
-      if (nspecies.eq.0) call die("Please specify number of species!!")
-      if (nspecies.GT.20)
-     $     call die("read_basis_ascii: Please increase bounds!!")
+      call read_chemical_types
+      nspecies = number_of_species()
 
       allocate(species(nspecies))
 
-      call get_species_names(nspecies,species_name,z)
-
       do is = 1, nspecies
          spp => species(is)
-         spp%label = species_name(is)
-         write(filename,'(a,a)') trim(spp%label), ".PAOs.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='old',form='formatted')
-         rewind(lun)
-         call read_header(spp,lun)
-         read(lun,*) 
+         spp%label = species_label(is)
+         spp%read_from_file = .true.
+         call read_ion_ascii(spp)
+      enddo
+      call elec_corr_setup()
+
+      end subroutine read_basis_ascii
+!
+!----------------------
+      subroutine read_ion_ascii(spp)
+      type(species_info), pointer  :: spp
+      type(rad_func), pointer      :: op
+
+      character(len=20) filename
+      integer i, j, l, m, lun, nor, nk, ispol, npts
+      real(dp) dummy
+
+      write(filename,'(a,a)') trim(spp%label), ".ion"
+      call io_assign(lun)
+      open(lun,file=filename,status='old',form='formatted')
+      rewind(lun)
+
+      call read_header(spp,lun)
+      read(lun,*) 
          do i=1,spp%n_orbnl
             read(lun,'(4i3,f10.6)')
      $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
      $           ispol, spp%orbnl_pop(i)
             spp%orbnl_ispol(i) =  ispol.eq.1
-            op=>spp%orbnl(i)
-            read(lun,'(i4,2g26.16)') npts, op%delta, op%cutoff
-            call rad_alloc(op,npts)
-            if (npts.ne.NTBMAX) call die("Wrong no. of grid points!")
-            do j=1,npts
-               read(lun,'(2g26.16)') dummy, op%f(j)
-            enddo
-            call rad_setup_d2(op)
+            call radial_read_ascii(spp%orbnl(i),lun)
          enddo
-         call io_close(lun)
 !
 !        Update indexes
 !
@@ -460,27 +399,13 @@ c     basis.
          enddo
          spp%norbs = nor
 
-
-         write(filename,'(a,a)') trim(spp%label), ".KBs.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='old',form='formatted')
-         rewind(lun)
-         call read_header(spp,lun,skip=.true.)
+! KBs
          read(lun,*)
          do i=1,spp%n_pjnl
             read(lun,'(2i3,f22.16)')
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
-            op=>spp%pjnl(i)
-            read(lun,'(i4,2g26.16)') npts,
-     $           op%delta, op%cutoff
-            call rad_alloc(op,npts)
-            if (npts.ne.NTBMAX) call die("Wrong no. of grid points!")
-            do j=1,npts
-               read(lun,'(2g26.16)') dummy, op%f(j)
-            enddo
-            call rad_setup_d2(op)
+            call radial_read_ascii(spp%pjnl(i),lun)
          enddo
-         call io_close(lun)
 !
 !        Update indexes
 !
@@ -497,85 +422,45 @@ c     basis.
             enddo
          enddo
          spp%nprojs = nk
-
-         write(filename,'(a,a)') trim(spp%label), ".Vlocal.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='old',form='formatted')
-         call read_header(spp,lun,skip=.true.)
+!
+!Vlocal
          read(lun,*)
-            op=>spp%vlocal
-            read(lun,'(i4,2g26.16)') npts, op%delta, op%cutoff
-            call rad_alloc(op,npts)
-!            if (npts.ne.NTBMAX) call die("Wrong no. of grid points!")
-            do j=1,npts
-               read(lun,'(2g26.16)') dummy, op%f(j)
-            enddo
-            call rad_setup_d2(op)
-         call io_close(lun)
+         call radial_read_ascii(spp%vlocal,lun)
 
-         write(filename,'(a,a)') trim(spp%label), ".Chlocal.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='old',form='formatted')
-         call read_header(spp,lun,skip=.true.)
+!
+!Chlocal
          read(lun,*)
-            op=>spp%chlocal
-            read(lun,'(i4,2g26.16)') npts, op%delta, op%cutoff
-            call rad_alloc(op,npts)
-            if (npts.ne.NTBMAX) call die("Wrong no. of grid points!")
-            do j=1,npts
-               read(lun,'(2g26.16)') dummy, op%f(j)
-            enddo
-            call rad_setup_d2(op)
+         call radial_read_ascii(spp%chlocal,lun)
+!
+!Core
+         read(lun,*,end=9999)
+         call radial_read_ascii(spp%core,lun)
+
+ 9999    continue
          call io_close(lun)
-
-         write(filename,'(a,a)') trim(spp%label), ".Core.data"
-         inquire(file=filename,exist=spp%there_is_core)
-         if (.not. spp%there_is_core) cycle
-
-         call io_assign(lun)
-         open(lun,file=filename,status='old',form='formatted')
-         call read_header(spp,lun,skip=.true.)
-         read(lun,*)
-            op=>spp%core
-            read(lun,'(i4,2g26.16)') npts, op%delta, op%cutoff
-            call rad_alloc(op,npts)
-            if (npts.ne.NTBMAX) call die("Wrong no. of grid points!")
-            do j=1,npts
-               read(lun,'(2g26.16)') dummy, op%f(j)
-            enddo
-            call rad_setup_d2(op)
-         call io_close(lun)
-
-      enddo
-
-      call elec_corr_setup()
 
       CONTAINS
 
-      subroutine read_header(p,unit,skip)
+      subroutine read_header(p,unit)
 
       type(species_info), pointer :: p
       integer, intent(in)         :: unit
-      logical, intent(in),optional  :: skip
+      
+      character(len=78) line
 
-      logical skip_over
-
-      skip_over = .false.
-      if (present(skip))  skip_over = skip
-         
-      if (skip_over) then
-         do i=1,8
-            read(unit,*)
-         enddo
-         RETURN
+      read(unit,'(a)') line
+      if (trim(line) .eq. '<preamble>') then
+ 1       continue
+         read(unit,'(a)') line
+         if (trim(line) .ne. '</preamble>') goto 1
       endif
-
+         
       read(unit,'(a2)') p%symbol
       read(unit,'(a20)') p%label
       read(unit,'(i5)') p%z
       read(unit,'(i5)') p%zval
-      read(unit,'(g26.16)') p%mass
-      read(unit,'(g26.16)') p%self_energy
+      read(unit,'(g25.15)') p%mass
+      read(unit,'(g25.15)') p%self_energy
       read(unit,'(2i4)') p%lmax_basis, p%n_orbnl
       read(unit,'(2i4)') p%lmax_projs, p%n_pjnl
 
@@ -584,7 +469,7 @@ c     basis.
 
       end subroutine read_header
 
-      end subroutine read_basis_ascii
+      end subroutine read_ion_ascii
 
 
 #ifndef CDF
@@ -613,12 +498,11 @@ c     basis.
       integer is, j, i, l
       character*20 filename
 
-      write(6,'(/,a,/)')
-     $     '*** Dumping atomic info in netCDF format (.nc files)'
-
       do is = 1, nspecies
          spp => species(is)
-         write(filename,'(a,a)') trim(spp%label), ".dump.nc"
+         if (spp%read_from_file) cycle   !! Do not dump
+
+         write(filename,'(a,a)') trim(spp%label), ".ion.nc"
          write(6,'(2a)') 'Dumping basis to NetCDF file ',
      $                   trim(filename)
 
@@ -816,118 +700,184 @@ c
 
       subroutine dump_basis_ascii
 
-      integer aux(maxnorbs), lun
-      character*20 filename
-
-      integer is, j, i, l, ispol
+      integer aux(maxnorbs)
+      integer is
 
       do is = 1, nspecies
-         spp => species(is)
-         write(filename,'(a,a)') trim(spp%label), ".PAOs.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='replace',form='formatted')
-         call write_header(spp,lun)
-         write(lun,'(a)') "# PAOs:__________________________"
+         call dump_ion_ascii(is)
+      enddo
+      end subroutine dump_basis_ascii
+!---
+      subroutine dump_ion_ascii(is)
+      integer, intent(in)      :: is
+
+      type(species_info), pointer  ::   spp
+      character*20 filename
+      integer j, i, l, ispol, lun
+      type(rad_func), pointer :: op
+
+      spp => species(is)
+      if (spp%read_from_file) return    !! Do not dump
+
+      write(filename,'(a,a)') trim(spp%label), ".ion"
+      call io_assign(lun)
+      open(lun,file=filename,status='replace',form='formatted')
+
+      write(lun,'(a)') '<preamble>'
+      call write_basis_specs(lun,is)
+      call pseudo_header_print(lun,
+     $                   basis_parameters(is)%pseudopotential)
+      write(lun,'(a)') '</preamble>'
+      call write_header(spp,lun)
+      write(lun,'(a)') "# PAOs:__________________________"
          do i=1,spp%n_orbnl
             ispol = 0
             if (spp%orbnl_ispol(i)) ispol = 1
             write(lun,'(4i3,f10.6,2x,a)')
      $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
      $           ispol, spp%orbnl_pop(i),
-     $           " # l, n, z, is_polarization, population"
-            op=>spp%orbnl(i)
-            write(lun,'(i4,2g26.16,a)') op%n,
-     $           op%delta, op%cutoff, " # npts, delta, cutoff"
-            do j=1,op%n
-               write(lun,'(2g26.16)') (j-1)*op%delta, op%f(j)
-            enddo
+     $           " #orbital l, n, z, is_polarized, population"
+            call radial_dump_ascii(spp%orbnl(i),lun)
          enddo
          
-         call io_close(lun)
-
-         write(filename,'(a,a)') trim(spp%label), ".KBs.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='replace',form='formatted')
-         call write_header(spp,lun)
          write(lun,'(a)') "# KBs:__________________________"
          do i=1,spp%n_pjnl
             write(lun,'(2i3,f22.16,2x,a)')
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
-     $           " # l, n (sequence number), Reference energy"
-            op=>spp%pjnl(i)
-            write(lun,'(i4,2g26.16,a)') op%n,
-     $           op%delta, op%cutoff, " # npts, delta, cutoff"
-            do j=1,op%n
-               write(lun,'(2g26.16)') (j-1)*op%delta, op%f(j)
-            enddo
+     $           " #kb l, n (sequence number), Reference energy"
+            call radial_dump_ascii(spp%pjnl(i),lun)
          enddo
-         call io_close(lun)
 
-         write(filename,'(a,a)') trim(spp%label), ".Vlocal.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='replace',form='formatted')
-         call write_header(spp,lun)
          write(lun,'(a)') "# Vlocal:__________________________"
-            op=>spp%vlocal
-            write(lun,'(i4,2g26.16,a)') op%n,
-     $           op%delta, op%cutoff, " # npts, delta, cutoff"
-            do j=1,op%n
-               write(lun,'(2g26.16)') (j-1)*op%delta, op%f(j)
-            enddo
-         call io_close(lun)
+         call radial_dump_ascii(spp%vlocal,lun)
 
-         write(filename,'(a,a)') trim(spp%label), ".Chlocal.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='replace',form='formatted')
-         call write_header(spp,lun)
          write(lun,'(a)') "# Chlocal:__________________________"
-            op=>spp%chlocal
-            write(lun,'(i4,2g26.16,a)') op%n,
-     $           op%delta, op%cutoff, " # npts, delta, cutoff"
-            do j=1,op%n
-               write(lun,'(2g26.16)') (j-1)*op%delta, op%f(j)
-            enddo
+         call radial_dump_ascii(spp%chlocal,lun)
+
+         if (spp%there_is_core) then
+            write(lun,'(a)') "# Core:__________________________"
+            call radial_dump_ascii(spp%core,lun)
+         endif
          call io_close(lun)
 
-         if (.not. spp%there_is_core) cycle
+         CONTAINS
 
-         write(filename,'(a,a)') trim(spp%label), ".Core.data"
-         call io_assign(lun)
-         open(lun,file=filename,status='replace',form='formatted')
-         call write_header(spp,lun)
-         write(lun,'(a)') "# Core:__________________________"
-            op=>spp%core
-            write(lun,'(i4,2g26.16,a)') op%n,
-     $           op%delta, op%cutoff, " # npts, delta, cutoff"
-            do j=1,op%n
-               write(lun,'(2g26.16)') (j-1)*op%delta, op%f(j)
-            enddo
-         call io_close(lun)
+         subroutine write_header(p,unit)
+         
+         type(species_info), pointer :: p
+         integer, intent(in)         :: unit
 
+         write(unit,'(a2,28x,a)') p%symbol, "# Symbol"
+         write(unit,'(a20,10x,a)') p%label, "# Label"
+         write(unit,'(i5,25x,a)') p%z, "# Atomic number"
+         write(unit,'(i5,25x,a)') p%zval, "# Valence charge"
+         write(unit,'(g25.15,4x,a)') p%mass, "# Mass "
+         write(unit,'(g25.15,4x,a)') p%self_energy, "# Self energy "
+         write(unit,'(2i4,22x,a)') p%lmax_basis, p%n_orbnl,
+     $        "# Lmax for basis, no. of nl orbitals "
+         write(unit,'(2i4,22x,a)') p%lmax_projs, p%n_pjnl,
+     $        "# Lmax for projectors, no. of nl KB projectors "
+
+         end subroutine write_header
+
+      end subroutine dump_ion_ascii
+!
+      subroutine dump_basis_xml
+
+      integer aux(maxnorbs)
+      integer is
+
+      do is = 1, nspecies
+         call dump_ion_xml(is)
       enddo
+      end subroutine dump_basis_xml
+!---
+      subroutine dump_ion_xml(is)
+      use xml
 
-      CONTAINS
+      integer, intent(in)      :: is
 
-      subroutine write_header(p,unit)
+      type(species_info), pointer  ::   spp
+      character*20 filename
+      integer j, i, l, ispol, lun
+      type(rad_func), pointer :: op
 
-      type(species_info), pointer :: p
-      integer, intent(in)         :: unit
+      spp => species(is)
+      if (spp%read_from_file) return    !! Do not dump
 
-      write(unit,'(a2,28x,a)') p%symbol, "# Symbol"
-      write(unit,'(a20,10x,a)') p%label, "# Label"
-      write(unit,'(i5,25x,a)') p%z, "# Atomic number"
-      write(unit,'(i5,25x,a)') p%zval, "# Valence charge"
-      write(unit,'(g26.16,4x,a)') p%mass, "# Mass "
-      write(unit,'(g26.16,4x,a)') p%self_energy, "# Self energy "
-      write(unit,'(2i4,22x,a)') p%lmax_basis, p%n_orbnl,
-     $     "# Lmax for basis, no. of nl orbitals "
-      write(unit,'(2i4,22x,a)') p%lmax_projs, p%n_pjnl,
-     $     "# Lmax for projectors, no. of nl KB projectors "
+      write(filename,'(a,a)') trim(spp%label), ".ion.xml"
+      call io_assign(lun)
+      open(lun,file=filename,status='replace',form='formatted')
 
-      end subroutine write_header
+      write(lun,'(a)') "<ion> "
+      call xml_dump_element(lun,'symbol',str(spp%symbol))
+      call xml_dump_element(lun,'label',str(spp%label))
+      call xml_dump_element(lun,'z',str(spp%z))
+      call xml_dump_element(lun,'valence',str(spp%zval))
+      call xml_dump_element(lun,'mass',str(spp%mass))
+      call xml_dump_element(lun,'self_energy',str(spp%self_energy))
+      call xml_dump_element(lun,'lmax_basis',str(spp%lmax_basis))
+      call xml_dump_element(lun,'norbs_nl',str(spp%n_orbnl))
+      call xml_dump_element(lun,'lmax_projs',str(spp%lmax_projs))
+      call xml_dump_element(lun,'nprojs_nl',str(spp%n_pjnl))
 
-      end subroutine dump_basis_ascii
+      write(lun,'(a)') '<preamble>'
+      call write_basis_specs(lun,is)
+      call pseudo_header_print(lun,
+     $                   basis_parameters(is)%pseudopotential)
+      write(lun,'(a)') '</preamble>'
 
+      write(lun,'(a)') "<paos>"
+         do i=1,spp%n_orbnl
+            write(lun,'(a)') "<orbital "
+            ispol = 0
+            if (spp%orbnl_ispol(i)) ispol = 1
+            call xml_dump_attribute(lun,'l',str(spp%orbnl_l(i)))
+            call xml_dump_attribute(lun,'n',str(spp%orbnl_n(i)))
+            call xml_dump_attribute(lun,'z',str(spp%orbnl_z(i)))
+            call xml_dump_attribute(lun,'ispol',str(ispol))
+            call xml_dump_attribute(lun,'population',
+     $                            str(spp%orbnl_pop(i)))
+            write(lun,'(a)') " >"
+            call radial_dump_xml(spp%orbnl(i),lun)
+            write(lun,'(a)') "</orbital>"
+         enddo
+      write(lun,'(a)') "</paos>"
+         
+      write(lun,'(a)') "<kbs>"
+      do i=1,spp%n_pjnl
+         write(lun,'(a)') "<projector "
+         call xml_dump_attribute(lun,'l',str(spp%pjnl_l(i)))
+         call xml_dump_attribute(lun,'n',str(spp%pjnl_n(i)))
+         call xml_dump_attribute(lun,'ref_energy',
+     $                                   str(spp%pjnl_ekb(i)))
+         call radial_dump_xml(spp%pjnl(i),lun)
+         write(lun,'(a)') " >"
+       enddo
+       write(lun,'(a)') "</kbs>"
+
+       write(lun,'(a)') "<vlocal>"
+       call radial_dump_xml(spp%vlocal,lun)
+       write(lun,'(a)') "</vlocal>"
+
+       write(lun,'(a)') "<chlocal>"
+       call radial_dump_xml(spp%chlocal,lun)
+       write(lun,'(a)') "</chlocal>"
+
+       if (spp%there_is_core) then
+          write(lun,'(a)') "<core>"
+          call radial_dump_xml(spp%core,lun)
+          write(lun,'(a)') "</core>"
+       endif
+
+       write(lun,'(a)') "</ion>"
+
+       call io_close(lun)
+
+      end subroutine dump_ion_xml
+!
+!
+!======================================================================
 !
 !     This "atomic" routines use information **in the new structures**,
 !     so they cannot be replaced by those in atom.f...

@@ -36,6 +36,7 @@ C                       : within a sphere of radius rmax
 C integer indexp(nep)   : Translation from extended to normal mesh index
 C integer ipa(na)       : Mesh cell in which atom is
 C integer mop           : Maximum number of non-zero orbital points
+c integer nmeshg(3)     : Total number of mesh points in each direction
 C integer ne(3)         : Number of mesh-Extension intervals 
 C                       : in each direction
 C integer nem(3)        : Extended-mesh divisions in each direction
@@ -57,6 +58,7 @@ C ----------------------------------------------------------------------
       integer, dimension(3), save :: ne
       integer, dimension(3), save :: nem
       integer, dimension(3), save :: nmsc
+      integer, dimension(3), save :: nmeshg
 
       real*8,  dimension(3,3),   save :: cmesh
       real*8,  dimension(3,3),   save :: rcmesh
@@ -342,9 +344,12 @@ C to be larger, increase ntm and try again.
         goto 50
       endif
 
+C Store number of mesh points in module array
+      nmeshg(1:3) = ntm(1:3)
+
 C Output current mesh dimensions and cut-off
       if (Node.eq.0) then
-        write(6,'(/,a,3(i6,a),i12)') 'DHSCF: MESH =',
+        write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
      .  ntm(1),' x',ntm(2),' x',ntm(3),' =', ntm(1)*ntm(2)*ntm(3)
       endif
 
@@ -366,7 +371,7 @@ c      G2mesh = 1.0d6
 c      call chkgmx( k0, rcell, ntm, G2mesh )
       if (Node.eq.0) then
         write(6,'(a,2f10.3,a)')
-     . 'DHSCF: Mesh cutoff (required, used) =', G2max, G2mesh, ' Ry'
+     . 'InitMesh: Mesh cutoff (required, used) =', G2max, G2mesh, ' Ry'
       endif
       G2max = G2mesh
 
@@ -399,10 +404,10 @@ C possible place within the unit cell.
       enddo
 
 C Some printout for debugging
-*     write(6,'(a,3i6)') 'DHSCF: NM   =', nm 
-*     write(6,'(a,3i6)') 'DHSCF: NMSC =', nmsc 
-*     write(6,'(a,3i6)') 'DHSCF: NE   =', ne 
-*     write(6,'(a,3i6)') 'DHSCF: NEM  =', nem 
+*     write(6,'(a,3i6)') 'InitMesh: NM   =', nm 
+*     write(6,'(a,3i6)') 'InitMesh: NMSC =', nmsc 
+*     write(6,'(a,3i6)') 'InitMesh: NE   =', ne 
+*     write(6,'(a,3i6)') 'InitMesh: NEM  =', nem 
 
 C Find total number of extended-mesh points.
       nep = nem(1) * nem(2) * nem(3)
@@ -1055,7 +1060,7 @@ C
 C Local variables
 C
       integer
-     .  ia, io, iop, ip, ip0, iphi, is, isp, n, nlist
+     .  ia, io, iop, ip, ip0, iphi, is, isp, n, nlist, nliste
 
 #ifdef MPI
       integer
@@ -1065,14 +1070,12 @@ C
       logical
      .  within
 
-      logical, save :: firsttime
+      logical, save :: firsttime = .true.
 
-      integer, dimension(:), allocatable :: numphi
+      integer, dimension(:), allocatable, save :: numphi
 
       real*8
      .  dxsp(3,nsp), grphi(3), phip, r2o, r2sp(nsp)
-
-      data firsttime / .true. /
 
 C On first call set the logical DirectPhi
       if (firsttime) then
@@ -1131,24 +1134,56 @@ C Allocate phi if this is not a direct calculation
       else
         nphi = nlist
       endif
+
+C Add an extra margin of error to nlist to minimise reallocations
+      nliste = 1.01*nlist
+
+C Adjust dimensions of phi if necessary
       if (allocated(phi)) then
-        call memory('D','S',size(phi),'meshphi')
-        deallocate(phi)
+        if (nphi.gt.(size(phi,2))) then
+          call memory('D','S',size(phi),'meshphi')
+          deallocate(phi)
+          if (DirectPhi) then
+            allocate(phi(nsp,nphi))
+            call memory('A','S',nsp*nphi,'meshphi')
+          else
+            allocate(phi(nsp,nliste))
+            call memory('A','S',nsp*nliste,'meshphi')                       
+          endif                                                             
+        endif                                                               
+      else                                                                  
+        if (DirectPhi) then                                                 
+          allocate(phi(nsp,nphi))                                           
+          call memory('A','S',nsp*nphi,'meshphi')                           
+        else                                                                
+          allocate(phi(nsp,nliste))                                         
+          call memory('A','S',nsp*nliste,'meshphi')                         
+        endif                                                               
       endif
+
+C Adjust dimensions of list arrays if necessary
       if (allocated(lstpht)) then
-        call memory('D','I',size(lstpht),'meshphi')
-        deallocate(lstpht)
+        if (nlist.gt.size(lstpht)) then
+          call memory('D','I',size(lstpht),'meshphi')
+          deallocate(lstpht)
+          allocate(lstpht(nliste))
+          call memory('A','I',nlist,'meshphi')
+        endif
+      else
+        allocate(lstpht(nliste))
+        call memory('A','I',nliste,'meshphi')
       endif
       if (allocated(listp2)) then
-        call memory('D','I',size(listp2),'meshphi')
-        deallocate(listp2)
+        if (nlist.gt.size(listp2)) then
+          call memory('D','I',size(listp2),'meshphi')
+          deallocate(listp2)
+          allocate(listp2(nliste))
+          call memory('A','I',nliste,'meshphi')
+        endif
+      else
+        allocate(listp2(nliste))
+        call memory('A','I',nliste,'meshphi')
       endif
-      allocate(phi(nsp,nphi))
-      call memory('A','S',nsp*nphi,'meshphi')
-      allocate(lstpht(nlist))
-      call memory('A','I',nlist,'meshphi')
-      allocate(listp2(nlist))
-      call memory('A','I',nlist,'meshphi')
 
 C Find indexes and values of atomic orbitals at mesh points
       numphi = 0

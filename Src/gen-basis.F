@@ -1,6 +1,11 @@
-      program base
+      program gen_basis
 
-C Routine to initialize the Pseudopotentials and Atomic Orbitals.
+C Stand-alone program to generate the PAOs, KB projectors, Vlocal, etc
+C for a set of atoms. 
+C
+C The input is exactly the same as that for SIESTA.
+C This program generates .ion (optionally .ion.nc) files readable
+C by SIESTA
 C
       use fdf
       use ionew
@@ -38,17 +43,17 @@ C Initialise MPI and set processor number
       call io_setup     ! Initialize IOnode
 
 
-      call fdf_init('stdin','base_out.fdf')
+      call fdf_init('stdin','gen-basis_out.fdf')
 
-      call basis_read
-      call basis_transfer
-      call write_basis
+      call read_basis_specs
+      call basis_specs_transfer
 
       nsmax = nsp                   ! For old_atmfuncs
       call allocate_old_arrays
       call clear_tables
 
       do is = 1,nsp
+         call write_basis_specs(6,is)
          basp=>basis_parameters(is)
          call atom_main(iz(is), lmxkb(is), nkbl(0,is), 
      .           erefkb(1,0,is),lmxo(is), nzeta(0,1,is), rco(1,0,1,is), 
@@ -67,7 +72,7 @@ C Initialise MPI and set processor number
       call dump_basis_ascii
       call dump_basis_netcdf
 
-      end program base
+      end program gen_basis
 !
 !     Use private copies of routines to avoid MPI issues
 !

@@ -1,9 +1,8 @@
 # Makefile for siesta
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
-MOD_DIR=Modules
 #
-default: what siesta base
+default: what siesta gen-basis
 #
 include arch.make
 #
@@ -37,7 +36,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
 	on_subs.o ordern.o outcell.o outcoor.o overfsm.o \
-	paste.o phirphi.o pixmol.o timestamp.o \
+	paste.o pdos.o pdosk.o phirphi.o pixmol.o timestamp.o \
 	propor.o pulayx.o  \
 	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o\
 	reinit.o reord.o rhoofd.o rhooda.o  \
@@ -48,7 +47,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         ofc.o poison.o radfft.o  \
 	siesta.o version.o io.o\
         spin_init.o coor.o transfer.o\
-        broadcast_basis.o 
+        broadcast_basis.o sig.o
 #
 FDF=libfdf.a
 $(FDF): 
@@ -58,12 +57,11 @@ $(FDF):
 #
 dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o kgrid.o kgridinit.o ksv.o : $(FDF)
-redata.o siesta.o diagon.o: $(FDF)
-cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
+redata.o siesta.o diagon.o pdos.o: $(FDF)
+coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
 #
 atom.o basis_specs.o: $(FDF)
-coor.o read_user_basis.o: $(FDF)
-base.o: $(FDF)
+gen-basis.o: $(FDF)
 #
 #
 # This is crude but will have to do for now.
@@ -73,13 +71,14 @@ MOD_OBJS=precision.o atom.o atmparams.o atmfuncs.o listsc.o \
          memoryinfo.o numbvect.o  parallel.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o parsing.o\
          interfaces.o  alloc.o phonon.o spher_harm.o periodic_table.o\
-         basis_types.o pseudopotential.o basis_specs.o sys.o basis_io.o
+         basis_types.o pseudopotential.o basis_specs.o sys.o basis_io.o\
+         chemical.o xml.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
-initatom.o: basis_specs.o basis_types.o
+initatom.o: basis_specs.o basis_types.o basis_io.o
 atom.o: basis_types.o
-basis_specs.o: pseudopotential.o basis_types.o
+basis_specs.o: pseudopotential.o basis_types.o chemical.o
 basis_types.o: pseudopotential.o atmparams.o
 atom.o initatom.o transfer.o     : old_atmfuncs.o
 basis_types.o atom.o old_atmfuncs.o atmfuncs.o: atmparams.o
@@ -97,9 +96,10 @@ chempot.o         : numbvect.o
 memory.o          : memoryinfo.o
 dhscf.o dfscf.o forhar.o rhooda.o rhoofd.o vmat.o : meshsubs.o
 dfscf.o rhoofd.o vmat.o : meshmatrix.o
-siesta.o: atomlist.o
+siesta.o: atomlist.o 
 old_atmfuncs.o atomlist.o siesta.o atom.o: ionew.o
 coor.o: atomlist.o
+radial.o: xml.o
 atm_types.o: radial.o
 transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
 atmfuncs.o: atm_types.o radial.o
@@ -112,7 +112,8 @@ propor.o spher_harm.o pseudopotential.o: sys.o
 redata.o dhscf.o: sys.o
 #
 #
-basis_io.o: ionew.o atm_types.o atmfuncs.o radial.o sys.o 
+basis_io.o: ionew.o atm_types.o atmfuncs.o radial.o sys.o chemical.o\
+            basis_types.o xml.o
 basis_io.o: $(FDF) $(NETCDF_INTERFACE)
 siesta.o bands.o efield.o fixed.o grdsam.o: parsing.o
 initdm.o repol.o ksv.o: parsing.o
@@ -151,27 +152,27 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MPI_INTERFACE)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
-BASE_OBJS=base.o basis_types.o precision.o\
-          basis_io.o  transfer.o atm_types.o\
-          atmfuncs.o old_atmfuncs.o radial.o spher_harm.o io.o \
+GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o\
+          basis_io.o  chemical.o transfer.o atm_types.o\
+          atmparams.o atmfuncs.o old_atmfuncs.o radial.o spher_harm.o io.o \
 	  paste.o ionew.o \
           chkdim.o basis_specs.o atom.o periodic_table.o\
           pseudopotential.o dot.o xc.o recipes.o arw.o radfft.o\
-          bessph.o sys.o timer.o $(SYSOBJ)
+          bessph.o sys.o timer.o  xml.o $(SYSOBJ)
 # precision must be the first one here...
-base.o: precision.o atom.o basis_types.o basis_specs.o basis_io.o $(FDF)
-base: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
-                $(COMP_LIBS) $(BASE_OBJS)
-	$(FC) -o base \
-	       $(LDFLAGS) $(BASE_OBJS) $(MPI_INTERFACE) $(FDF) \
+gen-basis.o: precision.o atom.o basis_types.o basis_specs.o basis_io.o $(FDF)
+gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
+                $(COMP_LIBS) $(GEN-BASIS_OBJS)
+	$(FC) -o gen-basis \
+	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) \
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta *.o  *.a
+	rm -f siesta gen-basis *.o  *.a
 	rm -f *.mod
 	(cd fdf ; $(MAKE) clean)
-	(cd MPI ; $(MAKE) clean )
+	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd NetCDF ; $(MAKE) clean )
 	(cd Libs ; $(MAKE) clean )
 pristine:  clean

@@ -17,7 +17,7 @@ C
       character*30 words
       character*40 string,blank
       character*1 c1,c2,space,dp,hash,slash
-      logical lspace,lfirst,lcontinuation,lread,lword
+      logical lspace,lfirst,lread,lword
       data blank/'                                        '/
       dp='.'
       hash='#'
@@ -43,17 +43,6 @@ C
       line(81:81)=' '
       lfirst=(line(1:1).ne.space)
       lread=.true.
-      icontin=.false.
-      lcontinuation=(icontin.ne.0)
-      if (lcontinuation) then
-C
-C  Blank out anything after continuation character to 
-C  avoid processing comments
-C
-        do i=icontin,80
-          line(i:i)=' '
-        enddo
-      endif
 C*******************
 C  Locate strings  *
 C*******************
@@ -164,11 +153,7 @@ C  Set values for next search
 C
         ilower=nend+1
       enddo
-      if (lcontinuation) then
-        goto 10
-      else
-        return
-      endif
+      return
   100 write(6,'(/,a,a,/)')"  **** Warning - continuation character",
      *  " on last line of input ****"
       nwarn=nwarn+1

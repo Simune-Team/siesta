@@ -1,3 +1,8 @@
+Sun Sep 16 19:46:05 2001  Alberto Garcia  <wdpgaara@lg.ehu.es>
+
+	* Pseudopotential files are now generated in both unformatted
+	( VPSOUT) and formatted (VPSFMT) versions.
+
 2000-04-10    <wdpgaara@node1.wm.lc.ehu.es>
 
 	* Changed once more the management of the "compatibility

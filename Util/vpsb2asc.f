@@ -1,4 +1,4 @@
-c$Id: vpsb2asc.f,v 1.3 1997/05/20 13:21:24 wdpgaara Exp $
+c$Id: vpsb2asc.f,v 1.4 2001/07/22 14:32:10 wdpgaara Exp $
 c
       program vpsb2asc
 c
@@ -42,7 +42,9 @@ c
 c      open files
 c
       open(unit=2,file=binary_file,form='unformatted',status='old')
-      open(unit=6,file=ascii_file,form='formatted',status='new')
+      rewind(2)
+      open(unit=6,file=ascii_file,form='formatted',status='unknown')
+      rewind(6)
 c
       read(2) nameat, corr, rel, core, (ray(j),j=1,6), 
      &         (title(j),j=1,7), npotd, npotu, nrp, a, b, zion
@@ -54,7 +56,7 @@ c
 c
  9000 format(1x,a2,1x,a2,1x,a3,1x,a4)
  9010 format(1x,6a10,/,1x,7a10)
- 9015 format(1x,2i3,i5,3f20.10)
+ 9015 format(1x,2i3,i5,3g20.12)
 c      
 c     Note the format. Change if needed.
 c

@@ -4,7 +4,7 @@ Brief user's guide of PLRHO. Jose M. Soler, December 1997.
 plrho uses the pgplot library, which is free domain. Once you
 have installed it (and made it visible), you compile plrho with:
 
-f77 plrho.f -lX11 -lpgplot -o plrho
+f90 plrho.f -lX11 -lpgplot -o plrho
 
 plrho is a utility program to plot the electron density and other 
 output functions from siesta. It draws an isosurface of the
@@ -135,6 +135,16 @@ plrho <enter>
 Subroutine platom reads a file of type XV (like h2o.XV) and plots a bond 
 wireframe (in addition to the isosurface). It is still rather primitive 
 and unstable, and therefore its call is still commented out in plrho.
+
+Subroutine iorho, used by plrho, is a simplified version of the routine
+(with the same name and interface) used by siesta to write the density 
+and potential data files. The simplified verion is serial only, but
+reads correctly the files written by parallel siesta.
+
+File plrho.f77 contains a fortran77 version of plrho. It allows to use
+f77 instead of f90 to compile it, since all the subroutines are written
+in fortran77. The only disadvantage is that it uses more memory, though
+this can be fixed by adjusting parameter maxp within it.
 
 Please, send problems and suggestions to jose.soler@uam.es
 

@@ -1,9 +1,8 @@
       SUBROUTINE CELLXC( FUNCTL, AUTHOR, IREL, IDER, 
      .                   CELL, NMESH, NSPAN, MAXP, MTYPE, XMESH,
      .                   NSPIN, DENS,
-     .                   EX, EC, DX, DC, VXC, IAUXDER, DVXCDN,
-     .                   STRESSL, MAXAUX, AUX,
-     .                   NMESHG, NSM, Node, Nodes )
+     .                   EX, EC, DX, DC, VXC, DVXCDN,
+     .                   STRESSL, MAXAUX, AUX )
 
 C *******************************************************************
 C Finds total exchange-correlation energy and potential in a
@@ -13,8 +12,11 @@ C   the Generalized-Gradient-Aproximation with the 'explicit mesh
 C   functional' method of White & Bird, PRB 50, 4954 (1994).
 C Gradients are 'defined' by numerical derivatives, using 2*NN+1 mesh
 C   points, where NN is a parameter defined below
+C Ref: L.C.Balbas et al, cond-mat/0104171
 C Coded by L.C.Balbas and J.M.Soler. December 1996.
 C Stress added by J.L.Martins and J.M.Soler. August 1997.
+C Parallel version written by J.Gale. June 1999.
+C Argument DVXCDN added by J.Junquera. November 2000.
 C ************************* INPUT ***********************************
 C CHARACTER*(*) FUNCTL : Functional to be used:
 C              'LDA' or 'LSD' => Local (spin) Density Approximation
@@ -27,8 +29,8 @@ C                     the local density limit of the next:
 C            'PBE' => GGA Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
 C                     Uppercase is optional
 C INTEGER IREL         : Relativistic exchange? (0=>no, 1=>yes)
-C INTEGER IDER         : Store derivatives of exchange-correlation potential?
-C                        (0=>no, 1=>yes)
+C INTEGER IDER         : Return dVxc/drho in DVXCDN?
+C                        0=>no, 1=>yes (available only for LDA)
 C REAL*8  CELL(3,3)    : Unit cell vectors CELL(ixyz,ivector)
 C INTEGER NMESH(3)     : Number of mesh divisions of each vector
 C INTEGER NSPAN(3)     : Physical dimensions of arrays XMESH, DENS and
@@ -57,10 +59,6 @@ C INTEGER MAXAUX       : Physical dimension of array AUX.
 C                        If FUNCTL.EQ.'GGA' and MTYPE.NE.0, must be
 C                        MAXAUX .GE. NSPAN(1)*NSPAN(2)*NSPAN(3)
 C                        Not used otherwise
-C INTEGER NMESHG(3)    : Global number of mesh divisions of each vector
-C INTEGER NSM          : Number of sub-mesh points along each axis
-C INTEGER IAUXDER      : First dimension of DVXCDN,
-C                        1 if Khon-Sham forces or ntpl if Harris forces.
 C ************************* OUTPUT **********************************
 C REAL*8  EX              : Total exchange energy
 C REAL*8  EC              : Total correlation energy
@@ -70,6 +68,7 @@ C REAL    VXC(MAXP,NSPIN) : (Spin) exch-corr potential
 C                           Notice single precision in this version
 C REAL    DVXCDN(MAXP,NSPIN,NSPIN) : Derivatives of exchange-correlation
 C                           potential respect the charge density
+C                           Not used unless IDER=1. Available only for LDA
 C REAL*8  STRESSL(3,3)    : xc contribution to the stress tensor,
 C                           assuming constant density (not charge),
 C                           i.e. r->r' => rho'(r') = rho(r)
@@ -97,10 +96,10 @@ C       them consecutively in array DENS
 C     NMESH(1) = N1
 C     NMESH(2) = N2
 C     NMESH(3) = N3
-C     CALL CELLXC( 'GGA', 'PBE', 0,
-C    .              CELL, NMESH, NMESH, MAXP, 0, 0,
+C     CALL CELLXC( 'GGA', 'PBE', 0, 0,
+C    .              CELL, NMESH, NMESH, MAXP, 0, XMESH,
 C    .              2, DENS,
-C    .              EX, EC, DX, DC, VXC, STRESS, 0, 0 )
+C    .              EX, EC, DX, DC, VXC, DVXCDN, STRESS, 0, AUX )
 C Or alternatively:
 C     PARAMETER ( M1=100, M2=100, M3=100 )
 C     DIMENSION NMESH(3), NSPAN(3), DENS(M1,M2,M3,2), VXC(M1,M2,M3,2)
@@ -110,52 +109,46 @@ C     Find DENS at N1*N2*N3 mesh points
 C     NMESH(1) = N1
 C     NMESH(2) = N2
 C     NMESH(3) = N3
-C     CALL CELLXC( 'GGA', 'PBE', 0,
-C    .              CELL, NMESH, NSPAN, M1*M2*M3, 0, 0,
+C     CALL CELLXC( 'GGA', 'PBE', 0, 0,
+C    .              CELL, NMESH, NSPAN, M1*M2*M3, 0, XMESH,
 C    .              2, DENS,
-C    .              EX, EC, DX, DC, VXC, STRESS, 0, 0 )
+C    .              EX, EC, DX, DC, VXC, DVXCDN, STRESS, 0, AUX )
 C ********* BEHAVIOUR ***********************************************
-C - Notice that XMESH and AUX are not used if MTYPE=0. This means that
-C   you do not even need to declare them in the calling program. See
-C   usage section for calling examples.
+C - Notice that XMESH and AUX are not used if MTYPE=0, and DVXCDN is not
+C   used if IDER=0. This means that you do not even need to dimension 
+C   them in the calling program. See usage section for calling examples.
 C - If FNCTNL='LDA', DENS and VXC may be the same physical array.
 C - Stops and prints a warning if arguments FUNCTL or AUTHOR are not
 C   one of the allowed possibilities.
 C - Since the exchange and correlation part is usually a small fraction
 C   of a typical electronic structure calculation, this routine has
 C   been coded with emphasis on simplicity and functionality, not in
-C   eficiency. It is not designed to vectorize or parallelize well.
+C   eficiency. The parallel version was written by J.Gale.
 C ********* ROUTINES CALLED *****************************************
 C GGAXC, LDAXC, RECLAT, TIMER, VOLCEL
 C *******************************************************************
 
-C
-C  Modules
-C
-      use precision
 #ifdef MPI
+C  Modules
       use mpi
       use parallel
+      use mesh, only: nsm, nmeshg
 #endif
 
       IMPLICIT NONE
 
 C Argument types and dimensions
       CHARACTER*(*)     FUNCTL, AUTHOR
-      INTEGER           IREL, IDER, MAXAUX, MAXP, MTYPE, NMESHG(3), NSM,
-     .                  NMESH(3), NSPAN(3), NSPIN, Node, Nodes, IAUXDER
+      INTEGER           IREL, IDER, MAXAUX, MAXP, MTYPE, 
+     .                  NMESH(3), NSPAN(3), NSPIN
       DOUBLE PRECISION  CELL(3,3), DC, DX, EC, EX, STRESSL(3,3)
 C     If you change next line, please change also the argument
 C     explanations in the header comments
 *     DOUBLE PRECISION
       REAL
-     .                  AUX(*), DENS(MAXP,NSPIN),
+     .                  AUX(*), DENS(MAXP,NSPIN), 
+     .                  DVXCDN(MAXP,NSPIN,NSPIN),
      .                  VXC(MAXP,NSPIN), XMESH(3,*)
-      REAL, DIMENSION(IAUXDER,NSPIN,NSPIN) :: DVXCDN
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
-     .                  DVXDN, DVCDN
-      INTEGER 
-     .                  IS2
 
 C Fix the order of the numerical derivatives
 C NN is the number of points used in each coordinate and direction,
@@ -175,13 +168,14 @@ C Fix switch to skip points with zero density
       PARAMETER ( SKIP0  = .TRUE. )
       PARAMETER ( DENMIN = 1.D-15 )
 
-C MPI related variables
 #ifdef MPI
+C MPI related variables
       integer 
      .  MPIerror, ProcessorZ, BlockSizeY, BlockSizeZ, MeshNsm(3),
-     .  BlockSizeYMax, BlockSizeZMax, NRemY, NRemZ, Py, Pz
+     .  BlockSizeYMax, BlockSizeZMax, Node, Nodes, NRemY, NRemZ,
+     .  Py, Pz
       integer 
-     .  NSwap, NDummy, IDen1, IDen2, IOut, INN, MeshDum(3),
+     .  NSwap, NDummy, IDen1, IDen2, IOut, INN, MeshDum(3), 
      .  Requests(4), Request, Status(MPI_Status_Size), NReq,
      .  Statuss(MPI_Status_Size,4), Tag, Pleft2, Pright2,
      .  Pleft3, Pright3, PzMod, PyMod, NMeshPN, JPNN(3,-NN:NN)
@@ -199,41 +193,30 @@ C MPI related variables
 #endif
 
 C Local variables and arrays
+C Parameter MSPIN must be equal or larger than NSPIN
+      INTEGER MSPIN
+      PARAMETER ( MSPIN = 4 )
       LOGICAL           GGA
       INTEGER           I1, I2, I3, IC, IN, IP, IS, IX,
-     .                  J1, J2, J3, JN, JP(3,-NN:NN), JX, NPG
-      DOUBLE PRECISION  DENTOT, DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
+     .                  J1, J2, J3, JN, JP(3,-NN:NN), JS, JX,
+     .                  KS, NPG
+      DOUBLE PRECISION  D(MSPIN), DECDD(MSPIN), DECDGD(3,MSPIN),
+     .                  DENTOT, DEXDD(MSPIN), DEXDGD(3,MSPIN),
+     .                  DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
      .                  DMDX(3,3), DVOL, DXDM(3,3),
-     .                  EPSC, EPSX, F1, F2, 
+     .                  DVCDN(MSPIN*MSPIN), DVXDN(MSPIN*MSPIN),
+     .                  EPSC, EPSX, F1, F2, GD(3,MSPIN),
      .                  VOLCEL, VOLUME, STRESS(3,3)
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE ::
-     .                  D, DECDD, DEXDD
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE ::
-     .                  DECDGD, DEXDGD, GD
-
       EXTERNAL          GGAXC, LDAXC, RECLAT, VOLCEL, memory
 
 C Start time counter (intended only for debugging and development)
       CALL TIMER( 'CELLXC', 1 )
 
-
-C Allocate local memory
-      allocate(D(nspin))
-      call memory('A','D',nspin,'cellxc')
-      allocate(DECDD(nspin))
-      call memory('A','D',nspin,'cellxc')
-      allocate(DEXDD(nspin))
-      call memory('A','D',nspin,'cellxc')
-      allocate(DECDGD(3,nspin))
-      call memory('A','D',3*nspin,'cellxc')
-      allocate(DEXDGD(3,nspin))
-      call memory('A','D',3*nspin,'cellxc')
-      allocate(GD(3,nspin))
-      call memory('A','D',3*nspin,'cellxc')
-      allocate(DVXDN(NSPIN,NSPIN))
-      call memory('A','D',nspin*nspin,'cellxc')
-      allocate(DVCDN(NSPIN,NSPIN))
-      call memory('A','D',nspin*nspin,'cellxc')
+#ifdef MPI
+C Get local node and number of nodes
+      call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+      call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+#endif
 
 C Set GGA switch
       IF ( FUNCTL.EQ.'LDA' .OR. FUNCTL.EQ.'lda' .OR.
@@ -243,6 +226,18 @@ C Set GGA switch
         GGA = .TRUE.
       ELSE
         WRITE(6,*) 'CELLXC: Unknown functional ', FUNCTL
+        STOP
+      ENDIF
+
+C Check IDER
+      IF (IDER.NE.0 .AND. GGA) THEN
+        WRITE(6,*) 'CELLXC: IDER=1 available only for LDA'
+        STOP
+      ENDIF
+
+C Check value of MSPIN
+      IF (MSPIN.LT.NSPIN) THEN
+        WRITE(6,*) 'CELLXC: parameter MSPIN must be at least ', NSPIN
         STOP
       ENDIF
 
@@ -485,7 +480,11 @@ C Find weights of numerical derivation from Lagrange interp. formula
       DGDM(0) = 0.0d0
 
 C Find total number of mesh points
+#ifdef MPI
       NPG = NMESHG(1) * NMESHG(2) * NMESHG(3)
+#else
+      NPG = NMESH(1) * NMESH(2) * NMESH(3)
+#endif
 
 C Find Jacobian matrix dx/dmesh for uniform mesh
       IF (MTYPE.EQ.0) THEN
@@ -498,7 +497,11 @@ C       Find mesh cell volume
 C         Find mesh unit vectors and reciprocal mesh vectors
           DO 25 IC = 1,3
             DO 20 IX = 1,3
+#ifdef MPI
               DXDM(IX,IC) = CELL(IX,IC) / NMESHG(IC)
+#else
+              DXDM(IX,IC) = CELL(IX,IC) / NMESH(IC)
+#endif
    20       CONTINUE
    25     CONTINUE
           CALL RECLAT( DXDM, DMDX, 0 )
@@ -525,12 +528,12 @@ C Initialize output
       IF (GGA) THEN
         DO 70 IS = 1,NSPIN
           DO 66 I3 = 0,NMESH(3)-1
-            DO 64 I2 = 0,NMESH(2)-1
-            DO 62 I1 = 0,NMESH(1)-1
-              IP = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
-              VXC(IP,IS) = 0.0
-   62       CONTINUE
-   64       CONTINUE
+          DO 64 I2 = 0,NMESH(2)-1
+          DO 62 I1 = 0,NMESH(1)-1
+            IP = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
+            VXC(IP,IS) = 0.0
+   62     CONTINUE
+   64     CONTINUE
    66     CONTINUE
    70   CONTINUE
 #ifdef MPI
@@ -898,8 +901,9 @@ C Z-direction
           ELSE
             VXC(IP,IS) = DEXDD(IS) + DECDD(IS)
             IF (IDER .EQ. 1) THEN
-              DO IS2 = 1, NSPIN
-                DVXCDN(IP,IS2,IS) = DVXDN(IS2,IS) + DVCDN(IS2,IS)
+              DO JS = 1, NSPIN
+                KS = JS + (IS-1)*NSPIN
+                DVXCDN(IP,JS,IS) = DVXDN(KS) + DVCDN(KS)
               ENDDO
             ENDIF
           ENDIF
@@ -1082,20 +1086,27 @@ C Divide by energy unit
           STRESSL(IX,JX) = STRESSL(IX,JX) + (STRESS(IX,JX) / EUNIT)
   320   CONTINUE
   330 CONTINUE
-      
-      DO IS = 1, NSPIN
-        DO IS2 = 1, NSPIN
-          DO IP = 1, IAUXDER
-            DVXCDN(IP,IS2,IS) = DVXCDN(IP,IS2,IS) / EUNIT
+
+      IF (IDER.EQ.1 .AND. .NOT.GGA) THEN
+        DO IS = 1,NSPIN
+        DO JS = 1,NSPIN
+          DO I3 = 0,NMESH(3)-1
+          DO I2 = 0,NMESH(2)-1
+          DO I1 = 0,NMESH(1)-1
+            IP = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
+            DVXCDN(IP,JS,IS) = DVXCDN(IP,JS,IS) / EUNIT
+          ENDDO
+          ENDDO
           ENDDO
         ENDDO
-      ENDDO
+        ENDDO
+      ENDIF
 
 C Re-entry point for nodes with no mesh points stored locally
   999 continue
 
-C Collect together quantities
 #ifdef MPI
+C Collect together quantities
       Buffer(1) = EX
       Buffer(2) = EC
       Buffer(3) = DX
@@ -1123,24 +1134,6 @@ C Free memory
         deallocate(Statm)
       endif
 #endif
-
-C Deallocate local memory
-      call memory('D','D',size(D),'cellxc')
-      deallocate(D)
-      call memory('D','D',size(DECDD),'cellxc')
-      deallocate(DECDD)
-      call memory('D','D',size(DEXDD),'cellxc')
-      deallocate(DEXDD)
-      call memory('D','D',size(DECDGD),'cellxc')
-      deallocate(DECDGD)
-      call memory('D','D',size(DEXDGD),'cellxc')
-      deallocate(DEXDGD)
-      call memory('D','D',size(GD),'cellxc')
-      deallocate(GD)
-      call memory('D','D',size(DVXDN),'cellxc')
-      deallocate(DVXDN)
-      call memory('D','D',size(DVCDN),'cellxc')
-      deallocate(DVCDN)
 
 C Stop time counter
       CALL TIMER( 'CELLXC', 2 )

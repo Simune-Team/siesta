@@ -11,15 +11,14 @@ NETCDF_INTERFACE=libnetcdf_f90.a
 DEFS_CDF=-DCDF
 #
 MPI_INTERFACE=libmpi_f90.a
-MPI_INCLUDE=/usr/local/include
+MPI_INCLUDE=/usr/local/mpich-1.2/sgi64/include
+MPI_LIBS= /usr/local/mpich-1.2/sgi64/lib/libmpich.a
+BLACS_LIBS=-L/usr/local/lib/64 -lblacs
+SCALAPACK_LIBS=-L/usr/local/lib/64 -lscalapack -lpblas -ltools -lredist
 DEFS_MPI=-DMPI
 #
-LIBS= -L/usr/local/lib/64 \
-      -lscalapack -lpblas -ltools \
-      -lredist \
-      -lblacs       -lblacs \
-      -lcomplib.sgimath  \
-       /usr/local/mpich-1.2/sgi64/lib/libmpich.a $(NETCDF_LIBS)
+LIBS= $(SCALAPACK_LIBS) $(BLACS_LIBS)  -lcomplib.sgimath  \
+      $(MPI_LIBS) $(NETCDF_LIBS)
 SYS=bsd
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
@@ -32,6 +31,7 @@ DEFS= $(DEFS_CDF) $(DEFS_MPI)
 .f90.o:
 	$(FC) -c $(FFLAGS) $<
 #
+
 
 
 

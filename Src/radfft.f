@@ -51,7 +51,8 @@ C    Therefore G(NR), which should be exactly zero, is used (for L=0)
 C    as a 'reminder' term for the integral of G beyond kmax, to ensure 
 C    that F(0)=Sum[4*pi*r**2*dr*G(IR)] (this allows to recover F(0)
 C    when called again in the inverse direction). Thus, the last value
-C    G(NR) should be replaced by zero for any other use.
+C    G(NR) should be replaced by zero for any other use. NOTICE: this
+C    is commented out in this version!
 C *********************************************************************
 C Written by J.M.Soler. August 1996.
 C *********************************************************************
@@ -211,16 +212,16 @@ C Direct integration for the smallest Q's ---------------------------
 C -------------------------------------------------------------------
 
 C Special case for Q=QMAX -------------------------------------------
-      IF (L.EQ.0) THEN
-        GSUM = 0.D0
-        DO IQ = 1,NQ-1
-          Q = IQ * DQ
-          GSUM = GSUM + Q*Q * GG(IQ)
-        ENDDO
-        GSUM = GSUM * 4.D0 * PI * DQ
-        GG(NQ) = (2.D0*PI)**1.5D0 * F(0) - GSUM
-        GG(NQ) = GG(NQ) / (4.D0 * PI * DQ * QMAX**2)
-      ENDIF
+*     IF (L.EQ.0) THEN
+*       GSUM = 0.D0
+*       DO IQ = 1,NQ-1
+*         Q = IQ * DQ
+*         GSUM = GSUM + Q*Q * GG(IQ)
+*       ENDDO
+*       GSUM = GSUM * 4.D0 * PI * DQ
+*       GG(NQ) = (2.D0*PI)**1.5D0 * F(0) - GSUM
+*       GG(NQ) = GG(NQ) / (4.D0 * PI * DQ * QMAX**2)
+*     ENDIF
 C -------------------------------------------------------------------
 
 C Copy from local to output array -----------------------------------

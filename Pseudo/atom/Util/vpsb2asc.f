@@ -1,4 +1,4 @@
-c$Id: vpsb2asc.f,v 1.2 2000/05/02 19:09:19 wdpgaara Exp $
+c$Id: vpsb2asc.f,v 1.3 2001/07/22 14:29:43 wdpgaara Exp $
 c
       program vpsb2asc
 c
@@ -56,7 +56,7 @@ c
 c
  9000 format(1x,a2,1x,a2,1x,a3,1x,a4)
  9010 format(1x,6a10,/,1x,7a10)
- 9015 format(1x,2i3,i5,3f20.10)
+ 9015 format(1x,2i3,i5,3g20.12)
 c      
 c     Note the format. Change if needed.
 c

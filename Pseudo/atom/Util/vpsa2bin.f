@@ -1,4 +1,4 @@
-c$Id: vpsa2bin.f,v 1.2 2000/05/02 19:09:19 wdpgaara Exp $
+c$Id: vpsa2bin.f,v 1.4 2001/07/22 14:30:14 wdpgaara Exp $
 c
       program vpsa2bin
 c
@@ -43,7 +43,7 @@ c      open files
 c
       open(unit=1,file=ascii_file,form='formatted',status='old')
       rewind(1)
-      open(unit=2,file=binary_file,form='unformatted',status='unkonwn')
+      open(unit=2,file=binary_file,form='unformatted',status='unknown')
       rewind(2)
 c
       read(1,9000) nameat, corr, rel, core
@@ -56,7 +56,7 @@ c
 c
  9000 format(1x,a2,1x,a2,1x,a3,1x,a4)
  9010 format(1x,6a10,/,1x,7a10)
- 9015 format(1x,2i3,i5,3f20.10)
+ 9015 format(1x,2i3,i5,3g20.12)
 c      
 c     Note the format. Change if needed.
 c

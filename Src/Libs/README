@@ -1,0 +1,2 @@
+Use the code in this directory if you do not have compiled (presumably
+optimized) blas and lapack libraries in your system.

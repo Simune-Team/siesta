@@ -1,0 +1,558 @@
+SIESTA 1.0.59 -- [pgf90 fixes] (July 10, 2001)
+Architecture  : SIESTA_ARCH
+Compiler flags: FFLAGS
+SERIAL version
+NetCDF-capable
+
+* Running in serial mode
+>> Start of run:  24-JUL-2001  18:51:19
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+Reading from standard input...
+
+*: ****************** Dump of input data file ****************************
+# -----------------------------------------------------------------------------
+# FDF for a cubic c-Si supercell with 64 atoms
+#
+# E. Artacho, April 1999
+# -----------------------------------------------------------------------------
+SystemName          64-atom silicon
+SystemLabel         si64
+NumberOfAtoms       64
+NumberOfSpecies     1
+%block ChemicalSpeciesLabel
+ 1  14  Si
+%endblock ChemicalSpeciesLabel
+PAO.BasisSize       SZ
+PAO.EnergyShift     300 meV
+LatticeConstant     5.430 Ang
+%block LatticeVectors
+  2.000  0.000  0.000
+  0.000  2.000  0.000
+  0.000  0.000  2.000
+%endblock LatticeVectors
+MeshCutoff          40.0 Ry
+MaxSCFIterations    50
+DM.MixingWeight      0.3
+DM.NumberPulay       3
+DM.Tolerance         1.d-3
+DM.UseSaveDM
+SolutionMethod       diagon
+ElectronicTemperature  25 meV
+MD.TypeOfRun         cg
+MD.NumCGsteps        50
+MD.MaxCGDispl         0.1  Ang
+MD.MaxForceTol        0.04 eV/Ang
+AtomicCoordinatesFormat  ScaledCartesian
+%block AtomicCoordinatesAndAtomicSpecies
+    0.000    0.000    0.000   1 #  Si  1
+    0.250    0.250    0.250   1 #  Si  2
+    0.000    0.500    0.500   1 #  Si  3
+    0.250    0.750    0.750   1 #  Si  4
+    0.500    0.000    0.500   1 #  Si  5
+    0.750    0.250    0.750   1 #  Si  6
+    0.500    0.500    0.000   1 #  Si  7
+    0.750    0.750    0.250   1 #  Si  8
+    1.000    0.000    0.000   1 #  Si  9
+    1.250    0.250    0.250   1 #  Si 10
+    1.000    0.500    0.500   1 #  Si 11
+    1.250    0.750    0.750   1 #  Si 12
+    1.500    0.000    0.500   1 #  Si 13
+    1.750    0.250    0.750   1 #  Si 14
+    1.500    0.500    0.000   1 #  Si 15
+    1.750    0.750    0.250   1 #  Si 16
+    0.000    1.000    0.000   1 #  Si 17
+    0.250    1.250    0.250   1 #  Si 18
+    0.000    1.500    0.500   1 #  Si 19
+    0.250    1.750    0.750   1 #  Si 20
+    0.500    1.000    0.500   1 #  Si 21
+    0.750    1.250    0.750   1 #  Si 22
+    0.500    1.500    0.000   1 #  Si 23
+    0.750    1.750    0.250   1 #  Si 24
+    0.000    0.000    1.000   1 #  Si 25
+    0.250    0.250    1.250   1 #  Si 26
+    0.000    0.500    1.500   1 #  Si 27
+    0.250    0.750    1.750   1 #  Si 28
+    0.500    0.000    1.500   1 #  Si 29
+    0.750    0.250    1.750   1 #  Si 30
+    0.500    0.500    1.000   1 #  Si 31
+    0.750    0.750    1.250   1 #  Si 32
+    1.000    1.000    0.000   1 #  Si 33
+    1.250    1.250    0.250   1 #  Si 34
+    1.000    1.500    0.500   1 #  Si 35
+    1.250    1.750    0.750   1 #  Si 36
+    1.500    1.000    0.500   1 #  Si 37
+    1.750    1.250    0.750   1 #  Si 38
+    1.500    1.500    0.000   1 #  Si 39
+    1.750    1.750    0.250   1 #  Si 40
+    1.000    0.000    1.000   1 #  Si 41
+    1.250    0.250    1.250   1 #  Si 42
+    1.000    0.500    1.500   1 #  Si 43
+    1.250    0.750    1.750   1 #  Si 44
+    1.500    0.000    1.500   1 #  Si 45
+    1.750    0.250    1.750   1 #  Si 46
+    1.500    0.500    1.000   1 #  Si 47
+    1.750    0.750    1.250   1 #  Si 48
+    0.000    1.000    1.000   1 #  Si 49
+    0.250    1.250    1.250   1 #  Si 50
+    0.000    1.500    1.500   1 #  Si 51
+    0.250    1.750    1.750   1 #  Si 52
+    0.500    1.000    1.500   1 #  Si 53
+    0.750    1.250    1.750   1 #  Si 54
+    0.500    1.500    1.000   1 #  Si 55
+    0.750    1.750    1.250   1 #  Si 56
+    1.000    1.000    1.000   1 #  Si 57
+    1.250    1.250    1.250   1 #  Si 58
+    1.000    1.500    1.500   1 #  Si 59
+    1.250    1.750    1.750   1 #  Si 60
+    1.500    1.000    1.500   1 #  Si 61
+    1.750    1.250    1.750   1 #  Si 62
+    1.500    1.500    1.000   1 #  Si 63
+    1.750    1.750    1.250   1 #  Si 64
+%endblock AtomicCoordinatesAndAtomicSpecies
+*: ****************** End of input data file *****************************
+
+redata: ****************** Simulation parameters ******************************
+redata:
+redata: The following are some of the parameters of the simulation.
+redata: A complete list of the parameters used, including defect values,
+redata: can be found in file out.fdf             
+redata:
+redata: -----------------------------------------------------------------------
+redata: System Name: 64-atom silicon                                            
+redata: -----------------------------------------------------------------------
+redata: System Label                     =     si64                
+
+initatom: Reading input for the pseudopotentials and atomic orbitals
+ Species number:            1  Label: Si Atomic number:          14
+Ground state valence configuration:
+           3 s           2
+           3 p           2
+======================================================================
+Si                   Z=  14    Mass=  28.090        Charge=  0.0000    
+Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+L=1  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+----------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+======================================================================
+ATOM: Called for Si  (Z =  14)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Valence configuration (pseudopotential and basis set generation):
+3s( 2.00) rc: 1.89
+3p( 2.00) rc: 1.89
+3d( 0.00) rc: 1.89
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+
+ATOM: Estimated core radius    2.54944
+
+ATOM: Include non-local core corrections could be a good idea
+ATOM: Maximum radius for local-pseudopot. charge    2.85303
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.936440   el= -0.796617   Ekb=  4.661340   kbcos=  0.299756
+   l= 1   rc=  1.936440   el= -0.307040   Ekb=  1.494238   kbcos=  0.301471
+   l= 2   rc=  1.936440   el=  0.002313   Ekb= -2.808672   kbcos= -0.054903
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+ATOM: -------------------------------------------------------------------------
+
+ATOM: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 3s
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.022049 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.883716
+                 energy =   -0.773554
+                kinetic =    0.585471
+    potential(screened) =   -1.359025
+       potential(ionic) =   -3.840954
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 3p
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.022049 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.116033
+                 energy =   -0.285742
+                kinetic =    0.892202
+    potential(screened) =   -1.177944
+       potential(ionic) =   -3.446720
+ATOM: Total number of Sankey-type orbitals:  4
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+ 3s( 2.00)                                                            
+ 3p( 2.00)                                                            
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.116033
+
+ATOM:__________________________ 
+
+prinput:  Basis input **
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   14 Si                      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Si          2                    # Species label, number of l-shells
+ n=3   0   1                         # n, l, Nzeta 
+   4.884   
+   1.000   
+ n=3   1   1                         # n, l, Nzeta 
+   6.116   
+   1.000   
+%endblock PAO.Basis
+
+prinput: *****
+
+*** Dumping atomic info in netCDF format (.nc files)
+
+Dumping basis to NetCDF file Si.dump.nc
+coor: Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                        (in units of alat)
+redata: Number of spin components        =     1
+redata: Long output                      =     F
+redata: Number of Atomic Species         =     1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     NO
+redata: Mesh Cutoff                      =    40.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Max. number of SCF Iter          =    50
+redata: One Pulay mixing every           =     3 iterations
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?       =     F
+redata: New DM Mixing Weight             =     0.3000
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.001000
+redata: Use continuation files for DM    =     T
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            = Diagonalization
+redata: Electronic Temperature           =     0.0018  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     CG coord. optimization
+redata: Variable cell                    =     F
+redata: Use continuation files for CG    =     F
+redata: Maximum number of CG moves       =    50
+redata: Max atomic displ per move        =     0.1890  Bohr
+redata: Force tolerance                  =     0.0016  Ry/Bohr
+redata: ***********************************************************************
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1      1
+siesta:      2.56530   2.56530   2.56530  1      2
+siesta:      0.00000   5.13061   5.13061  1      3
+siesta:      2.56530   7.69591   7.69591  1      4
+siesta:      5.13061   0.00000   5.13061  1      5
+siesta:      7.69591   2.56530   7.69591  1      6
+siesta:      5.13061   5.13061   0.00000  1      7
+siesta:      7.69591   7.69591   2.56530  1      8
+siesta:     10.26122   0.00000   0.00000  1      9
+siesta:     12.82652   2.56530   2.56530  1     10
+siesta:     10.26122   5.13061   5.13061  1     11
+siesta:     12.82652   7.69591   7.69591  1     12
+siesta:     15.39183   0.00000   5.13061  1     13
+siesta:     17.95713   2.56530   7.69591  1     14
+siesta:     15.39183   5.13061   0.00000  1     15
+siesta:     17.95713   7.69591   2.56530  1     16
+siesta:      0.00000  10.26122   0.00000  1     17
+siesta:      2.56530  12.82652   2.56530  1     18
+siesta:      0.00000  15.39183   5.13061  1     19
+siesta:      2.56530  17.95713   7.69591  1     20
+siesta:      5.13061  10.26122   5.13061  1     21
+siesta:      7.69591  12.82652   7.69591  1     22
+siesta:      5.13061  15.39183   0.00000  1     23
+siesta:      7.69591  17.95713   2.56530  1     24
+siesta:      0.00000   0.00000  10.26122  1     25
+siesta:      2.56530   2.56530  12.82652  1     26
+siesta:      0.00000   5.13061  15.39183  1     27
+siesta:      2.56530   7.69591  17.95713  1     28
+siesta:      5.13061   0.00000  15.39183  1     29
+siesta:      7.69591   2.56530  17.95713  1     30
+siesta:      5.13061   5.13061  10.26122  1     31
+siesta:      7.69591   7.69591  12.82652  1     32
+siesta:     10.26122  10.26122   0.00000  1     33
+siesta:     12.82652  12.82652   2.56530  1     34
+siesta:     10.26122  15.39183   5.13061  1     35
+siesta:     12.82652  17.95713   7.69591  1     36
+siesta:     15.39183  10.26122   5.13061  1     37
+siesta:     17.95713  12.82652   7.69591  1     38
+siesta:     15.39183  15.39183   0.00000  1     39
+siesta:     17.95713  17.95713   2.56530  1     40
+siesta:     10.26122   0.00000  10.26122  1     41
+siesta:     12.82652   2.56530  12.82652  1     42
+siesta:     10.26122   5.13061  15.39183  1     43
+siesta:     12.82652   7.69591  17.95713  1     44
+siesta:     15.39183   0.00000  15.39183  1     45
+siesta:     17.95713   2.56530  17.95713  1     46
+siesta:     15.39183   5.13061  10.26122  1     47
+siesta:     17.95713   7.69591  12.82652  1     48
+siesta:      0.00000  10.26122  10.26122  1     49
+siesta:      2.56530  12.82652  12.82652  1     50
+siesta:      0.00000  15.39183  15.39183  1     51
+siesta:      2.56530  17.95713  17.95713  1     52
+siesta:      5.13061  10.26122  15.39183  1     53
+siesta:      7.69591  12.82652  17.95713  1     54
+siesta:      5.13061  15.39183  10.26122  1     55
+siesta:      7.69591  17.95713  12.82652  1     56
+siesta:     10.26122  10.26122  10.26122  1     57
+siesta:     12.82652  12.82652  12.82652  1     58
+siesta:     10.26122  15.39183  15.39183  1     59
+siesta:     12.82652  17.95713  17.95713  1     60
+siesta:     15.39183  10.26122  15.39183  1     61
+siesta:     17.95713  12.82652  17.95713  1     62
+siesta:     15.39183  15.39183  10.26122  1     63
+siesta:     17.95713  17.95713  12.82652  1     64
+initatomlists: Number of atoms, orbitals, and projectors:     64   256   576
+
+siesta: System type = bulk      
+
+
+* Maximum dynamic memory allocated =     1 MB
+
+siesta:    ===============================
+siesta:        Begin CG move =      0
+siesta:    ===============================
+
+InitMesh: MESH =    48 x    48 x    48 =      110592
+InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
+
+
+* Maximum dynamic memory allocated =    27 MB
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =   12185.667955
+siesta: Ena     =    3675.141829
+siesta: Ekin    =    2572.945558
+siesta: Enl     =    1153.571630
+siesta: DEna    =       0.000011
+siesta: DUscf   =       0.000000
+siesta: DUext   =       0.000000
+siesta: Exc     =   -2070.626828
+siesta: eta*DQ  =       0.000000
+siesta: Emadel  =       0.000000
+siesta: Eharris =   -6839.790577
+siesta: Etot    =   -6854.635756
+siesta: FreeEng =   -6854.635756
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6839.7906    -6854.6358    -6854.6358  1.0203 -3.0641
+timer: Routine,Calls,Time,% = IterSCF        1       7.510  81.88
+siesta:    2    -6838.2317    -6838.1807    -6838.1807  0.0154 -3.2858
+siesta:    3    -6838.2304    -6838.2656    -6838.2656  0.0066 -3.2822
+siesta:    4    -6838.2297    -6838.2287    -6838.2287  0.0000 -3.2766
+
+siesta: E_KS(eV) =     -6838.2289
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+ Tot    0.001651    0.001653    0.001674
+----------------------------------------
+ Max    0.000244
+ Res    0.000077    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    0.000244    constrained
+
+cgvc: Finished line minimization    1.  Mean atomic displacement =    0.0000
+
+outcoor: Relaxed atomic coordinates (scaled):               
+    0.00000000    0.00000000    0.00000000   1  Si        1
+    0.25000000    0.25000000    0.25000000   1  Si        2
+    0.00000000    0.50000000    0.50000000   1  Si        3
+    0.25000000    0.75000000    0.75000000   1  Si        4
+    0.50000000    0.00000000    0.50000000   1  Si        5
+    0.75000000    0.25000000    0.75000000   1  Si        6
+    0.50000000    0.50000000    0.00000000   1  Si        7
+    0.75000000    0.75000000    0.25000000   1  Si        8
+    1.00000000    0.00000000    0.00000000   1  Si        9
+    1.25000000    0.25000000    0.25000000   1  Si       10
+    1.00000000    0.50000000    0.50000000   1  Si       11
+    1.25000000    0.75000000    0.75000000   1  Si       12
+    1.50000000    0.00000000    0.50000000   1  Si       13
+    1.75000000    0.25000000    0.75000000   1  Si       14
+    1.50000000    0.50000000    0.00000000   1  Si       15
+    1.75000000    0.75000000    0.25000000   1  Si       16
+    0.00000000    1.00000000    0.00000000   1  Si       17
+    0.25000000    1.25000000    0.25000000   1  Si       18
+    0.00000000    1.50000000    0.50000000   1  Si       19
+    0.25000000    1.75000000    0.75000000   1  Si       20
+    0.50000000    1.00000000    0.50000000   1  Si       21
+    0.75000000    1.25000000    0.75000000   1  Si       22
+    0.50000000    1.50000000    0.00000000   1  Si       23
+    0.75000000    1.75000000    0.25000000   1  Si       24
+    0.00000000    0.00000000    1.00000000   1  Si       25
+    0.25000000    0.25000000    1.25000000   1  Si       26
+    0.00000000    0.50000000    1.50000000   1  Si       27
+    0.25000000    0.75000000    1.75000000   1  Si       28
+    0.50000000    0.00000000    1.50000000   1  Si       29
+    0.75000000    0.25000000    1.75000000   1  Si       30
+    0.50000000    0.50000000    1.00000000   1  Si       31
+    0.75000000    0.75000000    1.25000000   1  Si       32
+    1.00000000    1.00000000    0.00000000   1  Si       33
+    1.25000000    1.25000000    0.25000000   1  Si       34
+    1.00000000    1.50000000    0.50000000   1  Si       35
+    1.25000000    1.75000000    0.75000000   1  Si       36
+    1.50000000    1.00000000    0.50000000   1  Si       37
+    1.75000000    1.25000000    0.75000000   1  Si       38
+    1.50000000    1.50000000    0.00000000   1  Si       39
+    1.75000000    1.75000000    0.25000000   1  Si       40
+    1.00000000    0.00000000    1.00000000   1  Si       41
+    1.25000000    0.25000000    1.25000000   1  Si       42
+    1.00000000    0.50000000    1.50000000   1  Si       43
+    1.25000000    0.75000000    1.75000000   1  Si       44
+    1.50000000    0.00000000    1.50000000   1  Si       45
+    1.75000000    0.25000000    1.75000000   1  Si       46
+    1.50000000    0.50000000    1.00000000   1  Si       47
+    1.75000000    0.75000000    1.25000000   1  Si       48
+    0.00000000    1.00000000    1.00000000   1  Si       49
+    0.25000000    1.25000000    1.25000000   1  Si       50
+    0.00000000    1.50000000    1.50000000   1  Si       51
+    0.25000000    1.75000000    1.75000000   1  Si       52
+    0.50000000    1.00000000    1.50000000   1  Si       53
+    0.75000000    1.25000000    1.75000000   1  Si       54
+    0.50000000    1.50000000    1.00000000   1  Si       55
+    0.75000000    1.75000000    1.25000000   1  Si       56
+    1.00000000    1.00000000    1.00000000   1  Si       57
+    1.25000000    1.25000000    1.25000000   1  Si       58
+    1.00000000    1.50000000    1.50000000   1  Si       59
+    1.25000000    1.75000000    1.75000000   1  Si       60
+    1.50000000    1.00000000    1.50000000   1  Si       61
+    1.75000000    1.25000000    1.75000000   1  Si       62
+    1.50000000    1.50000000    1.00000000   1  Si       63
+    1.75000000    1.75000000    1.25000000   1  Si       64
+
+siesta: Eigenvalues (eV):
+  ik is    eps
+   1  1 -16.20 -15.21 -15.21 -15.21 -15.21 -15.21 -15.21 -14.23 -14.23 -14.23
+        -14.23 -14.23 -14.23 -14.23 -14.23 -14.23 -14.23 -14.23 -14.23 -13.89
+        -13.89 -13.89 -13.89 -12.08 -12.08 -12.08 -12.08 -12.08 -12.08 -11.91
+        -11.91 -11.91 -11.91 -11.91 -11.91 -11.91 -11.91 -11.91 -11.91 -11.91
+        -11.91 -11.26 -11.26 -11.26 -11.26  -9.68  -9.68  -9.68  -9.68  -9.68
+         -9.68  -9.68  -9.68  -9.68  -9.68  -9.68  -9.68  -8.06  -8.06  -8.06
+         -8.06  -8.06  -8.06  -8.06  -8.06  -8.06  -8.06  -8.06  -8.06  -7.99
+         -7.99  -7.99  -7.99  -7.99  -7.99  -7.99  -7.99  -7.99  -7.99  -7.99
+         -7.99  -7.69  -7.69  -7.69  -7.69  -7.69  -7.69  -7.08  -7.08  -7.08
+         -7.08  -7.08  -7.08  -6.05  -6.05  -6.05  -6.05  -6.05  -6.05  -6.05
+         -6.05  -6.05  -6.05  -6.05  -6.05  -5.50  -5.50  -5.50  -5.50  -5.50
+         -5.50  -5.50  -5.50  -5.50  -5.50  -5.50  -5.50  -5.37  -5.37  -5.37
+         -5.37  -5.37  -5.37  -5.37  -5.37  -3.92  -3.92  -3.92  -2.09  -2.09
+         -2.09  -2.09  -2.09  -2.09  -1.91  -1.91  -1.91  -1.91  -1.42  -1.42
+         -1.42  -1.42  -1.42  -1.42  -1.01  -1.01  -1.01  -0.93  -0.43  -0.43
+         -0.43  -0.43  -0.43  -0.43  -0.43  -0.43  -0.43  -0.43  -0.43  -0.43
+          1.19   1.19   1.19   1.19   1.19   1.19   1.19   1.19   1.32   1.32
+          1.32   1.32   1.32   1.32   1.78   1.78   1.78   1.78   1.78   1.78
+          1.78   1.78   1.78   1.78   1.78   1.78   2.19   2.19   2.19   2.19
+          2.19   2.19   2.19   2.19   2.19   2.19   2.19   2.19   3.16   3.16
+          3.16   3.16   3.16   3.16   3.16   3.16   3.16   3.16   3.16   3.16
+          3.63   3.63   3.63   3.63   3.63   3.63   3.63   3.63   3.63   3.63
+          3.63   3.63   4.26   4.26   4.26   4.26   4.26   4.26   4.26   4.26
+          4.26   4.26   4.26   4.26   4.53   4.53   4.53   4.53   4.53   4.53
+          4.53   4.53   4.53   4.53   4.53   4.53   7.04   7.04   7.04   7.04
+          7.04   7.04   8.11   8.11   8.11   8.11
+siesta: Fermi energy =      -3.276638 eV
+
+siesta: Program's energy decomposition (eV):
+siesta:-Eions   =  -12185.667955
+siesta: Ena     =    3675.141829
+siesta: Ekin    =    2552.619179
+siesta: Enl     =     954.493311
+siesta: DEna    =     214.480388
+siesta: DUscf   =       5.382660
+siesta: DUext   =       0.000000
+siesta: Exc     =   -2054.678357
+siesta: eta*DQ  =       0.000000
+siesta: Emadel  =       0.000000
+siesta: Ekinion =       0.000000
+siesta: Eharris =   -6838.229920
+siesta: Etot    =   -6838.228946
+siesta: FreeEng =   -6838.228946
+
+siesta: Final energy (eV):
+siesta:       Kinetic =    2552.619179
+siesta:       Hartree =     399.178158
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -2054.678357
+siesta:  Ion-electron =   -3041.812748
+siesta:       Ion-ion =   -4693.535178
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -6838.228946
+
+siesta: Stress tensor (eV/Ang**3):
+siesta:    -0.038703    0.000000    0.000000
+siesta:     0.000000   -0.038703    0.000000
+siesta:     0.000000    0.000000   -0.038703
+
+siesta: Cell volume =       1280.824056 Ang**3
+
+siesta: Pressure:
+siesta:                Solid            Molecule  Units
+siesta:           0.00042153          0.00042150  Ry/Bohr**3
+siesta:           0.03870317          0.03870044  eV/Ang**3
+siesta:          62.00997812         62.00560816  kBar
+
+
+* Maximum dynamic memory allocated : Node    0 =    27 MB
+* Maximum memory occured during poison                        
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1      23.802      23.802    99.99
+timer:  Setup             1       0.571       0.571     2.40
+timer:  bands             1       0.002       0.002     0.01
+timer:  KSV_init          1       0.002       0.002     0.01
+timer:  IterMD            1      23.206      23.206    97.49
+timer:  hsparse           2       0.403       0.805     3.38
+timer:  overfsm           2       0.185       0.371     1.56
+timer:  IterSCF           5       4.422      22.108    92.88
+timer:  kinefsm           2       0.144       0.288     1.21
+timer:  nlefsm            2       0.745       1.490     6.26
+timer:  DHSCF             5       3.461      17.307    72.71
+timer:  DHSCF1            1       0.117       0.117     0.49
+timer:  DHSCF2            1       2.989       2.989    12.55
+timer:  REORD            32       0.001       0.043     0.18
+timer:  POISON            6       0.092       0.550     2.31
+timer:  DHSCF3            5       1.871       9.357    39.31
+timer:  rhoofd            5       0.859       4.293    18.04
+timer:  CELLXC            5       0.123       0.616     2.59
+timer:  vmat              5       0.774       3.870    16.26
+timer:  diagon            4       0.624       2.498    10.49
+timer:  rdiag             4       0.352       1.408     5.92
+timer:  DHSCF4            1       4.838       4.838    20.32
+timer:  dfscf             1       4.130       4.130    17.35
+  
+>> End of run:  24-JUL-2001  18:51:43

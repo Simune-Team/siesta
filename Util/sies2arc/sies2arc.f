@@ -229,6 +229,7 @@ C*******************
      *          '(a4,1x,3f15.9,1x,a4,1x,i4,2(1x,a2),1x,f8.4,1x,i4)')
      *          lab2,x(i),y(i),z(i),wtype1,i,asym,asym,q,i
             enddo
+            write(iout,'(''end'')')
           endif
           write(iout,'(''end'')')
         endif

@@ -70,7 +70,7 @@ C Internal variables
       integer
      .   i, ia, ib, ibuff(no), ic, ii, imp, in, ind, iop, ip, iphi,
      .   is, isp, ispin, iu, iua, iul, ix, ix1, ix2, iy,
-     .   j, jb, jc, jmp, last, lasta, lastop, maxb, maxndl,
+     .   j, jb, jc, jmp, last, lasta, lastop, maxb, maxc, maxndl,
      .   nc, nphiloc
       real*8
      .   CD(nsp), CDV(nsp), DF(12), Dji, dxsp(3,nsp),  
@@ -99,15 +99,15 @@ C  Get old allocation defaults and set new ones
      .                    imin=1, routine='dfscf' )
       
 C  Allocate buffers to store partial copies of Dscf and C
-      maxb = maxval(endpht(1:np)-endpht(0:np-1))
-      maxb = maxb + minb
+      maxc = maxval(endpht(1:np)-endpht(0:np-1))
+      maxb = maxc + minb
       maxb = min( maxb, no )
-      call realloc( C,   1,nsp,  1,maxb,          name='C'   )
+      call realloc( C,   1,nsp,  1,maxc,          name='C'   )
       call realloc( D,   0,maxb, 0,maxb, 1,nspin, name='D'   )
-      call realloc( gC,  1,3,    1,nsp,  1,maxb,  name='gC'  )
-      call realloc( ibc, 1,maxb,                  name='ibc' )
+      call realloc( gC,  1,3,    1,nsp,  1,maxc,  name='gC'  )
+      call realloc( ibc, 1,maxc,                  name='ibc' )
       call realloc( iob, 0,maxb,                  name='iob' )
-      call realloc( xgC, 1,9,    1,nsp,  1,maxb,  name='xgC' )
+      call realloc( xgC, 1,9,    1,nsp,  1,maxc,  name='xgC' )
 
 C  Set logical that determines whether we need to use parallel or serial mode
       Parallel = (nuo .ne. nuotot)

@@ -347,7 +347,7 @@ C Start time counter
              write(6,'(a)')
      .        'dhscf:   Harris forces for a XC functional different of'      
              write(6,'(a)')
-     .        'dhscf:   Perdew-Zunger has not been implemeted yet'
+     .        'dhscf:   Perdew-Zunger has not been implemented yet'
              write(6,102)
            endif
            call die
@@ -733,14 +733,9 @@ C ----------------------------------------------------------------------
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,+1)
       enddo
 
-*      call cellxc( XCfunc, XCauth, 0, cell, ntml, ntml, ntpl, 0, 
-*     .             aux3, nspin, DRho, Ex, Ec, DEx, DEc, Vscf, 
-*     .             stressl, 1, aux1, ntm, nsm, Node, Nodes )
-
       call cellxc( XCfunc, XCauth, 0, 0, cell, ntml, ntml, ntpl, 0, 
      .             aux3, nspin, DRho, Ex, Ec, DEx, DEc, Vscf, 
-     .             1, DVxcdn, stressl,
-     .             1, aux1, ntm, nsm, Node, Nodes )
+     .             DVxcdn, stressl, 1, aux1 )
 
       do ispin = 1,nspin
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,-1)
@@ -814,8 +809,7 @@ C Find contribution of partial-core-correction
         if ( ifor .eq. 1)
      .    call forhar( ntpl, nspin, nml, ntml, ntm, npcc,
      .                 XCfunc, XCauth, cell, rhoatm, rhopcc,
-     .                 Vna, DRho,
-     .                 Vscf, Vaux, Node, Nodes )
+     .                 Vna, DRho, Vscf, Vaux )
 
 C Transform spin density into sum and difference
         if (nsd .eq. 2) then

@@ -1,4 +1,4 @@
-A single makefile can be used to build siesta for different
+The single top-level Makefile can be used to build SIESTA for different
 architectures and compilers, provided the following steps are taken:
 
 * Look for a .make file in this directory that might be appropriate for
@@ -7,8 +7,8 @@ architectures and compilers, provided the following steps are taken:
 
 * Copy or link the file to the Src directory, renaming it as "arch.make".
 
-One of the macros set in the .make files refers to machine-dependent
-routines, which are kept in different .f files in the Src directory,
+The macro SYS in the .make files refers to files holding
+machine-dependent routines, which are kept in the Src directory,
 according to the architecture and compiler/library capabilities.
 
 NetCDF hooks:

@@ -57,7 +57,7 @@ C Internal variables and arrays
       integer
      .  i, ia, ic, ii, il, imp, in, ind, iop, ip, iphi, 
      .  is, isp, iu, iul, ix, j, jc, jl, jmp, jn, 
-     .  last, lasta, lastop, maxloc, nc, nlocal, 
+     .  last, lasta, lastop, maxloc, maxloc2, nc, nlocal, 
      .  nphiloc, nvmaxl
       integer, dimension(:), allocatable, save ::
      .  ilc, ilocal, iorb
@@ -78,21 +78,21 @@ C  Set algorithm logical
 
 C  Find value of maxloc
 
-      maxloc = maxval(endpht(1:np)-endpht(0:np-1))
-      maxloc = maxloc + minloc
+      maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
+      maxloc = maxloc2 + minloc
       maxloc = min( maxloc, no )
 
 C  Allocate local memory
       allocate(ilocal(no))
       call memory('A','I',no,'vmat')
-      allocate(ilc(maxloc))
-      call memory('A','I',maxloc,'vmat')
+      allocate(ilc(maxloc2))
+      call memory('A','I',maxloc2,'vmat')
       allocate(iorb(0:maxloc))
       call memory('A','I',maxloc+1,'vmat')
       allocate(Vlocal(0:maxloc,0:maxloc))
       call memory('A','D',(maxloc+1)*(maxloc+1),'vmat')
-      allocate(Clocal(nsp,maxloc))
-      call memory('A','D',nsp*maxloc,'vmat')
+      allocate(Clocal(nsp,maxloc2))
+      call memory('A','D',nsp*maxloc2,'vmat')
       allocate(VClocal(nsp))
       call memory('A','D',nsp,'vmat')
 

@@ -70,16 +70,16 @@ C
      .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
      .  ni, nkpnt, nmove, nn, nnia, nr,
      .  ns, nsc(3), nscf, nspin, ntm(3), no_l, nv, 
-     .  nxij, pmax, nkpol, nhist
+     .  nxij, pmax, nkpol, nhist, io_sig
 
       integer
      .  Node, Nodes
 #ifdef MPI
       integer
-     .  MPIerror, ntmp, procYval, procYdefault
+     .  MPIerror, ntmp, procYval, procYdefault, blocksizedefault
 #endif
 
-      integer, dimension(:), allocatable, save ::
+      integer, dimension(:), allocatable ::
      .  ibuffer1, 
      .  jna, listh, listhold, listhptr, listhptrold,
      .  numh, numhold
@@ -87,7 +87,7 @@ C
       real(dp)
      .  amu, Ang, bcell(3,3), beta, bulkm, 
      .  charnet, cfmax, cftem, const, cstress(3,3),
-     .  Debye, dipol(3), dDmax, dDtol, DEna,
+     .  Debye, dipol(3), dDmax, dDtol, DEharr, DEna,
      .  dt, DUext, DUscf, Dxc, dx, dxmax, e1, e2, sigma,
      .  Ecorrec, ef, Eharrs, Eions, Ekin, Ekinion, Emad, Ena, 
      .  Enaatm, Enascf, Enl, Entrop, 
@@ -110,11 +110,11 @@ C
      .  xmax, xmin,
      .  stressl(3,3), veclen
 
-      real(dp), dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable ::
      .  efs, kweight, qs, r2ij, 
      .  wgthpol, dpbuffer1, H0, S
 
-      real(dp), dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable :: 
      .  auxpul, bk, cfa, fa, fal, kpoint, kpol,
      .  polR, polxyz, H, va, xij,
      .  xijo, dpbuffer2, Dscf, Dscfsave, Dold,
@@ -124,11 +124,11 @@ C
       real(dp)
      .  buffer1, stresstmp(3,3)
 
-      real(dp), dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable :: 
      .  fatmp
 #endif
 
-      real(dp), dimension(:,:,:), allocatable, save :: 
+      real(dp), dimension(:,:,:), allocatable :: 
      .  ebk, eo, qo
 
       logical
@@ -192,6 +192,8 @@ C Initialise MPI and set processor number
 
 C Print version information ...........................................
       if (IOnode) then
+        call io_assign(io_sig)
+        call sig_setup(io_sig)
         call prversion
 #ifdef MPI
          write(6,'(/,a,i4,a)')
@@ -231,7 +233,10 @@ C Initialise read .....................................................
       call reinit(slabel, sname)
 
 C Set allocation report level .........................................
-      level = fdf_integer( 'alloc_report_level', 0 )
+      if (IOnode) level = fdf_integer( 'alloc_report_level', 0 )
+#ifdef MPI
+      call MPI_Bcast(level,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+#endif
       call alloc_report( level=level, file=trim(slabel)//'.alloc' )
 C ..................
 
@@ -322,25 +327,6 @@ C Read simulation data ................................................
      .            pulfile, tempinit, dumpcharge, varcel, harrisfun )
 
 
-C Set ProcessorY and BlockSize in module parallel
-#ifdef MPI
-      if (IOnode) then
-        call set_processorYdefault(Nodes,procYdefault)
-        procYval = fdf_integer('processorY',procYdefault)
-        BlockSize = fdf_integer('blocksize',8)
-      endif
-      call MPI_Bcast(procYval,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(BlockSize,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call set_processorY(procYval)
-      if (IOnode) then
-         write(6,'(a,2i4,/)')
-     $        '* ProcessorY, Blocksize: ', procYval, Blocksize
-      endif
-#else
-      call set_processorY(1)
-      BlockSize = 8
-#endif
-
 C Find some switches ..................................................
       if (IOnode) then
         writek    = fdf_boolean('WriteKpoints'    , outlng )
@@ -406,6 +392,26 @@ C Initialize atom lists
       call initatomlists
       qtot = qtot - charnet
 !
+
+C Set ProcessorY and BlockSize in module parallel
+#ifdef MPI
+      if (IOnode) then
+        call set_processorYdefault(Nodes,procYdefault)
+        call set_blocksizedefault(Nodes,no_u,blocksizedefault)
+        procYval = fdf_integer('processorY',procYdefault)
+        BlockSize = fdf_integer('blocksize',blocksizedefault)
+      endif
+      call MPI_Bcast(procYval,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+      call MPI_Bcast(BlockSize,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+      call set_processorY(procYval)
+      if (IOnode) then
+         write(6,'(/,a,2i4,/)')
+     $        '* ProcessorY, Blocksize: ', procYval, Blocksize
+      endif
+#else
+      call set_processorY(1)
+      BlockSize = 8
+#endif
 
 C Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
@@ -1373,7 +1379,7 @@ C Solve eigenvalue problem .........................................
 C ..................
 
 C Harris-functional energy ............................................
-          Eharrs = 0.0_dp
+          DEharr = 0.0_dp
           do ispin = 1,nspin
 C const factor takes into account that there are two nondiagonal
 C elements in non-collinear spin density matrix, stored as
@@ -1382,15 +1388,15 @@ C ispin=4 => Imag(D12)
             const = 1._dp
             if (ispin .gt. 2) const = 2._dp
             do io = 1,nh
-              Eharrs = Eharrs + H(io,ispin) * const * 
+              DEharr = DEharr + H(io,ispin) * const * 
      .                     ( Dscf(io,ispin) - Dold(io,ispin) )
             enddo
           enddo
 #ifdef MPI
-C Global reduction of Eharrs
-          call MPI_AllReduce(Eharrs,buffer1,1,DAT_double,
+C Global reduction of DEharr
+          call MPI_AllReduce(DEharr,buffer1,1,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
-          Eharrs = buffer1
+          DEharr = buffer1
 #endif
 C ..................
 
@@ -1434,7 +1440,7 @@ C ...................
 C Print energies ......................................................
           DEna = Enascf - Enaatm
           Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
-          Eharrs = Etot + Eharrs
+          Eharrs = Etot + DEharr
           FreeE  = Etot - Temp * Entrop
           if (IOnode) then
             if (istp.eq.1 .and. first) write(6,'(/,a,/,(a,f15.6))')
@@ -1481,7 +1487,16 @@ C Print total energy and density matrix error .........................
      .            'Eharris(eV) = ',Eharrs/eV,
      .            '  E_KS(eV) = ',Etot/eV,'  dDmax = ',dDmax
             endif
+            call sig(io_sig,'Harris in scf',Eharrs/eV)
+            call sig(io_sig,'Etot in scf',Etot/eV)
+            call sig(io_sig,'dDmax in scf',dDmax)
           endif
+        else
+C         recalculating the energy in the last iter (for gridcellsampling)
+          DEna = Enascf - Enaatm
+          Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
+          Eharrs = Etot + DEharr
+          FreeE  = Etot - Temp * Entrop
         endif
 C ...................
 
@@ -1511,6 +1526,7 @@ C End of SCF iteration_________________________________________________
 C Write final Kohn-Sham Energy ........................................
       if (IOnode) then
         write(6,"(/a,f14.4)") 'siesta: E_KS(eV) = ', Etot/eV
+        call sig(io_sig,'Final KS energy',Etot/eV)
       endif
 
 #ifdef MPI
@@ -1559,6 +1575,7 @@ C Write atomic forces .................................................
         endif
         write(6,'(40(1h-),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
         write(6,'(40(1h-),/,a4, f12.6)') 'Max',fmax*Ang/eV
+        call sig(io_sig,'Maximum force',fmax*Ang/eV)
         write(6,'(a4,f12.6,a)')'Res',fres*Ang/eV,
      .                   '    sqrt( Sum f_i^2 / 3N )'
         write(6,'(40(1h-),/,a4, f12.6,a)') 'Max',cfmax*Ang/eV, 
@@ -1583,7 +1600,7 @@ C       Pressure (only for the solid)
           Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
           write(6,'(/,a,f20.8,a)')
      .      'siesta: Pressure:', Psol/kBar, '  kBar'
-
+          call sig(io_sig,'Pressure kbar',Psol/kBar)
         endif
       endif
 C ...................
@@ -1796,7 +1813,7 @@ C Print eigenvalues
       endif
 
       if (isolve.eq.0.and.IOnode) 
-     .     call ioeig(eo, ef, no_l, nspin, nkpnt, no_l, nspin, maxk)
+     .     call ioeig(eo, ef, no_u, nspin, nkpnt, no_u, nspin, maxk)
 !--
 C Compute the projected density of states
 !
@@ -1814,6 +1831,12 @@ C Compute the projected density of states
 
       if (do_pdos) then
 
+#ifdef MPI
+            if( IOnode) then
+              write(6,*)
+     .           'siesta: ERROR: PDOS not parallelized yet'
+            endif
+#else
 c     Find the desired energy range
          if (IOnode) then
             read(iu,'(a)') line
@@ -1825,10 +1848,10 @@ c     Find the desired energy range
             e2 = values(p,2) * factor
             sigma = values(p,3) * factor
             nhist = integers(p,1)
-            write(6,*) '>>'
-            write(6,*) 'PDOS info: '
-            write(6,*) 'e1, e2, sigma, nhist: ', e1, e2, sigma, nhist
-            write(6,*) '>>'
+            write(6,'(a)') 'siesta: PDOS info: '
+            write(6,'(a,3(f8.2,a),2x,i5)') 
+     $             'siesta: e1, e2, sigma, nhist: ',     
+     $             e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
 !
          endif  ! IOnode
 #ifdef MPI
@@ -1837,9 +1860,16 @@ c     Find the desired energy range
         call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
-        if (IOnode) write(6,*) 'PDOS not implemented yet'
+        call pdos( no_s, nspin, nspin, no_l, maxnh,
+     .             no_u, numh, listhptr, listh, H, S,
+     .             e1, e2, sigma, nhist,
+     .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
+     .             nbk, bk, ebk, no_u)
 
-      endif                     ! PDOS calc (do_pdos)
+!        if (IOnode) write(6,*) 'PDOS not implemented yet'
+
+#endif                          ! PDOS calc (only in serial version)
+      endif                     ! PDOS calc (do_pdos)                         
 
 C Print program's energy decomposition
       if (IOnode) then
@@ -1859,6 +1889,24 @@ C Print program's energy decomposition
      .     'siesta: Eharris =', (Eharrs+Ekinion)/eV,
      .     'siesta: Etot    =', (Etot+Ekinion)/eV,
      .     'siesta: FreeEng =', (FreeE+Ekinion)/eV
+c
+c   Signature records
+c
+
+        call sig(io_sig,'siesta:-Eions   =', (-Eions)/eV)
+        call sig(io_sig,'siesta: Ena     =', Ena/eV)
+        call sig(io_sig,'siesta: Ekin    =', Ekin/eV)
+        call sig(io_sig,'siesta: Enl     =', Enl/eV)
+        call sig(io_sig,'siesta: DEna    =', DEna/eV)
+        call sig(io_sig,'siesta: DUscf   =', DUscf/eV)
+        call sig(io_sig,'siesta: DUext   =', DUext/eV)
+        call sig(io_sig,'siesta: Exc     =', Exc/eV)
+        call sig(io_sig,'siesta: eta*DQ  =', Ecorrec/eV)
+        call sig(io_sig,'siesta: Emadel  =', Emad/eV)
+        call sig(io_sig,'siesta: Ekinion =', Ekinion/eV)
+        call sig(io_sig,'siesta: Eharris =', (Eharrs+Ekinion)/eV)
+        call sig(io_sig,'siesta: Etot    =', (Etot+Ekinion)/eV)
+        call sig(io_sig,'siesta: FreeEng =', (FreeE+Ekinion)/eV)
 
 C Print standard energy decomposition
         write(6,'(/,a)') 'siesta: Final energy (eV):'
@@ -1962,6 +2010,7 @@ C Find pressure
      .    'siesta: ', Psol,           Pmol,           '  Ry/Bohr**3',
      .    'siesta: ', Psol*Ang**3/eV, Pmol*Ang**3/eV, '  eV/Ang**3',
      .    'siesta: ', Psol/kBar,      Pmol/kBar,      '  kBar'
+          call sig(io_sig,'Pressure kbar',Psol/kBar)
       endif
 
 c Print spin polarization
@@ -1987,6 +2036,7 @@ c Print spin polarization
           if (IOnode) then
             write(6,'(/,a,f12.6)')
      .       'siesta: Total spin polarization (Qup-Qdown) =', stot
+            call sig(io_sig,'Tot spin pol',stot)
             write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
           endif
         endif

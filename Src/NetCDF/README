@@ -1,3 +1,8 @@
+The routines in this directory implement a fortran90 interface
+to the NetCDF library. Its use is optional in SIESTA.
+
+NOTE
+
 Some (old) versions of Compaq compilers cannot deal with the code in
 netcdf_text_variables.f90. So far the routines there are not needed by
 siesta, so the 'include' statement in netcdf.f90 has been commented

@@ -58,15 +58,15 @@ c Reading input for the pseudopotentials and atomic orbitals
 !
 !     New routines in basis_specs and basis_types.
 !
-         call basis_read
-         call basis_transfer
-         call write_basis
+         call read_basis_specs
+         call basis_specs_transfer
 
          nsmax = nsp             !! For old_atmfuncs
          call allocate_old_arrays
          call clear_tables
 
          do is = 1,nsp
+            call write_basis_specs(6,is)
             basp=>basis_parameters(is)
             call atom_main( iz(is), lmxkb(is), nkbl(0,is), 
      .           erefkb(1,0,is),lmxo(is), nzeta(0,1,is), rco(1,0,1,is), 
@@ -86,6 +86,7 @@ c Reading input for the pseudopotentials and atomic orbitals
 
       call dump_basis_ascii
       call dump_basis_netcdf
+      call dump_basis_xml
 
       end subroutine initatom
 

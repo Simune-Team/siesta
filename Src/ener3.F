@@ -87,9 +87,10 @@ C
 C Internal variables ......................................................
 
       integer
-     .  i,in,ind,j,jn,k,kl,kn,knlh,Nodes,nn,nbandsmin,nbandsmax,
+     .  i,ib,in,ind,j,jn,k,kl,kn,knlh,Nodes,nn,nn2,nbandsmin,nbandsmax,
      .  nbandspernode, iloc, nbandsloc
       integer, dimension(:), allocatable, save :: iptr
+      integer, dimension(:), allocatable, save :: iptr2
 #ifdef MPI
       integer
      .  MPIerror, nbl, nh, maxnhg, nremainder, ii, Node
@@ -101,14 +102,18 @@ C Internal variables ......................................................
      .  hl,sl
       double precision, dimension(:,:), allocatable, save :: 
      .  cl,gl
+      double precision, dimension(:,:), allocatable, save :: 
+     .  cl2,gl2
 #endif
 
       double precision
      .  a1,a2,a3,b1,b2,b3,c1,c2,c3,func1(3),func2(3),
      .  lam1,lam2,lam3,pp1,pp2,pp3
 
+      double precision, dimension(:,:), allocatable, save :: 
+     .  aux
       double precision, dimension(:,:,:), allocatable, save :: 
-     .  aux, bux1, bux2
+     .  bux1, bux2
 
 C..................
 
@@ -126,6 +131,10 @@ C Allocate local arrays for c/g/h/s
       allocate(cl(ncmax,nbl))
       call memory('A','D',ncmax*nbl,'ener3')
       allocate(gl(ncmax,nbl))
+      call memory('A','D',ncmax*nbl,'ener3')
+      allocate(cl2(ncmax,nbl))
+      call memory('A','D',ncmax*nbl,'ener3')
+      allocate(gl2(ncmax,nbl))
       call memory('A','D',ncmax*nbl,'ener3')
       allocate(hl(maxnhg))
       call memory('A','D',maxnhg,'ener3')
@@ -154,13 +163,15 @@ C Work out range of bands for this Node
       call timer('ener3',1)
 
 C Allocate dynamic memory
-      allocate(aux(6,nbasis,nbandspernode+1))
-      call memory('A','D',6*nbasis*(nbandspernode+1),'ener3')
+      allocate(aux(6,nbasis))
+      call memory('A','D',6*nbasis,'ener3')
       allocate(bux1(3,nbands,nbandspernode+1))
       call memory('A','D',3*nbands*(nbandspernode+1),'ener3')
       allocate(bux2(3,nbands,nbandspernode+1))
       call memory('A','D',3*nbands*(nbandspernode+1),'ener3')
       allocate(iptr(nbasis))
+      call memory('A','I',nbasis,'ener3')
+      allocate(iptr2(nbasis))
       call memory('A','I',nbasis,'ener3')
 
 #ifdef MPI
@@ -185,7 +196,7 @@ C Initialize output and auxiliary varialbles ...............................
       ener(1:3) = 0.0d0
       func1(1:3) = 0.0d0
       func2(1:3) = 0.0d0
-      aux(1:6,1:nbasis,1:nbandspernode+1) = 0.0d0
+      aux(1:6,1:nbasis) = 0.0d0
       bux1(1:3,1:nbands,1:nbandspernode+1) = 0.0d0
       bux2(1:3,1:nbands,1:nbandspernode+1) = 0.0d0
 
@@ -240,145 +251,180 @@ C Build pointer for condensing f and fs on local node
           iptr(k) = kl
         enddo
 
+C Loop over Nodes for broadcasting of c,g,h and s
+        do nn2 = 1,Nodes
+
+#ifdef MPI
+C Get local size on broadcast node
+          call GetNodeOrbs(nbasis,nn2-1,Nodes,nbl)
+
+          if (nn.eq.nn2) then
+C cl2 and gl2 as needed are already globalised in cl and gl
+            cl2(1:ncmax,1:nbl) = cl(1:ncmax,1:nbl)
+            gl2(1:ncmax,1:nbl) = gl(1:ncmax,1:nbl)
+
+          else
+C Place arrays in local storage on broadcast node
+            if (Node.eq.nn2-1) then
+              do ib = 1,nbasisloc
+                do ii = 1,ncmax
+                  cl2(ii,ib) = c(ii,ib)
+                  gl2(ii,ib) = grad(ii,ib)
+                enddo
+              enddo
+            endif
+
+C Broadcast arrays if necessary
+            call MPI_Bcast(cl2(1,1),ncmax*nbl,DAT_double,nn2-1,
+     .          MPI_Comm_World,MPIerror)
+            call MPI_Bcast(gl2(1,1),ncmax*nbl,DAT_double,nn2-1,
+     .          MPI_Comm_World,MPIerror)
+          endif
+#endif
+
+C Build pointer for condensing f and fs on local node
+          do k = 1,nbasis
+            call GlobalToLocalOrb(k,nn2-1,Nodes,kl)
+            iptr2(k) = kl
+          enddo
+
 C Calculate Functional .....................................................
 C F=CtH
 C Fs=CtS
 
-        do i = 1,nbandsloc
-          do in = 1,numct(i)
-            k = listct(in,i)
-            kl = iptr(k)
-            if (kl.gt.0) then
+          do i = 1,nbandsloc
+            do in = 1,numct(i)
+              k = listct(in,i)
+              kl = iptr(k)
+              if (kl.gt.0) then
 #ifdef MPI
-              pp1 = cl(cttoc(in,i),kl) + lam1 * gl(cttoc(in,i),kl)
-              pp2 = cl(cttoc(in,i),kl) + lam2 * gl(cttoc(in,i),kl)
-              pp3 = cl(cttoc(in,i),kl) + lam3 * gl(cttoc(in,i),kl)
+                pp1 = cl(cttoc(in,i),kl) + lam1 * gl(cttoc(in,i),kl)
+                pp2 = cl(cttoc(in,i),kl) + lam2 * gl(cttoc(in,i),kl)
+                pp3 = cl(cttoc(in,i),kl) + lam3 * gl(cttoc(in,i),kl)
 
-              do kn = 1,numhl(kl)
-                ind = listhlptr(kl) + kn
-                knlh = listhl(ind)
-                aux(1,knlh,i) = aux(1,knlh,i) + pp1 * hl(ind)
-                aux(2,knlh,i) = aux(2,knlh,i) + pp2 * hl(ind)
-                aux(3,knlh,i) = aux(3,knlh,i) + pp3 * hl(ind)
-                aux(4,knlh,i) = aux(4,knlh,i) + pp1 * sl(ind)
-                aux(5,knlh,i) = aux(5,knlh,i) + pp2 * sl(ind)
-                aux(6,knlh,i) = aux(6,knlh,i) + pp3 * sl(ind)
-              enddo
+                do kn = 1,numhl(kl)
+                  ind = listhlptr(kl) + kn
+                  knlh = listhl(ind)
+                  aux(1,knlh) = aux(1,knlh) + pp1 * hl(ind)
+                  aux(2,knlh) = aux(2,knlh) + pp2 * hl(ind)
+                  aux(3,knlh) = aux(3,knlh) + pp3 * hl(ind)
+                  aux(4,knlh) = aux(4,knlh) + pp1 * sl(ind)
+                  aux(5,knlh) = aux(5,knlh) + pp2 * sl(ind)
+                  aux(6,knlh) = aux(6,knlh) + pp3 * sl(ind)
+                enddo
 #else
-              pp1 = c(cttoc(in,i),kl) + lam1 * grad(cttoc(in,i),kl)
-              pp2 = c(cttoc(in,i),kl) + lam2 * grad(cttoc(in,i),kl)
-              pp3 = c(cttoc(in,i),kl) + lam3 * grad(cttoc(in,i),kl)
-  
-              do kn = 1,numh(kl)
-                ind = listhptr(kl) + kn
-                knlh = listh(ind)
-                aux(1,knlh,i) = aux(1,knlh,i) + pp1 * h(ind)
-                aux(2,knlh,i) = aux(2,knlh,i) + pp2 * h(ind)
-                aux(3,knlh,i) = aux(3,knlh,i) + pp3 * h(ind)
-                aux(4,knlh,i) = aux(4,knlh,i) + pp1 * s(ind)
-                aux(5,knlh,i) = aux(5,knlh,i) + pp2 * s(ind)
-                aux(6,knlh,i) = aux(6,knlh,i) + pp3 * s(ind)
-              enddo
+                pp1 = c(cttoc(in,i),kl) + lam1 * grad(cttoc(in,i),kl)
+                pp2 = c(cttoc(in,i),kl) + lam2 * grad(cttoc(in,i),kl)
+                pp3 = c(cttoc(in,i),kl) + lam3 * grad(cttoc(in,i),kl)
+    
+                do kn = 1,numh(kl)
+                  ind = listhptr(kl) + kn
+                  knlh = listh(ind)
+                  aux(1,knlh) = aux(1,knlh) + pp1 * h(ind)
+                  aux(2,knlh) = aux(2,knlh) + pp2 * h(ind)
+                  aux(3,knlh) = aux(3,knlh) + pp3 * h(ind)
+                  aux(4,knlh) = aux(4,knlh) + pp1 * s(ind)
+                  aux(5,knlh) = aux(5,knlh) + pp2 * s(ind)
+                  aux(6,knlh) = aux(6,knlh) + pp3 * s(ind)
+                enddo
 #endif
-            endif
-          enddo
-
-        enddo
-
-C End of loop over nodes
-      enddo
-
-C Loop over Nodes for broadcasting of c,g,h and s
-      do nn = 1,Nodes
-
-#ifdef MPI
-C Get local size on broadcast node
-        call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-
-C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          do i = 1,nbasisloc
-            do ii = 1,ncmax
-              cl(ii,i) = c(ii,i)
-              gl(ii,i) = grad(ii,i)
+              endif
             enddo
-          enddo
-        endif
 
-C Broadcast arrays
-        call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(gl(1,1),ncmax*nbl,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-#endif
-
-C Build pointer for condensing f and fs on local node
-        do k = 1,nbasis
-          call GlobalToLocalOrb(k,nn-1,Nodes,kl)
-          iptr(k) = kl
-        enddo
-
-      do i = 1,nbandsloc
-
-        do in = 1,numf(i)
-          k = listf(in,i)
-          kl = iptr(k)
-          if (kl.gt.0) then
-            a1 = aux(1,k,i)
-            a2 = aux(2,k,i)
-            a3 = aux(3,k,i)
-            b1 = aux(4,k,i)
-            b2 = aux(5,k,i)
-            b3 = aux(6,k,i)
+            do in = 1,numf(i)
+              k = listf(in,i)
+              kl = iptr2(k)
+              if (kl.gt.0) then
+                a1 = aux(1,k)
+                a2 = aux(2,k)
+                a3 = aux(3,k)
+                b1 = aux(4,k)
+                b2 = aux(5,k)
+                b3 = aux(6,k)
 
 C Hij=CtHC
 C Sij=CtSC
 C multiply FxC and FsxC
-            do kn = 1,numc(k)
+                do kn = 1,numc(k)
 #ifdef MPI
-              c1 = cl(kn,kl) + lam1 * gl(kn,kl)
-              c2 = cl(kn,kl) + lam2 * gl(kn,kl)
-              c3 = cl(kn,kl) + lam3 * gl(kn,kl)
+                  c1 = cl2(kn,kl) + lam1 * gl2(kn,kl)
+                  c2 = cl2(kn,kl) + lam2 * gl2(kn,kl)
+                  c3 = cl2(kn,kl) + lam3 * gl2(kn,kl)
 #else
-              c1 = c(kn,kl) + lam1 * grad(kn,kl)
-              c2 = c(kn,kl) + lam2 * grad(kn,kl)
-              c3 = c(kn,kl) + lam3 * grad(kn,kl)
+                  c1 = c(kn,kl) + lam1 * grad(kn,kl)
+                  c2 = c(kn,kl) + lam2 * grad(kn,kl)
+                  c3 = c(kn,kl) + lam3 * grad(kn,kl)
 #endif
-              bux1(1,listc(kn,k),i) = bux1(1,listc(kn,k),i) + 
-     .          a1 * c1
-              bux1(2,listc(kn,k),i) = bux1(2,listc(kn,k),i) + 
-     .          a2 * c2
-              bux1(3,listc(kn,k),i) = bux1(3,listc(kn,k),i) + 
-     .          a3 * c3
-              bux2(1,listc(kn,k),i) = bux2(1,listc(kn,k),i) + 
-     .          b1 * c1
-              bux2(2,listc(kn,k),i) = bux2(2,listc(kn,k),i) + 
-     .          b2 * c2
-              bux2(3,listc(kn,k),i) = bux2(3,listc(kn,k),i) + 
-     .          b3 * c3
+                  bux1(1,listc(kn,k),i) = bux1(1,listc(kn,k),i) + 
+     .              a1 * c1
+                  bux1(2,listc(kn,k),i) = bux1(2,listc(kn,k),i) + 
+     .              a2 * c2
+                  bux1(3,listc(kn,k),i) = bux1(3,listc(kn,k),i) + 
+     .              a3 * c3
+                  bux2(1,listc(kn,k),i) = bux2(1,listc(kn,k),i) + 
+     .              b1 * c1
+                  bux2(2,listc(kn,k),i) = bux2(2,listc(kn,k),i) + 
+     .              b2 * c2
+                  bux2(3,listc(kn,k),i) = bux2(3,listc(kn,k),i) + 
+     .              b3 * c3
+                enddo
+              endif
             enddo
-          endif
+
+            do in = 1,numct(i)
+              k = listct(in,i)
+              kl = iptr(k)
+              if (kl.gt.0) then
+#ifdef MPI
+                do kn = 1,numhl(kl)
+                  ind = listhlptr(kl) + kn
+                  knlh = listhl(ind)
+                  aux(1,knlh) = 0.0d0
+                  aux(2,knlh) = 0.0d0
+                  aux(3,knlh) = 0.0d0
+                  aux(4,knlh) = 0.0d0
+                  aux(5,knlh) = 0.0d0
+                  aux(6,knlh) = 0.0d0
+                enddo
+#else
+                do kn = 1,numh(kl)
+                  ind = listhptr(kl) + kn
+                  knlh = listh(ind)
+                  aux(1,knlh) = 0.0d0
+                  aux(2,knlh) = 0.0d0
+                  aux(3,knlh) = 0.0d0
+                  aux(4,knlh) = 0.0d0
+                  aux(5,knlh) = 0.0d0
+                  aux(6,knlh) = 0.0d0
+                enddo
+#endif
+              endif
+            enddo
+
+C End of loop over nbandsloc
+          enddo
+
+C End of loop over node nn2
         enddo
+
+C End of loop over node nn
       enddo
 
-C End of loop over nodes
-      enddo
-
-      do i = nbandsmin,nbandsmax
-        iloc = i - nbandsmin + 1
-        func1(1) = func1(1) + bux1(1,i,iloc) - eta * bux2(1,i,iloc)
-        func1(2) = func1(2) + bux1(2,i,iloc) - eta * bux2(2,i,iloc)
-        func1(3) = func1(3) + bux1(3,i,iloc) - eta * bux2(3,i,iloc)
-        do jn = 1,numhij(iloc)
-          func2(1) = func2(1) + (bux1(1,listhij(jn,iloc),iloc) -
-     .             eta * bux2(1,listhij(jn,iloc),iloc)) * 
-     .             bux2(1,listhij(jn,iloc),iloc)
-          func2(2) = func2(2) + (bux1(2,listhij(jn,iloc),iloc) -
-     .             eta * bux2(2,listhij(jn,iloc),iloc)) * 
-     .             bux2(2,listhij(jn,iloc),iloc)
-          func2(3) = func2(3) + (bux1(3,listhij(jn,iloc),iloc) -
-     .             eta * bux2(3,listhij(jn,iloc),iloc)) * 
-     .             bux2(3,listhij(jn,iloc),iloc)
+      do i = 1,nbandsloc
+        iloc = i + nbandsmin - 1
+        func1(1) = func1(1) + bux1(1,iloc,i) - eta * bux2(1,iloc,i)
+        func1(2) = func1(2) + bux1(2,iloc,i) - eta * bux2(2,iloc,i)
+        func1(3) = func1(3) + bux1(3,iloc,i) - eta * bux2(3,iloc,i)
+        do jn = 1,numhij(i)
+          func2(1) = func2(1) + (bux1(1,listhij(jn,i),i) -
+     .             eta * bux2(1,listhij(jn,i),i)) * 
+     .             bux2(1,listhij(jn,i),i)
+          func2(2) = func2(2) + (bux1(2,listhij(jn,i),i) -
+     .             eta * bux2(2,listhij(jn,i),i)) * 
+     .             bux2(2,listhij(jn,i),i)
+          func2(3) = func2(3) + (bux1(3,listhij(jn,i),i) -
+     .             eta * bux2(3,listhij(jn,i),i)) * 
+     .             bux2(3,listhij(jn,i),i)
         enddo
       enddo
 
@@ -410,6 +456,10 @@ C Free dynamic memory
       deallocate(cl)
       call memory('D','D',size(gl),'ener3')
       deallocate(gl)
+      call memory('D','D',size(cl2),'ener3')
+      deallocate(cl2)
+      call memory('D','D',size(gl2),'ener3')
+      deallocate(gl2)
       call memory('D','D',size(hl),'ener3')
       deallocate(hl)
       call memory('D','D',size(sl),'ener3')
@@ -429,6 +479,8 @@ C Free dynamic memory
       deallocate(bux2)
       call memory('D','I',size(iptr),'ener3')
       deallocate(iptr)
+      call memory('D','I',size(iptr2),'ener3')
+      deallocate(iptr2)
 
       call timer('ener3',2)
       return

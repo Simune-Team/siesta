@@ -116,9 +116,9 @@ C     nm  : index for basis orbitals connected to basis orbital m
       double precision
      .  rtmp
       double precision, dimension(:), allocatable, save :: 
-     .  hl, sl
+     .  hl, sl, chccl
       double precision, dimension(:,:), allocatable, save :: 
-     .  cl, chccl, csccl
+     .  cl
 #endif
       integer, dimension(:), allocatable, save :: 
      .  iptrgtol, iptrltog
@@ -435,10 +435,8 @@ C ........................
       call GetNodeOrbs(nbasis,0,Nodes,nbl)
 #ifdef MPI
 C Allocate workspace for dm and edm on local node
-      allocate(chccl(nbasis,nbandspernode+1))
-      call memory('A','D',nbasis*(nbandspernode+1),'denmat')
-      allocate(csccl(nbasis,nbandspernode+1))
-      call memory('A','D',nbasis*(nbandspernode+1),'denmat')
+      allocate(chccl(nbasis))
+      call memory('A','D',nbasis,'denmat')
 #endif
 
 C Allocate column vectors and initialise
@@ -454,55 +452,89 @@ C Loop over Nodes
       do nn = 1,Nodes
 
 #ifdef MPI
-C Broadcast chcc/cscc
+C Broadcast chcc
         nbmin = (nn-1)*nbandspernode + min(nremainder,(nn-1)) + 1
         nbmax = nbmin + nbandspernode - 1
         if ((nn-1).lt.nremainder) nbmax = nbmax + 1
         nloc = (nbmax-nbmin+1)
 
+        do iloc = 1,nloc
 C Place arrays in local storage on broadcast node
-        if (Node.eq.nn-1) then
-          chccl(1:nbasis,1:nloc) = chcc(1:nbasis,1:nloc)
-          csccl(1:nbasis,1:nloc) = cscc(1:nbasis,1:nloc)
-        endif
+          if (Node.eq.nn-1) then
+            chccl(1:nbasis) = chcc(1:nbasis,iloc)
+          endif
 
 C Broadcast arrays
-        call MPI_Bcast(chccl(1,1),nbasis*nloc,DAT_double,
-     .        nn-1,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(csccl(1,1),nbasis*nloc,DAT_double,
+          call MPI_Bcast(chccl,nbasis,DAT_double,
      .        nn-1,MPI_Comm_World,MPIerror)
 #endif
 
 C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
-        do n = 1,nbasisloc
-          nl = iptrltog(n)
+          do n = 1,nbasisloc
+            nl = iptrltog(n)
 
 C Use listft to expand a column of cscc
-          do in = 1,numft(nl)
-            i = listft(in,n)
-            ni = fttof(in,n)
+            do in = 1,numft(nl)
+              i = listft(in,n) 
+              ni = fttof(in,n)
 #ifdef MPI
-            if (i.ge.nbmin.and.i.le.nbmax) then
-              iloc = i - nbmin + 1
-              csccCol(i,n) = csccl(ni,iloc)
-              chccCol(i,n) = chccl(ni,iloc)
-            endif
+              if (i.eq.(iloc+nbmin-1)) then
+                chccCol(i,n) = chccl(ni)
+              endif
 #else
-            csccCol(i,n) = cscc(ni,i)
-            chccCol(i,n) = chcc(ni,i)
+              csccCol(i,n) = cscc(ni,i)
+              chccCol(i,n) = chcc(ni,i)
 #endif
+            enddo
+          enddo
+#ifdef MPI
+        enddo
+#endif
+
+C End loop over Nodes
+      enddo
+
+#ifdef MPI
+C Loop over Nodes
+      do nn = 1,Nodes
+
+C Broadcast cscc
+        nbmin = (nn-1)*nbandspernode + min(nremainder,(nn-1)) + 1
+        nbmax = nbmin + nbandspernode - 1
+        if ((nn-1).lt.nremainder) nbmax = nbmax + 1
+        nloc = (nbmax-nbmin+1)
+
+        do iloc = 1,nloc
+C Place arrays in local storage on broadcast node
+          if (Node.eq.nn-1) then
+            chccl(1:nbasis) = cscc(1:nbasis,iloc)
+          endif
+
+C Broadcast arrays
+          call MPI_Bcast(chccl,nbasis,DAT_double,
+     .        nn-1,MPI_Comm_World,MPIerror)
+
+C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
+          do n = 1,nbasisloc
+            nl = iptrltog(n)
+
+C Use listft to expand a column of cscc
+            do in = 1,numft(nl)
+              i = listft(in,n)
+              ni = fttof(in,n)
+              if (i.eq.(iloc+nbmin-1)) then
+                csccCol(i,n) = chccl(ni)
+              endif
+            enddo
           enddo
         enddo
 
 C End loop over Nodes
       enddo
 
-#ifdef MPI
-C Deallocate chccl and csccl as these are no longer needed
+C Deallocate chccl as this is no longer needed
       call memory('D','D',size(chccl),'denmat')
       deallocate(chccl)
-      call memory('D','D',size(csccl),'denmat')
-      deallocate(csccl)
 #endif
 
 C Zero dm and edm

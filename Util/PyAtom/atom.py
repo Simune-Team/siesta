@@ -4,7 +4,7 @@
 from Numeric import *
 from Scientific.IO.NetCDF import *
 
-example="Ba.dump.nc"
+example="Ba.ion.nc"
 
 class rfunc:
 	def __init__(self,f,delta,cutoff):

@@ -20,7 +20,7 @@
 
       Implicit None
 
-      private die
+      private die, sp, dp
 
       integer, parameter :: sp = selected_real_kind(6,30)
       integer, parameter :: dp = selected_real_kind(14,100)
@@ -333,7 +333,7 @@
       end subroutine die
 !
 !-----------------------------------------------------------------------
-      subroutine basis_transfer
+      subroutine basis_specs_transfer
 
       integer lmax, lmaxkb, nzeta_max, nsemi_max, nkb_max
       integer l, isp, n
@@ -484,49 +484,51 @@
 
       enddo
 
-      end subroutine basis_transfer
+      end subroutine basis_specs_transfer
 
 !-----------------------------------------------------------------------
-      subroutine write_basis
+      subroutine write_basis_specs(lun,is)
+      integer, intent(in)  :: lun
+      integer, intent(in)  :: is
 
-      integer l, is, n, i
+      integer l,  n, i
 
-      do is=1,nsp
-         write(6,'(70(1h=))')
-         write(6,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
+      write(lun,'(a)') '<basis_specs>'
+         write(lun,'(70(1h=))')
+         write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
      $        atm_label(is), 'Z=',iz(is),
      $        'Mass=', smass(is), 'Charge=', charge(is)
-         write(6,'(a5,i1,1x,a6,i1,5x,a10,a10,1x,a6,l1)')
+         write(lun,'(a5,i1,1x,a6,i1,5x,a10,a10,1x,a6,l1)')
      $        'Lmxo=', lmxo(is), 'Lmxkb=', lmxkb(is),
      $        'BasisType=', basistype(is), 'Semic=', semic(is)
          do l=0,lmxo(is)
-            write(6,'(a2,i1,2x,a7,i1,2x,a8,i1)')
+            write(lun,'(a2,i1,2x,a7,i1,2x,a8,i1)')
      $           'L=', l, 'Nsemic=', nsemic(l,is),
      $           'Cnfigmx=', cnfigmx(l,is)
             do n=1,nsemic(l,is)+1
-               write(6,'(10x,a2,i1,2x,a6,i1,2xa7,i1)')
+               write(lun,'(10x,a2,i1,2x,a6,i1,2xa7,i1)')
      $                         'n=', n, 'nzeta=',nzeta(l,n,is),
      $                         'polorb=', polorb(l,n,is)
-               write(6,'(10x,a10,2x,g12.5)') 
+               write(lun,'(10x,a10,2x,g12.5)') 
      $                         'vcte:', vcte(l,n,is)
-               write(6,'(10x,a10,2x,g12.5)') 
+               write(lun,'(10x,a10,2x,g12.5)') 
      $                         'rinn:', rinn(l,n,is)
-               write(6,'(10x,a10,2x,4g12.5)') 'rcs:',
+               write(lun,'(10x,a10,2x,4g12.5)') 'rcs:',
      $                         (rco(i,l,n,is),i=1,nzeta(l,n,is))
-               write(6,'(10x,a10,2x,4g12.5)') 'lambdas:',
+               write(lun,'(10x,a10,2x,4g12.5)') 'lambdas:',
      $                         (lambda(i,l,n,is),i=1,nzeta(l,n,is))
             enddo
          enddo
-         write(6,'(70(1h-))')
+         write(lun,'(70(1h-))')
          do l=0,lmxkb(is)
-            write(6,'(a2,i1,2x,a5,i1,2x,a6,4g12.5)')
+            write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g12.5)')
      $           'L=', l, 'Nkbl=', nkbl(l,is),
      $           'erefs:  ', (erefkb(i,l,is),i=1,nkbl(l,is))
          enddo
-         write(6,'(70(1h=))')
-      enddo
+         write(lun,'(70(1h=))')
+      write(lun,'(a)') '</basis_specs>'
 
-      end subroutine write_basis
+      end subroutine write_basis_specs
 !-----------------------------------------------------------------------
       end module basis_types
 

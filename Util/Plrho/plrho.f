@@ -2,32 +2,31 @@
 
 c Plots the electron (spin) density, potential or LDOS as 
 c a colored solid surface.
-c Written by J.M.Soler. Nov. 1997.
+c Written by J.M.Soler. Nov/1997. Last modified Jan/2001.
 
       implicit none
 
 c Common arrays
       include 'plrho.h'
 
-c Internal parameters
-c maxp   : Maximun number of points
-      integer maxp
-      parameter ( maxp   = 10000000 )
-
 c Internal variables
       character
      .  name*75, fform*12, fname*80, output*20, paste*80, task*15
+      logical
+     .  found
       integer
      .  i, i1, i2, i3, icmin, icmax, ip, is, j, ind,
-     .  mesh(3), ncolor, np, nspin, nt, pgopen
+     .  mesh(3), ncolor, np, nsm, nspin, nt, pgopen
       real
      .  alpha, beta, cell(3,3), colavg, colmax, colmin,
-     .  f(maxp,2), fvalue, f1max, f1min, f2max, f2min, f2zero,
+     .  fvalue, f1max, f1min, f2max, f2min, f2zero,
      .  gamma, origin(3), rho, rx, ry,
      .  vpxmax, vpxmin, vsxmax, vsxmin,
      .  vpymax, vpymin, vsymax, vsymin,
      .  x, xmax, xmean, xmin, xrange,
      .  y, ymax, ymean, ymin, yrange
+      real, allocatable ::
+     .  f(:,:)
       double precision
      .  dcell(3,3)
       external
@@ -55,56 +54,39 @@ c Read density
       else
         fname = paste( name, '.RHO' )
       endif
-      open( unit=1, file=fname, status='old', form=fform )
-      if (fform .eq. 'formatted') then
-        read(1,*) cell
-        read(1,*) mesh, nspin
-        np = mesh(1) * mesh(2) * mesh(3)
-        if (np .gt. maxp) stop 'plrho: parameter maxp too small'
-        ind = 0
-        do is = 1,nspin
-          do i1 = 1,mesh(3)
-            do i2 = 1,mesh(2)
-              read(1,*) (f(ind+ip,is),ip=1,mesh(1))
-              ind = ind + mesh(1)
-            enddo
+      nsm = 1
+      np = 0
+      nspin = 0
+      call iorho( 'read', fname, dcell, mesh, nsm, np, nspin, 
+     .            f, found )
+      if (found) then
+        allocate( f(np,2) )
+        call iorho( 'read', fname, dcell, mesh, nsm, np, nspin, 
+     .              f, found )
+        do i = 1,3
+          do j= 1,3
+            cell(j,i) = dcell(j,i)
           enddo
         enddo
       else
-        read(1) dcell
-        read(1) mesh, nspin
-        np = mesh(1) * mesh(2) * mesh(3)
-        if (np .gt. maxp) stop 'plrho: parameter maxp too small'
-        ind = 0
-        do is = 1,nspin
-          do i1 = 1,mesh(3)
-            do i2 = 1,mesh(2)
-              read(1) (f(ind+ip,is),ip=1,mesh(1))
-              ind = ind + mesh(1)
-            enddo
-          enddo
-        enddo
-        do i = 1,3
-          do j= 1,3
-            cell(j,i) =dcell(j,i)
-          enddo
-        enddo
+        write(6,*) 'plrho: ERROR: file not found: ', fname
+        stop
       endif
-      close(1)
 
-      write(6,'(a,3(/,3f12.6))') 'plrho: cell =', cell
+      write(6,'(/,a,/,(3f12.6))') 'plrho: cell =', cell
       write(6,'(a,3i6)') 'plrho: mesh  =', mesh
       write(6,'(a,3i6)') 'plrho: nspin =', nspin
 
 c Reorder spin density as sum and difference
-      if (task .eq. 'spin') then
-        if (nspin .ne. 2) stop 'plrho: data not spin polarized'
+      if (nspin .eq. 2) then
         ncolor = 1
         do ip = 1,np
           rho = f(ip,1) + f(ip,2)
           f(ip,2) = f(ip,1) - f(ip,2)
           f(ip,1) = rho
         enddo
+      elseif (task .eq. 'spin') then
+        stop 'plrho: data not spin polarized'
       endif
 
 c Read potential
@@ -112,31 +94,12 @@ c Read potential
         ncolor = 1
         if (task .eq. 'vt') fname = paste( name, '.VT' )
         if (task .eq. 'vh') fname = paste( name, '.VH' )
-        open( unit=1, file=fname, status='old', form=fform )
-        if (fform .eq. 'formatted') then
-          read(1,*) cell
-          read(1,*) mesh
-          np = mesh(1) * mesh(2) * mesh(3)
-          ind = 0
-          do i1 = 1,mesh(3)
-            do i2 = 1,mesh(2)
-              read(1,*) (f(ind+ip,2),ip=1,mesh(1))
-              ind = ind + mesh(1)
-            enddo
-          enddo
-        else
-          read(1) dcell
-          read(1) mesh
-          np = mesh(1) * mesh(2) * mesh(3)
-          ind = 0
-          do i1 = 1,mesh(3)
-            do i2 = 1,mesh(2)
-              read(1) (f(ind+ip,2),ip=1,mesh(1))
-              ind = ind + mesh(1)
-            enddo
-          enddo
+        call iorho( 'read', fname, dcell, mesh, nsm, np, nspin, 
+     .              f(1,2), found )
+        if (.not.found) then
+          write(6,*) 'plrho: ERROR: file not found: ', fname
+          stop
         endif
-        close(1)
       endif
         
 c Rotate cell vectors
@@ -248,6 +211,7 @@ c Copy pixmap to window and show it
 
 
       include 'icolor.f'
+      include 'iorho.f'
       include 'paste.f'
       include 'plsurf.f'
       include 'pltr3d.f'

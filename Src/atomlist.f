@@ -158,7 +158,7 @@ c Initialize atomic lists
       enddo
       
       if (IOnode)
-     $   write(6,'(a,3(1x,i4))')
+     $   write(6,'(a,3(1x,i5))')
      $   'initatomlists: Number of atoms, orbitals, and projectors: ',
      $     na_u, no_u, nokb_u
 
@@ -270,7 +270,7 @@ C Expand iakb and iphKB and rckb
      .    'superc: Internal auxiliary supercell:',
      .     nsc(1), ' x', nsc(2), ' x', nsc(3), '  =', ncells
 
-         write(6,'(a,3(1x,i4))')
+         write(6,'(a,3(1x,i5))')
      $     'superc: Number of atoms, orbitals, and projectors: ',
      $     na_s, no_s, nokb_s
            

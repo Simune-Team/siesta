@@ -732,6 +732,23 @@ c
       return
       end
 c
+c
+      logical function fdf_block_old(label,unit)
+c
+c     Returns "true" and the unit number of the file from which to read
+c     the contents of a block if "label" is associated with a block, and
+c     false if not (unit is set to -1 in this case).
+c
+c     Wrapper function to get around scope bug in pgf90
+
+      implicit none
+      character*(*) label
+      integer unit
+      logical fdf_block
+      external fdf_block
+
+      fdf_block_old = fdf_block(label,unit)
+      end
 c-----------------------------------------------------------------------
 c
       logical function fdf_locate(label)

@@ -116,7 +116,6 @@ C Internal variable types and dimensions ----------------------------
      .  JO, JO1, JO2, JR, JS,
      .  L, L1, L2, L3, LMAX,
      .  N, NILM, NILM1, NILM2, NJLM1, NJLM2
-
       INTEGER, SAVE ::
      .  MF=0, MFF=0, MFFR=0, MFFY=0, 
      .  NF=0, NFF=0, NFFR=0, NFFY=0
@@ -141,6 +140,8 @@ C Internal variable types and dimensions ----------------------------
       LOGICAL, SAVE ::
      .  NULLIFIED=.FALSE.
 
+      logical, save :: opened=.false.   ! JMS debug
+
       TYPE(allocDefaults) ::
      .  OLDEFS
 
@@ -155,6 +156,7 @@ C Nullify pointers
       IF (.NOT.NULLIFIED) THEN
         NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
      .           CFFR, DYDR, F, FFR, FFY, Y )
+        ALLOCATE( INDF(0,0,0) )
         NULLIFIED = .TRUE.
       ENDIF
 
@@ -204,15 +206,25 @@ C Check argument OPERAT
       ENDIF
 
 C Check size of orbital index table
-      IF ( MAX(IS1,IS2).GT.SIZE(INDF,1)   .OR. 
+      IF ( MAX(IS1,IS2).GT.SIZE(INDF,1)   .OR.
      .     MIN(IO1,IO2).LT.LBOUND(INDF,2) .OR.
      .     MAX(IO1,IO2).GT.UBOUND(INDF,2) .OR.
      .     MAX(IOPER,2).GT.SIZE(INDF,3) ) THEN
-        CALL REALLOC( INDF, 1,MAX(IS1,IS2), MIN(IO1,IO2),MAX(IO1,IO2),
-     .                1,MAX(IOPER,2), MYNAME//'INDF' )
-        CALL REALLOC( NLM,  1,MAX(IS1,IS2), MIN(IO1,IO2),MAX(IO1,IO2),
-     .                1,MAX(IOPER,2), MYNAME//'NLM'  )
-      END IF
+        CALL REALLOC( INDF, 1,MAX(SIZE(INDF,1),IS1,IS2),
+     .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
+     .                IO1,IO2),1,MAX(SIZE(INDF,3),IOPER,2),
+     .                MYNAME//'INDF' )
+        CALL REALLOC( NLM,  1,MAX(SIZE(INDF,1),IS1,IS2),
+     .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
+     .                IO1,IO2),1,MAX(SIZE(INDF,3),IOPER,2),
+     .                MYNAME//'NLM'  )
+      ENDIF
+
+C JMS debug
+c      if (.not.opened) then
+c        open(41,file='matel.out',form='formatted',status='unknown')
+c        opened = .true.
+c      endif
 
 C Find radial expansion of each orbital -----------------------------
       DO I = 1,2
@@ -239,13 +251,11 @@ C         two orbitals
 C         Reallocate arrays
           L = LOFIO( IS, IO )
           NILM = (L+2)**2
-          IF (NF+NILM .GT. MF) THEN
-            MF = EXPAND * (NF+NILM)
-            CALL REALLOC( F, 0,NQ, 1,MF, MYNAME//'F'   )
-            CALL REALLOC( ILM,     1,MF, MYNAME//'ILM' )
-            CALL REALLOC( INDFF, 1,MF, 1,MF, 1,MAX(IOPER,2),
-     .                    MYNAME//'INDFF' )
-          ENDIF
+          IF (NF+NILM .GT. MF) MF = EXPAND * (NF+NILM)
+          CALL REALLOC( F, 0,NQ, 1,MF, MYNAME//'F'   )
+          CALL REALLOC( ILM,     1,MF, MYNAME//'ILM' )
+          CALL REALLOC( INDFF,   1,MF, 1,MF, 1,MAX(IOPER,2),
+     .                  MYNAME//'INDFF' )
 
 C         Expand orbital in spherical harmonics
           IF ((I.EQ.1) .OR. (IOPER.LE.2)) THEN
@@ -275,8 +285,12 @@ C         Store orbital in k-space
             NF = NF + 1
             L = LOFILM( ILM(NF) )
             CALL RADFFT( L, NQ, RMAX, F(0,NF), F(0,NF) )
-            F(NQ,NF) = 0.D0
+*           F(NQ,NF) = 0.D0
           ENDDO
+
+C JMS debug
+c          write(41,'(/,a,4i6)') 'is,io,l,nf =', is, io, l, nf
+c          write(41,'(i6,e25.12)') (iq,f(iq,nf),iq=0,nq)
 
 *         CALL TIMER( 'MATEL1', 2 )
         ENDIF
@@ -319,6 +333,7 @@ C         Loop on possible values of l quantum number of product
 
 C           Return to real space
             CALL RADFFT( L3, NQ, NQ*PI/RMAX, FFQ, FFL )
+*           FFL(NQ) = 0.D0
             IF (MOD(ABS(L1-L2-L3)/2,2) .NE. 0) THEN
               DO IR = 0,NQ
                 FFL(IR) = - FFL(IR)
@@ -392,6 +407,12 @@ C           Store new radial function and setup spline interpolation
               DFFRMX = 0.D0
               CALL SPLIN( RI, FFR(0,1,NFFR), NR+1, DFFR0, DFFRMX,
      .                    FFR(0,2,NFFR) )
+
+C JMS debug
+c              write(41,'(/,a,4i6)') 'if1,if2,nffr =', if1,if2,nffr
+c              write(41,'(i6,2e25.12)') 
+c     .          (ir,ffr(ir,1,nffr),ffr(ir,2,nffr),ir=0,nr)
+
             ENDIF
           ENDDO
 

@@ -97,7 +97,7 @@
          logical                                       ::  there_is_core
          type(rad_func)                                ::  core
 
-
+         logical                        :: read_from_file
       end type species_info
 
 !

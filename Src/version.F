@@ -15,9 +15,9 @@ c     included for reference.)
 c
 c     After it is done, this file should be commited.
 c
-      integer, dimension(3), save  :: num_version = (/1,0,49/)
+      integer, dimension(3), save  :: num_version = (/1,0,61/)
       character(len=80), parameter :: version_str =
-     . "SIESTA 1.0.49 -- [newatom merged] (Jan 29, 2001)"
+     . "SIESTA 1.0.62 -- [Projected Density Of States] (Sept 24, 2001)"
 
       end module version_info
 
@@ -51,6 +51,9 @@ c
       integer, intent(out)  :: v(3)
       v = num_version
       end subroutine get_version
+
+
+
 
 
 

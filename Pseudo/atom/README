@@ -32,6 +32,9 @@ INSTALLATION
 To compile, edit the makefile to suit your compiler and 
 architecture.
 
+USAGE
+
+See Docs/User.Guide
 
 TIPS AND CAVEATS
 
