@@ -61,7 +61,7 @@ C                                     C + 3 * lam * GRAD
 C ************************************************************************
 
       use precision
-      use on_main,   only : ncG2L,ncT2P,nbG2L,nbL2G,nbandsloc,nbNode
+      use on_main,   only : ncG2L,ncT2P,nbG2L,nbL2G,nbandsloc
       use globalise
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_sum

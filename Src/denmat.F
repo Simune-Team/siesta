@@ -1,8 +1,8 @@
       subroutine denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
      .                  nctmax,nfmax,nftmax,nhmax,nhijmax,numc,listc,
      .                  numct,listct,cttoc,numf,listf,numft,listft,
-     .                  fttof,numh,listh,listhptr,numhij,listhij,chcc,
-     .                  cscc,dm,edm,nbasisCloc,nspin,Node)
+     .                  fttof,numh,listh,listhptr,numhij,listhij,
+     .                  dm,edm,nbasisCloc,nspin,Node)
 C *******************************************************************
 C Subroutine to compute the Density and Energy Density matrices
 C for the Order-N functional of Kim et al. (PRB 52, 1640 (95))
@@ -22,6 +22,8 @@ C The DM is normalized to the exact number of electrons!!!
 C
 C Written by P.Ordejon, Noviembre'96
 C Modified by J.M.Soler, May'97
+C Multiplication for cHc x c / cSc x c changed to suit parallel
+C version and spatial decomposition added by J.D. Gale December '04
 C ************************** INPUT **********************************
 C real*8 c(ncmax,nbasis)      : Localized Wave Functions (sparse)
 C real*8 eta                  : Fermi level parameter of Kim et al.
@@ -69,8 +71,6 @@ C integer numhij(nbands)      : Control vector of Hij matrix
 C                                (number of <>0  elements of each row of Hij)
 C integer listhij(nhijmax,nbands): Control vector of Hij matrix 
 C                                (list of <>0  elements of each row of Hij)
-C real*8 chcc(nfmax,nbands)   : Auxiliary space
-C real*8 cscc(nfmax,nbands)   : Auxiliary space
 C ************************* OUTPUT **********************************
 C real*8 dm(nhmax,nbasis)     : Density Matrix
 C real*8 edm(nhmax,nbasis)    : Energy density matrix
@@ -79,7 +79,7 @@ C *******************************************************************
       use precision
       use spatial,   only : nG2L, nL2G, nNode
       use on_main,   only : ncG2L, ncP2T, ncT2P, nbL2G, nbandsloc,
-     .                      nbNode, ncL2G, nbG2L
+     .                      ncL2G, nbG2L
 
 #ifdef MPI
       use globalise, only: setglobalise, maxft2, numft2, listft2,
@@ -113,8 +113,7 @@ C *******************************************************************
 
       real(dp) ::
      .  c(ncmax,nbasisCloc,nspin),dm(nhmax,nspin),edm(nhmax,nspin),
-     .  qs(nspin),eta(nspin),h(nhmax,nspin),s(nhmax),
-     .  chcc(nfmax,nbandsloc),cscc(nfmax,nbandsloc)
+     .  qs(nspin),eta(nspin),h(nhmax,nspin),s(nhmax)
      
       external
      .  iodm, timer
@@ -136,7 +135,7 @@ C     nm  : index for basis orbitals connected to basis orbital m
      .  csccCol(:), ft(:,:), fst(:,:)
 
       real(dp) ::
-     .  cim, cnj, chin, csin, chccim, csccim, cchccmn, ccsccmn,
+     .  cim, cnj, chin, csin, cchccmn, ccsccmn,
      .  Hmn, Smn, qout(2), fact, spinfct
 
 #ifdef MPI
@@ -198,12 +197,22 @@ C Initialize temporary arrays
         chccCol(i) = 0.0d0
         cscrow(i) = 0.0d0
         chcrow(i) = 0.0d0
+#ifdef MPI
+        ctmp(i,1) = 0.0d0
+        ctmp(i,2) = 0.0d0
+#endif
       enddo
 #ifdef MPI
       do i = 1,nbandsloc
         do j = 1,nhijmax
           cscrowsave(j,i) = 0.0d0
           chcrowsave(j,i) = 0.0d0
+        enddo
+      enddo
+      do i = 1,nbasisCloc
+        do j = 1,MaxFT2
+          ftG(j,i) = 0.0d0
+          fstG(j,i) = 0.0d0
         enddo
       enddo
 #endif
@@ -298,25 +307,25 @@ C Add diagonal terms - 2 and 2eta
 
 C Find row i of cscc=csc*ct and chcc=chc*ct. 
 C Only the nonzero elements of f=cH will be required.
-          do mi = 1,numf(il)
-            m = listf(mi,il)
-            mm = ncG2L(m)
-            csccim = 0.0d0
-            chccim = 0.0d0
-            if (nbNode(i).eq.Node) then
-              do jm = 1,numc(mm)
-                j = listc(jm,mm)
+          do mi = 1,numct(il)
+            m = listct(mi,il)
 #ifdef MPI
-                chccim = chccim + ctmp(j,1) * c(jm,mm,is)
-                csccim = csccim + ctmp(j,2) * c(jm,mm,is)
-#else
-                chccim = chccim + chcrow(j) * c(jm,mm,is)
-                csccim = csccim + cscrow(j) * c(jm,mm,is)
-#endif
+            if (ncT2P(m).gt.0) then
+              im = cttoc(mi,il)
+              do in = 1,numft2(m)
+                j = listft2(in,m)
+                ftG(in,m)  = ftG(in,m)  + ctmp(j,1)*c(im,m,is)
+                fstG(in,m) = fstG(in,m) + ctmp(j,2)*c(im,m,is)
               enddo
             endif
-            cscc(mi,il) = csccim
-            chcc(mi,il) = chccim
+#else
+            im = cttoc(mi,il)
+            do in = 1,numft(m)
+              j = listft(in,m)
+              ft(in,m)  = ft(in,m)  + chcrow(j)*c(im,m,is)
+              fst(in,m) = fst(in,m) + cscrow(j)*c(im,m,is)
+            enddo
+#endif
           enddo
 
 C Reinitialise chcrow/cscrow
@@ -331,27 +340,6 @@ C Reinitialise ctmp
 #endif
         
         enddo
-
-C Find global sum of ft/fst
-        do nn = 1,nbasisCloc
-          do in = 1,numft(nn)
-            i = listft(in,nn)
-            il = nbG2L(i)
-            if (il.gt.0) then
-              ni = fttof(in,nn)
-              ft(in,nn) = chcc(ni,il)
-              fst(in,nn) = cscc(ni,il)
-            endif
-          enddo
-        enddo
-
-#ifdef MPI
-C Globalise ft/fst
-        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
-     .                  ft,ftG,Node)
-        call globaliseF(nbasisCloc,nbands,nftmax,numft,listft,
-     .                  fst,fstG,Node)
-#endif
 
 C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
         do n = 1,nbasisloc

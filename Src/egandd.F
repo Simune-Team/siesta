@@ -260,7 +260,7 @@ C-JMS Modified denmat argument list
         call denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
      .              maxnct,maxnf,maxnft,nhmax,maxnhij,numc,listc,
      .              numct,listct,cttoc,numf,listf,numft,listft,
-     .              fttof,numh,listh,listhptr,numhij,listhij,f,fs,
+     .              fttof,numh,listh,listhptr,numhij,listhij,
      .              dm,edm,nbasisCloc,nspin,Node)
         goto 999
       endif

@@ -17,14 +17,10 @@ C  Band pointers
 C
 C  nbandsloc = no. of bands to which local orbitals belong
 C  nbL2G     = pointer from local band to global band index
-C  nbAtom    = pointer to atom on which band is centred
-C  nbNode    = pointer to Node with responsibility for band
 C
         integer,           save :: nbandsloc = 1
         integer,  pointer, save :: nbL2G(:)
         integer,  pointer, save :: nbG2L(:)
-        integer,  pointer, save :: nbNode(:)
-        integer,  pointer, save :: nbAtom(:)
 
         real(dp), pointer, save :: c(:,:,:)
         real(dp), pointer, save :: cold(:,:,:)

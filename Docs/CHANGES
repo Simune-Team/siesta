@@ -1,6 +1,171 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.29
+Date: 2004/12/10  7:30 GMT
+Title: New parallel denmat 
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The multiplication of cHc / cSc by c in denmat has been rewritten in
+terms of using numct/listct, instead of numf/listf to go directly
+to ftG/fstG, rather than via chcc/cscc. A number of related clean ups
+in the parallel order N have been made.
+
+Files:
+
+atomlwf.F     The arrays nbNode and nbAtom have been removed
+denmat.F      Algorithm changed for chc/csc x c step /
+              arrays chcc & cscc eliminated / globaliseF not
+              called anymore.
+egandd.F      Arrays f & fs no longer passed to denmat.F
+ener3.F       The array nbNode is no longer "use"d
+ener3lomem.F  The array nbNode is no longer "use"d
+globalise.F   Local elements of buxg are now explicitly zeroed for
+              safety during rezero call.
+onmod.F       The arrays nbNode and nbAtom have been removed
+ordern.F      The arrays nbNode and nbAtom have been removed
+version.F / CHANGES - as per usual
+=======================================================================
+Version: 1.4.28
+Date: 2004/12/09  18:00 GMT
+Title: Autoconf (siesta-devel--reference--1.4--patch-10)
+Author: Toby White (committed by Alberto Garcia)
+
+Changes:
+
+ * Add requisite files for autoconf.
+  - aclocal.m4 & configure are generated files.
+
+ * Remove cleaning of aux_ files from Makefile
+
+ARCH info:
+
+Revision: siesta-devel--reference--1.4--patch-10
+Archive: siesta@uam.es--2004
+Creator: Alberto Garcia <wdpgaara@lg.ehu.es>
+Date: Tue Dec  7 21:54:51 CET 2004
+Standard-date: 2004-12-07 20:54:51 GMT
+New-files: Src/.arch-ids/aclocal.m4.id
+    Src/.arch-ids/arch.make.in.id
+    Src/.arch-ids/config.guess.id
+    Src/.arch-ids/config.sub.id
+    Src/.arch-ids/configure.ac.id
+    Src/.arch-ids/configure.id Src/aclocal.m4
+    Src/arch.make.in Src/config.guess Src/config.sub
+    Src/configure Src/configure.ac Src/m4/.arch-ids/=id
+    Src/m4/.arch-ids/ACX_MPI.m4.id
+    Src/m4/.arch-ids/TW_CHECK_BLACS.m4.id
+    Src/m4/.arch-ids/TW_CHECK_FC_90.m4.id
+    Src/m4/.arch-ids/TW_CHECK_FC_95.m4.id
+    Src/m4/.arch-ids/TW_CHECK_FC_FPP.m4.id
+    Src/m4/.arch-ids/TW_CHECK_FC_FPP_90.m4.id
+    Src/m4/.arch-ids/TW_CHECK_FC_TR15580.m4.id
+    Src/m4/.arch-ids/TW_CHECK_FC_TR15581.m4.id
+    Src/m4/.arch-ids/TW_CHECK_SCALAPACK.m4.id
+    Src/m4/.arch-ids/TW_FC_CHECK_DCFUNS.m4.id
+    Src/m4/.arch-ids/TW_FC_CHECK_FLUSH.m4.id
+    Src/m4/.arch-ids/TW_FC_ID.m4.id
+    Src/m4/.arch-ids/TW_FC_ID_FLAGS.m4.id
+    Src/m4/.arch-ids/TW_FIND_FC_BLAS.m4.id
+    Src/m4/.arch-ids/TW_FIND_LAPACK.m4.id
+    Src/m4/.arch-ids/TW_PATH_NETCDF.m4.id
+    Src/m4/.arch-ids/TW_TRY_DC_LAPACK.m4.id
+    Src/m4/.arch-ids/ac_config_aux_dirs.m4.id
+    Src/m4/.arch-ids/fortran.m4.id Src/m4/ACX_MPI.m4
+    Src/m4/TW_CHECK_BLACS.m4 Src/m4/TW_CHECK_FC_90.m4
+    Src/m4/TW_CHECK_FC_95.m4 Src/m4/TW_CHECK_FC_FPP.m4
+    Src/m4/TW_CHECK_FC_FPP_90.m4
+    Src/m4/TW_CHECK_FC_TR15580.m4
+    Src/m4/TW_CHECK_FC_TR15581.m4
+    Src/m4/TW_CHECK_SCALAPACK.m4
+    Src/m4/TW_FC_CHECK_DCFUNS.m4
+    Src/m4/TW_FC_CHECK_FLUSH.m4 Src/m4/TW_FC_ID.m4
+    Src/m4/TW_FC_ID_FLAGS.m4 Src/m4/TW_FIND_FC_BLAS.m4
+    Src/m4/TW_FIND_LAPACK.m4 Src/m4/TW_PATH_NETCDF.m4
+    Src/m4/TW_TRY_DC_LAPACK.m4 Src/m4/ac_config_aux_dirs.m4
+    Src/m4/fortran.m4
+New-directories: Src/m4 Src/m4/.arch-ids
+Modified-files: Src/Makefile
+New-patches: siesta@uam.es--2004/siesta-devel--reference--1.4--patch-10
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--base-0
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-1
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-2
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-3
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-4
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-5
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-6
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-7
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--base-0
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-1
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-2
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-7
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-4
+Summary: Autoconf files -- merge of siesta-devel--twhite--1.4--patch-4
+Keywords: 
+
+
+
+=======================================================================
+Version: 1.4.27
+Date: 2004/12/09  17:30 GMT
+Title: Fixes by Toby White (siesta-devel--reference--1.4--patch-9)
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Changes:
+
+    * minor fixes to let NAG run with fewer complaints
+    * - neigh.f: initialize CELAST & RGLAST before use
+                 use precision module
+                 add intents to arguments
+      - meshmatrix.F: do not test size of unallocated array
+      - matel.f & meshsubs.f: make sure literal constants have
+                              correct precision
+    * Rearrange Libs:
+      - move IEEECK from blas.f to lapack.f
+      - replace machine.f with LAPACK3E version which is not
+        broken by optimization.
+      - Src/Libs/makefile & Src/Makefile: add separate targets 
+                                          for libblas.a and liblapack.a
+    * Src/Makefile fixes: 
+      - clear SUFFIXES at the start (fixes .mod Modula-2 problems)
+      - Fix sed quoting in version rule (and tidy it up a bit)
+
+ARCH info:
+
+Revision: siesta-devel--reference--1.4--patch-9
+Archive: siesta@uam.es--2004
+Creator: Alberto Garcia <wdpgaara@lg.ehu.es>
+Date: Tue Dec  7 20:22:24 CET 2004
+Standard-date: 2004-12-07 19:22:24 GMT
+Renamed-files: Src/Libs/.arch-ids/machine.f.id Src/Libs/.arch-ids/machine.F.id
+    Src/Libs/machine.f Src/Libs/machine.F
+Modified-files: Src/Libs/README Src/Libs/blas.f
+    Src/Libs/lapack.f Src/Libs/machine.F Src/Libs/makefile
+    Src/Makefile Src/matel.f Src/meshmatrix.F Src/meshsubs.F
+    Src/neighb.f
+Modified-directories: Src/Libs/.arch-ids
+New-patches: siesta@uam.es--2004/siesta-devel--reference--1.4--patch-9
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-3
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-4
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-5
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-6
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--base-0
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-1
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-2
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-3
+Summary: Merge of siesta-devel--twhite--1.4--patch-3
+Keywords: 
+
+** Transitional fixes:
+
+	Removed obsolete files:
+
+	Src/fdf:   fdf2.f  fdf3.f
+        Src/NetCDF:  netcdf.f90.orig netcdf_overloads.f90.orig
+        Util/Denchar/Src/NetCDF:  netcdf.f90.orig netcdf_overloads.f90.orig
+	Docs/Tech: basis_generation.html index.html
+
+=======================================================================
 Version: 1.4.26
 Date: 2004/12/05  3:30 GMT
 Title: Fixes for test example bugs

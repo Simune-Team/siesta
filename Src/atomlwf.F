@@ -296,7 +296,6 @@ C (or the number of electrons)
 C loop over LWF's centered on atom ia
         do indexb = 1,indexi
           index = index + 1
-          nbAtom(index) = ia
 
 c clear list of atoms considered within loc. range
           do indexa = 1,nna
@@ -421,18 +420,6 @@ C   occupied and 0.1 if empty)
       enddo
 
       nbands = index
-
-C Create map of responsibilities for bands on nodes
-      call re_alloc(nbNode,1,nbands,name='nbNode')
-#ifdef MPI
-      do mu = 1,nbands
-        nbNode(mu) = natomsNode(nbAtom(mu))
-      enddo
-#else
-      do mu = 1,nbands
-        nbNode(mu) = 0
-      enddo
-#endif
 
       if (index .gt. nbasis) then
         if (Node.eq.0) then

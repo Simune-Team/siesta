@@ -1045,6 +1045,12 @@ C Internal variables
       integer          :: mu
       integer          :: n
           
+C Rezero based on local elements
+      do jn = 1,numhij(ibandloc)
+        j = listhij(jn,ibandloc)
+        buxg(j) = 0.0d0
+      enddo
+
 C Loop over neighbouring nodes
       do n = 1,NNodes
             
@@ -1088,6 +1094,13 @@ C Internal variables
       integer          :: m
       integer          :: mu
       integer          :: n
+
+C Rezero based on local elements
+      do jn = 1,numhij(ibandloc)
+        j = listhij(jn,ibandloc)
+        buxg(j,1) = 0.0d0
+        buxg(j,2) = 0.0d0
+      enddo
 
 C Loop over neighbouring nodes
       do n = 1,NNodes
@@ -1133,6 +1146,14 @@ C Internal variables
       integer          :: m
       integer          :: mu
       integer          :: n
+
+C Rezero based on local elements
+      do jn = 1,numhij(ibandloc)
+        j = listhij(jn,ibandloc)
+        buxg(j,1) = 0.0d0
+        buxg(j,2) = 0.0d0
+        buxg(j,3) = 0.0d0
+      enddo
 
 C Loop over neighbouring nodes
       do n = 1,NNodes
