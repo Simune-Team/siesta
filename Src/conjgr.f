@@ -1,4 +1,4 @@
-      SUBROUTINE CONJGR (N,X,G,DXMAX,GTOL,CNTROL,H)
+      subroutine conjgr(N,X,G,DXMAX,GTOL,CNTROL,H)
 
       use precision
 
@@ -21,69 +21,69 @@ C          STORAGE REQUIRED: IOP=1 => FLETCHER-REEVES. IOPT=2 =>
 C          POLAK-RIBIERE. DETAILS IN SECT. 10.6 OF 'NUMERICAL RECIPES'
 C WRITTEN BY J.SOLER. JAN/91. BASED ON ROUTINES IN 'NUMERICAL RECIPES'
 
-      integer, intent(in)   :: n
-      integer,  PARAMETER   :: IOPT=2
+C Local parameters
+      integer,  parameter     :: iopt = 2
 
-      real(dp) ::  X(N),G(N),H(N,IOPT),CNTROL(0:19)
-      real(dp), intent(in)  :: dxmax, gtol
+C Passed variables
+      integer,  intent(in)    :: n
+      real(dp), intent(in)    :: dxmax, gtol
+      real(dp), intent(inout) :: X(N),G(N),H(N,IOPT),CNTROL(0:19)
 
-      real(dp) :: gmax, gg, gamma
-      integer  :: i, j
+C Local variables
+      real(dp)                :: gmax, gg, gamma
+      integer                 :: i, j
 
-      real(dp) :: ddot
+      real(dp)                :: ddot
       external  ddot
 
-      ! Make sure all values of cntrol are initialized
-      cntrol=0.0_dp
-
-C     IF GRADIENT IS SMALLER THAN TOLERENCE, RETURN
+C If gradient is smaller than tolerence, return
       GMAX=ABS(G(1))
-      DO 10 J=1,N
+      do J=1,N
 *       G(J)=-G(J)
         GMAX=MAX(GMAX,ABS(G(J)))
-   10 CONTINUE
-      IF (GMAX.LE.GTOL) THEN
+      enddo
+      if (GMAX.LE.GTOL) then
         CNTROL(0)=0
         GOTO 60
-      ENDIF
+      endif
 
-C     FIRST-CALL INITIALIZATIONS
-      IF (NINT(CNTROL(0)).EQ.0) THEN
-        DO 30 I=1,IOPT
-          DO 20 J=1,N
+C First-call initializations
+      if (NINT(CNTROL(0)).EQ.0) then
+        do I=1,IOPT
+          do J=1,N
             H(J,I)=G(J)
-   20     CONTINUE
-   30   CONTINUE
+          enddo
+        enddo
         CNTROL(0)=1
         CNTROL(1)=1
         CNTROL(2)=ddot(n,G,1,G,1)
         CNTROL(10)=0
         CNTROL(18)=DXMAX
-      ENDIF
+      endif
 
-C     LINE MINIMIZATION IS ALWAYS CALLED
-   40 CALL LINMIN (N,X,H,G,DXMAX,CNTROL(10))
+C Line minimization is always called
+   40 call linmin(N,X,H,G,DXMAX,CNTROL(10))
 
-C     IF LINE MINIMIZATION IS FINISHED, FIND NEW LINE DIRECTION
-      IF (NINT(CNTROL(10)).EQ.0) THEN
+C If line minimization is finished, find new line direction
+      if (NINT(CNTROL(10)).EQ.0) then
         GG=ddot(n,G,1,G,1)
-        IF (IOPT.EQ.2) GG=GG-ddot(n,G,1,H(1,2),1)
+        if (IOPT.EQ.2) GG=GG-ddot(n,G,1,H(1,2),1)
         GAMMA=GG/CNTROL(2)
-        DO 50 J=1,N
+        do J=1,N
           H(J,1)=G(J)+GAMMA*H(J,1)
           IF (IOPT.EQ.2) H(J,2)=G(J)
-   50   CONTINUE
+        enddo
         CNTROL(1)=CNTROL(1)+1
         CNTROL(2)=ddot(n,G,1,G,1)
 *       WRITE(6,'(A,I4,F15.6)')
 *    .     ' CONJGR: NEW LINE DIRECTION. N,DX=',N,CNTROL(18)
-        GOTO 40
-      ENDIF
+        goto 40
+      endif
 
-   60 CONTINUE
-      END
+   60 continue
+      end
 
-      SUBROUTINE LINMIN (N,XVEC,HVEC,GVEC,DXMAX,CNTROL)
+      subroutine linmin(n,XVEC,HVEC,GVEC,DXMAX,CNTROL)
 
       use precision
 

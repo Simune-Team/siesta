@@ -1,6 +1,19 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.47
+Date: 2005/03/16 04:00 GMT 
+Title: CG bug fix
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The initialisation of cntrl in conjgr.f introduced in 1.4.42
+has been removed since this is already done in the calling
+routine and causes the minimiser to fail by reseting it on
+every call.
+
+conjgr.f    Line with cntrl = 0.0 removed and style updated a bit
+version.F90 / CHANGES
+=======================================================================
 Version: 1.4.46
 Date: 2005/03/11 07:30 GMT 
 Title: PDOS - Parallel over K points
