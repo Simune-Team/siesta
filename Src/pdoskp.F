@@ -99,6 +99,8 @@ C Internal variables ---------------------------------------------------
      .  BNode, MPIerror
       real(dp), dimension(:,:,:), allocatable, save ::
      .  Sloc
+#else
+      integer :: BNode
 #endif
 
       external
