@@ -1,7 +1,111 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 ========================================================================
-Version: 0.11.0 0.12.0
+ 0.11.4  released as 0.11.f1
+========================================================================
+Version: 0.11.4 
+Date: 1999/09/02 11:00:00
+Title: Rounding off release: Examples update and matel.h
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Files:
+  Examples/*/Out/*  updated for latest version
+  Include/matel.h   changed MAXR to 128 and MAXQ to 1024 for consistency
+                    (1 before, and the compiler complained)
+========================================================================
+Version: 0.11.4 
+Date: 1999/08/02 16:00:00
+Title: Fixed bug in vmat.f
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+   It was introduced in 0.10.20, and affected only Gamma-point
+   calculations with substantial overlap between equivalent orbitals
+   from different cells. Fixed.
+
+Files:
+   vmat.f
+   customary siesta.tex, version.h, CHANGES
+========================================================================
+Version: 0.11.3 
+Date: 1999/06/08 12:30:00
+Title: Fixed bug in atomlwf.f
+Author: Pablo Ordejon (ordejon@icmab.es)
+
+Description:
+   The number of electron is now passed from ordern.f to atomlwf.f
+   This fixes problems when charged cells and Order-N are combined.
+   Also, checks are done to avoid the use of Ordejon-Mauri functional
+   with charged cells.
+
+Files:
+   ordern.f, atomlwf.f
+   customary siesta.tex, version.h, CHANGES
+========================================================================
+Version: 0.11.2  (No PL change)
+Date: 1999/06/04 16:30:00
+Title: Minor cosmetic changes. New .make files
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+ * Minor cosmetic change in siesta.f to avoid
+   check bounds warnings or errors at compile
+   time.
+ * Re-structuring of matel.f to help some 
+   compilers.
+ * Changes to some of the Sys/*.make files. Addition
+   of some more.
+
+   (No user-visible changes.)
+
+Files:
+   siesta.f:
+   matel.f: 
+   Sys/
+   g77.make: ranlib used by default (BSD compatibility)
+   g77-libs.make: New file. Uses system BLAS and LAPACK.
+   nag-f90.make, nag-f95.make, pgf77.make, pgf90.make: New files.
+========================================================================
+Version: 0.11.2 
+Date: 1999/06/03 12:30:00
+Title: Changes to fdf behavior. Use of io_assign
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+ * When calling fdf_init with 'stdin' as input file,
+   some systems complain about the impossibility of
+   rewinding unit 5. The fix consists of creating 
+   a scratch file FDF_STDIN and passing it to
+   fdf_init.
+ * fdf has been updated to avoid using standard
+   input directly (same mechanism).
+ * Call to io_assign in atom.f (instead of 
+   opening and closing unit 12)
+
+   (No user-visible changes.)
+
+Files:
+   redata.f: Modified to use FDF_STDIN.
+   fdf/fdf.f: Now deals more robustly with stdin.
+   atom.f:   Call to io_assign 
+   Makefile: Explicit dependencies for fdf files.
+   customary version.h, CHANGES
+========================================================================
+Version: 0.11.1 
+Date: 1999/06/02 19:30:00
+Title: Fixed bug in rhoofd.f
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+   It was introduced in 0.10.20, and affected only Gamma-point
+   calculations with substantial overlap between equivalent orbitals
+   from different cells. Fixed.
+
+Files:
+   rhoofd.f
+   customary siesta.tex, version.h, CHANGES
+========================================================================
+Version: 0.11.0
 Date: 1999/05/26 12:00:00
 Title: Fixed bug in siesta.f, iomd was called with idyn instead of varcel
 Author: Emilio Artacho (emilio.artacho@uam.es)
@@ -10,7 +114,7 @@ Files:
    Src/siesta.f
    (plus customary)
 ========================================================================
-Version: 0.11.0 0.12.0
+Version: 0.11.0
 Date: 1999/05/25 16:00:00
 Title:  Bug fixes
 Author: Pablo Ordejon (ordejon@icmab.es)
@@ -20,7 +124,7 @@ Files:
    Src/redata.f          fs_dafault defined as logical
    Src/version.h, Docs/CHANGES    Usual changes
 ========================================================================
-Version: 0.11.0 0.12.0
+Version: 0.11.0 
 Date: 1999/05/17 21:00:00
 Title: Option to calculate a fixed spin state
 Author: Pablo Ordejon (ordejon@icmab.es)
@@ -37,7 +141,7 @@ Files:
    Docs/siesta.ind       Changes for fixed spin calcs.
    Docs/release.notes_0.11       Changes for fixed spin calcs.
 ========================================================================
-Version: 0.11.0 0.12.0
+Version: 0.11.0 
 Date: 1999/05/17 20:00:00
 Title: Fixed bug in cgvc.f 
 Author: Emilio Artacho (emilio.artacho@uam.es)
@@ -47,7 +151,7 @@ Files:
            changed for reclat
   version.h, CHANGES, siesta.tex as usual
 ========================================================================
-Version: 0.11.0 0.12.0
+Version: 0.11.0 
 Date: 1999/05/05 17:15:00
 Title: Fixed bug in madelung (mulecule) + fixed dim enlargement
 Author: Emilio Artacho (emilio.artacho@uam.es)

@@ -1,8 +1,8 @@
  
-prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
-prdate: DATE = Mon Apr 19 16:53:27 MET DST 1999
+prdate: PROGRAM = siesta, SYSTEM = perseo.fmc.uam.es
+prdate: DATE = Tue Jun  8 18:01:09 MET DST 1999
  
-              SIESTA Version 0.11    (Apr 20, 1999, 12:00:00)             
+              SIESTA Version 0.11.4  (June 8, 1999, 16:00:00)             
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -56,6 +56,7 @@ redata: Use continuation files for DM    =     F
 redata: Neglect nonoverlap interactions  =     F
 redata: Method of Calculation            =     Diagonalization
 redata: Electronic Temperature           =     0.0019  Ry
+redata: Fix the spin of the system       =     F
 redata: Dynamics option                  =     Verlet MD run
 redata: Initial MD time step             =     1
 redata:   Final MD time step             =     1
@@ -283,130 +284,130 @@ DHSCF: Mesh cutoff (required, used) =    50.000    50.384 Ry
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =     815.854478
-siesta: Ena     =     175.155496
-siesta: Ekin    =     341.667410
-siesta: Enl     =     -52.736807
+siesta: Ena     =     175.154321
+siesta: Ekin    =     341.667406
+siesta: Enl     =     -52.736835
 siesta: DEna    =      -0.000020
 siesta: DUscf   =       0.000000
 siesta: DUext   =       0.000000
 siesta: Exc     =    -109.951267
 siesta: eta*DQ  =       0.000000
 siesta: Emadel  =       0.000000
-siesta: Eharris =    -466.429034
-siesta: Etot    =    -461.719667
-siesta: FreeEng =    -461.719667
+siesta: Eharris =    -466.426492
+siesta: Etot    =    -461.720873
+siesta: FreeEng =    -461.720873
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
-siesta:    1     -466.4290     -461.7197     -461.7197  1.4384 -4.2486
-timer: Routine,Calls,Time,% = IterSCF        1       8.372  88.29
-siesta:    2     -466.8690     -465.2413     -465.2413  0.1755 -0.1485
-siesta:    3     -465.9252     -465.4643     -465.4643  0.0515 -1.5873
-siesta:    4     -465.8460     -465.5644     -465.5644  0.0176 -1.9946
-siesta:    5     -465.8385     -465.6334     -465.6334  0.0087 -2.1127
-siesta:    6     -465.8377     -465.6845     -465.6845  0.0083 -2.1458
-siesta:    7     -465.8375     -465.7228     -465.7228  0.0067 -2.1542
-siesta:    8     -465.8375     -465.7515     -465.7515  0.0051 -2.1556
-siesta:    9     -465.8375     -465.7730     -465.7730  0.0038 -2.1554
-siesta:   10     -465.8375     -465.7891     -465.7891  0.0028 -2.1550
-siesta:   11     -465.8375     -465.8012     -465.8012  0.0021 -2.1546
-siesta:   12     -465.8375     -465.8103     -465.8103  0.0016 -2.1544
-siesta:   13     -465.8375     -465.8171     -465.8171  0.0012 -2.1542
-siesta:   14     -465.8375     -465.8222     -465.8222  0.0009 -2.1541
-siesta:   15     -465.8375     -465.8260     -465.8260  0.0006 -2.1541
-siesta:   16     -465.8375     -465.8289     -465.8289  0.0005 -2.1541
-siesta:   17     -465.8375     -465.8311     -465.8311  0.0004 -2.1541
-siesta:   18     -465.8375     -465.8327     -465.8327  0.0003 -2.1541
-siesta:   19     -465.8375     -465.8338     -465.8338  0.0002 -2.1541
-siesta:   20     -465.8375     -465.8348     -465.8348  0.0001 -2.1541
-siesta:   21     -465.8375     -465.8354     -465.8354  0.0001 -2.1541
-siesta:   22     -465.8375     -465.8360     -465.8360  0.0001 -2.1541
-siesta:   23     -465.8375     -465.8363     -465.8363  0.0001 -2.1541
+siesta:    1     -466.4265     -461.7209     -461.7209  1.4406 -4.0899
+timer: Routine,Calls,Time,% = IterSCF        1      23.298  94.41
+siesta:    2     -466.8666     -465.2393     -465.2393  0.1756  0.0100
+siesta:    3     -465.9230     -465.4623     -465.4623  0.0515 -1.4290
+siesta:    4     -465.8439     -465.5624     -465.5624  0.0176 -1.8363
+siesta:    5     -465.8363     -465.6313     -465.6313  0.0088 -1.9544
+siesta:    6     -465.8355     -465.6824     -465.6824  0.0084 -1.9875
+siesta:    7     -465.8354     -465.7207     -465.7207  0.0067 -1.9958
+siesta:    8     -465.8354     -465.7493     -465.7493  0.0051 -1.9972
+siesta:    9     -465.8354     -465.7709     -465.7709  0.0038 -1.9970
+siesta:   10     -465.8353     -465.7869     -465.7869  0.0028 -1.9965
+siesta:   11     -465.8353     -465.7990     -465.7990  0.0021 -1.9962
+siesta:   12     -465.8353     -465.8081     -465.8081  0.0016 -1.9959
+siesta:   13     -465.8353     -465.8149     -465.8149  0.0012 -1.9958
+siesta:   14     -465.8353     -465.8200     -465.8200  0.0009 -1.9957
+siesta:   15     -465.8353     -465.8238     -465.8238  0.0006 -1.9957
+siesta:   16     -465.8353     -465.8267     -465.8267  0.0005 -1.9956
+siesta:   17     -465.8353     -465.8289     -465.8289  0.0004 -1.9956
+siesta:   18     -465.8353     -465.8305     -465.8305  0.0003 -1.9956
+siesta:   19     -465.8353     -465.8317     -465.8317  0.0002 -1.9956
+siesta:   20     -465.8353     -465.8326     -465.8326  0.0002 -1.9956
+siesta:   21     -465.8354     -465.8333     -465.8333  0.0001 -1.9956
+siesta:   22     -465.8353     -465.8338     -465.8338  0.0001 -1.9956
+siesta:   23     -465.8353     -465.8342     -465.8342  0.0001 -1.9956
 
-siesta: E_KS(eV) =      -465.8363
+siesta: E_KS(eV) =      -465.8342
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
- Tot   -0.000003    0.054746   -0.000001
+ Tot   -0.000001    0.055251    0.000000
 ----------------------------------------
- Max    0.694915
- Res    0.382994    sqrt( Sum f_i^2 / 3N )
+ Max    0.687697
+ Res    0.378136    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.694915    constrained
+ Max    0.687697    constrained
 
 siesta: Temp_ion =       0.000 K
 
 siesta: Program's energy decomposition (eV):
 siesta:-Eions   =    -815.854478
-siesta: Ena     =     175.155496
-siesta: Ekin    =     350.784601
-siesta: Enl     =     -61.958604
-siesta: DEna    =      -1.777794
-siesta: DUscf   =       0.727270
+siesta: Ena     =     175.154321
+siesta: Ekin    =     350.793469
+siesta: Enl     =     -61.964076
+siesta: DEna    =      -1.779623
+siesta: DUscf   =       0.726696
 siesta: DUext   =       0.000000
-siesta: Exc     =    -112.912840
+siesta: Exc     =    -112.910470
 siesta: eta*DQ  =       0.000000
 siesta: Emadel  =       0.000000
 siesta: Ekinion =       0.000000
-siesta: Eharris =    -465.837499
-siesta: Etot    =    -465.836350
-siesta: FreeEng =    -465.836350
+siesta: Eharris =    -465.835313
+siesta: Etot    =    -465.834163
+siesta: FreeEng =    -465.834163
 
 siesta: Final energy (eV):
-siesta:       Kinetic =     350.784601
-siesta:       Hartree =     382.616396
+siesta:       Kinetic =     350.793469
+siesta:       Hartree =     382.602054
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -112.912840
-siesta:  Ion-electron =   -1072.819790
-siesta:       Ion-ion =     -13.504717
+siesta:   Exch.-corr. =    -112.910470
+siesta:  Ion-electron =   -1072.813324
+siesta:       Ion-ion =     -13.505893
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -465.836350
+siesta:         Total =    -465.834163
 
 siesta: Atomic forces (eV/Ang):
-siesta:    1   -0.000003   -0.467103   -0.000001
-siesta:    2    0.694915    0.260925    0.000000
-siesta:    3   -0.694914    0.260925    0.000000
+siesta:    1   -0.000001   -0.457682    0.000000
+siesta:    2    0.687697    0.256467    0.000000
+siesta:    3   -0.687697    0.256467    0.000000
 siesta: ----------------------------------------
-siesta:  Tot   -0.000003    0.054746   -0.000001
+siesta:  Tot   -0.000001    0.055251    0.000000
 
 siesta: Stress tensor (eV/Ang**3):
-siesta:    -0.012463    0.000000    0.000000
-siesta:     0.000000   -0.002215    0.000000
-siesta:     0.000000    0.000000    0.014000
+siesta:    -0.012415    0.000000    0.000000
+siesta:     0.000000   -0.002193    0.000000
+siesta:     0.000000    0.000000    0.014006
 
 siesta: Cell volume =        235.378012 Ang**3
 
 siesta: Pressure:
 siesta:                Solid            Molecule  Units
-siesta:           0.00000246         -0.00001823  Ry/Bohr**3
-siesta:           0.00022599         -0.00167417  eV/Ang**3
-siesta:           0.36207365         -2.68234648  kBar
+siesta:           0.00000218         -0.00001826  Ry/Bohr**3
+siesta:           0.00020058         -0.00167626  eV/Ang**3
+siesta:           0.32136833         -2.68568597  kBar
 
-siesta: Electric dipole (a.u.)  =    0.000000    0.558086    0.000000
-siesta: Electric dipole (Debye) =    0.000000    1.418515    0.000000
+siesta: Electric dipole (a.u.)  =    0.000000    0.558039    0.000000
+siesta: Electric dipole (Debye) =    0.000000    1.418396    0.000000
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      13.245      13.245    99.99
-timer:  bands             2       0.000       0.001     0.01
-timer:  IterMD            1      12.139      12.139    91.64
-timer:  hsparse           1       0.010       0.010     0.07
-timer:  IterSCF          23       0.526      12.109    91.42
-timer:  nlefsm            2       2.094       4.188    31.62
-timer:  DHSCF            23       0.171       3.924    29.63
-timer:  POISON           25       0.030       0.758     5.73
-timer:  DHSCF2            1       0.244       0.244     1.84
-timer:  REORD           186       0.001       0.097     0.73
-timer:  RFFT             48       0.014       0.671     5.07
-timer:  DHSCF3           23       0.124       2.847    21.49
-timer:  rhoofd           23       0.028       0.651     4.91
-timer:  CELLXC           23       0.020       0.450     3.40
-timer:  vmat             23       0.028       0.634     4.79
-timer:  diagon           23       0.003       0.067     0.51
-timer:  rdiag            23       0.002       0.051     0.38
-timer:  DHSCF4            1       0.795       0.795     6.01
-timer:  dfscf            46       0.012       0.545     4.11
+timer:  siesta            1      29.574      29.574   100.00
+timer:  bands             2       0.001       0.002     0.01
+timer:  IterMD            1      28.199      28.199    95.35
+timer:  hsparse           1       0.012       0.012     0.04
+timer:  IterSCF          23       1.224      28.161    95.22
+timer:  nlefsm            2       6.184      12.368    41.82
+timer:  DHSCF            23       0.223       5.130    17.35
+timer:  POISON           25       0.038       0.948     3.20
+timer:  DHSCF2            1       0.286       0.286     0.97
+timer:  REORD           186       0.001       0.131     0.44
+timer:  RFFT             48       0.017       0.834     2.82
+timer:  DHSCF3           23       0.165       3.803    12.86
+timer:  rhoofd           23       0.039       0.906     3.06
+timer:  CELLXC           23       0.023       0.530     1.79
+timer:  vmat             23       0.043       0.986     3.33
+timer:  diagon           23       0.004       0.083     0.28
+timer:  rdiag            23       0.003       0.063     0.21
+timer:  DHSCF4            1       0.996       0.996     3.37
+timer:  dfscf            46       0.015       0.701     2.37
   
  
-prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
-prdate: DATE = Mon Apr 19 16:53:53 MET DST 1999
+prdate: PROGRAM = siesta, SYSTEM = perseo.fmc.uam.es
+prdate: DATE = Tue Jun  8 18:02:41 MET DST 1999
  

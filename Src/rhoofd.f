@@ -1,3 +1,5 @@
+C $Id: rhoofd.f,v 1.10.2.3 1999/06/09 09:24:08 emilio Exp $
+
       subroutine rhoofd( NO, indxuo, endC,  listC,  C, NSPmax, NSP, 
      .                   NP, endCt, listCt, CtoCt,
      .                   NDmax, numDs, listDs, Dscf,
@@ -121,13 +123,8 @@ C  Copy row i of Dscf into row last of Dlocal
             do ii = 1, numDs(i)
               j = listDs(ii,i)
               jl = ilocal(j)
-              if (i .eq. j) then
-                Dij = Dscf(ii,iu)
-              else
-                Dij = 2*Dscf(ii,iu)
-              endif
-              Dlocal(il,jl) = Dij
-              Dlocal(jl,il) = Dij
+              Dlocal(il,jl) = Dscf(ii,iu)
+              Dlocal(jl,il) = Dscf(ii,iu)
             enddo
           endif
         enddo
@@ -144,7 +141,11 @@ C  Loop on second orbital of mesh point
             j = listCt(jmp)
             jl = ilocal(j)
             jn = CtoCt(jmp)
-            Dij = Dlocal(il,jl)
+            if (imp .eq. jmp) then
+              Dij = Dlocal(il,jl)
+            else
+              Dij = 2*Dlocal(il,jl)
+            endif
 
 C  Loop over sub-points
             do isp = 1, nsp

@@ -1,7 +1,7 @@
-C $Id: atomlwf.f,v 1.10 1999/03/11 19:26:36 ordejon Exp $
+C $Id: atomlwf.f,v 1.10.2.2 1999/06/08 10:40:01 ordejon Exp $
 
       subroutine cspa(ioptlwf,iopt,natoms,nbasis,lasto,isa,
-     .        qa,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
+     .        qa,enum,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
      .        c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,nbands,
      .        overflow)
 C ******************************************************************************
@@ -20,10 +20,12 @@ C      C,Si:     3 LWF's
 C      N:        3 LWF's
 C      O:        4 LWF's
 C      ...
+C    It can be used with charged cells, although it has not been
+C    tested in detail.
 C 2) Method of Ordejon et al: number of localized orbitals 
 C    equal to number of occupied orbitals. 
 C    Only available when each atom has an EVEN number of
-C    electrons.
+C    electrons. It can NOT be used with charged cells.
 C
 C Writen by P.Ordejon, 1993. 
 C Re-writen by P.Ordejon, November'96.
@@ -42,6 +44,7 @@ C integer nbasis            : Number of basis orbitals
 C integer lasto(0:natoms)   : Index of last orbital of each atom
 C integer isa(natoms)       : Species index of each atom
 C real*8 qa(natoms)         : Neutral atom charge
+C real*8 enum               : Total number of electrons
 C real*8 rcoor              : Cutoff radius of Localized Wave Functions
 C real*8 rh                 : Maximum cutoff radius of Hamiltonian matrix
 C real*8 cell(3,3)          : Supercell vectors
@@ -81,7 +84,7 @@ C ****************************************************************************
      .  listh(nhmax,nbasis)
 
       double precision
-     .  cell(3,3),qa(natoms),rcoor,rh,xa(3,natoms),
+     .  cell(3,3),enum,qa(natoms),rcoor,rh,xa(3,natoms),
      .  c(maxnc,nbasis)
  
       logical
@@ -176,20 +179,29 @@ C determine maximum cell length
 C ........................
 
 C Check that there is an even number of electrons in the system ...............
+      nqtot = enum + tiny
+      if (abs(nqtot-enum+tiny) .gt. 1e-3) then
+        write(6,*) 'cspa: WARNING: total charge non integer:',enum
+      endif
+      if (2*(nqtot/2) .ne. nqtot) then
+        write(6,*) 'cspa: ERROR: Wrong total charge; odd charge:',qtot
+        write(6,*) '      ERROR: Charge must be EVEN to use Order-N ',
+     .    'option'
+        stop
+      endif
+C ..................
+
+C Check if system is charged..............
       qtot = 0.d0
       do ia = 1,natoms
         qtot = qtot + qa(ia)
       enddo
-      qtot = qtot + tiny
-      nqtot = qtot
-      if (abs(nqtot-qtot+tiny) .gt. 1e-3) then
-        write(6,*) 'cspa: Wrong total charge; non integer:',qtot
-        stop
-      endif
-      if (2*(nqtot/2) .ne. nqtot) then
-        write(6,*) 'cspa: Wrong total charge; odd charge:',qtot
-        write(6,*) '      Charge must be EVEN to use Order-N option'
-        stop
+      if (abs(qtot-enum) .gt. 1.0d-4) then
+        if (ioptlwf .eq. 2) then
+          write(6,*) 'cspa: ERROR: Charged systems can not be done'
+          write(6,*) '      ERROR: with the Ordejon-Mauri functional'
+          stop
+        endif
       endif
 C ..................
 
@@ -346,15 +358,22 @@ C ..........
       nbands = index
 
       if (index .gt. nbasis) then
-        write(6,*) 'cspa: Number of LWFs larger than  basis set size'
-        write(6,*) '      Increase basis set, or use less LWFs'
+        write(6,*) 'cspa: ERROR: Num of LWFs larger than  basis set ',
+     .    'size'
+        write(6,*) '      ERROR: Increase basis set, or use less LWFs'
+        stop
+      endif
+
+      if (2*index+tiny .lt. enum) then
+        write(6,*) 'cspa: ERROR: Too few LWFs for number of electrons'
+        write(6,*) '      ERROR: Check if system charge is too large'
         stop
       endif
 
       if ((ioptlwf .eq. 2) .and. (nbands .ne. nqtot/2)) then
-        write(6,*) 'cspa: Number of LWFs incorrectly calculated'
-        write(6,*) '      Something went wrong in generating the'
-        write(6,*) '      LWFs for the Ordejon-Mauri functional'
+        write(6,*) 'cspa: ERROR: Number of LWFs incorrectly calculated'
+        write(6,*) '      ERROR: Something went wrong in generating the'
+        write(6,*) '      ERROR: LWFs for the Ordejon-Mauri functional'
         stop
       endif
 
@@ -535,4 +554,3 @@ C If 32 or less electrons, populate lowest s, p, d and f orbitals
 
       return
       end
-C ................................

@@ -1,15 +1,14 @@
  
 prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
-prdate: DATE = Tue Apr 20 14:03:19 MET DST 1999
+prdate: DATE = Tue Jun  8 16:23:59 MET DST 1999
  
-              SIESTA Version 0.11    (Apr 20, 1999, 12:00:00)             
+              SIESTA Version 0.11.4  (June 8, 1999, 16:00:00)             
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
                            ***********************       
 
 redata: ****************** Dump of input data file ****************************
-# $Id: Fe.out,v 1.1 1999/04/20 12:53:43 emilio Exp $
 # -----------------------------------------------------------------------------
 # FDF for bcc iron
 #
@@ -122,6 +121,7 @@ redata: Use continuation files for DM    =     T
 redata: Neglect nonoverlap interactions  =     F
 redata: Method of Calculation            =     Diagonalization
 redata: Electronic Temperature           =     0.0018  Ry
+redata: Fix the spin of the system       =     F
 redata: Dynamics option                  =     CG coord. optimization
 redata: Variable cell                    =     F
 redata: Use continuation files for CG    =     F
@@ -280,55 +280,54 @@ DHSCF: Mesh cutoff (required, used) =   150.000   171.794 Ry
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =     711.951412
-siesta: Ena     =      22.613363
-siesta: Ekin    =     769.702474
-siesta: Enl     =    -468.783614
+siesta: Ena     =      22.613269
+siesta: Ekin    =     769.702470
+siesta: Enl     =    -468.783732
 siesta: DEna    =      -0.000009
 siesta: DUscf   =       0.000000
 siesta: DUext   =       0.000000
 siesta: Exc     =    -395.838237
 siesta: eta*DQ  =       0.000000
 siesta: Emadel  =       0.000000
-siesta: Eharris =    -784.089854
-siesta: Etot    =    -784.257435
-siesta: FreeEng =    -784.257435
+siesta: Eharris =    -784.090402
+siesta: Etot    =    -784.257650
+siesta: FreeEng =    -784.257650
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
-siesta:    1     -784.0899     -784.2574     -784.2574  0.9328 -5.2112
-timer: Routine,Calls,Time,% = IterSCF        1      64.416  87.43
-siesta:    2     -784.5038     -784.3283     -784.3309  0.0646 -6.2957
-siesta:    3     -784.4535     -784.3227     -784.3244  0.0816 -6.1106
-siesta:    4     -784.4341     -784.3841     -784.3859  0.0301 -5.7983
-siesta:    5     -784.4321     -784.3821     -784.3847  0.0303 -5.8491
-siesta:    6     -784.4419     -784.4286     -784.4311  0.0195 -5.8112
-siesta:    7     -784.4400     -784.4272     -784.4302  0.0179 -5.8960
-siesta:    8     -784.4423     -784.4375     -784.4404  0.0149 -5.9149
-siesta:    9     -784.4430     -784.4393     -784.4421  0.0141 -5.9161
-siesta:   10     -784.4470     -784.4400     -784.4428  0.0134 -5.8838
-siesta:   11     -784.4467     -784.4374     -784.4399  0.0108 -5.8880
-siesta:   12     -784.4474     -784.4347     -784.4372  0.0070 -5.8818
-siesta:   13     -784.4475     -784.4332     -784.4357  0.0068 -5.8874
-siesta:   14     -784.4476     -784.4340     -784.4365  0.0063 -5.8923
-siesta:   15     -784.4479     -784.4461     -784.4486  0.0034 -5.9040
-siesta:   16     -784.4480     -784.4464     -784.4490  0.0032 -5.9027
-siesta:   17     -784.4482     -784.4493     -784.4519  0.0030 -5.8967
-siesta:   18     -784.4482     -784.4506     -784.4531  0.0028 -5.8985
-siesta:   19     -784.4482     -784.4524     -784.4550  0.0014 -5.9033
-siesta:   20     -784.4482     -784.4502     -784.4528  0.0016 -5.9038
-siesta:   21     -784.4483     -784.4502     -784.4528  0.0015 -5.9028
-siesta:   22     -784.4483     -784.4506     -784.4532  0.0007 -5.8973
-siesta:   23     -784.4483     -784.4505     -784.4531  0.0005 -5.8977
+siesta:    1     -784.0904     -784.2577     -784.2577  0.9330 -5.2113
+timer: Routine,Calls,Time,% = IterSCF        1      76.046  88.56
+siesta:    2     -784.5045     -784.3290     -784.3316  0.0646 -6.2961
+siesta:    3     -784.4541     -784.3234     -784.3251  0.0815 -6.1109
+siesta:    4     -784.4348     -784.3848     -784.3866  0.0302 -5.7982
+siesta:    5     -784.4328     -784.3828     -784.3854  0.0304 -5.8495
+siesta:    6     -784.4425     -784.4287     -784.4313  0.0197 -5.8116
+siesta:    7     -784.4408     -784.4278     -784.4307  0.0180 -5.8962
+siesta:    8     -784.4431     -784.4380     -784.4409  0.0150 -5.9149
+siesta:    9     -784.4438     -784.4401     -784.4430  0.0142 -5.9162
+siesta:   10     -784.4478     -784.4423     -784.4451  0.0119 -5.8814
+siesta:   11     -784.4476     -784.4393     -784.4418  0.0096 -5.8854
+siesta:   12     -784.4482     -784.4355     -784.4380  0.0070 -5.8801
+siesta:   13     -784.4483     -784.4344     -784.4369  0.0067 -5.8862
+siesta:   14     -784.4484     -784.4351     -784.4376  0.0062 -5.8936
+siesta:   15     -784.4486     -784.4433     -784.4458  0.0046 -5.9004
+siesta:   16     -784.4486     -784.4443     -784.4468  0.0043 -5.9000
+siesta:   17     -784.4490     -784.4507     -784.4532  0.0031 -5.8940
+siesta:   18     -784.4490     -784.4504     -784.4530  0.0027 -5.8956
+siesta:   19     -784.4490     -784.4503     -784.4529  0.0013 -5.9072
+siesta:   20     -784.4491     -784.4509     -784.4535  0.0012 -5.9056
+siesta:   21     -784.4491     -784.4514     -784.4540  0.0007 -5.9014
+siesta:   22     -784.4491     -784.4510     -784.4536  0.0004 -5.8991
 
-siesta: E_KS(eV) =      -784.4505
+siesta: E_KS(eV) =      -784.4510
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
- Tot   -0.000019    0.000011    0.000001
+ Tot   -0.000016    0.000003    0.000009
 ----------------------------------------
- Max    0.000019
- Res    0.000013    sqrt( Sum f_i^2 / 3N )
+ Max    0.000016
+ Res    0.000010    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.000019    constrained
+ Max    0.000016    constrained
 
 mulliken: Atomic and Orbital Populations:
 
@@ -338,9 +337,9 @@ Specie: Fe
 Atom  Qatom  Qorb
                s       s       dxy     dyz     dz2     dxz     dx2-y2  dxy    
                dyz     dz2     dxz     dx2-y2  Ppy     Ppz     Ppx    
-   1  5.155  -0.151   0.445   0.906   0.906   0.969   0.906   0.969  -0.030
+   1  5.156  -0.151   0.445   0.907   0.907   0.969   0.907   0.969  -0.030
              -0.030  -0.023  -0.030  -0.023   0.113   0.113   0.113
-mulliken: Qtot =    5.155
+mulliken: Qtot =    5.156
 
 mulliken: Spin DOWN 
 
@@ -348,74 +347,74 @@ Specie: Fe
 Atom  Qatom  Qorb
                s       s       dxy     dyz     dz2     dxz     dx2-y2  dxy    
                dyz     dz2     dxz     dx2-y2  Ppy     Ppz     Ppx    
-   1  2.845  -0.244   0.544   0.542   0.542   0.346   0.542   0.346  -0.052
+   1  2.844  -0.244   0.544   0.542   0.542   0.346   0.542   0.346  -0.052
              -0.052  -0.045  -0.052  -0.045   0.158   0.158   0.158
-mulliken: Qtot =    2.845
+mulliken: Qtot =    2.844
 
 siesta: Program's energy decomposition (eV):
 siesta:-Eions   =    -711.951412
-siesta: Ena     =      22.613363
-siesta: Ekin    =     770.634129
-siesta: Enl     =    -473.847804
-siesta: DEna    =       0.804970
-siesta: DUscf   =       0.020650
+siesta: Ena     =      22.613269
+siesta: Ekin    =     770.595944
+siesta: Enl     =    -473.818628
+siesta: DEna    =       0.810002
+siesta: DUscf   =       0.020724
 siesta: DUext   =       0.000000
-siesta: Exc     =    -392.724442
+siesta: Exc     =    -392.720882
 siesta: eta*DQ  =       0.000000
 siesta: Emadel  =       0.000000
 siesta: Ekinion =       0.000000
-siesta: Eharris =    -784.448272
-siesta: Etot    =    -784.450546
-siesta: FreeEng =    -784.453137
+siesta: Eharris =    -784.449079
+siesta: Etot    =    -784.450982
+siesta: FreeEng =    -784.453581
 
 siesta: Final energy (eV):
-siesta:       Kinetic =     770.634129
-siesta:       Hartree =      86.202604
+siesta:       Kinetic =     770.595944
+siesta:       Hartree =      86.191327
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -392.724442
-siesta:  Ion-electron =    -819.109571
-siesta:       Ion-ion =    -429.453265
+siesta:   Exch.-corr. =    -392.720882
+siesta:  Ion-electron =    -819.064013
+siesta:       Ion-ion =    -429.453359
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -784.450546
+siesta:         Total =    -784.450982
 
 siesta: Stress tensor (eV/Ang**3):
-siesta:     0.000680   -0.003172   -0.003172
-siesta:    -0.003172    0.000679    0.003172
-siesta:    -0.003172    0.003172    0.000681
+siesta:     0.002010   -0.003171   -0.003171
+siesta:    -0.003171    0.002010    0.003171
+siesta:    -0.003171    0.003171    0.002012
 
 siesta: Cell volume =         11.819952 Ang**3
 
 siesta: Pressure:
 siesta:                Solid            Molecule  Units
-siesta:          -0.00000741         -0.00000741  Ry/Bohr**3
-siesta:          -0.00067999         -0.00067999  eV/Ang**3
-siesta:          -1.08947394         -1.08947394  kBar
+siesta:          -0.00002190         -0.00002190  Ry/Bohr**3
+siesta:          -0.00201087         -0.00201087  eV/Ang**3
+siesta:          -3.22180824         -3.22180824  kBar
 
-siesta: Total spin polarization (Qup-Qdown) =    2.309418
+siesta: Total spin polarization (Qup-Qdown) =    2.312549
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1    1044.774    1044.774   100.00
-timer:  bands             2       0.805       1.609     0.15
-timer:  IterMD            1    1042.118    1042.118    99.75
-timer:  hsparse           1       7.057       7.057     0.68
-timer:  IterSCF          23      44.940    1033.610    98.93
-timer:  nlefsm            2      12.700      25.399     2.43
-timer:  DHSCF            23       5.092     117.114    11.21
-timer:  POISON           25       0.003       0.063     0.01
-timer:  DHSCF2            1       2.643       2.643     0.25
-timer:  REORD           209       0.000       0.021     0.00
-timer:  RFFT             48       0.001       0.037     0.00
-timer:  DHSCF3           23       3.748      86.207     8.25
-timer:  rhoofd           46       0.821      37.756     3.61
-timer:  CELLXC           23       0.112       2.585     0.25
-timer:  vmat             46       0.994      45.714     4.38
-timer:  diagon           23      38.434     883.991    84.61
-timer:  cdiag        109098       0.001     136.957    13.11
-timer:  DHSCF4            1      27.883      27.883     2.67
-timer:  dfscf         20580       0.001      24.239     2.32
+timer:  siesta            1    1005.394    1005.394   100.00
+timer:  bands             2       0.739       1.478     0.15
+timer:  IterMD            1    1002.802    1002.802    99.74
+timer:  hsparse           1       7.541       7.541     0.75
+timer:  IterSCF          22      45.173     993.810    98.85
+timer:  nlefsm            2      16.086      32.173     3.20
+timer:  DHSCF            22       5.094     112.076    11.15
+timer:  POISON           24       0.002       0.058     0.01
+timer:  DHSCF2            1       2.645       2.645     0.26
+timer:  REORD           200       0.000       0.026     0.00
+timer:  RFFT             46       0.001       0.036     0.00
+timer:  DHSCF3           22       3.691      81.193     8.08
+timer:  rhoofd           44       0.858      37.736     3.75
+timer:  CELLXC           22       0.116       2.543     0.25
+timer:  vmat             44       0.926      40.760     4.05
+timer:  diagon           22      38.013     836.282    83.18
+timer:  cdiag        104366       0.001     133.032    13.23
+timer:  DHSCF4            1      27.861      27.861     2.77
+timer:  dfscf         20580       0.001      24.236     2.41
   
  
 prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
-prdate: DATE = Tue Apr 20 14:40:23 MET DST 1999
+prdate: DATE = Tue Jun  8 16:59:59 MET DST 1999
  

@@ -1,4 +1,4 @@
-# $Id: linux-f95.make,v 1.1 1999/02/26 10:26:53 wdpgaara Exp $
+# $Id: nag-f95.make,v 1.1.2.1 1999/06/04 14:47:33 wdpgaara Exp $
 #
 # (Experimental) For NAG (f95) V.4. compiler.
 #

@@ -190,6 +190,124 @@ C Internal variable types and dimensions ----------------------------
      .  FRSTME    /.TRUE./
 C -------------------------------------------------------------------
 
+      ENTRY MATEL0( NS )
+C *******************************************************************
+C Checks if the array dimensions in MATEL are sufficient. If not,
+C writes a new file matel.h with the correct ones, prints an error
+C message and stops. 
+C Modified by DSP, Aug. 1998
+C *********** INPUT *************************************************
+C INTEGER NS              : Number of species
+C *******************************************************************
+
+      LMAX = 0
+      NZMAX = 0
+      DO 320 IS = 1,NS
+        LMAX = MAX( LMAX, LOMAXFIS(IS), LMXKBFIS(IS) )
+        DO 310 L = 0,LOMAXFIS(IS)
+          NZMAX = MAX( NZMAX, NZTFL(IS,L) )
+  310   CONTINUE
+  320 CONTINUE
+      NY = (LMAX+1)**2
+
+      IF (NS    .GT. MAXS .OR.
+     .    LMAX  .GT. MAXL .OR.
+     .    NZMAX .GT. MAXZ .OR.
+     .    NY    .GT. MAXY .OR.
+     .    NR    .GT. MAXR .OR.
+     .    NQ    .GT. MAXQ) THEN
+
+        OPEN( 1, FILE='matel.h', STATUS='UNKNOWN' )
+        WRITE(1,'(A)') 'C Dimension parameters for MATEL'
+        WRITE(1,'(6X,A)') 'INTEGER  MAXS,MAXL,MAXZ,MAXY,MAXR,MAXQ'
+        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXS   =', NS,   ' )'
+        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXL   =', LMAX, ' )'
+        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXZ   =', NZMAX,' )'
+        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXY   =', NY,   ' )'
+        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXR   =', NR,   ' )'
+        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXQ   =', NQ,   ' )'
+        CLOSE( 1 )
+        
+        WRITE(6,'(a)') 'MATEL: Dimensions too small. RECOMPILE.'
+        STOP 'MATEL: Dimensions too small. RECOMPILE.'
+      ENDIF
+
+
+      RETURN
+c
+c
+c
+
+      ENTRY MATEL( OPERAT, IS1, IS2, IO1, IO2, R12, S12, DSDR )
+C *******************************************************************
+C Finds the overlap or laplacian matrix elements between two atomic
+C orbitals. Written by J.M.Soler. April 1995.
+C ************************* INPUT ***********************************
+C CHARACTER OPERAT : Operator to be used: 'S' => Unity (overlap)
+C                                         'T' => -Laplacian
+C INTEGER   IS1    : 		Species index of 1st orbital atom
+C INTEGER   IS2    : 		Species index of 2nd orbital atom
+C                    Allowed range of IS1, IS2: (1, MAXS), where
+C                    MAXS and MAXL (below) are internal parameters.
+C INTEGER   IO1    : Orbital index of 1st orbital (within atom)
+C INTEGER   IO2    : Orbital index of 2nd orbital (within atom)
+C                    Allowed range of IO1, IO2: (-MAXL**2, MAXL**2)
+C                    Indexes IS1,IS2,IO1,IO2 are used to call routines
+C                    RCUT and PHIATM (see below).
+C REAL*8    R12(3) : Vector from first to second atom
+C ************************* OUTPUT **********************************
+C REAL*8 S12      : Matrix element between orbitals.
+C REAL*8 DSDR(3)  : Derivative (gradient) of S12 with respect to R12.
+C ************************* ROUTINES CALLED *************************
+C The following functions must exist:
+C
+C REAL*8 FUNCTION RCUT(IS,IO)
+C   Returns cutoff radius of orbitals and KB projectors.
+C Input:
+C     INTEGER IS : Species index
+C     INTEGER IO : Orbital index
+C
+C SUBROUTINE PHIATM(IS,IO,R,PHI,GRPHI)
+C    Finds values and gradients of:
+C    a) basis orbitals (IO > 0)
+C    b) KB proyectors  (IO < 0)
+C    c) Local part of screened pseudopotential (IO = 0) ( b) and c) are
+C       not required if MATEL is called only with IO > 0 ) 
+C Input:
+C   INTEGER IS   : Species index
+C   INTEGER IO   : Orbital index
+C   REAL*8  R(3) : Position with respect to atom
+C Output:
+C   REAL*8  PHI      : Value of orbital or KB projector at point R
+C   REAL*8  GRPHI(3) : Gradient of PHI at point R  
+C
+C INTEGER FUNCTION LOMAXFIS(IS)
+C    Returns the maximum angular momentum of orbitals 
+C Input:
+C     INTEGER IS : Species index
+C 
+C INTEGER FUNCTION LMXKBFIS(IS)
+C    Returns the maximum angular momentum of KB projectors
+C Input:
+C     INTEGER IS : Species index
+C
+C INTEGER FUNCTION NZTFL(IS,L)
+C    Returns the number of different basis functions with the
+C    same angular momentum L.
+C Input:
+C     INTEGER IS : Species index
+C     INTEGER L  : Angular momentum
+C
+C ************************* UNITS ***********************************
+C Length units are arbitrary, but must be consistent in MATEL, RCUT
+C   and PHIATM. The laplacian unit is (length unit)**(-2).
+C ************************* BEHAVIOUR *******************************
+C 1) Returns exactly zero if |R12| > RCUT(IS1,IO1) + RCUT(IS2,IO2)
+C 2) If (IS1.LE.0 .OR. IS2.LE.0) all internal tables are erased for
+C    reinitialization.
+C *******************************************************************
+
+
 C Start time counter ------------------------------------------------
 *     CALL TIMER( 'MATEL', 1 )
 C -------------------------------------------------------------------
@@ -469,48 +587,6 @@ C Stop time counter -------------------------------------------------
 C -------------------------------------------------------------------
       RETURN
 
-
-      ENTRY MATEL0( NS )
-C *******************************************************************
-C Checks if the array dimensions in MATEL are sufficient. If not,
-C writes a new file matel.h with the correct ones, prints an error
-C message and stops. 
-C Modified by DSP, Aug. 1998
-C *********** INPUT *************************************************
-C INTEGER NS              : Number of species
-C *******************************************************************
-
-      LMAX = 0
-      NZMAX = 0
-      DO 320 IS = 1,NS
-        LMAX = MAX( LMAX, LOMAXFIS(IS), LMXKBFIS(IS) )
-        DO 310 L = 0,LOMAXFIS(IS)
-          NZMAX = MAX( NZMAX, NZTFL(IS,L) )
-  310   CONTINUE
-  320 CONTINUE
-      NY = (LMAX+1)**2
-
-      IF (NS    .GT. MAXS .OR.
-     .    LMAX  .GT. MAXL .OR.
-     .    NZMAX .GT. MAXZ .OR.
-     .    NY    .GT. MAXY .OR.
-     .    NR    .GT. MAXR .OR.
-     .    NQ    .GT. MAXQ) THEN
-
-        OPEN( 1, FILE='matel.h', STATUS='UNKNOWN' )
-        WRITE(1,'(A)') 'C Dimension parameters for MATEL'
-        WRITE(1,'(6X,A)') 'INTEGER  MAXS,MAXL,MAXZ,MAXY,MAXR,MAXQ'
-        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXS   =', NS,   ' )'
-        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXL   =', LMAX, ' )'
-        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXZ   =', NZMAX,' )'
-        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXY   =', NY,   ' )'
-        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXR   =', NR,   ' )'
-        WRITE(1,'(6X,A,I12,A)') 'PARAMETER ( MAXQ   =', NQ,   ' )'
-        CLOSE( 1 )
-        
-        WRITE(6,'(a)') 'MATEL: Dimensions too small. RECOMPILE.'
-        STOP 'MATEL: Dimensions too small. RECOMPILE.'
-      ENDIF
 
       END
 

@@ -43,11 +43,17 @@ c
       character*(*) filein, fileout
 
       include 'fdf.h'
+      integer lun, length
+
+      character*50 file_input
+      character*132 linein
 
       integer debug_level
 c
       integer fdf_integer
       external fdf_integer
+      logical leqi
+      external leqi
 c
 c     Prevent the user from opening two head files
 c
@@ -60,14 +66,38 @@ c
 
       ndepth = 0
 
-      call fdf_open(filein)
+      file_input = filein
+
+      if (leqi(file_input,'stdin')) then
+c
+c        Copy standard input to a temporary file.
+c        This is done to avoid attempts to rewind
+c        standard input (which might fail in some
+c        systems)
+c
+         call io_assign(lun)
+         open(lun,file='FDF_STDIN',form='formatted',status='unknown')
+         rewind(lun)
+
+ 10      continue
+         read(5,err=100,end=100,fmt='(a)') linein
+         call chrlen(linein,0,length)
+         write(lun,'(a)') linein(1:length)
+         goto 10
+ 100     continue
+         call io_close(lun)
+         file_input = 'FDF_STDIN'
+
+      endif
+
+      call fdf_open(file_input)
+      write(fdf_out,'(/,a,a,a,i3,/)')
+     $        '#FDF: Opened ', file_input, ' for input. Unit:',fdf_in
+
       call io_assign(fdf_out)
       open(unit=fdf_out,file=fileout,form='formatted',
      $                               status='unknown')
       rewind(fdf_out)
-
-      write(fdf_out,'(/,a,a,a,i3,/)')
-     $          '#FDF: Opened ',filein, ' for input. Unit:',fdf_in
 
       fdf_started = .true.
 
@@ -158,25 +188,17 @@ c
          stop 'DEPTH'
       endif
 
-      if (leqi(filename,'stdin')) then
-         lun = 5
-         if (fdf_debug) write(fdf_log,'(a,i1,a)')
-     $        '--->Reading from Standard Input [depth:', ndepth,'] '
+      call io_assign(lun)
 
+      inquire(file=filename,exist=file_exists)
+      if (file_exists) then
+         open(unit=lun,file=filename,status='old',form='formatted')
+         rewind(lun)
+         if (fdf_debug) write(fdf_log,'(a,i1,a,a50)')
+     $        '--->Opened [depth:', ndepth,'] ', filename
       else
-
-         call io_assign(lun)
-
-         inquire(file=filename,exist=file_exists)
-         if (file_exists) then
-            open(unit=lun,file=filename,status='old',form='formatted')
-            rewind(lun)
-            if (fdf_debug) write(fdf_log,'(a,i1,a,a50)')
-     $           '--->Opened [depth:', ndepth,'] ', filename
-         else
-            write(fdf_err,'(a,a60)')
-     $           'FDF: Cannot open ',filename
-         endif
+         write(fdf_err,'(a,a60)')
+     $        'FDF: Cannot open ',filename
       endif
 
       fdf_stack(ndepth) = lun

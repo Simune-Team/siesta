@@ -1,3 +1,5 @@
+C $Id: vmat.f,v 1.10.2.3 1999/06/09 09:24:07 emilio Exp $
+
       subroutine vmat( NO, indxuo, endC, listC, C, NSPmax, NSP,
      .                 NP, endCt, listCt, CtoCt,
      .                 VolCel, V, NVmax, numVs, listVs, Vs,
@@ -59,7 +61,7 @@ C *********************************************************************
 
       integer i, ii, il, imp, in, iorb(0:maxloc), ip, isp, iu,
      .        j, jl, jmp, jn, last, nlocal
-      double precision Ci, Cj, dVol, Vlocal(0:maxloc,0:maxloc)
+      double precision Ci, Cj, dVol, Vij, Vlocal(0:maxloc,0:maxloc)
       
       call timer('vmat',1)
 
@@ -106,15 +108,8 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
             iu = indxuo(i)
             do ii = 1, numVs(i)
               j = listVs(ii,i)
-              if (j .eq. i) then
-                Vs(ii,iu) = Vs(ii,iu) + dVol * Vlocal(il,il) 
-              else
-                jl = ilocal(j)
-C                 The sum Vlocal(jl,il)+Vlocal(il,jl) is used because
-C                 matrix elements are added below only to one of them
-                Vs(ii,iu) = Vs(ii,iu) + dVol *
-     .                      ( Vlocal(jl,il) + Vlocal(il,jl) )
-              endif
+              jl = ilocal(j)
+              Vs(ii,iu) = Vs(ii,iu) + dVol * Vlocal(jl,il)
             enddo
           enddo
           do il = 1,last
@@ -155,13 +150,16 @@ C  Notice that the loop runs only for jmp.le.imp
             jn = CtoCt(jmp)
 
 C  Loop over sub-points
+            Vij = 0
             do isp = 1, nsp
               Ci = C(isp,in)
               Cj = C(isp,jn)
-C               Notice that each term is added only once to 
-C               Vlocal(jl,il) + Vlocal(il,jl)
-              Vlocal(jl,il) = Vlocal(jl,il) + V(isp,ip) * Ci * Cj
+              Vij = Vij + V(isp,ip) * Ci * Cj
             enddo
+            Vlocal(jl,il) = Vlocal(jl,il) + Vij
+            if (imp .ne. jmp) then
+              Vlocal(il,jl) = Vlocal(il,jl) + Vij
+            endif
 
           enddo
         enddo
@@ -173,13 +171,8 @@ C  Add final Vlocal to Vs
         iu = indxuo(i)
         do ii = 1, numVs(i)
           j = listVs(ii,i)
-          if (j .eq. i) then
-            Vs(ii,iu) = Vs(ii,iu) + dVol * Vlocal(il,il) 
-          else
-            jl = ilocal(j)
-            Vs(ii,iu) = Vs(ii,iu) + dVol *
-     .                  ( Vlocal(jl,il) + Vlocal(il,jl) )
-          endif
+          jl = ilocal(j)
+          Vs(ii,iu) = Vs(ii,iu) + dVol * Vlocal(jl,il)
         enddo
       enddo
 

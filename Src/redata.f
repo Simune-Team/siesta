@@ -179,6 +179,8 @@ C  Internal variables .................................................
       integer 
      .  i, ic, ix, mscell(3,3), ncells
 
+      integer length, lun
+
       double precision
      .  alat, ucell(3,3), volcel
 
@@ -220,17 +222,24 @@ C Print Welcome and Presentation .......................................
 C ..................
 
 C Dump data file to output file .......................................
+C and generate scratch file for FDF to read from
+C
       write(6,'(/,a,18(1h*),a,28(1h*))')
      .  'redata: ', ' Dump of input data file '
-   10 continue
-        read(5,'(a80)',end=20) line
-        do ic = len(line),1,-1
-          if (line(ic:ic) .ne. ' ') goto 15
-        enddo
-        ic = 0
-   15   if (ic .gt. 0) write(6,'(a)') line(1:ic)
-      goto 10
-   20 continue
+
+      call io_assign(lun)
+      open(lun,file='FDF_STDIN',form='formatted',status='unknown')
+      rewind(lun)
+
+ 10   continue
+         read(5,err=20,end=20,fmt='(a)') line
+         call chrlen(line,0,length)
+         write(lun,'(a)') line(1:length)
+         if (length .ne. 0) write(6,'(a)') line(1:length)
+         goto 10
+ 20   continue
+      call io_close(lun)
+
       write(6,'(a,18(1h*),a,29(1h*))')
      .  'redata: ', ' End of input data file '
 C ..................
@@ -238,7 +247,7 @@ C ..................
 C Read data from FDF file..............................................
 
 C Set up fdf ...
-      filein = 'stdin'
+      filein = 'FDF_STDIN'
       fileout = 'out.fdf'
       call fdf_init(filein,fileout)
 C ...

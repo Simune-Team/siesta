@@ -91,7 +91,7 @@ siesta.o redbasis.o redbasis_subs.o iomd.o ioxv.o iokp.o iofa.o : fdf/fdfdefs.h
 cgvc.o iocg.o ofc.o : fdf/fdfdefs.h
 #
 FDF= fdf/fdf.o fdf/io.o
-$(FDF):
+$(FDF): fdf/fdf.f fdf/fdf.h fdf/io.f
 	(cd fdf ; $(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" fdf.o io.o)
 #
 prversion.o: version.h

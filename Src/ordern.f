@@ -1,4 +1,4 @@
-C $Id: ordern.f,v 1.16 1999/03/11 19:26:35 ordejon Exp $
+C $Id: ordern.f,v 1.16.2.1 1999/06/08 10:23:09 ordejon Exp $
 
       subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,lasto,
      .                  isa,qa,rcoor,rh,cell,xa,iscf,istep,itmax,
@@ -179,7 +179,7 @@ C             Find out number of bands
 C   This call was modified by DSP, Aug. 1998.
           call cspa(ioptlwf,iopt,natoms,nbasis,
      .        lasto,isa,
-     .        qa,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
+     .        qa,enum,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
      .        c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,nbands,
      .        overflow)
 

@@ -1,4 +1,4 @@
-C $Id: atom.f,v 1.39 1999/02/26 21:10:20 daniel Exp $
+C $Id: atom.f,v 1.39.2.1 1999/06/03 10:03:58 wdpgaara Exp $
 
        SUBROUTINE ATOM (NTOTSP,IZIN,LMXKB,LMXO,
      .          NZETA,RCO,LAMBDA,ATM_LABEL,
@@ -307,7 +307,7 @@ C********Internal variables*********************************************
 
        integer 
      .  iz, nrval, ir , nrgauss, nchloc, nzcontr, l, nVna,
-     .  irelt
+     .  irelt, lun
     
       
        logical
@@ -679,12 +679,13 @@ C***************************************************************************
 
 C**************Write a file to plot the local potential**********************
 C
-         open(unit=12,file=paste(atm_label,'.vlocal'),
+            call io_assign(lun)
+         open(lun,file=paste(atm_label,'.vlocal'),
      .       status='unknown')
           do ir=1,nrval
-          write(12,*) rofi(ir),vlocal(ir),chcore(ir)
+          write(lun,*) rofi(ir),vlocal(ir),chcore(ir)
           enddo
-          close(12) 
+          call io_close(lun) 
 C
 C********************************************************************
 

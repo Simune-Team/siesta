@@ -26,30 +26,30 @@ C PRMEM:        atom    chloctab       0.056 MBytes
 C PRMEM:        atom       Total       1.796 MBytes
   
 C PRMEM:       matel         ILM       0.000 MBytes
-C PRMEM:       matel       ILMFF       0.105 MBytes
+C PRMEM:       matel       ILMFF       0.097 MBytes
 C PRMEM:       matel        INDF       0.000 MBytes
 C PRMEM:       matel       INDFF       0.077 MBytes
-C PRMEM:       matel      INDFFR       0.105 MBytes
-C PRMEM:       matel      INDFFY       0.040 MBytes
+C PRMEM:       matel      INDFFR       0.097 MBytes
+C PRMEM:       matel      INDFFY       0.037 MBytes
 C PRMEM:       matel        IFFR       0.000 MBytes
 C PRMEM:       matel        DYDR       0.002 MBytes
-C PRMEM:       matel           F       0.468 MBytes
-C PRMEM:       matel         FFR       2.415 MBytes
-C PRMEM:       matel         FFQ       0.004 MBytes
-C PRMEM:       matel         FFY       0.210 MBytes
+C PRMEM:       matel           F       0.935 MBytes
+C PRMEM:       matel         FFR       2.229 MBytes
+C PRMEM:       matel         FFQ       0.008 MBytes
+C PRMEM:       matel         FFY       0.194 MBytes
 C PRMEM:       matel          RI       0.001 MBytes
 C PRMEM:       matel           Y       0.001 MBytes
-C PRMEM:       matel       Total       3.428 MBytes
+C PRMEM:       matel       Total       3.678 MBytes
   
-C PRMEM:      nlefsm        iano       0.004 MBytes
-C PRMEM:      nlefsm        iana       0.002 MBytes
-C PRMEM:      nlefsm       grSki       0.384 MBytes
-C PRMEM:      nlefsm        r2ki       0.004 MBytes
-C PRMEM:      nlefsm         Ski       1.280 MBytes
-C PRMEM:      nlefsm          Vi       0.080 MBytes
-C PRMEM:      nlefsm         xki       0.012 MBytes
-C PRMEM:      nlefsm         xno       0.008 MBytes
-C PRMEM:      nlefsm       Total       1.774 MBytes
+C PRMEM:      nlefsm        iano       0.008 MBytes
+C PRMEM:      nlefsm        iana       0.004 MBytes
+C PRMEM:      nlefsm       grSki       0.768 MBytes
+C PRMEM:      nlefsm        r2ki       0.008 MBytes
+C PRMEM:      nlefsm         Ski       2.560 MBytes
+C PRMEM:      nlefsm          Vi       0.160 MBytes
+C PRMEM:      nlefsm         xki       0.024 MBytes
+C PRMEM:      nlefsm         xno       0.016 MBytes
+C PRMEM:      nlefsm       Total       3.548 MBytes
   
 C PRMEM:       DHSCF         AUX       0.012 MBytes
 C PRMEM:       DHSCF         DXA       0.000 MBytes
@@ -103,5 +103,5 @@ C PRMEM:    gradient          ft       0.004 MBytes
 C PRMEM:    gradient         fst       0.004 MBytes
 C PRMEM:    gradient       Total       0.008 MBytes
   
-C PRMEM:       Total       Total       9.645 MBytes
+C PRMEM:       Total       Total      11.669 MBytes
   

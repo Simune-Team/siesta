@@ -247,8 +247,11 @@ C  calculate spin populations for fixed spin case...
      . '  siesta:        for collinear spin polarized calculations.'
           stop
         endif
-        qs(1) = (qtot + ts) / 2.0d0
-        qs(2) = (qtot - ts) / 2.0d0
+        do i=1,2
+           qs(i) = (qtot + (3-2*i)*ts) / 2.0d0
+cag      qs(1) = (qtot + ts) / 2.0d0
+cag      qs(2) = (qtot - ts) / 2.0d0
+        enddo
       endif
 C ...
        
@@ -1034,7 +1037,8 @@ C Print total energy and density matrix error .........................
      .      '   dDmax', '  Ef_up', '  Ef_dn(eV)'
             write(6,'(a8,i4,3f14.4,f8.4,2f9.4)')
      .      'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
-     .                 Efs(1)/eV,  Efs(2)/eV
+     .                 (Efs(i)/eV,i=1,2)
+
           else
             if (iscf .eq. 1) write(6,'(/,a12,3a14,2a8)')
      .      'siesta: iscf', '   Eharris(eV)', 
