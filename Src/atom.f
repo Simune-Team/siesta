@@ -1968,6 +1968,20 @@ C Written by D. Sanchez-Portal, Aug. 1998
      .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
           endif
 
+       elseif((xcauth.eq.'RPBE').and.(xcfunc.eq.'GGA')) then
+
+          write(6,'(a)')  'xc_check: GGA RPBE'
+          if(icorr.ne.'rp') then
+           write(6,'(a)')
+     .       'xc_check: WARNING: Pseudopotential generated with'
+           if(icorr.eq.'ca')
+     .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
+           if(icorr.eq.'pw')
+     . write(6,'(a)') 'xc_check: WARNING: Perdew-Wang 1992 functional'
+            if(icorr.eq.'pb') write(6,'(a)')
+     .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
+          endif
+
        else
 
           write(6,'(a)')
