@@ -18,17 +18,6 @@ C
       implicit none
 
 C ----------------------------------------------------------------------
-C Mesh parameters
-C ----------------------------------------------------------------------
-C integer nsm           : Number of mesh sub-divisions in each direction
-C integer nsp           : Number of sub-points of each mesh point
-C ----------------------------------------------------------------------
-C Fix number of sub-points (recomended nsm = 2) 
-      integer nsm, nsp
-      parameter ( nsm = 2 )
-      parameter ( nsp = nsm * nsm * nsm )
-
-C ----------------------------------------------------------------------
 C Mesh variables
 C ----------------------------------------------------------------------
 C real*8  cmesh(3,3)    : Mesh-cell vectors
@@ -43,6 +32,8 @@ C integer ne(3)         : Number of mesh-Extension intervals
 C                       : in each direction
 C integer nem(3)        : Extended-mesh divisions in each direction
 C integer nmsc(3)       : Mesh divisions of each supercell vector
+C integer nsm           : Number of mesh sub-divisions in each direction
+C integer nsp           : Number of sub-points of each mesh point
 C real*8  rcmesh(3,3)   : Reciprocal mesh-cell vectors
 C                       : (WITHOUT 2*pi factor)
 C real*8  xdop(3,mop)   : Vector to mesh points within rmax
@@ -55,16 +46,18 @@ C ----------------------------------------------------------------------
 
       real(dp),  dimension(:,:), allocatable, save :: dxa
       real(dp),  dimension(:,:), allocatable, save :: xdop
+      real(dp),  dimension(:,:), allocatable, save :: xdsp
 
-      integer,  save :: mop
+      integer,                save :: mop
       integer,  dimension(3), save :: ne
       integer,  dimension(3), save :: nem
       integer,  dimension(3), save :: nmsc
       integer,  dimension(3), save :: nmeshg
+      integer,                save :: nsm
+      integer,                save :: nsp
 
       real(dp),  dimension(3,3),   save :: cmesh
       real(dp),  dimension(3,3),   save :: rcmesh
-      real(dp),  dimension(3,nsp), save :: xdsp
 
       end module mesh
 

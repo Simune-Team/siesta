@@ -308,7 +308,10 @@ C Start time counter
           XCfunc = fdf_string('xc.functional','LDA')
           XCauth = fdf_string('xc.authors','PZ')
           harrisfun = fdf_boolean('Harris_functional',.false.)
+          nsm    = fdf_integer('MeshSubDivisions',2)
+          nsm    = max(nsm,1)
         endif
+
 #ifdef MPI
         call MPI_Bcast(XCfunc,10,MPI_character,0,MPI_Comm_World,
      .    MPIerror)
@@ -316,7 +319,12 @@ C Start time counter
      .    MPIerror)
         call MPI_Bcast(harrisfun,1,MPI_logical,0,MPI_Comm_World,
      .    MPIerror)
+        call MPI_Bcast(nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
+
+C Set mesh sub-division variables & perform one off allocation
+        nsp = nsm*nsm*nsm
+        allocate(xdsp(3,nsp))
 
 C Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
@@ -908,21 +916,21 @@ C Stop time counter
 C ----------------------------------------------------------------------
 C Free locally allocated memory
 C ----------------------------------------------------------------------
-      if (allocated(DRho)) then
-        call memory('D','S',size(DRho),'dhscf')
-        deallocate(DRho)
-      endif
-      if (allocated(Vscf)) then
-        call memory('D','S',size(Vscf),'dhscf')
-        deallocate(Vscf)
+      if (allocated(DVxcdn)) then
+        call memory('D','S',size(DVxcdn),'dhscf')
+        deallocate(DVxcdn)
       endif
       if (allocated(Vaux)) then
         call memory('D','S',size(Vaux),'dhscf')
         deallocate(Vaux)
       endif
-      if (allocated(DVxcdn)) then
-        call memory('D','S',size(DVxcdn),'dhscf')
-        deallocate(DVxcdn)
+      if (allocated(Vscf)) then
+        call memory('D','S',size(Vscf),'dhscf')
+        deallocate(Vscf)
+      endif
+      if (allocated(DRho)) then
+        call memory('D','S',size(DRho),'dhscf')
+        deallocate(DRho)
       endif
 
       frstme = .false.

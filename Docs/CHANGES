@@ -1,6 +1,19 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.37
+Date: 2005/01/25 03:00 GMT
+Title: Mesh subdivisions control from input
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The value of nsm, which was previously a parameter, can now be
+adjusted from the input deck using the "MeshSubDivisions" option.
+The order of array deallocation in dhscf.F has also been reversed.
+
+Files:
+
+dhscf.F, meshsubs.F, version.F90, CHANGES, siesta.tex
+=======================================================================
 Version: 1.4.36
 Date: 2005/01/25 06:10 GMT
 Title: Grdsam array size fix
