@@ -1,0 +1,30 @@
+#!/bin/sh 
+#-------------------------------------------------------------
+# 'Really' runs the SIESTA program, recompiling until it runs.
+# Syntax:  rrsiesta name [init]
+# Example: rrsiesta H2O
+#
+# If the init option is specified, the 'initial' include files
+# in SIESTA_DIR/Include are used (good for first compilation).
+#
+# Environment variable $SIESTA_DIR should be previously defined,
+# If it is not defined, it assumes SIESTA_DIR = ../Src
+#
+# Data file name.fdf must exist in working directory.
+# Written by J.M.Soler. August 1997.
+# Modified by Alberto Garcia. March 1998.
+#-------------------------------------------------------------
+
+if [ $# -gt 1 -a "$2" = init ] ; then
+  msiesta init
+else
+  msiesta
+fi
+
+rsiesta $1
+
+while grep RECOMPILE $1.out > /dev/null ; do 
+  msiesta
+  rsiesta $1
+done
+

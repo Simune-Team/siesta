@@ -1,0 +1,973 @@
+ 
+prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
+prdate: DATE = Fri Mar 13 13:29:27 MET 1998
+ 
+SIESTA Version 0.8.44 (Mar 13, 1998, 13:30:00)                        
+
+redata:               ***********************                 
+redata:               *  WELCOME TO SIESTA  *                 
+redata:               ***********************                 
+
+redata: *********************** Dump of input data file ***********************
+SystemName          Water molecule, using order-N method
+SystemLabel         h2o
+NumberOfAtoms       3
+NumberOfSpecies     2
+%block ChemicalSpeciesLabel
+ 1  8  O      # Species index, atomic number, species label
+ 2  1  H
+%endblock ChemicalSpeciesLabel
+AtomicCoordinatesFormat  NotScaledCartesianAng
+%block AtomicCoordinatesAndAtomicSpecies
+ 0.000  0.000  0.000  1
+ 0.757  0.586  0.000  2
+-0.757  0.586  0.000  2
+%endblock AtomicCoordinatesAndAtomicSpecies
+SolutionMethod   ordern
+redata: ************************ End of input data file ************************
+
+
+redata: ************************************************************************
+redata:               SIMULATION PARAMETERS
+redata:
+redata:  The following are some of the parameters of the simulation.
+redata:  A complete list of the parameters used, including defect values,
+redata:  can be found in file out.fdf             
+redata:
+redata: System Name                      = Water molecule, using order-N method                                                                                                                  
+redata: System Label                     = h2o                 
+redata: Number of Atoms                  =     3
+redata: Number of Atomic Species         =     2
+redata: Write minimum siesta.h dimensions  =     F
+redata: Write Mulliken Pop. = NO
+redata: label for specie   1   O                   
+redata: label for specie   2   H                   
+redata:
+redata: WARNING: No valid lattice constant specified
+redata: WARNING: Cell will be generated automatically
+redata:
+redata: Spin Polarization                =     1
+redata: Mesh Cutoff                      =    50.0000  Ry
+redata: Max. number of SCF Iter          =    50
+redata: Mixing is linear
+redata: Write Pulay info on disk?       =     F
+redata: New DM Mixing Weight             =     0.2500
+redata: DM Tolerance for SCF             =     0.000100
+redata: Use continuation files for DM    =     F
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            = Order-N
+redata: Maximum number of iterations     =  1000
+redata: Relative tolerance               =     0.10D-07
+redata: Eta (Fermi level parameter)      =     0.0000  Ry
+redata: Radius of LWFs                   =     9.50    Bohr
+redata: Use continuation files for LWF =     F
+redata: Method to build LWFs = kim          
+redata: Dynamics option                  = Verlet MD run
+redata: Initial MD time step             =     1
+redata:   Final MD time step             =     1
+redata: Length of MD time step           =     1.0000  fs
+redata: Length of MD time step           =     1.0000  fs
+redata: Initial Temperature of MD run    =     0.0000  K
+redata: Perform a MD quench              =     F
+recoor: Atomic-coordinates input format  = Cartesian coordinates
+recoor:                                    (in Angstroms)
+recoor: Atomic coordinates (Bohr) and species
+recoor:    1     0.00000   0.00000   0.00000  1
+recoor:    2     1.43052   1.10738   0.00000  2
+recoor:    3    -1.43052   1.10738   0.00000  2
+redata: ************************************************************************
+  
+
+ATOM: ************************************************************************
+ATOM: Called for O   (Z =   8)
+
+
+ATOM: Pseudopotential generation method:
+ATOM: ATM3      Troullier-Martins                       
+
+ATOM: Valence configuration (pseudopotential generation):
+       2s 2.00  r
+       4.00  r= 1
+       0  r= 1.14
+       r= 1.14/  
+
+ATOM: Exchange-correlation functional:
+ATOM: Ceperley-Alder
+
+ATOM: 99.0% of the norm of Vloc inside     34.126 Ry
+ATOM: 99.9% of the norm of Vloc inside     77.774 Ry
+
+ATOM: Maximum radius for local-pseudopot. charge    1.37759
+ATOM: No ghost state for L =  0
+ATOM: No ghost state for L =  1
+ATOM: No ghost state for L =  2
+ATOM: No ghost state for L =  3
+
+ATOM: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.294105   el= -1.742414   kbcos=  9.135903
+   l= 1   rc=  1.294105   el= -0.676589   kbcos= -8.124878
+   l= 2   rc=  1.448233   el=  0.002386   kbcos= -2.039267
+   l= 3   rc=  1.561052   el=  0.003508   kbcos= -0.799329
+ATOM: Total number of KB projectors: 16
+
+ATOM: Sankey-type orbitals:
+ATOM: Selected multiple-zeta basis: split          
+
+ATOM: Orbitals with angular momentum L= 0
+
+ATOM: PAO cut-off radius determinated from an
+ATOM: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.305093
+                 energy =   -1.723766
+                kinetic =    1.614911
+    potential(screened) =   -3.338677
+       potential(ionic) =  -11.304675
+
+   izeta = 2
+                 rmatch =    2.510382
+              splitnorm =    0.150000
+                 energy =   -1.471081
+                kinetic =    2.446738
+    potential(screened) =   -3.917818
+       potential(ionic) =  -12.476310
+
+ATOM: Orbitals with angular momentum L= 1
+
+ATOM: PAO cut-off radius determinated from an
+ATOM: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.937239
+                 energy =   -0.658841
+                kinetic =    5.005986
+    potential(screened) =   -5.664826
+       potential(ionic) =  -13.452360
+
+   izeta = 2
+                 rmatch =    2.541963
+              splitnorm =    0.150000
+                 energy =   -0.367387
+                kinetic =    7.530138
+    potential(screened) =   -7.897525
+       potential(ionic) =  -16.611418
+
+ATOM: Orbitals with angular momentum L= 2
+
+   izeta= 1   Perturbative polarization orbital
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.937239
+                 energy =    2.471848
+                kinetic =    4.716729
+    potential(screened) =   -2.244881
+       potential(ionic) =   -8.529842
+ATOM: Total number of Sankey-type orbitals: 13
+
+ATOM: Valence configuration(local Pseudopot. screening):
+        2s( 2.00)
+        2p( 4.00)
+        3d( 0.00)
+
+ATOM:  Cut-off radius for vlocal:  3.937239
+ATOM: ************************************************************************
+ATOM: Called for H   (Z =   1)
+
+
+ATOM: Pseudopotential generation method:
+ATOM: ATM3      Troullier-Martins                       
+
+ATOM: Valence configuration (pseudopotential generation):
+       1s 1.00  r
+       0.00  r= 1
+       0  r= 1.25
+
+ATOM: Exchange-correlation functional:
+ATOM: Ceperley-Alder
+
+ATOM: 99.0% of the norm of Vloc inside     28.493 Ry
+ATOM: 99.9% of the norm of Vloc inside     64.935 Ry
+
+ATOM: Maximum radius for local-pseudopot. charge    1.45251
+ATOM: No ghost state for L =  0
+ATOM: No ghost state for L =  1
+ATOM: No ghost state for L =  2
+
+ATOM: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.364359   el= -0.467325   kbcos= -2.005361
+   l= 1   rc=  1.434438   el=  0.001430   kbcos= -0.501708
+   l= 2   rc=  1.470814   el=  0.002365   kbcos= -0.190555
+ATOM: Total number of KB projectors:  9
+
+ATOM: Sankey-type orbitals:
+ATOM: Selected multiple-zeta basis: split          
+
+ATOM: Orbitals with angular momentum L= 0
+
+ATOM: PAO cut-off radius determinated from an
+ATOM: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.828263
+                 energy =   -0.449375
+                kinetic =    0.929372
+    potential(screened) =   -1.378747
+       potential(ionic) =   -1.915047
+
+   izeta = 2
+                 rmatch =    3.854947
+              splitnorm =    0.150000
+                 energy =   -0.335649
+                kinetic =    1.505971
+    potential(screened) =   -1.841620
+       potential(ionic) =   -2.413776
+
+ATOM: Orbitals with angular momentum L= 1
+
+   izeta= 1   Perturbative polarization orbital
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.828263
+                 energy =    0.717182
+                kinetic =    1.396396
+    potential(screened) =   -0.679215
+       potential(ionic) =   -1.159582
+ATOM: Total number of Sankey-type orbitals:  5
+
+ATOM: Valence configuration(local Pseudopot. screening):
+        1s( 1.00)
+        2p( 0.00)
+
+ATOM:  Cut-off radius for vlocal:  4.828263
+
+************************************************************************
+
+ATOM: Basis sets have been generated automatically
+ATOM: using the options:
+ATOM: PAO.BasisSize dzp            
+ATOM: PAO.BasisType  split          
+ATOM: PAO.EnergyShift    0.020000 Ry 
+ATOM: An alternative input to obtain the same basis set:
+
+INPUT: ************************************************************************
+PAO.BasisType  split          
+PAO.EnergyShift    0.020000 Ry 
+PAO.SplitNorm    0.150000
+PAO.PolarizationOrbitals true
+PAO.SplitPolarizationOrbitals   1
+%block PAO_basis_and_PS_lmax        # Define Basis set
+
+  1  8 2 3                   # Index, Z, LmaxPAO, LmaxPS
+           0           2              # l, Nzeta  
+   3.30509334104827        2.51038227137638       # rc(izeta=1,Nzeta)(Bohr)
+   1.00000000000000        1.00000000000000       # scaleFactor(izeta=1,Nzeta)
+           1           2              # l, Nzeta  
+   3.93723919457141        2.54196289048337       # rc(izeta=1,Nzeta)(Bohr)
+   1.00000000000000        1.00000000000000       # scaleFactor(izeta=1,Nzeta)
+
+  2  1 1 2                   # Index, Z, LmaxPAO, LmaxPS
+           0           2              # l, Nzeta  
+   4.82826286593361        3.85494677852031       # rc(izeta=1,Nzeta)(Bohr)
+   1.00000000000000        1.00000000000000       # scaleFactor(izeta=1,Nzeta)
+%endblock PAO_basis_and_PS_lmax     
+ATOM: ************************************************************************
+
+initatom: is,iz =   1   8
+initatom: io,rcut,q   =   1    3.305093    2.000000
+initatom: io,rcut,q   =   2    2.510382    0.000000
+initatom: io,rcut,q   =   3    3.937239    1.333333
+initatom: io,rcut,q   =   4    3.937239    1.333333
+initatom: io,rcut,q   =   5    3.937239    1.333333
+initatom: io,rcut,q   =   6    2.541963    0.000000
+initatom: io,rcut,q   =   7    2.541963    0.000000
+initatom: io,rcut,q   =   8    2.541963    0.000000
+initatom: io,rcut,q   =   9    3.937239    0.000000
+initatom: io,rcut,q   =  10    3.937239    0.000000
+initatom: io,rcut,q   =  11    3.937239    0.000000
+initatom: io,rcut,q   =  12    3.937239    0.000000
+initatom: io,rcut,q   =  13    3.937239    0.000000
+initatom: io,rcut     =   0    3.937239
+initatom: io,rcut,eps =  -1    1.294105    9.135903
+initatom: io,rcut,eps =  -2    1.294105   -8.124878
+initatom: io,rcut,eps =  -3    1.294105   -8.124878
+initatom: io,rcut,eps =  -4    1.294105   -8.124878
+initatom: io,rcut,eps =  -5    1.448233   -2.039267
+initatom: io,rcut,eps =  -6    1.448233   -2.039267
+initatom: io,rcut,eps =  -7    1.448233   -2.039267
+initatom: io,rcut,eps =  -8    1.448233   -2.039267
+initatom: io,rcut,eps =  -9    1.448233   -2.039267
+initatom: io,rcut,eps = -10    1.561052   -0.799329
+initatom: io,rcut,eps = -11    1.561052   -0.799329
+initatom: io,rcut,eps = -12    1.561052   -0.799329
+initatom: io,rcut,eps = -13    1.561052   -0.799329
+initatom: io,rcut,eps = -14    1.561052   -0.799329
+initatom: io,rcut,eps = -15    1.561052   -0.799329
+initatom: io,rcut,eps = -16    1.561052   -0.799329
+
+initatom: is,iz =   2   1
+initatom: io,rcut,q   =   1    4.828263    1.000000
+initatom: io,rcut,q   =   2    3.854947    0.000000
+initatom: io,rcut,q   =   3    4.828263    0.000000
+initatom: io,rcut,q   =   4    4.828263    0.000000
+initatom: io,rcut,q   =   5    4.828263    0.000000
+initatom: io,rcut     =   0    4.828263
+initatom: io,rcut,eps =  -1    1.364359   -2.005361
+initatom: io,rcut,eps =  -2    1.434438   -0.501708
+initatom: io,rcut,eps =  -3    1.434438   -0.501708
+initatom: io,rcut,eps =  -4    1.434438   -0.501708
+initatom: io,rcut,eps =  -5    1.470814   -0.190555
+initatom: io,rcut,eps =  -6    1.470814   -0.190555
+initatom: io,rcut,eps =  -7    1.470814   -0.190555
+initatom: io,rcut,eps =  -8    1.470814   -0.190555
+initatom: io,rcut,eps =  -9    1.470814   -0.190555
+  
+initatom: ia, is, iz, lasto, lastkb =   1   1   8    13    16
+initatom: ia, is, iz, lasto, lastkb =   2   2   1    18    25
+initatom: ia, is, iz, lasto, lastkb =   3   2   1    23    34
+
+siesta: Automatic unit cell vectors (Ang):
+siesta:    7.286412    0.000000    0.000000
+siesta:    0.000000    5.746952    0.000000
+siesta:    0.000000    0.000000    5.621012
+
+siesta: System type = molecule  
+
+siesta:    ===============================
+siesta:        Begin MD step =      1
+siesta:    ===============================
+
+outcoor: Atomic coordinates (Ang):                          
+    0.00000000    0.00000000    0.00000000   1  O         1
+    0.75700000    0.58600000    0.00000000   2  H         2
+   -0.75700000    0.58600000    0.00000000   2  H         3
+
+DHSCF: MESH =    32 x    30 x    24 =       23040
+
+siesta: dhscf mesh cutoff =    50.384 Ry
+ ordern: enum =   8.00000000000000     
+ ordern: ioptlwf           1
+ITER =    1      GRAD =        -234.450379      ENER =      -1.653479
+ITER =    2      GRAD =         -19.302506      ENER =      -3.070707
+ITER =    3      GRAD =          -5.425823      ENER =      -3.482826
+ITER =    4      GRAD =         -11.367345      ENER =      -3.842269
+ITER =    5      GRAD =          -7.649498      ENER =      -4.128691
+ITER =    6      GRAD =          -1.912905      ENER =      -4.287212
+ITER =    7      GRAD =          -1.921467      ENER =      -4.343365
+ITER =    8      GRAD =          -0.678966      ENER =      -4.376181
+ITER =    9      GRAD =          -0.279028      ENER =      -4.394818
+ITER =   10      GRAD =          -0.139562      ENER =      -4.404034
+ITER =   11      GRAD =          -0.375013      ENER =      -4.409591
+ITER =   12      GRAD =          -0.146936      ENER =      -4.419251
+ITER =   13      GRAD =          -0.153710      ENER =      -4.426158
+ITER =   14      GRAD =          -0.137671      ENER =      -4.431613
+ITER =   15      GRAD =          -0.182307      ENER =      -4.435188
+ITER =   16      GRAD =          -0.107921      ENER =      -4.440392
+ITER =   17      GRAD =          -0.300355      ENER =      -4.448130
+ITER =   18      GRAD =          -0.156335      ENER =      -4.459647
+ITER =   19      GRAD =          -0.161595      ENER =      -4.465889
+ITER =   20      GRAD =          -0.163269      ENER =      -4.469360
+ITER =   21      GRAD =          -0.122258      ENER =      -4.475061
+ITER =   22      GRAD =          -0.121188      ENER =      -4.480013
+ITER =   23      GRAD =          -0.067496      ENER =      -4.484481
+ITER =   24      GRAD =          -0.051190      ENER =      -4.486403
+ITER =   25      GRAD =          -0.076214      ENER =      -4.488345
+ITER =   26      GRAD =          -0.021786      ENER =      -4.489593
+ITER =   27      GRAD =          -0.022532      ENER =      -4.490933
+ITER =   28      GRAD =          -0.037641      ENER =      -4.492085
+ITER =   29      GRAD =          -0.029238      ENER =      -4.493645
+ITER =   30      GRAD =          -0.040709      ENER =      -4.494795
+ITER =   31      GRAD =          -0.036438      ENER =      -4.495748
+ITER =   32      GRAD =          -0.021930      ENER =      -4.496681
+ITER =   33      GRAD =          -0.024691      ENER =      -4.498309
+ITER =   34      GRAD =          -0.038433      ENER =      -4.499581
+ITER =   35      GRAD =          -0.020164      ENER =      -4.500384
+ITER =   36      GRAD =          -0.018077      ENER =      -4.500819
+ITER =   37      GRAD =          -0.012552      ENER =      -4.501636
+ITER =   38      GRAD =          -0.009439      ENER =      -4.502103
+ITER =   39      GRAD =          -0.013043      ENER =      -4.502555
+ITER =   40      GRAD =          -0.010501      ENER =      -4.502802
+ITER =   41      GRAD =          -0.006368      ENER =      -4.503189
+ITER =   42      GRAD =          -0.009850      ENER =      -4.503522
+ITER =   43      GRAD =          -0.010832      ENER =      -4.503904
+ITER =   44      GRAD =          -0.019045      ENER =      -4.504393
+ITER =   45      GRAD =          -0.009909      ENER =      -4.504728
+ITER =   46      GRAD =          -0.009661      ENER =      -4.505267
+ITER =   47      GRAD =          -0.003942      ENER =      -4.505573
+ITER =   48      GRAD =          -0.004990      ENER =      -4.505753
+ITER =   49      GRAD =          -0.004521      ENER =      -4.505859
+ITER =   50      GRAD =          -0.004001      ENER =      -4.506009
+ITER =   51      GRAD =          -0.001428      ENER =      -4.506109
+ITER =   52      GRAD =          -0.001174      ENER =      -4.506178
+ITER =   53      GRAD =          -0.001829      ENER =      -4.506223
+ITER =   54      GRAD =          -0.002626      ENER =      -4.506278
+ITER =   55      GRAD =          -0.000883      ENER =      -4.506343
+ITER =   56      GRAD =          -0.001968      ENER =      -4.506417
+ITER =   57      GRAD =          -0.001921      ENER =      -4.506489
+ITER =   58      GRAD =          -0.002565      ENER =      -4.506550
+ITER =   59      GRAD =          -0.001665      ENER =      -4.506607
+ITER =   60      GRAD =          -0.001855      ENER =      -4.506674
+ITER =   61      GRAD =          -0.001055      ENER =      -4.506752
+ITER =   62      GRAD =          -0.001229      ENER =      -4.506800
+ITER =   63      GRAD =          -0.000765      ENER =      -4.506821
+ITER =   64      GRAD =          -0.000466      ENER =      -4.506849
+ITER =   65      GRAD =          -0.000604      ENER =      -4.506869
+ITER =   66      GRAD =          -0.000533      ENER =      -4.506895
+ITER =   67      GRAD =          -0.000540      ENER =      -4.506910
+ITER =   68      GRAD =          -0.000286      ENER =      -4.506921
+ITER =   69      GRAD =          -0.000196      ENER =      -4.506930
+ITER =   70      GRAD =          -0.000239      ENER =      -4.506945
+ITER =   71      GRAD =          -0.000461      ENER =      -4.506956
+ITER =   72      GRAD =          -0.000272      ENER =      -4.506965
+ITER =   73      GRAD =          -0.000362      ENER =      -4.506975
+ITER =   74      GRAD =          -0.000134      ENER =      -4.506988
+ITER =   75      GRAD =          -0.000146      ENER =      -4.506993
+ITER =   76      GRAD =          -0.000213      ENER =      -4.506999
+ITER =   77      GRAD =          -0.000094      ENER =      -4.507002
+ITER =   78      GRAD =          -0.000067      ENER =      -4.507008
+ITER =   79      GRAD =          -0.000064      ENER =      -4.507010
+ITER =   80      GRAD =          -0.000060      ENER =      -4.507012
+ITER =   81      GRAD =          -0.000059      ENER =      -4.507014
+ITER =   82      GRAD =          -0.000061      ENER =      -4.507016
+ITER =   83      GRAD =          -0.000059      ENER =      -4.507018
+ITER =   84      GRAD =          -0.000042      ENER =      -4.507021
+ITER =   85      GRAD =          -0.000079      ENER =      -4.507022
+ITER =   86      GRAD =          -0.000046      ENER =      -4.507024
+ITER =   87      GRAD =          -0.000038      ENER =      -4.507026
+ITER =   88      GRAD =          -0.000025      ENER =      -4.507028
+ITER =   89      GRAD =          -0.000030      ENER =      -4.507028
+ITER =   90      GRAD =          -0.000021      ENER =      -4.507029
+ITER =   91      GRAD =          -0.000011      ENER =      -4.507030
+ITER =   92      GRAD =          -0.000006      ENER =      -4.507030
+ITER =   93      GRAD =          -0.000018      ENER =      -4.507031
+ITER =   94      GRAD =          -0.000016      ENER =      -4.507031
+ITER =   95      GRAD =          -0.000015      ENER =      -4.507032
+ITER =   96      GRAD =          -0.000012      ENER =      -4.507032
+ITER =   97      GRAD =          -0.000017      ENER =      -4.507033
+ITER =   98      GRAD =          -0.000014      ENER =      -4.507033
+ITER =   99      GRAD =          -0.000022      ENER =      -4.507034
+ITER =  100      GRAD =          -0.000008      ENER =      -4.507034
+ITER =  101      GRAD =          -0.000008      ENER =      -4.507035
+ITER =  102      GRAD =          -0.000011      ENER =      -4.507035
+ITER =  103      GRAD =          -0.000010      ENER =      -4.507035
+ITER =  104      GRAD =          -0.000005      ENER =      -4.507036
+ITER =  105      GRAD =          -0.000005      ENER =      -4.507036
+ITER =  106      GRAD =          -0.000002      ENER =      -4.507036
+ITER =  107      GRAD =          -0.000003      ENER =      -4.507036
+ITER =  108      GRAD =          -0.000002      ENER =      -4.507036
+ITER =  109      GRAD =          -0.000002      ENER =      -4.507036
+ITER =  110      GRAD =          -0.000003      ENER =      -4.507036
+ITER =  111      GRAD =          -0.000002      ENER =      -4.507037
+ITER =  112      GRAD =          -0.000003      ENER =      -4.507037
+ITER =  113      GRAD =          -0.000003      ENER =      -4.507037
+ITER =  114      GRAD =          -0.000002      ENER =      -4.507037
+ITER =  115      GRAD =          -0.000002      ENER =      -4.507037
+ITER =  116      GRAD =          -0.000001      ENER =      -4.507037
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   8.00000006629406     
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =     815.854478
+siesta: Ena     =     175.155512
+siesta: Ekin    =     341.667255
+siesta: Enl     =     -52.736808
+siesta: DEna    =      -0.000013
+siesta: DUscf   =       0.000000
+siesta: DUext   =       0.000000
+siesta: Exc     =    -109.951279
+siesta: eta*DQ  =       0.000000
+siesta: Eharris =    -466.427798
+siesta: Etot    =    -461.719811
+siesta: FreeEng =    -461.719811
+
+siesta: iscf =        1
+Eharris(eV) =       -466.4278  E_KS(eV) =       -461.7198  dDmax =  1.4414
+timer: Routine,Calls,Time,% = IterSCF        1       8.407  89.76
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.399281      ENER =      -3.180496
+ITER =    2      GRAD =          -0.687169      ENER =      -3.221784
+ITER =    3      GRAD =          -0.107621      ENER =      -3.230154
+ITER =    4      GRAD =          -0.072566      ENER =      -3.235473
+ITER =    5      GRAD =          -0.017103      ENER =      -3.238220
+ITER =    6      GRAD =          -0.005694      ENER =      -3.238805
+ITER =    7      GRAD =          -0.005457      ENER =      -3.238928
+ITER =    8      GRAD =          -0.001216      ENER =      -3.239167
+ITER =    9      GRAD =          -0.001080      ENER =      -3.239347
+ITER =   10      GRAD =          -0.001673      ENER =      -3.239389
+ITER =   11      GRAD =          -0.004786      ENER =      -3.239482
+ITER =   12      GRAD =          -0.001526      ENER =      -3.239646
+ITER =   13      GRAD =          -0.001960      ENER =      -3.239713
+ITER =   14      GRAD =          -0.000833      ENER =      -3.239847
+ITER =   15      GRAD =          -0.000650      ENER =      -3.239870
+ITER =   16      GRAD =          -0.001306      ENER =      -3.239910
+ITER =   17      GRAD =          -0.000409      ENER =      -3.239933
+ITER =   18      GRAD =          -0.000663      ENER =      -3.239958
+ITER =   19      GRAD =          -0.000451      ENER =      -3.239987
+ITER =   20      GRAD =          -0.000647      ENER =      -3.240001
+ITER =   21      GRAD =          -0.000580      ENER =      -3.240025
+ITER =   22      GRAD =          -0.000232      ENER =      -3.240044
+ITER =   23      GRAD =          -0.000355      ENER =      -3.240062
+ITER =   24      GRAD =          -0.000569      ENER =      -3.240086
+ITER =   25      GRAD =          -0.000351      ENER =      -3.240104
+ITER =   26      GRAD =          -0.000618      ENER =      -3.240116
+ITER =   27      GRAD =          -0.000214      ENER =      -3.240131
+ITER =   28      GRAD =          -0.000087      ENER =      -3.240134
+ITER =   29      GRAD =          -0.000184      ENER =      -3.240138
+ITER =   30      GRAD =          -0.000258      ENER =      -3.240146
+ITER =   31      GRAD =          -0.000163      ENER =      -3.240155
+ITER =   32      GRAD =          -0.000094      ENER =      -3.240160
+ITER =   33      GRAD =          -0.000057      ENER =      -3.240162
+ITER =   34      GRAD =          -0.000071      ENER =      -3.240165
+ITER =   35      GRAD =          -0.000082      ENER =      -3.240169
+ITER =   36      GRAD =          -0.000037      ENER =      -3.240171
+ITER =   37      GRAD =          -0.000023      ENER =      -3.240172
+ITER =   38      GRAD =          -0.000049      ENER =      -3.240174
+ITER =   39      GRAD =          -0.000039      ENER =      -3.240175
+ITER =   40      GRAD =          -0.000027      ENER =      -3.240176
+ITER =   41      GRAD =          -0.000062      ENER =      -3.240178
+ITER =   42      GRAD =          -0.000053      ENER =      -3.240179
+ITER =   43      GRAD =          -0.000025      ENER =      -3.240181
+ITER =   44      GRAD =          -0.000040      ENER =      -3.240182
+ITER =   45      GRAD =          -0.000235      ENER =      -3.240186
+ITER =   46      GRAD =          -0.000209      ENER =      -3.240194
+ITER =   47      GRAD =          -0.000056      ENER =      -3.240237
+ITER =   48      GRAD =          -0.000036      ENER =      -3.240240
+ITER =   49      GRAD =          -0.000011      ENER =      -3.240241
+ITER =   50      GRAD =          -0.000015      ENER =      -3.240241
+ITER =   51      GRAD =          -0.000027      ENER =      -3.240242
+ITER =   52      GRAD =          -0.000022      ENER =      -3.240243
+ITER =   53      GRAD =          -0.000014      ENER =      -3.240245
+ITER =   54      GRAD =          -0.000007      ENER =      -3.240246
+ITER =   55      GRAD =          -0.000005      ENER =      -3.240246
+ITER =   56      GRAD =          -0.000004      ENER =      -3.240246
+ITER =   57      GRAD =          -0.000004      ENER =      -3.240247
+ITER =   58      GRAD =          -0.000004      ENER =      -3.240247
+ITER =   59      GRAD =          -0.000010      ENER =      -3.240247
+ITER =   60      GRAD =          -0.000003      ENER =      -3.240248
+ITER =   61      GRAD =          -0.000004      ENER =      -3.240248
+ITER =   62      GRAD =          -0.000003      ENER =      -3.240248
+ITER =   63      GRAD =          -0.000003      ENER =      -3.240249
+ITER =   64      GRAD =          -0.000004      ENER =      -3.240249
+ITER =   65      GRAD =          -0.000003      ENER =      -3.240249
+ITER =   66      GRAD =          -0.000001      ENER =      -3.240249
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999997992198     
+
+siesta: iscf =        2
+Eharris(eV) =       -466.8666  E_KS(eV) =       -465.2406  dDmax =  0.1762
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.082124      ENER =      -3.658109
+ITER =    2      GRAD =          -0.084160      ENER =      -3.668108
+ITER =    3      GRAD =          -0.015679      ENER =      -3.669064
+ITER =    4      GRAD =          -0.009414      ENER =      -3.670193
+ITER =    5      GRAD =          -0.001227      ENER =      -3.670414
+ITER =    6      GRAD =          -0.000476      ENER =      -3.670448
+ITER =    7      GRAD =          -0.000844      ENER =      -3.670484
+ITER =    8      GRAD =          -0.000396      ENER =      -3.670514
+ITER =    9      GRAD =          -0.000750      ENER =      -3.670526
+ITER =   10      GRAD =          -0.000265      ENER =      -3.670557
+ITER =   11      GRAD =          -0.000390      ENER =      -3.670569
+ITER =   12      GRAD =          -0.000927      ENER =      -3.670587
+ITER =   13      GRAD =          -0.000379      ENER =      -3.670611
+ITER =   14      GRAD =          -0.000348      ENER =      -3.670625
+ITER =   15      GRAD =          -0.000403      ENER =      -3.670642
+ITER =   16      GRAD =          -0.000369      ENER =      -3.670651
+ITER =   17      GRAD =          -0.000297      ENER =      -3.670664
+ITER =   18      GRAD =          -0.000269      ENER =      -3.670682
+ITER =   19      GRAD =          -0.000269      ENER =      -3.670689
+ITER =   20      GRAD =          -0.000214      ENER =      -3.670696
+ITER =   21      GRAD =          -0.000100      ENER =      -3.670709
+ITER =   22      GRAD =          -0.000146      ENER =      -3.670712
+ITER =   23      GRAD =          -0.000068      ENER =      -3.670715
+ITER =   24      GRAD =          -0.000057      ENER =      -3.670717
+ITER =   25      GRAD =          -0.000105      ENER =      -3.670719
+ITER =   26      GRAD =          -0.000035      ENER =      -3.670723
+ITER =   27      GRAD =          -0.000051      ENER =      -3.670724
+ITER =   28      GRAD =          -0.000062      ENER =      -3.670726
+ITER =   29      GRAD =          -0.000048      ENER =      -3.670728
+ITER =   30      GRAD =          -0.000035      ENER =      -3.670730
+ITER =   31      GRAD =          -0.000054      ENER =      -3.670731
+ITER =   32      GRAD =          -0.000032      ENER =      -3.670733
+ITER =   33      GRAD =          -0.000026      ENER =      -3.670734
+ITER =   34      GRAD =          -0.000032      ENER =      -3.670735
+ITER =   35      GRAD =          -0.000012      ENER =      -3.670736
+ITER =   36      GRAD =          -0.000031      ENER =      -3.670737
+ITER =   37      GRAD =          -0.000015      ENER =      -3.670738
+ITER =   38      GRAD =          -0.000018      ENER =      -3.670738
+ITER =   39      GRAD =          -0.000035      ENER =      -3.670739
+ITER =   40      GRAD =          -0.000028      ENER =      -3.670740
+ITER =   41      GRAD =          -0.000054      ENER =      -3.670742
+ITER =   42      GRAD =          -0.000049      ENER =      -3.670744
+ITER =   43      GRAD =          -0.000026      ENER =      -3.670745
+ITER =   44      GRAD =          -0.000014      ENER =      -3.670746
+ITER =   45      GRAD =          -0.000010      ENER =      -3.670746
+ITER =   46      GRAD =          -0.000002      ENER =      -3.670746
+ITER =   47      GRAD =          -0.000002      ENER =      -3.670746
+ITER =   48      GRAD =          -0.000003      ENER =      -3.670746
+ITER =   49      GRAD =          -0.000003      ENER =      -3.670747
+ITER =   50      GRAD =          -0.000001      ENER =      -3.670747
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999993537812     
+
+siesta: iscf =        3
+Eharris(eV) =       -465.9238  E_KS(eV) =       -465.4634  dDmax =  0.0513
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.006701      ENER =      -3.795284
+ITER =    2      GRAD =          -0.011106      ENER =      -3.796024
+ITER =    3      GRAD =          -0.001252      ENER =      -3.796146
+ITER =    4      GRAD =          -0.001239      ENER =      -3.796227
+ITER =    5      GRAD =          -0.000092      ENER =      -3.796258
+ITER =    6      GRAD =          -0.000061      ENER =      -3.796264
+ITER =    7      GRAD =          -0.000063      ENER =      -3.796267
+ITER =    8      GRAD =          -0.000059      ENER =      -3.796269
+ITER =    9      GRAD =          -0.000034      ENER =      -3.796272
+ITER =   10      GRAD =          -0.000056      ENER =      -3.796275
+ITER =   11      GRAD =          -0.000046      ENER =      -3.796278
+ITER =   12      GRAD =          -0.000102      ENER =      -3.796281
+ITER =   13      GRAD =          -0.000032      ENER =      -3.796283
+ITER =   14      GRAD =          -0.000024      ENER =      -3.796284
+ITER =   15      GRAD =          -0.000041      ENER =      -3.796285
+ITER =   16      GRAD =          -0.000027      ENER =      -3.796286
+ITER =   17      GRAD =          -0.000024      ENER =      -3.796287
+ITER =   18      GRAD =          -0.000023      ENER =      -3.796288
+ITER =   19      GRAD =          -0.000029      ENER =      -3.796289
+ITER =   20      GRAD =          -0.000008      ENER =      -3.796290
+ITER =   21      GRAD =          -0.000006      ENER =      -3.796290
+ITER =   22      GRAD =          -0.000013      ENER =      -3.796290
+ITER =   23      GRAD =          -0.000010      ENER =      -3.796290
+ITER =   24      GRAD =          -0.000006      ENER =      -3.796291
+ITER =   25      GRAD =          -0.000004      ENER =      -3.796291
+ITER =   26      GRAD =          -0.000003      ENER =      -3.796291
+ITER =   27      GRAD =          -0.000001      ENER =      -3.796291
+ITER =   28      GRAD =          -0.000003      ENER =      -3.796291
+ITER =   29      GRAD =          -0.000004      ENER =      -3.796291
+ITER =   30      GRAD =          -0.000009      ENER =      -3.796291
+ITER =   31      GRAD =          -0.000004      ENER =      -3.796292
+ITER =   32      GRAD =          -0.000004      ENER =      -3.796292
+ITER =   33      GRAD =          -0.000002      ENER =      -3.796292
+ITER =   34      GRAD =          -0.000002      ENER =      -3.796292
+ITER =   35      GRAD =          -0.000007      ENER =      -3.796292
+ITER =   36      GRAD =          -0.000002      ENER =      -3.796293
+ITER =   37      GRAD =          -0.000001      ENER =      -3.796293
+ITER =   38      GRAD =          -0.000001      ENER =      -3.796293
+ITER =   39      GRAD =          -0.000002      ENER =      -3.796293
+ITER =   40      GRAD =          -0.000001      ENER =      -3.796293
+ITER =   41      GRAD =          -0.000003      ENER =      -3.796293
+ITER =   42      GRAD =          -0.000005      ENER =      -3.796293
+ITER =   43      GRAD =          -0.000006      ENER =      -3.796293
+ITER =   44      GRAD =          -0.000002      ENER =      -3.796293
+ITER =   45      GRAD =          -0.000002      ENER =      -3.796293
+ITER =   46      GRAD =          -0.000002      ENER =      -3.796294
+ITER =   47      GRAD =          -0.000001      ENER =      -3.796294
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999999127705     
+
+siesta: iscf =        4
+Eharris(eV) =       -465.8447  E_KS(eV) =       -465.5633  dDmax =  0.0167
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000616      ENER =      -3.833625
+ITER =    2      GRAD =          -0.001079      ENER =      -3.833689
+ITER =    3      GRAD =          -0.000123      ENER =      -3.833701
+ITER =    4      GRAD =          -0.000138      ENER =      -3.833708
+ITER =    5      GRAD =          -0.000015      ENER =      -3.833711
+ITER =    6      GRAD =          -0.000008      ENER =      -3.833711
+ITER =    7      GRAD =          -0.000026      ENER =      -3.833712
+ITER =    8      GRAD =          -0.000008      ENER =      -3.833712
+ITER =    9      GRAD =          -0.000006      ENER =      -3.833713
+ITER =   10      GRAD =          -0.000005      ENER =      -3.833713
+ITER =   11      GRAD =          -0.000004      ENER =      -3.833714
+ITER =   12      GRAD =          -0.000005      ENER =      -3.833714
+ITER =   13      GRAD =          -0.000012      ENER =      -3.833714
+ITER =   14      GRAD =          -0.000009      ENER =      -3.833714
+ITER =   15      GRAD =          -0.000002      ENER =      -3.833715
+ITER =   16      GRAD =          -0.000006      ENER =      -3.833715
+ITER =   17      GRAD =          -0.000004      ENER =      -3.833715
+ITER =   18      GRAD =          -0.000008      ENER =      -3.833716
+ITER =   19      GRAD =          -0.000003      ENER =      -3.833716
+ITER =   20      GRAD =          -0.000001      ENER =      -3.833716
+ITER =   21      GRAD =          -0.000001      ENER =      -3.833716
+ITER =   22      GRAD =           0.000000      ENER =      -3.833716
+ITER =   23      GRAD =          -0.000002      ENER =      -3.833716
+ITER =   24      GRAD =          -0.000001      ENER =      -3.833716
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999997943667     
+
+siesta: iscf =        5
+Eharris(eV) =       -465.8372  E_KS(eV) =       -465.6323  dDmax =  0.0097
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000059      ENER =      -3.844696
+ITER =    2      GRAD =          -0.000058      ENER =      -3.844702
+ITER =    3      GRAD =          -0.000017      ENER =      -3.844702
+ITER =    4      GRAD =          -0.000013      ENER =      -3.844703
+ITER =    5      GRAD =          -0.000004      ENER =      -3.844703
+ITER =    6      GRAD =          -0.000001      ENER =      -3.844703
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998580248     
+
+siesta: iscf =        6
+Eharris(eV) =       -465.8365  E_KS(eV) =       -465.6834  dDmax =  0.0068
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000009      ENER =      -3.848190
+ITER =    2      GRAD =          -0.000008      ENER =      -3.848191
+ITER =    3      GRAD =          -0.000003      ENER =      -3.848191
+ITER =    4      GRAD =          -0.000002      ENER =      -3.848191
+ITER =    5      GRAD =          -0.000002      ENER =      -3.848191
+ITER =    6      GRAD =          -0.000001      ENER =      -3.848191
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999997258758     
+
+siesta: iscf =        7
+Eharris(eV) =       -465.8363  E_KS(eV) =       -465.7216  dDmax =  0.0051
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000002      ENER =      -3.849137
+ITER =    2      GRAD =          -0.000001      ENER =      -3.849137
+ITER =    3      GRAD =           0.000000      ENER =      -3.849137
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998525733     
+
+siesta: iscf =        8
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.7502  dDmax =  0.0038
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000001      ENER =      -3.849596
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998855874     
+
+siesta: iscf =        9
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.7718  dDmax =  0.0029
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000001      ENER =      -3.849919
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998315289     
+
+siesta: iscf =       10
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.7879  dDmax =  0.0022
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000002      ENER =      -3.850104
+ITER =    2      GRAD =          -0.000001      ENER =      -3.850104
+ITER =    3      GRAD =          -0.000003      ENER =      -3.850104
+ITER =    4      GRAD =           0.000000      ENER =      -3.850104
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998292481     
+
+siesta: iscf =       11
+Eharris(eV) =       -465.8363  E_KS(eV) =       -465.8000  dDmax =  0.0017
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000001      ENER =      -3.849825
+ITER =    2      GRAD =           0.000000      ENER =      -3.849825
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999997553109     
+
+siesta: iscf =       12
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8090  dDmax =  0.0013
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000001      ENER =      -3.849689
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998751441     
+
+siesta: iscf =       13
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8158  dDmax =  0.0010
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849603
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998257976     
+
+siesta: iscf =       14
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8209  dDmax =  0.0008
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000001      ENER =      -3.849597
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999999032889     
+
+siesta: iscf =       15
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8248  dDmax =  0.0006
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849604
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998633524     
+
+siesta: iscf =       16
+Eharris(eV) =       -465.8363  E_KS(eV) =       -465.8277  dDmax =  0.0005
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000001      ENER =      -3.849634
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999999098415     
+
+siesta: iscf =       17
+Eharris(eV) =       -465.8363  E_KS(eV) =       -465.8298  dDmax =  0.0004
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849668
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998782630     
+
+siesta: iscf =       18
+Eharris(eV) =       -465.8363  E_KS(eV) =       -465.8314  dDmax =  0.0003
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =          -0.000001      ENER =      -3.849702
+ITER =    2      GRAD =           0.000000      ENER =      -3.849702
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998820416     
+
+siesta: iscf =       19
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8326  dDmax =  0.0003
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849738
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999999163240     
+
+siesta: iscf =       20
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8335  dDmax =  0.0002
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849762
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998866613     
+
+siesta: iscf =       21
+Eharris(eV) =       -465.8363  E_KS(eV) =       -465.8342  dDmax =  0.0002
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849784
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999999185756     
+
+siesta: iscf =       22
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8347  dDmax =  0.0001
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849794
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998895735     
+
+siesta: iscf =       23
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8351  dDmax =  0.0001
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849801
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999999205625     
+
+siesta: iscf =       24
+Eharris(eV) =       -465.8362  E_KS(eV) =       -465.8354  dDmax =  0.0001
+ ordern: enum =   8.00000000000000     
+ITER =    1      GRAD =           0.000000      ENER =      -3.849801
+
+ cgwf:  CG tolerance reached
+ ordern: qtot=   7.99999998928729     
+
+siesta: iscf =       25
+Eharris(eV) =       -465.8363  E_KS(eV) =       -465.8356  dDmax =  0.0001
+
+siesta: Atomic forces (eV/Ang):
+   1   -0.000022   -0.473050    0.000046
+   2    0.821930    0.283040    0.000004
+   3   -0.821927    0.283041   -0.000003
+----------------------------------------
+ Tot   -0.000019    0.093031    0.000047
+----------------------------------------
+ Max    0.821930
+ Res    0.439082    [ sqrt( Sum f_i^2 / 3N ) ]
+
+siesta: Program's energy decomposition (eV):
+siesta:-Eions   =    -815.854478
+siesta: Ena     =     175.155512
+siesta: Ekin    =     350.759824
+siesta: Enl     =     -61.950480
+siesta: DEna    =      -1.764041
+siesta: DUscf   =       0.727086
+siesta: DUext   =       0.000000
+siesta: Exc     =    -112.909036
+siesta: eta*DQ  =       0.000000
+siesta: Ekinion =       0.000000
+siesta: Eharris =    -465.836262
+siesta: Etot    =    -465.835615
+siesta: FreeEng =    -465.835615
+
+siesta: Final energy (eV):
+siesta:       Kinetic =     350.759824
+siesta:       Hartree =     382.600214
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =    -112.909036
+siesta:  Ion-electron =   -1072.782092
+siesta:       Ion-ion =     -13.504524
+siesta:       Ekinion =       0.000000
+siesta:         Total =    -465.835615
+
+siesta: Atomic forces (eV/Ang):
+siesta:    1   -0.000022   -0.473050    0.000046
+siesta:    2    0.821930    0.283040    0.000004
+siesta:    3   -0.821927    0.283041   -0.000003
+siesta: ----------------------------------------
+siesta:  Tot   -0.000019    0.093031    0.000047
+
+siesta: Stress tensor (eV/Ang**3):
+siesta:    -0.012553    0.000000    0.000000
+siesta:     0.000000   -0.002232    0.000000
+siesta:     0.000000    0.000000    0.014000
+
+siesta: Cell volume =  235.378012 Ang**3
+
+siesta: Pressure:
+siesta:                Solid            Molecule  Units
+siesta:           0.00000285         -0.00002101  Ry/Bohr**3
+siesta:           0.00026165         -0.00192906  eV/Ang**3
+siesta:           0.41919745         -3.09055356  kBar
+
+siesta: Electric dipole (a.u.)  =    0.000000    0.558569    0.000000
+siesta: Electric dipole (Debye) =    0.000000    1.419742    0.000000
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1      14.839      14.839   100.00
+timer:  bands             2       0.000       0.001     0.01
+timer:  IterMD            1      13.888      13.888    93.59
+timer:  IterSCF          25       0.555      13.865    93.44
+timer:  nlefsm            2       2.115       4.229    28.50
+timer:  DHSCF            25       0.217       5.426    36.56
+timer:  POISON           27       0.030       0.815     5.49
+timer:  DHSCF2            1       0.221       0.221     1.49
+timer:  REORD           202       0.001       0.109     0.74
+timer:  RFFT             52       0.014       0.719     4.85
+timer:  DHSCF3           25       0.176       4.391    29.59
+timer:  rhoofd           25       0.055       1.382     9.31
+timer:  CELLXC           25       0.018       0.440     2.97
+timer:  vmat             25       0.055       1.377     9.28
+timer:  gradient        365       0.000       0.109     0.74
+timer:  ener3           340       0.000       0.128     0.86
+timer:  denmat           25       0.006       0.151     1.02
+timer:  DHSCF4            1       0.780       0.780     5.26
+timer:  dfscf            46       0.012       0.557     3.76
+  
+ 
+rsiesta: Run-time errors and warnings:
+redata: WARNING: No valid lattice constant specified
+redata: WARNING: Cell will be generated automatically
+ 
+ 
+prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
+prdate: DATE = Fri Mar 13 13:29:55 MET 1998
+ 

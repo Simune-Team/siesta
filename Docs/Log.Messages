@@ -1,0 +1,2271 @@
+Mon May  4 17:22:09 1998  Alberto Garcia  <wdpgaara@lcpxbi.wm.lc.ehu.es>
+
+	* Util/qsiesta: heading prdate added
+
+Mon May  4 10:29:41 1998  Emilio Artacho  <emilio@lcpxbi.wm.lc.ehu.es>
+
+	* Docs/CHANGES:
+	Adding rlylm.f overfsm.f to 0.8.51, that were forgotten last night
+
+	* Src/overfsm.f, Src/rlylm.f:
+	Removal of unused variables, and new parenthesis in ambiguous 
+        expressions
+
+Mon May  4 08:45:39 1998  Alberto Garcia  <wdpgaara@lcpxbi.wm.lc.ehu.es>
+
+	* Util/qsiesta: Added prdate
+
+Sun May  3 20:32:47 1998  Emilio Artacho  <emilio@lcpxbi.wm.lc.ehu.es>
+
+	* Docs/CHANGES, Docs/siesta.tex, Src/outcoor.f, Src/version.h, 
+          Src/cputim.f, Src/Sys/osfdxml.f, Src/Sys/cray.f, Src/Sys/ibm.f, 
+          Src/Sys/ibmessl.f, Src/redata.f, Src/reord.f, Src/rdiag.f, 
+          Src/prmem.f, Src/psover.f, Src/radfft.f, Src/ranger.f, 
+          Src/nlefsm.f, Src/ordvec.f, Src/kgrid.f, Src/initatom.f, 
+          Src/initdm.f, Src/iorho.f, Src/gradient.f, Src/idiag.f, 
+          Src/four1.f, Src/dhscf.f, Src/diagon.f, Src/efield.f, Src/fermid.f, 
+          Src/denmat.f, Src/poison.f, Src/bessph.f, Src/cdiag.f, Src/constr.f, 
+          Src/atom_subs.f, Src/bands.f, Src/splin.f, Src/xc.f, Src/atom.f, 
+          Src/siesta.f, Src/hsparse.f, Src/vmat.f, Src/xijorb.f:
+	Removal of unused variables, and new parenthesis in ambiguous 
+        expressions
+
+Thu Apr 30 16:45:04 1998  Emilio Artacho  <emilio@lcpxbi.wm.lc.ehu.es>
+
+	* Docs/siesta.tex: Project announced for weighted DOS analyses
+
+	* Docs/siesta.tex: Description of Ghost atoms
+
+	* Docs/siesta.tex: Update of list of problems, bugs, and projects.
+
+	* Docs/siesta.tex:
+	Warning in manual: Supercell cannot be used with dynamics or relaxations
+
+Wed Apr 29 18:48:42 1998  Emilio Artacho  <emilio@lcpxbi.wm.lc.ehu.es>
+
+	* Docs/siesta.tex, Docs/CHANGES:
+	Output added of E_KS at the end of each SCF loop (siesta.f)
+	Output cosmetics in siesta.f, ordern.f, chkdim.f, and cgwf.f
+	Manual front page includes Alberto now.
+
+	* Src/chkdim.f, Src/ordern.f, Src/cgwf.f, Src/siesta.f:
+	Output added of E_KS at the end of each SCF loop (siesta.f)
+	Output cosmetics in siesta.f, ordern.f, chkdim.f, and cgwf.f
+
+Wed Apr 29 12:31:51 1998  Alberto Garcia  <wdpgaara@lcpxbi.wm.lc.ehu.es>
+
+	* Util/msiesta: Added -print predicate to find (did not work on AIX)
+
+	* Util/msiesta:
+	Use -f test operator instead of -e, which does not seem to be standard.
+
+Wed Apr 15 13:51:08 1998  Jose Soler  <jose@lcpxbi.wm.lc.ehu.es>
+
+	* Util/Plrho/pltr3d.f, Util/Plrho/ray.f, Util/Plrho/light.dat, 
+          Util/Plrho/plrho.f, Util/Plrho/plrho_guide.txt, Docs/siesta.tex, 
+          Docs/CHANGES, Src/version.h, Src/siesta.f:
+	Printed Fermi energy
+	Variable illumination in plrho
+
+Tue Apr 14 19:46:35 1998  Emilio Artacho  <emilio@lcpxbi.wm.lc.ehu.es>
+
+	* Src/Sys/linux.make: linux.make lacked RANLIB definition. Fixed.
+
+	Emilio Artacho (Emilio.Artacho@uam.es)
+
+	* Docs/CHANGES, Docs/siesta.tex, Src/prversion.f, Src/version.h, 
+          Src/atom.f, Src/initatom.f, Src/outcell.f, Src/Makefile, 
+          Src/redata.f, Src/remass.f:
+	Reading atomic masses + cosmetics + fix bugs (linux.make, outcell)
+
+	  Atomic masses can be now read through an fdf block: AtomicMass.
+	  The species not included in the block assume standard value for the
+	  species. If block not present, standard values for all (as before).
+
+	  linux.make lacked RANLIB definition. Fixed.
+
+	  outcell.f wrote cell volume in wrong units. Fixed.
+
+	  Cosmetics: initatom does not write poems any more. And others.
+
+	Emilio Artacho (Emilio.Artacho@uam.es)
+
+Sat Apr  4 15:44:24 1998  Pablo Ordejon  <ordejon@lcpxbi.wm.lc.ehu.es>
+
+	* Docs/CHANGES: Version 0.8.48
+
+	P. Ordejon, April 4, 1998
+
+	* Docs/siesta.tex: Version 0.8.48
+	No changes to siesta.tex text.
+
+	P. Ordejon, April 4, 1998
+
+	* Src/version.h: Version 0.8.48
+
+	P. Ordejon, April 4, 1998
+
+	* Src/gradient.f:
+	Eliminated nhfmax variable. Substitute by nfmax in the
+	definition of f and fs matrices. This saves memory from
+	overdimensioned matrices.
+
+	P. Ordejon, April 4, 1998
+
+	* Src/denmat.f: Eliminated nhfmax variable. Substitute by nfmax
+	in the definition of chcc and cscc matrices.
+	This saves space from overdimensioned matrices.
+
+	P. Ordejon, April 4, 1998
+
+	* Src/egandd.f:
+	Redefine size of f and fs matrices (substitute maxnhf by maxnf).
+	This saves space of overdimensioned matrices.
+
+	P. Ordejon, April 4, 1998
+
+	* Src/siesta.f:
+	Error corrected in if statement.  The temperature is now
+	writen correctly on output for any MD flavour.
+
+	P. Ordejon, April 4, 1998
+
+Wed Apr  1 17:10:45 1998  Alberto Garcia  <wdpgaara>
+
+	* Util/msiesta: New scheme to copy *.h files to $SIESTA_DIR
+
+Wed Mar 25 12:09:05 1998  Alberto Garcia  <wdpgaara>
+
+	* Docs/CHANGES: * Support for SGI and Cray machines.
+	* Scripts rewritten using Bourne shell constructs.
+
+	* Src/version.h: * Support for Cray and SGI machines.
+	* Scripts rewritten using Bourne shell constructs.
+
+	* Docs/siesta.tex: Cray and SGI support. Version to 0.8.47
+
+	* Src/Sys/sgi.make: Include warning about binary arch
+
+	* Src/Makefile: New 'COMMENTS' symbol added. No debug by default
+
+	* Util/prdate, Util/rsiesta, Util/qrrsiesta, Util/qsiesta, 
+	  Util/rrsiesta, Util/msiesta:
+	Switch to sh. Basic functionality not changed
+
+Wed Mar 18 12:40:18 1998  Jose Soler  <jose>
+
+	* Util/Plrho/plrho.f, Util/Plrho/plsurf.f, Docs/CHANGES, 
+	  Docs/siesta.tex, Src/siesta.f, Src/version.h, Src/matel.f:
+	Suppressed an incorrect call to matel0
+	Corrected value of average color
+
+Tue Mar 17 17:02:27 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/Sys/sgi.f, Src/Sys/sgi.make: SGI support
+
+	* Src/Makefile: Corrected error in outcoor.o dependency
+
+Mon Mar 16 15:43:53 1998  daniel  <daniel>
+
+	* Docs/CHANGES: *** empty log message ***
+
+	* Src/atom.f:
+	  Initial commentaries of the routine changed as those of initatom.f
+
+	* Src/atom_subs.f:
+	   Some lines have been commented in subroutines 
+	   rc_vs_e and polarization to avoid the ''out of control" 
+	   output detected in some machines.
+
+	* Src/initatom.f:
+	    Changed the description of the behaviour of the routine:
+	    arrays     lmaxs,lmxkbs,nzls,rcls,contrf
+	    must be considered as output information rather than input.
+
+Fri Mar 13 15:49:26 1998  Jose Soler  <jose>
+
+	* Src/Makefile: Corrected decomposition of final energies
+	Creation of matel.h
+	Reorganized system-dependent versions
+	Optimized diagonalization
+
+	* Examples/Si64/Out/siesta.size, Examples/H2O/OrderN/out.fdf, 
+	  Examples/Si64/Out/si64.out, Examples/H2O/OrderN/h2o.out, 
+	  Examples/H2O/OrderN/siesta.size, Examples/H2O/Out/out.fdf, 
+	  Examples/H2O/Out/siesta.size, Examples/H2O/Out/h2o.out:
+	Output updated with siesta 0.8.44
+
+	* Docs/CHANGES, Docs/siesta.tex, Src/Sys/osf.f, Src/Sys/osfdxml.f,
+          Src/Sys/ibm.f, Src/Sys/ibmessl.f, Src/Sys/bsd.f, Src/Sys/cray.f,
+	  Src/Sys/general.f, Src/Include/matel.h, Src/siesta.f,
+	  Src/version.h, Src/matel.f, Src/matel.h, Src/poison.f, 
+	  Src/cputim.f, Src/diagon.f:
+	Corrected decomposition of final energies
+	Creation of matel.h
+	Reorganized system-dependent versions
+	Optimized diagonalization
+
+Thu Mar 12 10:58:42 1998  daniel  <daniel>
+
+	* Src/atom.f:
+	A bug in the last modification (1997/03/10) has been corrected.
+
+Wed Mar 11 19:19:14 1998  Emilio Artacho  <emilio>
+
+	* Src/matel.f:
+	Compilation cosmetics: added intermediate variable NQQQ to avoid
+	compilation message of line never reached, when checking dimensions.
+
+Wed Mar 11 12:37:26 1998  Jose Soler  <jose>
+
+	* Docs/siesta.tex: Minor updates in the Quick Start section.
+	Spelling corrections all over.
+
+Tue Mar 10 15:05:30 1998  daniel  <daniel>
+
+	* Src/atom.f:
+	The read of pseudopotential information has been modified 
+	to allow the paremeter lmaxd to be lower than the total number 
+	of pseupotentials in the file X.vps
+
+Tue Mar 10 11:53:38 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/Sys/glib.c:
+	Interface routines to implement functions which are not 
+	standard and are not provided by some fortran compilers.
+
+Tue Mar 10 10:29:20 1998  Jose Soler  <jose>
+
+	* Docs/CHANGES: Version 0.8.43: Changed tolerace in routine livec
+
+	* Src/shaper.f: Changed tolerace to 1.d-10 in routine livec
+
+	* Util/README:
+	Suppressed the reference to nondistributed program plband.
+	Added references to msiesta, rsiesta, rrsiesta, qsiesta, 
+	qrrsiesta and prdate.
+
+Sun Mar  8 20:33:41 1998  Emilio Artacho  <emilio>
+
+	* Docs/Log.Messages: A second slight revision of old logs
+
+	* Docs/Log.Messages:
+	Slightly revised to include some logs that were not 
+	written at the time
+
+	* Docs/CHANGES:
+	Completed initial version of CHANGES file, including the whole
+	SIESTA 0.8 history.
+
+	* Util/Plrho/README.pgplot:
+	Information about where to find PGPLOT library
+
+Sat Mar  7 18:35:46 1998  Emilio Artacho  <emilio>
+
+	* Docs/Log.Messages, Docs/CHANGES:
+	Files containing information about program development:
+	 - CHANGES describes the changes (patches or fixes) to the package
+	   conceptually (introduced by hand).
+	 - Log.Messages is the collection of CVS log messages (introduced at
+	   committing time) sorted by date. Details of dates and times for
+	   the particular changes are to be looked for here.
+
+Sat Mar  7 10:48:30 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/makefile: Better cleaning
+
+	* Src/fdf/makefile: Remove references to io.h and dist
+
+	* Src/fdf/io_sample.f: status=unknown for DEC
+
+	* Src/fdf/io_sample.f, Src/fdf/fdf.f: io_err interface change
+
+	* Src/fdf/Attic/io.h, Src/fdf/io.f:
+	* New coding scheme for 'io' module: It now uses multiple entry points
+	  in a single subroutine for a more transparent data encapsulation.
+	  Interface changes: io_seterr, io_geterr, io_getout, io_setout are now
+	  subroutines instead of functions (and note name change).
+
+Thu Mar  5 08:39:16 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/Sys/cray.make: Better flags
+
+	* Src/parse.f:
+	* Format specifiers for internal reads tailored to field length.
+
+	* Src/fdf/fdf.f:
+	* Use a tailored format specifier for the internal reads. 
+	(Based on code	by Vicente Botella <imtfc4k@fresno.csic.es>).
+
+Wed Mar  4 17:03:49 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/Sys/osf.make, Src/Sys/osfdxml.make, Src/Sys/unknown.make, 
+	  Src/Sys/hp.make, Src/Sys/ibm.make, Src/Sys/ibmessl.make, 
+	  Src/Sys/linux.make, Src/Sys/freebsd.make:
+	Debugging support. Inclusion of a FFLAGS_DEBUG macro with the
+	right flags for each architecture.
+
+	* Src/Makefile: * Debugging support
+	* ftnchek support
+
+	* Src/Sys/cray.f, Src/Sys/cray.make: Cray support
+
+	* Src/parse.f:
+	Used an explicit format descriptor in internal reads. (Cray complained)
+
+Tue Mar  3 17:53:17 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f:
+	Used a explicit format, instead of * in
+	fdf_{integer,single,double,physical},
+	since apparently the * is not standard in that context. 
+	(Cray complains).
+
+Mon Feb 23 12:05:03 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/siesta.f: version files
+
+	* Src/Makefile: version file dependencies
+
+	* Src/siesta.f: Version string printed
+
+	* Src/ChangeLog: Changes file
+
+	* Src/prversion.f, Src/version.h: Version string management
+
+	* Examples/Vps/README: Fixed typo
+
+Sat Feb 21 11:18:18 1998  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/Docs/User.Guide: Added mention of GGA
+
+Fri Feb 20 19:31:22 1998  Jose Soler  <jose>
+
+	* Examples/H2O/OrderN/out.fdf, Examples/H2O/OrderN/h2o.fdf, 
+          Examples/H2O/OrderN/siesta.size, Examples/H2O/OrderN/h2o.out,
+          Examples/Vps/H.inp, Examples/Vps/O.inp, Examples/Vps/O.vps, 
+          Examples/Vps/H.vps, Examples/Vps/README, Examples/Vps/Si.inp, 
+          Examples/Vps/Si.vps:
+	Wholly restructured siesta/Examples directory
+
+	* Src/redata.f:
+	Changed default values of SolutionMethod and ElectronicTemperature
+
+	* Docs/siesta.tex:
+	Changed default values of SolutionMethod and ElectronicTemperature
+	Added Appendix of accepted physical units
+	Added discussion of possible run-compile infinite loop using rrsiesta
+
+	* Examples/Si64/Out/out.fdf, Examples/Si64/Out/si64.out, 
+          Examples/Si64/Out/siesta.size:
+	Wholly restructured siesta/Examples directory.
+
+	* Examples/Si64/si64.fdf: Wholly restructure siesta/Examples directory.
+
+	* Examples/H2O/Out/siesta.size, Examples/H2O/Out/h2o.out, 
+          Examples/H2O/Out/out.fdf:
+	Wholly restructured siesta/Examples directory.
+
+	* Examples/H2O/h2o.fdf: Fully restructured siesta/Examples directory.
+
+	* Src/cross.f: Calculates the vector product of two vectors.
+
+Fri Feb 20 14:37:00 1998  Pablo Ordejon  <ordejon>
+
+	* Src/cgwf.f: Changed minimization parameters to solve convergence
+	problem for h2o molecule
+	P. Ordejon, Feb 20 1998
+
+Fri Feb 20 12:58:56 1998  Jose Soler  <jose>
+
+	* Examples/Attic/H.vps, Examples/Attic/DEC.H.vps, 
+          Examples/Attic/DEC.O.vps, Examples/Attic/rsiesta, 
+          Examples/Attic/h2o.gga.fdf, Examples/Attic/msiesta, 
+          Examples/Attic/qsiesta, Examples/Attic/O.vps, 
+          Examples/Attic/clean, Examples/Attic/IBM.h2o.out, 
+          Examples/Attic/IBM.O.vps, Examples/Attic/IBM.H.vps, 
+          Examples/Attic/h2o.fdf, Examples/Attic/DEC.h2o.out, 
+          Examples/Attic/DEC.h2o.gga.out:
+	Reformed the whole structure of the siesta/Examples directory
+
+Thu Feb 19 18:31:38 1998  Emilio Artacho  <emilio>
+
+	* Util/qrrsiesta, Util/qsiesta, Util/msiesta, Util/rsiesta:
+	The utility files for automatized running of siesta, msiesta, rsiesta, 
+        and qsiesta have been slightly modified: the executable code siesta 
+        is moved to the working directory, so that different systems can run 
+        simultaneously without interfering, as long as the working directories 
+        are different.
+	Simultaneous compilation is not advised.
+
+	qrrsiesta has been added: it does recurrent run-recompile in batch 
+        queues (both this one and qsiesta are prepared for NQS batch system,
+	available at least for DEC systems)
+
+Thu Feb 19 17:02:22 1998  Jose Soler  <jose>
+
+	* Util/rsiesta: Call prdate script
+
+	* Util/prdate:
+	Shell script, substituting the routine of same name, which prints the
+	host name and the date and time
+
+	* Util/msiesta:
+	Copy constr.f from working directory (if it exists) or from Include
+	directory (if msiesta init)
+
+	* Src/Makefile: Added fixed.f constr.f efield.f
+	When make pristine, copy Include/constr.f .
+
+	* Src/siesta.f: Added call to fixed (GeometryConstraints)
+	Call relaxation and dynamics with constrined forces
+	Print constrained forces
+	Find, add and print interaction energy with external electric field
+	Print dipole moment also for chains and slabs
+
+	* Src/dhscf.f: Dipole moment is calculated also for chains and slabs
+	Call to efield (external electric field)
+	New argument returning the interaction energy with external 
+        electric field
+
+	* Src/efield.f: Implementation of ExternalElectricField
+
+	* Src/fdf/fdf.f: Added units of electric field in fdf_convfac
+
+	* Src/shaper.f: New argument returning the bulk vector directions
+
+	* Src/Include/constr.f, Src/constr.f, Src/fixed.f:
+	Implementation of GeometryConstraints
+
+	* Src/siesta.h: Copied from Include/siesta.h
+
+	* Src/prdate.f:
+	Commented out everything (substituted by a shell script)
+
+	* Src/dipole.f: Corrected the sign of the dipole moment.
+
+	* Src/xc.f: Where rho=0, Vxc=0 without any calculation.
+
+	* Docs/siesta.tex:
+	Added description of GeometryConstraints and ExternalElectricField
+
+	* Examples/Attic/DEC.h2o.gga.out, Examples/Attic/DEC.h2o.out:
+	Updated output with sign of dipole moment corrected.
+
+Tue Feb 17 16:31:04 1998  Pablo Ordejon  <ordejon>
+
+	* Src/cgwf.f: Redefine parameter restart (from 50 to 300)
+	P. Ordejon, Feb 17 1998
+
+	* Src/vmb.f: Small modifications to correct the problem if T=0
+	P. Ordejon, Feb 17 1998
+
+	* Src/siesta.f: Small modifications to correct problems with initial
+	temperature for MD (when T=0)
+	P. Ordejon, Feb 17 1998
+
+	* Src/outcoor.f:
+	Include parameter namax to define maximum size of arrays
+	(maximum number of atoms)
+	P. Ordejon.  Feb 17 1998
+
+	* Src/ordern.f: Small modifications of extrapolation procedure between
+	succesive minimizations (make linear extrapolation
+	ONLY when last minimization took less than 50 iterations)
+	P. Ordejon, Feb 17 1998
+
+	* Src/dynamics.f: Include velocities as output in all dynamics options
+	P. Ordejon, Feb 17 1998
+
+	* Src/coceri.f:
+	Include parameter namax to define maximum size of arrays
+	(maximum number of atoms)
+	P. Ordejon.  Feb 17 1998
+
+Wed Feb 11 19:07:00 1998  Alberto Garcia  <wdpgaara>
+
+	* Src/redata.f, Src/initdm.f, Src/recoor.f: Data statement out of order
+
+	* Src/outcoor.f, Src/coceri.f: Adjustable array illegal in f77
+
+Wed Dec 31 12:46:41 1997  Emilio Artacho  <emilio>
+
+	* Docs/siesta.tex:
+	Mulliken: note the non-conventional order for orbitals p and d.
+
+Sat Dec 27 12:31:09 1997  Emilio Artacho  <emilio>
+
+	* Docs/siesta.tex:
+	DM.InitSpin: It allows the introduction of initial spin polarizations
+	atom by atom.
+
+	* Src/idiag.f, Src/Makefile, Src/initdm.f, Src/minvec.f, Src/siesta.f:
+	Modification in DM initialization:
+	   - Now it is done in new separate subroutine  initdm.f
+	   - It allows the introduction of initial spin polarizations
+	     atom by atom with new block  DM.InitSpin
+	(minvec.f and idiag.f were only touched for spelling reasons)
+
+Wed Dec 24 10:44:26 1997  Pablo Ordejon  <ordejon>
+
+	* Docs/siesta.tex: Add my name to list of modifications in file header.
+
+Tue Dec 23 19:58:24 1997  Pablo Ordejon  <ordejon>
+
+	* Src/vmb.f:
+	Routine to assign velicities to atoms corresponding to a given
+	temperature, using the Maxwell-Boltzmann distribution
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/redata.f: Include new variables:
+	* DM.PulayOnDisk
+	* MD.InitialTemperature
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/egandd.f: Small modifications to renormalize the charge in denmat
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/siesta.f: Several changes:
+	* new pulayx interface, and related variables
+	* new dynamics info: initial temperature
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/pulayx.f: Improved Pulay routine:
+	* less disk use and I/O
+	* possibility of storing info on memory instead of disk
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/Include/siesta.h, Src/siesta.h:
+	Include dimaux in the list of parameters (variable for Pulay dimensions)
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/dynamics.f: Corrects serious error of units in foverm variable
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/Makefile: Include vmb routine
+
+	P. Ordejon, 23 Dec 97
+
+	* Src/denmat.f:
+	Modified to renormalize the density matrix to the correct charge.
+	Necessary in Order-N calculations to achieve selfconsistency.
+
+	P. Ordejon, 23 Dec 97
+
+	* Examples/Attic/h2o.fdf: Updated to include new variables:
+	DM.NumberPulay
+	DM.PulayOnFile
+	MD.InitialTemperature
+
+	* Examples/Attic/clean: Updated to include *.P1 and *.P2 files
+
+	P. Ordejon, 23 Dec 97
+
+	* Examples/Attic/DEC.h2o.out:
+	Updated to last changes of I/O and options
+
+	P. Ordejon, 23 Dec 97
+
+	* Docs/siesta.tex: Documented changes in:
+	DM.PulayOnFile
+	MD.InitialTemperature
+
+	P. Ordejon, 23 Dec 97
+
+Mon Dec 22 20:49:04 1997  Emilio Artacho  <emilio>
+
+	* Docs/siesta.tex: Updated for new input/output features:
+	- AtomCoorFormatOut
+	- Fractional as sinonym of ScaledByLatticeVectors
+	- Output files for Xmol and Cerius
+
+	* Src/outcoor.f, Src/recoor.f, Src/coceri.f, Src/coxmol.f, 
+          Src/outcell.f, Src/atom_subs.f, Src/siesta.f, Src/Makefile, 
+          Src/redata.f:
+	New input/output features:
+
+	- Coordinates input has been separated to new subroutine (recoor)  
+          that hangs from redata.
+	- Output of cell vectors and parameters separated into new routine 
+          (outcell) (only for intermediate and final writing in case of 
+          lattice relaxation or MD Parrinello-Rahman)
+	- More flexible output of coordinates (both intermediate and final):
+	  * It can write in any of the formats that can be used for input
+	    (except ScaledCartesian if there was no lattice parameter in input)
+	  * Output format specified in new fdf: AtomCoorFormatOut.
+	    Default (if not given): uses same as for input 
+            (AtomicCoordinatesFormat)
+	    For both fdf's the value 'Fractional' can be used instead of
+	    'ScaledByLatticeVectors'
+	  New subroutine (outcoor)
+	- Optional writing of atomic coordinates in separate files with 
+          adequate formats for being read by:
+	  * XMOL (symbol and x y z in Ang)                 WriteCoorXmol   true
+	  * CERIUS (cell pars, sym, x y z in fractional)   WriteCoorCerius true
+	  New subroutines (coxmol, coceri)
+
+Wed Dec 17 08:49:52 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f: Used io_close instead of io_release
+
+	* Src/fdf/io.f: Removed io_reserve. Fixed a few typos.
+
+Tue Dec 16 20:50:55 1997  Emilio Artacho  <emilio>
+
+	* Docs/siesta.tex: Explanation of use of WriteCoorXmol.
+
+	* Src/coxmol.f:
+	To write coordinates in Xmol format in a separate file if wanted
+	by setting WriteCoorXmol true
+
+	* Src/Makefile, Src/siesta.f: Changes in output od siesta:
+	 - Writes maximum force and residual mean square force after total force
+	 - Writes atomic coordinates as x, y, z, is, Symbol, number. It can
+	   be taken for the input file as is.
+	 - Optional writing the coordinates in separate file in Xmol format
+	   by setting to true the fdf WriteCoorXmol (new subroutine coxmol)
+
+	* Docs/siesta.tex: Description of LatticeParameters added.
+
+	* Src/iorho.f:
+	Internal variables introduced to avoid compilation messages of lines
+	unreachable. Plus bit of cosmetics in dimension error.
+
+Mon Dec 15 20:02:56 1997  Emilio Artacho  <emilio>
+
+	* Src/siesta.f, Src/redata.f:
+	New possibility of introducing lattice vectors:
+
+	%block LatticeParameters
+	   a  b  c  alpha  beta  gamma
+	%endblock LatticeParameters
+
+	It checks whether both blocks (LatticeParameters and LatticeVectors)
+	are present, and stops with ERROR if it is the case. Otherwise
+	it generates the vectors according to whatever is present or
+	automatically if none.
+
+	Also changed: redata now writes the vectors in rows (instead of columns
+	as before) and without the 'redata: ' so that they can be incorporated
+	as written to the input.
+
+	Some minor cosmetics has also been changed.
+
+Sat Dec 13 14:24:27 1997  Emilio Artacho  <emilio>
+
+	* Examples/Attic/O.psatom.data, Examples/Attic/H.psatom.data, 
+          Examples/Attic/IBM.O.psatom.data, Examples/Attic/DEC.H.psatom.data, 
+          Examples/Attic/DEC.O.psatom.data, Examples/Attic/IBM.H.psatom.data:
+	All .psatom.data of the Examples were changed to .vps
+
+	* Examples/Attic/H.vps, Examples/Attic/O.vps, Examples/Attic/DEC.O.vps,
+          Examples/Attic/IBM.H.vps, Examples/Attic/IBM.O.vps,
+          Examples/Attic/DEC.H.vps:
+	Changed all Example .psatom.data to .vps
+
+	* Docs/siesta.tex:
+	Update for pseudopotential naming as .vps, explaining that .psatom.data
+	is kept for historical reasons.
+
+	* Src/atom.f:
+	Pseudopotentials will be read from .vps . For backwards compatibility,
+	if .vps is not found, then .psatom.data is looked for. In this case
+	a warning is given.
+
+	* Src/dynamics.f:
+	Small garbage removed from a comment line (irrelevant for the code)
+
+Fri Dec 12 08:51:39 1997  Jose Soler  <jose>
+
+	* Docs/siesta.tex: Removed version number. Changed date.
+	Added reference of Sanibel paper
+	Added description of labels:
+	  WarningMinimumAtomicDistance
+	  SaveElectrostaticPotential
+	  SaveTotalPotential
+	  LocalDensityOfStates
+
+Thu Dec 11 17:42:24 1997  Jose Soler  <jose>
+
+	* Src/siesta.f: Added check for excesive proximity between atoms.
+	Call to iodm (store density matrix) made earlier.
+	Added the calculation and storage of the electron density, potential and
+	local density of states.
+
+	* Src/iorho.f: Added arguments fname and found.
+	Arguments n1, n2, n3 changed to vector mesh(3).
+	Possibility of both formatted and unformatted output.
+
+	* Src/diagon.f: Added arguments e1 and e2.
+	Added the calculation of the density matrix for the LDOS.
+
+	* Src/dhscf.f: Added arguments FILRHO, FILEVH, FILEVT.
+	Added the storing of the potential.
+	Now storing the electron density is determined by argument FILRHO,
+	rather than by an fdf call.
+
+	* Util/README: Added lines for plrho and plband
+
+	* Util/Plrho/paste.f, Util/Plrho/plrho.h, Util/Plrho/plrho.f, 
+          Util/Plrho/plsurf.f, Util/Plrho/rotate.f, Util/Plrho/icolor.f, 
+          Util/Plrho/plrho_guide.txt, Util/Plrho/pltr3d.f, Util/Plrho/README, 
+          Util/Plrho/plrho.dat:
+	Initial version of program plrho to plot the electron density and other
+	functions calculated by siesta.
+
+	* Src/radfft.f:
+	Five lines changed from lower to upper case (pure cosmetics)
+
+	* Src/four1.f:
+	Added a comment to report its procedence from Numerical Recipes
+
+	* Src/chkdim.f: Added header comments
+
+Sat Nov 22 12:15:15 1997  Emilio Artacho  <emilio>
+
+	* Src/ioxv.f: Adding a write for a message saying when it reads XV
+
+Fri Nov 21 20:10:29 1997  Emilio Artacho  <emilio>
+
+	* Src/mulliken.f: Formatted output (cosmetics)
+
+Tue Nov 18 10:02:44 1997  Emilio Artacho  <emilio>
+
+	* Docs/siesta.tex:
+	Changing scale factor of splitgauss, plus a couple of misspellings
+
+	* Src/atom.f:
+	Changes splitgauss exponent to inverse scale-factor, 
+        plus cosmetics in messages
+
+Wed Nov  5 15:51:16 1997  Emilio Artacho  <emilio>
+
+	* Src/siesta.f: Revised output for Parrinello-Rahman information
+
+Wed Nov  5 10:59:49 1997  Jose Soler  <jose>
+
+	* Src/ioxv.f: An incorrect 'write(iu,*) na' changed to read
+
+Mon Nov  3 08:23:49 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/README: The copyright section is now in a separate file.
+
+	* Pseudo/atom/COPYRIGHT: *** empty log message ***
+
+Fri Oct 24 18:16:00 1997  Jose Soler  <jose>
+
+	* Docs/siesta.tex: Documented block AtomicCoordinatesOrigin
+
+	* Src/ioxv.f:
+	Corrected output unit for writing coordinates and velocities.
+
+	* Src/redata.f: Added AtomicCoordinatesOrigin data block.
+
+	* Src/siesta.f: Embellishment of a couple of output lines.
+
+Wed Oct 22 10:12:06 1997  Jose Soler  <jose>
+
+	* Src/minvec.f: Added a tolerance in vector-length comparisons.
+
+Thu Oct 16 18:14:16 1997  daniel  <daniel>
+
+        * Src/redata.f: pequenyos cambios . Nueva variable logica chemblock.
+          Algunos avisos nuevos sobre la cosistencia de los input si se usan  
+          simultaneamente los bloques Chemical_specie_label y 
+          PAO_basis_and_PS_lmax.
+
+        * Src/atom_subs.f: corregida la llamada a la subrutina NRMLZG en EGOFV.
+          Contenia 4 parametros cuando la subrutina solo tiene 3 parametros 
+          (este error no tenia consecuencias numericas).
+
+        * Src/atom.f: cambiada en profundidad. Corregidos algunos errores 
+          relacionados con la generacion del input alternativo. 
+
+Wed Oct 15 18:08:52 1997  Emilio Artacho  <emilio>
+
+	* Src/Sys/ibm.f, Src/Sys/ibm.make, Src/Sys/osf.f, Src/Sys/osf.make:
+	New makefile options for IBMs and DECs without libraries.
+
+	* Docs/siesta.tex:
+	New makefile options documented (ibm and osf) plus warning about ranlib.
+
+Wed Oct 15 17:32:59 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/Sys/unknown.make: Added dummy RANLIB command to warn the user.
+
+Tue Oct 14 09:41:18 1997  Pablo Ordejon  <ordejon>
+
+	* Src/dhscf.f: Initialize NOTY to cero.
+
+	* Src/siesta.f: Correct call to ioxv to include variable 'found'
+
+Mon Oct 13 18:19:36 1997  Jose Soler  <jose>
+
+	* Examples/Attic/DEC.h2o.out:
+	Small numerical variation due to change in listh order, introduced to
+	improve diagon efficiency with a supercell.
+
+	* Src/xc.f: Removed an obsolete debugging loop.
+
+	* Src/siesta.f:
+	Changed the call to hsparse and xijorb to improve the performance of
+	  diagon when there is a supercell.
+	Imposed the translational supercell symmetry on forces.
+
+	* Src/kgrid.f: Changed the k-grid default to gamma of the SUPER cell
+
+	* Src/xijorb.f, Src/diagon.f, Src/hsparse.f, Src/iorder.f, Src/ordvec.f:
+	Improved performance of diagon for a supercell
+
+	* Src/Makefile: Added ordvec.f and iorder.f
+
+	* Docs/siesta.tex:
+	Added comments for a change in the default of kgrid.MornkhorstPack
+
+Fri Oct 10 09:29:26 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudogen/Attic/pswatch.f, Pseudogen/Attic/Makefile, 
+          Pseudogen/Attic/README, Pseudogen/Attic/psgen, 
+          Pseudogen/Attic/C.psgen.out_check, Pseudogen/Attic/F.atm.data, 
+          Pseudogen/Attic/F.psgen.out_check, Pseudogen/Attic/C.atm.data:
+	Removed from siesta package.
+
+Mon Oct  6 08:15:39 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/diagon.f, Src/atom.f:
+	Moved data statement to end of declaration section.
+
+Thu Oct  2 17:36:33 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f:
+	Added character '~' to list of valid characters in tokens.
+
+Wed Oct  1 14:48:53 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/wrapup.f:
+	* Restored the assignment to 'id' in the preamble.
+
+Mon Sep 29 20:55:47 1997  Pablo Ordejon  <ordejon>
+
+	* Src/redata.f: Corrected to initialize atomic masses.
+
+Fri Sep 26 23:39:34 1997  Pablo Ordejon  <ordejon>
+
+	* Src/shaper.f: RMAX initialized to 0.0D0
+	P. Ordejon.  27-Sep-97.
+
+	* Src/dhscf.f: Variable SHAPE included in SAVE.
+	P. Ordejon. 27-Sep-97
+
+Fri Sep 26 17:30:03 1997  Jose Soler  <jose>
+
+	* Docs/siesta.tex:
+	Corrected some lines of the PS generation in Quick start section.
+	Removed stress problem with partial core corrections.
+
+	* Src/dhscf.f: Corrected force and stress with partial core correction.
+	Added printout of the number of mesh points.
+
+	* Src/diagon.f: maxaux increased to value required by bands.f
+
+	* Src/redata.f, Src/siesta.f:
+	Corrected error in automatic cell generation.
+
+Wed Sep 24 14:07:17 1997  Jose Soler  <jose>
+
+	* Src/siesta.f:
+	Supressed the warning for charge loss in the first SCF iteration.
+	Added cpu timings after the first SCF and MD iterations.
+
+Tue Sep 23 09:44:06 1997  Emilio Artacho  <emilio>
+
+	* Docs/siesta.tex:
+	Report bug on stress calculation with partial core correction.
+
+Mon Sep 22 14:09:42 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/parse.f: Added tab as valid separator.
+
+Thu Sep 18 17:34:35 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/Samples/h.tm2.inp:
+	Example input file for the generation of the H pseudopotential.
+
+	* Pseudo/atom/wrapup.f:
+	* Changed the encoding of ps information in the 'title' character array.
+	  It now accomodates up to lmax=4 in less than the (arbitrary but 
+          standard) 70 characters used in the Froyen version.
+
+Wed Sep 17 17:33:39 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/plot.h, Pseudo/atom/dmixp.f:
+	nrmax updated to 1500... shame!
+
+	* Pseudo/atom/ode.f:
+	Changed interpolation method from four points to three points.
+	There was a problem at the beginning of the range: if x was between
+	r(1) and r(2), it is not possible to include r(0) as the first point!
+	The results with three and four points are otherwise equal to a high
+	degree of accuracy.
+
+Fri Sep 12 10:24:37 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/Attic/linedefs.h:
+	file linedefs.h was initially added on branch exp-use-line.
+
+	* Src/fdf/Attic/linetest.f:
+	file linetest.f was initially added on branch exp-use-line.
+
+	* Src/fdf/Attic/line.h:
+	file line.h was initially added on branch exp-use-line.
+
+	* Src/fdf/Attic/line.f:
+	file line.f was initially added on branch exp-use-line.
+
+Mon Sep  8 07:48:26 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/Makefile:
+	Added new target "pristine" which cleans and restores original .h files.
+
+	* Src/Attic/clean: Functionality moved to Makefile (make pristine).
+
+Thu Aug 28 15:25:16 1997  daniel  <daniel>
+
+	* Examples/Attic/h2o.gga.fdf:
+	La variable siesta.PAO.BasisType ha sido sustituida por la variable
+	mas corta PAO.BasisType
+
+	Los valores validos para dicha variable son 'split' , 'nodes',
+	 'user', 'splitgauss', 'nonodes'.
+
+	El valor por defecto de esta variable es 'split'.
+
+	* Examples/Attic/h2o.fdf:
+	La variable siesta.PAO.BasisType ha sido sustituida por una version
+	mas corta PAO.BasisType.
+	Las opciones validas son 'nodes','split','user','splitgauss','nonodes'
+
+	* Src/atom.f: *** empty log message ***
+
+Tue Aug 26 09:10:06 1997  Jose Soler  <jose>
+
+	* Src/ranger.f: Added a RECOMPILE message directed to standard output.
+
+Mon Aug 25 18:42:20 1997  Jose Soler  <jose>
+
+	* Docs/siesta.tex: Largely expanded INTRODUCTION section.
+	New QUICK START section.
+	New k-sampling options documented.
+	Two error&warning messages documented.
+	Two known problems documented.
+
+	* Util/rrsiesta:
+	Really-run-siesta. Keeps recompiling until siesta really runs.
+
+	* Util/rsiesta:
+	Extracts from output all errors and warnings and prints them at the end.
+
+	* Src/Include/siesta.h: Added arguments maxbk and maxuo
+
+	* Src/siesta.h: Added parameters maxbk and maxuo
+
+	* Src/siesta.f:
+	New version to handle the unit-cell & super-cell construction.
+	Added parameters maxkb and maxuo
+	Added arguments ucell and indxua in call to redata
+	Added arguments maxuo and indxuo in call to diagon
+	Added call to bands
+
+	* Src/redata.f: Reads the cell-supercell construction.
+
+	* Src/kgrid.f: New version which allows non-diagonal k-grid supercells.
+
+	* Src/iohs.f: Type declaration of paste changed of place.
+
+	* Src/diagon.f:
+	New version able to work with the unit-cell & super-cell construction.
+
+	* Src/bands.f:
+	Calculates and writes band energies at required k-point lines.
+
+	* Src/idiag.f: 'Diagonalizes' an integer matrix.
+
+	* Src/Makefile: Added idiag.f and bands.f
+
+Mon Aug 18 14:13:21 1997  Jose Soler  <jose>
+
+	* Src/Include/dhscf.h, Src/Include/diagon.h, Src/Include/ranger.h, 
+          Src/Include/siesta.h, Src/diagon.h:
+	Spelling correction in comments.
+
+Sat Aug 16 21:27:17 1997  Emilio Artacho  <emilio>
+
+	* Docs/siesta.tex: Changes in atom.f: Basis definitions, etc.
+
+	* Src/rhoofd.f, Src/shaper.f, Src/xijorb.f, Src/dfscf.f, Src/kgrid.f, 
+          Src/minvec.f, Src/reord.f, Src/conjgr.f, Src/dismin.f, Src/ylmexp.f, 
+          Src/rlylm.f, Src/siesta.f, Src/overfsm.f, Src/radfft.f, Src/ranger.f,
+          Src/neighb.f, Src/kinefsm.f, Src/matel.f, Src/ranger.h, Src/siesta.h,
+          Src/hsparse.f, Src/dhscf.f, Src/dhscf.h, Src/nlefsm.f:
+	Correcting misspellings (no relevance for the code)
+
+Wed Aug 13 09:23:48 1997  Jose Soler  <jose>
+
+	* Src/dhscf.f, Src/siesta.f:
+	Mesh cutoff is printed in dhscf.h and output file when dhscf needs 
+        to be recompiled.
+
+	* Examples/Attic/DEC.h2o.gga.out, Examples/Attic/DEC.h2o.out:
+	New results with corrected stress.
+
+	* Src/ordern.f: Argument nspin added in call to extrapol.
+
+Tue Aug 12 11:37:38 1997  Jose Soler  <jose>
+
+	* Src/xc.f:
+	More robust handling of negative spin densities in exchge and pzxc.
+
+	* Src/siesta.f: Added argument nspin in call to extrapol.
+	Supressed spin loop in calling extrapol.
+
+	* Src/extrapol.f: Added argument nspin and loop on spin.
+
+	* Src/dfscf.f: Dimension fa(3) changed to fa(NX) for more clarity.
+
+	* Src/Attic/clean: Added: rm Sys/*.o
+
+Tue Aug 12 09:34:44 1997  Emilio Artacho  <emilio>
+
+	* Src/Sys/ibmessl.make:
+	Adding FFLAGS for trapping floating point exceptions (optional)
+
+Fri Aug  8 18:53:19 1997  Jose Soler  <jose>
+
+	* Src/Sys/bsd.f, Src/Sys/ibmessl.f, Src/Sys/osfdxml.f, 
+          Src/Sys/general.f:
+	Argument stress in poison is now only output.
+	Added a stress contribution previously calculated outside poison.
+
+	* Src/xc.f: Added argument stress to cellxc.
+	Cellxc now calculates xc contribution to stress, including a term
+	previously absent in the GGA case.
+
+	* Src/dhscf.f: Restructured calculation of stress.
+	Added argument stress in call to cellxc.
+
+Fri Aug  8 18:09:25 1997  Emilio Artacho  <emilio>
+
+	* Src/pulayx.f:
+	Input variable added: MAXSAV controlling Pulay mixing (DM.NumberPulay)
+
+	* Src/redata.f:
+	Two FDF input variables added: MAXSAV controlling Pulay mixing 
+        (DM.NumberPulay)
+	    INSPN initializing spin to ferro or antiferro (DM.InitSpinAF)
+
+	* Src/siesta.f:
+	Two FDF input variables added: MAXSAV controlling Pulay mixing 
+        (DM.NumberPulay)
+	    INSPN initializing spin to ferro or antiferro (DM.InitSpinAF)
+	Atomic coordinates are printed at every dynamics step
+
+Thu Aug  7 18:12:11 1997  Jose Soler  <jose>
+
+	* Src/Makefile: Default value of ARCH changed to unknown
+
+	* Src/Sys/osfdxml.f, Src/Sys/bsd.f, Src/Sys/general.f, 
+          Src/Sys/ibmessl.f:
+	Poison finds missing stress term.
+	Added stress to argument list of poison.
+
+	* Src/dhscf.f:
+	Added argument stress in call to poison, to find missing stress 
+        term from the electrostatic energy.
+
+Thu Aug  7 15:59:14 1997  Emilio Artacho  <emilio>
+
+	* Src/Sys/ibmessl.make:
+	Including compilation flags for IBM RISCs: 
+                    -qmaxmem=6144 -qtkq_size=25000
+
+Thu Aug  7 12:05:06 1997  Jose Soler  <jose>
+
+	* Examples/Attic/DEC.h2o.gga.out, Examples/Attic/IBM.h2o.out, 
+          Examples/Attic/DEC.h2o.out, Examples/Attic/h2o.gga.fdf, 
+          Examples/Attic/h2o.fdf, Examples/Attic/IBM.siesta.out, 
+          Examples/Attic/DEC.siesta.out, Examples/Attic/siesta.gga.out, 
+          Examples/Attic/siesta.fdf, Examples/Attic/siesta.gga.fdf, 
+          Examples/Attic/siesta.out:
+	Generic name siesta changed to specific one h2o in data
+        and output files.
+
+	* Examples/Attic/clean:
+	Updated to clean new files created when siesta runs.
+
+	* Examples/Attic/qsiesta, Examples/Attic/rsiesta, 
+          Examples/Attic/msiesta:
+	msiesta makes (compiles) siesta from an arbitrary directory.
+	rsiesta runs             siesta from an arbitrary directory.
+	qsiesta queues (submits) siesta job from an arbitrary directory.
+	All three use the environment variable SIESTA_DIR (../Src by default)
+	Same as those in siesta/Util.
+
+	* Util/qsiesta, Util/msiesta, Util/rsiesta:
+	msiesta makes (compiles) siesta from an arbitrary directory.
+	rsiesta runs             siesta from an arbitrary directory.
+	qsiesta queues (submits) siesta job from an arbitrary directory.
+	All three use the environment variable SIESTA_DIR (../Src by default)
+
+	* Src/Sys/unknown.make:
+	Uses f77 as the compiler name and no library routines.
+
+	* Src/Makefile: Added ranger.f
+	Added dependencies of atom.o atom_subs.o chcore.o epskb.o phiatm.o
+	   psover.o rcore.o rcut.o and uion.o on include file atom.h
+
+	* Src/Attic/clean: Cleans the Src directory from object files.
+	Copies *.h from Include subdirectory (initial values).
+
+	* Src/nlefsm.f: Parameter maxkba increased to 16.
+
+	* Src/dhscf.f: Prints parameter descriptions in dhscf.h
+
+	* Src/ranger.f, Src/ranger.h, Src/neighb.f:
+	Subroutine ranger split from file neighb.f
+	ranger dimension parameters separated in ranger.h file.
+
+	* Src/diagon.h, Src/ordern.h, Src/dhscf.h, Src/siesta.h:
+	Parameters set to the values apropriate for initial compilation 
+        (same as those in Include dyrectory).
+
+	* Src/atom.h: Parameter nsmax increased to 7.
+
+	* Src/Attic/dhscf.h0, Src/Attic/ordern.h0, Src/Attic/diagon.h0, 
+          Src/Attic/siesta.h0:
+	Moved to Include directory.
+
+	* Src/Include/ordern.h, Src/Include/dhscf.h, Src/Include/diagon.h, 
+          Src/Include/siesta.h, Src/Include/atom.h, Src/Include/ranger.h:
+	Include file for initial compilation.
+
+Wed Aug  6 09:22:08 1997  Jose Soler  <jose>
+
+	* Examples/Attic/siesta.out: Obtained with last Daniel version of atom.
+
+	* Src/atom.f: Identical to previous version. Re-commited to add Log:
+	Added arguments maxl, maxzetout and atm_label(is).
+	Many changes to implement new automatic basis generation posibilities.
+
+	* Src/initatom.f:
+	Identical to previous version. Re-commited to add Log:
+	Added arguments lmax, zetmax and atm_label.
+	Added arguments maxl, maxzetout and atm_label(is) in call to atom.
+	Added these sentences (required because some dimensions are unknown 
+        after call to atom):
+	call chkdime(maxl, lmaxs(is), overflow, lmax)
+	call chkdime(maxzet,maxzetout, overflow, zetmax)
+	if (overflow) return
+
+	* Src/siesta.f: Identical to previous version. Re-commited to add Log:
+	Added array atm_label(maxs)*20
+	Changed call to redata: added argument atm_label
+	Changed call to initatom: added args maxl, maxzetout and atm_label(is)
+
+	* Src/parse.f: Identical to previous version. Re-commited to add Log:
+	New routine which parses an input line into names and numbers.
+
+	* Src/redata.f: Identical to previous version. Re-commited to add Log:
+	PAO_basis_and_PS_lmax is now optional.
+	Added Chemical_species_label block.
+	Added argument atm_label.
+
+	* Src/Makefile: Identical to previous version. Re-commited to add Log:
+	Added parse.f
+
+Tue Aug  5 19:36:47 1997  daniel  <daniel>
+
+	* Src/Makefile, Src/siesta.f, Src/parse.f, Src/atom.f, Src/initatom.f, 
+          Src/redata.f:
+	*** empty log message ***
+
+Mon Aug  4 18:12:39 1997  Jose Soler  <jose>
+
+	* Src/Attic/pw92c.f, Src/Attic/chkdime.f, Src/Attic/equal.f, 
+          Src/Attic/ewaldf.f, Src/Attic/cdiagon.f, Src/Attic/cft.f, 
+          Src/Attic/matest.f, Src/Attic/phitst.f:
+	Removed unused fossil files.
+
+	* Src/siesta.f: Corrected a SEVERE bug for spin polarization.
+	Corrected ispin index in eigenvalue printout.
+
+Mon Jul 28 16:09:14 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/wrapup.f:
+	The derivative of the core charge needed to fit the partial-core 
+        function is now computed with a five-point method.
+
+	* Pseudo/atom/Samples/as.tm2.inp: Use core-corrections.
+
+Thu Jul 24 18:17:32 1997  daniel  <daniel>
+
+	* Src/atom.f: Fixing a bug in atom.f committed 
+
+Thu Jul 24 16:04:09 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/Makefile: Added pulayx.
+
+Thu Jul 24 15:46:34 1997  Pablo Ordejon  <ordejon>
+
+	* Src/pulayx.f: Routine to perform Pulay Mixing
+
+Wed Jul 23 18:58:26 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/README: *** empty log message ***
+
+	* Pseudo/atom/Samples/README: Added warning. Modified location of atm.
+
+	* Pseudo/atom/Samples/f.tm2.gga.pb.inp, Pseudo/atom/Samples/c.tm2.inp:
+	*** empty log message ***
+
+	* Pseudo/atom/Samples/c.tm2.out: Example output file.
+
+	* Pseudo/atom/makefile: Removed distribution target. Cosmetic changes.
+
+	* Pseudo/atom/auxosf.f: position of data statement...
+
+	* Pseudo/atom/Samples/si.tm2.inp, Pseudo/atom/Samples/as.tm2.inp, 
+          Pseudo/atom/Samples/o.tm2.inp:
+	Sample input file for atm
+
+	* Pseudo/atom/Samples/plotps.sm, Pseudo/atom/Samples/plotx11.sh, 
+          Pseudo/atom/Samples/plotps.sh:
+	Better logic.
+
+	* Pseudo/atom/Samples/pt.sh, Pseudo/atom/Samples/ae.sh, 
+          Pseudo/atom/Samples/pg.sh:
+	atm assumed to be in source directory.
+
+	* Pseudo/atom/Samples/Attic/si.new.inp, 
+          Pseudo/atom/Samples/Attic/logder.sm, 
+          Pseudo/atom/Samples/Attic/ni.hsc.inp, 
+          Pseudo/atom/Samples/Attic/atom.sm, 
+          Pseudo/atom/Samples/Attic/hnr.ae.inp, 
+          Pseudo/atom/Samples/Attic/ba.hsc.inp, 
+          Pseudo/atom/Samples/Attic/ba.tm2.inp:
+	removed.
+
+	* Pseudo/atom/input.f: The last empty line is not any longer necessary.
+
+	* Pseudo/atom/atom.sm: Better range for wfns and pots in real space.
+	Added plot of pseudo wfns in reciprocal space.
+
+Wed Jul 23 12:48:19 1997  daniel  <daniel>
+
+	* Src/atom_subs.f, Src/atom.f: Bug fixed (of what committed Jul 21)
+
+Tue Jul 22 15:02:18 1997  daniel  <daniel>
+
+	* Pseudogen/Attic/psgen, Pseudogen/Attic/Makefile:
+	*** empty log message ***
+
+Mon Jul 21 17:38:17 1997  Pablo Ordejon  <ordejon>
+
+	* Docs/siesta.tex: New SIESTA manual document with:
+	- Description of new variables
+	- New format by E. Artacho
+
+	* Src/siesta.f: Include call to Pulay mixing
+	Include variable MAXSPN in call to diagon
+
+	* Src/matel.f: Change MAXL to 3.
+
+	* Src/fermid.f: Change some dimensios to MAXSPN
+	Include MAXSPN between routine arguments.
+
+	* Src/diagon.f: Change dimensions of some matrices to MAXSPN.
+	Include MAXSPN between routine arguments
+
+	* Src/mulliken.f:
+	Calculate total charge in the analysis (usefull for spin polarization)
+
+Mon Jul 21 16:25:18 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/prdate.f:
+	Eliminate flag -s in hostname (not compatible with HP-UX)
+
+	* Src/prmem.f: Include variable IU in SAVE
+
+	* Src/siesta.f: Forces are now printed.
+
+	* Src/atom.f: Local potential flavor changed from 'old' to 'new'.
+
+Mon Jul 21 14:45:48 1997  daniel  <daniel>
+
+	* Examples/Attic/siesta.gga.out, Examples/Attic/siesta.out, 
+          Examples/Attic/siesta.gga.fdf, Examples/Attic/siesta.fdf, 
+          Src/atom_subs.f, Src/atom.f:
+	New automatic basis FDF inputs (first version)
+        Altenative local pseudopot for large cores.
+
+Wed Jul 16 15:00:22 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/Attic/makefile: Now renamed back to Makefile.
+
+	* Src/Makefile: A single makefile for different architectures.
+
+	* Src/Attic/Makefile.DEC, Src/Attic/Makefile.IBM, 
+          Src/Attic/Makefile.linux:
+	Consolidated in a single Makefile.
+
+	* Src/Attic/io.f, Src/Attic/io.h:
+	Now part of fdf distribution in fdf directory.
+
+	* Src/Attic/fdf.f, Src/Attic/fdf.h, Src/Attic/fdfdefs.h:
+	Now in fdf directory.
+
+	* Src/Attic/poison.general.f, Src/Attic/cputim.general.f, 
+          Src/Attic/poison.DEC.f, Src/Attic/poison.IBM.f, Src/Attic/poison.f, 
+          Src/Attic/cputim.DEC.f, Src/Attic/cputim.IBM.f, Src/Attic/cputim.f:
+	Now contained in machine-specific files in Sys/.
+
+Tue Jul 15 21:39:57 1997  Jose Soler  <jose>
+
+	* Docs/siesta.tex:
+	Updated with all the fdf parameters defined up to now.
+
+	* Examples/Attic/siesta.out: Output of last version (same results).
+
+	* Src/shaper.f:
+	Finds the system type (shape): isolated molecule, chain, slab or bulk.
+
+	* Src/ioxv.f:
+	Reads/writes the atomic positions and velocities, as well as the cell
+	shape and velocity (for Parrinello-Rahman dynamics).
+
+	* Src/iorho.f:
+	Read/writes the total valence pseudoelectron density at the mesh points.
+
+	* Src/iohs.f:
+	Reads/writes the hamiltonian and overlap matrices, as well as all the
+	data required to generate bands and density of states.
+
+	* Src/iolwf.f: The LWF file is now called SystemLabel.LWF
+
+	* Src/iodm.f: The density matrix file is now called SystemLabel.DM
+
+	* Src/dipole.f:
+	Finds the electric dipole moment by integration in the mesh.
+
+	* Src/Makefile: Supressed rdiagon.f
+	Added cdiag.f dipole.f iohs.f iorho.f ioxv.f kgrid.f prdate.f 
+        shaper.f xijorb.f
+	nlefsm.f no longer depends of siesta.h
+
+	* Src/siesta.f: Handling of arrays for k sampling.
+	Automatic cell generation.
+	Saves hamiltonian and overlap matrices, if requested.
+	Saves atomic positions and velocities, if requested.
+	Prints the eigenvalues (only with diagon).
+	Prints the system shape.
+	Prints the dipole moment (only for molecules).
+	Output modifications and embellishment.
+	Added calls to iohs, ioxv, kgrid, prdate, shaper, and xijorb.
+	Modified calls to dhscf and diagon.
+
+	* Src/Attic/siesta.h0, Src/siesta.h: Added parameter maxk.
+
+	* Src/xijorb.f:
+	Finds space vectors between orbital centers, for its use in k-smapling
+	inside diagon.
+
+	* Src/timer.f: Slight output modifications.
+
+	* Src/redata.f: Does not stop when alat is absent.
+	Output modifications.
+
+	* Src/prdate.f: Prints program, CPU system, date and time.
+
+	* Src/ordern.f: More emphatic 'bad dimensions' message.
+
+	* Src/nlefsm.f:
+	No longer dependent of siesta.h (has its own parameters).
+
+	* Src/kgrid.f: Finds k-point coordinates. Reads directly from fdf file.
+
+	* Src/fermid.f:
+	Added an if block to avoid overflows at low temperature.
+
+	* Src/Attic/diagon.h0, Src/diagon.h:
+	Added parameters maxaux and max1or2.
+
+	* Src/dhscf.f: Supressed arguments related to k-points.
+	Calls to iorho and dipole.
+
+	* Src/atom.f: Output embellishment.
+
+	* Src/cdiag.f:
+	Routine name TQL2 changed to TQL2C, to avoid conflict with same name
+	inside rdiag.f
+
+	* Src/rdiag.f:
+	Auxiliary vectors fv1 and fv2 combined into a single array.
+
+	* Src/Attic/rdiagon.f, Src/diagon.f:
+	rdiagon.f substituted by diagon.f, which now handles both the 
+        real (gamma) and complex (k-sampling) cases.
+
+Tue Jul 15 14:18:02 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/dhscf.f, Src/redata.f: fdf include file now in subdirectory.
+
+	* Src/Attic/makefile:
+	New organization. Multiple architectures supported.
+
+	* Src/Sys/README: *** empty log message ***
+
+	* Src/Sys/osfdxml.f, Src/Sys/bsd.f, Src/Sys/general.f, 
+          Src/Sys/ibmessl.f:
+	Auxiliary file with system-dependent routines.
+
+	* Src/Sys/ibmessl.make, Src/Sys/linux.make, Src/Sys/osfdxml.make, 
+          Src/Sys/freebsd.make, Src/Sys/hp.make:
+	Include file for make.
+
+	* Src/atom.f:
+	Data statement moved to the end of the declaration section.
+
+	* Src/fdf/makefile: Compiler name can be inherited.
+
+	* Src/fdf/makefile: Removed -g flag.
+
+	* Src/fdf/io_sample.f: Example program to show io's capabilities.
+
+Thu Jul 10 08:42:14 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/Samples/README: Mention the need for SuperMongo.
+
+Wed Jul  9 16:04:54 1997  daniel  <daniel>
+
+	* Pseudogen/Attic/F.atm.data, Pseudogen/Attic/Makefile, 
+          Pseudogen/Attic/C.psgen.out_check, Pseudogen/Attic/pswatch.f, 
+          Pseudogen/Attic/README, Pseudogen/Attic/C.atm.data, 
+          Pseudogen/Attic/F.psgen.out_check, Pseudogen/Attic/psgen, 
+          Pseudo/Attic/cleanatom, Pseudo/Attic/pswatch.f, 
+          Pseudo/Attic/F.psgen.out_check, Pseudo/Attic/O.atom.dat, 
+          Pseudo/Attic/atom.dat, Pseudo/Attic/psgen.output, 
+          Pseudo/Attic/C.psgen.out_check, Pseudo/Attic/F.psatom.data,  
+          Pseudo/Attic/Makefile, Pseudo/Attic/psgen, 
+          Pseudo/Attic/atom-5.62.tar.gz, Pseudo/Attic/F.atm.data,  
+          Pseudo/Attic/IBM.atom.exe, Pseudo/Attic/C.psatom.data, 
+          Pseudo/Attic/periodicTable.dat, Pseudo/Attic/H.atom.dat, 
+          Pseudo/Attic/README, Pseudo/Attic/DEC.atom.exe, 
+          Pseudo/Attic/C.atm.data, pseudo/Attic/pswatch.f,  
+          pseudo/Attic/Makefile, pseudo/Attic/README, 
+          pseudo/Attic/F.psatom.pot.data, pseudo/Attic/psgen,  
+          pseudo/Attic/F.psgen.out_check, pseudo/Attic/COPYRIGHT,  
+          pseudo/Attic/periodicTable.dat, pseudo/Attic/C.psgen.out_check, 
+          pseudo/Attic/C.psatom.pot.data, pseudo/Attic/F.atm.data, 
+          pseudo/Attic/C.atm.data, pseudo/Attic/atm.f, 
+          pseudo/Attic/conv_plot.f, pseudo/Attic/INSTALL:
+	*** empty log message ***
+
+Mon Jun 30 15:14:52 1997  Jose Soler  <jose>
+
+	* Src/iolwf.f, Src/iodm.f:
+	Changed the name of a parameter in a call to chkdim.
+
+	* Src/hsparse.f:
+	Rewritten to avoid a serious bug in the logic of last version.
+
+	* Examples/Attic/siesta.out: Updated after change of hsparse.
+
+Mon Jun 23 16:28:07 1997  Jose Soler  <jose>
+
+	* Src/dhscf.h, Src/ordern.h, Src/siesta.h:
+	Dimensions adjusted for water molecule.
+
+	* Src/Attic/Makefile.linux, Src/Attic/Makefile.DEC, 
+          Src/Attic/Makefile.IBM:
+	Supressed overkb.f, volofb.f and fdf_io.h
+	Added iodm.f and iolwf.f
+	nlefsm.o depends of siesta.h
+	denmat.o, egandd.o and gradient.o depend of ordern.h
+
+	* Examples/Attic/siesta.gga.out, Examples/Attic/siesta.out:
+	Last version (after Jose's optimizations), run at cefeo.
+
+	* Examples/Attic/siesta.fdf:
+	DM.UseSaveDM and LWF.UseSaveLWF changed to false.
+
+	* Examples/Attic/clean: sh changed to csh.
+	Added   rm siesta.DM
+	        rm siesta.LWF
+	        siesta.size
+	Suppressed   rm matel.dim
+
+	* Src/Attic/volofb.f: Replaced by volcel.
+
+	* Src/timer.f: Prints a blank line after timing report.
+
+	* Src/siesta.f: Call to dnaefs (added).
+	Calls to overkb (supressed), hsparse and nlefsm (modified).
+	Suppressed arrays Skb, listkb and numkb.
+	kinefsm and nlefsm called only when first.or.last
+	Call to prmem added.
+	Report of timer added after the first SCF iteration.
+	Handling of dhscf return with ierr=1 (size overflow).
+	Added copyright heading.
+	Other smaller changes.
+
+	* Src/Attic/rdiagon.f: Write of wave functions through routine iolwf.
+
+	* Src/reord.f: Rewritten for optimization.
+
+	* Src/redata.f:
+	Defect value of DM.UseSaveDM and ON.UseSaveLWF chaged to false.
+
+	* Src/ylmexp.f, Src/radfft.f: Commented out the call to timer routine.
+
+	* Src/prmem.f: Writes to a common file when IUNIT=0
+
+	* Src/Attic/poison.general.f:
+	External routine volofb changed to volcel.
+
+	* Src/Attic/poison.DEC.f, Src/Attic/poison.f: Does not use AUX array.
+
+	* Src/Attic/fdf_io.h: No needed in the last versions of fdf.
+
+	* Src/Attic/neighb.h: Not needed since a long time ago.
+
+	* Src/Attic/overkb.f: No longer needed with new version of nlefsm.
+
+	* Src/ordern.f: Uses iolwf to read/write LWF's.
+	Does not stop if LWF file(s) is not found: generates new LWF's.
+
+	* Src/nlefsm.f: Fully rewritten. No longer uses Skb array.
+
+	* Src/neighb.f: Added status='unknown' to an open statement.
+
+	* Src/Makefile: Supressed overkb.f, volofb.f and fdf_io.h
+	Added iodm.f and iolwf.f
+	nlefsm.o made dependent of siesta.h
+	denmat.o, egandd.o and gradient.o made dependent of ordern.h
+
+	* Src/iolwf.f: New routine to read/write the localized wave functions.
+
+	* Src/iodm.f: New routine to read/write the density matrix.
+
+	* Src/hsparse.f: Rewritten the KB part.
+	Changed the interface.
+
+	* Src/gradient.f: Transposed f and fs.
+	Other minor changes.
+
+	* Src/Attic/fdf.f: Alberto corrected some bugs.
+
+	* Src/ener3.f: Call to timer routine.
+
+	* Src/matel.f, Src/egandd.f: Call to prmem.
+
+	* Src/Attic/ordern.h0, Src/Attic/siesta.h0, Src/Attic/diagon.h0:
+	Created to be copied as .h for the first compilation.
+
+	* Src/Attic/dhscf.h0:
+	Created to be copied as dhscf.h for the first compilation.
+
+	* Src/dhscf.f: Optimized loops to calculate PHI and GRPHI.
+	Changed value of parameter NPTFFT.
+	New call to prmem.
+	Returns with IERR=1 when dimensions are incorrect.
+	Other minor changes.
+
+	* Src/vmat.f, Src/transp.f, Src/vlist.f, Src/rhooda.f, Src/dfscf.f, 
+          Src/rhoofd.f:
+	Calls to timer routine and minimal cosmethic changes.
+
+	* Src/denmat.f: Rewritten for optimization.
+	Density matrix saved through routine iodm.
+
+	* Src/Attic/cputim.f: Added external etime declaration.
+
+Fri Jun  6 17:33:15 1997  Pablo Ordejon  <ordejon>
+
+	* Examples/Attic/siesta.fdf, Examples/Attic/siesta.out:
+	New versions of siesta package, with several new
+	options, improved generation of siesta.h, and corrections
+	of stress in dynamics.
+	P.Ordejon
+
+	* Src/siesta.f: Modifications:
+	1) Define g2max for all the time steps of the calculatino
+	2) recalculate cell volume each time step, in case cell shape
+	   or size has changed
+	3) corrections to generate the siesta.h file in HP and Linux systems
+	4) include new redata options and variables
+	P. Ordejon
+
+	* Src/redata.f: Include variables to:
+	1) use or not SAVE.LWF and SAVE.DM files
+	2) choose scheme to construct LWF: Kim, Ordejon-Mauri and files
+	P. Ordejon
+
+	* Src/Attic/overkb.f:
+	Corrections for generation of siesta.h in HP and Linux.
+	P. Ordejon
+
+	* Src/ordern.f:
+	Modifications to: include the old Ordejon-Mauri functional, with 
+        the minimum number of bands possible, and to use the LWFs files 
+        blindly (without checking or comparing with O-M and Kim functionals.
+	P. Ordejon
+
+	* Src/neighb.f:
+	Included variables in save command, to correct malfunctions
+	in HP and Linux systems
+	P. Ordejon
+
+	* Src/hsparse.f:
+	Corrections for generation of siesta.h in HP and Linux.
+	P. Ordejon
+
+	* Src/dynamics.f:
+	Change sign of stress in MD routines, to make it compatible with the 
+        one calculated by siesta.
+	P. Ordejon
+
+	* Src/dhscf.f:
+	Included variables in save declarations, to correct errors
+	in HP and Linux systems.
+	P. Ordejon.
+
+	* Src/atomlwf.f: Modifications to:
+	1) include the old Ordejon-Mauri functional, with the minimum
+	   number of bands possible.
+	2) Avoid looking for neighbours in very large regions,
+	   when the LWFs have large radii.
+	P. Ordejon
+
+	* Src/atom.f:
+	Changed tolerance eps in local neutral-atom pseudopotential.
+	P. Ordejon
+
+Fri May 30 17:15:56 1997  Alberto Garcia  <wdpgaara>
+
+	* Examples/Attic/clean:
+	Added -f flag and simple message. Changed interpreter to sh.
+
+Wed May 28 10:03:00 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f:
+	* Bug fix: fdf_locate would return true even if 'label' was part of
+	  the 'Value' section (as in a title).
+
+Mon May 26 10:49:46 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/Samples/README: Note about location of executable.
+
+Fri May 23 09:01:29 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/README: Some history.
+
+	* Pseudo/atom/atm.f, Pseudo/atom/ChangeLog:
+	Cosmetic and info changes to prepare for ATOM_1_2
+
+	* Pseudo/atom/Util/pswatch.f:
+	Daniel Sanchez Portal's ghostwatcher program.
+
+	* Pseudo/atom/Samples/si.pt.inp, Pseudo/atom/Samples/Attic/si.new.inp, 
+          Pseudo/atom/Samples/si.ker.inp, Pseudo/atom/Samples/si.ae.inp, 
+          Pseudo/atom/Samples/si.hsc.inp, Pseudo/atom/Samples/plotx11.sh, 
+          Pseudo/atom/Samples/pt.sh, Pseudo/atom/Samples/plotps.sm, 
+          Pseudo/atom/Samples/pg.sh, Pseudo/atom/Samples/plotps.sh, 
+          Pseudo/atom/Samples/Attic/logder.sm, 
+          Pseudo/atom/Samples/Attic/ni.hsc.inp, 
+          Pseudo/atom/Samples/Attic/hnr.ae.inp, Pseudo/atom/Samples/h.ae.inp, 
+          Pseudo/atom/Samples/c.tm2.ucb.inp, 
+          Pseudo/atom/Samples/f.tm2.gga.pb.inp, Pseudo/atom/Samples/c.tm2.inp, 
+          Pseudo/atom/Samples/Attic/ba.hsc.inp, 
+          Pseudo/atom/Samples/Attic/ba.tm2.inp, 
+          Pseudo/atom/Samples/Attic/atom.sm, Pseudo/atom/Samples/ae.sh, 
+          Pseudo/atom/Samples/README:
+	Sample input files, scripts, and plotting drivers.
+
+	* Pseudo/atom/wf.f: Warn the user if rc_input is changed.
+
+	* Pseudo/atom/Util/vpsb2asc.f, Pseudo/atom/Util/vpsa2bin.f:
+	Binary <---> ASCII conversion for VPS files.
+
+	* Pseudo/atom/makefile: Added mentions to compat.
+
+	* Pseudo/atom/input.f, Pseudo/atom/wrapup.f, Pseudo/atom/velect.f:
+	Uses compatibility module to manage some parameters and pick and 
+        XC routine.
+
+	* Pseudo/atom/pw92xc.f, Pseudo/atom/pzxc.f, Pseudo/atom/pw92c.f, 
+          Pseudo/atom/ldaxc.f, Pseudo/atom/pbexc.f, Pseudo/atom/ggaxc.f, 
+          Pseudo/atom/atomxc.f, Pseudo/atom/exchng.f:
+	Implementation of Balbas-Soler XC package.
+
+	* Pseudo/atom/compat_params.f:
+	Implements a "packaged" compatibility mode.
+
+Thu May 22 18:20:20 1997  Alberto Garcia  <wdpgaara>
+
+	* Pseudo/atom/compat.h:
+	Implementation of a "packaged" compatibility mode.
+
+	* Pseudo/atom/Docs/User.Guide, Pseudo/atom/Contrib/pseudv.for, 
+          Pseudo/atom/Contrib/parcor.for, Pseudo/atom/Contrib/pseu.for, 
+          Pseudo/atom/BHS/symbols.h, Pseudo/atom/BHS/shirley_bhsfit.for, 
+          Pseudo/atom/BHS/symbols.f, Pseudo/atom/BHS/set2.h, 
+          Pseudo/atom/BHS/plot.h, Pseudo/atom/BHS/potran.f, 
+          Pseudo/atom/BHS/pb.bhsinp, Pseudo/atom/BHS/ni.bhsinp, 
+          Pseudo/atom/BHS/o.bhsinp, Pseudo/atom/BHS/na.bhsinp, 
+          Pseudo/atom/BHS/bhspot.f, Pseudo/atom/BHS/makefile, 
+          Pseudo/atom/BHS/README, Pseudo/atom/BHS/BHSINP:
+	*** empty log message ***
+
+	* Pseudo/atom/gga.h: Removed reduce.
+
+	* Pseudo/atom/radial.h: Larger nrmax.
+
+	* Pseudo/atom/wtrans.f, Pseudo/atom/root.f, Pseudo/atom/v0pp.f, 
+          Pseudo/atom/potrw.f, Pseudo/atom/potrv.f, Pseudo/atom/denplot.f, 
+          Pseudo/atom/logder.f, Pseudo/atom/input.f:
+	Cosmetic changes.
+
+	* Pseudo/atom/potran.f:
+	Some cosmetic changes: status 'unknown' in open statement.
+
+	* Pseudo/atom/auxosf.f, Pseudo/atom/recipes.f: Added for ATM_1_0
+
+	* Pseudo/atom/wrapup.f, Pseudo/atom/wtrans.f, Pseudo/atom/wf.f, 
+          Pseudo/atom/velect.f, Pseudo/atom/vionic.f, Pseudo/atom/v0pp.f, 
+          Pseudo/atom/tm2.f, Pseudo/atom/tm2_blk.h, Pseudo/atom/string.f, 
+          Pseudo/atom/splift.f, Pseudo/atom/spliq.f, Pseudo/atom/scilib.f, 
+          Pseudo/atom/root.f, Pseudo/atom/radial.h, Pseudo/atom/prdiff.f, 
+          Pseudo/atom/pseudo.f, Pseudo/atom/potrw.f, Pseudo/atom/potran.f, 
+          Pseudo/atom/potrv.f, Pseudo/atom/plot.h, Pseudo/atom/orbital.h, 
+          Pseudo/atom/param.h, Pseudo/atom/orban.f, Pseudo/atom/nucl_z.f, 
+          Pseudo/atom/ode_blk.h, Pseudo/atom/logder.f, Pseudo/atom/nonlinear.h,
+          Pseudo/atom/linear.h, Pseudo/atom/ion.h, Pseudo/atom/ker.f, 
+          Pseudo/atom/input.f, Pseudo/atom/gga.h, Pseudo/atom/hsc.f, 
+          Pseudo/atom/gexcorr.f, Pseudo/atom/ext.f, Pseudo/atom/genrhs.f,
+          Pseudo/atom/excorr.f, Pseudo/atom/etotal.f, Pseudo/atom/elecpot.h,
+          Pseudo/atom/energy.h, Pseudo/atom/dsolv2.f, Pseudo/atom/dmixp.f,
+          Pseudo/atom/dsolv1.f, Pseudo/atom/difrel.f, Pseudo/atom/difnrl.f,
+          Pseudo/atom/coeffs.h, Pseudo/atom/denplot.f, Pseudo/atom/chg_mism.f,
+          Pseudo/atom/banner.h, Pseudo/atom/charge.h, Pseudo/atom/auxvax.f,
+          Pseudo/atom/auxibm.f, Pseudo/atom/auxsun.f, Pseudo/atom/auxcra.f,
+          Pseudo/atom/atm.f:
+	Moving from RCSfiles to ATM_1_0
+
+	* Pseudo/atom/makefile: Moving towards ATM_1_0
+
+	* Pseudo/atom/Attic/makefile.sun, Pseudo/atom/Attic/makefile.vax,
+          Pseudo/atom/Attic/makefile.sccs, Pseudo/atom/Attic/makefile.cray,
+          Pseudo/atom/Attic/makefile.ibm, Pseudo/atom/logder.sm,
+          Pseudo/atom/atom.sh, Pseudo/atom/atom.sm, Pseudo/atom/ChangeLog:
+	Moving from RCS files to ATM_1_0
+
+Tue May 20 13:21:24 1997  Alberto Garcia  <wdpgaara>
+
+	* Util/vpsb2asc.f, Util/vpsa2bin.f:
+	Better logic. Bounds check. Increased nrmax.
+
+Tue May 20 12:12:13 1997  daniel  <daniel>
+
+	* Util/vpsa2bin.f:
+	Two lines comented. Now all the pseudopotentials readed are written.
+
+	* Src/atom.f:
+	Two lines of code added just to guarantee that the value of the
+	local potential is exactly -2*Zval for r > Rlocmax .
+
+Fri May  9 10:12:41 1997  Jose Soler  <jose>
+
+	* Src/Attic/timer.IBM.f, Src/Attic/timer.nonIBM.f:
+	Removed unnecessary versions. (Versions in cputim instead).
+
+	* Src/Attic/Makefile.DEC, Src/Attic/Makefile.IBM, Src/Makefile:
+	Updated comments.
+
+Wed May  7 14:00:40 1997  daniel  <daniel>
+
+	* Pseudo/Attic/F.atm.data, Pseudo/Attic/Makefile, 
+          Pseudo/Attic/pswatch.f, Pseudo/Attic/C.psgen.out_check,
+          Pseudo/Attic/F.psgen.out_check, Pseudo/Attic/psgen.output,
+          Pseudo/Attic/C.psatom.data, Pseudo/Attic/psgen,
+          Pseudo/Attic/F.psatom.data, Pseudo/Attic/C.atm.data,
+          pseudo/Attic/psgen:
+	*** empty log message ***
+
+Tue May  6 16:54:33 1997  Jose Soler  <jose>
+
+	* Src/Attic/overkb.f, Src/siesta.f, Src/mulliken.f, Src/ordern.f,
+          Src/initatom.f, Src/atomlwf.f, Src/hsparse.f:
+	Improved array dimensioning procedures.
+	Changes by Pablo. Commited by Jose.
+
+	* Src/redata.f:
+	Introduced fdf labels WriteSiestaDim, UseSaveDM and UseSaveLWF y
+	WriteMullikenPop.
+	Value NotScaledCartesian changed to NotScaledCartesianBohr.
+	Changes by Pablo. Commited by Jose.
+
+	* Src/atom.f:
+	Pablo changed dimensioning of array q. Authorized by Daniel. 
+        Commited by Jose.
+
+	* Src/Makefile: Compiler name xlf changed to f77.
+
+	* Examples/Attic/siesta.gga.out, Examples/Attic/siesta.gga.fdf,
+          Examples/Attic/siesta.fdf, Examples/Attic/siesta.out:
+	In/out files for new version with improved array dimensioning.
+	FDF label NotScaledCartesian changed to NotScaledCartesianBohr.
+
+Mon May  5 11:00:21 1997  Jose Soler  <jose>
+
+	* Src/neighb.f: Corrected a basic error which ignored atomic movements.
+
+	* Examples/Attic/siesta.out: Essentially identical but run at the DEC.
+
+Tue Apr 22 07:49:49 1997  Jose Soler  <jose>
+
+	* Src/dhscf.f: Unused function evxc removed from EXTERNAL statement.
+
+Mon Apr 21 11:04:15 1997  daniel  <daniel>
+
+	* Examples/Attic/siesta.gga.fdf: *** empty log message ***
+
+	* Src/atom.f:
+	 An old declaration ( EXTERNAL CDATA_FDF) which is not used now
+	 has been suppressed.
+	 The label 'basistype' for the fdf call has been changed for a 
+         new one more specific : 'siesta.PAO.BasisType'
+	 as was suggested by Jose Soler.
+
+	* Examples/Attic/siesta.fdf:
+	 The label basistype used in atom.f to select the type of basis 
+         which will be generated has been changed by a more specific one: 
+         'siesta.PAO.BasisType' as was sugested by Jose Soler.
+
+Thu Apr 17 18:14:17 1997  daniel  <daniel>
+
+	* pseudo/Attic/Makefile, pseudo/Attic/psgen, pseudo/Attic/pswatch.f,
+          pseudo/Attic/conv_plot.f, pseudo/Attic/periodicTable.dat,
+          pseudo/Attic/README, pseudo/Attic/atm.f, pseudo/Attic/INSTALL,
+          pseudo/Attic/F.psgen.out_check, pseudo/Attic/F.atm.data,
+          pseudo/Attic/F.psatom.pot.data, pseudo/Attic/COPYRIGHT,
+          pseudo/Attic/C.psgen.out_check, pseudo/Attic/C.psatom.pot.data,
+          pseudo/Attic/C.atm.data:
+	*** empty log message ***
+
+Wed Apr 16 20:20:15 1997  daniel  <daniel>
+
+	* Examples/Attic/siesta.gga.out, Examples/Attic/siesta.out, 
+          Examples/Attic/siesta.gga.fdf:
+	*** empty log message ***
+
+	* Examples/Attic/siesta.fdf:
+	 Includes the new input variable 'basistype', to be used for atom.f
+	 with default value 'nodes' or 'NODES'.
+
+	* Src/atom.f: *** empty log message ***
+
+	* Src/Attic/Makefile.IBM:
+	Add subroutines 'dnaefs.f' and 'psover.f' for compilation.
+
+	* Src/Attic/Makefile.DEC:
+	 Add subroutines 'dnaefs.f' and 'psover.f' for compilation.
+
+	* Src/Makefile:
+	 Add subrotuines 'dnaefs.f' and 'psover.f' for compilation.
+
+	* Src/atom_subs.f:
+	 This version includes some new subroutines (choverlp,psch) which are
+	 used to calculated the electrostatic corrections due to
+	 'local pseudopotential charge density' overlap.
+
+	* Src/atom.f:
+	This version has a defined parameter which is readed from the input 
+        file and allows to use different types of basis set.
+	The parameter is a character one called 'basistype' and the 
+        availeable options are:
+	 1) 'NODES','nodes'
+	 2) 'NONODES','nonodes'
+	 3) 'SPLIT','split'
+	* Src/atom.f: New version which includes :
+	* New fdf calls.
+	* GGA
+	* New (smoother and dependent in the pseudopotential generation 
+          radius Rc) local pseudopotential.
+	* Electrostatic correction which allows the possibility of overlap 
+          between nearest neighbours local pseudopotential. This correction 
+          is calculated numerically therefore, all possible 'local potential 
+          charge densities' are possible.
+
+	The performance of this new local potentials is being tested at 
+        the moment. Old (gaussian) local potentials are available choosing 
+        the appropiate parameter in the header of this subroutine 
+        (parameter 'loctype' with options 'new' and 'old')
+
+	* Src/dnaefs.f:
+	Subroutine which adds in the main program (siesta.f) the coorection 
+        to the energy and forces due to the overlap of the "local 
+        pseudopotential charge density".
+
+	* Src/psover.f:
+	Subroutine which returns the electrostatic correction due to the 
+        possible overlap of the " local pseudopotential charge densities "
+
+Tue Apr 15 15:01:14 1997  Jose Soler  <jose>
+
+	* Examples/Attic/IBM.siesta.out, Examples/Attic/DEC.siesta.out:
+	Added the cputime results for giotto and cefeo.
+
+	* Src/Attic/poison.general.f: Activated the call to timer.
+
+	* Src/Attic/Makefile.IBM, Src/Attic/Makefile.DEC, Src/Makefile:
+	cputim added to subroutine list.
+	Created versions for IBM and DEC (nearly identical).
+
+	* Src/timer.f: Recovered version which calls to cputim.
+
+	* Src/Attic/cputim.f, Src/Attic/cputim.general.f, 
+          Src/Attic/cputim.IBM.f, Src/Attic/cputim.DEC.f:
+	New version for the DEC's (identical to Sun's).
+
+Fri Apr 11 17:51:30 1997  Jose Soler  <jose>
+
+	* Examples/Attic/IBM.siesta.out:
+	Corrected version, using the IBM version of POISON.
+
+	* Src/Attic/poison.nonIBM.f: Filename changed to poison.general.f
+
+	* Pseudo/Attic/cleanatom: Cleaner of TM output files
+
+	* Pseudo/Attic/atom.dat, Pseudo/Attic/periodicTable.dat,
+          Pseudo/Attic/H.atom.dat, Pseudo/Attic/O.atom.dat:
+	Data files for Troullier-Martins pseudopotential generation program.
+
+	* Pseudo/Attic/IBM.atom.exe, Pseudo/Attic/DEC.atom.exe:
+	DEC and IBM executables of Troullier-Martins pseudopotential program.
+
+	* Pseudo/Attic/README:
+	Warning on authorship and distribution of TM pseudopotential program
+
+	* Pseudo/Attic/atom-5.62.tar.gz:
+	Troullier-Martins pseudopotential program
+
+	* Util/vpsb2asc.f, Util/vpsa2bin.f:
+	Increased length of string for file name
+
+	* Examples/Attic/clean: Cleans continuation files.
+
+	* Examples/Attic/DEC.siesta.out, Examples/Attic/IBM.siesta.out:
+	Output files for H2O (siesta.fdf) run at DEC's and IBM's. 
+        The main difference (3 meV in Etot) seems to originate from 
+        the different pseudopotentials. The difference from the FFT's 
+        is about 10 times smaller.
+
+	* Examples/Attic/O.psatom.data, Examples/Attic/IBM.H.psatom.data,
+          Examples/Attic/IBM.O.psatom.data, Examples/Attic/H.psatom.data,
+          Examples/Attic/DEC.H.psatom.data, Examples/Attic/DEC.O.psatom.data:
+	H and O seudopotentials created with the same Troullier-Martins program
+	compiled in IBM and DEC machines. Apart from the different binary 
+        formats, they seem to differ apreciably for still-unknon reasons.
+
+	* Src/radfft.f: Unused routine CFT removed from EXTERNAL declaration.
+
+	* Src/Attic/poison.general.f, Src/Attic/poison.f,
+          Src/Attic/poison.DEC.f, Src/Attic/poison.IBM.f:
+	poison.DEC.f: new version which uses routine sff_3d from DEC lxml 
+                      library
+	poison.IBM.f: the factor 1/N moved to the INVERSE transform in RFFT
+	poison.nonIBM.f: name changed to poison.general.f and factor 1/N 
+                         moved to the inverse transform in FFT
+
+	* Src/Makefile: Name of library changed from libkb.a to libsiesta.a
+	$(LDFLAGS) added to link line
+
+Wed Apr  9 13:14:35 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f, Src/fdf/makefile:
+	* fdf_boolean now writes to log file when label is found by itself 
+          (bugfix).
+
+Fri Apr  4 12:14:01 1997  Jose Soler  <jose>
+
+	* Examples/Attic/siesta.lda.out:
+	Suppressed, since it was identical to siesta.out
+
+	* Examples/Attic/siesta.gga.out, Examples/Attic/siesta.gga.fdf,
+          Examples/Attic/siesta.out, Examples/Attic/siesta.fdf:
+	Updated to fdf version 0.6.1 and redata.
+
+	* Src/redata.f:
+	Commented-out lines suppressed. No changes in active code.
+
+	* Src/dhscf.f, Src/atom.f:
+	Calls to fdf routines changed for fdf version 0_6_1
+
+	* Src/Makefile: Added io.f, atmass.f
+	Suppressed string.f
+
+	* Src/redata.f: Updated to use fdf version 0_6_1.
+	Some fdf labels changed.
+	fdf input file is now read directly through standard input (unit 5).
+	Two minor errors corrected.
+
+	* Src/atmass.f:
+	New utility function: inputs atomic number and outputs atomic mass.
+
+	* Src/Attic/fdfdefs.h, Src/Attic/io.h, Src/Attic/fdf.h,
+          Src/Attic/string.f, Src/Attic/fdf.f, Src/Attic/io.f:
+	FDF update to version 0_6_1. The routines in string.f have been 
+        incorporated to fdf.f and io.f. fdfdefs.h is the include file 
+        to use fdf.
+
+Fri Apr  4 09:25:28 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f: * Incorporated the three small routines in string.f
+	* Added two more units to fdf_convfac
+
+	* Src/fdf/Attic/string.f: String routines now incorporated in fdf.f
+
+Thu Apr  3 16:28:45 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f: * Added character + to token list
+	* Enlarged size of DIM array in units routine
+
+Wed Apr  2 17:36:59 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/fdf.f: *** empty log message ***
+
+	* Src/fdf/sample.fdf, Src/fdf/sample.f, Src/fdf/coords.fdf,
+	  Src/fdf/fdfdefs.h:
+	Modifications to support change to fdf_block. Minor cosmetic
+	improvements.
+
+	* Src/fdf/io.f: Declared nunits explicitly.
+
+	* Src/fdf/fdf.f:
+	* fdf_block now returns .true. or .false., and the unit number as
+	  part of the parameter list.
+	* fdf_defined implemented using fdf_locate: returns .true. if the label
+	  appears (in any manner) in the fdf file.
+	* Added more physical unit names.
+	  (Had to add the characters */^ to the list of token characters).
+	* Fixed small bug in fdf_block: the label is now correctly passed to the
+	  dump routine.
+
+Thu Mar 20 17:38:26 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/sample.f, Src/fdf/makefile: Support for declarations file.
+
+	* Src/fdf/fdfdefs.h: Declarations file.
+
+Thu Mar 20 15:26:42 1997  Jose Soler  <jose>
+
+	* Src/siesta.f, Src/Attic/overkb.f, Src/nlefsm.f, Src/overfsm.f,
+	  Src/naefs.f, Src/kinefsm.f, Src/hsparse.f, Src/atomlwf.f:
+	To use the new version of NEIGHB, a line has been added before calls to
+	this routine.
+
+	* Src/neighb.f:
+	New version, based on routine RANGER, with enhanced functionality 
+	and with a safer treatement of argument arrays.
+
+Tue Mar 18 10:56:44 1997  Jose Soler  <jose>
+
+	* Src/Attic/cellxc.f: Supressed because it is now contained in xc.f.
+
+Thu Mar 13 16:26:21 1997  Jose Soler  <jose>
+
+	* Src/Makefile: Changed to incorporate the previous files
+	atomxc.f, cellxc.f, exchge.f, ggaxc.f, ldaxc.f, pbegga.f and pw92xc.f
+	into the single file xc.f.
+
+	* Src/dhscf.h, Src/dhscf.f:
+	Changed to call CELLXC for LDA or GGA depending on fdf parameters
+	xc.functional and xc.authors. Also allows for xc 
+	partial-core-correction.
+
+	* Src/atom.f:
+	Changed to call ATOMXC for LDA or GGA, depending on fdf parameters
+	xc.functional and xc.authors.
+
+	* Src/xc.f:
+	New Balbas-Soler exchange-correlation routines including GGA.
+
+	* Src/Attic/pw92xc.f, Src/Attic/ldaxc.f, Src/Attic/pbegga.f,
+	  Src/Attic/ggaxc.f, Src/Attic/atomxc.f, Src/Attic/exchge.f:
+	Removed because they are now inside xc.f.
+
+	* Examples/Attic/siesta.gga.fdf, Examples/Attic/siesta.gga.out:
+	Input and output test files for H2O with GGA for the same parameters
+	as in siesta.fdf. LDA pseudopotentials used.
+
+	* Examples/Attic/siesta.lda.out:
+	Test output file for H2O (siesta.fdf) with LDA but after changing 
+	the program to allow GGA.
+
+	* Examples/Attic/H.psatom.data, Examples/Attic/O.psatom.data:
+	LDA pseudopotentials generated with psgen to run H2O test.
+
+	* Examples/Attic/siesta.out:
+	This is the output of the first version for H2O (siesta.dat).
+
+Mon Mar  3 08:33:24 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/sample.fdf, Src/fdf/fdf.f, Src/fdf/sample.f:
+	Fixed a bug in fdf_physical (the default value was always used...)
+	fdf_setdebug is now called from fdf_init: it looks for fdf-debug in the
+	fdf file itsel.
+	Added fdf_enabled and fdf_shutdown.
+	Removed fdf_unit.
+	Removed some unused variables.
+
+Mon Feb  3 15:40:31 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/Attic/string.f, Src/fdf/sample.fdf, Src/fdf/sample.f,
+	  Src/fdf/fdf.Standard, Src/fdf/makefile, Src/fdf/coords.fdf,
+	  Src/fdf/TODO:
+	Version 0.6 of fdf package.
+
+	* Src/fdf/Attic/jose_fdf.f: *** empty log message ***
+
+	* Src/fdf/fdf.h, Src/fdf/fdf.f: Main changes:
+		New parsing strategy to simplify processing.
+		Rethought syntax (to fdf V.0.6)
+		New user-level routine: fdf_block.
+		Deleted fdf_unit.
+		Modified the setting of debug levels.
+		Support for reading directly from stdin.
+
+	* Src/fdf/Coords.dat: Data file.
+
+	* Src/fdf/io.f, Src/fdf/io.h:
+	Copied from the io module to complement fdf.
+
+	* Src/fdf/Attic/parse.f: Test file no longer needed.
+
+	* Src/fdf/Attic/fdf_io.h: Changed name to fdf.h...
+
+Wed Jan 29 15:00:41 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/Attic/fdf_io.h: New parsing structures.
+
+	* Src/fdf/fdf.f: New implementation. Not the final word, though.
+
+Mon Jan 27 18:14:08 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/Attic/parse.f: Parsing routine for fdf.
+
+Fri Jan  3 19:51:03 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/TODO: To-do file
+
+	* Src/fdf/makefile: *** empty log message ***
+
+	* Src/fdf/fdf.h:
+	The names of the routines changed. Added fdf_physical and fdf_unit.
+
+	* Src/fdf/Attic/fdf_io.h:
+	Added variables to support a file stack. Also, flags and units
+	for debugging support.
+
+	* Src/fdf/sample.fdf, Src/fdf/sample.f:
+	Adapted to the new version of fdf.
+
+	* Src/fdf/fdf.f: Lots of changes:
+		New names for the routines.
+		New, simpler, initialization routine.
+		Support for include files (two flavors).
+		Support for unit conversion (fdf_physical).
+		Optional debugging.
+		It uses the new io package for logical unit management.
+
+	* Src/fdf/fdf.Standard:
+	Clearer syntax. Added mentions to new features: include files
+	and units.
+
+	* Src/fdf/coords.fdf, Src/fdf/Otherfile: Sample fdf file
+
+Thu Jan  2 14:38:53 1997  Alberto Garcia  <wdpgaara>
+
+	* Src/fdf/Attic/jose_fdf.f: Jose Soler's original implementation.
+
+Mon Dec 30 10:29:19 1996  Alberto Garcia  <alberto>
+
+	* Src/fdf/Attic/fdf_io.h, Src/fdf/Attic/string.f,
+	  Src/fdf/fdf.Standard, Src/fdf/fdf.f, Src/fdf/fdf.h,
+	  Src/fdf/makefile, Src/fdf/sample.f, Src/fdf/sample.fdf:
+	Initial revision
+
+Sat Dec 28 12:38:48 1996  Alberto Garcia  <wdpgaara>
+
+	* Util/README:
+	Added README, a file to list and give a succint explanation about
+	each program or script in the Util directory.
+
+Sat Dec 28 11:24:26 1996  Alberto Garcia  <alberto>
+
+	* Util/vpsa2bin.f, Util/vpsb2asc.f:
+	Pseudopotential fmt-unftm conversion
+
+	* Src/redata.f:
+	Changed list-directed format to '(a)' in first read statement. Previous
+	syntax did not work on the Alpha.
+
+	* Src/splin.f, Src/uion.f, Src/volcel.f, Src/ylmylm.f:
+	First version after the Madrid meeting. Released to Richard Martin.
+
+
+	* Src/Attic/fdf_io.h, Src/Attic/neighb.h, Src/Attic/string.f,
+	  Src/Attic/timer.IBM.f, Src/Attic/timer.nonIBM.f, Src/Attic/volofb.f,
+	  Src/Makefile, Src/atom.h, Src/dhscf.h, Src/diagon.h, Src/ordern.h,
+	  Src/siesta.h, Src/timer.f, Src/transp.f, Src/vlist.f, Src/vmat.f,
+          Src/ylmexp.f:
+	Initial revision
+
+	* Src/inver.f, Src/lofilm.f, Src/mixing.f, Src/on_subs.f, Src/order.f,
+	  Src/ordix.f, Src/phiatm.f, Src/propor.f, Src/ran3.f, Src/rcore.f,
+	  Src/rcut.f, Src/reclat.f:
+	First version after the Madrid meeting. Released to Richard Martin.
+
+
+	* Src/Attic/ldaxc.f, Src/Attic/matest.f, Src/Attic/overkb.f,
+	  Src/Attic/pbegga.f, Src/Attic/phitst.f, Src/Attic/poison.IBM.f,
+	  Src/Attic/poison.f, Src/Attic/poison.nonIBM.f, Src/Attic/pw92c.f,
+ 	  Src/Attic/pw92xc.f, Src/Attic/rdiagon.f, Src/kinefsm.f, Src/matel.f,
+	  Src/minvec.f, Src/mulliken.f, Src/naefs.f, Src/neighb.f,
+	  Src/nlefsm.f, Src/ordern.f, Src/overfsm.f, Src/prmem.f, Src/radfft.f,
+	  Src/rdiag.f, Src/redata.f, Src/reord.f, Src/rhooda.f, Src/rhoofd.f,
+	  Src/rlylm.f, Src/siesta.f:
+	Initial revision
+
+	* Src/bessph.f, Src/chcore.f, Src/chkgmx.f, Src/dot.f, Src/epskb.f,
+	  Src/gauleg.f:
+	First version after the Madrid meeting. Released to Richard Martin.
+
+
+	* Src/Attic/atomxc.f, Src/Attic/cdiagon.f, Src/Attic/cellxc.f,
+          Src/Attic/cft.f, Src/Attic/chkdime.f, Src/Attic/cputim.f,
+	  Src/Attic/equal.f, Src/Attic/ewaldf.f, Src/Attic/exchge.f,
+	  Src/Attic/fdf.f, Src/Attic/ggaxc.f, Src/atom.f, Src/atom_subs.f,
+ 	  Src/atomlwf.f, Src/cdiag.f, Src/cgwf.f, Src/chkdim.f, Src/conjgr.f,
+	  Src/denmat.f, Src/dfscf.f, Src/dhscf.f, Src/dismin.f, Src/dynamics.f,
+	  Src/egandd.f, Src/ener3.f, Src/extrapol.f, Src/fermid.f, Src/four1.f,
+	  Src/gradient.f, Src/hsparse.f, Src/initatom.f, Docs/siesta.tex,
+	  Examples/Attic/siesta.fdf:
+	Initial revision
+

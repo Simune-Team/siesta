@@ -1,0 +1,12 @@
+This file is: siesta/Examples/Vps/README
+
+The siesta/Examples/Vps directory contains the pseudopotentials required 
+by the SIESTA run examples contained in siesta/Examples, as well as the 
+input files used to generate those pseudopotentials with the 
+siesta/Pseudo/atom/atm program.
+
+These pseudopotentials are provided only as examples, and we do not 
+guarantee their accuracy or transferability. We warn you that
+pseudopotential generation may be tricky,  and that all pseudopotentials
+should be thoroughly checked by the user before relying on them.
+

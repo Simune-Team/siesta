@@ -1,0 +1,562 @@
+ 
+prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
+prdate: DATE = Fri Mar 13 13:32:37 MET 1998
+ 
+SIESTA Version 0.8.44 (Mar 13, 1998, 13:30:00)                        
+
+redata:               ***********************                 
+redata:               *  WELCOME TO SIESTA  *                 
+redata:               ***********************                 
+
+redata: *********************** Dump of input data file ***********************
+SystemName       64-atom silicon
+SystemLabel      si64
+NumberOfAtoms    2
+NumberOfSpecies  1
+%block ChemicalSpeciesLabel
+ 1  14  Si
+%endblock ChemicalSpeciesLabel
+LatticeConstant   5.430 Ang
+%block LatticeVectors
+  0.000  0.500  0.500
+  0.500  0.000  0.500
+  0.500  0.500  0.000
+%endblock LatticeVectors
+AtomicCoordinatesFormat  ScaledCartesian
+%block AtomicCoordinatesAndAtomicSpecies
+-0.1250 -0.1250 -0.1250   1
+ 0.1250  0.1250  0.1250   1
+%endblock AtomicCoordinatesAndAtomicSpecies
+%block SuperCell
+ -2   2   2
+  2  -2   2
+  2   2  -2
+%endblock SuperCell
+PAO.BasisSize     SZ
+PAO.EnergyShift   0.5 eV
+MeshCutoff        20.0 Ry
+DM.MixingWeight   0.50
+DM.NumberPulay    3
+redata: ************************ End of input data file ************************
+
+
+redata: ************************************************************************
+redata:               SIMULATION PARAMETERS
+redata:
+redata:  The following are some of the parameters of the simulation.
+redata:  A complete list of the parameters used, including defect values,
+redata:  can be found in file out.fdf             
+redata:
+redata: System Name                      = 64-atom silicon                                                                                                                                       
+redata: System Label                     = si64                
+redata: Number of Atoms                  =     2
+redata: Number of Atomic Species         =     1
+redata: Write minimum siesta.h dimensions  =     F
+redata: Write Mulliken Pop. = NO
+redata: label for specie   1   Si                  
+redata: Lattice Constant                 =    10.2612  Bohr
+redata: Lattice vectors (in units of Lattice Constant) =
+           0.00000   0.50000   0.50000
+           0.50000   0.00000   0.50000
+           0.50000   0.50000   0.00000
+redata: Lattice vectors (in Bohr) =
+           0.00000   5.13061   5.13061
+           5.13061   0.00000   5.13061
+           5.13061   5.13061   0.00000
+redata: Spin Polarization                =     1
+redata: Mesh Cutoff                      =    20.0000  Ry
+redata: Max. number of SCF Iter          =    50
+redata: One Pulay mixing every           =     3 iterations
+redata: Write Pulay info on disk?       =     F
+redata: New DM Mixing Weight             =     0.5000
+redata: DM Tolerance for SCF             =     0.000100
+redata: Use continuation files for DM    =     F
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            = Diagonalization
+redata: Electronic Temperature           =     0.0019  Ry
+redata: Dynamics option                  = Verlet MD run
+redata: Initial MD time step             =     1
+redata:   Final MD time step             =     1
+redata: Length of MD time step           =     1.0000  fs
+redata: Length of MD time step           =     1.0000  fs
+redata: Initial Temperature of MD run    =     0.0000  K
+redata: Perform a MD quench              =     F
+recoor: Atomic-coordinates input format  = Cartesian coordinates
+recoor:                                    (in units of alat)
+recoor: Atomic coordinates (Bohr) and species
+recoor:    1    -1.28265  -1.28265  -1.28265  1
+recoor:    2     1.28265   1.28265   1.28265  1
+redata: Total-cell (supercell) vectors (Bohr)
+redata:   20.522434    0.000000    0.000000
+redata:    0.000000   20.522434    0.000000
+redata:    0.000000    0.000000   20.522434
+redata: Number of unit cells  =    32
+redata: Total number of atoms =    64
+redata: ************************************************************************
+  
+
+ATOM: ************************************************************************
+ATOM: Called for Si  (Z =  14)
+
+
+ATOM: Pseudopotential generation method:
+ATOM: ATM3      Troullier-Martins                       
+
+ATOM: Valence configuration (pseudopotential generation):
+       3s 2.00  r
+       2.00  r= 1
+       0  r= 1.89
+
+ATOM: Exchange-correlation functional:
+ATOM: Ceperley-Alder
+
+ATOM: Estimated core radius    2.54944
+
+ATOM: Include non-local core corrections could be a good idea
+ATOM: Maximum radius for local-pseudopot. charge    2.58151
+ATOM: No ghost state for L =  0
+ATOM: No ghost state for L =  1
+ATOM: No ghost state for L =  2
+
+ATOM: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.936440   el= -0.796617   kbcos=  4.661340
+   l= 1   rc=  1.936440   el= -0.307040   kbcos=  1.494238
+   l= 2   rc=  1.936440   el=  0.002313   kbcos= -2.808672
+ATOM: Total number of KB projectors:  9
+
+ATOM: Sankey-type orbitals:
+
+ATOM: Orbitals with angular momentum L= 0
+
+ATOM: PAO cut-off radius determinated from an
+ATOM: energy shift=  0.036749 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.645526
+                 energy =   -0.762990
+                kinetic =    0.613190
+    potential(screened) =   -1.376180
+       potential(ionic) =   -3.871589
+
+ATOM: Orbitals with angular momentum L= 1
+
+ATOM: PAO cut-off radius determinated from an
+ATOM: energy shift=  0.036749 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    5.674097
+                 energy =   -0.273048
+                kinetic =    0.943447
+    potential(screened) =   -1.216494
+       potential(ionic) =   -3.514321
+ATOM: Total number of Sankey-type orbitals:  4
+
+ATOM: Valence configuration(local Pseudopot. screening):
+        3s( 2.00)
+        3p( 2.00)
+
+ATOM:  Cut-off radius for vlocal:  5.674097
+
+************************************************************************
+
+ATOM: Basis sets have been generated automatically
+ATOM: using the options:
+ATOM: PAO.BasisSize sz             
+ATOM: PAO.BasisType  split          
+ATOM: PAO.EnergyShift    0.036749 Ry 
+ATOM: An alternative input to obtain the same basis set:
+
+INPUT: ************************************************************************
+PAO.BasisType  split          
+PAO.EnergyShift    0.036749 Ry 
+PAO.SplitNorm    0.150000
+PAO.PolarizationOrbitals false
+%block PAO_basis_and_PS_lmax        # Define Basis set
+
+  1 14 1 2                   # Index, Z, LmaxPAO, LmaxPS
+           0           1              # l, Nzeta  
+   4.64552577920288       # rc(izeta=1,Nzeta)(Bohr)
+   1.00000000000000       # scaleFactor(izeta=1,Nzeta)
+           1           1              # l, Nzeta  
+   5.67409720000605       # rc(izeta=1,Nzeta)(Bohr)
+   1.00000000000000       # scaleFactor(izeta=1,Nzeta)
+%endblock PAO_basis_and_PS_lmax     
+ATOM: ************************************************************************
+
+initatom: is,iz =   1  14
+initatom: io,rcut,q   =   1    4.645526    2.000000
+initatom: io,rcut,q   =   2    5.674097    0.666667
+initatom: io,rcut,q   =   3    5.674097    0.666667
+initatom: io,rcut,q   =   4    5.674097    0.666667
+initatom: io,rcut     =   0    5.674097
+initatom: io,rcut,eps =  -1    1.936440    4.661340
+initatom: io,rcut,eps =  -2    1.936440    1.494238
+initatom: io,rcut,eps =  -3    1.936440    1.494238
+initatom: io,rcut,eps =  -4    1.936440    1.494238
+initatom: io,rcut,eps =  -5    1.936440   -2.808672
+initatom: io,rcut,eps =  -6    1.936440   -2.808672
+initatom: io,rcut,eps =  -7    1.936440   -2.808672
+initatom: io,rcut,eps =  -8    1.936440   -2.808672
+initatom: io,rcut,eps =  -9    1.936440   -2.808672
+  
+initatom: ia, is, iz, lasto, lastkb =   1   1  14     4     9
+initatom: ia, is, iz, lasto, lastkb =   2   1  14     8    18
+initatom: ia, is, iz, lasto, lastkb =   3   1  14    12    27
+initatom: ia, is, iz, lasto, lastkb =   4   1  14    16    36
+initatom: ia, is, iz, lasto, lastkb =   5   1  14    20    45
+initatom: ia, is, iz, lasto, lastkb =   6   1  14    24    54
+initatom: ia, is, iz, lasto, lastkb =   7   1  14    28    63
+initatom: ia, is, iz, lasto, lastkb =   8   1  14    32    72
+initatom: ia, is, iz, lasto, lastkb =   9   1  14    36    81
+initatom: ia, is, iz, lasto, lastkb =  10   1  14    40    90
+initatom: ia, is, iz, lasto, lastkb =  11   1  14    44    99
+initatom: ia, is, iz, lasto, lastkb =  12   1  14    48   108
+initatom: ia, is, iz, lasto, lastkb =  13   1  14    52   117
+initatom: ia, is, iz, lasto, lastkb =  14   1  14    56   126
+initatom: ia, is, iz, lasto, lastkb =  15   1  14    60   135
+initatom: ia, is, iz, lasto, lastkb =  16   1  14    64   144
+initatom: ia, is, iz, lasto, lastkb =  17   1  14    68   153
+initatom: ia, is, iz, lasto, lastkb =  18   1  14    72   162
+initatom: ia, is, iz, lasto, lastkb =  19   1  14    76   171
+initatom: ia, is, iz, lasto, lastkb =  20   1  14    80   180
+initatom: ia, is, iz, lasto, lastkb =  21   1  14    84   189
+initatom: ia, is, iz, lasto, lastkb =  22   1  14    88   198
+initatom: ia, is, iz, lasto, lastkb =  23   1  14    92   207
+initatom: ia, is, iz, lasto, lastkb =  24   1  14    96   216
+initatom: ia, is, iz, lasto, lastkb =  25   1  14   100   225
+initatom: ia, is, iz, lasto, lastkb =  26   1  14   104   234
+initatom: ia, is, iz, lasto, lastkb =  27   1  14   108   243
+initatom: ia, is, iz, lasto, lastkb =  28   1  14   112   252
+initatom: ia, is, iz, lasto, lastkb =  29   1  14   116   261
+initatom: ia, is, iz, lasto, lastkb =  30   1  14   120   270
+initatom: ia, is, iz, lasto, lastkb =  31   1  14   124   279
+initatom: ia, is, iz, lasto, lastkb =  32   1  14   128   288
+initatom: ia, is, iz, lasto, lastkb =  33   1  14   132   297
+initatom: ia, is, iz, lasto, lastkb =  34   1  14   136   306
+initatom: ia, is, iz, lasto, lastkb =  35   1  14   140   315
+initatom: ia, is, iz, lasto, lastkb =  36   1  14   144   324
+initatom: ia, is, iz, lasto, lastkb =  37   1  14   148   333
+initatom: ia, is, iz, lasto, lastkb =  38   1  14   152   342
+initatom: ia, is, iz, lasto, lastkb =  39   1  14   156   351
+initatom: ia, is, iz, lasto, lastkb =  40   1  14   160   360
+initatom: ia, is, iz, lasto, lastkb =  41   1  14   164   369
+initatom: ia, is, iz, lasto, lastkb =  42   1  14   168   378
+initatom: ia, is, iz, lasto, lastkb =  43   1  14   172   387
+initatom: ia, is, iz, lasto, lastkb =  44   1  14   176   396
+initatom: ia, is, iz, lasto, lastkb =  45   1  14   180   405
+initatom: ia, is, iz, lasto, lastkb =  46   1  14   184   414
+initatom: ia, is, iz, lasto, lastkb =  47   1  14   188   423
+initatom: ia, is, iz, lasto, lastkb =  48   1  14   192   432
+initatom: ia, is, iz, lasto, lastkb =  49   1  14   196   441
+initatom: ia, is, iz, lasto, lastkb =  50   1  14   200   450
+initatom: ia, is, iz, lasto, lastkb =  51   1  14   204   459
+initatom: ia, is, iz, lasto, lastkb =  52   1  14   208   468
+initatom: ia, is, iz, lasto, lastkb =  53   1  14   212   477
+initatom: ia, is, iz, lasto, lastkb =  54   1  14   216   486
+initatom: ia, is, iz, lasto, lastkb =  55   1  14   220   495
+initatom: ia, is, iz, lasto, lastkb =  56   1  14   224   504
+initatom: ia, is, iz, lasto, lastkb =  57   1  14   228   513
+initatom: ia, is, iz, lasto, lastkb =  58   1  14   232   522
+initatom: ia, is, iz, lasto, lastkb =  59   1  14   236   531
+initatom: ia, is, iz, lasto, lastkb =  60   1  14   240   540
+initatom: ia, is, iz, lasto, lastkb =  61   1  14   244   549
+initatom: ia, is, iz, lasto, lastkb =  62   1  14   248   558
+initatom: ia, is, iz, lasto, lastkb =  63   1  14   252   567
+initatom: ia, is, iz, lasto, lastkb =  64   1  14   256   576
+
+siesta: System type = bulk      
+
+siesta: k-point coordinates (Bohr**-1) and weights:
+siesta:    1    0.000000   -0.306162    0.000000       0.031250
+siesta:    2    0.000000    0.000000    0.000000       0.031250
+siesta:    3    0.000000    0.306162    0.000000       0.031250
+siesta:    4    0.000000    0.612324    0.000000       0.031250
+siesta:    5    0.000000   -0.612324    0.306162       0.062500
+siesta:    6    0.000000   -0.306162    0.306162       0.062500
+siesta:    7    0.000000    0.000000    0.306162       0.062500
+siesta:    8    0.000000    0.306162    0.306162       0.062500
+siesta:    9    0.000000   -0.918485    0.612324       0.031250
+siesta:   10    0.000000   -0.612324    0.612324       0.031250
+siesta:   11    0.000000   -0.306162    0.612324       0.031250
+siesta:   12    0.000000    0.000000    0.612324       0.031250
+siesta:   13    0.306162    0.000000   -0.306162       0.031250
+siesta:   14    0.306162    0.306162   -0.306162       0.031250
+siesta:   15    0.306162    0.612324   -0.306162       0.031250
+siesta:   16    0.306162    0.918485   -0.306162       0.031250
+siesta:   17    0.306162   -0.306162    0.000000       0.062500
+siesta:   18    0.306162    0.000000    0.000000       0.062500
+siesta:   19    0.306162    0.306162    0.000000       0.062500
+siesta:   20    0.306162    0.612324    0.000000       0.062500
+siesta:   21    0.306162   -0.612324    0.306162       0.031250
+siesta:   22    0.306162   -0.306162    0.306162       0.031250
+siesta:   23    0.306162    0.000000    0.306162       0.031250
+siesta:   24    0.306162    0.306162    0.306162       0.031250
+siesta: k-mesh cutoff =    5.430000 Ang
+
+siesta:    ===============================
+siesta:        Begin MD step =      1
+siesta:    ===============================
+
+outcoor: Atomic coordinates (scaled):                       
+   -0.12500000   -0.12500000   -0.12500000   1  Si        1
+    0.12500000    0.12500000    0.12500000   1  Si        2
+   -0.12500000    0.37500000    0.37500000   1  Si        3
+    0.12500000    0.62500000    0.62500000   1  Si        4
+   -0.12500000    0.87500000    0.87500000   1  Si        5
+    0.12500000    1.12500000    1.12500000   1  Si        6
+   -0.12500000    1.37500000    1.37500000   1  Si        7
+    0.12500000    1.62500000    1.62500000   1  Si        8
+    0.37500000   -0.12500000    0.37500000   1  Si        9
+    0.62500000    0.12500000    0.62500000   1  Si       10
+    0.37500000    0.37500000    0.87500000   1  Si       11
+    0.62500000    0.62500000    1.12500000   1  Si       12
+    0.37500000    0.87500000    1.37500000   1  Si       13
+    0.62500000    1.12500000    1.62500000   1  Si       14
+    0.37500000    1.37500000    1.87500000   1  Si       15
+    0.62500000    1.62500000    2.12500000   1  Si       16
+    0.87500000   -0.12500000    0.87500000   1  Si       17
+    1.12500000    0.12500000    1.12500000   1  Si       18
+    0.87500000    0.37500000    1.37500000   1  Si       19
+    1.12500000    0.62500000    1.62500000   1  Si       20
+    0.87500000    0.87500000    1.87500000   1  Si       21
+    1.12500000    1.12500000    2.12500000   1  Si       22
+    0.87500000    1.37500000    2.37500000   1  Si       23
+    1.12500000    1.62500000    2.62500000   1  Si       24
+    1.37500000   -0.12500000    1.37500000   1  Si       25
+    1.62500000    0.12500000    1.62500000   1  Si       26
+    1.37500000    0.37500000    1.87500000   1  Si       27
+    1.62500000    0.62500000    2.12500000   1  Si       28
+    1.37500000    0.87500000    2.37500000   1  Si       29
+    1.62500000    1.12500000    2.62500000   1  Si       30
+    1.37500000    1.37500000    2.87500000   1  Si       31
+    1.62500000    1.62500000    3.12500000   1  Si       32
+    0.87500000   -0.12500000   -0.12500000   1  Si       33
+    1.12500000    0.12500000    0.12500000   1  Si       34
+    0.87500000    0.37500000    0.37500000   1  Si       35
+    1.12500000    0.62500000    0.62500000   1  Si       36
+    0.87500000    0.87500000    0.87500000   1  Si       37
+    1.12500000    1.12500000    1.12500000   1  Si       38
+    0.87500000    1.37500000    1.37500000   1  Si       39
+    1.12500000    1.62500000    1.62500000   1  Si       40
+    1.37500000   -0.12500000    0.37500000   1  Si       41
+    1.62500000    0.12500000    0.62500000   1  Si       42
+    1.37500000    0.37500000    0.87500000   1  Si       43
+    1.62500000    0.62500000    1.12500000   1  Si       44
+    1.37500000    0.87500000    1.37500000   1  Si       45
+    1.62500000    1.12500000    1.62500000   1  Si       46
+    1.37500000    1.37500000    1.87500000   1  Si       47
+    1.62500000    1.62500000    2.12500000   1  Si       48
+    1.87500000   -0.12500000    0.87500000   1  Si       49
+    2.12500000    0.12500000    1.12500000   1  Si       50
+    1.87500000    0.37500000    1.37500000   1  Si       51
+    2.12500000    0.62500000    1.62500000   1  Si       52
+    1.87500000    0.87500000    1.87500000   1  Si       53
+    2.12500000    1.12500000    2.12500000   1  Si       54
+    1.87500000    1.37500000    2.37500000   1  Si       55
+    2.12500000    1.62500000    2.62500000   1  Si       56
+    2.37500000   -0.12500000    1.37500000   1  Si       57
+    2.62500000    0.12500000    1.62500000   1  Si       58
+    2.37500000    0.37500000    1.87500000   1  Si       59
+    2.62500000    0.62500000    2.12500000   1  Si       60
+    2.37500000    0.87500000    2.37500000   1  Si       61
+    2.62500000    1.12500000    2.62500000   1  Si       62
+    2.37500000    1.37500000    2.87500000   1  Si       63
+    2.62500000    1.62500000    3.12500000   1  Si       64
+
+xijorb: WARNING: orbital pair      1   130 is multiply connected
+
+
+DHSCF: MESH =    30 x    30 x    30 =       27000
+
+siesta: dhscf mesh cutoff =    21.090 Ry
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =   12185.667943
+siesta: Ena     =    3614.849375
+siesta: Ekin    =    2710.666640
+siesta: Enl     =    1171.150780
+siesta: DEna    =      -0.000168
+siesta: DUscf   =       0.000000
+siesta: DUext   =       0.000000
+siesta: Exc     =   -2086.429138
+siesta: eta*DQ  =       0.000000
+siesta: Eharris =   -6833.299070
+siesta: Etot    =   -6775.430454
+siesta: FreeEng =   -6775.430454
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -6833.2991    -6775.4305    -6775.4305  1.0235 -2.3052
+timer: Routine,Calls,Time,% = IterSCF        1       4.888  77.76
+siesta:    2    -6831.2602    -6831.1877    -6831.1877  0.0155 -2.5733
+siesta:    3    -6831.2582    -6831.2232    -6831.2232  0.0075 -2.5685
+siesta:    4    -6831.2573    -6831.2548    -6831.2548  0.0000 -2.5639
+siesta:    5    -6831.2575    -6831.2562    -6831.2562  0.0000 -2.5639
+
+siesta: Atomic forces (eV/Ang):
+   1    0.023993    0.023994    0.023994
+   2   -0.023995   -0.023996   -0.023996
+   3    0.023993    0.023994    0.023994
+   4   -0.023995   -0.023996   -0.023996
+   5    0.023993    0.023994    0.023994
+   6   -0.023995   -0.023996   -0.023996
+   7    0.023993    0.023994    0.023994
+   8   -0.023995   -0.023996   -0.023996
+   9    0.023993    0.023994    0.023994
+  10   -0.023995   -0.023996   -0.023996
+  11    0.023993    0.023994    0.023994
+  12   -0.023995   -0.023996   -0.023996
+  13    0.023993    0.023994    0.023994
+  14   -0.023995   -0.023996   -0.023996
+  15    0.023993    0.023994    0.023994
+  16   -0.023995   -0.023996   -0.023996
+  17    0.023993    0.023994    0.023994
+  18   -0.023995   -0.023996   -0.023996
+  19    0.023993    0.023994    0.023994
+  20   -0.023995   -0.023996   -0.023996
+  21    0.023993    0.023994    0.023994
+  22   -0.023995   -0.023996   -0.023996
+  23    0.023993    0.023994    0.023994
+  24   -0.023995   -0.023996   -0.023996
+  25    0.023993    0.023994    0.023994
+  26   -0.023995   -0.023996   -0.023996
+  27    0.023993    0.023994    0.023994
+  28   -0.023995   -0.023996   -0.023996
+  29    0.023993    0.023994    0.023994
+  30   -0.023995   -0.023996   -0.023996
+  31    0.023993    0.023994    0.023994
+  32   -0.023995   -0.023996   -0.023996
+  33    0.023993    0.023994    0.023994
+  34   -0.023995   -0.023996   -0.023996
+  35    0.023993    0.023994    0.023994
+  36   -0.023995   -0.023996   -0.023996
+  37    0.023993    0.023994    0.023994
+  38   -0.023995   -0.023996   -0.023996
+  39    0.023993    0.023994    0.023994
+  40   -0.023995   -0.023996   -0.023996
+  41    0.023993    0.023994    0.023994
+  42   -0.023995   -0.023996   -0.023996
+  43    0.023993    0.023994    0.023994
+  44   -0.023995   -0.023996   -0.023996
+  45    0.023993    0.023994    0.023994
+  46   -0.023995   -0.023996   -0.023996
+  47    0.023993    0.023994    0.023994
+  48   -0.023995   -0.023996   -0.023996
+  49    0.023993    0.023994    0.023994
+  50   -0.023995   -0.023996   -0.023996
+  51    0.023993    0.023994    0.023994
+  52   -0.023995   -0.023996   -0.023996
+  53    0.023993    0.023994    0.023994
+  54   -0.023995   -0.023996   -0.023996
+  55    0.023993    0.023994    0.023994
+  56   -0.023995   -0.023996   -0.023996
+  57    0.023993    0.023994    0.023994
+  58   -0.023995   -0.023996   -0.023996
+  59    0.023993    0.023994    0.023994
+  60   -0.023995   -0.023996   -0.023996
+  61    0.023993    0.023994    0.023994
+  62   -0.023995   -0.023996   -0.023996
+  63    0.023993    0.023994    0.023994
+  64   -0.023995   -0.023996   -0.023996
+----------------------------------------
+ Tot   -0.000055   -0.000081   -0.000059
+----------------------------------------
+ Max    0.023996
+ Res    0.023995    [ sqrt( Sum f_i^2 / 3N ) ]
+
+siesta: Eigenvalues (eV):
+ ik is    eps
+  1  1 -14.52  -6.99  -5.39  -5.39  -1.41   2.08   3.50   3.54
+  2  1 -15.41  -3.21  -3.21  -3.21  -0.45  -0.41  -0.41  -0.26
+  3  1 -14.52  -6.99  -5.39  -5.39  -1.41   2.08   3.50   3.54
+  4  1 -11.44 -11.44  -6.47  -6.47  -0.56  -0.52   7.36   7.43
+  5  1 -11.24 -11.24  -7.42  -7.42   2.76   2.78   4.76   4.79
+  6  1 -13.55  -8.97  -7.38  -4.80   0.19   2.25   4.14   5.07
+  7  1 -14.52  -6.99  -5.39  -5.39  -1.41   2.08   3.50   3.54
+  8  1 -13.56  -8.97  -7.38  -4.80   0.21   2.29   4.13   5.10
+  9  1 -11.24 -11.24  -7.42  -7.42   2.76   2.78   4.76   4.79
+ 10  1 -11.44 -11.44  -6.47  -6.47  -0.56  -0.52   7.36   7.43
+ 11  1 -11.24 -11.24  -7.42  -7.42   2.76   2.78   4.76   4.79
+ 12  1 -11.44 -11.44  -6.47  -6.47  -0.56  -0.52   7.36   7.43
+ 13  1 -13.55  -8.97  -7.38  -4.80   0.19   2.25   4.14   5.07
+ 14  1 -13.21 -10.65  -4.69  -4.68  -1.15   1.74   1.78   8.75
+ 15  1 -13.55  -8.97  -7.38  -4.80   0.19   2.25   4.14   5.07
+ 16  1 -13.21 -10.65  -4.69  -4.68  -1.15   1.74   1.78   8.75
+ 17  1 -13.55  -8.97  -7.38  -4.80   0.19   2.25   4.14   5.07
+ 18  1 -14.52  -6.99  -5.39  -5.39  -1.41   2.08   3.50   3.54
+ 19  1 -13.56  -8.97  -7.38  -4.80   0.21   2.29   4.13   5.10
+ 20  1 -11.24 -11.24  -7.42  -7.42   2.76   2.78   4.76   4.79
+ 21  1 -13.56  -8.97  -7.38  -4.80   0.21   2.29   4.13   5.10
+ 22  1 -13.21 -10.65  -4.69  -4.68  -1.15   1.74   1.78   8.75
+ 23  1 -13.56  -8.97  -7.38  -4.80   0.21   2.29   4.13   5.10
+ 24  1 -13.21 -10.65  -4.68  -4.68  -1.10   1.80   1.80   8.73
+
+siesta: Program's energy decomposition (eV):
+siesta:-Eions   =  -12185.667943
+siesta: Ena     =    3614.849375
+siesta: Ekin    =    2604.776581
+siesta: Enl     =     960.309637
+siesta: DEna    =     234.026820
+siesta: DUscf   =       6.576186
+siesta: DUext   =       0.000000
+siesta: Exc     =   -2066.126896
+siesta: eta*DQ  =       0.000000
+siesta: Ekinion =       0.000000
+siesta: Eharris =   -6831.257486
+siesta: Etot    =   -6831.256241
+siesta: FreeEng =   -6831.256241
+
+siesta: Final energy (eV):
+siesta:       Kinetic =    2604.776581
+siesta:       Hartree =     428.609885
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =   -2066.126896
+siesta:  Ion-electron =   -2967.398704
+siesta:       Ion-ion =   -4831.117107
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -6831.256241
+
+siesta: Stress tensor (eV/Ang**3):
+siesta:    -0.036911    0.002518    0.002518
+siesta:     0.002518   -0.036911    0.002518
+siesta:     0.002518    0.002518   -0.036911
+
+siesta: Cell volume = 1280.824056 Ang**3
+
+siesta: Pressure:
+siesta:                Solid            Molecule  Units
+siesta:           0.00040201          0.00041088  Ry/Bohr**3
+siesta:           0.03691138          0.03772518  eV/Ang**3
+siesta:          59.13598044         60.43976405  kBar
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1      22.176      22.176   100.00
+timer:  bands             2       0.001       0.003     0.01
+timer:  IterMD            1      21.784      21.784    98.24
+timer:  IterSCF           5       4.151      20.757    93.60
+timer:  nlefsm            2       1.286       2.572    11.60
+timer:  DHSCF             5       3.197      15.987    72.09
+timer:  POISON            7       0.066       0.461     2.08
+timer:  DHSCF2            1       1.183       1.183     5.33
+timer:  REORD            32       0.001       0.023     0.11
+timer:  RFFT             12       0.036       0.427     1.93
+timer:  DHSCF3            5       1.451       7.257    32.72
+timer:  rhoofd            5       0.659       3.296    14.86
+timer:  CELLXC            5       0.046       0.231     1.04
+timer:  vmat              5       0.657       3.283    14.81
+timer:  diagon            5       0.092       0.458     2.06
+timer:  CDIAG           240       0.000       0.026     0.12
+timer:  diagon3         120       0.002       0.249     1.12
+timer:  DHSCF4            1       7.526       7.526    33.94
+timer:  dfscf           512       0.012       6.193    27.93
+  
+ 
+rsiesta: Run-time errors and warnings:
+xijorb: WARNING: orbital pair      1   130 is multiply connected
+ 
+ 
+prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
+prdate: DATE = Fri Mar 13 13:33:20 MET 1998
+ 

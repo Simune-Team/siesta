@@ -1,0 +1,13 @@
+This directory contains programs or scripts that can be helpful
+in connection with the program SIESTA:
+
+msiesta:     Compiles siesta
+rsiesta:     Runs siesta
+rrsiesta:    Really-runs siesta (run-compile loop)
+qsiesta:     Queues a siesta run job
+qrrsiesta:   Queues a siesta run-compile loop job
+prdate:      Prints the date and host (used by rsiesta)
+vpsa2bin:    Converts formatted pseudopotential files to unformatted.
+vpsb2asc:    Converts unformatted pseudopotential files to formatted.
+Plrho/plrho: Plots in 3D the electron density and other functions 
+             calculated by siesta

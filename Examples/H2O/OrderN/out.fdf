@@ -1,0 +1,102 @@
+
+#FDF: Opened stdin                for input. Unit:  5
+
+fdf-debug              0     # Default value
+SystemName     Water molecule, using order-N method                                            
+SystemLabel     h2o                                                                             
+NumberOfAtoms                        3
+NumberOfSpecies                        2
+WriteSiestaDim              F     # Default value
+WriteMullikenPop              0     # Default value
+
+%block ChemicalSpeciesLabel                                                    
+ 1  8  O      # Species index, atomic number, species label                    
+ 2  1  H                                                                       
+%endblock ChemicalSpeciesLabel                                                 
+
+
+%block ChemicalSpeciesLabel                                                    
+ 1  8  O      # Species index, atomic number, species label                    
+ 2  1  H                                                                       
+%endblock ChemicalSpeciesLabel                                                 
+
+LatticeConstant         0.0000000000E+00 Bohr     # Default value
+SpinPolarized              F     # Default value
+MeshCutoff          50.00000000     Ry     # Default value
+MaxSCFIterations             50     # Default value
+DM.NumberPulay              0     # Default value
+DM.PulayOnFile              F     # Default value
+DM.MixingWeight         0.2500000000         # Default value
+DM.Tolerance         0.1000000000E-03     # Default value
+UseSaveData              F     # Default value
+DM.UseSaveDM              F     # Default value
+NeglNonOverlapInt              F     # Default value
+SolutionMethod     ordern                                                                          
+ElectronicTemperature         0.1900000000E-02 Ry     # Default value
+ON.MaxNumIter           1000     # Default value
+ON.etol         0.1000000000E-07     # Default value
+ON.eta         0.0000000000E+00 Ry     # Default value
+On.RcLWF          9.500000000     Bohr     # Default value
+UseSaveData              F     # Default value
+ON.UseSaveLWF              F     # Default value
+ON.functional     kim               # Default value
+MD.TypeOfRun     verlet                     # Default value
+MD.NumCGsteps              0     # Default value
+MD.MaxCGDispl         0.2000000000     Bohr     # Default value
+MD.MaxForceTol         0.1000000000E-01 Ry/Bohr     # Default value
+MD.InitialTimeStep              1     # Default value
+MD.FinalTimeStep              1     # Default value
+MD.LengthTimeStep          1.000000000     fs     # Default value
+MD.Quench              F     # Default value
+MD.InitialTemperature         0.0000000000E+00 K     # Default value
+MD.TargetTemperature         0.0000000000E+00 K     # Default value
+MD.TargetPressure         0.0000000000E+00 Ry/Bohr**3     # Default value
+MD.NoseMass          100.0000000     Ry*fs**2     # Default value
+MD.ParrinelloRahmanMass          100.0000000     Ry*fs**2     # Default value
+MD.AnnealOption     TemperatureAndPressure     # Default value
+MD.TauRelax          100.0000000     fs     # Default value
+MD.BulkModulus          100.0000000         # Default value
+AtomicCoordinatesFormat     NotScaledCartesianAng                                                           
+
+%block AtomicCoordinatesAndAtomicSpecies                                       
+ 0.000  0.000  0.000  1                                                        
+ 0.757  0.586  0.000  2                                                        
+-0.757  0.586  0.000  2                                                        
+%endblock AtomicCoordinatesAndAtomicSpecies                                    
+
+UseSaveData              F     # Default value
+MD.UseSaveXV              F     # Default value
+SaveHS              F     # Default value
+PAO.BasisType     split               # Default value
+PAO.PolarizationOrbitals              F     # Default value
+PAO.BasisSize     standard            # Default value
+PAO.SplitPolarizationOrbitals              1     # Default value
+xc.functional     LDA     # Default value
+xc.authors     PZ     # Default value
+PAO.BasisType     split               # Default value
+PAO.EnergyShift         0.2000000000E-01 Ry     # Default value
+PAO.SplitNorm         0.1500000000         # Default value
+PAO.BasisType     split               # Default value
+PAO.PolarizationOrbitals              F     # Default value
+PAO.BasisSize     standard            # Default value
+PAO.SplitPolarizationOrbitals              1     # Default value
+xc.functional     LDA     # Default value
+xc.authors     PZ     # Default value
+PAO.BasisType     split               # Default value
+PAO.EnergyShift         0.2000000000E-01 Ry     # Default value
+PAO.SplitNorm         0.1500000000         # Default value
+kgrid_cutoff         0.0000000000E+00 Bohr     # Default value
+AtomicCoordinatesFormat     NotScaledCartesianAng                                                           
+AtomCoorFormatOut     NotScaledCartesianAng      # Default value
+LatticeConstant         0.0000000000E+00 Bohr     # Default value
+WarningMinimumAtomicDistance          1.000000000     Bohr     # Default value
+xc.functional     LDA     # Default value
+xc.authors     PZ     # Default value
+SystemLabel     h2o                                                                             
+SystemLabel     h2o                                                                             
+SystemLabel     h2o                                                                             
+WriteCoorXmol              F     # Default value
+WriteCoorCerius              F     # Default value
+SaveRho              F     # Default value
+SaveElectrostaticPotential              F     # Default value
+SaveTotalPotential              F     # Default value

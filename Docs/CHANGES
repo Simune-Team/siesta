@@ -1,0 +1,1368 @@
+========================================================================
+                  SIESTA CHANGES: TOP IS MOST RECENT
+========================================================================
+Version: 0.8.53
+Date: 1998/05/5  21:30:00
+Title: Revising script files + comment on them in the manual
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  Script files qsiesta and qrrsiesta allow running in the absence of other
+  scripts from the working directory.
+
+  msiesta copies Include/ordern.h and Include/diagon.h in working directory
+  if init.
+
+  Manual has a comment on the convenience of "touch" *.h in a working
+  directory if recompiling after some time (after other systems have been
+  compiled.
+
+Files:
+  qsiesta, qrrsiesta, msiesta
+  siesta.tex
+========================================================================
+Version: 0.8.52
+Date: 1998/05/4  20:25:00
+Title: Printing Qtot before DM normalization in O(N) solution
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  Write Qtot before and after the DM renormalization, in O(N) calculations.
+  This is usefull to bracket the value of eta.
+
+Files:
+  ordern.f       : Change the format of the printout of qtot
+  denmat.f       : Write qtot before normalization
+========================================================================
+Version: 0.8.51 
+Date: 1998/05/3  22:30:00
+Title: Removing unused variables + adding parenthesis: Avoiding warnings
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  From the compilation of SIESTA 0.8.50 with g77 -Wall (linux), warnings
+  concerning unused variables and ambiguous math expressions have been
+  used for their correction. Unused variables have been removed and 
+  parenthesis have been added to math expressions.
+
+Files: (and variables removed)
+  Sys/cray.f    : times (in cputim.f)
+  Sys/ibm.f     : times (in cputim.f)
+  Sys/ibmessl.f : i, j, np (in poison.f)
+  Sys/osfdxml.f : i, j, np (in poison.f)
+  atom.f        : loctype, namaux
+  atom_subs.f   :
+  bands.f       : ie
+  bessph.f      :
+  cdiag.f       :
+  constr.f      : fz
+  cputim.f      : times
+  denmat.f      : iunit
+  dhscf.f       : epsxc, qatm, qscf, ro, wspin
+  diagon.f      : found
+  efield.f      :
+  fermid.f      :
+  four1.f       :
+  gradient.f    :
+  hsparse.f     : kno, jno, ina
+  idiag.f       :
+  initatom.f    : il
+  initdm.f      : fname
+  iorho.f       : sname
+  kgrid.f       :
+  nlefsm.f      : kna
+  ordvec.f      : jv 
+  outcoor.f     : i, iunit, title
+  overfsm.f     :
+  poison.f      :
+  prmem.f       : namety
+  psover.f      : is
+  radfft.f      :
+  ranger.f      : drm, dxm, iv, ivx, nxlast, volmin
+  rdiag.f       :
+  redata.f      : alat_defect, smassr, iscale, flc
+  reord.f       : iaux, j1, j2, j3
+  rlylm.f       :
+  siesta.f      : overflowna, pi
+  splin.f       :
+  vmat.f        : p0
+  xc.f          : 
+  xijorb.f      : kno, jno, ina
+========================================================================
+Version: 0.8.50 (continued, no code change but cosmetics)
+Date: 1998/04/29  20:45:00
+Title: Output cosmetics + adding E_KS output for each SCF loop end.
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  Surface reflectivity and different light sources have been introduced.
+  The illumination data may be specified in light.dat file.
+
+Files:
+  siesta.f  (E_KS writing + cosmetics)
+  ordern.f  (output cosmetics)
+  chkdim.f  (")
+  cgwf.f    (")
+  siesta.tex (Alberto added to front page of manual)
+========================================================================
+Version: 0.8.50
+Date: 1998/04/15  16:00:00
+Title: Variable illumination in plrho
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Surface reflectivity and different light sources have been introduced.
+  The illumination data may be specified in light.dat file.
+
+Files (all in siesta/Util/Plrho):
+  ray.f     : New function, which returns a pixel light intensity (ray)
+  pltr3d.f  : Call to ray
+  plrho.f   : Added include 'ray.f' statement
+  light.dat : New. Example of illumination data file
+  plrho_guide.txt : Documentation of these changes
+========================================================================
+Version: 0.8.50
+Date: 1998/04/15  16:00:00
+Title: Printed Fermi energy
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Fermi energy re-printed after the eigenvalues
+
+Files:
+  siesta.f : Added a write line.
+========================================================================
+Version: 0.8.49
+Date: 1998/04/14 21:40:00
+Title: Reading atomic masses + cosmetics + fix bugs (linux.make, outcell)
+Author: Emilio Artacho (Emilio.Artacho@uam.es)
+
+Description:
+  Atomic masses can be now read through an fdf block: AtomicMass.
+  The species not included in the block assume standard value for the
+  species. If block not present, standard values for all (as before).
+   
+  linux.make lacked RANLIB definition. Fixed.
+
+  outcell.f wrote cell volume in wrong units. Fixed.
+
+  Cosmetics: initatom does not write poems any more. And others.
+
+Files:
+   remass.f : new for mass reading
+   redata.f : calls it plus cosmetics
+   Makefile
+   outcell.f: bug fixed
+   initatom.f
+   atom.f
+   prversion.f
+   siesta.tex
+========================================================================
+Version: 0.8.48
+Date: 1998/04/04 17:15:00
+Title: Temperature in output
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+
+The temperature is writen on output for any MD flavour.
+(Error corrected in if statement)
+
+Files:
+   siesta.f
+========================================================================
+Version: 0.8.48
+Date: 1998/04/04 17:15:00
+Title: Optimized memory for Order-N routines
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+
+Redefined the dimension of several matrices in the Order-N routines,
+which were oversized. The result is a reduction in executable size
+for Order-N calculations. The reduction is related to the maxnhf 
+parameter.
+
+Files:
+   denmat.f:   eliminate nhfmax parameter. sustitute by nfmax 
+               in chcc and cscc matrices definitions
+   egandd.f:   substitute maxnhf by maxnf in definition of f and fs
+   gradient.f: eliminate nhfmax parameter. sustitute by nfmax 
+               in f and fs matrices definitions
+========================================================================
+Version: 0.8.47
+Date: 1998/03/25 13:00:00
+Title: New Util scripts. Makefile extensions
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+The scripts in Util have been rewritten using Bourne shell constructs. Only
+minor changes in their functionality have been introduced (mostly more
+robust warnings).
+
+Added support for Cray and SGI machines. For the latter, a default
+binary architecture -mips4 is assumed. Added a $(COMMENTS) symbol
+to sgi.make (echoed in Makefile) to warn the user.
+
+Files:
+Directory Util: prdate, msiesta, rsiesta, rrsiesta, qsiesta, qrrsiesta
+Directory Src/Sys: cray.f, cray.make, sgi.f, sgi.make: new files.
+Directory Src: Makefile: Made 'nodebug' compilation the default.
+                         Corrected outcoor entry. Echoed $(COMMENTS).
+========================================================================
+Version: 0.8.46
+Date: 1998/03/18 13:45:00
+Title: Suppressed an incorrect call to matel0
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+ Suppressed an extra call to matel0, which was inadvertently left in 
+ siesta.f in last version.
+ Variables I1=1 and I2=2 introduced in matel to avoid a compilation
+ message with the -C option (array bounds check) 
+
+Files:
+ siesta.f
+ matel.f
+========================================================================
+Version: 0.8.45
+Date: 1998/03/16 16:32:00
+Title:  Commentaries changed.  
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+
+Subroutine initatom.f :
+ Arrays rcls, contrf, lmaxs, lmxkbs, nzls 
+ have to be considered as belonging to the output rather than to the 
+ input of the routine. The commentary on the begining of the routine
+ has been changed in that sense.
+Subroutine atom.f :
+ The same as initatom.f 
+
+Subroutine r_vs_e and polarization:
+ Some lines have been commented to avoid the 'uncontroled' ouput 
+ that appered when the programme was run in some machines.
+
+Files:
+  initatom.f : Updated header commentaries
+      atom.f : Updated header commentaries
+ atom_subs.f : Some lines commented in routines r_vs_e and polarization
+========================================================================
+Version: 0.8.44
+Date: 1998/03/13 13:30:00
+Title: Optimized diagonalization
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Some loops for the generation of the density matrix from the 
+  eigenvectors were interchanged, to improve memory access.
+  New versions for rdiag and cdiag, using lapack routine dsygv
+  of the DEC dxml library. 
+  These changes reduce CPU time by more than 50% in many cases.
+
+Files:
+  diagon.f      : Exchanged some loops
+  Sys/*.f       : Added include '../rdiag.f' sentence
+  Sys/osfdxml.f : Added new rdiag version, calling a lapack routine
+  Makefile      : Supressed rdiag
+  Examples/H2O/Out/*    : Updated outputs
+  Examples/H2O/OrderN/* : Updated outputs
+  Examples/Si64/Out/*   : Updated outputs
+========================================================================
+Version: 0.8.44
+Date: 1998/03/13 13:30:00
+Title: Reorganized system-dependent versions
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  In order to handle more easly the system-dependent versions, the
+  'general' (source code) versions are kept in the Src directory.
+  The files Src/Sys/*.f, containing the system-dependent versions,
+  now contain sentences like include '../poison.f', when necessary.
+
+Files:
+  Src/poison.f : (new) General version
+  Src/cputim.f : (new) General version
+  Src/Sys/*.f  : explicit source code of general versions substituted
+                 by sentences like include '../poison.f'
+========================================================================
+Version: 0.8.44
+Date: 1998/03/13 13:30:00
+Title: Creation of matel.h
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Although the sizes of the arrays in routine matel are independent of
+  system size, and neglegible for large systems, they were dimensioned
+  for the largest systems (5 species with spd DZP) and they took most 
+  of the memory for small systems. A new file matel.h, written by a
+  new matel0 entry point in matel.f, was introduced to solve this,
+  using the run-compile loop method.
+
+Files:
+  Include/matel.h : (new) basic dimension parameters for matel
+  matel.h  : same as Include/matel.h
+  matel.f  : new matel0 entry point
+  siesta.f : call to matel0
+========================================================================
+Version: 0.8.44
+Date: 1998/03/13 13:30:00
+Title: Corrected decomposition of final energies
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  A missing term -Uatm in the ion-electron interaction energy, printed
+  in the 'Final energy' output was added.
+  Ecorrec was changed to eta*DQ (only the printed name).
+  Ekinion was included in the final energy decomposition.
+  
+Files:
+  siesta.f
+========================================================================
+Version: 0.8.43
+Date: 1998/03/10 11:30:00
+Title: Changed tolerace in routine livec
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Changed tolerace to 1.d-10 in routine livec, called by shaper,
+  in order to solve a problem found by Pablo for a slab.
+  
+Files:
+  shaper.f  : Parameter TOL of LIVEC changed to 1.D-10
+========================================================================
+Version: 0.8.42
+Date: 1998/02/23 12:05:03
+Title: Implemented Version string management
+Author: Jose M. Soler (jose.soler@uam.es), 
+        Alberto Garcia (wdpgaara@lg.ehu.es)
+
+Description:
+  The version of the code in use is written in version.h, and is
+  printed in every siesta run. That version number is consistent
+  with the one appearing on the manual front page, as well as the
+  corresponding date. 
+    Odd version numbers (like 0.9) are distribution releases, 
+  with possible bug fixes: 0.9 fix 3.
+    Even version numbers (like 0.10) are development versions, 
+  which include new implementacions as patches: 0.10 pl 5
+  (pl: patch level).
+
+Files:
+  version.h   : has version number stored within
+  prversion.f : prints version
+  siesta.f    : calling version files
+  Makefile    : version file dependencies
+========================================================================
+Version: 0.8.41
+Date: 1998/02/20 19:31:22
+Title: Examples directory restructured
+Author: Jose M. Soler (jose.soler@uam.es), 
+
+Description:
+  Two exmaples now: H2O and Si64. Both diagonalizing. 
+
+Files: (within siesta/Examples/)
+   Vps/        (pseudopotentials)
+      README
+      H.inp     
+      O.inp
+      Si.inp
+      H.vps
+      O.vps
+      Si.vps
+   H2O/
+      h2o.fdf
+      Out/
+         h2o.out
+         out.fdf
+         siesta.size
+   Si64/
+      si64.fdf
+      Out/
+         si64.out
+         out.fdf
+         siesta.size
+========================================================================
+Version: 0.8.40
+Date: 1998/02/20 14:37:00
+Title: FIX: CG order-N minimization parameters
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+Changed minimization parameters to solve convergence problem
+in order-N solution of H2O.
+
+Files: 
+  cgwf.f
+========================================================================
+Version: 0.8.39
+Date: 1998/02/19 18:31:38
+Title: Moving the executable in utility *siesta scripts 
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  The utility files for automatized running of siesta (msiesta, rsiesta,
+  and qsiesta) have been slightly modified: the executable code siesta
+  is moved to the working directory, so that different systems can run
+  simultaneously without interfering, as long as the working directories
+  are different.
+  Simultaneous compilation is not advised.
+
+  qrrsiesta has been added: it does recurrent run-recompile in batch
+  queues (both this one and qsiesta are prepared for NQS batch system,
+  available at least for DEC systems)
+
+Files: (in Util/)
+  rsiesta 
+  msiesta
+  qsiesta
+  qrrsiesta : (new) equivalent to rrsiesta for NQS batch system
+========================================================================
+Version: 0.8.38
+Date: 1998/02/19 17:02:22
+Title: Printing of hostname and date/time transferred to script
+Author: Jose M. Soler (jose.soler@uam.es),
+
+Description:
+  Date, time and hostname are printed in the output file at the
+  beginning and the end of a siesta run. The prdate subroutine used
+  to do it using system calls which demanded large amounts of extra
+  memory. Now, that function has been transferred to a script (prdate)
+  which is called by the rsiesta script. The original subroutine has
+  been kept empty.
+
+Files:
+  prdate (in Util/) (new)
+  rsiesta (in Util/)
+  prdate.f : now empty, it does nothing, kept for possible future.
+========================================================================
+Version: 0.8.37
+Date: 1998/02/19 17:02:22
+Title: Dipole moment, now also calculated for chains and slabs
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Related to ExternalElectricField. Possibility of calculating 
+dipole moment for chains and slabs, not only for molecules, as
+long as it is normal to the direction(s) of repetition.
+
+Files:
+  dhscf.f
+  dipole.f : (sign of dipole moment corrected)
+========================================================================
+Version: 0.8.36
+Date: 1998/02/19 17:02:22
+Title: Implemented constraints for dynamics/relaxations
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Fixes constraints to the change of atomic coordinates during
+  geometry relaxation or molecular dynamics, usinf FDF data block
+  GeometryConstraints. Allowed constraints are:
+   -cellside: fixes the unit-cell side lengths to
+              their initial values (not implemented yet).
+   -cellangle: fixes the unit-cell angles to
+               their initial values (not implemented yet).
+   -position: fixes the positions of the specified atoms to
+               their initial values.
+   -center: fixes the center (mean position, not center of mass) of a 
+            group of atoms to its initial value (not implemented yet).
+   -rigid: fixes the relative positions of a group of atoms, without 
+           restricting their displacement or rotation as a rigit unit
+           (not implemented yet).
+   -routine: Additionally, the user may write a problem-specific routine 
+             called constr, which inputs the atomic forces and stress 
+             tensor and outputs them orthogonalized to the constraints. 
+  Example:
+     %block GeometryConstraints
+        cellside   c
+        cellangle  alpha  beta  gamma
+        position  from -1 to -10
+        rigid  1  2
+        center 1  2   0.0  0.0  1.0
+        routine constr
+     %endblock GeometryConstraints
+
+Files:
+  constr.f   : (new) User-written subroutine for constr-definition
+               (also in Src/Include/ for hanling like .h files)
+  fixed.f    : (new) Relaxation and dynamics with constrined forces
+  siesta.f   : Calls fixed
+  Makefile   : Added fixed.f and constr.f
+  siesta.tex : Documented
+========================================================================
+Version: 0.8.35
+Date: 1998/02/19 17:02:22
+Title: Implemented ExternalElectricField
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description: 
+  An external electric field can be applied to molecules,
+  chains and slabs, using an FDF data block. Example:
+      %block ExternalElectricField
+        0.000  0.000  0.100  V/Ang
+      %endblock ExternalElectricField
+  The field must be perpendicular to bulk directions 
+  (like those parallel to a slab), or otherwise siesta will
+  automatically orthogonalize it (and print a warning).
+  The field is applied using the real space grid of dhscf.
+  The discontinuity of the potential is automatically 
+  placed in the vacuum region, between repeated 
+  molecules/chains/slabs.
+
+Files:
+  cross.f  : (new) Vector poduct (used by efield)
+  dhscf.f  : Calls to efield and shaper
+  efield.f : (new) External electric field implementation
+  fdf.f    : Added electric field units
+  Makefile : Added cross.f and efield.f
+  siesta.f : Call to shaper
+  shaper.f : New argument to return the bulk directions
+  siesta.tex : ExternalElectricField documented
+========================================================================
+Version: 0.8.34
+Date: 1998/02/19 17:02:22
+Title: Calculate XC potential only where there is density
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Up to this point the XC potential was calculated for the whole grid.
+  Now it is calculated only for those points for which there is a finite
+  electronic density.
+
+Files:
+  xc.f
+========================================================================
+Version: 0.8.33
+Date: 1998/02/17 16:31:04
+Title: FIX: divided-by-zero problem in MD T=0. Miscellanea.
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  Small modifications to correct problems with initial temperature 
+  for MD (when T=0). Additionally:
+  - Parameter namax added to coceri.f and outcoor.f
+  - Small modifications of extrapolation procedure between
+    succesive minimizations in orderN (make linear extrapolation
+    ONLY when last minimization took less than 50 iterations)
+  - Redefine parameter restart (from 50 to 300) in cgwf.f
+
+Files:
+  vmb.f    : T=0 problem fixed
+  siesta.f : id.
+  outcoor.f: parameter namax added
+  coceri.f : id.
+  ordern.f : extrapolation
+  cgwf.f   : restart parameter
+========================================================================
+Version: 0.8.32
+Date: 1998/02/17 16:31:04
+Title: Velocities in XV for all dynamics options 
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  The velocities are now written in file .XV . Before they were all
+  zero except for the Verlet option. It allows their use on restart.
+
+Files:
+  dynamics.f
+========================================================================
+Version: 0.8.31
+Date: 1998/02/11 19:07:00
+Title: FIX: Non-standard FORTRAN in Emilio's 0.8.37 and 0.8.39 patches
+Author: Alberto Garcia (wdpgaara@lg.ehu.es)
+
+Description:
+  Data statement out of order in redata.f, initdm.f, and recoor.f
+  Adjustable array illegal in f77 in outcoor.f and coceri.f
+
+Files:
+  outcoor.f
+  coceri.f
+  initdm.f
+  recoor.f
+  redata.f
+========================================================================
+Version: 0.8.30
+Date: 1997/12/31 12:46:41
+Title: Non conventional order in p and d orbitals (Mulliken)
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  Noted that the order how the p and d orbitals are stored, and 
+  appear in places like Mulliken output, is not conventional. It was
+  no bug, it was supposed to be so, but it was not clear. It has been
+  made clear now in the manual, in the WriteMullikenPop explanation,
+  among other instances. The order is: y, z, x for the p's, and
+  xy, yz, z^2, xz and x^2-y^2, for the d's.
+
+Files:
+  siesta.tex (in Docs/) : documented.
+========================================================================
+Version: 0.8.29
+Date: 1997/12/27 12:31:09
+Title: Initial spin-polarization input for spin-polarized calculations
+Author: Emilio Artacho (emilio.artacho@uam.es) 
+
+Description:
+  Modification in DM initialization:
+  - Now it is done in new separate subroutine  initdm.f
+  - It allows the introduction of initial spin polarizations
+    atom by atom with new %block DM.InitSpin: there is one line per 
+    atom to be spin-polarized, containing the atom index and the desired
+    initial spin-polarization. Example:
+             %block DM.InitSpin
+                5  -1.
+                3   +
+                7   -
+                +   1
+               -.5  2
+             %endblock DM.InitSpin
+
+Files:
+  initdm.f : (new) DM initialization, including spin if required.
+  siesta.f : calling initdm.f
+  Makefile : include reference to initdm.f
+  siesta.tex : documentation on DM.InitSpin block
+  minvec.f : spelling (no effect of code)
+  idiag.f  : id.
+========================================================================
+Version: 0.8.28
+Date: 1997/12/23 19:58:24
+Title: Storage of density matrices for Pulay convergence acceleration
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  Pulay mixing routines have been modified.  
+  * An option is included to store the intermediate information
+    in files or in memory. The fdf variable is DM.PulayOnFile.
+    If true, SIESTA will use files SystemLabel.P1 and SystemLabel.P2
+    to store the intermediate information. If false, it will 
+    be stored in auxiliary arrays in memory. 
+  * The I/O from disk has been optimized, to decreasse the size
+    of the Pulay files and also the number of I/O operations
+  * IMPORTANT: A new parameter has been included in siesta.h !!!!
+    This is necessary to open space for the Pulay auxiliary
+    storage arrays.  This means that old siesta.h files will NOT
+    work with the new version, unless the new variable is defined.
+
+Files:
+  pulayx.f
+  redata.f
+  siesta.f
+  siesta.h
+  siesta.tex
+========================================================================
+Version: 0.8.27
+Date: 1997/12/23 19:58:24
+Title: Initial temperature for molecular dynamics
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  A new MD feature has been implemented: the possibility of
+  specifying an initial temperature for the MD sumulation.
+  The fdf variable is MD.InitialTemperature.
+  The atomic velocities are randomly assigned according to the
+  Maxwell-Boltzmann distribution (imposing the constraint of
+  zero center of mass velocity). 
+
+Files:
+  vmb.f   : (new)
+  redata.f
+  siesta.f
+  Makefile : include vmb.f
+  siesta.tex
+========================================================================
+Version: 0.8.26
+Date: 1997/12/23 19:58:24
+Title: Renormalize the charge for ordern
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  The density matrix routine for O(N) has been slightly modified,
+  to renormalize the DM so that the total charge is the correct
+  one. This is quite necessary to achieve selfconsistency with
+  the O(N) functional, although is not well justified (in principle
+  is not variational!!).
+
+Files:
+  egandd.f: Small modifications to renormalize the charge
+  denmat.f: Modified to renormalize the density matrix
+========================================================================
+Version: 0.8.25
+Date: 1997/12/23 19:58:24
+Title: FIX: Corrected scale of the time step
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  An IMPORTANT error in the dynamics routines has been corrected.
+  The routines had a unit conversion error that affected the 
+  scale of the time step (the dynamics were correct,
+  but the time units were scaled).
+
+Files:
+  dynamics.f: Corrects serious error of units in foverm variable
+========================================================================
+Version: 0.8.24
+Date: 1997/12/22 20:49:04
+Title: Input/Output: Coordinates, Lattice Parameters, Pseudopotentials,
+       Maximum and Mean Forces, Splitgauss
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  * Coordinates input has been separated to new subroutine (recoor)
+    that hangs from redata.
+  * Output of cell vectors and parameters separated into new routine
+    (outcell) (only for intermediate and final writing in case of
+    lattice relaxation or MD Parrinello-Rahman)
+  * More flexible output of coordinates (both intermediate and final):
+    - It can write in any of the formats that can be used for input
+      (except ScaledCartesian if there was no lattice parameter in input)
+    - Output format specified in new fdf: AtomCoorFormatOut.
+      Default (if not given): uses same as for input
+      (AtomicCoordinatesFormat)
+      For both fdf's the value 'Fractional' can be used instead of
+      'ScaledByLatticeVectors'
+    New subroutine (outcoor)
+  * Optional writing of atomic coordinates in separate files with
+    adequate formats for being read by:
+    - XMOL (symbol and x y z in Ang)               WriteCoorXmol   true
+    - CERIUS (cell pars, sym, x y z in fractional) WriteCoorCerius true
+    New subroutines (coxmol, coceri)
+  * Writes maximum force and residual mean square force 
+    after total force
+  * Writes atomic coordinates as x, y, z, is, Symbol, number. It can
+    be taken to the fdf input file as is.
+  * New possibility of introducing lattice vectors:
+        %block LatticeParameters
+           a  b  c  alpha  beta  gamma
+        %endblock LatticeParameters
+    It checks whether both blocks (LatticeParameters and LatticeVectors)
+    are present, and stops with ERROR if it is the case. Otherwise
+    it generates the vectors according to whatever is present or
+    automatically if none.
+  * redata now writes the vectors in rows (instead of columns as before) 
+    and without the 'redata: ' so that they can be incorporated
+    as written to the input.
+  * Pseudopotentials will be read from 'syslabel'.vps instead of .psatom.data. 
+    For backwards compatibility, if .vps is not found, then .psatom.data 
+    is looked for. In this case a warning is given.
+  * Making Siesta write a message saying when it reads XV
+  * Scale factor for splitgauss is now a scale factor and not the alpha
+    in exp(-alpha*r**2). Scale factor is 1/sqrt(alpha)
+  * Parrinello-Rahman MD (with or w/o quench) now writes stress tensor and
+    lattice parameters for every time step
+  * Mulliken: formatted output (pure cosmetics)
+
+Files:
+  recoor.f : (new) reads coordinates
+  outcell.f: (new) writes cell vectors
+  outcoor.f: (new) writes coordinates
+  coxmol.f : (new) writes coordinates in XMol format in a separate file
+  coceri.f : (new) writes coordinates in CERIUS format in a separate file
+  ioxv.f   : writes message
+  mulliken.f : Cosmetics
+  redata.f : calling
+  siesta.f : calling 
+  atom.f   : reading .vps + scale factor for splitgauss.
+  Makefile
+  siesta.tex
+========================================================================
+Version: 0.8.23
+Date: 1997/12/11 17:42:24
+Title: Added check for excesive proximity between atoms
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  The program warns about atoms being closer than a specific distance:
+  one Bohr by default, which can be modified by 
+    WarningMinimumAtomicDistance
+  Helpful to avoid the frequent errors in coordinate input, which,
+  when atoms are extremely close originates an overlap matrix error.
+
+Files:
+  siesta.f
+  siesta.tex
+========================================================================
+Version: 0.8.22
+Date: 1997/12/11 17:42:24
+Title: Plotting charge density, LDOS(x,y,z), Potentials
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Plotting SIESTA's outputs in real space. All plots are done in
+  two steps:
+   * Running SIESTA with an option for it to write a file with the
+     information to be plotted:
+      - SaveRho                    : logical: valence charge density 
+                                     (pseudocore)
+      - SaveElectrostaticPotential : logical: Pseudopots + Hartree
+      - SaveTotalPotential         : logical: id + XC
+      - LocalDensityOfStates       : data block: charge density 
+                                     associated to an energy range 
+                                     specified in the block:
+                                        %block LocalDensityOfStates
+                                           -3.50  0.00   eV
+                                        %endblock LocalDensityOfStates
+     These informations are stored in corresponding files (.RHO, .VH,
+     .VT, .LDOS, respectively). It is stored: information about the
+     real-space grid (defined by the cutoff => fineness of plot depends
+     on cutoff!!) and values of the specific funtion at the grid points.
+   * Generating a plot for X11 and/or Postscript, etc.
+     This is done with the utility plrho program now at Util/Plrho.
+     It requires the presence in the computer of the graphic library
+     PGPLOT, set of FORTRAN subroutines to plot on different devices.
+     It is public domain and not difficult to install.
+       Plrho plots isosurfaces (surfaces of constant value of the
+     particular function, like traditional plots of orbitals) in 3D
+     using perspective and shading. It allows plotting two functions
+     at the same time: First function (say Rho) as isosurface, and 
+     the value of the second function (say electrostatic potential)
+     is plotted on the Rho isosurface with a color coding (similar 
+     to GRASP for biopolymers).
+
+Files:
+  iorho.f
+  siesta.f
+  dhscf.f
+  siesta.tex
+  Util/README
+  Util/Plrho/ new directory wi th new files:
+    plrho.f, plrho.h, paste.f, plsurf.f, rotate.f, icolor.f, pltr3d.f, 
+    plrho_guide.txt, plrho.dat, and README
+========================================================================
+Version: 0.8.21
+Date: 1997/11/5 10:59:49
+Title: FIX: Correcting input/output for coordinates and velocities .XV
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  (1) Corrected output unit for writing coordinates and velocities
+      Fri Oct 24 18:16:00 1997
+  (2) An incorrect 'write(iu,*) na' changed to read
+      Wed Nov  5 10:59:49 1997
+
+Files:
+  ioxv.f
+========================================================================
+Version: 0.8.20
+Date: 1997/10/24 18:16:00
+Title: Shift all atomic coordinates by shifting the origins
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Vector specifying a rigid shift to apply to the atomic coordinates,
+  given in the same format and units as these. Notice that the atomic
+  positions (shifted or not) need not be within the cell formed by
+  LatticeVectors, since periodic boundary conditions are always
+  assumed. 
+    %block AtomicCoordinatesFormat
+        1.000   3.000   2.000
+    %endblock AtomicCoordinatesFormat
+
+Files:
+  redata.f
+  siesta.tex
+========================================================================
+Version: 0.8.19
+Date: 1997/10/22 10:12:06
+Title: FIX: Added a tolerance in vector-length comparisons in minvec.f
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Some systems entered an infinite loop in the first call to DHSCF
+  (building grid etc) due to a strict comparison of two vectors in
+  minvec.f. Added a tolerance, problem solved. (It used to happen 
+  in a Linux system at least).
+
+Files:
+  minvec.f
+========================================================================
+Version: 0.8.18
+Date: 1997/10/16 18:14:16
+Title: Off-site orbitals: fixes and changes for new basis handling
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+
+Description:
+  Off-site orbitals: to use them new species has to be defined, and
+  each orbital center has to be regarded as an 'atom' of that 'species'
+  and coordinates have to be assigned to it. Two kinds
+   * Orbitals that would correspond to some atom, but the atom is not 
+     there. The species is to be given the corresponding atomic number
+     with negative sign. Siesta will put the orbitals of that atom
+     in the given ccordinates but without pseudopotentail and without
+     its electrons. Useful for calculating the basis-set superposition
+     error (BSSE).
+   * Bessel functions. Corresponding node at r_c. EnergyShift has no
+     meaning here. The r_c has to be gicen in the PAO_basis_and_PS_lmax
+     block.
+
+Files:
+  redata.f
+  atom_subs.f
+  atom.f 
+========================================================================
+Version: 0.8.17
+Date: 1997/10/15 18:08:52
+Title: New makefile options for IBMs and DECs without libraries + RANLIB
+Author: Alberto Garcia (wdpgaara@lg.ehu.es) and Emilio Artacho
+
+Description:
+  - unknown.make: Added dummy RANLIB command to warn the user.
+  - New makefile ARCH options for IBMs and DECs without libraries: 
+    osf and ibm
+
+Files:
+  unknown.make
+  ibm.f
+  ibm.make
+  osf.f
+  osf.make
+  siesta.tex
+========================================================================
+Version: 0.8.16
+Date: 1997/9/26 17:30:03
+Title: Supercell: fixes and improvements
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  - Imposed the translational supercell symmetry on forces.
+  - Changed the call to hsparse and xijorb to improve the performance of
+    diagon when there is a supercell.
+  - Changed the k-grid default to gamma of the SUPER cell.
+  - Improved performance of diagon for a supercell.
+
+Files:
+  siesta.f
+  kgrid.f
+  xijorb.f
+  diagon.f
+  hsparse.f
+  iorder.f
+  ordvec.f
+  Makefile
+  siesta.tex
+========================================================================
+Version: 0.8.15
+Date: 1997/9/26 17:30:03
+Title: FIX: Stress & forces with part core  + automatic cell generation
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  - Corrected force and stress with partial core correction.
+  - Added printout of the number of mesh points.
+  - Corrected error in automatic cell generation.
+
+Files:
+  dhscf.f
+  diagon.f
+  siesta.f
+  redata.f
+  siesta.tex
+========================================================================
+Version: 0.8.14
+Date: 1997/8/28 15:25:16
+Title: siesta.PAO.BasisType --> PAO.BasisType
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+
+Description:
+  Old FDF label siesta.PAO.BasisType is now PAO.BasisType.
+  Its possible values: split, nodes, nonodes, user, and splitgauss.
+
+Files:
+  atom.f
+  Examples/h2o.fdf
+  Examples/h2o.gga.fdf
+========================================================================
+Version: 0.8.13
+Date: 1997/8/25 18:42:20
+Title: Manual (quick start, introduction) + Utilities (new rrsiesta)
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  * Manual siesta.tex:
+    - Largely expanded INTRODUCTION section.
+    - New QUICK START section.
+    - New k-sampling options documented.
+    - New error&warning messages and two known problems documented.
+  * Script utilities:
+    - New rrsiesta: Really-run-siesta. Keeps recompiling until siesta 
+      really runs. 
+    - rsiesta: Extracts from output all errors and warnings and prints 
+      them at the end.
+
+Files:
+  Util/rrsiesta (new)
+  Util/rsiesta
+  siesta.tex
+========================================================================
+Version: 0.8.12
+Date: 1997/8/25 18:42:20
+Title: k-sampling, supercells, and bands
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  * Supercell: New fdf block that allows automatic generation of a
+    supercell out of the repetition of the unit cell. Coordinates
+    have to be given only for atoms in the unit cell.
+      %block SuperCell
+         M(1,1)  M(2,1)  M(3,1)
+         M(1,2)  M(2,2)  M(3,2)
+         M(1,3)  M(2,3)  M(3,3)
+      %endblock SuperCell
+    and the supercell is defined as 
+    SuperCell(ix,i) = \sum_j CELL(ix,j)*M(j,i).
+    Diagonalization is done for the unit cell.
+    DHSCF works with the supercell.
+  * k-sampling: Improved. But it can only be done if a supercell is
+    defined such that any atom only sees one image of any other.
+  * Bands: k-lines are introduced to obtain eigenvalues along them
+    for conventional band (spaghetti) plots.
+
+Files:
+  idiag.f  (new)
+  bands.f  (new)
+  diagon.f
+  kgrid.f
+  redata.f
+  siesta.f
+  siesta.h
+  Src/Include/siesta.h
+  Makefile
+  siesta.tex
+========================================================================
+Version: 0.8.11
+Date: 1997/8/8 18:53:19
+Title: FIX: Found the bug in stress calculation
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  There was a term missing in the stress calculation associated to the
+  derivative of 1/r in the electrostatic energy (at last it was not
+  related with the orbitals' scale factors as speculated before).
+    There was an additional term missing for GGA. The whole has been 
+  restructured. The new contribution is calculated in poison
+
+Files:
+  Sys/osfdxml.f  : Added stress to argument list of poison.
+  Sys/bsd.f      : id.
+  Sys/general.f  : id.
+  Sys/ibmessl.f  : id.
+  xc.f
+  dhscf.f
+  Makefile
+========================================================================
+Version: 0.8.10
+Date: 1997/8/8 18:09:25
+Title: Input for controlling Pulay mixing
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  The fdf variable DM.NumberPulay is introduced. It controls Pulay 
+  mixing by stating that Pulay is to be performed every n iterations
+  (the others being linear mixing) n being the value given in 
+  DM.NumberPulay. If less than 2 it performs no Pulay mixing.
+  The mixing itself was introduced before by Pablo but another
+  input was used.
+
+Files:
+  pulayx.f
+  redata.f
+  siesta.f
+  siesta.tex
+========================================================================
+Version: 0.8.9
+Date: 1997/8/8 18:09:25
+Title: Input for controlling initial spin density: Ferro or Antiferro
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  The new FDF logical variable DM.InitSpinAF is introduced.
+  It defines the initial spin density for a spin polarized calculation. 
+  The spin density is initially constructed with the maximum possible
+  spin polarization for each atom in its atomic configuration.
+  This variable defines the relative orientation of the atomic
+  spins:
+    false: gives ferromagnetic order (all spins up).
+    true: gives antiferromagnetic order. Up and down are assigned 
+          according to order in the block 
+          AtomicCoordinatesAndAtomicSpecies: up for the odd atoms, 
+          down for even.
+Files:
+  redata.f
+  siesta.f
+  siesta.tex
+========================================================================
+Version: 0.8.8
+Date: 1997/8/7 12:05:06
+Title: Utility scripts rsiesta, msiesta, and qsiesta
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Shell scripts introduced to run siesta from an arbitrary directory.
+  All three use the environment variable SIESTA_DIR (../Src by default)
+
+Files:
+  Util/msiesta makes (compiles) siesta
+  Util/rsiesta runs siesta directly
+  Util/qsiesta submits a siesta batch job, using NQS batch system
+========================================================================
+Version: 0.8.7
+Date: 1997/8/7 12:05:06
+Title: Directory Include/ and ranger.f and ranger.h
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  * New directory Src/Include where all the recommended initial *.h
+    (atom, dhscf, siesta, diagon, ordern) are stored, instead the
+    Src/*.h0
+  * Subroutine ranger.f separated from neighb.f, and new ranger.h
+
+Files:
+  Src/Include/atom.h, dhscf.h, diagon.h, ordern.h, siesta.h and ranger.h
+  ranger.f (new)
+  neighb.f
+  Makefile 
+========================================================================
+Version: 0.8.6
+Date: 1997/8/5 19:36:47
+Title: Automatic basis implementation
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+
+Description:
+  Implemented into SIESTA the possibility of automatic generation of
+  the basis orbitals requiring minimal (or even none) information
+  at the input fdf file. General basis information for automatic basis
+  generation:
+   * PAO.EnergyShift: It defines the different (first-z) orbitals' r_c's
+     by their excitation energy. Giving this number the basis generated
+     is automatically a compensated basis (default 20 mRy).
+   * PAO.SplitNorm: A standard to define default sensible radii for the 
+     split-valence type of basis. It gives the amount of norm that
+     the second-zeta split-off piece has to carry. The split radius 
+     is defined accordingly. If multiple-zeta is used, the corresponding 
+     radii are obtained by imposing smaller fractions of the SplitNorm 
+     (1/2, 1/4 ...) value as norm carried by the higher zetas. (def 0.15)
+   * PAO.BasisSize: Defines basis sizes: SZ or MINIMAL for single-z;
+     DZ for double-z; and DZP or STANDARD for DZ plus polarization.
+     (def DZP).
+   * PAO.PolarizationOrbitals: true: adds polarization orbitals of
+     perturbative kind.
+   * PAO.SplitPolarizationOrbitals: true means to split the polarization
+     orbitals of perturbative kind.
+  These new inputs plus the old
+   * siesta.PAO.BasisType (now split, splitgauss, nodes, nonodes, user),
+  permit the definition of the basis with no need of the old 
+  block PAO_basis_and_PS_lmax. If this block is not present, then the
+  new block Chemical_species_label is needed, which inputs the different
+  species for the different atoms:
+     %block     ChemicalSpeciesLabel
+        1    6    C
+     %endblock  ChemicalSpeciesLabel
+  Note that just writing this block and nothing else for the basis, siesta
+  generates a quite sensible basis for the atoms involved (in this case 
+  just carbon): DZP, cutting with an energy shift of 20 mRy (approx 
+  4.2 Bohr for carbon), splitting with 0.15 of the norm, etc. If the
+  PAO_basis_and_PS_lmax is there, then only those data which are specified
+  with a zero will be generated automatically. Nonzero specifications in
+  this block have priority.
+     A file is written for each atom called 'label'.PAO.basis with the
+  numerical basis used. Same format as read by PAO.BasisType = user.
+
+Files:
+  parse.f   : (new) routine which parses an input line into names 
+              and numbers
+  atom.f    : Basis changes heavily here.
+  initatom.f: changed interface and added calls to chkdim
+  redata.f  : PAO_basis_and_PS_lmax is now optional.
+              Added Chemical_species_label block.
+              Added argument atm_label.
+  siesta.f  : changed interfaces to redata and initatom
+  Makefile  : added parse.f
+========================================================================
+Version: 0.8.5
+Date: 1997/8/4 18:12:39
+Title: FIX: Corrected a SEVERE bug for spin polarization
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Corrected a SEVERE bug for spin polarization. Correct ispin
+  index in eigenvalue printout.
+
+Files:
+  siesta.f
+========================================================================
+Version: 0.8.4
+Date: 1997/7/24 15:46:34
+Title: Pulay mixing
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+
+Description:
+  Introduced new routine to perform Pulay mixing: 
+  Modified and partly re-written by P. Ordejon, July'97, on a routine
+  original of In-Ho Lee, Beckman Inst., Univ. of Illinois, Mar. 25 '97.
+  It represents an SCF convergence accelerator nased on storing the
+  history of convergence for a few cycles and guessing the next based
+  on that story.
+
+Files:
+  pulayx.f
+  siesta.f
+  Makefile
+========================================================================
+Version: 0.8.3
+Date: 1997/7/21 14:45:48
+Title: Alaternative local pseudopotential for shallow cores
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+
+Description:
+  The local pseudopot is usially the one generated by a positive charge
+  equal to the net of the core, but spread in a Gaussian of the width 
+  of the core. The core radius is taken as the radius outside which
+  the pseudopotentials all (s,p,d..) go like Z/r within a tolerance. 
+  This cutoff is also defining the range of the KB projectors
+    However, atoms with shallow cores (Ga, Ge, ...) demand a very
+  long core radius, not necessarily because the different pseudopots
+  remain different for long radii, but because the charge of the core
+  spreads and the Z/r behavior comes too slowly.
+    For these cases (controlled by an if, if the value of that core 
+  radius is too long) an alternative local pseudopotential is defined:
+  A smooth curve ( Vloc(r)=v3exp(v1*r^2+v2*r^3) ) for  r < Rc(KB) 
+  is matched to the pseudopot coming from r > Rc(KB). Rc(KB) is the
+  new core radius (for the KB) very close to the one used in the 
+  atomic program, and the one for which diff pseudopots converge to one.
+  There is also the possibility of using 
+  Vloc(r)=v4exp(v1*r^2+v2*r^3+v3*r^4) for matching not only value and
+  first derivative, but also second derivative.
+    The program does everything. ATOM informs in output.
+  
+Files:
+  atom.f
+  atom_subs.f
+========================================================================
+Version: 0.8.2
+Date: 1997/7/16 15:00:22
+Title: Makefile: a unique file for different architectures
+Author: Alberto Garcia (wdpgaara@lg.ehu.es)
+
+Description:
+  Compilation procedure for SIESTA using one only Makefile file. The
+  user has to define the system variable ARCH taking one of the 
+  prepared possibilities in Src/Sys (like export ARCH=linux). 
+  The new directoy Src/Sys has the .make files for the different
+  architectures (compiler names, flags and other pecularities) and
+  the fortran subroutines that depend on the machine: cputim.f
+  and others like poison.f that may call propriety libraries.
+  general.f is all purpose, all architecture, and selfcontained
+  for the use on any platform.
+    This way, the old architecture adapted files in Src (poison, 
+  cputim, for different systems) disappear.
+
+Files:
+  Makefile
+  Sys/osfdxml.f
+  Sys/bsd.f
+  Sys/general.f
+  Sys/ibmessl.f
+  Sys/ibmessl.make
+  Sys/linux.make
+  Sys/osfdxml.make
+  Sys/freebsd.make
+  Sys/hp.make
+  makefile, Makefile.DEC, Makefile.IBM, Makefile.linux, 
+  poison.general.f, cputim.general.f, poison.DEC.f, poison.IBM.f, 
+  poison.f, cputim.DEC.f, cputim.IBM.f, and cputim.f  all disappear.
+========================================================================
+Version: 0.8.1
+Date: 1997/7/15 21:39:57
+Title: k-sampling
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  k-sampling implementation. It is only partial since dhscf.f and all 
+  dealings in the grid are left untouched (and real). It is therefore
+  only possible to do k-samplings on cells such that any atom sees only
+  one image of any other atom. K-sampling in this case is then just
+  mutiplying by phases in the right places.
+
+Files:
+  atom.f
+  cdiag.f
+  dhscf.f
+  diagon.f
+  fermid.f
+  kgrid.f (new)
+  rdiag.f
+  rdiagon.f (supressed)
+  siesta.f
+  siesta.h
+  xijorb.f (new) Vectors among atom centers
+  Makefile
+  siesta.tex
+========================================================================
+Version: SIESTA 0.8 
+Date: 1997/7/15 21:39:57
+Title: Several: Output files + shaper + dipole + prdate + automatic cell
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  * Several routines saving information to files: 
+    - iodm.f   : the 'save' file is SystemLabel.DM
+    - iolwf.f  : the 'save' file is SystemLabel.LWF
+    - iohs.f   : writes/reads H y S
+    - iorho.f  : writes/reads rho in the mesh
+    - ioxv.f   : writes/reads positions and velocities 
+  * Dipole moment is calculated from grid integration
+  * shaper.f obtains the shape of a system: molecule, chain, slab, solid
+  * prdate: prints time, date and computer name at the beginning and
+    the end of the calculation in the output file.
+  * Automatic cell: if there is no lattice parameter nor lattice vectors
+    specified in input, they are all generated such that there is no
+    overlap between cells (plus a 10% extra) (shape: molecule)
+      If the lattice parameter is given but not the lattice vectors a
+    cubic cell is assumed.
+
+Files:
+  dipole.f
+  dhscf.f
+  iodm.f
+  iolwf.f
+  iohs.f
+  iorho.f
+  ioxv.f
+  redata.f
+  shaper.f
+  prdate.f
+  siesta.f
+  Makefile
+  siesta.tex
+========================================================================
+
+            PRIOR TO SIESTA 0.8: Some important changes
+                  (see Log.Messages for details)
+
+========================================================================
+Date: 1997/6/23 16:28:07
+Title: SIESTA optimization, including adaptation to dxml of DEC
+Author: Jose M. Soler (jose.soler@uam.es)
+========================================================================
+Date: 1997/6/6 17:33:15
+Title: OrderN options (Kim, Ordejon-Mauri, file)
+       siesta.h generation
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+========================================================================
+Date: 1997/5/6 16:54:33
+Title: Mulliken populations in output
+Author: Pablo Ordejon (ordejon@condmat01.geol.uniovi.es)
+========================================================================
+Date: 1997/4/16 20:20:15
+Title: Smooth core charge for local pseudopot: core overlap handling
+Author: Daniel Sanchez-Portal (daniel@polar.fmc.uam.es)
+========================================================================
+Date: Once upon a time
+Title: Atomic program package for pseudopotential generation:
+       Berkeley's code, maintained by Alberto Garcia, is incorporated
+       into directory Pseudo
+Author: Alberto Garcia (wdpgaara@lg.ehu.es)
+========================================================================

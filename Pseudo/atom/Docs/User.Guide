@@ -1,0 +1,199 @@
+ATM --- Density-functional atomic calculations and pseudopotential generation
+
+User guide
+Alberto Garcia, wdpgaara@lg.ehu.es
+
+
+This brief document mainly describes the input format for the atm
+program, whose basic capabilities are:
+
+1. All-electron atomic calculations for arbitrary electronic configurations.
+
+2. Generation of ab-initio pseudopotentials (several flavors).
+
+3. Atomic calculations in which the effect of the core is represented
+by a previously generated pseudopotential. These are useful to make
+sure that the pseudopotential correctly reproduces the all-electron
+results for the valence complex.
+
+The file-manipulation details involved in each of those basic
+functions are taken care of by a set of shell scripts (ae.sh, pg.sh,
+and pt.sh) which take as one of the arguments the name of the input
+file. Thus the user only has to worry about preparing that input file.
+
+Here is an example for an all-electron calculation of the ground state
+of a silicon atom: (the ---- lines are *not* part of the file, and
+neither is the "Ruler" line, shown here only for illustrative purposes)
+
+----------------------------
+   ae Si ground state all-electron
+   Si   car
+       0.0
+    3    2
+    3    0      2.00
+    3    1      2.00
+
+12345678901234567890123456789012345678901234567890      Ruler
+----------------------------
+
+The first line specifies:
+	- the calculation code ("ae" here stands for "all-electron")
+	- a title for the job (here "Si ground state all-electron"
+ 
+	(format 3x,a2,a50)
+
+Second line:
+	- chemical symbol of the nucleus (here "Si", obviously)
+	- Exchange-correlation type. Here, "ca" stands for
+          Ceperley-Alder. Other options are wi (Wigner) hl
+	  (Hedin-Lundqvist), gl (Gunnarson-Lundqvist), and bh
+	  (von Barth-Hedin). The "best" LDA choice should be ca.
+	  It is also possible to use a gradient-corrected functional:
+	  "pb" indicates use of the GGA scheme by Perdew, Burke,
+	  and Ernzerhof (PRL 77, 3865 (1996).
+
+	- The character "r" next to "ca" is a flag to perform the
+          calculation relativistically, that is, solving the Dirac equation
+          instead of the Schrodinger equation. 
+	  The full range of options is:
+		- "s" : Spin-polarized calculation, non-relativistic.
+		- " " : Non-polarized (spin ignored), non-relativistic
+           		calculation.
+		- "r" : Relativistic calculation, obviously polarized.	
+	
+	(format 3x,a2,3x,a2,a1)
+
+Third line:	Its use is somewhat esoteric and for most calculations
+		it should contain just a 0.0 in the position shown.
+
+The rest of the file is devoted to the specification of the electronic
+configuration:
+
+Fourth line:
+	- Number of core and valence orbitals. For example, for Si, we
+	have 1s, 2s, and 2p in the core (a total of 3 orbitals), and
+	3s and 3p in the valence complex (2 orbitals).
+
+	(format 2i5)
+
+Fifth, sixth... lines: (there is one line for each valence orbital)
+	- n (principal quantum number), l (angular momentum q.n), and 
+	  occupation of the orbital in electrons. 
+	  5th line: 3s2 -- 2 els in 3s)
+	  6th line: 3p2 -- 2 els in 3p)
+
+	(format 2i5,2f10.3)
+	[ There are two f input descriptors to allow the input of "up"
+	and "down" occupations in spin-polarized calculations (see
+	example below)]
+
+
+The next line is left blank in this example to terminate the job. It
+is possible, however, to perform two or more calculations in
+succession by simply concatenating blocks as the one described above.
+For example, the following file is used to study the ground state of N
+and an excited state with one electron promoted from the 2s to the 2p
+orbital taking into account the spin polarization.
+
+
+---------------------------------
+   ae N ground state all-electron
+   N    cas
+       0.0
+    1    2
+    2    0      2.00      0.00
+    2    1      3.00      0.00
+   ae N 1s2 2s1 2p4  all-electron
+   N    cas
+       0.0
+    1    2
+    2    0      1.00      0.00
+    2    1      3.00      1.00
+
+12345678901234567890123456789012345678901234567890      Ruler
+--------------------------------- (blank line means end of job)
+	
+The different treatment of core and valence orbitals in the input for an
+all-electron calculation is purely cosmetic. The program "knows" how
+to fill the internal orbitals in the right order, so it is only
+necessary to give their number. That is handy for heavy atoms...
+Overzealous users might want to check the output to make sure that the
+core orbitals are indeed correctly treated.
+
+
+
+* Pseudopotential test calculations.
+
+The format is exactly the same, except that the job code is "pt"
+instead of "ae". Of course, one has to have a pseudopotential file
+(extension .vps) ready from a previous...
+
+
+... *Pseudopotential generation.
+
+In addition to the electronic configuration chosen for the generation
+of the pseudopotentials (which is input in the same manner as above),
+one has to specify the "flavor" (generation scheme) and the set of
+"core radii" rc for the construction of the pseudowavefunction. Here
+is an example for Si using the Hamann-Schluter-Chiang scheme:
+
+-------------------------------------
+   pg Si Pseudopotencial
+        hsc     2.00
+   Si   ca
+         0
+    3    3
+    3    0      2.00
+    3    1      0.50
+    3    2      0.50
+      1.12      1.35      1.17       0.0       0.0
+
+12345678901234567890123456789012345678901234567890      Ruler
+---------------------------------------
+
+Apart from the "pg" job code in the first line, there are two
+extra lines:
+
+(Second line): Flavor and radius at which to compute logarithmic
+derivatives for test purposes. 
+
+The flavor can be one of :
+
+	hsc	Hamann-Schluter-Chiang
+	bhs	Bachelet-Hamann-Schluter
+	ker	Kerker
+	tm2	Improved Troullier-Martins
+
+hsc and bhs are very similar, and so are ker and tm2. Both sets differ
+in the "softness" for a given choice of rc. The ker and tm2 schemes
+can get away with larger rc's, due to their wavefunction matching
+conditions.
+
+(format 8x, a3, f9.3)
+
+The last line (before the blank line) specifies the values of the rc's
+in atomic units (bohrs) for the s, p, d, and f orbitals (it is a good
+practice to input the valence orbitals in the order of increasing
+angular momentum, so that there is no possible confusion).
+
+(format 6f10.5)  (The two extra slots are a bit technical and should
+be set to zero or left blank). In the example above, only s,p, and d
+rc's are given. Here is an example for Silicon in which we are only
+interested in the s and p channels for our pseudopotential, and use
+the Kerker scheme:
+
+-----------------------------
+   pg Si Kerker generation
+        ker     2.00
+   Si   ca
+         0
+    3    3
+    3    0      2.00
+    3    1      2.00
+      1.80      1.80      0.00       0.0       0.0
+
+12345678901234567890123456789012345678901234567890      Ruler
+------------------------------------------
+
+
+Enjoy!

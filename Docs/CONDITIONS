@@ -1,0 +1,133 @@
+
+   POLICY FOR THE USE, DISTRIBUTION, AND MODIFICATION OF SIESTA
+   ============================================================
+
+MOTIVATION:
+
+The SIESTA program has been devised for its general use in research
+within the academic community. It is not being developed with the idea
+of its remaining for the particular use of a group or limited set of
+groups.  However, two considerations are relevant at this point: (1)
+The program is still at a relatively early stage of development, and
+(2) a team has been and is dedicating an important effort for the
+making, maintaining, and developing of SIESTA.  Therefore, some
+conditions have been defined for the use, distribution, and
+modification of SIESTA, which the authors consider fair and within the
+common fair practices in the academic community.  We think that
+considering possible conflicts early may avoid misunderstandings and
+problems later. We are open to suggestions concerning this policy.
+
+------------------------------------------------------------------------
+
+GENERAL POLICY:
+
+SIESTA IS NOT TO BE USED, DISTRIBUTED, NOR MODIFIED WITHOUT THE
+PREVIOUS CONSENT OF THE AUTHORS (see the authors below). 
+
+This clearly implies that no person should have access to
+the code without the previous knowledge and consent of the authors.
+The authors will keep a record of every person having access to the
+code.
+
+-------------------------------------------------------------------------
+
+USE:
+
+Because of the two points mentioned in the motivation, the use of SIESTA
+by any group will be considered a collaboration with the authors,
+until the authors consider it approriate to stop collaborating.
+
+The user collaborating with the authors may have SIESTA installed
+in whatever computer facilities he/she may consider appropriate
+for the particular project, as long as it does not imply any
+relation of SIESTA with the institution to which the user is adscribed.
+SIESTA is given to the user personally, for a collaboration, not
+to her/his institution.
+
+Future releases will require less program support and input, and a
+collaboration with just some author(s) or developer(s) of SIESTA 
+could be considered. The final goal is to have a version
+valid for distribution that will not require support.
+The collaboration with authors or developers will not be
+needed at that stage (the conditions for distribution of the
+code at that point are yet to be defined).
+ 
+In any case, proper credit to SIESTA by appropriate citation
+should be observed. 
+
+------------------------------------------------------------------------
+
+DEVELOPMENT AND CREDITS:
+
+Our main considerations are:
+
+1) Utility to the research community: we think that this
+is best served by a well maintained program, assuring
+its continuity and standard interfaces and avoiding
+its branching. At the same time, we think that this
+should be compatible with allowing others to contribute
+with their own ideas and improvements.
+
+2) Proper credit and benefits to all contributors.
+
+3) We do not plan to comercialize siesta, and we expect 
+to make it nearly freely available in the near future, 
+at least to the academic community. However, we are aware 
+that, if its usage becomes very widespread, it may
+be difficult for us to deal with its maintainance, and
+that the best option in the long future may be to delegate 
+that work. Therefore, although not planned nor desired, 
+we need to consider that possibility now.
+
+From the above considerations:
+
+1) The present authors of siesta are:
+
+      Emilio Artacho,        Autonomous Univ. of Madrid
+      Pablo Ordejon,         University of Oviedo
+      Daniel Sanchez-Portal, Autonomous Univ. of Madrid
+      Jose M. Soler,         Autonomous Univ. of Madrid
+
+Although we acknowledge that a limited number of auxiliary
+subroutines were written by (or are based on previous
+subroutines written by) other authors 
+we consider that the implementation of all the basic
+algorithms of the SIESTA program are ours.
+
+Alberto Garcia, of the Basque Country Univ., Spain, has been
+lately collaborating in the development and maintenance of
+SIESTA, and has been incorporated to the SIESTA developers team.
+
+2) As authors of the initial version of siesta, we reserve
+to ourselves all the rights to resolve any conflicts in its 
+development and distribution policies. Any others receiving
+siesta for use or development are implicitly accepting this.
+
+3) As far as possible, further developments of siesta
+should be as modular as possible (interacting by files or
+well-defined interface calls), allowing its independent
+maintainance by their respective authors and, eventually,
+its isolation for purposes of distribution. However, if
+any developments need to be intertwined with the rest
+of the program, their authors must delegate their
+distribution rights to us, and they must rennounce to
+distribute any alternative or modified version of siesta,
+or of another program using parts of siesta, without our 
+previous written permission. This resignation does not
+affect any rights to receive proper credit (and eventually
+other possible benefits) for their developments.
+
+4) From a technical point of view, unless they provide 
+dramatic improvements in efficiency or functionality,
+we intend to be rather restrictive with developments whose 
+lack of modularity may compromise the efficiency of the 
+rest of the program, or difficult its maintainance or 
+other future developments. Therefore, we decidedly
+encourage to discuss previously with us any projected
+developments.
+
+
+
+
+
+

@@ -1,0 +1,10 @@
+#!/bin/sh 
+
+PROG=$1
+HOST=`hostname`
+DATE=`date`
+
+echo ' '
+echo "prdate: PROGRAM = $PROG, SYSTEM = $HOST"
+echo "prdate: DATE = $DATE"
+echo ' '

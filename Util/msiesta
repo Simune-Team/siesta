@@ -1,0 +1,56 @@
+#!/bin/sh 
+#-------------------------------------------------------------
+# Makes (compiles) the SIESTA program.
+# Syntax:  msiesta [init]
+#
+# If the init option is specified, the 'initial' include files
+# in SIESTA_DIR/Include are used (good for first compilation).
+#
+# The environment variable $SIESTA_DIR, containing the path to the
+# SIESTA source directory, should be previously defined.
+# If it is not defined, it assumes SIESTA_DIR = ../Src
+#
+# The environment variable $ARCH should be previously defined,
+#
+# Written by J.M.Soler. Aug. 1997, Feb. 1998.
+# Modified by Alberto Garcia, March 1998.
+#-------------------------------------------------------------
+
+
+if [ -z "$ARCH" ] ; then
+      echo "msiesta: You must set the environment variable \$ARCH first"
+      exit
+fi
+#
+SIESTA_DIR=${SIESTA_DIR:=../Src}
+
+WDIR=`pwd`
+
+if [ $# -gt 1 ] ; then
+      echo "msiesta: Usage: msiesta [init]"
+      exit
+fi
+
+if [ $# -eq 1 -a "$1" = "init" ] ; then
+  cp $SIESTA_DIR/Include/*.h $SIESTA_DIR
+  cp $SIESTA_DIR/Include/constr.f $SIESTA_DIR
+  cp $SIESTA_DIR/Include/diagon.h $WDIR
+  cp $SIESTA_DIR/Include/ordern.h $WDIR
+else
+  for i in `find . -name '*.h' -print` ; do
+      cp -p $i $SIESTA_DIR
+  done
+  if  [ -f $WDIR/constr.f ] ; then
+      cp -p $WDIR/constr.f $SIESTA_DIR
+  fi
+fi
+
+cd $SIESTA_DIR
+make
+if [ $? -eq 0 ] ; then
+	mv siesta $WDIR
+else
+	echo "msiesta: make failed"
+	exit 1
+fi
+
