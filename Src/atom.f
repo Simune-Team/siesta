@@ -490,7 +490,7 @@ c    .          'atom: The above configuration will be used ',
          s(2:nrval)=drdi(2:nrval)*drdi(2:nrval)
          s(1)=s(2)
 
-! CALCULATION OF THE KLEINMAN-BYLANDER PROYECTOR FUNCTIONS
+! CALCULATION OF THE KLEINMAN-BYLANDER PROJECTOR FUNCTIONS
 ! 
             call KBgen(is, a,b,rofi,drdi,s,
      .         vps, vlocal, ve, nrval, Zval, lmxkb, 
@@ -512,6 +512,8 @@ c    .          'atom: The above configuration will be used ',
             call  comlocal(is,a,b,rofi,chlocal,nchloc,flting)
             nvlocal=0
             call  comlocal(is,a,b,rofi,red_vlocal,nvlocal,flting)
+            call  com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
+     $           zval,flting)
 ! 
 
 ! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION
@@ -626,6 +628,8 @@ c    .          'atom: The above configuration will be used ',
 ! No local potential
            nchloc=0
            call  comlocal(is,a,b,rofi,chlocal,nchloc,flting)    
+           call  com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
+     $          zval,flting)
 ! Zero neutral-atom pseudopotential if floating orbitals
            nVna=0
            call comVna(is,a,b,rofi,vlocal,nVna,flting)

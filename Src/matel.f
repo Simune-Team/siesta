@@ -430,8 +430,8 @@ C         Reallocate some arrays
             CALL RE_ALLOC( ILMFF,  1,MFFY, MYNAME//'ILMFF'  )
             CALL RE_ALLOC( INDFFR, 1,MFFY, MYNAME//'INDFFR' )
           ENDIF
-          CALL RE_ALLOC( Y,         1,NILM, MYNAME//'Y'    )
-          CALL RE_ALLOC( DYDR, 1,3, 1,NILM, MYNAME//'DYDR' )
+          CALL RE_ALLOC( Y,         1,NILM, MYNAME//'Y',COPY=.FALSE.)
+          CALL RE_ALLOC( DYDR, 1,3, 1,NILM, MYNAME//'DYDR',COPY=.FALSE.)
 
 C         Expand the product of two spherical harmonics (SH) also in SH
           CALL YLMEXP( L1+L2, RLYLM, YLMYLM, ILM(IFLM1), ILM(IFLM2),

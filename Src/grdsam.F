@@ -103,31 +103,31 @@ C Internal variables and arrays
  
       character         line*130, names*80
       logical           samesh
-      integer           ni, nn, nr, nv, npt, ipt, maxpt, iu, ia,
-     .                  ix, iv, integs(4), lastc, lc(0:3), lstntm(3)
+      integer           ni, nn, nr, nv, ipt, maxpt, iu, ia,
+     .                  ix, iv, integs(4), lastc, lc(0:3)
 #ifdef MPI
       integer           MPIerror
 #endif
-      real(dp)          reals(4), values(4), lstcll(3,3), avexc,
+      real(dp)          reals(4), values(4), avexc,
      .                  strold(3,3), avdipo(3), avstre(3,3), avdxc,
      .                  avenaa, avenas, avuatm, avuscf, avdusc, anpt,
      .                  strold2(3,3), avstre2(3,3)
 
       parameter         (maxpt = 100)
 
-      logical, save :: blread = .false.
-      logical, save :: samgrd = .false.
-
       real(dp), dimension(:,:), allocatable, save ::
      .                  pt, avfa, faold, xanew, avfa2, faold2
       real(dp), dimension(:,:), allocatable, save ::
      .                  dpt
 
-      save              lstcll, lstntm, npt
 
-      data              
-     .                  lstcll(1,1) / 0.743978657912656D50 /,
-     .                  lstntm      / 10000, 1, 1 /
+      !Saved variables:
+      logical, save :: blread = .false.
+      logical, save :: samgrd = .false.
+
+      real(dp), save :: lstcll(3,3) = 0.743978657912656D50
+      integer, save  :: lstntm(3) = (/10000, 1, 1/) 
+      integer, save  :: npt
 
 c ----------------------------------------------------------------------------
 

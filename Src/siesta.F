@@ -463,6 +463,7 @@ C Calculate spin populations for fixed spin case...
         enddo
       else
         qs(1) = qtot
+        qs(2:nspin) = 0.0_dp
       endif
 C ..................
 
@@ -554,7 +555,7 @@ C Check number of eigenstates - cannot be larger than number of
 C basis functions or smaller than number of occupied states + 1
 C so that the Fermi level can be estimated
       do is = 1,nspin
-        neigmin = nint(qs(is)/dble(3 - min(nspin,2))) + 1
+        neigmin = nint(qs(is)/real(3 - min(nspin,2), kind=dp)) + 1
         neigwanted = max(neigwanted,neigmin)
       enddo
       neigwanted = min(neigwanted,no_u)

@@ -33,6 +33,9 @@ C WRITTEN BY J.SOLER. JAN/91. BASED ON ROUTINES IN 'NUMERICAL RECIPES'
       real(dp) :: ddot
       external  ddot
 
+      ! Make sure all values of cntrol are initialized
+      cntrol=0.0_dp
+
 C     IF GRADIENT IS SMALLER THAN TOLERENCE, RETURN
       GMAX=ABS(G(1))
       DO 10 J=1,N

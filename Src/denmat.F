@@ -77,9 +77,7 @@ C real*8 edm(nhmax,nbasis)    : Energy density matrix
 C *******************************************************************
 
       use precision
-      use spatial,   only : nG2L, nL2G, nNode
-      use on_main,   only : ncG2L, ncP2T, ncT2P, nbL2G, nbandsloc,
-     .                      ncL2G, nbG2L
+      use on_main,   only : ncG2L, ncP2T, ncT2P, nbL2G, nbandsloc
 
 #ifdef MPI
       use globalise, only: setglobalise, maxft2, numft2, listft2,
@@ -127,12 +125,12 @@ C     mi  : index for basis orbitals of LWF i
 C     nm  : index for basis orbitals connected to basis orbital m
 
       integer 
-     .  i, il, in, indm, indn, im, is, j, jm, jn, m, mi, mm, mn, 
+     .  i, il, in, indm, indn, im, is, j, jn, m, mi, mm, mn, 
      .  n, nh, ni, nm, nn
 
       real(dp), allocatable, save ::
      .  cHrow(:), cSrow(:), chcrow(:), cscrow(:), chccCol(:),
-     .  csccCol(:), ft(:,:), fst(:,:)
+     .  csccCol(:)
 
       real(dp) ::
      .  cim, cnj, chin, csin, cchccmn, ccsccmn,
@@ -146,15 +144,18 @@ C     nm  : index for basis orbitals connected to basis orbital m
      .  ftG(:,:), fstG(:,:)
       integer ::
      .  MPIerror
+#else
+       real(dp), allocatable :: 
+     .     ft(:,:), fst(:,:)
 #endif
 
 C Start time counter
       call timer('denmat',1)
 
       if (nspin.eq.1) then
-        spinfct = 2.0d0
+        spinfct = 2.0_dp
       else
-        spinfct = 1.0d0
+        spinfct = 1.0_dp
       endif
 
 C Allocate local arrays
@@ -170,10 +171,6 @@ C Allocate local arrays
       call memory('A','D',size(chccCol),'denmat')
       allocate(csccCol(nbands))
       call memory('A','D',size(csccCol),'denmat')
-      allocate(ft(nftmax,nbasisCloc))
-      call memory('A','D',size(ft),'denmat')
-      allocate(fst(nftmax,nbasisCloc))
-      call memory('A','D',size(fst),'denmat')
 #ifdef MPI
       allocate(chcrowsave(nhijmax,nbandsloc))
       call memory('A','D',size(chcrowsave),'denmat')
@@ -185,36 +182,44 @@ C Allocate local arrays
       call memory('A','D',size(ftG),'denmat')
       allocate(fstG(MaxFt2,nbasisCloc))
       call memory('A','D',size(fstG),'denmat')
+#else
+      allocate(ft(nftmax,nbasisCloc))
+      call memory('A','D',size(ft),'denmat')
+      allocate(fst(nftmax,nbasisCloc))
+      call memory('A','D',size(fst),'denmat')
 #endif
 
 C Initialize temporary arrays
       do m = 1,nbasis
-        cHrow(m) = 0.0d0
-        cSrow(m) = 0.0d0
+        cHrow(m) = 0.0_dp
+        cSrow(m) = 0.0_dp
       enddo
       do i = 1,nbands
-        csccCol(i) = 0.0d0
-        chccCol(i) = 0.0d0
-        cscrow(i) = 0.0d0
-        chcrow(i) = 0.0d0
+        csccCol(i) = 0.0_dp
+        chccCol(i) = 0.0_dp
+        cscrow(i) = 0.0_dp
+        chcrow(i) = 0.0_dp
 #ifdef MPI
-        ctmp(i,1) = 0.0d0
-        ctmp(i,2) = 0.0d0
+        ctmp(i,1) = 0.0_dp
+        ctmp(i,2) = 0.0_dp
 #endif
       enddo
 #ifdef MPI
       do i = 1,nbandsloc
         do j = 1,nhijmax
-          cscrowsave(j,i) = 0.0d0
-          chcrowsave(j,i) = 0.0d0
+          cscrowsave(j,i) = 0.0_dp
+          chcrowsave(j,i) = 0.0_dp
         enddo
       enddo
       do i = 1,nbasisCloc
         do j = 1,MaxFT2
-          ftG(j,i) = 0.0d0
-          fstG(j,i) = 0.0d0
+          ftG(j,i) = 0.0_dp
+          fstG(j,i) = 0.0_dp
         enddo
       enddo
+#else
+      ft=0.0_dp
+      fst=0.0_dp
 #endif
 
 C Loop over spins
@@ -254,7 +259,7 @@ C Now use the list of nonzero elements of f=ct*H
             n = listf(ni,il)
             nn = ncG2L(n)
             csin = - cSrow(n)
-            chin = cHrow(n) - 2.0d0*eta(is)*cSrow(n)
+            chin = cHrow(n) - 2.0_dp*eta(is)*cSrow(n)
             do jn = 1,numc(nn)
               j = listc(jn,nn)
               cnj = c(jn,nn,is)
@@ -263,8 +268,8 @@ C Now use the list of nonzero elements of f=ct*H
             enddo
 
 C Restore cSrow and cHrow for next row
-            cSrow(n) = 0.0d0
-            cHrow(n) = 0.0d0
+            cSrow(n) = 0.0_dp
+            cHrow(n) = 0.0_dp
           enddo
 
 #ifdef MPI
@@ -276,8 +281,8 @@ C Reinitialise bux1/2 and save for later in sparse form
             j = listhij(jn,il)       
             chcrowsave(jn,il) = chcrow(j)
             cscrowsave(jn,il) = cscrow(j)
-            chcrow(j) = 0.0d0
-            cscrow(j) = 0.0d0
+            chcrow(j) = 0.0_dp
+            cscrow(j) = 0.0_dp
           enddo
 
         enddo
@@ -298,11 +303,11 @@ C Reload data after globalisation
           call globalreloadB2(il,nbands,chcrow,cscrow,ctmp)
 
 C Add diagonal terms - 2 and 2eta
-          ctmp(i,1) = ctmp(i,1) + 2.0d0 * eta(is)
-          ctmp(i,2) = ctmp(i,2) + 2.0d0
+          ctmp(i,1) = ctmp(i,1) + 2.0_dp * eta(is)
+          ctmp(i,2) = ctmp(i,2) + 2.0_dp
 #else
-          chcrow(i) = chcrow(i) + 2.0d0 * eta(is)
-          cscrow(i) = cscrow(i) + 2.0d0
+          chcrow(i) = chcrow(i) + 2.0_dp * eta(is)
+          cscrow(i) = cscrow(i) + 2.0_dp
 #endif
 
 C Find row i of cscc=csc*ct and chcc=chc*ct. 
@@ -331,8 +336,8 @@ C Only the nonzero elements of f=cH will be required.
 C Reinitialise chcrow/cscrow
           do jn = 1,numhij(il)
             j = listhij(jn,il)
-            chcrow(j) = 0.0d0
-            cscrow(j) = 0.0d0
+            chcrow(j) = 0.0_dp
+            cscrow(j) = 0.0_dp
           enddo
 #ifdef MPI
 C Reinitialise ctmp
@@ -368,8 +373,8 @@ C Use that H is symmetric to determine required elements
             mm = ncG2L(m)
             if (mm.gt.0) then
 C Find element (m,n) of c*cscc and c*chcc
-              ccsccmn = 0.0d0
-              cchccmn = 0.0d0
+              ccsccmn = 0.0_dp
+              cchccmn = 0.0_dp
               do im = 1,numc(mm)
                 i = listc(im,mm)
                 ccsccmn = ccsccmn + c(im,mm,is)*csccCol(i)
@@ -384,8 +389,8 @@ C Use that dm and edm are symmetric
 C Restore csccCol and chccCol for next column
           do in = 1,numft(nn)
             i = listft(in,nn)
-            csccCol(i) = 0.0d0
-            chccCol(i) = 0.0d0
+            csccCol(i) = 0.0_dp
+            chccCol(i) = 0.0_dp
           enddo
         enddo
 
@@ -394,7 +399,7 @@ C End of loop over spins
 
 C Normalize DM to exact charge .........................
 C Calculate total output charge ...
-      qout(1:2) = 0.0d0
+      qout(1:2) = 0.0_dp
       if (nbasisloc.gt.0) then
         nh = listhptr(nbasisloc) + numh(nbasisloc)
       else
@@ -425,7 +430,7 @@ C Globalise total charge
 
 C Normalize ...
       do is = 1,nspin
-        if (dabs(qs(is)-qout(is)) .gt. 0.05d0) then
+        if (dabs(qs(is)-qout(is)) .gt. 0.05_dp) then
           fact = qs(is) / qout(is)
           call dscal(nh,fact,dm(1,is),1)
           call dscal(nh,fact,edm(1,is),1)
@@ -444,11 +449,12 @@ C Deallocate local arrays
       deallocate(cscrowsave)
       call memory('D','D',size(chcrowsave),'denmat')
       deallocate(chcrowsave)
-#endif
+#else
       call memory('D','D',size(fst),'denmat')
       deallocate(fst)
       call memory('D','D',size(ft),'denmat')
       deallocate(ft)
+#endif
       call memory('D','D',size(csccCol),'denmat')
       deallocate(csccCol)
       call memory('D','D',size(chccCol),'denmat')
