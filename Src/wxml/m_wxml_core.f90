@@ -1,6 +1,8 @@
 module m_wxml_core
 
 use m_wxml_buffer
+use m_wxml_escape, only: check_Name
+use m_wxml_escape, only: add_to_buffer_escaping_markup
 use m_wxml_elstack
 use m_wxml_dictionary
 
@@ -23,9 +25,18 @@ type, public :: xmlf_t
 end type xmlf_t
 
 public :: xml_OpenFile, xml_NewElement, xml_EndElement, xml_Close
-public :: xml_AddPcdata, xml_AddAttribute, xml_AddXMLDeclaration
+public :: xml_AddXMLDeclaration
 public :: xml_AddComment, xml_AddCdataSection
 
+public :: xml_AddPcdata, xml_AddAttribute
+interface  xml_AddPcdata
+   module procedure xml_AddPcdata_Ch
+end interface
+!
+interface  xml_AddAttribute
+   module procedure xml_AddAttribute_Ch
+end interface
+!
 public :: xml_AddArray
 interface xml_AddArray
    module procedure  xml_AddArray_integer,  &
@@ -37,7 +48,10 @@ private :: get_unit
 private :: add_eol
 private :: write_attributes
 
-
+!
+! Heuristic (approximate) target for justification of output
+! Large unbroken pcdatas will go beyond this limit
+! 
 integer, private, parameter  :: COLUMNS = 80
 
 CONTAINS
@@ -52,8 +66,13 @@ integer :: iostat
 
 call get_unit(xf%lun,iostat)
 if (iostat /= 0) stop "cannot open file"
+!
+! Use large I/O buffer in case the O.S./Compiler combination
+! has hard-limits by default (i.e., NAGWare f95's 1024 byte limit)
+! This is related to the maximum size of the buffer.
+!
 open(unit=xf%lun, file=filename, form="formatted", status="replace", &
-     action="write", position="rewind") ! , recl=65536)
+     action="write", position="rewind", recl=4096)
 
 call reset_elstack(xf%stack)
 call reset_dict(xf%dict)
@@ -114,6 +133,8 @@ if (is_empty(xf%stack)) then
    xf%root_element_output = .true.
 endif
 
+call check_Name(name)
+
 call close_start_tag(xf,">")
 call push_elstack(name,xf%stack)
 call add_eol(xf)
@@ -123,11 +144,13 @@ call reset_dict(xf%dict)
 
 end subroutine xml_NewElement
 !-------------------------------------------------------------------
-subroutine xml_AddPcdata(xf,pcdata,space,line_feed)
+subroutine xml_AddPcdata_Ch(xf,pcdata,space,line_feed)
 type(xmlf_t), intent(inout)   :: xf
 character(len=*), intent(in)  :: pcdata
 logical, intent(in), optional  :: space
 logical, intent(in), optional  :: line_feed
+
+type(buffer_t) :: aux_buffer
 
 logical :: advance_line , advance_space
 integer :: n, i, jmax
@@ -171,14 +194,16 @@ i = 1
 do
    jmax = min(i+chunk_size-1,n)
 !   print *, "writing chunk: ", i, jmax
-   write(unit=xf%lun,fmt="(a)",advance="no") pcdata(i:jmax)
+   call reset_buffer(aux_buffer)
+   call add_to_buffer_escaping_markup(pcdata(i:jmax),aux_buffer)
+   write(unit=xf%lun,fmt="(a)",advance="no") char(aux_buffer)
    if (jmax == n) exit
    i = jmax + 1
 enddo
-end subroutine xml_AddPcdata
+end subroutine xml_AddPcdata_Ch
 
 !-------------------------------------------------------------------
-subroutine xml_AddAttribute(xf,name,value)
+subroutine xml_AddAttribute_Ch(xf,name,value)
 type(xmlf_t), intent(inout)   :: xf
 character(len=*), intent(in)  :: name
 character(len=*), intent(in)  :: value
@@ -197,7 +222,7 @@ endif
 call add_key_to_dict(trim(name),xf%dict)
 call add_value_to_dict(trim(value),xf%dict)
 
-end subroutine xml_AddAttribute
+end subroutine xml_AddAttribute_Ch
 
 !-----------------------------------------------------------
 subroutine xml_EndElement(xf,name)
@@ -230,7 +255,15 @@ end subroutine xml_EndElement
 !----------------------------------------------------------------
 
 subroutine xml_Close(xf)
-type(xmlf_t), intent(in)   :: xf
+type(xmlf_t), intent(inout)   :: xf
+
+character(len=200) :: name
+
+do
+   if (is_empty(xf%stack)) exit
+   call get_top_elstack(xf%stack,name)
+   call xml_EndElement(xf,trim(name))
+enddo
 
 write(unit=xf%lun,fmt="(a)") char(xf%buffer)
 close(unit=xf%lun)
@@ -318,14 +351,13 @@ do i = 1, len(xf%dict)
    call get_key(xf%dict,i,key,status)
    call get_value(xf%dict,key,value,status)
    key = adjustl(key)
-   value = adjustl(value)
    size = len_trim(key) + len_trim(value) + 4
    if ((len(xf%buffer) + size) > COLUMNS) call add_eol(xf)
    call add_to_buffer(" ", xf%buffer)
    call add_to_buffer(trim(key), xf%buffer)
    call add_to_buffer("=", xf%buffer)
    call add_to_buffer("""",xf%buffer)
-   call add_to_buffer(trim(value), xf%buffer)
+   call add_to_buffer_escaping_markup(trim(value), xf%buffer)
    call add_to_buffer("""", xf%buffer)
 enddo
 

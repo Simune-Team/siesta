@@ -3,18 +3,13 @@ module m_wxml_text
 integer, private, parameter ::  sp = selected_real_kind(6,30)
 integer, private, parameter ::  dp = selected_real_kind(14,100)
 !
-! TODO : Add optional format parameter
-!
-private
-
 public :: str
 
 interface str
    module procedure  str_integer,  str_real_dp, str_real_sp, &
-                     str_logical, str_character
+                     str_logical
 end interface
-private :: str_integer,  str_real_dp, str_real_sp, str_logical, &
-                     str_character
+private :: str_integer,  str_real_dp, str_real_sp, str_logical
 
 CONTAINS
 
@@ -30,13 +25,6 @@ CONTAINS
       endif
       s = adjustl(s)
       end function str_integer
-
-      function str_character(str) result(s)
-      character(len=*), intent(in) :: str
-      character(len=100)    :: s
-
-      s = str
-      end function str_character
 
       function str_logical(log,format) result(s)
       logical, intent(in)   :: log
