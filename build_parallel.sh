@@ -21,6 +21,7 @@ cp -rp README $dir
 cp -rp Siesta-licence.txt $dir/LICENCE
 rm -rf $dir/Docs/Tech
 rm -rf $dir/Src/Tests
+rm -rf $dir/Util/Denchar/Tests
 
 echo ""
 echo "**** Remember to include the .ps.gz User guide in 2up form"

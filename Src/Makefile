@@ -150,10 +150,10 @@ dc_lapack.a:  Libs/dc_lapack.f
 version:
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
-	@sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
-	@sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > compinfo.F
+	@sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F90 > temp0.F90
+	@sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F90 > compinfo.F90
 	@($(MAKE) -s "FC=$(FC)" "FFLAGS=$(FFLAGS)" compinfo.o)
-	@rm -f temp0.F compinfo.F
+	@rm -f temp0.F90 compinfo.F90
 	@mv compinfo.o version.o
 	@echo
 

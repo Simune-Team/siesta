@@ -82,7 +82,7 @@ C Internal variables ---------------------------------------------------
 
       DOUBLE PRECISION
      .  KXIJ, CKXIJ, SKXIJ, DELTA, ENER, DIFF, PI, PIPJ1, PIPJ2, 
-     .  PIPJS1, PIPJS2, GAUSS, NORM, DFLOAT, WKSUM
+     .  PIPJS1, PIPJS2, GAUSS, NORM, WKSUM
 
 #ifdef MPI
       integer ::
@@ -301,7 +301,7 @@ C Free workspace array for global reduction
         WKSUM = WKSUM + WK(IK)
       ENDDO
 
-      NORM = SIGMA * SQRT(PI) * DFLOAT(NK) * WKSUM
+      NORM = SIGMA * SQRT(PI) * NK * WKSUM
 
       DO IHIST = 1, NHIST
         DO ISPIN = 1, NSPIN

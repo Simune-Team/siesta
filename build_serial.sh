@@ -20,6 +20,7 @@ cp -rp Pseudo Examples Docs Util $dir
 cp -rp README  $dir
 cp -rp Siesta-licence.txt $dir/LICENCE
 rm -rf $dir/Docs/Tech
+rm -rf $dir/Util/Denchar/Tests
 
 mkdir $dir/Src
 cd Src
