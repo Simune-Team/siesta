@@ -1,6 +1,6 @@
       subroutine cgwf(iscf,itmax,ftol,eta,enum,nbasis,nbands,
-     .                nhmax,numh,listh,ncmax,numc,listc,h,s,c,
-     .                g,hg,xi,fe,iter,dm,edm,nbasisloc,
+     .                maxnh,numh,listhptr,listh,ncmax,numc,
+     .                listc,h,s,c,g,hg,xi,fe,iter,dm,edm,nbasisloc,
      .                maxnf,maxnft,maxnhij,maxnct)
 C *******************************************************************
 C Conjugate gradient minimization of the Kim et al. functional
@@ -17,11 +17,13 @@ C real*8 eta                  : Fermi level parameter of Kim et al.
 C real*8 enum                 : Total number of electrons
 C integer nbasis              : Number of atomic orbitals
 C integer nbands              : Number of Localized Wave Functions
-C integer nhmax               : First dimension of listh and H, and maximum
-C                               number of nonzero elements of each row of H
-C integer numh(nbasis)        : Control vector of H matrix
+C integer maxnh               : First dimension of listh and H, and maximum
+C                               number of nonzero elements of H
+C integer numh(nbasisloc)     : Control vector of H matrix
 C                               (number of nonzero elements of each row of H)
-C integer listh(nhmax,nbasis) : Control vector of H matrix
+C integer listhptr(nbasisloc) : Control vector of H matrix
+C                               (pointer to each row of H matrix)
+C integer listh(maxnh)        : Control vector of H matrix
 C                               (list of nonzero elements of each row of H)
 C integer ncmax               : First dimension of listc and C, and maximum
 C                               number of nonzero elements of each row of C
@@ -29,8 +31,8 @@ C integer numc(nbasis)        : Control vector of C matrix
 C                               (number of nonzero elements of each row of C)
 C integer listc(ncmax,nbasis) : Control vector of C matrix
 C                               (list of nonzero elements of each row of C)
-C real*8 h(nhmax,nbasisloc)   : Hamiltonian matrix (sparse)
-C real*8 s(nhmax,nbasisloc)   : Overlap matrix (sparse)
+C real*8 h(maxnh)             : Hamiltonian matrix (sparse)
+C real*8 s(maxnh)             : Overlap matrix (sparse)
 C real*4 g(ncmax,nbasisloc)   : Auxiliary space matrix
 C real*4 hg(ncmax,nbasisloc)  : Auxiliary space matrix
 C real*8 xi(ncmax,nbasisloc)  : Auxiliary space matrix (gradients)
@@ -44,8 +46,8 @@ C real*8 c(ncmax,nbasisloc)   : Localized Wave Functions (sparse)
 C ************************* OUTPUT **********************************
 C real*8 fe                   : Final electronic band structure energy
 C integer iter                : Number of CG iterations
-C real*8 dm(nhmax,nbasisloc)  : Density matrix (sparse)
-C real*8 edm(nhmax,nbasisloc) : Energy Density matrix (sparse)
+C real*8 dm(maxnh)            : Density matrix (sparse)
+C real*8 edm(maxnh)           : Energy Density matrix (sparse)
 C *******************************************************************
 C
 C  Modules
@@ -59,21 +61,20 @@ C
       implicit none
 
       integer
-     .  nbands,nbasis,ncmax,nhmax,nbasisloc,maxnf,maxnft,maxnhij,
+     .  nbands,nbasis,ncmax,maxnh,nbasisloc,maxnf,maxnft,maxnhij,
      .  maxnct
 
       integer
      .  iscf,iter,itmax,
-     .  listc(ncmax,nbasis),listh(nhmax,nbasis),
-     .  numc(nbasis),numh(nbasis)
+     .  listc(ncmax,nbasis),listh(*),listhptr(nbasisloc),
+     .  numc(nbasis),numh(nbasisloc)
 
       real*4
      .  g(ncmax,nbasisloc),hg(ncmax,nbasisloc)
 
       double precision
-     .  c(ncmax,nbasisloc),dm(nhmax,nbasisloc),edm(nhmax,nbasisloc),
-     .  enum,eta,fe,ftol,
-     .  h(nhmax,nbasisloc),s(nhmax,nbasisloc),xi(ncmax,nbasisloc)
+     .  c(ncmax,nbasisloc),dm(maxnh),edm(maxnh),enum,eta,fe,ftol,
+     .  h(maxnh),s(maxnh),xi(ncmax,nbasisloc)
 
 C  Internal variables .................................................
       integer 
@@ -119,9 +120,8 @@ C Calculate control vectors only if in first SCF step ....................
       if (iscf .eq. 1) then
 	iopt = 0
         call eandg(iopt,eta,enum,lam,
-     .             nhmax,numh,listh,ncmax,numc,listc,h,s,c,
-     .             nbasis,nbands,
-     .             e3,e,xi,dm,edm,nbasisloc,
+     .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
+     .             nbasis,nbands,e3,e,xi,dm,edm,nbasisloc,
      .             maxnf,maxnft,maxnhij,maxnct)
       endif
 C .....................
@@ -129,9 +129,8 @@ C .....................
 C Calculate gradient for first CG step ...................................
       iopt = 2
       call eandg(iopt,eta,enum,lam,
-     .           nhmax,numh,listh,ncmax,numc,listc,h,s,c,
-     .           nbasis,nbands,
-     .           e3,fp,xi,dm,edm,nbasisloc,
+     .           maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
+     .           nbasis,nbands,e3,fp,xi,dm,edm,nbasisloc,
      .           maxnf,maxnft,maxnhij,maxnct)
 C .....................
 
@@ -182,9 +181,8 @@ C ...........................
 C Get the energy at three points separated by lam ...........................
         iopt = 1
         call eandg(iopt,eta,enum,lam,
-     .             nhmax,numh,listh,ncmax,numc,listc,h,s,c,
-     .             nbasis,nbands,
-     .             e3,e,xi,dm,edm,nbasisloc,
+     .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
+     .             nbasis,nbands,e3,e,xi,dm,edm,nbasisloc,
      .             maxnf,maxnft,maxnhij,maxnct)
 C ...........................
 
@@ -227,9 +225,8 @@ C Calculate energy and gradient at current point ...........................
         partial=0.0d0
         iopt = 2
         call eandg(iopt,eta,enum,lam,
-     .             nhmax,numh,listh,ncmax,numc,listc,h,s,c,
-     .             nbasis,nbands,
-     .             e3,fe,xi,dm,edm,nbasisloc,
+     .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
+     .             nbasis,nbands,e3,fe,xi,dm,edm,nbasisloc,
      .             maxnf,maxnft,maxnhij,maxnct)
 C ...........................
 
@@ -304,7 +301,7 @@ C Exit if maximum number of iterations has been reached ...................
 C Compute density matrix ...................................................
       iopt = 3
       call eandg(iopt,eta,enum,lam,
-     .           nhmax,numh,listh,ncmax,numc,listc,h,s,c,
+     .           maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
      .           nbasis,nbands,e3,fe,xi,dm,edm,nbasisloc,
      .           maxnf,maxnft,maxnhij,maxnct)
 C ............................

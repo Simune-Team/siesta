@@ -90,25 +90,25 @@ c Internal variables
       character
      .  line*130,
      .  name1*10, name2*10, name3*10, name4*10, names*130
-      character(len=10), dimension(:), allocatable ::
+      character(len=10), dimension(:), allocatable, save ::
      .  ctype, cbuffer
       integer
      .  i, ia, ia1, ia2, ia3, ic, il, integs(maxw), iu, ix,
      .  jx, lastch, lch(0:maxw), nc, ni, nn, nr, nv, Node,
      .  maxcnew
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  iac, ibuffer
 #ifdef MPI
       integer MPIerror
 #endif
       double precision
      .  dot, fxc, reals(maxw), values(maxw), xnorm
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  xc, dpbuffer2
       external
      .  dot, constr, parse, memory
       save
-     .  ctype, frstme, iac, nc, xc
+     .  frstme, nc
 
       data
      .  frstme /.true./,
@@ -121,15 +121,16 @@ C Get Node number
       Node = 0
 #endif
 
-C Allocate local memory
-      allocate(ctype(maxc))
-      allocate(iac(maxc))
-      call memory('A','I',maxc,'fixed')
-      allocate(xc(3,maxc))
-      call memory('A','D',3*maxc,'fixed')
-
 C Read constraint data only the first time
       if (frstme) then
+
+C Allocate memory for constraints - do only once and preserve contents
+        allocate(ctype(maxc))
+        allocate(iac(maxc))
+        call memory('A','I',maxc,'fixed')
+        allocate(xc(3,maxc))
+        call memory('A','D',3*maxc,'fixed')
+
         nc = 0
 
 C       Look for constraints data block
@@ -376,13 +377,6 @@ c Apply constraints
           enddo
         endif
       enddo
-
-C Deallocate local memory
-      deallocate(ctype)
-      call memory('D','I',size(iac),'fixed')
-      deallocate(iac)
-      call memory('D','D',size(xc),'fixed')
-      deallocate(xc)
 
       end
 

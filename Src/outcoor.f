@@ -38,7 +38,7 @@ c Internal variables and arrays
       integer           ia, ix
       double precision  xac(3), recell(3,3), alat
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .                  xap
 
       external          pasteb, memory
@@ -73,13 +73,13 @@ c   Coord. option Fractional => Multiply by inverse of lattice vectors
         frstme = .false.
       endif
 
-C Allocate local memory
-      allocate(xap(3,na))
-      call memory('A','D',3*na,'outcoor')
-
 c Write coordinates at every time or relaxation step?
 
       if ( (cohead .eq. ' ') .and. ( .not. writec) ) return
+
+C Allocate local memory
+      allocate(xap(3,na))
+      call memory('A','D',3*na,'outcoor')
 
 c write coordinates according to format 
 

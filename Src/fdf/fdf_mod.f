@@ -63,6 +63,9 @@ c     Declarations for fdf procedures
          character(len=*), intent(in) :: filein, fileout
          end subroutine fdf_init
 
+         subroutine fdf_inhibit
+         end subroutine fdf_inhibit
+
       end interface
       end module fdf
 

@@ -1,7 +1,7 @@
       subroutine cspa(ioptlwf,iopt,natoms,nbasis,nbasisloc,lasto,
-     .        isa,qa,enum,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
-     .        c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,nbands,
-     .        overflow)
+     .        isa,qa,enum,rcoor,rh,cell,xa,maxnh,numh,listhptr,
+     .        listh,maxnc,c,numc,listc,ncmax,nctmax,nfmax,nftmax,
+     .        nhijmax,nbands,overflow)
 C ******************************************************************************
 C This subroutine builds the Localized Wave Functions, centered
 C on ATOMS (searching for atoms within a cutoff radius rcoor), and 
@@ -84,12 +84,12 @@ C
 
       integer 
      .  iopt,ioptlwf,maxnc,natoms,nbands,nbasis,ncmax,nctmax,
-     .  nfmax,nftmax,nhmax,nhijmax,nbasisloc
+     .  nfmax,nftmax,maxnh,nhijmax,nbasisloc
 
       integer 
      .  isa(natoms),lasto(0:natoms),
-     .  numc(nbasis),listc(maxnc,nbasis),numh(nbasis),
-     .  listh(nhmax,nbasis)
+     .  numc(nbasis),listc(maxnc,nbasis),numh(nbasisloc),
+     .  listhptr(nbasisloc),listh(maxnh)
 
       double precision
      .  cell(3,3),enum,qa(natoms),rcoor,rh,xa(3,natoms),
@@ -109,12 +109,12 @@ C  nnmax = maximum number of neighbour atoms within rcoor
      . j,ja,jj,k,mu,nct,nelectr,nf,nm,nna,norb,nqtot,nu,
      . numloc,nhij,Node,Nodes,mul
 
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      . alist, ilist, numft, indexloc, jan
 
 #ifdef MPI
       integer
-     .  MPIerror, ibuf1(5), ibuf2(5)
+     .  MPIerror, ibuf1(5), ibuf2(5), ntmp
       double precision
      .  rtmp
 #endif
@@ -123,10 +123,10 @@ C  nnmax = maximum number of neighbour atoms within rcoor
      . cg,fact,qtot,r,rmax,rr(3),rrmod,
      . snor,tiny,ran3
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      . r2ij
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      . xij
 
       data nnmax / 1000 /
@@ -295,7 +295,6 @@ C Look for neighbours of atom ia
           enddo
         endif
 
-
 C  determine how many LWF's depending on the atomic species 
 C  (or the number of electrons)
         nelectr = qa (ia) + tiny
@@ -367,16 +366,18 @@ C  loop over orbitals of ja
 	      if (.not.overflow) listc(nm+1,mu) = index
               nct = nct + 1
 
-C Find out structure of F and Ft matrices
-C   find orbitals which interact with mu
-              do imu = 1,numh(mu)
-                nu = listh(imu,mu)
-                if (ilist(nu) .eq. 0) then
-                  ilist(nu) = 1
-                  numft(nu) = numft(nu) + 1
-                  nf = nf + 1
-                endif
-              enddo
+C  Find out structure of F and Ft matrices
+C  find orbitals which interact with mu
+              if (mul.gt.0) then
+                do imu = 1,numh(mul)
+                  nu = listh(listhptr(mul)+imu)
+                  if (ilist(nu) .eq. 0) then
+                    ilist(nu) = 1
+                    numft(nu) = numft(nu) + 1
+                    nf = nf + 1
+                  endif
+                enddo
+              endif
 
 C  Assign ramdom guess for orbitals in atom ia if iopt = 0
 C  Call initguess on all Nodes, everytime to preserve
@@ -395,9 +396,9 @@ C  same regardless of the number of Nodes
             enddo
 30        enddo
 
-C Normalize LWF's if iopt = 0  .............................................
+C  Normalize LWF's if iopt = 0  .............................................
 C  (normalize to one if functions are expected to be occupied, 0.5 if half
-C   occupied and 0.1 if empty)
+C  occupied and 0.1 if empty)
           if (.not.overflow)  then
             if (iopt .eq. 0) then
               fact = 1.0d0
@@ -426,6 +427,16 @@ C ..........
           
         enddo
       enddo
+
+#ifdef MPI
+C Global sum of numft
+      call MPI_AllReduce(numft,ilist,nbasis,MPI_integer,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+      numft(1:nbasis) = ilist(1:nbasis)
+      call MPI_AllReduce(nfmax,ntmp,1,MPI_integer,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+      nfmax = ntmp
+#endif
 
       do mu = 1,nbasis
         nftmax = max ( nftmax , numft(mu) )

@@ -11,10 +11,10 @@ C****************************************************************
         real*8
      .    qtot
 
-        real*8, dimension(:), allocatable ::
+        real*8, dimension(:), allocatable, save ::
      .    c
 
-        real*8, dimension(:,:), allocatable ::
+        real*8, dimension(:,:), allocatable, save ::
      .    rr
 
       end module numbvect

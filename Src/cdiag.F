@@ -214,16 +214,20 @@ C Move eigenvectors to correct storage location
       if (info .ne. 0) then
         ierror = 1
         if (Node.eq.0) then
-          write(6,*) 'cdiag: ERROR in routine zhegv:'
           if (info.lt.0) then
+            write(6,*) 'cdiag: ERROR in routine zhegv:'
             write(6,*) -info,'-th argument had an illegal value'
           elseif (info.le.n)   then
 #ifdef MPI
             if (TryMemoryIncrease) then
-              ierror = -1
-              MemoryFactor = 1.5d0*MemoryFactor
-              write(6,*) 'Diagonalisation failed to converged'
-              write(6,*) 'Memory factor increased to ',MemoryFactor
+              if (MemoryScale.eq.1.0d0) then
+                ierror = -2
+              else
+                ierror = -1
+                MemoryFactor = MemoryScale*MemoryFactor
+                write(6,*) 'Diagonalisation failed to converged'
+                write(6,*) 'Memory factor increased to ',MemoryFactor
+              endif
             else
               write(6,*) 'ZHEGV failed to converge. ',info,
      .          ' off-diagonal elements of an intermediate '
@@ -242,8 +246,12 @@ C Move eigenvectors to correct storage location
           endif
         else
           if (info.le.n.and.info.gt.0.and.TryMemoryIncrease) then
-            ierror = -1
-            MemoryFactor = 1.5d0*MemoryFactor
+            if (MemoryScale.eq.1.0d0) then
+              ierror = -2
+            else
+              ierror = -1
+              MemoryFactor = MemoryScale*MemoryFactor
+            endif
           endif
         endif
       endif

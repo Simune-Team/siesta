@@ -533,6 +533,16 @@ C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
      .  MPIerror)
 #endif
 
+C Memory scale factor for rdiag/cdiag - cannot be less than 1.0
+      if (Node.eq.0) then
+        MemoryScale = fdf_double('DiagScale', 1.0d0 )
+        MemoryScale = max(MemoryScale,1.0d0)
+      endif
+#ifdef MPI
+      call MPI_Bcast(MemoryScale,1,DAT_double,0,MPI_Comm_World,
+     .  MPIerror)
+#endif
+
 C Memory increasing allowed if diagonalisation fails to converge?
       if (Node.eq.0) then
         TryMemoryIncrease = fdf_boolean('TryMemoryIncrease', .true. )

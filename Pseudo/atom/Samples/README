@@ -15,41 +15,6 @@ other place you will have to modify the definition of "prog" in them.
 
 After the run, the output information will reside in a sub-directory
 whose name is that of the input file without the .inp
-extension. Several files are produced:
-
-OUT	Human readable output file with information about energy levels,
-	total energies, pseudopotential information, etc.
-
-	(For c.tm2, there is a sample output file for test purposes)
-
-CHARGE	ASCII file containing the all-electron charge density for 
-	plotting purposes.
-	
-	Column format:   r (au)  rho_up rho_down   rho_core
-	 (so the total valence charge is rho_up+rho_down - rho_core)
-
-	The charge densities are actually 4 * pi * r^2 * rho.
-
-PSCHARGE The same as charge, except for the (pseudo) valence charge.
-
-VPSOUT	Pseudopotential binary file. A copy with the extension .vps is
-	made by pg.sh. This file is needed for a pseudopotential test run.
-
-
-Around a dozen files with plotting information are also produced.
-Wavefunction, pseudopotential, and logarithmic derivative plots can be
-generated using the SuperMongo package. Scripts for other graphics
-programs will be made available as the need arises.
-
-On screen:
-
-	../plotx11.sh
-
-In postscript with:
-
-	../plotps.sh
-
-
-
+extension. Several files are produced (see User.Guide in the Docs directory).
 
 

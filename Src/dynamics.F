@@ -91,8 +91,6 @@ C Internal variables ...........................................................
       integer MPIerror
 #endif
 
-      save x,xold,sold,hold
-
       double precision
      .  Ang,aux1(3,3),aux2(3,3),diff,dt2,dtby2,
      .  eV,f(3,3),fi(3,3),fovermp,
@@ -103,12 +101,14 @@ C Internal variables ...........................................................
      .  vol,volcel,
      .  x,xdot,xlast,xnew,xold
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  s,sdot,snew,sold,sunc,suncdot
+
+      save x,xold,hold
 
       external
      .  volcel, memory
-C ...............................................................................
+C ......................................................................
 
 C Get Node number
 #ifdef MPI
@@ -131,12 +131,14 @@ C Allocate local memory
       call memory('A','D',3*natoms,'npr')
       allocate(snew(3,natoms))
       call memory('A','D',3*natoms,'npr')
-      allocate(sold(3,natoms))
-      call memory('A','D',3*natoms,'npr')
       allocate(sunc(3,natoms))
       call memory('A','D',3*natoms,'npr')
       allocate(suncdot(3,natoms))
       call memory('A','D',3*natoms,'npr')
+      if (.not.allocated(sold)) then
+        allocate(sold(3,natoms))
+        call memory('A','D',3*natoms,'npr')
+      endif
 
       ct = 3
       if (natoms .eq. 1) ct = 0
@@ -195,21 +197,21 @@ C Calculate scaled coordinates (referred to matrix H) at current time
 
 C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
-      x = 0.0
-      xold = 0.0
-      do i = 1,3
-        do j = 1,3
-          hold(i,j) = h(i,j) - dt*hdot(i,j)
-        enddo
-      enddo
-      do ia = 1,natoms
+        x = 0.0
+        xold = 0.0
         do i = 1,3
-          sold(i,ia) = 0.0d0
           do j = 1,3
-            sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+            hold(i,j) = h(i,j) - dt*hdot(i,j)
           enddo
         enddo
-      enddo
+        do ia = 1,natoms
+          do i = 1,3
+            sold(i,ia) = 0.0d0
+            do j = 1,3
+              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+            enddo
+          enddo
+        enddo
       endif
 C ..................
 
@@ -495,8 +497,6 @@ C Deallocate local memory
       deallocate(sdot)
       call memory('D','D',size(snew),'npr')
       deallocate(snew)
-      call memory('D','D',size(sold),'npr')
-      deallocate(sold)
       call memory('D','D',size(sunc),'npr')
       deallocate(sunc)
       call memory('D','D',size(suncdot),'npr')
@@ -597,8 +597,6 @@ C Internal variables ...........................................................
       integer MPIerror
 #endif
 
-      save sold,hold
-
       double precision
      .  a1,a2,Ang,aux1(3,3),aux2(3,3),diff,dot,dt2,dtby2,
      .  eV,f(3,3),fi(3,3),fovermp,
@@ -608,8 +606,10 @@ C Internal variables ...........................................................
      .  tdiff,temp,tol,twodt,
      .  vol,volcel
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  s,sdot,snew,sold,sunc,suncdot
+
+      save hold
 
       external
      .  volcel, memory
@@ -638,12 +638,14 @@ C Allocate local memory
       call memory('A','D',3*natoms,'pr')
       allocate(snew(3,natoms))
       call memory('A','D',3*natoms,'pr')
-      allocate(sold(3,natoms))
-      call memory('A','D',3*natoms,'pr')
       allocate(sunc(3,natoms))
       call memory('A','D',3*natoms,'pr')
       allocate(suncdot(3,natoms))
       call memory('A','D',3*natoms,'pr')
+      if (.not.allocated(sold)) then
+        allocate(sold(3,natoms))
+        call memory('A','D',3*natoms,'pr')
+      endif
 
 C Define constants and conversion factors .......................................
       dt2   = dt**2
@@ -691,19 +693,19 @@ C Calculate scaled coordinates (referred to matrix H) at current time
 
 C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
-      do i = 1,3
-        do j = 1,3
-          hold(i,j) = h(i,j) - dt*hdot(i,j)
-        enddo
-      enddo
-      do ia = 1,natoms
         do i = 1,3
-          sold(i,ia) = 0.0d0
           do j = 1,3
-            sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+            hold(i,j) = h(i,j) - dt*hdot(i,j)
           enddo
         enddo
-      enddo
+        do ia = 1,natoms
+          do i = 1,3
+            sold(i,ia) = 0.0d0
+            do j = 1,3
+              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+            enddo
+          enddo
+        enddo
       endif
 C ..................
 
@@ -1018,8 +1020,6 @@ C Deallocate local memory
       deallocate(sdot)
       call memory('D','D',size(snew),'pr')
       deallocate(snew)
-      call memory('D','D',size(sold),'pr')
-      deallocate(sold)
       call memory('D','D',size(sunc),'pr')
       deallocate(sunc)
       call memory('D','D',size(suncdot),'pr')
@@ -1359,8 +1359,6 @@ C Internal variables ...........................................................
       integer MPIerror
 #endif
 
-      save sold
-
       double precision
      .  Ang,dt2,eV,
      .  fovermp,
@@ -1369,12 +1367,12 @@ C Internal variables ...........................................................
      .  tekin,temp,twodt,
      .  vol,volcel
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  s,sdot,snew,sold,sunc
 
        external
      .  volcel, memory
-C ...............................................................................
+C ....................................................................
 
 C Get Node number
 #ifdef MPI
@@ -1399,10 +1397,12 @@ C Allocate local memory
       call memory('A','D',3*natoms,'anneal')
       allocate(snew(3,natoms))
       call memory('A','D',3*natoms,'anneal')
-      allocate(sold(3,natoms))
-      call memory('A','D',3*natoms,'anneal')
       allocate(sunc(3,natoms))
       call memory('A','D',3*natoms,'anneal')
+      if (.not.allocated(sold)) then
+        allocate(sold(3,natoms))
+        call memory('A','D',3*natoms,'anneal')
+      endif
 
 C Define constants and conversion factors .......................................
       dt2   = dt**2
@@ -1445,14 +1445,14 @@ C Calculate scaled coordinates (referred to matrix H) at current time
 
 C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
-      do ia = 1,natoms
-        do i = 1,3
-          sold(i,ia) = 0.0d0
-          do j = 1,3
-            sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+        do ia = 1,natoms
+          do i = 1,3
+            sold(i,ia) = 0.0d0
+            do j = 1,3
+              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+            enddo
           enddo
         enddo
-      enddo
       endif
 C ..................
 
@@ -1506,7 +1506,7 @@ C Calculate pressure tensor at current time and ideal gas pressure
       enddo
 
 C Compute internal pressure  (pressin = 1/3 Tr (press))   at current time
-      pressin = 0.0
+      pressin = 0.0d0
       do i = 1,3
         pressin = pressin + press(i,i)
       enddo
@@ -1518,9 +1518,9 @@ C Compute kinetic energy
       if (ianneal .eq. 1 .or. ianneal .eq. 3) then
 C Correct velocities to reach target termperature
       if (kin .eq. 0.0) then
-        rfac2 = 1.0 + dt/taurelax
+        rfac2 = 1.0d0 + dt/taurelax
       else
-        rfac2 = (1.0 + dt/taurelax * (tekin/kin -1.0))
+        rfac2 = (1.0d0 + dt/taurelax * (tekin/kin -1.0d0))
       endif
       if (rfac2 .le. 0.0) then
         write(6,*) 'Wrong anneal parameter'
@@ -1643,8 +1643,6 @@ C Deallocate local memory
       deallocate(sdot)
       call memory('D','D',size(snew),'anneal')
       deallocate(snew)
-      call memory('D','D',size(sold),'anneal')
-      deallocate(sold)
       call memory('D','D',size(sunc),'anneal')
       deallocate(sunc)
 
@@ -1724,7 +1722,7 @@ C Internal variables ..........................................................
       double precision
      .  Ang,dot,dt2,eV,fovermp,temp,twodt
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  xanew
       double precision, dimension(:,:), allocatable, save ::
      .  xaold

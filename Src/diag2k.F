@@ -1,6 +1,6 @@
-      subroutine diag2k( nuo, no, maxuo, maxno, maxnd, maxo,
-     .                   numh, listh, numd, listd, H, S,
-     .                   getD, qtot, temp, e1, e2,
+      subroutine diag2k( nuo, no, maxuo, maxnh, maxnd, maxo,
+     .                   numh, listhptr, listh, numd, listdptr, 
+     .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
      .                   eo, qo, Dnew, Enew, ef,
      .                   Haux, Saux, psi, Dk, Ek, aux,
@@ -15,28 +15,30 @@ C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
 C integer maxuo               : Maximum number of basis orbitals
-C integer maxno               : Maximum number of orbitals interacting  
-C                               with any orbital
-C integer maxnd               : Maximum number of nonzero elements of 
-C                               each row of density matrix
+C integer maxnh               : Maximum number of orbitals interacting  
+C integer maxnd               : First dimension of listd / DM
 C integer maxo                : First dimension of eo and qo
-C integer numh(no)            : Number of nonzero elements of each row 
+C integer numh(nuo)           : Number of nonzero elements of each row 
 C                               of hamiltonian matrix
-C integer listh(maxno,no)     : Nonzero hamiltonian-matrix element  
+C integer listhptr(nuo)       : Pointer to each row (-1) of the
+C                               hamiltonian matrix
+C integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C integer numd(no)            : Number of nonzero elements of each row 
+C integer numd(nuo)           : Number of nonzero elements of each row 
 C                               of density matrix
-C integer listd(maxnd,no)     : Nonzero density-matrix element column 
+C integer listdptr(nuo)       : Pointer to each row (-1) of the
+C                               density matrix
+C integer listd(maxnd)        : Nonzero density-matrix element column 
 C                               indexes for each matrix row
-C real*8  H(maxno,maxuo,4)    : Hamiltonian in sparse form
-C real*8  S(maxno,maxuo)      : Overlap in sparse form
+C real*8  H(maxnh,4)          : Hamiltonian in sparse form
+C real*8  S(maxnh)            : Overlap in sparse form
 C logical getD                : Find occupations and density matrices?
 C real*8  qtot                : Number of electrons in unit cell
 C real*8  temp                : Electronic temperature 
 C real*8  e1, e2              : Energy range for density-matrix states
 C                               (to find local density of states)
 C                               Not used if e1 > e2
-C real*8  xij(3,maxno,maxuo)  : Vectors between orbital centers (sparse)
+C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
@@ -50,11 +52,11 @@ C                               over all processors
 C integer Node                : local processor
 C integer Nodes               : number of processors
 C *************************** OUTPUT **********************************
-C real*8 eo(maxo*4,nk)      : Eigenvalues
-C real*8 qo(maxo*4,nk)      : Occupations of eigenstates
-C real*8 Dnew(maxnd,maxuo,4): Output Density Matrix
-C real*8 Enew(maxnd,maxuo,4): Output Energy-Density Matrix
-C real*8 ef                 : Fermi energy
+C real*8 eo(maxo*4,nk)        : Eigenvalues
+C real*8 qo(maxo*4,nk)        : Occupations of eigenstates
+C real*8 Dnew(maxnd,4)        : Output Density Matrix
+C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
+C real*8 ef                   : Fermi energy
 C *************************** AUXILIARY *******************************
 C real*8 Haux(2,2,nuotot,2,nuo) : Aux. space for the hamiltonian matrix
 C real*8 Saux(2,2,nuotot,2,nuo) : Aux. space for the overlap matrix
@@ -87,17 +89,17 @@ C
 #endif
 
       integer
-     .  maxuo, maxnd, maxno, maxo, nk, no, nuo, nuotot, Node, Nodes
+     .  maxuo, maxnd, maxnh, maxo, nk, no, nuo, nuotot, Node, Nodes
 
       integer 
-     .  indxuo(no), listh(maxno,no), numh(no),
-     .  listd(maxnd,no), numd(no)
+     .  indxuo(no), listh(maxnh), numh(nuo), listd(maxnd), numd(nuo),
+     .  listhptr(*), listdptr(*)
 
       double precision
-     .  Dnew(maxnd,maxuo,4),
-     .  e1, e2, ef, Enew(maxnd,maxuo,4), eo(maxo*4,nk),
-     .  H(maxno,maxuo,4), kpoint(3,nk), qo(maxo*4,nk), qtot,
-     .  S(maxno,maxuo), stepf, temp, wk(nk), xij(3,maxno,maxuo)
+     .  Dnew(maxnd,4),
+     .  e1, e2, ef, Enew(maxnd,4), eo(maxo*4,nk),
+     .  H(maxnh,4), kpoint(3,nk), qo(maxo*4,nk), qtot,
+     .  S(maxnh), stepf, temp, wk(nk), xij(3,maxnh)
      
       double precision
      .  aux(5,2*nuotot), Dk(2,2,nuotot,2,nuo), Ek(2,2,nuotot,2,nuo), 
@@ -113,7 +115,7 @@ C
 C  Internal variables .............................................
       integer
      .  i, ie, ik, io, iio, is, ispin, iuo, j, jo, js, juo, 
-     .  BNode, iie, BTest, ierror
+     .  BNode, iie, BTest, ierror, ind, nd
       double precision
      .  ckx, ee, kxij, pipj1, pipj2, qe, skx, t
 C  ....................
@@ -126,50 +128,39 @@ C       Index i is for real/imag parts
 C       Indices is and js are for spin components
 C       Indices iuo and juo are for orbital components:
 C       Haux(i,js,juo,is,iuo) = <js,juo|H|is,iuo>
-   10   do iuo = 1,nuo
-          do is = 1,2
-            do juo = 1,nuotot
-              do js = 1,2
-                do i = 1,2
-                  Saux(i,js,juo,is,iuo) = 0.d0
-                  Haux(i,js,juo,is,iuo) = 0.d0
-                enddo
-              enddo
-            enddo
-          enddo
-        enddo
+   10   Saux = 0.0d0
+        Haux = 0.0d0
 
 C       Transfer S,H matrices from sparse format in supercell to
 C       full format in unit cell
 C       Convention: ispin=1 => H11, ispin=2 => H22, 
 C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
-        do io = 1,nuo
-          call LocalToGlobalOrb(io,Node,Nodes,iio)
-          do j = 1,numh(iio)
-            jo = listh(j,iio)
-            call GlobalToLocalOrb(indxuo(iio),Node,Nodes,iuo)
+        do iuo = 1,nuo
+          do j = 1,numh(iuo)
+            ind = listhptr(iuo) + j
+            jo = listh(ind)
             juo = indxuo(jo)
-            kxij = kpoint(1,ik) * xij(1,j,io) +
-     .             kpoint(2,ik) * xij(2,j,io) +
-     .             kpoint(3,ik) * xij(3,j,io)
+            kxij = kpoint(1,ik) * xij(1,ind) +
+     .             kpoint(2,ik) * xij(2,ind) +
+     .             kpoint(3,ik) * xij(3,ind)
             ckx = cos(kxij)
             skx = sin(kxij)
-            Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(j,io)*ckx
-            Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(j,io)*skx
-            Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(j,io)*ckx
-            Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(j,io)*skx
-            Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(j,io,1)*ckx
-            Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(j,io,1)*skx
-            Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(j,io,2)*ckx
-            Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(j,io,2)*skx
-            Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(j,io,3)*ckx
-     .                                                + H(j,io,4)*skx
-            Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(j,io,4)*ckx
-     .                                                + H(j,io,3)*skx
-            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo) + H(j,io,3)*ckx
-     .                                                - H(j,io,4)*skx
-            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo) + H(j,io,4)*ckx
-     .                                                + H(j,io,3)*skx
+            Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(ind)*ckx
+            Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(ind)*skx
+            Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(ind)*ckx
+            Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(ind)*skx
+            Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(ind,1)*ckx
+            Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(ind,1)*skx
+            Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(ind,2)*ckx
+            Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(ind,2)*skx
+            Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(ind,3)*ckx
+     .                                                + H(ind,4)*skx
+            Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
+     .                                                + H(ind,3)*skx
+            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo) + H(ind,3)*ckx
+     .                                                - H(ind,4)*skx
+            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo) + H(ind,4)*ckx
+     .                                                + H(ind,3)*skx
           enddo
         enddo
 
@@ -180,7 +171,7 @@ C       Possible memory optimization: equivalence Haux and psi
      .              eo(1,ik), psi, 2*nuotot, aux, ierror )
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
-        elseif (ierror.lt.0) then
+        elseif (ierror.eq.-1) then
           goto 10
         endif
       enddo
@@ -218,82 +209,56 @@ C Find weights for local density of states ............................
 C ....................
       
 c New density and energy-density matrices of unit-cell orbitals .......
-      do ispin = 1,4
-        do io = 1,nuo
-          call LocalToGlobalOrb(io,Node,Nodes,iio)
-          do j = 1,numd(iio)
-            Dnew(j,io,ispin) = 0.d0
-            Enew(j,io,ispin) = 0.d0
-          enddo
-        enddo
-      enddo
+      nd = listdptr(nuo) + numd(nuo)
+      Dnew(1:nd,1:4) = 0.0d0
+      Enew(1:nd,1:4) = 0.0d0
 
       do ik = 1,nk
 
 C       Find eigenvectors again (were stored only for one k point)
-   20   do iuo = 1,nuo
-          do is = 1,2
-            do juo = 1,nuotot
-              do js = 1,2
-                do i = 1,2
-                  Saux(i,js,juo,is,iuo) = 0.d0
-                  Haux(i,js,juo,is,iuo) = 0.d0
-                enddo
-              enddo
-            enddo
-          enddo
-        enddo
-        do io = 1,nuo
-          call LocalToGlobalOrb(io,Node,Nodes,iio)
-          do j = 1,numh(iio)
-            jo = listh(j,iio)
-            call GlobalToLocalOrb(indxuo(iio),Node,Nodes,iuo)
+   20   Saux = 0.0d0
+        Haux = 0.0d0
+        do iuo = 1,nuo
+          do j = 1,numh(iuo)
+            ind = listhptr(iuo) + j
+            jo = listh(ind)
             juo = indxuo(jo)
-            kxij = kpoint(1,ik) * xij(1,j,io) +
-     .             kpoint(2,ik) * xij(2,j,io) +
-     .             kpoint(3,ik) * xij(3,j,io)
+            kxij = kpoint(1,ik) * xij(1,ind) +
+     .             kpoint(2,ik) * xij(2,ind) +
+     .             kpoint(3,ik) * xij(3,ind)
             ckx = cos(kxij)
             skx = sin(kxij)
-            Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(j,io)*ckx
-            Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(j,io)*skx
-            Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(j,io)*ckx
-            Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(j,io)*skx
-            Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(j,io,1)*ckx
-            Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(j,io,1)*skx
-            Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(j,io,2)*ckx
-            Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(j,io,2)*skx
-            Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(j,io,3)*ckx
-     .                                                + H(j,io,4)*skx
-            Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(j,io,4)*ckx
-     .                                                + H(j,io,3)*skx
-            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo) + H(j,io,3)*ckx
-     .                                                - H(j,io,4)*skx
-            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo) + H(j,io,4)*ckx
-     .                                                + H(j,io,3)*skx
+            Saux(1,1,juo,1,iuo) = Saux(1,1,juo,1,iuo) + S(ind)*ckx
+            Saux(2,1,juo,1,iuo) = Saux(2,1,juo,1,iuo) + S(ind)*skx
+            Saux(1,2,juo,2,iuo) = Saux(1,2,juo,2,iuo) + S(ind)*ckx
+            Saux(2,2,juo,2,iuo) = Saux(2,2,juo,2,iuo) + S(ind)*skx
+            Haux(1,1,juo,1,iuo) = Haux(1,1,juo,1,iuo) + H(ind,1)*ckx
+            Haux(2,1,juo,1,iuo) = Haux(2,1,juo,1,iuo) + H(ind,1)*skx
+            Haux(1,2,juo,2,iuo) = Haux(1,2,juo,2,iuo) + H(ind,2)*ckx
+            Haux(2,2,juo,2,iuo) = Haux(2,2,juo,2,iuo) + H(ind,2)*skx
+            Haux(1,1,juo,2,iuo) = Haux(1,1,juo,2,iuo) + H(ind,3)*ckx
+     .                                                + H(ind,4)*skx
+            Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
+     .                                                + H(ind,3)*skx
+            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo) + H(ind,3)*ckx
+     .                                                - H(ind,4)*skx
+            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo) + H(ind,4)*ckx
+     .                                                + H(ind,3)*skx
           enddo
         enddo
         call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
      .              eo(1,ik), psi, 2*nuotot, aux, ierror )
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
-        elseif (ierror.lt.0) then
+        elseif (ierror.eq.-1) then
           goto 20
         endif
 
 C       Store the products of eigenvectors in matrices Dk and Ek
 C       WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-        do iuo = 1,nuo
-          do is = 1,2
-            do juo = 1,nuotot
-              do js = 1,2
-                do i = 1,2
-                  Dk(i,js,juo,is,iuo) = 0.d0
-                  Ek(i,js,juo,is,iuo) = 0.d0
-                enddo
-              enddo
-            enddo
-          enddo
-        enddo
+        Dk = 0.0d0
+        Ek = 0.0d0
+
         BNode = 0
         iie = 0
         do ie = 1,nuotot*2
@@ -343,14 +308,6 @@ C       WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
               Ek(1,1,juo,2,iuo) = Ek(1,1,juo,2,iuo) + ee * pipj1
               Ek(2,1,juo,2,iuo) = Ek(2,1,juo,2,iuo) + ee * pipj2
 
-*             pipj1 = psi(1,2,iio,ie) * psi(1,1,juo,ie) +
-*    .                psi(2,2,iio,ie) * psi(2,1,juo,ie)
-*             pipj2 = psi(1,2,iio,ie) * psi(2,1,juo,ie) -
-*    .                psi(2,2,iio,ie) * psi(1,1,juo,ie)
-*             Dk(1,2,juo,1,iuo) = Dk(1,2,juo,1,iuo) + qe * pipj1
-*             Dk(2,2,juo,1,iuo) = Dk(2,2,juo,1,iuo) + qe * pipj2
-*             Ek(1,2,juo,1,iuo) = Ek(1,2,juo,1,iuo) + ee * pipj1
-*             Ek(2,2,juo,1,iuo) = Ek(2,2,juo,1,iuo) + ee * pipj2
             enddo
           enddo
           BTest = ie/BlockSize
@@ -361,33 +318,32 @@ C       WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
         enddo
 
 C       Add contribution to density matrices of unit-cell orbitals
-        do io = 1,nuo
-          call LocalToGlobalOrb(io,Node,Nodes,iio)
-          call GlobalToLocalOrb(indxuo(iio),Node,Nodes,iuo)
-          do j = 1,numd(iio)
-            jo = listd(j,iio)
+        do iuo = 1,nuo
+          do j = 1,numd(iuo)
+            ind = listdptr(iuo) + j
+            jo = listd(ind)
             juo = indxuo(jo)
-            kxij = kpoint(1,ik) * xij(1,j,io) +
-     .             kpoint(2,ik) * xij(2,j,io) +
-     .             kpoint(3,ik) * xij(3,j,io)
+            kxij = kpoint(1,ik) * xij(1,ind) +
+     .             kpoint(2,ik) * xij(2,ind) +
+     .             kpoint(3,ik) * xij(3,ind)
             ckx = cos(kxij)
             skx = sin(kxij)
-            Dnew(j,io,1) = Dnew(j,io,1) + Dk(1,1,juo,1,iuo) * ckx
-     .                                  + Dk(2,1,juo,1,iuo) * skx
-            Enew(j,io,1) = Enew(j,io,1) + Ek(1,1,juo,1,iuo) * ckx
-     .                                  + Ek(2,1,juo,1,iuo) * skx
-            Dnew(j,io,2) = Dnew(j,io,2) + Dk(1,2,juo,2,iuo) * ckx
-     .                                  + Dk(2,2,juo,2,iuo) * skx
-            Enew(j,io,2) = Enew(j,io,2) + Ek(1,2,juo,2,iuo) * ckx
-     .                                  + Ek(2,2,juo,2,iuo) * skx
-            Dnew(j,io,3) = Dnew(j,io,3) + Dk(1,1,juo,2,iuo) * ckx
-     .                                  + Dk(2,1,juo,2,iuo) * skx
-            Enew(j,io,3) = Enew(j,io,3) + Ek(1,1,juo,2,iuo) * ckx
-     .                                  + Ek(2,1,juo,2,iuo) * skx
-            Dnew(j,io,4) = Dnew(j,io,4) + Dk(2,1,juo,2,iuo) * ckx
-     .                                  - Dk(1,1,juo,2,iuo) * skx
-            Enew(j,io,4) = Enew(j,io,4) + Ek(2,1,juo,2,iuo) * ckx
-     .                                  - Ek(1,1,juo,2,iuo) * skx
+            Dnew(ind,1) = Dnew(ind,1) + Dk(1,1,juo,1,iuo) * ckx
+     .                                + Dk(2,1,juo,1,iuo) * skx
+            Enew(ind,1) = Enew(ind,1) + Ek(1,1,juo,1,iuo) * ckx
+     .                                + Ek(2,1,juo,1,iuo) * skx
+            Dnew(ind,2) = Dnew(ind,2) + Dk(1,2,juo,2,iuo) * ckx
+     .                                + Dk(2,2,juo,2,iuo) * skx
+            Enew(ind,2) = Enew(ind,2) + Ek(1,2,juo,2,iuo) * ckx
+     .                                + Ek(2,2,juo,2,iuo) * skx
+            Dnew(ind,3) = Dnew(ind,3) + Dk(1,1,juo,2,iuo) * ckx
+     .                                + Dk(2,1,juo,2,iuo) * skx
+            Enew(ind,3) = Enew(ind,3) + Ek(1,1,juo,2,iuo) * ckx
+     .                                + Ek(2,1,juo,2,iuo) * skx
+            Dnew(ind,4) = Dnew(ind,4) + Dk(2,1,juo,2,iuo) * ckx
+     .                                - Dk(1,1,juo,2,iuo) * skx
+            Enew(ind,4) = Enew(ind,4) + Ek(2,1,juo,2,iuo) * ckx
+     .                                - Ek(1,1,juo,2,iuo) * skx
           enddo
         enddo
 
@@ -395,5 +351,3 @@ C       Add contribution to density matrices of unit-cell orbitals
 C ....................
 
       end
-
-

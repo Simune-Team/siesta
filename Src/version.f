@@ -15,9 +15,9 @@ c     included for reference.)
 c
 c     After it is done, this file should be commited.
 c
-      integer, dimension(3), save  :: num_version = (/1,0,13/)
+      integer, dimension(3), save  :: num_version = (/1,0,27/)
       character(len=80), parameter ::  version_str =
-     .  "SIESTA 1.0.13 -- Return to Main Trunk (Nov 26, 1999)"
+     .  "SIESTA 1.0.27 -- [new sparse form] (Apr 12, 2000)"
 
       character(len=60), parameter :: arch =
      $  'SYS'

@@ -41,7 +41,7 @@ C                      the pseudopotential information).
        integer  ntbmax, lmaxd, nzetmx, nkbmx, nrmax, lmx2, nsemx, nsmx
          parameter ( ntbmax =  500 )
          parameter ( lmaxd  =    4 )
-         parameter ( nzetmx =    2 )
+         parameter ( nzetmx =    3 )
          parameter ( nkbmx  =    2 )
          parameter ( nsmx  =    1 )
          parameter ( nsemx = 1 + nsmx) 
@@ -95,6 +95,7 @@ C                      the pseudopotential information).
 !
       character(len=20), save    :: label_save(40)
       character(len=10), save    :: basistype_save(40)  
+
 
       contains
 !
@@ -1232,6 +1233,202 @@ C            Next two lines introduced by J.Soler. 2/7/96.
         endif
 
       end subroutine phiatm
+
+
+      subroutine all_phi(is,io,r,nphi,phi,grphi)
+      integer, intent(in) :: is     ! Species index
+      integer, intent(in) :: io     ! Orbital-type switch:
+                                    ! IO > 0 => Basis orbitals
+                                    ! IO = 0 => Local screened pseudop
+                                    ! IO < 0 => KB projectors
+      real*8, intent(in)  :: r(3)   ! Point vector, relative to atom
+      integer, intent(out):: nphi   ! Number of phi's
+      real*8, intent(out) :: phi(:) ! Basis orbital, KB projector, or
+                                    !  local pseudopotential
+      real*8, optional, intent(out) :: grphi(:,:) ! Gradient of phi
+
+C  Returns Kleynman-Bylander local pseudopotential, nonlocal projectors,
+C  and atomic basis orbitals (and their gradients).
+C  Same as phiatm but returns all orbitals or KB projectors of the atom
+C  Written by D.Sanchez-Portal and J.M.Soler. Jan. 2000 
+
+C Distances in Bohr
+C 1) Each projector and basis function has a well defined total
+C    angular momentum (quantum number l).
+C 2) Basis functions are normalized and mutually orthogonal
+C 3) Projection functions are normalized and mutually orthogonal
+C 4) Normalization of KB projectors |Phi_lm> is such that 
+C     <Psi|V_KB|Psi'> = <Psi|V_local|Psi'> +
+C                   Sum_lm( epsKB_l * <Psi|Phi_lm> * <Phi_lm|Psi'> )
+C    where epsKB_l is returned by function EPSKB
+C 5) Prints a message and stops when no data exits for IS
+C 6) Returns exactly zero when |R| > RCUT(IS,IO)
+C 7) PHIATM with IO = 0 is strictly equivalent to VLOCAL_SUB
+C 8) If arrays phi or grphi are too small, returns with the required
+C    value of nphi
+
+      integer i, index, ipol, it, izeta, jlm,
+     .        l, lmax, m, maxlm, maxo, n, nsm
+      logical polar
+      double precision  rly(lmx2), grly(3,lmx2), rmod,
+     .                  phir, dphidr, delt
+
+      integer, parameter :: maxphi=100, maxs=10
+      integer, save, dimension(maxphi,maxs,-1:1) :: ilm, ind=0
+      logical, save, dimension(maxphi,maxs,-1:1) :: pol
+      double precision, save, dimension(maxphi,maxs,-1:1) :: rmax
+      logical, dimension(maxphi) :: within
+
+!     Check that species index is valid
+      call check_is('all_phi',is)
+
+!     Find number of orbitals
+      if (io.gt.0) then
+        it=+1
+        nphi=nomax(is)
+      elseif (io.lt.0) then
+        it=-1
+        nphi=nkbmax(is)
+      else
+        it=0
+        nphi=1
+      endif
+
+!     Find internal indexes of required orbitals
+      if (ind(1,is,it).eq.0) then
+
+!       Check size of tables
+        if (nphi.gt.maxphi) stop 'all_phi: maxphi too small'
+        if (is.gt.maxs)     stop 'all_phi: maxs too small'
+
+        if (io.gt.0) then
+          n=0 
+          index=0
+          do l=0,lmxosave(is)
+            do nsm=1,lsemicsave(l,is)+1
+              do izeta=1,nzetasave(l,nsm,is)
+                index=index+1
+                do m=-l,l
+                  n=n+1
+                  ind(n,is,it)=index
+                  ilm(n,is,it)=l*(l+1)+m+1
+                  pol(n,is,it)=.false.
+                  rmax(n,is,it)=table(1,index,is)*(ntbmax-1)
+                  rmax(n,is,it)=rmax(n,is,it)-1.d-12
+                enddo 
+              enddo 
+            enddo 
+          enddo 
+          index=0
+          do l=0,lmxosave(is)
+            do nsm=1,lsemicsave(l,is)+1
+              do ipol=1, npolorbsave(l,nsm,is)
+                index=index+1
+                do m=-(l+1),(l+1)
+                  n=n+1
+                  ind(n,is,it)=index
+                  ilm(n,is,it)=(l+1)*(l+2)+m+1
+                  pol(n,is,it)=.true.
+                  rmax(n,is,it)=tabpol(1,index,is)*(ntbmax-1)
+                  rmax(n,is,it)=rmax(n,is,it)-1.d-12
+                enddo 
+              enddo 
+            enddo 
+          enddo  
+
+        elseif (io.lt.0) then
+          n=0
+          index=0
+          do l=0,lmxkbsave(is)
+            do izeta=1,nkblsave(l,is)
+              index=index-1
+              do m=-l,l
+                n=n+1
+                ind(n,is,it)=index
+                ilm(n,is,it)=l*(l+1)+m+1
+                pol(n,is,it)=.false.
+                rmax(n,is,it)=table(1,index,is)*(ntbmax-1)
+                rmax(n,is,it)=rmax(n,is,it)-1.d-12
+              enddo 
+            enddo 
+          enddo 
+
+        else
+          n=1
+          index=0
+          ind(n,is,it)=0 
+          ilm(n,is,it)=1
+          pol(n,is,it)=.false.
+          rmax(n,is,it)=table(1,index,is)*(ntbmax-1)
+          rmax(n,is,it)=rmax(n,is,it)-1.d-12
+        endif 
+
+!       A safety check
+        if (n.ne.nphi) stop 'all_phi: n.ne.nphi'
+
+      endif
+
+!     Check size of output arrays
+      if (present(grphi)) then
+        if (size(grphi,1).ne.3)
+     .    stop 'all_phi: incorrect first dimension of grphi'
+        n = min( size(phi), size(grphi,2) )
+      else
+        n = size(phi)
+      endif
+      if (n.lt.nphi) return
+
+!     Initialize orbital values
+      phi(1:nphi) = 0.d0
+      if (present(grphi)) grphi(:,1:nphi) = 0.d0
+
+!     Find for which orbitals rmod < rmax
+      rmod = sqrt(sum(r*r)) + 1.0d-20
+      within(1:nphi) = rmod .lt. rmax(1:nphi,is,it)
+      if (.not.any(within(1:nphi))) return
+
+!     Find spherical harmonics
+      maxlm = maxval( ilm(1:nphi,is,it), mask=within )
+      lmax=nint(sqrt(dble(maxlm)))-1
+      call rlylm(lmax,r,rly,grly)
+
+!     Find orbital values
+      index=0
+      polar=.false.
+      i_loop: do i=1,nphi
+
+!       Check if rmod > rmax
+        if (.not.within(i)) cycle i_loop
+          
+!       Find radial part of orbital
+        if ( (ind(i,is,it).ne.index) .or.
+     .       (pol(i,is,it).neqv.polar) ) then
+          index=ind(i,is,it)
+          polar=pol(i,is,it)
+          if (polar) then
+            delt=tabpol(1,index,is)
+            call splint(delt,tabpol(3,index,is),
+     .                  tab2pol(1,index,is),ntbmax,
+     .                  rmod,phir,dphidr)
+          else
+            delt=table(1,index,is)  
+            call splint(delt,table(3,index,is),
+     .                  tab2(1,index,is),ntbmax,
+     .                  rmod,phir,dphidr)
+          endif
+
+        endif
+
+!       Multiply radial and angular parts
+        jlm = ilm(i,is,it)
+        phi(i) = phir * rly(jlm)
+        if (present(grphi))
+     .    grphi(:,i) = dphidr * rly(jlm) * r(:) / rmod + 
+     .                 phir * grly(:,jlm)
+
+      enddo i_loop
+
+      end subroutine all_phi
 !
         subroutine rphiatm(is,io,r,phi,dphidr)
       integer, intent(in) :: is      ! Species index

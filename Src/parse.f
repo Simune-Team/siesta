@@ -41,7 +41,7 @@ c     Internal variables
       logical
      .  isinteger, isreal, opened
 
-      logical, dimension(:), allocatable ::
+      logical, dimension(:), allocatable, save ::
      .  isblank, isdigit, isdot, isexp, issign, isother
 
       character  c

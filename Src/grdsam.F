@@ -1,8 +1,7 @@
-      subroutine grdsam(nspin, maxorb, norb, iaorb, iphorb, indxuo,
+      subroutine grdsam(nspin, norb, iaorb, iphorb, indxuo,
      .                  nuo, nuotot, nua, na, isa, xa, indxua,
-     .                  cell, mscell, g2max, ntm, 
-     .                  ilh, ifa, istr,
-     .                  maxno, numh, listh, Dscf, Datm, Hmat,
+     .                  cell, mscell, g2max, ntm, ifa, istr, maxnd,
+     .                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
      .                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .                  Exc, Dxc, dipol, fa, stress, fal, stressl )
 
@@ -31,7 +30,6 @@ c
 c Written by E. Artacho. January 1998. 
 c *********************** INPUT TOWARDS DHSCF *******************************
 c integer nspin         : number of spins considered 
-c integer maxorb        : second dimension of dscf and hmat
 c integer norb          : total number of basis orbitals
 c integer iaorb(norb)   : atom to which each orbital belongs
 c integer iphorb(norb)  : orbital index (within atom) of each orbital
@@ -44,18 +42,19 @@ c integer isa(na)       : species indexes
 c real*8  xa(3,na)      : atomic positions
 c real*8  cell(3,3)     : unit cell vectors
 c integer mscell(3,3)   : supercell vectors in units of ucell
-c integer ilh           : numh and listh: input or output?
 c integer ifa           : scf contrib to forces calculated or not
 c integer istr          : scf contrib to stress calculated or not
-c integer maxno         : first dimension of listh, dscf, hmat
-c real*8  dscf(maxno,maxorb,nspin): scf DM elements
-c real*8  datm(norb)        : Harris DM diagonal elements
+c integer maxnd         : first dimension of dscf
+c integer maxnh         : first dimension of listh, hmat
+c real*8  dscf(maxnd,nspin): scf DM elements
+c real*8  datm(norb)    : Harris DM diagonal elements
 c **** DHSCF INPUT OR OUTPUT (DEPENDING ON WHETHER MESH IS CALCULATED)*******
-c integer ntm(3)            : number of mesh divisions of each cell vector
+c integer ntm(3)        : number of mesh divisions of each cell vector
 c **** DHSCF INPUT OR OUTPUT (DEPENDING ON ARGUMENT ILH) ********************
-c integer numh(norb)        : number of nonzero H elements for each row
-c integer listh(maxno,norb) : nonzero-H-element column indexes for each row
-c real*8  hmat(maxno,maxorb,nspin): Hamiltonian matrix in sparse form
+c integer numh(nuo)     : number of nonzero H elements for each row
+c integer listhptr(nuo) : pointer to each row (-1) of H
+c integer listh(maxnh)  : nonzero-H-element column indexes for each row
+c real*8  Hmat(maxnh,nspin): Hamiltonian matrix in sparse form
 c ************************* DHSCF OUTPUT ******i*****************************
 c real*8  enaatm : integral of vna * rhoatm
 c real*8  enascf : integral of vna * rhoscf
@@ -85,16 +84,16 @@ C
 
       implicit          none
 
-      integer           maxno, maxorb, na, norb, nspin, nuo, nuotot, 
-     .                  nua, iaorb(norb), ifa, ilh,
-     .                  indxua(na), indxuo(norb),
-     .                  iphorb(norb), isa(na), istr, listh(maxno,norb),
-     .                  mscell(3,3), numh(norb), ntm(3)
+      integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
+     .                  nua, iaorb(norb), ifa, indxua(na), indxuo(norb),
+     .                  iphorb(norb), isa(na), istr, listh(maxnh),
+     .                  listhptr(nuo), mscell(3,3), 
+     .                  numh(nuo), ntm(3)
 
       double precision  cell(3,3), datm(norb), dipol(3), 
-     .                  dscf(maxno,maxorb,nspin), DUscf, DUext, Dxc, 
+     .                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
      .                  enaatm, enascf, exc, fa(3,nua), g2max,
-     .                  hmat(maxno,maxorb,nspin), stress(3,3),
+     .                  Hmat(maxnh,nspin), stress(3,3),
      .                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
 
       external          parse, memory
@@ -117,7 +116,7 @@ c Internal variables and arrays
      .                  strold2(3,3), avstre2(3,3)
 
       parameter         (maxpt = 100)
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .                  pt, avfa, faold, xanew, avfa2, faold2
       double precision, dimension(:,:), allocatable, save ::
      .                  dpt
@@ -140,8 +139,6 @@ C Get Node number
 #endif
 
 C Allocate local memory
-      allocate(pt(3,na))
-      call memory('A','D',3*na,'grdsam')
       allocate(avfa(3,na))
       call memory('A','D',3*na,'grdsam')
       allocate(avfa2(3,na))
@@ -153,6 +150,8 @@ C Allocate local memory
       allocate(xanew(3,na))
       call memory('A','D',3*na,'grdsam')
       if (.not.allocated(dpt)) then
+        allocate(pt(3,maxpt+1))
+        call memory('A','D',3*(maxpt+1),'grdsam')
         allocate(dpt(3,na))
         call memory('A','D',3*na,'grdsam')
       endif
@@ -211,18 +210,10 @@ C Look for block and read it if found ---------------------------------------
 c if sampling, store the forces and stresses prior to dhscf -----------------
 
       if (samgrd) then
-        do ia = 1, nua
-          do ix = 1, 3
-            faold(ix,ia) = fa(ix,ia)
-            faold2(ix,ia) = fal(ix,ia)
-          enddo
-        enddo
-        do iv = 1, 3
-          do ix = 1, 3
-            strold(ix,iv) = stress(ix,iv)
-            strold2(ix,iv) = stressl(ix,iv)
-          enddo
-        enddo
+        faold(1:3,1:nua) = fa(1:3,1:nua)
+        faold2(1:3,1:nua) = fal(1:3,1:nua)
+        strold(1:3,1:3) = stress(1:3,1:3)
+        strold2(1:3,1:3) = stressl(1:3,1:3)
         if (Node.eq.0) then
           write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', 0
         endif
@@ -231,12 +222,12 @@ c if sampling, store the forces and stresses prior to dhscf -----------------
 
 c first (normal) call to DHSCF, ihmat=1 --------------------------------------
 
-      call dhscf( nspin, maxorb, norb, iaorb, iphorb, indxuo, nuo,
+      call dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
      .            nuotot, nua,
      .            na, isa, xa, indxua, cell, mscell, g2max, ntm,
-     .            ilh, ifa, istr, 1, ' ', ' ', ' ', ' ',
-     .            maxno, numh, listh, Dscf, Datm,
-     .            maxno, numh, listh, Hmat,  
+     .            ifa, istr, 1, ' ', ' ', ' ', ' ',
+     .            maxnd, numh, listhptr, listh, Dscf, Datm,
+     .            maxnh, numh, listhptr, listh, Hmat,  
      .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, fa, stress, fal, stressl)
 
@@ -266,7 +257,7 @@ c generate displacements (in Bohr cartesian) if first time or new mesh ------
           endif
           do ipt = 1, npt
             do ix = 1, 3
-              dpt(ix,ipt) = 0.d0
+              dpt(ix,ipt) = 0.0d0
               do iv = 1, 3
                 dpt(ix,ipt) = dpt(ix,ipt) + 
      .                          cell(ix,iv)*pt(iv,ipt)/dble(ntm(iv))
@@ -277,21 +268,11 @@ c generate displacements (in Bohr cartesian) if first time or new mesh ------
 
 c initialize averages with output of regular DHSCF run -----------------------
 
-        do ia = 1, nua
-          do ix = 1, 3
-            avfa(ix,ia) = fa(ix,ia)
-            avfa2(ix,ia) = fal(ix,ia)
-          enddo
-        enddo
-        do iv = 1, 3
-          do ix = 1, 3
-            avstre(ix,iv) = stress(ix,iv)
-            avstre2(ix,iv) = stressl(ix,iv)
-          enddo
-        enddo
-        do ix = 1, 3
-          avdipo(ix) = dipol(ix)
-        enddo
+        avfa(1:3,1:nua) = fa(1:3,1:nua)
+        avfa2(1:3,1:nua) = fal(1:3,1:nua)
+        avstre(1:3,1:3) = stress(1:3,1:3)
+        avstre2(1:3,1:3) = stressl(1:3,1:3)
+        avdipo(1:3) = dipol(1:3)
         avenaa = enaatm
         avenas = enascf
         avuatm = uatm
@@ -309,46 +290,29 @@ c loop sampling on displacements making averages ----------------------------
               xanew(ix,ia) = xa(ix,ia) + dpt(ix,ipt)
             enddo
           enddo
-          do ia = 1, nua
-            do ix = 1, 3
-              xanew(ix,ia) = xa(ix,ia) + dpt(ix,ipt)
-            enddo
-          enddo
-          do iv = 1, 3
-            do ix = 1, 3
-              stress(ix,iv) = strold(ix,iv)
-              stressl(ix,iv) = strold2(ix,iv)
-            enddo
-          enddo
+          fa(1:3,1:nua) = faold(1:3,1:nua)
+          fal(1:3,1:nua) = faold2(1:3,1:nua)
+          stress(1:3,1:3) = strold(1:3,1:3)
+          stressl(1:3,1:3) = strold2(1:3,1:3)
         
           if (Node.eq.0) then
           write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', ipt
           endif
 
-          call dhscf( nspin, maxorb, norb, iaorb, iphorb, indxuo, nuo,
+          call dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
      .                nuotot, nua,
      .                na, isa, xanew, indxua, cell, mscell, g2max, ntm,
-     .                ilh, ifa, istr, 0, ' ', ' ', ' ', ' ',
-     .                maxno, numh, listh, Dscf, Datm,
-     .                maxno, numh, listh, Hmat, 
+     .                ifa, istr, 0, ' ', ' ', ' ', ' ',
+     .                maxnd, numh, listhptr, listh, Dscf, Datm,
+     .                maxnh, numh, listhptr, listh, Hmat, 
      .                Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .                Exc, Dxc, dipol, fa, stress, fal, stressl)
 
-          do ia = 1, nua
-            do ix = 1, 3
-              avfa(ix,ia) = avfa(ix,ia) + fa(ix,ia)
-              avfa2(ix,ia) = avfa2(ix,ia) + fal(ix,ia)
-            enddo
-          enddo
-          do iv = 1, 3
-            do ix = 1, 3
-              avstre(ix,iv) = avstre(ix,iv) + stress(ix,iv)
-              avstre2(ix,iv) = avstre2(ix,iv) + stressl(ix,iv)
-            enddo
-          enddo
-          do ix = 1, 3
-            avdipo(ix) = avdipo(ix) + dipol(ix)
-          enddo
+          avfa(1:3,1:nua) = avfa(1:3,1:nua) + fa(1:3,1:nua)
+          avfa2(1:3,1:nua) = avfa2(1:3,1:nua) + fal(1:3,1:nua)
+          avstre(1:3,1:3) = avstre(1:3,1:3) + stress(1:3,1:3)
+          avstre2(1:3,1:3) = avstre2(1:3,1:3) + stressl(1:3,1:3)
+          avdipo(1:3) = avdipo(1:3) + dipol(1:3)
           avenaa = avenaa + enaatm
           avenas = avenas + enascf
           avuatm = avuatm + uatm
@@ -362,21 +326,11 @@ c final averages ------------------------------------------------------------
 
         anpt = dble(npt+1)
 
-        do ia = 1, nua
-          do ix = 1, 3
-            fa(ix,ia) = avfa(ix,ia)/anpt
-            fal(ix,ia) = avfa2(ix,ia)/anpt
-          enddo
-        enddo
-        do iv = 1, 3
-          do ix = 1, 3
-            stress(ix,iv) = avstre(ix,iv)/anpt
-            stressl(ix,iv) = avstre2(ix,iv)/anpt
-          enddo
-        enddo
-        do ix = 1, 3
-          dipol(ix) = avdipo(ix)/anpt
-        enddo
+        fa(1:3,1:nua) = avfa(1:3,1:nua)/anpt
+        fal(1:3,1:nua) = avfa2(1:3,1:nua)/anpt
+        stress(1:3,1:3) = avstre(1:3,1:3)/anpt
+        stressl(1:3,1:3) = avstre2(1:3,1:3)/anpt
+        dipol(1:3) = avdipo(1:3)/anpt
         enaatm = avenaa/anpt
         enascf = avenas/anpt
         uatm   = avuatm/anpt
@@ -388,8 +342,6 @@ c final averages ------------------------------------------------------------
       endif
 
 C Deallocate local memory
-      call memory('D','D',size(pt),'grdsam')
-      deallocate(pt)
       call memory('D','D',size(avfa),'grdsam')
       deallocate(avfa)
       call memory('D','D',size(avfa2),'grdsam')

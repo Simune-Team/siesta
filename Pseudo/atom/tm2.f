@@ -1,5 +1,5 @@
 c
-c $Id: tm2.f,v 1.3 1999/02/26 14:26:48 wdpgaara Exp $
+c $Id: tm2.f,v 1.4 2000/02/10 14:01:31 wdpgaara Exp $
 c
       subroutine tm2(i,wfr,br)
 c
@@ -44,6 +44,9 @@ C     ..
       integer isrchfgt
       double precision zbrent, v0pp
       external zbrent, v0pp
+c
+c AG
+      fdold = 0.d0
 c
       lp = lo(i) + 1
       ka = lo(i) + 1
@@ -248,8 +251,11 @@ c           Calculate new delta
 c
          fdnew = log(cdrc/cdps) - 2*delta
          if (abs(fdnew) .lt. small) go to 160
-         ddelta = -fdnew*ddelta/(fdnew-fdold)
-         if (j .eq. 1) ddelta = -one/2
+         if (j .eq. 1) then
+            ddelta = -one/2
+         else
+            ddelta = -fdnew*ddelta/(fdnew-fdold)
+         endif
          delta = delta + ddelta
 c
          bj(1) = bj1 - delta

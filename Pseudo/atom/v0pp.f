@@ -28,6 +28,9 @@ C     ..
 C     .. Intrinsic Functions ..
       intrinsic abs, exp, log
 C     ..
+
+      fdold = 0.d0
+
       rc9 = rc8*rc1
       rc10 = rc8*rc2
       rc11 = rc8*rc3
@@ -132,8 +135,11 @@ c
 c
          end if
 c
-         ddelta = -fdnew*ddelta/(fdnew-fdold)
-         if (j .eq. 1) ddelta = -pfive
+         if (j .eq. 1) then
+            ddelta = -pfive
+         else
+            ddelta = -fdnew*ddelta/(fdnew-fdold)
+         endif
          delta = delta + ddelta
 c
          bj(1) = bj1 - delta

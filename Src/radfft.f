@@ -68,13 +68,13 @@ C Internal variable types and dimensions ----------------------------
       DOUBLE PRECISION
      .  BESSPH, C, DQ, DR, FR, PI, R, RN, Q
 
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE ::
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE ::
      .  GG
 
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE ::
      .  FN
 
-      DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE ::
+      DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE, SAVE ::
      .  P
 
       EXTERNAL

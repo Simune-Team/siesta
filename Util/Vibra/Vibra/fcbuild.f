@@ -50,6 +50,7 @@ c Internal variables ...
      .  xmass(maxa)
 
       data pi / 3.1415926d0 /
+      data overflow /.false./
 
 c ...
      

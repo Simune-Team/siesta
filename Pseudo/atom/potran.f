@@ -1,20 +1,4 @@
 C
-c $Id: potran.f,v 1.3 1997/05/22 18:01:39 wdpgaara Exp $
-c
-c $Log: potran.f,v $
-c Revision 1.3  1997/05/22 18:01:39  wdpgaara
-c Some cosmetic changes: status 'unknown' in open statement.
-c
-c Revision 1.2  1997/05/19 10:36:43  wdpgaara
-c Some cosmetic changes: Addition of 'unknown' status in open statements,
-c and assignment to function names before exceptional returns.
-c
-c Revision 1.1.1.1  1997/01/07 08:38:55  wdpgaara
-c Froyen-Troullier-Martins-AG atom code
-c
-c Revision 1.1  1991/12/14  00:34:49  alberto
-c Initial revision
-c
       subroutine potran(i,vd,r,nr,zion)
 c
       implicit none

@@ -7,7 +7,12 @@ FFLAGS=       $(CFLAGS)
 LDFLAGS=      $(CFLAGS)
 #
 default: linalg.a
-OBJS=	lapack.o blas.o
+OBJS=	lapack.o blas.o machine.o
+#
+# DO NOT OPTIMIZE THIS!
+#
+machine.o:
+	$(FC) -c machine.f
 #
 linalg.a:  $(OBJS)
 	ar qv linalg.a $(OBJS)

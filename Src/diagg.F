@@ -1,5 +1,6 @@
-      subroutine diagg( nspin, nuo, no, maxuo, maxno, maxnd, 
-     .                  maxo, numh, listh, numd, listd, H, S,
+      subroutine diagg( nspin, nuo, no, maxuo, maxnh, maxnd, 
+     .                  maxo, numh, listhptr, listh, numd, 
+     .                  listdptr, listd, H, S,
      .                  getD, fixspin, qtot, qs, temp, e1, e2,
      .                  eo, qo, Dnew, Enew, ef, efs,
      .                  Haux, Saux, psi, aux, nuotot,
@@ -16,21 +17,24 @@ C integer nuo                 : Number of basis orbitals local to node
 C integer no                  : Number of basis orbitals
 C integer maxuo               : Last dimension of xij
 C                               Must be at least max(indxuo)
-C integer maxno               : Maximum number of orbitals interacting  
-C                               with any orbital
+C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : Maximum number of nonzero elements of 
 C                               each row of density matrix
 C integer maxo                : First dimension of eo and qo
-C integer numh(no)            : Number of nonzero elements of each row 
+C integer numh(nuo)           : Number of nonzero elements of each row 
 C                               of hamiltonian matrix
-C integer listh(maxno,no)     : Nonzero hamiltonian-matrix element  
+C integer listhptr(nuo)       : Pointer to each row (-1) of the
+C                               hamiltonian matrix
+C integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C integer numd(no)            : Number of nonzero elements of each row 
+C integer numd(nuo)           : Number of nonzero elements of each row 
 C                               ofdensity matrix
-C integer listd(maxnd,no)     : Nonzero density-matrix element column 
+C integer listdptr(nuo)       : Pointer to each row (-1) of the
+C                               density matrix
+C integer listd(maxnd)        : Nonzero density-matrix element column 
 C                               indexes for each matrix row
-C real*8  H(maxno,maxuo,nspin): Hamiltonian in sparse form
-C real*8  S(maxno,maxuo)      : Overlap in sparse form
+C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  S(maxnh)            : Overlap in sparse form
 C logical getD                : Find occupations and density matrices?
 C logical fixspin             : Fix the spin of the system?
 C real*8  qtot                : Number of electrons in unit cell
@@ -45,17 +49,17 @@ C                               over all processors
 C integer Node                : local processor
 C integer Nodes               : total number of processors
 C *************************** OUTPUT **********************************
-C real*8 eo(maxo,nspn)           : Eigenvalues
+C real*8 eo(maxo,nspn)        : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
-C real*8 qo(maxo,nspn)           : Occupations of eigenstates
-C real*8 Dnew(maxno,maxuo,nspin) : Output Density Matrix
-C real*8 Enew(maxno,maxuo,nspin) : Output Energy-Density Matrix
-C real*8 ef                      : Fermi energy
-C real*8 efs(nspin)              : Fermi energy for each spin
-C                                  (for fixed spin calculations)
+C real*8 qo(maxo,nspn)        : Occupations of eigenstates
+C real*8 Dnew(maxnd,nspin)    : Output Density Matrix
+C real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
+C real*8 ef                   : Fermi energy
+C real*8 efs(nspin)           : Fermi energy for each spin
+C                               (for fixed spin calculations)
 C *************************** AUXILIARY *******************************
-C real*8 Haux(nuotot,no)      : Auxiliary space for the hamiltonian matrix
-C real*8 Saux(nuotot,no)      : Auxiliary space for the overlap matrix
+C real*8 Haux(nuotot,nuo)     : Auxiliary space for the hamiltonian matrix
+C real*8 Saux(nuotot,nuo)     : Auxiliary space for the overlap matrix
 C real*8 psi(nuotot,maxuo,nspin) : Auxiliary space for the eigenvectors
 C real*8 aux(nuotot*5)        : Extra auxiliary space
 C *************************** UNITS ***********************************
@@ -81,18 +85,17 @@ C
 #endif
 
       integer
-     .  maxnd, maxno, maxuo, maxo, nuo, no, nspin, nuotot, 
+     .  maxnd, maxnh, maxuo, maxo, nuo, no, nspin, nuotot, 
      .  Node, Nodes
 
       integer 
-     .  listh(maxno,no), numh(no),
-     .  listd(maxnd,no), numd(no)
+     .  listh(maxnh), numh(nuo), listhptr(nuo),
+     .  listd(maxnd), numd(nuo), listdptr(nuo)
 
       double precision
-     .  Dnew(maxnd,maxuo,nspin),
-     .  e1, e2, ef, Enew(maxnd,maxuo,nspin), eo(maxo,nspin),
-     .  H(maxno,maxuo,nspin), qo(maxo,nspin), qtot, qs(nspin),
-     .  S(maxno,maxuo), stepf, temp, efs(nspin)
+     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin),
+     .  eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
+     .  qtot, qs(nspin), S(maxnh), stepf, temp, efs(nspin)
      
       double precision
      .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin), 
@@ -105,8 +108,8 @@ C
      .  fermid, fermispin, rdiag, stepf
 
 C  Internal variables .............................................
-      integer           ie, io, iio, ispin, j, jo, BNode, iie, 
-     .                  BTest, ierror
+      integer           ie, io, iio, ispin, j, jo, BNode, iie, ind,
+     .                  BTest, ierror, nd
       double precision  ee, pipj, qe, t
 C  ....................
 
@@ -119,18 +122,18 @@ C Solve eigenvalue problem .........................................
           enddo
         enddo
         do io = 1,nuo
-          call LocalToGlobalOrb(io,Node,Nodes,iio)
-          do j = 1,numh(iio)
-            jo = listh(j,iio)
-            Saux(jo,io) = Saux(jo,io) + S(j,io)
-            Haux(jo,io) = Haux(jo,io) + H(j,io,ispin)
+          do j = 1,numh(io)
+            ind = listhptr(io) + j
+            jo = listh(ind)
+            Saux(jo,io) = Saux(jo,io) + S(ind)
+            Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
         enddo
-        call rdiag( Haux, Saux, no, nuo, nuotot, maxuo,
+        call rdiag( Haux, Saux, nuotot, nuo, nuotot, maxuo,
      .              eo(1,ispin), psi(1,1,ispin), aux, ierror )
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
-        elseif (ierror.lt.0) then
+        elseif (ierror.eq.-1) then
           goto 10
         endif
       enddo
@@ -165,40 +168,35 @@ C Find weights for local density of states ............................
 C ....................
       
 C New density and energy-density matrices of unit-cell orbitals .......
-      do ispin = 1,nspin
-        do io = 1,nuo
-          call LocalToGlobalOrb(io,Node,Nodes,iio)
-          do j = 1,numd(iio)
-            Dnew(j,io,ispin) = 0.d0
-            Enew(j,io,ispin) = 0.d0
-          enddo
-        enddo
-      enddo
+      nd = listdptr(nuo) + numd(nuo)
+      Dnew(1:nd,1:nspin) = 0.d0
+      Enew(1:nd,1:nspin) = 0.d0
 
 C Global operation to form new density matrix
       do ispin = 1,nspin
         BNode = 0
         iie = 0
-        do ie = 1,no
+        do ie = 1,nuotot
           if (Node.eq.BNode) then
             iie = iie + 1
-            do j = 1,no
+            do j = 1,nuotot
               aux(j) = psi(j,iie,ispin)
             enddo
           endif
 #ifdef MPI
-          call MPI_Bcast(aux,no,DAT_double,BNode,
+          call MPI_Bcast(aux,nuotot,DAT_double,BNode,
      .      MPI_Comm_World,MPIerror)
 #endif
           qe = qo(ie,ispin)
           ee = qo(ie,ispin) * eo(ie,ispin)
           do io = 1,nuo
             call LocalToGlobalOrb(io,Node,Nodes,iio)
-            do j = 1,numd(iio)
-              jo = listd(j,iio)
+            do j = 1,numd(io)
+              ind = listdptr(io) + j
+              jo = listd(ind)
               pipj = aux(iio) * aux(jo)
-              Dnew(j,io,ispin) = Dnew(j,io,ispin) + qe * pipj
-              Enew(j,io,ispin) = Enew(j,io,ispin) + ee * pipj
+              Dnew(ind,ispin) = Dnew(ind,ispin) + qe * pipj
+              Enew(ind,ispin) = Enew(ind,ispin) + ee * pipj
             enddo
           enddo
           BTest = ie/BlockSize

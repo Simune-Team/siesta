@@ -1,12 +1,12 @@
 c
       subroutine potrw(vd,r,nr,k,kj,ist,rc)
 c
-c  Step size of 0.05 is adjustable as seen fit to give
+c  Step size of 0.01 is adjustable as seen fit to give
 c  a reasonalble plot.
 c
 C     .. Parameters ..
       double precision zero, pzf
-      parameter (zero=0.D0,pzf=0.05D0)
+      parameter (zero=0.D0,pzf=0.01D0)
 C     ..
 C     .. Scalar Arguments ..
       integer ist, k, kj, nr
@@ -44,30 +44,6 @@ c
 c
       close(unit=3)
 cag
-c      if (kj .eq. 0) then
-c         if (k .eq. 0) then
-c            marker = 'wsp'
-c         else if (k .eq. 1) then
-c            marker = 'wpp'
-c         else if (k .eq. 2) then
-c            marker = 'wdp'
-c         else
-c            marker = 'wfp'
-c         end if
-c      else
-c         if (k .eq. 0) then
-c            marker = 'wst'
-c         else if (k .eq. 1) then
-c            marker = 'wpt'
-c         else if (k .eq. 2) then
-c            marker = 'wdt'
-c         else
-c            marker = 'wft'
-c         end if
-c      end if
-c      write(3,9010) marker
-c 9010 format(1x,'marker ',a3)
-c
       return
 c
       end

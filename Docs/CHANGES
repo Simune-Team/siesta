@@ -1,6 +1,553 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 ========================================================================
+Version: 1.0.27
+Date: 2000/04/12   4:00:00 GMT
+Title: Spin polarisation corrections
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+Three bugs relating to spin polarised calculations have been fixed
+as well as an issue relating to the use of a variable in atom.F
+detected by a compiler.
+
+Files:
+   atom.F       : q renamed to qtmp in choverlp
+   dhscf.F      : Dscf -> Dscf(1,ispin) in call to rhoofd
+                : Hmat -> Hmat(1,ispin) in call to vmat
+   siesta.F     : S(jo) -> S(ind) in calculation of qspin()
+   version.f    : Version number incremented to 1.0.27
+========================================================================
+Version: 1.0.26
+Date: 2000/03/30   9:30:00 GMT
+Title: Slight fixes to timing and vibrations
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+As a result of running on the Cray with uninitialised variables set to 
+NaN a few small possible problems were indentified for machines which
+do not default to static memory. Also a few similar issues were found
+in the course of testing parallel frequency calculations and have
+been cleaned up.
+
+Files:
+In Src/
+   ofc.f        : Reading of .FC file altered to avoid crash on Cray.
+   siesta.F     : Tempion initialised to zero and printing for FC option
+                : modified.
+   timer.F      : Variables "count_rate" and "wt" saved between calls
+                : in elap1.
+   version.f    : Version number incremented to 1.0.26
+In Util/Vibra/Vibra
+   fcbuild.f    : Logical "overflow" initialised to false
+   Makefile     : ARCH environment variable changed to SIESTA_SYS for
+                : consistency with main program
+   vibrator.f   : Logical "overflow" initialised to false
+                : Variable "nk" initialised to zero
+                : Call to outbands suppressed if nk = 0
+                : Typo corrected - "Writting" -> "Writing"
+   Sys/t3e.make : Make options for Cray T3E added
+========================================================================
+Version: 1.0.25
+Date: 2000/03/29   8:30:00 GMT
+Title: 
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+There have been several major changes for this release :
+
+(1) The array listh has now been distributed across the processors
+(2) The storage format of the main sparse arrays, H, S, Dscf, listh etc
+    has been changed to be more compact. Hence for any given spin these
+    arrays are now 1-D instead of 2-D, thus eliminating the storage of
+    any zeros (except the tolerance at the end of listh to avoid recalling
+    hsparse). The start of any row, n, of the sparse matrix can now be found
+    at "listhptr(n)+1".
+(3) dhscf.F has been heavily modified to make it more modular. Hence it
+    has largely been reduced to a series of subroutine calls which use
+    routines from meshsubs.F and meshmatrix.F. All references to the
+    density matrix in mesh-local stored form have been abstracted to a
+    module so that it and its pointers are not directly seen at the dhscf
+    level. Likewise the transformations from orbital to mesh-local storage
+    via MPI have been localised in 2 subroutines so that the majority of
+    high level mesh routines no longer call MPI.
+(4) The dimension of the array within has been corrected to maxphi in all_phi
+    as this can lead to floating point errors otherwise.
+(5) The storage of phi has been re-ordered according to Jose's suggestion
+    so that it is ordered by mesh points rather than orbitals. This has 
+    led to the removal of the call to transp and some related arrays as
+    the data is already in the transposed form. Similarly the
+    calculation of Phi has been simplified (at the expensive of some
+    potential CPU savings) leading to removal of options, such as SaveMemory.
+(6) An extra check has been added to the mesh initialisation. For non-right
+    angled unit cells there used to be the possibility that the mesh cut-off
+    might not be greater than the requested value. A new check has been 
+    added that guarantees that it will be satisfied by increasing NTM.
+(7) The value of ncmax is now initialised to zero in iolwf if no file is
+    found otherwise the value could be NaN and is then used to allocate
+    memory in ordern leading to a memory error.
+(8) Parallelisation of KSV added
+(9) Bug in grdsam fixed - pt was not preserved between calls
+
+Files:
+   atmfuncs.F   : The dimension of "within" has been corrected to maxphi in all_phi
+                : The default value of nzetmx has been increased to 3
+   atom.F       : Calls to prmem removed as the memory is dynamically created.
+   atomlwf.F    : Modified to allow for local nature of numh,listhptr,listh including
+                : globalisation of numft which is now needed as a result
+   bands.F      : Modified to allow for local nature of numh,listhptr,listh 
+   cgwf.F       : Modified due to new sparse form of arrays
+   chempot.F    : Modified due to new sparse form of arrays + loop conversion to f90
+   denmat.F     : Modified due to new sparse form of arrays + local nature of storage
+                : numh/listh/listhptr
+   detover.f    : Re-named to detover.F as CPP options are present
+   detover.F    : Modified due to new sparse form of arrays
+                : Aux re-sized to nocc x nocc and parallelisation added
+   dfscf.F      : Renamed to dfscf.f as all MPI calls have been removed
+   dfscf.f      : Argument maxorb removed and Dscf/DscfL changed to new format
+                : Internal logical Parallel introduced to handle choice of Dscf or DscfL
+                : The gradients are now calculated using a call to all_phi for speed
+   dhscf.F      : Globalisation of dipol(3) moved into dipole.F
+                : Argument maxorb removed and Hmat/Dscf changed to new format
+                : dipol(1:3) initialise to zero to avoid floating point crash in grdsam.F
+                : for "bulk" case
+   diag2g.F     : Modified due to new sparse form of arrays + loop conversion to f90
+   diag2k.F     : Modified due to new sparse form of arrays + loop conversion to f90
+   diagg.F      : Modified due to new sparse form of arrays + loop conversion to f90
+   diagk.F      : Modified due to new sparse form of arrays + loop conversion to f90
+   diagkp.F     : Modified to allow for local nature of numh,listhptr,listh
+                : Globalisation of pointers to H and S added
+   diagon.F     : Modified due to new sparse form of arrays 
+   diagpol.f    : Modified due to new sparse form of arrays + loop conversion to f90
+                : Modified to allow for parallel execution by changing the order of
+                : referencing Haux/Saux and looping on the left by nuotot and on the
+                : right by nuo.
+   dipole.F     : Globalisation of dipole now in subroutine
+   dynamics.F   : Contents of array "sold" now preserved between calls
+   egandd.F     : Modified due to new sparse form of arrays + frstme variable removed
+   ener3.F      : Modified due to new sparse form of arrays + local nature of storage
+                : numh/listh/listhptr
+   extrapol.F   : mm2/mnew changed to 2-D array of size (maxnh,nspin) + maxno->maxnh +
+                : modifications to allow for the fact that the sparse indexing arrays
+                : are now local only
+   extrapolon.F : version of extrapol created for order(N) using the old sparse matrix form
+                : as the format has yet to be changed in this section of the code
+   gradient.F   : Modified due to new sparse form of listh + local nature of storage
+                : numh/listh/listhptr
+   grdsam.F     : Argument maxorb removed and Hmat/Dscf changed to new format + loops
+                : changed to f90 form for compactness
+                : Array pt preserved between calls as the contents are only read once
+                : and dimensions corrected to 3 x (maxpt+1).
+   hsparse.F    : Modified due to new sparse form of listh + local nature of storage
+                : numh/listh/listhptr.
+                : Trap for nuo = 0 added  for setting nlhmax
+   idiag.f      : shared do loop termination removed
+   initdm.F     : Dscf/Dold changed to 2-D array of size (maxnh,nspin) + maxno->maxnh +
+                : listh now in 1-D form and a pointer to the start of the rows is added
+                : and passed through to iodm.F
+   iodm.F       : dm changed to 2-D array of size (maxnh,nspin) + maxno->maxnh
+   iohs.F       : Format of saved H/S/xij changed to match new linear form
+   iolwf.F      : ncmax initialised to 0 if found = .false.
+   kinefsm.F    : Renamed to kinefsm.f as all MPI calls have been removed
+   kinefsm.f    : Renamed kinefsm.F with Node and Nodes added to argument list
+                : Dscf made into 2-D array and maxnd is equal to maxnh
+   ksv.F        : Modified due to new sparse form of arrays and parallelisation.
+                : Copy of psi into psiprev moved to detover/savepsi
+   listsc.f     : Trivial typo - corrected in a comment
+   Makefile     : new routines added to list and dependances on meshmatrix.F and meshsubs.F
+   matel.f      : Calls to prmem removed as the memory is dynamically created.
+   meshmatrix.F : A collection of a module that contains data for the matrix Dscf
+                : stored locally with respect to the mesh rather than the orbitals
+                : and two subroutines that transform forward and backwards between
+                : the two local arrangements
+   meshsubs.F   : A collection of subroutines that perform tasks on the mesh. The is a
+                : composed of code that used to all be in dhscf.F but with changes to
+                : the code that calculates the wavefunctions at the mesh points. This
+                : part has been changed so that the data is ordered by mesh point and
+                : simplified according to Jose's algorithm
+   minvec.F     : shared do loop termination removed
+   mulliken.F   : Modified due to new sparse form of arrays + local nature of storage
+                : numh/listh/listhptr
+   nlefsm.F     : Renamed to nlefsm.f as all MPI calls have been removed
+   nlefsm.f     : Renamed nlefsm.F with Node and Nodes added to argument list
+   on_subs.F    : Two versions of the subroutine axb_build have now been added
+                : suffixed by 1 or 2. axb_build2 is the same as the old routine
+                : whereas axb_build1 is a modified form to allow for the more
+                : dense sparse storage algorithm used in the main part of the
+                : code, but not yet in the ordern section.
+   ordern.F     : Modified due to new sparse form of arrays and call to extrapol
+                : replaced by call to extrapolon
+   overfsm.F    : Renamed to overfsm.f as all MPI calls have been removed
+   overfsm.f    : Renamed overfsm.F with Node and Nodes added to argument list
+                : Escf made into 2-D array and maxnd is equal to maxnh
+   phirphi.f    : Modified due to new sparse form of arrays and for parallel form.
+                : nuotot, Node and Nodes added to argument list
+   plcharge.f   : Renamed to plcharge.F as it now requires MPI use
+   plcharge.F   : Created from plcharge.f but modified to reflect the new sparse
+                : array indexing form and the fact that this information is local.
+   pulayx.F     : Modified due to new sparse form of arrays + local nature of storage
+                : numh/listh/listhptr
+   redata.F     : Default value of MemoryScale has been changed to 1.0
+   rhooda.f     : The accessing of data has been modified to reflect the fact that
+                : quantities are now order by mesh points, leading to the removal
+                : of some of the indexing arrays. Also the argument list has been 
+                : shortened because a number of parameters are now in the "mesh" 
+                : /"meshphi" modules.
+   rhoofd.F     : Renamed to rhoofd.f as all MPI calls have been removed
+   rhoofd.f     : Created from rhoofd.F and modified so that the much of the grid
+                : related data is stored in modules rather than being passed as
+                : arguments. The choice between Parallel and serial forms of use
+                : Dscf is made internally now and the new sparse format is included.
+   savepsi.F    : New routine to copy psi to psiprev in ksv.F while handling the
+                : parallel distribution of data.
+   siesta.F     : Sparse storage of H,H0,S,xijo,Dscf,Dscfsave changed to save memory
+                : H,H0 and S now only allocated after first call to hsparse
+                : Some loops converted to f90 form to condense code
+                : Node and Nodes added to argument list of kinefsm/nlefsm/overfsm/
+                :   xijorb
+                : Commented out calls to prmem removed for tidyness
+                : Variable nnomax has been removed.
+                : The extra safety margin added to the length of listh has been
+                : reduced to 5% from 10% - because the array is 1-D there should
+                : less need for changes as variation betweens will now cancel
+                : each other out partially.
+   transp.f     : Deleted as it is no longer needed
+   version.f    : version number incremented to 1.0.25
+   vlist.F      : Removed to simplify dhscf.F as it was never called.
+   vmat.F       : Renamed to vmat.f as all MPI calls have been removed
+   vmat.f       : Created from vmat.F and modified so that the much of the grid
+                : related data is stored in modules rather than being passed as
+                : arguments. The choice between Parallel and serial forms of use
+                : Vs is made internally now and the new sparse format is included.
+   xijorb.F     : Renamed to xijorb.f as all MPI calls have been removed
+   xijorb.f     : Renamed xijorb.F with Node and Nodes added to argument list
+   xijorb.f     : xijo changed to 2-D array of size (3,maxnh) and nomax->maxnh
+========================================================================
+Version: 1.0.24b (version array not changed in program)
+Date: 2000/03/28  11:00:00 GMT
+Title: Minor cosmetic changes. Wall-time output
+Authors: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+The timing routine now generates an extra file "WALLTIME" with
+*elapsed* time. Added routines 'elap1' and 'timer1'.
+
+Some minor changes to the FDF package, to remove output to unit 0 and
+to improve the makefile. An extra routine fdf_inhibit, has been added
+for future use.
+
+Minor changes to MPI/Makefile to simplify the 'clean' procedure.
+
+Files:
+
+timer.F 
+fdf/fdf.f
+    fdf_mod.f
+    makefile 
+MPI/Makefile
+========================================================================
+Version: 1.0.24
+Date: 2000/01/27  11:30:00 GMT
+Title: Errors in siesta.F corrected
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+   The first dimension of the array ebk has been corrected to nuotot
+   instead of nuo in siesta.F, the dimension being passed to bands
+   being adjusted accordingly, so that the parallel operation is
+   correct. Also "bands" is now only called if nbk > 0 as there is
+   no setup to be done within "bands".
+Files:
+   siesta.F
+========================================================================
+Version: 1.0.23
+Date: 2000/01/27   9:30:00 GMT
+Title: Error in allocation of ebk corrected in siesta.F
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+   The array ebk in siesta.F was allocated within the check to see
+if nbk was greater than maxbk. However, this only happened if nbk
+> 1 leading to an error for a single K point. Allocation has now
+been moved until after maxbk is known.
+
+Files:
+   siesta.F
+========================================================================
+Version: 1.0.22
+Date: 2000/01/24  16:00:00 GMT
+Title: Fixes to bands.F / dhscf.F / atom.F
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+   A number of bugs have been uncovered and fixed as described below.
+Files:
+   atom.F    : in SPLIT a value of rphi was accessed where uninitialised
+   bands.F   : the use of fdf for reading the BandLines was incorrect
+             : and has been amended. Also, for simplicity and safety
+             : a "band" module has been created containing a routine
+             : "initbands" which initialises the data for bands and a
+             : true call to "bands" which actually performs the band
+             : structure calculation. This avoids the passing of
+             : uninitialised data arrays during the initialisation
+             : phase.
+   dhscf.F   : the arrays used to store the previous calls atomic
+             : coordinates failed to reflect the fact that the
+             : supercell might increase in size for a variable cell
+             : run with multiple K points. Hence now the sizes are
+             : checked first and SAMEXA is set to false if the sizes
+             : differ and the arrays are re-dimensioned. Also the
+             : size of NeedDscfL has been corrected to NUO instead
+             : of NORB, as has the referencing during DHSCF4 which
+             : included redundant work for supercells.
+   initdm.F  : the names of variables have been altered to reflect
+             : the fact that the routine operates on just the unit
+             : cell and not the supercell when addressing certain
+             : indices. This is a purely cosmetic change for 
+             : consistency with other parts of the program.
+   siesta.F  : the calls to bands have been modified to reflect the
+             : new form of initbands/bands. This has led to a cleaner
+             : allocation of dynamic memory.
+========================================================================
+Version: 1.0.21
+Date: 2000/01/11  10:30:00 GMT
+Title: Fixes and cosmetic improvements to avoid compiler warnings
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+   Two bugs have been fixed, namely the loss of constraint information
+   in fixed.F due to deallocation of the arrays between calls and an
+   uninitialised array access in "split" due to the wrong looping upper
+   bound. Also cosmetic changes have been made to remove compiler
+   warnings about features which do not strictly comply with the f90
+   standard (deprecated features) for cleaner compilation on some
+   machines.
+Files:
+   arw.F     : numbered do loops on executable line removed
+   atom.F    : loop over 1->nrmax changed to 1->nrval to avoid floating
+             : point error due to accessing an uninitialised array 
+             : element
+   detover.f : dcmplx -> cmplx / dimag -> aimag / dreal -> real
+   dhscf.F   : shared do loop termination removed
+   diagon.F  : ParallelOverK only set on first call now and saved
+   dismin.f  : shared do loop termination removed
+   egandd.F  : parameter "nc" no longer passed to ctrans1
+   ener3.F   : commented dimensions of numhij corrected
+   fixed.F   : arrays ctype / iac / xc allocated on first call and never
+             : deallocated
+   inver.f   : shared do loop termination removed
+   linpack.F : dcmplx -> cmplx / dimag -> aimag / dreal -> real
+   minvec.F  : shared do loop termination removed
+   on_subs.F : parameter "nc" no longer used - array dimension set using
+             : ncmin and ncmax
+   pulayx.F  : shared do loop termination removed
+========================================================================
+Version: 1.0.20
+Date: 2000/01/08  00:01:00 GMT
+Title: Improved performance with DirectPhi option
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+   The performance with option DirectPhi, in which the orbitals are
+   calculated 'on the fly' at grid points, has been improved by
+   obtaining all the orbitals of one atom in a single call.
+   Also, routines rhoofd and vmat have been slightly rewritten to
+   avoid references to large global arrays within the inermost loop.
+Files:
+   atmfuncs.f : New routine all_phi
+   rhoofd.F   : Calls all_phi instead of phiatm
+   vmat.f     : Calls all_phi instead of phiatm
+========================================================================
+Version: 1.0.19
+Date: 2000/01/04  13:00:00 GMT
+Title: Correction to memory allocation in egandd.F
+Authors: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+   Memory allocation in egandd.F didn't reflect the fact that the
+   bands are distributed across the nodes for some arrays leading
+   to unnecessarily large memory usage in parallel.
+File:
+   egandd.F
+========================================================================
+Version: 1.0.18 
+Date: 2000/01/04   12:50:00 CET
+Title: Bug fix in grid-cell sampling (improved mesh-cutoff convergence)
+Author: Emilio.Artacho@uam.es
+
+Description:
+   Bug discovered by Daniel SP, forces where not adequately updated
+File:
+   grdsam.F (plus customary siesta.tex, CHANGES, version.f)
+========================================================================
+Version: 1.0.17
+Date: 1999/12/19  12:30:00 GMT
+Title: Fixes to ordern and vlist
+Authors: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+A couple of bug fixes have been introduced :
+
+(1) The array nindv was being passed from eandg to axb_build with
+    the wrong size declaration on the second call. This led to an
+    out of bounds error which showed up as a crash in iolwf for
+    some runs. The arrays ind and nindv are now locally created
+    in axb_build with the sizes needed for a given call to avoid
+    any possible errors during calling.
+(2) The list of arguments for vlist was inconsistent with the call
+    from dhscf.F. The auxillary array parameters are now handled
+    using local dynamic memory. This error was not really detected
+    as vlist never seems to get called.
+
+Files:
+
+egandd.F  : ind and nindv have been removed
+on_subs.F : ind and nindv are now locally allocated in axb_build
+vlist.F   : MaxInd and ind removed from argument list and ind is now
+          : dynamically allocated
+========================================================================
+Version: 1.0.16
+Date: 1999/12/17   9:15:00 GMT
+Title: Fixes to ordern/iolwf + supercell creation
+Authors: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+A number of small changes have been made;
+
+(1) There were errors in the handling of restarts for ordern
+    calculations due to dynamic memory allocation which have
+    been fixed.
+(2) The use of listcold between ordern and extrapol was 
+    inconsistent for parallel runs. listcold now only stores
+    the lists for the local orbitals on the current node to
+    save memory and make everything consistent with extrapol.
+(3) The allocation of memory in SIESTA has been corrected for
+    an error that occured when a supercell was built.
+(4) The save attribute has been added to bcell in dhscf.F
+
+Files:
+
+dhscf.F  : bcell variable given save attribute
+iolwf.F  : modifications made to reflect changes to new size
+         : of listcold and dimension error for maxc trapped
+         : so that new value can be returned as ncmax
+ordern.F : listcold now dimensioned as (maxnc,maxoloc) to save
+         : memory and for consistency in extrapol. Handling of
+         : dynamic memory overflow in iolwf added.
+siesta.F : allocation of arrays that depend on nua moved to handle
+         : the fact that redata can change the value of nua for a
+         : supercell calculation
+========================================================================
+Version: 1.0.15
+Date: 1999/12/13  16:20:00 GMT
+Title: Improvements to building behavior
+Authors: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+A number of changes to improve compilation portability.
+
+Files:
+
+precision.f90:  Removed
+precision.f  :  Added. It now uses fixed format, as the rest of the program.
+Makefile     :  Better cleaning, and precision changes.
+fdf/makefile :  fdf_mod.o is now added to the library.
+Libs/lapack.f:  machine-constants routines segregated to machine.f.
+Libs/machine.f: file to be compiled without optimization.
+Libs/makefile:  added support for machine.o build.
+MPI/Makefile :  moved '.generated' to 'generate'.
+Sys/ibmp3.make and Sys/ibm.f: partial support for IBM machines (Emilio)
+
+========================================================================
+Version: 1.0.14
+Date: 1999/12/01   9:15:00 GMT
+Title: Memory leak checks + diagonalisation modification
+Authors: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+This version contains 3 principal changes :
+
+(1) To guard against memory leaks, the save attribute has been added
+    to near all allocatable arrays so that the machine can detect
+    when an array is attempted to be allocated having not been
+    previous deallocated. As a result, a memory leak was found in
+    outcoor.f on the array xap and has been fixed.
+(2) It appears that most of the time a parallel diagonalisation can
+    continue quite satisfactorily when SCALAPACK returns the warning
+    about non-converged eigenvalues due to clustering without any
+    effect on the results. Hence a new parameter MemoryScale has been
+    introduced which is the scale factor by which the memory available
+    to SCALAPACK is increased when TryMemoryIncrease is true. If this
+    value is set equal to 1.0, instead of the default 1.5, then the
+    SCF procedure continues without actually increasing the memory.
+(3) The print out of memory information has now been modified to
+    reflect the fact that the word lengths are different on a Cray
+    and this is handled by a cpp directive at compile time. Hence the
+    file memoryinfo.f has become memoryinfo.F
+
+Files:
+
+coceri.f     : save attribute added to allocatable arrays
+detover.f    : save attribute added to allocatable arrays
+diagpol.f    : save attribute added to allocatable arrays
+matel.f      : save attribute added to allocatable arrays
+numbvect.f   : save attribute added to allocatable arrays
+ordvec.f     : save attribute added to allocatable arrays
+outcoor.f    : save attribute added to allocatable arrays
+               + memory leak fixed on xap
+parse.f      : save attribute added to allocatable arrays
+phirphi.f    : save attribute added to allocatable arrays
+radfft.f     : save attribute added to allocatable arrays
+ranger.f     : save attribute added to allocatable arrays
+recipes.f    : save attribute added to allocatable arrays
+reord.f      : save attribute added to allocatable arrays
+shaper.f     : save attribute added to allocatable arrays
+xc.f         : save attribute added to allocatable arrays
+ylmylm.f     : save attribute added to allocatable arrays
+atminit.F    : save attribute added to allocatable arrays
+atomlwf.F    : save attribute added to allocatable arrays
+bands.F      : save attribute added to allocatable arrays
+cdiag.F      : ierror = -2 if TryMemoryIncrease = .true.
+               and MemoryScale = 1.0
+cgvc.F       : save attribute added to allocatable arrays
+chempot.F    : save attribute added to allocatable arrays
+diagk.F      : handling of ierror modified
+diag2k.F     : handling of ierror modified
+diagkp.F     : save attribute added to allocatable arrays
+diagg.F      : handling of ierror modified
+diag2g.F     : handling of ierror modified
+diagon.F     : save attribute added to allocatable arrays
+dynamics.F   : save attribute added to allocatable arrays
+egandd.F     : save attribute added to allocatable arrays
+extrapol.F   : save attribute added to allocatable arrays
+fixed.F      : save attribute added to allocatable arrays
+grdsam.F     : save attribute added to allocatable arrays
+hsparse.F    : save attribute added to allocatable arrays
+initdm.F     : save attribute added to allocatable arrays
+iodm.F       : save attribute added to allocatable arrays
+iolwf.F      : save attribute added to allocatable arrays
+kinefsm.F    : save attribute added to allocatable arrays
+ksv.F        : save attribute added to allocatable arrays
+memoryinfo.F : handling of Cray word lengths added
+mulliken.F   : save attribute added to allocatable arrays
+nlefsm.F     : save attribute added to allocatable arrays
+on_subs.F    : save attribute added to allocatable arrays
+overfsm.F    : save attribute added to allocatable arrays
+pulayx.F     : save attribute added to allocatable arrays
+redata.F     : MemoryScale read in
+rdiag.F      : ierror = -2 if TryMemoryIncrease = .true.
+               and MemoryScale = 1.0
+siesta.F     : save attribute added to allocatable arrays
+xijorb.F     : save attribute added to allocatable arrays
+========================================================================
 Version: 1.0.13
 Date: 1999/11/26  18:15:00 GMT
 Title: Return to Main Trunk

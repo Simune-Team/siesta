@@ -37,18 +37,19 @@ OBJS = arw.o atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	denmat.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
         diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	dipole.o dismin.o dnaefs.o dot.o dynamics.o \
-	efield.o egandd.o ener3.o extrapol.o \
+	efield.o egandd.o ener3.o extrapol.o extrapolon.o \
 	fermid.o fermispin.o fixed.o gauleg.o gradient.o grdsam.o \
 	hsparse.o idiag.o  initdm.o inver.o  \
 	iodm.o iohs.o iolwf.o iorder.o iorho.o ioxv.o  \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o lofilm.o \
-	madelung.o memory.o minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
+	madelung.o meshmatrix.o memory.o meshsubs.o minvec.o mulliken.o \
+        naefs.o neighb.o nlefsm.o \
 	on_subs.o order.o ordern.o ordvec.o outcell.o outcoor.o overfsm.o \
 	parse.o paste.o phirphi.o pixmol.o timestamp.o prmem.o propor.o pulayx.o  \
 	ranger.o ran3.o recipes.o reclat.o recoor.o redata.o redcel.o\
 	reinit.o reord.o resize.o rhoofd.o rhooda.o rlylm.o \
-	shaper.o superc.o superx.o timer.o transp.o  \
-	vmb.o vlist.o vmat.o volcel.o xc.o xijorb.o ylmexp.o ylmylm.o \
+	savepsi.o shaper.o superc.o superx.o timer.o \
+	vmb.o vmat.o volcel.o xc.o xijorb.o ylmexp.o ylmylm.o \
 	cellxc.o cdiag.o rdiag.o \
         cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o radfft.o die.o symbol.o\
@@ -86,14 +87,16 @@ phirphi.o         : matel.o
 rhoofd.o vmat.o   : listsc.o
 chempot.o         : numbvect.o
 memory.o          : memoryinfo.o
+dhscf.o dfscf.o rhooda.o rhoofd.o vmat.o : meshsubs.o
+dfscf.o rhoofd.o vmat.o : meshmatrix.o
 #
 #
 $(COM_OBJS): precision.o parallel.o $(MPILIB)
 #
 # Compile "AS IS" means basically not to use "-dp" on the Cray
 #
-precision.o: precision.f90
-	$(FC) $(FFLAGS) -c precision.f90
+precision.o: precision.f
+	$(FC) $(FFLAGS) -c precision.f
 #
 libmpi_f90.a: precision.o
 	@(cd MPI ; $(MAKE) )
@@ -118,14 +121,12 @@ siesta: version $(MPILIB) $(FDF) $(COMP_LIBS) $(ALL_OBJS)
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta *.o 
-	rm -f Sys/*.o
+	rm -f siesta *.o  *.a
 	rm -f *.mod
 	(cd fdf ; $(MAKE) clean)
 	(cd MPI ; $(MAKE) clean )
+	(cd Libs ; $(MAKE) clean )
 pristine:  clean
-	@echo "==> Copying original .h files from Include/"
-	cp -fp Include/*.h .
 	cp -fp Include/constr.f .
 #
 

@@ -19,8 +19,9 @@ c
       integer fdf_in, fdf_out, fdf_err, fdf_log
       common /fdf_io/ fdf_in, fdf_out, fdf_err, fdf_log, 
      $                ndepth, fdf_stack
-      logical fdf_debug, fdf_debug2, fdf_started
-      common /fdf_logicals/ fdf_debug, fdf_debug2, fdf_started
+      logical fdf_debug, fdf_debug2, fdf_started, fdf_donothing
+      common /fdf_logicals/ fdf_debug, fdf_debug2, fdf_started,
+     $                      fdf_donothing
 
       save /fdf_io/, /fdf_logicals/
 c
@@ -36,4 +37,5 @@ c
 
       save /fdf_line/, /fdf_parsing/
 c---
+
 

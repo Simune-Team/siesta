@@ -83,6 +83,8 @@ c Conversion factor from dsqrt(K/M) in eV and Ang to cm**-1 is 519.6
      .  io_assign, io_close, paste
 
       data pi / 3.1415926d0 /
+      data overflow /.false./
+      data nk / 0 /
 
 c ...
      
@@ -523,7 +525,7 @@ c write the eigenvalues and eigenvectors to output data file.
           fname = paste(slabel,'.vectors')
           open(iunit3,file=fname,status='unknown')
           if (ik.eq.1) then
-	    write(6,'(/,a)')' Writting eigenvalues and eigenvectors'
+	    write(6,'(/,a)')' Writing eigenvalues and eigenvectors'
 	    write(6,'(2a,/)')' to output file ', fname
           else
 c         go to end of file
@@ -549,14 +551,16 @@ Cc =================================================================
 
 
 c Write eigenvalues ...
-      call outbands(0, 1, maxd, 3*natoms, maxk, nk, nlines, lastk,
-     .              label, kpoint, ek, 0.0d0)
+      if (nk .gt. 0) then
+        call outbands(0, 1, maxd, 3*natoms, maxk, nk, nlines, lastk,
+     .                label, kpoint, ek, 0.0d0)
+      endif
 C ...
 
 
-33	format(7(f10.4,2x))
+   33 format(7(f10.4,2x))
 Cc
-	stop
-	end
+      stop
+      end
 
 

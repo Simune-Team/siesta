@@ -1,4 +1,4 @@
-C $Id: dismin.f,v 1.3 1999/01/31 10:53:53 emilio Exp $
+C $Id: dismin.f,v 1.4 2000/01/11 10:13:50 jgale Exp $
 
       DOUBLE PRECISION FUNCTION DISMIN( CELL, X )
 
@@ -14,21 +14,23 @@ C WRITTEN BY J.M.SOLER. NOV'96.
       PARAMETER ( N = 1 )
 
       D2MIN = 1.D30
-      DO 20 I1 = 0,N
-      DO 20 I2 = 0,N
-      DO 20 I3 = 0,N
-        IF ( I1.EQ.0 .OR. I1.EQ.N .OR.
-     .       I2.EQ.0 .OR. I2.EQ.N .OR.
-     .       I3.EQ.0 .OR. I3.EQ.N      ) THEN
-          D2 = 0.D0
-          DO 10 I = 1,3
-            DX = (CELL(I,1) * I1 + CELL(I,2) * I2 + CELL(I,3) * I3) / N
-            DX = DX - X(I)
-            D2 = D2 + DX * DX
-   10     CONTINUE
-          D2MIN = MIN( D2, D2MIN )
-        ENDIF
-   20 CONTINUE
+      DO I1 = 0,N
+        DO I2 = 0,N
+          DO I3 = 0,N
+            IF ( I1.EQ.0 .OR. I1.EQ.N .OR.
+     .           I2.EQ.0 .OR. I2.EQ.N .OR.
+     .           I3.EQ.0 .OR. I3.EQ.N      ) THEN
+              D2 = 0.0D0
+              DO I = 1,3
+                DX = (CELL(I,1)*I1+CELL(I,2)*I2+CELL(I,3)*I3)/N
+                DX = DX - X(I)
+                D2 = D2 + DX * DX
+              ENDDO
+              D2MIN = MIN( D2, D2MIN )
+            ENDIF
+          ENDDO
+        ENDDO
+      ENDDO
       DISMIN = SQRT( D2MIN )
       END
 

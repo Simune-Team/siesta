@@ -30,12 +30,13 @@ C *******************************************************************
 c     Internal variables and arrays
       character fname*33, sname*30, line*132, paste*33
       logical   frstme
-      integer   i, ix, unit1
-      double precision Ang, eV
+      integer   i, ix, unit1, nwritten, n
+      double precision Ang, eV, rdummy
       double precision, dimension(:,:), allocatable, save :: fres
 
-      save      frstme, fname
+      save      frstme, fname, nwritten
       data      frstme /.true./
+      data      nwritten / 0 /
 
 c     Allocate local array for storing residual forces
       if (.not.allocated(fres)) then
@@ -71,14 +72,19 @@ c     Set values of residual forces
         return
       endif
 
-c     Goto end of file if not frstime
-10    read(unit1,end=100,err=100,fmt='(a)') line
-      goto 10
+c     Read file written so far to put pointer for write in the correct place
+      read(unit1,'(a)') line
+      do n = 1,nwritten
+        do i=1,na
+          read(unit1,'(3f15.7)') (rdummy, ix=1,3)
+        enddo
+      enddo
 
-100   do i=1,na
+      do i=1,na
         write(unit1,'(3f15.7)') ((-fa(ix,i)+fres(ix,i))*
      .                              Ang**2/eV/dx, ix=1,3)
       enddo
+      nwritten = nwritten + 1
 
       call io_close(unit1)
 

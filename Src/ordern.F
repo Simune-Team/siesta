@@ -1,7 +1,7 @@
       subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,lasto,
      .                  isa,qa,rcoor,rh,cell,xa,iscf,istep,itmax,
-     .                  ftol,eta,enum,maxuo,nhmax,numh,listh,h,s,
-     .                  chebef,noeta,rcoorcp,beta,ipcheb,
+     .                  ftol,eta,enum,maxuo,maxnh,numh,listhptr,
+     .                  listh,h,s,chebef,noeta,rcoorcp,beta,ipcheb,
      .                  dm,edm,Ecorrec)
 C ****************************************************************************
 C Order-N solver of the Hamiltonian problem.
@@ -34,14 +34,14 @@ C                                  (recomended: 1e-8)
 C real*8 eta                   : Fermi level parameter of Kim et al.
 C real*8 enum                   : Total number of electrons
 C integer maxuo                : Second dimension of H, S, dm and edm.
-C integer nhmax                : First dimension of listh and H, and maximum
-C                                number of nonzero elements of each row of H
+C integer maxnh                : First dimension of listh and H, and maximum
+C                                number of nonzero elements of H
 C integer numh(nbasis)         : Control vector of H matrix
 C                                (number of nonzero elements of each row of H)
-C integer listh(nhmax,nbasis)  : Control vector of H matrix
+C integer listh(maxnh)         : Control vector of H matrix
 C                                (list of nonzero elements of each row of H)
-C real*8 h(nhmax,maxuo)        : Hamiltonian matrix (sparse)
-C real*8 s(nhmax,maxuo)        : Overlap matrix (sparse)
+C real*8 h(maxnh)              : Hamiltonian matrix (sparse)
+C real*8 s(maxnh)              : Overlap matrix (sparse)
 C logical chebef               : Compute the chemical potential
 C logical noeta                : Use computed Chem.pot. instead of eta
 C real*8 rcoorcp               : Cutoff radius to compute Fermi level by
@@ -49,8 +49,8 @@ C                                projection.
 C integer ipcheb               : Order of Chebishev expansion to compute Ef
 C real*8 beta                  : Inverse Temperature for Chebishev expansion
 C **************************** OUTPUT **************************************
-C real*8 dm(nhmax,maxuo)       : Density matrix (sparse)
-C real*8 edm(nhmax,maxuo)      : Energy Density matrix (sparse)
+C real*8 dm(maxnh)             : Density matrix (sparse)
+C real*8 edm(maxnh)            : Energy Density matrix (sparse)
 C real*8 Ecorrec               : Energy correction of Kim functional:
 C                                eta * (etot-qs) , where qs is the charge
 C                                of the Order-N solution
@@ -72,16 +72,16 @@ C
 
       integer 
      .  ioptlwf, ipcheb, iscf, istep, itmax, natoms, 
-     .  nbasis, nhmax, maxuo
+     .  nbasis, maxnh, maxuo
 
       integer
-     .  isa(natoms), lasto(0:natoms), listh(nhmax,nbasis), 
-     .  numh(nbasis)
+     .  isa(natoms), lasto(0:natoms), listh(maxnh), 
+     .  numh(*), listhptr(*)
 
       double precision
-     .  cell(3,3), dm(nhmax,maxuo), Ecorrec, edm(nhmax,maxuo), 
-     .  enum, eta, ftol, h(nhmax,maxuo), qa(natoms), rcoor, rh, 
-     .  s(nhmax,maxuo), xa(3,natoms), beta, rcoorcp
+     .  cell(3,3), dm(maxnh), Ecorrec, edm(maxnh), 
+     .  enum, eta, ftol, h(maxnh), qa(natoms), rcoor, rh, 
+     .  s(maxnh), xa(3,natoms), beta, rcoorcp
 
       logical
      .  chebef, noeta, usesavelwf
@@ -93,8 +93,8 @@ C Internal variables ..........................................................
 
       integer
      .  in, io, iio, iopt, iord, iter, iterm, ncmax, nctmax, 
-     .  nfmax, nftmax, nhijmax, nbands, nspin, Node, Nodes,
-     .  nbasisloc, nbasismax, nbandsloc
+     .  nfmax, nftmax, nh, nhijmax, nbands, nspin, Node, Nodes,
+     .  nbasisloc, nbasismax, nbandsloc, ntmp, BNode
 
       integer, dimension(:,:), allocatable, save ::
      .  listc, listcold
@@ -175,8 +175,8 @@ C Allocate local memory - never deallocated as contents must be saved
         call memory('A','I',maxnc*maxo,'ordern')
       endif
       if (.not.allocated(listcold)) then
-        allocate(listcold(maxnc,maxo))
-        call memory('A','I',maxnc*maxo,'ordern')
+        allocate(listcold(maxnc,maxoloc))
+        call memory('A','I',maxnc*maxoloc,'ordern')
       endif
       if (.not.allocated(c)) then
         allocate(c(maxnc,maxoloc))
@@ -207,21 +207,27 @@ C  structure of localized wave functions, and initial guess .............
    10   iopt = 1
         if (istep .eq. 1) then 
           if (usesavelwf) then
-            call iolwf( 'read', maxnc, maxo, maxoloc, nbasis, 1,
-     .                  numcold, listcold, c, found )
-            if (found) then
+            call iolwf( 'read', maxnc, ncmax, maxoloc, nbasis, 1,
+     .                  numcold, listcold, cold, found )
+            if (found.and.ncmax.le.maxnc) then
 C             Find out number of bands
               nbands = 0
               do io = 1,nbasis
-                do in = 1,numcold(io)
-                  nbands = max( nbands, listcold(in,io) )
-                enddo
+                call GlobalToLocalOrb(io,Node,Nodes,iio)
+                if (iio.gt.0) then
+                  do in = 1,numcold(io)
+                    nbands = max( nbands, listcold(in,iio) )
+                  enddo
+                endif
               enddo
+C Copy Cold to C
+              c = cold
             else
               iopt = 0
             endif
           else
             iopt = 0
+            ncmax = maxnc
           endif
         endif
         if (nbasis .gt. maxo)  overflow = .true.
@@ -229,14 +235,22 @@ C             Find out number of bands
         call GetNodeOrbs(nbasis,Node,Nodes,nbasisloc)
         call MPI_AllReduce(nbasisloc,nbasismax,1,MPI_integer,
      .    MPI_Max,MPI_Comm_World,MPIerror)
+        call MPI_AllReduce(nbands,ntmp,1,MPI_integer,
+     .    MPI_Max,MPI_Comm_World,MPIerror)
+        nbands = ntmp
+        call MPI_AllReduce(ncmax,ntmp,1,MPI_integer,
+     .    MPI_Max,MPI_Comm_World,MPIerror)
+        ncmax = ntmp
 #else
         nbasisloc = nbasis
         nbasismax = nbasis
 #endif
         if (nbasisloc .gt. maxoloc)  overflow = .true.
+        if (ncmax .gt. maxnc)  overflow = .true.
 
 C  If overflow re-dimension arrays and repeat previous step
         if (overflow) then
+          maxnc = ncmax
           call memory('D','I',size(numc),'ordern')
           deallocate(numc)
           call memory('D','I',size(numcold),'ordern')
@@ -257,8 +271,8 @@ C  If overflow re-dimension arrays and repeat previous step
           call memory('A','I',maxo,'ordern')
           allocate(listc(maxnc,maxo))
           call memory('A','I',maxnc*maxo,'ordern')
-          allocate(listcold(maxnc,maxo))
-          call memory('A','I',maxnc*maxo,'ordern')
+          allocate(listcold(maxnc,maxoloc))
+          call memory('A','I',maxnc*maxoloc,'ordern')
           allocate(c(maxnc,maxoloc))
           call memory('A','D',maxnc*maxoloc,'ordern')
           allocate(cold(maxnc,maxoloc))
@@ -270,11 +284,13 @@ C  If overflow re-dimension arrays and repeat previous step
         nbandsloc = ((nbands-1)/Nodes) + 1
 
         if (ioptlwf .ne. 0) then
+   20     continue
+
 C   This call was modified by DSP, Aug. 1998.
-   20     call cspa(ioptlwf,iopt,natoms,nbasis,nbasisloc,lasto,isa,
-     .        qa,enum,rcoor,rh,cell,xa,nhmax,numh,listh,maxnc,
-     .        c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,nbands,
-     .        overflow)
+          call cspa(ioptlwf,iopt,natoms,nbasis,nbasisloc,lasto,isa,
+     .        qa,enum,rcoor,rh,cell,xa,maxnh,numh,listhptr,listh,
+     .        maxnc,c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,
+     .        nbands,overflow)
 
           nbandsloc = ((nbands-1)/Nodes) + 1
 
@@ -299,11 +315,7 @@ C         Print good dimensions
             if (nbasis .gt. maxo .or. ncmax .gt. maxnc) then
               call memory('D','I',size(listc),'ordern')
               deallocate(listc)
-              call memory('D','I',size(listcold),'ordern')
-              deallocate(listcold)
               allocate(listc(ncmax,nbasis))
-              call memory('A','I',ncmax*nbasis,'ordern')
-              allocate(listcold(ncmax,nbasis))
               call memory('A','I',ncmax*nbasis,'ordern')
             endif
             if (nbasismax .gt. maxoloc .or. ncmax .gt. maxnc) then
@@ -311,10 +323,14 @@ C         Print good dimensions
               deallocate(c)
               call memory('D','D',size(cold),'ordern')
               deallocate(cold)
+              call memory('D','I',size(listcold),'ordern')
+              deallocate(listcold)
               allocate(c(ncmax,nbasismax))
               call memory('A','D',ncmax*nbasismax,'ordern')
               allocate(cold(ncmax,nbasismax))
               call memory('A','D',ncmax*nbasismax,'ordern')
+              allocate(listcold(ncmax,nbasis))
+              call memory('A','I',ncmax*nbasis,'ordern')
             endif
             maxo = nbasis
             maxoloc = nbasismax
@@ -338,8 +354,8 @@ C and HOMO and LUMO levels ..........
       if (chebef) then
 
         call timer( 'chempot', 1 )
-        call chempot(h,s,listh,numh,rcoorcp,ipcheb,beta,lasto,
-     .               cell,xa,enum,nbasis,nbasisloc,natoms,nhmax,
+        call chempot(h,s,numh,listhptr,listh,rcoorcp,ipcheb,beta,lasto,
+     .               cell,xa,enum,nbasis,nbasisloc,natoms,maxnh,
      .               chpot,emax,emin)
 C     . ,gap,homo,lumo)
         call timer( 'chempot', 2 )
@@ -368,10 +384,17 @@ C  iscf = 1 (that is, if we are in a new MD step) ...................
         if (ioptlwf .eq. 0) then
           do io = 1,nbasis
             numc(io) = numcold(io)
-            do in = 1,numcold(io)
-              listc(in,io) = listcold(in,io)
-*              c(in,io) = cold(in,io)
-            enddo
+            call GlobalToLocalOrb(io,Node,Nodes,iio)
+            call WhichNodeOrb(io,Nodes,BNode)
+            if (Node.eq.BNode) then
+              do in = 1,numcold(io)
+                listc(in,io) = listcold(in,iio)
+              enddo
+            endif
+#ifdef MPI
+            call MPI_Bcast(listc(1,io),numcold(io),MPI_integer,
+     .        BNode,MPI_Comm_World,MPIerror)
+#endif
           enddo
         endif
         iord = 1
@@ -386,7 +409,7 @@ C       to make it update the structure of c, if needed
           itest = .true.
         endif
         nspin = 1
-        call extrapol(istep,iord,nspin,nbasisloc,maxo,maxoloc,
+        call extrapolon(istep,iord,nspin,nbasisloc,maxo,maxoloc,
      .                maxnc,numc,listc,numcold,listcold,
      .                cold,c)
 C       If LWF's have just been read, restore istep
@@ -403,10 +426,10 @@ C Call the CG routines ...............................................
       call memory('A','S',maxnc*maxoloc,'ordern')
       allocate(g(maxnc,maxoloc))
       call memory('A','S',maxnc*maxoloc,'ordern')
-      call cgwf(iscf,itmax,ftol,eta,enum,nbasis,nbands,
-     .           nhmax,numh,listh,maxnc,numc,listc,h,s,c,
-     .           g,hg,xi,fe,iter,dm,edm,nbasisloc,
-     .           maxnf,maxnft,maxnhij,maxnct)
+      call cgwf(iscf,itmax,ftol,eta,enum,nbasis,nbands,maxnh,
+     .          numh,listhptr,listh,maxnc,numc,listc,h,s,c,
+     .          g,hg,xi,fe,iter,dm,edm,nbasisloc,maxnf,maxnft,
+     .          maxnhij,maxnct)
       call memory('D','D',size(xi),'ordern')
       deallocate(xi)
       call memory('D','S',size(hg),'ordern')
@@ -418,12 +441,10 @@ C ..................
 
 C Calculate correction to the total energy from Kim's functional .....
 C First calculate total charge of the solution
+      nh = listhptr(nbasisloc) + numh(nbasisloc)
       qtot = 0.d0
-      do io = 1,nbasisloc
-        call LocalToGlobalOrb(io,Node,Nodes,iio)
-        do in = 1,numh(iio)
-          qtot = qtot + dm(in,io) * s(in,io)
-        enddo
+      do io = 1,nh
+        qtot = qtot + dm(io) * s(io)
       enddo
 
 #ifdef MPI
@@ -441,8 +462,14 @@ C Global reduction of qtot
 C ..................
 
 C Save LWF's to disk .................................................
-      call iolwf( 'write', maxnc, maxo, maxoloc, nbasis, 1,
-     .             numc, listc, c, found )
+      do io = 1,nbasisloc
+        call LocalToGlobalOrb(io,Node,Nodes,iio)
+        do in = 1,numcold(iio)
+          listcold(in,io) = listc(in,iio)
+        enddo
+      enddo
+      call iolwf( 'write', maxnc, ncmax, maxoloc, nbasis, 1,
+     .             numc, listcold, c, found )
 C ....................
 
 *     call timer( 'ordern', 2 )

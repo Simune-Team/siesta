@@ -63,9 +63,13 @@ c
       open(unit=5,file='INP',status='old',form='formatted')
       open(unit=6,file='OUT',status='unknown',form='formatted')
 c
-c$$$      open(unit=20,file='TESTWF',status='unknown',form='formatted')
+c   Print version
 c
-
+      call prversion
+c
+c   Process directives
+c
+      call check_directives(5)
 c
 c   Start of loop over configuration.
 c

@@ -1,6 +1,6 @@
-      subroutine chempot(h,s,listh,numh,rcoor,pmax,beta,
+      subroutine chempot(h,s,numh,listhptr,listh,rcoor,pmax,beta,
      .                   lasto,cell,xa,enum,nbasis,nbasisloc,
-     .                   natoms,nhmax,chpot,emax,emin)
+     .                   natoms,maxnh,chpot,emax,emin)
 
 C     .,gap,homo,lumo)
 C *****************************************************************
@@ -22,10 +22,11 @@ C       memory for large problems.
 C
 C Written by Maider Machado and P.Ordejon, June'98 
 C ***************************** INPUT ***************************** 
-C real*8 h(nhmax,nbasisloc)       : Hamiltonian in sparse form
-C real*8 s(nhmax,nbasisloc)       : Overlap in sparse form
-C integer listh(nhmax,nbasisloc)  : Control vector of sparse hamilt.
-C integer numh(nbasis)            : Control vector of sparse hamilt.
+C real*8 h(maxnh)                 : Hamiltonian in sparse form
+C real*8 s(maxnh)                 : Overlap in sparse form
+C integer numh(nbasisloc)         : Control vector of sparse hamilt.
+C integer listhptr(nbasisloc)     : Control vector of sparse hamilt.
+C integer listh(maxnh)            : Control vector of sparse hamilt.
 C real*8 rcoor                    : Cutoff range for the projection 
 C                                   vectors
 C integer pmax                    : Maximum order of Chebishev expansion
@@ -38,8 +39,8 @@ C real*8 enum                     : Total number of electrons
 C integer nbasis                  : Number of basis orbitals (global)
 C integer nbasisloc               : Number of basis orbitals (local)
 C integer natoms                  : Number of atoms
-C integer nhmax                   : Maximum number of non-zero elements
-C                                   of each column of sparse Hamilt.
+C integer maxnh                   : Maximum number of non-zero elements
+C                                   of sparse Hamiltonian
 C **************************** OUTPUT *******************************
 C real*8 chpot                    : Chemical potential
 C real*8 emax                     : Maximum eigenvalue
@@ -63,21 +64,21 @@ C
       implicit none
 
       integer 
-     .  natoms, nbasis, nbasisloc, nhmax, pmax
+     .  natoms, nbasis, nbasisloc, maxnh, pmax
 
       integer
-     .  lasto(0:natoms), listh(nhmax,nbasis), numh(nbasis)
+     .  lasto(0:natoms), listh(maxnh), numh(nbasisloc), 
+     .  listhptr(nbasisloc)
 
       real*8
      .  beta, cell(3,3), chpot, emin, emax, enum, 
-     .  h(nhmax,nbasisloc),
-     .  rcoor, s(nhmax,nbasisloc), xa(3,natoms)
+     .  h(maxnh), rcoor, s(maxnh), xa(3,natoms)
 C    .  homo, lumo, gap
 
 C Internal variables...
 
       integer
-     . ipmax, maxnh, Node, Nodes, nnmaxnew, nvmaxnew
+     . ind, ipmax, nhmax, Node, Nodes, nnmaxnew, nvmaxnew
 #ifdef MPI
       integer
      . MPIerror
@@ -99,7 +100,7 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
      .  i, ia, ii, iil, imu, iorb, j, ja, ji, jj, jorb, 
      .  k, m, mu, nna, norb, nu, num, numloc, numv
 
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  listvt, numhp, indexloc, jan, ibuffer, listv
 
       real*8
@@ -108,19 +109,19 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
      .  zbrent
 C    .  delta, eref2, eref1, eig2, eig1
 
-      integer, dimension(:,:), allocatable ::
+      integer, dimension(:,:), allocatable, save ::
      .  listhp, listhpp
 
-      real*8, dimension(:), allocatable ::
+      real*8, dimension(:), allocatable, save ::
      .  paux, vec
 
-      real*8, dimension(:,:), allocatable ::
+      real*8, dimension(:,:), allocatable, save ::
      .  hbar, Hdense, Sdense
 
-      real*8, dimension(:), allocatable ::
+      real*8, dimension(:), allocatable, save ::
      . r2ij, dpbuffer1
 
-      real*8, dimension(:,:), allocatable ::
+      real*8, dimension(:,:), allocatable, save ::
      . xij, v, dpbuffer2
 
 C ...
@@ -150,26 +151,26 @@ C Total charge
       p = pmax
 
 C Find size of maxnh
-      maxnh = 0
-      do i = 1,nbasis
-        if (numh(i).gt.maxnh) maxnh = numh(i)
+      nhmax = 0
+      do i = 1,nbasisloc
+        nhmax = max(nhmax,numh(i))
       enddo
 
 C Allocate arrays that depend on maxnh
-      allocate(listhp(maxnh,nbasis))
-      call memory('A','I',maxnh*nbasis,'chempot')
-      allocate(listhpp(maxnh,nbasis))
-      call memory('A','I',maxnh*nbasis,'chempot')
-      allocate(paux(maxnh))
-      call memory('A','D',maxnh,'chempot')
-      allocate(vec(maxnh))
-      call memory('A','D',maxnh,'chempot')
-      allocate(hbar(maxnh,nbasis))
-      call memory('A','D',maxnh*nbasis,'chempot')
-      allocate(Hdense(maxnh,maxnh))
-      call memory('A','D',maxnh*maxnh,'chempot')
-      allocate(Sdense(maxnh,maxnh))
-      call memory('A','D',maxnh*maxnh,'chempot')
+      allocate(listhp(nhmax,nbasis))
+      call memory('A','I',nhmax*nbasis,'chempot')
+      allocate(listhpp(nhmax,nbasis))
+      call memory('A','I',nhmax*nbasis,'chempot')
+      allocate(paux(nhmax))
+      call memory('A','D',nhmax,'chempot')
+      allocate(vec(nhmax))
+      call memory('A','D',nhmax,'chempot')
+      allocate(hbar(nhmax,nbasis))
+      call memory('A','D',nhmax*nbasis,'chempot')
+      allocate(Hdense(nhmax,nhmax))
+      call memory('A','D',nhmax*nhmax,'chempot')
+      allocate(Sdense(nhmax,nhmax))
+      call memory('A','D',nhmax*nhmax,'chempot')
 
 C Allocate arrays that depend on nbasis
       allocate(listvt(nbasis))
@@ -220,9 +221,10 @@ C   (which will determine the reduce space) -
         num=0
         mu=0
         do i=lasto(ia-1)+1, lasto(ia)
-          if (numh(i) .gt. num) then
-            mu=i
-            num=numh(i)
+          call GlobalToLocalOrb(i,Node,Nodes,ii)
+          if (numh(ii) .gt. num) then
+            mu=ii
+            num=numh(ii)
           endif
         enddo
         if (mu .eq. 0) then
@@ -246,18 +248,19 @@ C -
 C Construct S and H in reduced space  -
 C  loop over orbitals ii in reduced space
         do i=1,nu
-          ii = listh(i,mu)
+          ii = listh(listhptr(mu)+i)
           call GlobalToLocalOrb(ii,Node,Nodes,iil)
           if (iil.gt.0) then
 C  loop over orbitals jj in reduced space
             do j=i,nu
-              jj = listh(j,mu)
+              jj = listh(listhptr(mu)+j)
 C  see if orbitals ii and jj interact
-              do k = 1,numh(ii)
-                if (listh(k,ii) .eq. jj) then
-                  Sdense(i,j)=s(k,iil)
+              do k = 1,numh(iil)
+                ind = listhptr(iil)+k
+                if (listh(ind) .eq. jj) then
+                  Sdense(i,j)=s(ind)
                   Sdense(j,i)=Sdense(i,j)
-                  Hdense(i,j)=h(k,iil)
+                  Hdense(i,j)=h(ind)
                   Hdense(j,i)=Hdense(i,j)
                 endif
               enddo
@@ -286,31 +289,32 @@ C  Globalise Hdense and Sdense for now
 #endif
 
 C  Cholesky factorization:
-        call choldc(Sdense,nu,maxnh,paux)
+        call choldc(Sdense,nu,nhmax,paux)
 C ...
 
 C loop over orbitals of atom ia ....
 C 
         do i=1,nu
-          ii=listh(i,mu)
+          ii=listh(listhptr(mu)+i)
 C  check if ii is in atom ia
           if (ii .ge. (lasto(ia-1)+1) .and. ii .le. lasto(ia)) then
 
             do j=1,nu
               vec(j) = Hdense(i,j)
             enddo
-            call cholsl(Sdense,nu,maxnh,paux,vec,vec)
+            call cholsl(Sdense,nu,nhmax,paux,vec,vec)
 
 C  vec contains the elements of H' in reduced space.
 C  now H' must be formed in sparse format -
 
 c  global indes of orbital i of reduced space
-            ii = listh(i,mu)
+            ii = listh(listhptr(mu)+i)
+            call GlobalToLocalOrb(ii,Node,Nodes,iil)
             do j=1,nu
 c  global indes of orbital j of reduced space
-              jj = listh(j,mu)
-              do k = 1, numh(ii)
-                if (listh(k,ii) .eq. jj) hbar(k,ii)=vec(j)
+              jj = listh(listhptr(mu)+j)
+              do k = 1, numh(iil)
+                if (listh(listhptr(iil)+k) .eq. jj) hbar(k,ii)=vec(j)
               enddo
             enddo
 
@@ -324,8 +328,10 @@ C ............
 
 C *** Compute smallest and largest eigenvalues (Lanczos Method) ***
 
-      call lanc1(2,hbar,maxnh,numh,listh,nhmax,nbasis,emin,Node)
-      call lanc1(1,hbar,maxnh,numh,listh,nhmax,nbasis,emax,Node)
+      call lanc1(2,hbar,nhmax,numh,listhptr,listh,maxnh,nbasis,
+     .  emin,Node)
+      call lanc1(1,hbar,nhmax,numh,listhptr,listh,maxnh,nbasis,
+     .  emax,Node)
 
       emean=0.5d0*(emax+emin)
       deltae=0.55d0*(emax-emin)
@@ -342,7 +348,7 @@ C  First scale and shift the hamiltonian ...
 
       do j=1,nbasis
         do i=1,numh(j)
-          if (listh(i,j).eq.j) then
+          if (listh(listhptr(j)+i).eq.j) then
             hbar(i,j)=(hbar(i,j)-emean)/deltae
           else
             hbar(i,j)=hbar(i,j)/deltae
@@ -418,9 +424,7 @@ C
       endif
 
 C initialize control vectors to zero 
-      do i = 1,nbasis
-        listvt(i) = 0
-      enddo
+      listvt(1:nbasis) = 0
 
 C Loop over atoms ...............
       do ia = 1,natoms
@@ -483,12 +487,9 @@ C
 C build structure of sparse vector v ...
 
 c clear list ot atoms considered within loc. range ...
-        do jj=1,nna
-          indexloc(jj) = 0
-        enddo
+        indexloc(1:nna) = 0
         numloc = 0
 c ...
-
 
         numv=0
         do 30 j = 1,nna
@@ -537,19 +538,15 @@ C
             listvt(nu) = numv
           enddo
 30      continue
-C ...
 
-c       number of orbitals of atom ia
+c number of orbitals of atom ia
         norb = lasto(ia) - lasto(ia-1)
 
-c     loop over orbitals of atom ia ...
+c loop over orbitals of atom ia ...
         do iorb = 1,norb
           mu = iorb + lasto(ia-1)
 
-          do 35 m=1,numv
-            v(m,1)=0.0d0
-            v(m,2)=0.0d0
- 35       continue  
+          v(1:numv,1:2)=0.0d0
 
           imu = listvt(mu)
 
@@ -560,7 +557,7 @@ c     loop over orbitals of atom ia ...
             ji = listv(j)
             numhp(ji)=0
             do i=1,numh(ji)
-              m=listh(i,ji)
+              m=listh(listhptr(ji)+i)
               jj = listvt(m)
               if (jj .ne. 0) then
                 numhp(ji)=numhp(ji)+1
@@ -675,7 +672,7 @@ CC Scale and shift the hamiltonian to absolute energy scale ...
 C
 C      do j=1,nbasis
 C        do i=1,numh(j)
-C          if (listh(i,j).eq.j) then
+C          if (listh(listhptr(j)+i).eq.j) then
 C            hbar(i,j)=deltae*hbar(i,j)+emean
 C          else
 C            hbar(i,j)=deltae*hbar(i,j)
@@ -697,7 +694,7 @@ C
 CC Shift Hamiltonian...
 C      do j=1,nbasis
 C        do i=1,numh(j)
-C          if (listh(i,j).eq.j) then
+C          if (listh(listhptr(j)+i).eq.j) then
 C            hbar(i,j)=hbar(i,j)-eref1
 C          endif
 C        enddo
@@ -705,7 +702,7 @@ C      enddo
 CC ...
 C
 CC Solve (H-eref1)**2 by Lanczos...
-C      call lanc2(hbar,maxnh,numh,listh,nhmax,nbasis,eig1,Node)
+C      call lanc2(hbar,nhmax,numh,listhptr,listh,maxnh,nbasis,eig1,Node)
 CC ...
 C
 C      eig1 = eig1 + eref1
@@ -718,7 +715,7 @@ C
 CC Shift Hamiltonian ...
 C      do j=1,nbasis
 C        do i=1,numh(j)
-C          if (listh(i,j).eq.j) then
+C          if (listh(listhptr(j)+i).eq.j) then
 C            hbar(i,j)=hbar(i,j)+eref1-eref2
 C          endif
 C        enddo
@@ -726,7 +723,7 @@ C      enddo
 CC ...
 C
 CC Solve (H-eref2)**2 by Lanczos ...
-C      call lanc2(hbar,maxnh,numh,listh,nhmax,nbasis,eig2,Node)
+C      call lanc2(hbar,nhmax,numh,listhptr,listh,maxnh,nbasis,eig2,Node)
 CC ...
 C
 C      eig2=eig2+eref2
@@ -1009,8 +1006,8 @@ C "Numerical Recipes", W.Press et al, Cambridge U.P.
       return
       end
 
-      subroutine lanc1(opt,hbar,maxnh,numh,listh,
-     .                   nhmax,nbasis,ener,Node)
+      subroutine lanc1(opt,hbar,nhmax,numh,listhptr,listh,
+     .                   maxnh,nbasis,ener,Node)
 C *********************************************************************
 C Routine to calculate the mimimum or maximum eigenvalues of
 C a given sparse Hamiltonian, by (2nd order) the Lanczos Method.
@@ -1020,11 +1017,12 @@ C ******************************** INPUT ******************************
 C integer opt                     : 1 = compute minimun eigenval.
 C                                   2 = compute maximum eigenval.
 C real*8 hbar(maxnh,nbasis)       : Sparse Hamiltonian
-C integer maxnh                   : Lower dimension of hbar
+C integer nhmax                   : Lower dimension of hbar
 C integer numh(nhmax)             : control vector of hbar
-C integer listh(nhmax,nbasis)     : control vector of hbar
-C integer nhmax                   : Maximum number of nonzero elements of
-C                                   each column of the hamiltonian
+C integer listhptr(nhmax)         : control vector of hbar
+C integer listh(maxnh)            : control vector of hbar
+C integer maxnh                 : Maximum number of nonzero elements of
+C                                   the hamiltonian
 C integer nbasis                  : number of basis orbitals
 C integer Node                    : local node number
 C ******************************* OUTPUT *******************************
@@ -1037,10 +1035,10 @@ C **********************************************************************
      .  nhmax, nbasis, opt, Node, maxnh
 
       integer 
-     .  listh(nhmax,nbasis), numh(nbasis)
+     .  listh(maxnh), numh(nbasis), listhptr(nbasis)
 
       real*8
-     .  ener, hbar(maxnh,nbasis)
+     .  ener, hbar(nhmax,nbasis)
 
 C  Internal variables ...
 
@@ -1059,7 +1057,7 @@ C  Internal variables ...
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr(2)
 
-      real*8, dimension(:), allocatable ::
+      real*8, dimension(:), allocatable, save ::
      .  hv0, u0, v0
 
       external
@@ -1091,15 +1089,13 @@ C  Generate an initial normalized random vector ........
       enddo
 C ...
 
-      do i=1,nbasis
-        v0(i)=0.0d0
-      enddo
+      v0(1:nbasis)=0.0d0
 
 C  Lanczos loop ................
       do k=1,itmax
         do j=1,nbasis
            do i=1,numh(j)
-              ii=listh(i,j)
+              ii=listh(listhptr(j)+i)
               v0(ii)=v0(ii)+hbar(i,j)*u0(j)
            enddo
         enddo
@@ -1114,13 +1110,11 @@ C  Lanczos loop ................
         enddo
         b1=sqrt(norm)
 
-        do i=1,nbasis
-           hv0(i)=0.0d0
-        enddo
+        hv0(1:nbasis)=0.0d0
 
         do j=1,nbasis
            do i=1,numh(j)
-              ii=listh(i,j)
+              ii=listh(listhptr(j)+i)
               hv0(ii)=hv0(ii)+hbar(i,j)*v0(j)
            enddo
         enddo
@@ -1147,7 +1141,6 @@ C eigenvalues and eigenvectors ...
         ener=wr(opt)
 C ...
 
- 
         norm=0.0d0
         diff=abs((wr(opt)-ecomp)/wr(opt))
         if (diff.gt.tol) then
@@ -1171,7 +1164,7 @@ CC  Lanczos loop ................
 C      do k=1,itmax
 C        do j=1,nbasis
 C           do i=1,numh(j)
-C              ii=listh(i,j)
+C              ii=listh(listhptr(j)+i)
 C              v0(ii)=v0(ii)+hbar(i,j)*u0(j)
 C           enddo
 C        enddo
@@ -1192,7 +1185,7 @@ C        enddo
 C
 C        do j=1,nbasis
 C           do i=1,numh(j)
-C              ii=listh(i,j)
+C              ii=listh(listhptr(j)+i)
 C              hv0(ii)=hv0(ii)+hbar(i,j)*v0(j)
 C           enddo
 C        enddo
@@ -1257,7 +1250,8 @@ C  Deallocate local memory
       end
 
 
-      subroutine lanc2(hbar,maxnh,numh,listh,nhmax,nbasis,ener,Node)
+      subroutine lanc2(hbar,nhmax,numh,listhptr,listh,maxnh,nbasis,
+     .                 ener,Node)
 C *********************************************************************
 C Routine to calculate the eigenvalue closest to cero for a given
 C sparse Hamiltonian H, using the the Folded Spectrum Method
@@ -1266,11 +1260,12 @@ C
 C Written by Maider Machado and P.Ordejon,  June'98
 C ******************************** INPUT ******************************
 C real*8 hbar(maxnh,nbasis)         : Sparse Hamiltonian
-C integer maxnh                   : Lower dimension of hbar
+C integer nhmax                   : Lower dimension of hbar
 C integer numh(nhmax)             : control vector of hbar
-C integer listh(nhmax,nbasis)     : control vector of hbar
-C integer nhmax                   : Maximum number of nonzero elements of
-C                                   each column of the hamiltonian
+C integer listhptr(nhmax)         : control vector of hbar
+C integer listh(maxnh)            : control vector of hbar
+C integer maxnh                   : Maximum number of nonzero elements of
+C                                   the hamiltonian
 C integer nbasis                  : number of basis orbitals
 C integer Node                    : local node number
 C ******************************* OUTPUT *******************************
@@ -1283,10 +1278,10 @@ C **********************************************************************
      .  nhmax, nbasis, Node, maxnh
 
       integer 
-     .  listh(nhmax,nbasis), numh(nbasis)
+     .  listh(maxnh), numh(nbasis), listhptr(nbasis)
 
       real*8
-     .  ener, hbar(maxnh,nbasis)
+     .  ener, hbar(nhmax,nbasis)
 
 C  Internal variables ...
 
@@ -1305,7 +1300,7 @@ C  Internal variables ...
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr
 
-      real*8, dimension(:), allocatable ::
+      real*8, dimension(:), allocatable, save ::
      .  hv0, u0, v0, v00
 
       external
@@ -1339,22 +1334,20 @@ C  Generate an initial normalized random vector ........
       enddo
 C ...
 
-      do i=1,nbasis
-        v0(i)=0.0d0
-        v00(i)=0.0d0
-      enddo
+      v0(1:nbasis)=0.0d0
+      v00(1:nbasis)=0.0d0
 
 C  Lanczos loop ................
       do k=1,itmax
         do j=1,nbasis
            do i=1,numh(j)
-              ii=listh(i,j)
+              ii=listh(listhptr(j)+i)
               v00(j)=v00(j)+hbar(i,j)*u0(ii)
            enddo
         enddo
         do j=1,nbasis
            do i=1,numh(j)
-              ii=listh(i,j)
+              ii=listh(listhptr(j)+i)
               v0(j)=v0(j)+hbar(i,j)*v00(ii)
            enddo
         enddo
@@ -1369,20 +1362,18 @@ C  Lanczos loop ................
         enddo
         b1=sqrt(norm)
 
-        do i=1,nbasis
-           hv0(i)=0.0d0
-	   v00(i)=0.0d0
-        enddo
+        hv0(1:nbasis)=0.0d0
+	v00(1:nbasis)=0.0d0
 
         do j=1,nbasis
            do i=1,numh(j)
-              ii=listh(i,j)
+              ii=listh(listhptr(j)+i)
               v00(j)=v00(j)+hbar(i,j)*v0(ii)
            enddo
         enddo
         do j=1,nbasis
            do i=1,numh(j)
-              ii=listh(i,j)
+              ii=listh(listhptr(j)+i)
               hv0(j)=hv0(j)+hbar(i,j)*v00(ii)
            enddo
         enddo
@@ -1395,7 +1386,6 @@ C  Lanczos loop ................
            c1=c1+v0(i)*hv0(i)/norm
         enddo
 
-
 c  minimum eigenvalue ...
         wr = 0.5d0*((a0+c1) 
      .                 - sqrt((a0+c1)**2 - 4.0d0*(a0*c1-b1*b2)))
@@ -1406,7 +1396,6 @@ c eigenvector ...
         eivec(2)=-eivec(1)*(a0+b1-wr)/(b2+c1-wr)
 C ...
 
- 
         norm=0.0d0
 
         do i=1,nbasis 
@@ -1434,12 +1423,10 @@ C .................
 
 C Calculate eigehvalue of H ...
       ener=0.0d0
-      do i=1,nbasis
-        v0(i)=0.0d0
-      enddo
+      v0(1:nbasis)=0.0d0
       do i=1,nbasis
         do j=1,numh(i)
-          ij=listh(j,i)
+          ij=listh(listhptr(i)+j)
           v0(i)=v0(i)+hbar(j,i)*u0(ij)
         enddo
       enddo

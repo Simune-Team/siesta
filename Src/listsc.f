@@ -92,7 +92,7 @@ C                  exactly as JUO is related to IUO
 C ************** BEHAVIOR *********************************************
 C Subroutine LISTSC_INIT must be called once before any call to LISTSC,
 C   and it must be called again if NSC or NUO change.
-C Arguments must be positive and IO.LE.NO, IOU.LE.NUO, JUO.LE.NO. This 
+C Arguments must be positive and IO.LE.NO, IUO.LE.NUO, JUO.LE.NO. This 
 C   is NOT checked, and a core dump is likely if not true.
 C *********************************************************************
 

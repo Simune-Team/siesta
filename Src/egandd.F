@@ -1,8 +1,7 @@
-      subroutine eandg(iopt,eta,enum,lam,
-     .                 nhmax,numh,listh,ncmax,numc,listc,h,s,c,
-     .                 nbasis,nbands,
-     .                 e3,e,grad,dm,edm,nbasisloc,
-     .                 maxnf,maxnft,maxnhij,maxnct)
+      subroutine eandg(iopt,eta,enum,lam,maxnh,numh,listhptr,listh,
+     .                 ncmax,numc,listc,h,s,c,nbasis,nbands,e3,e,
+     .                 grad,dm,edm,nbasisloc,maxnf,maxnft,maxnhij,
+     .                 maxnct)
 C **************************************************************************
 C Subroutine to link the CG algorithms to the calculation of
 C the functional energy and gradients, and to set up control
@@ -19,21 +18,23 @@ C                              iopt = 3  => Call density matrix routine
 C real*8 eta               : Fermi level parameter of Kim et al
 C real*8 enum              : Total number of electrons
 C real*8 lam               : Length of step for line minimization
-C integer nhmax            : First dimension of listh and H, and maximum
+C integer maxnh            : First dimension of listh and H, and maximum
 C                            number of nonzero elements of each row of H
-C integer numh(nbasis)       : Control vector of H matrix
+C integer numh(nbasisloc)  : Control vector of H matrix
 C                            (number of <>0 element of each row)
-C integer listh(nhmax,nbasis): Control vector of H matrix
+C integer listhptr(nbasisloc) : Control vector of H matrix
+C                            (pointer to start of each row (-1) of H matrix)
+C integer listh(maxnh)     : Control vector of H matrix
 C                            (list of <>0 element of each row)
 C integer ncmax            : First dimension of listc and C, and maximum
 C                            number of nonzero elements of each row of C
-C integer numc(nbasis)       : Control vector of C matrix
+C integer numc(nbasis)     : Control vector of C matrix
 C                            (number of <>0 element of each row)
 C integer listc(ncmax,nbasis): Control vector of C matrix
 C                            (list of <>0 element of each row)
-C real*8 h(nhmax,nbasis)     : Hamiltonian in sparse form
-C real*8 s(nhmax,nbasis)     : Overlap in sparse form
-C real*8 c(ncmax,nbasis)     : Current point (wave func. coeffs. in sparse)
+C real*8 h(maxnh)          : Hamiltonian in sparse form
+C real*8 s(maxnh)          : Overlap in sparse form
+C real*8 c(ncmax,nbasis)   : Current point (wave func. coeffs. in sparse)
 C integer nbasis           : Number of atomic orbitals
 C integer nbands           : Number of Localized Wave Functions
 C integer nbasisloc        : Number of local atomic orbitals
@@ -48,8 +49,8 @@ C                            (output if iopt = 2)
 C ***************************** OUTPUT *************************************
 C real*8 e(3)              : Value of the energy in three points C+LAM_i*GRAD
 C real*8 e                 : Value of the energy at point C
-C real*8 dm(nhmax,nbasis)  : Density matrix in sparse form
-C real*8 edm(nhmax,nbasis) : Energy density matrix in sparse form
+C real*8 dm(maxnh)         : Density matrix in sparse form
+C real*8 edm(maxnh)        : Energy density matrix in sparse form
 C **************************** BEHAVIOUR ***********************************
 C The overlap matrix 'o' must be in the same sparse format as the 
 C Hamiltonian matrix 'h', even if the overlap is more sparse than h
@@ -68,33 +69,28 @@ C
       implicit none
 
       integer
-     .  iopt,nbands,nbasis,ncmax,nhmax,nbasisloc,maxnf,maxnft,maxnhij,
+     .  iopt,nbands,nbasis,ncmax,maxnh,nbasisloc,maxnf,maxnft,maxnhij,
      .  maxnct
 
       integer
-     .  listc(ncmax,nbasis),listh(nhmax,nbasis),
-     .  numc(nbasis),numh(nbasis)
+     .  listc(ncmax,nbasis),listh(maxnh),listhptr(nbasisloc),
+     .  numc(nbasis),numh(nbasisloc)
 
       double precision
-     .  c(ncmax,nbasisloc),e,e3(3),
-     .  dm(nhmax,nbasisloc),edm(nhmax,nbasisloc),enum,eta,
-     .  h(nhmax,nbasisloc),grad(ncmax,nbasisloc),lam,
-     .  s(nhmax,nbasisloc)
+     .  c(ncmax,nbasisloc),e,e3(3),dm(maxnh),edm(maxnh),enum,eta,
+     .  h(maxnh),grad(ncmax,nbasisloc),lam,s(maxnh)
 
       external
-     .  axb_build,ctrans1,ctrans2,ener3,gradient,memory
+     .  axb_build1,axb_build2,ctrans1,ctrans2,ener3,gradient,memory
 
 C Internal variables .....................................................
       integer 
-     .  Node, Nodes, nbandsmin, nbandsmax, nbandspernode,
+     .  Node, Nodes, nbandsmin, nbandsmax, nbandspernode, nbandsloc,
      .  nremainder
 
 #ifdef MPI
       integer MPIerror
 #endif
-
-      integer, dimension(:), allocatable ::
-     .  nindv, ind
 
       integer, dimension(:), allocatable, save ::
      .  numct, numf, numft, numhij
@@ -102,17 +98,14 @@ C Internal variables .....................................................
       integer, dimension(:,:), allocatable, save ::
      .  cttoc, fttof, listct, listf, listft, listhij
 
-      logical, save ::
-     .  frstme
-
       integer, save ::
      .  maxo, maxoloc, maxlwf, maxnfl, maxnftl, maxnctl,
-     .  maxnhijl
+     .  maxnhijl, maxlwfl
 
-      data frstme   /.true./
       data maxo     / 0 /
       data maxoloc  / 0 /
       data maxlwf  / 0 /
+      data maxlwfl / 0 /
       data maxnfl  / 0 /
       data maxnftl / 0 /
       data maxnctl / 0 /
@@ -130,6 +123,14 @@ C Get Node number
 
 *     call timer('eandg',1)
 
+C Work out range of bands for this Node
+      nbandspernode = ((nbands-1)/Nodes)
+      nremainder = nbands - nbandspernode*Nodes
+      nbandsmin = Node*nbandspernode + min(nremainder,Node) + 1
+      nbandsmax = nbandsmin + nbandspernode - 1
+      if (Node.lt.nremainder) nbandsmax = nbandsmax + 1
+      nbandsloc = nbandsmax - nbandsmin + 1
+
 C Check array dimensions/handle dynamic memory
       if (nbasis .gt. maxo) then
         if (allocated(numft)) then
@@ -139,7 +140,7 @@ C Check array dimensions/handle dynamic memory
         allocate(numft(nbasis))
         call memory('A','I',nbasis,'eandg')
       endif
-      if (nbands .gt. maxlwf) then
+      if (nbandsloc .gt. maxlwfl) then
         if (allocated(numct)) then
           call memory('D','I',size(numct),'eandg')
           deallocate(numct)
@@ -152,12 +153,12 @@ C Check array dimensions/handle dynamic memory
           call memory('D','I',size(numhij),'eandg')
           deallocate(numhij)
         endif
-        allocate(numct(nbands))
-        call memory('A','I',nbands,'eandg')
-        allocate(numf(nbands))
-        call memory('A','I',nbands,'eandg')
-        allocate(numhij(nbands))
-        call memory('A','I',nbands,'eandg')
+        allocate(numct(nbandsloc))
+        call memory('A','I',nbandsloc,'eandg')
+        allocate(numf(nbandsloc))
+        call memory('A','I',nbandsloc,'eandg')
+        allocate(numhij(nbandsloc))
+        call memory('A','I',nbandsloc,'eandg')
       endif
       if (nbasisloc .gt. maxoloc .or. maxnft .gt. maxnftl) then
         if (allocated(fttof)) then
@@ -173,7 +174,7 @@ C Check array dimensions/handle dynamic memory
         allocate(listft(maxnf,nbasisloc))
         call memory('A','I',maxnf*nbasisloc,'eandg')
       endif
-      if (nbands .gt. maxlwf .or. maxnct .gt. maxnctl) then
+      if (nbandsloc .gt. maxlwfl .or. maxnct .gt. maxnctl) then
         if (allocated(cttoc)) then
           call memory('D','I',size(cttoc),'eandg')
           deallocate(cttoc)
@@ -182,82 +183,54 @@ C Check array dimensions/handle dynamic memory
           call memory('D','I',size(listct),'eandg')
           deallocate(listct)
         endif
-        allocate(cttoc(maxnct,nbands))
-        call memory('A','I',maxnct*nbands,'eandg')
-        allocate(listct(maxnct,nbands))
-        call memory('A','I',maxnct*nbands,'eandg')
+        allocate(cttoc(maxnct,nbandsloc))
+        call memory('A','I',maxnct*nbandsloc,'eandg')
+        allocate(listct(maxnct,nbandsloc))
+        call memory('A','I',maxnct*nbandsloc,'eandg')
       endif
-      if (nbands .gt. maxlwf .or. maxnf .gt. maxnfl) then
+      if (nbandsloc .gt. maxlwfl .or. maxnf .gt. maxnfl) then
         if (allocated(listf)) then
           call memory('D','I',size(listf),'eandg')
           deallocate(listf)
         endif
-        allocate(listf(maxnf,nbands))
-        call memory('A','I',maxnf*nbands,'eandg')
+        allocate(listf(maxnf,nbandsloc))
+        call memory('A','I',maxnf*nbandsloc,'eandg')
       endif
-      if (nbands .gt. maxlwf .or. maxnhij .gt. maxnhijl) then
+      if (nbandsloc .gt. maxlwfl .or. maxnhij .gt. maxnhijl) then
         if (allocated(listhij)) then
           call memory('D','I',size(listhij),'eandg')
           deallocate(listhij)
         endif
-        allocate(listhij(maxnhij,nbands))
-        call memory('A','I',maxnhij*nbands,'eandg')
+        allocate(listhij(maxnhij,nbandsloc))
+        call memory('A','I',maxnhij*nbandsloc,'eandg')
       endif
       maxo = max(maxo,nbasis)
       maxoloc = max(maxoloc,nbasisloc)
       maxlwf = max(maxlwf,nbands)
+      maxlwfl = max(maxlwfl,nbandsloc)
       maxnftl = max(maxnftl,maxnft)
       maxnfl = max(maxnfl,maxnf)
       maxnhijl = max(maxnhijl,maxnhij)
       maxnctl = max(maxnctl,maxnct)
 
-C Work out range of bands for this Node
-      nbandspernode = ((nbands-1)/Nodes)
-      nremainder = nbands - nbandspernode*Nodes
-      nbandsmin = Node*nbandspernode + min(nremainder,Node) + 1
-      nbandsmax = nbandsmin + nbandspernode - 1
-      if (Node.lt.nremainder) nbandsmax = nbandsmax + 1
-
-      if (frstme) then
-c        if (Node.eq.0) then
-c          call prmem( 0, 'eandg', 'cttoc',   'i', maxnct*maxlwf  )
-c          call prmem( 0, 'eandg', 'fttof',   'i', maxnft*maxoloc )
-c          call prmem( 0, 'eandg', 'listct',  'i', maxnct*maxlwf  )
-c          call prmem( 0, 'eandg', 'listf',   'i', maxnf*maxlwf   )
-c          call prmem( 0, 'eandg', 'listft',  'i', maxnft*maxoloc )
-c          call prmem( 0, 'eandg', 'listhij', 'i', maxnhij*maxlwf )
-c          call prmem( 0, 'eandg', ' ',       ' ', 0              )
-c        endif
-        frstme = .false.
-      endif
-
 C .....................
 C Set up index lists for sparse matrices ..................................
       if (iopt .eq. 0) then
-        allocate(ind(nbasis))
-        call memory('A','I',nbasis,'eandg')
-        allocate(nindv(maxnf))
-        call memory('A','I',maxnf,'eandg')
 C GET Ct LISTS
-        call ctrans1(nbasis,nbandsmin,nbandsmax,nbands,ncmax,maxnct,
+        call ctrans1(nbasis,nbandsmin,nbandsmax,ncmax,maxnct,
      .               numc,listc,numct,listct,cttoc)
 
 C GET F LISTS
-        call axb_build(nbandsmin,nbandsmax,nbasis,maxnct,numct,listct,
-     .                 nbasis,nbasis,nhmax,numh,listh,
-     .                 ind,nindv,maxnf,numf,listf)
+        call axb_build1(nbandsmin,nbandsmax,nbasis,maxnct,numct,listct,
+     .                 nbasis,nbasis,maxnh,numh,listhptr,listh,maxnf,
+     .                 numf,listf,Node,Nodes)
 C GET Ft LISTS
         call ctrans2(nbands,nbasis,maxnf,maxnft,numf,listf,
      .              numft,listft,fttof,Node,Nodes)
 C GET Hij LISTS
-        call axb_build(nbandsmin,nbandsmax,nbasis,maxnf,numf,listf,
+        call axb_build2(nbandsmin,nbandsmax,nbasis,maxnf,numf,listf,
      .                 nbasis,nbands,ncmax,numc,listc,
-     .                 ind,nindv,
      .                 maxnhij,numhij,listhij)
-        call memory('D','I',size(nindv),'eandg')
-        deallocate(nindv)
-        call memory('D','I',size(ind),'eandg')
-        deallocate(ind)
         goto 999
       endif
 C.........................
@@ -265,27 +238,20 @@ C.........................
 C Calculate the energy at three points of the line, for the
 C CG line minimization .....................................................
       if (iopt .eq. 1) then
-        call ener3(c,grad,lam,eta,enum,h,s,
-     .             nbasis,nbands,ncmax,maxnct,
-     .             maxnf,nhmax,maxnhij,
-     .             numc,listc,numct,listct,cttoc,numf,listf,
-     .             numh,listh,numhij,listhij,
+        call ener3(c,grad,lam,eta,enum,h,s,nbasis,nbands,ncmax,maxnct,
+     .             maxnf,maxnh,maxnhij,numc,listc,numct,listct,cttoc,
+     .             numf,listf,numh,listhptr,listh,numhij,listhij,
      .             e3,nbasisloc)
-*       return
         goto 999
       endif
 C.........................
 
 C Calculate the energy and Gradient at current point .......................
       if (iopt .eq. 2) then
-        call gradient(c,eta,enum,h,s,
-     .                nbasis,nbands,ncmax,maxnct,
-     .                maxnf,maxnft,nhmax,maxnhij,
-     .                numc,listc,numct,listct,cttoc,numf,listf,
-     .                numft,listft,
-     .                numh,listh,numhij,listhij,
-     .                grad,e,nbasisloc)
-*       return
+        call gradient(c,eta,enum,h,s,nbasis,nbands,ncmax,maxnct,maxnf,
+     .                maxnft,maxnh,maxnhij,numc,listc,numct,listct,
+     .                cttoc,numf,listf,numft,listft,numh,listhptr,
+     .                listh,numhij,listhij,grad,e,nbasisloc)
         goto 999
       endif
 C.........................
@@ -293,16 +259,14 @@ C.........................
 C Calculate density matrix .................................................
 C-JMS Modified denmat argument list
       if (iopt .eq. 3) then
-        call denmat(c,eta,h,s,enum,
-     .                nbasis,nbands,ncmax,maxnct,
-     .                maxnf,maxnft,nhmax,
-     .                numc,listc,numct,listct,cttoc,
-     .                numf,listf,numft,listft,fttof,
-     .                numh,listh,dm,edm,nbasisloc)
-*       return
+        call denmat(c,eta,h,s,enum,nbasis,nbands,ncmax,maxnct,maxnf,
+     .              maxnft,maxnh,numc,listc,numct,listct,cttoc,numf,
+     .              listf,numft,listft,fttof,numh,listhptr,listh,dm,
+     .              edm,nbasisloc)
         goto 999
       endif
-C.........................
+
+C Trap iopt out of range
       if (Node.eq.0) then
         stop 'Error in eandg: incorrect iopt'
       else

@@ -1,4 +1,4 @@
-C $Id: shaper.f,v 1.9 1999/11/26 18:28:34 wdpgaara Exp $
+C $Id: shaper.f,v 1.10 1999/12/01 08:49:44 jgale Exp $
 
       SUBROUTINE SHAPER( CELL, NA, ISA, XA, SHAPE, NV, VECS )
 
@@ -48,16 +48,16 @@ C Internal variables and arrays
       integer 
      .  IA, IN, IS, JA, JS, NNA, maxnain
 
-      integer, dimension(:), allocatable :: 
+      integer, dimension(:), allocatable, save :: 
      .  JAN
 
       double precision
      .  RI, RIJ, RJ, RMAX, XXJ(3)
 
-      double precision, dimension(:), allocatable :: 
+      double precision, dimension(:), allocatable, save :: 
      .  R2IJ
 
-      double precision, dimension(:,:), allocatable :: 
+      double precision, dimension(:,:), allocatable, save :: 
      .  XIJ
 
       logical

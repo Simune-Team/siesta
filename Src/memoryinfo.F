@@ -30,7 +30,11 @@ C
      .  WordsDC / 0 /,
      .  PeakMemory / 0 /,
      .  CurrentMemory / 0 /,
+#ifdef CRAY
+     .  ByteSize /8,8,8,8,8,16/
+#else
      .  ByteSize /4,4,8,4,8,16/
+#endif
 
       end module memoryinfo
 
@@ -41,6 +45,7 @@ C  By increasing this value it is possible to avoid failure to
 C  converge eigenvalues.
 C
 C  real*8  MemoryFactor      : factor by which memory is scaled
+C  real*8  MemoryScale       : factor by which memory is increased
 C  logical TryMemoryIncrease : if .true. then diagonalisation will
 C                            : run iteratively until enough memory
 C                            : is obtained for convergence
@@ -48,7 +53,7 @@ C
       implicit none
 
       real*8, save ::
-     .  MemoryFactor
+     .  MemoryFactor, MemoryScale
 
       logical, save ::
      .  TryMemoryIncrease

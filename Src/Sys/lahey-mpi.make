@@ -2,7 +2,7 @@
 FC=lf95
 FC_ASIS=$(FC)
 FFLAGS= -O  --ntrace --tpp
-LDFLAGS=
+LDFLAGS=--staticlink
 FFLAGS_DEBUG= -g -O0 -chk
 LIBS= -lscalapack-lf95 -lpblas-lf95 -ltools-lf95 -lredist-lf95 \
       -lblacsF77init_MPI-lf95-0  -lblacs_MPI-lf95-0 \

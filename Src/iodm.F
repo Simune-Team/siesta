@@ -1,26 +1,23 @@
-      subroutine iodm( task, maxnd, maxo, nbasis, nspin,
-     .                 numd, listd, dm, found )
+      subroutine iodm( task, maxnd, nbasis, nspin, numd, 
+     .                 listdptr, listd, dm, found )
 C *******************************************************************
 C Reads/writes density matrix from/to file
 C Written by P.Ordejon and J.M.Soler. May 1997.
 C ********* INPUT ***************************************************
 C character task*3 : 'read' or 'write'
 C integer   maxnd  : First dimension of listd and dm
-C integer   maxo   : Second dimension of dm (must be maxo.ge.nbasis)
 C integer   nbasis : Number of atomic orbitals
 C integer   nspin  : Number of spins (1 or 2)
 C ********* INPUT OR OUTPUT (depending on task) *********************
-C integer numd(nbasis)        : Control vector of DM matrix
-C                               (number of nonzero elements of each row)
-C integer listd(maxnd,nbasis) : Control vector of DM matrix
-C                               (list of nonzero elements of each row)
-C real*8  dm(maxnd,maxo,nspin): Density matrix
+C integer numd(nbasis)     : Control vector of DM matrix
+C                            (number of nonzero elements of each row)
+C integer listdptr(nbasis) : Control vector of DM matrix
+C                            (pointer to the start of each row)
+C integer listd(maxnd)     : Control vector of DM matrix
+C                            (list of nonzero elements of each row)
+C real*8  dm(maxnd,nspin)  : Density matrix
 C ********* OUTPUT *************************************************
 C logical found : Has DM been found in disk? (Only when task='read')
-C ********* PARALLEL ***********************************************
-C In order to preserve the order of the density matrix this
-C routine reads by reading in strict order the part of the
-C density matrix local to the current processor.
 C ******************************************************************
       
 C
@@ -33,26 +30,29 @@ C
       use mpi
 #endif
 
-      implicit          none
+      implicit  none
 
-      character         task*(*), paste*33
-      logical           found
-      integer           maxnd, maxo, nbasis, nspin
-      integer           listd(maxnd,*), numd(*)
-      double precision  dm(maxnd,maxo,nspin)
-      external          chkdim, io_assign, io_close, paste, timer,
-     .                  memory
+      character task*(*), paste*33
+      logical   found
+      integer   maxnd, nbasis, nspin
+      integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
+      real*8    dm(maxnd,nspin)
 
-c     Internal variables and arrays
+C Internal variables and arrays
       character fname*33, sname*30
       logical   exist1, exist2, exist3, frstme
       integer   im, is, unit1, unit2, m, nb, ndmax, ns
-      integer   Node,Nodes,nbasistot,ml
+      integer   Node, Nodes, nbasistot, ml, ndmaxg
+      integer, dimension(:), allocatable, save :: numdg
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
-      double precision, dimension(:), allocatable :: buffer
+      real*8, dimension(:), allocatable, save :: buffer
+      integer, dimension(:), allocatable, save :: ibuffer
 #endif
+      external          chkdim, io_assign, io_close, paste, timer,
+     .                  memory
+
       save      frstme, fname
       data      frstme /.true./
 
@@ -66,7 +66,7 @@ c Get the Node number
       Node = 0
       Nodes = 1
 #endif
-c     Find file name
+C Find file name
       if (frstme) then
         if (Node.eq.0) then
           sname = fdf_string('SystemLabel','siesta')
@@ -79,7 +79,7 @@ c     Find file name
         frstme = .false.
       endif
 
-c Find total number of basis functions over all Nodes
+C Find total number of basis functions over all Nodes
 #ifdef MPI
       if (Nodes.gt.1) then
         call MPI_AllReduce(nbasis,nbasistot,1,MPI_integer,MPI_sum,
@@ -91,11 +91,10 @@ c Find total number of basis functions over all Nodes
       nbasistot = nbasis
 #endif
 
-#ifdef MPI
-c Create buffer array for transfering density matrix between nodes
-      allocate(buffer(maxnd))
-      call memory('A','D',maxnd,'iodm')
-#endif
+
+C Allocate local buffer array for globalised numd
+      allocate(numdg(nbasistot))
+      call memory('A','I',nbasistot,'iodm')
 
       if (task.eq.'read' .or. task.eq.'READ') then
         if (Node.eq.0) then
@@ -105,14 +104,14 @@ c Create buffer array for transfering density matrix between nodes
         endif
 
 #ifdef MPI
-c       Broadcast logicals so that all processors take the same route
+C Broadcast logicals so that all processors take the same route
         call MPI_Bcast(exist1,1,MPI_logical,0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(exist2,1,MPI_logical,0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(exist3,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-c       First look for old-format files
         if (exist1 .and. exist2) then
+C Old-format files
           if (Node.eq.0) then
             write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
             call io_assign(unit1)
@@ -123,31 +122,80 @@ c       First look for old-format files
             rewind(unit2)
           endif
 
-          ndmax = 0
           if (Node.eq.0) then
             do m = 1,nbasistot
-              read(unit2,*) numd(m)
-              ndmax = max( ndmax, numd(m) )
+              read(unit2,*) numdg(m)
             enddo
           endif
 #ifdef MPI
-          call MPI_Bcast(numd,nbasistot,MPI_integer,0,MPI_Comm_World,
-     .      MPIerror)
-          call MPI_Bcast(ndmax,1,MPI_integer,0,MPI_Comm_World,
+          call MPI_Bcast(numdg,nbasistot,MPI_integer,0,MPI_Comm_World,
      .      MPIerror)
 #endif
-          call chkdim( 'iodm', 'maxnd', maxnd, ndmax, 1 )
-          do m = 1,nbasistot
-            call GlobalToLocalOrb(m,Node,Nodes,ml)
-            if (ml.gt.0) then
-              do im = 1,numd(m)
-                read(unit2,*) listd(im,m)
-              enddo
+
+C Convert global numd pointer to local form and generate listdptr
+          ndmax = 0
+          do m = 1,nbasis
+            call LocalToGlobalOrb(m,Node,Nodes,ml)
+            numd(m) = numdg(ml)
+            ndmax = ndmax + numd(m)
+            if (m .eq. 1) then
+              listdptr(1) = 0
+            else
+              listdptr(m) = listdptr(m-1) + numd(m-1)
             endif
+          enddo
+          ndmaxg = 0
+          do m = 1,nbasistot
+            ndmaxg = max(ndmaxg,numdg(m))
+          enddo
+
+C Check size of first dimension of dm
+          call chkdim( 'iodm', 'maxnd', maxnd, ndmax, 1 )
+
 #ifdef MPI
-            call MPI_Barrier(MPI_Comm_World,MPIerror)
+C Create buffer arrays for transfering density matrix between nodes and lists
+          allocate(buffer(ndmaxg))
+          call memory('A','D',ndmaxg,'iodm')
+          allocate(ibuffer(ndmaxg))
+          call memory('A','I',ndmaxg,'iodm')
+#endif
+
+          do m = 1,nbasistot
+#ifdef MPI
+            call WhichNodeOrb(m,Nodes,BNode)
+            if (BNode.eq.0.and.Node.eq.BNode) then
+              call GlobalToLocalOrb(m,Node,Nodes,ml)
+#else
+              ml = m
+#endif
+              do im = 1,numd(ml)
+                read(unit2,*) listd(listdptr(ml)+im)
+              enddo
+#ifdef MPI
+            elseif (Node.eq.0) then
+              do im = 1,numdg(m)
+                read(unit2,*) ibuffer(im)
+              enddo
+              call MPI_ISend(ibuffer,numdg(m),MPI_integer,
+     .          BNode,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            elseif (Node.eq.BNode) then
+              call GlobalToLocalOrb(m,Node,Nodes,ml)
+              call MPI_IRecv(listd(listdptr(ml)+1),numd(ml),
+     .          MPI_integer,0,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            endif
+            if (BNode.ne.0) then
+              call MPI_Barrier(MPI_Comm_World,MPIerror)
+            endif
 #endif
           enddo
+
+#ifdef MPI
+          call memory('D','I',size(ibuffer),'iodm')
+          deallocate(ibuffer)
+#endif
+
           do is = 1,nspin
             do m = 1,nbasistot
 #ifdef MPI
@@ -157,22 +205,21 @@ c       First look for old-format files
 #else
                 ml = m
 #endif
-                do im = 1,numd(m)
-                  read(unit1,*) dm(im,ml,is)
+                do im = 1,numd(ml)
+                  read(unit1,*) dm(listdptr(ml)+im,is)
                 enddo
 #ifdef MPI
               elseif (Node.eq.0) then
-                do im = 1,numd(m)
+                do im = 1,numdg(m)
                   read(unit1,*) buffer(im)
                 enddo
-                call MPI_ISend(buffer,numd(m),DAT_double,
+                call MPI_ISend(buffer,numdg(m),DAT_double,
      .            BNode,1,MPI_Comm_World,Request,MPIerror)
                 call MPI_Wait(Request,Status,MPIerror)
               elseif (Node.eq.BNode) then
                 call GlobalToLocalOrb(m,Node,Nodes,ml)
-                call MPI_IRecv(dm(1,ml,is),numd(m),
-     .            DAT_double,0,1,
-     .            MPI_Comm_World,Request,MPIerror)
+                call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),
+     .            DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
                 call MPI_Wait(Request,Status,MPIerror)
               endif
               if (BNode.ne.0) then
@@ -182,14 +229,20 @@ c       First look for old-format files
             enddo
           enddo
 
+#ifdef MPI
+C Free buffer array
+          call memory('D','D',size(buffer),'iodm')
+          deallocate(buffer)
+#endif
           if (Node.eq.0) then
             call io_close(unit1)
             call io_close(unit2)
           endif
+
           found = .true.
 
-c       Look now for new-format files
         elseif (exist3) then
+C New-format files
           if (Node.eq.0) then
             write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
             call io_assign(unit1)
@@ -199,42 +252,91 @@ c       Look now for new-format files
             read(unit1) nb, ns
           endif
 
-c Communicate the values to all Nodes and adjust to allow for
-c distributed memory before checking the dimensions
+C Communicate the values to all Nodes and adjust to allow for
+C distributed memory before checking the dimensions
 #ifdef MPI
           call MPI_Bcast(nb,1,MPI_integer,0,MPI_Comm_World,MPIerror)
           call MPI_Bcast(ns,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-c Check dimensions
+C Check dimensions
           call chkdim( 'iodm', 'nbasis', nbasistot, nb, 0 )
           call chkdim( 'iodm', 'nspin',  nspin,  ns, 0 )
 
-          ndmax = 0
           if (Node.eq.0) then
             do m = 1,nbasistot
-              read(unit1) numd(m)
-              ndmax = max( ndmax, numd(m) )
+              read(unit1) numdg(m)
             enddo
           endif
 #ifdef MPI
-          call MPI_Bcast(numd,nbasistot,MPI_integer,0,MPI_Comm_World,
-     .      MPIerror)
-          call MPI_Bcast(ndmax,1,MPI_integer,0,MPI_Comm_World,
+          call MPI_Bcast(numdg,nbasistot,MPI_integer,0,MPI_Comm_World,
      .      MPIerror)
 #endif
-          call chkdim( 'iodm', 'maxnd', maxnd, ndmax, 1 )
-          do m = 1,nbasistot
-            if (Node.eq.0) then
-              do im = 1,numd(m)
-                read(unit1) listd(im,m)
-              enddo
+
+C Convert global numd pointer to local form and generate listdptr
+          ndmax = 0
+          do m = 1,nbasis
+            call LocalToGlobalOrb(m,Node,Nodes,ml)
+            numd(m) = numdg(ml)
+            ndmax = ndmax + numd(m)
+            if (m .eq. 1) then
+              listdptr(1) = 0
+            else
+              listdptr(m) = listdptr(m-1) + numd(m-1)
             endif
+          enddo
+          ndmaxg = 0
+          do m = 1,nbasistot
+            ndmaxg = max(ndmaxg,numdg(m))
+          enddo
+
+C Check size of first dimension of dm
+          call chkdim( 'iodm', 'maxnd', maxnd, ndmax, 1 )
+
 #ifdef MPI
-            call MPI_Bcast(listd(1,m),numd(m),MPI_integer,0,
-     .        MPI_Comm_World,MPIerror)
+C Create buffer arrays for transfering density matrix between nodes and lists
+          allocate(buffer(ndmaxg))
+          call memory('A','D',ndmaxg,'iodm')
+          allocate(ibuffer(ndmaxg))
+          call memory('A','I',ndmaxg,'iodm')
+#endif
+
+          do m = 1,nbasistot
+#ifdef MPI
+            call WhichNodeOrb(m,Nodes,BNode)
+            if (BNode.eq.0.and.Node.eq.BNode) then
+              call GlobalToLocalOrb(m,Node,Nodes,ml)
+#else
+              ml = m
+#endif
+              do im = 1,numd(ml)
+                read(unit1) listd(listdptr(ml)+im)
+              enddo
+#ifdef MPI
+            elseif (Node.eq.0) then
+              do im = 1,numdg(m)
+                read(unit1) ibuffer(im)
+              enddo
+              call MPI_ISend(ibuffer,numdg(m),MPI_integer,
+     .          BNode,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            elseif (Node.eq.BNode) then
+              call GlobalToLocalOrb(m,Node,Nodes,ml)
+              call MPI_IRecv(listd(listdptr(ml)+1),numd(ml),
+     .          MPI_integer,0,1,MPI_Comm_World,Request,MPIerror)
+              call MPI_Wait(Request,Status,MPIerror)
+            endif
+            if (BNode.ne.0) then
+              call MPI_Barrier(MPI_Comm_World,MPIerror)
+            endif
 #endif
           enddo
+
+#ifdef MPI
+          call memory('D','I',size(ibuffer),'iodm')
+          deallocate(ibuffer)
+#endif
+
           do is = 1,nspin
             do m = 1,nbasistot
 #ifdef MPI
@@ -244,22 +346,21 @@ c Check dimensions
 #else
                 ml = m
 #endif
-                do im = 1,numd(m)
-                  read(unit1) dm(im,ml,is)
+                do im = 1,numd(ml)
+                  read(unit1) dm(listdptr(ml)+im,is)
                 enddo
 #ifdef MPI
               elseif (Node.eq.0) then
-                do im = 1,numd(m)
+                do im = 1,numdg(m)
                   read(unit1) buffer(im)
                 enddo
-                call MPI_ISend(buffer,numd(m),DAT_double,
+                call MPI_ISend(buffer,numdg(m),DAT_double,
      .            BNode,1,MPI_Comm_World,Request,MPIerror)
                 call MPI_Wait(Request,Status,MPIerror)
               elseif (Node.eq.BNode) then
                 call GlobalToLocalOrb(m,Node,Nodes,ml)
-                call MPI_IRecv(dm(1,ml,is),numd(m),
-     .            DAT_double,0,1,MPI_Comm_World,
-     .            Request,MPIerror)
+                call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),
+     .            DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
                 call MPI_Wait(Request,Status,MPIerror)
               endif
               if (BNode.ne.0) then
@@ -269,39 +370,119 @@ c Check dimensions
             enddo
           enddo
 
+#ifdef MPI
+C Free buffer array
+          call memory('D','D',size(buffer),'iodm')
+          deallocate(buffer)
+#endif
           if (Node.eq.0) then
             call io_close(unit1)
           endif
+
           found = .true.
 
         else
+
           found = .false.
+
         endif
 
       elseif (task.eq.'write' .or. task.eq.'WRITE') then
 
         if (Node.eq.0) then
           call io_assign(unit1)
-          open( unit1, file=fname,
-     .      form='unformatted', status='unknown' )
+          open( unit1, file=fname, form='unformatted', 
+     .      status='unknown' )
           rewind(unit1)
           write(unit1) nbasistot, nspin
         endif
 
+C Create globalised numd
+        do m = 1,nbasistot
+#ifdef MPI
+          call WhichNodeOrb(m,Nodes,BNode)
+          if (BNode.eq.0.and.Node.eq.BNode) then
+            call GlobalToLocalOrb(m,Node,Nodes,ml)
+#else
+            ml = m
+#endif
+            numdg(m) = numd(ml)
+#ifdef MPI
+          elseif (Node.eq.BNode) then
+            call GlobalToLocalOrb(m,Node,Nodes,ml)
+            call MPI_ISend(numd(ml),1,MPI_integer,
+     .        0,1,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          elseif (Node.eq.0) then
+            call MPI_IRecv(numdg(m),1,MPI_integer,
+     .        BNode,1,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          endif
+          if (BNode.ne.0) then
+            call MPI_Barrier(MPI_Comm_World,MPIerror)
+          endif
+#endif
+        enddo
+
+C Write out numd array
         if (Node.eq.0) then
-          do m=1,nbasistot
-            write(unit1) numd(m)
+          ndmaxg = 0
+          do m = 1,nbasistot
+            ndmaxg = max(ndmaxg,numdg(m))
           enddo
+          do m=1,nbasistot
+            write(unit1) numdg(m)
+          enddo
+#ifdef MPI
+          allocate(buffer(ndmaxg))
+          call memory('A','D',ndmaxg,'iodm')
+          allocate(ibuffer(ndmaxg))
+          call memory('A','I',ndmaxg,'iodm')
+#endif
         endif
 
-        if (Node.eq.0) then
-          do m=1,nbasistot
-            do im=1,numd(m)
-              write(unit1) listd(im,m)
+C Write out listd array
+        do m = 1,nbasistot
+#ifdef MPI
+          call WhichNodeOrb(m,Nodes,BNode)
+          if (BNode.eq.0.and.Node.eq.BNode) then
+            call GlobalToLocalOrb(m,Node,Nodes,ml)
+#else
+            ml = m
+#endif
+            do im = 1,numd(ml)
+              write(unit1) listd(listdptr(ml)+im)
             enddo
-          enddo
-        endif
+#ifdef MPI
+          elseif (Node.eq.0) then
+            call MPI_IRecv(ibuffer,numdg(m),MPI_integer,BNode,1,
+     .        MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          elseif (Node.eq.BNode) then
+            call GlobalToLocalOrb(m,Node,Nodes,ml)
+            call MPI_ISend(listd(listdptr(ml)+1),numd(ml),MPI_integer,
+     .        0,1,MPI_Comm_World,Request,MPIerror)
+            call MPI_Wait(Request,Status,MPIerror)
+          endif
+          if (BNode.ne.0) then
+            call MPI_Barrier(MPI_Comm_World,MPIerror)
+            if (Node.eq.0) then
+              do im = 1,numdg(m)
+                write(unit1) ibuffer(im)
+              enddo
+            endif
+          endif
+#endif
+        enddo
 
+#ifdef MPI
+        if (Node.eq.0) then
+          call memory('D','I',size(ibuffer),'iodm')
+          deallocate(ibuffer)
+        endif
+#endif
+
+C Write density matrix
         do is=1,nspin
           do m=1,nbasistot
 #ifdef MPI
@@ -311,34 +492,37 @@ c Check dimensions
 #else
               ml = m
 #endif
-              do im=1,numd(m)
-                write(unit1) dm(im,ml,is)
+              do im=1,numd(ml)
+                write(unit1) dm(listdptr(ml)+im,is)
               enddo
 #ifdef MPI
             elseif (Node.eq.0) then
-              call MPI_IRecv(buffer,numd(m),DAT_double,
+              call MPI_IRecv(buffer,numdg(m),DAT_double,
      .          BNode,1,MPI_Comm_World,Request,MPIerror)
               call MPI_Wait(Request,Status,MPIerror)
             elseif (Node.eq.BNode) then
               call GlobalToLocalOrb(m,Node,Nodes,ml)
-              call MPI_ISend(dm(1,ml,is),numd(m),DAT_double,
+              call MPI_ISend(dm(listdptr(ml)+1,is),numd(ml),DAT_double,
      .          0,1,MPI_Comm_World,Request,MPIerror)
               call MPI_Wait(Request,Status,MPIerror)
             endif
             if (BNode.ne.0) then
               call MPI_Barrier(MPI_Comm_World,MPIerror)
               if (Node.eq.0) then
-                do im=1,numd(m)
+                do im=1,numdg(m)
                   write(unit1) buffer(im)
                 enddo
               endif
             endif
 #endif
-
           enddo
         enddo
 
         if (Node.eq.0) then
+#ifdef MPI
+          call memory('D','D',size(buffer),'iodm')
+          deallocate(buffer)
+#endif
           call io_close(unit1)
         endif
 
@@ -350,15 +534,9 @@ c Check dimensions
         endif
       endif
 
-#ifdef MPI
-c Free buffer array 
-      call memory('D','D',size(buffer),'iodm')
-      deallocate(buffer)
-#endif
+C Deallocate local buffer array for globalised numd
+      call memory('D','I',size(numdg),'iodm')
+      deallocate(numdg)
 
 *     call timer( 'iodm', 2 )
       end
-
-
-
-

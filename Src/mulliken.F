@@ -1,5 +1,6 @@
-      subroutine mulliken( iopt,nspin,natoms,nbasis,nbmax,nhmax,
-     .              numh,listh,s,dm,isa,lasto,iaorb,iphorb )
+      subroutine mulliken(iopt,nspin,natoms,nbasis,maxnh,numh,
+     .                    listhptr,listh,s,dm,isa,lasto,iaorb,
+     .                    iphorb)
 C ********************************************************************
 C Subroutine to perform Mulliken population analisys.
 C (Overlap and total populations, both for orbitals and for atoms)
@@ -18,13 +19,13 @@ C                                            3 = 2 + orbital overlap pop.
 C integer nspin               : Number of spin components
 C integer natoms              : Number of atoms
 C integer nbasis              : Number of basis orbitals
-C integer nbmax               : Second dimension of dm
-C integer nhmax               : First dimension of d.m. and overlap, and its
-C                               maximum number of non-zero elements of each row
+C integer maxnh               : First dimension of d.m. and overlap, and its
+C                               maximum number of non-zero elements
 C integer numh(nbasis)        : First Control vector of d.m. and overlap
-C integer listh(nhmax,nbasis) : Second Control vector of d.m. and overlap
-C real*8 s(nhmax,nbasis)      : Overlap matrix in sparse form
-C real*8 dm(nhmax,nbmax,nspin): Density matrix in sparse form 
+C integer listhptr(nbasis)    : Second Control vector of d.m. and overlap
+C integer listh(maxnh)        : Third Control vector of d.m. and overlap
+C real*8  s(maxnh)            : Overlap matrix in sparse form
+C real*8  dm(maxnh,nspin)     : Density matrix in sparse form 
 C integer isa(natoms)         : Species index of each atom
 C integer lasto(0:maxa)       : Index of last orbital of each atom
 C                               (lasto(0) = 0) 
@@ -46,14 +47,14 @@ C
       implicit none
 
       integer
-     .  iopt,natoms,nbasis,nbmax,nhmax,nspin
+     .  iopt,natoms,nbasis,maxnh,nspin
 
       integer
-     .  numh(nbasis),lasto(0:natoms),listh(nhmax,nbasis),
-     .  iphorb(nbasis), isa(natoms), iaorb(nbasis)
+     .  numh(*),lasto(0:natoms),listh(maxnh),listhptr(*),
+     .  iphorb(*), isa(natoms), iaorb(*)
 
       double precision
-     .  dm(nhmax,nbmax,nspin),s(nhmax,nbasis)
+     .  dm(maxnh,nspin),s(maxnh)
 
       external
      .  memory
@@ -66,11 +67,11 @@ C Number of culumns in printout.  Must be smaller than 20
       integer MPIerror
       double precision 
      .  pb(ncol)
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  qb
 #endif
       integer i,ia,ib,ii,imax,in,io,ior,ip,is,j,ja,jja,jo,jor,
-     .  nao,nblock, ns, ispec, irow, nrow, nres, 
+     .  ind, nao, nblock, ns, ispec, irow, nrow, nres, 
      .  config(ncol), config2(8),
      .  Node, iNode, Nodes, itot
 
@@ -78,10 +79,10 @@ C Number of culumns in printout.  Must be smaller than 20
      .  p(ncol),qa,qas(4),
      .  qts(4),qtot,stot,svec(3) 
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  qo
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  qos
 
       character sym_label(ncol)*7, atm_label*20,
@@ -163,13 +164,14 @@ C memory usage the same as in the serial version.
                 do ii = 1,imax
                   p(ii) = 0.0d0
                 enddo
-                do in = 1,numh(itot)
-                  j = listh(in,itot)
+                do in = 1,numh(i)
+                  ind = listhptr(i)+in
+                  j = listh(ind)
                   ii = j - (ib - 1) * ncol
                   if (ii .ge. 1 .and. ii .le. imax) then
                     p(ii) = 0.d0
                     do is = 1,min(nspin,2)
-                      p(ii) = p(ii) + dm(in,itot,is) * s(in,itot)
+                      p(ii) = p(ii) + dm(ind,is) * s(ind)
                     enddo
                   endif
                 enddo
@@ -209,8 +211,9 @@ C Compute and print Overlap Populations for Atoms ....................
             do ior = lasto(i-1)+1,lasto(i)
               call GlobalToLocalOrb(ior,Node,Nodes,itot)
               if (itot.gt.0) then
-                do in = 1,numh(ior)
-                  jor = listh(in,ior)
+                do in = 1,numh(itot)
+                  ind = listhptr(itot)+in
+                  jor = listh(ind)
                   do jja = 1,natoms
                     if (lasto(jja) .ge. jor) then
                       ja = jja
@@ -220,7 +223,7 @@ C Compute and print Overlap Populations for Atoms ....................
 100               ii = ja - (ib - 1) * ncol
                   if (ii .ge. 1 .and. ii .le. imax) then
                     do is = 1,min(nspin,2)
-                      p(ii) = p(ii) + dm(in,itot,is) * s(in,itot)
+                      p(ii) = p(ii) + dm(ind,is) * s(ind)
                     enddo
                   endif
                 enddo
@@ -229,9 +232,7 @@ C Compute and print Overlap Populations for Atoms ....................
 
 #ifdef MPI
 C Global sum of values stored in p
-            do ii=1,imax
-              pb(ii)=p(ii)
-            enddo
+            pb(1:imax)=p(1:imax)
             call MPI_Reduce(pb,p,imax,DAT_double,MPI_sum,
      .        0,MPI_Comm_World,MPIerror)
 #endif
@@ -299,8 +300,9 @@ C             Compute charge in each orbital of atom ia
                    qo(nao) = 0.0d0
                    call GlobalToLocalOrb(io,Node,Nodes,itot)
                    if (itot.gt.0) then
-                     do in = 1,numh(io)
-                       qo(nao) = qo(nao) + dm(in,itot,is) * s(in,itot)
+                     do in = 1,numh(itot)
+                       ind = listhptr(itot) + in
+                       qo(nao) = qo(nao) + dm(ind,is) * s(ind)
                      enddo
                      qa = qa + qo(nao)
                    endif
@@ -308,9 +310,7 @@ C             Compute charge in each orbital of atom ia
 	         qtot = qtot + qa
 #ifdef MPI
 C Global sum of values stored in p
-                 do ii=1,nao
-                   qb(ii)=qo(ii)
-                 enddo
+                 qb(1:nao)=qo(1:nao)
                  call MPI_Reduce(qb,qo,nao,DAT_double,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
                  qb(1)=qa
@@ -336,18 +336,18 @@ C Global sum of total charge
 	  enddo
         elseif (nspin .eq. 4) then
           do is = 1,nspin
-            qts(is) = 0.d0
+            qts(is) = 0.0d0
             do io = 1,nbasis
               qos(is,io) = 0.0d0
             enddo
           enddo
           do is = 1,nspin
             do io = 1,nbasis
-              call LocalToGlobalOrb(io,Node,Nodes,itot)
-              do in = 1,numh(itot)
-                jo = listh(in,itot)
-                qos(is,io) = qos(is,io) + dm(in,io,is)*s(in,io)/2
-                qos(is,jo) = qos(is,jo) + dm(in,io,is)*s(in,io)/2
+              do in = 1,numh(io)
+                ind = listhptr(io)+in
+                jo = listh(ind)
+                qos(is,io) = qos(is,io) + dm(ind,is)*s(ind)/2
+                qos(is,jo) = qos(is,jo) + dm(ind,is)*s(ind)/2
               enddo
             enddo
           enddo 
@@ -361,9 +361,7 @@ C Global sum of total charge
 
            do ia = 1,natoms 
             if (isa(ia).eq.ispec) then 
-            do is = 1,nspin
-              qas(is) = 0.d0
-            enddo
+            qas(1:nspin) = 0.d0
             do iNode = 1,Nodes
               if (iNode.eq.Node) then
                 do io = lasto(ia-1)+1,lasto(ia)  

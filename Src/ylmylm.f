@@ -20,9 +20,9 @@ C *********************************************************************
       INTEGER MAXLM
 
       INTEGER           I, L, LOFILM
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE ::
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE ::
      .  Y
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE ::
      .  DYDR
 
       EXTERNAL          LOFILM, MEMORY

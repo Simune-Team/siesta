@@ -1,4 +1,4 @@
-C $Id: recipes.f,v 1.3 1999/11/26 18:28:29 wdpgaara Exp $
+C $Id: recipes.f,v 1.4 1999/12/01 08:49:44 jgale Exp $
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C    This file contains routines taken or adapted from 
@@ -31,7 +31,7 @@ C*****************************************************
       IMPLICIT DOUBLE PRECISION(A-H,O-Z)
       PARAMETER (TINY=1.D-15)
       DIMENSION XA(N),YA(N)
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  c, d
 
 C Allocate local memory
@@ -188,7 +188,7 @@ C*****************************************************
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
       DIMENSION XA(N),YA(N)
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  c, d
 
 C Allocate local memory
@@ -247,7 +247,7 @@ C This is routine spline of Num. Recipes with the name changed.
 C J.M.Soler, April'96.
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
       DIMENSION x(n),y(n),y2(n)
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  u
 
 C Allocate local memory

@@ -18,7 +18,7 @@ C     .. Local Scalars ..
       double precision aa, bb, rmax, sc, si, xji, zcore, zd, zion, zu,
      &                 zval
       integer i, j, li, ni, nval
-      character type*2, flavor*3, name*3, compat_str*6
+      character type*2, flavor*3, name*3, compat_str*20
 C     ..
 C     .. Local Arrays ..
       integer lc(15), nc(15), nomin(0:4)
@@ -56,6 +56,7 @@ c
          so(i) = zero
          zo(i) = zero
    20 continue
+c
 c
 c  read the type of calculation and title card
 c   job =
@@ -135,10 +136,10 @@ c   ispp = ' ' - nonspin calculation
 c   ispp = s  - spin polarized calculation
 c   ispp = r  - relativistic calculation
 c
-c   ... and a compatibility string
+c   ... and a compatibility string (obsolete -- to be removed)
 c
       read(5,9030) nameat, icorr, ispp, compat_str
- 9030 format(3x,a2,3x,a2,a1,1x,a6)
+ 9030 format(3x,a2,3x,a2,a1,1x,a20)
 c
       call compat_params(compat_str)
 c
@@ -305,7 +306,7 @@ c
 c   printout
 c
       write(6,9090) ray(1), ray(2), title
- 9090 format(1x,a10,a10,5x,5a10,/21('*'),/)
+ 9090 format(1x,a10,a10,5x,5a10,/60('-'),/)
       if (job .eq. 0) then
          write(6,9100) nameat
       else if (job .lt. 4) then

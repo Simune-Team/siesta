@@ -1,6 +1,7 @@
       subroutine xijorb( negl, scell, nua, na, xa,
      .                   lasto, lastkb, rco, rckb,
-     .                   nomax, numh, listh, xijo )
+     .                   maxnh, numh, listhptr,
+     .                   listh, xijo, Node, Nodes )
 C *********************************************************************
 C Finds vectors between orbital centers.
 C Writen by J.Soler. July 1997
@@ -17,30 +18,29 @@ C real*8  rco(no)      : Cutoff radius of basis orbitals
 C                        where no=lasto(na)
 C real*8  rckb(nkb)    : Cutoff radius of KB projectors
 C                        where nkb=lastkb(na)
-C integer nomax        : First/second dimension of listh/xijo
-C integer numh(no)        : Number of nonzero elements of each row of the
-C                           Hamiltonian matrix between atomic orbitals
-C integer listh(nomax,no) : Nonzero Hamiltonian-matrix element 
-C                           column indexes for each matrix row
-C                           (only if input_nomax.ge.output_nomax)
+C integer maxnh        : First/second dimension of listh/xijo
+C integer numh(nuo)    : Number of nonzero elements of each row of the
+C                        Hamiltonian matrix between atomic orbitals
+C integer listhptr(nuo): Pointer to start of each row (-1) in listh
+C integer listh(maxnh) : Nonzero Hamiltonian-matrix element 
+C                        column indexes for each matrix row
+C integer Node         : Local node number
+C integer Nodes        : Total number of nodes
 C **************************** OUTPUT *********************************
-C real*8  xijo(3,nomax,no) : Vectors between orbital centers
+C real*8  xijo(3,maxnh): Vectors between orbital centers
 C *********************************************************************
 C
 C  Modules
 C
       use precision
       use parallel
-#ifdef MPI
-      use mpi
-#endif
 
       implicit          none
-      integer           na, nomax
-      integer           lastkb(0:na), lasto(0:na), listh(nomax,*),
-     .                  nua, numh(*)
+      integer           na, maxnh, Node, Nodes
+      integer           lastkb(0:na), lasto(0:na), listh(maxnh),
+     .                  nua, numh(*), listhptr(*)
       double precision  scell(3,3), rckb(*), rco(*), xa(3,na),
-     .                  xijo(3,nomax,*)
+     .                  xijo(3,maxnh)
       logical           negl
       external          neighb, timer
 
@@ -51,27 +51,21 @@ C maxnkb = maximum number of neighbour KB projectors of any orbital
      .  maxna, maxnkb
 
       integer
-     .  ia, ikb, inkb, io, isel, iio,
-     .  j, ja, jna, jo,
-     .  ka, kna, ko, maxnain,
-     .  nkb, nna, nnkb, no, Node, Nodes
+     .  ia, ikb, inkb, io, isel, iio, ind,
+     .  j, ja, jna, jo, ka, kna, ko, maxnain,
+     .  nkb, nna, nnkb, no
 
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  jana, jnao, knakb, ibuffer
-
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
 
       double precision
      .  rci, rcj, rck, rij, rik, rjk,
      .  rmax, rmaxkb, rmaxo
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  r2ij, rcnkb, dpbuffer
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  xija
 
       logical
@@ -88,15 +82,6 @@ C -------------------------------------
 
 C     Start time counter
 *     call timer( 'xijorb', 1 )
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Set local variables
       nkb = lastkb(na)
@@ -159,9 +144,7 @@ C Initialize neighb subroutine
       endif
 
 C Initialize vector jnao only once
-      do io = 1,no
-        jnao(io) = 0
-      enddo
+      jnao(1:no) = 0
 
 C Loop on atoms (only within unit cell)
       overflow = .false.
@@ -280,8 +263,9 @@ C Add to list of connected orbitals
               enddo
 
 C Copy interatomic vectors into xijo
-              do j = 1,numh(io)
-                jo = listh(j,io)
+              do j = 1,numh(iio)
+                ind = listhptr(iio)+j
+                jo = listh(ind)
                 jna = jnao(jo)
                 if (jna .eq. 0) then
                   if (.not.warn2) then
@@ -292,13 +276,13 @@ C Copy interatomic vectors into xijo
                     endif
                     warn2 = .true.
                   endif
-                  xijo(1,j,iio) = 0.d0
-                  xijo(2,j,iio) = 0.d0
-                  xijo(3,j,iio) = 0.d0
+                  xijo(1,ind) = 0.d0
+                  xijo(2,ind) = 0.d0
+                  xijo(3,ind) = 0.d0
                 else
-                  xijo(1,j,iio) = xija(1,jna)
-                  xijo(2,j,iio) = xija(2,jna)
-                  xijo(3,j,iio) = xija(3,jna)
+                  xijo(1,ind) = xija(1,jna)
+                  xijo(2,ind) = xija(2,jna)
+                  xijo(3,ind) = xija(3,jna)
                 endif
               enddo
 

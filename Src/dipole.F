@@ -1,4 +1,4 @@
-      SUBROUTINE DIPOLE( CELL, NTM, M1, M2, M3, NSM, RHO, X0, DIPOL )
+      subroutine dipole( cell, ntm, M1, M2, M3, nsm, rho, X0, dipol )
 C ********************************************************************
 C Finds the electric dipole
 C Written by J.M.Soler. July 1997.
@@ -7,21 +7,21 @@ C Routine now is based on intrinsic structure of grid distribution
 C in order to calculate position of grid points in space for local
 C matrix. J.D.Gale March 1999.
 C *********** INPUT **************************************************
-C REAL*8  CELL(3,3)     : Unit cell vectors
-C INTEGER NTM(3)        : Global number of divisions of each lattice vector
-C INTEGER M1,M2,M3      : Local number of divisions of each lattice vector
-C INTEGER NSM           : Number of sub-points for each mesh point
-C REAL    RHO(N1,N2,N3) : Minus neutral charge density at mesh points
+C real*8  cell(3,3)     : Unit cell vectors
+C integer ntm(3)        : Global number of divisions of each lattice vector
+C integer M1,M2,M3      : Local number of divisions of each lattice vector
+C integer nsm           : Number of sub-points for each mesh point
+C real    rho(N1,N2,N3) : Minus neutral charge density at mesh points
 C                         Notice single precision in this version
-C REAL*8  X0(3)         : Origin in cartesian coordinates
+C real*8  X0(3)         : Origin in cartesian coordinates
 C                         (center of molecule)
 C *********** OUTPUT *************************************************
-C REAL*8 DIPOL(3)   : Electric dipole
+C real*8 dipol(3)   : Electric dipole
 C *********** UNITS **************************************************
-C CELL  in atomic units (Bohr)
-C RHO   in atomic units (electrons/Bohr**3)
+C cell  in atomic units (Bohr)
+C rho   in atomic units (electrons/Bohr**3)
 C X0    in atomic units (Bohr)
-C DIPOL in atomic units (electrons*Bohr)
+C dipol in atomic units (electrons*Bohr)
 C ********************************************************************
 C
 C  Modules
@@ -32,20 +32,20 @@ C
       use mpi
 #endif
 
-      IMPLICIT          NONE
+      implicit none
 
-      INTEGER           M1, M2, M3, NTM(3), NSM
-      REAL              RHO(M1,M2,M3)
-      DOUBLE PRECISION  CELL(3,3), DIPOL(3), VOLCEL, X0(3)
-      EXTERNAL          RECLAT, VOLCEL
+      integer           M1, M2, M3, ntm(3), nsm
+      real              rho(M1,M2,M3)
+      real*8            cell(3,3), dipol(3), volcel, X0(3)
+      external          reclat, volcel
 
 C Internal variables and arrays
-      INTEGER           I, I1, I2, I3, IX, Node, Nodes,
+      integer           I, I1, I2, I3, IX, Node, Nodes,
      .                  ProcessorZ, Py, Pz, I20, I30,
      .                  MG1, MG2, MG3, Yoffset, Zoffset,
      .                  BlockSizeY, BlockSizeZ, NRemY, NRemZ,
      .                  MeshNsm(3)
-      DOUBLE PRECISION  D(3), DVOL, DX, RCELL(3,3), X0L(3)
+      real*8            D(3), dvol, DX, Rcell(3,3), X0L(3)
 #ifdef MPI
       integer           MPIerror
 #endif
@@ -60,25 +60,23 @@ C Get the Node number
 #endif
 
 C Assign local variables
-      MG1 = NTM(1)
-      MG2 = NTM(2)
-      MG3 = NTM(3)
+      MG1 = ntm(1)
+      MG2 = ntm(2)
+      MG3 = ntm(3)
 
 C Find volume element
-      DVOL = VOLCEL( CELL ) / (MG1*MG2*MG3)
+      dvol = volcel( cell ) / (MG1*MG2*MG3)
 
 C Find reciprocal cell vectors (without the factor 2*pi)
-      CALL RECLAT( CELL, RCELL, 0 )
+      call reclat( cell, Rcell, 0 )
 
 C Find origin in lattice coordinates
-      DO 10 I = 1,3
-        X0L(I)= X0(1)*RCELL(1,I) + X0(2)*RCELL(2,I) + X0(3)*RCELL(3,I)
-   10 CONTINUE
+      do I = 1,3
+        X0L(I)= X0(1)*Rcell(1,I) + X0(2)*Rcell(2,I) + X0(3)*Rcell(3,I)
+      enddo
 
 C Initialize dipole
-      DIPOL(1) = 0.D0
-      DIPOL(2) = 0.D0
-      DIPOL(3) = 0.D0
+      dipol(1:3) = 0.0d0
 
 C Check that ProcessorY is a factor of the number of processors
       if (mod(Nodes,ProcessorY).gt.0) then
@@ -89,49 +87,55 @@ C Check that ProcessorY is a factor of the number of processors
       ProcessorZ = Nodes/ProcessorY
 
 C Calculate coarse mesh sizes
-      MeshNsm(1) = MG1/NSM
-      MeshNsm(2) = MG2/NSM
-      MeshNsm(3) = MG3/NSM
+      MeshNsm(1) = MG1/nsm
+      MeshNsm(2) = MG2/nsm
+      MeshNsm(3) = MG3/nsm
 
 C Calculate blocking sizes
-      BlockSizeY = (MeshNsm(2)/ProcessorY)*NSM
-      NRemY = (MG2 - ProcessorY*BlockSizeY)/NSM
-      BlockSizeZ = (MeshNsm(3)/ProcessorZ)*NSM
-      NRemZ = (MG3 - ProcessorZ*BlockSizeZ)/NSM
+      BlockSizeY = (MeshNsm(2)/ProcessorY)*nsm
+      NRemY = (MG2 - ProcessorY*BlockSizeY)/nsm
+      BlockSizeZ = (MeshNsm(3)/ProcessorZ)*nsm
+      NRemZ = (MG3 - ProcessorZ*BlockSizeZ)/nsm
 
 C Calculate coordinates of current node in processor grid
       Py = (Node/ProcessorZ)+1
       Pz = Node - (Py - 1)*ProcessorZ + 1
 
 C Calculate starting point for grid
-      Yoffset = (Py-1)*BlockSizeY + NSM*min(Py-1,NRemY)
-      Zoffset = (Pz-1)*BlockSizeZ + NSM*min(Pz-1,NRemZ)
+      Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
+      Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
 
 C Find dipole by direct integration allowing for block distributed
 C structure of rho
       I30 = Zoffset
-      DO 80 I3 = 1,M3
+      do I3 = 1,M3
         I30 = I30 + 1
-        D(3) = DBLE(I30-1) / DBLE(MG3) - X0L(3)
+        D(3) = dble(I30-1) / dble(MG3) - X0L(3)
         IF (D(3) .LT. -0.5D0) D(3) = D(3) + 1.D0
         IF (D(3) .GT. +0.5D0) D(3) = D(3) - 1.D0
         I20 = Yoffset
-        DO 70 I2 = 1,M2
+        do I2 = 1,M2
           I20 = I20 + 1
-          D(2) = DBLE(I20-1) / DBLE(MG2) - X0L(2)
+          D(2) = dble(I20-1) / dble(MG2) - X0L(2)
           IF (D(2) .LT. -0.5D0) D(2) = D(2) + 1.D0
           IF (D(2) .GT. +0.5D0) D(2) = D(2) - 1.D0
-          DO 60 I1 = 1,M1
-            D(1) = DBLE(I1-1) / DBLE(MG1) - X0L(1)
+          do I1 = 1,M1
+            D(1) = dble(I1-1) / dble(MG1) - X0L(1)
             IF (D(1) .LT. -0.5D0) D(1) = D(1) + 1.D0
             IF (D(1) .GT. +0.5D0) D(1) = D(1) - 1.D0
-            DO 40 IX = 1,3
-              DX = CELL(IX,1)*D(1) + CELL(IX,2)*D(2) + CELL(IX,3)*D(3)
-              DIPOL(IX) = DIPOL(IX) - DX * RHO(I1,I2,I3) * DVOL
-   40       CONTINUE
-   60     CONTINUE
-   70   CONTINUE
-   80 CONTINUE
+            do IX = 1,3
+              DX = cell(IX,1)*D(1) + cell(IX,2)*D(2) + cell(IX,3)*D(3)
+              dipol(IX) = dipol(IX) - DX * rho(I1,I2,I3) * dvol
+            enddo
+          enddo
+        enddo
+      enddo
 
-      END
+#ifdef MPI
+      call MPI_AllReduce(dipol,d,3,DAT_double,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+      dipol(1:3) = d(1:3)
+#endif
+
+      end
 

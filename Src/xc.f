@@ -76,9 +76,9 @@ C Local variables and arrays
       DOUBLE PRECISION
      .  DGDM(-NN:NN), DGIDFJ(-NN:NN), DRDM, DVOL, 
      .  EPSC, EPSX, F1, F2, PI
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE ::
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE ::
      .                  D, DECDD, DEXDD, AUX
-      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE, SAVE ::
      .                  DECDGD, DEXDGD, GD
       EXTERNAL
      .  GGAXC, LDAXC

@@ -24,8 +24,10 @@ c
       double precision zval, zratio, zion, ac, bc, cdcp, tanb, rbold,
      &                 rbnew, pi, ecut, vp2z, fcut, zot, vpsdm,
      &                 vps, rmind, vpsum, rminu, zelu, zeld, zelt,
-     &                 viodj, viouj
+     &                 viodj, viouj, cc
       double precision rcut(10), v(nrmax)
+
+      logical new_scheme
 c
       external logder
 c
@@ -65,16 +67,16 @@ c
 c
 c=====================================================================
 c  If a core correction is indicated construct pseudo core charge
-c  cdc(r) = ac*r * sin(bc*r) inside r(icore)
 c  if cfac < 0 or the valence charge is zero the full core is used
 c
       ifcore = job - 1
       if (ifcore .ne. 0) then
          ac = zero
          bc = zero
+         cc = zero
          icore = 1
          if (cfac .le. zero .or. zratio .eq. zero) then
-            write(6,9000) r(icore), ac, bc
+            write(6,9000) r(icore), ac, bc, cc
          else
             if (rcfac .le. zero) then
                do 30 i = nr, 2, -1
@@ -87,6 +89,45 @@ c
    40          continue
             end if
    50       continue
+            icore = i
+C
+C--------------------------------------------------------------------
+C Choice of methods to compute the core correction:
+C
+C 1. Traditional 'Froyen-Louie-Cohen' with cdc(r) = Arsin(Br)
+C    and value and first-derivative matching. It is the default
+c    for LDA calculations. See compat_params.f
+C    and input.f for info on how to force its use from the input file.
+C
+C 2. New by Jose Luis Martins' group, using a Kerker-like exp( ) function
+C    and matching also the second derivative. This is the default with
+C    the 'mons' compatibility mode for GGA calculations.
+C
+
+            new_scheme = .false.
+            if (is_gga) new_scheme = .true.
+            
+            if ( (use_old_cc) .and. (is_gga)) then
+
+               write(6,'(/,2a,/a)')
+     $              'WARNING: Using old-style core corrections',
+     $            ' despite this being a GGA calculation.',
+     $              'I hope you know what you are doing...'
+               new_scheme = .false.
+            endif
+
+            if ( (use_new_cc) .and. (.not. is_gga)) then
+
+               write(6,'(/,2a,/a)')
+     $              'WARNING: Using new core corrections',
+     $            ' despite this being an LDA calculation.',
+     $         'Results will not be compatible with older versions.'
+               new_scheme = .true.
+            endif
+
+            if (.not. new_scheme) then
+
+c           Fit to  cdc(r) = ac*r * sin(bc*r) inside r(icore)
 c
 c           Find derivative at core radius. Use a five-point formula
 c           instead of the old two-point method:
@@ -107,7 +148,6 @@ c           (p. 883) in Abramowitz-Stegun, with h=1
 c
 c           f'(0) = 1/12 f(-2) - 2/3 f(-1) + 2/3 f(1) - 1/12 f(2)
 c
-            icore = i
 cold            cdcp = (cdc(icore+1)-cdc(icore))/(r(icore+1)-r(icore))
 
             cdcp =   cdc(icore-2) - 8*cdc(icore-1) +
@@ -134,8 +174,9 @@ c
                   do 60 j = 1, icore
                      cdc(j) = ac*r(j)*sin(bc*r(j))
    60             continue
-                  write(6,9000) r(icore), ac, bc
+                  write(6,9000) r(icore), ac, bc, cc
 c
+                  call coreq
                   go to 80
 c
                else
@@ -144,10 +185,25 @@ c
    70       continue
             write(6,9010)
             call ext(830)
+
+            else
+
+c                 Use subroutine provided by JLM to fit
+c                 cdc(r) = r^2*exp(ac+bc*r^2+cc*r^4) inside r(icore)
+c
+                  CALL PCC_EXP(NR,ICORE,AC,BC,CC,R,CDC)
+                  write(6,9000) r(icore), ac, bc, cc
+
+c
+           endif
+
+           call coreq
+
          end if
       end if
+C---------------------------------------------------------------------
  9000 format(//' Core correction used',/' Pseudo core inside r =',f6.3,
-     &      /' ac =',f6.3,' bc =',f6.3,/)
+     &      /' ac =',f6.3,' bc =',f6.3,' cc =',f6.3,/)
  9010 format(//' Error in pseudo - nonconvergence in finding ',
      &      /'pseudo-core values')
 c

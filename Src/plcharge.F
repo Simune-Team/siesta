@@ -1,9 +1,7 @@
-C $Id: plcharge.f,v 1.6 1999/11/26 18:28:26 wdpgaara Exp $
-
-      SUBROUTINE PLCHARGE( NSPIN, NUO, NO, NA, MAXO, MAXA, MAXNO, 
+      SUBROUTINE PLCHARGE( NSPIN, NUOTOT, NO, NA, MAXO, MAXA, MAXNH, 
      .                     CELL, RMAXO, XA, 
      .                     LASTO, ISA, IPHORB, DATM,
-     .                     NUMH, LISTH, INDXUO )
+     .                     NUMH, LISTHPTR, LISTH, INDXUO, Nodes)
 C **********************************************************************
 C Prepare the data files to plot charge density at the points of a plane 
 C in real space.
@@ -16,6 +14,10 @@ C **********************************************************************
 
       use atmfuncs
       use fdf
+      use parallel
+#ifdef MPI
+      use mpi
+#endif
 
       IMPLICIT NONE
 
@@ -26,16 +28,18 @@ C **********************************************************************
      .  SNAME,FNAME
 
       INTEGER
-     .  UNIT1, MAXO, MAXA, MAXNO, NUO, NO, NA, NSPIN, 
+     .  UNIT1, MAXO, MAXA, MAXNH, NUOTOT, NO, NA, NSPIN, 
      .  LASTO(0:MAXA), ISA(MAXA), IPHORB(MAXO),
-     .  IL, IS, IB, IA, IO, J, NUMH(MAXO), LISTH(MAXNO,MAXO),
-     .  INDXUO(MAXO)
-
-
+     .  IL, IS, IB, IA, IIO, IO, J, NUMH(*), LISTH(MAXNH),
+     .  LISTHPTR(*), INDXUO(MAXO), Nodes
 
       DOUBLE PRECISION
      .  CELL(3,3), RMAXO, XA(3,MAXA), DATM(MAXO)
 
+
+#ifdef MPI
+      integer MPIerror
+#endif
 
       EXTERNAL
      .  IO_ASSIGN, IO_CLOSE, PASTE
@@ -44,10 +48,10 @@ C **********************************************************************
 C **********************************************************************
 C INTEGER MAXO           : Max. total number of basis orbitals
 C INTEGER MAXA           : Max. number of atoms
-C INTEGER MAXNO          : Max. number of neighbours orbitals
+C INTEGER MAXNH          : Dimension of listh
 C INTEGER NSPIN          : Number of different spin polarizations
 C                          Nspin = 1 => Non polarized. Nspin = 2 => Polarized
-C INTEGER NUO            : Number of atomic orbitals in unit cell
+C INTEGER NUOTOT         : Number of atomic orbitals in unit cell
 C INTEGER NO             : Total number of orbitals in supercell
 C INTEGER NA             : Number of atoms in supercell
 C REAL*8  CELL(3,3)      : Supercell vectors CELL(IXYZ,IVECT)
@@ -57,9 +61,10 @@ C INTEGER LASTO(0:MAXA)  : Position of last orbital of each atom
 C INTEGER ISA(MAXA)      : Species index of each atom
 C INTEGER IPHORB(MAXO)   : Orbital index of each atom in its atom
 C REAL*8  DATM(MAXO)     : Neutral atom charge of each orbital
-C INTEGER NUMH(MAXO)     : Control vector of Density Matrix
+C INTEGER NUMH(NUOTOT)   : Control vector of Density Matrix
 C                          (number of nonzero elements of each row)
-C INTEGER LISTH(MAXNO,MAXO) : Control vector of Density Matrix
+C INTEGER LISTHPTR(NUOTOT) : Control vector of Density Matrix
+C INTEGER LISTH(MAXNH)   : Control vector of Density Matrix
 C                          (list of nonzero elements of each row)
 C INTEGER INDXUO(MAXO)   : Index of equivalent orbital in unit cell
 C **********************************************************************
@@ -78,77 +83,77 @@ C Dump the tables into a file ------------------------------------------
 CIn the previous version this loop only was executed from
 CIL= -LMAXD+1 instead of -(LMAXD+1).
 C I belive that now is right! DSP.
-      DO 100 IB = 1, NTBMAX+2
-        DO 110 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
-          DO 120 IS = 1, NSMAX
+      DO IB = 1, NTBMAX+2
+        DO IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
+          DO IS = 1, NSMAX
             WRITE(UNIT1)TABLE(IB,IL,IS)
- 120      CONTINUE
- 110    CONTINUE
- 100  CONTINUE           
+          ENDDO
+        ENDDO
+      ENDDO
  
-      DO 200 IB = 1, NTBMAX+2
-        DO 210 IL = 1, NSEMX*NZETMX*(LMAXD+1)
-          DO 220 IS = 1, NSMAX
+      DO IB = 1, NTBMAX+2
+        DO IL = 1, NSEMX*NZETMX*(LMAXD+1)
+          DO IS = 1, NSMAX
             WRITE(UNIT1)TABPOL(IB,IL,IS)
- 220      CONTINUE
- 210    CONTINUE
- 200  CONTINUE
+          ENDDO
+        ENDDO
+      ENDDO
  
 CIn the previous version this loop only was executed from
 CIL= -LMAXD+1 instead of -(LMAXD+1).
 C I belive that now is right! DSP.
-      DO 300 IB = 1, NTBMAX
-        DO 310 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
-          DO 320 IS = 1,NSMAX
+      DO IB = 1, NTBMAX
+        DO IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
+          DO IS = 1,NSMAX
             WRITE(UNIT1)TAB2(IB,IL,IS)
- 320      ENDDO
- 310    ENDDO
- 300  ENDDO
+          ENDDO
+        ENDDO
+      ENDDO
  
 
-      DO 400 IB = 1, NTBMAX
-        DO 410 IL = 1, NSEMX*NZETMX*(LMAXD+1)
-          DO 420 IS = 1,NSMAX
+      DO IB = 1, NTBMAX
+        DO IL = 1, NSEMX*NZETMX*(LMAXD+1)
+          DO IS = 1,NSMAX
             WRITE(UNIT1)TAB2POL(IB,IL,IS)
- 420      ENDDO
- 410    ENDDO
- 400  ENDDO
+          ENDDO
+        ENDDO
+      ENDDO
 
-      DO 500 IS = 1,NSMAX
-         WRITE(UNIT1)LMXOSAVE(IS)
- 500  ENDDO 
+      DO IS = 1,NSMAX
+        WRITE(UNIT1)LMXOSAVE(IS)
+      ENDDO 
 
-      DO 600 IS = 1, NSMAX
-         WRITE(UNIT1)LMXKBSAVE(IS)
- 600  ENDDO 
+      DO IS = 1, NSMAX
+        WRITE(UNIT1)LMXKBSAVE(IS)
+      ENDDO 
 
 
-      DO 700 IL = 0,LMAXD
-       DO 750 IB= 1, NSEMX
-        DO 800 IS = 1,NSMAX
-          WRITE(UNIT1)NZETASAVE(IL,IB,IS)
- 800    ENDDO
- 750   ENDDO 
- 700  ENDDO
+      DO IL = 0,LMAXD
+        DO IB= 1, NSEMX
+          DO IS = 1,NSMAX
+            WRITE(UNIT1)NZETASAVE(IL,IB,IS)
+          ENDDO
+        ENDDO 
+      ENDDO
       
       DO IS = 1, NSMAX 
-       DO IB = 1, NSEMX
-        DO IL =0 , LMAXD
-          WRITE(UNIT1)NPOLORBSAVE(IL,IB,IS)
+        DO IB = 1, NSEMX
+          DO IL =0 , LMAXD
+            WRITE(UNIT1)NPOLORBSAVE(IL,IB,IS)
+          ENDDO 
         ENDDO 
-       ENDDO 
       ENDDO 
       
       DO IS=1, NSMAX
-         DO IL= 0, LMAXD
-           WRITE(UNIT1)LSEMICSAVE(IL,IS)
-         ENDDO 
+        DO IL= 0, LMAXD
+          WRITE(UNIT1)LSEMICSAVE(IL,IS)
+        ENDDO 
       ENDDO
 
       DO IS=1, NSMAX
-         DO IL= 0, LMAXD
-           WRITE(UNIT1)NKBLSAVE(IL,IS)
-         ENDDO 
+        DO IL= 0, LMAXD
+          WRITE(UNIT1)NKBLSAVE(IL,IS)
+        ENDDO 
       ENDDO
 
       WRITE(UNIT1)ISMAX
@@ -158,10 +163,10 @@ C I belive that now is right! DSP.
       ENDDO
 
       DO IL = 1, MAXO
-          WRITE(UNIT1)DATM(IL)
+        WRITE(UNIT1)DATM(IL)
       ENDDO
 
-      WRITE(UNIT1)NUO
+      WRITE(UNIT1)NUOTOT
       WRITE(UNIT1)NO
       WRITE(UNIT1)NA
       WRITE(UNIT1)NSPIN
@@ -184,17 +189,21 @@ C I belive that now is right! DSP.
         WRITE(UNIT1)IPHORB(IO),INDXUO(IO)
       ENDDO
 
-      DO IO = 1,MAXO
-        WRITE(UNIT1)NUMH(IO)
-        DO J = 1,NUMH(IO)
-          WRITE(UNIT1)LISTH(J,IO)
-        ENDDO
+      DO IO = 1,NUOTOT
+        call GlobalToLocalOrb(IO,Node,Nodes,IIO)
+        if (IIO.gt.0) then
+          WRITE(UNIT1)NUMH(IIO)
+          DO J = 1,NUMH(IIO)
+            WRITE(UNIT1)LISTH(LISTHPTR(IIO)+J)
+          ENDDO
+        endif
+#ifdef MPI
+        call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
       ENDDO
-
 
       CALL IO_CLOSE(UNIT1)
 
       RETURN
 
       END
-      

@@ -29,11 +29,11 @@
 
 \vspace{3cm}
 
-{\Huge {\bf SIESTA 1.0.12}}
+{\Huge {\bf SIESTA 1.0.20}}
 
 \vspace{3cm}
 
-{\Large {\it November 17, 1999} }
+{\Large {\it January 7, 2000} }
 
 \vspace{3cm}
 
@@ -2739,11 +2739,23 @@ The larger the number of processors being used, the larger the value of
 
 {\it Default value:}  2
 
+\item[{\bf DiagScale}] ({\it real no units}):
+\index{DiagScale@{\bf DiagScale}}
+Whether the parallel diagonalisation of a matrix is successful or not can
+depend on how much workspace is available to the routine when there are
+clusters of eigenvalues. {\bf DiagScale} is the scale factor by which
+the memory available is increased in diagonalisation when {\bf TryMemoryIncrease} 
+is true.
+
+{\it Use:} Controls the rate of increase of workspace available to parallel matrix diagonalisation
+
+{\it Default value:}  1.5
+
 \item[{\bf TryMemoryIncrease}] ({\it logical}):
 \index{TryMemoryIncrease@{\bf TryMemoryIncrease}}
 If true, this option allows the program to increase the value of {\bf DiagMemory}
-automatically until enough memory is obtained to be able to run a successful
-matrix diagonalisation in parallel.
+automatically by an a scale factor given by {\bf DiagScale} until enough memory is 
+obtained to be able to run a successful matrix diagonalisation in parallel.
 
 {\it Use:} Determines whether the program is able to iteratively increase the
   memory available to SCALAPACK until diagonalisation is successful

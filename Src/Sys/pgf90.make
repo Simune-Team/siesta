@@ -1,5 +1,5 @@
 #
-FC=ff90
+FC=pgf90
 FC_ASIS=$(FC)
 #
 FFLAGS=  -fast

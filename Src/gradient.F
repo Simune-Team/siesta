@@ -1,10 +1,8 @@
-      subroutine gradient(c,eta,enum,h,s,
-     .                 nbasis,nbands,ncmax,nctmax,
-     .                 nfmax,nftmax,nhmax,nhijmax,
-     .                 numc,listc,numct,listct,cttoc,numf,listf,
-     .                 numft,listft,
-     .                 numh,listh,numhij,listhij,
-     .                 grad,ener,nbasisloc)
+      subroutine gradient(c,eta,enum,h,s,nbasis,nbands,ncmax,nctmax,
+     .                    nfmax,nftmax,maxnh,nhijmax,numc,listc,
+     .                    numct,listct,cttoc,numf,listf,numft,listft,
+     .                    numh,listhptr,listh,numhij,listhij,grad,
+     .                    ener,nbasisloc)
 
 C ************************************************************************
 C Finds the energy and gradient at point C.
@@ -18,8 +16,8 @@ C real*8 c(ncmax,nbasisloc)    : Current point (wave function coeff.
 C                                  in sparse form)
 C real*8 eta                   : Fermi level parameter of Kim et al.
 C real*8 enum                  : Total number of electrons
-C real*8 h(nhmax,nbasisloc)    : Hamiltonian matrix (sparse)
-C real*8 s(nhmax,nbasisloc)    : Overlap matrix (sparse)
+C real*8 h(maxnh)              : Hamiltonian matrix (sparse)
+C real*8 s(maxnh)              : Overlap matrix (sparse)
 C integer nbasis               : Number of basis orbitals
 C integer nbands               : Number of LWF's
 C integer ncmax                : Max num of <>0 elements of each row of C
@@ -27,7 +25,7 @@ C integer nctmax               : Max num of <>0 elements of each col of C
 C integer nfmax                : Max num of <>0 elements of each row of 
 C                                   F = Ct x H
 C integer nftmax               : Max num of <>0 elements of each col of F
-C integer nhmax                : Max num of <>0 elements of each row of H
+C integer maxnh                : Max num of <>0 elements of H
 C integer nhijmax              : Max num of <>0 elements of each row of 
 C                                   Hij=Ct x H x C
 C integer numc(nbasis)         : Control vector of C matrix
@@ -47,9 +45,11 @@ C integer numft(nbasis)        : Control vector of F transpose matrix
 C                               (number of <>0  elements of each col of F)
 C integer listft(nfmax,nbasisloc) : Control vector of F transpose matrix
 C                               (list of <>0  elements of each col of F)
-C integer numh(nbasis)         : Control vector of H matrix
+C integer numh(nbasisloc)      : Control vector of H matrix
 C                                (number of <>0  elements of each row of H)
-C integer listh(nhmax,nbasis)  : Control vector of H matrix 
+C integer listhptr(nbasisloc)  : Control vector of H matrix
+C                                (pointer to the start of each row of H)
+C integer listh(maxnh)         : Control vector of H matrix 
 C                               (list of <>0  elements of each row of H)
 C integer numhij(nbasis)       : Control vector of Hij matrix
 C                                (number of <>0  elements of each row of Hij)
@@ -71,37 +71,40 @@ C
       implicit none
 
       integer
-     .  nbasis,nbands,ncmax,nctmax,nfmax,nftmax,nhmax,nhijmax,nbasisloc
+     .  nbasis,nbands,ncmax,nctmax,nfmax,nftmax,maxnh,nhijmax,nbasisloc
 
       integer
-     .  cttoc(nctmax,*),
-     .  listc(ncmax,nbasis),listct(nctmax,*),
-     .  listf(nfmax,*),listft(nftmax,nbasisloc),
-     .  listh(nhmax,nbasis),listhij(nhijmax,*),
-     .  numc(nbasis),numct(*),numf(*),numft(nbasis),
-     .  numh(nbasis),numhij(*)
+     .  cttoc(nctmax,*),listc(ncmax,nbasis),listct(nctmax,*),
+     .  listf(nfmax,*),listft(nftmax,nbasisloc),listh(maxnh),
+     .  listhij(nhijmax,*),numc(nbasis),numct(*),numf(*),
+     .  numft(nbasis),numh(nbasisloc),listhptr(nbasisloc),
+     .  numhij(*)
 
       double precision
      .  c(ncmax,nbasisloc),ener,eta,enum,grad(ncmax,nbasisloc),
-     .  h(nhmax,nbasisloc),s(nhmax,nbasisloc)
+     .  h(maxnh),s(maxnh)
 
 C Internal variables ......................................................
 
       integer
-     .  i,ik,in,j,jn,k,kl,kn,mu,muk,Node,Nodes,
-     .  nn, nbandsmin,nbandsmax,
-     .  nbandspernode, iloc, 
+     .  i,ik,in,ind,j,jn,k,kl,kn,knlh,mu,muk,Node,Nodes,
+     .  nn, nbandsmin,nbandsmax,nbandspernode, iloc, 
      .  nbandsloc
       integer, dimension(:), allocatable, save :: iptr
 #ifdef MPI
       integer
-     .  MPIerror, nremainder, nbmin, nbmax, nloc, nbl,
-     .  jloc, ii, il, mul
-      integer, dimension(:,:), allocatable, save :: listftl
+     .  MPIerror, ii, il, jloc, mul, nh, nremainder, 
+     .  nbmin, nbmax, maxnhg, nloc, nbl
+      integer, dimension(:), allocatable ::
+     .  listhlptr, listhl, numhl
+      integer, dimension(:,:), allocatable, save :: 
+     .  listftl
       double precision
      .  rtmp1(2),rtmp2(2)
+      double precision, dimension(:), allocatable, save :: 
+     .  hl, sl
       double precision, dimension(:,:), allocatable, save :: 
-     .  cl, hl, sl, ftl, fstl
+     .  cl, ftl, fstl
 #endif
       double precision, dimension(:,:), allocatable, save :: 
      .  f, ft, fs, fst, bux1, bux2
@@ -109,8 +112,6 @@ C Internal variables ......................................................
       double precision
      .  a0,b0,p0,func1,func2
      
-c      logical          frstme
-c      data frstme /.true./     
 C..................
 
 C Get Node number
@@ -118,13 +119,22 @@ C Get Node number
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
       call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
 
+C Get global sizes for first dimension of H/S
+      call MPI_AllReduce(maxnh,maxnhg,1,MPI_integer,MPI_max,
+     .  MPI_Comm_World,MPIerror)
+
+C Allocate local arrays for c/h/s
       call GetNodeOrbs(nbasis,0,Nodes,nbl)
       allocate(cl(ncmax,nbl))
       call memory('A','D',ncmax*nbl,'gradient')
-      allocate(hl(nhmax,nbl))
-      call memory('A','D',nhmax*nbl,'gradient')
-      allocate(sl(nhmax,nbl))
-      call memory('A','D',nhmax*nbl,'gradient')
+      allocate(hl(maxnhg))
+      call memory('A','D',maxnhg,'gradient')
+      allocate(sl(maxnhg))
+      call memory('A','D',maxnhg,'gradient')
+
+C Initialise hl/sl to prevent possible problems during transfer
+      hl(1:maxnhg) = 0.0d0
+      sl(1:maxnhg) = 0.0d0
 
 C Work out range of bands for this Node
       nbandspernode = ((nbands-1)/Nodes)
@@ -144,20 +154,20 @@ C Work out range of bands for this Node
 
       call timer('gradient',1)
       
-C-JMS Print array sizes ....................................................
-c      if (frstme) then
-c        if (Node.eq.0) then
-c          call prmem( 0, 'gradient', 'ft',  'd', maxnf*nbasisloc )
-c          call prmem( 0, 'gradient', 'fst', 'd', maxnf*nbasisloc )
-c          call prmem( 0, 'gradient', ' ',   ' ', 0          )
-c        endif
-c        frstme = .false.
-c      endif
-C ................
-
 C Allocate dynamic memory
       allocate(iptr(nbasis))
       call memory('A','I',nbasis,'gradient')
+
+#ifdef MPI
+C Allocate local storage for H/S control vectors
+      call GetNodeOrbs(nbasis,Node,Nodes,nbl)
+      allocate(numhl(nbasis))
+      call memory('A','I',nbasis,'gradient')
+      allocate(listhlptr(nbasis))
+      call memory('A','I',nbasis,'gradient')
+      allocate(listhl(maxnhg))
+      call memory('A','I',maxnhg,'gradient')
+#endif
 
 C Initialize output and auxiliary varialbles ...............................
 
@@ -174,16 +184,10 @@ C Initialize output and auxiliary varialbles ...............................
       allocate(bux2(nbands,nbandspernode+1))
       call memory('A','D',nbands*(nbandspernode+1),'gradient')
 
-      do nn = 1,nbandspernode+1
-        do i = 1,nbasis
-          f(i,nn) = 0.0d0
-          fs(i,nn) = 0.0d0
-        enddo
-        do i = 1,nbands
-          bux1(i,nn) = 0.0d0
-          bux2(i,nn) = 0.0d0
-        enddo
-      enddo
+      f(1:nbasis,1:nbandspernode+1) = 0.0d0
+      fs(1:nbasis,1:nbandspernode+1) = 0.0d0
+      bux1(1:nbands,1:nbandspernode+1) = 0.0d0
+      bux2(1:nbands,1:nbandspernode+1) = 0.0d0
 
 C..................
 
@@ -196,25 +200,36 @@ C Start loop over Nodes
 C Get local size on broadcast node
         call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
 
+C Distribute control vectors for H/S for this node
+        if (Node.eq.nn-1) then
+          numhl(1:nbl) = numh(1:nbl)
+        endif
+        call MPI_Bcast(numhl,nbl,MPI_integer,nn-1,
+     .    MPI_Comm_World,MPIerror)
+        listhlptr(1) = 0
+        do in = 2,nbl
+          listhlptr(in) = listhlptr(in-1) + numhl(in-1)
+        enddo
+        nh = listhlptr(nbl) + numhl(nbl)
+        if (Node.eq.nn-1) then
+          listhl(1:nh) = listh(1:nh)
+        endif
+        call MPI_Bcast(listhl,nh,MPI_integer,nn-1,
+     .    MPI_Comm_World,MPIerror)
+
 C Place arrays in local storage on broadcast node
         if (Node.eq.nn-1) then
-          do i = 1,nbasisloc
-            do ii = 1,ncmax
-              cl(ii,i) = c(ii,i)
-            enddo
-            do ii = 1,nhmax
-              hl(ii,i) = h(ii,i)
-              sl(ii,i) = s(ii,i)
-            enddo
-          enddo
+          cl(1:ncmax,1:nbl) = c(1:ncmax,1:nbl)
+          hl(1:nh) = h(1:nh)
+          sl(1:nh) = s(1:nh)
         endif
 
 C Broadcast arrays
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(hl(1,1),nhmax*nbl,DAT_double,nn-1,
+        call MPI_Bcast(hl,maxnhg,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sl(1,1),nhmax*nbl,DAT_double,nn-1,
+        call MPI_Bcast(sl,maxnhg,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
 
 C Build pointer to local orbitals for current working Node
@@ -234,21 +249,21 @@ C Fs=CtS
             if (kl.gt.0) then
               ik = cttoc(in,i)
               p0 = cl(ik,kl)
-              do kn = 1,numh(k)
-                f(listh(kn,k),i) = f(listh(kn,k),i) + 
-     .            p0 * ( hl(kn,kl) - eta*sl(kn,kl) )
-                fs(listh(kn,k),i) = fs(listh(kn,k),i) + 
-     .            p0 * sl(kn,kl)
+              do kn = 1,numhl(kl)
+                ind = listhlptr(kl)+kn
+                knlh = listhl(ind)
+                f(knlh,i) = f(knlh,i) + p0 * (hl(ind)-eta*sl(ind))
+                fs(knlh,i) = fs(knlh,i) + p0 * sl(ind)
               enddo
             endif
 #else
             ik = cttoc(in,i)
             p0 = c(ik,k)
             do kn = 1,numh(k)
-              f(listh(kn,k),i) = f(listh(kn,k),i) + 
-     .          p0 * ( h(kn,k) - eta*s(kn,k) )
-              fs(listh(kn,k),i) = fs(listh(kn,k),i) + 
-     .          p0 * s(kn,k)
+              ind = listhptr(k)+kn
+              knlh = listh(ind)
+              f(knlh,i) = f(knlh,i) + p0 * ( h(ind) - eta*s(ind) )
+              fs(knlh,i) = fs(knlh,i) + p0 * s(ind)
             enddo
 #endif
           enddo
@@ -263,6 +278,12 @@ C Deallocate memory for hl and sl as no longer needed
       deallocate(hl)
       call memory('D','D',size(sl),'gradient')
       deallocate(sl)
+      call memory('D','I',size(numhl),'gradient')
+      deallocate(numhl)
+      call memory('D','I',size(listhlptr),'gradient')
+      deallocate(listhlptr)
+      call memory('D','I',size(listhl),'gradient')
+      deallocate(listhl)
 #endif
 
 C Start loop over Nodes
@@ -274,11 +295,7 @@ C Get local size on broadcast node
 
 C Place arrays in local storage on broadcast node
         if (Node.eq.nn-1) then
-          do i = 1,nbasisloc
-            do ii = 1,ncmax
-              cl(ii,i) = c(ii,i)
-            enddo
-          enddo
+          cl(1:ncmax,1:nbl) = c(1:ncmax,1:nbl)
         endif
 
 C Broadcast arrays
@@ -431,20 +448,12 @@ C Create local storage memory for transpose arrays
 #ifdef MPI
 C Get local size on broadcast node
         call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
-        do i = 1,nbl
-          do ii = 1,ncmax
-            cl(ii,i) = 0.0
-          enddo
-        enddo
+        cl(1:ncmax,1:nbl) = 0.0
 
 C Place arrays in local storage on broadcast node
         if (Node.eq.nn-1) then
-          do i = 1,nbasisloc
-            do ii = 1,nbands
-              ftl(ii,i) = ft(ii,i)
-              fstl(ii,i) = fst(ii,i)
-            enddo
-          enddo
+          ftl(1:nbands,1:nbasisloc) = ft(1:nbands,1:nbasisloc)
+          fstl(1:nbands,1:nbasisloc) = fst(1:nbands,1:nbasisloc)
           do i = 1,nbasisloc
             call LocalToGlobalOrb(i,Node,Nodes,il)
             do ii = 1,numft(il)

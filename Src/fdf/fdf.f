@@ -13,6 +13,7 @@ c
 c     User callable routines:
 c
 c     fdf_init(filein,fileout)
+c     fdf_inhibit
 c     fdf_shutdown
 c     fdf_enabled
 c     fdf_{integer,single,double,string,boolean} (label,default)
@@ -29,10 +30,16 @@ c
       block data fdf
       implicit none
       include 'fdf.h'
-      data fdf_started, fdf_debug, fdf_debug2
-     $     /.false.,.false.,.false./
+      data fdf_started, fdf_debug, fdf_debug2, fdf_donothing
+     $     /.false.,.false.,.false.,.false./
       end
 c
+      subroutine fdf_inhibit
+      implicit none
+      include 'fdf.h'
+      fdf_donothing = .true.
+      end
+
       subroutine fdf_init(filein,fileout)
 c
 c     New initialization for fdf. Simplified user interface using
@@ -43,17 +50,13 @@ c
       character*(*) filein, fileout
 
       include 'fdf.h'
-      integer lun, length
-
-      character*50 file_input
-      character*132 linein
 
       integer debug_level
 c
       integer fdf_integer
       external fdf_integer
-      logical leqi
-      external leqi
+c
+      if (fdf_donothing) return
 c
 c     Prevent the user from opening two head files
 c
@@ -66,38 +69,14 @@ c
 
       ndepth = 0
 
-      file_input = filein
-
-      if (leqi(file_input,'stdin')) then
-c
-c        Copy standard input to a temporary file.
-c        This is done to avoid attempts to rewind
-c        standard input (which might fail in some
-c        systems)
-c
-         call io_assign(lun)
-         open(lun,file='FDF_STDIN',form='formatted',status='unknown')
-         rewind(lun)
-
- 10      continue
-         read(5,err=100,end=100,fmt='(a)') linein
-         call chrlen(linein,0,length)
-         write(lun,'(a)') linein(1:length)
-         goto 10
- 100     continue
-         call io_close(lun)
-         file_input = 'FDF_STDIN'
-
-      endif
-
-      call fdf_open(file_input)
-      write(fdf_out,'(/,a,a,a,i3,/)')
-     $        '#FDF: Opened ', file_input, ' for input. Unit:',fdf_in
-
       call io_assign(fdf_out)
       open(unit=fdf_out,file=fileout,form='formatted',
      $                               status='unknown')
       rewind(fdf_out)
+
+      call fdf_open(filein)
+      write(fdf_out,'(/,a,a,a,i3,/)')
+     $          '#FDF: Opened ',filein, ' for input. Unit:',fdf_in
 
       fdf_started = .true.
 
@@ -188,17 +167,25 @@ c
          stop 'DEPTH'
       endif
 
-      call io_assign(lun)
+      if (leqi(filename,'stdin')) then
+         lun = 5
+         if (fdf_debug) write(fdf_log,'(a,i1,a)')
+     $        '--->Reading from Standard Input [depth:', ndepth,'] '
 
-      inquire(file=filename,exist=file_exists)
-      if (file_exists) then
-         open(unit=lun,file=filename,status='old',form='formatted')
-         rewind(lun)
-         if (fdf_debug) write(fdf_log,'(a,i1,a,a50)')
-     $        '--->Opened [depth:', ndepth,'] ', filename
       else
-         write(fdf_err,'(a,a60)')
-     $        'FDF: Cannot open ',filename
+
+         call io_assign(lun)
+
+         inquire(file=filename,exist=file_exists)
+         if (file_exists) then
+            open(unit=lun,file=filename,status='old',form='formatted')
+            rewind(lun)
+            if (fdf_debug) write(fdf_log,'(a,i1,a,a50)')
+     $           '--->Opened [depth:', ndepth,'] ', filename
+         else
+            write(fdf_err,'(a,a60)')
+     $           'FDF: Cannot open ',filename
+         endif
       endif
 
       fdf_stack(ndepth) = lun
@@ -777,11 +764,12 @@ c
       logical leqi, fdf_getline
       external fdf_search, leqi, fdf_getline
 c
+      fdf_locate = .false.
+      if (fdf_donothing) return
+c
       call fdf_refresh
       if (fdf_debug) write(fdf_log,'(/,a,1x,a)')
      $        'Looking for ', label
-
-      fdf_locate = .false.
 
       rewind(fdf_in)
 

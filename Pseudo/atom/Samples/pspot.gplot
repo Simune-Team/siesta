@@ -1,0 +1,2 @@
+plot [0:4]  'PSPOTR0' with lines, 'PSPOTR1' with lines, 'PSPOTR2' with lines
+pause -1 "Hit return to end... "

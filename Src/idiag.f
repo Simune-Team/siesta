@@ -1,4 +1,4 @@
-C $Id: idiag.f,v 1.4 1999/01/31 11:14:55 emilio Exp $
+C $Id: idiag.f,v 1.5 2000/03/29 07:30:39 jgale Exp $
 
       SUBROUTINE IDIAG (NN,MOLD,MNEW,MLEFT,MRIGHT,MAUX)
 
@@ -24,7 +24,7 @@ C Written by J.Moreno and J.M.Soler
       DO 60 N=NN,2,-1
         DO 50 ITER=1,NITER
           MMIN=IBIG
-          DO 30 J=1,N
+          DO J=1,N
           DO 30 I=1,N
             IF ((I.NE.N.AND.J.NE.N) .OR. (I.EQ.N.AND.J.EQ.N)) GOTO 30
             IF (MNEW(I,J).EQ.0 .OR. ABS(MNEW(I,J)).GE.MMIN) GOTO 30
@@ -32,6 +32,7 @@ C Written by J.Moreno and J.M.Soler
                JMIN=J
                MMIN=ABS(MNEW(I,J))
    30     CONTINUE
+          ENDDO
           IF (MMIN.EQ.IBIG) GOTO 60
           I=MIN(IMIN,JMIN)
           MAUX(I,I,1)=0
@@ -78,15 +79,17 @@ C          FROM BOTH MA AND MB, YOU CAN MAKE MAUX=MC
 C WRITTEN BY JOSE SOLER. 22/5/90
 
       INTEGER MA(N1,N2),MB(N2,N3),MC(N1,N3),MAUX(N1,N3)
-      DO 20 I3=1,N3
-      DO 20 I1=1,N1
-        MAUX(I1,I3)=0
-        DO 10 I2=1,N2
-          MAUX(I1,I3)=MAUX(I1,I3)+MA(I1,I2)*MB(I2,I3)
-   10   CONTINUE
-   20 CONTINUE
-      DO 30 I=N3,1,-1
-      DO 30 J=N1,1,-1
-        MC(J,I)=MAUX(J,I)
-   30 CONTINUE
+      DO I3=1,N3
+        DO I1=1,N1
+          MAUX(I1,I3)=0
+          DO I2=1,N2
+            MAUX(I1,I3)=MAUX(I1,I3)+MA(I1,I2)*MB(I2,I3)
+          ENDDO
+        ENDDO
+      ENDDO
+      DO I=N3,1,-1
+        DO J=N1,1,-1
+          MC(J,I)=MAUX(J,I)
+        ENDDO
+      ENDDO
       END

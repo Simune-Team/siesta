@@ -4,6 +4,7 @@ FC_ASIS=$(FC)
 #
 FFLAGS= -O --warn --quiet --tpp --ntrace
 FFLAGS_DEBUG= -g -O0  -chk --trace
+LDFLAGS=--staticlink
 LIBS=
 COMP_LIBS=linalg.a
 SYS=bsd

@@ -650,7 +650,7 @@ c integer ns                     : Number of species
 c character*20  atm_label(maxs)  : Label for the different species
 c integer lmxo(maxs)             : Maximum angular momentum for the 
 c                                  basis orbitals
-c lsemic(0:lmaxd,ns)          : Number of semicore+valence shells
+c lsemic(0:lmaxd,ns)          : Number of semicore shells
 c                                  for each angular momentum 
 c integer polorb(0:lmaxd,nsemx,ns): Numebr of polarisation orbitals
 c                                  perturbatively calculated from
@@ -1034,7 +1034,7 @@ c character*20 atm_label         : Labels for the different species
 c ********* OUTPUT **************************************************
 c logical      semic             : if .true. there are semicore states 
 c                                  if .false. there are not.
-c integer      lsemic            : Angular momentum of the semicore shell
+c integer      lsemic(0:lmaxd)   : Number of semicore shells
 c *******************************************************************
 
        implicit none      

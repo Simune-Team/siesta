@@ -1,7 +1,8 @@
       subroutine initdm(Datm, Dscf, Dold, lasto, maxa,
-     .                  maxno, maxo, maxuo, maxspn, na, no, nspin, 
-     .                  numh, numhold, listh, listhold, iaorb, 
-     .                  found, inspn, usesavedm, nuotot)
+     .                  maxnh, maxo, maxuo, maxspn, nua, nuo, nspin, 
+     .                  numh, numhold, listhptr, listhptrold,
+     .                  listh, listhold, iaorb, found, inspn, 
+     .                  usesavedm, nuotot)
 
 c *******************************************************************
 c Density matrix initialization
@@ -29,24 +30,26 @@ c logical found         : whether DM was found in files
 c logical inspn         : true : AF ordering according to atom ordering
 c                                if no DM files, no DM.InitSpin, ispin=2
 c                         false: Ferro ordering  (fdf DM.InitSpinAF)
-c integer na            : Number of atoms
-c integer no            : Number of orbitals
+c integer nua           : Number of atoms in the unit cell
+c integer nuo           : Number of orbitals in the unit cell
 c integer nspin         : Number of spin components
 c integer maxa          : Max num. atoms for dimension
 c integer maxo          : Max. number of orbitals (globally)
 c integer maxuo         : Max. number of orbitals (locally)
-c integer maxno         : Max number of nonzero interactions
+c integer maxnh         : Max number of nonzero interactions
 c integer maxspn        : Max number of spin components in dimensions
 c integer lasto(0:maxa) : List with last orbital of each atom
-c integer numh(maxo)       : Dscf matrix sparse information
-c integer listh(maxno,maxo):  "
-c integer numhold(maxo)    : Same for Dold
-c integer listhold(maxno,maxuo) :  "
+c integer numh(*)       : Dscf matrix sparse information
+c integer listhptr(*)   :  "
+c integer listh(maxnh)  :  "
+c integer numhold(*)    : Same for Dold
+c integer listhptrold(*):  "
+c integer listhold(maxnh) :  "
 c integer iaorb(maxo)   : List saying to what atom an orbital belongs 
-c double Datm(NO)       : Occupations of basis orbitals in free atom
+c double Datm(no)       : Occupations of basis orbitals in free atom
 c ********* OUTPUT **************************************************
-c double Dscf(maxno,maxuo,maxspn) : Density matrix in sparse form
-c double Dold(maxno,maxuo,maxspn) : same Dscf (for previous cycle)
+c double Dscf(maxnh,maxspn) : Density matrix in sparse form
+c double Dold(maxnh,maxspn) : same Dscf (for previous cycle)
 c *******************************************************************
 
 C
@@ -62,12 +65,14 @@ C
       implicit          none
 
       logical           found, inspn, usesavedm
-      integer           no, na, maxo, maxuo, maxno, nspin, maxa, maxspn
-      integer           lasto(0:maxa), numh(maxo), numhold(maxo),
-     .                  listh(maxno,maxo), listhold(maxno,maxuo),
-     .                  iaorb(maxo),nuotot
-      double precision  Dscf(maxno,maxuo,maxspn), 
-     .                  Dold(maxno,maxuo,maxspn), 
+      integer           nuo, nua, maxo, maxuo, maxnh, nspin, maxa, 
+     .                  maxspn
+      integer           lasto(0:maxa), numh(maxuo), numhold(maxuo),
+     .                  listhptr(maxuo), listhptrold(maxuo),
+     .                  listh(maxnh), listhold(maxnh),
+     .                  iaorb(maxo), nuotot
+      double precision  Dscf(maxnh,maxspn), 
+     .                  Dold(maxnh,maxspn), 
      .                  Datm(maxo)
       external          parse, memory
 
@@ -78,26 +83,25 @@ c Internal variables and arrays
       character         updo*1, line*130, names*80
 c     character         fname*24
       logical           noncol, peratm
-      integer           ni, nn, nr, nv, iat, nat, ia, iu,
-     .                  i1, i2, in, ispin, jo, io, Node, Nodes,
+      integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,
+     .                  i1, i2, in, ind, ispin, jo, io, Node, Nodes,
      .                  iio, maxatnew
 
       integer, save ::  maxat
 
       integer           integs(4), lastc, lc(0:3)
 
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .                  atom, ibuffer
 #ifdef MPI
       integer
      .  MPIerror
-      integer, dimension(:,:), allocatable :: listhtmp
 #endif
       double precision  aspin, cosph, costh, epsilon, 
      .                  qio, pi, rate, reals(4),
      .                  sinph, sinth, spinat, spio, values(4)
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .                  phi, spin, theta, dpbuffer1
 
       data maxat / 1000 /
@@ -116,27 +120,8 @@ C Get Node number
 c try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
       if (usesavedm) then
-#ifdef MPI
-C Have to read listhold into listhtmp in MPI case because of different
-C dimension and copy back afterwards
-        allocate(listhtmp(maxno,nuotot))
-        call memory('A','I',maxno*nuotot,'initdm')
-        call iodm( 'read', maxno, maxuo, no, nspin,
-     .             numhold, listhtmp, Dscf, found )
-        if (found) then
-          do io = 1,no
-            call LocalToGlobalOrb(io,Node,Nodes,iio)
-            do in = 1, numhold(iio)
-              listhold(in,io) = listhtmp(in,iio)
-            enddo
-          enddo
-        endif
-        call memory('D','I',size(listhtmp),'initdm')
-        deallocate(listhtmp)
-#else
-        call iodm( 'read', maxno, maxuo, no, nspin,
-     .             numhold, listhold, Dscf, found )
-#endif
+        call iodm( 'read', maxnh, nuo, nspin, numhold, 
+     .             listhptrold, listhold, Dscf, found )
       else
         found = .false.
       endif
@@ -145,14 +130,8 @@ c if found update Dold, otherwise initialize with neutral atoms
 
       if (found) then
 
-        do ispin = 1,nspin
-          do io = 1,no
-            call LocalToGlobalOrb(io,Node,Nodes,iio)
-            do in = 1,numhold(iio)
-              Dold(in,io,ispin) = Dscf(in,io,ispin)
-            enddo
-          enddo
-        enddo
+        nh = listhptrold(nuo) + numhold(nuo)
+        Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
 
       else
 
@@ -185,7 +164,7 @@ C Allocate local memory
           call memory('A','D',maxat,'initdm')
 
           nat = 0
-          do iat = 1, na+1
+          do iat = 1, nua+1
 c           Read and parse a line of the data block
             if (Node.eq.0) then
               read(iu,'(a)', end=50) line
@@ -284,7 +263,7 @@ C             Read spin as + or - (maximun value)
             else
               goto 40
             endif
-            if (atom(nat).lt.1 .or. atom(nat).gt.na) then
+            if (atom(nat).lt.1 .or. atom(nat).gt.nua) then
               if (Node.eq.0) then
                 write(6,'(/,a)')
      .          'intdm: ERROR: Bad atom index in DM.InitSpin, line', iat
@@ -325,28 +304,22 @@ C             Read spin as + or - (maximun value)
 
 c initialize to 0
 
-          do ispin = 1,nspin
-            do io = 1,no
-              call LocalToGlobalOrb(io,Node,Nodes,iio)
-              do in = 1,numh(iio)
-                Dscf(in,io,ispin) = 0.d0
-              enddo
-            enddo
-          enddo
+          Dscf(1:maxnh,1:nspin) = 0.0d0
 
 c initialize all paramagnetic 
 
-          do ia = 1, na
+          do ia = 1, nua
             do io = lasto(ia-1) + 1, lasto(ia)
               call GlobalToLocalOrb(io,Node,Nodes,iio)
               if (iio.gt.0) then
-                do in = 1, numh(io)
-                  jo = listh(in,io)
+                do in = 1, numh(iio)
+                  ind = listhptr(iio)+in
+                  jo = listh(ind)
                   if (io .eq. jo) then
-                    Dscf(in,iio,1) = 0.5d0 * Datm(io)
-                    Dscf(in,iio,2) = Dscf(in,iio,1)
-                    Dold(in,iio,1) = Dscf(in,iio,1)
-                    Dold(in,iio,2) = Dscf(in,iio,2)
+                    Dscf(ind,1) = 0.5d0 * Datm(io)
+                    Dscf(ind,2) = Dscf(ind,1)
+                    Dold(ind,1) = Dscf(ind,1)
+                    Dold(ind,2) = Dscf(ind,2)
                   endif
                 enddo
               endif
@@ -379,8 +352,9 @@ c initialize orbitals with same rate as atom
               if (iio.gt.0) then
                 qio = Datm(io)
                 spio = rate * min( Datm(io), 2.d0 - Datm(io) )
-                do in = 1, numh(io)
-                  jo = listh(in,io)
+                do in = 1, numh(iio)
+                  ind = listhptr(iio)+in
+                  jo = listh(ind)
                   if (io .eq. jo) then
                     if (noncol) then
 c                   Store non-collinear-spin density matrix as
@@ -390,16 +364,16 @@ c                     ispin=3 => Real(D12); ispin=4 => Imag(D12)
                       sinth = sin(theta(iat))
                       cosph = cos(phi(iat))
                       sinph = sin(phi(iat))
-                      Dscf(in,iio,1) = (qio + spio * costh) / 2
-                      Dscf(in,iio,2) = (qio - spio * costh) / 2
-                      Dscf(in,iio,3) =   spio * sinth * cosph / 2
-                      Dscf(in,iio,4) = - spio * sinth * sinph / 2
+                      Dscf(ind,1) = (qio + spio * costh) / 2
+                      Dscf(ind,2) = (qio - spio * costh) / 2
+                      Dscf(ind,3) =   spio * sinth * cosph / 2
+                      Dscf(ind,4) = - spio * sinth * sinph / 2
                     else
-                      Dscf(in,iio,1) = (qio + spio) / 2
-                      Dscf(in,iio,2) = (qio - spio) / 2
+                      Dscf(ind,1) = (qio + spio) / 2
+                      Dscf(ind,2) = (qio - spio) / 2
                     endif
                     do ispin = 1,nspin
-                      Dold(in,iio,ispin) = Dscf(in,iio,ispin)
+                      Dold(ind,ispin) = Dscf(ind,ispin)
                     enddo
                   endif
                 enddo
@@ -422,24 +396,24 @@ c ---------------------------------------------------------------------
 
         else
 
+c initialize to 0
+
+          Dscf(1:maxnh,1:nspin) = 0.0d0
+
 c automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
 
-          do io = 1, no
+          do io = 1, nuo
             call LocalToGlobalOrb(io,Node,Nodes,iio)
-            do in = 1, numh(iio)
-              do ispin = 1, nspin
-                Dscf(in,io,ispin) = 0.d0
-              enddo
-            enddo
-            do in = 1,numh(iio)
-              jo = listh(in,iio)
+            do in = 1,numh(io)
+              ind = listhptr(io)+in
+              jo = listh(ind)
               if (iio .eq. jo) then
                 if (nspin .eq. 1) then
 
 c No spin polarization
 
-                  Dscf(in,io,1) = Datm(iio)
-                  Dold(in,io,1) = Datm(iio)
+                  Dscf(ind,1) = Datm(iio)
+                  Dold(ind,1) = Datm(iio)
                 else
 
 c Spin polarization
@@ -449,16 +423,16 @@ c Spin polarization
 
 C ferro or antiferro according to DM.InitSpinAF (inspn)
 
-                  if(inspn) then
+                  if (inspn) then
                     if (mod(iaorb(iio),2).eq.0) then
                       i1 = 2
                       i2 = 1
                     endif
                   endif
-                  Dscf(in,io,i1) = min( Datm(iio), 1.d0 )
-                  Dscf(in,io,i2) = Datm(iio) - Dscf(in,io,i1)
-                  Dold(in,io,i1) = Dscf(in,io,i1)
-                  Dold(in,io,i2) = Dscf(in,io,i2)
+                  Dscf(ind,i1) = min( Datm(iio), 1.d0 )
+                  Dscf(ind,i2) = Datm(iio) - Dscf(ind,i1)
+                  Dold(ind,i1) = Dscf(ind,i1)
+                  Dold(ind,i2) = Dscf(ind,i2)
                 endif
               endif
             enddo

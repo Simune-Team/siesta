@@ -1,6 +1,7 @@
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
-     .                    nomax, maxo, numh, listh, Node, Nodes )
+     .                    nlhmax, numh, 
+     .                    listhptr, listh, Node, Nodes )
 C *********************************************************************
 C Routine to find nonzero hamiltonian matrix elements.
 C Writen by J.Soler and P.Ordejon, June 1997
@@ -18,18 +19,27 @@ C                        where no=lasto(na)
 C integer iphkb(nkb)   : Index of each KB projector in its atom
 C                        (negative). Here nkb=lastkb(na)
 C integer isa(na)      : Species index of each atom
-C integer maxo         : Second dimension of listh and first of numh
 C **************************** INPUT and OUTPUT ***********************
-C integer nomax : Input : First dimension of listh
-C                 Output: Actual value needed for nomax (Maximum number
+C integer nlhmax: Input : Dimension of listh
+C                 Output: Actual value needed for nlhmax (Maximum number
 C                         of basis orbitals interacting, either directly
 C                         or through a KB projector, with any orbital)
 C **************************** OUTPUT *********************************
-C integer numh(maxo)        : Number of nonzero elements of each row of the
-C                           Hamiltonian matrix between atomic orbitals
-C integer listh(nomax,maxo) : Nonzero Hamiltonian-matrix element 
-C                           column indexes for each matrix row
-C                           (only if input_nomax.ge.output_nomax)
+C integer numh(*)       : Number of nonzero elements of each row of the
+C                         Hamiltonian matrix between atomic orbitals
+C integer listhptr(*)   : Pointer to where each row of listh starts - 1
+C                         The reason for pointing to the element before
+C                         the first one is so that when looping over the
+C                         elements of a row there is no need to shift by
+C                         minus one.
+C integer listh(nlhmax) : Nonzero Hamiltonian-matrix element 
+C                         column indexes for each matrix row
+C                         For parallel execution, listh contains the
+C                         elements for rows that involve
+C                         any locally stored orbitals. In the case
+C                         where parallelisation is over K points then
+C                         the full listh matrix is needed on every
+C                         Node.
 C **************************** BEHAVIOR *******************************
 C Equivalent pairs of atoms are assigned the same sparse index, i.e.
 C if atoms i1 and j1 are equivalent, and so are i2 and j2, and the
@@ -49,10 +59,10 @@ C
 #endif
 
       implicit          none
-      integer           na, nomax, maxo
-      integer           iphkb(*), iphorb(maxo), isa(na),
-     .                  lastkb(0:na), lasto(0:na), listh(nomax,maxo), 
-     .                  nsc(3), numh(maxo), Node, Nodes
+      integer           na, nlhmax
+      integer           iphkb(*), iphorb(*), isa(na),
+     .                  lastkb(0:na), lasto(0:na), listh(nlhmax), 
+     .                  listhptr(*), nsc(3), numh(*), Node, Nodes
       double precision  cell(3,3), xa(3,na)
       logical           negl
       external          neighb, ordvec, timer, memory
@@ -70,25 +80,25 @@ C tol    = tolerance for comparing vector-coordinates
       integer MPIerror, BNode, Bio
 #endif
       integer
-     .  ia, ikb, inkb, io, ioa, is, isel, 
+     .  ia, iio, ikb, inkb, io, ioa, is, isel, 
      .  j, ja, jna, jo, joa, js, 
      .  ka, kna, ko, koa, ks, maxnain,
-     .  ncells, nna, nnkb, no, nua, nuo, iio, nomaxin
+     .  ncells, nna, nnkb, no, nua, nuo, nuotot
 
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  jana, index, knakb, ibuffer
 
       double precision
      .  rci, rcj, rck, rij, rik, rjk,
      .  rmax, rmaxkb, rmaxo
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  r2ij, rckb, dpbuffer
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  xij
 
-      logical, dimension(:), allocatable :: conect
+      logical, dimension(:), allocatable, save :: conect
 
       logical
      .  overflow
@@ -103,8 +113,9 @@ C Start time counter
 C Check size of internal arrays
       ncells = nsc(1) * nsc(2) * nsc(3)
       nua = na / ncells
-      nuo = lasto(nua)
-      no = nuo * ncells
+      nuotot = lasto(nua)
+      no = nuotot * ncells
+      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 C Allocate local arrays
       allocate(conect(no))
@@ -173,7 +184,7 @@ C Initialize neighb subroutine
       endif
 
 C Initialize number of neighbour orbitals
-      do io= 1,no 
+      do io= 1,nuo 
         numh(io)=0
       enddo 
 
@@ -209,6 +220,12 @@ C Loop on orbitals of atom ia
 
             call GlobalToLocalOrb(io,Node,Nodes,iio)
             if (iio.gt.0) then
+
+              if (iio.gt.1) then
+                listhptr(iio) = listhptr(iio-1) + numh(iio-1)
+              else
+                listhptr(iio) = 0
+              endif
 
               is = isa(ia)
               ioa = iphorb(io)
@@ -263,7 +280,8 @@ C through a KB projector
                 ja = jana(jna)
                 rij = sqrt( r2ij(jna) )
                 do jo = lasto(ja-1)+1,lasto(ja)
-C If not yet connected
+
+C If not yet connected 
                   if (.not.conect(jo)) then
                     js = isa(ja)
                     joa = iphorb(jo)
@@ -287,15 +305,16 @@ C Find if jo overlaps with a KB projector
    50                 continue
                     endif
                     if (conect(jo)) then
-                      numh(io) = numh(io) + 1
-                      if (numh(io).le.nomax) listh(numh(io),io) = jo
+                      numh(iio) = numh(iio) + 1
+                      if (listhptr(iio)+numh(iio).le.nlhmax) 
+     .                    listh(listhptr(iio)+numh(iio)) = jo
                     endif
                   endif
                 enddo
               enddo
 
 C Restore conect array for next orbital io
-              if (numh(io).gt.nomax) then
+              if (listhptr(iio)+numh(iio).gt.nlhmax) then
                 do jna = 1,nna
                   ja = jana(jna)
                   do jo = lasto(ja-1)+1,lasto(ja)
@@ -303,8 +322,8 @@ C Restore conect array for next orbital io
                   enddo
                 enddo
               else
-                do j = 1,numh(io)
-                  jo = listh(j,io)
+                do j = 1,numh(iio)
+                  jo = listh(listhptr(iio)+j)
                   conect(jo) = .false.
                 enddo
               endif
@@ -331,44 +350,15 @@ C If maxna dimension was no good then reset arrays and start again
         goto 100
       endif
 
-#ifdef MPI
-C Globalise numh 
-      if (Nodes.gt.1) then
-        Bio = 0
-        do io = 1,nuo
-          Bio = Bio + 1
-          if (Bio .gt. BlockSize*Nodes) Bio = 1
-          BNode = ((Bio-1) / BlockSize)
-          call MPI_Bcast(numh(io),1,MPI_integer,BNode,
-     .      MPI_Comm_World,MPIerror)
-        enddo
+C Find optimum value for nlhmax
+      if (nuo .gt. 0) then
+        nlhmax = listhptr(nuo)+numh(nuo)
+      else
+        nlhmax = 0
       endif
-#endif
-
-C Find optimum value for nomax
-      nomaxin = nomax
-      nomax = 0
-      do io = 1,no
-        nomax = max( nomax, numh(io) )
-      enddo
-
-#ifdef MPI
-C Globalise listh if array is large enough - if not don't bother
-C as this routine call will have to be repeated.
-      if (Nodes.gt.1.and.nomax.le.nomaxin) then
-        Bio = 0
-        do io = 1,nuo
-          Bio = Bio + 1
-          if (Bio .gt. BlockSize*Nodes) Bio = 1
-          BNode = ((Bio-1) / BlockSize)
-          call MPI_Bcast(listh(1,io),numh(io),MPI_integer,BNode,
-     .      MPI_Comm_World,MPIerror)
-        enddo
-      endif
-#endif
 
 C Initialize listsc
-      call listsc_init( nsc, nuo )
+      call listsc_init( nsc, nuotot )
 
 C Deallocate local arrays
       call memory('D','L',size(conect),'hsparse')

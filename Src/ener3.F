@@ -1,9 +1,7 @@
-      subroutine ener3(c,grad,lam,eta,enum,h,s,
-     .                 nbasis,nbands,ncmax,nctmax,
-     .                 nfmax,nhmax,nhijmax,
-     .                 numc,listc,numct,listct,cttoc,numf,listf,
-     .                 numh,listh,numhij,listhij,
-     .                 ener,nbasisloc)
+      subroutine ener3(c,grad,lam,eta,enum,h,s,nbasis,nbands,ncmax,
+     .                 nctmax,nfmax,maxnh,nhijmax,numc,listc,numct,
+     .                 listct,cttoc,numf,listf,numh,listhptr,listh,
+     .                 numhij,listhij,ener,nbasisloc)
 
 C ************************************************************************
 C Finds the energy at three points of the line passing thru C in the
@@ -19,15 +17,15 @@ C real*8 grad(ncmax,nbasisloc) : Direction of search (sparse)
 C real*8 lam                   : Length of step
 C real*8 eta                   : Fermi level parameter of Kim et al.
 C real*8 enum                  : Total number of electrons
-C real*8 h(nhmax,nbasisloc)    : Hamiltonian matrix (sparse)
-C real*8 s(nhmax,nbasisloc)    : Overlap matrix (sparse)
+C real*8 h(maxnh)              : Hamiltonian matrix (sparse)
+C real*8 s(maxnh)              : Overlap matrix (sparse)
 C integer nbasis               : Number of basis orbitals
 C integer nbands               : Number of LWF's
 C integer ncmax                : Max num of <>0 elements of each row of C
 C integer nctmax               : Max num of <>0 elements of each col of C
 C integer nfmax                : Max num of <>0 elements of each row of 
 C                                   F = Ct x H
-C integer nhmax                : Max num of <>0 elements of each row of H
+C integer maxnh                : Max num of <>0 elements of H
 C integer nhijmax              : Max num of <>0 elements of each row of 
 C                                   Hij=Ct x H x C
 C integer numc(nbasis)         : Control vector of C matrix
@@ -43,11 +41,13 @@ C integer numf(nbands)         : Control vector of F matrix
 C                                (number of <>0  elements of each row of F)
 C integer listf(nfmax,nbands)  : Control vector of F matrix 
 C                                (list of <>0  elements of each row of F)
-C integer numh(nbasis)         : Control vector of H matrix
+C integer numh(nbasisloc)      : Control vector of H matrix
 C                                (number of <>0  elements of each row of H)
-C integer listh(nhmax,nbasis)  : Control vector of H matrix 
+C integer listhptr(nbasisloc)  : Control vector of H matrix
+C                                (pointer to the start of each row of H)
+C integer listh(maxnh)         : Control vector of H matrix 
 C                               (list of <>0  elements of each row of H)
-C integer numhij(nbasis)       : Control vector of Hij matrix
+C integer numhij(nbands)       : Control vector of Hij matrix
 C                                (number of <>0  elements of each row of Hij)
 C integer listhij(nhijmax,nbands): Control vector of Hij matrix 
 C                                (list of <>0  elements of each row of Hij)
@@ -71,32 +71,36 @@ C
       implicit none
 
       integer
-     .  nbasis,nbands,ncmax,nctmax,nfmax,nhmax,nhijmax,nbasisloc
+     .  nbasis,nbands,ncmax,nctmax,nfmax,maxnh,nhijmax,nbasisloc
 
       integer
      .  cttoc(nctmax,*),listc(ncmax,nbasis),
      .  listct(nctmax,*),listf(nfmax,*),
-     .  listh(nhmax,nbasis),listhij(nhijmax,*),
+     .  listh(maxnh),listhij(nhijmax,*),
      .  numc(nbasis),numct(*),numf(*),
-     .  numh(nbasis),numhij(*)
+     .  numh(nbasisloc),listhptr(nbasisloc),numhij(*)
 
       double precision
      .  c(ncmax,nbasisloc),ener(3),eta,enum,grad(ncmax,nbasisloc),
-     .  h(nhmax,nbasisloc),lam,s(nhmax,nbasisloc)
+     .  h(maxnh),lam,s(maxnh)
 
 C Internal variables ......................................................
 
       integer
-     .  i,in,j,jn,k,kl,kn,Nodes,nn,nbandsmin,nbandsmax,
+     .  i,in,ind,j,jn,k,kl,kn,knlh,Nodes,nn,nbandsmin,nbandsmax,
      .  nbandspernode, iloc, nbandsloc
       integer, dimension(:), allocatable, save :: iptr
 #ifdef MPI
       integer
-     .  MPIerror, nbl, nremainder, ii, Node
+     .  MPIerror, nbl, nh, maxnhg, nremainder, ii, Node
+      integer, dimension(:), allocatable ::
+     .  listhlptr, listhl, numhl
       double precision 
      .  etmp1(6), etmp2(6)
+      double precision, dimension(:), allocatable, save :: 
+     .  hl,sl
       double precision, dimension(:,:), allocatable, save :: 
-     .  cl,gl,hl,sl
+     .  cl,gl
 #endif
 
       double precision
@@ -108,19 +112,29 @@ C Internal variables ......................................................
 
 C..................
 
-C Get Node number
 #ifdef MPI
+C Get Node number
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
       call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
+
+C Get global sizes for first dimension of H/S
+      call MPI_AllReduce(maxnh,maxnhg,1,MPI_integer,MPI_max,
+     .  MPI_Comm_World,MPIerror)
+
+C Allocate local arrays for c/g/h/s
       call GetNodeOrbs(nbasis,0,Nodes,nbl)
       allocate(cl(ncmax,nbl))
       call memory('A','D',ncmax*nbl,'ener3')
       allocate(gl(ncmax,nbl))
       call memory('A','D',ncmax*nbl,'ener3')
-      allocate(hl(nhmax,nbl))
-      call memory('A','D',nhmax*nbl,'ener3')
-      allocate(sl(nhmax,nbl))
-      call memory('A','D',nhmax*nbl,'ener3')
+      allocate(hl(maxnhg))
+      call memory('A','D',maxnhg,'ener3')
+      allocate(sl(maxnhg))
+      call memory('A','D',maxnhg,'ener3')
+
+C Initialise hl/sl to prevent possible problems during transfer
+      hl(1:maxnhg) = 0.0d0
+      sl(1:maxnhg) = 0.0d0
 
 C Work out range of bands for this Node
       nbandspernode = ((nbands-1)/Nodes) 
@@ -149,6 +163,18 @@ C Allocate dynamic memory
       allocate(iptr(nbasis))
       call memory('A','I',nbasis,'ener3')
 
+#ifdef MPI
+C Allocate local storage for H/S control vectors
+      call GetNodeOrbs(nbasis,Node,Nodes,nbl)
+      allocate(numhl(nbasis))
+      call memory('A','I',nbasis,'ener3')
+      allocate(listhlptr(nbasis))
+      call memory('A','I',nbasis,'ener3')
+      allocate(listhl(maxnhg))
+      call memory('A','I',maxnhg,'ener3')
+#endif
+
+
 C Define points to compute energy ..........................................
       lam1 = lam
       lam2 = lam*2.0d0
@@ -156,28 +182,12 @@ C Define points to compute energy ..........................................
 C..................
 
 C Initialize output and auxiliary varialbles ...............................
-      do i = 1,3
-        ener(i) = 0.0d0
-        func1(i) = 0.0d0
-        func2(i) = 0.0d0
-      enddo
-
-      do nn = 1,nbandspernode+1
-        do i = 1,nbasis
-          do j = 1,6
-            aux(j,i,nn) = 0.0d0
-          enddo
-        enddo
-      enddo
-
-      do nn = 1,nbandspernode+1
-        do i = 1,nbands
-          do j = 1,3
-            bux1(j,i,nn) = 0.0d0
-            bux2(j,i,nn) = 0.0d0
-          enddo
-        enddo
-      enddo
+      ener(1:3) = 0.0d0
+      func1(1:3) = 0.0d0
+      func2(1:3) = 0.0d0
+      aux(1:6,1:nbasis,1:nbandspernode+1) = 0.0d0
+      bux1(1:3,1:nbands,1:nbandspernode+1) = 0.0d0
+      bux2(1:3,1:nbands,1:nbandspernode+1) = 0.0d0
 
 C..................
 
@@ -188,18 +198,29 @@ C Loop over Nodes for broadcasting of c,g,h and s
 C Get local size on broadcast node
         call GetNodeOrbs(nbasis,nn-1,Nodes,nbl)
 
+C Distribute control vectors for H/S for this node
+        if (Node.eq.nn-1) then
+          numhl(1:nbl) = numh(1:nbl)
+        endif
+        call MPI_Bcast(numhl,nbl,MPI_integer,nn-1,
+     .    MPI_Comm_World,MPIerror)
+        listhlptr(1) = 0
+        do in = 2,nbl
+          listhlptr(in) = listhlptr(in-1) + numhl(in-1)
+        enddo
+        nh = listhlptr(nbl) + numhl(nbl)
+        if (Node.eq.nn-1) then
+          listhl(1:nh) = listh(1:nh)
+        endif
+        call MPI_Bcast(listhl,nh,MPI_integer,nn-1,
+     .    MPI_Comm_World,MPIerror)
+
 C Place arrays in local storage on broadcast node
         if (Node.eq.nn-1) then
-          do i = 1,nbasisloc
-            do ii = 1,ncmax
-              cl(ii,i) = c(ii,i)
-              gl(ii,i) = grad(ii,i)
-            enddo
-            do ii = 1,nhmax
-              hl(ii,i) = h(ii,i)
-              sl(ii,i) = s(ii,i)
-            enddo
-          enddo
+          cl(1:ncmax,1:nbl) = c(1:ncmax,1:nbl)
+          gl(1:ncmax,1:nbl) = grad(1:ncmax,1:nbl)
+          hl(1:nh) = h(1:nh)
+          sl(1:nh) = s(1:nh)
         endif
 
 C Broadcast arrays
@@ -207,9 +228,9 @@ C Broadcast arrays
      .        MPI_Comm_World,MPIerror)
         call MPI_Bcast(gl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(hl(1,1),nhmax*nbl,DAT_double,nn-1,
+        call MPI_Bcast(hl,nh,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sl(1,1),nhmax*nbl,DAT_double,nn-1,
+        call MPI_Bcast(sl,nh,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
 #endif
 
@@ -223,54 +244,46 @@ C Calculate Functional .....................................................
 C F=CtH
 C Fs=CtS
 
-      do i = 1,nbandsloc
-        do in = 1,numct(i)
-          k = listct(in,i)
-          kl = iptr(k)
-          if (kl.gt.0) then
+        do i = 1,nbandsloc
+          do in = 1,numct(i)
+            k = listct(in,i)
+            kl = iptr(k)
+            if (kl.gt.0) then
 #ifdef MPI
-            pp1 = cl(cttoc(in,i),kl) + lam1 * gl(cttoc(in,i),kl)
-            pp2 = cl(cttoc(in,i),kl) + lam2 * gl(cttoc(in,i),kl)
-            pp3 = cl(cttoc(in,i),kl) + lam3 * gl(cttoc(in,i),kl)
+              pp1 = cl(cttoc(in,i),kl) + lam1 * gl(cttoc(in,i),kl)
+              pp2 = cl(cttoc(in,i),kl) + lam2 * gl(cttoc(in,i),kl)
+              pp3 = cl(cttoc(in,i),kl) + lam3 * gl(cttoc(in,i),kl)
 
-            do kn = 1,numh(k)
-              aux(1,listh(kn,k),i) = aux(1,listh(kn,k),i) + 
-     .          pp1 * hl(kn,kl)
-              aux(2,listh(kn,k),i) = aux(2,listh(kn,k),i) + 
-     .          pp2 * hl(kn,kl)
-              aux(3,listh(kn,k),i) = aux(3,listh(kn,k),i) + 
-     .          pp3 * hl(kn,kl)
-              aux(4,listh(kn,k),i) = aux(4,listh(kn,k),i) + 
-     .          pp1 * sl(kn,kl)
-              aux(5,listh(kn,k),i) = aux(5,listh(kn,k),i) + 
-     .          pp2 * sl(kn,kl)
-              aux(6,listh(kn,k),i) = aux(6,listh(kn,k),i) + 
-     .          pp3 * sl(kn,kl)
-            enddo
+              do kn = 1,numhl(kl)
+                ind = listhlptr(kl) + kn
+                knlh = listhl(ind)
+                aux(1,knlh,i) = aux(1,knlh,i) + pp1 * hl(ind)
+                aux(2,knlh,i) = aux(2,knlh,i) + pp2 * hl(ind)
+                aux(3,knlh,i) = aux(3,knlh,i) + pp3 * hl(ind)
+                aux(4,knlh,i) = aux(4,knlh,i) + pp1 * sl(ind)
+                aux(5,knlh,i) = aux(5,knlh,i) + pp2 * sl(ind)
+                aux(6,knlh,i) = aux(6,knlh,i) + pp3 * sl(ind)
+              enddo
 #else
-            pp1 = c(cttoc(in,i),kl) + lam1 * grad(cttoc(in,i),kl)
-            pp2 = c(cttoc(in,i),kl) + lam2 * grad(cttoc(in,i),kl)
-            pp3 = c(cttoc(in,i),kl) + lam3 * grad(cttoc(in,i),kl)
-
-            do kn = 1,numh(k)
-              aux(1,listh(kn,k),i) = aux(1,listh(kn,k),i) + 
-     .          pp1 * h(kn,kl)
-              aux(2,listh(kn,k),i) = aux(2,listh(kn,k),i) + 
-     .          pp2 * h(kn,kl)
-              aux(3,listh(kn,k),i) = aux(3,listh(kn,k),i) + 
-     .          pp3 * h(kn,kl)
-              aux(4,listh(kn,k),i) = aux(4,listh(kn,k),i) + 
-     .          pp1 * s(kn,kl)
-              aux(5,listh(kn,k),i) = aux(5,listh(kn,k),i) + 
-     .          pp2 * s(kn,kl)
-              aux(6,listh(kn,k),i) = aux(6,listh(kn,k),i) + 
-     .          pp3 * s(kn,kl)
-            enddo
+              pp1 = c(cttoc(in,i),kl) + lam1 * grad(cttoc(in,i),kl)
+              pp2 = c(cttoc(in,i),kl) + lam2 * grad(cttoc(in,i),kl)
+              pp3 = c(cttoc(in,i),kl) + lam3 * grad(cttoc(in,i),kl)
+  
+              do kn = 1,numh(kl)
+                ind = listhptr(kl) + kn
+                knlh = listh(ind)
+                aux(1,knlh,i) = aux(1,knlh,i) + pp1 * h(ind)
+                aux(2,knlh,i) = aux(2,knlh,i) + pp2 * h(ind)
+                aux(3,knlh,i) = aux(3,knlh,i) + pp3 * h(ind)
+                aux(4,knlh,i) = aux(4,knlh,i) + pp1 * s(ind)
+                aux(5,knlh,i) = aux(5,knlh,i) + pp2 * s(ind)
+                aux(6,knlh,i) = aux(6,knlh,i) + pp3 * s(ind)
+              enddo
 #endif
-          endif
-        enddo
+            endif
+          enddo
 
-      enddo
+        enddo
 
 C End of loop over nodes
       enddo
@@ -401,6 +414,12 @@ C Free dynamic memory
       deallocate(hl)
       call memory('D','D',size(sl),'ener3')
       deallocate(sl)
+      call memory('D','I',size(numhl),'ener3')
+      deallocate(numhl)
+      call memory('D','I',size(listhlptr),'ener3')
+      deallocate(listhlptr)
+      call memory('D','I',size(listhl),'ener3')
+      deallocate(listhl)
 #endif
       call memory('D','D',size(aux),'ener3')
       deallocate(aux)

@@ -1,5 +1,5 @@
-       subroutine pulayx(pulfile,iscf,mix,nbasis,maxuo,maxo,maxno,numd,
-     .                   nspin,maxsav,alpha,nkick,alphakick,
+       subroutine pulayx(pulfile,iscf,mix,nbasis,maxo,maxnd,numd,
+     .                   listdptr,nspin,maxsav,alpha,nkick,alphakick,
      .                   savedm,savere,dimaux,dmnew,dmold,dmax)
 C ***********************************************************************
 C Pulay mixing implemented to accelerate the self-consistency
@@ -18,13 +18,12 @@ C                                 .false. = use memory
 C integer iscf               : Current SCF iteration
 C logical mix                : Mix first SCF step (T or F)
 C integer nbasis             : Number of atomic orbitals stored locally
-C integer maxuo              : Maximum number of atomic orbitals (local)
 C integer maxo               : Maximum number of atomic orbitals (global)
-C integer maxno              : First dimension of D.M., and 
-C                              maximum number of nonzero elements of 
-C                              each row of the D.M.
+C integer maxnd              : First dimension of D.M., and 
+C                              maximum number of nonzero elements of D.M.
 C integer numd(maxo)         : Control vector of D.M.
 C                              (number of nonzero elements of each row)
+C integer listdptr(maxo)     : Pointer to start of rows in listd
 C integer nspin              : Spin polarization (1=unpolarized, 2=polarized)
 C integer maxsav             : Pulay mixing is done every maxsav iterations.
 C                              Remaining iterations are done by linear mixing.
@@ -35,12 +34,12 @@ C real*4 savedm(dimaux)      : Auxiliary storage (DM in former iterations)
 C real*4 savere(dimaux)      : Auxiliary storage (resuduals in former iterations)
 C integer dimaux             : Auxiliart matrices size
 C ********************* INPUT AND OUTPUT*********************************
-C real*8 dmnew(maxno,maxuo)  : Density Matrix
-C                           Input: d.m. output in current SCF iter
-C                           Output: d.m. input for next SCF iteration
-C real*8 dmold(maxno,maxuo)  : Density matrix
-C                           Input: d.m. input in current SCF step
-C                           Output: d.m. input for next SCF iteration
+C real*8 dmnew(maxnd)        : Density Matrix
+C                              Input: d.m. output in current SCF step
+C                              Output: d.m. input for next SCF iteration
+C real*8 dmold(maxnd)        : Density matrix
+C                              Input: d.m. input in current SCF step
+C                              Output: d.m. input for next SCF iteration
 C ************************** OUTPUT *************************************
 C real*8 dmax                : Maximum change of a DM element between 
 C                              input and output
@@ -89,14 +88,14 @@ C
        implicit none
 
        integer 
-     .  dimaux,iscf,maxsav,maxuo,maxo,maxno,nbasis,nkick,nspin
+     .  dimaux,iscf,maxsav,maxo,maxnd,nbasis,nkick,nspin
 
        integer  
-     .  numd(maxo)
+     .  numd(*),listdptr(*)
 
        real*8 
      .  alpha,alphakick,dmax,
-     .  dmnew(maxno,maxuo,nspin),dmold(maxno,maxuo,nspin)
+     .  dmnew(maxnd,nspin),dmold(maxnd,nspin)
 
        real*8
      .  savedm(dimaux), savere(dimaux)
@@ -113,7 +112,7 @@ C
 C Internal variables ....................................................
        integer
      .  i0,i,ii,iii,in,is,isite,j,jj,jtape,jtap1,numel,Node,Nodes,
-     .  maxmix
+     .  ind,maxmix
 
 #ifdef MPI
        integer
@@ -122,9 +121,9 @@ C Internal variables ....................................................
 
        real*8 
      .  sum
-       real*8, dimension(:,:), allocatable ::
+       real*8, dimension(:,:), allocatable, save ::
      .  b, bi
-       real*8, dimension(:), allocatable ::
+       real*8, dimension(:), allocatable, save ::
      .  buffer
        real*8, dimension(:), allocatable, save ::
      .  coeff
@@ -173,8 +172,7 @@ C Check that this is not a parallel run with pulfile=.true.
 C Check some input and dimensions .......................................
        numel = 0
        do i = 1,nbasis
-         call LocalToGlobalOrb(i,Node,Nodes,ii)
-         numel = numel + numd(ii)
+         numel = numel + numd(i)
        enddo
        numel = numel*nspin
 
@@ -209,19 +207,20 @@ C Write current D_in and Residual on tape ................................
          if (isite .eq. 0) isite = maxsav
          if (pulfile) then
            write(jtape,rec=isite) 
-     .      (((dmold(j,i,is),j=1,numd(i)),i=1,nbasis),is=1,nspin)
+     .      (((dmold(listdptr(i)+j,is),j=1,numd(i)),i=1,nbasis),
+     .      is=1,nspin)
            write(jtap1,rec=isite) 
-     .      ((((dmnew(j,i,is)-dmold(j,i,is)),j=1,numd(i)),
-     .                                     i=1,nbasis),is=1,nspin)
+     .      ((((dmnew(listdptr(i)+j,is)-dmold(listdptr(i)+j,is)),
+     .      j=1,numd(i)),i=1,nbasis),is=1,nspin)
          else
            i0 = (isite-1) * numel
            do is = 1,nspin
              do i = 1,nbasis
-               call LocalToGlobalOrb(i,Node,Nodes,ii)
-               do j = 1,numd(ii)
+               do j = 1,numd(i)
                  i0 = i0 + 1
-                 savedm(i0) = dmold(j,i,is)
-                 savere(i0) = dmnew(j,i,is) - dmold(j,i,is)
+                 savedm(i0) = dmold(listdptr(i)+j,is)
+                 savere(i0) = dmnew(listdptr(i)+j,is) - 
+     .                        dmold(listdptr(i)+j,is)
                enddo
              enddo
            enddo
@@ -235,14 +234,14 @@ C Perform linear mixing if maxsav =< 1
          dmax = 0.0d0
          do is = 1,nspin
            do i = 1,nbasis
-             call LocalToGlobalOrb(i,Node,Nodes,ii)
-             do in = 1,numd(ii)
-               dmax = max(dmax, abs(dmnew(in,i,is) - dmold(in,i,is)))
+             do in = 1,numd(i)
+               ind = listdptr(i) + in
+               dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
                if (iscf .gt. 1 .or. mix) then
-                 dmnew(in,i,is) =
-     .           (1.0d0-alpha)*dmold(in,i,is) + alpha*dmnew(in,i,is)
+                 dmnew(ind,is) =
+     .           (1.0d0-alpha)*dmold(ind,is) + alpha*dmnew(ind,is)
                endif
-               dmold(in,i,is) = dmnew(in,i,is)
+               dmold(ind,is) = dmnew(ind,is)
              enddo
            enddo
          enddo
@@ -256,14 +255,14 @@ C Perform linear mixing if iscf = 1
          dmax = 0.0d0
          do is = 1,nspin
            do i = 1,nbasis
-             call LocalToGlobalOrb(i,Node,Nodes,ii)
-             do in = 1,numd(ii)
-               dmax = max(dmax, abs(dmnew(in,i,is) - dmold(in,i,is)))
+             do in = 1,numd(i)
+               ind = listdptr(i) + in
+               dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
                if (mix) then
-                 dmnew(in,i,is) =
-     .           (1.0d0-alpha)*dmold(in,i,is) + alpha*dmnew(in,i,is)
+                 dmnew(ind,is) =
+     .           (1.0d0-alpha)*dmold(ind,is) + alpha*dmnew(ind,is)
                endif
-               dmold(in,i,is) = dmnew(in,i,is)
+               dmold(ind,is) = dmnew(ind,is)
              enddo
            enddo
          enddo
@@ -282,14 +281,14 @@ C Perform linear mixing if iscf = N x nkick
          dmax = 0.0d0
          do is = 1,nspin
            do i = 1,nbasis
-             call LocalToGlobalOrb(i,Node,Nodes,ii)
-             do in = 1,numd(ii)
-               dmax = max(dmax, abs(dmnew(in,i,is) - dmold(in,i,is)))
+             do in = 1,numd(i)
+               ind = listdptr(i) + in
+               dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
                if (mix) then
-                 dmnew(in,i,is) =
-     .      (1.0d0-alphakick)*dmold(in,i,is) + alphakick *dmnew(in,i,is)
+                 dmnew(ind,is) =
+     .      (1.0d0-alphakick)*dmold(ind,is) + alphakick *dmnew(ind,is)
                endif
-               dmold(in,i,is) = dmnew(in,i,is)
+               dmold(ind,is) = dmnew(ind,is)
              enddo
            enddo
          enddo
@@ -321,9 +320,9 @@ C  Compute current maximum deviation ...........
        dmax = 0.0d0
        do is = 1,nspin
          do i = 1,nbasis
-           call LocalToGlobalOrb(i,Node,Nodes,ii)
-           do in = 1,numd(ii)
-             dmax = max(dmax, abs(dmnew(in,i,is) - dmold(in,i,is)))
+           do in = 1,numd(i)
+             ind = listdptr(i) + in
+             dmax = max(dmax, abs(dmnew(ind,is) - dmold(ind,is)))
            enddo
          enddo
        enddo
@@ -337,15 +336,16 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
        do i=1,maxmix
          if (pulfile) then
            read(jtap1,rec=i) 
-     .     (((dmnew(jj,ii,is),jj=1,numd(ii)),ii=1,nbasis),is=1,nspin)
+     .     (((dmnew(listdptr(ii)+jj,is),jj=1,numd(ii)),ii=1,nbasis),
+     .     is=1,nspin)
          else
            i0 = (i-1) * numel
            do is = 1,nspin
              do ii = 1,nbasis
-               call LocalToGlobalOrb(ii,Node,Nodes,iii)
-               do jj = 1,numd(iii)
+               do jj = 1,numd(ii)
+                 ind = listdptr(ii) + jj
                  i0 = i0 + 1
-                 dmnew(jj,ii,is) = savere(i0)
+                 dmnew(ind,is) = savere(i0)
                enddo
              enddo
            enddo
@@ -355,9 +355,9 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
          sum=0.0d0
 	 do is=1,nspin
 	   do ii=1,nbasis
-             call LocalToGlobalOrb(ii,Node,Nodes,iii)
-	     do jj=1,numd(iii)
-               sum=sum+dmnew(jj,ii,is)*dmnew(jj,ii,is)
+	     do jj=1,numd(ii)
+               ind = listdptr(ii) + jj
+               sum=sum+dmnew(ind,is)*dmnew(ind,is)
              enddo
            enddo
          enddo
@@ -366,15 +366,16 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
          do j=1,i-1
            if (pulfile) then
              read(jtap1,rec=j) 
-     .     (((dmold(jj,ii,is),jj=1,numd(ii)),ii=1,nbasis),is=1,nspin)
+     .       (((dmold(listdptr(ii)+jj,is),jj=1,numd(ii)),ii=1,nbasis),
+     .         is=1,nspin)
            else
              i0 = (j-1) * numel
              do is = 1,nspin
                do ii = 1,nbasis
-                 call LocalToGlobalOrb(ii,Node,Nodes,iii)
-                 do jj = 1,numd(iii)
+                 do jj = 1,numd(ii)
+                   ind = listdptr(ii) + jj
                    i0 = i0 + 1
-                   dmold(jj,ii,is) = savere(i0)
+                   dmold(ind,is) = savere(i0)
                  enddo
                enddo
              enddo
@@ -384,9 +385,9 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
            sum=0.0d0
 	   do is=1,nspin
              do ii=1,nbasis
-               call LocalToGlobalOrb(ii,Node,Nodes,iii)
-               do jj=1,numd(iii)
-                 sum=sum+dmold(jj,ii,is)*dmnew(jj,ii,is)
+               do jj=1,numd(ii)
+                 ind = listdptr(ii) + jj
+                 sum=sum+dmold(ind,is)*dmnew(ind,is)
                enddo
              enddo
            enddo
@@ -418,26 +419,20 @@ C Global operations
 C ........
  
 C Read former matrices for mixing .........
-       do is=1,nspin
-         do ii=1,nbasis
-           call LocalToGlobalOrb(ii,Node,Nodes,iii)
-           do j=1,numd(iii)
-             dmnew(j,ii,is)=0.0d0
-           enddo
-         enddo
-       enddo
+       dmnew(1:maxnd,1:nspin)=0.0d0
        do i=1,maxmix
          if (pulfile) then
            read(jtape,rec=i) 
-     .     (((dmold(j,ii,is),j=1,numd(ii)),ii=1,nbasis),is=1,nspin)
+     .     (((dmold(listdptr(ii)+j,is),j=1,numd(ii)),ii=1,nbasis),
+     .       is=1,nspin)
          else
            i0 = (i-1) * numel
            do is = 1,nspin
              do ii = 1,nbasis
-               call LocalToGlobalOrb(ii,Node,Nodes,iii)
-               do j = 1,numd(iii)
+               do j = 1,numd(ii)
+                 ind = listdptr(ii) + j
                  i0 = i0 + 1
-                 dmold(j,ii,is) = savedm(i0)
+                 dmold(ind,is) = savedm(i0)
                enddo
              enddo
            enddo
@@ -445,9 +440,9 @@ C Read former matrices for mixing .........
 
 	 do is=1,nspin
            do ii=1,nbasis
-             call LocalToGlobalOrb(ii,Node,Nodes,iii)
-             do j=1,numd(iii)
-               dmnew(j,ii,is)=dmnew(j,ii,is)+dmold(j,ii,is)*coeff(i)
+             do j=1,numd(ii)
+               ind = listdptr(ii) + j
+               dmnew(ind,is)=dmnew(ind,is)+dmold(ind,is)*coeff(i)
              enddo
            enddo
          enddo
@@ -456,15 +451,16 @@ C Read former matrices for mixing .........
        do i=1,maxmix
          if (pulfile) then
            read(jtap1,rec=i)
-     .     (((dmold(j,ii,is),j=1,numd(ii)),ii=1,nbasis),is=1,nspin)
+     .     (((dmold(listdptr(ii)+j,is),j=1,numd(ii)),ii=1,nbasis),
+     .       is=1,nspin)
          else
            i0 = (i-1) * numel
            do is = 1,nspin
              do ii = 1,nbasis
-               call LocalToGlobalOrb(ii,Node,Nodes,iii)
-               do j = 1,numd(iii)
+               do j = 1,numd(ii)
+                 ind = listdptr(ii) + j
                  i0 = i0 + 1
-                 dmold(j,ii,is) = savere(i0)
+                 dmold(ind,is) = savere(i0)
                enddo
              enddo
            enddo
@@ -472,21 +468,18 @@ C Read former matrices for mixing .........
 
          do is=1,nspin
            do ii=1,nbasis
-             call LocalToGlobalOrb(ii,Node,Nodes,iii)
-             do j=1,numd(iii)
-               dmnew(j,ii,is)=dmnew(j,ii,is)+
-     .           alpha*coeff(i)*dmold(j,ii,is)
+             do j=1,numd(ii)
+               ind = listdptr(ii) + j
+               dmnew(ind,is)=dmnew(ind,is)+
+     .           alpha*coeff(i)*dmold(ind,is)
              enddo
            enddo
          enddo
        enddo
 
        do is=1,nspin
-         do ii=1,nbasis
-           call LocalToGlobalOrb(ii,Node,Nodes,iii)
-           do j=1,numd(iii)
-             dmold(j,ii,is)=dmnew(j,ii,is)
-           enddo
+         do ii=1,listdptr(nbasis)+numd(nbasis)
+           dmold(ii,is)=dmnew(ii,is)
          enddo
        enddo
 C ........
@@ -510,20 +503,26 @@ C Deallocate local arrays
         SUBROUTINE INVER2(A,B,N,mxddim)
         implicit real*8  (a-h,o-z)
         real*8 A(mxddim,mxddim),B(mxddim,mxddim),X
-        DO 20 I=1,N
-        DO 20 J=1,N
-20      B(I,J)=A(I,J)
-        DO 4 I=1,N
-        X=B(I,I)
-        B(I,I)=1.0d0
-        DO 1 J=1,N
-1       B(J,I)=B(J,I)/X
-        DO 4 K=1,N
-        IF (K-I) 2,4,2
-2       X=B(I,K)
-        B(I,K)=0.0d0
-        DO 3 J=1,N
-3       B(J,K)=B(J,K)-B(J,I)*X
-4       CONTINUE
+        DO I=1,N
+          DO J=1,N
+            B(I,J)=A(I,J)
+          ENDDO
+        ENDDO
+        DO I=1,N
+          X=B(I,I)
+          B(I,I)=1.0d0
+          DO J=1,N
+            B(J,I)=B(J,I)/X
+          ENDDO
+          DO K=1,N
+            IF ((K-I).NE.0) THEN 
+              X=B(I,K)
+              B(I,K)=0.0d0
+              DO J=1,N
+                B(J,K)=B(J,K)-B(J,I)*X
+              ENDDO
+            ENDIF
+          ENDDO
+        ENDDO
         RETURN
         END

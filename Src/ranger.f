@@ -318,7 +318,7 @@ c     Auxiliary variable to avoid compiler warnings
 c
       integer j_aux   
 
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  INX, I1NX, I2NX, J1NX, J2NX
 
       integer, dimension(:), allocatable, save ::
@@ -330,7 +330,7 @@ c
      .  R2, RANGE2, RNGMAX, RRANGE,
      .  XDIFF, XMARG, XMAX, XMIN
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  DMX, DX, DX0M
 
       double precision, dimension(:), allocatable, save ::

@@ -20,12 +20,12 @@ OBJS=mpi__character_s.o mpi__character_sv.o mpi__character_v.o \
 #
 SOURCES=$(OBJS:.o=.f90)
 #
-.generated: $(TEMPLATES)
+generated: $(TEMPLATES)
 	@make clean
 	@sh generate.sh
-	@touch .generated
+	@touch generated
 #
-$(OBJS): .generated  mpi__include.o
+$(OBJS): generated  mpi__include.o
 	$(FC) -c $*.f90
 #
 mpi.o:  $(OBJS) mpi__include.o
@@ -41,9 +41,8 @@ mpi__include.o: mpi__include.f90
 	$(FC) -c -I$(MPI_INCLUDE) mpi__include.f90
 #
 clean:
-	@rm -f $(SOURCES) *.o ../libmpi_f90.a 
-	@rm -f ../mpi*.mod 
-	@rm -f module_built .generated
+	@rm -f $(SOURCES) $(OBJS) mpi.o mpi__include.o
+	@rm -f module_built generated
 
 
 

@@ -21,12 +21,13 @@ io_check: io_sample
 	io_sample
 #
 module:  libfdf.a
-libfdf.a:	fdf.o 
-	ar qv libfdf.a fdf.o
-fdf.o:  fdf.f fdf_mod.f
+libfdf.a:	fdf.o fdf_mod.o
+	ar qv libfdf.a fdf.o fdf_mod.o
+fdf_mod.o: fdf_mod.f
 	$(FC) $(FFLAGS) -c fdf_mod.f
-	$(FC) $(FFLAGS) -c fdf.f
 	@cp -p *.mod ..
+fdf.o:  fdf.f 
+	$(FC) $(FFLAGS) -c fdf.f
 #
 clean:
 	rm -f $(OBJS) libfdf.a *.mod fdf_mod.o io_sample.o sample io_sample

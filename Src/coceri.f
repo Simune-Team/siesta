@@ -30,7 +30,7 @@ c Internal variables and arrays
       double precision  celang(3), cellm(3), recell(3,3),
      .                  xac(3), pi, Ang 
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .                  xap
 
       data pi, Ang      / 3.1415926d0, 0.529177d0 /

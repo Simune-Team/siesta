@@ -1,8 +1,8 @@
       subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
      .                   maxna, maxnh, maxnd, lasto, iphorb, isa, 
-     .                   numd, listd, numh, listh, nspin, Emat, 
-     .                   jna, xij, r2ij,
-     .                   fa, stress, S)
+     .                   numd, listdptr, listd, numh, listhptr, listh, 
+     .                   nspin, Emat, jna, xij, r2ij, fa, stress, S,
+     .                   Node, Nodes)
 C *********************************************************************
 C Overlap matrix and orthonormalization contribution to forces and stress.
 C Energies in Ry. Lengths in Bohr.
@@ -17,26 +17,31 @@ c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
 C integer maxo             : Second dimension of Emat
 C integer maxna            : Maximum number of neighbours of any atom
-C integer maxnh            : First dimension of H and listh
+C integer maxnh            : First dimension of S and listh
 C integer maxnd            : First dimension of Escf and listd
 C integer lasto(0:na)      : Last orbital index of each atom
 C integer iphorb(no)       : Orbital index of each orbital in its atom
 C integer isa(na)          : Species index of each atom
-C integer numd(no)         : Number of nonzero elements of each row
+C integer numd(nuotot)     : Number of nonzero elements of each row
 C                            of Emat
-C integer listd(maxnd,no)  : Colum indexes of the nonzero elements  
+C integer listdptr(nuotot) : Pointer to start of rows (-1) of Emat
+C integer listd(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of Emat
-C integer numh(no)         : Number of nonzero elements of each row
+C integer numh(nuotot)     : Number of nonzero elements of each row
 C                            of the overlap matrix
-C integer listh(maxnh,no)  : Colum indexes of the nonzero elements  
+C integer listhptr(nuotot) : Pointer to start of rows (-1) of overlap
+C                            matrix
+C integer listh(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of the overlap matrix
 C integer nspin            : Number of spin components of Emat
-C integer Emat(maxnd,maxo,nspin) : Energy-Density matrix
+C integer Emat(maxnd,nspin): Energy-Density matrix
 C integer jna(maxna)       : Aux. space to find neighbours (indexes)
 C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
 C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
+C integer Node             : Local node number
+C integer Nodes            : Total number of nodes
 C **************************** OUTPUT *********************************
-C real*8  S(maxnh,nuo)     : Sparse overlap matrix
+C real*8  S(maxnh)         : Sparse overlap matrix
 C ********************** INPUT and OUTPUT *****************************
 C real*8  fa(3,nua)        : Atomic forces (Orthog. part added to input)
 C real*8  stress(3,3)      : Stress tensor (Orthog. part added to input)
@@ -48,56 +53,37 @@ C
       use parallel
       use atmfuncs, only: rcut
       use matel_module, only: matel
-#ifdef MPI
-      use mpi
-#endif
 
       implicit none
 
       integer
-     . maxna, maxnd, maxnh, maxo, na, no, nspin, nua
+     . maxna, maxnd, maxnh, maxo, na, no, nspin, nua, Node, Nodes
 
       integer
      . indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
-     . listd(maxnd,no), numd(no), listh(maxnh,no), numh(no)
+     . listd(*), numd(*), listh(maxnh), numh(*), listdptr(*),
+     . listhptr(*)
 
       double precision
-     . scell(3,3), Emat(maxnd,maxo,nspin), 
+     . scell(3,3), Emat(maxnd,nspin), 
      . fa(3,nua), r2ij(maxna), rmaxo, 
-     . stress(3,3), S(maxnh,*), xa(3,na), xij(3,maxna)
+     . stress(3,3), S(maxnh), xa(3,na), xij(3,maxna)
 
 C Internal variables ......................................................
   
       integer
-     .  ia, io, ioa, is, ispin, ix, iio, 
+     .  ia, ind, io, ioa, is, ispin, ix, iio, 
      .  j, ja, jn, jo, joa, js, jua, jx, nnia
-
-      integer
-     .  Node, Nodes
-
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
 
       double precision
      .  fij(3), grSij(3) , rij, Sij, volcel, volume
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  Di, Si
 
       external
      .  chkdim, neighb, timer, memory
 C ......................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Start timer
       call timer( 'overfsm', 1 )
@@ -115,10 +101,8 @@ C Allocate local memory
       allocate(Si(no))
       call memory('A','D',no,'overfsm')
 
-      do jo = 1,no
-        Si(jo) = 0.d0
-        Di(jo) = 0.d0
-      enddo
+      Si(1:no) = 0.0d0
+      Di(1:no) = 0.0d0
 
       do ia = 1,nua
         nnia = maxna
@@ -132,10 +116,11 @@ C Is this orbital on this Node?
           if (iio.gt.0) then
 
 C Valid orbital 
-            do j = 1,numd(io)
-              jo = listd(j,io)
+            do j = 1,numd(iio)
+              ind = listdptr(iio)+j
+              jo = listd(ind)
               do ispin = 1,nspin  
-                Di(jo) = Di(jo) + Emat(j,iio,ispin)
+                Di(jo) = Di(jo) + Emat(ind,ispin)
               enddo
             enddo
             do jn = 1,nnia
@@ -163,14 +148,15 @@ C Valid orbital
                 endif
               enddo
             enddo
-            do j = 1,numd(io)
-              jo = listd(j,io)
+            do j = 1,numd(iio)
+              jo = listd(listdptr(iio)+j)
               Di(jo) = 0.d0
             enddo
-            do j = 1,numh(io)
-              jo = listh(j,io)
-              S(j,iio) = Si(jo)
-              Si(jo) = 0.d0
+            do j = 1,numh(iio)
+              ind = listhptr(iio)+j
+              jo = listh(ind)
+              S(ind) = Si(jo)
+              Si(jo) = 0.0d0
             enddo
           endif
         enddo

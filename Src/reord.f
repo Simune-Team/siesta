@@ -27,8 +27,8 @@ C ********************************************************************
       external
      .  memory
 
-      real, dimension(:), allocatable :: AUX
-      integer, dimension(:), allocatable :: JS
+      real, dimension(:), allocatable, save :: AUX
+      integer, dimension(:), allocatable, save :: JS
      
       CALL TIMER('REORD',1)
 

@@ -2,7 +2,7 @@ ATM --- Density-functional atomic calculations and pseudopotential generation
 
 User guide
 Alberto Garcia, wdpgaara@lg.ehu.es
-
+Updated 16 Feb 2000
 
 This brief document mainly describes the input format for the atm
 program, whose basic capabilities are:
@@ -27,7 +27,7 @@ neither is the "Ruler" line, shown here only for illustrative purposes)
 
 ----------------------------
    ae Si ground state all-electron
-   Si   car
+   Si   car  
        0.0
     3    2
     3    0      2.00
@@ -61,7 +61,7 @@ Second line:
            		calculation.
 		- "r" : Relativistic calculation, obviously polarized.	
 	
-	(format 3x,a2,3x,a2,a1)
+	(format 3x,a2,3x,a2,a1,2x)
 
 Third line:	Its use is somewhat esoteric and for most calculations
 		it should contain just a 0.0 in the position shown.
@@ -195,10 +195,33 @@ our pseudopotential, and use the Kerker scheme:
 123456789012345678901234567890123456789012345678901234567890   Ruler
 ------------------------------------------
 
+* Directives
+
+Some internal parameters and modes of operation tend to change over
+time. "Directives" can be used to select among those
+and change the behavior of the program without recompilation.
+
+They must appear at the top of the input file, with the following
+syntax:
+
+%define NAME
+%VARIABLE=value
+
+Currently, the program understands the following names:
+
+     COMPAT_UCB :  Revert to the standard circa 1990 UCB values. Note   
+                   that these correspond to the first released version 
+                   of Jose Luis Martins code, not to the old Froyen        
+                   version (that would be 'froyen' --to be implemented)   
+     (The default is: to use a denser grid up to larger radii.
+                      Use a larger value for the ps's ecuts.        
+                      Use the Soler-Balbas XC package)  
+                                                                          
+     NEW_CC     : New core-correction scheme
+     OLD_CC     : Old core-correction scheme  (see below)
 
 
-Partial core
-------------
+* Partial core corrections
 
 The program can generate a 'partial core' (or 'pseudocore') 
 for the partial-core non-linear exchange-correlation correction as
@@ -206,13 +229,21 @@ proposed in
 
 S. G. Louie, S. Froyen, and M. L. Cohen, Phys. Rev. B 26, 1738 (1982).
 
-The pseudocore charge density equals the charge density outside
-a given radius r_pc, and has the smooth form
+In the traditional approach (which is the default for LDA
+calculations), the pseudocore charge density equals the charge density
+outside a given radius r_pc, and has the smooth form
 
 pc(r) = ac*r * sin(bc*r)
 
 inside that radius. A smooth matching is provided with suitable ac and bc
 parameters calculated by the program.
+
+A new scheme has been implemented to fix some problems in the generation
+of GGA pseudopotentials. The smooth function is now
+
+pc(r) =  r^2 * exp(ac+bc*r^2+cc*r^4)
+
+and the second derivative is continuous at r_pc.
 
 To generate the partial core in addition to the pseudopotential,
 the jobcode at the first line should be 'pe' instead of 'pg'.
@@ -223,16 +254,27 @@ radius is then computed using the fifth number in that line (pc_weight)
 and the following criterion: at r_c the core charge density 
 equals pc_weight*(valence charge density).
 
+It is *highly recommended* to set an explicit value for the pseudocore
+radius r_pc, rather than letting the program provide a default.
+
 If pc_weight is input as negative, the full core charge is used.
 If pc_weight is input as zero, it is set equal to one, which will be
 thus the default if 'pe' is given but no numbers are given for these
 two variables.
 
-The output file contains the radius used and the ac and bc 
+The output file contains the radius used and the ac and bc (and cc)
 parameters used for the matching.
 
 The vps file contains the partial core in addition to the 
 pseudopotential.
+
+It is possible to override the default (new scheme for GGA
+calculations, old scheme for LDA calculations) by using the directives
+
+%define NEW_CC
+%define OLD_CC
+
+The program will issue the appropriate warnings.
 
 
 Output Files
@@ -258,6 +300,11 @@ OUT: The general output (log) of the run, offering information about
 For plotting:
 -------------
 
+Some relevant pieces of information are put into separate files that
+can be easily processed using any plotting program. In the Samples
+directory there are scripts for SuperMongo (plotx11.sh and plotps.sh),
+xmgr (viewps.sh), and a few simple Gnuplot command files (XXX.gplot).
+
 RHO: Atomic (all-electron) charge density as a funtion of radius.
      It is not integrated angularly (no 4 pi r^2 factor)
      Columns:
@@ -265,6 +312,7 @@ RHO: Atomic (all-electron) charge density as a funtion of radius.
       
      Up and down are for LSD calculations, but also for relativistic ones.
      The Rho_core is for only core electrons, but both spin components.
+     (The unit of charge is the charge of the electron)
 
 CHARGE: Same as RHO, but Rhos's are angularly integrated (x 4 pi r^2)
 
@@ -297,21 +345,24 @@ PSWFNQ0...PSWFNQ3 : Fourier transforms of the PSWFNR0...PSWFNR4.
               r    Psi(q)_l 
 
 PSPOTR0...PSPOTR3 : Pseudopotential as function of radius, 
-     one per l-channel
+     one per l-channel 
      Columns:
               r    Vps(r)_l    -2*Z_ion/r
  
      Last column is just the coulombic atraction of the core ion. It should
      fit the Vps when the charge of the core electrons has died out. 
 
-PSPOTQ0...PSPOTQ3 : Pseudopotential as function of radius, 
-     one per l-channel
+PSPOTQ0...PSPOTQ3 : Fourier Transform of the pseudopotential as a function of 
+	radius,  one per l-channel (q in bohr^-1)
      Columns:
               r    Vps(q)_l     0.
 
--------------------------------------------------------------------------       
+COREQ: Fourier transform of the pseudocore charge density.
+  	Columns:
+		q (bohr^-1)	rhoc(q) (electrons)
 
-
-
+-----------------------------------------------------------------------       
 
 Enjoy!
+
+

@@ -1,4 +1,4 @@
-      subroutine ctrans1(nr,ncmin,ncmax,nc,nmax,ntmax,
+      subroutine ctrans1(nr,ncmin,ncmax,nmax,ntmax,
      .              num,list,numt,listt,cttoc)
 C ********************************************************************
 C Finds the C transpose matrix control vectors numt and listt,
@@ -18,18 +18,19 @@ C                           (number of nonzero elements of each row of C)
 C integer list(nmax,nr)  : Control vector of C matrix
 C                          (list of nonzero elements of each row of C)
 C **************************** OUTPUT *********************************
-C integer numt(nc)       : Control vector of C matrix
+C integer numt(ncloc)     : Control vector of C matrix
 C                         (number of nonzero elements of each column of C)
-C integer listt(ntmax,nc) : Control vector of C transpose matrix
+C integer listt(ntmax,ncloc): Control vector of C transpose matrix
 C                           (list of nonzero elements of each column of C)
-C integer cttoc(ntmax,nc) : Map from C transpose to C indexing
+C integer cttoc(ntmax,ncloc): Map from C transpose to C indexing
 C *********************************************************************
       implicit none
 
       integer
-     .  ncmin,ncmax,nc,nmax,nr,ntmax,
-     .  cttoc(ntmax,nc),list(nmax,nr),listt(ntmax,nc),
-     .  num(nr),numt(nc)
+     .  ncmin,ncmax,nmax,nr,ntmax,
+     .  cttoc(ntmax,ncmax-ncmin+1),list(nmax,nr),
+     .  listt(ntmax,ncmax-ncmin+1),
+     .  num(nr),numt(ncmax-ncmin+1)
 
 C Internal variables ..................................................
       integer
@@ -110,8 +111,8 @@ C
       integer
      .  MPIerror, nbandspernode, nbandsmin, nbandsmax, nremainder,
      .  in,nrmax,nrmin,nrloc,mul
-      integer, dimension(:,:), allocatable :: listlocal
-      integer, dimension(:)  , allocatable :: numlocal
+      integer, dimension(:,:), allocatable, save :: listlocal
+      integer, dimension(:)  , allocatable, save :: numlocal
 #endif
 
 C Internal variables ..................................................
@@ -220,10 +221,165 @@ C Check dimensions .....................................................
 C ..........................
       return
       end
-      subroutine axb_build(nramin,nramax,nca,namax,numa,lista,
-     .               nrb,ncb,nbmax,numb,listb,
-     .               ind,nindv,
-     .               ncmax,numc,listc)
+      subroutine axb_build1(nramin,nramax,nca,namax,numa,lista,
+     .               nrb,ncb,nbmax,numb,listbptr,listb,ncmax,
+     .               numc,listc,node,Nodes)
+C ********************************************************************
+C Constructs control indexes of a C matrix in sparse form,
+C C being the product of A and B (also in sparse form)
+C
+C              C = A x B
+C
+C In full form: A is rectangular, and has dimension:  nra x nca
+C               B is rectangular, and has dimension:  nrb x ncb
+C and, as a result:
+C               C is rectangular, and has dimension:  nra x ncb
+C (Of course, nca must be equal to nrb)
+C
+C Written by P.Ordejon. October'96
+C ***************************** INPUT *********************************
+C integer nramin            : Minimum row number of A 
+C integer nramax            : Maximum row number of A 
+C integer nca               : Number of columns of A
+C integer namax             : First dimension of A matrix in sparse form,
+C                             as declared in calling routine
+C                             (max. number of <>0 elements of each row of A)
+C integer numa(nra)         : Control vector of A matrix
+C                            (number of nonzero elements of each row of A)
+C integer lista(namax,nra)  : Control vector of A matrix
+C                           (list of nonzero elements of each row of A)
+C integer nrb               : Number of rows of B
+C integer ncb               : Number of columns of B
+C integer nbmax             : First dimension of B matrix in sparse form,
+C                             as declared in calling routine
+C                             (max. number of <>0 elements of B)
+C integer numb(nrb)         : Control vector of B matrix
+C                             (number of nonzero elements of each row of B)
+C integer listbptr(nrb)     : Control vector of B matrix
+C                             (pointer to the start of each row of B)
+C integer listb(nbmax)      : Control vector of B matrix
+C                             (list of nonzero elements of each row of B)
+C integer ncmax             : First dimension of C matrix in sparse form,
+C                             as declared in calling routine
+C                             (max. number of <>0 elements of each row of C)
+C **************************** OUTPUT *********************************
+C integer numc(nra)          : Control vector of C matrix
+C                            (number of nonzero elements of each row of C)
+C integer listc(ncmax,nra)   : Control vector of C matrix
+C                            (list of nonzero elements of each row of C)
+C **************************** INTERNAL *******************************
+C integer ind(ncb)          : Auxiliary array to build C in sparse form
+C integer nindv(ncmax)      : Auxiliary array to store indexes of nonzero
+C                             matrix elements of each row of C
+C *********************************************************************
+      use parallel
+#ifdef MPI
+      use mpi
+#endif
+
+      implicit none
+
+      integer
+     .  nca,ncb,namax,nbmax,ncmax,nramin,nramax,nrb,Node,Nodes,
+     .  lista(namax,*),listb(nbmax),listc(ncmax,*),
+     .  numa(*),numb(nrb),numc(*),listbptr(nrb)
+
+C Internal variables..................................................
+      integer
+     .  i,il,in,j,k,kl,kn,lbmax,n,nbpmax,nraloc,nrbl
+
+      integer, dimension(:,:), allocatable ::
+     .  ind, nindv
+#ifdef MPI
+      integer, dimension(:), allocatable ::
+     .  listbtmp
+      integer
+     .  MPIerror, BNode, nl, numbtmp
+#endif
+
+C Check dimensions ....................................................
+      call chkdim('axb_build','nca',nca,nrb,0)
+
+C Initialize internal variables .......................................
+      nraloc = nramax - nramin + 1
+      allocate(ind(ncb,nraloc))
+      call memory('A','I',ncb*nraloc,'axb_build')
+      allocate(nindv(ncmax,nraloc))
+      call memory('A','I',ncmax*nraloc,'axb_build')
+      numc(1:nraloc) = 0
+      ind(1:ncb,1:nraloc) = 0
+      nindv(1:ncmax,1:nraloc)=0
+
+C Find out C control vectors ..........................................
+#ifdef MPI
+      call MPI_AllReduce(nbmax,nbpmax,1,MPI_integer,
+     .  MPI_max,MPI_Comm_World,MPIerror)
+      allocate(listbtmp(nbmax))
+      call memory('A','I',nbmax,'axb_build1')
+#else
+      nbpmax = listbptr(nrb)+numb(nrb)
+#endif
+
+C Loop over node whose control vector for b is to be distributed
+      do n = 1,nrb
+#ifdef MPI
+        call WhichNodeOrb(n,Nodes,BNode)
+        if (Node.eq.BNode) then
+          call GlobalToLocalOrb(n,Node,Nodes,nl)
+          numbtmp = numb(nl)
+          listbtmp(1:numbtmp) = listb(listbptr(nl)+1:listbptr(nl)+
+     .      numbtmp)
+        endif
+        call MPI_Bcast(numbtmp,1,MPI_integer,BNode,
+     .    MPI_Comm_World,MPIerror)
+        call MPI_Bcast(listbtmp,numbtmp,MPI_integer,BNode,
+     .    MPI_Comm_World,MPIerror)
+#endif
+C Loop over local bands
+        do i = 1,nraloc
+          do in = 1,numa(i)
+            k = lista(in,i)
+            if (k .eq. n) then
+#ifdef MPI
+              do kn = 1,numbtmp
+                j = listbtmp(kn)
+#else
+              do kn = 1,numb(n)
+                j = listb(kn)
+#endif
+                if (ind(j,i) .eq. 0) then
+                  ind(j,i) = 1
+                  numc(i) = numc(i) + 1
+                  nindv(numc(i),i) = j
+                endif
+              enddo
+            endif
+          enddo
+        enddo
+      enddo
+      do i = 1,nraloc
+        call chkdim ('axb_build','ncmax',ncmax,numc(i),1)
+        do in = 1,numc(i)
+          j = nindv(in,i)
+          listc(in,i) = j
+        enddo
+      enddo
+C ...........................
+C Free local memory
+      call memory('D','I',size(ind),'axb_build')
+      deallocate(ind)
+      call memory('D','I',size(nindv),'axb_build')
+      deallocate(nindv)
+#ifdef MPI
+      call memory('D','I',size(listbtmp),'axb_build1')
+      deallocate(listbtmp)
+#endif
+
+      return
+      end
+
+      subroutine axb_build2(nramin,nramax,nca,namax,numa,lista,
+     .               nrb,ncb,nbmax,numb,listb,ncmax,numc,listc)
 C ********************************************************************
 C Constructs control indexes of a C matrix in sparse form,
 C C being the product of A and B (also in sparse form)
@@ -257,9 +413,6 @@ C integer numb(nrb)          : Control vector of B matrix
 C                            (number of nonzero elements of each row of B)
 C integer listb(nbmax,nrb)   : Control vector of B matrix
 C                            (list of nonzero elements of each row of B)
-C integer ind(ncb)          : Auxiliary array to build C in sparse form
-C integer nindv(ncmax)      : Auxiliary array to store indexes of nonzero
-C                             matrix elements of each row of C
 C integer ncmax             : First dimension of C matrix in sparse form,
 C                             as declared in calling routine
 C                             (max. number of <>0 elements of each row of C)
@@ -268,25 +421,34 @@ C integer numc(nra)          : Control vector of C matrix
 C                            (number of nonzero elements of each row of C)
 C integer listc(ncmax,nra)   : Control vector of C matrix
 C                            (list of nonzero elements of each row of C)
+C **************************** INTERNAL *******************************
+C integer ind(ncb)          : Auxiliary array to build C in sparse form
+C integer nindv(ncmax)      : Auxiliary array to store indexes of nonzero
+C                             matrix elements of each row of C
 C *********************************************************************
       implicit none
 
       integer
      .  nca,ncb,namax,nbmax,ncmax,nramin,nramax,nrb,
-     .  ind(ncb),
      .  lista(namax,*),listb(nbmax,nrb),listc(ncmax,*),
-     .  nindv(ncmax),
      .  numa(*),numb(nrb),numc(*)
 
 C Internal variables..................................................
       integer
      .  i,il,in,j,k,kn,nind
+
+      integer, dimension(:), allocatable ::
+     .  ind, nindv
 C............................
 
 C Check dimensions ....................................................
       call chkdim('axb_build','nca',nca,nrb,0)
 C ...........................
 C Initialize internal variables .......................................
+      allocate(ind(ncb))
+      call memory('A','I',ncb,'axb_build')
+      allocate(nindv(ncmax))
+      call memory('A','I',ncmax,'axb_build')
       nind=0
       do i = 1,ncb
         ind(i) = 0
@@ -320,5 +482,11 @@ C Find out C control vectors ..........................................
         nind = 0
       enddo
 C ...........................
+C Free local memory
+      call memory('D','I',size(ind),'axb_build')
+      deallocate(ind)
+      call memory('D','I',size(nindv),'axb_build')
+      deallocate(nindv)
+
       return
       end

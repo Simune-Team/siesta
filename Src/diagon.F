@@ -1,5 +1,6 @@
-      subroutine diagon(no, nspin, maxspn, maxuo, maxno, maxnd, 
-     .                  maxo, numh, listh, numd, listd, H, S,
+      subroutine diagon(no, nspin, maxspn, maxuo, maxnh, maxnd, 
+     .                  maxo, numh, listhptr, listh, numd, 
+     .                  listdptr, listd, H, S,
      .                  qtot, fixspin, qs, temp, e1, e2,
      .                  gamma, xij, indxuo, nk, kpoint, wk,
      .                  eo, qo, Dnew, Enew, ef, efs, nuotot)
@@ -15,23 +16,24 @@ C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
 C integer nspin               : Spin polarization (1 or 2)
 C integer maxspn              : Second dimension of eo and qo
-C integer maxuo               : Last dimension of xij
-C                               Must be at least max(indxuo)
-C integer maxno               : Maximum number of orbitals interacting  
-C                               with any orbital
+C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : Maximum number of nonzero elements of 
 C                               each row of density matrix
 C integer maxo                : First dimension of eo and qo
-C integer numh(no)            : Number of nonzero elements of each row 
+C integer numh(nuo)           : Number of nonzero elements of each row 
 C                               of hamiltonian matrix
-C integer listh(maxno,no)     : Nonzero hamiltonian-matrix element  
+C integer listhptr(nuo)       : Pointer to each row (-1) of the
+C                               hamiltonian matrix
+C integer listh(maxlh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C integer numd(no)            : Number of nonzero elements of each row 
-C                               ofdensity matrix
-C integer listd(maxnd,no)     : Nonzero density-matrix element column 
+C integer numd(nuo)           : Number of nonzero elements of each row 
+C                               of density matrix
+C integer listdptr(nuo)       : Pointer to each row (-1) of the
+C                               density matrix
+C integer listd(maxnh)        : Nonzero density-matrix element column 
 C                               indexes for each matrix row
-C real*8  H(maxno,maxuo,nspin): Hamiltonian in sparse form
-C real*8  S(maxno,maxuo)      : Overlap in sparse form
+C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  qtot                : Number of electrons in unit cell
 C logical fixspin             : Fix the spin of the system?
 C real*8  qs(nspin)           : Number of electrons in unit cell for each
@@ -41,7 +43,7 @@ C real*8  e1, e2              : Energy range for density-matrix states
 C                               (to find local density of states)
 C                               Not used if e1 > e2
 C logical gamma               : Only gamma point?
-C real*8  xij(3,maxno,maxuo)  : Vectors between orbital centers (sparse)
+C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
@@ -55,10 +57,10 @@ C                               over all processors
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,maxspn,nk)   : Eigenvalues
 C real*8 qo(maxo,maxspn,nk)   : Occupations of eigenstates
-C real*8 Dnew(maxno,maxuo,nspin) : Output Density Matrix
-C real*8 Enew(maxno,maxuo,nspin) : Output Energy-Density Matrix
-C real*8 ef                    : Fermi energy
-C real*8 efs(nspin)            : Fermi energy for each spin
+C real*8 Dnew(maxnd,nspin)    : Output Density Matrix
+C real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
+C real*8 ef                   : Fermi energy
+C real*8 efs(nspin)           : Fermi energy for each spin
 C                                (for fixed spin calculations)
 C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
@@ -86,18 +88,17 @@ C
       implicit none
 
       integer
-     .  maxnd, maxno, maxspn, maxuo, maxo, nk, no, nspin, nuotot
+     .  maxnd, maxnh, maxspn, maxuo, maxo, nk, no, nspin, nuotot
 
       integer 
-     .  indxuo(no), listh(maxno,no), numh(no),
-     .  listd(maxnd,no), numd(no)
+     .  indxuo(no), listh(maxnh), numh(*), listd(maxnd), numd(*),
+     .  listhptr(*), listdptr(*)
 
       double precision
-     .  Dnew(maxnd,maxuo,nspin), 
-     .  e1, e2, ef, Enew(maxnd,maxuo,nspin), eo(maxo,maxspn,nk),
-     .  H(maxno,maxuo,nspin), kpoint(3,nk), qo(maxo,maxspn,nk), qtot,
-     .  S(maxno,maxuo), temp, wk(nk), xij(3,maxno,maxuo),
-     .  qs(nspin), efs(nspin)
+     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
+     .  eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
+     .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), 
+     .  xij(3,maxnh), qs(nspin), efs(nspin)
      
       logical
      .  fixspin, gamma
@@ -110,26 +111,27 @@ C
      .  MPIerror
       external
      .  diagkp
+      logical
+     .  frstme
 #endif
 
       logical
-     .  frstme, getD
+     .  getD
 
       integer
-     .  io, iuo, naux, nhs, npsi, nuo, 
-     .  Node, Nodes
+     .  io, iuo, naux, nhs, npsi, nuo, Node, Nodes
 
 C     Dynamic arrays
-      double precision, dimension(:), allocatable :: Haux, Saux
-      double precision, dimension(:), allocatable :: psi, aux
-      integer         , dimension(:), allocatable :: muo
+      double precision, dimension(:), allocatable, save :: Haux, Saux
+      double precision, dimension(:), allocatable, save :: psi, aux
+      integer         , dimension(:), allocatable, save :: muo
 
 #ifdef MPI
-      logical
+      logical, save ::
      .  ParallelOverK
-#endif
       save frstme
       data frstme /.true./
+#endif
 C  ....................
 
 C Get Node number and calculate local orbital range
@@ -137,11 +139,14 @@ C Get Node number and calculate local orbital range
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
       call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
-      if (Node.eq.0) then
-        ParallelOverK = fdf_boolean( 'ParallelOverK', .false. )
+      if (frstme) then
+        if (Node.eq.0) then
+          ParallelOverK = fdf_boolean( 'ParallelOverK', .false. )
+        endif
+        call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,
+     .    MPIerror)
+        frstme = .false.
       endif
-      call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,
-     .  MPIerror)
 #else
       Node = 0
       Nodes = 1
@@ -191,25 +196,13 @@ C Allocate local arrays
       allocate(muo(nuo))
       call memory('A','I',nuo,'diagon')
 
-C Print array sizes 
-      if (frstme) then
-        frstme = .false.
-c        if (Node.eq.0) then
-c          call prmem( 0, 'diagon', 'aux',  'd', naux )
-c          call prmem( 0, 'diagon', 'Haux', 'd', nhs  )
-c          call prmem( 0, 'diagon', 'psi',  'd', npsi )
-c          call prmem( 0, 'diagon', 'Saux', 'd', nhs  )
-c          call prmem( 0, 'diagon', ' ',    ' ', 0      )     
-c        endif
-      endif
-
 C Check indxuo .......................................................
       do iuo = 1,nuo
         muo(iuo) = 0
       enddo
       do io = 1,no
         iuo = indxuo(io)
-        if (iuo.le.0 .or. iuo.gt.no) then
+        if (iuo.le.0 .or. iuo.gt.nuotot) then
           if (Node.eq.0) then
             write(6,*) 'diagon: ERROR: invalid index: io, indxuo =',
      .        io, indxuo(io)
@@ -239,28 +232,28 @@ C ......................
 C Call apropriate routine .............................................
       getD = .true.
       if (nspin.le.2 .and. gamma) then
-        call diagg( nspin, nuo, no, maxuo, maxno, maxnd, maxo,
-     .              numh, listh, numd, listd, H, S,
-     .              getD, fixspin, qtot, qs, temp, e1, e2,
+        call diagg( nspin, nuo, no, maxuo, maxnh, maxnd, maxo,
+     .              numh, listhptr, listh, numd, listdptr, listd, 
+     .              H, S, getD, fixspin, qtot, qs, temp, e1, e2,
      .              eo, qo, Dnew, Enew, ef, efs,
      .              Haux, Saux, psi, aux, 
      .              nuotot, Node, Nodes)
       elseif (nspin.le.2 .and. .not.gamma) then
 #ifdef MPI
         if (ParallelOverK) then
-          call diagkp( nspin, nuo, no, maxspn, maxuo, maxno, maxnd, 
-     .              maxo, numh, listh, numd, listd, H, S,
-     .              getD, fixspin, qtot, qs, temp, e1, e2,
-     .              xij, indxuo, nk, kpoint, wk,
+          call diagkp( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
+     .              maxo, numh, listhptr, listh, numd, listdptr, 
+     .              listd, H, S, getD, fixspin, qtot, qs, temp, 
+     .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs,
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, Node, Nodes)
         else
 #endif
-          call diagk( nspin, nuo, no, maxspn, maxuo, maxno, maxnd, 
-     .              maxo, numh, listh, numd, listd, H, S,
-     .              getD, fixspin, qtot, qs, temp, e1, e2,
-     .              xij, indxuo, nk, kpoint, wk,
+          call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
+     .              maxo, numh, listhptr, listh, numd, listdptr,
+     .              listd, H, S, getD, fixspin, qtot, qs, temp, 
+     .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs,
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, Node, Nodes)
@@ -268,16 +261,16 @@ C Call apropriate routine .............................................
         endif
 #endif
       elseif (nspin.eq.4 .and. gamma) then
-        call diag2g( nuo, no, maxuo, maxno, maxnd, maxo,
-     .               numh, listh, numd, listd, H, S,
-     .               getD, qtot, temp, e1, e2,
+        call diag2g( nuo, no, maxuo, maxnh, maxnd, maxo,
+     .               numh, listhptr, listh, numd, listdptr,
+     .               listd, H, S, getD, qtot, temp, e1, e2,
      .               eo, qo, Dnew, Enew, ef,
      .               Haux, Saux, psi, aux, 
      .               nuotot, Node, Nodes)
       elseif (nspin.eq.4 .and. .not.gamma) then
-        call diag2k( nuo, no, maxuo, maxno, maxnd, maxo,
-     .               numh, listh, numd, listd, H, S,
-     .               getD, qtot, temp, e1, e2,
+        call diag2k( nuo, no, maxuo, maxnh, maxnd, maxo,
+     .               numh, listhptr, listh, numd, listdptr,
+     .               listd, H, S, getD, qtot, temp, e1, e2,
      .               xij, indxuo, nk, kpoint, wk,
      .               eo, qo, Dnew, Enew, ef,
      .               Haux, Saux, psi, Haux, Saux, aux, 

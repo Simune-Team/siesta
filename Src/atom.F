@@ -277,29 +277,10 @@
 !      
            if (.not.called) then 
              if (Node.eq.0) then
-                write(6,'(/,a,73(1h*))') 'ATOM: '  
+               write(6,'(/,a,73(1h*))') 'ATOM: '  
+             endif
 
-! SIZE OF THE BIGGER ARRAYS IN COMMON BLOCKS******************
-                  call prmem( 0, 'atom', 'table', 'D',
-     .       (ntbmax+2)*((lmaxd+1)*(nsemx*nzetmx+nkbmx)+1)*nsmax )
-                  call prmem( 0, 'atom', 'tab2',  'D',
-     .        ntbmax*((lmaxd+1)*(nsemx*nzetmx+nkbmx)+1)*nsmax )
-                  call prmem( 0, 'atom', 'tab2pol',  'D',
-     .       (ntbmax+2)*(lmaxd+1)*nzetmx*nsemx*nsmax )
-                  call prmem( 0, 'atom', 'tab2pol',  'D',
-     .        ntbmax*(lmaxd+1)*nsemx*nzetmx*nsmax )
-                  call prmem( 0, 'atom', 'coretab',  'D',
-     .              2*(ntbmax+1)*nsmax )
-                  call prmem( 0, 'atom', 'corrtab',  'D',
-     .              2*(ntbmax+1)*ns2 ) 
-                  call prmem( 0, 'atom', 'chloctab',  'D',
-     .              2*(ntbmax+1)*nsmax ) 
-
-                call prmem( 0, 'atom', ' ',' ',0) 
-! 
-              endif
-
-              called=.true.
+             called=.true.
            endif                
 ! 
 ! 
@@ -839,7 +820,7 @@ C
           real*8 r, vd, vv1, vv2, energ1, energ2, bessph, dev1, devn
           integer iz1, iz2, itb, nr, nmin, nmax, nn, iq
 
-          real*8 q          !!! AG
+          real*8 QTMP       !!! AG
 
           PI= 4.D0 * ATAN(1.D0)       
           CONS= 1.0d0/(2.0d0*PI)**1.5D0
@@ -971,10 +952,10 @@ C
 
 
                DO IQ=0,NQ
-                  Q=IQ*QMAX/NQ
-                  Q=Q*R 
-                  ENERG1=ENERG1+BESSPH(0,Q)*CH(IQ,1)
-                  ENERG2=ENERG2+BESSPH(0,Q)*CH(IQ,2)
+                  QTMP=IQ*QMAX/NQ
+                  QTMP=QTMP*R 
+                  ENERG1=ENERG1+BESSPH(0,QTMP)*CH(IQ,1)
+                  ENERG2=ENERG2+BESSPH(0,QTMP)*CH(IQ,2)
                ENDDO 
 
                ENERG1=ENERG1*QMAX/NQ
@@ -3977,12 +3958,15 @@ C*****************************************************************
             endif
 
 
-            do ir=1,nrmax
+            do ir=1,nrval
 C***********************parabolic split****************************
                r=rofi(ir)
-               g(ir)=-(cons1*r**2+cons2)*r**(l+1)+rphi(ir,l,nsm) 
+               if (ir.ge.nrc) then
+                 g(ir)=0.0d0
+               else
+                 g(ir)=-(cons1*r**2+cons2)*r**(l+1)+rphi(ir,l,nsm) 
+               endif
 C******************************************************************
-               if(ir.ge.nrc) g(ir)=0.0d0
             enddo 
 
 C***Orthogonalize to the inner shells if present******************

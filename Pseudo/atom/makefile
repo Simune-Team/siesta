@@ -20,7 +20,8 @@ SRCS=   atm.f  nucl_z.f   difnrl.f   difrel.f   dmixp.f   dsolv1.f   \
         potran.f   potrv.f   potrw.f   prdiff.f  string.f  root.f  \
         genrhs.f  logder.f ode.f denplot.f scilib.f  recipes.f \
 	atomxc.f  ldaxc.f ggaxc.f pbexc.f pw92xc.f pzxc.f \
-	pw92c.f exchng.f compat_params.f blypxc.f
+	pw92c.f exchng.f compat_params.f blypxc.f pcc_exp.f \
+	coreq.f get_unit.f gauleg.f divdif.f symbols.f prversion.f
 #
 OBJS=$(SRCS:.f=.o)
 #
@@ -47,7 +48,9 @@ logder.o: radial.h orbital.h param.h ion.h elecpot.h energy.h ode_blk.h \
           ode_path.h
 ode.o	: radial.h ode_blk.h
 orban.o : radial.h param.h ion.h elecpot.h
+prversion.o: version.h
 pseudo.o: radial.h orbital.h param.h elecpot.h
+symbols.o: set2.h
 tm2.o   : radial.h orbital.h ion.h param.h elecpot.h energy.h tm2_blk.h
 v0pp.o  : radial.h tm2_blk.h
 velect.o: radial.h orbital.h param.h charge.h elecpot.h energy.h compat.h

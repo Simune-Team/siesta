@@ -1,12 +1,9 @@
-      subroutine KSV_pol( nua, na, xa, rmaxo, scell, ucell,
-     .                  nuo, no, nspin, qspin,
-     .                  maxna, maxuo, maxno, maxkpol,
-     .                  numh, listh, H, S, AuxSr,
-     .                  xijo, indxuo,
-     .                  isa, iphorb, iaorb, lasto,
-     .                  jna, xij, r2ij,shape,
-     .                  nkpol,kpol,wgthpol,
-     .                  polR, polxyz)
+      subroutine KSV_pol( nua, na, xa, rmaxo, scell, ucell, nuotot,
+     .                    nuo, no, nspin, qspin, maxna, maxnh, 
+     .                    maxkpol, numh, listhptr, listh, H, S, 
+     .                    AuxSr, xijo, indxuo, isa, iphorb, iaorb, 
+     .                    lasto, jna, xij, r2ij,shape, nkpol,kpol,
+     .                    wgthpol, polR, polxyz)
 C *********************************************************************
 C Finds polarization using the method of King-Smith and Vanderbilt
 C ( Geometric Berry phase).
@@ -14,27 +11,29 @@ C Written by DSP, March 1999.
 C **************************** INPUT **********************************
 C integer nua                 : Number of atoms in the unit cell
 C integer na                  : Number of atoms 
-C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
+C real*8  xa(3,na)            : Atomic positions in cartesian coordinates
 C real*8  rmaxo               : Maximum cutoff for atomic orbitals
-C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
-C real*8  ucell(3,3)       : Unit cell vectors
-C integer nuo                 : Number of basis orbitals in the unit cell
+C real*8  scell(3,3)          : Supercell vectors SCELL(IXYZ,IVECT)
+C real*8  ucell(3,3)          : Unit cell vectors
+C integer nuotot              : No. of basis orbitals in the unit cell (global)
+C integer nuo                 : No. of basis orbitals in the unit cell (local)
 C integer no                  : Number of basis orbitals
 C integer nspin               : Number of spin components
 C real*8  qspin(2)            : Total population of spin up and down
-C integer maxna            : Maximum number of neighbours of any atom
-C integer maxno               : Maximum number of orbitals interacting  
+C integer maxna               : Maximum number of neighbours of any atom
+C integer maxnh               : Maximum number of orbitals interacting  
 C                               with any orbital
 C integer maxk                : Last dimension of kpoint 
-C integer numh(no)            : Number of nonzero elements of each row 
+C integer numh(nuo)           : Number of nonzero elements of each row 
 C                               of hamiltonian matrix
-C integer listh(maxno,no)     : Nonzero hamiltonian-matrix element  
+C integer listhptr(nuo)       : Pointer to the start of each row of
+C                               hamiltonian matrix
+C integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C real*8  H(maxno,maxuo,nspin): Hamiltonian in sparse form
-C real*8  S(maxno,maxuo)      : Overlap in sparse form
-C real*8  AuxSr(maxno,maxuo)  : Auxiliar matrix (outside H0)
-C real*8  xijo(3,maxno,maxuo) : Vectors between orbital centers (sparse)
-C integer maxuo               : Dimension 
+C real*8  H(maxnh,spin)       : Hamiltonian in sparse form
+C real*8  S(maxnh)            : Overlap in sparse form
+C real*8  AuxSr(maxnh)        : Auxiliar matrix (outside H0)
+C real*8  xijo(3,maxnh)       : Vectors between orbital centers (sparse)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
@@ -75,15 +74,15 @@ C
       use mpi
 #endif
       implicit          none
-      integer           maxkpol, maxno, maxuo, nuo, no, nspin
-      integer           indxuo(no), listh(maxno,nuo), numh(nuo)
-      integer           nkpol, na, isa(na), iphorb(no), iaorb(no) 
+      integer           maxkpol, maxnh, nuo, nuotot, no, nspin, na
+      integer           indxuo(no), listh(maxnh), numh(nuo), nkpol
+      integer           listhptr(nuo), isa(na), iphorb(no), iaorb(no) 
       integer           nua, maxna, jna(maxna), lasto(0:na)
       double precision  dot, 
-     .                  H(maxno,maxuo,nspin), kpol(3,maxkpol), 
-     .                  S(maxno,maxuo), xijo(3,maxno,maxuo),
+     .                  H(maxnh,nspin), kpol(3,maxkpol), 
+     .                  S(maxnh), xijo(3,maxnh),
      .                  polR(3,nspin), polxyz(3,nspin), ucell(3,3),
-     .                  wgthpol(maxkpol), AuxSr(maxno,maxuo), 
+     .                  wgthpol(maxkpol), AuxSr(maxnh), 
      .                  scell(3,3), rmaxo, xij(3,maxna), r2ij(maxna),
      .                  xa(3,na)
 C *********************************************************************
@@ -99,7 +98,7 @@ C Internal variables
       integer
      .  MPIerror
 #endif
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  muo
          
       double precision
@@ -110,7 +109,7 @@ C Internal variables
      .  tiny, phase, ph(3,2), Debye,
      .  vaux(3,2), area, J, qspin(2), dq
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  ek
 
       parameter (Debye  = 0.393430d0)  
@@ -121,7 +120,7 @@ C Internal variables
      .                  parse, paste, prmem, redcel,
      .                  volcel, reclat, memory
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  psi, psi1, psiprev
 
       parameter (  tiny= 1.0d-8  )
@@ -148,13 +147,6 @@ C Find the integration grids in reciprocal space
 
 C Exit if no calculation is going to be performed
       if (nk.eq.0) goto 999
-
-C For now trap parallel execution and stop
-      if (Nodes.gt.1) then
-        write(6,'(/,a)') 
-     .    'Parallel execution with polarisation not allowed!'
-        call die
-      endif
 
       if (nspin.eq.1) then 
 C Total number of valence electrons in the unit cell
@@ -199,9 +191,9 @@ C Check parameter maxkpol
       endif
 
 C Allocate local memory
-      npsi = 2*maxuo*nuo*nspin
-      allocate(muo(nuo))
-      call memory('A','I',nuo,'ksv_pol')
+      npsi = 2*nuotot*nuo*nspin
+      allocate(muo(nuotot))
+      call memory('A','I',nuotot,'ksv_pol')
       allocate(ek(nuo))
       call memory('A','D',nuo,'ksv_pol')
       allocate(psi(npsi))
@@ -219,7 +211,7 @@ C Initialise psi
       enddo
 
 C Check indxuo 
-      do iuo = 1,nuo
+      do iuo = 1,nuotot
         muo(iuo) = 0
       enddo
       do io = 1,no
@@ -329,10 +321,9 @@ C Calculation of the Jacobian
 
 C Construction of the matrix elements of the scalar product dk*r 
           call phirphi(nua, na, nuo, no, scell, xa, rmaxo,
-     .              maxna, maxno, lasto, iphorb, isa,
-     .              numh, listh, dk,
-     .              jna, xij, r2ij,
-     .              AuxSr) 
+     .              maxna, maxnh, lasto, iphorb, isa,
+     .              numh, listhptr, listh, dk,
+     .              jna, xij, r2ij, Node, Nodes, AuxSr) 
 
 C Begin the bidimensional integration over the path integrals
           do ik = 1, nk
@@ -350,9 +341,9 @@ C Find Wavefunctions
                 if (il.ne.npl) then 
                   if (nspin.le.2) then 
                     call diagpol( ispin, nspin, nuo, no,
-     .                  maxuo, maxno, 
-     .                  numh, listh, H, S,
-     .                  xijo, indxuo, kint, ek, psi)
+     .                  nuotot, maxnh, numh, listhptr, 
+     .                  listh, H, S, xijo, indxuo, kint,
+     .                  ek, psi)
                   elseif (nspin.eq.4) then  
                     stop 'KSV_pol: ERROR: nspin=4 not yet implemented'
                   else
@@ -364,7 +355,7 @@ C In the first point we just store the wavefunctions
                 if (il.eq.0) then 
                   iuo=0
                   do io = 1,nuo
-                    do jo = 1,nuo  
+                    do jo = 1,nuotot
                       ia=iaorb(jo)
                       dkxij=dot(dk,xa(1,ia),3)
                       ckxij=dcos(npl*dkxij)
@@ -377,38 +368,28 @@ C In the first point we just store the wavefunctions
                   detr=1.0d0
                   deti=0.0d0 
 
+C Store wavefunction for the next point
+                  call savepsi(psiprev,psi,npsi,nuo,nuotot,
+     .              nocc(ispin),Node,Nodes)
+
                 elseif (il.ne.npl) then 
 C Calculate the determinant of the overlap matrix between the 
 C periodic Bloch functions in this k point and in the previous one.   
-                  call detover(psiprev,psi,npsi, S, AuxSr,
-     .              numh, listh, indxuo, no, nuo, xijo, 
-     .              maxno, maxuo, nocc(ispin), kint, dk, 
-     .              detr, deti)
+                  call detover(psiprev, psi, S, AuxSr,
+     .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
+     .              maxnh, nuotot, nocc(ispin), kint, dk, 
+     .              detr, deti, .true., Node, Nodes )
  
 
                 else 
 C Calculate the determinant of the overlap matrix between the
 C periodic Bloch functions in the last k point and the first one
-                  call detover(psiprev,psi1,npsi, S, AuxSr,
-     .              numh, listh, indxuo, no, nuo, xijo, 
-     .              maxno, maxuo, nocc(ispin), kint, dk, 
-     .              detr, deti)
+                  call detover(psiprev, psi1, S, AuxSr,
+     .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
+     .              maxnh, nuotot, nocc(ispin), kint, dk, 
+     .              detr, deti, .false., Node, Nodes)
     
                 endif
-
-                if (il.ne.npl) then 
-C Store wavefunction for the next point  
-                  iuo=0
-                  do io = 1,nuo
-                    do jo = 1,nuo 
-                      iuo=iuo+1  
-                      psiprev(iuo)=psi(iuo) 
-                      iuo=iuo+1
-                      psiprev(iuo)=psi(iuo) 
-                    enddo
-                  enddo 
-                endif        
-
 
 C Product of all the determinants along the integration path
                 prodtr=prodtr*detr - prodti*deti

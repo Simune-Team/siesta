@@ -7,22 +7,22 @@
 default: what fcbuild vibrator
 #
 # System dependencies are dealt with by an include file. See Sys directory
-# for examples and instructions. The variable ARCH should be in the 
+# for examples and instructions. The variable SIESTA_SYS should be in the 
 # shell environment. 
 #
-ARCH?=unknown
+SIESTA_SYS?=unknown
 #
-include Sys/${ARCH}.make
+include Sys/${SIESTA_SYS}.make
 #
 # Uncomment the following line for debugging support
 #
-#FFLAGS=$(FFLAGS_DEBUG)
+FFLAGS=$(FFLAGS_DEBUG)
 #
 what:
 	@echo
-	@echo "Compilation architecture to be used:  $(ARCH)"
+	@echo "Compilation architecture to be used:  $(SIESTA_SYS)"
 	@echo "If that is not what you want, give the correct"
-	@echo "value to the variable ARCH in your shell environment."
+	@echo "value to the variable SIESTA_SYS in your shell environment."
 	@echo $(COMMENTS)
 	@echo
 #

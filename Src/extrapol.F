@@ -1,5 +1,6 @@
       subroutine extrapol(istep,iord,nspin,nrow,nmrow,nmrowl,nmax,num,
-     .                list,numold,listold,mm2,mnew)
+     .                    listptr,list,numold,listptrold,listold,
+     .                    mm2,mnew)
 C ******************************************************************************
 C Subroutine to extrapolate a given matrix M (like the coefficients of the
 C wave functions, or the density matrix) for the next MD step.
@@ -15,22 +16,26 @@ C integer nrow                 : Number of rows of matrix M
 C integer nmrow                : Maximum number of rows of matrix M (dimension)
 C integer nmrowl               : Maximum local number of rows of matrix M 
 C integer nmax                 : First dimension of M matrix, and maximum
-C                                number of nonzero elements of each column of M
-C integer num(nmax)            : Control vector 1 of M matrix at t
-C integer list(nmax,nmrow)     : Control vector 2 of M matrix at t
+C                                number of nonzero elements of M
+C integer num(nmrowl)          : Control vector 1 of M matrix at t
+C integer listptr(nmrowl)      : Control vector 2 of M matrix at t
+C integer list(nmax)           : Control vector 3 of M matrix at t
 C ************************** INPUT AND OUTPUT *********************************
-C integer numold(nmax)         : Input: Control vector 1 of M matrix at t-dt
+C integer numold(nmrowl)       : Input: Control vector 1 of M matrix at t-dt
 C                                       (if istep .ne. 1)
 C                                Output: Control vector 1 of M matrix at t
-C integer listold(nmax,nmrowl) : Input: Control vector 2 of M matrix at t-dt
+C integer listptrold(nmrowl)   : Input: Control vector 1 of M matrix at t-dt
 C                                       (if istep .ne. 1)
-C                                Output: Control vector 2 of M matrix at t
-C real*8 mm2(nmax,nmrowl,nspin) : Input: matrix M at t-2dt
+C                                Output: Control vector 1 of M matrix at t
+C integer listold(nmax)        : Input: Control vector 3 of M matrix at t-dt
+C                                       (if istep .ne. 1)
+C                                Output: Control vector 3 of M matrix at t
+C real*8 mm2(nmax,nspin)       : Input: matrix M at t-2dt
 C                                Output: matrix M at t-dt
-C real*8 mnew(nmax,nmrowl,nspin): New matrix M (extrapolated)
+C real*8 mnew(nmax,nspin)      : New matrix M (extrapolated)
 C                                Input: matrix at t-dt
 C                                Output: matrix at t
-C                                If istep = 1, mnew returned uncahanged
+C                                If istep = 1, mnew returned unchanged
 C **************************** BEHAVIOUR **************************************
 C The routine allows for the sparse structure of the matrix M to change
 C between MD time steps. On input, the matrices of former steps (mnew and mm2) 
@@ -67,21 +72,22 @@ C
      .  iord,istep,nmax,nmrow,nmrowl,nrow,nspin
 
       integer 
-     .  list(nmax,nmrow),listold(nmax,nmrowl),num(nmrow),numold(nmrow)
+     .  list(nmax),listold(nmax),num(nmrowl),numold(nmrowl),
+     .  listptr(nmrowl),listptrold(nmrowl)
 
       double precision
-     .  mm2(nmax,nmrowl,nspin),mnew(nmax,nmrowl,nspin)
+     .  mm2(nmax,nspin),mnew(nmax,nspin)
  
 C  Internal variables .......................................................
 
       integer
-     .  i,in,ispin,j,il,Node,Nodes
+     .  i,in,ind,ispin,j,Node,nh
       logical
      .  changed
       double precision
      .  msave
-      double precision, dimension(:,:), allocatable ::
-     .  aux
+      double precision, dimension(:), allocatable, save ::
+     .  aux, mtmp
 
       external
      .  memory
@@ -90,11 +96,12 @@ C ...........................................................................
 C Get Node number
 #ifdef MPI
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
 #else
       Node = 0
-      Nodes = 1
 #endif
+
+C Find the maximum number of non-zero elements in matrices
+      nh = listptr(nmrowl) + num(nmrowl)
 
       if (iord .ne. 0 .and. iord . ne. 1) then
         if (Node.eq.0) then
@@ -106,18 +113,10 @@ C Get Node number
 
 C Just initialize numold and listold if istep = 1 ...........................
       if (istep .eq. 1) then
-        do i = 1,nmrow
-          numold(i) = num(i)
-          call GlobalToLocalOrb(i,Node,Nodes,il)
-          if (il.gt.0) then
-            do in = 1,num(i)
-              listold(in,il) = list(in,i)
-              do ispin = 1,nspin
-                mm2(in,il,ispin) = 0.d0
-              enddo
-            enddo
-          endif
-        enddo
+        numold(1:nmrowl) = num(1:nmrowl)
+        listptrold(1:nmrowl) = listptr(1:nmrowl)
+        listold(1:nh) = list(1:nh)
+        mm2(1:nmax,1:nspin) = 0.0d0
         return
 C .....................
 
@@ -125,16 +124,13 @@ C .....................
 
 C Check if sparse structure has changed .....................................
         changed = .false.
-        do i = 1,nmrow
+        do i = 1,nmrowl
           if (numold(i) .ne. num(i)) changed = .true.
         enddo
 C Check list arrays if num arrays are unchanged
         if (.not.changed) then
-          do il = 1,nmrowl
-            call LocalToGlobalOrb(il,Node,Nodes,i)
-            do in = 1,num(i)
-              if (listold(in,il) .ne. list(in,i)) changed = .true.
-            enddo
+          do i = 1,nh
+            if (listold(i) .ne. list(i)) changed = .true.
           enddo
         endif
 
@@ -148,63 +144,65 @@ C Globalise changed flag
         if (changed) then
 C .....................
 
-C Allocate local scratch array
-          allocate(aux(2,nrow))
-          call memory('A','D',2*nrow,'extrapol')
-
 C If sparse structure has changed, re-order mnew and mm2 
 C and change numold and listold to current ones .............................
+C It is now necessary to use a buffer array during changes to mnew and mm2
+C because boundaries between rows may change in either direction
 
-          do i = 1,nrow
-            do j = 1,2
-              aux(j,i) = 0.0d0
-            enddo
-          enddo
+C Allocate local scratch arrays
+          allocate(aux(nrow))
+          call memory('A','D',nrow,'extrapol')
+          allocate(mtmp(nh))
+          call memory('A','D',nh,'extrapol')
+
+          aux(1:nrow) = 0.0d0
   
-          do i = 1,nmrowl
-            call LocalToGlobalOrb(i,Node,Nodes,il)
-            do ispin = 1,nspin
-              do in = 1,numold(il)
-                j = listold(in,i)
-                aux(1,j) = mnew(in,i,ispin)
-                aux(2,j) = mm2(in,i,ispin)
+          do ispin = 1,nspin
+            do i = 1,nmrowl
+              do in = 1,numold(i)
+                ind = listptrold(i)+in
+                j = listold(ind)
+                aux(j) = mnew(ind,ispin)
               enddo
-              do in = 1,num(il)
-                j = list(in,il)
-                mnew(in,i,ispin) = aux(1,j)
-                mm2(in,i,ispin) = aux(2,j)
+              do in = 1,num(i)
+                ind = listptr(i)+in
+                j = list(ind)
+                mtmp(ind) = aux(j)
               enddo
-              do in = 1,numold(il)
-                j = listold(in,i)
-                aux(1,j) = 0.0d0
-                aux(2,j) = 0.0d0
+              do in = 1,numold(i)
+                j = listold(listptrold(i)+in)
+                aux(j) = 0.0d0
               enddo
             enddo
-            numold(il) = num(il)
-            do in = 1,num(il)
-              listold(in,i) = list(in,il)
+            mnew(1:nh,ispin) = mtmp(1:nh)
+          enddo
+          do ispin = 1,nspin
+            do i = 1,nmrowl
+              do in = 1,numold(i)
+                ind = listptrold(i)+in
+                j = listold(ind)
+                aux(j) = mm2(ind,ispin)
+              enddo
+              do in = 1,num(i)
+                ind = listptr(i)+in
+                j = list(ind)
+                mtmp(ind) = aux(j)
+              enddo
+              do in = 1,numold(i)
+                j = listold(listptrold(i)+in)
+                aux(j) = 0.0d0
+              enddo
             enddo
+            mm2(1:nh,ispin) = mtmp(1:nh)
           enddo
 
-#ifdef MPI
-C  Globalise num/numold
-          do i=1,nmrow
-            numold(i) = 0
-          enddo
-          do i=1,nmrowl
-            call LocalToGlobalOrb(i,Node,Nodes,il)
-            if (il.gt.0) then
-              numold(il) = num(il)
-            endif
-          enddo
-          call MPI_AllReduce(numold,num,nmrow,MPI_integer,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
-          do i=1,nmrow
-            numold(i) = num(i)
-          enddo
-#endif
+          numold(1:nmrowl) = num(1:nmrowl)
+          listptrold(1:nmrowl) = listptr(1:nmrowl)
+          listold(1:nh) = list(1:nh)
 
-C Deallocate local scratch array
+C Deallocate local scratch arrays
+          call memory('D','D',size(mtmp),'extrapol')
+          deallocate(mtmp)
           call memory('D','D',size(aux),'extrapol')
           deallocate(aux)
 
@@ -214,16 +212,12 @@ C ..................
 C Extrapolate matrix M ......................................................
 
         do ispin = 1,nspin
-          do i = 1,nmrowl
-            call LocalToGlobalOrb(i,Node,Nodes,il)
-            do in = 1,num(il)
-              msave = mnew(in,i,ispin)
-              if (iord .eq. 1 .and. mm2(in,i,ispin) .ne. 0.0d0) then
-                mnew(in,i,ispin) = 2.0d0 * mnew(in,i,ispin) -
-     .                             mm2(in,i,ispin)
-              endif
-              mm2(in,i,ispin) = msave
-            enddo
+          do i = 1,nh
+            msave = mnew(i,ispin)
+            if (iord .eq. 1 .and. mm2(i,ispin) .ne. 0.0d0) then
+              mnew(i,ispin) = 2.0d0 * mnew(i,ispin) - mm2(i,ispin)
+            endif
+            mm2(i,ispin) = msave
           enddo
         enddo
 C ....................

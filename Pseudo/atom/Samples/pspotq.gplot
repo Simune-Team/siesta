@@ -1,0 +1,2 @@
+plot [0:16]  'PSPOTQ0' with lines, 'PSPOTQ1' with lines, 'PSPOTQ2' with lines
+pause -1 "Hit return to end... "

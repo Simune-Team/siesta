@@ -59,6 +59,7 @@ C     .. Common blocks ..
 C     ..
 c
       pi = 4.d0 * atan(1.d0)
+      ehart = zero
 c
 c      fit cd/r by splines
 c
@@ -196,6 +197,9 @@ c
          nspin = 2
 c
          r(1) = 0.0d0
+
+         is_gga = (leqi(icorr,'pb') .or. leqi(icorr,'bl'))
+
          if (icorr .eq. 'ca') then
             call atomxc('LDA','ca',relflag,nr,nrmax,r,nspin,dens,
      .           ex,ec,dx,dc,vxcarr)      

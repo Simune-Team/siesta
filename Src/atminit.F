@@ -11,9 +11,9 @@
       public initatom, initatomlists
 !
 !
-      integer, allocatable :: izs(:), nkbs(:), nos(:)
-      real*8, allocatable  :: smass(:)
-      real*8, allocatable  :: qos(:,:)
+      integer, allocatable, save :: izs(:), nkbs(:), nos(:)
+      real*8, allocatable, save  :: smass(:)
+      real*8, allocatable, save  :: qos(:,:)
 
       CONTAINS
 

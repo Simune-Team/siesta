@@ -53,7 +53,7 @@ c
 c     subroutines and functions
 c
 c     blas zaxpy,zscal,zswap
-c     fortran dabs,dcmplx,mod
+c     fortran abs,cmplx,mod
 c
 c     internal variables
 c
@@ -63,11 +63,11 @@ c
 c
       complex*16 zdum
       double precision cabs1
-      double precision dreal,dimag
+      double precision real,aimag
       complex*16 zdumr,zdumi
-      dreal(zdumr) = zdumr
-      dimag(zdumi) = (0.0d0,-1.0d0)*zdumi
-      cabs1(zdum) = dabs(dreal(zdum)) + dabs(dimag(zdum))
+      real(zdumr) = zdumr
+      aimag(zdumi) = (0.0d0,-1.0d0)*zdumi
+      cabs1(zdum) = abs(real(zdum)) + abs(aimag(zdum))
 c
 c     compute determinant
 c
@@ -81,12 +81,12 @@ c
 c        ...exit
             if (cabs1(det(1)) .eq. 0.0d0) go to 60
    10       if (cabs1(det(1)) .ge. 1.0d0) go to 20
-               det(1) = dcmplx(ten,0.0d0)*det(1)
+               det(1) = cmplx(ten,0.0d0)*det(1)
                det(2) = det(2) - (1.0d0,0.0d0)
             go to 10
    20       continue
    30       if (cabs1(det(1)) .lt. ten) go to 40
-               det(1) = det(1)/dcmplx(ten,0.0d0)
+               det(1) = det(1)/cmplx(ten,0.0d0)
                det(2) = det(2) + (1.0d0,0.0d0)
             go to 30
    40       continue
@@ -196,7 +196,7 @@ c
 c     subroutines and functions
 c
 c     blas zaxpy,zscal,izamax
-c     fortran dabs
+c     fortran abs
 c
 c     internal variables
 c
@@ -205,11 +205,11 @@ c
 c
       complex*16 zdum
       double precision cabs1
-      double precision dreal,dimag
+      double precision real,aimag
       complex*16 zdumr,zdumi
-      dreal(zdumr) = zdumr
-      dimag(zdumi) = (0.0d0,-1.0d0)*zdumi
-      cabs1(zdum) = dabs(dreal(zdum)) + dabs(dimag(zdum))
+      real(zdumr) = zdumr
+      aimag(zdumi) = (0.0d0,-1.0d0)*zdumi
+      cabs1(zdum) = abs(real(zdum)) + abs(aimag(zdum))
 c
 c     gaussian elimination with partial pivoting
 c
@@ -316,8 +316,8 @@ C
       double precision function sdcabs1(z)
       double complex z
       double precision t(2)
-      t(1) = dreal(z)
-      t(2) = dimag(z)
-      sdcabs1 = dabs(t(1)) + dabs(t(2))
+      t(1) = real(z)
+      t(2) = aimag(z)
+      sdcabs1 = abs(t(1)) + abs(t(2))
       return
       end

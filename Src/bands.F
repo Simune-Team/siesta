@@ -1,47 +1,29 @@
-      subroutine bands( no, nspin, maxspn, maxo, maxuo, maxno, maxk,
-     .                  numh, listh, H, S, ef, xij, indxuo,
-     .                  writeb, nk, kpoint, ek, nuotot )
+      module band
+
+      implicit none
+
+      integer :: maxlin
+      parameter (maxlin = 1000)
+
+      character, save :: label(maxlin)*8
+      integer, save   :: lastk(maxlin), nlines
+
+      contains
+
+      subroutine initbands( maxk, nk, kpoint )
 C *********************************************************************
-C Finds band energies at selected k-points.
+C Finds band k-points
+C Based on initialisation part of subroutine bands from original code.
 C Written by J.Soler, August 1997 and August 1998.
 C **************************** INPUT **********************************
-C integer no                  : Number of basis orbitals
-C integer nspin               : Number of spin components
-C integer maxspn              : Second dimension of ek
-C integer maxno               : Maximum number of orbitals interacting  
-C                               with any orbital
-C integer maxk                : Last dimension of kpoint and ek
-C integer numh(no)            : Number of nonzero elements of each row 
-C                               of hamiltonian matrix
-C integer listh(maxno,no)     : Nonzero hamiltonian-matrix element  
-C                               column indexes for each matrix row
-C real*8  H(maxno,maxuo,nspin): Hamiltonian in sparse form
-C real*8  S(maxno,maxuo)      : Overlap in sparse form
-C real*8  ef                  : Fermi energy
-C real*8  xij(3,maxno,maxuo)  : Vectors between orbital centers (sparse)
-C                               (not used if only gamma point)
-C integer maxo                : First dimension of ek
-C integer maxuo               : Second dimension of H and S
-C integer indxuo(no)          : Index of equivalent orbital in unit cell
-C                               Unit cell orbitals must be the first in
-C                               orbital lists, i.e. indxuo.le.nuo, with
-C                               nuo the number of orbitals in unit cell
-C real*8                      : Fermi energy
-C logical writeb              : This routine must write bands?
-C integer nuotot              : Total number of orbitals in unit cell
-C *************************** INPUT OR OUTPUT *************************
+C integer maxk           : Last dimension of kpoint
+C *************************** OUTPUT **********************************
 C integer nk             : Number of band k points
 C real*8  kpoint(3,maxk) : k point vectors
-C *************************** OUTPUT **********************************
-C real*8  ek(maxo,maxspn,maxk) : Eigenvalues
 C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
-C Energies in Rydbergs.
 C ***************** BEHAVIOUR *****************************************
-C - When writeb=true, bands are saved in file sys_name.bands, where
-C   sys_name is the value of fdf label SystemLabel, or 'siesta'
-C   by default.
 C - If nk=0 on input, k-points are read from labels BandLines and 
 C   BandLinesScale of the input fdf data file. If these labels are 
 C   not present, it returns with nk=0.
@@ -103,32 +85,24 @@ C
       use parallel
 #endif
       implicit          none
-      integer           maxk, maxno, maxspn, maxo, maxuo, nk, no, nspin
-      integer           indxuo(no), listh(maxno,no), numh(no), nuotot
-      logical           writeb
-      double precision  dot, ef, ek(maxo,maxspn,maxk),
-     .                  H(maxno,maxuo,nspin), kpoint(3,maxk), 
-     .                  S(maxno,maxuo), xij(3,maxno,maxuo)
+      integer           maxk, nk
+      double precision  kpoint(3,maxk)
       character         paste*30
-      external          dot, io_assign, io_close,
-     .                  parse, paste, prmem, redcel, memory
+      external          parse, paste, redcel, memory
 C *********************************************************************
 
-      integer maxlin
-      parameter (maxlin = 1000)
-
       character 
-     .  fname*30, label(maxlin)*8, line*130, names*80,
+     .  fname*30, line*130, names*80,
      .  scale*30, sname*25, string*10
 
       logical
-     .  getD, genlogic, fixspin
+     .  BandLinesPresent
 
       integer
-     .  ik, il, integs(4), io, ispin, iu, iuo, ix, 
-     .  lastc, lastk(maxlin), lc(0:3), 
-     .  naux, ni, nkl, nlines, nn, nr, nuo, nv,
-     .  Node, Nodes
+     .  ik, il, integs(4), iu, ix, 
+     .  lastc, lc(0:3), 
+     .  naux, ni, nkl, nn, nr, nv,
+     .  Node
 
 #ifdef MPI
       integer
@@ -136,45 +110,34 @@ C *********************************************************************
 #endif
 
       double precision
-     .  alat, caux(3,3), Dnew, qs(2),
-     .  e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot, path, pi,
-     .  rcell(3,3), reals(4), temp, ucell(3,3), values(4), wk
-
-C     Dynamic arrays
-      double precision, dimension(:), allocatable :: Haux, Saux
-      double precision, dimension(:), allocatable :: psi, aux
-      integer         , dimension(:), allocatable :: muo
-
-      parameter ( eV = 1.d0 / 13.60580d0 )
-      save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
-      data getD /.false./
-      data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
+     .  alat, caux(3,3), pi,
+     .  rcell(3,3), reals(4), ucell(3,3), values(4)
 
 C Get Node number
 #ifdef MPI
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 #else
       Node = 0
-      Nodes = 1
-      nuo = nuotot
 #endif
 
 C Start time counter 
       call timer( 'bands', 1 )
+
+C Initialise the number of band lines
+      nlines = 0
 
 C Find k points if they are not given in argument 
       if (nk .le. 0) then
 
 C       Find if there are band-lines data
         if (Node.eq.0) then
-          genlogic = fdf_block('BandLines',iu)
+          BandLinesPresent = fdf_defined('BandLines')
         endif
 #ifdef MPI
-        call MPI_Bcast(genlogic,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(BandLinesPresent,1,MPI_logical,0,MPI_Comm_World,
+     .    MPIerror)
 #endif
-        if ( genlogic ) then
+        if ( BandLinesPresent ) then
 
 C         Find lattice constant
           if (Node.eq.0) then
@@ -223,6 +186,7 @@ C         Find scale used in k point data
 C         Loop on data lines
           if (Node.eq.0) then
             nk = 0
+            BandLinesPresent = fdf_block('BandLines',iu)
             do il = 1,maxlin
 
 C           Read and parse data line
@@ -295,6 +259,125 @@ C Global broadcast of values
      .  MPI_Comm_World,MPIerror)
 #endif
 
+C This is the only exit point 
+  999 continue
+      call timer( 'bands', 2 )
+
+      end subroutine initbands
+
+
+      subroutine bands( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
+     .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
+     .                  writeb, nk, kpoint, ek, nuotot )
+C *********************************************************************
+C Finds band energies at selected k-points.
+C Written by J.Soler, August 1997 and August 1998.
+C Initialisation moved into a separate routine, JDG Jan 2000.
+C **************************** INPUT **********************************
+C integer no                  : Number of basis orbitals
+C integer nspin               : Number of spin components
+C integer maxspn              : Second dimension of ek
+C integer maxnh               : Maximum number of orbitals interacting  
+C                               with any orbital
+C integer maxk                : Last dimension of kpoint and ek
+C integer numh(nuo)           : Number of nonzero elements of each row 
+C                               of hamiltonian matrix
+C integer listhptr(nuo)       : Pointer to start of each row of the
+C                               hamiltonian matrix
+C integer listh(maxlh)        : Nonzero hamiltonian-matrix element  
+C                               column indexes for each matrix row
+C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
+C real*8  S(maxnh)            : Overlap in sparse form
+C real*8  ef                  : Fermi energy
+C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
+C                               (not used if only gamma point)
+C integer maxo                : First dimension of ek
+C integer maxuo               : Second dimension of H and S
+C integer indxuo(no)          : Index of equivalent orbital in unit cell
+C                               Unit cell orbitals must be the first in
+C                               orbital lists, i.e. indxuo.le.nuo, with
+C                               nuo the number of orbitals in unit cell
+C real*8  ef                  : Fermi energy
+C logical writeb              : This routine must write bands?
+C integer nuotot              : Total number of orbitals in unit cell
+C integer nk                  : Number of band k points
+C real*8  kpoint(3,maxk)      : k point vectors
+C *************************** OUTPUT **********************************
+C real*8  ek(maxo,maxspn,maxk) : Eigenvalues
+C *************************** UNITS ***********************************
+C Lengths in atomic units (Bohr).
+C k vectors in reciprocal atomic units.
+C Energies in Rydbergs.
+C ***************** BEHAVIOUR *****************************************
+C - When writeb=true, bands are saved in file sys_name.bands, where
+C   sys_name is the value of fdf label SystemLabel, or 'siesta'
+C   by default.
+C *********************************************************************
+C
+C  Modules
+C
+      use precision
+      use fdf
+#ifdef MPI
+      use mpi
+      use parallel
+#endif
+      implicit          none
+      integer           maxk, maxnh, maxspn, maxo, maxuo, nk, no, nspin,
+     .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
+     .                  listhptr(*)
+      logical           writeb
+      double precision  dot, ef, ek(maxo,maxspn,maxk),
+     .                  H(maxnh,nspin), kpoint(3,maxk), 
+     .                  S(maxnh), xij(3,maxnh)
+      character         paste*30
+      external          dot, io_assign, io_close, paste, memory
+C *********************************************************************
+
+      character 
+     .  fname*30, sname*25, string*10
+
+      logical
+     .  getD, fixspin
+
+      integer
+     .  ik, il, io, ispin, iu, iuo, 
+     .  naux, nuo, Node, Nodes
+
+#ifdef MPI
+      integer
+     .  MPIerror
+#endif
+
+      double precision
+     .  Dnew, qs(2),
+     .  e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot, path, pi,
+     .  temp, wk
+
+C     Dynamic arrays
+      double precision, dimension(:), allocatable, save :: Haux, Saux
+      double precision, dimension(:), allocatable, save :: psi, aux
+      integer         , dimension(:), allocatable, save :: muo
+
+      parameter ( eV = 1.d0 / 13.60580d0 )
+      save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
+      data getD /.false./
+      data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
+
+C Get Node number
+#ifdef MPI
+      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
+      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
+#else
+      Node = 0
+      Nodes = 1
+      nuo = nuotot
+#endif
+
+C Start time counter 
+      call timer( 'bands', 1 )
+
 C Check parameter maxk 
       if (nk .gt. maxk) then
         if (Node.eq.0) then
@@ -304,13 +387,6 @@ C Check parameter maxk
         endif
         goto 999
       endif
-
-C Find number of orbitals per unit cell and check argument sizes 
-      nuo = 0
-      do io = 1,no
-        nuo = max( nuo, indxuo(io) )
-      enddo
-      call chkdim( 'bands', 'maxuo', maxuo, nuo, 1 )
 
 C Allocate local arrays - only aux is relevant here
       naux  = nuotot*5
@@ -322,16 +398,16 @@ C Allocate local arrays - only aux is relevant here
       call memory('A','D',2*nuo*nuotot,'bands')
       allocate(aux(naux))
       call memory('A','D',naux,'bands')
-      allocate(muo(nuo))
-      call memory('A','I',nuo,'bands')
+      allocate(muo(nuotot))
+      call memory('A','I',nuotot,'bands')
 
 C Check indxuo 
-      do iuo = 1,nuo
+      do iuo = 1,nuotot
         muo(iuo) = 0
       enddo
       do io = 1,no
         iuo = indxuo(io)
-        if (indxuo(io).le.0 .or. indxuo(io).gt.no) then
+        if (indxuo(io).le.0 .or. indxuo(io).gt.nuotot) then
           if (Node.eq.0) then
             write(6,*) 'bands: invalid index: io, indxuo =',
      .        io, indxuo(io)
@@ -342,7 +418,7 @@ C Check indxuo
         endif
         muo(iuo) = muo(iuo) + 1
       enddo
-      do iuo = 1,nuo
+      do iuo = 1,nuotot
         if (muo(iuo) .ne. muo(1)) then
           if (Node.eq.0) then
           write(6,'(/,2a,3i6)') 'bands: ERROR: inconsistent indxuo.',
@@ -361,17 +437,17 @@ c fixspin and qs are not used in diagk, since getD=.false. ...
         qs(1)=0.0d0
         qs(2)=0.0d0
 c ...
-        call diagk( nspin, nuo, no, maxspn, maxuo, maxno, maxno, 
-     .              maxo, numh, listh, numh, listh, H, S,
-     .              getD, fixspin, qtot, qs, temp, e1, e2, 
-     .              xij, indxuo, nk, kpoint, wk,
+        call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
+     .              maxo, numh, listhptr, listh, numh, listhptr, 
+     .              listh, H, S, getD, fixspin, qtot, qs, temp, 
+     .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, efs,
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              nuotot, Node, Nodes)
       elseif (nspin.eq.4) then
-        call diag2k(nuo, no, maxuo, maxno, maxno, maxo,
-     .              numh, listh, numh, listh, H, S,
-     .              getD, qtot, temp, e1, e2,
+        call diag2k(nuo, no, maxuo, maxnh, maxnh, maxo,
+     .              numh, listhptr, listh, numh, listhptr, 
+     .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef,
      .              Haux, Saux, psi, Haux, Saux, aux,
@@ -467,6 +543,7 @@ C Free local arrays
 C This is the only exit point 
   999 continue
       call timer( 'bands', 2 )
-      end
 
+      end subroutine bands
 
+      end module band

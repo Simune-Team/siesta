@@ -1,0 +1,6 @@
+      SUBROUTINE CPUTIM (TIME)
+
+      DOUBLE PRECISION TIME
+
+      TIME = MCLOCK()*0.01D0
+      END

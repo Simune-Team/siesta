@@ -1,3 +1,59 @@
+2000-04-10    <wdpgaara@node1.wm.lc.ehu.es>
+
+	* Changed once more the management of the "compatibility
+	strings". Went back to the tried and true "symbols" approach. Now
+	it is possible to 
+
+	%define COMPAT_UCB
+
+	to revert back to the old parameters, and to change the GGA
+	vs. LDA default for the core-correction scheme by using either of
+
+	%define NEW_CC
+	%define OLD_CC
+
+	Introduced a version string, and set it to 3.1.
+
+2000-02-21    <wdpgaara@node1.wm.lc.ehu.es>
+
+	* Set the spacing to 0.01 in the real-space wavefunction plotting
+	routines. Some nodes were not seen in the plots... 
+	Added a few not very sophisticated GNUPLOT drivers in the Samples
+	directory, for those without SM.
+
+2000-02-16    <wdpgaara@node1.wm.lc.ehu.es>
+
+	* Changed the defaults regarding the CC schemes. The old method is
+	the default for LDA calculations, and the new one is used only for
+	GGA calculations. This behavior can be overriden by specifying
+	"mons-old-cc" or "mons-new-cc" as compatibility string. (See
+	updated User.Guide.)
+
+	* Implemented calculation of the Fourier transform of the
+	pseudocore charge.
+
+2000-02-10    <wdpgaara@node1.wm.lc.ehu.es>
+
+	* Implemented new scheme for the calculation of the pseudocore
+	charge, using a routine from Jose Luis Martins. The new method
+	results in a larger pseudocore, so it is not clear whether to
+	enable it by default. For now, it is indeed the default, unless
+	the "compatibility string" (see compat_params.f) is set to
+	"mons-old-cc" or "ucb".
+
+	* Added a new macro "core" for the plotting of core charges in
+	atom.sm. 
+
+	* Note that the initializations mentioned in the next entry
+	(Nov99) were actually done in a "real" subdirectory Pseudo/atom of
+	the siesta cvs tree, instead of in the symbolic link to atom. They
+	are merged now.
+
+1999-11-19    <wdpgaara@node1.wm.lc.ehu.es>
+
+	* Initialized variables (ddelta, fdold, ehart) in tm2.f, v0pp.f,
+	and velect.f
+
 Fri Nov 27 15:41:46 1998  Alberto Garcia  <wdpgaara@lcpxbi.wm.lc.ehu.es>
 
 	* (Maider Machado) Added support for Becke-Lee-Yang-Parr exchange

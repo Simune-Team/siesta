@@ -62,7 +62,7 @@ C Internal variable types and dimensions ----------------------------
      .  JJLM2, JL1, JL2, J, K
 
  
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  IFFR
 
       integer, dimension(:), allocatable, save ::
@@ -76,10 +76,10 @@ C Internal variable types and dimensions ----------------------------
      .  PI, Q, QMAX, R, RMAX,
      .  SR, X12(3), AUXV(3)
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  CFFR, FFQ, FFL, RI, Y
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  DYDR
 
       double precision, dimension(:), allocatable, save ::
@@ -95,7 +95,7 @@ C Internal variable types and dimensions ----------------------------
      .  FOUND, FRSTME, PROPOR
 
       EXTERNAL
-     .  CHKDIM, LOFILM, PRMEM, PROPOR, RADFFT, RLYLM,
+     .  CHKDIM, LOFILM, PROPOR, RADFFT, RLYLM,
      .  SPLIN, SPLINU, TIMER, YLMYLM, YLMEXP, memory
 
       SAVE
@@ -375,22 +375,6 @@ C Allocate local memory
 C Print size of arrays ----------------------------------------------
       IF (FRSTME) THEN
         FRSTME = .FALSE.
-        CALL PRMEM( 0, 'matel', 'ILM',    'I', MAXF+NY          )
-        CALL PRMEM( 0, 'matel', 'ILMFF',  'I', MAXFFY           )
-        CALL PRMEM( 0, 'matel', 'INDF',   'I', MAXIND           )
-        CALL PRMEM( 0, 'matel', 'NLM',    'I', MAXIND           )
-        CALL PRMEM( 0, 'matel', 'INDFF',  'I', MAXF2            )
-        CALL PRMEM( 0, 'matel', 'INDFFR', 'I', MAXFFY           )
-        CALL PRMEM( 0, 'matel', 'INDFFY', 'I', MAXFF+1          )
-        CALL PRMEM( 0, 'matel', 'IFFR',   'I', MAXLP1+1         )
-        CALL PRMEM( 0, 'matel', 'DYDR',   'D', 12*MAXLM2        )
-        CALL PRMEM( 0, 'matel', 'F',      'D', (NQ+1)*(MAXF+NY) )
-        CALL PRMEM( 0, 'matel', 'FFR',    'D', (NR+1)*2*MAXFFR  )
-        CALL PRMEM( 0, 'matel', 'FFQ',    'D', NQ+1             )
-        CALL PRMEM( 0, 'matel', 'FFY',    'D', MAXFFY           )
-        CALL PRMEM( 0, 'matel', 'RI',     'D', NR+1             )
-        CALL PRMEM( 0, 'matel', 'Y',      'D', 4*MAXLM2         )
-        CALL PRMEM( 0, 'matel', ' ',      ' ', 0                )
       ENDIF
 C -------------------------------------------------------------------
 

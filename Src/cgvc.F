@@ -75,7 +75,7 @@ c Internal variables and arrays
      .                  modcel(3), kBar, precon, strain(3,3), 
      .                  sxx, syy, szz, sxy, sxz, syz, cellin(3,3)
 
-      double precision, dimension(:), allocatable :: gxa, gfa
+      double precision, dimension(:), allocatable, save :: gxa, gfa
       double precision, dimension(:), allocatable, save :: cgaux
 
       save              frstme, ndeg, tstres, cgcntr, kBar,

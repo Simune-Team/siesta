@@ -24,7 +24,7 @@ C **********************************************************************
 
       INTEGER           IV, IV0, IV1, IX, JX
 
-      INTEGER, DIMENSION(:), ALLOCATABLE :: IAUX
+      INTEGER, DIMENSION(:), ALLOCATABLE, SAVE :: IAUX
 
       DATA MAXAUX / 1000 /
 

@@ -1,8 +1,8 @@
       subroutine nlefsm( scell, nua, na, isa, xa, indxua,
-     .                   nomax, nnomax, ndmax,
-     .                   lasto, lastkb, iphorb, iphKB,
-     .                   numd, listd, numh, listh, nspin, Dscf, 
-     .                   Enl, fa, stress, H )
+     .                   maxnh, maxnd, lasto, lastkb, iphorb, 
+     .                   iphKB, numd, listdptr, listd, numh, 
+     .                   listhptr, listh, nspin, Dscf, Enl, 
+     .                   fa, stress, H, Node, Nodes)
 C *********************************************************************
 C Calculates non-local (NL) pseudopotential contribution to total 
 C energy, atomic forces, stress and hamiltonian matrix elements.
@@ -16,9 +16,8 @@ C integer isa(na)          : Species index of each atom
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C integer nomax            : Maximum number of atomic orbitals
-C integer nnomax           : Maximum number of basis orbitals interacting
-C                            either directly or thru a KB projector
-C integer ndmax            : Maximum number of elements of each row of the
+C integer maxnh            : First dimension of H and listh
+C integer maxnd            : Maximum number of elements of the
 C                            density matrix
 C integer lasto(0:na)      : Position of last orbital of each atom
 C integer lastkb(0:na)     : Position of last KB projector of each atom
@@ -26,20 +25,26 @@ C integer iphorb(no)       : Orbital index of each orbital in its atom,
 C                            where no=lasto(na)
 C integer iphKB(nokb)      : Index of each KB projector in its atom,
 C                            where nokb=lastkb(na)
-C integer numd(no)         : Number of nonzero elements of each row of the
+C integer numd(nuo)        : Number of nonzero elements of each row of the
 C                            density matrix
-C integer listd(ndmax,no)  : Nonzero hamiltonian-matrix element column 
+C integer listdptr(nuo)    : Pointer to the start of each row (-1) of the
+C                            density matrix
+C integer listd(maxnd)     : Nonzero hamiltonian-matrix element column 
 C                            indexes for each matrix row
-C integer numh(no)         : Number of nonzero elements of each row of the
+C integer numh(nuo)        : Number of nonzero elements of each row of the
 C                            hamiltonian matrix
-C integer listh(nnomax,no) : Nonzero hamiltonian-matrix element column 
+C integer listhptr(nuo)    : Pointer to the start of each row (-1) of the
+C                            hamiltonian matrix
+C integer listh(maxnh)     : Nonzero hamiltonian-matrix element column 
 C                            indexes for each matrix row
 C integer nspin            : Number of spin components
-C real*8  Dscf(ndmax,nomax,nspin) : Density matrix
+C real*8  Dscf(maxnd,nspin): Density matrix
+C integer Node             : Local node number
+C integer Nodes            : Total number of nodes
 C ******************* INPUT and OUTPUT *********************************
 C real*8 fa(3,na)          : NL forces (added to input fa)
 C real*8 stress(3,3)       : NL stress (added to input stress)
-C real*8 H(nnomax,nomax,nspin) : NL Hamiltonian (added to input H)
+C real*8 H(maxnh,nspin)    : NL Hamiltonian (added to input H)
 C **************************** OUTPUT *********************************
 C real*8 Enl               : NL energy
 C *********************************************************************
@@ -50,23 +55,20 @@ C
       use parallel
       use atmfuncs, only: rcut, epskb
       use matel_module, only: matel
-#ifdef MPI
-      use mpi
-#endif
 
       implicit none
 
       integer
-     . na, ndmax, nnomax, nomax, nspin, nua
+     . maxnh, na, maxnd, nspin, nua, Node, Nodes
 
       integer
      . indxua(na), iphKB(*), iphorb(*), isa(na),  
-     . lasto(0:na), lastkb(0:na), listd(ndmax,*), listh(nnomax,*),
-     . numd(*), numh(*)
+     . lasto(0:na), lastkb(0:na), listd(maxnd), listh(maxnh),
+     . numd(*), numh(*), listdptr(*), listhptr(*)
 
       double precision
-     . scell(3,3), Dscf(ndmax,nomax,nspin), Enl,
-     . fa(3,nua), H(nnomax,nomax,nspin),
+     . scell(3,3), Dscf(maxnd,nspin), Enl,
+     . fa(3,nua), H(maxnh,nspin),
      . stress(3,3), xa(3,na), volcel
 
       external
@@ -79,39 +81,31 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      .  maxna, maxno
   
       integer
-     .  ia, ikb, ina, ino,
+     .  ia, ikb, ina, ind, ino,
      .  io, iio, ioa, is, ispin, ix, 
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
-     .  nkb, nna, nno, no, maxnain, maxkba
+     .  nkb, nna, nno, no, nuo, nuotot, maxnain, maxkba
 
-      integer
-     .  Node, Nodes
-
-      integer, dimension(:), allocatable ::
+      integer, dimension(:), allocatable, save ::
      .  iano, iana, iono, ibuffer
-
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
 
       double precision
      .  Cijk, epsk, fik, rki, rmax, rmaxkb, rmaxo, 
      .  Sik, Sjk, volume
 
-      double precision, dimension(:), allocatable ::
+      double precision, dimension(:), allocatable, save ::
      .  Di, Vi, r2ki
 
-      double precision, dimension(:,:), allocatable ::
+      double precision, dimension(:,:), allocatable, save ::
      .  Ski, xki, xno, dpbuffer2
 
-      double precision, dimension(:,:,:), allocatable ::
+      double precision, dimension(:,:,:), allocatable, save ::
      .  grSki, dpbuffer3
 
       logical
      .  within, overflow
      
-      logical, dimension(:), allocatable ::
+      logical, dimension(:), allocatable, save ::
      .  listed, listedall
 
       data maxna  / 1000 /
@@ -120,15 +114,6 @@ C ......................
 
 C Start time counter
       call timer( 'nlefsm', 1 )
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Find unit cell volume
       volume = volcel( scell ) * nua / na
@@ -151,6 +136,8 @@ C Find maximum range
 
 C Initialize arrays Di and Vi only once
       no = lasto(na)
+      nuotot = lasto(nua)
+      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 C Allocate local memory
       allocate(Di(no))
@@ -162,24 +149,22 @@ C Allocate local memory
       allocate(listedall(no))
       call memory('A','L',no,'nlefsm')
 
-      Enl = 0.d0
+      Enl = 0.0d0
       do jo = 1,no
-        Di(jo) = 0.d0
-        Vi(jo) = 0.d0
+        Di(jo) = 0.0d0
+        Vi(jo) = 0.0d0
         listed(jo) = .false.
         listedall(jo) = .false.
       enddo
 
 C Make list of all orbitals needed for this node
-      do io = 1,no
-        call GlobalToLocalOrb(io,Node,Nodes,iio)
-        if (iio.gt.0) then
-          listedall(io) = .true.
-          do j = 1,numh(io)
-            jo = listh(j,io)
-            listedall(jo) = .true.
-          enddo
-        endif
+      do io = 1,nuo
+        call LocalToGlobalOrb(io,Node,Nodes,iio)
+        listedall(iio) = .true.
+        do j = 1,numh(io)
+          jo = listh(listhptr(io)+j)
+          listedall(jo) = .true.
+        enddo
       enddo
 
 C Find maximum number of KB projectors of one atom = maxkba
@@ -359,16 +344,17 @@ C Valid orbital
               if (ia .le. nua) then
 
 C Scatter density matrix row of orbital io
-                do j = 1,numd(io)
-                  jo = listd(j,io)
+                do j = 1,numd(iio)
+                  ind = listdptr(iio)+j
+                  jo = listd(ind)
                   do ispin = 1,nspin
-                    Di(jo) = Di(jo) + Dscf(j,iio,ispin)
+                    Di(jo) = Di(jo) + Dscf(ind,ispin)
                   enddo
                 enddo
           
 C Scatter filter of desired matrix elements
-                do j = 1,numh(io)
-                  jo = listh(j,io)
+                do j = 1,numh(iio)
+                  jo = listh(listhptr(iio)+j)
                   listed(jo) = .true.
                 enddo
 
@@ -403,17 +389,18 @@ C Loop on KB projectors
                 enddo
 
 C Pick up contributions to H and restore Di and Vi
-                do j = 1,numh(io)
-                  jo = listh(j,io)
+                do j = 1,numh(iio)
+                  ind = listhptr(iio)+j
+                  jo = listh(ind)
                   do ispin = 1,nspin
-                    H(j,iio,ispin) = H(j,iio,ispin) + Vi(jo)
+                    H(ind,ispin) = H(ind,ispin) + Vi(jo)
                   enddo
-                  Vi(jo) = 0.d0
+                  Vi(jo) = 0.0d0
                   listed(jo) = .false.
                 enddo
-                do j = 1,numd(io)
-                  jo = listd(j,io)
-                  Di(jo) = 0.d0
+                do j = 1,numd(iio)
+                  jo = listd(listdptr(iio)+j)
+                  Di(jo) = 0.0d0
                 enddo
 
               endif
