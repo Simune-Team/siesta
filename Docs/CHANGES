@@ -1,32 +1,26 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
-Version: 1.0.62
-Date: 2001/09/24  12:00 GMT
-Title: Projected Density of States.
-Author: Javier Junquera <javier.junquera@uam.es>
+Version: 1.1.0
+Date: 2001/09/26
+Title: SIESTA-1.1 release
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
 
-Description:
+Changes and fixes to prepare for the release.
+(Changes along the rel-1-1-branch cvs branch)
 
-The Total Density Of States (Total DOS), and its projection
-on the basis orbitals (Projected Density Of States, PDOS),
-are computed and dumped to files ('.TOT.DOS' and '.PDOS' respectively).
+Summary:
 
-This only works in a serial run. An error message will be issued 
-when we try to use it in a parallel execution.
+* Bug fix for O(N) calculations (Julian Gale)
+  file: gradient.F
 
-It is only implemented when the hamiltonian
-is solved by diagonalization with k-points.
+* Restored PDOS processing (Javier Junquera and Alberto Garcia)
+  files: siesta.F pdos.f pdosk.f
 
-Files:
-   siesta.F    Call to pdos subroutine is added
-   pdos.f      New subroutine, interface between siesta and the one that
-               computes the PDOS
-   pdosk.f     New subroutine. Computes the PDOS
-   Makefile    pdos.o and pdosk.o added to object list 
-   Docs/siesta.tex, Docs/siesta.ind
-	       Documentation of new block usage.
-========================================================================
+* Added "xml" output for .ion data.  (Alberto Garcia)
+  files: xml.f basis_io.F radial.f initatom.f
+
+=======================================================================
 Version: 1.0.61
 Date: 2001/09/16  18:00 GMT
 Title: New input/output facilities for ps and basis information

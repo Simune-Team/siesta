@@ -17,12 +17,11 @@
 \oddsidemargin 1mm
 \topmargin -15mm
 
-
 \makeindex
 
+\parindent=0cm
 \baselineskip=14pt
 \parskip 5pt
-\parindent 1em
 
 \begin{document}
 
@@ -33,46 +32,57 @@
 \begin{center}
 
 \vspace{1cm}
+{\Huge {\sc U s e r' s \, \, G u i d e}}
 
-{\huge {\sc User's Guide}}
+\vspace{1cm}
+\hrulefill
+\vspace{2cm}
 
-\vspace{3cm}
+{\Huge {\bf S I E S T A \, \, 1.1}}
 
-{\Huge {\bf SIESTA 1.0.62}}
+\vspace{2cm}
+\hrulefill
+\vspace{2cm}
 
-\vspace{3cm}
+{\Large 25 September 2001 }
 
-{\Large {\it September 24, 2001} }
+\vspace{1.5cm}
 
-\vspace{3cm}
-
-\begin{tabular}{rl}
+\hbox{ \hskip 1.5cm
+\begin{tabular}{ll}
 
 {\Large Emilio Artacho} &
-   \Large{\it Cambridge University, UK} \\
+   \Large{\it University of Cambridge} \\ \\
 
-{\Large Julian Gale} &
-   \Large{\it Imperial College, London, UK} \\
+{\Large Julian D. Gale} &
+   \Large{\it Imperial College, London} \\ \\
 
 {\Large Alberto Garc\'{\i}a} &
-   \Large{\it Universidad del Pais Vasco, Bilbao} \\
+   \Large{\it Universidad del Pa\'{\i}s Vasco, Bilbao} \\ \\
 
 {\Large Javier Junquera} &
-   \Large{\it Universidad Aut\'onoma de Madrid} \\
+   \Large{\it Universidad Aut\'onoma de Madrid} \\ \\
 
-{\Large Pablo Ordej\'on} & 
-   \Large{\it Spanish Research Council, Barcelona} \\
+{\Large Richard M. Martin} &
+   \Large{\it University of Illinois at Urbana-Champaign} \\ \\
+
+{\Large Pablo Ordej\'on} &
+   \Large{\it Institut de Ci\`encia de Materiales, CSIC, Barcelona} \\ \\
 
 {\Large Daniel S\'anchez-Portal} &
-   \Large{\it Universidad del Pais Vasco, San Sebastian} \\
+   \Large{\it Universidad del Pa\'{\i}s Vasco, San Sebasti\'an} \\ \\
 
 {\Large Jos\'e M. Soler} &
    \Large{\it Universidad Aut\'onoma de Madrid}
 
 \end{tabular}
+}
 
-\vspace{2cm}
-{\bf siesta@wm.lc.ehu.es}
+\vspace{0.5cm}
+{\Large {\tt http://www.uam.es/siesta} }
+
+\vspace{2mm}
+{\Large \tt siesta@wm.lc.ehu.es}
 
 \end{center}
 
@@ -88,11 +98,11 @@
 
 \section{INTRODUCTION}
 
-SIESTA\index{SIESTA} (Spanish Initiative for Electronic Simulations with
-Thousands of Atoms) is a computer code to perform electronic
-structure calculations and {\it ab initio} molecular dynamics
-simulations of molecules and solids.
-Its main characteristics are:
+{\sc Siesta}\index{Siesta@{\sc Siesta}} (Spanish Initiative for 
+Electronic Simulations with
+Thousands of Atoms) is both a method and its computer program implementation,
+to perform electronic structure calculations and {\it ab initio} molecular 
+dynamics simulations of molecules and solids. Its main characteristics are:
 \begin{itemize}
 \item
 It uses the standard Kohn-Sham selfconsistent density functional
@@ -117,12 +127,14 @@ time and memory scale linearly with the number of atoms.
 Simulations with several hundred atoms are feasible with
 modest workstations.
 \item
-It is written in Fortran 90.
+It is written in Fortran 90. In particular, memory is allocated
+dynamically, so there is no need to recompile the program when
+the problem size changes.
+
+\item
 It may be compiled for serial or parallel execution (under MPI).
-The selection is performed by standard preprocessor compiler
-directives, switched by the appropriate makefiles.
-Auxiliary tools such shell scripts and makefiles are now
-available only for the UNIX operating system.
+(Note: This feature might not be available in all distributions.)
+
 \end{itemize}
 
 It routinely provides:
@@ -135,12 +147,15 @@ It routinely provides:
 \item Electron density.
 \end{itemize}
 
-It also allows (though not all options are compatible):
+And also (though not all options are compatible):
 \begin{itemize}
+\item Geometry relaxation, fixed or variable cell.
 \item Constant-temperature molecular dynamics (Nose thermostat).
 \item Variable cell dynamics (Parrinello-Rahman).
-\item Spin polarized calculations.
+\item Spin polarized calculations (collinear or not).
 \item k-sampling of the Brillouin zone.
+\item Local and orbital-projected density of states.
+\item Band structure.
 \end{itemize}
 
 {\large {\bf References:} }
@@ -148,59 +163,89 @@ It also allows (though not all options are compatible):
 \begin{itemize}
 
 \item
+``Unconstrained minimization approach for electronic computations
+that scales linearly with system size"
 P. Ordej\'on, D. A. Drabold, M. P. Grumbach and R. M. Martin, 
-Phys. Rev. B {\bf 48}, 14646 (1993); {\bf 51} 1456 (1995),
-and references therein.
+Phys. Rev. B {\bf 48}, 14646 (1993); 
+``Linear system-size methods for electronic-structure calculations"
+Phys. Rev. B {\bf 51} 1456 (1995), and references therein.
 
-Description of the order-{\it N}
-methods implemented in this code.
+Description of the order-{\it N} eigensolvers
+implemented in this code.
 
 \item
+``Self-consistent order-$N$ density-functional 
+calculations for very large systems"
 P. Ordej\'on, E. Artacho and J. M. Soler,
 Phys. Rev. B {\bf 53}, 10441, (1996).
 
-Description of a previous version of this program.
+Description of a previous version of this methodology.
 
 \item
+``Density functional method for very large systems with LCAO basis sets"
 D. S\'anchez-Portal, P. Ordej\'on, E. Artacho and J. M. Soler,
 Int. J. Quantum Chem., {\bf 65}, 453 (1997).
 
-Most updated description of the present code.
+Description of the present method and code.
 
 \item
+``Linear-scaling ab-initio calulations for large and complex systems"
 E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
 J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
 
-Description of numerical atomic orbitals used in the code,
-and brief review of applications as of March 1999.
+Description of the numerical atomic orbitals (NAOs) most commonly 
+used in the code, and brief review of applications as of March 1999.
+
+\item
+``Numerical atomic orbitals for linear-scaling calculations"
+J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
+(in press, preprint in cond-mat/0104170). 
+
+Improved, soft-confined NAOs.
+
+\item
+``The {\sc Siesta} method for ab initio order-$N$ materials simulation"
+J. M. Soler, E. Artacho, J. Gale, A. Garc\'{\i}a, J. Junquera, P. Ordej\'on,
+and D. S\'anchez-Portal (to appear soon)
+
+Extensive description of the {\sc Siesta} method.
 
 \end{itemize}
 
-This is a short description of the compilation procedures
-and of the datafile format for the SIESTA code.
-This version is a very preliminary release of the code.
-Please report problems, bugs and suggestions to
-{\bf siesta@wm.lc.ehu.es}
+For more information you can visit the web page 
+{\tt http://www.uam.es/siesta}.
 
-
+The following is a short description of the compilation procedures
+and of the datafile format for the {\sc Siesta} code.
 
 \section{QUICK START}
 
-\noindent
-Unpack the SIESTA distribution. Go to the {\tt Src/Sys} subdirectory
-and take a look at the files there. If one of them suits your
-platform, copy it or link it to {\tt Src/arch.make}. If you intend
-to create a parallel version of SIESTA, make sure you have all
-the extra support libraries ({\tt MPI, scalapack, blacs...}).
-Type {\tt make}. The executable should work for any job (This is not exactly
-true, since some of the parameters in the atomic routines are still
-hardwired, but those would seldom need to be changed.)
+\subsection{Compilation}
+Unpack the {\sc Siesta} distribution. Go to the {\tt Src/Sys}
+subdirectory and take a look at the {\tt .make} files there. If one of
+them suits your platform, copy it or link it to {\tt
+Src/arch.make}. If you intend to create a parallel version of {\sc
+Siesta}, make sure you have all the extra support libraries ({\tt MPI,
+scalapack, blacs...}).  Type {\tt make}. The executable should work
+for any job (This is not exactly true, since some of the parameters in
+the atomic routines are still hardwired (see {\tt Src/atmparams.f}) ,
+but those would seldom need to be changed.)
 
-\noindent
+\subsection{Running the program}
+
 Some example FDF files are provided in the {\tt Examples}
-directory. Probably the simplest to start with is the water-molecule
+directory. (Actually, this directory contains basically the {\tt .fdf}
+files and the pseudopotential generation input files. A faster way to
+test your installation of {\sc Siesta} is implemented in directory
+{\tt Src/Tests}\index{Tests}. On the other hand, at some point you
+will have to generate your own pseudopotentials and run your own jobs,
+so what follows is also of interest.)
+
+Probably the simplest to start with is the water-molecule
 example. It is advisable to create independent subdirectories for each
-job, so that everything is clean and neat:
+job, so that everything is clean and neat, and out of the {\tt siesta}
+directory, so that one can easily update version by replacing the
+whole {\tt siesta} tree:
 
 {\tt mkdir h2o}
 
@@ -209,7 +254,7 @@ We need to generate the required pseudopotentials
 \index{pseudopotential!example generation}
 (We are going to streamline this process for this time, but
 you must realize that this is a tricky business that you 
-must master before using SIESTA responsibly. Every 
+must master before using {\sc Siesta} responsibly. Every 
 pseudopotential must be thoroughly checked before use.)
 
 {\tt \$ cd $\sim$/siesta/Pseudo/atom}
@@ -329,26 +374,635 @@ siesta/Pseudo/atom/README} for more complete authorship and copyright
 acknowledgements).  It is included (with permission) in
 siesta/Pseudo/atom. Remember that {\bf all pseudopotentials should be
 thoroughly tested} before using them. We refer you to the standard
-literature and to {\tt siesta/Pseudo/atom/User.Guide}.
+literature on pseudopotentials and to {\tt siesta/Pseudo/atom/User.Guide}.
+
+The remainder of this section describes the input format for the {\sc Atm}
+program (Alberto Garcia, wdpgaara@lg.ehu.es), whose basic capabilities are:
+\begin{itemize}
+\item
+All-electron LDA/GGA atomic calculations for arbitrary electronic 
+configurations.
+
+\item
+Generation of ab-initio pseudopotentials (several flavors).
+
+\item
+Atomic calculations in which the effect of the core is represented
+by a previously generated pseudopotential. These are useful to make
+sure that the pseudopotential correctly reproduces the all-electron
+results for the valence complex.
+\end{itemize}
+
+The file-manipulation details involved in each of those basic
+functions are taken care of by a set of shell scripts ({\tt ae.sh}, 
+{\tt pg.sh}, and {\tt pt.sh}) which take as one of the arguments the name 
+of the input file. Thus the user only has to worry about preparing that input 
+file.
+
+Here is an example for an all-electron calculation of the ground state
+of a silicon atom: (the {\tt ----} lines are {\it not} part of the file, and
+neither is the "Ruler" line, shown here only for illustrative purposes)
+
+\begin{verbatim}
+----------------------------
+   ae Si ground state all-electron
+   Si   car  
+       0.0
+    3    2
+    3    0      2.00
+    3    1      2.00
+
+12345678901234567890123456789012345678901234567890      Ruler
+----------------------------
+\end{verbatim}
+
+The first line specifies:
+\begin{itemize}
+\item
+The calculation code ({\tt ae} here stands for all electron,
+{\tt pg} for pseudopotential generation, {\tt pt} for
+pseudopotential test, and {\tt pe} for pseudopotential generation 
+including partial core.
+
+\item
+A title for the job ({\tt Si ground state all-electron} in this case)
+read in the format {(\tt 3x,a2,a50)}.
+\end{itemize}
+
+Second line:
+\begin{itemize}
+\item
+chemical symbol of the nucleus (here {\tt Si})
+
+\item
+Exchange-correlation type. Here, {\tt ca} stands for
+Ceperley-Alder. Other options are {\tt wi} (Wigner) {\tt hl}
+(Hedin-Lundqvist), {\tt gl} (Gunnarson-Lundqvist), and {\tt bh}
+(von Barth-Hedin). The ``best" LDA choice should be {\tt ca}.
+It is also possible to use a gradient-corrected functional:
+{\tt pb} indicates use of the GGA scheme by Perdew, Burke,
+and Ernzerhof (PRL 77, 3865 (1996).
+
+\item
+The character {\tt r} next to {\tt ca} is a flag to perform the
+calculation relativistically, that is, solving the Dirac equation
+instead of the Schr\"odinger equation. 
+The full range of options is:
+``{\tt s}" : Spin-polarized calculation, non-relativistic.
+`` " (blank space): Non-polarized (spin ignored), non-relativistic calculation.
+``{\tt r}" : Relativistic calculation, obviously polarized.	
+	
+The format for reading is {\tt (3x,a2,3x,a2,a1,2x)}. 
+\end{itemize}
+
+Third line: Its use is somewhat esoteric and for most calculations
+it should contain just a 0.0 in the position shown.
+
+The rest of the file is devoted to the specification of the electronic
+configuration:
+
+Fourth line: Number of core and valence orbitals. For example, for Si, we
+have 1$s$, 2$s$, and 2$p$ in the core (a total of 3 orbitals), and
+3$s$ and 3$p$ in the valence complex (2 orbitals). The reading format is
+{\tt (2i5)}.
+
+Fifth, sixth... lines (there is one line for each valence orbital):
+{\tt n} principal quantum number, {\tt l} angular momentum, and 
+occupation of the orbital in electrons. 
+Format {\tt (2i5,2f10.3)} (there are two ``f" real input descriptors 
+to allow the input of "up" and "down" occupations in spin-polarized 
+calculations, see example below).
+
+The next line is left blank in this example to terminate the job. It
+is possible, however, to perform two or more calculations in
+succession by simply concatenating blocks as the one described above.
+For example, the following file is used to study the ground state of N
+and an excited state with one electron promoted from the 2$s$ to the 2$p$
+orbital taking into account the spin polarization.
+
+\begin{verbatim}
+---------------------------------
+   ae N ground state all-electron
+   N    cas
+       0.0
+    1    2
+    2    0      2.00      0.00
+    2    1      3.00      0.00
+   ae N 1s2 2s1 2p4  all-electron
+   N    cas
+       0.0
+    1    2
+    2    0      1.00      0.00
+    2    1      3.00      1.00
+
+12345678901234567890123456789012345678901234567890      Ruler
+--------------------------------- 
+\end{verbatim}
+	
+The different treatment of core and valence orbitals in the input for an
+all-electron calculation is purely cosmetic. The program "knows" how
+to fill the internal orbitals in the right order, so it is only
+necessary to give their number. That is handy for heavy atoms...
+Overzealous users might want to check the output to make sure that the
+core orbitals are indeed correctly treated.
 
 
-%\section{ATOMIC-ORBITAL BASES IMPLEMENTED IN SIESTA}
-%
-%To be described here. Look the input description for the time being.
+\subsection{Pseudopotential test calculations}
+
+The format is exactly the same, except that the job code is {\tt pt}
+instead of {\tt ae}. Of course, one has to have a pseudopotential file
+(extension .vps) ready from a previous pseudopotential generation.
 
 
+\subsection{Pseudopotential generation}
+
+In addition to the electronic configuration chosen for the generation
+of the pseudopotentials (which is input in the same manner as above),
+one has to specify the ``flavor" (generation scheme) and the set of
+``core radii" $r_c$ for the construction of the pseudowavefunction.
+CAUTION: the pseudopotential $r_c$'s and the basis orbitals $r_c$'s
+are completely different. Usually, pseudopostential $r_c$'s are
+between 1 and 2 bohrs, while NAO's $r_c$'s are usually around 5 to 7
+bohrs.
+
+Here is an example for Si using the Hamann-Schluter-Chiang scheme:
+
+\begin{verbatim}
+-------------------------------------
+   pg Si Pseudopotential
+        hsc     2.00
+   Si   ca
+         0
+    3    3
+    3    0      2.00
+    3    1      0.50
+    3    2      0.50
+   1.12      1.35      1.17      0.0       0.0       0.0
+
+123456789012345678901234567890123456789012345678901234567890   Ruler
+---------------------------------------
+\end{verbatim}
+
+Apart from the {\tt pg} job code in the first line, there are two
+extra lines:
+
+Second line: Flavor and radius at which to compute logarithmic
+derivatives for test purposes. The flavor can be one of :
+\begin{itemize}
+\item
+{\tt hsc}: Hamann-Schluter-Chiang
+\item
+{\tt bhs}: Bachelet-Hamann-Schluter
+\item
+{\tt ker}: Kerker
+\item
+{\tt tm2}: Improved Troullier-Martins
+\end{itemize}
+
+{\tt hsc} and {\tt bhs} are very similar, and so are {\tt ker} and {\tt tm2}. 
+Both sets differ in the ``softness" for a given choice of $r_c$. 
+The {\tt ker} and {\tt tm2} schemes can get away with larger $r_c$'s, 
+due to their wavefunction matching conditions.
+Reading format: {\tt (8x, a3, f9.3)}.
+
+The last line (before the blank line) specifies the values of the $r_c$'s
+in atomic units (bohrs) for the $s$, $p$, $d$, and $f$ orbitals (it is a good
+practice to input the valence orbitals in the order of increasing
+angular momentum, so that there is no possible confusion).
+Format {\tt (6f10.5)}  (see 'Partial core' below for the two extra slots,
+and should be set to zero or left blank if no partial core is used). 
+In the example above, only $s$, $p$, and $d$ $r_c$'s are given. Here is an 
+example for silicon in which we are only interested in the $s$ and $p$ 
+channels for our pseudopotential, and use the Kerker scheme:
+
+\begin{verbatim}
+-----------------------------
+   pg Si Kerker generation
+        ker     2.00
+   Si   ca
+         0
+    3    3
+    3    0      2.00
+    3    1      2.00
+   1.80      1.80      0.00      0.0       0.0       0.0
+
+123456789012345678901234567890123456789012345678901234567890   Ruler
+------------------------------------------
+\end{verbatim}
+
+\subsection{Directives}
+
+Some internal parameters and modes of operation tend to change over
+time. ``Directives" can be used to select among those
+and change the behavior of the program without recompilation.
+
+They must appear at the top of the input file, with the following
+syntax:
+\begin{verbatim}
+%define NAME
+%VARIABLE=value
+\end{verbatim}
+Currently, the program understands the following names:
+\begin{itemize}
+\item
+{\tt COMPAT\_UCB}: Revert to the standard circa 1990 UCB values. Note   
+that these correspond to the first released version 
+of Jose Luis Martins's code, not to the old Froyen        
+version (that would be {\tt FROYEN} --to be implemented).
+The default is: to use a denser grid up to larger radii, 
+use a larger value for the ps's ecuts, and use the Soler-Balbas XC package)  
+                                                                          
+\item
+{\tt NEW\_CC}: New core-correction scheme (Martins).
+
+\item
+{\tt OLD\_CC}: Old core-correction scheme (see below).
+\end{itemize}
+
+
+\subsection{Partial core corrections}
+
+The program can generate a 'partial core' (or 'pseudocore') 
+for the partial-core non-linear exchange-correlation correction as
+proposed in
+
+\noindent
+S. G. Louie, S. Froyen, and M. L. Cohen, Phys. Rev. B 26, 1738 (1982).
+
+\noindent
+In the traditional approach (which is the default for LDA
+calculations), the pseudocore charge density equals the charge density
+outside a given radius $r_{pc}$, and has the smooth form
+$$
+pc(r) = a_c r   \sin(b_c r)
+$$
+inside that radius. A smooth matching is provided with suitable $a_c$ 
+and $b_c$ parameters calculated by the program.
+
+A new scheme has been implemented to fix some problems in the generation
+of GGA pseudopotentials. The smooth function is now
+$$
+pc(r) =  r^2  e^{a_c+b_c r^2+c_c r^4}
+$$
+and derivatives up to the second are continuous  at $r_{pc}$.
+
+To generate the partial core in addition to the pseudopotential,
+the jobcode at the first line should be {\tt pe} instead of {\tt pg}.
+
+The radius $r_{pc}$ is given in the sixth slot in the last
+input line (see above). If it is negative or zero (or blank), the
+radius is then computed using the fifth number in that line (pc\_weight)
+and the following criterion: at $r_{pc}$ the core charge density 
+equals pc\_weight*(valence charge density).
+It is {\it highly recommended} to set an explicit value for the pseudocore
+radius $r_{pc}$, rather than letting the program provide a default.
+
+If pc\_weight is input as negative, the full core charge is used.
+If pc\_weight is input as zero, it is set equal to one, which will be
+thus the default if {\tt pe} is given but no numbers are given for these
+two variables.
+
+The output file contains the radius used and the $a_c$ and $b_c$ (and $c_c$)
+parameters used for the matching. The vps file contains the partial core in 
+addition to the pseudopotential.
+
+It is possible to override the default (new scheme for GGA
+calculations, old scheme for LDA calculations) by using the directives
+\begin{verbatim}
+%define NEW_CC
+%define OLD_CC
+\end{verbatim}
+The program will issue the appropriate warnings.
+
+
+\subsection{Output Files}
+
+The program generates several files, which, if using the
+provided shell scripts ({\tt pg.sh}, {\tt ae.sh}, {\tt pt.sh}), appear in 
+a subdirectory named as the input file, without the {\tt .inp} suffix.
+\begin{itemize}
+\item
+INP: Original input file.
+
+\item
+VPSIN: Input pseudopotential (if testing, with {\tt pt} option).
+
+\item
+VPSOUT: (if pseudopotential generation was used, {\tt pg}) it contains
+the pseudopotential itself and related information.
+
+\item
+VPSFMT: ASCII version of VPSOUT
+
+\item
+OUT: The general output (log) of the run, offering information about
+the atomic calculations, energies, eigenvalues, generation
+procedure, etc. First file to look at. Always, and specially
+if there are problems with the run or with the obtained vps.
+\end{itemize}
+
+
+\subsection{Output files for plotting}
+
+Some relevant pieces of information are put into separate files that
+can be easily processed using any plotting program. In the Samples
+directory there are scripts for {\sc SuperMongo} ({\tt plotx11.sh} and 
+{\tt plotps.sh}), XMGR ({\tt viewps.sh}), and a few simple {\sc Gnuplot}
+command files ({\tt XXX.gplot}).
+
+\begin{itemize}
+\item
+RHO: Atomic (all-electron) charge density as a funtion of radius.
+It is not integrated angularly (no $4 \pi r^2$ factor). 
+
+Information
+in columns: $r$, $\rho_{\uparrow}(r)$, $rho_{\downarrow}(r)$, and 
+$rho_{\rm core}(r)$. Up and down are for LSD calculations, but also 
+for relativistic ones. $rho_{\rm core}(r)$ is only for core electrons, 
+but both spin components. The unit of charge is the charge of the electron.
+
+\item
+CHARGE: Same as RHO, but the densities are angularly integrated ($\times 4 
+\pi r^2$).
+
+\item
+PSCHARGE: Same as CHARGE but $\rho_{\uparrow}(r)$ and $\rho_{\downarrow}(r)$ 
+refer to valence electrons, and $rho_{\rm core}(r)$ is the  pseudocore 
+generated (if) through {\tt pe} for non-linear partial-core 
+exchange-correlation correction.
+To ckeck the pseudocore (partial core) the 4th column of this file
+should be compared with the 4th column of CHARGE.
+\end{itemize}
+
+If generating pseudopotential:
+\begin{itemize}
+\item
+AEWFNR0...AEWFNR3 : all-electron wavefunctions as function of radius,
+for $s$, $p$, $d$, and $f$ valence orbitals (0, 1, 2, 3, respectively,
+or less if less channels were generated).
+
+In columns: $r$, $4 \pi^2 \Psi_l(r)$, 0.  
+They include angular integration, the $s$ orbitals also going to zero.
+
+\item
+PSWFNR0...PSWFNR3 : Same as above but for the pseudowavefunctions.
+They should fit the corresponding AEWFNRs outside of the chosen 
+core radii $r_c$. 
+
+In columns: $r$, $4 \pi^2 \Psi_l(r)$, $r_c$.
+       
+\item
+PSWFNQ0...PSWFNQ3 : Fourier transforms of the PSWFNR0...PSWFNR3.
+
+In columns: $r$, $\Psi_l(q)$ .
+
+\item
+PSPOTR0...PSPOTR3 : Pseudopotentials as function of radius, 
+one per $l$-channel.
+
+In columns: $r$, $V_l^{ps}(r)$, $-2 Z_{ion}/r$. The last column is just 
+the coulombic atraction of the core ion. It should fit the $V_l^{ps}$'s 
+when the charge of the core electrons has died out. 
+
+\item
+PSPOTQ0...PSPOTQ3 : Fourier Transform of the pseudopotentials as a function 
+of radius, one per $l$-channel ($q$ in bohr$^{-1}$).
+
+In columns: $r$, $V_l^{ps}(q)$, 0.
+
+\item
+COREQ: Fourier transform of the pseudocore charge density.
+
+In columns: $q$ (bohr$^{-1}$), $\rho_c(q)$ (electrons).
+\end{itemize}
+
+
+
+\section{ATOMIC-ORBITAL BASES IMPLEMENTED IN SIESTA}
+
+The main advantage of atomic orbitals is their efficiency (fewer orbitals 
+needed per electron for similar precision) 
+and their main disadvantage is the lack of systematics for optimal 
+convergence, an issue that quantum chemists have been working on for
+many years. They have also clearly shown that there
+is no limitation on precision intrinsic to LCAO.
+This section provides some information about how basis sets can be
+generated for {\sc Siesta}.
+
+It is important to stress at this point that neither the {\sc Siesta} 
+method nor the program
+are bound to the use of any particular kind of atomic orbitals. The
+user can feed to {\sc Siesta} the atomic basis set he/she choses by
+means of radial tables (see {\bf User.Basis} below), the
+only limitations being: $(i)$ the functions have to be atomic-like (radial 
+functions mutiplied by spherical harmonics), and $(ii)$ they have to be
+of finite support, i.e., each orbital becomes strictly zero beyond some
+cutoff radius chosen by the user.
+
+Most users, however, do not have their own basis sets. For these users
+we have devised some schemes to generate reasonable basis sets within
+the program. These bases depend on several parameters per atomic
+species that are for the user to choose, and can be important for both
+quality and efficiency. A description of these bases and some
+performance tests can be found in
+
+\noindent
+``Numerical atomic orbitals for linear-scaling calculations"
+J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
+(in press, preprint in cond-mat/0104170). 
+
+An important point here is that the basis set selection is a 
+variational problem and, therefore, minimizing the energy with respect
+to any parameters defining the basis is an ``ab initio" way to 
+define them.
+
+We have also devised a quite simple and systematic way of generating 
+basis sets based on specifying only one main parameter (the energy shift)
+besides the basis size. It does not offer the best NAO results one can get 
+for a given basis size but it has the important advantages mentioned above. 
+More about it in:
+
+\noindent
+``Linear-scaling ab-initio calulations for large and complex systems"
+E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
+J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
+
+(Note: In addition to {\sc Siesta} we provide the program {\sc
+Gen-basis}\index{Gen-basis@{\sc Gen-basis}}, which reads {\sc
+Siesta}'s input and generates basis files for later use. {\sc
+Gen-basis} is compiled automatically at the same time as {\sc
+Siesta}. Currently it offers no extra functionality, but in the future
+it will have better basis analysis capabilities.)
+
+In the following we give some clues on the basics of the basis sets
+that {\sc Siesta} generates. 
+  The starting point is always the solution of Kohn-Sham's Hamiltonian
+for the isolated pseudo-atoms, solved in a radial grid,
+with the same approximations as for the solid or molecule 
+(the same exchange-correlation functional and  pseudopotential),
+plus some way of confinement (see below).
+  We describe in the following three main features of a
+basis set of atomic orbitals: size, range, and radial shape.
+
+\subsection{Size: number of orbitals per atom}
+
+  Following the nomenclature of Quantum Chemistry, we establish
+a hierarchy of basis sets, from single-$\zeta$ to multiple-$\zeta$ 
+with polarization and diffuse orbitals, covering from quick calculations
+of low quality to high precision, as high as the finest obtained in
+Quantum Chemistry. 
+  A single-$\zeta$ (also called minimal) basis set (SZ in the following)
+has one single radial function per angular momentum channel, and only for 
+those angular momenta with substantial electronic population in the valence of
+the free atom.
+  It offers quick calculations and some insight on qualitative trends 
+in the chemical bonding and other properties. 
+  It remains too rigid, however, for more quantitative calculations
+requiring both radial and angular flexibilization.
+
+  Starting by the radial flexibilization of SZ, a better basis is obtained 
+by adding a second function per channel: double-$\zeta$ (DZ).
+  In Quantum Chemistry, the {\it split valence} scheme
+is widely used: starting from the expansion in Gaussians of one atomic 
+orbital, the most contracted gaussians are used to define the first
+orbital of the double-$\zeta$ and the most extended ones for the second.
+  For strictly localized functions there was a first proposal
+ of using the excited states of the confined atoms, but it would work only 
+for tight confinement (see {\bf PAO.BasisType} {\tt nodes} below).
+  We then proposed an extension of the split valence idea of Quantum Chemistry 
+to strictly localized NAO which has become the standard and has been used
+quite succesfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
+  It is based on the idea of suplementing the first $\zeta$ with, instead of
+a gaussian, a numerical orbital that reproduces the tail of the original PAO 
+outside a matching radius $r_{m}$, and continues smoothly towards the origin as 
+$r^l(a-br^2)$, with $a$ and $b$ ensuring continuity and differenciability 
+at $r_{m}$. 
+  Within exactly the same
+Hilbert space, the second orbital can be chosen to be the difference between
+the smooth one and the original PAO, which gives a basis orbital strictly
+confined within the matching radius $r_{m}$, i.e., smaller than the
+original PAO! 
+
+  Extra parameters have thus appeared: one $r_m$ per orbital to be doubled. 
+The user can again introduce them by hand (see {\bf PAO.Basis} below).
+Alternatively, all the $r_m$'s can be defined at once by specifying
+the value of the tail of the original PAO beyond $r_m$, the so-called
+split norm. Variational optimization
+of this split norm performed on different systems
+shows a very general and stable performance for values around
+15\% (except for the $\sim 50\%$ for hydrogen). 
+  It generalizes to multiple-$\zeta$ trivially.
+
+  Angular flexibility is obtained by adding shells of higher angular 
+momentum.
+  Ways to generate these so-called polarization orbitals have been
+described in the literature for Gaussians. 
+  For NAOs there are two ways for {\sc Siesta} and {\sc Genbasis} to
+generate them: $(i)$ Use atomic PAO's of higher angular momentum with
+suitable confinement, and $(ii)$ solve the pseudoatom in the presence
+of an electric field and obtain the $l+1$ orbitals from the perturbation
+of the $l$ orbitals by the field.
+
+  Finally, the method allows the inclusion of offsite orbitals (not centered
+around any specific atom). The orbitals again can be of any shape, including
+atomic orbitals as if an atom would be there (useful for basis-set
+superposition-error calculations). Bessel functions can also be added
+to the basis set.
+
+\subsection{Range: cutoff radii of orbitals}
+
+  Strictly localized orbitals (zero beyond a cutoff radius) are used
+in order to obtain sparse Hamiltonian and overlap matrices for linear 
+scaling. One cutoff radius per angular momentum channel has to be
+given for each species. 
+  A balanced and systematic starting point for defining all the different 
+radii is achieved by giving one single parameter, the energy shift, i.e., 
+the energy raise suffered by the orbital when confined.
+Allowing for system and physical-quantity variablity, as a rule of thumb
+$\Delta E_{\small \rm PAO} \approx 100$ meV gives 
+typical precisions within the accuracy of current GGA functionals.
+The user can, nevertheless, change the cutoff radii at will.
+
+\subsection{Shape}
+
+  Within the pseudopotential framework it is important to keep 
+the consistency between the pseudopotential and
+the form of the pseudoatomic orbitals in the core region.
+  The shape of the orbitals at larger radii depends on the
+cutoff radius (see above) and on the way the localization 
+is enforced.
+
+  The first proposal (and quite a standard among {\sc Siesta}
+users) uses an infinite square-well potential.
+  It has been widely and succesfully used for minimal bases within 
+the ab initio tight-binding scheme of Sankey and 
+collaborators using the {\sc Fireball } program, but also 
+for more flexible bases using the methodology of {\sc Siesta}.
+  This scheme has the disadavantage, however, of generating 
+orbitals with a discontinuous derivative at $r_c$. 
+  This discontinuity is more pronounced for smaller $r_c$'s and
+tends to disappear for long enough values of this cutoff.
+  It does remain, however, appreciable for sensible values of
+$r_c$ for those orbitals that would be very wide in the free atom.
+  It is surprising how small an effect such kink produces in the
+total energy of condensed systems.
+  It is, on the other hand, a problem for forces and stresses,
+especially if they are calculated using a (coarse) finite 
+three-dimensional grid.
+
+  Another problem of this scheme is related to its defining the
+basis considering the free atoms. 
+  Free atoms can present extremely
+extended orbitals, their extension being, besides problematic,
+of no practical use for the calculation in condensed systems:
+the electrons far away from the atom can be described by the
+basis functions of other atoms.
+ 
+  A traditional scheme to deal with this is the one based on the radial 
+scaling of the orbitals by suitable scale factors.
+  In addition to very basic bonding arguments, it is
+soundly based on restoring virial's theorem for finite bases, in the case
+of coulombic potentials (all-electron calculations).
+  The use of pseudopotentials limits its applicability, allowing only for
+extremely small deviations from unity ($\sim 1\%$) in the scale factors 
+obtained variationally (with the exception of hydrogen that can contract 
+up to 25\%). This possiblity is available to the user.
+
+  Another way of dealing with that problem and that of the kink at the
+same time is adding a soft confinement potential to the atomic Hamiltonian 
+used to generate the basis orbitals: it smoothens
+the kink and contracts the orbital as suited. Two additional parameters
+are introduced for the purpose, which can be defined again variationally.
+  The confining potential  is flat (zero) in the core region, starts off at
+some internal radius $r_i$ with all derivatives continuous
+and diverges at $r_c$ ensuring the strict localization there.
+  It is
+\begin{equation}
+  V(r) = V_{\rm o} { e^{- { {r_c - r_i} \over {r - r_i} } } \over {r_c -r} } 
+\end{equation}
+and both $r_i$ and $V_{\rm o}$ can be given to {\sc Siesta} together
+with $r_c$ in the input (see {\bf PAO.Basis} below).
+
+  Finally, the shape of an orbital is also changed by the ionic character 
+of the atom. 
+  Orbitals in cations tend to shrink, and they swell in anions.
+  Introducing a $\delta Q$ in the basis-generating free-atom calculations
+gives orbitals better adapted to ionic situations in the condensed
+systems.
+
+  More information about basis sets can be found in the proposed literature.
 
 \section{COMPILING THE PROGRAM}
 
 The compilation of the program is done using a Makefile
 that is provided with the code.\index{Makefile}
-This Makefile will generate the executable in several
+This Makefile will generate the executable for any of several
 architectures, with a  minimum of tuning required from the
-user. The instructions are in directory siesta/Src/Sys.
-There are a few files  in this directory,
+user. The instructions are in directory siesta/Src/Sys, where 
+there are also a number of {\tt .make} files
 already prepared for several architectures and
-operating sistems:\index{platforms}\index{architectures}
-If none of these fit your needs, you will have to build
+operating sistems.\index{platforms}\index{architectures}
+If none of these fit your needs, you will have to prepare
 one on your own. Note that some systems require running a program such as
 ranlib\index{ranlib} to index object code libraries.
 Once you have decided which {\tt *.make} you want to use,
@@ -405,22 +1059,6 @@ is used.
 \noindent
 These are some examples:
 
-% \begin{verse}
-% SystemName   Water molecule   \# I am a comment \\
-% SpinPolarized       yes \\
-% SaveRho                 \\
-% NumberOfAtoms       64  \\
-% LatticeConstant     5.42 Ang  \\
-% \%block LatticeVectors  \\
-% \hspace{1cm} 1.000  0.000  0.000    \\
-% \hspace{1cm} 0.000  1.000  0.000    \\
-% \hspace{1cm} 0.000  0.000  1.000    \\
-% \%endblock LatticeVectors  \\
-% KgridCutoff $<$ BZ\_sampling.fdf  \\
-% \%block AtomicCoordinatesAndAtomicSpecies $<$ coordinates.data \\
-% \%include mydefaults.fdf  \\
-% \end{verse}
-
 \begin{verbatim}
            SystemName      Water molecule  # This is a comment 
            SystemLabel     h2o
@@ -443,7 +1081,7 @@ These are some examples:
 \end{verbatim}
 
 Here follows a description of the variables that you can
-define in your SIESTA input file, with their data types and
+define in your {\sc Siesta} input file, with their data types and
 default values.
 
 \vspace{5pt}
@@ -487,7 +1125,7 @@ pseudopotential or basis set are counted as different species.
 \index{ChemicalSpeciesLabel@{\bf ChemicalSpeciesLabel}} 
 It specifies the different chemical species\index{species} that are present, 
 assigning them a number for further identification. 
-SIESTA recognizes the different atoms by the given atomic number.
+{\sc Siesta} recognizes the different atoms by the given atomic number.
 
 \begin{verbatim}
          %block Chemical_Species_label
@@ -591,7 +1229,7 @@ The format for the input of the basis described in this manual
 has experienced important changes respect to 
 previous versions of the program. Although old fashioned 
 input files are
-still readable by SIESTA, we highly recommend the use of this
+still readable by {\sc Siesta}, we highly recommend the use of this
 new format, which allows a much more flexible input.
 
 \begin{description}
@@ -603,9 +1241,10 @@ new format, which allows a much more flexible input.
 If true, the basis, KB projector, and other information is read from
 files {\it Atomlabel}{\tt .ion}, where {\it Atomlabel} is the atomic
 species label specified in block {\it ChemicalSpeciesLabel}. These
-files can be generated by a previous SIESTA run or by the standalone
-program BASE.  \index{BASE@{\bf BASE}}\index{basis!BASE standalone
-program} No pseudopotential files are necessary.
+files can be generated by a previous {\sc Siesta} run or by the
+standalone program {\sc Gen-basis}.\index{Gen-basis program@{\sc
+Gen-basis}}\index{basis!Gen-basis standalone program} No pseudopotential
+files are necessary.
 
 \item[{\bf User.Basis.NetCDF}] ({\it logical}): 
 \index{User.Basis.NetCDF@{\bf User.Basis.NetCDF}}
@@ -615,21 +1254,22 @@ program} No pseudopotential files are necessary.
 If true, the basis, KB projector, and other information is read from
 NetCDF files {\it Atomlabel}{\tt .ion.nc}, where {\it Atomlabel} is
 the atomic label specified in block {\it ChemicalSpeciesLabel}. These
-files can be generated by a previous SIESTA run or by the standalone
-program BASE.  \index{BASE@{\bf BASE}}\index{basis!BASE standalone
-program} See an Appendix for information on the optional NetCDF
-package.  No pseudopotential files are necessary.
+files can be generated by a previous {\sc Siesta} run or by the
+standalone program {\sc Gen-basis}.\index{Gen-basis program@{\sc
+Gen-basis}}\index{basis!Gen-basis standalone program} No pseudopotential
+files are necessary.
 
 
 \item[{\bf PAO.BasisType}] ({\it string}): 
-\index{PAO.BasisType@{\bf PAO.BasisType}}\index{basis!PAO} 
-The kind of basis to be generated is chosen. All are based
-on finite-range pseudo-atomic 
-orbitals\index{finite-range pseudo-atomic orbitals}
-[PAO's of Sankey and Niklewsky, PRB 40, 3979 (1989)]
-The original PAO's were described only for minimal bases. SIESTA generates 
-extended bases (multiple-$\zeta$,\index{multiple-$\zeta$} 
-polarization,\index{polarization orbitals} and diffuse 
+\index{PAO.BasisType@{\bf PAO.BasisType}}
+\index{basis!PAO} 
+
+The kind of basis to be generated is chosen. All are based on
+finite-range pseudo-atomic orbitals\index{finite-range pseudo-atomic
+orbitals} [PAO's of Sankey and Niklewsky, PRB 40, 3979 (1989)] The
+original PAO's were described only for minimal bases. {\sc Siesta}
+generates extended bases (multiple-$\zeta$,\index{multiple-$\zeta$}
+polarization,\index{polarization orbitals} and diffuse
 orbitals\index{diffuse orbitals} applying different schemes of choice:
 
 \begin{itemize}
@@ -673,8 +1313,8 @@ by changing the scale-factors, instead of using the excited orbitals.
 
 \noindent
 Note that, for the {\tt split} and {\tt nodes} cases
-the whole basis can be generated by SIESTA with no further information
-required. SIESTA will use default values as defined in the following 
+the whole basis can be generated by {\sc Siesta} with no further information
+required. {\sc Siesta} will use default values as defined in the following 
 ({\bf PAO.BasisSize},
 {\bf PAO.EnergyShift}, and {\bf PAO.SplitNorm}, see below).
 
@@ -758,7 +1398,7 @@ Block with the maximum angular momentum of the Kleinman-Bylander
 projectors,\index{Kleinman-Bylander projectors} {\tt lmxkb}. 
 This information is optional. If the block 
 is absent, or for a species which is not mentioned inside 
-it, SIESTA will take {\tt lmxkb(is) = lmxo(is) + 1}, where {\tt lmxo(is)}
+it, {\sc Siesta} will take {\tt lmxkb(is) = lmxo(is) + 1}, where {\tt lmxo(is)}
 is the maximum angular momentum of the basis orbitals of species {\tt is}.
 \begin{verbatim}
          %block Ps.lmax
@@ -853,37 +1493,36 @@ Block with data to define explicitly the
 basis to be used.  It allows the definition by hand of all the
 parameters that are used to construct the atomic basis. There is no
 need to enter information for all the species present in the
-calculation, basis\index{basis!PAO} for the species not mentioned in
-this block will be generated automatically using the parameter {\bf
+calculation. The basis\index{basis!PAO} for the species not mentioned in
+this block will be generated automatically using the parameters {\bf
 PAO.BasisSize}, {\bf PAO.BasisType}, {\bf PAO.EnergyShift} and {\bf
-PAO.SplitNorm}.  It can be used leaving some parameters to zero, or
-completely ignoring some of them, which are optional and do not need
-to appear.  In these cases the values will be generated from the
-magnitudes defined above, or from the appropriate defaults values. For
+PAO.SplitNorm}. Some parameters can be set to zero, or
+left out completely.  In these cases the values will be generated from the
+magnitudes defined above, or from the appropriate default values. For
 example, the radii\index{cutoff radius} will be obtained from {\bf
-PAO.EnergyShift} or from {\bf PAO.SplitNorm} if they are zero, the
-scale factors will be put to 1, if they are zero or not given in the
+PAO.EnergyShift} or from {\bf PAO.SplitNorm} if they are zero; the
+scale factors will be put to 1 if they are zero or not given in the
 input.  An example block for a two-species calculation (H and O) is
-the following:
+the following ({\tt opt} means optional):
 
 \begin{verbatim}
   %block PAO.Basis       # Define Basis set
-   O    2  nodes  1.0    # Label, l_shells, type (optional), ionic_charge (optional)
-    n=2 0   2            # n (optional), l, Nzeta
+   O    2  nodes  1.0    # Label, l_shells, type (opt), ionic_charge (opt)
+    n=2 0   2            # n (opt if not using semicore levels), l, Nzeta
           3.50  3.50     #     rc(izeta=1,Nzeta)(Bohr)
-          0.95  1.00     #     scaleFactor(izeta=1,Nzeta) (optional)
-        1   1   P   2    # l, Nzeta, PolOrb (optional), NzetaPol (optional)
+          0.95  1.00     #     scaleFactor(izeta=1,Nzeta) (opt)
+        1   1   P   2    # l, Nzeta, PolOrb (opt), NzetaPol (opt)
           3.50           #     rc(izeta=1,Nzeta)(Bohr)
-   H    1                # Label, l_shells, type (optional), ionic_charge (optional)
+   H    1                # Label, l_shells, type (opt), ionic_charge (opt)
         0   2            # l, Nzeta
           5.00  0.00     #     rc(izeta=1,Nzeta)(Bohr)
  %endblock PAO.Basis
 \end{verbatim}
 
 \noindent
-The reading is done this way (those variables in brackets are optional, 
-therefore they are only read if
-present):
+The reading is done this way (those variables in brackets are
+optional, therefore they are only read if present) (See 
+the routines in {\tt Src/basis\_specs.f} for detailed information):
 
 \begin{verbatim}
     From js = 1 to  nspecies 
@@ -950,13 +1589,13 @@ Using {\bf PAO.EnergyShift} makes no sense, and a cut off
 radius different from zero must be explicitely given (the same cutoff radius
 as the orbitals they polarize is usually a sensible choice).
 
-A species with atomic number = -100 will be considered by SIESTA as
+A species with atomic number = -100 will be considered by {\sc Siesta} as
 a constant-pseudopotential atom, {\it i.e.}, the basis functions
 generated will be spherical Bessel functions\index{Bessel functions}
 with the specified $r_c$. In this case, $r_c$ has to be given, 
 {\bf EnergyShift} will not calculate it.\index{basis!Bessel functions}
 
-Other negative atomic numbers will be interpreted by SIESTA as 
+Other negative atomic numbers will be interpreted by {\sc Siesta} as 
 {\it ghosts}\index{ghost atoms}\index{basis!ghost atoms} 
 of the corresponding positive value: the orbitals
 are generated and put in position as determined by the coordinates,
@@ -2089,7 +2728,7 @@ stress happens to be in a discontinuity.
 \item[{\bf MD.InitialTimeStep}] ({\it integer}): 
 \index{MD.InitialTimeStep@{\bf MD.InitialTimeStep}} 
 Initial time step of the MD simulation.
-In the current version of SIESTA it must be 1.
+In the current version of {\sc Siesta} it must be 1.
 
 {\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
     
@@ -2310,6 +2949,8 @@ atomatically sets MD.TypeOfRun to {\tt Phonon}.
 \vspace{5pt}
 \subsection{Parallel options}
 
+(Note: These features are not available in all distributions.)
+
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
@@ -2457,12 +3098,12 @@ expense of re-calculating a number of quantities.
 
 \item[{\bf LongOutput}] ({\it logical}):
 \index{LongOutput@{\bf LongOutput}}\index{output!long}
-SIESTA can write to standard output different data sets
+{\sc Siesta} can write to standard output different data sets
 depending on the values for output options described below.
-By default SIESTA will not write most of them. They can be
+By default {\sc Siesta} will not write most of them. They can be
 large for large systems (coordinates, eigenvalues, forces, etc.)
 and, if written to standard output, they accumulate for all the steps of 
-the dynamics. SIESTA writes the information in other files
+the dynamics. {\sc Siesta} writes the information in other files
 (see Output Files) in addition to the standard output, and these
 can be accumulative or not.
 
@@ -2674,7 +3315,7 @@ and vice-versa.
 \item[{\bf WriteMDhistory}] ({\it logical}):
 \index{WriteMDhistory@{\bf WriteMDhistory}}
 \index{output!molecular dynamics!history}
-If {\tt .true.} SIESTA accumulates the molecular dynamics
+If {\tt .true.} {\sc Siesta} accumulates the molecular dynamics
 trajectory in the following files:
 \begin{itemize}
 \item
@@ -2890,13 +3531,14 @@ File {\tt SystemLabel}.LDOS is only written, not read, by siesta.
 {\it Default value:} LDOS not calculated nor written.
         
 
-\item[{\bf ProjectedDensityOfStates}] ({\it block}): 
-\index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}} 
+\item[{\bf ProjectedDensityOfStates}] ({\it block}):
+\index{ProjectedDensityOfStates@{\bf ProjectedDensityOfStates}}
 \index{output!projected density of states}
+
 Instructs to write the Total Density Of States (Total DOS) and the 
 Projected Density Of States (PDOS) on the basis orbitals,
 between two given energies,
-in files {\tt SystemLabel}.TOT.DOS and 
+in files {\tt SystemLabel}.DOS and 
 {\tt SystemLabel}.PDOS, respectively. 
 The block must be a single line with the energies of the range for 
 PDOS projection,
@@ -2912,28 +3554,23 @@ An example is:
      %endblock ProjectedDensityOfStates
 \end{verbatim}
 
-{\it Use:} The two energies of the range must be ordered,
-with lowest first.
-The PDOS is only implemented when the
-hamiltonian is solved by diagonalization with k-points.
-The PDOS is not parallelized yet, so an
-error message is issued when we try to use it in a parallel 
+{\it Use:} The two energies of the range must be ordered, with lowest
+first.  The PDOS is only implemented when the hamiltonian is solved by
+diagonalization with k-points.  The PDOS is not parallelized yet, so
+an error message is issued when we try to use it in a parallel
 execution.
 
 {\it Output:} The Total DOS is dumped into a file
-called {\tt SystemLabel}.TOT.DOS. The format of this file is:
+called {\tt SystemLabel}.DOS. The format of this file is:
 
 Energy value, Total DOS (spin up), Total DOS (spin down)
 
 The Projected Density Of States for all the orbitals in the unit cell
-is dumped sequentially into a file called 
-{\tt SystemLabel}.PDOS. The format of this file, for each atomic orbital,
-is the same as in the case of the Total DOS. 
+is dumped sequentially into a file called {\tt SystemLabel}.PDOS. This
+file is more structured, so auxiliary tools can process it easily.
 
-In all the cases, the units for the DOS are 
-(number of states/eV),
-and the Total DOS, $g \left(\epsilon\right)$, 
-is normalized as follows:
+In all cases, the units for the DOS are (number of states/eV), and the
+Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
 
 \begin{eqnarray}
    \int_{-\infty}^{+\infty} g \left(\epsilon\right) d\epsilon = 
@@ -2943,13 +3580,6 @@ is normalized as follows:
 
 
 {\it Default value:} PDOS not calculated nor written.
-        
-\item[{\bf WriteSiestaDim}] ({\it logical}): 
-\index{WriteSiestaDim@{\bf WriteSiestaDim}} 
-Instructs siesta to write the correct dimension parameters in
-file siesta.h and stop.
-
-{\it Default value:} {\tt .false.}
 
 \end{description}
         
@@ -2960,7 +3590,7 @@ See {\it User.Basis} and {\it User.Basis.NetCDF} descriptors.
 
 \subsection{Pseudopotentials}
 
-The pseudopotentials will be read by SIESTA from different files, one
+The pseudopotentials will be read by {\sc Siesta} from different files, one
 for each defined species (species defined either in block
 {\bf ChemicalSpeciesLabel}).\index{pseudopotential!files}
 The name of the files should be:
@@ -2970,14 +3600,13 @@ The name of the files should be:
 
 \noindent 
 where {\it Chemical\_label} corresponds to the label defined in the
-{\bf ChemicalSpeciesLabel} block or the chemical symbol corresponding to
-the atomic number specified in {\bf PAO\_basis\_and\_PS\_lmax}.
+{\bf ChemicalSpeciesLabel} block.
         
 \section{OUTPUT FILES}
 
 \subsection{Standard output} \index{output!main output file}
 
-SIESTA writes its main output to standard output. 
+{\sc Siesta} writes its main output to standard output. 
 
 A brief description follows. See the example cases in the 
 siesta/Examples directory for illustration. 
@@ -3043,10 +3672,10 @@ for writing the Mulliken population analysis at different levels of detail.
 \end{itemize}
 
 Except for the first one, which is {\tt .true.} by default, the
-default of SIESTA for this options is {\tt .false.} (or 0 for the last)
+default of {\sc Siesta} for this options is {\tt .false.} (or 0 for the last)
 which means no writing. That gives the short output format.
 
-There is a long output possibility (verbose) defined in SIESTA, which is
+There is a long output possibility (verbose) defined in {\sc Siesta}, which is
 obtained by setting {\bf LongOutput} to {\tt .true.} . It changes 
 the default of the previous flags to {\tt .true.} (to 1 for 
 Mulliken), with the consequent appearance of the 
@@ -3057,7 +3686,7 @@ Of course, the explicit setting of any of these options overrides the
 
 
 \subsection{Used parameters}\index{out.fdf@{\tt out.fdf}}
-The file {\it out.fdf} contains all the parameters used by SIESTA
+The file {\it out.fdf} contains all the parameters used by {\sc Siesta}
 in a given run, both those specified in the input fdf file and
 those taken by default. They are written in fdf format, so that
 you may reuse them as input directly. Input data blocks are 
@@ -3075,8 +3704,8 @@ arrays are considered, since fixed-size arrays are generally much smaller.
 
 \subsection{Basis}
 \index{basis}\index{output!basis}
-SIESTA (and the standalone program BASE) 
-\index{BASE@{\bf BASE}}\index{basis!BASE standalone program}.
+{\sc Siesta} (and the standalone program {\sc Gen-basis}) 
+\index{basis!Gen-basis standalone program}
 always generate the files
 {\it Atomlabel}{\tt .ion}, where {\it Atomlabel} is the atomic label
 specified in block {\it ChemicalSpeciesLabel}.  Optionally, if
@@ -3086,11 +3715,11 @@ NetCDF files \index{NetCDF format}
 See an Appendix for information on the optional NetCDF package.
 
 \subsection{Pseudopotentials}
-\index{Pseudopotentials} SIESTA uses as local pseudopotential a smooth
+\index{Pseudopotentials} {\sc Siesta} uses as local pseudopotential a smooth
 function up to the core cutoff radius (normally the potential generated
 by the core positive charge spread with a gaussian form). The
 Kleinman-Bylander pseudopotentials are generated
-accordingly.
+accordingly. They appear in the {\tt .ion} files.
 \index{pseudopotential!writing vlocal} 
 \index{pseudopotential!writing KB projectors} 
 
@@ -3189,7 +3818,7 @@ including lattice vectors if the cell varies. In an unformatted form.
 The second gives global infomation (energy, temperature, etc),
 and the third has the coordintes in a form suited for XMol animation.
 See the {\bf WriteMDhistory} and {\bf WriteMDXmol} data descriptors 
-above for information. SIESTA always append new information on these
+above for information. {\sc Siesta} always append new information on these
 files, making them accumulative even for different runs.
 
 The {\tt iomd} subroutine is prepared for the changing of the 
@@ -3326,36 +3955,21 @@ is conserved, may be notably difficult for small-gap systems.
 \end{itemize}
 
 
-%\begin{thebibliography}{19}
-%
-%\bibitem{ORDE} P. Ordej\'on, D. A. Drabold, M. P. Grumbach and
-%R. M. Martin, Phys. Rev. B {\bf 48}, 14646 (1993); {\bf 51} 1456 (1995)
-%
-%\end{thebibliography}
-
-
-
-
 \section{PROJECTED CHANGES AND ADDITIONS}
 
 The following are major projected changes and improvements.
-The implementation dates are only temptative and very approximate.
 
 \begin{itemize}
 
 \item
 Subtraction of the energy and forces of the isolated atoms placed
 on the uniform real-space grid, in order to partially cancel the
-'energy rippling' (eggbox effect) introduced by that grid.
-
-\item
-Ability to calculate the atomic forces and stress from Harris density 
-functional, for fast non-selfconsistent calculations.
+'energy rippling' (egg-box effect) introduced by that grid.
 
 \item
 Spectral analysis of DOS weighted for different orbitals or atoms
 (just for the diagonalization option). The information is now
-available only through {\bf SaveHS}. Projected for August 1999.
+available only through {\bf SaveHS}. 
 
 \item
 Solution of the Poisson-Boltzman equation for molecules in solution,
@@ -3403,7 +4017,7 @@ followup of the problem.
 
 \item A brief one-line synopsis of the problem.
 
-\item The SIESTA version in which the problem was found. We can't
+\item The {\sc Siesta} version in which the problem was found. We can't
 assume that you have the very latest version, and a problem that exists in
 one version may not exist in another. Use the version number printed
 at the top of any output file (also found in file Src/version.F).
@@ -3411,7 +4025,7 @@ at the top of any output file (also found in file Src/version.F).
 \item The platform on which the problem was found, and the operating
 system and compiler version.
 
-\item The bug database is open so that SIESTA users can look at the
+\item The bug database is open so that {\sc Siesta} users can look at the
 known problems (this, by the way, is useful to avoid receiving
 duplicate bug reports). If for some reason you do not want your report
 to be seen by others, please set the {\tt Confidential} flag to {\tt
@@ -3452,13 +4066,9 @@ The main nonpublic contribution, that we thank thoroughly, are a
 number of routines, written by {\bf A. R.\ Williams} in 1985, for the
 solution of the radial Schr\"odinger and Poisson equations in the APW
 code of Soler and Williams (PRB {\bf 42}, 9728 (1990)).  Within
-SIESTA, they are kept in files arw.f and periodic\_table.f, and they
+{\sc Siesta}, they are kept in files arw.f and periodic\_table.f, and they
 are used for the generation of the basis orbitals and the screened
 pseudopotentials.
-
-\item
-The efficient implementation of k-sampling, which involves many routines, 
-was done in collaboration with {\bf J.\ Junquera} in 1998.
 
 \item
 Routine pulayx, used for the SCF mixing, was originally written by
@@ -3487,11 +4097,6 @@ the {\bf EISPACK} package are in file eispack.f
 The multivariate fast fourier transform in cft.f was written by
 {\bf R. C. Singleton} in 1968. It is used to solve Poisson's equation.
 
-\item 
-Subroutine plcharge.f (that writes information
-to be used by the utility program DENCHAR to plot density
-contours) was writen by {\bf J. Junquera}. 
-
 \item
 Subroutine iomd.f for writing MD history in files was originally written
 by {\bf J. Kohanoff}.
@@ -3500,26 +4105,14 @@ by {\bf J. Kohanoff}.
 We want to thank very specially {\bf O. F.\ Sankey, D. J.\ Niklewski} and 
 {\bf D. A.\ Drabold} for making the FIREBALL code available to P.\ Ordej\'on. 
 Although we no longer use the routines in that code, it 
-was essential in the initial development of the SIESTA project,
+was essential in the initial development of the {\sc Siesta} project,
 which still uses many of the algorithms developed by them.
 
-Also, we thank {\bf N.\ Troullier} and {\bf J. L.\ Martins} for
-making available to us their pseudopotential-generation program
-(which is based on the original code by {\bf S.\ Froyen}).
-This program is, however, completely separated from SIESTA.
-
-Besides his (impressive) current work on the parallelization of the program,
-{\bf J. D. Gale} has also contributed to the present scalar version
-with some ideas for improving the efficiency of the program 
-which are very useful.
-
 We thank {\bf V. Heine} for his supporting and encouraging us in this
-project. Finally, we want to thank very specially {\bf R. M.\ Martin} 
-for his continuous support, without which the SIESTA project would have 
-been very difficult or even impossible.
+project. 
 
-The SIESTA project has been supported by Spanish DGES
-through project PB95-0202.
+The {\sc Siesta} project has been supported by Spanish DGES
+through project PB95-0202 and by the Fundaci\'on Ram\'on Areces.
 
 
 \section{APPENDIX: Physical unit names recognized by FDF}
@@ -3643,7 +4236,7 @@ accessibility is of great interest also.
 \end{quotation}
 
 \index{NetCDF library}
-To be able to generate NetCDF files in SIESTA, the public domain
+To be able to generate NetCDF files in {\sc Siesta}, the public domain
 NetCDF library (V. 3.5 or higher) must be instaled. It can be
 downloaded from 
 
@@ -3656,9 +4249,9 @@ NETCDF_INTERFACE=libnetcdf_f90.a
 DEFS_CDF=-DCDF
 \end{verbatim}
 
-While it might seem as a hassle to have to install the library, the 
+While it might seem a hassle to have to install the library, the 
 added functionality is quite large, and it is set to grow in future
-releases of SIESTA. The area in which this is already beginning to be
+releases of {\sc Siesta}. The area in which this is already beginning to be
 felt is in the visualization of atomic information. When a NetCDF file
 is accessed by means of a scripting language with the proper
 interface (Python, {\tt http://www.python.org} is highly recommended
@@ -3667,12 +4260,148 @@ See the Utils/PyAtom directory for some example scripts.
 \index{Python language}
 
 
+\newpage
+\section{APPENDIX: Parallel {\sc Siesta}}
+\index{Parallel {\sc Siesta}}
 
+(Note: This feature might not be available in all distributions.)
 
+At present, {\sc Siesta} has been parallelised with moderate system sizes
+in mind and is suitable for comensurately moderate parallel computing
+systems of the type most widely available. A version suitable for
+massively parallel systems in order to tackle grand challenge problems
+will hopefully be available in the future.
+
+Apart from the possibility of faster real time performance, there is
+another major driving force for the use of the parallel version. All
+significant parts of the code have been written using a distributed
+data strategy over the Nodes. This means that the use of a parallel
+machine can allow access to a larger amount of physical memory.
+
+Given the targets for the present version, the strategy for parallelism
+does not employ spatial decomposition since this is only beneficial for
+very large problem sizes. Hence the work is divided in 2 ways depending
+on the section of the code :
+
+\begin{itemize}
+\item
+For operations that are orbital based, a 1-D block cyclic distribution
+has been used to divide the work over processors. This is controlled
+by the parameter {\bf BlockSize}.\index{BlockSize@{\bf Blocksize}}
+For optimal performance, this parameter
+should be adjusted according to the size of problem and the machine
+being used. Very small and very large values tend to be inefficient
+and typically values in the range 8 - 20 tend to be optimal. Parts of
+the code that parallelise in this way are, evaluation of the kinetic
+energy, the non-local pseudopotential contribution, determination of
+the overlap integrals and matrix diagonalisation/order N.
+
+\item
+For operations that are grid based, a 2-D block cyclic distribution
+over mesh points has been used to divide the work. The mesh is divided
+in the Y and Z directions, but not currently in the X direction. How
+the mesh points are divided is controlled by the {\bf ProcessorY}
+\index{ProcessorY@{\bf ProcessorY}}
+option which must be a factor of the total number of mesh points in the Y
+direction. Performance will be optimal when the load is balanced evenly
+over all processors. For dense bulk materials this is straightforward
+to achieve. For surfaces, where there is a region of vacuum, it is
+worth ensuring that the mesh is divided so as to ensure that some
+processors do not have just vacuum regions. Parts of the code that
+parallelise in this way are anything connected to the mesh (i.e. within
+DHSCF), including the evaluation of the Hartree and exchange-correlation
+energies.
+\end{itemize}
+
+There is also a second mode in which the parallel version can be used. For
+systems where the number of K points is very large and the size of the
+Hamiltonian/Overlap matrices is small, then the work can be parallelised
+over K points. This is far more efficient in the diagonalisation step
+since this phase becomes embarrassingly parallel once the matrices have
+been distributed to each Node. This mode is selected using the 
+{\bf ParallelOverK} \index{ParallelOverk@{\bf ParallelOverK}}
+option.
+
+In order to use the parallel version of the code you must have the following
+libraries installed on your computer :
+
+\begin{verbatim}
+
+(a) MPI :       The Message Passing Interface library - this allows the 
+                processors to communicate. Most machine vendors have their 
+                own implementations available for their own platforms. 
+                However, there are two freely available versions that can 
+                be installed :
+
+                MPICH :
+
+                  http://www-unix.mcs.anl.gov/mpi/mpich/
+
+                LAMMPI :
+
+                  http://www.lam-mpi.org/
+
+(b) Blacs :     This is a communications library that runs on top of MPI. Again
+                if can be obtained for free from :
+
+                  http://www.netlib.org/
+
+                Both source code and pre-compiled binaries are available.
+
+(c) Scalapack : This is a parallel library for dense linear algebra, equivalent
+                to "lapack" but for parallel systems. Once again this is freely
+                available as source code or in precompiled form from :
+
+                  http://www.netlib.org/
+
+\end{verbatim}
+
+\noindent
+Parallel versions of the files for {\tt arch.make} suitable for a
+number of systems are provided in the {\tt Src/Sys} directory. Should
+there be no suitable file there for your system, then the following
+are the key variables to be set in the {\tt arch.make} file:
+
+\begin{verbatim}
+MPI_INTERFACE=libmpi_f90.a
+MPI_INCLUDE=/usr/local/include
+DEFS_MPI=-DMPI
+#
+LIBS= -lscalapack -lblacs -lmpi
+\end{verbatim}
+
+Here {\tt MPI\_INTERFACE} indicates that the interface to MPI provided
+should be used which handles the issue of the variable type being
+passed. This will be needed in nearly all cases. {\tt MPI\_INCLUDE}
+indicates the directory where the header file "mpif.h" can be found on
+the present machine. The environment variable {\tt DEFS\_MPI} should always
+be set to {\tt "-DMPI"}, since this causes the preprocessor to include the
+parallel code in the source. Finally {\tt LIBS} must now include all the
+libraries required - namely Scalapack, Blacs and MPI, in addition to
+any machine optimised Blas, etc.
+
+To execute the parallel version, on most machine, the command will now
+be of the form :
+
+{\tt mpirun -np <nproc> siesta < input.fdf > output}
+
+Where {\tt <nproc>} is the desired number of processors, {\tt
+input.fdf} is the {\sc Siesta} input file and {\tt output} is the name
+of the output file.
+
+Finally, a word concerning performance of parallel execution. This is
+a very variable quantity and depends on the exact system you are using
+since it will vary according to the latency and bandwidth of the
+communication mechanism.  This is a function of the means by which the
+processors are physically connected and by software factors relating
+to the implementation of MPI. The one almost universal truth is that
+for significant system sizes is that parallel diagonalisation becomes
+the bottleneck and the place where efficiency is most readily
+lost. This is basically just the nature of diagonalisation, but it is
+always worth tuning the BlockSize parameter.
 
 \addcontentsline{toc}{section}{Index}
 \printindex
-
 
 \end{document}
 

@@ -1,6 +1,4 @@
-$Id: CONDITIONS,v 1.5 2001/09/20 12:04:07 wdpgaara Exp $
-
-   POLICY FOR THE USE, DISTRIBUTION, AND MODIFICATION OF SIESTA 0.11
+   POLICY FOR THE USE, DISTRIBUTION, AND MODIFICATION OF SIESTA 1.1
    =================================================================
 
 MOTIVATION:
@@ -8,15 +6,14 @@ MOTIVATION:
 The SIESTA program has been devised for its general use in research
 within the academic community. It is not being developed with the idea
 of its remaining for the particular use of a group or limited set of
-groups.  However, two considerations are relevant at this point: (1)
-The program is still at a relatively early stage of development, and
-(2) a team has been and is dedicating an important effort for the
-making, maintaining, and developing of SIESTA.  Therefore, some
-conditions have been defined for the use, distribution, and
-modification of SIESTA, which the authors consider fair and within the
-common fair practices in the academic community.  We think that
-considering possible conflicts early may avoid misunderstandings and
-problems later. We are open to suggestions concerning this policy.
+groups.  However, the SIESTA team has been and is dedicating an
+important effort for the making, maintaining, and developing of the
+program.  Therefore, some conditions have been defined for the use,
+distribution, and modification of SIESTA, which the authors consider
+fair and within the common fair practices in the academic community.
+We think that considering possible conflicts early may avoid
+misunderstandings and problems later. We are open to suggestions
+concerning this policy.
 
 ------------------------------------------------------------------------
 
@@ -34,13 +31,12 @@ code.
 
 USE:
 
-Because of the two points mentioned in the motivation, the use of 
-SIESTA by any group will be IN COLLABORATION (co-authoring) WITH 
-AT LEAST ONE of the authors or developers of the code (see names below), 
-until the author(s)/developer(s) consider it approriate to stop the 
-collaboration. This condition applies to new SIESTA 1.1 users, and 
-does not invalidate the conditions previously agreed in collaborations
-that started with earlier versions.
+The use of SIESTA by any group will be IN COLLABORATION (co-authoring)
+WITH AT LEAST ONE of the authors or developers of the code (see names
+below), until the author(s)/developer(s) consider it approriate to
+stop the collaboration. This condition applies to new SIESTA 1.1
+users, and does not invalidate the conditions previously agreed in
+collaborations that started with earlier versions.
 
 In addition, the author of any new substantial development of 
 the code will receive credit by co-authoring the first publication
@@ -53,7 +49,7 @@ project, as long as it does not imply any relation of SIESTA
 with the institution to which the user is adscribed.
 SIESTA is given to the user personally, for an open scientific 
 collaboration, not to her/his institution. This point has to be
-observed with special care in private or military institutions.
+observed with special care in commercial or military institutions.
 The code will be ONLY accesible to the persons involved in the
 collaboration, as agreed with the SIESTA developer, and whose names 
 have been communicated to the authors.
@@ -97,7 +93,7 @@ From the above considerations:
       Emilio Artacho,        University of Cambridge
       Pablo Ordejon,         ICMAB-CSIC, Barcelona
       Daniel Sanchez-Portal, Universidad del Pais Vasco, San Sebastian
-      Jose M. Soler,         Autonomous Univ. of Madrid
+      Jose M. Soler,         Universidad Autonoma de Madrid
 
 Although we acknowledge that a limited number of auxiliary subroutines
 were written by (or are based on previous subroutines written by)
@@ -108,6 +104,8 @@ algorithms of the SIESTA program are ours.
 
       Julian Gale,        Imperial College, London
       Alberto Garcia,     Universidad del Pais Vasco, Bilbao
+      Javier Junquera     Universidad Autonoma de Madrid
+      Richard M. Martin   University of Illinois at Urbana-Champaign
 
 2) As authors of the initial version of SIESTA, we reserve
 to ourselves all the rights to resolve any conflicts in its 
@@ -132,9 +130,10 @@ other possible benefits) for their developments.
 dramatic improvements in efficiency or functionality,
 we intend to be rather restrictive with developments whose 
 lack of modularity may compromise the efficiency of the 
-rest of the program, or difficult its maintainance or 
+rest of the program, or hamper its maintainance or 
 other future developments. Therefore, we decidedly
-encourage to discuss previously with us any projected
+encourage to discuss in advance with us any projected
 developments.
+
 
 

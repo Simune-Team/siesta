@@ -1,11 +1,11 @@
-SIESTA 1.0.59 -- [pgf90 fixes] (July 10, 2001)
+SIESTA 1.1 -- [] (Sept 22, 2001)
 Architecture  : SIESTA_ARCH
 Compiler flags: FFLAGS
 SERIAL version
 NetCDF-capable
 
 * Running in serial mode
->> Start of run:  24-JUL-2001  18:51:19
+>> Start of run:  22-SEP-2001  15:10:02
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -127,9 +127,9 @@ redata: System Label                     =     si64
 
 initatom: Reading input for the pseudopotentials and atomic orbitals
  Species number:            1  Label: Si Atomic number:          14
-Ground state valence configuration:
-           3 s           2
-           3 p           2
+Ground state valence configuration:   3s02  3p02
+Reading pseudopotential information in formatted form from Si.psf
+<basis_specs>
 ======================================================================
 Si                   Z=  14    Mass=  28.090        Charge=  0.0000    
 Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
@@ -150,6 +150,7 @@ L=0  Nkbl=1  erefs: 0.17977+309
 L=1  Nkbl=1  erefs: 0.17977+309
 L=2  Nkbl=1  erefs: 0.17977+309
 ======================================================================
+</basis_specs>
 ATOM: Called for Si  (Z =  14)
 
 read_vps: Pseudopotential generation method:
@@ -239,10 +240,7 @@ Si          2                    # Species label, number of l-shells
 %endblock PAO.Basis
 
 prinput: *****
-
-*** Dumping atomic info in netCDF format (.nc files)
-
-Dumping basis to NetCDF file Si.dump.nc
+Dumping basis to NetCDF file Si.ion.nc
 coor: Atomic-coordinates input format  =     Cartesian coordinates
 coor:                                        (in units of alat)
 redata: Number of spin components        =     1
@@ -255,14 +253,14 @@ redata: Net charge of the system         =     0.0000 |e|
 redata: Max. number of SCF Iter          =    50
 redata: One Pulay mixing every           =     3 iterations
 redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?       =     F
+redata: Write Pulay info on disk?        =     F
 redata: New DM Mixing Weight             =     0.3000
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks       =     0.5000
 redata: DM Tolerance for SCF             =     0.001000
 redata: Use continuation files for DM    =     T
 redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            = Diagonalization
+redata: Method of Calculation            =     Diagonalization
 redata: Electronic Temperature           =     0.0018  Ry
 redata: Fix the spin of the system       =     F
 redata: Dynamics option                  =     CG coord. optimization
@@ -353,7 +351,7 @@ InitMesh: MESH =    48 x    48 x    48 =      110592
 InitMesh: Mesh cutoff (required, used) =    40.000    53.991 Ry
 
 
-* Maximum dynamic memory allocated =    27 MB
+* Maximum dynamic memory allocated =    28 MB
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =   12185.667955
@@ -372,7 +370,7 @@ siesta: FreeEng =   -6854.635756
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1    -6839.7906    -6854.6358    -6854.6358  1.0203 -3.0641
-timer: Routine,Calls,Time,% = IterSCF        1       7.510  81.88
+timer: Routine,Calls,Time,% = IterSCF        1       6.535  80.39
 siesta:    2    -6838.2317    -6838.1807    -6838.1807  0.0154 -3.2858
 siesta:    3    -6838.2304    -6838.2656    -6838.2656  0.0066 -3.2822
 siesta:    4    -6838.2297    -6838.2287    -6838.2287  0.0000 -3.2766
@@ -526,33 +524,33 @@ siesta:           0.03870317          0.03870044  eV/Ang**3
 siesta:          62.00997812         62.00560816  kBar
 
 
-* Maximum dynamic memory allocated : Node    0 =    27 MB
+* Maximum dynamic memory allocated : Node    0 =    28 MB
 * Maximum memory occured during poison                        
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      23.802      23.802    99.99
-timer:  Setup             1       0.571       0.571     2.40
+timer:  siesta            1      22.756      22.756    99.99
+timer:  Setup             1       0.549       0.549     2.41
 timer:  bands             1       0.002       0.002     0.01
 timer:  KSV_init          1       0.002       0.002     0.01
-timer:  IterMD            1      23.206      23.206    97.49
-timer:  hsparse           2       0.403       0.805     3.38
-timer:  overfsm           2       0.185       0.371     1.56
-timer:  IterSCF           5       4.422      22.108    92.88
-timer:  kinefsm           2       0.144       0.288     1.21
-timer:  nlefsm            2       0.745       1.490     6.26
-timer:  DHSCF             5       3.461      17.307    72.71
-timer:  DHSCF1            1       0.117       0.117     0.49
-timer:  DHSCF2            1       2.989       2.989    12.55
-timer:  REORD            32       0.001       0.043     0.18
-timer:  POISON            6       0.092       0.550     2.31
-timer:  DHSCF3            5       1.871       9.357    39.31
-timer:  rhoofd            5       0.859       4.293    18.04
-timer:  CELLXC            5       0.123       0.616     2.59
-timer:  vmat              5       0.774       3.870    16.26
-timer:  diagon            4       0.624       2.498    10.49
-timer:  rdiag             4       0.352       1.408     5.92
-timer:  DHSCF4            1       4.838       4.838    20.32
-timer:  dfscf             1       4.130       4.130    17.35
+timer:  IterMD            1      22.183      22.183    97.47
+timer:  hsparse           2       0.415       0.831     3.65
+timer:  overfsm           2       0.150       0.300     1.32
+timer:  IterSCF           5       4.226      21.129    92.84
+timer:  kinefsm           2       0.138       0.276     1.21
+timer:  nlefsm            2       0.667       1.333     5.86
+timer:  DHSCF             5       3.299      16.494    72.48
+timer:  DHSCF1            1       0.117       0.117     0.51
+timer:  DHSCF2            1       3.002       3.002    13.19
+timer:  REORD            32       0.001       0.046     0.20
+timer:  POISON            6       0.092       0.550     2.42
+timer:  DHSCF3            5       1.722       8.609    37.83
+timer:  rhoofd            5       0.862       4.310    18.94
+timer:  CELLXC            5       0.123       0.617     2.71
+timer:  vmat              5       0.616       3.078    13.53
+timer:  diagon            4       0.619       2.477    10.88
+timer:  rdiag             4       0.351       1.404     6.17
+timer:  DHSCF4            1       4.759       4.759    20.91
+timer:  dfscf             1       4.046       4.046    17.78
   
->> End of run:  24-JUL-2001  18:51:43
+>> End of run:  22-SEP-2001  15:10:25

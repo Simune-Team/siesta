@@ -104,7 +104,7 @@ C Internal variables ---------------------------------------------------
       CALL TIMER( 'pdos', 1)
 
 C Find the intervals between the subdivisions in the energy scale ------
-      DELTA = (E2 - E1) / NHIST
+      DELTA = (E2 - E1) / (NHIST-1)
       EV = 13.6058D0
       SNAME = FDF_STRING('SystemLabel','siesta')
       POINT = '.'
@@ -225,6 +225,7 @@ CCC New writing
 
            write(iunit2,'(a)') '<orbital '
            call xml_dump_attribute(iunit2,"index",str(i))
+           call xml_dump_attribute(iunit2,"atom_index",str(iat))
            call xml_dump_attribute(iunit2,"species",
      $                           trim(labelfis(spec)))
            write(pos_string,'(3f11.6)') (xa(ii,iat),ii=1,3)
@@ -238,9 +239,9 @@ CCC New writing
            write(iunit2,'(a)') '<data>'
            do ihist=1,nhist
               if (nspin.eq.1) then
-                 write(iunit2,'(f20.5)') dpr(ihist,i,1)/eV
+                 write(iunit2,'(f10.5)') dpr(ihist,i,1)/eV
               else if (nspin .eq. 2) then
-                 write(iunit2,'(2f20.5)') ener*eV, dpr(ihist,i,1)/eV,
+                 write(iunit2,'(2f10.5)') ener*eV, dpr(ihist,i,1)/eV,
      $                                 dpr(ihist,i,2)/eV
               endif
            enddo

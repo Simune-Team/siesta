@@ -8,7 +8,7 @@ include arch.make
 #
 # Uncomment the following line for debugging support
 #
-FFLAGS=$(FFLAGS_DEBUG)
+#FFLAGS=$(FFLAGS_DEBUG)
 #
 what:
 	@echo
@@ -108,6 +108,7 @@ old_atmfuncs.o atmfuncs.o matel.o: spher_harm.o
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o ionew.o: sys.o
 atmfuncs.o atom.o basis_specs.o: sys.o
 chkdim.o coor.o diagpol.o matel.o old_atmfuncs.o periodic_table.o: sys.o
+pdos.o: xml.o atmfuncs.o atomlist.o
 propor.o spher_harm.o pseudopotential.o: sys.o
 redata.o dhscf.o: sys.o
 #
@@ -142,8 +143,8 @@ version:
 	sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
 	sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > temp.F
 	$(FC) -c $(FFLAGS) $(DEFS) temp.F
+	@rm -f temp0.F temp.F
 	@mv temp.o version.o
-	@rm -f temp.F temp0.F 
 	@echo
 
 siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \

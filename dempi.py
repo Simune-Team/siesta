@@ -26,6 +26,8 @@ class DeMPIError(exceptions.Exception):
 
 filename=sys.argv[1]
 
+sys.stderr.write(" -> Processing " + filename + " ...")
+
 f=open(filename,"r")
 
 # State flags
@@ -89,6 +91,7 @@ while line:
 
 f.close()
 
+sys.stderr.write("... Done \n")
 
 
 

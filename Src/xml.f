@@ -41,7 +41,7 @@
       character(len=25) str_integer
 
       character(len=25) dummy
-      write(dummy,*)  int
+      write(dummy,'(i25)')  int
       str_integer = trim(dummy)
       end function str_integer
 
@@ -50,7 +50,7 @@
       character(len=25) str_double
 
       character(len=25) dummy
-      write(dummy,*)  num
+      write(dummy,'(g25.15)')  num
       str_double = trim(dummy)
       end function str_double
 

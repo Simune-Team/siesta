@@ -694,12 +694,12 @@ C Internal variables
      .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
      .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
      .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
-     .  DS, DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
+     .  DS(2), DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
      .  EC, ECUNIF, EX, EXUNIF,
      .  F, F1, F2, F3, F4, FC, FX, FOUTHD,
      .  GAMMA, GD(3,2), GDM(2), GDMIN, GDMS, GDMT, GDS, GDT(3),
      .  H, HALF, KF, KFS, KS, PHI, PI, RS, S,
-     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF, ZETA
+     .  T, THD, THRHLF, TWO, TWOTHD, VCUNIF(2), VXUNIF(2), ZETA
      
       DOUBLE PRECISION F5, F6, F7, F8, ASINHS
       DOUBLE PRECISION DF5DD,DF6DD,DF7DD,DF8DD
@@ -815,10 +815,10 @@ C Find correlation energy derivatives
 C Find exchange energy and potential
       FX = 0
       DO 60 IS = 1,2
-        DS   = MAX( DENMIN, 2 * D(IS) )
+        DS(1) = MAX( DENMIN, 2 * D(IS) )
         GDMS = MAX( GDMIN, 2 * GDM(IS) )
-        KFS = (3 * PI**2 * DS)**THD
-        S = GDMS / (2 * KFS * DS)
+        KFS = (3 * PI**2 * DS(1))**THD
+        S = GDMS / (2 * KFS * DS(1))
         F4 = SQRT(1.0D0 + (7.7956D0*S)**2)
         ASINHS = LOG(7.7956D0*S + F4)
         F1 = 1.0D0 + 0.19645D0 * S * ASINHS
@@ -827,23 +827,23 @@ C Find exchange energy and potential
         F = (F1 + F2 * S*S ) * F3
      .       
         CALL EXCHNG( IREL, 1, DS, EXUNIF, VXUNIF )
-        FX = FX + DS * EXUNIF * F
+        FX = FX + DS(1) * EXUNIF * F
 
-        DKFDD = THD * KFS / DS
-        DSDD = S * ( -DKFDD/KFS - 1/DS )
+        DKFDD = THD * KFS / DS(1)
+        DSDD = S * ( -DKFDD/KFS - 1/DS(1) )
         DF1DS = 0.19645D0 * ASINHS +
      .    0.19645D0 * S * 7.7956D0 / F4
         DF2DS = 0.15084D0*200.0D0*S*EXP(-100.0D0*S*S)
         DF3DS = - F3*F3 * (DF1DS + 4.0D0*0.004D0 * S*S*S)
         DFDS =  DF1DS * F3 + DF2DS * S*S * F3 + 2.0D0 * S * F2 * F3
      .            + (F1 + F2 * S*S ) * DF3DS   
-        DFXDD(IS) = VXUNIF * F + DS * EXUNIF * DFDS * DSDD
+        DFXDD(IS) = VXUNIF(1) * F + DS(1) * EXUNIF * DFDS * DSDD
 
         DO 50 IX = 1,3
           GDS = 2 * GD(IX,IS)
           DSDGD = (S / GDMS) * GDS / GDMS
           DFDGD = DFDS * DSDGD
-          DFXDGD(IX,IS) = DS * EXUNIF * DFDGD
+          DFXDGD(IX,IS) = DS(1) * EXUNIF * DFDGD
    50   CONTINUE
    60 CONTINUE
       FX = HALF * FX / DT

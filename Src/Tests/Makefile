@@ -4,14 +4,14 @@
 # Location of siesta executable (seen from two levels down)
 #
 SIESTA=../../../siesta
-#SIESTA="mpirun -np 4 ../../../siesta"
+#SIESTA="mpirun -np 2 ../../../siesta"
 #
 #
 include ../arch.make
 #
-tests= h2o  batio3 sih si64 fe # h2o_orderN 
+tests= h2o  h2o_dos h2o_orderN batio3 sih si64 fe
 #
-all: cmpsig
+all:  ###   cmpsig   ## Optional
 	@for i in ${tests} ; do \
 		echo ">>>> Running $$i test..." ; \
 		(SIESTA=$(SIESTA) sh do.sh $$i) ; \
