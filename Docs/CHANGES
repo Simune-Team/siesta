@@ -2,6 +2,7 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 ARCH: WILL be cvs 1.4.31
+(patch-12)
 Creator: Toby White <tow21@cam.ac.uk>
 Modified-files: Src/cdiag.F Src/scalapack_extra.f
 Summary: bugfixes for Julian's diagon improvements
@@ -13,6 +14,18 @@ Keywords: scalapack blas ztrsm
 * In cdiag.F, ztrsm was being called with an incorrectly typed
   7th argument. This silently introduced random numbers into the
   energy.
+
+(patch-13)
+Summary: fix ztrsm bugfix
+Keywords:
+
+* previous bugfix omitted kind= keyword from cmplx
+* also apply same bugfix to pblas pztrsm calls.
+
+Patches applied:
+
+ * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-7
+   fix ztrsm bugfix
 
 =======================================================================
 Version: 1.4.30

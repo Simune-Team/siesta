@@ -634,17 +634,19 @@ C*******************************************************************************
         if (Serial) then
           if (neigvec.gt.0) then
             call ztrsm('Left', 'U', 'N', 'Non-unit', 
-     .                 n, neigvec, cmplx(one,dp), S, n, Z, n)
+     .                 n, neigvec, cmplx(one,kind=dp), S, n, Z, n)
           endif
 #ifdef MPI
         else
           if (neigvec.gt.0) then
             if (Use2D) then
-              call pztrsm('Left','U','N','Non-unit',n,neigvec,one,
+              call pztrsm('Left','U','N','Non-unit',n,neigvec,
+     .                     cmplx(one,kind=dp),
      .                     s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
               call pzgemr2d(n,n,z2d,1,1,desc_h2d,Z,1,1,desch,ictxt)
             else
-              call pztrsm('Left','U','N','Non-unit',n,neigvec,one,
+              call pztrsm('Left','U','N','Non-unit',n,neigvec,
+     .                     cmplx(one,kind=dp),
      .                     S,1,1,desch,Z,1,1,desch)
             endif
           endif
