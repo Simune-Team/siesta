@@ -39,7 +39,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
 	ordern.o outcell.o outcoor.o overfsm.o \
-	paste.o pdos.o pdosg.o pdosk.o phirphi.o pixmol.o plcharge.o \
+	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	timestamp.o propor.o pulayx.o \
 	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
