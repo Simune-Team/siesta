@@ -14,8 +14,8 @@
 
       CONTAINS
 
-      subroutine fermid( nspin, MAXSPN, NK, WK, MAXE, NE, E, 
-     .                   TEMP, qtot, WKE, EF, entropy )
+      subroutine fermid( nspin, maxspn, NK, WK, maxe, NE, E, 
+     .                   temp, qtot, WKE, EF, entropy )
 
 C *********************************************************************
 C Finds the Fermi energy and the occupation weights of states.
@@ -24,17 +24,17 @@ C Simple single excitation introduced by E. Artacho August 2002.
 C Alternative occupation functions introduced by P. Ordejon, May'03.
 C ********** INPUT ****************************************************
 C INTEGER nspin    : Number of different spin polarizations (1 or 2)
-C INTEGER MAXSPN   : Maximum number of different spin polarizations (1 or 2)
+C INTEGER maxspn   : Maximum number of different spin polarizations (1 or 2)
 C                    for E and WKE matrices dimensions
 C INTEGER NK       : Number of K-points
 C REAL*8  WK(NK)   : Sampling weights of k-points (must sum 1)
-C INTEGER MAXE     : First dimension of E and WKE
+C INTEGER maxe     : First dimension of E and WKE
 C INTEGER NE       : Number of bands
-C REAL*8  E(MAXE,MAXSPN,NK) : State eigenvalues
-C REAL*8  TEMP     : Temperature (in the same units of E)
+C REAL*8  E(maxe,maxspn,NK) : State eigenvalues
+C REAL*8  temp     : Temperature (in the same units of E)
 C REAL*8  qtot     : Total valence charge (number of electrons)
 C ********** OUTPUT ***************************************************
-C REAL*8  WKE(MAXE,MAXSPN,NK) : Occupations multiplied by k-point weights
+C REAL*8  WKE(maxe,maxspn,NK) : Occupations multiplied by k-point weights
 C                               (sum qtot)
 C REAL*8  EF                 : Fermi energy
 C REAL*8  entropy            : Entropy contribution to the electronic
@@ -92,6 +92,10 @@ C Reading whether to do an excited state
         blread = .true.
       endif   
 
+C Zero occupancies, including those not explicitly
+C calculated here if ne < maxe
+      wke(1:maxe,1:nspin,1:nk) = 0.0d0
+
 C Determine Fermi level
       sumq = 0.0d0
       emin = e(1,1,1)
@@ -99,7 +103,7 @@ C Determine Fermi level
       do ik = 1,nk
         do ispin = 1,nspin
           do ie = 1,ne
-            wke(ie,ispin,ik) = wk(ik)*2.0d0/nspin
+            wke(ie,ispin,ik) = wk(ik)*2.0d0/dble(nspin)
             sumq = sumq + wke(ie,ispin,ik)
             emin = min(emin,e(ie,ispin,ik))
             emax = max(emax,e(ie,ispin,ik))
@@ -128,10 +132,10 @@ C Determine Fermi level
         stop
       endif
       T = max(temp,1.d-6)
-      DRange = T*sqrt(-log(tol*0.01d0))
-      emin = emin - DRange
-      emax = emax + DRange
-      DO 50 iter = 1,nitmax
+      drange = T*sqrt(-log(tol*0.01d0))
+      emin = emin - drange
+      emax = emax + drange
+      do iter = 1,nitmax
         ef = 0.5d0*(emin + emax)
         sumq = 0.0d0
         do ik = 1,nk
@@ -167,7 +171,7 @@ C if nspin =2 populations of homo and lumo become equal.
 
 C Obtain the electronic entropy
 
-100       entropy=0.0d0
+100       entropy = 0.0d0
 
           do ik = 1,nk
             do ie = 1,ne
@@ -189,7 +193,7 @@ C Obtain the electronic entropy
 
         if (sumq.le.qtot) emin = ef
         if (sumq.ge.qtot) emax = ef
-  50  continue
+      enddo
 
       if (Node.eq.0) then
         write(6,*) 'Fermid: Iteration has not converged.'
@@ -204,8 +208,8 @@ C Obtain the electronic entropy
 !---------------------------------------------------------
 
 
-      subroutine fermispin( nspin, MAXSPN, NK, WK, MAXE, NE, E, 
-     .                      TEMP, qtot, WKE, EF, entropy )
+      subroutine fermispin( nspin, maxspn, NK, WK, maxe, NE, E, 
+     .                      temp, qtot, WKE, EF, entropy )
 
 C *********************************************************************
 C Finds the Fermi energy and the occupation weights of states,
@@ -215,18 +219,18 @@ C Written by J.M.Soler. August'96.
 C Version modified for fixed spin configurations: P. Ordejon'03-04
 C ********** INPUT ****************************************************
 C INTEGER nspin    : Number of different spin polarizations (1 or 2)
-C INTEGER MAXSPN   : Maximum number of different spin polarizations (1 or 2)
+C INTEGER maxspn   : Maximum number of different spin polarizations (1 or 2)
 C                    for E and WKE matrices dimensions
 C INTEGER NK       : Number of K-points
 C REAL*8  WK(NK)   : Sampling weights of k-points (must sum 1)
-C INTEGER MAXE     : First dimension of E and WKE
+C INTEGER maxe     : First dimension of E and WKE
 C INTEGER NE       : Number of bands
-C REAL*8  E(MAXE,MAXSPN,NK) : State eigenvalues
-C REAL*8  TEMP     : Temperature (in the same units of E)
-C REAL*8  qtot(MAXSPN) : Total valence charge (number of electrons)
+C REAL*8  E(maxe,maxspn,NK) : State eigenvalues
+C REAL*8  temp     : Temperature (in the same units of E)
+C REAL*8  qtot(maxspn) : Total valence charge (number of electrons)
 C                         for each spin component
 C ********** OUTPUT ***************************************************
-C REAL*8  WKE(MAXE,MAXSPN,NK) : Occupations multiplied by k-point weights
+C REAL*8  WKE(maxe,maxspn,NK) : Occupations multiplied by k-point weights
 C                               (sum qtot)
 C REAL*8  EF(nspin)           : Fermi energy (for each spin, if qtot
 C                              is different for each spin component.
@@ -234,109 +238,114 @@ C REAL*8  entropy            : Entropy contribution to the electronic
 C                              Free Energy
 C *********************************************************************
 
-      integer :: maxe, maxspn, nk, nspin, nitmax, ispin
-      integer :: ik, ie, ne, iter
+      integer    :: maxe, maxspn, nk, nspin, nitmax, ispin
+      integer    :: ik, ie, ne, iter
       real(dp)   :: entropy
 
-      real(dp)         E(MAXE,MAXSPN,NK),emin(4),emax(4),
-     .                 EF(nspin),qtot(MAXSPN),sumq(4),TEMP,
-     .                 WKE(MAXE,MAXSPN,NK),WK(NK)
-      real(dp)   ::    t, drange, w, eik, tol
-      logical          conv
-      parameter (TOL=1.0D-10,NITMAX=150)
+      real(dp)   :: E(maxe,maxspn,NK),emin(4),emax(4),
+     .              EF(nspin),qtot(maxspn),sumq(4),temp,
+     .              WKE(maxe,maxspn,NK),WK(NK)
+      real(dp)   :: t, drange, w, eik, tol
+      logical    :: conv
+      parameter (tol=1.0D-10,nitmax=150)
 
-      conv = .FALSE.
+      conv = .false.
 
       do ispin = 1,nspin
-       sumq(ispin)=0.0D0
+       sumq(ispin) = 0.0d0
       enddo
       do ispin = 1,nspin
-        emin(ispin)=E(1,ispin,1)
-        emax(ispin)=E(1,ispin,1)
+        emin(ispin) = E(1,ispin,1)
+        emax(ispin) = E(1,ispin,1)
       enddo
-      do IK=1,NK
-        do ispin=1,nspin
-          do IE=1,NE
-            WKE(IE,ispin,IK)=WK(IK)*2.D0/nspin
-            sumq(ispin)=sumq(ispin)+WKE(IE,ispin,IK)
-            emin(ispin)=MIN(emin(ispin),E(IE,ispin,IK))
-            emax(ispin)=MAX(emax(ispin),E(IE,ispin,IK))
+
+C Zero occupancies, including those not explicitly
+C calculated here if ne < maxe
+      wke(1:maxe,1:nspin,1:nk) = 0.0d0
+
+      do ik = 1,nk
+        do ispin = 1,nspin
+          do ie = 1,ne
+            wke(ie,ispin,IK) = wk(ik)*2.0d0/dble(nspin)
+            sumq(ispin) = sumq(ispin) + wke(ie,ispin,ik)
+            emin(ispin) = min(emin(ispin),e(ie,ispin,ik))
+            emax(ispin) = max(emax(ispin),e(ie,ispin,ik))
           enddo
         enddo
       enddo
-      do ispin=1,nspin
-        EF(ispin)=emax(ispin)
-      enddo
-      conv = .TRUE.
       do ispin = 1,nspin
-        if (ABS(sumq(ispin)-qtot(ispin)).GT.TOL) conv = .FALSE.
+        ef(ispin) = emax(ispin)
+      enddo
+      conv = .true.
+      do ispin = 1,nspin
+        if (abs(sumq(ispin)-qtot(ispin)).gt.tol) conv = .false.
       enddo
 
-      IF (conv) GOTO 100
+      if (conv) goto 100
 
-      DO ispin = 1,nspin
-        IF (sumq(ispin).LT.qtot(ispin)) THEN
+      do ispin = 1,nspin
+        if (sumq(ispin).lt.qtot(ispin)) then
           if (Node.eq.0) then
             write(6,*) 'Fermid: Not enough states'
             write(6,*) 'Fermid: ispin,qtot,sumq=',
      .                 ispin,qtot(ispin),sumq(ispin)
           endif
-          STOP
+          stop
         ENDIF
-      ENDDO
-      T=MAX(TEMP,1.D-6)
-      DRANGE=T*SQRT(-LOG(TOL*.01D0))
-      DO ispin = 1,nspin
-        emin(ispin)=emin(ispin)-DRANGE
-        emax(ispin)=emax(ispin)+DRANGE
-      ENDDO
-      DO 50 ITER=1,NITMAX
-        DO ispin = 1,nspin
-          EF(ispin)=0.5D0*(emin(ispin)+emax(ispin))
-          sumq(ispin)=0.D0
-        ENDDO
-        DO 40 IK=1,NK
-          DO 35 ispin=1,nspin
-            DO 30 IE=1,NE
-              WKE(IE,ispin,IK)=WK(IK)*
-     .             STEPF((E(IE,ispin,IK)-EF(ispin))/T)*2.0/nspin
-              sumq(ispin)=sumq(ispin)+WKE(IE,ispin,IK)
-  30        CONTINUE
-  35      CONTINUE
-  40    CONTINUE
-        conv = .TRUE.
-        DO ispin = 1,nspin
-          IF (ABS(sumq(ispin)-qtot(ispin)).GT.TOL) conv = .FALSE.
-        ENDDO
-        IF (conv) GOTO 100
-        DO ispin = 1,nspin
-          IF (sumq(ispin).LE.qtot(ispin)) emin(ispin)=EF(ispin)
-          IF (sumq(ispin).GE.qtot(ispin)) emax(ispin)=EF(ispin)
-        ENDDO
-  50  CONTINUE
+      enddo
+      T = max(temp,1.0d-6)
+      drange = T*sqrt(-log(tol*0.01d0))
+      do ispin = 1,nspin
+        emin(ispin) = emin(ispin) - drange
+        emax(ispin) = emax(ispin) + drange
+      enddo
+      do iter = 1,nitmax
+        do ispin = 1,nspin
+          ef(ispin) = 0.5d0*(emin(ispin)+emax(ispin))
+          sumq(ispin) = 0.0d0
+        enddo
+        do ik = 1,nk
+          do ispin = 1,nspin
+            do ie = 1,ne
+              wke(ie,ispin,ik) = wk(ik)*
+     .             stepf((E(ie,ispin,ik)-ef(ispin))/T)*2.0d0/dble(nspin)
+              sumq(ispin)=sumq(ispin)+wke(ie,ispin,ik)
+            enddo
+          enddo
+        enddo
+        conv = .true.
+        do ispin = 1,nspin
+          if (abs(sumq(ispin)-qtot(ispin)).gt.tol) conv = .false.
+        enddo
+        if (conv) goto 100
+        do ispin = 1,nspin
+          if (sumq(ispin).le.qtot(ispin)) emin(ispin) = ef(ispin)
+          if (sumq(ispin).ge.qtot(ispin)) emax(ispin) = ef(ispin)
+        enddo
+      enddo
 
       if (Node.eq.0) then
-        WRITE (6,*) 'Fermid: Iteration has not converged.'
-        DO ispin = 1,nspin
-          WRITE (6,*) 'Fermid: ispin,qtot,sumq=',
+        write (6,*) 'Fermid: Iteration has not converged.'
+        do ispin = 1,nspin
+          write (6,*) 'Fermid: ispin,qtot,sumq=',
      .               ispin,qtot(ispin),sumq(ispin)
-        ENDDO 
-        STOP 'Fermid: Iteration has not converged.'
+        enddo 
+        stop 'Fermid: Iteration has not converged.'
       else
-        STOP
+        stop
       endif
-100   CONTINUE
+100   continue
       entropy = 0.0d0
 
-      do IK=1,NK
-        do IE=1,NE
-          do ispin=1,nspin
+      do ik = 1,nk
+        do ie = 1,ne
+          do ispin = 1,nspin
 
-            W = (nspin / 2.0D0) * WKE(IE,ispin,IK) / WK(IK)
-            EIK = (E(IE,ispin,IK)-EF(ispin)) / T
+            W = (nspin / 2.0d0) * wke(ie,ispin,ik) / wk(ik)
+            eik = (E(ie,ispin,ik)-ef(ispin)) / T
 
-            entropy = entropy + ( 2.0D0 * WK(IK) / nspin ) *
-     .                ENPY(EIK,W)
+            entropy = entropy + ( 2.0d0 * wk(ik) / nspin ) *
+     .                enpy(eik,W)
 
           enddo
         enddo
@@ -536,7 +545,7 @@ C  NOTE: SINGLE PRECISION ACCURACY
      .      T*(0.09678418D0+T*(-0.18628806D0+
      .      T*(0.27886807D0+T*(-1.13520398D0+
      .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
-      IF (X.LT.0.D0) DERFC=2.D0-DERFC
+      if (X.LT.0.D0) DERFC=2.D0-DERFC
 
       end function derfc
 
@@ -555,7 +564,7 @@ C  NOTE: SINGLE PRECISION ACCURACY
      .      T*(0.09678418D0+T*(-0.18628806D0+
      .      T*(0.27886807D0+T*(-1.13520398D0+
      .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
-      IF (X.LT.0.D0) DERF=2.D0-DERF
+      if (X.LT.0.D0) DERF=2.D0-DERF
 
       derf = 1.0d0 - derf
       end function derf

@@ -24,7 +24,6 @@
       use periodic_table
       use basis_types, only: basis_def_t
       use fdf
-      use m_radfft
       use pseudopotential, only: pseudopotential_t
 
       implicit none      

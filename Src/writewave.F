@@ -683,7 +683,7 @@ C Call appropriate diagonalization routine
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
      .               e1, e2, ek, qk, Dnew, Enew, ef, efs, Entropy,
-     .               Haux, Saux, psi, aux, nuotot, occtol, 1 )
+     .               Haux, Saux, psi, aux, nuotot, occtol, 1, nuotot )
       else
          call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
@@ -888,7 +888,7 @@ C eigenvector is now stored in aux in all processors, and can be printed
             write(iu,'(a72)')  ' ---------------------------------------
      .--------------------------------'
             write(iu,'(a72)')  '  Atom  Species Orb-global  Orb-in-atom
-     . Orb-type      Re(psi)   Im(psi)'
+     . Orb-type     Re(psi)   Im(psi)'
             do j = 1,ntot
               write(iu,'(i6,5x,a3,1x,i10,8x,i3,7x,i1,a7,1x,2(f10.6))') 
      .                 iaorb(j),labelfis(isa(iaorb(j))),j,
@@ -907,7 +907,7 @@ C eigenvector is now stored in aux in all processors, and can be printed
             write(6,'(a72)')   ' ---------------------------------------
      .--------------------------------'
             write(6,'(a72)')  '  Atom  Species Orb-global  Orb-in-atom
-     . Orb-type      Re(psi)   Im(psi)'
+     . Orb-type     Re(psi)   Im(psi)'
             do j = 1,ntot
               write(6,'(i6,5x,a3,1x,i10,8x,i3,7x,i1,a7,1x,2(f10.6))') 
      .                 iaorb(j),labelfis(isa(iaorb(j))),j,

@@ -1,12 +1,46 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
-ARCH: WILL be cvs 1.4.31
-(patch-12)
-Creator: Toby White <tow21@cam.ac.uk>
-Modified-files: Src/cdiag.F Src/scalapack_extra.f
-Summary: bugfixes for Julian's diagon improvements
-Keywords: scalapack blas ztrsm
+Version: 1.4.33
+Date: 2005/01/05 16:15 GMT
+Title: Fixed bugs in diagk.F for writting of wave functions
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Some bugs introduced in the recent changes of diagk.F in the writting
+of the wave functions are corrected.
+
+Files:
+
+diagk.F       All eigenvectors are computed when writing of wave 
+              functions is required; the right information about
+              eigenvalues is now passed.
+writewave.F   Correct call to diagg.f to include new variable 
+              neigwanted
+version.F90 / CHANGES
+
+=======================================================================
+Version: 1.4.32
+Date: 2004/12/20  8:30 GMT
+Title: Fermi occupancy initialisation
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The occupancies are explicitly initialised to zero in fermid &
+fermispin to ensure that the checking of occupancies in the build
+of the density matrix is correct.
+
+Files:
+
+fermid.F      Initialisation of occupancies upto maxe added and
+              cosmetic f90 changes made.
+version.F90 / CHANGES
+
+=======================================================================
+Version: 1.4.31
+Date: 2004/12/10  16:40 GMT
+Title: bugfixes for Julian's diagon improvements
+ARCH patches: siesta-devel--reference--1.4--patch-12,
+              siesta-devel--reference--1.4--patch-13
+Author: Toby White (committed by Alberto Garcia)
 
 * scalapack_extra needs an extra couple of routines now. With
   these siesta will now compile with Sun's S3L library for 
@@ -14,18 +48,43 @@ Keywords: scalapack blas ztrsm
 * In cdiag.F, ztrsm was being called with an incorrectly typed
   7th argument. This silently introduced random numbers into the
   energy.
-
-(patch-13)
-Summary: fix ztrsm bugfix
-Keywords:
-
 * previous bugfix omitted kind= keyword from cmplx
 * also apply same bugfix to pblas pztrsm calls.
 
-Patches applied:
+ARCH info:
 
- * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-7
-   fix ztrsm bugfix
+Revision: siesta-devel--reference--1.4--patch-12
+Archive: siesta@uam.es--2004
+Creator: Alberto Garcia <wdpgaara@lg.ehu.es>
+Date: Fri Dec 10 16:26:27 CET 2004
+Standard-date: 2004-12-10 15:26:27 GMT
+Modified-files: Docs/CHANGES Src/cdiag.F
+    Src/scalapack_extra.f
+    {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4/siesta@uam.es--2004/patch-log/patch-4
+    {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4/siesta@uam.es--2004/patch-log/patch-6
+Modified-directories: {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4
+    {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4/siesta@uam.es--2004
+    {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4/siesta@uam.es--2004/patch-log
+New-patches: siesta@uam.es--2004/siesta-devel--reference--1.4--patch-12
+    twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-8
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-8
+    twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-11
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-5
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-6
+Summary: bugfixes for Julian's diagon improvements
+Keywords: scalapack blas ztrsm
+
+Revision: siesta-devel--reference--1.4--patch-13
+Archive: siesta@uam.es--2004
+Creator: Alberto Garcia <wdpgaara@lg.ehu.es>
+Date: Fri Dec 10 17:30:24 CET 2004
+Standard-date: 2004-12-10 16:30:24 GMT
+Modified-files: Docs/CHANGES Src/cdiag.F
+New-patches: siesta@uam.es--2004/siesta-devel--reference--1.4--patch-13
+    twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-7
+Summary: fix ztrsm bugfix
+
+
 
 =======================================================================
 Version: 1.4.30
