@@ -40,7 +40,7 @@ module_built: mpi.o $(OBJS)
 	@touch module_built
 #
 mpi__include.o: mpi__include.f90
-	$(FC) $(DEFS) -c $(FREE_F90) -I$(MPI_INCLUDE) mpi__include.f90
+	$(FC) $(DEFS) -c $(FREE_F90) $(FFLAGS_MPI) -I$(MPI_INCLUDE) mpi__include.f90
 #
 pi3:    pi3.o
 	$(FC) -o pi3 $(LDFLAGS) pi3.o ../$(MPI_INTERFACE) $(LIBS) 

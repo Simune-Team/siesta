@@ -621,21 +621,17 @@ C Passed arguments
       logical,   intent(out) :: samesh, samexa
 
 C Local variables
+! Saved
+      integer, save :: lastna = 0
+      real(dp), save :: tiny       = 1.0e-12_dp,
+     .                  lastc(3,3) = 0.743978657912656e50_dp,
+     .                  lastra     = 0.0_dp
+
+! non-saved
       integer
      .  i, ia, j
-      integer, save ::
-     .  lastna
-      real(dp), save ::
-     .  tiny
-      real(dp), save ::
-     .  lastc(3,3), lastra
       real(dp), dimension(:,:), allocatable, save ::
      .  lastxa
-
-      data lastna / 0 /
-      data lastra / 0.0_dp /
-      data lastc(1,1) / 0.743978657912656e50_dp /
-      data tiny / 1.0e-12_dp /
 
 C If number of atoms has changed then deallocate lastxa
       if (na.ne.lastna) then

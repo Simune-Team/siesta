@@ -97,28 +97,23 @@ C Next line is non-standard but may be supressed
       implicit none
 
 C Define space dimension
-      INTEGER NX
-      PARAMETER ( NX = 3 )
+      integer, parameter :: nx = 3
 
 C Argument types and dimensions
-      integer ::
-     .  IA, ISC, NNA, MAXNNA, NA
-      real(dp) ::
-     .  CELL(NX,NX), range, XA(NX,NA)
+      integer, intent(in) :: ia, isc, na
+      integer, intent(out) :: nna
+      integer, intent(inout) :: maxnna
+      real(dp) :: cell(nx,nx), range, xa(nx,na)
 
 C Internal variables
-      logical, save :: frstme = .true.
-c      logical        :: frstme = .true.
-      logical           samcel
-      integer, save :: IAMOVE(1) = 0
-c      integer        :: IAMOVE(1) = 0
-      integer ::
-     .  IX, JX
-      real(dp) ::
-     .  CELAST(NX,NX), RGLAST, X0(NX)
+      logical, save  :: frstme        = .true.
+      integer, save  :: iamove(1)     = 0
+      real(dp), save :: celast(nx,nx) = 0.0_dp,
+     .                  rglast        = 0.0_dp,
+     .                  x0(nx)        = 0.0_dp
 
-      SAVE
-      DATA X0 / NX*0.D0 /
+      logical :: samcel
+      integer :: IX, JX
 
 C Nullify pointers
       if (frstme) then

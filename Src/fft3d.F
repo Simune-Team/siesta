@@ -779,7 +779,7 @@ C  Free local memory
 C
       call memory('D','S',size(ftmp2),'redistribXY')
       deallocate(ftmp2)
-      call memory('D','S',size(ftmp2),'redistribXY')
+      call memory('D','S',size(ftmp),'redistribXY')
       deallocate(ftmp)
 
       return

@@ -1,6 +1,39 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+ARCH: Could be 1.4.34
+Date: 2005/01/07 13:45 GMT
+Summary: Bugfixes by Toby White: decls, inits, typos, autoconf
+Keywords: Merged from -devel--twhite--patch-9
+
+Changes:
+
+* Fix declarations in mneighb.f similarly to neighb.f
+* Fix typo in fft3d.F
+* Fix MPI/Makefile to properly inherit FFLAGS_MPI
+* Initialise variables properly in meshsubs.F
+* Add ifort to list of compilers tested for in configure
+
+Patches applied:
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-3
+   correct mneighb.f declarations
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-4
+   add ifort to compiler list.
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-6
+   makefile fix, meshsubs.F fix
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-7
+   wrong deallocation 
+
+ * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-8
+   sync with reference
+
+ * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-9
+   assorted minor bugfixes merged from tw-bugfix-2
+
 Version: 1.4.33
 Date: 2005/01/05 16:15 GMT
 Title: Fixed bugs in diagk.F for writting of wave functions

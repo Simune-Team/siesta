@@ -610,7 +610,7 @@ AC_DEFUN([_AC_FC_DIALECT_YEAR],
 #  autoconf. The same problem arises (with no easy solution) on some Digital
 #  compilers: f95 fails on .F files, f90 succeeds.)
 #
-m4_define([_AC_F95_FC], [xlf95 lf95 gfortran f95 fort ifc efc pgf95])
+m4_define([_AC_F95_FC], [xlf95 lf95 gfortran f95 fort ifort ifc efc pgf95])
 m4_define([_AC_F90_FC], [f90 xlf90 pgf90 epcf90])
 m4_define([_AC_F77_FC], [g77 f77 xlf frt pgf77 fort77 fl32 af77])
 AC_DEFUN([_AC_PROG_FC],
