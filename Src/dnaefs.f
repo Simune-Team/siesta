@@ -1,4 +1,4 @@
-C $Id: dnaefs.f,v 1.4 1999/01/31 10:53:53 emilio Exp $
+C $Id: dnaefs.f,v 1.5 1999/11/26 18:28:06 wdpgaara Exp $
 
       subroutine dnaefs( nua, na, scell, xa, indxua, rmaxv,
      .                   maxna, isa, jna, xij, r2ij,
@@ -35,6 +35,8 @@ C      INTEGER IS : Specie index
 C
 C *********************************************************************
 
+      use atmfuncs, only: izofis, psover
+
       implicit none
 
       integer
@@ -49,14 +51,11 @@ C *********************************************************************
 
 C Internal variables ......................................................
       integer
-     .  ia, is, ix, ja, jn, js, jx, jua, nnia, izofis
+     .  ia, is, ix, ja, jn, js, jx, jua, nnia
 
       double precision
      .  dvdr, fij(3), rij, r2min, vij, volcel, volume
        
-      external 
-     .  izofis
-
       parameter ( r2min = 1.d-15 )
 C ......................
 

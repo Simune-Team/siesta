@@ -4,7 +4,7 @@
      .                   INDXUO, NUMD, LISTD, DSCF, DSCFNA, 
      .                   IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .                   NPX, NPY, COORPO, NORMAL, DIRVER1, DIRVER2, 
-     .                   ARMUNI, IUNITCD )
+     .                   ARMUNI, IUNITCD, ISCALE )
 C **********************************************************************
 C Compute the density of charge at the points of a plane in real space
 C Coded by J. Junquera November'98
@@ -14,18 +14,20 @@ C **********************************************************************
 
       INCLUDE 'fdfdefs.h'
 
+C INTEGER MAXATOM   : Maximum number of Atoms
 C INTEGER ORBMAX    : Maximum number of Atomic Orbitals
 C INTEGER ATOMAX    : Maximum number of neighbour atoms
 C INTEGER NPLAMAX   : Maximum number of points in the plane
 
-      INTEGER NPLAMAX, ORBMAX, ATOMAX
+      INTEGER MAXATOM, NPLAMAX, ORBMAX, ATOMAX
+      PARAMETER(MAXATOM =  1000 )
       PARAMETER(ORBMAX  = 10000 )
       PARAMETER(ATOMAX  =  1000 )
       PARAMETER(NPLAMAX = 10000 )
 
       INTEGER
      .  IOPTION, NPX, NPY, MAXA, MAXO,
-     .  NAMAX, MAXNO, MAXSPN, NA, NSPIN, IUNITCD,
+     .  NAMAX, MAXNO, MAXSPN, NA, NSPIN, IUNITCD, ISCALE,
      .  LASTO(0:MAXA), ISA(MAXA), IPHORB(MAXO),
      .  INDXUO(MAXO), NUMD(MAXO), LISTD(MAXNO,MAXO)
 
@@ -80,6 +82,7 @@ C                            (number of non-zero elements of eaach row)
 C INTEGER LISTD(MAXNO,MAXO): Control vector of Density Matrix
 C                            (list of non-zero elements of each row)
 C INTEGER IUNITCD          : Unit of the charge density
+C INTEGER ISCALE           : Unit if the points of the plane
 C REAL*8  CELL(3,3)        : Unit cell vectors CELL(IXYZ,IVECT)
 C REAL*8  XA(3,NA)         : Atomic positions in cartesian coordinates
 C REAL*8  RMAXO            : Maximum range of basis orbitals
@@ -96,17 +99,16 @@ C **********************************************************************
  
       INTEGER
      .  I, J, IX, IN, IAT1, IAT2, JO, IO, IUO, IAVEC, IAVEC1, IAVEC2, 
-     .  IS1, IS2, IPHI1, IPHI2
+     .  IS1, IS2, IPHI1, IPHI2, NAPLA, INDICES(MAXATOM)
 
       DOUBLE PRECISION
      .  RMAX, XIJ(3,ATOMAX), R2IJ(ATOMAX), XPO(3), RMAX2, XVEC1(3),
      .  XVEC2(3), PHIMU, PHINU, GRPHIMU(3), GRPHINU(3), DISCF(ORBMAX),
-     .  DIATM(ORBMAX), DIUP(ORBMAX), DIDOWN(ORBMAX)
+     .  DIATM(ORBMAX), DIUP(ORBMAX), DIDOWN(ORBMAX), XAPLA(3,MAXATOM)
 
       CHARACTER
      .  SNAME*30, FNAMESCF*38, FNAMEDEL*38, FNAMEUP*38, FNAMEDOWN*38,
      .  PASTE*38
- 
 
       EXTERNAL
      .  CHKDIM, IO_ASSIGN, IO_CLOSE, PASTE, PLANE,
@@ -125,9 +127,14 @@ C REAL*8  XIJ(3,NAMAX)     : Vectors from point in real space to orbitals
 C REAL*8  R2IJ(NAMAX)      : Squared distance to atomic orbitals
 C REAL*8  XPO(3)           : Coordinates of the point of the plane respect
 C                            we are going to calculate the neighbours orbitals
+C INTEGER INDICES(MAXATOM) : Indices of the points whose coordinates will
+C                            be rotated from the lattice reference frame
+C                            to the in-plane reference frame
+C REAL*8  XAPLA(3,MAXATOM) : Atomic coordinates in plane reference frame
 C **********************************************************************
 
 C Check some dimensions ------------------------------------------------
+          CALL CHKDIM( 'RHOOFR', 'MAXATOM', MAXATOM, MAXA   , 1 )
           CALL CHKDIM( 'RHOOFR', 'NPLAMAX', NPLAMAX, NPX*NPY, 1 )
           CALL CHKDIM( 'RHOOFR', 'ATOMAX' , ATOMAX , NAMAX  , 1 )
           CALL CHKDIM( 'RHOOFR', 'ORBMAX' , ORBMAX , MAXO   , 1 )
@@ -135,7 +142,8 @@ C Check some dimensions ------------------------------------------------
 C Build the plane ------------------------------------------------------
           CALL PLANE( NPLAMAX, IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .                NPX, NPY, COORPO, NORMAL, DIRVER1, DIRVER2, 
-     .                POINRE, PLAPO )   
+     .                POINRE, PLAPO, NA, NAPLA, INDICES, ISCALE,
+     .                XA, XAPLA )   
 C End building of the plane --------------------------------------------
 
 C Initialize neighbour subroutine --------------------------------------
@@ -197,14 +205,18 @@ C Open files to store charge density -----------------------------------
    
 C Dump input data in output files --------------------------------------
       CALL WROUT( IOPTION, UNIT1, NORMAL, COORPO, DIRVER1, DIRVER2, 
-     .            NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD )
+     .            NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD,
+     .            MAXATOM, NAPLA, INDICES, XAPLA )
       CALL WROUT( IOPTION, UNIT2, NORMAL, COORPO, DIRVER1, DIRVER2, 
-     .            NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD )
+     .            NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD, 
+     .            MAXATOM, NAPLA, INDICES, XAPLA )
       IF ( NSPIN .EQ. 2) THEN
         CALL WROUT( IOPTION, UNIT3, NORMAL, COORPO, DIRVER1, DIRVER2, 
-     .              NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD )
+     .              NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD, 
+     .              MAXATOM, NAPLA, INDICES, XAPLA )
         CALL WROUT( IOPTION, UNIT4, NORMAL, COORPO, DIRVER1, DIRVER2, 
-     .              NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD )
+     .              NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD, 
+     .              MAXATOM, NAPLA, INDICES, XAPLA )
       ENDIF
       
 C Loop over all points in real space -----------------------------------

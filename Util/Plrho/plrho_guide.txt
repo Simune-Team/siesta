@@ -132,6 +132,10 @@ The pgplot library allows many output-unit posibilities. I have tested:
 Once the plrho.dat file is complete, you run plrho simply with
 plrho <enter>
 
+Subroutine platom reads a file of type XV (like h2o.XV) and plots a bond 
+wireframe (in addition to the isosurface). It is still rather primitive 
+and unstable, and therefore its call is still commented out in plrho.
+
 Please, send problems and suggestions to jose.soler@uam.es
 
 

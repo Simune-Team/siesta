@@ -1,5 +1,3 @@
-% $Id: siesta.tex,v 1.84 1999/05/26 09:50:02 emilio Exp $ 
- 
 % Manual for the SIESTA program
 
 \documentstyle[11pt]{article}
@@ -9,6 +7,7 @@
 \textwidth 16cm
 \oddsidemargin 1mm
 \topmargin -15mm
+
 
 \makeindex
 
@@ -30,41 +29,35 @@
 
 \vspace{3cm}
 
-{\Huge {\bf SIESTA 0.12}}
+{\Huge {\bf SIESTA 1.0.12}}
 
 \vspace{3cm}
 
-{\Large {\it May 26, 1999} }
+{\Large {\it November 17, 1999} }
 
 \vspace{3cm}
 
-{\Large Pablo Ordej\'on}
+\begin{tabular}{rl}
 
-\vspace{5pt}
+{\Large Emilio Artacho} &
+   \Large{\it Autonomous University of Madrid} \\
 
-{\it Departamento de F\'{\i}sica, Universidad de
-Oviedo, 33007 Oviedo, Spain}
+{\Large Julian Gale} &
+   \Large{\it Imperial College, London} \\
 
-\vspace{7mm}
+{\Large Alberto Garc\'{\i}a} &
+   \Large{\it Basque Country University at Bilbao} \\
 
-{\Large Daniel S\'anchez-Portal, Emilio Artacho, and Jos\'e M. Soler}
+{\Large Pablo Ordej\'on} & 
+   \Large{\it Spanish Research Council, Barcelona} \\
 
-\vspace{5pt}
- 
-{\it Departamento de F\'{\i}sica de la Materia Condensada, C-III,
-Universidad Aut\'onoma, 
+{\Large Daniel S\'anchez-Portal} &
+   \Large{\it University of Illinois at Urbana-Champain} \\
 
-28049 Madrid, Spain} 
+{\Large Jos\'e M. Soler} &
+   \Large{\it Autonomous University of Madrid}
 
-\vspace{7mm}
-
-{\Large Alberto Garc\'{\i}a}
-
-\vspace{5pt}
-
-{\it Departamento de F\'{\i}sica Aplicada II,
-Universidad del Pa\'{\i}s Vasco, 48080 Bilbao, Spain}
-
+\end{tabular}
 
 \vspace{2cm}
 {\bf siesta@polar.fmc.uam.es}
@@ -112,14 +105,12 @@ time and memory scale linearly with the number of atoms.
 Simulations with several hundred atoms are feasible with
 modest workstations.
 \item
-It is written in Fortran 77, with some widespread extensions over
-the ANSI standard. No parallel version is yet available at this
-moment. Accessory tools like shell scripts and makefiles are now
+It is written in Fortran 77 and Fortran 90.
+It may be compiled for serial or parallel execution (under MPI).
+The selection is performed by standard preprocessor compiler
+directives, switched by the apropriate makefiles.
+Accessory tools like shell scripts and makefiles are now
 available only for the UNIX operating system.
-
-WARNING: The next version of SIESTA (version 0.13) will be partially
-or totally written in Fortran 90/95, since we consider that
-f90 compilers are already available for any platform.
 \end{itemize}
 
 It routinely provides:
@@ -166,7 +157,7 @@ Most updated description of the present code.
 
 \item
 E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
-J. M. Soler, cond-mat/9904159 (1999).
+J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
 
 Description of numerical atomic orbitals used in the code,
 and brief review of applications as of March 1999.
@@ -1151,6 +1142,85 @@ is the maximum angular momentum of the basis orbitals of species {\tt is}.
 of the basis orbitals plus one.
 \noindent
 
+\item[{\bf PS.KBprojectors}] ({\it data block}):
+\index{PS.KBprojectors@{\bf PS.KBprojectors} }
+This block provides information about the number of Kleinman-Bylander
+projectors per angular momentum, and for each species, that will used
+in the calculation. This block is optional.
+If the block is absent, or for species not mentioned in it, only 
+one projector will be used for each angular momentum. The projectors
+will be constructed using the eigenfunctions of the respective
+pseudopotentials. 
+
+
+This block allows to specify the number of projector for each l, and also
+the reference energies of the wavefunctions used to build them.
+The specification of the reference energies is optional. If these 
+energies are not given, the program will use the eigenfunctions with an
+increasing number of nodes (if there is not bound state with
+the corresponding number of nodes, the ``eigenstates" are taken to be just
+functions which are made zero at very long distance of the nucleus).
+The units for the energy can be optionally specified, if not, the 
+program will assumed that are given in Rydbergs. 
+The data provided in this block must be consistent with those 
+read from the block {\bf PS.lmax}. 
+
+\begin{verbatim}
+         %block PS.KBprojectors
+             Si  3
+              2   1 
+             -0.9     eV
+              0   2
+             -0.5  -1.0d4 Hartree
+              1   2
+             Ga  1
+              1  3
+             -1.0  1.0d5 -6.0
+         %endblock PS.KBprojectors
+\end{verbatim}
+
+The reading is done this way (those variables in brackets are optional,
+therefore they are only read if
+present):
+
+\begin{verbatim}
+    From is = 1 to  nspecies
+         read: label(is), l_shells(is)
+         From lsh=1 to l_shells(is)
+              read: l, nkbl(l,is)
+              read: {erefKB(izeta,il,is)}, from ikb = 1 to nkbl(l,is), {units}
+\end{verbatim}
+
+When a very high energy, higher that 1000 Ry, is specified, the default is taken instead. 
+On the other hand, 
+very low (negative) energies, lower
+than -1000 Ry, are used to indicate that the energy derivative of the
+last state must be used. For example, in the example given 
+above, two projectors will be used for the {\it s} pseudopotential
+of Si. One generated using a reference energy of -0.5 Hartree, and the
+second one using the energy derivative of this state. For the 
+{\it p} pseudopotential of Ga, three projectors will be used. 
+The second one will be constructed from an automatically generated 
+wavefunction with one node, and the other projectors from states
+at -1.0 and -6.0 Rydberg.
+
+The analysis looking for possible {\it ghost} states is only performed when 
+a single projector is used.
+Using several projectors some attention should 
+be paid to the ``KB cosine" (kbcos), given in the output of the program.
+The KB cosine gives the value of the overlap between the 
+reference state and the projector generated from it. 
+If these 
+numbers are very small ( $<$ 0.01, for example) 
+for {\bf all} the projectors of some angular momentum, one can
+have problems related with the presence of ghost states. 
+
+{\it Default:} (Block absent or empty). Only one KB projector, constructed
+from the nodeless eigenfunction, used
+for each angular momentum. 
+\noindent
+
+     
 \item[{\bf PAO.Basis}] ({\it data block}): 
 \index{PAO.Basis@{\bf PAO.Basis}\index{basis!PAO}} 
 Block with data to define explicitly the basis to be used. 
@@ -1189,7 +1259,7 @@ An example block for a two-species calculation (H and O) is the following:
 \begin{verbatim}
   %block PAO.Basis       # Define Basis set
    O    2  nodes  1.0    # Label, l_shells, type (optional), ionic_charge (optional)
-        0   2            # l, Nzeta
+    n=2 0   2            # n (optional), l, Nzeta
           3.50  3.50     #     rc(izeta=1,Nzeta)(Bohr)
           0.95  1.00     #     scaleFactor(izeta=1,Nzeta) (optional)
         1   1   P   2    # l, Nzeta, PolOrb (optional), NzetaPol (optional)
@@ -1220,7 +1290,7 @@ present):
     From js = 1 to  nspecies 
          read: label(is), l_shells(is), { type(is) }, { ionic_charge(is) }
          From lsh=1 to l_shells(is)
-              read: l, nzls(l,is), { PolOrb(l+1) }, { NzetaPol(l+1) }
+              read: { n }, l, nzls(l,is), { PolOrb(l+1) }, { NzetaPol(l+1) }
               read: rcls(izeta,il,is), from izeta = 1 to nzls(l,is)
               read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
@@ -1257,6 +1327,11 @@ Same options as {\bf PAO.BasisType}
 \item[-] {\tt ionic\_charge(is)}: {\it Optional input}. 
 Net charge of species {\tt is}. This is  only used for
 basis set generation purposes. {\it Default value}: {\tt 0.0} (neutral atom)
+\item[-] {\tt n}: Principal quantum number of the shell. This is an optional 
+input for normal atoms, however it must be specified when there are
+{\it semicore} states (i.e. when states that usually are not 
+considered to belong to the 
+valence shell have been included in the calculation)
 \item[-] {\tt l}: Angular momentum of 
 basis orbitals of this shell
 \item[-] {\tt nzls(l,is)}: Number of 'zetas' for angular 
@@ -1938,6 +2013,118 @@ vector in cartesian coordinates, in the specified units. Example:
 
 {\it Default value:} zero field
 
+\item[{\bf PolarizationGrids}] ({\it data block}):
+\index{PolarizationGrids@{\bf PolarizationGrids}}
+\index{bulk polarization}\index{Berry phase}
+If specified, the macroscopic polarization will be calculated using the
+geometric Berry phase approach (R.D. King-Smith, and D. Vanderbilt,
+PRB {\bf 47}, 1651 (1993)). In this method the electronic 
+contribution to the macroscopic polarization, along a given direction, 
+is calculated using
+a discretized version of the formula
+\begin{equation}
+\label{pol_formula}
+    P_{e,\parallel}={ifq_e \over 8\pi^3} \int_A d{\bf k}_\perp
+    \sum_{n=1}^M \int_0^{|G_\parallel|} dk_{\parallel}
+     \langle u_{{\bf k} n} |{\delta \over \delta k_{\parallel}} |
+      u_{{\bf k} n} \rangle
+\end{equation}
+where $f$ is the occupation (2 for a non-magnetic system), 
+$q_e$ the electron charge, $M$ is the number of occupied bands (the
+system {\bf must} be an insulator), and $u_{{\bf k} n}$ are
+the periodic Bloch functions. ${\bf G}_\parallel$ is the shortest
+reciprocal vector along the chosen direction. 
+
+As it can be seen in formula (\ref{pol_formula}), to compute each 
+component of the polarization we must perform a surface integration
+of the result of a 1-D integral in the selected direction. 
+The grids for the calculation along the direction of each of the
+three lattice vectors are specified in the block
+{\bf PolarizationGrids}. 
+\begin{verbatim}
+     %block PolarizationGrids
+        10   3  4      yes
+         2  20  2       no
+         4   4 15
+     %endblock PolarizationGrids
+\end{verbatim}      
+
+All three grids must be specified, therefore
+a 3$\times$3 matrix of integer numbers must be given:
+the first row specifies the grid that 
+will be used to calculate the polarization
+along the direction of the first lattice vector,
+the second row will be used for the calculation along the
+the direction of the second lattice vector, and the
+third row for the third lattice vector.
+The numbers in the diagonal of the matrix specifie the number
+of points to be used in the one dimensional line integrals along
+the different directions. The other numbers specifie the mesh
+used in the surface integrals.
+The last column specifies if the bidimensional grids
+are going to be diplaced from the origin or not, as in the
+Monkhorst-Pack algorithm (PRB {\bf 13}, 5188 (1976)).
+This last column is optional.
+If the number of point in one of the grids is zero, the calculation
+will not be performed for this particular direction.
+
+For example, in the given example, for the computation in the
+direction of the first lattice vector, 15 points will be used
+for the line integrals, while a 3$\times$4 mesh will be used
+for the surface integration. This last grid will be displaced 
+from the origin, so $\Gamma$ will not be included in the 
+bidimensional integral. For the directions of the second
+and third lattice vectors, the number of points will be
+20 and 2$\times$2, and 15 and 4$\times$4, respectively. 
+
+It has to be stressed that the macroscopic polarization can only
+be meaningfully calculated using this approach for insulators. 
+Therefore, the presence of an energy gap is necessary, and 
+no band can cross the Fermi level. The program performs a simple
+check of this 
+condition, just by counting the electrons in the unit cell ( 
+the number must be even for a non-magnetic system, and the
+total spin polarization must have an integer value for 
+spin polarized systems), however is the responsability of the 
+user to check that the system under study is actually an insulator
+(for both spin components if spin polarized).
+
+The total macroscopic polarization, 
+given in the output of the program,
+is the sum 
+of the electronic contribution (calculated as the 
+Berry phase of the valence bands), and the ionic contribution, 
+which is simply defined as the sum of the atomic positions within
+the unit cell multiply by 
+the ionic charges ($\sum_i^{N_a} Z_i {\bf r}_i$). 
+In the case of the magnetic 
+systems, the bulk polarization for each spin component has been 
+defined as 
+\begin{equation}
+       {\bf P}^\sigma = {\bf P}_e^\sigma + 
+   {1 \over 2} \sum_i^{N_a}  Z_i {\bf r}_i
+\end{equation}
+$N_a$ is the number of atoms in the unit cell, and ${\bf r}_i$ and
+$Z_i$ 
+are the positions and charges of the ions.
+
+It is also worth noting, that the macroscopic polarization given 
+by formula (\ref{pol_formula}) is only defined modulo a ``quantum"
+of polarization (the bulk polarization per unit cell is only 
+well defined modulo $fq_e${\bf R}, being {\bf R} an arbitrary lattice
+vector). However, the experimentally observable quantities are
+associate to changes in the polarization induced by changes on 
+the atomic positions (dinamical charges), strains (piezoelectric tensor), 
+etc... The calculation of those changes, 
+between different configurations of the solid,
+will be well defined as far as they are smaller than the ``quantum", 
+i.e. the perturbations are small enough to 
+create small changes in the polarization. 
+
+{\it Use:} Only compatible with {\bf SolutionMethod} = diagon.\\
+{\it Default value:} Empty. No calculation performed.
+
+
 
 \item[{\bf GridCellSampling}] ({\it data block}):\index{egg-box effect} 
 \index{GridCellSampling@{\bf GridCellSampling}}\index{rippling}
@@ -1958,7 +2145,7 @@ to the grid. The original grid-system setup (one point of the grid
 at the origin) is always calculated. It is the (0,0,0) displacement. 
 The block {\bf GridCellSampling} gives the additional displacements
 wanted for the sampling. They are given relative to the grid-cell 
-vec0tors, i.e., (1,1,1) would displace to the next grid point across
+vectors, i.e., (1,1,1) would displace to the next grid point across
 the body diagonal, giving an equivalent grid-system situation
 (a useless displacement for a sampling).
 
@@ -2502,6 +2689,129 @@ matrix\index{Force Constants Matrix} for phonon calculations.
 \end{description}
 
 
+\vspace{5pt}
+\subsection{Parallel options}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf BlockSize}] ({\it integer}):
+\index{BlockSize@{\bf BlockSize}}
+The orbitals are distributed over the processors when running in parallel
+using a 1-D block-cyclic algorithm. {\bf BlockSize} is the number of
+consecutive orbitals which are located on a given processor before
+moving to the next one. Large values of this parameter lead to poor
+load balancing, while small values can lead to inefficient execution.
+The performance of the parallel code can be optimised by varying
+this parameter until a suitable value is found.
+
+{\it Use:} Controls the blocksize used for distributing orbitals over processors
+
+{\it Default value:}  8
+
+\item[{\bf ProcessorY}] ({\it integer}):
+\index{ProcessorY@{\bf ProcessorY}}
+The mesh points are divided in the Y and Z directions over the processors
+in a 2-D grid. {\bf ProcessorY} specifies the dimension of the processor
+grid in the Y-direction and must be a factor of the total number of
+processors. Ideally the processors should be divided so that the number
+of mesh points per processor along each axis is as similar as possible.
+
+{\it Use:} Controls the dimensions of the 2-D processor grid for mesh distribution
+
+{\it Default value:}  Variable - chosen using multiples of factors of the total
+  number of processors
+
+\item[{\bf DiagMemory}] ({\it real no units}):
+\index{DiagMemory@{\bf DiagMemory}}
+Whether the parallel diagonalisation of a matrix is successful or not can 
+depend on how much workspace is available to the routine when there are
+clusters of eigenvalues. {\bf DiagMemory} allows the user to increase
+the memory available, when necessary, to achieve successful diagonalisation
+and is a scale factor relative to the minimum amount of memory that
+SCALAPACK might need. Failure due to this parameter being too small
+can potentially be avoid if the option {\bf TryMemoryIncrease} is true.
+The larger the number of processors being used, the larger the value of
+{\bf DiagMemory} that will be needed.
+
+{\it Use:} Controls the amount of workspace available to parallel matrix diagonalisation
+
+{\it Default value:}  2
+
+\item[{\bf TryMemoryIncrease}] ({\it logical}):
+\index{TryMemoryIncrease@{\bf TryMemoryIncrease}}
+If true, this option allows the program to increase the value of {\bf DiagMemory}
+automatically until enough memory is obtained to be able to run a successful
+matrix diagonalisation in parallel.
+
+{\it Use:} Determines whether the program is able to iteratively increase the
+  memory available to SCALAPACK until diagonalisation is successful
+
+{\it Default value:}  true
+
+\item[{\bf ParallelOverK}] ({\it logical}):
+\index{ParallelOverK@{\bf ParallelOverK}}
+For the diagonalisation there is a choice in strategy about whether to parallelise
+over the K points or over the orbitals. K point diagonalisation is close to
+perfectly parallel but is only useful where the number of K points is much 
+larger than the number of processors and therefore orbital parallelisation
+is generally preferred. The exception is for metals where the unit cell is
+small, but the number of K points to be sampled is very large. In this last
+case it is recommend that this option be used.
+
+{\it Use:} Controls whether the diagonalisation is parallelised with respect
+  to orbitals or K points - not allowed for non-co-linear spin case.
+
+{\it Default value:}  false
+
+\end{description}
+
+
+\vspace{5pt}
+\subsection{Efficency options}
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf DirectPhi}] ({\it logical}):
+\index{DirectPhi@{\bf DirectPhi}}
+
+In the calculation of the matrix elements on the mesh this requires the
+value of the orbitals on the mesh points. This array represents one of
+the largest uses of memory within the code. If set to true this option
+allows the code to generate the orbital values when needed rather than
+storing the values. This obviously costs more computer time but will
+make it possible to run larger jobs where memory is the limiting factor.,
+
+{\it Use:} Controls whether the values of the orbitals at the mesh points
+  are stored or calculated on the fly.
+
+{\it Default value:}  false
+
+\item[{\bf SaveMemory}] ({\it logical}):
+\index{SaveMemory@{\bf SaveMemory}}
+
+When calculating values that are stored in arrays whose dimensions
+cannot be accurately predicted ahead of time, there are two choices
+as to what to do when an array bound is exceeded. Firstly, the
+contents can be copied into buffer arrays while the dimensions
+are increased and then copied back (which is the default for
+expensive operations) or secondly, the arrays can be re-initialised
+and filled from scratch after re-dimensioning. The first approach
+is the fastest but requires larger amounts of memory, particular
+in {\bf dhscf}, whereas the second uses the minimum memory at the
+expense of re-calculating a number of quantities.
+
+{\it Use:} Controls whether the program uses algorithms which save memory
+  at the expense of CPU time by not preserving the contents of arrays
+  when re-initialising the dimensions due to bounds being exceeded. 
+
+{\it Default value:}  false
+
+\end{description}
+
 
 \vspace{5pt}
 \subsection{Output options}
@@ -2620,6 +2930,14 @@ states.\index{density of states}
  
 {\it Default value:} {\tt .false.} (see {\bf LongOutput})
 
+\item[{\bf WriteDM}] ({\it logical}):
+\index{WriteDM@{\bf WriteDM}}
+\index{output!density matrix}
+It determines whether the density matrix is output as a {\it Systemlabel}.DM file or
+not. For large systems this file can be quite big and therefore it
+may be necessary to turn this option off to conserve disk space.
+
+{\it Default value:} {\tt .true.}
 
 \item[{\bf WriteKbands}] ({\it logical}):
 \index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
@@ -3647,5 +3965,6 @@ Efield   & Har/Bohr/e & 5.1422546E11 \\
 \end{center}
 
 \input{siesta.ind}
+
 
 \end{document}

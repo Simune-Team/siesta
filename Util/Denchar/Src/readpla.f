@@ -1,7 +1,7 @@
 
       SUBROUTINE READPLA( IOPTION, XMIN, XMAX, YMIN, YMAX,
      .                    NPX, NPY, COORPO, NORMAL, DIRVER1, DIRVER2, 
-     .                    ARMUNI, MAXA, XA, VOLUME, IUNITCD ) 
+     .                    ARMUNI, MAXA, XA, VOLUME, IUNITCD, ISCALE ) 
 C **********************************************************************
 C Read the data file to prepare the plane in which we are going to
 C calculate the charge density
@@ -13,7 +13,7 @@ C **********************************************************************
       INCLUDE 'fdfdefs.h'
 
       INTEGER 
-     .  IOPTION, NPX, NPY
+     .  IOPTION, NPX, NPY, ISCALE, IUNITCD
      
       DOUBLE PRECISION
      .  XMIN, XMAX, YMIN, YMAX, 
@@ -46,6 +46,12 @@ C                          the plane. COORPO(POINT,IX)
 C INTEGER MAXA           : Maximum number of atoms
 C REAL*8  XA(3,MAXA)     : Atomic coordinates
 C REAL*8 VOLUME          : Volumen of unit cell (in bohr**3)
+C INTEGER IUNITCD        : Units for the electron density
+C                          IUNITCD = 1 => Ele/(bohr)**3
+C                          IUNITCD = 2 => Ele/(Ang)**3
+C                          IUNITCD = 3 => Ele/(unitcell)
+C INTEGER ISCALE         : Units for the atomic positions
+C                          (ISCALE = 1 => Bohrs, ISCALE = 2 => Ang)
 C **********************************************************************
 
       CHARACTER 
@@ -54,8 +60,7 @@ C **********************************************************************
      .  UCD*22, UCD_DEFECT*22
 
       INTEGER
-     .  IUNIT, IX, JX, NPX_DEFECT, NPY_DEFECT, IND1, IND2, IND3,
-     .  ISCALE, IUNITCD
+     .  IUNIT, IX, JX, NPX_DEFECT, NPY_DEFECT, IND1, IND2, IND3
 
       DOUBLE PRECISION
      .  ORIGIN(3), XDIR(3)

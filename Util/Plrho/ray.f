@@ -13,7 +13,9 @@ C    6  10        20        30        40        50        60        7072
 
 c maxl : Maximun number of light sources
       integer maxl
+      real    eps
       parameter ( maxl = 10 )
+      parameter ( eps  = 1.e-12 )
 
 c Internal variables
       logical  frstme, yes
@@ -65,7 +67,7 @@ c Find illumination vector
           xl(1,il) = - sin(tlight(il)*pi/180.) * cos(plight(il)*pi/180.)
           xl(2,il) = - sin(tlight(il)*pi/180.) * sin(plight(il)*pi/180.)
           xl(3,il) = - cos(tlight(il)*pi/180.)
-          wl2(il) = (wlight(il)*pi/180.)**2
+          wl2(il) = (wlight(il)*pi/180.)**2 + eps
           dl(il) = dlight(il) / pi / wl2(il)
         enddo
       endif
@@ -75,7 +77,7 @@ c Add light contributions
       do il = 1,nl
 
 c       Find normalized surface normal
-        gmod = sqrt( g(1)**2 + g(2)**2 + g(3)**2 )
+        gmod = sqrt( g(1)**2 + g(2)**2 + g(3)**2 ) + eps
         xn(1) = g(1) / gmod
         xn(2) = g(2) / gmod
         xn(3) = g(3) / gmod

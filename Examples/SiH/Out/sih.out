@@ -2,14 +2,14 @@
 prdate: PROGRAM = siesta, SYSTEM = cefeo.fmc.uam.es
 prdate: DATE = Wed Jun  9 09:36:15 MET DST 1999
  
-              SIESTA Version 0.11.4  (June 8, 1999, 16:00:00)             
+              SIESTA Version 0.12.4  (June 8, 1999, 16:00:00)             
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
                            ***********************       
 
 redata: ****************** Dump of input data file ****************************
-# $Id: sih.out,v 1.1.2.1 1999/06/09 08:14:29 emilio Exp $
+# $Id: sih.out,v 1.2 1999/06/09 08:12:39 emilio Exp $
 # -----------------------------------------------------------------------------
 # FDF for interstitial H in a cubic c-Si supercell with 64 atoms
 #

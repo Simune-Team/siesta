@@ -1,5 +1,3 @@
-C $Id: xc.f,v 1.13 1999/03/04 16:21:11 jose Exp $
-
       SUBROUTINE ATOMXC( FUNCTL, AUTHOR, IREL,
      .                   NR, MAXR, RMESH, NSPIN, DENS,
      .                   EX, EC, DX, DC, VXC )
@@ -57,12 +55,8 @@ C Argument types and dimensions
 C Internal parameters
 C NN     : order of the numerical derivatives: the number of radial 
 C          points used is 2*NN+1
-C MAXAUX : must be larger than the number of radial mesh points
-C MAXSPN : maximum number of spin values (4 for non-collinear spin)
-      INTEGER NN, MAXAUX, MAXSPN
+      INTEGER NN
       PARAMETER ( NN     =    5 )
-      PARAMETER ( MAXAUX = 2000 )
-      PARAMETER ( MAXSPN =    4 )
 
 C Fix energy unit:  EUNIT=1.0 => Hartrees,
 C                   EUNIT=0.5 => Rydbergs,
@@ -80,10 +74,12 @@ C Local variables and arrays
       INTEGER
      .  IN, IN1, IN2, IR, IS, JN
       DOUBLE PRECISION
-     .  AUX(MAXAUX), D(MAXSPN), DECDD(MAXSPN), DECDGD(3,MAXSPN),
-     .  DEXDD(MAXSPN), DEXDGD(3,MAXSPN),
      .  DGDM(-NN:NN), DGIDFJ(-NN:NN), DRDM, DVOL, 
-     .  EPSC, EPSX, F1, F2, GD(3,MAXSPN), PI
+     .  EPSC, EPSX, F1, F2, PI
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE ::
+     .                  D, DECDD, DEXDD, AUX
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
+     .                  DECDGD, DEXDGD, GD
       EXTERNAL
      .  GGAXC, LDAXC
 
@@ -98,9 +94,21 @@ C Set GGA switch
         STOP
       ENDIF
 
-C Check size of auxiliary array
-      IF (GGA .AND. MAXAUX.LT.NR)
-     .  STOP 'ATOMXC: Parameter MAXAUX too small'
+C Allocate local memory
+      allocate(D(nspin))
+      call memory('A','D',nspin,'atomxc')
+      allocate(DECDD(nspin))
+      call memory('A','D',nspin,'atomxc')
+      allocate(DEXDD(nspin))
+      call memory('A','D',nspin,'atomxc')
+      allocate(DECDGD(3,nspin))
+      call memory('A','D',3*nspin,'atomxc')
+      allocate(DEXDGD(3,nspin))
+      call memory('A','D',3*nspin,'atomxc')
+      allocate(GD(3,nspin))
+      call memory('A','D',3*nspin,'atomxc')
+      allocate(AUX(NR))
+      call memory('A','D',nr,'atomxc')
 
 C Initialize output
       EX = 0
@@ -230,458 +238,23 @@ C Divide by energy unit
   170   CONTINUE
   180 CONTINUE
 
-      END
-
-
-
-      SUBROUTINE CELLXC( FUNCTL, AUTHOR, IREL,
-     .                   CELL, NMESH, NSPAN, MAXP, MTYPE, XMESH,
-     .                   NSPIN, DENS,
-     .                   EX, EC, DX, DC, VXC, STRESS, MAXAUX, AUX )
-
-C *******************************************************************
-C Finds total exchange-correlation energy and potential in a
-C   periodic cell.
-C This version implements the Local (spin) Density Approximation and
-C   the Generalized-Gradient-Aproximation with the 'explicit mesh 
-C   functional' method of White & Bird, PRB 50, 4954 (1994).
-C Gradients are 'defined' by numerical derivatives, using 2*NN+1 mesh
-C   points, where NN is a parameter defined below
-C Coded by L.C.Balbas and J.M.Soler. December 1996.
-C Stress added by J.L.Martins and J.M.Soler. August 1997.
-C ************************* INPUT ***********************************
-C CHARACTER*(*) FUNCTL : Functional to be used:
-C              'LDA' or 'LSD' => Local (spin) Density Approximation
-C                       'GGA' => Generalized Gradient Corrections
-C                                Uppercase is optional
-C CHARACTER*(*) AUTHOR : Parametrization desired:
-C     'CA' or 'PZ' => LSD Perdew & Zunger, PRB 23, 5075 (1981)
-C           'PW92' => LSD Perdew & Wang, PRB, 45, 13244 (1992). This is
-C                     the local density limit of the next:
-C            'PBE' => GGA Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
-C                     Uppercase is optional
-C INTEGER IREL         : Relativistic exchange? (0=>no, 1=>yes)
-C REAL*8  CELL(3,3)    : Unit cell vectors CELL(ixyz,ivector)
-C INTEGER NMESH(3)     : Number of mesh divisions of each vector
-C INTEGER NSPAN(3)     : Physical dimensions of arrays XMESH, DENS and
-C                        VXC (or memory span between array elements)
-C                        See usage section for more information
-C INTEGER MAXP         : Physical dimension of XMESH, DENS, and VXC
-C INTEGER MTYPE        : Mesh type:
-C                        0 => Uniform mesh
-C                        1 => Adaptive mesh, given in cartesian coord
-C                        2 => Adaptive mesh, given in cell-vector coord
-C REAL    XMESH(3,MAXP): Mesh point coordinates (not used if MTYPE=0)
-C                        When MTYPE=2, cartesian coordinates are
-C                        Xcart(ix,im) = Sum_iv(CELL(ix,iv)*XMESH(iv,ip))
-C                        Notice single precision in this version
-C INTEGER NSPIN        : NSPIN=1 => unpolarized; NSPIN=2 => polarized
-C REAL    DENS(MAXP,NSPIN) : Total (NSPIN=1) or spin (NSPIN=2) electron
-C                            density at mesh points, ordered as
-C                            IP = I1+NSPAN(1)*((I2-1)+NSPAN(2)*(I3-1)),
-C                            with I1=1,...,NMESH(1), etc
-C                            Notice single precision in this version
-C INTEGER MAXAUX       : Physical dimension of array AUX.
-C                        If FUNCTL.EQ.'GGA' and MTYPE.NE.0, must be
-C                        MAXAUX .GE. NSPAN(1)*NSPAN(2)*NSPAN(3)
-C                        Not used otherwise
-C ************************* OUTPUT **********************************
-C REAL*8  EX              : Total exchange energy
-C REAL*8  EC              : Total correlation energy
-C REAL*8  DX              : IntegralOf( rho * (eps_x - v_x) )
-C REAL*8  DC              : IntegralOf( rho * (eps_c - v_c) )
-C REAL    VXC(MAXP,NSPIN) : (Spin) exch-corr potential
-C                           Notice single precision in this version
-C REAL*8  STRESS(3,3)     : xc contribution to the stress tensor,
-C                           assuming constant density (not charge),
-C                           i.e. r->r' => rho'(r') = rho(r)
-C                           For plane-wave and grid (finite diff) basis
-C                           sets, density rescaling gives an extra term
-C                           (not included) (DX+DC-EX-EC)/cell_volume for
-C                           the diagonal elements of stress. For other
-C                           basis sets, the extra term is, in general:
-C                           IntegralOf(v_xc * d_rho/d_strain) / cell_vol
-C ************************* AUXILIARY *******************************
-C REAL    AUX(MAXAUX)     : Not used unless 
-C                           FUNCTL.EQ.'GGA' .AND. MTYPE.NE.0
-C ************************ UNITS ************************************
-C Distances in atomic units (Bohr).
-C Densities in atomic units (electrons/Bohr**3)
-C Energy unit depending of parameter EUNIT below
-C Stress in EUNIT/Bohr**3
-C ************************ USAGE ************************************
-C Typical calls for different array dimensions:
-C     PARAMETER ( MAXP = 1000000 )
-C     DIMENSION NMESH(3), DENS(MAXP,2), VXC(MAXP,2)
-C     Find CELL vectors
-C     Find density at N1*N2*N3 mesh points (less than MAXP) and place 
-C       them consecutively in array DENS
-C     NMESH(1) = N1
-C     NMESH(2) = N2
-C     NMESH(3) = N3
-C     CALL CELLXC( 'GGA', 'PBE', 0,
-C    .              CELL, NMESH, NMESH, MAXP, 0, 0,
-C    .              2, DENS,
-C    .              EX, EC, DX, DC, VXC, STRESS, 0, 0 )
-C Or alternatively:
-C     PARAMETER ( M1=100, M2=100, M3=100 )
-C     DIMENSION NMESH(3), NSPAN(3), DENS(M1,M2,M3,2), VXC(M1,M2,M3,2)
-C     DATA NSPAN / M1, M2, M3 /
-C     Find CELL vectors
-C     Find DENS at N1*N2*N3 mesh points
-C     NMESH(1) = N1
-C     NMESH(2) = N2
-C     NMESH(3) = N3
-C     CALL CELLXC( 'GGA', 'PBE', 0,
-C    .              CELL, NMESH, NSPAN, M1*M2*M3, 0, 0,
-C    .              2, DENS,
-C    .              EX, EC, DX, DC, VXC, STRESS, 0, 0 )
-C ********* BEHAVIOUR ***********************************************
-C - Notice that XMESH and AUX are not used if MTYPE=0. This means that
-C   you do not even need to declare them in the calling program. See
-C   usage section for calling examples.
-C - If FNCTNL='LDA', DENS and VXC may be the same physical array.
-C - Stops and prints a warning if arguments FUNCTL or AUTHOR are not
-C   one of the allowed possibilities.
-C - Since the exchange and correlation part is usually a small fraction
-C   of a typical electronic structure calculation, this routine has
-C   been coded with emphasis on simplicity and functionality, not in
-C   eficiency. It is not designed to vectorize or parallelize well.
-C ********* ROUTINES CALLED *****************************************
-C GGAXC, LDAXC, RECLAT, TIMER, VOLCEL
-C *******************************************************************
-
-C Next line is nonstandard but may be suppressed
-      IMPLICIT NONE
-
-C Argument types and dimensions
-      CHARACTER*(*)     FUNCTL, AUTHOR
-      INTEGER           IREL, MAXAUX, MAXP, MTYPE,
-     .                  NMESH(3), NSPAN(3), NSPIN
-      DOUBLE PRECISION  CELL(3,3), DC, DX, EC, EX, STRESS(3,3)
-C     If you change next line, please change also the argument
-C     explanations in the header comments
-*     DOUBLE PRECISION
-      REAL
-     .                  AUX(MAXAUX), DENS(MAXP,NSPIN),
-     .                  VXC(MAXP,NSPIN), XMESH(3,MAXP)
-
-C Fix the order of the numerical derivatives
-C NN is the number of points used in each coordinate and direction,
-C i.e. a total of 6*NN neighbour points is used to find the gradients
-      INTEGER NN
-      PARAMETER ( NN = 3 )
-
-C Fix energy unit:  EUNIT=1.0 => Hartrees,
-C                   EUNIT=0.5 => Rydbergs,
-C                   EUNIT=0.03674903 => eV
-      DOUBLE PRECISION EUNIT
-      PARAMETER ( EUNIT = 0.5D0 )
-
-C Fix switch to skip points with zero density
-      LOGICAL SKIP0
-      DOUBLE PRECISION DENMIN
-      PARAMETER ( SKIP0  = .TRUE. )
-      PARAMETER ( DENMIN = 1.D-15 )
-
-C Local variables and arrays
-      INTEGER MAXSPN
-      PARAMETER ( MAXSPN = 4 )
-      LOGICAL           GGA
-      INTEGER           I1, I2, I3, IC, IN, IP, IS, IX,
-     .                  J1, J2, J3, JN, JP(3,-NN:NN), JX, NP
-      DOUBLE PRECISION  D(MAXSPN), DECDD(MAXSPN), DECDGD(3,MAXSPN),
-     .                  DENTOT, DEXDD(MAXSPN), DEXDGD(3,MAXSPN),
-     .                  DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
-     .                  DMDX(3,3), DVOL, DXDM(3,3),
-     .                  EPSC, EPSX, F1, F2, GD(3,MAXSPN),
-     .                  VOLCEL, VOLUME
-      EXTERNAL          GGAXC, LDAXC, RECLAT, VOLCEL
-
-
-C Start time counter (intended only for debugging and development)
-      CALL TIMER( 'CELLXC', 1 )
-
-C Set GGA switch
-      IF ( FUNCTL.EQ.'LDA' .OR. FUNCTL.EQ.'lda' .OR.
-     .     FUNCTL.EQ.'LSD' .OR. FUNCTL.EQ.'lsd' ) THEN
-        GGA = .FALSE.
-      ELSEIF ( FUNCTL.EQ.'GGA' .OR. FUNCTL.EQ.'gga') THEN
-        GGA = .TRUE.
-      ELSE
-        WRITE(6,*) 'CELLXC: Unknown functional ', FUNCTL
-        STOP
-      ENDIF
-
-C Find weights of numerical derivation from Lagrange interp. formula
-      DO 15 IN = -NN,NN
-        F1 = 1
-        F2 = 1
-        DO 10 JN = -NN,NN
-          IF (JN.NE.IN .AND. JN.NE.0) F1 = F1 * (0  - JN)
-          IF (JN.NE.IN)               F2 = F2 * (IN - JN)
-   10   CONTINUE
-        DGDM(IN) = F1 / F2
-   15 CONTINUE
-      DGDM(0) = 0
-
-C Find total number of mesh points
-      NP = NMESH(1) * NMESH(2) * NMESH(3)
-
-C Find Jacobian matrix dx/dmesh for uniform mesh
-      IF (MTYPE.EQ.0) THEN
-
-C       Find mesh cell volume 
-        DVOL = VOLCEL( CELL ) / NP
-
-        IF (GGA) THEN
-
-C         Find mesh unit vectors and reciprocal mesh vectors
-          DO 25 IC = 1,3
-            DO 20 IX = 1,3
-              DXDM(IX,IC) = CELL(IX,IC) / NMESH(IC)
-   20       CONTINUE
-   25     CONTINUE
-          CALL RECLAT( DXDM, DMDX, 0 )
-
-C         Find the weights for the derivative d(gradF(i))/d(F(j)) of
-C         the gradient at point i with respect to the value at point j
-          DO 50 IN = -NN,NN
-            DO 40 IC = 1,3
-              DO 30 IX = 1,3
-                DGIDFJ(IX,IC,IN) = DMDX(IX,IC) * DGDM(IN)
-   30         CONTINUE
-   40       CONTINUE
-   50     CONTINUE
-
-        ENDIF
-
-      ENDIF
-
-C Initialize output
-      EX = 0
-      EC = 0
-      DX = 0
-      DC = 0
-      IF (GGA) THEN
-        DO 70 IS = 1,NSPIN
-          DO 66 I3 = 0,NMESH(3)-1
-          DO 64 I2 = 0,NMESH(2)-1
-          DO 62 I1 = 0,NMESH(1)-1
-            IP = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
-            VXC(IP,IS) = 0
-   62     CONTINUE
-   64     CONTINUE
-   66     CONTINUE
-   70   CONTINUE
-      ENDIF
-      DO 74 JX = 1,3
-        DO 72 IX = 1,3
-          STRESS(IX,JX) = 0.D0
-   72   CONTINUE
-   74 CONTINUE
-
-C Loop on mesh points
-      DO 230 I3 = 0,NMESH(3)-1
-      DO 220 I2 = 0,NMESH(2)-1
-      DO 210 I1 = 0,NMESH(1)-1
-
-C       Find mesh index of this point
-        IP = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
-
-C       Skip point if density=0
-        IF (SKIP0) THEN
-          DENTOT = 0.D0
-          DO 75 IS = 1,NSPIN
-            DENTOT = DENTOT + ABS(DENS(IP,IS))
-   75     CONTINUE
-          IF (DENTOT .LT. DENMIN) THEN
-            DO 76 IS = 1,NSPIN
-              VXC(IP,IS) = 0
-   76       CONTINUE
-            GOTO 210
-          ENDIF
-        ENDIF
-
-C       Find mesh indexes of neighbour points
-        IF (GGA .OR. MTYPE.NE.0) THEN
-          DO 80 IN = -NN,NN
-            J1 = MOD( I1+IN+100*NMESH(1), NMESH(1) )
-            J2 = MOD( I2+IN+100*NMESH(2), NMESH(2) )
-            J3 = MOD( I3+IN+100*NMESH(3), NMESH(3) )
-            JP(1,IN) = 1 + J1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
-            JP(2,IN) = 1 + I1 + NSPAN(1) * J2 + NSPAN(1) * NSPAN(2) * I3
-            JP(3,IN) = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * J3
-   80     CONTINUE
-        ENDIF
-
-C       Find Jacobian matrix dx/dmesh for adaptative mesh
-        IF (MTYPE .NE. 0) THEN
-
-C         Find dx/dmesh
-          DO 110 IC = 1,3
-            DO 100 IX = 1,3
-              DXDM(IX,IC) = 0
-              DO 90 IN = -NN,NN
-                IF (MTYPE .EQ. 1) THEN
-                  DXDM(IX,IC) = DXDM(IX,IC) +
-     .                          XMESH(IX,JP(IC,IN)) * DGDM(IN)
-                ELSE
-                  DXDM(IX,IC) = DXDM(IX,IC) +
-     .                   ( CELL(IX,1) * XMESH(1,JP(IC,IN)) +
-     .                     CELL(IX,2) * XMESH(2,JP(IC,IN)) +
-     .                     CELL(IX,3) * XMESH(3,JP(IC,IN)) ) * DGDM(IN)
-                ENDIF
-   90         CONTINUE
-  100       CONTINUE
-  110     CONTINUE
-
-C         Find inverse of matrix dx/dmesh
-          CALL RECLAT( DXDM, DMDX, 0 )
-
-C         Find differential of volume = determinant of Jacobian matrix
-          DVOL = VOLCEL( DXDM )
-          IF (GGA) AUX(IP) = DVOL
-
-C         Find the weights for the derivative d(gradF(i))/d(F(j)), of
-C         the gradient at point i with respect to the value at point j
-          IF (GGA) THEN
-            DO 140 IN = -NN,NN
-              DO 130 IC = 1,3
-                DO 120 IX = 1,3
-                  DGIDFJ(IX,IC,IN) = DMDX(IX,IC) * DGDM(IN)
-  120           CONTINUE
-  130         CONTINUE
-  140       CONTINUE
-          ENDIF
-
-        ENDIF
-
-C       Find density and gradient of density at this point
-        DO 145 IS = 1,NSPIN
-          D(IS) = DENS(IP,IS)
-  145   CONTINUE
-        IF (GGA) THEN
-          DO 165 IS = 1,NSPIN
-            DO 160 IX = 1,3
-              GD(IX,IS) = 0
-              DO 150 IN = -NN,NN
-                GD(IX,IS) = GD(IX,IS) +
-     .                      DGIDFJ(IX,1,IN) * DENS(JP(1,IN),IS) +
-     .                      DGIDFJ(IX,2,IN) * DENS(JP(2,IN),IS) +
-     .                      DGIDFJ(IX,3,IN) * DENS(JP(3,IN),IS)
-  150         CONTINUE
-  160       CONTINUE
-  165     CONTINUE
-        ENDIF
-
-C       Find exchange and correlation energy densities and their 
-C       derivatives with respect to density and density gradient
-        IF (GGA) THEN
-          CALL GGAXC( AUTHOR, IREL, NSPIN, D, GD,
-     .                EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
-        ELSE
-          CALL LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, DEXDD, DECDD )
-        ENDIF
-
-C       Add contributions to exchange-correlation energy and its
-C       derivatives with respect to density at all points
-        DO 170 IS = 1,MIN(NSPIN,2)
-          EX = EX + DVOL * D(IS) * EPSX
-          EC = EC + DVOL * D(IS) * EPSC
-          DX = DX + DVOL * D(IS) * EPSX
-          DC = DC + DVOL * D(IS) * EPSC
-  170   CONTINUE
-        DO 200 IS = 1,NSPIN
-          DX = DX - DVOL * D(IS) * DEXDD(IS)
-          DC = DC - DVOL * D(IS) * DECDD(IS)
-          IF (GGA) THEN
-            VXC(IP,IS) = VXC(IP,IS) + DVOL * ( DEXDD(IS) + DECDD(IS) )
-            DO 190 IN = -NN,NN
-              DO 180 IC = 1,3
-                DO 175 IX = 1,3
-                  DX = DX - DVOL * DENS(JP(IC,IN),IS) *
-     .                      DEXDGD(IX,IS) * DGIDFJ(IX,IC,IN)
-                  DC = DC - DVOL * DENS(JP(IC,IN),IS) *
-     .                      DECDGD(IX,IS) * DGIDFJ(IX,IC,IN)
-                  VXC(JP(IC,IN),IS) = VXC(JP(IC,IN),IS) + DVOL *
-     .               (DEXDGD(IX,IS) + DECDGD(IX,IS)) * DGIDFJ(IX,IC,IN)
-  175           CONTINUE
-  180         CONTINUE
-  190       CONTINUE
-          ELSE
-            VXC(IP,IS) = DEXDD(IS) + DECDD(IS)
-          ENDIF
-  200   CONTINUE
-
-C       Add contribution to stress due to change in gradient of density
-C       originated by the deformation of the mesh with strain
-        IF (GGA) THEN
-          DO 206 JX = 1,3
-            DO 204 IX = 1,3
-              DO 202 IS = 1,NSPIN
-                STRESS(IX,JX) = STRESS(IX,JX) - DVOL * GD(IX,IS) *
-     .                           ( DEXDGD(JX,IS) + DECDGD(JX,IS) )
-  202         CONTINUE
-  204       CONTINUE
-  206     CONTINUE
-        ENDIF
-
-  210 CONTINUE
-  220 CONTINUE
-  230 CONTINUE
-
-C Divide by volume element to obtain the potential (per electron)
-      IF (GGA) THEN
-        DO 270 IS = 1,NSPIN
-          DO 260 I3 = 0,NMESH(3)-1
-          DO 250 I2 = 0,NMESH(2)-1
-          DO 240 I1 = 0,NMESH(1)-1
-            IP = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
-            IF (MTYPE .NE. 0) DVOL = AUX(IP)
-            VXC(IP,IS) = VXC(IP,IS) / DVOL
-  240     CONTINUE
-  250     CONTINUE
-  260     CONTINUE
-  270   CONTINUE
-      ENDIF
-
-C Add contribution to stress from the change of volume with strain and
-C divide by volume to get correct stress definition (dE/dStrain)/Vol
-      VOLUME = VOLCEL( CELL )
-      DO 274 JX = 1,3
-        STRESS(JX,JX) = STRESS(JX,JX) + EX + EC
-        DO 272 IX = 1,3
-          STRESS(IX,JX) = STRESS(IX,JX) / VOLUME
-  272   CONTINUE
-  274 CONTINUE
-      
-C Divide by energy unit
-      EX = EX / EUNIT
-      EC = EC / EUNIT
-      DX = DX / EUNIT
-      DC = DC / EUNIT
-      DO 310 IS = 1,NSPIN
-        DO 300 I3 = 0,NMESH(3)-1
-        DO 290 I2 = 0,NMESH(2)-1
-        DO 280 I1 = 0,NMESH(1)-1
-          IP = 1 + I1 + NSPAN(1) * I2 + NSPAN(1) * NSPAN(2) * I3
-          VXC(IP,IS) = VXC(IP,IS) / EUNIT
-  280   CONTINUE
-  290   CONTINUE
-  300   CONTINUE
-  310 CONTINUE
-      DO 330 JX = 1,3
-        DO 320 IX = 1,3
-          STRESS(IX,JX) = STRESS(IX,JX) / EUNIT
-  320   CONTINUE
-  330 CONTINUE
-
-C Stop time counter
-      CALL TIMER( 'CELLXC', 2 )
+C Deallocate local memory
+      call memory('D','D',size(D),'atomxc')
+      deallocate(D)
+      call memory('D','D',size(DECDD),'atomxc')
+      deallocate(DECDD)
+      call memory('D','D',size(DEXDD),'atomxc')
+      deallocate(DEXDD)
+      call memory('D','D',size(DECDGD),'atomxc')
+      deallocate(DECDGD)
+      call memory('D','D',size(DEXDGD),'atomxc')
+      deallocate(DEXDGD)
+      call memory('D','D',size(GD),'atomxc')
+      deallocate(GD)
+      call memory('D','D',size(AUX),'atomxc')
+      deallocate(AUX)
 
       END
-
 
 
       SUBROUTINE EXCHNG( IREL, NSP, DS, EX, VX )
@@ -1380,9 +953,3 @@ C      Change from Rydbergs to Hartrees
          VC(ISP) = HALF * VC(ISP)
    10  CONTINUE
       END
-
-
-
-
-
-

@@ -1,8 +1,6 @@
-C $Id: transp.f,v 1.3 1999/01/31 11:45:15 emilio Exp $
-
       subroutine transp( NO, endC, listC,
-     .                   NP, endCt, listCt, CtoCt,
-     .                   MaxNCt, numCt )
+     .                   NP, NPF, NPxyz, endCt, listCt, CtoCt,
+     .                   Node, Nodes )
 
 C ********************************************************************
 C Finds the 'transpose' of a sparse matrix ordered by rows, or rather
@@ -15,29 +13,32 @@ C integer NO              : Number of rows
 C integer endC(0:NO)      : Accumulated umber of nonzero elements in
 C                           each row
 C integer listC(NCmax,NO) : List of nonzero elements in each row
-C integer NP              : Number of columns
-C integer MaxNCt          : Dimension of auxiliary array numCt
+C integer NP              : Number of columns stored locally
+C integer NPF             : Number of columns in full system
+C integer NPxyz(3)        : Dimensions of the grid
 C *********************** OUTPUT **************************************
 C integer endCt(0:NP)     : Accumulated number of nonzero elements in
 C                           each column
 C integer listCt(*)       : List of nonzero elements in each column
 C integer CtoCt(*)        : Index of matrix C where the nonzero
 C                           elements in each column are stored
-C *********************** AUXILIARY **********************************
-C integer numCt(MaxNCt)  : Space that can be used freely between calls
-C                          MaxNCt must be at least NP
 C ********************************************************************
 
-      implicit none
-      integer  NO, NP, MaxNCt, endC(0:NO),  listC(*), endCt(0:NP),
-     .         listCt(*), CtoCt(*), numCt(NP)
-      integer  i, in, J, n
+      use parallel
 
-C     Check size of auxiliary array
-      if (NP .gt. MaxNCT) stop 'TRANSP: dimension MaxNCT too small'
+      implicit none
+      integer  NO, NP, endC(0:NO),  listC(*), endCt(0:NP),
+     .         listCt(*), CtoCt(*), NPF, NPxyz(3)
+      integer  i, in, j, jj, n, Node, Nodes
+      integer, dimension(:), allocatable, save :: numCt
+      external memory
+
+C     Allocate local memory
+      allocate(numCt(NPF))
+      call memory('A','I',NPF,'transp')
 
 C     Find number of nonzero orbitals at each mesh point
-      do J = 1, NP
+      do J = 1, NPF
         numCt(J) = 0
       enddo
       do i = 1, NO
@@ -49,8 +50,11 @@ C     Find number of nonzero orbitals at each mesh point
 
 C     Find limit of each point in arrays listCt and CtoCt
       endCt(0) = 0
-      do J = 1, NP
-        endCt(J) = endCt(J-1) + numCt(J)
+      do J = 1, NPF
+        call GlobalToLocalMesh(j,NPxyz,Node,Nodes,jj)
+        if (jj.gt.0) then
+          endCt(jj) = endCt(jj-1) + numCt(J)
+        endif
         numCt(J) = 0
       enddo
 
@@ -58,15 +62,22 @@ C     Make listCt and CtoCt lists
       do i = 1, NO
         do in = endC(i-1)+1, endC(i)
           J = listC(in)
-          numCt(J) = numCt(J) + 1
-          n = endCt(J-1) + numCt(J)
-          listCt(n) = i
-          CtoCt(n) = in
+          call GlobalToLocalMesh(j,NPxyz,Node,Nodes,jj)
+          if (jj.gt.0) then
+            numCt(jj) = numCt(jj) + 1
+            n = endCt(jj-1) + numCt(jj)
+            listCt(n) = i
+            CtoCt(n) = in
 *         write(6,'(a,i3,5i6)')
 *    .     'transp: i,endC(i-1),in,ip,endCt(ip-1),kn=',
 *    .      i,endC(i-1),in,J,endCt(J-1),n
+          endif
         enddo
       enddo
+
+C     Free local memory
+      call memory('D','I',size(numCt),'transp')
+      deallocate(numCt)
 
       end
 

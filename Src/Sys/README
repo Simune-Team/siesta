@@ -5,14 +5,15 @@ architectures and compilers, provided the following steps are taken:
   your particular configuration. If there is none, write your own using
   the existing files as guides.
 
-* Define in your environment a variable ARCH, giving it as value the
+* Define in your environment a variable SIESTA_SYS, giving it as value the
   basename of the appropriate .make file. For example, assuming you
   have a Dec Alpha with DXML libraries:
 
-	ARCH=osfdxml ; export ARCH  (sh, ksh, bash, etc)
-	setenv ARCH osfdxml         (csh and derivatives)
+	SIESTA_SYS=osfdxml ; export SIESTA_SYS  (sh, ksh, bash, etc)
+	setenv SIESTA_SYS osfdxml         (csh and derivatives)
 
 
 One of the macros set in the .make files refers to machine-dependent
-routines, which are kept in different .f files, according to the
-architecture and compiler/library capabilities.
+routines, which are kept in different .f files in the Src directory,
+according to the architecture and compiler/library capabilities.
+

@@ -1,4 +1,4 @@
-C $Id: shaper.f,v 1.8 1999/05/05 17:25:34 emilio Exp $
+C $Id: shaper.f,v 1.9 1999/11/26 18:28:34 wdpgaara Exp $
 
       SUBROUTINE SHAPER( CELL, NA, ISA, XA, SHAPE, NV, VECS )
 
@@ -33,18 +33,37 @@ C will fail if one atom evaporates from one slab and reaches another
 C image of the slab, reporting the system as bulk.
 C **********************************************************************
 
+      use atmfuncs, only: rcut
+
       IMPLICIT          NONE
       INTEGER           NA, ISA(NA), NV
-      DOUBLE PRECISION  CELL(3,3), XA(3,NA), RCUT, VECS(3,3)
-      EXTERNAL          CHKDIM, NEIGHB, LIVEC, RCUT
+      DOUBLE PRECISION  CELL(3,3), XA(3,NA), VECS(3,3)
+      EXTERNAL          CHKDIM, NEIGHB, LIVEC
       CHARACTER         SHAPE*(*)
 
 C Internal variables and arrays
-      INTEGER MAXNA
-      PARAMETER (MAXNA = 1000)
-      INTEGER          IA, IN, IS, JA, JAN(MAXNA), JS, NNA
-      DOUBLE PRECISION RI, RIJ, RJ, RMAX, R2IJ(MAXNA),
-     .                 XIJ(3,MAXNA), XXJ(3)
+      integer, save ::
+     .  MAXNA
+
+      integer 
+     .  IA, IN, IS, JA, JS, NNA, maxnain
+
+      integer, dimension(:), allocatable :: 
+     .  JAN
+
+      double precision
+     .  RI, RIJ, RJ, RMAX, XXJ(3)
+
+      double precision, dimension(:), allocatable :: 
+     .  R2IJ
+
+      double precision, dimension(:,:), allocatable :: 
+     .  XIJ
+
+      logical
+     .  overflow
+
+      data MAXNA / 1000 /
 
 C Find maximum interaction range
       RMAX = 0.0D0
@@ -53,53 +72,108 @@ C Find maximum interaction range
         RMAX = MAX( RMAX, RCUT(IS,0) )
    10 CONTINUE
 
+C Allocate local memory
+  100 if (.not.allocated(jan)) then
+        allocate(jan(maxna))
+        call memory('A','I',maxna,'shaper')
+      endif
+      if (.not.allocated(r2ij)) then
+        allocate(r2ij(maxna))
+        call memory('A','D',maxna,'shaper')
+      endif
+      if (.not.allocated(xij)) then
+        allocate(xij(3,maxna))
+        call memory('A','D',3*maxna,'shaper')
+      endif
+
 C Initialize neighbour-locater routine
       NNA = MAXNA
       CALL NEIGHB( CELL, 2*RMAX, NA, XA, 0, 0, NNA, JAN, XIJ, R2IJ )
+      overflow = (nna.gt.maxna)
+      if (overflow) then
+        call memory('D','I',size(jan),'shaper')
+        deallocate(jan)
+        call memory('D','D',size(r2ij),'shaper')
+        deallocate(r2ij)
+        call memory('D','D',size(xij),'shaper')
+        deallocate(xij)
+        maxna = nna + nint(0.1*nna)
+        goto 100
+      endif
 
 C Main loop
       NV = 0
-      DO 90 IA = 1,NA
+      maxnain = maxna
+      do IA = 1,NA
         IS = ISA(IA)
         RI = RCUT(IS,0)
 
-C       Find neighbours of atom IA
-        NNA = MAXNA
+C Find neighbours of atom IA
+        NNA = maxnain
         CALL NEIGHB( CELL, RI+RMAX, NA, XA, IA, 0,
      .               NNA, JAN, XIJ, R2IJ )
-        CALL CHKDIM( 'SHAPER', 'MAXNA', MAXNA, NNA, 1 )
+        if (.not.overflow) overflow = (nna.gt.maxna)
+        if (overflow) then
+          maxna = max(maxna,nna)
+        endif
 
-        DO 50 IN = 1,NNA
-          JA = JAN(IN)
-          JS = ISA(JA)
-          RJ = RCUT(JS,0)
-          RIJ = SQRT(R2IJ(IN))
+C Don't do the actual work if the neighbour arrays are too small
+        if (.not.overflow) then
 
-C         Check if IA and JA interact
-          IF (RIJ .LT. RI+RJ) THEN
+          do IN = 1,NNA
+            JA = JAN(IN)
+            JS = ISA(JA)
+            RJ = RCUT(JS,0)
+            RIJ = SQRT(R2IJ(IN))
 
-C           Find vector between two images of atom JA
-C           (we assume that all atoms in one unit cell are connected)
-            XXJ(1) = XA(1,IA) + XIJ(1,IN) - XA(1,JA)
-            XXJ(2) = XA(2,IA) + XIJ(2,IN) - XA(2,JA)
-            XXJ(3) = XA(3,IA) + XIJ(3,IN) - XA(3,JA)
+C Check if IA and JA interact
+            IF (RIJ .LT. RI+RJ) THEN
 
-C           Add to set of linearly independent vectors
-            CALL LIVEC( XXJ, NV, VECS )
+C Find vector between two images of atom JA
+C (we assume that all atoms in one unit cell are connected)
+              XXJ(1) = XA(1,IA) + XIJ(1,IN) - XA(1,JA)
+              XXJ(2) = XA(2,IA) + XIJ(2,IN) - XA(2,JA)
+              XXJ(3) = XA(3,IA) + XIJ(3,IN) - XA(3,JA)
 
-            IF (NV .EQ. 3) GOTO 999
-          ENDIF
-   50   CONTINUE
-   90 CONTINUE
+C Add to set of linearly independent vectors
+              CALL LIVEC( XXJ, NV, VECS )
+
+              IF (NV .EQ. 3) GOTO 999
+            ENDIF
+          enddo
+        endif
+
+      enddo
+
+C If maxna dimension was no good then reset arrays and start again
+      if (overflow) then
+        call memory('D','I',size(jan),'shaper')
+        deallocate(jan)
+        call memory('D','D',size(r2ij),'shaper')
+        deallocate(r2ij)
+        call memory('D','D',size(xij),'shaper')
+        deallocate(xij)
+        maxna = maxna + nint(0.1*maxna)
+        goto 100
+      endif
 
 C Exit point
-  999 CONTINUE
+  999 continue
       IF (NV.EQ.0 .AND. NA.EQ.1) SHAPE = 'atom'
       IF (NV.EQ.0 .AND. NA.GT.1) SHAPE = 'molecule'
       IF (NV.EQ.1) SHAPE = 'chain'
       IF (NV.EQ.2) SHAPE = 'slab'
       IF (NV.EQ.3) SHAPE = 'bulk'
-      END
+
+C Deallocate local memory
+      call memory('D','I',size(jan),'shaper')
+      deallocate(jan)
+      call memory('D','D',size(r2ij),'shaper')
+      deallocate(r2ij)
+      call memory('D','D',size(xij),'shaper')
+      deallocate(xij)
+
+      end
 
 
 
@@ -139,11 +213,3 @@ C Written by J.M.Soler. July 1997.
       ENDIF
 
       END
-
-
-
-
-
-
-
-

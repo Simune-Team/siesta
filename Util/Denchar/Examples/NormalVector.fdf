@@ -35,3 +35,10 @@ SystemLabel          Si64         # Short name for naming files
 %block 2D.X_Axis                  # Coordinates one point to define x-axis
 2.56530 2.56530 2.56530
 %endblock 2D.X_Axis
+
+%block 2D.AtomsInPlane
+ 1
+ 2
+ 3
+%endblock 2D.AtomsInPlane
+

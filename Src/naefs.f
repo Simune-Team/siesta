@@ -1,4 +1,4 @@
-C $Id: naefs.f,v 1.5 1999/01/31 11:20:08 emilio Exp $
+C $Id: naefs.f,v 1.6 1999/11/26 18:28:23 wdpgaara Exp $
 
       subroutine naefs(nua, na, scell, xa, indxua, rmaxv,
      .                maxna, isa,
@@ -36,6 +36,9 @@ C      INTEGER IS : Specie index
 C
 C *********************************************************************
 
+      use atmfuncs, only: izofis
+      use matel_module, only: matel
+
       implicit none
 
       integer
@@ -50,13 +53,11 @@ C *********************************************************************
 
 C Internal variables ......................................................
       integer
-     .  ia, is, ix, ja, jn, js, jx, jua, nnia, izofis
+     .  ia, is, ix, ja, jn, js, jx, jua, nnia
 
       double precision
      .  fij(3), pi, vij, volcel, volume 
       
-      external 
-     .  izofis
 C ......................
 
 C     Initialize neighb subroutine

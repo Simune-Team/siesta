@@ -1,5 +1,6 @@
       SUBROUTINE WROUT(IOPTION, UNIT1, NORMAL, COORPO, DIRVER1, DIRVER2, 
-     .                 NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD )
+     .                 NPX, NPY, XMIN, XMAX, YMIN, YMAX, IUNITCD,
+     .                 MAXATOM, NAPLA, INDICES, XAPLA )
 C **********************************************************************
 C Dump input data into the output files
 C Written by J. Junquera Feb '99
@@ -10,10 +11,11 @@ C **********************************************************************
       INCLUDE 'fdfdefs.h'
 
       INTEGER
-     .  IOPTION, UNIT1, NPX, NPY, IUNITCD
+     .  IOPTION, UNIT1, NPX, NPY, IUNITCD, MAXATOM, NAPLA, 
+     .  INDICES(MAXATOM)
 
       DOUBLE PRECISION
-     .  NORMAL(3), COORPO(3,3), DIRVER1(3), DIRVER2(3)
+     .  NORMAL(3), COORPO(3,3), DIRVER1(3), DIRVER2(3), XAPLA(3,MAXATOM)
 
       DOUBLE PRECISION
      .  XMIN, XMAX, YMIN, YMAX
@@ -37,6 +39,11 @@ C                          zero (Plane Reference Frame; PRF)
 C REAL*8  XMIN, XMAX     : Limits of the plane in the PRF for x-direction
 C REAL*8  YMIN, YMAX     : Limits of the plane in the PRF for y-direction
 C INTEGER IUNITCD        : Unit of the charge density
+C INTEGER MAXATOM        : Maximum number of atoms
+C INTEGER NAPLA          : Number of atoms whose coordiantes has been rotated   
+C INTEGER INDICES(MAXATOM): Indices of tha atoms whose coordinates has 
+C                           been roated
+C REAL*8  XAPLA(3,MAXATOM): Atomic coordiantes in the in-plane reference frame
 C **********************************************************************
 
 C ***************  INTERNAL VARIABLES **********************************
@@ -44,7 +51,7 @@ C ***************  INTERNAL VARIABLES **********************************
      .  SNAME
 
       INTEGER
-     .  IX, IP
+     .  IX, IP, IA
 
 C Open files to store charge density -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
@@ -145,6 +152,17 @@ C Open files to store charge density -----------------------------------
         WRITE(UNIT1,'(A,/,A)')
      .    '#  WROUT: Unit of the charge density in output files : ',
      .    '#  WROUT: Electrons/unit cell'
+      ENDIF
+
+      IF( NAPLA .NE. 0) THEN
+        WRITE(UNIT1,'(A)')
+     .    '#  WROUT: Atomic coordinates in the in-plane reference frame'
+        WRITE(UNIT1,'(A,19(1H ),A)')
+     .    '#  WROUT: Atomic Index','Atomic coordinates'
+        DO IA = 1, NAPLA
+          WRITE(UNIT1,'(A,I14,5X,3F15.4)')
+     .      '#',INDICES(IA), (XAPLA(IX,INDICES(IA)),IX=1,3)
+        ENDDO
       ENDIF
 
       WRITE(UNIT1,'(A)')

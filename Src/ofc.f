@@ -1,11 +1,11 @@
-C $Id: ofc.f,v 1.1 1999/02/28 19:08:35 ordejon Exp $
-
       subroutine ofc(fa, dx, na)
 C *******************************************************************
 C Writes force constants matrix to file
 C Input forces are in Ry/Bohr and input displacements are in Bohr.
 C Force Constants written in file are in eV / Ang
 C Written by P.Ordejon. August'98.
+C Dynamic memory and save attribute for fres introduced by J.Gale
+C Sept'99.
 C ********* INPUT ***************************************************
 C real*8 fa(3,na)             : atomic forces (in Ry / Bohr)
 C real*8 dx                   : atomic displacements (in Bohr)
@@ -18,25 +18,30 @@ C residual forces are obtained. These residual forces are
 C substracted from the forces on other steps, to calculate the
 C force constants matrix
 C *******************************************************************
-      
+
+      use fdf
+
       implicit          none
       integer           na
       double precision  dx, fa(3,na)
-      external          chkdim, io_assign, io_close, paste, timer
-      include          'fdf/fdfdefs.h'
+      external          chkdim, io_assign, io_close, paste, timer,
+     .                  memory
 
 c     Internal variables and arrays
-      integer maxa
-      parameter (maxa = 2000)
       character fname*33, sname*30, line*132, paste*33
       logical   frstme
       integer   i, ix, unit1
-      double precision Ang, eV, fres(3,maxa)
+      double precision Ang, eV
+      double precision, dimension(:,:), allocatable, save :: fres
+
       save      frstme, fname
       data      frstme /.true./
 
-c     check dimensions
-      call chkdim('ofs','maxa',maxa,na,1)
+c     Allocate local array for storing residual forces
+      if (.not.allocated(fres)) then
+        allocate(fres(3,na))
+        call memory('A','D',3*na,'ofc')
+      endif
 
 c     Define conversion factors
       Ang = 1.d0 / 0.529177d0
@@ -79,7 +84,3 @@ c     Goto end of file if not frstime
 
       return
       end
-
-
-
-

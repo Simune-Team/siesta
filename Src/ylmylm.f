@@ -1,5 +1,3 @@
-C $Id: ylmylm.f,v 1.3 1999/01/31 11:45:19 emilio Exp $
-
       SUBROUTINE YLMYLM( ILM1, ILM2, R, YY, DYYDR )
 
 C *********************************************************************
@@ -19,22 +17,35 @@ C *********************************************************************
       INTEGER           ILM1, ILM2
       DOUBLE PRECISION  DYYDR(3), R(3), YY
 
-      INTEGER MAXL, MAXLM
-      PARAMETER ( MAXL  = 4 )
-      PARAMETER ( MAXLM = (MAXL+1)*(MAXL+1) )
+      INTEGER MAXLM
 
       INTEGER           I, L, LOFILM
-      DOUBLE PRECISION  DYDR(3,MAXLM), Y(MAXLM)
-      EXTERNAL          CHKDIM, LOFILM
+      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE ::
+     .  Y
+      DOUBLE PRECISION, DIMENSION(:,:), ALLOCATABLE ::
+     .  DYDR
+
+      EXTERNAL          LOFILM, MEMORY
 
       L = MAX( LOFILM(ILM1), LOFILM(ILM2) )
-      CALL CHKDIM( 'YLMYLM', 'MAXL', MAXL, L, 1 )
+      MAXLM = (L+1)*(L+1)
+
+      allocate(Y(MAXLM))
+      call memory('A','D',MAXLM,'ylmylm')
+      allocate(DYDR(3,MAXLM))
+      call memory('A','D',3*MAXLM,'ylmylm')
+
       CALL RLYLM( L, R, Y, DYDR )
 
       YY = Y(ILM1) * Y(ILM2)
       DO 10 I = 1,3
         DYYDR(I) = DYDR(I,ILM1) * Y(ILM2) + Y(ILM1) * DYDR(I,ILM2)
    10 CONTINUE
+
+      call memory('D','D',size(Y),'ylmylm')
+      deallocate(Y)
+      call memory('D','D',size(DYDR),'ylmylm')
+      deallocate(DYDR)
 
       END
 

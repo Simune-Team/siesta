@@ -1,4 +1,4 @@
-c $Id: iomd.f,v 1.3 1999/04/13 11:20:49 emilio Exp $
+c $Id: iomd.f,v 1.4 1999/11/26 18:28:17 wdpgaara Exp $
 
       subroutine iomd( na, isa, iza, xa, va, cell, vcell, varcel,
      .                 istep, istep0, istepf, temp, eks, getot)
@@ -27,6 +27,8 @@ c integer istep0     : First time step
 c integer istepf     : Last time step
 c *******************************************************************
 
+      use fdf
+
       implicit          none
       character         paste*33
       integer           na, isa(na), iza(na)
@@ -35,7 +37,6 @@ c *******************************************************************
       double precision  cell(3,3), xa(3,na), va(3,na), vcell(3,3),
      .                  temp, eks, getot
       external          io_assign, io_close, paste
-      include           'fdf/fdfdefs.h'
 
 c Internal variables and arrays
       logical    formtt
@@ -68,18 +69,18 @@ c Open file (only the first MD step)
 
       if(istep . eq . istep0) then
         call io_assign( iuene )
-        open(iuene, file=fnene, form='formatted', status='unknown')
-        call windf(iuene)
+        open(iuene, file=fnene, form='formatted', position='append', 
+     .    status='unknown')
         write(iuene,"(4a,/)") 'Step','   Temperature',
      .                      '     KS energy','  Total energy'
         if ( formt ) then
           call io_assign( iupos )
-          open(iupos, file=fnpos, form='formatted', status='unknown')
-          call windf(iupos)
+          open(iupos, file=fnpos, form='formatted', position='append',
+     .      status='unknown')
           if ( varcel ) then 
             call io_assign( iucel )
-            open(iucel,file=fncel,form='formatted',status='unknown' )
-            call windf(iucel)
+            open(iucel,file=fncel,form='formatted',position='append',
+     .        status='unknown' )
           endif
         else
           call io_assign( iupos )
@@ -120,16 +121,6 @@ c Close file (only at the end of the MD run)
 
 
 c *******************************************************************
-c Wind to end of file of a formatted file
-      subroutine windf(iu)
-      integer iu
-
- 1    read(iu,*,end=2)
-      goto 1
- 2    continue
-      end
-
-
 c Wind to end of file of an unformatted file
       subroutine windu(iu)
       integer iu

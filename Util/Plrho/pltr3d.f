@@ -40,11 +40,11 @@ c Internal variables
      .  g(3), g1(3), g2(3), r, ray, wxmax, wxmin, wymax, wymin,
      .  x, x1, x2, xmin, xmax,
      .  y, y1, y2, ymin, ymax, 
-     .  z, z1, z2, zbuff(0:maxx-1,0:maxy-1)
+     .  z, z1, z2
       logical
      .  frstme
       save
-     .  dx, dy, frstme, xmin, xmax, ymin, ymax, zbuff
+     .  dx, dy, frstme, xmin, xmax, ymin, ymax
       data
      .  frstme /.true./
 

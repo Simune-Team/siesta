@@ -1,4 +1,4 @@
-C $Id: plcharge.f,v 1.4 1999/04/11 13:57:47 emilio Exp $
+C $Id: plcharge.f,v 1.6 1999/11/26 18:28:26 wdpgaara Exp $
 
       SUBROUTINE PLCHARGE( NSPIN, NUO, NO, NA, MAXO, MAXA, MAXNO, 
      .                     CELL, RMAXO, XA, 
@@ -11,12 +11,14 @@ C The information is to be read by the external DENCHAR
 C program, to plot charge density contours in 2D
 C
 C Coded by J. Junquera 11/98
+C Modified by DSP, July 1999
 C **********************************************************************
+
+      use atmfuncs
+      use fdf
 
       IMPLICIT NONE
 
-      INCLUDE 'atom.h'
-      INCLUDE 'fdf/fdfdefs.h'
 
       CHARACTER*33 PASTE
 
@@ -26,30 +28,18 @@ C **********************************************************************
       INTEGER
      .  UNIT1, MAXO, MAXA, MAXNO, NUO, NO, NA, NSPIN, 
      .  LASTO(0:MAXA), ISA(MAXA), IPHORB(MAXO),
-     .  ISMAX, NOMAX(NSMAX), NKBMAX(NSMAX),
      .  IL, IS, IB, IA, IO, J, NUMH(MAXO), LISTH(MAXNO,MAXO),
-     .  INDXUO(MAXO), NPOLORBSAVE(LMAXD,NSMAX),
-     .  LMXOSAVE(NSMAX), LMXKBSAVE(NSMAX), NZETASAVE(0:LMAXD,NSMAX)
+     .  INDXUO(MAXO)
+
+
 
       DOUBLE PRECISION
      .  CELL(3,3), RMAXO, XA(3,MAXA), DATM(MAXO)
 
-      DOUBLE PRECISION
-     .  TABLE((NTBMAX+2),-(LMAXD+1):NZETMX*(LMAXD+1),NSMAX),
-     .  TAB2(NTBMAX,-(LMAXD+1):NZETMX*(LMAXD+1),NSMAX),
-     .  TABPOL((NTBMAX+2),LMAXD*NZETMX,NSMAX),
-     .  TAB2POL(NTBMAX,LMAXD*NZETMX,NSMAX)
 
       EXTERNAL
      .  IO_ASSIGN, IO_CLOSE, PASTE
 
-      COMMON/CMTAB/TABLE,TABPOL
-      COMMON/CMSPLINE/TAB2,TAB2POL
-      COMMON/CMZETA/NZETASAVE
-      COMMON/CONTROL/ISMAX,NOMAX,NKBMAX
-      COMMON/CMPOLORB/NPOLORBSAVE
-      COMMON/CMLMXO/LMXOSAVE
-      COMMON/CMLMXKB/LMXKBSAVE
 
 C **********************************************************************
 C INTEGER MAXO           : Max. total number of basis orbitals
@@ -89,7 +79,7 @@ CIn the previous version this loop only was executed from
 CIL= -LMAXD+1 instead of -(LMAXD+1).
 C I belive that now is right! DSP.
       DO 100 IB = 1, NTBMAX+2
-        DO 110 IL = -(LMAXD+1), NZETMX*(LMAXD+1)
+        DO 110 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
           DO 120 IS = 1, NSMAX
             WRITE(UNIT1)TABLE(IB,IL,IS)
  120      CONTINUE
@@ -97,7 +87,7 @@ C I belive that now is right! DSP.
  100  CONTINUE           
  
       DO 200 IB = 1, NTBMAX+2
-        DO 210 IL = 1, NZETMX*LMAXD
+        DO 210 IL = 1, NSEMX*NZETMX*(LMAXD+1)
           DO 220 IS = 1, NSMAX
             WRITE(UNIT1)TABPOL(IB,IL,IS)
  220      CONTINUE
@@ -108,7 +98,7 @@ CIn the previous version this loop only was executed from
 CIL= -LMAXD+1 instead of -(LMAXD+1).
 C I belive that now is right! DSP.
       DO 300 IB = 1, NTBMAX
-        DO 310 IL = -(LMAXD+1), NZETMX*(LMAXD+1)
+        DO 310 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
           DO 320 IS = 1,NSMAX
             WRITE(UNIT1)TAB2(IB,IL,IS)
  320      ENDDO
@@ -117,7 +107,7 @@ C I belive that now is right! DSP.
  
 
       DO 400 IB = 1, NTBMAX
-        DO 410 IL = 1, NZETMX*LMAXD
+        DO 410 IL = 1, NSEMX*NZETMX*(LMAXD+1)
           DO 420 IS = 1,NSMAX
             WRITE(UNIT1)TAB2POL(IB,IL,IS)
  420      ENDDO
@@ -134,17 +124,32 @@ C I belive that now is right! DSP.
 
 
       DO 700 IL = 0,LMAXD
+       DO 750 IB= 1, NSEMX
         DO 800 IS = 1,NSMAX
-          WRITE(UNIT1)NZETASAVE(IL,IS)
+          WRITE(UNIT1)NZETASAVE(IL,IB,IS)
  800    ENDDO
+ 750   ENDDO 
  700  ENDDO
       
       DO IS = 1, NSMAX 
-        DO IL =1 , LMAXD
-          WRITE(UNIT1)NPOLORBSAVE(IL,IS)
+       DO IB = 1, NSEMX
+        DO IL =0 , LMAXD
+          WRITE(UNIT1)NPOLORBSAVE(IL,IB,IS)
         ENDDO 
+       ENDDO 
       ENDDO 
+      
+      DO IS=1, NSMAX
+         DO IL= 0, LMAXD
+           WRITE(UNIT1)LSEMICSAVE(IL,IS)
+         ENDDO 
+      ENDDO
 
+      DO IS=1, NSMAX
+         DO IL= 0, LMAXD
+           WRITE(UNIT1)NKBLSAVE(IL,IS)
+         ENDDO 
+      ENDDO
 
       WRITE(UNIT1)ISMAX
                

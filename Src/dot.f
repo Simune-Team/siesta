@@ -1,14 +1,12 @@
-C $Id: dot.f,v 1.2 1999/01/31 10:53:54 emilio Exp $
-
       DOUBLE PRECISION FUNCTION DOT(A,B,N)
 C
 C     RETURNS REAL*8 SCALAR PRODUCT OF TWO REAL*8 VECTORS
 C
       DOUBLE PRECISION A(N),B(N),SUM
       SUM=0.D0
-      DO 1 I=1,N
+      DO I=1,N
          SUM = SUM + A(I) * B(I)
- 1    CONTINUE
+      ENDDO
       DOT=SUM
       RETURN
       END

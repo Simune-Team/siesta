@@ -1,4 +1,4 @@
-c $Id: iofa.f,v 1.1 1999/02/21 00:09:49 emilio Exp $
+c $Id: iofa.f,v 1.2 1999/11/26 18:28:16 wdpgaara Exp $
 
       subroutine iofa( na, fa )
 
@@ -10,12 +10,13 @@ c integer na           : Number atoms
 c real*8  fa(3,na)     : Forces on the atoms
 c *******************************************************************
 
+      use fdf
+
       implicit          none
       character         paste*33
       integer           na
       double precision  fa(3,*)
       external          io_assign, io_close, paste
-      include          'fdf/fdfdefs.h'
 
 c Internal 
       character         sname*30, fname*33

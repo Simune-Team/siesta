@@ -3,9 +3,9 @@ FC = f77
 CF = f77  
 CFT = f77 
 
-OBJECTS = chkdim.o colinear.o dot.o io.o iodm.o denchar.o\
+OBJECTS = atompla.o chkdim.o colinear.o dot.o io.o iodm.o denchar.o\
           dmna.o fdf.o length.o matvect.o\
-          neighb.o paste.o phiatm.o planed.o prmem.o\
+          neighb.o parse.o paste.o phiatm.o planed.o prmem.o\
           ranger.o readpla.o redata.o rhoofr.o rlylm.o splint.o volcel.o\
           wrout.o
 

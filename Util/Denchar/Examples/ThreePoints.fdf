@@ -30,3 +30,9 @@ SystemLabel          Si64         # Short name for naming files
 0.00000   5.13061   5.13061                    
 %endblock 2D.Coor3Points
 
+%block 2D.AtomsInPlane
+ 1
+ 2
+ 3
+%endblock 2D.AtomsInPlane
+

@@ -1,8 +1,10 @@
-# $Id: Makefile,v 1.47 1999/05/18 17:17:33 ordejon Exp $
-#
 # Makefile for siesta
 #
-.SUFFIXES: .f .o .a .prj .smb .log
+.SUFFIXES: .f .F .o .a  .f90
+MOD_DIR=Modules
+#
+#mpi:
+#	$(MAKE) "DEFS=-DMPI" siesta
 #
 default: what siesta
 #
@@ -26,132 +28,104 @@ what:
 	@echo $(COMMENTS)
 	@echo
 #
-SYSOBJ=Sys/$(SYS).o
-$(SYSOBJ): Sys/$(SYS).f
-	(cd Sys ; $(FC) -c $(FFLAGS) $(SYS).f)
+SYSOBJ=$(SYS).o
 #
-#  Some routines do not depend on program dimensions. They are put
-#  in a library. Note that only changed .o files need to be re-inserted
-#  in it.
+# Note that machine-specific files are now in top Src directory.
 #
-SUBS =  arw.f atmass.f atomlwf.f bessph.f cgwf.f chkdim.f chkgmx.f \
-	cgvc.f coceri.f conjgr.f constr.f coxmol.f cross.f \
-	dfscf.f diagg.f diagk.f diag2g.f diag2k.f digcel.f  \
-	dipole.f dismin.f dnaefs.f dot.f dynamics.f \
-	efield.f ener3.f extrapol.f \
-	fermid.f fermispin.f fixed.f gauleg.f grdsam.f hsparse.f \
-	idiag.f initdm.f inver.f iocg.f iodm.f ioeig.f iofa.f iohs.f \
-	iokp.f iolwf.f iomd.f iorder.f iorho.f ioxv.f \
-	kgrid.f kinefsm.f listsc.f lofilm.f madelung.f\
-	minvec.f mulliken.f naefs.f neighb.f nlefsm.f \
-	ofc.f on_subs.f order.f ordvec.f outcell.f outcoor.f overfsm.f \
-	parse.f paste.f prdate.f prmem.f propor.f prversion.f pulayx.f  \
-	pixmol.f radfft.f ran3.f recipes.f reclat.f recoor.f redata.f \
-	redcel.f remass.f reord.f rhoofd.f rhooda.f rlylm.f \
-	shaper.f superc.f superx.f timer.f transp.f typecell.f \
-	vmb.f vlist.f vmat.f volcel.f xc.f xijorb.f ylmexp.f ylmylm.f
+OBJS = arw.o atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
+	chempot.o coceri.o conjgr.o constr.o coxmol.o cross.o \
+	denmat.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
+        diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
+	dipole.o dismin.o dnaefs.o dot.o dynamics.o \
+	efield.o egandd.o ener3.o extrapol.o \
+	fermid.o fermispin.o fixed.o gauleg.o gradient.o grdsam.o \
+	hsparse.o idiag.o  initdm.o inver.o  \
+	iodm.o iohs.o iolwf.o iorder.o iorho.o ioxv.o  \
+	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o lofilm.o \
+	madelung.o memory.o minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
+	on_subs.o order.o ordern.o ordvec.o outcell.o outcoor.o overfsm.o \
+	parse.o paste.o phirphi.o pixmol.o timestamp.o prmem.o propor.o pulayx.o  \
+	ranger.o ran3.o recipes.o reclat.o recoor.o redata.o redcel.o\
+	reinit.o reord.o resize.o rhoofd.o rhooda.o rlylm.o \
+	shaper.o superc.o superx.o timer.o transp.o  \
+	vmb.o vlist.o vmat.o volcel.o xc.o xijorb.o ylmexp.o ylmylm.o \
+	cellxc.o cdiag.o rdiag.o \
+        cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
+        ofc.o poison.o radfft.o die.o symbol.o\
+	siesta.o atom.o redbasis.o plcharge.o dump_atom.o version.o io.o
 #
-LIBOBJS=$(SUBS:.f=.o)
-libsiesta.a: $(LIBOBJS)
-	ar rv $@ $?
-	$(RANLIB) $@
-#
-#  These modules are dimensioned.
-#
-DIM_SRCS= atom.f atom_subs.f atom_functions.f bands.f \
-          dhscf.f diagon.f ordern.f chempot.f denmat.f \
-          egandd.f gradient.f initatom.f matel.f \
-          plcharge.f ranger.f redbasis.f redbasis_subs.f siesta.f
-DIM_OBJS=$(DIM_SRCS:.f=.o)
-#
-atom.o           : atom.f      atom.h
-plcharge.o       : plcharge.f  atom.h
-atom_subs.o      : atom_subs.f atom.h
-atom_functions.o : atom_functions.f atom.h 
-initatom.o       : initatom.f atom.h
-redbasis.o       : redbasis.f atom.h
-redbasis_subs.o  : redbasis_subs.f atom.h
-dhscf.o          : dhscf.f     dhscf.h
-diagon.o         : diagon.f    diagon.h
-bands.o          : bands.f     diagon.h
-ordern.o         : ordern.f    ordern.h
-chempot.o        : chempot.f   ordern.h
-denmat.o         : denmat.f    ordern.h
-egandd.o         : egandd.f    ordern.h
-gradient.o       : gradient.f  ordern.h
-ranger.o         : ranger.f    ranger.h
-matel.o          : matel.f     matel.h
-siesta.o         : siesta.f    siesta.h
+FDF= fdf/libfdf.a
+$(FDF): fdf/fdf.f fdf/fdf_mod.f
+	(cd fdf ; $(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" module)
 #
 # Routines using fdf calls.
 #
-atom.o dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : fdf/fdfdefs.h
-plcharge.o recoor.o redata.o remass.o outcoor.o ioeig.o kgrid.o : fdf/fdfdefs.h
-siesta.o redbasis.o redbasis_subs.o iomd.o ioxv.o iokp.o iofa.o : fdf/fdfdefs.h
-cgvc.o iocg.o ofc.o : fdf/fdfdefs.h
+dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : $(FDF)
+plcharge.o recoor.o outcoor.o ioxv.o kgrid.o kgridinit.o ksv.o : $(FDF)
+redata.o siesta.o diagon.o: $(FDF)
+cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
 #
-FDF= fdf/fdf.o fdf/io.o
-$(FDF): fdf/fdf.f fdf/fdf.h fdf/io.f
-	(cd fdf ; $(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" fdf.o io.o)
+atom.o redbasis.o: $(FDF)
 #
-prversion.o: version.h
 #
-siesta: $(DIM_OBJS) $(SYSOBJ) $(FDF) libsiesta.a
+# This is crude but will have to do for now.
+# Note : precision must be the first module
+#
+MOD_OBJS=precision.o atmfuncs.o atminit.o listsc.o matel.o memoryinfo.o numbvect.o \
+        parallel.o
+COM_OBJS=$(OBJS) $(SYSOBJ)
+ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
+#
+atminit.o atom.o atomlwf.o dhscf.o dnaefs.o       : atmfuncs.o
+dump_atom.o efield.o matel.o mulliken.o outcoor.o : atmfuncs.o
+overfsm.o plcharge.o redbasis.o shaper.o          : atmfuncs.o
+kinefsm.o naefs.o nlefsm.o overfsm.o              : atmfuncs.o matel.o
+siesta.o          : atminit.o atmfuncs.o matel.o
+dfscf.o hsparse.o : atmfuncs.o listsc.o
+phirphi.o         : matel.o
+rhoofd.o vmat.o   : listsc.o
+chempot.o         : numbvect.o
+memory.o          : memoryinfo.o
+#
+#
+$(COM_OBJS): precision.o parallel.o $(MPILIB)
+#
+# Compile "AS IS" means basically not to use "-dp" on the Cray
+#
+precision.o: precision.f90
+	$(FC) $(FFLAGS) -c precision.f90
+#
+libmpi_f90.a: precision.o
+	@(cd MPI ; $(MAKE) )
+#
+# Libraries that need to be compiled
+#
+linalg.a: Libs/blas.f Libs/lapack.f
+	@(cd Libs ; $(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)")
+#
+version:
+	sed  "s/SYS/${SIESTA_SYS}/g" version.f > temp0.f
+	sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.f > temp1.f
+	sed  "s/MPILIB/${MPILIB}/g" temp1.f > temp.f
+	$(FC) -c $(FFLAGS) temp.f
+	@mv temp.o version.o
+	@rm -f temp.f temp0.f temp1.f
+	@echo
+
+siesta: version $(MPILIB) $(FDF) $(COMP_LIBS) $(ALL_OBJS)
 	$(FC) -o siesta \
-	       $(LDFLAGS) $(DIM_OBJS) $(SYSOBJ) $(FDF) libsiesta.a $(LIBS)
-#
-# Basic recipe to compile
-#
-.f.o:
-	$(FC) -c $(FFLAGS) $<
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MPILIB) $(COMP_LIBS) $(LIBS) 
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta *.o libsiesta.a
+	rm -f siesta *.o 
 	rm -f Sys/*.o
-	(cd fdf ; make clean)
+	rm -f *.mod
+	(cd fdf ; $(MAKE) clean)
+	(cd MPI ; $(MAKE) clean )
 pristine:  clean
 	@echo "==> Copying original .h files from Include/"
 	cp -fp Include/*.h .
 	cp -fp Include/constr.f .
-setup:
-	@echo "==> Copying standard .h files from Include/"
-	cp -fp Include/*.h .
 #
-# FTNCHEK and plusFORT section
-#
-FILES=$(SUBS) $(DIM_SRCS)
-#
-# set up macro PRJS containing project filenames
-#
-PRJS= $(FILES:.f=.prj)
-SMBS= $(FILES:.f=.smb)
-#
-.f.smb:
-	-spag log=$*.log $<
-#
-chk:    $(SMBS)
-	-gxchk $(SMBS)
-#
-
-# tell make how to create a .prj file from a .f file
-#
-.f.prj:
-	ftnchek -project -noextern -library -array=0 \
-		-quiet -sixchar  -output=$*.ana $<
-
-# "make check" will check everything that has been changed.
-check: $(PRJS)
-	ftnchek -output=Global.chk -quiet $(PRJS)
-#
-clean_check:
-	rm -f *.prj *.ana Global.chk
-clean_chk:
-	rm -f *.log *.smb *.spg gxchk.sav gxchk.out
-#
-veryclean:  clean clean_check
-
-
-
-
 

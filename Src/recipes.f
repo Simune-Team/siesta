@@ -1,4 +1,4 @@
-C $Id: recipes.f,v 1.2 1999/01/31 11:43:34 emilio Exp $
+C $Id: recipes.f,v 1.3 1999/11/26 18:28:29 wdpgaara Exp $
 
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C    This file contains routines taken or adapted from 
@@ -29,13 +29,16 @@ C polinomic interpolation by D. Sanchez-Portal, 1996
 C***************************************************** 
 
       IMPLICIT DOUBLE PRECISION(A-H,O-Z)
-      PARAMETER (NMAX=20,TINY=1.D-15)
-      DIMENSION XA(N),YA(N),C(NMAX),D(NMAX)
+      PARAMETER (TINY=1.D-15)
+      DIMENSION XA(N),YA(N)
+      double precision, dimension(:), allocatable ::
+     .  c, d
 
-      IF (N.GT.NMAX) THEN 
-        WRITE(6,*) 'RATINT: NMAX TOO SMALL' 
-        STOP
-      ENDIF 
+C Allocate local memory
+      allocate(c(n))
+      call memory('A','D',n,'ratint')
+      allocate(d(n))
+      call memory('A','D',n,'ratint')
 
       NS=1
       HH=ABS(X-XA(1))
@@ -44,7 +47,7 @@ C*****************************************************
         IF (H.LT.TINY)THEN
           Y=YA(I)
           DY=0.0D0
-          RETURN
+          goto 999
         ELSE IF (H.LT.HH) THEN
           NS=I
           HH=H
@@ -79,6 +82,15 @@ C*************WE TRY WITH A POLYNOMIAL ONE*************************
 
 
 100   CALL POLINT(XA,YA,N,X,Y,DY)
+
+C Exit point
+  999 continue
+
+C Deallocate local memory
+      call memory('D','D',size(c),'ratint')
+      deallocate(c)
+      call memory('D','D',size(d),'ratint')
+      deallocate(d)
 
       RETURN
       END
@@ -174,15 +186,16 @@ C D. Sanchez-Portal, Oct. 1996
 C*****************************************************
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      PARAMETER (NMAX=10) 
-      DIMENSION XA(N),YA(N),C(NMAX),D(NMAX)
+      DIMENSION XA(N),YA(N)
 
+      double precision, dimension(:), allocatable ::
+     .  c, d
 
-      IF(N.GT.NMAX) THEN 
-        WRITE(6,*) 'POLINT: NMAX TOO SMALL'
-        STOP
-      ENDIF
-
+C Allocate local memory
+      allocate(c(n))
+      call memory('A','D',n,'polint')
+      allocate(d(n))
+      call memory('A','D',n,'polint')
 
       NS=1
       DIF=DABS(X-XA(1))
@@ -216,6 +229,13 @@ C*****************************************************
         ENDIF
         Y=Y+DY
 13    CONTINUE
+
+C Deallocate local memory
+      call memory('D','D',size(c),'polint')
+      deallocate(c)
+      call memory('D','D',size(d),'polint')
+      deallocate(d)
+
       RETURN
       END
 C  (C) Copr. 1986-92 Numerical Recipes Software !E#.
@@ -226,30 +246,35 @@ C  (C) Copr. 1986-92 Numerical Recipes Software !E#.
 C This is routine spline of Num. Recipes with the name changed.
 C J.M.Soler, April'96.
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      PARAMETER (NMAX=2000)
-      DIMENSION x(n),y(n),y2(n),u(NMAX)
-      if (n.gt.NMAX) stop 'splin: Dimension NMAX too small'
+      DIMENSION x(n),y(n),y2(n)
+      double precision, dimension(:), allocatable ::
+     .  u
+
+C Allocate local memory
+      allocate(u(n))
+      call memory('A','D',n,'splin')
+
       if (yp1.gt..99e30) then
-        y2(1)=0.
-        u(1)=0.
+        y2(1)=0.0d0
+        u(1)=0.0d0
       else
-        y2(1)=-0.5
+        y2(1)=-0.5d0
         u(1)=(3./(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
       endif
       do 11 i=2,n-1
         sig=(x(i)-x(i-1))/(x(i+1)-x(i-1))
-        p=sig*y2(i-1)+2.
+        p=sig*y2(i-1)+2.0d0
         y2(i)=(sig-1.)/p
-        u(i)=(6.*((y(i+1)-y(i))/(x(i+
+        u(i)=(6.0d0*((y(i+1)-y(i))/(x(i+
      *1)-x(i))-(y(i)-y(i-1))/(x(i)-x(i-1)))/(x(i+1)-x(i-1))-sig*
      *u(i-1))/p
 11    continue
       if (ypn.gt..99e30) then
-        qn=0.
-        un=0.
+        qn=0.0d0
+        un=0.0d0
       else
-        qn=0.5
-        un=(3./(x(n)-x(n-1)))*(ypn-(y(n)-y(n-1))/(x(n)-x(n-1)))
+        qn=0.5d0
+        un=(3.0d0/(x(n)-x(n-1)))*(ypn-(y(n)-y(n-1))/(x(n)-x(n-1)))
       endif
       y2(n)=(un-qn*u(n-1))/(qn*y2(n-1)+1.)
       do 12 k=n-1,1,-1
@@ -260,6 +285,11 @@ C        WRITE(*,*)'x(',I,') = ',x(I)
 C        WRITE(*,*)'y(',I,') = ',y(I)
 C        WRITE(*,*)'y2(',I,') = ',y2(I)
 20    CONTINUE
+
+C Deallocate local memory
+      call memory('D','D',size(u),'splin')
+      deallocate(u)
+
       return
       END
 C  (C) Copr. 1986-92 Numerical Recipes Software !E#.

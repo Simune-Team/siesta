@@ -1,0 +1,118 @@
+      subroutine madelung(cell, shape, charnet, Emad)
+
+c *******************************************************************
+c Finds Madelung correction for charged systems
+c (Makov & Payne, PRB 51, 4014 (1995))
+c (Values of Madelung constant: 
+C  Coldwell-Horsfall & Maradudin, J. Math. Phys. 1, 395 (1960))
+c
+c Written by P. Ordejon, March 1999.
+c ********* INPUT ***************************************************
+c real*8       cell(3,3): Lattice vectors (in Bohr)
+c character*10 shape    : Cell shape (atom,molecule,chain,slab,bulk)
+c real*8       charnet  : Net charge of the system
+c ********* OUTPUT **************************************************
+c real*8       Emad     : Madelung correction energy (in Ry)
+c *******************************************************************
+C
+C  Modules
+C
+      use precision
+#ifdef MPI
+      use mpi
+#endif
+
+      implicit none
+
+      double precision
+     .  cell(3,3), charnet, Emad
+
+      character
+     .  shape*10
+
+C Local variables.........
+
+      double precision
+     .  alpha, lv
+ 
+      character
+     .  ctype*4
+
+      integer
+     .  Node
+#ifdef MPI
+      integer
+     .  MPIerror
+#endif
+
+C Get Node number
+#ifdef MPI
+      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+#else
+      Node = 0
+#endif
+
+C If system is charged, find if energy correction terms can be applied
+C (cluster or molecule, with SC, FCC or BCC cell) .....................
+      if (shape .ne. 'molecule' .and. shape .ne. 'atom') then
+        if (Node.eq.0) then
+          write(6,'(2a)')
+     .      'madelung: WARNING: Charged system, but not'
+     .      ,' an atom or molecule.'
+          write(6,'(2a)')
+     .      'madelung: WARNING: Energy correction terms'
+     .      ,' can not be applied. '
+          write(6,'(2a)')
+     .      'madelung: WARNING: Continue only if you really know'
+     .      ,' what you are doing.'
+        endif
+        Emad = 0.0d0
+        return
+      else
+        call typecell(cell,ctype,lv)
+        if (ctype .eq. 'none') then
+          if (Node.eq.0) then
+            write(6,'(2a)')
+     .        'madelung: WARNING: Charged system, but not'
+     .        ,' SC, FCC or BCC cell.'
+            write(6,'(2a)')
+     .        'madelung: WARNING: Energy correction terms'
+     .        ,' can not be applied. '
+            write(6,'(2a)')
+     .        'madelung: WARNING: Continue only if you really know'
+     .        ,' what you are doing.'
+          endif
+          Emad = 0.0d0
+          return
+        else if (ctype .eq. 'sc') then
+          alpha = 5.6745947
+          if (Node.eq.0) then
+            write(6,'(a)')
+     .        'madelung: Charged system with SC cell'
+          endif
+        else if (ctype .eq. 'bcc') then
+          alpha = 7.278473
+          if (Node.eq.0) then
+            write(6,'(a)')
+     .        'madelung: Charged system with BCC cell'
+          endif
+        else if (ctype .eq. 'fcc') then
+          alpha = 9.1697536
+          if (Node.eq.0) then
+            write(6,'(a)')
+     .        'madelung: Charged system with FCC cell'
+          endif
+        else
+          if (Node.eq.0) then
+            write(6,'(a)')
+     .        'madelung: ERROR: Wrong type of cell'
+          endif
+          stop
+        endif
+      endif
+
+      Emad = charnet**2 * alpha / (2.0d0 * lv)
+C ...................
+      return
+      end
+

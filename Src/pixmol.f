@@ -1,4 +1,4 @@
-c $Id: pixmol.f,v 1.2 1999/04/13 11:20:49 emilio Exp $
+c $Id: pixmol.f,v 1.3 1999/11/26 18:28:26 wdpgaara Exp $
 
       subroutine pixmol(iza, xa, na, slabel, last)
 
@@ -34,8 +34,8 @@ c -------------------------------------------------------------------
       if ( frstme ) then
         fname = paste(slabel,'.ANI')
         call io_assign(unit)
-        open( unit, file=fname, form = 'formatted', status='unknown')
-        call windf(unit)
+        open( unit, file=fname, form = 'formatted', position='append',
+     .    status='unknown')
         Ang  = 1.d0 / 0.529177d0
         frstme = .false.
       endif

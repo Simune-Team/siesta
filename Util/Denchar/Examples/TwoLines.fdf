@@ -33,3 +33,9 @@ SystemLabel          Si64         # Short name for naming files
 0.000   0.000   0.000
 %endblock 2D.PlaneOrigin                 
 
+%block 2D.AtomsInPlane
+ 1
+ 2
+ 3
+%endblock 2D.AtomsInPlane
+

@@ -207,6 +207,9 @@ c Generate solid surface (ploting on pixmap array)
       if (ncolor .gt. 0) write(6,'(a,3f12.6)')
      . 'plrho: colmin, colavg, colmax =', colmin, colavg, colmax
 
+c Draw bonding framework
+*     call platom( name, alpha, beta, gamma )
+
 c Copy pixmap to window and show it
       call pgpixl( pixmap, maxx, maxy,
      .             ixmin+1, ixmax+1, iymin+1, iymax+1,
@@ -223,4 +226,10 @@ c Copy pixmap to window and show it
       include 'ray.f'
       include 'rotate.f'
 
+*     include 'chkdim.f'
+*     include 'dot.f'
+*     include 'neighb.f'
+*     include 'platom.f'
+*     include 'plin3d.f'
+*     include 'ranger.f'
 

@@ -5,7 +5,7 @@ C Reads density matrix from siesta and calculates the density of charge
 C at the points of a plane in real space 
 C Coded by J. Junquera 11/98
 C
-C Version: 0.1.1
+C Version: 0.1.2
 C **********************************************************************
 
       IMPLICIT NONE
@@ -20,7 +20,7 @@ C **********************************************************************
      .  NUMH(MAXO), LISTH(MAXNO,MAXO)
 
       INTEGER
-     .  IOPTION, NPX, NPY, IUNITCD 
+     .  IOPTION, NPX, NPY, IUNITCD, ISCALE 
 
       DOUBLE PRECISION
      .  CELL(3,3), XA(3,MAXA), RMAXO, VOLUME, VOLCEL
@@ -63,6 +63,7 @@ C                                    (number of nonzero elements of each row)
 C INTEGER LISTH(MAXNO,MAXO)        : Control vector of Density Matrix
 C                                    (list of nonzero elements of each row)
 C INTEGER IUNITCD                  : Units of the charge density
+C INTEGER ISCALE                   : Units of the points of the plane
 C REAL*8  CELL(3,3)                : Unit cell vectors CELL(IXYZ,IVECT)
 C REAL*8  VOLUME                   : Volumen of unit cell (in bohr**3)
 C REAL*8  XA(3,MAXA)               : Atomic positions in cartesian coordinates
@@ -121,10 +122,7 @@ C Read Density Matrix from files ---------------------------------------
 C Read option to generate the plane ------------------------------------
       CALL READPLA( IOPTION, XMIN, XMAX, YMIN, YMAX, 
      .              NPX, NPY, COORPO, NORMAL, DIRVER1, DIRVER2,
-     .              ARMUNI, MAXA, XA, VOLUME, IUNITCD )
-
-cC Dump input inot the output files -------------------------------------
-c      CALL WROUT( NSPIN, IOPTION)
+     .              ARMUNI, MAXA, XA, VOLUME, IUNITCD, ISCALE )
 
 C Form Density Matrix for Neutral and Isolated Atoms -------------------
       CALL DMNA( NO, NSPIN, MAXO, MAXNO, NUMH, LISTH, INDXUO, 
@@ -136,6 +134,6 @@ C Calulate the charge density ------------------------------------------
      .             INDXUO, NUMH, LISTH, DSCF, DSCFNA,
      .             IOPTION, XMIN, XMAX, YMIN, YMAX,
      .             NPX, NPY, COORPO, NORMAL, DIRVER1, DIRVER2,
-     .             ARMUNI, IUNITCD )
+     .             ARMUNI, IUNITCD, ISCALE )
 
       END

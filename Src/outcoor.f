@@ -1,5 +1,3 @@
-c $Id: outcoor.f,v 1.9 1999/04/13 17:03:25 emilio Exp $
-
       subroutine outcoor(cell, xa, isa, na, cohead, writec) 
 
 c *******************************************************************
@@ -22,6 +20,9 @@ c inversion of lattice vectors for fractional coordinates is done
 c through subroutine reclat.
 c *******************************************************************
 
+      use atmfuncs, only: labelfis
+      use fdf
+
       implicit          none
       integer           na
       integer           isa(na)
@@ -31,33 +32,22 @@ c *******************************************************************
 
 c Internal variables and arrays
 
-      integer namax
-
-      parameter (namax=2000)
-
       character         acf*22, acf_defect*22, acfout*22, 
-     .                  pieceh*20, titl*60, pasteb*60,
-     .                  labelfis*20
+     .                  pieceh*20, titl*60, pasteb*60
       logical           leqi, frstme
       integer           ia, ix
-      double precision  xac(3), xap(3,namax), recell(3,3), alat
+      double precision  xac(3), recell(3,3), alat
 
-      external          pasteb, labelfis
-      include 'fdf/fdfdefs.h'
-      save              frstme, acfout
+      double precision, dimension(:,:), allocatable ::
+     .                  xap
+
+      external          pasteb, memory
+      save              frstme, acfout, alat
 
       data              frstme /.true./
 c--------------------------------------------------------------------
 
       if (frstme) then
-
-C Check dimensions ..................................................
-        if (na .gt. namax) then
-           write(6,*) 
-     .        'outcoor: ERROR: Insufficient NAMAX; It must be at least ',na
-           stop
-         endif
-C ..................
 
 C read format for output of atomic coordinates
 
@@ -82,6 +72,10 @@ c   Coord. option Fractional => Multiply by inverse of lattice vectors
 
         frstme = .false.
       endif
+
+C Allocate local memory
+      allocate(xap(3,na))
+      call memory('A','D',3*na,'outcoor')
 
 c Write coordinates at every time or relaxation step?
 
@@ -157,6 +151,10 @@ c writing the coordinates
 
       write(6,'(3f14.8,i4,2x,a6,i5)')
      .  ((xap(ix,ia),ix=1,3),isa(ia),labelfis(isa(ia)),ia,ia=1,na)
+
+C Deallocate local memory
+      call memory('D','D',size(xap),'outcoor')
+      deallocate(xap)
 
       return
       end

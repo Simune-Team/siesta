@@ -1,6 +1,7 @@
       subroutine plane(nplamax, option,xmin,xmax,ymin,ymax,
      .                 npx,npy,coorpo,normalp,dirver1,dirver2,
-     .                 latpoint,plapoint)
+     .                 latpoint,plapoint,na,napla,indices,iscale,
+     .                 xa,xaplane)
 *
 *     This subroutine calculates coordinates of the points of one plane in 
 *    two reference frames: in the lattice reference frame (lrf) and in another 
@@ -17,7 +18,13 @@
 *                  (if option = 3) (lrf)
 *    normal(3) = components of the normal vector.
 *    dirver(2,3) = components of the directions vectors. 
-*  OUTPUT: output of this subroutine is the data file plapoint
+*    na = number of atoms
+*    indices(na) = indices ofthe atoms whose coordinates will be rotated
+*                  from the lattice reference frame to the in-plane 
+*                  reference frame
+*    iscale = units of the points of the plane
+*    xa(3,na) = atomic coordinates in lattice reference frame
+*    xaplane(3,na) = atomic coordinates in plane reference frame
 *
 *    Coded by J.Junquera (March/97)
 *-----------------------------------------------------------------------
@@ -25,9 +32,9 @@
 *
       implicit none
 
-      integer i,j,option,npx,npy,nplamax
+      integer i,j,option,npx,npy,nplamax, na, napla, indices(na), iscale
       real*8 xmin,xmax,ymin,ymax,length,modnor,moddi1
-      real*8 normal(3),normalp(3)
+      real*8 normal(3),normalp(3), xa(3,na), xaplane(3,na)
       real*8 plapoint(nplamax,3)
       real*8 latpoint(nplamax,3)
       real*8 coorpo(3,3)
@@ -35,7 +42,7 @@
       real*8 xplane(3),yplane(3)
       real*8 origin(3)
       real*8 mrot(3,3),inmrot(3,3)
-      external length
+      external length, atompla
 
 *
 *    modnor,moddi1 = length of the vecotr normal and dirver1
@@ -123,6 +130,9 @@ c         write(*,*)(xplane(i),i=1,3)
         
       call rotation(nplamax,npx,npy,mrot,inmrot,origin,
      .              plapoint,latpoint)
+
+      call atompla( na, origin, xa, inmrot, napla, indices, iscale,
+     .              xaplane )
 
       return
       end

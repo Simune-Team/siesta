@@ -46,7 +46,7 @@ C***********************************************************************
 C*************Internal variables*************************************
 C
          integer l, norb, lorb, izeta, ipol, nkb,
-     .    indx, morb, ilm, i
+     .    indx, morb, ilm, i, nsm
 
          double precision  rly(lmx2), grly(3,lmx2), rmax, rmod,
      .      phir, dphidr, delt
@@ -59,16 +59,19 @@ C********************************************************************
 C************Variables in common blocks******************************
 C
        double precision
-     .  table((ntbmax+2),-(lmaxd+1):nzetmx*(lmaxd+1),nsmax),
-     .  tabpol((ntbmax+2),nzetmx*lmaxd,nsmax),
-     .  tab2(ntbmax,-(lmaxd+1):nzetmx*(lmaxd+1),nsmax),
-     .  tab2pol(ntbmax,nzetmx*lmaxd,nsmax)
+     .  table((ntbmax+2),-nkbmx*(lmaxd+1):nsemx*nzetmx*(lmaxd+1),nsmax),
+     .  tabpol((ntbmax+2),nsemx*nzetmx*(lmaxd+1),nsmax),
+     .  tab2(ntbmax,-nkbmx*(lmaxd+1):nsemx*nzetmx*(lmaxd+1),nsmax),
+     .  tab2pol(ntbmax,nsemx*nzetmx*(lmaxd+1),nsmax)
 
 
        integer
-     .  nzetasave(0:lmaxd,nsmax),ismax,nomax(nsmax),
-     .  nkbmax(nsmax),npolorbsave(lmaxd,nsmax),
-     .  lmxosave(nsmax), lmxkbsave(nsmax)
+     .  nzetasave(0:lmaxd,nsemx,nsmax),ismax,nomax(nsmax),
+     .  nkbmax(nsmax),npolorbsave(0:lmaxd,nsemx,nsmax),
+     .  lmxosave(nsmax), lmxkbsave(nsmax),
+     .  nkblsave(0:lmaxd,nsmax),lsemicsave(0:lmaxd,nsmax)
+       logical
+     .  semicsave(nsmax)
 C
 C*******************************************************************
 
@@ -77,6 +80,8 @@ C
        common/cmtab/table,tabpol
        common/cmspline/tab2,tab2pol
        common/cmzeta/nzetasave
+       common/cmsemic/semicsave,lsemicsave
+       common/cmnkbl/nkblsave
        common/control/ismax,nomax,nkbmax
        common/cmpolorb/npolorbsave
        common/cmlmxo/lmxosave
@@ -96,14 +101,15 @@ C*******************************************************************
      .     ' IOMAX= ',nomax(is)
           STOP
         endif
- 
+
        pol=.false.
        if (io.gt.0) then
 
           norb=0
           indx=0
           do  l=0,lmxosave(is)
-            do izeta=1,nzetasave(l,is)
+           do nsm=1,lsemicsave(l,is)+1
+            do izeta=1,nzetasave(l,nsm,is)
                norb=norb+(2*l+1)
                indx=indx+1
                if(norb.ge.io) then
@@ -112,19 +118,22 @@ C*******************************************************************
                    goto 20
                endif
             enddo
+           enddo
           enddo
 
           indx=0
-          do  l=1,min(lmxosave(is)+1,lmaxd)
-            do ipol=1, npolorbsave(l,is)
-              norb=norb+(2*l+1)
+          do  l=0,lmxosave(is)
+           do nsm=1,lsemicsave(l,is)+1
+            do ipol=1, npolorbsave(l,nsm,is)
+              norb=norb+(2*(l+1)+1)
               indx=indx+1
               if(norb.ge.io) then
-                    lorb=l
+                    lorb=l+1
                     morb=io-norb+lorb
                     pol=.true.
                     goto 20
              endif 
+            enddo
            enddo
           enddo 
 
@@ -134,9 +143,11 @@ C*******************************************************************
          nkb=0
          indx=0
          do l=0,lmxkbsave(is)
-            indx=indx+1
-            nkb=nkb-(2*l+1)
-            if(nkb.le.io) goto 30
+            do izeta=1,nkblsave(l,is)
+              indx=indx+1
+              nkb=nkb-(2*l+1)
+              if(nkb.le.io) goto 30
+            enddo
          enddo
 
  30      lorb=l
@@ -151,6 +162,8 @@ C            Next two lines introduced by J.Soler. 2/7/96.
              morb=0
 
          endif
+
+
 
 
         if(.not.pol) then
@@ -203,6 +216,7 @@ C            Next two lines introduced by J.Soler. 2/7/96.
               enddo
 
 
+
 *             write(6,'(a,i4,2f12.6)')
 *    .         'phiatm: ilm,phi/rl,rl*ylm=', ilm, phi, rly(ilm)
 
@@ -215,4 +229,6 @@ C            Next two lines introduced by J.Soler. 2/7/96.
         return
 
         end
+
+
 

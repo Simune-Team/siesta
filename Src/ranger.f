@@ -1,5 +1,3 @@
-C $Id: ranger.f,v 1.7 1999/03/04 16:21:10 jose Exp $
-
       SUBROUTINE RANGER( MODE, NX, CELL, RANGE, NA, XA,
      .                   NAMOVE, IAMOVE,
      .                   IA0, ISC, X0,
@@ -51,13 +49,8 @@ C *********** UNITS **************************************************
 C Units of CELL, RANGE, XA and X0 are arbitrary but must be equal.
 C All vectors in cartesian coordinates.
 C *********** SUBROUTINES USED ***************************************
-C CHKDIM, DISMIN, DOT, PRMEM, RECCEL, VOLCEL
+C DISMIN, DOT, PRMEM, RECCEL, VOLCEL
 C *********** BEHAVIOUR **********************************************
-C If internal dimension variables are too small, an include file named
-C   ranger.h is written with the required dimensions, and the routine
-C   stops, asking to be recompiled. Then, ranger.h may be automatically
-C   included in the new compilation, or its parameters copyed to this
-C   source file. Initially, you may make all the parameters equal to 1.
 C This is a 'remembering' routine, that saves a single copy of required 
 C   information on the system. Therefore, it cannot be used
 C   simultaneously for different cells or sets of atoms.
@@ -205,7 +198,11 @@ C   - Automatic cell generation for nonperiodic boundary conditions
 C All the algorithms and coding developed by J.M.Soler. November 1996.
 C ********************************************************************
 
-C Next line is non-standard but may be supressed
+C
+C  Modules
+C
+      use precision
+
       IMPLICIT NONE
 
 C Argument types and dimensions
@@ -230,29 +227,6 @@ C EPS is a small number to be subtracted from 1
       PARAMETER ( DXRANG = 1.0D0  )
       PARAMETER ( EPS    = 1.D-14 )
 
-C Dimension parameters for internal arrays:
-C INTEGER MAXA   Maximum number of atoms
-C INTEGER MAXM   Maximum number of mesh cells
-C INTEGER MAXEM  Maximum number of extended mesh cells
-C INTEGER MAXNM  Maximum number of neighbour mesh cells
-C The following values are orientative for 1000 atoms,
-C requiring about 50 KBytes of internal array memory
-C     INTEGER MAXA, MAXEM, MAXM, MAXNM, MAXX
-C     PARAMETER ( MAXA  = 1000 )
-C     PARAMETER ( MAXEM = 2000 )
-C     PARAMETER ( MAXM  = 1000 )
-C     PARAMETER ( MAXNM =  350 )
-C     PARAMETER ( MAXX  =    3 )
-
-C Supress next lines if you want ranger.h to be INCLUDEd
-*     INTEGER MAXA, MAXEM, MAXM, MAXNM, MAXX
-*     PARAMETER ( MAXA  =  2000 )
-*     PARAMETER ( MAXEM = 12000 )
-*     PARAMETER ( MAXM  =  6000 )
-*     PARAMETER ( MAXNM =   350 )
-*     PARAMETER ( MAXX  =     3 )
-      INCLUDE 'ranger.h'
-
 C Variable-naming hints:
 C   Character(s) indicates
 C          A     Atom
@@ -267,7 +241,7 @@ C          X     coordinate or basis vector
 C          1     lower bound
 C          2     upper bound or square
 
-C Internal functions, variables and arrays (here MX=MAXX)
+C Internal functions, variables and arrays
 C REAL*8  CELMSH(MX*MX) Mesh-cell vectors
 C REAL*8  DMX(MX)       In-cell atomic position in mesh coordinates 
 C REAL*8  DOT()         Finds the scalar product of two vectors
@@ -284,13 +258,13 @@ C REAL*8  EPS           Parameter defined above
 C LOGICAL FRSTME        First call to subroutine? 
 C INTEGER IA            Atom index
 C INTEGER IAM           Atom-to-move index
-C INTEGER IA1M(MAXM)    Pointer to first atom in mesh cell
-C INTEGER IANEXT(MAXA)  Pointer to next atom in mesh cell
-C INTEGER IAPREV(MAXA)  Pointer to previous atom in mesh cell
+C INTEGER IA1M(NM)      Pointer to first atom in mesh cell
+C INTEGER IANEXT(NA)    Pointer to next atom in mesh cell
+C INTEGER IAPREV(NA)    Pointer to previous atom in mesh cell
 C INTEGER IDNM(MAXNM)   Index-distance between neighbour mesh points 
 C INTEGER IM            Mesh index  
 C INTEGER IEM           Extended-mesh index  
-C INTEGER IEMA(MAXA)    Extended-mesh index of atoms
+C INTEGER IEMA(NA)      Extended-mesh index of atoms
 C INTEGER I1EMX(MX)     Minimum vaue of extended-mesh-coordinate indices
 C INTEGER I2EMX(MX)     Maximum vaue of extended-mesh-coordinate indices
 C INTEGER I1MX(MX)      Minimum vaue of mesh-coordinate indices
@@ -301,7 +275,7 @@ C INTEGER I1NX(MX)      Minimum neighbour-cell-coordinate indices
 C INTEGER I2NX(MX)      Maximum neighbour-cell-coordinate indices
 C INTEGER INX(MX)       Neighbour-cell-coordinate indices
 C LOGICAL INSIDE        Are two mesh cells within each other's range?
-C INTEGER IMESH(MAXEM)  Correspondence between extended and normal mesh
+C INTEGER IMESH(NEM)    Correspondence between extended and normal mesh
 C INTEGER IV            Vertex index
 C INTEGER IVX           Vertex coordinate index
 C INTEGER IX            Cartesian coordinte index
@@ -336,40 +310,138 @@ C REAL*8  XMAX          Maximum atom coordinate
 C REAL*8  XMIN          Minimum atom coordinate
 
       INTEGER
-     .  IA, IAM, IA1M(MAXM), IANEXT(MAXA), IAPREV(MAXA),
-     .  IDNM(MAXNM), IEM, IEMA(MAXA), I1EMX(MAXX), I2EMX(MAXX), 
-     .  IM, IMX(MAXX), I1MX(MAXX), I2MX(MAXX), IMESH(MAXEM),
-     .  IN, INX(MAXX), I1NX(MAXX), I2NX(MAXX), IX, IXX,
-     .  JA, JEM, JM, J1NX(MAXX), J2NX(MAXX), JX,
-     .  MA, MEM, MM, MNM, MX,
-     .  NAM, NM, NEM, NEMX(MAXX), NMX(MAXX),
-     .  NNAMAX, NNM, NNMMAX, NNX(MAXX)
-C     INTEGER 
-C    .  IV, IVX(MAXX)
+     .  IA, IAM, IEM, IM, 
+     .  IN, IX, IXX, JA, JEM, JM, JX,
+     .  NAM, NM, NEM, NNAMAX, NNM, NNMMAX, MAXNA
+c
+c     Auxiliary variable to avoid compiler warnings
+c
+      integer j_aux   
+
+      integer, dimension(:), allocatable ::
+     .  INX, I1NX, I2NX, J1NX, J2NX
+
+      integer, dimension(:), allocatable, save ::
+     .  IANEXT, IAPREV, IEMA, I1EMX, I2EMX, IMX, I1MX, I2MX,
+     .  NEMX, NMX, NNX, IA1M, IMESH, IDNM
 
       DOUBLE PRECISION
-     .  CELMSH(MAXX*MAXX),
-     .  DISMIN, DMX(MAXX), DOT, DPLANE, DX(MAXX), DX0M(MAXX),
-     .  DXAM(MAXX,MAXA), DXNM(MAXX,MAXNM),
-     .  R2, RANGE2, RCELL(MAXX*MAXX), RNGMAX, RMCELL(MAXX*MAXX), RRANGE,
+     .  DISMIN, DOT, DPLANE, 
+     .  R2, RANGE2, RNGMAX, RRANGE,
      .  XDIFF, XMARG, XMAX, XMIN
-C     DOUBLE PRECISION 
-C    .  DRM, DXM(MAXX)
+
+      double precision, dimension(:), allocatable ::
+     .  DMX, DX, DX0M
+
+      double precision, dimension(:), allocatable, save ::
+     .  CELMSH, RCELL, RMCELL
+
+      double precision, dimension(:,:), allocatable, save ::
+     .  DXAM, DXNM
 
       LOGICAL
      .  FRSTME, INSIDE, MOVALL, NULCEL
 
       EXTERNAL
-     .  DISMIN, DOT, PRMEM, RECCEL
+     .  DISMIN, DOT, PRMEM, RECCEL, memory
 
       SAVE
-     .  CELMSH, DXAM, DXNM, FRSTME, 
-     .  I1MX, I1EMX, I2MX, I2EMX, IA1M, IAM, IANEXT, 
-     .  IAPREV, IEM, IEMA, IDNM, IM, IMX, IMESH,
-     .  NEM, NEMX, NM, NMX, NNM, NNX, 
-     .  RANGE2, RCELL, RNGMAX, RMCELL, RRANGE
+     .  FRSTME, IAM, IEM, IM, 
+     .  NEM, NM, NNM, RANGE2, RNGMAX, RRANGE, MAXNA
 
       DATA FRSTME /.TRUE./
+      DATA MAXNA  / 0 /
+
+C Allocate local memory - check for change in number of atoms
+C and if there has been one then re-initialise
+      if (NA.gt.MAXNA) then
+        if (allocated(IANEXT)) then
+          call memory('D','I',size(IANEXT),'ranger')
+          deallocate(IANEXT)
+        endif
+        if (allocated(IAPREV)) then
+          call memory('D','I',size(IAPREV),'ranger')
+          deallocate(IAPREV)
+        endif
+        if (allocated(IEMA)) then
+          call memory('D','I',size(IEMA),'ranger')
+          deallocate(IEMA)
+        endif
+        if (allocated(DXAM)) then
+          call memory('D','D',size(DXAM),'ranger')
+          deallocate(DXAM)
+        endif
+        allocate(IANEXT(NA))
+        call memory('A','I',NA,'ranger')
+        allocate(IAPREV(NA))
+        call memory('A','I',NA,'ranger')
+        allocate(IEMA(NA))
+        call memory('A','I',NA,'ranger')
+        allocate(DXAM(NX,NA))
+        call memory('A','D',NX*NA,'ranger')
+        MAXNA = NA
+        FRSTME = .FALSE.
+      endif
+      if (.not.allocated(I1EMX)) then
+        allocate(I1EMX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(I2EMX)) then
+        allocate(I2EMX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(IMX)) then
+        allocate(IMX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(I1MX)) then
+        allocate(I1MX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(I2MX)) then
+        allocate(I2MX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(NEMX)) then
+        allocate(NEMX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(NMX)) then
+        allocate(NMX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(NNX)) then
+        allocate(NNX(NX))
+        call memory('A','I',NX,'ranger')
+      endif
+      if (.not.allocated(CELMSH)) then
+        allocate(CELMSH(NX*NX))
+        call memory('A','D',NX*NX,'ranger')
+      endif
+      if (.not.allocated(RCELL)) then
+        allocate(RCELL(NX*NX))
+        call memory('A','D',NX*NX,'ranger')
+      endif
+      if (.not.allocated(RMCELL)) then
+        allocate(RMCELL(NX*NX))
+        call memory('A','D',NX*NX,'ranger')
+      endif
+      allocate(INX(NX))
+      call memory('A','I',NX,'ranger')
+      allocate(I1NX(NX))
+      call memory('A','I',NX,'ranger')
+      allocate(I2NX(NX))
+      call memory('A','I',NX,'ranger')
+      allocate(J1NX(NX))
+      call memory('A','I',NX,'ranger')
+      allocate(J2NX(NX))
+      call memory('A','I',NX,'ranger')
+      allocate(DMX(NX))
+      call memory('A','D',NX,'ranger')
+      allocate(DX(NX))
+      call memory('A','D',NX,'ranger')
+      allocate(DX0M(NX))
+      call memory('A','D',NX,'ranger')
 
 C Cell-mesh initialization section
       IF (MODE.EQ.'CELL' .OR. MODE.EQ.'cell' .OR.
@@ -377,9 +449,6 @@ C Cell-mesh initialization section
 
 C       Start time counter (this is for debugging)
 *       CALL TIMER( 'RANGER1', 1 )
-
-C       Check that MAXX is large enough
-        CALL CHKDIM( 'RANGER', 'MAXX', MAXX, NX, 1 )
 
 C       Store range for comparison in subsequent calls
         RNGMAX = RANGE
@@ -455,49 +524,44 @@ C       Find index-range of neighbour mesh cells and of extended mesh
           NEM = NEM * NEMX(IX)
    80   CONTINUE
 
-C       Check dimensions and print good ones
-        IF ( MAXA  .LT. NA  .OR.
-     .       MAXM  .LT. NM  .OR.
-     .       MAXEM .LT. NEM .OR.
-     .       MAXNM .LT. NNM .OR.
-     .       MAXX  .LT. NX      ) THEN
-          MA  = MAX( NA,  MAXA  )
-          MEM = MAX( NEM, MAXEM )
-          MM  = MAX( NM,  MAXM  )
-          MNM = MAX( NNM, MAXNM )
-          MX  = MAX( NX,  MAXX  )
-          OPEN( 1, FILE='ranger.h', STATUS='UNKNOWN' )
-          WRITE(1,'(A)') 'C Internal parameters for ranger.f'
-          WRITE(1,'(A)') '      INTEGER MAXA,MAXEM,MAXM,MAXNM,MAXX'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXA   =', MA,  ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXEM  =', MEM, ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXM   =', MM,  ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXNM  =', MNM, ' )'
-          WRITE(1,'(A,I9,A)') '      PARAMETER ( MAXX   =', MX,  ' )'
-          CALL PRMEM( 1, 'ranger', 'DXNM',   'D', NX*NNM )
-          CALL PRMEM( 1, 'ranger', 'DXAM',   'D', NX*NA  )
-          CALL PRMEM( 1, 'ranger', 'IA1M',   'I', NM     )
-          CALL PRMEM( 1, 'ranger', 'IANEXT', 'I', NA     )
-          CALL PRMEM( 1, 'ranger', 'IAPREV', 'I', NA     )
-          CALL PRMEM( 1, 'ranger', 'IDNM',   'I', NNM    )
-          CALL PRMEM( 1, 'ranger', 'IEMA',   'I', NA     )
-          CALL PRMEM( 1, 'ranger', 'IMESH',  'I', NEM    )
-          CALL PRMEM( 1, 'ranger', ' ',      ' ', 0      )
-          CLOSE(1)
-          WRITE(6,'(A)') 'RANGER: BAD DIMENSIONS. RECOMPILE.'
-          STOP 'RANGER: BAD DIMENSIONS. RECOMPILE.'
-        ENDIF
+C  Allocate arrays whose dimensions are now known
+        if (allocated(IA1M)) then
+          call memory('D','I',size(IA1M),'ranger')
+          deallocate(IA1M)
+        endif
+        if (allocated(IDNM)) then
+          call memory('D','I',size(IDNM),'ranger')
+          deallocate(IDNM)
+        endif
+        if (allocated(DXNM)) then
+          call memory('D','D',size(DXNM),'ranger')
+          deallocate(DXNM)
+        endif
+        if (allocated(IMESH)) then
+          call memory('D','I',size(IMESH),'ranger')
+          deallocate(IMESH)
+        endif
+        allocate(IA1M(NM))
+        call memory('A','I',NM,'ranger')
+        allocate(IDNM(NNM))
+        call memory('A','I',NNM,'ranger')
+        allocate(DXNM(NX,NNM))
+        call memory('A','D',NX*NNM,'ranger')
+        allocate(IMESH(NEM))
+        call memory('A','I',NEM,'ranger')
 
 C       Find which mesh cells are actually within range
         NNMMAX = NNM
         NNM = 0
         DO 170 IN = 1,NNMMAX
-          CALL INDARR( -1, NX, I1NX, I2NX, INX, 1, IN )
+          j_aux = in
+          CALL INDARR( -1, NX, I1NX, I2NX, INX, 1, j_aux )
           INSIDE = .TRUE.
 C         From here to label 130 is generally not worth unless CELL is
 C         very nonorthorrombic (like fcc, bcc or hex) and changes rarely
 *         DO 120 IV = 1,2**NX
-*           CALL INDARR( -1, NX, J1NX, J2NX, IVX, 1, IV )
+*           j_aux = iv
+*           CALL INDARR( -1, NX, J1NX, J2NX, IVX, 1, j_aux )
 *           DO 100 IX = 1,NX
 *             DXM(IX) = 0.D0
 *             DO 90 JX = 1,NX
@@ -534,7 +598,8 @@ C           DXNM is the vector distance between neighbour mesh cells
 
 C       Find correspondence between extended and reduced (normal) meshes
         DO 180 IEM = 1,NEM
-          CALL INDARR( -1, NX, I1EMX, I2EMX, IMX, 1, IEM )
+          j_aux = iem
+          CALL INDARR( -1, NX, I1EMX, I2EMX, IMX, 1, j_aux )
           CALL INDARR( +1, NX, I1MX,  I2MX,  IMX, 1, IM  )
           IMESH(IEM) = IM
   180   CONTINUE
@@ -694,11 +759,29 @@ C           Take next atom in this mesh-cell and go to begining of loop
       ENDIF
 C End of search section
 
+C Deallocate local memory
+      call memory('D','I',size(INX),'ranger')
+      deallocate(INX)
+      call memory('D','I',size(I1NX),'ranger')
+      deallocate(I1NX)
+      call memory('D','I',size(I2NX),'ranger')
+      deallocate(I2NX)
+      call memory('D','I',size(J1NX),'ranger')
+      deallocate(J1NX)
+      call memory('D','I',size(J2NX),'ranger')
+      deallocate(J2NX)
+      call memory('D','D',size(DMX),'ranger')
+      deallocate(DMX)
+      call memory('D','D',size(DX),'ranger')
+      deallocate(DX)
+      call memory('D','D',size(DX0M),'ranger')
+      deallocate(DX0M)
+
 C This is the unique return point
       FRSTME = .FALSE.
+
+      RETURN
       END
-
-
 
       SUBROUTINE RECCEL( N, A, B, IOPT )
 

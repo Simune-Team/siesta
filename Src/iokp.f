@@ -1,4 +1,4 @@
-c $Id: iokp.f,v 1.1 1999/02/21 00:09:48 emilio Exp $
+c $Id: iokp.f,v 1.2 1999/11/26 18:28:16 wdpgaara Exp $
 
       subroutine iokp( nk, points, weight )
 
@@ -11,12 +11,13 @@ c real*8  points(3,nk) : k-point coordinates
 c real*8  weight(3,nk) : k-point weight
 c *******************************************************************
 
+      use fdf
+
       implicit          none
       character         paste*33
       integer           nk
       double precision  points(3,*), weight(*)
       external          io_assign, io_close, paste
-      include          'fdf/fdfdefs.h'
 
 c Internal 
       character  sname*30, fname*33

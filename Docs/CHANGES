@@ -1,10 +1,817 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 ========================================================================
- 0.11.4  released as 0.11.f1
+Version: 1.0.13
+Date: 1999/11/26  18:15:00 GMT
+Title: Return to Main Trunk
+Authors: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+The changes made to the code along the "merged" branch have been
+merged back to the main trunk. A few cosmetic changes have also
+been made. Note that it is not practical to include all the commit
+messages pertaining to the merged branch again. For all practical purposes,
+there is a "wall" between 0.12.19 (tagged 'fork') and 1.0.13. 
+
+Files:
+
+CHANGES:	It contains the description of the latest changes along
+		the merged branch. For full details, see the log history
+		in each file.
+redbasis.f:	Removal of references to atom.h
+atom.h:		Removal. (Note that some "hardwired" parameters remain
+		in the atmfuncs module -- they will be dealt with in
+		the future.)
 ========================================================================
-Version: 0.11.4 
-Date: 1999/09/02 11:00:00
+Version: 1.0.12
+Date: 1999/11/24  18:00:00 GMT
+Title: Direct evaluation of phi added
+Authors: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+An option has been added to calculate the value of the orbitals at
+the mesh points on the fly to avoid the use of the PHI array in
+DHSCF on lower routines. This allows a large saving in memory to
+be made in some cases, with a penalty in CPU time. For very large
+jobs it makes the difference between running and not running though
+if memory is tight. Also an MPI barrier has been added in siesta.F
+before the memory is printed to tidy up the output.
+
+Files:
+
+dfscf.F    : value of phi is now used from called to phiatm rather than C
+dhscf.F    : DirectPhi option added
+rhooda.f   : DirectPhi option added
+rhoofd.F   : DirectPhi option added
+siesta.F   : MPI barrier added before call to printmemory
+vmat.F     : DirectPhi option added
+siesta.ind : SaveMemory and DirectPhi options described
+siesta.tex : SaveMemory and DirectPhi options described
+========================================================================
+Version: 1.0.11
+Date: 1999/11/18  16:30:00 GMT
+Title: Sys reorganization. Bugfix in atom.F. Misc cosmetic changes.
+Authors: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+	* The Sys directory has been reorganized. Obsolete files have
+ 	been removed. A new file "nolibs.make" has been added to support
+	systems without any libraries (this would be the equivalent of
+	'unknown.make').
+	* Bug fix in atom.F: The global variable Q was being inadvertently
+	re-used in a subroutine. 
+	* Fix to avoid interface errors (when checking enabled) in ranger.f
+	* diagkp.F: Addition of a dummy routine so that some compilers do
+	not complain of an empty file.
+
+Files:
+
+Makefile: Clarified the status of Sys.f files.
+atom.F:   Bug fix.
+diagkp.F: Addition of dummy routine.
+diagon.F: fdf is now 'used'.
+ranger.f: interface errors "corrected" (more needs to be done in the future)
+Sys/*.make: Elimination of obsolete files and addition of new ones.
+
+========================================================================
+Version: 1.0.10
+Date: 1999/11/17  17:00:00
+Title: listsc and matel converted into modules
+Authors: Jose M. Soler <jose.soler@uam.es> / Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+  The clumsy ENTRY construction in listsc and matel was translated
+  into fortran90 modules (JMS). Plus a number of small fixes for
+  errors during compilation + runtime errors, primarily connected
+  with the diagonalisation modifications. Also documentation
+  modifications.
+
+Files:
+  Makefile  : declare listsc and matel as modules. 
+  atom.F    : data statement converted into array declaration + 
+            : nrcfile initialised
+  dfscf.F   : use statement
+  diagkp.F  : routine wrapped in preprocessor directive - for MPI only
+  diagon.F  : diagkp declared as external
+  diagpol.f : error flag for cdiag call added + handling
+  hsparse.F : use statement
+  kinefsm.F : use statement
+  linpack.F : renamed from linpack.f
+            : compiler directives added to handle precision of BLAS routines
+            : dcabs1 renamed to sdcabs1 to avoid conflict with libraries
+            : routines ending in "1" were removed as they were redundant
+  listsc.f  : converted into module
+  matel.f   : converted into module
+  naefs.f   : use statement
+  nlefsm.F  : use statement
+  overfsm.F : use statement
+  phirphi.f : use statement
+  rhoofd.F  : use statement
+  siesta.F  : use statement + lower limit of maxkb + initialisating Escf
+  version.f : increased number
+  vmat.F    : use statement
+  fdf/makefile    : copying of module files now uses wildcard
+  Docs/siesta.tex : version no. changed + parallel related options added
+  Docs/siesta.ind : new options added with provisional page numbers
+========================================================================
+Version: 1.0.9
+Date: 1999/11/16  19:00:00
+Title: Ongoing cleanup of atomic routines. FDF module. LAPACK and BLAS
+Author: Alberto Garcia
+
+Description:
+
+A number of unrelated changes.
+
+* Systems without lapack and blas can now use source provided
+  (use "cvs update -d" to pick up new directory Libs)
+* Removed some blas routines from linpack (now duplicated in Libs/blas.f)
+* Initialization of some variables (notably ends of arrays) in atom.F.
+  Typically, the first element of arrays indexed over the radial
+  coordinate was not initialized properly. They showed up as "initialized"
+  in runs with checks enabled. This fix might improve the accord between
+  runs with different number of processors.
+* Use of "assigned" unit numbers for reading in atom.F and redbasis.f
+  (Formerly an arbitrary "unit=1"  was used)
+* Changed redbasis.F back to redbasis.f, as no MPI-specific code is left.
+* Wrap of I/O in subroutine 'user' in atom.F. Rationalization of some of
+  the reading. More work needs to be done.
+* Be more careful about underflow in atom.F. A check has been added to
+  avoid computation of exp(-big), where 'big' could be so large as to
+  cause underflows (and some systems to stop). A configurable maximum
+  value for 'big' (currently 60.d0) has been introduced.
+* Fdf declarations are now in a module. Note that this is the simplest
+  step one can take to bring fdf into a f90 "flavor". The only change
+  to the code has been to introduce a private unit allocator. 
+* The Makefile has been changed to support the new features. Also, the
+  MPILIB mechanism has been slightly modified. It should now work
+  on machines (such as the SGI) whose makes complained if MPILIB was
+  empty (in serial mode).
+
+Files:
+ Makefile         
+ bands.F          
+ cgvc.F           
+ dhscf.F          
+ efield.F         
+ fixed.F          
+ grdsam.F         
+ initdm.F         
+ iocg.f           
+ iodm.F           
+ ioeig.f          
+ iofa.f           
+ iohs.F           
+ iokp.f           
+ iolwf.F          
+ iomd.f           
+ iorho.F          
+ ioxv.F           
+ kgridinit.F      
+ ksv.F            
+ linpack.f        
+ ofc.f            
+ outcoor.f        
+ plcharge.f        
+ pulayx.F          
+ recoor.F          
+ redata.F          
+ redcel.F          
+ reinit.F          
+ repol.F           
+ resize.F          
+ siesta.F          
+ version.f         
+ fdf/ makefile     
+ Libs/makefile
+ Libs/lapack.f
+ Libs/blas.f
+
+========================================================================
+Version: 1.0.8
+Date: 1999/11/16  17:00:00
+Title: Diagonalisation improvements and parallelisation over K points
+Author: Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+
+   The diagonalisation procedure has been slightly modified. So far
+    many parallel diagonalisations have failed because of the memory
+    being insufficient to separate clustered eigenvalues. The
+    solution is obviously to provide more memory, which can be done
+    using the "DiagMemory" option. However, it is not easy to know
+    a priori how much extra memory is needed which leads to lots of
+    job restarts from scratch. Hence, an option "TryMemoryIncrease"
+    has been added to try to solve this problem internally to
+    minimise the number of failing runs. The specific changes that
+    have resulted are :
+
+    (1) cdiag/rdiag now return an argument ierror which indicates the
+        success or failure of diagonalisation. Ierror = 0 implies
+        success, 1 implies fatal failure and -1 implies that failure
+        was due to insufficient memory being available to separate
+        clustered eigenvalues and that a repeat should be tried 
+        with more memory.
+    (2) the fdf option "TryMemoryIncrease" has been added with the
+        default value ".true.". This implies that a parallel job
+        will attempt to increase the memory available to diagonalisation
+        by increasing "MemoryFactor" internally with the aim of
+        achieving a successful diagonalisation without restarting
+        the job externally
+    (3) in routines that call cdiag/rdiag the ierror flag is now
+        handled by calling "die" if there is a fatal error. If there
+        was insufficient memory then the arrays are re-initialised
+        and the diagonalisation repeated to see if it is successful
+        - this only happens if TryMemoryIncrease is true.
+    (4) For the case of multiple K points, nspin .le. 2, an
+        option to parallelise over K points has been added in the
+        new routine "diagkp" based on "diagk". This option gives
+        good parallel performance for small unit cell metallic
+        systems where the number of K points is much larger than
+        the number of orbitals.
+Files:
+   Makefile
+   cdiag.F
+   diagg.F
+   diag2g.F
+   diagk.F
+   diag2k.F
+   diagkp.F
+   diagon.F
+   memoryinfo.f
+   rdiag.F
+   redata.F
+   siesta.F
+   version.f
+========================================================================
+Version: 1.0.7
+Date: 1999/11/15  13:30:00
+Title: KSV routines re-introduced for serial mode only + save attribute
+Author: Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+   Daniel's polarisation modifcations have now been introduced back
+    into the merged version for SERIAL only execution at the 
+    moment. There have been a few changes in the routines as well :
+
+    (1) Dynamic memory has been introduced
+    (2) KSV_pol has been split into an initialisation routine KSV_init
+        that calculates just the dimensions needed and KSV_pol which
+        does the actual calculation.
+    (3) The code that performs the determinant calculation has been
+        placed in a separate subroutine called linpack.f
+    (4) The function dcabs1 in the Linpack routines has been modified
+        to avoid a bug due to the optimising compiler on the Cray
+
+    The "save" attribute has been added to allocatable arrays - this
+    should help track down any memory leaks as an attempt to allocate
+    an already allocated array from a previous call should result in
+    an error. So far this has been done for the main routines where
+    larger amounts of memory are allocated - should be extended to
+    all arrays eventually.
+    Also, in dhscf.F the maximum loop index in the calculation of X0
+    prior to calling DIPOLE has been changed to NUA instead of NA
+    otherwise the incorrect dipole moment is obtained.
+Files:
+   Makefile
+   cdiag.F
+   cellxc.F
+   denmat.F
+   detover.f
+   dhscf.F
+   diagpol.f
+   ener3.F
+   fft3d.F
+   gradient.F
+   iorho.F
+   ksv.F
+   ksvinit.f
+   linpack.f
+   ordern.F
+   phirphi.f
+   poison.F
+   rdiag.F
+   repol.F
+   rhoofd.F
+   siesta.F
+   transp.f
+   version.f
+   vmat.F
+========================================================================
+Version: 1.0.6
+Date: 1999/11/11  10:00:00
+Title: Improved choice of default processorY value added
+Author: Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+   New features introduced for this version are :
+
+    (1) Nearly all parameters that might be exceeded during a run have
+        been replaced with dynamic memory. The remaining parameter
+        statements are large to set run behaviour, rather than array
+        sizes. Some array dimensioning parameters remain, but these
+        related to numbers which are unlikely to change (such as the
+        maximum angular moment possible for an orbital etc)
+    (2) Variable declarations have been tidied up to produce fewer
+        compiler warning concerning unused variables. This particularly
+        applies to the scalar version
+    (3) A small number of bug fixes, including initialisation of ql to
+        zero to avoid a crash when semi-core states are present.
+Files:
+   coceri.f
+   dot.f
+   dnaefs.f
+   naefs.f
+   neighb.f
+   ordvec.f
+   outcoor.f
+   parallel.f
+   parse.f
+   phirphi.f
+   prmem.f
+   radfft.f
+   ranger.f
+   recipes.f
+   reord.f
+   shaper.f
+   version.f
+   xc.f
+   ylmylm.f
+   atminit.F
+   arw.F
+   atomlwf.F
+   bands.F
+   cdiag.F
+   cellxc.F
+   cgvc.F
+   chempot.F
+   chkdim.F
+   denmat.F
+   dfscf.F
+   dhscf.F
+   diag2g.F
+   diag2k.F
+   diagk.F
+   diagon.F
+   dynamics.F
+   efield.F
+   egandd.F
+   ener3.F
+   fermid.F
+   fft3d.F
+   fixed.F
+   gradient.F
+   hsparse.F
+   initdm.F
+   iorho.F
+   kgrid.F
+   kgridinit.F
+   kinefsm.F
+   ksv.F
+   mulliken.F
+   nlefsm.F
+   on_subs.F
+   ordern.F
+   overfsm.F
+   pulayx.F
+   redata.F
+   rdiag.F
+   redbasis.F
+   rhoofd.F
+   siesta.F
+   timer.F
+   vmat.F
+   xijorb.F
+========================================================================
+Version: 1.0.5
+Date: 1999/11/01  16:00:00
+Title: Improved choice of default processorY value added
+Author: Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+   The program now chooses a default value of ProcessorY based on
+    the total number of Nodes so that the processors are divided
+    as evenly as possible in the two directions with the Y direction
+    being the smaller factor. Currently only 2, 3 and 5 are used
+    as possible factors. More could be easily added, but probably
+    would be of limited use.
+Files:
+   siesta.F
+   parallel.f
+========================================================================
+Version: 1.0.4
+Date: 1999/10/28  13:00:00
+Title: Input parameter to control workspace for diagonalisation added
+Author: Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+   A new input option "DiagMemory" has been introduced which allows
+    the user to control how much workspace memory is made available
+    to Scalapack. The memory that is given, the more likely it is
+    that all eigenvalues will be converged as the separation of
+    clustered values in this package is dependent on this. The
+    default value is 2. A value of less than 1 will lead to failure!
+Files:
+   Makefile
+   cdiag.F
+   memoryinfo.f
+   rdiag.F
+   redata.F
+========================================================================
+Version: 1.0.3
+Date: 1999/10/27   9:00:00
+Title: Memory tracking added + minor bug fixes
+Author: Julian Gale (j.gale@ic.ac.uk)
+
+Description:
+   In order to monitor the dynamic memory usage of SIESTA, a routine
+    memory has been added which must be called everytime an array is
+    allocated or deallocated. There is also a routine "printmemory"
+    which can be called at anytime to output the peak memory use so
+    far. Hopefully this should enable the detection of memory leaks
+    and assist in determining whether a job fails to run due to lack
+    of memory.
+   Also a few minor bugs have been fixed where uninitialised variables
+    were being accessed on restarting from an existing density matrix
+    or from a conjugate gradients history file.
+Files:
+   Makefile
+   siesta.F
+   memory.F
+   memoryinfo.f
+   atminit.F
+   atom.F
+   atomlwf.F
+   bands.F
+   cdiag.F
+   cellxc.F
+   cgvc.F
+   chempot.F
+   denmat.F
+   dhscf.F
+   diagon.F
+   dynamics.F
+   egandd.F
+   ener3.F
+   extrapol.F
+   fft3d.F
+   gradient.F
+   grdsam.F
+   hsparse.F
+   initdm.F
+   iodm.F
+   iolwf.F
+   iorho.F
+   kinefsm.F
+   listsc.f
+   matel.f
+   mulliken.F
+   nlefsm.F
+   ofc.f
+   on_subs.F
+   ordern.F
+   overfsm.F
+   pulayx.F
+   poison.F
+   ranger.F 
+   rdiag.F
+   reord.f
+   rhoofd.F
+   transp.f
+   vmat.F
+========================================================================
+************************************************************************
+*********      OLD  (SERIAL ONLY) VERSION CHANGELOG    *****************
+/////////      This version is kept in the cvs branch  /////////////////
+/////////                    'siesta-0'                /////////////////   
+************************************************************************
+========================================================================
+Version: 0.12.19
+Date: 1999/09/4   05:00:00
+Title: Minor change in subroutine redbasis and reKBblock
+Author: Daniel Sanchez (daniel@roma.physics.uiuc.edu)
+
+Description:
+     Variable polorb included in the call of the subroutine 
+     reKBblock 
+File:
+     redbasis.f
+     redbasis_subs.f
+=====================================================================
+Version: 0.12.18
+Date: 1999/08/12  23:00:00
+Title: Minor changes to avoid compilation warnings
+Author: Daniel Sanchez (daniel@roma.physics.uiuc.edu)
+
+Description:
+   Some minor changes in subroutines atom_subs.f, atom_functionss.f
+    and KSV.f to try to eliminate some compilation warnings (reported
+    by Pablo Ordejon) using Linux compiler 
+Files:
+   atom_subs.f
+   atom_functions.f
+   KSV.f
+   Include/diagon.h : Value of the parameter maxhs set equal to 2.
+========================================================================
+Version: 0.12.17
+Date: 1999/08/04  14:00:00
+Title: Corrected bug in coceri.f
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  Coordinate output for cerius (coceri.f) was wrong because of
+  a transposition of the inverse matrix of lattice vectors (to get
+  to fractional coordinates.
+
+Files:
+  coceri.f
+  usual (CHANGES, version.h, siesta.tex)
+========================================================================
+Version: 0.12.16
+Date: 1999/08/03  01:30:00
+Title: Corrected bug in redbasis.f
+Author: Daniel Sanchez (daniel@roma.physics.uiuc.edu)
+
+Description:
+  Variables semic and lsemic were not correctly initialized,
+  this causes an error in hp machines.
+
+Files:
+  redbasis.f : Variables semic and lsemic are now initialized
+========================================================================  
+Version: 0.12.15
+Date: 1999/08/02  19:30:00  
+Title: Restored variable savevh (bug introduced in recent change)
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  Somehow I introduced an 'amass' within the name savevh
+
+Files:
+  siesta.f : Restored declaration of variable savevh
+========================================================================  
+Version: 0.12.14
+Date: 1999/07/30  02:45:00
+Title: Double-z orbitals orthogonalized to inner states
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description:
+    With the option "split", the double-z orbitals are 
+    explicitely orthogonalized to the inner (semicore) 
+    states. 
+    Minor bug corrected in subroutine draw_basis
+Files: 
+       atom_subs.f
+       version.h
+       Docs/CHANGES
+========================================================================
+Version: 0.12.13
+Date: 1999/07/29  08:30:00
+Title: More general type of "semicore" states allowed.
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description:
+    Several modifications in the atomic routines allow now
+    for a more general type of "semicore"-like states in the
+    calculations.
+    For example, if the pseudopotential of Ti is generated
+    from a ionic configuration 3s2 3p6 3d2, the program will
+    understand that the readed pseudopotentials belong to the
+    states 3s and 3p rather than to the states 4s and 4p.
+    The program can handle a different (independent) basis set
+    for the 3s and 4s shell (for example), generated using the
+    standard techniques, but now the PAO corresponding to
+    the 4s state will have one node.
+
+    Another  difference is that now the basis set is generated
+    using the same configuration (self-consistent density) used
+    to generate the pseudopotentials ( previously the atom
+    was neutralize by rescaling the charge density).
+
+
+Files:
+   initatom.f
+   atom.f
+   atom_subs.f
+   atom_functions.f
+   redbasis.f
+   redbasis_subs.f
+   mulliken.f
+   plcharge.f
+   version.h
+   Util/Denchar/Src/redata.f
+   Util/Denchar/Src/phiatm.f
+   Src/Include/atom.h
+   Docs/CHANGES
+   Docs/siesta.tex
+========================================================================
+Version: 0.12.12
+Date: 1999/07/26  20:30:00  
+Title: listh array restricted to unit cell
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  The listh array, which frequently took most of the memory when using
+  k-sampling, is now restricted to the unit cell, and recalculated on
+  the fly outside it, using a faster algorithm.
+
+Files:
+  dfscf.f   : Call to listh for orbitals out of the unit cell
+  hsparse.f : Call to listh0 to initialize listh function
+  listh.f   : New algorithm. Now a function for a given orbital.
+  rhoofd.f  : Call to listh for orbitals out of the unit cell
+  siesta.f  : Dimension of listh reduced from supercell to unit cell
+  vmat.f    : Call to listh for orbitals out of the unit cell
+  Makefile  : listsc.o depends on siesta.h
+========================================================================
+Version: 0.12.11
+Date: 1999/07/20  7:30:00
+Title: Several KB projectors for each angular momentum
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description:
+  Several new routines have been added to the files atom_subs.f
+  and redbasis_subs.f to allow the use of several KB projectors
+  for each angular momentum. The implementation follows the
+  work by Blochl, PRB 41, 5414 (1990). 
+
+Files:
+  atom_subs.f: Several new routines
+  redbasis_subs.f: New routine to read the block PS.KBprojectors
+  redbasis.f:  Added a call to routine reKBblock, two new arguments
+  atom.f: to new arguments in the call of this routine, 
+          and some other changes
+  initatom.f: Modified the calls to routines atom and redbasis.
+  matel.f: New parameter mxzkb (max. number of KB projectors per l)
+  nlefsm.f: Value of the parameter maxkba from 16 to 25.
+  version.h
+  Include/atom.h:New parameter nkbmx(max. number of KB projectors per l)
+  Include/matel.h:New parameter mxzkb(max. number of KB projectors per l)
+  Docs/siesta.tex
+  Docs/CHANGES
+========================================================================  
+Version: 0.12.10
+Date: 1999/07/13  14:15:00
+Title: Plrho support for bonding wireframe
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  A new routine (platom) was added to read the XV file and draw a
+wireframe of bonds connecting atoms. Since it is still rather primitive
+and unstable, its call is commented out in plrho.
+
+Files:
+  platom.f : Bond-wireframe routine (new)
+  plin3d.f : Plots a line in 3 dimensions (new)
+  plrho.f  : Added call to platom (still commented out)
+  plrho.h  : zbuff array added to common block
+  pltr3d.f : zbuff array moved to common block
+  ray.f    : Added eps to denominator to avoid division by zero
+  plrho_guide.txt : Added brief explanation on platom
+========================================================================
+Version: 0.12.9
+Date: 1999/07/13  14:00:00
+Title: First call to overfsm moved out of SCF loop
+Author: Jose M. Soler (jose.soler@uam.es)
+
+Description:
+  In order to be able to make some post-processing calculations which
+may require the overlap matrix, with MaxSCFiterations=0 (reading the 
+converged density matrix), the first call to overfsm was moved before
+the start of the SCF loop.
+
+Files:
+  siesta.f : First call to overfsm moved out of SCF loop
+========================================================================
+Version: 0.12.8
+Date: 1999/07/2  5:00:00
+Title: Small modifications on the routine KSV_pol
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description:
+  Just adding an exit point if no calculation has been requested
+
+Files:
+  Src/KSV.f
+  Docs/CHANGES
+========================================================================
+Version: 0.12.8
+Date: 1999/07/1  7:00:00
+Title: Some modifications on the routine KSV_pol
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description:
+  Some small changes in the routine KSV_pol, which calculates 
+  the electronic polarization. 
+
+Files:
+  Src/KSV.f New argument shape, and some minor modifications
+  Src/siesta.f Calls to the routine KSV_pol modify for the new parameter
+  Docs/CHANGES 
+========================================================================
+Version: 0.12.7
+Date: 1999/06/30  1:00:00
+Title: Electronic polarization calculation using the Berry phase method
+       (and other minor changes) 
+Author: Daniel Sanchez-Portal (daniel@roma.physics.uiuc.edu)
+
+Description: 
+  The calculation of the electronic polarization for bulk systems
+  using the Berry phase approach of R.D.King-Smith and D.Vanderbilt 
+  (PRB 47, 1651 (1993)). The calculation is slightly different than 
+  the usual approach used within plane-waves calculatios, and 
+  calculations using gaussian basis sets, due to the numerical 
+  (arbitrary radial shape) character of the basis used in SIESTA. 
+  The matrix elements of the position operator in the basis set is 
+  used, instead of the plane-wave that appears in the initial 
+  formulation of the method. This method can only be applied 
+  to insulators.
+
+  The calculation of this matrix elements is performed by matel 
+  only when the calculation of the polarization is requested, to 
+  avoid the allocation of the extra-memory (relatively big compare
+  with which was usually used by matel) when it is not necessary.
+
+  Other small modifications in the atomic routines:
+   *When the basis set is generated from a charged atomic 
+    configuration (this must be explicetely requested in the input,
+    it is not related with the configuration used to generate the 
+    pseudopotentials) a message is print by the subroutine atom.
+   *Radius of the orbitals for cations are now different (shorter)  
+    than those of the neutral atom. For anions they are calculated
+    from the neutral atom.
+   *Some changes in subroutine USER to avoid problems with 
+    the interpolation of the orbitals (readed from the numerical 
+    tables) near zero.
+
+   Corrected a small bug in SIESTA: 
+    Usually the coordinates are moved after the last self-consistent
+    calculation of the density-matrix. These changed coordinates 
+    are then inconsistent with the density-matrix and forces used
+    to calculate the forces, virial, LDOS, files to plot density, 
+    etc... I have corrected this by saving the last coordinates 
+    for what the electronic structure is actually calculated, and 
+    using these coordinates to perform all these final calculations.
+   
+Files 
+  Src/detover.f, KSV.f, phirphi.f, diagpol.f, repol.f (new files)
+  Src/atom_functions.f (added three new functions) 
+  Src/matel.f (strongly modified)
+  Src/siesta.f, matel.h, siesta.h (modified)
+  Src/atom.f, atom_subs.f, siesta.f (slight modifications)
+  Src/Makefile 
+  customary siesta.tex, siesta.ind, version.h, CHANGES
+======================================================================== 
+Version: 0.12.6 [to 0.11.5 in rel-0-11-fixes branch]
+Date: 1999/06/18 12:30:00
+Title: BUG Fixed in iorho.f concerning formatted/unformatted reading
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Description:
+  A formatted read was done for unformatted files and vice-versa.
+  It DID NOT affect the normal working of siesta since it was always
+  using an unformatted file, and compilers were wise enough to
+  disregard the * format. (In that case, how did we find it? I
+  don't know, ask Jorge Kohanoff).
+
+Files:
+  iorho.f and customary
+========================================================================
+Version: 0.12.6 [to 0.11.5 in rel-0-11-fixes branch]
+Date: 1999/06/10 17:45:00
+Title: BUG Fixed: save alat in outcoor.f (bug only for certain compilers)
+Author: Emilio Artacho (emilio.artacho@uam.es)
+
+Files:
+  outcoor.f and customary
+========================================================================
+Version: 0.12.5 
+Date: 1999/06/09 12:30:00
+Title: Denchar utility: it provides now atomic coordinates in 2D-plot coors
+Author: Javier Junquera (javier@polar.fmc.uam.es)
+
+Description:
+  The package provides the possibility of giving the coordinates
+  of any atoms of the calculated system in the reference frame of
+  the 2D plot (the third coordinate would correspond to the one
+  perpendicular to the plane and is zero for atoms within the plane).
+    The atoms wanted are specified by giving their indices as in the
+  siesta run, in the fdf block 2D.AtomsInPlane .
+
+Files (all in Util/Denchar):
+  Src/atompla.f  (new)
+  Src/denchar.f, planed.f, rhoofr.f, readpla.f, wrout.f, Makefile (modif)
+  Docs/denchar.tex
+  Examples/ (all modified)
+  customary siesta.tex, version.h, CHANGES
+========================================================================
+0.12.4 = 0.11.4  released as 0.11.f1
+========================================================================
+Version: 0.12.4 [0.11.4 in rel-0-11-fixes branch]
+Date: 1999/06/09 10:45:00
 Title: Rounding off release: Examples update and matel.h
 Author: Emilio Artacho (emilio.artacho@uam.es)
 
@@ -13,9 +820,9 @@ Files:
   Include/matel.h   changed MAXR to 128 and MAXQ to 1024 for consistency
                     (1 before, and the compiler complained)
 ========================================================================
-Version: 0.11.4 
-Date: 1999/08/02 16:00:00
-Title: Fixed bug in vmat.f
+Version: 0.12.4 [0.11.4 in rel-0-11-fixes branch]
+Date: 1999/06/08 16:00:00
+Title: Fixed bug in vmat.f  
 Author: Jose M. Soler (jose.soler@uam.es)
 
 Description:
@@ -27,7 +834,7 @@ Files:
    vmat.f
    customary siesta.tex, version.h, CHANGES
 ========================================================================
-Version: 0.11.3 
+Version: 0.12.3 [0.11.3 in rel-0-11-fixes branch]
 Date: 1999/06/08 12:30:00
 Title: Fixed bug in atomlwf.f
 Author: Pablo Ordejon (ordejon@icmab.es)
@@ -42,7 +849,7 @@ Files:
    ordern.f, atomlwf.f
    customary siesta.tex, version.h, CHANGES
 ========================================================================
-Version: 0.11.2  (No PL change)
+Version: 0.12.2  (No PL change)
 Date: 1999/06/04 16:30:00
 Title: Minor cosmetic changes. New .make files
 Author: Alberto Garcia <wdpgaara@lg.ehu.es>
@@ -66,7 +873,7 @@ Files:
    g77-libs.make: New file. Uses system BLAS and LAPACK.
    nag-f90.make, nag-f95.make, pgf77.make, pgf90.make: New files.
 ========================================================================
-Version: 0.11.2 
+Version: 0.12.2 
 Date: 1999/06/03 12:30:00
 Title: Changes to fdf behavior. Use of io_assign
 Author: Alberto Garcia <wdpgaara@lg.ehu.es>
@@ -91,8 +898,8 @@ Files:
    Makefile: Explicit dependencies for fdf files.
    customary version.h, CHANGES
 ========================================================================
-Version: 0.11.1 
-Date: 1999/06/02 19:30:00
+Version: 0.11.1 0.12.1
+Date: 1999/06/02 19:20:00
 Title: Fixed bug in rhoofd.f
 Author: Jose M. Soler (jose.soler@uam.es)
 
@@ -105,7 +912,7 @@ Files:
    rhoofd.f
    customary siesta.tex, version.h, CHANGES
 ========================================================================
-Version: 0.11.0
+Version: 0.11.0 0.12.0
 Date: 1999/05/26 12:00:00
 Title: Fixed bug in siesta.f, iomd was called with idyn instead of varcel
 Author: Emilio Artacho (emilio.artacho@uam.es)
@@ -114,7 +921,7 @@ Files:
    Src/siesta.f
    (plus customary)
 ========================================================================
-Version: 0.11.0
+Version: 0.11.0 0.12.0
 Date: 1999/05/25 16:00:00
 Title:  Bug fixes
 Author: Pablo Ordejon (ordejon@icmab.es)
@@ -124,7 +931,7 @@ Files:
    Src/redata.f          fs_dafault defined as logical
    Src/version.h, Docs/CHANGES    Usual changes
 ========================================================================
-Version: 0.11.0 
+Version: 0.11.0 0.12.0
 Date: 1999/05/17 21:00:00
 Title: Option to calculate a fixed spin state
 Author: Pablo Ordejon (ordejon@icmab.es)
@@ -141,7 +948,7 @@ Files:
    Docs/siesta.ind       Changes for fixed spin calcs.
    Docs/release.notes_0.11       Changes for fixed spin calcs.
 ========================================================================
-Version: 0.11.0 
+Version: 0.11.0 0.12.0
 Date: 1999/05/17 20:00:00
 Title: Fixed bug in cgvc.f 
 Author: Emilio Artacho (emilio.artacho@uam.es)
@@ -151,7 +958,7 @@ Files:
            changed for reclat
   version.h, CHANGES, siesta.tex as usual
 ========================================================================
-Version: 0.11.0 
+Version: 0.11.0 0.12.0
 Date: 1999/05/05 17:15:00
 Title: Fixed bug in madelung (mulecule) + fixed dim enlargement
 Author: Emilio Artacho (emilio.artacho@uam.es)

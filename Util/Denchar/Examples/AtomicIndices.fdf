@@ -27,3 +27,9 @@ SystemLabel             Si64           # Short name for naming files
 %block 2D.Indices3Atoms                # Indices of three atoms
  1  2  3
 %endblock 2D.Indices3Atoms
+
+%block 2D.AtomsInPlane
+ 1
+ 2
+ 3
+%endblock 2D.AtomsInPlane

@@ -7,6 +7,7 @@
 C **********************************************************************
 C Read tables calculated in siesta
 C Coded by J. Junquera 11/98
+C Modified by DSP, July 1999
 C **********************************************************************
 
       IMPLICIT NONE
@@ -20,22 +21,27 @@ C **********************************************************************
      .  ISA(MAXA), IPHORB(MAXO),
      .  NUMH(MAXO), LISTH(MAXNO,MAXO), INDXUO(MAXO),
      .  ISMAX, NOMAX(NSMAX), NKBMAX(NSMAX),
-     .  IB, IL, IS, IA, IO, J, NPOLORBSAVE(LMAXD,NSMAX),
-     .  LMXOSAVE(NSMAX), LMXKBSAVE(NSMAX), NZETASAVE(0:LMAXD,NSMAX)
+     .  IB, IL, IS, IA, IO, J, NPOLORBSAVE(0:LMAXD,NSEMX,NSMAX),
+     .  LMXOSAVE(NSMAX), LMXKBSAVE(NSMAX), 
+     .  NZETASAVE(0:LMAXD,NSEMX,NSMAX),
+     .  LSEMICSAVE(0:LMAXD,NSMAX), NKBLSAVE(0:LMAXD,NSMAX)
 
 
       DOUBLE PRECISION
      .  CELL(3,3), XA(3,MAXA), RMAXO, DATM(MAXO)
 
       DOUBLE PRECISION
-     .  TABLE((NTBMAX+2),-(LMAXD+1):NZETMX*(LMAXD+1),NSMAX),
-     .  TAB2(NTBMAX,-(LMAXD+1):NZETMX*(LMAXD+1),NSMAX),
-     .  TABPOL((NTBMAX+2),LMAXD*NZETMX,NSMAX),
-     .  TAB2POL(NTBMAX,LMAXD*NZETMX,NSMAX)
+     .  TABLE((NTBMAX+2),-(LMAXD+1):NSEMX*NZETMX*(LMAXD+1),NSMAX),
+     .  TAB2(NTBMAX,-(LMAXD+1):NSEMX*NZETMX*(LMAXD+1),NSMAX),
+     .  TABPOL((NTBMAX+2),(LMAXD+1)*NSEMX*NZETMX,NSMAX),
+     .  TAB2POL(NTBMAX,(LMAXD+1)*NSEMX*NZETMX,NSMAX)
 
 
       CHARACTER
      .  SNAME*30, FNAME*33, PASTE*33
+
+      LOGICAL
+     .  SEMICSAVE(NSMAX)
 
       EXTERNAL 
      .  IO_ASSIGN, IO_CLOSE, PASTE
@@ -43,6 +49,8 @@ C **********************************************************************
       COMMON/CMTAB/TABLE,TABPOL
       COMMON/CMSPLINE/TAB2,TAB2POL
       COMMON/CMZETA/NZETASAVE
+      COMMON/CMSEMIC/SEMICSAVE,LSEMICSAVE
+      COMMON/CMNKBL/NKBLSAVE
       COMMON/CONTROL/ISMAX,NOMAX,NKBMAX
       COMMON/CMPOLORB/NPOLORBSAVE
       COMMON/CMLMXO/LMXOSAVE
@@ -86,7 +94,7 @@ CIn the previous version this loop only was executed from
 CIL= -LMAXD+1 instead of -(LMAXD+1).
 C I belive that now is right! DSP.
       DO 100 IB = 1, NTBMAX+2
-        DO 110 IL = -(LMAXD+1), NZETMX*(LMAXD+1)
+        DO 110 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
           DO 120 IS = 1, NSMAX
             READ(UNIT1)TABLE(IB,IL,IS)
  120      CONTINUE
@@ -94,7 +102,7 @@ C I belive that now is right! DSP.
  100  CONTINUE
 
       DO 200 IB = 1, NTBMAX+2
-        DO 210 IL = 1, NZETMX*LMAXD
+        DO 210 IL = 1, NSEMX*NZETMX*(LMAXD+1)
           DO 220 IS = 1, NSMAX
             READ(UNIT1)TABPOL(IB,IL,IS)
  220      CONTINUE
@@ -105,7 +113,7 @@ CIn the previous version this loop only was executed from
 CIL= -LMAXD+1 instead of -(LMAXD+1).
 C I belive that now is right! DSP.
       DO 300 IB = 1, NTBMAX
-        DO 310 IL = -(LMAXD+1), NZETMX*(LMAXD+1)
+        DO 310 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
           DO 320 IS = 1,NSMAX
             READ(UNIT1)TAB2(IB,IL,IS)
  320      ENDDO
@@ -114,7 +122,7 @@ C I belive that now is right! DSP.
 
 
       DO 400 IB = 1, NTBMAX
-        DO 410 IL = 1, NZETMX*LMAXD
+        DO 410 IL = 1, NSEMX*NZETMX*(LMAXD+1)
           DO 420 IS = 1,NSMAX
             READ(UNIT1)TAB2POL(IB,IL,IS)
  420      ENDDO
@@ -130,16 +138,33 @@ C I belive that now is right! DSP.
  600  ENDDO
 
       DO 700 IL = 0,LMAXD
+       DO 750 IB= 1, NSEMX
         DO 800 IS = 1,NSMAX
-          READ(UNIT1)NZETASAVE(IL,IS)
+          READ(UNIT1)NZETASAVE(IL,IB,IS)
  800    ENDDO
+ 750   ENDDO
  700  ENDDO
-       
+
       DO IS = 1, NSMAX
-        DO IL =1 , LMAXD
-          READ(UNIT1)NPOLORBSAVE(IL,IS)
-        ENDDO 
-      ENDDO 
+       DO IB = 1, NSEMX
+        DO IL =0 , LMAXD
+          READ(UNIT1)NPOLORBSAVE(IL,IB,IS)
+        ENDDO
+       ENDDO
+      ENDDO
+
+      DO IS=1, NSMAX
+         DO IL= 0, LMAXD
+           READ(UNIT1)LSEMICSAVE(IL,IS)
+         ENDDO
+      ENDDO
+
+      DO IS=1, NSMAX
+         DO IL= 0, LMAXD
+           READ(UNIT1)NKBLSAVE(IL,IS)
+         ENDDO
+      ENDDO
+
 
  
       READ(UNIT1)ISMAX

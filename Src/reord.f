@@ -1,6 +1,4 @@
-C $Id: reord.f,v 1.5 1999/01/31 11:43:37 emilio Exp $
-
-      SUBROUTINE REORD( FCLUST, FSEQ, NM, NSM, ITR, MAXAUX, AUX )
+      SUBROUTINE REORD( FCLUST, FSEQ, NM, NSM, ITR )
 
 C ********************************************************************
 C Re-orders a clustered data array into a sequential one and viceversa
@@ -11,36 +9,41 @@ C INTEGER NSM    : Number of Sub-divisions in each Mesh division
 C INTEGER ITR    : TRanslation-direction switch
 C                  ITR=+1 => From clustered to sequential
 C                  ITR=-1 => From sequential to clustered
-C INTEGER MAXAUX : MAXimum AUXiliary space
 C **** INPUT OR OUTPUT (Depending on ITR ) ***************************
 C REAL*4 FCLUST(NSM,NSM,NSM,NM1,NM2,NM3) : CLUSTered data
 C REAL*4 FSEQ(NSM*NM1,NSM*NM2,NSM*NM3)   : SEQuential data
-C **** AUXILIARY *****************************************************
-C REAL*4 AUX(NM1*NM2*NSM**3) : Space that can be used freely outside
 C ********************************************************************
 
       IMPLICIT NONE
       INTEGER
-     .  NM(3), NSM, ITR, MAXAUX
+     .  NM(3), NSM, ITR 
       REAL
-     .  FCLUST(*), FSEQ(*), AUX(*)
+     .  FCLUST(*), FSEQ(*)
      
-      INTEGER MAXNS3
-      PARAMETER ( MAXNS3 = 8 )
       INTEGER 
      .  I, I0, I1, I2, I3, IS, IS1, IS2, IS3,
-     .  J, J0, JS(MAXNS3), NAUX, NSM2, NSM3, NTM(3)
+     .  J, J0, NSM3, NTM(3), NAUX
+
+      external
+     .  memory
+
+      real, dimension(:), allocatable :: AUX
+      integer, dimension(:), allocatable :: JS
      
       CALL TIMER('REORD',1)
 
       NTM(1) = NM(1) * NSM
       NTM(2) = NM(2) * NSM
       NTM(3) = NM(3) * NSM
-      NSM2 = NSM**2
       NSM3 = NSM**3
       NAUX = NM(1) * NM(2) * NSM3
-      CALL CHKDIM( 'REORD', 'MAXAUX', MAXAUX, NAUX, 1 )
-      CALL CHKDIM( 'REORD', 'MAXNS3', MAXNS3, NSM3, 1 )
+C
+C  Allocate local memory
+C
+      allocate(AUX(NAUX))
+      call memory('A','S',naux,'reord')
+      allocate(JS(NSM3))
+      call memory('A','I',nsm3,'reord')
 
       IS = 0
       DO IS3 = 0,NSM-1
@@ -93,6 +96,14 @@ C ********************************************************************
           ENDDO
         ENDDO
       ENDIF
+
+C
+C  Free local memory
+C
+      call memory('D','I',size(JS),'reord')
+      deallocate(JS)
+      call memory('D','S',size(AUX),'reord')
+      deallocate(AUX)
 
       CALL TIMER('REORD',2)
       END

@@ -1,5 +1,3 @@
-c $Id: parse.f,v 1.6 1999/01/31 11:20:12 emilio Exp $
-
       subroutine parse( line, nn, lc, names, nv, values,
      .                  ni, integers, nr, reals )
 
@@ -40,18 +38,32 @@ c **********************************************************************
 c **********************************************************************
 
 c     Internal variables
-      integer maxl
-      parameter ( maxl = 200 )
-      logical    isblank(0:maxl+1), isdigit(0:maxl+1), isdot(0:maxl+1),
-     .           isexp(0:maxl+1), isinteger, issign(0:maxl+1),
-     .           isother(0:maxl+1), isreal, opened
+      logical
+     .  isinteger, isreal, opened
+
+      logical, dimension(:), allocatable ::
+     .  isblank, isdigit, isdot, isexp, issign, isother
+
       character  c
       character fmtstr*10
       integer    i, i1, i2, ic, iw, ll, ndot, nexp, nsign
 
 c     Check line length
       ll = len(line)
-      if (ll.gt.maxl) stop 'parse: parameter maxl too small'
+
+C Allocate local memory
+      allocate(isblank(0:ll+1))
+      call memory('A','L',ll+2,'parse')
+      allocate(isdigit(0:ll+1))
+      call memory('A','L',ll+2,'parse')
+      allocate(isdot(0:ll+1))
+      call memory('A','L',ll+2,'parse')
+      allocate(isexp(0:ll+1))
+      call memory('A','L',ll+2,'parse')
+      allocate(issign(0:ll+1))
+      call memory('A','L',ll+2,'parse')
+      allocate(isother(0:ll+1))
+      call memory('A','L',ll+2,'parse')
 
 c     Clasify line characters
       isblank(0) = .true.
@@ -95,7 +107,7 @@ c       Locate first character of word
         do i1 = i2+1,ll
           if (.not.isblank(i1)) goto 10
         enddo
-          return
+        goto 999
    10   continue
 
 c       Locate last character of word, while checking if
@@ -186,6 +198,23 @@ c         Remove enclosing apostrophes if present
           endif
         endif
       enddo
+
+C Exit point
+  999 continue
+
+C Deallocate local memory
+      call memory('D','L',size(isblank),'parse')
+      deallocate(isblank)
+      call memory('D','L',size(isdigit),'parse')
+      deallocate(isdigit)
+      call memory('D','L',size(isdot),'parse')
+      deallocate(isdot)
+      call memory('D','L',size(isexp),'parse')
+      deallocate(isexp)
+      call memory('D','L',size(issign),'parse')
+      deallocate(issign)
+      call memory('D','L',size(isother),'parse')
+      deallocate(isother)
 
       end
 

@@ -1,4 +1,4 @@
-C $Id: prmem.f,v 1.5 1999/01/31 11:20:14 emilio Exp $
+C $Id: prmem.f,v 1.6 1999/11/26 18:28:27 wdpgaara Exp $
 
       SUBROUTINE PRMEM( IUNIT, PROG, VAR, TYPE, DIM )
 C ********************************************************************
@@ -22,8 +22,8 @@ C ********************************************************************
 
 
       IMPLICIT          NONE
-      INTEGER           MAXPR, MINU, NC, NTY
-      PARAMETER       ( MAXPR = 90, MINU = 10, NC = 2, NTY = 7 )
+      INTEGER           MAXPR, NC, NTY
+      PARAMETER       ( MAXPR = 90, NC = 2, NTY = 7 )
       CHARACTER         PROG*(*), VAR*(*)
       CHARACTER         CTY(NC,NTY), TYPE, FNAME*14
       CHARACTER*10      PROGS(MAXPR)

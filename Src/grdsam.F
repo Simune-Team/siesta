@@ -1,0 +1,406 @@
+      subroutine grdsam(nspin, maxorb, norb, iaorb, iphorb, indxuo,
+     .                  nuo, nuotot, nua, na, isa, xa, indxua,
+     .                  cell, mscell, g2max, ntm, 
+     .                  ilh, ifa, istr,
+     .                  maxno, numh, listh, Dscf, Datm, Hmat,
+     .                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     .                  Exc, Dxc, dipol, fa, stress, fal, stressl )
+
+c ***************************************************************************
+c Final call to dhscf of the scf cycle + grid-cell sampling
+c
+c   After a first call to DHSCF, there are more calls for rigidly shifted
+c   atomic coordinates, sampling the small cell defined by the grid, to get
+c   average energy, forces, stress, and dipole. It does it with fix density 
+c   matrix. It can be regarded as a (discrete sampling) symmetrization
+c   to restore the homogeneity of space, which was lost with the 
+c   grid summations. 
+c
+c   The first call to DHSCF is the usual one (the point in which 
+c   selfconsistency has been performed). It corresponds to the 
+c   shift (0,0,0) in the grid cell.
+c
+c   The sampling is done on the additional points given in block
+c   GridCellSampling, which are given in fractional coordinates of
+c   the small grid cell. 
+c
+c   Even if the sum is large the symmetrization is never complete 
+c   since the density matrix is the one obtained for one position of
+c   the grid (no new selfconsistency for each shift).
+c      
+c Written by E. Artacho. January 1998. 
+c *********************** INPUT TOWARDS DHSCF *******************************
+c integer nspin         : number of spins considered 
+c integer maxorb        : second dimension of dscf and hmat
+c integer norb          : total number of basis orbitals
+c integer iaorb(norb)   : atom to which each orbital belongs
+c integer iphorb(norb)  : orbital index (within atom) of each orbital
+c integer indxuo(norb)  : index of equivalent atom in unit cell
+c integer nuo           : number of orbitals in a unit cell (local)
+c integer nuotot        : number of orbitals in a unit cell (global)
+c integer nua           : number of atoms in unit cell
+c integer na            : number of atoms in supercell
+c integer isa(na)       : species indexes
+c real*8  xa(3,na)      : atomic positions
+c real*8  cell(3,3)     : unit cell vectors
+c integer mscell(3,3)   : supercell vectors in units of ucell
+c integer ilh           : numh and listh: input or output?
+c integer ifa           : scf contrib to forces calculated or not
+c integer istr          : scf contrib to stress calculated or not
+c integer maxno         : first dimension of listh, dscf, hmat
+c real*8  dscf(maxno,maxorb,nspin): scf DM elements
+c real*8  datm(norb)        : Harris DM diagonal elements
+c **** DHSCF INPUT OR OUTPUT (DEPENDING ON WHETHER MESH IS CALCULATED)*******
+c integer ntm(3)            : number of mesh divisions of each cell vector
+c **** DHSCF INPUT OR OUTPUT (DEPENDING ON ARGUMENT ILH) ********************
+c integer numh(norb)        : number of nonzero H elements for each row
+c integer listh(maxno,norb) : nonzero-H-element column indexes for each row
+c real*8  hmat(maxno,maxorb,nspin): Hamiltonian matrix in sparse form
+c ************************* DHSCF OUTPUT ******i*****************************
+c real*8  enaatm : integral of vna * rhoatm
+c real*8  enascf : integral of vna * rhoscf
+c real*8  uatm   : Harris hartree electron-interaction energy
+c real*8  uscf   : scf hartree electron-interaction energy
+c real*8  duscf  : electrostatic (hartree) energy of rhoscf-rhoatm density
+c real*8  duext  : interaction energy with external electric field
+c real*8  exc    : scf XC energy
+c real*8  dxc    : scf double-counting correction to exc
+c real*8  dipol(3): electric dipole (in a.u.)
+c *********************** DHSCF INPUT AND OUTPUT ****************************
+c real*8  g2max       : effective planewave cutoff in Ry 
+c real*8  fa(3,na)    : atomic forces
+c real*8  stress(3,3) : stress tensor
+c real*8  fal(3,na)   : atomic forces (local to Node)
+c real*8  stressl(3,3): stress tensor (local to Node)
+c ***************************************************************************
+
+C
+C  Modules
+C
+      use precision
+      use fdf
+#ifdef MPI
+      use mpi
+#endif
+
+      implicit          none
+
+      integer           maxno, maxorb, na, norb, nspin, nuo, nuotot, 
+     .                  nua, iaorb(norb), ifa, ilh,
+     .                  indxua(na), indxuo(norb),
+     .                  iphorb(norb), isa(na), istr, listh(maxno,norb),
+     .                  mscell(3,3), numh(norb), ntm(3)
+
+      double precision  cell(3,3), datm(norb), dipol(3), 
+     .                  dscf(maxno,maxorb,nspin), DUscf, DUext, Dxc, 
+     .                  enaatm, enascf, exc, fa(3,nua), g2max,
+     .                  hmat(maxno,maxorb,nspin), stress(3,3),
+     .                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
+
+      external          parse, memory
+
+c ----------------------------------------------------------------------------
+
+c Internal variables and arrays
+ 
+      character         line*130, names*80
+      logical           samgrd, blread, samesh
+      integer           ni, nn, nr, nv, npt, ipt, maxpt, iu, ia,
+     .                  ix, iv, integs(4), lastc, lc(0:3), lstntm(3),
+     .                  Node
+#ifdef MPI
+      integer           MPIerror
+#endif
+      double precision  reals(4), values(4), lstcll(3,3), avexc,
+     .                  strold(3,3), avdipo(3), avstre(3,3), avdxc,
+     .                  avenaa, avenas, avuatm, avuscf, avdusc, anpt,
+     .                  strold2(3,3), avstre2(3,3)
+
+      parameter         (maxpt = 100)
+      double precision, dimension(:,:), allocatable ::
+     .                  pt, avfa, faold, xanew, avfa2, faold2
+      double precision, dimension(:,:), allocatable, save ::
+     .                  dpt
+
+      save              blread, samgrd, lstcll, lstntm, npt
+    
+
+      data              blread      /.false./,
+     .                  samgrd      /.false./,
+     .                  lstcll(1,1) / 0.743978657912656D50 /,
+     .                  lstntm      / 10000, 1, 1 /
+
+c ----------------------------------------------------------------------------
+
+C Get Node number
+#ifdef MPI
+      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+#else
+      Node = 0
+#endif
+
+C Allocate local memory
+      allocate(pt(3,na))
+      call memory('A','D',3*na,'grdsam')
+      allocate(avfa(3,na))
+      call memory('A','D',3*na,'grdsam')
+      allocate(avfa2(3,na))
+      call memory('A','D',3*na,'grdsam')
+      allocate(faold(3,na))
+      call memory('A','D',3*na,'grdsam')
+      allocate(faold2(3,na))
+      call memory('A','D',3*na,'grdsam')
+      allocate(xanew(3,na))
+      call memory('A','D',3*na,'grdsam')
+      if (.not.allocated(dpt)) then
+        allocate(dpt(3,na))
+        call memory('A','D',3*na,'grdsam')
+      endif
+
+C Check whether GridCellSampling block has been looked for ------------------
+
+      if ( .not. blread ) then
+
+C Look for block and read it if found ---------------------------------------
+ 
+        if (Node.eq.0) then
+          samgrd = fdf_block('GridCellSampling',iu)
+        endif
+#ifdef MPI
+        call MPI_Bcast(samgrd,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
+
+        if (samgrd) then
+          if (Node.eq.0) then
+            write(6,'(a)') 'grdsam: Reading %block GridCellSampling'
+          endif
+          do ipt = 1, maxpt + 1
+            if (Node.eq.0) then
+              read(iu,'(a)', end=50) line
+            endif
+#ifdef MPI
+            call MPI_Bcast(line,130,MPI_character,0,MPI_Comm_World,
+     .        MPIerror)
+#endif
+            lastc = index(line,'#') - 1
+            if (lastc .le. 0) lastc = len(line)
+            call parse( line(1:lastc), nn, lc, names, nv, values,
+     .                  ni, integs, nr, reals )
+            if (nr .ge. 3) then
+              pt(1,ipt) = reals(1)
+              pt(2,ipt) = reals(2)
+              pt(3,ipt) = reals(3)
+            else
+              npt = ipt - 1
+              goto 50
+            endif
+          enddo
+          if (Node.eq.0) then
+            write(6,'(/,a)') 
+     .     'grdsam: ERROR: Number of points in block larger than MAXPT'
+            stop 
+     .     'grdsam: ERROR: Number of points in block larger than MAXPT'
+          else
+            stop
+          endif
+   50     continue
+        endif
+        blread = .true.
+      endif
+
+c if sampling, store the forces and stresses prior to dhscf -----------------
+
+      if (samgrd) then
+        do ia = 1, nua
+          do ix = 1, 3
+            faold(ix,ia) = fa(ix,ia)
+            faold2(ix,ia) = fal(ix,ia)
+          enddo
+        enddo
+        do iv = 1, 3
+          do ix = 1, 3
+            strold(ix,iv) = stress(ix,iv)
+            strold2(ix,iv) = stressl(ix,iv)
+          enddo
+        enddo
+        if (Node.eq.0) then
+          write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', 0
+        endif
+      endif
+
+
+c first (normal) call to DHSCF, ihmat=1 --------------------------------------
+
+      call dhscf( nspin, maxorb, norb, iaorb, iphorb, indxuo, nuo,
+     .            nuotot, nua,
+     .            na, isa, xa, indxua, cell, mscell, g2max, ntm,
+     .            ilh, ifa, istr, 1, ' ', ' ', ' ', ' ',
+     .            maxno, numh, listh, Dscf, Datm,
+     .            maxno, numh, listh, Hmat,  
+     .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     .            Exc, Dxc, dipol, fa, stress, fal, stressl)
+
+
+c Sampling ------------------------------------------------------------------
+
+      if (samgrd) then
+
+c find if mesh is new -------------------------------------------------------
+
+        samesh = .true.
+        do iv = 1, 3
+          if ( ntm(iv) .ne. lstntm(iv) ) samesh = .false.
+          lstntm(iv) = ntm(iv)
+          do ix = 1, 3
+            if ( cell(ix,iv) .ne. lstcll(ix,iv) ) samesh = .false.
+            lstcll(ix,iv) = cell(ix,iv)
+          enddo
+        enddo
+
+c generate displacements (in Bohr cartesian) if first time or new mesh ------
+
+        if (.not. samesh) then
+          if (Node.eq.0) then
+            write(6,'(a)') 
+     .       'grdsam: Generating displacements for grid-cell sampling'
+          endif
+          do ipt = 1, npt
+            do ix = 1, 3
+              dpt(ix,ipt) = 0.d0
+              do iv = 1, 3
+                dpt(ix,ipt) = dpt(ix,ipt) + 
+     .                          cell(ix,iv)*pt(iv,ipt)/dble(ntm(iv))
+              enddo
+            enddo
+          enddo
+        endif
+
+c initialize averages with output of regular DHSCF run -----------------------
+
+        do ia = 1, nua
+          do ix = 1, 3
+            avfa(ix,ia) = fa(ix,ia)
+            avfa2(ix,ia) = fal(ix,ia)
+          enddo
+        enddo
+        do iv = 1, 3
+          do ix = 1, 3
+            avstre(ix,iv) = stress(ix,iv)
+            avstre2(ix,iv) = stressl(ix,iv)
+          enddo
+        enddo
+        do ix = 1, 3
+          avdipo(ix) = dipol(ix)
+        enddo
+        avenaa = enaatm
+        avenas = enascf
+        avuatm = uatm
+        avuscf = uscf
+        avdusc = duscf
+        avexc  = exc
+        avdxc  = dxc
+
+c loop sampling on displacements making averages ----------------------------
+
+        do ipt = 1, npt
+
+          do ia = 1, na
+            do ix = 1, 3
+              xanew(ix,ia) = xa(ix,ia) + dpt(ix,ipt)
+            enddo
+          enddo
+          do ia = 1, nua
+            do ix = 1, 3
+              xanew(ix,ia) = xa(ix,ia) + dpt(ix,ipt)
+            enddo
+          enddo
+          do iv = 1, 3
+            do ix = 1, 3
+              stress(ix,iv) = strold(ix,iv)
+              stressl(ix,iv) = strold2(ix,iv)
+            enddo
+          enddo
+        
+          if (Node.eq.0) then
+          write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', ipt
+          endif
+
+          call dhscf( nspin, maxorb, norb, iaorb, iphorb, indxuo, nuo,
+     .                nuotot, nua,
+     .                na, isa, xanew, indxua, cell, mscell, g2max, ntm,
+     .                ilh, ifa, istr, 0, ' ', ' ', ' ', ' ',
+     .                maxno, numh, listh, Dscf, Datm,
+     .                maxno, numh, listh, Hmat, 
+     .                Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     .                Exc, Dxc, dipol, fa, stress, fal, stressl)
+
+          do ia = 1, nua
+            do ix = 1, 3
+              avfa(ix,ia) = avfa(ix,ia) + fa(ix,ia)
+              avfa2(ix,ia) = avfa2(ix,ia) + fal(ix,ia)
+            enddo
+          enddo
+          do iv = 1, 3
+            do ix = 1, 3
+              avstre(ix,iv) = avstre(ix,iv) + stress(ix,iv)
+              avstre2(ix,iv) = avstre2(ix,iv) + stressl(ix,iv)
+            enddo
+          enddo
+          do ix = 1, 3
+            avdipo(ix) = avdipo(ix) + dipol(ix)
+          enddo
+          avenaa = avenaa + enaatm
+          avenas = avenas + enascf
+          avuatm = avuatm + uatm
+          avuscf = avuscf + uscf
+          avdusc = avdusc + duscf
+          avexc  = avexc  + exc
+          avdxc  = avdxc  + dxc
+        enddo
+
+c final averages ------------------------------------------------------------
+
+        anpt = dble(npt+1)
+
+        do ia = 1, nua
+          do ix = 1, 3
+            fa(ix,ia) = avfa(ix,ia)/anpt
+            fal(ix,ia) = avfa2(ix,ia)/anpt
+          enddo
+        enddo
+        do iv = 1, 3
+          do ix = 1, 3
+            stress(ix,iv) = avstre(ix,iv)/anpt
+            stressl(ix,iv) = avstre2(ix,iv)/anpt
+          enddo
+        enddo
+        do ix = 1, 3
+          dipol(ix) = avdipo(ix)/anpt
+        enddo
+        enaatm = avenaa/anpt
+        enascf = avenas/anpt
+        uatm   = avuatm/anpt
+        uscf   = avuscf/anpt
+        duscf  = avdusc/anpt
+        exc    = avexc/anpt
+        dxc    = avdxc/anpt
+
+      endif
+
+C Deallocate local memory
+      call memory('D','D',size(pt),'grdsam')
+      deallocate(pt)
+      call memory('D','D',size(avfa),'grdsam')
+      deallocate(avfa)
+      call memory('D','D',size(avfa2),'grdsam')
+      deallocate(avfa2)
+      call memory('D','D',size(faold),'grdsam')
+      deallocate(faold)
+      call memory('D','D',size(faold2),'grdsam')
+      deallocate(faold2)
+      call memory('D','D',size(xanew),'grdsam')
+      deallocate(xanew)
+
+      return
+      end
+

@@ -1,16 +1,28 @@
-# $Id: sgi.make,v 1.5 1999/04/26 13:12:16 wdpgaara Exp $
 #
-FC=f77 -mips4 -static
-# Careful with -mips4! If turning single into double precision, switch to -32
+FC=f90 -n32
 #
-FFLAGS= -O
-# -O3 gives problems with -c in some versions
-#
+FFLAGS=  -O3 
+#FFLAGS= -O scalar2,pipeline2,aggress -eA
 FFLAGS_DEBUG= -g -O0
-LIBS=
-SYS=sgi
-# To use the sgimath library, use sgimath.make
 #
-RANLIB=@echo No ranlib required for 
-COMMENTS=" ** Make sure you are using the right ABI and ISA (see man abi(5))"
+LIBS= -lcomplib.sgimath 
+SYS=bsd
+#
+# Location of mpif.h include file
+#
+MPILIB=
+MPI_INCLUDE=/usr/local/include
+#
+# Definition to trigger MPI conditional compilation
+#
+DEFS=
+#
+.F.o:
+	$(FC) -c $(FFLAGS) $(DEFS) $<
+.f.o:
+	$(FC) -c $(FFLAGS) $<
+.F90.o:
+	$(FC) -c $(FFLAGS) $(DEFS) $<
+.f90.o:
+	$(FC) -c $(FFLAGS) $<
 #

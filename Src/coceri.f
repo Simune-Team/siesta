@@ -1,5 +1,3 @@
-c $Id: coceri.f,v 1.5 1999/04/08 10:57:34 emilio Exp $
-
       subroutine coceri(iza, xa, cell, na, sname, slabel)
 
 c *******************************************************************
@@ -27,22 +25,19 @@ c ******************************************************************
 
 c Internal variables and arrays
  
-      integer namax
-
-      parameter (namax=2000)
- 
       character         fname*24, symbol*2
       integer           unit,ix, iv,  i, ia
       double precision  celang(3), cellm(3), recell(3,3),
-     .                  xap(3,namax), xac(3), pi, Ang 
+     .                  xac(3), pi, Ang 
+
+      double precision, dimension(:,:), allocatable ::
+     .                  xap
 
       data pi, Ang      / 3.1415926d0, 0.529177d0 /
 
-C Check dimensions ..........................................................
-      if (na .gt. namax) then
-        write(6,*) 'coceri: Wrong namax; Must be at least ',na
-        stop
-      endif
+C Allocate local memory
+      allocate(xap(3,na))
+      call memory('A','D',3*na,'coceri')
 C ..................
 
 c Find lattice parameters out of lattice vectors: first modules:
@@ -81,9 +76,9 @@ c Obtain fractional coordinates (reclat inverts matrix)
           xac(ix) = xa(ix,ia)
         enddo
         do ix = 1,3
-          xap(ix,ia) = recell(ix,1) * xac(1) +
-     .                 recell(ix,2) * xac(2) +
-     .                 recell(ix,3) * xac(3)
+          xap(ix,ia) = recell(1,ix) * xac(1) +
+     .                 recell(2,ix) * xac(2) +
+     .                 recell(3,ix) * xac(3)
         enddo
       enddo
 
@@ -120,6 +115,10 @@ c Write file
 
       call io_close(unit)
       
+C Deallocate local memory
+      call memory('D','D',size(xap),'coceri')
+      deallocate(xap)
+
       return
       end
 

@@ -34,7 +34,7 @@
 
 \vspace{4cm}
 
-{\Huge {\bf DENCHAR 0.1.1} }
+{\Huge {\bf DENCHAR 0.1.2} }
 
 \vspace{3cm}
 
@@ -369,6 +369,16 @@ the origin and this new point will define the x-direction.
 \begin{verbatim}
   1.000   0.000   0.000
 \end{verbatim}
+
+\item[{\bf 2D.AtomsInPlane}] ({\it data block}): 
+Indices of the atoms whose coordinates will be rotated to the in-plane 
+reference frame. In this system of reference, atoms in the plane will have 
+the third coordinate equal to zero. 
+The coordinates will be written in the corresponding output files. The
+units of the output coordinates will be determined by 2D.CoorUnits.
+One index per line.
+
+{\it Default value:} No default value 
 
 \end{description}
 

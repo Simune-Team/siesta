@@ -1,4 +1,4 @@
-c $Id: iocg.f,v 1.1 1999/02/21 21:05:50 emilio Exp $
+c $Id: iocg.f,v 1.2 1999/11/26 18:28:14 wdpgaara Exp $
 
       subroutine iocg( task, naux, cgaux, cgcntr, relaxd, found )
 
@@ -15,7 +15,9 @@ c logical   relaxd        : whether system is relaxed or not.
 c***************** OUTPUT *************************************************
 c logical found : Has DM been found in disk? (Only when task='read')
 c**************************************************************************
-      
+
+      use fdf
+
       implicit          none
       character         task*(*), paste*33
       logical           found, relaxd
@@ -24,7 +26,6 @@ c**************************************************************************
 
       external          chkdim, io_assign, io_close, paste
 
-      include          'fdf/fdfdefs.h'
 
 c Internal variables and arrays ------------------------------------------
 
