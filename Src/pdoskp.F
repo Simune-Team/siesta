@@ -79,7 +79,7 @@ C **********************************************************************
 C Internal variables ---------------------------------------------------
       integer
      .  ik, is, iio, io, iuo, juo, j, jo, ihist, iband, ind, ierror,
-     .  maxnhg, nuog
+     .  maxnhg, nuog, BNode
 
       integer, dimension(:), allocatable, save ::
      .  numhg, listhptrg, listhg
@@ -96,11 +96,9 @@ C Internal variables ---------------------------------------------------
 
 #ifdef MPI
       integer ::
-     .  BNode, MPIerror
+     .  MPIerror
       real(dp), dimension(:,:,:), allocatable, save ::
      .  Sloc
-#else
-      integer :: BNode
 #endif
 
       external
