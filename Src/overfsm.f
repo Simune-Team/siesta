@@ -159,10 +159,10 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call memory('D','D',size(Di),'overfsm')
-      deallocate(Di)
       call memory('D','D',size(Si),'overfsm')
       deallocate(Si)
+      call memory('D','D',size(Di),'overfsm')
+      deallocate(Di)
 
 C Finish timer
       call timer( 'overfsm', 2 )

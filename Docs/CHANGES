@@ -1,6 +1,18 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.44
+Date: 2005/03/08 04:30 GMT 
+Title: FSM deallocation order change
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+Changes:
+
+nlefsm.f / overfsm.f / nlefsm.f - order of deallocations reversed
+to try to keep stack clean
+
+version.F90 / CHANGES as per usual
+=======================================================================
 Version: 1.4.43
 Date: 2005/03/04 19:30 GMT
 Title: Introduction of RPBE (GGA) 
