@@ -245,8 +245,8 @@ C Read spin as + or - (maximun value)
                 goto 40
               endif
               if (nr .eq. 2) then
-                theta(nat) = reals(1)
-                phi(nat)   = reals(2)
+                theta(nat) = reals(1) * pi/180.d0
+                phi(nat)   = reals(2) * pi/180.d0
               elseif (nr .eq. 0) then
                 theta(nat) = 0.d0
                 phi(nat)   = 0.d0

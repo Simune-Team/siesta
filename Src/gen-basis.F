@@ -14,10 +14,17 @@ C
       use ionew
       use precision
       use parallel,     only : Node, Nodes
-      use basis_types
-      use basis_specs
+      use basis_types, only: nsp, basis_specs_transfer
+      use basis_types, only: iz, lmxkb, nkbl, 
+     .           erefkb, lmxo, nzeta, rco, 
+     .           lambda,
+     .           atm_label, polorb, semic, nsemic,
+     .           cnfigmx, charge, smass, basistype,
+     $           rinn, vcte 
+      use basis_types, only: write_basis_specs
+      use basis_types, only: basis_def_t, basis_parameters
+      use basis_specs, only: read_basis_specs
       use basis_io
-!      use atmparams
       use old_atmfuncs, only : nsmax
       use old_atmfuncs, only : clear_tables, allocate_old_arrays
 
@@ -34,6 +41,8 @@ C
       integer is
 !     integer narg
       character(len=50) filein
+
+      type(basis_def_t), pointer   :: basp
 
 #ifdef MPI
       integer  MPIerror
@@ -68,8 +77,8 @@ C Initialise MPI and set processor number
          filein = "stdin"
          call fdf_init(filein,'gen-basis_out.fdf')
 
-         call read_basis_specs
-         call basis_specs_transfer
+         call read_basis_specs()
+         call basis_specs_transfer()
 
          nsmax = nsp            ! For old_atmfuncs
          call allocate_old_arrays

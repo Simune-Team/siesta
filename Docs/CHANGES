@@ -1,6 +1,64 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.20
+Date: 2004/11/19 8:40 GMT
+Title: Fixed import of symbols from basis_types and basis_specs modules
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Files:
+	Src/initatom.f 
+            gen-basis.F
+            basis_specs.f :  Added "private" clause to basis_specs
+                             and imported symbols explicitly in
+                             initatom and gen-basis.
+
+	version.F90: Customary changes.
+
+=======================================================================
+Version: 1.4.19
+Date: 2004/11/13 15:00 GMT
+Title: Added pdosxml utility, ps rc table, MPI test files, "only" clauses
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Files:
+	Util/pdosxml/       : Directory containing PDOS file processor
+                              which uses the Fortran XML parser.
+
+	Pseudo/atom/Contrib/atom_table.txt:
+                              Table by Jose Luis Martins with suggested
+                              values for the configurations and rc
+                              parameters for pseudopotential generation.
+
+        Src/MPI/blacs_prb.f90
+                pblas_prb.f90
+                pblas.dat
+                pi3.F      :  Files to test the MPI installation, and
+                              the blacs and pblas libraries.
+        Src/MPI/Makefile   :  Support for the test files.
+        Src/MPI/generate.sh:  Fix a typo (SV, VS overloads)
+	
+	Src/atom.f 
+            basis_types.f  :  Added "only" clauses in import of
+                              basis_types module.
+        Src/Makefile       :  Added dependency for sys.o
+
+	version.F90: Customary changes.
+
+=======================================================================
+Version: 1.4.18
+Date: 2004/08/30 11:00 GMT
+Title: Bug in noncollinear spin input angles, reported by Ivan Runger
+Author: Jose M. Soler <jose.soler@uam.es>
+
+With the noncollinear spin option, the input spin angles were not
+converted to radians
+
+Files:
+	initdm.F : Factor pi/180 added to angles
+	version.F90: Customary changes.
+
+=======================================================================
 Version: 1.4.17
 Date: 2004/07/19 12:00 GMT
 Title: More code cleanup after optical props import

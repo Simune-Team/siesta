@@ -127,6 +127,7 @@ propor.o spher_harm.o pseudopotential.o: sys.o
 redata.o dhscf.o: sys.o
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o: fermid.o
 optical.o transition_rate.o: fermid.o
+sys.o: parallel.o
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
 #

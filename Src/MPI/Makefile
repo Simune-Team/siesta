@@ -3,7 +3,7 @@
 #
 include ../arch.make
 #
-default: module_built
+default: module_built 
 #
 TEMPLATES= mpi__type_s.f90 mpi__type_sv.f90 mpi__type_v.f90 mpi__type_vs.f90
 
@@ -42,9 +42,19 @@ module_built: mpi.o $(OBJS)
 mpi__include.o: mpi__include.f90
 	$(FC) $(DEFS) -c $(FREE_F90) -I$(MPI_INCLUDE) mpi__include.f90
 #
+pi3:    pi3.o
+	$(FC) -o pi3 $(LDFLAGS) pi3.o ../$(MPI_INTERFACE) $(LIBS) 
+#
+blacs_prb:    blacs_prb.o
+	$(FC) -o blacs_prb $(LDFLAGS) blacs_prb.o ../$(MPI_INTERFACE) $(LIBS) 
+#
+pblas_prb:    pblas_prb.o
+	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o ../$(MPI_INTERFACE) $(LIBS) 
+#
 clean:
 	@rm -f $(SOURCES) $(OBJS) mpi.o mpi__include.o *.mod
 	@rm -f module_built generated *.uses
+	@rm -f pi3.o pi3
 
 
 

@@ -21,7 +21,15 @@
       use fdf
       use precision
       use basis_types, only: basis_specs_transfer, nsp
-      use basis_specs
+      use basis_types, only: iz, lmxkb, nkbl, 
+     .           erefkb, lmxo, nzeta, rco, 
+     .           lambda,
+     .           atm_label, polorb, semic, nsemic,
+     .           cnfigmx, charge, smass, basistype,
+     $           rinn, vcte 
+      use basis_types, only: write_basis_specs
+      use basis_types, only: basis_def_t, basis_parameters
+      use basis_specs, only: read_basis_specs
 
       use basis_io, only: read_basis_ascii, read_basis_netcdf
       use basis_io, only: dump_basis_ascii, dump_basis_netcdf
@@ -29,13 +37,15 @@
 
       use old_atmfuncs, only: nsmax, allocate_old_arrays
       use old_atmfuncs, only: clear_tables, deallocate_old_arrays
-      use atom
+      use atom, only: atom_main, prinput
       use electrostatic, only: elec_corr_setup
 
       implicit none
 
 C Internal variables ...................................................
       integer is
+
+      type(basis_def_t), pointer   :: basp
 
       logical user_basis, user_basis_netcdf
       

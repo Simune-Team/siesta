@@ -11,7 +11,7 @@ for kind in ${KINDS} ; do
 echo "         USE MPI__r${kind}_V      ;  USE MPI__r${kind}_S" >> V_S.uses
 echo "         USE MPI__c${kind}_V      ;  USE MPI__c${kind}_S" >> V_S.uses
 
-echo "         USE MPI__r${kind}_VS      ;  USE MPI__r${kind}_VS" >> VS.uses
+echo "         USE MPI__r${kind}_VS      ;  USE MPI__r${kind}_SV" >> VS.uses
 echo "         USE MPI__c${kind}_VS     ;  USE MPI__c${kind}_SV" >> VS.uses
 
 done

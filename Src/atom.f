@@ -22,7 +22,7 @@
       use old_atmfuncs, only: labelfis, izofis
 !----------------------------------------------------------------
       use periodic_table
-      use basis_types
+      use basis_types, only: basis_def_t
       use fdf
       use m_radfft
       use pseudopotential, only: pseudopotential_t

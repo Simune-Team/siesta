@@ -111,7 +111,9 @@
 ! =======================================================================
 !
       use precision
-      use basis_types
+      use basis_types, only: basis_def_t, shell_t, lshell_t, kbshell_t
+      use basis_types, only: nsp, basis_parameters, ground_state_t
+      use basis_types, only: destroy, copy_shell, initialize
       use pseudopotential
       use periodic_table
       use chemical
@@ -142,12 +144,16 @@
       character(len=1), parameter   ::
      $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
-      integer           isp
+      integer           isp         ! just an index dummy variable for the whole module
+
+      public :: read_basis_specs
+
+      private
 
       CONTAINS
 
 !---
-      subroutine read_basis_specs
+      subroutine read_basis_specs()
 
       character(len=15), parameter  :: basis_size_default='standard'
       character(len=10), parameter  :: basistype_default='split'
