@@ -1,4 +1,4 @@
-      MODULE MPI
+      MODULE MPI_SIESTA
 !
 !
 !       Michael Hennecke
@@ -792,4 +792,4 @@ c    &     DAT_2dcomplex => MPI_2double_complex
           END SUBROUTINE MPI_PCONTROL
         END INTERFACE
 
-      END MODULE MPI
+      END MODULE MPI_SIESTA

@@ -1,11 +1,12 @@
-c $Id: iomd.f,v 1.5 2001/01/09 10:01:52 ordejon Exp $
+c $Id: iomd.f,v 1.6 2003/05/21 22:29:31 emilio Exp $
 
-      subroutine iomd( na, isa, iza, xa, va, cell, vcell, varcel,
-     .                 istep, istep0, istepf, temp, eks, getot)
+      subroutine iomd( na, isa, iza, xa, va, cell, vcell, varcel, istep,
+     .                 istep0, istepf, temp, eks, getot, volume, Psol)
 
 c *******************************************************************
 c Saves positions, cell, and energies in a MD run (accumulative)
 c J.Kohanoff August 1998, slightly modified by E. Artacho, Feb. 1999
+c Modified to open and close each time by E. Artacho, Aug 2002
 c *******************************************************************
 c Two possibilities: |*everything into one single unformatted file
 c                    | (for postprocessing programs, space saving)
@@ -25,6 +26,8 @@ c real*8  getot      : Total energy
 c integer istep      : Present time step
 c integer istep0     : First time step
 c integer istepf     : Last time step
+c real*8  volume     : cell volume in Ang**3
+c real*8  Psol       : total pressure (static plus kinetik) in kBar
 c *******************************************************************
 
       use fdf
@@ -35,7 +38,7 @@ c *******************************************************************
       integer           istep, istep0, istepf
       logical           varcel
       double precision  cell(3,3), xa(3,na), va(3,na), vcell(3,3),
-     .                  temp, eks, getot
+     .                  temp, eks, getot, volume, Psol
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
@@ -65,33 +68,35 @@ c Find name of file
         frstme = .false.
       endif
 
-c Open file (only the first MD step)
+c Open file 
+
+      call io_assign( iuene )
+      open(iuene, file=fnene, form='formatted', position='append', 
+     .  status='unknown')
+      if ( formt ) then
+        call io_assign( iupos )
+        open(iupos, file=fnpos, form='formatted', position='append',
+     .    status='unknown')
+        if ( varcel ) then 
+          call io_assign( iucel )
+          open(iucel,file=fncel,form='formatted',position='append',
+     .      status='unknown' )
+        endif
+      else
+        call io_assign( iupos )
+        open(iupos,file=fnpos,form='unformatted',status='unknown')
+        call windu(iupos)
+      endif
 
       if(istep . eq . istep0) then
-        call io_assign( iuene )
-        open(iuene, file=fnene, form='formatted', position='append', 
-     .    status='unknown')
-        write(iuene,"(4a,/)") 'Step','   Temperature',
-     .                      '     KS energy','  Total energy'
-        if ( formt ) then
-          call io_assign( iupos )
-          open(iupos, file=fnpos, form='formatted', position='append',
-     .      status='unknown')
-          if ( varcel ) then 
-            call io_assign( iucel )
-            open(iucel,file=fncel,form='formatted',position='append',
-     .        status='unknown' )
-          endif
-        else
-          call io_assign( iupos )
-          open(iupos,file=fnpos,form='unformatted',status='unknown')
-          call windu(iupos)
-        endif
+        write(iuene,"(6a)") 'Step','        T (K)','     E_KS (eV)',
+     .     '    E_tot (eV)','     Vol (A^3)','      P (kBar)' 
       endif
 
 c Write data on files
 
-      write(iuene,'(i4,5(2x,f12.6))') istep, temp, eks, getot
+      write(iuene,'(i4,3x,f10.2,2(2x,f12.4),2(2x,f12.3))') 
+     .            istep, temp, eks, getot, volume, Psol
       if ( formt ) then
         write(iupos,*) istep
         do ia = 1,na
@@ -108,13 +113,11 @@ c Write data on files
         if ( varcel ) write(iupos) cell, vcell
       endif
 
-c Close file (only at the end of the MD run)
+c Close file
 
-      if(istep. eq. istepf) then
-        call io_close( iuene )
-        call io_close( iupos )
-        if ( formt .and. varcel ) call io_close( iucel )
-      endif
+      call io_close( iuene )
+      call io_close( iupos )
+      if ( formt .and. varcel ) call io_close( iucel )
 
       return
       end

@@ -15,7 +15,7 @@ c     Logical units min_lun to min_max are managed by this module.
       use sys
 
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none

@@ -16,6 +16,7 @@ FC=f90 -64
 FFLAGS=  -O3 
 #FFLAGS= -O scalar2,pipeline2,aggress -eA
 FFLAGS_DEBUG= -g -O0
+RANLIB=echo
 #
 NETCDF_LIBS=
 NETCDF_INTERFACE=

@@ -17,7 +17,7 @@ C
       use precision
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -76,7 +76,7 @@ C
 c
 c          Read from standard input
 c
-           write(6,'(a)') 'Reading from standard input...'
+           write(6,'(/a)') 'reinit: Reading from standard input'
            lun = 5
            call io_assign(lun_tmp)
            open(lun_tmp,file='INPUT_TMP',
@@ -84,8 +84,8 @@ c
            rewind(lun_tmp)
         endif
 
-        write(6,'(/,a,18(1h*),a,28(1h*))')
-     .    '*: ', ' Dump of input data file '
+        write(6,'(a,23(1h*),a,28(1h*))')
+     .    '***', ' Dump of input data file '
 c
  10     continue
         read(lun,err=20,end=20,fmt='(a)') line
@@ -97,8 +97,8 @@ c
         goto 10
  20     continue
 c
-        write(6,'(a,18(1h*),a,29(1h*))')
-     .    '*: ', ' End of input data file '
+        write(6,'(a,23(1h*),a,29(1h*))')
+     .    '***', ' End of input data file '
 c
 c       Choose proper file for fdf processing
 c
@@ -113,32 +113,22 @@ c
 C Set up fdf ...
         fileout = 'out.fdf'
         call fdf_init(filein,fileout)
-C ...
-
-        write(6,'(/,a,18(1h*),a,30(1h*))')
-     .    'redata: ', ' Simulation parameters '
-        write(6,'(a)')  'redata:'
-        write(6,'(a)')  'redata: The following are some of the '//
-     .                           'parameters of the simulation.'
-        write(6,'(a)')  'redata: A complete list of the parameters '//
-     .                           'used, including defect values,'
-        write(6,'(a,a)')'redata: can be found in file ',fileout
-        write(6,'(a)')  'redata:'
 
 C Defile Name of the system ...
         sname_default = ' '
         sname = fdf_string('SystemName',sname_default)
-        write(6,'(a,71(1h-))') 'redata: '
+        write(6,'(/a,71(1h-))') 'reinit: '
         write(6,'(a,a)') 
-     .   'redata: System Name: ',sname
-        write(6,'(a,71(1h-))') 'redata: '
+     .   'reinit: System Name: ',sname
+        write(6,'(a,71(1h-))') 'reinit: '
 C ...
 
 C Defile System Label (short name to label files) ...
         slabel_default  = 'siesta'
         slabel = fdf_string('SystemLabel',slabel_default)
-        write(6,'(a,4x,a)') 
-     .   'redata: System Label                     = ',slabel
+        write(6,'(a,a)') 
+     .   'reinit: System Label: ',slabel
+        write(6,'(a,71(1h-))') 'reinit: '
 C ...
       endif
 

@@ -5,6 +5,7 @@ FC_ASIS=$(FC)
 #
 FFLAGS=  -O
 FFLAGS_DEBUG= -g
+RANLIB=echo "... do we need to ranlib this? :"
 LDFLAGS=
 COMP_LIBS=linalg.a
 #

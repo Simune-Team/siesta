@@ -80,7 +80,7 @@ C
       use fdf
       use parsing
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit          none
@@ -226,7 +226,7 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
       call dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
      .            nuotot, nua,
      .            na, isa, xa, indxua, cell, mscell, g2max, ntm,
-     .            ifa, istr, 1, ' ', ' ', ' ', ' ',
+     .            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
      .            maxnd, numh, listhptr, listh, Dscf, Datm,
      .            maxnh, numh, listhptr, listh, Hmat,  
      .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
@@ -303,7 +303,7 @@ c loop sampling on displacements making averages ----------------------------
           call dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
      .                nuotot, nua,
      .                na, isa, xanew, indxua, cell, mscell, g2max, ntm,
-     .                ifa, istr, 0, ' ', ' ', ' ', ' ',
+     .                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
      .                maxnd, numh, listhptr, listh, Dscf, Datm,
      .                maxnh, numh, listhptr, listh, Hmat, 
      .                Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,

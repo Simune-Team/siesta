@@ -46,7 +46,7 @@ C  Modules
       use parallel
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit          none

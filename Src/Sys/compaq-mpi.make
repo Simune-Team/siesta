@@ -21,7 +21,7 @@ LIBS = -L/usr/local/lib/scalapack -lscalapack -lpblas -ltools -lblacsF77 \
         -lblacs -ldxml -lfmpi -lmpi -lelan
 
 SYS=bsd
-RANLIB=
+RANLIB=echo
 DEFS= $(DEFS_CDF) $(DEFS_MPI) 
 
 # Actual compilation recipes for siesta code.

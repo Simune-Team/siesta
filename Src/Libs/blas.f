@@ -88,11 +88,14 @@ c
    50 continue
       return
       end
+
       double precision function dcabs1(z)
-      double complex z,zz
+      double complex z
       double precision t(2)
-      equivalence (zz,t(1))
-      zz = z
+!AG      equivalence (zz,t(1))
+      t(1) = dble(z)
+      t(2) = dimag(z)
+!------
       dcabs1 = dabs(t(1)) + dabs(t(2))
       return
       end

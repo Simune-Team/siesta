@@ -4,7 +4,7 @@
 
 C **********************************************************************
 C Read the data files to plot charge density at the points of a plane 
-C in real space.
+C or at a 3D grid in real space.
 C The information is written by the subroutine plcharge in SIESTA,
 C when WriteDenchar option is set up to .true. in the fdf input data 
 C file.
@@ -12,6 +12,7 @@ C
 C Coded by J. Junquera 11/98
 C Modified by DSP, July 1999
 C Modified by J. Junquera, 7/01
+C Modified by P. Ordejon to include 3D capabilities, June 2003
 C **********************************************************************
 
       USE FDF
@@ -38,13 +39,13 @@ C                          or through a KB projector, with any orbital
 C INTEGER NSPIN          : Number of different spin polarizations
 C                          Nspin = 1 => Non polarized. Nspin = 2 => Polarized
 C **** OUTPUT **********************************************************
-C INTEGER LASTO(0:MAXA)  : Last orbital of each atom in array iphorb
 C INTEGER ISA(MAXA)      : Species index of each atom in the supercell
 C INTEGER IPHORB(MAXO)   : Orbital index (within atom) of each orbital
 C INTEGER INDXUO(MAXO)   : Equivalent orbital in unit cell
-C INTEGER NSC(3)         : Num. of unit cells in each supercell direction
+C INTEGER LASTO(0:MAXA)  : Last orbital of each atom in array iphorb
 C REAL*8  CELL(3,3)      : Supercell vectors CELL(IXYZ,IVECT)
 C                          (in bohrs)
+C INTEGER NSC(3)         : Num. of unit cells in each supercell direction
 C REAL*8  XA(3,MAXA)     : Atomic positions in cartesian coordinates
 C                          (in bohrs)
 C REAL*8  RMAXO          : Maximum range of basis orbitals

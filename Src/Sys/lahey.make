@@ -2,6 +2,7 @@ SIESTA_ARCH=lahey
 #
 FC=lf95
 FC_ASIS=$(FC)
+RANLIB=echo
 #
 FFLAGS= -O --warn --quiet --tpp --ntrace
 FFLAGS_DEBUG= -g -O0  --chk --trace

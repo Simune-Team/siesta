@@ -29,7 +29,6 @@ AtomicDispl          0.04  Bohr
 BandLinesScale       pi/a
 %block BandLines
  1  0.000  0.000  0.000  \Gamma
- 1  0.000  0.000  0.000  \Gamma
 %endblock BandLines
 
 Eigenvectors         True

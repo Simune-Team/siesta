@@ -5,7 +5,15 @@ vpsa2bin:    Converts formatted pseudopotential files to unformatted.
 vpsb2asc:    Converts unformatted pseudopotential files to formatted.
 Plrho/plrho: Plots in 3D the electron density and other functions 
              calculated by siesta (by Jose M. Soler)
-Denchar:     2D contour plots of charge and spin density (by J. Junquera)
-Coutour:     2D contour plots of charge and spin density (by E. Artacho)
+Denchar:     Produces 2D grid for maps, contour plots etc. of charge 
+             and spin density, and of wave-functions. 
+             Based on the density matrix and basis orbitals (by J. Junquera)
+Contour:     grid2d: As Denchar but for any function defined in the 3D grid.
+             grid1d: Extracts a 1D line of data out of the 3D grid.
+             Based on the 3D grid (by E. Artacho)
 Vibra:       Package to compute phonon frequencies and modes (by P. Ordejon)
 PyAtom:      Some (experimental) Python scripts
+readwf:      Converts wavefnct coeffs file to readable form (by P. Ordejon)
+plstm:       Simple program for STM simulations (by P. Ordejon)
+grid2cube:   Converts Siesta grid files to Gaussian Cube (by P. Ordejon)
+Macroave:    Macroscopic averaging for interfaces and surfaces (by J. Junquera)

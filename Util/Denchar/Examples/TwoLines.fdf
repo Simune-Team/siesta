@@ -1,41 +1,54 @@
+
 SystemLabel          Si64         # Short name for naming files
-2D.CoorUnits         bohr         # Format for coordinate of the points
-                                  # Bohr
-                                  # Ang
 
-2D.DensityUnits     Ele/bohr**3   # Units of Charge Density
-                                  # Ele/bohr**3
-                                  # Ele/Ang**3
-                                  # Ele/UnitCell
+NumberOfSpecies         1
+
+%block ChemicalSpeciesLabel
+ 1 14 Si
+%endblock ChemicalSpeciesLabel
+
+Denchar.TypeOfRun       3D
+
+Denchar.PlotCharge             T
+Denchar.PlotWaveFunctions      T
 
 
-2D.MinX            -5.0  bohr     # Minimum coordinate of the window in X-dir
-2D.MaxX             5.0  bohr     # Maximum coordinate of the window in X-dir
+Denchar.CoorUnits       bohr         # Format for coordinate of the points
+                                     # Bohr
+                                     # Ang
 
-2D.MinY            -5.0  bohr     # Minimum coordinate of the window in Y-dir
-2D.MaxY             5.0  bohr     # Maximum coordinate of the window in Y-dir
+Denchar.DensityUnits   Ele/bohr**3   # Units of Charge Density
+                                     # Ele/bohr**3
+                                     # Ele/Ang**3
+                                     # Ele/UnitCell
 
-2D.NumberPointsX       70         # Number of points in X-axis
-2D.NumberPointsY       70         # Number of points in Y-axis
 
-2D.PlaneGeneration   TwoLines     # Option to generate the plane
-                                  # NormalVector
-                                  # TwoLines
-                                  # ThreePoints
-                                  # ThreeAtomicIndices
+Denchar.MinX        -5.0  bohr     # Minimum coordinate of the window in X-dir
+Denchar.MaxX         5.0  bohr     # Maximum coordinate of the window in X-dir
 
-%block 2D.Comp2Vectors            # Components of Two Vectors in the plane
+Denchar.MinY        -5.0  bohr     # Minimum coordinate of the window in Y-dir
+Denchar.MaxY         5.0  bohr     # Maximum coordinate of the window in Y-dir
+
+Denchar.MinZ        -5.0  bohr     # Minimum coordinate of the window in Z-dir
+Denchar.MaxZ         5.0  bohr     # Maximum coordinate of the window in Z-dir
+
+Denchar.NumberPointsX       70         # Number of points in X-axis
+Denchar.NumberPointsY       70         # Number of points in Y-axis
+Denchar.NumberPointsZ       70         # Number of points in Z-axis
+
+Denchar.PlaneGeneration   TwoLines     # Option to generate the plane
+                                       # NormalVector
+                                       # TwoLines
+                                       # ThreePoints
+                                       # ThreeAtomicIndices
+
+%block Denchar.Comp2Vectors         # Components of Two Vectors in the plane
 2.56530 2.56530 2.56530                    
 0.00000 5.13061 5.13061 
-%endblock 2D.Comp2Vectors
+%endblock Denchar.Comp2Vectors
 
-%block 2D.PlaneOrigin             # Coordinates of the origin of the plane 
+%block Denchar.PlaneOrigin          # Coordinates of the origin of the plane 
 0.000   0.000   0.000
-%endblock 2D.PlaneOrigin                 
+%endblock Denchar.PlaneOrigin                 
 
-%block 2D.AtomsInPlane
- 1
- 2
- 3
-%endblock 2D.AtomsInPlane
 

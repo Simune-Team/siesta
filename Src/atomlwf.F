@@ -70,7 +70,7 @@ C
       use precision
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none

@@ -5,6 +5,7 @@ include ../arch.make
 #
 module_built: netcdf.o
 	@ar q libnetcdf_f90.a netcdf.o
+	-$(RANLIB) libnetcdf_f90.a
 	@mv libnetcdf_f90.a ..
 	@mv *.mod ..
 	@touch module_built

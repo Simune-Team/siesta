@@ -1010,6 +1010,88 @@ C Loop over sub-points
 
       end subroutine NeutralAtomOnMesh
 
+      subroutine LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
+C
+C Finds the diffuse ionic charge, whose electrostatic potential is equal
+C to Vlocal on the mesh
+C
+C ----------------------------------------------------------------------
+C Input :
+C ----------------------------------------------------------------------
+C integer na            : Number of atoms in supercell
+C integer isa(na)       : Species index of all atoms in supercell
+C integer ntpl          : Number of mesh Total Points in unit cell
+C                       : (including subpoints) locally
+C integer indxua        : Index of equivalent atom in unit cell
+C ----------------------------------------------------------------------
+C Output : 
+C ----------------------------------------------------------------------
+C real    Chlocal(ntpl)     : Sum of diffuse ionic charge densities
+C ----------------------------------------------------------------------
+ 
+      use atmfuncs, only: rcut, psch
+      use atm_types
+      use radial
+      use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+ 
+      implicit none
+ 
+C
+C Passed arguments
+C
+      integer, intent(in)  :: na, isa(na), ntpl
+      integer, intent(in)  :: indxua(*)
+      real,    intent(out) :: Chlocal(ntpl)
+ 
+C
+C Internal variables
+C
+      integer
+     .  i, ia, iop, ip, ip0, is, isp, iua
+ 
+      real*8
+     .  dx(3), grpsch(3), r, ra, pschloc
+
+      type(rad_func), pointer            :: func   
+ 
+C
+C Functions
+C
+      real*8
+     .  dot
+ 
+C Initialise array to zero 
+      Chlocal(1:ntpl) = 0.0d0
+ 
+      do ia = 1,na
+        iua = indxua(ia)
+        is = isa(ia)
+        func => species(is)%chlocal
+        ra = func%cutoff
+ 
+C Loop over mesh points inside rmax
+        do iop = 1,mop
+          ip0 = indexp( ipa(ia) + idop(iop) )
+          if (ip0 .gt. 0) then
+ 
+C Loop over sub-points
+            do isp = 1,nsp
+              dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
+              r = sqrt( dot( dx, dx, 3 ) )
+              if (r .lt. ra) then
+                ip = isp + nsp * (ip0 - 1)
+                call psch( is, dx, pschloc, grpsch )
+                Chlocal(ip) = Chlocal(ip) + pschloc
+              endif
+            enddo
+ 
+          endif
+        enddo
+ 
+      enddo
+ 
+      end subroutine LocalChargeOnMesh
+
       subroutine PhiOnMesh( nmpl, ntopl, norb, iaorb, iphorb, isa,
      .                      Node)
 C
@@ -1040,7 +1122,7 @@ C
       use fdf
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none

@@ -7,7 +7,7 @@
 #  cvs export { -r <appropriate tag>, -d <date> } [ -d directory ] siesta
 #
 
-dir=siesta-1.1s
+dir=siesta-1.3s
 
 if [ -d $dir ] ; then
       echo "Directory exists"
@@ -15,9 +15,9 @@ if [ -d $dir ] ; then
 fi
 
 mkdir $dir
-echo "Copying Pseudo Examples Docs Util..."
-cp -rp Pseudo Examples Docs Util $dir
-cp -rp README send-bug $dir
+echo "Copying Pseudo Examples Docs Tutorials Util..."
+cp -rp Pseudo Examples Tutorials Docs Util $dir
+cp -rp README  $dir
 rm -rf $dir/Docs/Tech
 
 mkdir $dir/Src
@@ -31,7 +31,7 @@ for i in *.F *.F90; do
   python ../dempi.py $i > ../$dir/Src/$i
 done
 echo "Copying serial files..."
-for i in *.f *.f90 ; do
+for i in *.f ; do
   cp -p $i ../$dir/Src
 done
 rm -rf $dir/Src/Include

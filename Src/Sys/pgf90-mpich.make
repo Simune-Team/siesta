@@ -5,6 +5,7 @@ FC_ASIS=$(FC)
 #
 FFLAGS= -fast
 FFLAGS_DEBUG= -g -O0
+RANLIB=echo
 #
 NETCDF_LIBS=/usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
 NETCDF_INTERFACE=libnetcdf_f90.a

@@ -24,7 +24,7 @@ C
       use precision
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -127,14 +127,19 @@ C
           if (ntrigs.gt.maxmaxtrigs) then
             lredimension = .true.
             maxmaxtrigs = ntrigs
+          else
+            OldMesh(i) = Mesh(i)
           endif
-          OldMesh(i) = Mesh(i)
         endif
       enddo
       if (lredimension) then
+C
+C  Resize FFT array for trig factors and set OldMesh to 0 to force recalculation
+C
         maxtrigs = maxmaxtrigs
         deallocate(trigs)
         allocate(trigs(maxtrigs,3))
+        OldMesh(1:3) = 0
         goto 10
       endif
 
@@ -257,7 +262,7 @@ C
 C  Julian Gale, July 1999
 C
       use precision
-      use mpi
+      use mpi_siesta
       use parallel
 
       implicit none
@@ -531,7 +536,7 @@ C
 C  Julian Gale, July 1999
 C
       use precision
-      use mpi
+      use mpi_siesta
       use parallel
 
       implicit none

@@ -215,20 +215,20 @@ c   Second derivatives with respect to the density
 
 
 c   Second derivatives with respect to the density gradient
-       do is=1,2
-        if (is.eq.1)then
-          ois=2
-        else
-          ois=1
-        endif
-        do ix=1,3
-         dg11dd(ix,is)=2*gd(ix,is)
-         dg22dd(ix,is)=2*gd(ix,is)
-         dg12dd(ix,is)=gd(ix,ois)
-         dLYPgd(ix,is)=dLYP11*dg11dd(ix,is)+dLYP12*dg12dd(ix,is)+
-     .   dLYP22*dg22dd(ix,is)
+
+        do is=1,2
+          do ix=1,3
+           dg11dd(ix,is)=2*gd(ix,is)
+           dg22dd(ix,is)=2*gd(ix,is)
+          enddo
         enddo
-       enddo
+        do ix=1,3
+          dLYPgd(ix,1)=dLYP11*dg11dd(ix,1)+dLYP12*gd(ix,2)
+          dLYPgd(ix,2)=dLYP22*dg22dd(ix,2)+dLYP12*gd(ix,1)
+        enddo
+
+
+
 
 c    Set output arguments
        EX=becke

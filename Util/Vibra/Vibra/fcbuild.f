@@ -247,7 +247,7 @@ c  Write Number of atoms in Supercell ...
 c ...
 
 c  Write Lattice Constant...
-      write(iunit,'(a,f10.5,a)') 'LatticeConstant ',alat,'  Bohr'
+      write(iunit,'(a,f15.10,a)') 'LatticeConstant ',alat,'  Bohr'
       write(iunit,*) 
 c ...
 
@@ -281,7 +281,7 @@ c  Write MD options: Force Constant Calculation ...
       write(iunit,'(2a)')    'MD.TypeOfRun       ','    FC'
       write(iunit,'(a,i5)') 'MD.FCfirst          ',i1
       write(iunit,'(a,i5)') 'MD.FClast           ',i2
-      write(iunit,'(a,f10.5,a)') 'MD.FCdispl          ',dx,'  Bohr'
+      write(iunit,'(a,f15.10,a)') 'MD.FCdispl          ',dx,'  Bohr'
 c ...
       
       write(6,'(/,3(/,a,/),/)') 
@@ -289,8 +289,8 @@ c ...
      . '    Output (in FDF format) has been written in FC.fdf',
      . '************************************************************'
 
-10    format(3(f8.4,2x))
-11    format(3(f8.4,2x),i5)
+10    format(3(f15.10,2x))
+11    format(3(f15.10,2x),i5)
 
       stop
 

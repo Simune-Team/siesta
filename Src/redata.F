@@ -121,7 +121,7 @@ C
       use fdf
       use sys
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
       use diagmemory
       use phonon

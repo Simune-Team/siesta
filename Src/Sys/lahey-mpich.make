@@ -5,6 +5,7 @@ FC_ASIS=$(FC)
 FFLAGS= -O  --ntrace --tpp
 LDFLAGS=--staticlink
 FFLAGS_DEBUG= -g -O0 --chk
+RANLIB=echo
 #
 NETCDF_LIBS=-L/usr/local/netcdf-3.5/lib/lahey -lnetcdf
 NETCDF_INTERFACE=libnetcdf_f90.a

@@ -8,7 +8,7 @@
       use radial
 
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none

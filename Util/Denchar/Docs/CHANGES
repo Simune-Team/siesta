@@ -1,6 +1,109 @@
 ========================================================================
                   DENCHAR CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.2.0
+Date: 2003/07/03  18:30 
+Title: Capability for 3D and wavefunction plots
+Author: Pablo Ordejon  <ordejon@icmab.es>
+
+Description:
+
+  Denchar has extended its capabilities to:
+ 1) Produce 3D plots (in the form of Gaussian Cube files)
+ 2) Plot wavefunctions read from Siesta
+
+Files: 
+
+   Src/atompla.f
+   Src/chemical.f
+   Src/denchar.F
+   Src/iodm.F
+   Src/itochar.f    <--- new file
+   Src/Makefile 
+   Src/planed.f
+   Src/readpla.f
+   Src/readwaves.f  <--- new file
+   Src/redata.f
+   Src/rhoofr.f
+   Src/wavofr.f     <--- new file
+   Src/wrout.f
+   Docs/denchar.tex
+   Docs/CHANGES
+   Examples/AtomicIndices.fdf
+   Examples/NormalVector.fdf
+   Examples/ThreePoints.fdf
+   Examples/TwoLines.fdf
+   Tests/Si/Si.fdf   <--- removed    
+   Tests/Si/Si.psf   <--- removed    
+   Tests/Si/Si.ion   <--- removed    
+   Tests/Si/Si.CON.DEL   <--- removed    
+   Tests/Si/Si.CON.SCF   <--- removed    
+   Tests/Si/2D     <--- new directory
+   Tests/Si/2D/contour.gplot     <--- new file
+   Tests/Si/2D/Si.CON.DEL        <--- new file
+   Tests/Si/2D/Si.CON.SCF        <--- new file
+   Tests/Si/2D/Si.CON.WF1        <--- new file
+   Tests/Si/2D/Si.CON.WF2        <--- new file
+   Tests/Si/2D/Si.CON.WF3        <--- new file
+   Tests/Si/2D/Si.CON.WF4        <--- new file
+   Tests/Si/2D/Si.CON.WF5        <--- new file
+   Tests/Si/2D/Si.CON.WF6        <--- new file
+   Tests/Si/2D/Si.CON.WF7        <--- new file
+   Tests/Si/2D/Si.CON.WF8        <--- new file
+   Tests/Si/2D/Si.fdf            <--- new file
+   Tests/Si/2D/Si.psf            <--- new file
+   Tests/Si/3D     <--- new directory
+   Tests/Si/3D/Si.DRHO.cube      <--- new file
+   Tests/Si/3D/Si.RHO.cube       <--- new file
+   Tests/Si/3D/Si.WF1.cube       <--- new file
+   Tests/Si/3D/Si.WF2.cube       <--- new file
+   Tests/Si/3D/Si.WF3.cube       <--- new file
+   Tests/Si/3D/Si.WF4.cube       <--- new file
+   Tests/Si/3D/Si.WF5.cube       <--- new file
+   Tests/Si/3D/Si.WF6.cube       <--- new file
+   Tests/Si/3D/Si.WF7.cube       <--- new file
+   Tests/Si/3D/Si.WF8.cube       <--- new file
+   Tests/Si/3D/Si.fdf            <--- new file
+   Tests/Si/3D/Si.psf            <--- new file
+   Tests/SiH3/SiH3.fdf   <--- removed    
+   Tests/SiH3/H.psf   <--- removed    
+   Tests/SiH3/Si.psf   <--- removed    
+   Tests/SiH3/SiH3.CON.DEL   <--- removed    
+   Tests/SiH3/SiH3.CON.UP   <--- removed    
+   Tests/SiH3/SiH3.CON.DOWN   <--- removed    
+   Tests/SiH3/SiH3.CON.MAG   <--- removed    
+   Tests/SiH3/2D    <--- new directory
+   Tests/SiH3/SiH3.CON.DEL       <--- new file
+   Tests/SiH3/SiH3.CON.DOWN      <--- new file
+   Tests/SiH3/SiH3.CON.MAG       <--- new file
+   Tests/SiH3/SiH3.CON.UP        <--- new file
+   Tests/SiH3/SiH3.CON.WF1.UP    <--- new file
+   Tests/SiH3/SiH3.CON.WF1.DOWN  <--- new file
+   Tests/SiH3/SiH3.CON.WF2.UP    <--- new file
+   Tests/SiH3/SiH3.CON.WF2.DOWN  <--- new file
+   Tests/SiH3/SiH3.CON.WF3.UP    <--- new file
+   Tests/SiH3/SiH3.CON.WF3.DOWN  <--- new file
+   Tests/SiH3/SiH3.CON.WF4.UP    <--- new file
+   Tests/SiH3/SiH3.CON.WF4.DOWN  <--- new file
+   Tests/SiH3/SiH3.CON.WF5.UP    <--- new file
+   Tests/SiH3/SiH3.CON.WF5.DOWN  <--- new file
+   Tests/SiH3/SiH3.CON.WF6.UP    <--- new file
+   Tests/SiH3/SiH3.CON.WF6.DOWN  <--- new file
+   Tests/SiH3/H.psf              <--- new file
+   Tests/SiH3/Si.psf             <--- new file
+   Tests/SiH3/Si.fdf             <--- new file
+   Tests/SiH3/3D    <--- new directory
+   Tests/SiH3/3D/SiH3.DRHO.cube      <--- new file
+   Tests/SiH3/3D/SiH3.RHO.DOWN.cube  <--- new file
+   Tests/SiH3/3D/SiH3.RHO.UP.cube    <--- new file
+   Tests/SiH3/3D/SiH3.WF5.DOWN.cube  <--- new file
+   Tests/SiH3/3D/SiH3.WF5.UP.cube    <--- new file
+   Tests/SiH3/3D/H.psf               <--- new file
+   Tests/SiH3/3D/Si.psf              <--- new file
+   Tests/SiH3/3D/SiH3.fdf            <--- new file
+
+
+===============================================================================
 Version: 1.1.0
 Date: 2002/02/04  16:00 GMT
 Title: F90 Denchar Implementation, Compatible with Siesta-1.2.5 
@@ -75,5 +178,7 @@ Files: We import the following files
    Test/SiH3/SiH3.CON.MAG
 
 ===============================================================================
+   
+       
    
        

@@ -3,7 +3,9 @@ SIESTA_ARCH=osfdxml
 FC=f90
 FFLAGS= -fast -tune host
 FFLAGS_DEBUG= -g3 -fast -tune host
+RANLIB=echo
 LIBS= -ldxml
+COMP_LIBS=dc_lapack.a
 SYS=bsd
 DEFS=
 MPILIB=
@@ -20,3 +22,9 @@ CPP=/bin/cpp -P
 .f90.o:
 	$(FC) -c $(FFLAGS)   $<
 #
+
+
+
+
+
+

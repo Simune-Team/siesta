@@ -26,7 +26,7 @@ LIBS= -lsci -lmpi
 #LIBS= -lsci -lmpi -lapp
 #
 SYS=t3e
-RANLIB=
+RANLIB=echo
 DEFS= $(DEFS_CDF) $(DEFS_MPI) -DCRAY
 #
 # Actual compilation recipes for siesta code.

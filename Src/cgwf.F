@@ -52,7 +52,7 @@ C
       use precision
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -396,7 +396,7 @@ C Set up linear equations system to calculate polinomial coeffs.............
         e(i+2) = ener(i)
       enddo
 
-      call inver(b,bi,5)
+      call inver(b,bi,5,5)
 
       do jj = 1,5
         e0 = e0 + bi(2,jj) * e(jj)

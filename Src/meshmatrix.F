@@ -64,7 +64,7 @@ C
       use parallel
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -217,7 +217,7 @@ C  Modules
       use precision
       use meshdscf, only: nrowsDscfL, numdl, listdlptr, NeedDscfL
 #ifdef MPI
-      use mpi
+      use mpi_siesta
       use parallel
 #endif
 
@@ -357,7 +357,7 @@ C  Modules
       use precision
       use meshdscf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
       use parallel
 #endif
 

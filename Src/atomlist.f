@@ -95,17 +95,17 @@ C
       nokb_s = nokb_u
 
       nullify(iaorb, indxuo, iphorb, Datm, rco)
-      call realloc(iaorb, 1, no_u, routine='initatomlists')
-      call realloc(indxuo, 1, no_u, routine='initatomlists')
-      call realloc(iphorb, 1, no_u, routine='initatomlists')
-      call realloc(Datm, 1, no_u, routine='initatomlists')
-      call realloc(rco, 1, no_u, routine='initatomlists')
+      call re_alloc(iaorb, 1, no_u, routine='initatomlists')
+      call re_alloc(indxuo, 1, no_u, routine='initatomlists')
+      call re_alloc(iphorb, 1, no_u, routine='initatomlists')
+      call re_alloc(Datm, 1, no_u, routine='initatomlists')
+      call re_alloc(rco, 1, no_u, routine='initatomlists')
 !
 !
       nullify(iaKB, iphKB, rckb)
-      call realloc(iaKB, 1, nokb_u, routine='initatomlists')
-      call realloc(iphKB, 1, nokb_u, routine='initatomlists')
-      call realloc(rckb, 1, nokb_u, routine='initatomlists')
+      call re_alloc(iaKB, 1, nokb_u, routine='initatomlists')
+      call re_alloc(iphKB, 1, nokb_u, routine='initatomlists')
+      call re_alloc(rckb, 1, nokb_u, routine='initatomlists')
 
 c Initialize atomic lists
       nol = 0
@@ -158,7 +158,7 @@ c Initialize atomic lists
       enddo
       
       if (IOnode)
-     $   write(6,'(a,3(1x,i5))')
+     $   write(6,'(/a,3(1x,i5))')
      $   'initatomlists: Number of atoms, orbitals, and projectors: ',
      $     na_u, no_u, nokb_u
 
@@ -192,14 +192,14 @@ C Internal variables
 !     Reallocate arrays if needed
 !
       if (na.gt.na_s) then
-        call realloc(indxua, 1, na, routine='superc',copy=.true.)
-        call realloc(isa, 1, na, routine='superc',copy=.true.)
-        call realloc(iza, 1, na, routine='superc',copy=.true.)
-        call realloc(lastkb, 0, na, routine='superc',copy=.true.)
-        call realloc(lasto, 0, na, routine='superc',copy=.true.)
-        call realloc(qa, 1, na, routine='superc',copy=.true.)
-        call realloc(xa, 1,3, 1,na, routine='superc',copy=.true.)
-        call realloc(xalast, 1,3, 1,na, routine='superc',copy=.true.)
+        call re_alloc(indxua, 1, na, routine='superc',copy=.true.)
+        call re_alloc(isa, 1, na, routine='superc',copy=.true.)
+        call re_alloc(iza, 1, na, routine='superc',copy=.true.)
+        call re_alloc(lastkb, 0, na, routine='superc',copy=.true.)
+        call re_alloc(lasto, 0, na, routine='superc',copy=.true.)
+        call re_alloc(qa, 1, na, routine='superc',copy=.true.)
+        call re_alloc(xa, 1,3, 1,na, routine='superc',copy=.true.)
+        call re_alloc(xalast, 1,3, 1,na, routine='superc',copy=.true.)
       endif
 
       na_s  = na
@@ -220,11 +220,11 @@ C Find indxua and expand isa, iza, lasto and lastkb to supercell
 ! Reallocate orbital arrays
 
       if (no.gt.no_s) then
-        call realloc(iaorb, 1,no, routine='superc',copy=.true.)
-        call realloc(indxuo, 1,no, routine='superc',copy=.true.)
-        call realloc(iphorb, 1,no, routine='superc',copy=.true.)
-        call realloc(Datm, 1,no, routine='superc',copy=.true.)
-        call realloc(rco, 1,no, routine='superc',copy=.true.)
+        call re_alloc(iaorb, 1,no, routine='superc',copy=.true.)
+        call re_alloc(indxuo, 1,no, routine='superc',copy=.true.)
+        call re_alloc(iphorb, 1,no, routine='superc',copy=.true.)
+        call re_alloc(Datm, 1,no, routine='superc',copy=.true.)
+        call re_alloc(rco, 1,no, routine='superc',copy=.true.)
       endif
 
       no_s = no
@@ -245,9 +245,9 @@ C Find indxuo and expand iaorb, iphorb, and rco
 ! Reallocate projector arrays
 
       if (nokb .gt. nokb_s) then
-        call realloc(iaKB, 1,nokb, routine='superc',copy=.true.)
-        call realloc(iphKB, 1,nokb, routine='superc',copy=.true.)
-        call realloc(rckb, 1,nokb, routine='superc',copy=.true.)
+        call re_alloc(iaKB, 1,nokb, routine='superc',copy=.true.)
+        call re_alloc(iphKB, 1,nokb, routine='superc',copy=.true.)
+        call re_alloc(rckb, 1,nokb, routine='superc',copy=.true.)
       endif
 
       nokb_s = nokb

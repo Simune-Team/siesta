@@ -1,5 +1,611 @@
-========================================================================
+=======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
+=======================================================================
+Version: 1.2.45
+Date: 2003/07/17 22:00
+Title: Slight change in Makefile 
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+  The Makefile has been slightly changes to avoid problems with
+the sed processing from version.F to temp.F and temp0.F
+
+Files:
+  Makefile + customary (Licence files added).
+=======================================================================
+Version: 1.2.44
+Date: 2003/07/15 14:00
+Title: Parallel eggbox
+Author: Julian Gale <j.gale@imperial.ac.uk>
+
+Description: 
+
+The eggbox routine was tripping up parallel execution of the code
+and so this has been handled.
+
+Files:
+
+diagon.F  : Order of memory deallocation reversed to be stack friendly
+eggbox.F  : Calls to fdf are now handled in parallel and data is
+          : broadcast where necessary
+siesta.F  : First call to eggbox is now for all processors
+version.F & CHANGES
+=======================================================================
+Version: 1.2.43
+Date: 2003/07/14  1:30
+Title: Fixed fermid
+Author: Julian Gale <j.gale@imperial.ac.uk>
+
+Description:
+
+The routine fermid.F has been bug fixed. The variable NH was not
+broadcast when read in parallel and not explicitly saved between
+calls. Also the ocf string was set to two different defaults in
+STEPF vs ENPY, which has been standardised.
+
+Files:
+fermid.F    : Changes as listed above.
+version.F and CHANGES
+=======================================================================
+Version: 1.2.42
+Date: 2003/07/11 11:00
+Title: Berry phase continuity for polarization calculation
+Author: Daniel Sanchez-Portal
+
+Description:
+
+The Berry phase is obtained as a surface integral (in reciprocal
+space) of a so-called quantum phase.
+When evaluating the integrand we have an arbitrariness of 2pin
+in each point of the 2D mesh. This arbitrariness has
+to be eliminated by enforcing the continuity of the integrand.
+A few code lines have been added to subroutine ksv.F in order
+to ensure this continuity. 
+
+Files:
+ksv.F  : few lines of code added and new array phaseold(2)
+version.F and CHANGES
+=======================================================================
+Version: 1.2.41
+Date: 2003/07/09 11:30
+Title: Parallel PDOS, gamma point and K point weighting
+Author: Julian Gale <j.gale@imperial.ac.uk>
+
+Description:
+
+The PDOS option has been extended to allow for the gamma point, 
+K point weighting and parallel execution.
+
+Files:
+
+Makefile   : pdosg.F added
+pdos.f     : renamed to pdos.F
+pdos.F     : modified version of pdos.f to handle parallel execution
+pdosg.F    : routine for PDOS calculation at gamma point added
+pdosk.f    : renamed to pdosk.F
+pdosk.F    : modified version of pdosk.f to handle parallel execution
+siesta.F   : Parallel call to pdos now allowed and variables broadcasted
+siesta.tex : Comment on order-N in parallel added
+version.F and CHANGES
+=======================================================================
+Version: 1.2.40
+Date: 2003/07/02 19:30
+Title: renaming of module mpi to mpi_siesta
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+
+Renaming of module mpi to mpi_siesta to avoid name clashes
+
+Files:
+
+alloc.F90, *.F
+version.F and siesta.tex and CHANGES
+=======================================================================
+Version: 1.2.39
+Date: 2003/06/30 19:00
+Title: renaming of realloc and dealloc to re_alloc and de_alloc
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+
+Renaming of realloc and dealloc to re_alloc and de_alloc
+to avoid problems with some (not so standard but important)
+compilers.
+
+Files:
+
+alloc.F90, siesta.F, atomlist.f, on_subs.F,
+cdiag.F, rdiag.F, coor.f, dfscf.f, matel.f,
+version.F and siesta.tex and CHANGES 
+=======================================================================
+Version: 1.2.38
+Date: 2003/06/30 18:00
+Title: Small bug in siesta.F
+Author: Pablo Ordejon <ordejon@icmab,es>
+
+Description:
+
+A small bug in siesta.F that showed up in alpha machines has
+been corrected, about the handling of undefined wfk.
+
+Files:
+
+siesta.F
+Customary version.F siesta.tex CHANGES
+=======================================================================
+Version: 1.2.37
+Date: 2003/06/30 15:35
+Title: Update of Util: README and inclusion og grid1d + release.notes
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+
+Grid1d utility added (very simple extracting of 1D information from
+anthing in the 3D grid in the RHO format). It interpolates.
+Update in Util/README and in release.notes_1.3
+
+Files:
+
+Util/ grid1d.f grid1d-raw.in grid1d-noraw.in README
+Docs/ release.notes_1.3
+Customary version.F siesta.tex CHANGES
+=======================================================================
+Version: 1.2.36
+Date: 2003/06/30 13:15
+Title: Corrected parallel Mulliken for iopt = 3
+Author: Julian Gale <j.gale@imperial.ac.uk>
+
+Description:
+
+The use of Mulliken level 3 in parallel was causing the code to print
+out incorrect results and hang. This was due to referencing of the
+local number of basis functions where the global number should be used.
+This is now fixed so that the serial and parallel results should be
+congruent for this option.
+
+Files:
+
+mulliken.F  : nbasistot now passed in instead of nbasis (global vs
+            : local). nbasis (local) is computed locally and the
+            : iopt = 3 code has been corrected to ensure that the
+            : orbitals are printed in the global order
+siesta.F    : no_u passed to mulliken instead of no_l
+version.F, CHANGES : customary changes
+=======================================================================
+Version: 1.2.35
+Date: 2003/06/30 12:00
+Title: Write Wavefunctions capability, bug corrections and new utils
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description:
+
+1) The capability to write wavefunctions coefficients of selected
+   wavefunctions at selected k-points has been implemented.
+   Dumps the coefficients to a binary file (a utility program
+   to convert it to readable form is also provided in Util),
+   and also to the main output if desired.
+   Note that a new logical variable (getPSI) has been
+   included in the interface of diagg and diagk, so that they
+   calculated the wavefunctions that the user wishes to print.
+
+2) Several bugs (mainly in parallel mode runs) are corrected
+
+3) Three new utility programs are included
+
+Files:
+/Docs
+  siesta.tex : customary changes; explanation of utility to write wfs
+  siesta.ind : customary changes
+  CHANGES    : customary changes
+/Src
+  bands.F    : comply to new interface of diagg and diagk; 
+               bug (intr. in 1.2.31) corrected in call to diag routines
+  diagg.F    : capability to write wfs; new logical flag in interface
+  diagk.F    : capability to write wfs; new logical flag in interface
+  diagon.F   : capability to write wfs to file
+  fermid.F   : parallel mode bug fix
+  inver.f    : augmented for robustness in case LAPACK fails
+  Makefile   : miscellaneous changes
+  pulayx.F   : augmented for robustness in case residual is exacly null
+  siesta.F   : changes for capability to write wavefunctions
+  version.F  : customary changes
+  vmb.F      : parallel mode bug fix
+  writewave.F: new: module that handles the wfs writting
+/Util
+  README     : update list of utility programs
+  grid2cube.f: new: converts siesta grid files to Gaussian Cube format
+  pltstm.f   : new: a simple program to simulate STM images
+  readwf.f   : new: utility to read wfs file to user-friendly format
+=======================================================================
+Version: 1.2.34
+Date: 2003/06/30  9:00
+Title: Correction in order-N - C save
+Author: Julian D. Gale <j.gale@ic.ac.uk>
+
+Description:
+
+The contents of the C array is now preserved when reallocating after
+the call to cspa since this is not read again.
+
+Files:
+
+ordern.F   : Contents of C copied to rtmp2 and back again after realloc
+version.F, CHANGES    : customary changes
+=======================================================================
+Version: 1.2.33
+Date: 2003/06/26 16:20 UTC
+Title: Portability bug fixes and enhancements
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+A number of fixes related to portability problems:
+
+* Handling of array shapes in radfft. Related: explicit interface
+for ordern and hsparse routines.
+
+* Bug fix in new fermid.F routines.
+
+* Initialization bug fix in on_subs.F.
+
+* Support for systems without the LAPACK 'divide and conquer' routines
+in their system libraries. 
+
+* Warning for MPI data type codes.
+
+* Improved compilation in subdirectories.
+
+* Apparently cosmetic changes intended for the NAG compiler.
+
+
+Files:
+
+ordern.F, hsparse.f : Now wrapped in modules m_ordern and m_hsparse, 
+		      respectively. No file name change.
+interfaces.f        : Removed.
+siesta.F            : Now 'use's m_ordern and m_hsparse.
+                      Initialization of two logical variables.
+
+radfft.f            : Now wrapped in module m_radfft. 
+                      No file name change.
+matel.f, atom.f,
+basis_io.F          : Now 'use' m_radfft.
+
+atom.f              : Cosmetic changes, and simplification of ghost 
+                      signals.
+
+Makefile            : Support for new module dependencies.
+                      Better handling of compilation in subdirectories,
+                      in particular ranlib handling.
+
+fermid.F            : variable ocupfncft now saved.
+on_subs.F           : ncmax initialized before its use.
+poison.F            : (cosmetic?) modulo instead of mod
+inver.f             : (cosmetic?) reversed declaration order.
+
+(these changes committed at an earlier date:)
+Libs/  :
+lapack.f, dc_lapack.f : Split divide and conquer routines.
+makefile              : Better logic for support of 'dc'-less systems.
+
+MPI/   :
+Makefile              : Warning about kind numbers.
+
+Sys/   :
+.make files           : Explicit RANLIB macro.
+                        Alpha files might require dc_lapack split.
+README                : Explain dc_lapack issue.
+lahey-nolibs.make
+pgf90-nolibs.make     : New files.
+nag-darwin-nolibs-make: NAG MacOSX macros (some hfs issues)
+
+version.F, CHANGES    : customary changes
+=======================================================================
+Version: 1.2.32
+Date: 2003/06/23 16:00
+Title: Correction in order-N + PDOS in manual
+Author: Julian D. Gale <j.gale@ic.ac.uk>
+
+Description:
+
+Two small corrections have been made. The first fixes an out of bounds
+error that can occur when restarting an order-N calculation and the
+second is the removal of the limitations for PDOS from the text in the
+manual to reflect recent modifications.
+
+Files:
+ordern.F     : maxnc is now the larger of ncmax and maxnc after
+               reallocation to ensure that passed first dimension is
+               correct for listc/listcold
+siesta.tex   : Text concerning PDOS updated
+version.F, CHANGES, siesta.tex, siesta.ind: customary changes
+=======================================================================
+Version: 1.2.31
+Date: 2003/06/23 12:00
+Title: Methfessel-Paxton smearing function
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description:
+
+   The smearing function scheme of Methfessel and Paxton has been
+implemented. For metals, it allows for a much better convergence
+to the ground state properties even with large smearing temperatures.
+Improved convergence to self-consistency and k-points is also
+achieved.
+   A few changes have been made in the old Fermi-Dirac function, too.
+In particular, the old function stepf included a factor 2 that
+has been removed (to make the definition of the Fermi-Dirac
+and Methfessel-Paxton functions correspond to the usual ones),
+and added elsewhere. Therefore, the diagonalization
+routines have been updated accordingly.
+   Also, the calculation of the entropy has been removed from siesta.F,
+because in the Methfessel-Paxton scheme this term depends
+on the eigenvalues, which are not available in the main program.
+The calculation of the entropy is done now in fermid.F, and
+passed to siesta.F through the diagonalization routines.
+
+Files:
+siesta.F    : changes to remove entropy and calculation
+diag2g.F, diag2k.F, diagg.F, diagk.F, diagkp.F, diagon.F, diagsprl.F:
+              changed to pass Entropy to siesta.F, and redefined stepf
+fermid.F    : Methfessel-Paxton included; redefined stepf
+fermispin.F : redefined stepf
+version.F, CHANGES, siesta.tex, siesta.ind: customary changes
+=======================================================================
+Version: 1.2.30
+Date: 2003/06/23 11:45
+Title: Miscellaneous corrections
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description:
+
+   Several corrections have been made (thanks to those who reported the 
+problems):
+
+1) Maxwell-Boltzmann initial velocities were not obbeying the constraints 
+   imposed in fixed.F (problem reported by Masaya Ishida).  This has now 
+   been fixed, so that dynamics runs do obbey the constraints.  
+2) A correction in the dynamics routines has been made to account for the 
+   number of imposed constraints in the definition of the temperature. 
+   As a consequence, a new variable has been included in the argument list 
+   of constr.f to output the number of constraints imposed by the user. 
+3) The example of the constr.f provided to make the relative height of two 
+   atoms constant, only worked for the case of two atoms with the same mass. 
+   I have rewriten it for the general case of two different masses, and 
+   changed the example in the manual and the fixed.F routine accordingly.
+4) Some changes in the initiallization of the MD variables, to make the start 
+   of the run more in accord with the imposed initial velocities.
+5) The inver.f90 routine provided by William Mattson has been removed, 
+   because it caused some problems in handling nonorthogonal cells, in the 
+   variable cell dynamics (problem reported by Benoit Braida). I have written 
+   a new inver.f code that used LAPACK routines to invert a matrix. All the 
+   calls to the old inver2 and the old inver.f90 routines are now re-directed 
+   to the new inver. The appropriate LAPACK routines that were not included in 
+   Libs/lapack.f have been included.
+6) The fdf reading of the Divide-and-Conquer option is now only done in the 
+   first call to the diagonalization routines, to avoid huge out.fdf files
+   when a large number of k-points is used.
+7) A recent change in matel.f made by A. Garcia to avoid problems with the 
+   NAG compiled have been reverted, since it causes problems in other 
+   compilers. This still needs to be worked out!!
+8) A bug in mulliken.F that caused the overlap population matrix between atoms
+   not to be symmetric when k-points were used (pointed out by P. Alemany) has 
+   been corrected.
+9) A small bug (found by S. Reich) in vibrator.F has been corrected. Besides, 
+   fdbuild.F has been slightly changed to include more significant digits in 
+   the output. Finally, some input files and updated output files have been 
+   provided so that the user can reproduce the examples of Vibra.
+   
+
+Files:
+/Docs
+  siesta.tex : customary changes; explanation of new interface of constr.f 
+               and correction to example case
+  CHANGES    : changes as customary
+/Src
+  cdiag.F    : read fdf option D&C only fisrt time  	
+  cgwf.F     : call to new inver routine
+  constr.F   : interface with new output variable ntcon
+  dynamics.F : miscellaneous: temp. definition with constraints; 
+               new init. of some dynamics
+  fixed.F    : new interface with constr.f; define tot. nr. of constraints;
+               correct example case
+  inver.f    : new file - new inversion routine
+  inver.f90  : removed
+  matel.f    : recent change by A. Garcia reverted
+  mulliken.F : bug corrected: lines 219 and 226
+  pulayx.F   : call to new inversion routine; comment invert2 (not used now)
+  rdiag.F    : read fdf option D&C only fisrt time
+  siesta.F   : misc. changes in calls to dynamics and constraint routines
+  version.F  : customary changes
+  vmb.F      : changes to account for constraints in definig initial velocities
+/Src/Include
+  constr.f   : interface with new output variable ntcon
+/Src/Libs
+  lapack.f   : routines necessary to invert matrices included
+/Util/Vibra
+  README     : update email address
+/Util/Vibra/Docs
+  CHANGES    : new file; records changes in Vibra package
+  vibra.tex  : some changes in user guide
+/Util/Vibra/Examples
+  README     : new file; explanation to run examples
+  si2.bands  : updated output file
+  si2.FC     : updated output file
+  si2.fdf    : updated input file
+  si2-siesta : new file; input for Siesta, necessary to reproduce example
+  si2.vectors: updated output file
+  si54.bands : updated output file
+  si54.FC    : updated output file
+  si54-siesta: new file; input for Siesta, necessary to reproduce example
+  Si.inp     : new file; input for Siesta, necessary to reproduce example
+/Util/Vibra/Vibra
+  fcbuild.f  : increase number of digits in the output of atomic coords
+  vibrator.f : bug fix
+=======================================================================
+Version: 1.2.29
+Date: 2003/06/06 18:15
+Title: Two small bugs
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+  Some arrays were not allocated in the rare case that there was a
+single basis orbital in the whole system. Also, the dimension of the 
+input array in routine four1 was incorrect.
+
+Files:
+  siesta.F  : corrected use of dimension maxnh
+  recipes.f : dimension of array DATA increased from NN to 2*NN
+=======================================================================
+Version: 1.2.28
+Date: 2003/06/05 23:30
+Title: Eggbox correction (by Tom Archer) plus cosmetics
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+  A possibility for eggbox correction is included assuming atom additivity
+and species dependent components, by which various fourier components 
+for the eggbox of isolated atoms of each species are given to Siesta
+and Siesta substracts it from energy and forces.
+  A little output cosmetics has been introduced as well
+
+Files:
+  eggbox.F : new
+  siesta.F, Makefile: to call eggbox
+  coor.f, atom.f, reinit.F, basis_types.f, memory.f, 
+  atomlist.f, initatom.f, redata.f and siesta.F : changes only in writes
+  version.F, siesta.tex, siesta.ind and CHANGES as customary
+=======================================================================
+Version: 1.2.27
+Date: 2003/06/04 14:00
+Title: Print of the ionic and total charge densities. 
+Author: Javier Junquera <javier.junquera@ulg.ac.be>
+
+Description:
+The soft diffuse ionic charge, whose electrostatic potential is the
+local part of the pseudopotential, can be printed now at the points
+of the grid (file SystemLabel.IOCH), together with the total 
+(ionic+electronic) charge density (file SystemLabel.TOCH). 
+The new input variables that control the writting are, respectively,
+SaveIonicCharge, and SaveTotalCharge.
+
+When using the Harris functional, the Harris energy is printed at
+the end of each molecular dynamic step, instead of the Kohn-Sham energy.
+The SystemLabel.MDE file is also written using the harris' energy instead
+of the Kohn-Sham energy. 
+
+Files:
+   siesta.F  : New variables to define the files SystemLabel.IOCH, and
+               SystemLabel.TOCH. 
+             : Calls to dhscf have changed. The name of two extra files
+             : have been added to the argument list.
+             : Printing of the Harris energy. 
+             : Change in the definitions of getot, and in the call to 
+             : iomd when harris functional is used. 
+   grdsam.F  : Calls to dhscf have changed. The name of two extra files
+             : have been added to the argument list.
+   dhscf.F   : Two new variables with the names of the two files.
+             : Call the new subroutine LocalChargeOnMesh, and write 
+             : the ionic and total charge densities. 
+   meshsubs.F: New subroutine LocalChargeOnMesh.
+   siesta.tex, siesta.ind, CHANGES, version.F: Customary changes
+=======================================================================
+Version: 1.2.26
+Date: 2003/06/03 14:30
+Title: Fixed bug in parallel polarisation
+Author: Julian Gale <j.gale@imperial.ac.uk>
+
+Description:
+The calculation of polarisation was giving incorrect answers in 
+parallel due to corruption of the saved wavefunction in psiprev.
+Was due to trying to combine the calculation and saving aspects
+to minimise communication. Saving of wavefunction now performed
+as a separate operation.
+
+Files:
+   ksv.F     : savepsi is now called after detover where needed and
+             : the logical flag that was passed to this routine has
+             : been removed.
+   detover.F : The savepsi option has been removed along with the
+             : incoming logical argument.
+   version.F / CHANGES
+=======================================================================
+Version: 1.2.25
+Date: 2003/05/22 19:30
+Title: Fixed bug in BLYP forces (Marivi Fernandez-Serra) 
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+  The implementation of the derivatives for the forces in the BLYP
+functional had a bug, found and fixed by Marivi Fernandez-Serra.
+  (a few hours before, Alberto Garcia committed basis_type.f to 
+solve some compilation problems with some compilers).
+
+Files:
+  xc.f      in Src
+  blypxc.f  in Pseudo/atom
+  basis_type.f
+  siesta.tex, siesta.ind, CHANGES, version.F
+=======================================================================
+Version: 1.2.24
+Date: 2003/05/21 22:00
+Title: Various (single excitation, flush, print pressure, etc)
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+
+1. Single excitation: possibility of lowest excited state by 
+   swapping the populations of HOMO and LUMO (if no spin polarisation,
+   it is half swapping). Introduce SingleExcitation logical flag.
+   It is done for ispin=1 and ik=1.
+2. The SIG file (who used it?) is now only appearing is asked with the
+   SignatureRecords flag.
+3. Option of Mulliken at every SCF (for dealing with SCF problems)
+   by turning true the MullikenInSCF flag
+4. Flushes the ANI, MD, and MDE files at every time step by closing
+   the files. It reopens (append) at every instance. It solves the
+   problem originated by some compilers that keep data in buffers. 
+   These data are lost if the program dies. It is still to be solved for
+   the standard output. The same (not elegant but robust) solution 
+   can be used if instead of writing to standard output, siesta would
+   write to a file.
+5. In MD runs the stress tensor and (solid) pressure are printed at
+   every step. Both the static (ellectronic contribution) and total
+   (adding kinetic term of nuclei). At the end of the run it is printed
+   as always, only the static. The MDE file now writes total solid pressure
+   and volume together with E_tot, E_KS, T, and step.
+
+Files:
+   fermid.F   : Single excitation
+   siesta.F   : Signature records, Mulliken in SCF
+   mulliken.F : Consmetics
+   iomd.f     : flush MD and MDE
+   pixmol.f   : flush ANI
+   siesta.tex, siesta.ind, CHANGES, version.F
+=======================================================================
+Version: 1.2.23
+Date: 2003/05/01 11:00
+Title: Corrected FFT and ordern
+Author: Julian D. Gale <j.gale@imperial.ac.uk>
+
+Description:
+
+Two bugs have been fixed:
+(1) In the FFT routine, the dimensions were exceed then the contents of
+    trigs were not always recalculated after increasing the dimensions.
+(2) In order N the contents of several arrays were not preserved during
+    resizing leading to loss of data for the subsequent geometry steps.
+
+Files:
+
+diagon.F  : The order of deallocation of the arrays is reversed to be more
+            stack friendly.
+fft3d.F   : OldMesh reinitialised to 0 if the size of the array trigs is
+            altered to ensure that array is refilled correctly.
+hpcx.make : the -bmaxdata flag has been added in order to access the 
+            full memory
+ordern.F  : Contents of several arrays are preserved on resizing.
 =======================================================================
 Version: 1.2.22
 Date: 2003/04/14 15:10
@@ -61,6 +667,7 @@ IBM Regatta machine to enable use with the HPCx service in the UK
 
 Files:
 
+alloc.F90         : if NODAT option added for -DNODAT to avoid MPI problems
 bands.F           : if NODAT option added for -DNODAT to avoid MPI problems
 broadcast_basis.F : if NODAT option added for -DNODAT to avoid MPI problems
 cellxc.F          : if NODAT option added for -DNODAT to avoid MPI problems

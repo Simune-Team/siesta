@@ -28,7 +28,7 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
@@ -103,7 +103,7 @@ C Get the Node number
           DO 35 ISPIN=1,NSPIN
             DO 30 IE=1,NE
               WKE(IE,ISPIN,IK)=WK(IK)*
-     .                     STEPF((E(IE,ISPIN,IK)-EF(ISPIN))/T)/NSPIN
+     .             STEPF((E(IE,ISPIN,IK)-EF(ISPIN))/T)*2.0/NSPIN
               SUMQ(ISPIN)=SUMQ(ISPIN)+WKE(IE,ISPIN,IK)
   30        CONTINUE
   35      CONTINUE

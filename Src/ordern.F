@@ -1,3 +1,9 @@
+      module m_ordern
+!
+!     We need an explicit interface since assumed-shape arrays are used
+!
+      CONTAINS
+
       subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,lasto,
      .                  isa,qa,rcoor,rh,cell,xa,iscf,istep,itmax,
      .                  ftol,eta,enum,maxuo,maxnh,numh,listhptr,
@@ -66,7 +72,7 @@ C
       use parallel
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -100,10 +106,10 @@ C Internal variables ..........................................................
      .  nbasisloc, nbasismax, nbandsloc, ntmp, BNode
 
       integer, dimension(:,:), allocatable, save ::
-     .  listc, listcold
+     .  listc, listcold, ntmp2
 
       integer, dimension(:), allocatable, save ::
-     .  numc, numcold
+     .  numc, numcold, ntmp1
 
       double precision
      .  fe, qtot, chpot,emax,emin,eV
@@ -115,7 +121,7 @@ C Internal variables ..........................................................
      .  xi
 
       double precision, dimension(:,:), allocatable, save ::
-     .  c, cold
+     .  c, cold, rtmp2
 
       logical
      .  overflow, itest, found, writelwf
@@ -229,6 +235,8 @@ C Copy Cold to C
             iopt = 0
             ncmax = maxnc
           endif
+        else 
+          ncmax = maxnc
         endif
         if (nbasis .gt. maxo)  overflow = .true.
 #ifdef MPI
@@ -299,17 +307,26 @@ C         Check that dimensions are large enough
           if (nbandsloc.gt. maxlwf)  overflow = .true.
           if (ncmax    .gt. maxnc)   overflow = .true.
    
-C         Print good dimensions
+C Resize arrays while preserving contents of old version
           if (overflow) then
             if (nbasis .gt. maxo) then
               call memory('D','I',size(numc),'ordern')
               deallocate(numc)
-              call memory('D','I',size(numcold),'ordern')
-              deallocate(numcold)
               allocate(numc(nbasis))
               call memory('A','I',nbasis,'ordern')
+C
+              allocate(ntmp1(maxo))
+              call memory('A','I',maxo,'ordern')
+C
+              ntmp1(1:maxo) = numcold(1:maxo)
+              call memory('D','I',size(numcold),'ordern')
+              deallocate(numcold)
               allocate(numcold(nbasis))
               call memory('A','I',nbasis,'ordern')
+              numcold(1:maxo) = ntmp1(1:maxo)
+C
+              call memory('D','I',size(ntmp1),'ordern')
+              deallocate(ntmp1)
             endif
             if (nbasis .gt. maxo .or. ncmax .gt. maxnc) then
               call memory('D','I',size(listc),'ordern')
@@ -318,27 +335,50 @@ C         Print good dimensions
               call memory('A','I',ncmax*nbasis,'ordern')
             endif
             if (nbasismax .gt. maxoloc .or. ncmax .gt. maxnc) then
+              allocate(rtmp2(maxnc,maxoloc))
+              call memory('A','D',maxnc*maxoloc,'ordern')
+C
+              rtmp2(1:maxnc,1:maxoloc) = c(1:maxnc,1:maxoloc)
               call memory('D','D',size(c),'ordern')
-              deallocate(c)
-              call memory('D','D',size(cold),'ordern')
-              deallocate(cold)
-              call memory('D','I',size(listcold),'ordern')
-              deallocate(listcold)
+              deallocate(c) 
               allocate(c(ncmax,nbasismax))
               call memory('A','D',ncmax*nbasismax,'ordern')
+              c(1:maxnc,1:maxoloc) = rtmp2(1:maxnc,1:maxoloc)
+C             
+              rtmp2(1:maxnc,1:maxoloc) = cold(1:maxnc,1:maxoloc)
+              call memory('D','D',size(cold),'ordern')
+              deallocate(cold)
               allocate(cold(ncmax,nbasismax))
               call memory('A','D',ncmax*nbasismax,'ordern')
+              cold(1:maxnc,1:maxoloc) = rtmp2(1:maxnc,1:maxoloc)
+C             
+              call memory('D','D',size(rtmp2),'ordern')
+              deallocate(rtmp2)
+              allocate(ntmp2(maxnc,maxoloc))
+              call memory('A','I',maxnc*maxoloc,'ordern')
+C             
+              ntmp2(1:maxnc,1:maxoloc) = listcold(1:maxnc,1:maxoloc)
+              call memory('D','I',size(listcold),'ordern')
+              deallocate(listcold)
               allocate(listcold(ncmax,nbasis))
               call memory('A','I',ncmax*nbasis,'ordern')
+              listcold(1:maxnc,1:maxoloc) = ntmp2(1:maxnc,1:maxoloc)
+C             
+              call memory('D','I',size(ntmp2),'ordern')
+              deallocate(ntmp2)
             endif
             maxo = nbasis
             maxoloc = nbasismax
             maxlwf = nbandsloc
-            maxnc = ncmax
+            maxnc = max(ncmax,maxnc)
             overflow = .false.
             goto 20
           endif
           maxnct = nctmax
+
+        else
+          
+          nbandsloc = ((nbands-1)/Nodes) + 1
 
         endif
       endif
@@ -483,3 +523,5 @@ C ....................
 *     call timer( 'ordern', 2 )
 
       end subroutine ordern
+
+      end module m_ordern

@@ -53,20 +53,20 @@ C Format of atomic coordinates
      .    leqi(acf,'Bohr') ) then
         iscale = 0
         write(6,'(a,a)')
-     .   'coor: Atomic-coordinates input format  = ',
+     .   'coor:   Atomic-coordinates input format  = ',
      .   '    Cartesian coordinates'
         write(6,'(a,a)')
-     .   'coor:                                    ',
-     .   '    (in Bohr units)'
+     .   'coor:                                      ',
+     .   '      (in Bohr units)'
       else if (leqi(acf,'NotScaledCartesianAng') .or.
      .         leqi(acf,'Ang') ) then
         iscale = 1
         write(6,'(a,a)')
-     .   'coor: Atomic-coordinates input format  = ',
+     .   'coor:   Atomic-coordinates input format  = ',
      .   '    Cartesian coordinates'
         write(6,'(a,a)')
      .   'coor:                                    ',
-     .   '    (in Angstroms)'
+     .   '      (in Angstroms)'
       else if (leqi(acf,'ScaledCartesian')) then
         if (alat.eq.0.d0) then
            write(6,"(/,2a)") 'coor: ERROR: Explicit lattice ',
@@ -75,11 +75,11 @@ C Format of atomic coordinates
         endif
         iscale = 2
         write(6,'(a,a)')
-     .   'coor: Atomic-coordinates input format  = ',
+     .   'coor:   Atomic-coordinates input format  = ',
      .   '    Cartesian coordinates'
         write(6,'(a,a)')
      .   'coor:                                    ',
-     .   '    (in units of alat)'
+     .   '      (in units of alat)'
       else if (leqi(acf,'ScaledByLatticeVectors') .or. 
      .         leqi(acf,'Fractional') ) then
         if (alat.eq.0.d0) then
@@ -89,7 +89,7 @@ C Format of atomic coordinates
         endif
         iscale = 3
         write(6,'(a,a)')
-     .   'coor: Atomic-coordinates input format  = ',
+     .   'coor:   Atomic-coordinates input format  = ',
      .   '    Fractional'
       else
         write(6,"(/,'coor: ',72(1h*))")
@@ -127,8 +127,8 @@ c Read atomic coordinates and species
       na  = na * ncells
 
       nullify(isa,xa)
-      call realloc(isa,1,na,name='isa',routine='coor')
-      call realloc(xa,1,3,1,na,name='xa',routine='coor')
+      call re_alloc(isa,1,na,name='isa',routine='coor')
+      call re_alloc(xa,1,3,1,na,name='xa',routine='coor')
 
       if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',iunit) )
      .     then

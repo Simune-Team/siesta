@@ -30,7 +30,7 @@ MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
         potran.o   potrv.o potrvs.o  potrw.o   prdiff.o  string.o  root.o  \
         genrhs.o  logder.o ode.o denplot.o scilib.o  recipes.o \
 	compat_params.o  pcc_exp.o  change_valence.o \
-	coreq.o get_unit.o gauleg.o divdif.o symbols.o prversion.o\
+	coreq.o get_unit.o gauleg.o divdif.o symbols.o prversion.o
 #
 OBJS= $(MAIN_OBJS) $(XC_OBJS)
 #

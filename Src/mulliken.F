@@ -1,4 +1,4 @@
-      subroutine mulliken(iopt,nspin,natoms,nbasis,maxnh,numh,
+      subroutine mulliken(iopt,nspin,natoms,nbasistot,maxnh,numh,
      .                    listhptr,listh,s,dm,isa,lasto,iaorb,
      .                    iphorb)
 C ********************************************************************
@@ -18,7 +18,7 @@ C                                            2 = 1 + atomic overlap pop.
 C                                            3 = 2 + orbital overlap pop.
 C integer nspin               : Number of spin components
 C integer natoms              : Number of atoms
-C integer nbasis              : Number of basis orbitals
+C integer nbasistot           : Number of basis orbitals over all nodes
 C integer maxnh               : First dimension of d.m. and overlap, and its
 C                               maximum number of non-zero elements
 C integer numh(nbasis)        : First Control vector of d.m. and overlap
@@ -41,13 +41,13 @@ C
       use parallel
       use atmfuncs, only: symfio, cnfigfio, labelfis, nofis
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
 
       integer
-     .  iopt,natoms,nbasis,maxnh,nspin
+     .  iopt,natoms,nbasistot,maxnh,nspin
 
       integer
      .  numh(*),lasto(0:natoms),listh(maxnh),listhptr(*),
@@ -60,7 +60,7 @@ C
      .  memory
 C Internal parameters ..................................................
 C Number of culumns in printout.  Must be smaller than 20
-      integer ncol
+      integer ncol, nbasis
       parameter (ncol = 8)
 
 #ifdef MPI
@@ -94,9 +94,13 @@ C Get Node number
 #ifdef MPI
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
       call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
+
+C Find number of locally stored orbitals and allocated related arrays
+      call GetNodeOrbs(nbasistot,Node,Nodes,nbasis)
 #else
       Node = 0
       Nodes = 1
+      nbasis = nbasistot
 #endif
 
       if (iopt.eq.0) then
@@ -129,14 +133,13 @@ C Compute and print Overlap Populations for Orbitals ....................
         if (Node.eq.0) then
           write(6,*) 
           write(6,"(a)")'mulliken: Overlap Populations between Orbitals'
-          write(6,*) 
         endif
-        nblock = nbasis / ncol
+        nblock = nbasistot / ncol
         ip=1
-        if (nblock*ncol .eq. nbasis) ip=0
+        if (nblock*ncol .eq. nbasistot) ip=0
         do ib = 1,nblock+ip
           imax = ncol
-          if (ib .eq. nblock+1) imax = nbasis - nblock * ncol  
+          if (ib .eq. nblock+1) imax = nbasistot - nblock * ncol  
           do ii=1,imax 
              sym_label(ii)=symfio(isa(iaorb((ib-1)*ncol+ii)),
      .                iphorb((ib-1)*ncol+ii))
@@ -145,38 +148,35 @@ C Compute and print Overlap Populations for Orbitals ....................
           enddo 
           if (Node.eq.0) then
             write(6,*) 
-            write(6,10) ((ib-1)*ncol+ii,ii=1,imax) 
-            write(6,'(15x,20(1x,i1,a7))') 
+            write(6,'(14x,20(2x,i4,3x))')((ib-1)*ncol+ii,ii=1,imax) 
+            write(6,'(17x,20(1x,i1,a7))') 
      .              (config(ii),sym_label(ii),ii=1,imax)
-            write(6,*) 
           endif
 
 C Loop over the following section so that each Node can print
 C the terms relating to the local orbitals in sequence. Not
 C the most efficient algorithm, but preserves order and keeps
 C memory usage the same as in the serial version.
-          do iNode = 0,Nodes-1
-            if (iNode.eq.Node) then
-              do i = 1,nbasis 
-                call LocalToGlobalOrb(i,Node,Nodes,itot)
-                sym_label(1)=symfio(isa(iaorb(itot)),iphorb(itot))
-                config(1)=cnfigfio(isa(iaorb(itot)),iphorb(itot))
-                do ii = 1,imax
-                  p(ii) = 0.0d0
-                enddo
-                do in = 1,numh(i)
-                  ind = listhptr(i)+in
-                  j = listh(ind)
-                  ii = j - (ib - 1) * ncol
-                  if (ii .ge. 1 .and. ii .le. imax) then
-                    p(ii) = 0.d0
-                    do is = 1,min(nspin,2)
-                      p(ii) = p(ii) + dm(ind,is) * s(ind)
-                    enddo
-                  endif
-                enddo
-                write(6,15) i,config(1), sym_label(1),(p(ii),ii=1,imax)
+          do itot = 1,nbasistot
+            call GlobalToLocalOrb(itot,Node,Nodes,i)
+            if (i.gt.0) then
+              sym_label(1)=symfio(isa(iaorb(itot)),iphorb(itot))
+              config(1)=cnfigfio(isa(iaorb(itot)),iphorb(itot))
+              do ii = 1,imax
+                p(ii) = 0.0d0
               enddo
+              do in = 1,numh(i)
+                ind = listhptr(i)+in
+                j = listh(ind)
+                ii = j - (ib - 1) * ncol
+                if (ii .ge. 1 .and. ii .le. imax) then
+                  p(ii) = 0.d0
+                  do is = 1,min(nspin,2)
+                    p(ii) = p(ii) + dm(ind,is) * s(ind)
+                  enddo
+                endif
+              enddo
+              write(6,15) itot,config(1), sym_label(1),(p(ii),ii=1,imax)
             endif
 #ifdef MPI
             call MPI_Barrier( MPI_Comm_World, MPIerror )
@@ -191,7 +191,6 @@ C Compute and print Overlap Populations for Atoms ....................
         if (Node.eq.0) then
           write(6,*) 
           write(6,"(a)")'mulliken: Overlap Populations between Atoms'
-          write(6,*) 
         endif
         nblock = natoms / ncol
         ip=1
@@ -202,7 +201,6 @@ C Compute and print Overlap Populations for Atoms ....................
           if (Node.eq.0) then
             write(6,*) 
             write(6,10) ((ib-1)*ncol+ii,ii=1,imax)
-            write(6,*) 
           endif
           do i = 1,natoms
             do ii = 1,imax
@@ -220,12 +218,14 @@ C Compute and print Overlap Populations for Atoms ....................
                       goto 100
                     endif
                   enddo
-100               ii = ja - (ib - 1) * ncol
+                  goto 110
+ 100              ii = ja - (ib - 1) * ncol
                   if (ii .ge. 1 .and. ii .le. imax) then
                     do is = 1,min(nspin,2)
                       p(ii) = p(ii) + dm(ind,is) * s(ind)
                     enddo
                   endif
+ 110              continue
                 enddo
               endif
             enddo
@@ -267,7 +267,7 @@ C Compute and print Mulliken Orbital and Atomic Populations ..........
 
              atm_label=labelfis(ispec)
              if (Node.eq.0) then
-               write(6,'(/2a)')'Specie: ', atm_label 
+               write(6,'(/2a)')'Species: ', atm_label 
                write(6,'(a4,a7,a6)') 'Atom', 'Qatom', 'Qorb'
              endif
 C DSP, Writing symmetries for each orbital. 
@@ -283,16 +283,17 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                  config2(io)=cnfigfio(ispec,nao)
                enddo 
                if (Node.eq.0) then
-                 write(6,'(14x,8(i1,a7))')
+                 write(6,'(15x,8(i1,a7))')
      .             (config2(io),sym_label2(io),io=1,8)
                endif
              enddo 
              do io=1,nres 
                nao=nao+1 
                sym_label2(io)=symfio(ispec,nao) 
+               config2(io)=cnfigfio(ispec,nao)
              enddo 
              if (Node.eq.0) then
-               write(6,'(14x,8(i1,a7))')
+               write(6,'(15x,8(i1,a7))')
      .           (config2(io),sym_label2(io),io=1,nres) 
              endif
 
@@ -351,7 +352,7 @@ C Global sum of total charge
 #endif
 #endif
             if (Node.eq.0) then
-              write(6,"(a,f8.3)") 'mulliken: Qtot = ', qtot
+              write(6,"(/a,f8.3)") 'mulliken: Qtot = ', qtot
             endif
           enddo
         elseif (nspin .eq. 4) then
@@ -375,7 +376,7 @@ C Global sum of total charge
           do ispec=1,ns
             atm_label=labelfis(ispec)
             if (Node.eq.0) then
-              write(6,'(/2a)')'Specie: ', atm_label
+              write(6,'(/2a)')'Species: ', atm_label
               write(6,'(/,a4,a9,4x,2a10,3x,a8,/,64(1h-))')
      .        'Atom', 'Orb', 'Charge', 'Spin', 'Svec'
             endif

@@ -17,15 +17,11 @@
 !
       use atmparams
       use pseudopotential
+      use precision
 
       Implicit None
 
-      private die, sp, dp
-
-      integer, parameter :: sp = selected_real_kind(6,30)
-      integer, parameter :: dp = selected_real_kind(14,100)
-
-      type ground_state_t
+      type  ground_state_t
           integer                   ::  lmax_valence
           integer                   ::  n(0:3)
           real(dp)                  ::  occupation(0:3)
@@ -112,6 +108,7 @@
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
+
       interface destroy
         module procedure destroy_shell,
      $                   destroy_lshell, destroy_basis_def
@@ -326,13 +323,6 @@
       end subroutine print_basis_def
 
 !-----------------------------------------------------------------------
-      subroutine die(str)
-      character(len=*), optional :: str
-      if (present(str)) write(6,'(a)') str
-      stop
-      end subroutine die
-!
-!-----------------------------------------------------------------------
       subroutine basis_specs_transfer
 
       integer lmax, lmaxkb, nzeta_max, nsemi_max, nkb_max
@@ -376,19 +366,19 @@
       lmax = max(lmax,lmaxkb)
       if (lmax .gt. lmaxd) then
          write(6,*) "Increment lmaxd to ", lmax
-         call die
+         STOP "lmaxd"
       endif
       if (nzeta_max .gt. nzetmx) then
          write(6,*) "Increment nzetmx to ", nzeta_max
-         call die
+         STOP "nzetmx"
       endif
       if (nsemi_max .gt. nsemx) then
          write(6,*) "Increment nsemx to ", nsemi_max
-         call die
+         STOP "nsemx"
       endif
       if (nkb_max .gt. nkbmx) then
          write(6,*) "Increment nkbmx to ", nkb_max
-         call die
+         STOP "nkb_max"
       endif
 !
 !     ALLOCATE old arrrays
@@ -493,8 +483,7 @@
 
       integer l,  n, i
 
-      write(lun,'(a)') '<basis_specs>'
-         write(lun,'(70("="))')
+      write(lun,'(/a/79("="))') '<basis_specs>'
          write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
      $        atm_label(is), 'Z=',iz(is),
      $        'Mass=', smass(is), 'Charge=', charge(is)
@@ -520,14 +509,14 @@
      $                         (lambda(i,l,n,is),i=1,nzeta(l,n,is))
             enddo
          enddo
-         write(lun,'(70("-"))')
+         write(lun,'(79("-"))')
          do l=0,lmxkb(is)
             write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g12.5)')
      $           'L=', l, 'Nkbl=', nkbl(l,is),
      $           'erefs:  ', (erefkb(i,l,is),i=1,nkbl(l,is))
          enddo
-         write(lun,'(70("="))')
-      write(lun,'(a)') '</basis_specs>'
+         write(lun,'(79("="))')
+      write(lun,'(a/)') '</basis_specs>'
 
       end subroutine write_basis_specs
 !-----------------------------------------------------------------------

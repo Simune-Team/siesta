@@ -13,13 +13,17 @@ SOURCES=$(OBJS:.o=.f90)
 #
 generated: $(TEMPLATES) 
 	@make clean
+	@echo
+	@echo "PARALLEL VERSION:   **** MPI  WARNING ****"
+	@echo "We are assuming that the 'kind' numbers for"
+	@echo "single and double precision real are 4 and 8, respectively."
+	@echo "This is the case for all compilers we have dealt with so far,"
+	@echo "but you should change it if the assumption does not hold for"
+	@echo "your compiler!!"
+	@echo
+	@echo "Hit ^C to abort and change the defaults in MPI/Makefile..."
+	@sleep 2
 #
-#       Warning!!!! This assumes that the 'kind' numbers for
-#       single and double precision real are 4 and 8, respectively.
-#
-#	This is the case for all compilers we have dealt with so far,
-#       but you should change it if the assumption does not hold for
-#       your compiler
 	@sh generate.sh "4 8"
 	@touch generated
 #
@@ -31,6 +35,7 @@ mpi.o:  $(OBJS) mpi__include.o
 #
 module_built: mpi.o $(OBJS) mpi__include.o 
 	@ar q libmpi_f90.a mpi.o mpi__include.o $(OBJS)
+	-$(RANLIB) libmpi_f90.a
 	@mv libmpi_f90.a ..
 	@mv *.mod ..
 	@touch module_built

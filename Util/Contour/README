@@ -21,6 +21,10 @@ It is a quite preliminary version. It will be revised for
 including spin densities, using fdf (possibly the one used in the
 SIESTA calculation), improving interpolation, etc. 
 
+GRID1D
+
+Similar but outputs along a line in stead of a plane.
+
 Please report bugs to
 
 emilio.artacho@uam.es

@@ -1,35 +1,48 @@
+
 SystemLabel             Si64           # Short name for naming files
-2D.CoorUnits            bohr           # Format for coordinate of the points
+
+NumberOfSpecies         1
+
+%block ChemicalSpeciesLabel
+ 1 14 Si
+%endblock ChemicalSpeciesLabel
+
+Denchar.TypeOfRun       2D
+
+Denchar.PlotCharge             T
+Denchar.PlotWaveFunctions      T
+
+Denchar.CoorUnits       bohr           # Format for coordinate of the points
                                        # Bohr
                                        # Ang
 
-2D.DensityUnits        Ele/bohr**3     # Units of Charge Density
+Denchar.DensityUnits   Ele/bohr**3     # Units of Charge Density
                                        # Ele/bohr**3
                                        # Ele/Ang**3
                                        # Ele/UnitCell
 
-2D.MinX                -5.0  bohr      # Minimum coord of the window in X-dir
-2D.MaxX                 5.0  bohr      # Maximum coord of the window in X-dir
+Denchar.MinX           -5.0  bohr      # Minimum coord of the window in X-dir
+Denchar.MaxX            5.0  bohr      # Maximum coord of the window in X-dir
 
-2D.MinY                -5.0  bohr      # Minimum coord of the window in Y-dir
-2D.MaxY                 5.0  bohr      # Maximum coord of the window in Y-dir
+Denchar.MinY           -5.0  bohr      # Minimum coord of the window in Y-dir
+Denchar.MaxY            5.0  bohr      # Maximum coord of the window in Y-dir
 
-2D.NumberPointsX         70            # Number of points in X-axis
-2D.NumberPointsY         70            # Number of points in Y-axis
+Denchar.NumberPointsX    70            # Number of points in X-axis
+Denchar.NumberPointsY    70            # Number of points in Y-axis
 
-2D.PlaneGeneration  ThreeAtomicIndices # Option to generate the plane
-                                       # NormalVector
-                                       # TwoLines
-                                       # ThreePoints
-                                       # ThreeAtomicIndices
+Denchar.PlaneGeneration  ThreeAtomicIndices # Option to generate the plane
+                                            # NormalVector
+                                            # TwoLines
+                                            # ThreePoints
+                                            # ThreeAtomicIndices
 
 
-%block 2D.Indices3Atoms                # Indices of three atoms
+%block Denchar.Indices3Atoms                # Indices of three atoms
  1  2  3
-%endblock 2D.Indices3Atoms
+%endblock Denchar.Indices3Atoms
 
-%block 2D.AtomsInPlane
+%block Denchar.AtomsInPlane
  1
  2
  3
-%endblock 2D.AtomsInPlane
+%endblock Denchar.AtomsInPlane

@@ -1,3 +1,10 @@
+      module m_radfft
+!
+!     Wrap the subroutine in a module to offer an explicit interface
+!     which simplifies the issue of the shape of F and G. Callers
+!     will need to pass a full array or an array section.
+!
+      CONTAINS
       SUBROUTINE RADFFT( L, NR, RMAX, F, G )
 C *********************************************************************
 C Makes a fast Fourier transform of a radial function.
@@ -63,7 +70,8 @@ C -------------------------------------------------------------------
 
 C Declare argument types and dimensions -----------------------------
       INTEGER           L, NR
-      DOUBLE PRECISION  F(0:NR), G(0:NR), RMAX
+      DOUBLE PRECISION  F(0:), G(0:), RMAX
+!      DOUBLE PRECISION  F(0:NR), G(0:NR), RMAX
 C -------------------------------------------------------------------
 
 C ERRFFT is the typical truncation error in the FFT routine ---------
@@ -172,6 +180,11 @@ C         Find  r**2 * r**n / r**(l+1)
         ENDDO
 
 C       Perform one-dimensional complex FFT
+!
+!       Only the elements from 0 to 2*NR-1 of FN are used.
+!       (a total of 2*NR). Four1 will receive a one-dimensional
+!       array of size 2*NR.
+!
         CALL FOUR1( FN, 2*NR, +1 )
 
 C       Accumulate contribution
@@ -242,5 +255,5 @@ C Stop time counter ------------------------------------------------
 *     CALL TIMER( 'RADFFT', 2 )
 C -------------------------------------------------------------------
 
-      END
-
+      END subroutine radfft
+      end module m_radfft

@@ -894,7 +894,7 @@ c
       call io_assign(lun)
       open(lun,file=filename,status='replace',form='formatted')
 
-      write(lun,'(a)') "<ion> "
+      write(lun,'(a)') '<ion version="0.1">'
       call xml_dump_element(lun,'symbol',str(spp%symbol))
       call xml_dump_element(lun,'label',str(spp%label))
       call xml_dump_element(lun,'z',str(spp%z))
@@ -936,8 +936,9 @@ c
          call xml_dump_attribute(lun,'n',str(spp%pjnl_n(i)))
          call xml_dump_attribute(lun,'ref_energy',
      $                                   str(spp%pjnl_ekb(i)))
-         call radial_dump_xml(spp%pjnl(i),lun)
          write(lun,'(a)') " >"
+         call radial_dump_xml(spp%pjnl(i),lun)
+         write(lun,'(a)') "</projector>"
        enddo
        write(lun,'(a)') "</kbs>"
 
@@ -974,6 +975,7 @@ c
       SUBROUTINE CH_OVERLAP(IS1,IS2,RMX,CORR)
       use atmfuncs, only: izvalfis, psch
       use ionew, only: IOnode
+      use m_radfft
 
       integer, intent(in)   :: is1, is2
       real(dp), intent(in )    :: rmx
@@ -1104,8 +1106,8 @@ C
          
 C****FOURIER-TRANSFORM OF RADIAL CHARGE DENSITY****
 C
-      CALL RADFFT( 0, NQ, RMAX, CH(0,1), CH(0,1) )
-      CALL RADFFT( 0, NQ, RMAX, CH(0,2), CH(0,2) )
+      CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,1), CH(0:NQ,1) )
+      CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,2), CH(0:NQ,2) )
 C
 
 CNEUTRALIZE CHARGE DENSITY FOR FOURIER-SPACE CALCULATION

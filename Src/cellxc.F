@@ -130,7 +130,7 @@ C *******************************************************************
 
 #ifdef MPI
 C  Modules
-      use mpi
+      use mpi_siesta
       use parallel
       use mesh, only: nsm, nmeshg
 #endif

@@ -38,13 +38,13 @@
 \hrulefill
 \vspace{2cm}
 
-{\Huge {\bf S I E S T A \, \, 1.2.21}}
+{\Huge {\bf S I E S T A \, \, 1.2.45}}
 
 \vspace{2cm}
 \hrulefill
 \vspace{2cm}
 
-{\Large April 14, 2003 }
+{\Large 17 July 2003 }
 
 \vspace{1.5cm}
 
@@ -206,7 +206,7 @@ Improved, soft-confined NAOs.
 \item
 ``The {\sc Siesta} method for ab initio order-$N$ materials simulation"
 J. M. Soler, E. Artacho, J. Gale, A. Garc\'{\i}a, J. Junquera, P. Ordej\'on,
-and D. S\'anchez-Portal (to appear soon)
+and D. S\'anchez-Portal, J. Phys.: Condens. Matter {\bf 14}, 2745-2779 (2002) 
 
 Extensive description of the {\sc Siesta} method.
 
@@ -411,7 +411,7 @@ performance tests can be found in
 \noindent
 ``Numerical atomic orbitals for linear-scaling calculations"
 J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
-(in press, preprint in cond-mat/0104170). 
+{\bf 64} 235111, (2001)
 
 An important point here is that the basis set selection is a 
 variational problem and, therefore, minimizing the energy with respect
@@ -1108,17 +1108,17 @@ input.  An example block for a two-species calculation (H and O) is
 the following ({\tt opt} means optional):
 
 \begin{verbatim}
-  %block PAO.Basis       # Define Basis set
-   O    2  nodes  1.0    # Label, l_shells, type (opt), ionic_charge (opt)
-    n=2 0   2            # n (opt if not using semicore levels), l, Nzeta
-          3.50  3.50     #     rc(izeta=1,Nzeta)(Bohr)
-          0.95  1.00     #     scaleFactor(izeta=1,Nzeta) (opt)
-        1   1   P   2    # l, Nzeta, PolOrb (opt), NzetaPol (opt)
-          3.50           #     rc(izeta=1,Nzeta)(Bohr)
-   H    1                # Label, l_shells, type (opt), ionic_charge (opt)
-        0   2            # l, Nzeta
-          5.00  0.00     #     rc(izeta=1,Nzeta)(Bohr)
- %endblock PAO.Basis
+%block PAO.Basis     # Define Basis set
+O    2  nodes  1.0   # Label, l_shells, type (opt), ionic_charge (opt)
+ n=2 0 2  E 50.0 2.5 # n (opt if not using semicore levels),l,Nzeta,Softconf(opt
+     3.50  3.50      #     rc(izeta=1,Nzeta)(Bohr)
+     0.95  1.00      #     scaleFactor(izeta=1,Nzeta) (opt)
+     1 1  P 2        # l, Nzeta, PolOrb (opt), NzetaPol (opt)
+     3.50            #     rc(izeta=1,Nzeta)(Bohr)
+H    1               # Label, l_shells, type (opt), ionic_charge (opt)
+     0 2             # l, Nzeta
+     5.00  0.00      #     rc(izeta=1,Nzeta)(Bohr)
+%endblock PAO.Basis
 \end{verbatim}
 
 \noindent
@@ -1130,7 +1130,8 @@ the routines in {\tt Src/basis\_specs.f} for detailed information):
     From js = 1 to  nspecies 
          read: label(is), l_shells(is), { type(is) }, { ionic_charge(is) }
          From lsh=1 to l_shells(is)
-              read: { n }, l, nzls(l,is), { PolOrb(l+1) }, { NzetaPol(l+1) }
+              read: { n }, l, nzls(l,is), { PolOrb(l+1) }, { NzetaPol(l+1) },
+               {SoftConfFlag(l,is)}, {PrefactorSoft(l,is)}, {InnerRadSoft(l,is)}
               read: rcls(izeta,il,is), from izeta = 1 to nzls(l,is)
               read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
@@ -1166,6 +1167,17 @@ from the first-zeta orbital of angular momentum $l$. {\it Default value}: ' '
 'zetas' for the 
 polarization shell (generated automatically in a split valence fashion). 
 Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1} 
+\item[-] {\tt SoftConfFlag(l,is)}:\index{basis!soft confinement potential}
+{\it Optional input}. If set equal to 
+{\tt E}, the new soft confinement potential proposed in formula (1) of
+the paper by J. Junquera {\it et al.}, Phys. Rev. B {\bf 64}, 235111 (2001),
+is used instead of the Sankey hard well potential.
+\item[-] {\tt PrefactorSoft(l,is)}: {\it Optional input}. Prefactor
+of the soft confinement potential ($V_{0}$ in the formula). Units in Ry. 
+{\it Default value}: 0 Ry.
+\item[-] {\tt InnerRadSoft(l,is)}: {\it Optional input}. Inner radius where
+the soft confinemet potential starts off ($r_{i}$ in the foormula). 
+Units in bohrs. {\it Default value}: 0 bohrs. 
 \item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of 
 each 'zeta' for each angular momentum {\tt l} of species {\tt is}
 \item[-] {\tt contrf(izeta,l,is)}: {\it Optional input}. 
@@ -1391,14 +1403,26 @@ c real*8  amass(na)    : input atomic masses
 c real*8  xa(3,na)     : input atomic cartesian coordinates (Bohr)
 c real*8  stress( 3,3) : input/output stress tensor (Ry/Bohr**3)
 c real*8  fa(3,na)     : input/output atomic forces (Ry/Bohr)
-      integer na, isa(na)
+c integer ntcon        : output total number of position constraints
+c                        imposed in this routine
+      integer na, isa(na), ntcon
       double precision amass(na), cell(3,3), fa(3,na),
      .                 stress(3,3), xa(3,na), fz
-      fz = ( fa(3,1) + fa(3,2) ) / 2.d0
-      fa(3,1) = fz
-      fa(3,2) = fz
+      fz = fa(3,1) + fa(3,2) 
+      fa(3,1) = fz * amass(1)/(amass(1)+amass(2))
+      fa(3,2) = fz * amass(2)/(amass(1)+amass(2))
+      ntcon=1
       end
 \end{verbatim}
+
+NOTE that the input of the routine {\bf constr} has changed
+with respect to {\sc Siesta} versions prior to 1.3. Now, it includes the
+argument {\it ntcon}, where the routine should
+store the number of position constraints imposed in it,
+as an output.  The user should update older {\bf constr} routines
+accordingly. In the example above, the number of constraints is one,
+since only the relative z position of two atoms is constrained
+to be constant.
 
 \end{itemize}
 
@@ -1509,7 +1533,6 @@ Overrides {\bf kgrid\_cutoff}
 (Default used only when {\bf kgrid\_cutoff} is not defined).
         
 
-
 \item[{\bf BandLinesScale}] ({\it string}): 
 \index{BandLinesScale@{\bf BandLinesScale}} 
 Specifies the scale of the k vectors given in {\bf BandLines} below.
@@ -1550,6 +1573,45 @@ to calculate the total energy and charge density.
 
 {\it Default value:} No band energies calculated.
 
+
+\item[{\bf WaveFuncKPointsScale}] ({\it string}): 
+\index{WaveFuncKPointsScale@{\bf WaveFuncKPointsScale}} 
+Specifies the scale of the k vectors given in 
+{\bf WaveFuncKPoints} below.
+The options are:
+\begin{itemize}
+\item {\tt pi/a} (k-vector coordinates are given in cartesian 
+coordinates, in units of $\pi/a$, where $a$ is the lattice constant)
+\item {\tt ReciprocalLatticeVectors} (k vectors are given in
+reciprocal-lattice-vector coordinates)
+\end{itemize}
+
+{\it Default value:} {\tt pi/a}
+
+
+\item[{\bf WaveFuncKPoints}] ({\it data block}): 
+\index{WaveFuncKPoints@{\bf WaveFuncKPoints}} 
+Specifies the k-points at which the electronic wavefunction
+coefficients are written. 
+An example for an FCC lattice is:
+
+\begin{verbatim}
+     %block WaveFuncKPoints              
+     0.000  0.000  0.000  from 1 to 10   # Gamma wavefuncs 1 to 10
+     2.000  0.000  0.000  1 3 5          # X wavefuncs 1,3 and 5
+     1.500  1.500  1.500                 # K wavefuncs, all
+     %endblock WaveFuncKPoints
+\end{verbatim}
+
+The number of wavefunction is defined by its energy, so that the
+first one has lowest energy.
+The output of the wavefunctions in described in Section \ref{subsec:wf}
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
+These k points are unrelated and compatible with any k-grid used
+to calculate the total energy,  charge density and band structure.
+
+{\it Default value:} No wavefunctions are written.
 
 \end{description}
 
@@ -1599,15 +1661,26 @@ and {\tt LSD}.
 Particular parametrization of the
 exchange-correlation functional. Options are:
 \begin{itemize}
-\item {\tt CA} (Ceperley-Alder) equivalent to {\tt PZ} (Perdew-Zunger).
+\item {\tt CA} (Ceperley-Alder) \index{CA}
+equivalent to {\tt PZ} (Perdew-Zunger). \index{PZ}
 Local density approximation.
 Ref: Perdew and Zunger, PRB 23, 5075 (1981)
-\item {\tt PW92} (Perdew-Wang-92). 
+\item {\tt PW92} (Perdew-Wang-92). \index{PW92}
 Local density approximation.\index{LDA}\index{LSD}
 Ref: Perdew and Wang, PRB, 45, 13244 (1992)
 \item {\tt PBE} (Perdew-Burke-Ernzerhof). Generalized gradients
 approximation.  Ref: Perdew, Burke and Ernzerhof, PRL 77, 3865
-(1996)\index{GGA}
+(1996)\index{GGA} \index{PBE}
+\item {\tt LYP} Generalized gradients approximation \index{BLYP}
+that implements Becke gradient exchange functional (A. D.
+Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) and Lee, Yang, Parr
+correlation functional (C. Lee, W. Yang, R. G. Parr, Phys. Rev. B
+{\bf 37}, 785 (1988)), as modified by Miehlich, Savin, Stoll and Preuss,
+Chem. Phys. Lett. {\bf 157}, 200 (1989). See also Johnson, Gill and Pople,
+J. Chem. Phys. {\bf 98}, 5612 (1993). (Some errors were detected in this
+last paper, so not all of their expressions correspond exactly to those
+implemented in {\sc Siesta}).
+
 \end{itemize}
 
 {\it Use:} {\bf XC.functional} and {\bf XC.authors} must be compatible.
@@ -1654,6 +1727,15 @@ electron spin, 1/2). It is only used
 if {\bf FixSpin} = {\tt .true.}
 
 {\it Default value:} 0.0
+
+\item[{\bf SingleExcitation}] ({\it logical}):
+\index{SingleExcitation@{\bf SingleExcitation}}
+If true, {\sc Siesta} calculates a very rough approximation to 
+the lowest excited state by swapping the populations of the HOMO 
+and the LUMO. If there is no spin polarisation, it is half swap only. 
+It is done for the first spin component (up) and first k vector.
+
+{\it Default value:} {\tt .false.}
 
 \item[{\bf MeshCutoff}] ({\it real energy}): 
 \index{MeshCutoff@{\bf MeshCutoff}}\index{grid}\index{mesh}  
@@ -1753,7 +1835,6 @@ Pulay mixing. This mixing is done every {\bf DM.NumberKick} cycles.
 {\it Default value:} {\tt 0.50}
 
 
-
 \item[{\bf DM.MixSCF1}] ({\it logical}):\index{SCF!mixing}
 \index{DM.MixSCF1@{\bf DM.MixSCF1}}\index{SCF!mixing}
 Logical variable to indicate whether mixing is done in the
@@ -1827,6 +1908,14 @@ Example:
 
 {\it Default value:} If present but empty, all atoms are not polarized. 
 If absent, {\bf DM.InitSpinAF} defines the polarization.
+
+\item[{\bf MullikenInSCF}] ({\it logical}):
+\index{MullikenInSCF@{\bf MullikenInSCF}}
+If true, the Mulliken populations will be written for every SCF step
+at the level of detail specified in {\bf WriteMullikenPop}. Useful
+when dealing with SCF problems, otherwise too verbose.
+
+{\it Default value:} {\tt .false.}
 
 
 \item[{\bf NeglNonOverlapInt}] ({\it logical}): 
@@ -2005,7 +2094,6 @@ would use the body center as a second point in the sampling. Or:
 
 gives an fcc kind of sampling, and
 
-
 \begin{verbatim}
      %block GridCellSampling
         0.5    0.0    0.0
@@ -2041,6 +2129,110 @@ is of the order of one extra SCF iteration.
 
 {\it Default value:} Empty.
 
+
+\item[{\bf EggboxRemove}] ({\it data block}):\index{egg-box effect}
+\index{EggboxRemove@{\bf EggboxRemove}}\index{rippling}
+
+For recovering translational invariance in an approximate way.
+The introduction of a finite 3D grid for the calculation of integrals
+causes the breaking of translational symmetry (the egg-box effect). 
+This symmetry breaking is clear when
+moving one single atom in an otherwise empty simulation cell. The total
+energy and the forces oscillate with the grid periodicity when the
+atom is moved, as if the atom were moving on an eggbox. In the limit of
+infinitely fine grid (large mesh cutoff) this effect disappears.
+
+For reasonable values of the mesh cutoff, the effect of the eggbox 
+on the total energy or on the relaxed structure is normally unimportant.
+However, it can affect substantially the process of relaxation, by 
+increasing the number of steps considerably, and can also spoil the
+calculation of vibrations, usually much more demanding than relaxations.
+
+It works by substracting from Kohn-Sham's total energy (and forces) an
+approximation to the eggbox energy, sum of atomic contributions. 
+Each atom has a predefined eggbox energy depending on where it sits on
+the cell. This atomic contribution is species dependent and is 
+obviously invariant under grid-cell translations. Each species
+contribution is thus expanded in the appropriate Fourier series.
+It is important to have a smooth eggbox, for it to  
+be represented by a few Fourier components. A jagged egg-box is often an
+indication of a problem with the pseudo.
+
+In the block there is one line per Fourier component. The first integer
+is for the atomic species it is associated with. The other three
+represent the reciprocal lattice vector of the grid cell (in units
+of the basis vectors of the reciprocal cell). The real number is
+the Fourier coefficient in units of the energy scale given in 
+{\bf EggboxScale} (see below), normally 1 eV.
+
+The number and choice of Fourier components is free, as well as their
+order in the block. One can choose to correct only some species and not
+others if, for instance, there is a substantial difference in hardness
+of the cores. The 0 0 0 components will add a species-dependent
+constant energy per atom. It is thus irrelevant except if comparing
+total energies of different calculations, in which case they 
+have to be considered with care (for instance by putting them all to zero,
+i.e. by not introducing them in the list). 
+The other components average to zero representing no bias in the
+total energy comparisons. 
+
+If the total
+energies of the free atoms are put as 0 0 0 coefficients (with
+spin polarisation if adequate etc.) the corrected total energy
+will be the cohesive energy of the system (per unit cell).
+
+{\it Example:} For a two species system, this example would give a quite
+sufficent set in many instances (the actual values of the Fourier 
+coefficients are not realistic).
+
+\begin{verbatim}
+     %block EggBoxRemove
+       1   0   0   0 -143.86904
+       1   0   0   1    0.00031
+       1   0   1   0    0.00016
+       1   0   1   1   -0.00015
+       1   1   0   0    0.00035
+       1   1   0   1   -0.00017
+       2   0   0   0 -270.81903
+       2   0   0   1    0.00015
+       2   0   1   0    0.00024
+       2   1   0   0    0.00035
+       2   1   0   1   -0.00077
+       2   1   1   0   -0.00075
+       2   1   1   1   -0.00002
+     %endblock EggBoxRemove
+\end{verbatim}
+
+It represents an alternative to grid-cell sampling (above).
+It is only approximate, but once the Fourier components for each 
+species are given, it does not represent any computational 
+effort (neither memory nor time), while the grid-cell sampling
+requires CPU time (roughly one extra SCF step per point every
+MD step).
+
+It will be particularly helpful in atoms with substantial partial
+core or semicore electrons.
+
+{\it Use:} This technique as it stands should only be used for fixed cell 
+calculations. 
+
+For the time being, it is up to the user to obtain the Fourier
+components to be introduced. They can be obtrained by moving one
+isolated atom through the cell to be used in the calculation
+(for a give cell size, shape and mesh), once for each species. 
+There is a utility program that does it, calling siesta (Tom Archer).
+
+{\it Default value:} Empty.
+
+
+\item[{\bf EggboxScale}] ({\it real energy}):\index{egg-box effect}
+\index{EggboxScale@{\bf EggboxScale}}\index{rippling}
+
+Defines the scale in which the Fourier components of the 
+egg-box energy are given in the {\bf EggboxRemove} block.
+
+{\it Default value:} 1 eV.
+
 \end{description}
 
 
@@ -2069,9 +2261,80 @@ cannot be used in parallel.
 
 {\it Default value:} {\tt false}
 
+\item[{\bf OccupationFunction}]({\it string}):
+\index{OccupationFunction@{\bf OccupationFunction}}
+\index{ElectronicTemperature@{\bf ElectronicTemperature}}
+String variable to select the function that determines the occupation
+of the electronic states. Two options are available:
+\begin{itemize}
+\item {\tt FD}: The usual Fermi-Dirac occupation function is used.
+\item {\tt MP}: The occupation function proposed by Methfessel and 
+Paxton (Phys. Rev. B, {\bf 40}, 3616 (1989)), is used.
+\end{itemize}
+The smearing of the electronic occupations is done, in both cases,
+using an energy width defined by the {\bf ElectronicTemperature}
+variable. Note that, while in the case of Fermi-Dirac, the occupations
+correspond to the physical ones if the electronic temperature is
+set to the physical temperature of the system, this is not the case
+in the Methfessel-Paxton function. In this case, the tempeature
+is just a mathematical artifact to obtain a more accurate
+integration of the physical quantities at a lower cost. In
+particular, the Methfessel-Paxton scheme has the advantage
+that, even for quite large smearing temperatures, the 
+obtained energy is very close to the physical energy at T=0.
+Also, it allows a much faster convergence with respect to
+k-points, specially for metals. Finally, the convergence to
+selfconsistency is very much improved (allowing the use
+of larger mixing coefficients).
+
+For the Methfessel-Paxton case, one can use relatively large
+values for the {\bf ElectronicTemperature} parameter. How large
+depends on the specific system. A guide can be found in the
+article by J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.
+{\bf 6}, 15 (1996).
+
+If Methfessel-Paxton smearing is used, the order of
+the corresponding Hermite polynomial expansion must also be chosen
+(see description of variable {\bf OccupationMPOrder}).
+
+We finally note that, in both cases (FD and MP), once a finite
+temperature has been chosen, the relevant energy is not the Kohn-Sham
+energy, but the Free energy. In particular, the
+atomic forces are derivatives of the Free energy, not the KS 
+energy. See R. Wentzcovitch {\it et al.}, Phys. Rev. B {\bf 45},
+11372 (1992); S. de Gironcoli, Phys. Rev. B {\bf 51}, 6773 (1995);
+J. Kresse and J. Furthm\"uller, Comp. Mat. Sci.
+{\bf 6}, 15 (1996),
+for details.
+
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}
+
+{\it Default value:} {\tt FD} 
+
+\item[{\bf OccupationMPOrder}]({\it integer}):
+\index{OccupationMPOrder@{\bf OccupationMPOrder}}
+\index{OccupationFunction@{\bf OccupationFunction}}
+Order of the Hermite-Gauss polynomial expansion for the
+electronic occupation functions in the Methfessel-Paxton
+scheme (see Phys. Rev. B  {\bf 40}, 3616 (1989)).
+Specially for metals, higher order expansions provide better convergence
+to the ground state result, even with larger smearing
+temperatures, and provide also better convergence with k-points.
+
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}
+and {\bf OccupationFunction} =  {\tt MP}
+
+{\it Default value:} {\tt 1} 
+
+
+
 \item[{\bf ElectronicTemperature}] ({\it real temperature or energy}): 
 \index{ElectronicTemperature@{\bf ElectronicTemperature}}
-Temperature for Fermi-Dirac distribution. Useful specially for
+\index{OccupationFunction@{\bf OccupationFunction}}
+Temperature for Fermi-Dirac or Methfessel-Paxton
+distribution. Useful specially for
 metals, and to accelerate selfconsistency in some cases.
 
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}
@@ -2246,16 +2509,17 @@ the Parrinello-Rahman method)
 by means of a Nos\'e thermostat and pressure controlled by 
 the Parrinello-Rahman method)
 \item {\tt Anneal}  (MD with annealing to a desired
-temperature and/or pressure (see variable MD.AnnealOption below))
+temperature and/or pressure (see variable MD.AnnealOption below)
 \item {\tt FC}  (Compute force constants matrix\index{Force Constants
 Matrix} for phonon
-calculations))
-
+calculations. The output can be analyzed to extract phonon
+frequencies and vectors with the VIBRA/index{VIBRA} package in the Util/
+directory)
 \item {\tt Phonon} (Compute forces for a specified set of atomic
 displacements. These are choosen with the help of the program {\sc
 Phonon} \footnote{{\sc Phonon} is \copyright\ copyright by Krzysztof
-Parlinski} ) \index{Phonon program} \index{Force Constants
-Matrix!using phonon@using {\sc Phonon}} for phonon calculations)). See
+Parlinski}  \index{Phonon program} \index{Force Constants
+Matrix!using phonon@using {\sc Phonon}} for phonon calculations). See
 also {\tt MD.ATforPhonon} block.
 \end{itemize}
     
@@ -2749,6 +3013,10 @@ In particular, it redefines the defaults for the following:
 {\bf WriteBands}\index{WriteBands@{\bf WriteBands}}:
 \index{output!band structure} {\tt .true.}
 \item
+{\bf WriteWaveFunctions}
+\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}:
+\index{output!wave functions} {\tt .true.}
+\item
 {\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}} 
 \index{output!Mulliken analysis}\index{Mulliken population analysis} 1
 
@@ -2853,6 +3121,26 @@ structure.\index{band structure} The GNUBANDS\index{GNUBANDS} program
 standard input and dumps to standard output a file directly plotable
 by {\sc Gnuplot}.\index{Gnuplot@{\sc Gnuplot}}
 \footnote{{\sc Gnuplot} is under \copyright\ copyright of GNU software}
+
+{\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
+ 
+{\it Default value:} {\tt .false.} (see {\bf LongOutput})
+
+\item[{\bf WriteWaveFunctions}] ({\it logical}): 
+\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
+\index{output!wave functions} If {\tt .true.} it writes
+the Hamiltonian eigenvectors (coefficients of the wavefunctions
+in the basis set orbitals expansion) corresponding to the $\vec k$ vectors
+defined by the {\bf WaveFuncKPoints}
+\index{WaveFuncKPoints@{\bf WaveFuncKPoints}}
+descriptor to the main output file.  Otherwise it does
+not, but they are dumped into the file {\it Systemlabel}.WFS
+to be used by postprocessing utilities for handling the 
+wave functions
+\index{wave functions}. The READWF\index{READWF} program
+(found in the Util/ directory) reads the {\it Systemlabel}.WFS from
+standard input and dumps to standard output a file readable
+by the user.
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
  
@@ -2975,6 +3263,13 @@ Sets the level of the allocation report, printed in file
 \end{itemize}
 
 {\it Default value:} {\tt 0}
+
+        
+\item[{\bf SignatureRecords}] ({\it logical}):
+\index{SignatureRecords@{\bf SignatureRecords}}
+If true, some information is stored in the SIG file.
+
+{\it Default value:} {\tt .false.}
 
         
 \end{description}
@@ -3121,6 +3416,36 @@ which may be used by an application program in later versions.
 {\it Default value:} {\tt .false.}
         
 
+\item[{\bf SaveIonicCharge}] ({\it logical}): 
+\index{SaveIonicCharge@{\bf SaveIonicCharge}} 
+\index{output!ionic charge}
+Instructs to write the soft diffuse ionic charge at the
+mesh used by DHSCF,
+in file {\tt SystemLabel}.IOCH. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+Remember that, within the {\sc Siesta} sign convention, the electron charge
+density is positive and the ionic charge density is negative. 
+
+
+{\it Use:} File {\tt SystemLabel}.IOCH is only written, not read, by siesta.
+
+{\it Default value:} {\tt .false.}
+        
+\item[{\bf SaveTotalCharge}] ({\it logical}): 
+\index{SaveTotalCharge@{\bf SaveTotalCharge}} 
+\index{output!total charge}
+Instructs to write the total charge density (ionic+electronic) at the
+mesh used by DHSCF,
+in file {\tt SystemLabel}.TOCH. This file can be read by routine IORHO,
+which may be used by an application program in later versions.
+Remember that, within the {\sc Siesta} sign convention, the electron charge
+density is positive and the ionic charge density is negative. 
+
+{\it Use:} File {\tt SystemLabel}.TOCH is only written, not read, by siesta.
+
+{\it Default value:} {\tt .false.}
+        
+
 \item[{\bf LocalDensityOfStates}] ({\it block}): 
 \index{LocalDensityOfStates@{\bf LocalDensityOfStates}} 
 \index{output!local density of states}
@@ -3171,10 +3496,7 @@ An example is:
 \end{verbatim}
 
 {\it Use:} The two energies of the range must be ordered, with lowest
-first.  The PDOS is only implemented when the hamiltonian is solved by
-diagonalization with k-points.  The PDOS is not parallelized yet, so
-an error message is issued when we try to use it in a parallel
-execution.
+first. 
 
 {\it Output:} The Total DOS is dumped into a file
 called {\tt SystemLabel}.DOS. The format of this file is:
@@ -3293,6 +3615,11 @@ for writing the $\vec k$ points used to band-structure plots,
 \index{output!band structure} 
 for writing the band structure at those $\vec k$ points,
 \item
+{\bf WriteWaveFunctions}\index{WriteWaveFunctions@{\bf WriteWaveFunctions}}
+\index{output!wave functions} 
+for writing the coefficients of the wave functions at
+certain $\vec k$ points,
+\item
 {\bf WriteMullikenPop}\index{WriteMullikenPop@{\bf WriteMullikenPop}}
 \index{output!Mulliken analysis}\index{Mulliken population analysis} 
 for writing the Mulliken population analysis at different levels of detail.
@@ -3373,6 +3700,9 @@ See the {\bf WriteKpoints} data descriptor above.
 (files SystemLabel.RHO, SystemLabel.DRHO, SystemLabel.VH, SystemLabel.VT) 
 See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf SaveElectrostaticPotential},
 and {\bf SaveTotalPotential} data descriptors above.
+3D-plots of these files can be done using the pacakges
+PLRHO/index{PLRHO} and GRID2CUBE/index{GRID2CUBE} in the Util/
+directory.
 
 
 \subsection{Energy bands}
@@ -3403,7 +3733,23 @@ program (found in the Util/ directory) reads the {\it Systemlabel}.bands
 for plotting.
 See the {\bf BandLines} data descriptor above for more information.
 
+\subsection{Wavefunction coefficients}\label{subsec:wf}
+(file SystemLabel.WFS) This unformatted file has the
+information of the k-points where wavefunctions coefficients
+are written, and the energies and coefficients of each
+wavefunction which was specified in the input file
+(see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf WaveFuncKPoints}}
+descriptor above).
+It also writes information on the atomic species and
+the orbitals for postprocessing purposes.
+
+\noindent
+The READWF\index{READWF} postprocessing utility
+program (found in the Util/ directory) reads the {\it Systemlabel}.WFS
+file and generates a readable file.
+
 \subsection{Eigenvalues}
+
 \index{output!eigenvalues}
 The Hamiltonian eigenvalues for the sampling $\vec k$ points are
 dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
@@ -3612,11 +3958,8 @@ Implementation of the Li-Nunes-Vanderbilt order-$N$ functional
 \section{REPORTING BUGS}
 \index{bug reports}
 Your assistance is essential to help improve the program. If you find
-any problem, please report it back to us using the {\tt send-bug}
-script in the top {\tt SIESTA} directory, or (better) the bug
-reporting Web interface at {\tt http://www.uam.es/siesta} (log in as
-{\tt user}, with any non-empty password). There is online
-documentation available on the web page itself. Please keep in mind
+any problem, please report it back to us through the {\sc Siesta} mailing
+list (details in {\tt www.uam.es/siesta}). Please keep in mind
 the following guidelines:
 
 \begin{itemize}
@@ -3627,7 +3970,9 @@ concise and to the point.
 \item Describe the exact steps you followed to see the problem. You
 might want to include a copy of the fdf file you used in the
 calculation, details about the pseudopotentials, etc, or provide a
-means for us to download the information.
+means for us to download the information. (It might be unwise to swamp
+all the list users with huge files. State the problem in the most
+concise form possible and we will request more info from you.)
 
 \item Be specific. Describe what happened and how it differs from what
 should have happened.
@@ -3652,30 +3997,16 @@ at the top of any output file (also found in file Src/version.F).
 \item The platform on which the problem was found, and the operating
 system and compiler version.
 
-\item The bug database is open so that {\sc Siesta} users can look at the
-known problems (this, by the way, is useful to avoid receiving
-duplicate bug reports). If for some reason you do not want your report
-to be seen by others, please set the {\tt Confidential} flag to {\tt
-yes}.
+\item The {\sc Siesta} mailing list is an open forum.
+If for some reason you do not want your report
+to be seen by others, please arrange with a developer to look into the
+matter directly.
 
 \end{itemize}
 
-\item The other fields in the form can be left in their default
-values, but if your report concerns a documentation bug or a request
-for new functionality, please set the {\tt Class} field
-accordingly. (The default is {\tt sw-bug} which stands for ``software
-bug''.)
-
-
-\item Whether using the Web form or e-mail to submit your bug report,
-please limit your communication to one bug report per form or message.
+\item Please limit your communication to one bug report per form or message.
 
 \end{itemize}
-
-You will receive an acknowledgement of your report by email, and
-notifications of any progress in the solution. If you want to browse
-the bug database, simply use the Web interface and request a
-``query''.
 
 \section{ACKNOWLEDGMENTS}
 
@@ -3689,12 +4020,12 @@ let us know.
 
 \begin{itemize}
 \item
-The main nonpublic contribution, that we thank thoroughly, are a
-number of routines, written by {\bf A. R.\ Williams} in 1985, for the
-solution of the radial Schr\"odinger and Poisson equations in the APW
-code of Soler and Williams (PRB {\bf 42}, 9728 (1990)).  Within
-{\sc Siesta}, they are kept in files arw.f and periodic\_table.f, and they
-are used for the generation of the basis orbitals and the screened
+The main nonpublic contribution, that we thank thoroughly, are modified
+versions of a number of routines, originally written by {\bf A. R.\ Williams} 
+around 1985, for the solution of the radial Schr\"odinger and Poisson 
+equations in the APW code of Soler and Williams (PRB {\bf 42}, 9728 (1990)).
+Within {\sc Siesta}, they are kept in files arw.f and periodic\_table.f, 
+and they are used for the generation of the basis orbitals and the screened
 pseudopotentials.
 
 \item
@@ -3710,10 +4041,10 @@ LDA parametrization of xc, is based on routine velect, written by
 {\bf S.\ Froyen}.
 
 \item
-A number of routines (some of them modified or with name changed)
-from {\em Numerical Recipes. The Art of Scientific Computing}
+A small number of routines are modified versions of those from 
+{\em Numerical Recipes. The Art of Scientific Computing}
 by {\bf W. H.\ Press, S. A.\ Teukolsky, W. T.\ Veterling and B. P.\ Flannery}
-(Cambridge U.P. 1987-1992) are kept in file recipes.f
+(Cambridge U.P. 1987-1992), and are kept in file recipes.f
 
 \item
 Some standard diagonalization routines by {\bf B. S. Garbow} are kept
@@ -3948,6 +4279,12 @@ since this phase becomes embarrassingly parallel once the matrices have
 been distributed to each Node. This mode is selected using the 
 {\bf ParallelOverK} \index{ParallelOverk@{\bf ParallelOverK}}
 option.
+
+It should be noted that at the moment the parallelisation of the order-N
+part is primarily done in order to be able to access large amounts of
+distributed memory, rather than for parallel efficiency. For efficiency,
+this requires a spatial decomposition which is not included in this
+version.
 
 In order to use the parallel version of the code you must have the following
 libraries installed on your computer :

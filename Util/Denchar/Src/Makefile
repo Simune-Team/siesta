@@ -6,7 +6,7 @@ MOD_DIR=Modules
 #default: what denchar 
 default: what denchar
 #
-include ../../../Src/arch.make
+include arch.make
 #
 # Uncomment the following line for debugging support
 #
@@ -34,11 +34,11 @@ SYSOBJ=$(SYS).o
 #
 OBJS = atompla.o  \
         bessph.o chkdim.o colinear.o denchar.o dismin.o \
-	dmna.o dot.o io.o iodm.o length.o matvect.o memory.o \
+	dmna.o dot.o io.o iodm.o itochar.o length.o matvect.o memory.o \
 	neighb.o paste.o planed.o  prmem.o \
-	radfft.o ranger.o readpla.o recipes.o \
+	radfft.o ranger.o readpla.o readwaves.o recipes.o \
         redata.o reinit.o rhoofr.o\
-	version.o volcel.o wrout.o 
+	version.o volcel.o wavofr.o wrout.o 
 #
 FDF=libfdf.a
 $(FDF): 
@@ -92,6 +92,8 @@ netcdf.mod:
 # Libraries that need to be compiled
 #
 #
+
+
 version:
 	sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
 	sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > temp.F

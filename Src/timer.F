@@ -32,7 +32,7 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
@@ -192,7 +192,7 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)

@@ -1,22 +1,25 @@
-      SUBROUTINE PLANE( NA, NPLAMAX, OPTION, XMIN, XMAX, YMIN, YMAX,
-     .                  NPX, NPY, COORPO, NORMALP, DIRVER1, DIRVER2,
+      SUBROUTINE PLANE( NA, NPLAMAX, IDIMEN, OPTION, 
+     .                  XMIN, XMAX, YMIN, YMAX, ZMIN, ZMAX, 
+     .                  NPX, NPY, NPZ, COORPO, NORMALP, 
+     .                  DIRVER1, DIRVER2,
      .                  XA, NAPLA, INDICES, ISCALE,
      .                  LATPOINT, PLAPOINT, XAPLANE )
 
 C **********************************************************************
-C This subroutine calculates coordinates of the points of a plane in 
-C two reference frames: in the lattice reference frame (lrf) and in another 
-C one centered on the plane in which the third coordiante 
-C is always cero (prf)
+C This subroutine calculates coordinates of the points of a plane 
+C or in the 3D-grid in two reference frames: in the lattice reference 
+C frame (lrf) and in another one centered on the plane in which the 
+C third coordiante is always cero (prf)
 C **********************************************************************
 
       IMPLICIT NONE
 
       INTEGER, INTENT(IN) ::
-     .   NPLAMAX, OPTION, NPX, NPY, ISCALE, NA, NAPLA, INDICES(NA)
+     .   NPLAMAX, OPTION, NPX, NPY, NPZ, ISCALE, NA, NAPLA, INDICES(NA),
+     .   IDIMEN
 
       DOUBLE PRECISION, INTENT(IN) ::
-     .   XMIN, XMAX, YMIN, YMAX,
+     .   XMIN, XMAX, YMIN, YMAX, ZMIN, ZMAX,
      .   NORMALP(3), COORPO(3,3), XA(3,NA)
 
       DOUBLE PRECISION, INTENT(INOUT) ::
@@ -29,17 +32,18 @@ C **********************************************************************
 C **** INPUTS **********************************************************
 C INTEGER NA         : Number of atoms in supercell
 C INTEGER NPLAMAX    : Maximum number of points in the plane
+C INTEGER IDIMEN     : Specify if the run is to plot quantities
+C                      in a plane or in a 3D grid (2 or 3, respect)
 C INTEGER OPTION     : Choose one of these options to define a plane:
 C                      1 = components of the normal vector
 C                      2 = equation of two straigth lines
 C                      3 = coordinates of three points
 C                      4 = indices of three atoms
-C INTEGER NPX,NPY    : Number of points generated along x and y
-C                      direction in a system of reference in which
-C                      the third components od the points of the plane is
-C                      zero (Plane Reference Frame; PRF)
+C INTEGER NPX,NPY,NPZ: Number of points generated along x and y
+C                      directions (and z for 3D-grids) 
 C REAL*8 XMIN, XMAX  : Limits of the plane in the PRF for x-direction
 C REAL*8 YMIN, YMAX  : Limits of the plane in the PRF for y-direction
+C REAL*8 ZMIN, ZMAX  : Limits of the plane in the PRF for z-direction
 C REAL*8  NORMAL(3)  : Components of the normal vector used to define
 C                      the plane
 C REAL*8  DIRVER1(3) : Components of the first vector contained
@@ -54,13 +58,13 @@ C INTEGER NAPLA      : Number of atoms whose coordinates will be rotated
 C INTEGER INDICES(NA): Indices of the atoms whose coordinates will
 C                      be rotated from the lattice reference frame
 C                      to the in-plane reference frame
-C INTEGER ISCALE     : Unit if the points of the plane
+C INTEGER ISCALE     : Unit of the points of the plane
 C REAL*8  XA(3,NA)   : Atomic positions in cartesian coordinates
 C                      (in bohr)
 C **** OUTPUT **********************************************************
-C REAL*8  LATPOINT(NPLAMAX,3) : Coordinates of the points of the plane
+C REAL*8  LATPOINT(NPLAMAX,3) : Coordinates of the points 
 C                               (lattice ref. frame)
-C REAL*8  PLAPOINT(NPLAMAX,3) : Coordinates of the points of the plane
+C REAL*8  PLAPOINT(NPLAMAX,3) : Coordinates of the points 
 C                               (plane refer. frame)
 C REAL*8  XAPLANE(3,NA): Atomic coordinates in plane reference frame
 C **********************************************************************
@@ -79,7 +83,8 @@ C Internal variables ---------------------------------------------------
 
 C **********************************************************************
 C REAL*8 MODNOR, MODDI1       : Length of the vector normal and dirver1
-C REAL*8 XPLANE(3), YPLANE(3) : Plane reference frame
+C REAL*8 XPLANE(3), YPLANE(3) 
+C        ZPLANE(3)            : Plane reference frame
 C REAL*8 ORIGIN(3)            : Coordinates of a point of the plane 
 C                               that will be considered the origin of the 
 C                               reference frame fixed in the plane. 
@@ -134,8 +139,8 @@ c         write(*,*)(xplane(i),i=1,3)
          do i = 1,3
             normal(i) = (1/modnor)*normal(i)
             xplane(i) = (1/moddi1)*dirver1(i)
-        enddo
-         
+         enddo
+          
       endif
 
       call crossv(normal,xplane,yplane)
@@ -160,13 +165,14 @@ c         write(*,*)(xplane(i),i=1,3)
          enddo
       enddo
 
-      call popla(nplamax,npx,npy,xmin,xmax,ymin,ymax,plapoint)
+      call popla(nplamax,npx,npy,npz,xmin,xmax,ymin,ymax,zmin,zmax,
+     .          idimen,plapoint)
         
-      call rotation(nplamax,npx,npy,mrot,inmrot,origin,
+      call rotation(nplamax,npx,npy,npz,mrot,inmrot,origin,
      .              plapoint,latpoint)
 
-      call atompla( na, origin, xa, inmrot, napla, indices, iscale,
-     .              xaplane )
+      call atompla( na, origin, xa, inmrot, idimen, iscale, 
+     .              napla, indices, xaplane )
 
       return
       end
@@ -174,7 +180,8 @@ c         write(*,*)(xplane(i),i=1,3)
 
 *=======================================================================
 *=======================================================================
-      subroutine popla(nplamax,npx,npy,xmin,xmax,ymin,ymax,plapoint)
+      subroutine popla(nplamax,npx,npy,npz,xmin,xmax,ymin,ymax,
+     .           zmin,zmax,idimen,plapoint)
 *
 *     This subroutine generates the coordinates of the points of the plane in
 *    a reference frame fixed in the plane and where the z-axis is the normal
@@ -186,34 +193,58 @@ c         write(*,*)(xplane(i),i=1,3)
         implicit none
     
         integer nplamax
-        integer npx,npy,i,k,l
-        real*8 xmin,xmax,ymin,ymax,deltax,deltay
+        integer npx,npy,npz,i,k,l,m,idimen
+        real*8 xmin,xmax,ymin,ymax,zmin,zmax,deltax,deltay,deltaz
         real*8 plapoint(nplamax,3)
 *-----------------------------------------------------------------------
 *     INICIALIZATION
 *
-        i = 1
         deltax=(xmax-xmin)/(npx - 1)
         deltay=(ymax-ymin)/(npy - 1)
+        if (npz .ne. 1) then
+          deltaz=(zmax-zmin)/(npz - 1)
+        else
+          deltaz=0.0d0
+        endif
 
 *-----------------------------------------------------------------------
-*     COMPUTATIONAL BLOCH
+*     COMPUTATIONAL BLOCK
 *
-        do k = 1,npx
-           do l = 1,npy
-             plapoint(i,1) = xmin + (k-1)*deltax
-             plapoint(i,2) = ymin + (l-1)*deltay
-             plapoint(i,3) = 0.d0
-             i = i+1
-          enddo
-        enddo
 
-	return
-	end
+C Do the loops differently if 2D or 3D. 
+C This is necessary to comply with the ordering
+C expected by Cube, and to maintain the former 
+C ordering in the 2D case from former versions
+
+        i = 1
+        if (idimen .eq. 2) then
+          do k = 1,npx
+            do l = 1,npy
+               plapoint(i,1) = xmin + (k-1)*deltax
+               plapoint(i,2) = ymin + (l-1)*deltay
+               plapoint(i,3) = 0.0d0
+               i = i+1
+            enddo
+          enddo
+        else if (idimen .eq. 3) then
+          do m = 1,npz
+             do l = 1,npy
+               do k = 1,npx
+                  plapoint(i,1) = xmin + (k-1)*deltax
+                  plapoint(i,2) = ymin + (l-1)*deltay
+                  plapoint(i,3) = zmin + (m-1)*deltaz
+                  i = i+1
+                enddo
+            enddo
+          enddo
+        endif
+
+        return
+        end
 *=======================================================================
 *=======================================================================       
 
-      subroutine rotation(nplamax,npx,npy,mrot,inmrot,origin,
+      subroutine rotation(nplamax,npx,npy,npz,mrot,inmrot,origin,
      .                    plapoint,latpoint)
 *
 *     This subroutine makes the transformation of the coordinates of the points
@@ -225,7 +256,7 @@ c         write(*,*)(xplane(i),i=1,3)
       implicit none
 
       integer nplamax
-      integer npx,npy,i,j
+      integer npx,npy,npz,i,j
       real*8 mrot(3,3),inmrot(3,3)
       real*8 origin(3),vaux1(3),vaux2(3)
       real*8 plapoint(nplamax,3),latpoint(nplamax,3)
@@ -234,10 +265,10 @@ c         write(*,*)(xplane(i),i=1,3)
 *    
 *     vaux1,vaux2 = auxiliar vectors needed in the computation of latpoint.
 *-----------------------------------------------------------------------
-*     COMPUTATIONAL BLOCH
+*     COMPUTATIONAL BLOCK
 *
 
-      do i = 1, npx*npy
+      do i = 1, npx*npy*npz
          do j = 1,3
            vaux1(j) = plapoint(i,j)
          enddo

@@ -5,7 +5,7 @@
 !
 
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
       use precision
       use sys

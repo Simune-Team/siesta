@@ -37,7 +37,7 @@ C
       use precision
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
       use parallel
 #endif
       use diagmemory
@@ -82,13 +82,16 @@ C
       integer                :: Node
       integer                :: Nodes
       integer, pointer, save :: iwork(:)
-      logical                :: DivideConquer
+      logical,          save :: DivideConquer
+      logical,          save :: DCread
       logical,          save :: nullified = .false.
       real*8                 :: h(nml,nm)
       real*8                 :: s(nml,nm)
       real*8                 :: w(nml)
       real*8                 :: z(nml,maxuo)
       real*8,  pointer, save :: work(:)
+
+      data DCread /.false./
 C ......................
 
 C Start time count
@@ -129,7 +132,10 @@ C Set general Lapack parameters
 
 C Set divide and conquer option - serial only
       if (Nodes.eq.1) then
-        DivideConquer = fdf_boolean( 'DivideAndConquer', .false. )
+        if (.not. DCread) then
+          DivideConquer = fdf_boolean( 'DivideAndConquer', .false. )
+          DCread=.true.
+        endif
       else
         DivideConquer = .false.
       endif
@@ -152,11 +158,11 @@ C Calculate sizes of workspace arrays and add margin of error
         lwork = nint(MemoryFactor*dble(lwork))
 
 C Allocate workspace arrays
-        call realloc( work,    1,lwork,   name='work'  )
-        call realloc( iwork,   1,liwork,  name='iwork' )
-        call realloc( gap,     1,Nodes,   name='gap'     )
-        call realloc( iclustr, 1,2*Nodes, name='iclustr' )
-        call realloc( ifail,   1,nml,     name='ifail'   )
+        call re_alloc( work,    1,lwork,   name='work'  )
+        call re_alloc( iwork,   1,liwork,  name='iwork' )
+        call re_alloc( gap,     1,Nodes,   name='gap'     )
+        call re_alloc( iclustr, 1,2*Nodes, name='iclustr' )
+        call re_alloc( ifail,   1,nml,     name='ifail'   )
 
 C Get Blacs context and initialise Blacs grid 
         nprow = 1
@@ -195,11 +201,11 @@ C Exit Blacs
         call blacs_gridexit( ictxt )
 
 C Deallocate workspace arrays
-        call dealloc( iwork,   name='iwork'  )
-        call dealloc( work,    name='work'   )
-        call dealloc( ifail,   name='ifail'  )
-        call dealloc( iclustr, name='iclustr')
-        call dealloc( gap,     name='gap'    )
+        call de_alloc( iwork,   name='iwork'  )
+        call de_alloc( work,    name='work'   )
+        call de_alloc( ifail,   name='ifail'  )
+        call de_alloc( iclustr, name='iclustr')
+        call de_alloc( gap,     name='gap'    )
       else
 #endif
 C***************************
@@ -212,8 +218,8 @@ C Set size of workspace arrays
           liwork = 3 + 5*nm
 
 C Allocate workspace arrays
-          call realloc( work,  1,lwork,  name='work'  )
-          call realloc( iwork, 1,liwork, name='iwork' )
+          call re_alloc( work,  1,lwork,  name='work'  )
+          call re_alloc( iwork, 1,liwork, name='iwork' )
 
 C Call lapack
 #ifdef CRAY
@@ -224,8 +230,8 @@ C Call lapack
      .      (1,jobz,uplo,n,h,nm,s,nm,w,work,lwork,iwork,liwork,info)
 
 C Deallocate workspace arrays
-          call dealloc( iwork,   name='iwork'  )
-          call dealloc( work,    name='work'   )
+          call de_alloc( iwork,   name='iwork'  )
+          call de_alloc( work,    name='work'   )
 
         else
 
@@ -233,7 +239,7 @@ C Set size of workspace array
           lwork = 5*nm
 
 C Allocate workspace array
-          call realloc( work, 1,lwork, name='work' )
+          call re_alloc( work, 1,lwork, name='work' )
 
 C Call lapack
 #ifdef CRAY
@@ -244,7 +250,7 @@ C Call lapack
      .      (1,jobz,uplo,n,h,nm,s,nm,w,work,lwork,info)
 
 C Deallocate workspace array
-          call dealloc( work, name='work' )
+          call de_alloc( work, name='work' )
         endif
 
 C Copy eigenvectors into appropriate array

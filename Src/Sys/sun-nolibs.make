@@ -5,6 +5,7 @@ SIESTA_ARCH=sun-nolibs
 #
 FC=f90
 FC_ASIS=$(FC)
+RANLIB=echo
 #
 FFLAGS= -O
 FFLAGS_DEBUG= -g -O0

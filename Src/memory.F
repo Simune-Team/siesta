@@ -88,7 +88,7 @@ C
       use memoryinfo
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -125,7 +125,7 @@ C Find peak memory use over all Nodes
 
 C Output memory use information
       if (Node.eq.0) then
-        write(Unit,'(/)')
+        write(Unit,*)
       endif
       if (Level.eq.0) then
         if (Node.eq.0) then

@@ -1,8 +1,7 @@
       subroutine detover(psiprev, psi, S, Sr, 
      .               numh, listhptr, listh, indxuo,
      .               no, nuo, xij, maxnh, nuotot, nocc,
-     .               kpoint, dk, detr, deti, savepsi,
-     .               Node, Nodes)
+     .               kpoint, dk, detr, deti, Node, Nodes)
 C *********************************************************************
 C Finds the determinant of the overlap matrix
 C between the periodic Bloch functions corresponding to neighboring  
@@ -33,8 +32,6 @@ C integer nocc                : number of occupied states
 C real*8  kpoint(3)           : Current kpoint
 C real*8  dk(3)               : Vector joining the previous and current 
 C                               kpoint
-C logical savepsi             : Indicates whether psi should be saved 
-C                             : in psiprev
 C integer Node                : Local node number
 C integer Nodes               : Total number of Nodes
 C *************************** INPUT/OUTPUT ****************************
@@ -49,7 +46,7 @@ C *********************************************************************
       use precision
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
       implicit none
  
@@ -57,7 +54,6 @@ C *********************************************************************
      .  nuo, maxnh, nuotot, no, nocc,
      .  listh(maxnh), listhptr(nuo), numh(nuo), indxuo(no), 
      .  info, job, Node, Nodes
-      logical savepsi
       parameter(job=10)
 
       double precision 
@@ -161,18 +157,6 @@ C Broadcast copy of psi on node n to all other nodes
           enddo
         enddo
 
-C Save local part of psiprev if required
-        if (savepsi) then
-          do iuo = 1,noccmax
-            call LocalToGlobalOrb(iuo,n,Nodes,iuog)
-            do juo = 1,nuo
-              call LocalToGlobalOrb(juo,Node,Nodes,juog)
-              psiprev(1,juo,iuog) = psitmp(1,juog,iuo)
-              psiprev(2,juo,iuog) = psitmp(2,juog,iuo)
-            enddo
-          enddo
-        endif
-
       enddo
 
       call memory('D','D',size(psitmp),'detover')
@@ -231,17 +215,5 @@ C Deallocate local memory
       deallocate(Aux2)
       call memory('D','Z',size(Aux),'detover')
       deallocate(Aux)
-
-#ifndef MPI
-      if (savepsi) then
-C Store wavefunction for the next point
-        do iuo = 1,nuo
-          do juo = 1,nuotot
-            psiprev(1,juo,iuo)=psi(1,juo,iuo)
-            psiprev(2,juo,iuo)=psi(2,juo,iuo)
-          enddo
-        enddo
-      endif
-#endif
 
       end

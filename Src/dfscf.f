@@ -102,12 +102,12 @@ C  Allocate buffers to store partial copies of Dscf and C
       maxc = maxval(endpht(1:np)-endpht(0:np-1))
       maxb = maxc + minb
       maxb = min( maxb, no )
-      call realloc( C,   1,nsp,  1,maxc,          name='C'   )
-      call realloc( D,   0,maxb, 0,maxb, 1,nspin, name='D'   )
-      call realloc( gC,  1,3,    1,nsp,  1,maxc,  name='gC'  )
-      call realloc( ibc, 1,maxc,                  name='ibc' )
-      call realloc( iob, 0,maxb,                  name='iob' )
-      call realloc( xgC, 1,9,    1,nsp,  1,maxc,  name='xgC' )
+      call re_alloc( C,   1,nsp,  1,maxc,          name='C'   )
+      call re_alloc( D,   0,maxb, 0,maxb, 1,nspin, name='D'   )
+      call re_alloc( gC,  1,3,    1,nsp,  1,maxc,  name='gC'  )
+      call re_alloc( ibc, 1,maxc,                  name='ibc' )
+      call re_alloc( iob, 0,maxb,                  name='iob' )
+      call re_alloc( xgC, 1,9,    1,nsp,  1,maxc,  name='xgC' )
 
 C  Set logical that determines whether we need to use parallel or serial mode
       Parallel = (nuo .ne. nuotot)
@@ -341,12 +341,12 @@ C  End of mesh point loop
       enddo
   
 C  Deallocate local memory
-      call dealloc( xgC, name='xgC'  )
-      call dealloc( iob, name='iob' )
-      call dealloc( ibc, name='ibc'  )
-      call dealloc( gC,  name='gC'   )
-      call dealloc( D,   name='D'    )
-      call dealloc( C,   name='C'    )
+      call de_alloc( xgC, name='xgC'  )
+      call de_alloc( iob, name='iob' )
+      call de_alloc( ibc, name='ibc'  )
+      call de_alloc( gC,  name='gC'   )
+      call de_alloc( D,   name='D'    )
+      call de_alloc( C,   name='C'    )
       if (Parallel) then
         call memory('D','D',size(DscfL),'meshdscf')
         deallocate(DscfL)

@@ -1,3 +1,4 @@
+
 # Makefile for siesta
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
@@ -36,7 +37,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
 	on_subs.o ordern.o outcell.o outcoor.o overfsm.o \
-	paste.o pdos.o pdosk.o phirphi.o pixmol.o plcharge.o timestamp.o \
+	paste.o pdos.o pdosg.o pdosk.o phirphi.o pixmol.o plcharge.o timestamp.o \
 	propor.o pulayx.o \
 	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
@@ -45,13 +46,13 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	cellxc.o cdiag.o rdiag.o \
         cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
-	siesta.o version.o io.o \
+	siesta.o temp.o io.o \
         spin_init.o coor.o transfer.o \
-        broadcast_basis.o sig.o
+        broadcast_basis.o sig.o eggbox.o
 #
 FDF=libfdf.a
 $(FDF): 
-	(cd fdf ; $(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" module)
+	(cd fdf ; $(MAKE) module)
 #
 # Routines using fdf calls.
 #
@@ -59,7 +60,7 @@ dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
-readsp.o : $(FDF)
+readsp.o eggbox.o : $(FDF)
 #
 atom.o basis_specs.o: $(FDF)
 gen-basis.o: $(FDF)
@@ -71,9 +72,9 @@ gen-basis.o: $(FDF)
 MOD_OBJS=precision.o atom.o atmparams.o atmfuncs.o listsc.o \
          memoryinfo.o numbvect.o  parallel.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o parsing.o\
-         interfaces.o  alloc.o phonon.o spher_harm.o periodic_table.o\
+         alloc.o phonon.o spher_harm.o periodic_table.o\
          basis_types.o pseudopotential.o basis_specs.o sys.o basis_io.o\
-         chemical.o xml.o
+         chemical.o xml.o writewave.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
@@ -89,7 +90,7 @@ efield.o matel.o mulliken.o outcoor.o : atmfuncs.o
 overfsm.o shaper.o                                : atmfuncs.o
 atomlist.o                                        : atmfuncs.o 
 kinefsm.o naefs.o nlefsm.o overfsm.o              : atmfuncs.o
-siesta.o          : atmfuncs.o phonon.o
+siesta.o          : atmfuncs.o phonon.o ordern.o hsparse.o
 redata.o          : phonon.o
 dfscf.o hsparse.o : atmfuncs.o listsc.o
 rhoofd.o rhoofdsp.o vmat.o vmatsp.o  : listsc.o
@@ -114,15 +115,15 @@ chkdim.o coor.o diagpol.o matel.o old_atmfuncs.o periodic_table.o: sys.o
 pdos.o: xml.o atmfuncs.o atomlist.o
 propor.o spher_harm.o pseudopotential.o: sys.o
 redata.o dhscf.o: sys.o
-#
+#----------------------------------------------------
+matel.o basis_io.o atom.o : radfft.o
 #
 basis_io.o: ionew.o atm_types.o atmfuncs.o radial.o sys.o chemical.o\
             basis_types.o xml.o
 basis_io.o: $(FDF) $(NETCDF_INTERFACE)
-siesta.o bands.o efield.o fixed.o grdsam.o: parsing.o
+siesta.o bands.o efield.o fixed.o grdsam.o writewave.o: parsing.o
 initdm.o repol.o ksv.o: parsing.o
 #
-siesta.o: interfaces.o
 siesta.o atomlist.o coor.o dfscf.o matel.o: alloc.o
 #
 broadcast_basis.o: atm_types.o 
@@ -137,17 +138,19 @@ libmpi_f90.a:
 libnetcdf_f90.a: 
 	@(cd NetCDF ; $(MAKE) )
 #
-# Libraries that need to be compiled
+# Libraries that might need to be compiled
 #
 linalg.a: Libs/blas.f Libs/lapack.f
-	@(cd Libs ; $(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)")
+	@echo "==> Compiling linalg.a in Libs..."
+	@(cd Libs ; $(MAKE) linalg.a)
+dc_lapack.a:  Libs/dc_lapack.f
+	@echo "==> Compiling dc_lapack.a in Libs..."
+	@(cd Libs ; $(MAKE) dc_lapack.a)
 #
 version:
 	sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
 	sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > temp.F
-	@($(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" temp.o)
-	@rm -f temp0.F temp.F
-	@mv temp.o version.o
+	@rm -f temp0.F
 	@echo
 
 siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
@@ -155,6 +158,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MPI_INTERFACE)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+	@rm -f temp.F
 #
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o\
           basis_io.o  chemical.o transfer.o atm_types.o\
@@ -170,6 +174,7 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) \
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+	@rm -f temp.F
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"

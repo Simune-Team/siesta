@@ -17,7 +17,7 @@ C
       use precision
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
       use parallel
 #endif
 

@@ -14,6 +14,7 @@ FC_ASIS=$(FC)
 FFLAGS= -O
 FFLAGS_DEBUG= -g 
 LDFLAGS=-Vaxlib 
+RANLIB=echo
 LIBS=  
 SYS=bsd
 DEFS=

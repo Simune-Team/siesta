@@ -11,7 +11,7 @@ include ../arch.make
 #
 tests= h2o h2o_dos h2o_orderN batio3 sih si64 fe floating bessel 
 #
-all:  ###   cmpsig   ## Optional
+all:  ###   cmpsig   ## Optional: better not activate as of 1.3
 	@for i in ${tests} ; do \
 		echo ">>>> Running $$i test..." ; \
 		(SIESTA=$(SIESTA) sh do.sh $$i) ; \
@@ -26,3 +26,9 @@ clean:
 		echo ">>>> Cleaning $$i test..." ; \
 		(cd $$i ; rm -rf work ; rm -f *.out completed) ; \
 	done
+
+
+
+
+
+

@@ -1,5 +1,5 @@
       subroutine fixed( cell, stress, na, isa, amass, xa, fa,
-     .                  cstress, cfa )
+     .                  cstress, cfa, ntcon )
 
 c **********************************************************************
 c Reads and imposes required constraints to atomic displacements by
@@ -7,6 +7,8 @@ c making zero the forces in those directions. Constraints are specified
 c by the FDF data block GeometryConstraints (see example below).
 c Only types position and routine implemented in this version.
 c Written by J.M.Soler. Feb., 1998
+c Modified by P. Ordejon to output the total number of constraints
+C    imposed.  June, 2003
 c *********** INPUT ****************************************************
 c real*8  cell(3,3)    : Lattice vectors
 c real*8  stress( 3,3) : Stress tensor
@@ -18,12 +20,13 @@ c real*8  fa(3,na)     : Atomic forces
 c *********** OUTPUT ***************************************************
 c real*8  cstress( 3,3) : Constrained stress tensor
 c real*8  cfa(3,na)     : Constrained atomic forces
+c integer ntcon         : Total number of position constraints imposed
 c *********** UNITS ****************************************************
 c Units are arbitrary but cell and xa must be in the same units
 c *********** BEHAVIOUR ************************************************
 c cstress may be the same physical array as stress, and cfa the same 
 c as fa, i.e. it is allowed:
-c     call fixed( cell, stress, na, isa, amass, xa, fa, stress, fa )
+c     call fixed( cell, stress, na, isa, amass, xa, fa, stress, fa, ntcon )
 c *********** USAGE ****************************************************
 c Example: consider a diatomic molecule (atoms 1 and 2) above a surface, 
 c represented by a slab of 5 atomic layers, with 10 atoms per layer.
@@ -44,7 +47,7 @@ c   %endblock GeometryConstraints
 c
 c where constr is the following user-written subroutine:
 c
-c      subroutine constr( cell, na, isa, amass, xa, stress, fa )
+c      subroutine constr( cell, na, isa, amass, xa, stress, fa, ntcon )
 cc real*8  cell(3,3)    : input lattice vectors (Bohr)
 cc integer na           : input number of atoms
 cc integer isa(na)      : input species indexes
@@ -52,12 +55,14 @@ cc real*8  amass(na)    : input atomic masses
 cc real*8  xa(3,na)     : input atomic cartesian coordinates (Bohr)
 cc real*8  stress( 3,3) : input/output stress tensor (Ry/Bohr**3)
 cc real*8  fa(3,na)     : input/output atomic forces (Ry/Bohr)
-c      integer na, isa(na)
+cc integer ntcon        : total number of position constraints, accumulative
+c      integer na, isa(na), ntcon
 c      double precision amass(na), cell(3,3), fa(3,na),
 c     .                 stress(3,3), xa(3,na), fz
-c      fz = ( fa(3,1) + fa(3,2) ) / 2.d0
-c      fa(3,1) = fz
-c      fa(3,2) = fz
+c      fz =  fa(3,1) + fa(3,2) 
+c      fa(3,1) = fz*amass(1)/(amass(1)+amass(2))
+c      fa(3,2) = fz*amass(2)/(amass(1)+amass(2))
+c      ntcon = ntcon+1
 c      end
 c **********************************************************************
 
@@ -68,12 +73,12 @@ C
       use fdf
       use parsing
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit          none
 
-      integer           na, isa(na)
+      integer           na, isa(na), ntcon
       double precision  amass(na), cell(3,3), cfa(3,na), cstress(3,3),
      .                  fa(3,na), stress(3,3), xa(3,na)
 
@@ -386,10 +391,12 @@ c Copy stress and forces to output arrays
       enddo
 
 c Apply constraints
+      ntcon = 0
       do ic = 1,nc
         if (ctype(ic) .eq. 'routine') then
-          call constr( cell, na, isa, amass, xa, cstress, cfa )
+          call constr( cell, na, isa, amass, xa, cstress, cfa, ntcon )
         elseif (ctype(ic) .eq. 'position') then
+          ntcon = ntcon + 1
           ia = iac(ic)
           fxc = dot( cfa(1,ia), xc(1,ic), 3 )
           do ix = 1,3

@@ -7,6 +7,7 @@
       use periodic_table
       use basis_types
       use fdf
+      use m_radfft
 
       implicit none      
 
@@ -17,18 +18,18 @@
 !---------------------------------------------------------------------
 ! Some internal parameters
 
-        real*8, parameter             :: deltmax=0.05d0
+        real(dp), parameter             :: deltmax=0.05d0
 ! Maximum distance (in Bohrs) between points where function 
 ! is evaluated to generate the tables for interpolation
 ! If this distance is exceeded  a warning is printed
 ! In practice, this means that the cutoff can be as large as 25 bohrs
 ! with ntbmax=500
 
-        real*8, parameter             :: eshift_default=0.02d0
+        real(dp), parameter             :: eshift_default=0.02d0
 ! Default energy-shift to define the cut off radius of orbitals
 ! In Rydbergs
 
-        real*8, parameter             :: splnorm_default=0.15d0
+        real(dp), parameter             :: splnorm_default=0.15d0
 ! Default norm-percentage for the automatic definition of
 ! multiple-zeta orbitals with the 'SPLIT' option
 
@@ -58,7 +59,7 @@
       integer, intent(in) :: nkbl(0:lmaxd) 
 !       Number of Kleinman-Bylander projectors for each angular momentum
 
-      real*8, intent(in) :: erefkb(nkbmx,0:lmaxd)
+      real(dp), intent(in) :: erefkb(nkbmx,0:lmaxd)
 !       Reference energies (in Ry) for the calculation  of the KB projectors
 
       integer, intent(IN) :: lmxo 
@@ -69,10 +70,10 @@
 !       Number of shells of PAOs with the same angular momentum. 
 !       (i.e.not including the polarization base functions)
 
-      real*8, intent(IN) :: rco(nzetmx,0:lmaxd,nsemx)
+      real(dp), intent(IN) :: rco(nzetmx,0:lmaxd,nsemx)
 !       Cutoff radius for Sankey-type basis orbitals
 
-      real*8, intent(IN) :: lambda_in(nzetmx,0:lmaxd,nsemx)
+      real(dp), intent(IN) :: lambda_in(nzetmx,0:lmaxd,nsemx)
 !       Scaling factor for the atomic orbital,  for the 'SPLIT' type 
 !       of basis it is interpreted as the exponent (in Bohr-2)
 !       of the gaussian orbitals for the double-Z, triple-Z, etc.. 
@@ -95,11 +96,11 @@
       integer, intent(in) :: cnfigmx(0:lmaxd)
 !       Maximum principal quantum number present for a given angular momentum
 
-      real*8, intent(IN)  :: charge_in
+      real(dp), intent(IN)  :: charge_in
 !       Charge state of the atom, only for basis set generation purposes
 !       AS SPECIFIED IN PAO.BASIS common block
 
-      real*8, intent(in)  :: smass
+      real(dp), intent(in)  :: smass
 !       Atomic mass for the species
 
       character(len=10), intent(in)  :: basistype
@@ -108,7 +109,7 @@
       integer, intent(in)  :: isin
 !       Species index 
 
-      real*8, intent(in) :: vcte(0:lmaxd,nsemx), rinn(0:lmaxd,nsemx)
+      real(dp), intent(in) :: vcte(0:lmaxd,nsemx), rinn(0:lmaxd,nsemx)
 !       Parameters for soft-confinement potential
 !
 !     Former arguments, no longer used
@@ -118,8 +119,8 @@
 !     Extra copies to avoid  problems with the old 'inout'
 !
       integer lmxkb
-      real*8 charge
-      real*8 :: lambda(nzetmx,0:lmaxd,nsemx)
+      real(dp) charge
+      real(dp) :: lambda(nzetmx,0:lmaxd,nsemx)
 
 !-----------------------------------------------------------------------
 !   Initializes Kleinman-Bylander pseudopotential and atomic orbitals.
@@ -212,17 +213,17 @@
 
              if (iz.gt.0) then  
                write(6,'(3a,i4,a)')
-     .         'ATOM: Called for ', symbol(iz), '  (Z =', iz,')' 
+     .         'atom: Called for ', symbol(iz), '  (Z =', iz,')' 
 
              elseif((iz.lt.0).and.(iz.ne.-100)) then  
 
                write(6,'(3a,i4,a,a)')
-     .         'ATOM: Called for ', symbol(abs(iz)), '  (Z =', iz,')',
+     .         'atom: Called for ', symbol(abs(iz)), '  (Z =', iz,')',
      .         ' ( Floating basis ) ' 
 
              elseif(iz.eq.-100) then
                write(6,'(a,i4,a)')
-     .         'ATOM: Called for Z=',iz,'( Floating Bessel functions)'  
+     .         'atom: Called for Z=',iz,'( Floating Bessel functions)'  
 
              endif
 ! 
@@ -255,8 +256,8 @@
 !
             if (abs(zval-chgvps).gt.1.0d-3) then 
               write(6,'(/,a,/,a,f5.2)') 
-     .  'ATOM: Pseudopotential generated from an ionic configuration',
-     .  'ATOM: with net charge', zval-chgvps
+     .  'atom: Pseudopotential generated from an ionic configuration',
+     .  'atom: with net charge', zval-chgvps
             endif 
 !
 !           AG: Note zval-chgvps = (Znuc-Zcore)-true_zval
@@ -283,7 +284,7 @@
             if ((abs(charge).eq.0.d0).or. 
      .          (abs(charge-(zval-chgvps)).lt.1.0d-3)) then   
 c             write(6,'(/,2a)') 
-c    .          'ATOM: The above configuration will be used ', 
+c    .          'atom: The above configuration will be used ', 
 
               charge=zval-chgvps
             endif
@@ -414,10 +415,10 @@ c    .          'ATOM: The above configuration will be used ',
 ! behaviour as in the pseudopotentials we modify the definition
 ! of the local potential, making it join the Vps's smoothly at rgauss.
 ! 
-        write(6,'(/,a,f10.5)') 'ATOM: Estimated core radius ',
+        write(6,'(/,a,f10.5)') 'atom: Estimated core radius ',
      .           rgauss2
         if (nicore.eq.'nc ')
-     .  write(6,'(/,2a)') 'ATOM: Including non-local core corrections',
+     .  write(6,'(/,2a)') 'atom: Including non-local core corrections',
      .  ' could be a good idea'
 !
 ! As all potentials are equal beyond rgauss, we can just use the
@@ -441,7 +442,7 @@ c    .          'ATOM: The above configuration will be used ',
 ! Save local-pseudopotential charge
 !  
           Rchloc=rofi(nchloc)
-          write(6,'(2a,f10.5)') 'ATOM: Maximum radius for' ,
+          write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
      .        ' 4*pi*r*r*local-pseudopot. charge ',Rchloc
 
             call  comlocal(is,a,b,rofi,chlocal,nchloc,flting)
@@ -463,7 +464,7 @@ c    .          'ATOM: The above configuration will be used ',
          call  com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
      $                    zval,flting)
 !
-          write(6,'(2a,f10.5)') 'ATOM: Maximum radius for' ,
+          write(6,'(2a,f10.5)') 'atom: Maximum radius for' ,
      .        ' r*vlocal+2*Zval: ', rofi(nvlocal)           
 !
 !-------------------------------------------------------------------
@@ -511,8 +512,8 @@ c    .          'ATOM: The above configuration will be used ',
 ! Method for the augmentation of the basis set
 !
          if (basistype.ne.'user') then
-             write(6,'(a,73(1h-))') 'ATOM: '
-             write(6,'(/,a)') 'ATOM: SANKEY-TYPE ORBITALS:'
+             write(6,'(a,73(1h-))') 'atom: '
+             write(6,'(/,a)') 'atom: SANKEY-TYPE ORBITALS:'
            nzcontr=0
            do l=0,lmxo
              do nsm=1,nsemic(l)+1
@@ -521,7 +522,7 @@ c    .          'ATOM: The above configuration will be used ',
            enddo
            if (nzcontr.eq.1) then
                write(6,'(2a)')
-     .        'ATOM: Selected multiple-zeta basis: ',basistype
+     .        'atom: Selected multiple-zeta basis: ',basistype
            endif
          endif
 
@@ -532,9 +533,9 @@ c    .          'ATOM: The above configuration will be used ',
 
          if (charge.lt.0.0d0) then 
           write(6,'(/,a)') 
-     .    'ATOM: basis set generated (by rescaling the valence charge)'
+     .    'atom: basis set generated (by rescaling the valence charge)'
           write(6,'(a,f8.4)')
-     .    'ATOM: for an anion of charge ',charge 
+     .    'atom: for an anion of charge ',charge 
          endif
 
          call Basis_gen(Zval,is, a,b,rofi,drdi,s,
@@ -545,14 +546,14 @@ c    .          'ATOM: The above configuration will be used ',
       else
           if (abs(charge-zval+chgvps).gt.1.0d-3) then 
             write(6,'(/,a)')
-     .  'ATOM: basis set generated (by rescaling the valence charge)'
+     .  'atom: basis set generated (by rescaling the valence charge)'
             write(6,'(a,f8.4)')
-     .  'ATOM: for a cation of charge ',charge 
+     .  'atom: for a cation of charge ',charge 
           else
             write(6,'(/,a)')
-     .  'ATOM: basis set generated from the ionic configuration used'
+     .  'atom: basis set generated from the ionic configuration used'
             write(6,'(a)')
-     .  'ATOM: to generate the pseudopotential'
+     .  'atom: to generate the pseudopotential'
           endif
 
         call Basis_gen(Zval,is, a,b,rofi,drdi,s,
@@ -561,7 +562,7 @@ c    .          'ATOM: The above configuration will be used ',
      .                   basistype, rphi, no, rinn, vcte)
       endif
         write(6,'(a,i3)')
-     .      'ATOM: Total number of Sankey-type orbitals:', no
+     .      'atom: Total number of Sankey-type orbitals:', no
       nomax(is)=no
 ! 
       if(flting.gt.0.0d0) then 
@@ -619,11 +620,11 @@ c    .          'ATOM: The above configuration will be used ',
      .          lmxo,nzeta,rco,lambda, no)
  
            write(6,'(/a,i3)')
-     .          'ATOM: Total number of floating Bessel orbitals:', no
+     .          'atom: Total number of floating Bessel orbitals:', no
            nomax(is)=no
         endif 
 
-        write(6,'(/,a)') 'ATOM:__________________________ '
+        write(6,'(/,a,73("_"))') 'atom: '
 
 
         end subroutine atom_main
@@ -644,9 +645,9 @@ C**
      .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval)
         
         integer  l, nnodo, nn
-        real*8 rnodo, a, b
+        real(dp) rnodo, a, b
        
-        real*8 dexpa, ab, hi, gold, r0, g0, r1, g1
+        real(dp) dexpa, ab, hi, gold, r0, g0, r1, g1
 c       if (nrval.gt.nrmax) then   
 c        write(6,*) 'Rc_vs_E : Nrmx must be increased to at least',
 c    .         nrval
@@ -734,7 +735,7 @@ C       Written by Daniel Sanchez-Portal, July 1997
 C 
      
         integer nrmin, niter
-        real*8 cons1, rint
+        real(dp) cons1, rint
         parameter(nrmin=1,niter=1000,
      .                    cons1=1.0d5,rint=15.0d0)
 
@@ -742,8 +743,8 @@ C
         double precision r(nrval),psi(nrval),psipol(nrval),
      .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval)
         
-        real*8 a, rmax, reduc, dl, hi, rnd1, c1, c2, rnodo, cons, gold
-        real*8 gmax, r0, g0, r1, g1, grmx, dff1, dff2, savecons, dnrm
+        real(dp) a, rmax, reduc, dl, hi, rnd1, c1, c2, rnodo, cons, gold
+        real(dp) gmax, r0, g0, r1, g1, grmx, dff1, dff2, savecons, dnrm
         integer index, nnodes, iter, nnd, ir
         integer  l
 
@@ -928,14 +929,14 @@ C
 
          integer l, nm, nrc
           
-         real*8,  parameter  :: Ratio=0.61803399D0       
+         real(dp),  parameter  :: Ratio=0.61803399D0       
          double precision rphi(nrc),rnrm(nrc) 
-         real*8 a, b, splnorm, cons1, cons2
+         real(dp) a, b, splnorm, cons1, cons2
 
-         real*8 rfirst, slopold, slop, rmin, gmin, cmin, rnrmin
-         real*8 gmax, cmax, rmax, rnrmax, valmin, valmax, gmed
-         real*8 cmed, rmed, rnrmed, valmed, g1, c1, r, rn1, val1
-         real*8 g2, c2, rn2, val2
+         real(dp) rfirst, slopold, slop, rmin, gmin, cmin, rnrmin
+         real(dp) gmax, cmax, rmax, rnrmax, valmin, valmax, gmed
+         real(dp) cmed, rmed, rnrmed, valmed, g1, c1, r, rn1, val1
+         real(dp) g2, c2, rn2, val2
          integer n0, n1, n2, n3
          integer ir, nr_max, nmin, nmax, nmed, iter, nlast
 
@@ -1106,14 +1107,14 @@ c              val3=val2
 
           subroutine findp(nrc,nm,rphi,a,b,l,cons1,cons2)
           integer nrc, nm, l
-          real*8 a, b, cons1, cons2
+          real(dp) a, b, cons1, cons2
           double precision rphi(nrc)
 
 C  This routine provides the constants Cons1 and 
 C  Cons2 and described in subroutine 'parabola' 
 
-          real*8 rm, rm1, rm2, drdi_local, frsp
-          real*8 dfrsp
+          real(dp) rm, rm1, rm2, drdi_local, frsp
+          real(dp) dfrsp
           rm=b*(exp(a*(nm-1)) + 1.0d0) 
           rm1=b*(exp(a*(nm-2)) + 1.0d0)
           rm2=b*(exp(a*nm) + 1.0d0)
@@ -1130,7 +1131,7 @@ C  Cons2 and described in subroutine 'parabola'
           end subroutine findp
  
           subroutine nrmpal(c1,c2,r,l,dnrm)
-          real*8 c1, c2, r, dnrm
+          real(dp) c1, c2, r, dnrm
           integer l
 C returns the norm of a parabolic function
 C    f(r')= r'^l (c1*r'^2 + c2)  r'< r
@@ -1173,6 +1174,7 @@ C**   Iterate over the possible local potentials**
       rgauss=0.0_dp
       rgauss2=0.0_dp
       nrgauss=0
+      nrgauss2=0
 
       do l=0,lmxkb-1
          do ir=nrval,2,-1
@@ -1635,19 +1637,19 @@ C     rphi (*)  : first radial pseudowavefunctions for Vps.
 C     eigenl    : eigenvalue 
 C     
 C     Output:
-C     ighost:   if ighost=0 no ghost states
-C     if ighost=1, ghost states exist
+C     Sets ighost to 1 if it finds a ghost state.
+!     ighost is a saved variable in the caller.
 C     
 C     Written by D. Sanchez-Portal, Aug. 1998
 C     
 
       integer, intent(in)   :: nrval,l
       integer, intent(inout)   :: nrc
-      integer, intent(out)  :: ighost
+      integer, intent(inout)  :: ighost
 
-      real*8, intent(in) :: zval, a, b, eigenl
-      real*8, intent(in) :: rofi(:), vps(:), vlocal(:), ve(:)
-      real*8, intent(in) :: s(:), drdi(:), rphi(:)
+      real(dp), intent(in) :: zval, a, b, eigenl
+      real(dp), intent(in) :: rofi(:), vps(:), vlocal(:), ve(:)
+      real(dp), intent(in) :: s(:), drdi(:), rphi(:)
 
 C     * Internal variables***
 
@@ -1655,15 +1657,6 @@ C     * Internal variables***
      .     elocal1, elocal2, g(nrmax), vl, vphi, dkbcos
 
       integer  ir, nprin, nnode
-      logical  called
-C     
-      save called
-      data  called /.false./
-C     
-      if(.not.called) then 
-         ighost=0 
-         called=.true.
-      endif
 
 !     Compares the reference energy with the eigenvalues of the
 !     local potential, for ghost analysis.
@@ -2564,9 +2557,9 @@ Cdrdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b] *
                l = vp%ldown(ndown) 
                if(l.ne.ndown-1) then
                   write(6,'(a)')
-     . 'ATOM: Unexpected angular momentum  for pseudopotential'
+     . 'atom: Unexpected angular momentum  for pseudopotential'
                   write(6,'(a)')
-     . 'ATOM: Pseudopotential should be ordered by increasing l'
+     . 'atom: Pseudopotential should be ordered by increasing l'
                endif
                vps(1:nrval,l) = vp%vdown(ndown,1:nrval)
                do ir=2,nrval
@@ -2730,6 +2723,7 @@ C**and this limitation simplifies the handling of not bound states*
 C 
          parameter (Rmax=6.0d0)
 C
+         save ighost
          data ighost / 0 /
 
          nrwf=nint(log(Rmax/b+1.0d0)/a)+1
@@ -4582,7 +4576,7 @@ C****CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL
            write(6,"(2a,f12.5)")'Vna: WARNING: ',
      .        'Cut-off radius for charge density =', rcocc
            write(6,"(2a)")'Vna: WARNING: ',
-     .        'Check ATOM: Look for the sentence:'
+     .        'Check atom: Look for the sentence:'
            write(6,"(2a)")'Vna: WARNING: ',
      .        'LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL'
            write(6,"(2a)")'Vna: WARNING: ',
@@ -5296,13 +5290,13 @@ C   scheme. Rmax should not be taken too big.
 C   D. Sanchez-Portal, July 1999.
 C**
 
-        real*8 a, b
+        real(dp) a, b
         integer nrval
-        real*8 r(nrval),
+        real(dp) r(nrval),
      .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval),
      .   rphi(nrval), rmax, dnrm
 
-        real*8 big, dexpa, ab, hi
+        real(dp) big, dexpa, ab, hi
         parameter (big=1.0d6)
         integer  l, nrc, jr, ir
 
@@ -5423,9 +5417,8 @@ C***Internal variables
           character(len=11) rcchar(nzetmx), lambdachar(nzetmx)
 
 
-             write(6,'(/2a)')
-     .            'prinput:  Basis input ',
-     .            '**'
+             write(6,'(/a,58("-"))')
+     .            'prinput: Basis input '
 
              basistype=fdf_string('PAO.BasisType',basistype_default)
              call type_name(basistype) 
@@ -5517,16 +5510,14 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
      .                       '%endblock PAO.Basis' 
 
 
-             write(6,'(/2a)')
-     .             'prinput: ****',
-     .             '*'
+             write(6,'(/a,70("-")/)') 'prinput: '
 
              end subroutine prinput
 
         SUBROUTINE CHOVERLP(IS1,IS2,RMX,CORR,CORR2)
         integer, intent(in)   :: is1, is2
-        real*8, intent(inout)    :: rmx
-        real*8, intent(out)    :: corr(ntbmax), corr2(ntbmax)
+        real(dp), intent(inout)    :: rmx
+        real(dp), intent(out)    :: corr(ntbmax), corr2(ntbmax)
 
 C  Returns a table with the difference between the electrostatic energy 
 C  of two spherical charge-densities and two punctual charges with the 
@@ -5562,7 +5553,7 @@ C
 C*
 
         integer nq, npoint, ir
-        real*8 q2cut, cherr
+        real(dp) q2cut, cherr
         PARAMETER ( NQ     =  512  )
         PARAMETER ( NPOINT =  4     ) 
         PARAMETER ( Q2CUT  =  2.5D3 )
@@ -5571,17 +5562,17 @@ C*
 C
 CARRAYS DECLARATION**
 C
-        real*8 
+        real(dp) 
      .    CH(0:NQ,2),VTB(NTBMAX,2),
      .    V(0:NQ,2),
      .    GRCH(3),RX(3),RAUX(2*NPOINT+1)
 
 
-          real*8 cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
-          real*8 r, vd, vv1, vv2, energ1, energ2, bessph, dev1, devn
+          real(dp) cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
+          real(dp) r, vd, vv1, vv2, energ1, energ2, bessph, dev1, devn
           integer iz1, iz2, itb, nr, nmin, nmax, nn, iq
 
-          real*8 QTMP       !!! AG
+          real(dp) QTMP       !!! AG
 
           PI= 4.D0 * ATAN(1.D0)       
           CONS= 1.0d0/(2.0d0*PI)**1.5D0
@@ -5682,8 +5673,8 @@ C
          
 C****FOURIER-TRANSFORM OF RADIAL CHARGE DENSITY****
 C
-           CALL RADFFT( 0, NQ, RMAX, CH(0,1), CH(0,1) )
-           CALL RADFFT( 0, NQ, RMAX, CH(0,2), CH(0,2) )
+           CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,1), CH(0:NQ,1) )
+           CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,2), CH(0:NQ,2) )
 C
 
 CNEUTRALIZE CHARGE DENSITY FOR FOURIER-SPACE CALCULATION
@@ -5739,9 +5730,9 @@ C
 
           SUBROUTINE NUMEROV(NR,DELT,Q,V)
           integer, intent(in)  :: nr
-          real*8, intent(in)   :: delt
-          real*8, intent(in)   :: q(0:nr)
-          real*8, intent(out)  :: v(0:nr)
+          real(dp), intent(in)   :: delt
+          real(dp), intent(in)   :: q(0:nr)
+          real(dp), intent(out)  :: v(0:nr)
 
 C   Being Q(r) a spherical charge density in a homogeneus radial mesh
 C   with distance DELT between consecutive points, this routine returns
@@ -5749,16 +5740,16 @@ C   the electrostatic potential generated by this charge distribution.
 C   Written by D. Sanchez-Portal, March 1997.
 CINPUT****
 C   INTEGER NR      :    Number of radial points.
-C   REAL*8  DELT    :    Distance between consecutive points.
-C   REAL*8  Q(0:NR) :    Spherical charge density.
+C   REAL(DP)  DELT    :    Distance between consecutive points.
+C   REAL(DP)  Q(0:NR) :    Spherical charge density.
 COUTPUT***
-C   REAL*8  V(0:NR) :    Electrostatic potential at mesh points.
+C   REAL(DP)  V(0:NR) :    Electrostatic potential at mesh points.
 CBEHAVIOUR
 C   Qtot/r asimptotic behaviour is imposed.
 C****
 
           integer ir
-          real*8 pi, fourpi, qtot, r, cons
+          real(dp) pi, fourpi, qtot, r, cons
 
             PI=4.0D0*DATAN(1.0D0)
             FOURPI=4.0D0*PI

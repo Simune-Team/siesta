@@ -33,7 +33,7 @@ C
       use precision
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       IMPLICIT          NONE
@@ -231,7 +231,7 @@ C WRITTEN BY J.M.SOLER. MAY/95.
         NREM = N
         DO IP = 1,NP
    10     CONTINUE 
-          IF ( MOD( NREM, IPRIME(IP) ) .EQ. 0 ) THEN
+          IF ( MODULO( NREM, IPRIME(IP) ) .EQ. 0 ) THEN
             NREM = NREM / IPRIME(IP)
             GOTO 10
           ENDIF

@@ -3,7 +3,7 @@
      .                  listdptr, listd, H, S,
      .                  qtot, fixspin, qs, temp, e1, e2,
      .                  gamma, xij, indxuo, nk, kpoint, wk,
-     .                  eo, qo, Dnew, Enew, ef, efs, nuotot)
+     .                  eo, qo, Dnew, Enew, ef, efs, Entropy, nuotot)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -62,6 +62,7 @@ C real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
 C real*8 efs(nspin)           : Fermi energy for each spin
 C                                (for fixed spin calculations)
+C real*8 Entropy              : Electronic entropy
 C *************************** UNITS ***********************************
 C xij and kpoint must be in reciprocal coordinates of each other.
 C temp and H must be in the same energy units.
@@ -82,7 +83,7 @@ C
       use parallel
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -95,7 +96,7 @@ C
      .  listhptr(*), listdptr(*)
 
       double precision
-     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
+     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), Entropy,
      .  eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
      .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), 
      .  xij(3,maxnh), qs(nspin), efs(nspin), qspiral(3)
@@ -117,7 +118,7 @@ C
 #endif
 
       logical
-     .  getD
+     .  getD, getPSI
 
       integer
      .  io, iuo, iu, naux, nhs, npsi, nuo, Node, Nodes
@@ -242,11 +243,13 @@ C ......................
 
 C Call apropriate routine .............................................
       getD = .true.
+      getPSI = .false.
+
       if (nspin.le.2 .and. gamma) then
         call diagg( nspin, nuo, no, maxuo, maxnh, maxnd, maxo,
      .              numh, listhptr, listh, numd, listdptr, listd, 
-     .              H, S, getD, fixspin, qtot, qs, temp, e1, e2,
-     .              eo, qo, Dnew, Enew, ef, efs,
+     .              H, S, getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
+     .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, aux, 
      .              nuotot, Node, Nodes)
       elseif (nspin.le.2 .and. .not.gamma) then
@@ -256,16 +259,16 @@ C Call apropriate routine .............................................
      .              maxo, numh, listhptr, listh, numd, listdptr, 
      .              listd, H, S, getD, fixspin, qtot, qs, temp, 
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
-     .              eo, qo, Dnew, Enew, ef, efs,
+     .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, Node, Nodes)
         else
 #endif
           call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
      .              maxo, numh, listhptr, listh, numd, listdptr,
-     .              listd, H, S, getD, fixspin, qtot, qs, temp, 
+     .              listd, H, S, getD, getPSI, fixspin, qtot, qs, temp, 
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
-     .              eo, qo, Dnew, Enew, ef, efs,
+     .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, Node, Nodes)
 #ifdef MPI
@@ -275,7 +278,7 @@ C Call apropriate routine .............................................
         call diag2g( nuo, no, maxuo, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
-     .               eo, qo, Dnew, Enew, ef,
+     .               eo, qo, Dnew, Enew, ef, Entropy,
      .               Haux, Saux, psi, aux, 
      .               nuotot, Node, Nodes)
       elseif (nspin.eq.4 .and. spiral) then
@@ -283,7 +286,7 @@ C Call apropriate routine .............................................
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
      .               xij, indxuo, nk, kpoint, wk,
-     .               eo, qo, Dnew, Enew, ef, qspiral,
+     .               eo, qo, Dnew, Enew, ef, Entropy, qspiral,
      .               Haux, Saux, psi, Haux, Saux, aux,
      .               nuotot, Node, Nodes)
       elseif (nspin.eq.4 .and. .not.gamma) then
@@ -291,23 +294,23 @@ C Call apropriate routine .............................................
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
      .               xij, indxuo, nk, kpoint, wk,
-     .               eo, qo, Dnew, Enew, ef,
+     .               eo, qo, Dnew, Enew, ef, Entropy,
      .               Haux, Saux, psi, Haux, Saux, aux, 
      .               nuotot, Node, Nodes)
       endif
 C ....................
 
 C Free local arrays
-      call memory('D','D',size(Haux),'diagon')
-      deallocate(Haux)
-      call memory('D','D',size(Saux),'diagon')
-      deallocate(Saux)
-      call memory('D','D',size(psi),'diagon')
-      deallocate(psi)
-      call memory('D','D',size(aux),'diagon')
-      deallocate(aux)
       call memory('D','I',size(muo),'diagon')
       deallocate(muo)
+      call memory('D','D',size(aux),'diagon')
+      deallocate(aux)
+      call memory('D','D',size(psi),'diagon')
+      deallocate(psi)
+      call memory('D','D',size(Saux),'diagon')
+      deallocate(Saux)
+      call memory('D','D',size(Haux),'diagon')
+      deallocate(Haux)
 
 C Stop time counter ...................................................
       call timer( 'diagon', 2 )

@@ -115,7 +115,7 @@ C Broadcast logicals so that all processors take the same route
         if (exist1 .and. exist2) then
 C Old-format files
           if (Node.eq.0) then
-            write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
+C            write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
             call io_assign(unit1)
             call io_assign(unit2)
             open( unit1, file='SAVE.DM', status='unknown')
@@ -242,7 +242,7 @@ C Free buffer array
         elseif (exist3) then
 C New-format files
           if (Node.eq.0) then
-            write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
+C            write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
             call io_assign(unit1)
             open( unit1, file=fname,
      .          form='unformatted', status='unknown' )

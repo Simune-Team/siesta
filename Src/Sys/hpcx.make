@@ -1,6 +1,6 @@
 SIESTA_ARCH=hpcx
 
-FC=mpxlf90_r
+FC=mpxlf90_r -bmaxdata:1000000000
 FC_ASIS=$(FC)
 
 FFLAGS= -qfixed -O3 -qarch=pwr4 -qtune=pwr4 -qstrict

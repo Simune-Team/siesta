@@ -1,10 +1,10 @@
-c $Id: pixmol.f,v 1.4 2001/01/29 18:02:05 wdpgaara Exp $
+c $Id: pixmol.f,v 1.5 2003/05/21 22:29:31 emilio Exp $
 
       subroutine pixmol(iza, xa, na, slabel, last)
 
 c *******************************************************************
 c Writes and accumulates coordinates to be animated by Xmol
-c Written by E. Artacho. February 1999.
+c Written by E. Artacho. February 1999. Modified to open/close 2003
 c ********* INPUT ***************************************************
 c integer   iza(na)   : Atomic numbers of different atoms
 c double    xa(3,na)  : Atom coordinates
@@ -29,25 +29,26 @@ c Internal variables and arrays
       logical           frstme
       integer           unit, i, ia
       double precision  Ang
-      save              frstme, Ang, unit
+      save              frstme, Ang, unit, fname
       data              frstme /.true./
 c -------------------------------------------------------------------
 
       if ( frstme ) then
         fname = paste(slabel,'.ANI')
-        call io_assign(unit)
-        open( unit, file=fname, form = 'formatted', position='append',
-     .    status='unknown')
         Ang  = 1.d0 / 0.529177d0
         frstme = .false.
       endif
+
+      call io_assign(unit)
+      open( unit, file=fname, form = 'formatted', position='append',
+     .      status='unknown')
 
       write(unit,'(i5)') na
       write(unit,*)
       write(unit,'(a2,2x,3f12.6)')
      .     ( symbol(iza(ia)), (xa(i,ia)/Ang,i=1,3), ia=1,na )
 
-      if (last) call io_close(unit)
+      call io_close(unit)
       
       return
       end

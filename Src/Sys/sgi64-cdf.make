@@ -1,6 +1,7 @@
 #
 SIESTA_ARCH=sgi64-cdf
 FC=f90 -64
+RANLIB=echo
 #
 FFLAGS=  -O3 -OPT:Olimit=0
 NOOPT= 

@@ -4,7 +4,7 @@
 
       subroutine die(str)
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       character(len=*), intent(in), optional   :: str
@@ -37,7 +37,7 @@
 
       subroutine bye(str)
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       character(len=*), intent(in), optional   :: str

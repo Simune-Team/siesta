@@ -5,6 +5,7 @@ SIESTA_ARCH=osfdxml-mpich
 FC=mpif90
 FFLAGS= -fast -tune host
 FFLAGS_DEBUG= -g3 -fast -tune host
+RANLIB=echo
 LIBS= /usr/local/BLACS/LIB/blacs_MPI-ALPHA-0.a \
       /usr/local/BLACS/LIB/blacsCinit_MPI-ALPHA-0.a \
       /usr/local/BLACS/LIB/blacsF77init_MPI-ALPHA-0.a \

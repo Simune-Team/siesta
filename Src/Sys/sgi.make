@@ -1,6 +1,7 @@
 SIESTA_ARCH=sgi
 #
 FC=f90 -n32
+RANLIB=echo
 #
 FFLAGS=  -O3 
 #FFLAGS= -O scalar2,pipeline2,aggress -eA

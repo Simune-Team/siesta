@@ -82,7 +82,7 @@ C
       use fdf
       use parsing
 #ifdef MPI
-      use mpi
+      use mpi_siesta
       use parallel
 #endif
       implicit          none
@@ -343,7 +343,7 @@ C
       use precision
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
       use parallel
 #endif
       implicit          none
@@ -362,7 +362,7 @@ C *********************************************************************
      .  fname*30, sname*25, string*10
 
       logical
-     .  getD, fixspin
+     .  getD, getPSI, fixspin
 
       integer
      .  ik, il, io, ispin, iu, iuo, 
@@ -376,7 +376,7 @@ C *********************************************************************
       double precision
      .  Dnew, qs(2),
      .  e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot, path, pi,
-     .  temp, wk
+     .  temp, wk, Entropy
 
 C     Dynamic arrays
       double precision, dimension(:), allocatable, save :: Haux, Saux
@@ -386,6 +386,7 @@ C     Dynamic arrays
       parameter ( eV = 1.d0 / 13.60580d0 )
       save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data getD /.false./
+      data getPSI /.false./
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
 C Get Node number
@@ -463,9 +464,9 @@ c fixspin and qs are not used in diagk, since getD=.false. ...
 c ...
         call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
      .              maxo, numh, listhptr, listh, numh, listhptr, 
-     .              listh, H, S, getD, fixspin, qtot, qs, temp, 
+     .              listh, H, S, getD, getPSI, fixspin, qtot, qs, temp,
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
-     .              ek, qk, Dnew, Enew, ef, efs,
+     .              ek, qk, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              nuotot, Node, Nodes)
       elseif (nspin.eq.4) then
@@ -473,7 +474,7 @@ c ...
      .              numh, listhptr, listh, numh, listhptr, 
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,
-     .              ek, qk, Dnew, Enew, ef,
+     .              ek, qk, Dnew, Enew, ef, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              nuotot, Node, Nodes)
       else

@@ -17,7 +17,6 @@ cd work
 #
 if (${SIESTA} 2>&1 > $name.out < ../$name.fdf) ; then
        cp $name.out .. ;
-       cp SIG  ../$name.sig;
        touch ../completed;
        echo "    ===> SIESTA finished successfully";
 else
@@ -26,4 +25,5 @@ fi
       echo "    -------------------------------------"
 
    
+
 

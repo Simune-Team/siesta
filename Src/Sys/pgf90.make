@@ -5,6 +5,7 @@ FC_ASIS=$(FC)
 #
 FFLAGS=  -fast
 FFLAGS_DEBUG= -g -O0
+RANLIB=echo
 LDFLAGS=
 COMP_LIBS=
 #

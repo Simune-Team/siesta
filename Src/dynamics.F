@@ -1,5 +1,5 @@
       subroutine npr(istep,iunit,natoms,fa,stress,tp,tt,dt,
-     .               ma,mn,mpr,va,xa,hdot,h,kin,kn,kpr,vn,vpr,
+     .               ma,mn,mpr,ntcon,va,xa,hdot,h,kin,kn,kpr,vn,vpr,
      .               temp,pressin)
 C *************************************************************************
 C Subroutine for MD simulations with CONTROLLED PRESSURE AND TEMPERATURE.
@@ -45,6 +45,7 @@ C real*8 dt             : Length of the time step
 C real*8 ma(natoms)     : Atomic masses
 C real*8 mn             : Mass of Nose thermostat
 C real*8 mpr            : Mass of Parrinello-Rahman variables
+C integer ntcon         : Total number of position constraints imposed
 C ******************* INPUT AND OUTPUT ****************************************
 C real*8 va(3,natoms)   : Atomic velocities
 C real*8 xa(3,natoms)   : Atomic coordinates
@@ -69,13 +70,13 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
 
       integer 
-     .   natoms,istep, iunit
+     .   natoms, ntcon, istep, iunit
 
       double precision
      .  dt,fa(3,natoms),h(3,3),hdot(3,3),kin,kn,kpr,
@@ -140,7 +141,7 @@ C Allocate local memory
         call memory('A','D',3*natoms,'npr')
       endif
 
-      ct = 3
+      ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
 C Define constants and conversion factors .......................................
@@ -182,8 +183,8 @@ C Compute G=HtH at current time
       enddo
 
 C Compute Inverse of H and G at current time 
-      call inver(h,hi,3)
-      call inver(g,gi,3)
+      call inver(h,hi,3,3)
+      call inver(g,gi,3,3)
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -208,7 +209,8 @@ C Initialize variables if current time step is the first of the simulation
           do i = 1,3
             sold(i,ia) = 0.0d0
             do j = 1,3
-              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia)
+     .                     + (dt2/2.0d0) * fovermp * fa(j,ia) / ma(ia))
             enddo
           enddo
         enddo
@@ -294,7 +296,7 @@ C xdot and hdot (time derivatives at current time), and related stuff
         aux1(i,i) = aux1(i,i) + 1.0d0
       enddo
 
-      call inver(aux1,fi,3)
+      call inver(aux1,fi,3,3)
 
       do j = 1,3
         do i = 1,3
@@ -506,7 +508,7 @@ C Deallocate local memory
       end
     
       subroutine pr(istep,iunit,iquench,natoms,fa,stress,tp,dt,
-     .               ma,mpr,va,xa,hdot,h,kin,kpr,vpr,
+     .               ma,mpr,ntcon,va,xa,hdot,h,kin,kpr,vpr,
      .               temp,pressin)
 C *************************************************************************
 C Subroutine for MD simulations with CONTROLLED PRESSURE.
@@ -553,6 +555,7 @@ C real*8 tp             : Target pressure
 C real*8 dt             : Length of the time step 
 C real*8 ma(natoms)     : Atomic masses
 C real*8 mpr            : Mass of Parrinello-Rahman variables
+C integer ntcon         : Total number of position constraints imposed
 C ******************* INPUT AND OUTPUT ****************************************
 C real*8 va(3,natoms)   : Atomic velocities
 C real*8 xa(3,natoms)   : Atomic coordinates
@@ -575,13 +578,13 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
 
       integer 
-     .   natoms,istep,iquench,iunit
+     .   natoms,ntcon,istep,iquench,iunit
 
       double precision
      .  dt,fa(3,natoms),h(3,3),hdot(3,3),kin,kpr,
@@ -628,7 +631,7 @@ C Get Node number
         endif
         stop
       endif
-      ct = 3
+      ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory
@@ -678,8 +681,8 @@ C Compute G=HtH at current time
       enddo
 
 C Compute Inverse of H and G at current time 
-      call inver(h,hi,3)
-      call inver(g,gi,3)
+      call inver(h,hi,3,3)
+      call inver(g,gi,3,3)
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -702,7 +705,8 @@ C Initialize variables if current time step is the first of the simulation
           do i = 1,3
             sold(i,ia) = 0.0d0
             do j = 1,3
-              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia)
+     .                     + (dt2/2.0d0) * fovermp * fa(j,ia) / ma(ia))
             enddo
           enddo
         enddo
@@ -781,7 +785,7 @@ C hdot (time derivatives at current time), and related stuff
         aux1(i,i) = aux1(i,i) + 1.0d0
       enddo
 
-      call inver(aux1,fi,3)
+      call inver(aux1,fi,3,3)
 
       do j = 1,3
         do i = 1,3
@@ -1029,7 +1033,7 @@ C Deallocate local memory
       end
     
       subroutine nose(istep,iunit,natoms,fa,tt,dt,
-     .                ma,mn,va,xa,kin,kn,vn,
+     .                ma,mn,ntcon,va,xa,kin,kn,vn,
      .                temp)
 C *************************************************************************
 C Subroutine for MD simulations with CONTROLLED TEMPERATURE.
@@ -1065,6 +1069,7 @@ C real*8 tt             : Target temperature
 C real*8 dt             : Length of the time step 
 C real*8 ma(natoms)     : Atomic masses
 C real*8 mn             : Mass of Nose thermostat
+C integer ntcon         : Total number of position constraints imposed
 C real*8 va(3,natoms)   : Atomic velocities
 C                         (used only if istep = 1)
 C ******************* INPUT AND OUTPUT ****************************************
@@ -1081,13 +1086,13 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
 
       integer 
-     .   natoms,istep,iunit
+     .   natoms,ntcon,istep,iunit
 
       double precision
      .  dt,fa(3,natoms),kin,kn,
@@ -1129,7 +1134,7 @@ C Get Node number
         endif
         stop
       endif
-      ct = 3
+      ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory and initialise
@@ -1176,6 +1181,7 @@ C Initialize variables if current time step is the first of the simulation
         do ia = 1,natoms
           do i = 1,3
             xaold(i,ia) = xa(i,ia) - dt * va(i,ia)
+     .                + (dt2/2.0d0) * fovermp * fa(i,ia) / ma(ia)
           enddo
         enddo
       endif
@@ -1271,7 +1277,7 @@ C .....................
 
       subroutine anneal(istep,iunit,ianneal,taurelax,bulkm,
      .               natoms,fa,stress,tp,tt,dt,
-     .               ma,va,xa,h,kin,
+     .               ma,ntcon,va,xa,h,kin,
      .               temp,pressin)
 C *************************************************************************
 C Subroutine for MD simulations with a TARGET PRESSURE AND TEMPERATURE.
@@ -1318,6 +1324,7 @@ C real*8 tp           : Target pressure
 C real*8 tt           : Target temperature 
 C real*8 dt           : Length of the time step 
 C real*8 ma(natoms)   : Atomic masses 
+C integer ntcon         : Total number of position constraints imposed
 C real*8 va(3,natoms) : Atomic velocities
 C                       (used only if istep = 1)
 C ******************* INPUT AND OUTPUT ****************************************
@@ -1337,13 +1344,13 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
 
       integer 
-     .   natoms,istep,ianneal,iunit
+     .   natoms,ntcon,istep,ianneal,iunit
 
       double precision
      .  bulkm,dt,fa(3,natoms),h(3,3),kin,
@@ -1387,7 +1394,7 @@ C Get Node number
         endif
         stop
       endif
-      ct = 3
+      ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory
@@ -1431,7 +1438,7 @@ C ........................
 
 C Compute Parrinello-Rahman variables (H and scaled coordinates) ............
 C Compute Inverse of H and G at current time 
-      call inver(h,hi,3)
+      call inver(h,hi,3,3)
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -1449,7 +1456,8 @@ C Initialize variables if current time step is the first of the simulation
           do i = 1,3
             sold(i,ia) = 0.0d0
             do j = 1,3
-              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia))
+              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia)
+     .                     + (dt2/2.0d0) * fovermp * fa(j,ia) / ma(ia))
             enddo
           enddo
         enddo
@@ -1650,8 +1658,8 @@ C Deallocate local memory
       end
 
 
-      subroutine verlet1(istep,iunit,iquench,natoms,fa,dt,ma,va,xa,
-     .                   kin,temp)
+      subroutine verlet1(istep,iunit,iquench,natoms,fa,dt,ma,ntcon,va,
+     .                   xa,kin,temp)
 C *************************************************************************
 C Subroutine for MD simulations using the Original Verlet Algrithm.
 C (See Allen-Tildesley, Computer Simulations of Liquids, pg. 78)
@@ -1681,6 +1689,7 @@ C integer natoms        : Number of atoms in the simulation cell
 C real*8 fa(3,natoms)   : Atomic forces 
 C real*8 dt             : Length of the time step
 C real*8 ma(natoms)     : Atomic masses 
+C integer ntcon         : Total number of position constraints imposed
 C real*8 va(3,natoms)   : Atomic velocities 
 C                         (used only if istep = 1)
 C ******************* INPUT AND OUTPUT ****************************************
@@ -1695,13 +1704,13 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
 
       integer 
-     .   natoms,istep,iquench,iunit
+     .   natoms,ntcon,istep,iquench,iunit
 
       double precision
      .  dt,fa(3,natoms),kin,ma(natoms),
@@ -1742,7 +1751,7 @@ C Get Node number
         endif
         stop
       endif
-      ct = 3
+      ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory
@@ -1775,6 +1784,7 @@ C Compute old coordinates if the time step is the first of the simulation .....
         do ia = 1,natoms
           do i = 1,3
             xaold(i,ia) = xa(i,ia) - dt * va(i,ia)
+     .                + (dt2/2.0d0) * fovermp * fa(i,ia) / ma(ia)
           enddo
         enddo
       endif
@@ -1849,8 +1859,8 @@ C Deallocate local memory
       return
       end
     
-      subroutine verlet2(istep,iunit,iquench,natoms,fa,dt,ma,va,xa,
-     .                   kin,temp)
+      subroutine verlet2(istep,iunit,iquench,natoms,fa,dt,ma,ntcon,va,
+     .                   xa,kin,temp)
 C *************************************************************************
 C Subroutine for MD simulations using the velocity-Verlet Algrithm.
 C (See Allen-Tildesley, Computer Simulations of Liquids, pg. 81)
@@ -1880,6 +1890,7 @@ C integer natoms        : Number of atoms in the simulation cell
 C real*8 fa(3,natoms)   : Atomic forces 
 C real*8 dt             : Length of the time step
 C real*8 ma(natoms)     : Atomic masses 
+C integer ntcon         : Total number of position constraints imposed
 C real*8 va(3,natoms)   : Atomic velocities
 C                         (used only if istep = 1)
 C ******************* INPUT AND OUTPUT ****************************************
@@ -1894,13 +1905,13 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
 
       integer 
-     .   natoms,istep,iquench,iunit
+     .   natoms,ntcon,istep,iquench,iunit
 
       double precision
      .  dt,fa(3,natoms),kin,ma(natoms),
@@ -1938,7 +1949,7 @@ C Get Node number
         endif
         stop
       endif
-      ct = 3
+      ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory - only done once as data must be saved. As a

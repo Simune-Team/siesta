@@ -2,7 +2,7 @@ MODULE alloc
 
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
 ! ------------------------------------------------------------------
@@ -156,8 +156,8 @@ implicit none
 PUBLIC ::             &
   alloc_default,      &! Sets allocation defaults
   alloc_report,       &! Sets log report defaults
-  realloc,            &! Allocation/reallocation
-  dealloc,            &! Deallocation
+  re_alloc,           &! Allocation/reallocation
+  de_alloc,           &! Deallocation
   allocDefaults        ! Derived type to hold allocation defaults
 
 PRIVATE      ! Nothing is declared public beyond this point
@@ -166,7 +166,7 @@ PRIVATE      ! Nothing is declared public beyond this point
 ! JMS/AG: It might be necessary to comment out dealloc_s1 due to
 ! an apparent bug in the DEC compiler
 
-interface dealloc
+interface de_alloc
   module procedure dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
                    dealloc_i1, dealloc_i2, dealloc_i3,             &
                    dealloc_l1, dealloc_l2, dealloc_l3,             &
@@ -182,7 +182,7 @@ end interface
 !         the following are removed:
 !   realloc_d1s, realloc_i1s, realloc_l1s, realloc_r1s
 
-interface realloc
+interface re_alloc
   module procedure &
     realloc_d1,  realloc_i1,  realloc_l1,  realloc_r1,  &
     realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  &

@@ -72,7 +72,7 @@ C
       use parsing
       use atmfuncs, only: izvalfis
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
       implicit          none
       integer           maxkpol, maxnh, nuo, nuotot, no, nspin, na
@@ -108,7 +108,7 @@ C Internal variables
      .  prodtr, prodti, kint(3), volcel, dkmod,
      .  dkxij, ckxij, skxij, dmod, polion(3),
      .  tiny, phase, ph(3,2), Debye,
-     .  vaux(3,2), area, J, qspin(2), dq
+     .  vaux(3,2), area, J, qspin(2), dq, phaseold(2)
 
       double precision, dimension(:), allocatable, save ::
      .  ek
@@ -378,8 +378,11 @@ C periodic Bloch functions in this k point and in the previous one.
                   call detover(psiprev, psi, S, AuxSr,
      .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
      .              maxnh, nuotot, nocc(ispin), kint, dk, 
-     .              detr, deti, .true., Node, Nodes )
+     .              detr, deti, Node, Nodes )
  
+C Store wavefunction for the next point
+                  call savepsi(psiprev,psi,npsi,nuo,nuotot,
+     .              nocc(ispin),Node,Nodes)
 
                 else 
 C Calculate the determinant of the overlap matrix between the
@@ -387,7 +390,7 @@ C periodic Bloch functions in the last k point and the first one
                   call detover(psiprev, psi1, S, AuxSr,
      .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
      .              maxnh, nuotot, nocc(ispin), kint, dk, 
-     .              detr, deti, .false., Node, Nodes)
+     .              detr, deti, Node, Nodes)
     
                 endif
 
@@ -424,7 +427,21 @@ C avoid abrupt jumps near the value pi or -pi.
        
               if ((shape.ne.'molecule').and.(phase.lt.0.0d0))
      .            phase = 2.0d0*pi + phase
-        
+
+C Continuity of the phase in the plane******************
+C
+       if(ik.gt.1.and.
+     .       dabs(phase-phaseold(ispin)).gt.pi) then
+              if((phase-phaseold(ispin)).lt.0.0d0) then
+                   phase=phase+2.0d0*pi
+              else
+                   phase=phase-2.0d0*pi
+              endif
+       endif
+       phaseold(ispin)=phase
+C
+C*********************************************************
+
 C Calculating the Berry phase from the global phase of the 
 C product of all the determinants 
               if (prodtr.ne.0.0d0) then 

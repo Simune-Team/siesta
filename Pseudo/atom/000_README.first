@@ -1,0 +1,6 @@
+Special notes for Alpha computers:
+
+If you run into trouble with arithmetic errors, edit
+makefile and toggle the XC_OBJS lines (to use the old
+version of the Soler-Balbas routines).
+

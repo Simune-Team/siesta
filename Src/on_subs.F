@@ -99,7 +99,7 @@ C
       use precision
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -246,7 +246,7 @@ C
       use precision
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -426,14 +426,18 @@ C                             matrix elements of each row of C
 C *********************************************************************
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
       use alloc
 
       implicit none
-
+!
+!     AG
+!
+      integer, intent(out) :: ncmax
+!--------------------------------------
       integer
-     .  nca,ncb,namax,nbmax,ncmax,nramin,nramax,nrb,Node,Nodes,
+     .  nca,ncb,namax,nbmax,nramin,nramax,nrb,Node,Nodes,
      .  lista(namax,*),listb(nbmax),numa(*),numb(nrb),numc(*),
      .  listbptr(nrb)
 
@@ -462,6 +466,8 @@ C Check dimensions ....................................................
 
 C Initialize internal variables .......................................
       nraloc = nramax - nramin + 1
+!AG: Moved this ncmax initialization here...
+      ncmax = 100
       allocate(indl(ncb))
       call memory('A','I',ncb,'axb_build1s')
       allocate(nindv(ncmax,nraloc))
@@ -471,8 +477,7 @@ C Initialize internal variables .......................................
 
 C Allocate initial size of nindv
       nullify(nindv)
-      ncmax = 100
-      call realloc(nindv,1,ncmax,1,nraloc,name='nindv')
+      call re_alloc(nindv,1,ncmax,1,nraloc,name='nindv')
       nindv(1:ncmax,1:nraloc) = 0
 
 C Find out C control vectors ..........................................
@@ -541,7 +546,7 @@ C Expand index
                   numc(i) = numc(i) + 1
                   if (numc(i).gt.ncmax) then
                     ncmax = ncmax + 100
-                    call realloc(nindv,1,ncmax,1,nraloc,name='nindv')
+                    call re_alloc(nindv,1,ncmax,1,nraloc,name='nindv')
                   endif
                   nindv(numc(i),i) = j
                 endif
@@ -565,7 +570,7 @@ C Compress index and re-zero indl
 C ...........................
 
 C Free local memory
-      call dealloc( nindv, name='nindv' )
+      call de_alloc( nindv, name='nindv' )
       call memory('D','I',size(indl),'axb_build1s')
       deallocate(indl)
 #ifdef MPI
@@ -635,7 +640,7 @@ C                             matrix elements of each row of C
 C *********************************************************************
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -1050,7 +1055,7 @@ C *********************************************************************
 
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none

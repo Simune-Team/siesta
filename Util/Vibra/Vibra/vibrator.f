@@ -450,6 +450,7 @@ c Loop over k points
                   qr(1)=q(1)*(rl(1)+r(1))+
      .                  q(2)*(rl(2)+r(2))+
      .                  q(3)*(rl(3)+r(3))
+                  goto 10
                 endif
               endif
               if (abs(R2-dmin) .lt. 0.0001) then
@@ -458,6 +459,7 @@ c Loop over k points
      .                  q(2)*(rl(2)+r(2))+
      .                  q(3)*(rl(3)+r(3))
               endif
+10            continue
             enddo
             enddo
             enddo

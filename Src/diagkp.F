@@ -10,7 +10,7 @@ c
      .                  maxo, numh, listhptr, listh, numd, listdptr, 
      .                  listd, H, S, getD, fixspin, qtot, qs, temp, 
      .                  e1, e2, xij, indxuo, nk, kpoint, wk,
-     .                  eo, qo, Dnew, Enew, ef, efs,
+     .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
      .                  Haux, Saux, psi, Dk, Ek, aux, nuotot,
      .                  Node, Nodes)
 C *********************************************************************
@@ -73,6 +73,7 @@ C real*8 qo(maxo,maxspn,nk)   : Occupations of eigenstates
 C real*8 Dnew(maxnd,nspin)    : Output Density Matrix
 C real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
+C real*8 Entropy              : Electronic entropy
 C *************************** AUXILIARY *******************************
 C real*8 Haux(2,nuotot,nuo) : Auxiliary space for the hamiltonian matrix
 C real*8 Saux(2,nuotot,nuo) : Auxiliary space for the overlap matrix
@@ -97,7 +98,7 @@ C
       use precision
       use sys
       use parallel
-      use mpi
+      use mpi_siesta
 
       implicit          none
 
@@ -111,7 +112,7 @@ C
      .                  listdptr(nuo)
       double precision  Dnew(maxnd,nspin),
      .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
-     .                  eo(maxo,maxspn,nk), H(maxnh,nspin),
+     .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
      .                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
      .                  S(maxnh), stepf, temp, wk(nk),
      .                  xij(3,maxnh), qs(nspin)
@@ -292,7 +293,7 @@ C Find new Fermi energy and occupation weights ........................
      .               temp, qs, qo, efs )
       else
         call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
-     .             temp, qtot, qo, ef )
+     .             temp, qtot, qo, ef, Entropy )
       endif
 C ....................
 
@@ -305,8 +306,8 @@ C Find weights for local density of states ............................
           do ispin = 1,nspin
             do io = 1,nuotot
               qo(io,ispin,ik) = wk(ik) * 
-     .             ( stepf( (eo(io,ispin,ik)-e2)/t ) -
-     .               stepf( (eo(io,ispin,ik)-e1)/t ) ) / nspin
+     .             ( stepf((eo(io,ispin,ik)-e2)/t) -
+     .               stepf((eo(io,ispin,ik)-e1)/t)) * 2.0d0 / nspin
             enddo
           enddo
         enddo

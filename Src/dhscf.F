@@ -1,7 +1,8 @@
       subroutine dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
      .                  nuotot, nua, na, isa, xa, indxua, ucell, mscell, 
      .                  G2max, ntm, ifa, istr, iHmat, filrho, fildrh, 
-     .                  filevh, filevt, maxnd, numd, listdptr, listd, 
+     .                  filevh, filevt, filepsch, filetoch, maxnd, numd,
+     .                  listdptr, listd, 
      .                  Dscf, datm, maxnh, numh, listhptr, listh, Hmat,
      .                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
      .                  Exc, Dxc, dipol, Fa, stress, fal, stressl )
@@ -45,6 +46,10 @@ C                         (If blank => not saved)
 C character*(*) filevh  : Name of file to save electrostatic potential
 C                         (If blank => not saved)
 C character*(*) filevt  : Name of file to save total potential
+C                         (If blank => not saved)
+C character*(*) filepsch: Name of file to save the soft diffuse ionic charge
+C                         (If blank => not saved)
+C character*(*) filetoch: Name of file to save the total ionic+electronic charge
 C                         (If blank => not saved)
 C integer maxnd             : First dimension of listd and Dscf
 C integer numd(nuo)         : Number of nonzero density-matrix
@@ -133,7 +138,7 @@ C
       use sys
       use mesh
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -154,7 +159,8 @@ C
      .  fal(3,nua), stressl(3,3)
 
       character
-     .  filevh*(*), filevt*(*), fildrh*(*), filrho*(*)
+     .  filevh*(*), filevt*(*), fildrh*(*), filrho*(*), 
+     .  filepsch*(*), filetoch*(*)
 
 C ----------------------------------------------------------------------
 C Routines called internally:
@@ -261,6 +267,9 @@ C
 
       real, dimension(:,:,:), allocatable, save ::
      .  DVxcdn
+
+      real, dimension(:), allocatable::
+     .  Chlocal, Totchar
 !
 !     Dummy arrays for cellxc call
 !
@@ -568,6 +577,49 @@ C ----------------------------------------------------------------------
         enddo
       endif
 
+C ----------------------------------------------------------------------
+C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
+C ----------------------------------------------------------------------
+
+      if (filepsch .ne. ' ' .or. filetoch .ne. ' ') then
+
+        allocate(Chlocal(ntpl))
+        call memory('A','S',ntpl,'dhscf')
+
+C Find diffuse ionic charge on mesh
+        call LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
+      
+C Save diffuse ionic charge 
+        if (filepsch .ne. ' ') then
+          call reord( Chlocal, Chlocal, nml, nsm, +1)
+          call iorho( 'write', filepsch, cell, ntm, nsm, ntpl, 1, 
+     .      Chlocal, found )
+          call reord( Chlocal, Chlocal, nml, nsm, -1)
+        endif
+
+C Save total (ionic+electronic) charge 
+        if ( filetoch .ne. ' ') then
+          allocate(Totchar(ntpl))
+          call memory('A','S',ntpl,'dhscf')
+        
+          Totchar(:) = 0.0
+          do ispin = 1,nsd
+            Totchar(1:ntpl) = Totchar(1:ntpl) + 
+     .                        Chlocal(1:ntpl)/nsd + DRho(1:ntpl,ispin)
+          enddo
+          call reord( Totchar, Totchar, nml, nsm, +1)
+          call iorho( 'write', filetoch, cell, ntm, nsm, ntpl, 1, 
+     .      Totchar, found )
+          call reord( Totchar, Totchar, nml, nsm, -1)
+
+          call memory('D','S',ntpl,'dhscf')
+          deallocate(Totchar)
+        endif 
+
+        call memory('D','S',ntpl,'dhscf')
+        deallocate(Chlocal)
+      endif
+
 C Find difference between selfconsistent and atomic densities
       do ispin = 1,nsd
         DRho(1:ntpl,ispin) = DRho(1:ntpl,ispin) - rhoatm(1:ntpl)/nsd
@@ -624,6 +676,7 @@ C Orthogonalize dipole to bulk directions
           dipol(1:3) = const * b1Xb2(1:3)
         endif
       endif
+
 
 C ----------------------------------------------------------------------
 C Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf

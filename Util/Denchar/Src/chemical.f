@@ -108,20 +108,20 @@
         floating = (z.le.0)
         bessel = (z.eq.-100)
 
-        if (.not.floating) then
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(label),
-     $             ' Atomic number:',  z
-        elseif (bessel) then
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(label),
-     $             ' (floating Bessel functions)'
-        else
-         write(6,*) 'Species number: ', isp,
-     $             ' Label: ', trim(label),
-     $             ' Atomic number:',  z,
-     $             ' (floating PAOs)'
-        endif
+C        if (.not.floating) then
+C         write(6,*) 'Species number: ', isp,
+C     $             ' Label: ', trim(label),
+C     $             ' Atomic number:',  z
+C        elseif (bessel) then
+C         write(6,*) 'Species number: ', isp,
+C     $             ' Label: ', trim(label),
+C     $             ' (floating Bessel functions)'
+C        else
+C         write(6,*) 'Species number: ', isp,
+C     $             ' Label: ', trim(label),
+C     $             ' Atomic number:',  z,
+C     $             ' (floating PAOs)'
+C        endif
 !
         chemical_list%z(isp) = z
         chemical_list%spec_label(isp) = label

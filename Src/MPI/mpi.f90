@@ -1,4 +1,4 @@
-      MODULE MPI
+      MODULE MPI_SIESTA
 !
 !
 !       Michael Hennecke
@@ -793,4 +793,4 @@
           END SUBROUTINE MPI_PCONTROL
         END INTERFACE
 
-      END MODULE MPI
+      END MODULE MPI_SIESTA

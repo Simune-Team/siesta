@@ -17,15 +17,16 @@
 ! precision from same routine in Numerical Recipes.
 !**********************************************************************
 ! Input:
-!   real*8  DATA(NN) : Function to be Fourier transformed
-!   integer NN       : Number of points. Must be a power of 2
-!   integer ISIGN    : ISIG=+1/-1 => Direct/inverse transform
+!   complex*16 DATA(NN) : Function to be Fourier transformed
+!   integer    NN       : Number of points. Must be a power of 2
+!   integer    ISIGN    : ISIG=+1/-1 => Direct/inverse transform
 ! Output:
-!   real*8  DATA(NN) : Fourier transformed function
+!   complex*16 DATA(NN) : The direct Fourier transform (ISIG=+1), or
+!                         NN times the inverse Fourier transf (ISIG=-1)
 !**********************************************************************
       IMPLICIT NONE
       INTEGER          :: NN, ISIGN
-      DOUBLE PRECISION :: DATA(NN)
+      DOUBLE PRECISION :: DATA(2*NN)
 
       INTEGER          :: I, ISTEP, J, M, MMAX, N
       DOUBLE PRECISION :: TEMPI, TEMPR, THETA, WI, WPI, WPR, WR, WTEMP

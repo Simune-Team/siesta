@@ -39,19 +39,19 @@ c Reading input for the pseudopotentials and atomic orbitals
 
       write(6,'(/2a)') 
      .    'initatom: Reading input for the pseudopotentials ',
-     .    'and atomic orbitals'
+     .    'and atomic orbitals ----------'
 
       user_basis = fdf_boolean('user-basis',.false.)
       user_basis_netcdf = fdf_boolean('user-basis-netcdf',.false.)
 
       if (user_basis_netcdf) then
 
-         write(6,'(a)') 'Reading PAOs and KBs from NetCDF files...'
+         write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
          call read_basis_netcdf
 
       else if (user_basis) then
 
-         write(6,'(a)') 'Reading PAOs and KBs from ascii files...'
+         write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
          call read_basis_ascii
 
       else

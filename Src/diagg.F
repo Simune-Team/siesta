@@ -1,8 +1,8 @@
       subroutine diagg( nspin, nuo, no, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, 
      .                  listdptr, listd, H, S,
-     .                  getD, fixspin, qtot, qs, temp, e1, e2,
-     .                  eo, qo, Dnew, Enew, ef, efs,
+     .                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
+     .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
      .                  Haux, Saux, psi, aux, nuotot,
      .                  Node, Nodes )
 C *********************************************************************
@@ -36,6 +36,7 @@ C                               indexes for each matrix row
 C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C logical getD                : Find occupations and density matrices?
+C logical getPSI              : Find and print wavefunctions?
 C logical fixspin             : Fix the spin of the system?
 C real*8  qtot                : Number of electrons in unit cell
 C real*8  qs(nspin)           : Number of electrons in unit cell for each
@@ -57,6 +58,7 @@ C real*8 Enew(maxnd,nspin)    : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
 C real*8 efs(nspin)           : Fermi energy for each spin
 C                               (for fixed spin calculations)
+C real*8 Entropy              : Electronic entropy
 C *************************** AUXILIARY *******************************
 C real*8 Haux(nuotot,nuo)     : Auxiliary space for the hamiltonian matrix
 C real*8 Saux(nuotot,nuo)     : Auxiliary space for the overlap matrix
@@ -74,8 +76,9 @@ C
       use precision
       use sys
       use parallel
+      use writewave
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -94,7 +97,7 @@ C
      .  listd(maxnd), numd(nuo), listdptr(nuo)
 
       double precision
-     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin),
+     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), Entropy,
      .  eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
      .  qtot, qs(nspin), S(maxnh), stepf, temp, efs(nspin)
      
@@ -103,16 +106,17 @@ C
      .  aux(5*nuotot)
 
       logical
-     .  getD, fixspin
+     .  getD, getPSI, fixspin
 
       external
      .  fermid, fermispin, rdiag, stepf
 
 C  Internal variables .............................................
-      integer           ie, io, iio, ispin, j, jo, BNode, iie, ind,
+      integer           ie, io, iio, ispin, ix, j, jo, BNode, iie, ind,
      .                  BTest, ierror, nd
-      double precision  ee, pipj, qe, t
+      double precision  ee, pipj, qe, t, k(3)
 C  ....................
+
 
 C Solve eigenvalue problem .........................................
       do ispin = 1,nspin
@@ -137,6 +141,15 @@ C Solve eigenvalue problem .........................................
         elseif (ierror.eq.-1) then
           goto 10
         endif
+
+        if (getPSI) then
+           do ix=1,3
+             k(ix)=0.0d0
+           enddo
+           call writew(nuotot,nuo,1,k,ispin,
+     .                eo(1,ispin),psi(1,1,ispin),.true.)
+        endif
+
       enddo
 C ....................
 
@@ -150,7 +163,7 @@ C Find new Fermi energy and occupation weights ........................
      .               temp, qs, qo, efs )
       else
         call fermid( nspin, nspin, 1, 1.d0, maxo, no, eo, 
-     .             temp, qtot, qo, ef )
+     .             temp, qtot, qo, ef, Entropy )
       endif
 C ....................
 
@@ -161,8 +174,8 @@ C Find weights for local density of states ............................
         t = max( temp, 1.d-6 )
         do ispin = 1,nspin
           do io = 1,nuotot
-            qo(io,ispin) = ( stepf( (eo(io,ispin)-e2)/t ) -
-     .                       stepf( (eo(io,ispin)-e1)/t ) ) / nspin
+            qo(io,ispin) = ( stepf((eo(io,ispin)-e2)/t) -
+     .                       stepf((eo(io,ispin)-e1)/t)) * 2.0d0/nspin
           enddo
         enddo
       endif

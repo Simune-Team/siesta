@@ -3,7 +3,7 @@ SIESTA_ARCH=osfdxml
 FC=f90
 FFLAGS= -fast -tune host
 FFLAGS_DEBUG= -g
-
+RANLIB=echo
 COMP_LIBS=
 #
 NETCDF_LIBS=-L/usr/local/netcdf-3.5/lib -lnetcdf

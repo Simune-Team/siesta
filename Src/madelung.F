@@ -19,7 +19,7 @@ C  Modules
 C
       use precision
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none

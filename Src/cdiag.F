@@ -40,7 +40,7 @@ C Modules
       use precision
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
       use parallel
 #endif
       use diagmemory
@@ -69,7 +69,8 @@ C Internal varables and arrays
       integer                 :: Nodes
       integer,  pointer, save :: iwork(:)
       logical,           save :: nullified = .false.
-      logical                 :: DivideConquer
+      logical,           save :: DivideConquer
+      logical,           save :: DCread
       real*8,   pointer, save :: rwork(:)
       real*8,   pointer, save :: work(:,:)
       type(allocDefaults) oldDefaults
@@ -95,6 +96,8 @@ C Internal varables and arrays
       logical                 :: Serial
       character               :: range
 #endif
+
+      data DCread /.false./
 C ......................
 
 C Start time count
@@ -139,7 +142,10 @@ C Set general Lapack parameters
 
 C Set divide and conquer option - serial only
       if (Nodes.eq.1) then
-        DivideConquer = fdf_boolean( 'DivideAndConquer', .false. )
+        if (.not. DCread) then
+          DivideConquer = fdf_boolean( 'DivideAndConquer', .false. )
+          DCread=.true.
+        endif
       else
         DivideConquer = .false.
       endif
@@ -155,9 +161,9 @@ C Accuracy for eigenvalues
 C Accuracy for orthogonalisation
         orfac=1.0d-3
 C Allocate workspace arrays
-        call realloc( gap,     1,Nodes,   name='gap'     )
-        call realloc( iclustr, 1,2*Nodes, name='iclustr' )
-        call realloc( ifail,   1,nh,      name='ifail'   )
+        call re_alloc( gap,     1,Nodes,   name='gap'     )
+        call re_alloc( iclustr, 1,2*Nodes, name='iclustr' )
+        call re_alloc( ifail,   1,nh,      name='ifail'   )
 
 C Get Blacs context and initialise Blacs grid
         nprow = 1
@@ -199,9 +205,9 @@ C Call Scalapack to get sizes
         liwork=diwork(1)
 
 C Allocate arrays to correct sizes
-        call realloc( work, 1,2, 1,lwork,  name='work'  )
-        call realloc( rwork,     1,lrwork, name='rwork' )
-        call realloc( iwork,     1,liwork, name='iwork' )
+        call re_alloc( work, 1,2, 1,lwork,  name='work'  )
+        call re_alloc( rwork,     1,lrwork, name='rwork' )
+        call re_alloc( iwork,     1,liwork, name='iwork' )
 
 C Repeated here as some machines corrupt these parameters
         if (nevec.le.0) then
@@ -226,12 +232,12 @@ C Exit Blacs
         call blacs_gridexit( ictxt )
 
 C Deallocate workspace arrays
-        call dealloc( iwork,   name='iwork'  )
-        call dealloc( rwork,   name='rwork'  )
-        call dealloc( work,    name='work'   )
-        call dealloc( ifail,   name='ifail'  )
-        call dealloc( iclustr, name='iclustr')
-        call dealloc( gap,     name='gap'    )
+        call de_alloc( iwork,   name='iwork'  )
+        call de_alloc( rwork,   name='rwork'  )
+        call de_alloc( work,    name='work'   )
+        call de_alloc( ifail,   name='ifail'  )
+        call de_alloc( iclustr, name='iclustr')
+        call de_alloc( gap,     name='gap'    )
       else
 #endif
 C***************************
@@ -248,9 +254,9 @@ C Set size of workspace arrays
           liwork = 3 + 5*n
 
 C Allocate workspace arrays
-          call realloc( work, 1,2, 1,lwork,  name='work'  )
-          call realloc( rwork,     1,lrwork, name='rwork' )
-          call realloc( iwork,     1,liwork, name='iwork' )
+          call re_alloc( work, 1,2, 1,lwork,  name='work'  )
+          call re_alloc( rwork,     1,lrwork, name='rwork' )
+          call re_alloc( iwork,     1,liwork, name='iwork' )
 
 C Call lapack
 #ifdef CRAY
@@ -262,9 +268,9 @@ C Call lapack
      .       iwork,liwork,info)
 
 C Deallocate workspace arrays
-          call dealloc( iwork,   name='iwork'  )
-          call dealloc( rwork,   name='rwork'  )
-          call dealloc( work,    name='work'   )
+          call de_alloc( iwork,   name='iwork'  )
+          call de_alloc( rwork,   name='rwork'  )
+          call de_alloc( work,    name='work'   )
 
         else
 
@@ -273,7 +279,7 @@ C Set size of workspace arrays
           lrwork = 3*n - 2
 
 C Allocate workspace array
-          call realloc( rwork, 1,lrwork, name='rwork' )
+          call re_alloc( rwork, 1,lrwork, name='rwork' )
 
 #ifdef CRAY
           call chegv
@@ -283,7 +289,7 @@ C Allocate workspace array
      .      (1,jobz,uplo,n,h_2,nh,s_2,ns,w,z_2,lwork,rwork,info)
 
 C Deallocate workspace array
-          call dealloc( rwork, name='rwork' )
+          call de_alloc( rwork, name='rwork' )
         endif
 
 C Move eigenvectors to correct storage location

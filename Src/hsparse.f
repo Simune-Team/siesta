@@ -1,3 +1,9 @@
+      module m_hsparse
+!
+!     We need an explicit interface since assumed-shape arrays are used
+!
+      CONTAINS
+
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
      .                    nlhmax, numh, 
@@ -380,7 +386,10 @@ C Deallocate local arrays
       call timer( 'hsparse', 2 )
 
       return
-      end
+      end subroutine hsparse
+
+      end module m_hsparse
+
 
 
 

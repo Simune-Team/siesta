@@ -18,7 +18,7 @@ C **********************************************************************
       use fdf
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       IMPLICIT NONE

@@ -1,0 +1,40 @@
+=======================================================================
+                  VIBRA CHANGES: TOP IS MOST RECENT
+=======================================================================
+Version: 0.1.1 
+Date: 2003/06/21 
+Title: Small bug reported by Stephanie Reich and example files
+Author: Pablo Ordejon <ordeojn@icmab.es>
+
+Description:
+  A bug in the counting of equivalent neighbours for q-point
+phonon calculations was detected by S. Reich. The bug produced
+small errors in the computed phonon band frecuencies and 
+eigenvectors (a few percent at most).
+  The output of fcbuild has been changed to include more significant
+digits in the coordinates and lattice constant.
+  The examples files have been changed slightly. In particular,
+I have included the input for Siesta necessary to reproduce
+the provided output. Also, the output files have been updated
+according to the Siesta input (which is slightly different from
+the old one), and for the correction of the bug above. Also,
+input pseudopotential files are provided. This way, users should
+be able to reproduce the provided results.
+
+Files:
+In Vibes:
+  vibrator.f : bug corrected
+  fcbuild.f  : increased number of digits in coordinate output
+In Examples:
+  Si.inp           : new file; Si pseudo input
+  C.inp            : new file; Si pseudo input
+  si2-siesta.fdf   : new file; input for Siesta
+  si2.bands        : updated output
+  si2.vectors      : updated output
+  si54-siesta.fdf  : new file; input for Siesta
+  si54.bands       : updated output
+  README           : new file; explanation on how to run examples
+In Docs:
+  CHANGES          : new file: log of changes
+  vibra.tex        : change version, date and address
+=======================================================================

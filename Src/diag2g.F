@@ -1,7 +1,7 @@
       subroutine diag2g( nuo, no, maxuo, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr,
      .                   listd, H, S, getD, qtot, temp, e1, e2,
-     .                   eo, qo, Dnew, Enew, ef,
+     .                   eo, qo, Dnew, Enew, ef, Entropy,
      .                   Haux, Saux, psi, aux, nuotot,
      .                   Node, Nodes)
 C *********************************************************************
@@ -47,6 +47,7 @@ C real*8 qo(maxo*2)           : Occupations of eigenstates
 C real*8 Dnew(maxnd,4)        : Output Density Matrix
 C real*8 Enew(maxnd,4)        : Output Energy-Density Matrix
 C real*8 ef                   : Fermi energy
+C real*8 Entropy              : Electronic entropy
 C *************************** AUXILIARY *******************************
 C real*8 Haux(2,2,nuotot,2,nuo): Auxiliary space for the hamiltonian matrix
 C real*8 Saux(2,2,nuotot,2,nuo): Auxiliary space for the overlap matrix
@@ -67,7 +68,7 @@ C
       use sys
       use parallel
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none
@@ -85,7 +86,7 @@ C
      .  listd(maxnd), numd(nuo), listdptr(nuo)
 
       double precision
-     .  Dnew(maxnd,4), e1, e2, ef, Enew(maxnd,4), eo(maxo*2),
+     .  Dnew(maxnd,4), e1, e2, ef, Enew(maxnd,4), Entropy, eo(maxo*2),
      .  H(maxnh,4), qo(maxo*2), qtot, S(maxnh), stepf, temp
      
       double precision
@@ -153,7 +154,7 @@ C ....................
 
 C Find new Fermi energy and occupation weights ........................
       call fermid( 2, 2, 1, 1.d0, maxo, no, eo, 
-     .             temp, qtot, qo, ef )
+     .             temp, qtot, qo, ef, Entropy )
 C ....................
 
 *     write(6,'(/,a,/,(10f7.2))') 'diag2g: eo =', eo
@@ -166,7 +167,7 @@ C Find weights for local density of states ............................
         t = max( temp, 1.d-6 )
         do io = 1,nuotot*2
           qo(io) =  ( stepf( (eo(io)-e2)/t ) -
-     .                stepf( (eo(io)-e1)/t ) ) / 2
+     .                stepf( (eo(io)-e1)/t ) ) 
         enddo
       endif
 C ....................

@@ -1,3 +1,4 @@
+
       SUBROUTINE MATEL( OPERAT, IS1, IS2, IO1, IO2, R12, S12, DSDR )
 C *******************************************************************
 C Finds the overlap or laplacian matrix elements between two atomic
@@ -81,6 +82,7 @@ C Modules -----------------------------------------------------------
       USE ATMFUNCS, ONLY: 
      .  LOFIO, PHIATM, RCUT, XPHIATM, YPHIATM, ZPHIATM
       use spher_harm
+      use m_radfft
 C -------------------------------------------------------------------
 
 C Argument types and dimensions -------------------------------------
@@ -140,13 +142,14 @@ C Internal variable types and dimensions ----------------------------
       LOGICAL, SAVE ::
      .  NULLIFIED=.FALSE.
 
-      logical, save :: opened=.false.   ! JMS debug
+!      logical, save :: opened=.false.   ! JMS debug
 
       TYPE(allocDefaults) ::
      .  OLDEFS
 
       EXTERNAL
-     .  PROPOR, RADFFT, SPLINE, SPLINT, TIMER
+     .  PROPOR, SPLINE, SPLINT, TIMER
+
 C -------------------------------------------------------------------
 
 C Start time counter 
@@ -166,20 +169,20 @@ C Set allocation defaults
 
 C Check if tables must be re-initialized 
       IF ( IS1.LE.0 .OR. IS2.LE.0 ) THEN
-        CALL DEALLOC( IFFR,   MYNAME//'IFFR'   )
-        CALL DEALLOC( ILM,    MYNAME//'ILM'    )
-        CALL DEALLOC( ILMFF,  MYNAME//'ILMFF'  )
-        CALL DEALLOC( INDF,   MYNAME//'INDF'   )
-        CALL DEALLOC( INDFF,  MYNAME//'INDFF'  )
-        CALL DEALLOC( INDFFR, MYNAME//'INDFFR' )
-        CALL DEALLOC( INDFFY, MYNAME//'INDFFY' )
-        CALL DEALLOC( NLM,    MYNAME//'NLM'    )
-        CALL DEALLOC( CFFR,   MYNAME//'CFFR'   )
-        CALL DEALLOC( DYDR,   MYNAME//'DYDR'   )
-        CALL DEALLOC( F,      MYNAME//'F'      )
-        CALL DEALLOC( FFR,    MYNAME//'FFR'    )
-        CALL DEALLOC( FFY,    MYNAME//'FFY'    )
-        CALL DEALLOC( Y,      MYNAME//'Y'      )
+        CALL DE_ALLOC( IFFR,   MYNAME//'IFFR'   )
+        CALL DE_ALLOC( ILM,    MYNAME//'ILM'    )
+        CALL DE_ALLOC( ILMFF,  MYNAME//'ILMFF'  )
+        CALL DE_ALLOC( INDF,   MYNAME//'INDF'   )
+        CALL DE_ALLOC( INDFF,  MYNAME//'INDFF'  )
+        CALL DE_ALLOC( INDFFR, MYNAME//'INDFFR' )
+        CALL DE_ALLOC( INDFFY, MYNAME//'INDFFY' )
+        CALL DE_ALLOC( NLM,    MYNAME//'NLM'    )
+        CALL DE_ALLOC( CFFR,   MYNAME//'CFFR'   )
+        CALL DE_ALLOC( DYDR,   MYNAME//'DYDR'   )
+        CALL DE_ALLOC( F,      MYNAME//'F'      )
+        CALL DE_ALLOC( FFR,    MYNAME//'FFR'    )
+        CALL DE_ALLOC( FFY,    MYNAME//'FFY'    )
+        CALL DE_ALLOC( Y,      MYNAME//'Y'      )
         MF   = 0
         MFF  = 0
         MFFR = 0
@@ -210,11 +213,11 @@ C Check size of orbital index table
      .     MIN(IO1,IO2).LT.LBOUND(INDF,2) .OR.
      .     MAX(IO1,IO2).GT.UBOUND(INDF,2) .OR.
      .     MAX(IOPER,2).GT.SIZE(INDF,3) ) THEN
-        CALL REALLOC( INDF, 1,MAX(SIZE(INDF,1),IS1,IS2),
+        CALL RE_ALLOC( INDF, 1,MAX(SIZE(INDF,1),IS1,IS2),
      .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
      .                IO1,IO2),1,MAX(SIZE(INDF,3),IOPER,2),
      .                MYNAME//'INDF' )
-        CALL REALLOC( NLM,  1,MAX(SIZE(INDF,1),IS1,IS2),
+        CALL RE_ALLOC( NLM,  1,MAX(SIZE(INDF,1),IS1,IS2),
      .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
      .                IO1,IO2),1,MAX(SIZE(INDF,3),IOPER,2),
      .                MYNAME//'NLM'  )
@@ -252,9 +255,9 @@ C         Reallocate arrays
           L = LOFIO( IS, IO )
           NILM = (L+2)**2
           IF (NF+NILM .GT. MF) MF = EXPAND * (NF+NILM)
-          CALL REALLOC( F, 0,NQ, 1,MF, MYNAME//'F'   )
-          CALL REALLOC( ILM,     1,MF, MYNAME//'ILM' )
-          CALL REALLOC( INDFF,   1,MF, 1,MF, 1,MAX(IOPER,2),
+          CALL RE_ALLOC( F, 0,NQ, 1,MF, MYNAME//'F'   )
+          CALL RE_ALLOC( ILM,     1,MF, MYNAME//'ILM' )
+          CALL RE_ALLOC( INDFF,   1,MF, 1,MF, 1,MAX(IOPER,2),
      .                  MYNAME//'INDFF' )
 
 C         Expand orbital in spherical harmonics
@@ -284,7 +287,7 @@ C         Store orbital in k-space
           DO JLM = 1,NILM
             NF = NF + 1
             L = LOFILM( ILM(NF) )
-            CALL RADFFT( L, NQ, RMAX, F(0,NF), F(0,NF) )
+            CALL RADFFT( L, NQ, RMAX, F(0:NQ,NF), F(0:NQ,NF) )
 *           F(NQ,NF) = 0.D0
           ENDDO
 
@@ -327,8 +330,8 @@ C         Find orbitals convolution by multiplication in k-space
 C         Loop on possible values of l quantum number of product
           L1 = LOFILM( ILM(IFLM1) )
           L2 = LOFILM( ILM(IFLM2) )
-          CALL REALLOC( IFFR, 0,L1+L2, MYNAME//'IFFR' )
-          CALL REALLOC( CFFR, 0,L1+L2, MYNAME//'CFFR' )
+          CALL RE_ALLOC( IFFR, 0,L1+L2, MYNAME//'IFFR' )
+          CALL RE_ALLOC( CFFR, 0,L1+L2, MYNAME//'CFFR' )
           DO L3 = ABS(L1-L2), L1+L2, 2
 
 C           Return to real space
@@ -395,7 +398,7 @@ C           Store new radial function and setup spline interpolation
               NFFR = NFFR + 1
               IF (NFFR .GT. MFFR) THEN
                 MFFR = EXPAND * NFFR
-                CALL REALLOC( FFR, 0,NR, 1,2, 1,MFFR, MYNAME//'FFR' )
+                CALL RE_ALLOC( FFR, 0,NR, 1,2, 1,MFFR, MYNAME//'FFR' )
               ENDIF
               IFFR(L3) = NFFR
               CFFR(L3) = 1.D0
@@ -419,12 +422,12 @@ C         Reallocate some arrays
           NILM = (L1+L2+1)**2
           IF (NFFY+NILM .GT. MFFY) THEN
             MFFY = EXPAND * (NFFY+NILM)
-            CALL REALLOC( FFY,    1,MFFY, MYNAME//'FFY'    )
-            CALL REALLOC( ILMFF,  1,MFFY, MYNAME//'ILMFF'  )
-            CALL REALLOC( INDFFR, 1,MFFY, MYNAME//'INDFFR' )
+            CALL RE_ALLOC( FFY,    1,MFFY, MYNAME//'FFY'    )
+            CALL RE_ALLOC( ILMFF,  1,MFFY, MYNAME//'ILMFF'  )
+            CALL RE_ALLOC( INDFFR, 1,MFFY, MYNAME//'INDFFR' )
           ENDIF
-          CALL REALLOC( Y,         1,NILM, MYNAME//'Y'    )
-          CALL REALLOC( DYDR, 1,3, 1,NILM, MYNAME//'DYDR' )
+          CALL RE_ALLOC( Y,         1,NILM, MYNAME//'Y'    )
+          CALL RE_ALLOC( DYDR, 1,3, 1,NILM, MYNAME//'DYDR' )
 
 C         Expand the product of two spherical harmonics (SH) also in SH
           CALL YLMEXP( L1+L2, RLYLM, YLMYLM, ILM(IFLM1), ILM(IFLM2),
@@ -442,7 +445,7 @@ C         Loop on possible lm values of orbital product
           NFF = NFF + 1
           IF (NFF .GT. MFF) THEN
             MFF = EXPAND * NFF
-            CALL REALLOC( INDFFY, 0,MFF, MYNAME//'INDFFY' )
+            CALL RE_ALLOC( INDFFY, 0,MFF, MYNAME//'INDFFY' )
           ENDIF
           INDFFY(NFF) = NFFY
           INDFF(IFLM1,IFLM2,IOPER) = NFF

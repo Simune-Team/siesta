@@ -22,7 +22,7 @@ C
 C     It has to be MPI-aware since it calls routines down the line...
 C
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
       implicit none

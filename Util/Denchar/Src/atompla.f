@@ -1,10 +1,12 @@
-      SUBROUTINE ATOMPLA( NA, ORIGIN, XA, MROT, NATINPLA, INDICES, 
-     .                    ISCALE, XAPLANE )
+      SUBROUTINE ATOMPLA( NA, ORIGIN, XA, MROT, IDIMEN, ISCALE,
+     .                   NATINPLA, INDICES, XAPLANE )
 C **********************************************************************
-C Projection of the coordinates of some selected atoms on the 
+C Find the coordinates of some selected atoms on the 
 C plane-reference-frame. Atoms in plane will have the third coordinate 
 C equal to zero.
+C For 3D-grid, all the atoms are selected
 C Coded by J. Junquera May '99
+C Modified by P. Ordejon to include 3D capability; June 2003
 C **********************************************************************
 
       USE FDF
@@ -22,12 +24,10 @@ C **********************************************************************
 C ******* INPUT ********************************************************
 C INTEGER NA             : Number of atoms
 C REAL*8  ORIGIN(3)      : Origin of the plane reference frame
-C REAL*8  XPLANE(3)      : X-vector of the in-plane reference frame 
-C REAL*8  YPLANE(3)      : Y-vector of the in-plane reference frame
-C REAL*8  NORMAL(3)      : Normal vector of the plane 
 C REAL*8  XA(3,NA)       : Atomic coordinates in lattice reference frame
 C REAL*8  MROT(3,3)      : Rotation matrix from the lattice reference frame 
 C                          to the in-plane reference frame
+C INTEGER IDIMEN         : Determines if run is plane or 3D-grid
 C INTEGER ISCALE         : Units of the atomic coordinates
 C                          ISCALE = 1 => bohrs, ISCALE = 2 => Ang
 C ******* OUTPUT *******************************************************
@@ -41,7 +41,7 @@ C **********************************************************************
      .  LINE*150
 
       INTEGER 
-     .  NATINPL_DEFECT, IUNIT, IAT, IX
+     .  NATINPL_DEFECT, IDIMEN, IUNIT, IAT, IX
  
       DOUBLE PRECISION
      .  VAUX1(3), VAUX2(3)
@@ -61,27 +61,39 @@ C                          rotated from the lattice reference frame to
 C                          the in-plane reference frame
 C REAL*8  VAUX1(3)       : Auxiliar vector
 C REAL*8  VAUX2(3)       : Auxiliar vector
-C LOGICAL ATINPLA        : Is the block 2D.AtomsInPlane present in fdf?
+C LOGICAL ATINPLA        : Is block Denchar.AtomsInPlane present in fdf?
 C **********************************************************************
 
-C Read fdf data block '2D.AtomsInPlane' --------------------------------
-      NATINPL_DEFECT = 0
-      NATINPLA = 0
+      IF (IDIMEN .EQ. 2) THEN
 
-      NULLIFY(BP)
-      IF ( .NOT. FDF_BLOCK('2D.AtomsInPlane',BP) )  GOTO 2000
+C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
+        NATINPL_DEFECT = 0
+        NATINPLA = 0
+  
+        NULLIFY(BP)
+        IF ( .NOT. FDF_BLOCK('Dencahr.AtomsInPlane',BP) )  GOTO 2000
 
-      LOOP: DO
-        IF (.NOT. FDF_BLINE(BP,LINE)) EXIT LOOP
-        P=>DIGEST(LINE)
-        IF (.NOT. MATCH(P,"I") ) 
-     .       CALL DIE("Wrong format in 2D.AtomsInPlane")
-        NATINPLA = NATINPLA + 1
-        INDICES(NATINPLA) = INTEGERS(P,1) 
-        CALL DESTROY(P)
-      ENDDO LOOP
-      CALL DESTROY(BP) 
+        LOOP: DO
+          IF (.NOT. FDF_BLINE(BP,LINE)) EXIT LOOP
+          P=>DIGEST(LINE)
+          IF (.NOT. MATCH(P,"I") ) 
+     .         CALL DIE("Wrong format in Denchar.AtomsInPlane")
+          NATINPLA = NATINPLA + 1
+          INDICES(NATINPLA) = INTEGERS(P,1) 
+          CALL DESTROY(P)
+        ENDDO LOOP
+        CALL DESTROY(BP) 
  2000   CONTINUE
+
+      ELSE IF (IDIMEN .EQ. 3) THEN
+        NATINPLA = NA
+        DO IAT = 1, NA
+          INDICES(IAT) = IAT
+        ENDDO
+      ELSE
+        CALL DIE("Wrong IDIMEN in ATOMPLA")
+      ENDIF
+     
 
 C Rotate the coordinates -----------------------------------------------
         DO IAT = 1, NATINPLA
@@ -96,11 +108,11 @@ C Rotate the coordinates -----------------------------------------------
             XAPLANE(IX,INDICES(IAT)) = VAUX2(IX)
           ENDDO
   
-        IF (ISCALE .EQ. 2) THEN
-          DO IX = 1,3
-           XAPLANE(IX,INDICES(IAT))=XAPLANE(IX,INDICES(IAT))*0.529177D0       
-          ENDDO
-        ENDIF
+C        IF (ISCALE .EQ. 2) THEN
+C          DO IX = 1,3
+C           XAPLANE(IX,INDICES(IAT))=XAPLANE(IX,INDICES(IAT))*0.529177D0
+C          ENDDO
+C        ENDIF
 
         ENDDO
 

@@ -269,7 +269,7 @@ cat input.tmp >> figure.mgr
 
 # Loop over figures
 switch == 0
-until [ $switch = 5 ]
+until [ $switch == 5 ]
 do
 
 echo "

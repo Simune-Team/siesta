@@ -82,7 +82,7 @@ C
       use parallel
       use fdf
 #ifdef MPI
-      use mpi
+      use mpi_siesta
 #endif
 
        implicit none
@@ -416,11 +416,30 @@ C Global operations
        enddo
 #endif
 
-       call inver2(b,bi,maxmix+1,maxsav+1)
+C Check if any of the residuals is already cero
+
+       do i=1,maxmix
+         coeff(i)=0.0d0
+       enddo
+
+       do i=1,maxmix
+         sum = 0.0d0
+         do j=1,maxmix
+           sum = sum + b(i,j)**2
+         enddo
+         if (sum .le. 1.d-10) then
+           coeff(i)=1.0d0
+           goto 200
+         endif
+       enddo
+
+       call inver(b,bi,maxmix+1,maxsav+1)
 
        do i=1,maxmix
          coeff(i)=bi(i,maxmix+1)
        enddo
+
+200    continue
 C ........
  
 C Read former matrices for mixing .........
@@ -504,30 +523,3 @@ C Deallocate local arrays
        return
        end
 
-
-        SUBROUTINE INVER2(A,B,N,mxddim)
-        implicit real*8  (a-h,o-z)
-        real*8 A(mxddim,mxddim),B(mxddim,mxddim),X
-        DO I=1,N
-          DO J=1,N
-            B(I,J)=A(I,J)
-          ENDDO
-        ENDDO
-        DO I=1,N
-          X=B(I,I)
-          B(I,I)=1.0d0
-          DO J=1,N
-            B(J,I)=B(J,I)/X
-          ENDDO
-          DO K=1,N
-            IF ((K-I).NE.0) THEN 
-              X=B(I,K)
-              B(I,K)=0.0d0
-              DO J=1,N
-                B(J,K)=B(J,K)-B(J,I)*X
-              ENDDO
-            ENDIF
-          ENDDO
-        ENDDO
-        RETURN
-        END
