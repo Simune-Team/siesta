@@ -126,8 +126,8 @@ C     different chemical species in the calculation:
         call memory('A','I',nsmax,'atom')
         allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
         call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
-        allocate(nsemicsave(0:nsemx,nsmax))
-        call memory('A','I',(nsemx+1)*nsmax,'atom')
+        allocate(nsemicsave(0:lmaxd,nsmax))
+        call memory('A','I',(lmaxd+1)*nsmax,'atom')
         allocate(nzetasave(0:lmaxd,nsemx,nsmax))
         call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
         allocate(nomax(nsmax))
@@ -1263,7 +1263,7 @@ C 8) If arrays phi or grphi are too small, returns with the required
 C    value of nphi
 
       integer i, index, ipol, it, izeta, jlm,
-     .        l, lmax, m, maxlm, maxo, n, nsm
+     .        l, lmax, m, maxlm, n, nsm
       logical polar
       double precision  rly(lmx2), grly(3,lmx2), rmod,
      .                  phir, dphidr, delt

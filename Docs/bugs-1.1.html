@@ -1,4 +1,4 @@
-<h1>List of known bugs in Siesta RELEASE 1.1</h1>
+<h1>List of known problems in Siesta RELEASE 1.1</h1>
 
 <ol>
 <li> (Cosmetic)
@@ -11,6 +11,41 @@ state atomic charge density).
 Fix: The fix is trivial, but for compatibility reasons it will
      not be applied along this release branch.
 </pre>
+</ol>
+<p> 
+<h2> ** All the following bugfixes have been 
+     incorporated into siesta-1.1f2</h2>
+<p>
+<ol>
+<li> (Porting) Support added for the Intel Fortran Compiler
+<p>
+<li> Declaration error for variable nsemicsave in old_atmfuncs.f
+<p>
+<pre>
+Fix:
+
+*** 126,133 ****
+          call memory('A','I',nsmax,'atom')
+          allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+!         allocate(nsemicsave(0:nsemx,nsmax))
+!         call memory('A','I',(nsemx+1)*nsmax,'atom')
+          allocate(nzetasave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+          allocate(nomax(nsmax))
+--- 126,133 ----
+          call memory('A','I',nsmax,'atom')
+          allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+!         allocate(nsemicsave(0:lmaxd,nsmax))
+!         call memory('A','I',(lmaxd+1)*nsmax,'atom')
+          allocate(nzetasave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+          allocate(nomax(nsmax))
+</pre>
+</ol>
+<p> 
+<h2> All the following bugfixes have been incorporated into siesta-1.1f1</h2>
 <p>
 <li> (Related to basis input from files)
 <pre>
@@ -182,6 +217,4 @@ C  Find atomic cutoff radii
 </pre>
 </ol>
 
-<p> 
-<h2> All the above bugfixes have been incorporated into siesta-1.1f1</h2>
 

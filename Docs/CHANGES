@@ -1,6 +1,20 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.1.2
+Date: 2002/09/23
+Title: SIESTA-1.1f2 (maintenance fix 2)
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+-----------------------------------------------------------------------
+
+Changes since 1.1.1:
+
+* Support for the Intel Fortran Compiler: changes in fdf subsystem
+  and in makefiles.
+
+* Fix the declaration of nsemicsave in old_atmfuncs.f
+
+=======================================================================
 Version: 1.1.1
 Date: 2002/04/19
 Title: SIESTA-1.1f1 (bugfix 1)

@@ -16,4 +16,33 @@ NetCDF hooks:
 If you have netcdf V3.5 installed, you can set the macros NETCDF_XXX
 (as in some of the example files) to use it.
 
+THINGS TO WATCH OUT FOR:
 
+* If you have trouble compiling alloc.F90, it might be that your compiler
+does not recognize the .F90 suffix as a "in need of preprocessing, free
+form, source file". Then you need to do the preprocessing *before* invoking
+the compiler. This happens to our knowledge, on Suns and Alphas. A quick
+way to fix it is to redefine the .F90 rule in the arch.make file:
+
+#
+.F90.o:
+        $(CPP) $(DEFS) $< > $*.f90
+        $(FC) -c $(FFLAGS) $*.f90
+        @rm -f $*.f90
+#
+
+WARNING: Make sure that the "leading spaces" above are actually a single
+tab character.
+
+* Sometimes "make" gets confused while trying to generate "file.o" if
+"file.mod" already exists, and invokes the "m2c" compiler as:
+
+m2c -o alloc.o alloc.mod
+
+If this happens to you, just make sure you delete the "file.mod" file.
+If it gets really annoying, remove the built-in rule .mod--> .o
+by inserting the line
+
+%.o : %.mod
+
+in arch.make. This works at least with GNU make.
