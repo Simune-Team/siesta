@@ -79,26 +79,30 @@ C      Move atomic positions XA       (Molecular dynamics step)
 C    ENDDO
 C ********************************************************************
 
-C Next line is non-standard but may be supressed
+      Use precision, only : dp
       IMPLICIT NONE
 
 C Define space dimension
-      INTEGER NX
-      PARAMETER ( NX = 3 )
+      INTEGER, PARAMETER :: NX = 3
 
 C Argument types and dimensions
-      INTEGER           IA, ISC, JAN(*), NA, NNA
-      DOUBLE PRECISION  CELL(NX,NX), RANGE, R2IJ(*),
-     .                  XA(NX,NA), XIJ(NX,*)
+      INTEGER, INTENT(IN)    :: IA, ISC, NA
+      INTEGER, INTENT(OUT)   :: JAN(*)
+      INTEGER, INTENT(INOUT) :: NNA
+      REAL(DP), INTENT(IN)   :: CELL(NX,NX), RANGE, XA(NX,NA)
+      REAL(DP), INTENT(OUT)  :: R2IJ(*), XIJ(NX,*)
 
 C Internal variables
-      LOGICAL           FRSTME, SAMCEL
-      INTEGER           IAMOVE(1), IX, JX
-      DOUBLE PRECISION  CELAST(NX,NX), RGLAST, X0(NX)
-      SAVE
-      DATA FRSTME / .TRUE. /
-      DATA IAMOVE / 0 /
-      DATA X0 / NX*0.D0 /
+C ... saved
+      LOGICAL, SAVE    :: FRSTME        = .True.
+      INTEGER, SAVE    :: IAMOVE(1)     = 0
+      REAL(DP), SAVE   :: CELAST(NX,NX) = 0.0_dp, 
+     .                    RGLAST        = 0.0_dp, 
+     .                    X0(NX)        = 0.0_dp
+
+C ... unsaved
+      LOGICAL :: SAMCEL
+      INTEGER :: IX, JX
 
 C Initialization section
       IF (FRSTME .OR. IA.LE.0 .OR. RANGE.GT.RGLAST) THEN

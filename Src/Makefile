@@ -1,6 +1,8 @@
 
 # Makefile for siesta
 #
+# Remove implicit rules (including for Modula-2, which just confuses matters)
+.SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
 default: what siesta gen-basis  # denchar
@@ -160,6 +162,12 @@ libnetcdf_f90.a:
 #
 # Libraries that might need to be compiled
 #
+libblas.a:
+	@echo "==> Compiling libblas.a in Libs..."
+	@(cd Libs ; $(MAKE) libblas.a)
+liblapack.a:
+	@echo "==> Compiling liblapack.a in Libs..."
+	@(cd Libs ; $(MAKE) liblapack.a)
 linalg.a: Libs/blas.f Libs/lapack.f
 	@echo "==> Compiling linalg.a in Libs..."
 	@(cd Libs ; $(MAKE) linalg.a)
@@ -167,14 +175,14 @@ dc_lapack.a:  Libs/dc_lapack.f
 	@echo "==> Compiling dc_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) dc_lapack.a)
 #
-version:
+
+version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
-	@sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F90 > temp0.F90
-	@sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F90 > compinfo.F90
-	@($(MAKE) -s "FC=$(FC)" "FFLAGS=$(FFLAGS)" compinfo.o)
-	@rm -f temp0.F90 compinfo.F90
+	@sed  "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g" version.F90 > compinfo.F90
+	@($(MAKE) compinfo.o)
 	@mv compinfo.o version.o
+	@rm -f compinfo.F90
 	@echo
 
 siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\

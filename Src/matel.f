@@ -322,7 +322,7 @@ C         Check interaction range
           ENDIF
 
 C         Find orbitals convolution by multiplication in k-space
-          C = ( 2.D0 * PI )**1.5D0
+          C = ( 2.0_dp * PI )**1.5_dp
           DO IQ = 0,NQ
             FFQ(IQ) = C * F(IQ,IFLM1) * F(IQ,IFLM2)
             IF ( OPERAT .EQ. 'T' ) THEN
@@ -354,7 +354,7 @@ C           Divide by R**L
                 FFL(IR) = FFL(IR) / R**L3
               ENDDO
 C             Parabolic extrapolation to R=0
-              FFL(0) = ( 4.D0 * FFL(1) - FFL(2) ) / 3.D0
+              FFL(0) = ( 4.0_dp * FFL(1) - FFL(2) ) / 3.0_dp
             ENDIF
 
 C           Select NR out of NQ points
@@ -409,8 +409,8 @@ C           Store new radial function and setup spline interpolation
               DO IR = 0,NR
                 FFR(IR,1,NFFR) = FFL(IR)
               ENDDO
-              DFFR0 = HUGE(1.D0)
-              DFFRMX = 0.D0
+              DFFR0 = HUGE(1.0_dp)
+              DFFRMX = 0.0_dp
               CALL SPLINE( RMAX/NR, FFR(0,1,NFFR), NR+1, DFFR0, DFFRMX,
      .                     FFR(0,2,NFFR) )
 
@@ -435,7 +435,7 @@ C         Reallocate some arrays
 
 C         Expand the product of two spherical harmonics (SH) also in SH
           CALL YLMEXP( L1+L2, RLYLM, YLMYLM, ILM(IFLM1), ILM(IFLM2),
-     .                 1, 1, 1.D0, NILM, ILMFF(NFFY+1:MFFY), 
+     .                 1, 1, 1.0_dp, NILM, ILMFF(NFFY+1:MFFY), 
      .                 FFY(NFFY+1:MFFY))
 
 C         Loop on possible lm values of orbital product
@@ -465,10 +465,10 @@ C Find value of matrix element and its gradient ---------------------
 *     CALL TIMER( 'MATEL3', 1 )
 
 C     Initialize output
-      S12 = 0.D0
-      DSDR(1) = 0.D0
-      DSDR(2) = 0.D0
-      DSDR(3) = 0.D0
+      S12 = 0.0_dp
+      DSDR(1) = 0.0_dp
+      DSDR(2) = 0.0_dp
+      DSDR(3) = 0.0_dp
 
 C     Find if orbitals are out of range and avoid R12=0
       X12(1) = R12(1)

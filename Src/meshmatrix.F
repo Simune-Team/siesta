@@ -112,13 +112,15 @@ C Create pointer as to whether a given row of DscfL is needed in NeedDscfL
       enddo
 
 C Allocate/reallocate memory for numdl and listdlptr
-      if (.not.allocated(numdl).or.size(numdl).ne.nrowsDscfL) then
-        if (allocated(numdl)) then
+      if (allocated(numdl)) then
+        if (size(numdl).ne.nrowsDscfL) then
           call memory('D','I',size(numdl),'CreateLocalDscfPointers')
           deallocate(numdl)
           call memory('D','I',size(listdlptr),'CreateLocalDscfPointers')
           deallocate(listdlptr)
         endif
+      endif
+      if (.not.allocated(numdl)) then
         allocate(numdl(max(1,nrowsDscfL)))
         call memory('A','I',max(1,nrowsDscfL),'CreateLocalDscfPointers')
         allocate(listdlptr(max(1,nrowsDscfL)))

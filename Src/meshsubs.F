@@ -222,7 +222,7 @@ C
      .  timer, volcel, memory
 
       data
-     .  k0 / 3*0.0d0 /
+     .  k0 / 3*0.0_dp /
 
 C ----------------------------------------------------------------------
 C Orbital type initialization 
@@ -389,7 +389,7 @@ C Loop over mesh directions
       do i = 1,3
 
 C pldist is the distance between mesh planes
-        pldist = 1.0d0 / sqrt(ddot(3,rcmesh(1,i),1,rcmesh(1,i),1))
+        pldist = 1.0_dp / sqrt(ddot(3,rcmesh(1,i),1,rcmesh(1,i),1))
 
 C Find number of planes spanned by rmax
         ne(i) = rmax / pldist + dble( nsm-1 ) / dble( nsm )
@@ -633,9 +633,9 @@ C Local variables
      .  lastxa
 
       data lastna / 0 /
-      data lastra / 0.0d0 /
-      data lastc(1,1) / 0.743978657912656d50 /
-      data tiny / 1.0d-12 /
+      data lastra / 0.0_dp /
+      data lastc(1,1) / 0.743978657912656e50_dp /
+      data tiny / 1.0e-12_dp /
 
 C If number of atoms has changed then deallocate lastxa
       if (na.ne.lastna) then
@@ -649,8 +649,8 @@ C Allocate lastxa and initialise it to an unlikely number
       if (.not.allocated(lastxa)) then
         allocate(lastxa(3,na))
         call memory('A','D',3*na,'SameMeshAndAtoms')
-        lastxa(1:3,1:na) = 0.0d0
-        lastxa(1,1) = 0.987654321273567d50
+        lastxa(1:3,1:na) = 0.0_dp
+        lastxa(1,1) = 0.987654321273567e50_dp
       endif
 
 C Find if mesh has to be changed due to unit cell
@@ -663,7 +663,7 @@ C Find if mesh has to be changed due to unit cell
       enddo
 
 C Find if mesh has to be changed due to unit cell
-      if ( G2max .gt. G2mesh * (1.0d0 + tiny) ) samesh = .false.
+      if ( G2max .gt. G2mesh * (1.0_dp + tiny) ) samesh = .false.
 
 C Find if mesh has to be changed due to rmax
       if (rmax .ne. lastra) samesh = .false.
@@ -760,7 +760,7 @@ C Find atomic positions relative to mesh
 C Find index of extended-mesh cell in which atom is
         do i = 1,3
           dx(i) = ddot(3,xa(1,ia),1,rcmesh(1,i),1)
-          ix(i) = int( dx(i) + 100000 ) - 100000
+          ix(i) = int( dx(i) + 100000_dp ) - 100000_dp
           dx(i) = dx(i) - ix(i)
           ix(i) = mod( ix(i) + 1000*nmsc(i), nmsc(i) )
           ix(i) = ix(i) + ne(i)
@@ -851,13 +851,13 @@ C
       real(dp)
      .  ddot
 
-      data tiny / 1.0d-12 /
+      data tiny / 1.0e-12_dp /
 
 C Find out whether this is a gradient run based on the arguments passed
       Gradients = ( Forces .or. Stress )
 
 C Initialise array to zero
-      if (.not.Gradients) rhopcc(1:ntpl) = 0.0d0
+      if (.not.Gradients) rhopcc(1:ntpl) = 0.0_dp
 
       do ia = 1,na
         iua = indxua(ia)
@@ -975,7 +975,7 @@ C Check whether forces and/or stress has been requested based on arguments
       Gradients = (Forces.or.Stress)
 
 C Initialise array to zero
-      if (.not.Gradients) vna(1:ntpl) = 0.0d0
+      if (.not.Gradients) vna(1:ntpl) = 0.0_dp
 
       do ia = 1,na
         iua = indxua(ia)
@@ -1067,7 +1067,7 @@ C
      .  ddot
  
 C Initialise array to zero 
-      Chlocal(1:ntpl) = 0.0d0
+      Chlocal(1:ntpl) = 0.0_dp
  
       do ia = 1,na
         iua = indxua(ia)
