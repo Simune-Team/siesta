@@ -1,8 +1,8 @@
 
-      SUBROUTINE INVER(A,B,N,NDIM)
+      SUBROUTINE INVER(A,B,N,NDIM,INFO)
 
       IMPLICIT NONE
-      INTEGER N,NDIM
+      INTEGER N,NDIM,INFO
       DOUBLE PRECISION A(NDIM,NDIM),B(NDIM,NDIM),X
 
 C Routine to obtain the inverse of a general, nonsymmetric
@@ -20,14 +20,18 @@ C N              integer     Size of the matrix
 C NDIM           integer     Defined size of matrix
 C **** OUTPUT ****
 C B(NDIM,NDIM)   real*8      Inverse of A
+C INFO           integer     If inversion was unsucessful, 
+C                            INFO <> 0 is returned
+C                            Is successfull, INFO = 0 returned
 C ***************
 
 
       DOUBLE PRECISION WORK(N),C,ERROR,DELTA,TOL
-      INTEGER IPIV(N),INFO
+      INTEGER IPIV(N)
       INTEGER I,J,K
 
       TOL=1.0D-4
+      INFO = 0
 
       DO I=1,N
       DO J=1,N
@@ -76,6 +80,7 @@ C CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
         GOTO 100
       ENDIF
 
+      INFO = 0
       RETURN
 
 100   CONTINUE
@@ -88,6 +93,10 @@ C Try simple, old algorithm:
         ENDDO
       ENDDO
       DO I=1,N
+        IF (B(I,I) .EQ. 0.0D0) THEN
+          INFO = 1
+          RETURN
+        ENDIF
         X=B(I,I)
         B(I,I)=1.0d0
         DO J=1,N
@@ -127,12 +136,14 @@ C CHECK THAT THE INVERSE WAS CORRECTLY CALCULATED
       ENDDO
 
       IF (ERROR/N .GT. TOL) THEN
-        WRITE(6,'(a,f10.5)')
-     .    'inver:  INVER unsuccessful, ERROR = ', ERROR
-        STOP
+C        WRITE(6,'(a,f10.5)')
+C     .    'inver:  INVER unsuccessful, ERROR = ', ERROR
+        INFO = 1
+        RETURN
       ENDIF
 
 
 
+      INFO = 0
       RETURN
       END

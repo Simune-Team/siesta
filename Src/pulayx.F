@@ -112,7 +112,7 @@ C
 C Internal variables ....................................................
        integer
      .  i0,i,ii,in,is,isite,j,jj,jtape,jtap1,numel,Node,Nodes,
-     .  ind,maxmix
+     .  ind,info,maxmix
 
 #ifdef MPI
        integer
@@ -416,30 +416,21 @@ C Global operations
        enddo
 #endif
 
-C Check if any of the residuals is already cero
+       call inver(b,bi,maxmix+1,maxsav+1,info)
 
-       do i=1,maxmix
-         coeff(i)=0.0d0
-       enddo
-
-       do i=1,maxmix
-         sum = 0.0d0
-         do j=1,maxmix
-           sum = sum + b(i,j)**2
+C If inver was successful, get coefficients for Pulay mixing
+       if (info .eq. 0) then
+         do i=1,maxmix
+           coeff(i)=bi(i,maxmix+1)
          enddo
-         if (sum .le. 1.d-10) then
-           coeff(i)=1.0d0
-           goto 200
-         endif
-       enddo
+       else
+C Otherwise, use only last step
+         do i=1,maxmix
+           coeff(i)=0.0d0
+         enddo
+         coeff(mod(iscf,maxsav)) = 1.0d0
+       endif
 
-       call inver(b,bi,maxmix+1,maxsav+1)
-
-       do i=1,maxmix
-         coeff(i)=bi(i,maxmix+1)
-       enddo
-
-200    continue
 C ........
  
 C Read former matrices for mixing .........

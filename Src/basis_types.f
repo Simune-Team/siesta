@@ -35,8 +35,8 @@
           integer                   ::  nzeta      ! Number of PAOs
           logical                   ::  polarized  
           integer                   ::  nzeta_pol
-          real*8                    ::  rinn       ! Soft confinement
-          real*8                    ::  vcte       ! Soft confinement
+          real(dp)                  ::  rinn       ! Soft confinement
+          real(dp)                  ::  vcte       ! Soft confinement
           real*8, pointer           ::  rc(:)      ! rc's for PAOs
           real*8, pointer           ::  lambda(:)  ! Contraction factors
           !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
@@ -66,8 +66,8 @@
           integer                   ::  lmxkb      ! Max l for KB projs
           type(lshell_t), pointer   ::  lshell(:)  ! One shell per l 
           type(kbshell_t), pointer  ::  kbshell(:) ! One KB shell per l
-          real*8                    ::  ionic_charge
-          real*8                    ::  mass   
+          real(dp)                  ::  ionic_charge
+          real(dp)                  ::  mass   
           !
           ! The rest of the components are auxiliary
           ! 
@@ -95,14 +95,14 @@
       integer      ,save, allocatable :: cnfigmx(:,:)
       integer      ,save, allocatable :: polorb(:,:,:)
       integer      ,save, allocatable :: nzeta(:,:,:)
-      real*8       ,save, allocatable :: vcte(:,:,:)
-      real*8       ,save, allocatable :: rinn(:,:,:)
-      real*8       ,save, allocatable :: erefkb(:,:,:)
-      real*8       ,save, allocatable :: charge(:)
-      real*8       ,save, allocatable :: lambda(:,:,:,:)
-      real*8       ,save, allocatable :: rco(:,:,:,:)
+      real(dp)     ,save, allocatable :: vcte(:,:,:)
+      real(dp)     ,save, allocatable :: rinn(:,:,:)
+      real(dp)     ,save, allocatable :: erefkb(:,:,:)
+      real(dp)     ,save, allocatable :: charge(:)
+      real(dp)     ,save, allocatable :: lambda(:,:,:,:)
+      real(dp)     ,save, allocatable :: rco(:,:,:,:)
       integer      ,save, allocatable :: iz(:)
-      real*8       ,save, allocatable :: smass(:)
+      real(dp)     ,save, allocatable :: smass(:)
       character(len=10), save, allocatable :: basistype(:)
       character(len=20), save, allocatable :: atm_label(:)
 

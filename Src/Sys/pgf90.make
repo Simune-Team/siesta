@@ -7,11 +7,11 @@ FFLAGS=  -fast
 FFLAGS_DEBUG= -g -O0
 RANLIB=echo
 LDFLAGS=
-COMP_LIBS=
+COMP_LIBS=dc_lapack.a
 #
-NETCDF_LIBS=/usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
-NETCDF_INTERFACE=libnetcdf_f90.a
-DEFS_CDF=-DCDF
+NETCDF_LIBS=            # /usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
+NETCDF_INTERFACE=       # libnetcdf_f90.a
+DEFS_CDF=               # -DCDF
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
@@ -26,7 +26,7 @@ DEFS= $(DEFS_CDF) $(DEFS_MPI)
 # Compile atom.f without optimization.
 #
 atom.o:
-        $(FC) -c $(FFLAGS_DEBUG) atom.f
+	$(FC) -c $(FFLAGS_DEBUG) atom.f
 #
 .F.o:
 	$(FC) -c $(FFLAGS)  $(DEFS) $<

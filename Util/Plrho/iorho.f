@@ -69,8 +69,8 @@ c Read density (only if array f is large enough)
         maxp = np
       else
         if (fform .eq. 'formatted') then
-          ind = 0
           do is = 1,ns
+            ind = 0
             do i3 = 1,mesh(3)
               do i2 = 1,mesh(2)
                 read(1,*) (f(ind+ip,is),ip=1,mesh(1))
@@ -79,8 +79,8 @@ c Read density (only if array f is large enough)
             enddo
           enddo
         else
-          ind = 0
           do is = 1,ns
+            ind = 0
             do i3 = 1,mesh(3)
               do i2 = 1,mesh(2)
                 read(1) (f(ind+ip,is),ip=1,mesh(1))

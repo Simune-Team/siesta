@@ -1,7 +1,10 @@
 #
+default: module_built
+#
 .SUFFIXES: .o .f90 .a 
 #
 include ../arch.make
+FFLAGS=$(FFLAGS) $(FFLAGS_NETCDF)
 #
 module_built: netcdf.o
 	@ar q libnetcdf_f90.a netcdf.o
@@ -18,6 +21,6 @@ netcdf.o: netcdf.f90 netcdf_sizes.f90 netcdf_sizesOK.f90 \
           netcdf_overloads.f90 netcdf_visibility.f90 \
           netcdf_file.f90 netcdf_dims.f90 netcdf_attributes.f90 \
           netcdf_variables.f90 netcdf_text_variables.f90 netcdf_expanded.f90
-	$(FC) -c netcdf.f90
+	$(FC) $(FFLAGS_NETCDF) -c netcdf.f90
 clean:
 	/bin/rm -f *.o *.mod *.MOD module_built

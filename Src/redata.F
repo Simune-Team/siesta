@@ -62,6 +62,7 @@ C                             4 = Nose thermostat + Parrinello-Rahman MD
 C                             5 = Annealing MD
 C                             6 = Force constants
 C                             7 = Forces for PHONON program
+C                             8 = Force evaluation
 C integer istart           : Initial time step for MD
 C integer ifinal           : Final time step for MD
 C integer nmove            : Number of CG steps in CG optimization
@@ -945,6 +946,13 @@ C     Type of dynamics
           write(6,'(a,a)')
      .     'redata: Dynamics option                  = ',
      .     '    Force Constants Matrix Calculation'
+        endif
+      else if (leqi(dyntyp,'forces')) then
+        idyn = 8
+        if (Node.eq.0) then
+          write(6,'(a,a)')
+     .     'redata: Dynamics option                  = ',
+     .     '    Force evaluation'
         endif
       else
         if (Node.eq.0) then

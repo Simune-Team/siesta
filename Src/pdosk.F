@@ -301,7 +301,7 @@ C Free workspace array for global reduction
         WKSUM = WKSUM + WK(IK)
       ENDDO
 
-      NORM = SIGMA * SQRT(PI) * NK * WKSUM
+      NORM = SIGMA * SQRT(PI) * WKSUM
 
       DO IHIST = 1, NHIST
         DO ISPIN = 1, NSPIN

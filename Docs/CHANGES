@@ -1,6 +1,181 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.9
+Date: 2004/02/01 18:00
+Title: Miscellaneous fixes for portability
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description: Consolidation of various fixes for portability.
+
+Files:
+
+Src/basis_types.f  : use kind(dp) instead of real*8
+Src/iodm.F         : use ionew
+Src/pseudopotential.f : use ionew
+Src/pdos.F         : Remove unused variables, arguments, and functions.
+Src/siesta.F       : Remove unused arguments in call to pdos. 
+                     Remove hollerith constructs.
+Src/periodic_table.f : Make mass data real, instead of double precision.
+Src/xlf.f          : New file for IBM-XL support (flush routine)
+Src/f2kcli.F90     : New file for command-line argument parsing.
+Src/iopipes.F90    : Add conditional block for NAG compilation.
+
+Src/Makefile       : Remove f2kcli from gen-basis and siesta (mpich problems)
+Src/gen-basis.F    : Remove f2kcli code.
+
+Src/denchar.F
+    m_denchar_geom.f
+    m_denchar_init.F
+    m_denchar_io.F	
+    m_denchar_neighb.f
+    m_denchar_work.f   : New files for denchar in top directory.  
+Util/Denchar/Docs/denchar.tex: Manual for denchar updated.
+Util/Denchar/Docs/CHANGES    : Updated to reflect change in code location.
+Util/Denchar/Src/Makefile    : Disabled.
+
+Util/Contour/grid2d.f : float to dble. Open statements changed.
+Util/PyAtom: shape.sh : extracts cell shape data from output file.
+
+
+Src/NetCDF/Makefile: add default line. Add FFLAGS_NETCDF symbol.
+Src/Libs/makefile  : do not include machine.o in dc_lapack.a
+Src/Sys/pgf90.make : Add dc_lapack.a to COMP_LIBS. Tab for atom.o. CDF optional
+Src/Sys/pgf90-mpich.make : As above plus some documentation on MPI stuff
+Src/Sys/macosx-xlf.make
+Src/Sys/macosx-nag.make  : New files for MacOS X support.
+Src/Sys/nag-darwin-nolibs.make : Removed. Obsolete
+
+Util/PyAtom/local.biggles.py: change Vlocal to Reduced_vlocal.
+
+=======================================================================
+Version: 1.4.8
+Date: 2004/01/26 16:00
+Title: Fixes in inver, pulay, fermispin, plstm.
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description: Fixes to correct bugs and/or improve the stability 
+             of the inversion routines, the Pulay mixing and the fixed 
+             spin calculations. These fixes correct the degradation
+             of performance of selfconsistency convergence 
+             of Siesta 1.3 compared to 1.2.  
+             Small change on utility plstm.f to avoid problems 
+             in some compilers.
+             
+Files:
+  cgwf.F             : New interface with inver
+  dynamics.F         : New interface with inver
+  diagg.F            : Corrects call to fermispin
+  diagk.F            : Corrects call to fermispin
+  diagkp.F           : Corrects call to fermispin
+  fermid.F           : Now contains fermispin subroutine; 
+                       fermispin now calculates and returns entropy.
+  fermispin.F        : Elliminated; content included now in fermid.F
+  inver.f            : New interface, returns error message if 
+                       unsuccessful execution
+  pulayx.F           : New interface with inver; corrected stability
+  version.F90        : Customary changes
+  Makefile           : Elliminated reference to fermispin.F
+  Docs/CHANGES       : Customary changes
+  Util/plstm.f       : Changed input flags
+
+=======================================================================
+Version: 1.4.7
+Date: 2004/01/22 17:00
+Title: Bug in normalization of DOS
+Author: Javier Junquera <jjunquer@physics.rutgers.edu>
+
+Description: The Density Of States was divided twice by the number
+             of k-points. This bug is present since version 1.2.41.
+  
+Files:
+  pdosk.F            : The number of k-points, NK, has dropped 
+                       from the normalization factor, NORM
+  version.F90        : Customary changes
+  Docs/CHANGES       : Customary changes
+
+=======================================================================
+Version: 1.4.6
+Date: 2004/01/19 16:30
+Title: Siesta as a subroutine
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description: A new utility routine module that can be used by external
+  programs to communicate with siesta processes (running separatedly)
+  to send coordinates and receive forces, as if siesta were a 
+  conventional force-field subroutine.
+  
+Files:
+  iopipes.F90 : New module with the routines to communicate with the
+                user's driver program through Unix pipes
+  redata.F    : Accepts new option MD.TypeOfRun=forces
+  reinit.F    : Appends a number to file INPUT_TMP
+  siesta.F    : Calls to the communication routines added
+  Makefile    : Added file iopipes.o
+  Util/SiestaSubroutine : New directory. Contains the module fsiesta, 
+                          with the routines to be called by the user's
+                          program, and the subdirectory FmixMD with an
+                          example. See its file README for details.
+  Docs/siesta.tex       : Explains the new option MD.TypeOfRun=forces
+
+=======================================================================
+Version: 1.4.5
+Date: 2003/12/05 13:45
+Title: Bug fix (initdm)
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+  A small denominator has been added to avoid a division by zero when
+one tries to polarize a closed-shell atom. A warning has also been 
+added for this case.
+
+Files:
+  initdm.F: small denominator and warning added
+
+=======================================================================
+Version: 1.4.4
+Date: 2003/11/18 19:00
+Title: Bug fix (initwave)
+Author: Javier Junquera <jjunquer@physics.rutgers.edu>
+
+Description: 
+  Two allocatables variables were incorrectly deallocated
+
+Files:
+  writewave.F: inquiry for the status of values and integs before deallocate
+
+=======================================================================
+Version: 1.4.3
+Date: 2003/11/07 17:00
+Title: Bug fix (Plrho)
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+  An index was incorrectly initialized, causing problems in spin
+polarized systems
+
+Files:
+  Util/Plrho/iorho.f  : Instruction ind=0 moved inside spin loops
+
+=======================================================================
+Version: 1.4.2 
+Date: 2003/11/05 17:30
+Title: Bux fix (initwave)
+Author: Javier Junquera <jjunquer@physics.rutgers.edu>
+
+Description: 
+
+ A memory problem, that appeared when more than 4 values were 
+ introduced in each line of the block WaveFuncKPoints, has been fixed.
+ The variables values and integs in the subroutine initwave
+ (module writewave) have been redefined as allocatable.
+
+Files:
+    writewave.F : variables values and integs defined as allocatable
+    version.F90, CHANGES : Customary changes
+    siesta.tex : Change of affiliation
+
+=======================================================================
 Version: 1.4.1 
 Date: 2003/09/10 18:30
 Title: version.F --> version.F90

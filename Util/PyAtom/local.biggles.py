@@ -17,11 +17,11 @@ if of.variables.has_key('chcore'): nrows = nrows+1
 
 t=biggles.Table(nrows,1)
 
-delta=of.variables['vlocal'].Vlocal_delta[0]
+delta=of.variables['reduced_vlocal'].Reduced_vlocal_delta[0]
 r = arange(1,ntb+1)*float(delta)
 p=biggles.FramedPlot()
-p.title="Vlocal"
-p.add(biggles.Curve(r,of.variables['vlocal'][:]))
+p.title="Reduced Vlocal"
+p.add(biggles.Curve(r,of.variables['reduced_vlocal'][:]))
 t.set(0,0,p)
 
 delta=of.variables['chlocal'].Chlocal_delta[0]

@@ -71,7 +71,7 @@ C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
         NATINPLA = 0
   
         NULLIFY(BP)
-        IF ( .NOT. FDF_BLOCK('Dencahr.AtomsInPlane',BP) )  GOTO 2000
+        IF ( .NOT. FDF_BLOCK('Denchar.AtomsInPlane',BP) )  GOTO 2000
 
         LOOP: DO
           IF (.NOT. FDF_BLINE(BP,LINE)) EXIT LOOP

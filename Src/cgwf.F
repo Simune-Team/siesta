@@ -355,7 +355,7 @@ C Internal variables ......................................................
 
       real(dp), parameter   ::  one_third = 1.0_dp/3.0_dp
 
-      integer in,i,j,jj
+      integer in,i,info,j,jj
 
       real(dp) 
      .  b(5,5),bi(5,5),e(5),e0,e1,e2,e3,ep1,ep2,ep3,
@@ -396,7 +396,9 @@ C Set up linear equations system to calculate polinomial coeffs.............
         e(i+2) = ener(i)
       enddo
 
-      call inver(b,bi,5,5)
+      call inver(b,bi,5,5,info)
+      if (info .ne. 0) stop 'cgwf: INVER failed'
+
 
       do jj = 1,5
         e0 = e0 + bi(2,jj) * e(jj)

@@ -23,7 +23,7 @@ C
       implicit none
 
       character
-     .  slabel*20, sname*59
+     .  slabel*20, sname*59, string*20
 
 C  Internal variables .................................................
       character
@@ -33,9 +33,9 @@ C  Internal variables .................................................
      .  slabel_default*59, sname_default*20
 
       integer 
-     .  Node, length, lun, lun_tmp
+     .  count, Node, length, lun, lun_tmp
 
-      logical debug_input
+      logical debug_input, file_exists
 #ifdef MPI
       integer
      .  MPIerror
@@ -70,6 +70,7 @@ C
      $          'Siesta is reading its input from file INPUT_DEBUG'
            
            call io_assign(lun)
+           filein = 'INPUT_DEBUG'
            open(lun,file='INPUT_DEBUG',form='formatted',status='old')
            rewind(lun)
         else
@@ -79,7 +80,14 @@ c
            write(6,'(/a)') 'reinit: Reading from standard input'
            lun = 5
            call io_assign(lun_tmp)
-           open(lun_tmp,file='INPUT_TMP',
+           do
+             call system_clock( count )
+             write(string,*) count
+             filein = 'INPUT_TMP.'//adjustl(string)
+             inquire( file=filein, exist=file_exists )
+             if (.not.file_exists) exit
+           end do
+           open(lun_tmp,file=filein,
      $                  form='formatted',status='replace')
            rewind(lun_tmp)
         endif
@@ -104,10 +112,8 @@ c       Choose proper file for fdf processing
 c
         if (debug_input) then
            call io_close(lun)
-           filein = 'INPUT_DEBUG'
         else
            call io_close(lun_tmp)
-           filein = 'INPUT_TMP'
         endif
 
 C Set up fdf ...

@@ -61,7 +61,7 @@
    \Large{\it Universidad del Pa\'{\i}s Vasco, Bilbao} \\ \\
 
 {\Large Javier Junquera} &
-   \Large{\it Universit\'e de Li\`ege, Belgium} \\ \\
+   \Large{\it Rutgers University, New Jersey, USA} \\ \\
 
 {\Large Richard M. Martin} &
    \Large{\it University of Illinois at Urbana-Champaign} \\ \\
@@ -652,6 +652,9 @@ yes, F, false, .false., no. Blank is also equivalent to true.
 \item[$\bullet$] Real values which represent a physical magnitude must be
 followed by its units. Look at function fdf\_convfac in
 file $\sim$/siesta/Src/fdf/fdf.f for the units that are currently supported.
+It is important to include a decimal point in a real number to distinguish
+it from an integer, in order to prevent ambiguities when mixing the types
+on the same input line.
 
 \item[$\bullet$] Complex data structures are called blocks and are
 placed between `\%block label'\index{block@\%block} and a `\%endblock label' 
@@ -2527,6 +2530,14 @@ Phonon} \footnote{{\sc Phonon} is \copyright\ copyright by Krzysztof
 Parlinski}  \index{Phonon program} \index{Force Constants
 Matrix!using phonon@using {\sc Phonon}} for phonon calculations). See
 also {\tt MD.ATforPhonon} block.
+\item {\tt Forces} (Receive coordinates from, and return forces to,
+an external driver program, using Unix pipes for communication.
+The routines in module Util/SiestaSubroutine/fsiesta.f90 allow the
+user's program to perform this communication transparently, as if
+siesta were a conventional force-field subroutine. See file README
+in that directory for details. WARNING: if this option is specified
+without a driver program sending data, siesta may hung up without
+any notice).
 \end{itemize}
     
 {\it Default value:} {\tt Verlet} ({\tt CG} for one atom systems)
@@ -4266,8 +4277,8 @@ over mesh points has been used to divide the work. The mesh is divided
 in the Y and Z directions, but not currently in the X direction. How
 the mesh points are divided is controlled by the {\bf ProcessorY}
 \index{ProcessorY@{\bf ProcessorY}}
-option which must be a factor of the total number of mesh points in the Y
-direction. Performance will be optimal when the load is balanced evenly
+option which must be a factor of the total number of processors.
+Performance will be optimal when the load is balanced evenly
 over all processors. For dense bulk materials this is straightforward
 to achieve. For surfaces, where there is a region of vacuum, it is
 worth ensuring that the mesh is divided so as to ensure that some

@@ -6,7 +6,7 @@ MOD_DIR=Modules
 #default: what denchar 
 default: what denchar
 #
-include arch.make
+#####################include arch.make
 #
 # Uncomment the following line for debugging support
 #
@@ -20,7 +20,12 @@ DEFS_CDF=
 NETCDF_INCLUDE=
 #
 what:
-	@echo
+	@echo " **************************************************"
+	@echo " *** DENCHAR is now in the top Src directory !! ***"
+	@echo " *** Go back there and type 'make denchar'      ***"
+	@echo " **************************************************"
+	@echo "Hit ^C to abort now..."
+	sleep 60
 	@echo "Compilation architecture to be used: ${SIESTA_ARCH}"
 	@echo "If this is not what you want, create the right"
 	@echo "arch.make file using the models in Sys"

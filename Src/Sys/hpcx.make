@@ -14,7 +14,7 @@ COMP_LIBS=
 SYS=ibm
 RANLIB=ranlib
 MPI_INCLUDE=/usr/lpp/ppe.poe/include
-MPI_INTERFACE=
+MPI_INTERFACE=libmpi_f90.a
 #
 DEFS=-WF,-DMPI,-DNODAT
 FREE_F90=-qsuffix=f=f90 -qfree=f90

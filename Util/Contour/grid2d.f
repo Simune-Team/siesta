@@ -1,4 +1,4 @@
-c $Id: grid2d.f,v 1.3 2001/01/19 15:58:43 wdpgaara Exp $
+c $Id: grid2d.f,v 1.4 2004/02/01 17:00:45 wdpgaara Exp $
 
       program grid2d
 
@@ -186,10 +186,10 @@ c ---------------------------------------------------------------------------
 
 c read function from the 3D grid --------------------------------------------
 
-      open( unit=1, file=fname, status='old', form=fform )
-
       ffform = fform
       if (ffform .eq. 'formatted') then
+         open( unit=1, file=fname, status='old', form="formatted" )
+
          read(1,*) cell
          read(1,*) mesh, nspin
          np = mesh(1) * mesh(2) * mesh(3)
@@ -205,6 +205,7 @@ c read function from the 3D grid --------------------------------------------
          enddo
 !!! OLD         read(1,*) ( (rho(ip,is), ip = 1, np), is = 1, nspin)
       else
+         open( unit=1, file=fname, status='old', form="unformatted" )
          read(1) cell
          read(1) mesh, nspin
          np = mesh(1) * mesh(2) * mesh(3)
@@ -252,7 +253,7 @@ c lattice-vector moduli and size of sides of grid cell (small 'cube') -------
          do i = 1, 3
             celmod(n) = celmod(n) + cell(i,n)*cell(i,n)
          enddo
-         sid(n) = celmod(n)/dfloat( mesh(n) )
+         sid(n) = celmod(n)/dble( mesh(n) )
       enddo
 
 
@@ -262,9 +263,9 @@ c scan the rectangle in fractional coordinates of av and bv -----------------
       if ( ny.lt.2 ) ny = 2
 
       xincr = 0.d0
-      if (nx .gt. 1) xincr = 1.d0 / dfloat(nx -1)
+      if (nx .gt. 1) xincr = 1.d0 / dble(nx -1)
       yincr = 0.d0
-      if (ny .gt. 1) yincr = 1.d0 / dfloat(ny -1)
+      if (ny .gt. 1) yincr = 1.d0 / dble(ny -1)
 
 c loop in 2D grid -----------------------------------------------------------
 
@@ -306,7 +307,7 @@ c the cube is between m1, m1+1, m2, m2+1, m3, and m+1, unless m.lt.1 --------
 
 c fractional coordinates of the point within the small 'cube' ---------------
 
-               alp(n) =  rn(n)*mesh(n) - dfloat(m(n)-1) 
+               alp(n) =  rn(n)*mesh(n) - dble(m(n)-1) 
 
 c bring the points to the unit cell (using the traslational symmetry) -------
 

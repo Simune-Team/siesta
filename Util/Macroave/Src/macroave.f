@@ -389,6 +389,7 @@ C in fft grid, interpolating the planar average calculated before ------
           DATA(II)=RHOZ(NPOINTS) +
      .             (X-Z(NPOINTS))*(RHOZ(1)-RHOZ(NPOINTS))/
      .             (Z(NPOINTS)-Z(NPOINTS-1))
+          DATA(II+1) = 0.D0
  20       CONTINUE
         ENDDO
       ENDIF

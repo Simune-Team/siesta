@@ -84,7 +84,7 @@ C *********************************************************************
      .  WaveFuncPresent, Frstime, outlng
 
       integer
-     .  i, ik, il, integs(4), iu, ix, iw, iw1, iw2, iw3,
+     .  i, ik, il, iu, ix, iw, iw1, iw2, iw3,
      .  lastc, lc(0:3), mscell(3,3),
      .  ni, nkl, nn, nr, nv, Node, nmk
 
@@ -95,7 +95,15 @@ C *********************************************************************
 
       double precision
      .  alat, caux(3,3), pi,
-     .  rcell(3,3), reals(4), ucell(3,3), values(4)
+     .  rcell(3,3), reals(4), ucell(3,3)
+
+      double precision, dimension(:), allocatable :: values(:)
+      integer :: maxnv 
+   
+      integer, dimension(:), allocatable :: integs(:)
+      integer :: maxni 
+ 
+      logical :: overread
 
       save
      .  Frstime
@@ -205,13 +213,51 @@ C         Loop on data lines
             nk = 0
             WaveFuncPresent = fdf_block('WaveFuncKPoints',iu)
             do il = 1,maxlin
-
 C           Read and parse data line
               read(iu,'(a)',end=50) line
               lastc = index(line,'#') - 1
               if (lastc .le. 0) lastc = len(line)
+ 45           continue
+C             The maximum number of integers that could be introduced 
+C             in the input file is the 
+C             number of bands per k-point = number of atomic orbitals per cell
+              if( .not. allocated(integs)) then
+                maxni = norb
+                allocate(integs(maxni))
+                integs(:) = 0
+              endif
+C             The maximum number of values that could be introduced 
+C             in the input file is the number of bands plus
+C             the coordinates of the k-point (three real numbers).
+              if( .not. allocated(values)) then
+                maxnv = norb + 3
+                allocate(values(maxnv))
+                values(:) = 0.d0
+              endif
+
               call parse( line(1:lastc), nn, lc, names, nv, values,
      .                  ni, integs, nr, reals )
+
+              overread = .false.
+              if( nv .gt. maxnv ) then
+                maxnv    = nv
+                overread = .true.
+              endif
+              if( ni .gt. maxni ) then
+                maxni    = ni
+                overread = .true.
+              endif
+              if( overread ) then
+                if( allocated(values) ) then
+                  deallocate(values)
+                  allocate(values(maxnv))
+                endif
+                if( allocated(integs) ) then
+                  deallocate(integs)
+                  allocate(integs(maxni))
+                endif
+                goto 45
+              endif
 
 C           Check if data are already finished
               if (nv .ge. 3) then
@@ -311,6 +357,7 @@ C               Store indexes of wave functions to printout
                     integs(i)=i
                   enddo
                 endif
+
 
                 if (ni .le. nwf) then
 
@@ -417,6 +464,15 @@ C Global broadcast of values
 
 C This is the only exit point 
   999 continue
+
+      if( allocated(values) ) then
+         deallocate(values)
+      endif
+                                                                                
+      if( allocated(integs) ) then
+         deallocate(integs)
+      endif
+
 
       Frstime = .false.
       call timer( 'writewave', 2 )

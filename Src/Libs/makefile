@@ -2,28 +2,25 @@
 #  Makefile for Libraries
 #  Some systems only need the stuff in dc_lapack.f (Divide and Conquer)
 #
+default: linalg.a
+#
 include ../arch.make
 #
-FC?=f77
-CFLAGS?= 
-FFLAGS?=       $(CFLAGS)
-LDFLAGS?=      $(CFLAGS)
-#
 ALL_OBJS= lapack.o dc_lapack.o blas.o machine.o
-DC_OBJS=  dc_lapack.o
+# Add machine.o here only if needed...
+DC_OBJS=  dc_lapack.o   # machine.o
 #
 default: linalg.a
 #
-# DO NOT OPTIMIZE THIS!
+# DO NOT OPTIMIZE machine.o !!
 #
-machine.o:
-	$(FC) -c machine.f
-#
-linalg.a:  $(ALL_OBJS)
+linalg.a: lapack.o dc_lapack.o blas.o 
+	($(MAKE) FFLAGS="$(FFLAGS_DEBUG)" machine.o)
 	ar qv linalg.a $(ALL_OBJS)
 	$(RANLIB) linalg.a
 	mv linalg.a ..
-dc_lapack.a:  $(DC_OBJS)
+dc_lapack.a:  dc_lapack.o
+	($(MAKE) FFLAGS="$(FFLAGS_DEBUG)" machine.o)
 	ar qv dc_lapack.a $(DC_OBJS)
 	$(RANLIB) dc_lapack.a
 	mv dc_lapack.a ..

@@ -1,0 +1,106 @@
+
+This directory contains support routines for siesta-as-a-subroutine in 
+Unix/Linux, using pipes for communication between the user's program
+and one or more siesta processes. To use the package, you must:
+1) Write a normal fdf data file for the siesta program (see the siesta
+   manual for instructions) with the following characteristics:
+ - The SystemLabel contained in it MUST be identical to the file prefix.
+   I.e. if the file is h2o.fdf, the SystemLabel must be h2o
+ - There must be a 'MD.TypeOfRun forces' statement in it
+ - The number of atoms, the atomic species, and the order of them (in the
+   coordinates specification) must be consistent with the arguments in the
+   calls to the subroutine siesta_forces (see below).
+ - The values of the atomic coordinates and cell vectors are arbitrary 
+   (e.g. they may be zero), since they will be reset by your first call
+   to siesta_forces.
+ - The siesta basis set and all the remaining siesta parameters, other
+   than the atomic coordinates and cell vectors will be those specified
+   in the fdf data file. If not present, they will be set by siesta
+   according to the defaults values explained in the siesta manual.
+2) Write a main program or subroutine(s) of your own that contains:
+ - A 'use fsiesta' statement in each routine with any of the following
+   calls.
+ - A single call, in the whole program, to each of: siesta_launch, 
+   siesta_units, and siesta_quit.
+ - Calls to siesta_forces (after those to siesta_launch and siesta_units
+   and before the call to siesta_quit) to get the atomic forces at each
+   required coordinates.
+ - In all the previous calls, the 'label' argument must be the same as
+   the prefix of the siesta fdf data file (i.e. 'h2o' for h2o.fdf).
+ - Compile your program, with a copy of fsiesta.f90 in the same directory.
+ - Run your program.
+3) Alternatively, you may omit the call to siesta_launch and instead,
+   make the following in the command line (or using a shell script):
+ - Open two Unix pipes named e.g. h2o.coords and h2o.forces (if the
+   label is h2o) using 'mkfifo h2o.coords h2o.forces'
+ - Start a siesta process using 'siesta < h2o.fdf > h2o.out'
+ - Start your program (here called 'the driver').
+4) Your program may call more than one siesta process, for example to
+   combine the calculations of two different systems, or of the same
+   system with different precision parameters (see FmixMD for an example).
+   In this case you must:
+ - Write an fdf file for each siesta process (obviously with different
+   names and consistent SystemLabel-s)
+ - Make as many calls to siesta_launch, etc, as siesta processes you
+   want to use, with consistent label arguments.
+5) Depending on your compiler and operating system, it may occur that
+   the communication pipes still exist after yor program terminates
+   (normally or abnormally). In that case, simply remove them, as if
+   they were normal files.
+
+! Subroutines usage:
+!   call siesta_launch( label, nnodes )
+!     character(len=*),intent(in) :: label  : Name of siesta process
+!                                             (prefix of its .fdf file)
+!     integer,optional,intent(in) :: nnodes : Number of MPI nodes
+!
+!   call siesta_units( length, energy )
+!     character(len=*),intent(in) :: length : Physical unit of length
+!     character(len=*),intent(in) :: energy : Physical unit of energy
+!
+!   call siesta_forces( label, na, xa, cell, energy, fa, stress )
+!     character(len=*), intent(in) :: label      : Name of siesta process
+!     integer,          intent(in) :: na         : Number of atoms
+!     real(dp),         intent(in) :: xa(3,na)   : Cartesian coords
+!     real(dp),optional,intent(in) :: cell(3,3)  : Unit cell vectors
+!     real(dp),optional,intent(out):: energy     : Total energy
+!     real(dp),optional,intent(out):: fa(3,na)   : Atomic forces
+!     real(dp),optional,intent(out):: stress(3,3): Stress tensor
+!   call siesta_quit( label )
+!     character(len=*),intent(in) :: label  : Name of one siesta process,
+!                                             or 'all' to stop all procs.
+! Behaviour:
+! - If nnodes is not present among siesta_launch arguments, or nnodes<2, 
+!   a serial siesta process will be launched. Otherwise, a parallel 
+!   mpirun process will be launched.
+! - If siesta_units is not called, length='Ang', energy='eV' are
+!   used by default. If it is called more than once, the units in the
+!   last call become in effect.
+! - The physical units set by siesta_units are used for all the siesta
+!   processes launched
+! - If siesta_forces is called without a previous call to siesta_launch
+!   for that label, it assumes that the siesta process has been launched
+!   (and the communication pipes created) externally in the shell.
+!   In this case, siesta_forces only opens its end of the pipes and begins
+!   communication through them.
+! - If argument cell is not present in the call to siesta_forces, or if
+!   the cell has zero volume, it is assumed that the system is a molecule,
+!   and a supercell is generated automatically by siesta so that the 
+!   different images do not overlap. In this case the stress returned
+!   has no physical meaning.
+! - The stress is defined as dE/d(strain)/Volume, with a positive sign
+!   when the system tends to contract (negative pressure)
+! - The following events result in a stopping error message:
+!   - siesta_launch is called twice with the same label
+!   - siesta_forces finds a communication error trough the pipes
+!   - siesta_quit is called without a prior call to siesta_launch or
+!     siesta_forces for that label
+! - If siesta_quit is not called for a launched siesta process, that
+!   process will stay listening indefinitedly to the pipe and will need
+!   to be killed in the shell.
+! - siesta_units may be called either before or after siesta_launch
+!
+! Note: the routines that handle the other side of the communication 
+! are in module iopipes of the siesta program.
+! J.M.Soler and A.Garcia. Jan 2004.
+

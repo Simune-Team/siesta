@@ -338,6 +338,9 @@ c find maximum atomic moment that the atoms involved can carry
             do io = lasto(ia-1) + 1, lasto(ia)
               spinat = spinat + min( Datm(io), 2.d0 - Datm(io) )
             enddo
+            if (spinat.lt.epsilon .and. Node.eq.0) print'(a,i6,a)', 
+     .        'initdm: WARNING: atom ', atom(iat),
+     .        ' has a closed-shell and cannot be polarized'
 
 c if given spin is larger than possible, make it to max atomic
 
@@ -347,7 +350,7 @@ c if given spin is larger than possible, make it to max atomic
 
 c initialize orbitals with same rate as atom
 
-            rate = spin(iat) / spinat
+            rate = spin(iat) / (spinat+epsilon)
             do io = lasto(ia-1) + 1, lasto(ia)
               call GlobalToLocalOrb(io,Node,Nodes,iio)
               if (iio.gt.0) then

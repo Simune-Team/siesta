@@ -86,7 +86,7 @@ C
 C Internal variables .............................................................
 
       integer
-     .  ct,i,ia,j,k,Node
+     .  ct,i,ia,info,j,k,Node
 
 #ifdef MPI
       integer MPIerror
@@ -183,8 +183,10 @@ C Compute G=HtH at current time
       enddo
 
 C Compute Inverse of H and G at current time 
-      call inver(h,hi,3,3)
-      call inver(g,gi,3,3)
+      call inver(h,hi,3,3,info)
+      if (info .ne. 0) stop 'npr: INVER failed'
+      call inver(g,gi,3,3,info)
+      if (info .ne. 0) stop 'npr: INVER failed'
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -296,7 +298,8 @@ C xdot and hdot (time derivatives at current time), and related stuff
         aux1(i,i) = aux1(i,i) + 1.0d0
       enddo
 
-      call inver(aux1,fi,3,3)
+      call inver(aux1,fi,3,3,info)
+      if (info .ne. 0) stop 'npr: INVER failed'
 
       do j = 1,3
         do i = 1,3
@@ -594,7 +597,7 @@ C
 C Internal variables .............................................................
 
       integer
-     .  ct,i,ia,j,k,Node
+     .  ct,i,info,ia,j,k,Node
 
 #ifdef MPI
       integer MPIerror
@@ -681,8 +684,10 @@ C Compute G=HtH at current time
       enddo
 
 C Compute Inverse of H and G at current time 
-      call inver(h,hi,3,3)
-      call inver(g,gi,3,3)
+      call inver(h,hi,3,3,info)
+      if (info .ne. 0) stop 'pr: INVER failed'
+      call inver(g,gi,3,3,info)
+      if (info .ne. 0) stop 'pr: INVER failed'
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -785,7 +790,8 @@ C hdot (time derivatives at current time), and related stuff
         aux1(i,i) = aux1(i,i) + 1.0d0
       enddo
 
-      call inver(aux1,fi,3,3)
+      call inver(aux1,fi,3,3,info)
+      if (info .ne. 0) stop 'pr: INVER failed'
 
       do j = 1,3
         do i = 1,3
@@ -1360,7 +1366,7 @@ C
 C Internal variables .............................................................
 
       integer
-     .  ct,i,ia,j,k,Node
+     .  ct,i,ia,info,j,k,Node
 
 #ifdef MPI
       integer MPIerror
@@ -1438,7 +1444,8 @@ C ........................
 
 C Compute Parrinello-Rahman variables (H and scaled coordinates) ............
 C Compute Inverse of H and G at current time 
-      call inver(h,hi,3,3)
+      call inver(h,hi,3,3,info)
+      if (info .ne. 0) stop 'anneal: INVER failed'
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms

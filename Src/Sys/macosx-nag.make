@@ -1,12 +1,15 @@
-SIESTA_ARCH=nag-darwin-nolibs
+SIESTA_ARCH=macosx-nag-cdf
 #
+#  NAG Fortran compiler on MacOS X
+#  
 # Issues addressed: 
 #
 #      - Case-insensitive filesystem
 #      - .F and .F90 suffixes not recognized by f95 on Mac (possibly related
-#        to the first point.
+#        to the first point. Explicit pre-processing.
 #      - CPUtime now called in the f95 fashion (file nag.f)
 #      - -dcfuns option to allow non-standard intrinsics such as dconjg
+#      - -dusty to allow for some deprecated features in blas and lapack.
 # 
 # Other issues:
 #
@@ -22,35 +25,36 @@ FFLAGS_DEBUG=
 LDFLAGS=
 COMP_LIBS=
 #
-NETCDF_LIBS=
-NETCDF_INTERFACE=
-DEFS_CDF=
+NETCDF_LIBS=            # -L/opt/lib -lnetcdf
+NETCDF_INTERFACE=       # libnetcdf_f90.a
+DEFS_CDF= -D__NAG__     # -DCDF
+FFLAGS_NETCDF=-mismatch_all -w=unused          # Relax module checks...
 #
 MPI_INTERFACE=
 MPI_INCLUDE=
 DEFS_MPI=
 #
-LIBS= 
+LIBS=  $(MPI_LIBS)  $(NETCDF_LIBS) #-framework veclib  (maybe for G5's)
 COMP_LIBS=linalg.a
 SYS=nag
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 CPP=/usr/local/lib/NAGWare/fpp -P
 #
+%.o : %.mod
+#
 .F.o:
-	mv $<  $*.fpp
-	$(CPP) -fixed $(DEFS) $*.fpp > $*.f
-	$(FC) -c $(FFLAGS)  $(DEFS) $*.f
-	@rm -f $*.f
-	@mv $*.fpp $*.F
+	$(CPP) -fixed $(DEFS) $*.F > aux_$*.f
+	$(FC) -c $(FFLAGS)  $(DEFS) aux_$*.f 
+	@rm -f aux_$*.f
+	@mv aux_$*.o $*.o
 .f.o:
 	$(FC) -c $(FFLAGS)   $<
 .F90.o:
-	mv $<  $*.fpp90
-	$(CPP) -free $(DEFS) $*.fpp90 > $*.f90
-	$(FC) -c $(FFLAGS) $*.f90
-	@rm -f $*.f90
-	@mv $*.fpp90 $*.F90
+	$(CPP) -free $(DEFS) $*.F90 > aux_$*.f90
+	$(FC) -c $(FFLAGS) aux_$*.f90
+	@rm -f aux_$*.f90
+	@mv aux_$*.o $*.o
 .f90.o:
 	$(FC) -c $(FFLAGS)   $<
 #

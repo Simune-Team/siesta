@@ -1,8 +1,7 @@
       SUBROUTINE PDOS( NO, NSPIN, MAXSPN, MAXUO, MAXNH, 
      .                 MAXO, NUMH, LISTHPTR, LISTH, H, S, 
      .                 E1, E2, SIGMA, NHIST,
-     .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO,
-     .                 NBK, BK, EBK, NUOTOT )
+     .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO, NUOTOT )
 C **********************************************************************
 C Subroutine to calculate the proyected density of states on the
 C atomic orbitals for a given eigenvalue spectra
@@ -42,9 +41,6 @@ C INTEGER NK                  : Number of k points
 C REAL*8  KPOINT(3,NK)        : k point vectors
 C REAL*8  WK(NK)              : k point weights (must sum one)
 C REAL*8  EO(MAXUO,MAXSPN,NK) : Eigenvalues
-C INTEGER NBK                 : Number of bands k-points
-C REAL*8  BK(3,NBK)           : k-point vectors to compute the band structure
-C REAL*8  EBK(MAXUO,MAXSPN,NBK): Eigenvalues for the band structure
 C INTEGER NUOTOT              : Total number of orbitals in unit cell
 C **********************************************************************
 
@@ -62,16 +58,14 @@ C **********************************************************************
       IMPLICIT NONE
 
       INTEGER
-     .  NO, NSPIN, MAXSPN, MAXUO, MAXNH, NK, NHIST, NBK, 
-     .  MAXO, NUOTOT
+     .  NO, NSPIN, MAXSPN, MAXUO, MAXNH, NK, NHIST, MAXO, NUOTOT
 
       INTEGER 
      .  NUMH(*), LISTH(MAXNH), LISTHPTR(*), INDXUO(NO)
 
       DOUBLE PRECISION
      .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA,  
-     .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), BK(3,NBK),
-     .  EO(MAXO,MAXSPN,NK), EBK(MAXO,MAXSPN,NBK)
+     .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), EO(MAXO,MAXSPN,NK)
 
       LOGICAL
      .  GAMMA
@@ -84,29 +78,25 @@ C Dynamic arrays -------------------------------------------------------
 
 C Internal variables ---------------------------------------------------
       INTEGER
-     .  NUO, IO, NHS, NPSI, NAUX, IUO, IHIST, ISPIN, 
-     .  NTY, ITY, IA, IS, IPHI, IN, IUNIT1, IUNIT2, I
+     .  NUO, NHS, NPSI, NAUX, IUO, IHIST, ISPIN, 
+     .  IUNIT1, IUNIT2, I
 
-      integer iat, spec, ii, iorb, j, Node, Nodes
+      integer iat, spec, ii, iorb, Node, Nodes
 
 #ifdef MPI
       integer MPIerror
 #endif
 
-      CHARACTER*7  IL
       character*40 pos_string
 
       CHARACTER
-     .  SNAME*30, FNAMETOT*37, FNAMEPRO*37, FNAMEPAR*53, 
-     .  PARTIAL1*11, PARTIAL2*18,
-     .  PARTIAL3*31, PARTIAL4*22, PASTE*53, ICHARA*10, 
-     .  INTCHAR*10, POINT
+     .  SNAME*30, FNAMETOT*37, FNAMEPRO*37, PASTE*53,  POINT
 
       DOUBLE PRECISION
      .  DELTA, ENER, EV
 
       EXTERNAL
-     .  INTCHAR, IO_ASSIGN, IO_CLOSE, PASTE, 
+     .  IO_ASSIGN, IO_CLOSE, PASTE, 
      .  PDOSK, TIMER
 
       CALL TIMER( 'pdos', 1)
@@ -277,45 +267,5 @@ C Free local arrays ----------------------------------------------------
       CALL TIMER( 'pdos', 2)
 
       RETURN
-      END
-
-C ----------------------------------------------------------------------
-
-      CHARACTER*10 FUNCTION INTCHAR(IA)
-
-      IMPLICIT NONE
-
-      INTEGER IA
-      CHARACTER*1 MYCHAR, ICHAR(10)
-
-      INTEGER I, IN, J, IFIN
-
-      DO I = 1, 10
-        ICHAR(I) = ' '
-      ENDDO
-      
-      INTCHAR = ' '
-
-      I = IA
- 
-      DO IN = 1, 10
-        IF(I.GT.0) THEN
-          J = MOD(I,10)
-          I = I/10
-          ICHAR(IN) = MYCHAR(J)
-          IFIN = IN
-        ENDIF
-      ENDDO  
-        
-      DO IN = 1, IFIN
-        INTCHAR = ICHAR(IN)//INTCHAR
-      ENDDO
-
-      END
-
-      CHARACTER FUNCTION MYCHAR(I)
-      CHARACTER CHARI(0:9)
-      DATA CHARI/'0','1','2','3','4','5','6','7','8','9'/
-      MYCHAR = CHARI(I)
       END
 

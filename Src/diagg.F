@@ -159,8 +159,8 @@ C ....................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( nspin, nspin, 1, 1.d0, maxuo, no, eo,
-     .               temp, qs, qo, efs )
+        call fermispin( nspin, nspin, 1, 1.d0, maxo, no, eo,
+     .               temp, qs, qo, efs, Entropy )
       else
         call fermid( nspin, nspin, 1, 1.d0, maxo, no, eo, 
      .             temp, qtot, qo, ef, Entropy )

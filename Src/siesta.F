@@ -26,6 +26,7 @@ C  Modules
       use parse
       use writewave
       use ionew, only: io_setup, IOnode
+      use iopipes
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -37,7 +38,7 @@ C  Modules
       integer
      .  fincoor,
      .  i, ia, ia1, ia2, iadispl, ianneal,
-     .  idyn, ifa, ifinal, ihmat, iiscf, ik, iio,
+     .  idyn, ifa, ifinal, ihmat, ihuge, iiscf, ik, iio,
      .  ind, inicoor, io, ioptlwf, iord,
      .  iquench, is, isel, iscf, 
      .  isolve, ispin, istp, istpsave, istart, istep, istr,
@@ -83,7 +84,7 @@ C  Modules
      .  taurelax, temp, tempinit, tempion, tiny, tp, ts, tt,
      .  tstress(3,3), Uatm, ucell(3,3), Uscf,
      .  vcell(3,3), virial, vn,
-     .  volcel, volume, vpr, we, wmix, wmixkick, wo,
+     .  volcel, volume, vpr, wmix, wmixkick, 
      .  xmax, xmin,
      .  stressl(3,3), veclen
 
@@ -152,6 +153,7 @@ C  Modules
      .  eggbox_block /.true./
      .  relaxd /.false./
      .  tiny /1.e-15_dp/
+     .  ihuge /1073741823/
      .  maxnh / 0 /
      .  maxna / 200 /
      .  tempion / 0.0_dp /
@@ -237,7 +239,7 @@ C ..................
       if (atmonly) call bye("End of atom setup")
 
       if (Node.eq.0) then
-        write(6,'(/,a,20(1h*),a,28(1h*))')
+        write(6,'(/,a,20("*"),a,28("*"))')
      .    'siesta: ', ' Simulation parameters '
         write(6,'(a)')  'siesta:'
         write(6,'(a)')  'siesta: The following are some of the '//
@@ -389,7 +391,6 @@ C Initialise file SIG for Signature records (whatever they are...) ...
         call io_assign(io_sig)
         call sig_setup(io_sig)
       endif
-
 C .....................
 
 C Read cell shape and atomic positions from a former run ..............
@@ -400,6 +401,12 @@ C Read cell shape and atomic positions from a former run ..............
      .    'siesta: WARNING: XV file not found'
       endif
 C ..................
+
+C Read cell shape and atomic positions from driver program through pipe
+      if (idyn.eq.8) then
+        call coordsFromPipe( na_u, xa, ucell )
+      end if
+C .....................
 
 C Dump initial coordinates to output ..................................
       if ( writic.and.(IOnode) ) then
@@ -708,6 +715,9 @@ C Notice that this loop is not indented
         call phonon_setup
         inicoor = 1
         fincoor = phonon_num_disps
+      else if (idyn .eq. 8) then
+        inicoor = 0
+        fincoor = ihuge
       else
          call die('siesta: wrong idyn')
       endif
@@ -773,6 +783,11 @@ c displace atom by dx...
            call phonon_set_coords(istep,xa,ucell)
         endif
       endif
+
+C Get coordinates from driver program trough pipe
+      if (idyn.eq.8 .and. istep.ne.inicoor) then
+        call coordsFromPipe( na_u, xa, ucell )
+      end if
 
       if (IOnode) then
 C Print atomic coordinates ............................................
@@ -1741,12 +1756,12 @@ C ...................
         else
           call iofa( na_u, fa )
         endif
-        write(6,'(40(1h-),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
-        write(6,'(40(1h-),/,a4, f12.6)') 'Max',fmax*Ang/eV
+        write(6,'(40("-"),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
+        write(6,'(40("-"),/,a4, f12.6)') 'Max',fmax*Ang/eV
         if (signat) call sig(io_sig,'Maximum force',fmax*Ang/eV)
         write(6,'(a4,f12.6,a)')'Res',fres*Ang/eV,
      .                   '    sqrt( Sum f_i^2 / 3N )'
-        write(6,'(40(1h-),/,a4, f12.6,a)') 'Max',cfmax*Ang/eV, 
+        write(6,'(40("-"),/,a4, f12.6,a)') 'Max',cfmax*Ang/eV, 
      .                   '    constrained'
 
 C Write Force Constant matrix if FC calculation ...
@@ -1850,6 +1865,8 @@ C Exit coordinate relaxation loop
      .              va, xa, ucell, Ekinion, tempion, Pint)
 !         Propagate the new structure to the virtual supercell
           call superx( ucell, nsc, na_u, na_s, xa, scell )
+      elseif (idyn.eq.8) then
+        call forcesToPipe( na_u, Etot, cfa, cstress )
       endif
 
       if (IOnode) then
@@ -2049,7 +2066,7 @@ C Broadcast values to all nodes
      .             no_u, numh, listhptr, listh, H, S,
      .             e1, e2, sigma, nhist,
      .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
-     .             nbk, bk, ebk, no_u)
+     .             no_u)
 
       endif                     ! PDOS calc (do_pdos)
 
@@ -2119,7 +2136,7 @@ C Print atomic forces
           write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
           write(6,'(a,i4,3f12.6)')
      .      ('siesta: ', ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
-          write(6,'(a,40(1h-),/,a,a4,3f12.6)')
+          write(6,'(a,40("-"),/,a,a4,3f12.6)')
      .      'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
         endif
       endif
@@ -2145,7 +2162,7 @@ C Print constrained atomic forces
             write(6,'(/,a)') 'siesta: Constrained forces (eV/Ang):'
             write(6,'(a,i4,3f12.6)')
      .        ('siesta: ', ia,(cfa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
-            write(6,'(a,40(1h-),/,a,a4,3f12.6)')
+            write(6,'(a,40("-"),/,a,a4,3f12.6)')
      .        'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
           endif
         endif

@@ -1,4 +1,21 @@
-c $Id: grid1d.f,v 1.1 2003/06/30 14:31:52 emilio Exp $
+! 
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996-2003
+! 
+! THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+! "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+! LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+! A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT
+! OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+! SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+! LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+! DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+! THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+! (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+! OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+!
+c $Id: grid1d.f,v 1.2 2003/11/05 18:50:53 wdpgaara Exp $
 
       program grid1d
 
@@ -42,6 +59,7 @@ c****************************************************************************
 
       integer           maxp
       parameter         (maxp = 10000000)
+      integer           ind,i1,i2
 
       real              rho(maxp,2)
 
@@ -142,13 +160,31 @@ c read function from the 3D grid --------------------------------------------
          read(1,*) mesh, nspin
          np = mesh(1) * mesh(2) * mesh(3)
          if (np .gt. maxp) stop 'grid1d: Parameter MAXP too small'
-         read(1,*) ( (rho(ip,is), ip = 1, np), is = 1, nspin)
+         ind = 0
+         do is = 1,nspin
+            do i1 = 1,mesh(3)
+               do i2 = 1,mesh(2)
+                  read(1,*) (rho(ind+ip,is),ip=1,mesh(1))
+                  ind = ind + mesh(1)
+               enddo
+            enddo
+         enddo
+!!! OLD         read(1,*) ( (rho(ip,is), ip = 1, np), is = 1, nspin)
       else
          read(1) cell
          read(1) mesh, nspin
          np = mesh(1) * mesh(2) * mesh(3)
          if (np .gt. maxp) stop 'grid1d: Parameter MAXP too small'
-         read(1) ( (rho(ip,is), ip = 1, np), is = 1,nspin)
+        ind = 0
+        do is = 1,nspin
+          do i1 = 1,mesh(3)
+            do i2 = 1,mesh(2)
+              read(1) (rho(ind+ip,is),ip=1,mesh(1))
+              ind = ind + mesh(1)
+            enddo
+          enddo
+        enddo
+!!! OLD         read(1) ( (rho(ip,is), ip = 1, np), is = 1,nspin)
       endif
       close(1)
 
@@ -382,3 +418,4 @@ c****************************************************************************
 
       return
       end
+

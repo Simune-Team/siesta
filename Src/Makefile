@@ -3,7 +3,7 @@
 #
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-default: what siesta gen-basis
+default: what siesta gen-basis  # denchar
 #
 include arch.make
 #
@@ -30,9 +30,9 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o dynamics.o \
 	efield.o egandd.o ener3.o extrapol.o extrapolon.o \
-	fermid.o fermispin.o fixed.o forhar.o gradient.o grdsam.o \
+	fermid.o fixed.o forhar.o gradient.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
-	iodm.o iohs.o iolwf.o iorho.o ioxv.o ipack.o \
+	iodm.o iohs.o iolwf.o iorho.o ioxv.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
@@ -60,7 +60,7 @@ dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
-readsp.o eggbox.o : $(FDF)
+readsp.o eggbox.o iopipes.o : $(FDF)
 #
 atom.o basis_specs.o: $(FDF)
 gen-basis.o: $(FDF)
@@ -78,7 +78,6 @@ MOD_OBJS=precision.o atom.o atmparams.o atmfuncs.o listsc.o \
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
-arw.o: ionew.o
 initatom.o: basis_specs.o basis_types.o basis_io.o
 atom.o: basis_types.o
 basis_specs.o: pseudopotential.o basis_types.o chemical.o
@@ -90,18 +89,19 @@ efield.o matel.o mulliken.o outcoor.o : atmfuncs.o
 overfsm.o shaper.o                                : atmfuncs.o
 atomlist.o                                        : atmfuncs.o 
 kinefsm.o naefs.o nlefsm.o overfsm.o              : atmfuncs.o
-siesta.o          : atmfuncs.o phonon.o ordern.o hsparse.o
+siesta.o          : atmfuncs.o phonon.o ordern.o hsparse.o iopipes.o
 redata.o          : phonon.o
 dfscf.o hsparse.o : atmfuncs.o listsc.o
 rhoofd.o rhoofdsp.o vmat.o vmatsp.o  : listsc.o
 hsparse.o minvec.o : sorting.o
 chempot.o         : numbvect.o
 memory.o          : memoryinfo.o
-dhscf.o dfscf.o forhar.o rhooda.o rhoofd.o rhoofdsp.o : meshsubs.o
+dhscf.o dfscf.o forhar.o rhooda.o rhoofd.o rhoofdsp.o cellxc.o : meshsubs.o
 vmat.o vmatsp.o : meshsubs.o
 dfscf.o rhoofd.o rhoofdsp.o vmat.o vmatsp.o : meshmatrix.o
 siesta.o: atomlist.o 
-old_atmfuncs.o atomlist.o siesta.o atom.o: ionew.o
+old_atmfuncs.o atomlist.o siesta.o atom.o arw.o pseudopotential.o: ionew.o
+iodm.o pdos.o iopipes.o: ionew.o
 coor.o: atomlist.o
 radial.o: xml.o
 atm_types.o: radial.o
@@ -163,6 +163,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MPI_INTERFACE)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
+#------------------------------------------------------------------------
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o\
           basis_io.o  chemical.o transfer.o atm_types.o\
           atmparams.o atmfuncs.o old_atmfuncs.o radial.o spher_harm.o io.o \
@@ -178,14 +179,40 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
 	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) \
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
+#------------------------------------------------------------------------
+# Denchar is now at the main source level...
+#
+DENCHAR_OBJS = m_denchar_init.o m_denchar_geom.o m_denchar_io.o \
+               m_denchar_neighb.o m_denchar_work.o \
+               denchar.o
+#
+m_denchar_io.o m_denchar_init.o denchar.o : $(FDF)
+denchar.o: precision.o parallel.o basis_io.o listsc.o 
+denchar.o: m_denchar_init.o m_denchar_io.o m_denchar_work.o m_denchar_geom.o
+#
+OTHER_DENCHAR_OBJS=  precision.o \
+        f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
+        paste.o  radfft.o recipes.o io.o \
+        volcel.o parallel.o memoryinfo.o sys.o listsc.o  \
+        atmparams.o atmfuncs.o ionew.o atm_types.o \
+        radial.o spher_harm.o  basis_io.o basis_types.o \
+        pseudopotential.o chemical.o xml.o $(SYSOBJ)
+
+denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) 
+	$(FC) -o denchar \
+	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
+           $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE)  $(LIBS) 
+#----------------------------------------------------------------------------
+#
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta gen-basis *.o  *.a *.pcl *.pc
+	rm -f siesta gen-basis denchar *.o  *.a *.pcl *.pc
 	rm -f *.mod
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd NetCDF ; $(MAKE) clean )
 	(cd Libs ; $(MAKE) clean )
+#
 pristine:  clean
 	cp -fp Include/constr.f .
 #

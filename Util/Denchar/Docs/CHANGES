@@ -1,6 +1,15 @@
 ========================================================================
                   DENCHAR CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.3
+Date: 2004/02/01 18:00
+Title: Denchar moved to top source directory !
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description: Denchar now lives in the top source directory. 
+             The manual and Examples are stil under Util/Denchar.
+
+=======================================================================
 Version: 1.2.1
 Date: 2003/07/22  14:45 
 Title: Bug in output corrected

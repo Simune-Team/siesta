@@ -9,6 +9,7 @@ C by SIESTA
 C
 C RESTRICTION: Just a single species allowed
 C
+!!      use f2kcli
       use fdf
       use ionew
       use precision
@@ -28,6 +29,8 @@ C
       implicit none
 
       integer is, Node, Nodes
+!     integer narg
+      character(len=50) filein
 
 #ifdef MPI
       integer  MPIerror
@@ -47,39 +50,53 @@ C Initialise MPI and set processor number
 
       call io_setup     ! Initialize IOnode
 
+      if (Ionode) then
+!
+!        Problems with mpich command-line argument handling...
+!$$$         narg = command_argument_count()
+!$$$         if (narg == 0) then
+!$$$            filein = "stdin"
+!$$$         else if (narg == 1) then
+!$$$            call get_command_argument(1,filein)
+!$$$         else
+!$$$            stop "too many command-line arguments"
+!$$$         endif
+!
+         filein = "stdin"
+         call fdf_init(filein,'gen-basis_out.fdf')
 
-      call fdf_init('stdin','gen-basis_out.fdf')
+         call read_basis_specs
+         call basis_specs_transfer
 
-      call read_basis_specs
-      call basis_specs_transfer
+         nsmax = nsp            ! For old_atmfuncs
+         call allocate_old_arrays
+         call clear_tables
 
-      nsmax = nsp                   ! For old_atmfuncs
-      call allocate_old_arrays
-      call clear_tables
-
-      if (nsp .gt. 1) then
-         write(6,'(//,a,//)') "JUST A SINGLE SPECIES ALLOWED..."
-         STOP
-      endif
-      do is = 1,nsp
-         call write_basis_specs(6,is)
-         basp=>basis_parameters(is)
-         call atom_main(iz(is), lmxkb(is), nkbl(0,is), 
+         if (nsp .gt. 1) then
+            write(6,'(//,a,//)') "JUST A SINGLE SPECIES ALLOWED..."
+            STOP
+         endif
+         do is = 1,nsp
+            call write_basis_specs(6,is)
+            basp=>basis_parameters(is)
+            call atom_main(iz(is), lmxkb(is), nkbl(0,is), 
      .           erefkb(1,0,is),lmxo(is), nzeta(0,1,is), rco(1,0,1,is), 
      .           lambda(1,0,1,is),
      .           atm_label(is), polorb(0,1,is), semic(is), nsemic(0,is),
      .           cnfigmx(0,is),charge(is), smass(is), basistype(is), is,
      $           rinn(0,1,is), vcte(0,1,is), basp)
-      enddo 
+         enddo 
 
-      call prinput(nsp)
+         call prinput(nsp)
 
 !        Create the new data structures
 
-      call transfer
+         call transfer
 
-      call dump_basis_ascii
-      call dump_basis_netcdf
+         call dump_basis_ascii
+         call dump_basis_netcdf
+
+      endif
 
       end program gen_basis
 !

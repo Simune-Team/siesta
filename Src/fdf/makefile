@@ -3,24 +3,17 @@
 #
 include ../arch.make
 #
-FC?=f77
-CFLAGS?= 
-FFLAGS?=  -g -O0     $(CFLAGS)
-LDFLAGS?=      $(CFLAGS)
-#
-#
 module:  libfdf.a
 libfdf.a:	fdf.o fdf_mod.o parse.o
 	ar qv libfdf.a fdf.o fdf_mod.o parse.o
 	-$(RANLIB) libfdf.a
 	cp libfdf.a ..
+	@cp -p *.*d ..
+	@echo "fdf/work.pc" >> ../work.pcl
 #
 # Note trick for Intel Fortran Compiler
 #
 fdf_mod.o: fdf_mod.f parse.o
-	$(FC) $(FFLAGS) -c fdf_mod.f
-	@cp -p *.*d ..
-	@echo "fdf/work.pc" >> ../work.pcl
 fdf.o:		fdf.h
 #
 #---------------------------------------------------

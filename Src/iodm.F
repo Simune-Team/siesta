@@ -26,6 +26,7 @@ C
       use precision
       use parallel
       use fdf
+      use ionew
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -50,8 +51,7 @@ C Internal variables and arrays
       real*8, dimension(:), allocatable, save :: buffer
       integer, dimension(:), allocatable, save :: ibuffer
 #endif
-      external          chkdim, io_assign, io_close, paste, timer,
-     .                  memory
+      external          chkdim, paste, timer,  memory
 
       save      frstme, fname
       data      frstme /.true./

@@ -189,7 +189,7 @@ C Written by J.M.Soler. April'97.
       integer, PARAMETER  :: NZ=94
       character(len=50) message
 
-      DOUBLE PRECISION AMASS(0:NZ)
+      real AMASS(0:NZ)
       DATA AMASS / 0.00,
      .     1.01,  4.00,  6.94,  9.01, 10.81, 12.01, 14.01, 16.00,
      .    19.00, 20.18, 22.99, 24.31, 26.98, 28.09, 30.97, 32.07,
@@ -208,7 +208,7 @@ C Written by J.M.Soler. April'97.
          write(message,'(a,i4)') 'ATMASS: ERROR: No data for Z =',Z
          call die(message)
       ELSE
-         ATMASS=AMASS(Z)
+         ATMASS=real(AMASS(Z),kind=dp)
       ENDIF
 
       END function atmass

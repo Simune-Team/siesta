@@ -1,6 +1,17 @@
 =======================================================================
                   MACROAVE CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.2.1 
+Date: 2003/11/18 14:30
+Title: Small bug in the initialization of DATA while linear interpolation
+Author: Javier Junquera <jjunquer@physics.rutgers.edu>
+
+Description:
+   The imaginary part of the array DATA at the last points of the
+   grid, when linear interpolation is chosen, were not initialized.
+
+Files: macroave.f
+=======================================================================
 Version: 1.1.0 
 Date: 2003/06/20 18:00
 Title: Imported sources
