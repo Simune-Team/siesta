@@ -68,14 +68,14 @@ C Internal variables
      .   minb  = 100,  ! Min buffer size for local copy of Dscf
      .   maxoa = 100   ! Max # of orbitals per atom
       integer
-     .   i, ia, ib, ibuff(no), ic, ii, imp, in, ind, iop, ip, iphi, io,
+     .   i, ia, ib, ibuff(no), ic, ii, imp, ind, iop, ip, iphi,
      .   is, isp, ispin, iu, iua, iul, ix, ix1, ix2, iy,
-     .   j, jb, jc, jmp, last, lasta, lastop, maxb, maxc, maxndl,
+     .   j, jb, jc, last, lasta, lastop, maxb, maxc, maxndl,
      .   nc, nphiloc
       real*8
      .   CD(nsp), CDV(nsp), DF(12), Dji, dxsp(3,nsp),  
      .   gCi(12,nsp), grada(3,maxoa,nsp),
-     .   phia(maxoa,nsp), rvol, r2o, r2sp, r2cut(nsmax), V(nsp,nspin)
+     .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,nspin)
       integer, pointer, save ::
      .   ibc(:), iob(:)
       real*8, pointer, save ::
@@ -119,10 +119,8 @@ C  If parallel, allocate temporary storage for Local Dscf
         call memory('A','D',maxndl*nspin,'meshdscf')
 
 C Redistribute Dscf to DscfL form
-        do ispin = 1,nspin
-          call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
-     .                     Dscf(1,ispin), DscfL(1,ispin) )
-        enddo
+        call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
+     .                   nspin, Dscf, DscfL )
 
       endif
 
@@ -146,13 +144,11 @@ C  Initialise variables
       iob(:) = 0
       last = 0
 
-C  Find atomic cutoff radii
-      r2cut(:) = 0.0d0
-      do i = 1,nuotot
+C  Find atomic cutoff radiae
+      do i = 1,no
         ia = iaorb(i)
         is = isa(ia)
-        io = iphorb(i)
-        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
+        r2cut(is) = rcut(is,0)**2
       enddo
 
 C  Evaluate constants
@@ -359,3 +355,4 @@ C  Restore old allocation defaults
 
       call timer('dfscf',2)
       end
+

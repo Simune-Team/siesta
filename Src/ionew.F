@@ -141,7 +141,7 @@ c
 c     Prints a list of the connected logical units and the names of
 c     the associated files
 c
-      logical used, named, opened
+      logical named, opened
       integer iostat, i
       character filename*50, form*11
 

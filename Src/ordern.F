@@ -64,6 +64,7 @@ C  Modules
 C
       use precision
       use parallel
+      use fdf
 #ifdef MPI
       use mpi
 #endif
@@ -91,12 +92,11 @@ C
 
 C Internal variables ..........................................................
       integer, save ::
-     .  maxo, maxoloc, maxlwf, maxnc, maxnct, maxnf, maxnft,
-     .  maxnhij
+     .  maxo, maxoloc, maxlwf, maxnc, maxnct
 
       integer
      .  in, io, iio, iopt, iord, iter, iterm, ncmax, nctmax, 
-     .  nfmax, nftmax, nh, nhijmax, nbands, nspin, Node, Nodes,
+     .  nh, nbands, nspin, Node, Nodes,
      .  nbasisloc, nbasismax, nbandsloc, ntmp, BNode
 
       integer, dimension(:,:), allocatable, save ::
@@ -118,7 +118,7 @@ C Internal variables ..........................................................
      .  c, cold
 
       logical
-     .  overflow, itest, found 
+     .  overflow, itest, found, writelwf
 
 #ifdef MPI
       integer
@@ -136,9 +136,6 @@ C Internal variables ..........................................................
       data maxlwf  / 1 /
       data maxnc   / 1 /
       data maxnct  / 1 /
-      data maxnf   / 1 /
-      data maxnft  / 1 /
-      data maxnhij / 1 /
 C ...................
 
 C Get Node number and local number of orbitals in unit cell
@@ -292,8 +289,7 @@ C  If overflow re-dimension arrays and repeat previous step
 C   This call was modified by DSP, Aug. 1998.
           call cspa(ioptlwf,iopt,natoms,nbasis,nbasisloc,lasto,isa,
      .        qa,enum,rcoor,rh,cell,xa,maxnh,numh,listhptr,listh,
-     .        maxnc,c,numc,listc,ncmax,nctmax,nfmax,nftmax,nhijmax,
-     .        nbands,overflow)
+     .        maxnc,c,numc,listc,ncmax,nctmax,nbands,overflow)
 
           nbandsloc = ((nbands-1)/Nodes) + 1
 
@@ -342,9 +338,6 @@ C         Print good dimensions
             overflow = .false.
             goto 20
           endif
-          maxnf = nfmax
-          maxnft = nftmax
-          maxnhij = nhijmax
           maxnct = nctmax
 
         endif
@@ -431,8 +424,7 @@ C Call the CG routines ...............................................
       call memory('A','S',maxnc*maxoloc,'ordern')
       call cgwf(iscf,itmax,ftol,eta,enum,nbasis,nbands,maxnh,
      .          numh,listhptr,listh,maxnc,numc,listc,h,s,c,
-     .          g,hg,xi,fe,iter,dm,edm,nbasisloc,maxnf,maxnft,
-     .          maxnhij,maxnct)
+     .          g,hg,xi,fe,iter,dm,edm,nbasisloc,maxnct)
       call memory('D','D',size(xi),'ordern')
       deallocate(xi)
       call memory('D','S',size(hg),'ordern')
@@ -471,12 +463,18 @@ C Save LWF's to disk .................................................
           listcold(in,io) = listc(in,iio)
         enddo
       enddo
-      call iolwf( 'write', maxnc, ncmax, maxoloc, nbasis, 1,
+      if (Node.eq.0) then
+        writelwf = fdf_boolean('WriteLWF', .true. )
+      endif
+#ifdef MPI
+      call MPI_Bcast(writelwf,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
+      if (writelwf) then
+        call iolwf( 'write', maxnc, ncmax, maxoloc, nbasis, 1,
      .             numc, listcold, c, found )
+      endif
 C ....................
 
 *     call timer( 'ordern', 2 )
 
       end subroutine ordern
-
-

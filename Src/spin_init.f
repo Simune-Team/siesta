@@ -20,8 +20,8 @@ C
 
       nspin = 1
 
-      sppol  = fdf_boolean('SpinPolarized',.false.)
-      noncol = fdf_boolean('NonCollinearSpin',.false.)
+      sppol  = fdf_get('SpinPolarized',.false.)
+      noncol = fdf_get('NonCollinearSpin',.false.)
 
       if (noncol) then
         nspin = 4

@@ -119,7 +119,7 @@
             call broadcast_radial(func,Node)
          enddo
 
-         func=>spp%vlocal
+         func=>spp%vna
          call broadcast_radial(func,Node)
 
          func=>spp%chlocal

@@ -31,7 +31,7 @@ C
       real             rhoatm(nsp,np)
       real*8           Datm(no), phip
 
-      integer          i, in, ip, isp, iu, kn, iop, is, iphi, ia, ix
+      integer          i, ip, isp, iu, kn, iop, is, iphi, ia, ix
       real*8           Ci, gradCi(3), r2o, r2sp, dxsp(3) 
 
 C  Loop on mesh points

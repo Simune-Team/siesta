@@ -532,13 +532,8 @@ C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
 
-      do ispin = 1,nspin
-
-        call rhoofd( norb, indxuo, nmpl, maxnd, numd, listdptr, listd,
-     .               Dscf(1,ispin), DRho(1,ispin), nuo, nuotot, iaorb,
-     .               iphorb, isa )
-
-      enddo
+      call rhoofd( norb, indxuo, nmpl, maxnd, numd, listdptr, listd,
+     .             nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa )
 
 C ----------------------------------------------------------------------
 C Save electron density
@@ -774,13 +769,9 @@ C ----------------------------------------------------------------------
 
       if (iHmat .eq. 1) then
 
-        do ispin = 1,nspin
-
-          call vmat( norb, indxuo, nmpl, dvol, Vscf(1,ispin), maxnd,
-     .               numd, listdptr, listd, Hmat(1,ispin), nuo,
-     .               nuotot, iaorb, iphorb, isa )
-
-        enddo
+        call vmat( norb, indxuo, nmpl, dvol, nspin, Vscf, maxnd,
+     .             numd, listdptr, listd, Hmat, nuo,
+     .             nuotot, iaorb, iphorb, isa )
 
       endif
 

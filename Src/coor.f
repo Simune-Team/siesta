@@ -48,7 +48,7 @@ C Read unit cell and supercell
 C Format of atomic coordinates
 
       acf_default = 'NotScaledCartesianBohr'
-      acf = fdf_string('AtomicCoordinatesFormat',acf_default)
+      acf = fdf_get('AtomicCoordinatesFormat',acf_default)
       if (leqi(acf,'NotScaledCartesianBohr') .or.
      .    leqi(acf,'Bohr') ) then
         iscale = 0
@@ -111,7 +111,7 @@ C Format of atomic coordinates
 
 c Read atomic coordinates and species
 
-      na = fdf_integer('NumberOfAtoms',0)
+      na = fdf_get('NumberOfAtoms',0)
       if (na.eq.0) call die("Must specify number of atoms!")
 !
 !     Check if we need more space to accomodate supercell

@@ -7,7 +7,7 @@
 #  cvs export { -r <appropriate tag>, -d <date> } [ -d directory ] siesta
 #
 
-dir=siesta-1.1-f1s
+dir=siesta-1.1s
 
 if [ -d $dir ] ; then
       echo "Directory exists"

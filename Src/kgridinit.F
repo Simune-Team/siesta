@@ -66,7 +66,7 @@ c Internal variables
 #ifdef MPI
       integer           MPIerror
 #endif
-      double precision  d(3), defcut, dkg(3), dkx(3), dscell(3,3),
+      double precision  defcut, dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), huge, pi,  
      .                  scell(3,3), tiny, vmod
       logical           genlogic

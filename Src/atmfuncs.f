@@ -294,7 +294,7 @@ C  Distances in Bohr
          pp => spp%pjnl(spp%pj_index(-io))
          rcut = pp%cutoff
       else
-         rcut = spp%vlocal%cutoff
+         rcut = spp%vna%cutoff
       endif
 
       end function rcut
@@ -401,7 +401,7 @@ C  Energy in Rydbergs.
       end function epskb
 
 !--------------------------------------------------------------------
-      subroutine vlocal_sub(is,r,v,grv)
+      subroutine vna_sub(is,r,v,grv)
       integer, intent(in) :: is      ! Species index
       real(dp), intent(in)  :: r(3)    ! Point vector, relative to atom
       real(dp), intent(out) :: v       ! Value of local pseudopotential
@@ -414,14 +414,14 @@ C  2) Returns exactly zero when |R| > RCUT(IS,0)
       real(dp) rmod, dvdr
       integer i
 
-      call chk('vlocal_sub',is)
+      call chk('vna_sub',is)
 
       v=0.0_dp
       grv(1:3)=0.0_dp
 
       if (floating(is)) return
 
-      func => species(is)%vlocal
+      func => species(is)%vna
 
       rmod = sqrt(sum(r*r))
       if (rmod .gt. func%cutoff) return
@@ -430,7 +430,7 @@ C  2) Returns exactly zero when |R| > RCUT(IS,0)
       rmod=rmod+tiny20
       grv(1:3) = dvdr * r(1:3)/rmod
  
-      end subroutine vlocal_sub
+      end subroutine vna_sub
 
       subroutine psch(is,r,ch,grch)
       integer, intent(in) :: is      ! Species index
@@ -518,7 +518,7 @@ C                   Sum_lm( epsKB_l * <Psi|Phi_lm> * <Phi_lm|Psi'> )
 C    where epsKB_l is returned by function EPSKB
 C 5) Prints a message and stops when no data exits for IS and/or IO
 C 6) Returns exactly zero when |R| > RCUT(IS,IO)
-C 7) PHIATM with IO = 0 is strictly equivalent to VLOCAL_SUB
+C 7) PHIATM with IO = 0 is strictly equivalent to VNA_SUB
 
       real(dp) rmod, phir, dphidr
       real(dp) rly(max_ilm), grly(3,max_ilm)
@@ -542,7 +542,7 @@ C 7) PHIATM with IO = 0 is strictly equivalent to VLOCAL_SUB
          m = spp%pj_m(ik)
       else     ! io=0
          if (floating(is)) return
-         func => spp%vlocal
+         func => spp%vna
          l = 0
          m = 0
       endif
@@ -594,11 +594,10 @@ C     <Psi|V_KB|Psi'> = <Psi|V_local|Psi'> +
 C                   Sum_lm( epsKB_l * <Psi|Phi_lm> * <Phi_lm|Psi'> )
 C    where epsKB_l is returned by function EPSKB
 C 6) Returns exactly zero when |R| > RCUT(IS,IO)
-C 7) RPHIATM with ITYPE = 0 is strictly equivalent to VLOCAL_SUB
+C 7) RPHIATM with ITYPE = 0 is strictly equivalent to VNA_SUB
 
       real(dp) rmod, phir
-      real(dp) rly(max_ilm), grly(3,max_ilm)
-      integer i, l, m, ik, ilm
+      integer i, l, m, ik
 
       phi = 0.0_dp
       dphidr = 0._dp
@@ -618,7 +617,7 @@ C 7) RPHIATM with ITYPE = 0 is strictly equivalent to VLOCAL_SUB
          m = spp%pj_m(ik)
       else
          if (floating(is)) return
-         func => spp%vlocal
+         func => spp%vna
          l = 0
          m = 0
       endif
@@ -758,7 +757,7 @@ C    value of nphi
       elseif (it.lt.0) then
         nphi=spp%nprojs
       else
-         call die("all_phi: Please use phiatm to get Vlocal...")
+         call die("all_phi: Please use phiatm to get Vna...")
       endif
       
       if (nphi.gt.maxphi) call die('all_phi: maxphi too small')

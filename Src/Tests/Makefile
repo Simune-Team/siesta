@@ -9,7 +9,7 @@ SIESTA=../../../siesta
 #
 include ../arch.make
 #
-tests= h2o  h2o_dos h2o_orderN batio3 sih si64 fe
+tests= h2o h2o_dos h2o_orderN batio3 sih si64 fe floating bessel 
 #
 all:  ###   cmpsig   ## Optional
 	@for i in ${tests} ; do \

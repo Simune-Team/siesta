@@ -170,10 +170,10 @@ C D. Sanchez-Portal, Oct. 1996.
       integer j, npts
       real(dp) dummy
 
-      read(lun,'(i4,2g25.15)') npts, op%delta, op%cutoff
+      read(lun,*) npts, op%delta, op%cutoff
       call rad_alloc(op,npts)
       do j=1,npts
-         read(lun,'(2g25.15)') dummy, op%f(j)
+         read(lun,*) dummy, op%f(j)
       enddo
       call rad_setup_d2(op)
       end subroutine radial_read_ascii
@@ -184,10 +184,10 @@ C D. Sanchez-Portal, Oct. 1996.
       integer lun
       integer j
 
-      write(lun,'(i4,2g25.15,a)') op%n,
+      write(lun,'(i4,2g22.12,a)') op%n,
      $     op%delta, op%cutoff, " # npts, delta, cutoff"
       do j=1,op%n
-         write(lun,'(2g25.15)') (j-1)*op%delta, op%f(j)
+         write(lun,'(2g22.12)') (j-1)*op%delta, op%f(j)
       enddo
       end subroutine radial_dump_ascii
 !
@@ -202,7 +202,7 @@ C D. Sanchez-Portal, Oct. 1996.
       call xml_dump_element(lun,'cutoff',str(op%cutoff))
       write(lun,'(a)') '<data>'
       do j=1,op%n
-         write(lun,'(2g25.15)') (j-1)*op%delta, op%f(j)
+         write(lun,'(2g22.12)') (j-1)*op%delta, op%f(j)
       enddo
       write(lun,'(a)') '</data>'
       write(lun,'(a)') '</radfunc>'

@@ -1,7 +1,7 @@
       subroutine cgwf(iscf,itmax,ftol,eta,enum,nbasis,nbands,
      .                maxnh,numh,listhptr,listh,ncmax,numc,
      .                listc,h,s,c,g,hg,xi,fe,iter,dm,edm,nbasisloc,
-     .                maxnf,maxnft,maxnhij,maxnct)
+     .                maxnct)
 C *******************************************************************
 C Conjugate gradient minimization of the Kim et al. functional
 C Returns the converged WF. coefficients and the density matrices.
@@ -37,10 +37,7 @@ C real*4 g(ncmax,nbasisloc)   : Auxiliary space matrix
 C real*4 hg(ncmax,nbasisloc)  : Auxiliary space matrix
 C real*8 xi(ncmax,nbasisloc)  : Auxiliary space matrix (gradients)
 C integer nbasisloc           : Number of local basis functions stored 
-C integer maxnf               : )
-C integer maxnft              : )Array dimensions to be passed to lower routines
-C integer maxnhij             : )
-C integer maxnct              : )
+C integer maxnct              : Array dimension to be passed to lower routines
 C ******************** INPUT AND OUTPUT *****************************
 C real*8 c(ncmax,nbasisloc)   : Localized Wave Functions (sparse)
 C ************************* OUTPUT **********************************
@@ -61,8 +58,7 @@ C
       implicit none
 
       integer
-     .  nbands,nbasis,ncmax,maxnh,nbasisloc,maxnf,maxnft,maxnhij,
-     .  maxnct
+     .  nbands,nbasis,ncmax,maxnh,nbasisloc,maxnct
 
       integer
      .  iscf,iter,itmax,
@@ -119,8 +115,7 @@ C Calculate control vectors only if in first SCF step ....................
 	iopt = 0
         call eandg(iopt,eta,enum,lam,
      .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
-     .             nbasis,nbands,e3,e,xi,dm,edm,nbasisloc,
-     .             maxnf,maxnft,maxnhij,maxnct)
+     .             nbasis,nbands,e3,e,xi,dm,edm,nbasisloc,maxnct)
       endif
 C .....................
 
@@ -128,8 +123,7 @@ C Calculate gradient for first CG step ...................................
       iopt = 2
       call eandg(iopt,eta,enum,lam,
      .           maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
-     .           nbasis,nbands,e3,fp,xi,dm,edm,nbasisloc,
-     .           maxnf,maxnft,maxnhij,maxnct)
+     .           nbasis,nbands,e3,fp,xi,dm,edm,nbasisloc,maxnct)
 C .....................
 
       elamb = fp
@@ -180,8 +174,7 @@ C Get the energy at three points separated by lam ...........................
         iopt = 1
         call eandg(iopt,eta,enum,lam,
      .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
-     .             nbasis,nbands,e3,e,xi,dm,edm,nbasisloc,
-     .             maxnf,maxnft,maxnhij,maxnct)
+     .             nbasis,nbands,e3,e,xi,dm,edm,nbasisloc,maxnct)
 C ...........................
 
 C Solve exactly the line minimzation with a forth order polinomial ..........
@@ -225,8 +218,7 @@ C Calculate energy and gradient at current point ...........................
         iopt = 2
         call eandg(iopt,eta,enum,lam,
      .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
-     .             nbasis,nbands,e3,fe,xi,dm,edm,nbasisloc,
-     .             maxnf,maxnft,maxnhij,maxnct)
+     .             nbasis,nbands,e3,fe,xi,dm,edm,nbasisloc,maxnct)
 C ...........................
 
 C Check if minimization has converged ......................................
@@ -301,8 +293,7 @@ C Compute density matrix ...................................................
       iopt = 3
       call eandg(iopt,eta,enum,lam,
      .           maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
-     .           nbasis,nbands,e3,fe,xi,dm,edm,nbasisloc,
-     .           maxnf,maxnft,maxnhij,maxnct)
+     .           nbasis,nbands,e3,fe,xi,dm,edm,nbasisloc,maxnct)
 C ............................
  33   format('cgwf: iter = ',i4,6x,'grad = ',f18.6,6x,'Eb(Ry) = ',f14.6)
 

@@ -241,7 +241,7 @@ CCC New writing
               if (nspin.eq.1) then
                  write(iunit2,'(f10.5)') dpr(ihist,i,1)/eV
               else if (nspin .eq. 2) then
-                 write(iunit2,'(2f10.5)') dpr(ihist,i,1)/eV,
+                 write(iunit2,'(2f10.5)') ener*eV, dpr(ihist,i,1)/eV,
      $                                 dpr(ihist,i,2)/eV
               endif
            enddo

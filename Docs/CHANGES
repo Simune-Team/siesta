@@ -1,77 +1,249 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
-Version: 1.1.2
-Date: 2002/09/23
-Title: SIESTA-1.1f2 (maintenance fix 2)
-Author: Alberto Garcia <wdpgaara@lg.ehu.es>
------------------------------------------------------------------------
+Version: 1.2.4
+Date: 2001/12/14  18:15 GMT
+Title: Order N improvements/tidy
+Author: Julian Gale <j.gale@ic.ac.uk>
 
-Changes since 1.1.1:
+Description:
 
-* Support for the Intel Fortran Compiler: changes in fdf subsystem
-  and in makefiles.
+The key changes relate to improvements in the order N part. The form of
+cspa and eandg has been changed, in particular. Now the parameters maxnf,
+maxnft and maxnhij are found in eandg, not in cspa. This allows an
+accurate determination of the sizes in parallel and leads to much 
+improved parallel scaling of cspa, removing this bottleneck for very
+large calculations. There are also improvements to ener3.F and gradient.F
+to reduce memory requirements and improve performance. There are also a
+large number of minor changes where unused variables have been cleared
+out.
 
-* Fix the declaration of nsemicsave in old_atmfuncs.f
+Files:
 
+atmfuncs.f      Unused variables removed to be tidy and reduce warnings
+atom.f          Unused variables removed to be tidy and reduce warnings
+atomlwf.F       Considerably changed to achieve reasonable parallel
+                scaling and efficiency. The parameters nfmax, nftmax
+                and nhijmax are no longer determined here since the
+                values were always overestimates when operating in 
+                parallel and this allows the code to be more readily
+                distributed over processors. The determination of the
+                sparse indexing and the initialisation of the LWFs has
+                been separated so that parallelism can be achieved without
+                altering the effect on the random initialisation. The
+                building of the sparse indices is now distributed by
+                search atom over Nodes.
+bands.F         Unused variables removed to be tidy and reduce warnings
+basis_io.F      Unused variables removed to be tidy and reduce warnings
+cgwf.F          Variables maxnf, maxnft and maxnhij removed as arguments
+                and no longer passed to eandg.
+detover.F       Dimensions of psitmp for passing corrected and full
+                matrix used in savepsi option. Also referencing of
+                variable "je" return to the global frame as "jeg"
+                where necessary. Unused variables removed.
+dfscf.f         Unused variables removed to be tidy and reduce warnings
+diag2g.F        Unused variables removed to be tidy and reduce warnings
+diag2k.F        Unused variables removed to be tidy and reduce warnings
+diagpol.f       Unused variable "io" removed
+egandd.F        Structure changed due to the fact that maxnhij, maxnft
+                and maxnf are now determined here, rather than in cspa.
+ener3.F         Re-structured for greater parallel efficiency / lower
+                memory use.
+forhar.f        Unused variables removed to be tidy and reduce warnings
+gradient.F      Variables nfmax/nhijmax globalised
+initatom.f      Unused variable "js" removed
+ionew.F         Declaration of "used" removed since variable is unused
+                in io_status
+kgridinit.F     Unused variable "d" removed
+ksv.F           Unused variable "mxhov2" removed
+matel.f         Unused variable "js" removed
+meshsubs.F      Unused variables removed to be tidy and reduce warnings
+old_atmfuncs.f  Declaration of "maxo" removed since variable is unused
+on_subs.F       New routines added that are variants on the old ones
+                for determining just the array dimension parameters
+                nfmax, nftmax, nhijmax.
+ordern.F        Modified to reflect the removal of nfmax, nftmax and
+                nhijmax
+parallel.f      Unused variables removed to be tidy and reduce warnings
+phonon.F        Unused variables removed to be tidy and reduce warnings
+pulayx.F        Unused variable "iii" removed
+rhooda.f        Unused variable "in" removed
+rhoofd.f        Unused variables removed to be tidy and reduce warnings
+siesta.F        Unused variables removed to be tidy and reduce warnings
+vmat.f          Unused variables removed to be tidy and reduce warnings
 =======================================================================
-Version: 1.1.1
-Date: 2002/04/19
-Title: SIESTA-1.1f1 (bugfix 1)
-Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+Version: 1.2.3
+Date: 2001/11/20  12:30 GMT
+Title: iorho parallel fix / order N improvements
+Author: Julian Gale <j.gale@ic.ac.uk>
 
-Bugfixes since 1.1 release:
+Description:
 
-Summary: (See bug page on http://www.uam.es/siesta for more details)
+The handling of blocksizes has been corrected in iorho.F, since
+the data distribution model coded was not quite the same as in
+dhscf.F. The routine has been changed to make things consistent.
+Further improvements have been to the order N part to reduce the
+memory and increase the speed. In particular, the set up of the
+indexing arrays has been examined. In axb_build1, the array ind
+has been switched from a 2-D to 1-D array which is set up as necessary
+using the sparsed stored indices. Also the broadcast of data has
+been altered to group data so that each Node only broadcasts once.
+The size of the local scratch arrays in denmat have also been reduced
+by finding the optimum value of nfmax.
 
-* The "electrostatic correction" tables were not updated correctly.
-  (basis_io.F)
-* The extension of the NetCDF file was wrong.
-  (basis_specs.f)
-* The default mass assigned to "floating atoms" (which provide
-  just their orbitals) was too big, and it led to overflows.
-* (Parallel version) If the number of processors was greater than 1, 
-  then the values in qspin() were wrong because the array was not 
-  globally reduced. Hence the total spin difference was incorrectly printed.
-  (siesta.F)
-* In module atom.f, messages relating to the size of seldom-changed
-  parameters pointed the user to file "atom.h". The correct reference
-  is to file "atmparams.f".
-  (atom.f)
-* In routine pdos.f, the output of data pertaining to the PDOS in the
-  spin-polarized case mistakenly included an energy field.
-  (pdos.f)
-* In routine vlocal_sub in file old_atmfuncs.f, the declaration of the
-  dummy argument v was incorrect.
-  (old_atmfuncs.f)
-* Wrong edit descriptor in atom.f
-  (atom.f)
-* If the longest orbital of a given species was unoccupied in the
-  free atom, then some points were wrongly skipped while calculating the
-  integrals. This could lead to loss of accuracy.
-  (dfscf.f, vmat.f, rhoofd.f)
+Files:
 
+   atomlwf.F    Rounding error allowed for in checking of number
+                of electrons.
+   denmat.F     Memory reduced further / performance increased.
+                Main change is to value of nfmax used to size
+                local temporary arrays.
+   egandd.F     Array indgf is distributed across nodes.
+   gradient.F   Memory reduced further / performance increased.
+   iorho.F      Calculation of blocksizes for I/O in parallel
+                was in error. Now fixed.
+   on_subs.F    The array ind has been removed and replaced by a
+                1-D array which is filled as necessary from nindv
+                which is sparse. Also data is broadcast by Node
+                rather than by orbital. Array indgf is distributed
+                across nodes.
+   outcoor.f    I/O modified to handle up to 999,999 atoms
+   siesta.F     I/O modified to handle up to 999,999 atoms
 =======================================================================
-Version: 1.1.0
+Version: 1.2.2
+Date: 2001/11/05  16:00 GMT
+Title: Memory re-linearised in order N
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+In the process of originally parallelising the order N part,
+the linear scaling of the memory usage with system size was
+lost. This has now been restored which should lead to memory
+savings for large jobs in parallel.
+
+Files:
+   denmat.F      Modified to change size of all 2-D or higher
+                 arrays so that two dense indices are never
+                 used.
+   egandd.F      Call to ind_gf reinstated and fttof passed to
+                 gradient. Left-hand dimension of fttof/listft
+                 corrected to maxnft.
+   ener3.F       Modified to change size of all 2-D or higher
+                 arrays so that two dense indices are never
+                 used.
+   gradient.F    Modified to change size of all 2-D or higher
+                 arrays so that two dense indices are never
+                 used.
+   on_subs.F     Subroutine ind_gf reinstated as fttof is now
+                 used again.
+   MPI/Makefile  Two blank lines removed that break the make
+                 on SGI machines.
+=======================================================================
+Version: 1.2.1
+Date: 2001/10/11  17:30 GMT
+Title: Accelerated direct spin polarised calculations
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+The use of the DirectPhi option has been accelerated for spin
+polarised calculations by only calculating the values of Phi
+on the mesh once. This is achieved by moving the loop over
+spin inside rhoofd and vmat. Also a bug in the print out of the
+spin polarisation when running in parallel has been fixed.
+
+Files:
+   dfscf.f       Call to matrixOtoM modified.
+   dhscf.F       Calling of rhoofd and vmat modified.
+   meshmatrix.F  Spin loops moved within matrixOtoM and matrixMtoO.
+   rhoofd.f      Looping over spin components now included internally.
+                 Dlocal array stored in triangular fashion.
+   siesta.F      Qspin now globalised before print out of spin 
+                 polarisation.
+   vmat.f        Looping over spin components now included internally.
+                 Vlocal array stored in triangular fashion.
+=======================================================================
+Version: 1.2.0
 Date: 2001/09/26
-Title: SIESTA-1.1 release
+Title: Merge from rel-1-1-branch at 1.1 release point (siesta-1-1)
 Author: Alberto Garcia <wdpgaara@lg.ehu.es>
 
-Changes and fixes to prepare for the release.
-(Changes along the rel-1-1-branch cvs branch)
+ Starting point for new cycle of development.
 
-Summary:
+ Changes and fixes in preparation of the 1.1 release
+ merged back to main trunk:
 
-* Bug fix for O(N) calculations (Julian Gale)
-  file: gradient.F
+* Fixed mismatched MPI block in siesta.F (related to PDOS change).
+  file: siesta.F
 
-* Restored PDOS processing (Javier Junquera and Alberto Garcia)
-  files: siesta.F pdos.f pdosk.f
+* Total DOS file is now just *.DOS.
 
-* Added "xml" output for .ion data.  (Alberto Garcia)
+* Better output for PDOS file. Used "xml" format to ease (?) 
+  processing (evolving ideas).
+  files: pdos.f pdosk.f 
+
+* Added new "h2o_dos" test in Src/Tests.
+
+* Added "xml" output for .ion data.
   files: xml.f basis_io.F radial.f initatom.f
 
+* Committed Bug fix for O(N) calculations (Julian Gale)
+  file: gradient.F Src/Tests/Makefile (enabled h2o_orderN)
+
+* Added new sgi64-mpi_fermat.make file (Julian Gale)
+
+* Array shape fixes in xc.f (cosmetic) (Julian Gale)
+
+* Added top README file.
+
+* Removed obsolete source files from Src directory.
+  files: iorder.f order.f ordvec.f ylmylm.f lofilm.f
+         resize.F ylmexp.f symbol.f rlylm.f die.F
+
+* Added user.list (Please update), build_parallel.sh, and other 
+  release-related files, and updated some others. These files are
+  not part of any distribution.
+
+* Updated CONDITIONS (list of developers)
+
+* Many User Guide updates (J. Junquera, E. Artacho, A. Garcia)
+
+* Removed .vps, out.fdf, and siesta.size files from Examples directory.
+
+* Updated .out files in Src/Tests and Examples/*/Out
+
+* Added Util/PyAtom/pdos.py script (experimental -- not in release)
+
+* Set Version to 1.2.0
+
 =======================================================================
+Version: 1.0.62
+Date: 2001/09/24  12:00 GMT
+Title: Projected Density of States.
+Author: Javier Junquera <javier.junquera@uam.es>
+
+Description:
+
+The Total Density Of States (Total DOS), and its projection
+on the basis orbitals (Projected Density Of States, PDOS),
+are computed and dumped to files ('.TOT.DOS' and '.PDOS' respectively).
+
+This only works in a serial run. An error message will be issued 
+when we try to use it in a parallel execution.
+
+It is only implemented when the hamiltonian
+is solved by diagonalization with k-points.
+
+Files:
+   siesta.F    Call to pdos subroutine is added
+   pdos.f      New subroutine, interface between siesta and the one that
+               computes the PDOS
+   pdosk.f     New subroutine. Computes the PDOS
+   Makefile    pdos.o and pdosk.o added to object list 
+   Docs/siesta.tex, Docs/siesta.ind
+	       Documentation of new block usage.
+========================================================================
 Version: 1.0.61
 Date: 2001/09/16  18:00 GMT
 Title: New input/output facilities for ps and basis information

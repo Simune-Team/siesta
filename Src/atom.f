@@ -166,7 +166,6 @@
        
 ! Internal variables
  
-       integer ns2
        double precision
      .  rofi(nrmax), drdi(nrmax), s(nrmax),
      .  vps(nrmax,0:lmaxd), rphi(nrmax,0:lmaxd,nsemx),
@@ -1985,7 +1984,7 @@ C*TABLE WITH THE PSEUDO_CORE DATA
               write(6,'(a)') 
      .    'comcore: WARNING It might be a good idea to increase' 
               write(6,'(a)')
-     .    'comcore: WARNING parameter ntbmax (in file atmparams.f) '
+     .    'comcore: WARNING parameter ntbmax (in file atom.h) '
               write(6,'(a,i6)')
      .    'comcore: WARNING to at least ntbmax = ', 
      .            nint(Rcore/deltmax)+2 
@@ -2050,7 +2049,7 @@ C
               write(6,'(a)')
      .    'comlocal: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comlocal: WARNING parameter ntbmax (in file atmparams.f) '
+     .    'comlocal: WARNING parameter ntbmax (in file atom.h) '
               write(6,'(a,i6)')
      .    'comlocal: WARNING to at least ntbmax = ', 
      .        nint(Rchloc/deltmax)+2 
@@ -2138,14 +2137,8 @@ CCALCULATION OF THE ELECTROSTATIC CORRECTION***
      
 C      Internal and common variables
 
-       integer  ns, izeta, l, ix,
-     .  lmax, nzetamax, ikb, nkblmx,nsm, nsm_max,
-     .  config(0:4)
+       integer  l, lmax, nzetamax, nkblmx,nsm, nsm_max
  
-
-        logical overflow
-
-
 C**ADDING A NEW SPECIES TO THE LIST**
            
           new=.true.  
@@ -2283,14 +2276,13 @@ C*Internal variables ****
      .     ve(nrmax)
 
            double precision 
-     .     r2, ea, rpb, chgvps, ztot, zup, zdown, rc_read
+     .        ea, rpb, chgvps, ztot, zup, zdown, rc_read
 
            integer  
      .        nr, nodd, lmax, linput, npotd, npotu,
-     .        ndown, nup, l, ir, i, itext
+     .        ndown, l, ir, i, itext
            character 
-     .         fname*50,  orb*2,
-     .         method(6)*10,text*70,paste*50
+     .         orb*2,method(6)*10,text*70
 
            type(pseudopotential_t), pointer :: vp
 
@@ -2523,7 +2515,7 @@ C
               write(6,'(a)')
      .    'comKB: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comKB: WARNING parameter ntbmax (in file atmparams.f) '
+     .    'comKB: WARNING parameter ntbmax (in file atom.h) '
               write(6,'(a,i6)')
      .    'comKB: WARNING to at least ntbmax = ', 
      .        nint(Rc/deltmax)+2
@@ -3844,7 +3836,7 @@ C
               write(6,'(a)')
      .    'comBasis: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comBasis: WARNING parameter ntbmax (in file atmparams.f) '
+     .    'comBasis: WARNING parameter ntbmax (in file atom.h) '
               write(6,'(a,i6)')
      .    'comBasis: WARNING to at least ntbmax = ',
      .        nint(Rc/deltmax)+2
@@ -4268,7 +4260,7 @@ C***Internal variables*
 
         double precision  qatm(0:3)
           
-        integer noPAO, l, izeta, m, norb, noPol, iorb, lpop,
+        integer noPAO, l, izeta, m, norb, noPol, lpop,
      .     nsm, nvalence, config(0:lmaxd)
         character*70  line
 
@@ -4337,7 +4329,7 @@ C***Internal variables*
           write(6,'(/,2a)') 'atm_pop: Valence configuration',
      .                      '(local Pseudopot. screening):' 
           do l=0,lpop 
-            write(line,'(7(1x,i1,a1,a1,f5.2,a1))')
+            write(line,'(7(x,i1,a1,a1,f5.2,a1))')
      .          (cnfigtb(l,nsm,is),sym(l),'(',qPAO(l,nsm),')',
      .       nsm=1,nsemic(l)+1-(cnfigtb(l,nsemic(l)+1,is)-config(l)))
             write(6,'(a)') line
@@ -4500,7 +4492,7 @@ C
               write(6,'(a)')
      .    'comVna: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comVna: WARNING parameter ntbmax (in file atmparams.f) '
+     .    'comVna: WARNING parameter ntbmax (in file atom.h) '
               write(6,'(a,i6)')
      .    'comVna: WARNING to at least ntbmax = ',
      .        nint(rVna/deltmax)+2
@@ -4863,7 +4855,7 @@ C
               write(6,'(a)')
      .    'comPOL: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comPOL: WARNING parameter ntbmax (in file atmparams.f) '
+     .    'comPOL: WARNING parameter ntbmax (in file atom.h) '
               write(6,'(a,i6)')
      .    'comPOL: WARNING to at least ntbmax = ',
      .        nint(Rc/deltmax)+2

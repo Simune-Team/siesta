@@ -93,8 +93,8 @@ C
 C *********************************************************************
 
       character 
-     .  fname*30, line*130, names*80,
-     .  scale*30, sname*25, string*10
+     .  line*130, names*80,
+     .  scale*30
 
       logical
      .  BandLinesPresent
@@ -102,8 +102,7 @@ C *********************************************************************
       integer
      .  ik, il, integs(4), iu, ix, 
      .  lastc, lc(0:3), mscell(3,3),
-     .  naux, ni, nkl, nn, nr, nv,
-     .  Node
+     .  ni, nkl, nn, nr, nv, Node
 
 #ifdef MPI
       integer

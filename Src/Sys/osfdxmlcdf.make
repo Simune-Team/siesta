@@ -2,7 +2,7 @@ SIESTA_ARCH=osfdxml
 #
 FC=f90
 FFLAGS= -fast -tune host
-FFLAGS_DEBUG= -g3 -fast -tune host
+FFLAGS_DEBUG= -g
 
 COMP_LIBS=
 #

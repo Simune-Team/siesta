@@ -188,7 +188,7 @@ C Distribute information about listd globally
       end subroutine CreateLocalDscfPointers
 
       subroutine matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, 
-     .                       nuotot, Dscf, DscfL )
+     .                       nuotot, nspin, Dscf, DscfL )
 C ********************************************************************
 C Transforms a matrix which is distributed by block cyclic 
 C distribution of orbitals to a matrix that contains all
@@ -202,9 +202,10 @@ C integer listdptr(nuo) : Pointer to start of rows in Dscf
 C integer maxndl        : First dimension of DscfL
 C integer nuo           : Local no. of orbitals in unit cell
 C integer nuotot        : Total no. of orbitals in unit cell
-C real*8  Dscf(maxnd)   : Matrix in orbital distributed form
+C integer nspin         : Number of spin components
+C real*8  Dscf(maxnd,nspin) : Matrix in orbital distributed form
 C *********************** OUTPUT *************************************
-C real*8  DscfL(maxndl) : Matrix in mesh distributed form
+C real*8  DscfL(maxndl,nspin) : Matrix in mesh distributed form
 C ********************************************************************
 
 C  Modules
@@ -219,17 +220,18 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   maxnd, maxndl, nuo, nuotot, numd(nuo), listdptr(nuo)
+     .   maxnd, maxndl, nspin, nuo, nuotot, numd(nuo), 
+     .   listdptr(nuo)
 
       double precision
-     .   Dscf(maxnd), DscfL(maxndl)
+     .   Dscf(maxnd,nspin), DscfL(maxndl,nspin)
 
       external
      .   memory
 
 C Internal variables and arrays
       integer
-     .  io, iio, il
+     .  ii, io, iio, il, ispin
 
 #ifdef MPI
       integer 
@@ -255,13 +257,13 @@ C Find local and global size of maxno
      .  MPI_Comm_World,MPIerror)
 
 C Allocate local Dscf storage array
-      allocate(buffer(maxnog))
-      call memory('A','D',maxnog,'matrixOtoM')
+      allocate(buffer(maxnog*nspin))
+      call memory('A','D',maxnog*nspin,'matrixOtoM')
 
 C Zero buffer as we will be passing the complete array
 C as the number of explicitly non-zero elements will
 C not be known on all nodes
-      buffer(1:maxnog) = 0.0d0
+      buffer(1:maxnog*nspin) = 0.0d0
 
 C Loop over rows of Dscf broadcasting to all other nodes
       do io = 1,nuotot
@@ -270,19 +272,25 @@ C Loop over rows of Dscf broadcasting to all other nodes
 C If this row is local to this node then copy into buffer
         if (Node.eq.BNode) then
           call GlobalToLocalOrb(io,Node,Nodes,iio)
-          buffer(1:numd(iio)) = Dscf(listdptr(iio)+1:listdptr(iio)+
-     .      numd(iio))
+          do ispin = 1,nspin
+            ii = (ispin-1)*maxnog
+            buffer(ii+1:ii+numd(iio)) = 
+     .        Dscf(listdptr(iio)+1:listdptr(iio)+numd(iio),ispin)
+          enddo
         endif
 
 C Broadcast buffer array
-        call MPI_Bcast(buffer,maxnog,DAT_double,BNode,
+        call MPI_Bcast(buffer,maxnog*nspin,DAT_double,BNode,
      .                 MPI_Comm_World,MPIerror)
 
 C Get pointer for this row of Dscf and see if it is needed for DscfL
         il = NeedDscfL(io)
         if (il.gt.0) then
-          DscfL(listdlptr(il)+1:listdlptr(il)+numdl(il)) = 
-     .      buffer(1:numdl(il))
+          do ispin = 1,nspin
+            ii = (ispin-1)*maxnog
+            DscfL(listdlptr(il)+1:listdlptr(il)+numdl(il),ispin) = 
+     .        buffer(ii+1:ii+numdl(il))
+          enddo
         endif
       enddo
 
@@ -294,22 +302,24 @@ C*********************
 C  Serial execution  *
 C*********************
 C Loop over rows of Dscf checking to see if they are in DscfL
-      do io = 1,nuotot
+      do ispin = 1,nspin
+        do io = 1,nuotot
 
 C Get pointer for this row of Dscf and see if it is needed for DscfL
-        il = NeedDscfL(io)
-        if (il.gt.0) then
-          DscfL(listdlptr(il)+1:listdlptr(il)+numdl(il)) = 
-     .      Dscf(listdptr(io)+1:listdptr(io)+numdl(il))
-        endif
+          il = NeedDscfL(io)
+          if (il.gt.0) then
+            DscfL(listdlptr(il)+1:listdlptr(il)+numdl(il),ispin) = 
+     .        Dscf(listdptr(io)+1:listdptr(io)+numdl(il),ispin)
+          endif
 
+        enddo
       enddo
 #endif
 
       end subroutine matrixOtoM
 
       subroutine matrixMtoO( maxnvl, maxnv, numVs, listVsptr, nuo, 
-     .                       nuotot, VsL, Vs )
+     .                       nuotot, nspin, VsL, Vs )
 
 C ********************************************************************
 C Transforms a matrix which is distributed by mesh points to a matrix
@@ -325,9 +335,10 @@ C integer numVs(nuo)      : Number of non-zero elements in row of Vs
 C integer listVsptr(nuo)  : Pointer to start of rows in Vs
 C integer nuo             : Local no. of orbitals in unit cell
 C integer nuotot          : Total no. of orbitals in unit cell
-C real*8  VsL(maxnvl)     : Mesh contribution to be added to Vs
+C integer nspin           : Number of spin components
+C real*8  VsL(maxnvl,nspin) : Mesh contribution to be added to Vs
 C ******************** INPUT AND OUTPUT *******************************
-C real*8  Vs(maxnv)       : Value of nonzero elements in each row of Vs
+C real*8  Vs(maxnv,nspin) : Value of nonzero elements in each row of Vs
 C                           to which the potential matrix elements are
 C                           summed up
 C *********************************************************************
@@ -344,13 +355,14 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   maxnv, maxnvl, nuo, nuotot, numVs(nuo), listVsptr(nuo)
+     .   maxnv, maxnvl, nspin, nuo, nuotot, numVs(nuo), 
+     .   listVsptr(nuo)
       double precision
-     .   Vs(maxnv), VsL(maxnvl)
+     .   Vs(maxnv,nspin), VsL(maxnvl,nspin)
 
 C Internal variables and arrays
       integer
-     .  i, iu, ii
+     .  i, iu, ii, ispin
 
 #ifdef MPI
       integer 
@@ -378,8 +390,8 @@ C Find the maximum value of maxno on any Node and globally
      .  MPI_max,MPI_Comm_World,MPIerror)
 
 C Allocate buffer memory for transfer of matrix and pointer
-      allocate(Vi(maxnvg))
-      call memory('A','D',maxnvg,'matrixMtoO')
+      allocate(Vi(maxnvg*nspin))
+      call memory('A','D',maxnvg*nspin,'matrixMtoO')
       allocate(nVsLPtr(nuotot))
       call memory('A','I',nuotot,'matrixMtoO')
       allocate(listViptr(nuotot))
@@ -414,23 +426,29 @@ C Need to broadcast the row pointer info for Vi (listdlptr)
 
 C If this is the broadcasting Node then copy the data to the buffer
         if (in.eq.Node) then
-          Vi(1:maxnvl) = VsL(1:maxnvl)
+          do ispin = 1,nspin
+            ii = (ispin-1)*maxnvg
+            Vi(ii+1:ii+maxnvl) = VsL(1:maxnvl,ispin)
+          enddo
         endif
 
 C Broadcast the buffer information
-        call MPI_Bcast(Vi,maxnvg,DAT_double,in,
+        call MPI_Bcast(Vi,maxnvg*nspin,DAT_double,in,
      .                 MPI_Comm_World,MPIerror)
 
 C Add those elements that are needed locally to the values already
 C stored in the orbital oriented array
-        do i = 1,nuo
-          call LocalToGlobalOrb(i,Node,Nodes,iu)
-          iul = nVsLPtr(iu)
-          if (iul.gt.0) then
-            Vs(listVsptr(i)+1:listVsptr(i)+numVs(i)) = 
-     .      Vs(listVsptr(i)+1:listVsptr(i)+numVs(i)) + 
-     .      Vi(listViptr(iul)+1:listViptr(iul)+numVs(i))
-          endif
+        do ispin = 1,nspin
+          ii = (ispin-1)*maxnvg
+          do i = 1,nuo
+            call LocalToGlobalOrb(i,Node,Nodes,iu)
+            iul = nVsLPtr(iu)
+            if (iul.gt.0) then
+              Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) = 
+     .          Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) + 
+     .          Vi(ii+listViptr(iul)+1:ii+listViptr(iul)+numVs(i))
+            endif
+          enddo
         enddo
 
       enddo
@@ -448,13 +466,15 @@ C  Serial execution  *
 C*********************
 C Add those elements that are needed locally to the values already
 C stored in the orbital oriented array
-      do i = 1,nuotot
-        iu = NeedDscfL(i)
-        if (iu.gt.0) then
-          Vs(listVsptr(i)+1:listVsptr(i)+numVs(i)) = 
-     .    Vs(listVsptr(i)+1:listVsptr(i)+numVs(i)) + 
-     .    VsL(listdlptr(iu)+1:listdlptr(iu)+numVs(i))
-        endif
+      do ispin = 1,nspin
+        do i = 1,nuotot
+          iu = NeedDscfL(i)
+          if (iu.gt.0) then
+            Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) = 
+     .        Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) + 
+     .        VsL(listdlptr(iu)+1:listdlptr(iu)+numVs(i),ispin)
+          endif
+        enddo
       enddo
 #endif
 

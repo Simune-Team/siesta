@@ -685,11 +685,6 @@ C
 C Passed arguments
       integer
      .  Nodes, nuotot, blocksizedefault
-C Local variables
-      integer
-     .  Nx, Ny, Nrem
-      logical
-     .  factor
 
 C Compare number of orbitals against sensible number
       if (nuotot.gt.8*Nodes) then

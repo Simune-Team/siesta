@@ -149,7 +149,7 @@ c writing a heading for the coordinates
 
 c writing the coordinates
 
-      write(6,'(3f14.8,i4,2x,a6,i5)')
+      write(6,'(3f14.8,i4,2x,a6,i6)')
      .  ((xap(ix,ia),ix=1,3),isa(ia),labelfis(isa(ia)),ia,ia=1,na)
 
 C Deallocate local memory

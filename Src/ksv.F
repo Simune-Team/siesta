@@ -93,7 +93,7 @@ C Internal variables
      .  ik, il, io, ispin, iuo, ix, i,
      .  iy, npl, jo, is, ia, ntote, nocc(2),
      .  nk2D(3), kscell(3,3), igrd, 
-     .  nk, nmeshk(3,3), Nptot, mxhov2, 
+     .  nk, nmeshk(3,3), Nptot, 
      .  notcal(3), Node, Nodes, npsi
 #ifdef MPI
       integer
@@ -422,8 +422,8 @@ C Now phase is defined in the interval [-pi,pi]. It is
 C convinient to bring it back to the interval [-2pi:0] to
 C avoid abrupt jumps near the value pi or -pi.
        
-              if ((shape.ne.'molecule').and.(phase.lt.0.0d0)) 
-     .            phase=2.0d0*pi + phase
+              if ((shape.ne.'molecule').and.(phase.lt.0.0d0))
+     .            phase = 2.0d0*pi + phase
         
 C Calculating the Berry phase from the global phase of the 
 C product of all the determinants 

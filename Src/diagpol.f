@@ -53,7 +53,7 @@ C *********************************************************************
 
 C  Internal variables .............................................
       integer
-     .  ierror, ind, io, ispin, iuo, j, jo, juo
+     .  ierror, ind, ispin, iuo, j, jo, juo
       double precision
      .  ckxij, kxij, skxij
       double precision, dimension(:,:,:), allocatable, save ::

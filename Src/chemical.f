@@ -82,7 +82,7 @@
       integer z
       logical floating, bessel
 
-      nsp = fdf_integer('Number_of_species',0)
+      nsp = fdf_get('Number_of_species',0)
       if (nsp.eq.0) call die("No species found!!!")
 
       allocate(chemical_list%spec_label(nsp))

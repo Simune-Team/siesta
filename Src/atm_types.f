@@ -92,7 +92,7 @@
 !
          type(rad_func), dimension(:), pointer         ::  orbnl
          type(rad_func), dimension(:), pointer         ::  pjnl
-         type(rad_func)                                ::  vlocal
+         type(rad_func)                                ::  vna
          type(rad_func)                                ::  chlocal
          logical                                       ::  there_is_core
          type(rad_func)                                ::  core

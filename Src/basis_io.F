@@ -46,16 +46,15 @@
       integer ncid, iret
 
       integer nkbs, nkbs_id, ntb_id, proj_id,
-     $     nkbl_id, pjnl_l_id, pjnl_n_id, pjnl_ekb_id, kbdelta_id,
+     $     pjnl_l_id, pjnl_n_id, pjnl_ekb_id, kbdelta_id,
      $     kbcutoff_id
       integer norbs, norbs_id, orbnl_l_id, orbnl_n_id, orbnl_z_id,
      $     cutoff_id, delta_id, orb_id, orbnl_pop_id, orbnl_ispol_id
-      integer vlocal_id, chlocal_id, core_id
+      integer vna_id, chlocal_id, core_id
 
       integer aux(maxnorbs)
 
       integer is, j, i, l, nrp_tables, core_flag, nor, nk, m
-      integer ia, noa, nkba
 
       character(len=20) filename
       character(len=20) dummy
@@ -142,11 +141,11 @@
                                 !
                                 !       Local potential
                                 !
-         iret = nf90_inq_varid(ncid,'vlocal',vlocal_id)
-         iret = nf90_get_att(ncid,vlocal_id,
-     $        'Vlocal_cutoff',spp%vlocal%cutoff)
-         iret = nf90_get_att(ncid,vlocal_id,
-     $        'Vlocal_delta',spp%vlocal%delta)
+         iret = nf90_inq_varid(ncid,'vna',vna_id)
+         iret = nf90_get_att(ncid,vna_id,
+     $        'Vna_cutoff',spp%vna%cutoff)
+         iret = nf90_get_att(ncid,vna_id,
+     $        'Vna_delta',spp%vna%delta)
                                 !
                                 !       Local potential charge density
                                 !
@@ -224,11 +223,11 @@ c
                                 !
                                 !       Local potential
                                 !
-         call rad_alloc(spp%vlocal,NTBMAX)
-         iret = nf90_get_var(ncid,vlocal_id,spp%vlocal%f(1:),
+         call rad_alloc(spp%vna,NTBMAX)
+         iret = nf90_get_var(ncid,vna_id,spp%vna%f(1:),
      $        start=(/1/),count=(/NTBMAX/))
          call check(iret)
-         call rad_setup_d2(spp%vlocal)
+         call rad_setup_d2(spp%vna)
 
                                 !
                                 !       Local potential charge density
@@ -338,7 +337,7 @@ c
 
       implicit none
 
-      integer aux(maxnorbs), lun
+      integer lun
       character*20 filename
 
 
@@ -377,7 +376,7 @@ c
       call read_header(spp,lun)
       read(lun,*) 
          do i=1,spp%n_orbnl
-            read(lun,'(4i3,f10.6)')
+            read(lun,*)
      $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
      $           ispol, spp%orbnl_pop(i)
             spp%orbnl_ispol(i) =  ispol.eq.1
@@ -403,7 +402,7 @@ c
 ! KBs
          read(lun,*)
          do i=1,spp%n_pjnl
-            read(lun,'(2i3,f22.16)')
+            read(lun,*)
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
             call radial_read_ascii(spp%pjnl(i),lun)
          enddo
@@ -424,9 +423,9 @@ c
          enddo
          spp%nprojs = nk
 !
-!Vlocal
+!Vna
          read(lun,*)
-         call radial_read_ascii(spp%vlocal,lun)
+         call radial_read_ascii(spp%vna,lun)
 
 !
 !Chlocal
@@ -458,12 +457,12 @@ c
          
       read(unit,'(a2)') p%symbol
       read(unit,'(a20)') p%label
-      read(unit,'(i5)') p%z
-      read(unit,'(i5)') p%zval
-      read(unit,'(g25.15)') p%mass
-      read(unit,'(g25.15)') p%self_energy
-      read(unit,'(2i4)') p%lmax_basis, p%n_orbnl
-      read(unit,'(2i4)') p%lmax_projs, p%n_pjnl
+      read(unit,*) p%z
+      read(unit,*) p%zval
+      read(unit,*) p%mass
+      read(unit,*) p%self_energy
+      read(unit,*) p%lmax_basis, p%n_orbnl
+      read(unit,*) p%lmax_projs, p%n_pjnl
 
       allocate(p%orbnl(p%n_orbnl))
       allocate(p%pjnl(p%n_pjnl))
@@ -487,11 +486,11 @@ c
       integer ncid, iret
 
       integer nkbs, nkbs_id, ntb_id, proj_id,
-     $        nkbl_id, pjnl_l_id, pjnl_n_id, pjnl_ekb_id, kbdelta_id,
+     $        pjnl_l_id, pjnl_n_id, pjnl_ekb_id, kbdelta_id,
      $        kbcutoff_id
       integer norbs, norbs_id, orbnl_l_id, orbnl_n_id, orbnl_z_id,
      $        cutoff_id, delta_id, orb_id, orbnl_pop_id, orbnl_ispol_id
-      integer vlocal_id, chlocal_id, core_id
+      integer vna_id, chlocal_id, core_id
 
       integer aux(maxnorbs)
 
@@ -569,12 +568,12 @@ c
 !
 !       Local potential
 !
-        iret = nf90_def_var(ncid,'vlocal',nf90_double,
-     $                      (/ntb_id/),vlocal_id)
-        iret = nf90_put_att(ncid,vlocal_id,
-     $                      'Vlocal_cutoff',spp%vlocal%cutoff)
-        iret = nf90_put_att(ncid,vlocal_id,
-     $                      'Vlocal_delta',spp%vlocal%delta)
+        iret = nf90_def_var(ncid,'vna',nf90_double,
+     $                      (/ntb_id/),vna_id)
+        iret = nf90_put_att(ncid,vna_id,
+     $                      'Vna_cutoff',spp%vna%cutoff)
+        iret = nf90_put_att(ncid,vna_id,
+     $                      'Vna_delta',spp%vna%delta)
 !
 !       Local potential charge density
 !
@@ -650,7 +649,7 @@ c
 !
 !       Local potential
 !
-        iret = nf90_put_var(ncid,vlocal_id,spp%vlocal%f(1:),
+        iret = nf90_put_var(ncid,vna_id,spp%vna%f(1:),
      $                      start=(/1/),count=(/NTBMAX/))
         call check(iret)
 
@@ -701,7 +700,6 @@ c
 
       subroutine dump_basis_ascii
 
-      integer aux(maxnorbs)
       integer is
 
       do is = 1, nspecies
@@ -749,8 +747,8 @@ c
             call radial_dump_ascii(spp%pjnl(i),lun)
          enddo
 
-         write(lun,'(a)') "# Vlocal:__________________________"
-         call radial_dump_ascii(spp%vlocal,lun)
+         write(lun,'(a)') "# Vna:__________________________"
+         call radial_dump_ascii(spp%vna,lun)
 
          write(lun,'(a)') "# Chlocal:__________________________"
          call radial_dump_ascii(spp%chlocal,lun)
@@ -772,8 +770,8 @@ c
          write(unit,'(a20,10x,a)') p%label, "# Label"
          write(unit,'(i5,25x,a)') p%z, "# Atomic number"
          write(unit,'(i5,25x,a)') p%zval, "# Valence charge"
-         write(unit,'(g25.15,4x,a)') p%mass, "# Mass "
-         write(unit,'(g25.15,4x,a)') p%self_energy, "# Self energy "
+         write(unit,'(g22.12,4x,a)') p%mass, "# Mass "
+         write(unit,'(g22.12,4x,a)') p%self_energy, "# Self energy "
          write(unit,'(2i4,22x,a)') p%lmax_basis, p%n_orbnl,
      $        "# Lmax for basis, no. of nl orbitals "
          write(unit,'(2i4,22x,a)') p%lmax_projs, p%n_pjnl,
@@ -785,7 +783,6 @@ c
 !
       subroutine dump_basis_xml
 
-      integer aux(maxnorbs)
       integer is
 
       do is = 1, nspecies
@@ -857,9 +854,9 @@ c
        enddo
        write(lun,'(a)') "</kbs>"
 
-       write(lun,'(a)') "<vlocal>"
-       call radial_dump_xml(spp%vlocal,lun)
-       write(lun,'(a)') "</vlocal>"
+       write(lun,'(a)') "<vna>"
+       call radial_dump_xml(spp%vna,lun)
+       write(lun,'(a)') "</vna>"
 
        write(lun,'(a)') "<chlocal>"
        call radial_dump_xml(spp%chlocal,lun)
@@ -914,8 +911,6 @@ C     (in Ry if lengths are in Bohr).
 C     CHERR is a small number to check the precision of the charge density
 C     integration.
 
-      real(dp)            :: aux(size(corr))   ! automatic array
-
       integer nq, npoint
       real(dp)            :: q2cut, cherr
       PARAMETER ( NQ     =  512  )
@@ -930,7 +925,7 @@ C     integration.
 
 
       REAL(DP) cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
-      REAL(DP) r, vd, vv1, vv2, energ1, energ2, bessph, dev1, devn
+      REAL(DP) r, vd, vv1, vv2, energ1, energ2, bessph
       integer iz1, iz2, itb, nr, nmin, nmax, nn, iq, ir
 
       REAL(DP) QTMP             

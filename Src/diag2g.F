@@ -100,7 +100,7 @@ C
 
 C  Internal variables .............................................
       integer           BNode, BTest, i, ie, ierror, iie, iio,
-     .                  ind, io, is, ispin, j, jo, js, nd
+     .                  ind, io, j, jo, nd
       double precision  ee, pipj, qe, t
 C  ....................
 

@@ -113,7 +113,7 @@ C Internal variable types and dimensions ----------------------------
      .  I, IF1, IF2, IFF, IFFY, IFLM1, IFLM2, 
      .  IO, IOPER, IQ, IR, IS, IX,
      .  JF1, JF2, JFF, JFFR, JFFY, JFLM1, JFLM2, JLM, 
-     .  JO, JO1, JO2, JR, JS,
+     .  JO, JO1, JO2, JR,
      .  L, L1, L2, L3, LMAX,
      .  N, NILM, NILM1, NILM2, NJLM1, NJLM2
       INTEGER, SAVE ::

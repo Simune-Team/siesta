@@ -1,5 +1,5 @@
       subroutine rhoofd( no, indxuo, np, maxnd, numd, listdptr, 
-     .                   listd, Dscf, rhoscf, nuo, nuotot, 
+     .                   listd, nspin, Dscf, rhoscf, nuo, nuotot, 
      .                   iaorb, iphorb, isa )
 C ********************************************************************
 C Finds the SCF density at the mesh points from the density matrix.
@@ -18,6 +18,7 @@ C                           any row of Dscf
 C integer numd(nuo)       : Number of nonzero elemts in each row of Dscf
 C integer listdptr(nuo)   : Pointer to start of rows in listd
 C integer listd(maxnd)    : List of nonzero elements in each row of Dscf
+C integer nspin           : Number of spin components
 C real*8  Dscf(maxnd)     : Rows of Dscf that are non-zero 
 C integer nuo             : Number of orbitals in unit cell locally
 C integer nuotot          : Number of orbitals in unit cell in total
@@ -40,14 +41,14 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   no, np, maxnd, nuo, nuotot, indxuo(no), iaorb(*),
+     .   no, np, nspin, maxnd, nuo, nuotot, indxuo(no), iaorb(*),
      .   iphorb(*), isa(*), numd(nuo), listdptr(nuo), listd(maxnd)
 
       real
-     .   rhoscf(nsp,np)
+     .   rhoscf(nsp,np,nspin)
 
       real*8
-     .   Ci, Cj, Dscf(maxnd)
+     .   Dscf(maxnd,nspin)
 
       external
      .   memory, timer
@@ -58,9 +59,8 @@ C Internal variables and arrays
      .  maxoa  = 100   ! Max # of orbitals per atom
 
       integer
-     .  i, ia, ic, ii, il, imp, in, ind, io,
-     .  iop, ip, iphi, is, isp, iu, iul, ix,
-     .  j, jc, jl, jn, jmp,
+     .  i, ia, ic, ii, ijl, il, imp, ind, ispin,
+     .  iop, ip, iphi, is, isp, iu, iul, j, jc, jl, 
      .  last, lasta, lastop, maxloc, maxloc2, maxndl, nc, nphiloc
 
       integer, dimension(:), allocatable, save :: 
@@ -70,7 +70,7 @@ C Internal variables and arrays
      .  Parallel
 
       real*8
-     .  Dij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
+     .  Cij(nsp), Dij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
 
       real*8, dimension(:,:), allocatable ::
      .  Clocal, Dlocal
@@ -93,31 +93,30 @@ C  Allocate local memory
       call memory('A','I',maxloc2,'rhoofd')
       allocate(iorb(0:maxloc))
       call memory('A','I',maxloc+1,'rhoofd')
-      allocate(Dlocal(0:maxloc,0:maxloc))
-      call memory('A','D',(maxloc+1)*(maxloc+1),'rhoofd')
+      ijl = (maxloc+1)*(maxloc+2)/2
+      allocate(Dlocal(ijl,nspin))
+      call memory('A','D',ijl*nspin,'rhoofd')
       allocate(Clocal(nsp,maxloc2))
       call memory('A','D',nsp*maxloc2,'rhoofd')
 
       if (Parallel) then
         maxndl = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)
-        allocate(DscfL(maxndl,1))
-        call memory('A','D',maxndl,'meshdscf')
+        allocate(DscfL(maxndl,nspin))
+        call memory('A','D',maxndl*nspin,'meshdscf')
 C Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
-     .    Dscf, DscfL )
+     .    nspin, Dscf, DscfL )
       endif
 
-C  Find atomic cutoff radii
-      r2cut(:) = 0.0d0
-      do i = 1,nuotot
+C  Find atomic cutoff radiae
+      do i = 1,no
         ia = iaorb(i)
         is = isa(ia)
-        io = iphorb(i)
-        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
+        r2cut(is) = rcut(is,0)**2
       enddo
 
 C  Initializations
-      rhoscf(:,:) = 0.0
+      rhoscf(:,:,:) = 0.0
       Dlocal(:,:) = 0.0d0
       ilocal(:) = 0
       iorb(:) = 0
@@ -170,18 +169,30 @@ C  Copy row i of Dscf into row last of Dlocal
                   ind = listdlptr(iul)+ii
                   j = listdl(ind)
                   jl = ilocal(j)
-                  Dij = DscfL(ind,1)
-                  Dlocal(il,jl) = Dij
-                  Dlocal(jl,il) = Dij
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    Dij = DscfL(ind,ispin)
+                    Dlocal(ijl,ispin) = Dij
+                  enddo
                 enddo
               else
                 do ii = 1, numdl(iul)
                   ind = listdlptr(iul)+ii
                   j = listsc( i, iu, listdl(ind) )
                   jl = ilocal(j)
-                  Dij = DscfL(ind,1)
-                  Dlocal(il,jl) = Dij
-                  Dlocal(jl,il) = Dij
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    Dij = DscfL(ind,ispin)
+                    Dlocal(ijl,ispin) = Dij
+                  enddo
                 enddo
               endif
             else
@@ -190,18 +201,30 @@ C  Copy row i of Dscf into row last of Dlocal
                   ind = listdptr(iu)+ii
                   j = listd(ind)
                   jl = ilocal(j)
-                  Dij = Dscf(ind)
-                  Dlocal(il,jl) = Dij
-                  Dlocal(jl,il) = Dij
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    Dij = Dscf(ind,ispin)
+                    Dlocal(ijl,ispin) = Dij
+                  enddo
                 enddo
               else
                 do ii = 1, numd(iu)
                   ind = listdptr(iu)+ii
                   j = listsc( i, iu, listd(ind) )
                   jl = ilocal(j)
-                  Dij = Dscf(ind)
-                  Dlocal(il,jl) = Dij
-                  Dlocal(jl,il) = Dij
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    Dij = Dscf(ind,ispin)
+                    Dlocal(ijl,ispin) = Dij
+                  enddo
                 enddo
               endif
             endif
@@ -245,16 +268,27 @@ C  Generate or retrieve phi values
 C  Loop on second orbital of mesh point
           do jc = 1,ic
             jl = ilc(jc)
-            if (ic .eq. jc) then
-              Dij = Dlocal(il,jl)
+            do isp = 1, nsp
+              Cij(isp) = Clocal(isp,ic) * Clocal(isp,jc)
+            enddo
+            if (il.gt.jl) then
+              ijl = il*(il+1)/2 + jl + 1
             else
-              Dij = 2*Dlocal(il,jl)
+              ijl = jl*(jl+1)/2 + il + 1
             endif
+            do ispin = 1,nspin
+              if (ic .eq. jc) then
+                Dij = Dlocal(ijl,ispin)
+              else
+                Dij = 2*Dlocal(ijl,ispin)
+              endif
 
 C  Loop over sub-points
-            do isp = 1, nsp
-              rhoscf(isp,ip) = rhoscf(isp,ip) +
-     .                         Dij * Clocal(isp,ic) * Clocal(isp,jc)
+              do isp = 1, nsp
+                rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + 
+     .            Dij*Cij(isp)
+              enddo
+
             enddo
 
           enddo

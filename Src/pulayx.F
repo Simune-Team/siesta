@@ -111,7 +111,7 @@ C
 
 C Internal variables ....................................................
        integer
-     .  i0,i,ii,iii,in,is,isite,j,jj,jtape,jtap1,numel,Node,Nodes,
+     .  i0,i,ii,in,is,isite,j,jj,jtape,jtap1,numel,Node,Nodes,
      .  ind,maxmix
 
 #ifdef MPI

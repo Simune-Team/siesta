@@ -56,17 +56,17 @@ C Arguments
       integer           maxp, mesh(3), nspin, nsm
       real              rho(maxp,nspin)
       double precision  cell(3,3)
-      external          io_assign, io_close, paste, memory
+      external          io_assign, io_close, memory
 
 c Internal variables and arrays
-      character  paste*33, fform*11
-      integer    i, ip, iu, is, j, ju, np, ns, Node, 
-     .           npmax, BlockSizeY, RemainderY, ProcessorZ,
-     .           BlockSizeZ, npl,
-     .           NZ, iy, iz, izm, Ind, ir
+      character  fform*11
+      integer    i, ip, iu, is, j, np, ns, Node, 
+     .           npmax, BlockSizeY, BlockSizeZ, ProcessorZ,
+     .           meshnsm(3), npl, NRemY, NRemZ,
+     .           iy, iz, izm, Ind, Ind2, ir
 
 #ifdef MPI
-      integer    MPIerror, meshnsm(3), Request, meshl(3),
+      integer    MPIerror, Request, meshl(3),
      .           Status(MPI_Status_Size), Nodes, BNode, NBlock
       logical    ltmp
       real, dimension(:), allocatable, save :: bdens
@@ -94,13 +94,10 @@ C Work out density block dimensions
       endif
       ProcessorZ = Nodes/ProcessorY
       BlockSizeY = ((((mesh(2)/nsm)-1)/ProcessorY) + 1)*nsm
-      BlockSizeZ = ((((mesh(3)/nsm)-1)/ProcessorZ) + 1)*nsm
-      allocate(bdens(BlockSizeY*mesh(3)))
-      call memory('A','S',BlockSizeY*mesh(3),'iorho')
+      allocate(bdens(BlockSizeY*mesh(1)))
+      call memory('A','S',BlockSizeY*mesh(1),'iorho')
 #else
       ProcessorZ = 1
-      BlockSizeY = mesh(2)
-      BlockSizeZ = mesh(3)
 #endif
 
 c Choose between read or write
@@ -138,11 +135,11 @@ c         Read cell vectors and number of points
 #endif
           np = mesh(1) * mesh(2) * mesh(3)
 
-#ifdef MPI
 C  Get local dimensions
           meshnsm(1) = mesh(1)/nsm
           meshnsm(2) = mesh(2)/nsm
           meshnsm(3) = mesh(3)/nsm
+#ifdef MPI
           call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
 #else
           npl = np
@@ -184,27 +181,26 @@ C  Outer loop over spins
 C  Loop over Z mesh direction
           do iz = 1,ProcessorZ
 
-            if (iz.eq.ProcessorZ) then
-              NZ = mesh(3) - (ProcessorZ-1)*BlockSizeZ
-            else
-              NZ = BlockSizeZ
-            endif
+C  Work out number of mesh points in Z direction
+            BlockSizeZ = (meshnsm(3)/ProcessorZ)
+            NRemZ = meshnsm(3) - BlockSizeZ*ProcessorZ
+            if (iz-1.lt.NRemZ) BlockSizeZ = BlockSizeZ + 1
+            BlockSizeZ = BlockSizeZ*nsm
 
 C  Loop over local Z mesh points
-            do izm = 1,NZ
+            do izm = 1,BlockSizeZ
 
 C  Loop over blocks in Y mesh direction
               do iy = 1,ProcessorY
 
 C  Work out size of density sub-matrix to be transfered
-                if (iy.eq.ProcessorY) then
-                  RemainderY = mesh(2) - (ProcessorY-1)*BlockSizeY
-                else
-                  RemainderY = BlockSizeY
-                endif
+                BlockSizeY = (meshnsm(2)/ProcessorY)
+                NRemY = meshnsm(2) - BlockSizeY*ProcessorY
+                if (iy-1.lt.NRemY) BlockSizeY = BlockSizeY + 1
+                BlockSizeY = BlockSizeY*nsm
 
 #ifdef MPI
-                NBlock = RemainderY*mesh(3)
+                NBlock = BlockSizeY*mesh(1)
 C  Work out which node block is stored on
                 BNode = (iy-1)*ProcessorZ + iz - 1
 
@@ -212,12 +208,12 @@ C  Work out which node block is stored on
 #endif
 C  If density sub-matrix is local Node 0 then just read it in
                   if (fform .eq. 'formatted') then
-                    do ir = 1,RemainderY
+                    do ir = 1,BlockSizeY
                       read(iu,*) (rho(Ind+ip,is),ip=1,mesh(1))
                       Ind = Ind + mesh(1)
                     enddo
                   else
-                    do ir = 1,RemainderY
+                    do ir = 1,BlockSizeY
                       read(iu) (rho(Ind+ip,is),ip=1,mesh(1))
                       Ind = Ind + mesh(1)
                     enddo
@@ -226,16 +222,16 @@ C  If density sub-matrix is local Node 0 then just read it in
 #ifdef MPI
                 elseif (Node.eq.0) then
 C  If this is Node 0 then read and send density sub-matrix
-                  Ind = 0
+                  Ind2 = 0
                   if (fform .eq. 'formatted') then
-                    do ir = 1,RemainderY
-                      read(iu,*) (bdens(Ind+ip),ip=1,mesh(1))
-                      Ind = Ind + mesh(1)
+                    do ir = 1,BlockSizeY
+                      read(iu,*) (bdens(Ind2+ip),ip=1,mesh(1))
+                      Ind2 = Ind2 + mesh(1)
                     enddo
                   else
-                    do ir = 1,RemainderY
-                      read(iu) (bdens(Ind+ip),ip=1,mesh(1))
-                      Ind = Ind + mesh(1)
+                    do ir = 1,BlockSizeY
+                      read(iu) (bdens(Ind2+ip),ip=1,mesh(1))
+                      Ind2 = Ind2 + mesh(1)
                     enddo
                   endif
                   call MPI_ISend(bdens,NBlock,DAT_single,BNode,1,
@@ -281,6 +277,10 @@ c  Open file
 
         np = mesh(1) * mesh(2) * mesh(3)
 
+        meshnsm(1) = mesh(1)/nsm
+        meshnsm(2) = mesh(2)/nsm
+        meshnsm(3) = mesh(3)/nsm
+
 c       Write data
         if (Node.eq.0) then
           if (fform .eq. 'formatted') then
@@ -302,27 +302,25 @@ C  Outer loop over spins
 C  Loop over Z dimension of processor grid
           do iz = 1,ProcessorZ
 
-            if (iz.eq.ProcessorZ) then
-              NZ = mesh(3) - (ProcessorZ-1)*BlockSizeZ
-            else
-              NZ = BlockSizeZ
-            endif
+            BlockSizeZ = (meshnsm(3)/ProcessorZ)
+            NRemZ = meshnsm(3) - BlockSizeZ*ProcessorZ
+            if (iz-1.lt.NRemZ) BlockSizeZ = BlockSizeZ + 1
+            BlockSizeZ = BlockSizeZ*nsm
 
 C  Loop over local Z mesh points
-            do izm = 1,NZ
+            do izm = 1,BlockSizeZ
 
 C  Loop over blocks in Y mesh direction
               do iy = 1,ProcessorY
 
 C  Work out size of density sub-matrix to be transfered
-                if (iy.eq.ProcessorY) then
-                  RemainderY = mesh(2) - (ProcessorY-1)*BlockSizeY
-                else
-                  RemainderY = BlockSizeY
-                endif
+                BlockSizeY = (meshnsm(2)/ProcessorY)
+                NRemY = meshnsm(2) - BlockSizeY*ProcessorY
+                if (iy-1.lt.NRemY) BlockSizeY = BlockSizeY + 1
+                BlockSizeY = BlockSizeY*nsm
 
 #ifdef MPI
-                NBlock = RemainderY*mesh(3)
+                NBlock = BlockSizeY*mesh(1)
 C  Work out which node block is stored on
                 BNode = (iy-1)*ProcessorZ + iz - 1
 
@@ -330,13 +328,13 @@ C  Work out which node block is stored on
 #endif
 C  If density sub-matrix is local Node 0 then just write it out
                   if (fform .eq. 'formatted') then
-                    do ir = 1,RemainderY
+                    do ir = 1,BlockSizeY
                       write(iu,'(e15.6)') (rho(Ind+ip,is),
      .                  ip=1,mesh(1))
                       Ind = Ind + mesh(1)
                     enddo
                   else
-                    do ir = 1,RemainderY
+                    do ir = 1,BlockSizeY
                       write(iu) (rho(Ind+ip,is),ip=1,mesh(1))
                       Ind = Ind + mesh(1)
                     enddo
@@ -361,17 +359,17 @@ C  If this is the Node where the density sub-matrix is, then send
                 if (BNode.ne.0) then
                   call MPI_Barrier(MPI_Comm_World,MPIerror)
                   if (Node.eq.0) then
-                    Ind = 0
+                    Ind2 = 0
                     if (fform .eq. 'formatted') then
-                      do ir = 1,RemainderY
-                        write(iu,'(e15.6)') (bdens(Ind+ip),ip=1,
+                      do ir = 1,BlockSizeY
+                        write(iu,'(e15.6)') (bdens(Ind2+ip),ip=1,
      .                    mesh(1))
-                        Ind = Ind + mesh(1)
+                        Ind2 = Ind2 + mesh(1)
                       enddo
                     else
-                      do ir = 1,RemainderY
-                        write(iu) (bdens(Ind+ip),ip=1,mesh(1))
-                        Ind = Ind + mesh(1)
+                      do ir = 1,BlockSizeY
+                        write(iu) (bdens(Ind2+ip),ip=1,mesh(1))
+                        Ind2 = Ind2 + mesh(1)
                       enddo
                     endif
                   endif

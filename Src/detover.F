@@ -70,12 +70,12 @@ C *********************************************************************
 C**** Internal variables ***********************************************
 
       integer 
-     .  iuo, juo, j, io, ie, je, iu, ju, jo, i, ind
+     .  iuo, juo, j, ie, je, jo, i, ind
       integer, dimension(:), allocatable, save ::
      .  Auxint
 #ifdef MPI
       integer 
-     .  MPIerror, iuog, juog, n, noccloc
+     .  MPIerror, iuog, jeg, juog, n, noccloc, noccmax
       real*8, dimension(:,:,:), allocatable, save ::
      .  psitmp
 #endif
@@ -114,26 +114,30 @@ C Allocate local memory
       enddo 
  
 #ifdef MPI
+      call GetNodeOrbs(nuotot,0,Nodes,noccmax)
+      allocate(psitmp(2,nuotot,noccmax))
+      call memory('A','D',2*nuotot*noccmax,'detover')
+
 C Ultimately this needs modifying so that Aux is distributed
       do n = 0,Nodes-1
 
 C Broadcast copy of psi on node n to all other nodes
         call GetNodeOrbs(nocc,n,Nodes,noccloc)
-        allocate(psitmp(2,nuotot,noccloc))
-        call memory('A','D',2*nuotot*noccloc,'detover')
+        call GetNodeOrbs(nuotot,n,Nodes,noccmax)
         if (Node .eq. n) then
-          do iuo = 1,noccloc
+          do iuo = 1,noccmax
             do juo = 1,nuotot
               psitmp(1,juo,iuo) = psi(1,juo,iuo)
               psitmp(2,juo,iuo) = psi(2,juo,iuo)
             enddo
           enddo
         endif
-        call MPI_Bcast(psitmp(1,1,1),2*nuotot*noccloc,DAT_double,
+        call MPI_Bcast(psitmp(1,1,1),2*nuotot*noccmax,DAT_double,
      .    n,MPI_Comm_World,MPIerror)
 
         do ie = 1,nocc
           do je = 1, noccloc
+            call LocalToGlobalOrb(je,n,Nodes,jeg)
 
             do iuo=1,nuo
               do juo=1,nuotot
@@ -144,7 +148,7 @@ C Broadcast copy of psi on node n to all other nodes
      .                  psiprev(2,iuo,ie) * psitmp(1,juo,je)
                 pipj=cmplx(pipj1,pipj2)
   
-                Aux(je,ie) = Aux(je,ie) + pipj*Aux2(juo,iuo)
+                Aux(jeg,ie) = Aux(jeg,ie) + pipj*Aux2(juo,iuo)
 
               enddo
             enddo
@@ -154,7 +158,7 @@ C Broadcast copy of psi on node n to all other nodes
 
 C Save local part of psiprev if required
         if (savepsi) then
-          do iuo = 1,noccloc
+          do iuo = 1,noccmax
             call LocalToGlobalOrb(iuo,n,Nodes,iuog)
             do juo = 1,nuo
               call LocalToGlobalOrb(juo,Node,Nodes,juog)
@@ -164,10 +168,11 @@ C Save local part of psiprev if required
           enddo
         endif
 
-        call memory('D','D',size(psitmp),'detover')
-        deallocate(psitmp)
-
       enddo
+
+      call memory('D','D',size(psitmp),'detover')
+      deallocate(psitmp)
+
 #else
       do ie = 1,nocc
         do je = 1, nocc

@@ -222,11 +222,11 @@
 
 
 
-         call rad_alloc(spp%vlocal,NTBMAX)
-         spp%vlocal%f(1:)       = table(3:,0,is)
-         spp%vlocal%cutoff      = table(2,0,is)
-         spp%vlocal%delta       = table(1,0,is)
-         spp%vlocal%d2(1:)      = tab2(1:,0,is)
+         call rad_alloc(spp%vna,NTBMAX)
+         spp%vna%f(1:)       = table(3:,0,is)
+         spp%vna%cutoff      = table(2,0,is)
+         spp%vna%delta       = table(1,0,is)
+         spp%vna%d2(1:)      = tab2(1:,0,is)
 
          call rad_alloc(spp%chlocal,NTBMAX)
          spp%chlocal%delta      = chloctab(1,1,is)

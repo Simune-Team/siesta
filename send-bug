@@ -32,7 +32,7 @@ SUBMITTER=siesta-user
 GNATS_ADDR=bugs@wm.lc.ehu.es
 
 # The default release for this host.
-DEFAULT_RELEASE="1.1-f1"
+DEFAULT_RELEASE="Please specify SIESTA version!"
 
 CATEGORIES="siesta"
 
@@ -392,7 +392,7 @@ echo "***"
 echo "*** Please  mail the file $LOCAL_FILE to $GNATS_ADDR"
 echo "***"
 echo "*** Please use *plain text* in your mailing"
-#echo "*** or ELSE send the bug report by using the Web interface at"
-#echo "*** http://lcdx00.wm.lc.ehu.es/cgi-bin/gnatsweb.pl"
-#echo "*** (login as 'user', with any nonempty password)"
+echo "*** or ELSE send the bug report by using the Web interface at"
+echo "*** http://lcdx00.wm.lc.ehu.es/cgi-bin/gnatsweb.pl"
+echo "*** (login as 'user', with any nonempty password)"
 echo "***"

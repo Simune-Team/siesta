@@ -1,5 +1,4 @@
 
-
                       S I E S T A   U S E R S
 
 ========================================================================
@@ -49,30 +48,45 @@ E-MAIL : Jose.Soler@uam.es
 2. OUR GROUPS
 --------------
 
-NAME   : Josep Maria Oliva
+NAME   : Eduardo Anglada
+ADDRESS: Departamento de Fisica de la Materia Condensada
+         Universidad Autonoma de Madrid (Spain)
+E-MAIL : Eduardo.Anglada@uam.es
+
+NAME   : Gabriel Canto
 ADDRESS: ICMAB, CSIC, Campus de la UAB
          Bellaterra 08193, Barcelona (Spain)
-E-MAIL : jmo@kanigo.icmab.es
+E-MAIL : gcanto@icmab.es
+
+NAME   : Marivi Fernandez-Serra
+ADDRESS: Departament of Earth Sciences
+         University of Cambridge (UK)
+E-MAIL : mfer01@esc.cam.ac.uk
 
 NAME   : Eduardo Hernandez
 ADDRESS: ICMAB, CSIC, Campus de la UAB
          Bellaterra 08193, Barcelona (Spain)
 E-MAIL : ehe@icmab.es
 
+NAME   : Jose Luis Mozos
+ADDRESS: ICMAB, CSIC, Campus de la UAB
+         Bellaterra 08193, Barcelona (Spain)
+E-MAIL : jlm@icmab.es
+
+NAME   : Josep Maria Oliva
+ADDRESS: ICMAB, CSIC, Campus de la UAB
+         Bellaterra 08193, Barcelona (Spain)
+E-MAIL : jmo@kanigo.icmab.es
+
 NAME   : Oscar Paz  
 ADDRESS: Departamento de Fisica de la Materia Condensada
          Universidad Autonoma de Madrid (Spain)
 E-MAIL : Oscar.Paz@uam.es
 
-NAME   : Eduardo Anglada
-ADDRESS: Departamento de Fisica de la Materia Condensada
-         Universidad Autonoma de Madrid (Spain)
-E-MAIL : Eduardo.Anglada@uam.es
-
-NAME   : Marivi Fernandez-Serra
-ADDRESS: Departament of Earth Sciences
-         University of Cambridge (UK)
-E-MAIL : mfer01@esc.cam.ac.uk
+NAME   : Riccardo Rurali
+ADDRESS: ICMAB-CNM, CSIC, Campus de la UAB
+         Bellaterra 08193, Barcelona (Spain)
+E-MAIL : Riccardo.Rurali@ultra.cnm.es
 
 ========================================================================
 
@@ -81,43 +95,43 @@ E-MAIL : mfer01@esc.cam.ac.uk
 
 NAME   : Carlos Balbas
 ADDRESS: Universidad de Valladolid (Spain)
-E-MAIL : carlos@fermi.dec.cie.uva.es
-VERSION: ??
+E-MAIL : balbas@lcb.fam.cie.uva.es, carlos@fermi.dec.cie.uva.es
+VERSION: 1.1s
 
 NAME   : Marcela Beltran
 ADDRESS: UNAM, Mexico
 E-MAIL : mbeltran@servidor.unam.mx
-VERSION: 0.9
+VERSION: 1.1s
 
 NAME   : Xavier Blase
 ADDRESS: Departament de Phyisque des Materiaux
          Universite Claude Bernard de Lyon (France)
 E-MAIL : Xavier.Blase@dpm.univ-lyon1.fr
-VERSION: 1.0
+VERSION: 1.1p
 
 NAME   : Vicente Botella
 ADDRESS: I.E.M. Miguel A. Catalan C.S.I.C
          Serrano 119-bis, 28006 Madrid (Spain) 
 E-MAIL : vbotella@iem.cfmac.csic.es.
-VERSION: 0.11.f1
+VERSION: 1.1s
 
 NAME   : Rodrigo Capaz
 ADDRESS: Instituto de Fisica
          Universidade Federal do Rio de Janeiro (Brasil)
 E-MAIL : capaz@if.ufrj.br
-VERSION: 1.0s
+VERSION: 1.1s
 
 NAME   : Helio Chacham
 ADDRESS: Universidade Federal de Minas Gerais
          Belo Horizonte, Minas Gerais (Brasil)
 E-MAIL : chacham@cedro.fisica.ufmg.br
-VERSION: 0.9
+VERSION: 1.1s
 
 NAME   : Martin S. Craig
 ADDRESS: Earth Sciences Department
          Cambridge University (UK)
 E-MAIL : mcra98@esc.cam.ac.uk
-VERSION: 1.0
+VERSION: 1.1s, 1.1p
 
 NAME   : Martin Dove
 ADDRESS: Dept. of Earth Sciences, Cambridge (UK)
@@ -127,17 +141,37 @@ VERSION: 1.0
 NAME   : David Drabold
 ADDRESS: Ohio University (US)
 E-MAIL : drabold@helios1.phy.ohiou.edu
-VERSION: 0.9
+VERSION: 1.1s
+
+NAME   : Stefan Estreicher
+ADDRESS: Physics Department - mail stop 1051,
+         Texas Tech University, Lubbock, TX 79409
+E-MAIL : stefan.estreicher@ttu.edu
+VERSION: 1.1s
+PROJECT: Defects in semiconductors
 
 NAME   : Gabriel Fabricius
 ADDRESS: Universidad de La Plata (Argentina)
 E-MAIL : fabriciu@venus.fisica.unlp.edu.ar
 VERSION: 0.10
 
+NAME   : Amir Farajian
+ADDRESS: Research Institute for Computational Sciences
+         National Institute of Advanced Industrial Research
+         Tsukuba 305-8568 (Japan)
+E-MAIL : amir@imr.edu
+VERSION: 1.1s
+
 NAME   : Peter A. Fedders
 ADDRESS: Washington University  (Saint Louis, Missouri)
 E-MAIL : paf@wuphys.wustl.edu
 VERSION: 0.11.f1
+
+NAME   : Chu-Chun Fu
+ADDRESS: Departamento de Fisica, Comision Nacional de Energia Atomica,
+         Avda. del Libertador 8250, 1429 Buenos Aires, Argentina
+E-MAIL : chuchunfu@yahoo.com
+VERSION: 1.1s
 
 NAME   : Javier Gallego
 ADDRESS: Universidad de Santiago de Compostela (Spain)
@@ -147,12 +181,22 @@ VERSION: ??
 NAME   : Ignacio Garzon
 ADDRESS: UNAM, Mexico
 E-MAIL : garzon@fenix.ifisicacu.unam.mx
-VERSION: 0.9
+VERSION: 1.1s
 
-NAME   : Gorka Izquierdo
-ADDRESS: Universidad de Valladolid (Spain)
-E-MAIL : gorka@phenix.fam.cie.uva.es
-VERSION: ??
+NAME   : Jorge J. Kohanoff
+ADDRESS: School of Mathematics and Physics
+         Queens University of Belfast (UK)
+E-MAIL : J.Kohanoff@qub.ac.uk
+VERSION: 1.1p
+CONTACT: Pablo 
+PROJECT: Oxides
+
+NAME   : Sergio F. Koval
+ADDRESS: Grupo de Materia Condensada I
+         Instituto de Fisica Rosario, Argentina
+E-MAIL : koval@ifir.ifir.edu.ar
+VERSION: 1.1s
+CONTACT: Jorge J. Kohanoff
 
 NAME   : Jose Luis Martins
 ADDRESS: Univ. Lisboa (Portugal)
@@ -163,29 +207,57 @@ NAME   : Mario Mazzoni
 ADDRESS: Department of Physics
          University of California, Berkeley, USA
 E-MAIL : mario@civet.berkeley.edu, mazzoni@cedro.fisica.ufmg.br
-VERSION: ??
+VERSION: 1.1p
 
-NAME   : Rampi Ramprasad
-ADDRESS: Flat Panel Display Division (Motorola)
-         7700 S. River Parkway MD FPD22
-         Tempe, AZ 85284  (USA)
-E-MAIL : g14994@email.mot.com
-VERSION: ??
+NAME   : Normand Mousseau
+ADDRESS: Département de physique, Université de Montréal
+         C.P. 6128, succ. Centre-ville, Montréal (Québec) H3C 3J7
+E-MAIL : Normand.Mousseau@umontreal.ca
+VERSION: 1.1s
+PROJECT: ART+SIESTA
+
+NAME   : Steffi Reich
+ADDRESS: Technische Universitaet Berlin, Germany
+E-MAIL : steffi@physik.TU-Berlin.DE
+VERSION: 1.1s
 
 NAME   : Carlos Rey 
 ADDRESS: Universidad de Santiago de Compostela (Spain)
 E-MAIL : carlos@fmgtcfm6.usc.es
 VERSION: ??
 
+NAME   : Carme Rovira
+ADDRESS: Universidad de Barcelona (Spain)
+E-MAIL : c.rovira@qf.ub.es
+VERSION: 1.0s
+
 NAME   : Ignacio Sainz-Diaz
 ADDRESS: CSIC Granada (Spain)
 E-MAIL : sainz@eez.csic.es 
 VERSION: ??
 
-NAME   : Otto F Sankey
+NAME   : Cristian G. Sanchez
+ADDRESS: Atomistic Simulation Group
+         School of Mathematics and Physics
+         Queen's University of Belfast (UK)
+E-MAIL : c.sanchez@qub.ac.uk
+VERSION: 1.1s
+
+NAME   : Otto F. Sankey
 ADDRESS: Arizona State Univ, Tempe (USA)
-E-MAIL : SANKEY@edison.la.asu.edu
-VERSION: 0.11.f1
+E-MAIL : Otto.Sankey@asu.edu, SANKEY@edison.la.asu.edu
+VERSION: 1.1s
+
+NAME   : Stefano Sanvito
+ADDRESS: Materials Department, Univ. of California, Santa Barbara, CA 93106
+E-MAIL : ssanvito@mrl.ucsb.edu
+VERSION: 1.1s
+PROJECT: Dilute magnetic alloys
+
+NAME   : Christian Thomsen
+ADDRESS: Technische Universitaet Berlin, Germany
+E-MAIL : thomsen@physik.TU-Berlin.DE
+VERSION: 1.0
 
 NAME   : Vicente Timon
 ADDRESS: I.E.M. Miguel A. Catalan CSIC
@@ -196,59 +268,41 @@ VERSION: 0.11.f1
 NAME   : Jose A. Torres
 ADDRESS: JRCAT-ATP (Theory Group) c/o NAIR, Tsukuba, Japan
 E-MAIL : jtorres@jrcat.or.jp
-VERSION: 0.10
+VERSION: 1.1s
 PROJECT: Au nanowires
 
 NAME   : Erio Tosatti
 ADDRESS: SISSA, I-34014 Trieste, Italy
 E-MAIL : tosatti@sissa.it
-VERSION: 0.10
+VERSION: 1.1s
 PROJECT: Nanowires
-
-NAME   : Paul von Allmen
-ADDRESS: Flat Panel Display Division (Motorola)
-         7700 S. River Parkway MD FPD22
-         Tempe, AZ 85284  (USA)
-E-MAIL : a008ab@email.mot.com
-VERSION: ??
-
-NAME   : Jun Wang
-ADDRESS: Motorola's Phoenix Corp. Research Labs 
-         2100 E. Elliot Road, EL508
-         Tempe, Arizona 85284   
-E-MAIL : a769aa@base.sps.mot.com
-VERSION: 0.9
 
 NAME   : Michele Warren
 ADDRESS: Department of Earth Sciences 
          University of Manchester (UK)
 E-MAIL : Michele.Warren@man.ac.uk
-VERSION: 0.11.f1
+VERSION: 1.1s
 
 NAME   : Ruben Weht
 ADDRESS: Universidad de Buenos Aires
 E-MAIL : ruweht@cnea.gov.ar
-VERSION: 0.9
+VERSION: 1.1s
 
-NAME   : Yasunari Zempo
-ADDRESS: Sumitomo Chemical (Japan)
-E-MAIL : zempo@tuc.sumitomo-chem.co.jp
-VERSION: 0.11.f1
-
-NAME   : Masaya Ishida
-ADDRESS: Sumitomo Chemical (Japan)
-E-MAIL : ishida@tuc.sumitomo-chem.co.jp
-VERSION: 0.11.f1
+NAME   : Mariana Weissmann
+ADDRESS: Departamento de Fisica, Comision Nacional de Energia Atomica,
+         Avda. del Libertador 8250, 1429 Buenos Aires, Argentina
+E-MAIL : weissman@cnea.gov.ar
+VERSION: 0.12.25
 
 NAME   : Marilia J. Caldas
 ADDRESS: Departamento de Fisica, Universidade de Sao Paulo, Brasil
 E-MAIL : mjcaldas@usp.br
-VERSION: 0.12
+VERSION: 1.1s
 
 NAME   : Rogerio J. Baierle
 ADDRESS: Universidade Federal de Rio Grande do Sul
 E-MAIL : rbaierle@ccne.ufsm.br
-VERSION: 0.12
+VERSION: 1.1s
 
 ========================================================================
 
@@ -262,24 +316,48 @@ NAME   : Xavier Blase
 ADDRESS: Departament de Phyisque des Materiaux
          Universite Claude Bernard de Lyon (France)
 E-MAIL : Xavier.Blase@dpm.univ-lyon1.fr
-VERSION: 1.0
+VERSION: 1.1p
+
+NAME   : Mads Brandbyge
+ADDRESS: Mikroelektronik Centret
+         Build. 345=F8, DK-2800 Lyngby, Denmark
+E-MAIL : mbr@mic.dtu.dk
+VERSION: 1.1s, 1.1p
+CONTACT: Pablo
+PROJECT: Transiesta
 
 NAME   : Martin S. Craig
 ADDRESS: Earth Sciences Department
          Cambridge University (UK) 
 E-MAIL : mcra98@esc.cam.ac.uk 
-VERSION: 1.0
+VERSION: 1.1s, 1.1p
+
+NAME   : Mathieu Digne
+ADDRESS: Institut de Recherches sur la Catalyse
+         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
+E-MAIL : mdigne@catalyse.univ-lyon1.fr
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: Alumina surfaces
 
 NAME   : Martin Dove
 ADDRESS: Dept. of Earth Sciences, Cambridge (UK)
 E-MAIL : martin@minp.esc.cam.ac.uk
 VERSION: 1.0
 
-NAME   : Mario Mazzoni
-ADDRESS: Department of Physics
-         University of California, Berkeley, USA
-E-MAIL : mario@civet.berkeley.edu, mazzoni@cedro.fisica.ufmg.br
-VERSION: ??
+NAME   : Jorge J. Kohanoff
+ADDRESS: School of Mathematics and Physics
+         Queens University of Belfast (UK)
+E-MAIL : J.Kohanoff@qub.ac.uk
+VERSION: 1.1p
+
+NAME   : Young-Jee Lee 
+ADDRESS: Laboratory of Physic, Helsinki University of Technology,
+         P.O.Box 1100, FIN-02150 Espoo (Finland)
+E-MAIL : lee@fyslab.hut.fi
+VERSION: 1.1p
+CONTACT: Pablo
+PROJECT: Materials with Fermi instabilities
 
 NAME   : Steven G. Louie
 ADDRESS: Department of Physics
@@ -289,13 +367,18 @@ VERSION: 1.0p
 CONTACT: Emilio
 PROJECT: Nanotubes, NMR of benzene in solution
 
-NAME   : Mathieu Digne
-ADDRESS: Institut de Recherches sur la Catalyse
-         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
-E-MAIL : mdigne@catalyse.univ-lyon1.fr
-VERSION: 1.0p
-CONTACT: Emilio
-PROJECT: Alumina surfaces
+NAME   : Mario Mazzoni
+ADDRESS: Department of Physics
+         University of California, Berkeley, USA
+E-MAIL : mario@civet.berkeley.edu, mazzoni@cedro.fisica.ufmg.br
+VERSION: 1.1p
+
+NAME   : Risto Nieminen
+ADDRESS: OMP/Laboratory of Physic, 
+         Helsinki University of Technology, FIN-02150 Espoo (Finland)
+E-MAIL : rni@fyslab.hut.fi
+VERSION: None
+CONTACT: Pablo
 
 NAME   : Guillaume Poulet
 ADDRESS: Institut de Recherches sur la Catalyse
@@ -313,6 +396,22 @@ VERSION: 1.0p
 CONTACT: Emilio
 PROJECT: AlPOs, heterogeneous catalysis, STM.
 
+NAME   : Kurt Stokbro
+ADDRESS: Mikroelektronik Centret
+         Build. 345=F8, DK-2800 Lyngby, Denmark
+E-MAIL : ks@mic.dtu.dk
+VERSION: 1.0p
+CONTACT: Pablo
+PROJECT: Transiesta
+
+NAME   : Jeremy Taylor
+ADDRESS: Mikroelektronik Centret
+         Build. 345=F8, DK-2800 Lyngby, Denmark
+E-MAIL : jet@mic.dtu.dk
+VERSION: 1.1s, 1.1p
+CONTACT: Pablo
+PROJECT: Transiesta
+
 
 INTERESTED
 ----------
@@ -321,12 +420,12 @@ NAME   : Rodrigo Capaz
 ADDRESS: Instituto de Fisica
          Universidade Federal do Rio de Janeiro (Brasil)
 E-MAIL : capaz@if.ufrj.br
-VERSION: 1.0s
+VERSION: 1.1s
 
 NAME   : Jean-Paul Crocombette
 ADDRESS: CEA Saclay, France
 E-MAIL : jpcrocombette@cea.fr
-VERSION: 1.0
+VERSION: 1.1s
 CONTACT: Emilio
 PROJECT: defects in SiO2, radiation damage
 
@@ -344,80 +443,299 @@ VERSION: None yet
 CONTACT: Javier
 PROJECT: Collaboration with AB-INIT
 
+NAME   : Yasunari Zempo
+ADDRESS: Sumitomo Chemical (Japan)
+E-MAIL : zempo@tuc.sumitomo-chem.co.jp
+VERSION: 0.11.f1
+
 ========================================================================
 
 5. ACTIVE COLLABORATING
 -----------------------
 
+NAME   : Simone Alexandre
+ADDRESS: Department of Earth Sciences
+         University of Cambridge, UK
+E-MAIL : sale01@esc.cam.ac.uk
+VERSION: 1.0
+CONTACT: Emilio
+PROJECT: Polarons in DNA
+
+NAME   : Neil Allan
+ADDRESS: Bristol University, UK
+E-MAIL : N.L.Allan@bristol.ac.uk
+VERSION: 1.1s
+CONTACT: Pablo
+PROJECT: C3P4 crystalline phases
+
 NAME   : Jose Miguel Alonso Pruneda
 ADDRESS: Universidad de Oviedo
          Departamento de Fisica
          Facultad de Geologia, Despacho 6-2
-E-MAIL : ???? @condmat01.geol.uniovi.es
-VERSION: ??
+E-MAIL : pruneda@condmat01.geol.uniovi.es
+VERSION: 1.1s
 CONTACT: Pablo
-PROJECT: ??
+PROJECT: Phonos
+
+NAME   :  Antonio Aramburu
+ADDRESS:  Departamento de Ciencias de la Tierra 
+          y Fisica de la Materia Condensada
+          Facultad de Ciencias
+          Universidad de Cantabria
+          Avenida de los Castros s/n
+          39005 Santander (Spain)
+E-MAIL :  aramburu@materiales.unican.es
+VERSION:  1.1s
+CONTACT:  P. Ordejon
+PROJECT:  Impurities in ionic crystals
+
+NAME   : Dave Bowler
+ADDRESS: Department of Physics
+         University College London, UK
+E-MAIL : david.bowler@ucl.ac.uk
+VERSION: 1.1s
+CONTACT: Emilio, Julian
+PROJECT: Collaboration with CONQUEST
+
+NAME   : Mads Brandbyge
+ADDRESS: Mikroelektronik Centret
+         Build. 345=F8, DK-2800 Lyngby, Denmark
+E-MAIL : mbr@mic.dtu.dk
+VERSION: 1.1s, 1.1p
+CONTACT: Pablo
+PROJECT: Transiesta
+
+NAME   : Sandrine Brochard
+ADDRESS: Laboratoire de Metallurgie Physique
+         Universite Poitiers, France
+E-MAIL : Sandrine.Brochard@univ-poitiers.fr
+VERSION: 1.1s
+CONTACT: Emilio, Jose
+PROJECT: Pb on Si(111)
+
+NAME   : Gunnar Borstel
+ADDRESS: University of Osnabruk, 
+         Theoretical Solid State Physics Department,
+         D-49069 Osnabruk, Germany 
+E-MAIL : gborstel@physik.uni-osnabrueck.de
+VERSION: 1.1s
+CONTACT: Jose
+PROJECT: Reactivity of nanoscopic Al2O3 clusters
+
+NAME   : Maria Caravaca (Ricardo A. Casali)
+ADDRESS: OLD: Institute for Semiconductor Physics
+              Im Technologiepark 25 
+              15236 Frankfurt Oder - Germany
+         NEW UNKNOWN
+E-MAIL : mac@ing.unne.edu.ar
+VERSION: 1.1s
+CONTACT: Pablo
+PROJECT: HfO2
+
+NAME   : Daniel Cox
+ADDRESS: Department of Physics, University of California, 
+         1 Shields Ave., Davis, CA 95616
+E-MAIL : cox@rilke.ucdavis.edu 
+VERSION: 1.1s
+CONTACT: Pablo
+PROJECT: Biological molecules
+
+NAME   : Jean-Paul Crocombette
+ADDRESS: CEA Saclay, France
+E-MAIL : jpcrocombette@cea.fr
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: defects in SiO2, radiation damage
+
+NAME   : Gustavo Dalpian
+ADDRESS: Instituto de Fisica
+         Universidade de Sao Paulo, Brasil
+E-MAIL : dalpian@usp.br
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: Steps and boundaries in Si surfaces
+
+NAME   : Antonio J. R. da Silva
+ADDRESS: Instituto de Fisica
+         Universidade de Sao Paulo, Brasil
+E-MAIL : ajrsilva@macbeth.if.usp.br 
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: Si(100)
+
+NAME   : Oswaldo Dieguez
+ADDRESS: Cavendish Laboratory
+         University of Cambridge, UK
+E-MAIL : odl22@phy.cam.ac.uk
+VERSION: 1.0
+CONTACT: Pablo
+PROJECT: Orden-N in metals
+
+NAME   : Mathieu Digne
+ADDRESS: Institut de Recherches sur la Catalyse
+         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
+E-MAIL : mdigne@catalyse.univ-lyon1.fr
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: Alumina surfaces
+
+NAME   : Daniel Farias
+ADDRESS: Departamento de Fisica de la Materia Condensada
+         Universidad Autonoma de Madrid, Spain
+E-MAIL : Daniel.Farias@uam.es 
+VERSION: 0.12
+CONTACT: Javier
+PROJECT: O or H on metallic surfaces
 
 NAME   : Jaime Ferrer
 ADDRESS: Universidad de Oviedo
          Departamento de Fisica
          Facultad de Geologia, Despacho 6-3
 E-MAIL : ferrer@condmat01.geol.uniovi.es
-VERSION: 0.11.f1
+VERSION: 1.1s
 CONTACT: Pablo
 PROJECT: Non collinear spin, magnons
 
-NAME   : Paul Dolby
-ADDRESS: Univ. Lancaster (UK)
-E-MAIL : p.dolby@lancaster.ac.uk
-VERSION: ??
-CONTACT: ??
-PROJECT: ??
+NAME   : Mike Gillan
+ADDRESS: Department of Physics
+         University College London, UK
+E-MAIL : mike.gillan@ucl.ac.uk
+VERSION: 1.0
+CONTACT: Emilio, Jose, Pablo ,Julian, Alberto
+PROJECT: Collaboration with CONQUEST
 
-NAME   : Colin Lambert
-ADDRESS: University of Lancaster (UK)
-E-MAIL : c.lambert@lancaster.ac.uk
-VERSION: ??
-CONTACT: ??
-PROJECT: ??
+NAME   : Jose Maria Gomez-Rodriguez
+ADDRESS: Departamento de Fisica de la Materia Condensada
+         Universidad Autonoma de Madrid, Spain
+E-MAIL : josem.gomez@uam.es
+VERSION: None yet
+CONTACT: Javier
+PROJECT: Pb on Si(001)
+
+NAME   : Alejandro Goni
+ADDRESS: Technische Universitaet Berlin, Germany
+E-MAIL : goni@physik.TU-Berlin.DE
+VERSION: 1.0
+CONTACT: Pablo
+PROJECT: III-V heterostructures: phonons.
+
+NAME   : Mark Johnson
+ADDRESS: ILL, Grenoble, France
+E-MAIL : johnson@ill.fr
+VERSION: 1.1s
+CONTACT: Julian
+PROJECT: Durene
+
+NAME   :  Abdel Kenoufi
+ADDRESS:  CERMICS - ENPC 
+          6 et 8 avenue Blaise Pascal
+          Cit? Descartes - Champs sur Marne
+          77455 Marne la Vall?e Cedex 2
+          FRANCE 
+E-MAIL :  kenoufi@lpt1.u-strasbg.fr
+VERSION:  1.1s
+CONTACT:  P. Ordejon
+PROJECT:  Ceramics
+
+NAME   : Young-Jee Lee 
+ADDRESS: Laboratory of Physic, Helsinki University of Technology,
+         P.O.Box 1100, FIN-02150 Espoo (Finland)
+E-MAIL : lee@fyslab.hut.fi
+VERSION: 1.1p
+CONTACT: Pablo
+PROJECT: Materials with Fermi instabilities
+
+NAME   : Steven G. Louie
+ADDRESS: Department of Physics
+         University of California, Berkeley, USA
+E-MAIL : sglouie@uclink.berkeley.edu
+VERSION: 1.0p
+CONTACT: Emilio
+PROJECT: Nanotubes, NMR of benzene in solution
 
 NAME   : Maider Machado
 ADDRESS: Universidad del Pais Vasco (Spain)
 E-MAIL : maider@condmat01.geol.uniovi.es
-VERSION: ??
-CONTACT: Pablo
+VERSION: 0.12
+CONTACT: Pablo, Daniel
+PROJECT: Interactions of particles with surfaces
+
+NAME   : Maria Machon (student of Thomsen)
+ADDRESS: Technische Universitaet Berlin, Germany
+E-MAIL : maria@physik.TU-Berlin.DE
+VERSION: 1.0 ??
+CONTACT: Pablo, Emilio
+PROJECT: III-V heterostructures
+
+NAME   : Carl Masens
+ADDRESS: Department of Applied Physics
+         University of Technology, Sydney
+         PO Box 123 Broadway, NSW 2007, Australia
+         Phone +61-2-9514-2225. Fax: +61-2-9514-2219
+         http://www.phys.uts.edu.au/~carlm
+E-MAIL : carl.masens@uts.edu.au, Carl.D.Masens@uts.edu.au
+VERSION: 1.1s
+CONTACT: Julian ?
 PROJECT: ??
+
+NAME   : Eduardo Ariel Menendez Proupin
+ADDRESS: Laboratorio de Ingenieria de Zeolitas, 
+         Instituto de Materiales y Reactivos, Universidad de La Habana
+         San Lazaro y L., Vedado 10400, La Habana, Cuba
+E-MAIL : eariel@raman.ff.oc.uh.cu
+VERSION: 1.1s
+CONTACT: Pablo
+PROJECT: amorphous semiconductors
+
+NAME   : Sorin Milutinovici
+ADDRESS: Bucharest University, Mineralogy Department
+         Bd. N. Balcescu no. 1, 70111 Bucharest Romania
+E-MAIL : sorinm@geo.edu.ro
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: sphalerite and chalcopyrite
 
 NAME   : Alfonso Mu~noz
 ADDRESS: Universidad de La Laguna (Spain)
 E-MAIL : amunoz@teide.dfis.ull.es
-VERSION: ??
+VERSION: 1.1s
 CONTACT: Emilio, ...
+PROJECT: ??
+
+NAME   : Nicolas Muzet (with Claude Lecomte)
+ADDRESS: Laboratoire de Cristallographie et Modelisation
+         des Materiaux Mineraux et Biologiques
+         Univ Henri Poincare Nancy1
+         54506 Vandoeuvre-les-Nancy Cedex  France
+E-MAIL : muzet@lcm3b.uhp-nancy.fr
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: Charge density in biomolecules
+
+NAME   : Ganapati Natarajan (student of S. R. Elliot)
+ADDRESS: Department of Chemistry
+         University of Cambridge (UK)
+E-MAIL : gn203@hermes.cam.ac.uk
+VERSION: 1.1s (originally collaborating with Dave Drabold)
+CONTACT: Emilio
 PROJECT: ??
 
 NAME   : Krzystof Parlinski
 ADDRESS: Institute of Nuclear Physics
          Ul.radzikowskiego 152, 31-342 Cracow (Poland)
 E-MAIL : b8parlin@cyf-kr.edu.pl
-VERSION: 1.0.50 or so
+VERSION: 1.1s
 CONTACT: Alberto
 PROJECT: Phonons in CaCl2
 
-NAME   : Stefano Sanvito
-ADDRESS: DERA
-         Malvern (UK)
-E-MAIL : sanvito@dera.gov.uk
-VERSION: 0.11.f1
-CONTACT: Pablo
-PROJECT: ??
-
-NAME   : Mathieu Digne
-ADDRESS: Institut de Recherches sur la Catalyse
-         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
-E-MAIL : mdigne@catalyse.univ-lyon1.fr
-VERSION: 1.0p
-CONTACT: Emilio
-PROJECT: Alumina surfaces
+NAME   : Andrei Postnikov
+ADDRESS: Gerhard Mercator University Duisburg,
+         Theoretical Low-Temperature Physics, 
+         D-47048 Duisburg, Germany
+E-MAIL : postnik@thp.Uni-Duisburg.DE
+VERSION: 1.1s
+CONTACT: Jose
+PROJECT: Noncollinear spin in Fe clusters
 
 NAME   : Guillaume Poulet
 ADDRESS: Institut de Recherches sur la Catalyse
@@ -435,14 +753,67 @@ VERSION: 1.0p
 CONTACT: Emilio
 PROJECT: AlPOs, heterogeneous catalysis, STM.
 
+NAME   : Damian Scherlis
+ADDRESS: Departmento de Fisicoquimica, Universidad de Buenos Aires. 
+E-MAIL : damian@pepa.q1.fcen.uba.ar
+VERSION: 1.0
+CONTACT: Pablo
+PROJECT: MM/QM models for solvents
+
 NAME   : Tome M. Schmidt
 ADDRESS: Faculdade de Fisica
          Universidade Federal de Uberlandia
          Cx. P. 593, 38.400-902, Uberlandia, MG, Brazil
 E-MAIL : tschmidt@inga.ufu.br
-VERSION: 0.11.f1
+VERSION: 1.1s
 CONTACT: Emilio
 PROJECT: Hydroxiapatite
+
+NAME   : Kurt Stokbro
+ADDRESS: Mikroelektronik Centret
+         Build. 345=F8, DK-2800 Lyngby, Denmark
+E-MAIL : ks@mic.dtu.dk
+VERSION: 1.0
+CONTACT: Pablo
+PROJECT: Transiesta
+
+NAME   : Jeremy Taylor
+ADDRESS: Mikroelektronik Centret
+         Build. 345=F8, DK-2800 Lyngby, Denmark
+E-MAIL : jet@mic.dtu.dk
+VERSION: 1.1s, 1.1p
+CONTACT: Pablo
+PROJECT: Transiesta
+
+NAME   : Marek Veithen
+ADDRESS: Institute de Physique, Universite de Liege.
+E-MAIL : Marek.Veithen@student.ulg.ac.be
+VERSION: 1.0s
+CONTACT: Javier
+PROJECT: Si clusters
+
+NAME   : Chandra Verma
+ADDRESS: York Structural Biology Laboratory,
+         University of York, UK
+E-MAIL : chandra@ysbl.york.ac.uk
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: ??
+
+NAME   : Sandro de Vita
+ADDRESS: EPF Lausanne, Switzerland
+         Trieste, Italy
+E-MAIL : devita@dpdec.epfl.ch
+VERSION: ??
+CONTACT: Emilio
+PROJECT: ??
+
+NAME   : Perla Wahnon
+ADDRESS: ETS Ingenieria de Telecomunicaciones, UPM
+E-MAIL : perla@etsit.upm.es, CC: pablo@gdc.tat.upm.es (PhD student)
+VERSION: 1.1s
+CONTACT: Emilio
+PROJECT: ??
 
 NAME   : Hong Xu
 ADDRESS: Dept. Physique des Materiaux
@@ -452,216 +823,264 @@ VERSION: 0.12-1.0?
 CONTACT: Emilio
 PROJECT: Liquid InSe
 
-NAME   : Ganapati Natarajan (student of S. R. Elliot)
-ADDRESS: Department of Chemistry
-         University of Cambridge (UK)
-E-MAIL : gn203@hermes.cam.ac.uk
-VERSION: 0.11 (originally collaborating with Dave Drabold)
-CONTACT: Emilio
-PROJECT: ??
 
-NAME   : Mark Johnson
-ADDRESS: ILL, Grenoble, France
-E-MAIL : johnson@ill.fr
-VERSION: 0.11.1f
-CONTACT: Julian
-PROJECT: Durene
+============================================================================
 
-NAME   : Christian Thomsen
-ADDRESS: Technische Universitaet Berlin, Germany
-E-MAIL : thomsen@physik.TU-Berlin.DE
-VERSION: ??
+6. INDUSTRIAL USERS
+--------------------------------------
+
+
+NAME   : Andrew Horsfield
+ADDRESS: Fujitsu European Centre for Information Technology
+E-MAIL : horsfield@fecit.co.uk
+VERSION: None
 CONTACT: Pablo
-PROJECT: Nanotube vibrations
 
-NAME   : Alejandro Goni
-ADDRESS: Technische Universitaet Berlin, Germany
-E-MAIL : goni@physik.TU-Berlin.DE
-VERSION: 0.9
+NAME   : Masaya Ishida
+ADDRESS: Sumitomo Chemical (Japan)
+E-MAIL : ishida@tuc.sumitomo-chem.co.jp
+VERSION: 1.1s
+
+NAME   : Masayoshi Mikami
+ADDRESS: Mitsubishi Chemical Corporation 
+         Research and Development Division, Yokohama Research Center
+         1000, Kamoshida-cho Aoba-ku, Yokohama, 227-8502, Japan 
+E-MAIL : mmikami@rc.m-kagaku.co.jp
+VERSION: None
 CONTACT: Pablo
-PROJECT: III-V heterostructures: phonons.
+PROJECT: Photochromic molecular crystals, or heterogeneous catalysis
 
-NAME   : Steffi Reich
-ADDRESS: Technische Universitaet Berlin, Germany
-E-MAIL : steffi@physik.TU-Berlin.DE
+NAME   : Rampi Ramprasad
+ADDRESS: Flat Panel Display Division (Motorola)
+         7700 S. River Parkway MD FPD22
+         Tempe, AZ 85284  (USA)
+E-MAIL : g14994@email.mot.com
 VERSION: 0.11.f1
-CONTACT: Pablo
-PROJECT: Nanotubes
 
-NAME   : Maria Machon (student of Thomsen)
-ADDRESS: Technische Universitaet Berlin, Germany
-E-MAIL : maria@physik.TU-Berlin.DE
-VERSION: 1.0 ??
-CONTACT: Pablo, Emilio
-PROJECT: III-V heterostructures
+NAME   : Paul von Allmen
+ADDRESS: Flat Panel Display Division (Motorola)
+         7700 S. River Parkway MD FPD22
+         Tempe, AZ 85284  (USA)
+E-MAIL : a008ab@email.mot.com
+VERSION: 0.11.f1
 
-NAME   : Carl Masens
-ADDRESS: Australia ???
-E-MAIL : carl.masens@uts.edu.au
-VERSION: ??
-CONTACT: Julian ?
-PROJECT: ??
+NAME   : Jun Wang
+ADDRESS: Motorola's Phoenix Corp. Research Labs 
+         2100 E. Elliot Road, EL508
+         Tempe, Arizona 85284   
+E-MAIL : a769aa@base.sps.mot.com
+VERSION: 0.11.f1
 
-NAME   : Jean-Paul Crocombette
-ADDRESS: CEA Saclay, France
-E-MAIL : jpcrocombette@cea.fr
-VERSION: 1.0
-CONTACT: Emilio
-PROJECT: defects in SiO2, radiation damage
+NAME   : Yasunari Zempo
+ADDRESS: Sumitomo Chemical (Japan)
+E-MAIL : zempo@tuc.sumitomo-chem.co.jp
+VERSION: 0.11.f1
 
-NAME   : Jose Maria Gomez-Rodriguez
-ADDRESS: Departamento de Fisica de la Materia Condensada
-         Universidad Autonoma de Madrid, Spain
-E-MAIL : josem.gomez@uam.es
-VERSION: None yet
-CONTACT: Javier
-PROJECT: Pb on Si(001)
 
-NAME   : Daniel Farias
-ADDRESS: Departamento de Fisica de la Materia Condensada
-         Universidad Autonoma de Madrid, Spain
-E-MAIL : Daniel.Farias@uam.es 
-VERSION: 0.12
-CONTACT: Javier
-PROJECT: O or H on metallic surfaces
+============================================================================
 
-NAME   : Marek Veithen
-ADDRESS: Institute de Physique, Universite de Liege.
-E-MAIL : Marek.Veithen@student.ulg.ac.be
-VERSION: 1.0s
-CONTACT: Javier
-PROJECT: Si clusters
+7. 0-VERSION USERS
+--------------------------------------
 
-NAME   : Oswaldo Dieguez
-ADDRESS: Cavendish Laboratory
-         University of Cambridge, UK
-E-MAIL : odl22@phy.cam.ac.uk
-VERSION: 1.0
-CONTACT: Pablo
-PROJECT: Orden-N in metals
+NAME    : Stefan Andreev (contact: Prof. Kaxiras, jose)
+ADDRESS : David Reichman's group
+          12 Oxford Street
+          Department of Chemistry and Chemical Biology, Box 102
+          Harvard University
+          Cambridge, MA  02138
+          USA
+          Home Tel: (617) 493-4207
+          Office Tel: (617) 495-8859
+E-MAIL  : sandreev@fas.harvard.edu
+VERSION : 
 
-NAME   : Mike Gillan
-ADDRESS: Department of Physics
-         University College London, UK
-E-MAIL : mike.gillan@ucl.ac.uk
-VERSION: 1.0
-CONTACT: Emilio, Jose, Pablo ,Julian, Alberto
-PROJECT: Collaboration with CONQUEST
+NAME    : Sushil Auluck (contact: www)
+ADDRESS : Department of Physics
+          Indian Institute of Technology
+          Roorkee 247 667 Uttranchal
+          India
+          Phone: +91-1332-74075(Home)        
+                 +91-1332-85010(Home)     
+                 +91-1332-85745(Work) 
+          Fax:   +91-1332-73560
+E-MAIL  : aulucfph@rurkiu.ernet.in
+VERSION :
 
-NAME   : Dave Bowler
-ADDRESS: Department of Physics
-         University College London, UK
-E-MAIL : david.bowler@ucl.ac.uk
-VERSION: 1.0
-CONTACT: Emilio, Julian
-PROJECT: Collaboration with CONQUEST
+NAME    : Evgueni Chagarov
+ADDRESS : Computational Materials Science Group of Prof. James B. Adams
+          Arizona State University
+E-MAIL  : Evgueni.Chagarov@asu.edu
+VERSION : 0.11
 
-NAME   : Gustavo Dalpian
-ADDRESS: Instituto de Fisica
-         Universidade de Sao Paulo, Brasil
-E-MAIL : dalpian@usp.br
-VERSION: 0.12
-CONTACT: Emilio
-PROJECT: Steps and boundaries in Si surfaces
+NAME    : Zheng Jin Cheng
+ADDRESS : Department of Physics  
+          National University of Singapore  
+          Lower Kent Ridge Road  
+          Singapore 119260
+          Tel: (65)-8745100 (Office)
+          Fax: (65)-7776126
+E-MAIL  : jczheng@sps.nus.edu.sg
+VERSION :
 
-NAME   : Antonio J. R. da Silva
-ADDRESS: Instituto de Fisica
-         Universidade de Sao Paulo, Brasil
-E-MAIL : ajrsilva@macbeth.if.usp.br 
-VERSION: 0.12
-CONTACT: Emilio
-PROJECT: Si(100)
+NAME    : Sung-Yool Choi (contact: www)
+ADDRESS : Senior Research Scientist
+          Micro-Electronics Tech. Lab., ETRI
+          P.O.Box 106, Yusong, Taejon, 305-600, Korea
+          Tel: 82 42 860 6840, Fax: 82 42 860 5202
+          http://cnt.etri.re.kr/~sychoi
+E-MAIL  : sychoi@etri.re.kr, sychoi@cnt.etri.re.kr
+VERSION :
 
-NAME   : Steven G. Louie
-ADDRESS: Department of Physics
-         University of California, Berkeley, USA
-E-MAIL : sglouie@uclink.berkeley.edu
-VERSION: 1.0p
-CONTACT: Emilio
-PROJECT: Nanotubes, NMR of benzene in solution
+NAME    : Sergio D. Dalosto (contact: jose)
+ADDRESS : Post Doc Researcher
+          Biochemistry and Biophysics
+          Univ. of Pennsylvania, UPENN
+          Philadelphia
+          Tel:(215) 898-8783
+          Fax:(215) 573-2042
+          Home Tel: (215) 781 1341
+E-MAIL  : sdalosto@mail.med.upenn.edu
+VERSION : ??
 
-NAME   : Sandrine Brochard
-ADDRESS: Laboratoire de Metallurgie Physique
-         Universite Poitiers, France
-E-MAIL : Sandrine.Brochard@univ-poitiers.fr
-VERSION: 1.0
-CONTACT: Emilio, Jose
-PROJECT: Pb on Si(111)
+NAME    : R. A. Evarestov (contact: G.Borstel)
+ADDRESS : Dept. of Quantum Chemistry
+          St.Petersburg State University
 
-NAME   : Simone Alexandre
-ADDRESS: Department of Earth Sciences
-         University of Cambridge, UK
-E-MAIL : sale01@esc.cam.ac.uk
-VERSION: 1.0
-CONTACT: Emilio
-PROJECT: Polarons in DNA
+E-MAIL  : evaresto@theochem.uni-hannover.de
+VERSION :
 
-NAME   : Sorin Milutinovici
-ADDRESS: Bucharest University, Mineralogy Department
-         Bd. N. Balcescu no. 1, 70111 Bucharest Romania
-E-MAIL : sorinm@geo.edu.ro
-VERSION: None yet
-CONTACT: Emilio
-PROJECT: sphalerite and chalcopyrite
+NAME    : Vasilii Gusakov (contact: daniel)
+ADDRESS : Institute of solid State and Semiconductor Physics
+          P. Brovki str. 17
+          220072 Minsk
+          Belarus
+E-MAIL  : gusakov@ifttp.bas-net.by
+VERSION :
 
-NAME   : Andrei Postnikov
-ADDRESS: Gerhard Mercator University Duisburg,
-         Theoretical Low-Temperature Physics, 
-         D-47048 Duisburg, Germany
-E-MAIL : postnik@thp.Uni-Duisburg.DE
-VERSION: 0.12.29
-CONTACT: Jose
-PROJECT: Noncollinear spin in Fe clusters
+NAME    : hgm69 ?? (student in the field of ab-initio calculation
+                    for solid states)
+ADDRESS : ??
+E-MAIL  : hgm69@jingxian.xmu.edu.cn
+VERSION :
 
-NAME   : Gunnar Borstel
-ADDRESS: University of Osnabruk, 
-         Theoretical Solid State Physics Department,
-         D-49069 Osnabruk, Germany 
-E-MAIL : gborstel@physik.uni-osnabrueck.de
-VERSION: None yet
-CONTACT: Jose
-PROJECT: Reactivity of nanoscopic Al2O3 clusters
+NAME    : Minoru Ikeda (contact: www)
+ADDRESS : Fujitsu Laboratories Ltd.
+          Silicon Technology Laboratories
+          Memory Device Laboratory, Senior Researcher
+          243-0197 10-1 Morinosato-Wakamiya, Atsugi, Kanagawa, Japan
+          Tel:+81-46-250-8215, Fax:+81-46-250-8804
+E-MAIL  : ikeda@ccg.flab.fujitsu.co.jp
+VERSION : 
 
-NAME   : Kurt Stokbro
-ADDRESS: Mikroelektronik Centret
-         Build. 345=F8, DK-2800 Lyngby, Denmark
-E-MAIL : ks@mic.dtu.dk
-VERSION: ??
-CONTACT: Pablo
-PROJECT: Transiesta
+NAME    : Takugo Ishii (contact: International Workshop on DV-Xa ('01), www)
+ADDRESS : Department of Materials Science and Engineering, Kyoto University
+          Sakyo, Kyoto 606-8501, Japan
+          Phone : +81-75-753-5435
+          Fax   : +81-75-753-5447
+E-MAIL  : itack@mac.com
+VERSION :
 
-************* Other transiesters...*************
+NAME    : Ted Lowther (contact: www)
+ADDRESS : Professor of Computational Physics
+          Department of Physics
+          University of the Witwatersrand
+          Johannesburg
+          South Africa
+          Fax: +27 11 339 8262
+E-MAIL  : lowther@[146.141.41.2]
+VERSION :
+
+NAME    : Alexander Martins da Silva
+ADDRESS : Aluno de Doutorado em Fisico-Quimica (Prof. Marco Antonio Chaer)
+          Instituto de Quimica
+          Universidade do Brasil, RJ, Brasil
+          21949-900
+          Tel: +55 21 562-7179/7180
+                55 21 696-2676
+E-MAIL  : alex@chaer.iq.ufrj.br, alex.msilva@uol.com.br
+VERSION : ??
+
+NAME    : Eduardo Medina de la Rosa
+ADDRESS : ??
+E-MAIL  : emedina@ull.es
+VERSION : Interested in Win98 version
+
+NAME    : Manuel Melle-Franco
+ADDRESS : Francesco Zerbetto's group
+          Dip. di Chimica "G. Ciamician"
+          Universita Di Bologna
+          via Selmi 2, I-40126
+          Bologna, Italy
+          Fax   :  +39-051-2099456
+          Phone :  +39-051-2099498
+          Mobile:  (0)-328-3647205
+E-MAIL  : manu@ciamserv.ciam.unibo.it
+VERSION : Asking for collaboration. Maybe 1.1s?
+
+NAME    : R.S. Rao
+ADDRESS : HPPD, Purnima Labs.,
+          BARC
+E-MAIL  : rsrao@apsara.barc.ernet.in, hpps@magnum.barc.ernet.in
+VERSION :
+
+NAME    : Adlane Sayede
+ADDRESS : Algeria ??
+E-MAIL  : sayede_adlane@hotmail.com
+VERSION : ??
+
+NAME    : John S. Tse
+ADDRESS : Senior Research Officer
+          Program Leader
+          Theory and Computation Program
+          Steacie Institute for Molecular Science
+          National Research Council of Canada
+          100 Sussex Drive, Ottawa, Ontario
+          Canada K1A 0R6
+          Fax: +1 613-947-2838, Voice: +1 613-991-1237
+E-MAIL  : John.Tse@nrc.ca, tse@ned1.sims.nrc.ca
+VERSION :
+
+NAME    : Sornthep Vannarat (contact: emilio)
+ADDRESS : Institute for Materials Research
+          Tohoku University
+          2-1-1 Katahira, Sendai, Japan
+          Tel 81-22-215-2057
+          Fax 81-22-215-2052
+          http://www.kawazoe.imr.tohoku.ac.jp/~sornthep/
+E-MAIL  : sornthep@imr.tohoku.ac.jp
+VERSION :
+
+NAME    : Jiang-long Wang
+ADDRESS : Institute of Solid State Physics,
+          Academia Sinica, P. O. Box 1129,
+          230031 Hefei, Anhui, P. R. China
+          Tel: 86-551-5591464
+          Fax: 86-551-5591434
+E-MAIL  : jlwang@theory.issp.ac.cn
+VERSION : 
+
+NAME    : Fernando A.B. Whitaker (contact: Antonio Jose Roque da Silva, emilio)
+ADDRESS : National High Performance Computing Center at Sao Paulo
+          State University of Campinas - Brazil
+E-MAIL  : whitaker@cenapad.unicamp.br
+VERSION : ??
+
+NAME    : S. Yashonath
+ADDRESS : ??
+E-MAIL  : yashonat@sscu.iisc.ernet.in
+VERSION :
+
+
+NAME    : ?? 
+ADDRESS : ??
+E-MAIL  : siryu@semilab3.ee.cau.ac.kr
+VERSION :
+
 
 ============================================================================
 
 DUBIOUS (Please check and re-classify)
 --------------------------------------
-
-NAME   : Amir Farajian
-ADDRESS: National Institute of Materials and Chemical Research
-         1-1 Higashi, Tsukuba, Ibaraki 305-8565, Japan
-E-MAIL : amir@nimc.go.jp
-VERSION: ANY???
-CONTACT: Pablo
-PROJECT: Molecular dynamics study of dioxin formation mechanisms
-
-NAME   : Maria Caravaca (Ricardo A. Casali)
-ADDRESS: Institute for Semiconductor Physics
-         Im Technologiepark 25 
-         15236 Frankfurt Oder - Germany
-E-MAIL : rac@ihp-ffo.de
-VERSION: ANY???
-CONTACT: Pablo?
-PROJECT: Interfaces of Si with TiO2, ZrO2, Ta2O5. Also Si/Ti.
-
-NAME   : Masayoshi Mikami
-ADDRESS: Mitsubishi Chemical Corporation (PRIVATE COMPANY!)
-         Research and Development Division, Yokohama Research Center
-         1000, Kamoshida-cho Aoba-ku, Yokohama, 227-8502, Japan 
-E-MAIL : mmikami@rc.m-kagaku.co.jp
-VERSION: ANY???
-CONTACT: Pablo
-PROJECT: Photochromic molecular crystals, or heterogeneous catalysis
 
 NAME   : Julio Mara~non
 ADDRESS: Departamento de Fi'sica
@@ -673,23 +1092,67 @@ PROJECT: CuO (electronic & magnetic prop) & organic crystals
 
 ========================================================================
 
-5. NO NEWS BUT OF INTEREST
+8. NO NEWS BUT OF INTEREST
 --------------------------
 
-NAME   : John Robertson
-ADDRESS: Department of Engineering 
-         University of Cambridge, UK
-E-MAIL : jr@eng.cam.ac.uk
-VERSION: None yet
-CONTACT: Emilio
-PROJECT: Amorphous Carbon
+NAME   : Fabio Bernardini
+ADDRESS: Dipartimento di Fisica
+         Universita' di Cagliari
+         Cittadella Universitaria
+         S. Prov.le Monserrato - Sestu Km. 0.700
+         09042 - Monserrato (CA), Italy
+E-MAIL : fabio@sparc10.unica.it
+VERSION: 0.11.f1
+CONTACT: Pablo
+PROJECT: Semiconductors
 
-NAME   : Francois Willaime
-ADDRESS: CEA Saclay, France
-E-MAIL : willaim@srmp101.saclay.cea.fr
-VERSION: 1.0
+NAME   : Marie-Laure Bocquet
+ADDRESS: Institut de Recherches sur la Catalyse
+         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
+E-MAIL : mbocquet@ens-lyon.fr
+VERSION: 0.11.f1
 CONTACT: Emilio
-PROJECT: Defects in Fe
+PROJECT: Adsorption on metallic surfaces and STM imaging
+
+NAME   : Raul Cachau
+ADDRESS: National Cancer Institute (US)
+         Advance Biomedical Computing Center
+         P.O.Box B, Frederick, MD 21702-1201, USA
+E-MAIL : cachau@ncifcrf.gov
+VERSION: 0.11.f1
+CONTACT: Pablo
+PROJECT: Test molecules, biomolecules
+
+NAME   : Emily Carter
+ADDRESS: Department of Chemistry and Biochemistry, Box 951569
+         University of California, Los Angeles, CA 90095-1569
+E-MAIL : eac@chem.ucla.edu
+VERSION: ??
+CONTACT: Jose
+PROJECT: ??
+
+NAME   : Cristoph Domain
+ADDRESS: Electricite de France, France
+E-MAIL : Christophe.Domain@edfgdf.fr
+VERSION: 0.12
+CONTACT: Emilio
+PROJECT: Radiation damage in metals
+
+NAME   : Stephen Elliott
+ADDRESS: Department of Chemistry
+         University of Cambridge, UK
+E-MAIL : sre1@cus.cam.ac.uk
+VERSION: 0.12.25
+CONTACT: Pablo
+PROJECT: Glasses
+
+NAME   : Jean-Sebastien Filhol
+ADDRESS: Institut de Recherches sur la Catalyse
+         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
+E-MAIL : jsfilhol@chimie.ens-lyon.fr
+VERSION: 0.11.f1
+CONTACT: Emilio
+PROJECT: Adsorption on metals
 
 NAME   : Jose Maria Gallego
 ADDRESS: Instituto de Ciencia de Materiales Madrid, CSIC, Spain
@@ -713,68 +1176,6 @@ VERSION: 0.11.f1
 CONTACT: Emilio
 PROJECT: STM imaging
 
-NAME   : Jorge J. Kohanoff
-ADDRESS: School of Mathematics and Physics
-         Queens University of Belfast (UK)
-E-MAIL : J.Kohanoff@qub.ac.uk
-VERSION: 0.11
-CONTACT: Pablo 
-PROJECT: ??
-
-NAME   : Marie-Laure Bocquet
-ADDRESS: Institut de Recherches sur la Catalyse
-         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
-E-MAIL : mbocquet@ens-lyon.fr
-VERSION: 0.11.f1
-CONTACT: Emilio
-PROJECT: Adsorption on metallic surfaces and STM imaging
-
-NAME   : Cristoph Domain
-ADDRESS: Electricite de France, France
-E-MAIL : Christophe.Domain@edfgdf.fr
-VERSION: 0.12
-CONTACT: Emilio
-PROJECT: Radiation damage in metals
-
-NAME   : Jean-Sebastien Filhol
-ADDRESS: Institut de Recherches sur la Catalyse
-         2 avenue Albert Einstein,69626 Villeurbanne Cedex, France
-E-MAIL : jsfilhol@chimie.ens-lyon.fr
-VERSION: 0.11.f1
-CONTACT: Emilio
-PROJECT: Adsorption on metals
-
-NAME   : Alain Pasturel
-ADDRESS: CNRS Grenoble, France
-E-MAIL : pasturel@belledonne.polycnrs-gre.fr
-VERSION: 0.11.f1
-CONTACT: Emilio
-PROJECT: ??
-
-NAME   : Pascal Raybaud
-ADDRESS: Intitut Francais du Petrol (near Paris), France
-E-MAIL : Pascal.RAYBAUD@ifp.fr
-VERSION: 0.11
-CONTACT: Emilio
-PROJECT: ??
-
-NAME   : Herve Touloat
-ADDRESS: Intitut Francais du Petrol (near Paris), France
-E-MAIL : herve.toulhoat@ifp.fr
-VERSION: 0.11
-CONTACT: Emilio
-PROJECT: Alumina surfaces
-
-NAME   : Nicolas Muzet (with Claude Lecomte)
-ADDRESS: Laboratoire de Cristallographie et Modelisation             
-         des Materiaux Mineraux et Biologiques                               
-         Univ Henri Poincaré Nancy1
-         54506 Vandoeuvre-les-Nancy Cedex  France
-E-MAIL : muzet@lcm3b.uhp-nancy.fr
-VERSION: 0.11.f1
-CONTACT: Emilio
-PROJECT: Charge density in biomolecules
-
 NAME   : Christian Jelsch 
 ADDRESS: Laboratoire de Cristallographie et Modelisation             
          des Materiaux Mineraux et Biologiques                               
@@ -784,31 +1185,6 @@ E-MAIL : jelsch@lcm3b.u-nancy.fr
 VERSION: 0.11.f1
 CONTACT: Emilio
 PROJECT: Charge density in biomolecules
-
-NAME   : Raul Cachau
-ADDRESS: National Cancer Institute (US)
-         Advance Biomedical Computing Center
-         P.O.Box B, Frederick, MD 21702-1201, USA
-E-MAIL : cachau@ncifcrf.gov
-VERSION: ??
-CONTACT: Pablo
-PROJECT: Test molecules, biomolecules
-
-NAME   : Emily Carter
-ADDRESS: Department of Chemistry and Biochemistry, Box 951569
-         University of California, Los Angeles, CA 90095-1569
-E-MAIL : eac@chem.ucla.edu
-VERSION: ??
-CONTACT: Jose
-PROJECT: ??
-
-NAME   : Frank Starrost
-ADDRESS: Department of Chemistry and Biochemistry, Box 951569
-         University of California, Los Angeles, CA 90095-1569
-E-MAIL : fstar@chem.ucla.edu
-VERSION: 1.0.17
-CONTACT: Jose
-PROJECT: ??
 
 NAME   : Efthimios Kaxiras
 ADDRESS: Department of Physics, Lyman Lab.
@@ -829,13 +1205,6 @@ VERSION: ??
 CONTACT: Pablo
 PROJECT: ??
 
-NAME   : Bjorn Winkler
-ADDRESS: Kiel University (Germany)
-E-MAIL : bjoern@min.uni-kiel.de
-VERSION: 0.11
-CONTACT: Emilio
-PROJECT: ??
-
 NAME   : Ricardo W. Nunes  
 ADDRESS: Departamento de Fisica
          Universidade Federal de Minas Gerais, Brasil
@@ -844,9 +1213,74 @@ VERSION: None yet
 CONTACT: Jose
 PROJECT: Order-N solver
 
+NAME   : Alain Pasturel
+ADDRESS: CNRS Grenoble, France
+E-MAIL : pasturel@belledonne.polycnrs-gre.fr
+VERSION: 0.11.f1
+CONTACT: Emilio
+PROJECT: ??
+
+NAME   : Pascal Raybaud
+ADDRESS: Intitut Francais du Petrol (near Paris), France
+E-MAIL : Pascal.RAYBAUD@ifp.fr
+VERSION: 0.11
+CONTACT: Emilio
+PROJECT: ??
+
+NAME   : John Robertson
+ADDRESS: Department of Engineering 
+         University of Cambridge, UK
+E-MAIL : jr@eng.cam.ac.uk
+VERSION: None yet
+CONTACT: Emilio
+PROJECT: Amorphous Carbon
+
+NAME   : Aldo Romero
+ADDRESS: Facultad de Fisica, Pontificia Universidad Catolica de Chile
+         Casilla 306,  Santiago 22, Chile
+E-MAIL : ahromero@bethe.fis.puc.cl
+VERSION: 0.12.25
+CONTACT: Pablo
+
+NAME   : Mojmir Sob
+ADDRESS: Institute of Physics of Materials, Czech Republic 
+E-MAIL : mojmir@ipm.cz
+VERSION: 0.12.25
+CONTACT: Pablo
+PROJECT: Grain boundaries in metals
+
+NAME   : Frank Starrost
+ADDRESS: Department of Chemistry and Biochemistry, Box 951569
+         University of California, Los Angeles, CA 90095-1569
+E-MAIL : fstar@chem.ucla.edu
+VERSION: 1.0.17
+CONTACT: Jose
+PROJECT: ??
+
+NAME   : Herve Touloat
+ADDRESS: Intitut Francais du Petrol (near Paris), France
+E-MAIL : herve.toulhoat@ifp.fr
+VERSION: 0.11
+CONTACT: Emilio
+PROJECT: Alumina surfaces
+
+NAME   : Francois Willaime
+ADDRESS: CEA Saclay, France
+E-MAIL : willaim@srmp101.saclay.cea.fr
+VERSION: 1.0
+CONTACT: Emilio
+PROJECT: Defects in Fe
+
+NAME   : Bjorn Winkler
+ADDRESS: Kiel University (Germany)
+E-MAIL : bjoern@min.uni-kiel.de
+VERSION: 0.11
+CONTACT: Emilio
+PROJECT: ??
+
 ========================================================================
 
-6. SPECIAL TREATMENT  ?????
+9. SPECIAL TREATMENT  ?????
 ----------------------------
 
 NAME   : Marvin Cohen, Steven Louie, & Alex Zettl    ****** COMPANY ******
@@ -862,7 +1296,7 @@ VERSION: 0.11-1.0 ??
 
 ========================================================================
 
-7. NO NEWS NO INTEREST
+10. NO NEWS NO INTEREST
 -----------------------
 
 NAME   : Shahriar Anwar
@@ -881,6 +1315,62 @@ VERSION: 0.11
 CONTACT: Pablo, Emilio
 PROJECT: ??
 
+NAME   : Paul Dolby
+ADDRESS: Univ. Lancaster (UK)
+E-MAIL : p.dolby@lancaster.ac.uk
+VERSION: 0.10?
+CONTACT: Pablo
+PROJECT: ??
+
+NAME   : Markus Elstner
+ADDRESS: Universitaet-GH Paderderborn
+         Fachbereich Physik, Theoretische Physik
+         D-33098 Paderborn (Germany)
+         ---
+         Abteilung Molekulare Biophysik (H0200)
+         Deutsches Krebsforschungszentrum (DKFZ)
+         Im Neuenheimer Feld 280
+         69120 Heidelberg (Germany)
+E-MAIL : elstner@cmt.harvard.edu, M.Elstner@DKFZ-Heidelberg.DE
+VERSION: ??
+CONTACT: Jose
+PROJECT: ??
+
+NAME   : Marcelo Galvan
+ADDRESS: Univ. Autonoma de Mexico,
+         Av Michoacan y la Purisima. 
+         Iztapalapa, 09340 Mexico DF
+E-MAIL : mgalvan@xanum.uam.mx
+VERSION: 0.11.f1
+CONTACT: Jose
+PROJECT: Biomolecules?
+
+NAME   : Gorka Izquierdo
+ADDRESS: Universidad de Valladolid (Spain)
+E-MAIL : gorka@phenix.fam.cie.uva.es
+VERSION: ??
+COMMENT: Moved out of science
+
+NAME   : Srini Krishnamurthy
+ADDRESS: SRI International
+E-MAIL : srinivasan.krishnamurthy@sri.com
+VERSION: 0.12
+CONTACT: Pablo
+
+NAME   : Vijay Kumar
+ADDRESS: ??
+E-MAIL : kumar@imr.edu
+VERSION: ??
+CONTACT: Jose
+PROJECT: ??
+
+NAME   : Colin Lambert
+ADDRESS: University of Lancaster (UK)
+E-MAIL : c.lambert@lancaster.ac.uk
+VERSION: 0.10?
+CONTACT: Pablo
+PROJECT: ??
+
 NAME   : Claude Lecomte  
 ADDRESS: Laboratoire de Cristallographie et Modelisation
          des Materiaux Mineraux et Biologiques
@@ -890,13 +1380,6 @@ E-MAIL : lecomte@lcm3b.u-nancy.fr
 VERSION: 0.11.f1
 CONTACT: Emilio
 PROJECT: Charge density in biomolecules
-
-NAME   : Andrew Horsfield
-ADDRESS: Fujitsu European Centre for Information Technology
-E-MAIL : horsfield@fecit.co.uk
-VERSION: ??
-CONTACT: Pablo
-PROJECT: ??
 
 NAME   : Young Hee Lee
 ADDRESS: Jeonbuk National University (Korea)
@@ -928,10 +1411,18 @@ VERSION: ??
 CONTACT: Jose, Emilio
 PROJECT: ??
 
+NAME   : Josep M. Ricart
+ADDRESS: Departament de Quimica Fisica i Inorganica
+         UNIVERSITAT ROVIRA I VIRGILI, Placa Imperial Tarraco, 1
+         43005 - TARRAGONA (SPAIN)
+E-MAIL : ricart@quimica.urv.es
+VERSION: 0.12
+CONTACT: Pablo
+
 NAME   : Angel Rubio
 ADDRESS: Universidad de Valladolid (Spain)
-E-MAIL : arubio@fixat8.fam.cie.uva.es
-VERSION: 0.9
+E-MAIL : arubio@fixat8.fam.cie.uva.es, arubio@sc.ehu.es
+VERSION: 1.1s
 CONTACT: Jose
 PROJECT: ??
 
@@ -951,34 +1442,11 @@ VERSION: 0.9
 CONTACT: Pablo
 PROJECT: ??
 
-NAME   : Markus Elstner
-ADDRESS: Universitaet-GH Paderderborn
-         Fachbereich Physik, Theoretische Physik
-         D-33098 Paderborn (Germany)
-         ---
-         Abteilung Molekulare Biophysik (H0200)
-         Deutsches Krebsforschungszentrum (DKFZ)
-         Im Neuenheimer Feld 280
-         69120 Heidelberg (Germany)
-E-MAIL : elstner@cmt.harvard.edu, M.Elstner@DKFZ-Heidelberg.DE
-VERSION: ??
-CONTACT: Jose
-PROJECT: ??
-
-NAME   : Marcelo Galvan
-ADDRESS: Univ. Autonoma de Mexico,
-         Av Michoacan y la Purisima. 
-         Iztapalapa, 09340 Mexico DF
-E-MAIL : mgalvan@xanum.uam.mx
-VERSION: 0.11.f1
-CONTACT: Jose
-PROJECT: Biomolecules?
-
-NAME   : Vijay Kumar
-ADDRESS: ??
-E-MAIL : kumar@imr.edu
-VERSION: ??
-CONTACT: Jose
-PROJECT: ??
+NAME   : Claudio Zicovich
+ADDRESS: Instituto de Tecnologia Quimica, 
+         Universidad Politecnica de Valencia
+E-MAIL : zicovich@pleiades.upv.es
+VERSION: 0.12
+PROJECT: Zeolites
 
 ========================================================================

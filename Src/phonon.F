@@ -205,9 +205,9 @@ C real*8 disp(3)              : fractional displacement
      .                  memory, leqi
 
 c     Internal variables and arrays
-      character fname*33, sname*40, line*132, paste*33, atname*2
+      character fname*33, sname*40, paste*33, atname*2
       logical   frstme
-      integer   i, j, ix, unit1, n, ia, isp, iunit
+      integer   i, j, ix, unit1, ia, isp, iunit
       double precision Ang, eV
       character acf*50
 
@@ -277,9 +277,3 @@ c     Find file name
       end subroutine phonon_write_forces
 
       end module phonon
-
-
-
-
-
-

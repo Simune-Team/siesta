@@ -170,7 +170,7 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta gen-basis *.o  *.a *.pcl *.pc
+	rm -f siesta gen-basis *.o  *.a
 	rm -f *.mod
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi

@@ -1,4 +1,4 @@
-      subroutine vmat( no, indxuo, np, dvol, V, nvmax, 
+      subroutine vmat( no, indxuo, np, dvol, nspin, V, nvmax, 
      .                 numVs, listVsptr, listVs, Vs, 
      .                 nuo, nuotot, iaorb, iphorb, isa )
 
@@ -15,7 +15,8 @@ C integer no              : Number of basis orbitals
 C integer indxuo(no)      : Index of equivalent atom in unit cell
 C integer np              : Number of columns in C (local)
 C real*8  dvol            : Volume per mesh point
-C real*4  V(np)           : Value of the potential at the mesh points
+C integer nspin           : Number of spin components
+C real*4  V(np,nspin)     : Value of the potential at the mesh points
 C integer nvmax           : First dimension of listV and Vs, and maxim.
 C                           number of nonzero elements in any row of Vs
 C integer numVs(nuo)      : Number of non-zero elements in a row of Vs
@@ -25,7 +26,7 @@ C integer iaorb(*)        : Pointer to atom to which orbital belongs
 C integer iphorb(*)       : Orbital index within each atom
 C integer isa(*)          : Species index of all atoms
 C ******************** INPUT AND OUTPUT *******************************
-C real*8  Vs(nvmax)       : Value of nonzero elements in each row 
+C real*8  Vs(nvmax,nspin) : Value of nonzero elements in each row 
 C                           of Vs to which the potential matrix 
 C                           elements are summed up
 C *********************************************************************
@@ -42,12 +43,12 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   no, np, nvmax, nuo, nuotot, indxuo(no), iaorb(*),
+     .   no, np, nvmax, nuo, nuotot, indxuo(no), iaorb(*), nspin,
      .   iphorb(*), isa(*), numVs(nuo), listVsptr(nuo), listVs(nvmax)
       real
-     .   V(nsp,np)
+     .   V(nsp,np,nspin)
       real*8
-     .   dvol, Vs(nvmax)
+     .   dvol, Vs(nvmax,nspin)
 
 C Internal variables and arrays
 
@@ -55,8 +56,8 @@ C Internal variables and arrays
      .  minloc = 100,  ! Min buffer size for local copy of Dscf
      .  maxoa  = 100   ! Max # of orbitals per atom
       integer
-     .  i, ia, ic, ii, il, imp, in, ind, iop, ip, iphi, io,
-     .  is, isp, iu, iul, ix, j, jc, jl, jmp, jn, 
+     .  i, ia, ic, ii, ijl, il, imp, ind, iop, ip, iphi, 
+     .  is, isp, ispin, iu, iul, ix, j, jc, jl, 
      .  last, lasta, lastop, maxloc, maxloc2, nc, nlocal, 
      .  nphiloc, nvmaxl
       integer, dimension(:), allocatable, save ::
@@ -89,8 +90,9 @@ C  Allocate local memory
       call memory('A','I',maxloc2,'vmat')
       allocate(iorb(0:maxloc))
       call memory('A','I',maxloc+1,'vmat')
-      allocate(Vlocal(0:maxloc,0:maxloc))
-      call memory('A','D',(maxloc+1)*(maxloc+1),'vmat')
+      ijl = (maxloc+1)*(maxloc+2)/2
+      allocate(Vlocal(ijl,nspin))
+      call memory('A','D',ijl*nspin,'vmat')
       allocate(Clocal(nsp,maxloc2))
       call memory('A','D',nsp*maxloc2,'vmat')
       allocate(VClocal(nsp))
@@ -98,9 +100,9 @@ C  Allocate local memory
 
       if (Parallel) then
         nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
-        allocate(DscfL(nvmaxl,1))
-        call memory('A','D',nvmaxl,'meshdscf')
-        DscfL(1:nvmaxl,1) = 0.0d0
+        allocate(DscfL(nvmaxl,nspin))
+        call memory('A','D',nvmaxl*nspin,'meshdscf')
+        DscfL(1:nvmaxl,1:nspin) = 0.0d0
       endif
 
 C  Full initializations done only once
@@ -109,13 +111,11 @@ C  Full initializations done only once
       Vlocal(:,:) = 0.0
       last = 0
 
-C  Find atomic cutoff radii
-      r2cut(:) = 0.0d0
-      do i = 1,nuotot
+C  Find atomic cutoff radiae
+      do i = 1,no
         ia = iaorb(i)
         is = isa(ia)
-        io = iphorb(i)
-        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
+        r2cut(is) = rcut(is,0)**2
       enddo
 
 C  Loop over grid points
@@ -144,14 +144,30 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
                   ind = listdlptr(iul)+ii
                   j = listdl(ind)
                   jl = ilocal(j)
-                  DscfL(ind,1) = DscfL(ind,1) + dVol * Vlocal(jl,il) 
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
+     .                Vlocal(ijl,ispin) 
+                  enddo
                 enddo
               else
                 do ii = 1, numdl(iul)
                   ind = listdlptr(iul)+ii
                   j = listsc( i, iu, listdl(ind) )
                   jl = ilocal(j)
-                  DscfL(ind,1) = DscfL(ind,1) + dVol * Vlocal(jl,il) 
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
+     .                Vlocal(ijl,ispin) 
+                  enddo
                 enddo
               endif
             else
@@ -160,21 +176,38 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
                   ind = listVsptr(iu)+ii
                   j = listVs(ind)
                   jl = ilocal(j)
-                  Vs(ind) = Vs(ind) + dVol * Vlocal(jl,il) 
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
+     .                Vlocal(ijl,ispin) 
+                  enddo
                 enddo
               else
                 do ii = 1, numVs(iu)
                   ind = listVsptr(iu)+ii
                   j = listsc( i, iu, listVs(ind) )
                   jl = ilocal(j)
-                  Vs(ind) = Vs(ind) + dVol * Vlocal(jl,il) 
+                  if (il.gt.jl) then
+                    ijl = il*(il+1)/2 + jl + 1
+                  else
+                    ijl = jl*(jl+1)/2 + il + 1
+                  endif
+                  do ispin = 1,nspin
+                    Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
+     .                Vlocal(ijl,ispin) 
+                  enddo
                 enddo
               endif
             endif
           enddo
           ilocal(iorb(1:last)) = 0
           iorb(1:last) = 0
-          Vlocal(1:last,1:last) = 0.0d0
+          ijl = (last+1)*(last+2)/2
+          Vlocal(1:ijl,1:nspin) = 0.0d0
           last = 0
         endif
 
@@ -232,25 +265,29 @@ C  Generate or retrieve phi values
           endif
 
 C  Pre-multiply V and Clocal(,ic)
-          do isp = 1,nsp
-            VClocal(isp) = V(isp,ip) * Clocal(isp,ic)
-          enddo
-
-C  Loop on second orbital of mesh point (only for jc.le.ic)
-          do jc = 1,ic
-            jl = ilc(jc)
-
-C           Loop over sub-points
-            Vij = 0.0d0
+          do ispin = 1,nspin
             do isp = 1,nsp
-              Vij = Vij + VClocal(isp) * Clocal(isp,jc)
+              VClocal(isp) = V(isp,ip,ispin) * Clocal(isp,ic)
             enddo
 
-            Vlocal(jl,il) = Vlocal(jl,il) + Vij
-            if (ic .ne. jc) then
-              Vlocal(il,jl) = Vlocal(il,jl) + Vij
-            endif
+C  Loop on second orbital of mesh point (only for jc.le.ic)
+            do jc = 1,ic
+              jl = ilc(jc)
 
+C             Loop over sub-points
+              Vij = 0.0d0
+              do isp = 1,nsp
+                Vij = Vij + VClocal(isp) * Clocal(isp,jc)
+              enddo
+
+              if (il.gt.jl) then
+                ijl = il*(il+1)/2 + jl + 1
+              else
+                ijl = jl*(jl+1)/2 + il + 1
+              endif
+              Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
+
+            enddo
           enddo
         enddo
       enddo
@@ -266,14 +303,30 @@ C  Add final Vlocal to Vs
               ind = listdlptr(iul)+ii
               j = listdl(ind)
               jl = ilocal(j)
-              DscfL(ind,1) = DscfL(ind,1) + dVol * Vlocal(jl,il) 
+              if (il.gt.jl) then
+                ijl = il*(il+1)/2 + jl + 1
+              else
+                ijl = jl*(jl+1)/2 + il + 1
+              endif
+              do ispin = 1,nspin
+                DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
+     .            Vlocal(ijl,ispin) 
+              enddo
             enddo
           else
             do ii = 1, numdl(iul)
               ind = listdlptr(iul)+ii
               j = listsc( i, iu, listdl(ind) )
               jl = ilocal(j)
-              DscfL(ind,1) = DscfL(ind,1) + dVol * Vlocal(jl,il) 
+              if (il.gt.jl) then
+                ijl = il*(il+1)/2 + jl + 1
+              else
+                ijl = jl*(jl+1)/2 + il + 1
+              endif
+              do ispin = 1,nspin
+                DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
+     .            Vlocal(ijl,ispin) 
+              enddo
             enddo
           endif
         else
@@ -282,14 +335,30 @@ C  Add final Vlocal to Vs
               ind = listVsptr(iu)+ii
               j = listVs(ind)
               jl = ilocal(j)
-              Vs(ind) = Vs(ind) + dVol * Vlocal(jl,il) 
+              if (il.gt.jl) then
+                ijl = il*(il+1)/2 + jl + 1
+              else
+                ijl = jl*(jl+1)/2 + il + 1
+              endif
+              do ispin = 1,nspin
+                Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
+     .            Vlocal(ijl,ispin) 
+              enddo
             enddo
           else
             do ii = 1, numVs(iu)
               ind = listVsptr(iu)+ii
               j = listsc( i, iu, listVs(ind) )
               jl = ilocal(j)
-              Vs(ind) = Vs(ind) + dVol * Vlocal(jl,il) 
+              if (il.gt.jl) then
+                ijl = il*(il+1)/2 + jl + 1
+              else
+                ijl = jl*(jl+1)/2 + il + 1
+              endif
+              do ispin = 1,nspin
+                Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
+     .            Vlocal(ijl,ispin) 
+              enddo
             enddo
           endif
         endif
@@ -312,7 +381,7 @@ C  Free local memory
       if (Parallel) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
-     .    nuotot, DscfL, Vs )
+     .      nuotot, nspin, DscfL, Vs )
 C Free memory 
         call memory('D','D',size(DscfL),'meshdscf')
         deallocate(DscfL)

@@ -195,7 +195,7 @@ C Local variables
 C
       integer
      .  i, ia, i1, i2, i3, indi, io, iphi, is, isp, ity, j, j1, j2, j3, 
-     .  ncells, nep, nmp, ntop, ntp, nty
+     .  ncells, nep, ntop, ntp, nty
 
       integer, dimension(:), allocatable, save ::
      .  iphty, isty, noty
@@ -354,7 +354,6 @@ C Output current mesh dimensions and cut-off
       endif
 
 C Find number of mesh points in unit cell.
-      nmp = nm(1) * nm(2) * nm(3)
       ntp = ntm(1) * ntm(2) * ntm(3)
 
 C Find local number of Mesh points of each kind

@@ -69,7 +69,7 @@ C ----------------------------------------------------------------------
 C Internal variables and arrays
 C ----------------------------------------------------------------------
       INTEGER IP, ISPIN, ISPIN2
-      REAL*8 DUSCF, DSTRES(3,3), RHOTOT, EX, EC, DEX, DEC, STRESSL(3,3)
+      REAL*8 EX, EC, DEX, DEC, STRESSL(3,3)
       real aux1(1), aux3(3,1)   !! dummy arrays for cellxc
       REAL, DIMENSION(:,:), ALLOCATABLE :: DRHOIN
       REAL, DIMENSION(:,:,:), ALLOCATABLE :: DVXCDN

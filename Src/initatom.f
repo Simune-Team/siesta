@@ -41,8 +41,8 @@ c Reading input for the pseudopotentials and atomic orbitals
      .    'initatom: Reading input for the pseudopotentials ',
      .    'and atomic orbitals'
 
-      user_basis = fdf_boolean('user-basis',.false.)
-      user_basis_netcdf = fdf_boolean('user-basis-netcdf',.false.)
+      user_basis = fdf_get('user-basis',.false.)
+      user_basis_netcdf = fdf_get('user-basis-netcdf',.false.)
 
       if (user_basis_netcdf) then
 

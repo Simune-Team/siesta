@@ -157,7 +157,11 @@ C Written by J. Soler
      .           'Tl','Pb','Bi','Po','At','Rn','Fr','Ra','Ac','Th',
      .           'Pa','U' ,'Np','Pu','Am','Cm','Bk','Cf','Es','Fm',
      .           'Md','No','Lr'/
-      IF (IZ.LT.1 .OR. IZ.GT.NZ) THEN
+      IF (IZ.EQ.0 .OR. IZ.EQ.-100) THEN
+         SYMBOL = 'BS'
+      ELSE IF (IZ.LT.0 .AND. IZ.GT.-100) THEN
+         SYMBOL = NAME(-IZ)
+      ELSE IF (IZ.LT.1 .OR. IZ.GT.NZ) THEN
          WRITE(6,*) ' SYMBOL: OUT OF RANGE IZ =',IZ
          SYMBOL = ' '
       ELSE

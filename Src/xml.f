@@ -50,7 +50,7 @@
       character(len=25) str_double
 
       character(len=25) dummy
-      write(dummy,'(g25.15)')  num
+      write(dummy,'(g22.12)')  num
       str_double = trim(dummy)
       end function str_double
 

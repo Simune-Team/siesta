@@ -59,18 +59,17 @@ C
       integer
      .  fincoor,
      .  i, ia, ia1, ia2, iadispl, ianneal,
-     .  idyn, ifa, ifinal, ihmat, iiscf, ik, ikb, in, iio,
-     .  ind, inicoor, io, ioa, ioptlwf, iord,
+     .  idyn, ifa, ifinal, ihmat, iiscf, ik, iio,
+     .  ind, inicoor, io, ioptlwf, iord,
      .  iquench, is, isel, iscf, 
      .  isolve, ispin, istp, istpsave, istart, istep, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
      .  j, ja, jamin, jo, jx, kscell(3,3),
-     .  lastc, lc(0:1), level, maxbk, maxk, maxnh, maxnhold,
+     .  level, maxbk, maxk, maxnh, maxnhold,
      .  maxna, maxsav, mscell(3,3), mullipop, ncells,
      .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
-     .  ni, nkpnt, nmove, nn, nnia, nr,
-     .  ns, nsc(3), nscf, nspin, ntm(3), no_l, nv, 
-     .  nxij, pmax, nkpol, nhist, io_sig
+     .  nkpnt, nmove, nnia, ns, nsc(3), nscf, nspin, 
+     .  ntm(3), no_l, nxij, pmax, nkpol, nhist, io_sig
 
       integer
      .  Node, Nodes
@@ -99,7 +98,7 @@ C
      .  kn, kpr, 
      .  mn, mpr, Pint, Pmol, Psol
       real(dp)
-     .  qaux, qspin(4), qsol, qtmp(4),
+     .  qaux, qspin(4), qsol,
      .  rc, rcoor, rcoorcp, rijmin, 
      .  rmax, rmaxh, rmin, r2min,
      .  scell(3,3), stot, stress(3,3), strtol, svec(3),
@@ -112,7 +111,7 @@ C
 
       real(dp), dimension(:), allocatable ::
      .  efs, kweight, qs, r2ij, 
-     .  wgthpol, dpbuffer1, H0, S
+     .  wgthpol, H0, S
 
       real(dp), dimension(:,:), allocatable :: 
      .  auxpul, bk, cfa, fa, fal, kpoint, kpol,
@@ -122,7 +121,7 @@ C
 
 #ifdef MPI
       real(dp)
-     .  buffer1, stresstmp(3,3)
+     .  buffer1, stresstmp(3,3), qtmp(4)
 
       real(dp), dimension(:,:), allocatable :: 
      .  fatmp
@@ -381,7 +380,7 @@ C ..................
 C Dump initial coordinates to output ..................................
       if ( writic.and.(IOnode) ) then
         write(6,'(/a)') 'siesta: Atomic coordinates (Bohr) and species'
-        write(6,"('siesta: ',2x,3f10.5,i3,3x,i4)")
+        write(6,"('siesta: ',2x,3f10.5,i3,3x,i6)")
      .           ( (xa(ix,ia), ix=1,3), isa(ia), ia, ia=1, na_u)
       endif
 C ..................
@@ -1443,7 +1442,7 @@ C Print energies ......................................................
           Eharrs = Etot + DEharr
           FreeE  = Etot - Temp * Entrop
           if (IOnode) then
-            if (istp.eq.1 .and. first) write(6,'(/,a,/,(a,f15.6))')
+            if (istp.eq.1 .and. first) write(6,'(/,a,/,(a,f17.6))')
      .        'siesta: Program''s energy decomposition (eV):',
      .        'siesta: Eions   =', Eions/eV,
      .        'siesta: Ena     =', Ena/eV,
@@ -1569,7 +1568,7 @@ C Write atomic forces .................................................
       if (IOnode) then
         write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
         if ( writef ) then
-        write(6,'(i4,3f12.6)') (ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
+        write(6,'(i6,3f12.6)') (ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
         else
           call iofa( na_u, fa )
         endif
@@ -1831,12 +1830,6 @@ C Compute the projected density of states
 
       if (do_pdos) then
 
-#ifdef MPI
-            if( IOnode) then
-              write(6,*)
-     .           'siesta: ERROR: PDOS not parallelized yet'
-            endif
-#else
 c     Find the desired energy range
          if (IOnode) then
             read(iu,'(a)') line
@@ -1848,26 +1841,21 @@ c     Find the desired energy range
             e2 = values(p,2) * factor
             sigma = values(p,3) * factor
             nhist = integers(p,1)
-            write(6,'(a)') 'siesta: PDOS info: '
-            write(6,'(a,3(f8.2,a),2x,i5)') 
-     $             'siesta: e1, e2, sigma, nhist: ',     
-     $             e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
+            write(6,*) '>>'
+            write(6,*) 'PDOS info: '
+            write(6,*) 'e1, e2, sigma, nhist: ', e1, e2, sigma, nhist
+            write(6,*) '>>'
 !
          endif  ! IOnode
+#ifdef MPI
+        call MPI_Bcast(e1,1,DAT_double,0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(e2,1,DAT_double,0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+#endif
+        if (IOnode) write(6,*) 'PDOS not implemented yet'
 
-!        call MPI_Bcast(e1,1,DAT_double,0,MPI_Comm_World,MPIerror)
-!        call MPI_Bcast(e2,1,DAT_double,0,MPI_Comm_World,MPIerror)
-!        call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
-!        call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-
-        call pdos( no_s, nspin, nspin, no_l, maxnh,
-     .             no_u, numh, listhptr, listh, H, S,
-     .             e1, e2, sigma, nhist,
-     .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
-     .             nbk, bk, ebk, no_u)
-
-#endif                          ! PDOS calc (only in serial version)
-      endif                     ! PDOS calc (do_pdos)                         
+      endif                     ! PDOS calc (do_pdos)
 
 C Print program's energy decomposition
       if (IOnode) then
