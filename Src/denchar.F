@@ -167,14 +167,15 @@ C Initialise MPI and set processor number
       call io_setup     ! Initialize IOnode
 
 C Set up fdf -----------------------------------------------------------
-      narg = command_argument_count()
-      if (narg == 0) then
-         FILEIN = "stdin"
-      else if (narg == 1) then
-         call get_command_argument(1,FILEIN)
-      else
-         stop "too many command-line arguments"
-      endif
+!      narg = command_argument_count()
+!      if (narg == 0) then
+!         FILEIN = "stdin"
+!      else if (narg == 1) then
+!         call get_command_argument(1,FILEIN)
+!      else
+!         stop "too many command-line arguments"
+!      endif
+      FILEIN='stdin'
 
       FILEOUT = 'out.fdf'
       CALL FDF_INIT(FILEIN,FILEOUT)

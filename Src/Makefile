@@ -5,7 +5,7 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-default: what siesta gen-basis  # denchar
+default: what siesta gen-basis # denchar
 #
 include arch.make
 #
@@ -221,7 +221,7 @@ denchar.o: m_denchar_init.o m_denchar_io.o m_denchar_work.o m_denchar_geom.o
 OTHER_DENCHAR_OBJS=  precision.o \
         f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
         paste.o  radfft.o recipes.o io.o \
-        volcel.o parallel.o memoryinfo.o sys.o listsc.o  \
+        volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
         atmparams.o atmfuncs.o ionew.o atm_types.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
         pseudopotential.o chemical.o xml.o $(SYSOBJ)

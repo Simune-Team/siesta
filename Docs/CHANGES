@@ -1,6 +1,25 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.39
+Date: 2005/02/04 17:05 GMT
+Title: Denchar bugs fixed
+Author: Javier Junquera <javier.junquera@unican.es>
+
+Some bugs that appeared during the compilation or execution
+of denchar have been fixed.
+
+Files:
+
+Makefile         - inclusion of parallelsubs.o in OTHER_DENCHAR_OBJS
+denchar.F        - variable FILEIN set to 'stdin',
+                   avoiding the call to command_argument_count()
+m_denchar_work.f - change in some write formats in order to 
+                   avoid double space between data of consecutive
+                   rows in the output.
+version.F90, CHANGES 
+Denchar/Docs/denchar.tex : Change in affiliation
+=======================================================================
 Version: 1.4.38
 Date: 2005/02/04 05:30 GMT
 Title: O(N) extrapolation fix

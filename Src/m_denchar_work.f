@@ -556,11 +556,11 @@ C Loop again over neighbours -------------------------------------------
 
          IF (IDIMEN .EQ. 2) THEN
            IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
-             WRITE(UNIT1,'(/)')
-             WRITE(UNIT2,'(/)')
+             WRITE(UNIT1,'(A)')
+             WRITE(UNIT2,'(A)')
              IF ( NSPIN .EQ. 2 ) THEN
-               WRITE(UNIT3,'(/)')
-               WRITE(UNIT4,'(/)')
+               WRITE(UNIT3,'(A)')
+               WRITE(UNIT4,'(A)')
              ENDIF
            ENDIF
          ENDIF
@@ -1050,9 +1050,9 @@ C Loop over Non-zero orbitals ------------------------------------------
 
            IF (IDIMEN .EQ. 2) THEN
              IF ( MOD(NPO,NPX) .EQ. 0 ) THEN
-               WRITE(UNIT1,'(/)')
+               WRITE(UNIT1,'(A)')
                IF ( NSPIN .EQ. 2 ) THEN
-                 WRITE(UNIT2,'(/)')
+                 WRITE(UNIT2,'(A)')
                ENDIF
              ENDIF
            ENDIF
