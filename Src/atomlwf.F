@@ -135,6 +135,7 @@ C Check that iopt is correct ................................................
         call die('cspa: Wrong iopt in cspa')
       endif
 
+
 C Allocate local arrays
       allocate(alist(natoms))
       allocate(ilist(nbasis))
@@ -172,10 +173,14 @@ C Work out which basis functions are required in local C copy
       enddo
 
 C Resize arrays that depend on nbasisCloc
-      call re_alloc(listc,1,maxnc,1,nbasisCloc,name='listc')
-      call re_alloc(listcold,1,maxnc,1,nbasisCloc,name='listcold')
-      call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,name='c')
-      call re_alloc(cold,1,maxnc,1,nbasisCloc,1,nspin,name='cold')
+      call re_alloc(listc,1,maxnc,1,nbasisCloc,
+     .              shrink=.false.,name='listc')
+      call re_alloc(listcold,1,maxnc,1,nbasisloc,
+     .              shrink=.false.,name='listcold')
+      call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,
+     .              shrink=.false.,name='c')
+      call re_alloc(cold,1,maxnc,1,nbasisloc,1,nspin,
+     .              shrink=.false.,name='cold')
 
 C Initialize some stuff
 

@@ -212,9 +212,9 @@ C  Call cspa to initialise Wannier function related data structures
 
 C  Resize arrays in case maxnc has changed
       call re_alloc(listc,1,maxnc,1,nbasisCloc,name='listc')
-      call re_alloc(listcold,1,maxnc,1,nbasisCloc,name='listcold')
+      call re_alloc(listcold,1,maxnc,1,nbasisloc,name='listcold')
       call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,name='c')
-      call re_alloc(cold,1,maxnc,1,nbasisCloc,1,nspin,name='cold')
+      call re_alloc(cold,1,maxnc,1,nbasisloc,1,nspin,name='cold')
       call re_alloc(xi,1,maxnc,1,nbasisCloc,1,nspin,name='xi')
       call re_alloc(g,1,maxnc,1,nbasisCloc,1,nspin,name='g')
       call re_alloc(hg,1,maxnc,1,nbasisCloc,1,nspin,name='hg')
@@ -222,11 +222,12 @@ C  Resize arrays in case maxnc has changed
       if (iscf.eq.1.and.istep.eq.1) then
         if (usesavelwf) then
 C  Read Wannier functions if file is present
-          call iolwf( 'read', nbasis, nbasisCloc, maxnc, found, nspin)
+          call iolwf( 'read', nbasis, nbasisCloc, nbasisloc, maxnc, 
+     .                found, nspin)
           if (found) then
 C  Find out number of bands
             nbands = 0
-            do io = 1,nbasisCloc
+            do io = 1,nbasisloc
               do in = 1,numcold(io)
                 nbands = max( nbands, listcold(in,io) )
               enddo
@@ -236,25 +237,15 @@ C  Find out number of bands
      .                         MPI_Comm_World,MPIerror)
             nbands = ntmp
 #endif
-            do io = nbasisloc+1,nbasisCloc
-              numcold(io) = numc(io)
-              do in = 1,numc(io)
-                listcold(in,io) = listc(in,io)
-              enddo
-            enddo
-#ifdef MPI
-C Set up communication information & then distribute C
-            call setglobalise(nbasis,nbasisloc,nbasisCloc,nhmax,numh,
-     .                        listh,listhptr,Node,Nodes)
-            call globaliseC(nbasisCloc,maxnc,numcold,cold,nspin,Node)
-#endif
+C  Copy coefficients read in from Cold to C ready for extrapolon
             do is = 1,nspin
-              do io = 1,nbasisCloc
-                do in = 1,numc(io)
+              do io = 1,nbasisloc
+                do in = 1,numcold(io)
                   c(in,io,is) = cold(in,io,is)
                 enddo
               enddo
             enddo
+
           endif
         endif
       endif
@@ -286,7 +277,7 @@ C  iscf = 1 (that is, if we are in a new MD step) ...................
           write(6,"(/a,i3)") 'ordern: ioptlwf =',ioptlwf
         endif
         if (ioptlwf.eq.0) then
-          do io = 1,nbasisCloc
+          do io = 1,nbasisloc
             numc(io) = numcold(io)
             do in = 1,numcold(io)
               listc(in,io) = listcold(in,io)
@@ -305,7 +296,29 @@ C to make it update the structure of c, if needed
           itest = .true.
         endif
         call extrapolon(istep,iord,nspin,nbasis,nbasisCloc,maxnc,
-     .                  numc,listc,aux,numcold,listcold,cold,c,Node)
+     .                  numc,listc,aux,numcold,listcold,cold,c,
+     .                  nbasisloc,Node)
+
+#ifdef MPI
+        if (istep.ne.1) then
+
+C Zero parts of C that current Node does not have primary responsibility for
+          do is = 1,nspin
+            do io = nbasisloc+1,nbasisCloc
+              do in = 1,numc(io)
+                c(in,io,is) = 0.0d0
+              enddo
+            enddo
+          enddo
+
+C Globalise C to get values for rows from other nodes
+          call setglobalise(nbasis,nbasisloc,nbasisCloc,nhmax,numh,
+     .                    listh,listhptr,Node,Nodes)
+          call globaliseC(nbasisCloc,maxnc,numc,c,nspin,Node)
+
+        endif
+#endif
+
 C If LWF's have just been read, restore istep
         if (itest) istep = 1
         itest = .false.
@@ -356,7 +369,8 @@ C Global reduction of qtot
       endif
 
 C Save LWF's to disk .................................................
-      call iolwf( 'write', nbasis, nbasisCloc, maxnc, found, nspin)
+      call iolwf( 'write', nbasis, nbasisCloc, nbasisloc, maxnc, 
+     .            found, nspin)
 
       frstme = .false.
 *     call timer( 'ordern', 2 )

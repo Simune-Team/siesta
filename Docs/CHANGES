@@ -1,6 +1,32 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.38
+Date: 2005/02/04 05:30 GMT
+Title: O(N) extrapolation fix
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The order N code was failing in parallel when the structure
+of the Hamiltonian changed between geomtry steps. The code
+has been modified to solve this. The arrays cold / listcold
+now only keep the rows for which the current node has principal
+responsibility for. The extrapolation and I/O of LWFs now
+acts just on this part of C and is then globalised to all
+processors.
+
+Files:
+
+atomlwf.F      Dimensions of cold/listcold decreased by using nbasisloc
+egandd.F       Reallocation of arrays now occurs when iopt = 0 and
+               not just on the first call. The copy=.true. and
+               shrink=.false. attributes have also been added.
+extrapolon.F   Now acts only on 1->nbasisloc rather than 1->nbasisCloc
+iolwf.F        Now acts only on 1->nbasisloc rather than 1->nbasisCloc
+               and nbasisloc is added as a pased argument.
+ordern.F       Handling of cold/listcold changed and call to 
+               globaliseC added after extrapolon call.
+version.F90, CHANGES
+=======================================================================
 Version: 1.4.37
 Date: 2005/01/25 03:00 GMT
 Title: Mesh subdivisions control from input

@@ -122,6 +122,17 @@ C Nullify pointers
         nullify(nbG2L)
         nullify(f)
         nullify(fs)
+
+C Set flag for memory algorithm choice
+        if (Node.eq.0) then
+          LoMem = fdf_boolean('ON.LowerMemory',.false.)
+        endif
+#ifdef MPI
+        call MPI_Bcast(LoMem,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
+
+        frstme = .false.
+
       endif
 
       if (iopt.eq.0) then
@@ -148,37 +159,38 @@ C Find nbandsloc and pointers
           endif
         enddo
         deallocate(lNeeded)
-      endif
 
-      if (frstme) then
-C Initial allocation of memory
-        call re_alloc(numct,1,nbandsloc,name='numct')
-        call re_alloc(numf,1,nbandsloc,name='numf')
-        call re_alloc(numft,1,nbasisCloc,name='numft')
-        call re_alloc(numhij,1,nbandsloc,name='numhij')
-        call re_alloc(indon,1,nbasis,name='indon')
-        call re_alloc(nindv,1,nbasis,name='nindv')
-        call re_alloc(cttoc,1,maxnct,1,nbandsloc,name='cttoc')
-        call re_alloc(fttof,1,maxnft,1,nbasisCloc,name='fttof')
-        call re_alloc(listct,1,maxnct,1,nbandsloc,name='listct')
-        call re_alloc(listf,1,maxnf,1,nbandsloc,name='listf')
-        call re_alloc(listft,1,maxnft,1,nbasisCloc,name='listft')
-        call re_alloc(listhij,1,maxnhij,1,nbandsloc,name='listhij')
-        call re_alloc(f,1,maxnf,1,nbandsloc,name='f')
-        call re_alloc(fs,1,maxnf,1,nbandsloc,name='fs')
-
-C Set flag for memory algorithm choice
-        if (Node.eq.0) then
-          LoMem = fdf_boolean('ON.LowerMemory',.false.)
-        endif
-#ifdef MPI
-        call MPI_Bcast(LoMem,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-        frstme = .false.
-      endif
+C Allocation of memory
+        call re_alloc(numct,1,nbandsloc,name='numct',copy=.true.,
+     .                shrink=.false.)
+        call re_alloc(numf,1,nbandsloc,name='numf',copy=.true.,
+     .                shrink=.false.)
+        call re_alloc(numft,1,nbasisCloc,name='numft',copy=.true.,
+     .                shrink=.false.)
+        call re_alloc(numhij,1,nbandsloc,name='numhij',copy=.true.,
+     .                shrink=.false.)
+        call re_alloc(indon,1,nbasis,name='indon',copy=.true.,
+     .                shrink=.false.)
+        call re_alloc(nindv,1,nbasis,name='nindv',copy=.true.,
+     .                shrink=.false.)
+        call re_alloc(cttoc,1,maxnct,1,nbandsloc,name='cttoc',
+     .                copy=.true.,shrink=.false.)
+        call re_alloc(fttof,1,maxnft,1,nbasisCloc,name='fttof',
+     .                copy=.true.,shrink=.false.)
+        call re_alloc(listct,1,maxnct,1,nbandsloc,name='listct',
+     .                copy=.true.,shrink=.false.)
+        call re_alloc(listf,1,maxnf,1,nbandsloc,name='listf',
+     .                copy=.true.,shrink=.false.)
+        call re_alloc(listft,1,maxnft,1,nbasisCloc,name='listft',
+     .                copy=.true.,shrink=.false.)
+        call re_alloc(listhij,1,maxnhij,1,nbandsloc,name='listhij',
+     .                copy=.true.,shrink=.false.)
+        call re_alloc(f,1,maxnf,1,nbandsloc,name='f',copy=.true.,
+     .                shrink=.false.)
+        call re_alloc(fs,1,maxnf,1,nbandsloc,name='fs',copy=.true.,
+     .                shrink=.false.)
 
 C Set up index lists for sparse matrices ..................................
-      if (iopt .eq. 0) then
 
 C GET Ct LISTS
         call ctrans1(nbasisCloc,maxnct)

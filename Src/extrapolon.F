@@ -1,5 +1,6 @@
       subroutine extrapolon(istep,iord,nspin,nbasis,nbasisCloc,maxnc,
-     .                      numc,listc,aux,numcold,listcold,cold,c,Node)
+     .                      numc,listc,aux,numcold,listcold,cold,c,
+     .                      nbasisloc,Node)
 C ******************************************************************************
 C Subroutine to extrapolate a given matrix M (like the coefficients of the
 C wave functions, or the density matrix) for the next MD step.
@@ -54,14 +55,14 @@ C *****************************************************************************
       implicit none
 
       integer 
-     .  iord,istep,maxnc,nbasis,nbasisCloc,nspin,Node
+     .  iord,istep,maxnc,nbasis,nbasisCloc,nspin,Node,nbasisloc
 
       integer 
-     .  listc(maxnc,nbasisCloc),listcold(maxnc,nbasisCloc),
-     .  numc(nbasisCloc),numcold(nbasisCloc)
+     .  listc(maxnc,nbasisCloc),listcold(maxnc,nbasisloc),
+     .  numc(nbasisCloc),numcold(nbasisloc)
 
       real(dp) ::
-     .  aux(2,nbasis),cold(maxnc,nbasisCloc,nspin),
+     .  aux(2,nbasis),cold(maxnc,nbasisloc,nspin),
      .  c(maxnc,nbasisCloc,nspin)
  
 C  Internal variables .......................................................
@@ -82,7 +83,7 @@ C ...........................................................................
 
 C Just initialize numcold and listcold if istep = 1 ...........................
       if (istep .eq. 1) then
-        do i = 1,nbasisCloc
+        do i = 1,nbasisloc
           numcold(i) = numc(i)
           do in = 1,numc(i)
             listcold(in,i) = listc(in,i)
@@ -96,7 +97,7 @@ C Just initialize numcold and listcold if istep = 1 ...........................
       else
 
 C Check if sparse structure has changed .....................................
-        do i = 1,nbasisCloc
+        do i = 1,nbasisloc
           if (numcold(i).ne.numc(i)) goto 10
           do in = 1,numc(i)
             if (listcold(in,i).ne.listc(in,i)) goto 10
@@ -114,7 +115,7 @@ C and change numcold and listcold to current ones .............................
           enddo
         enddo
   
-        do i = 1,nbasisCloc
+        do i = 1,nbasisloc
           do ispin = 1,nspin
             do in = 1,numcold(i)
               j = listcold(in,i)
@@ -142,7 +143,7 @@ C Extrapolate matrix M ......................................................
 20      continue
 
         do ispin = 1,nspin
-          do i = 1,nbasisCloc
+          do i = 1,nbasisloc
             do in = 1,numc(i)
               msave = c(in,i,ispin)
               if (iord.eq.1 .and. cold(in,i,ispin).ne.0.0d0) then

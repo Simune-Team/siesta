@@ -1,11 +1,15 @@
-      subroutine iolwf( task, nbasis, nbasisCloc, maxnc, found, nspin)
+      subroutine iolwf( task, nbasis, nbasisCloc, nbasisloc, maxnc, 
+     .                  found, nspin)
 C *******************************************************************
 C Reads/writes localized wave functions from/to file
 C Written by P.Ordejon and J.M.Soler. May 1997.
 C ********* INPUT ***************************************************
-C character task*3 : 'read' or 'write'
-C integer   nbasis : Number of atomic orbitals
-C integer   nspin  : Number of spins (1 or 2)
+C character task*3     : 'read' or 'write'
+C integer   nbasis     : Number of atomic orbitals globally
+C integer   nbasisCloc : Number of rows stored locally in C
+C integer   nbasisloc  : Number of orbitals for which the current node
+C                      : is responsible
+C integer   nspin      : Number of spins (1 or 2)
 C ********* INPUT OR OUTPUT (depending on task) *********************
 C integer numc(nbasis)       : Control vector of c matrix
 C                              (number of nonzero elements of each row)
@@ -41,7 +45,7 @@ C
 
       character task*(*), paste*33
       logical   found
-      integer   nbasis, nbasisCloc, nspin, maxnc
+      integer   nbasis, nbasisCloc, nbasisloc, nspin, maxnc
       external  chkdim, io_assign, io_close, paste, timer, memory
 
 C Internal variables and arrays
@@ -164,16 +168,16 @@ C Check size of arrays
           if (ncmax.gt.maxnc) then
             maxnc = ncmax 
             call re_alloc(listc,1,maxnc,1,nbasisCloc,name='listc')
-            call re_alloc(listcold,1,maxnc,1,nbasisCloc,name='listcold')
+            call re_alloc(listcold,1,maxnc,1,nbasisloc,name='listcold')
             call re_alloc(c,1,maxnc,1,nbasisCloc,1,nspin,name='c')
-            call re_alloc(cold,1,maxnc,1,nbasisCloc,1,nspin,name='cold')
+            call re_alloc(cold,1,maxnc,1,nbasisloc,1,nspin,name='cold')
             call re_alloc(xi,1,maxnc,1,nbasisCloc,1,nspin,name='xi')
             call re_alloc(g,1,maxnc,1,nbasisCloc,1,nspin,name='g')
             call re_alloc(hg,1,maxnc,1,nbasisCloc,1,nspin,name='hg')
           endif
 
 C Initialise C before reading
-          cold(1:maxnc,1:nbasisCloc,1:nspin) = 0.0d0
+          cold(1:maxnc,1:nbasisloc,1:nspin) = 0.0d0
 
 C Loop over basis functions reading in rows of listc and distributing
           do m = 1,nbasis 
