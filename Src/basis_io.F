@@ -474,8 +474,7 @@ c
 
 #ifndef CDF
       subroutine dump_basis_netcdf
-      write(6,'(/,a,/)')
-     $     '*** Install netCDF and get a nice dump of atomic info...'
+!     Do nothing
       end subroutine dump_basis_netcdf
 #else
       subroutine dump_basis_netcdf
@@ -622,7 +621,8 @@ c
         iret = nf90_put_var(ncid,orbnl_n_id,spp%orbnl_n,count=(/norbs/))
         iret = nf90_put_var(ncid,orbnl_z_id,spp%orbnl_z,count=(/norbs/))
 
-        if (norbs .gt. maxnorbs) call die("dump2cdf: Increase maxnorbs")
+        if (norbs .gt. maxnorbs)
+     $        call die("dump_basis_netcdf: Increase maxnorbs")
         aux(1:norbs) = 0
         do i = 1, norbs
            if (spp%orbnl_ispol(i)) aux(i)=1

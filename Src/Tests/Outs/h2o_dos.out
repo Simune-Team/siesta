@@ -1,11 +1,11 @@
 SIESTA 1.1 -- [] (Sept 22, 2001)
-Architecture  : SIESTA_ARCH
-Compiler flags: FFLAGS
+Architecture  : osfdxml
+Compiler flags: f90 -fast -tune host
 SERIAL version
 NetCDF-capable
 
 * Running in serial mode
->> Start of run:  22-SEP-2001  14:52:08
+>> Start of run:  24-SEP-2001  16:20:17
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -14,9 +14,17 @@ Reading from standard input...
 
 *: ****************** Dump of input data file ****************************
 SystemName          Water molecule
-SystemLabel         h2o
+SystemLabel         h2o_dos
 NumberOfAtoms       3
 NumberOfSpecies     2
+%block Projected-density-of-states
+-26.00 4.00 0.200 500 eV
+%endblock Projected-density-of-states
+%block kgrid_Monkhorst_Pack
+   2  0  0  0.5
+   0  2  0  0.5
+   0  0  2  0.5
+%endblock kgrid_Monkhorst_Pack
 %block ChemicalSpeciesLabel
  1  8  O      # Species index, atomic number, species label
  2  1  H
@@ -38,7 +46,7 @@ redata:
 redata: -----------------------------------------------------------------------
 redata: System Name: Water molecule                                             
 redata: -----------------------------------------------------------------------
-redata: System Label                     =     h2o                 
+redata: System Label                     =     h2o_dos             
 
 initatom: Reading input for the pseudopotentials and atomic orbitals
  Species number:            1  Label: O Atomic number:           8
@@ -330,6 +338,16 @@ siesta:    0.000000    0.000000    5.621012
 
 siesta: System type = molecule  
 
+siesta: k-grid: Number of k-points =     4
+siesta: k-grid: Cutoff             =     5.621 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    2   0   0      0.500
+siesta: k-grid:    0   2   0      0.500
+siesta: k-grid:    0   0   2      0.500
+
+superc: Internal auxiliary supercell:     2 x     3 x     3  =      18
+superc: Number of atoms, orbitals, and projectors:     54   414   612
+
 
 * Maximum dynamic memory allocated =     2 MB
 
@@ -337,11 +355,14 @@ siesta:    ===============================
 siesta:        Begin MD step =      1
 siesta:    ===============================
 
+superc: Internal auxiliary supercell:     2 x     3 x     3  =      18
+superc: Number of atoms, orbitals, and projectors:     54   414   612
+
 InitMesh: MESH =    32 x    30 x    24 =       23040
 InitMesh: Mesh cutoff (required, used) =    50.000    50.384 Ry
 
 
-* Maximum dynamic memory allocated =     3 MB
+* Maximum dynamic memory allocated =     4 MB
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =     815.854478
@@ -360,7 +381,7 @@ siesta: FreeEng =    -461.720725
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -466.4303     -461.7207     -461.7207  1.4383 -4.2475
-timer: Routine,Calls,Time,% = IterSCF        1       6.220  70.51
+timer: Routine,Calls,Time,% = IterSCF        1       6.303  68.60
 siesta:    2     -466.8703     -465.2425     -465.2425  0.1755 -0.1474
 siesta:    3     -465.9264     -465.4655     -465.4655  0.0515 -1.5862
 siesta:    4     -465.8472     -465.5656     -465.5656  0.0176 -1.9935
@@ -404,7 +425,18 @@ siesta: Eigenvalues (eV):
    1  1 -24.74 -12.70  -8.71  -6.23   1.68   4.09   9.85  11.56  12.26  13.34
          14.68  21.97  24.22  27.21  28.65  32.19  42.80  42.94  46.15  48.83
          49.89  70.65  96.18
+   2  1 -24.74 -12.70  -8.71  -6.23   1.68   4.09   9.85  11.56  12.26  13.34
+         14.68  21.97  24.22  27.21  28.65  32.19  42.80  42.94  46.15  48.83
+         49.89  70.65  96.18
+   3  1 -24.74 -12.70  -8.71  -6.23   1.68   4.09   9.85  11.56  12.26  13.34
+         14.68  21.97  24.22  27.21  28.65  32.19  42.80  42.94  46.15  48.83
+         49.89  70.65  96.18
+   4  1 -24.74 -12.70  -8.71  -6.23   1.68   4.09   9.85  11.56  12.26  13.34
+         14.68  21.97  24.22  27.21  28.65  32.19  42.80  42.94  46.15  48.83
+         49.89  70.65  96.18
 siesta: Fermi energy =      -2.152973 eV
+siesta: PDOS info: 
+siesta: e1, e2, sigma, nhist:   -26.00 eV    4.00 eV    0.20 eV    500
 
 siesta: Program's energy decomposition (eV):
 siesta:-Eions   =    -815.854478
@@ -461,28 +493,29 @@ siesta: Electric dipole (Debye) =    0.000000    1.418483    0.000000
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      10.494      10.494    99.98
-timer:  Setup             1       0.870       0.870     8.29
-timer:  bands             1       0.000       0.000     0.00
+timer:  siesta            1      11.322      11.322    99.98
+timer:  Setup             1       1.125       1.125     9.94
+timer:  bands             1       0.001       0.001     0.01
 timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD            1       9.617       9.617    91.62
-timer:  hsparse           2       0.004       0.009     0.08
-timer:  overfsm           2       0.862       1.724    16.42
-timer:  IterSCF          23       0.343       7.878    75.06
-timer:  kinefsm           2       0.821       1.643    15.65
-timer:  nlefsm            2       2.162       4.325    41.20
-timer:  DHSCF            23       0.077       1.775    16.91
-timer:  DHSCF1            1       0.055       0.055     0.52
-timer:  DHSCF2            1       0.117       0.117     1.12
-timer:  REORD           186       0.000       0.054     0.51
-timer:  POISON           24       0.013       0.318     3.03
-timer:  DHSCF3           23       0.063       1.452    13.84
-timer:  rhoofd           23       0.019       0.426     4.05
-timer:  CELLXC           23       0.012       0.278     2.65
-timer:  vmat             23       0.013       0.297     2.83
-timer:  diagon           22       0.002       0.040     0.38
-timer:  rdiag            22       0.002       0.033     0.32
-timer:  DHSCF4            1       0.149       0.149     1.42
-timer:  dfscf             1       0.133       0.133     1.26
+timer:  IterMD            1       9.998       9.998    88.30
+timer:  hsparse           2       0.008       0.016     0.14
+timer:  overfsm           2       0.867       1.733    15.31
+timer:  IterSCF          23       0.358       8.232    72.69
+timer:  kinefsm           2       0.825       1.650    14.58
+timer:  nlefsm            2       2.169       4.337    38.30
+timer:  DHSCF            23       0.082       1.875    16.56
+timer:  DHSCF1            1       0.065       0.065     0.58
+timer:  DHSCF2            1       0.164       0.164     1.45
+timer:  REORD           186       0.000       0.060     0.53
+timer:  POISON           24       0.014       0.335     2.96
+timer:  DHSCF3           23       0.065       1.497    13.22
+timer:  rhoofd           23       0.019       0.435     3.84
+timer:  CELLXC           23       0.012       0.285     2.52
+timer:  vmat             23       0.014       0.315     2.78
+timer:  diagon           22       0.012       0.271     2.40
+timer:  cdiag           180       0.001       0.214     1.89
+timer:  DHSCF4            1       0.144       0.144     1.28
+timer:  dfscf             1       0.124       0.124     1.09
+timer:  pdos              1       0.187       0.187     1.65
   
->> End of run:  22-SEP-2001  14:52:19
+>> End of run:  24-SEP-2001  16:20:29

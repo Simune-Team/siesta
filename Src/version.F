@@ -9,15 +9,15 @@ c     in which case the PL should be reset to zero.
 c
 c     A self-consistent commit is a group of changes that fix a bug
 c     or implement a new feature, in such a way that the program can
-c     be compiled (no loose ends left). An update to the ChangeLog file
+c     be compiled (no loose ends left). An update to the CHANGES file
 c     should be an integral part of a commit (the PL number should be
 c     included for reference.)
 c
 c     After it is done, this file should be commited.
 c
-      integer, dimension(3), save  :: num_version = (/1,0,61/)
+      integer, dimension(3), save  :: num_version = (/1,1,0/)
       character(len=80), parameter :: version_str =
-     . "SIESTA 1.0.62 -- [Projected Density Of States] (Sept 24, 2001)"
+     . "SIESTA 1.1 -- [RELEASE] (Sept 25, 2001)"
 
       end module version_info
 

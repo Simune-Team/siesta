@@ -1854,19 +1854,17 @@ c     Find the desired energy range
      $             e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
 !
          endif  ! IOnode
-#ifdef MPI
-        call MPI_Bcast(e1,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(e2,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
+
+!        call MPI_Bcast(e1,1,DAT_double,0,MPI_Comm_World,MPIerror)
+!        call MPI_Bcast(e2,1,DAT_double,0,MPI_Comm_World,MPIerror)
+!        call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
+!        call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+
         call pdos( no_s, nspin, nspin, no_l, maxnh,
      .             no_u, numh, listhptr, listh, H, S,
      .             e1, e2, sigma, nhist,
      .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
      .             nbk, bk, ebk, no_u)
-
-!        if (IOnode) write(6,*) 'PDOS not implemented yet'
 
 #endif                          ! PDOS calc (only in serial version)
       endif                     ! PDOS calc (do_pdos)                         

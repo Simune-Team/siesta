@@ -1,11 +1,11 @@
-SIESTA 1.0.60 -- [Memory workaround] (Sept 11, 2001)
-Architecture  : osfdxml
-Compiler flags: f90 -fast -tune host
+SIESTA 1.1 -- [] (Sept 22, 2001)
+Architecture  : SIESTA_ARCH
+Compiler flags: FFLAGS
 SERIAL version
 NetCDF-capable
 
 * Running in serial mode
->> Start of run:  15-SEP-2001  17:37:56
+>> Start of run:  22-SEP-2001  15:10:25
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -13,7 +13,6 @@ NetCDF-capable
 Reading from standard input...
 
 *: ****************** Dump of input data file ****************************
-# $Id: fe.out,v 1.1 2001/09/15 16:11:43 wdpgaara Exp $
 # -----------------------------------------------------------------------------
 # FDF for bcc iron
 #
@@ -98,11 +97,11 @@ redata: System Label                     =     Fe
 
 initatom: Reading input for the pseudopotentials and atomic orbitals
  Species number:            1  Label: Fe Atomic number:          26
-Ground state valence configuration:
-           4 s           2
-           3 d           6
+Ground state valence configuration:   4s02  3d06
+Reading pseudopotential information in formatted form from Fe.psf
  Warning: Empty PAO shell. l =           1
  Will have a KB projector anyway...
+<basis_specs>
 ======================================================================
 Fe                   Z=  26    Mass=  55.850        Charge=  0.0000    
 Lmxo=2 Lmxkb=3     BasisType=split      Semic=F
@@ -130,6 +129,7 @@ L=1  Nkbl=1  erefs: 0.17977+309
 L=2  Nkbl=1  erefs: 0.17977+309
 L=3  Nkbl=1  erefs: 0.17977+309
 ======================================================================
+</basis_specs>
 ATOM: Called for Fe  (Z =  26)
 
 read_vps: Pseudopotential generation method:
@@ -254,10 +254,7 @@ Fe          2                    # Species label, number of l-shells
 %endblock PAO.Basis
 
 prinput: *****
-
-*** Dumping atomic info in netCDF format (.nc files)
-
-Dumping basis to NetCDF file Fe.dump.nc
+Dumping basis to NetCDF file Fe.ion.nc
 coor: Atomic-coordinates input format  =     Fractional
 redata: Number of spin components        =     2
 redata: Long output                      =     F
@@ -340,7 +337,7 @@ siesta: FreeEng =    -784.257805
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -784.0820     -784.2578     -784.2578  0.9324 -5.2097
-timer: Routine,Calls,Time,% = IterSCF        1      33.888  87.95
+timer: Routine,Calls,Time,% = IterSCF        1      32.704  87.55
 siesta:    2     -784.4933     -784.3232     -784.3258  0.0611 -6.2768
 siesta:    3     -784.4455     -784.3181     -784.3198  0.0797 -6.0975
 siesta:    4     -784.4276     -784.3780     -784.3798  0.0298 -5.7868
@@ -5184,28 +5181,28 @@ siesta: Total spin polarization (Qup-Qdown) =    2.320694
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1     510.205     510.205   100.00
-timer:  Setup             1       0.650       0.650     0.13
-timer:  bands             3       0.219       0.658     0.13
+timer:  siesta            1     508.330     508.330   100.00
+timer:  Setup             1       0.634       0.634     0.12
+timer:  bands             3       0.218       0.655     0.13
 timer:  KSV_init          1       0.001       0.001     0.00
-timer:  IterMD            1     508.618     508.618    99.69
-timer:  hsparse           2       0.560       1.120     0.22
-timer:  overfsm           2       1.152       2.303     0.45
-timer:  IterSCF          25      20.185     504.619    98.90
-timer:  kinefsm           2       1.101       2.202     0.43
-timer:  nlefsm            2       4.640       9.280     1.82
-timer:  DHSCF            25       2.302      57.548    11.28
-timer:  DHSCF1            1       0.398       0.398     0.08
-timer:  DHSCF2            1       4.690       4.690     0.92
-timer:  REORD           227       0.000       0.009     0.00
-timer:  POISON           26       0.001       0.038     0.01
-timer:  DHSCF3           25       2.025      50.626     9.92
-timer:  rhoofd           50       0.476      23.784     4.66
-timer:  CELLXC           25       0.053       1.318     0.26
-timer:  vmat             50       0.509      25.428     4.98
-timer:  diagon           24      18.104     434.491    85.16
-timer:  cdiag        113830       0.000      55.070    10.79
-timer:  DHSCF4            1       1.807       1.807     0.35
-timer:  dfscf             1       1.454       1.454     0.29
+timer:  IterMD            1     506.757     506.757    99.69
+timer:  hsparse           2       0.562       1.123     0.22
+timer:  overfsm           2       1.161       2.323     0.46
+timer:  IterSCF          25      20.109     502.737    98.90
+timer:  kinefsm           2       1.112       2.223     0.44
+timer:  nlefsm            2       4.632       9.263     1.82
+timer:  DHSCF            25       2.293      57.331    11.28
+timer:  DHSCF1            1       0.400       0.400     0.08
+timer:  DHSCF2            1       3.512       3.512     0.69
+timer:  REORD           227       0.000       0.011     0.00
+timer:  POISON           26       0.002       0.043     0.01
+timer:  DHSCF3           25       2.065      51.627    10.16
+timer:  rhoofd           50       0.486      24.316     4.78
+timer:  CELLXC           25       0.051       1.278     0.25
+timer:  vmat             50       0.519      25.935     5.10
+timer:  diagon           24      18.029     432.707    85.12
+timer:  cdiag        113830       0.000      55.567    10.93
+timer:  DHSCF4            1       1.770       1.770     0.35
+timer:  dfscf             1       1.497       1.497     0.29
   
->> End of run:  15-SEP-2001  17:46:28
+>> End of run:  22-SEP-2001  15:18:55

@@ -496,7 +496,7 @@ C Global reduction of grad
       do k = 1,nbasis
         do ik = 1,numc(k)
           j = listc(ik,k)
-          grad(ik,k) = 4.d0 * f(k,j) + grad(ik,k)
+          grad(ik,k) = 4.d0 * f(k,j)
         enddo
       enddo
 #endif
@@ -564,7 +564,7 @@ C (only products of neccesary elements)
                 j = listftl(muk,mul)
                 a0 = a0 + bux2(j,i) * ftl2(j,mul)
               enddo
-              cl(cttoc(ik,i),mul) = cl(cttoc(ik,i),mul) -2.0 * a0
+              cl(cttoc(ik,i),mul) = cl(cttoc(ik,i),mul) -2.0d0*a0
             endif
           enddo
 #else
@@ -576,7 +576,7 @@ C (only products of neccesary elements)
               a0 = a0 + bux1(j,i) * fst(j,mu) + bux2(j,i) * 
      .          ft(j,mu)
             enddo
-            grad(cttoc(ik,i),mu) = (-2.d0) * a0
+            grad(cttoc(ik,i),mu) = grad(cttoc(ik,i),mu) -2.0d0*a0
           enddo
 #endif
         enddo

@@ -1,3 +1,37 @@
+Dear Colleague:
+
+We are pleased to announce the availability of SIESTA 1.1, the first
+major release of our Self-Consistent DFT LCAO program since
+1999. (See the Release Notes at the end of this file.)
+
+You can download the new version by pointing your Web browser to
+
+http://trastero.uam.es/descarga?id=XXXXX_Serial__XXXXX
+
+Just enter your email address in the input field of the form and
+click on the "Descarga" button.
+
+Please note that this URL will work for a limited period of time (nine
+days approximately). If you cannot download the file in the next few
+days, please contact Oscar Paz (oscar.paz@uam.es) to request a new URL.
+Oscar will help you with any other downloading problems.
+
+Best wishes,
+
+      The SIESTA team (http://www.uam.es/siesta)  siesta@wm.lc.ehu.es
+
+      Emilio Artacho,        University of Cambridge
+      Julian Gale,           Imperial College, London
+      Alberto Garcia,        Universidad del Pais Vasco, Bilbao
+      Javier Junquera        Universidad Autonoma de Madrid
+      Richard M. Martin,     University of Illinois at Urbana-Champaign
+      Pablo Ordejon,         ICMAB-CSIC, Barcelona
+      Daniel Sanchez-Portal, Universidad del Pais Vasco, San Sebastian
+      Jose M. Soler,         Universidad Autonoma de Madrid
+
+
+=======================
+
 Release Notes for SIESTA-1.1, September 25, 2001
 
 (See the Manual for documentation of the new features. A complete list
@@ -66,6 +100,8 @@ problems regarding:
 
 We encourage you to follow the bug reporting guidelines in the SIESTA
 manual.
+
+
 
 
 

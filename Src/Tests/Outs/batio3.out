@@ -1,11 +1,11 @@
-SIESTA 1.0.59 -- [pgf90 fixes] (July 10, 2001)
+SIESTA 1.1 -- [] (Sept 22, 2001)
 Architecture  : SIESTA_ARCH
 Compiler flags: FFLAGS
 SERIAL version
 NetCDF-capable
 
 * Running in serial mode
->> Start of run:  24-JUL-2001  12:51:29
+>> Start of run:  22-SEP-2001  14:52:19
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -129,21 +129,20 @@ initatom: Reading input for the pseudopotentials and atomic orbitals
  Species number:            1  Label: Ba Atomic number:          56
  Species number:            2  Label: Ti Atomic number:          22
  Species number:            3  Label: O Atomic number:           8
-Ground state valence configuration:
-           6 s           2
+Ground state valence configuration:   6s02
+Reading pseudopotential information in formatted form from Ba.psf
 Semicore shell(s) with  8 electrons included in the valence for
 Ba
-Ground state valence configuration:
-           4 s           2
-           3 d           2
+Ground state valence configuration:   4s02  3d02
+Reading pseudopotential information in formatted form from Ti.psf
 Semicore shell(s) with  8 electrons included in the valence for
 Ti
-Ground state valence configuration:
-           2 s           2
-           2 p           4
+Ground state valence configuration:   2s02  2p04
+Reading pseudopotential information in formatted form from O.psf
 relmxkb: Read Max KB Ang. Momentum=    3 for species Ba
 relmxkb: Read Max KB Ang. Momentum=    3 for species Ti
 relmxkb: Read Max KB Ang. Momentum=    3 for species O
+<basis_specs>
 ======================================================================
 Ba                   Z=  56    Mass=  137.33        Charge= 0.70000    
 Lmxo=2 Lmxkb=3     BasisType=split      Semic=T
@@ -181,70 +180,7 @@ L=1  Nkbl=2  erefs: 0.17977+309 0.17977+309
 L=2  Nkbl=1  erefs: 0.17977+309
 L=3  Nkbl=1  erefs: 0.17977+309
 ======================================================================
-======================================================================
-Ti                   Z=  22    Mass=  47.880        Charge=  1.9100    
-Lmxo=2 Lmxkb=3     BasisType=split      Semic=T
-L=0  Nsemic=1  Cnfigmx=4
-          n=1  nzeta=1  polorb=0
-               vcte:    93.950    
-               rinn:    5.2000    
-                rcs:    5.6995    
-            lambdas:    1.0000    
-          n=2  nzeta=2  polorb=0
-               vcte:    96.470    
-               rinn:    5.6000    
-                rcs:    6.1000      5.0994    
-            lambdas:    1.0000      1.0000    
-L=1  Nsemic=1  Cnfigmx=4
-          n=1  nzeta=1  polorb=0
-               vcte:    95.470    
-               rinn:    5.2000    
-                rcs:    5.6994    
-            lambdas:    1.0000    
-          n=2  nzeta=1  polorb=0
-               vcte:   0.50000    
-               rinn:    1.7700    
-                rcs:    3.0537    
-            lambdas:    1.0000    
-L=2  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=2  polorb=0
-               vcte:    46.050    
-               rinn:    4.9500    
-                rcs:    5.9433      4.7001    
-            lambdas:    1.0000      1.0000    
-----------------------------------------------------------------------
-L=0  Nkbl=2  erefs: 0.17977+309 0.17977+309
-L=1  Nkbl=2  erefs: 0.17977+309 0.17977+309
-L=2  Nkbl=1  erefs: 0.17977+309
-L=3  Nkbl=1  erefs: 0.17977+309
-======================================================================
-======================================================================
-O                    Z=   8    Mass=  16.000        Charge=-0.28000    
-Lmxo=2 Lmxkb=3     BasisType=split      Semic=F
-L=0  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=0
-               vcte:    40.580    
-               rinn:    3.9500    
-                rcs:    4.9527      3.6033    
-            lambdas:    1.0000      1.0000    
-L=1  Nsemic=0  Cnfigmx=2
-          n=1  nzeta=2  polorb=0
-               vcte:    36.780    
-               rinn:    4.3500    
-                rcs:    4.9999      3.8975    
-            lambdas:    1.0000      1.0000    
-L=2  Nsemic=0  Cnfigmx=3
-          n=1  nzeta=1  polorb=0
-               vcte:    21.690    
-               rinn:   0.93000    
-                rcs:    2.7328    
-            lambdas:    1.0000    
-----------------------------------------------------------------------
-L=0  Nkbl=1  erefs: 0.17977+309
-L=1  Nkbl=1  erefs: 0.17977+309
-L=2  Nkbl=1  erefs: 0.17977+309
-L=3  Nkbl=1  erefs: 0.17977+309
-======================================================================
+</basis_specs>
 ATOM: Called for Ba  (Z =  56)
 
 read_vps: Pseudopotential generation method:
@@ -270,9 +206,9 @@ VLOCAL1: 99.0% of the norm of Vloc inside      7.549 Ry
 VLOCAL1: 99.9% of the norm of Vloc inside     17.204 Ry
 ATOM: Maximum radius for local-pseudopot. charge    2.89253
 KBgen: More than one KB projector for l=  0
-KBgen: ghost states analisys will be not performed
+KBgen: ghost states analysis will be not performed
 KBgen: More than one KB projector for l=  1
-KBgen: ghost states analisys will be not performed
+KBgen: ghost states analysis will be not performed
 GHOST: No ghost state for L =  2
 GHOST: No ghost state for L =  3
 
@@ -366,6 +302,45 @@ atm_pop: Valence configuration(local Pseudopot. screening):
 Vna:  Cut-off radius for the neutral-atom potential:   7.026172
 
 ATOM:__________________________ 
+<basis_specs>
+======================================================================
+Ti                   Z=  22    Mass=  47.880        Charge=  1.9100    
+Lmxo=2 Lmxkb=3     BasisType=split      Semic=T
+L=0  Nsemic=1  Cnfigmx=4
+          n=1  nzeta=1  polorb=0
+               vcte:    93.950    
+               rinn:    5.2000    
+                rcs:    5.6995    
+            lambdas:    1.0000    
+          n=2  nzeta=2  polorb=0
+               vcte:    96.470    
+               rinn:    5.6000    
+                rcs:    6.1000      5.0994    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=1  Cnfigmx=4
+          n=1  nzeta=1  polorb=0
+               vcte:    95.470    
+               rinn:    5.2000    
+                rcs:    5.6994    
+            lambdas:    1.0000    
+          n=2  nzeta=1  polorb=0
+               vcte:   0.50000    
+               rinn:    1.7700    
+                rcs:    3.0537    
+            lambdas:    1.0000    
+L=2  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=2  polorb=0
+               vcte:    46.050    
+               rinn:    4.9500    
+                rcs:    5.9433      4.7001    
+            lambdas:    1.0000      1.0000    
+----------------------------------------------------------------------
+L=0  Nkbl=2  erefs: 0.17977+309 0.17977+309
+L=1  Nkbl=2  erefs: 0.17977+309 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+======================================================================
+</basis_specs>
 ATOM: Called for Ti  (Z =  22)
 
 read_vps: Pseudopotential generation method:
@@ -391,9 +366,9 @@ VLOCAL1: 99.0% of the norm of Vloc inside     11.334 Ry
 VLOCAL1: 99.9% of the norm of Vloc inside     25.831 Ry
 ATOM: Maximum radius for local-pseudopot. charge    2.39028
 KBgen: More than one KB projector for l=  0
-KBgen: ghost states analisys will be not performed
+KBgen: ghost states analysis will be not performed
 KBgen: More than one KB projector for l=  1
-KBgen: ghost states analisys will be not performed
+KBgen: ghost states analysis will be not performed
 GHOST: No ghost state for L =  2
 GHOST: No ghost state for L =  3
 
@@ -495,6 +470,35 @@ atm_pop: Valence configuration(local Pseudopot. screening):
 Vna:  Cut-off radius for the neutral-atom potential:   6.103968
 
 ATOM:__________________________ 
+<basis_specs>
+======================================================================
+O                    Z=   8    Mass=  16.000        Charge=-0.28000    
+Lmxo=2 Lmxkb=3     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=0
+               vcte:    40.580    
+               rinn:    3.9500    
+                rcs:    4.9527      3.6033    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=0
+               vcte:    36.780    
+               rinn:    4.3500    
+                rcs:    4.9999      3.8975    
+            lambdas:    1.0000      1.0000    
+L=2  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=1  polorb=0
+               vcte:    21.690    
+               rinn:   0.93000    
+                rcs:    2.7328    
+            lambdas:    1.0000    
+----------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+L=3  Nkbl=1  erefs: 0.17977+309
+======================================================================
+</basis_specs>
 ATOM: Called for O   (Z =   8)
 
 read_vps: Pseudopotential generation method:
@@ -650,12 +654,9 @@ O           3  -0.280            # Label, l-shells, ionic net charge
 %endblock PAO.Basis
 
 prinput: *****
-
-*** Dumping atomic info in netCDF format (.nc files)
-
-Dumping basis to NetCDF file Ba.dump.nc
-Dumping basis to NetCDF file Ti.dump.nc
-Dumping basis to NetCDF file O.dump.nc
+Dumping basis to NetCDF file Ba.ion.nc
+Dumping basis to NetCDF file Ti.ion.nc
+Dumping basis to NetCDF file O.ion.nc
 coor: Atomic-coordinates input format  =     Fractional
 redata: Number of spin components        =     1
 redata: Long output                      =     F
@@ -667,14 +668,14 @@ redata: Net charge of the system         =     0.0000 |e|
 redata: Max. number of SCF Iter          =     2
 redata: One Pulay mixing every           =     3 iterations
 redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?       =     F
+redata: Write Pulay info on disk?        =     F
 redata: New DM Mixing Weight             =     0.0200
 redata: Kick with linear mixing every    =    15 iterations
 redata: DM Mixing Weight for Kicks       =     1.0000
 redata: DM Tolerance for SCF             =     0.000100
 redata: Use continuation files for DM    =     F
 redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            = Diagonalization
+redata: Method of Calculation            =     Diagonalization
 redata: Electronic Temperature           =     0.0006  Ry
 redata: Fix the spin of the system       =     F
 redata: Dynamics option                  =     Verlet MD run
@@ -746,7 +747,7 @@ siesta: FreeEng =   -3600.155005
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1    -3617.9634    -3600.1550    -3600.1550  1.9614 -5.3223
-timer: Routine,Calls,Time,% = IterSCF        1     140.465  77.34
+timer: Routine,Calls,Time,% = IterSCF        1     135.964  77.43
 grdsam: Reading %block GridCellSampling
 grdsam: Grid-cell sampling, point   0
 grdsam: Generating displacements for grid-cell sampling
@@ -777,7 +778,7 @@ siesta: Atomic forces (eV/Ang):
 siesta: Temp_ion =       0.000 K
 
 
-* Maximum dynamic memory allocated =    62 MB
+* Maximum dynamic memory allocated =    63 MB
 
 siesta: Eigenvalues (eV):
   ik is    eps
@@ -2871,33 +2872,33 @@ siesta:          -0.24204987         -0.24205089  eV/Ang**3
 siesta:        -387.81084126       -387.81247778  kBar
 
 
-* Maximum dynamic memory allocated : Node    0 =    62 MB
+* Maximum dynamic memory allocated : Node    0 =    63 MB
 * Maximum memory occured during ranger                        
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1     579.586     579.586   100.00
-timer:  Setup             1       2.093       2.093     0.36
-timer:  bands             1       0.003       0.003     0.00
-timer:  KSV_init          1       0.002       0.002     0.00
-timer:  IterMD            1     577.344     577.344    99.61
-timer:  hsparse           2       7.372      14.743     2.54
-timer:  overfsm           2       8.526      17.052     2.94
-timer:  IterSCF           2     269.133     538.267    92.87
-timer:  kinefsm           2       8.047      16.094     2.78
-timer:  nlefsm            2      25.764      51.529     8.89
-timer:  DHSCF             9      48.643     437.786    75.53
-timer:  DHSCF1            1       1.257       1.257     0.22
-timer:  DHSCF2            7      38.441     269.084    46.43
-timer:  REORD            68       0.001       0.038     0.01
-timer:  POISON           16       0.029       0.458     0.08
-timer:  DHSCF3            9       6.981      62.833    10.84
-timer:  rhoofd            9       5.673      51.056     8.81
-timer:  CELLXC            9       0.070       0.629     0.11
-timer:  vmat              2       5.406      10.812     1.87
-timer:  diagon            1      32.268      32.268     5.57
-timer:  cdiag           512       0.022      11.457     1.98
-timer:  DHSCF4            8      13.070     104.561    18.04
-timer:  dfscf             8      11.424      91.390    15.77
+timer:  siesta            1     661.870     661.870   100.00
+timer:  Setup             1       2.153       2.153     0.33
+timer:  bands             1       0.002       0.002     0.00
+timer:  KSV_init          1       0.003       0.003     0.00
+timer:  IterMD            1     659.564     659.564    99.65
+timer:  hsparse           2       7.320      14.639     2.21
+timer:  overfsm           2       7.791      15.582     2.35
+timer:  IterSCF           2     311.040     622.079    93.99
+timer:  kinefsm           2       7.699      15.397     2.33
+timer:  nlefsm            2      24.922      49.844     7.53
+timer:  DHSCF             9      58.226     524.038    79.18
+timer:  DHSCF1            1       1.277       1.277     0.19
+timer:  DHSCF2            7      51.600     361.203    54.57
+timer:  REORD            68       0.001       0.046     0.01
+timer:  POISON           16       0.026       0.412     0.06
+timer:  DHSCF3            9       6.624      59.618     9.01
+timer:  rhoofd            9       5.440      48.959     7.40
+timer:  CELLXC            9       0.053       0.476     0.07
+timer:  vmat              2       4.931       9.862     1.49
+timer:  diagon            1      32.229      32.229     4.87
+timer:  cdiag           512       0.022      11.434     1.73
+timer:  DHSCF4            8      12.739     101.911    15.40
+timer:  dfscf             8      11.070      88.559    13.38
   
->> End of run:  24-JUL-2001  13:01:11
+>> End of run:  22-SEP-2001  15:03:27

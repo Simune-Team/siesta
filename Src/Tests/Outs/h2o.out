@@ -1,11 +1,11 @@
-SIESTA 1.0.59 -- [pgf90 fixes] (July 10, 2001)
+SIESTA 1.1 -- [] (Sept 22, 2001)
 Architecture  : SIESTA_ARCH
 Compiler flags: FFLAGS
 SERIAL version
 NetCDF-capable
 
 * Running in serial mode
->> Start of run:  24-JUL-2001  12:51:04
+>> Start of run:  22-SEP-2001  14:52:08
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -43,13 +43,13 @@ redata: System Label                     =     h2o
 initatom: Reading input for the pseudopotentials and atomic orbitals
  Species number:            1  Label: O Atomic number:           8
  Species number:            2  Label: H Atomic number:           1
-Ground state valence configuration:
-           2 s           2
-           2 p           4
-Ground state valence configuration:
-           1 s           1
+Ground state valence configuration:   2s02  2p04
+Reading pseudopotential information in formatted form from O.psf
+Ground state valence configuration:   1s01
+Reading pseudopotential information in formatted form from H.psf
  For O, increment lmxkb to           3  due to polarization orbitals.
  For H, increment lmxkb to           2  due to polarization orbitals.
+<basis_specs>
 ======================================================================
 O                    Z=   8    Mass=  16.000        Charge=  0.0000    
 Lmxo=1 Lmxkb=3     BasisType=split      Semic=F
@@ -71,20 +71,7 @@ L=1  Nkbl=1  erefs: 0.17977+309
 L=2  Nkbl=1  erefs: 0.17977+309
 L=3  Nkbl=1  erefs: 0.17977+309
 ======================================================================
-======================================================================
-H                    Z=   1    Mass=  1.0100        Charge=  0.0000    
-Lmxo=0 Lmxkb=2     BasisType=split      Semic=F
-L=0  Nsemic=0  Cnfigmx=1
-          n=1  nzeta=2  polorb=1
-               vcte:    0.0000    
-               rinn:    0.0000    
-                rcs:    0.0000      0.0000    
-            lambdas:    1.0000      1.0000    
-----------------------------------------------------------------------
-L=0  Nkbl=1  erefs: 0.17977+309
-L=1  Nkbl=1  erefs: 0.17977+309
-L=2  Nkbl=1  erefs: 0.17977+309
-======================================================================
+</basis_specs>
 ATOM: Called for O   (Z =   8)
 
 read_vps: Pseudopotential generation method:
@@ -184,6 +171,22 @@ atm_pop: Valence configuration(local Pseudopot. screening):
 Vna:  Cut-off radius for the neutral-atom potential:   3.937239
 
 ATOM:__________________________ 
+<basis_specs>
+======================================================================
+H                    Z=   1    Mass=  1.0100        Charge=  0.0000    
+Lmxo=0 Lmxkb=2     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=1
+          n=1  nzeta=2  polorb=1
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+----------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+======================================================================
+</basis_specs>
 ATOM: Called for H   (Z =   1)
 
 read_vps: Pseudopotential generation method:
@@ -281,11 +284,8 @@ H           1                    # Species label, number of l-shells
 %endblock PAO.Basis
 
 prinput: *****
-
-*** Dumping atomic info in netCDF format (.nc files)
-
-Dumping basis to NetCDF file O.dump.nc
-Dumping basis to NetCDF file H.dump.nc
+Dumping basis to NetCDF file O.ion.nc
+Dumping basis to NetCDF file H.ion.nc
 coor: Atomic-coordinates input format  =     Cartesian coordinates
 coor:                                        (in Angstroms)
 redata: Number of spin components        =     1
@@ -298,14 +298,14 @@ redata: Net charge of the system         =     0.0000 |e|
 redata: Max. number of SCF Iter          =    50
 redata: Mixing is linear
 redata: Mix DM in first SCF step ?       =     F
-redata: Write Pulay info on disk?       =     F
+redata: Write Pulay info on disk?        =     F
 redata: New DM Mixing Weight             =     0.2500
 redata: No kicks to SCF
 redata: DM Mixing Weight for Kicks       =     0.5000
 redata: DM Tolerance for SCF             =     0.000100
 redata: Use continuation files for DM    =     F
 redata: Neglect nonoverlap interactions  =     F
-redata: Method of Calculation            = Diagonalization
+redata: Method of Calculation            =     Diagonalization
 redata: Electronic Temperature           =     0.0019  Ry
 redata: Fix the spin of the system       =     F
 redata: Dynamics option                  =     Verlet MD run
@@ -360,7 +360,7 @@ siesta: FreeEng =    -461.720725
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -466.4303     -461.7207     -461.7207  1.4383 -4.2475
-timer: Routine,Calls,Time,% = IterSCF        1       6.955  69.66
+timer: Routine,Calls,Time,% = IterSCF        1       6.220  70.51
 siesta:    2     -466.8703     -465.2425     -465.2425  0.1755 -0.1474
 siesta:    3     -465.9264     -465.4655     -465.4655  0.0515 -1.5862
 siesta:    4     -465.8472     -465.5656     -465.5656  0.0176 -1.9935
@@ -461,28 +461,28 @@ siesta: Electric dipole (Debye) =    0.000000    1.418483    0.000000
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      11.620      11.620    99.99
-timer:  Setup             1       0.878       0.878     7.56
-timer:  bands             1       0.001       0.001     0.01
+timer:  siesta            1      10.494      10.494    99.98
+timer:  Setup             1       0.870       0.870     8.29
+timer:  bands             1       0.000       0.000     0.00
 timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD            1      10.733      10.733    92.36
+timer:  IterMD            1       9.617       9.617    91.62
 timer:  hsparse           2       0.004       0.009     0.08
-timer:  overfsm           2       1.071       2.141    18.43
-timer:  IterSCF          23       0.373       8.575    73.79
-timer:  kinefsm           2       0.895       1.789    15.39
-timer:  nlefsm            2       2.439       4.878    41.98
-timer:  DHSCF            23       0.076       1.749    15.05
-timer:  DHSCF1            1       0.056       0.056     0.48
-timer:  DHSCF2            1       0.116       0.116     1.00
-timer:  REORD           186       0.000       0.048     0.41
-timer:  POISON           24       0.013       0.316     2.72
-timer:  DHSCF3           23       0.063       1.438    12.37
-timer:  rhoofd           23       0.018       0.420     3.61
-timer:  CELLXC           23       0.012       0.281     2.42
-timer:  vmat             23       0.013       0.296     2.54
-timer:  diagon           22       0.001       0.032     0.28
-timer:  rdiag            22       0.001       0.023     0.20
-timer:  DHSCF4            1       0.138       0.138     1.18
-timer:  dfscf             1       0.120       0.120     1.03
+timer:  overfsm           2       0.862       1.724    16.42
+timer:  IterSCF          23       0.343       7.878    75.06
+timer:  kinefsm           2       0.821       1.643    15.65
+timer:  nlefsm            2       2.162       4.325    41.20
+timer:  DHSCF            23       0.077       1.775    16.91
+timer:  DHSCF1            1       0.055       0.055     0.52
+timer:  DHSCF2            1       0.117       0.117     1.12
+timer:  REORD           186       0.000       0.054     0.51
+timer:  POISON           24       0.013       0.318     3.03
+timer:  DHSCF3           23       0.063       1.452    13.84
+timer:  rhoofd           23       0.019       0.426     4.05
+timer:  CELLXC           23       0.012       0.278     2.65
+timer:  vmat             23       0.013       0.297     2.83
+timer:  diagon           22       0.002       0.040     0.38
+timer:  rdiag            22       0.002       0.033     0.32
+timer:  DHSCF4            1       0.149       0.149     1.42
+timer:  dfscf             1       0.133       0.133     1.26
   
->> End of run:  24-JUL-2001  12:51:17
+>> End of run:  22-SEP-2001  14:52:19
