@@ -112,7 +112,6 @@ C Matrices for 2D
       integer                 :: ibtype
       integer                 :: ilaenv
       integer                 :: info
-      integer                 :: iter
       integer                 :: liwork
       integer                 :: lrwork
       integer                 :: lwork
@@ -164,10 +163,6 @@ C*******************************************************************************
 
 C Initialise error flag
       ierror = 0
-
-! vl and vu are not currently used, but they must be initialized
-      vl = 0
-      vu = n
 
 C Set algorithm logicals
       if (DoRead) then
@@ -277,9 +272,6 @@ C NB: Divide and conquer doesnot have eigenvalue only case in Scalapack
       abstol = 1.0d-8
       orfac  = 1.0d-3
 
-C Set BFG parameters
-      iter = - 1
-
 C Calculate memory requirements
       if (Serial) then
         if (DivideConquer) then
@@ -309,33 +301,28 @@ C Calculate memory requirements
       else
         if (Use2D) then
           call blacs_gridinfo(desc_h2d(2),nprow,npcol,myrow,mycol)
+          iarow = indxg2p(1,desc_h2d(6),myrow,desc_h2d(7),nprow)
+          iacol = indxg2p(1,desc_h2d(5),mycol,desc_h2d(8),npcol)
         else
           call blacs_gridinfo(desch(2),nprow,npcol,myrow,mycol)
+          iarow = indxg2p(1,desch(6),myrow,desch(7),nprow)
+          iacol = indxg2p(1,desch(5),mycol,desch(8),npcol)
         endif
         nn = max(n,BlockSize)
         nn = max(nn,2)
+        np0 = numroc(nn,BlockSize,0,0,nprow)
+        mq0 = numroc(nn,BlockSize,0,0,npcol)
+        np = numroc(n,BlockSize,myrow,iarow,nprow)
+        nq = numroc(n,BlockSize,mycol,iacol,npcol)
         if (DivideConquer) then
-          np0 = numroc(nn,BlockSize,0,0,nprow)
-          mq0 = numroc(nn,BlockSize,0,0,npcol)
           lwork = n + BlockSize*(np0 + mq0 + BlockSize)
           nhegst_lwopt = (2*np + nq)*BlockSize + 
      .                   BlockSize*BlockSize
           lwork = max(lwork,nhegst_lwopt)
-          if (Use2D) then
-            iarow = indxg2p(1,desc_h2d(6),myrow,desc_h2d(7),nprow)
-            iacol = indxg2p(1,desc_h2d(5),mycol,desc_h2d(8),npcol)
-          else
-            iarow = indxg2p(1,desch(6),myrow,desch(7),nprow)
-            iacol = indxg2p(1,desch(5),mycol,desch(8),npcol)
-          endif
-          np = numroc(n,BlockSize,myrow,iarow,nprow)
-          nq = numroc(n,BlockSize,mycol,iacol,npcol)
 C Note: Scalapack documentation fibs about the size of lrwork!
           lrwork = 1 + 10*n + 3*np*nq
           liwork = 7*n + 8*Nodes + 2
         else
-          np0 = numroc(nn,BlockSize,0,0,nprow)
-          mq0 = numroc(nn,BlockSize,0,0,npcol)
           if (neigvec.gt.0) then
             lwork = n + (np0 + mq0 + BlockSize)*BlockSize
 

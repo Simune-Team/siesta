@@ -112,7 +112,6 @@ C Matrices for 2D
       character               :: range
       integer                 :: ilaenv
       integer                 :: info
-      integer                 :: iter
       integer                 :: liwork
       integer                 :: lwork
       integer                 :: nb
@@ -269,9 +268,6 @@ C Set general Lapack parameters
       orfac  = 1.0d-3
       one = 1.0d0
 
-C Set BFG parameters
-      iter = - 1
-
 C Calculate memory requirements
       if (Serial) then
         if (DivideConquer) then
@@ -329,7 +325,7 @@ C Calculate memory requirements
             lwork2 = max(5*n + nsytrd_lwopt,nsygst_lwopt)
             lwork = max(lwork,lwork2)
           else
-            lwork = 5*n + max(5*nn,BlockSize*(np+1))
+            lwork = 5*n + max(5*nn,BlockSize*(np0+1))
           endif
           liwork = 6*max(n,Nodes+1,4)
         endif

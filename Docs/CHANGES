@@ -1,6 +1,22 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.50
+Date: 2005/03/29 07:30 GMT 
+Title: Parallel diag np/q fix
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The variables np/nq were being used without initialisation in some
+cases of parallel diagonalisation, according to options. This has
+been rectified, as well as removing the variable "iter" which was 
+unused.
+
+Files:
+
+cdiag.F    np/nq set and iter removed
+rdiag.F    np/nq set and iter removed
+version.F90 / CHANGES as per usual
+=======================================================================
 Version: 1.4.49
 Date: 2005/03/23 05:00 GMT 
 Title: CG variable save fix
