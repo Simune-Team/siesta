@@ -1,6 +1,21 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.45
+Date: 2005/03/10 03:00 GMT 
+Title: Diag tag snag
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+Changes:
+
+A couple of incorrect tags have been updated to reflect the fact
+that they should now be prefixed with "Diag." - spotted by
+Nichols.
+
+siesta.tex      ParallelOverK -> Diag.ParallelOverK
+redata.F        DivideAndConquer -> Diag.DivideAndConquer
+version.F90 / CHANGES
+=======================================================================
 Version: 1.4.44
 Date: 2005/03/08 04:30 GMT 
 Title: FSM deallocation order change
@@ -196,12 +211,38 @@ Modified-files: Docs/CHANGES Src/Libs/blas.f
     Src/alloc.F90 Src/atomlwf.F Src/cdiag.F Src/configure
     Src/m4/fortran.m4 Src/memory.F Src/pulayx.F Src/rdiag.F
     Src/setatomnodes.F Src/siesta.F
-    {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4/siest
-a@uam.es--2004/patch-log/patch-15
+    {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4/siesta@uam.es--2004/patch-log/patch-15
 Summary: Assorted fixes by Toby White (including spatial parallelization)
 Keywords: 
 
 Patches applied:
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-9
+   more minor bugfixes
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-10
+   remove unnecessary blas/lapack routines.
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-11
+   fix for empty nodes
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-13
+   another empty node fix.
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-14
+   add pathf90 to configure list.
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-15
+   open specifier in alloc.F90 fix.
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-17
+   Fix alloc.F90 open, and correct setatomnodes
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-18
+   improve output and error diagnostics
+
+ * twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-20
+   minor fixes
 
  * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-10
    merge from upstream
@@ -220,6 +261,7 @@ Patches applied:
 
  * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-15
    assorted changes from my bugfix branch
+
 =======================================================================
 Version: 1.4.39
 Date: 2005/02/04 17:05 GMT
@@ -8194,4 +8236,5 @@ Title: Atomic program package for pseudopotential generation:
        into directory Pseudo
 Author: Alberto Garcia (wdpgaara@lg.ehu.es)
 ========================================================================
+
 

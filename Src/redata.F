@@ -536,7 +536,7 @@ C Method to Solve LDA Hamitonian ...
      .     'Diagonalization'
         endif
         if (Nodes.eq.1) then
-          DaC  = fdf_boolean('DivideAndConquer',.false.)
+          DaC  = fdf_boolean('Diag.DivideAndConquer',.false.)
         else
           DaC  = .false.
         endif
