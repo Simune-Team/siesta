@@ -1,5 +1,5 @@
       subroutine cgvc( na, xa, fa, cell, stress, volume, dxmax, 
-     .                 tp, ftol, strtol, varcel, relaxd, usesavecg )           
+     .                 tp, ftol, strtol, varcel, relaxd, usesavecg )
 c ***************************************************************************
 c Variable-cell conjugate-gradient geometry optimization
 c
@@ -83,8 +83,8 @@ c Internal variables and arrays
 
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
 
-      real(dp), dimension(:), allocatable :: gxa, gfa
-      real(dp), dimension(:), allocatable :: cgaux
+      real(dp), dimension(:), allocatable       :: gxa, gfa
+      real(dp), dimension(:), allocatable, save :: cgaux
 
 ! Saved internal variables:
 
@@ -395,10 +395,10 @@ c save cgaux ----------------------------------------------------------------
      .  call iocg( 'write', ndeg*2, cgaux, cgcntr, relaxd, found )
 
 C Deallocate local memory
-      call memory('D','D',size(gfa),'cgvc')
-      deallocate(gfa)
       call memory('D','D',size(gxa),'cgvc')
       deallocate(gxa)
+      call memory('D','D',size(gfa),'cgvc')
+      deallocate(gfa)
 
       return
       end

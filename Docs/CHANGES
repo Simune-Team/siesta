@@ -1,6 +1,38 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.49
+Date: 2005/03/23 05:00 GMT 
+Title: CG variable save fix
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The "save" attribute has been added back for cgaux in cgvc.F as
+this is required by conjgr.f for correct execution. The deallocation
+order of gfa & gxa has been reversed for cleaness too.
+
+Files:
+
+cgvc.F    Save attribute added to cgaux
+version.F90 / CHANGES as per usual
+=======================================================================
+Version: 1.4.48
+Date: 2005/03/21 07:30 GMT 
+Title: CG variable re-initialization + constant fix in meshsubs.F
+Author: Toby White <tow21@cam.ac.uk>
+
+* cgvc.F: cgcntrl is still not initialized correctly if usesavecg is not 
+          set. This patch fixes this. 
+          Update variable declarations & include intent; make kBar a parameter.
+          Correct subroutine documentation.
+          Replace all d0 with _dp.
+          Replace specific dabs with generic abs.
+
+* meshsubs.F: Fix constant.
+
+version.F90 / CHANGES
+
+ARCH patches: siesta-devel--reference--1.4--patch-30 and --patch-34
+=======================================================================
 Version: 1.4.47
 Date: 2005/03/16 04:00 GMT 
 Title: CG bug fix
