@@ -37,8 +37,8 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
 	on_subs.o ordern.o outcell.o outcoor.o overfsm.o \
-	paste.o pdos.o pdosg.o pdosk.o phirphi.o pixmol.o plcharge.o timestamp.o \
-	propor.o pulayx.o \
+	paste.o pdos.o pdosg.o pdosk.o phirphi.o pixmol.o plcharge.o \
+	timestamp.o propor.o pulayx.o \
 	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer.o \
@@ -46,7 +46,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	cellxc.o cdiag.o rdiag.o \
         cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
-	siesta.o temp.o io.o \
+	temp.o siesta.o io.o \
         spin_init.o coor.o transfer.o \
         broadcast_basis.o sig.o eggbox.o
 #
@@ -150,7 +150,8 @@ dc_lapack.a:  Libs/dc_lapack.f
 version:
 	sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
 	sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > temp.F
-	@rm -f temp0.F
+	@($(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" temp.o)
+	@rm -f temp0.F temp.F
 	@echo
 
 siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
@@ -158,7 +159,6 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MPI_INTERFACE)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
-	@rm -f temp.F
 #
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o\
           basis_io.o  chemical.o transfer.o atm_types.o\
@@ -174,7 +174,6 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) \
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
-	@rm -f temp.F
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"

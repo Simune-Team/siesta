@@ -152,7 +152,7 @@ C temp_default  : Electronic temperature default, in Ry
       integer na_diag
       double precision g2max_default, temp_default
       parameter ( na_diag       = 100      )
-      parameter ( g2max_default = 50.d0    )
+      parameter ( g2max_default = 150.d0   )
       parameter ( temp_default  = 1.900d-3 )
 C ................
 

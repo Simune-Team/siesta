@@ -1,6 +1,21 @@
 ========================================================================
                   DENCHAR CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.2.1
+Date: 2003/07/22  14:45 
+Title: Bug in output corrected
+Author: Pablo Ordejon  <ordejon@icmab.es>
+
+Description: 
+
+ Two small bugs in the writting out has been corrected.
+
+Files:
+
+  Src/wrout.F:  bug corrected
+  Src/itochar.f:  bug corrected
+  CHANGES, denchar.tex: Customary changes
+=======================================================================
 Version: 1.2.0
 Date: 2003/07/03  18:30 
 Title: Capability for 3D and wavefunction plots

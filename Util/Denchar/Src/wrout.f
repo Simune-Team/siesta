@@ -132,11 +132,11 @@ C Write general information only if called for the first time
      .    '  ', YMAX,' bohrs'
         IF (IDIMEN .EQ. 3) THEN
           WRITE(UNIT1,'(A,/,A,F12.5,A)')
-     .    '  Minimum value of the y-component of the window : ',
-     .    '  ', YMIN,' bohrs'
+     .    '  Minimum value of the z-component of the window : ',
+     .    '  ', ZMIN,' bohrs'
           WRITE(UNIT1,'(A,/,A,F12.5,A)')
-     .    '  Maximum value of the y-component of the window : ',
-     .    '  ', YMAX,' bohrs'
+     .    '  Maximum value of the z-component of the window : ',
+     .    '  ', ZMAX,' bohrs'
         ENDIF
 
         WRITE(UNIT1,'(A)')

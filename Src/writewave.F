@@ -827,11 +827,11 @@ c Determine which node handles this wavefunction
         BNode = indwf/BlockSize
         if (BNode*BlockSize.eq.indwf) then
           BNode = BNode + 1
-11        continue
-          if (BNode .gt. Nodes-1) then
-            BNode =BNode - Nodes
-            goto 11
-          endif
+        endif
+11      continue
+        if (BNode .gt. Nodes-1) then
+          BNode =BNode - Nodes
+          goto 11
         endif
 
         if (Node.eq.BNode) then

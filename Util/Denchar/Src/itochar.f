@@ -27,9 +27,9 @@ C P. Ordejon, July 2003
           if (achar(iascii) .eq. '0') then 
             nvac = nvac + 1
             goto 10
+          else 
+            null = .false.
           endif
-        else 
-          null = .false.
         endif
         char(ipos:ipos) = achar(iascii)
 10      continue

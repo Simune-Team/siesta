@@ -1,6 +1,37 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.3
+Date: 2003/07/23 14:15
+Title: Minor bug corrections
+Author: Pablo Ordejon <ordejon@icmab.es>
+
+Description:
+  A minor bug in the parallel execution in writewave.F has
+been fixed. Two bugs in the output of Denchar have been
+fixed.
+
+Files:
+  Src/writewave.f:  Parallel execution bug corrected
+  Util/Denchar/Src/wrout.F:  Bug in writting of output corrected
+  Util/Denchar/Src/itochar.F:  Bug in writting of output corrected
+  Util/Denchar/Docs/denchar.tex, CHANGES:  Customary changes
+  siesta.tex, CHANGES, version.F, release_notes_1.3:  Customary changes
+=======================================================================
+Version: 1.3 and 1.4.0
+Date: 2003/07/19 19:15
+Title: Tagging and branching 1.3 and 1.4.0
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+  The 1.3 package is defined as is at this stage. It is tagged
+and a branch is opened for bug corrections of 1.3 (new versions
+with fixes will be produced and distributed when/if needed) while
+the main branch trunk becomes 1.4.0 for fuirther development.
+
+Files:
+  CHANGES, siesta.tex, version.F
+=======================================================================
 Version: 1.2.45
 Date: 2003/07/17 22:00
 Title: Slight change in Makefile 
