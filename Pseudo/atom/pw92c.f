@@ -83,6 +83,11 @@ C using eq.(10) of cited reference (Perdew & Wang, PRB, 45, 13244 (92))
         DGDRS(IG) = - 2*A(IG) * ( ALPHA1(IG) * LOG(C) +
      .                            (1+ALPHA1(IG)*RS) * DCDRS / C )
    20 CONTINUE
+C
+C    In case zeta is close to 1 or -1, things can go wrong when
+C    computing F and DFDZ below...
+C
+      if ( abs((abs(zeta)-1.d0)) .lt.1.d-10) zeta = zeta + 1.d-8
 
 C Find f''(0) and f(zeta) from eq.(9)
       C = 1 / (2**FOUTHD - 2)
@@ -110,3 +115,8 @@ C Find correlation potential
       ENDIF
 
       END
+
+
+
+
+

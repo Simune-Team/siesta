@@ -1,3 +1,4 @@
+SIESTA_ARCH=osfdxml
 #
 FC=f90
 FFLAGS= -fast -tune host

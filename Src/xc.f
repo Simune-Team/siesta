@@ -681,11 +681,12 @@ C Internal variable declarations
       DOUBLE PRECISION  A(0:2), ALPHA1(0:2), B, BETA(0:2,4), C,
      .                  DBDRS, DECDD(2), DECDRS, DECDZ, DENMIN, DFDZ,
      .                  DGDRS(0:2), DCDRS, DRSDD, DTOT, DZDD(2),
-     .                  F, FPP0, FOUTHD, G(0:2), HALF,
+     .                  F, FPP0, FOUTHD, G(0:2), HALF, ONE,
      .                  P(0:2), PI, RS, THD, THRHLF, ZETA
 
-C Fix lower bound of density to avoid division by zero
+C Add tiny numbers to avoid numerical errors
       PARAMETER ( DENMIN = 1.D-12 )
+      PARAMETER ( ONE    = 1.D0 + 1.D-12 )
 
 C Fix some numerical constants
       PARAMETER ( FOUTHD=4.D0/3.D0, HALF=0.5D0,
@@ -714,8 +715,8 @@ C       Find derivatives dRs/dDens and dZeta/dDens
         ZETA = ( DENS(1) - DENS(2) ) / DTOT
         RS = ( 3 / (4*PI*DTOT) )**THD
         DRSDD = (- RS) / DTOT / 3
-        DZDD(1) =   1 / DTOT - ZETA / DTOT
-        DZDD(2) = - (1 / DTOT) - (ZETA / DTOT)
+        DZDD(1) =   (ONE - ZETA) / DTOT
+        DZDD(2) = - (ONE + ZETA) / DTOT
       ENDIF
 
 C Find eps_c(rs,0)=G(0), eps_c(rs,1)=G(1) and -alpha_c(rs)=G(2)
@@ -739,15 +740,15 @@ C using eq.(10) of cited reference (Perdew & Wang, PRB, 45, 13244 (92))
 C Find f''(0) and f(zeta) from eq.(9)
       C = 1 / (2**FOUTHD - 2)
       FPP0 = 8 * C / 9
-      F = ( (1+ZETA)**FOUTHD + (1-ZETA)**FOUTHD - 2 ) * C
-      DFDZ = FOUTHD * ( (1+ZETA)**THD - (1-ZETA)**THD ) * C
+      F = ( (ONE+ZETA)**FOUTHD + (ONE-ZETA)**FOUTHD - 2 ) * C
+      DFDZ = FOUTHD * ( (ONE+ZETA)**THD - (ONE-ZETA)**THD ) * C
 
 C Find eps_c(rs,zeta) from eq.(8)
-      EC = G(0) - G(2) * F / FPP0 * (1-ZETA**4) +
+      EC = G(0) - G(2) * F / FPP0 * (ONE-ZETA**4) +
      .    (G(1)-G(0)) * F * ZETA**4
-      DECDRS = DGDRS(0) - DGDRS(2) * F / FPP0 * (1-ZETA**4) +
+      DECDRS = DGDRS(0) - DGDRS(2) * F / FPP0 * (ONE-ZETA**4) +
      .        (DGDRS(1)-DGDRS(0)) * F * ZETA**4
-      DECDZ = (- G(2)) / FPP0 * ( DFDZ*(1-ZETA**4) - F*4*ZETA**3 ) +
+      DECDZ = (- G(2)) / FPP0 * ( DFDZ*(ONE-ZETA**4) - F*4*ZETA**3 ) +
      .        (G(1)-G(0)) * ( DFDZ*ZETA**4 + F*4*ZETA**3 )
       
 C Find correlation potential
@@ -856,7 +857,9 @@ C      X-alpha parameter:
        PARAMETER ( ALP = 2.D0 / 3.D0 )
 
 C      Other variables converted into parameters by J.M.Soler
+C      Tiny number added to ONE to avoid numerical errors
        PARAMETER ( PI   = 3.14159265358979312D0 )
+       PARAMETER ( ONEZ = 1.0D0 + 1.D-12 ) 
        PARAMETER ( HALF = 0.5D0 ) 
        PARAMETER ( TRD  = 1.D0 / 3.D0 ) 
        PARAMETER ( FTRD = 4.D0 / 3.D0 )
@@ -881,8 +884,8 @@ C      Find density and polarization
            RETURN
          ENDIF
          Z = (D1 - D2) / D
-         FZ = ((1+Z)**FTRD+(1-Z)**FTRD-2)/TFTM
-         FZP = FTRD*((1+Z)**TRD-(1-Z)**TRD)/TFTM 
+         FZ = ((ONEZ+Z)**FTRD+(ONEZ-Z)**FTRD-2)/TFTM
+         FZP = FTRD*((ONEZ+Z)**TRD-(ONEZ-Z)**TRD)/TFTM 
        ELSE
          D = DS(1)
          IF (D .LE. ZERO) THEN
@@ -934,10 +937,10 @@ C      Find up and down potentials
        IF (NSP .EQ. 2) THEN
          EX    = EXP + FZ*(EXF-EXP)
          EC    = ECP + FZ*(ECF-ECP)
-         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP)
-         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP)
-         VC(1) = VCP + FZ*(VCF-VCP) + (1-Z)*FZP*(ECF-ECP)
-         VC(2) = VCP + FZ*(VCF-VCP) - (1+Z)*FZP*(ECF-ECP)
+         VX(1) = VXP + FZ*(VXF-VXP) + (ONEZ-Z)*FZP*(EXF-EXP)
+         VX(2) = VXP + FZ*(VXF-VXP) - (ONEZ+Z)*FZP*(EXF-EXP)
+         VC(1) = VCP + FZ*(VCF-VCP) + (ONEZ-Z)*FZP*(ECF-ECP)
+         VC(2) = VCP + FZ*(VCF-VCP) - (ONEZ+Z)*FZP*(ECF-ECP)
        ELSE
          EX    = EXP
          EC    = ECP

@@ -12,7 +12,7 @@ C Coded by J. Junquera 11/98
 C Modified by DSP, July 1999
 C **********************************************************************
 
-      use atmfuncs
+      use old_atmfuncs
       use fdf
       use parallel
 #ifdef MPI
@@ -31,7 +31,7 @@ C **********************************************************************
      .  UNIT1, MAXO, MAXA, MAXNH, NUOTOT, NO, NA, NSPIN, 
      .  LASTO(0:MAXA), ISA(MAXA), IPHORB(MAXO),
      .  IL, IS, IB, IA, IIO, IO, J, NUMH(*), LISTH(MAXNH),
-     .  LISTHPTR(*), INDXUO(MAXO), Nodes
+     .  LISTHPTR(*), INDXUO(MAXO), Node, Nodes
 
       DOUBLE PRECISION
      .  CELL(3,3), RMAXO, XA(3,MAXA), DATM(MAXO)
@@ -68,6 +68,14 @@ C INTEGER LISTH(MAXNH)   : Control vector of Density Matrix
 C                          (list of nonzero elements of each row)
 C INTEGER INDXUO(MAXO)   : Index of equivalent orbital in unit cell
 C **********************************************************************
+
+#ifdef MPI
+      call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
+      call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+#else
+      Node =  0
+      Nodes = 1
+#endif
 
 C Assign the name of the output file -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
@@ -146,7 +154,7 @@ C I belive that now is right! DSP.
       
       DO IS=1, NSMAX
         DO IL= 0, LMAXD
-          WRITE(UNIT1)LSEMICSAVE(IL,IS)
+          WRITE(UNIT1)NSEMICSAVE(IL,IS)
         ENDDO 
       ENDDO
 

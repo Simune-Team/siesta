@@ -69,10 +69,10 @@ C
      .  listc(ncmax,nbasis),listh(*),listhptr(nbasisloc),
      .  numc(nbasis),numh(nbasisloc)
 
-      real*4
+      REAL(SP)
      .  g(ncmax,nbasisloc),hg(ncmax,nbasisloc)
 
-      double precision
+      real(dp)
      .  c(ncmax,nbasisloc),dm(maxnh),edm(maxnh),enum,eta,fe,ftol,
      .  h(maxnh),s(maxnh),xi(ncmax,nbasisloc)
 
@@ -81,19 +81,17 @@ C  Internal variables .................................................
      . i,ii,its,j,iopt,irestart,numit,Node,Nodes
 
 #ifdef MPI
-      integer
-     .  MPIerror
-      double precision
-     .  rtmp
+      integer MPIerror
+      real(dp) rtmp
 #endif
 
-      double precision
+      real(dp)
      .  dgg,e,e3(3),elamb,eps,fp,gam,gg,lam,lambda,lm,partial
 
       logical 
      .  iout,itest
 
-      parameter (eps=1.d-15)
+      parameter (eps=1.e-15_dp)
       parameter (irestart=300)
 C ..........................
 
@@ -107,10 +105,10 @@ C Get Node number
 #endif
 
 C Set step for line minim: lam (empirically 1.0e-1 works fine) 
-      lam = 1.0d0
-      lm = 0.0d0
+      lam = 1.0_dp
+      lm = 0.0_dp
       iter = 0
-      partial = 0.0d0
+      partial = 0.0_dp
       itest = .false.
       numit = 0
 
@@ -165,14 +163,14 @@ C Loop for the CG minimization ____________________________________________
 C Check if the gradient at current point is negative, and sufficiently
 C large to avoid problems. Otherwise, set a fixed lambda
 C to CG iteration cycle with iout = .false.  ................................
-        if (abs(partial) .le. 1.5e-8) then
-  	  lambda = lm*0.4d0
-	  if (lm .eq. 0.0d0) lambda=0.4d0
+        if (abs(partial) .le. 1.5e-8_dp) then
+  	  lambda = lm*0.4_dp
+	  if (lm .eq. 0.0_dp) lambda=0.4_dp
 C	  iout = .false.
 	  goto 1000
         endif
-        if (partial .gt. 0.0d0) then
-	  lambda = -0.0001d0
+        if (partial .gt. 0.0_dp) then
+	  lambda = -0.0001_dp
 	  iout = .false.
 	  goto 1000
         endif
@@ -194,9 +192,9 @@ C Check if the solution of the line minimization is reasonable
 C (ie, lambda is small)
 C Otherwise, set a fixed lambda and return to CG iteration 
 C cycle with iout = .false.  ................................
-        if (abs(lambda) .ge. 10.0d0) then
-          lambda = lm * 0.3d0
-          if (lm .eq. 0.0d0) lambda = 0.01d0
+        if (abs(lambda) .ge. 10.0_dp) then
+          lambda = lm * 0.3_dp
+          if (lm .eq. 0.0_dp) lambda = 0.01_dp
           iout = .false.
 	  goto 1000
         endif
@@ -217,12 +215,13 @@ C Update point to line mimimum and multiply gradient by lambda .............
 C ...........................
 
 C Calculate average lambda (lm) during CG minimization .....................
-        lm = float(its-1) / float(its) * lm + lambda / float(its)
+        lm = real(its-1,dp) / real(its,dp) * lm
+     $                  + lambda / real(its,dp)
 C ...........................
 
 
 C Calculate energy and gradient at current point ...........................
-        partial=0.0d0
+        partial=0.0_dp
         iopt = 2
         call eandg(iopt,eta,enum,lam,
      .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
@@ -231,7 +230,7 @@ C Calculate energy and gradient at current point ...........................
 C ...........................
 
 C Check if minimization has converged ......................................
-        if (2.*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
+        if (2.0_dp*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
 	  if (iout) then
             if (Node.eq.0) then
 	      write(6,"(/a)") 'cgwf:  CG tolerance reached'
@@ -244,8 +243,8 @@ C ...........................
 C Continue if tol not reached ..............................................
         fp = fe
         elamb = fe
-        gg = 0.0d0
-        dgg = 0.0d0
+        gg = 0.0_dp
+        dgg = 0.0_dp
         do i = 1,nbasisloc
           call LocalToGlobalOrb(i,Node,Nodes,ii)
 	  do j = 1,numc(ii)
@@ -261,13 +260,13 @@ C Continue if tol not reached ..............................................
      .    MPI_Comm_World,MPIerror)
         dgg = rtmp
 #endif
-        if (gg .eq. 0.0d0) goto 16
+        if (gg .eq. 0.0_dp) goto 16
         gam = dgg / gg
         do i = 1,nbasisloc
           call LocalToGlobalOrb(i,Node,Nodes,ii)
 	  do j = 1,numc(ii)
             g(j,i) = -xi(j,i)
-	    if (itest) gam = 0.0d0
+	    if (itest) gam = 0.0_dp
             hg(j,i) = g(j,i) + gam * hg(j,i)
             partial = partial + hg(j,i) * xi(j,i)
             xi(j,i) = hg(j,i)
@@ -306,11 +305,8 @@ C Compute density matrix ...................................................
      .           maxnf,maxnft,maxnhij,maxnct)
 C ............................
  33   format('cgwf: iter = ',i4,6x,'grad = ',f18.6,6x,'Eb(Ry) = ',f14.6)
-      return
-      end
-C ......................
-C *******************************************************************
 
+      end
 
 
       subroutine linmin4(partial,elamb,ener,lam,lambda)
@@ -336,45 +332,49 @@ C real*8 lam                  : Step between points
 C ********************** OUTPUT *************************************
 C real*8 lambda               : Distance to minimum
 C *******************************************************************
+
+      use precision
+
       implicit none
 
-      double precision
-     .  elamb,partial,lam,lambda,ener(3)
+      real(dp), intent(in)  ::  elamb, partial, lam ,ener(3)
+      real(dp), intent(out) ::  lambda
 
 C Internal variables ......................................................
-      integer 
-     .  in,i,j,jj
 
-      double precision 
+      real(dp), parameter   ::  one_third = 1.0_dp/3.0_dp
+
+      integer in,i,j,jj
+
+      real(dp) 
      .  b(5,5),bi(5,5),e(5),e0,e1,e2,e3,ep1,ep2,ep3,
      .  l,lambda1,lambda2,lambda3,q,r,sol1,sol2,test
 
-      complex 
-     .  c
+      complex(dp)  c
 
 
 C Set up linear equations system to calculate polinomial coeffs.............
-      e0 = 0.0d0
-      e1 = 0.0d0
-      e2 = 0.0d0
-      e3 = 0.0d0
+      e0 = 0.0_dp
+      e1 = 0.0_dp
+      e2 = 0.0_dp
+      e3 = 0.0_dp
 
       e(1) = elamb
       e(2) = partial
-      b(1,1) = 1.0d0
-      b(1,2) = 0.0d0
-      b(1,3) = 0.0d0
-      b(1,4) = 0.0d0
-      b(1,5) = 0.0d0
-      b(2,1) = 0.0d0
-      b(2,2) = 1.0d0
-      b(2,3) = 0.0d0
-      b(2,4) = 0.0d0
-      b(2,5) = 0.0d0
+      b(1,1) = 1.0_dp
+      b(1,2) = 0.0_dp
+      b(1,3) = 0.0_dp
+      b(1,4) = 0.0_dp
+      b(1,5) = 0.0_dp
+      b(2,1) = 0.0_dp
+      b(2,2) = 1.0_dp
+      b(2,3) = 0.0_dp
+      b(2,4) = 0.0_dp
+      b(2,5) = 0.0_dp
 
       do in = 1,3
-        l = float(in)*lam
-        B(in+2,1) = 1.0d0
+        l = real(in,dp)*lam
+        B(in+2,1) = 1.0_dp
         do j = 2,5
           B(in+2,j) = l**(j-1)
         enddo
@@ -389,80 +389,74 @@ C Set up linear equations system to calculate polinomial coeffs.............
 
       do jj = 1,5
         e0 = e0 + bi(2,jj) * e(jj)
-        e1 = e1 + bi(3,jj) * e(jj) * 2.0
-        e2 = e2 + bi(4,jj) * e(jj) * 3.0
-        e3 = e3 + bi(5,jj) * e(jj) * 4.0
+        e1 = e1 + bi(3,jj) * e(jj) * 2.0_dp
+        e2 = e2 + bi(4,jj) * e(jj) * 3.0_dp
+        e3 = e3 + bi(5,jj) * e(jj) * 4.0_dp
       enddo
 C .....................
 
 
 C Solve the minimum ......................................................
-      q = (1.d0 / 3.d0) * (e1 / e3) - 
-     .    (1.d0 / 9.d0) * (e2 / e3)**2
-      r = (1.d0 / 6.d0) * ((e1 * e2) / (e3 * e3) - 
-     .     3.d0 * (e0 / e3)) - (1.d0 / 27.d0) * ( e2/e3 )**3
+      q = one_third * (e1 / e3) - 
+     .    (1._dp / 9._dp) * (e2 / e3)**2
+      r = (1._dp / 6._dp) * ((e1 * e2) / (e3 * e3) - 
+     .     3._dp * (e0 / e3)) - (1._dp / 27._dp) * ( e2/e3 )**3
 
       test = q**3 + r**2
 
-      if (test .le. 0.0d0) goto 1234
+      if (test .gt. 0.0_dp) then
 
-      if (r + test**0.5d0 .lt. 0.0d0) then
-        sol1 = - ((-r - test**0.5d0)**(1.d0 / 3.d0))
-        goto 122
+         if (r + sqrt(test) .lt. 0.0_dp) then
+            sol1 = - ((-r - sqrt(test))**one_third)
+         else
+            sol1 = (r + sqrt(test))**one_third
+         endif
+
+         if (r .lt. sqrt(test)) then
+            sol2 = - ( (-r + sqrt(test))**one_third)
+         else
+            sol2 = (r - sqrt(test))**one_third
+         endif
+
+         lambda = (sol1 + sol2) - one_third * (e2 / e3) 
+
+      else
+
+         c = (0.0_dp,1.0_dp) * sqrt(-test)
+         c = c + r
+         c = exp(one_third * log(c))
+
+         lambda1 = 2.0_dp * real(c) - one_third * (e2 / e3)
+         
+         lambda2 = (-(e2/e3 + lambda1) + dsqrt((e2/e3 + lambda1)**2 +
+     .        4._dp * (e0 / e3) / lambda1)) / 2.0_dp
+         
+         lambda3 = (-(e2/e3 + lambda1) - dsqrt((e2/e3 + lambda1)**2 +
+     .        4._dp * (e0 / e3) / lambda1)) / 2.0_dp
+
+         ep1 = lambda1 * e0 + lambda1**2 * e1 / 2.0_dp + 
+     .        lambda1**3 * e2 / 3.0_dp + 
+     .        lambda1**4 * e3 / 4.0_dp
+
+         ep2 = lambda2 * e0 + lambda2**2 * e1 / 2.0_dp +
+     .        lambda2**3 * e2 / 3.0_dp +
+     .        lambda2**4 * e3 / 4.0_dp
+
+         ep3 = lambda3 * e0 + lambda3**2 * e1 / 2.0_dp + 
+     .        lambda3**3 * e2 / 3.0_dp +
+     .        lambda3**4 * e3 / 4.0_dp
+
+         if (ep1 .lt. ep2) then
+            lambda=lambda1
+         else
+            lambda=lambda2
+         endif
+
+         if ((ep3 .lt. ep1) .and. (ep3 .lt. ep2)) then
+            lambda=lambda3
+         endif
+
       endif
-      sol1 = (r + test**0.5d0)**(1.d0 / 3.d0)
-122   continue
-      if (r .lt. test**0.5d0) then
-        sol2 = - ( (-r + test**0.5d0)**(1.d0 / 3.d0))
-        goto 123
-      endif
-      sol2 = (r - test**0.5d0)**(1.d0 / 3.d0)
-123   continue
 
-      lambda = (sol1 + sol2) - (e2 / e3) / 3.0d0
-
-      goto 1235
-
-1234  continue
-
-      c = (0.0,1.0) * (-test)**0.5
-      c = c + r * (1.0,0.0)
-      c = cexp(1.e0 / 3.e0 * clog(c))
-
-      lambda1 = 2.0d0 * real(c) - (e2 / e3) / 3.0d0
-
-      lambda2 = (-(e2 / e3 + lambda1) + dsqrt((e2 / e3 + lambda1)**2 +
-     .          4.d0 * (e0 / e3) / lambda1)) / 2.0d0
-
-      lambda3 = (-(e2 / e3 + lambda1) - dsqrt((e2 / e3 + lambda1)**2 +
-     .          4.d0 * (e0 / e3) / lambda1)) / 2.0d0
-
-      ep1 = lambda1 * e0 + lambda1**2 * e1 / 2.0d0 + 
-     .      lambda1**3 * e2 / 3.0d0 + 
-     .      lambda1**4 * e3 / 4.0d0
-
-      ep2 = lambda2 * e0 + lambda2**2 * e1 / 2.0d0 +
-     .      lambda2**3 * e2 / 3.0d0 +
-     .      lambda2**4 * e3 / 4.0d0
-
-      ep3 = lambda3 * e0 + lambda3**2 * e1 / 2.0d0 + 
-     .      lambda3**3 * e2 / 3.0d0 +
-     .      lambda3**4 * e3 / 4.0d0
-
-      if (ep1 .lt. ep2) then
-        lambda=lambda1
-        goto 4321
-      endif
-      lambda=lambda2
-4321  continue
-      if ((ep3 .lt. ep1) .and. (ep3 .lt. ep2)) then
-        lambda=lambda3
-      endif
-C .....................
-
-1235  continue
-
-
-      return
       end
 

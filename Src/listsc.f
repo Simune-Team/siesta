@@ -17,7 +17,11 @@ C INTEGER NUO    : Number of orbitals in unit cell
 C *********************************************************************
 
       IMPLICIT NONE
-      INTEGER NSC(3), NUO, I1, I2, I3, IC, J1, J2, J3, JC,
+
+      integer, intent(in)   :: nsc(3)
+      integer, intent(in)   :: nuo
+
+      INTEGER I1, I2, I3, IC, J1, J2, J3, JC,
      .        KUO, LASTIO, LASTJO, NCELLS, NO
       EXTERNAL CHKDIM, MEMORY
       
@@ -97,7 +101,9 @@ C   is NOT checked, and a core dump is likely if not true.
 C *********************************************************************
 
       IMPLICIT NONE
-      INTEGER IO, IUO, JUO, LISTSC
+
+      integer listsc
+      INTEGER, intent(in) ::  IO, IUO, JUO
 
       LISTSC = IND1( IND2(IO) + IND2(JUO) - IND2(IUO) )
 

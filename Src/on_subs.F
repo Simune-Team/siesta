@@ -281,12 +281,12 @@ C *********************************************************************
 
       integer
      .  nca,ncb,namax,nbmax,ncmax,nramin,nramax,nrb,Node,Nodes,
-     .  lista(namax,*),listb(nbmax),listc(ncmax,*),
-     .  numa(*),numb(nrb),numc(*),listbptr(nrb)
+     .  lista(namax,*),listb(nbmax),listc(ncmax,*),numa(*),
+     .  numb(nrb),numc(*),listbptr(nrb)
 
 C Internal variables..................................................
       integer
-     .  i,il,in,j,k,kl,kn,lbmax,n,nbpmax,nraloc,nrbl
+     .  i,in,j,k,kn,n,nraloc
 
       integer, dimension(:,:), allocatable ::
      .  ind, nindv
@@ -294,7 +294,7 @@ C Internal variables..................................................
       integer, dimension(:), allocatable ::
      .  listbtmp
       integer
-     .  MPIerror, BNode, nl, numbtmp
+     .  MPIerror, BNode, nl, numbtmp, nbpmax
 #endif
 
 C Check dimensions ....................................................
@@ -314,10 +314,8 @@ C Find out C control vectors ..........................................
 #ifdef MPI
       call MPI_AllReduce(nbmax,nbpmax,1,MPI_integer,
      .  MPI_max,MPI_Comm_World,MPIerror)
-      allocate(listbtmp(nbmax))
-      call memory('A','I',nbmax,'axb_build1')
-#else
-      nbpmax = listbptr(nrb)+numb(nrb)
+      allocate(listbtmp(nbpmax))
+      call memory('A','I',nbpmax,'axb_build1')
 #endif
 
 C Loop over node whose control vector for b is to be distributed
@@ -345,7 +343,7 @@ C Loop over local bands
                 j = listbtmp(kn)
 #else
               do kn = 1,numb(n)
-                j = listb(kn)
+                j = listb(listbptr(n)+kn)
 #endif
                 if (ind(j,i) .eq. 0) then
                   ind(j,i) = 1

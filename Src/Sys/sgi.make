@@ -1,3 +1,4 @@
+SIESTA_ARCH=sgi
 #
 FC=f90 -n32
 #

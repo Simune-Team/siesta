@@ -403,7 +403,7 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
 #ifdef MPI
 C Global operations
        do i=1,maxmix
-         call MPI_AllReduce(b(1,i),buffer,maxmix,DAT_double,
+         call MPI_AllReduce(b(1:,i),buffer,maxmix,DAT_double,
      .     MPI_sum,MPI_Comm_World,MPIerror)
          do j=1,maxmix
            b(j,i)=buffer(j)

@@ -1,6 +1,299 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 ========================================================================
+Version: 1.0.33
+Date: 2000/07/05  16:00 GMT
+Title: Re-organization of atomic information. Other structural changes.
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+-- Completely new replacement for atmfuncs module.
+
+Created a set of derived types to hold the information relative
+to the atomic basis and pseudopotentials. The new structures are
+somewhat more flexible and lean than the old ones. The functions in
+atmfuncs have been re-implemented accordingly.
+
+A new module 'types.f' holds the derived types (which might still be
+streamlined somewhat). In 'transfer.f', the information is transferred
+from the old atomic structures to the new ones.  The old atmfuncs
+module has been renamed to 'old_atmfuncs'. The new structures are also
+used in dump2cdf.F, which creates self-describing files with the
+atomic information (see below).
+
+Atom.F and redbasis.F are left mostly untouched for now.
+
+The old dimensioning parameters (still useful for old_atmfuncs, atom, and 
+redbasis) are kept in 'atmparams'.
+
+Created a "radial function" derived type (not general enough, but
+useful for atmfuncs) which encapsulates the linear grid and the
+'splint' operation needed to interpolate on it. Presumably other types
+appropriate for logarithmic meshes, more general functions, etc, could
+be defined as well. The code is in 'radial.f', although the type
+definition is still in types.f.
+
+-- Matel.f 
+
+Allocatable arrays local to matel turned into automatic arrays, which
+are allocated and deallocated automatically by the compiler. (The SGI
+had problems deallocating one of the arrays).  This solution (also
+used in parsing.f) is the cleanest one for relatively small
+arrays. For larger sizes, the process could run into stack limits
+(which could in principle be circumvented by the use of the "limit(s)"
+or "ulimit(s)" shell command).
+
+-- Siesta.F atomlist.f atminit.F
+
+Some streamlining of the code. Created a new module "atomlist" which
+holds isa, xa, lasto, etc, and contains initatomlists and superc
+(which does nothing but reallocate arrays if needed and expanding xa,
+etc to the virtual supercell). Eventually, "atomlist" could be use(d)
+by the routines which need those arrays.  Regarding the treatment of
+the "real" and the "virtual" supercell, "ncells", "na", "no", etc,
+meant different things in different places, and one had to be very
+careful about it.  In the new version, the program knows nothing about
+the supercell specified in the input file (as the manual says it
+should). It only deals with "na_u" and "no_u", respectively the number
+of atoms and the number of orbitals in the unit cell. If the use of
+k-points forces the use of a "virtual" supercell, one needs also
+"na_s" and "no_s". Those variables also live in module
+'atomlist'. Also, "nuo" (the number of orbitals local to the node) has
+been renamed to "no_l".
+
+atminit.F could really be part of the atomic suite in the future.
+
+-- OrderN issue: If the user requests k-points for an ordern calculation,
+the program fails as some arrays are accessed beyond their dimensions.
+Inserted a trap for (.not. gamma) before the call to ordern to check it.
+Eventually the supercell variables should be made private to the small group
+of routines which really need them... 
+
+-- Use of new 'alloc' module by Jose.
+
+It has been integrated as Src/alloc.F90, with some minor changes and
+fixes (and a change of the module name to just 'alloc' instead of
+'alloc_module').  It is used by siesta.F, coor.f, and atomlist.f to
+deal with the atomlist arrays. 
+
+ -- Redata.F coor.f init_spin.f
+
+Eliminated the call to 'recoor' inside redata and replaced it by a
+call from siesta to a new routine 'coor'. This almost eliminates the
+need to call 'resize', except to initialize nspin. For now,
+'init_spin' does only that bit, but it could be extended to do the
+rest of the spin-related readings.
+
+-- NetCDF hooks
+
+Included support for the use of data files which are self-describing
+and thus readable in a wide variety of ways. I have chosen the netCDF
+format, which I think is powerful enough for our purposes. If the user
+compiles Siesta with the NetCDF option (enabled in arch.make with a
+couple of lines), the program will generate files with extensions
+".dump.nc" for each of the species, containing the orbitals, KB projs,
+etc. The 'ncdump' utility which comes with netCDF can be used to
+produce a human readable form of the files, and other tools (such as
+Python, or other compiled Fortran programs) can be used to provide any
+desired information.  The basis information can also be read from the
+.dump.nc NetCDF files by renaming them to .basis.nc and specifying
+'new-user-basis' in the fdf file. (This capability is restricted for now to 
+NetCDF-capable implementations).
+
+-- NetCDF interface
+
+A new directory NetCDF contains the F90 interface to the NetCDF
+library Version 3.5 (whose source is kept in a separate cvs
+repository, in case it is needed).  Note that the interface is
+relatively new, and only works with that version of NetCDF.
+
+-- MPI interface
+
+Upgraded the MPI F90 interface by using kind numbers for the
+generation of the module procedures which are then overloaded. A
+single file "Interfaces.f90" is now produced. Cray users can now avoid
+editing mpi.f90, as the necessary type fiddlings are done in a
+preprocessor block in mpi.F.
+
+-- Slight change to the arch.make macros. 
+
+In order to support the new MPI and NetCDF interfaces, new macros have
+to be defined in the arch.make file. Examples for Linux, SGI64, and
+Osfdxml-cdf have been created in the Src/Sys file. (All of them with
+NetCDF support which can be overridden).
+
+
+-- Use of kind parameters in declarations and tagging of real constants.
+
+Started using the 'kinds' defined in precision.F (note the change to
+allow a possible Cray-related preprocessing) in some files.  The only
+way to avoid precision-related pitfalls is to stick to consistent
+declarations and the tagging of all real constants. See in particular
+routine 'linmin' in file 'cgwf.F'.
+
+-- Parse routine
+
+Some of the %blocks in Siesta have lots of structure. Reading or
+modifying it can be difficult.  We are looking for ways to make
+'parse' more powerful. Eventually, it will live in a module of its own
+together with extra data structures which won't have to be declared in
+the calling routine. For now, a new module
+('parsing') has been created. As a more
+techical note also mentioned above, the allocatable
+arrays have been replaced with automatic ones.
+
+-- FDF2 module
+
+As an exercise, created another fdf interface module which
+contains a generic 'fdf_get' routine. It is called 'fdf2' and used
+for illustration purposes in 'coor.f' and 'spin_init.f'.
+
+-- IONode
+
+Routines which formerly called MPI_Comm_Rank to find out whether 
+it was OK to do IO can now just import the logical variable 'IOnode' from 
+module 'ionew'. (Eventually ionew will contain all the stuff now in 'io').
+The variable is initialized by a call to 'io_setup' in siesta.F.
+
+-- Interface blocks
+
+File interfaces.f contains interface blocks for ordern and
+hsparse. Eventually, it would be desirable to provide explicit
+interfaces for all the routines in the package (via interface blocks
+or by the use of modules).
+
+Changed, New, and Replaced files: Too many to list here (see the more
+relevant cases in description above).
+
+========================================================================
+Version: 1.0.32
+Date: 2000/06/19  22:00 GMT
+Title: Handling of nonpositive density in exchange-correlation routines
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+The handling of negative or zero densities has been corrected and 
+homogenized across xc routines. The DENMIN parameter has been
+decreased to 1.d-15, to avoid small energy errors. Documentation for
+the noncollinear spin option added to cellxc interface.
+
+Files:
+  xc.f     : Corrected overflow bug. DENMIN decreased
+  cellxc.F : Corrected ISPIN loop limit. ABS(D) changed by MAX(0.d0,D)
+========================================================================
+Version: 1.0.31
+Date: 2000/06/16  16:00:00 GMT
+Title: Fix of order N, stress fixing and tidying of prmem.
+Author: Julian D. Gale <j.gale@ic.ac.uk>
+
+Description:
+
+The problem with the serial version of order N dimension checking
+has been corrected and the references to prmem removed as they
+are now defunct. Also the ability to fix stresses has been added
+to the geometry constraints.
+
+Files:
+   cellxc.F     : trapping of densities less than denmin added to
+                : avoid floating point crashes in XC routines
+   fixed.F      : stress fixing option added
+   ksv.F        : prmem removed from list of external routines
+   Makefile     : prmem.o removed from list of objects
+   neighb.f     : prmem removed from comment as no longer needed
+   on_subs.F    : bug in axb_build1 corrected due to listb references
+   prmem.f      : removed as no longer used
+   ranger.f     : prmem removed from list of external routines
+   siesta.F     : extra MPI_Barrier added after final printmemory to
+                : tidy parallel output
+                : call to prmem removed as no longer used
+   siesta.tex   : stress fixing documented
+   version.f    : Version number incremented to 1.0.31
+========================================================================
+Version: 1.0.30
+Date: 2000/05/16  01:30:00 GMT
+Title: Removed single precision in recipes.f
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+A conversion to single precision, originally in the Numerical Recipes
+routine four1, was removed. Apparently this was the main source of 
+minor numerical discrepancies between different computers. 
+Also, all constants were transformed from single to double precision.
+The output files in siesta/Examples were also updated.
+
+Files:
+   recipes.f                   : Removed calls to SNGL
+   Examples/H2O/Out/h2o.out    : Updated (with cefeo/osfdxml.make)
+   Examples/H2O/Out/out.fdf    :    "
+   Examples/H2O/OrderN/h2o.fdf :    "
+   Examples/H2O/OrderN/out.fdf :    "
+   Examples/SiH/Out/sih.fdf    :    "
+   Examples/SiH/Out/out.fdf    :    "
+   Examples/Fe/Out/Fe.fdf      :    "
+   Examples/Fe/Out/out.fdf     :    "
+   version.f                   : Updated version number and date
+   Docs/siesta.tex             : Updated date
+   Docs/CHANGES                : This entry
+========================================================================
+Version: 1.0.29
+Date: 2000/05/01  13:00:00 GMT
+Title: Band calculation bug fixes etc
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+A couple of problems concerned with band structure calculations
+which were brought to light by one of Daniels students have been
+fixed as well as a missing format descriptor from an error
+message.
+
+Files:
+   atom.F       : missing "i4" output descriptor for error message 
+                : added concerning insufficient L projectors
+   bands.F      : mscell(3,3) declared locally and added to redcel call
+                : references to nuo changed to nuotot in several places
+                : as this was leading to incorrect output to the .bands
+                : file
+   ksv.F        : redcel removed from list of external routines
+   version.f    : Version number incremented to 1.0.29
+========================================================================
+Version: 1.0.28
+Date: 2000/04/28   17:00:00 GMT
+Title: New compilation scheme. Reading from stdin. Matel fix.
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+For a number of reasons, the architecture support in the makefiles is
+now implemented by including "arch.make" (that is, a fixed-name file,
+instead of "$SIESTA_SYS.make"). All references to SIESTA_SYS have been
+eliminated, so even if it is still in the environment nothing should be
+messed up. A new makefile variable SIESTA_ARCH is used for identification
+purposes.
+
+Also, reinit now allows the FDF input to be read through standard
+input, as in siesta < h2o.fdf. To support debugging sessions, siesta
+will read from INPUT_DEBUG if this file exists (and warn about it).
+NOTE: In some platforms, the siesta executable must reside in the same
+directory as the files for things to work properly (this happens to
+the parallel version in Linux).
+
+A minor (cosmetic) fix to matel: some arrays did not need to be saved,
+as they were deallocated upon exit.
+
+Files:
+   Docs/siesta.tex : Revamping and removal of obsolete sections.
+   matel.f      : Array declarations.
+   version.f    : Version number incremented to 1.0.28
+   reinit.F     : Support for dual input.
+   resize.F     : More graceful exit.
+   Makefile     : arch.make support.
+   Sys/*.make   : Some pruning of old files, updates.
+   MPI/Makefile : arch.make support.
+========================================================================
 Version: 1.0.27
 Date: 2000/04/12   4:00:00 GMT
 Title: Spin polarisation corrections

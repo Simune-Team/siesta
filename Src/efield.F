@@ -48,6 +48,7 @@ C
       use parallel
       use atmfuncs, only: rcut
       use fdf
+      use parsing
 #ifdef MPI
       use mpi
 #endif
@@ -57,7 +58,7 @@ C
       integer           na, isa(na), mesh(3), nsm
       real              v(*)
       double precision  cell(3,3), dot, field(3), xa(3,na)
-      external          cross, dot, parse, reclat, shaper
+      external          cross, dot, reclat, shaper
 
 c Internal parameters
 c tol : tolerance for bulk components of the electric field
@@ -67,7 +68,8 @@ c tol : tolerance for bulk components of the electric field
 c Internal variables
       logical           found, frstme, isfield, orthog
       character         eunits*10, shape*8, line*130, names*20
-      integer           i0(3), i1, i2, i3, ia, imesh, int, is, iu, ix,
+      integer           i0(3), i1, i2, i3, ia, imesh, int(1),
+     $                  is, iu, ix,
      .                  j1, j2, j3, last, lc(0:1), 
      .                  nbcell, ni, nn, nr, nv, Node, Nodes, meshl(3),
      .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,

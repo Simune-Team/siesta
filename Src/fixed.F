@@ -39,6 +39,7 @@ c   position  from -1 to -10
 c   rigid  1  2
 c   center 1  2   0.0  0.0  1.0
 c   routine constr
+c   stress 1  2  3
 c   %endblock GeometryConstraints
 c
 c where constr is the following user-written subroutine:
@@ -65,6 +66,7 @@ C  Modules
 C
       use precision
       use fdf
+      use parsing
 #ifdef MPI
       use mpi
 #endif
@@ -102,13 +104,13 @@ c Internal variables
       integer MPIerror
 #endif
       double precision
-     .  dot, fxc, reals(maxw), values(maxw), xnorm
+     .  dot, fxc, reals(maxw), values(maxw), xnorm, xs(6)
       double precision, dimension(:,:), allocatable, save ::
      .  xc, dpbuffer2
       external
-     .  dot, constr, parse, memory
+     .  dot, constr, memory
       save
-     .  frstme, nc
+     .  frstme, nc, xs
 
       data
      .  frstme /.true./,
@@ -130,6 +132,9 @@ C Allocate memory for constraints - do only once and preserve contents
         call memory('A','I',maxc,'fixed')
         allocate(xc(3,maxc))
         call memory('A','D',3*maxc,'fixed')
+
+c Initialise stress constraints to unconstrained state
+        xs(1:6) = 0.0d0
 
         nc = 0
 
@@ -342,6 +347,15 @@ C
               endif
             enddo
 
+          elseif (name1 .eq. 'stress') then
+
+            do ic = 1,nv
+              nc = nc + 1
+              ctype(nc) = 'stress'
+              ix = nint(values(ic))
+              if (ix.ge.1.and.ix.le.6) xs(ix) = 1.0d0
+            enddo
+
           else
             if (Node.eq.0) then
               write(6,*) 'fixed: ERROR: sorry, constraint type ',
@@ -353,7 +367,7 @@ C
         frstme = .false.
       endif
 
-c Copy stress and forces to output arrays
+c Copy stress and forces to output arrays 
       do ix = 1,3
         do jx = 1,3
           cstress(jx,ix) = stress(jx,ix)
@@ -378,6 +392,15 @@ c Apply constraints
         endif
       enddo
 
+c Apply stress constraints
+      cstress(1,1) = cstress(1,1) - xs(1)*cstress(1,1)
+      cstress(2,2) = cstress(2,2) - xs(2)*cstress(2,2)
+      cstress(3,3) = cstress(3,3) - xs(3)*cstress(3,3)
+      cstress(3,2) = cstress(3,2) - xs(4)*cstress(3,2)
+      cstress(2,3) = cstress(2,3) - xs(4)*cstress(2,3)
+      cstress(3,1) = cstress(3,1) - xs(5)*cstress(3,1)
+      cstress(1,3) = cstress(1,3) - xs(5)*cstress(1,3)
+      cstress(1,2) = cstress(1,2) - xs(6)*cstress(1,2)
+      cstress(2,1) = cstress(2,1) - xs(6)*cstress(2,1)
+
       end
-
-

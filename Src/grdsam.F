@@ -78,6 +78,7 @@ C  Modules
 C
       use precision
       use fdf
+      use parsing
 #ifdef MPI
       use mpi
 #endif
@@ -96,7 +97,7 @@ C
      .                  Hmat(maxnh,nspin), stress(3,3),
      .                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
 
-      external          parse, memory
+      external          memory
 
 c ----------------------------------------------------------------------------
 

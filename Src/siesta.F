@@ -1,6 +1,6 @@
       Program SIESTA
 
-C ********************************************************************
+C ***
 C SIESTA Density Functional LCAO program package.
 C Copyright by E.Artacho, P.Ordejon, D.Sanchez-Portal and 
 C   J.M.Soler, 1996, 1997.
@@ -10,76 +10,82 @@ C permitted without prior and explicit authorization by the authors.
 C Send comments/suggestions/bug-reports to:
 C   Jose M. Soler: jose.soler@uam.es
 C   Pablo Ordejon: ordejon@condmat2.ciencias.uniovi.es
-C ********************************************************************
+C ***
 C This program uses the flexible data format (FDF) package,
 C copyrighted by A.Garcia and J.M.Soler, 1996, 1997
-C ********************************************************************
+C ***
 C This program uses exchange-correlation routines copyrighted
 C by C.Balbas, J.L.Martins and J.M.Soler, 1996, 1997.
-C ********************************************************************
+C ***
 C Routine idiag copyrighted by J.Moreno and J.M.Soler, 1990.
-C ********************************************************************
+C ***
 C Routine pulayx copyrighted by In-Ho Lee and P.Ordejon, 1997.
-C ********************************************************************
+C ***
 C This program uses routines from 'Numerical Recipes', copyrighted
 C by W.H.Press, A.A.Teukolsky, W.T.Veterlig and B.P.Flannery.
 C Some of these routines have been modified or their name changed.
-C ********************************************************************
+C ***
 C The atomic part uses old routines from unknown authors. If you wrote
 C any of these routines, please let us know, to include the apropriate
 C acknowledgements.
-C ********************************************************************
+C ***
 C This module was written by P.Ordejon and J.M.Soler, 1996, 1997, 1998.
-C ********************************************************************
+C ***
 C Parallelisation changes introduced JDG, 1998, 1999.
-C ********************************************************************
-C    6  10        20        30        40        50        60        7072
-
+C ***
+C General architectural issues: Alberto Garcia, 1997, 1998, 1999, 2000
+C ***
 C
 C  Modules
 C
       use precision
+      use interfaces   ! 
       use parallel
       use atmfuncs, only: rcut, uion
-      use atminit
+      use atminit, only: initatom
+      use atomlist
       use band
       use matel_module, only: matel_init
       use fdf
+      use parsing
+      use ionew, only: io_setup, IOnode
 #ifdef MPI
       use mpi
 #endif
+      use alloc
 
       implicit none
+
 
       integer
      .  fincoor,
      .  i, ia, ia1, ia2, iadispl, ianneal,
      .  idyn, ifa, ifinal, ihmat, iiscf, ik, ikb, in, iio,
-     .  ind, inicoor, integers, io, ioa, ioptlwf, iord,
+     .  ind, inicoor, integers(1), io, ioa, ioptlwf, iord,
      .  iquench, is, isel, iscf, 
      .  isolve, ispin, istp, istpsave, istart, istep, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
      .  j, ja, jamin, jo, jx, kscell(3,3),
-     .  lastc, lc(0:1), maxa, maxbk, maxk, maxkb, maxnh, maxnhold,
-     .  maxna, maxo, maxsav, mscell(3,3), mullipop,
-     .  na, nkick, nnamax, nauxpul, nbcell, nbk, ncells, ncgmax, nh,
-     .  ni, nkpnt, nmove, nn, nnia, no, nokb, nr,
-     .  ns, nsc(3), nscf, nspin, ntm(3), nua, nuo, nuokb, nv, 
-     .  nxij, nuotot, pmax, nkpol
+     .  lastc, lc(0:1), maxbk, maxk, maxnh, maxnhold,
+     .  maxna, maxsav, mscell(3,3), mullipop, ncells,
+     .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
+     .  ni, nkpnt, nmove, nn, nnia, nr,
+     .  ns, nsc(3), nscf, nspin, ntm(3), no_l, nv, 
+     .  nxij, pmax, nkpol
 
       integer
-     .  Node, Nodes, IOnode
+     .  Node, Nodes
 #ifdef MPI
       integer
      .  MPIerror, ntmp, procYval, procYdefault
 #endif
 
       integer, dimension(:), allocatable, save ::
-     .  iaKB, iaorb, ibuffer1, indxua, indxuo, iphorb, iphKB, isa, iza,
-     .  jna, lastkb, lasto, listh, listhold, listhptr, listhptrold,
+     .  ibuffer1, 
+     .  jna, listh, listhold, listhptr, listhptrold,
      .  numh, numhold
 
-      double precision
+      real(dp)
      .  amu, Ang, bcell(3,3), beta, bulkm, 
      .  charnet, cfmax, cftem, const, cstress(3,3),
      .  Debye, dipol(3), dDmax, dDtol, DEna,
@@ -93,10 +99,10 @@ C
      .  kBar, kcutof, kdispl(3), Kelvin,
      .  kn, kpr, 
      .  mn, mpr, Pint, Pmol, Psol
-      double precision
-     .  qaux, qspin(4), qsol, qtot, 
+      real(dp)
+     .  qaux, qspin(4), qsol,
      .  rc, rcoor, rcoorcp, reals(2), rijmin, 
-     .  rmax, rmaxh, rmaxkb, rmaxo, rmaxv, rmin, r2min,
+     .  rmax, rmaxh, rmin, r2min,
      .  scell(3,3), stot, stress(3,3), strtol, svec(3),
      .  taurelax, temp, tempinit, tempion, tiny, tp, ts, tt,
      .  Uatm, ucell(3,3), Uscf,
@@ -105,25 +111,25 @@ C
      .  xmax, xmin,
      .  stressl(3,3), veclen
 
-      double precision, dimension(:), allocatable, save ::
-     .  amass, Datm, efs, kweight, qa, qs, r2ij, rckb, rco, 
+      real(dp), dimension(:), allocatable, save ::
+     .  efs, kweight, qs, r2ij, 
      .  wgthpol, dpbuffer1, H0, S
 
-      double precision, dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable, save :: 
      .  auxpul, bk, cfa, fa, fal, kpoint, kpol,
-     .  polR, polxyz, H, va, xa, xalast, xij,
+     .  polR, polxyz, H, va, xij,
      .  xijo, dpbuffer2, Dscf, Dscfsave, Dold,
      .  Eold, Escf
 
 #ifdef MPI
-      double precision
+      real(dp)
      .  buffer1, stresstmp(3,3)
 
-      double precision, dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable, save :: 
      .  fatmp
 #endif
 
-      double precision, dimension(:,:,:), allocatable, save :: 
+      real(dp), dimension(:,:,:), allocatable, save :: 
      .  ebk, eo, qo
 
       logical
@@ -134,7 +140,7 @@ C
      .  same, savehs, savevh, savevt, savdrh, savrho,
      .  usesavecg, usesavelwf, usesavedm, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
-     .  writek, writic, varcel, genlogic, writedm
+     .  writek, writic, varcel, genlogic, writedm, atmonly
 
 #ifdef MPI
       logical
@@ -144,45 +150,46 @@ C
       character
      .  filevh*25, filevt*25, fildrh*25, filrho*25,
      .  line*150, names*80, paste*25,
-     .  slabel*20, sname*150, shape*10
+     .  slabel*20, sname*150, shape*10, message*79
 
       external
      .  anneal, chkdim, cgvc, fixed,
      .  dhscf, diagon, dnaefs, extrapol,
-     .  hsparse, iodm, ioxv, 
+     .  iodm, ioxv, 
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb, nlefsm, 
-     .  nose, npr, ordern, overfsm, parse, paste, prmem, pulayx, 
-     .  redata, reinit, resize, shaper, spnvec, superc, superx,
+     .  nose, npr, overfsm, paste, pulayx, 
+     .  redata, reinit, shaper, spnvec, superx,
      .  timer, verlet2, volcel, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion
 
       data
-     .  e1, e2 / 1.d0, -1.d0 /
-     .  kcutof, kscell, kdispl / 0.d0, 9*0, 3*0.d0 /
+     .  e1, e2 / 1._dp, -1._dp /
+     .  kcutof, kscell, kdispl / 0._dp, 9*0, 3*0._dp /
      .  nkpnt / 1 /
      .  relaxd /.false./
-     .  tiny /1.d-15/
+     .  tiny /1.e-15_dp/
      .  maxnh / 1 /
      .  maxna / 200 /
-     .  tempion / 0.0d0 /
-     .  na, no, nokb, nua, nuo, nuokb, nnamax /7*1/
+     .  tempion / 0.0_dp /
+     .  no_l, nnamax /2*1/
      .  nauxpul, nbk, ns, nspin, nxij /5*1/
      .  ncells, nsc, mscell / 1,   1,1,1,   1,0,0, 0,1,0, 0,0,1 /
 c---------------------------------------------------------------------
 
 C Initialise MPI and set processor number
-      IOnode = 0
 #ifdef MPI
       call MPI_Init( MPIerror )
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
 #else
-      Node = IOnode
+      Node =  0
       Nodes = 1
 #endif
 
+      call io_setup     ! Initialize IOnode
+
 C Print version information ...........................................
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         call prversion
 #ifdef MPI
          write(6,'(/,a,i4,a)')
@@ -200,53 +207,80 @@ C Start time counter ..................................................
       call timer( 'Setup', 1 )
 C ..................
 
-C Print initial date and time .........................................
-      if (Node.eq.IOnode) then
-        call timestamp('Start of run')
-      endif
-C ....................
+      if (IOnode)  call timestamp('Start of run')
 
 C Factors of conversion to internal units (Bohr,fs,Ry) ................
-      Ang    = 1.d0 / 0.529177d0
-      eV     = 1.d0 / 13.60580d0
-      kBar   = 1.d0 / 1.47108d5
-      Kelvin = eV / 11604.45d0
-      Debye  = 0.393430d0
-      amu    = 2.133107d0
+      Ang    = 1._dp / 0.529177_dp
+      eV     = 1._dp / 13.60580_dp
+      kBar   = 1._dp / 1.47108e5_dp
+      Kelvin = eV / 11604.45_dp
+      Debye  = 0.393430_dp
+      amu    = 2.133107_dp
 C ..................
 
 C Initialize some variables
-      DUext = 0.0d0
-      Eharrs = 0.0d0
-      Eions = 0.0d0
-      Emad =0.0d0
-      FreeE = 0.0d0
+      DUext = 0.0_dp
+      Eharrs = 0.0_dp
+      Eions = 0.0_dp
+      Emad =0.0_dp
+      FreeE = 0.0_dp
 
 C Initialise read .....................................................
       call reinit(slabel, sname)
 
 C Read simulation sizes ...............................................
-      call resize(nua, nspin, ucell, ncells)
 
-C Allocate arrays based on read sizes .................................
-      maxa = nua*ncells
-      allocate(indxua(maxa))
-      call memory('A','I',maxa,'siesta')
-      allocate(isa(maxa))
-      call memory('A','I',maxa,'siesta')
-      allocate(iza(maxa))
-      call memory('A','I',maxa,'siesta')
-      allocate(lastkb(0:maxa))
-      call memory('A','I',maxa+1,'siesta')
-      allocate(lasto(0:maxa))
-      call memory('A','I',maxa+1,'siesta')
-      allocate(qa(maxa))
-      call memory('A','D',maxa,'siesta')
-      allocate(xa(3,maxa))
-      call memory('A','D',3*maxa,'siesta')
-      allocate(xalast(3,maxa))
-      call memory('A','D',3*maxa,'siesta')
-C
+!! Read number of atoms and coordinates, and unit cell
+      if (IOnode) call coor(na_u,ucell)  ! Sets na_u, xa, and isa
+
+#ifdef MPI
+      call MPI_Bcast(na_u,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+      call MPI_Bcast(ucell(1,1),9,DAT_double,0,MPI_Comm_World,
+     .  MPIerror)
+
+      if (Node.ne.0) then    ! Allocate isa and xa in rest of nodes
+         nullify(isa,xa)
+         call realloc(isa,1,na_u,name='isa',routine='siesta')
+         call realloc(xa,1,3,1,na_u,name='xa',routine='siesta')
+      endif
+      call MPI_Bcast(isa,na_u,MPI_integer,0,MPI_Comm_World,MPIerror)
+      call MPI_Bcast(xa(1,1),3*na_u,DAT_double,0,MPI_Comm_World,
+     .  MPIerror)
+#endif
+
+C Allocate arrays based on read sizes ................
+!
+!     Those living in module atomlists
+!
+      nullify(indxua,iza,lastkb,lasto,qa,amass,xalast)
+      call realloc(indxua,1,na_u,name='indxua',routine='siesta')
+      call realloc(iza,1,na_u,name='iza',routine='siesta')
+      call realloc(lastkb,0,na_u,name='lastkb',routine='siesta')
+      call realloc(lasto,0,na_u,name='lasto',routine='siesta')
+      call realloc(qa,1,na_u,name='qa',routine='siesta')
+      call realloc(xalast,1,3,1,na_u,name='xalast',routine='siesta')
+      call realloc(amass,1,na_u,name='amass',routine='siesta')
+
+!
+!     Others
+!
+      allocate(cfa(3,na_u))
+      call memory('A','D',3*na_u,'siesta')
+      allocate(fa(3,na_u))
+      call memory('A','D',3*na_u,'siesta')
+      allocate(fal(3,na_u))
+      call memory('A','D',3*na_u,'siesta')
+      allocate(va(3,na_u))
+      call memory('A','D',3*na_u,'siesta')
+
+C Initialise those arrays that must be pre-initialised
+      fal(1:3,1:na_u) = 0.0_dp
+      stress(1:3,1:3) = 0.0_dp
+
+      if (IOnode) call spin_init(nspin)
+#ifdef MPI
+      call MPI_Bcast(nspin,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+#endif
       allocate(efs(nspin))
       call memory('A','D',nspin,'siesta')
       allocate(qs(nspin))
@@ -257,7 +291,7 @@ C
       call memory('A','D',3*nspin,'siesta')
 
 C Read simulation data ................................................
-      call redata(nua, ncells, ns, nspin, isa, xa, outlng, 
+      call redata(na_u, ns, nspin, outlng, 
      .            g2cut, charnet, negl, nscf, dDtol, mix, wmix, 
      .            isolve, temp, fixspin, ts, ncgmax, ftol, strtol, 
      .            eta, etol, rcoor, 
@@ -268,29 +302,10 @@ C Read simulation data ................................................
      .            usesavelwf, usesavedm, usesavecg,
      .            mullipop, inspn, maxsav, nkick, wmixkick, 
      .            pulfile, tempinit, dumpcharge, varcel)
-      na = nua
-
-C Allocate arrays whose size depends on nua as this may be changed in redata
-      allocate(amass(nua))
-      call memory('A','D',nua,'siesta')
-      allocate(cfa(3,nua))
-      call memory('A','D',3*nua,'siesta')
-      allocate(fa(3,nua))
-      call memory('A','D',3*nua,'siesta')
-      allocate(fal(3,nua))
-      call memory('A','D',3*nua,'siesta')
-      allocate(va(3,nua))
-      call memory('A','D',3*nua,'siesta')
-
-C Initialise those arrays that must be pre-initialised
-      fal(1:3,1:nua) = 0.0d0
-      stress(1:3,1:3) = 0.0d0
-
-C ................
 
 C Set ProcessorY and BlockSize in module parallel
 #ifdef MPI
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         call set_processorYdefault(Nodes,procYdefault)
         procYval = fdf_integer('processorY',procYdefault)
         BlockSize = fdf_integer('blocksize',8)
@@ -298,7 +313,7 @@ C Set ProcessorY and BlockSize in module parallel
       call MPI_Bcast(procYval,1,MPI_integer,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(BlockSize,1,MPI_integer,0,MPI_Comm_World,MPIerror)
       call set_processorY(procYval)
-      if (Node.eq.IOnode) then
+      if (IOnode) then
          write(6,'(a,2i4,/)')
      $        '* ProcessorY, Blocksize: ', procYval, Blocksize
       endif
@@ -308,7 +323,7 @@ C Set ProcessorY and BlockSize in module parallel
 #endif
 
 C Find some switches ..................................................
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         writek    = fdf_boolean('WriteKpoints'    , outlng )
         writef    = fdf_boolean('WriteForces'     , outlng )
         writedm   = fdf_boolean('WriteDM'         , .true. )
@@ -326,7 +341,7 @@ C Find some switches ..................................................
         savehs    = fdf_boolean('SaveHS'          , .false.)
 
         rijmin    = fdf_physical( 'WarningMinimumAtomicDistance',
-     .                                              1.d0, 'Bohr' )
+     .                                              1._dp, 'Bohr' )
 
       endif
 #ifdef MPI
@@ -352,132 +367,93 @@ C .....................
 C Read cell shape and atomic positions from a former run ..............
       foundxv = .false.
       if (usesavexv) then
-        call ioxv( 'read', ucell, vcell, nua, isa, iza, xa, va, found )
-        if (Node.eq.IOnode.and..not.found) write(6,'(/,a)')
+        call ioxv( 'read', ucell, vcell, na_u, isa, iza, xa, va, found )
+        if (IOnode.and..not.found) write(6,'(/,a)')
      .    'siesta: WARNING: XV file not found'
         foundxv = found
       endif
 C ..................
 
 C Dump initial coordinates to output ..................................
-      if ( writic.and.(Node.eq.IOnode) ) then
+      if ( writic.and.(IOnode) ) then
         write(6,'(/a)') 'siesta: Atomic coordinates (Bohr) and species'
         write(6,"('siesta: ',2x,3f10.5,i3,3x,i4)")
-     .           ( (xa(ix,ia), ix=1,3), isa(ia), ia, ia=1, na)
+     .           ( (xa(ix,ia), ix=1,3), isa(ia), ia, ia=1, na_u)
       endif
 C ..................
 
-C Initialize pseudopotentials, atomic orbitals and atom lists .........
-      call initatom(ns, nua, isa, nuotot, nuokb)
+! Initialize pseudopotentials and atomic orbitals, and
+! set no_u and nokb_u
+      
+      
+      call initatom(ns, na_u, isa, no_u, nokb_u)
 
-C Find number of locally stored orbitals
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
+C Find number of locally stored orbitals and allocated related arrays
+      call GetNodeOrbs(no_u,Node,Nodes,no_l)
 
-C Allocate arrays related to orbitals and pseudopotentials ............
-      maxo = nuotot*ncells
-      allocate(iaorb(maxo))
-      call memory('A','I',maxo,'siesta')
-      allocate(indxuo(maxo))
-      call memory('A','I',maxo,'siesta')
-      allocate(iphorb(maxo))
-      call memory('A','I',maxo,'siesta')
-      allocate(listhptr(nuo))
-      call memory('A','I',nuo,'siesta')
-      allocate(listhptrold(nuo))
-      call memory('A','I',nuo,'siesta')
-      allocate(numh(nuo))
-      call memory('A','I',nuotot,'siesta')
-      allocate(numhold(nuo))
-      call memory('A','I',nuo,'siesta')
-      allocate(Datm(maxo))
-      call memory('A','D',maxo,'siesta')
-      allocate(rco(maxo))
-      call memory('A','D',maxo,'siesta')
-      maxkb = nuokb*ncells
-      allocate(iaKB(maxkb))
-      call memory('A','I',maxkb,'siesta')
-      allocate(iphKB(maxkb))
-      call memory('A','I',maxkb,'siesta')
-      allocate(rckb(maxkb))
-      call memory('A','D',maxkb,'siesta')
+      allocate(listhptr(no_l))
+      call memory('A','I',no_l,'siesta')
+      listhptr(:) = 0
+      allocate(listhptrold(no_l))
+      call memory('A','I',no_l,'siesta')
+      listhptrold(:) = 0
+      allocate(numh(no_l))
+      call memory('A','I',no_l,'siesta')
+      numh(:) = 0
+      allocate(numhold(no_l))
+      call memory('A','I',no_l,'siesta')
+      numhold(:) = 0
 
-C Initialize atom lists ...............................................
-      call initatomlists(nua, nuotot, nuokb, isa, qtot,
-     .              rmaxv, rmaxo, rmaxkb, lasto,
-     .              lastkb, iza, amass, iaorb,
-     .              iphorb, Datm, qa, iaKB, iphKB)
+C Initialize atom lists 
+! na_u, no_u, and nokb_u are all set now
+
+      call initatomlists
       qtot = qtot - charnet
-      nuotot=lasto(nua)
-      no = nuotot
-      nokb = nuokb
-
-      if (Node.eq.IOnode) then
-         if (fdf_defined('Atom-Setup-Only')) then
-            call die("End of atom setup")
-         endif
-         if (fdf_defined('Atom-dump')) then
-            write(6,'(a)') 'Dumping ATOM info to file ATOM.dump'
-            call dump_atom
-         endif
-      endif
+!
 
 C  calculate spin populations for fixed spin case...
       if (fixspin) then
         if (nspin .ne. 2) then
-          write(6,'(a)')
-     .   'siesta: ERROR: You can only fix the spin of the system'
-          write(6,'(a)')
-     . '  siesta:        for collinear spin polarized calculations.'
-          stop
+           write(message,'(2a)')
+     $       'siesta: ERROR: You can only fix the spin of the system',
+     $       'for collinear spin polarized calculations.'
+             call die(message)
         endif
         do i=1,2
-          qs(i) = (qtot + (3-2*i)*ts) / 2.0d0
+          qs(i) = (qtot + (3-2*i)*ts) / 2.0_dp
         enddo
       endif
 C ..................
 
-C Find rco and rckb .............................
-      do ia = 1,nua
-        is = isa(ia)
-        do io = lasto(ia-1)+1,lasto(ia)
-          ioa = iphorb(io)
-          rco(io) = rcut(is,ioa)
-        enddo
-        do ikb = lastkb(ia-1)+1,lastkb(ia)
-          ioa = iphKB(ikb)
-          rckb(ikb) = rcut(is,ioa)
-        enddo
-      enddo
-C ......................
 
 C Find maximum interaction range ......................................
       if (negl) then
-        rmaxh = 2.0d0*rmaxo
+        rmaxh = 2.0_dp*rmaxo
       else
-        rmaxh = 2.0d0*rmaxo + 2.0d0*rmaxkb
+        rmaxh = 2.0_dp*rmaxo + 2.0_dp*rmaxkb
       endif
 C ......................
 
 C Automatic cell generation ...........................................
       if (volcel(ucell) .lt. 1.0d-8) then
-        ucell(1:3,1:3) = 0.0d0
-        scell(1:3,1:3) = 0.0d0
+        ucell(1:3,1:3) = 0.0_dp
+        scell(1:3,1:3) = 0.0_dp
         do ix = 1,3
-          xmin =  1.0d30
-          xmax = -1.0d30
-          do ia = 1,na
+          xmin =  huge(1._dp)
+          xmax = -xmin
+          do ia = 1,na_u
             is = isa(ia)
             rc = rcut(is,0)
             xmin = min( xmin, xa(ix,ia)-rc )
             xmax = max( xmax, xa(ix,ia)+rc )
           enddo
 C         Use a 10% margin for atomic movements
-          ucell(ix,ix) = 1.10d0 * (xmax - xmin)
+          ucell(ix,ix) = 1.10_dp * (xmax - xmin)
           scell(ix,ix) = ucell(ix,ix)
         enddo
 C build cubic cell if system is charged
-        if (charnet .ne. 0.0d0) then
-          xmax = -1.d30
+        if (charnet .ne. 0.0_dp) then
+          xmax = -huge(1._dp)
           do ix = 1,3
             if (ucell(ix,ix) .gt. xmax) xmax = ucell(ix,ix)
           enddo
@@ -488,7 +464,7 @@ C build cubic cell if system is charged
         endif
 C
         volume = volcel( ucell )
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           write(6,'(/,a,3(/,a,3f12.6))')
      .      'siesta: Automatic unit cell vectors (Ang):',
      .      ('siesta:', (ucell(ix,iv)/Ang,ix=1,3), iv =1,3)
@@ -497,14 +473,14 @@ C
 C ......................
 
 C Find system shape ...................................................
-      call shaper( ucell, nua, isa, xa, shape, nbcell, bcell )
-      if (Node.eq.IOnode) then
+      call shaper( ucell, na_u, isa, xa, shape, nbcell, bcell )
+      if (IOnode) then
         write(6,'(/,2a)') 'siesta: System type = ', shape
       endif
 C ......................
 
 C Madelung correction for charged systems .............................
-      if (charnet .ne. 0.0d0) then
+      if (charnet .ne. 0.0_dp) then
         call madelung(ucell, shape, charnet, Emad)
       endif
 C ......................
@@ -523,12 +499,12 @@ C initialise the data - could be made more efficient in future!
       call memory('A','D',3*maxk,'siesta')
       allocate(kweight(maxk))
       call memory('A','D',maxk,'siesta')
-      kpoint(1:3,1)=0.0d0
-      kweight(1)=1.0d0
-      allocate(eo(nuotot,nspin,maxk))
-      call memory('A','D',nuotot*nspin*maxk,'siesta')
-      allocate(qo(nuotot,nspin,maxk))
-      call memory('A','D',nuotot*nspin*maxk,'siesta')
+      kpoint(1:3,1)=0.0_dp
+      kweight(1)=1.0_dp
+      allocate(eo(no_u,nspin,maxk))
+      call memory('A','D',no_u*nspin*maxk,'siesta')
+      allocate(qo(no_u,nspin,maxk))
+      call memory('A','D',no_u*nspin*maxk,'siesta')
       call kgrid( ucell, kscell, kdispl,
      .            nkpnt, kpoint, kweight )
 C ......................
@@ -552,8 +528,8 @@ C the dimensions and repeat the initialisation
         nbk = 0
         call initbands( maxbk, nbk, bk )
       endif
-      allocate(ebk(nuotot,nspin,maxbk))
-      call memory('A','D',nuotot*nspin*maxbk,'siesta')
+      allocate(ebk(no_u,nspin,maxbk))
+      call memory('A','D',no_u*nspin*maxbk,'siesta')
 
 C ......................
 
@@ -588,7 +564,7 @@ C Find if only gamma point is used ....................................
 C ....................
 
 C Print k-points ......................................................
-      if (.not.gamma .and. Node.eq.IOnode) then
+      if (.not.gamma .and. IOnode) then
         if ( writek ) then
           write(6,'(/,a)')
      .     'siesta: k-point coordinates (Bohr**-1) and weights:'
@@ -615,7 +591,7 @@ C ....................
 
 C Find required supercell
       do i = 1,3
-        mscell(1:3,i) = 0.0d0
+        mscell(1:3,i) = 0.0_dp
         if (gamma) then
           nsc(i) = 1
           mscell(i,i) = 1
@@ -626,205 +602,14 @@ C Find required supercell
         endif
       enddo
 
-C Find number of cells, atoms and orbitals in supercell
-      ncells = nsc(1) * nsc(2) * nsc(3)
-
-C Reallocate atom related memory to allow for supercell while
-C preserving the contents
-      if (nua*ncells.gt.maxa) then
-        allocate(ibuffer1(0:maxa))
-        call memory('A','I',maxa+1,'siesta')
-C
-        ibuffer1(1:maxa)=indxua(1:maxa)
-        call memory('D','I',size(indxua),'siesta')
-        deallocate(indxua)
-        allocate(indxua(nua*ncells))
-        call memory('A','I',nua*ncells,'siesta')
-        indxua(1:maxa)=ibuffer1(1:maxa)
-C
-        ibuffer1(1:maxa)=isa(1:maxa)
-        call memory('D','I',size(isa),'siesta')
-        deallocate(isa)
-        allocate(isa(nua*ncells))
-        call memory('A','I',nua*ncells,'siesta')
-        isa(1:maxa)=ibuffer1(1:maxa)
-C
-        ibuffer1(1:maxa)=iza(1:maxa)
-        call memory('D','I',size(iza),'siesta')
-        deallocate(iza)
-        allocate(iza(nua*ncells))
-        call memory('A','I',nua*ncells,'siesta')
-        iza(1:maxa)=ibuffer1(1:maxa)
-C
-        ibuffer1(0:maxa)=lastkb(0:maxa)
-        call memory('D','I',size(lastkb),'siesta')
-        deallocate(lastkb)
-        allocate(lastkb(0:nua*ncells))
-        call memory('A','I',nua*ncells+1,'siesta')
-        lastkb(0:maxa)=ibuffer1(0:maxa)
-C
-        ibuffer1(0:maxa)=lasto(0:maxa)
-        call memory('D','I',size(lasto),'siesta')
-        deallocate(lasto)
-        allocate(lasto(0:nua*ncells))
-        call memory('A','I',nua*ncells+1,'siesta')
-        lasto(0:maxa)=ibuffer1(0:maxa)
-C
-        call memory('D','I',size(ibuffer1),'siesta')
-        deallocate(ibuffer1)
-        allocate(dpbuffer1(maxa))
-        call memory('A','D',maxa,'siesta')
-C
-        dpbuffer1(1:maxa)=qa(1:maxa)
-        call memory('D','D',size(qa),'siesta')
-        deallocate(qa)
-        allocate(qa(nua*ncells))
-        call memory('A','D',nua*ncells,'siesta')
-        qa(1:maxa)=dpbuffer1(1:maxa)
-C
-        call memory('D','D',size(dpbuffer1),'siesta')
-        deallocate(dpbuffer1)
-        allocate(dpbuffer2(3,maxa))
-        call memory('A','D',3*maxa,'siesta')
-C
-        dpbuffer2(1:3,1:maxa)=xa(1:3,1:maxa)
-        call memory('D','D',size(xa),'siesta')
-        deallocate(xa)
-        allocate(xa(3,nua*ncells))
-        call memory('A','D',3*nua*ncells,'siesta')
-        xa(1:3,1:maxa)=dpbuffer2(1:3,1:maxa)
-C
-        call memory('D','D',size(xalast),'siesta')
-        deallocate(xalast)
-        allocate(xalast(3,nua*ncells))
-        call memory('A','D',3*nua*ncells,'siesta')
-C
-        call memory('D','D',size(dpbuffer2),'siesta')
-        deallocate(dpbuffer2)
-        maxa=nua*ncells
-      endif
-
-C Reallocate orbital related memory to allow for supercell while 
-C preserving the contents
-      if (nuotot*ncells.gt.maxo) then
-        allocate(ibuffer1(maxo))
-        call memory('A','I',maxo,'siesta')
-C
-        ibuffer1(1:maxo)=iaorb(1:maxo)
-        call memory('D','I',size(iaorb),'siesta')
-        deallocate(iaorb)
-        allocate(iaorb(nuotot*ncells))
-        call memory('A','I',nuotot*ncells,'siesta')
-        iaorb(1:maxo)=ibuffer1(1:maxo)
-C
-        ibuffer1(1:maxo)=indxuo(1:maxo)
-        call memory('D','I',size(indxuo),'siesta')
-        deallocate(indxuo)
-        allocate(indxuo(nuotot*ncells))
-        call memory('A','I',nuotot*ncells,'siesta')
-        indxuo(1:maxo)=ibuffer1(1:maxo)
-C
-        ibuffer1(1:maxo)=iphorb(1:maxo)
-        call memory('D','I',size(iphorb),'siesta')
-        deallocate(iphorb)
-        allocate(iphorb(nuotot*ncells))
-        call memory('A','I',nuotot*ncells,'siesta')
-        iphorb(1:maxo)=ibuffer1(1:maxo)
-C
-        call memory('D','I',size(ibuffer1),'siesta')
-        deallocate(ibuffer1)
-        allocate(dpbuffer1(maxo))
-        call memory('A','D',maxo,'siesta')
-C
-        dpbuffer1(1:maxo)=Datm(1:maxo)
-        call memory('D','D',size(Datm),'siesta')
-        deallocate(Datm)
-        allocate(Datm(nuotot*ncells))
-        call memory('A','D',nuotot*ncells,'siesta')
-        Datm(1:maxo)=dpbuffer1(1:maxo)
-C
-        dpbuffer1(1:maxo)=rco(1:maxo)
-        call memory('D','D',size(rco),'siesta')
-        deallocate(rco)
-        allocate(rco(nuotot*ncells))
-        call memory('A','D',nuotot*ncells,'siesta')
-        rco(1:maxo)=dpbuffer1(1:maxo)
-C
-        call memory('D','D',size(dpbuffer1),'siesta')
-        deallocate(dpbuffer1)
-        maxo = nuotot*ncells
-      endif
-
-C Reallocate memory to allow for supercell size while preserving contents
-      if (nuokb*ncells.gt.maxkb) then
-        allocate(ibuffer1(maxkb))
-        call memory('A','I',maxkb,'siesta')
-C
-        ibuffer1(1:maxkb)=iaKB(1:maxkb)
-        call memory('D','I',size(iaKB),'siesta')
-        deallocate(iaKB)
-        allocate(iaKB(nuokb*ncells))
-        call memory('A','I',nuokb*ncells,'siesta')
-        iaKB(1:maxkb)=ibuffer1(1:maxkb)
-C
-        ibuffer1(1:maxkb)=iphKB(1:maxkb)
-        call memory('D','I',size(iphKB),'siesta')
-        deallocate(iphKB)
-        allocate(iphKB(nuokb*ncells))
-        call memory('A','I',nuokb*ncells,'siesta')
-        iphKB(1:maxkb)=ibuffer1(1:maxkb)
-C
-        call memory('D','I',size(ibuffer1),'siesta')
-        deallocate(ibuffer1)
-        allocate(dpbuffer1(maxkb))
-        call memory('A','D',maxkb,'siesta')
-C
-        dpbuffer1(1:maxkb)=rckb(1:maxkb)
-        call memory('D','D',size(rckb),'siesta')
-        deallocate(rckb)
-        allocate(rckb(nuokb*ncells))
-        call memory('A','D',nuokb*ncells,'siesta')
-        rckb(1:maxkb)=dpbuffer1(1:maxkb)
-C
-        call memory('D','D',size(dpbuffer1),'siesta')
-        deallocate(dpbuffer1)
-        maxkb = nuokb*ncells
-      endif
-
 C Find auxiliary supercell (required only for k sampling) ............
-      call superc( ucell, nua, nuotot, nuokb,
-     .             maxa, maxo, maxkb,
-     .             xa, isa, iza, lasto, lastkb,
-     .             iaorb, iphorb, rco, iakb, iphkb, rckb,
-     .             scell, nsc, ncells,
-     .             na, no, nokb, indxua, indxuo )
-      if (Node.eq.IOnode) then
-        if (.not.gamma) write(6,'(/,a,i6,a,i6,a,i6,a,i8)')
-     .    'siesta: Internal auxiliary supercell:',
-     .     nsc(1), '  x', nsc(2), '  x', nsc(3), '  =', ncells
-      endif
-C ..................
 
-C Some printout for debugging .......................
-*     if (Node.eq.IOnode) then
-*     write(6,'(/,a,/,(3f12.6))') 'siesta: scell =', scell
-*     write(6,'(/,a,/,(3i6,2i8,3f12.6))')
-*    .  'siesta: ia,isa,iza,lasto,lastkb,xa =',
-*    .  (ia,isa(ia),iza(ia),lasto(ia),lastkb(ia),
-*    .   (xa(ix,ia),ix=1,3),ia=1,na)
-*     write(6,'(/,a,3i6)') 'siesta: na, no, nokb =', na, no, nokb
-*     write(6,'(/,a)') 'siesta: indxua, indxuo ='
-*     do ia = 1,na
-*       write(6,'(i6,3x,20i4)')
-*    .    indxua(ia), (indxuo(io),io=lasto(ia-1)+1,lasto(ia))
-*     enddo
-*     endif
-C ..................
+      call superc( ucell, scell, nsc)
 
 C Initialize atomic velocities to zero ................................
       if (.not. foundxv) then
-        va(1:3,1:nua) = 0.0d0
-        vcell(1:3,1:3)=0.0d0
+        va(1:3,1:na_u) = 0.0_dp
+        vcell(1:3,1:3)=0.0_dp
       endif
 C ..................
 
@@ -840,16 +625,12 @@ C Notice that this loop is not indented
         inicoor = 0
         fincoor = (ia2-ia1+1)*3*2
       else
-        if (Node.eq.IOnode) then
-          stop 'siesta: wrong idyn'
-        else
-          stop
-        endif
+         call die('siesta: wrong idyn')
       endif
 
 C Build initial velocities according to Maxwell-Bolzmann distribution....
       if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. foundxv)) 
-     .    call vmb(nua,tempinit,amass,va)
+     .    call vmb(na_u,tempinit,amass,va)
 C ..................
 
       istp = 0
@@ -863,7 +644,7 @@ C Start loop over coordinate changes
       do istep = inicoor,fincoor
       call timer( 'IterMD', 1 )
       istp = istp + 1
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         write(6,'(/,a)') 'siesta:    ==============================='
         if (idyn .eq. 0) 
      .   write(6,'(a,i6)') 'siesta:        Begin CG move = ',istep
@@ -902,9 +683,9 @@ c displace atom by dx...
         endif
       endif
 
-      if (Node.eq.IOnode) then
+      if (IOnode) then
 C Print atomic coordinates ............................................
-        call outcoor( ucell, xa, isa, nua, ' ', writec )
+        call outcoor( ucell, xa, isa, na_u, ' ', writec )
       endif
 C ...................
 
@@ -927,23 +708,23 @@ C If number of k points has changed - re-size arrays
           call memory('A','D',3*nkpnt,'siesta')
           allocate(kweight(nkpnt))
           call memory('A','D',nkpnt,'siesta')
-          kpoint(1:3,1)=0.0d0
-          kweight(1)=1.0d0
+          kpoint(1:3,1)=0.0_dp
+          kweight(1)=1.0_dp
           call kgrid( ucell, kscell, kdispl,
      .      nkpnt, kpoint, kweight )
           call memory('D','D',size(eo),'siesta')
           deallocate(eo)
           call memory('D','D',size(qo),'siesta')
           deallocate(qo)
-          allocate(eo(nuotot,nspin,nkpnt))
-          call memory('A','D',nuotot*nspin*nkpnt,'siesta')
-          allocate(qo(nuotot,nspin,nkpnt))
-          call memory('A','D',nuotot*nspin*nkpnt,'siesta')
+          allocate(eo(no_u,nspin,nkpnt))
+          call memory('A','D',no_u*nspin*nkpnt,'siesta')
+          allocate(qo(no_u,nspin,nkpnt))
+          call memory('A','D',no_u*nspin*nkpnt,'siesta')
           maxk=nkpnt
         endif
  
 C Print k-points 
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           if ( writek ) then
             write(6,'(/,a)')
      .       'siesta: k-point coordinates (Bohr**-1) and weights:'
@@ -969,7 +750,7 @@ C Print k-points
  
 C Find required supercell
         do i = 1,3
-          mscell(1:3,i) = 0.0d0
+          mscell(1:3,i) = 0.0_dp
           if (gamma) then
             nsc(i) = 1
             mscell(i,i) = 1
@@ -980,195 +761,20 @@ C Find required supercell
           endif
         enddo
 
-C Find number of cells, atoms and orbitals in supercell
-        ncells = nsc(1) * nsc(2) * nsc(3)
-
-C Reallocate atom related memory to allow for supercell while
-C preserving the contents
-        if (nua*ncells.gt.maxa) then
-          allocate(ibuffer1(0:maxa))
-          call memory('A','I',maxa+1,'siesta')
-C
-          ibuffer1(1:maxa)=indxua(1:maxa)
-          call memory('D','I',size(indxua),'siesta')
-          deallocate(indxua)
-          allocate(indxua(nua*ncells))
-          call memory('A','I',nua*ncells,'siesta')
-          indxua(1:maxa)=ibuffer1(1:maxa)
-C
-          ibuffer1(1:maxa)=isa(1:maxa)
-          call memory('D','I',size(isa),'siesta')
-          deallocate(isa)
-          allocate(isa(nua*ncells))
-          call memory('A','I',nua*ncells,'siesta')
-          isa(1:maxa)=ibuffer1(1:maxa)
-C
-          ibuffer1(1:maxa)=iza(1:maxa)
-          call memory('D','I',size(iza),'siesta')
-          deallocate(iza)
-          allocate(iza(nua*ncells))
-          call memory('A','I',nua*ncells,'siesta')
-          iza(1:maxa)=ibuffer1(1:maxa)
-C
-          ibuffer1(0:maxa)=lastkb(0:maxa)
-          call memory('D','I',size(lastkb),'siesta')
-          deallocate(lastkb)
-          allocate(lastkb(0:nua*ncells))
-          call memory('A','I',nua*ncells+1,'siesta')
-          lastkb(0:maxa)=ibuffer1(0:maxa)
-C
-          ibuffer1(0:maxa)=lasto(0:maxa)
-          call memory('D','I',size(lasto),'siesta')
-          deallocate(lasto)
-          allocate(lasto(0:nua*ncells))
-          call memory('A','I',nua*ncells+1,'siesta')
-          lasto(0:maxa)=ibuffer1(0:maxa)
-C
-          call memory('D','I',size(ibuffer1),'siesta')
-          deallocate(ibuffer1)
-          allocate(dpbuffer1(maxa))
-          call memory('A','D',maxa,'siesta')
-C
-          dpbuffer1(1:maxa)=qa(1:maxa)
-          call memory('D','D',size(qa),'siesta')
-          deallocate(qa)
-          allocate(qa(nua*ncells))
-          call memory('A','D',nua*ncells,'siesta')
-          qa(1:maxa)=dpbuffer1(1:maxa)
-C
-          call memory('D','D',size(dpbuffer1),'siesta')
-          deallocate(dpbuffer1)
-          allocate(dpbuffer2(3,maxa))
-          call memory('A','D',3*maxa,'siesta')
-C
-          dpbuffer2(1:3,1:maxa)=xa(1:3,1:maxa)
-          call memory('D','D',size(xa),'siesta')
-          deallocate(xa)
-          allocate(xa(3,nua*ncells))
-          call memory('A','D',3*nuo*ncells,'siesta')
-          xa(1:3,1:maxa)=dpbuffer2(1:3,1:maxa)
-C
-          dpbuffer2(1:3,1:maxa)=xalast(1:3,1:maxa)
-          call memory('D','D',size(xalast),'siesta')
-          deallocate(xalast)
-          allocate(xalast(3,nua*ncells))
-          call memory('A','D',3*nuo*ncells,'siesta')
-          xalast(1:3,1:maxa)=dpbuffer2(1:3,1:maxa)
-C
-          call memory('D','D',size(dpbuffer2),'siesta')
-          deallocate(dpbuffer2)
-          maxa=nua*ncells
-        endif
-
-C Reallocate orbital related memory to allow for supercell while 
-C preserving the contents
-        if (nuotot*ncells.gt.maxo) then
-          allocate(ibuffer1(maxo))
-          call memory('A','I',maxo,'siesta')
-C
-          ibuffer1(1:maxo)=iaorb(1:maxo)
-          call memory('D','I',size(iaorb),'siesta')
-          deallocate(iaorb)
-          allocate(iaorb(nuotot*ncells))
-          call memory('A','I',nuotot*ncells,'siesta')
-          iaorb(1:maxo)=ibuffer1(1:maxo)
-C
-          ibuffer1(1:maxo)=indxuo(1:maxo)
-          call memory('D','I',size(indxuo),'siesta')
-          deallocate(indxuo)
-          allocate(indxuo(nuotot*ncells))
-          call memory('A','I',nuotot*ncells,'siesta')
-          indxuo(1:maxo)=ibuffer1(1:maxo)
-C
-          ibuffer1(1:maxo)=iphorb(1:maxo)
-          call memory('D','I',size(iphorb),'siesta')
-          deallocate(iphorb)
-          allocate(iphorb(nuotot*ncells))
-          call memory('A','I',nuotot*ncells,'siesta')
-          iphorb(1:maxo)=ibuffer1(1:maxo)
-C
-          call memory('D','I',size(ibuffer1),'siesta')
-          deallocate(ibuffer1)
-          allocate(dpbuffer1(maxo))
-          call memory('A','D',maxo,'siesta')
-C
-          dpbuffer1(1:maxo)=Datm(1:maxo)
-          call memory('D','D',size(Datm),'siesta')
-          deallocate(Datm)
-          allocate(Datm(nuotot*ncells))
-          call memory('A','D',nuotot*ncells,'siesta')
-          Datm(1:maxo)=dpbuffer1(1:maxo)
-C
-          dpbuffer1(1:maxo)=rco(1:maxo)
-          call memory('D','D',size(rco),'siesta')
-          deallocate(rco)
-          allocate(rco(nuotot*ncells))
-          call memory('A','D',nuotot*ncells,'siesta')
-          rco(1:maxo)=dpbuffer1(1:maxo)
-C
-          call memory('D','D',size(dpbuffer1),'siesta')
-          deallocate(dpbuffer1)
-          maxo = nuotot*ncells
-        endif
-
-C Reallocate memory to allow for supercell size while preserving contents
-        if (nuokb*ncells.gt.maxkb) then
-          allocate(ibuffer1(maxkb))
-          call memory('A','I',maxkb,'siesta')
-C
-          ibuffer1(1:maxkb)=iaKB(1:maxkb)
-          call memory('D','I',size(iaKB),'siesta')
-          deallocate(iaKB)
-          allocate(iaKB(nuokb*ncells))
-          call memory('A','I',nuokb*ncells,'siesta')
-          iaKB(1:maxkb)=ibuffer1(1:maxkb)
-C
-          ibuffer1(1:maxkb)=iphKB(1:maxkb)
-          call memory('D','I',size(iphKB),'siesta')
-          deallocate(iphKB)
-          allocate(iphKB(nuokb*ncells))
-          call memory('A','I',nuokb*ncells,'siesta')
-          iphKB(1:maxkb)=ibuffer1(1:maxkb)
-C
-          call memory('D','I',size(ibuffer1),'siesta')
-          deallocate(ibuffer1)
-          allocate(dpbuffer1(maxkb))
-          call memory('A','D',maxkb,'siesta')
-C
-          dpbuffer1(1:maxkb)=rckb(1:maxkb)
-          call memory('D','D',size(rckb),'siesta')
-          deallocate(rckb)
-          allocate(rckb(nuokb*ncells))
-          call memory('A','D',nuokb*ncells,'siesta')
-          rckb(1:maxkb)=dpbuffer1(1:maxkb)
-C
-          call memory('D','D',size(dpbuffer1),'siesta')
-          deallocate(dpbuffer1)
-          maxkb = nuokb*ncells
-        endif
-
 C auxiliary supercell
-        call superc( ucell, nua, nuotot, nuokb,
-     .               maxa, maxo, maxkb,
-     .               xa, isa, iza, lasto, lastkb,
-     .               iaorb, iphorb, rco, iakb, iphkb, rckb,
-     .               scell, nsc, ncells,
-     .               na, no, nokb, indxua, indxuo )
-        if (.not.gamma.and.Node.eq.IOnode) write(6,'(/,a,i6,a,i6,a,i6,
-     .     a,i8)') 'siesta: Internal auxiliary supercell:',
-     .     nsc(1), '  x', nsc(2), '  x', nsc(3), '  =', ncells
+
+        call superc(ucell,  scell, nsc)
 
 C Madelung correction for charged systems .............................
-        if (charnet .ne. 0.0d0) then
+        if (charnet .ne. 0.0_dp) then
           call madelung(ucell, shape, charnet, Emad)
         endif
 
       endif
 C End variable cell actualization
 
-
 C Print unit cell for variable cell ...................................
-      if ( varcel.and.(Node.eq.IOnode) ) call outcell(ucell)
+      if ( varcel.and.(IOnode) ) call outcell(ucell)
 C ...................
 
 C Find unit cell volume ...............................................
@@ -1178,7 +784,7 @@ C ...................
 C Initialize neighb subroutine ........................................
   144 ia = 0
       isel = 0
-      rmax = max( 2.d0*rmaxv, 2.d0*rmaxo, rmaxo+rmaxkb )
+      rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb )
       nnia = maxna
       if (allocated(jna)) then
         call memory('D','I',size(jna),'siesta')
@@ -1198,12 +804,12 @@ C Initialize neighb subroutine ........................................
       call memory('A','D',maxna,'siesta')
       allocate(xij(3,maxna))
       call memory('A','D',3*maxna,'siesta')
-      call neighb( scell, rmax, na, xa, ia, isel,
+      call neighb( scell, rmax, na_s, xa, ia, isel,
      .             nnia, jna, xij, r2ij )
       nnamax = 0
-      do ia = 1,na
+      do ia = 1,na_s
         nnia = 0
-        call neighb( scell, rmax, na, xa, ia, isel,
+        call neighb( scell, rmax, na_s, xa, ia, isel,
      .               nnia, jna, xij, r2ij )
         nnamax = max( nnamax, nnia )
       enddo
@@ -1218,11 +824,11 @@ C       Increase maxna with safety margin when atoms move
 C ..................
 
 C Check if any two atoms are unreasonably close .......................
-      do ia = 1,na
-        r2min = 1.d30
+      do ia = 1,na_s
+        r2min = huge(1._dp)
         jamin = 0
         nnia = maxna
-        call neighb( scell, rmax, na, xa, ia, isel,
+        call neighb( scell, rmax, na_s, xa, ia, isel,
      .               nnia, jna, xij, r2ij )
         do j = 1,nnia
           ja = jna(j)
@@ -1235,7 +841,7 @@ C           Check that it is not the same atom
           endif
         enddo
         rmin = sqrt( r2min )
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           if ( rmin .lt. rijmin ) write(6,'(a,2i6,a,f12.6,a)')
      .      'siesta: WARNING: Atoms', ia, jamin, ' too close: rij =',
      .       rmin/Ang, ' Ang'
@@ -1250,7 +856,7 @@ C List of nonzero hamiltonian matrix elements .........................
       endif
    44 nh = maxnh
       maxnhold = maxnh
-      call hsparse( negl, scell, nsc, na, isa, xa, lasto, lastkb, 
+      call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .              iphorb, iphKB, nh, numh, listhptr, listh, 
      .              Node, Nodes )
       overflow = .false.
@@ -1282,7 +888,7 @@ C but for subsequent steps listhold, Dscf and Dscfsave must be conserved
           allocate(Dscf(maxnh,nspin))
           call memory('A','D',maxnh*nspin,'siesta')
 C Initialise Dscfsave to avoid problems in extrapol
-          Dscfsave(1:maxnh,1:nspin) = 0.0d0
+          Dscfsave(1:maxnh,1:nspin) = 0.0_dp
         else
 C
           allocate(ibuffer1(maxnhold))
@@ -1368,9 +974,9 @@ C Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
 C ..................
 
 C Some printout for debugging ........................................
-*     if (Node.eq.IOnode) then
+*     if (IOnode) then
 *       write(6,'(/,a)') 'siesta: connected orbitals'
-*       do io = 1,nuotot
+*       do io = 1,no_u
 *         call GlobalToLocalOrb(io,Node,Nodes,iio)
 *         if (iio.gt.0) then
 *           write(6,'(i6,4x,15i4)') 
@@ -1393,7 +999,7 @@ C Find vectors between orbital centers ................................
         nxij = maxnh
         allocate(xijo(3,nxij))
         call memory('A','D',3*nxij,'siesta')
-        call xijorb( negl, scell, nua, na, xa,
+        call xijorb( negl, scell, na_u, na_s, xa,
      .               lasto, lastkb, rco, rckb,
      .               maxnh, numh, listhptr,
      .               listh, xijo, Node, Nodes )
@@ -1407,21 +1013,21 @@ C ..................
 C Initialize density matrix ...........................................
 C set density matrix for first step
       if (istp .eq. 1) 
-     .   call initdm(Datm, Dscf, Dold, lasto, na,
-     .               maxnh, maxo, nuo, nspin, nua, nuo, nspin,
+     .   call initdm(Datm, Dscf, Dold, lasto, na_s,
+     .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
      .               numh, numhold, listhptr, listhptrold,
      .               listh, listhold, iaorb, found, inspn, 
-     .               usesavedm, nuotot)
+     .               usesavedm, no_u)
 
       if (istp .ne. 1 .and. idyn .eq. 6)
-     .   call initdm(Datm, Dscf, Dold, lasto, na,
-     .               maxnh, maxo, nuo, nspin, nua, nuo, nspin,
+     .   call initdm(Datm, Dscf, Dold, lasto, na_s,
+     .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
      .               numh, numhold, listhptr, listhptrold,
      .               listh, listhold, iaorb, found, inspn, 
-     .               usesavedm, nuotot)
+     .               usesavedm, no_u)
 
 C Initialize energy-density matrix to zero for first call to overfsm
-      Escf = 0.0d0
+      Escf = 0.0_dp
 
 C Extrapolate density matrix between steps
       itest = .false.
@@ -1438,7 +1044,7 @@ C  to make it update the structure of DM, if needed
         iord = 0
         itest = .true.
       endif
-      call extrapol(istp, iord, nspin, maxo, nuotot, nuo, maxnh, 
+      call extrapol(istp, iord, nspin, no_s, no_u, no_l, maxnh, 
      .              numh, listhptr, listh, numhold, listhptrold,
      .              listhold, Dscfsave, Dscf)
 C  If DM have just been read, restore istp
@@ -1455,7 +1061,7 @@ C Check for Pulay auxiliary matrices sizes ...................................
         endif
       else
         nauxpul = 0
-        do io = 1,nuo
+        do io = 1,no_l
           nauxpul = nauxpul + numh(io)
         enddo
         nauxpul = nauxpul * nspin * maxsav
@@ -1481,7 +1087,7 @@ C       Increase nauxpul with safety margin when atoms move
 C ....................
 
 C Find overlap matrix ...............................................
-      call overfsm(nua, na, no, scell, xa, indxua, rmaxo, nuo,
+      call overfsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo, no_l,
      .             maxna, maxnh, maxnh, lasto, iphorb, isa, 
      .             numh, listhptr, listh, numh, listhptr, listh, 
      .             min(nspin,2), Escf, jna, xij, r2ij,
@@ -1491,8 +1097,8 @@ C ..................
 C Start of SCF iteration _____________________________________________
       first = .true.
       last  = .false.
-      if (wmix .le. 0.d0) then
-        if (Node.eq.IOnode) then
+      if (wmix .le. 0._dp) then
+        if (IOnode) then
           write(6,'(/,a,f15.8)')
      .     'siesta: WARNING: Mixing weight for SCF loop =', wmix
         endif
@@ -1504,7 +1110,7 @@ C Start of SCF iteration _____________________________________________
         call timer( 'IterSCF', 1 )
 
 C Normalize density matrix to exact charge ...........................
-        qsol = 0.0d0
+        qsol = 0.0_dp
         do ispin = 1,min(nspin,2)
           do io = 1,nh
             qsol = qsol + Dscf(io,ispin) * s(io)
@@ -1515,9 +1121,9 @@ C Normalize density matrix to exact charge ...........................
      .    MPI_sum,MPI_Comm_World,MPIerror)
         qsol=buffer1
 #endif
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           if (.not.first .and.
-     .       abs(qsol/qtot-1.d0).gt.1.d-2) write(6,'(a,2f15.6)')
+     .       abs(qsol/qtot-1._dp).gt.1.d-2) write(6,'(a,2f15.6)')
      .      'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
         endif
         do ispin = 1,nspin
@@ -1529,21 +1135,21 @@ C Normalize density matrix to exact charge ...........................
 C ..................
 
 C Initialize Hamiltonian ........................................
-        H = 0.0d0
+        H = 0.0_dp
 
 C Initialize forces and stress ...................
         if (first.or.last) then
-          fa(1:3,1:nua) = 0.0d0
-          fal(1:3,1:nua) = 0.0d0
-          stress(1:3,1:3) = 0.0d0
-          stressl(1:3,1:3) = 0.0d0
+          fa(1:3,1:na_u) = 0.0_dp
+          fal(1:3,1:na_u) = 0.0_dp
+          stress(1:3,1:3) = 0.0_dp
+          stressl(1:3,1:3) = 0.0_dp
         endif
 C ..................
 
 C Self-energy of isolated ions ........................................
         if (first) then
-          Eions = 0.0d0
-          do ia = 1,nua
+          Eions = 0.0_dp
+          do ia = 1,na_u
             is = isa(ia)
             Eions = Eions + uion(is)
           enddo
@@ -1553,10 +1159,10 @@ C ..................
 C Neutral-atom: energy, forces and stress ............................
 C First time for energy, last time for forces
         if (first.or.last) then
-          call naefs(nua, na, scell, xa, indxua, rmaxv,
+          call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
      .               maxna, isa, jna, xij, r2ij,
      .               Ena, fa, stress)
-          call dnaefs(nua, na, scell, xa, indxua, rmaxv,
+          call dnaefs(na_u, na_s, scell, xa, indxua, rmaxv,
      .               maxna, isa, jna, xij, r2ij,
      .               DEna, fa, stress) 
           Ena = Ena + DEna
@@ -1565,7 +1171,7 @@ C ..................
 
 C Kinetic: energy, forces, stress and matrix elements .................
         if (first.or.last) then
-          call kinefsm(nua, na, no, scell, xa, indxua, rmaxo, nuo,
+          call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo, no_l,
      .                 maxna, maxnh, maxnh, lasto, iphorb, isa, 
      .                 numh, listhptr, listh, numh, listhptr, listh, 
      .                 min(nspin,2), Dscf, jna, xij, r2ij,
@@ -1581,7 +1187,7 @@ C ..................
 
 C Non-local-pseudop: energy, forces, stress and matrix elements .......
         if (first.or.last) then
-          call nlefsm(scell, nua, na, isa, xa, indxua, maxnh,
+          call nlefsm(scell, na_u, na_s, isa, xa, indxua, maxnh,
      .                maxnh, lasto, lastkb, iphorb, iphKB, numh,
      .                listhptr, listh, numh, listhptr, listh, 
      .                min(nspin,2), Dscf, Enl, fal, stressl, H,
@@ -1603,7 +1209,7 @@ C Save or get partial Hamiltonian (non-SCF part) ......................
             if (ispin .le. 2) then
               H(1:nh,ispin) = H0(1:nh)
             else
-              H(1:nh,ispin) = 0.0d0
+              H(1:nh,ispin) = 0.0_dp
             endif
           enddo          
         endif
@@ -1613,7 +1219,7 @@ C Non-SCF part of total energy .......................................
         if (first.or.last) then
           E0 = -Eions + Ena + Ekin + Enl
         else
-          E0 = 0.0d0
+          E0 = 0.0_dp
           do ispin = 1,min(nspin,2)
             do io = 1,nh
               E0 = E0 + H0(io) * Dscf(io,ispin)
@@ -1636,8 +1242,8 @@ C Add SCF contribution to energy and matrix elements ..................
 c         Last call to dhscf and grid-cell sampling if requested
           ifa  = 1
           istr = 1
-          call grdsam( nspin, no, iaorb, iphorb, indxuo,
-     .                 nuo, nuotot, nua, na, isa, xa, indxua,
+          call grdsam( nspin, no_s, iaorb, iphorb, indxuo,
+     .                 no_l, no_u, na_u, na_s, isa, xa, indxua,
      .                 ucell, mscell, g2max, ntm, ifa, istr, maxnh,
      .                 maxnh, numh, listhptr, listh, Dscf, Datm, H,
      .                 Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
@@ -1646,8 +1252,8 @@ c         Last call to dhscf and grid-cell sampling if requested
           ifa  = 0
           istr = 0
           ihmat = 1
-          call dhscf( nspin, no, iaorb, iphorb, indxuo, nuo,
-     .                nuotot, nua, na, isa, xa, indxua, 
+          call dhscf( nspin, no_s, iaorb, iphorb, indxuo, no_l,
+     .                no_u, na_u, na_s, isa, xa, indxua, 
      .                ucell, mscell, g2max, ntm,
      .                ifa, istr, ihmat, ' ', ' ', ' ', ' ',
      .                maxnh, numh, listhptr, listh, Dscf, Datm,
@@ -1666,7 +1272,7 @@ C ..................
 
 C Orthonormalization forces ...........................................
         if (last) then
-           call overfsm(nua, na, no, scell, xa, indxua, rmaxo, nuo,
+           call overfsm(na_u, na_s, no_s, scell, xa, indxua,rmaxo,no_l,
      .                 maxna, maxnh, maxnh, lasto, iphorb, isa, 
      .                 numh, listhptr, listh, numh, listhptr, listh, 
      .                 min(nspin,2), Escf, jna, xij, r2ij,
@@ -1675,22 +1281,22 @@ C Orthonormalization forces ...........................................
 C ..................
 
 C Find entropy ........................................................
-        Entrop = 0.0d0
+        Entrop = 0.0_dp
         if (isolve .eq. 0) then
           if (istp.gt.1 .or. iscf.gt.1) then
             do ik = 1,nkpnt
-              do io = 1,nuotot
+              do io = 1,no_u
                 if (nspin .eq. 1) then
-                  wo = qo(io,1,ik) / kweight(ik) * 0.5d0
-                  we = 1.d0 - wo
+                  wo = qo(io,1,ik) / kweight(ik) * 0.5_dp
+                  we = 1._dp - wo
                   wo = max( wo, tiny )
                   we = max( we, tiny )
-                  Entrop = Entrop - 2.d0 * kweight(ik) *
+                  Entrop = Entrop - 2._dp * kweight(ik) *
      .                             ( wo*log(wo) + we*log(we) )
                 else
                   do ispin = 1,2
                     wo = qo(io,ispin,ik) / kweight(ik)
-                    we = 1.d0 - wo
+                    we = 1._dp - wo
                     wo = max( wo, tiny )
                     we = max( we, tiny )
                     Entrop = Entrop - kweight(ik) *
@@ -1708,42 +1314,40 @@ C Save present density matrix ........................................
 
 C Save hamiltonian and overlap matrices ............................
         if (savehs) then
-          call iohs( 'write', gamma, nuotot, nspin, maxnh,
+          call iohs( 'write', gamma, no_u, nspin, maxnh,
      .               numh, listhptr, listh, H, S, qtot, temp, xijo )
         endif
 C ..................
 
 C Solve eigenvalue problem .........................................
         if (isolve .eq. 0) then
-          call diagon(no, nspin, nspin, nuo, maxnh, maxnh, nuotot,
+          call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     .                eo, qo, Dscf, Escf, ef, efs, nuotot)
-          Ecorrec = 0.d0
+     .                eo, qo, Dscf, Escf, ef, efs, no_u)
+          Ecorrec = 0._dp
         elseif (isolve .eq. 1) then
-          call ordern(usesavelwf,ioptlwf,na,no,lasto,isa,qa,rcoor,
+          if (.not. gamma) call die("Cannot do O(N) with k-points.")
+          call ordern(usesavelwf,ioptlwf,na_s,no_s,lasto,isa,qa,rcoor,
      .                rmaxh,ucell,xa,iscf,istp,ncgmax,etol,eta,
-     .                qtot,nuo,maxnh,numh,listhptr,listh,H,S,
+     .                qtot,no_l,maxnh,numh,listhptr,listh,H,S,
      .                chebef,noeta,rcoorcp,beta,pmax,Dscf,Escf,
      .                Ecorrec)
         else
-          if (Node.eq.IOnode) then
-          write(6,'(/,a,I3,A)') 'siesta: ERROR: wrong solution method'
-          endif
-          stop
+          call die('siesta: ERROR: wrong solution method')
         endif
 C ..................
 
 C Harris-functional energy ............................................
-        Eharrs = 0.0d0
+        Eharrs = 0.0_dp
         do ispin = 1,nspin
 C const factor takes into account that there are two nondiagonal
 C elements in non-collinear spin density matrix, stored as
 C ispin=1 => D11; ispin=2 => D22, ispin=3 => Real(D12);
 C ispin=4 => Imag(D12)
-          const = 1.d0
-          if (ispin .gt. 2) const = 2.d0
+          const = 1._dp
+          if (ispin .gt. 2) const = 2._dp
           do io = 1,nh
             Eharrs = Eharrs + H(io,ispin) * const * 
      .                   ( Dscf(io,ispin) - Dold(io,ispin) )
@@ -1759,7 +1363,7 @@ C ..................
 
 C Mix input and output energy-density and density matrices ............
 C Following line for using and saving the density matrix without mix ..
-        if (wmix.ne.0.d0) then
+        if (wmix.ne.0._dp) then
 C Pulay mixing
           mmix  = mix
           iiscf = iscf
@@ -1767,7 +1371,7 @@ C Pulay mixing
             iiscf = 1
             if (iscf .ne. 1) mmix = .true.
           endif
-          call pulayx( pulfile, iiscf, mmix, nuo, maxo, maxnh,
+          call pulayx( pulfile, iiscf, mmix, no_l, no_s, maxnh,
      .                 numh, listhptr, nspin, maxsav, wmix, nkick, 
      .                 wmixkick, auxpul(1,1), auxpul(1,2), nauxpul,
      .                 Dscf, Dold, dDmax)
@@ -1785,10 +1389,10 @@ C Save density matrix on disk, after mixing ...........................
         if (writedm) then
           if (idyn .eq. 6) then
             if (istp .eq.1)
-     .      call iodm( 'write', maxnh, nuo, nspin,
+     .      call iodm( 'write', maxnh, no_l, nspin,
      .                 numh, listhptr, listh, Dscf, found )
           else
-            call iodm( 'write', maxnh, nuo, nspin,
+            call iodm( 'write', maxnh, no_l, nspin,
      .                 numh, listhptr, listh, Dscf, found )
           endif
         endif
@@ -1799,7 +1403,7 @@ C Print energies ......................................................
         Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
         Eharrs = Etot + Eharrs
         FreeE  = Etot - Temp * Entrop
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           if (istp.eq.1 .and. first) write(6,'(/,a,/,(a,f15.6))')
      .      'siesta: Program''s energy decomposition (eV):',
      .      'siesta: Eions   =', Eions/eV,
@@ -1852,7 +1456,7 @@ C If last iteration, exit SCF loop ....................................
           Dscf(1:nh,1:nspin) = Dold(1:nh,1:nspin)
           Escf(1:nh,1:nspin) = Eold(1:nh,1:nspin)
           if (dumpcharge) then
-            call plcharge( nspin, nuotot, no, na, maxo, na, 
+            call plcharge( nspin, no_u, no_s, na_s, no_s, na_s, 
      .                     maxnh, scell, rmaxo, xa, 
      .                     lasto, isa, iphorb, Datm,
      .                     numh, listhptr, listh, indxuo,
@@ -1875,38 +1479,38 @@ C ...................
 C End of SCF iteration_________________________________________________
 
 C Write final Kohn-Sham Energy ........................................
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         write(6,"(/a,f14.4)") 'siesta: E_KS(eV) = ', Etot/eV
       endif
 
 #ifdef MPI
 C Global reduction of forces and stresses
-      allocate(fatmp(3,nua))
-      call memory('A','D',3*nua,'siesta')
+      allocate(fatmp(3,na_u))
+      call memory('A','D',3*na_u,'siesta')
       call MPI_AllReduce(stressl(1,1),stresstmp(1,1),9,
      .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-      call MPI_AllReduce(fal(1,1),fatmp(1,1),3*nua,
+      call MPI_AllReduce(fal(1,1),fatmp(1,1),3*na_u,
      .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
-      fa(1:3,1:nua) = fa(1:3,1:nua) + fatmp(1:3,1:nua)
+      fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
       call memory('D','D',size(fatmp),'siesta')
       deallocate(fatmp)
 #else
       stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
-      fa(1:3,1:nua) = fa(1:3,1:nua) + fal(1:3,1:nua)
+      fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 #endif
 
 C Impose constraints to atomic movements by changing forces ...........
-      call fixed( ucell, stress, nua, isa, amass, xa, fa, cstress, cfa )
+      call fixed(ucell,stress,na_u,isa, amass, xa, fa, cstress, cfa )
 C ...................
 
 C Write atomic forces .................................................
-      fmax = 0.0d0
-      cfmax = 0.0d0
-      fres = 0.0d0
+      fmax = 0.0_dp
+      cfmax = 0.0_dp
+      fres = 0.0_dp
       do ix = 1,3
-        ftot(ix) = 0.0d0
-        do ia = 1,nua
+        ftot(ix) = 0.0_dp
+        do ia = 1,na_u
           ftem = fa(ix,ia)
           cftem = cfa(ix,ia)
           ftot(ix) = ftot(ix) + ftem
@@ -1915,13 +1519,13 @@ C Write atomic forces .................................................
           cfmax = max( cfmax, dabs(cftem) )
         enddo
       enddo
-      fres = dsqrt( fres / (3.0d0*nua) )
-      if (Node.eq.IOnode) then
+      fres = dsqrt( fres / (3.0_dp*na_u) )
+      if (IOnode) then
         write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
         if ( writef ) then
-          write(6,'(i4,3f12.6)') (ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,nua)
+        write(6,'(i4,3f12.6)') (ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
         else
-          call iofa( nua, fa )
+          call iofa( na_u, fa )
         endif
         write(6,'(40(1h-),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
         write(6,'(40(1h-),/,a4, f12.6)') 'Max',fmax*Ang/eV
@@ -1933,7 +1537,7 @@ C Write atomic forces .................................................
 C Write Force Constant matrix if FC calculation ...
 
         if (idyn .eq. 6) then
-          call ofc(fa,dx,nua)
+          call ofc(fa,dx,na_u)
         endif
 
 C Write stress tensor for any variable cell dynamics ..................
@@ -1943,7 +1547,7 @@ C Write stress tensor for any variable cell dynamics ..................
      .       ('     ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
 
 C       Pressure (only for the solid)
-          Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0d0)
+          Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
           write(6,'(/,a,f20.8,a)')
      .      'siesta: Pressure:', Psol/kBar, '  kBar'
 
@@ -1952,7 +1556,7 @@ C       Pressure (only for the solid)
 C ...................
 
 C Mulliken population analysis .......................................
-      call mulliken( mullipop, nspin, nua, nuo, maxnh,
+      call mulliken( mullipop, nspin, na_u, no_l, maxnh,
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
 
@@ -1960,12 +1564,12 @@ C ...................
 
 C Move atoms ..........................................................
       if (idyn .eq. 0) then 
-        xalast(1:3,1:na)=xa(1:3,1:na)
+        xalast(1:3,1:na_s)=xa(1:3,1:na_s)
         if (nmove .ne. 0) then
-          call cgvc( nua, xa, cfa, ucell, cstress, volume, dxmax,
+          call cgvc( na_u, xa, cfa, ucell, cstress, volume, dxmax,
      .               tp, ftol, strtol, varcel, relaxd, usesavecg )
           if (relaxd) then
-            xalast(1:3,1:na)=xa(1:3,1:na)
+            xalast(1:3,1:na_s)=xa(1:3,1:na_s)
 C Exit coordinate relaxation loop
             call timer( 'IterMD', 2 )
             goto 60
@@ -1976,46 +1580,46 @@ C Exit coordinate relaxation loop
 C Save the last coordinates for which the 
 C density matrix has been calculated
       if (istep.eq.fincoor) then
-        xalast(1:3,1:na)=xa(1:3,1:na)
+        xalast(1:3,1:na_s)=xa(1:3,1:na_s)
       endif
 
-      Ekinion  = 0.0d0
-      vn       = 0.0d0
-      vpr      = 0.0d0
-      kn       = 0.0d0
-      kpr      = 0.0d0
+      Ekinion  = 0.0_dp
+      vn       = 0.0_dp
+      vpr      = 0.0_dp
+      kn       = 0.0_dp
+      kpr      = 0.0_dp
 
       iunit = 2
 
       if (idyn .eq. 1) then
-        call verlet2(istp, iunit, iquench, nua, cfa, dt, 
+        call verlet2(istp, iunit, iquench, na_u, cfa, dt, 
      .               amass, va, xa, Ekinion, tempion)
       
       elseif (idyn .eq. 2) then
-        call nose(istp, iunit, nua, cfa, tt, dt, amass, mn, 
+        call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn, 
      .            va, xa, Ekinion, kn, vn, tempion)
 
       elseif (idyn .eq. 3) then
-        call pr(istp, iunit, iquench, nua, cfa, cstress, tp, dt, amass,
+        call pr(istp, iunit, iquench, na_u, cfa, cstress, tp, dt, amass,
      .          mpr, va, xa, vcell, ucell, Ekinion, kpr, vpr, tempion,
      .          Pint)
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           write(6,'(/,a,f12.3,a)')
      .      'siesta: E_kin PR =', kpr/Kelvin, ' K'
         endif
       
       elseif (idyn .eq. 4) then
-        call npr(istp, iunit, nua, cfa, cstress, tp, tt, dt, amass, mn,
+        call npr(istp, iunit, na_u, cfa, cstress, tp, tt, dt, amass, mn,
      .           mpr, va, xa, vcell, ucell, Ekinion, kn, kpr, vn, vpr,
      .           tempion, Pint)
 
       elseif (idyn .eq. 5) then
         call anneal(istp, iunit, ianneal, taurelax, bulkm,
-     .              nua, cfa, cstress, tp, tt, dt, amass,
+     .              na_u, cfa, cstress, tp, tt, dt, amass,
      .              va, xa, ucell, Ekinion, tempion, Pint)
       endif
 
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         if (idyn .gt. 0 .and. idyn .lt. 6) then
           write(6,'(/,a,f12.3,a)')
      .      'siesta: Temp_ion =', tempion, ' K'
@@ -2023,18 +1627,19 @@ C density matrix has been calculated
       endif
 C ...................
 
-C Change supercell and expand atomic positions to supercell ..........
-      call superx( ucell, nsc, nua, maxa, xa, scell )
+! Some coordinates have been updated. Now propagate the new
+! structure to the virtual supercell.
+      call superx( ucell, nsc, na_u, na_s, xa, scell )
 C ...................
 
 C Save last atomic positions and velocities ..........................
-      call ioxv( 'write', ucell, vcell, nua, isa, iza, xa, va, found )
+      call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, found )
 C ...................
 
       getot = Etot + Ekinion + kn + kpr + vn + vpr
 
 C Add kinetic term to stress tensor ..................................
-*     do ia = 1,nua
+*     do ia = 1,na_u
 *       do jx = 1,3
 *         do ix = 1,3
 *           stress(ix,jx) = stress(ix,jx) -
@@ -2051,14 +1656,14 @@ c restore original coordinates after FC displacements ...
 c ...
 
 C Save atomic positions and velocities accumulatively ................
-      if (writmd.and.Node.eq.IOnode) call iomd( nua, isa, iza, 
+      if (writmd.and.IOnode) call iomd( na_u, isa, iza, 
      .         xa, va, ucell, vcell, varcel, istep, inicoor, 
      .         fincoor, tempion, Etot, getot)
 
 C Accumulate coor in Xmol file for animation .........................
       lastst = fincoor .le. istep
-      if (writpx.and.Node.eq.IOnode) 
-     .  call pixmol(iza, xa, nua, slabel, lastst)
+      if (writpx.and.IOnode) 
+     .  call pixmol(iza, xa, na_u, slabel, lastst)
 C ...................
 
 C Output memory use at the end of this geometry step
@@ -2069,13 +1674,13 @@ C Output memory use at the end of this geometry step
    60 continue
 C End of coordinate-relaxation loop ==================================
 
-      if (Node.eq.IOnode) then
+      if (IOnode) then
 C Print atomic coordinates (and also unit cell for ParrRah.)
         if (nmove .ne. 0) then
           if (relaxd) 
-     .      call outcoor(ucell, xa, isa, nua,'Relaxed', .true. )
+     .      call outcoor(ucell, xa, isa, na_u,'Relaxed', .true. )
           if (.not.relaxd) 
-     .      call outcoor(ucell, xa, isa, nua,
+     .      call outcoor(ucell, xa, isa, na_u,
      .                 'Final (unrelaxed)', .true. )
           if ( varcel ) call outcell(ucell)
         endif
@@ -2084,21 +1689,21 @@ C Print atomic coordinates (and also unit cell for ParrRah.)
 C Print coordinates in xmol format in a separate file
 
         if (fdf_boolean('WriteCoorXmol',.false.)) 
-     .     call coxmol(iza, xa, nua, slabel)
+     .     call coxmol(iza, xa, na_u, slabel)
 
 C Print coordinates in cerius format in a separate file
 
         if (fdf_boolean('WriteCoorCerius',.false.))
-     .     call coceri(iza, xa, ucell, nua, sname, slabel)
+     .     call coceri(iza, xa, ucell, na_u, sname, slabel)
       endif
 
 
 C Find and print bands
       if (nbk.gt.0) then
-        call bands( no, nspin, nspin, nuotot, nuo, maxnh, maxbk,
+        call bands( no_s, nspin, nspin, no_u, no_l, maxnh, maxbk,
      .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
-     .              .true., nbk, bk, ebk, nuotot )
-        if (Node.eq.IOnode) then
+     .              .true., nbk, bk, ebk, no_u )
+        if (IOnode) then
           if ( writbk ) then
             write(6,'(/,a,/,a4,a12)')
      .       'siesta: Band k vectors (Bohr**-1):', 'ik', 'k'
@@ -2113,9 +1718,9 @@ C Find and print bands
             do ispin = 1,min(nspin,2)
               do ik = 1,nbk
                 write(6,'(i4,i3,10f7.2)')
-     .            ik, ispin, (ebk(io,ispin,ik)/eV,io=1,min(10,nuotot))
-                if (nuotot.gt.10) write(6,'(7x,10f7.2)')
-     .              (ebk(io,ispin,ik)/eV,io=11,nuotot)
+     .            ik, ispin, (ebk(io,ispin,ik)/eV,io=1,min(10,no_u))
+                if (no_u.gt.10) write(6,'(7x,10f7.2)')
+     .              (ebk(io,ispin,ik)/eV,io=11,no_u)
               enddo
             enddo
           endif
@@ -2123,17 +1728,17 @@ C Find and print bands
       endif
 
 C Print eigenvalues
-      if (Node.eq.IOnode) then
-        if (isolve.eq.0 .and. nuo.lt.1000) then
+      if (IOnode) then
+        if (isolve.eq.0 .and. no_l.lt.1000) then
           if (nspin .le. 2) then
             write(6,'(/,a,/,a4,a3,a7)')
      .       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
             do ik = 1,nkpnt
               do ispin = 1,nspin
                 write(6,'(i4,i3,10f7.2)')
-     .            ik, ispin, (eo(io,ispin,ik)/eV,io=1,min(10,nuotot))
-                if (nuotot.gt.10) write(6,'(7x,10f7.2)')
-     .            (eo(io,ispin,ik)/eV,io=11,nuotot)
+     .            ik, ispin, (eo(io,ispin,ik)/eV,io=1,min(10,no_u))
+                if (no_u.gt.10) write(6,'(7x,10f7.2)')
+     .            (eo(io,ispin,ik)/eV,io=11,no_u)
               enddo
             enddo
           else
@@ -2141,18 +1746,18 @@ C Print eigenvalues
             do ik = 1,nkpnt
               write(6,'(a,i6)') 'ik =', ik
               write(6,'(10f7.2)')
-     .          ((eo(io,ispin,ik)/eV,io=1,nuotot),ispin=1,2)
+     .          ((eo(io,ispin,ik)/eV,io=1,no_u),ispin=1,2)
             enddo
           endif
           write(6,'(a,f15.6,a)') 'siesta: Fermi energy =', ef/eV, ' eV'
         endif
       endif
 
-      if (isolve.eq.0.and.Node.eq.IOnode) 
-     .     call ioeig(eo, ef, nuo, nspin, nkpnt, nuo, nspin, maxk)
+      if (isolve.eq.0.and.IOnode) 
+     .     call ioeig(eo, ef, no_l, nspin, nkpnt, no_l, nspin, maxk)
 
 C Print program's energy decomposition
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         write(6,'(/,a,/,(a,f15.6))')
      .     'siesta: Program''s energy decomposition (eV):',
      .     'siesta:-Eions   =', (-Eions)/eV,
@@ -2184,19 +1789,19 @@ C Print standard energy decomposition
       endif
 
 C Print atomic forces
-      fmax = 0.0d0
+      fmax = 0.0_dp
       do ix = 1,3
-        ftot(ix) = 0.0d0
-        do ia = 1,nua
+        ftot(ix) = 0.0_dp
+        do ia = 1,na_u
           fmax = max( fmax, dabs(fa(ix,ia)) )
           ftot(ix) = ftot(ix) + fa(ix,ia)
         enddo
       enddo
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         if (fmax .gt. ftol) then
           write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
           write(6,'(a,i4,3f12.6)')
-     .      ('siesta: ', ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,nua)
+     .      ('siesta: ', ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
           write(6,'(a,40(1h-),/,a,a4,3f12.6)')
      .      'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
         endif
@@ -2204,25 +1809,25 @@ C Print atomic forces
 
 C Print constrained atomic forces
       same = .true.
-      do ia = 1,nua
+      do ia = 1,na_u
         do ix = 1,3
           if (cfa(ix,ia) .ne. fa(ix,ia)) same = .false.
         enddo
       enddo
       if (.not.same) then
-        fmax = 0.0d0
+        fmax = 0.0_dp
         do ix = 1,3
-          ftot(ix) = 0.0d0
-          do ia = 1,nua
+          ftot(ix) = 0.0_dp
+          do ia = 1,na_u
             fmax = max( fmax, dabs(cfa(ix,ia)) )
             ftot(ix) = ftot(ix) + cfa(ix,ia)
           enddo
         enddo
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           if (fmax .gt. ftol) then
             write(6,'(/,a)') 'siesta: Constrained forces (eV/Ang):'
             write(6,'(a,i4,3f12.6)')
-     .        ('siesta: ', ia,(cfa(ix,ia)*Ang/eV,ix=1,3),ia=1,nua)
+     .        ('siesta: ', ia,(cfa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
             write(6,'(a,40(1h-),/,a,a4,3f12.6)')
      .        'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
           endif
@@ -2230,7 +1835,7 @@ C Print constrained atomic forces
       endif
 
 C Print stress tensor
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         write(6,'(/,a,3(/,a,3f12.6))')
      .    'siesta: Stress tensor (eV/Ang**3):',
      .    ('siesta: ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
@@ -2243,7 +1848,7 @@ C Print constrained stress tensor
           if (cstress(jx,ix) .ne. stress(jx,ix)) same = .false.
         enddo
       enddo
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         if (.not.same)
      .    write(6,'(/,a,3(/,a,3f12.6))')
      .      'siesta: Constrained stress tensor (eV/Ang**3):',
@@ -2251,19 +1856,19 @@ C Print constrained stress tensor
       endif
 
 C Find pressure
-      virial = 0.0d0
+      virial = 0.0_dp
       do ix = 1,3
-        fmean = 0.0d0
-        do ia = 1,nua
-          fmean = fmean + fa(ix,ia) / nua
+        fmean = 0.0_dp
+        do ia = 1,na_u
+          fmean = fmean + fa(ix,ia) / na_u
         enddo
-        do ia = 1,nua
+        do ia = 1,na_u
           virial = virial + xalast(ix,ia) * (fa(ix,ia) - fmean)
         enddo
       enddo
-      Psol = - (( stress(1,1) + stress(2,2) + stress(3,3) )/3.0d0)
-      Pmol = Psol - virial / volume / 3.0d0
-      if (Node.eq.IOnode) then
+      Psol = - (( stress(1,1) + stress(2,2) + stress(3,3) )/3.0_dp)
+      Pmol = Psol - virial / volume / 3.0_dp
+      if (IOnode) then
         write(6,'(/,a,f18.6,a)')
      .    'siesta: Cell volume =', volume/Ang**3, ' Ang**3'
         write(6,'(/,a,/,a,2a20,a,3(/,a,2f20.8,a))')
@@ -2277,8 +1882,8 @@ C Find pressure
 c Print spin polarization
       if (nspin .ge. 2) then
         do ispin = 1,nspin
-          qspin(ispin) = 0.0d0
-          do io = 1,nuo
+          qspin(ispin) = 0.0_dp
+          do io = 1,no_l
             do j = 1,numh(io)
               ind = listhptr(io)+j
               jo = listh(ind)
@@ -2287,14 +1892,14 @@ c Print spin polarization
           enddo
         enddo
         if (nspin .eq. 2) then
-          if (Node.eq.IOnode) then
+          if (IOnode) then
             write(6,'(/,a,f12.6)')
      .       'siesta: Total spin polarization (Qup-Qdown) =', 
      .       qspin(1) - qspin(2)
           endif
         elseif (nspin .eq. 4) then
           call spnvec( nspin, qspin, qaux, stot, svec )
-          if (Node.eq.IOnode) then
+          if (IOnode) then
             write(6,'(/,a,f12.6)')
      .       'siesta: Total spin polarization (Qup-Qdown) =', stot
             write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
@@ -2303,7 +1908,7 @@ c Print spin polarization
       endif
 
 c Print electric dipole
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         if (shape .ne. 'bulk') then
           write(6,'(/,a,3f12.6)')
      .      'siesta: Electric dipole (a.u.)  =', dipol
@@ -2319,15 +1924,15 @@ C Attention H0 is used as an auxiliar array (It does not contain
 C any useful information any more ) !!!!
 C NOT SORTED FOR PARALLEL OPERATION YET
       if (nkpol.gt.0) then
-        call KSV_pol(nua, na, xalast, rmaxo, scell, ucell,
-     .               nuotot, nuo, no, nspin, qspin, maxna, 
+        call KSV_pol(na_u, na_s, xalast, rmaxo, scell, ucell,
+     .               no_u, no_l, no_s, nspin, qspin, maxna, 
      .               maxnh, nkpol, numh, listhptr, listh, 
      .               H, S, H0, xijo, indxuo, isa, iphorb, 
      .               iaorb, lasto, jna, xij, r2ij,shape,
      .               nkpol,kpol,wgthpol, polR, polxyz) 
       endif
 C NOT SORTED FOR PARALLEL OPERATION YET
-      if (nkpol.gt.0.and.Node.eq.IOnode) then
+      if (nkpol.gt.0.and.IOnode) then
         do ispin=1,nspin
           if (nspin.gt.1) then
             if (ispin.eq.1) write(6,'(/,a)')
@@ -2368,7 +1973,7 @@ C is turned on. JDG
 c...................................
 
 c Save electron density and potential
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         savrho = fdf_boolean( 'SaveRho',                    .false.)
         savdrh = fdf_boolean( 'SaveDeltaRho',               .false.)
         savevh = fdf_boolean( 'SaveElectrostaticPotential', .false.)
@@ -2390,8 +1995,8 @@ c Save electron density and potential
         if (savevh) filevh = paste( slabel, '.VH'  )
         if (savevt) filevt = paste( slabel, '.VT'  )
         g2max = g2cut
-        call dhscf( nspin, no, iaorb, iphorb, indxuo, nuo,
-     .              nuotot, nua, na, isa, xa, indxua, 
+        call dhscf( nspin, no_s, iaorb, iphorb, indxuo, no_l,
+     .              no_u, na_u, na_s, isa, xa, indxua, 
      .              ucell, mscell, g2max, ntm,
      .              0, 0, 0, filrho, fildrh, filevh, filevt,
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
@@ -2401,7 +2006,7 @@ c Save electron density and potential
       endif
 
 c Find local density of states
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         genlogic = fdf_block('LocalDensityOfStates',iu)
       endif
 #ifdef MPI
@@ -2410,7 +2015,7 @@ c Find local density of states
       if ( genlogic ) then
 
 c       Find the desired energy range
-        if (Node.eq.IOnode) then
+        if (IOnode) then
           read(iu,'(a)') line
           lastc = index(line,'#') - 1
           if (lastc .eq. -1) lastc = len(line)
@@ -2432,13 +2037,13 @@ c       Find the desired energy range
 
 c       Find the density matrix for states between e1 and e2
         if (isolve .eq. 0) then
-          call diagon(no, nspin, nspin, nuo, maxnh, maxnh, nuotot,
+          call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                H, S, qtot, fixspin, qs, temp, e1, e2,
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     .                eo, qo, Dscf, Escf, ef, efs, nuotot)
+     .                eo, qo, Dscf, Escf, ef, efs, no_u)
         else
-          if (Node.eq.IOnode) then
+          if (IOnode) then
             write(6,*)
      .       'siesta: ERROR: LDOS implemented only with diagon'
           endif
@@ -2448,8 +2053,8 @@ c       Find the density matrix for states between e1 and e2
 c       Find the LDOS in the real space mesh
         filrho = paste( slabel, '.LDOS' )
         g2max = g2cut
-        call dhscf( nspin, no, iaorb, iphorb, indxuo, nuo,
-     .              nuotot, nua, na, isa, xa, indxua, 
+        call dhscf( nspin, no_s, iaorb, iphorb, indxuo, no_l,
+     .              no_u, na_u, na_s, isa, xa, indxua, 
      .              ucell, mscell, g2max, ntm,
      .              0, 0, 0, filrho, ' ', ' ', ' ',
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
@@ -2464,19 +2069,17 @@ C Output memory use up to the end of the program
       call MPI_Barrier(MPI_Comm_World,MPIerror)
 #endif
       call printmemory( 6, 1 )
+#ifdef MPI
+      call MPI_Barrier(MPI_Comm_World,MPIerror)
+#endif
 
 c Stop time counter
       call timer( 'siesta', 2 )
       call timer( 'all', 3 )
 
 C Print final date and time
-      if (Node.eq.IOnode) then
+      if (IOnode) then
         call timestamp('End of run')
-      endif
-
-c Stop memory counter
-      if (Node.eq.IOnode) then
-        call prmem( 0, ' ', ' ', ' ', 0 )
       endif
 
 C Finalize MPI
@@ -2485,3 +2088,12 @@ C Finalize MPI
 #endif
 
       end
+
+
+
+
+
+
+
+
+

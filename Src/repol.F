@@ -46,6 +46,7 @@ C
       use precision
       use parallel
       use fdf
+      use parsing
 #ifdef MPI
       use mpi
 #endif
@@ -53,7 +54,6 @@ C
       implicit          none
       integer           nmeshk(3,3)
       double precision  displ(3)
-      external          parse
 
 c ----------------------------------------------------------------------------
 

@@ -1,12 +1,10 @@
+
+#FDF: Opened INPUT_TMP            for input. Unit: 12
+
 fdf-debug              0     # Default value
 SystemName     bcc Fe ferro GGA                                                                
 SystemLabel     Fe                                                                              
-LongOutput              F     # Default value
 NumberOfAtoms                        1
-NumberOfSpecies                        1
-WriteSiestaDim              F     # Default value
-WriteDenchar              F     # Default value
-WriteMullikenPop                        1
 LatticeConstant          5.423516139           Bohr
 # Above item originally: LatticeConstant          2.870000000     Ang       
 
@@ -16,11 +14,22 @@ LatticeConstant          5.423516139           Bohr
  0.50000   0.500000 -0.500000                                                  
 %endblock LatticeVectors                                                       
 
+
+%block LatticeVectors                                                          
+ 0.50000   0.500000  0.500000                                                  
+ 0.50000  -0.500000  0.500000                                                  
+ 0.50000   0.500000 -0.500000                                                  
+%endblock LatticeVectors                                                       
+
 SpinPolarized              T
 NonCollinearSpin              F     # Default value
+LongOutput              F     # Default value
+NumberOfSpecies                        1
+WriteDenchar              F     # Default value
+WriteMullikenPop                        1
 MeshCutoff          150.0000000             Ry
 # Above item originally: MeshCutoff          150.0000000     Ry        
-NetCharge         0.0000000000E+00     # Default value
+NetCharge          0.000000000         # Default value
 MaxSCFIterations                       40
 DM.NumberPulay                        3
 DM.MixSCF1              F     # Default value
@@ -34,12 +43,15 @@ UseSaveData              F     # Default value
 DM.UseSaveDM              T
 NeglNonOverlapInt              F     # Default value
 SolutionMethod     diagon                                                                          
+DiagMemory          2.000000000         # Default value
+DiagScale          1.000000000         # Default value
+TryMemoryIncrease              T     # Default value
 ElectronicTemperature         0.1837449711E-02         Ry
 # Above item originally: ElectronicTemperature          25.00000000     meV       
 FixSpin              F     # Default value
 ON.MaxNumIter           1000     # Default value
 ON.etol         0.1000000000E-07     # Default value
-ON.eta         0.0000000000E+00 Ry     # Default value
+ON.eta          0.000000000     Ry     # Default value
 On.RcLWF          9.500000000     Bohr     # Default value
 UseSaveData              F     # Default value
 ON.UseSaveLWF              F     # Default value
@@ -47,7 +59,7 @@ ON.functional     kim               # Default value
 ON.ChemicalPotential              F     # Default value
 ON.ChemicalPotentialUse              F     # Default value
 ON.ChemicalPotentialRc          9.500000000     Bohr     # Default value
-ON.ChemicalPotentialTemperature         0.5000000000E-01 Ry     # Default value
+ON.ChemicalPotentialTemperature         0.5000000075E-01 Ry     # Default value
 ON.ChemicalPotentialOrder            100     # Default value
 MD.VariableCell              F     # Default value
 MD.TypeOfRun     cg                                                                              
@@ -63,19 +75,26 @@ MD.InitialTimeStep              1     # Default value
 MD.FinalTimeStep              1     # Default value
 MD.LengthTimeStep          1.000000000     fs     # Default value
 MD.Quench              F     # Default value
-MD.InitialTemperature         0.0000000000E+00 K     # Default value
-MD.TargetTemperature         0.0000000000E+00 K     # Default value
-MD.TargetPressure         0.0000000000E+00 Ry/Bohr**3     # Default value
+MD.InitialTemperature          0.000000000     K     # Default value
+MD.TargetTemperature          0.000000000     K     # Default value
+MD.TargetPressure          0.000000000     Ry/Bohr**3     # Default value
 MD.NoseMass          100.0000000     Ry*fs**2     # Default value
 MD.ParrinelloRahmanMass          100.0000000     Ry*fs**2     # Default value
 MD.AnnealOption     TemperatureAndPressure     # Default value
 MD.TauRelax          100.0000000     fs     # Default value
-MD.BulkModulus          100.0000000     Ry/Bohr**3     # Default value
+MD.BulkModulus          100.0000000         # Default value
 MD.FCDispl         0.4000000000E-01 Bohr     # Default value
 MD.FCfirst              1     # Default value
 MD.FClast              1     # Default value
 LatticeConstant          5.423516139           Bohr
 # Above item originally: LatticeConstant          2.870000000     Ang       
+
+%block LatticeVectors                                                          
+ 0.50000   0.500000  0.500000                                                  
+ 0.50000  -0.500000  0.500000                                                  
+ 0.50000   0.500000 -0.500000                                                  
+%endblock LatticeVectors                                                       
+
 
 %block LatticeVectors                                                          
  0.50000   0.500000  0.500000                                                  
@@ -92,7 +111,7 @@ NumberOfAtoms                        1
 
 WriteKpoints              F     # Default value
 WriteForces              F     # Default value
-WriteEigenvalues              F     # Default value
+WriteDM              T     # Default value
 WriteBands              F     # Default value
 WriteKbands              F     # Default value
 WriteCoorStep              T     # Label by itself
@@ -103,21 +122,8 @@ UseSaveData              F     # Default value
 MD.UseSaveXV              F     # Default value
 SaveHS              F     # Default value
 WarningMinimumAtomicDistance          1.000000000     Bohr     # Default value
-NumberOfSpecies                        1
-
-%block PAO.Basis                                                               
-  Fe  2                                                                        
-  0  2  P                                                                      
-  6. 0.                                                                        
-  2  2                                                                         
-  0. 0.                                                                        
-%endblock PAO.Basis                                                            
-
-
-%block ChemicalSpeciesLabel                                                    
-  1  26  Fe                                                                    
-%endblock ChemicalSpeciesLabel                                                 
-
+PAO.Basis
+Chemical_species_label
 
 %block ChemicalSpeciesLabel                                                    
   1  26  Fe                                                                    
@@ -143,6 +149,10 @@ PAO.SplitNorm         0.1500000000         # Default value
 PAO.BasisType     split          # Default value
 kgrid_cutoff          28.34590317           Bohr
 # Above item originally: kgrid_cutoff          15.00000000     Ang       
+BandLines
+LatticeConstant          5.423516139           Bohr
+# Above item originally: LatticeConstant          2.870000000     Ang       
+BandLinesScale     pi/a     # Default value
 
 %block BandLines                                                               
   1  0.00000   0.000000  0.000000  \Gamma                                      
@@ -152,6 +162,7 @@ kgrid_cutoff          28.34590317           Bohr
  34  1.00000   1.000000  1.000000  P                                           
 %endblock BandLines                                                            
 
+BandLines
 LatticeConstant          5.423516139           Bohr
 # Above item originally: LatticeConstant          2.870000000     Ang       
 BandLinesScale     pi/a     # Default value
@@ -172,32 +183,12 @@ LatticeConstant          5.423516139           Bohr
 SystemLabel     Fe                                                                              
 xc.functional     GGA                                                                             
 xc.authors     PBE                                                                             
+DirectPhi              F     # Default value
 SystemLabel     Fe                                                                              
 SystemLabel     Fe                                                                              
 SystemLabel     Fe                                                                              
 WriteCoorXmol              F     # Default value
 WriteCoorCerius              F     # Default value
-
-%block BandLines                                                               
-  1  0.00000   0.000000  0.000000  \Gamma                                      
- 40  2.00000   0.000000  0.000000  H                                           
- 28  1.00000   1.000000  0.000000  N                                           
- 28  0.00000   0.000000  0.000000  \Gamma                                      
- 34  1.00000   1.000000  1.000000  P                                           
-%endblock BandLines                                                            
-
-LatticeConstant          5.423516139           Bohr
-# Above item originally: LatticeConstant          2.870000000     Ang       
-BandLinesScale     pi/a     # Default value
-
-%block BandLines                                                               
-  1  0.00000   0.000000  0.000000  \Gamma                                      
- 40  2.00000   0.000000  0.000000  H                                           
- 28  1.00000   1.000000  0.000000  N                                           
- 28  0.00000   0.000000  0.000000  \Gamma                                      
- 34  1.00000   1.000000  1.000000  P                                           
-%endblock BandLines                                                            
-
 SystemLabel     Fe                                                                              
 SystemLabel     Fe                                                                              
 SaveRho              F     # Default value

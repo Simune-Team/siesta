@@ -39,7 +39,7 @@ C
 C  Modules
 C
       use precision
-      use atmfuncs, only: rcut, phiatm, all_phi, nsmax
+      use atmfuncs, only: rcut, phiatm, all_phi, nsmax=>nspecies
       use listsc_module, only: listsc
       use mesh, only: dxa, nsp, xdop, xdsp
       use meshphi, only: endpht, lstpht, listp2

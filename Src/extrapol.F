@@ -86,8 +86,7 @@ C  Internal variables .......................................................
      .  changed
       double precision
      .  msave
-      double precision, dimension(:), allocatable, save ::
-     .  aux, mtmp
+      double precision, dimension(:), allocatable :: aux, mtmp
 
       external
      .  memory

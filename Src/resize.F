@@ -78,7 +78,7 @@ C Global broadcast of values
      .   'redata: ERROR: Number of atoms must be larger than zero.'
           write(6,102)
         endif
-        stop
+        call die
       endif
 C ..................
 

@@ -1,5 +1,3 @@
-C $Id: recipes.f,v 1.4 1999/12/01 08:49:44 jgale Exp $
-
 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
 C    This file contains routines taken or adapted from 
 C    'Numerical Recipes, The Art of Scientific Computing' by
@@ -110,7 +108,7 @@ C*****************************************************
       IMPLICIT DOUBLE PRECISION(A-H,O-Z)
       DIMENSION Y(N),Y2(N),U(N)
     
-      IF (YP1.GT..99E30) THEN
+      IF (YP1.GT..99D30) THEN
         Y2(1)=0.0D0
         U(1)=0.0D0
       ELSE
@@ -124,14 +122,14 @@ C*****************************************************
         U(I)=(3.0D0*( Y(I+1)+Y(I-1)-2.0D0*Y(I) )/(DELT*DELT)
      *      -SIG*U(I-1))/P
 11    CONTINUE
-      IF (YPN.GT..99E30) THEN
+      IF (YPN.GT..99D30) THEN
         QN=0.0D0
         UN=0.0D0
       ELSE
         QN=0.5D0
         UN=(3.0D0/DELT)*(YPN-(Y(N)-Y(N-1))/DELT)
       ENDIF
-      Y2(N)=(UN-QN*U(N-1))/(QN*Y2(N-1)+1.)
+      Y2(N)=(UN-QN*U(N-1))/(QN*Y2(N-1)+1.D0)
       DO 12 K=N-1,1,-1
         Y2(K)=Y2(K)*Y2(K+1)+U(K)
 12    CONTINUE
@@ -160,15 +158,16 @@ C*****************************************************
       NHI=NLO+1
 
  
-      IF (DELT.EQ.0.) PAUSE 'Bad DELT input.'
+      IF (DELT.EQ.0.D0) PAUSE 'Bad DELT input.'
 
       A=NHI-X/DELT-1
       B=1.0D0-A
       Y=A*YA(NLO)+B*YA(NHI)+
-     *      ((A**3-A)*Y2A(NLO)+(B**3-B)*Y2A(NHI))*(DELT**2)/6.
+     *      ((A**3-A)*Y2A(NLO)+(B**3-B)*Y2A(NHI))*(DELT**2)/6.D0
 
       DYDX=(YA(NHI)-YA(NLO))/DELT +
-     * (-((3*(A**2)-1.0)*Y2A(NLO))+(3*(B**2)-1.0)*Y2A(NHI))*DELT/6.
+     * (-((3*(A**2)-1.D0)*Y2A(NLO))+
+     * (3*(B**2)-1.D0)*Y2A(NHI))*DELT/6.D0
       RETURN
       END
 
@@ -254,29 +253,29 @@ C Allocate local memory
       allocate(u(n))
       call memory('A','D',n,'splin')
 
-      if (yp1.gt..99e30) then
+      if (yp1.gt..99d30) then
         y2(1)=0.0d0
         u(1)=0.0d0
       else
         y2(1)=-0.5d0
-        u(1)=(3./(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
+        u(1)=(3.d0/(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
       endif
       do 11 i=2,n-1
         sig=(x(i)-x(i-1))/(x(i+1)-x(i-1))
         p=sig*y2(i-1)+2.0d0
-        y2(i)=(sig-1.)/p
+        y2(i)=(sig-1.d0)/p
         u(i)=(6.0d0*((y(i+1)-y(i))/(x(i+
      *1)-x(i))-(y(i)-y(i-1))/(x(i)-x(i-1)))/(x(i+1)-x(i-1))-sig*
      *u(i-1))/p
 11    continue
-      if (ypn.gt..99e30) then
+      if (ypn.gt..99d30) then
         qn=0.0d0
         un=0.0d0
       else
         qn=0.5d0
         un=(3.0d0/(x(n)-x(n-1)))*(ypn-(y(n)-y(n-1))/(x(n)-x(n-1)))
       endif
-      y2(n)=(un-qn*u(n-1))/(qn*y2(n-1)+1.)
+      y2(n)=(un-qn*u(n-1))/(qn*y2(n-1)+1.d0)
       do 12 k=n-1,1,-1
         y2(k)=y2(k)*y2(k+1)+u(k)
 12    continue
@@ -308,13 +307,13 @@ C J.M.Soler, April'96.
       klo=min(klo,n-1)
       khi=klo+1
       hy=(ya(khi)-ya(klo))/h
-      if (h.eq.0.) pause 'bad xa input in splint'
+      if (h.eq.0.d0) pause 'bad xa input in splint'
       a=(xmin+(khi-1)*h-x)/h
       b=(x-xmin-(klo-1)*h)/h
       y=a*ya(klo)+b*ya(khi)+((a**3-a)*y2a(klo)+(b**3-b)*y2a(khi))*(h**
-     *2)/6.
-      dy=(h*y2a(klo)/6.)*((-3.)*a**2+1.)+
-     *   (h*y2a(khi)/6.)*(3.*b**2-1.)+hy
+     *2)/6.d0
+      dy=(h*y2a(klo)/6.d0)*((-3.d0)*a**2+1.d0)+
+     *   (h*y2a(khi)/6.d0)*(3.d0*b**2-1.d0)+hy
 
       return
       END
@@ -420,8 +419,8 @@ C "Numerical Recipes", W.Press et al, Cambridge U.P., 1st ed.
         DO 13 M=1,MMAX,2
           DO 12 I=M,N,ISTEP
             J=I+MMAX
-            TEMPR=SNGL(WR)*DATA(J)-SNGL(WI)*DATA(J+1)
-            TEMPI=SNGL(WR)*DATA(J+1)+SNGL(WI)*DATA(J)
+            TEMPR=WR*DATA(J)-WI*DATA(J+1)
+            TEMPI=WR*DATA(J+1)+WI*DATA(J)
             DATA(J)=DATA(I)-TEMPR
             DATA(J+1)=DATA(I+1)-TEMPI
             DATA(I)=DATA(I)+TEMPR

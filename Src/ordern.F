@@ -70,21 +70,24 @@ C
 
       implicit none
 
-      integer 
-     .  ioptlwf, ipcheb, iscf, istep, itmax, natoms, 
+      double precision, intent(INOUT) :: eta   !!  ?????????
+      integer, intent(inout)          :: istep
+
+      integer, intent(in)           ::
+     .  ioptlwf, ipcheb, iscf, itmax, natoms, 
      .  nbasis, maxnh, maxuo
 
-      integer
+      integer, intent(in)           ::
      .  isa(natoms), lasto(0:natoms), listh(maxnh), 
-     .  numh(*), listhptr(*)
+     .  numh(:), listhptr(:)
 
-      double precision
-     .  cell(3,3), dm(maxnh), Ecorrec, edm(maxnh), 
-     .  enum, eta, ftol, h(maxnh), qa(natoms), rcoor, rh, 
+      double precision, intent(out) :: dm(maxnh), Ecorrec, edm(maxnh)
+      double precision, intent(in)  ::
+     .  cell(3,3), 
+     .  enum, ftol, h(maxnh), qa(natoms), rcoor, rh, 
      .  s(maxnh), xa(3,natoms), beta, rcoorcp
 
-      logical
-     .  chebef, noeta, usesavelwf
+      logical, intent(in)           :: chebef, noeta, usesavelwf
 
 C Internal variables ..........................................................
       integer, save ::
@@ -473,7 +476,7 @@ C Save LWF's to disk .................................................
 C ....................
 
 *     call timer( 'ordern', 2 )
-      return
-      end
+
+      end subroutine ordern
 
 

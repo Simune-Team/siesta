@@ -1,3 +1,4 @@
+SIESTA_ARCH=nolibs
 #
 # Serial compilation without the need of any installed libraries.
 #
@@ -23,6 +24,3 @@ MPI_INCLUDE=/usr/local/include
 .f90.o:
 	$(FC) -c $(FFLAGS)   $<
 #
-
-
-

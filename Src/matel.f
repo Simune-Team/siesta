@@ -1,6 +1,6 @@
       MODULE MATEL_MODULE
 c
-c     This module contains two 'entries': matel0 and matel.
+c     This module contains two 'entries': matel_init and matel.
 c
 c     The declaration section should come first.
 c 
@@ -63,9 +63,6 @@ C Internal variable types and dimensions ----------------------------
 
  
       integer, dimension(:), allocatable, save ::
-     .  IFFR
-
-      integer, dimension(:), allocatable, save ::
      .  ILM, ILMFF, INDFFY, INDFFR
 
       integer, dimension(:,:,:), allocatable, save ::
@@ -75,12 +72,6 @@ C Internal variable types and dimensions ----------------------------
      .  C, CPROP, DFFR0, DFFRMX, DSRDR, 
      .  PI, Q, QMAX, R, RMAX,
      .  SR, X12(3), AUXV(3)
-
-      double precision, dimension(:), allocatable, save ::
-     .  CFFR, FFQ, FFL, RI, Y
-
-      double precision, dimension(:,:), allocatable, save ::
-     .  DYDR
 
       double precision, dimension(:), allocatable, save ::
      .  FFY
@@ -131,6 +122,9 @@ C *******************************************************************
       IMPLICIT NONE
       INTEGER NS
 
+!     Compute the maximum l needed, and the maximum nzeta and nkbl
+!     (the latter possibly obsolete)
+
       LMAX = 0
       NZMAX = 0
       NKBMAX_MATEL = 0
@@ -146,6 +140,9 @@ C *******************************************************************
   320 CONTINUE
       NY = (LMAX+1)**2
 
+!
+!     Part of Graft to support KSV module...
+!
       CALL REPOL(IAUXM,AUXV)
 
       NGRPOL=0
@@ -159,6 +156,7 @@ C *******************************************************************
       ENDIF
 
 C  Calculate derived array dimensions needed for matel
+
       MAXLO  = LMAX
       MAXLKB = LMAX
       MAXZO  = NZMAX
@@ -168,10 +166,19 @@ C  Calculate derived array dimensions needed for matel
       MAXLP2 = MAXLP1 + 1
       MAXLM  = (LMAX+1)*(LMAX+1)
       MAXLM2 = (LMAX+2)*(LMAX+2)
+
       MAXO   = MAXZO  * (MAXLO+1)  * (MAXLO+1)
+!       Maximum number of orbitals (incl m)
+
       MAXKB  = MAXZKB * (MAXLKB+1) * (MAXLKB+1)
+!       Maximum number of KB projs (incl m)
+
       MAXSS  = MAXS * (MAXS+1) / 2
+!       Maximum number of pairs of species
+
       MAXZZ  = MAXZO * (2*MAXZO+MAXZKB)  + 2
+!       
+
       MAXF1  = MAXS * (MAXO+MAXKB+1)
       MAXF   = MAXS * (MAXO+MAXKB+1) *
      .         (1+4*(IOPER-2))
@@ -189,6 +196,7 @@ C  Calculate derived array dimensions needed for matel
       MAXF2  = MAXF1 * MAXF * IOPER
 
 C  Allocate local arrays that must be preserved between calls
+
       if (.not.allocated(ILM)) then
         allocate(ILM(MAXF+NY))
         call memory('A','I',MAXF+NY,'matel')
@@ -231,21 +239,10 @@ C  Allocate local arrays that must be preserved between calls
       endif
 
 C  Initialise local arrays that have just been allocated
-      DO I = 1,NOPERAT
-        DO J = -MAXKB,MAXO
-          DO K = 1,MAXS
-            INDF(K,J,I) = 0
-            NLM(K,J,I) = 0
-          ENDDO
-        ENDDO
-      ENDDO
-      DO I = 1,NOPERAT
-        DO J = 1,MAXF
-          DO K = 1,MAXF1
-            INDFF(K,J,I) = 0
-          ENDDO
-        ENDDO
-      ENDDO
+
+      INDF(1:maxs,-maxkb:maxo,1:noperat) = 0
+      NLM(1:maxs,-maxkb:maxo,1:noperat) = 0
+      INDFF(1:maxf1,1:maxf,1:noperat) = 0
       INDFFY(0) = 0
 
       END SUBROUTINE MATEL_INIT
@@ -261,7 +258,6 @@ C Modified to calculate the matrix elements of the position operator
 C by DSP. June, 1999
 C ************************* INPUT ***********************************
 C CHARACTER OPERAT : Operator to be used: 'S' => Unity (overlap)
-C                                         'T' => -Laplacian
 C                                         'T' => -Laplacian
 C                                         'X' =>  x
 C                                         'Y' =>  y
@@ -349,26 +345,21 @@ C Argument types and dimensions -------------------------------------
       INTEGER           IO1, IO2, IS1, IS2
       DOUBLE PRECISION  DSDR(3), R12(3), S12
 C -------------------------------------------------------------------
+C
+C
+C     Automatic arrays local to this routine
+C
+      integer          IFFR(0:2*MAXLP1)
+      double precision CFFR(0:2*MAXLP1)
+      double precision FFQ(0:NQ)
+      double precision FFL(0:NQ)
+      double precision RI(0:NR)
+      double precision Y(4*MAXLM2)
+      double precision DYDR(3,4*MAXLM2)
 
 C Start time counter ------------------------------------------------
 *     CALL TIMER( 'MATEL', 1 )
 C -------------------------------------------------------------------
-
-C Allocate local memory
-      allocate(IFFR(0:2*MAXLP1))
-      call memory('A','I',2*MAXLP1+1,'matel')
-      allocate(CFFR(0:2*MAXLP1))
-      call memory('A','D',2*MAXLP1+1,'matel')
-      allocate(DYDR(3,4*MAXLM2))
-      call memory('A','D',3*(4*MAXLM2),'matel')
-      allocate(FFQ(0:NQ))
-      call memory('A','D',NQ+1,'matel')
-      allocate(FFL(0:NQ))
-      call memory('A','D',NQ+1,'matel')
-      allocate(RI(0:NR))
-      call memory('A','D',NR+1,'matel')
-      allocate(Y(4*MAXLM2))
-      call memory('A','D',4*MAXLM2,'matel')
 
       PI = 4.D0 * ATAN(1.D0)
 
@@ -380,28 +371,21 @@ C -------------------------------------------------------------------
 
 C Check if tables must be re-initialized ----------------------------
       IF ( IS1.LE.0 .OR. IS2.LE.0 ) THEN
-       DO 45  IOP = 1, NOPERAT
-          DO 20 JS = 1,MAXS
-            DO 10 JO = -MAXKB,MAXO
-               INDF(JS,JO,IOP) = 0
-               NLM(JS,JO,IOP) = 0
-   10       CONTINUE
-   20     CONTINUE
-          DO 40 JF2 = 1,MAXF
-           DO 30 JF1 = 1,MAXF
-            INDFF(JF1,JF2,IOP) = 0
-            INDFF(JF1,JF2,IOP) = 0
-   30     CONTINUE
-   40    CONTINUE
-   45   CONTINUE
-        INDFFY(0) = 0
-        NF   = 0
-        NFF  = 0
-        NFFR = 0
-        NFFY = 0
-        GOTO 999
+
+         INDF(1:maxs,-maxkb:maxo,1:noperat) = 0
+         NLM(1:maxs,-maxkb:maxo,1:noperat) = 0
+         INDFF(1:maxf1,1:maxf,1:noperat) = 0
+
+         INDFFY(0) = 0
+         NF   = 0
+         NFF  = 0
+         NFFR = 0
+         NFFY = 0
+         GOTO 999
+
       ELSEIF ( IS1.GT.MAXS .OR. IS2.GT.MAXS ) THEN
-         call die('MATEL: parameter MAXS too small')
+         call die(
+     $  'MATEL: Apparently MATEL_INIT was called with NS too small')
       ENDIF
 C -------------------------------------------------------------------
 
@@ -689,22 +673,6 @@ C -------------------------------------------------------------------
 
 C Stop time counter -------------------------------------------------
   999 CONTINUE
-
-C Deallocate local memory
-      call memory('D','I',size(IFFR),'matel')
-      deallocate(IFFR)
-      call memory('D','D',size(CFFR),'matel')
-      deallocate(CFFR)
-      call memory('D','D',size(DYDR),'matel')
-      deallocate(DYDR)
-      call memory('D','D',size(FFQ),'matel')
-      deallocate(FFQ)
-      call memory('D','D',size(FFL),'matel')
-      deallocate(FFL)
-      call memory('D','D',size(RI),'matel')
-      deallocate(RI)
-      call memory('D','D',size(Y),'matel')
-      deallocate(Y)
 
 *     CALL TIMER( 'MATEL', 2 )
 C -------------------------------------------------------------------

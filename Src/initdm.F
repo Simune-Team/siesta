@@ -58,6 +58,7 @@ C
       use precision
       use parallel
       use fdf
+      use parsing
 #ifdef MPI
       use mpi
 #endif
@@ -74,7 +75,7 @@ C
       double precision  Dscf(maxnh,maxspn), 
      .                  Dold(maxnh,maxspn), 
      .                  Datm(maxo)
-      external          parse, memory
+      external          memory
 
 c ---------------------------------------------------------------------
 

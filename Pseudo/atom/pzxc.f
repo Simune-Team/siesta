@@ -91,6 +91,12 @@ c      Find density and polarization
            RETURN
          ENDIF
          Z = (DS(1) - DS(2)) / D
+
+C    In case z is close to 1 or -1, things can go wrong when
+C    computing FZ and FZP below...
+C
+         if (abs((abs(z)-1.d0)).lt.1.d-10) z = z + 1.d-8
+
          FZ = ((1+Z)**FTRD+(1-Z)**FTRD-2)/TFTM
          FZP = FTRD*((1+Z)**TRD-(1-Z)**TRD)/TFTM 
        ELSE

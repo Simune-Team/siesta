@@ -59,12 +59,18 @@ C
 #endif
 
       implicit          none
-      integer           na, nlhmax
-      integer           iphkb(*), iphorb(*), isa(na),
-     .                  lastkb(0:na), lasto(0:na), listh(nlhmax), 
-     .                  listhptr(*), nsc(3), numh(*), Node, Nodes
-      double precision  cell(3,3), xa(3,na)
-      logical           negl
+      integer, intent(in)          ::  na
+      integer, intent(in)          ::  iphkb(:), iphorb(:)
+      integer, intent(in)          ::  isa(na), lastkb(0:na),
+     $                                 lasto(0:na)
+      integer, intent(in)          ::  nsc(3), Node, Nodes
+      double precision, intent(in) ::  cell(3,3), xa(3,na)
+      logical, intent(in)          ::  negl
+
+      integer, intent(inout)       ::  nlhmax
+      integer, intent(out)         ::  listh(:), listhptr(:)
+      integer, intent(out)         ::  numh(:)
+
       external          neighb, ordvec, timer, memory
 
 C Internal variables -----------------

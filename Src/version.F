@@ -15,17 +15,9 @@ c     included for reference.)
 c
 c     After it is done, this file should be commited.
 c
-      integer, dimension(3), save  :: num_version = (/1,0,27/)
+      integer, dimension(3), save  :: num_version = (/1,0,33/)
       character(len=80), parameter ::  version_str =
-     .  "SIESTA 1.0.27 -- [new sparse form] (Apr 12, 2000)"
-
-      character(len=60), parameter :: arch =
-     $  'SYS'
-      character(len=60), parameter :: fflags =
-     $  'FFLAGS'
-      character(len=60), parameter :: mpilib =
-     $  'MPILIB'
-
+     .  "SIESTA 1.0.33 -- [struct reorg, NetCDF] (July 5, 2000)"
 
       end module version_info
 
@@ -37,13 +29,19 @@ c
       use version_info
       implicit none
       write(6,'(a)') trim(version_str)
-      write(6,'(2a)') 'Architecture  : ', trim(arch)
-      write(6,'(2a)') 'Compiler flags: ', trim(fflags)
-      if (len_trim(mpilib) .ne. 0) then
-         write(6,'(a)') 'PARALLEL version'
-      else
-         write(6,'(a)') 'SERIAL version'
-      endif
+      write(6,'(2a)') 'Architecture  : ',
+     $     'SIESTA_ARCH'
+      write(6,'(2a)') 'Compiler flags: ',
+     $'FFLAGS'
+#ifdef MPI
+      write(6,'(a)') 'PARALLEL version'
+#else
+      write(6,'(a)') 'SERIAL version'
+#endif
+
+#ifdef CDF
+      write(6,'(a)') 'NetCDF-capable'
+#endif
 
       end subroutine prversion
 
@@ -53,5 +51,9 @@ c
       integer, intent(out)  :: v(3)
       v = num_version
       end subroutine get_version
+
+
+
+
 
 

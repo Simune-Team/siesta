@@ -40,12 +40,16 @@ C REAL    XMESH(3,MAXP): Mesh point coordinates (not used if MTYPE=0)
 C                        When MTYPE=2, cartesian coordinates are
 C                        Xcart(ix,im) = Sum_iv(CELL(ix,iv)*XMESH(iv,ip))
 C                        Notice single precision in this version
-C INTEGER NSPIN        : NSPIN=1 => unpolarized; NSPIN=2 => polarized
+C INTEGER NSPIN        : NSPIN=1 => unpolarized; NSPIN=2 => polarized;
+C                        NSPIN=4 => non-collinear polarization
 C REAL    DENS(MAXP,NSPIN) : Total (NSPIN=1) or spin (NSPIN=2) electron
-C                            density at mesh points, ordered as
-C                            IP = I1+NSPAN(1)*((I2-1)+NSPAN(2)*(I3-1)),
-C                            with I1=1,...,NMESH(1), etc
-C                            Notice single precision in this version
+C                        density at mesh points, ordered as
+C                        IP = I1+NSPAN(1)*((I2-1)+NSPAN(2)*(I3-1)),
+C                        with I1=1,...,NMESH(1), etc 
+C                        For non-collinear polarization, the density
+C                        matrix is given by: DENS(1)=D11, DENS(2)=D22,
+C                        DENS(3)=Real(D12), DENS(4)=Im(D12)
+C                        Notice single precision in this version
 C INTEGER MAXAUX       : Physical dimension of array AUX.
 C                        If FUNCTL.EQ.'GGA' and MTYPE.NE.0, must be
 C                        MAXAUX .GE. NSPAN(1)*NSPAN(2)*NSPAN(3)
@@ -552,13 +556,13 @@ C       Find mesh index of this point
 C       Skip point if density=0
         IF (SKIP0) THEN
           DENTOT = 0.D0
-          DO 75 IS = 1,NSPIN
-            DENTOT = DENTOT + ABS(DENS(IP,IS))
-   75     CONTINUE
+          DO IS = 1,MIN(NSPIN,2)
+            DENTOT = DENTOT + MAX(0.D0,DENS(IP,IS))
+          ENDDO
           IF (DENTOT .LT. DENMIN) THEN
-            DO 76 IS = 1,NSPIN
-              VXC(IP,IS) = 0.0
-   76       CONTINUE
+            DO IS = 1,NSPIN
+              VXC(IP,IS) = 0.0D0
+            ENDDO
             GOTO 210
           ENDIF
         ENDIF
@@ -677,10 +681,16 @@ C         the gradient at point i with respect to the value at point j
 
         ENDIF
 
-C       Find density and gradient of density at this point
-        DO 145 IS = 1,NSPIN
+C  Find density and gradient of density at this point
+        DO IS = 1,NSPIN
           D(IS) = DENS(IP,IS)
-  145   CONTINUE
+        ENDDO
+C       Test to ensure that densities are always > 0 added to 
+C       avoid floating point errors in ggaxc. JDG & JMS
+        DO IS = 1,MIN(NSPIN,2)
+          D(IS) = MAX(0.D0,D(IS))
+*         D(IS) = max(DENMIN,D(IS))
+        ENDDO
         IF (GGA) THEN
 #ifdef MPI
           if (Nodes.eq.1) then

@@ -70,7 +70,7 @@ C
      .  lasto(0:natoms), listh(maxnh), numh(nbasisloc), 
      .  listhptr(nbasisloc)
 
-      real*8
+      double precision
      .  beta, cell(3,3), chpot, emin, emax, enum, 
      .  h(maxnh), rcoor, s(maxnh), xa(3,natoms)
 C    .  homo, lumo, gap
@@ -92,7 +92,7 @@ C nvmax = maximum number of non-zero elements within a sparse vector v
 C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       parameter(ipmax = 200)
 
-      real*8 
+      double precision 
      .  mu1,mu2
       parameter(mu1=-1.2d0,mu2=1.2d0)
 
@@ -103,7 +103,7 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       integer, dimension(:), allocatable, save ::
      .  listvt, numhp, indexloc, jan, ibuffer, listv
 
-      real*8
+      double precision
      .  betap, chpotsh, deltae, emean,
      .  numb, rmax, rrmod, ri(3), tol,
      .  zbrent
@@ -112,16 +112,16 @@ C    .  delta, eref2, eref1, eig2, eig1
       integer, dimension(:,:), allocatable, save ::
      .  listhp, listhpp
 
-      real*8, dimension(:), allocatable, save ::
+      double precision, dimension(:), allocatable, save ::
      .  paux, vec
 
-      real*8, dimension(:,:), allocatable, save ::
+      double precision, dimension(:,:), allocatable, save ::
      .  hbar, Hdense, Sdense
 
-      real*8, dimension(:), allocatable, save ::
+      double precision, dimension(:), allocatable, save ::
      . r2ij, dpbuffer1
 
-      real*8, dimension(:,:), allocatable, save ::
+      double precision, dimension(:,:), allocatable, save ::
      . xij, v, dpbuffer2
 
 C ...
@@ -273,12 +273,12 @@ C  Globalise Hdense and Sdense for now
         allocate(dpbuffer1(nu))
         call memory('A','D',nu,'chempot')
         do i=1,nu
-          call MPI_AllReduce(Sdense(1,i),dpbuffer1,nu,DAT_double,
+          call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
           do j=1,nu
             Sdense(j,i) = dpbuffer1(j)
           enddo
-          call MPI_AllReduce(Hdense(1,i),dpbuffer1,nu,DAT_double,
+          call MPI_AllReduce(Hdense(1:,i),dpbuffer1,nu,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
           do j=1,nu
             Hdense(j,i) = dpbuffer1(j)
@@ -771,7 +771,7 @@ C **********************************************************************
 
       implicit none
 
-      real*8 mu,Ne,numb
+      double precision mu,Ne,numb
       integer k,n
 
       call chebfd(p,mu,c) 
@@ -1037,7 +1037,7 @@ C **********************************************************************
       integer 
      .  listh(maxnh), numh(nbasis), listhptr(nbasis)
 
-      real*8
+      double precision
      .  ener, hbar(nhmax,nbasis)
 
 C  Internal variables ...
@@ -1053,11 +1053,11 @@ C  Internal variables ...
       integer
      .  i, ii, j, k
 
-      real*8
+      double precision
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr(2)
 
-      real*8, dimension(:), allocatable, save ::
+      double precision, dimension(:), allocatable, save ::
      .  hv0, u0, v0
 
       external
@@ -1280,7 +1280,7 @@ C **********************************************************************
       integer 
      .  listh(maxnh), numh(nbasis), listhptr(nbasis)
 
-      real*8
+      double precision
      .  ener, hbar(nhmax,nbasis)
 
 C  Internal variables ...
@@ -1296,11 +1296,11 @@ C  Internal variables ...
       integer
      .  i, ii, ij, j, k
 
-      real*8
+      double precision
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr
 
-      real*8, dimension(:), allocatable, save ::
+      double precision, dimension(:), allocatable, save ::
      .  hv0, u0, v0, v00
 
       external

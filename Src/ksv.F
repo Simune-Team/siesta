@@ -69,6 +69,7 @@ C
       use precision
       use parallel
       use fdf
+      use parsing
       use atmfuncs, only: izvalfis
 #ifdef MPI
       use mpi
@@ -117,8 +118,7 @@ C Internal variables
       character         paste*30, shape*10
 
       external          dot, io_assign, io_close,
-     .                  parse, paste, prmem, redcel,
-     .                  volcel, reclat, memory
+     .                  paste, volcel, reclat, memory
 
       double precision, dimension(:), allocatable, save ::
      .  psi, psi1, psiprev

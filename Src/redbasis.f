@@ -1,6 +1,6 @@
       subroutine read_basis(nsp,iz,lmxkb,nkbl,erefkb,
      .         lmxo, nzeta, rco, lambda,
-     .         atm_label,polorb,semic,lsemic,charge,smass,
+     .         atm_label,polorb,semic,nsemic,charge,smass,
      .         basistype)
 !
 !
@@ -42,7 +42,7 @@ C                                 perturbatively  calculated from
 C                                 the PAO orbitals with angular momentum
 C                                 L (This orbitals will have L'=L+1) 
 C   LOGICAL SEMIC(NSP)       :  Presence or not of semicore orbitals
-C   INTEGER LSEMIC(0:LMAXD,NSP):  Number of semicore shells for each angular
+C   INTEGER NSEMIC(0:LMAXD,NSP):  Number of semicore shells for each angular
 C                                       momentum
 C   REAL*8  CHARGE(NSP)  :  Charge state of the ion, only for PAO 
 C                             calculation purposes.
@@ -55,8 +55,9 @@ C------------------------------------------------------------------C
 C  Modules
 C
       use precision
-      use atmfuncs, only: lmaxd, nsemx, nzetmx, nkbmx
+      use atmparams
       use fdf
+      use parsing
 
       implicit none
 
@@ -66,7 +67,7 @@ C
       integer, intent(in) :: nsp
       integer, intent(out) :: iz(nsp),lmxkb(nsp),lmxo(nsp),
      .     polorb(0:lmaxd,nsemx,nsp),nzeta(0:lmaxd,nsemx,nsp),
-     .     lsemic(0:lmaxd,nsp), nkbl(0:lmaxd,nsp)
+     .     nsemic(0:lmaxd,nsp), nkbl(0:lmaxd,nsp)
 
       double precision, intent(out) ::
      .     rco(nzetmx,0:lmaxd,nsemx,nsp),
@@ -141,7 +142,7 @@ C
         do is=1,nsp
           semic(is)=.false.
           do l=0,lmaxd
-            lsemic(l,is)=0
+            nsemic(l,is)=0
           enddo
         enddo 
         do is=1,nsp  
@@ -158,11 +159,11 @@ C
             enddo 
        
             call semicore(Zval,iz(is),atm_label(is),
-     .                      semic(is),lsemic(0,is)) 
+     .                      semic(is),nsemic(0,is)) 
 
             if (semic(is)) then 
                do l=0,lmaxd
-                 if(lsemic(l,is).ne.0) 
+                 if(nsemic(l,is).ne.0) 
      .               lmxval=max(lmxval,l)
                enddo 
             endif
@@ -261,7 +262,7 @@ C
            if((.not.old_block).and.(new_block)) then 
 
            call rePAOBasis(atm_label,iz,lmxo,nzeta,rco,lambda,
-     .         polorb,charge,basistype,semic,lsemic,nsp)
+     .         polorb,charge,basistype,semic,nsemic,nsp)
 
            endif 
 
@@ -305,7 +306,7 @@ C
              if (lmxo(is).eq.-1) then 
                call autobasis(basis_sizes(is),
      .           abs(iz(is)),
-     .           semic(is), lsemic(0,is),
+     .           semic(is), nsemic(0,is),
      .           lmxo(is),nzeta(0,1,is),rco(1,0,1,is),
      .           lambda(1,0,1,is),
      .           polorb(0,1,is)) 
@@ -324,7 +325,7 @@ C
 
              if (semic(is)) then
                do l=0,lmaxd
-                 if(lsemic(l,is).ne.0)
+                 if(nsemic(l,is).ne.0)
      .               lmxval=max(lmxval,l)
                enddo
              endif
@@ -338,24 +339,24 @@ C
                error=.true.                
              endif  
             
-            do nsm=1,lsemic(0,is)+1           
+            do nsm=1,nsemic(0,is)+1           
               
              if(nzeta(0,nsm,is).eq.0) then 
                 write(6,'(a)')
      .     'read_basis: ERROR: At least one shell of basis set orbitals' 
                 write(6,'(a,i1,3a)')
      .     'read_basis: ERROR: is need for the ',
-     .      config(0)-(lsemic(0,is)+1)+nsm,sym(0),
+     .      config(0)-(nsemic(0,is)+1)+nsm,sym(0),
      .     ' in ',atm_label(is)
                 error=.true.    
              endif 
             enddo 
 
              do l=1,lmxval
-                do nsm=1,lsemic(l,is)+1
+                do nsm=1,nsemic(l,is)+1
                    if(
      .           (ql(l).gt.1.0d-4).or.
-     .             ((nsm.lt.lsemic(l,is)+1).and.(semic(is))) ) then 
+     .             ((nsm.lt.nsemic(l,is)+1).and.(semic(is))) ) then 
 
                     if(nzeta(l,nsm,is).eq.0) then 
                      write(6,'(2a)')
@@ -364,7 +365,7 @@ C
      .    'read_basis: ERROR: There must be at least one shell of ' 
                      write(6,'(a,i1,a)')
      .    'read_basis: ERROR: basis set orbitals for the state',
-     .     config(l)-(lsemic(l,is)+1)+nsm,sym(l)  
+     .     config(l)-(nsemic(l,is)+1)+nsm,sym(l)  
                       error=.true.    
                   endif
                  endif 
@@ -377,7 +378,7 @@ C
 C         Reading information for multiples KB projectors 
 C             
           call reKBblock(atm_label,lmxkb,nkbl,erefkb,
-     .               lmxo, lsemic, polorb, nsp, nsp)
+     .               lmxo, nsemic, polorb, nsp, nsp)
 
           do is=1,nsp              
              if(iz(is).lt.0) then 
@@ -453,7 +454,6 @@ c *******************************************************************
       integer           maxs, ns
       character*15      basis_sizes(maxs) 
       character*20      atm_label(maxs)
-      external          parse
 
 c ----------------------------------------------------------------------------
 
@@ -552,7 +552,6 @@ C
       implicit          none
       integer           maxs, ns, iz(maxs)
       character*20      atm_label(maxs) 
-      external          parse
 
 c ----------------------------------------------------------------------------
 
@@ -619,7 +618,7 @@ c check for block and read
       end subroutine rechemsp
 
       subroutine reKBblock(atm_label,lmxkb,nkbl,erefkb,
-     .               lmxo,lsemic,polorb,maxs,ns)
+     .               lmxo,nsemic,polorb,maxs,ns)
 c *******************************************************************
 c Reading the number of KB projectors for each angular momentum
 c and the reference energies for their construction.
@@ -650,7 +649,7 @@ c integer ns                     : Number of species
 c character*20  atm_label(maxs)  : Label for the different species
 c integer lmxo(maxs)             : Maximum angular momentum for the 
 c                                  basis orbitals
-c lsemic(0:lmaxd,ns)          : Number of semicore shells
+c nsemic(0:lmaxd,ns)          : Number of semicore shells
 c                                  for each angular momentum 
 c integer polorb(0:lmaxd,nsemx,ns): Numebr of polarisation orbitals
 c                                  perturbatively calculated from
@@ -670,7 +669,6 @@ c *******************************************************************
       integer           polorb(0:lmaxd,nsemx,ns)
       real*8            erefkb(nkbmx,0:lmaxd,maxs)
       character*20      atm_label(maxs)
-      external          parse
 
 c ----------------------------------------------------------------------------
 
@@ -686,7 +684,7 @@ c Internal variables and arrays
       integer           integs(4), lastc, lc(0:3), nzt, izt, l
       integer           nsh,l_control(0:lmaxd), l_read, ish, ish2
       integer           nzt_overf, l_overf, lmax, l_contr, lpol
-      integer           lsemic(0:lmaxd,ns)  
+      integer           nsemic(0:lmaxd,ns)  
       double precision  reals(4), values(4)
       logical           overf_zet, overf_l
 !      external          fdf_convfac 
@@ -908,13 +906,13 @@ c reading the number of shells
            if(ns_control(ist).eq.0) then 
              if(lmxkb(ist).eq.-1) lmxkb(ist)=lmxo(ist)+1
              do l=0,lmxkb(ist)
-               nkbl(l,ist)=lsemic(l,ist)+1
-               do izt=1, lsemic(l,ist)+1
+               nkbl(l,ist)=nsemic(l,ist)+1
+               do izt=1, nsemic(l,ist)+1
                       erefKB(izt,l,ist)=huge(1.d0)
                enddo 
              enddo 
              do l=0,lmxo(ist)
-               do izt=1, lsemic(l,ist)+1
+               do izt=1, nsemic(l,ist)+1
                    if(polorb(l,izt,ist).gt.0) lpol=l+1
                enddo
              enddo
@@ -956,7 +954,6 @@ c *******************************************************************
       integer           maxs, ns
       integer           lmxkb(maxs)
       character*20      atm_label(maxs)
-      external          parse
 
 c ----------------------------------------------------------------------------
 
@@ -1018,7 +1015,7 @@ c determine the species index from the label
 
       end subroutine relmxkb
 
-        subroutine semicore(Zval,Z,atm_label,semic,lsemic)
+        subroutine semicore(Zval,Z,atm_label,semic,nsemic)
 c *******************************************************************
 c Reading information for basis generation.
 c
@@ -1034,7 +1031,7 @@ c character*20 atm_label         : Labels for the different species
 c ********* OUTPUT **************************************************
 c logical      semic             : if .true. there are semicore states 
 c                                  if .false. there are not.
-c integer      lsemic(0:lmaxd)   : Number of semicore shells
+c integer      nsemic(0:lmaxd)   : Number of semicore shells
 c *******************************************************************
 
        implicit none      
@@ -1042,7 +1039,7 @@ c *******************************************************************
        character atm_label*20, paste*50, fname*50, namatm*2, 
      .   icorr*2, irel*3, nicore*4,
      .   method(6)*10, text*70
-       integer lsemic(0:lmaxd), nr, npotd, npotu, i,ndiff, Z
+       integer nsemic(0:lmaxd), nr, npotd, npotu, i,ndiff, Z
        logical semic,found
        integer lun
        
@@ -1099,14 +1096,14 @@ C***************************************************************************
      .       ' semicore shell included in the valence for species ',
      .        atm_label
 
-             call find_semi(abs(z),charge_loc,lsemic) 
+             call find_semi(abs(z),charge_loc,nsemic) 
              do i=0,lmaxd
-              if(lsemic(i)+1.gt.nsemx) then 
+              if(nsemic(i)+1.gt.nsemx) then 
                 write(6,'(a)')
      .                   'semicore: ERROR parameter nsemx in atmfuncs'
                 write(6,'(a,i2)')
      .                'semicore: ERROR must be increased to at least',
-     .                lsemic(i)+1
+     .                nsemic(i)+1
               endif
              enddo
 
@@ -1117,7 +1114,7 @@ C***************************************************************************
          end subroutine semicore
 !
         subroutine autobasis(basis_size,iz,
-     .       semic, lsemic,
+     .       semic, nsemic,
      .       lmxo,nzeta,rco,lambda,
      .       polorb)
          
@@ -1130,7 +1127,7 @@ C Modified by DSP, July 1999
         
          character basis_size*15
          integer lmxo, nzeta(0:lmaxd,nsemx), polorb(0:lmaxd,nsemx),
-     .     lsemic(0:lmaxd), iz,nsm
+     .     nsemic(0:lmaxd), iz,nsm
          logical semic 
          double precision rco(nzetmx,0:lmaxd,nsemx), 
      .       lambda(nzetmx,0:lmaxd,nsemx)
@@ -1152,7 +1149,7 @@ C Initialise ql - JDG Nov 99
          lmax=lmxval
          if(semic) then
            do l=0,lmaxd
-               if(lsemic(l).gt.0) lmax=max(lmax,l)
+               if(nsemic(l).gt.0) lmax=max(lmax,l)
            enddo 
          endif
          lmxval=max(lmxval,lmax)
@@ -1169,8 +1166,8 @@ C Initialise ql - JDG Nov 99
          pol_contr=.false. 
          do l=0,lmxval
              
-             nval=lsemic(l)+1
-             if(l.gt.0) npol=lsemic(l-1)+1
+             nval=nsemic(l)+1
+             if(l.gt.0) npol=nsemic(l-1)+1
 
              if(abs(ql(l)).lt.1.0d-4) then 
                 
@@ -1228,9 +1225,9 @@ C Initialise ql - JDG Nov 99
              endif 
  
 
-             if((semic).and.(lsemic(l).gt.0)) then
+             if((semic).and.(nsemic(l).gt.0)) then
                 if(.not. overflow) then
-                   do nsm=1,lsemic(l)
+                   do nsm=1,nsemic(l)
                       nzeta(l,nsm)=1
                       rco(1,l,nsm)=0.0d0
                       lambda(1,l,nsm)=0.0d0
@@ -1247,7 +1244,7 @@ C Initialise ql - JDG Nov 99
 c             lmax=max(lmax, lmxval) 
 c             if(lmax.gt.lmaxd) overflow=.true. 
               if(.not.overflow) then 
-                 npol=lsemic(lmxval-1)+1
+                 npol=nsemic(lmxval-1)+1
                  polorb(lmxval-1,npol)=1 
               endif 
             endif 
@@ -1297,7 +1294,7 @@ C Written by D. Sanchez-Portal, Aug. 1998.
         end subroutine type_name
 
          subroutine rePAOBasis(atm_label,iz,lmxo,nzeta,rco,lambda,
-     .         polorb,charge,basistype,semic,lsemic,ns)
+     .         polorb,charge,basistype,semic,nsemic,ns)
 
 c *******************************************************************
 c Reading information for basis generation of different species from
@@ -1314,14 +1311,13 @@ c *******************************************************************
  
       integer   ns, lmxo(ns), polorb(0:lmaxd,nsemx,ns)
       integer   nzeta(0:lmaxd,nsemx,ns), iz(ns)
-      integer   lsemic(0:lmaxd,ns)
+      integer   nsemic(0:lmaxd,ns)
       double precision
      .   rco(nzetmx,0:lmaxd,nsemx,ns), 
      .   lambda(nzetmx,0:lmaxd,nsemx,ns),
      .   charge(ns)
       character atm_label(ns)*20, basistype(ns)*10
       logical    semic(ns)
-      external   parse
 
 c ----------------------------------------------------------------------------
 
@@ -1447,7 +1443,7 @@ C quantum number
                         call die
                      endif
                      nsm_read=qnumber(names(lc(0)+1:lc(1)))
-                     nsm_read=lsemic(l_read,ns_read)+1
+                     nsm_read=nsemic(l_read,ns_read)+1
      .                       -(config(l_read)-nsm_read)
                    else
                      if(semic(ns_read)) then
@@ -1650,7 +1646,6 @@ c *******************************************************************
      .   rco(nzetmx,0:lmaxd,nsemx,ns), 
      .   lambda(nzetmx,0:lmaxd,nsemx,ns),
      .   charge(ns)
-      external   parse
 
 c ----------------------------------------------------------------------------
 
@@ -1750,14 +1745,14 @@ c                  if(lmxo(is)+1.gt.l_overf) l_overf=lmxo(is)+1
 
       end subroutine reOLDblock
 
-      subroutine find_semi(jz,chg,lsemic )
+      subroutine find_semi(jz,chg,nsemic )
           
            implicit none
            double precision qval(0:4), sum, charge_local, chg
            integer config(0:4), conf_last(0:4), niter,
      .      conf_val(0:4), l, lval, latm, iter,
      .      izlast, nsem, nsemcap, ll, jz, iz_loc, i,
-     .      lsemic(0:lmaxd)      
+     .      nsemic(0:lmaxd)      
            character sym(0:4)
            
            data sym / 's','p','d','f','g' /
@@ -1768,7 +1763,7 @@ c                  if(lmxo(is)+1.gt.l_overf) l_overf=lmxo(is)+1
            nsemcap=0              
 C Ground state configuration for the atom
               do l=0,lmaxd
-                 lsemic(l)=0
+                 nsemic(l)=0
               enddo 
               do l=0,3
                  qval(l)=0.0d0
@@ -1851,7 +1846,7 @@ c                 write(6,*) 'Posible semicore:', config(l),'(',l,')'
      .        'find_semi: Semicore states:',
      .        ((i,sym(l), i=config(l),conf_val(l)-1),l=0,3)
               do l=0,3
-                 lsemic(l)=conf_val(l)-config(l)
+                 nsemic(l)=conf_val(l)-config(l)
 c                if(config(l).ne.conf_val(l)) then
 c                  write(6,*) (i,sym(l), i=config(l),conf_val(l)-1)
 c                endif
@@ -1902,8 +1897,6 @@ c *******************************************************************
 
       integer           maxs, ns
       double precision  smass(maxs)
-
-      external          parse
 
 c ----------------------------------------------------------------------------
 

@@ -984,6 +984,7 @@ C Loop over sub-points
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
                 call phiatm( is, 0, dx, va, grva )
+!                write(88,*) is, dx, va, grva
                 if (Gradients) then
                   do i = 1,3
                     grva(i) = dvol * grva(i) * drho(ip)

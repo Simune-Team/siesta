@@ -25,18 +25,26 @@
 !       data type.
 !       Thus, you will have to choose one of the two options below:
 !
-      USE MPI__INCLUDE,                                                 &
+      USE MPI__INCLUDE,                                                  &
       &     DAT_single => MPI_real,                                      &
+      &     DAT_2single => MPI_2real,                                    &
       &     DAT_double => MPI_double_precision,                          &
+      &     DAT_2double => MPI_2double_precision,                        &
       &     DAT_complex => MPI_complex,                                  &
-      &     DAT_dcomplex => MPI_double_complex 
+      &     DAT_2complex => MPI_2complex,                                &
+      &     DAT_dcomplex => MPI_double_complex,                          &
+      &     DAT_2dcomplex => MPI_2double_complex 
 !
 ! For Crays:
 !
-!     &     DAT_single => MPI_real,                                     &
-!     &     DAT_double => MPI_real,                                     &
-!     &     DAT_complex => MPI_complex,                                 &
-!     &     DAT_dcomplex => MPI_complex                                  
+!     &     DAT_single => MPI_real,                                      &
+!     &     DAT_2single => MPI_2real,                                    &
+!     &     DAT_double => MPI_real,                                      &
+!     &     DAT_2double => MPI_2real,                                    &
+!     &     DAT_complex => MPI_complex,                                  &
+!     &     DAT_2complex => MPI_2complex,                                &
+!     &     DAT_dcomplex => MPI_complex,                                 &
+!     &     DAT_2dcomplex => MPI_2complex                                  
 
 
 !       ... generic overloads for <choice> argument routines ...

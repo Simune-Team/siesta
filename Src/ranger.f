@@ -49,7 +49,7 @@ C *********** UNITS **************************************************
 C Units of CELL, RANGE, XA and X0 are arbitrary but must be equal.
 C All vectors in cartesian coordinates.
 C *********** SUBROUTINES USED ***************************************
-C DISMIN, DOT, PRMEM, RECCEL, VOLCEL
+C DISMIN, DOT, RECCEL, VOLCEL
 C *********** BEHAVIOUR **********************************************
 C This is a 'remembering' routine, that saves a single copy of required 
 C   information on the system. Therefore, it cannot be used
@@ -297,7 +297,6 @@ C INTEGER NNM           Number of neighbour mesh cells
 C INTEGER NNMMAX        Maximum number of neighbour mesh cells
 C INTEGER NNX(MX)       Neighbour-cell ranges
 C LOGICAL NULCEL        Null cell?
-C         PRMEM()       Prints memory usage of arrays
 C REAL*8  R2            Squared distance between two atoms
 C REAL*8  RANGE2        Square of range
 C REAL*8  RCELL(MX*MX)  Reciprocal cell vectors
@@ -343,7 +342,7 @@ c
      .  FRSTME, INSIDE, MOVALL, NULCEL
 
       EXTERNAL
-     .  DISMIN, DOT, PRMEM, RECCEL, memory
+     .  DISMIN, DOT, RECCEL, memory
 
       SAVE
      .  FRSTME, IAM, IEM, IM, 

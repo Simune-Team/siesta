@@ -1,12 +1,10 @@
+
+#FDF: Opened INPUT_TMP            for input. Unit: 12
+
 fdf-debug              0     # Default value
 SystemName     H in 64-atom silicon                                                            
 SystemLabel     sih                                                                             
-LongOutput              F     # Default value
 NumberOfAtoms                       65
-NumberOfSpecies                        2
-WriteSiestaDim              F     # Default value
-WriteDenchar              F     # Default value
-WriteMullikenPop              0     # Default value
 LatticeConstant          10.26121695           Bohr
 # Above item originally: LatticeConstant          5.430000000     Ang       
 
@@ -16,11 +14,22 @@ LatticeConstant          10.26121695           Bohr
   0.000  0.000  2.000                                                          
 %endblock LatticeVectors                                                       
 
+
+%block LatticeVectors                                                          
+  2.000  0.000  0.000                                                          
+  0.000  2.000  0.000                                                          
+  0.000  0.000  2.000                                                          
+%endblock LatticeVectors                                                       
+
 SpinPolarized              F     # Default value
 NonCollinearSpin              F     # Default value
+LongOutput              F     # Default value
+NumberOfSpecies                        2
+WriteDenchar              F     # Default value
+WriteMullikenPop              0     # Default value
 MeshCutoff          40.00000000             Ry
 # Above item originally: MeshCutoff          40.00000000     Ry        
-NetCharge         0.0000000000E+00     # Default value
+NetCharge          0.000000000         # Default value
 MaxSCFIterations                       50
 DM.NumberPulay                        3
 DM.MixSCF1              F     # Default value
@@ -33,12 +42,15 @@ UseSaveData              F     # Default value
 DM.UseSaveDM              T     # Label by itself
 NeglNonOverlapInt              F     # Default value
 SolutionMethod     diagon                                                                          
+DiagMemory          2.000000000         # Default value
+DiagScale          1.000000000         # Default value
+TryMemoryIncrease              T     # Default value
 ElectronicTemperature         0.1837449711E-02         Ry
 # Above item originally: ElectronicTemperature          25.00000000     meV       
 FixSpin              F     # Default value
 ON.MaxNumIter           1000     # Default value
 ON.etol         0.1000000000E-07     # Default value
-ON.eta         0.0000000000E+00 Ry     # Default value
+ON.eta          0.000000000     Ry     # Default value
 On.RcLWF          9.500000000     Bohr     # Default value
 UseSaveData              F     # Default value
 ON.UseSaveLWF              F     # Default value
@@ -46,7 +58,7 @@ ON.functional     kim               # Default value
 ON.ChemicalPotential              F     # Default value
 ON.ChemicalPotentialUse              F     # Default value
 ON.ChemicalPotentialRc          9.500000000     Bohr     # Default value
-ON.ChemicalPotentialTemperature         0.5000000000E-01 Ry     # Default value
+ON.ChemicalPotentialTemperature         0.5000000075E-01 Ry     # Default value
 ON.ChemicalPotentialOrder            100     # Default value
 MD.VariableCell              F     # Default value
 MD.TypeOfRun     cg                                                                              
@@ -62,19 +74,26 @@ MD.InitialTimeStep              1     # Default value
 MD.FinalTimeStep              1     # Default value
 MD.LengthTimeStep          1.000000000     fs     # Default value
 MD.Quench              F     # Default value
-MD.InitialTemperature         0.0000000000E+00 K     # Default value
-MD.TargetTemperature         0.0000000000E+00 K     # Default value
-MD.TargetPressure         0.0000000000E+00 Ry/Bohr**3     # Default value
+MD.InitialTemperature          0.000000000     K     # Default value
+MD.TargetTemperature          0.000000000     K     # Default value
+MD.TargetPressure          0.000000000     Ry/Bohr**3     # Default value
 MD.NoseMass          100.0000000     Ry*fs**2     # Default value
 MD.ParrinelloRahmanMass          100.0000000     Ry*fs**2     # Default value
 MD.AnnealOption     TemperatureAndPressure     # Default value
 MD.TauRelax          100.0000000     fs     # Default value
-MD.BulkModulus          100.0000000     Ry/Bohr**3     # Default value
+MD.BulkModulus          100.0000000         # Default value
 MD.FCDispl         0.4000000000E-01 Bohr     # Default value
 MD.FCfirst              1     # Default value
 MD.FClast             65     # Default value
 LatticeConstant          10.26121695           Bohr
 # Above item originally: LatticeConstant          5.430000000     Ang       
+
+%block LatticeVectors                                                          
+  2.000  0.000  0.000                                                          
+  0.000  2.000  0.000                                                          
+  0.000  0.000  2.000                                                          
+%endblock LatticeVectors                                                       
+
 
 %block LatticeVectors                                                          
   2.000  0.000  0.000                                                          
@@ -155,7 +174,7 @@ NumberOfAtoms                       65
 
 WriteKpoints              F     # Default value
 WriteForces              F     # Default value
-WriteEigenvalues              F     # Default value
+WriteDM              T     # Default value
 WriteBands              F     # Default value
 WriteKbands              F     # Default value
 WriteCoorStep              F     # Default value
@@ -166,21 +185,8 @@ UseSaveData              F     # Default value
 MD.UseSaveXV              F     # Default value
 SaveHS              F     # Default value
 WarningMinimumAtomicDistance          1.000000000     Bohr     # Default value
-NumberOfSpecies                        2
-
-%block PAO.Basis                                                               
-  H  1                                                                         
-  0  1                                                                         
-  0.                                                                           
-  0.8                                                                          
-%endblock PAO.Basis                                                            
-
-
-%block ChemicalSpeciesLabel                                                    
- 1  14  Si                                                                     
- 2   1  H                                                                      
-%endblock ChemicalSpeciesLabel                                                 
-
+PAO.Basis
+Chemical_species_label
 
 %block ChemicalSpeciesLabel                                                    
  1  14  Si                                                                     
@@ -210,7 +216,7 @@ PAO.EnergyShift         0.2204939653E-01         Ry
 PAO.SplitNorm         0.1500000000         # Default value
 PAO.SplitNorm         0.1500000000         # Default value
 PAO.BasisType     split          # Default value
-kgrid_cutoff         0.0000000000E+00 Bohr     # Default value
+kgrid_cutoff          0.000000000     Bohr     # Default value
 AtomicCoordinatesFormat     ScaledCartesian                                                                 
 AtomCoorFormatOut     ScaledCartesian            # Default value
 LatticeConstant          10.26121695           Bohr
@@ -218,6 +224,7 @@ LatticeConstant          10.26121695           Bohr
 SystemLabel     sih                                                                             
 xc.functional     LDA     # Default value
 xc.authors     PZ     # Default value
+DirectPhi              F     # Default value
 SystemLabel     sih                                                                             
 SystemLabel     sih                                                                             
 SystemLabel     sih                                                                             

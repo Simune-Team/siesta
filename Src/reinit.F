@@ -1,5 +1,5 @@
       subroutine reinit(slabel, sname) 
-C *********************************************************************
+
 C Subroutine to initialise the reading of the data for SIESTA 
 C
 C     It uses the FDF (Flexible Data Fromat) package 
@@ -33,9 +33,9 @@ C  Internal variables .................................................
      .  slabel_default*59, sname_default*20
 
       integer 
-     .  Node, length, lun
+     .  Node, length, lun, lun_tmp
 
-      logical file_exists
+      logical debug_input
 #ifdef MPI
       integer
      .  MPIerror
@@ -59,38 +59,58 @@ C Print Welcome and Presentation .......................................
      .   '                           ***********************       '
 C ..................
 
-C Dump data file to output file .......................................
+C Dump data file to output file 
 C and generate scratch file for FDF to read from
+C (except if INPUT_DEBUG exists)
 C
 
-        call io_assign(lun)
-        inquire(file='INPUT',exist=file_exists)
-        if (.not. file_exists) then
+        inquire(file='INPUT_DEBUG',exist=debug_input)
+        if (debug_input) then
            write(6,'(a)') 'WARNING: ' //
-     $          'Siesta now reads its input from file INPUT...'
-           call die('Input file not found')
+     $          'Siesta is reading its input from file INPUT_DEBUG'
+           
+           call io_assign(lun)
+           open(lun,file='INPUT_DEBUG',form='formatted',status='old')
+           rewind(lun)
+        else
+c
+c          Read from standard input
+c
+           write(6,'(a)') 'Reading from standard input...'
+           lun = 5
+           call io_assign(lun_tmp)
+           open(lun_tmp,file='INPUT_TMP',
+     $                  form='formatted',status='replace')
+           rewind(lun_tmp)
         endif
-        open(lun,file='INPUT',form='formatted',status='old')
-        rewind(lun)
 
         write(6,'(/,a,18(1h*),a,28(1h*))')
      .    '*: ', ' Dump of input data file '
+c
  10     continue
         read(lun,err=20,end=20,fmt='(a)') line
         call chrlen(line,0,length)
-        if (length .ne. 0) write(6,'(a)') line(1:length)
+        if (length .ne. 0) then
+           write(6,'(a)') line(1:length)
+           if (.not. debug_input) write(lun_tmp,'(a)') line(1:length)
+        endif
         goto 10
  20     continue
-        call io_close(lun)
-
+c
         write(6,'(a,18(1h*),a,29(1h*))')
      .    '*: ', ' End of input data file '
-C ..................
-
-C Read data from FDF file..............................................
+c
+c       Choose proper file for fdf processing
+c
+        if (debug_input) then
+           call io_close(lun)
+           filein = 'INPUT_DEBUG'
+        else
+           call io_close(lun_tmp)
+           filein = 'INPUT_TMP'
+        endif
 
 C Set up fdf ...
-        filein = 'INPUT'
         fileout = 'out.fdf'
         call fdf_init(filein,fileout)
 C ...

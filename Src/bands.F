@@ -80,6 +80,7 @@ C  Modules
 C
       use precision
       use fdf
+      use parsing
 #ifdef MPI
       use mpi
       use parallel
@@ -88,7 +89,7 @@ C
       integer           maxk, nk
       double precision  kpoint(3,maxk)
       character         paste*30
-      external          parse, paste, redcel, memory
+      external          paste, redcel, memory
 C *********************************************************************
 
       character 
@@ -100,7 +101,7 @@ C *********************************************************************
 
       integer
      .  ik, il, integs(4), iu, ix, 
-     .  lastc, lc(0:3), 
+     .  lastc, lc(0:3), mscell(3,3),
      .  naux, ni, nkl, nn, nr, nv,
      .  Node
 
@@ -166,7 +167,7 @@ C         Find scale used in k point data
             pi = 4.d0 * atan(1.d0)
           elseif (scale .eq. 'ReciprocalLatticeVectors') then
             if (Node.eq.0) then
-              call redcel( alat, caux, ucell )
+              call redcel( alat, caux, ucell, mscell )
             endif
 #ifdef MPI
             call MPI_Bcast(alat,1,DAT_double,0,
@@ -482,7 +483,7 @@ C       Find and write the ranges of k and ek
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
           do ispin = 1,min(nspin,2)
-            do io = 1, nuo
+            do io = 1, nuotot
               emax = max( emax, ek(io,ispin,ik) )
               emin = min( emin, ek(io,ispin,ik) )
             enddo
@@ -492,7 +493,7 @@ C       Find and write the ranges of k and ek
         write(iu,*) emin/eV, emax/eV
 
 C       Write eigenvalues
-        write(iu,*) nuo, min(nspin,2), nk
+        write(iu,*) nuotot, min(nspin,2), nk
         path = 0.d0
         do ik = 1,nk
           if (ik .gt. 1)
@@ -500,7 +501,8 @@ C       Write eigenvalues
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
           write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
-     .      path, ((ek(io,ispin,ik)/eV,io=1,nuo),ispin=1,min(nspin,2))
+     .      path, ((ek(io,ispin,ik)/eV,io=1,nuotot),
+     .      ispin=1,min(nspin,2))
         enddo
 
 C       Write abscisas of line ends and their labels

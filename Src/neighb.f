@@ -1,4 +1,4 @@
-C $Id: neighb.f,v 1.9 1999/03/04 16:21:09 jose Exp $
+C $Id: neighb.f,v 1.10 2000/06/16 14:40:05 jgale Exp $
 
       SUBROUTINE NEIGHB( CELL, RANGE, NA, XA, IA, ISC,
      .                   NNA, JAN, XIJ, R2IJ )
@@ -27,7 +27,7 @@ C REAL*8  R2IJ(NNA)  : Squared distances to neighbours
 C *********** UNITS **************************************************
 C Units of CELL, RANGE and XA are arbitrary but must be equal
 C *********** SUBROUTINES USED ***************************************
-C CHKDIM, DISMIN, DOT, PRMEM, RECLAT
+C CHKDIM, DISMIN, DOT, RECLAT
 C *********** BEHAVIOUR **********************************************
 C CPU time and memory scale linearly with the number of atoms, for
 C   sufficiently large numbers.

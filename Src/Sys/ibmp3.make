@@ -1,3 +1,4 @@
+SIESTA_ARCH=ibmp3
 #
 # IBM without ESSL
 #

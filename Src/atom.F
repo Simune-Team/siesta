@@ -1,12 +1,14 @@
        SUBROUTINE ATOM (NTOTSP,IZIN,LMXKB,NKBL,EREFKB,
      .          LMXO, NZETA, 
      .          RCO,LAMBDA,ATM_LABEL,
-     .          NPOLORB,SEMIC,LSEMIC,CHARGE,SMASS,BASISTYPE, 
+     .          NPOLORB,SEMIC,NSEMIC,CHARGE,SMASS,BASISTYPE, 
      .          IS,NKB,NO,Q)
 
       use precision
-      use atmfuncs
+      use atmparams
+      use old_atmfuncs
       use fdf
+      use ionew, only: IOnode
 #ifdef MPI
       use mpi
 #endif
@@ -55,10 +57,10 @@
 
       logical, intent(in) :: semic
 !       If .true. there is a shell of semicore states with angular
-!       momentum LSEMIC
+!       momentum NSEMIC
 
-      integer, intent(in) :: lsemic(0:lmaxd)
-!       Angular momentum for the semicore states
+      integer, intent(in) :: nsemic(0:lmaxd)
+!       Number of semicore states with a given angular momentum
 
       real*8, intent(INOUT)  :: charge
 !       Charge state of the atom, only for basis set generation purposes
@@ -133,8 +135,10 @@
 
         real*8, parameter             :: deltmax=0.05d0
 ! Maximum distance (in Bohrs) between points where function 
-! is evaluated to generate the tables for intepolation
+! is evaluated to generate the tables for interpolation
 ! If this distance is exceeded  a warning is printed
+! In practice, this means that the cutoff can be as large as 25 bohrs
+! with ntbmax=500
 
         real*8, parameter             :: eshift_default=0.02d0
 ! Default energy-shift to define the cut off radius of orbitals
@@ -178,17 +182,15 @@
     
        logical  called, new
    
-! Declarations for FDF package *******************************
- 
          character*2 symbol
          external symbol
 
          save called
          data  called /.false./
- 
+!
          pi=acos(-1.0d0)
 
-! Allocate arrays in atmfuncs module
+! Allocate arrays in old_atmfuncs module
       if (.not.called) then
         nsmax=NTOTSP
         ns2=((nsmax+1)*nsmax)/2
@@ -208,8 +210,6 @@
         call memory('A','D',nsmax,'atom')
         allocate(chargesave(nsmax))
         call memory('A','D',nsmax,'atom')
-        allocate(qltb(0:3,nsemx,nsmax))
-        call memory('A','D',4*nsemx*nsmax,'atom')
 !
 !       Table: This is a hybrid
 !            negative values of the second index correspond to KB projectors
@@ -250,7 +250,7 @@
         call memory('A','I',nsmax,'atom')
         allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
         call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
-        allocate(lsemicsave(0:nsemx,nsmax))
+        allocate(nsemicsave(0:nsemx,nsmax))
         call memory('A','I',(nsemx+1)*nsmax,'atom')
         allocate(nzetasave(0:lmaxd,nsemx,nsmax))
         call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
@@ -276,7 +276,7 @@
 ! INITIALIZATION IN FIRST CALL
 !      
            if (.not.called) then 
-             if (Node.eq.0) then
+             if (IOnode) then
                write(6,'(/,a,73(1h*))') 'ATOM: '  
              endif
 
@@ -288,7 +288,7 @@
 ! and selected options
 ! 
            iz=izin
-           if (Node.eq.0) then
+           if (IOnode) then
              if (iz.gt.0) then  
                write(6,'(3a,i4,a)')
      .         'ATOM: Called for ', symbol(iz), '  (Z =', iz,')' 
@@ -312,19 +312,19 @@
            endif  
 ! 
 ! 
-! Checking if the has been called previously for the same specie*****
+! Checking if the has been called previously for the same specie
 ! 
            call new_specie(iz,lmxkb, 
      .         nkbl, erefkb, lmxo,
      .         nzeta, rco, lambda, atm_label,
-     .         npolorb, semic, lsemic,
+     .         npolorb, semic, nsemic,
      .         is, new, no, nkb, q) 
 ! 
-! If iz=0 the tables haves been initializated and we exit****************
+! If iz=0 the tables haves been initializated and we exit*
 ! 
               if (iz.eq.0) then 
                  called=.false.
-                 if (Node.eq.0) then
+                 if (IOnode) then
                    write(6,'(a,73(1h*))') 'ATOM: '
                  endif
                  return
@@ -334,26 +334,26 @@
 ! If it was not a new species there is nothing more to do, so we exit** 
 ! 
               if (.not.new) then 
-                 if (Node.eq.0) then
+                 if (IOnode) then
                    write(6,'(a,73(1h*))') 'ATOM: ' 
                  endif
                  return
               endif                 
 ! 
 
-! IF IT WAS A NEW SPECIES WE START HERE ALL THE CALCULATIONS************
+! IF IT WAS A NEW SPECIES WE START HERE ALL THE CALCULATIONS**
      
-! Save the type of basis set generation procedure*****************
+! Save the type of basis set generation procedure**
 ! 
               basistype_save(is)=basistype
 
-! Save atomic mass in a common block****************************** 
+! Save atomic mass in a common block 
 ! 
               smasstb(is)=smass
 
         if (iz.ne.-100) then
 
-! Reading pseudopotentials********************************* 
+! Reading pseudopotentials*** 
 ! 
             call read_vps(atm_label, lmxo, lmxkb,
      .        nrval,a,b,rofi,drdi,s,vps,
@@ -376,29 +376,29 @@ c    .          'ATOM: The above configuration will be used ',
             endif
 ! 
 !  
-!  Save readed valence charge*********************************
+!  Save readed valence charge***
 !  This can be different from the standard one if we have included semicore
 !  states in the valence shell.
 ! 
             izvaltb(is)=nint(zval)
 
 ! IF IZ IS NEGATIVE WE WILL HAVE FLOATING ORBITALS IN THE ATOMIC POSITIONS*
-! IF IZ POSITIVE WE WILL HAVE REAL ATOMS*********************
+! IF IZ POSITIVE WE WILL HAVE REAL ATOMS*
 ! 
            flting=dsign(1.0d0,dble(iz))
            iz=abs(iz)
 ! 
-! Common block with pseudocore information*******************
+! Common block with pseudocore information****
 ! used for non-linear-core-correction for exchange-correlation energy***
 ! 
            call comcore(is,a,b,rofi,chcore,nrval,nicore,flting)
 
 ! CALCULATION OF THE VALENCE SCREENING POTENTIAL FROM THE READ CHARGE
-! DENSITY*****************************************
+! DENSITY*
 !  
-! For Kleinman-Bylander projectors calculation***************************
+! For Kleinman-Bylander projectors calculation**
           call vhrtre(rho,ve,rofi,drdi,s,nrval,a)  
-! For PAO basis functions calculations*********************************** 
+! For PAO basis functions calculations 
           do ir=2,nrval 
               auxrho(ir)=(zval-charge)*rho(ir)/chgvps
           enddo 
@@ -406,10 +406,10 @@ c    .          'ATOM: The above configuration will be used ',
           chargesave(is)=charge
 ! 
 ! 
-! ADD THE EXCHANGE-CORRELATION POTENTIAL*******************
+! ADD THE EXCHANGE-CORRELATION POTENTIAL****
 ! Choosing the adecuate functional for the exchange-correlation****
 ! 
-          if (Node.eq.0) then
+          if (IOnode) then
             xcfunc = fdf_string('xc.functional','LDA')
             xcauth = fdf_string('xc.authors','PZ')
           endif
@@ -467,23 +467,23 @@ c    .          'ATOM: The above configuration will be used ',
 ! Now, we are going  to calculate the local pseudopotential and the  ****
 ! KB projectors, this is only necessary if we are dealing with real  ****
 ! atoms (not with floating orbitals), i.e. only if flting is greater ****
-! than zero**************************************************************
+! than zero**
 ! 
           if (flting.gt.0.0d0) then
  
-! Rgauss is the maximum cut-off radius used in the pseudopotential   *****
-! generation, Rgauss is determined by comparison of the pseudopot.   *****
-! Corresponding to different l ( this is not possible is we have     *****
-! just one pseudopotential)                                          *****
-! Rgauss2 is the radius where the pseudopotentials reach  the        *****
-! asymptotic behaviour 2*Zval/r.                                     *****
-! For just one pseudopotential Rgauss is taken equal to Rgauss2      ***** 
+! Rgauss is the maximum cut-off radius used in the pseudopotential   
+! generation, Rgauss is determined by comparison of the pseudopot.   
+! Corresponding to different l ( this is not possible is we have     
+! just one pseudopotential)                                          
+! Rgauss2 is the radius where the pseudopotentials reach  the        
+! asymptotic behaviour 2*Zval/r.                                     
+! For just one pseudopotential Rgauss is taken equal to Rgauss2       
 ! 
          call radii_ps(vps,rofi,Zval,nrval,lmxkb,
      .          nrgauss, rgauss, rgauss2)
 ! 
 !  
-! Calculate local pseudopotential**************************
+! Calculate local pseudopotential*
 ! 
             if (rgauss2.gt.1.30d0*rgauss) then
 
@@ -493,11 +493,11 @@ c    .          'ATOM: The above configuration will be used ',
 ! behaviour as in the pseudopotentials we modified the definition
 ! of the local potential
 ! 
-         if (Node.eq.0) then
+         if (IOnode) then
            write(6,'(/,a,f10.5)') 'ATOM: Estimated core radius ',
      .           rgauss2
          endif
-         if (nicore.eq.'nc '.and.Node.eq.0)
+         if (nicore.eq.'nc '.and.IOnode)
      .   write(6,'(/,2a)') 'ATOM: Include non-local core corrections',
      .   ' could be a good idea'
            call vlocal2(Zval, nrval, a, rofi, drdi, s, vps(1,0),
@@ -513,20 +513,20 @@ c    .          'ATOM: The above configuration will be used ',
 
             endif 
 ! 
-! Common block with local-pseudopotential charge************************
+! Common block with local-pseudopotential charge****
 ! used for non-linear-core-correction for exchange-correlation energy***
 !  
           Rchloc=rofi(nchloc)
-          if (Node.eq.0) then
+          if (IOnode) then
             write(6,'(2a,f10.5)') 'ATOM: Maximum radius for' ,
      .        ' local-pseudopot. charge ',Rchloc
           endif
 
             call  comlocal(is,a,b,rofi,chcore,nchloc,flting)
 ! 
-! Write a file to plot the local potential**********************
+! Write a file to plot the local potential**
 ! 
-         if (Node.eq.0) then
+         if (IOnode) then
            call io_assign(lun)
            open(lun,file=paste(atm_label,'.vlocal'),
      .       status='unknown')
@@ -536,12 +536,12 @@ c    .          'ATOM: The above configuration will be used ',
            call io_close(lun) 
          endif
 
-! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION***************** 
+! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION** 
 ! 
          s(2:nrval)=drdi(2:nrval)*drdi(2:nrval)
          s(1)=s(2)
 
-! CALCULATION OF THE KLEINMAN-BYLANDER PROYECTOR FUNCTIONS*******
+! CALCULATION OF THE KLEINMAN-BYLANDER PROYECTOR FUNCTIONS**
 ! 
             call KBgen(is, a,b,rofi,drdi,s,
      .         vps, vlocal, ve, nrval, Zval, lmxkb, 
@@ -551,19 +551,19 @@ c    .          'ATOM: The above configuration will be used ',
 
             elseif(flting.lt.0.0d0) then 
 
-! None Kleinman-Bylander projectors if floating orbitals*******
+! None Kleinman-Bylander projectors if floating orbitals**
 !          
             nkb=0 
             nkbmax(is)=0
 
 
-! Zero local pseudopotential if floating orbitals*******
+! Zero local pseudopotential if floating orbitals**
 ! 
             nchloc=0
             call  comlocal(is,a,b,rofi,chcore,nchloc,flting)
 ! 
 
-! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION*****************
+! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION**
 !          (Needed for the calculation of the basis set )
 
             s(2:nrval)=drdi(2:nrval)*drdi(2:nrval)
@@ -572,23 +572,23 @@ c    .          'ATOM: The above configuration will be used ',
             endif  
 
 
-! CONSTRUCTION OF THE BASIS ORBITALS*************************
+! CONSTRUCTION OF THE BASIS ORBITALS
 
-! Method for the augmentation of the basis set****************
+! Method for the augmentation of the basis set*
 ! 
          if (basistype.ne.'user') then
-           if (Node.eq.0) then
+           if (IOnode) then
              write(6,'(a,73(1h-))') 'ATOM: '
              write(6,'(/,a)') 'ATOM: SANKEY-TYPE ORBITALS:'
            endif
            nzcontr=0
            do l=0,lmxo
-             do nsm=1,lsemic(l)+1
+             do nsm=1,nsemic(l)+1
               if(nzeta(l,nsm).gt.1) nzcontr=1
              enddo
            enddo
            if (nzcontr.eq.1) then
-             if (Node.eq.0) then
+             if (IOnode) then
                write(6,'(2a)')
      .        'ATOM: Selected multiple-zeta basis: ',basistype
              endif
@@ -596,11 +596,11 @@ c    .          'ATOM: The above configuration will be used ',
          endif
 
 
-! Generate the PAOs basis set ***************************
+! Generate the PAOs basis set **
 ! 
        if (charge.le.0.0d0) then
 
-         if (charge.lt.0.0d0.and.Node.eq.0) then 
+         if (charge.lt.0.0d0.and.IOnode) then 
           write(6,'(/,a)') 
      .    'ATOM: basis set generated (by rescaling the valence charge)'
           write(6,'(a,f8.4)')
@@ -608,12 +608,12 @@ c    .          'ATOM: The above configuration will be used ',
          endif
 
          call Basis_gen(Zval,is, a,b,rofi,drdi,s,
-     .                   vps, ve, vePAO, nrval, lmxo,lsemic,
+     .                   vps, ve, vePAO, nrval, lmxo,nsemic,
      .                   nzeta, rco, lambda, npolorb,
      .                   basistype, rphi, no)
  
       else
-        if (Node.eq.0) then
+        if (IOnode) then
           if (abs(charge-zval+chgvps).gt.1.0d-3) then 
             write(6,'(/,a)')
      .  'ATOM: basis set generated (by rescaling the valence charge)'
@@ -628,120 +628,79 @@ c    .          'ATOM: The above configuration will be used ',
         endif
 
         call Basis_gen(Zval,is, a,b,rofi,drdi,s,
-     .                   vps, vePAO, vePAO, nrval, lmxo,lsemic,
+     .                   vps, vePAO, vePAO, nrval, lmxo,nsemic,
      .                   nzeta, rco, lambda, npolorb,
      .                   basistype, rphi, no)
       endif
-      if (Node.eq.0) then
+      if (IOnode) then
         write(6,'(a,i3)')
      .      'ATOM: Total number of Sankey-type orbitals:', no
       endif
       nomax(is)=no
 ! 
-! 
-
-
-
-           if(flting.gt.0.0d0) then 
+      if(flting.gt.0.0d0) then 
  
-! Calculate initial populations for the atomic orbitals***********
+! Calculate initial populations for the atomic orbitals*
 ! 
-           call atm_pop(is,iz,q,qPAO,lmxo,
-     .       nzeta,semic,lsemic,npolorb) 
-! 
-! 
+         call atm_pop(is,iz,q,qPAO,lmxo,
+     .        nzeta,semic,nsemic,npolorb) 
 
-! Screening of the atomic local pseudopotential********************
+! Screening of the atomic local pseudopotential
 ! 
-           call  Vna(is,Zval,qPAO,rphi,rco,lsemic,vlocal,
+         call  Vna(is,Zval,qPAO,rphi,rco,nsemic,vlocal,
      .        a,b,rofi,drdi,nrval,lmxo,nVna)
-! 
-! 
         
-!  CALCULATION OF THE ELECTROSTATIC SELF-ENERGY Of THE ****************
-!  ******** LOCAL PSEUDOPOTENTIAL CHARGE DENSITY ********************** 
-! 
-          call slfe_local(slfe(is),vlocal,rofi,a,nVna,drdi) 
-! 
+!  CALCULATION OF THE ELECTROSTATIC SELF-ENERGY Of THE *
+!  *** LOCAL PSEUDOPOTENTIAL CHARGE DENSITY ** 
+         call slfe_local(slfe(is),vlocal,rofi,a,nVna,drdi) 
  
-           elseif(flting.lt.0.0d0) then 
+      elseif(flting.lt.0.0d0) then 
 
-! Populations are zero because we have floating orbitals,******
-! not real atoms***********************************************
-!    
-                  q(1:no)=0.0d0
-                  qtb(1:maxos,is)=0.0d0
-                  qltb(0:3,1:nsemx,is)=0.0d0
-
-! Zero neutral-atom pseudopotential if floating orbitals*******
-!  
-              nVna=0
-              call comVna(is,a,b,rofi,vlocal,nVna,flting)
-
+! Populations are zero because we have floating orbitals,*
+! not real atoms**
+         q(1:no)=0.0d0
+         qtb(1:maxos,is)=0.0d0
+! Zero neutral-atom pseudopotential if floating orbitals**
+         nVna=0
+         call comVna(is,a,b,rofi,vlocal,nVna,flting)
 ! Zero self-energy for the local pseudopotential charge****
-! 
-              slfe(is)=0.0d0
-! 
-            endif 
+         slfe(is)=0.0d0
+      endif 
 
-        elseif(iz.eq.-100) then
+      elseif(iz.eq.-100) then
 
-! SET UP THE MESH POINTS AND ITS DERIVATIVE******************
-! 
-               call set_mesh(a,b,rofi,drdi,s)
-
-! Local pseudopotential, KB projector, pseudocore charge density, etc...
-! blocks do not contain any information in the case of floating Bessel
-! functions but they have to be intialize in anycase
-! 
+! SET UP THE MESH POINTS AND ITS DERIVATIVE***
+! ONLY FOR FLOATING ORBS
+           call set_mesh(a,b,rofi,drdi,s)
            flting=dsign(1.0d0,dble(iz)) 
-! 
-!  Zero valence charge for floating Bessel functions***********
-! 
-            izvaltb(is)=0
-! 
-! Zero pseudocore charge density******************
-! 
+           izvaltb(is)=0
+! No core charge
            call  comcore(is,a,b,rofi,chcore,
-     .                       nrval,nicore,flting) 
-! 
-! None Kleinman-Bylander projectors if floating orbitals*******
-!          
-            nkb=0 
-            nkbmax(is)=0
-! 
-! Zero local pseudopotential if floating orbitals*******
-! 
-            nchloc=0
+     .          nrval,nicore,flting) 
+! No KB projectors
+           nkb=0 
+           nkbmax(is)=0
+! No local potential
+           nchloc=0
            call  comlocal(is,a,b,rofi,chcore,nchloc,flting)    
-! 
-! Populations are zero because we have floating orbitals,******
-! not real atoms***********************************************
-!    
+! Populations are zero because we have floating orbitals,
            q(1:no)=0.0d0
-! 
-! Zero neutral-atom pseudopotential if floating orbitals*******
-!  
+! Zero neutral-atom pseudopotential if floating orbitals
            nVna=0
            call comVna(is,a,b,rofi,vlocal,nVna,flting)
-! 
-! Zero self-energy for the local pseudopotential charge****
-! 
+! Zero self-energy for the local pseudopotential charge
            slfe(is)=0.0d0
-! 
-! Calculate Bessel functions******************************************
-! 
-             call Bessel (is,a,b,rofi,drdi,s,
-     .             lmxo,nzeta,rco,lambda, no)
-
+! Calculate Bessel functions
+           call Bessel (is,a,b,rofi,drdi,s,
+     .          lmxo,nzeta,rco,lambda, no)
  
-         if (Node.eq.0) then
-           write(6,'(/a,i3)')
-     .       'ATOM: Total number of floating Bessel orbitals:', no
-         endif
-         nomax(is)=no
+           if (IOnode) then
+              write(6,'(/a,i3)')
+     .          'ATOM: Total number of floating Bessel orbitals:', no
+           endif
+           nomax(is)=no
+        endif 
 
-         endif 
 
 ! Now atom has been called for all the species present in the 
 ! calculation
@@ -750,7 +709,7 @@ c    .          'ATOM: The above configuration will be used ',
 ! 
 !      Writing basis information into a file 
 ! 
-           if (Node.eq.0) then
+           if (IOnode) then
              call draw_basis(ntotsp)
              call prinput(ntotsp)   
              write(6,'(/,a,73(1h*))') 'ATOM: '
@@ -776,7 +735,7 @@ C  by Jose M. Soler)
 
 C  INTEGER IS1,IS2             :  Species indexes.
 C  RMX                         :  Maximum range of the correction.
-C*************************OUTPUT****************************************
+COUTPUT
 C  CORR(NTBMAX)                :  Electrostatic correction energy.
 C  CORR2(NTBMAX)               :  Table with the second derivative 
 C                                 of CORR for spline interpolation.
@@ -786,7 +745,7 @@ C                                 just a floating basis set.
 C Distances in Bohr.
 C Energy in Rydbergs.
 
-C******************INTERNAL PARAMETERS**********************************
+C***INTERNAL PARAMETERS****
 C
 C Internal precision parameters  ------------------------------------
 C NQ is the number of radial points in reciprocal space.
@@ -798,7 +757,7 @@ C  (in Ry if lengths are in Bohr).
 C CHERR is a small number to check the precision of the charge density
 C integration.
 C
-C***********************************************************************
+C*
 
         integer nq, npoint
         real*8 q2cut, cherr
@@ -808,7 +767,7 @@ C***********************************************************************
         PARAMETER ( CHERR   =  5.D-2 )
 
 C
-C********************ARRAYS DECLARATION********************************
+CARRAYS DECLARATION**
 C
         real*8 
      .    CH(0:NQ,2),VTB(NTBMAX,2),
@@ -825,12 +784,12 @@ C
           PI= 4.D0 * ATAN(1.D0)       
           CONS= 1.0d0/(2.0d0*PI)**1.5D0
 C
-C******************CUT-OFF IN REAL AND RECIPROCAL SPACE*****************
+C***CUT-OFF IN REAL AND RECIPROCAL SPACE**
 C
            QMAX =  SQRT( Q2CUT )
            RMAX = PI * NQ / QMAX
            IF(RMX.GT.RMAX) THEN  
-             if (Node.eq.0) then
+             if (IOnode) then
                WRITE(6,*) 'CHOVERLP: THE NUMBER OF INTEGRATION',
      .          ' POINTS MUST BE INCREASED'
                write(6,'(a,2f15.6)') 'chovrlap: rmx,rmax =', rmx, rmax
@@ -841,10 +800,10 @@ C
            C=4.0D0*PI*DELT
            DLT=RMX/(NTBMAX-1)
 C
-C*********************************************************************** 
+C* 
      
 
-C*********RADIAL CHARGE DENSITIES(CHECKING TOTAL CHARGE)****************
+C****RADIAL CHARGE DENSITIES(CHECKING TOTAL CHARGE)*
 C
           IZ1=IZOFIS(IS1)
           IZ2=IZOFIS(IS2)
@@ -887,7 +846,7 @@ C
            
            IF((ABS(Z1-IZ1).GT.CHERR).OR.
      .        (ABS(Z2-IZ2).GT.CHERR)) THEN 
-             if (Node.eq.0) then
+             if (IOnode) then
                WRITE(6,*) 'CHOVERLP: THE NUMBER OF INTEGRATION',
      .           ' POINTS MUST BE INCREASED'
                WRITE(6,*) 'CHOVERLP: Z1=',Z1,' IZ1=',IZ1
@@ -901,7 +860,7 @@ C
              CH(IR,2)=DBLE(IZ2)*CH(IR,2)/Z2
            ENDDO 
 C
-C*****REAL SPACE INTEGRATION OF POISSON EQUATION***********************
+CREAL SPACE INTEGRATION OF POISSON EQUATION***
 C          
           
            CALL NUMEROV(NQ,DELT,CH(0,1),V(0,1))
@@ -923,13 +882,13 @@ C
               VTB(ITB,2)=VV2
            ENDDO 
          
-C****FOURIER-TRANSFORM OF RADIAL CHARGE DENSITY************************
+C****FOURIER-TRANSFORM OF RADIAL CHARGE DENSITY****
 C
            CALL RADFFT( 0, NQ, RMAX, CH(0,1), CH(0,1) )
            CALL RADFFT( 0, NQ, RMAX, CH(0,2), CH(0,2) )
 C
 
-C*****NEUTRALIZE CHARGE DENSITY FOR FOURIER-SPACE CALCULATION**********
+CNEUTRALIZE CHARGE DENSITY FOR FOURIER-SPACE CALCULATION
 C
            DO IQ=0,NQ
               R=IQ*QMAX/NQ
@@ -942,7 +901,7 @@ C
 
            ENDDO
 C
-C*********THE ELECTROSTATIC ENERGY CORRECTION IS STORED IN 'CORR'******
+C****THE ELECTROSTATIC ENERGY CORRECTION IS STORED IN 'CORR'*
 C  
             DO IR=1,NTBMAX
 
@@ -971,7 +930,7 @@ C
 
             ENDDO 
 
-C********CREATING A TABLE WITH SECOND DERIVATIVES FOR SPLINES*******
+C***CREATING A TABLE WITH SECOND DERIVATIVES FOR SPLINES**
 C
             DEV1= huge(1.d0)
             DEVN= huge(1.d0)
@@ -990,22 +949,22 @@ C   Being Q(r) a spherical charge density in a homogeneus radial mesh
 C   with distance DELT between consecutive points, this routine returns
 C   the electrostatic potential generated by this charge distribution.
 C   Written by D. Sanchez-Portal, March 1997.
-C********************INPUT********************************************
+CINPUT****
 C   INTEGER NR      :    Number of radial points.
 C   REAL*8  DELT    :    Distance between consecutive points.
 C   REAL*8  Q(0:NR) :    Spherical charge density.
-C********************OUTPUT*******************************************
+COUTPUT***
 C   REAL*8  V(0:NR) :    Electrostatic potential at mesh points.
-C********************BEHAVIOUR****************************************
+CBEHAVIOUR
 C   Qtot/r asimptotic behaviour is imposed.
-C*********************************************************************
+C****
 
           real*8 pi, fourpi, qtot, r, cons
 
             PI=4.0D0*DATAN(1.0D0)
             FOURPI=4.0D0*PI
 
-C********************NUMEROV ALGORITHM******************************* 
+CNUMEROV ALGORITHM* 
 C
              V(0)=0.0D0
              V(1)=1.0D0
@@ -1015,9 +974,9 @@ C
      .      ( Q(IR)*IR+10.0D0*Q(IR-1)*(IR-1)+Q(IR-2)*(IR-2) )/12.0D0
              ENDDO 
 C
-C********************************************************************
+C***
 
-C******************CALCULATE TOTAL CHARGE****************************
+C***CALCULATE TOTAL CHARGE***
 C
    
              QTOT=0.0D0
@@ -1027,9 +986,9 @@ C
              ENDDO
              QTOT=4.0D0*PI*QTOT*DELT
 C
-C********************************************************************
+C***
 
-C******* FIXING QTOT/R ASIMPTOTIC BEHAVIOUR**************************
+C** FIXING QTOT/R ASIMPTOTIC BEHAVIOUR*
 C
 
              CONS=(QTOT-V(NR))/(NR*DELT)
@@ -1040,20 +999,20 @@ C
              ENDDO 
              V(0)=(4.0D0*V(1)-V(2))/3.0D0
 C
-C********************************************************************
+C***
 
              RETURN 
              END subroutine numerov
 
         subroutine rc_vs_e(a,b,r,vps,
      .      ve,nrval,l,el,nnodo,rnodo)
-C**************************************************************
+C**
 C   Calculate the position, rnodo, of the node number nnode of the 
 C   radial wavefunction of the pseudopotential Vps, with angular 
 C   momentum  l, and energy el.
 C   D. Sanchez-Portal, July 1997.
 C   Modify by DSP, July 1999
-C**************************************************************
+C**
 
         integer nrval
         double precision r(nrval),
@@ -1127,7 +1086,7 @@ c          endif
         subroutine polarization(a,r,psi,vps,
      .      ve,drdi,nrc,l,el,psipol,nrval)
 
-C*************************************************************
+C*
 C      This routine calculate the polarization (unoccupied) 
 C      orbitals with angular momentum l from the atomic 
 C      orbitals with l-1 angular momentum, using a perturbative
@@ -1135,8 +1094,8 @@ C      approach.
 C      The routine solve and inhomogeneus version of 
 C      Schrodinger eqn.  
 C      It is not an optimized algorithm!!!!!!!!!!!!!!!!!
-C************************************************************
-C************************************************************
+C
+C
 C       cons1 is a big number. If it is choosen too 
 C       big, too many iterations will be needed.
 C       If cons1 is too small it may happen that 
@@ -1147,7 +1106,7 @@ C       algorithm used here cannot converge. That is
 C       why Rc's are required to be smaller than Rint,
 C       where Rint should not be greater than aprox. 15 Bohr
 C       Written by Daniel Sanchez-Portal, July 1997
-C************************************************************ 
+C 
      
         integer nrmin, niter
         real*8 cons1, rint
@@ -1171,7 +1130,7 @@ c       endif
         rmax=r(nrval)
 
         if(rmax.gt.rint) then 
-         if (Node.eq.0) then
+         if (IOnode) then
           write(6,*) 'POLARIZATION: Rc for the polarization orbitals'
           write(6,*) 'must be smaller than ',rint,' Bohr'
          endif
@@ -1183,10 +1142,10 @@ c       endif
         enddo 
  
           reduc=-0.5d0
-C**** We calculate the polarization function with angular******* 
-C***** momentum l=l+dl
+C**** We calculate the polarization function with angular** 
+C momentum l=l+dl
           dl=1
-C****************************************************************
+C****
           do ir=2,nrval
             hi=vps(ir)+ve(ir)+(l+dl)*(l+dl+1)/r(ir)**2-el
             hi=hi*(drdi(ir)**2)
@@ -1257,7 +1216,7 @@ CInitialized c1 and c2 to arbitrary values.............
      .        ((rnodo.eq.0.0d0).and.
      .        (abs(grmx).lt.1.0d-7) ) ) goto 100
 
-*********************We begin by finding a node!!!!**********************
+*We begin by finding a node!!!!**
 
           if((rnd1.eq.0.0d0).and.(rnodo.eq.0.0d0)) then  
              c2=(-reduc)*cons
@@ -1272,10 +1231,10 @@ CInitialized c1 and c2 to arbitrary values.............
               c2=2.0d0*cons
           endif  
        
-**************************************************************************
+****
 
       
-****************Now we lead this node to Rc*******************************
+*Now we lead this node to Rc*
           if((rnd1.ne.0.0d0).and.(rnodo.eq.0.0d0)) then 
               c2=0.50d0*(c1+c2)
           elseif((rnd1.ne.0.0d0).and.(rnodo.ne.0.0d0)) then 
@@ -1304,7 +1263,7 @@ CInitialized c1 and c2 to arbitrary values.............
            endif 
 
           enddo 
-          if (Node.eq.0) then
+          if (IOnode) then
             write(6,*)'POLARIZATION: Iteration to find the polarization'
             write(6,*)'orbital has failed !!!!!!!!!'
             write(6,*)'Please try with a Rc no bigger than ',rnd1,
@@ -1329,7 +1288,7 @@ CInitialized c1 and c2 to arbitrary values.............
          subroutine parabola(a,b,nrc,rphi,rnrm,l,
      .              splnorm,cons1,cons2,nm) 
 
-C*******************************************************
+C
 C For a value of the SplitNorm parameter equal
 C to splnorm, this routine returns 
 C the parameters Cons1, Cons2 and Nm, such that 
@@ -1349,10 +1308,10 @@ C rnrm(nrmax): PAO's norm as a function of the
 C   radius. 
 C
 C  Written by D. Sanchez-Portal, July 1997.
-C*******************************************************  
+C  
 C Algorithm based on routine for Golden Section Search
 C from Numerical Recipes.
-C*******************************************************
+C
 
          integer l, nm, nrc
           
@@ -1546,14 +1505,14 @@ C
         subroutine radii_ps(vps,rofi,Zval,nrval,lmxkb,
      .          nrgauss, rgauss, rgauss2)
 
-C*******************************************************************
+C**
 C   This rouitne returns the maximum radius for the
 C   Kleinman-Bylander projectors with a standart choice
 C   of the local potential.
 C   Check also at which radius the asymptotic 2*Zval/r
 C   behaviour is achieved.  
 C   D. Sanchez-Portal, Aug. 1998
-C*******************************************************************
+C**
 
 
         implicit none
@@ -1564,12 +1523,12 @@ C*******************************************************************
         integer nrval, lmxkb, nrgauss
 
 
-C***************internal variables*****************************
+Cinternal variables****
         double precision eps, dincv, r
         integer ir, l
         parameter (eps=1.0d-4)
 
-C*******Iterate over the possible local potentials*****************
+C**Iterate over the possible local potentials**
 
           rgauss=0.0d0
           nrgauss=0
@@ -1602,12 +1561,12 @@ C*******Iterate over the possible local potentials*****************
        subroutine vlocal2(Zval, nrval, a, rofi, drdi, s, vps,
      .              nrgauss,vlocal,nchloc,chcore) 
 
-C**************************************************************************** 
+C* 
 C     This routine generates the local pseudopotential appropiate 
 C     for species with  a large core.
 C     
 C     Written by D. Sanchez-Portal, Aug. 1998
-C**************************************************************************** 
+C* 
    
 
        implicit none 
@@ -1617,7 +1576,7 @@ C****************************************************************************
        integer nrgauss, nrval, nchloc
 
 
-C********************Internal variables***************************************
+CInternal variables****
        double precision 
      .      vlc, r, dev, dev2, dev3, var1, var2, var3, v1, v2, v3, v4,
      .      dm11, dm12, dm13, dm21, dm22, dm23, dm31, dm32, dm33, eps,
@@ -1631,9 +1590,9 @@ C********************Internal variables***************************************
        pi=acos(-1.0d0)        
 
 
-C**********Continuity up to second derivative*********************************
+CContinuity up to second derivative***
                 ndevfit=2
-C**********Continuity up to third derivative**********************************
+CContinuity up to third derivative****
 C               ndevfit=3
 
 
@@ -1677,11 +1636,11 @@ CWe impose the continuity up to second
 
 c            elseif(ndevfit.eq.3) then 
              else
-C******************************************************************************
+C***
 C We can also construct a local potential Vloc(r)=v4*exp(v1*r^2+v2*r^3+v3*r^4),
 C this new coefficient allows us to impose the continuity of the potential up
 C to the third derivative.
-C******************************************************************************
+C***
  
             vlc=vlocal(nrgauss)
             r=rofi(nrgauss)
@@ -1717,16 +1676,16 @@ C******************************************************************************
                r=rofi(ir)
                if(ir.le.nrgauss) then 
  
-C************If second derivative fit**************************************
+C**If second derivative fit***
                 if(ndevfit.eq.2) then 
                     vlocal(ir)=v3*exp((v1+v2*r)*r*r)
-C**************************************************************************
+C****
 
-C************If third derivative fit***************************************
+C**If third derivative fit****
                 elseif(ndevfit.eq.3) then 
 
                     vlocal(ir)=v4*exp((v1+v2*r+v3*r*r)*r*r)
-c**************************************************************************
+c****
                 endif 
 
                else
@@ -1781,7 +1740,7 @@ C between the ions
 
              else
 
-C***************If second derivative fit************************************** 
+CIf second derivative fit*** 
              if(ndevfit.eq.2)  then
               r=rofi(ir)
 
@@ -1794,7 +1753,7 @@ C***************If second derivative fit**************************************
               chcore(ir)= (-g3)/cons
               qtot= qtot  + 0.5d0*g3*r*r*drdi(ir)
  
-C**************If third derivative fit****************************************
+C****If third derivative fit
      
               elseif(ndevfit.eq.3)  then
 
@@ -1831,10 +1790,10 @@ C**************If third derivative fit****************************************
      .          vlocal, nchloc, chcore)
 
 
-C****************************************************************************
+C*
 C     This routine generates a smooth local pseudopotential.
 C     Written by D. Sanchez-Portal, Aug. 1998
-C****************************************************************************
+C*
 
 
          implicit none
@@ -1844,7 +1803,7 @@ C****************************************************************************
          integer
      .     nrval, nchloc
 
-C*********************Internal variables******************************* 
+C*Internal variables* 
 
           double precision van, factor, alp, cutoff1, cutoff2,
      .        gexp, qtot, eps, pi, chc, r, Rchloc, rhor1
@@ -1859,18 +1818,18 @@ CAG
 
 C**Usual local potential (generated with an optimum Vandebilt function)**
                    loctype='new' 
-C************************************************************************
+C**
 
 C***The very first local potential used by SIESTA was a the electrostatic
 C***potential generated by a gaussian distribution ===> loctype='old' 
 C                  loctype='old'
-C*************************************************************************
+C***
 
 
                         pi=acos(-1.0d0)
 
 
-C******************************************************************
+C*
 C           Local-potential size parameter 'rgauss'
 C   We choose as a smooth pseudopotential the one generated 
 C   by a 'Vanderbilt-function' charge distribution. We have to select 
@@ -1882,7 +1841,7 @@ C    when van---> Inf. we will obtain a step function
 C    Some test has revealed that the best election to achieve 
 C    a good converge in real and reciprocal space is b in the 
 C    range 0.5-1.0 .
-C******************************************************************
+C*
 
 C  So, the 'gaussian' charge distribution 
 C  must go to zero at a distance 'rgauss'.
@@ -1890,27 +1849,27 @@ C  must go to zero at a distance 'rgauss'.
         if(loctype.eq.'new') then          
 
 
-C***********************************************************************
+C*
 C     We take a 'Vanderbilt-function' as local potential
 C     van=1.0d0 all the parameter have optimized for this value 
-C***********************************************************************
+C*
                 van=1.0d0
                 cutoff1=3.63d0
                 cutoff2=5.48d0
-C**********************99% of charge inside Rgauss**********************
+C**99% of charge inside Rgauss**
 c               factor=1.627d0
-C***********************************************************************
+C*
 
-C**********************99.9% of charge inside Rgauss********************
+C**99.9% of charge inside Rgauss
                 factor=1.815d0
-C***********************************************************************
+C*
               
-C*********** Scaling factor for local-pseudopot. charge*****************
+C* Scaling factor for local-pseudopot. charge**
                   alp=factor/rgauss
-C***********************************************************************
+C*
 
 
-      if (Node.eq.0) then
+      if (IOnode) then
        write(6,'(/,a,f10.3,a)')
      .             'VLOCAL1: 99.0% of the norm of Vloc inside ',
      .                 (alp*cutoff1)**2,' Ry'
@@ -1928,9 +1887,9 @@ C This is just a gaussian !!!!!!!!!!!!!!!!!
                  factor=2.0d0
 
 
-C*********** Scaling factor for local-pseudopot. charge*****************
+C* Scaling factor for local-pseudopot. charge**
                 alp=factor/rgauss  
-C***********************************************************************
+C*
                 
          endif 
 
@@ -1990,7 +1949,7 @@ c            if(ir.eq.1) rhor1=-rhor
           double precision
      .        Zval, rofi(*),vps(*),ve(*),s(nrc),drdi(*),a,b,e,g(*)
      
-C********************* Internal variables*********************************  
+C* Internal variables***  
 
            double precision
      .       a2b4, h(nrmax), r2, vtot, rmax, dr,
@@ -2042,7 +2001,7 @@ C********************* Internal variables*********************************
      .        ve,s,drdi,nrval,l,a,b,
      .        nrc, eigenl,rphi,ighost)
 
-C**********************************************************************
+C
 C This routine checks the possible existence of ghost states. 
 C   Input:
 C        vps(*)    : pseudopotential for angular momentum l
@@ -2055,7 +2014,7 @@ C        ighost:   if ighost=0 no ghost states
 C                  if ighost=1, ghost states exist
 C
 C   Written by D. Sanchez-Portal, Aug. 1998
-C**********************************************************************
+C
 
           implicit none
 
@@ -2065,7 +2024,7 @@ C**********************************************************************
           integer
      .        nrval,l,ighost, nrc
 
-C********************* Internal variables*********************************
+C* Internal variables***
 
            double precision
      .        dnrm, avgv, phi, e,
@@ -2073,7 +2032,7 @@ C********************* Internal variables*********************************
 C    .        , dknrm
            integer  ir, nprin, nnode
            logical  called
-C**********************SAVE FOR NEXT CALL******************************
+C**SAVE FOR NEXT CALL
 C
            save called
            data  called /.false./
@@ -2082,15 +2041,15 @@ C
                   ighost=0 
                   called=.true.
               endif
-C******************GHOST ANALYSIS**********************************
+C***GHOST ANALYSIS****
 
 
-C***CALCULATE EIGENVALUES OF LOCAL POTENTIAL FOR GHOST ANALYSIS******
+C***CALCULATE EIGENVALUES OF LOCAL POTENTIAL FOR GHOST ANALYSIS*
               
 
 C* ATTENTION , 'Ve' is the screenig potential generated from valence*
 C* pseudo-charge given by the pseudopotential generation program ****
-C******************************************************************** 
+C*** 
           do 20 nnode=1,2
               nprin=l+1
 
@@ -2105,7 +2064,7 @@ C********************************************************************
 c        write(6,*) 'GHOST: Ground state vlocal for L=',l,elocal(1)
 c        write(6,*) 'GHOST: First excited state for L=',l,elocal(2)
 
-C****************CALCULATE KB-COSINE**********************************
+C*CALCULATE KB-COSINE****
 
              nrc=min(nrc,nrval)
              dnrm=0.0d0
@@ -2122,19 +2081,19 @@ C****************CALCULATE KB-COSINE**********************************
              dkbcos=dnrm/(avgv+1.0d-20)
 c            dknrm=1.0d0/(sqrt(dnrm)+1.0d-20)
 
-C***************GHOST ANALYSIS*****************************************
+CGHOST ANALYSIS*
 
 
           if(dkbcos.gt.0.0d0) then
 
               if(eigenl.gt.elocal(2)) then
-                if (Node.eq.0) then
+                if (IOnode) then
                  write(6,"(a,i3)")
      .            'GHOST: WARNING: Ghost state for L =', l
                 endif
                 ighost=1
               else
-                if (Node.eq.0) then
+                if (IOnode) then
                  write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
                 endif
               endif
@@ -2142,20 +2101,20 @@ C***************GHOST ANALYSIS*****************************************
            elseif(dkbcos.lt.0d0) then
 
               if(eigenl.gt.elocal(1)) then
-                if (Node.eq.0) then
+                if (IOnode) then
                  write(6,"(a,i3)")
      .            'GHOST: WARNING: Ghost state for L =', l
                 endif
                 ighost=1
               else
-                if (Node.eq.0) then
+                if (IOnode) then
                  write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
                 endif
               endif
 
            elseif(dkbcos.eq.0.0d0) then
 
-              if (Node.eq.0) then
+              if (IOnode) then
                write(6,"('GHOST: vps = vlocal, no ghost for L =',i3)") l
               endif
 
@@ -2166,13 +2125,13 @@ C***************GHOST ANALYSIS*****************************************
 
         subroutine KBproj(rofi,drdi,vps,vlocal,nrwf,l,rphi,
      .    dkbcos,ekb,proj,nrc)  
-C****************************************************************
+C****
 C    This routine calculates the Kleinman-Bylander projector
 C    with angular momentum l.
 C
 C  Written by D. Sanchez-Portal, Aug. 1998
 C  Modified by DSP to allow more than one projector per l, July 1999.
-C****************************************************************
+C****
 
           implicit none
 
@@ -2182,7 +2141,7 @@ C****************************************************************
           integer
      .        nrwf, l, nrc
 
-C********************* Internal variables*********************************
+C* Internal variables***
 
           double precision 
      .        eps, dnrm, vl, vphi, avgv, r, phi, dknrm,
@@ -2274,7 +2233,7 @@ C Normalize the new function
              
             
 
-C**********DEFINE THE CUT-OFF RADII FOR THE KB PROJECTORS************
+CDEFINE THE CUT-OFF RADII FOR THE KB PROJECTORS**
 C Warning these radii should be quite short, if it is not the case
 C something is probably wrong in this part of the program.
 C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
@@ -2283,7 +2242,7 @@ C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
                  phi=(rphi2(ir,ikb)/rofi(ir))*dknrm
                  dincv=abs((vps(ir)-vlocal(ir))*phi)
                  if (dincv.gt.eps) then 
-                   if (ir.ge.nrwf-1.and.Node.eq.0) then
+                   if (ir.ge.nrwf-1.and.IOnode) then
                      write(6,"(2a,/,2a)") 'KBproj: WARNING: ',
      .               'KB projector does not decay to zero',
      .               'KBproj: WARNING: ',       
@@ -2296,7 +2255,7 @@ C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
 21            nrc=ir+1
               rc=rofi(nrc)
       
-              if (Node.eq.0) then
+              if (IOnode) then
               if(rc.lt.0.5d0) then
                 write(6,"('KBproj: WARNING: Rc(',i2,')=',f12.4)")l,rc
                 write(6,"(2a)") 'KBproj: WARNING: ',
@@ -2331,13 +2290,13 @@ C Written by D. Sanchez-Portal, Aug. 1998
         character
      .       xcfunc*3, xcauth*4,icorr*2
 
-       if (Node.eq.0) then
+       if (IOnode) then
        write(6,'(/a)') 'xc_check: Exchange-correlation functional:'
        endif
        if(((xcauth.eq.'CA').or.(xcauth.eq.'PZ')).and.
      .    ((xcfunc.eq.'LDA').or.(xcfunc.eq.'LSD'))) then
 
-         if (Node.eq.0) then
+         if (IOnode) then
           write(6,'(a)') 'xc_check: Ceperley-Alder'
           if(icorr.ne.'ca') then
            write(6,'(a)')
@@ -2352,7 +2311,7 @@ C Written by D. Sanchez-Portal, Aug. 1998
        elseif((xcauth.eq.'PW92').and.
      .    ((xcfunc.eq.'LDA').or.(xcfunc.eq.'LSD'))) then
 
-         if (Node.eq.0) then
+         if (IOnode) then
           write(6,'(a)') 'xc_check: Perdew-Wang 1992'
           if(icorr.ne.'pw') then
             write(6,'(a)')
@@ -2365,7 +2324,7 @@ C Written by D. Sanchez-Portal, Aug. 1998
          endif
        elseif((xcauth.eq.'PBE').and.(xcfunc.eq.'GGA')) then
 
-         if (Node.eq.0) then
+         if (IOnode) then
           write(6,'(a)')
      .     'xc_check: GGA Perdew, Burke & Ernzerhof 1996'
           if(icorr.ne.'pb') then
@@ -2380,7 +2339,7 @@ C Written by D. Sanchez-Portal, Aug. 1998
 
        else
 
-         if (Node.eq.0) then
+         if (IOnode) then
           write(6,'(a)')
      . 'xc_check: ERROR: Exchange-correlation functional not allowed'
           write(6,'(a)') 'xc_check: ERROR: xc.functional= ',xcfunc
@@ -2406,7 +2365,7 @@ C  D. Sanchez-Portal, Aug. 1998
 
            character nicore*4
           
-C**********Internal variables*********************************************
+CInternal variables
 C
            integer nrcore,ir, nr, nmin, nmax, nn, itb
            double precision r2, chc, r, pi, delt, Rcore, dy,
@@ -2418,7 +2377,7 @@ C
            double precision eps
             parameter (eps=1.0d-6)  
           
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
@@ -2446,16 +2405,16 @@ C
             enddo
 10         continue
 
-           if (Node.eq.0) then
+           if (IOnode) then
              write(6,'(a,f10.6)') 
      .         'comcore: Pseudo-core radius Rcore=',Rcore
            endif
 
-C****************TABLE WITH THE PSEUDO_CORE DATA********************
+C*TABLE WITH THE PSEUDO_CORE DATA
 
             delt=Rcore/(dble(ntbmax-1)+1.0d-20)  
 
-           if (Node.eq.0) then
+           if (IOnode) then
             if(delt.gt.deltmax) then 
               write(6,'(a)') 
      .    'comcore: WARNING It might be a good idea to increase' 
@@ -2481,7 +2440,7 @@ C****************TABLE WITH THE PSEUDO_CORE DATA********************
             enddo
             coretab(2,1,is)=coretab(3,1,is)
 
-C*********TABLE WITH THE SECOND DERIVATIVE OF THE PSEUDO_CORE********
+C****TABLE WITH THE SECOND DERIVATIVE OF THE PSEUDO_CORE***
 
             yp1=huge(1.d0)
             ypn=huge(1.d0)
@@ -2521,7 +2480,7 @@ C  D. Sanchez-Portal, Aug. 1998
      .        chlocal(nrmax), rofi(nrmax), a ,b, flting
 
           
-C**********Internal variables*********************************************
+CInternal variables
 C
            integer nr, nmin, nmax, nn, itb, indx, is2
            double precision chc, r, delt, Rchloc, dy,
@@ -2530,7 +2489,7 @@ C
            double precision 
      .          aux(ntbmax) 
            
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
@@ -2542,7 +2501,7 @@ C
 
           delt=Rchloc/(dble(ntbmax-1)+1.0d-20) 
           
-          if (Node.eq.0) then
+          if (IOnode) then
           if(delt.gt.deltmax) then
               write(6,'(a)')
      .    'comlocal: WARNING It might be a good idea to increase'
@@ -2571,8 +2530,8 @@ C
 
 
 
-C****TABLE WITH THE SECOND DERIVATIVE OF THE LOCAL-PSEUDOTENTIAL********
-C***********************CHARGE DENSITY**********************************
+C****TABLE WITH THE SECOND DERIVATIVE OF THE LOCAL-PSEUDOTENTIAL***
+C***CHARGE DENSITY****
 
          yp1=huge(1.d0)
          ypn=huge(1.d0)
@@ -2580,7 +2539,7 @@ C***********************CHARGE DENSITY**********************************
          call spline(delt,chloctab(2,1,is),ntbmax,
      .      yp1,ypn,chloctab(2,2,is),aux)
 
-C*****CALCULATION OF THE ELECTROSTATIC CORRECTION***********************
+CCALCULATION OF THE ELECTROSTATIC CORRECTION***
 
          do is2=is,1,-1
             rmax=chloctab(1,1,is2)*(ntbmax-1)+Rchloc+0.2d0
@@ -2616,7 +2575,7 @@ C*****CALCULATION OF THE ELECTROSTATIC CORRECTION***********************
        subroutine new_specie(iz,lmxkb, 
      .  nkbl, erefkb, lmxo,
      .  nzeta, rco, lambda, atm_label,
-     .  npolorb, semic, lsemic, 
+     .  npolorb, semic, nsemic, 
      .  isnew, new, no, nkb, q)
 
 C  Checks if 'atom' has been called for a new species or if 
@@ -2639,7 +2598,7 @@ CCCC SHOULD BE REWRITTEN!!!!!!!!!!!!!!!!!!!!!!!!!!
 
        integer
      .  iz, lmxkb, lmxo, nzeta(0:lmaxd,nsemx), npolorb(0:lmaxd,nsemx),
-     .  lsemic(0:lmaxd), isnew, no, nkb, nkbl(0:lmaxd)
+     .  nsemic(0:lmaxd), isnew, no, nkb, nkbl(0:lmaxd)
       
        character 
      .   atm_label*20 
@@ -2716,8 +2675,8 @@ C this is not a new species
 
           if (lmxo.ne.lmxosave(nsold)) goto 8
           do 7 l=0,lmxo
-            if (lsemic(l).ne.lsemicsave(l,nsold)) goto 8
-            do 6 nsm=1,lsemic(l)+1
+            if (nsemic(l).ne.nsemicsave(l,nsold)) goto 8
+            do 6 nsm=1,nsemic(l)+1
               if (nzeta(l,nsm).ne.nzetasave(l,nsm,nsold)) goto 8
               do izeta=1,nzeta(l,nsm)
                  if (rco(izeta,l,nsm).ne.
@@ -2730,7 +2689,7 @@ C this is not a new species
   6         continue 
   7       continue
           do l=0,lmxo
-            do nsm=1,lsemic(l)+1
+            do nsm=1,nsemic(l)+1
               if (npolorb(l,nsm).ne.
      .                npolorbsave(l,nsm,nsold)) goto 8  
             enddo
@@ -2739,13 +2698,13 @@ C this is not a new species
 
           if (semic.neqv.semicsave(nsold)) goto 8
           do l=0,lmxo
-             if (lsemic(l).ne.lsemicsave(l,nsold)) goto 8
+             if (nsemic(l).ne.nsemicsave(l,nsold)) goto 8
           enddo 
           no=nomax(nsold)
           nkb=nkbmax(nsold)  
           if (iz.lt.0) then 
              if (nkb.ne.0) then
-               if (Node.eq.0) then
+               if (IOnode) then
                write(6,'(2a)')
      .          'new_specie: ERROR: Specie: ', label_save(nsold) 
                write(6,'(a)')
@@ -2763,7 +2722,7 @@ C this is not a new species
             q(izeta)=qtb(izeta,nsold)
           enddo 
 
-          if (Node.eq.0) then
+          if (IOnode) then
             write(6,'(/,a,i2,a,i2)')
      .       'new-specie: WARNING: Data for species', isold+1,
      .       ' are identical to those of the previous species',nsold
@@ -2771,7 +2730,7 @@ C this is not a new species
 
           return 
 
-  8       if (Node.eq.0) then
+  8       if (IOnode) then
           write(6,'(/,a)')
      .'new_specie:WARNING: There are previous data for the same species'
           write(6,'(a)')
@@ -2781,12 +2740,12 @@ C this is not a new species
   9       continue
 
 
-C*******ADDING A NEW SPECIES TO THE LIST********************************
+C**ADDING A NEW SPECIES TO THE LIST**
            
           overflow=.false.
           do ns=1,isold
               if (atm_label.eq.label_save(ns)) then
-                if (Node.eq.0) then
+                if (IOnode) then
                   write(6,'(/,2a)')
      .        'new_specie: WARNING: Two species with the same label  ',
      .                atm_label
@@ -2802,7 +2761,7 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
           lmax=max(lmxo,lmxkb) 
 
           if (lmax.gt.lmaxd) then 
-            if (Node.eq.0) then
+            if (IOnode) then
               write(6,"(2a,i4)") 
      .        'new_specie: ERROR: Parameter lmaxd must be increased ',
      .        'to at least ', lmax 
@@ -2813,15 +2772,15 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
           nzetamax=0
           nsm_max=0
           do l=0,lmxo
-            nsm_max=max(lsemic(l)+1,nsm_max)
-            do nsm=1, lsemic(l)+1
+            nsm_max=max(nsemic(l)+1,nsm_max)
+            do nsm=1, nsemic(l)+1
               nzetamax=max(nzeta(l,nsm),nzetamax) 
               nzetamax=max(npolorb(l,nsm),nzetamax) 
             enddo
           enddo
 
           if (nsm_max.gt.nsemx) then 
-            if (Node.eq.0) then
+            if (IOnode) then
              write(6,"(2a,i4)")
      .        'new_specie: ERROR: Parameter nsmx must be increased ',
      .        'to at least ', nsm_max-1
@@ -2830,7 +2789,7 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
           endif
 
           if (nzetamax.gt.nzetmx) then 
-            if (Node.eq.0) then
+            if (IOnode) then
              write(6,"(2a,i4)") 
      .        'new_specie: ERROR: Parameter nzetmx must be increased ',
      .        'to at least ', nzetamax
@@ -2841,7 +2800,7 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
           nkblmx= maxval(nkbl(0:lmxkb))
            
           if (nkblmx.gt.nkbmx) then
-            if (Node.eq.0) then
+            if (IOnode) then
              write(6,"(2a,i4)")
      .        'new_specie: ERROR: Parameter nkbmx must be increased ',
      .        'to at least ', nkblmx
@@ -2862,12 +2821,12 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
            if (iz.ne.-100) then  
             call cnfig(abs(iz),config) 
             do l=0,3
-              do nsm=1, lsemic(l)+1
-                 cnfigtb(l,nsm,isnew)=config(l)-(lsemic(l)+1)+nsm
+              do nsm=1, nsemic(l)+1
+                 cnfigtb(l,nsm,isnew)=config(l)-(nsemic(l)+1)+nsm
               enddo
             enddo 
             do l=4,lmaxd
-              do nsm=lsemic(l),0,-1
+              do nsm=nsemic(l),0,-1
                  cnfigtb(l,nsm+1,isnew)=l+1-nsm
               enddo
             enddo
@@ -2879,8 +2838,8 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
 
           no=0
           do l=0,lmxo
-             lsemicsave(l,isnew)=lsemic(l)
-             do nsm=1,lsemic(l)+1
+             nsemicsave(l,isnew)=nsemic(l)
+             do nsm=1,nsemic(l)+1
                nzetasave(l,nsm,isnew)=nzeta(l,nsm)
                do izeta=1,nzeta(l,nsm)
                  rcosave(izeta,l,nsm,isnew)=rco(izeta,l,nsm)
@@ -2900,7 +2859,7 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
            enddo  
 
            do l=0,lmxo
-             do nsm=1,lsemic(l)+1
+             do nsm=1,nsemic(l)+1
                npolorbsave(l,nsm,isnew)=npolorb(l,nsm)
                no=no+(2*(l+1)+1)*npolorb(l,nsm)
              enddo
@@ -2914,7 +2873,7 @@ C*******ADDING A NEW SPECIES TO THE LIST********************************
            q(1:maxos)=0.0d0
 
           elseif (overflow) then 
-            if (Node.eq.0) then
+            if (IOnode) then
                write(6,'(a)') 
      .              'new_specie: ERROR: Check dimensions in file atom.h'
             endif
@@ -2939,7 +2898,7 @@ C****If iz=0 all the tables are set to zero, everything is reinitialized**
               nomax(ns)=0  
               semicsave(ns)=.false.
               
-              lsemicsave(:,ns) = 0
+              nsemicsave(:,ns) = 0
               nzetasave(:,:,ns) = 0
               rcotb(:,:,:,ns) = 0.d0
               lambdatb(:,:,:,ns) = 0.d0
@@ -2954,17 +2913,17 @@ C****If iz=0 all the tables are set to zero, everything is reinitialized**
 !
 !              The whole operation should be expressed as
 !
-!              table(:,:,ns) = 0.d0
-!              tab2(:,:,ns) = 0.d0
+              table(:,:,ns) = 0.d0
+              tab2(:,:,ns) = 0.d0
  
-              do l=-(lmaxd+1),nzetmx*nsemx*(lmaxd+1)
-                 do ix=1,ntbmax 
-                    table(ix,l,ns)=0.0d0
-                    tab2(ix,l,ns)=0.0d0
-                 enddo
-                 table(ntbmax+1,l,ns)=0.0d0
-                 table(ntbmax+2,l,ns)=0.0d0 
-             enddo  
+!              do l=-(lmaxd+1),nzetmx*nsemx*(lmaxd+1)
+!                 do ix=1,ntbmax 
+!                    table(ix,l,ns)=0.0d0
+!                    tab2(ix,l,ns)=0.0d0
+!                 enddo
+!                 table(ntbmax+1,l,ns)=0.0d0
+!                 table(ntbmax+2,l,ns)=0.0d0 
+!             enddo  
 
 !            Likewise:
 !
@@ -2988,7 +2947,7 @@ C****If iz=0 all the tables are set to zero, everything is reinitialized**
 
 C   Read the file generated by the pseudopotential generation code.
 C   Written by D. Sanchez-Portal, Aug. 1998
-C*******************************************************************
+C**
 
            implicit none 
       
@@ -3003,7 +2962,7 @@ C*******************************************************************
 
            character atm_label*20, nicore*4, irel*3, icorr*2
 
-C***********Internal variables **************
+C*Internal variables ****
            
            double precision 
      .     ve(nrmax)
@@ -3021,7 +2980,7 @@ C***********Internal variables **************
 
            logical found          
 
-           if (Node.eq.0) then
+           if (IOnode) then
              fname = paste(atm_label,'.vps')
              inquire(file=fname, exist=found)
              if (.not.found) then
@@ -3038,7 +2997,7 @@ C Broadcast value
            call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
            if (.not.found) then
-              if (Node.eq.0) then
+              if (IOnode) then
                  write(6,'(/,2a,a20,/)') 'read_vps: ERROR: ',
      .                'Pseudopotential file not found: ', fname
               endif
@@ -3047,7 +3006,7 @@ C Broadcast value
 
 
 
-           if (Node.eq.0) then
+           if (IOnode) then
              call io_assign(io_ps)
              open(io_ps,file=fname,form='unformatted',status='unknown')
 
@@ -3089,10 +3048,10 @@ C Broadcast values
 
 
            if (lmax.lt.linput) then
-             if (Node.eq.0) then
+             if (IOnode) then
                write(6,'(a)')
      .          'read_vps: ERROR: You must generate a pseudopotential'
-               write(6,'(a)')
+               write(6,'(a,i4)')
      .          'read_vps: ERROR: for each L up to ',linput
              endif
              call die
@@ -3100,7 +3059,7 @@ C Broadcast values
 
            nrval=nr+1
            if(nrval.gt.nrmax) then
-             if (Node.eq.0) then
+             if (IOnode) then
                write(6,'(a, i4)')
      .     'read_vps: ERROR: Nrmax must be increased to at least',nrval
              endif
@@ -3108,10 +3067,10 @@ C Broadcast values
            endif
 
 
-C********Write information about pseudopotential generation*******************
+C***Write information about pseudopotential generation****
 
 
-           if (Node.eq.0) then
+           if (IOnode) then
              write(6,'(/,a)')
      .           'read_vps: Pseudopotential generation method:'
              write(6,'(7a)')   
@@ -3186,7 +3145,7 @@ c           write(6,*) chgvps
 
 
            if (lmax.lt.linput) then
-             if (Node.eq.0) then
+             if (IOnode) then
                write(6,'(a)') 
      .          'read_vps: ERROR: You must generate a pseudopotential'
                write(6,'(a,i4)') 
@@ -3200,7 +3159,7 @@ c           write(6,*) chgvps
            nrval=nrval-1+nodd
 
            if(nrval.gt.nrmax) then
-             if (Node.eq.0) then
+             if (IOnode) then
                write(6,'(a,i4)')
      .     'read_vps: ERROR: Nrmax must be increased to at least',nrval
              endif
@@ -3208,10 +3167,10 @@ c           write(6,*) chgvps
            endif
 
 
-C*******************Radial mesh*****************************************
+C****Radial mesh*
 
            rofi(1)=0.0d0 
-           if (Node.eq.0) then
+           if (IOnode) then
              read(io_ps) (rofi(ir),ir=2,nrval)
            endif
 #ifdef MPI
@@ -3222,10 +3181,10 @@ C Broadcast values
 
 
 
-C********Calculate drdi and s ***********************************************
+C***Calculate drdi and s **
 C****drdi is the derivative of the radial distance respect to the mesh index
-C*****i.e. rofi(ir)= b*[ exp( a*(i-1) ) - 1 ] and therefore *****************
-C*****drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b] **************************
+Ci.e. rofi(ir)= b*[ exp( a*(i-1) ) - 1 ] and therefore **
+Cdrdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b] *
 
            rpb=b
            ea=exp(a)
@@ -3236,9 +3195,9 @@ C*****drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b] **************************
            enddo 
 
 
-C********Reading ionic pseudopotentials*******************
+C***Reading ionic pseudopotentials****
            do 20 ndown=1,lmax+1
-             if (Node.eq.0) then
+             if (IOnode) then
                read(io_ps) l,(vps(ir,l),ir=2,nrval)
                vps(1,l) = vps(2,l)       ! AG
                if(l.ne.ndown-1) then
@@ -3260,7 +3219,7 @@ C Broadcast values
      .         0,MPI_Comm_World,MPIerror)
 #endif
   20       continue
-           if (Node.eq.0) then
+           if (IOnode) then
              if(lmax+2.le.npotd)then
                do ndown=lmax+2,npotd
                   read(io_ps) l
@@ -3273,11 +3232,11 @@ C Broadcast values
 
 
 
-C******* READ THE CORE CORRECTION CHARGE DENSITY *********************
+C** READ THE CORE CORRECTION CHARGE DENSITY *
 
           r2=rofi(2)/(rofi(3)-rofi(2))
 
-          if (Node.eq.0) then
+          if (IOnode) then
             read(io_ps) (chcore(ir),ir=2,nrval)
             chcore(1)=chcore(2)-(chcore(3)-chcore(2))*r2 !AG: Get in block
           endif
@@ -3288,9 +3247,9 @@ C Broadcast values
 #endif
 
 
-C******** READ THE PSEUDO VALENCE DENSITY ****************************
+C*** READ THE PSEUDO VALENCE DENSITY ***
 
-          if (Node.eq.0) then
+          if (IOnode) then
             read(io_ps) (rho(ir),ir=2,nrval)
             rho(1)=rho(2)-(rho(3)-rho(2))*r2 ! AG: get into block
           endif
@@ -3299,13 +3258,13 @@ C Broadcast values
           call MPI_Bcast(rho,nrval,DAT_double,0,
      .      MPI_Comm_World,MPIerror)
 #endif
-          if (Node.eq.0) then
+          if (IOnode) then
             call io_close(io_ps)
           endif
 
 
 C***OBTAIN AN IONIC-PSEUDOPOTENTIAL IF CORE CORRECTION FOR HARTREE****
-C*************************POTENTIAL***********************************
+CPOTENTIAL
 
         if((nicore.eq.'pche').or.(nicore.eq.'fche')) then
             call vhrtre(chcore,ve,rofi,drdi,s,nrval,a)
@@ -3361,12 +3320,12 @@ C*************************POTENTIAL***********************************
 
                subroutine comKB(is,a,b,rofi,proj,
      .            l,ikb,rc,ekb,nrc)
-C***********************************************************************
+C*
 C  Creates the common block with all the information about the 
 C  Kleinman-Bylander projectors.
 C  Written by D. Sanchez-Portal, Aug. 1998.
 C  Modified by DSP to allow more than one projector per l, July 1999.
-C***********************************************************************
+C*
               
                implicit none
 
@@ -3375,7 +3334,7 @@ C***********************************************************************
                double precision rc, ekb, proj(nrmax), a, b,
      .            rofi(nrmax)  
 
-C*********Internal variables*********************************************
+C****Internal variables
 C
              integer indx, itb, nr, nmax, nmin, nn, il
              double precision delt, r, vphi, dy, yp1, ypn
@@ -3383,14 +3342,14 @@ C
              double precision
      .          aux(ntbmax)
  
-****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
 C
              rctb(ikb,l,is)=rc 
  
-C**********INTERPOLATION TO GENERATE TABLES WITH KB PROJECTORS*******
+CINTERPOLATION TO GENERATE TABLES WITH KB PROJECTORS**
 C
              indx=0
              do il=0,l-1
@@ -3398,7 +3357,7 @@ C
              enddo 
              indx=indx+ikb
              if(ikb.gt.nkblsave(l,is)) then
-              if (Node.eq.0) then
+              if (IOnode) then
                 write(6,'(/,2a,i3,a,i3)')
      .         'comKB: ERROR: Maximum number of KB projectors',
      .         ' for l=',l,' must be', nkblsave(l,is)
@@ -3407,7 +3366,7 @@ C
              endif 
 
              delt=rc/(dble(ntbmax-1)+1.0d-20) 
-          if (Node.eq.0) then
+          if (IOnode) then
           if(delt.gt.deltmax) then
               write(6,'(a)')
      .    'comKB: WARNING It might be a good idea to increase'
@@ -3433,9 +3392,9 @@ C
             enddo 
             table(ntbmax+2,-indx,is)=0.0d0
 C
-C*********************************************************************
+C****
 
-C*********TABLE WITH THE SECOND DERIVATIVE ****************************
+C****TABLE WITH THE SECOND DERIVATIVE ***
 C
             yp1=huge(1.d0)
             ypn=huge(1.d0)
@@ -3449,14 +3408,14 @@ C
      .         vps, vlocal, ve, nrval, Zval, lmxkb, 
      .         nkbl, erefkb, nkb)
 
-C*********************************************************************
+C****
 C Call routines for 1) the generation of the Kleinman-Bylander projectors,
 C 2) Cheking for the presence of ghost states and 3), the storage of 
 C all the information in the corresponding common blocks.
 C
 C  Written D. Sanchez-Portal, Aug. 1998.
 C  Modified by DSP to allow more than one projector per l, July 1999.
-C*********************************************************************
+C****
 
                implicit none
 
@@ -3468,7 +3427,7 @@ C*********************************************************************
                integer
      .           nrval, lmxkb, nkb, is, nkbl(0:lmaxd)
 
-C********Internal variables*************************************
+C***Internal variables**
 
                integer 
      .           l,nprin, nnodes, ighost, nrwf, ikb, ir,
@@ -3481,7 +3440,7 @@ C********Internal variables*************************************
      .           rphi(nrmax,nkbmx), rmax, dnrm, 
      .           proj(nrmax)
                  
-C**The atomic wavefunctions and/or its energy derivatives are****** 
+C**The atomic wavefunctions and/or its energy derivatives are* 
 C**calculated only inside a sphere of radius Rmax. To define the***  
 C**KB projectors they will not be need very far from the nucleus,** 
 C**and this limitation simplifies the handling of not bound states*
@@ -3502,8 +3461,8 @@ C
                proj(ir)=0.0d0
             enddo
             do ikb= 1, nkbl(l)
-C***************Atomic wavefunctions and eigenvalues****************
-C**************for the construction of the KB projectors************
+CAtomic wavefunctions and eigenvalues*
+C****for the construction of the KB projectors**
  
 C If the reference energies have not been specifed, the eigenstates
 C with the condition of being zero at r(nrval) will be used.
@@ -3543,43 +3502,43 @@ C
 C
            endif 
 C
-C******************************************************************
+C*
 
-C******************GHOST ANALYSIS**********************************
+C***GHOST ANALYSIS****
 C 
             if(nkbl(l).eq.1) then
              call ghost(Zval,rofi,vps(1,l),vlocal,
      .        ve,s,drdi,nrval,l,a,b,nrwf,
      .        erefkb(ikb,l),rphi(1,ikb),ighost)
             else 
-             if (ikb.eq.1.and.Node.eq.0)
+             if (ikb.eq.1.and.IOnode)
      .        write(6,'(a,i3,/a)') 
      .         'KBgen: More than one KB projector for l=',l,
      .         'KBgen: ghost states analisys will be not performed'
             endif
 
-C******************KB Projectors***********************************
+C***KB Projectors
 C
           call KBproj(rofi,drdi,vps(1,l),vlocal,nrwf,l,rphi(1,ikb),
      .                 dkbcos(ikb,l),ekb(ikb,l),proj,nrc)
 
 C
-C******************************************************************
+C*
 
           rc(ikb,l)=rofi(nrc)
  
-C*****Common block with the information about the  KB projectors********
+CCommon block with the information about the  KB projectors***
 C
           call comKB(is,a,b,rofi,proj,
      .                 l,ikb,rc(ikb,l),ekb(ikb,l),nrc)
 C
-C********************************************************************
+C***
 
           enddo 
          enddo   
         
          if (ighost.eq.1) then
-          if (Node.eq.0) then
+          if (IOnode) then
             write(6,"(2a)")'KBgen: WARNING: ',
      .            'Ghost states have been detected'
             write(6,"(2a)")'KBgen: WARNING: ',
@@ -3591,7 +3550,7 @@ C********************************************************************
          endif
 
 
-         if (Node.eq.0) then
+         if (IOnode) then
          write(6,'(/,a)')'KBgen: Kleinman-Bylander projectors: '
          do l=0,lmxkb
            do ikb=1, nkbl(l)
@@ -3603,7 +3562,7 @@ C********************************************************************
          endif
 
 
-C**********TOTAL NUMBER OF KLEINMAN-BYLANDER PROJECTORS**************
+CTOTAL NUMBER OF KLEINMAN-BYLANDER PROJECTORS****
 C
            nkb=0
            do l=0,lmxkb
@@ -3611,7 +3570,7 @@ C
                  nkb=nkb+(2*l+1) 
               enddo 
            enddo 
-         if (Node.eq.0) then
+         if (IOnode) then
            write(6,'(/,a, i4)')
      .'KBgen: Total number of  Kleinman-Bylander projectors: ', nkb
          endif
@@ -3619,17 +3578,17 @@ C
         end  subroutine KBgen
 !
               subroutine Basis_gen(Zval,is, a,b,rofi,drdi,s,
-     .                   vps, ve, vePAO, nrval, lmxo,lsemic, 
+     .                   vps, ve, vePAO, nrval, lmxo,nsemic, 
      .                   nzeta, rco, lambda, polorb,
      .                   basis_type, rphi, notot)
 
-C*********************************************************************
+C****
 C Generates the basis set and stores all the information in the 
 C correspoinding common blocks.
 C
 C Written by D. Sanchez-Portal, Aug. 1998.
 C Modify by DSP, July 1999
-C*********************************************************************
+C****
 
 
                implicit none
@@ -3643,12 +3602,12 @@ C*********************************************************************
 
                integer
      .           nrval, lmxo, notot, is, nzeta(0:lmaxd,nsemx),
-     .           polorb(0:lmaxd,nsemx),lsemic(0:lmaxd)
+     .           polorb(0:lmaxd,nsemx),nsemic(0:lmaxd)
 
                character
      .           basis_type*10
 
-C********Internal variables*************************************
+C***Internal variables**
 
                 integer noPAO, noPOL
 
@@ -3661,7 +3620,7 @@ C********Internal variables*************************************
 
                  call SPLIT(Zval,is, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO, 
-     .                   nrval, lmxo, lsemic,
+     .                   nrval, lmxo, nsemic,
      .                   nzeta, rco, lambda,
      .                   rphi, ePAO, noPAO)
          
@@ -3669,7 +3628,7 @@ C********Internal variables*************************************
  
                  call NODES(Zval,is, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO,
-     .                   nrval, lmxo, lsemic,
+     .                   nrval, lmxo, nsemic,
      .                   nzeta, rco, lambda,
      .                   rphi, ePAO, noPAO)
 
@@ -3677,7 +3636,7 @@ C********Internal variables*************************************
  
                  call NONODES(Zval,is, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO,
-     .                   nrval, lmxo, lsemic,
+     .                   nrval, lmxo, nsemic,
      .                   nzeta, rco, lambda,
      .                   rphi, ePAO, noPAO)
           
@@ -3685,28 +3644,28 @@ C********Internal variables*************************************
       
                  call SPLITGAUSS(Zval,is, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO,
-     .                   nrval, lmxo, lsemic,
+     .                   nrval, lmxo, nsemic,
      .                   nzeta, rco, lambda,
      .                   rphi, ePAO, noPAO)
 
                 elseif(basis_type.eq.'user') then 
  
                  call USER(is, a, b, rofi, drdi,
-     .             vps, ve, lmxo, lsemic, nzeta,
+     .             vps, ve, lmxo, nsemic, nzeta,
      .             rco, lambda, rphi, ePAO, noPAO)
 
                 endif            
  
 
-C********Polarization orbitals*******************************
+C***Polarization orbitals*
 C 
                   call POLgen(is,a,b,rofi,drdi,
      .               ePAO,rphi,rco,vps,vePAO,
-     .               polorb,lmxo,lsemic,noPOL) 
+     .               polorb,lmxo,nsemic,noPOL) 
 C
-C************************************************************
+C
 
-C******Total number of orbitals******************************
+C*Total number of orbitals
 C 
                    notot=noPAO+noPOL
 
@@ -3715,14 +3674,14 @@ C
 
            subroutine SPLIT(Zval,is,a,b,rofi,drdi,s,
      .             vps,ve,vePAO,
-     .             nrval,lmxo, lsemic,
+     .             nrval,lmxo, nsemic,
      .             nzeta,rco,lambda, rphi, ePAO, norb) 
-C*********************************************************************
+C****
 C Calculates the atomic orbitals basis set, using the option SPLIT 
 C for the generation of the augmentation orbitals.
 C  Written by D. Sanchez-Portal, Aug. 1998
 C  Modified by DSP, July 1999
-C*********************************************************************
+C****
 
                implicit none
 
@@ -3736,10 +3695,10 @@ C*********************************************************************
 
                integer
      .           nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
-     .           norb, lsemic(0:lmaxd)
+     .           norb, nsemic(0:lmaxd)
 
 
-C********Internal variables*************************************
+C***Internal variables**
 
                integer
      .           l,nprin, nnodes, nodd, nrc, nsp, i, ir,indx,
@@ -3756,14 +3715,14 @@ C********Internal variables*************************************
      .           over(nsemx)
 
 
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C 
                integer  npoint 
                parameter(npoint=4)
 C
 C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
-         if (Node.eq.0) then
+         if (IOnode) then
            eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
          endif
 #ifdef MPI
@@ -3774,7 +3733,7 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
 C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
 
-         if (Node.eq.0) then
+         if (IOnode) then
            splnorm=fdf_double('PAO.SplitNorm',splnorm_default)
          endif
 #ifdef MPI
@@ -3786,9 +3745,9 @@ C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
              indx=0
              do l=0,lmxo 
               
-              do nsm=1,lsemic(l)+1 
+              do nsm=1,nsemic(l)+1 
                 if(nzeta(l,nsm).gt.0) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I2)')
      .               'SPLIT: Orbitals with angular momentum L=',l 
                   endif
@@ -3798,19 +3757,19 @@ C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
 
 50            continue
               
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
 
                 if(nzeta(l,nsm).gt.0) then
  
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I1,A)')
      .               'SPLIT: Basis orbitals for state ',
      .                cnfigtb(l,nsm,is), sym(l)
                   endif
 
                   if(rco(1,l,nsm).lt.1.0d-5) then    
-C**Automatic determination of the cut off radius for the PAOs********
-C***************Atomic eigenvalues***********************************
+C**Automatic determination of the cut off radius for the PAOs***
+CAtomic eigenvalues
 C
                       nnodes=nsm
                       nprin=l+nsm
@@ -3818,10 +3777,10 @@ C
      .                  nrval,l,a,b,nnodes,nprin,
      .                  eigen(l),rphi(1,l,nsm))
 C
-C****************Rc given by eshift**********************************   
+C*Rc given by eshift****   
 C
                        if(eigen(l).gt.0.0d0) then 
-           if (Node.eq.0) then
+           if (IOnode) then
                           write(6,'(/A,I2,A)')
      .       'SPLIT: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
@@ -3837,7 +3796,7 @@ C
                        else
                           rco(1,l,nsm)=rofi(nrval-2)
                        endif
-           if (Node.eq.0) then
+           if (IOnode) then
                   write(6,'(/,A,/,A,f10.6,A)')
      .        'SPLIT: PAO cut-off radius determinated from an',
      .        'SPLIT: energy shift=',eshift,' Ry'
@@ -3846,14 +3805,14 @@ C
                  endif  
 C
 
-C*****IF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
-C**************LEFT UNTOUCHED******************************************
+CIF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
+C****LEFT UNTOUCHED**
              if(lambda(1,l,nsm).le.0.0d0) lambda(1,l,nsm)=1.0d0
 
               do izeta=1, nzeta(l,nsm)
 
 C****COMPRESSION FACTOR IS ONLY ACTIVE FOR THE INITIAL PAO WHEN USING****
-C**** SPLIT OPTION FOR THE GENERATION OF THE BASIS SET*******************
+C**** SPLIT OPTION FOR THE GENERATION OF THE BASIS SET****
                  lambda(izeta,l,nsm)=lambda(1,l,nsm)
 
                   rc=rco(izeta,l,nsm)/lambda(1,l,nsm)
@@ -3866,7 +3825,7 @@ C**** SPLIT OPTION FOR THE GENERATION OF THE BASIS SET*******************
                   rco(izeta,l,nsm)=rc*lambda(1,l,nsm)
                   
                 if(izeta.eq.1) then 
-C****Generate PAO orbitals for the first shell of the basis set********
+C****Generate PAO orbitals for the first shell of the basis set***
 C 
                       nnodes=nsm
                       nprin=l+nsm
@@ -3884,12 +3843,12 @@ C
 c               elseif(izeta.gt.1) then 
                 else
        
-C********Cut-off radius for double-Z, triple-Z,..., if it is set to**** 
-C********zero in the input then it is calculated from the splitnorm**** 
-C******** parameter ***************************************************
+C***Cut-off radius for double-Z, triple-Z,..., if it is set to**** 
+C***zero in the input then it is calculated from the splitnorm**** 
+C*** parameter *
 
                 if(rco(izeta,l,nsm).gt.rco(1,l,nsm)) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/,A)') 
      . 'SPLIT: ERROR: SPLIT OPTION FOR BASIS SET '
                     write(6,'(A)')  
@@ -3909,16 +3868,16 @@ C******** parameter ***************************************************
                dfrsp=dfrsp/drdi(nrc)
 
 
-C**********************parabolic split******************************
+C**parabolic split
             cons1= 0.5d0*(dfrsp*rc-l*frsp)/(rc**(l+2))
             cons2= frsp/(rc**l)-cons1*rc**2
             call nrmpal(cons1,cons2,rc,l,rnp)
             spln=1.0d0-rnrm(nrc)+rnp
-C*******************************************************************
+C**
 
                 do i=1,izeta-1
                  if(abs(rco(izeta,l,nsm)-rco(i,l,nsm)).lt.1.0d-5) then
-                   if (Node.eq.0) then
+                   if (IOnode) then
                    write(6,'(/,A,I2,A,I2,A,I2)')
      .            'SPLIT: WARNING: Split-orbital with zeta=',izeta,
      .            ' and zeta=',i,' are identical for l=',l
@@ -3937,17 +3896,17 @@ C*******************************************************************
             call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
      .                   l,spln,cons1,cons2,nsp)
 
-C***Cut-off radius for the split orbital with a desired norm******
+C***Cut-off radius for the split orbital with a desired norm*
          nrc=nsp
          rco(izeta,l,nsm)=
      .       b*(exp(a*(nsp-1))-1.0d0)*lambda(izeta,l,nsm)
-C*****************************************************************
+C
 
 
              do i=1,izeta-1
                 if(abs(rco(izeta,l,nsm)-rco(i,l,nsm))
      .                                   .lt.1.0d-5) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                    write(6,'(/,A,I2,A,I2,A,I2)')
      .            'SPLIT: WARNING: Split-orbital with zeta=',izeta,
      .            ' and zeta=',i,' are identicals for l=',l
@@ -3959,17 +3918,17 @@ C*****************************************************************
 
 
             do ir=1,nrval
-C***********************parabolic split****************************
+C***parabolic split***
                r=rofi(ir)
                if (ir.ge.nrc) then
                  g(ir)=0.0d0
                else
                  g(ir)=-(cons1*r**2+cons2)*r**(l+1)+rphi(ir,l,nsm) 
                endif
-C******************************************************************
+C*
             enddo 
 
-C***Orthogonalize to the inner shells if present******************
+C***Orthogonalize to the inner shells if present***
              if(nsm.gt.1) then
               do ism=1,nsm-1
                rc=rco(1,l,ism)/lambda(1,l,ism)
@@ -4001,9 +3960,9 @@ C***Orthogonalize to the inner shells if present******************
             dnrm=0.0d0
             do ir=2,nrc-1
               r=rofi(ir)
-C***********************parabolic split****************************
+C***parabolic split***
               phi=g(ir)/(r**(l+1))
-C******************************************************************
+C*
 
               dnrm=dnrm+drdi(ir)*(phi*r**(l+1))**2
               g(ir)=phi
@@ -4013,7 +3972,7 @@ C******************************************************************
 
             endif
               
-C**************Normalization of basis functions***********************
+C****Normalization of basis functions***
             eps=1.0d-4
             if(abs(dnrm-1.0d0).gt.eps) then
                do ir=1,nrc
@@ -4024,9 +3983,9 @@ C**************Normalization of basis functions***********************
                  endif
                enddo
             endif
-C*********************************************************************  
+C****  
 
-C*Calculation of the mean value of kinetic and potential energy*******
+C*Calculation of the mean value of kinetic and potential energy**
 C    Potential and kinetic energy of the orbital before compression
 
 
@@ -4076,7 +4035,7 @@ C Potential energy after compression
 
             if(izeta.eq.1) then  
 
-           if (Node.eq.0) then
+           if (IOnode) then
              write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .          'izeta =',izeta,
      .          'lambda =',lambda(izeta,l,nsm),
@@ -4088,7 +4047,7 @@ C Potential energy after compression
 
             elseif(izeta.gt.1) then 
 
-           if (Node.eq.0) then
+           if (IOnode) then
             write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .         'izeta =',izeta,
      .         'rmatch =',rco(izeta,l,nsm),
@@ -4098,7 +4057,7 @@ C Potential energy after compression
 
             endif 
 
-          if (Node.eq.0) then
+          if (IOnode) then
           write(6,'(a25,f12.6)') 'kinetic =',ekin
           write(6,'(a25,f12.6)') 'potential(screened) =',epot
           write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
@@ -4125,14 +4084,14 @@ C Potential energy after compression
 !
            subroutine NODES(Zval,is,a,b,rofi,drdi,s,
      .             vps,ve,vePAO,
-     .             nrval,lmxo,lsemic,
+     .             nrval,lmxo,nsemic,
      .             nzeta,rco,lambda, rphi, ePAO, norb) 
-C*********************************************************************
+C****
 C Calculates the atomic orbitals basis set, using the option NODES
 C for the generation of the augmentation orbitals.
 C  Written by D. Sanchez-Portal, Aug. 1998
 C   Modified by DSP, July 1999
-C*********************************************************************
+C****
 
                implicit none
 
@@ -4146,10 +4105,10 @@ C*********************************************************************
 
                integer
      .           nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
-     .           norb,lsemic(0:lmaxd)
+     .           norb,nsemic(0:lmaxd)
 
 
-C********Internal variables*************************************
+C***Internal variables**
 
                integer
      .           l,nprin, nnodes, nodd, nrc, ir, indx,
@@ -4163,14 +4122,14 @@ C********Internal variables*************************************
      .           epot, epot2, rh, dy, eorb, eps
 
 
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C 
                integer  npoint 
                parameter(npoint=4)
 C
 C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
-         if (Node.eq.0) then
+         if (IOnode) then
            eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
          endif
 #ifdef MPI
@@ -4183,9 +4142,9 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
              do l=0,lmxo
 
 
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
                 if(nzeta(l,nsm).gt.0) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I2)')
      .               'NODES: Orbitals with angular momentum L=',l
                   endif
@@ -4195,11 +4154,11 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
 50            continue
 
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
 
                 if(nzeta(l,nsm).gt.0) then
 
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I1,A)')
      .               'NODES: Basis orbitals for state ',
      .                cnfigtb(l,nsm,is), sym(l)
@@ -4207,8 +4166,8 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
 
                   if(rco(1,l,nsm).lt.1.0d-5) then    
-C**Automatic determination of the cut off radius for the PAOs********
-C***************Atomic eigenvalues***********************************
+C**Automatic determination of the cut off radius for the PAOs***
+CAtomic eigenvalues
 C
                       nnodes=nsm
                       nprin=l+nsm
@@ -4216,10 +4175,10 @@ C
      .                  nrval,l,a,b,nnodes,nprin,
      .                  eigen(l),rphi(1,l,nsm))
 C
-C****************Rc given by eshift**********************************   
+C*Rc given by eshift****   
 C                
                        if(eigen(l).gt.0.0d0) then
-          if (Node.eq.0) then
+          if (IOnode) then
                           write(6,'(/A,I2,A)')
      .       'NODES: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
@@ -4237,7 +4196,7 @@ C
                           rco(1,l,nsm)=rofi(nrval-2)
                        endif 
 
-             if (Node.eq.0) then
+             if (IOnode) then
                   write(6,'(/,A,/,A,f10.6,A)')
      .         'NODES: PAO cut-off radius determinated from an',
      .         'NODES: energy shift=',eshift,' Ry'
@@ -4245,15 +4204,15 @@ C
 
                  endif  
 C
-C********************************************************************
+C***
 
 
               do izeta=1, nzeta(l,nsm)
 
-C*****IF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
-C********************UNTOUCHED******************************************
+CIF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
+CUNTOUCHED**
           if(lambda(izeta,l,nsm).le.0.0d0) lambda(izeta,l,nsm)=1.0d0 
-C***********************************************************************
+C*
              if(abs(rco(izeta,l,nsm)).le.1.0d-5) then 
                  rco(izeta,l,nsm)=rco(1,l,nsm)
              endif 
@@ -4266,8 +4225,8 @@ C***********************************************************************
                   endif
                   rc=b*(exp(a*(nrc-1))-1.0d0)
                   rco(izeta,l,nsm)=rc*lambda(izeta,l,nsm)
-C****Generate PAO orbitals with increasing number of nodes *************
-C*********************for the different shells**************************
+C****Generate PAO orbitals with increasing number of nodes ***
+C*for the different shells*
 C 
                       nnodes=izeta+nsm
                       nprin=l+izeta+nsm
@@ -4285,7 +4244,7 @@ C
                        enddo 
                        g(1)=g(2)         
 
-C**************Normalization of basis functions***********************
+C****Normalization of basis functions***
             eps=1.0d-4
             if(abs(dnrm-1.0d0).gt.eps) then
                do ir=1,nrc
@@ -4295,10 +4254,10 @@ C**************Normalization of basis functions***********************
                  endif
                enddo
             endif
-C*********************************************************************
+C****
 
 
-C*Calculation of the mean value of kinetic and potential energy*******
+C*Calculation of the mean value of kinetic and potential energy**
 C    Potential and kinetic energy of the orbital before compression
 
 
@@ -4346,7 +4305,7 @@ C Potential energy after compression
 
 
 
-             if (Node.eq.0) then
+             if (IOnode) then
                write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .          'izeta =',izeta,
      .          'lambda =',lambda(izeta,l,nsm),
@@ -4357,7 +4316,7 @@ C Potential energy after compression
 
                  if(izeta.eq.1) ePAO(l,nsm)=eorb
 
-          if (Node.eq.0) then
+          if (IOnode) then
           write(6,'(a25,f12.6)') 'kinetic =',ekin
           write(6,'(a25,f12.6)') 'potential(screened) =',epot
           write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
@@ -4385,13 +4344,13 @@ C Potential energy after compression
 
            subroutine NONODES(Zval,is,a,b,rofi,drdi,s,
      .             vps,ve,vePAO,
-     .             nrval,lmxo,lsemic,
+     .             nrval,lmxo,nsemic,
      .             nzeta,rco,lambda, rphi, ePAO, norb) 
-C*********************************************************************
+C****
 C Calculates the atomic orbitals basis set, using the option NONODES
 C for the generation of the augmentation orbitals.
 C  Written by D. Sanchez-Portal, Aug. 1998
-C*********************************************************************
+C****
 
                implicit none
 
@@ -4405,7 +4364,7 @@ C*********************************************************************
 
                integer
      .           nrval, lmxo,  is, nzeta(0:lmaxd,nsemx),
-     .           norb, lsemic(0:lmaxd)
+     .           norb, nsemic(0:lmaxd)
 
 
                integer
@@ -4420,14 +4379,14 @@ C*********************************************************************
      .           epot, epot2, rh, dy, eorb, eps
 
 
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C 
                integer  npoint 
                parameter(npoint=4)
 C
 C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
-         if (Node.eq.0) then
+         if (IOnode) then
            eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
          endif
 #ifdef MPI
@@ -4440,9 +4399,9 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
              do l=0,lmxo
 
 
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
                 if(nzeta(l,nsm).gt.0) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                   write(6,'(/A,I2)')
      .             'NONODES: Orbitals with angular momentum L=',l
                   endif
@@ -4452,11 +4411,11 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
 50            continue
 
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
 
                 if(nzeta(l,nsm).gt.0) then
 
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I1,A)')
      .                'NONODES: Basis orbitals for state ',
      .                cnfigtb(l,nsm,is), sym(l)
@@ -4464,8 +4423,8 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
 
                   if(rco(1,l,nsm).lt.1.0d-5) then    
-C**Automatic determination of the cut off radius for the PAOs********
-C***************Atomic eigenvalues***********************************
+C**Automatic determination of the cut off radius for the PAOs***
+CAtomic eigenvalues
 C
                       nnodes=nsm
                       nprin=l+nsm
@@ -4473,10 +4432,10 @@ C
      .                  nrval,l,a,b,nnodes,nprin,
      .                  eigen(l),rphi(1,l,nsm))
 C
-C****************Rc given by eshift**********************************   
+C*Rc given by eshift****   
 C                
                        if(eigen(l).gt.0.0d0) then
-          if (Node.eq.0) then
+          if (IOnode) then
                           write(6,'(/A,I2,A)')
      .       'NONODES: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
@@ -4494,7 +4453,7 @@ C
                           rco(1,l,nsm)=rofi(nrval-2)
                        endif 
 
-          if (Node.eq.0) then
+          if (IOnode) then
                   write(6,'(/,A,/,A,f10.6,A)')
      .         'NONODES: PAO cut-off radius determinated from an',
      .         'NONODES: energy shift=',eshift,' Ry'
@@ -4502,21 +4461,21 @@ C
 
                  endif  
 C
-C********************************************************************
+C***
 
 
               do izeta=1, nzeta(l,nsm)
 
-C*****IF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
-C********************UNTOUCHED******************************************
+CIF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
+CUNTOUCHED**
             if(lambda(izeta,l,nsm).le.0.0d0) lambda(izeta,l,nsm)=1.0d0 
-C*********************************************************************** 
+C* 
             if(abs(rco(izeta,l,nsm)).lt.1.0d-5) 
      .                           rco(izeta,l,nsm)=rco(1,l,nsm)
             do i=1,izeta-1
              if((abs(rco(izeta,l,nsm)-rco(i,l,nsm)).lt.1.0d-5).and.
      . (abs(lambda(izeta,l,nsm)-lambda(i,l,nsm)).lt.1.0d-5)) then
-               if (Node.eq.0) then
+               if (IOnode) then
                  write(6,'(/,A,I2,A,I2,A,I2,2A)')
      .  'NONODES: WARNING: PAO base function with zeta=',izeta,
      .  ' and zeta=',i,' are identical for ',cnfigtb(l,nsm,is),
@@ -4534,8 +4493,8 @@ C***********************************************************************
                   endif
                   rc=b*(exp(a*(nrc-1))-1.0d0)
                   rco(izeta,l,nsm)=rc*lambda(izeta,l,nsm)
-C****Generate PAO orbitals with increasing number of nodes *************
-C*********************for the different shells**************************
+C****Generate PAO orbitals with increasing number of nodes ***
+C*for the different shells*
 C 
                      nnodes=nsm
                      nprin=l+nsm
@@ -4553,7 +4512,7 @@ C
                        enddo 
                        g(1)=g(2)         
 
-C**************Normalization of basis functions***********************
+C****Normalization of basis functions***
             eps=1.0d-4
             if(abs(dnrm-1.0d0).gt.eps) then
                do ir=1,nrc
@@ -4563,10 +4522,10 @@ C**************Normalization of basis functions***********************
                  endif
                enddo
             endif
-C*********************************************************************
+C****
 
 
-C*Calculation of the mean value of kinetic and potential energy*******
+C*Calculation of the mean value of kinetic and potential energy**
 C    Potential and kinetic energy of the orbital before compression
 
 
@@ -4615,7 +4574,7 @@ C Potential energy after compression
 
 
 
-          if (Node.eq.0) then
+          if (IOnode) then
              write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .          'izeta =',izeta,
      .          'lambda =',lambda(izeta,l,nsm),
@@ -4625,7 +4584,7 @@ C Potential energy after compression
 
                 if(izeta.eq.1) ePAO(l,nsm)=eorb
 
-          if (Node.eq.0) then
+          if (IOnode) then
           write(6,'(a25,f12.6)') 'kinetic =',ekin
           write(6,'(a25,f12.6)') 'potential(screened) =',epot
           write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
@@ -4656,12 +4615,12 @@ C Potential energy after compression
 !
                subroutine comBasis(is,a,b,rofi,rphi,
      .            l,rc,lambda,nzeta,nsemic,nrc,norb)
-C***********************************************************************
+C*
 C  Generates the common blocks for the storage of the information 
 C  about the basis set orbitals.
 C
 C  Written by D. Sanchez-Portal, Aug. 1998.
-C***********************************************************************
+C*
 
                implicit none
 
@@ -4670,7 +4629,7 @@ C***********************************************************************
                double precision rc, lambda, rphi(nrmax), a, b,
      .            rofi(nrmax)  
 
-C*********Internal variables*********************************************
+C****Internal variables
 C
              integer itb, nr, nmax, nmin, nn
         
@@ -4679,7 +4638,7 @@ C
              double precision
      .          aux(ntbmax) 
  
-****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
@@ -4688,12 +4647,12 @@ C
               lambdatb(nzeta,l,nsemic,is)=lambda
 
 
-C**********INTERPOLATION TO GENERATE TABLES
+CINTERPOLATION TO GENERATE TABLES
 C
             delt=rc/(dble(ntbmax-1)+1.0d-20) 
   
             if(delt.gt.deltmax) then
-          if (Node.eq.0) then
+          if (IOnode) then
               write(6,'(a)')
      .    'comBasis: WARNING It might be a good idea to increase'
               write(6,'(a)')
@@ -4728,7 +4687,7 @@ C
             table(ntbmax+2,norb,is) = 0.d0
 !!          Either way, it looks quite arbitrary
 !!
-C*********TABLE WITH THE SECOND DERIVATIVE ****************************
+C****TABLE WITH THE SECOND DERIVATIVE ***
 
             yp1=huge(1.d0)
             ypn=huge(1.d0)
@@ -4740,13 +4699,13 @@ C
 !
       subroutine SPLITGAUSS(Zval,is,a,b,rofi,drdi,s,
      .             vps,ve,vePAO,
-     .             nrval,lmxo,lsemic,
+     .             nrval,lmxo,nsemic,
      .             nzeta,rco,lambda, rphi, ePAO, norb) 
-C*********************************************************************
+C****
 C Calculates the atomic orbitals basis set, using the option SPLITGAUSS
 C for the generation of the augmentation orbitals.
 C  Written by D. Sanchez-Portal, Aug. 1998
-C*********************************************************************
+C****
 
                implicit none
 
@@ -4759,7 +4718,7 @@ C*********************************************************************
 
                integer
      .           nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
-     .           norb, lsemic(0:lmaxd)
+     .           norb, nsemic(0:lmaxd)
 
 
                integer
@@ -4775,14 +4734,14 @@ C*********************************************************************
      .           epot, epot2, rh, dy, eorb, eps, dlapl
 
 
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C 
                integer  npoint 
                parameter(npoint=4)
 
 C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
-         if (Node.eq.0) then
+         if (IOnode) then
            eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
          endif
 #ifdef MPI
@@ -4796,9 +4755,9 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
              indx=0
              do l=0,lmxo
 
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
                 if(nzeta(l,nsm).gt.0) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I2)')
      .               'SPLITGAUSS: Orbitals with angular momentum L=',l
                   endif
@@ -4808,11 +4767,11 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
 50            continue
 
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
 
                 if(nzeta(l,nsm).gt.0) then
 
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I1,A)')
      .               'SPLITGAUSS: Basis orbitals for state ',
      .                cnfigtb(l,nsm,is), sym(l)
@@ -4820,8 +4779,8 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
 
                   if(rco(1,l,nsm).lt.1.0d-5) then    
-C**Automatic determination of the cut off radius for the PAOs********
-C***************Atomic eigenvalues***********************************
+C**Automatic determination of the cut off radius for the PAOs***
+CAtomic eigenvalues
 C
                       nnodes=nsm
                       nprin=l+nsm
@@ -4829,10 +4788,10 @@ C
      .                  nrval,l,a,b,nnodes,nprin,
      .                  eigen(l),rphi(1,l,nsm))
 C
-C****************Rc given by eshift**********************************   
+C*Rc given by eshift****   
 C                
                        if(eigen(l).gt.0.0d0) then
-          if (Node.eq.0) then
+          if (IOnode) then
                           write(6,'(/A,I2,A)')
      .  'SPLITGAUSS: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
@@ -4850,7 +4809,7 @@ C
                           rco(1,l,nsm)=rofi(nrval-2)
                        endif 
 
-          if (Node.eq.0) then
+          if (IOnode) then
                   write(6,'(/,A,/,A,f10.6,A)')
      .   'SPLITGAUSS: PAO cut-off radius determinated from an',
      .   'SPLITGAUSS: energy shift=',eshift,' Ry'
@@ -4858,22 +4817,22 @@ C
 
                  endif  
 C
-C********************************************************************
+C***
 
-C*****IF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
-C********************UNTOUCHED******************************************
+CIF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
+CUNTOUCHED**
                if(lambda(1,l,nsm).le.0.0d0) lambda(1,l,nsm)=1.0d0
-C***********************************************************************
+C*
 
               do izeta=1, nzeta(l,nsm)
 
              if(abs(rco(izeta,l,nsm)).lt.1.0d-5) 
      .                      rco(izeta,l,nsm)=rco(1,l,nsm)
-C**********With spligauss option, compression factor must be taken****
-C**********as the gaussian exponent***********************************
+CWith spligauss option, compression factor must be taken****
+Cas the gaussian exponent
               if(izeta.gt.1) then 
                   if(lambda(izeta,l,nsm).le.0.0d0) then 
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/a,/a,a)')
      .'SPLITGAUSS: ERROR: with SPLITGAUSS option the compression ',
      .'SPLITGAUSS: ERROR: factors for all the augmentation functions',
@@ -4885,7 +4844,7 @@ C**********as the gaussian exponent***********************************
                   gexp=1.0d0/(gexp**2)
                   lambda(izeta,l,nsm)=1.0d0
               endif
-C*********************************************************************
+C****
                   
                   rc=rco(izeta,l,nsm)/lambda(izeta,l,nsm)
                   nrc=nint(log(rc/b+1.0d0)/a)+1
@@ -4934,7 +4893,7 @@ c                   elseif(izeta.gt.1) then
 
 
 
-C**************Normalization of basis functions***********************
+C****Normalization of basis functions***
             eps=1.0d-4
             if(abs(dnrm-1.0d0).gt.eps) then
                do ir=1,nrc
@@ -4944,10 +4903,10 @@ C**************Normalization of basis functions***********************
                  endif
                enddo
             endif
-C*********************************************************************
+C****
 
 
-C*Calculation of the mean value of kinetic and potential energy*******
+C*Calculation of the mean value of kinetic and potential energy**
 C    Potential and kinetic energy of the orbital before compression
 
 
@@ -5018,7 +4977,7 @@ C Potential energy after compression
 
             if(izeta.eq.1) then  
 
-          if (Node.eq.0) then
+          if (IOnode) then
              write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .          'izeta =',izeta,
      .          'lambda =',lambda(izeta,l,nsm),
@@ -5030,7 +4989,7 @@ C Potential energy after compression
 
             elseif(izeta.gt.1) then  
 
-              if (Node.eq.0) then
+              if (IOnode) then
                 write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .            'izeta=',izeta,'gaussian exponent=',gexp,
      .            'rc=',rco(izeta,l,nsm),'energy=',eorb
@@ -5038,7 +4997,7 @@ C Potential energy after compression
 
             endif 
 
-          if (Node.eq.0) then
+          if (IOnode) then
           write(6,'(a25,f12.6)') 'kinetic =',ekin
           write(6,'(a25,f12.6)') 'potential(screened) =',epot
           write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
@@ -5065,18 +5024,18 @@ C Potential energy after compression
 !
                subroutine compress_PAO(a,b,rofi,rphi,
      .            rc,lambda)
-C**********************************************************
+C***
 C   Compression of a PAO orbital according to the compression
 C   factor lambda. Input and outputare stored in the same array, 
 C   and the radial grid is identical in input and output. 
 C  Written by D. Sanchez-Portal, Aug. 1998
-C**********************************************************
+C***
                implicit none
 
                double precision rc, lambda, rphi(nrmax), a, b,
      .            rofi(nrmax)  
 
-C*********Internal variables*********************************************
+C****Internal variables
 C
              integer nr, nmax, nmin, nn, maxpoint, nrc, ir  
         
@@ -5085,14 +5044,14 @@ C
              double precision
      .          aux(nrmax)
 
-****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
 C
 
-C*INTERPOLATION TO CALCULATE THE VALUE OF THE FIRST-SHELL PAO *********
-C***BASIS FUNCTIONS IN THE LOGARITHMIC MESH AFTER COMPRESSION *********
+C*INTERPOLATION TO CALCULATE THE VALUE OF THE FIRST-SHELL PAO ****
+C***BASIS FUNCTIONS IN THE LOGARITHMIC MESH AFTER COMPRESSION ****
 C
               nrc=nint(log(rc/b+1.0d0)/a)+1
               rmax=rc/lambda
@@ -5118,13 +5077,13 @@ C
          end subroutine compress_PAO
 !
        subroutine atm_pop(is,iz,q,qPAO,lmxo,
-     .       nzeta,semic,lsemic,polorb) 
-C*****************************************************************
+     .       nzeta,semic,nsemic,polorb) 
+C
 C Returns the ground states atomic population for each species.
 C This information is required for the screening of the local 
 C pseudopotential.
 C Written by D. Sanchez-Portal, Aug. 1998
-C*****************************************************************
+C
 
          implicit none
 
@@ -5132,13 +5091,13 @@ C*****************************************************************
 
          integer 
      .     nzeta(0:lmaxd,nsemx),polorb(0:lmaxd,nsemx), 
-     .     lsemic(0:lmaxd),iz,
+     .     nsemic(0:lmaxd),iz,
      .     lmxo ,is 
 
          logical semic
 
 
-C********Internal variables************************************
+C***Internal variables*
 
         double precision  qatm(0:3)
           
@@ -5152,17 +5111,17 @@ C********Internal variables************************************
 
         qPAO(0:lmaxd,1:nsemx) = 0.d0  ! AG
 !
-!       What is this? semic says whether lsemic is defined....
+!       What is this? semic says whether nsemic is defined....
 !
         do l=0,lmxo 
-          nsm=lsemic(l)+1
+          nsm=nsemic(l)+1
           qPAO(l,nsm)=0.0d0
           if(l.le.3) qPAO(l,nsm)=qatm(l) 
         enddo 
 
         if(semic) then 
         do l=0,lmxo
-           do nsm=1,lsemic(l)  
+           do nsm=1,nsemic(l)  
               qPAO(l,nsm)=2*(2*l+1)  
            enddo 
         enddo 
@@ -5170,7 +5129,7 @@ C********Internal variables************************************
 
         noPAO=0
         do l=0,lmxo 
-          do nsm=1,lsemic(l)+1
+          do nsm=1,nsemic(l)+1
            if(nzeta(l,nsm).gt.0) then 
             do  izeta=1,nzeta(l,nsm) 
                   do m=1,2*l+1 
@@ -5186,7 +5145,7 @@ C********Internal variables************************************
 
         noPol=0
         do l=0,lmxo
-          do nsm=1,lsemic(l)+1
+          do nsm=1,nsemic(l)+1
             if(polorb(l,nsm).gt.0) then 
              do  izeta=1,polorb(l,nsm)
                 do m=1,2*(l+1)+1 
@@ -5204,37 +5163,31 @@ C********Internal variables************************************
         enddo 
 
         lpop=min(3,lmxo)  
-        if (Node.eq.0) then
+        if (IOnode) then
           write(6,'(/,2a)') 'atm_pop: Valence configuration',
      .                      '(local Pseudopot. screening):' 
           do l=0,lpop 
             write(line,'(7(x,i1,a1,a1,f5.2,a1))')
      .          (cnfigtb(l,nsm,is),sym(l),'(',qPAO(l,nsm),')',
-     .                                      nsm=1,lsemic(l)+1)
+     .                                      nsm=1,nsemic(l)+1)
             write(6,'(a)') line
  
 c           write(6,*) 
 c    .         (cnfigtb(l,nsm,is),sym(l),'(',qPAO(l,nsm),')',
-c    .                                      nsm=1,lsemic(l)+1) 
+c    .                                      nsm=1,nsemic(l)+1) 
           enddo
         endif
 
-        do l=0,3
-          do nsm=1,lsemic(l)+1
-              qltb(l,nsm,is)=qPAO(l,nsm)
-          enddo 
-        enddo
- 
         end subroutine atm_pop
 !
 
-        subroutine Vna(is,Zval,qPAO,rphi,rco,lsemic,vloc,
+        subroutine Vna(is,Zval,qPAO,rphi,rco,nsemic,vloc,
      .        a,b,rofi,drdi,nrval,lmxo,nVna) 
-C******************************************************************
+C*
 C  Generates the neutral-atom pseudopotential.
 C  D. Sanchez-Portal, Aug. 1998.
 C  Modify by DSP, July 1999
-C******************************************************************
+C*
           
           implicit none
  
@@ -5244,10 +5197,10 @@ C******************************************************************
      .    drdi(nrmax),rco(nzetmx,0:lmaxd,nsemx),a,b, vloc(nrmax) 
       
           integer
-     .    nrval, lmxo,is, nVna, lsemic(0:lmaxd),nsm
+     .    nrval, lmxo,is, nVna, nsemic(0:lmaxd),nsm
 
 
-C********Internal variables***************************************
+C***Internal variables****
 
          double precision
      .    rho(nrmax), chval, ve(nrmax), s(nrmax),eps, phi,
@@ -5264,7 +5217,7 @@ C********Internal variables***************************************
           chval=0.0d0 
           ncocc=0 
           do l=0,lmxo
-            do nsm=1,lsemic(l)+1
+            do nsm=1,nsemic(l)+1
              if(qPAO(l,nsm).gt.0.0d0) then
               nrc=nint(log(rco(1,l,nsm)/b+1.0d0)/a)+1 
               ncocc=max(ncocc,nrc)
@@ -5289,7 +5242,7 @@ C**CALCULATION OF THE HARTREE POTENTIAL DUE TO THE NEW VALENCE CHARGE**
 C
           call vhrtre(rho,ve,rofi,drdi,s,nrval,a)
 C
-C*********LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL**************************
+C****LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL*
           eps=1.0d-5
           nVna=0
           do ir=nrval,2,-1
@@ -5299,7 +5252,7 @@ C*********LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL**************************
           enddo 
           nVna=max(nVna,ncocc)
 
-C*********CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL***** 
+C****CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL 
 
           rcocc=b*(exp(a*(ncocc-1))-1.0d0)
 
@@ -5309,13 +5262,13 @@ C*********CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL*****
             rVna=b*(exp(a*(nVna-1))-1.0d0)
           endif 
 
-          if (Node.eq.0) then
+          if (IOnode) then
           write(6,'(/,a,f10.6)')
      .  'Vna:  Cut-off radius for the neutral-atom potential: ', 
      .  rVna
           endif
 
-          if (Node.eq.0) then
+          if (IOnode) then
          if(rVna.gt.(rcocc+0.5d0)) then
            write(6,"(2a,f12.5)")'Vna: WARNING: ',
      .  'Cut-off radius for the neutral-atom potential, rVna =', 
@@ -5337,7 +5290,7 @@ C*********CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL*****
      .          (      rofi(3)**2 -      rofi(2)**2 )
          
 
-C*******Construct the common block with the neutral-atom potential**** 
+C**Construct the common block with the neutral-atom potential**** 
 C
           call comVna(is,a,b,rofi,Ve,nVna,1.0d0)
 C
@@ -5346,11 +5299,11 @@ C
 !
            subroutine comVna(is,a,b,rofi,Vna,nVna,flting)
 
-C***********************************************************************
+C*
 C  Creates the common block with the information about the neutral atom
 C  pseudoptential.
 C   D. Sanchez-Portal, Aug. 1998.
-C***********************************************************************
+C*
 
            implicit none
 
@@ -5360,12 +5313,12 @@ C***********************************************************************
      .        Vna(nrmax), rofi(nrmax), a ,b, flting
 
           
-C**********Internal variables********************************************
+CInternal variables****
            integer nr, nmin, nmax, nn, itb
            double precision  yp1, ypn, dy, v, rVna, delt, r
            double precision  aux(ntbmax)
 
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
@@ -5375,7 +5328,7 @@ C
          delt=rVna/(dble(ntbmax-1)+1.0d-20) 
  
          if(delt.gt.deltmax) then
-          if (Node.eq.0) then
+          if (IOnode) then
               write(6,'(a)')
      .    'comVna: WARNING It might be a good idea to increase'
               write(6,'(a)')
@@ -5409,7 +5362,7 @@ C
           enddo 
           table(ntbmax+2,0,is)=0.0d0
 
-C*********TABLE WITH THE SECOND DERIVATIVE ****************************
+C****TABLE WITH THE SECOND DERIVATIVE ***
 C 
           if (flting.gt.0.0d0) then
             yp1=0.d0
@@ -5434,7 +5387,7 @@ C Written by D. Sanchez-Portal, Aug. 1998.
 
          integer nVna 
            
-C***********Internal variables********************************
+C*Internal variables**
           
          double precision slf, a2b4, s(nrmax), g0, g1, g2,
      .       g3, g4, d2g, d2u
@@ -5478,12 +5431,12 @@ C***********Internal variables********************************
 !
             subroutine POLgen(is,a,b, rofi, drdi,
      .          ePAO,rphi,rco,vps,ve,
-     .          polorb,lmxo, lsemic,norb)
-C*********************************************************************
+     .          polorb,lmxo, nsemic,norb)
+C****
 C Calculates the polarization  orbitals for the basis set augmentation.
 C Written by D. Sanchez-Portal, Aug. 1998.
 C Modify by DSP, July 1999
-C*********************************************************************
+C****
 C
                implicit none
 
@@ -5496,7 +5449,7 @@ C
 
                integer
      .           lmxo, is, norb, polorb(0:lmaxd,nsemx), 
-     .           lsemic(0:lmaxd)
+     .           nsemic(0:lmaxd)
 
                integer
      .           l, nrc, nsp, ir,indx,
@@ -5514,7 +5467,7 @@ C
 
 C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
 
-         if (Node.eq.0) then
+         if (IOnode) then
            splnorm=fdf_double('PAO.SplitNorm',splnorm_default)
          endif
 #ifdef MPI
@@ -5526,9 +5479,9 @@ C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
              indx=0
              
              do l=0,lmxo
-               do nsm=1,lsemic(l)+1
+               do nsm=1,nsemic(l)+1
                 if(polorb(l,nsm).gt.0) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/A,I2)')
      .    'POLgen: Perturbative polarization orbital with L= ',l+1
                   endif
@@ -5538,13 +5491,13 @@ C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
 
 50            continue
 
-              do nsm=1,lsemic(l)+1
+              do nsm=1,nsemic(l)+1
 
                if (polorb(l,nsm).gt.0) then 
 
                do ipol=1,polorb(l,nsm)
 
-                 if (Node.eq.0) then
+                 if (IOnode) then
                    write(6,'(/A,I1,A)')
      .              'POLgen: Polarization orbital for state ',
      .               cnfigtb(l,nsm,is), sym(l)
@@ -5575,7 +5528,7 @@ c               elseif(ipol.gt.1) then
                 else
                    rc=rco(1,l,nsm) 
                    nrc=nint(log(rc/b+1.0d0)/a)+1
-C***Multiple shells can be generated using the split scheme*************
+C***Multiple shells can be generated using the split scheme***
        
             spln=splnorm
             if(ipol.gt.2) then
@@ -5586,18 +5539,18 @@ C***Multiple shells can be generated using the split scheme*************
      .                   l+1,spln,cons1,cons2,nsp)
 
 
-C***Cut-off radius for the split orbital with a desired norm****** 
+C***Cut-off radius for the split orbital with a desired norm* 
          nrc=nsp
          rcpol(ipol,l,nsm)=b*(exp(a*(nrc-1))-1.0d0)
-C*****************************************************************
+C
 
               
             dnrm=0.0d0
             do ir=2,nrc-1
               r=rofi(ir)
-C***********************parabolic split****************************
+C***parabolic split***
               phi=-(cons1*r**2+cons2)+phipol(ir)/(r**(l+2))
-C******************************************************************
+C*
 
               dnrm=dnrm+drdi(ir)*(phi*r**(l+2))**2
               g(ir)=phi
@@ -5608,7 +5561,7 @@ C******************************************************************
             
               endif
 
-C**************Normalization of basis functions***********************
+C****Normalization of basis functions***
             eps=1.0d-4
             if(abs(dnrm-1.0d0).gt.eps) then
                do ir=1,nrc
@@ -5619,10 +5572,10 @@ C**************Normalization of basis functions***********************
                  endif
                enddo
             endif
-C*********************************************************************
+C****
 
 
-C*Calculation of the mean value of kinetic and potential energy*******
+C*Calculation of the mean value of kinetic and potential energy**
 C    Potential and kinetic energy of the orbital
 
 
@@ -5656,7 +5609,7 @@ C    Potential and kinetic energy of the orbital
 
             if(ipol.eq.1) then  
 
-          if (Node.eq.0) then
+          if (IOnode) then
              write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
      .          'izeta =',ipol,
      .          'rc =',rcpol(ipol,l,nsm),
@@ -5665,7 +5618,7 @@ C    Potential and kinetic energy of the orbital
 
             elseif(ipol.gt.1) then 
 
-          if (Node.eq.0) then
+          if (IOnode) then
             write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .         'izeta =',ipol,
      .         'rmatch =',rcpol(ipol,l,nsm),
@@ -5675,7 +5628,7 @@ C    Potential and kinetic energy of the orbital
 
             endif 
 
-          if (Node.eq.0) then
+          if (IOnode) then
           write(6,'(a25,f12.6)') 'kinetic =',ekin
           write(6,'(a25,f12.6)') 'potential(screened) =',epot
           write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
@@ -5701,7 +5654,7 @@ C    Potential and kinetic energy of the orbital
 
                subroutine comPOL(is,a,b,rofi,rphi,
      .            l,nsm,rc,ipol,nrc,norb)
-C*********************************************************************
+C****
 C Generates the common block with the information about the polarization
 C orbitals.
 C  Written by D. Sanchez-Portal, Aug. 1998.
@@ -5714,7 +5667,7 @@ C  Modify by DSP, July 1999
                double precision rc, rphi(nrmax), a, b,
      .            rofi(nrmax)  
 
-C*********Internal variables*********************************************
+C****Internal variables
 C
              integer itb, nr, nmax, nmin, nn
         
@@ -5722,19 +5675,19 @@ C
              
              double precision   aux(ntbmax)
 
-****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
 C
           rcpoltb(ipol,l,nsm,is)=rc
 
-C**********INTERPOLATION TO GENERATE TABLES WITH KB PROJECTORS*******
+CINTERPOLATION TO GENERATE TABLES WITH KB PROJECTORS**
 C
             delt=rc/(dble(ntbmax-1)+1.0d-20) 
 
           if(delt.gt.deltmax) then
-            if (Node.eq.0) then
+            if (IOnode) then
               write(6,'(a)')
      .    'comPOL: WARNING It might be a good idea to increase'
               write(6,'(a)')
@@ -5762,9 +5715,9 @@ C
             tabpol(ntbmax+2,norb,is)=0.0d0  
                        
 C
-C*********************************************************************
+C****
 
-C*********TABLE WITH THE SECOND DERIVATIVE ****************************
+C****TABLE WITH THE SECOND DERIVATIVE ***
 C
 
             yp1=huge(1.d0)
@@ -5777,7 +5730,7 @@ C
 !
         subroutine set_mesh(a,b,rofi,drdi,s)
 
-C**************************************************************
+C**
 C    Setting up mesh points an its derivatives from standard
 C    values
 C    D. Sanchez-Portal, Aug. 98
@@ -5788,7 +5741,7 @@ C    D. Sanchez-Portal, Aug. 98
      .     rofi(nrmax), drdi(nrmax), s(nrmax), a, b
 
 
-C**** Internal variables******************************************
+C**** Internal variables**
         double precision 
      .     aa, bb, zt, rpb, ea, ea2
         integer ir
@@ -5798,12 +5751,12 @@ C**** Internal variables******************************************
         parameter(bb=6.0d0) 
 
 
-C***********STANDART VALUES FOR MESH PARAMETERS*************************
+C*STANDART VALUES FOR MESH PARAMETERS
 
           b=exp(-bb)/zt
           a=1.0d0/aa
 
-C***********SET UP THE MESH POINTS AND ITS DERIVATIVE******************
+C*SET UP THE MESH POINTS AND ITS DERIVATIVE***
 
           rpb=b
           ea=exp(a)
@@ -5820,7 +5773,7 @@ C***********SET UP THE MESH POINTS AND ITS DERIVATIVE******************
           subroutine BESSEL(is,a,b,rofi,drdi,s,
      .             lmxo,
      .             nzeta,rco,lambda, norb) 
-C*********************************************************************
+C****
 C  Caculates Bessel functions as a floating basis
 C  Written by D. Sanchez-Portal, Aug. 1998.
 C  Modify by DSP, July 1999
@@ -5839,7 +5792,7 @@ C  Modify by DSP, July 1999
      .           norb
 
 
-C********Internal variables*************************************
+C***Internal variables**
 
                integer
      .           l,nprin, nnodes, nodd, nrc, ir,indx,
@@ -5858,7 +5811,7 @@ C********Internal variables*************************************
 
                if(nzeta(l,1).gt.0) then
 
-            if (Node.eq.0) then
+            if (IOnode) then
             write(6,'(/2A,I2)')
      .       'Bessel: floating Bessel functions ',
      .           'with angular momentum L=',l
@@ -5866,10 +5819,10 @@ C********Internal variables*************************************
 
               do izeta=1, nzeta(l,1) 
 
-C*******Cut-off radius for Bessel functions must be an explicit input***
+C**Cut-off radius for Bessel functions must be an explicit input***
 C
                 if (rco(izeta,l,1).lt.1.0d-5) then 
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(a)')
      .     'Bessel: ERROR Zero cut-off radius with Z=-100 option'
                     write(6,'(a)')
@@ -5881,17 +5834,17 @@ C
  
                 endif
 C
-C********************************************************************
+C***
 
           if(abs(lambda(izeta,l,1)).lt.1.0d-3) lambda(izeta,l,1)=1.0d0
-C***********************************************************************
-           if(abs(lambda(izeta,l,1)-1.0d0).gt.1.0d-3.and.Node.eq.0) 
+C*
+           if(abs(lambda(izeta,l,1)-1.0d0).gt.1.0d-3.and.IOnode) 
      .         then
              write(6,'(/,a)')
      . 'Bessel: WARNING Scale factor is not active with Z=-100 option' 
            endif 
            lambda(izeta,l,1)=1.0d0
-C***********************************************************************
+C*
 
                   rc=rco(izeta,l,1)
                   nrc=nint(log(rc/b+1.0d0)/a)+1
@@ -5916,18 +5869,18 @@ C***********************************************************************
                        enddo 
                        g(1)=g(2)        
 
-C*********Checking normalization of the wavefunctions*****************
+C****Checking normalization of the wavefunctions**
                  eps=1.0d-4
                  if(abs(dnrm-1.0d0).gt.eps) then
                    do ir=1,nrc
                    g(ir)=g(ir)/sqrt(dnrm)
                   enddo
                  endif
-C*********************************************************************  
+C****  
 
 
 
-           if (Node.eq.0) then
+           if (IOnode) then
              write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
      .          'izeta =',izeta,
      .          'rc =',rco(izeta,l,1),
@@ -5965,7 +5918,7 @@ C Written by D. Sanchez-Portal, Sept. 98
         character paste*80
         external  paste 
 C
-C*********Internal variables**************************************
+C****Internal variables***
 C
 C      Number of points in the homogeneus radial mesh 
 C      for plotting purposes
@@ -5993,7 +5946,7 @@ C
                    write(iu,*) l, nztmx 
 
                    do izt=1, nztmx
-C**********************************************************************
+C
 C The only problem now is to translate the l,izt index into the orbital 
 C index io (index inside each atom). The problem is that index for
 C PAOs and polarization orbitals of each symmetry are not consecutive. 
@@ -6009,7 +5962,7 @@ C
  10                      continue 
 C 
 C   Now we have the needed orbital index, io   
-C*********************************************************************
+C****
 
                          rc=rcut(is,io)
                          write(iu,*) izt, ndraw, rc      
@@ -6035,13 +5988,13 @@ C*********************************************************************
 
            subroutine USER(is,a,b,rofi,drdi,
      .             vps,ve,
-     .             lmxo, lsemic,
+     .             lmxo, nsemic,
      .             nzeta,rco,lambda, rphi, ePAO, norb) 
-C*****************************************************************
+C
 C Read the basis orbitals provided by the user and calculates its
 C energy.
 C Written by D. Sanchez-Portal, Aug. 1998
-C*****************************************************************
+C
 
                implicit none
 
@@ -6055,10 +6008,10 @@ C*****************************************************************
 
                integer
      .           lmxo, is, nzeta(0:lmaxd,nsemx),
-     .           norb,lsemic(0:lmaxd)
+     .           norb,nsemic(0:lmaxd)
 
 
-C********Internal variables*************************************
+C***Internal variables**
 
                integer
      .           l,nodd, nrc, ir,indx,nrcfile, jr, nrcomp,
@@ -6079,11 +6032,11 @@ C********Internal variables*************************************
                external paste
 
 
-C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION*************
+C****NUMBER OF POINTS USED BY RATINT FOR THE INTERPOLATION***
 C
                integer, parameter ::  npoint=4
 
-      if (Node.eq.0) then
+      if (IOnode) then
         filename=paste(label_save(is),'.user.basis')
 
         call io_assign(io_user)
@@ -6103,7 +6056,7 @@ C Broadcast value of lmxfile
 #endif
 
       if (lmxfile.lt.lmxo) then
-        if (Node.eq.0) then
+        if (IOnode) then
           write(6,'(/a)')
      .      'USER: ERROR maximum angular momentum of the orbitals'
           write(6,'(2a)')
@@ -6122,7 +6075,7 @@ C Variable initialised as it was previously unset - JDG
       indx=0
       do l=0,lmxo 
 
-          if (Node.eq.0) then
+          if (IOnode) then
             read(io_user,*) luser, nzetfile 
           endif
 
@@ -6135,7 +6088,7 @@ C Broadcast values of luser and nzetfile
 #endif
 
           if (luser.ne.l) then
-            if (Node.eq.0) then
+            if (IOnode) then
               write(6,'(/,2a, /2(a,i2),/a)')
      .      'USER: ERROR Reading user-basis orbitals from file:',
      .       filename,
@@ -6146,13 +6099,13 @@ C Broadcast values of luser and nzetfile
           endif
 
              numzetal=0
-             do nsm=1,lsemic(l)+1
+             do nsm=1,nsemic(l)+1
                do izeta=1,nzeta(l,nsm)
                  numzetal=numzetal+1
                enddo 
              enddo 
              if (nzetfile.lt.numzetal) then
-               if (Node.eq.0) then
+               if (IOnode) then
                   write(6,'(/,2a,i2,/2a,/2(a,i2),a)')
      .           'USER: ERROR ',
      .           'number of orbitals with l=', l,'USER: ERROR in file',
@@ -6163,13 +6116,13 @@ C Broadcast values of luser and nzetfile
                call die
              endif
 
-             if (numzetal.gt.0.and.Node.eq.0) then 
+             if (numzetal.gt.0.and.IOnode) then 
                write(6,'(/A,I2)')
      .           'USER: Orbitals with angular momentum L=',l
 
-            do nsm=1,lsemic(l)+1
+            do nsm=1,nsemic(l)+1
 
-              if (Node.eq.0) then
+              if (IOnode) then
                 write(6,'(/A,I1,A)')
      .            'USER: Basis orbitals for state ',
      .            cnfigtb(l,nsm,is), sym(l)
@@ -6181,7 +6134,7 @@ C     IF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE
 C     LEFT UNTOUCHED
              if(lambda(izeta,l,nsm).le.0.0d0) lambda(izeta,l,nsm)=1.0d0
 
-                if (Node.eq.0) then
+                if (IOnode) then
                   read(io_user,*) izetafile,npfile,rcfile
                 endif
 #ifdef MPI
@@ -6194,7 +6147,7 @@ C     LEFT UNTOUCHED
 #endif
                     
                 if (izetafile-izetasum.ne.izeta) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/,2a,/2(a,i2),/a)')
      .      'USER: ERROR Reading user-basis orbitals from file:',
      .       filename,
@@ -6205,7 +6158,7 @@ C     LEFT UNTOUCHED
                   call die
                 endif
                 if ((npfile+1).gt.nrmax) then
-                  if (Node.eq.0) then
+                  if (IOnode) then
                     write(6,'(/,2a,/2a,/2a,i6)')
      .       'USER: ERROR ',
      .       'Too many grid points required to read functions', 
@@ -6220,7 +6173,7 @@ C     LEFT UNTOUCHED
               if(rco(izeta,l,nsm).lt.1.0d-5) 
      .            rco(izeta,l,nsm)=rcfile*lambda(izeta,l,nsm)
               if(rco(izeta,l,nsm).lt.1.0d-5) then  
-                if (Node.eq.0) then
+                if (IOnode) then
                   write(6,'(/,a,/,2a,/,a)')
      .      'USER: ERROR A non-zero cut-off radius should be given',
      .      'USER: ERROR either in the input file or in the file',
@@ -6233,7 +6186,7 @@ CAG WARNING: This was not wrapped in previous versions
 
               rc=rco(izeta,l,nsm)/lambda(izeta,l,nsm) 
 CAG Better
-              if (Node.eq.0) then
+              if (IOnode) then
 C                 Read the whole thing
                   do ir=1,npfile
                      read(io_user,*) rfile(ir), rf(ir)
@@ -6274,7 +6227,7 @@ CAG
                 rco(izeta,l,nsm)=rc*lambda(izeta,l,nsm)
 
 
-C*********First point should be zero***********************************
+C****First point should be zero
 C
               if(rfile(1).ne.0.0d0) then  
                 do ir=1,npfile
@@ -6291,11 +6244,11 @@ C
                 nrcfile=nrcfile+1
               endif
 C
-C********************************************************************** 
+C 
 
 
-C****Interpolation in the logaritmic mesh where pseudopotentials*******
-C****are defined******************************************************* 
+C****Interpolation in the logaritmic mesh where pseudopotentials**
+C****are defined 
 C
               dnrm=0.0d0
               nr=1    
@@ -6320,10 +6273,10 @@ c                call polint(rfile(nmin),rf(nmin),nn,r,phi,dy)
               enddo
               g(1)=g(2)
 C
-C*********************************************************************
+C****
 
     
-C**************Normalization of basis functions***********************
+C****Normalization of basis functions***
             eps=1.0d-4
             if(abs(dnrm-1.0d0).gt.eps) then
                do ir=1,nrc
@@ -6333,9 +6286,9 @@ C**************Normalization of basis functions***********************
                  endif
                enddo
             endif
-C*********************************************************************  
+C****  
 
-C*Calculation of the mean value of kinetic and potential energy*******
+C*Calculation of the mean value of kinetic and potential energy**
 C    Potential and kinetic energy of the orbital before compression
 
              ekin=0.0d0
@@ -6380,7 +6333,7 @@ C Potential energy after compression
              eorb=ekin+epot
 
 
-             if (Node.eq.0) then
+             if (IOnode) then
              write(6,'(/,(3x,a,i2),3(/,a25,f12.6))')
      .          'izeta =',izeta,
      .          'lambda =',lambda(izeta,l,nsm),
@@ -6391,7 +6344,7 @@ C Potential energy after compression
               if(izeta.eq.1) ePAO(l,nsm)=eorb
 
 
-          if (Node.eq.0) then
+          if (IOnode) then
           write(6,'(a25,f12.6)') 'kinetic =',ekin
           write(6,'(a25,f12.6)') 'potential(screened) =',epot
           write(6,'(a25,f12.6)') 'potential(ionic) =',epot2 
@@ -6412,7 +6365,7 @@ C Potential energy after compression
                        
               
 CAG What is this now??
-            if (Node.eq.0) then
+            if (IOnode) then
               do izeta=izetasum+1,nzetfile
                   read(io_user,*) izetafile,npfile
                   do ir=1,npfile
@@ -6425,25 +6378,25 @@ CAG What is this now??
  
             endif     
            enddo 
-           if (Node .eq. 0) call io_close(io_user)
+           if (IOnode) call io_close(io_user)
 
           end subroutine user
 !
           subroutine prinput(ntotsp)
 
-C*******************************************************************
+C**
 C Prints the values of the parameter which have been actually 
 C used in the generation of the basis (cut-off radius, contraction
 C factors, and BasisType option to augment the basis set).
 C The information is written in the same format as required for the 
 C input file.
 C Written by D. Sanchez-Portal, Oct. 1998.
-C*******************************************************************
+C**
 
           implicit none 
           integer ntotsp
 
-C******************Internal variables***********************************
+C***Internal variables
           integer is, nshell, l, lo, nzt, izt, nsm
           
           character basistype*10
@@ -6451,8 +6404,8 @@ C******************Internal variables***********************************
 
 
              write(6,'(/2a)')
-     .            'prinput: ************************* Basis input ',
-     .            '********************************'
+     .            'prinput:  Basis input ',
+     .            '**'
 
              basistype=fdf_string('PAO.BasisType',basistype_default)
              call type_name(basistype) 
@@ -6476,7 +6429,7 @@ C******************Internal variables***********************************
                 nshell=0 
                 lo=lmxosave(is)
                 do l=0,lo
-                   do nsm=1,lsemicsave(l,is)+1
+                   do nsm=1,nsemicsave(l,is)+1
                     if(nzetasave(l,nsm,is).ne.0) nshell=nshell+1
                    enddo 
                 enddo 
@@ -6511,7 +6464,7 @@ C******************Internal variables***********************************
                 endif 
  
                    do l=0,lo
-                     do nsm=1,lsemicsave(l,is)+1
+                     do nsm=1,nsemicsave(l,is)+1
                       nzt=nzetasave(l,nsm,is)
                       if(nzt.ne.0) then  
                         if(npolorbsave(l,nsm,is).gt.0)then
@@ -6545,8 +6498,8 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
 
 
              write(6,'(/2a)')
-     .             'prinput: **********************************',
-     .             '************************************'
+     .             'prinput: ****',
+     .             '*'
 
              
              end subroutine prinput
@@ -6556,14 +6509,14 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
       
         implicit none
 
-C*************************************************************
+C*
 C      This routine calculate the energy derivative of 
 C      a given wavefunction.
 C      The routine solve and inhomogeneus version of 
 C      Schrodinger eqn.  
 C      It is not an optimized algorithm!!!!!!!!!!!!!!!!!
 C       Written by Daniel Sanchez-Portal, July 1999
-C************************************************************ 
+C 
         integer  l, nrmin, nrval, ir, nrc   
 
         double precision r(nrval),psi(nrval),psidev(nrval),
@@ -6572,7 +6525,7 @@ C************************************************************
         
          parameter(nrmin=1) 
 
-C************************************************************
+C
 
           
           nrc=min(nrc,nrval)
@@ -6630,14 +6583,14 @@ C and normalize
         subroutine rphi_vs_e(a,b,r,vps,
      .      ve,nrval,l,el,rphi,rmax)
 
-C**************************************************************
+C**
 C   Calculate the atomic 
 C   radial wavefunction of the pseudopotential Vps, with angular
 C   momentum  l, and energy el, inside r<Rmax
 C   The Schrodinger equation is solved using a simple Numerov 
 C   scheme. Rmax should not be taken too big. 
 C   D. Sanchez-Portal, July 1999.
-C**************************************************************
+C**
 
         real*8 a, b
         integer nrval

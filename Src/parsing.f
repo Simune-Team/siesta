@@ -1,3 +1,9 @@
+      module parsing
+
+      implicit none
+
+      contains
+
       subroutine parse( line, nn, lc, names, nv, values,
      .                  ni, integers, nr, reals )
 
@@ -29,41 +35,33 @@ c Real numbers are i.e. 5.0, 2., -.25, +1.d6, 2.E-3
 c Apostrophes enclosing strings are removed in output names.
 c Double apostrophes inside a name are left unchanged.
 c The size of arrays names, values, integers and reals must be long
-c   enough to contain all instances present in line. No check is made.
-c **********************************************************************
+c  enough to contain all instances present in line. No check is made.
+
       implicit          none
-      integer           integers(*), lc(0:*), ni, nn, nr, nv
-      character         line*(*), names*(*)
-      double precision  reals(*), values(*)
-c **********************************************************************
+      integer, intent(out)           :: integers(:), lc(0:)
+      integer, intent(out)           :: ni, nn, nr, nv
+      character(len=*), intent(out)  :: names
+      character(len=*), intent(in)   :: line
+      double precision, intent(out)  :: reals(:), values(:)
+
 
 c     Internal variables
       logical
      .  isinteger, isreal, opened
-
-      logical, dimension(:), allocatable, save ::
+!
+!     Automatic arrays
+!
+      logical, dimension(0:len(line)+1) ::
      .  isblank, isdigit, isdot, isexp, issign, isother
 
       character  c
       character fmtstr*10
       integer    i, i1, i2, ic, iw, ll, ndot, nexp, nsign
+c
+      names = ' '
 
 c     Check line length
       ll = len(line)
-
-C Allocate local memory
-      allocate(isblank(0:ll+1))
-      call memory('A','L',ll+2,'parse')
-      allocate(isdigit(0:ll+1))
-      call memory('A','L',ll+2,'parse')
-      allocate(isdot(0:ll+1))
-      call memory('A','L',ll+2,'parse')
-      allocate(isexp(0:ll+1))
-      call memory('A','L',ll+2,'parse')
-      allocate(issign(0:ll+1))
-      call memory('A','L',ll+2,'parse')
-      allocate(isother(0:ll+1))
-      call memory('A','L',ll+2,'parse')
 
 c     Clasify line characters
       isblank(0) = .true.
@@ -202,21 +200,10 @@ c         Remove enclosing apostrophes if present
 C Exit point
   999 continue
 
-C Deallocate local memory
-      call memory('D','L',size(isblank),'parse')
-      deallocate(isblank)
-      call memory('D','L',size(isdigit),'parse')
-      deallocate(isdigit)
-      call memory('D','L',size(isdot),'parse')
-      deallocate(isdot)
-      call memory('D','L',size(isexp),'parse')
-      deallocate(isexp)
-      call memory('D','L',size(issign),'parse')
-      deallocate(issign)
-      call memory('D','L',size(isother),'parse')
-      deallocate(isother)
+      end subroutine parse
 
-      end
+      end module parsing
+
 
 
 

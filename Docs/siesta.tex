@@ -29,11 +29,11 @@
 
 \vspace{3cm}
 
-{\Huge {\bf SIESTA 1.0.20}}
+{\Huge {\bf SIESTA 1.0.32}}
 
 \vspace{3cm}
 
-{\Large {\it January 7, 2000} }
+{\Large {\it June 19, 2000} }
 
 \vspace{3cm}
 
@@ -46,7 +46,7 @@
    \Large{\it Imperial College, London} \\
 
 {\Large Alberto Garc\'{\i}a} &
-   \Large{\it Basque Country University at Bilbao} \\
+   \Large{\it Universidad del Pais Vasco, Bilbao} \\
 
 {\Large Pablo Ordej\'on} & 
    \Large{\it Spanish Research Council, Barcelona} \\
@@ -105,7 +105,7 @@ time and memory scale linearly with the number of atoms.
 Simulations with several hundred atoms are feasible with
 modest workstations.
 \item
-It is written in Fortran 77 and Fortran 90.
+It is written in Fortran 90.
 It may be compiled for serial or parallel execution (under MPI).
 The selection is performed by standard preprocessor compiler
 directives, switched by the apropriate makefiles.
@@ -175,146 +175,30 @@ Please report problems, bugs and suggestions to
 \section{QUICK START}
 
 \noindent
-In this section we give all the steps required to install
-and run the program for the first example, the water molecule.
-We assume that you use UNIX and that you will install SIESTA in 
-$\sim$/siesta, where $\sim$ indicates your home directory.
-The commands that you must type are in {\tt typewriter} font, 
-and {\tt \$} indicates the prompt.
-
-The first two steps depend on the shell you use:
-
-{\tt \$ SIESTA\_DIR=$\sim$/siesta/Src ; 
-export SIESTA\_DIR}\index{SIESTA\_DIR@{\tt SIESTA\_DIR}}
-
-{\tt \$ SIESTA\_SYS=unknown ; 
-      export SIESTA\_SYS}\index{SIESTA\_SYS@{\tt SIESTA\_SYS}}
-\hspace{1cm} within sh, ksh or bash,
+Unpack the SIESTA distribution. Go to the {\tt Src/Sys} subdirectory
+and take a look at the files there. If one of them suits your
+platform, copy it or link it to {\tt Src/arch.make}. If you intend
+to create a parallel version of SIESTA, make sure you have all
+the extra support libraries ({\tt MPI, scalapack, blacs...}).
+Type make. The executable should work for any job (This is not exactly
+true, since some of the parameters in the atomic routines are still
+hardwired, but those would seldom need to be changed.)
 
 \noindent
-or alternatively: 
+Some example fdf files are provided in the {\tt Examples}
+directory. Probably the simplest to start with is the
+water-molecule example. It is advisable to create independent subdirectories for
+each job, so that everything is clean and neat:
 
-\vspace{1pt}
-{\tt \$ setenv SIESTA\_DIR $\sim$/siesta/Src}
-
-{\tt \$ setenv SIESTA\_SYS unknown}
-\hspace{2.5cm} if you use csh or descendants.
-
-\noindent
-This specifies where the SIESTA program is and  
-the system architecture (see the compilation section for
-better alternatives for production runs). {\bf You must type these two lines
-each time you log in} or, alternatively, you may put them
-in your .profile or .login file.
-
-{\tt \$ cd}
+{\tt mkdir h2o}
 
 \noindent
-Change to your home directory, where you will install SIESTA.
-If you have received the program by Email, use your editor to
-cut below the line of dots and make a file called siesta.uu
-with that part of the note (if you got the program by ftp,
-skip this step):
-
-{\tt \$ uudecode siesta.uu}
-
-\noindent
-Now you should have a file $\sim$/siesta.tar.Z or $\sim$/siesta.tar.gz
-
-{\tt \$ uncompress siesta.tar} , if $\sim$/siesta.tar.Z , or
-
-{\tt \$ gunzip siesta.tar.gz} . 
-
-\noindent
-Then,
-
-{\tt \$ tar -xf siesta.tar}
-
-\noindent
-Now you should have a new directory: $\sim$/siesta
-
-{\tt \$ cd siesta}
-
-Before SIESTA can be built for the first time, a few 
-standard parameter files need to be copied 
-from $\sim$/siesta/Src/Include to $\sim$/siesta/Src :
-
-{\tt \$ cp Src/Include/*.h Src}
-
-Create a new pristine directory. It is recommended not to
-do it within the siesta directory, keeping siesta with just
-the distribution files. This way, a SIESTA upgrade is done
-easily by replacing the whole siesta directory by a new one.
-
-{\tt cd ~/mysystems} (for example)
-
-\noindent
-You need not open a new directory
-for each new system you try, but it is a good practice.
-
-{\tt \$ mkdir h2o}
-
-{\tt \$ cd h2o}
-
-{\tt \$ cp $\sim$/siesta/Util/msiesta .}\index{msiesta@{\tt msiesta}}
-
-{\tt \$ cp $\sim$/siesta/Util/rsiesta .}\index{rsiesta@{\tt rsiesta}}
-
-{\tt \$ cp $\sim$/siesta/Util/rrsiesta .}\index{rrsiesta@{\tt rrsiesta}}
-
-{\tt \$ cp $\sim$/siesta/Util/prdate .}\index{prdate@{\tt prdate}}
-
-\noindent
-Get the four script\index{scripts} files that will help you to compile and
-run the program (if you know the script language, have a
-look at them; they are rather simple). Alternatively, you
-may copy them once and for all to a directory included in 
-your path, or add $\sim$/siesta/Util to your path, or introduce
-symbolic links ({\tt ln -s}) to these script files into a
-directory included in your path.
-
-The last script is called by SIESTA to print the date, time
-and hostname at the beginning and end of each run.
-To see how it works, write
-
-{\tt \$ prdate my\_test .}
-
-\noindent
-As input file retrieve the one provided in the Examples directory:
-
-{\tt \$ cp $\sim$/siesta/Examples/H2O/h2o.fdf}
-
-{\tt \$ cat h2o.fdf}
-
-\noindent
-It looks like this:
-\begin{verbatim}
-----------------------------------------------------------
-SystemName          Water molecule
-SystemLabel         h2o
-NumberOfAtoms       3
-NumberOfSpecies     2
-
-%block ChemicalSpeciesLabel
- 1  8  O      # Species index, atomic number, species label
- 2  1  H
-%endblock ChemicalSpeciesLabel
-
-AtomicCoordinatesFormat  Ang
-%block AtomicCoordinatesAndAtomicSpecies
- 0.000  0.000  0.000  1
- 0.757  0.586  0.000  2
--0.757  0.586  0.000  2
-%endblock AtomicCoordinatesAndAtomicSpecies
-----------------------------------------------------------
-\end{verbatim}
-
-Now we will generate the required pseudopotentials.
+We need to generate the required pseudopotentials
 \index{pseudopotential!example generation}
-We are going to streamline this process for this time, but
+(We are going to streamline this process for this time, but
 you must realize that this is a tricky business that you 
 must master before using SIESTA responsibly. Every 
-pseudopotential must be thoroughly checked before using it.
+pseudopotential must be thoroughly checked before using it.)
 
 {\tt \$ cd $\sim$/siesta/Pseudo/atom}
 
@@ -366,46 +250,22 @@ changing its name to accommodate it to the SIESTA naming convention.
 \noindent
 repeats the process for hydrogen.
 
-{\tt \$ cd $\sim$/siesta/h2o}
 
 \noindent
-Return to your working directory, where there should now be
-the following files:
+Now you are ready to run the program:
+
+{\tt siesta < h2o.fdf | tee h2o.out}
+
+\noindent
+(Actually, if you are running the parallel version
+you should use some other invocation, such as {\tt mpirun -np 2 siesta
+...}, but we cannot go into that
+here.)
+
+After a successful run of the program, you should have the following
+files in your directory:
 \begin{itemize}
-\item msiesta
-\item rsiesta
-\item rrsiesta
-\item prdate
-\item h2o.fdf
-\item O.vps
-\item H.vps
-\end{itemize}
 
-{\tt \$ msiesta init}
-
-\noindent
-Make (compile) SIESTA for the first time. 
-The compiled program
-is in the working directory and is called simply siesta.
-If there is a problem at this
-stage it may be related to the particulars of your operating system.
-See 'Compiling the program' to adapt SIESTA to your system.
-
-{\tt \$ rrsiesta h2o}
-
-\noindent
-Really-run siesta for h2o. This shell script invokes the
-rsiesta (run siesta) and msiesta (make siesta) scripts, 
-alternatively running the program, readjusting the array dimensions,
-and recompiling until the program really runs up to the end
-(actually, both previous steps could be done in one
-step: {\tt \$ rrsiesta h2o init}).
-Now there should be the following new files:
-\begin{itemize}
-\item siesta.h,\index{siesta.h} dhscf.h,\index{dhscf.h} 
-diagon.h,\index{diagon.h} diagnc.h,\index{diagnc.h} 
-ordern.h,\index{ordern.h} atom.h,\index{atom.h} ranger.h,\index{ranger.h},
-and matel.h\index{matel.h} (include files with array-dimension parameters)
 \item out.fdf\index{out.fdf}
  (contains all the data used, explicit or default-ed) 
 \item O.vlocal and H.vlocal\index{species.vlocal@{\it species.}vlocal}
@@ -436,11 +296,8 @@ You may also want to look at the out.fdf file to see all
 the default values that siesta has chosen for you, before
 studying the input-explanation section and start changing them.
 
-Now look at the other data files in $\sim$/siesta/Examples
+Now look at the other data files in {\tt Examples}
 (all with and .fdf suffix) choose one and repeat the process for it.
-You need not recompile the entire program: simply use 
-rrsiesta.\index{rrsiesta@{\tt rrsiesta}}
-
 
 
 \section{PSEUDOPOTENTIAL GENERATION}
@@ -458,9 +315,7 @@ ChemicalSpeciesLabel}}
 descriptor below).
 
 These files are generated by a standard and {\bf completely independent}
-program. This program was {\bf not} written by us, but mainly by 
-Alberto Garc\'{\i}a,\index{pseudopotential!atom program} who also maintains it
-(read siesta/Pseudo/atom/README for more complete authorship and 
+program (read {\tt siesta/Pseudo/atom/README} for more complete authorship and 
 copyright acknowledgements).
 It is included (with permission) in siesta/Pseudo/atom only for
 completeness. Its input and output is in a very standard format and,
@@ -469,8 +324,7 @@ to use your own programs instead. If you are not familiar, you should
 be {\bf very} careful before relying in a pseudopotential that you
 have generated, since {\bf all pseudopotentials should be thoroughly
 tested} before using them. We refer you to the standard literature
-and to the siesta/Pseudo/atom/User.Guide.
-
+and to {\tt siesta/Pseudo/atom/User.Guide}.
 
 
 %\section{ATOMIC-ORBITAL BASES IMPLEMENTED IN SIESTA}
@@ -481,16 +335,6 @@ and to the siesta/Pseudo/atom/User.Guide.
 
 \section{COMPILING THE PROGRAM}
 
-Usually you will compile and run the program using the
-shell scripts msiesta, rsiesta, and rrsiesta, provided in
-directory siesta/Util, or similar ones that you may write.
-However, we give you here a general description of how
-the siesta program is structured, how it determines the
-array dimensions it requires for each case, and how it
-should be compiled by hand, so that you can understand
-what is going on when you use rrsiesta, in order to help
-you to find a fix if something goes wrong.
-
 The compilation of the program is done using a Makefile
 that is provided with the code.\index{Makefile}
 This Makefile will generate the executable in several
@@ -498,231 +342,14 @@ architectures, with a  minimum of tuning required from the
 user. The instructions are in directory siesta/Src/Sys.
 There are a few files  in this directory,
 already prepared for several architectures and
-operating sistems:\index{platforms}\index{architectures} 
-\begin{itemize}
-\item[-] g77.make (for systems, including Linux, running modern
-versions of g77),\index{g77}
-\item[-] g77-libs.make (for systems, including Linux, running modern
-versions of g77 and with BLAS and LAPACK libraries installed),\index{g77-libs}
-\item[-] linux.make (for systems with older versions of g77, lacking
-timing routines ---obsolescent),\index{Linux}
-\item[-] osf.make (for DEC Alphas),\index{OSF}\index{DEC Alpha}\index{dxml} 
-\item[-] osfdxml.make (for DEC alphas with the dxml math library), 
-\item[-] ibm.make (for IBM RISC),\index{AIX}\index{IBM RISC} 
-\item[-] ibmessl.make (for IBM RISC with the ESSL math library),\index{ESSL} 
-\item[-] ibmesslp3.make (for IBM RISC with the ESSL math library, and
-Power3 processor),
-\item[-] sgi.make (for SGI)\index{SGI} 
-      (check that the options are right for your machine).
-\item[-] sgimath.make (for SGI, using SGI's math library)\index{SGI} 
-      (check that the options are right for your machine).
-\item[-] cray.make (for CRAY machines).\index{CRAY}
-\item[-] hp.make (for HP-UX).\index{HP-UX}
-\item[-] unknown.make (for the most general and least optimized 
-options and codes).\index{unknown}
-\end{itemize}
-\noindent
+operating sistems:\index{platforms}\index{architectures}
 If none of these fit your needs, you will have to build
 one on your own. Note that some systems require running a program such as
 ranlib\index{ranlib} to index object code libraries.
 Once you have decided which *.make you want to use,
-you just need to define an environment variable
-in your shell; for instance, for a Linux running a modern version of
-g77:
-
-\vspace{2pt}
-{\tt SIESTA\_SYS=g77 ; export SIESTA\_SYS} \hspace{1cm} within sh, ksh or bash,
-\index{SIESTA\_SYS@{\tt SIESTA\_SYS}}
-
-\vspace{1pt}
-{\tt setenv SIESTA\_SYS g77} \hspace{2.5cm} if you use csh.
-
-\vspace{2pt}
-\noindent
-Usually it is better to define these variables in your
-.login, .profile or .cshrc, so that they are defined
-whenever you log in.
+you just need to copy or link it to the {\tt Src} directory 
+as {\tt arch.make}.
 Then, just compile using the make utility, as usual.
-
-
-There are eight parameter files which contain
-dimensioning parameters\index{dimension parameters} necessary 
-for different parts of the code. Standard versions
-of these files can be found in the Src/Include subdirectory, and
-need to be copied to Src before SIESTA is compiled for the first time
-(see below).
-
-
-\begin{itemize}
-
-\item[$\bullet$] {\bf siesta.h:}\index{siesta.h}
-This file contains parameters which are used
-to defile the dimensions of the variables defined by the
-main program (siesta.f).  They represent physical parameters
-like maximum number of atoms, neighbours of any atom, etc... 
-that the executable
-program can handle. The parameters specified should be larger than
-those of the physical system under study.  However, if you 
-specify numbers smaller than needed, siesta will stop, after
-writing a new siesta.h file in the running directory, 
-with parameters appropriate for the system. You just have
-to copy siesta.h to the directory where siesta.f is and recompile it.
-{\bf NOTE:} If you do not know the appropriate values of the parameters,
-you can initialize them to 1, run siesta and re-compile again with 
-the siesta.h generated.  It may be necessary to repeat this five or six
-times, since some of the parameters can only be determined by siesta
-if other parameters are correct. To alleviate this, you may start by
-copying Src/Include/siesta.h into siesta.h\index{Include/} 
-
-\item[$\bullet$] 
-{\bf dhscf.h:}\index{dhscf.h} 
-It contains parameters to define variables dimensions for
-dhscf.f and related grid and FFT routines. Like with siesta.h,
-you can initialize all variables to 1 (as in Src/Include/dhscf.h), 
-run siesta and recompile with the generated dhscf.h file.  
-This is HIGHLY recommended, since the amount of memory usage of the 
-executable will be optimized for the system under study.
-
-\item[$\bullet$] 
-{\bf ordern.h:}\index{ordern.h} 
-It contains parameters to define variables dimensions for
-ordern.f and related Order-N functional routines. Like with siesta.h
-and dhscf.h, you can initialize all variables to 1 
-(as in Src/Include/ordern.h), run siesta and
-recompile with the generated ordern.h file.  This is HIGHLY recommended,
-since the amount of memory usage of the executable will be optimized 
-for the system under study.  {\bf NOTE:} if you run the program 
-with diagonalization, the Order-N routines will not be used, so
-it is convenient to compile siesta with all the ordern.h parameters
-set to 1, since this will open the least possible memory. 
-
-\item[$\bullet$] 
-{\bf diagon.h:}\index{diagon.h}
-It contains parameters to define variables dimensions for
-rdiagon.f and related diagonalization routines. Like with the *.h
-files above, you can initialize all variables to 1, run siesta and
-recompile with the generated diagon.h file.  This is HIGHLY recommended,
-since the amount of memory usage of the executable will be optimized 
-for the system under study.  {\bf NOTE:} if you run the program 
-with the Order-N option, the diagonalization routines will not be used, so
-it is convenient to compile siesta with all the diagon.h parameters
-set to 1, since this will open the least possible memory. Otherwise, 
-you will be memory-bound, since some $O(N^2)$ matrices will be open!
-
-\item[$\bullet$]
-{\bf diagnc.h:}\index{diagnc.h}
-Equivalent to diagon.h but for the non-colinear spin\index{non-colinear spin}
-case, which requires matrices four times larger in each dimension, 
-as compared with the non-polarized case, and twice the polarized colinear
-case. As above, it can be generated automatically if insufficient, 
-and care should be taken for the dimensions to be 1 if diagnc.f is
-not used (non-colinear magnetism not used).
-
-\item[$\bullet$]
-{\bf matel.h:}\index{matel.h}
-It contains parameters to define dimensions for
-matel.f that calculates matrix elements which are not to be obtained
-through the grid. Again, automatically generated.
-
-\item[$\bullet$]
-{\bf ranger.h:}\index{ranger.h}
-It contains parameters for ranger.f which finds the
-neighbors of any atom. Automatically generated as well.
-
-\item[$\bullet$] 
-{\bf atom.h:}\index{atom.h}
-It contains parameters for the generation of the atomic
-orbitals and the pseudopotentials. These parameters are not very likely
-to need modification, and they do not affect much the memory use.
-You may need to change them if the program complaints about some
-of its dimensions being too small, but SIESTA will NOT generate
-a new atom.h for you.
-
-\end{itemize}
-
-At the end of a succesful compilation cycle, these files contain
-parameters adapted to the problem at hand will (except for {\bf
-atom.h}).  You should keep them in the working
-directory for the system for future compilations if needed.
-
-The first time that SIESTA is compiled for a particular
-system, it should be done with
-\index{msiesta@{\tt msiesta}}\index{rrsiesta@{\tt rrsiesta}}
-
-{\tt msiesta init} 
-
-\noindent
-and then
-
-{\tt rrsiesta} {\it your\_system}
-
-\noindent
-or directly 
-
-{\tt rrsiesta} {\it your\_system} {\tt init} .
-
-\noindent
-This copies the standard versions of the {\tt *.h} files to the source
-and working directories and starts the compilation/run cycle. At the
-end, the {\tt *.h} files in both the source and working directory will
-be appropriately dimensioned, so further run cycles should not use 
-the {\tt init} modifier.
-
-If some time has elapsed since the {\tt *.h} files were
-generated, and SIESTA has been compiled for other systems
-in the meantime, use
-
-{\tt msiesta touch}
-
-\noindent
-or 
-
-{\tt rrsiesta} {\it your\_system} {\tt touch}.
-
-\noindent
-This form of the commands will copy the {\tt *.h} files in the working
-directory to the source directory, with a modified timestamp that
-will trick {\tt make} into re-builing the program appropriately.
-
-The {\tt atom.h} file is rarely to be changed.
-If you ever need to modify it, it will have
-to be manually. And also manual should be its activation for
-{\tt msiesta} or {\tt rrsiesta} by means of
-
-{\tt touch atom.h} .
-
-% \vspace{0.8truecm}
-% \item The parameters in siesta.h, dhscf.h and ordern.h 
-% produced by siesta are the MINIMUM values for
-% the system being run.  However, during the dynamics, some of
-% these values can become too small, so the program will stop and
-% you will need to recompile again. To avoid this, it is a good
-% practice to increase to some extent (a 10 \% is usually
-% sufficient) the parameters of the
-% *.h files, to avoid overflow during the dynamics. This is
-% specially true for parameters like those describing number of atoms
-% within an interaction range etc, whereas other as number
-% of atoms or number of species will not change during the simulation.
-% We recommend to do this for these parameters:
-
-% - In siesta.h: maxna, maxnkb, maxno
-
-% - In dhscf.h:  maxaux, maxop, maxtop
-
-% - In ordern.h: maxnc, maxnct, maxnf, maxnft, maxnhij, maxnhf
-
-% \hspace{0.2truecm}{\bf
-% IMPORTANT:} You must have: maxnhf = max(maxnf,maxnhij)
-
- 
- 
-%\section{USING THE PROGRAM}
-%
-%The program uses a number of files for input. Some of them
-%are data files, others contain information like pseudopotentials,
-%and others contain intermediate and restart information.
-%
-%\subsection{Input Data File}
 
 \section{INPUT DATA FILE}
 
@@ -1547,6 +1174,8 @@ geometry relaxation or molecular dynamics. Allowed constraints are:
 their initial values (not implemented yet).
 \item {\tt cellangle}: fixes the unit-cell angles to
 their initial values (not implemented yet).
+\item {\tt stress}: fixes the specified stresses to
+their initial values.
 \item {\tt position}: fixes the positions of the specified atoms to
 their initial values.
 \item {\tt center}: fixes the center (mean position, not center of
@@ -1595,6 +1224,7 @@ the relative height of the two atoms
         position  from -1 to -10
         rigid  1  2
         center 1  2   0.0  0.0  1.0
+        stress 4 5 6
         routine constr
      %endblock GeometryConstraints
 \end{verbatim}
@@ -1612,6 +1242,9 @@ coordinates and, without it, all three coordinates will be
 fixed (to fix a center, or a position, in the $x$ and $y$ directions,
 but not in the $z$ direction, two lines are required, one for each
 direction). 
+The sixth line specifies that the stresses 4, 5 and 6 should be fixed.
+The convention used for numbering stresses is that 1=xx,2=yy,3=zz,
+4=yz,5=xz,6=xy.
 The list of atoms for a given constraint may contain several atoms
 (as in lines 4 and 5) {\it or} a range (as in the third line),
 but not both. But you may specify many constraints of the same type,
@@ -3652,14 +3285,12 @@ the calculation would most probably not converge.
 And other similar messages.
 
 {\it Description:}
-Most system-dependent array dimensions are calculated by siesta itself,
-and dumped into .h (include) files for recompilation.
-But some array dimensions which change unfrequently, and do not lead to
+Some array dimensions which change unfrequently, and do not lead to
 much memory use, are fixed to oversized values. This message means that
 one of this parameters is too small and neads to be increased.
 However, if this occurs and your system is not very large, or unusual in
 some sense, you should suspect first of a mistake in the data file (incorrect
-atomic positions or cell dimensions, too large cutoff radiae, etc).
+atomic positions or cell dimensions, too large cutoff radii, etc).
 
 {\it Fix:}
 Check again the data file. 
@@ -3668,86 +3299,6 @@ If you find nothing unusual, edit the specified routine and change the
 corresponding parameter.
 After running the program, look at the siesta.size file to check that
 the memory use is still acceptable.
-
-% \item[{\tt xijorb: WARNING: orbital pair ... is multiply connected}].
-% 
-% {\it Description:}
-% In order to calculate the hamiltonian for an arbitrary k point, 
-% without using complex arithmetics, siesta calculates the hamiltonian 
-% matrix elements (at gamma) in a (super)cell so large that two atomic
-% orbitals interact only with one of the repeated `images' of each of
-% them. Then the matrix elements are multiplied by the appropriate
-% structure factor and added for all `images'.
-% This message means that you are using k-sampling with a (super)cell
-% which is too small, so that a basis orbital interacts with different
-% images of some other orbital. The message is printed only for the
-% first pair found, but the problem probably occurs for many or all pairs.
-% If the interactions are small, the results may still be good, but you
-% must be careful.
-% In particular, {\it this problem does not exist when k points are 
-% generated automatically} (even though
-% the warning will still appear), or when the supercells given by
-% {\bf SuperCell} and {\bf kgrid.MonkhorstPack} are equal, 
-% because in these cases the phase factors
-% of the different images are identical.
-% 
-% {\it Fix:}
-% Think again if you really need k-sampling.
-% Increase the unit cell or use a {\bf SuperCell} of it.
-% Then specify the {\bf NeglNonOverlapInt} option and, if the change in
-% the results is small enough, try to reduce again the unit cell or supercell.
-
-\end{description}
-
-
-
-\subsection{Other known problems}
-
-\begin{description}
-\itemsep 10pt
-\parsep 0pt
-
-\item[{\bf rrsiesta enters an infinite run-compile loop}].
-
-{\it Description:}
-In some cases, complex interactions between different parameters
-may cause that one parameter is incorrectly 
-reduced when another is increased in the output .h file, 
-and viceversa, what causes an endless run-compile loop.
-
-{\it Fix:}
-Begin the compilation again with {\tt msiesta init}.
-If this does not solve the problem, use {\tt rsiesta} and {\tt msiesta} 
-to run the run-compile loop by hand. 
-Find which .h file is causing the problem. Then edit
-this file and set the parameters to the maximum value acquired
-during the run-compile loop.
-
-% \item[{\bf Insufficient dimensions in matel.h after compilation loop}].
-%
-% {\it Description:}
-% The subroutine matel.f generates its own dimension in the recursive
-% process described above. In rare occasions it still asks for manual
-% increase in dimensions. Specifically MAXFFR can ask for larger dimensions.
-%
-% {\it Fix:}
-% In that case the problem is solved by increasing MAXL by one in matel.h
-% by hand.
-
-
-% \item[{\bf Dynamics with a SuperCell}].
-%
-% {\it Description:}
-% The {\bf SuperCell} block should not be used (unless as the trivial 
-% identity matrix, which is the default) in conjunction with any kind
-% of dynamics or relaxation. It is not prepared for that and can cause 
-% different kinds of trouble. 
-%
-% {\it Fix:}
-% Introduce all the atoms explicitly in the fdf file: the number of atoms,
-% the supercell vectors as cell vectors, and all the coordinates.
-% You can run SIESTA with no dynamics a first time using SuperCell
-% and get the all the coordinates from the output.
 
 \end{description}
 
@@ -3795,12 +3346,10 @@ The implementation dates are only temptative and very approximate.
 Subtraction of the energy and forces of the isolated atoms placed
 on the uniform real-space grid, in order to partially cancel the
 'energy rippling' (eggbox effect) introduced by that grid.
-Projected for August 1999.
 
 \item
 Ability to calculate the atomic forces and stress from Harris density 
 functional, for fast non-selfconsistent calculations.
-Projected for August 1999.
 
 \item
 Spectral analysis of DOS weighted for different orbitals or atoms
@@ -3810,19 +3359,10 @@ available only through {\bf SaveHS}. Projected for August 1999.
 \item
 Solution of the Poisson-Boltzman equation for molecules in solution,
 using multigrid methods.
-Projected for August 1999.
 
 \item
 Implementation of the Li-Nunes-Vanderbilt order-$N$ functional
 (R. W. Nunes and D. Vanderbilt, PRB {\bf 50}, 17611 (1994)).
-Projected for August 1999.
-
-\item
-Parallelization of the entire SIESTA code or of part of it.
-Projected for June 1999 (Juilan D. Gale).
-
-\item 
-Migration to Fortran 90. Projected for December 1999.
 
 \end{itemize}
 

@@ -1,4 +1,4 @@
-      subroutine redata(na, ncells, ns, nspin, isa, xa, outlng, g2max,
+      subroutine redata(na, ns, nspin, outlng, g2max,
      .                  charnet, negl, nscf, dDtol, mix, wmix, isolve, 
      .                  temp, fixspin, ts, ncgmax, ftol, strtol, eta, 
      .                  etol, rcoor, 
@@ -19,12 +19,9 @@ C Writen by P.Ordejon, December'96
 C Modified for introduction of dynamic memory in SIESTA by JDG Sept 99
 C ***************************** INPUT *********************************
 C integer na               : Number of atoms
-C integer ncells           : Number of unit cells in supercell
 C integer nspin            : Spin polarization
 C **************************** OUTPUT *********************************
 C integer ns               : Number of species
-C integer isa(na)          : Species index of each atom
-C real*8 xa(3,na)          : Atomic coordinates (Bohr)
 C real*8 charnet           : Net charge (in units of |e|)
 C logical outlng           : Long (true) or short (false) output
 C real*8 g2max             : PW cutoff energy (Ry)
@@ -125,7 +122,7 @@ C
 
       integer
      .  ia1, ia2, ianneal, idyn, ifinal, ioptlwf,
-     .  iquench, na, ncells, isa(na), isolve, istart, maxsav,
+     .  iquench, na, isolve, istart, maxsav,
      .  mullipop, ncgmax, nkick, nmove, ns, nscf, nspin,
      .  pmax
 
@@ -133,8 +130,7 @@ C
      .  beta, bulkm, charnet,
      .  dDtol, dt, dx, dxmax, eta, etol, ftol, g2max,
      .  mn, mpr, rcoor, rcoorcp, strtol,
-     .  taurelax, temp, tempinit, tcp, tp, ts, tt, wmix, wmixkick,
-     .  xa(3,na)
+     .  taurelax, temp, tempinit, tcp, tp, ts, tt, wmix, wmixkick
 
       logical
      .  chebef, dumpcharge, fixspin, inspn, mix, negl, noeta, 
@@ -1197,17 +1193,6 @@ C Variable cell shape? Depending on input and type of dynamics
      .                .and. (idyn.ne.6)
      .                .and. (.not. (idyn.eq.5 .and. ianneal.ne.1) )
 
-C Atomic Coordinates ..................................
-      if (Node.eq.0) then
-        call recoor( na*ncells, na, isa, xa )
-      endif
-
-#ifdef MPI
-      call MPI_Bcast(na,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(isa,na,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(xa(1,1),3*na,DAT_double,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
       
       if (Node.eq.0) then
         write(6,102)

@@ -1,3 +1,4 @@
+SIESTA_ARCH=t3e
 #
 # Makefile include file for Cray's T3E
 # Alberto Garcia <wdpgaara@lg.ehu.es>, Aug 2, 1999
@@ -7,33 +8,26 @@
 #
 FC=f90 -em -dp
 #
-# To compile some interface modules, we need the actual meaning
-# of 'double precision' on the Cray.
-#
-FC_ASIS=f90 -em
-#
 # Whatever needed, except -dp and -em... 
 #
 FFLAGS=  -O scalar2,pipeline2,aggress
 #FFLAGS= -O scalar2,pipeline2,aggress -eA
 FFLAGS_DEBUG= -g -Rabc -ei
 #
+NETCDF_LIBS=
+NETCDF_INTERFACE=
+DEFS_CDF=
 #
+MPI_INTERFACE=libmpi_f90.a
+MPI_INCLUDE=/usr/local/include
+DEFS_MPI=-DMPI
 #
 LIBS= -lsci -lmpi 
 #LIBS= -lsci -lmpi -lapp
 #
 SYS=t3e
 RANLIB=
-#
-# Location of mpif.h include file
-#
-MPI_INCLUDE=/usr/local/include
-#
-# Definition to trigger MPI conditional compilation
-#
-DEFS=-DMPI -DCRAY
-MPILIB=libmpi_f90.a
+DEFS= $(DEFS_CDF) $(DEFS_MPI) -DCRAY
 #
 # Actual compilation recipes for siesta code.
 # Specify "-p ." to let the compiler know that
@@ -49,3 +43,4 @@ MPILIB=libmpi_f90.a
 .f90.o:
 	$(FC) -c $(FFLAGS) -p .  $<
 #
+
