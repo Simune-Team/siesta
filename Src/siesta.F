@@ -99,7 +99,7 @@ C
      .  kn, kpr, 
      .  mn, mpr, Pint, Pmol, Psol
       real(dp)
-     .  qaux, qspin(4), qsol,
+     .  qaux, qspin(4), qsol, qtmp(4),
      .  rc, rcoor, rcoorcp, rijmin, 
      .  rmax, rmaxh, rmin, r2min,
      .  scell(3,3), stot, stress(3,3), strtol, svec(3),
@@ -2023,6 +2023,12 @@ c Print spin polarization
             enddo
           enddo
         enddo
+#ifdef MPI
+C Global reduction of spin components
+        call MPI_AllReduce(qspin,qtmp,nspin,
+     .    DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+        qspin(1:nspin) = qtmp(1:nspin)
+#endif
         if (nspin .eq. 2) then
           if (IOnode) then
             write(6,'(/,a,f12.6)')

@@ -15,9 +15,9 @@ c     included for reference.)
 c
 c     After it is done, this file should be commited.
 c
-      integer, dimension(3), save  :: num_version = (/1,1,0/)
+      integer, dimension(3), save  :: num_version = (/1,1,2/)
       character(len=80), parameter :: version_str =
-     . "SIESTA 1.1 -- [RELEASE] (Sept 25, 2001)"
+     . "SIESTA 1.1.2 -- [1.1-Patch-2] (2002-09-23)"
 
       end module version_info
 

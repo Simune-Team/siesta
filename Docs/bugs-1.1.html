@@ -1,0 +1,220 @@
+<h1>List of known problems in Siesta RELEASE 1.1</h1>
+
+<ol>
+<li> (Cosmetic)
+<pre>
+In the .ion, .ion.nc, and .ion.xml files, a record is incorrectly
+labeled as "vlocal" (which is the "bare" local pseudopotential). It
+should be labeled "vna" (which is vlocal screened by the ground
+state atomic charge density).
+
+Fix: The fix is trivial, but for compatibility reasons it will
+     not be applied along this release branch.
+</pre>
+</ol>
+<p> 
+<h2> ** All the following bugfixes have been 
+     incorporated into siesta-1.1f2</h2>
+<p>
+<ol>
+<li> (Porting) Support added for the Intel Fortran Compiler
+<p>
+<li> Declaration error for variable nsemicsave in old_atmfuncs.f
+<p>
+<pre>
+Fix:
+
+*** 126,133 ****
+          call memory('A','I',nsmax,'atom')
+          allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+!         allocate(nsemicsave(0:nsemx,nsmax))
+!         call memory('A','I',(nsemx+1)*nsmax,'atom')
+          allocate(nzetasave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+          allocate(nomax(nsmax))
+--- 126,133 ----
+          call memory('A','I',nsmax,'atom')
+          allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+!         allocate(nsemicsave(0:lmaxd,nsmax))
+!         call memory('A','I',(lmaxd+1)*nsmax,'atom')
+          allocate(nzetasave(0:lmaxd,nsemx,nsmax))
+          call memory('A','I',(lmaxd+1)*nsemx*nsmax,'atom')
+          allocate(nomax(nsmax))
+</pre>
+</ol>
+<p> 
+<h2> All the following bugfixes have been incorporated into siesta-1.1f1</h2>
+<p>
+<li> (Related to basis input from files)
+<pre>
+1. The "electrostatic correction" tables are not updated correctly.
+
+2. The extension of the NetCDF file is wrong.
+
+Fixes: In Src/basis_io.F :
+
+1. Change  ".ion_nc"    to ".ion.nc". Context:
+
+*** 69,75 ****
+           spp => species(is)
+           spp%label = species_label(is)
+           spp%read_from_file = .true.
+!          write(filename,'(a,a)') trim(spp%label), ".ion_nc"
+           iret = nf90_open(trim(filename),NF90_NOWRITE,ncid)
+  
+           iret = nf90_inq_dimid(ncid,'norbs',norbs_id)
+--- 69,75 ----
+           spp => species(is)
+           spp%label = species_label(is)
+           spp%read_from_file = .true.
+!          write(filename,'(a,a)') trim(spp%label), ".ion.nc"
+           iret = nf90_open(trim(filename),NF90_NOWRITE,ncid)
+  
+           iret = nf90_inq_dimid(ncid,'norbs',norbs_id)
+
+
+2. Add the line 
+
+	call rad_setup_d2(func)
+
+in the context
+
+--- 323,329 ----
+                 func%cutoff = rchloc + rchloc2 + 0.2_dp
+                 func%delta =  func%cutoff / (NTBMAX - 1)
+                 call ch_overlap(is,is2,func%cutoff,func%f)
++                call rad_setup_d2(func)
+              endif
+           enddo
+        enddo
+
+<a href="files11/basis_io.F">New version of basis_io.F</a>
+</pre>
+<p>
+<li> (Related to calculations with floating orbitals)
+<pre>
+The default mass assigned to "floating atoms" (which provide
+just their orbitals) was too big, and it led to overflows.
+
+Fix: In basis_specs.f, replace the line
+
+	basp%mass = huge(1.d0)
+
+by the line
+	
+	basp%mass = 1.d40   ! big but not too big, as it is used
+
+<a href="files11/basis_specs.f">New version of basis_specs.f</a>
+</pre>
+<p>
+<li> (Print out of total spin when running in parallel)
+<pre>
+If the number of processors is greater than 1, then the values
+in qspin() are wrong because the array is not globally reduced.
+Hence the total spin difference is incorrectly printed.
+
+Fix:
+
+In siesta.F :
+
+  Change line 102 from :
+
+     .  qaux, qspin(4), qsol, 
+
+  to 
+
+     .  qaux, qspin(4), qsol, qtmp(4),
+
+  Add the following after line 2025 to globalise qspin once it is
+  initialised :
+	
+#ifdef MPI
+C Global reduction of spin components
+        call MPI_AllReduce(qspin,qtmp,nspin,
+     .    DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+        qspin(1:nspin) = qtmp(1:nspin)
+#endif
+
+<a href="files11/siesta.F">New version of siesta.F</a>
+</pre>
+<p>
+<li> (Cosmetic) 
+<pre>
+In module atom.f, messages relating to the size of seldom-changed
+parameters point the user to file "atom.h". The correct reference
+is to file "atmparams.f".
+</pre>
+<p>
+<li> (Partial density of states for spin-polarized case) 
+<pre>
+
+In routine pdos.f, the output of data pertaining to the PDOS in the
+spin-polarized case mistakenly included an energy field. The correct
+write statement is marked below.
+
+           do ihist=1,nhist
+              if (nspin.eq.1) then
+                 write(iunit2,'(f10.5)') dpr(ihist,i,1)/eV
+              else if (nspin .eq. 2) then
+<<<<             write(iunit2,'(2f10.5)') dpr(ihist,i,1)/eV,
+     $                                 dpr(ihist,i,2)/eV
+              endif
+           enddo
+
+<a href="files11/pdos.f">New version of pdos.f</a>
+</pre>
+<p>
+<li> (Declaration error in old_atmfuncs.f)
+<pre>
+
+In routine vlocal_sub in file old_atmfuncs.f, the declaration of the
+dummy argument v is incorrect. It should be a scalar, not an array:
+
+	real*8, intent(out) :: v       ! Value of local pseudopotential
+
+<a href="files11/old_atmfuncs.f">New version of old_atmfuncs.f</a>
+</pre>
+
+<p>
+<li> (Edit descriptor in atom.f)
+<pre>
+
+Line 4340 of atom.f should be:
+
+             write(line,'(7(1x,i1,a1,a1,f5.2,a1))')
+
+                 instead of
+
+             write(line,'(7(x,i1,a1,a1,f5.2,a1))')
+</pre>
+
+<li> (Loss of accuracy in computation of integrals over real space mesh
+      if longest orbital in basis is unocuppied in the free atom)
+<pre> 
+
+If the longest orbital of a given species is unoccupied in the
+free atom, then some points were wrongly skipped while calculating the
+integrals.  The definition of the cutoff radii has been modified in
+vmat, rhoofd and dfscf, along the lines of:
+
+      integer io
+      ....
+      ....
+C  Find atomic cutoff radii
+      r2cut(:) = 0.0d0
+      do i = 1,nuotot
+        ia = iaorb(i)
+        is = isa(ia)
+        io = iphorb(i)
+        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
+      enddo
+
+<a href="files11/dfscf.f">New version of dfscf.f</a>
+<a href="files11/vmat.f">New version of vmat.f</a>
+<a href="files11/rhoofd.f">New version of rhoofd.f</a>
+</pre>
+</ol>
+
+

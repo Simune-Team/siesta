@@ -1985,7 +1985,7 @@ C*TABLE WITH THE PSEUDO_CORE DATA
               write(6,'(a)') 
      .    'comcore: WARNING It might be a good idea to increase' 
               write(6,'(a)')
-     .    'comcore: WARNING parameter ntbmax (in file atom.h) '
+     .    'comcore: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comcore: WARNING to at least ntbmax = ', 
      .            nint(Rcore/deltmax)+2 
@@ -2050,7 +2050,7 @@ C
               write(6,'(a)')
      .    'comlocal: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comlocal: WARNING parameter ntbmax (in file atom.h) '
+     .    'comlocal: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comlocal: WARNING to at least ntbmax = ', 
      .        nint(Rchloc/deltmax)+2 
@@ -2523,7 +2523,7 @@ C
               write(6,'(a)')
      .    'comKB: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comKB: WARNING parameter ntbmax (in file atom.h) '
+     .    'comKB: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comKB: WARNING to at least ntbmax = ', 
      .        nint(Rc/deltmax)+2
@@ -3844,7 +3844,7 @@ C
               write(6,'(a)')
      .    'comBasis: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comBasis: WARNING parameter ntbmax (in file atom.h) '
+     .    'comBasis: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comBasis: WARNING to at least ntbmax = ',
      .        nint(Rc/deltmax)+2
@@ -4337,7 +4337,7 @@ C***Internal variables*
           write(6,'(/,2a)') 'atm_pop: Valence configuration',
      .                      '(local Pseudopot. screening):' 
           do l=0,lpop 
-            write(line,'(7(x,i1,a1,a1,f5.2,a1))')
+            write(line,'(7(1x,i1,a1,a1,f5.2,a1))')
      .          (cnfigtb(l,nsm,is),sym(l),'(',qPAO(l,nsm),')',
      .       nsm=1,nsemic(l)+1-(cnfigtb(l,nsemic(l)+1,is)-config(l)))
             write(6,'(a)') line
@@ -4500,7 +4500,7 @@ C
               write(6,'(a)')
      .    'comVna: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comVna: WARNING parameter ntbmax (in file atom.h) '
+     .    'comVna: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comVna: WARNING to at least ntbmax = ',
      .        nint(rVna/deltmax)+2
@@ -4863,7 +4863,7 @@ C
               write(6,'(a)')
      .    'comPOL: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comPOL: WARNING parameter ntbmax (in file atom.h) '
+     .    'comPOL: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comPOL: WARNING to at least ntbmax = ',
      .        nint(Rc/deltmax)+2
