@@ -194,7 +194,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o parallel.o \
           basis_io.o  chemical.o transfer.o atm_types.o\
-          atmparams.o old_atmfuncs.o radial.o  io.o \
+          atmparams.o old_atmfuncs.o radial.o io.o \
 	  paste.o ionew.o \
           basis_specs.o atom.o periodic_table.o\
           pseudopotential.o dot.o xc.o recipes.o arw.o  \
@@ -236,6 +236,7 @@ clean:
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f siesta gen-basis denchar *.o  *.a *.pcl *.pc
 	rm -f *.mod
+	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
