@@ -1,0 +1,24 @@
+#
+#  The pseudopotential we have generated has an s-channel
+#  that corresponds to the 5s (semicore) state, not to
+#  the 6s. This is apparent in the following test
+#
+   ae Ba  True ground state
+ n=Ba c=car
+       0.0       0.0       0.0       0.0       0.0       0.0
+   11    4
+    6    0     2.00
+    6    1     0.00
+    5    2     0.00 
+    4    3     0.00
+   pt Ba  True ground state
+ n=Ba c=car
+       0.0       0.0       0.0       0.0       0.0       0.0
+   11    4
+    6    0     2.00
+    6    1     0.00
+    5    2     0.00 
+    4    3     0.00
+
+
+

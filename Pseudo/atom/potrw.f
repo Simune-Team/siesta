@@ -20,9 +20,13 @@ C     .. Local Scalars ..
       integer j
       character filename*7
 C     ..
+c
       if (kj .eq. 0) then
          write(filename,9900) k
  9900 format('PSWFNR',i1)
+      else if (kj .eq. -1) then
+         write(filename,9930) k
+ 9930 format('PTWFNR',i1)
       else
          write(filename,9910) k
  9910 format('AEWFNR',i1)
@@ -40,10 +44,12 @@ c
             step = step + pzf
          end if
    10 continue
- 9000 format(1x,f7.4,3x,2f10.6)
+ 9000 format(1x,f7.4,3x,f12.8,2x,f8.4)
 c
       close(unit=3)
 cag
       return
 c
       end
+
+

@@ -139,7 +139,7 @@ C
      .  usesavecg, usesavelwf, usesavedm, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     $  harrisfun
+     .  harrisfun, printeigen
 
 #ifdef MPI
       logical
@@ -747,7 +747,7 @@ C If number of k points has changed - re-size arrays
           maxk=nkpnt
        else
           call kgrid( ucell, kscell, kdispl,
-     $                nkpnt, kpoint, kweight )
+     .                nkpnt, kpoint, kweight )
 
        endif
  
@@ -1357,7 +1357,7 @@ C Save hamiltonian and overlap matrices ............................
 C ..................
 
 C Solve eigenvalue problem .........................................
-        if( .not. last) then
+        if( .not. last ) then
           if (isolve .eq. 0) then
             call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                  numh, listhptr, listh, numh, listhptr, listh, 
@@ -1365,6 +1365,7 @@ C Solve eigenvalue problem .........................................
      .                  gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      .                  eo, qo, Dscf, Escf, ef, efs, no_u)
             Ecorrec = 0._dp
+            printeigen = .true.
           elseif (isolve .eq. 1) then
             if (.not. gamma) call die("Cannot do O(N) with k-points.")
             call ordern(usesavelwf,ioptlwf,na_s,no_s,lasto,isa,qa,rcoor,
@@ -1504,7 +1505,10 @@ C If last iteration, exit SCF loop ....................................
           Dscf(1:nh,1:nspin) = Dold(1:nh,1:nspin)
           Escf(1:nh,1:nspin) = Eold(1:nh,1:nspin)
           if (dumpcharge) then
-             if (IOnode) write(6,*) 'Charge info in .RHO file'
+c             if (IOnode) write(6,*) 'Charge info in .RHO file'
+             call plcharge( no_s, na_s, no_u, maxnh, maxna, nspin,
+     .                      isa, iphorb, indxuo, lasto,
+     .                      scell, nsc, xa, rmaxo, datm )
           endif
           call timer( 'IterSCF', 2 )
           goto 50
@@ -1786,7 +1790,7 @@ C Find and print bands
       endif
 
 C Print eigenvalues
-      if (IOnode) then
+      if (IOnode .and. printeigen) then
         if (isolve.eq.0 .and. no_l.lt.1000) then
           if (nspin .le. 2) then
             write(6,'(/,a,/,a4,a3,a7)')
@@ -1811,7 +1815,7 @@ C Print eigenvalues
         endif
       endif
 
-      if (isolve.eq.0.and.IOnode) 
+      if (isolve.eq.0.and.IOnode.and.printeigen) 
      .     call ioeig(eo, ef, no_u, nspin, nkpnt, no_u, nspin, maxk)
 !--
 C Compute the projected density of states
@@ -1830,6 +1834,12 @@ C Compute the projected density of states
 
       if (do_pdos) then
 
+#ifdef MPI
+            if( IOnode) then
+              write(6,*)
+     .           'siesta: ERROR: PDOS not parallelized yet'
+            endif
+#else
 c     Find the desired energy range
          if (IOnode) then
             read(iu,'(a)') line
@@ -1841,20 +1851,25 @@ c     Find the desired energy range
             e2 = values(p,2) * factor
             sigma = values(p,3) * factor
             nhist = integers(p,1)
-            write(6,*) '>>'
-            write(6,*) 'PDOS info: '
-            write(6,*) 'e1, e2, sigma, nhist: ', e1, e2, sigma, nhist
-            write(6,*) '>>'
+            write(6,'(a)') 'siesta: PDOS info: '
+            write(6,'(a,3(f8.2,a),2x,i5)')
+     $             'siesta: e1, e2, sigma, nhist: ',
+     $             e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
 !
          endif  ! IOnode
-#ifdef MPI
-        call MPI_Bcast(e1,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(e2,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
-        if (IOnode) write(6,*) 'PDOS not implemented yet'
 
+!        call MPI_Bcast(e1,1,DAT_double,0,MPI_Comm_World,MPIerror)
+!        call MPI_Bcast(e2,1,DAT_double,0,MPI_Comm_World,MPIerror)
+!        call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
+!        call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+
+        call pdos( no_s, nspin, nspin, no_l, maxnh,
+     .             no_u, numh, listhptr, listh, H, S,
+     .             e1, e2, sigma, nhist,
+     .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
+     .             nbk, bk, ebk, no_u)
+
+#endif                          ! PDOS calc (only in serial version)
       endif                     ! PDOS calc (do_pdos)
 
 C Print program's energy decomposition

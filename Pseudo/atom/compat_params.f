@@ -63,7 +63,11 @@ c
          use_excorr = .false.
 
       endif
-
+c
+c     Avoid cutting off ionic unscreened pseudopotentials
+c
+      if (defined('NO_PS_CUTOFFS')) ecuts = 0.d0
+c
       use_old_cc = defined('OLD_CC')
       use_new_cc = defined('NEW_CC')
 

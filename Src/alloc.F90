@@ -162,27 +162,32 @@ PUBLIC ::             &
 
 PRIVATE      ! Nothing is declared public beyond this point
 
+
+! JMS/AG: It might be necessary to comment out dealloc_s1 due to
+! an apparent bug in the DEC compiler
+
 interface dealloc
   module procedure dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
                    dealloc_i1, dealloc_i2, dealloc_i3,             &
                    dealloc_l1, dealloc_l2, dealloc_l3,             &
-! JMS: Next line commented to fix an apparet bug in the DEC compiler
                    dealloc_s1,                         &
                    dealloc_r1, dealloc_r2, dealloc_r3
 end interface
 
+! JMS/AG: realloc_s1 removed
+!         due to an apparent bug in the DEC compiler
+! JMS/AG: realloc_s1s removed 
+!         due to apparent bugs in DEC & SGI compilers
+! JMS/AG: Due to an apparent bug in the SGI compiler,
+!         the following are removed:
+!   realloc_d1s, realloc_i1s, realloc_l1s, realloc_r1s
+
 interface realloc
   module procedure &
-! JMS: Next line commented due to an apparent bug in the DEC compiler
-!    realloc_s1,                                         &
     realloc_d1,  realloc_i1,  realloc_l1,  realloc_r1,  &
     realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  &
     realloc_d3,  realloc_i3,  realloc_l3,  realloc_r3,  &
     realloc_d4,                                         &
-! JMS: Next line commented due to apparent bugs in DEC & SGI compilers
-!   realloc_s1s,                                        &
-! JMS: Next line commented due to an apparent bug in the SGI compiler
-!   realloc_d1s, realloc_i1s, realloc_l1s, realloc_r1s, &
     realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
     realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
     realloc_d4s

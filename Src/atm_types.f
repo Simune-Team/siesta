@@ -90,12 +90,13 @@
          integer, dimension(maxnprojs)   ::  pj_l
          integer, dimension(maxnprojs)   ::  pj_m
 !
-         type(rad_func), dimension(:), pointer         ::  orbnl
-         type(rad_func), dimension(:), pointer         ::  pjnl
-         type(rad_func)                                ::  vna
-         type(rad_func)                                ::  chlocal
-         logical                                       ::  there_is_core
-         type(rad_func)                                ::  core
+         type(rad_func), dimension(:), pointer       ::  orbnl
+         type(rad_func), dimension(:), pointer       ::  pjnl
+         type(rad_func)                              ::  vna
+         type(rad_func)                              ::  chlocal
+         type(rad_func)                              ::  reduced_vlocal
+         logical                                     ::  there_is_core
+         type(rad_func)                              ::  core
 
          logical                        :: read_from_file
       end type species_info

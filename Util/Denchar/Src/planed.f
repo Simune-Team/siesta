@@ -1,60 +1,93 @@
-      subroutine plane(nplamax, option,xmin,xmax,ymin,ymax,
-     .                 npx,npy,coorpo,normalp,dirver1,dirver2,
-     .                 latpoint,plapoint,na,napla,indices,iscale,
-     .                 xa,xaplane)
-*
-*     This subroutine calculates coordinates of the points of one plane in 
-*    two reference frames: in the lattice reference frame (lrf) and in another 
-*    one centered on the plane in which the thid coordiante is always cero (prf)
-*  INPUTS:  
-*    option: Choose one of these options to define a plane:
-*                   1 = components of the normal vector
-*                   2 = equation of two straigth lines
-*                   3 = coordinates of three points
-*                   4 = indexes of three atoms
-*    xmin,xmax,ymin,ymax = limits of the portion of the plane simulated (prf).
-*    npx,npy = number of points generated in the directions x and y in prf 
-*    coorpo(3,3) = coordinates of the three points utilized to define the plane
-*                  (if option = 3) (lrf)
-*    normal(3) = components of the normal vector.
-*    dirver(2,3) = components of the directions vectors. 
-*    na = number of atoms
-*    indices(na) = indices ofthe atoms whose coordinates will be rotated
-*                  from the lattice reference frame to the in-plane 
-*                  reference frame
-*    iscale = units of the points of the plane
-*    xa(3,na) = atomic coordinates in lattice reference frame
-*    xaplane(3,na) = atomic coordinates in plane reference frame
-*
-*    Coded by J.Junquera (March/97)
-*-----------------------------------------------------------------------
-*     VARIABLES
-*
-      implicit none
+      SUBROUTINE PLANE( NA, NPLAMAX, OPTION, XMIN, XMAX, YMIN, YMAX,
+     .                  NPX, NPY, COORPO, NORMALP, DIRVER1, DIRVER2,
+     .                  XA, NAPLA, INDICES, ISCALE,
+     .                  LATPOINT, PLAPOINT, XAPLANE )
 
-      integer i,j,option,npx,npy,nplamax, na, napla, indices(na), iscale
-      real*8 xmin,xmax,ymin,ymax,length,modnor,moddi1
-      real*8 normal(3),normalp(3), xa(3,na), xaplane(3,na)
-      real*8 plapoint(nplamax,3)
-      real*8 latpoint(nplamax,3)
-      real*8 coorpo(3,3)
-      real*8 dirver1(3),dirver2(3)
+C **********************************************************************
+C This subroutine calculates coordinates of the points of a plane in 
+C two reference frames: in the lattice reference frame (lrf) and in another 
+C one centered on the plane in which the third coordiante 
+C is always cero (prf)
+C **********************************************************************
+
+      IMPLICIT NONE
+
+      INTEGER, INTENT(IN) ::
+     .   NPLAMAX, OPTION, NPX, NPY, ISCALE, NA, NAPLA, INDICES(NA)
+
+      DOUBLE PRECISION, INTENT(IN) ::
+     .   XMIN, XMAX, YMIN, YMAX,
+     .   NORMALP(3), COORPO(3,3), XA(3,NA)
+
+      DOUBLE PRECISION, INTENT(INOUT) ::
+     .   DIRVER1(3), DIRVER2(3)
+
+      DOUBLE PRECISION, INTENT(OUT) ::
+     .   PLAPOINT(NPLAMAX,3), LATPOINT(NPLAMAX,3),
+     .   XAPLANE(3,NA)
+
+C **** INPUTS **********************************************************
+C INTEGER NA         : Number of atoms in supercell
+C INTEGER NPLAMAX    : Maximum number of points in the plane
+C INTEGER OPTION     : Choose one of these options to define a plane:
+C                      1 = components of the normal vector
+C                      2 = equation of two straigth lines
+C                      3 = coordinates of three points
+C                      4 = indices of three atoms
+C INTEGER NPX,NPY    : Number of points generated along x and y
+C                      direction in a system of reference in which
+C                      the third components od the points of the plane is
+C                      zero (Plane Reference Frame; PRF)
+C REAL*8 XMIN, XMAX  : Limits of the plane in the PRF for x-direction
+C REAL*8 YMIN, YMAX  : Limits of the plane in the PRF for y-direction
+C REAL*8  NORMAL(3)  : Components of the normal vector used to define
+C                      the plane
+C REAL*8  DIRVER1(3) : Components of the first vector contained
+C                      in the plane
+C                      (Only used if ioption = 2)
+C REAL*8  DIRVER2(3) : Components of the second vector contained
+C                       in the plane
+C                       (Only used if ioption = 2)
+C REAL*8  COORPO(3,3): Coordinates of the three points used to define
+C                      the plane (Only used if ioption = 3)
+C INTEGER NAPLA      : Number of atoms whose coordinates will be rotated
+C INTEGER INDICES(NA): Indices of the atoms whose coordinates will
+C                      be rotated from the lattice reference frame
+C                      to the in-plane reference frame
+C INTEGER ISCALE     : Unit if the points of the plane
+C REAL*8  XA(3,NA)   : Atomic positions in cartesian coordinates
+C                      (in bohr)
+C **** OUTPUT **********************************************************
+C REAL*8  LATPOINT(NPLAMAX,3) : Coordinates of the points of the plane
+C                               (lattice ref. frame)
+C REAL*8  PLAPOINT(NPLAMAX,3) : Coordinates of the points of the plane
+C                               (plane refer. frame)
+C REAL*8  XAPLANE(3,NA): Atomic coordinates in plane reference frame
+C **********************************************************************
+
+C Internal variables ---------------------------------------------------
+
+      integer i,j
+      real*8 length,modnor,moddi1
+      real*8 normal(3)
       real*8 xplane(3),yplane(3)
       real*8 origin(3)
       real*8 mrot(3,3),inmrot(3,3)
+
       external length, atompla
 
-*
-*    modnor,moddi1 = length of the vecotr normal and dirver1
-*    xplane,yplane = plane reference frame. 
-*    plapoint(3) = coordinates of some points of the plane(plane refer. frame)
-*    latpoint(3) = coordinates of some points of the plane(lattice ref. frame)
-*    origin(3) = coordinates of a point of the plane that will be considered 
-*                the origin of the reference frame fixed in the plane. 
-*    mrot(3,3) = matriz del cambio de base de las coordenadas en el sistema
-*                de referencia del plano al sistema de referencia de la red.
-*    inmrot(3,3) = inversa de la matriz anterior.
-*
+
+C **********************************************************************
+C REAL*8 MODNOR, MODDI1       : Length of the vector normal and dirver1
+C REAL*8 XPLANE(3), YPLANE(3) : Plane reference frame
+C REAL*8 ORIGIN(3)            : Coordinates of a point of the plane 
+C                               that will be considered the origin of the 
+C                               reference frame fixed in the plane. 
+C REAL*8 MROT(3,3)            : matrix that relates the in plane
+C                               reference frame with the lattice reference
+C                               frame.
+C REAL*8 INMROT(3,3)          : Inverse of the previous matrix
+C **********************************************************************
 
       if(option .eq. 1) then
 
@@ -110,6 +143,7 @@ c         write(*,*)(xplane(i),i=1,3)
       do i = 1,3
          origin(i) = coorpo(1,i)
       enddo
+
 
 *
 *       We define now the matrix that describe the rotation.
@@ -237,20 +271,31 @@ c         write(*,*)(xplane(i),i=1,3)
       end
 *=======================================================================
 *=======================================================================
-      subroutine crossv(a,b,c)
-*
-*     This subroutine calculates the cross product of two vectors defined in
-*    cartesian coordinates.
-*
-      real*8 a(3),b(3),c(3)
-*
-*     a(3),b(3),c(3) :cartesian coordiantes of the three vectors.
-*
+      SUBROUTINE CROSSV( A, B, C )
+
+C **********************************************************************
+C This subroutine calculates the cross product of two vectors defined 
+C in cartesian coordinates.
+C **********************************************************************
+
+      DOUBLE PRECISION, INTENT(IN) ::
+     .   A(3), B(3)
+
+      DOUBLE PRECISION, INTENT(OUT) ::
+     .   C(3)
+
+C **** INPUT ***********************************************************
+C REAL*8 A(3)  : Cartesian components of the first vector
+C REAL*8 B(3)  : Cartesian components of the second vector
+C **** OUTPUT **********************************************************
+C REAL*8 C(3)  : Cartesian components of cross product vector
+C **********************************************************************
 
       c(1) = a(2)*b(3) - a(3)*b(2)
       c(2) = a(3)*b(1) - a(1)*b(3)
       c(3) = a(1)*b(2) - a(2)*b(1)
 
-      return
-      end
+      RETURN
+  
+      END SUBROUTINE CROSSV
 

@@ -56,7 +56,7 @@ C Internal variables and arrays
      .  minloc = 100,  ! Min buffer size for local copy of Dscf
      .  maxoa  = 100   ! Max # of orbitals per atom
       integer
-     .  i, ia, ic, ii, ijl, il, imp, ind, iop, ip, iphi, 
+     .  i, ia, ic, ii, ijl, il, imp, ind, iop, ip, iphi, io,
      .  is, isp, ispin, iu, iul, ix, j, jc, jl, 
      .  last, lasta, lastop, maxloc, maxloc2, nc, nlocal, 
      .  nphiloc, nvmaxl
@@ -112,10 +112,12 @@ C  Full initializations done only once
       last = 0
 
 C  Find atomic cutoff radiae
-      do i = 1,no
+      r2cut(:) = 0.0d0
+      do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
-        r2cut(is) = rcut(is,0)**2
+        io = iphorb(i)
+        r2cut(is) = max( r2cut(is), rcut(is,io)**2 )
       enddo
 
 C  Loop over grid points
@@ -285,7 +287,11 @@ C             Loop over sub-points
               else
                 ijl = jl*(jl+1)/2 + il + 1
               endif
-              Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
+              if (ic.ne.jc.and.il.eq.jl) then
+                Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + 2.0*Vij
+              else
+                Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
+              endif
 
             enddo
           enddo

@@ -178,18 +178,33 @@ C D. Sanchez-Portal, Oct. 1996.
       call rad_setup_d2(op)
       end subroutine radial_read_ascii
 !
-!
-      subroutine radial_dump_ascii(op,lun)
+!--------------------------------------------------------------------
+      subroutine radial_dump_ascii(op,lun,header)
       type(rad_func)    :: op
-      integer lun
-      integer j
+      integer           :: lun
+      logical, intent(in), optional :: header
 
-      write(lun,'(i4,2g22.12,a)') op%n,
-     $     op%delta, op%cutoff, " # npts, delta, cutoff"
+      integer :: j
+      logical :: print_header
+!
+!     The standard dump is to unit "lun"
+!     and includes a header with npts, delta, and cutoff
+!
+      print_header = .true.
+      if (present(header)) then
+         print_header = header
+      endif
+!
+      if (print_header) then
+         write(lun,'(i4,2g22.12,a)') op%n,
+     $        op%delta, op%cutoff, " # npts, delta, cutoff"
+      endif
       do j=1,op%n
          write(lun,'(2g22.12)') (j-1)*op%delta, op%f(j)
       enddo
+
       end subroutine radial_dump_ascii
+!--------------------------------------------------------------------
 !
       subroutine radial_dump_xml(op,lun)
       type(rad_func)    :: op

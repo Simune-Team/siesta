@@ -1,74 +1,64 @@
 
-      SUBROUTINE DMNA( NO, NSPIN, MAXO, MAXNO, NUMH, LISTH, INDXUO, 
+      SUBROUTINE DMNA( MAXUO, MAXO, MAXND, NUMD, LISTD, LISTDPTR,
      .                 DATM, DSCFNA )
 C **********************************************************************
 C Form Density Matrix for neutral and isolated atoms from occupations 
 C of basis orbitals in free atom
 C Coded by J. Junquera 11/98
+C Modified by J. Junquera 07/01
 C **********************************************************************
 
       IMPLICIT NONE
 
-      INTEGER ORBMAX
-      PARAMETER( ORBMAX = 10000 )
-
-      INTEGER 
-     .  NO, NSPIN, MAXO, MAXNO, INDXUO(MAXO),
-     .  NUMH(MAXO), LISTH(MAXNO,MAXO),
-     .  IO, IUO, JO, IN, ISPIN
+      INTEGER, INTENT(IN) :: 
+     .  MAXUO, MAXO, MAXND,
+     .  NUMD(MAXUO), LISTD(MAXND), LISTDPTR(MAXUO)
  
-      DOUBLE PRECISION
-     .  DATM(MAXO),
-     .  DSCFNA(MAXNO,MAXO,NSPIN)
+      DOUBLE PRECISION, INTENT(IN) ::
+     .  DATM(MAXO)
  
-      DOUBLE PRECISION
-     .  DI(ORBMAX)
-
-      EXTERNAL 
-     .  CHKDIM
-
+      DOUBLE PRECISION, INTENT(OUT) ::
+     .  DSCFNA(MAXND)
+ 
+C **** INPUT ***********************************************************
+C INTEGER MAXUO               : Max. number of basis orbitals in unit cell
+C INTEGER MAXO                : Max. number of basis orbitals in supercell
+C INTEGER MAXND               : Nonzero Hamiltonian-matrix element
+C                               column indexes for each matrix row
+C                               For parallel execution, listh contains the
+C                               elements for rows that involve
+C                               any locally stored orbitals. In the case
+C                               where parallelisation is over K points then
+C                               the full listh matrix is needed on every
+C                               Node.
+C INTEGER NUMD(MAXUO)         : Number of non-zero elements of each row of 
+C                               the Density Matrix 
+C INTEGER LISTD(MAXND)        : Non-zero Density-Matrix element column 
+C                               indexes for each matrix row
+C INTEGER LISTDPTR(MAXUO)     : Pointer to where each row of listh starts - 1
+C                               The reason for pointing to the element before
+C                               the first one is so that when looping over the
+C                               elements of a row there is no need to shift by
+C                               minus one.
+C REAL*8  DATM(MAXO)          : Neutral atom charge of each orbital
+C **** OUTPUT **********************************************************
+C REAL*8  DSCFNA(MAXND)       : Neutral Atom Density Matrix
 C **********************************************************************
-C INTEGER NO                : Total number of orbitals
-C INTEGER NSPIN             : Spin polarization
-C INTEGER MAXO              : Max. total number of basis orbitals
-C INTEGER MAXNO             : Max. total number of neighbours orbitals
-C INTEGER INDXUO(MAXO)      : Equivalent otbital in unit cell
-C INTEGER NUMH(MAXO)        : Number of non-zero elements of each row of 
-C                             the Density Matrix 
-C INTEGER LISTH(MAXNO,MAXO) : Non-zero Density-Matrix element column 
-C                             indexes for each matrix row
-C REAL*8  DATM(MAXO)        : Neutral atom charge of each orbital              
-C REAL*8  DSCFNA(MAXNO,MAXO,NSPIN) : Neutral Atom Density Matrix
-C **********************************************************************
 
-C Check dimensions -----------------------------------------------------
-      CALL CHKDIM( 'DMNA', 'ORBMAX' , ORBMAX , MAXO   , 1 )
+C Some internal variables ----------------------------------------------
 
-C Expand Datm from Unit Cell to SuperCell ------------------------------
-      DO IO = 1,NO
-        IUO = INDXUO(IO)
-        DI(IO) = DATM(IUO)
-      ENDDO
+      INTEGER
+     .  IO, JO, IN, IND
 
-
-      DO IO = 1, NO
 C Initialize Neutral Atom Density Matrix -------------------------------
-        DO IN = 1, NUMH(IO)
-          DO ISPIN = 1, NSPIN
-            DSCFNA(IN,IO,ISPIN) = 0.D0
-          ENDDO
-        ENDDO
+      DSCFNA(:) = 0.D0
 
-        DO IN = 1, NUMH(IO)
-          JO = LISTH(IN,IO)
+      DO IO = 1, MAXUO
+        DO IN = 1, NUMD(IO)
+          IND = LISTDPTR(IO) + IN
+          JO = LISTD(IND)
           IF (IO .EQ. JO) THEN
-            IF (NSPIN .EQ. 1) THEN
-
-C No spin polarization -------------------------------------------------
-              DSCFNA(IN,IO,1) = DI(IO)
-            ENDIF
-
-C Spin polarized case is not implemented yet ---------------------------
+              DSCFNA(IND) = DATM(IO)
           ENDIF
         ENDDO
       ENDDO

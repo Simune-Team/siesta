@@ -42,6 +42,7 @@ c
 C     .. Local Scalars ..
       double precision vsum
       integer i
+      character*2 id
 C     ..
 C     .. Intrinsic Functions ..
       intrinsic abs
@@ -74,12 +75,15 @@ c
      &      //' nl    s      occ',9x,'eigenvalue',4x,'kinetic energy',
      &      6x,'pot energy',/)
 c
+      id = " "
       do 20 i = nfirst, nlast
+         if (i .ge. ncp) id="&v"
          write(6,9010) no(i), il(lo(i)+1), so(i), zo(i), ev(i),
-     &     ek(i), ep(i)
- 9010    format(1x,i1,a1,f6.1,f10.4,3f17.8)
+     &     ek(i), ep(i), id
+ 9010    format(1x,i1,a1,f6.1,f10.4,3f17.8,2x,a2)
    20 continue
 c
+      write(6,'(a)') '---------------------------- &v'
       write(6,9020) (etot(i),i=1,10)
  9020 format(//' total energies',/1x,14('-'),
      &      //' sum of eigenvalues        =',f18.8,

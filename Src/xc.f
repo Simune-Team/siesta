@@ -318,29 +318,101 @@ C derivatives with respect to density and density gradient, in the
 C Generalized Gradient Correction approximation.
 C Lengths in Bohr, energies in Hartrees
 C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
+C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
 
       IMPLICIT          NONE
       CHARACTER*(*)     AUTHOR
-      INTEGER           IREL, NSPIN
-      DOUBLE PRECISION  D(NSPIN), DECDD(NSPIN), DECDGD(3,NSPIN),
-     .                  DEXDD(NSPIN), DEXDGD(3,NSPIN),
-     .                  EPSC, EPSX, GD(3,NSPIN)
+      INTEGER           IREL, NSPIN, NS, IS, IX
+      DOUBLE PRECISION  THETA, PHI, D(NSPIN), DECDD(NSPIN),
+     .                  DECDGD(3,NSPIN), DEXDD(NSPIN), DEXDGD(3,NSPIN),
+     .                  EPSC, EPSX, GD(3,NSPIN),
+     .                  DD(2), DTOT, DPOL, GDTOT(3), GDPOL(3),
+     .                  GDD(3,2), TINY, DECDN(2), DEXDN(2),
+     .                  VPOL, DECDGN(3,2), DEXDGN(3,2),
+     .                  VGPOLX, VGPOLC, C2, S2, ST, CP, SP
 
-      IF (NSPIN .GT. 2) STOP 'GGAXC: Not prepared for this NSPIN'
+      PARAMETER ( TINY = 1.D-12 )
+
+      IF (NSPIN .EQ. 4) THEN
+C       Find eigenvalues of density matrix (up and down densities
+C       along the spin direction)
+C       Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
+        NS = 2
+        DTOT = D(1) + D(2)
+        DPOL = SQRT( (D(1)-D(2))**2 + 4.D0*(D(3)**2+D(4)**2) )
+        DD(1) = 0.5D0 * ( DTOT + DPOL ) 
+        DD(2) = 0.5D0 * ( DTOT - DPOL )
+        THETA = ACOS((D(1)-D(2))/(DPOL+TINY))
+        C2 = COS(THETA/2)
+        S2 = SIN(THETA/2)
+        ST = SIN(THETA)
+        PHI = ATAN(-D(4)/(D(3)+TINY))
+        CP = COS(PHI)
+        SP = SIN(PHI)
+C       Find diagonal elements of the gradient
+        DO 10 IX = 1,3
+          GDD(IX,1) = GD(IX,1)*C2**2 + GD(IX,2)*S2**2 +
+     .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
+          GDD(IX,2) = GD(IX,1)*S2**2 + GD(IX,2)*C2**2 -
+     .                2.d0*C2*S2*(GD(IX,3)*CP - GD(IX,4)*SP)
+   10   CONTINUE 
+      ELSE
+        NS = NSPIN
+        DO 20 IS = 1,NSPIN
+          DD(IS) = D(IS)
+          DO 30 IX = 1,3
+            GDD(IX,IS) = GD(IX,IS)
+   30     CONTINUE
+   20   CONTINUE
+      ENDIF
 
       IF (AUTHOR.EQ.'PBE' .OR. AUTHOR.EQ.'pbe') THEN
-        CALL PBEXC( IREL, NSPIN, D, GD,
-     .              EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
+        CALL PBEXC( IREL, NS, DD, GDD,
+     .              EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
       ELSEIF (AUTHOR.EQ.'PW91' .OR. AUTHOR.EQ.'pw91') THEN
-        CALL PW91XC( IREL, NSPIN, D, GD,
-     .               EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
+        CALL PW91XC( IREL, NS, DD, GDD,
+     .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
       ELSE
         WRITE(6,*) 'GGAXC: Unknown author ', AUTHOR
         STOP
       ENDIF
+
+      IF (NSPIN .EQ. 4) THEN
+C       Find dE/dD(ispin) = dE/dDup * dDup/dD(ispin) +
+C                           dE/dDdown * dDown/dD(ispin)
+        VPOL  = (DEXDN(1)-DEXDN(2)) * (D(1)-D(2)) / (DPOL+TINY)
+        DEXDD(1) = 0.5D0 * ( DEXDN(1) + DEXDN(2) + VPOL )
+        DEXDD(2) = 0.5D0 * ( DEXDN(1) + DEXDN(2) - VPOL )
+        DEXDD(3) = (DEXDN(1)-DEXDN(2)) * D(3) / (DPOL+TINY)
+        DEXDD(4) = (DEXDN(1)-DEXDN(2)) * D(4) / (DPOL+TINY)
+        VPOL  = (DECDN(1)-DECDN(2)) * (D(1)-D(2)) / (DPOL+TINY)
+        DECDD(1) = 0.5D0 * ( DECDN(1) + DECDN(2) + VPOL )
+        DECDD(2) = 0.5D0 * ( DECDN(1) + DECDN(2) - VPOL )
+        DECDD(3) = (DECDN(1)-DECDN(2)) * D(3) / (DPOL+TINY)
+        DECDD(4) = (DECDN(1)-DECDN(2)) * D(4) / (DPOL+TINY)
+C       Gradient terms
+        DO 40 IX = 1,3
+          DEXDGD(IX,1) = DEXDGN(IX,1)*C2**2 + DEXDGN(IX,2)*S2**2
+          DEXDGD(IX,2) = DEXDGN(IX,1)*S2**2 + DEXDGN(IX,2)*C2**2
+          DEXDGD(IX,3) = 0.5D0*(DEXDGN(IX,1) - DEXDGN(IX,2))*ST*CP
+          DEXDGD(IX,4) = 0.5D0*(DEXDGN(IX,2) - DEXDGN(IX,1))*ST*SP
+          DECDGD(IX,1) = DECDGN(IX,1)*C2**2 + DECDGN(IX,2)*S2**2
+          DECDGD(IX,2) = DECDGN(IX,1)*S2**2 + DECDGN(IX,2)*C2**2
+          DECDGD(IX,3) = 0.5D0*(DECDGN(IX,1) - DECDGN(IX,2))*ST*CP
+          DECDGD(IX,4) = 0.5D0*(DECDGN(IX,2) - DECDGN(IX,1))*ST*SP
+   40   CONTINUE
+      ELSE
+        DO 60 IS = 1,NSPIN
+          DEXDD(IS) = DEXDN(IS)
+          DECDD(IS) = DECDN(IS)
+          DO 50 IX = 1,3
+            DEXDGD(IX,IS) = DEXDGN(IX,IS)
+            DECDGD(IX,IS) = DECDGN(IX,IS)
+   50     CONTINUE
+   60   CONTINUE
+      ENDIF
+
       END
-
-
 
 
       SUBROUTINE LDAXC( AUTHOR, IREL, NSPIN, D, EPSX, EPSC, VX, VC,
@@ -1168,7 +1240,7 @@ C      Correlation
          ECF=(C0311+C0014*RS)*RSLOG-C0538-C0096*RS
          VCF=(C0311+CON5*RS)*RSLOG-CON6-CON7*RS
          DVCFDN = (CON5*RS*RSLOG + (CON5-CON7)*RS + C0311)*(-TRD/D)
-         DECPDN = (C0014*RS*RSLOG + (C0014-C0096)*RS + C0311)*(-TRD/D)
+         DECFDN = (C0014*RS*RSLOG + (C0014-C0096)*RS + C0311)*(-TRD/D)
        ENDIF
 
        ISP1 = 1

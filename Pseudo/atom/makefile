@@ -9,19 +9,20 @@
 #
 FC= f77
 FFLAGS= -O
-AUX_OBJS= aux_general.o
+AUX_OBJS= auxosf.o
 #----------------------------------------------$$$$$
 #
 SRCS=   atm.f  nucl_z.f   difnrl.f   difrel.f   dmixp.f   dsolv1.f   \
         pseudo.f  wf.f  hsc.f  excorr.f \
         tm2.f  ker.f  wrapup.f   splift.f   spliq.f  \
         velect.f   vionic.f   wtrans.f   v0pp.f  chg_mism.f  \
-        dsolv2.f   etotal.f   ext.f  input.f   orban.f   \
-        potran.f   potrv.f   potrw.f   prdiff.f  string.f  root.f  \
+        dsolv2.f   etotal.f   ext.f  input.f  header.f orban.f   \
+        potran.f   potrv.f potrvs.f  potrw.f   prdiff.f  string.f  root.f  \
         genrhs.f  logder.f ode.f denplot.f scilib.f  recipes.f \
 	atomxc.f  ldaxc.f ggaxc.f pbexc.f pw92xc.f pzxc.f \
 	pw92c.f exchng.f compat_params.f blypxc.f pcc_exp.f \
-	coreq.f get_unit.f gauleg.f divdif.f symbols.f prversion.f
+	coreq.f get_unit.f gauleg.f divdif.f symbols.f prversion.f\
+        change_valence.f
 #
 OBJS=$(SRCS:.f=.o)
 #
@@ -55,10 +56,12 @@ tm2.o   : radial.h orbital.h ion.h param.h elecpot.h energy.h tm2_blk.h
 v0pp.o  : radial.h tm2_blk.h
 velect.o: radial.h orbital.h param.h charge.h elecpot.h energy.h compat.h
 vionic.o: radial.h orbital.h param.h ion.h charge.h 
+change_valence.o: radial.h param.h  charge.h ion.h
 wf.o hsc.o ker.o : radial.h orbital.h ion.h param.h elecpot.h energy.h
 wrapup.o: radial.h orbital.h param.h ion.h charge.h elecpot.h energy.h \
           compat.h
 wtrans.o potran.o: plot.h
+ninput.o header.o: input.h
 #
 # FTNCHEK and FORCHECK section
 #

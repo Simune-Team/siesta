@@ -27,6 +27,7 @@ C
 C  Modules
 C
       use precision
+      use fdf
 #ifdef MPI
       use mpi
 #endif
@@ -39,7 +40,7 @@ C
 c ----------------------------------------------------------------------
 
 c Internal variables
-      integer           i, i1, i2, i3, igmax(3), igmin(3),
+      integer           i, i1, i2, i3, igmax(3), igmin(3), iu,
      .                  ir, ik, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
      .                  ng(3), ni, nkr(3), nktot, Node
@@ -50,6 +51,7 @@ c Internal variables
      .                  gridk(3,3), gscell(3,3), pi,
      .                  scell(3,3), tiny, w1, wtot
       external          idiag, reclat
+      logical           spiral
       parameter (tiny   = 1.d-12)
 
 c Get Node number
@@ -58,6 +60,9 @@ c Get Node number
 #else
       Node = 0
 #endif
+
+c Find out if there is spiral arrangement of spins
+      spiral = fdf_block('SpinSpiral',iu)
 
 c Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -113,27 +118,32 @@ c Find total range of grid indexes
       enddo
 
 c Find number of points with time-reversal (inversion) symmetry,
-c after reflection on each alternative plane
-      do j = 1,3
-        ni = ng(j)
-        if (abs(dkg(j)) .lt. tiny) then
-          ni = ng(j)/2 + 1
-        elseif (abs(dkg(j)-0.5d0) .lt. tiny) then
-          ni = (ng(j)-1)/2 + 1
-        endif
-        nkr(j) = ni * nktot / kdsc(j,j)
-      enddo
+c (if not spiral) after reflection on each alternative plane
+      if (spiral) then
+c       If spin-spiral, use all k points
+        nk = nktot
+      else
+        do j = 1,3
+          ni = ng(j)
+          if (abs(dkg(j)) .lt. tiny) then
+            ni = ng(j)/2 + 1
+          elseif (abs(dkg(j)-0.5d0) .lt. tiny) then
+            ni = (ng(j)-1)/2 + 1
+          endif
+          nkr(j) = ni * nktot / kdsc(j,j)
+        enddo
 
-c Select reflection plane
-      ir = 3
-      if (nkr(2) .lt. nkr(ir)) ir = 2
-      if (nkr(1) .lt. nkr(ir)) ir = 1
-      igmin(ir) = 0
-      if (abs(dkg(ir)-0.5d0) .lt. tiny)
-     .  igmax(ir) = (ng(ir)-1)/2
+c       Select reflection plane
+        ir = 3
+        if (nkr(2) .lt. nkr(ir)) ir = 2
+        if (nkr(1) .lt. nkr(ir)) ir = 1
+        igmin(ir) = 0
+        if (abs(dkg(ir)-0.5d0) .lt. tiny)
+     .    igmax(ir) = (ng(ir)-1)/2
+        nk = nkr(ir)
+      endif
 
 c Find k points and weights
-      nk = nkr(ir)
       w1 = 1.d0 / nktot
       nk = 0
       do i3 = igmin(3),igmax(3)
@@ -151,21 +161,25 @@ c Find k points and weights
      .                    gridk(ix,2)*d(2) +
      .                    gridk(ix,3)*d(3)
         enddo
-        if ( abs(d(ir))              .lt. tiny .or.
-     .       abs(d(ir)-0.5d0*ng(ir)) .lt. tiny) then
+        if (spiral) then
           weight(nk) = w1
         else
-          weight(nk) = 2.d0 * w1
+          if ( abs(d(ir))              .lt. tiny .or.
+     .         abs(d(ir)-0.5d0*ng(ir)) .lt. tiny) then
+            weight(nk) = w1
+          else
+            weight(nk) = 2.d0 * w1
+          endif
         endif
       enddo
       enddo
       enddo
 
 c A couple of tests for debugging
-      if (Node.eq.0) then
-        if (nk .ne. nkr(ir))
-     .    write(6,*) 'kgrid: ERROR: nk, nkr(ir) =', nk, nkr(ir)
-      endif
+c     if (Node.eq.0) then
+c       if (nk .ne. nkr(ir))
+c    .    write(6,*) 'kgrid: ERROR: nk, nkr(ir) =', nk, nkr(ir)
+c     endif
       wtot = 0.d0
       do ik = 1,nk
         wtot = wtot + weight(ik)

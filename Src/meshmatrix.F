@@ -85,7 +85,8 @@ C
 C Local variables
 C
       integer
-     .  BNode, i, ii, io, iio, ip, imp, iu, numdele, maxndmax
+     .  BNode, i, ii, io, iio, ip, imp, iu, numdele, maxndmax,
+     .  nsize
 #ifdef MPI
       integer
      .  MPIerror
@@ -122,10 +123,10 @@ C Allocate/reallocate memory for numdl and listdlptr
           call memory('D','I',size(listdlptr),'CreateLocalDscfPointers')
           deallocate(listdlptr)
         endif
-        allocate(numdl(nrowsDscfL))
-        call memory('A','I',nrowsDscfL,'CreateLocalDscfPointers')
-        allocate(listdlptr(nrowsDscfL))
-        call memory('A','I',nrowsDscfL,'CreateLocalDscfPointers')
+        allocate(numdl(max(1,nrowsDscfL)))
+        call memory('A','I',max(1,nrowsDscfL),'CreateLocalDscfPointers')
+        allocate(listdlptr(max(1,nrowsDscfL)))
+        call memory('A','I',max(1,nrowsDscfL),'CreateLocalDscfPointers')
       endif
 
 C Distribute information about numd globally
@@ -155,9 +156,13 @@ C Allocate/reallocate listdl
         call memory('D','I',size(listdl),'CreateLocalDscfPointers')
         deallocate(listdl)
       endif
-      allocate(listdl(listdlptr(nrowsDscfL)+numdl(nrowsDscfL)))
-      call memory('A','I',listdlptr(nrowsDscfL)+numdl(nrowsDscfL),
-     .  'CreateLocalDscfPointers')
+      if (nrowsDscfL.gt.0) then
+        nsize = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)
+      else
+        nsize = 1
+      endif
+      allocate(listdl(nsize))
+      call memory('A','I',nsize,'CreateLocalDscfPointers')
 
 C Distribute information about listd globally
       allocate(ibuffer(maxndmax))
@@ -418,7 +423,7 @@ C Broadcast the pointer information
      .                 MPIerror)
 
 C Need to broadcast the row pointer info for Vi (listdlptr)
-        if (in.eq.Node) then
+        if (in.eq.Node.and.nrowsDscfL.gt.0) then
           listViptr(1:nrowsDscfL) = listdlptr(1:nrowsDscfL)
         endif
         call MPI_Bcast(listViptr,nuotot,MPI_integer,in,MPI_Comm_World,

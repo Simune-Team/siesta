@@ -29,11 +29,12 @@ C Internal variable declarations
       DOUBLE PRECISION  A(0:2), ALPHA1(0:2), B, BETA(0:2,4), C,
      .                  DBDRS, DECDD(2), DECDRS, DECDZ, DENMIN, DFDZ,
      .                  DGDRS(0:2), DCDRS, DRSDD, DTOT, DZDD(2),
-     .                  F, FPP0, FOUTHD, G(0:2), HALF,
+     .                  F, FPP0, FOUTHD, G(0:2), HALF, ONE,
      .                  P(0:2), PI, RS, THD, THRHLF, ZETA
 
-C Fix lower bound of density to avoid division by zero
+C Add tiny numbers to avoid numerical errors
       PARAMETER ( DENMIN = 1.D-12 )
+      PARAMETER ( ONE    = 1.D0 + 1.D-12 )
 
 C Fix some numerical constants
       PARAMETER ( FOUTHD=4.D0/3.D0, HALF=0.5D0,
@@ -55,15 +56,15 @@ C Find rs and zeta
         ZETA = 0
         RS = ( 3 / (4*PI*DTOT) )**THD
 C       Find derivatives dRs/dDens and dZeta/dDens
-        DRSDD = - RS / DTOT / 3
+        DRSDD = (- RS) / DTOT / 3
         DZDD(1) = 0
       ELSE
         DTOT = MAX( DENMIN, DENS(1)+DENS(2) )
         ZETA = ( DENS(1) - DENS(2) ) / DTOT
         RS = ( 3 / (4*PI*DTOT) )**THD
-        DRSDD = - RS / DTOT / 3
-        DZDD(1) =   1 / DTOT - ZETA / DTOT
-        DZDD(2) = - 1 / DTOT - ZETA / DTOT
+        DRSDD = (- RS) / DTOT / 3
+        DZDD(1) =   (ONE - ZETA) / DTOT
+        DZDD(2) = - (ONE + ZETA) / DTOT
       ENDIF
 
 C Find eps_c(rs,0)=G(0), eps_c(rs,1)=G(1) and -alpha_c(rs)=G(2)
@@ -78,31 +79,26 @@ C using eq.(10) of cited reference (Perdew & Wang, PRB, 45, 13244 (92))
      .          BETA(IG,3) * THRHLF    * RS**HALF +
      .          BETA(IG,4) * (P(IG)+1) * RS**P(IG)
         C = 1 + 1 / (2 * A(IG) * B)
-        DCDRS = - (C-1) * DBDRS / B
-        G(IG) = - 2 * A(IG) * ( 1 + ALPHA1(IG)*RS ) * LOG(C)
-        DGDRS(IG) = - 2*A(IG) * ( ALPHA1(IG) * LOG(C) +
+        DCDRS = - ( (C-1) * DBDRS / B )
+        G(IG) = (- 2) * A(IG) * ( 1 + ALPHA1(IG)*RS ) * LOG(C)
+        DGDRS(IG) = (- 2) *A(IG) * ( ALPHA1(IG) * LOG(C) +
      .                            (1+ALPHA1(IG)*RS) * DCDRS / C )
-   20 CONTINUE
-C
-C    In case zeta is close to 1 or -1, things can go wrong when
-C    computing F and DFDZ below...
-C
-      if ( abs((abs(zeta)-1.d0)) .lt.1.d-10) zeta = zeta + 1.d-8
+ 20      CONTINUE
 
 C Find f''(0) and f(zeta) from eq.(9)
       C = 1 / (2**FOUTHD - 2)
       FPP0 = 8 * C / 9
-      F = ( (1+ZETA)**FOUTHD + (1-ZETA)**FOUTHD - 2 ) * C
-      DFDZ = FOUTHD * ( (1+ZETA)**THD - (1-ZETA)**THD ) * C
+      F = ( (ONE+ZETA)**FOUTHD + (ONE-ZETA)**FOUTHD - 2 ) * C
+      DFDZ = FOUTHD * ( (ONE+ZETA)**THD - (ONE-ZETA)**THD ) * C
 
 C Find eps_c(rs,zeta) from eq.(8)
-      EC = G(0) - G(2) * F / FPP0 * (1-ZETA**4) +
+      EC = G(0) - G(2) * F / FPP0 * (ONE-ZETA**4) +
      .    (G(1)-G(0)) * F * ZETA**4
-      DECDRS = DGDRS(0) - DGDRS(2) * F / FPP0 * (1-ZETA**4) +
+      DECDRS = DGDRS(0) - DGDRS(2) * F / FPP0 * (ONE-ZETA**4) +
      .        (DGDRS(1)-DGDRS(0)) * F * ZETA**4
-      DECDZ = - G(2) / FPP0 * ( DFDZ*(1-ZETA**4) - F*4*ZETA**3 ) +
+      DECDZ = (- G(2)) / FPP0 * ( DFDZ*(ONE-ZETA**4) - F*4*ZETA**3 ) +
      .        (G(1)-G(0)) * ( DFDZ*ZETA**4 + F*4*ZETA**3 )
-      
+
 C Find correlation potential
       IF (NSPIN .EQ. 1) THEN
         DECDD(1) = DECDRS * DRSDD

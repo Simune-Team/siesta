@@ -19,7 +19,7 @@ C     ..
 C     .. Local Scalars ..
       double precision aa, dv, dvmax, t1, t2, xmixo, zsold
       integer i, icon2, iconv, iiter, iter, 
-     &        itsm, maxit, nconf
+     &        itsm, maxit, nconf, jobold
       character icold*2, naold*2
       character pot_id*40, headline*79
 C     ..
@@ -55,6 +55,7 @@ c
       naold = '  '
       icold = '  '
       zsold = zero
+      jobold = -1
       nconf = 0
       nr = nrmax
 c
@@ -67,24 +68,41 @@ c   Print version
 c
       call prversion
 c
-c   Process directives
 c
-      call check_directives(5)
+c   Start of loop over configurations or different jobs.
+c   Note that it is possible to mix different kinds of
+c   jobs (for example, an all-electron calculation followed
+c   by a pseudopotential test).
 c
-c   Start of loop over configuration.
-c
-      job = 0
    10 continue
       norb = norbmx
 c
 c   Read the input data.
+c   New: allow directives before each job
 c
+      call check_directives(5)
       Call Input
 c
-c  Stop - no more data in input file,
-c  Find time taken for total calculation.
+c     Prevent computing energy differences between different
+c     kinds of jobs. Print those differences only at
+c     the end of a series.
 c
+      if (nconf .gt. 0) then
+         if ((job .ne. jobold) .or.
+     $       (naold .ne. nameat) .or.
+     $       (icold .ne. icorr) .or.
+     $       (zsold .ne. zsh))    then
+            
+            if ((job.lt.1.or.job.gt.3) .and.
+     $           (nconf .ge. 2)) then
+               call prdiff(nconf,econf)
+            endif
+            nconf = 0
+         endif
+      endif
+
       if (job .lt. 0) then
+c  Stop - no more data in input file,
          t2 = second()
          write(6,9000) t2 - t1
  9000    format(//' The total time for the calculation is ',f12.5,
@@ -92,11 +110,24 @@ c
          call ext(0)
       end if
 c
+c     Print out info gathered by Input
+c
+      call Header
+c
+c
 c  Jump charge density 'set up' and ionic data input if
 c  configuration test.
 c
+c  All-electron calculations must have a properly
+c  setup starting charge.
+c  Make sure it is done even if we change jobs
+c  to "ae".
+c
       itsm = znuc/9 + 3
-      if (zsold .eq. zsh .and. naold .eq. nameat  .and.
+c
+      if (zsold .eq. zsh .and.
+     $    naold .eq. nameat  .and.
+     $    jobold .eq. job    .and.
      &    (job.lt.1.or.job.gt.4)) then
 
 c        do nothing
@@ -105,6 +136,8 @@ c        do nothing
 
          if (job .lt. 4) then
 
+            write(6,'(a)') 'Setting up initial charge'
+c
 c           Set up the initial charge density.
 c           cdd and cdu  =  (4 pi r**2 rho(r))/2
 
@@ -123,6 +156,7 @@ c           potential convergence.
 c
 c        set up ionic potentials
 c
+         write(6,'(a)') 'Setting up ionic potential'
          call Vionic
 c
       end if
@@ -223,9 +257,19 @@ c   Compute the logarithmic derivative as a function of energy
 c
       if (logder_radius .gt. 0.d0) call logder(ncore+1,norb,'AE')
 c
-c   Replace the valence charge density.
+c   Replace the valence charge density. Kludgeish...
 c
-      if (job .eq. 5) call Vionic
+c      if (job .eq. 5) then
+c         job = 6
+c         call Vionic
+c         job = 5
+c      endif
+c
+c     Better way...
+c
+      if (job .eq. 5) then
+         call change_valence
+      endif
 c
 c  Pseudopotential generation.
 c
@@ -270,25 +314,24 @@ c
 
       end if
 c
-c  printout difference from first configuration
-c
       nconf = nconf + 1
       econf(nconf) = etot(10)
-      if (naold .eq. nameat .and. icold .eq. icorr .and.
-     &    nconf .ne. 1 .and. (job.lt.1.or.job.gt.3)) then
-         call prdiff(nconf,econf)
-         write(6,9080) etot(10) - econf(1)
-      end if
-      write(6,9090)
- 9080 format(//' excitation energy         =',f18.8,/)
- 9090 format(//60('%'),//)
+c
+c   End loop of configuration.
 c
       naold = nameat
       icold = icorr
       zsold = zsh
-c
-c   End loop of configuration.
-c
+      jobold = job
+
       go to 10
 c
       end
+
+
+
+
+
+
+
+

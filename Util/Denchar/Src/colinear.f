@@ -1,17 +1,18 @@
 
       SUBROUTINE COLINEAR( COORPO, COLIN )
+
 C **********************************************************************
-C Checks if three points lyes in the same straight line (if they are 
+C Checks if three points lye in the same straight line (if they are 
 C colinear).
 C Coded by J. Junquera November'98
 C **********************************************************************
 
       IMPLICIT NONE
 
-      DOUBLE PRECISION
+      DOUBLE PRECISION, INTENT(IN) ::
      .  COORPO(3,3)
  
-      LOGICAL
+      LOGICAL, INTENT(OUT) ::
      .  COLIN
 
 C **********************************************************************
@@ -19,6 +20,8 @@ C REAL*8 COORPO(3,3)   : Coordinates of three points. COORPO(POINT,IX)
 C LOGICAL COLIN        : True => Three points are colinear
 C                        False=> Three points NOT colinear
 C **********************************************************************
+
+C Internal variables ---------------------------------------------------
 
       INTEGER 
      .  IX

@@ -7,6 +7,8 @@ C The input is exactly the same as that for SIESTA.
 C This program generates .ion (optionally .ion.nc) files readable
 C by SIESTA
 C
+C RESTRICTION: Just a single species allowed
+C
       use fdf
       use ionew
       use precision
@@ -16,6 +18,9 @@ C
       use atmparams
       use old_atmfuncs
       use atom
+C
+C     It has to be MPI-aware since it calls routines down the line...
+C
 #ifdef MPI
       use mpi
 #endif
@@ -52,6 +57,10 @@ C Initialise MPI and set processor number
       call allocate_old_arrays
       call clear_tables
 
+      if (nsp .gt. 1) then
+         write(6,'(//,a,//)') "JUST A SINGLE SPECIES ALLOWED..."
+         STOP
+      endif
       do is = 1,nsp
          call write_basis_specs(6,is)
          basp=>basis_parameters(is)

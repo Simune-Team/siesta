@@ -1,0 +1,123 @@
+
+# Sample FDF file for program SIESTA
+# P.Ordejon, December'96, J.M.Soler, March'97
+
+SystemName        Si tetrahedral     # Descriptive name of the system
+SystemLabel            SiH3          # Short name for naming files
+NumberOfAtoms           4            # Number of atoms
+NumberOfSpecies         2            # Number of species
+
+PAO.EnergyShift 0.25 eV
+PAO.SplitNorm   0.15
+PAO.BasisType   split
+PAO.BasisSize   DZP
+
+
+%block ChemicalSpeciesLabel
+ 1  14  Si     # Species index, atomic number, species label
+ 2  1   H
+%endblock ChemicalSpeciesLabel
+
+#%block PAO.Basis                   # Define Basis set
+#Si           2                     is, Z, Lmax, LmaxPS
+#       0   1                           l, Nzeta
+#      5.0                  rc(izeta=1,Nzeta)(Bohr)
+#      1.0                  scaleFactor(izeta=1,Nzeta)
+#       1   1                           l, Nzeta
+#      5.0                   rc(izeta=1,Nzeta)(Bohr)
+#      1.0                   scaleFactor(izeta=1,Nzeta)
+#H            1
+#       0   1
+#      5.0   
+#      1.0  
+#%endblock PAO.Basis
+
+
+%block AtomicCoordinatesAndAtomicSpecies
+   0.00000    .00000    .00000    1
+  -0.85447  -0.85447   0.85447    2
+  -0.85447   0.85447  -0.85447    2
+   0.85447  -0.85447  -0.85447    2
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+%block kgrid_Monkhorst_Pack
+ 1  0  0  0.0
+ 0  1  0  0.0
+ 0  0  1  0.0
+%endblock kgrid_Monkhorst_Pack
+
+# Atomic coordinates
+AtomicCoordinatesFormat   NotScaledCartesianAng  # Format for coordinates
+                                                 #   - NotScaledCartesianBohr
+                                                 #   - NotScaledCartesianAng
+                                                 #   - ScaledCartesian
+
+SpinPolarized         true          # Logical parameters are: yes or no
+
+MeshCutoff          150. Ry          # Mesh cutoff. real space mesh
+
+# SCF options
+MaxSCFIterations      100           # Maximum number of SCF iter
+DM.MixingWeight       0.10          # New DM amount for next SCF cycle
+DM.Tolerance          1.d-4         # Tolerance in maximum difference
+                                    # between input and output DM
+DM.UseSaveDM           yes          # to use continuation files
+DM.NumberPulay         3
+
+NeglNonOverlapInt     false        # Neglect non-overlap interactions
+  
+WriteMullikenPop       1
+
+
+ElectronicTemperature 25 meV       # Temp. for Fermi smearing
+
+# MD options
+
+MD.TypeOfRun            Verlet      # Type of dynamics:
+MD.InitialTimeStep      1
+MD.FinalTimeStep        1  
+MD.LenghtTimeStep       2.0 fs
+MD.InitialTemperature   0.0 K
+
+WriteDenchar           .true.
+SaveRho                .true.
+SaveDeltaRho                .true.
+
+2D.CoorUnits            bohr           # Format for coordinate of the points
+                                       # Bohr
+                                       # Ang
+
+2D.DensityUnits        Ele/bohr**3     # Units of Charge Density
+                                       # Ele/bohr**3
+                                       # Ele/Ang**3
+                                       # Ele/UnitCell
+
+2D.MinX                 0.0  Ang       # Minimum coord of the window in X-dir
+2D.MaxX           14.174551141 bohr    # Maximum coord of the window in X-dir
+
+2D.MinY                 0.0  Ang       # Minimum coord of the window in Y-dir
+2D.MaxY          14.174551141 bohr     # Maximum coord of the window in X-dir
+
+2D.NumberPointsX         61            # Number of points in X-axis
+2D.NumberPointsY         61            # Number of points in Y-axis
+
+2D.PlaneGeneration  NormalVector       # Option to generate the plane
+                                       # NormalVector
+                                       # TwoLines
+                                       # ThreePoints
+                                       # ThreeAtomicIndices
+
+
+%block 2D.CompNormalVector        # Components of the Normal Vector
+0.000   0.000   1.000
+%endblock 2D.CompNormalVector
+
+%block 2D.PlaneOrigin             # Coordinates of the origin of the plane
+0.000   0.000   0.000
+%endblock 2D.PlaneOrigin
+
+%block 2D.X_Axis                  # Coordinates one point to define x-axis
+1.00000 0.00000 0.00000
+%endblock 2D.X_Axis
+
+

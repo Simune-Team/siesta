@@ -125,6 +125,9 @@
          func=>spp%chlocal
          call broadcast_radial(func,Node)
 
+         func=>spp%reduced_vlocal
+         call broadcast_radial(func,Node)
+
          call MPI_Bcast(spp%there_is_core,1,MPI_logical,
      $                  0,MPI_Comm_World,MPIerror)
          

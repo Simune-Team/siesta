@@ -1,4 +1,4 @@
-c $Id: auxibm.f,v 1.4 1997/05/22 17:32:01 wdpgaara Exp $
+c $Id: auxibm.f,v 1.5 2002/07/11 21:47:00 wdpgaara Exp $
 c
 c     Auxiliary file for the plane-wave program. IBM RS/6000 Version
 c     It is now very close to "BSD" flavors, thanks to the introduction
@@ -27,7 +27,7 @@ C
       year = mod(iarray(3),100)
 
           WRITE(BDATE,102) day,DASH,MONTH(mon),DASH,year
- 102  FORMAT(I2,A1,A3,A1,I2,' ')
+ 102  FORMAT(I2,A1,A3,A1,I2.2,' ')
           RETURN
           END
 c

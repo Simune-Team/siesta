@@ -156,9 +156,9 @@
       character(len=10) :: basistype_generic
 
 
-      basis_size=fdf_get('PAO.BasisSize',basis_size_default)
+      basis_size=fdf_string('PAO.BasisSize',basis_size_default)
       call size_name(basis_size)
-      basistype_generic=fdf_get('PAO.BasisType',basistype_default)
+      basistype_generic=fdf_string('PAO.BasisType',basistype_default)
       call type_name(basistype_generic)
 
 !
@@ -596,6 +596,7 @@
          end subroutine repaobasis
 !_______________________________________________________________________
 
+
          function set_default_lmxkb(is) result(lmxkb)
          integer lmxkb
          integer, intent(in) :: is
@@ -619,18 +620,27 @@
                if (s%polarized) lpol = s%l + 1
             enddo
          enddo
-         if (lpol .gt. basp%lmxo) then
-            lmxkb = lpol + 1
-            write(6,*) 'For ', trim(basp%label), ', increment lmxkb to',
-     $                 lmxkb, ' due to polarization orbitals.'
-            if (lmxkb.gt.3) then
-               write(6,*) 'Warning: For ', trim(basp%label), 
-     $                 ' lmxkb would have to be set to ', lmxkb
-               write(6,*) 'Setting it to maximum value of 3'
-               lmxkb = 3
-            endif
+         if (lpol .gt. basp%lmxo) lmxkb = lpol + 1
+
+         write(6,'(3a,i1,/,2a,/,a)') 'For ', trim(basp%label),
+     $              ', standard SIESTA heuristics set lmxkb to ',
+     $              lmxkb,
+     $              ' (one more than the basis l,',
+     $              ' including polarization orbitals).',
+     $  'Use PS.lmax or PS.KBprojectors blocks to override.'
+!
+!        But there is an upper limit for sanity: f is the highest
+!
+         if (lmxkb.gt.3) then
+            write(6,'(3a,i1)') 'Warning: For ', trim(basp%label),
+     $           ' lmxkb would have been set to ', lmxkb
+            write(6,'(a)')
+     $           'Setting it to maximum value of 3 (f projector)'
+            lmxkb = 3
          endif
+
          end function set_default_lmxkb
+
 !-----------------------------------------------------------------------
 
       subroutine resizes

@@ -1,240 +1,106 @@
+      SUBROUTINE REDATA( MAXO, MAXA, MAXUO, MAXNH, NSPIN, 
+     .                   ISA, IPHORB, INDXUO, LASTO,
+     .                   CELL, NSC, XA, RMAXO, DATM )
 
-      SUBROUTINE REDATA( NSPIN, NUO, NO, NA, 
-     .                   MAXO, MAXA, MAXNO, MAXSPIN, 
-     .                   CELL, RMAXO, XA, 
-     .                   LASTO, ISA, IPHORB, DATM,
-     .                   NUMH, LISTH, INDXUO )
 C **********************************************************************
-C Read tables calculated in siesta
+C Read the data files to plot charge density at the points of a plane 
+C in real space.
+C The information is written by the subroutine plcharge in SIESTA,
+C when WriteDenchar option is set up to .true. in the fdf input data 
+C file.
+C
 C Coded by J. Junquera 11/98
 C Modified by DSP, July 1999
+C Modified by J. Junquera, 7/01
 C **********************************************************************
+
+      USE FDF
 
       IMPLICIT NONE
 
-      INCLUDE 'atom.h'
-      INCLUDE 'fdfdefs.h'
+      INTEGER, INTENT(IN) ::
+     .  MAXO, MAXA, MAXUO, NSPIN, MAXNH
 
-      INTEGER 
-     .  NSPIN, MAXO, MAXA, MAXSPIN, MAXNO,
-     .  NUO, NO, NA, UNIT1, LASTO(0:MAXA), 
-     .  ISA(MAXA), IPHORB(MAXO),
-     .  NUMH(MAXO), LISTH(MAXNO,MAXO), INDXUO(MAXO),
-     .  ISMAX, NOMAX(NSMAX), NKBMAX(NSMAX),
-     .  IB, IL, IS, IA, IO, J, NPOLORBSAVE(0:LMAXD,NSEMX,NSMAX),
-     .  LMXOSAVE(NSMAX), LMXKBSAVE(NSMAX), 
-     .  NZETASAVE(0:LMAXD,NSEMX,NSMAX),
-     .  LSEMICSAVE(0:LMAXD,NSMAX), NKBLSAVE(0:LMAXD,NSMAX)
+      INTEGER, INTENT(OUT) ::
+     .  LASTO(0:MAXA), ISA(MAXA), IPHORB(MAXO), INDXUO(MAXO), NSC(3)
 
-
-      DOUBLE PRECISION
+      DOUBLE PRECISION, INTENT(OUT) ::
      .  CELL(3,3), XA(3,MAXA), RMAXO, DATM(MAXO)
 
-      DOUBLE PRECISION
-     .  TABLE((NTBMAX+2),-(LMAXD+1):NSEMX*NZETMX*(LMAXD+1),NSMAX),
-     .  TAB2(NTBMAX,-(LMAXD+1):NSEMX*NZETMX*(LMAXD+1),NSMAX),
-     .  TABPOL((NTBMAX+2),(LMAXD+1)*NSEMX*NZETMX,NSMAX),
-     .  TAB2POL(NTBMAX,(LMAXD+1)*NSEMX*NZETMX,NSMAX)
 
+C **** INPUT ***********************************************************
+C INTEGER MAXO           : Maximum number of atomic orbitals in supercell
+C INTEGER MAXA           : Maximum number of atoms in supercell
+C INTEGER MAXUO          : Maximum number of atomic orbitals in unit cell.
+C INTEGER MAXNH          : Maximum number
+C                          of basis orbitals interacting, either directly
+C                          or through a KB projector, with any orbital
+C INTEGER NSPIN          : Number of different spin polarizations
+C                          Nspin = 1 => Non polarized. Nspin = 2 => Polarized
+C **** OUTPUT **********************************************************
+C INTEGER LASTO(0:MAXA)  : Last orbital of each atom in array iphorb
+C INTEGER ISA(MAXA)      : Species index of each atom in the supercell
+C INTEGER IPHORB(MAXO)   : Orbital index (within atom) of each orbital
+C INTEGER INDXUO(MAXO)   : Equivalent orbital in unit cell
+C INTEGER NSC(3)         : Num. of unit cells in each supercell direction
+C REAL*8  CELL(3,3)      : Supercell vectors CELL(IXYZ,IVECT)
+C                          (in bohrs)
+C REAL*8  XA(3,MAXA)     : Atomic positions in cartesian coordinates
+C                          (in bohrs)
+C REAL*8  RMAXO          : Maximum range of basis orbitals
+C REAL*8  DATM(MAXO)     : Occupations of basis orbitals in free atom
+C **********************************************************************
 
-      CHARACTER
-     .  SNAME*30, FNAME*33, PASTE*33
+C Internal variables ---------------------------------------------------
 
-      LOGICAL
-     .  SEMICSAVE(NSMAX)
+      CHARACTER*33 PASTE
 
-      EXTERNAL 
+      CHARACTER*30
+     .  SNAME, FNAME
+
+      INTEGER
+     .  UNIT1, IL, IA, J
+
+      EXTERNAL
      .  IO_ASSIGN, IO_CLOSE, PASTE
 
-      COMMON/CMTAB/TABLE,TABPOL
-      COMMON/CMSPLINE/TAB2,TAB2POL
-      COMMON/CMZETA/NZETASAVE
-      COMMON/CMSEMIC/SEMICSAVE,LSEMICSAVE
-      COMMON/CMNKBL/NKBLSAVE
-      COMMON/CONTROL/ISMAX,NOMAX,NKBMAX
-      COMMON/CMPOLORB/NPOLORBSAVE
-      COMMON/CMLMXO/LMXOSAVE
-      COMMON/CMLMXKB/LMXKBSAVE
 
-C **********************************************************************
-C INTEGER MAXO           : Max. total number of basis orbitals
-C INTEGER MAXA           : Max. number of atoms
-C INTEGER MAXNO          : Max. number of neighbour orbitals
-C INTEGER MAXSPIN        : Max. number of spines (1 or 2)
-C INTEGER NSPIN          : Number of different spin polarizations
-C                          Nspin = 1 => Non polarized, Nspin = 2 => Polarized 
-C INTEGER NUO            : Number of orbitals in unit cell
-C INTEGER NO             : Total number of atomic orbitals
-C INTEGER NA             : Number of atoms 
-C REAL*8  CELL(3,3)      : Unit cell vectors CELL(IXYZ,IVECT)
-C REAL*8  XA(3,MAXA)     : Atomic position in cartesian coordinates
-C REAL*8  RMAXO          : Maximum cutoff radius for atomic orbitals
-C INTEGER LASTO(0:MAXA)  : Position of last orbital of each atom
-C INTEGER ISA(MAXA)      : Species index of each atom
-C INTEGER IPHORB(MAXO)   : Orbital index of each atom in its orbital
-C REAL*8  DATM(MAXO)     : Neutral atom charge of each orbital
-C INTEGER NUMH(MAXO)     : Control vector of Density Matrix
-C                          (number of nonzero elements of each row)
-C INTEGER LISTH(MAXNO,MAXO) : Control vector of Density Matrix
-C                          (list of nonzero elements of each row)
-C INTEGER INDXUO(MAXO)   : Index of equivalent orbital in unit cell
-C **********************************************************************
-
+C Assign the name of the output file -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME = PASTE(SNAME,'.PLD')
+      FNAME = PASTE(sname,'.PLD')
 
       CALL IO_ASSIGN(UNIT1)
 
-      OPEN (UNIT = UNIT1, FILE = FNAME, FORM = 'UNFORMATTED',
-     .      STATUS = 'UNKNOWN')
-        REWIND(UNIT1)
-C Read tables from files -----------------------------------------------
+      OPEN ( UNIT = UNIT1, FILE = FNAME, FORM = 'UNFORMATTED',
+     .       STATUS = 'UNKNOWN' )
+C Dump the tables into a file ------------------------------------------
 
-CIn the previous version this loop only was executed from
-CIL= -LMAXD+1 instead of -(LMAXD+1).
-C I belive that now is right! DSP.
-      DO 100 IB = 1, NTBMAX+2
-        DO 110 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
-          DO 120 IS = 1, NSMAX
-            READ(UNIT1)TABLE(IB,IL,IS)
- 120      CONTINUE
- 110    CONTINUE
- 100  CONTINUE
-
-      DO 200 IB = 1, NTBMAX+2
-        DO 210 IL = 1, NSEMX*NZETMX*(LMAXD+1)
-          DO 220 IS = 1, NSMAX
-            READ(UNIT1)TABPOL(IB,IL,IS)
- 220      CONTINUE
- 210    CONTINUE
- 200  CONTINUE
-
-CIn the previous version this loop only was executed from
-CIL= -LMAXD+1 instead of -(LMAXD+1).
-C I belive that now is right! DSP.
-      DO 300 IB = 1, NTBMAX
-        DO 310 IL = -(LMAXD+1), NSEMX*NZETMX*(LMAXD+1)
-          DO 320 IS = 1,NSMAX
-            READ(UNIT1)TAB2(IB,IL,IS)
- 320      ENDDO
- 310    ENDDO
- 300  ENDDO
-
-
-      DO 400 IB = 1, NTBMAX
-        DO 410 IL = 1, NSEMX*NZETMX*(LMAXD+1)
-          DO 420 IS = 1,NSMAX
-            READ(UNIT1)TAB2POL(IB,IL,IS)
- 420      ENDDO
- 410    ENDDO
- 400  ENDDO
-      
-      DO 500 IS = 1,NSMAX
-         READ(UNIT1)LMXOSAVE(IS)
- 500  ENDDO
-
-      DO 600 IS = 1, NSMAX
-         READ(UNIT1)LMXKBSAVE(IS)
- 600  ENDDO
-
-      DO 700 IL = 0,LMAXD
-       DO 750 IB= 1, NSEMX
-        DO 800 IS = 1,NSMAX
-          READ(UNIT1)NZETASAVE(IL,IB,IS)
- 800    ENDDO
- 750   ENDDO
- 700  ENDDO
-
-      DO IS = 1, NSMAX
-       DO IB = 1, NSEMX
-        DO IL =0 , LMAXD
-          READ(UNIT1)NPOLORBSAVE(IL,IB,IS)
-        ENDDO
-       ENDDO
-      ENDDO
-
-      DO IS=1, NSMAX
-         DO IL= 0, LMAXD
-           READ(UNIT1)LSEMICSAVE(IL,IS)
-         ENDDO
-      ENDDO
-
-      DO IS=1, NSMAX
-         DO IL= 0, LMAXD
-           READ(UNIT1)NKBLSAVE(IL,IS)
-         ENDDO
-      ENDDO
-
-
- 
-      READ(UNIT1)ISMAX
-
-      DO IS = 1, NSMAX
-          READ(UNIT1)NOMAX(IS), NKBMAX(IS)
-      ENDDO
-     
+        READ(UNIT1)RMAXO
 
         DO IL = 1, MAXO
-          READ(UNIT1)DATM(IL)
+          READ(UNIT1)IPHORB(IL), INDXUO(IL), DATM(IL)
         ENDDO
 
-        READ(UNIT1)NUO
-        READ(UNIT1)NO
-        READ(UNIT1)NA
-        READ(UNIT1)NSPIN
-
-        IF(NO .GT. MAXO) THEN
-          WRITE(6,'(a)')'Error in redata.f: NO > MAXO'
-          WRITE(6,*)'NO = ',NO,' MAXO = ', MAXO
-          WRITE(6,'(a)')'Have you copy the correct .h files into '
-          WRITE(6,'(a)')'Src and recompile? '
-          STOP
-        ENDIF
-
-        IF(NA .GT. MAXA) THEN
-          WRITE(6,'(a)')'Error in redata.f: NA > MAXA'
-          WRITE(6,*)'NA = ',NA,' MAXA = ', MAXA
-          WRITE(6,'(a)')'Have you copy the correct .h files into '
-          WRITE(6,'(a)')'Src and recompile? '
-          STOP
-        ENDIF
-
-        IF(NSPIN .GT. MAXSPIN) THEN
-          WRITE(6,'(a)')'Error in redata.f: NSPIN > MAXSPIN'
-          WRITE(6,*)'NSPIN = ',NSPIN,' MAXSPIN = ', MAXSPIN
-          WRITE(6,'(a)')'Have you copy the correct .h files into '
-          WRITE(6,'(a)')'Src and recompile?'
-          STOP
-        ENDIF
-
-        DO IA = 1,3
-          READ(UNIT1)(CELL(J,IA),J=1,3)
-        ENDDO
-
-        DO IA = 1,MAXA
-          READ(UNIT1)(XA(J,IA),J=1,3),ISA(IA)
+        DO IA = 1, MAXA
+          READ(UNIT1)ISA(IA)
         ENDDO
 
         DO IA = 0, MAXA
           READ(UNIT1)LASTO(IA)
         ENDDO
 
-        READ(UNIT1)RMAXO
-        
-        DO IO = 1,MAXO
-          READ(UNIT1)IPHORB(IO),INDXUO(IO)
-        ENDDO
- 
-        DO IO = 1, MAXO
-          READ(UNIT1)NUMH(IO)
-          DO J = 1,NUMH(IO)
-            READ(UNIT1)LISTH(J,IO)
-          ENDDO
+        DO IA = 1,3
+          READ(UNIT1)(CELL(J,IA),J=1,3)
         ENDDO
 
+        READ(UNIT1)(NSC(IA),IA=1,3)
+
+        DO IA = 1, MAXA
+          READ(UNIT1)(XA(J,IA),J=1,3)
+        ENDDO
 
       CALL IO_CLOSE(UNIT1)
 
       RETURN
 
-      END
+      END SUBROUTINE REDATA

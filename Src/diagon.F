@@ -98,13 +98,14 @@ C
      .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
      .  eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
      .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), 
-     .  xij(3,maxnh), qs(nspin), efs(nspin)
+     .  xij(3,maxnh), qs(nspin), efs(nspin), qspiral(3)
      
       logical
-     .  fixspin, gamma
+     .  fixspin, gamma, spiral
 
       external
-     .  diagg, diagk, diag2g, diag2k, io_assign, io_close, memory
+     .  diagg, diagk, diag2g, diag2k, io_assign, io_close, memory,
+     .  readsp, diagsprl
 
 #ifdef MPI
       integer
@@ -119,7 +120,7 @@ C
      .  getD
 
       integer
-     .  io, iuo, naux, nhs, npsi, nuo, Node, Nodes
+     .  io, iuo, iu, naux, nhs, npsi, nuo, Node, Nodes
 
 C     Dynamic arrays
       double precision, dimension(:), allocatable, save :: Haux, Saux
@@ -155,6 +156,16 @@ C Get Node number and calculate local orbital range
 
 C Start time counter ................................................
       call timer( 'diagon', 1 )
+C ......................
+
+C Read spin-spiral wavevector (if defined)..........................
+      call readsp( qspiral, spiral )
+      if (spiral) then
+        if (gamma) write(6,*) 
+     .    'diagon: WARNING: spin-spiral requires k sampling'
+        if (nspin.ne.4) write(6,*)
+     .    'diagon: WARNING: spin-spiral requires nspin=4'
+      endif
 C ......................
 
 C Check internal dimensions ..........................................
@@ -266,6 +277,14 @@ C Call apropriate routine .............................................
      .               listd, H, S, getD, qtot, temp, e1, e2,
      .               eo, qo, Dnew, Enew, ef,
      .               Haux, Saux, psi, aux, 
+     .               nuotot, Node, Nodes)
+      elseif (nspin.eq.4 .and. spiral) then
+        call diagsprl( nuo, no, maxuo, maxnh, maxnd, maxo,
+     .               numh, listhptr, listh, numd, listdptr,
+     .               listd, H, S, getD, qtot, temp, e1, e2,
+     .               xij, indxuo, nk, kpoint, wk,
+     .               eo, qo, Dnew, Enew, ef, qspiral,
+     .               Haux, Saux, psi, Haux, Saux, aux,
      .               nuotot, Node, Nodes)
       elseif (nspin.eq.4 .and. .not.gamma) then
         call diag2k( nuo, no, maxuo, maxnh, maxnd, maxo,

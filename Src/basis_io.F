@@ -490,7 +490,7 @@ c
      $        kbcutoff_id
       integer norbs, norbs_id, orbnl_l_id, orbnl_n_id, orbnl_z_id,
      $        cutoff_id, delta_id, orb_id, orbnl_pop_id, orbnl_ispol_id
-      integer vna_id, chlocal_id, core_id
+      integer vna_id, chlocal_id, reduced_vlocal_id, core_id
 
       integer aux(maxnorbs)
 
@@ -584,6 +584,15 @@ c
         iret = nf90_put_att(ncid,chlocal_id,
      $                      'Chlocal_delta',spp%chlocal%delta)
 !
+!       Reduced Local potential (rV+2*Zval)
+!
+        iret = nf90_def_var(ncid,'reduced_vlocal',nf90_double,
+     $                      (/ntb_id/),reduced_vlocal_id)
+        iret = nf90_put_att(ncid,reduced_vlocal_id,
+     $         'Reduced_vlocal_cutoff',spp%reduced_vlocal%cutoff)
+        iret = nf90_put_att(ncid,reduced_vlocal_id,
+     $         'Reduced_vlocal_delta',spp%reduced_vlocal%delta)
+!
 !       Core charge
 !
         if (spp%there_is_core) then
@@ -660,6 +669,14 @@ c
      $                      start=(/1/),count=(/NTBMAX/))
         call check(iret)
 
+!
+!       Reduced Local potential
+!
+        iret = nf90_put_var(ncid,reduced_vlocal_id,
+     $       spp%reduced_vlocal%f(1:),
+     $                      start=(/1/),count=(/NTBMAX/))
+        call check(iret)
+
         if (spp%there_is_core) then
            iret = nf90_put_var(ncid,core_id,spp%core%f(1:),
      $                      start=(/1/),count=(/NTBMAX/))
@@ -712,7 +729,8 @@ c
 
       type(species_info), pointer  ::   spp
       character*20 filename
-      integer j, i, l, ispol, lun
+      character*30 fileid
+      integer j, i, l, ispol, lun, lun2, zeta, n_series
       type(rad_func), pointer :: op
 
       spp => species(is)
@@ -729,9 +747,29 @@ c
       write(lun,'(a)') '</preamble>'
       call write_header(spp,lun)
       write(lun,'(a)') "# PAOs:__________________________"
+         n_series = 0
          do i=1,spp%n_orbnl
             ispol = 0
             if (spp%orbnl_ispol(i)) ispol = 1
+            zeta = spp%orbnl_z(i)
+            if (zeta == 1) n_series = n_series + 1
+!
+!           New: write small files with individual orbitals
+!
+!!            write(fileid,'(a,a,i2.2)') trim(spp%label), ".ORB.", i
+            write(fileid,'(a,i1,a,i1,a,a)') "ORB.S", n_series, ".",
+     $            zeta, ".", trim(spp%label)
+            call io_assign(lun2)
+            open(unit=lun2,file=fileid,status='replace',
+     $                     form='formatted')
+            write(lun2,'(2a,4i3,f10.4)') "# ", trim(spp%label),
+     $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
+     $           ispol, spp%orbnl_pop(i)
+            write(lun2,'(a)')
+     $       "#(species label, l, n, z, is_polarized, popul)"
+            call radial_dump_ascii(spp%orbnl(i),lun2,header=.false.)
+            call io_close(lun2)
+
             write(lun,'(4i3,f10.6,2x,a)')
      $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
      $           ispol, spp%orbnl_pop(i),
@@ -740,22 +778,71 @@ c
          enddo
          
          write(lun,'(a)') "# KBs:__________________________"
+         n_series = 0
          do i=1,spp%n_pjnl
+            zeta = spp%pjnl_n(i)
+            l = spp%pjnl_l(i)
+!!            write(fileid,'(a,a,i2.2)') trim(spp%label), ".KB.", i
+            write(fileid,'(a,i1,a,i1,a,a)') "KB.L", l , ".",
+     $            zeta, ".", trim(spp%label)
+            call io_assign(lun2)
+            open(unit=lun2,file=fileid,status='replace',
+     $                     form='formatted')
+            write(lun2,'(2a,2i3,f12.5)') "# ",trim(spp%label), 
+     $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
+            write(lun2,'(a)')
+     $           "#kb l, n (sequence number), Reference energy"
+            call radial_dump_ascii(spp%pjnl(i),lun2,header=.false.)
+            call io_close(lun2)
+
             write(lun,'(2i3,f22.16,2x,a)')
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
      $           " #kb l, n (sequence number), Reference energy"
             call radial_dump_ascii(spp%pjnl(i),lun)
+
          enddo
 
          write(lun,'(a)') "# Vna:__________________________"
+         write(fileid,'(a,a)') "VNA.", trim(spp%label)
+         call io_assign(lun2)
+         open(unit=lun2,file=fileid,status='replace',
+     $        form='formatted')
+         write(lun2,'(3a)') "# ",trim(spp%label), " Vna"
+         call radial_dump_ascii(spp%vna,lun2,header=.false.)
+         call io_close(lun2)
          call radial_dump_ascii(spp%vna,lun)
 
          write(lun,'(a)') "# Chlocal:__________________________"
+         write(fileid,'(a,a)') "CHLOCAL.", trim(spp%label)
+         call io_assign(lun2)
+         open(unit=lun2,file=fileid,status='replace',
+     $        form='formatted')
+         write(lun2,'(3a)') "# ",trim(spp%label), " ChLocal"
+         call radial_dump_ascii(spp%chlocal,lun2,header=.false.)
+         call io_close(lun2)
          call radial_dump_ascii(spp%chlocal,lun)
-
+!
+!        Vlocal does not go to the .ion file
+!
+         write(fileid,'(a,a)') "RED_VLOCAL.", trim(spp%label)
+         call io_assign(lun2)
+         open(unit=lun2,file=fileid,status='replace',
+     $        form='formatted')
+         write(lun2,'(3a)') "# ",trim(spp%label), " Red_Vlocal"
+         call
+     $    radial_dump_ascii(spp%reduced_vlocal,lun2,header=.false.)
+         call io_close(lun2)
+!
          if (spp%there_is_core) then
             write(lun,'(a)') "# Core:__________________________"
-            call radial_dump_ascii(spp%core,lun)
+            write(fileid,'(a,a)') "CHCORE.", trim(spp%label)
+            call io_assign(lun2)
+            open(unit=lun2,file=fileid,status='replace',
+     $           form='formatted')
+            write(lun2,'(3a)') "# ",trim(spp%label), " ChCore"
+            call radial_dump_ascii(spp%core,lun2,header=.false.)
+            call io_close(lun2)
+           call radial_dump_ascii(spp%core,lun)
          endif
          call io_close(lun)
 
@@ -861,6 +948,10 @@ c
        write(lun,'(a)') "<chlocal>"
        call radial_dump_xml(spp%chlocal,lun)
        write(lun,'(a)') "</chlocal>"
+
+       write(lun,'(a)') "<reduced_vlocal>"
+       call radial_dump_xml(spp%reduced_vlocal,lun)
+       write(lun,'(a)') "</reduced_vlocal>"
 
        if (spp%there_is_core) then
           write(lun,'(a)') "<core>"

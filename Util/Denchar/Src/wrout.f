@@ -6,9 +6,9 @@ C Dump input data into the output files
 C Written by J. Junquera Feb '99
 C **********************************************************************
 
-      IMPLICIT NONE
+      USE FDF
 
-      INCLUDE 'fdfdefs.h'
+      IMPLICIT NONE
 
       INTEGER
      .  IOPTION, UNIT1, NPX, NPY, IUNITCD, MAXATOM, NAPLA, 
@@ -39,7 +39,7 @@ C                          zero (Plane Reference Frame; PRF)
 C REAL*8  XMIN, XMAX     : Limits of the plane in the PRF for x-direction
 C REAL*8  YMIN, YMAX     : Limits of the plane in the PRF for y-direction
 C INTEGER IUNITCD        : Unit of the charge density
-C INTEGER MAXATOM        : Maximum number of atoms
+C INTEGER MAXATOM        : Total number of atoms in supercell
 C INTEGER NAPLA          : Number of atoms whose coordiantes has been rotated   
 C INTEGER INDICES(MAXATOM): Indices of tha atoms whose coordinates has 
 C                           been roated

@@ -1,3 +1,25 @@
+2002-07-12  Alberto Garcia  <wdpgaara@lg.ehu.es>
+
+	* Major revision with a view to ease analysis of pseudopotentials
+	and streamline testing. Wrote a manual (Docs/atom.tex). 
+	Incompatible changes:
+	 - The "energy differences" section is now printed only after a
+	   homogeneous series of calculations.
+	 - The input file can contain comments, directives, and blank
+           lines at the beginning and at the end.
+	 - PSCHARGE file contains the true pseudo valence charge, not
+	   the rescaled value.
+	Other changes:
+	 - Bug fixes for XC polarized routines (avoid crashes)
+	 - Bug fix in tm2 in calculation of norm (negligible effect)	
+	 - New implementation of "valence charge modify"
+	 - More output files, including screened pseudopotentials.
+	 - More plotting scripts (mainly gnuplot as lowest common
+	   denominator)
+	 - Output file rigged for easier extraction of data.
+	 - Tutorial directory created (work in progress)
+	 - ae.sh pg.sh pt.sh scripts re-designed.
+
 Sun Sep 16 19:46:05 2001  Alberto Garcia  <wdpgaara@lg.ehu.es>
 
 	* Pseudopotential files are now generated in both unformatted

@@ -1,7 +1,10 @@
 c
-c $Id: auxsun.f,v 1.3 1997/05/22 17:32:01 wdpgaara Exp $
+c $Id: auxsun.f,v 1.4 2002/07/11 21:47:00 wdpgaara Exp $
 c
 c $Log: auxsun.f,v $
+c Revision 1.4  2002/07/11 21:47:00  wdpgaara
+c Fix year problem
+c
 c Revision 1.3  1997/05/22 17:32:01  wdpgaara
 c Moving from RCSfiles to ATM_1_0
 c
@@ -32,7 +35,7 @@ c
           call idate(iarray)
           write(bdate,102) iarray(1),dash,month(iarray(2)),dash,
      &                     iarray(3)
- 102  format(i2,a1,a3,a1,i2,' ')
+ 102  format(i2,a1,a3,a1,i2.2,' ')
           return
           end
 

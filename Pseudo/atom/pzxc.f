@@ -58,6 +58,9 @@ C      X-alpha parameter:
        real*8 alp
        PARAMETER ( ALP = 2.D0 / 3.D0 )
 
+       real*8 ONEZ
+       parameter ( ONEZ = 1.0d0 + 1.d-12)
+
 C      Other variables converted into parameters by J.M.Soler
 
        real*8 pi, half, trd, ftrd, tftm, a0, crs, cxp, cxf
@@ -92,13 +95,9 @@ c      Find density and polarization
          ENDIF
          Z = (DS(1) - DS(2)) / D
 
-C    In case z is close to 1 or -1, things can go wrong when
-C    computing FZ and FZP below...
 C
-         if (abs((abs(z)-1.d0)).lt.1.d-10) z = z + 1.d-8
-
-         FZ = ((1+Z)**FTRD+(1-Z)**FTRD-2)/TFTM
-         FZP = FTRD*((1+Z)**TRD-(1-Z)**TRD)/TFTM 
+         FZ = ((ONEZ+Z)**FTRD+(ONEZ-Z)**FTRD-2)/TFTM
+         FZP = FTRD*((ONEZ+Z)**TRD-(ONEZ-Z)**TRD)/TFTM 
        ELSE
          D = DS(1)
          IF (D .LE. ZERO) THEN
@@ -150,10 +149,10 @@ C      Find up and down potentials
        IF (NSP .EQ. 2) THEN
          EX    = EXP_VAR + FZ*(EXF-EXP_VAR)
          EC    = ECP + FZ*(ECF-ECP)
-         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP_VAR)
-         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP_VAR)
-         VC(1) = VCP + FZ*(VCF-VCP) + (1-Z)*FZP*(ECF-ECP)
-         VC(2) = VCP + FZ*(VCF-VCP) - (1+Z)*FZP*(ECF-ECP)
+         VX(1) = VXP + FZ*(VXF-VXP) + (ONEZ-Z)*FZP*(EXF-EXP_VAR)
+         VX(2) = VXP + FZ*(VXF-VXP) - (ONEZ+Z)*FZP*(EXF-EXP_VAR)
+         VC(1) = VCP + FZ*(VCF-VCP) + (ONEZ-Z)*FZP*(ECF-ECP)
+         VC(2) = VCP + FZ*(VCF-VCP) - (ONEZ+Z)*FZP*(ECF-ECP)
        ELSE
          EX    = EXP_VAR
          EC    = ECP

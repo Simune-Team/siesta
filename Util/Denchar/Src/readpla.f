@@ -1,58 +1,68 @@
 
-      SUBROUTINE READPLA( IOPTION, XMIN, XMAX, YMIN, YMAX,
-     .                    NPX, NPY, COORPO, NORMAL, DIRVER1, DIRVER2, 
-     .                    ARMUNI, MAXA, XA, VOLUME, IUNITCD, ISCALE ) 
+      SUBROUTINE READPLA( MAXA, XA, VOLUME, 
+     .                    IOPTION, IUNITCD, ISCALE, NPX, NPY,
+     .                    XMIN, XMAX, YMIN, YMAX,
+     .                    COORPO, NORMAL, DIRVER1, DIRVER2, 
+     .                    ARMUNI ) 
+
 C **********************************************************************
 C Read the data file to prepare the plane in which we are going to
 C calculate the charge density
 C Coded by J. Junquera, November 98
 C **********************************************************************
 
+      USE FDF
+
       IMPLICIT NONE
 
-      INCLUDE 'fdfdefs.h'
+      INTEGER, INTENT(IN) ::
+     .  MAXA
+      
+      DOUBLE PRECISION, INTENT(IN) ::
+     .  XA(3,MAXA), VOLUME
 
-      INTEGER 
+      INTEGER, INTENT(OUT) ::
      .  IOPTION, NPX, NPY, ISCALE, IUNITCD
      
-      DOUBLE PRECISION
+      DOUBLE PRECISION, INTENT(OUT) ::
      .  XMIN, XMAX, YMIN, YMAX, 
      .  COORPO(3,3), NORMAL(3), DIRVER1(3), DIRVER2(3),
      .  ARMUNI
 
-      INTEGER
-     .  MAXA
-      
-      DOUBLE PRECISION
-     .  XA(3,MAXA), VOLUME
-
-C **********************************************************************
+C ****** INPUT *********************************************************
+C INTEGER MAXA           : Maximum number of atoms
+C REAL*8  XA(3,MAXA)     : Atomic coordinates
+C REAL*8 VOLUME          : Volumen of unit cell (in bohr**3)
+C ****** OUTPUT ********************************************************
 C INTEGER IOPTION        : Option to generate the plane
 C                          1 = Normal vector
 C                          2 = Two vectors belonging to the plane
 C                          3 = Three points of the plane
 C                          4 = Three atomic indices
-C INTEGER NPX, NPY       : Number of points generated along x and y
-C                          directions ina a system of reference in which
-C                          the third component of the points of the plane
-C                          is zero (Plane Reference Frame; PRF)
-C REAL*8  XMIN, XMAX     : Limits of the plane in the PRF for x-direction
-C REAL*8  YMIN, YMAX     : Limits of the plane in the PRF for y-direction
-C REAL*8  NORMAL(3)      : Components of the normal vector used to define
-C                          the plane 
-C REAL*8  DIRVER(3)      : Components of the two vectors contained in the plane 
-C REAL*8  COORPO(3,3)    : Coordinates of the three points used to define 
-C                          the plane. COORPO(POINT,IX)
-C INTEGER MAXA           : Maximum number of atoms
-C REAL*8  XA(3,MAXA)     : Atomic coordinates
-C REAL*8 VOLUME          : Volumen of unit cell (in bohr**3)
 C INTEGER IUNITCD        : Units for the electron density
 C                          IUNITCD = 1 => Ele/(bohr)**3
 C                          IUNITCD = 2 => Ele/(Ang)**3
 C                          IUNITCD = 3 => Ele/(unitcell)
 C INTEGER ISCALE         : Units for the atomic positions
 C                          (ISCALE = 1 => Bohrs, ISCALE = 2 => Ang)
+C INTEGER NPX, NPY       : Number of points generated along x and y
+C                          directions ina a system of reference in which
+C                          the third component of the points of the plane
+C                          is zero (Plane Reference Frame; PRF)
+C REAL*8  XMIN, XMAX     : Limits of the plane in the PRF for x-direction
+C REAL*8  YMIN, YMAX     : Limits of the plane in the PRF for y-direction
+C REAL*8  COORPO(3,3)    : Coordinates of the three points used to define 
+C                          the plane. COORPO(POINT,IX)
+C REAL*8  NORMAL(3)      : Components of the normal vector used to define
+C                          the plane 
+C REAL*8  DIRVER1(3)     : Components of the first vector 
+C                          contained in the plane 
+C REAL*8  DIRVER2(3)     : Components of the first vector 
+C                          contained in the plane 
+C REAL*8  ARMUNI         : Conversion factors for the charge density
 C **********************************************************************
+
+C Internal variables ---------------------------------------------------
 
       CHARACTER 
      .  OGP*22, OGP_DEFECT*22,

@@ -1,6 +1,248 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.2.15
+Date: 2002/07/14 17:00 
+Title: Cosmetic changes for School
+Author: Alberto Garcia
+
+Description:
+
+The atomic generation routines have been enhanced to provide
+more information for plotting. Gen-basis now accepts only one
+species. 
+Tutorials directory added.
+The manual has been updated to mention the existence of the ATOM
+manual.
+
+=======================================================================
+Version: 1.2.14
+Date: 2002/06/28 17:00
+Title: Non-collinear GGA
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+Support for non-collinar GGA. The local xc energy is made dependent
+of the gradient of the density and of the MAGNITUDE of magnetization, 
+but not of the gradient of the magnetization direction.
+Implemented by Victor M. Garcia <victor@condmat.uniovi.es>
+
+Files:
+
+xc.f: Modified the subrutine GGAXC to allow for non-collinear spin. 
+
+=======================================================================
+Version: 1.2.13
+Date: 2002/06/24 12:45 
+Title: Spin spiral
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+Support for spin-spiral states, implemented by Victor M. Garcia
+<victor@condmat.uniovi.es>
+
+Files:
+
+dhscf.F:      Call to rhoofdsp and vmatsp.
+diagon.F:     Call to diagsprl.
+kgridinit.F:  If spiral, skip time reversal symmetry (include all k's)
+kgrid.F       If spiral, skip time reversal symmetry (include all k's)
+diagsprl.F    New. Diagonalizes the Hamiltonian for spin spiral.
+ipack.f       New. Packs/unpacks several integer indexes into/out of one
+readsp.f      New. Reads spiral wave vector
+rhoofdsp.f    New. Substitutes rhoofd for spiral configurations.
+vmatsp.f      New. Substitutes vmat for spiral configurations.
+Makefile      Add diagsprl.F, ipack.f, readsp.f, rhoofdsp.f, and vmatsp.f
+
+=======================================================================
+Version: 1.2.12
+Date: 2002/06/20 17:00 
+Title: Simplification of fdf module
+Author: Alberto Garcia
+
+Description:
+
+The fdf module provides f90 interfaces for the f77 routines in
+fdf.f, as well as new, pure-f90 routines. Until now there was
+also an overloaded routine "fdf_get" which could stand for any
+of the specific scalar routines. Unfortunately, either the Intel
+or the PGI compiler chokes with its implementation.  It is almost
+certain that these are compiler errors. However, in the interest
+of portability, the "fdf_get" interface has been removed.
+
+For the same reason, the routine fdf_parsed_string (currently not
+used in Siesta) has been removed.
+
+Changed Files:
+
+fdf/fdf_mod.f
+in Src:
+basis_specs.f coor.f initatom.f chemical.f fdf_mod.f spin_init.f
+
+=======================================================================
+Version: 1.2.11
+Date: 2002/06/11 17:00 
+Title: Changes for (partial) support of Intel Fortran Compiler
+Author: Alberto Garcia
+
+Description:
+
+The Intel Fortran Compiler is apparently strong at optimization but
+very weak at following standard practice. It is not trivial to
+integrate full support for it, but the current version of Siesta (at
+least the serial incarnation) can still be made to compile portably
+with a few kludges. At this point there is no support for MPI or
+NetCDF.
+
+1. Changes in fdf/fdf_mod.f: addition of redundant internal interfaces.
+2. fdf/makefile: kludge to make the fdf directory visible in the
+   "subprogram catalog", and to deal with new extension for module files.
+3. Makefile: clean procedure updated.
+3. New intel*.make files in Sys.
+
+Thanks to Eduardo Anglada for helping with the catalog issue.
+
+Changed Files:
+
+fdf/fdf_mod.f
+fdf/makefile
+Makefile
+Src/Sys/intel-mkl.make:    New file. Uses optimized mkl libraries
+Src/Sys/intel-nolibs.make: IFC needs a special library...
+
+=======================================================================
+Version: 1.2.10
+Date: 2002/06/07 15:00 
+Title: Bugs in non-collinear spin
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+1. Avoid out-of-bounds in array qos
+
+2. Definition of hermiticity relations for the Hamiltonian and
+   density matrix in diag2g.F and diag2k.F
+
+4. Modified the density matrix in diag2k.F to take ino account the 
+   time reversal symmetry.
+
+5. Modified siesta.F to skip the eigenvectors calculation if there is
+   only one SCF step.
+
+All these bugs were found and corrected by Victor M. Garcia
+<victor@condmat.uniovi.es>
+
+Files:
+
+diag2g.F    Correct hamiltonian hermicity
+diag2k.F    Correct hamiltonian hermicity and time-reversal in DM
+mulliken.F  Avoid out-of-bounds in array qos
+siesta.F    Avoid writting noncalculated eigenvalues
+siesta.tex  Date and version updated
+
+=======================================================================
+Version: 1.2.9
+Date: 2002/04/30  15:00 GMT
+Title: Vmat fix
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+An error in the diagonal elements of Vlocal has been corrected, as well
+as a few more minor items.
+
+Files:
+
+meshmatrix.F	Case where no mesh points are allocated to a node during
+                parallel execution is handled properly with respect to
+                zero length arrays.
+on_subs.F       Duplicate definition of numbtmp removed
+vmat.f      	Error in diagonal elements of Vlocal corrected
+xc.f		Variable name corrected in pzxc from DECPDN -> DECFDN
+=======================================================================
+Version: 1.2.8
+Date: 2002/04/11
+Title: Bug fixed in vmat.f, rhoofd.f, and dfscf.f
+Author: Javier Junquera <Javier.Junquera@ulg.ac.be>
+
+Description:
+
+1. A bug has been fixed in the subroutines that calculate
+   the integrals in the real space mesh.
+   If the longest orbital of a given specie is unoccupied in 
+   the free atom, then some points were wrongly skipped
+   while calculating the integrals.
+   The definition of the cutoff radiae has been modified in
+   vmat, rhoofd and dfscf
+   Files: vmat.f, rhoofd.f, dfscf.f
+ 
+2. The maximum number of iterations to converge the Fermi
+   energy has been increased to 100. For some systems 50 is not
+   a large enough number.
+   File: fermid.F
+
+3. Customary changes in file Src/version.F and Docs/CHANGES
+   File: version.F, Docs/CHANGES
+
+=======================================================================
+Version: 1.2.7
+Date: 2002/02/06
+Title: PDOS calculation back into siesta.F...
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+The PDOS calculation had been deactivated in siesta.F due to an error. 
+It has been put back in.  File: siesta.F
+
+=======================================================================
+Version: 1.2.6
+Date: 2002/02/04
+Title: Interface with F90 Denchar Utility
+Author: Javier Junquera <Javier.Junquera@ulg.ac.be>
+
+Description:
+
+1. The interface between Siesta and Denchar has been implemented
+   using Fortran 90. 
+   File: plcharge.F
+
+2. The interface routine is called again from Siesta.
+   (This call was commented in the fortran 90 Siesta branch.
+   File: siesta.F
+
+3. Subroutine plcharge is included in the object list.
+   File: Makefile
+
+4. Almost all the routines in the utility package Denchar have been 
+   rewritten in Fortran 90 in order
+   to make it compatible with the 1.X version of Siesta.
+   Files: Util/Denchar
+
+5. Customary changes in file Src/version.F and Docs/siesta.tex
+   File: version.F
+=======================================================================
+Version: 1.2.5
+Date: 2002/01/17
+Title: Bug fix in pdos.f, reorg of ghost routine, lmxkb info for users
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+1. Fixed a writing bug in pdos.f (for spin-polarized calculations).
+   File: pdos.f
+
+2. Make f-channel the highest-l projector used.
+   Inform the user about the possibility of
+   using a lower lmxkb.
+   File: basis_specs.f
+
+3. Reorganize routine ghost (avoid computing excited state if
+   not necessary). Remove references to "atom.h".
+   File: atom.f
+=======================================================================
 Version: 1.2.4
 Date: 2001/12/14  18:15 GMT
 Title: Order N improvements/tidy
@@ -163,6 +405,27 @@ Files:
                  polarisation.
    vmat.f        Looping over spin components now included internally.
                  Vlocal array stored in triangular fashion.
+=======================================================================
+Version: 1.2.0 [No change]
+Date: 2001/10/04
+Title: Bug fixes in basis_io.F
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+Fixed bugs having to do with:
+
+1. The use of the .ion files generated by an independent siesta or
+gen-basis run.
+2. The default mass for floating orbitals
+
+(Discovered just after the release of siesta-1.1)
+
+Files:
+   basis_io.F:   Second derivative of elec_corr structures was not
+                 updated after generation in elec_corr_setup.
+		 Changed filename from XX.ion_nc to XX.ion.nc
+   basis_specs.f: Do not make default mass too big for floating orbitals.
 =======================================================================
 Version: 1.2.0
 Date: 2001/09/26

@@ -1,5 +1,5 @@
 c
-c $Id: tm2.f,v 1.4 2000/02/10 14:01:31 wdpgaara Exp $
+c $Id: tm2.f,v 1.5 2002/07/04 18:29:34 wdpgaara Exp $
 c
       subroutine tm2(i,wfr,br)
 c
@@ -231,7 +231,7 @@ c           Integrate pseudo charge density from r = 0 to rc.
 c
          ll = 2
          cdps = -ar(jrc)*ar(jrc)*rab(jrc)
-         if (mod(jrc,2) .ne. 2) then
+         if (mod(jrc,2) .ne. 0) then
             do 110 k = jrc, 1, -1
                cdps = cdps + ll*ar(k)*ar(k)*rab(k)
                ll = 6 - ll

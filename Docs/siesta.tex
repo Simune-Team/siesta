@@ -38,13 +38,13 @@
 \hrulefill
 \vspace{2cm}
 
-{\Huge {\bf S I E S T A \, \, 1.2.0}}
+{\Huge {\bf S I E S T A \, \, 1.2.15}}
 
 \vspace{2cm}
 \hrulefill
 \vspace{2cm}
 
-{\Large 26 September 2001 }
+{\Large July 14, 2002 }
 
 \vspace{1.5cm}
 
@@ -61,7 +61,7 @@
    \Large{\it Universidad del Pa\'{\i}s Vasco, Bilbao} \\ \\
 
 {\Large Javier Junquera} &
-   \Large{\it Universidad Aut\'onoma de Madrid} \\ \\
+   \Large{\it Universit\'e de Li\`ege, Belgium} \\ \\
 
 {\Large Richard M. Martin} &
    \Large{\it University of Illinois at Urbana-Champaign} \\ \\
@@ -199,7 +199,7 @@ used in the code, and brief review of applications as of March 1999.
 \item
 ``Numerical atomic orbitals for linear-scaling calculations"
 J. Junquera, O. Paz, D. S\'anchez-Portal, and E. Artacho, Phys. Rev. B
-(in press, preprint in cond-mat/0104170). 
+ {\bf 64}, 235111, (2001).
 
 Improved, soft-confined NAOs.
 
@@ -255,7 +255,9 @@ We need to generate the required pseudopotentials
 (We are going to streamline this process for this time, but
 you must realize that this is a tricky business that you 
 must master before using {\sc Siesta} responsibly. Every 
-pseudopotential must be thoroughly checked before use.)
+pseudopotential must be thoroughly checked before use. Please refer to
+the {\sc ATOM} program manual in {\tt $\sim$/siesta/Pseudo/atom/Docs}
+for details regarding what follows.)
 
 {\tt \$ cd $\sim$/siesta/Pseudo/atom}
 
@@ -295,7 +297,7 @@ you will need to understand in the future:
 Now there should be a new subdirectory called o.tm2 (o for o-xygen)
 and {\tt o.tm2.vps} (unformatted) and {\tt o.tm2.psf} (ASCII) files.
 
-{\tt \$ cp o.tm2.psf $\sim$/siesta/h2o/}
+{\tt \$ cp o.tm2.psf $\sim$/siesta/h2o/O.psf}
 
 \noindent
 copies the generated pseudopotential file to your working directory. 
@@ -305,7 +307,7 @@ desire.)
 
 {\tt \$ pg.sh h.tm2.inp}
 
-{\tt \$ cp h.tm2.psf $\sim$/siesta/h2o/}
+{\tt \$ cp h.tm2.psf $\sim$/siesta/h2o/H.psf}
 
 \noindent
 repeats the process for hydrogen.
@@ -357,7 +359,7 @@ Now look at the other data files in {\tt Examples}
 (all with and .fdf suffix) choose one and repeat the process for it.
 
 
-\section{PSEUDOPOTENTIAL GENERATION}
+\section{PSEUDOPOTENTIAL HANDLING}
 
 \index{pseudopotential!generation}
 
@@ -374,408 +376,8 @@ siesta/Pseudo/atom/README} for more complete authorship and copyright
 acknowledgements).  It is included (with permission) in
 siesta/Pseudo/atom. Remember that {\bf all pseudopotentials should be
 thoroughly tested} before using them. We refer you to the standard
-literature on pseudopotentials and to {\tt siesta/Pseudo/atom/User.Guide}.
-
-The remainder of this section describes the input format for the {\sc Atm}
-program (Alberto Garcia, wdpgaara@lg.ehu.es), whose basic capabilities are:
-\begin{itemize}
-\item
-All-electron LDA/GGA atomic calculations for arbitrary electronic 
-configurations.
-
-\item
-Generation of ab-initio pseudopotentials (several flavors).
-
-\item
-Atomic calculations in which the effect of the core is represented
-by a previously generated pseudopotential. These are useful to make
-sure that the pseudopotential correctly reproduces the all-electron
-results for the valence complex.
-\end{itemize}
-
-The file-manipulation details involved in each of those basic
-functions are taken care of by a set of shell scripts ({\tt ae.sh}, 
-{\tt pg.sh}, and {\tt pt.sh}) which take as one of the arguments the name 
-of the input file. Thus the user only has to worry about preparing that input 
-file.
-
-Here is an example for an all-electron calculation of the ground state
-of a silicon atom: (the {\tt ----} lines are {\it not} part of the file, and
-neither is the "Ruler" line, shown here only for illustrative purposes)
-
-\begin{verbatim}
-----------------------------
-   ae Si ground state all-electron
-   Si   car  
-       0.0
-    3    2
-    3    0      2.00
-    3    1      2.00
-
-12345678901234567890123456789012345678901234567890      Ruler
-----------------------------
-\end{verbatim}
-
-The first line specifies:
-\begin{itemize}
-\item
-The calculation code ({\tt ae} here stands for all electron,
-{\tt pg} for pseudopotential generation, {\tt pt} for
-pseudopotential test, and {\tt pe} for pseudopotential generation 
-including partial core.
-
-\item
-A title for the job ({\tt Si ground state all-electron} in this case)
-read in the format {(\tt 3x,a2,a50)}.
-\end{itemize}
-
-Second line:
-\begin{itemize}
-\item
-chemical symbol of the nucleus (here {\tt Si})
-
-\item
-Exchange-correlation type. Here, {\tt ca} stands for
-Ceperley-Alder. Other options are {\tt wi} (Wigner) {\tt hl}
-(Hedin-Lundqvist), {\tt gl} (Gunnarson-Lundqvist), and {\tt bh}
-(von Barth-Hedin). The ``best" LDA choice should be {\tt ca}.
-It is also possible to use a gradient-corrected functional:
-{\tt pb} indicates use of the GGA scheme by Perdew, Burke,
-and Ernzerhof (PRL 77, 3865 (1996).
-
-\item
-The character {\tt r} next to {\tt ca} is a flag to perform the
-calculation relativistically, that is, solving the Dirac equation
-instead of the Schr\"odinger equation. 
-The full range of options is:
-``{\tt s}" : Spin-polarized calculation, non-relativistic.
-`` " (blank space): Non-polarized (spin ignored), non-relativistic calculation.
-``{\tt r}" : Relativistic calculation, obviously polarized.	
-	
-The format for reading is {\tt (3x,a2,3x,a2,a1,2x)}. 
-\end{itemize}
-
-Third line: Its use is somewhat esoteric and for most calculations
-it should contain just a 0.0 in the position shown.
-
-The rest of the file is devoted to the specification of the electronic
-configuration:
-
-Fourth line: Number of core and valence orbitals. For example, for Si, we
-have 1$s$, 2$s$, and 2$p$ in the core (a total of 3 orbitals), and
-3$s$ and 3$p$ in the valence complex (2 orbitals). The reading format is
-{\tt (2i5)}.
-
-Fifth, sixth... lines (there is one line for each valence orbital):
-{\tt n} principal quantum number, {\tt l} angular momentum, and 
-occupation of the orbital in electrons. 
-Format {\tt (2i5,2f10.3)} (there are two ``f" real input descriptors 
-to allow the input of "up" and "down" occupations in spin-polarized 
-calculations, see example below).
-
-The next line is left blank in this example to terminate the job. It
-is possible, however, to perform two or more calculations in
-succession by simply concatenating blocks as the one described above.
-For example, the following file is used to study the ground state of N
-and an excited state with one electron promoted from the 2$s$ to the 2$p$
-orbital taking into account the spin polarization.
-
-\begin{verbatim}
----------------------------------
-   ae N ground state all-electron
-   N    cas
-       0.0
-    1    2
-    2    0      2.00      0.00
-    2    1      3.00      0.00
-   ae N 1s2 2s1 2p4  all-electron
-   N    cas
-       0.0
-    1    2
-    2    0      1.00      0.00
-    2    1      3.00      1.00
-
-12345678901234567890123456789012345678901234567890      Ruler
---------------------------------- 
-\end{verbatim}
-	
-The different treatment of core and valence orbitals in the input for an
-all-electron calculation is purely cosmetic. The program "knows" how
-to fill the internal orbitals in the right order, so it is only
-necessary to give their number. That is handy for heavy atoms...
-Overzealous users might want to check the output to make sure that the
-core orbitals are indeed correctly treated.
-
-
-\subsection{Pseudopotential test calculations}
-
-The format is exactly the same, except that the job code is {\tt pt}
-instead of {\tt ae}. Of course, one has to have a pseudopotential file
-(extension .vps) ready from a previous pseudopotential generation.
-
-
-\subsection{Pseudopotential generation}
-
-In addition to the electronic configuration chosen for the generation
-of the pseudopotentials (which is input in the same manner as above),
-one has to specify the ``flavor" (generation scheme) and the set of
-``core radii" $r_c$ for the construction of the pseudowavefunction.
-CAUTION: the pseudopotential $r_c$'s and the basis orbitals $r_c$'s
-are completely different. Usually, pseudopostential $r_c$'s are
-between 1 and 2 bohrs, while NAO's $r_c$'s are usually around 5 to 7
-bohrs.
-
-Here is an example for Si using the Hamann-Schluter-Chiang scheme:
-
-\begin{verbatim}
--------------------------------------
-   pg Si Pseudopotential
-        hsc     2.00
-   Si   ca
-         0
-    3    3
-    3    0      2.00
-    3    1      0.50
-    3    2      0.50
-   1.12      1.35      1.17      0.0       0.0       0.0
-
-123456789012345678901234567890123456789012345678901234567890   Ruler
----------------------------------------
-\end{verbatim}
-
-Apart from the {\tt pg} job code in the first line, there are two
-extra lines:
-
-Second line: Flavor and radius at which to compute logarithmic
-derivatives for test purposes. The flavor can be one of :
-\begin{itemize}
-\item
-{\tt hsc}: Hamann-Schluter-Chiang
-\item
-{\tt bhs}: Bachelet-Hamann-Schluter
-\item
-{\tt ker}: Kerker
-\item
-{\tt tm2}: Improved Troullier-Martins
-\end{itemize}
-
-{\tt hsc} and {\tt bhs} are very similar, and so are {\tt ker} and {\tt tm2}. 
-Both sets differ in the ``softness" for a given choice of $r_c$. 
-The {\tt ker} and {\tt tm2} schemes can get away with larger $r_c$'s, 
-due to their wavefunction matching conditions.
-Reading format: {\tt (8x, a3, f9.3)}.
-
-The last line (before the blank line) specifies the values of the $r_c$'s
-in atomic units (bohrs) for the $s$, $p$, $d$, and $f$ orbitals (it is a good
-practice to input the valence orbitals in the order of increasing
-angular momentum, so that there is no possible confusion).
-Format {\tt (6f10.5)}  (see 'Partial core' below for the two extra slots,
-and should be set to zero or left blank if no partial core is used). 
-In the example above, only $s$, $p$, and $d$ $r_c$'s are given. Here is an 
-example for silicon in which we are only interested in the $s$ and $p$ 
-channels for our pseudopotential, and use the Kerker scheme:
-
-\begin{verbatim}
------------------------------
-   pg Si Kerker generation
-        ker     2.00
-   Si   ca
-         0
-    3    3
-    3    0      2.00
-    3    1      2.00
-   1.80      1.80      0.00      0.0       0.0       0.0
-
-123456789012345678901234567890123456789012345678901234567890   Ruler
-------------------------------------------
-\end{verbatim}
-
-\subsection{Directives}
-
-Some internal parameters and modes of operation tend to change over
-time. ``Directives" can be used to select among those
-and change the behavior of the program without recompilation.
-
-They must appear at the top of the input file, with the following
-syntax:
-\begin{verbatim}
-%define NAME
-%VARIABLE=value
-\end{verbatim}
-Currently, the program understands the following names:
-\begin{itemize}
-\item
-{\tt COMPAT\_UCB}: Revert to the standard circa 1990 UCB values. Note   
-that these correspond to the first released version 
-of Jose Luis Martins's code, not to the old Froyen        
-version (that would be {\tt FROYEN} --to be implemented).
-The default is: to use a denser grid up to larger radii, 
-use a larger value for the ps's ecuts, and use the Soler-Balbas XC package)  
-                                                                          
-\item
-{\tt NEW\_CC}: New core-correction scheme (Martins).
-
-\item
-{\tt OLD\_CC}: Old core-correction scheme (see below).
-\end{itemize}
-
-
-\subsection{Partial core corrections}
-
-The program can generate a 'partial core' (or 'pseudocore') 
-for the partial-core non-linear exchange-correlation correction as
-proposed in
-
-\noindent
-S. G. Louie, S. Froyen, and M. L. Cohen, Phys. Rev. B 26, 1738 (1982).
-
-\noindent
-In the traditional approach (which is the default for LDA
-calculations), the pseudocore charge density equals the charge density
-outside a given radius $r_{pc}$, and has the smooth form
-$$
-pc(r) = a_c r   \sin(b_c r)
-$$
-inside that radius. A smooth matching is provided with suitable $a_c$ 
-and $b_c$ parameters calculated by the program.
-
-A new scheme has been implemented to fix some problems in the generation
-of GGA pseudopotentials. The smooth function is now
-$$
-pc(r) =  r^2  e^{a_c+b_c r^2+c_c r^4}
-$$
-and derivatives up to the second are continuous  at $r_{pc}$.
-
-To generate the partial core in addition to the pseudopotential,
-the jobcode at the first line should be {\tt pe} instead of {\tt pg}.
-
-The radius $r_{pc}$ is given in the sixth slot in the last
-input line (see above). If it is negative or zero (or blank), the
-radius is then computed using the fifth number in that line (pc\_weight)
-and the following criterion: at $r_{pc}$ the core charge density 
-equals pc\_weight*(valence charge density).
-It is {\it highly recommended} to set an explicit value for the pseudocore
-radius $r_{pc}$, rather than letting the program provide a default.
-
-If pc\_weight is input as negative, the full core charge is used.
-If pc\_weight is input as zero, it is set equal to one, which will be
-thus the default if {\tt pe} is given but no numbers are given for these
-two variables.
-
-The output file contains the radius used and the $a_c$ and $b_c$ (and $c_c$)
-parameters used for the matching. The vps file contains the partial core in 
-addition to the pseudopotential.
-
-It is possible to override the default (new scheme for GGA
-calculations, old scheme for LDA calculations) by using the directives
-\begin{verbatim}
-%define NEW_CC
-%define OLD_CC
-\end{verbatim}
-The program will issue the appropriate warnings.
-
-
-\subsection{Output Files}
-
-The program generates several files, which, if using the
-provided shell scripts ({\tt pg.sh}, {\tt ae.sh}, {\tt pt.sh}), appear in 
-a subdirectory named as the input file, without the {\tt .inp} suffix.
-\begin{itemize}
-\item
-INP: Original input file.
-
-\item
-VPSIN: Input pseudopotential (if testing, with {\tt pt} option).
-
-\item
-VPSOUT: (if pseudopotential generation was used, {\tt pg}) it contains
-the pseudopotential itself and related information.
-
-\item
-VPSFMT: ASCII version of VPSOUT
-
-\item
-OUT: The general output (log) of the run, offering information about
-the atomic calculations, energies, eigenvalues, generation
-procedure, etc. First file to look at. Always, and specially
-if there are problems with the run or with the obtained vps.
-\end{itemize}
-
-
-\subsection{Output files for plotting}
-
-Some relevant pieces of information are put into separate files that
-can be easily processed using any plotting program. In the Samples
-directory there are scripts for {\sc SuperMongo} ({\tt plotx11.sh} and 
-{\tt plotps.sh}), XMGR ({\tt viewps.sh}), and a few simple {\sc Gnuplot}
-command files ({\tt XXX.gplot}).
-
-\begin{itemize}
-\item
-RHO: Atomic (all-electron) charge density as a funtion of radius.
-It is not integrated angularly (no $4 \pi r^2$ factor). 
-
-Information
-in columns: $r$, $\rho_{\uparrow}(r)$, $rho_{\downarrow}(r)$, and 
-$rho_{\rm core}(r)$. Up and down are for LSD calculations, but also 
-for relativistic ones. $rho_{\rm core}(r)$ is only for core electrons, 
-but both spin components. The unit of charge is the charge of the electron.
-
-\item
-CHARGE: Same as RHO, but the densities are angularly integrated ($\times 4 
-\pi r^2$).
-
-\item
-PSCHARGE: Same as CHARGE but $\rho_{\uparrow}(r)$ and $\rho_{\downarrow}(r)$ 
-refer to valence electrons, and $rho_{\rm core}(r)$ is the  pseudocore 
-generated (if) through {\tt pe} for non-linear partial-core 
-exchange-correlation correction.
-To ckeck the pseudocore (partial core) the 4th column of this file
-should be compared with the 4th column of CHARGE.
-\end{itemize}
-
-If generating pseudopotential:
-\begin{itemize}
-\item
-AEWFNR0...AEWFNR3 : all-electron wavefunctions as function of radius,
-for $s$, $p$, $d$, and $f$ valence orbitals (0, 1, 2, 3, respectively,
-or less if less channels were generated).
-
-In columns: $r$, $4 \pi^2 \Psi_l(r)$, 0.  
-They include angular integration, the $s$ orbitals also going to zero.
-
-\item
-PSWFNR0...PSWFNR3 : Same as above but for the pseudowavefunctions.
-They should fit the corresponding AEWFNRs outside of the chosen 
-core radii $r_c$. 
-
-In columns: $r$, $4 \pi^2 \Psi_l(r)$, $r_c$.
-       
-\item
-PSWFNQ0...PSWFNQ3 : Fourier transforms of the PSWFNR0...PSWFNR3.
-
-In columns: $r$, $\Psi_l(q)$ .
-
-\item
-PSPOTR0...PSPOTR3 : Pseudopotentials as function of radius, 
-one per $l$-channel.
-
-In columns: $r$, $V_l^{ps}(r)$, $-2 Z_{ion}/r$. The last column is just 
-the coulombic atraction of the core ion. It should fit the $V_l^{ps}$'s 
-when the charge of the core electrons has died out. 
-
-\item
-PSPOTQ0...PSPOTQ3 : Fourier Transform of the pseudopotentials as a function 
-of radius, one per $l$-channel ($q$ in bohr$^{-1}$).
-
-In columns: $r$, $V_l^{ps}(q)$, 0.
-
-\item
-COREQ: Fourier transform of the pseudocore charge density.
-
-In columns: $q$ (bohr$^{-1}$), $\rho_c(q)$ (electrons).
-\end{itemize}
-
+literature on pseudopotentials and to the {\sc ATOM} manual {\tt
+siesta/Pseudo/atom/atom.tex}.
 
 
 \section{ATOMIC-ORBITAL BASES IMPLEMENTED IN SIESTA}
@@ -831,8 +433,8 @@ J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
 Gen-basis}\index{Gen-basis@{\sc Gen-basis}}, which reads {\sc
 Siesta}'s input and generates basis files for later use. {\sc
 Gen-basis} is compiled automatically at the same time as {\sc
-Siesta}. Currently it offers no extra functionality, but in the future
-it will have better basis analysis capabilities.)
+Siesta}. It should be run from the {\tt Tutorials/Bases} directory, 
+using the {\tt gen-basis.sh} script. It is limited to a single species.
 
 In the following we give some clues on the basics of the basis sets
 that {\sc Siesta} generates. 
@@ -1241,7 +843,7 @@ new format, which allows a much more flexible input.
 If true, the basis, KB projector, and other information is read from
 files {\it Atomlabel}{\tt .ion}, where {\it Atomlabel} is the atomic
 species label specified in block {\it ChemicalSpeciesLabel}. These
-files can be generated by a previous {\sc Siesta} run or by the
+files can be generated by a previous {\sc Siesta} run or (one by one) by the
 standalone program {\sc Gen-basis}.\index{Gen-basis program@{\sc
 Gen-basis}}\index{basis!Gen-basis standalone program} No pseudopotential
 files are necessary.
@@ -3331,7 +2933,6 @@ These files are accumulative even for different runs.
  
 {\it Default value:} {\tt .false.}
 
-
 \item[{\bf WarningMinimumAtomicDistance}] ({\it physical}): 
 \index{WarningMinimumAtomicDistance@{\bf WarningMinimumAtomicDistance}}
 Fixes a threshold interatomic distance below which a warning
@@ -3580,6 +3181,17 @@ Total DOS, $g \left(\epsilon\right)$, is normalized as follows:
 
 
 {\it Default value:} PDOS not calculated nor written.
+
+\item[{\bf WriteDenchar}] ({\it logical}):
+\index{WriteDenchar@{\bf WriteDenchar}}
+\index{output!charge density for DENCHAR code}
+Instructs to write information needed by the utility program
+DENCHAR (by J. Junquera) to plot the valence charge density
+contours. The information is written in file {\tt SystemLabel}.PLD.
+ 
+{\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
+ 
+{\it Default value:} {\tt .false.}
 
 \end{description}
         

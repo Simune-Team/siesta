@@ -9,8 +9,10 @@ C *********************************************************************
 C Calculates the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
 C eigenvector, for given Hamiltonian and Overlap matrices.
-C This version is for non-colinear spin with k-sampling.
+C This version is for non-colinear spin with k-sampling and time 
+C reversal symmetry.
 C Writen by J.Soler, August 1998.
+C Modified by V.M.Garcia, June 2002.
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
@@ -158,10 +160,14 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
      .                                                + H(ind,4)*skx
             Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
      .                                                + H(ind,3)*skx
-            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo) + H(ind,3)*ckx
-     .                                                - H(ind,4)*skx
-            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo) + H(ind,4)*ckx
-     .                                                + H(ind,3)*skx
+          enddo
+        enddo
+
+c Hermiticity
+        do iuo = 1,nuo
+          do juo = 1,nuo
+            Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
+            Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
           enddo
         enddo
 
@@ -238,12 +244,17 @@ C       Find eigenvectors
      .                                                + H(ind,4)*skx
             Haux(2,1,juo,2,iuo) = Haux(2,1,juo,2,iuo) - H(ind,4)*ckx
      .                                                + H(ind,3)*skx
-            Haux(1,2,juo,1,iuo) = Haux(1,2,juo,1,iuo) + H(ind,3)*ckx
-     .                                                - H(ind,4)*skx
-            Haux(2,2,juo,1,iuo) = Haux(2,2,juo,1,iuo) + H(ind,4)*ckx
-     .                                                + H(ind,3)*skx
           enddo
         enddo
+
+c Hermiticity
+        do iuo = 1,nuo
+          do juo = 1,nuo
+            Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
+            Haux(2,2,juo,1,iuo) = -Haux(2,1,iuo,2,juo)
+          enddo
+        enddo
+
         call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
      .              eo(1,ik), psi, 2*nuotot, 2*nuo, ierror )
         if (ierror.ne.0) then
@@ -324,22 +335,32 @@ C       Add contribution to density matrices of unit-cell orbitals
      .             kpoint(3,ik) * xij(3,ind)
             ckx = cos(kxij)
             skx = sin(kxij)
+
             Dnew(ind,1) = Dnew(ind,1) + Dk(1,1,juo,1,iuo) * ckx
      .                                + Dk(2,1,juo,1,iuo) * skx
             Enew(ind,1) = Enew(ind,1) + Ek(1,1,juo,1,iuo) * ckx
      .                                + Ek(2,1,juo,1,iuo) * skx
+
             Dnew(ind,2) = Dnew(ind,2) + Dk(1,2,juo,2,iuo) * ckx
      .                                + Dk(2,2,juo,2,iuo) * skx
             Enew(ind,2) = Enew(ind,2) + Ek(1,2,juo,2,iuo) * ckx
      .                                + Ek(2,2,juo,2,iuo) * skx
-            Dnew(ind,3) = Dnew(ind,3) + Dk(1,1,juo,2,iuo) * ckx
-     .                                + Dk(2,1,juo,2,iuo) * skx
-            Enew(ind,3) = Enew(ind,3) + Ek(1,1,juo,2,iuo) * ckx
-     .                                + Ek(2,1,juo,2,iuo) * skx
-            Dnew(ind,4) = Dnew(ind,4) + Dk(2,1,juo,2,iuo) * ckx
-     .                                - Dk(1,1,juo,2,iuo) * skx
-            Enew(ind,4) = Enew(ind,4) + Ek(2,1,juo,2,iuo) * ckx
-     .                                - Ek(1,1,juo,2,iuo) * skx
+
+            ! Average k and -k solutions because time-reversal sym
+            Dnew(ind,3) = Dnew(ind,3) + 0.5d0 * 
+     .       ((Dk(1,1,juo,2,iuo) + Dk(1,1,iuo,2,juo)) * ckx
+     .       +(Dk(2,1,juo,2,iuo) - Dk(2,1,iuo,2,juo)) * skx)
+            Enew(ind,3) = Enew(ind,3) + 0.5d0 * 
+     .       ((Ek(1,1,juo,2,iuo) + Ek(1,1,iuo,2,juo)) * ckx
+     .       +(Ek(2,1,juo,2,iuo) - Ek(2,1,iuo,2,juo)) * skx)
+
+            Dnew(ind,4) = Dnew(ind,4) + 0.5d0 * 
+     .       ((Dk(2,1,juo,2,iuo) + Dk(2,1,iuo,2,juo)) * ckx
+     .       -(Dk(1,1,juo,2,iuo) - Dk(1,1,iuo,2,juo)) * skx)
+            Enew(ind,4) = Enew(ind,4) + 0.5d0 * 
+     .       ((Ek(2,1,juo,2,iuo) + Ek(2,1,iuo,2,juo)) * ckx
+     .       -(Ek(1,1,juo,2,iuo) - Ek(1,1,iuo,2,juo)) * skx)
+
           enddo
         enddo
 

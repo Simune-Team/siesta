@@ -10,17 +10,29 @@ C INTEGER   N       : Required value of dimension parameter
 C INTEGER   IOPT    : Option switch: IOPT=0 => Require that ND.EQ.N
 C                                    IOPT=1 => Require that ND.GE.N
 C **********************************************************************
-      CHARACTER SUB*(*),VAR*(*)
+C
+C  Modules
+C
+      use precision
+      use sys
+
+      implicit none
+
+      character(len=*), intent(in) ::  SUB ,VAR
+      integer, intent(in)          ::  nd, n, iopt
+
+      character(len=132) message
+
       IF ( IOPT.EQ.0 ) THEN
         IF ( ND.EQ.N ) RETURN
-          WRITE (6,'(/5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
-     .      ', dimension ',VAR,' =',ND,'. It must be exactly ',N
-          STOP
+        WRITE (message,'(5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
+     .        ', dimension ',VAR,' =',ND,'. It must be exactly ',N
+        call die(message)
       ELSE
         IF ( ND.GE.N ) RETURN
-          WRITE (6,'(/5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
-     .      ', dimension ',VAR,' =',ND,'. It must be at least ',N
-          STOP
+        WRITE (message,'(5A,I8,A,I8)') 'chkdim: ERROR: In ', SUB,
+     .        ', dimension ',VAR,' =',ND,'. It must be at least ',N
+        call die(message)
       ENDIF
       END
 
@@ -28,9 +40,12 @@ C **********************************************************************
 
       SUBROUTINE CHKDIME (ND,N,OVERFLOW,NM)
       LOGICAL OVERFLOW
+      integer nd, n, nm
+
       NM = MAX(N,NM)
       IF ( ND.GE.N ) RETURN
       OVERFLOW = .TRUE.
       RETURN
       END
+
 

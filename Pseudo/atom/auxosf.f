@@ -19,7 +19,7 @@ c
           call idate(iarray)
           write(bdate,102) iarray(1),dash,month(iarray(2)),dash,
      &                     mod(iarray(3),100)
- 102  format(i2,a1,a3,a1,i2,' ')
+ 102  format(i2,a1,a3,a1,i2.2,' ')
           return
           end
 c

@@ -189,6 +189,8 @@ c        Extrapolate the density at r=0
 c
          dens(1,1) = dens(2,1) - (dens(3,1)-dens(2,1))*r(2)/(r(3)-r(2))
          dens(1,2) = dens(2,2) - (dens(3,2)-dens(2,2))*r(2)/(r(3)-r(2))
+         if (dens(1,1) .lt. 0.d0) dens(1,1) = 0.d0
+         if (dens(1,2) .lt. 0.d0) dens(1,2) = 0.d0
 c
 c        Define 'relflag' and 'nspin' for the interface ATOMXC
 c

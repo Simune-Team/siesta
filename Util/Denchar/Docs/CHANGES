@@ -1,0 +1,79 @@
+========================================================================
+                  DENCHAR CHANGES: TOP IS MOST RECENT
+=======================================================================
+Version: 1.1.0
+Date: 2002/02/04  16:00 GMT
+Title: F90 Denchar Implementation, Compatible with Siesta-1.2.5 
+Author: Javier Junquera  <Javier.Junquera@ulg.ac.be>
+
+Description:
+
+   A F90 implementation of Denchar code has been done.
+ It included all the atomic routines by A. Garcia needed
+ to read the basis from files.
+ 
+
+Files: We import the following files
+
+   Src/atmfuncs.f
+   Src/atmparams.f
+   Src/atm_types.f
+   Src/atompla.f
+   Src/basis_io.F
+   Src/bessph.f
+   Src/bsd.f
+   Src/chkdim.f
+   Src/colinear.f
+   Src/denchar.F
+   Src/dismin.f
+   Src/dmna.f
+   Src/dot.f
+   Src/iodm.F
+   Src/io.f
+   Src/ionew.F
+   Src/length.f
+   Src/listsc.f
+   Src/matvect.f
+   Src/memory.F
+   Src/memoryinfo.F
+   Src/neighb.f
+   Src/parallel.f
+   Src/paste.f
+   Src/planed.f
+   Src/precision.F
+   Src/prmem.f
+   Src/radfft.f
+   Src/radial.f
+   Src/ranger.f
+   Src/readpla.f
+   Src/recipes.f
+   Src/redata.f
+   Src/reinit.f
+   Src/rhoofr.f
+   Src/spher_harm.f
+   Src/sys.F
+   Src/version.F
+   Src/volcel.f
+   Src/wrout.f
+   Docs/denchar.tex
+   Docs/CHANGES
+   Examples/AtomicIndices.fdf
+   Examples/NormalVector.fdf
+   Examples/ThreePoints.fdf
+   Examples/TwoLines.fdf
+   Test/Si/Si.fdf
+   Test/Si/Si.psf
+   Test/Si/Si.ion
+   Test/Si/Si.CON.DEL
+   Test/Si/Si.CON.SCF
+   Test/SiH3/SiH3.fdf
+   Test/SiH3/H.psf
+   Test/SiH3/Si.psf
+   Test/SiH3/SiH3.CON.DEL
+   Test/SiH3/SiH3.CON.UP
+   Test/SiH3/SiH3.CON.DOWN
+   Test/SiH3/SiH3.CON.MAG
+
+===============================================================================
+   
+       

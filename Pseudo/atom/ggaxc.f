@@ -16,6 +16,17 @@ cc     .                  EPSC, EPSX, GD(3,NSPIN)
      .                  DEXDD(NSPIN), DEXDGD(3,NSPIN),
      .                  EPSC, EPSX, GD(3,NSPIN)
 
+C after JLM
+      INTEGER I
+
+      DO I=1,NSPIN
+        IF(D(I) .LT. 0.0D0) then
+           write(0,*) 'density <0 in ggaxc. dens=', d(i)
+           D(I) = 0.0D0
+        endif
+      ENDDO
+C after JLM
+
       IF (AUTHOR.EQ.'PBE' .OR. AUTHOR.EQ.'pbe') THEN
         CALL PBEXC( IREL, NSPIN, D, GD,
      .              EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
@@ -26,3 +37,9 @@ cc     .                  EPSC, EPSX, GD(3,NSPIN)
         STOP
       ENDIF
       END
+
+
+
+
+
+

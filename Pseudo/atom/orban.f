@@ -1,5 +1,5 @@
 C
-      subroutine orban(id,ar,br,n,l,occup,spin,eigv,ekin,epot)
+      subroutine orban(iorb,id,ar,br,n,l,occup,spin,eigv,ekin,epot)
 c
       implicit none
 c
@@ -16,7 +16,7 @@ C     .. Parameters ..
       parameter (ai=2*137.0360411D0,zero=0.D0)
 C     ..
 C     .. Scalar Arguments ..
-      integer l, n
+      integer iorb, l, n
       double precision spin, occup, eigv, ekin, epot 
       character id*1
 C     ..
@@ -26,6 +26,7 @@ C     ..
 C     .. Local Scalars ..
       double precision ar2, arp, arpm, br2, deni, sa2
       integer i, i90, i99, ka, ll, llp, lp, nextr, nzero
+      integer kj, ist
 C     ..
 C     .. Local Arrays ..
       double precision aextr(10), bextr(10), rextr(10), rzero(10)
@@ -153,20 +154,27 @@ c
      &      f6.4,' electrons!!')
  9030 format(8x,'WARNING:  This orbital is not bound!')
 c
-c  njtj  ***  plotting routines  ***
-c    Save plotting information to current plot.dat file
-c  (unit = 3),  User must specify what orbital
-c   is to be saved(or all).
 c
-c      iorbplot=3
-c      ist=1
-c      if (ar(nr-80) is .lt. 0.0) ist=-1
-c      if (iorb .eq. iorbplot) then
-c        call potrw(ar,r,nr-80,l,0,ist)
-c      call potrw(ar,r,nr-80,l,0,ist)
+      if (job .ne. 0 .and. job .ne. 4) return
 c
-c  njtj  ***  user should adjust for their needs  ***
+c    Plot valence wavefunctions if AE or PT job
+c
+      if (iorb .gt. ncore) then
+c
+c     Plot and make the wavefunction 'upright'
+c
+         ist = nint(sign(1.d0,ar(nr-85)))
+c
+         if (job .eq. 4) then
+            kj = -1
+         else 
+            kj = 1
+         endif
+         call potrw(ar,r,nr-85,l,kj,ist,0.d0)
+      endif
 c
       return
 c
       end
+
+

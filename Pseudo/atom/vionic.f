@@ -1,7 +1,15 @@
 C
-c $Id: vionic.f,v 1.2 1997/05/22 17:32:36 wdpgaara Exp $
+c $Id: vionic.f,v 1.4 2002/07/08 18:08:26 wdpgaara Exp $
 c
 c $Log: vionic.f,v $
+c Revision 1.4  2002/07/08 18:08:26  wdpgaara
+c Re-implemented the "valence charge modification" feature.
+c New routine: change_valence.
+c Superseded vionic kludge. Watch out for compiler complaints.
+c
+c Revision 1.3  2002/07/05 18:22:39  wdpgaara
+c Fix format of grid parameters
+c
 c Revision 1.2  1997/05/22 17:32:36  wdpgaara
 c Moving from RCSfiles to ATM_1_0
 c
@@ -153,9 +161,17 @@ c
          cdc(1) = zero
 c
 c  replace valence charge on tape(valence charge modify)
+c  This is a horrible kludge, and it probably has never
+c  been used after the Froyen days...
+c  It might also violate the Fortran Standard.
+c
+c  Note the instantaneous job number change needed
+c  Leave it as is, but use routine change_valence
+c  for a cleaner operation.
 c
          if (job .eq. 6) then
             write(1) (cdd(i)+cdu(i),i=2,nr)
+            close(1)
 c
             return
 c
@@ -231,7 +247,7 @@ c
      &         ' not equal to correlation from tape ',a2,//)
          write(6,9040) r(2), nr, r(nr)
  9040    format(' radial grid parameters',//' r(1) = .0 , r(2) =',d8.2,
-     &         ' , ... , r(',i3,') =',f6.2,//)
+     &         ' , ... , r(',i4,') =',f6.2,//)
       end if
 c
 c   add potential from shell charge

@@ -1,2 +1,0 @@
-plot [0:4] 'PSWFNR0' using 1:2 with lines, 'PSWFNR1' using 1:2 with lines, 'PSWFNR2' using 1:2 with lines
-pause -1 "Hit return to end"

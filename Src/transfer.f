@@ -234,6 +234,12 @@
          spp%chlocal%f(1:)      = chloctab(2:,1,is)
          spp%chlocal%d2(1:)     = chloctab(2:,2,is)
 
+         call rad_alloc(spp%reduced_vlocal,NTBMAX)
+         spp%reduced_vlocal%delta      = vlocaltab(1,1,is)
+         spp%reduced_vlocal%cutoff     = vlocaltab(1,1,is)*(NTBMAX-1)
+         spp%reduced_vlocal%f(1:)      = vlocaltab(2:,1,is)
+         spp%reduced_vlocal%d2(1:)     = vlocaltab(2:,2,is)
+
          spp%there_is_core      = (coretab(1,2,is) .eq. 1)
 
          call rad_alloc(spp%core,NTBMAX)

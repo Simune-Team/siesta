@@ -7,14 +7,10 @@ c
 c
 c ***********************************************************
 c *                                                         *
-c *    This is a plotting routine; the user should adjust   *
-c *  for their own needs.  The potential is fitted with a   *
-c *  second degree polynomial, which is muliplied with the  *
+c *  The potential is fitted with a                         *
+c *  second degree polynomial, which is multiplied with the *
 c *  appropriate functions and then integrated by parts     *
-c *  to find the fourier transform.  The result is then     *
-c *  printed to the current plot.dat file (unit=3) for      *
-c *  later plotting.  A marker(marker fn#) is placed at     *
-c *  the end of each set of data.                           *
+c *  to find the fourier transform.                         *
 c *                                                         *
 c ***********************************************************
 c

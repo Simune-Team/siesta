@@ -58,7 +58,7 @@ c     information
       character*10 dummy_string
 
       call getline(unit_no,dummy_string)
-      backspace(unit_no)
+      if (dummy_string .ne. '#') backspace(unit_no)
 
       return
       end
@@ -69,7 +69,9 @@ c
 
 c     Provides the caller with a line that does not contain comments
 c     or directives.
-
+c
+c     If it encounters the end of file, returns '#'
+c
       integer unit_no
       character*(*) string
 
@@ -91,7 +93,7 @@ c
 
   10  continue
 
-      read(unit_no,'(a132)') line
+      read(unit_no,'(a132)',end=999) line
 
 c  ...skip comment lines ( those include blank lines )
 
@@ -114,7 +116,9 @@ c
       endif
 c
       string = line
-
+      RETURN
+ 999  continue
+      string = '#'
       return
 c
       end   

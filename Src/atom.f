@@ -14,7 +14,28 @@
 
       public :: atom_main, prinput
 
+!---------------------------------------------------------------------
+! Some internal parameters
 
+        real*8, parameter             :: deltmax=0.05d0
+! Maximum distance (in Bohrs) between points where function 
+! is evaluated to generate the tables for interpolation
+! If this distance is exceeded  a warning is printed
+! In practice, this means that the cutoff can be as large as 25 bohrs
+! with ntbmax=500
+
+        real*8, parameter             :: eshift_default=0.02d0
+! Default energy-shift to define the cut off radius of orbitals
+! In Rydbergs
+
+        real*8, parameter             :: splnorm_default=0.15d0
+! Default norm-percentage for the automatic definition of
+! multiple-zeta orbitals with the 'SPLIT' option
+
+        character(len=1)     :: sym(0:4) = (/ 's','p','d','f','g' /)
+
+!---------------------------------------------------------------------
+       
       CONTAINS
 
 
@@ -145,33 +166,15 @@
 
 
            
-! Some internal parameters
-
-        real*8, parameter             :: deltmax=0.05d0
-! Maximum distance (in Bohrs) between points where function 
-! is evaluated to generate the tables for interpolation
-! If this distance is exceeded  a warning is printed
-! In practice, this means that the cutoff can be as large as 25 bohrs
-! with ntbmax=500
-
-        real*8, parameter             :: eshift_default=0.02d0
-! Default energy-shift to define the cut off radius of orbitals
-! In Rydbergs
-
-        real*8, parameter             :: splnorm_default=0.15d0
-! Default norm-percentage for the automatic definition of
-! multiple-zeta orbitals with the 'SPLIT' option
-
-        character(len=1)     :: sym(0:4) = (/ 's','p','d','f','g' /)
-       
 ! Internal variables
  
        double precision
      .  rofi(nrmax), drdi(nrmax), s(nrmax),
      .  vps(nrmax,0:lmaxd), rphi(nrmax,0:lmaxd,nsemx),
      .  vlocal(nrmax), vxc(nrmax), ve(nrmax),
-     .  rho(nrmax), chcore(nrmax), auxrho(nrmax),
-     .  vePAO(nrmax), qPAO(0:lmaxd,nsemx)
+     .  rho(nrmax), chcore(nrmax), rho_PAO(nrmax), auxrho(nrmax),
+     .  vePAO(nrmax), qPAO(0:lmaxd,nsemx), chlocal(nrmax),
+     .  red_vlocal(nrmax)
 
 
        double precision 
@@ -190,7 +193,7 @@
 
        integer 
      .  iz, nrval, ir , nrgauss, nchloc, nzcontr, l, nVna,
-     .  irelt, lun, nsm
+     .  irelt, lun, nsm, nvlocal
     
        logical  new
    
@@ -240,7 +243,7 @@
 ! 
             call read_vps(atm_label, lmxo, lmxkb,
      .        nrval,a,b,rofi,drdi,s,vps,
-     .        rho, chcore, zval, chgvps, nicore, irel, icorr) 
+     .        rho, chcore, zval, chgvps, nicore, irel, icorr,basp) 
 
             do ir=1,nrval
               rho(ir)=chgvps*rho(ir)/zval
@@ -255,7 +258,22 @@
      .  'ATOM: Pseudopotential generated from an ionic configuration',
      .  'ATOM: with net charge', zval-chgvps
             endif 
-
+!
+!           AG: Note zval-chgvps = (Znuc-Zcore)-true_zval
+!           Example: Ba with 5s and 5p in the core:
+!           zval from atom (scaled with zratio): 10 (5s2 5p6 6s2)
+!           chgvps (only 5s2 and 5p6 occupied in ref config): 8
+!           true_zval = chgvps
+!           ==> net charge (zval-chgvps) = 2
+!           Znuc = 56,  Zcore= Z(Xe)-2-6 = 54-2-6 = 46
+!           Znuc-Zcore-true_val = 56 - 46 - 8 = 2
+!
+!           If we stop the practice of scaling the valence charge
+!           in the ps file, we would need info about Zcore to setup
+!           things correctly (both for Siesta and for the PW program...)
+!           BUT actually, we have that information in the ps file!!
+!           The potentials are stored as r*V, so at large r they all
+!           go to -2*(Znuc-Zcore).....
 !
 !           Set 'charge':
 !              1. If 'charge' is zero (that is, not set in the fdf file)
@@ -263,7 +281,7 @@
 !              2. If 'charge' is equal to zval-chgvps, set it to that.
 !
             if ((abs(charge).eq.0.d0).or. 
-     .          (abs(charge-zval+chgvps).lt.1.0d-3)) then   
+     .          (abs(charge-(zval-chgvps)).lt.1.0d-3)) then   
 c             write(6,'(/,2a)') 
 c    .          'ATOM: The above configuration will be used ', 
 
@@ -274,6 +292,7 @@ c    .          'ATOM: The above configuration will be used ',
 !  Save readed valence charge***
 !  This can be different from the standard one if we have included semicore
 !  states in the valence shell.
+!  For example: Ba with 5s and 5p in the core: zval=10 (5s2 5p6 6s2)
 ! 
             izvaltb(is)=nint(zval)
 
@@ -291,13 +310,22 @@ c    .          'ATOM: The above configuration will be used ',
 ! CALCULATION OF THE VALENCE SCREENING POTENTIAL FROM THE READ CHARGE
 ! DENSITY*
 !  
-! For Kleinman-Bylander projectors calculation**
+! For Kleinman-Bylander projectors calculation
+! We use the same valence charge as in ps generation
+!
           call vhrtre(rho,ve,rofi,drdi,s,nrval,a)  
+
 ! For PAO basis functions calculations 
+! We use the "scaled" charge density of an ion of total charge "charge"
+! As seen above, this ion could be the one involved in ps generation,
+! or another specified at the time of basis generation.
+! Example: Ba: ps ionic charge: +2
+!              basis gen specified charge: +0.7
+
           do ir=2,nrval 
-              auxrho(ir)=(zval-charge)*rho(ir)/chgvps
+              rho_PAO(ir)=(zval-charge)*rho(ir)/chgvps
           enddo 
-          call vhrtre(auxrho,vePAO,rofi,drdi,s,nrval,a) 
+          call vhrtre(rho_PAO,vePAO,rofi,drdi,s,nrval,a) 
           chargesave(is)=charge
 ! 
 ! 
@@ -312,7 +340,10 @@ c    .          'ATOM: The above configuration will be used ',
 ! 
             if (irel.eq.'rel') irelt=1
             if (irel.ne.'rel') irelt=0 
-
+!
+!        NOTE that atomxc expects true rho(r), not 4pir^2*rho(r)
+!        We use auxrho for that
+!
           do ir=2,nrval
             r2=rofi(ir)**2
             r2=4.0d0*pi*r2
@@ -335,7 +366,7 @@ c    .          'ATOM: The above configuration will be used ',
           do ir=2,nrval
             r2=rofi(ir)**2
             r2=4.0d0*pi*r2
-            dc=(zval-charge)*rho(ir)/(r2*chgvps)
+            dc= rho_PAO(ir)/r2
             if (nicore.ne.'nc  ')  dc=dc+chcore(ir)/r2
               auxrho(ir)=dc
           enddo
@@ -361,7 +392,7 @@ c    .          'ATOM: The above configuration will be used ',
  
 ! Rgauss is the maximum cut-off radius used in the pseudopotential   
 ! generation, Rgauss is determined by comparison of the pseudopot.   
-! Corresponding to different l ( this is not possible is we have     
+! Corresponding to different l ( this is not possible if we have     
 ! just one pseudopotential)                                          
 ! Rgauss2 is the radius where the pseudopotentials reach  the        
 ! asymptotic behaviour 2*Zval/r.                                     
@@ -381,13 +412,13 @@ c    .          'ATOM: The above configuration will be used ',
 ! behaviour as in the pseudopotentials we modified the definition
 ! of the local potential
 ! 
-         write(6,'(/,a,f10.5)') 'ATOM: Estimated core radius ',
+        write(6,'(/,a,f10.5)') 'ATOM: Estimated core radius ',
      .           rgauss2
-         if (nicore.eq.'nc ')
-     .   write(6,'(/,2a)') 'ATOM: Include non-local core corrections',
-     .   ' could be a good idea'
-           call vlocal2(Zval, nrval, a, rofi, drdi, s, vps(1,0),
-     .              nrgauss,vlocal,nchloc,chcore)
+        if (nicore.eq.'nc ')
+     .  write(6,'(/,2a)') 'ATOM: Including non-local core corrections',
+     .  ' could be a good idea'
+         call vlocal2(Zval, nrval, a, rofi, drdi, s, vps(:,0),
+     .              nrgauss,vlocal,nchloc,chlocal)
 ! 
               else
 ! 
@@ -395,18 +426,39 @@ c    .          'ATOM: The above configuration will be used ',
 ! for a radius approximately equal to Rc. 
 ! 
             call vlocal1(Zval, nrval, a, rofi, drdi, s, rgauss,
-     .                     vlocal,nchloc,chcore)
+     .                     vlocal,nchloc,chlocal)
 
             endif 
 ! 
-! Common block with local-pseudopotential charge****
-! used for non-linear-core-correction for exchange-correlation energy***
+! Save local-pseudopotential charge
 !  
           Rchloc=rofi(nchloc)
           write(6,'(2a,f10.5)') 'ATOM: Maximum radius for' ,
-     .        ' local-pseudopot. charge ',Rchloc
+     .        ' 4*pi*r*r*local-pseudopot. charge ',Rchloc
 
-            call  comlocal(is,a,b,rofi,chcore,nchloc,flting)
+            call  comlocal(is,a,b,rofi,chlocal,nchloc,flting)
+!
+!------------------------------------------------------------------
+!new: Save vlocal (actually r*vlocal +2*Zval)
+!
+         red_vlocal(1:nrval) =
+     $        rofi(1:nrval)*vlocal(1:nrval) + 2.0_dp*Zval
+!
+!  Use the same eps=1.0e-4 as in other Vlocal-related routines
+!
+         do ir=nrval,2,-1
+            if (abs(red_vlocal(ir)) .gt. 1.0e-4_dp) then
+               nvlocal = ir + 1
+               exit
+            endif
+         enddo
+         call  com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
+     $                    zval,flting)
+!
+          write(6,'(2a,f10.5)') 'ATOM: Maximum radius for' ,
+     .        ' r*vlocal+2*Zval: ', rofi(nvlocal)           
+!
+!-------------------------------------------------------------------
 ! 
 ! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION** 
 ! 
@@ -432,7 +484,9 @@ c    .          'ATOM: The above configuration will be used ',
 ! Zero local pseudopotential if floating orbitals**
 ! 
             nchloc=0
-            call  comlocal(is,a,b,rofi,chcore,nchloc,flting)
+            call  comlocal(is,a,b,rofi,chlocal,nchloc,flting)
+            nvlocal=0
+            call  comlocal(is,a,b,rofi,red_vlocal,nvlocal,flting)
 ! 
 
 ! ARRAY S FOR THE SCHRODINGER EQ. INTEGRATION**
@@ -546,7 +600,7 @@ c    .          'ATOM: The above configuration will be used ',
            nkbmax(is)=0
 ! No local potential
            nchloc=0
-           call  comlocal(is,a,b,rofi,chcore,nchloc,flting)    
+           call  comlocal(is,a,b,rofi,chlocal,nchloc,flting)    
 ! Zero neutral-atom pseudopotential if floating orbitals
            nVna=0
            call comVna(is,a,b,rofi,vlocal,nVna,flting)
@@ -564,7 +618,7 @@ c    .          'ATOM: The above configuration will be used ',
         write(6,'(/,a)') 'ATOM:__________________________ '
 
 
-       CONTAINS
+        end subroutine atom_main
 
 
         subroutine rc_vs_e(a,b,r,vps,
@@ -577,7 +631,7 @@ C   D. Sanchez-Portal, July 1997.
 C   Modify by DSP, July 1999
 C**
 
-        integer nrval
+        integer nrval, ir
         double precision r(nrval),
      .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval)
         
@@ -682,7 +736,7 @@ C
         
         real*8 a, rmax, reduc, dl, hi, rnd1, c1, c2, rnodo, cons, gold
         real*8 gmax, r0, g0, r1, g1, grmx, dff1, dff2, savecons, dnrm
-        integer index, nnodes, iter, nnd
+        integer index, nnodes, iter, nnd, ir
         integer  l
 
 c       if ((nrval.gt.nrmax).or.(nrc.gt.nrmax)) then   
@@ -1082,439 +1136,419 @@ C
           end subroutine nrmpal
 
 
-        subroutine radii_ps(vps,rofi,Zval,nrval,lmxkb,
-     .          nrgauss, rgauss, rgauss2)
+!---------------------
 
-C**
-C   This rouitne returns the maximum radius for the
-C   Kleinman-Bylander projectors with a standart choice
-C   of the local potential.
-C   Check also at which radius the asymptotic 2*Zval/r
-C   behaviour is achieved.  
-C   D. Sanchez-Portal, Aug. 1998
-C**
+      subroutine radii_ps(vps,rofi,Zval,nrval,lmxkb,
+     .     nrgauss, rgauss, rgauss2)
 
-
-        implicit none
-
-        double precision 
-     .     vps(nrmax,0:lmaxd), rofi(nrmax), 
-     .     rgauss, rgauss2, Zval
-        integer nrval, lmxkb, nrgauss
+C     This routine returns the maximum radius for the
+C     Kleinman-Bylander projectors with a standard choice
+C     of the local potential.
+C     Check also at which radius the asymptotic 2*Zval/r
+C     behaviour is achieved.
+C     D. Sanchez-Portal, Aug. 1998
 
 
-Cinternal variables****
-        double precision eps, dincv, r
-        integer ir, l
-        parameter (eps=1.0d-4)
+      real(dp), intent(in)    ::  vps(:,0:), rofi(:)
+      real(dp), intent(in)    ::  Zval
+      integer, intent(in)   ::  nrval, lmxkb
+      integer, intent(out)  ::  nrgauss
+      real(dp), intent(out)   ::  rgauss, rgauss2
 
-C**Iterate over the possible local potentials**
+      real(dp) dincv, r
+      integer ir, l, nrgauss2
 
-          rgauss=0.0d0
-          nrgauss=0
-          do l=0,lmxkb-1
-               
-             do ir=nrval,2,-1
-                 dincv=abs(vps(ir,l)-vps(ir,lmxkb))
-                 if(dincv.gt.eps) goto 10
-             enddo 
-10           rgauss=max(rofi(ir),rgauss)
-             nrgauss=max(ir,nrgauss)
-          enddo
+      real(dp), parameter     ::  eps=1.0d-4
 
-          do ir=nrval,2,-1
-              r=rofi(ir)
-              dincv=abs(vps(ir,0)*r+2.0d0*zval)
-              if(dincv.gt.eps) goto 20
-          enddo 
+C**   Iterate over the possible local potentials**
+
+      rgauss=0.0_dp
+      rgauss2=0.0_dp
+      nrgauss=0
+
+      do l=0,lmxkb-1
+         do ir=nrval,2,-1
+            dincv=abs(vps(ir,l)-vps(ir,lmxkb))
+            if(dincv.gt.eps) exit
+         enddo
+         rgauss=max(rofi(ir),rgauss)
+         nrgauss=max(ir,nrgauss)
+      enddo
+!
+!     New: Use all potentials, not just l=0, since
+!     potentials with larger l can converge later...
+!
+      do l=0,lmxkb
+         do ir=nrval,2,-1
+            r=rofi(ir)
+            dincv=abs(vps(ir,l)*r+2.0_dp*zval)
+            if(dincv.gt.eps) exit
+         enddo
+         write(6,'(a,i1,a,f8.4)')
+     $     'V l=', l,' = -2*Zval/r beyond r=', rofi(ir)
+         rgauss2=max(rofi(ir),rgauss2)
+         nrgauss2=max(ir,nrgauss)
+      enddo
+
+      if(lmxkb.eq.0) then
+         rgauss=rgauss2
+         nrgauss=nrgauss2
+      endif
+
+      write(6,'(a,f8.4)') 'All V_l potentials equal beyond r=', rgauss
+      write(6,'(a)')
+     $     "This should be close to max(r_c) in ps generation"
+      write(6,'(a,f8.4)')
+     $     'All pots = -2*Zval/r beyond r=', rgauss2
+
+      end subroutine radii_ps
+
             
-20        rgauss2=rofi(ir)
-          if(lmxkb.eq.0) then 
-             rgauss=rgauss2 
-             nrgauss=ir
-          endif 
+!-----------------------------------------------------
 
+      subroutine vlocal1(Zval, nrval, a, rofi, drdi, s, rgauss,
+     .     vlocal, nchloc, chlocal)
 
-          end subroutine radii_ps
-            
-
-       subroutine vlocal2(Zval, nrval, a, rofi, drdi, s, vps,
-     .              nrgauss,vlocal,nchloc,chcore) 
-
-C* 
-C     This routine generates the local pseudopotential appropiate 
-C     for species with  a large core.
-C     
-C     Written by D. Sanchez-Portal, Aug. 1998
-C* 
-   
-
-       implicit none 
-        
-       double precision rofi(nrmax), drdi(nrmax), s(nrmax),
-     .     vps(nrmax), vlocal(nrmax), a, Zval, chcore(nrmax)
-       integer nrgauss, nrval, nchloc
-
-
-CInternal variables****
-       double precision 
-     .      vlc, r, dev, dev2, dev3, var1, var2, var3, v1, v2, v3, v4,
-     .      dm11, dm12, dm13, dm21, dm22, dm23, dm31, dm32, dm33, eps,
-     .      g0, g1, g2, g3, g4, d2g, d2u, cons, a2b4, qtot, pi   
-       integer 
-     .      ndevfit, ir  
-
-       parameter (eps=1.0d-5)
-                     
- 
-       pi=acos(-1.0d0)        
-
-
-CContinuity up to second derivative***
-                ndevfit=2
-CContinuity up to third derivative****
-C               ndevfit=3
-
-
-
-                nrgauss=nrgauss+3
-
-                do ir=1,nrval
-                   vlocal(ir)=vps(ir)*rofi(ir)
-                enddo 
-
-                   ir=nrgauss
-                   dev=(vlocal(ir+1)-vlocal(ir-1))*0.5d0
-                   dev2=(vlocal(ir+1)+vlocal(ir-1)-2.0d0*vlocal(ir))
-                   dev3=(vlocal(ir+2)-2.0d0*vlocal(ir+1)
-     .                 +2.0d0*vlocal(ir-1)-vlocal(ir-2))*0.5d0
-                   dev3=(dev3-3.0d0*a*dev2+2.0d0*(a**2)*dev)
-     .               /(drdi(ir)**3)
-                   dev2=(dev2-a*dev)/(drdi(ir)**2)
-                   dev=dev/drdi(ir)
-
-CLocal potential is Vloc(r)=v3*exp(v1*r^2+v2*r^3) inside Rgauss and equals the 
-Call-electron atomic potential outside Rgauss
-CWe impose the continuity up to second        
-    
-             if(ndevfit.eq.2) then               
-               vlc=vlocal(nrgauss)
-               r=rofi(nrgauss)
-
-               var1=dev/vlc-1.0d0/r
-               var2=dev2/vlc-2.0d0*var1/r -(var1**2)
-
-               dm11=2.0d0*r
-               dm12=3.0d0*r*r
-               dm21=2.0d0
-               dm22=6.0d0*r
-
-               v1=(dm22*var1-dm12*var2)/(6.0d0*r*r)
-               v2=(dm11*var2-dm21*var1)/(6.0d0*r*r)
-               v3=vlc/(r*exp((v1+v2*r)*r*r))
-
-
-c            elseif(ndevfit.eq.3) then 
-             else
-C***
-C We can also construct a local potential Vloc(r)=v4*exp(v1*r^2+v2*r^3+v3*r^4),
-C this new coefficient allows us to impose the continuity of the potential up
-C to the third derivative.
-C***
- 
-            vlc=vlocal(nrgauss)
-            r=rofi(nrgauss)
-            
-            var1=dev/vlc-1.0d0/r
-            var2=dev2/vlc-2.0d0*var1/r-(var1**2)
-            var3=dev3/vlc-3.0d0*var1*var2-(var1**3)
-     .                           -3.0d0*(var1**2+var2)/r
-
-            dm11=2.0d0*r
-            dm12=3.0d0*r*r
-            dm13=4.0d0*r*r*r
-            dm21=2.0d0
-            dm22=6.0d0*r
-            dm23=12.0d0*r*r
-            dm31=0.0d0
-            dm32=6.0d0
-            dm33=24.0d0*r
-
-            v1=((var1*dm22*dm33+var2*dm13*dm32+var3*dm12*dm23)
-     .   -(var3*dm22*dm13+var1*dm32*dm23+var2*dm12*dm33))/(48.0d0*r*r*r) 
-            v2=((var2*dm11*dm33+var3*dm21*dm13+var1*dm23*dm31)
-     .   -(var2*dm31*dm13+var3*dm23*dm11+var1*dm21*dm33))/(48.0d0*r*r*r)
-            v3=((var3*dm11*dm22+var2*dm12*dm31+var1*dm32*dm21)
-     .   -(var1*dm22*dm31+var3*dm21*dm12+var2*dm11*dm32))/(48.0d0*r*r*r)
-            v4=vlc/(r*exp((v1+v2*r+v3*r*r)*r*r))
-            
-          endif 
-
-
- 
-             do ir=1,nrval
-               r=rofi(ir)
-               if(ir.le.nrgauss) then 
- 
-C**If second derivative fit***
-                if(ndevfit.eq.2) then 
-                    vlocal(ir)=v3*exp((v1+v2*r)*r*r)
-C****
-
-C**If third derivative fit****
-                elseif(ndevfit.eq.3) then 
-
-                    vlocal(ir)=v4*exp((v1+v2*r+v3*r*r)*r*r)
-c****
-                endif 
-
-               else
-                    vlocal(ir)=vps(ir)
-               endif 
-
-             enddo 
-
-
-
-C Once we have the local potential we define the 'local-pseudopotential 
-C charge' which help us to calculate the electrostatic interation 
-C between the ions
-
-
-          a2b4=0.25d0*a*a 
-          qtot=0.d0 
-          do ir=1,nrval-1
-             
-            g2=vlocal(ir)*rofi(ir)
-            if(abs(g2+2.0d0*zval).lt.eps) goto 10
-
-             if(ir.gt.nrgauss) then  
-
-              if((ir.gt.2).and.(ir.lt.(nrval-1))) then 
-                g0=vlocal(ir-2)*rofi(ir-2)/s(ir-2)
-                g1=vlocal(ir-1)*rofi(ir-1)/s(ir-1)
-                g2=vlocal(ir)*rofi(ir)/s(ir)
-                g3=vlocal(ir+1)*rofi(ir+1)/s(ir+1)
-                g4=vlocal(ir+2)*rofi(ir+2)/s(ir+2)
-
-                d2g=(16.0d0*(g1+g3)-(g0+g4)-30.0d0*g2)/12.0d0
-               
-              else
-                g1=vlocal(ir-1)*rofi(ir-1)/s(ir-1)
-                g2=vlocal(ir)*rofi(ir)/s(ir) 
-                g3=vlocal(ir+1)*rofi(ir+1)/s(ir+1)  
-               
-                d2g=g1+g3-2.0d0*g2
-
-              endif  
-
-              d2u=d2g-a2b4*g2
-
-              r=rofi(ir)
-              cons=8.0d0*pi*r*drdi(ir)*s(ir)
-              chcore(ir)=(-d2u)/cons
-              qtot= qtot + 0.5d0*d2u*r/s(ir)
-
-
-
-
-             else
-
-CIf second derivative fit*** 
-             if(ndevfit.eq.2)  then
-              r=rofi(ir)
-
-              g0=v3*exp((v1+v2*r)*r**2)
-              g1=(2.0d0*v1+3.0d0*v2*r)
-              g2=2.0d0*v1+6.0d0*v2*r
-              g3=(g2+g1*g1*r*r+2.0d0*g1)*g0
-             
-              cons=8.0d0*pi
-              chcore(ir)= (-g3)/cons
-              qtot= qtot  + 0.5d0*g3*r*r*drdi(ir)
- 
-C****If third derivative fit
-     
-              elseif(ndevfit.eq.3)  then
-
-              r=rofi(ir)
-           
-              g0=v4*exp((v1+v2*r+v3*r*r)*r*r)     
-              g1=(2.0d0*v1+3.0d0*v2*r+4.0d0*v3*r*r)
-              g2=(2.0d0*v1+6.0d0*v2*r+12.0d0*v3*r*r)    
-              g3=(g2+g1*g1*r*r+2.0d0*g1)*g0   
-
-              cons=8.0d0*pi
-              chcore(ir)= -g3/cons
-              qtot= qtot  + 0.5d0*g3*r*r*drdi(ir)
-             endif 
-
-          endif
-       enddo              
-
- 10    continue
-       nchloc=ir          
-
-       do ir=1,nchloc-1
-          chcore(ir)=zval*chcore(ir)/qtot
-       enddo  
-       do ir=nchloc,nrval
-          chcore(ir)=0.0d0
-       enddo 
-
-       end subroutine vlocal2
-
-
-
-       subroutine vlocal1(Zval, nrval, a, rofi, drdi, s, rgauss,
-     .          vlocal, nchloc, chcore)
-
-
-C*
 C     This routine generates a smooth local pseudopotential.
 C     Written by D. Sanchez-Portal, Aug. 1998
-C*
+
+      real(dp), intent(in) :: Zval, a
+      integer, intent(in) :: nrval
+      real(dp), intent(in) :: rofi(:), drdi(:), s(:)
+      real(dp), intent(out) :: vlocal(:)
+      real(dp), intent(out) :: chlocal(:)
+      integer, intent(out) :: nchloc
+      real(dp), intent(inout) :: rgauss      !!???
 
 
-         implicit none
-         double precision 
-     .     Zval, rofi(nrmax), vlocal(nrmax), rgauss, chcore(nrmax),
-     .     rhor, drdi(nrmax), s(nrmax), a
-         integer
-     .     nrval, nchloc
+C     *Internal variables* 
 
-C*Internal variables* 
+      real(dp) van, factor, alp, cutoff1, cutoff2,
+     .     gexp, qtot, eps, pi, chc, r, Rchloc, rhor1, rhor
+      integer ir
+      character loctype*3
 
-          double precision van, factor, alp, cutoff1, cutoff2,
-     .        gexp, qtot, eps, pi, chc, r, Rchloc, rhor1
-          integer ir
+      parameter(eps=1.0d-4)
 
-          character loctype*3
+C**   Usual local potential 
+C     (generated with an optimum Vandebilt function)**
+      loctype='new' 
 
-          parameter(eps=1.0d-4)
-CAG       Maximum exponent for exp(-x)
-          real*8, parameter :: exp_range=60.d0
-CAG
+C***  The very first local potential used by SIESTA was 
+C     the electrostatic potential generated by a gaussian 
+C     distribution ===> loctype='old' 
+C     loctype='old'
+C***  
+      pi=acos(-1.0_dp)
 
-C**Usual local potential (generated with an optimum Vandebilt function)**
-                   loctype='new' 
-C**
+C     Local-potential size parameter 'rgauss'
+C     We choose as a smooth pseudopotential the one generated 
+C     by a 'Vanderbilt-function' charge distribution. We have to select 
+C     the size of this distribution somehow.
+C     'Vanderbilt-functions' are of the form :
+C     p(r)=N*exp(-(sinh(van*r)/sinh(van))**2)
+C     when van---> 0 we will obtain a 'gaussian'
+C     when van---> Inf. we will obtain a step function
+C     Some test has revealed that the best election to achieve 
+C     a good convergence in real and reciprocal space is b in the 
+C     range 0.5-1.0 .
+C     *
 
-C***The very first local potential used by SIESTA was a the electrostatic
-C***potential generated by a gaussian distribution ===> loctype='old' 
-C                  loctype='old'
-C***
+C     So, the 'gaussian' charge distribution 
+C     must go to zero at a distance 'rgauss'.
 
+      if(loctype.eq.'new') then          
 
-                        pi=acos(-1.0d0)
-
-
-C*
-C           Local-potential size parameter 'rgauss'
-C   We choose as a smooth pseudopotential the one generated 
-C   by a 'Vanderbilt-function' charge distribution. We have to select 
-C   the size of this distribution somehow.
-C   'Vandebilt-functions' are of the form :
-C    p(r)=N*exp(-(sinh(van*r)/sinh(van)**2)
-C    when van---> 0 we will obtain a 'gaussian'
-C    when van---> Inf. we will obtain a step function
-C    Some test has revealed that the best election to achieve 
-C    a good converge in real and reciprocal space is b in the 
-C    range 0.5-1.0 .
-C*
-
-C  So, the 'gaussian' charge distribution 
-C  must go to zero at a distance 'rgauss'.
-
-        if(loctype.eq.'new') then          
-
-
-C*
 C     We take a 'Vanderbilt-function' as local potential
-C     van=1.0d0 all the parameter have optimized for this value 
-C*
-                van=1.0d0
-                cutoff1=3.63d0
-                cutoff2=5.48d0
-C**99% of charge inside Rgauss**
-c               factor=1.627d0
-C*
+C     van=1.0_dp all the parameter have optimized for this value 
 
-C**99.9% of charge inside Rgauss
-                factor=1.815d0
-C*
-              
-C* Scaling factor for local-pseudopot. charge**
-                  alp=factor/rgauss
-C*
+         van=1.0_dp
+         cutoff1=3.63_dp
+         cutoff2=5.48_dp
+C**   99% of charge inside Rgauss**
+c     factor=1.627_dp
+
+C**   99.9% of charge inside Rgauss
+         factor=1.815_dp
+         
+C     * Scaling factor for local-pseudopot. charge**
+         alp=factor/rgauss
+
+         write(6,'(/,a,f10.3,a)')
+     .        'VLOCAL1: 99.0% of the norm of Vloc inside ',
+     .        (alp*cutoff1)**2,' Ry'
+         write(6,'(a,f10.3,a)')
+     .        'VLOCAL1: 99.9% of the norm of Vloc inside ',
+     .        (alp*cutoff2)**2,' Ry'
+
+      else 
+
+C     This is just a gaussian !!!!!!!!!!!!!!!!!                 
+         van=0.00001_dp 
+         rgauss=0.80_dp
+         factor=2.0_dp
+C     * Scaling factor for local-pseudopot. charge**
+         alp=factor/rgauss  
+      endif 
+!--------------------
+
+      qtot=0.0_dp 
+      rhor1 = vander(van,alp*rofi(1))     ! This is 1...
+      do ir=1,nrval
+         r=rofi(ir) 
+         rhor = vander(van,alp*r)
+         chlocal(ir)=(-4.0_dp)*pi*rhor*r*r
+         qtot=qtot+rhor*drdi(ir)*r*r
+      enddo
+
+      qtot=4.0_dp*pi*qtot 
+      nchloc=0  
+      do ir=nrval,1,-1
+         chc=zval*chlocal(ir)/qtot
+         chlocal(ir)=chc
+         if((abs(chc).gt.eps).and.(nchloc.eq.0)) then    
+            nchloc=ir+1
+         endif
+      enddo 
+      Rchloc=rofi(nchloc)
+!
+!     Note that the above cutoff is for 4*pi*r*r*rho_local(r)...
+!
+      call vhrtre(chlocal,vlocal,rofi,drdi,s,nrval,a)
+
+      do ir=2,nrval 
+         r=rofi(ir)  
+         chlocal(ir)=chlocal(ir)/(4.0_dp*pi*r*r)
+!
+!     Poor man's cutoff!! Largely irrelevant?
+!      
+         if (r.gt.1.1_dp*Rchloc) then
+            vlocal(ir)=(-2.0_dp)*zval/rofi(ir)
+         endif
+
+      enddo 
+      chlocal(1)= -rhor1* zval/qtot
+
+      end subroutine vlocal1
 
 
-       write(6,'(/,a,f10.3,a)')
-     .             'VLOCAL1: 99.0% of the norm of Vloc inside ',
-     .                 (alp*cutoff1)**2,' Ry'
-       write(6,'(a,f10.3,a)')
-     .             'VLOCAL1: 99.9% of the norm of Vloc inside ',
-     .                 (alp*cutoff2)**2,' Ry'
+      subroutine vlocal2(Zval, nrval, a, rofi, drdi, s, vps,
+     .     nrgauss,vlocal,nchloc,chlocal) 
+
+C     This routine generates the local pseudopotential appropiate 
+C     for species with  a large core.
+C     Written by D. Sanchez-Portal, Aug. 1998
+      
+      real(dp), intent(in) :: Zval, a
+      integer, intent(in) :: nrval
+      integer, intent(inout) :: nrgauss
+      real(dp), intent(in) :: rofi(:), drdi(:), s(:), vps(:)
+      real(dp), intent(out) :: vlocal(:), chlocal(:)
+      integer, intent(out) :: nchloc
 
 
-c        elseif(loctype.eq.'old') then 
-         else 
-C This is just a gaussian !!!!!!!!!!!!!!!!!                 
-                 van=0.00001d0 
-                 rgauss=0.80d0
-                 factor=2.0d0
+C     Internal variables****
+
+      real(dp) 
+     .     vlc, r, dev, dev2, dev3, var1, var2, var3, v1, v2, v3, v4,
+     .     dm11, dm12, dm13, dm21, dm22, dm23, dm31, dm32, dm33, 
+     .     g0, g1, g2, g3, g4, d2g, d2u, cons, a2b4, qtot, pi   
+      integer 
+     .     ndevfit, ir  
+
+      real(dp), parameter  :: eps=1.0d-5
+      
+      pi=acos(-1.0_dp)        
+
+C     Continuity up to second derivative***
+      ndevfit=2
+C     Continuity up to third derivative****
+C     ndevfit=3
+
+      nrgauss=nrgauss+3        !! For good measure...
+
+      do ir=1,nrval
+         vlocal(ir)=vps(ir)*rofi(ir)
+      enddo 
+
+      ir=nrgauss
+      dev=(vlocal(ir+1)-vlocal(ir-1))*0.5_dp
+      dev2=(vlocal(ir+1)+vlocal(ir-1)-2.0_dp*vlocal(ir))
+      dev3=(vlocal(ir+2)-2.0_dp*vlocal(ir+1)
+     .     +2.0_dp*vlocal(ir-1)-vlocal(ir-2))*0.5_dp
+      dev3=(dev3-3.0_dp*a*dev2+2.0_dp*(a**2)*dev)
+     .     /(drdi(ir)**3)
+      dev2=(dev2-a*dev)/(drdi(ir)**2)
+      dev=dev/drdi(ir)
+
+C     Local potential is Vloc(r)=v3*exp(v1*r^2+v2*r^3) 
+C     inside Rgauss and equals the 
+C     all-electron atomic potential outside Rgauss
+C     We impose the continuity up to second        
+      
+      if(ndevfit.eq.2) then               
+         vlc=vlocal(nrgauss)
+         r=rofi(nrgauss)
+
+         var1=dev/vlc-1.0_dp/r
+         var2=dev2/vlc-2.0_dp*var1/r -(var1**2)
+
+         dm11=2.0_dp*r
+         dm12=3.0_dp*r*r
+         dm21=2.0_dp
+         dm22=6.0_dp*r
+
+         v1=(dm22*var1-dm12*var2)/(6.0_dp*r*r)
+         v2=(dm11*var2-dm21*var1)/(6.0_dp*r*r)
+         v3=vlc/(r*exp((v1+v2*r)*r*r))
 
 
-C* Scaling factor for local-pseudopot. charge**
-                alp=factor/rgauss  
-C*
-                
+c     elseif(ndevfit.eq.3) then 
+      else
+
+C     We can also construct a local potential 
+C     Vloc(r)=v4*exp(v1*r^2+v2*r^3+v3*r^4),
+C     this new coefficient allows us to impose the continuity 
+C     of the potential up  to the third derivative.
+
+         vlc=vlocal(nrgauss)
+         r=rofi(nrgauss)
+         
+         var1=dev/vlc-1.0_dp/r
+         var2=dev2/vlc-2.0_dp*var1/r-(var1**2)
+         var3=dev3/vlc-3.0_dp*var1*var2-(var1**3)
+     .        -3.0_dp*(var1**2+var2)/r
+
+         dm11=2.0_dp*r
+         dm12=3.0_dp*r*r
+         dm13=4.0_dp*r*r*r
+         dm21=2.0_dp
+         dm22=6.0_dp*r
+         dm23=12.0_dp*r*r
+         dm31=0.0_dp
+         dm32=6.0_dp
+         dm33=24.0_dp*r
+
+         v1=((var1*dm22*dm33+var2*dm13*dm32+var3*dm12*dm23)
+     . -(var3*dm22*dm13+var1*dm32*dm23+var2*dm12*dm33))/(48.0_dp*r*r*r)  
+         v2=((var2*dm11*dm33+var3*dm21*dm13+var1*dm23*dm31)
+     . -(var2*dm31*dm13+var3*dm23*dm11+var1*dm21*dm33))/(48.0_dp*r*r*r)
+         v3=((var3*dm11*dm22+var2*dm12*dm31+var1*dm32*dm21)
+     . -(var1*dm22*dm31+var3*dm21*dm12+var2*dm11*dm32))/(48.0_dp*r*r*r)
+         v4=vlc/(r*exp((v1+v2*r+v3*r*r)*r*r))
+         
+      endif 
+      
+      do ir=1,nrval
+         r=rofi(ir)
+         if(ir.le.nrgauss) then 
+            
+C**   If second derivative fit***
+            if(ndevfit.eq.2) then 
+               vlocal(ir)=v3*exp((v1+v2*r)*r*r)
+
+C**   If third derivative fit****
+            elseif(ndevfit.eq.3) then 
+
+               vlocal(ir)=v4*exp((v1+v2*r+v3*r*r)*r*r)
+c**** 
+            endif 
+
+         else
+            vlocal(ir)=vps(ir)
          endif 
 
-          qtot=0.0d0 
-          do ir=1,nrval
-             r=rofi(ir) 
-             gexp=sinh(van*alp*r)/sinh(van)
-             gexp=gexp*gexp
-CAG  ---- prevent underflow
-             rhor = 0.d0
-             if (gexp .lt. exp_range) rhor=exp(-gexp)  
-CAG
-c            if(ir.eq.1) rhor1=-rhor
-             chcore(ir)=(-4.0d0)*pi*rhor*r*r
-             qtot=qtot+rhor*drdi(ir)*r*r
-          enddo
-          gexp=sinh(van*alp*rofi(1))/sinh(van)
-          gexp=gexp*gexp
-          rhor1 = 0.d0
-          if (gexp .lt. exp_range) rhor1=exp(-gexp)
+      enddo 
 
-          qtot=4.0d0*pi*qtot 
-          nchloc=0  
-          do ir=nrval,1,-1
-             chc=zval*chcore(ir)/qtot
-             chcore(ir)=chc
-             if((abs(chc).gt.eps).and.(nchloc.eq.0)) then    
-                 nchloc=ir+1
-             endif
-          enddo 
-          Rchloc=rofi(nchloc)
+C     Once we have the local potential we define the 'local-pseudopotential 
+C     charge' which help us to calculate the electrostatic interation 
+C     between the ions
 
+      a2b4=0.25_dp*a*a 
+      qtot=0._dp 
+      do ir=1,nrval-1
+         
+         g2=vlocal(ir)*rofi(ir)
+!
+!        To determine the chlocal cutoff, use the reduced_vlocal cutoff
+!
+         if(abs(g2+2.0_dp*zval).lt.eps) goto 10
 
-         call vhrtre(chcore,vlocal,rofi,drdi,s,nrval,a)
-   
-          do ir=2,nrval 
-             r=rofi(ir)  
-             chcore(ir)=chcore(ir)/(4.0d0*pi*r*r)
-             if (r.gt.1.1d0*Rchloc) then
-                 vlocal(ir)=(-2.0d0)*zval/rofi(ir)
-             endif
+         if(ir.gt.nrgauss) then  
 
-          enddo 
-          chcore(1)=rhor1*zval/qtot
+            if((ir.gt.2).and.(ir.lt.(nrval-1))) then 
+               g0=vlocal(ir-2)*rofi(ir-2)/s(ir-2)
+               g1=vlocal(ir-1)*rofi(ir-1)/s(ir-1)
+               g2=vlocal(ir)*rofi(ir)/s(ir)
+               g3=vlocal(ir+1)*rofi(ir+1)/s(ir+1)
+               g4=vlocal(ir+2)*rofi(ir+2)/s(ir+2)
 
-          end subroutine vlocal1
+               d2g=(16.0_dp*(g1+g3)-(g0+g4)-30.0_dp*g2)/12.0_dp
+               
+            else
+               g1=vlocal(ir-1)*rofi(ir-1)/s(ir-1)
+               g2=vlocal(ir)*rofi(ir)/s(ir) 
+               g3=vlocal(ir+1)*rofi(ir+1)/s(ir+1)  
+               
+               d2g=g1+g3-2.0_dp*g2
 
+            endif  
+
+            d2u=d2g-a2b4*g2
+
+            r=rofi(ir)
+            cons=8.0_dp*pi*r*drdi(ir)*s(ir)
+            chlocal(ir)=(-d2u)/cons
+            qtot= qtot + 0.5_dp*d2u*r/s(ir)
+
+         else
+
+C     If second derivative fit*** 
+            if(ndevfit.eq.2)  then
+               r=rofi(ir)
+
+               g0=v3*exp((v1+v2*r)*r**2)
+               g1=(2.0_dp*v1+3.0_dp*v2*r)
+               g2=2.0_dp*v1+6.0_dp*v2*r
+               g3=(g2+g1*g1*r*r+2.0_dp*g1)*g0
+               
+               cons=8.0_dp*pi
+               chlocal(ir)= (-g3)/cons
+               qtot= qtot  + 0.5_dp*g3*r*r*drdi(ir)
+               
+C**** If third derivative fit
+               
+            elseif(ndevfit.eq.3)  then
+
+               r=rofi(ir)
+               
+               g0=v4*exp((v1+v2*r+v3*r*r)*r*r)     
+               g1=(2.0_dp*v1+3.0_dp*v2*r+4.0_dp*v3*r*r)
+               g2=(2.0_dp*v1+6.0_dp*v2*r+12.0_dp*v3*r*r)    
+               g3=(g2+g1*g1*r*r+2.0_dp*g1)*g0   
+
+               cons=8.0_dp*pi
+               chlocal(ir)= -g3/cons
+               qtot= qtot  + 0.5_dp*g3*r*r*drdi(ir)
+            endif 
+
+         endif
+      enddo              
+
+ 10   continue
+      nchloc=ir          
+
+      do ir=1,nchloc-1
+         chlocal(ir)=zval*chlocal(ir)/qtot
+      enddo  
+      do ir=nchloc,nrval
+         chlocal(ir)=0.0_dp
+      enddo 
+
+      end subroutine vlocal2
+
+!
+!----------------------------------------------------------------
 !
         subroutine schro_eq(Zval,rofi,vps,ve,s,drdi,
      .        nrc,l,a,b,nnodes,nprin,
@@ -1575,120 +1609,118 @@ C* Internal variables***
             end subroutine schro_eq
              
 
-         subroutine ghost(Zval,rofi,vps,vlocal,
-     .        ve,s,drdi,nrval,l,a,b,
-     .        nrc, eigenl,rphi,ighost)
+      subroutine ghost(Zval,rofi,vps,vlocal,
+     .     ve,s,drdi,nrval,l,a,b,
+     .     nrc, eigenl,rphi,ighost)
 
-C
-C This routine checks the possible existence of ghost states. 
-C   Input:
-C        vps(*)    : pseudopotential for angular momentum l
-C        vlocal(*) : local pseudopotential
-C        rphi (*)  : first radial pseudowavefunctions for Vps.
-C        eigenl    : eigenvalue 
+C     This routine checks the possible existence of ghost states. 
+C     Input:
+C     vps(*)    : pseudopotential for angular momentum l
+C     vlocal(*) : local pseudopotential
+C     rphi (*)  : first radial pseudowavefunctions for Vps.
+C     eigenl    : eigenvalue 
 C     
-C  Output:
-C        ighost:   if ighost=0 no ghost states
-C                  if ighost=1, ghost states exist
-C
-C   Written by D. Sanchez-Portal, Aug. 1998
-C
+C     Output:
+C     ighost:   if ighost=0 no ghost states
+C     if ighost=1, ghost states exist
+C     
+C     Written by D. Sanchez-Portal, Aug. 1998
+C     
 
-          implicit none
+      integer, intent(in)   :: nrval,l
+      integer, intent(inout)   :: nrc
+      integer, intent(out)  :: ighost
 
-          double precision
-     .        Zval, rofi(*),vps(*),ve(*),s(*),drdi(*),a,b,eigenl,
-     .        rphi(*), vlocal(*)
-          integer
-     .        nrval,l,ighost, nrc
+      real*8, intent(in) :: zval, a, b, eigenl
+      real*8, intent(in) :: rofi(:), vps(:), vlocal(:), ve(:)
+      real*8, intent(in) :: s(:), drdi(:), rphi(:)
 
-C* Internal variables***
+C     * Internal variables***
 
-           double precision
-     .        dnrm, avgv, phi, e,
-     .        elocal(2), g(nrmax), vl, vphi, dkbcos
-C    .        , dknrm
-           integer  ir, nprin, nnode
-           logical  called
-C**SAVE FOR NEXT CALL
-C
-           save called
-           data  called /.false./
-C
-              if(.not.called) then 
-                  ighost=0 
-                  called=.true.
-              endif
-C***GHOST ANALYSIS****
+      double precision   dnrm, avgv, phi,
+     .     elocal1, elocal2, g(nrmax), vl, vphi, dkbcos
 
+      integer  ir, nprin, nnode
+      logical  called
+C     
+      save called
+      data  called /.false./
+C     
+      if(.not.called) then 
+         ighost=0 
+         called=.true.
+      endif
 
-C***CALCULATE EIGENVALUES OF LOCAL POTENTIAL FOR GHOST ANALYSIS*
-              
+!     Compares the reference energy with the eigenvalues of the
+!     local potential, for ghost analysis.
 
-C* ATTENTION , 'Ve' is the screenig potential generated from valence*
-C* pseudo-charge given by the pseudopotential generation program ****
-C*** 
-          do 20 nnode=1,2
-              nprin=l+1
+! ATTENTION , 'Ve' is the screenig potential generated from valence
+! pseudo-charge given by the pseudopotential generation program
 
-              call schro_eq(Zval,rofi,vlocal,ve,s,drdi,
+!!!      write(6,*) 'Entering ghost: l, eigenl', l, eigenl
+
+C     CALCULATE KB-COSINE
+
+      nrc=min(nrc,nrval)
+      dnrm=0.0d0
+      avgv=0.0d0
+      do 30 ir=2,nrc
+         vl=(vps(ir)-vlocal(ir))
+         phi=rphi(ir)
+         vphi=vl*phi
+         dnrm=dnrm+vphi*vphi*drdi(ir)
+         avgv=avgv+vphi*phi*drdi(ir)
+ 30   continue
+      dkbcos=dnrm/(avgv+1.0d-20)
+
+C     GHOST ANALYSIS
+
+!
+!     Do not compute the second eigenvalue it it is not necessary
+!
+
+      if (dkbcos.lt.0d0) then
+
+         nprin=l+1
+         nnode = 1
+         call schro_eq(Zval,rofi,vlocal,ve,s,drdi,
      .        nrval,l,a,b,nnode,nprin,
-     .        e,g)
+     .        elocal1,g)
 
-              elocal(nnode)=e
-              
-  20       continue
+         if(eigenl.gt.elocal1) then
+            write(6,"(a,i3)")
+     .           'GHOST: WARNING: Ghost state for L =', l
+            ighost=1
+         else
+            write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
+         endif
 
-c        write(6,*) 'GHOST: Ground state vlocal for L=',l,elocal(1)
-c        write(6,*) 'GHOST: First excited state for L=',l,elocal(2)
+      else if (dkbcos.gt.0.0d0) then
 
-C*CALCULATE KB-COSINE****
+         nprin=l+1
+         nnode = 2
+         call schro_eq(Zval,rofi,vlocal,ve,s,drdi,
+     .        nrval,l,a,b,nnode,nprin,
+     .        elocal2,g)
 
-             nrc=min(nrc,nrval)
-             dnrm=0.0d0
-             avgv=0.0d0
-             do 30 ir=2,nrc
-               vl=(vps(ir)-vlocal(ir))
-               phi=rphi(ir)
-               vphi=vl*phi
-               dnrm=dnrm+vphi*vphi*drdi(ir)
-               avgv=avgv+vphi*phi*drdi(ir)
-  30         continue
+         if(eigenl.gt.elocal2) then
+            write(6,"(a,i3)")
+     .           'GHOST: WARNING: Ghost state for L =', l
+            ighost=1
+         else
+            write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
+         endif
 
+      else if (dkbcos.eq.0.0d0) then
 
-             dkbcos=dnrm/(avgv+1.0d-20)
-c            dknrm=1.0d0/(sqrt(dnrm)+1.0d-20)
+         write(6,"('GHOST: vps = vlocal, no ghost for L =',i3)") l
 
-CGHOST ANALYSIS*
+      endif
 
+c     write(6,*) 'GHOST: Ground state vlocal for L=',l,elocal1
+c     write(6,*) 'GHOST: First excited state for L=',l,elocal2
 
-          if(dkbcos.gt.0.0d0) then
-
-              if(eigenl.gt.elocal(2)) then
-                 write(6,"(a,i3)")
-     .            'GHOST: WARNING: Ghost state for L =', l
-                ighost=1
-              else
-                 write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
-              endif
-
-           elseif(dkbcos.lt.0d0) then
-
-              if(eigenl.gt.elocal(1)) then
-                 write(6,"(a,i3)")
-     .            'GHOST: WARNING: Ghost state for L =', l
-                ighost=1
-              else
-                 write(6,'(a,i3)') 'GHOST: No ghost state for L =',l
-              endif
-
-           elseif(dkbcos.eq.0.0d0) then
-
-               write(6,"('GHOST: vps = vlocal, no ghost for L =',i3)") l
-
-           endif
-
-           end subroutine ghost
+      end subroutine ghost
 
 
         subroutine KBproj(rofi,drdi,vps,vlocal,nrwf,l,rphi,
@@ -1984,7 +2016,7 @@ C*TABLE WITH THE PSEUDO_CORE DATA
               write(6,'(a)') 
      .    'comcore: WARNING It might be a good idea to increase' 
               write(6,'(a)')
-     .    'comcore: WARNING parameter ntbmax (in file atom.h) '
+     .    'comcore: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comcore: WARNING to at least ntbmax = ', 
      .            nint(Rcore/deltmax)+2 
@@ -2049,7 +2081,7 @@ C
               write(6,'(a)')
      .    'comlocal: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comlocal: WARNING parameter ntbmax (in file atom.h) '
+     .    'comlocal: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comlocal: WARNING to at least ntbmax = ', 
      .        nint(Rchloc/deltmax)+2 
@@ -2112,6 +2144,77 @@ CCALCULATION OF THE ELECTROSTATIC CORRECTION***
 
         endif 
         end subroutine comlocal
+
+!
+!       New routine to deal with Vlocal
+!
+        subroutine com_vlocal(is,a,b,rofi,red_vlocal,nvlocal,
+     $                        zval,flting)
+
+! Save vlocal (actually r*vlocal +2*Zval)
+
+        implicit none
+
+        integer nvlocal, is
+ 
+        double precision  red_vlocal(nrmax), rofi(nrmax),
+     $                    a ,b, zval, flting
+
+           integer nr, nmin, nmax, nn, itb, indx, is2
+           double precision chc, r, delt, Rvlocal, dy,
+     .     yp1, ypn, rmax
+  
+          integer npoint
+          parameter(npoint=4)
+C
+        if(flting.gt.0.0d0) then 
+  
+          Rvlocal=rofi(nvlocal)
+
+          delt=Rvlocal/(dble(ntbmax-1)+1.0d-20) 
+          
+          if(delt.gt.deltmax) then
+              write(6,'(a)')
+     .    'comlocal: WARNING It might be a good idea to increase'
+              write(6,'(a)')
+     .    'comlocal: WARNING parameter ntbmax (in file atmparams.f) '
+              write(6,'(a,i6)')
+     .    'comlocal: WARNING to at least ntbmax = ', 
+     .        nint(Rvlocal/deltmax)+2 
+          endif 
+
+          vlocaltab(1,1,is)=delt
+          vlocaltab(1,2,is)=1.0d0
+          do itb=1,ntbmax
+             r=delt*(itb-1)
+             nr=nint(log(r/b+1.0d0)/a)+1
+             nmin=max(1,nr-npoint)
+             nmax=min(nvlocal,nr+npoint)
+             nn=nmax-nmin+1
+             call ratint(rofi(nmin),red_vlocal(nmin),nn,r,chc,dy)
+             vlocaltab(itb+1,1,is)=chc
+          enddo
+!
+!         Note rigorous limit at r=0...
+!
+          vlocaltab(2,1,is)= 2.0d0*zval
+!
+         yp1=huge(1.d0)
+         ypn=huge(1.d0)
+
+         call spline(delt,vlocaltab(2,1,is),ntbmax,
+     .      yp1,ypn,vlocaltab(2,2,is))
+
+        elseif( flting.lt.0.0d0) then 
+ 
+            do itb=1,ntbmax+1
+               vlocaltab(itb,1,is)=0.0d0
+               vlocaltab(itb,2,is)=0.0d0
+            enddo
+
+        endif 
+
+        end subroutine com_vlocal
 
 !
        subroutine new_specie(iz,lmxkb, 
@@ -2251,13 +2354,15 @@ C**ADDING A NEW SPECIES TO THE LIST**
         subroutine read_vps(atm_label, lmxo, lmxkb,
      .             nrval,a,b,rofi,drdi,s,vps,
      .             rho, chcore, zval, chgvps,
-     .             nicore, irel, icorr)
+     .             nicore, irel, icorr,basp)
 
 C   Read the file generated by the pseudopotential generation code.
 C   Written by D. Sanchez-Portal, Aug. 1998
 C**
 
            implicit none 
+
+       type(basis_def_t), pointer   :: basp
       
            double precision
      .        rofi(nrmax), drdi(nrmax), s(nrmax), vps(nrmax,0:lmaxd),
@@ -2381,6 +2486,7 @@ C the 'text' variable.
 
            endif
 
+           write(6,'(a,f10.5)') 'Total valence charge: ', chgvps
 
            if (nicore.ne.'nc  ') then
            write(6,'(/,a)')
@@ -2391,16 +2497,20 @@ C the 'text' variable.
              elseif(nicore.eq.'pche') then
                write(6,'(a)') 
      .            'read_vps: Pseudo-core for hartree and xc-correction'
+           write(6,'(a)') 'Siesta cannot use this pseudopotential'
+           write(6,'(a)') 'Use option pe instead of ph in ATOM program'
+           STOP
              elseif(nicore.eq.'fcec') then
                write(6,'(a)') 'read_vps: Full-core for xc-correction'
              elseif(nicore.eq.'fche') then
                write(6,'(a)') 
      .            'read_vps: Full-core for hartree and xc-correction'
+           write(6,'(a)') 'Siesta cannot use this pseudopotential'
+           write(6,'(a)') 'Use option pe instead of ph in ATOM program'
+           STOP
              endif
 
            endif
-
-
 
 !          Radial mesh
 
@@ -2445,8 +2555,10 @@ Cdrdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b] *
             rho(1:nrval) = vp%chval(1:nrval)
 
 
-C***OBTAIN AN IONIC-PSEUDOPOTENTIAL IF CORE CORRECTION FOR HARTREE****
-CPOTENTIAL
+C OBTAIN AN IONIC-PSEUDOPOTENTIAL IF CORE CORRECTION FOR HARTREE
+C POTENTIAL
+!
+! AG: OBSOLETE, as the program will stop in this case.
 
         if((nicore.eq.'pche').or.(nicore.eq.'fche')) then
             call vhrtre(chcore,ve,rofi,drdi,s,nrval,a)
@@ -2515,7 +2627,7 @@ C
               write(6,'(a)')
      .    'comKB: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comKB: WARNING parameter ntbmax (in file atom.h) '
+     .    'comKB: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comKB: WARNING to at least ntbmax = ', 
      .        nint(Rc/deltmax)+2
@@ -2650,9 +2762,9 @@ C*
 C***GHOST ANALYSIS****
 C 
             if(nkbl(l).eq.1) then
-             call ghost(Zval,rofi,vps(1,l),vlocal,
+             call ghost(Zval,rofi,vps(:,l),vlocal,
      .        ve,s,drdi,nrval,l,a,b,nrwf,
-     .        erefkb(ikb,l),rphi(1,ikb),ighost)
+     .        erefkb(ikb,l),rphi(:,ikb),ighost)
             else 
              if (ikb.eq.1)
      .        write(6,'(a,i3,/a)') 
@@ -2794,7 +2906,7 @@ C
                   call POLgen(is,a,b,rofi,drdi,
      .               ePAO,rphi,rco,vps,vePAO,
      .               polorb,lmxo,nsemic,noPOL,
-     $               rinn, vcte) 
+     $               rinn, vcte,nrval) 
 C
 C
 
@@ -3836,7 +3948,7 @@ C
               write(6,'(a)')
      .    'comBasis: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comBasis: WARNING parameter ntbmax (in file atom.h) '
+     .    'comBasis: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comBasis: WARNING to at least ntbmax = ',
      .        nint(Rc/deltmax)+2
@@ -4329,7 +4441,7 @@ C***Internal variables*
           write(6,'(/,2a)') 'atm_pop: Valence configuration',
      .                      '(local Pseudopot. screening):' 
           do l=0,lpop 
-            write(line,'(7(x,i1,a1,a1,f5.2,a1))')
+            write(line,'(7(1x,i1,a1,a1,f5.2,a1))')
      .          (cnfigtb(l,nsm,is),sym(l),'(',qPAO(l,nsm),')',
      .       nsm=1,nsemic(l)+1-(cnfigtb(l,nsemic(l)+1,is)-config(l)))
             write(6,'(a)') line
@@ -4391,7 +4503,15 @@ C***Internal variables****
           enddo 
          enddo
          rho(1)=0.0d0 
-
+!
+!        Now chval contains the total charge
+!        in the occupied basis states.
+!
+!        It should be equal to the (nominal) 
+!        valence charge (i.e. Znuc-Zcore).
+!
+         write(6,'(a,2f10.5)') 'Vna: chval, zval: ', chval, zval
+!
          eps=1.0d-4
          if(abs(chval-zval).gt.eps) then
            do ir=2,nrval
@@ -4492,7 +4612,7 @@ C
               write(6,'(a)')
      .    'comVna: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comVna: WARNING parameter ntbmax (in file atom.h) '
+     .    'comVna: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comVna: WARNING to at least ntbmax = ',
      .        nint(rVna/deltmax)+2
@@ -4580,7 +4700,7 @@ C*Internal variables**
             subroutine POLgen(is,a,b, rofi, drdi,
      .          ePAO,rphi,rco,vps,ve,
      .          polorb,lmxo, nsemic,norb,
-     $          rinn,vcte)
+     $          rinn,vcte,nrval)
 C****
 C Calculates the polarization  orbitals for the basis set augmentation.
 C Written by D. Sanchez-Portal, Aug. 1998.
@@ -4599,7 +4719,7 @@ C
 
                integer
      .           lmxo, is, norb, polorb(0:lmaxd,nsemx), 
-     .           nsemic(0:lmaxd)
+     .           nsemic(0:lmaxd), nrval
 
                integer
      .           l, nrc, nsp, ir,indx,
@@ -4855,7 +4975,7 @@ C
               write(6,'(a)')
      .    'comPOL: WARNING It might be a good idea to increase'
               write(6,'(a)')
-     .    'comPOL: WARNING parameter ntbmax (in file atom.h) '
+     .    'comPOL: WARNING parameter ntbmax (in file atmparams.f) '
               write(6,'(a,i6)')
      .    'comPOL: WARNING to at least ntbmax = ',
      .        nint(Rc/deltmax)+2
@@ -5215,11 +5335,6 @@ C Normalize the wavefunction
           
           end subroutine rphi_vs_e
 
-        end subroutine atom_main
-
-!
-!
-!
 !
 !   This is duplicate with redbasis.F...
 !
@@ -5310,7 +5425,7 @@ C***Internal variables
                     if(nzetasave(l,nsm,is).ne.0) nshell=nshell+1
                    enddo 
                 enddo 
-                if(basistype_save(is).eq.basistype) then  
+               if(basistype_save(is).eq.basistype) then  
 
                 if(abs(chargesave(is)).lt.1.0d-4) then 
                      write(6,'(a10,1x,i2,20x,a)')
@@ -5338,7 +5453,7 @@ C***Internal variables
      .              ' ionic net charge'
                 endif 
            
-                endif 
+               endif 
  
                    do l=0,lo
                      do nsm=1,nsemicsave(l,is)+1
@@ -5659,5 +5774,33 @@ C***
 
              RETURN 
              END subroutine numerov
+
+!
+!--------------------------------------------------------------
+!
+!      The famous "Vanderbilt generalized cutoff"
+!
+       function vander(a,x) result(f)
+       real(dp), intent(in) :: a    ! Generalized gaussian shape
+       real(dp), intent(in) :: x    
+       real(dp)             :: f
+
+       real(dp), parameter :: log10_e = 0.4343
+       real(dp), parameter :: exp_range = (range(1.0_dp)-1)/log10_e
+
+!!       real(dp), parameter :: exp_range = 40.0_dp
+       real(dp)   :: gexp
+
+       gexp = sinh(a*x)/sinh(a)
+       gexp = gexp*gexp
+
+       if (gexp .lt. exp_range) then
+          f=exp(-gexp)  
+       else
+          f = 0.0_dp
+       endif
+
+       end function vander
+
 
        end module atom

@@ -125,11 +125,18 @@ C             ispin=4 => Imag(H12)
           Haux(1,1,jo,1,io) =  H(ind,1)
           Haux(1,2,jo,2,io) =  H(ind,2)
           Haux(1,1,jo,2,io) =  H(ind,3)
-          Haux(1,2,jo,1,io) =  H(ind,3)
           Haux(2,1,jo,2,io) = -H(ind,4)
-          Haux(2,2,jo,1,io) =  H(ind,4)
         enddo
       enddo
+
+c Hermiticity
+      do io = 1,no
+        do jo = 1,no
+          Haux(1,2,jo,1,io) =  Haux(1,1,io,2,jo)
+          Haux(2,2,jo,1,io) = -Haux(2,1,io,2,jo)
+        enddo
+      enddo
+
 C ....................
 
 C Solve the eigenvalue problem .......................................

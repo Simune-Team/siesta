@@ -26,6 +26,9 @@ c
      &                 vps, rmind, vpsum, rminu, zelu, zeld, zelt,
      &                 viodj, viouj, cc
       double precision rcut(10), v(nrmax)
+c
+      double precision cutoff_function
+      external cutoff_function
 
       logical new_scheme
 c
@@ -77,6 +80,8 @@ c
          icore = 1
          if (cfac .le. zero .or. zratio .eq. zero) then
             write(6,9000) r(icore), ac, bc, cc
+            write(6,'(a)') '(Full core used)'
+            call coreq
          else
             if (rcfac .le. zero) then
                do 30 i = nr, 2, -1
@@ -230,8 +235,27 @@ c  Construct the ionic pseudopotential and find the cutoff,
 c  ecut should be adjusted to give a reassonable ionic cutoff
 c  radius, but should not alter the pseudopotential, ie.,
 c  the ionic cutoff radius should not be inside the pseudopotential
-c  cutoff radius
+c  cutoff radius.
 c
+c  Note that the cutting off of the pseudopotentials (making
+c  them approach -2*Zion/r faster) is not strictly necessary.
+c  It might even be argued that it should be left to "client"
+c  programs to decide what to do.
+
+cag
+c
+c     On the issue of plotting:
+c
+c     For non-relativistic, non-spin-polarized calculations, all
+c     the orbitals are considered as "down".
+c     For relativistic calculations, the "s" orbitals are considered
+c     as "up". The actual things plotted on the files (which only
+c     record l, not the up/down character) depend on the order of
+c     enumeration of the orbitals. Since these are always "down/up",
+c     the potentials plotted are always the "up" ones (except of
+c     course for scalar calculations and for "s" states in relativistic
+c     calculations, for which the distinction is irrelevant.
+
       write(6,9020)
  9020 format(/)
       ecut = ecuts
@@ -239,13 +263,30 @@ c
          lp = lo(i) + 1
          if (down(i)) then
             do 90 j = 2, nr
+               v(j) = viod(lp,j)/r(j) + vid(j)
                viod(lp,j) = viod(lp,j) + (vid(j)-vod(j))*r(j)
                vp2z = viod(lp,j) + 2*zion
                if (abs(vp2z) .gt. ecut) jcut = j
    90       continue
+cag
+c           Plot screened ionic potential
+c
+            call potrvs(v,r,nr-120,lo(i))
+cag
+c           Default cutoff function: f(r)=exp(-5*(r-r_cut)). It damps
+c           down the residual of rV+2*Zion.
+c           Should be made smoother... Vps ends up with a kink at rcut.
+c           Maybe use one of the Vanderbilt generalized gaussians.
+cag
             rcut(i-ncore) = r(jcut)
+            if (rcut(i-ncore) .lt. rc(lp)) then
+               write(6,'(a,2f8.4)') 'Vps rcut point moved out to rc: ',
+     $              rcut(i-ncore), rc(lp)
+               rcut(i-ncore) = rc(lp)
+            endif
             do 100 j = jcut, nr
-               fcut = exp(-5*(r(j)-r(jcut)))
+cag               fcut = exp(-5*(r(j)-r(jcut)))
+               fcut = cutoff_function(r(j)-r(jcut))
                viod(lp,j) = -2*zion + fcut*(viod(lp,j)+2*zion)
   100       continue
             do 110 j = 2, nr
@@ -257,13 +298,25 @@ c
 c
          else
             do 120 j = 2, nr
+               v(j) = viou(lp,j)/r(j) + viu(j)
                viou(lp,j) = viou(lp,j) + (viu(j)-vou(j))*r(j)
                vp2z = viou(lp,j) + 2*zion
                if (abs(vp2z) .gt. ecut) jcut = j
   120       continue
+cag
+c           Plot screened ionic potential
+c
+            call potrvs(v,r,nr-120,lo(i))
+cag
             rcut(i-ncore) = r(jcut)
+            if (rcut(i-ncore) .lt. rc(lp)) then
+               write(6,'(a,2f8.4)') 'Vps rcut point moved out to rc: ',
+     $              rcut(i-ncore), rc(lp)
+               rcut(i-ncore) = rc(lp)
+            endif
             do 130 j = jcut, nr
-               fcut = exp(-5*(r(j)-r(jcut)))
+cag               fcut = exp(-5*(r(j)-r(jcut)))
+               fcut = cutoff_function(r(j)-r(jcut))
                viou(lp,j) = -2*zion + fcut*(viou(lp,j)+2*zion)
   130       continue
             do 140 j = 2, nr
@@ -517,13 +570,22 @@ c
 c
       open(unit=3,file='PSCHARGE',form='formatted',status='unknown')
 c
+c     NOTE: We no longer put "zratio" here!!!
+c     (We still do in the ps file for compatibility with PW and
+c      SIESTA) 
+c     (Only affects plots for ionic configurations)
+c     BEAR THIS IN MIND IF YOU ARE USING THE HEURISTIC CORE CORRECTION
+c     CRITERION: If you specify a given "pc_weight" in the input file,
+c     do not be surprised if the plot does not show rcore
+c     in the place you expect it to be.
+c
       if (ifcore .ne. 1) then
          do 400 j = 2, nr
-            write(3,9900) r(j), zratio*cdu(j), zratio*cdd(j), zero
+            write(3,9900) r(j), cdu(j), cdd(j), zero
  400     continue
       else
          do 410 j = 2, nr
-            write(3,9900) r(j), zratio*cdu(j), zratio*cdd(j), cdc(j)
+            write(3,9900) r(j), cdu(j), cdd(j), cdc(j)
  410     continue
       endif
 c
@@ -535,6 +597,18 @@ c
 c
       end
 
+      double precision function cutoff_function(r)
+      implicit none
+c
+c     Generalized cutoff function
+c
+      double precision r
+c
+c     Standard cutoff
+c
+      cutoff_function = exp(-5.d0*r)
+
+      end
 
 
 

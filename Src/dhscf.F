@@ -171,8 +171,12 @@ C        poison(...)    : Solves Poisson equation
 C        reord(...)     : Reorders electron density and potential arrays
 C        rhooda(...)    : Finds Harris electron density in the mesh
 C        rhoofd(...)    : Finds SCF electron density in the mesh
+C        rhoofdsp(...)  : Finds SCF electron density in the mesh for
+C                         spiral arrangement of spins
 C        timer(...)     : Finds CPU times
 C        vmat(...)      : Finds matrix elements of SCF potential
+C        vmatsp(...)    : Finds matrix elements of SCF potential for
+C                         spiral arrangement of spins
 C real*8 volcel( cell ) : Returns volume of unit cell
 C ----------------------------------------------------------------------
 C Internal variables and arrays:
@@ -236,7 +240,7 @@ C
 C Internal variables
 C
       integer
-     .  i, ia, io, ip, iphi, is, ispin, j, ifor, 
+     .  i, ia, io, ip, iphi, is, ispin, j, ifor, iu, 
      .  nbcell, nm(3), npcc, nsd, nzero(3), 
      .  Node, Nodes, ntopl, nmpl, nsc(3), ntpl, 
      .  nml(3), ntml(3)
@@ -267,7 +271,7 @@ C
      .  DEc, DEx, DFa(3), DFaatm(3), DFascf(3),
      .  dot, DStres(3,3), dvol, Ec, Ex, field(3),
      .  rhotot, rmax, scell(3,3), tiny,
-     .  Uharrs, volume, volcel, x0(3)
+     .  Uharrs, volume, volcel, x0(3), qspiral(3)
 
 #ifdef MPI
       real*8
@@ -276,7 +280,7 @@ C
 
       logical
      .  found, frstme, IsDiag, IsEfld, samesh, samexa,
-     .  harrisfun, leqi
+     .  harrisfun, leqi, spiral
 
       character
      .  shape*10, XCauth*10, XCfunc*10
@@ -285,9 +289,9 @@ C
      .  cellxc, cross,
      .  dfscf,  dipole, dot,  
      .  efield, iorho, poison, 
-     .  reord, rhooda, rhoofd, 
-     .  timer, vmat, volcel,
-     .  memory
+     .  reord, rhooda, rhoofd, rhoofdsp, 
+     .  timer, vmat, vmatsp, volcel,
+     .  memory, readsp
 
       save
      .  bcell, cell, dvol, field, frstme, G2mesh,
@@ -352,6 +356,13 @@ C Start time counter
            endif
            call die
         endif
+      endif
+
+C Read spin-spiral wavevector (if defined)
+      call readsp( qspiral, spiral )
+      if (spiral .and. nspin.lt.4) then
+        write(6,*) 'dhscf: ERROR: spiral is only defined for nspin = 4'
+        stop
       endif
 
 C ----------------------------------------------------------------------
@@ -532,8 +543,14 @@ C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
 
-      call rhoofd( norb, indxuo, nmpl, maxnd, numd, listdptr, listd,
-     .             nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa )
+      if (spiral) then
+        call rhoofdsp(norb, indxuo, nmpl, maxnd, numd, listdptr, listd,
+     .                nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb,
+     .                isa, qspiral)
+      else
+        call rhoofd(norb, indxuo, nmpl, maxnd, numd, listdptr, listd,
+     .              nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa)
+      endif
 
 C ----------------------------------------------------------------------
 C Save electron density
@@ -768,11 +785,15 @@ C Find SCF contribution to hamiltonian matrix elements
 C ----------------------------------------------------------------------
 
       if (iHmat .eq. 1) then
-
-        call vmat( norb, indxuo, nmpl, dvol, nspin, Vscf, maxnd,
-     .             numd, listdptr, listd, Hmat, nuo,
-     .             nuotot, iaorb, iphorb, isa )
-
+        if (spiral) then
+          call vmatsp( norb, indxuo, nmpl, dvol, nspin, Vscf, maxnd,
+     .               numd, listdptr, listd, Hmat, nuo,
+     .               nuotot, iaorb, iphorb, isa, qspiral )
+        else
+          call vmat( norb, indxuo, nmpl, dvol, nspin, Vscf, maxnd,
+     .               numd, listdptr, listd, Hmat, nuo,
+     .               nuotot, iaorb, iphorb, isa )
+        endif
       endif
 
 C Stop time counter for SCF iteration part

@@ -347,7 +347,8 @@ C Global sum of total charge
                 ind = listhptr(io)+in
                 jo = listh(ind)
                 qos(is,io) = qos(is,io) + dm(ind,is)*s(ind)/2
-                qos(is,jo) = qos(is,jo) + dm(ind,is)*s(ind)/2
+                if (jo.le.nbasis)
+     .            qos(is,jo) = qos(is,jo) + dm(ind,is)*s(ind)/2
               enddo
             enddo
           enddo 

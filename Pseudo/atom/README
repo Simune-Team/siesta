@@ -9,7 +9,7 @@ substantial structural changes to the April 1990 (5.0) Minnesota
 version while at Berkeley and elsewhere.
 
 Jose Luis Martins (JLM) is maintaining his own version of the
-code.
+code. 
 
 This version can be run in two 'compatibility modes' (see Samples
 directory for examples).
@@ -34,7 +34,7 @@ architecture.
 
 USAGE
 
-See Docs/User.Guide
+See the new manual in Docs/manual.tex.
 
 TIPS AND CAVEATS
 
@@ -44,7 +44,6 @@ errors tend to be a bit cryptic.
 To have logarithmic derivatives computed, the user needs
 to specify the radius at which to do it (variable logder_radius).
 It is input on the "flavor" line (see subroutine input) (a.u.).
-(See examples in Samples). 
 
 * Note that the logarithmic derivatives are computed
 non-relativistically. Deviations between the pseudo and all-electron
@@ -53,6 +52,8 @@ the pseudopotential is "good".
 
 
 Please send bug reports and comments to wdpgaara@lg.ehu.es.
+
+
 
 
 

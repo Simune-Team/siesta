@@ -1,2 +1,0 @@
-plot [0:3] 'CHARGE' using 1:4 with lines, 'PSCHARGE' using 1:4 with lines
-pause -1 "Hit return to end"

@@ -69,7 +69,7 @@ c Internal variables
       double precision  defcut, dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), huge, pi,  
      .                  scell(3,3), tiny, vmod
-      logical           genlogic
+      logical           genlogic, spiral
       parameter (defcut = 0.d0)
       parameter (huge   = 1.d30)
       parameter (tiny   = 1.d-12)
@@ -80,6 +80,9 @@ c Get Node number
 #else
       Node = 0
 #endif
+
+c Find out if there is spiral arrangement of spins 
+      spiral = fdf_block('SpinSpiral',iu)
 
 c Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -196,24 +199,29 @@ c Find total range of grid indexes
       enddo
 
 c Find number of points with time-reversal (inversion) symmetry,
-c after reflection on each alternative plane
-      do j = 1,3
-        ni = ng(j)
-        if (abs(dkg(j)) .lt. tiny) then
-          ni = ng(j)/2 + 1
-        elseif (abs(dkg(j)-0.5d0) .lt. tiny) then
-          ni = (ng(j)-1)/2 + 1
-        endif
-        nkr(j) = ni * nktot / kdsc(j,j)
-      enddo
+c (if not spiral) after reflection on each alternative plane
+      if (spiral) then
+c       If spiral, use all k points
+        nk = nktot
+      else
+        do j = 1,3
+          ni = ng(j)
+          if (abs(dkg(j)) .lt. tiny) then
+            ni = ng(j)/2 + 1
+          elseif (abs(dkg(j)-0.5d0) .lt. tiny) then
+            ni = (ng(j)-1)/2 + 1
+          endif
+          nkr(j) = ni * nktot / kdsc(j,j)
+        enddo
 
-c Select reflection plane
-      ir = 3
-      if (nkr(2) .lt. nkr(ir)) ir = 2
-      if (nkr(1) .lt. nkr(ir)) ir = 1
+c       Select reflection plane
+        ir = 3
+        if (nkr(2) .lt. nkr(ir)) ir = 2
+        if (nkr(1) .lt. nkr(ir)) ir = 1
 
-c Find k points and weights
-      nk = nkr(ir)
+c       Find k points and weights
+        nk = nkr(ir)
+      endif
 
       return
       end

@@ -1,0 +1,8 @@
+#
+# The SIMPLEST basis definition
+#
+NumberOfSpecies     1
+
+%block ChemicalSpeciesLabel
+ 1  14  Si_dzp
+%endblock ChemicalSpeciesLabel

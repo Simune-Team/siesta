@@ -27,26 +27,26 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o conjgr.o constr.o coxmol.o cross.o \
 	denmat.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	dipole.o dismin.o dnaefs.o dot.o dynamics.o \
+	diagsprl.o dipole.o dismin.o dnaefs.o dot.o dynamics.o \
 	efield.o egandd.o ener3.o extrapol.o extrapolon.o \
 	fermid.o fermispin.o fixed.o forhar.o gradient.o grdsam.o \
-	hsparse.o idiag.o  initatom.o initdm.o inver.o  \
-	iodm.o iohs.o iolwf.o iorho.o ioxv.o  \
+	hsparse.o idiag.o  initatom.o initdm.o inver.o \
+	iodm.o iohs.o iolwf.o iorho.o ioxv.o ipack.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
 	on_subs.o ordern.o outcell.o outcoor.o overfsm.o \
-	paste.o pdos.o pdosk.o phirphi.o pixmol.o timestamp.o \
-	propor.o pulayx.o  \
-	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o\
-	reinit.o reord.o rhoofd.o rhooda.o  \
+	paste.o pdos.o pdosk.o phirphi.o pixmol.o plcharge.o timestamp.o \
+	propor.o pulayx.o \
+	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o \
+	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer.o \
-	vmb.o vmat.o volcel.o xc.o xijorb.o  \
+	vmb.o vmat.o vmatsp.o volcel.o xc.o xijorb.o \
 	cellxc.o cdiag.o rdiag.o \
         cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
-        ofc.o poison.o radfft.o  \
-	siesta.o version.o io.o\
-        spin_init.o coor.o transfer.o\
+        ofc.o poison.o readsp.o radfft.o \
+	siesta.o version.o io.o \
+        spin_init.o coor.o transfer.o \
         broadcast_basis.o sig.o
 #
 FDF=libfdf.a
@@ -57,8 +57,9 @@ $(FDF):
 #
 dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o kgrid.o kgridinit.o ksv.o : $(FDF)
-redata.o siesta.o diagon.o pdos.o: $(FDF)
+redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
+readsp.o : $(FDF)
 #
 atom.o basis_specs.o: $(FDF)
 gen-basis.o: $(FDF)
@@ -80,7 +81,7 @@ initatom.o: basis_specs.o basis_types.o basis_io.o
 atom.o: basis_types.o
 basis_specs.o: pseudopotential.o basis_types.o chemical.o
 basis_types.o: pseudopotential.o atmparams.o
-atom.o initatom.o transfer.o     : old_atmfuncs.o
+atom.o initatom.o transfer.o  plcharge.o   : old_atmfuncs.o
 basis_types.o atom.o old_atmfuncs.o atmfuncs.o: atmparams.o
 atomlwf.o dhscf.o dnaefs.o                 : atmfuncs.o
 efield.o matel.o mulliken.o outcoor.o : atmfuncs.o
@@ -90,12 +91,13 @@ kinefsm.o naefs.o nlefsm.o overfsm.o              : atmfuncs.o
 siesta.o          : atmfuncs.o phonon.o
 redata.o          : phonon.o
 dfscf.o hsparse.o : atmfuncs.o listsc.o
-rhoofd.o vmat.o   : listsc.o
+rhoofd.o rhoofdsp.o vmat.o vmatsp.o  : listsc.o
 hsparse.o minvec.o : sorting.o
 chempot.o         : numbvect.o
 memory.o          : memoryinfo.o
-dhscf.o dfscf.o forhar.o rhooda.o rhoofd.o vmat.o : meshsubs.o
-dfscf.o rhoofd.o vmat.o : meshmatrix.o
+dhscf.o dfscf.o forhar.o rhooda.o rhoofd.o rhoofdsp.o : meshsubs.o
+vmat.o vmatsp.o : meshsubs.o
+dfscf.o rhoofd.o rhoofdsp.o vmat.o vmatsp.o : meshmatrix.o
 siesta.o: atomlist.o 
 old_atmfuncs.o atomlist.o siesta.o atom.o: ionew.o
 coor.o: atomlist.o
@@ -105,7 +107,7 @@ transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
 atmfuncs.o: atm_types.o radial.o
 old_atmfuncs.o atmfuncs.o matel.o: spher_harm.o
 #
-diag2g.o diag2k.o diagg.o diagk.o diagkp.o ionew.o: sys.o
+diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o ionew.o: sys.o
 atmfuncs.o atom.o basis_specs.o: sys.o
 chkdim.o coor.o diagpol.o matel.o old_atmfuncs.o periodic_table.o: sys.o
 pdos.o: xml.o atmfuncs.o atomlist.o
@@ -170,7 +172,7 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta gen-basis *.o  *.a
+	rm -f siesta gen-basis *.o  *.a *.pcl *.pc
 	rm -f *.mod
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
