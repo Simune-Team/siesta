@@ -749,7 +749,7 @@ C Find atomic positions relative to mesh
 C Find index of extended-mesh cell in which atom is
         do i = 1,3
           dx(i) = ddot(3,xa(1,ia),1,rcmesh(1,i),1)
-          ix(i) = int( dx(i) + 100000_dp ) - 100000_dp
+          ix(i) = int( dx(i) + 100000 ) - 100000
           dx(i) = dx(i) - ix(i)
           ix(i) = mod( ix(i) + 1000*nmsc(i), nmsc(i) )
           ix(i) = ix(i) + ne(i)
