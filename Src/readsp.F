@@ -15,6 +15,7 @@ C
 C  Modules
 C
       use precision
+      use parallel,   only : Node
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -23,7 +24,7 @@ C
 
       implicit none
 
-      double precision
+      real(dp)
      .  q(3)
 
       logical
@@ -38,7 +39,7 @@ C  Internal variables .................................................
      .  lattice*30
 
       integer 
-     .  iu, mscell(3,3), Node
+     .  iu, mscell(3,3)
 
 #ifdef MPI
       integer
@@ -48,15 +49,8 @@ C  Internal variables .................................................
       logical
      .  lSpinSpiral
 
-      double precision
+      real(dp)
      .  pi, alat, ucell(3,3), scell(3,3), rcell(3,3)
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C Read lattice constant and unit cell vectors .........................
 

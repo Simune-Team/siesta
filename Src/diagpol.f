@@ -1,6 +1,7 @@
       subroutine diagpol( ispin, nspin, nuo, no, nuotot,
      .                    maxnh, numh, listhptr, listh, H, S,
-     .                    xij, indxuo, kpoint, eo, psi)
+     .                    xij, indxuo, kpoint, eo, psi,
+     .                    Haux, Saux )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, 
 C for given Hamiltonian and Overlap matrices (including
@@ -30,6 +31,8 @@ C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the number of orbitals in unit cell
 C real*8  kpoint(3)           : k point vectors
 C real*8  psi                 : Workspace array
+C real*8  Haux(2,nuotot,nuo)  : Workspace for dense H
+C real*8  Saux(2,nuotot,nuo)  : Workspace for dense S
 C *************************** OUTPUT **********************************
 C real*8 eo(nuotot)           : Eigenvalues
 C *************************** UNITS ***********************************
@@ -37,36 +40,31 @@ C xij and kpoint must be in reciprocal coordinates of each other.
 C eo H.
 C *********************************************************************
 
-      use sys
       use precision
+      use sys
 
       implicit          none
+
       integer
      .  maxnh, nuotot, no, nspin, nuo, indxuo(no), listh(maxnh), 
      .  listhptr(nuo), numh(nuo)
 
-      double precision  
+      real(dp)
      .  eo(nuotot), H(maxnh,nspin), kpoint(3), S(maxnh), 
-     .  xij(3,maxnh), psi(2,nuotot,nuo)
+     .  xij(3,maxnh), psi(2,nuotot,nuo), Haux(2,nuotot,nuo),
+     .  Saux(2,nuotot,nuo)
 
       external          cdiag, memory
 
 C  Internal variables .............................................
       integer
      .  ierror, ind, ispin, iuo, j, jo, juo
-      double precision
+      real(dp)
      .  ckxij, kxij, skxij
-      double precision, dimension(:,:,:), allocatable, save ::
-     .  Haux, Saux
-      double precision, dimension(:), allocatable, save ::
-     .  aux
+      real(dp), dimension(:), allocatable, save :: aux
 C  ....................
 
 C Allocate local memory
-      allocate(Haux(2,nuotot,nuo))
-      call memory('A','D',2*nuotot*nuo,'diagpol')
-      allocate(Saux(2,nuotot,nuo))
-      call memory('A','D',2*nuotot*nuo,'diagpol')
       allocate(aux(2*nuotot*5))
       call memory('A','D',2*nuotot*5,'diagpol')
 
@@ -75,7 +73,7 @@ C Solve eigenvalue problem .........................................
       Haux = 0.0d0
       do iuo = 1,nuo
         do j = 1,numh(iuo)
-          ind = listhptr(iuo)+j
+          ind = listhptr(iuo) + j
           jo = listh(ind)
           juo = indxuo(jo)
           kxij = kpoint(1) * xij(1,ind) +
@@ -83,20 +81,16 @@ C Solve eigenvalue problem .........................................
      .           kpoint(3) * xij(3,ind)
           ckxij = cos(kxij)
           skxij = sin(kxij)
-          Saux(1,juo,iuo)=Saux(1,juo,iuo)+S(ind)*ckxij
-          Saux(2,juo,iuo)=Saux(2,juo,iuo)-S(ind)*skxij
-          Haux(1,juo,iuo)=Haux(1,juo,iuo)+H(ind,ispin)*ckxij
-          Haux(2,juo,iuo)=Haux(2,juo,iuo)-H(ind,ispin)*skxij
+          Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
+          Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
+          Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
+          Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
         enddo
       enddo
       call cdiag( Haux, nuotot, Saux, nuotot, nuo,
      .            eo, psi, nuotot, nuo, ierror )
 
 C Deallocate local memory
-      call memory('D','D',size(Haux),'diagpol')
-      deallocate(Haux)
-      call memory('D','D',size(Saux),'diagpol')
-      deallocate(Saux)
       call memory('D','D',size(aux),'diagpol')
       deallocate(aux)
 
@@ -106,11 +100,3 @@ C Trap error flag from cdiag
       endif
 
       end
-
-
-
-
-
-
-
-

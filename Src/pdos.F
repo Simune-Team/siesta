@@ -44,19 +44,21 @@ C REAL*8  EO(MAXUO,MAXSPN,NK) : Eigenvalues
 C INTEGER NUOTOT              : Total number of orbitals in unit cell
 C **********************************************************************
 
-      use precision, only: dp
-      use parallel
-      USE FDF
-      use atomlist, only: xa, isa, iphorb, iaorb
-      use atmfuncs, only: zetafio, mofio, lofio, cnfigfio, labelfis
+      use precision,   only : dp
+      use parallel,    only : Node, Nodes
+      use fdf
+      use atomlist,    only : xa, isa, iphorb, iaorb
+      use atmfuncs,    only : zetafio, mofio, lofio, cnfigfio, labelfis
       use flib_wxml
-      use xml, only: xml_dump_attribute, xml_dump_element
-      use ionew,    only : IOnode
+      use xml,         only : xml_dump_attribute, xml_dump_element
+      use ionew,       only : IOnode
+      use densematrix, only : Haux, Saux, psi
+      use alloc
 #ifdef MPI
-      use mpi_siesta, only: mpi_comm_world
+      use parallelsubs, only : GetNodeOrbs
 #endif
 
-      IMPLICIT NONE
+      implicit none
 
       INTEGER
      .  NO, NSPIN, MAXSPN, MAXUO, MAXNH, NK, NHIST, MAXO, NUOTOT
@@ -64,7 +66,7 @@ C **********************************************************************
       INTEGER 
      .  NUMH(*), LISTH(MAXNH), LISTHPTR(*), INDXUO(NO)
 
-      DOUBLE PRECISION
+      real(dp)
      .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA,  
      .  XIJ(3,MAXNH), KPOINT(3,NK), WK(NK), EO(MAXO,MAXSPN,NK)
 
@@ -72,30 +74,25 @@ C **********************************************************************
      .  GAMMA
 
 C Dynamic arrays -------------------------------------------------------
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE :: HAUX, SAUX
-      DOUBLE PRECISION, DIMENSION(:), ALLOCATABLE, SAVE :: PSI, AUX
-      DOUBLE PRECISION, DIMENSION(:,:)  , ALLOCATABLE :: DTOT
-      DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE :: DPR
+      real(dp), DIMENSION(:), ALLOCATABLE, SAVE :: AUX
+      real(dp), DIMENSION(:,:)  , ALLOCATABLE :: DTOT
+      real(dp), DIMENSION(:,:,:), ALLOCATABLE :: DPR
 
 C Internal variables ---------------------------------------------------
       INTEGER
      .  NUO, NHS, NPSI, NAUX, IUO, IHIST, ISPIN, 
      .  IUNIT1, IUNIT2, I
 
-      integer iat, spec, ii, iorb, Node, Nodes
+      integer iat, spec, ii, iorb
 
       real(dp), dimension(:), allocatable  :: tmp
-
-#ifdef MPI
-      integer MPIerror
-#endif
 
       character*40 pos_string
 
       CHARACTER
      .  SNAME*30, FNAMETOT*37, FNAMEPRO*37, PASTE*53,  POINT
 
-      DOUBLE PRECISION
+      real(dp)
      .  DELTA, ENER, EV
 
       EXTERNAL
@@ -105,15 +102,6 @@ C Internal variables ---------------------------------------------------
       type(xmlf_t) :: xf            ! For new XML output
 
       CALL TIMER( 'pdos', 1)
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Find the intervals between the subdivisions in the energy scale ------
       DELTA = (E2 - E1) / (NHIST-1)
@@ -142,12 +130,9 @@ C Check internal dimensions --------------------------------------------
       ENDIF
 
 C Allocate local arrays ------------------------------------------------
-      ALLOCATE(HAUX(NHS))
-      CALL MEMORY('A','D',NHS,'pdos')
-      ALLOCATE(SAUX(NHS))
-      CALL MEMORY('A','D',NHS,'pdos')
-      ALLOCATE(PSI(NPSI))
-      CALL MEMORY('A','D',NPSI,'pdos')
+      call re_alloc(Haux,1,nhs,name='Haux',routine='pdos')
+      call re_alloc(Saux,1,nhs,name='Saux',routine='pdos')
+      call re_alloc(psi,1,npsi,name='psi',routine='pdos')
       ALLOCATE(AUX(NAUX))
       CALL MEMORY('A','D',NAUX,'pdos')
       ALLOCATE(DTOT(NHIST,2))
@@ -170,15 +155,13 @@ C Call appropiate routine ----------------------------------------------
         CALL PDOSG( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, INDXUO, EO,
-     .              HAUX, SAUX, PSI, DTOT, DPR, NUOTOT,
-     .              Node, Nodes )
+     .              HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
       ELSE IF ( NSPIN.LE.2 .AND. .NOT.GAMMA) THEN
         CALL PDOSK( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, 
      .              XIJ, INDXUO, NK, KPOINT, WK, EO,
-     .              HAUX, SAUX, PSI, AUX, DTOT, DPR, NUOTOT,
-     .              Node, Nodes )
+     .              HAUX, SAUX, PSI, AUX, DTOT, DPR, NUOTOT )
       ENDIF
 
       if (IOnode) then
@@ -303,12 +286,6 @@ C Free local arrays ----------------------------------------------------
       DEALLOCATE(DTOT)
       CALL MEMORY('D','D',SIZE(AUX),'pdos')
       DEALLOCATE(AUX)
-      CALL MEMORY('D','D',SIZE(PSI),'pdos')
-      DEALLOCATE(PSI)
-      CALL MEMORY('D','D',SIZE(SAUX),'pdos')
-      DEALLOCATE(SAUX)
-      CALL MEMORY('D','D',SIZE(HAUX),'pdos')
-      DEALLOCATE(HAUX)
 
       deallocate(tmp)
 

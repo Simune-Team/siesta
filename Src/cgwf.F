@@ -51,6 +51,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -74,7 +75,7 @@ C
 
 C  Internal variables .................................................
       integer 
-     . i,ii,its,j,iopt,irestart,numit,Node,Nodes
+     . i,ii,its,j,iopt,irestart,numit
 
 #ifdef MPI
       integer MPIerror
@@ -90,15 +91,6 @@ C  Internal variables .................................................
       parameter (eps=1.e-15_dp)
       parameter (irestart=300)
 C ..........................
-
-C Get Node number 
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Set step for line minim: lam (empirically 1.0e-1 works fine) 
       lam = 1.0_dp

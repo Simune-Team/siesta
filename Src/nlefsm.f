@@ -1,8 +1,8 @@
-      subroutine nlefsm( scell, nua, na, isa, xa, indxua,
+      subroutine nlefsm( scell, nua, na, isa, xa, indxua, maxna,
      .                   maxnh, maxnd, lasto, lastkb, iphorb, 
      .                   iphKB, numd, listdptr, listd, numh, 
      .                   listhptr, listh, nspin, Dscf, Enl, 
-     .                   fa, stress, H, Node, Nodes)
+     .                   fa, stress, H )
 C *********************************************************************
 C Calculates non-local (NL) pseudopotential contribution to total 
 C energy, atomic forces, stress and hamiltonian matrix elements.
@@ -14,8 +14,8 @@ C integer nua              : Number of atoms in unit cell
 C integer na               : Number of atoms in supercell
 C integer isa(na)          : Species index of each atom
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
-c integer indxua(na)       : Index of equivalent atom in unit cell
-C integer nomax            : Maximum number of atomic orbitals
+C integer indxua(na)       : Index of equivalent atom in unit cell
+C integer maxna            : Maximum number of atoms for neighb
 C integer maxnh            : First dimension of H and listh
 C integer maxnd            : Maximum number of elements of the
 C                            density matrix
@@ -39,8 +39,6 @@ C integer listh(maxnh)     : Nonzero hamiltonian-matrix element column
 C                            indexes for each matrix row
 C integer nspin            : Number of spin components
 C real*8  Dscf(maxnd,nspin): Density matrix
-C integer Node             : Local node number
-C integer Nodes            : Total number of nodes
 C ******************* INPUT and OUTPUT *********************************
 C real*8 fa(3,na)          : NL forces (added to input fa)
 C real*8 stress(3,3)       : NL stress (added to input stress)
@@ -52,32 +50,33 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: rcut, epskb
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
+      use parallelsubs,  only : GlobalToLocalOrb
+      use atmfuncs,      only : rcut, epskb
 
       implicit none
 
       integer
-     . maxnh, na, maxnd, nspin, nua, Node, Nodes
+     .  maxna, maxnh, na, maxnd, nspin, nua
 
       integer
-     . indxua(na), iphKB(*), iphorb(*), isa(na),  
-     . lasto(0:na), lastkb(0:na), listd(maxnd), listh(maxnh),
-     . numd(*), numh(*), listdptr(*), listhptr(*)
+     .  indxua(na), iphKB(*), iphorb(*), isa(na),  
+     .  lasto(0:na), lastkb(0:na), listd(maxnd), listh(maxnh),
+     .  numd(*), numh(*), listdptr(*), listhptr(*)
 
-      double precision
-     . scell(3,3), Dscf(maxnd,nspin), Enl,
-     . fa(3,nua), H(maxnh,nspin),
-     . stress(3,3), xa(3,na), volcel
+      real(dp)
+     .  scell(3,3), Dscf(maxnd,nspin), Enl,
+     .  fa(3,nua), H(maxnh,nspin),
+     .  stress(3,3), xa(3,na), volcel
 
       external
-     . chkdim, neighb, timer, volcel, memory
+     .  neighb, timer, volcel, memory
 
 C Internal variables ................................................
-C maxna  = maximum number of neighbour atoms of one atom
 C maxno  = maximum number of basis orbitals overlapping a KB projector
       integer, save ::
-     .  maxna, maxno
+     .  maxno
   
       integer
      .  ia, ikb, ina, ind, ino,
@@ -88,17 +87,17 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       integer, dimension(:), allocatable, save ::
      .  iano, iana, iono, ibuffer
 
-      double precision
+      real(dp)
      .  Cijk, epsk, fik, rki, rmax, rmaxkb, rmaxo, 
      .  Sik, Sjk, volume
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  Di, Vi, r2ki
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  Ski, xki, xno, dpbuffer2
 
-      double precision, dimension(:,:,:), allocatable, save ::
+      real(dp), dimension(:,:,:), allocatable, save ::
      .  grSki, dpbuffer3
 
       logical
@@ -107,7 +106,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       logical, dimension(:), allocatable, save ::
      .  listed, listedall
 
-      data maxna  / 1000 /
       data maxno  / 2000 /
 C ......................
 
@@ -118,8 +116,8 @@ C Find unit cell volume
       volume = volcel( scell ) * nua / na
 
 C Find maximum range
-      rmaxo = 0.d0
-      rmaxkb = 0.d0
+      rmaxo = 0.0d0
+      rmaxkb = 0.0d0
       do ia = 1,na
         is = isa(ia)
         do ikb = lastkb(ia-1)+1,lastkb(ia)
@@ -450,4 +448,5 @@ C Deallocate local memory
       deallocate(xki)
 
       call timer( 'nlefsm', 2 )
+
       end

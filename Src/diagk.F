@@ -3,8 +3,7 @@
      .                  listd, H, S, getD, getPSI, fixspin, qtot, qs, 
      .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
      .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, Dk, Ek, aux, nuotot,
-     .                  Node, Nodes)
+     .                  Haux, Saux, psi, Dk, Ek, aux, nuotot)
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -54,8 +53,6 @@ C real*8  kpoint(3,nk)        : k point vectors
 C real*8  wk(nk)              : k point weights (must sum one)
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
-C integer Node                : local processor
-C integer Nodes               : number of processors
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,maxspn,nk)   : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
@@ -84,8 +81,10 @@ C  Modules
 C
       use precision
       use sys
-      use parallel
+      use parallel,      only : Node, Nodes, BlockSize
+      use parallelsubs,  only : LocalToGlobalOrb
       use writewave
+      use m_fermid,      only : fermid, fermispin, stepf
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -98,21 +97,21 @@ C
 #endif
 
       integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
-     .                  nspin, nuo, nuotot, Node, Nodes
+     .                  nspin, nuo, nuotot
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
      .                  listdptr(nuo)
-      real*8            Dnew(maxnd,nspin),
+      real(dp)          Dnew(maxnd,nspin),
      .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
      .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
      .                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
-     .                  S(maxnh), stepf, temp, wk(nk),
+     .                  S(maxnh), temp, wk(nk),
      .                  xij(3,maxnh), qs(nspin)
-      real*8            Dk(2,nuotot,nuo), Ek(2,nuotot,nuo),
+      real(dp)          Dk(2,nuotot,nuo), Ek(2,nuotot,nuo),
      .                  Haux(2,nuotot,nuo), Saux(2,nuotot,nuo),
      .                  psi(2,nuotot,nuo), aux(2,nuotot*5)
       logical           getD, getPSI, fixspin
-      external          cdiag, fermid, fermispin, stepf
+      external          cdiag
 
 C  Internal variables .............................................
       integer
@@ -124,7 +123,7 @@ C  Internal variables .............................................
       logical
      .  lfound
 
-      real*8
+      real(dp)
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
 C  ....................
 
@@ -194,10 +193,10 @@ C Create pointer to highest occupied band
         allocate(HighestOccupiedBand(nspin,nk))
         do ik = 1,nk
           do ispin = 1,nspin
-            io = 0
+            io = nuotot + 1
             lfound = .false.
-            do while (io.lt.nuotot.and..not.lfound)
-              io = io + 1
+            do while (io.gt.1.and..not.lfound)
+              io = io - 1
               lfound = (abs(qo(io,ispin,ik)).lt.1.0d-12)
             enddo
             HighestOccupiedBand(ispin,ik) = io

@@ -1,6 +1,7 @@
 MODULE alloc
 
       use precision
+      use parallel,   only : Node, Nodes
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -279,16 +280,9 @@ character(len=*), optional, intent(in) :: file
 logical,          optional, intent(in) :: printNow
 
 logical open
-integer node
 
 #ifdef MPI
 integer MPIerror
-#endif
-
-#ifdef MPI
-call MPI_Comm_Rank( MPI_Comm_World, node, MPIerror )
-#else
-node = 0
 #endif
 
 if (present(level)) then
@@ -1262,18 +1256,38 @@ real(DP)            :: delta_mem
 logical             :: newPeak
 logical,  save      :: header_written = .false.
 logical,  save      :: tree_nullified = .false.
-integer             :: memSize, nodes
+integer             :: memSize
 #ifdef MPI
 integer             :: MPIerror
 #endif
 
-if (REPORT_LEVEL <= 0) return
+! Set routine name
+if (present(routine)) then
+  rname = routine
+else
+  rname = DEFAULT%routine
+end if
 
-#ifdef MPI
-call MPI_Comm_Size( MPI_Comm_World, nodes, MPIerror )
-#else
-nodes = 1
-#endif
+! Call siesta counting routine 'memory'
+if (delta_size > 0) then
+  task = 'A'
+else
+  task = 'D'
+end if
+select case( type )
+case ('R')         ! Real --> single
+  memType = 'S'
+  memSize = abs(delta_size)
+case ('S')         ! Character (string) --> integer/4
+  memType = 'I'
+  memSize = abs(delta_size) / type_mem('I')
+case default
+  memType = type
+  memSize = abs(delta_size)
+end select
+call memory( task, memType, memSize, trim(rname) )
+
+if (REPORT_LEVEL <= 0) return
 
 ! Compound routine+array name
 if (present(name)) then
@@ -1282,11 +1296,6 @@ else
   aname = DEFAULT_NAME
 end if
 MAX_LEN = max( MAX_LEN, len(trim(aname)) )
-if (present(routine)) then
-  rname = routine
-else
-  rname = DEFAULT%routine
-end if
 
 ! Find memory increment and total allocated memory
 delta_mem = delta_size * type_mem(type)
@@ -1328,25 +1337,6 @@ if (REPORT_LEVEL == 4 .and. nodes == 1) then
   write(REPORT_UNIT,'(a16,1x,a32,1x,2f15.6)') &
      rname, aname, delta_mem/MBYTE, TOT_MEM/MBYTE
 end if
-
-! Call siesta counting routine 'memory'
-if (delta_size > 0) then
-  task = 'A'
-else
-  task = 'D'
-end if
-select case( type )
-case ('R')         ! Real --> single
-  memType = 'S'
-  memSize = abs(delta_size)
-case ('S')         ! Character (string) --> integer/4
-  memType = 'I'
-  memSize = abs(delta_size) / type_mem('I')
-case default
-  memType = type
-  memSize = abs(delta_size)
-end select
-call memory( task, memType, memSize, trim(rname) )
 
 END SUBROUTINE count
 
@@ -1467,21 +1457,11 @@ implicit none
 
 character(len=80) :: string = 'Name'
 character         :: date*8, time*10, zone*5
-integer           :: node, nodes
 
 #ifdef MPI
 integer           :: MPIerror, nodePEAK
 integer           :: Status(MPI_Status_Size)
 real(DP)          :: G_TOT_MEM, G_PEAK_MEM(2), L_PEAK_MEM(2)
-#endif
-
-! Get the local node number and the total number of nodes
-#ifdef MPI
-call MPI_Comm_Rank( MPI_Comm_World, node, MPIerror )
-call MPI_Comm_Size( MPI_Comm_World, nodes, MPIerror )
-#else
-node = 0
-nodes = 0
 #endif
 
 #ifdef MPI

@@ -96,7 +96,7 @@ C ----------------------------------------------------------------------
       end module meshphi
 
       subroutine InitMesh( na, xa, cell, norb, iaorb, iphorb, isa,
-     .                     rmax, G2max, G2mesh, Node, Nodes, nsc, nmpl, 
+     .                     rmax, G2max, G2mesh, nsc, nmpl, 
      .                     nm, nml, ntm, ntml, ntpl, ntopl, dvol)
 C
 C Initialises the mesh
@@ -112,8 +112,6 @@ C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
 C integer isa(na)       : Species index of all atoms in supercell
 C real*8  rmax          : Maximum orbital radius
-C integer Node          : Local node number
-C integer Nodes         : Total number of nodes
 C integer nsc(3)        : Number of unit-cells in each supercell direct.
 C ----------------------------------------------------------------------
 C Input and output :
@@ -172,10 +170,11 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: rcut
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
+      use atmfuncs,      only : rcut
       use mesh
-      use meshphi, only: endpht
+      use meshphi,       only : endpht
 
       implicit none
 
@@ -183,11 +182,11 @@ C
 C Passed arguments
 C
       integer
-     .  na, Node, Nodes, ntpl, ntopl, nm(3), nml(3), nmpl, 
+     .  na, ntpl, ntopl, nm(3), nml(3), nmpl, 
      .  norb, nsc(3), ntm(3), ntml(3), iaorb(norb),
      .  iphorb(norb), isa(na)
 
-      real*8
+      real(dp)
      .  cell(3,3), dvol, G2max, G2mesh, rmax, xa(3,na)
 
 C
@@ -200,13 +199,13 @@ C
       integer, dimension(:), allocatable, save ::
      .  iphty, isty, noty
 
-      real*8
+      real(dp)
      .  dx(3), dxp(3), pldist, r, rcell(3,3), vecmod, volume
 
-      real*8, save ::
+      real(dp), save ::
      .  k0(3)
 
-      real*8, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  rcty
 
       logical
@@ -214,7 +213,7 @@ C
 C
 C Functions
 C
-      real*8
+      real(dp)
      .  dismin, dot, volcel
 
       external
@@ -1092,8 +1091,7 @@ C Loop over sub-points
  
       end subroutine LocalChargeOnMesh
 
-      subroutine PhiOnMesh( nmpl, ntopl, norb, iaorb, iphorb, isa,
-     .                      Node)
+      subroutine PhiOnMesh( nmpl, ntopl, norb, iaorb, iphorb, isa)
 C
 C Calculates the values of the orbitals at the mesh points
 C
@@ -1106,7 +1104,6 @@ C integer isa(na)       : Species index of all atoms in supercell
 C integer nmpl          : Number of mesh points in unit cell locally
 C integer norb          : Total number of basis orbitals in supercell
 C integer ntopl         : Total number of nonzero orbital points locally
-C integer Node          : Local node number
 C ----------------------------------------------------------------------
 C Output :
 C ----------------------------------------------------------------------
@@ -1116,9 +1113,10 @@ C ----------------------------------------------------------------------
 C
 C Modules
 C
-      use atmfuncs, only: rcut, phiatm
-      use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+      use atmfuncs, only : rcut, phiatm
+      use mesh,     only : dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
       use meshphi
+      use parallel, only : Node
       use fdf
       use precision
 #ifdef MPI
@@ -1135,7 +1133,6 @@ C
       integer, intent(in) :: iaorb(norb)
       integer, intent(in) :: iphorb(norb)
       integer, intent(in) :: isa(*)
-      integer, intent(in) :: Node
 
 C
 C Local variables
@@ -1155,7 +1152,7 @@ C
 
       integer, dimension(:), allocatable, save :: numphi
 
-      real*8
+      real(dp)
      .  dxsp(3,nsp), grphi(3), phip, r2o, r2sp(nsp)
 
 C On first call set the logical DirectPhi

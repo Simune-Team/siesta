@@ -69,16 +69,14 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel,   only : Node
 
       implicit none
 
       integer 
      .   natoms, ntcon, istep, iunit
 
-      double precision
+      real(dp)
      .  dt,fa(3,natoms),h(3,3),hdot(3,3),kin,kn,kpr,
      .  ma(natoms),mn,mpr,stress(3,3),tp,tt,
      .  va(3,natoms),vn,vpr,xa(3,natoms)
@@ -86,13 +84,9 @@ C
 C Internal variables .............................................................
 
       integer
-     .  ct,i,ia,info,j,k,Node
+     .  ct,i,ia,info,j,k
 
-#ifdef MPI
-      integer MPIerror
-#endif
-
-      double precision
+      real(dp)
      .  Ang,aux1(3,3),aux2(3,3),diff,dt2,dtby2,
      .  eV,f(3,3),fi(3,3),fovermp,
      .  g(3,3),gdot(3,3),gi(3,3),
@@ -102,7 +96,7 @@ C Internal variables ...........................................................
      .  vol,volcel,
      .  x,xdot,xlast,xnew,xold
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  s,sdot,snew,sold,sunc,suncdot
 
       save x,xold,hold
@@ -110,13 +104,6 @@ C Internal variables ...........................................................
       external
      .  volcel, memory
 C ......................................................................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
         if (Node.eq.0) then
@@ -580,16 +567,14 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel,   only : Node
 
       implicit none
 
       integer 
      .   natoms,ntcon,istep,iquench,iunit
 
-      double precision
+      real(dp)
      .  dt,fa(3,natoms),h(3,3),hdot(3,3),kin,kpr,
      .  ma(natoms),mpr,stress(3,3),tp,
      .  va(3,natoms),vpr,xa(3,natoms)
@@ -597,13 +582,9 @@ C
 C Internal variables .............................................................
 
       integer
-     .  ct,i,info,ia,j,k,Node
+     .  ct,i,info,ia,j,k
 
-#ifdef MPI
-      integer MPIerror
-#endif
-
-      double precision
+      real(dp)
      .  a1,a2,Ang,aux1(3,3),aux2(3,3),diff,dot,dt2,dtby2,
      .  eV,f(3,3),fi(3,3),fovermp,
      .  g(3,3),gdot(3,3),gi(3,3),
@@ -612,7 +593,7 @@ C Internal variables ...........................................................
      .  tdiff,temp,tol,twodt,
      .  vol,volcel
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  s,sdot,snew,sold,sunc,suncdot
 
       save hold
@@ -620,13 +601,6 @@ C Internal variables ...........................................................
       external
      .  volcel, memory
 C ...............................................................................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
         if (Node.eq.0) then
@@ -1091,16 +1065,14 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel,   only : Node
 
       implicit none
 
       integer 
      .   natoms,ntcon,istep,iunit
 
-      double precision
+      real(dp)
      .  dt,fa(3,natoms),kin,kn,
      .  ma(natoms),mn,tt,
      .  va(3,natoms),vn,xa(3,natoms)
@@ -1110,29 +1082,18 @@ C
 C Internal variables .........................................................
 
       integer
-     .  ct,i,ia,Node
-
-#ifdef MPI
-      integer MPIerror
-#endif
+     .  ct,i,ia
 
       save x,xold
 
-      double precision
+      real(dp)
      .  Ang,diff,dt2,dtby2,eV,fact,fovermp,
      .  tekin,temp,tol,twodt,
      .  x,xdot,xlast,xnew,xold
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xanew,xaold
 C .............................................................................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
         if (Node.eq.0) then
@@ -1349,16 +1310,14 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel,   only : Node
 
       implicit none
 
       integer 
      .   natoms,ntcon,istep,ianneal,iunit
 
-      double precision
+      real(dp)
      .  bulkm,dt,fa(3,natoms),h(3,3),kin,
      .  ma(natoms),stress(3,3),taurelax,tp,tt,
      .  va(3,natoms),xa(3,natoms)
@@ -1366,33 +1325,19 @@ C
 C Internal variables .............................................................
 
       integer
-     .  ct,i,ia,info,j,k,Node
+     .  ct,i,ia,info,j,k
 
-#ifdef MPI
-      integer MPIerror
-#endif
-
-      double precision
-     .  Ang,dt2,eV,
-     .  fovermp,
-     .  hi(3,3),hs(3),
+      real(dp)
+     .  Ang,dt2,eV,fovermp,hi(3,3),hs(3),
      .  pgas,press(3,3),pressin,rfac,rfac2,
-     .  tekin,temp,twodt,
-     .  vol,volcel
+     .  tekin,temp,twodt,vol,volcel
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  s,sdot,snew,sold,sunc
 
        external
      .  volcel, memory
 C ....................................................................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
         if (Node.eq.0) then
@@ -1710,16 +1655,14 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel,   only : Node
 
       implicit none
 
       integer 
      .   natoms,ntcon,istep,iquench,iunit
 
-      double precision
+      real(dp)
      .  dt,fa(3,natoms),kin,ma(natoms),
      .  va(3,natoms),xa(3,natoms)
 
@@ -1729,28 +1672,17 @@ C
 C Internal variables ..........................................................
  
       integer
-     .  ct,i,ia,Node
+     .  ct,i,ia
 
-#ifdef MPI
-      integer MPIerror
-#endif
-
-      double precision
+      real(dp)
      .  Ang,dot,dt2,eV,fovermp,temp,twodt
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xanew
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xaold
 
 C ........................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
         if (Node.eq.0) then
@@ -1911,16 +1843,14 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel,   only : Node
 
       implicit none
 
       integer 
      .   natoms,ntcon,istep,iquench,iunit
 
-      double precision
+      real(dp)
      .  dt,fa(3,natoms),kin,ma(natoms),
      .  va(3,natoms),xa(3,natoms)
 
@@ -1930,25 +1860,14 @@ C
 C Internal variables ..........................................................
  
       integer
-     .  ct,i,ia,Node
+     .  ct,i,ia
 
-#ifdef MPI
-      integer MPIerror
-#endif
-
-      double precision
+      real(dp)
      .  Ang,dot,dt2,dtby2,eV,fovermp,temp
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  accold,vold
 C ........................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
       if (iunit .ne. 1 .and. iunit .ne. 2) then
         if (Node.eq.0) then

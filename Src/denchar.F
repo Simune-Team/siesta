@@ -1,4 +1,3 @@
-
       PROGRAM DENCHAR
 
 C **********************************************************************
@@ -33,8 +32,6 @@ C
 #endif
 
       implicit none
-
-      integer Node, Nodes
 
 #ifdef MPI
       integer  MPIerror

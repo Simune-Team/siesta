@@ -131,8 +131,8 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: rcut, rcore
+      use parallel,      only : Node
+      use atmfuncs,      only : rcut, rcore
       use fdf
       use sys
       use mesh
@@ -246,8 +246,7 @@ C
       integer
      .  i, ia, io, ip, iphi, is, ispin, j, ifor, iu, 
      .  nbcell, nm(3), npcc, nsd, nzero(3), 
-     .  Node, Nodes, ntopl, nmpl, nsc(3), ntpl, 
-     .  nml(3), ntml(3)
+     .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3)
 
 #ifdef MPI
       integer
@@ -312,17 +311,6 @@ C
      .  nzero / 3*0 /,
      .  tiny  / 1.D-12 /,
      .  frstme /.true./
-
-C ----------------------------------------------------------------------
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C ----------------------------------------------------------------------
 C General initialisation
@@ -425,7 +413,7 @@ C ----------------------------------------------------------------------
 C Mesh initialization 
 C ----------------------------------------------------------------------
         call InitMesh( na, xa, cell, norb, iaorb, iphorb, isa, rmax, 
-     .                 G2max, G2mesh, Node, Nodes, nsc, nmpl, nm,
+     .                 G2max, G2mesh, nsc, nmpl, nm,
      .                 nml, ntm, ntml, ntpl, ntopl, dvol)
 
 C ----------------------------------------------------------------------
@@ -507,7 +495,7 @@ C Find neutral-atom potential
      .                          .false., .false. )
 
 C Calculate orbital values on mesh
-        call PhiOnMesh( nmpl, ntopl, norb, iaorb, iphorb, isa, Node)
+        call PhiOnMesh( nmpl, ntopl, norb, iaorb, iphorb, isa )
 
 C ----------------------------------------------------------------------
 C Create sparse indexing for Dscf as needed for local mesh
@@ -515,7 +503,7 @@ C ----------------------------------------------------------------------
 
         if (nuo .ne. nuotot) then
           call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
-     .      listd, Node, Nodes)
+     .      listd )
         endif
 
 C ----------------------------------------------------------------------

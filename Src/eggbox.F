@@ -25,19 +25,19 @@ c **********************************************************************
 C  Modules
 
       use precision
-      use parallel
+      use parallel,    only : Node
       use fdf
       use parsing
 #ifdef MPI
       use mpi_siesta
 #endif
 
-c External
+C External
 
       implicit          none
+
       integer           na, isa(na), ntm(3)
-      double precision  cell(3,3),
-     .     fa(3,na), fanew(3,na), xa(3,na), Etot
+      real(dp)          cell(3,3), fa(3,na), fanew(3,na), xa(3,na), Etot
       character task*6 
       logical eggbox_block
 
@@ -53,12 +53,13 @@ c maxispe  : maximum number of species
       parameter ( maxshell = 10 )
       parameter ( maxispe = 15 )
 
-c Internal variables  
+C Internal variables  
 
-      logical  frstme
+      logical, save :: frstme = .true.
+
       integer  n, j, ni, nn, nr, nv, integers(maxw), lc(0:maxw),
-     .     ia, ix, i, iu, a, b, c, Node, Nodes
-      double precision reals(maxw), values(maxw),
+     .     ia, ix, i, iu, a, b, c
+      real(dp) reals(maxw), values(maxw),
      .     pi, xac(3), k(3), xa_frac(3,na), 
      .     celli(3,3), f(3,na), E, x, y, z, 
      .     fxyz(3,na), eV, escale,
@@ -68,26 +69,16 @@ c Internal variables
       integer  MPIerror, nvreal
 #endif
 
-      data  frstme /.true./
-      save vreal, frstme, escale, pi
+      save vreal, escale, pi
 
 c --------------------------------------------------------------
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
       if (frstme) then
          frstme = .false.
          eV = 13.60580_dp
          pi = 4.d0 * atan(1.d0)
 
-c initalise vreal
+C Initalise vreal
          do a=0,maxshell
            do b=0,maxshell
              do c=0,maxshell
@@ -98,7 +89,7 @@ c initalise vreal
            enddo
          enddo
          
-c read cooeficents from fdf
+C Read cooeficents from fdf
          if (Node.eq.0) then
            eggbox_block = fdf_block('EggBoxRemove',iu)
          endif
@@ -113,21 +104,21 @@ c read cooeficents from fdf
                read(iu,'(a)') line
                call parse(line, nn, lc, names, nv, values, ni, integers,
      .                    nr, reals)
-c check if block has finished
+C Check if block has finished
                name1 = names(lc(0)+1:lc(1))
                if (name1 .eq. '%end' .or.name1 .eq. '%endblock') goto 30
-c vreal is set out as vreal(kx,ky,kz,species)
+C vreal is set out as vreal(kx,ky,kz,species)
                vreal(integers(2),integers(3),integers(4),
      .              integers(1))=reals(1)
              enddo
  30          continue
 
-c get the scale (default 1 eV)
+C Get the scale (default 1 eV)
              escale = fdf_physical('EggBoxScale', 1.d0, 'eV')
              escale = escale/eV
            endif
 
-c pass data to other nodes
+C Pass data to other nodes
 #ifdef MPI
            nvreal = maxispe*(maxshell+1)**3
 #ifdef NODAT
@@ -149,10 +140,10 @@ c          write(6,'a') "eggbox: The eggbox effect will not be removed"
       endif
          
 
-c find reciprical lattice unit cell
+C Find reciprical lattice unit cell
       call reclat(cell, celli, 0)
 
-c convert to fractional coordinates
+C Convert to fractional coordinates
       do ia = 1,na
          do ix = 1,3
             xac(ix) = xa(ix,ia)
@@ -164,21 +155,21 @@ c convert to fractional coordinates
          enddo
       enddo
          
-c define the k vector describing the periodicity of the grid 
+C Define the k vector describing the periodicity of the grid 
       k(1) = 2.0d0*pi*ntm(1)
       k(2) = 2.0d0*pi*ntm(2)
       k(3) = 2.0d0*pi*ntm(3)
 
-c loop over all atoms predict the egg box effect and subtract it off
+C Loop over all atoms predict the egg box effect and subtract it off
       E=0
       do ia=1,na
-c        i is the atom type
+C i is the atom type
          i=isa(ia)
          x=xa_frac(1,ia)
          y=xa_frac(2,ia)
          z=xa_frac(3,ia)
 
-c The predicted energy
+C The predicted energy
          do a=0,maxshell
            do b=0,maxshell
              do c=0,maxshell
@@ -187,7 +178,7 @@ c The predicted energy
            enddo
          enddo
 
-c The predicted forces
+C The predicted forces
          f(1,ia)=0.0_dp
          f(2,ia)=0.0_dp
          f(3,ia)=0.0_dp
@@ -209,7 +200,7 @@ c The predicted forces
             enddo
          enddo
 
-c convert forces to cartesian coordinates
+C Convert forces to cartesian coordinates
          do ix = 1,3
             fxyz(ix,ia) = celli(ix,1) * f(1,ia) +
      .           celli(ix,2) * f(2,ia) +
@@ -219,7 +210,7 @@ c convert forces to cartesian coordinates
          fxyz(2,ia)=-fxyz(2,ia)*escale
          fxyz(3,ia)=-fxyz(3,ia)*escale
             
-c finaly remove the eggbox forces from fa
+C Finally remove the eggbox forces from fa
          if (task.eq.'forces') then
             fa(1,ia)=(fa(1,ia)-fxyz(1,ia))
             fa(2,ia)=(fa(2,ia)-fxyz(2,ia))
@@ -227,7 +218,7 @@ c finaly remove the eggbox forces from fa
          endif         
       enddo  
 
-c remove the eggbox energy
+C Remove the eggbox energy
       if (task.eq.'energy') then
          Etot=Etot-E*escale
       endif

@@ -2,8 +2,7 @@
      .                  MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                  E1, E2, NHIST, SIGMA, 
      .                  XIJ, INDXUO, NK, KPOINT, WK, EO, 
-     .                  HAUX, SAUX, PSI, AUX, DTOT, DPR, NUOTOT,
-     .                  Node, Nodes )
+     .                  HAUX, SAUX, PSI, AUX, DTOT, DPR, NUOTOT )
 
 C **********************************************************************
 C Find the density of states projected onto the atomic orbitals
@@ -41,8 +40,6 @@ C REAL*8  KPOINT(3,NK)      : k point vectors
 C REAL*8  WK(NK)            : Weights for k points
 C REAL*8  EO(MAXO,MAXSPN,NK): Eigenvalues
 C INTEGER NUOTOT            : Total number of orbitals per unit cell
-C integer Node              : Local node number
-C integer Nodes             : Total number of nodes
 C ****  AUXILIARY  *****************************************************
 C REAL*8  HAUX(2,NUO,NUO)   : Auxiliary space for the hamiltonian matrix
 C REAL*8  SAUX(2,NUO,NUO)   : Auxiliary space for the overlap matrix
@@ -54,7 +51,8 @@ C REAL*8  DPR(NHIST,NUO,2): Proyected density of states
 C **********************************************************************
 
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -63,13 +61,13 @@ C **********************************************************************
 
       INTEGER
      .  NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH, NK, 
-     .  MAXO, NHIST, NUOTOT, Node, Nodes
+     .  MAXO, NHIST, NUOTOT
 
       INTEGER
      .  NUMH(NUO), LISTHPTR(NUO), LISTH(MAXNH),
      .  INDXUO(NO)
 
-      DOUBLE PRECISION
+      real(dp)
      .  H(MAXNH,NSPIN), S(MAXNH), E1, E2, SIGMA, 
      .  XIJ(3,MAXNH), KPOINT(3,NK), EO(MAXO,MAXSPN,NK),
      .  HAUX(2,NUOTOT,NUO), SAUX(2,NUOTOT,NUO), PSI(2,NUOTOT,NUO),
@@ -80,14 +78,14 @@ C Internal variables ---------------------------------------------------
      .  IK, ISPIN, IUO, JUO, IO, J, JO, IHIST, IBAND, JOTY, IND,
      .  IERROR, IBANDG
 
-      DOUBLE PRECISION
+      real(dp)
      .  KXIJ, CKXIJ, SKXIJ, DELTA, ENER, DIFF, PI, PIPJ1, PIPJ2, 
      .  PIPJS1, PIPJS2, GAUSS, NORM, WKSUM
 
 #ifdef MPI
       integer ::
      .  BNode, Bnuo, maxnuo, MPIerror
-      real*8, dimension(:,:,:), allocatable, save ::
+      real(dp), dimension(:,:,:), allocatable, save ::
      .  Sloc
 #endif
 

@@ -87,6 +87,7 @@ C               : 1 = peak memory on all Nodes
 C
       use memoryinfo
       use precision
+      use parallel,  only : Node, Nodes
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -99,20 +100,11 @@ C Passed arguments
 
 C Local arguments
       integer
-     .  Node, Nodes, MaxMemory, n
+     .  MaxMemory, n
 
 #ifdef MPI
       integer
      .  MPIerror
-#endif
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
 #endif
 
 C Find peak memory use over all Nodes

@@ -19,11 +19,11 @@ C
 
       IMPLICIT         NONE
 
-      DOUBLE PRECISION B0(3,3),BMIN(3,3),DOT,VOLCEL
+      real(dp)         B0(3,3),BMIN(3,3),DOT,VOLCEL
       EXTERNAL         DOT,RECLAT,VOLCEL
 
-      INTEGER          I,I1,I2,I3,ITER,J,NITER,Node,IAUX(3)
-      DOUBLE PRECISION AUX(3,3),B(3,3),B2(1,3),BNEW(3),BNEW2,
+      INTEGER          I,I1,I2,I3,ITER,J,NITER,IAUX(3)
+      real(dp)         AUX(3,3),B(3,3),B2(1,3),BNEW(3),BNEW2,
      .                 C(3,3),EPS,VNEW,V0
 
       PARAMETER (EPS=1.D-8,NITER=100)
@@ -99,14 +99,10 @@ C
 
       SUBROUTINE VOLNEW(A,ANEW,INEW,VOL)
       INTEGER          I,INEW,J
-      DOUBLE PRECISION A(3,3),ANEW(3),AUX(3,3),VOL
+      real(dp)         A(3,3),ANEW(3),AUX(3,3),VOL
       AUX(1:3,1:3)=A(1:3,1:3)
       AUX(1:3,INEW)=ANEW(1:3)
       VOL=ABS(VOLCEL(AUX))
       END subroutine volnew
 
       END subroutine minvec
-
-
-
-

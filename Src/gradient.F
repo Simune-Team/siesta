@@ -66,6 +66,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -89,7 +90,7 @@ C
 C Internal variables ......................................................
 
       integer
-     .  i,ik,in,ind,j,jk,jn,k,kl,kn,knk,knlh,mu,muk,Node,Nodes,
+     .  i,ik,in,ind,j,jk,jn,k,kl,kn,knk,knlh,mu,muk,
      .  nn, nbandsmin, nbandsmax, nbandspernode, iloc, 
      .  nbandsloc, nfmaxg, nhijmaxg
       integer, dimension(:), allocatable, save :: 
@@ -124,9 +125,6 @@ C..................
       
 C Get Node number
 #ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-
 C Get global sizes for first dimension of H/S
       call MPI_AllReduce(maxnh,maxnhg,1,MPI_integer,MPI_max,
      .  MPI_Comm_World,MPIerror)
@@ -168,8 +166,6 @@ C Find true value of nhijmax
       call MPI_AllReduce(nhijmaxl,nhijmaxg,1,MPI_integer,MPI_max,
      .  MPI_Comm_World,MPIerror)
 #else
-      Node = 0
-      Nodes = 1
       nbandsmin = 1
       nbandsmax = nbands
       nbandspernode = nbands

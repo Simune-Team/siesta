@@ -45,8 +45,9 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: rcut
+      use parallel,     only : Node, Nodes, ProcessorY
+      use parallelsubs, only : HowManyMeshPerNode
+      use atmfuncs,     only : rcut
       use fdf
       use parsing
 #ifdef MPI
@@ -57,46 +58,34 @@ C
 
       integer           na, isa(na), mesh(3), nsm
       real              v(*)
-      double precision  cell(3,3), dot, field(3), xa(3,na)
+      real(dp)          cell(3,3), dot, field(3), xa(3,na)
       external          cross, dot, reclat, shaper
 
-c Internal parameters
-c tol : tolerance for bulk components of the electric field
-      double precision tol
-      parameter ( tol = 1.d-12 )
+C Internal parameters
+C tol : tolerance for bulk components of the electric field
+      real(dp), save :: tol = 1.0d-12
 
-c Internal variables
-      logical           found, frstme, isfield, orthog
+C Internal variables
+      logical           found, isfield, orthog
+      logical,  save :: frstme = .true.
       character         eunits*10, shape*8, line*130, names*20
       integer           i0(3), i1, i2, i3, ia, imesh, int(1),
      $                  is, iu, ix,
      .                  j1, j2, j3, last, lc(0:1), 
-     .                  nbcell, ni, nn, nr, nv, Node, Nodes, meshl(3),
+     .                  nbcell, ni, nn, nr, nv, meshl(3),
      .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,
      .                  Zoffset, Py, Pz, i30, i20, meshnsm(3),
      .                  NRemY, NRemZ
 #ifdef MPI
       integer           MPIerror, npl
 #endif
-      double precision  b1xb2(3), bcell(3,3), cfactor, dplane(3),
+      real(dp)          b1xb2(3), bcell(3,3), cfactor, dplane(3),
      .                  e(3), e0(3), eb1, eb2, eb3,
      .                  f(3), rc, rcell(3,3), v0,
      .                  xfrac, xmax(3), xmean, xmin(3)
-      save              e, f, frstme, isfield, i0, v0
+      save              e, f, isfield, i0, v0
 
-      data frstme /.true./
-*     data eunits /'          '/
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-c Find and store the electric field only the first time
+C Find and store the electric field only the first time
       if (frstme) then
         frstme = .false.
         isfield = .false.
@@ -105,7 +94,7 @@ c Find and store the electric field only the first time
         enddo
 
         if (Node.eq.0) then
-c       Read the electric field block from the fdf input file
+C Read the electric field block from the fdf input file
           found = fdf_block('ExternalElectricField',iu)
           if (found) then
             read(iu,'(a)') line
@@ -132,7 +121,7 @@ c       Read the electric field block from the fdf input file
         call MPI_Bcast(isfield,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-c       Check that the field is orthogonal to the bulk directions
+C Check that the field is orthogonal to the bulk directions
         if (isfield) then
           call shaper( cell, na, isa, xa, shape, nbcell, bcell )
           orthog = .true.
@@ -158,7 +147,7 @@ c       Check that the field is orthogonal to the bulk directions
           elseif (nbcell .eq. 3) then
             orthog = .false.
             do ix = 1,3
-              e(ix) = 0.d0
+              e(ix) = 0.0d0
             enddo
           endif
           if (Node.eq.0) then
@@ -175,17 +164,17 @@ c       Check that the field is orthogonal to the bulk directions
         endif
       endif
 
-c Find the origin of a shited cell, with the system centered in it
-c This is done at every call, because of possible atomic movements
+C Find the origin of a shited cell, with the system centered in it
+C This is done at every call, because of possible atomic movements
       if (isfield) then
 
-c       Find reciprocal unit cell and distance between lattice planes
+C Find reciprocal unit cell and distance between lattice planes
         call reclat( cell, rcell, 0 )
         do ix = 1,3
           dplane(ix) = sqrt( dot(rcell(1,ix),rcell(1,ix),3) )
         enddo
 
-c       Find the geometric center of the system
+C Find the geometric center of the system
         do ix = 1,3
           xmin(ix) =  1.d30
           xmax(ix) = -1.d30
@@ -200,20 +189,20 @@ c       Find the geometric center of the system
           enddo
         enddo
 
-c       Find the mesh index of the origin of the shifted cell
+C Find the mesh index of the origin of the shifted cell
         do ix = 1,3
           xmean = (xmin(ix) + xmax(ix)) / 2
           i0(ix) = nint( (xmean-0.5d0) * mesh(ix) )
         enddo
 
-c       Find the electric field in mesh coordinates, so that
-c       v = e*x = f*index
+C Find the electric field in mesh coordinates, so that
+C v = e*x = f*index
         do ix = 1,3
           f(ix) = dot( e, cell(1,ix), 3 ) / max( mesh(ix), 1 )
         enddo
 
-c       Find the potential at the origin of the shifted cell, so that
-c       the potential is zero at the center of the cell
+C Find the potential at the origin of the shifted cell, so that
+C the potential is zero at the center of the cell
         v0 = (- 0.5d0) * (f(1)*mesh(1) + f(2)*mesh(2) + f(3)*mesh(3))
       endif        
 
@@ -256,7 +245,7 @@ C Calculate starting point for grid
         Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
         Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
 
-c Add the electric field potential to the input potential
+C Add the electric field potential to the input potential
         imesh = 0
         i30 = Zoffset - 1
         do i3 = 0,meshl(3)-1
@@ -280,5 +269,3 @@ C Copy the electric field to the output array
         field(ix) = e(ix)
       enddo
       end
-
-

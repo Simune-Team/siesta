@@ -13,7 +13,7 @@ C ***
 
 C  Modules
       use precision, only: dp
-      use parallel, only: blocksize
+      use parallel, only: BlockSize, Node, Nodes, ProcessorY
       use atmfuncs, only: rcut, uion
       use atomlist, only: xa, xalast, indxuo, na_u
       use atomlist, only: isa, indxua, iza, lastkb, lasto
@@ -41,12 +41,16 @@ C  Modules
       use phonon, only: phonon_write_forces, phonon_restore_coords
       use phonon, only: phonon_set_coords
 
-      use m_ordern, only: ordern
-      use m_hsparse, only: hsparse
+      use densematrix
 
-      use parallel, only: set_processory, getnodeorbs
-      use writewave, only: initwave, wwave
-      use iopipes, only: forcestopipe, coordsfrompipe
+      use m_ordern,     only: ordern
+      use m_hsparse,    only: hsparse
+
+      use parallelsubs, only: set_processory, getnodeorbs,
+     .                        set_processorydefault, 
+     .                        set_blocksizedefault
+      use writewave,    only: initwave, wwave
+      use iopipes,      only: forcestopipe, coordsfrompipe
 
       implicit none
 
@@ -65,8 +69,6 @@ C  Modules
      .  nkpnt, nmove, nnia, ns, nsc(3), nscold(3), nscf, nspin, 
      .  ntm(3), ntcon, no_l, nxij, nwk, pmax, nkpol, nhist, io_sig
 
-      integer
-     .  Node, Nodes
 #ifdef MPI
       integer
      .  MPIerror, ntmp, procYval, procYdefault, blocksizedefault
@@ -150,7 +152,7 @@ C  Modules
      .  slabel*20, sname*150, shape*10, message*79
 
       external
-     .  anneal, chkdim, cgvc, fixed,
+     .  anneal, cgvc, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, ioxv, 
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb, nlefsm, 
@@ -183,9 +185,6 @@ C Initialise MPI and set processor number
       call MPI_Init( MPIerror )
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-#else
-      Node =  0
-      Nodes = 1
 #endif
 
       call io_setup     ! Initialize IOnode
@@ -207,7 +206,6 @@ C Start time counter ..................................................
       call timer( 'siesta', 0 )
       call timer( 'siesta', 1 )
       call timer( 'Setup', 1 )
-C ..................
 
       if (IOnode)  call timestamp('Start of run')
 
@@ -218,7 +216,9 @@ C Factors of conversion to internal units (Bohr,fs,Ry) ................
       Kelvin = eV / 11604.45_dp
       Debye  = 0.393430_dp
       amu    = 2.133107_dp
-C ..................
+
+C Nullify arrays
+      nullify(Haux,Saux,psi)
 
 C Initialize some variables
       DUext = 0.0_dp
@@ -348,7 +348,7 @@ C Read simulation data ................................................
      .            bulkm, taurelax,
      .            usesavelwf, usesavedm, usesavecg,
      .            mullipop, inspn, maxsav, nkick, wmixkick, 
-     .            pulfile, tempinit, dumpcharge, varcel, harrisfun )
+     .            pulfile, tempinit, dumpcharge, varcel, harrisfun)
 
 
 C Find some switches ..................................................
@@ -484,7 +484,7 @@ C  calculate spin populations for fixed spin case...
      $       'for collinear spin polarized calculations.'
              call die(message)
         endif
-        do i=1,2
+        do i = 1,2
           qs(i) = (qtot + (3-2*i)*ts) / 2.0_dp
         enddo
       endif
@@ -624,11 +624,10 @@ C the dimensions and repeat the initialisation
          endif
 
       endif
-
 C ......................
 
 C Find the grid for the calculation of the polarization..............
-      nkpol=1
+      nkpol = 1
       allocate(kpol(3,1))
       call memory('A','D',3,'siesta')
       allocate(wgthpol(1))
@@ -947,7 +946,7 @@ C Initialize neighb subroutine ........................................
         nnamax = max( nnamax, nnia )
       enddo
       if (nnamax .gt. maxna) then
-C       Increase maxna with safety margin when atoms move
+C Increase maxna with safety margin when atoms move
         maxna = nnamax + 0.10 * nnamax + 10
         overflow = .true.
       else
@@ -991,8 +990,7 @@ C List of nonzero hamiltonian matrix elements .........................
    44 nh = max(1,maxnh)
       maxnhold = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
-     .              iphorb, iphKB, nh, numh, listhptr, listh, 
-     .              Node, Nodes )
+     .              iphorb, iphKB, nh, numh, listhptr, listh )
       overflow = .false.
       if (nh .gt. maxnh) then
 C Increase maxnh with safety margin when atoms move
@@ -1140,7 +1138,7 @@ C Find vectors between orbital centers ................................
         call xijorb( negl, scell, na_u, na_s, xa,
      .               lasto, lastkb, rco, rckb,
      .               maxnh, numh, listhptr,
-     .               listh, xijo, Node, Nodes )
+     .               listh, xijo )
       else
         nxij = 1
         allocate(xijo(3,1))
@@ -1244,7 +1242,7 @@ C Find overlap matrix ...............................................
      .             maxna, maxnh, maxnh, lasto, iphorb, isa, 
      .             numh, listhptr, listh, numh, listhptr, listh, 
      .             min(nspin,2), Escf, jna, xij, r2ij,
-     .             fal, stress, S, Node, Nodes)
+     .             fal, stress, S )
 C ..................
 
 C Start of SCF iteration _____________________________________________
@@ -1333,7 +1331,7 @@ C Kinetic: energy, forces, stress and matrix elements .................
      .                 maxna, maxnh, maxnh, lasto, iphorb, isa, 
      .                 numh, listhptr, listh, numh, listhptr, listh, 
      .                 min(nspin,2), Dscf, jna, xij, r2ij,
-     .                 Ekin, fal, stressl, H, Node, Nodes) 
+     .                 Ekin, fal, stressl, H ) 
 #ifdef MPI
 C Global reduction of energy terms
 #ifdef NODAT
@@ -1350,11 +1348,27 @@ C ..................
 
 C Non-local-pseudop: energy, forces, stress and matrix elements .......
         if (first.or.last) then
-          call nlefsm(scell, na_u, na_s, isa, xa, indxua, maxnh,
-     .                maxnh, lasto, lastkb, iphorb, iphKB, numh,
-     .                listhptr, listh, numh, listhptr, listh, 
-     .                min(nspin,2), Dscf, Enl, fal, stressl, H,
-     .                Node, Nodes) 
+          call nlefsm(scell, na_u, na_s, isa, xa, indxua, maxna,
+     .                maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
+     .                numh, listhptr, listh, numh, listhptr, listh, 
+     .                min(nspin,2), Dscf, Enl, fal, stressl, H)
+        
+C Check whether maxna has been increased during nlefsm & resize if needed
+          if (maxna.gt.size(jna)) then
+            call memory('D','I',size(jna),'siesta')
+            deallocate(jna)
+            call memory('D','D',size(r2ij),'siesta')
+            deallocate(r2ij)
+            call memory('D','D',size(xij),'siesta')
+            deallocate(xij)
+            allocate(jna(maxna))
+            call memory('A','I',maxna,'siesta')
+            allocate(r2ij(maxna))
+            call memory('A','D',maxna,'siesta')
+            allocate(xij(3,maxna))
+            call memory('A','D',3*maxna,'siesta')
+          endif
+
 #ifdef MPI
 C Global reduction of energy terms
 #ifdef NODAT
@@ -1449,7 +1463,7 @@ C Orthonormalization forces ...........................................
      .                 maxna, maxnh, maxnh, lasto, iphorb, isa, 
      .                 numh, listhptr, listh, numh, listhptr, listh, 
      .                 min(nspin,2), Escf, jna, xij, r2ij,
-     .                 fal, stressl, S, Node, Nodes) 
+     .                 fal, stressl, S ) 
         endif
 C ..................
 
@@ -2269,7 +2283,7 @@ C Global reduction of spin components
         endif
       endif
 
-c Print electric dipole
+C Print electric dipole
       if (IOnode) then
         if (shape .ne. 'bulk') then
           write(6,'(/,a,3f12.6)')
@@ -2282,57 +2296,29 @@ c Print electric dipole
 
 C Calculation of the bulk polarization using the Berry phase
 C formulas by King-Smith and Vanderbilt
-C Attention H0 is used as an auxiliar array (It does not contain
-C any useful information any more ) !!!!
+C Attention H0 is used as an auxiliary array
       if (nkpol.gt.0) then
         call KSV_pol(na_u, na_s, xalast, rmaxo, scell, ucell,
      .               no_u, no_l, no_s, nspin, qspin, maxna, 
      .               maxnh, nkpol, numh, listhptr, listh, 
      .               H, S, H0, xijo, indxuo, isa, iphorb, 
      .               iaorb, lasto, jna, xij, r2ij,shape,
-     .               nkpol,kpol,wgthpol, polR, polxyz) 
+     .               nkpol,kpol,wgthpol, polR, polxyz ) 
       endif
-      if (nkpol.gt.0.and.IOnode) then
-        do ispin=1,nspin
-          if (nspin.gt.1) then
-            if (ispin.eq.1) write(6,'(/,a)')
-     .       'siesta: Macroscopic polarization for spin Up:'
-            if (ispin.eq.2) write(6,'(/,a)')
-     .       'siesta: Macroscopic polarization for spin Down:'
-          endif
-          write(6,'(/,a)')
-     .     'siesta: Macroscopic polarization per unit cell (a.u.):'
-          write(6,'(a,3f12.6)')
-     .     'siesta: Along the lattice vectors  ',
-     .       (polR(ix,ispin),ix=1,3)
-          write(6,'(a,3f12.6)')
-     .     'siesta: Along cartesian directions ',
-     .      (polxyz(ix,ispin),ix=1,3)
-          write(6,'(/,a)')
-     .     'siesta: Macroscopic polarization per unit cell (Debye):'
-          write(6,'(a,3f12.6)')
-     .     'siesta: Along the lattice vectors  ',
-     .       (polR(ix,ispin)/Debye,ix=1,3)
-          write(6,'(a,3f12.6)')
-     .     'siesta: Along cartesian directions ',
-     .      (polxyz(ix,ispin)/Debye,ix=1,3) 
-        enddo 
-        if (nspin.gt.1) then 
-C Modified so that compiler is happy when nspin = 1 and bounds checking
-C is turned on. JDG
-          write(6,'(/,a,/a,3f12.6)')
-     .      'siesta: Sum along cartesian directions (a.u.): ',
-     .      'siesta: ',(polxyz(ix,1)+polxyz(ix,min(nspin,2)),ix=1,3)
-          write(6,'(/,a,/a,3f12.6)')
-     .      'siesta: Sum along cartesian directions (Debye): ',
-     .      'siesta: ',((polxyz(ix,1)+polxyz(ix,min(nspin,2)))/Debye,
-     .      ix=1,3)
-        endif
 
-      endif
+C Calculation of the optical conductivity
+C Attention H0, Eold, Dold are used as auxiliary arrays
+      call optical(na_u, na_s, xa, scell, ucell,
+     .             no_u, no_l, no_s, nspin, qspin,
+     .             maxna, maxnh, numh, listhptr, listh, H, S, H0,
+     .             Eold(1,1), Dold(1,1),
+     .             xijo, indxuo, indxua, ebk, ef, temp,
+     .             isa, iphorb, iphKB, iaorb, lasto, lastkb,
+     .             jna, xij, r2ij, shape, slabel)
+
 c...................................
 
-c Save electron density and potential
+C Save electron density and potential
       if (IOnode) then
         savrho = fdf_boolean( 'SaveRho',    dumpcharge .or. .false.)
         savdrh = fdf_boolean( 'SaveDeltaRho',               .false.)
@@ -2389,10 +2375,10 @@ C Find the desired energy range
           read(iu,'(a)') line
           p=>digest(line)
           if (.not. match(p,"vvn"))
-     $       call die("Wrong format in LocalDensityofStates")
+     .       call die("Wrong format in LocalDensityofStates")
           factor = fdf_convfac( names(p,1), 'Ry' )
-          e1 = values(p,1) * factor
-          e2 = values(p,2) * factor
+          e1 = values(p,1)*factor
+          e2 = values(p,2)*factor
           call destroy(p)
         endif
 #ifdef MPI
@@ -2465,12 +2451,3 @@ C Finalize MPI
 #endif
 
       end
-
-
-
-
-
-
-
-
-

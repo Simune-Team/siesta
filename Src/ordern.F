@@ -70,6 +70,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -102,7 +103,7 @@ C Internal variables ..........................................................
 
       integer
      .  in, io, iio, iopt, iord, iter, iterm, ncmax, nctmax, 
-     .  nh, nbands, nspin, Node, Nodes,
+     .  nh, nbands, nspin, 
      .  nbasisloc, nbasismax, nbandsloc, ntmp, BNode
 
       integer, dimension(:,:), allocatable, save ::
@@ -146,14 +147,10 @@ C ...................
 
 C Get Node number and local number of orbitals in unit cell
 #ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
       call GetNodeOrbs(nbasis,Node,Nodes,nbasisloc)
       call MPI_AllReduce(nbasisloc,nbasismax,1,MPI_integer,
      .  MPI_Max,MPI_Comm_World,MPIerror)
 #else
-      Node = 0
-      Nodes = 1
       nbasisloc = nbasis
       nbasismax = nbasis
 #endif

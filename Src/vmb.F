@@ -24,6 +24,7 @@ C
 C  Modules
 C
       use precision
+      use parallel,    only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -38,15 +39,15 @@ C
       integer 
      .  nat, isa(nat)
 
-      double precision
+      real(dp)
      .  mass(nat), ttemp, va(3,nat), xa(3,nat)
 
 C Internal variables ..................
 
       integer 
-     .  iseed, i, ix, iy, ntcon, Node
+     .  iseed, i, ix, iy, ntcon
 
-      double precision
+      real(dp)
      .  cell(3,3), stress(3,3), fa(3,nat), 
      .  massi, tempe, velo, vtot(3)
 
@@ -84,7 +85,7 @@ C ...............
 
 C Impose constraint on zero center of mass velocity ....................
         do i = 1,nat
-          do ix=1,3
+          do ix = 1,3
             va(ix,i) = va(ix,i) - vtot(ix)/nat
           enddo
         enddo
@@ -112,27 +113,25 @@ C
 
 C Zero dummy matrices for stress and cell (needed in
 C call to constrains routine)
-      do ix=1,3
-      do iy=1,3
-        cell(ix,iy)=0.0d0
-        stress(ix,iy)=0.0d0
-      enddo
+      do ix = 1,3
+        do iy = 1,3
+          cell(ix,iy) = 0.0d0
+          stress(ix,iy) = 0.0d0
+        enddo
       enddo
 
-      do i=1,nat
-      do ix=1,3
-        fa(ix,i)=va(ix,i)*mass(i)
-      enddo
+      do i = 1,nat
+        do i x =1,3
+          fa(ix,i) = va(ix,i)*mass(i)
+        enddo
       enddo
       call fixed( cell, stress, nat, isa, mass, xa, fa,
      .                  stress, fa, ntcon )
-      do i=1,nat
-      do ix=1,3
-      va(ix,i)=fa(ix,i)/mass(i)
+      do i = 1,nat
+        do ix = 1,3
+          va(ix,i) = fa(ix,i)/mass(i)
+        enddo
       enddo
-      enddo
-
-C ...............
 
       if (nat .le. 1) return
 
@@ -141,7 +140,7 @@ C Correct velocity to exact temperature .....................
 
       if (abs(tempe-ttemp) .ge. 1.e-4 .and. tempe .ge. 1.e-4) then
         do i = 1,Nat
-          do ix=1,3
+          do ix = 1,3
             va(ix,i) = va(ix,i) * dsqrt(ttemp/tempe)
           enddo
         enddo

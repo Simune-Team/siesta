@@ -3,8 +3,7 @@
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
-     .                   Haux, Saux, psi, Dk, Ek, aux,
-     .                   nuotot, Node, Nodes)
+     .                   Haux, Saux, psi, Dk, Ek, aux, nuotot )
 C *********************************************************************
 C Calculates the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -51,8 +50,6 @@ C real*8  kpoint(3,nk)        : k point vectors
 C real*8  wk(nk)              : k point weights (must sum one)
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
-C integer Node                : local processor
-C integer Nodes               : number of processors
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo*4,nk)        : Eigenvalues
 C real*8 qo(maxo*4,nk)        : Occupations of eigenstates
@@ -80,7 +77,9 @@ C  Modules
 C
       use precision
       use sys
-      use parallel
+      use parallel,      only : Node, Nodes, BlockSize
+      use parallelsubs,  only : LocalToGlobalOrb
+      use m_fermid,      only : fermid, stepf
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -93,19 +92,19 @@ C
 #endif
 
       integer
-     .  maxuo, maxnd, maxnh, maxo, nk, no, nuo, nuotot, Node, Nodes
+     .  maxuo, maxnd, maxnh, maxo, nk, no, nuo, nuotot
 
       integer 
      .  indxuo(no), listh(maxnh), numh(nuo), listd(maxnd), numd(nuo),
      .  listhptr(*), listdptr(*)
 
-      real*8
+      real(dp)
      .  Dnew(maxnd,4),
      .  e1, e2, ef, Enew(maxnd,4), eo(maxo*4,nk), Entropy,
      .  H(maxnh,4), kpoint(3,nk), qo(maxo*4,nk), qtot,
-     .  S(maxnh), stepf, temp, wk(nk), xij(3,maxnh)
+     .  S(maxnh), temp, wk(nk), xij(3,maxnh)
      
-      real*8
+      real(dp)
      .  aux(5,2*nuotot), Dk(2,2,nuotot,2,nuo), Ek(2,2,nuotot,2,nuo), 
      .  Haux(2,2,nuotot,2,nuo), psi(2,2,nuotot,nuo*2), 
      .  Saux(2,2,nuotot,2,nuo)
@@ -113,8 +112,7 @@ C
       logical
      .  getD
 
-      external
-     .  cdiag, fermid, stepf
+      external    cdiag
 
 C  Internal variables .............................................
       integer
@@ -123,7 +121,7 @@ C  Internal variables .............................................
       integer, allocatable, save :: HighestOccupiedBand(:)
       logical
      .  lfound
-      real*8
+      real(dp)
      .  ckx, ee, kxij, pipj1, pipj2, qe, skx, t
 C  ....................
 

@@ -13,14 +13,15 @@ C
       use fdf
       use ionew
       use precision
+      use parallel,     only : Node, Nodes
       use basis_types
       use basis_specs
       use basis_io
 !      use atmparams
-      use old_atmfuncs, only: nsmax
-      use old_atmfuncs, only: clear_tables, allocate_old_arrays
+      use old_atmfuncs, only : nsmax
+      use old_atmfuncs, only : clear_tables, allocate_old_arrays
 
-      use atom, only: atom_main, prinput
+      use atom,         only : atom_main, prinput
 C
 C     It has to be MPI-aware since it calls routines down the line...
 C
@@ -30,7 +31,7 @@ C
 
       implicit none
 
-      integer is, Node, Nodes
+      integer is
 !     integer narg
       character(len=50) filein
 

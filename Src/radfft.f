@@ -95,8 +95,8 @@ C Internal variable types and dimensions ----------------------------
       DOUBLE PRECISION, DIMENSION(:,:,:), ALLOCATABLE, SAVE ::
      .  P
 
-      EXTERNAL
-     .  BESSPH, CHKDIM, TIMER, MEMORY
+      external
+     .  bessph, timer, memory
 C -------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------

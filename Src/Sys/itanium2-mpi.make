@@ -11,7 +11,7 @@ FFLAGS_DEBUG= -g -O0
 LDFLAG=#-Vaxlib 
 RANLIB=echo
 LIBS=  
-SYS=bsd
+SYS=scalapack_extra
 DEFS=-DMPI -DNODAT
 MPI_INTERFACE=libmpi_f90.a
 #

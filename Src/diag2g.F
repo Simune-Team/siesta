@@ -2,8 +2,7 @@
      .                   numh, listhptr, listh, numd, listdptr,
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
-     .                   Haux, Saux, psi, aux, nuotot,
-     .                   Node, Nodes)
+     .                   Haux, Saux, psi, aux, nuotot )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -39,8 +38,6 @@ C                               (to find local density of states)
 C                               Not used if e1 > e2
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
-C integer Node                : local processor
-C integer Nodes               : number of processors
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo*2)           : Eigenvalues
 C real*8 qo(maxo*2)           : Occupations of eigenstates
@@ -66,7 +63,9 @@ C  Modules
 C
       use precision
       use sys
-      use parallel
+      use parallel,     only : Node, Nodes, BlockSize
+      use parallelsubs, only : LocalToGlobalOrb
+      use m_fermid,     only : fermid, stepf
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -79,32 +78,31 @@ C
 #endif
 
       integer
-     .  maxo, maxuo, maxnd, maxnh, no, nuo, nuotot, Node, Nodes
+     .  maxo, maxuo, maxnd, maxnh, no, nuo, nuotot
 
       integer 
      .  listh(maxnh), numh(nuo), listhptr(nuo),
      .  listd(maxnd), numd(nuo), listdptr(nuo)
 
-      real*8
+      real(dp)
      .  Dnew(maxnd,4), e1, e2, ef, Enew(maxnd,4), Entropy, eo(maxo*2),
-     .  H(maxnh,4), qo(maxo*2), qtot, S(maxnh), stepf, temp
+     .  H(maxnh,4), qo(maxo*2), qtot, S(maxnh), temp
      
-      real*8
+      real(dp)
      .  aux(5,2*nuotot), Haux(2,2,nuotot,2,nuo),
      .  psi(2,2,nuotot,2*no), Saux(2,2,nuotot,2,nuo)
 
       logical
      .  getD
 
-      external
-     .  cdiag, fermid, stepf
+      external cdiag
 
 C  Internal variables .............................................
       integer           BNode, BTest, i, ie, ierror, iie, iio,
      .                  ind, io, j, jo, nd
       integer           HighestOccupiedBand
       logical           lfound
-      real*8            ee, pipj, qe, t
+      real(dp)          ee, pipj, qe, t
 C  ....................
 
 C Initialize Hamiltonian and overlap matrices in full format .....
@@ -150,7 +148,7 @@ C Check if we are done ................................................
       if (.not.getD) return
 
 C Find new Fermi energy and occupation weights ........................
-      call fermid( 2, 2, 1, 1.d0, maxo, no, eo, 
+      call fermid( 2, 2, 1, (/1.d0/), maxo, no, eo, 
      .             temp, qtot, qo, ef, Entropy )
 
 *     write(6,'(/,a,/,(10f7.2))') 'diag2g: eo =', eo

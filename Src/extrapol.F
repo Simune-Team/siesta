@@ -54,7 +54,8 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,     only : Node
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -75,29 +76,22 @@ C
      .  list(nmax),listold(nmax),num(nmrowl),numold(nmrowl),
      .  listptr(nmrowl),listptrold(nmrowl)
 
-      double precision
+      real(dp)
      .  mm2(nmax,nspin),mnew(nmax,nspin)
  
 C  Internal variables .......................................................
 
       integer
-     .  i,in,ind,ispin,j,Node,nh,nrmax
+     .  i,in,ind,ispin,j,nh,nrmax
       logical
      .  changed
-      double precision
+      real(dp)
      .  msave
-      double precision, dimension(:), allocatable :: aux, mtmp
+      real(dp), dimension(:), allocatable :: aux, mtmp
 
       external
      .  memory
 C ...........................................................................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C Find the maximum number of non-zero elements in matrices
       nh = listptr(nmrowl) + num(nmrowl)

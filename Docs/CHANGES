@@ -1,6 +1,236 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.17
+Date: 2004/07/19 12:00 GMT
+Title: More code cleanup after optical props import
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+A number of mostly cosmetic changes were necessary to make the code
+acceptable by the Intel Compiler.
+
+Files:
+
+	fermid.F : Changed into a module
+
+	Makefile bands.F conjgr.f dfscf.f 
+	diag2g.F diag2k.F diagg.F diagk.F diagkp.F diagsprl.F
+	diagon.F optical.F phirphi_opt.f rdiag.F 
+	timer.F transition_rate.F writewave.F: Assorted cosmetic changes.
+
+	scalapack_extra.f: New file to hold SCALAPACK routines not
+                           in old versions.
+	Sys/itanium2-mpi.make: Use scalapack_extr
+
+	version.F90: Customary changes.
+
+=======================================================================
+Version: 1.4.16
+Date: 2004/07/14 10:40
+Title: HighestOccupiedBand fix
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The setting of the highest occupied orbital has been changed to
+come from the top downwards to avoid problems with the
+SingleExcitation option.
+
+Files:
+
+diagg.F   Setting of HighestOccupiedBand changed
+diagk.F   Setting of HighestOccupiedBand changed
+diagkp.F  Setting of HighestOccupiedBand changed
+
++ usual changes to CHANGES, version.F90
+=======================================================================
+Version: 1.4.15
+Date: 2004/07/13 11:30
+Title: Optical properties & improved gamma point diagonalisation
+Author: Daniel Sanchez-Portal and 
+        Julian Gale <julian@power.curtin.edu.au>
+
+Optical property calculation reintroduced, modified for improved
+efficiency, and parallelised. It should be noted that while it works
+in parallel there is scope for improvement of the performance.
+
+Arrays Haux, Saux & psi which are dense moved into a new module.
+
+Memory requirements for gamma point divide and conquer option reduced 
+by adding SIESTA specific routine that avoids copying.
+
+Parallel divide and conquer for gamma point added.
+
+Node & Nodes placed in parallel module.
+
+Memory accounting made more reliable.
+
+Files:
+
+In Src/
+
+Makefile           New routines & modules added
+alloc.F90          Subroutine count changed so that memory is always
+                   called to ensure that total memory count is correct.
+atmfuncs.f         rphiatm made public for benefit of phirphi_opt
+atomlwf.F          Node/Nodes now accessed from parallel module
+bands.F            Node/Nodes now accessed from parallel module
+                   Haux, Saux & psi accessed from module
+broadcast_basis.F  Node/Nodes now accessed from parallel module
+cdiag.F            Node/Nodes now accessed from parallel module
+cellxc.F           Node/Nodes now accessed from parallel module
+cgvc.F             Node now accessed from parallel module
+cgwf.F             Node/Nodes now accessed from parallel module
+chempot.F          Node/Nodes now accessed from parallel module
+chkgmx.F           Removed
+chkgmx.f           chkgmx.F but with no need for cpp since Node is
+                   now accessed from parallel module
+denchar.F          Node/Nodes now accessed from parallel module
+denmat.F           Node/Nodes now accessed from parallel module
+densematrix.f      Module containing Haux, Saux & psi added
+detover.F          Node/Nodes now accessed from parallel module
+dhscf.F            Node now accessed from parallel module
+diagg.F            No. of eigenvectors argument added to rdiag call
+                   Node/Nodes now accessed from parallel module
+diag2g.F           Node/Nodes now accessed from parallel module
+diag2k.F           Node/Nodes now accessed from parallel module
+diagk.F            Node/Nodes now accessed from parallel module
+diagkp.F           Node/Nodes now accessed from parallel module
+diagon.F           Arrays Haux, Saux & psi now accessed from module
+                   Node/Nodes now accessed from parallel module
+diagpol.f          Arrays Haux & Saux now passed in
+diagsprl.F         Node/Nodes now accessed from parallel module
+dipole.F           Node/Nodes accessed from parallel module
+dnaefs.f           Call to chkdim removed
+dsyevds.f          Modified version of Lapack routine to save memory
+dynamics.F         Renamed to dynamics.f
+dynamics.f         As per dynamics.F except that Node is accessed from
+                   parallel module & uses module precision
+efield.F           Use of "double precision" replaced by real(dp)
+                   Node/Nodes accessed from parallel module
+eggbox.F           Node now accessed from parallel module
+egandd.F           Node/Nodes accessed from parallel module
+ener3.F            Node/Nodes accessed from parallel module
+extrapol.F         Node/Nodes accessed from parallel module
+extrapolon.F       Node/Nodes accessed from parallel module
+fermid.F           Node/Nodes accessed from parallel module
+                   Precision taken from module
+fft3d.F            Node/Nodes accessed from parallel module
+fixed.F            Node/Nodes accessed from parallel module
+gauleg.f           File removed since it is no longer used
+gen-basis.F        Node/Nodes accessed from parallel module
+gradient.F         Node/Nodes accessed from parallel module
+grdsam.F           Node accessed from parallel module
+hsparse.f          Node/Nodes accessed from parallel module
+idiag.f            Fast return added for case where MOLD is diagonal
+                   already to avoid crash in kgrid
+initdm.F           Node/Nodes accessed from parallel module
+iodm.F             Node/Nodes accessed from parallel module
+iohs.F             Node/Nodes accessed from parallel module
+iolwf.F            Node/Nodes accessed from parallel module
+ionew.F            Node accessed from parallel module
+iorho.F            Node/Nodes accessed from parallel module
+ioxv.F             Node accessed from parallel module
+kgrid.F            Node accessed from parallel module
+kgridinit.F        Cosmetic changes & Node accessed from parallel module
+kinefsm.f          Call to chkdim removed
+                   Node/Nodes accessed from parallel module
+ksv.F              Renamed to ksv.f as cpp now not needed
+ksv.f              As per ksv.F, but Node accessed from parallel module
+                   Arrays Haux, Saux & psi now accessed from module
+                   Size of psi arrays is reduced by a factor of nspin
+                   which is not actually needed.
+                   Output that was in the main routine is now here.
+listsc.f           Redundant reference to external chkdim removed
+madelung.F         Renamed to madelung.f as cpp now not needed
+madelung.f         As per madelung.F, but Node accessed from parallel module
+memory.F           Node/Nodes accessed from parallel module
+meshmatrix.F       Use of "double precision" replaced by real(dp)
+                   Node/Nodes accessed from parallel module
+meshsubs.F         Node/Nodes accessed from parallel module
+minvec.f           Precision now set from module
+mulliken.F         Node/Nodes accessed from parallel module
+naefs.f            Call to chkdim removed
+nlefsm.f           Redundant reference to external chkdim removed
+                   maxna now passed in so that it's size is increased
+                   prior to possible optical calculation
+                   Node/Nodes accessed from parallel module
+ofc.f              Redundant reference to external chkdim removed
+on_subs.F          Node/Nodes accessed from parallel module
+optical.F          Added from version 0.15 & updated
+                   Node/Nodes accessed from parallel module
+ordern.F           Node/Nodes accessed from parallel module
+overfsm.f          Node/Nodes accessed from parallel module
+parallel.f         Node/Nodes placed in module
+parallelsubs.f     Split out of parallel.f to contain subroutines
+                   Default BlockSize increased to 24
+pdos.F             Node/Nodes accessed from parallel module
+                   Arrays Haux, Saux & psi now accessed from module
+pdosg.F            No. of eigenvectors argument added to rdiag call
+                   Node/Nodes accessed from parallel module
+pdosk.F            Node/Nodes accessed from parallel module
+phirphi.f          Use of chkdim removed
+                   Calls to matel now wrapped by check on whether dk is
+                   significant to avoid redundant calculation.
+                   Node/Nodes accessed from parallel module
+phirphi_opt.f      Added from version 0.15 & updated
+                   Calls to matel now wrapped by check on whether dk is
+                   significant to avoid redundant calculation.
+                   Node/Nodes accessed from parallel module
+phonon.F           Reference to chkdim being external removed
+                   Node/Nodes accessed from parallel module
+plcharge.F         Node/Nodes accessed from parallel module
+poison.F           Node/Nodes accessed from parallel module
+propor.f           Precision now set from module
+pulayx.F           Node/Nodes accessed from parallel module
+radfft.f           Redundant reference to external chkdim removed
+rdiag.F            Rewritten version added
+                   Node/Nodes accessed from parallel module
+readsp.F           Node/Nodes now accessed from parallel module
+redata.F           Node/Nodes now accessed from parallel module
+                   Default MemoryFactor reduced to 1.2
+reinit.F           Node/Nodes now accessed from parallel module
+reoptical.F        Added from version 0.15 & updated
+                   Node/Nodes now accessed from parallel module
+repol.F            Use of "double precision" replaced by real(dp)
+                   Node/Nodes now accessed from parallel module
+savepsi.F          Node/Nodes now accessed from parallel module
+shaper.f           Redundant reference to external chkdim removed
+siesta.F           Pointers Haux, Saux & psi nullified
+                   Calls to optical added
+                   Resizing of arrays after nlefsm added if required
+                   based on maxna
+                   Output for KSV now moved into KSV_pol
+                   Node/Nodes accessed from parallel module
+sys.F              Node/Nodes now accessed from parallel module
+timer.F            Node now accessed from parallel module
+                   Made implicit real(dp) rather than double precision
+transition_rate.F  Added from version 0.15 & updated
+                   Node/Nodes accessed from parallel module
+vmb.F              Use of "double precision" replaced by real(dp)
+                   Node/Nodes accessed from parallel module
+xijorb.f           Node/Nodes accessed from parallel module
+writewave.F        Arrays Haux, Saux & psi now accessed from module
+                   Node/Nodes accessed from parallel module
+
+In Src/Libs/
+
+lapack.f           Extra-routines added for rdiag.F
+
+In Util/
+
+optical            Directory renamed to Optical for style consistency
+
+In Util/Optical
+
+README             Reinstated from version 0.15
+input.f            Reinstated from version 0.15
+optical.f          Reinstated from version 0.15
+si.EPSIMG          Reinstated from version 0.15
+
+In Docs/
+
+siesta.tex         Optical option documented
+CHANGES            This documentation added!
+=======================================================================
 Version: 1.4.14
 Date: 2004/06/23 14:30
 Title: Diag speed up
@@ -34,7 +264,7 @@ Src/electrostatic.f npairs is now used from atm_types so that the value is
 Src/dfscf.f         indxuo now accessed from module
 Src/dhscf.F         First dimension of DVxcdn made equal to ntpl for
                     correct bounds checking in cellxc.F even though
-                    never referenced
+                    never referenced 
                     indxuo no longer passed through
 Src/grdsam.F        indxuo no longer passed through
 Src/meshmatrix.F    indxuo now accessed from module

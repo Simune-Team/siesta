@@ -6,8 +6,7 @@
 
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
-     .                    nlhmax, numh, 
-     .                    listhptr, listh, Node, Nodes )
+     .                    nlhmax, numh, listhptr, listh )
 C *********************************************************************
 C Routine to find nonzero hamiltonian matrix elements.
 C Writen by J.Soler and P.Ordejon, June 1997
@@ -57,23 +56,25 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: rcut
-      use listsc_module, only: listsc_init
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GetNodeOrbs, GlobalToLocalOrb
+      use atmfuncs,      only : rcut
+      use listsc_module, only : listsc_init
       use sorting
 
-      implicit          none
-      integer, intent(in)          ::  na
-      integer, intent(in)          ::  iphkb(:), iphorb(:)
-      integer, intent(in)          ::  isa(na), lastkb(0:na),
-     $                                 lasto(0:na)
-      integer, intent(in)          ::  nsc(3), Node, Nodes
-      double precision, intent(in) ::  cell(3,3), xa(3,na)
-      logical, intent(in)          ::  negl
+      implicit none
 
-      integer, intent(inout)       ::  nlhmax
-      integer, intent(out)         ::  listh(:), listhptr(:)
-      integer, intent(out)         ::  numh(:)
+      integer,  intent(in)          ::  na
+      integer,  intent(in)          ::  iphkb(:), iphorb(:)
+      integer,  intent(in)          ::  isa(na), lastkb(0:na),
+     $                                  lasto(0:na)
+      integer,  intent(in)          ::  nsc(3)
+      real(dp), intent(in)          ::  cell(3,3), xa(3,na)
+      logical,  intent(in)          ::  negl
+
+      integer,  intent(inout)       ::  nlhmax
+      integer,  intent(out)         ::  listh(:), listhptr(:)
+      integer,  intent(out)         ::  numh(:)
 
       external          neighb, timer, memory
 
@@ -81,10 +82,9 @@ C Internal variables -----------------
 C maxna  = maximum number of neighbour atoms of any atom
 C maxnkb = maximum number of neighbour KB projectors of any orbital
 C tol    = tolerance for comparing vector-coordinates
-      integer, save ::
+      integer,  save ::
      .  maxna, maxnkb
-      double precision tol
-      parameter ( tol    = 1.d-8 )
+      real(dp), save :: tol = 1.0d-8
 
       integer
      .  ia, iio, ikb, inkb, io, ioa, is, isel, 
@@ -95,14 +95,14 @@ C tol    = tolerance for comparing vector-coordinates
       integer, dimension(:), allocatable, save ::
      .  jana, index, knakb, ibuffer
 
-      double precision
+      real(dp)
      .  rci, rcj, rck, rij, rik, rjk,
      .  rmax, rmaxkb, rmaxo
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  r2ij, rckb, dpbuffer
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xij
 
       logical, dimension(:), allocatable, save :: conect

@@ -2,7 +2,7 @@
      .                  maxna, maxnh, maxnd, lasto, iphorb, isa, 
      .                  numd, listdptr, listd, numh, listhptr, listh, 
      .                  nspin, Dscf, jna, xij, r2ij, Ekin, 
-     .                  fa, stress, H, Node, Nodes)
+     .                  fa, stress, H )
 C *********************************************************************
 C Kinetic contribution to energy, forces, stress and matrix elements.
 C Energies in Ry. Lengths in Bohr.
@@ -39,8 +39,6 @@ C integer Dscf(maxnd,nspin): Density matrix
 C integer jna(maxna)       : Aux. space to find neighbours (indexes)
 C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
 C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
-C integer Node             : Local node number
-C integer Nodes            : Total number of nodes
 C **************************** OUTPUT *********************************
 C real*8 Ekin              : Kinetic energy in unit cell
 C ********************** INPUT and OUTPUT *****************************
@@ -52,23 +50,24 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: rcut
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GlobalToLocalOrb
+      use atmfuncs,      only : rcut
 
       implicit none
 
       integer
-     . maxna, maxnd, maxnh, maxo, na, no, nspin, nua, Node, Nodes
+     .  maxna, maxnd, maxnh, maxo, na, no, nspin, nua
 
       integer
-     . indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
-     . listd(maxnd), listh(maxnh), numd(*), numh(*), listdptr(*),
-     . listhptr(*)
+     .  indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
+     .  listd(maxnd), listh(maxnh), numd(*), numh(*), listdptr(*),
+     .  listhptr(*)
 
-      double precision
-     . scell(3,3), Dscf(maxnd,nspin), Ekin, 
-     . fa(3,nua), H(maxnh,nspin), r2ij(maxna), rmaxo, 
-     . stress(3,3), xa(3,na), xij(3,maxna)
+      real(dp)
+     .  scell(3,3), Dscf(maxnd,nspin), Ekin, 
+     .  fa(3,nua), H(maxnh,nspin), r2ij(maxna), rmaxo, 
+     .  stress(3,3), xa(3,na), xij(3,maxna)
 
 C Internal variables ..................................................
   
@@ -76,14 +75,14 @@ C Internal variables ..................................................
      .  ia, ind, io, iio, ioa, is, ispin, ix, 
      .  j, ja, jn, jo, joa, js, jua, jx, nnia
 
-      double precision
+      real(dp)
      .  fij(3), grTij(3) , rij, Tij, volcel, volume
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  Di, Ti
 
       external
-     .  chkdim, neighb, volcel, timer, memory
+     .  neighb, volcel, timer, memory
 C ......................
 
 C Start timer
@@ -98,7 +97,7 @@ C Allocate local memory
       volume = nua * volcel(scell) / na
 
       nnia = maxna
-      call neighb( scell, 2.d0*rmaxo, na, xa, 0, 0,
+      call neighb( scell, 2.0d0*rmaxo, na, xa, 0, 0,
      .             nnia, jna, xij, r2ij )
 
       Ekin = 0.0d0
@@ -107,9 +106,8 @@ C Allocate local memory
 
       do ia = 1,nua
         nnia = maxna
-        call neighb( scell, 2.d0*rmaxo, na, xa, ia, 0,
+        call neighb( scell, 2.0d0*rmaxo, na, xa, ia, 0,
      .               nnia, jna, xij, r2ij )
-        call chkdim( 'kinefsm', 'maxna', maxna, nnia, 1 )
         do io = lasto(ia-1)+1,lasto(ia)
 
 C Is this orbital on this Node?
@@ -118,7 +116,7 @@ C Is this orbital on this Node?
 
 C Valid orbital 
             do j = 1,numd(iio)
-              ind = listdptr(iio)+j
+              ind = listdptr(iio) + j
               jo = listd(ind)
               do ispin = 1,nspin
                 Di(jo) = Di(jo) + Dscf(ind,ispin)
@@ -152,7 +150,7 @@ C Valid orbital
             enddo
             do j = 1,numd(iio)
               jo = listd(listdptr(iio)+j)
-              Di(jo) = 0.d0
+              Di(jo) = 0.0d0
             enddo
             do j = 1,numh(iio)
               ind = listhptr(iio)+j
@@ -160,7 +158,7 @@ C Valid orbital
               do ispin = 1,nspin
                 H(ind,ispin) = H(ind,ispin) + Ti(jo)
               enddo
-              Ti(jo) = 0.d0
+              Ti(jo) = 0.0d0
             enddo
           endif
         enddo
@@ -175,5 +173,4 @@ C Deallocate local memory
 C Finish timer
       call timer( 'kinefsm', 2 )
 
-      return
       end

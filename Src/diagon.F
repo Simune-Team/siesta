@@ -80,10 +80,14 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
       use fdf
+      use densematrix,  only : Haux, Saux, psi
+      use alloc
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
+     $                         mpi_logical
 #endif
 
       implicit none
@@ -95,7 +99,7 @@ C
      .  indxuo(no), listh(maxnh), numh(*), listd(maxnd), numd(*),
      .  listhptr(*), listdptr(*)
 
-      double precision
+      real(dp)
      .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), Entropy,
      .  eo(maxo,maxspn,nk), H(maxnh,nspin), kpoint(3,nk), 
      .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), 
@@ -113,33 +117,26 @@ C
      .  MPIerror
       external
      .  diagkp
-      logical
-     .  frstme
 #endif
 
       logical
      .  getD, getPSI
 
       integer
-     .  io, iuo, iu, naux, nhs, npsi, nuo, Node, Nodes
+     .  io, iuo, iu, naux, nhs, npsi, nuo
 
-C     Dynamic arrays
-      double precision, dimension(:), allocatable, save :: Haux, Saux
-      double precision, dimension(:), allocatable, save :: psi, aux
-      integer         , dimension(:), allocatable, save :: muo
+C Dynamic arrays
+      real(dp), dimension(:), allocatable, save :: aux
+      integer,  dimension(:), allocatable, save :: muo
 
 #ifdef MPI
-      logical, save ::
-     .  ParallelOverK
-      save frstme
-      data frstme /.true./
+      logical, save :: ParallelOverK
+      logical, save :: frstme = .true.
 #endif
 C  ....................
 
 C Get Node number and calculate local orbital range
 #ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
       if (frstme) then
         if (Node.eq.0) then
@@ -150,8 +147,6 @@ C Get Node number and calculate local orbital range
         frstme = .false.
       endif
 #else
-      Node = 0
-      Nodes = 1
       nuo = nuotot
 #endif
 
@@ -197,18 +192,15 @@ C Check internal dimensions ..........................................
       endif
 
 C Allocate local arrays
-      allocate(Haux(nhs))
-      call memory('A','D',nhs,'diagon')
-      allocate(Saux(nhs))
-      call memory('A','D',nhs,'diagon')
-      allocate(psi(npsi))
-      call memory('A','D',npsi,'diagon')
+      call re_alloc(Haux,1,nhs,name='Haux',routine='diagon')
+      call re_alloc(Saux,1,nhs,name='Saux',routine='diagon')
+      call re_alloc(psi,1,npsi,name='psi',routine='diagon')
       allocate(aux(naux))
       call memory('A','D',naux,'diagon')
       allocate(muo(nuo))
       call memory('A','I',nuo,'diagon')
 
-C Check indxuo .......................................................
+C Check indxuo
       do iuo = 1,nuo
         muo(iuo) = 0
       enddo
@@ -239,9 +231,8 @@ C Check indxuo .......................................................
           endif
         endif
       enddo
-C ......................
 
-C Call apropriate routine .............................................
+C Call apropriate routine
       getD = .true.
       getPSI = .false.
 
@@ -250,8 +241,7 @@ C Call apropriate routine .............................................
      .              numh, listhptr, listh, numd, listdptr, listd, 
      .              H, S, getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .              Haux, Saux, psi, aux, 
-     .              nuotot, Node, Nodes)
+     .              Haux, Saux, psi, aux, nuotot )
       elseif (nspin.le.2 .and. .not.gamma) then
 #ifdef MPI
         if (ParallelOverK) then
@@ -261,7 +251,7 @@ C Call apropriate routine .............................................
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
-     .              nuotot, Node, Nodes)
+     .              nuotot )
         else
 #endif
           call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
@@ -270,7 +260,7 @@ C Call apropriate routine .............................................
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
-     .              nuotot, Node, Nodes)
+     .              nuotot )
 #ifdef MPI
         endif
 #endif
@@ -279,16 +269,14 @@ C Call apropriate routine .............................................
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
      .               eo, qo, Dnew, Enew, ef, Entropy,
-     .               Haux, Saux, psi, aux, 
-     .               nuotot, Node, Nodes)
+     .               Haux, Saux, psi, aux, nuotot )
       elseif (nspin.eq.4 .and. spiral) then
         call diagsprl( nuo, no, maxuo, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
      .               xij, indxuo, nk, kpoint, wk,
      .               eo, qo, Dnew, Enew, ef, Entropy, qspiral,
-     .               Haux, Saux, psi, Haux, Saux, aux,
-     .               nuotot, Node, Nodes)
+     .               Haux, Saux, psi, Haux, Saux, aux, nuotot )
       elseif (nspin.eq.4 .and. .not.gamma) then
         call diag2k( nuo, no, maxuo, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
@@ -296,24 +284,16 @@ C Call apropriate routine .............................................
      .               xij, indxuo, nk, kpoint, wk,
      .               eo, qo, Dnew, Enew, ef, Entropy,
      .               Haux, Saux, psi, Haux, Saux, aux, 
-     .               nuotot, Node, Nodes)
+     .               nuotot )
       endif
-C ....................
 
 C Free local arrays
       call memory('D','I',size(muo),'diagon')
       deallocate(muo)
       call memory('D','D',size(aux),'diagon')
       deallocate(aux)
-      call memory('D','D',size(psi),'diagon')
-      deallocate(psi)
-      call memory('D','D',size(Saux),'diagon')
-      deallocate(Saux)
-      call memory('D','D',size(Haux),'diagon')
-      deallocate(Haux)
 
-C Stop time counter ...................................................
+C Stop time counter
       call timer( 'diagon', 2 )
-C .......................
 
       end

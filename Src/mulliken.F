@@ -38,8 +38,9 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: symfio, cnfigfio, labelfis, nofis
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GetNodeOrbs, GlobalToLocalOrb
+      use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -53,7 +54,7 @@ C
      .  numh(*),lasto(0:natoms),listh(maxnh),listhptr(*),
      .  iphorb(*), isa(natoms), iaorb(*)
 
-      double precision
+      real(dp)
      .  dm(maxnh,nspin),s(maxnh)
 
       external
@@ -65,25 +66,19 @@ C Number of culumns in printout.  Must be smaller than 20
 
 #ifdef MPI
       integer MPIerror
-      double precision 
+      real(dp)
      .  pb(ncol)
-      double precision, dimension(:), allocatable, save ::
-     .  qb
+      real(dp), dimension(:), allocatable, save :: qb
 #endif
       integer i,ia,ib,ii,imax,in,io,ior,ip,is,j,ja,jja,jo,jor,
      .  ind, nao, nblock, ns, ispec, irow, nrow, nres, 
-     .  config(ncol), config2(8),
-     .  Node, iNode, Nodes, itot
+     .  config(ncol), config2(8), iNode, itot
 
-      double precision
-     .  p(ncol),qa,qas(4),
-     .  qts(4),qtot,stot,svec(3) 
+      real(dp)
+     .  p(ncol),qa,qas(4),qts(4),qtot,stot,svec(3) 
 
-      double precision, dimension(:), allocatable, save ::
-     .  qo
-
-      double precision, dimension(:,:), allocatable, save ::
-     .  qos
+      real(dp), dimension(:),   allocatable, save :: qo
+      real(dp), dimension(:,:), allocatable, save :: qos
 
       character sym_label(ncol)*7, atm_label*20,
      .     sym_label2(8)*7   
@@ -92,14 +87,9 @@ C ......................
 
 C Get Node number
 #ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-
 C Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(nbasistot,Node,Nodes,nbasis)
 #else
-      Node = 0
-      Nodes = 1
       nbasis = nbasistot
 #endif
 
@@ -501,29 +491,31 @@ c real*8  st    : Total spin
 c real*8  sv(3) : Spin vector
 c ********************************************************************
 
+      use precision
+
       implicit          none
       integer           ns
-      double precision  qs(ns), qt, st, sv(3)
-      double precision  cosph, costh, sinph, sinth, tiny
+      real(dp)          qs(ns), qt, st, sv(3)
+      real(dp)          cosph, costh, sinph, sinth, tiny
       parameter ( tiny = 1.d-12 )
 
       if (ns .eq. 1) then
         qt = qs(1)
-        st = 0.d0
-        sv(1) = 0.d0
-        sv(2) = 0.d0
-        sv(3) = 0.d0
+        st = 0.0d0
+        sv(1) = 0.0d0
+        sv(2) = 0.0d0
+        sv(3) = 0.0d0
       elseif (ns .eq. 2) then
         qt = qs(1) + qs(2)
         st = qs(1) - qs(2)
-        sv(1) = 0.d0
-        sv(2) = 0.d0
+        sv(1) = 0.0d0
+        sv(2) = 0.0d0
         sv(3) = st
       elseif (ns .eq. 4) then
         qt = qs(1) + qs(2)
         st = sqrt( (qs(1)-qs(2))**2 + 4.d0*(qs(3)**2+qs(4)**2) )
         costh = ( qs(1) - qs(2) ) / ( st + tiny )
-        sinth = sqrt( 1.d0 - costh**2 )
+        sinth = sqrt( 1.0d0 - costh**2 )
         cosph =  qs(3) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
         sinph = -qs(4) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
         sv(1) = st * sinth * cosph
@@ -534,5 +526,3 @@ c ********************************************************************
         return
       endif
       end
-
-

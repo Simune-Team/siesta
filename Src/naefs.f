@@ -1,9 +1,6 @@
-C $Id: naefs.f,v 1.7 2001/01/12 18:30:29 jose Exp $
-
       subroutine naefs(nua, na, scell, xa, indxua, rmaxv,
-     .                maxna, isa,
-     .                jna, xij, r2ij,
-     .                Ena, fa, stress)
+     .                 maxna, isa, jna, xij, r2ij,
+     .                 Ena, fa, stress)
 C *********************************************************************
 C Neutral Atom (NA) energy, forces and stress.
 C This is the self energy of rho_na=-Laplacian(v_na(Ry))/(8*pi)
@@ -36,7 +33,8 @@ C      INTEGER IS : Specie index
 C
 C *********************************************************************
 
-      use atmfuncs, only: izofis
+      use precision 
+      use atmfuncs,  only: izofis
 
       implicit none
 
@@ -44,36 +42,36 @@ C *********************************************************************
      .  maxna, na, nua
 
       integer
-     . indxua(na), isa(na), jna(maxna)
+     .  indxua(na), isa(na), jna(maxna)
 
-      double precision
-     . scell(3,3), Ena, fa(3,nua), r2ij(maxna), rmaxv, 
-     . stress(3,3), xa(3,na), xij(3,maxna)
+      real(dp)
+     .  scell(3,3), Ena, fa(3,nua), r2ij(maxna), rmaxv, 
+     .  stress(3,3), xa(3,na), xij(3,maxna)
 
 C Internal variables ......................................................
       integer
      .  ia, is, ix, ja, jn, js, jx, jua, nnia
 
-      double precision
+      real(dp)
      .  fij(3), pi, vij, volcel, volume 
       
 C ......................
 
-C     Initialize neighb subroutine
+C Initialize neighb subroutine
       nnia = maxna
       call neighb( scell, 2.d0*rmaxv, na, xa, 0, 0,
      .             nnia, jna, xij, r2ij )
 
-      pi = 4.d0 * atan(1.d0)
+      pi = 4.0d0 * atan(1.0d0)
       volume = nua * volcel(scell) / na
-      Ena = 0.d0
+      Ena = 0.0d0
  
       do ia = 1,nua
-c       Find neighbour atoms
+
+C Find neighbour atoms
         nnia = maxna
-        call neighb( scell, 2.d0*rmaxv, na, xa, ia, 0,
+        call neighb( scell, 2.0d0*rmaxv, na, xa, ia, 0,
      .               nnia, jna, xij, r2ij )
-        call chkdim( 'naefs', 'maxna', maxna, nnia, 1 )
         do jn = 1,nnia
           ja = jna(jn)
           jua = indxua(ja)
@@ -81,9 +79,9 @@ c       Find neighbour atoms
           js = isa(ja)
           if (izofis(is).gt.0 .and. izofis(js).gt.0) then
             call matel( 'T', is, js, 0, 0, xij(1,jn), vij, fij )
-            Ena = Ena + vij / (16.d0*pi)
+            Ena = Ena + vij / (16.0d0*pi)
             do ix = 1,3
-              fij(ix) = fij(ix) / (16.d0*pi)
+              fij(ix) = fij(ix) / (16.0d0*pi)
               fa(ix,ia)  = fa(ix,ia)  + fij(ix)
               fa(ix,jua) = fa(ix,jua) - fij(ix)
               do jx = 1,3

@@ -8,8 +8,8 @@
      .                  bulkm, taurelax, 
      .                  usesavelwf, usesavedm, usesavecg,
      .                  mullipop, inspn, maxsav, nkick, wmixkick, 
-     .                  pulfile, tempinit, dumpcharge, varcel,
-     .                  harrisfun )      
+     .                  pulfile, tempinit, dumpcharge, varcel, 
+     .                  harrisfun )
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
@@ -118,7 +118,8 @@ C **********************************************************************
 C
 C  Modules
 C
-      use precision, only: dp
+      use precision, only : dp
+      use parallel,  only : Node, Nodes
       use fdf
       use sys
 #ifdef MPI
@@ -135,7 +136,7 @@ C
      .  mullipop, ncgmax, nkick, nmove, ns, nscf, nspin,
      .  pmax
 
-      double precision
+      real(dp)
      .  beta, bulkm, charnet,
      .  dDtol, dt, dx, dxmax, eta, etol, ftol, g2max,
      .  mn, mpr, rcoor, rcoorcp, strtol,
@@ -151,7 +152,7 @@ C na_diag      : maximum number of atoms with diagon as default method
 C g2max_default : Mesh cutoff default, in Ry
 C temp_default  : Electronic temperature default, in Ry
       integer na_diag
-      double precision g2max_default, temp_default
+      real(dp) g2max_default, temp_default
       parameter ( na_diag       = 100      )
       parameter ( g2max_default = 100.d0   )
       parameter ( temp_default  = 1.900d-3 )
@@ -172,15 +173,12 @@ C  Internal variables .................................................
      .  ncgmax_default, nkick_default, nmove_default,
      .  ns_default, nscf_default, pmax_default
 
-      integer 
-     .  Node, Nodes
-
 #ifdef MPI
       integer
      .  MPIerror
 #endif
 
-      double precision
+      real(dp)
      .  bulkm_default, cnet_default,
      .  dDtol_default, dt_default, dx_default, dxmax_default,
      .  eta_default, etol_default, ftol_default,
@@ -196,15 +194,7 @@ C  Internal variables .................................................
      .  negl_default, mix_default, noeta_default, pul_default, 
      .  qnch_default, usdm_default, uslwf_default, uscg_default
 
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
+C Start of code
       ns = 1
 
 C Type of output
@@ -567,7 +557,7 @@ C Method to Solve LDA Hamitonian ...
 
 C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
       if (Node.eq.0) then
-        MemoryFactor = fdf_double('DiagMemory', 2.0d0 )
+        MemoryFactor = fdf_double('DiagMemory', 1.2d0 )
         MemoryFactor = max(MemoryFactor,1.0d0)
       endif
 #ifdef MPI

@@ -58,6 +58,7 @@ C
 C  Modules
 C
       use precision
+      use parallel
       use on_subs, only: ctrans1, axb_build2, ctrans2, axb_build1s
       use on_subs, only: axb_build2s, axb_build1, ind_gf, ctrans2s
 
@@ -80,7 +81,7 @@ C
 
 C Internal variables .....................................................
       integer 
-     .  Node, Nodes, nbandsmin, nbandsmax, nbandspernode, nbandsloc,
+     .  nbandsmin, nbandsmax, nbandspernode, nbandsloc,
      .  nremainder, maxnf, maxnft, maxnhij
 
 #ifdef MPI
@@ -107,15 +108,6 @@ C Internal variables .....................................................
       data maxnctl / 0 /
       data maxnhijl / 0 /
 C .....................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 *     call timer('eandg',1)
 
@@ -192,7 +184,7 @@ C GET Ct LISTS
 C GET F list sizes
         call axb_build1s(nbandsmin,nbandsmax,nbasis,maxnct,numct,
      .                   listct,nbasis,nbasis,maxnh,numh,listhptr,
-     .                   listh,maxnf,numf,Node,Nodes)
+     .                   listh,maxnf,numf)
       else
         maxnf = maxnfl
       endif
@@ -212,14 +204,13 @@ C Adjust sizes based on maxnf
 C GET F LISTS
         call axb_build1(nbandsmin,nbandsmax,nbasis,maxnct,numct,listct,
      .                 nbasis,nbasis,maxnh,numh,listhptr,listh,maxnf,
-     .                 numf,listf,Node,Nodes)
+     .                 numf,listf)
 C GET indgf map
         call ind_gf(nbasis,nbasisloc,nbandsmin,nbandsmax,nbands,
-     .              ncmax,maxnf,numc,listc,numf,listf,indgf,Node,
-     .              Nodes)
+     .              ncmax,maxnf,numc,listc,numf,listf,indgf)
 C GET Ft list sizes
         call ctrans2s(nbands,nbasis,maxnf,maxnft,numf,listf,
-     .                numft,Node,Nodes)
+     .                numft)
       else
         maxnft = maxnftl
       endif
@@ -245,7 +236,7 @@ C Adjust sizes based on information from ctrans2s
       if (iopt .eq. 0) then
 C GET Ft LISTS
         call ctrans2(nbands,nbasis,maxnf,maxnft,numf,listf,
-     .               numft,listft,fttof,Node,Nodes)
+     .               numft,listft,fttof)
 C GET Hij list sizes
         call axb_build2s(nbandsmin,nbandsmax,nbasis,maxnf,numf,
      .                   listf,nbasis,nbands,ncmax,numc,listc,

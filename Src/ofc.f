@@ -19,36 +19,38 @@ C substracted from the forces on other steps, to calculate the
 C force constants matrix
 C *******************************************************************
 
+      use precision
       use fdf
 
       implicit          none
+
       integer           na
-      double precision  dx, fa(3,na)
-      external          chkdim, io_assign, io_close, paste, timer,
+      real(dp)          dx, fa(3,na)
+      external          io_assign, io_close, paste, timer,
      .                  memory
 
-c     Internal variables and arrays
+C Internal variables and arrays
       character fname*33, sname*30, line*132, paste*33
       logical   frstme
       integer   i, ix, unit1, nwritten, n
-      double precision Ang, eV, rdummy
-      double precision, dimension(:,:), allocatable, save :: fres
+      real(dp)  Ang, eV, rdummy
+      real(dp), dimension(:,:), allocatable, save :: fres
 
       save      frstme, fname, nwritten
       data      frstme /.true./
       data      nwritten / 0 /
 
-c     Allocate local array for storing residual forces
+C Allocate local array for storing residual forces
       if (.not.allocated(fres)) then
         allocate(fres(3,na))
         call memory('A','D',3*na,'ofc')
       endif
 
-c     Define conversion factors
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
+C Define conversion factors
+      Ang = 1.0d0 / 0.529177d0
+      eV  = 1.0d0 / 13.60580d0
 
-c     Find file name
+C Find file name
       if (frstme) then
         sname = fdf_string('SystemLabel','siesta')
         fname = paste(sname,'.FC')
@@ -59,11 +61,11 @@ c     Find file name
       rewind(unit1)
 
       if (frstme) then
-c     Write header message if frstime
+C Write header message if frstime
         write(unit1,'(a)') 'Force constants matrix'
-c     Set values of residual forces
-        do i=1,na
-          do ix=1,3
+C Set values of residual forces
+        do i = 1,na
+          do ix = 1,3
             fres(ix,i) = fa(ix,i)
           enddo
         enddo
@@ -72,7 +74,7 @@ c     Set values of residual forces
         return
       endif
 
-c     Read file written so far to put pointer for write in the correct place
+C Read file written so far to put pointer for write in the correct place
       read(unit1,'(a)') line
       do n = 1,nwritten
         do i=1,na

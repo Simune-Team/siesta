@@ -79,15 +79,16 @@ C
 C  Modules
 C
       use precision
+      use parallel,     only : Node
       use fdf
       use parsing
 #ifdef MPI
       use mpi_siesta
-      use parallel
 #endif
       implicit          none
+
       integer           maxk, nk
-      double precision  kpoint(3,maxk)
+      real(dp)          kpoint(3,maxk)
       character         paste*30
       external          paste, redcel, memory
 C *********************************************************************
@@ -102,23 +103,16 @@ C *********************************************************************
       integer
      .  ik, il, integs(4), iu, ix, 
      .  lastc, lc(0:3), mscell(3,3),
-     .  ni, nkl, nn, nr, nv, Node
+     .  ni, nkl, nn, nr, nv
 
 #ifdef MPI
       integer
      .  MPIerror
 #endif
 
-      double precision
+      real(dp)
      .  alat, caux(3,3), pi,
      .  rcell(3,3), reals(4), ucell(3,3), values(4)
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C Start time counter 
       call timer( 'bands', 1 )
@@ -129,7 +123,7 @@ C Initialise the number of band lines
 C Find k points if they are not given in argument 
       if (nk .le. 0) then
 
-C       Find if there are band-lines data
+C Find if there are band-lines data
         if (Node.eq.0) then
           BandLinesPresent = fdf_defined('BandLines')
         endif
@@ -139,7 +133,7 @@ C       Find if there are band-lines data
 #endif
         if ( BandLinesPresent ) then
 
-C         Find lattice constant
+C Find lattice constant
           if (Node.eq.0) then
             alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
           endif
@@ -159,7 +153,7 @@ C         Find lattice constant
             goto 999
           endif
 
-C         Find scale used in k point data
+C Find scale used in k point data
           if (Node.eq.0) then
             scale = fdf_string( 'BandLinesScale', 'pi/a' )
           endif
@@ -200,30 +194,30 @@ C         Find scale used in k point data
      .        'bands: No band calculation performed'
           endif
 
-C         Loop on data lines
+C Loop on data lines
           if (Node.eq.0) then
             nk = 0
             BandLinesPresent = fdf_block('BandLines',iu)
             do il = 1,maxlin
 
-C           Read and parse data line
+C Read and parse data line
               read(iu,'(a)',end=50) line
               lastc = index(line,'#') - 1
               if (lastc .le. 0) lastc = len(line)
               call parse( line(1:lastc), nn, lc, names, nv, values,
      .                  ni, integs, nr, reals )
 
-C           Check if data are already finished
+C Check if data are already finished
               if (nv .ge. 3) then
 
-C             Add to total number of k points
+C Add to total number of k points
                 nkl = integs(1)
                 nk = nk + nkl
 
-C             If there is room to store k points
+C If there is room to store k points
                 if (nk .le. maxk) then
 
-C               Find last point in line
+C Find last point in line
                   if (scale .eq. 'pi/a') then
                     kpoint(1,nk) = values(2) * pi / alat
                     kpoint(2,nk) = values(3) * pi / alat
@@ -236,7 +230,7 @@ C               Find last point in line
                     enddo
                   endif
 
-C               Find points along the line
+C Find points along the line
                   do ik = 1,nkl-1
                     do ix = 1,3
                       kpoint(ix,nk-nkl+ik) =
@@ -245,7 +239,7 @@ C               Find points along the line
                     enddo
                   enddo
 
-C               Find point label
+C Find point label
                   if (nn .gt. 0) then
                     label(il) = names(1:lc(1))
                   else
@@ -255,7 +249,7 @@ C               Find point label
 
                 endif
               else
-C             No more lines to read => Exit do loop
+C No more lines to read => Exit do loop
                 goto 50
               endif
             enddo
@@ -264,7 +258,7 @@ C             No more lines to read => Exit do loop
             nlines = il - 1
           endif
         else
-C         No k-point data available => go to exit point
+C No k-point data available => go to exit point
           goto 999
         endif
       endif
@@ -288,7 +282,6 @@ C This is the only exit point
       call timer( 'bands', 2 )
 
       end subroutine initbands
-
 
       subroutine bands( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
@@ -341,17 +334,19 @@ C
 C  Modules
 C
       use precision
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GetNodeOrbs
       use fdf
-#ifdef MPI
-      use mpi_siesta
-      use parallel
-#endif
+      use densematrix
+      use alloc
+
       implicit          none
+
       integer           maxk, maxnh, maxspn, maxo, maxuo, nk, no, nspin,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
       logical           writeb
-      double precision  dot, ef, ek(maxo,maxspn,maxk),
+      real(dp)          dot, ef, ek(maxo,maxspn,maxk),
      .                  H(maxnh,nspin), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh)
       character         paste*30
@@ -366,22 +361,21 @@ C *********************************************************************
 
       integer
      .  ik, il, io, ispin, iu, iuo, 
-     .  naux, nuo, Node, Nodes
+     .  naux, nuo, nhs
 
 #ifdef MPI
       integer
      .  MPIerror
 #endif
 
-      double precision
+      real(dp)
      .  Dnew, qs(2),
      .  e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot, path, pi,
      .  temp, wk, Entropy
 
-C     Dynamic arrays
-      double precision, dimension(:), allocatable, save :: Haux, Saux
-      double precision, dimension(:), allocatable, save :: psi, aux
-      integer         , dimension(:), allocatable, save :: muo
+C Dynamic arrays
+      real(dp), dimension(:), allocatable, save :: aux
+      integer,  dimension(:), allocatable, save :: muo
 
       parameter ( eV = 1.d0 / 13.60580d0 )
       save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
@@ -389,14 +383,10 @@ C     Dynamic arrays
       data getPSI /.false./
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
-C Get Node number
+C Get number of local orbitals
 #ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 #else
-      Node = 0
-      Nodes = 1
       nuo = nuotot
 #endif
 
@@ -414,13 +404,11 @@ C Check parameter maxk
       endif
 
 C Allocate local arrays - only aux is relevant here
+      nhs = 2*nuotot*nuo
+      call re_alloc(Haux,1,nhs,name='Haux',routine='bands')
+      call re_alloc(Saux,1,nhs,name='Saux',routine='bands')
+      call re_alloc(psi,1,nhs,name='psi',routine='bands')
       naux  = nuotot*5
-      allocate(Haux(2*nuo*nuotot))
-      call memory('A','D',2*nuo*nuotot,'bands')
-      allocate(Saux(2*nuo*nuotot))
-      call memory('A','D',2*nuo*nuotot,'bands')
-      allocate(psi(2*nuo*nuotot))
-      call memory('A','D',2*nuo*nuotot,'bands')
       allocate(aux(naux))
       call memory('A','D',naux,'bands')
       allocate(muo(nuotot))
@@ -457,18 +445,18 @@ C Check indxuo
 
 C Find the band energies 
       if (nspin.le.2) then
-c fixspin and qs are not used in diagk, since getD=.false. ...
+C fixspin and qs are not used in diagk, since getD=.false. ...
         fixspin = .false.
         qs(1)=0.0d0
         qs(2)=0.0d0
-c ...
+
         call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
      .              maxo, numh, listhptr, listh, numh, listhptr, 
      .              listh, H, S, getD, getPSI, fixspin, qtot, qs, temp,
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              nuotot, Node, Nodes)
+     .              nuotot )
       elseif (nspin.eq.4) then
         call diag2k(nuo, no, maxuo, maxnh, maxnh, maxo,
      .              numh, listhptr, listh, numh, listhptr, 
@@ -476,7 +464,7 @@ c ...
      .              xij, indxuo, nk, kpoint, wk,
      .              ek, qk, Dnew, Enew, ef, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
-     .              nuotot, Node, Nodes)
+     .              nuotot )
       else
         if (Node.eq.0) then
           stop 'bands: ERROR: incorrect value of nspin'
@@ -488,16 +476,16 @@ c ...
 C Write bands 
       if (writeb.and.Node.eq.0) then
 
-C       Find name of output file and open it
+C Find name of output file and open it
         sname = fdf_string('SystemLabel','siesta')
         fname = paste(sname,'.bands')
         call io_assign(iu)
         open( iu, file=fname, status='unknown')
 
-C       Write Fermi energy
+C Write Fermi energy
         write(iu,*) ef/eV
 
-C       Find and write the ranges of k and ek
+C Find and write the ranges of k and ek
         path = 0.d0
         emax = ek(1,1,1)
         emin = ek(1,1,1)
@@ -516,7 +504,7 @@ C       Find and write the ranges of k and ek
         write(iu,*) 0.d0, path
         write(iu,*) emin/eV, emax/eV
 
-C       Write eigenvalues
+C Write eigenvalues
         write(iu,*) nuotot, min(nspin,2), nk
         path = 0.d0
         do ik = 1,nk
@@ -529,7 +517,7 @@ C       Write eigenvalues
      .      ispin=1,min(nspin,2))
         enddo
 
-C       Write abscisas of line ends and their labels
+C Write abscisas of line ends and their labels
         write(iu,*) nlines
         il = 1
         path = 0.d0
@@ -539,7 +527,7 @@ C       Write abscisas of line ends and their labels
      .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
      .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
           if (ik .eq. lastk(il)) then
-C           Put label between quotes
+C Put label between quotes
             if (label(il) .eq. ' ') then
               string = ''' '''
             else
@@ -550,21 +538,15 @@ C           Put label between quotes
           endif
         enddo
 
-C       Close output file
+C Close output file
         call io_close(iu)
       endif
 
 C Free local arrays 
-      call memory('D','D',size(Haux),'bands')
-      deallocate(Haux)
-      call memory('D','D',size(Saux),'bands')
-      deallocate(Saux)
-      call memory('D','D',size(psi),'bands')
-      deallocate(psi)
-      call memory('D','D',size(aux),'bands')
-      deallocate(aux)
       call memory('D','I',size(muo),'bands')
       deallocate(muo)
+      call memory('D','D',size(aux),'bands')
+      deallocate(aux)
 
 C This is the only exit point 
   999 continue

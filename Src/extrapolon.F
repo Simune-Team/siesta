@@ -51,6 +51,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -76,7 +77,7 @@ C
 C  Internal variables .......................................................
 
       integer
-     .  i,in,ispin,j,il,Node,Nodes
+     .  i,in,ispin,j,il
       logical
      .  changed
       double precision
@@ -87,15 +88,6 @@ C  Internal variables .......................................................
       external
      .  memory
 C ...........................................................................
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
       if (iord .ne. 0 .and. iord . ne. 1) then
         if (Node.eq.0) then

@@ -18,13 +18,11 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel,   only : Node
 
       implicit none
 
-      double precision
+      real(dp)
      .  cell(3,3), charnet, Emad
 
       character
@@ -32,25 +30,11 @@ C
 
 C Local variables.........
 
-      double precision
+      real(dp)
      .  alpha, lv
  
       character
      .  ctype*4
-
-      integer
-     .  Node
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C If system is charged, find if energy correction terms can be applied
 C (cluster or molecule, with SC, FCC or BCC cell) .....................

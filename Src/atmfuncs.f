@@ -34,7 +34,7 @@ C     different chemical species in the calculation:
       public  :: rcore, rcut, chcore_sub, epskb, uion
       public  :: atmpopfio, psch, izvalfis, floating, psover
       public  :: lofio, symfio, cnfigfio, zetafio, mofio
-      public  :: labelfis, lomaxfis, nztfl
+      public  :: labelfis, lomaxfis, nztfl, rphiatm
       public  :: phiatm, all_phi, xphiatm, yphiatm, zphiatm
       private
                           !

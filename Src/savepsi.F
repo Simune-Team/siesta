@@ -1,5 +1,4 @@
-      subroutine savepsi(psiprev, psi, maxpsi, nuo, nuotot, nocc,
-     .                   Node, Nodes)
+      subroutine savepsi(psiprev, psi, maxpsi, nuo, nuotot, nocc)
 C *********************************************************************
 C Copies psi into psiprev allowing for the fact that the parallel form
 C requires a re-distribution of the data.
@@ -10,8 +9,6 @@ C real*8  maxpsi              : Array dimensions for psi and psiprev
 C integer nuo                 : Number of basis orbitals in the unit cell
 C integer nuotot              : Third dimension of xij
 C integer nocc                : number of occupied states
-C integer Node                : Local node number
-C integer Nodes               : Total number of Nodes
 C *************************** OUTPUT **********************************
 C real*8  psiprev(maxpsi)     : Wavefunctions in previous k point
 C *************************** UNITS ***********************************
@@ -20,15 +17,16 @@ C k vectors in reciprocal atomic units.
 C Energies in Rydbergs.
 C *********************************************************************
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
 #ifdef MPI
       use mpi_siesta
 #endif
       implicit none
  
-      integer nuo, nuotot, maxpsi, nocc, Node, Nodes
+      integer nuo, nuotot, maxpsi, nocc
 
-      double precision 
+      real(dp)
      .  psiprev(2,nuo,nuotot), 
      .  psi(2,nuotot,nuo)
 
@@ -39,7 +37,7 @@ C**** Internal variables ***********************************************
 #ifdef MPI
       integer 
      .  MPIerror, iuog, juog, n, noccloc
-      real*8, dimension(:,:,:), allocatable, save ::
+      real(dp), dimension(:,:,:), allocatable, save ::
      .  psitmp
 #endif
 

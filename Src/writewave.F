@@ -1,22 +1,18 @@
-	      module writewave
+      module writewave
 
       implicit none
 
       integer :: maxlin
-      parameter (maxlin = 1000)
+      parameter (maxlin=1000)
 
-      character, save :: label(maxlin)*8
-      integer, save   :: lastk(maxlin)
+      character,  save :: label(maxlin)*8
+      integer,    save :: lastk(maxlin)
 
-      integer, save   :: nwf
+      integer,    save :: nwf = 1
       integer, save, dimension(:), allocatable :: nwflist
       integer, save, dimension(:,:), allocatable :: iwf
 
-      logical, save   :: wwf
-
-      data nwf /1/
-      data wwf /.false./
-      
+      logical,    save :: wwf = .false.
 
       contains
 
@@ -62,15 +58,16 @@ C
 C  Modules
 C
       use precision
+      use parallel,     only : Node
       use fdf
       use parsing
 #ifdef MPI
       use mpi_siesta
-      use parallel
 #endif
       implicit          none
+
       integer           maxk, norb, nk
-      double precision  kpoint(3,maxk)
+      real(dp)          kpoint(3,maxk)
       character         paste*30
       logical           overflow
       external          paste, redcel, memory
@@ -80,44 +77,32 @@ C *********************************************************************
      .  line*130, names*80, name1*10, name2*10, name3*10,
      .  scale*30
 
-      logical
-     .  WaveFuncPresent, Frstime, outlng
+      logical, save :: Frstime = .true.
+      logical       :: outlng
+      logical       :: overread
+      logical       :: WaveFuncPresent
+
 
       integer
      .  i, ik, il, iu, ix, iw, iw1, iw2, iw3,
      .  lastc, lc(0:3), mscell(3,3),
-     .  ni, nkl, nn, nr, nv, Node, nmk
+     .  ni, nkl, nn, nr, nv, nmk
 
 #ifdef MPI
       integer
      .  MPIerror
 #endif
 
-      double precision
+      real(dp)
      .  alat, caux(3,3), pi,
      .  rcell(3,3), reals(4), ucell(3,3)
 
-      double precision, dimension(:), allocatable :: values(:)
+      real(dp), dimension(:), allocatable :: values(:)
       integer :: maxnv 
    
       integer, dimension(:), allocatable :: integs(:)
       integer :: maxni 
  
-      logical :: overread
-
-      save
-     .  Frstime
-
-      data
-     .  Frstime /.true./
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
-
 C Start time counter 
       call timer( 'writewave', 1 )
 
@@ -134,13 +119,13 @@ C Start time counter
 C Find k points if they are not given in argument 
       if (nk .le. 0) then
 
-C       Find if there are k-points data
+C Find if there are k-points data
         if (Node.eq.0) then
           outlng = fdf_boolean('LongOutput', .false.)
           wwf = fdf_boolean('WriteWaveFunctions',outlng)
         endif
 
-C       Find if there are k-points data
+C Find if there are k-points data
         if (Node.eq.0) then
           WaveFuncPresent = fdf_defined('WaveFuncKPoints')
         endif
@@ -150,7 +135,7 @@ C       Find if there are k-points data
 #endif
         if ( WaveFuncPresent ) then
 
-C         Find lattice constant
+C Find lattice constant
           if (Node.eq.0) then
             alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
           endif
@@ -171,7 +156,7 @@ C         Find lattice constant
             goto 999
           endif
 
-C         Find scale used in k point data
+C Find scale used in k point data
           if (Node.eq.0) then
             scale = fdf_string( 'WaveFuncKPointsScale', 'pi/a' )
           endif
@@ -208,27 +193,27 @@ C         Find scale used in k point data
      .     'writewave: No band calculation performed'
           endif
 
-C         Loop on data lines
+C Loop on data lines
           if (Node.eq.0) then
             nk = 0
             WaveFuncPresent = fdf_block('WaveFuncKPoints',iu)
             do il = 1,maxlin
-C           Read and parse data line
+C Read and parse data line
               read(iu,'(a)',end=50) line
               lastc = index(line,'#') - 1
               if (lastc .le. 0) lastc = len(line)
  45           continue
-C             The maximum number of integers that could be introduced 
-C             in the input file is the 
-C             number of bands per k-point = number of atomic orbitals per cell
+C The maximum number of integers that could be introduced 
+C in the input file is the 
+C number of bands per k-point = number of atomic orbitals per cell
               if( .not. allocated(integs)) then
                 maxni = norb
                 allocate(integs(maxni))
                 integs(:) = 0
               endif
-C             The maximum number of values that could be introduced 
-C             in the input file is the number of bands plus
-C             the coordinates of the k-point (three real numbers).
+C The maximum number of values that could be introduced 
+C in the input file is the number of bands plus
+C the coordinates of the k-point (three real numbers).
               if( .not. allocated(values)) then
                 maxnv = norb + 3
                 allocate(values(maxnv))
@@ -259,10 +244,10 @@ C             the coordinates of the k-point (three real numbers).
                 goto 45
               endif
 
-C           Check if data are already finished
+C Check if data are already finished
               if (nv .ge. 3) then
 
-c             Check syntax
+C Check syntax
                 if (nr.ne.0 .and. nr.ne.3) then
                   write(6,'(a,/,a)')
      .             'writewave: syntax ERROR in %block WaveFuncKPoints:',
@@ -271,13 +256,13 @@ c             Check syntax
                 endif
 
 
-C             Add this point to total number of k points
+C Add this point to total number of k points
                 nk = nk + 1
 
-C             If there is room to store k points
+C If there is room to store k points
                 if (nk .le. maxk) then
 
-C               Find coordinates of k point
+C Find coordinates of k point
                   if (scale .eq. 'pi/a') then
                     kpoint(1,nk) = values(1) * pi / alat
                     kpoint(2,nk) = values(2) * pi / alat
@@ -297,15 +282,15 @@ C               Find coordinates of k point
                 endif
 
 
-C             Do the next even if there is no room to store k points
-C             so that the information on number of vectors to print
-C             is available on next call
+C Do the next even if there is no room to store k points
+C so that the information on number of vectors to print
+C is available on next call
 
-C             Find which eigenvectors should be printed
+C Find which eigenvectors should be printed
 
                 if (nn .ge. 1) then
 
-C               Check that line contains 'from', 'to' and maybe 'step'
+C Check that line contains 'from', 'to' and maybe 'step'
                   if (nn .ne. 2 .and. nn .ne. 3) then
                     write(6,'(a,/,a)')
      .             'writewave: syntax ERROR in %block WaveFuncKPoints:',
@@ -347,7 +332,7 @@ C               Check that line contains 'from', 'to' and maybe 'step'
 
                 endif
 
-C               Store indexes of wave functions to printout
+C Store indexes of wave functions to printout
 
                 if (ni .eq. 0) then
                   ni = norb
@@ -407,7 +392,7 @@ C               Store indexes of wave functions to printout
 
                 endif
               else
-C             No more lines to read => Exit do loop
+C No more lines to read => Exit do loop
                 goto 50
               endif
    10         continue
@@ -416,7 +401,7 @@ C             No more lines to read => Exit do loop
    50       continue
           endif
         else
-C         No k-point data available => go to exit point
+C No k-point data available => go to exit point
           goto 999
         endif
       endif
@@ -525,17 +510,21 @@ C
 C  Modules
 C
       use precision
+      use parallel,    only : Node, Nodes
       use fdf
+      use densematrix, only : Haux, Saux, psi
+      use alloc
 #ifdef MPI
-      use mpi_siesta
-      use parallel
+      use parallelsubs, only : GetNodeOrbs
 #endif
+
       implicit          none
+
       integer           maxk, maxnh, maxspn, maxo, maxuo, nk, no, nspin,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
       logical           gamma
-      double precision  dot, ef, 
+      real(dp)          dot, ef, 
      .                  H(maxnh,nspin), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh)
       character         paste*30
@@ -546,28 +535,24 @@ C *********************************************************************
      .  getD, getPSI, fixspin
 
       integer
-     .  ik, il, io, ispin, iu, iuo, 
-     .  naux, nuo, Node, Nodes
+     .  ik, il, io, ispin, iu, iuo, naux, nuo
 
 #ifdef MPI
       integer
      .  MPIerror
 #endif
 
-      double precision
+      real(dp)
      .  Dnew, qs(2),
      .  e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot, path, pi,
      .  temp, wk, Entropy
 
-C     Dynamic arrays
-      double precision, dimension(:), allocatable, save :: Haux, Saux
-      double precision, dimension(:), allocatable, save :: aux
-      double precision, dimension(:,:,:), allocatable :: psi
-      double precision, dimension(:,:,:), allocatable, save :: ek
-      integer         , dimension(:), allocatable, save :: muo
+C Dynamic arrays
+      real(dp), allocatable, save :: aux(:)
+      real(dp), allocatable, save :: ek(:,:,:)
+      integer,  allocatable, save :: muo(:)
 
       character sname*30, fname*33, fform*11
-
 
       parameter ( eV = 1.d0 / 13.60580d0 )
       save getD, getPSI, Dnew, Enew, e1, e2, qk, qtot, temp, wk
@@ -575,14 +560,10 @@ C     Dynamic arrays
       data getPSI /.true./
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
-C Get Node number
+C Get local number of orbitals
 #ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 #else
-      Node = 0
-      Nodes = 1
       nuo = nuotot
 #endif
 
@@ -611,15 +592,12 @@ C Check spin
       endif
 
 C Allocate local arrays - only aux is relevant here
-      naux  = 2*nuotot*5
-      allocate(Haux(2*nuo*nuotot))
-      call memory('A','D',2*nuo*nuotot,'writewave')
-      allocate(Saux(2*nuo*nuotot))
-      call memory('A','D',2*nuo*nuotot,'writewave')
-      allocate(psi(2,nuotot,nuo))
-      call memory('A','D',2*nuo*nuotot,'writewave')
+      call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
+      call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
+      call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
       allocate(ek(nspin,nuo,nuotot))
       call memory('A','D',nspin*nuo*nuotot,'writewave')
+      naux = 2*nuotot*5
       allocate(aux(naux))
       call memory('A','D',naux,'writewave')
       allocate(muo(nuotot))
@@ -701,9 +679,8 @@ C Find output file name, and open for Node 0
 C Find the eigenvectors
 c fixspin and qs are not used in diagk, since getD=.false. ...
       fixspin = .false.
-      qs(1)=0.0d0
-      qs(2)=0.0d0
-c ...
+      qs(1) = 0.0d0
+      qs(2) = 0.0d0
 c
 
 C Call appropriate diagonalization routine
@@ -714,8 +691,7 @@ C Call appropriate diagonalization routine
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
      .               e1, e2, ek, qk, Dnew, Enew, ef, efs, Entropy,
-     .               Haux, Saux, psi, aux,
-     .               nuotot, Node, Nodes)
+     .               Haux, Saux, psi, aux, nuotot )
       else
          call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
@@ -723,24 +699,17 @@ C Call appropriate diagonalization routine
      .               fixspin, qtot, qs, temp,
      .               e1, e2, xij, indxuo, nk, kpoint, wk,
      .               ek, qk, Dnew, Enew, ef, efs, Entropy,
-     .               Haux, Saux, psi, Haux, Saux, aux,
-     .               nuotot, Node, Nodes)
+     .               Haux, Saux, psi, Haux, Saux, aux, nuotot )
       endif
  
 
 C Free local arrays 
-      call memory('D','D',size(Haux),'writewave')
-      deallocate(Haux)
-      call memory('D','D',size(Saux),'writewave')
-      deallocate(Saux)
-      call memory('D','D',size(psi),'writewave')
-      deallocate(psi)
-      call memory('D','I',size(ek),'writewave')
-      deallocate(ek)
-      call memory('D','D',size(aux),'writewave')
-      deallocate(aux)
       call memory('D','I',size(muo),'writewave')
       deallocate(muo)
+      call memory('D','D',size(aux),'writewave')
+      deallocate(aux)
+      call memory('D','I',size(ek),'writewave')
+      deallocate(ek)
 
 C This is the only exit point 
   999 continue
@@ -753,10 +722,11 @@ C This is the only exit point
 
       use precision
       use sys
-      use parallel
+      use parallel,     only : Node, Nodes, BlockSize
+      use parallelsubs, only : GlobalToLocalOrb
       use fdf
-      use atmfuncs, only: symfio, cnfigfio, labelfis, nofis
-      use atomlist, only: isa, iaorb, iphorb
+      use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
+      use atomlist,     only : isa, iaorb, iphorb
 
 #ifdef MPI
       use mpi_siesta
@@ -771,40 +741,29 @@ C This is the only exit point
 
       integer nuotot, nuo, ispin, ik
 
-      double precision eo(*), psi(*), k(3)
-C      double precision eo(*), psi(2,nuotot,nuo), k(3)
+      real(dp) eo(*), psi(*), k(3)
 
       logical gamma
 
 C  Internal variables .............................................
       integer
-     .  BNode, BTest, Node, Nodes, ntot, iie, ie, iw, indwf, j, ind,
-     .  iu
+     .  BNode, BTest, ntot, iie, ie, iw, indwf, j, ind, iu
 
-      logical frstime, writeie
+      logical, save :: frstime = .true.
+      logical       :: writeie
 
       character sname*30, fname*33, paste*33, fform*11
 
-      double precision, dimension(:,:), allocatable :: aux
+      real(dp), dimension(:,:), allocatable :: aux
 
-      save frstime, sname, fform, fname
-      data frstime /.true./
+      save sname, fform, fname
 
       external paste, io_assign, io_close
 
 C ...................
 
-c Fix whether formatted or unformatted files wil be used
+C Fix whether formatted or unformatted files wil be used
       fform = 'unformatted'
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Allocate auxiliary arrays
 
@@ -871,14 +830,12 @@ C First print the index and value of k-point
         endif
       endif
 
-
 C Loop over wavefunctions that should be printed
-
 
       do iw = 1,nwflist(ik)
         indwf = iwf(ik,iw)
 
-c Determine which node handles this wavefunction
+C Determine which node handles this wavefunction
 
         BNode = indwf/BlockSize
         if (BNode*BlockSize.eq.indwf) then
@@ -992,12 +949,10 @@ C Close output file
         call io_close(iu)
       endif
 
-
 C Deallocate auxiliary arrays
 
       call memory('D','D',size(aux),'writewave')
       deallocate(aux)
-
         
       end subroutine writew
 

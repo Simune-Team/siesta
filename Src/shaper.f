@@ -1,4 +1,4 @@
-C $Id: shaper.f,v 1.10 1999/12/01 08:49:44 jgale Exp $
+C $Id: shaper.f,v 1.11 2004/07/13 09:23:53 jgale Exp $
 
       SUBROUTINE SHAPER( CELL, NA, ISA, XA, SHAPE, NV, VECS )
 
@@ -38,7 +38,7 @@ C **********************************************************************
       IMPLICIT          NONE
       INTEGER           NA, ISA(NA), NV
       DOUBLE PRECISION  CELL(3,3), XA(3,NA), VECS(3,3)
-      EXTERNAL          CHKDIM, NEIGHB, LIVEC
+      EXTERNAL          NEIGHB, LIVEC
       CHARACTER         SHAPE*(*)
 
 C Internal variables and arrays

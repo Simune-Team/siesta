@@ -78,6 +78,7 @@ C
       use precision
       use fdf
       use parsing
+      use parallel,  only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -90,7 +91,7 @@ C
      .                  listhptr(nuo), mscell(3,3), 
      .                  numh(nuo), ntm(3)
 
-      real*8            cell(3,3), datm(norb), dipol(3), 
+      real(dp)          cell(3,3), datm(norb), dipol(3), 
      .                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
      .                  enaatm, enascf, exc, fa(3,nua), g2max,
      .                  Hmat(maxnh,nspin), stress(3,3),
@@ -98,45 +99,37 @@ C
 
       external          memory
 
-c ----------------------------------------------------------------------------
-
-c Internal variables and arrays
+C Internal variables and arrays
  
       character         line*130, names*80
-      logical           samgrd, blread, samesh
+      logical           samesh
       integer           ni, nn, nr, nv, npt, ipt, maxpt, iu, ia,
-     .                  ix, iv, integs(4), lastc, lc(0:3), lstntm(3),
-     .                  Node
+     .                  ix, iv, integs(4), lastc, lc(0:3), lstntm(3)
 #ifdef MPI
       integer           MPIerror
 #endif
-      double precision  reals(4), values(4), lstcll(3,3), avexc,
+      real(dp)          reals(4), values(4), lstcll(3,3), avexc,
      .                  strold(3,3), avdipo(3), avstre(3,3), avdxc,
      .                  avenaa, avenas, avuatm, avuscf, avdusc, anpt,
      .                  strold2(3,3), avstre2(3,3)
 
       parameter         (maxpt = 100)
-      double precision, dimension(:,:), allocatable, save ::
+
+      logical, save :: blread = .false.
+      logical, save :: samgrd = .false.
+
+      real(dp), dimension(:,:), allocatable, save ::
      .                  pt, avfa, faold, xanew, avfa2, faold2
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .                  dpt
 
-      save              blread, samgrd, lstcll, lstntm, npt
-    
+      save              lstcll, lstntm, npt
 
-      data              blread      /.false./,
-     .                  samgrd      /.false./,
+      data              
      .                  lstcll(1,1) / 0.743978657912656D50 /,
      .                  lstntm      / 10000, 1, 1 /
 
 c ----------------------------------------------------------------------------
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C Allocate local memory
       allocate(avfa(3,na))

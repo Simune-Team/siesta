@@ -1,7 +1,7 @@
       subroutine xijorb( negl, scell, nua, na, xa,
      .                   lasto, lastkb, rco, rckb,
      .                   maxnh, numh, listhptr,
-     .                   listh, xijo, Node, Nodes )
+     .                   listh, xijo )
 C *********************************************************************
 C Finds vectors between orbital centers.
 C Writen by J.Soler. July 1997
@@ -24,8 +24,6 @@ C                        Hamiltonian matrix between atomic orbitals
 C integer listhptr(nuo): Pointer to start of each row (-1) in listh
 C integer listh(maxnh) : Nonzero Hamiltonian-matrix element 
 C                        column indexes for each matrix row
-C integer Node         : Local node number
-C integer Nodes        : Total number of nodes
 C **************************** OUTPUT *********************************
 C real*8  xijo(3,maxnh): Vectors between orbital centers
 C *********************************************************************
@@ -33,13 +31,15 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GlobalToLocalOrb
 
       implicit          none
-      integer           na, maxnh, Node, Nodes
+
+      integer           na, maxnh
       integer           lastkb(0:na), lasto(0:na), listh(maxnh),
      .                  nua, numh(*), listhptr(*)
-      double precision  scell(3,3), rckb(*), rco(*), xa(3,na),
+      real(dp)          scell(3,3), rckb(*), rco(*), xa(3,na),
      .                  xijo(3,maxnh)
       logical           negl
       external          neighb, timer
@@ -47,8 +47,8 @@ C
 C Internal variables -----------------
 C maxna  = maximum number of neighbour atoms of any atom
 C maxnkb = maximum number of neighbour KB projectors of any orbital
-      integer, save ::
-     .  maxna, maxnkb
+      integer, save :: maxna = 1000
+      integer, save :: maxnkb = 2000
 
       integer
      .  ia, ikb, inkb, io, isel, iio, ind,
@@ -58,26 +58,25 @@ C maxnkb = maximum number of neighbour KB projectors of any orbital
       integer, dimension(:), allocatable, save ::
      .  jana, jnao, knakb, ibuffer
 
-      double precision
+      real(dp)
      .  rci, rcj, rck, rij, rik, rjk,
      .  rmax, rmaxkb, rmaxo
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  r2ij, rcnkb, dpbuffer
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xija
 
+      logical, save :: warn1 = .false.
+      logical, save :: warn2 = .false.
+
       logical
-     .  conect, warn1, warn2, overflow
+     .  conect, overflow
      
       external
      .  memory
 
-      save warn1, warn2
-      data warn1, warn2 /2*.false./
-      data maxna  / 1000 /
-      data maxnkb / 2000 /
 C -------------------------------------
 
 C     Start time counter

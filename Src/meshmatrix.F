@@ -32,7 +32,7 @@ C ----------------------------------------------------------------------
       end module meshdscf
 
       subroutine CreateLocalDscfPointers( nmpl, nuotot, numd,
-     .                                    listdptr, listd, Node, Nodes)
+     .                                    listdptr, listd )
 C
 C Calculates the values of the orbitals at the mesh points
 C
@@ -46,8 +46,6 @@ C                       : elements for each matrix row
 C integer listdptr(nuo) : Pointer to start of rows of density-matrix
 C integer listd(maxnh)  : Nonzero-density-matrix-element column
 C                       : indexes for each matrix row
-C integer Node          : Local node number
-C integer Nodes         : Total number of nodes
 C ----------------------------------------------------------------------
 C Output :
 C ----------------------------------------------------------------------
@@ -57,11 +55,12 @@ C ----------------------------------------------------------------------
 C
 C Modules
 C
-      use atomlist, only: indxuo
-      use meshdscf, only: listdl, listdlptr, NeedDscfL, nrowsDscfL, 
-     .                    numdl
-      use meshphi,  only: endpht, lstpht
-      use parallel
+      use atomlist,     only : indxuo
+      use meshdscf,     only : listdl, listdlptr, NeedDscfL, 
+     .                         nrowsDscfL, numdl
+      use meshphi,      only : endpht, lstpht
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use precision
 #ifdef MPI
       use mpi_siesta
@@ -77,8 +76,6 @@ C
       integer, intent(in) :: numd(*)
       integer, intent(in) :: listdptr(*)
       integer, intent(in) :: listd(*)
-      integer, intent(in) :: Node
-      integer, intent(in) :: Nodes
 
 C
 C Local variables
@@ -214,10 +211,11 @@ C ********************************************************************
 
 C  Modules
       use precision
-      use meshdscf, only: nrowsDscfL, numdl, listdlptr, NeedDscfL
+      use meshdscf, only : nrowsDscfL, numdl, listdlptr, NeedDscfL
 #ifdef MPI
       use mpi_siesta
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
 #endif
 
       implicit none
@@ -227,7 +225,7 @@ C Argument types and dimensions
      .   maxnd, maxndl, nspin, nuo, nuotot, numd(nuo), 
      .   listdptr(nuo)
 
-      double precision
+      real(dp)
      .   Dscf(maxnd,nspin), DscfL(maxndl,nspin)
 
       external
@@ -239,8 +237,8 @@ C Internal variables and arrays
 
 #ifdef MPI
       integer 
-     .  BNode, maxno, maxnog, MPIerror, Node, Nodes
-      double precision, dimension(:), allocatable, save :: 
+     .  BNode, maxno, maxnog, MPIerror
+      real(dp), dimension(:), allocatable, save :: 
      .  buffer
 #endif
 
@@ -248,10 +246,6 @@ C***********************
 C  Parallel execution  *
 C***********************
 #ifdef MPI
-C Get Node number
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-
 C Find local and global size of maxno
       maxno = 0
       do io = 1,nrowsDscfL
@@ -357,7 +351,9 @@ C  Modules
       use meshdscf
 #ifdef MPI
       use mpi_siesta
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb,
+     .                         LocalToGlobalOrb
 #endif
 
       implicit none
@@ -366,7 +362,7 @@ C Argument types and dimensions
       integer
      .   maxnv, maxnvl, nspin, nuo, nuotot, numVs(nuo), 
      .   listVsptr(nuo)
-      double precision
+      real(dp)
      .   Vs(maxnv,nspin), VsL(maxnvl,nspin)
 
 C Internal variables and arrays
@@ -375,8 +371,8 @@ C Internal variables and arrays
 
 #ifdef MPI
       integer 
-     .  in, iul, maxnvg, MPIerror, nVsL, nVsLmax, Node, Nodes
-      double precision, dimension(:), allocatable, save :: 
+     .  in, iul, maxnvg, MPIerror, nVsL, nVsLmax
+      real(dp), dimension(:), allocatable, save :: 
      .  Vi
       integer, dimension(:), allocatable, save :: 
      .  nVsLPtr, listViptr
@@ -386,10 +382,6 @@ C***********************
 C  Parallel execution  *
 C***********************
 #ifdef MPI
-C Get Node number
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-
 C Find the maximum number of rows on anyone Node
       call MPI_AllReduce(nrowsDscfL,nVsLmax,1,MPI_integer,
      .  MPI_max,MPI_Comm_World,MPIerror)

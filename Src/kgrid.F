@@ -1,6 +1,4 @@
-      subroutine kgrid( cell, kscell, displ,
-     .                  nk, points, weight )
-
+      subroutine kgrid( cell, kscell, displ, nk, points, weight )
 c **********************************************************************
 c Finds Monkhost-Pack k-point coordinates and weights.
 c This version assumes no symmetry except time reversal, i.e.
@@ -27,6 +25,7 @@ C
 C  Modules
 C
       use precision
+      use parallel,     only : Node
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -35,7 +34,7 @@ C
       implicit          none
 
       integer           kscell(3,3), nk
-      double precision  cell(3,3), displ(3), 
+      real(dp)          cell(3,3), displ(3), 
      .                  points(3,*), weight(*)
 c ----------------------------------------------------------------------
 
@@ -43,25 +42,18 @@ c Internal variables
       integer           i, i1, i2, i3, igmax(3), igmin(3), iu,
      .                  ir, ik, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
-     .                  ng(3), ni, nkr(3), nktot, Node
+     .                  ng(3), ni, nkr(3), nktot
 #ifdef MPI
       integer           MPIerror
 #endif
-      double precision  d(3), dkg(3), dkx(3), dscell(3,3),
+      real(dp)          d(3), dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), pi,
      .                  scell(3,3), tiny, w1, wtot
       external          idiag, reclat
       logical           spiral
       parameter (tiny   = 1.d-12)
 
-c Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
-
-c Find out if there is spiral arrangement of spins
+C Find out if there is spiral arrangement of spins
       if (Node.eq.0) then
         spiral = fdf_block('SpinSpiral',iu)
       endif
@@ -69,7 +61,7 @@ c Find out if there is spiral arrangement of spins
       call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-c Find total number of points (determinant of kscell)
+C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
      .             kscell(2,1) * kscell(3,2) * kscell(1,3) +
      .             kscell(3,1) * kscell(1,2) * kscell(2,3) -
@@ -77,7 +69,7 @@ c Find total number of points (determinant of kscell)
      .             kscell(2,1) * kscell(1,2) * kscell(3,3) -
      .             kscell(3,1) * kscell(2,2) * kscell(1,3) )
 
-c Find k-grid supercell
+C Find k-grid supercell
       do i = 1,3
         do ix = 1,3
           scell(ix,i) = cell(ix,1) * kscell(1,i) +
@@ -86,7 +78,7 @@ c Find k-grid supercell
         enddo
       enddo
 
-c Find equivalent diagonal supercell
+C Find equivalent diagonal supercell
       call idiag( 3, kscell, kdsc, ml, mr, maux )
       do i = 1,3
         do ix = 1,3
@@ -96,10 +88,10 @@ c Find equivalent diagonal supercell
         enddo
       enddo
 
-c Find k-grid unit vectors
+C Find k-grid unit vectors
       call reclat( dscell, gridk, 1 )
 
-c Find grid origin in cartesian coordinates
+C Find grid origin in cartesian coordinates
       call reclat( scell, gscell, 1 )
       do ix = 1,3
         dkx(ix) = gscell(ix,1) * displ(1) +
@@ -107,7 +99,7 @@ c Find grid origin in cartesian coordinates
      .            gscell(ix,3) * displ(3)
       enddo
 
-c Find grid origin in gridk coordinates
+C Find grid origin in gridk coordinates
       pi = 4.d0 * atan(1.d0)
       do i = 1,3
         dkg(i) = ( dkx(1) * dscell(1,i) +
@@ -115,17 +107,17 @@ c Find grid origin in gridk coordinates
      .             dkx(3) * dscell(3,i) ) / (2*pi)
       enddo
 
-c Find total range of grid indexes
+C Find total range of grid indexes
       do j = 1,3
         ng(j) = kdsc(j,j)
         igmin(j) = -( (ng(j)-1) / 2)
         igmax(j) = ng(j) / 2
       enddo
 
-c Find number of points with time-reversal (inversion) symmetry,
-c (if not spiral) after reflection on each alternative plane
+C Find number of points with time-reversal (inversion) symmetry,
+C (if not spiral) after reflection on each alternative plane
       if (spiral) then
-c       If spin-spiral, use all k points
+C       If spin-spiral, use all k points
         nk = nktot
       else
         do j = 1,3
@@ -138,7 +130,7 @@ c       If spin-spiral, use all k points
           nkr(j) = ni * nktot / kdsc(j,j)
         enddo
 
-c       Select reflection plane
+C Select reflection plane
         ir = 3
         if (nkr(2) .lt. nkr(ir)) ir = 2
         if (nkr(1) .lt. nkr(ir)) ir = 1
@@ -148,8 +140,8 @@ c       Select reflection plane
         nk = nkr(ir)
       endif
 
-c Find k points and weights
-      w1 = 1.d0 / nktot
+C Find k points and weights
+      w1 = 1.0d0 / nktot
       nk = 0
       do i3 = igmin(3),igmax(3)
       do i2 = igmin(2),igmax(2)
@@ -180,7 +172,7 @@ c Find k points and weights
       enddo
       enddo
 
-c A couple of tests for debugging
+C A couple of tests for debugging
 c     if (Node.eq.0) then
 c       if (nk .ne. nkr(ir))
 c    .    write(6,*) 'kgrid: ERROR: nk, nkr(ir) =', nk, nkr(ir)
@@ -196,4 +188,3 @@ c     endif
 
       return
       end
-

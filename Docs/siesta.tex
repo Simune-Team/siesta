@@ -1644,7 +1644,7 @@ pretty crude for some systems. The forces are computed within the
 Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
 
-When this option is choosen, the values of DM.UseSaveDM,
+When this option is chosen, the values of DM.UseSaveDM,
 MaxSCFIterations, and DM.MixSCF1 are automatically set up to False, 1
 and False respectively, no matter whatever other specification are in
 the INPUT file.
@@ -2054,6 +2054,118 @@ to create small changes in the polarization.
 
 {\it Use:} Only compatible with {\bf SolutionMethod} = diagon.\\
 {\it Default value:} Empty. No calculation performed.
+
+
+\item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
+optical absorption} 
+If specified, the imaginary part of the dielectric function
+will be calculated and stored in a file called {\it Systemlabel}.{\bf EPSIMG}.
+The calculation is performed using the simplest approach based on the
+dipolar transition matrix elements between different eigenfunctions
+of the self-consistent Hamiltonian. For molecules the calculation 
+is performed using the position operator matrix elements, while
+for solids the calculation is carried out in the momentum space
+formulation.
+Corrections due to the non-locality of the pseudopotentials
+are introduced in the usual way. 
+
+{\it Default value:} {\tt false}
+
+\item[{\bf Optical.EnergyMinimum}] ({\it real energy}):
+\index{Optical.EnergyMinimum@{\bf Optical.EnergyMinimum}}
+This specifies the minimum of the energy range in which
+the frequency spectrum will be calculated.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.EnergyMaximum}] ({\it real energy}):
+\index{Optical.EnergyMaximum@{\bf Optical.EnergyMaximum}}
+This specifies the maximum of the energy range in which
+the frequency spectrum will be calculated.
+
+{\it Default value:} 10 Ry.
+
+\item[{\bf Optical.Broaden}] ({\it real energy}):
+\index{Optical.Broaden@{\bf Optical.Broaden}}
+If this is value is set then a Gaussian broadening will be
+applied to the frequency values.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.Scissor}] ({\it real energy}):
+\index{Optical.Scissor@{\bf Optical.Scissor}}
+Because of the tendency of DFT calculations to under estimate
+the band gap, a rigid shift of the unoccupied states, known as 
+the scissor operator, can be added to correct the gap and
+thereby improve the calculated results. This shift is only
+applied to the optical calculation and no where else within
+the calculation.
+
+{\it Default value:} 0 Ry.
+
+\item[{\bf Optical.NumberOfBands}] ({\it integer}):
+\index{Optical.NumberOfBands@{\bf Optical.NumberOfBands}}
+This option controls the number of bands that are included in
+the optical property calculation. Clearly this number must be
+larger than the number of occupied bands and less than or
+equal to the number of basis functions (which determines the
+number of unoccupied bands available). Note, while including
+all the bands may be the most accurate choice this will also
+be the most expensive!
+
+{\it Default value:} All bands.
+
+\item[{\bf Optical.Mesh}] ({\it data block}):
+\index{Optical.Mesh@{\bf Optical.Mesh}}
+This block contains 3 numbers that determine the mesh size
+used for the integration across the Brillouin zone. For
+example:
+
+\begin{verbatim}
+        %block  Optical.Mesh
+          5 5 5
+        %endblock  Optical.Mesh
+\end{verbatim}
+
+The three values represent the number of mesh points in
+the direction of each reciprocal lattice vector.
+
+{\it Default value:} Empty.
+
+\item[{\bf Optical.OffsetMesh}] ({\it logical}):
+\index{Optical.OffsetMesh@{\bf Optical.OffsetMesh}}
+If set to true, then the mesh is offset away from the
+gamma point for odd numbers of points.
+
+{\it Default value:} {\tt false}
+
+\item[{\bf Optical.PolarizationType}] ({\it string}):
+\index{Optical.PolarizationType@{\bf Optical.PolarizationType}}
+This option has three possible values that represent the
+type of polarization to be used in the calculation. The options
+are {\bf polarized}, which implies the application of an electric
+field in a given direction, {\bf unpolarized}, which implies the
+propagation of light in a given direction, and {\bf polycrystal}.
+In the case of the first two options a direction in space must
+be specified for the electric field or propagation using the
+{\it Optical.Vector} data block.
+
+{\it Default value:} {\tt polycrystal}
+
+\item[{\bf Optical.Vector}] ({\it data block}):
+\index{Optical.Vector@{\bf Optical.Vector}}
+This block contains 3 numbers that specify the vector direction
+for either the electric field or light propagation, for a polarized
+or unpolarized calculation, respectively. A typical block might look
+like:
+
+\begin{verbatim}
+        %block  Optical.Vector
+          1.0 0.0 0.5
+        %endblock  Optical.Vector
+\end{verbatim}
+
+{\it Default value:} Empty.
 
 
 
@@ -2865,7 +2977,7 @@ optimised by varying this parameter until a suitable value is found.
 {\it Use:} Controls the blocksize used for distributing orbitals over
 processors
 
-{\it Default value:}  8
+{\it Default value:} 24
 
 \item[{\bf ProcessorY}] ({\it integer}): \index{ProcessorY@{\bf
 ProcessorY}} The mesh points are divided in the Y and Z directions
@@ -2896,7 +3008,7 @@ The larger the number of processors being used, the larger the value of
 {\it Use:} Controls the amount of workspace available to parallel
 matrix diagonalisation
 
-{\it Default value:}  2
+{\it Default value:}  1.2
 
 \item[{\bf DiagScale}] ({\it real no units}): \index{DiagScale@{\bf
 DiagScale}} Whether the parallel diagonalisation of a matrix is

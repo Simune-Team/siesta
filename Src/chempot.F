@@ -56,6 +56,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -78,7 +79,7 @@ C    .  homo, lumo, gap
 C Internal variables...
 
       integer
-     . ind, ipmax, nhmax, Node, Nodes, nnmaxnew, nvmaxnew
+     . ind, ipmax, nhmax, nnmaxnew, nvmaxnew
 #ifdef MPI
       integer
      . MPIerror
@@ -134,15 +135,6 @@ C ...
       data nnmax / 1000 /
       data nvmax / 1000 /
 C ...
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Assign information for Chebyshev expansion .................
 C Total charge

@@ -130,9 +130,10 @@ C *******************************************************************
 
 #ifdef MPI
 C  Modules
+      use parallel,     only : Node, Nodes, ProcessorY
+      use parallelsubs, only : HowManyMeshPerNode
       use mpi_siesta
-      use parallel
-      use mesh, only: nsm, nmeshg
+      use mesh,         only : nsm, nmeshg
 #endif
 
       IMPLICIT NONE
@@ -172,7 +173,7 @@ C Fix switch to skip points with zero density
 C MPI related variables
       integer 
      .  MPIerror, ProcessorZ, BlockSizeY, BlockSizeZ, MeshNsm(3),
-     .  BlockSizeYMax, BlockSizeZMax, Node, Nodes, NRemY, NRemZ,
+     .  BlockSizeYMax, BlockSizeZMax, NRemY, NRemZ,
      .  Py, Pz
       integer 
      .  NSwap, NDummy, IDen1, IDen2, IOut, INN, MeshDum(3), 
@@ -212,12 +213,6 @@ C Parameter MSPIN must be equal or larger than NSPIN
 
 C Start time counter (intended only for debugging and development)
       CALL TIMER( 'CELLXC', 1 )
-
-#ifdef MPI
-C Get local node and number of nodes
-      call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
-      call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-#endif
 
 C Set GGA switch
       IF ( FUNCTL.EQ.'LDA' .OR. FUNCTL.EQ.'lda' .OR.

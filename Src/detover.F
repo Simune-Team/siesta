@@ -1,7 +1,7 @@
       subroutine detover(psiprev, psi, S, Sr, 
      .               numh, listhptr, listh, indxuo,
      .               no, nuo, xij, maxnh, nuotot, nocc,
-     .               kpoint, dk, detr, deti, Node, Nodes)
+     .               kpoint, dk, detr, deti )
 C *********************************************************************
 C Finds the determinant of the overlap matrix
 C between the periodic Bloch functions corresponding to neighboring  
@@ -32,8 +32,6 @@ C integer nocc                : number of occupied states
 C real*8  kpoint(3)           : Current kpoint
 C real*8  dk(3)               : Vector joining the previous and current 
 C                               kpoint
-C integer Node                : Local node number
-C integer Nodes               : Total number of Nodes
 C *************************** INPUT/OUTPUT ****************************
 C real*8  psiprev(2,nuo,nuotot) : Wavefunctions in previous k point
 C real*8  detr                  : Real part of the determinant
@@ -44,7 +42,8 @@ C k vectors in reciprocal atomic units.
 C Energies in Rydbergs.
 C *********************************************************************
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -53,10 +52,10 @@ C *********************************************************************
       integer 
      .  nuo, maxnh, nuotot, no, nocc,
      .  listh(maxnh), listhptr(nuo), numh(nuo), indxuo(no), 
-     .  info, job, Node, Nodes
+     .  info, job
       parameter(job=10)
 
-      double precision 
+      real(dp)
      .  psiprev(2,nuo,nuotot), dk(3),detr, deti,
      .  xij(3,maxnh), S(maxnh), Sr(maxnh),
      .  psi(2,nuotot,nuo), kpoint(3)
@@ -72,10 +71,10 @@ C**** Internal variables ***********************************************
 #ifdef MPI
       integer 
      .  MPIerror, iuog, jeg, juog, n, noccloc, noccmax
-      real*8, dimension(:,:,:), allocatable, save ::
+      real(dp), dimension(:,:,:), allocatable, save ::
      .  psitmp
 #endif
-      real*8 
+      real(dp) 
      .  kxij, skxij, ckxij,pipj1, pipj2
 
       complex*16, dimension(:,:), allocatable, save ::

@@ -44,7 +44,7 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,  only : Node
       use fdf
       use parsing
 #ifdef MPI
@@ -52,72 +52,65 @@ C
 #endif
 
       implicit          none
+
+C Passed variables and arrays
       integer           nmeshk(3,3)
-      double precision  displ(3)
+      real(dp)          displ(3)
 
-c ----------------------------------------------------------------------------
-
-c Internal variables and arrays
+C Internal variables and arrays
  
       character         line*130, names*80, yiorno
-      integer           ni, nn, nr, nv, igrd, iu, ix, Node
+      integer           ni, nn, nr, nv, igrd, iu, ix
       integer           integs(4), lastc, lc(0:3)
-      double precision  reals(4), values(4)
+      real(dp)          reals(4), values(4)
 #ifdef MPI
       integer           MPIerror
 #endif
 
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
-
-c set outputs to zero
-      do igrd=1,3
-         do ix=1,3
-            nmeshk(ix,igrd)=0
-         enddo 
-         displ(igrd)=0.0d0
+C Set outputs to zero
+      do igrd = 1,3
+        do ix = 1,3
+          nmeshk(ix,igrd) = 0
+        enddo 
+        displ(igrd) = 0.0d0
       enddo
 
-c check for block and read
+C Check for block and read
 
       if (Node.eq.0) then
         if ( fdf_block('PolarizationGrids',iu) ) then
 
-           do igrd = 1, 3
-              read(iu,'(a)', end=50) line
-              lastc = index(line,'#') - 1
-              if (lastc .le. 0) lastc = len(line)
-              call parse( line(1:lastc), nn, lc, names, nv, values,
+          do igrd = 1, 3
+            read(iu,'(a)', end=50) line
+            lastc = index(line,'#') - 1
+            if (lastc .le. 0) lastc = len(line)
+            call parse( line(1:lastc), nn, lc, names, nv, values,
      .                  ni, integs, nr, reals )
-              if (ni .eq. 3) then
-                 nmeshk(1,igrd)=integs(1)
-                 nmeshk(2,igrd)=integs(2)
-                 nmeshk(3,igrd)=integs(3)
+            if (ni .eq. 3) then
+              nmeshk(1,igrd) = integs(1)
+              nmeshk(2,igrd) = integs(2)
+              nmeshk(3,igrd) = integs(3)
                  
-                 if (nn.ge.1) then 
-                    yiorno = names(lc(0)+1:lc(1)) 
-                    if( yiorno.eq.'yes'  .or.
-     .                  yiorno.eq.'YES'  .or.
-     .                  yiorno.eq.'y'    .or.
-     .                  yiorno.eq.'Y'    .or.
-     .                  yiorno.eq.'true' .or.
-     .                  yiorno.eq.'TRUE' .or.
-     .                  yiorno.eq.'t'    .or.
-     .                  yiorno.eq.'T' ) then 
+              if (nn.ge.1) then 
+                yiorno = names(lc(0)+1:lc(1)) 
+                if ( yiorno.eq.'yes'  .or.
+     .               yiorno.eq.'YES'  .or.
+     .               yiorno.eq.'y'    .or.
+     .               yiorno.eq.'Y'    .or.
+     .               yiorno.eq.'true' .or.
+     .               yiorno.eq.'TRUE' .or.
+     .               yiorno.eq.'t'    .or.
+     .               yiorno.eq.'T' ) then 
                         
-                             displ(igrd)=0.5d0
+                  displ(igrd) = 0.5d0
                              
-                    endif 
-                 endif         
-              else
-                goto 10
-              endif
-           enddo
+                endif 
+              endif         
+            else
+              goto 10
+            endif
+
+          enddo
 
         endif
 
@@ -141,4 +134,3 @@ C Globalise output
 
       return
       end
-

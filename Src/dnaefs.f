@@ -1,5 +1,3 @@
-C $Id: dnaefs.f,v 1.5 1999/11/26 18:28:06 wdpgaara Exp $
-
       subroutine dnaefs( nua, na, scell, xa, indxua, rmaxv,
      .                   maxna, isa, jna, xij, r2ij,
      .                   DEna, fa, stress)
@@ -35,43 +33,44 @@ C      INTEGER IS : Specie index
 C
 C *********************************************************************
 
-      use atmfuncs, only: izofis, psover
+      use precision
+      use atmfuncs,  only: izofis, psover
 
       implicit none
 
       integer
-     . maxna, na, nua
+     .  maxna, na, nua
 
       integer
-     . indxua(na), isa(na), jna(maxna)
+     .  indxua(na), isa(na), jna(maxna)
 
-      double precision
-     . scell(3,3), DEna, fa(3,nua), r2ij(maxna), rmaxv, 
-     . stress(3,3), xa(3,na), xij(3,maxna)
+      real(dp)
+     .  scell(3,3), DEna, fa(3,nua), r2ij(maxna), rmaxv, 
+     .  stress(3,3), xa(3,na), xij(3,maxna)
 
 C Internal variables ......................................................
       integer
      .  ia, is, ix, ja, jn, js, jx, jua, nnia
 
-      double precision
+      real(dp)
      .  dvdr, fij(3), rij, r2min, vij, volcel, volume
        
       parameter ( r2min = 1.d-15 )
 C ......................
 
       nnia = maxna
-      call neighb( scell, 2.d0*rmaxv, na, xa, 0, 0,
+      call neighb( scell, 2.0d0*rmaxv, na, xa, 0, 0,
      .             nnia, jna, xij, r2ij )
 
       volume = nua * volcel(scell) / na
-      DEna = 0.d0
+      DEna = 0.0d0
  
       do ia = 1,nua
-c       Find neighbour atoms
+
+C Find neighbour atoms
         nnia = maxna
-        call neighb( scell, 2.d0*rmaxv, na, xa, ia, 0,
+        call neighb( scell, 2.0d0*rmaxv, na, xa, ia, 0,
      .               nnia, jna, xij, r2ij )
-        call chkdim( 'dnaefs', 'maxna', maxna, nnia, 1 )
         do jn = 1,nnia
           ja = jna(jn)
           jua = indxua(ja)
@@ -82,9 +81,9 @@ c       Find neighbour atoms
      .        izofis(is).gt.0 .and. izofis(js).gt.0) then
             rij = sqrt( r2ij(jn) )
             call psover( is, js, rij, vij, dvdr )
-            DEna = DEna + vij / 2.d0
+            DEna = DEna + vij / 2.0d0
             do ix = 1,3
-              fij(ix) = dvdr * xij(ix,jn) / rij / 2.d0
+              fij(ix) = dvdr * xij(ix,jn) / rij / 2.0d0
               fa(ix,ia)  = fa(ix,ia)  + fij(ix)
               fa(ix,jua) = fa(ix,jua) - fij(ix)
               do jx = 1,3
@@ -98,4 +97,3 @@ c       Find neighbour atoms
 
       return
       end
-

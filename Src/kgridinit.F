@@ -1,5 +1,4 @@
-      subroutine kgridinit( cell, kscell, displ,
-     .                  cutoff, nk )
+      subroutine kgridinit( cell, kscell, displ, cutoff, nk )
 
 c **********************************************************************
 c Finds Monkhost-Pack k-point coordinates and weights.
@@ -47,6 +46,7 @@ C
 C  Modules
 C
       use precision
+      use parallel,   only : Node
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -54,19 +54,19 @@ C
 
       implicit          none
 
+C Passed variables
       integer           kscell(3,3), nk
-      double precision  cell(3,3), cutoff, displ(3)
+      real(dp)          cell(3,3), cutoff, displ(3)
       external          idiag, reclat
-c ----------------------------------------------------------------------
 
-c Internal variables
+C Internal variables
       integer           i, ir, iu, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
-     .                  ng(3), ni, nkr(3), nktot, Node
+     .                  ng(3), ni, nkr(3), nktot
 #ifdef MPI
       integer           MPIerror
 #endif
-      double precision  defcut, dkg(3), dkx(3), dscell(3,3),
+      real(dp)          defcut, dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), huge, pi,  
      .                  scell(3,3), scmin(3,3), tiny, vmod
       logical           genlogic, spiral
@@ -74,14 +74,7 @@ c Internal variables
       parameter (huge   = 1.d30)
       parameter (tiny   = 1.d-12)
 
-c Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
-
-c Find out if there is spiral arrangement of spins 
+C Find out if there is spiral arrangement of spins 
       if (Node.eq.0) then
         spiral = fdf_block('SpinSpiral',iu)
       endif
@@ -89,7 +82,7 @@ c Find out if there is spiral arrangement of spins
       call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-c Find total number of points (determinant of kscell)
+C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
      .             kscell(2,1) * kscell(3,2) * kscell(1,3) +
      .             kscell(3,1) * kscell(1,2) * kscell(2,3) -
@@ -97,7 +90,7 @@ c Find total number of points (determinant of kscell)
      .             kscell(2,1) * kscell(1,2) * kscell(3,3) -
      .             kscell(3,1) * kscell(2,2) * kscell(1,3) )
 
-c Look for kscell or cutoff in input fdf file
+C Look for kscell or cutoff in input fdf file
       if ( nktot.eq.0 .and. cutoff.lt.tiny ) then
         if (Node.eq.0) then
           genlogic = fdf_block('kgrid_Monkhorst_Pack',iu)
@@ -129,7 +122,7 @@ c Look for kscell or cutoff in input fdf file
      .                 kscell(2,1) * kscell(1,2) * kscell(3,3) -
      .                 kscell(3,1) * kscell(2,2) * kscell(1,3) )
         else
-c         The second argument is the default value
+C The second argument is the default value
           if (Node.eq.0) then
             cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
           endif
@@ -145,7 +138,7 @@ c         The second argument is the default value
         endif
       endif
 
-c Find kscell from required cutoff
+C Find kscell from required cutoff
       if (nktot .eq. 0) then
         nktot = 1
         do j = 1,3
@@ -159,7 +152,7 @@ c Find kscell from required cutoff
         enddo
       endif
 
-c Find k-grid supercell
+C Find k-grid supercell
       do i = 1,3
         do ix = 1,3
           scell(ix,i) = cell(ix,1) * kscell(1,i) +
@@ -168,7 +161,7 @@ c Find k-grid supercell
         enddo
       enddo
 
-c Find actual cutoff
+C Find actual cutoff
       call minvec( scell, scmin )
       cutoff = huge
       do i = 1,3
@@ -176,7 +169,7 @@ c Find actual cutoff
         cutoff = min( cutoff, vmod/2.d0 )
       enddo
 
-c Find equivalent diagonal supercell
+C Find equivalent diagonal supercell
       call idiag( 3, kscell, kdsc, ml, mr, maux )
       do i = 1,3
         do ix = 1,3
@@ -186,10 +179,10 @@ c Find equivalent diagonal supercell
         enddo
       enddo
 
-c Find k-grid unit vectors
+C Find k-grid unit vectors
       call reclat( dscell, gridk, 1 )
 
-c Find grid origin in cartesian coordinates
+C Find grid origin in cartesian coordinates
       call reclat( scell, gscell, 1 )
       do ix = 1,3
         dkx(ix) = gscell(ix,1) * displ(1) +
@@ -197,7 +190,7 @@ c Find grid origin in cartesian coordinates
      .            gscell(ix,3) * displ(3)
       enddo
 
-c Find grid origin in gridk coordinates
+C Find grid origin in gridk coordinates
       pi = 4.d0 * atan(1.d0)
       do i = 1,3
         dkg(i) = ( dkx(1) * dscell(1,i) +
@@ -205,19 +198,19 @@ c Find grid origin in gridk coordinates
      .             dkx(3) * dscell(3,i) ) / (2*pi)
       enddo
 
-c Some printout for debugging
+C Some printout for debugging
 *     write(6,'(/,a,/,(3f12.6,i6,f12.6))') 'kgrid: gridK,ng,dg =',
 *    .  ((gridk(ix,i),ix=1,3),kdsc(i,i),dkg(i),i=1,3)
 
-c Find total range of grid indexes
+C Find total range of grid indexes
       do j = 1,3
         ng(j) = kdsc(j,j)
       enddo
 
-c Find number of points with time-reversal (inversion) symmetry,
-c (if not spiral) after reflection on each alternative plane
+C Find number of points with time-reversal (inversion) symmetry,
+C (if not spiral) after reflection on each alternative plane
       if (spiral) then
-c       If spiral, use all k points
+C If spiral, use all k points
         nk = nktot
       else
         do j = 1,3
@@ -230,12 +223,12 @@ c       If spiral, use all k points
           nkr(j) = ni * nktot / kdsc(j,j)
         enddo
 
-c       Select reflection plane
+C Select reflection plane
         ir = 3
         if (nkr(2) .lt. nkr(ir)) ir = 2
         if (nkr(1) .lt. nkr(ir)) ir = 1
 
-c       Find k points and weights
+C Find k points and weights
         nk = nkr(ir)
       endif
 

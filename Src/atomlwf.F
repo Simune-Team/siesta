@@ -69,6 +69,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -100,7 +101,7 @@ C  nnmax = maximum number of neighbour atoms within rcoor
      . i,ia,imu,
      . in,index,indexa,indexb,indexi,indexj,iorb,iseed,
      . j,ja,jj,k,mu,nelectr,nm,nna,norb,nqtot,nu,
-     . numloc,Node,Nodes,mul,nct
+     . numloc,mul,nct
 
       integer, dimension(:), allocatable, save ::
      . ilist, iptrgl, indexloc, jan
@@ -134,15 +135,6 @@ C ...........................................................................
       call timer('cspa',1)
 
       tiny = 1.d-10
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Check that iopt is correct ................................................
       if (iopt .ne. 0 .and. iopt .ne. 1) then

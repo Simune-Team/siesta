@@ -22,7 +22,8 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes, ProcessorY
+      use parallelsubs, only : HowManyMeshPerNode
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -46,16 +47,15 @@ C  Local variables
 C
       integer
      .  maxmaxtrigs, ntrigs,
-     .  n1, n2, n3, n2l, n3l, CMeshG(3), CMeshL(3),
-     .  i, n, ng, Node, Nodes, nmeshl, 
-     .  ProcessorZ, IOffSet, OldMesh(3)
+     .  n1, n2, n3, n2l, n3l, CMeshG(3), CMeshL(3), i, n,
+     .  ng, nmeshl, ProcessorZ, IOffSet, OldMesh(3)
       integer, save ::
      .  maxtrigs
       logical
      .  LocalPoints, lredimension
-      real*8
+      real(dp)
      .  scale
-      real*8, dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable, save :: 
      .  trigs
 #ifdef MPI
       integer
@@ -70,14 +70,6 @@ C
       save OldMesh
       data OldMesh/0,0,0/
 
-C
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 C
 C  Set mesh size variables
 C
@@ -263,7 +255,7 @@ C  Julian Gale, July 1999
 C
       use precision
       use mpi_siesta
-      use parallel
+      use parallel,    only : ProcessorY
 
       implicit none
 
@@ -537,7 +529,7 @@ C  Julian Gale, July 1999
 C
       use precision
       use mpi_siesta
-      use parallel
+      use parallel,    only : ProcessorY
 
       implicit none
 

@@ -15,6 +15,7 @@ C
 C  Modules
 C
       use precision
+      use parallel,    only : Node
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -33,20 +34,12 @@ C  Internal variables .................................................
      .  slabel_default*59, sname_default*20
 
       integer 
-     .  count, Node, length, lun, lun_tmp
+     .  count, length, lun, lun_tmp
 
       logical debug_input, file_exists
 #ifdef MPI
       integer
      .  MPIerror
-#endif
-
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
 #endif
 
 C Print Welcome and Presentation .......................................

@@ -71,6 +71,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -106,7 +107,7 @@ C     nm  : index for basis orbitals connected to basis orbital m
 
       integer 
      .  i, ii, in, ind, im, il, iloc, j, jm, jn, m, mi, mn, n, nh, ni,
-     .  Node, Nodes, nl, nm, nn, nbandsmin, nbandsmax, nbandspernode,
+     .  nl, nm, nn, nbandsmin, nbandsmax, nbandspernode,
      .  nbl, nbandsloc, nrow, nrowmax, nsize, nfmaxl, nfmaxg
 #ifdef MPI
       integer
@@ -146,10 +147,6 @@ C Start time counter .....................................................
       call timer('denmat',1)
 
 #ifdef MPI
-C Get Node number
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-
 C Get global sizes for first dimension of H/S
       call MPI_AllReduce(maxnh,maxnhg,1,MPI_integer,MPI_max,
      .  MPI_Comm_World,MPIerror)
@@ -179,8 +176,6 @@ C Find true value of nfmax
       call MPI_AllReduce(nfmaxl,nfmaxg,1,MPI_integer,MPI_max,
      .  MPI_Comm_World,MPIerror)
 #else
-      Node = 0
-      Nodes = 1
       nbandsmin = 1
       nbandsmax = nbands
       nbandspernode = nbands

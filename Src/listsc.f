@@ -23,7 +23,7 @@ C *********************************************************************
 
       INTEGER I1, I2, I3, IC, J1, J2, J3, JC,
      .        KUO, LASTIO, LASTJO, NCELLS, NO
-      EXTERNAL CHKDIM, MEMORY
+      EXTERNAL MEMORY
       
       NCELLS = NSC(1) * NSC(2) * NSC(3)
       NO = NUO * NCELLS

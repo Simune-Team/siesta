@@ -1,7 +1,8 @@
       module on_subs
 
-      use precision, only: dp
-      use parallel
+      use precision, only : dp
+      use parallel,  only : Node, Nodes
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_integer, mpi_max
 #endif
@@ -86,7 +87,7 @@ C ..........................
       return
       end subroutine ctrans1
 
-      subroutine ctrans2s(nr,nc,nmax,ntmax,num,list,numt,Node,Nodes)
+      subroutine ctrans2s(nr,nc,nmax,ntmax,num,list,numt)
 C ********************************************************************
 C Finds the C maximum number of non-zero column elements, ntmax.
 C Adapted from ctrans.
@@ -101,8 +102,6 @@ C integer num(nr)        : Control vector of C matrix
 C                           (number of nonzero elements of each row of C)
 C integer list(nmax,nr)  : Control vector of C matrix
 C                          (list of nonzero elements of each row of C)
-C integer Node           : Local node number
-C integer Nodes          : Total number of global nodes
 C **************************** OUTPUT *********************************
 C integer numt(nc)       : Control vector of C matrix
 C                         (number of nonzero elements of each column of C)
@@ -111,8 +110,7 @@ C                           column of C
 C *********************************************************************
 C
       integer
-     .  nc,nmax,nr,ntmax,Node,Nodes,
-     .  list(nmax,nr),num(nr),numt(nc)
+     .  nc,nmax,nr,ntmax,list(nmax,nr),num(nr),numt(nc)
 
 #ifdef MPI
       integer
@@ -222,7 +220,7 @@ C ..........................
 
 
       subroutine ctrans2(nr,nc,nmax,ntmax,
-     .              num,list,numt,listt,fttoc,Node,Nodes)
+     .              num,list,numt,listt,fttoc)
 C ********************************************************************
 C Finds the C transpose matrix control vectors numt and listt,
 C and the index vector fttoc.
@@ -238,8 +236,6 @@ C integer num(nr)        : Control vector of C matrix
 C                           (number of nonzero elements of each row of C)
 C integer list(nmax,nr)  : Control vector of C matrix
 C                          (list of nonzero elements of each row of C)
-C integer Node           : Local node number
-C integer Nodes          : Total number of global nodes
 C **************************** OUTPUT *********************************
 C integer numt(nc)       : Control vector of C matrix
 C                         (number of nonzero elements of each column of C)
@@ -249,8 +245,7 @@ C integer fttoc(ntmax,nc) : Map from C transpose to C indexing
 C *********************************************************************
 C
       integer
-     .  nc,nmax,nr,ntmax,Node,Nodes,
-     .  fttoc(ntmax,*),list(nmax,nr),listt(ntmax,*),
+     .  nc,nmax,nr,ntmax,fttoc(ntmax,*),list(nmax,nr),listt(ntmax,*),
      .  num(nr),numt(nc)
 
 #ifdef MPI
@@ -375,7 +370,7 @@ C ..........................
 
       subroutine axb_build1s(nramin,nramax,nca,namax,numa,lista,
      .               nrb,ncb,nbmax,numb,listbptr,listb,ncmax,
-     .               numc,node,Nodes)
+     .               numc)
 C ********************************************************************
 C Determines the maximum number of non-zero elements in a row of a
 C sparse matrix C :
@@ -429,7 +424,7 @@ C *********************************************************************
       integer, intent(out) :: ncmax
 !--------------------------------------
       integer
-     .  nca,ncb,namax,nbmax,nramin,nramax,nrb,Node,Nodes,
+     .  nca,ncb,namax,nbmax,nramin,nramax,nrb,
      .  lista(namax,*),listb(nbmax),numa(*),numb(nrb),numc(*),
      .  listbptr(nrb)
 
@@ -582,7 +577,7 @@ C Free local memory
 
       subroutine axb_build1(nramin,nramax,nca,namax,numa,lista,
      .               nrb,ncb,nbmax,numb,listbptr,listb,ncmax,
-     .               numc,listc,node,Nodes)
+     .               numc,listc)
 C ********************************************************************
 C Constructs control indexes of a C matrix in sparse form,
 C C being the product of A and B (also in sparse form)
@@ -633,7 +628,7 @@ C                             matrix elements of each row of C
 C *********************************************************************
 
       integer
-     .  nca,ncb,namax,nbmax,ncmax,nramin,nramax,nrb,Node,Nodes,
+     .  nca,ncb,namax,nbmax,ncmax,nramin,nramax,nrb,
      .  lista(namax,*),listb(nbmax),listc(ncmax,*),numa(*),
      .  numb(nrb),numc(*),listbptr(nrb)
 
@@ -1012,7 +1007,7 @@ C Free local memory
 
 
       subroutine ind_gf(nr,nrloc,ncmin,ncmax,nc,maxnc,nfmax,
-     .              numc,listc,numf,listf,indgf,Node,Nodes)
+     .              numc,listc,numf,listf,indgf)
 C ********************************************************************
 C Maps the F matrix into C matrix
 C Written by P.Ordejon. October'96
@@ -1044,7 +1039,7 @@ C                    (i,j) of C (in sparse notation)
 C *********************************************************************
 
       integer
-     .  maxnc,nc,ncmin,ncmax,nfmax,nn,nr,nrloc,Node,Nodes,
+     .  maxnc,nc,ncmin,ncmax,nfmax,nn,nr,nrloc,
      .  indgf(maxnc,nrloc),listc(maxnc,nr),listf(nfmax,*),
      .  numc(nr),numf(*)
 

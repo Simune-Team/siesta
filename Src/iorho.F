@@ -43,7 +43,8 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes, ProcessorY
+      use parallelsubs, only : HowManyMeshPerNode
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -55,35 +56,27 @@ C Arguments
       character*(*)     fname, task
       integer           maxp, mesh(3), nspin, nsm
       real              rho(maxp,nspin)
-      double precision  cell(3,3)
+      real(dp)          cell(3,3)
       external          io_assign, io_close, memory
 
-c Internal variables and arrays
+C Internal variables and arrays
       character  fform*11
-      integer    i, ip, iu, is, j, np, ns, Node, 
+      integer    i, ip, iu, is, j, np, ns, 
      .           npmax, BlockSizeY, BlockSizeZ, ProcessorZ,
      .           meshnsm(3), npl, NRemY, NRemZ,
      .           iy, iz, izm, Ind, Ind2, ir
 
 #ifdef MPI
       integer    MPIerror, Request, meshl(3),
-     .           Status(MPI_Status_Size), Nodes, BNode, NBlock
+     .           Status(MPI_Status_Size), BNode, NBlock
       logical    ltmp
       real, dimension(:), allocatable, save :: bdens
 #endif
 
       logical    baddim, found
 
-c Fix whether formatted or unformatted files wil be used
+C Fix whether formatted or unformatted files wil be used
       fform = 'unformatted'
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-#endif
 
 #ifdef MPI
 C Work out density block dimensions
@@ -100,10 +93,10 @@ C Work out density block dimensions
       ProcessorZ = 1
 #endif
 
-c Choose between read or write
+C Choose between read or write
       if (task.eq.'read' .or. task.eq.'READ') then
 
-c       Check if input file exists
+C Check if input file exists
         if (Node.eq.0) then
           inquire( file=fname, exist=found )
         endif
@@ -112,12 +105,12 @@ c       Check if input file exists
 #endif
         if (found) then
 
-c         Open file
+C Open file
           if (Node.eq.0) then
             call io_assign( iu )
             open( iu, file=fname, form=fform, status='old' )      
 
-c         Read cell vectors and number of points
+C Read cell vectors and number of points
             if (fform .eq. 'formatted') then
               read(iu,*) cell
               read(iu,*) mesh, ns
@@ -140,7 +133,7 @@ c         Read cell vectors and number of points
 #endif
           np = mesh(1) * mesh(2) * mesh(3)
 
-C  Get local dimensions
+C Get local dimensions
           meshnsm(1) = mesh(1)/nsm
           meshnsm(2) = mesh(2)/nsm
           meshnsm(3) = mesh(3)/nsm
@@ -150,13 +143,13 @@ C  Get local dimensions
           npl = np
 #endif
 
-c  Check dimensions
+C Check dimensions
           baddim = .false.
           if (ns .gt. nspin) baddim = .true.
           if (npl .gt. maxp) baddim = .true.
 
 #ifdef MPI
-C  Globalise dimension check
+C Globalise dimension check
           call MPI_AllReduce(baddim,ltmp,1,MPI_logical,MPI_Lor,
      .      MPI_Comm_World,MPIerror)
           baddim = ltmp
@@ -164,7 +157,7 @@ C  Globalise dimension check
 
           if (baddim) then
 #ifdef MPI
-C  Find largest value of npl
+C Find largest value of npl
             call MPI_AllReduce(npl,npmax,1,MPI_integer,MPI_Max,
      .        MPI_Comm_World,MPIerror)
 #else
@@ -178,27 +171,27 @@ C  Find largest value of npl
             nspin = ns
           endif
 
-C  Outer loop over spins
+C Outer loop over spins
           do is = 1,ns
 
           Ind = 0
 
-C  Loop over Z mesh direction
+C Loop over Z mesh direction
           do iz = 1,ProcessorZ
 
-C  Work out number of mesh points in Z direction
+C Work out number of mesh points in Z direction
             BlockSizeZ = (meshnsm(3)/ProcessorZ)
             NRemZ = meshnsm(3) - BlockSizeZ*ProcessorZ
             if (iz-1.lt.NRemZ) BlockSizeZ = BlockSizeZ + 1
             BlockSizeZ = BlockSizeZ*nsm
 
-C  Loop over local Z mesh points
+C Loop over local Z mesh points
             do izm = 1,BlockSizeZ
 
-C  Loop over blocks in Y mesh direction
+C Loop over blocks in Y mesh direction
               do iy = 1,ProcessorY
 
-C  Work out size of density sub-matrix to be transfered
+C Work out size of density sub-matrix to be transfered
                 BlockSizeY = (meshnsm(2)/ProcessorY)
                 NRemY = meshnsm(2) - BlockSizeY*ProcessorY
                 if (iy-1.lt.NRemY) BlockSizeY = BlockSizeY + 1
@@ -206,12 +199,12 @@ C  Work out size of density sub-matrix to be transfered
 
 #ifdef MPI
                 NBlock = BlockSizeY*mesh(1)
-C  Work out which node block is stored on
+C Work out which node block is stored on
                 BNode = (iy-1)*ProcessorZ + iz - 1
 
                 if (BNode.eq.0.and.Node.eq.BNode) then
 #endif
-C  If density sub-matrix is local Node 0 then just read it in
+C If density sub-matrix is local Node 0 then just read it in
                   if (fform .eq. 'formatted') then
                     do ir = 1,BlockSizeY
                       read(iu,*) (rho(Ind+ip,is),ip=1,mesh(1))
@@ -226,7 +219,7 @@ C  If density sub-matrix is local Node 0 then just read it in
 
 #ifdef MPI
                 elseif (Node.eq.0) then
-C  If this is Node 0 then read and send density sub-matrix
+C If this is Node 0 then read and send density sub-matrix
                   Ind2 = 0
                   if (fform .eq. 'formatted') then
                     do ir = 1,BlockSizeY
@@ -249,7 +242,7 @@ C  If this is Node 0 then read and send density sub-matrix
                   call MPI_Wait(Request,Status,MPIerror)
 
                 elseif (Node.eq.BNode) then
-C  If this is the Node where the density sub-matrix is, then receive
+C If this is the Node where the density sub-matrix is, then receive
 #ifdef NODAT
                   call MPI_IRecv(rho(Ind+1,is),NBlock,MPI_real,
      .              0,1,MPI_Comm_World,Request,MPIerror)
@@ -277,14 +270,14 @@ C  If this is the Node where the density sub-matrix is, then receive
 
         endif
 
-c  Close file
+C Close file
         if (Node.eq.0) then
           call io_close( iu )
         endif
 
       elseif (task.eq.'write' .or. task.eq.'WRITE') then
 
-c  Open file
+C Open file
         if (Node.eq.0) then
           call io_assign( iu )
           open( iu, file=fname, form=fform, status='unknown' )      
@@ -296,7 +289,7 @@ c  Open file
         meshnsm(2) = mesh(2)/nsm
         meshnsm(3) = mesh(3)/nsm
 
-c       Write data
+C Write data
         if (Node.eq.0) then
           if (fform .eq. 'formatted') then
             do i = 1,3
@@ -309,12 +302,12 @@ c       Write data
           endif
         endif
 
-C  Outer loop over spins
+C Outer loop over spins
         do is = 1,nspin
 
           Ind = 0
 
-C  Loop over Z dimension of processor grid
+C Loop over Z dimension of processor grid
           do iz = 1,ProcessorZ
 
             BlockSizeZ = (meshnsm(3)/ProcessorZ)
@@ -322,13 +315,13 @@ C  Loop over Z dimension of processor grid
             if (iz-1.lt.NRemZ) BlockSizeZ = BlockSizeZ + 1
             BlockSizeZ = BlockSizeZ*nsm
 
-C  Loop over local Z mesh points
+C Loop over local Z mesh points
             do izm = 1,BlockSizeZ
 
-C  Loop over blocks in Y mesh direction
+C Loop over blocks in Y mesh direction
               do iy = 1,ProcessorY
 
-C  Work out size of density sub-matrix to be transfered
+C Work out size of density sub-matrix to be transfered
                 BlockSizeY = (meshnsm(2)/ProcessorY)
                 NRemY = meshnsm(2) - BlockSizeY*ProcessorY
                 if (iy-1.lt.NRemY) BlockSizeY = BlockSizeY + 1
@@ -336,12 +329,12 @@ C  Work out size of density sub-matrix to be transfered
 
 #ifdef MPI
                 NBlock = BlockSizeY*mesh(1)
-C  Work out which node block is stored on
+C Work out which node block is stored on
                 BNode = (iy-1)*ProcessorZ + iz - 1
 
                 if (BNode.eq.0.and.Node.eq.BNode) then
 #endif
-C  If density sub-matrix is local Node 0 then just write it out
+C If density sub-matrix is local Node 0 then just write it out
                   if (fform .eq. 'formatted') then
                     do ir = 1,BlockSizeY
                       write(iu,'(e15.6)') (rho(Ind+ip,is),
@@ -357,7 +350,7 @@ C  If density sub-matrix is local Node 0 then just write it out
 
 #ifdef MPI
                 elseif (Node.eq.0) then
-C  If this is Node 0 then recv and write density sub-matrix
+C If this is Node 0 then recv and write density sub-matrix
 #ifdef NODAT
                   call MPI_IRecv(bdens,NBlock,MPI_real,BNode,1,
      .              MPI_Comm_World,Request,MPIerror)
@@ -368,7 +361,7 @@ C  If this is Node 0 then recv and write density sub-matrix
                   call MPI_Wait(Request,Status,MPIerror)
 
                 elseif (Node.eq.BNode) then
-C  If this is the Node where the density sub-matrix is, then send
+C If this is the Node where the density sub-matrix is, then send
 #ifdef NODAT
                   call MPI_ISend(rho(Ind+1,is),NBlock,MPI_real,0,1,
      .              MPI_Comm_World,Request,MPIerror)
@@ -410,7 +403,7 @@ C  If this is the Node where the density sub-matrix is, then send
         enddo
 
         if (Node.eq.0) then
-c       Close file
+C Close file
           call io_close( iu )
         endif
 

@@ -64,6 +64,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -87,14 +88,14 @@ C
 C Internal variables ......................................................
 
       integer
-     .  i,ib,in,ind,j,jn,k,kl,kn,knk,knlh,Nodes,nn,nbandsmin,
+     .  i,ib,in,ind,j,jn,k,kl,kn,knk,knlh,nn,nbandsmin,
      .  nbandsmax,nbandspernode,iloc,nbandsloc,nfmaxg,nfmaxl,
      .  nhijmaxg
       integer, dimension(:), allocatable, save :: 
      .  iptr
 #ifdef MPI
       integer
-     .  MPIerror, nbl, nh, maxnhg, nhijmaxl, nremainder, ii, Node
+     .  MPIerror, nbl, nh, maxnhg, nhijmaxl, nremainder, ii
       integer, dimension(:), allocatable ::
      .  listhlptr, listhl, numhl
       double precision 
@@ -117,10 +118,6 @@ C Internal variables ......................................................
 C..................
 
 #ifdef MPI
-C Get Node number
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-
 C Get global sizes for first dimension of H/S
       call MPI_AllReduce(maxnh,maxnhg,1,MPI_integer,MPI_max,
      .  MPI_Comm_World,MPIerror)

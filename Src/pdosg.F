@@ -1,8 +1,7 @@
       subroutine pdosg( nspin, nuo, no, maxspn, maxuo, maxnh, 
      .                  maxo, numh, listhptr, listh, H, S,
      .                  E1, E2, nhist, sigma, indxuo, eo, 
-     .                  haux, saux, psi, dtot, dpr, nuotot,
-     .                  Node, Nodes )
+     .                  haux, saux, psi, dtot, dpr, nuotot )
 
 C **********************************************************************
 C Find the density of states projected onto the atomic orbitals
@@ -36,8 +35,6 @@ C real*8  sigma             : Width of the gaussian to expand the eigenvectors
 C integer indxuo(no)        : Index of equivalent orbital in unit cell
 C real*8  eo(maxo,maxspn)   : Eigenvalues
 C integer nuotot            : Total number of orbitals per unit cell
-C integer Node              : Local node number
-C integer Nodes             : Total number of nodes
 C ****  AUXILIARY  *****************************************************
 C real*8  haux(nuo,nuo)     : Auxiliary space for the hamiltonian matrix
 C real*8  saux(nuo,nuo)     : Auxiliary space for the overlap matrix
@@ -48,7 +45,8 @@ C real*8  dpr(nhist,nuo,2): Proyected density of states
 C **********************************************************************
 
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -57,13 +55,13 @@ C **********************************************************************
 
       integer
      .  nspin, nuo, no, maxspn, maxuo, maxnh, 
-     .  maxo, nhist, nuotot, Node, Nodes
+     .  maxo, nhist, nuotot
 
       integer
      .  numh(nuo), listhptr(nuo), listh(maxnh),
      .  indxuo(no)
 
-      double precision
+      real(dp)
      .  H(maxnh,nspin), S(maxnh), E1, E2, sigma, eo(maxo,maxspn),
      .  haux(nuotot,nuo), saux(nuotot,nuo), psi(nuotot,nuo),
      .  dtot(nhist,2), dpr(nhist,maxuo,2) 
@@ -73,15 +71,15 @@ C Internal variables ---------------------------------------------------
      .  ispin, iuo, juo, io, j, jo, ihist, iband, ind,
      .  ierror, ibandg
 
-      double precision
+      real(dp)
      .  delta, ener, diff, pi, pipj1, gauss, norm
 
 #ifdef MPI
       integer ::
      .  BNode, Bnuo, maxnuo, MPIerror
-      real*8, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  Sloc
-      real*8, dimension(:,:,:), allocatable, save ::
+      real(dp), dimension(:,:,:), allocatable, save ::
      .  tmp
 #endif
 
@@ -117,7 +115,7 @@ C Build the full Hamiltonian and overlap matrix
 
 C Diagonalize at the Gamma point
         call rdiag( haux, saux, nuotot, nuo, nuotot, maxuo,
-     .              eo(1,ispin), psi, ierror )
+     .              eo(1,ispin), psi, nuotot, ierror )
 
 C Rebuild the full overlap matrix
         do iuo = 1, nuo

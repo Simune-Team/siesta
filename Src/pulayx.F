@@ -79,7 +79,7 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,   only : Node, Nodes
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -93,11 +93,11 @@ C
        integer  
      .  numd(*),listdptr(*)
 
-       real*8 
+       real(dp) 
      .  alpha,alphakick,dmax,
      .  dmnew(maxnd,nspin),dmold(maxnd,nspin)
 
-       real*8
+       real(dp)
      .  savedm(dimaux), savere(dimaux)
 
        logical
@@ -111,42 +111,30 @@ C
 
 C Internal variables ....................................................
        integer
-     .  i0,i,ii,in,is,isite,j,jj,jtape,jtap1,numel,Node,Nodes,
-     .  ind,info,maxmix
+     .  i0,i,ii,in,is,isite,j,jj,jtape,jtap1,numel,ind,info,maxmix
 
 #ifdef MPI
        integer
      .  MPIerror
 #endif
 
-       real*8 
+       real(dp) 
      .  sum
-       real*8, dimension(:,:), allocatable, save ::
+       real(dp), dimension(:,:), allocatable, save ::
      .  b, bi
-       real*8, dimension(:), allocatable, save ::
+       real(dp), dimension(:), allocatable, save ::
      .  buffer
-       real*8, dimension(:), allocatable, save ::
+       real(dp), dimension(:), allocatable, save ::
      .  coeff
 
        character
      .  fname1*33, fname2*33, sname*30
 
-       logical
-     .  frstme
+       logical, save :: frstme = .true.
 
-       save frstme, sname
+       save sname
 
-       data  frstme /.true./
 C ........................
-
-C Get Node number
-#ifdef MPI
-       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-       call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-       Node = 0
-       Nodes = 1
-#endif
 
        if (frstme) then
          if (Node.eq.0) then

@@ -3,26 +3,16 @@ C
 C  Modules
 C
       use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use parallel, only : Node
 
       IMPLICIT DOUBLE PRECISION (A-H,K,O-Z)
 
       integer :: i, j, i1, i2, i3
 
       PARAMETER (ZERO=0.D0,HALF=.5D0,TINY=1.D-8,BIG=1.D20)
-      DOUBLE PRECISION K(3),BG(3,3),BM(3,3),G(3)
-      INTEGER MESH(3),Node
-#ifdef MPI
-      integer MPIerror
-#endif
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
+      real(dp) K(3),BG(3,3),BM(3,3),G(3)
+      INTEGER MESH(3)
+
       DO I=1,3
         DO J=1,3
           BM(J,I)=BG(J,I)*MESH(I)

@@ -1,19 +1,21 @@
-      subroutine rdiag(h,s,n,nm,nml,maxuo,w,z,ierror)
+      subroutine rdiag(H,S,n,nm,nml,maxuo,w,Z,neigvec,ierror)
 C ***************************************************************************
 C Subroutine  to solve all eigenvalues and eigenvectors of the
 C real general eigenvalue problem  H z = w S z,  with H and S
 C real symmetric matrices, by calling the  LAPACK routine DSYGV
-C Writen by G.Fabricius and J.Soler, March 1998
+C Written by G.Fabricius and J.Soler, March 1998
+C Rewritten by Julian Gale, June 2004
 C ************************** INPUT ******************************************
-C real*8 h(nml,nm)                 : Symmetric H matrix
-C real*8 s(nml,nm)                 : Symmetric S matrix
-C integer n                        : Order of  the generalized  system
+C real*8 H(nml,nm)                 : Symmetric H matrix
+C real*8 S(nml,nm)                 : Symmetric S matrix
+C integer n                        : Order of the generalized  system
 C integer nm                       : Right hand dimension of H and S matrices
 C integer nml                      : Left hand dimension of H and S matrices
 C                                    which is greater than or equal to nm
+C integer neigvec                  : No. of eigenvectors to calculate
 C ************************** OUTPUT *****************************************
 C real*8 w(nml)                    : Eigenvalues
-C real*8 z(nml,maxuo)              : Eigenvectros
+C real*8 Z(nml,nm)                 : Eigenvectors
 C integer ierror                   : Flag indicating success code for routine
 C                                  :  0 = success
 C                                  : -1 = repeat call as memory is increased
@@ -36,282 +38,345 @@ C  Modules
 C
       use precision
       use fdf
+      use parallel,   only : Node, Nodes, BlockSize
+      use diagmemory, only : MemoryFactor
 #ifdef MPI
-      use mpi_siesta, only: mpi_comm_world
-      use parallel
+      use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
 #endif
-      use diagmemory, only: memoryfactor, memoryscale, trymemoryincrease
       use alloc
+      use sys,       only : die
 
       implicit          none
 
+C Passed variables
+      integer                 :: ierror
+      integer                 :: maxuo
+      integer                 :: n
+      integer                 :: neigvec
+      integer                 :: nm
+      integer                 :: nml
+      real(dp)                :: H(nml,nm)
+      real(dp)                :: S(nml,nm)
+      real(dp)                :: w(nml)
+      real(dp)                :: Z(nml,nm)
+
+C Local variables
       type(allocDefaults) oldDefaults
 #ifdef MPI
-
-      integer                :: desch(9)
-      integer                :: descs(9)
-      integer                :: descz(9)
-      integer                :: MPIerror
-      integer                :: nprow
-      integer                :: npcol
-      integer                :: ictxt
-      integer                :: mvfound
-      integer                :: mfound
-      integer                :: nmmax
-      integer, pointer, save :: iclustr(:)
-      integer, pointer, save :: ifail(:)
-      real*8                 :: abstol
-      real*8                 :: orfac
-      real*8,  pointer, save :: gap(:)
-      logical                :: BlacsOK
-      logical                :: Serial
+      integer                 :: anb
+      integer                 :: desch(9)
+      integer                 :: MPIerror
+      integer                 :: iacol
+      integer                 :: iarow
+      integer                 :: iceil
+      integer                 :: ictxt
+      integer                 :: indxg2p
+      integer                 :: lwork2
+      integer                 :: mq0
+      integer                 :: mvfound
+      integer                 :: mfound
+      integer                 :: mycol
+      integer                 :: myrow
+      integer                 :: nn
+      integer                 :: np
+      integer                 :: np0
+      integer                 :: npcol
+      integer                 :: nprow
+      integer                 :: nps
+      integer                 :: nq
+      integer                 :: nsygst_lwopt
+      integer                 :: nsytrd_lwopt
+      integer                 :: nt
+      integer                 :: numroc
+      integer                 :: pjlaenv
+      integer                 :: sqnpc
+      integer,  pointer, save :: iclustr(:)
+      real(dp), pointer, save :: gap(:)
+      logical                 :: BlacsOK
 #endif
-      character              :: jobz
-      character              :: range
-      character              :: uplo
-      integer                :: i1
-      integer                :: i2
-      integer                :: ierror
-      integer                :: info
-      integer                :: liwork
-      integer                :: lwork
-      integer                :: maxuo
-      integer                :: n
-      integer                :: nm
-      integer                :: nml
-      integer                :: Node
-      integer                :: Nodes
-      integer, pointer, save :: iwork(:)
-      logical,          save :: DivideConquer
-      logical,          save :: DCread
-      logical,          save :: nullified = .false.
-      real*8                 :: h(nml,nm)
-      real*8                 :: s(nml,nm)
-      real*8                 :: w(nml)
-      real*8                 :: z(nml,maxuo)
-      real*8,  pointer, save :: work(:)
-
-      data DCread /.false./
-C ......................
+      character               :: jobz
+      character               :: range
+      integer                 :: i1
+      integer                 :: i2
+      integer                 :: ilaenv
+      integer                 :: info
+      integer                 :: liwork
+      integer                 :: lwork
+      integer                 :: neigok
+      integer                 :: nb
+      integer                 :: nz
+      integer,  pointer, save :: ifail(:)
+      integer,  pointer, save :: iwork(:)
+      logical,           save :: DivideConquer
+      logical,           save :: DCread = .true.
+      logical,           save :: nullified = .false.
+      logical                 :: Serial
+      real(dp)                :: abstol
+      real(dp)                :: one
+      real(dp)                :: orfac
+      real(dp)                :: scale
+      real(dp)                :: vl
+      real(dp)                :: vu
+      real(dp), pointer, save :: work(:)
 
 C Start time count
       call timer('rdiag',1)
 
 C Nullify pointers
       if (.not.nullified) then
-        nullify( iwork )
-        nullify( work )
+        nullify( ifail, iwork, work )
 #ifdef MPI
-        nullify( gap, iclustr, ifail )
+        nullify( gap, iclustr )
 #endif
         nullified = .true.
       endif
 
 C Get old allocation defaults and set new ones
-      call alloc_default( old=oldDefaults,
-     .                    copy=.false., shrink=.true.,
+      call alloc_default( old=oldDefaults, copy=.false., shrink=.true.,
      .                    imin=1, routine='rdiag' )
+
+C*******************************************************************************
+C Setup                                                                        *
+C*******************************************************************************
 
 C Initialise error flag
       ierror = 0
 
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
+C Set algorithm logicals
       Serial = (nm.eq.nml.or.Nodes.eq.1)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-C Set general Lapack parameters
-      jobz='V'
-      uplo='U'
-      range='A'
-
-C Set divide and conquer option - serial only
-      if (Nodes.eq.1) then
-        if (.not. DCread) then
+      if (DCread) then
+        DCread = .false.
+        if (Node.eq.0) then
           DivideConquer = fdf_boolean( 'DivideAndConquer', .false. )
-          DCread=.true.
         endif
-      else
-        DivideConquer = .false.
+#ifdef MPI
+        call MPI_Bcast(DivideConquer,1,MPI_logical,0,MPI_Comm_World,
+     .    MPIerror)
+#endif
       endif
 
 #ifdef MPI
-      if (.not.Serial) then
-C*****************************
-C  Parallel diagonalisation  *
-C*****************************
-C Accuracy for eigenvalues
-        abstol = 1.0d-8
-C Accuracy for orthogonalisation
-        orfac = 1.0d-3
-
-C Calculate sizes of workspace arrays and add margin of error
-        nmmax = (nml/Nodes) + BlockSize
-        lwork = 5*nml+max(5*nml,nmmax*nml+2*BlockSize*BlockSize)+
-     .          ((nml/Nodes)+1)*nml
-        liwork = 6*max(nml,Nodes+1,4)
-        lwork = nint(MemoryFactor*dble(lwork))
-
-C Allocate workspace arrays
-        call re_alloc( work,    1,lwork,   name='work'  )
-        call re_alloc( iwork,   1,liwork,  name='iwork' )
-        call re_alloc( gap,     1,Nodes,   name='gap'     )
-        call re_alloc( iclustr, 1,2*Nodes, name='iclustr' )
-        call re_alloc( ifail,   1,nml,     name='ifail'   )
-
 C Get Blacs context and initialise Blacs grid 
+      if (.not.Serial) then
         nprow = 1
         npcol = Nodes
         call blacs_get( -1, 0, ictxt )
         call blacs_gridinit( ictxt, 'C', nprow, npcol )
 
-C Distribute matrices over grid
-        BlacsOK = .true.
+C Set up blacs descriptors for parallel case
+        BlacsOK = .true.                                                       
         call descinit( desch, nml, nml, BlockSize, BlockSize, 0, 0, 
      .    ictxt, nml, info )
         if (info.ne.0) BlacsOK = .false.
-        call descinit( descs, nml, nml, BlockSize, BlockSize, 0, 0, 
-     .    ictxt, nml, info )
-        if (info.ne.0) BlacsOK = .false.
-        call descinit( descz, nml, nml, BlockSize, BlockSize, 0, 0, 
-     .    ictxt, nml, info )
-        if (info.ne.0) BlacsOK = .false.
         if (.not.BlacsOK) then
-        write(6,'('' ERROR : Blacs has failed to initialise in rdiag!''
-     .    )')
-        call MPI_Abort(MPI_Comm_World,1,MPIerror)
+          call die('ERROR : Blacs setup has failed in rdiag!')
         endif
-
-C Call Scalapack to diagonalise matrix
-#ifdef CRAY
-        call pssygvx
-#else
-        call pdsygvx
+      endif
 #endif
-     .     (1,jobz,range,uplo,nml,h,1,1,desch,s,1,1,descs,
-     .      0.0d0,0.0d0,0,0,abstol,mfound,mvfound,w,orfac,z,1,1,descz,
-     .      work,lwork,iwork,liwork,ifail,iclustr,gap,info)
 
-C Exit Blacs
-        call blacs_gridexit( ictxt )
-
-C Deallocate workspace arrays
-        call de_alloc( iwork,   name='iwork'  )
-        call de_alloc( work,    name='work'   )
-        call de_alloc( ifail,   name='ifail'  )
-        call de_alloc( iclustr, name='iclustr')
-        call de_alloc( gap,     name='gap'    )
+C Set general Lapack parameters
+      if (neigvec.gt.0) then
+        jobz   = 'V'
+        if (neigvec.eq.nml) then
+          range  = 'A'
+        else
+          range  = 'I'
+        endif
       else
-#endif
-C***************************
-C  Serial diagonalisation  *
-C***************************
-        if (DivideConquer) then
+        jobz   = 'N'
+        range  = 'A'
+      endif
+      abstol = 1.0d-8
+      orfac  = 1.0d-3
+      one = 1.0d0
 
-C Set size of workspace arrays
-          lwork = 1 + 6*nm + 2*nm*nm
-          liwork = 3 + 5*nm
+C Calculate memory requirements
+      if (Serial) then
+        if (DivideConquer) then
+          if (neigvec.gt.0) then
+            lwork = 1 + 6*n + n*n
+            liwork = 3 + 5*n
+          else
+            lwork = 1 + 2*n
+            liwork = 1
+          endif
+        else
+          nb = ilaenv(1,'DSYTRD','U',n,-1,-1,-1)
+          lwork = max(8*n,(nb+3)*n)
+          liwork = 5*n
+        endif
+#ifdef MPI
+      else
+        call blacs_gridinfo(desch(2),nprow,npcol,myrow,mycol)
+        if (DivideConquer) then
+          np0 = numroc(n,BlockSize,0,0,nprow)
+          mq0 = numroc(n,BlockSize,0,0,npcol)
+          lwork = max(BlockSize*(np0+1),3*BlockSize)
+          lwork2 = BlockSize*(2*np0 + mq0 + BlockSize)
+          lwork = max(lwork,lwork2)
+          iarow = indxg2p(1,BlockSize,myrow,desch(7),nprow)
+          iacol = indxg2p(1,BlockSize,mycol,desch(8),npcol)
+          np = numroc(n,BlockSize,myrow,iarow,nprow)
+          nq = numroc(n,BlockSize,mycol,iacol,npcol)
+          nt = 3*n + max(BlockSize*(np+1),3*BlockSize)
+          lwork2 = max(1+6*n+2*np*nq,nt) + 2*n
+          lwork = max(lwork,lwork2)
+          liwork = 7*n + 8*Nodes + 2
+        else
+          nn = max(n,BlockSize)
+          np0 = numroc(nn,BlockSize,0,0,1)
+          if (neigvec.gt.0) then
+            mq0 = numroc(max(n,BlockSize),BlockSize,0,0,Nodes)
+            lwork = 5*n + max(5*nn,np0*mq0+2*BlockSize*BlockSize) +
+     .              iceil(neigvec,Nodes)*nn
+            anb = pjlaenv(ictxt,3,'PDSYTTRD','L',0,0,0,0)
+            sqnpc = int(sqrt(dble(Nodes)))
+            nps = max(numroc(n,1,0,0,sqnpc),2*anb)
+            nsytrd_lwopt = n + 2*(anb + 1)*(4*nps + 2) + 
+     .                     (nps + 3)*nps
+            nsygst_lwopt = (2*np + nq)*BlockSize + 
+     .                     BlockSize*BlockSize
+            lwork2 = max(5*n + nsytrd_lwopt,nsygst_lwopt)
+            lwork = max(lwork,lwork2)
+          else
+            lwork = 5*n + max(5*nn,BlockSize*(np+1))
+          endif
+          liwork = 6*max(n,Nodes+1,4)
+        endif
+#endif
+      endif
+
+C Scale memory by memory factor
+      lwork = nint(MemoryFactor*dble(lwork))
 
 C Allocate workspace arrays
-          call re_alloc( work,  1,lwork,  name='work'  )
-          call re_alloc( iwork, 1,liwork, name='iwork' )
-
-C Call lapack
-#ifdef CRAY
-          call ssygvd
-#else
-          call dsygvd
-#endif
-     .      (1,jobz,uplo,n,h,nm,s,nm,w,work,lwork,iwork,liwork,info)
-
-C Deallocate workspace arrays
-          call de_alloc( iwork,   name='iwork'  )
-          call de_alloc( work,    name='work'   )
-
-        else
-
-C Set size of workspace array
-          lwork = 5*nm
-
-C Allocate workspace array
-          call re_alloc( work, 1,lwork, name='work' )
-
-C Call lapack
-#ifdef CRAY
-          call ssygv
-#else
-          call dsygv
-#endif
-     .      (1,jobz,uplo,n,h,nm,s,nm,w,work,lwork,info)
-
-C Deallocate workspace array
-          call de_alloc( work, name='work' )
-        endif
-
-C Copy eigenvectors into appropriate array
-        do i1 = 1,n
-          do i2 = 1,n
-            z(i2,i1) = h(i2,i1)
-          enddo
-        enddo
+      call re_alloc( work,    1,lwork,   name='work'  )
+      call re_alloc( iwork,   1,liwork,  name='iwork' )
+      call re_alloc( ifail,   1,nml,     name='ifail'   )
 #ifdef MPI
-      endif
+      call re_alloc( gap,     1,Nodes,   name='gap'     )
+      call re_alloc( iclustr, 1,2*Nodes, name='iclustr' )
 #endif
+
+C*******************************************************************************
+C Factorise overlap matrix                                                     *
+C*******************************************************************************
+      call timer('rdiag1',1)
+      if (Serial) then
+        call dpotrf('U',n,S,nml,info)
+#ifdef MPI
+      else
+        call pdpotrf('U',n,S,1,1,desch,info)
+#endif
+      endif
+      if (info.ne.0) then
+        call die('Error in Cholesky factorisation in rdiag')
+      endif
+      call timer('rdiag1',2)
+
+C*******************************************************************************
+C Transform problem to standard eigenvalue problem                             *
+C*******************************************************************************
+      call timer('rdiag2',1)
+      if (Serial) then
+        call dsygst(1,'U',n,H,nml,S,nml,info)
+#ifdef MPI
+      else
+        call pdsyngst(1,'U',n,H,1,1,desch,S,1,1,
+     .                desch,scale,work,lwork,info)
+#endif
+      endif
+      if (info.ne.0) then
+        call die('Error in forward transformation in rdiag')
+      endif
+      call timer('rdiag2',2)
+
+C*******************************************************************************
+C Solve standard eigenvalue problem                                            *
+C*******************************************************************************
+      call timer('rdiag3',1)
+      if (Serial) then
+        if (DivideConquer) then
+          call dsyevds(jobz,'U',n,H,nml,w,Z,nml,work,lwork,iwork,
+     .      liwork,info)
+          neigok = n
+        else
+          call dsyevx(jobz,range,'U',n,H,nml,vl,vu,1,neigvec,abstol,
+     .                neigok,w,Z,nml,work,lwork,iwork,ifail,info)
+        endif
+#ifdef MPI
+      else
+        if (DivideConquer) then
+          call pdsyevd(jobz,'U',n,H,1,1,desch,w,Z,1,1,desch,work,
+     .      lwork,iwork,liwork,info)
+          neigok = n
+        else
+          call pdsyevx(jobz,range,'U',n,H,1,1,desch,vl,vu,1,neigvec,
+     .                 abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
+     .                 lwork,iwork,liwork,ifail,iclustr,gap,info)
+        endif
+#endif
+      endif
 
 C Check error flag
-      if (info .ne. 0) then
+      if (info.ne.0) then
         ierror = 1
-        if (Node.eq.0) then
-          if (info.lt.0) then
-            write(6,*) 'rdiag: ERROR in routine dsygv:'
-            write(6,*) -info,'-th argument had an illegal value'
-          elseif (info.le.n)   then
-#ifdef MPI
-            if (TryMemoryIncrease) then
-              if (MemoryScale.eq.1.0d0) then
-                ierror = -2
-              else
-                ierror = -1
-                MemoryFactor = MemoryScale*MemoryFactor
-                write(6,*) 'Diagonalisation failed to converged'
-                write(6,*) 'Memory factor increased to ',MemoryFactor
-              endif
-            else
-              write(6,*) 'DSYGV failed to converge. ',info,
-     .          ' off-diagonal elements of an intermediate '
-              write(6,*) 'tridiagonal form did not converge to zero'
-            endif
-#else
-            write(6,*) 'DSYGV failed to converge. ',info,
-     .        ' off-diagonal elements of an intermediate '
-            write(6,*) 'tridiagonal form did not converge to zero'
-#endif
-          else
-            write(6,*)'The leading minor of order ',info-n,
-     .        ' of B is not positive definite.'
-            write(6,*)'The factorization of B could not be completed',
-     .        ' and no eigenvalues or eigenvectors were computed.'
-          endif
-        else
-          if (info.le.n.and.info.gt.0.and.TryMemoryIncrease) then
-            if (MemoryScale.eq.1.0d0) then
-              ierror = -2
-            else
-              ierror = -1
-              MemoryFactor = MemoryScale*MemoryFactor
-            endif
-          endif
+        if (info.lt.0) then
+          call die('Illegal argument to standard eigensolver')
+        elseif (info.gt.0)   then
+          call die('Failure to converge standard eigenproblem')
         endif
       endif
+      if (neigok.lt.neigvec) then
+        call die('Insufficient eigenvalues converged in rdiag')
+      endif
+      call timer('rdiag3',2)
+
+C*******************************************************************************
+C Back transformation                                                          *
+C*******************************************************************************
+      call timer('rdiag4',1)
+      if (Serial) then
+        call dtrsm('Left','U','N','Non-unit',n,neigvec,one,
+     .             S,nml,Z,nml)
+#ifdef MPI
+      else
+        call pdtrsm('Left','U','N','Non-unit',n,neigvec,one,
+     .              S,1,1,desch,Z,1,1,desch)
+        if (scale.ne.one) then
+          call dscal(n,scale,w,1)
+        endif
+#endif
+      endif
+      if (info.ne.0) then
+        call die('Error in back transformation in rdiag')
+      endif
+      call timer('rdiag4',2)
+
+C*******************************************************************************
+C Clean up                                                                     *
+C*******************************************************************************
+
+C Deallocate workspace arrays
+#ifdef MPI
+      call de_alloc( iclustr, name='iclustr')
+      call de_alloc( gap,     name='gap'    )
+#endif
+      call de_alloc( ifail,   name='ifail'  )
+      call de_alloc( iwork,   name='iwork'  )
+      call de_alloc( work,    name='work'   )
+
+#ifdef MPI
+C Exit Blacs
+      if (.not.Serial) then
+        call blacs_gridexit( ictxt )
+      endif
+#endif
 
 C  Restore old allocation defaults
       call alloc_default( restore=oldDefaults )
 
 C Stop time count
       call timer('rdiag',2)
+
       end

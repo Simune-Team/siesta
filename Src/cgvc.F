@@ -42,6 +42,7 @@ C
 C  Modules
 C
       use precision
+      use parallel,    only : Node
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -53,7 +54,7 @@ C
 
       logical           relaxd, varcel, usesavecg
 
-      double precision  cell(3,3), stress(3,3), 
+      real(dp)          cell(3,3), stress(3,3), 
      .                  xa(3,na), fa(3,na),
      .                  tp, ftol, strtol, volume, dxmax
 
@@ -64,19 +65,19 @@ c Internal variables and arrays
 
       logical           tarstr, frstme, found
 
-      integer           iu, ia, ndeg, i, j, n, indi, linmin, Node
+      integer           iu, ia, ndeg, i, j, n, indi, linmin
 
 #ifdef MPI
       integer           MPIerror
 #endif
 
-      double precision  
+      real(dp)          
      .                  cgcntr(0:20), tstres(3,3), celli(3,3), 
      .                  modcel(3), kBar, precon, strain(3,3), 
      .                  sxx, syy, szz, sxy, sxz, syz, cellin(3,3)
 
-      double precision, dimension(:), allocatable, save :: gxa, gfa
-      double precision, dimension(:), allocatable, save :: cgaux
+      real(dp), dimension(:), allocatable, save :: gxa, gfa
+      real(dp), dimension(:), allocatable, save :: cgaux
 
       save              frstme, ndeg, tstres, cgcntr, kBar,
      .                  modcel, precon, strain, cellin, linmin
@@ -86,13 +87,6 @@ c Internal variables and arrays
      .                  tarstr      /.false./
 
 c ---------------------------------------------------------------------------
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C Allocate local memory
       allocate(gfa(na*3 + 6))

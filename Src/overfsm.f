@@ -1,8 +1,7 @@
       subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
      .                   maxna, maxnh, maxnd, lasto, iphorb, isa, 
      .                   numd, listdptr, listd, numh, listhptr, listh, 
-     .                   nspin, Emat, jna, xij, r2ij, fa, stress, S,
-     .                   Node, Nodes)
+     .                   nspin, Emat, jna, xij, r2ij, fa, stress, S)
 C *********************************************************************
 C Overlap matrix and orthonormalization contribution to forces and stress.
 C Energies in Ry. Lengths in Bohr.
@@ -38,8 +37,6 @@ C integer Emat(maxnd,nspin): Energy-Density matrix
 C integer jna(maxna)       : Aux. space to find neighbours (indexes)
 C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
 C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
-C integer Node             : Local node number
-C integer Nodes            : Total number of nodes
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 C ********************** INPUT and OUTPUT *****************************
@@ -50,13 +47,14 @@ C
 C  Modules
 C
       use precision
-      use parallel
-      use atmfuncs, only: rcut
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GlobalToLocalOrb
+      use atmfuncs,      only : rcut
 
       implicit none
 
       integer
-     . maxna, maxnd, maxnh, maxo, na, no, nspin, nua, Node, Nodes
+     . maxna, maxnd, maxnh, maxo, na, no, nspin, nua
 
       integer
      . indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 

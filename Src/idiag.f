@@ -1,5 +1,3 @@
-C $Id: idiag.f,v 1.6 2004/06/10 16:17:00 wdpgaara Exp $
-
       SUBROUTINE IDIAG (NN,MOLD,MNEW,MLEFT,MRIGHT,MAUX)
 
 C GIVEN A SQUARE INTEGER MATRIX MOLD, FINDS A DIAGONAL MATRIX MNEW,
@@ -11,10 +9,12 @@ C Written by J.Moreno and J.M.Soler
       integer :: jmin
 
       INTEGER MOLD(NN,NN),MNEW(NN,NN),MLEFT(NN,NN),MRIGHT(NN,NN),
-     .        MAUX(NN,NN,2)
+     .        MAUX(NN,NN,2),ISUM
       PARAMETER (NITER=50,IBIG=9999999)
+      ISUM = 0
       DO 20 J=1,NN
         DO 10 I=1,NN
+          ISUM = ISUM + ABS(MOLD(I,J))
           MNEW(I,J)=MOLD(I,J)
           MLEFT(I,J)=0
           MRIGHT(I,J)=0
@@ -24,6 +24,7 @@ C Written by J.Moreno and J.M.Soler
         MRIGHT(J,J)=1
         MAUX(J,J,1)=1
    20 CONTINUE
+      IF (ISUM.EQ.0) RETURN
       DO 60 N=NN,2,-1
         DO 50 ITER=1,NITER
           MMIN=IBIG

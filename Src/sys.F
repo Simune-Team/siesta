@@ -3,21 +3,16 @@
       CONTAINS
 
       subroutine die(str)
+
+      use parallel, only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
 
       character(len=*), intent(in), optional   :: str
 
-      integer Node
 #ifdef MPI
       integer MPIerror, rc
-#endif
-
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
 #endif
 
       if (Node.eq.0) then
@@ -36,21 +31,16 @@
       end subroutine die
 
       subroutine bye(str)
+
+      use parallel, only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
 
       character(len=*), intent(in), optional   :: str
 
-      integer Node
 #ifdef MPI
       integer MPIerror, rc
-#endif
-
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
 #endif
 
       if (Node.eq.0) then

@@ -1,6 +1,5 @@
       subroutine fixed( cell, stress, na, isa, amass, xa, fa,
      .                  cstress, cfa, ntcon )
-
 c **********************************************************************
 c Reads and imposes required constraints to atomic displacements by
 c making zero the forces in those directions. Constraints are specified
@@ -70,6 +69,7 @@ C
 C  Modules
 C
       use precision
+      use parallel,   only : Node
       use fdf
       use parsing
 #ifdef MPI
@@ -79,7 +79,7 @@ C
       implicit          none
 
       integer           na, isa(na), ntcon
-      double precision  amass(na), cell(3,3), cfa(3,na), cstress(3,3),
+      real(dp)          amass(na), cell(3,3), cfa(3,na), cstress(3,3),
      .                  fa(3,na), stress(3,3), xa(3,na)
 
 c Internal parameters
@@ -101,16 +101,16 @@ c Internal variables
      .  ctype, cbuffer
       integer
      .  i, ia, ia1, ia2, ia3, ic, il, integs(maxw), iu, ix,
-     .  jx, lastch, lch(0:maxw), nc, ni, nn, nr, nv, Node,
+     .  jx, lastch, lch(0:maxw), nc, ni, nn, nr, nv, 
      .  maxcnew
       integer, dimension(:), allocatable, save ::
      .  iac, ibuffer
 #ifdef MPI
       integer MPIerror
 #endif
-      double precision
+      real(dp)
      .  dot, fxc, reals(maxw), values(maxw), xnorm, xs(6)
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  xc, dpbuffer2
       external
      .  dot, constr, memory
@@ -120,13 +120,6 @@ c Internal variables
       data
      .  frstme /.true./,
      .  maxc   / 1000 /
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C Read constraint data only the first time
       if (frstme) then

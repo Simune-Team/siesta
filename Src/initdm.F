@@ -56,7 +56,8 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
       use fdf
       use parsing
 #ifdef MPI
@@ -72,7 +73,7 @@ C
      .                  listhptr(maxuo), listhptrold(maxuo),
      .                  listh(maxnh), listhold(maxnh),
      .                  iaorb(maxo), nuotot
-      double precision  Dscf(maxnh,maxspn), 
+      real(dp)          Dscf(maxnh,maxspn), 
      .                  Dold(maxnh,maxspn), 
      .                  Datm(maxo)
       external          memory
@@ -85,7 +86,7 @@ c Internal variables and arrays
 c     character         fname*24
       logical           noncol, peratm
       integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,
-     .                  i1, i2, in, ind, ispin, jo, io, Node, Nodes,
+     .                  i1, i2, in, ind, ispin, jo, io, 
      .                  iio, maxatnew
 
       integer, save ::  maxat
@@ -98,27 +99,18 @@ c     character         fname*24
       integer
      .  MPIerror
 #endif
-      double precision  aspin, cosph, costh, epsilon, 
+      real(dp)          aspin, cosph, costh, epsilon, 
      .                  qio, pi, rate, reals(4),
      .                  sinph, sinth, spinat, spio, values(4)
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .                  phi, spin, theta, dpbuffer1
 
       data maxat / 1000 /
       data epsilon / 1.d-8 /
       pi = 4.d0 * atan(1.d0)
 
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-c try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
+C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
       if (usesavedm) then
         call iodm( 'read', maxnh, nuo, nspin, numhold, 
@@ -127,7 +119,7 @@ c try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
         found = .false.
       endif
 
-c if found update Dold, otherwise initialize with neutral atoms
+C If found update Dold, otherwise initialize with neutral atoms
 
       if (found) then
 
@@ -136,11 +128,11 @@ c if found update Dold, otherwise initialize with neutral atoms
 
       else
 
-c see whether specific initial spins are given in a DM.InitSpin block
-c and read them in a loop on atoms where lines are read and parsed
-c   integer nat       : how many atoms to polarize
-c   integer atom(nat) : which atoms
-c   double  spin(nat) : what polarization -----------------------------
+C See whether specific initial spins are given in a DM.InitSpin block
+C and read them in a loop on atoms where lines are read and parsed
+C   integer nat       : how many atoms to polarize
+C   integer atom(nat) : which atoms
+C   double  spin(nat) : what polarization -----------------------------
 
         noncol = .false.
         if (Node.eq.0) then
@@ -166,7 +158,7 @@ C Allocate local memory
 
           nat = 0
           do iat = 1, nua+1
-c           Read and parse a line of the data block
+C Read and parse a line of the data block
             if (Node.eq.0) then
               read(iu,'(a)', end=50) line
             endif
@@ -179,7 +171,7 @@ c           Read and parse a line of the data block
             call parse( line(1:lastc), nn, lc, names, nv, values,
      .                  ni, integs, nr, reals )
             if (nn.ge.1 .and. names(lc(0)+1:lc(1)).eq.'%endblock') then
-c             End data reading
+C End data reading
               goto 50
             elseif (ni .eq. 1) then
               if (nat.eq.maxat) then
@@ -224,18 +216,18 @@ C
               nat = nat + 1
               atom(nat) = integs(1)
             else
-c             Print bad-syntax error and stop
+C Print bad-syntax error and stop
               goto 40
             endif
             if (nn .eq. 0) then
-c             Read value of spin
+C Read value of spin
               if (nr .eq. 3) then
-c               Read spin value and direction
+C Read spin value and direction
                 spin(nat)  = reals(1)
                 theta(nat) = reals(2) * pi/180.d0
                 phi(nat)   = reals(3) * pi/180.d0
               elseif (nr .eq. 1) then
-c               Read spin value. Default direction.
+C Read spin value. Default direction.
                 spin(nat)  = reals(1)
                 theta(nat) = 0.d0
                 phi(nat)   = 0.d0
@@ -243,7 +235,7 @@ c               Read spin value. Default direction.
                 goto 40
               endif
             else if (nn .eq. 1) then
-C             Read spin as + or - (maximun value)
+C Read spin as + or - (maximun value)
               updo = names(lc(0)+1:lc(1))
               if (updo .eq. '+') then
                 spin(nat) =  100.d0
@@ -303,11 +295,11 @@ C             Read spin as + or - (maximun value)
             noncol = .false.
           endif
 
-c initialize to 0
+C Initialize to 0
 
           Dscf(1:maxnh,1:nspin) = 0.0d0
 
-c initialize all paramagnetic 
+C Initialize all paramagnetic 
 
           do ia = 1, nua
             do io = lasto(ia-1) + 1, lasto(ia)
@@ -327,12 +319,12 @@ c initialize all paramagnetic
             enddo
           enddo
 
-c loop on atoms with spin
+C Loop on atoms with spin
 
           do iat = 1, nat
             ia = atom(iat)
 
-c find maximum atomic moment that the atoms involved can carry
+C Find maximum atomic moment that the atoms involved can carry
           
             spinat = 0.d0
             do io = lasto(ia-1) + 1, lasto(ia)
@@ -342,13 +334,13 @@ c find maximum atomic moment that the atoms involved can carry
      .        'initdm: WARNING: atom ', atom(iat),
      .        ' has a closed-shell and cannot be polarized'
 
-c if given spin is larger than possible, make it to max atomic
+C If given spin is larger than possible, make it to max atomic
 
             aspin = abs(spin(iat))
             if ((aspin .gt. spinat) .and. (aspin .gt. epsilon)) 
      .         spin(iat) = spinat*spin(iat)/aspin 
 
-c initialize orbitals with same rate as atom
+C Initialize orbitals with same rate as atom
 
             rate = spin(iat) / (spinat+epsilon)
             do io = lasto(ia-1) + 1, lasto(ia)
@@ -361,9 +353,9 @@ c initialize orbitals with same rate as atom
                   jo = listh(ind)
                   if (io .eq. jo) then
                     if (noncol) then
-c                   Store non-collinear-spin density matrix as
-c                     ispin=1 => D11, ispin=2 => D22;
-c                     ispin=3 => Real(D12); ispin=4 => Imag(D12)
+C Store non-collinear-spin density matrix as
+C   ispin=1 => D11, ispin=2 => D22;
+C   ispin=3 => Real(D12); ispin=4 => Imag(D12)
                       costh = cos(theta(iat))
                       sinth = sin(theta(iat))
                       cosph = cos(phi(iat))
@@ -400,11 +392,11 @@ c ---------------------------------------------------------------------
 
         else
 
-c initialize to 0
+C Initialize to 0
 
           Dscf(1:maxnh,1:nspin) = 0.0d0
 
-c automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
+C Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
 
           do io = 1, nuo
             call LocalToGlobalOrb(io,Node,Nodes,iio)
@@ -414,18 +406,18 @@ c automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
               if (iio .eq. jo) then
                 if (nspin .eq. 1) then
 
-c No spin polarization
+C No spin polarization
 
                   Dscf(ind,1) = Datm(iio)
                   Dold(ind,1) = Datm(iio)
                 else
 
-c Spin polarization
+C Spin polarization
 
                   i1 = 1
                   i2 = 2
 
-C ferro or antiferro according to DM.InitSpinAF (inspn)
+C Ferro or antiferro according to DM.InitSpinAF (inspn)
 
                   if (inspn) then
                     if (mod(iaorb(iio),2).eq.0) then
@@ -448,4 +440,3 @@ C ferro or antiferro according to DM.InitSpinAF (inspn)
 
       return
       end
-

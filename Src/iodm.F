@@ -24,7 +24,9 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb,
+     .                         GlobalToLocalOrb
       use fdf
       use ionew
 #ifdef MPI
@@ -37,19 +39,19 @@ C
       logical   found
       integer   maxnd, nbasis, nspin
       integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
-      real*8    dm(maxnd,nspin)
+      real(dp)  dm(maxnd,nspin)
 
 C Internal variables and arrays
       character fname*33, sname*30
       logical   exist1, exist2, exist3, frstme
       integer   im, is, unit1, unit2, m, nb, ndmax, ns
-      integer   Node, Nodes, nbasistot, ml, ndmaxg
+      integer   nbasistot, ml, ndmaxg
       integer, dimension(:), allocatable, save :: numdg
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
-      real*8, dimension(:), allocatable, save :: buffer
-      integer, dimension(:), allocatable, save :: ibuffer
+      real(dp), dimension(:), allocatable, save :: buffer
+      integer,  dimension(:), allocatable, save :: ibuffer
 #endif
       external          chkdim, paste, timer,  memory
 
@@ -58,14 +60,6 @@ C Internal variables and arrays
 
 *     call timer( 'iodm', 1 )
 
-c Get the Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 C Find file name
       if (frstme) then
         if (Node.eq.0) then

@@ -1,15 +1,16 @@
-      LOGICAL FUNCTION PROPOR( N, A, B, TOL, AOVERB )
+      logical function propor( N, A, B, TOL, AOVERB )
 C **********************************************************************
 C Checks if two vectors are proportional within a tolerance.
 C Written by J.M.Soler. August 1996.
 C **********************************************************************
 
+      use precision
       use sys
 
-      IMPLICIT NONE
+      implicit none
 
-      INTEGER           I, IMAX, N, Node
-      DOUBLE PRECISION  A(N), AOVERB, B(N), BMAX, TOL
+      integer           I, IMAX, N
+      real(dp)          A(N), AOVERB, B(N), BMAX, TOL
 
       BMAX = 0.D0
       IMAX = 0

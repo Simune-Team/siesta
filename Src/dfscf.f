@@ -41,7 +41,7 @@ C    6  10        20        30        40        50        60        7072
 C  Modules
       use precision
       use atmfuncs, only: rcut, phiatm, all_phi
-      use atm_types, nsmax=>nspecies
+      use atm_types, only: nsmax=>nspecies
       use atomlist, only: indxuo
       use listsc_module, only: listsc
       use mesh, only: dxa, nsp, xdop, xdsp
@@ -82,7 +82,7 @@ C Internal variables
       real*8, pointer, save ::
      .   C(:,:), D(:,:,:), gC(:,:,:), xgC(:,:,:)
       logical ::
-     .   Parallel, nullified=.false.
+     .   Parallel_Run, nullified=.false.
       type(allocDefaults) oldDefaults
 
 C  Start time counter
@@ -111,10 +111,10 @@ C  Allocate buffers to store partial copies of Dscf and C
       call re_alloc( xgC, 1,9,    1,nsp,  1,maxc,  name='xgC' )
 
 C  Set logical that determines whether we need to use parallel or serial mode
-      Parallel = (nuo .ne. nuotot)
+      Parallel_Run = (nuo .ne. nuotot)
 
 C  If parallel, allocate temporary storage for Local Dscf
-      if (Parallel) then
+      if (Parallel_Run) then
         maxndl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
         allocate(DscfL(maxndl,nspin))
         call memory('A','D',maxndl*nspin,'meshdscf')
@@ -196,7 +196,7 @@ C  Copy row i of Dscf into row last of D
             iob(last) = i
             ib = last
             iu = indxuo(i)
-            if (Parallel) then
+            if (Parallel_Run) then
               iul = NeedDscfL(iu)
               do ii = 1, numdl(iul)
                 ind = listdlptr(iul)+ii
@@ -348,7 +348,7 @@ C  Deallocate local memory
       call de_alloc( gC,  name='gC'   )
       call de_alloc( D,   name='D'    )
       call de_alloc( C,   name='C'    )
-      if (Parallel) then
+      if (Parallel_Run) then
         call memory('D','D',size(DscfL),'meshdscf')
         deallocate(DscfL)
       endif

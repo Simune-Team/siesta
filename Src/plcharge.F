@@ -14,14 +14,15 @@ C Modified by J. Junquera 7/01
 C Modified by J. Junquera 2/02
 C **********************************************************************
 
+      use precision
       use old_atmfuncs
       use fdf
-      use parallel
+      use parallel,      only : Node, Nodes
 #ifdef MPI
       use mpi_siesta
 #endif
 
-      IMPLICIT NONE
+      implicit none
 
       INTEGER, INTENT(IN) ::
      .  MAXO, MAXA, MAXUO, MAXNH, MAXNA, NSPIN
@@ -29,7 +30,7 @@ C **********************************************************************
       INTEGER, INTENT(IN) ::
      .  LASTO(0:MAXA), ISA(MAXA), IPHORB(MAXO), INDXUO(MAXO), NSC(3)
 
-      DOUBLE PRECISION, INTENT(IN) ::
+      real(dp), INTENT(IN) ::
      .  CELL(3,3), XA(3,MAXA), RMAXO, DATM(MAXO)
 
 C ****** INPUT *********************************************************
@@ -63,7 +64,7 @@ C Internal variables ---------------------------------------------------
      .  SNAME, FNAME1, FNAME2
 
       INTEGER
-     .  UNIT1, UNIT2, IL, IA, J, Node, Nodes, MAXNHG
+     .  UNIT1, UNIT2, IL, IA, J, MAXNHG
 
 #ifdef MPI
       INTEGER MPIerror
@@ -73,16 +74,8 @@ C Internal variables ---------------------------------------------------
      .  IO_ASSIGN, IO_CLOSE, PASTE
 
 #ifdef MPI
-      CALL MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
-      CALL MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
-#else
-      Node =  0
-      Nodes = 1
-#endif
-
-#ifdef MPI
-         CALL MPI_AllReduce(MAXNH,MAXNHG,1,MPI_integer,MPI_sum,
-     .    MPI_Comm_World,MPIerror)
+      call MPI_AllReduce(MAXNH,MAXNHG,1,MPI_integer,MPI_sum,
+     .                   MPI_Comm_World,MPIerror)
 #endif
 
 C Write only if we are in the node 0 -----------------------------------

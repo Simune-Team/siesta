@@ -7,6 +7,7 @@
 #ifdef MPI
       use mpi_siesta
 #endif
+      use parallel,     only : Node
       use precision
       use sys
 
@@ -17,9 +18,6 @@
       public phonon_setup, phonon_set_coords, phonon_restore_coords
       public phonon_write_forces, phonon_check
       public phonon_num_disps
-
-
-      integer Node
 
       integer, parameter  :: max_phonon = 100
       integer phonon_num_disps
@@ -46,12 +44,6 @@
 
 #ifdef MPI
       integer MPIerror
-#endif
-
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
 #endif
 
       phonon_check = .false.
@@ -206,7 +198,7 @@ C real*8 disp(3)              : fractional displacement
       character(len=1), allocatable, save ::   phonon_label(:)
 
       logical           leqi
-      external          chkdim, io_assign, io_close, paste, timer,
+      external          io_assign, io_close, paste, timer,
      .                  memory, leqi
 
 c     Internal variables and arrays

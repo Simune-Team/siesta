@@ -31,11 +31,12 @@ C
 C  Modules
 C
       use precision
+      use parallel,   only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      implicit real(dp)(A-H,O-Z)
 
       real :: treal
 
@@ -45,19 +46,11 @@ C
 #ifdef MPI
       dimension buffer1(3),buffer2(3)
       integer mpierror
-      integer node
 #endif
       INTEGER NCALLS(NMAX)
       CHARACTER*10 PROGS(NMAX),PROG*(*)
       SAVE PROGS,NPROGS,TIME0,TIME1,TIMET,NCALLS
       DATA NPROGS,TIME0 /0,ZERO/
-
-C Get processor number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 !!      CALL CPUTIM (TIME)
       call cpu_time( treal)         ! Standard Fortran95
@@ -199,6 +192,7 @@ C
 C  Modules
 C
       use precision
+      use parallel, only : Node
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -214,20 +208,12 @@ C
 #ifdef MPI
       dimension buffer1(3),buffer2(3)
       integer mpierror
-      integer node
 #endif
       INTEGER NCALLS(NMAX)
       CHARACTER*10 PROGS(NMAX),PROG*(*)
       SAVE PROGS,NPROGS,TIME0,TIME1,TIMET,NCALLS,count_rate,wt
       DATA NPROGS,TIME0 /0,ZERO/
       data first /.true./
-
-C Get processor number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
       if (first) then
          CALL system_clock (count_rate=count_rate_int)
@@ -354,3 +340,5 @@ C Sum values across Nodes
          endif
       ENDIF
       END
+
+

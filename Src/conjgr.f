@@ -1,6 +1,8 @@
-C $Id: conjgr.f,v 1.3 1999/01/31 10:50:53 emilio Exp $
+C $Id: conjgr.f,v 1.5 2004/07/15 17:16:55 wdpgaara Exp $
 
       SUBROUTINE CONJGR (N,X,G,DXMAX,GTOL,CNTROL,H)
+
+      use precision
 
 C DIRECTS A CONJUGATE-GRADIENT MINIMIZATION OF A FUNCTION WHICH
 C IS EVALUATED BY THE CALLING PROGRAM.
@@ -21,9 +23,17 @@ C          STORAGE REQUIRED: IOP=1 => FLETCHER-REEVES. IOPT=2 =>
 C          POLAK-RIBIERE. DETAILS IN SECT. 10.6 OF 'NUMERICAL RECIPES'
 C WRITTEN BY J.SOLER. JAN/91. BASED ON ROUTINES IN 'NUMERICAL RECIPES'
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      PARAMETER (IOPT=2)
-      DIMENSION X(N),G(N),H(N,IOPT),CNTROL(0:19)
+      integer, intent(in)   :: n
+      integer,  PARAMETER   :: IOPT=2
+
+      real(dp) ::  X(N),G(N),H(N,IOPT),CNTROL(0:19)
+      real(dp), intent(in)  :: dxmax, gtol
+
+      real(dp) :: gmax, gg, gamma
+      integer  :: i, j
+
+      real(dp) :: dot
+      external  dot
 
 C     IF GRADIENT IS SMALLER THAN TOLERENCE, RETURN
       GMAX=ABS(G(1))
@@ -73,9 +83,20 @@ C     IF LINE MINIMIZATION IS FINISHED, FIND NEW LINE DIRECTION
       END
 
       SUBROUTINE LINMIN (N,XVEC,HVEC,GVEC,DXMAX,CNTROL)
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      PARAMETER (FACTOR=1.6D0)
-      DIMENSION XVEC(N),HVEC(N),GVEC(N),CNTROL(0:9)
+
+      use precision
+
+      integer, intent(in) :: n
+      real(dp) ::  XVEC(N),HVEC(N),GVEC(N),CNTROL(0:9)
+      real(dp), intent(in) :: dxmax
+
+      real(dp), PARAMETER :: FACTOR=1.6D0
+
+      integer  :: i, icntrl
+      real(dp) :: x1, x2, y1, y2, x0, hmod, hmax, dx, x, y
+
+      real(dp) :: dot
+      external  dot
 
 C     TRANSLATE CONTROL PARAMETERS
       ICNTRL=NINT(CNTROL(0))
@@ -146,3 +167,14 @@ C     STORE CONTROL PARAMETERS AND SET NEW POINT
         XVEC(I)=XVEC(I)+HVEC(I)*(X-X0)
    30 CONTINUE
       END
+
+
+
+
+
+
+
+
+
+
+

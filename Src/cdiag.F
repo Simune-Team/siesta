@@ -37,11 +37,11 @@ C not added by Julian Gale, November 1999
 C ***************************************************************************
 C
 C Modules
-      use precision, only: dp
+      use precision,  only: dp
       use fdf
+      use parallel,   only: Node, Nodes, BlockSize
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
-      use parallel
 #endif
       use diagmemory, only: memoryfactor, memoryscale, trymemoryincrease
       use alloc
@@ -50,7 +50,7 @@ C Modules
 
 C Arguments
       integer           ierror,n,nevec,nh,ns,nz
-      double precision  w(nh)
+      real(dp)          w(nh)
 !
 !     AG: To avoid type checking errors at runtime
 !
@@ -65,14 +65,12 @@ C Internal varables and arrays
       integer                 :: lwork
       integer                 :: liwork
       integer                 :: lrwork
-      integer                 :: Node
-      integer                 :: Nodes
       integer,  pointer, save :: iwork(:)
       logical,           save :: nullified = .false.
       logical,           save :: DivideConquer
       logical,           save :: DCread
-      real*8,   pointer, save :: rwork(:)
-      real*8,   pointer, save :: work(:,:)
+      real(dp), pointer, save :: rwork(:)
+      real(dp), pointer, save :: work(:,:)
       type(allocDefaults) oldDefaults
 #ifdef MPI
       integer                 :: desch(9)
@@ -86,11 +84,11 @@ C Internal varables and arrays
       integer                 :: mvfound
       integer,  pointer, save :: iclustr(:)
       integer,  pointer, save :: ifail(:)
-      real*8                  :: abstol
-      real*8                  :: orfac
-      real*8,   pointer, save :: gap(:)
+      real(dp)                :: abstol
+      real(dp)                :: orfac
+      real(dp), pointer, save :: gap(:)
       complex*16              :: dwork(1)
-      real*8                  :: drwork(1)
+      real(dp)                :: drwork(1)
       integer                 :: diwork(1)
       logical                 :: BlacsOK
       logical                 :: Serial
@@ -121,16 +119,6 @@ C Get old allocation defaults and set new ones
       
 C Initialise error code
       ierror = 0
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-      Serial = (n.eq.nh.or.Nodes.eq.1)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Set general Lapack parameters
       if (nevec.le.0) then

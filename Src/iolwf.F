@@ -27,6 +27,7 @@ C  Modules
 C
       use precision
       use parallel
+      use parallelsubs
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -45,7 +46,7 @@ C
 C Internal variables and arrays
       character fname*33, sname*30
       logical   exist1, exist2, exist3, frstme
-      integer   im, is, unit1, unit2, m, nb, ns, Node, Nodes,
+      integer   im, is, unit1, unit2, m, nb, ns, 
      .          ml, BNode
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
@@ -57,15 +58,6 @@ C Internal variables and arrays
       data      frstme /.true./
 
 *     call timer( 'iolwf', 1 )
-
-C Get Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 #ifdef MPI
 C Allocate local buffer array

@@ -1,5 +1,21 @@
-      SUBROUTINE FERMID( NSPIN, MAXSPN, NK, WK, MAXE, NE, E, 
-     .                   TEMP, QTOT, WKE, EF, ENTROPY )
+      module m_fermid
+
+      use precision
+      use parallel,   only : Node
+      use fdf
+#ifdef MPI
+      use mpi_siesta
+#endif
+
+      public :: fermid, fermispin, stepf
+      private :: enpy, derfc, derf, whg, hp
+
+      private
+
+      CONTAINS
+
+      subroutine fermid( nspin, MAXSPN, NK, WK, MAXE, NE, E, 
+     .                   TEMP, qtot, WKE, EF, entropy )
 
 C *********************************************************************
 C Finds the Fermi energy and the occupation weights of states.
@@ -7,7 +23,7 @@ C Written by J.M.Soler. August'96.
 C Simple single excitation introduced by E. Artacho August 2002.
 C Alternative occupation functions introduced by P. Ordejon, May'03.
 C ********** INPUT ****************************************************
-C INTEGER NSPIN    : Number of different spin polarizations (1 or 2)
+C INTEGER nspin    : Number of different spin polarizations (1 or 2)
 C INTEGER MAXSPN   : Maximum number of different spin polarizations (1 or 2)
 C                    for E and WKE matrices dimensions
 C INTEGER NK       : Number of K-points
@@ -16,176 +32,180 @@ C INTEGER MAXE     : First dimension of E and WKE
 C INTEGER NE       : Number of bands
 C REAL*8  E(MAXE,MAXSPN,NK) : State eigenvalues
 C REAL*8  TEMP     : Temperature (in the same units of E)
-C REAL*8  QTOT     : Total valence charge (number of electrons)
+C REAL*8  qtot     : Total valence charge (number of electrons)
 C ********** OUTPUT ***************************************************
 C REAL*8  WKE(MAXE,MAXSPN,NK) : Occupations multiplied by k-point weights
-C                               (sum QTOT)
+C                               (sum qtot)
 C REAL*8  EF                 : Fermi energy
-C REAL*8  ENTROPY            : Entropy contribution to the electronic
+C REAL*8  entropy            : Entropy contribution to the electronic
 C                              Free Energy
 C *********************************************************************
 
 C
 C  Modules
 C
-      use precision
-      use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      integer :: nitmax, maxe, maxspn, nk, ik, ispin
-      integer :: ie, ne, nspin, iter
+CCCCCCCCCC      implicit real(dp)(A-H,O-Z)
 
+C Passed variables
+      integer        :: maxe
+      integer        :: maxspn
+      integer        :: ne
+      integer        :: nk
+      integer        :: nspin
 
-      PARAMETER (TOL=1.D-10,NITMAX=150)
-      DOUBLE PRECISION E(MAXE,MAXSPN,NK),WKE(MAXE,MAXSPN,NK),WK(NK)
-      INTEGER Node, ief
+      real(dp)       :: e(maxe,maxspn,nk)
+      real(dp)       :: entropy
+      real(dp)       :: qtot
+      real(dp)       :: temp
+      real(dp)       :: wke(maxe,maxspn,nk)
+      real(dp)       :: wk(nk)
+      real(dp)       :: ef
 
 C Local variables
-      logical blread, excitd
+      integer        :: ie
+      integer        :: ief
+      integer        :: ik
+      integer        :: ispin
+      integer        :: iter
+      integer,  save :: nitmax = 150
+      logical,  save :: blread = .false.
+      logical,  save :: excitd = .false.
+      real(dp), save :: tol = 1.0d-10
+      real(dp)       :: sumq, emin, emax, t, drange, wkebuf, w, eik
+
 #ifdef MPI
       integer MPIerror
 #endif
       
-      save blread, excitd
-      data blread, excitd /.false., .false./
-
-
-C Get the Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
-
-c Reading whether excited state -------
-
+C Reading whether to do an excited state
       if ( .not. blread) then
-         if ( Node .eq. 0 ) then
-            excitd = fdf_boolean('SingleExcitation', .false.)
-            if ( excitd ) write(6,'(/a)') 
-     .          'fermid: Calculating for lowest-exciton excited state'
-         endif
+        if ( Node .eq. 0 ) then
+          excitd = fdf_boolean('SingleExcitation', .false.)
+          if ( excitd ) write(6,'(/a)') 
+     .        'fermid: Calculating for lowest-exciton excited state'
+        endif
 #ifdef MPI
-         call MPI_Bcast(excitd,1,MPI_logical,0,
-     .                  MPI_Comm_World,MPIerror)
+        call MPI_Bcast(excitd,1,MPI_logical,0,
+     .                 MPI_Comm_World,MPIerror)
 #endif
-         blread = .true.
+        blread = .true.
       endif   
-c--------------------------------------
 
+C Determine Fermi level
+      sumq = 0.0d0
+      emin = e(1,1,1)
+      emax = e(1,1,1)
+      do ik = 1,nk
+        do ispin = 1,nspin
+          do ie = 1,ne
+            wke(ie,ispin,ik) = wk(ik)*2.0d0/nspin
+            sumq = sumq + wke(ie,ispin,ik)
+            emin = min(emin,e(ie,ispin,ik))
+            emax = max(emax,e(ie,ispin,ik))
+          enddo
+        enddo
+      enddo
 
-      SUMQ=0.D0
-      EMIN=E(1,1,1)
-      EMAX=E(1,1,1)
-      DO 20 IK=1,NK
-        DO 15 ISPIN=1,NSPIN
-          DO 10 IE=1,NE
-            WKE(IE,ISPIN,IK)=WK(IK)*2.D0/NSPIN
-            SUMQ=SUMQ+WKE(IE,ISPIN,IK)
-            EMIN=MIN(EMIN,E(IE,ISPIN,IK))
-            EMAX=MAX(EMAX,E(IE,ISPIN,IK))
-  10      CONTINUE
-  15    CONTINUE
-  20  CONTINUE
+      ef = emax
 
-      EF=EMAX
-      IF (ABS(SUMQ-QTOT).LT.TOL) THEN
+      if (abs(sumq-qtot).lt.tol) then
         if (excitd) then
-           if (Node.eq.0) then
-              write (6,'(/a)') 
-     .               'FERMID: BANDS FULL, NO EXCITATION POSSIBLE'
-           endif
-           stop
+          if (Node.eq.0) then
+            write (6,'(/a)') 
+     .            'Fermid: Bands full, no excitation possible'
+          endif
+          stop
         else
-           return
+          return
         endif
-      ENDIF
-      IF (SUMQ.LT.QTOT) THEN
+      endif
+      if (sumq.lt.qtot) then
         if (Node.eq.0) then
-          WRITE (6,*) 'FERMID: NOT ENOUGH STATES'
-          WRITE (6,*) 'FERMID: QTOT,SUMQ=',QTOT,SUMQ
+          write(6,*) 'Fermid: Not enough states'
+          write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
         endif
-        STOP
-      ENDIF
-      T=MAX(TEMP,1.D-6)
-      DRANGE=T*SQRT(-LOG(TOL*.01D0))
-      EMIN=EMIN-DRANGE
-      EMAX=EMAX+DRANGE
-      DO 50 ITER=1,NITMAX
-         EF=0.5D0*(EMIN+EMAX)
-         SUMQ=0.D0
-         DO 40 IK=1,NK
-           DO 35 ISPIN=1,NSPIN
-             DO 30 IE=1,NE
-               WKE(IE,ISPIN,IK)=WK(IK)*
-     .             STEPF((E(IE,ISPIN,IK)-EF)/T)*2.0/NSPIN
-               SUMQ=SUMQ+WKE(IE,ISPIN,IK)
-  30         CONTINUE
-  35       CONTINUE
-  40     CONTINUE
+        stop
+      endif
+      T = max(temp,1.d-6)
+      DRange = T*sqrt(-log(tol*0.01d0))
+      emin = emin - DRange
+      emax = emax + DRange
+      DO 50 iter = 1,nitmax
+        ef = 0.5d0*(emin + emax)
+        sumq = 0.0d0
+        do ik = 1,nk
+          do ispin = 1,nspin
+            do ie = 1,ne
+              wke(ie,ispin,ik) = wk(ik)*
+     .            stepf((e(ie,ispin,ik)-ef)/T)*2.0d0/nspin
+              sumq = sumq + wke(ie,ispin,ik)
+            enddo
+          enddo
+        enddo
 
-c If the Fermi level was found..................... 
-         IF (ABS(SUMQ-QTOT).LT.TOL) THEN
+C If the Fermi level was found..................... 
+        if (abs(sumq-qtot).lt.tol) then
 
-c If excited state is to be calculated, find the level above Ef for
-c k=1 and spin=1
-            if (excitd) then
-               do ie = 1, ne
-                  if ( e(ie,1,1) .gt. EF ) then
-                     ief = ie
-                     go to 314
-                  endif
-               enddo
-  314          continue
-c and swap populations (meaningful only for T close to 0):
-c if nspin =1 populations of homo and lumo are just swapped for is=1
-c if nspin =2 populations of homo and lumo become equal.
-               wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) )/(3-nspin)
-               wke(ief,1,1) = wke(ief,1,1) + wkebuf
-               wke(ief-1,1,1) = wke(ief-1,1,1) - wkebuf
-            endif
-
+C If excited state is to be calculated, find the level above Ef for
+C k=1 and spin=1
+          if (excitd) then
+            do ie = 1, ne
+              if ( e(ie,1,1) .gt. ef ) then
+                ief = ie
+                go to 314
+              endif
+            enddo
+  314       continue
+C and swap populations (meaningful only for T close to 0):
+C if nspin =1 populations of homo and lumo are just swapped for is=1
+C if nspin =2 populations of homo and lumo become equal.
+            wkebuf = ( wke(ief-1,1,1) - wke(ief,1,1) )/(3-nspin)
+            wke(ief,1,1) = wke(ief,1,1) + wkebuf
+            wke(ief-1,1,1) = wke(ief-1,1,1) - wkebuf
+          endif
 
 C Obtain the electronic entropy
 
-100         ENTROPY=0.0D0
+100       entropy=0.0d0
 
-            DO 140 IK=1,NK
-              DO 135 IE=1,NE
-                DO 130 ISPIN=1,NSPIN
+          do ik = 1,nk
+            do ie = 1,ne
+              do ispin = 1,nspin
 
-                  W = (NSPIN / 2.0D0) * WKE(IE,ISPIN,IK) / WK(IK)
-                  EIK = (E(IE,ISPIN,IK)-EF) / T
+                W = (nspin / 2.0d0) * wke(ie,ispin,ik) / wk(ik)
+                eik = (e(ie,ispin,ik)-ef) / T
 
-                  ENTROPY = ENTROPY + ( 2.0D0 * WK(IK) / NSPIN ) *
-     .                      ENPY(EIK,W)
+                entropy = entropy + ( 2.0d0 * wk(ik) / nspin ) *
+     .                    enpy(eik,w)
 
-130             CONTINUE
-135           CONTINUE
-140         CONTINUE
+              enddo
+            enddo
+          enddo
 
-            RETURN
+          return
 
-         ENDIF
-c...................................................
-         IF (SUMQ.LE.QTOT) EMIN=EF
-         IF (SUMQ.GE.QTOT) EMAX=EF
-  50  CONTINUE
+        endif
+
+        if (sumq.le.qtot) emin = ef
+        if (sumq.ge.qtot) emax = ef
+  50  continue
+
       if (Node.eq.0) then
-        WRITE (6,*) 'FERMID: ITERATION HAS NOT CONVERGED.'
-        WRITE (6,*) 'FERMID: QTOT,SUMQ=',QTOT,SUMQ
-        STOP 'FERMID: ITERATION HAS NOT CONVERGED.'
+        write(6,*) 'Fermid: Iteration has not converged.'
+        write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
+        stop 'Fermid: Iteration has not converged.'
       else
-        STOP
+        stop
       endif
-      END
+
+      end subroutine fermid
+
+!---------------------------------------------------------
 
 
-      SUBROUTINE FERMISPIN( NSPIN, MAXSPN, NK, WK, MAXE, NE, E, 
-     .                   TEMP, QTOT, WKE, EF, ENTROPY )
+      subroutine fermispin( nspin, MAXSPN, NK, WK, MAXE, NE, E, 
+     .                      TEMP, qtot, WKE, EF, entropy )
 
 C *********************************************************************
 C Finds the Fermi energy and the occupation weights of states,
@@ -194,7 +214,7 @@ C to a given value.
 C Written by J.M.Soler. August'96.
 C Version modified for fixed spin configurations: P. Ordejon'03-04
 C ********** INPUT ****************************************************
-C INTEGER NSPIN    : Number of different spin polarizations (1 or 2)
+C INTEGER nspin    : Number of different spin polarizations (1 or 2)
 C INTEGER MAXSPN   : Maximum number of different spin polarizations (1 or 2)
 C                    for E and WKE matrices dimensions
 C INTEGER NK       : Number of K-points
@@ -203,162 +223,144 @@ C INTEGER MAXE     : First dimension of E and WKE
 C INTEGER NE       : Number of bands
 C REAL*8  E(MAXE,MAXSPN,NK) : State eigenvalues
 C REAL*8  TEMP     : Temperature (in the same units of E)
-C REAL*8  QTOT(MAXSPN) : Total valence charge (number of electrons)
+C REAL*8  qtot(MAXSPN) : Total valence charge (number of electrons)
 C                         for each spin component
 C ********** OUTPUT ***************************************************
 C REAL*8  WKE(MAXE,MAXSPN,NK) : Occupations multiplied by k-point weights
-C                               (sum QTOT)
-C REAL*8  EF(NSPIN)           : Fermi energy (for each spin, if QTOT
+C                               (sum qtot)
+C REAL*8  EF(nspin)           : Fermi energy (for each spin, if qtot
 C                              is different for each spin component.
-C REAL*8  ENTROPY            : Entropy contribution to the electronic
+C REAL*8  entropy            : Entropy contribution to the electronic
 C                              Free Energy
 C *********************************************************************
 
-C
-C  Modules
-C
-      use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
       integer :: maxe, maxspn, nk, nspin, nitmax, ispin
       integer :: ik, ie, ne, iter
+      real(dp)   :: entropy
 
-      DOUBLE PRECISION E(MAXE,MAXSPN,NK),EMIN(4),EMAX(4),
-     .                 EF(NSPIN),QTOT(MAXSPN),SUMQ(4),TEMP,
+      real(dp)         E(MAXE,MAXSPN,NK),emin(4),emax(4),
+     .                 EF(nspin),qtot(MAXSPN),sumq(4),TEMP,
      .                 WKE(MAXE,MAXSPN,NK),WK(NK)
-      INTEGER          Node
-      LOGICAL          CONV
-      PARAMETER (TOL=1.0D-10,NITMAX=150)
+      real(dp)   ::    t, drange, w, eik, tol
+      logical          conv
+      parameter (TOL=1.0D-10,NITMAX=150)
 
 C Local variables
 #ifdef MPI
       integer MPIerror
 #endif
 
-C Get the Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
+      conv = .FALSE.
 
-      CONV = .FALSE.
-
-      DO ISPIN = 1,NSPIN
-       SUMQ(ISPIN)=0.0D0
+      DO ispin = 1,nspin
+       sumq(ispin)=0.0D0
       ENDDO
-      DO ISPIN = 1,NSPIN
-        EMIN(ISPIN)=E(1,ISPIN,1)
-        EMAX(ISPIN)=E(1,ISPIN,1)
+      DO ispin = 1,nspin
+        emin(ispin)=E(1,ispin,1)
+        emax(ispin)=E(1,ispin,1)
       ENDDO
-      DO 20 IK=1,NK
-        DO 15 ISPIN=1,NSPIN
-          DO 10 IE=1,NE
-            WKE(IE,ISPIN,IK)=WK(IK)*2.D0/NSPIN
-            SUMQ(ISPIN)=SUMQ(ISPIN)+WKE(IE,ISPIN,IK)
-            EMIN(ISPIN)=MIN(EMIN(ISPIN),E(IE,ISPIN,IK))
-            EMAX(ISPIN)=MAX(EMAX(ISPIN),E(IE,ISPIN,IK))
-  10      CONTINUE
-  15    CONTINUE
-  20  CONTINUE
-      DO ISPIN=1,NSPIN
-        EF(ISPIN)=EMAX(ISPIN)
+      DO IK=1,NK
+        DO ispin=1,nspin
+          DO IE=1,NE
+            WKE(IE,ispin,IK)=WK(IK)*2.D0/nspin
+            sumq(ispin)=sumq(ispin)+WKE(IE,ispin,IK)
+            emin(ispin)=MIN(emin(ispin),E(IE,ispin,IK))
+            emax(ispin)=MAX(emax(ispin),E(IE,ispin,IK))
+          enddo
+        enddo
+      enddo
+      DO ispin=1,nspin
+        EF(ispin)=emax(ispin)
       ENDDO
-      CONV = .TRUE.
-      DO ISPIN = 1,NSPIN
-        IF (ABS(SUMQ(ISPIN)-QTOT(ISPIN)).GT.TOL) CONV = .FALSE.
+      conv = .TRUE.
+      DO ispin = 1,nspin
+        IF (ABS(sumq(ispin)-qtot(ispin)).GT.TOL) conv = .FALSE.
       ENDDO
 
-      IF (CONV) GOTO 100
+      IF (conv) GOTO 100
 
-      DO ISPIN = 1,NSPIN
-        IF (SUMQ(ISPIN).LT.QTOT(ISPIN)) THEN
+      DO ispin = 1,nspin
+        IF (sumq(ispin).LT.qtot(ispin)) THEN
           if (Node.eq.0) then
-            WRITE (6,*) 'FERMID: NOT ENOUGH STATES'
-            WRITE (6,*) 'FERMID: ISPIN,QTOT,SUMQ=',
-     .                 ISPIN,QTOT(ISPIN),SUMQ(ISPIN)
+            write(6,*) 'Fermid: Not enough states'
+            write(6,*) 'Fermid: ispin,qtot,sumq=',
+     .                 ispin,qtot(ispin),sumq(ispin)
           endif
           STOP
         ENDIF
       ENDDO
       T=MAX(TEMP,1.D-6)
       DRANGE=T*SQRT(-LOG(TOL*.01D0))
-      DO ISPIN = 1,NSPIN
-        EMIN(ISPIN)=EMIN(ISPIN)-DRANGE
-        EMAX(ISPIN)=EMAX(ISPIN)+DRANGE
+      DO ispin = 1,nspin
+        emin(ispin)=emin(ispin)-DRANGE
+        emax(ispin)=emax(ispin)+DRANGE
       ENDDO
       DO 50 ITER=1,NITMAX
-        DO ISPIN = 1,NSPIN
-          EF(ISPIN)=0.5D0*(EMIN(ISPIN)+EMAX(ISPIN))
-          SUMQ(ISPIN)=0.D0
+        DO ispin = 1,nspin
+          EF(ispin)=0.5D0*(emin(ispin)+emax(ispin))
+          sumq(ispin)=0.D0
         ENDDO
         DO 40 IK=1,NK
-          DO 35 ISPIN=1,NSPIN
+          DO 35 ispin=1,nspin
             DO 30 IE=1,NE
-              WKE(IE,ISPIN,IK)=WK(IK)*
-     .             STEPF((E(IE,ISPIN,IK)-EF(ISPIN))/T)*2.0/NSPIN
-              SUMQ(ISPIN)=SUMQ(ISPIN)+WKE(IE,ISPIN,IK)
+              WKE(IE,ispin,IK)=WK(IK)*
+     .             STEPF((E(IE,ispin,IK)-EF(ispin))/T)*2.0/nspin
+              sumq(ispin)=sumq(ispin)+WKE(IE,ispin,IK)
   30        CONTINUE
   35      CONTINUE
   40    CONTINUE
-        CONV = .TRUE.
-        DO ISPIN = 1,NSPIN
-          IF (ABS(SUMQ(ISPIN)-QTOT(ISPIN)).GT.TOL) CONV = .FALSE.
+        conv = .TRUE.
+        DO ispin = 1,nspin
+          IF (ABS(sumq(ispin)-qtot(ispin)).GT.TOL) conv = .FALSE.
         ENDDO
-        IF (CONV) GOTO 100
-        DO ISPIN = 1,NSPIN
-          IF (SUMQ(ISPIN).LE.QTOT(ISPIN)) EMIN(ISPIN)=EF(ISPIN)
-          IF (SUMQ(ISPIN).GE.QTOT(ISPIN)) EMAX(ISPIN)=EF(ISPIN)
+        IF (conv) GOTO 100
+        DO ispin = 1,nspin
+          IF (sumq(ispin).LE.qtot(ispin)) emin(ispin)=EF(ispin)
+          IF (sumq(ispin).GE.qtot(ispin)) emax(ispin)=EF(ispin)
         ENDDO
   50  CONTINUE
 
       if (Node.eq.0) then
-        WRITE (6,*) 'FERMID: ITERATION HAS NOT CONVERGED.'
-        DO ISPIN = 1,NSPIN
-          WRITE (6,*) 'FERMID: ISPIN,QTOT,SUMQ=',
-     .               ISPIN,QTOT(ISPIN),SUMQ(ISPIN)
+        WRITE (6,*) 'Fermid: Iteration has not converged.'
+        DO ispin = 1,nspin
+          WRITE (6,*) 'Fermid: ispin,qtot,sumq=',
+     .               ispin,qtot(ispin),sumq(ispin)
         ENDDO 
-        STOP 'FERMID: ITERATION HAS NOT CONVERGED.'
+        STOP 'Fermid: Iteration has not converged.'
       else
         STOP
       endif
 100   CONTINUE
-      ENTROPY=0.0D0
+      entropy = 0.0d0
 
-      DO 140 IK=1,NK
-        DO 135 IE=1,NE
-          DO 130 ISPIN=1,NSPIN
+      do IK=1,NK
+        do IE=1,NE
+          do ispin=1,nspin
 
-            W = (NSPIN / 2.0D0) * WKE(IE,ISPIN,IK) / WK(IK)
-            EIK = (E(IE,ISPIN,IK)-EF(ISPIN)) / T
+            W = (nspin / 2.0D0) * WKE(IE,ispin,IK) / WK(IK)
+            EIK = (E(IE,ispin,IK)-EF(ispin)) / T
 
-            ENTROPY = ENTROPY + ( 2.0D0 * WK(IK) / NSPIN ) *
+            entropy = entropy + ( 2.0D0 * WK(IK) / nspin ) *
      .                ENPY(EIK,W)
 
-130       CONTINUE
-135     CONTINUE
-140   CONTINUE
-      RETURN
+          enddo
+        enddo
+      enddo
 
-      END
+      return
+
+      end subroutine fermispin
 
 
+      real(dp) function stepf(X)
+      real(dp), intent(in) :: x
 
-      DOUBLE PRECISION FUNCTION STEPF(X)
-      use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
-      
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      integer :: i, j
+      integer  :: i, j
+      real(dp) :: pi, a, gauss
 
 C Local variables
       character(len=22), save :: ocf = 'FD'
       integer,           save :: nh = 1
-      integer                 :: Node
       integer,           save :: ocupfnct
       logical                 :: leqi
       logical,           save :: ocfread = .false.
@@ -366,18 +368,11 @@ C Local variables
       integer MPIerror
 #endif
       
-      PARAMETER (PI = 3.14159265358979D0)
+      parameter (PI = 3.14159265358979D0)
 
-c Reading which electronic occupation function to use -------
+C Reading which electronic occupation function to use -------
 
       if ( .not. ocfread) then
-
-C Get the Node number
-#ifdef MPI
-        call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-        Node = 0
-#endif
 
         if ( Node .eq. 0 ) then
           ocf = fdf_string('OccupationFunction','FD')
@@ -408,62 +403,52 @@ C Get the Node number
       endif   
 c--------------------------------------
 
-
-
-C     Complementary error function. Ref: Fu & Ho, PRB 28, 5480 (1983)
+C Complementary error function. Ref: Fu & Ho, PRB 28, 5480 (1983)
 *     STEPF=DERFC(X)  -  not available
 
-      IF (OCUPFNCT .EQ. 1) THEN
+      if (ocupfnct .eq. 1) then
 
-C     Fermi-Dirac distribution
-        IF (X.GT.100.D0) THEN
-          STEPF = 0.D0
-        ELSEIF (X.LT.-100.D0) THEN
-          STEPF = 1.D0
-        ELSE
-          STEPF = 1.D0 / ( 1.D0 + EXP(X) )
-        ENDIF
-
-
-      ELSE IF (OCUPFNCT .EQ. 2) THEN
-
-C     Improved step function. Ref: Methfessel & Paxton PRB40 (15/Aug/89)
-C     NH is the order of the Hemite polynomial expansion.
+C Fermi-Dirac distribution
+        if (x.gt.100.D0) then
+          stepf = 0.D0
+        elseif (x.lt.-100.d0) then
+          stepf = 1.d0
+        else
+          stepf = 1.d0 / ( 1.d0 + exp(x) )
+        endif
 
 
+      else if (ocupfnct .eq. 2) then
 
-        STEPF =  0.5D0 * DERFC(X)
-        A = 1.0D0/SQRT(PI)
+C Improved step function. Ref: Methfessel & Paxton PRB40 (15/Aug/89)
+C NH is the order of the Hemite polynomial expansion.
 
-        DO I=1,NH
+        stepf =  0.5d0 * derfc(x)
+        a = 1.0d0/sqrt(pi)
+
+        do i = 1,nh
 
 C Get coefficients in Hermite-Gauss expansion
-          A = -A / (I * 4.0D0)
+          A = -A / (I * 4.0d0)
 
 C Get contribution to step function at order I
-          GAUSS = DEXP(-X*X)
+          gauss = dexp(-x*x)
           J = 2*I -1 
-          IF (GAUSS .GT. 1.D-20) STEPF = STEPF + A * HP(X,J) * GAUSS
+          if (gauss .gt. 1.d-20) stepf = stepf + a * hp(x,j) * gauss
 
-        ENDDO
+        enddO
 
-      ELSE
+      else
 
-        STOP 'STEPF: INCORRECT STEP FUNCTION'
+        stop 'Stepf: Incorrect step function'
 
-      ENDIF
+      endif
 
-      END
+      end function stepf
 
 
-
-      DOUBLE PRECISION FUNCTION ENPY(E,W)
-      use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      real(dp) function enpy(E,W)
+      real(dp), intent(in)  :: e, w
 
 C Computes the contribution of a given state with energy E
 C (refered to the Fermi energy, in units of the smearing 
@@ -473,37 +458,35 @@ C P. Ordejon, June 2003
 C Local variables
       character(len=22), save :: ocf = 'FD'
       integer,           save :: nh = 1
-      integer                 :: Node 
       integer,           save :: ocupfnct
       logical                 :: leqi
       logical,           save :: ocfread = .false.
+      real(dp)                :: tiny, wo, we
+
 #ifdef MPI
       integer MPIerror
 #endif
       
-      DATA tiny /1.d-15/
+      data tiny /1.d-15/
 
 c Reading which electronic occupation function to use -------
 
       if ( .not. ocfread) then
 
-C Get the Node number
-#ifdef MPI
-        call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-        Node = 0
-#endif
-
         if ( Node .eq. 0 ) then
           ocf = fdf_string('OccupationFunction', 'FD')
 
           if (leqi(ocf,'FD')) then
-            ocupfnct=1
+            ocupfnct = 1
           else if (leqi(ocf,'MP')) then
-            ocupfnct=2
+            ocupfnct = 2
             nh = fdf_integer('OccupationMPOrder',1)
+            write(6,'(/a,i2)')
+     .     'Stepf: Methfessel-Paxton step function'
+            write(6,'(a,i2)')
+     .     '       Using Hermite-Gauss polynomials of order ',nh
           else
-            stop 'fermid: Error: Allowed values for OccupationFunction 
+            stop 'Fermid: Error: Allowed values for OccupationFunction 
      . are FD and MP'
           endif
         endif
@@ -518,72 +501,72 @@ C Get the Node number
 c--------------------------------------
 
 
+      if (ocupfnct .eq. 1) then
 
-      IF (OCUPFNCT .EQ. 1) THEN
-
-C     Mermin entropy for the Fermi-Dirac distribution
+C Mermin entropy for the Fermi-Dirac distribution
         wo = max( w, tiny )
         we = 1.0d0 - wo
         we = max( we, tiny )
 
-        ENPY = - 1.0 * ( wo*log(wo) + we*log(we) )
+        enpy = - 1.0 * ( wo*log(wo) + we*log(we) )
      .         
 
-      ELSE IF (OCUPFNCT .EQ. 2) THEN
+      else if (ocupfnct .eq. 2) then
 
-C     Entropy for the Improved step function. 
-C     Ref: Methfessel & Paxton PRB40 (15/Aug/89)
+C Entropy for the Improved step function. 
+C Ref: Methfessel & Paxton PRB40 (15/Aug/89)
 
-        ENPY = WHG(E,NH)
+        enpy = whg(e,nh)
 
-      ELSE
+      else
 
-        STOP 'STEPF: INCORRECT STEP FUNCTION'
+        stop 'Stepf: Incorrect step function'
 
-      ENDIF
+      endif
 
-      END
+      END function enpy
 
 
-
-      DOUBLE PRECISION FUNCTION DERFC (X)
+      real(dp) function derfc(X)
+      real(dp), intent(in) :: x
 
 C  COMPLEMENTARY ERROR FUNCTION FROM "NUMERICAL RECIPES"
 C  NOTE: SINGLE PRECISION ACCURACY
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      Z=ABS(X)
-      T=1.D0/(1.D0+0.5D0*Z)
+      real(dp) :: z, t
+
+      Z = ABS(X)
+      T = 1.0d0/(1.0d0 + 0.5d0*Z)
       DERFC=T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
      .      T*(0.09678418D0+T*(-0.18628806D0+
      .      T*(0.27886807D0+T*(-1.13520398D0+
      .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
       IF (X.LT.0.D0) DERFC=2.D0-DERFC
-      END
+
+      end function derfc
 
 
-
-      DOUBLE PRECISION FUNCTION DERF (X)
+      real(dp) function derf(X)
+      real(dp), intent(in) :: x
 
 C  ERROR FUNCTION FROM "NUMERICAL RECIPES"
 C  NOTE: SINGLE PRECISION ACCURACY
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      Z=ABS(X)
-      T=1.D0/(1.D0+0.5D0*Z)
+      real(dp) :: z, t
+
+      Z = ABS(X)
+      T = 1.0d0/(1.0d0 + 0.5d0*Z)
       DERF= T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
      .      T*(0.09678418D0+T*(-0.18628806D0+
      .      T*(0.27886807D0+T*(-1.13520398D0+
      .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
       IF (X.LT.0.D0) DERF=2.D0-DERF
 
-      DERF = 1.D0 - DERF
-      END
+      derf = 1.0d0 - derf
+      end function derf
 
 
-
-
-      DOUBLE PRECISION FUNCTION WHG(X,N)
+      real(dp) function whg(x,n)
 C
 C  Computes the factors to get the entropy term 
 C  for the Methfessel-Paxton smearing with Hermite
@@ -592,30 +575,35 @@ C
 C  P. Ordejon, June '03
 C
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      integer :: i, n
+C Passed variables
+      integer        :: n
+      real(dp)       :: x
 
-      PI = 3.14159265358979D0
-      X2=X**2.0D0
+C Local variables
+      integer        :: i
+      real(dp)       :: a
+      real(dp)       :: gauss
+      real(dp), save :: pi = 3.14159265358979d0
+      real(dp)       :: x2
+
+      x2 = x**2.0d0
+
+C Get coefficients
+
+      a = 1.0d0/sqrt(pi)
+      do i = 1,n
+        a = - a / (dble(I) * 4.0d0)
+      enddo
+
+      gauss = dexp(-x2)
+      whg = 0.0d0
+      if (gauss .gt. 1.0d-20) whg = 0.5d0*a*hp(x,2*n)*gauss
+
+      return
+      end function whg
 
 
-C get coefficients
-
-      A = 1.0D0/SQRT(PI)
-      DO I=1,N
-        A = -A / (I * 4.0D0)
-      ENDDO
-
-      GAUSS = DEXP(-X2)
-      WHG = 0.D0
-      IF (GAUSS .GT. 1.D-20) WHG = 0.5D0 * A * HP(X,2*N) * GAUSS
-
-      RETURN
-      END
-
-
-      DOUBLE PRECISION FUNCTION HP(X,N)
-
+      real(dp) function hp(x,n)
 C 
 C  Returns the value of the Hermite polynomial of degree N
 C  evaluated at X.
@@ -628,26 +616,31 @@ C
 C  P. Ordejon, June 2003
 C
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      INTEGER :: N, i
+C Passed variables
+      integer  :: n
+      real(dp) :: x
 
-      IF (N .GT. 1000) 
-     .     stop 'fermid: Order of Hermite polynomial too large'
+C Local variables
+      integer  :: i
+      real(dp) :: hm1
+      real(dp) :: hm2
+
+      if (n .gt. 1000) 
+     .     stop 'Fermid: Order of Hermite polynomial too large'
 
 
-      HP = 1.0D0
-      HM2 = 0.0D0
-      HM1 = 1.0D0
+      hp = 1.0d0
+      hm2 = 0.0d0
+      hm1 = 1.0d0
 
-      DO I=1,N
+      do i = 1,n
 
-        HP = 2.0 * (X * HM1 - (I-1) * HM2)
-        HM2 = HM1
-        HM1 = HP
+        hp = 2.0_dp * (x * hm1 - dble(i-1) * hm2)
+        hm2 = hm1
+        hm1 = hp
 
-      ENDDO
+      enddo
       
-      END
+      end function hp
 
-      
-      
+      end module m_fermid

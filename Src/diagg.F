@@ -3,8 +3,7 @@
      .                  listdptr, listd, H, S,
      .                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
      .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, aux, nuotot,
-     .                  Node, Nodes )
+     .                  Haux, Saux, psi, aux, nuotot )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -47,8 +46,6 @@ C                               (to find local density of states)
 C                               Not used if e1 > e2
 C integer nuotot              : total number of orbitals per unit cell
 C                               over all processors
-C integer Node                : local processor
-C integer Nodes               : total number of processors
 C *************************** OUTPUT **********************************
 C real*8 eo(maxo,nspn)        : Eigenvalues
 C ******************** OUTPUT (only if getD=.true.) *******************
@@ -75,8 +72,11 @@ C  Modules
 C
       use precision
       use sys
-      use parallel
+      use parallel,      only : Node, Nodes, BlockSize
+      use parallelsubs,  only : LocalToGlobalOrb
       use writewave
+      use m_fermid,      only : fermid, fermispin, stepf
+
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -89,27 +89,25 @@ C
 #endif
 
       integer
-     .  maxnd, maxnh, maxuo, maxo, nuo, no, nspin, nuotot, 
-     .  Node, Nodes
+     .  maxnd, maxnh, maxuo, maxo, nuo, no, nspin, nuotot
 
       integer 
      .  listh(maxnh), numh(nuo), listhptr(nuo),
      .  listd(maxnd), numd(nuo), listdptr(nuo)
 
-      real*8
+      real(dp)
      .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), Entropy,
      .  eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
-     .  qtot, qs(nspin), S(maxnh), stepf, temp, efs(nspin)
+     .  qtot, qs(nspin), S(maxnh), temp, efs(nspin)
      
-      real*8
+      real(dp)
      .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin), 
      .  aux(5*nuotot)
 
       logical
      .  getD, getPSI, fixspin
 
-      external
-     .  fermid, fermispin, rdiag, stepf
+      external rdiag
 
 C  Internal variables .............................................
       integer           ie, io, iio, ispin, ix, j, jo, BNode, iie, ind,
@@ -136,7 +134,7 @@ C Solve eigenvalue problem .........................................
           enddo
         enddo
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, maxuo,
-     .              eo(1,ispin), psi(1,1,ispin), ierror )
+     .              eo(1,ispin), psi(1,1,ispin), nuotot, ierror )
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.eq.-1) then
@@ -158,10 +156,10 @@ C Check if we are done ................................................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( nspin, nspin, 1, 1.d0, maxo, no, eo,
+        call fermispin( nspin, nspin, 1, (/1.d0/), maxo, no, eo,
      .               temp, qs, qo, efs, Entropy )
       else
-        call fermid( nspin, nspin, 1, 1.d0, maxo, no, eo, 
+        call fermid( nspin, nspin, 1, (/1.d0/), maxo, no, eo, 
      .             temp, qtot, qo, ef, Entropy )
       endif
 
@@ -181,10 +179,10 @@ C Find weights for local density of states ............................
 C Create pointer to highest occupied band
       allocate(HighestOccupiedBand(nspin))
       do ispin = 1,nspin
-        io = 0
+        io = nuotot + 1
         lfound = .false.
-        do while (io.lt.nuotot.and..not.lfound)
-          io = io + 1
+        do while (io.gt.1.and..not.lfound)
+          io = io - 1
           lfound = (abs(qo(io,ispin)).lt.1.0d-12)
         enddo
         HighestOccupiedBand(ispin) = io

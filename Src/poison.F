@@ -31,12 +31,12 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,    only : Node, Nodes, ProcessorY
 #ifdef MPI
       use mpi_siesta
 #endif
 
-      IMPLICIT          NONE
+      implicit          none
 
 #ifdef MPI
       integer           MPIerror
@@ -44,16 +44,16 @@ C
 
       INTEGER           N1, N2, N3, Mesh(3), NSM
       REAL              RHO(N1*N2*N3), V(N1*N2*N3)
-      DOUBLE PRECISION  CELL(3,3), STRESS(3,3), U
+      real(dp)          CELL(3,3), STRESS(3,3), U
 
       real, dimension(:,:), allocatable, save :: CG
 
       INTEGER           I, I1, I2, I3, IX, J, J1, J2, J3, JX,
-     .                  NP, NG, NG2, NG3, Node, Nodes,
+     .                  NP, NG, NG2, NG3, 
      .                  ProcessorZ, Py, Pz, J2min, J2max,
      .                  J3min, J3max, J2L, J3L, NRemY, NRemZ,
      .                  BlockSizeY, BlockSizeZ
-      DOUBLE PRECISION  C, B(3,3), DU, G(3), G2, G2MAX, 
+      real(dp)          C, B(3,3), DU, G(3), G2, G2MAX, 
      .                  K0(3), PI, TINY, VG, VOLUME, VOLCEL
       EXTERNAL          CHKGMX, FFT, RECLAT, VOLCEL, memory
       SAVE              K0, TINY
@@ -70,15 +70,6 @@ C the FFT which is otherwise misleading.
 
 C Start timer
       CALL TIMER('POISON',1)
-
-C Get number of Nodes
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node  = 0
-      Nodes = 1
-#endif
 
 C
 C  Allocate local memory

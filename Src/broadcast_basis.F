@@ -6,6 +6,7 @@
 
       use atm_types
       use radial
+      use parallel,   only : Node, Nodes
 
 #ifdef MPI
       use mpi_siesta
@@ -19,14 +20,12 @@
 !
       end subroutine broadcast_basis
 #else
-      integer MPIerror, Node, Nodes
+      integer MPIerror
 
       integer is, i
       type(species_info), pointer  :: spp
       type(rad_func), pointer      :: func
 
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
       if (Nodes.eq.1) return
 
       call MPI_Bcast(nspecies,1,MPI_integer,0,MPI_Comm_World,MPIerror)

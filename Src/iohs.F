@@ -34,7 +34,9 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,     only : Node, Nodes
+      use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb,
+     .                         GlobalToLocalOrb, GetNodeOrbs
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -46,35 +48,26 @@ C
       logical           gamma
       integer           maxnh, nuotot, nspin
       integer           listh(maxnh), numh(*), listhptr(*)
-      double precision  H(maxnh,nspin), S(maxnh),
+      real(dp)          H(maxnh,nspin), S(maxnh),
      .                  qtot, temp, xij(3,maxnh)
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
       character  sname*30, fname*33
       integer    im, is, iu, j, ju, k, mnh, ns
-      integer    Node,Nodes,ih,hl,nuo,maxnhtot,maxhg
+      integer    ih,hl,nuo,maxnhtot,maxhg
       integer, dimension(:), allocatable :: numhg
 #ifdef MPI
       integer    MPIerror, Request, Status(MPI_Status_Size), BNode
-      integer, dimension(:), allocatable :: ibuffer
-      real*8,  dimension(:), allocatable :: buffer
-      real*8,  dimension(:,:), allocatable :: buffer2
+      integer,  dimension(:),   allocatable :: ibuffer
+      real(dp), dimension(:),   allocatable :: buffer
+      real(dp), dimension(:,:), allocatable :: buffer2
 #endif
       logical    baddim, found, frstme
       save       frstme, fname
       data frstme /.true./
 
-c Get the Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
-
-c Find name of file
+C Find name of file
       if (frstme) then
         if (Node.eq.0) then
           sname = fdf_string( 'SystemLabel', 'siesta' )
@@ -87,7 +80,7 @@ c Find name of file
         frstme = .false.
       endif
 
-c Find total numbers over all Nodes
+C Find total numbers over all Nodes
 #ifdef MPI
       call MPI_AllReduce(maxnh,maxnhtot,1,MPI_integer,MPI_sum,
      .  MPI_Comm_World,MPIerror)

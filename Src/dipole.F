@@ -27,7 +27,7 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,   only : Node, Nodes, ProcessorY
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -36,27 +36,18 @@ C
 
       integer           M1, M2, M3, ntm(3), nsm
       real              rho(M1,M2,M3)
-      real*8            cell(3,3), dipol(3), volcel, X0(3)
+      real(dp)          cell(3,3), dipol(3), volcel, X0(3)
       external          reclat, volcel
 
 C Internal variables and arrays
-      integer           I, I1, I2, I3, IX, Node, Nodes,
+      integer           I, I1, I2, I3, IX, 
      .                  ProcessorZ, Py, Pz, I20, I30,
      .                  MG1, MG2, MG3, Yoffset, Zoffset,
      .                  BlockSizeY, BlockSizeZ, NRemY, NRemZ,
      .                  MeshNsm(3)
-      real*8            D(3), dvol, DX, Rcell(3,3), X0L(3)
+      real(dp)          D(3), dvol, DX, Rcell(3,3), X0L(3)
 #ifdef MPI
       integer           MPIerror
-#endif
-
-C Get the Node number
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
 #endif
 
 C Assign local variables

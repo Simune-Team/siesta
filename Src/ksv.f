@@ -3,7 +3,7 @@
      .                    maxkpol, numh, listhptr, listh, H, S, 
      .                    AuxSr, xijo, indxuo, isa, iphorb, iaorb, 
      .                    lasto, jna, xij, r2ij,shape, nkpol,kpol,
-     .                    wgthpol, polR, polxyz)
+     .                    wgthpol, polR, polxyz )
 C *********************************************************************
 C Finds polarization using the method of King-Smith and Vanderbilt
 C ( Geometric Berry phase).
@@ -67,19 +67,20 @@ C
 C  Modules
 C
       use precision
-      use parallel
+      use parallel,      only : Node
       use fdf
       use parsing
-      use atmfuncs, only: izvalfis
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use atmfuncs,      only : izvalfis
+      use densematrix
+      use alloc
+
       implicit          none
+
       integer           maxkpol, maxnh, nuo, nuotot, no, nspin, na
       integer           indxuo(no), listh(maxnh), numh(nuo), nkpol
       integer           listhptr(nuo), isa(na), iphorb(no), iaorb(no) 
       integer           nua, maxna, jna(maxna), lasto(0:na)
-      double precision  dot, 
+      real(dp)          dot, 
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
      .                  polR(3,nspin), polxyz(3,nspin), ucell(3,3),
@@ -94,15 +95,12 @@ C Internal variables
      .  iy, npl, jo, is, ia, ntote, nocc(2),
      .  nk2D(3), kscell(3,3), igrd, 
      .  nk, nmeshk(3,3), Nptot, 
-     .  notcal(3), Node, Nodes, npsi
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
+     .  notcal(3), nhs, npsi
+
       integer, dimension(:), allocatable, save ::
      .  muo
          
-      double precision
+      real(dp)
      .  difA, pi, rcell(3,3), uR(3,3),  
      .  displ(3), dsp(3), cutoff, dk(3), detr, deti, 
      .  prodtr, prodti, kint(3), volcel, dkmod,
@@ -110,7 +108,7 @@ C Internal variables
      .  tiny, phase, ph(3,2), Debye,
      .  vaux(3,2), area, J, qspin(2), dq, phaseold(2)
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  ek
 
       parameter (Debye  = 0.393430d0)  
@@ -120,21 +118,13 @@ C Internal variables
       external          dot, io_assign, io_close,
      .                  paste, volcel, reclat, memory
 
-      double precision, dimension(:), allocatable, save ::
-     .  psi, psi1, psiprev
+      real(dp), dimension(:), allocatable, save ::
+     .  psi1, psiprev
 
       parameter (  tiny= 1.0d-8  )
 
 C Start time counter 
       call timer( 'KSV_pol', 1 )
-
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
-#else
-      Node = 0
-      Nodes = 1
-#endif
 
 C Reading unit cell and calculate the reciprocal cell
       call reclat( ucell, rcell, 1 )
@@ -191,13 +181,16 @@ C Check parameter maxkpol
       endif
 
 C Allocate local memory
-      npsi = 2*nuotot*nuo*nspin
+      nhs = 2*nuotot*nuo
+      npsi = 2*nuotot*nuo
+      call re_alloc(Haux,1,nhs,name='Haux',routine='KSV_pol')
+      call re_alloc(Saux,1,nhs,name='Saux',routine='KSV_pol')
+      call re_alloc(psi,1,npsi,name='psi',routine='KSV_pol')
+
       allocate(muo(nuotot))
       call memory('A','I',nuotot,'ksv_pol')
       allocate(ek(nuotot))
       call memory('A','D',nuo,'ksv_pol')
-      allocate(psi(npsi))
-      call memory('A','D',npsi,'ksv_pol')
       allocate(psi1(npsi))
       call memory('A','D',npsi,'ksv_pol')
       allocate(psiprev(npsi))
@@ -248,24 +241,24 @@ C Nuclear component
         enddo
       enddo
    
-      do ix=1,3 
-        do ispin=1, nspin
-          polxyz(ix,ispin)=0.0d0
-          polR(ix,ispin)=0.0d0
-          ph(ix,ispin)=0.d0
+      do ix = 1,3 
+        do ispin = 1,nspin
+          polxyz(ix,ispin) = 0.0d0
+          polR(ix,ispin) = 0.0d0
+          ph(ix,ispin) = 0.0d0
         enddo 
-        polion(ix)=0.0d0
-        do ia=1,nua
-          is=isa(ia)
-          dmod=dot(rcell(1,ix),xa(1,ia),3)*izvalfis(is)/nspin
-          polion(ix)=polion(ix)+ 
+        polion(ix) = 0.0d0
+        do ia = 1,nua
+          is = isa(ia)
+          dmod = dot(rcell(1,ix),xa(1,ia),3)*izvalfis(is)/nspin
+          polion(ix) = polion(ix) + 
      .     dmod*dsqrt(dot(ucell(1,ix),ucell(1,ix),3))/(2.0d0*pi) 
         enddo 
       enddo 
     
-      do igrd=1,3 
-        notcal(igrd)=0
-        Nptot=nmeshk(1,igrd)*nmeshk(2,igrd)*nmeshk(3,igrd)
+      do igrd = 1,3 
+        notcal(igrd) = 0
+        Nptot = nmeshk(1,igrd)*nmeshk(2,igrd)*nmeshk(3,igrd)
 
         if ( Nptot.gt. 0 ) then
 
@@ -323,18 +316,18 @@ C Construction of the matrix elements of the scalar product dk*r
           call phirphi(nua, na, nuo, no, scell, xa, rmaxo,
      .              maxna, maxnh, lasto, iphorb, isa,
      .              numh, listhptr, listh, dk,
-     .              jna, xij, r2ij, Node, Nodes, AuxSr) 
+     .              jna, xij, r2ij, AuxSr) 
 
 C Begin the bidimensional integration over the path integrals
           do ik = 1, nk
-            do ispin=1,nspin 
-              prodtr=1.0d0
-              prodti=0.0d0
-              phase=0.0d0
+            do ispin = 1,nspin 
+              prodtr = 1.0d0
+              prodti = 0.0d0
+              phase = 0.0d0
               do il = 0, npl
             
-                do ix=1,3
-                  kint(ix)=kpol(ix,ik)+il*dk(ix)
+                do ix = 1,3
+                  kint(ix) = kpol(ix,ik) + il*dk(ix)
                 enddo            
 
 C Find Wavefunctions 
@@ -343,7 +336,7 @@ C Find Wavefunctions
                     call diagpol( ispin, nspin, nuo, no,
      .                  nuotot, maxnh, numh, listhptr, 
      .                  listh, H, S, xijo, indxuo, kint,
-     .                  ek, psi)
+     .                  ek, psi, Haux, Saux )
                   elseif (nspin.eq.4) then  
                     stop 'KSV_pol: ERROR: nspin=4 not yet implemented'
                   else
@@ -353,24 +346,23 @@ C Find Wavefunctions
 
 C In the first point we just store the wavefunctions      
                 if (il.eq.0) then 
-                  iuo=0
+                  iuo = 0
                   do io = 1,nuo
                     do jo = 1,nuotot
-                      ia=iaorb(jo)
-                      dkxij=dot(dk,xa(1,ia),3)
-                      ckxij=dcos(npl*dkxij)
-                      skxij=dsin(npl*dkxij)
-                      psi1(iuo+1)=psi(iuo+1)*ckxij+psi(iuo+2)*skxij 
-                      psi1(iuo+2)=psi(iuo+2)*ckxij-psi(iuo+1)*skxij
-                      iuo=iuo+2
+                      ia = iaorb(jo)
+                      dkxij = dot(dk,xa(1,ia),3)
+                      ckxij = dcos(npl*dkxij)
+                      skxij = dsin(npl*dkxij)
+                      psi1(iuo+1) = psi(iuo+1)*ckxij + psi(iuo+2)*skxij 
+                      psi1(iuo+2) = psi(iuo+2)*ckxij - psi(iuo+1)*skxij
+                      iuo = iuo + 2
                     enddo 
                   enddo 
-                  detr=1.0d0
-                  deti=0.0d0 
+                  detr = 1.0d0
+                  deti = 0.0d0 
 
 C Store wavefunction for the next point
-                  call savepsi(psiprev,psi,npsi,nuo,nuotot,
-     .              nocc(ispin),Node,Nodes)
+                  call savepsi(psiprev,psi,npsi,nuo,nuotot,nocc(ispin))
 
                 elseif (il.ne.npl) then 
 C Calculate the determinant of the overlap matrix between the 
@@ -378,11 +370,10 @@ C periodic Bloch functions in this k point and in the previous one.
                   call detover(psiprev, psi, S, AuxSr,
      .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
      .              maxnh, nuotot, nocc(ispin), kint, dk, 
-     .              detr, deti, Node, Nodes )
+     .              detr, deti )
  
 C Store wavefunction for the next point
-                  call savepsi(psiprev,psi,npsi,nuo,nuotot,
-     .              nocc(ispin),Node,Nodes)
+                  call savepsi(psiprev,psi,npsi,nuo,nuotot,nocc(ispin))
 
                 else 
 C Calculate the determinant of the overlap matrix between the
@@ -390,22 +381,22 @@ C periodic Bloch functions in the last k point and the first one
                   call detover(psiprev, psi1, S, AuxSr,
      .              numh, listhptr, listh, indxuo, no, nuo, xijo, 
      .              maxnh, nuotot, nocc(ispin), kint, dk, 
-     .              detr, deti, Node, Nodes)
+     .              detr, deti )
     
                 endif
 
 C Product of all the determinants along the integration path
-                prodtr=prodtr*detr - prodti*deti
-                prodti=prodti*detr + prodtr*deti
+                prodtr = prodtr*detr - prodti*deti
+                prodti = prodti*detr + prodtr*deti
 
 C Phase { i.e. Im[ln(det)] } of the individual determinants 
                 if (detr.ne.0.0d0) then
                   if (detr.gt.0d0) then
-                    phase=phase+ datan(deti/detr) 
+                    phase = phase + datan(deti/detr) 
                   elseif (deti/detr.gt.0.0d0) then 
-                    phase=phase+ datan(deti/detr)-pi  
+                    phase = phase + datan(deti/detr)-pi  
                   else 
-                    phase=phase+pi+datan(deti/detr) 
+                    phase = phase + pi + datan(deti/detr) 
                   endif 
                 else
                   if (dabs(deti).gt.tiny) then
@@ -562,12 +553,49 @@ C Deallocate local memory
       deallocate(muo)
       call memory('D','D',size(ek),'ksv_pol')
       deallocate(ek)
-      call memory('D','D',size(psi),'ksv_pol')
-      deallocate(psi)
       call memory('D','D',size(psi1),'ksv_pol')
       deallocate(psi1)
       call memory('D','D',size(psiprev),'ksv_pol')
       deallocate(psiprev)
 
+      if (nkpol.gt.0.and.Node.eq.0) then
+        do ispin = 1,nspin
+          if (nspin.gt.1) then
+            if (ispin.eq.1) write(6,'(/,a)')
+     .       'siesta: Macroscopic polarization for spin Up:'
+            if (ispin.eq.2) write(6,'(/,a)')
+     .       'siesta: Macroscopic polarization for spin Down:'
+          endif
+          write(6,'(/,a)')
+     .     'siesta: Macroscopic polarization per unit cell (a.u.):'
+          write(6,'(a,3f12.6)')
+     .     'siesta: Along the lattice vectors  ',
+     .       (polR(ix,ispin),ix=1,3)
+          write(6,'(a,3f12.6)')
+     .     'siesta: Along cartesian directions ',
+     .      (polxyz(ix,ispin),ix=1,3)
+          write(6,'(/,a)')
+     .     'siesta: Macroscopic polarization per unit cell (Debye):'
+          write(6,'(a,3f12.6)')
+     .     'siesta: Along the lattice vectors  ',
+     .       (polR(ix,ispin)/Debye,ix=1,3)
+          write(6,'(a,3f12.6)')
+     .     'siesta: Along cartesian directions ',
+     .      (polxyz(ix,ispin)/Debye,ix=1,3) 
+        enddo 
+        if (nspin.gt.1) then 
+C Modified so that compiler is happy when nspin = 1 and bounds checking
+C is turned on. JDG
+          write(6,'(/,a,/a,3f12.6)')
+     .      'siesta: Sum along cartesian directions (a.u.): ',
+     .      'siesta: ',(polxyz(ix,1)+polxyz(ix,min(nspin,2)),ix=1,3)
+          write(6,'(/,a,/a,3f12.6)')
+     .      'siesta: Sum along cartesian directions (Debye): ',
+     .      'siesta: ',((polxyz(ix,1)+polxyz(ix,min(nspin,2)))/Debye,
+     .      ix=1,3)
+        endif
+      endif
+
       call timer( 'KSV_pol', 2 )
+
       end
