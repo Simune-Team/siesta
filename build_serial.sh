@@ -15,15 +15,16 @@ if [ -d $dir ] ; then
 fi
 
 mkdir $dir
-echo "Copying Pseudo Examples Docs Tutorials Util..."
-cp -rp Pseudo Examples Tutorials Docs Util $dir
+echo "Copying Pseudo Examples Docs Util..."
+cp -rp Pseudo Examples Docs Util $dir
 cp -rp README  $dir
+cp -rp Siesta-licence.txt $dir/LICENCE
 rm -rf $dir/Docs/Tech
 
 mkdir $dir/Src
 cd Src
-echo "Copying fdf Sys NetCDF Tests and Libs to Src..."
-cp -rp fdf Sys NetCDF Libs Tests ../$dir/Src
+echo "Copying fdf Sys NetCDF Include and Libs to Src..."
+cp -rp fdf Sys NetCDF Libs Include ../$dir/Src
 cp -rp Makefile ../$dir/Src
 
 echo "De-MPI'ng .F and .F90 files..."
@@ -34,7 +35,6 @@ echo "Copying serial files..."
 for i in *.f ; do
   cp -p $i ../$dir/Src
 done
-rm -rf $dir/Src/Include
 
 echo ""
 echo "**** Remember to include the .ps.gz User guide in 2up form"

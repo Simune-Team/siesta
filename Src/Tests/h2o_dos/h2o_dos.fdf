@@ -3,6 +3,8 @@ SystemLabel         h2o_dos
 NumberOfAtoms       3
 NumberOfSpecies     2
 
+MeshCutoff  50 Ry
+
 %block Projected-density-of-states
 -26.00 4.00 0.200 500 eV
 %endblock Projected-density-of-states

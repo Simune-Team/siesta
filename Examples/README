@@ -1,3 +1,5 @@
-Here you can find example fdf files and pseudopotential-generation
-input files. For a comprehensive and automated set of SIESTA tests,
-see Src/Tests.
+Here you can find example fdf files, pseudopotential files and 
+pseudopotential-generation input files (see Tutorial in Pseudo/atom). 
+(You don't need to generate your pseudos to run these examples, 
+but it is very advisable to know how to generate and test 
+pseudopotentials, as explained within the Pseudo/atom directory).

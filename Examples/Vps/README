@@ -1,6 +1,7 @@
-These are the input files used to generate some of the pseudopotentials
+Here are the input files used to generate some of the pseudopotentials
 in Src/Tests/Pseudos. You might want to use them to practice running
-the program ATOM (see Pseudo/atom).
+the program ATOM (see Pseudo/atom). You also have the .psf pseudopotential
+files needed to run the examples.
 
 These pseudopotentials are provided only as examples, and we do not 
 guarantee their accuracy or transferability. We warn you that

@@ -1382,7 +1382,7 @@ C    value of nphi
 
 !     Find for which orbitals rmod < rmax
       rmod = sqrt(sum(r*r)) + 1.0d-20
-      within(1:nphi) = rmod .lt. rmax(1:nphi,is,it)
+      within(1:nphi) = ( rmax(1:nphi,is,it) > rmod )
       if (.not.any(within(1:nphi))) return
 
 !     Find spherical harmonics

@@ -3,6 +3,8 @@ SystemLabel         h2o
 NumberOfAtoms       3
 NumberOfSpecies     2
 
+MeshCutoff  50 Ry
+
 %block ChemicalSpeciesLabel
  1  8  O      # Species index, atomic number, species label
  2  1  H

@@ -46,7 +46,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	cellxc.o cdiag.o rdiag.o \
         cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
-	temp.o siesta.o io.o \
+	siesta.o io.o \
         spin_init.o coor.o transfer.o \
         broadcast_basis.o sig.o eggbox.o
 #
@@ -72,7 +72,7 @@ gen-basis.o: $(FDF)
 MOD_OBJS=precision.o atom.o atmparams.o atmfuncs.o listsc.o \
          memoryinfo.o numbvect.o  parallel.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o parsing.o\
-         alloc.o phonon.o spher_harm.o periodic_table.o\
+         alloc.o phonon.o spher_harm.o periodic_table.o version.o \
          basis_types.o pseudopotential.o basis_specs.o sys.o basis_io.o\
          chemical.o xml.o writewave.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
@@ -148,10 +148,13 @@ dc_lapack.a:  Libs/dc_lapack.f
 	@(cd Libs ; $(MAKE) dc_lapack.a)
 #
 version:
-	sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
-	sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > temp.F
-	@($(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" temp.o)
-	@rm -f temp0.F temp.F
+	@echo
+	@echo "==> Incorporating information about present compilation (compiler and flags)"
+	@sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
+	@sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > compinfo.F
+	@($(MAKE) -s "FC=$(FC)" "FFLAGS=$(FFLAGS)" compinfo.o)
+	@rm -f temp0.F compinfo.F
+	@mv compinfo.o version.o
 	@echo
 
 siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \

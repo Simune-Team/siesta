@@ -21,7 +21,7 @@ THINGS TO WATCH OUT FOR:
 * If you have trouble compiling alloc.F90, it might be that your compiler
 does not recognize the .F90 suffix as a "in need of preprocessing, free
 form, source file". Then you need to do the preprocessing *before* invoking
-the compiler. This happens to our knowledge, on Suns and Alphas. A quick
+the compiler. This happens, to our knowledge, on Suns and Alphas. A quick
 way to fix it is to redefine the .F90 rule in the arch.make file:
 
 #
@@ -46,3 +46,8 @@ by inserting the line
 %.o : %.mod
 
 in arch.make. This works at least with GNU make.
+
+* The Portland Group's pgf90 compiler (at least version 5.0-1) 
+produces bad code when compiling atom.f with optimization. A special
+rule for atom.o has been inserted in the pgf90-*.make files so that
+no optimization is used.

@@ -1,7 +1,21 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
-Version: 1.3
+Version: 1.3 and 1.4.0 not yet
+Date: 2003/07/19 19:15
+Title: Pre Tagging and branching 1.3 and 1.4.0: Miscellanea
+Author: Emilio Artacho <emilio@esc.cam.ac.uk>
+
+Description:
+  Some pre-branching changes: Mesh cutoff to 100Ry default;
+  Makefile to show contents of FFLAGS etc in output;
+  Manual: index entry for geometry constraints + warning about XV
+          for supercell.
+
+Files:
+  Makefile, redata.F, siesta.tex, siesta.ind, version.F, CHANGES
+=======================================================================
+Version: 1.3 not yet
 Date: 2003/07/23 14:15
 Title: Minor bug corrections
 Author: Pablo Ordejon <ordejon@icmab.es>
@@ -18,16 +32,18 @@ Files:
   Util/Denchar/Docs/denchar.tex, CHANGES:  Customary changes
   siesta.tex, CHANGES, version.F, release_notes_1.3:  Customary changes
 =======================================================================
-Version: 1.3 and 1.4.0
+Version: 1.3 and 1.4.0 not yet
 Date: 2003/07/19 19:15
-Title: Tagging and branching 1.3 and 1.4.0
+Title: Pre Tagging and branching 1.3 and 1.4.0
 Author: Emilio Artacho <emilio@esc.cam.ac.uk>
 
 Description:
-  The 1.3 package is defined as is at this stage. It is tagged
-and a branch is opened for bug corrections of 1.3 (new versions
+  The 1.3 package was to be defined at this stage. 
+But not yet, since Examples have to be updated with 1.3 and a few
+last minute things popped up. Later, it will be tagged
+and a branch opened for bug corrections of 1.3 (new versions
 with fixes will be produced and distributed when/if needed) while
-the main branch trunk becomes 1.4.0 for fuirther development.
+the main branch trunk becomes 1.4.0 for further development.
 
 Files:
   CHANGES, siesta.tex, version.F

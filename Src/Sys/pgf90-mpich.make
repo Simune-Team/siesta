@@ -22,6 +22,13 @@ LIBS= -L/usr/local/lib/pgi \
 SYS=bsd
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
+#
+# Important (at least for V5.0-1 of the pgf90 compiler...)
+# Compile atom.f without optimization.
+#
+atom.o:
+        $(FC) -c $(FFLAGS_DEBUG) atom.f
+#
 .F.o:
 	$(FC) -c $(FFLAGS)  $(DEFS) $<
 .f.o:

@@ -116,7 +116,7 @@ C Assign the name of the output file -----------------------------------
 C Dump the tables into a file ------------------------------------------
 
         WRITE(UNIT2) RMAXO
-        WRITE(6,*) RMAXO
+C       WRITE(6,*) RMAXO
 
         DO IL = 1, MAXO
           WRITE(UNIT2)IPHORB(IL), INDXUO(IL), DATM(IL)

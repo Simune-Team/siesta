@@ -1,4 +1,4 @@
-SIESTA LICENCE
+SIESTA ACADEMIC LICENCE
 
 Motivation and Preamble
 
@@ -11,13 +11,13 @@ community.
 1. Definitions 
 
 "The Authors" are:
-    Emilio Artacho, 	University of Cambridge
-    Julian Gale, 	Imperial College, London
-    Alberto García, 	Universidad del País Vasco, Bilbao
-    Javier Junquera, 	Rutgers University
-    Pablo Ordejón, 	ICMAB-CSIC, Barcelona
-    Daniel Sánchez-Portal, Universidad del País Vasco, San Sebastian
-    José M. Soler, 	Universidad Autónoma de Madrid
+    Emilio Artacho, 		University of Cambridge
+    Julian Gale, 		Imperial College, London
+    Alberto Garcia,		Universidad del Pais Vasco, Bilbao
+    Javier Junquera, 		Rutgers University
+    Pablo Ordejon		ICMAB-CSIC, Barcelona
+    Daniel Sanchez-Portal, 	Universidad del Pais Vasco, San Sebastian
+    Jose M. Soler, 		Universidad Autonoma de Madrid
 
 Although we, the Authors, acknowledge that a limited number of auxiliary 
 subroutines were written by (or are based on previous subroutines written 
@@ -28,7 +28,7 @@ The SIESTA team ("the Developers") are the Authors and:
    Richard M. Martin   University of Illinois at Urbana-Champaign
 
 "The Copyright-Holder" is:
-   The Fundación General de la Universidad Autónoma de Madrid (FGUAM).
+   The Fundacion General de la Universidad Autonoma de Madrid (FGUAM).
 
 The valid distributors of the SIESTA package ("The Distributors") are the 
 Developers, and Copyright-Holder as specified above.
@@ -60,10 +60,15 @@ on the output of any part of the SIESTA package, is with the Licensee.
 
 3. Limitation of Usage
 
-The use of the SIESTA package is restricted solely to academic purposes: 
-the Authors reserve the exclusive right to determine what purposes are 
-academic, and to withhold the right to use the SIESTA package where they 
-are not satisfied that this condition is fulfilled.
+The use of the SIESTA package under the present Licence is restricted
+solely to academic institutions (including universities and non-military
+public research laboratories), and to academic purposes, i.e., leading 
+to open publication of results, with neither withhold of information nor 
+intentional delay in publication. Notwithstanding these general definitions, 
+the Authors reserve the exclusive right to determine what purposes and 
+institutions are eligible for using the SIESTA package under this Licence, 
+and to withhold the right to use the software where they are not satisfied 
+that either condition is fulfilled.
 
 The Licensee is hereby provided with a non-exclusive, royalty-free right to 
 use any part of the SIESTA package, and to display, publish, perform, or 
@@ -157,11 +162,3 @@ use or modify the SIESTA package.
 
 Everyone is permitted to copy and distribute verbatim copies of this 
 Licence document, but changing it is not permitted.
-
-Licensee: Print name and e-mail
-
-Signature:					Date:
-
-Signature of a Distributor:			Date:
-
-Print name:

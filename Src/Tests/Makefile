@@ -7,7 +7,7 @@ SIESTA=../../../siesta
 #SIESTA="mpirun -np 2 ../../../siesta"
 #
 #
-include ../arch.make
+###include ../arch.make
 #
 tests= h2o h2o_dos h2o_orderN batio3 sih si64 fe floating bessel 
 #
@@ -17,11 +17,11 @@ all:  ###   cmpsig   ## Optional: better not activate as of 1.3
 		(SIESTA=$(SIESTA) sh do.sh $$i) ; \
 	done
 #
-cmpsig: cmpsig.f
-	$(FC) $(FFLAGS) -o cmpsig cmpsig.f
+##cmpsig: cmpsig.f
+##	$(FC) $(FFLAGS) -o cmpsig cmpsig.f
 #
 clean:
-	rm -f cmpsig
+##	rm -f cmpsig
 	@for i in ${tests} ; do \
 		echo ">>>> Cleaning $$i test..." ; \
 		(cd $$i ; rm -rf work ; rm -f *.out completed) ; \

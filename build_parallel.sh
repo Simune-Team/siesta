@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# Creates the 'parallel' distribution of siesta.
+# Creates the 'parallel' distribution of siesta (default for 1.3).
 #
 #  This script should be run on an "EXPORTED" directory:
 #
@@ -15,11 +15,12 @@ if [ -d $dir ] ; then
 fi
 
 mkdir $dir
-echo "Copying Pseudo Tutorials Examples Docs Util Src ..."
-cp -rp Pseudo Tutorials Examples Docs Util Src $dir
+echo "Copying Pseudo Examples Docs Util Src ..."
+cp -rp Pseudo Examples Docs Util Src $dir
 cp -rp README $dir
+cp -rp Siesta-licence.txt $dir/LICENCE
 rm -rf $dir/Docs/Tech
-rm -rf $dir/Src/Include
+rm -rf $dir/Src/Tests
 
 echo ""
 echo "**** Remember to include the .ps.gz User guide in 2up form"

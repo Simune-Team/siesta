@@ -21,6 +21,7 @@ sed 's/%%/\#/g' copyright > copyright.sharp
 #
 rm -f MPISAVED
 cp Src/MPI/mpi.F  MPISAVED
+mv Src/Libs LibsSAVED
 #
 rm -f tmp.tmp
 
@@ -47,9 +48,10 @@ for i in $list ; do
     mv tmp.tmp $i
 done
 #
-# restore mpi.F
+# restore mpi.F and Libs
 #
 mv -f MPISAVED Src/MPI/mpi.F
+mv -f LibsSAVED Src/Libs
 
 #
 # Now change the initial character of the header...
@@ -68,7 +70,16 @@ for i in $list ; do
     mv tmp.tmp $i
 done
 
-
+# LaTeX files
+#
+header=copyright
+#
+list=`find Docs -name '*.tex'`
+for i in $list ; do
+    cat $header $i > tmp.tmp
+    mv tmp.tmp $i
+done
+      
 
 
 
