@@ -1100,7 +1100,7 @@ C and set usesavedata to false to avoid reading back saved copy
 
 
 C Initialize energy-density matrix to zero for first call to overfsm
-      Escf = 0.0_dp
+      Escf(1:maxnh,1:nspin) = 0.0_dp
 
 C Extrapolate density matrix between steps
       itest = .false.

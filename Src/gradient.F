@@ -300,8 +300,6 @@ C Calculate energy terms & reinitialise bux1/2
 #else
             func2 = func2 + bux1(j)*bux2(j)
 #endif
-            bux1(j) = 0.0d0
-            bux2(j) = 0.0d0
           enddo
 
 C Multiply Hij x Fs and Sij x F row by row
@@ -331,6 +329,12 @@ C (only products of neccesary elements)
 C Reinitialise buxg
           call globalrezeroB2(il,nbands,buxg)
 #endif
+C Reinitialise bux1 / bux2
+          do jn = 1,numhij(il)
+            j = listhij(jn,il)
+            bux1(j) = 0.0d0
+            bux2(j) = 0.0d0
+          enddo
 
         enddo
 

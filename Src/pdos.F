@@ -197,7 +197,7 @@ C New writing
         call xml_AddAttribute(xf,"units","eV")
         write(iunit2,'(a)') '<energy_values units="eV">'
 
-        allocate(tmp(nhist))
+        allocate(tmp(2*nhist))
         do ihist = 1,nhist
            ENER = E1 + (IHIST-1) * DELTA
            tmp(ihist) = ener*eV
@@ -207,11 +207,6 @@ C New writing
 
         call xml_AddArray(xf,tmp(1:nhist))
         call xml_EndElement(xf,"energy_values")
-
-          if (nspin.eq.2) then
-             deallocate(tmp)
-             allocate(tmp(2*nhist))
-          endif
 
         do i = 1, nuotot
           iat = iaorb(i)
@@ -271,6 +266,10 @@ C Close file
         call xml_Close(xf)
         write(iunit2,'(a)') '</pdos>'
         call io_close(iunit2)
+
+C Free local workspace array
+        deallocate(tmp)
+
       endif
             
 
@@ -279,8 +278,6 @@ C Free local arrays ----------------------------------------------------
       DEALLOCATE(DPR)
       CALL MEMORY('D','D',SIZE(DTOT),'pdos')
       DEALLOCATE(DTOT)
-
-      deallocate(tmp)
 
       CALL TIMER( 'pdos', 2)
 

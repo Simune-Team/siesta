@@ -1,6 +1,17 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.26
+Date: 2004/12/05  3:30 GMT
+Title: Fixes for test example bugs
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+dfscf.f         Setting of Parallel_Run variable corrected
+gradient.F      Reinitialisation of bux1/2 moved for correct 
+                operation of serial version.
+pdos.F          Deallocation of tmp moved to correct place
+siesta.F        Initialisation of Escf given explicit limits
+=======================================================================
 Version: 1.4.25
 Date: 2004/12/02  4:00 GMT
 Title: Fix for parallel ON grad
