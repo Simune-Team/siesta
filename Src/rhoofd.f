@@ -1,4 +1,4 @@
-      subroutine rhoofd( no, indxuo, np, maxnd, numd, listdptr, 
+      subroutine rhoofd( no, np, maxnd, numd, listdptr, 
      .                   listd, nspin, Dscf, rhoscf, nuo, nuotot, 
      .                   iaorb, iphorb, isa )
 C ********************************************************************
@@ -10,7 +10,6 @@ C Version of rhoofd that optionally uses a direct algorithm to save
 C memory. Modified by J.D.Gale, November'99
 C *********************** InpUT **************************************
 C integer no              : Number of basis orbitals
-C integer indxuo(no)      : Index of equivalent atom in unit cell
 C integer np              : Number of mesh points
 C integer maxnd           : First dimension of listD and Dscf, and
 C                           maximum number of nonzero elements in
@@ -31,7 +30,9 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use atmfuncs, only: rcut, phiatm, all_phi, nsmax=>nspecies
+      use atmfuncs,  only: rcut, phiatm, all_phi
+      use atm_types, only: nsmax=>nspecies
+      use atomlist,  only: indxuo
       use listsc_module, only: listsc
       use mesh,     only: nsp, dxa, xdop, xdsp
       use meshdscf
@@ -41,7 +42,7 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   no, np, nspin, maxnd, nuo, nuotot, indxuo(no), iaorb(*),
+     .   no, np, nspin, maxnd, nuo, nuotot, iaorb(*),
      .   iphorb(*), isa(*), numd(nuo), listdptr(nuo), listd(maxnd)
 
       real
@@ -307,21 +308,20 @@ C  Restore iorb for next point
       enddo
 
 C  Free local memory
-      call memory('D','I',size(ilocal),'rhoofd')
-      deallocate(ilocal)
-      call memory('D','I',size(ilc),'rhoofd')
-      deallocate(ilc)
-      call memory('D','I',size(iorb),'rhoofd')
-      deallocate(iorb)
-      call memory('D','D',size(Dlocal),'rhoofd')
-      deallocate(Dlocal)
-      call memory('D','D',size(Clocal),'rhoofd')
-      deallocate(Clocal)
-
       if (Parallel) then
         call memory('D','D',size(DscfL),'meshdscf')
         deallocate(DscfL)
       endif
+      call memory('D','D',size(Clocal),'rhoofd')
+      deallocate(Clocal)
+      call memory('D','D',size(Dlocal),'rhoofd')
+      deallocate(Dlocal)
+      call memory('D','I',size(iorb),'rhoofd')
+      deallocate(iorb)
+      call memory('D','I',size(ilc),'rhoofd')
+      deallocate(ilc)
+      call memory('D','I',size(ilocal),'rhoofd')
+      deallocate(ilocal)
 
       call timer('rhoofd',2)
       end

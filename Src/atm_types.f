@@ -1,42 +1,39 @@
       module atm_types
 
-      use radial
+      use precision, only: dp
+      use radial, only: rad_func
 !
 !     Derived types for orbitals and KB projectors
 !
       implicit none
-
 !
 !     Storage of orbital and projector real-space tables and other
 !     characteristics
 !
-         
-!
 !     These parameters are over-dimensioned, but there is no storage
 !     penalty, as the real information is packed and indexed.
 !
-!
-      integer, parameter  :: maxn_pjnl = 10
-!       Maximum number of projectors (not counting different "m" copies)
-      integer, parameter  :: maxn_orbnl = 20
-!       Maximum number of nl orbitals (not counting different "m" copies)
-
-      integer, parameter  :: maxnorbs = 100
+      integer, parameter, public  :: maxnorbs = 100
 !       Maximum number of nlm orbitals
-      integer, parameter  :: maxnprojs = 50
+!
+      integer, parameter, public  :: maxn_pjnl = 10
+!       Maximum number of projectors (not counting different "m" copies)
+      integer, parameter, public  :: maxn_orbnl = 20
+!       Maximum number of nl orbitals (not counting different "m" copies)
+      integer, parameter, public  :: maxnprojs = 50
 !       Maximum number of nlm projectors
 !
 
 !
 !     Species_info: Consolidate all the pieces of information in one place
 !
-      type species_info
+      type, public :: species_info
          character(len=2)                ::  symbol
          character(len=20)               ::  label
          integer                         ::  z          ! Atomic number
-         double precision                ::  mass
+         real(dp)                        ::  mass
          integer                         ::  zval       ! Valence charge
-         double precision                ::  self_energy !Electrostatic
+         real(dp)                        ::  self_energy !Electrostatic
                                                          !self-energy
 !
 !        Orbitals
@@ -50,7 +47,7 @@
          integer, dimension(maxn_orbnl)  ::  orbnl_z    ! z of each nl orb
          logical, dimension(maxn_orbnl)  ::  orbnl_ispol! is it a pol. orb?
 
-         double precision,
+         real(dp),
      $            dimension(maxn_orbnl)  ::  orbnl_pop  ! pop. of nl orb
                                                         ! (total of 2l+1
                                                         ! components)
@@ -65,7 +62,7 @@
          integer                         ::  lmax_projs ! l cutoff for projs
          integer, dimension(maxn_pjnl)   ::  pjnl_l     ! l of each nl proj
          integer, dimension(maxn_pjnl)   ::  pjnl_n     ! n of each nl proj
-         double precision, dimension(maxn_pjnl)
+         real(dp), dimension(maxn_pjnl)
      $                                   ::  pjnl_ekb   ! energy of
                                                          ! each nl proj
 !
@@ -81,7 +78,7 @@
          integer, dimension(maxnorbs)    ::  orb_n
          integer, dimension(maxnorbs)    ::  orb_l
          integer, dimension(maxnorbs)    ::  orb_m
-         double precision,
+         real(dp),
      $            dimension(maxnorbs)    ::  orb_pop   ! pop. of nl orb
 
          integer                         ::  nprojs
@@ -102,11 +99,15 @@
       end type species_info
 
 !
-      integer, save             :: nspecies
-      integer, save             :: npairs
+      integer, save, public             :: nspecies
+      integer, save, public             :: npairs
 
-      type(species_info), target, allocatable, save   ::  species(:)
-      type(rad_func), allocatable, target, save     ::  elec_corr(:)
+      type(species_info), target, allocatable,
+     $                            save, public   ::  species(:)
+      type(rad_func), allocatable, target,
+     $                            save, public   ::  elec_corr(:)
 !
+
+      private
 
       end module atm_types

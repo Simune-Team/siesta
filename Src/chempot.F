@@ -582,8 +582,8 @@ c loop over orbitals of atom ia ...
 
           do 40 k=2,p-1
 
-	    do j=1,numv
-	      v(j,3)=-v(j,1)
+            do j=1,numv
+              v(j,3)=-v(j,1)
               ji = listv(j)
               do i=1,numhp(ji)
                 jj=listhp(i,ji)
@@ -595,7 +595,7 @@ c loop over orbitals of atom ia ...
 
             rr(mu,k)=v(imu,3)
 
-	    j=0
+            j=0
             do i=1,numv
               v(i,1)=v(i,2)
               v(i,2)=v(i,3)
@@ -622,8 +622,8 @@ C Calculate chemical potential as the root of Nel - Tr(rho) = 0 ...
 C Inverse temperature (in units of energy scaled so that the spectrum
 C  lays between (-1,+1)
       betap = beta * deltae
-C	write(6,*) 'betap',betap
-C	write(6,*) 'rcoor',rcoor
+C       write(6,*) 'betap',betap
+C       write(6,*) 'rcoor',rcoor
 C ............
 
 C      do p=1,pmax
@@ -856,7 +856,7 @@ C ***********************************************************************
       DO 30 J=1,N
         SUM=0.D0
         DO 20 K=1,N
-	  SUM=SUM+F(K)*COS(PI*(J-1)*(K-0.5D0)/N)
+          SUM=SUM+F(K)*COS(PI*(J-1)*(K-0.5D0)/N)
   20    CONTINUE
         C(J) =FAC*SUM
   30  CONTINUE  
@@ -888,7 +888,7 @@ c      integer ix
 c      do ix=1,1001
 c        a=(x2-x1)*(ix-1)/1000. + x1
 c        fa=func(a)
-c	write(6,*) a,func(a)
+c       write(6,*) a,func(a)
 c      enddo
 
       A=X1
@@ -952,7 +952,7 @@ c      enddo
         ELSE
           B=B+SIGN(TOL1,XM)
         ENDIF
-	FB=FUNC(B)
+        FB=FUNC(B)
 11    CONTINUE
       STOP 'ZBRENT exceeding maximum iterations.'
 C      ZBRENT=B

@@ -1,4 +1,4 @@
-      subroutine rhoofdsp( no, indxuo, np, maxnd, numd, listdptr, 
+      subroutine rhoofdsp( no, np, maxnd, numd, listdptr, 
      .                     listd, nspin, Dscf, rhoscf, nuo, nuotot, 
      .                     iaorb, iphorb, isa, q )
 C ********************************************************************
@@ -11,7 +11,6 @@ C memory. Modified by J.D.Gale, November'99
 C Spiral version written by V. M. Garcia-Suarez. June 2002.
 C *********************** InpUT **************************************
 C integer no              : Number of basis orbitals
-C integer indxuo(no)      : Index of equivalent atom in unit cell
 C integer np              : Number of mesh points
 C integer maxnd           : First dimension of listD and Dscf, and
 C                           maximum number of nonzero elements in
@@ -33,7 +32,9 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use atmfuncs, only: rcut, phiatm, all_phi, nsmax=>nspecies
+      use atmfuncs,  only: rcut, all_phi
+      use atm_types, only: nsmax=>nspecies
+      use atomlist,  only: indxuo
       use listsc_module, only: listsc
       use mesh, only: nsp, dxa, xdop, xdsp, cmesh, nmeshg, nsm
       use meshdscf
@@ -43,7 +44,7 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   no, np, nspin, maxnd, nuo, nuotot, indxuo(no), iaorb(*),
+     .   no, np, nspin, maxnd, nuo, nuotot, iaorb(*),
      .   iphorb(*), isa(*), numd(nuo), listdptr(nuo), listd(maxnd)
 
       real

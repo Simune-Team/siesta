@@ -12,26 +12,41 @@ C Send comments/suggestions/bug-reports to siesta@uam.es
 C ***
 
 C  Modules
-      use precision
-      use sys
-      use parallel
+      use precision, only: dp
+      use parallel, only: blocksize
       use atmfuncs, only: rcut, uion
-      use atomlist
+      use atomlist, only: xa, xalast, indxuo, na_u
+      use atomlist, only: isa, indxua, iza, lastkb, lasto
+      use atomlist, only: qa, amass, qtot, no_u, rmaxo, rmaxkb
+      use atomlist, only: rmaxv, na_s, iphorb, iphkb, rco, rckb
+      use atomlist, only: datm, no_s, iaorb
+      use atomlist, only: superx, superc, initatomlists
 !
-      use m_ordern
-      use m_hsparse
-!
-      use band
+      use band, only: initbands, bands
       use fdf
+      use sys, only: die, bye
       use parse
-      use writewave
       use ionew, only: io_setup, IOnode
-      use iopipes
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
+      use mpi_siesta, only: mpi_integer, mpi_logical
+#ifdef NODAT
+      use mpi_siesta, only: mpi_double_precision
+#else
+      use mpi_siesta, only: DAT_double
 #endif
-      use alloc
-      use phonon
+#endif
+      use alloc, only: re_alloc, alloc_report
+      use phonon, only: phonon_num_disps, phonon_setup
+      use phonon, only: phonon_write_forces, phonon_restore_coords
+      use phonon, only: phonon_set_coords
+
+      use m_ordern, only: ordern
+      use m_hsparse, only: hsparse
+
+      use parallel, only: set_processory, getnodeorbs
+      use writewave, only: initwave, wwave
+      use iopipes, only: forcestopipe, coordsfrompipe
 
       implicit none
 
@@ -1400,7 +1415,7 @@ C Add SCF contribution to energy and matrix elements ..................
 c         Last call to dhscf and grid-cell sampling if requested
           ifa  = 1
           istr = 1
-          call grdsam( nspin, no_s, iaorb, iphorb, indxuo,
+          call grdsam( nspin, no_s, iaorb, iphorb, 
      .                 no_l, no_u, na_u, na_s, isa, xa, indxua,
      .                 ucell, mscell, g2max, ntm, ifa, istr, maxnh,
      .                 maxnh, numh, listhptr, listh, Dscf, Datm, H,
@@ -1410,7 +1425,7 @@ c         Last call to dhscf and grid-cell sampling if requested
           ifa  = 0
           istr = 0
           ihmat = 1
-          call dhscf( nspin, no_s, iaorb, iphorb, indxuo, no_l,
+          call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .                no_u, na_u, na_s, isa, xa, indxua, 
      .                ucell, mscell, g2max, ntm,
      .                ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
@@ -2349,7 +2364,7 @@ c Save electron density and potential
         if (savepsch) filepsch = paste( slabel, '.IOCH'  )
         if (savetoch) filetoch = paste( slabel, '.TOCH'  )
         g2max = g2cut
-        call dhscf( nspin, no_s, iaorb, iphorb, indxuo, no_l,
+        call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa, indxua, 
      .              ucell, mscell, g2max, ntm,
      .              0, 0, 0, filrho, fildrh, filevh, filevt,
@@ -2369,7 +2384,7 @@ c Find local density of states
 #endif
       if ( genlogic ) then
 
-c       Find the desired energy range
+C Find the desired energy range
         if (IOnode) then
           read(iu,'(a)') line
           p=>digest(line)
@@ -2394,7 +2409,7 @@ c       Find the desired energy range
 #endif
 #endif
 
-c       Find the density matrix for states between e1 and e2
+C Find the density matrix for states between e1 and e2
         if (isolve .eq. 0) then
           call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
@@ -2409,10 +2424,10 @@ c       Find the density matrix for states between e1 and e2
           goto 70
         endif
      
-c       Find the LDOS in the real space mesh
+C Find the LDOS in the real space mesh
         filrho = paste( slabel, '.LDOS' )
         g2max = g2cut
-        call dhscf( nspin, no_s, iaorb, iphorb, indxuo, no_l,
+        call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa, indxua, 
      .              ucell, mscell, g2max, ntm,
      .              0, 0, 0, filrho, ' ', ' ', ' ', ' ', ' ',

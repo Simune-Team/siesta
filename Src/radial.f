@@ -5,12 +5,11 @@
 
       implicit none
 
-      private 
-      public rad_func, rad_alloc, rad_get, rad_setup_d2, rad_zero
-      public radial_read_ascii, radial_dump_ascii
-      public radial_dump_xml
+      public :: rad_alloc, rad_get, rad_setup_d2, rad_zero
+      public :: radial_read_ascii, radial_dump_ascii
+      public :: radial_dump_xml
 
-      type rad_func
+      type, public :: rad_func
          integer          n
          double precision cutoff         
          double precision delta
@@ -18,6 +17,7 @@
          double precision, dimension(:), pointer :: d2  ! Second derivative
       end type rad_func
 
+      private 
 
       CONTAINS
 
@@ -207,6 +207,7 @@ C D. Sanchez-Portal, Oct. 1996.
 !--------------------------------------------------------------------
 !
       subroutine radial_dump_xml(op,lun)
+
       type(rad_func)    :: op
       integer lun
       integer j

@@ -1,6 +1,199 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.14
+Date: 2004/06/23 14:30
+Title: Diag speed up
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+Saving of CPU time in diag*.F by skipping build of density matrix
+when the band occupancy is less than a small threshold.
+
+Files:
+
+Src/diag2g.F     HighestOccupiedBand pointer added to limit D build
+Src/diag2k.F     HighestOccupiedBand pointer added to limit D build
+Src/diagg.F      HighestOccupiedBand pointer added to limit D build
+Src/diagk.F      HighestOccupiedBand pointer added to limit D build
+Src/diagkp.F     HighestOccupiedBand pointer added to limit D build
+                 Sizes of listhptr/listdptr/numh/numd changed to maxuo
+Src/diagsprl.F   HighestOccupiedBand pointer added to limit D build
+=======================================================================
+Version: 1.4.13
+Date: 2004/06/23  9:30
+Title: Even more code cleanup
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+Some minor fixes to compilation and other small changes
+
+Files:
+
+Src/atom.f          Check on value of nsemx being exceeded for qPAO added
+Src/electrostatic.f npairs is now used from atm_types so that the value is
+                    the same on all nodes
+Src/dfscf.f         indxuo now accessed from module
+Src/dhscf.F         First dimension of DVxcdn made equal to ntpl for
+                    correct bounds checking in cellxc.F even though
+                    never referenced
+                    indxuo no longer passed through
+Src/grdsam.F        indxuo no longer passed through
+Src/meshmatrix.F    indxuo now accessed from module
+Src/parallel.f      Default blocksize increased to 16
+Src/rhooda.f        indxuo now accessed from module
+Src/rhoofd.f        indxuo now accessed from module
+Src/rhoofdsp.f      indxuo now accessed from module
+Src/siesta.F        ifdef NODAT wrapping of mpi_siesta use statement
+                    added to select correct quantity for using
+                    indxuo no longer passed to grdsam & dhscf
+Src/vmat.f          indxuo now accessed from module
+Src/vmatsp.f        indxuo now accessed from module
+=======================================================================
+Version: 1.4.12
+Date: 2004/06/10 21:00
+Title: More code cleanup
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+* Declaration of variables in some files.
+ (implicit statements for real variables remain...)
+
+File siesta/Src/dot.f 
+File siesta/Src/electrostatic.f 
+File siesta/Src/fermid.F 
+File siesta/Src/idiag.f 
+File siesta/Src/linpack.F
+File siesta/Src/paste.f 
+File siesta/Src/poison.F 
+File siesta/Src/pseudopotential.f
+File siesta/Src/ranger.f 
+File siesta/Src/reclat.f 
+File siesta/Src/timer.F 
+File siesta/Src/xc.f 
+
+* Some changes to the MPI compilation setup. File mpif2sane.f90 intended
+  to replace the direct  inclusion of mpif.h in the future.
+
+File siesta/Src/MPI/Makefile              (new symbol for NAG compiler)
+File siesta/Src/MPI/mpi.F                 (remove some mpi_2XX symbols)
+File siesta/Src/MPI/mpi__include.f90              ( " )
+File siesta/Src/MPI/mpif2sane.f90 is new.
+File siesta/Src/Sys/macosx-nag-mpi.make is new.
+
+=======================================================================
+Version: 1.4.11
+Date: 2004/06/08 12:00
+Title: Use of accessibility clauses to help compilers + cleanup
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+* Some compilers (notably Intel's) have trouble compiling certain
+sections of the code, probably because of limitations in their
+namespace-handling internal structures in some versions.  To help
+them, and also as a matter of good programming practice, it is
+advisable to follow these basic guidelines:
+
+1. Make all modules "private" by default. Public entities should be
+given the "public" attribute explicitly. This prevents the leaking of
+symbols from other used modules.
+2. Use the "only:" qualifier to import symbols from modules. This is
+particularly necessary for program units which use a lot of modules, such
+as siesta.F itself.
+
+Files changed: 
+
+        Src: pdos.F redata.F siesta.F cdiag.F rdiag.F 
+             atmfuncs.f old_atmfuncs.f basis_types.f atm_types.f
+	     atom.f transfer.f ionew.F initatom.f atomlist.f
+             dfscf.f rhoofd.f rhoofdsp.f vmat.f vmatsp.f
+
+	Src/MPI: mpi.F mpi__include.f90        (removed mpi.f90)
+
+* On_subs has been turned into a module.
+
+	Src: on_subs.F egandd.F
+
+* The calculation of the electrostatic correction tables has been moved out
+  of the basis-generation modules and placed in a new one (electrostatic.f).
+  Gen-basis and the rest of the basis-generation code are now more decoupled
+  from the rest of the program, and a number of duplicate routines have
+  been removed. The module old_atmfuncs.f has been streamlined, with the
+  removal of a number of obsolete routines and data structures.
+
+Files:
+
+	Src: old_atmfuncs.f atom.f transfer.f initatom.f gen-basis.F
+             Makefile basis_io.F
+
+* Fixed MPI/Makefile to make the NODAT option pass through for the 
+  compilation of the MPI modules. 
+
+	Src/MPI/Makefile
+
+* New directory Src/wxml for XML-writing modules. The new code is being
+  progressively integrated into Siesta. 
+
+  Files:   
+		Src: pdos.F   (some new calls, and extra file)
+                     Makefile (support for wxml)
+
+	        Src/wxml: New directory
+
+   (Developers: use "-d" flag to cvs update to pick up the new directory)
+
+* Removal of unused symbols, declaration of implicitly-typed variables,
+  use of standard kinds for real variables (some files only)
+
+	Src: chkgmx.F bessph.f pseudopotential.f atm_types.f basis_types.f
+             atom.f transfer.f basis_io.F
+
+* Tab removal and other cosmetic changes:
+
+	Src: iopipes.F90 chempot.F fermid.F alloc.F90 matel.f meshsubs.F
+             neighb.f ranger.f ran3.f overfsm.f
+
+* Wrapping of MPI I/O (Julian Gale):
+
+	Src: diagon.F  (spiral case was not wrapped)
+
+* Change in deallocation order (Julian Gale):
+
+        Src: rhoofd.f vmat.f
+
+* In timer.F, the call to the CPUTIM routine has been eliminated in favor
+  of the f95 standard cpu_time. A new file "cpu_time.f90" has been added
+  for compilers which are not f95-compliant (PGI). Current SYS symbols
+  in .make files are redundant but harmless.
+
+	Files:  Src:  timer.F cpu_time.f90 (new file)
+                Src/Sys:  pgf90*.make  (use cpu_time in SYS)
+
+* New .make files for compilation on a new machine with itanium2 processors
+  and myrinet networking (using Intel's 7.1 compiler)
+
+	Files:  Src/Sys: itanium2.make itanium2-mpi.make
+
+* Pseudo/atom/Tutorial: 
+	scripts ae.sh, pg.sh, and pt.sh made more robust.
+        New file subps.gps for shell interoperability.
+
+  version.F90                : Customary changes
+  Docs/CHANGES               : Customary changes
+
+========================================================================
+Description: New .make and SYS files to support IBM's pessl library
+Version: 1.4.10
+Date: 2004/02/04 16:00
+Title: Support for pessl on IBM machines
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description: New .make and SYS files to support IBM's pessl library
+
+Files:
+
+  Src/Sys/ibm-regatta-p4.make: New file
+  Src/ibm_pessl.f            : New file with extra code 
+  version.F90                : Customary changes
+  Docs/CHANGES               : Customary changes
+
+=======================================================================
 Version: 1.4.9
 Date: 2004/02/01 18:00
 Title: Miscellaneous fixes for portability

@@ -31,7 +31,7 @@ C ----------------------------------------------------------------------
 
       end module meshdscf
 
-      subroutine CreateLocalDscfPointers( nmpl, nuotot, indxuo, numd,
+      subroutine CreateLocalDscfPointers( nmpl, nuotot, numd,
      .                                    listdptr, listd, Node, Nodes)
 C
 C Calculates the values of the orbitals at the mesh points
@@ -41,7 +41,6 @@ C Input :
 C ----------------------------------------------------------------------
 C integer nmpl          : Number of mesh points in unit cell locally
 C integer nuotot        : Total number of basis orbitals in unit cell
-C integer indxuo(nuotot): Pointer from orbital in supercell to unit cell
 C integer numd(nuo)     : Number of nonzero density-matrix
 C                       : elements for each matrix row
 C integer listdptr(nuo) : Pointer to start of rows of density-matrix
@@ -58,6 +57,7 @@ C ----------------------------------------------------------------------
 C
 C Modules
 C
+      use atomlist, only: indxuo
       use meshdscf, only: listdl, listdlptr, NeedDscfL, nrowsDscfL, 
      .                    numdl
       use meshphi,  only: endpht, lstpht
@@ -74,7 +74,6 @@ C Passed arguments
 C
       integer, intent(in) :: nmpl
       integer, intent(in) :: nuotot
-      integer, intent(in) :: indxuo(nuotot)
       integer, intent(in) :: numd(*)
       integer, intent(in) :: listdptr(*)
       integer, intent(in) :: listd(*)

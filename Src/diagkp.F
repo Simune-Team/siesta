@@ -107,16 +107,16 @@ C
 
       integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
      .                  nspin, nuo, nuotot, Node, Nodes
-      integer           indxuo(no), listh(maxnh), numh(nuo),
-     .                  listd(maxnd), numd(nuo), listhptr(nuo),
-     .                  listdptr(nuo)
-      double precision  Dnew(maxnd,nspin),
+      integer           indxuo(no), listh(maxnh), numh(maxuo),
+     .                  listd(maxnd), numd(maxuo), listhptr(maxuo),
+     .                  listdptr(maxuo)
+      real*8            Dnew(maxnd,nspin),
      .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
      .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
      .                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
      .                  S(maxnh), stepf, temp, wk(nk),
      .                  xij(3,maxnh), qs(nspin)
-      double precision  Dk(2,nuotot,nuotot), Ek(2,nuotot,nuotot),
+      real*8            Dk(2,nuotot,nuotot), Ek(2,nuotot,nuotot),
      .                  Haux(2,nuotot,nuotot), Saux(2,nuotot,nuotot),
      .                  psi(2,nuotot,nuotot), aux(2,nuotot*5)
       logical           getD, fixspin
@@ -128,11 +128,14 @@ C  Internal variables .............................................
      .  j, jo, juo, maxnhg, nuog 
       integer, dimension(:), allocatable, save ::
      .  numhg, listhptrg, listhg
-      double precision
+      integer, allocatable, save :: HighestOccupiedBand(:,:)
+      logical
+     .  lfound
+      real*8
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
-      double precision, dimension(:), allocatable, save ::
+      real*8, dimension(:), allocatable, save ::
      .  Snew
-      double precision, dimension(:,:), allocatable, save ::
+      real*8, dimension(:,:), allocatable, save ::
      .  Hnew, Dnewloc, Enewloc, xijloc
 C  ....................
 
@@ -261,7 +264,6 @@ C Note : sign of complex part changed to match change in order of iuo/juo
           endif
         enddo
       enddo
-C ....................
 
 C Globalise eigenvalues
       BNode = -1
@@ -279,7 +281,6 @@ C Globalise eigenvalues
 
 C Check if we are done ................................................
       if (.not.getD) goto 999
-C ....................
 
 C Allocate local copies of Dk and Ek for building matrices
       allocate(Dnewloc(maxnhg,2))
@@ -295,7 +296,6 @@ C Find new Fermi energy and occupation weights ........................
         call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
      .             temp, qtot, qo, ef, Entropy )
       endif
-C ....................
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -312,17 +312,29 @@ C Find weights for local density of states ............................
           enddo
         enddo
       endif
-C ....................
       
-c New density and energy-density matrices of unit-cell orbitals .......
+C Create pointer to highest occupied band
+      allocate(HighestOccupiedBand(nspin,nk))
+      do ik = 1+Node,nk,Nodes
+        do ispin = 1,nspin
+          io = 0
+          lfound = .false.
+          do while (io.lt.nuotot.and..not.lfound)
+            io = io + 1
+            lfound = (abs(qo(io,ispin,ik)).lt.1.0d-12)
+          enddo
+          HighestOccupiedBand(ispin,ik) = io
+        enddo
+      enddo
 
+C New density and energy-density matrices of unit-cell orbitals .......
       Dnewloc(1:maxnhg,1:nspin) = 0.0d0
       Enewloc(1:maxnhg,1:nspin) = 0.0d0
 
       do ik = 1+Node,nk,Nodes
         do ispin = 1,nspin
 
-C         Find eigenvectors 
+C Find eigenvectors 
           Saux = 0.0d0
           Haux = 0.0d0
           do io = 1,nuog
@@ -348,11 +360,11 @@ C         Find eigenvectors
             call die('Terminating due to failed diagonalisation')
           endif
 
-C         Add contribution to density matrices of unit-cell orbitals
+C Add contribution to density matrices of unit-cell orbitals
           Dk = 0.0d0
           Ek = 0.0d0
 C Global operation to form new density matrix
-          do ie = 1,nuotot
+          do ie = 1,HighestOccupiedBand(ispin,ik)
             do j = 1,nuotot
               aux(1,j) = psi(1,j,ie)
               aux(2,j) = psi(2,j,ie)
@@ -384,9 +396,9 @@ C Should be numd/listd/listdptr but H equivalents used to save globalisation
      .               kpoint(3,ik) * xijloc(3,ind)
               ckxij = cos(kxij)
               skxij = sin(kxij)
-              Dnewloc(ind,ispin)=Dnewloc(ind,ispin)+ 
+              Dnewloc(ind,ispin) = Dnewloc(ind,ispin) + 
      .          Dk(1,juo,iuo)*ckxij - Dk(2,juo,iuo)*skxij
-              Enewloc(ind,ispin)=Enewloc(ind,ispin)+ 
+              Enewloc(ind,ispin) = Enewloc(ind,ispin) + 
      .          Ek(1,juo,iuo)*ckxij - Ek(2,juo,iuo)*skxij
             enddo
           enddo
@@ -416,9 +428,9 @@ C Globalise Dnew/Enew (reference to numhg should be numd)
 #endif
         enddo
       enddo
-C ....................
 
 C Deallocate local memory needed only if getD is true
+      deallocate(HighestOccupiedBand)
       call memory('D','D',size(Dnewloc),'diagkp')
       deallocate(Dnewloc)
       call memory('D','D',size(Enewloc),'diagkp')

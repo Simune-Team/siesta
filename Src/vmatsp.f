@@ -1,4 +1,4 @@
-      subroutine vmatsp( no, indxuo, np, dvol, nspin, V, nvmax, 
+      subroutine vmatsp( no, np, dvol, nspin, V, nvmax, 
      .                 numVs, listVsptr, listVs, Vs, 
      .                 nuo, nuotot, iaorb, iphorb, isa, q )
 
@@ -13,7 +13,6 @@ C Modified by J.D.Gale, November'99
 C Spiral version written by V. M. Garcia-Suarez. June 2002.
 C *********************** INPUT **************************************
 C integer no              : Number of basis orbitals
-C integer indxuo(no)      : Index of equivalent atom in unit cell
 C integer np              : Number of columns in C (local)
 C real*8  dvol            : Volume per mesh point
 C integer nspin           : Number of spin components
@@ -35,7 +34,9 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use atmfuncs, only: rcut, phiatm, all_phi, nsmax=>nspecies
+      use atmfuncs,  only: rcut, phiatm, all_phi
+      use atm_types, only: nsmax=>nspecies
+      use atomlist,  only: indxuo
       use listsc_module, only: listsc
       use mesh, only: dxa, nsp, xdop, xdsp, cmesh, nmeshg, nsm
       use meshdscf
@@ -45,7 +46,7 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   no, np, nvmax, nuo, nuotot, indxuo(no), iaorb(*), nspin,
+     .   no, np, nvmax, nuo, nuotot, iaorb(*), nspin,
      .   iphorb(*), isa(*), numVs(nuo), listVsptr(nuo), listVs(nvmax)
       real
      .   V(nsp,np,nspin)

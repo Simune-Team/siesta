@@ -16,9 +16,11 @@ C
       use basis_types
       use basis_specs
       use basis_io
-      use atmparams
-      use old_atmfuncs
-      use atom
+!      use atmparams
+      use old_atmfuncs, only: nsmax
+      use old_atmfuncs, only: clear_tables, allocate_old_arrays
+
+      use atom, only: atom_main, prinput
 C
 C     It has to be MPI-aware since it calls routines down the line...
 C

@@ -1,5 +1,5 @@
       subroutine dfscf( ifa, istr, na, no, nuo, nuotot, np, nspin,
-     .                  indxua, isa, indxuo, iaorb, iphorb,
+     .                  indxua, isa, iaorb, iphorb,
      .                  maxnd, numd, listdptr, listd, Dscf, Datm,
      .                  Vscf, Vatm, dvol, VolCel, Fal, Stressl )
 
@@ -18,7 +18,6 @@ C integer np              : Number of mesh points (total is nsp*np)
 C integer nspin           : Number of spin components
 C integer indxua(na)      : Index of equivalent atom in unit cell
 C integer isa(na)         : Species index of each atom
-C integer indxuo(no)      : Index of equivalent atom in unit cell
 C integer iaorb(no)       : Atom to which orbitals belong
 C integer iphorb(no)      : Index of orbital within its atom
 C integer maxnd           : First dimension of Dscf
@@ -41,7 +40,9 @@ C    6  10        20        30        40        50        60        7072
 
 C  Modules
       use precision
-      use atmfuncs, only: rcut, phiatm, all_phi, nsmax=>nspecies
+      use atmfuncs, only: rcut, phiatm, all_phi
+      use atm_types, nsmax=>nspecies
+      use atomlist, only: indxuo
       use listsc_module, only: listsc
       use mesh, only: dxa, nsp, xdop, xdsp
       use meshphi, only: endpht, lstpht, listp2
@@ -53,7 +54,7 @@ C  Modules
 C  Passed arguments
       integer
      .   ifa, istr, na, no, nuo, nuotot, np, nspin,  
-     .   indxua(na), isa(na), indxuo(no), iaorb(no), iphorb(no), 
+     .   indxua(na), isa(na), iaorb(no), iphorb(no), 
      .   maxnd, numd(nuo), listdptr(nuo), listd(maxnd)
 
       real
@@ -357,4 +358,3 @@ C  Restore old allocation defaults
 
       call timer('dfscf',2)
       end
-

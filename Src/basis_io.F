@@ -8,24 +8,28 @@
       use chemical
       use sys
       use precision
+#ifdef CDF
       use atmparams, only:NTBMAX
+#endif
       use atm_types
-      use basis_types
+      use basis_types, only: write_basis_specs, basis_parameters
       use pseudopotential
       use radial
       use fdf
+!      use flib_wxml, only: str
+      use xml, only: xml_dump_attribute, xml_dump_element, str
 
       implicit none
 
-      private
       public :: dump_basis_ascii, read_basis_ascii
       public :: dump_basis_xml
       public :: dump_basis_netcdf, read_basis_netcdf
 
       type(species_info), pointer        :: spp
-      type(rad_func), pointer            :: op
-      type(rad_func), pointer            :: pp
-      type(rad_func), pointer            :: func
+
+!!!!!!!      private :: xml_element_content
+
+      private
 
       CONTAINS
 
@@ -40,8 +44,8 @@
 
       use netcdf
 
-      implicit none
-
+      type(rad_func), pointer            :: op
+      type(rad_func), pointer            :: pp
 
       integer ncid, iret
 
@@ -276,8 +280,6 @@ c
 
       enddo
 !
-      call elec_corr_setup()
-
       CONTAINS
 
       subroutine check(status)
@@ -293,56 +295,13 @@ c
 #endif
 
 !----------------------------------------------------------------
-      subroutine elec_corr_setup
-
-      use atmfuncs, only: floating
-
-      integer is, is2, i
-      real(dp) rchloc, rchloc2
-
-      type(rad_func), pointer :: func
-
-      npairs = ((nspecies+1)*nspecies)/2
-      allocate(elec_corr(npairs))
-      do is=1,npairs
-        func=>elec_corr(is)
-        call rad_zero(func)
-      enddo
-
-      do is=1,nspecies
-         rchloc = species(is)%chlocal%cutoff
-         do is2=is,1,-1
-            rchloc2 = species(is2)%chlocal%cutoff
-            i = ((is-1)*is)/2+is2
-            func => elec_corr(i)
-            if (floating(is) .or. floating(is2)) then
-               call rad_zero(func)
-            else
-               call rad_alloc(func,NTBMAX)
-               func%cutoff = rchloc + rchloc2 + 0.2_dp
-               func%delta =  func%cutoff / (NTBMAX - 1)
-               call ch_overlap(is,is2,func%cutoff,func%f)
-               call rad_setup_d2(func)
-            endif
-         enddo
-      enddo
-
-      end subroutine elec_corr_setup
-!----------------------------------------------------------------
 #ifdef CDF
 #endif
 !=======================================================================
 
       subroutine read_basis_ascii
 
-      implicit none
-
-      integer lun
-      character*20 filename
-
-
-      integer is, j, i, l, ispol, nor, nk, m, npts
-      real(dp) dummy
+      integer is
 
       call read_chemical_types
       nspecies = number_of_species()
@@ -355,18 +314,15 @@ c
          spp%read_from_file = .true.
          call read_ion_ascii(spp)
       enddo
-      call elec_corr_setup()
 
       end subroutine read_basis_ascii
 !
 !----------------------
       subroutine read_ion_ascii(spp)
       type(species_info), pointer  :: spp
-      type(rad_func), pointer      :: op
 
       character(len=20) filename
-      integer i, j, l, m, lun, nor, nk, ispol, npts
-      real(dp) dummy
+      integer i, l, m, lun, nor, nk, ispol
 
       write(filename,'(a,a)') trim(spp%label), ".ion"
       call io_assign(lun)
@@ -481,7 +437,8 @@ c
 
       use netcdf
 
-      implicit none
+      type(rad_func), pointer            :: pp
+      type(rad_func), pointer            :: op
 
       integer ncid, iret
 
@@ -730,8 +687,7 @@ c
       type(species_info), pointer  ::   spp
       character*20 filename
       character*30 fileid
-      integer j, i, l, ispol, lun, lun2, zeta, n_series
-      type(rad_func), pointer :: op
+      integer i, l, ispol, lun, lun2, zeta, n_series
 
       spp => species(is)
       if (spp%read_from_file) return    !! Do not dump
@@ -868,6 +824,7 @@ c
 
       end subroutine dump_ion_ascii
 !
+!-----------------------------------------------------------------
       subroutine dump_basis_xml
 
       integer is
@@ -878,14 +835,12 @@ c
       end subroutine dump_basis_xml
 !---
       subroutine dump_ion_xml(is)
-      use xml
 
       integer, intent(in)      :: is
 
       type(species_info), pointer  ::   spp
       character*20 filename
-      integer j, i, l, ispol, lun
-      type(rad_func), pointer :: op
+      integer i, ispol, lun
 
       spp => species(is)
       if (spp%read_from_file) return    !! Do not dump
@@ -967,246 +922,18 @@ c
       end subroutine dump_ion_xml
 !
 !
-!======================================================================
-!
-!     This "atomic" routines use information **in the new structures**,
-!     so they cannot be replaced by those in atom.f...
-!
-      SUBROUTINE CH_OVERLAP(IS1,IS2,RMX,CORR)
-      use atmfuncs, only: izvalfis, psch
-      use ionew, only: IOnode
-      use m_radfft
-
-      integer, intent(in)   :: is1, is2
-      real(dp), intent(in )    :: rmx
-      real(dp), intent(out)    :: corr(:)
-
-C     Returns a table with the difference between the electrostatic energy 
-C     of two spherical charge-densities and two punctual charges with the 
-C     same total charge as a function of the distance between the centers 
-C     of these charge densities. 
-C     Written by D.Sanchez-Portal. March, 1997.(from routine MATEL, written 
-C     by Jose M. Soler)
-
-C     INTEGER IS1,IS2             :  Species indexes.
-C     RMX                         :  Maximum range of the correction.
-C     CORR(NTBMAX)                :  Electrostatic correction energy.
-
-C     Distances in Bohr. Energy in Rydbergs.
-
-C     Internal precision parameters  ------------------------------------
-C     NQ is the number of radial points in reciprocal space.
-C     Npoint , 2npoint+1 is the number of points used by POLINT in the 
-C     interpolation.
-C     Q2CUT is the required planewave cutoff for the expansion of
-C     the 'local-pseudopotential atomic charge density'
-C     (in Ry if lengths are in Bohr).
-C     CHERR is a small number to check the precision of the charge density
-C     integration.
-
-      integer nq, npoint
-      real(dp)            :: q2cut, cherr
-      PARAMETER ( NQ     =  512  )
-      PARAMETER ( NPOINT =  4     ) 
-      PARAMETER ( Q2CUT  =  2.5e3_dp )
-      PARAMETER ( CHERR   =  5.e-2_dp )
-
-      real(dp)
-     .     CH(0:NQ,2),VTB(NTBMAX,2),
-     .     V(0:NQ,2),
-     .     GRCH(3),RX(3),RAUX(2*NPOINT+1)
-
-
-      REAL(DP) cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
-      REAL(DP) r, vd, vv1, vv2, energ1, energ2, bessph
-      integer iz1, iz2, itb, nr, nmin, nmax, nn, iq, ir
-
-      REAL(DP) QTMP             
-
-      PI= 4._DP * ATAN(1._DP)       
-      CONS= 1.0_dp/(2.0_dp*PI)**1.5_DP
-C     
-C***  CUT-OFF IN REAL AND RECIPROCAL SPACE**
-C     
-      QMAX =  SQRT( Q2CUT )
-      RMAX = PI * NQ / QMAX
-      IF(RMX.GT.RMAX) THEN  
-         if (IOnode) then
-            WRITE(6,*) 'CH_OVERLAP: THE NUMBER OF INTEGRATION',
-     .           ' POINTS MUST BE INCREASED'
-            write(6,'(a,2f15.6)') 'ch_overlap: rmx,rmax =', rmx, rmax
-         endif
-         call die
-      ENDIF 
-      DELT=PI/QMAX
-      C=4.0_DP*PI*DELT
-      DLT=RMX/(NTBMAX-1)
-
-      IZ1=IZVALFIS(IS1)
-      IZ2=IZVALFIS(IS2)
-
-      Z1=0.0_DP
-      Z2=0.0_DP
-
-      RX(2)=0.0_DP
-      RX(3)=0.0_DP 
-
-      DO IR=0,NQ
-         R=IR*DELT
-         RX(1)=R
-             
-         CALL PSCH(IS1,RX,CH1,GRCH)
-         CALL PSCH(IS2,RX,CH2,GRCH)
-
-         CH(IR,1)=-CH1
-         CH(IR,2)=-CH2
-
-         Z1=Z1-C*CH1*R*R    
-         Z2=Z2-C*CH2*R*R
-
-      ENDDO
-           
-      IF((ABS(Z1-IZ1).GT.CHERR).OR.
-     .     (ABS(Z2-IZ2).GT.CHERR)) THEN 
-         if (IOnode) then
-            WRITE(6,*) 'CH_OVERLAP: THE NUMBER OF INTEGRATION',
-     .           ' POINTS MUST BE INCREASED'
-            WRITE(6,*) 'CH_OVERLAP: Z1=',Z1,' IZ1=',IZ1
-            WRITE(6,*) 'CH_OVERLAP: Z2=',Z2,' IZ2=',IZ2
-         endif
-         call die
-      ENDIF
-
-      DO IR=0,NQ
-         CH(IR,1)=real(IZ1,dp)*CH(IR,1)/Z1
-         CH(IR,2)=real(IZ2,dp)*CH(IR,2)/Z2
-      ENDDO 
-C
-C     REAL SPACE INTEGRATION OF POISSON EQUATION
-C          
-          
-      CALL NUMEROV(NQ,DELT,CH(0,1),V(0,1))
-      CALL NUMEROV(NQ,DELT,CH(0,2),V(0,2))
-           
-      DO ITB=1,NTBMAX
-         R=DLT*(ITB-1)
-         NR=NINT(R/DELT)
-         NMIN=MAX(0,NR-NPOINT)
-         NMAX=MIN(NQ,NR+NPOINT)
-         NN=NMAX-NMIN+1
-         DO IR=1,NN
-            RAUX(IR)=DELT*(NMIN+IR-1) 
-         ENDDO 
-         CALL POLINT(RAUX,V(NMIN,1),NN,R,VV1,VD)
-         CALL POLINT(RAUX,V(NMIN,2),NN,R,VV2,VD)
- 
-         VTB(ITB,1)=VV1
-         VTB(ITB,2)=VV2
-      ENDDO 
-         
-C****FOURIER-TRANSFORM OF RADIAL CHARGE DENSITY****
-C
-      CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,1), CH(0:NQ,1) )
-      CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,2), CH(0:NQ,2) )
-C
-
-CNEUTRALIZE CHARGE DENSITY FOR FOURIER-SPACE CALCULATION
-C
-      DO IQ=0,NQ
-         R=IQ*QMAX/NQ
-         CH1 = (CH(IQ,1)-IZ1*CONS)*CH(IQ,2)
-         CH2=  (CH(IQ,2)-IZ2*CONS)*CH(IQ,1)
-         CH(IQ,1) = CH1
-         CH(IQ,2) = CH2
-      ENDDO
-C
-C     THE ELECTROSTATIC ENERGY CORRECTION IS STORED IN 'CORR'
-C  
-      DO IR=1,NTBMAX
-
-         R=DLT*(IR-1)
-         ENERG1=0.0_dp
-         ENERG2=0.0_dp
-
-
-         DO IQ=0,NQ
-            QTMP=IQ*QMAX/NQ
-            QTMP=QTMP*R 
-            ENERG1=ENERG1+BESSPH(0,QTMP)*CH(IQ,1)
-            ENERG2=ENERG2+BESSPH(0,QTMP)*CH(IQ,2)
-         ENDDO 
-
-         ENERG1=ENERG1*QMAX/NQ
-         ENERG2=ENERG2*QMAX/NQ
-   
-         ENERG2=ENERG2*4.0_DP*(2.0_dp*PI)**2
-         ENERG1=ENERG1*4.0_DP*(2.0_dp*PI)**2
-              
-         ENERG1=-(ENERG1*R)-(IZ2*(VTB(IR,1)*R-IZ1))
-         ENERG2=-(ENERG2*R)-(IZ1*(VTB(IR,2)*R-IZ2))
-  
-         CORR(IR)=0.5_DP*(ENERG1+ENERG2)
-
-      ENDDO 
-
-      END subroutine ch_overlap
-
-
-      SUBROUTINE NUMEROV(NR,DELT,Q,V)
-      integer, intent(in)  :: nr
-      REAL(DP), intent(in)   :: delt
-      REAL(DP), intent(in)   :: q(0:nr)
-      REAL(DP), intent(out)  :: v(0:nr)
-
-C   Being Q(r) a spherical charge density in a homogeneus radial mesh
-C   with distance DELT between consecutive points, this routine returns
-C   the electrostatic potential generated by this charge distribution.
-C   Written by D. Sanchez-Portal, March 1997.
-
-C   INTEGER NR      :    Number of radial points.
-C   REAL(DP)  DELT    :    Distance between consecutive points.
-C   REAL(DP)  Q(0:NR) :    Spherical charge density.
-C   REAL(DP)  V(0:NR) :    Electrostatic potential at mesh points.
-
-C   Qtot/r asimptotic behaviour is imposed.
-
-
-      integer ir
-      REAL(DP) pi, fourpi, qtot, r, cons
-
-      PI=4.0_DP*DATAN(1.0_DP)
-      FOURPI=4.0_DP*PI
-
-C     NUMEROV ALGORITHM* 
-C
-      V(0)=0.0_DP
-      V(1)=1.0_DP
-
-      DO IR=2,NR
-         V(IR)=2.0_DP*V(IR-1)-V(IR-2) - FOURPI*DELT**3*
-     .        ( Q(IR)*IR+10.0_DP*Q(IR-1)*(IR-1)+Q(IR-2)*(IR-2) )/12.0_DP
-      ENDDO 
-
-C***CALCULATE TOTAL CHARGE***
-   
-      QTOT=0.0_DP
-      DO IR=1,NR
-         R=IR*DELT
-         QTOT=QTOT+R*R*Q(IR)
-      ENDDO
-      QTOT=4.0_DP*PI*QTOT*DELT
-
-C** FIXING QTOT/R ASIMPTOTIC BEHAVIOUR*
-
-      CONS=(QTOT-V(NR))/(NR*DELT)
-             
-      DO IR=1,NR
-         R=IR*DELT
-         V(IR)=V(IR)/(IR*DELT)+CONS
-      ENDDO 
-      V(0)=(4.0_DP*V(1)-V(2))/3.0_DP
-
-      END subroutine numerov
+!---------------------------------------------------------------------
+c$$$      subroutine xml_element_content(xf,name,content)
+c$$$      use flib_wxml
+c$$$      type(xmlf_t), intent(inout) :: xf            ! For new XML output
+c$$$      character(len=*), intent(in)  :: name
+c$$$      character(len=*), intent(in)  :: content
+c$$$
+c$$$      call xml_NewElement(xf,name)
+c$$$      call xml_AddPcdata(xf,content)
+c$$$      call xml_EndElement(xf,name)
+c$$$      end subroutine xml_element_content
+c$$$!---------------------------------------------------------------------
 
       end module basis_io
 

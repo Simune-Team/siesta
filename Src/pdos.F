@@ -44,15 +44,16 @@ C REAL*8  EO(MAXUO,MAXSPN,NK) : Eigenvalues
 C INTEGER NUOTOT              : Total number of orbitals in unit cell
 C **********************************************************************
 
-      use precision
+      use precision, only: dp
       use parallel
       USE FDF
-      use atmfuncs
-      use atomlist, dummy => indxuo
-      use xml
+      use atomlist, only: xa, isa, iphorb, iaorb
+      use atmfuncs, only: zetafio, mofio, lofio, cnfigfio, labelfis
+      use flib_wxml
+      use xml, only: xml_dump_attribute, xml_dump_element
       use ionew,    only : IOnode
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: mpi_comm_world
 #endif
 
       IMPLICIT NONE
@@ -83,6 +84,8 @@ C Internal variables ---------------------------------------------------
 
       integer iat, spec, ii, iorb, Node, Nodes
 
+      real(dp), dimension(:), allocatable  :: tmp
+
 #ifdef MPI
       integer MPIerror
 #endif
@@ -98,6 +101,8 @@ C Internal variables ---------------------------------------------------
       EXTERNAL
      .  IO_ASSIGN, IO_CLOSE, PASTE, 
      .  PDOSK, TIMER
+
+      type(xmlf_t) :: xf            ! For new XML output
 
       CALL TIMER( 'pdos', 1)
 
@@ -116,10 +121,6 @@ C Find the intervals between the subdivisions in the energy scale ------
       if (Node.eq.0) then
         SNAME = FDF_STRING('SystemLabel','siesta')
       endif
-#ifdef MPI
-      call MPI_Bcast(SNAME,30,MPI_character,0,MPI_Comm_World,
-     *  MPIerror)
-#endif
       POINT = '.'
 
 C Find number of orbitals per unit cell 
@@ -200,36 +201,79 @@ C Close file for write
 
 C New writing
       if (IOnode) then
+         call xml_OpenFile("pdos.xml",xf)
+         call xml_AddXMLDeclaration(xf,"UTF-8")
+
         FNAMEPRO = PASTE(SNAME,'.PDOS')
         CALL IO_ASSIGN(IUNIT2)
         open(iunit2,file=FNAMEPRO,form='formatted',status='unknown')
+        call xml_NewElement(xf,"pdos")
+        call xml_NewElement(xf,"nspin")
+        call xml_AddPcdata(xf,str(nspin), line_feed=.false.)
+        call xml_EndElement(xf,"nspin")
+
         write(iunit2,'(a)') '<pdos>'
         write(iunit2,'(a,i1,a)') '<nspin>', nspin, '</nspin>'
         write(iunit2,'(a,i4,a)') '<norbitals>', nuotot, '</norbitals>'
+        call xml_NewElement(xf,"energy_values")
+        call xml_AddAttribute(xf,"units","eV")
         write(iunit2,'(a)') '<energy_values units="eV">'
+
+        allocate(tmp(nhist))
         do ihist = 1,nhist
            ENER = E1 + (IHIST-1) * DELTA
+           tmp(ihist) = ener*eV
            write(iunit2,'(f20.5)') ener*eV
         enddo
         write(iunit2,'(a)') '</energy_values>'
+
+        call xml_AddArray(xf,tmp(1:nhist))
+        call xml_EndElement(xf,"energy_values")
+
+          if (nspin.eq.2) then
+             deallocate(tmp)
+             allocate(tmp(2*nhist))
+          endif
 
         do i = 1, nuotot
           iat = iaorb(i)
           iorb = iphorb(i)
           spec = isa(iat)
 
+          call xml_NewElement(xf,"orbital")
           write(iunit2,'(a)') '<orbital '
+          call xml_AddAttribute(xf,"index",str(i))
           call xml_dump_attribute(iunit2,"index",str(i))
+          call xml_AddAttribute(xf,"atom_index",str(iat))
           call xml_dump_attribute(iunit2,"atom_index",str(iat))
+          call xml_AddAttribute(xf,"species",trim(labelfis(spec)))
           call xml_dump_attribute(iunit2,"species",
      .                           trim(labelfis(spec)))
           write(pos_string,'(3f11.6)') (xa(ii,iat),ii=1,3)
+          call xml_AddAttribute(xf,"position",pos_string)
           call xml_dump_attribute(iunit2,"position",pos_string)
+          call xml_AddAttribute(xf,"n",str(cnfigfio(spec,iorb)))
           call xml_dump_attribute(iunit2,"n",str(cnfigfio(spec,iorb)))
+          call xml_AddAttribute(xf,"l",str(lofio(spec,iorb)))
           call xml_dump_attribute(iunit2,"l",str(lofio(spec,iorb)))
+          call xml_AddAttribute(xf,"m",str(mofio(spec,iorb)))
           call xml_dump_attribute(iunit2,"m",str(mofio(spec,iorb)))
+          call xml_AddAttribute(xf,"z",str(zetafio(spec,iorb)))
           call xml_dump_attribute(iunit2,"z",str(zetafio(spec,iorb)))
           write(iunit2,'(a)') '> '
+
+!------------------------------------------------------------
+          call xml_NewElement(xf,"data")
+          if (nspin.eq.1) then
+             call xml_AddArray(xf,dpr(1:nhist,i,1)/eV)
+          elseif (nspin .eq. 2) then
+             tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)/eV
+             tmp(2:2*nhist:2) = dpr(1:nhist,i,2)/eV
+             call xml_AddArray(xf,tmp(1:2*nhist),format="(2f20.6)")
+          endif
+          call xml_EndElement(xf,"data")
+          call xml_EndElement(xf,"orbital")
+!------------------------------------------------------------
 
           write(iunit2,'(a)') '<data>'
           do ihist = 1,nhist
@@ -245,6 +289,8 @@ C New writing
         enddo
 
 C Close file
+        call xml_EndElement(xf,"pdos")
+        call xml_Close(xf)
         write(iunit2,'(a)') '</pdos>'
         call io_close(iunit2)
       endif
@@ -263,6 +309,8 @@ C Free local arrays ----------------------------------------------------
       DEALLOCATE(SAUX)
       CALL MEMORY('D','D',SIZE(HAUX),'pdos')
       DEALLOCATE(HAUX)
+
+      deallocate(tmp)
 
       CALL TIMER( 'pdos', 2)
 

@@ -37,10 +37,15 @@ C
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
 
+      real :: treal
+
+      integer :: nmax, iopt, nprogs, iprog
       PARAMETER (NMAX=500,ZERO=0.D0,HUNDRD=100.D0,TIMMIN=1.D-6)
       DIMENSION TIME1(NMAX),TIMET(NMAX)
 #ifdef MPI
       dimension buffer1(3),buffer2(3)
+      integer mpierror
+      integer node
 #endif
       INTEGER NCALLS(NMAX)
       CHARACTER*10 PROGS(NMAX),PROG*(*)
@@ -54,7 +59,10 @@ C Get processor number
       Node = 0
 #endif
 
-      CALL CPUTIM (TIME)
+!!      CALL CPUTIM (TIME)
+      call cpu_time( treal)         ! Standard Fortran95
+      TIME = treal
+
       IF (IOPT.EQ.0) THEN
          NPROGS=0
          TIME0=TIME
@@ -197,6 +205,7 @@ C
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
 
+      integer :: nmax, iopt, nprogs, iprog
       PARAMETER (NMAX=500,ZERO=0.D0,HUNDRD=100.D0,TIMMIN=1.D-6)
       DIMENSION TIME1(NMAX),TIMET(NMAX)
       integer time_int, count_rate_int, wt
@@ -204,6 +213,8 @@ C
       logical first
 #ifdef MPI
       dimension buffer1(3),buffer2(3)
+      integer mpierror
+      integer node
 #endif
       INTEGER NCALLS(NMAX)
       CHARACTER*10 PROGS(NMAX),PROG*(*)

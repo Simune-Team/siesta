@@ -291,7 +291,7 @@ C and cutoff radius of each type.
         call memory('D','I',size(iphty),'dhscf')
         deallocate(iphty)
       endif
-        if (allocated(isty)) then
+      if (allocated(isty)) then
         call memory('D','I',size(isty),'dhscf')
         deallocate(isty)
       endif

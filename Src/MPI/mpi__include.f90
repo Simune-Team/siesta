@@ -20,4 +20,17 @@
         IMPLICIT NONE
 
         INCLUDE 'mpif.h'
+
+        public :: mpi_real
+        public :: mpi_complex
+        public :: mpi_double_complex
+        public :: mpi_double_precision
+        public :: mpi_2double_precision
+        public :: mpi_integer, mpi_character, mpi_logical
+        public :: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
+        public :: mpi_status_size
+        public :: mpi_comm_world
+
+        private
+
       END MODULE MPI__INCLUDE

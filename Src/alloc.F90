@@ -1594,7 +1594,7 @@ if (ierr/=0) then
     print*, 'alloc_err: array unknown', &
                ' requested by ', routine
   endif
-  print'(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
+  print '(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
                       i,bounds(i,1),bounds(i,2),         &
                       i=1,size(bounds,dim=1))
   stop 'alloc_err: allocate error'

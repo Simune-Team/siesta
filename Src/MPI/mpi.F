@@ -24,17 +24,14 @@
 !       as symbolic datatypes, and have them point to the appropriate
 !       data type.
 !
-      USE MPI__INCLUDE,
+#ifndef NODAT
+      USE MPI__INCLUDE, only:
 #ifndef CRAY
      &     DAT_single => MPI_real,                                      &
-     &     DAT_2single => MPI_2real,                                    &
      &     DAT_double => MPI_double_precision,                          &
      &     DAT_2double => MPI_2double_precision,                        &
      &     DAT_complex => MPI_complex,                                  &
-!!     &     DAT_2complex => MPI_2complex,                                &
      &     DAT_dcomplex => MPI_double_complex
-!!     &     DAT_2dcomplex => MPI_double_complex
-c    &     DAT_2dcomplex => MPI_2double_complex
 #else
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
@@ -46,6 +43,18 @@ c    &     DAT_2dcomplex => MPI_2double_complex
      &     DAT_2dcomplex => MPI_complex  
 #endif
 !!****      NOTE fudging of "2complex" on CRAY!!!
+
+#else
+        use mpi__include, only: mpi_real
+        use mpi__include, only: mpi_complex
+        use mpi__include, only: mpi_double_complex
+        use mpi__include, only: mpi_double_precision
+        use mpi__include, only: mpi_2double_precision
+#endif
+        use mpi__include, only: mpi_integer, mpi_character, mpi_logical
+        use mpi__include, only: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
+        use mpi__include, only: mpi_status_size
+        use mpi__include, only: mpi_comm_world
 
 !       ... generic overloads for <choice> argument routines ...
 
@@ -791,5 +800,7 @@ c    &     DAT_2dcomplex => MPI_2double_complex
 !           ... maybe more arguments ...
           END SUBROUTINE MPI_PCONTROL
         END INTERFACE
+
+        public
 
       END MODULE MPI_SIESTA

@@ -1,5 +1,3 @@
-C $Id: neighb.f,v 1.10 2000/06/16 14:40:05 jgale Exp $
-
       SUBROUTINE NEIGHB( CELL, RANGE, NA, XA, IA, ISC,
      .                   NNA, JAN, XIJ, R2IJ )
 
@@ -149,6 +147,3 @@ C Find neighbours of atom IA
      .               NNA, JAN, XIJ, R2IJ )
 
       END
-
-
-

@@ -31,12 +31,12 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o dynamics.o \
 	efield.o egandd.o ener3.o extrapol.o extrapolon.o \
 	fermid.o fixed.o forhar.o gradient.o grdsam.o \
-	hsparse.o idiag.o  initatom.o initdm.o inver.o \
+	hsparse.o idiag.o  electrostatic.o initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o iorho.o ioxv.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
-	on_subs.o ordern.o outcell.o outcoor.o overfsm.o \
+	ordern.o outcell.o outcoor.o overfsm.o \
 	paste.o pdos.o pdosg.o pdosk.o phirphi.o pixmol.o plcharge.o \
 	timestamp.o propor.o pulayx.o \
 	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o \
@@ -48,8 +48,17 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         ofc.o poison.o readsp.o radfft.o \
 	siesta.o io.o \
         spin_init.o coor.o transfer.o \
-        broadcast_basis.o sig.o eggbox.o
+        broadcast_basis.o sig.o eggbox.o 
+#--------------------------------------------------------------
 #
+WXML=libwxml.a
+$(WXML): 
+	(cd wxml ; $(MAKE) module)
+#
+# Routines using wxml calls.
+#
+pdos.o : $(WXML)
+#--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
 	(cd fdf ; $(MAKE) module)
@@ -73,8 +82,8 @@ MOD_OBJS=precision.o atom.o atmparams.o atmfuncs.o listsc.o \
          memoryinfo.o numbvect.o  parallel.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o parsing.o\
          alloc.o phonon.o spher_harm.o periodic_table.o version.o \
-         basis_types.o pseudopotential.o basis_specs.o sys.o basis_io.o\
-         chemical.o xml.o writewave.o
+         basis_types.o xml.o pseudopotential.o basis_specs.o sys.o basis_io.o\
+         chemical.o writewave.o on_subs.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
@@ -103,7 +112,7 @@ siesta.o: atomlist.o
 old_atmfuncs.o atomlist.o siesta.o atom.o arw.o pseudopotential.o: ionew.o
 iodm.o pdos.o iopipes.o: ionew.o
 coor.o: atomlist.o
-radial.o: xml.o
+pdos.o radial.o: xml.o
 atm_types.o: radial.o
 transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
 atmfuncs.o: atm_types.o radial.o
@@ -112,7 +121,7 @@ old_atmfuncs.o atmfuncs.o matel.o: spher_harm.o
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o ionew.o: sys.o
 atmfuncs.o atom.o basis_specs.o: sys.o
 chkdim.o coor.o diagpol.o matel.o old_atmfuncs.o periodic_table.o: sys.o
-pdos.o: xml.o atmfuncs.o atomlist.o
+pdos.o: atmfuncs.o atomlist.o
 propor.o spher_harm.o pseudopotential.o: sys.o
 redata.o dhscf.o: sys.o
 #----------------------------------------------------
@@ -157,27 +166,27 @@ version:
 	@mv compinfo.o version.o
 	@echo
 
-siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
+siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\
                 $(COMP_LIBS) $(ALL_OBJS)
 	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(MPI_INTERFACE)\
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(MPI_INTERFACE)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o\
           basis_io.o  chemical.o transfer.o atm_types.o\
-          atmparams.o atmfuncs.o old_atmfuncs.o radial.o spher_harm.o io.o \
-	  paste.o memoryinfo.o memory.o ionew.o \
-          chkdim.o basis_specs.o atom.o periodic_table.o\
-          pseudopotential.o dot.o xc.o recipes.o arw.o radfft.o\
-          bessph.o sys.o timer.o  xml.o $(SYSOBJ)
+          atmparams.o old_atmfuncs.o radial.o  io.o \
+	  paste.o ionew.o \
+          basis_specs.o atom.o periodic_table.o\
+          pseudopotential.o dot.o xc.o recipes.o arw.o  \
+          sys.o timer.o  xml.o $(SYSOBJ)
 # precision must be the first one here...
 gen-basis.o: precision.o atom.o basis_types.o basis_specs.o basis_io.o $(FDF)
-gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
-                $(COMP_LIBS) $(GEN-BASIS_OBJS)
+gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
+                 $(GEN-BASIS_OBJS)
 	$(FC) -o gen-basis \
-	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) \
-               $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
+               $(NETCDF_INTERFACE) $(LIBS) 
 #
 #------------------------------------------------------------------------
 # Denchar is now at the main source level...
@@ -209,6 +218,7 @@ clean:
 	rm -f siesta gen-basis denchar *.o  *.a *.pcl *.pc
 	rm -f *.mod
 	(cd fdf ; $(MAKE) clean)
+	(cd wxml ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd NetCDF ; $(MAKE) clean )
 	(cd Libs ; $(MAKE) clean )

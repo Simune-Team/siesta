@@ -253,6 +253,7 @@ C Energies in Hartrees
 C *****************************************************************
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer :: nsp, irel
       PARAMETER (ZERO=0.D0,ONE=1.D0,PFIVE=.5D0,OPF=1.5D0,C014=0.014D0)
       DIMENSION DS(NSP), VX(NSP)
 
@@ -1122,6 +1123,7 @@ C Energies in Hartrees
 C *****************************************************************
 
        IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+       integer :: nsp, irel, isp1, isp2, isp
        DIMENSION DS(NSP), VX(NSP), VC(NSP), 
      .           DVXDN(NSP,NSP), DVCDN(NSP,NSP)
 

@@ -222,6 +222,7 @@ C
 C CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
 C WRITTEN BY J.M.SOLER. MAY/95.
 
+      integer :: np, nmax, nmin, n, nrem, ip
       PARAMETER (NP = 3, NMAX = 1000000)
       INTEGER IPRIME(NP)
       DATA IPRIME / 2, 3, 5 /

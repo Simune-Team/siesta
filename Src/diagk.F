@@ -1,8 +1,7 @@
       subroutine diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, listdptr, 
-     .                  listd, H, S,
-     .                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
-     .                  xij, indxuo, nk, kpoint, wk,
+     .                  listd, H, S, getD, getPSI, fixspin, qtot, qs, 
+     .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
      .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
      .                  Haux, Saux, psi, Dk, Ek, aux, nuotot,
      .                  Node, Nodes)
@@ -103,13 +102,13 @@ C
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
      .                  listdptr(nuo)
-      double precision  Dnew(maxnd,nspin),
+      real*8            Dnew(maxnd,nspin),
      .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
      .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
      .                  kpoint(3,nk), qo(maxo,maxspn,nk), qtot, 
      .                  S(maxnh), stepf, temp, wk(nk),
      .                  xij(3,maxnh), qs(nspin)
-      double precision  Dk(2,nuotot,nuo), Ek(2,nuotot,nuo),
+      real*8            Dk(2,nuotot,nuo), Ek(2,nuotot,nuo),
      .                  Haux(2,nuotot,nuo), Saux(2,nuotot,nuo),
      .                  psi(2,nuotot,nuo), aux(2,nuotot*5)
       logical           getD, getPSI, fixspin
@@ -119,14 +118,18 @@ C  Internal variables .............................................
       integer
      .  BNode, BTest, ie, ierror, iie, ik, ind, io, iio,
      .  ispin, iuo, j, jo, juo, nd
-      double precision
+
+      integer, allocatable, save :: HighestOccupiedBand(:,:)
+
+      logical
+     .  lfound
+
+      real*8
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
 C  ....................
 
-
 C Skip eigenvalues if DM is not required and WF's are required ....
       if (getPSI .and. .not. getD) goto 10
-C ................
 
 C Find eigenvalues ................................................
       do ik = 1,nk
@@ -157,11 +160,9 @@ C Note : sign of complex part changed to match change in order of iuo/juo
           endif
         enddo
       enddo
-C ....................
 
 C Check if we are done ................................................
       if (.not.getD .and. .not. getPSI) return
-C ....................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
@@ -171,7 +172,6 @@ C Find new Fermi energy and occupation weights ........................
         call fermid( nspin, maxspn, nk, wk, maxo, nuotot, eo, 
      .             temp, qtot, qo, ef, Entropy )
       endif
-C ....................
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -188,20 +188,34 @@ C Find weights for local density of states ............................
           enddo
         enddo
       endif
-C ....................
-      
-c New density and energy-density matrices of unit-cell orbitals .......
 
+C Create pointer to highest occupied band
+      if (getD) then
+        allocate(HighestOccupiedBand(nspin,nk))
+        do ik = 1,nk
+          do ispin = 1,nspin
+            io = 0
+            lfound = .false.
+            do while (io.lt.nuotot.and..not.lfound)
+              io = io + 1
+              lfound = (abs(qo(io,ispin,ik)).lt.1.0d-12)
+            enddo
+            HighestOccupiedBand(ispin,ik) = io
+          enddo
+        enddo
+      endif
+      
+C New density and energy-density matrices of unit-cell orbitals .......
       nd = listdptr(nuo) + numd(nuo)
-      Dnew(1:nd,1:nspin) = 0.d0
-      Enew(1:nd,1:nspin) = 0.d0
+      Dnew(1:nd,1:nspin) = 0.0d0
+      Enew(1:nd,1:nspin) = 0.0d0
 
   10  continue
 
       do ik = 1,nk
         do ispin = 1,nspin
 
-C         Find eigenvectors 
+C Find eigenvectors 
           Saux = 0.0d0
           Haux = 0.0d0
           do iuo = 1,nuo
@@ -230,79 +244,83 @@ C         Find eigenvectors
      .     call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
      .                 eo(1,ispin,ik),psi,.false.)
  
-          if (.not.getD) goto 20
+          if (getD) then
 
-C         Add contribution to density matrices of unit-cell orbitals
-C         WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
-          do iuo = 1,nuo
-            do juo = 1,nuotot
-              Dk(1,juo,iuo) = 0.d0
-              DK(2,juo,iuo) = 0.d0
-              Ek(1,juo,iuo) = 0.d0
-              Ek(2,juo,iuo) = 0.d0
-            enddo
-          enddo
-C Global operation to form new density matrix
-          BNode = 0
-          iie = 0
-          do ie = 1,nuotot
-            if (Node.eq.BNode) then
-              iie = iie + 1
-              do j = 1,nuotot
-                aux(1,j) = psi(1,j,iie)
-                aux(2,j) = psi(2,j,iie)
+C Add contribution to density matrices of unit-cell orbitals
+C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
+            do iuo = 1,nuo
+              do juo = 1,nuotot
+                Dk(1,juo,iuo) = 0.0d0
+                DK(2,juo,iuo) = 0.0d0
+                Ek(1,juo,iuo) = 0.0d0
+                Ek(2,juo,iuo) = 0.0d0
               enddo
-            endif
+            enddo
+
+C Global operation to form new density matrix
+            BNode = 0
+            iie = 0
+            do ie = 1,HighestOccupiedBand(ispin,ik)
+              if (Node.eq.BNode) then
+                iie = iie + 1
+                do j = 1,nuotot
+                  aux(1,j) = psi(1,j,iie)
+                  aux(2,j) = psi(2,j,iie)
+                enddo
+              endif
 #ifdef MPI
 #ifdef NODAT
-            call MPI_Bcast(aux(1,1),2*nuotot,MPI_double_precision,
-     .        BNode,MPI_Comm_World,MPIerror)
+              call MPI_Bcast(aux(1,1),2*nuotot,MPI_double_precision,
+     .          BNode,MPI_Comm_World,MPIerror)
 #else
-            call MPI_Bcast(aux(1,1),2*nuotot,DAT_double,
-     .        BNode,MPI_Comm_World,MPIerror)
+              call MPI_Bcast(aux(1,1),2*nuotot,DAT_double,
+     .          BNode,MPI_Comm_World,MPIerror)
 #endif
 #endif
-            qe = qo(ie,ispin,ik)
-            ee = qo(ie,ispin,ik) * eo(ie,ispin,ik)
+              qe = qo(ie,ispin,ik)
+              ee = qo(ie,ispin,ik) * eo(ie,ispin,ik)
+              do iuo = 1,nuo
+                call LocalToGlobalOrb(iuo,Node,Nodes,iio)
+                do juo = 1,nuotot
+                  pipj1 = aux(1,iio) * aux(1,juo) +
+     .                    aux(2,iio) * aux(2,juo)
+                  pipj2 = aux(1,iio) * aux(2,juo) -
+     .                    aux(2,iio) * aux(1,juo)
+                  Dk(1,juo,iuo) = Dk(1,juo,iuo) + qe * pipj1
+                  Dk(2,juo,iuo) = Dk(2,juo,iuo) + qe * pipj2
+                  Ek(1,juo,iuo) = Ek(1,juo,iuo) + ee * pipj1
+                  Ek(2,juo,iuo) = Ek(2,juo,iuo) + ee * pipj2
+                enddo
+              enddo
+              BTest = ie/BlockSize
+              if (BTest*BlockSize.eq.ie) then
+                BNode = BNode + 1
+                if (BNode .gt. Nodes-1) BNode = 0
+              endif
+            enddo
             do iuo = 1,nuo
-              call LocalToGlobalOrb(iuo,Node,Nodes,iio)
-              do juo = 1,nuotot
-                pipj1 = aux(1,iio) * aux(1,juo) +
-     .                  aux(2,iio) * aux(2,juo)
-                pipj2 = aux(1,iio) * aux(2,juo) -
-     .                  aux(2,iio) * aux(1,juo)
-                Dk(1,juo,iuo) = Dk(1,juo,iuo) + qe * pipj1
-                Dk(2,juo,iuo) = Dk(2,juo,iuo) + qe * pipj2
-                Ek(1,juo,iuo) = Ek(1,juo,iuo) + ee * pipj1
-                Ek(2,juo,iuo) = Ek(2,juo,iuo) + ee * pipj2
+              do j = 1,numd(iuo)
+                ind = listdptr(iuo) + j
+                jo = listd(ind)
+                juo = indxuo(jo)
+                kxij = kpoint(1,ik) * xij(1,ind) +
+     .                 kpoint(2,ik) * xij(2,ind) +
+     .                 kpoint(3,ik) * xij(3,ind)
+                ckxij = cos(kxij)
+                skxij = sin(kxij)
+                Dnew(ind,ispin)=Dnew(ind,ispin)+ Dk(1,juo,iuo)*ckxij -
+     .                                           Dk(2,juo,iuo)*skxij
+                Enew(ind,ispin)=Enew(ind,ispin)+ Ek(1,juo,iuo)*ckxij -
+     .                                           Ek(2,juo,iuo)*skxij
               enddo
             enddo
-            BTest = ie/BlockSize
-            if (BTest*BlockSize.eq.ie) then
-              BNode = BNode + 1
-              if (BNode .gt. Nodes-1) BNode = 0
-            endif
-          enddo
-          do iuo = 1,nuo
-            do j = 1,numd(iuo)
-              ind = listdptr(iuo) + j
-              jo = listd(ind)
-              juo = indxuo(jo)
-              kxij = kpoint(1,ik) * xij(1,ind) +
-     .               kpoint(2,ik) * xij(2,ind) +
-     .               kpoint(3,ik) * xij(3,ind)
-              ckxij = cos(kxij)
-              skxij = sin(kxij)
-              Dnew(ind,ispin)=Dnew(ind,ispin)+ Dk(1,juo,iuo)*ckxij -
-     .                                           Dk(2,juo,iuo)*skxij
-              Enew(ind,ispin)=Enew(ind,ispin)+ Ek(1,juo,iuo)*ckxij -
-     .                                           Ek(2,juo,iuo)*skxij
-            enddo
-          enddo
 
- 20       continue
+          endif
+
         enddo
       enddo
-C ....................
+
+C Free local memory
+      if (getD) deallocate(HighestOccupiedBand)
 
       end

@@ -1,4 +1,4 @@
-C $Id: bessph.f,v 1.3 1999/01/31 10:50:51 emilio Exp $
+C $Id: bessph.f,v 1.4 2004/06/07 17:26:54 wdpgaara Exp $
 
       DOUBLE PRECISION FUNCTION BESSPH (L,X)
 *
@@ -6,8 +6,15 @@ C $Id: bessph.f,v 1.3 1999/01/31 10:50:51 emilio Exp $
 *  REF: ABRAMOWITZ AND STEGUN, FORMULAS 10.1.2 AND 10.1.19
 *  WRITTEN BY J.SOLER (JSOLER AT EMDUAM11). NOV/89.
 *
+
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      PARAMETER (ZERO=0.D0,ONE=1.D0,TINY=1.D-15,NTERMS=100)
+
+      integer, parameter :: nterms = 100
+      PARAMETER (ZERO=0.D0,ONE=1.D0,TINY=1.D-15)
+
+      integer, intent(in) :: L
+      integer :: i, n
+
       SWITCH=MAX(1,2*L-1)
       IF (ABS(X).LT.SWITCH) THEN
 *        USE POWER SERIES

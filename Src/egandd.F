@@ -58,8 +58,11 @@ C
 C  Modules
 C
       use precision
+      use on_subs, only: ctrans1, axb_build2, ctrans2, axb_build1s
+      use on_subs, only: axb_build2s, axb_build1, ind_gf, ctrans2s
+
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: mpi_comm_world
 #endif
 
       implicit none
@@ -74,10 +77,6 @@ C
       double precision
      .  c(ncmax,nbasisloc),e,e3(3),dm(maxnh),edm(maxnh),enum,eta,
      .  h(maxnh),grad(ncmax,nbasisloc),lam,s(maxnh)
-
-      external
-     .  axb_build1,axb_build2,axb_build1s,axb_build2s,
-     .  ctrans1,ctrans2,ctrans2s,ener3,gradient,memory
 
 C Internal variables .....................................................
       integer 

@@ -687,8 +687,8 @@ C Passed arguments
      .  Nodes, nuotot, blocksizedefault
 
 C Compare number of orbitals against sensible number
-      if (nuotot.gt.8*Nodes) then
-        blocksizedefault = 8
+      if (nuotot.gt.16*Nodes) then
+        blocksizedefault = 16
       else
         blocksizedefault = ( (nuotot - 1) / Nodes) + 1
       endif

@@ -37,13 +37,13 @@ C not added by Julian Gale, November 1999
 C ***************************************************************************
 C
 C Modules
-      use precision
+      use precision, only: dp
       use fdf
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only: mpi_comm_world
       use parallel
 #endif
-      use diagmemory
+      use diagmemory, only: memoryfactor, memoryscale, trymemoryincrease
       use alloc
 
       implicit          none

@@ -1,9 +1,32 @@
       subroutine transfer
 
-      use atm_types
+      use atm_types, only: maxnorbs, nspecies
+      use atm_types, only: species, species_info
+
       use radial
       use atmparams, only:NTBMAX
-      use old_atmfuncs
+!----------------------------------------------------------------
+      use old_atmfuncs, only: nsmax
+!
+!     old_atmfuncs arrays
+!
+      use old_atmfuncs, only: tabpol, table, tab2
+      use old_atmfuncs, only: coretab, tab2pol
+      use old_atmfuncs, only: qtb, slfe
+      use old_atmfuncs, only: chloctab, vlocaltab
+      use old_atmfuncs, only: lmxosave, npolorbsave
+      use old_atmfuncs, only: nzetasave, nsemicsave, nkblsave
+!
+!     old_atmfuncs procedures
+!
+      use old_atmfuncs, only: labelfis, izofis, izvalfis
+      use old_atmfuncs, only: massfis, lomaxfis, nofis
+      use old_atmfuncs, only: cnfigfio, lofio, mofio
+      use old_atmfuncs, only: atmpopfio, epskb, rcut
+      use old_atmfuncs, only: lmxkbfis, nkbfis
+
+!----------------------------------------------------------------
+
       use periodic_table, only: symbol
 
       implicit none
@@ -11,10 +34,9 @@
       type(species_info), pointer        :: spp
       type(rad_func), pointer            :: op
       type(rad_func), pointer            :: pp
-      type(rad_func), pointer            :: func   
 
       integer is, io, i , n, ntot, l, m, max_npjnl
-      integer max_norbnl, nsm, izeta, num_nl_notpol, j
+      integer max_norbnl, nsm, izeta, j
       integer norb, indx, ipol, num_normal, num_pol
 
       integer, dimension(maxnorbs) :: index_normal, z_normal,
@@ -24,10 +46,8 @@
 !     Allocate main structures for new atmfuncs -----------
 
       nspecies = nsmax           ! From old_atmfuncs
-      npairs = ((nspecies+1)*nspecies)/2
 
       allocate(species(nspecies))
-      allocate(elec_corr(npairs))
 !-----------------------------------------------------------
 
       max_npjnl = 0
@@ -248,18 +268,6 @@
          spp%core%f(1:)         = coretab(2:,1,is)
          spp%core%d2(1:)        = coretab(2:,2,is)
 
-      enddo
-
-!
-!     Electrostatic correction functions
-!
-      do i = 1, npairs
-         func => elec_corr(i)
-         call rad_alloc(func,NTBMAX)
-         func%delta = corrtab(1,1,i)
-         func%cutoff = corrtab(1,1,i)*(NTBMAX-1)
-         func%f(1:) = corrtab(2:,1,i)
-         func%d2(1:) = corrtab(2:,2,i)
       enddo
 
       end subroutine transfer

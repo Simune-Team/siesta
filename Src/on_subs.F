@@ -1,3 +1,18 @@
+      module on_subs
+
+      use precision, only: dp
+      use parallel
+#ifdef MPI
+      use mpi_siesta, only: mpi_comm_world, mpi_integer, mpi_max
+#endif
+      use alloc
+
+      public :: ctrans1, axb_build2, ctrans2, axb_build1s
+      public :: axb_build2s, axb_build1, ind_gf, ctrans2s
+      
+      CONTAINS
+
+!!----------------------------------------------------------------
       subroutine ctrans1(nr,ncmin,ncmax,nmax,ntmax,
      .              num,list,numt,listt,cttoc)
 C ********************************************************************
@@ -69,7 +84,8 @@ C ..........................
       call timer('ctrans1',2)
 
       return
-      end
+      end subroutine ctrans1
+
       subroutine ctrans2s(nr,nc,nmax,ntmax,num,list,numt,Node,Nodes)
 C ********************************************************************
 C Finds the C maximum number of non-zero column elements, ntmax.
@@ -94,16 +110,6 @@ C integer ntmax          : maximum number of nonzero elements of each
 C                           column of C
 C *********************************************************************
 C
-C  Modules
-C
-      use precision
-      use parallel
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      implicit none
-
       integer
      .  nc,nmax,nr,ntmax,Node,Nodes,
      .  list(nmax,nr),num(nr),numt(nc)
@@ -212,7 +218,8 @@ C ..........................
       call timer('ctrans2s',2)
 
       return
-      end
+      end       subroutine ctrans2s
+
 
       subroutine ctrans2(nr,nc,nmax,ntmax,
      .              num,list,numt,listt,fttoc,Node,Nodes)
@@ -241,16 +248,6 @@ C                           (list of nonzero elements of each column of C)
 C integer fttoc(ntmax,nc) : Map from C transpose to C indexing
 C *********************************************************************
 C
-C  Modules
-C
-      use precision
-      use parallel
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      implicit none
-
       integer
      .  nc,nmax,nr,ntmax,Node,Nodes,
      .  fttoc(ntmax,*),list(nmax,nr),listt(ntmax,*),
@@ -373,7 +370,8 @@ C ..........................
       call timer('ctrans2',2)
 
       return
-      end
+      end       subroutine ctrans2
+
 
       subroutine axb_build1s(nramin,nramax,nca,namax,numa,lista,
      .               nrb,ncb,nbmax,numb,listbptr,listb,ncmax,
@@ -424,13 +422,7 @@ C integer ind(ncb)          : Auxiliary array to build C in sparse form
 C integer nindv(ncmax,nraloc): Auxiliary array to store indexes of nonzero
 C                             matrix elements of each row of C
 C *********************************************************************
-      use parallel
-#ifdef MPI
-      use mpi_siesta
-#endif
-      use alloc
 
-      implicit none
 !
 !     AG
 !
@@ -585,7 +577,8 @@ C Free local memory
       call timer('axbbuild1s',2)
 
       return
-      end
+      end      subroutine axb_build1s
+
 
       subroutine axb_build1(nramin,nramax,nca,namax,numa,lista,
      .               nrb,ncb,nbmax,numb,listbptr,listb,ncmax,
@@ -638,12 +631,6 @@ C integer ind(ncb)          : Auxiliary array to build C in sparse form
 C integer nindv(ncmax)      : Auxiliary array to store indexes of nonzero
 C                             matrix elements of each row of C
 C *********************************************************************
-      use parallel
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      implicit none
 
       integer
      .  nca,ncb,namax,nbmax,ncmax,nramin,nramax,nrb,Node,Nodes,
@@ -788,7 +775,8 @@ C Free local memory
       call timer('axb_build1',2)
 
       return
-      end
+      end      subroutine axb_build1
+
 
       subroutine axb_build2s(nramin,nramax,nca,namax,numa,lista,
      .               nrb,ncb,nbmax,numb,listb,ncmax,numc)
@@ -902,7 +890,8 @@ C Free local memory
       call timer('axbbuild2s',2)
 
       return
-      end
+      end      subroutine axb_build2s
+
 
       subroutine axb_build2(nramin,nramax,nca,namax,numa,lista,
      .               nrb,ncb,nbmax,numb,listb,ncmax,numc,listc)
@@ -1019,7 +1008,8 @@ C Free local memory
       call timer('axb_build2',2)
 
       return
-      end
+      end      subroutine axb_build2
+
 
       subroutine ind_gf(nr,nrloc,ncmin,ncmax,nc,maxnc,nfmax,
      .              numc,listc,numf,listf,indgf,Node,Nodes)
@@ -1052,13 +1042,6 @@ C                    indgf(i,j) is the column index (in sparse notation)
 C                    of the element of F corresponding to the element
 C                    (i,j) of C (in sparse notation)
 C *********************************************************************
-
-      use parallel
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      implicit none
 
       integer
      .  maxnc,nc,ncmin,ncmax,nfmax,nn,nr,nrloc,Node,Nodes,
@@ -1166,4 +1149,7 @@ C Free local workspace arrays
       call timer('ind_gf',2)
 
       return
-      end
+      end      subroutine ind_gf
+
+      end module on_subs
+

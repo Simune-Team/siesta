@@ -1,4 +1,4 @@
-      subroutine grdsam(nspin, norb, iaorb, iphorb, indxuo,
+      subroutine grdsam(nspin, norb, iaorb, iphorb, 
      .                  nuo, nuotot, nua, na, isa, xa, indxua,
      .                  cell, mscell, g2max, ntm, ifa, istr, maxnd,
      .                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
@@ -33,7 +33,6 @@ c integer nspin         : number of spins considered
 c integer norb          : total number of basis orbitals
 c integer iaorb(norb)   : atom to which each orbital belongs
 c integer iphorb(norb)  : orbital index (within atom) of each orbital
-c integer indxuo(norb)  : index of equivalent atom in unit cell
 c integer nuo           : number of orbitals in a unit cell (local)
 c integer nuotot        : number of orbitals in a unit cell (global)
 c integer nua           : number of atoms in unit cell
@@ -86,12 +85,12 @@ C
       implicit          none
 
       integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
-     .                  nua, iaorb(norb), ifa, indxua(na), indxuo(norb),
+     .                  nua, iaorb(norb), ifa, indxua(na), 
      .                  iphorb(norb), isa(na), istr, listh(maxnh),
      .                  listhptr(nuo), mscell(3,3), 
      .                  numh(nuo), ntm(3)
 
-      double precision  cell(3,3), datm(norb), dipol(3), 
+      real*8            cell(3,3), datm(norb), dipol(3), 
      .                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
      .                  enaatm, enascf, exc, fa(3,nua), g2max,
      .                  Hmat(maxnh,nspin), stress(3,3),
@@ -223,8 +222,7 @@ c if sampling, store the forces and stresses prior to dhscf -----------------
 
 c first (normal) call to DHSCF, ihmat=1 --------------------------------------
 
-      call dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
-     .            nuotot, nua,
+      call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      .            na, isa, xa, indxua, cell, mscell, g2max, ntm,
      .            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
      .            maxnd, numh, listhptr, listh, Dscf, Datm,
@@ -300,8 +298,7 @@ c loop sampling on displacements making averages ----------------------------
           write(6,'(a,i3)') 'grdsam: Grid-cell sampling, point ', ipt
           endif
 
-          call dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
-     .                nuotot, nua,
+          call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
      .                na, isa, xanew, indxua, cell, mscell, g2max, ntm,
      .                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
      .                maxnd, numh, listhptr, listh, Dscf, Datm,

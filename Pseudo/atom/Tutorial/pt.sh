@@ -6,7 +6,7 @@
 #
 # Make sure that atm is in path
 #
-DEFAULT_DIR=../../
+DEFAULT_DIR=../..
 ATOM_UTILS_DIR=${ATOM_UTILS_DIR:-${DEFAULT_DIR}}
 #
 default="../../../atm"
@@ -42,7 +42,8 @@ echo "==> Output data in directory $name"
 #  Copy plotting scripts
 #
 for i in charge vcharge vspin pt  ; do
-            cp -f ${ATOM_UTILS_DIR}/$i.gp* .
+            cp -f ${ATOM_UTILS_DIR}/$i.gps .
+            cp -f ${ATOM_UTILS_DIR}/$i.gplot .
 done
 
 

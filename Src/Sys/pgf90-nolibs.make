@@ -18,7 +18,7 @@ MPI_INCLUDE=
 DEFS_MPI=
 #
 LIBS= -L/usr/local/lib  -lg2c $(NETCDF_LIBS)
-SYS=bsd
+SYS=cpu_time
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 # Important (at least for V5.0-1 of the pgf90 compiler...)

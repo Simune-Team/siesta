@@ -275,6 +275,7 @@ c     finds the index of element having max. absolute value.
 c     jack dongarra, 3/11/78.
 c
       integer n,incx
+      integer :: ix, i
       complex*16 zx(1)
       double precision smax
       complex*16 zdum

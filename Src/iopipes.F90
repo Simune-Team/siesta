@@ -82,18 +82,25 @@ subroutine coordsFromPipe( na, xa, cell )
       read(iuc,*) xa
       read(iuc,*) task
       if (trim(task)=='end_coords') then
-        print'(/,3a,/,(3f12.6))', &
+        print '(/,3a,/,(3f12.6))', &
           'coordsFromPipe: cell (',trim(xunit),') =', cell
-        print'(  3a,/,(3f12.6))', &
+        print '(  3a,/,(3f12.6))', &
           'coordsFromPipe: xa (',trim(xunit),') =', xa
         ! Convert coordinate units
         cell = cell * fdf_convfac( xunit, siesta_xunit )
         xa   = xa   * fdf_convfac( xunit, siesta_xunit )
 #ifdef MPI
+#ifndef NODAT
         call MPI_Bcast( cell(1,1), 9, DAT_double, 0, &
                         MPI_Comm_World, MPIerror)
         call MPI_Bcast( xa(1,1), 3*na, DAT_double, 0, &
                         MPI_Comm_World, MPIerror)
+#else
+        call MPI_Bcast( cell(1,1), 9, MPI_double_precision, 0, &
+                        MPI_Comm_World, MPIerror)
+        call MPI_Bcast( xa(1,1), 3*na, MPI_double_precision, 0, &
+                        MPI_Comm_World, MPIerror)
+#endif
 #endif
       else
         call die('coordsFromPipe: ERROR: coords not complete')
@@ -145,9 +152,9 @@ subroutine forcesToPipe( na, energy, forces, stress )
   f = forces * fdf_convfac( siesta_funit, funit )
 
 ! Print forces in output file
-  print'(/,3a,f12.6)',    'forcesToPipe: energy (',trim(eunit),') =', e
-  print'(3a,/,(3f12.6))', 'forcesToPipe: stress (',trim(sunit),') =', s
-  print'(3a,/,(3f12.6))', 'forcesToPipe: forces (',trim(funit),') =', f
+  print '(/,3a,f12.6)',    'forcesToPipe: energy (',trim(eunit),') =', e
+  print '(3a,/,(3f12.6))', 'forcesToPipe: stress (',trim(sunit),') =', s
+  print '(3a,/,(3f12.6))', 'forcesToPipe: forces (',trim(funit),') =', f
 
 ! Write forces to pipe
   if (IOnode) then

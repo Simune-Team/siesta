@@ -3,19 +3,24 @@
       use precision
       use alloc
       use ionew, only: IOnode
+      use  atmfuncs, only: nofis, nkbfis, izofis, massfis,
+     $                     rcut, atmpopfio
+      use atm_types, only: species
 
       implicit none
+
+      public :: initatomlists, superc, superx
 
 !
 !     Instead of "generic" na, no, and nokb, we use:
 !
 ! For "supercell" (intended for k-point calcs)
-      integer, save                  :: na_s         ! Number of atoms
-      integer, save                  :: no_s         ! Number of orbitals
-      integer, save                  :: nokb_s       ! Number of KB projs
+      integer, save, public          :: na_s         ! Number of atoms
+      integer, save, public          :: no_s         ! Number of orbitals
+      integer, save, public          :: nokb_s       ! Number of KB projs
 
 ! Same for "unit", or "real" cell:
-      integer, save                  ::  na_u, no_u, nokb_u
+      integer, save, public          ::  na_u, no_u, nokb_u
 
 ! Here 'na' is a generic number. It could be na_u or na_s, depending
 ! on whether we need a supercell or not.
@@ -27,54 +32,56 @@ C integer iza(na)           : Atomic number of each atom
 C real*8 amass(na)          : Atomic mass of each atom
 C real*8 qa(na)             : Neutral atom charge of each atom
 
-      integer, pointer, save  :: isa(:) ! 
-      integer, pointer, save  :: iza(:) ! 
-      integer, pointer, save  :: lasto(:) ! 
-      integer, pointer, save  :: lastkb(:)
-      real(dp), pointer, save  :: amass(:), qa(:)
+      integer, pointer, save, public  :: isa(:) ! 
+      integer, pointer, save, public  :: iza(:) ! 
+      integer, pointer, save, public  :: lasto(:) ! 
+      integer, pointer, save, public  :: lastkb(:)
+      real(dp), pointer, save, public  :: amass(:), qa(:)
 
-      real(dp), pointer, save  :: xa(:,:)
+      real(dp), pointer, save, public  :: xa(:,:)
 !        Atomic coordinates
-      real(dp), pointer, save  :: xalast(:,:)
+      real(dp), pointer, save, public  :: xalast(:,:)
 !        Atomic coordinates (it doesn't really belong here)
 
-      integer, pointer, save           :: indxua(:)
+      integer, pointer, save, public           :: indxua(:)
 !        Index of equivalent atom in "u" cell
 
-      real(dp), save         :: rmaxv  ! Max cutoff for local pot Vna
-      real(dp), save         :: rmaxo  ! Max cuoff for atomic orbitals
-      real(dp), save         :: rmaxkb ! Max cuoff for KB projectors
+      real(dp), save, public     :: rmaxv  ! Max cutoff for local pot Vna
+      real(dp), save, public     :: rmaxo  ! Max cuoff for atomic orbitals
+      real(dp), save, public     :: rmaxkb ! Max cuoff for KB projectors
 
-      real(dp), save         :: qtot ! Total number of electrons
+      real(dp), save, public     :: qtot ! Total number of electrons
 
 
-      integer, pointer, save  :: iaorb(:)  ! Atomic index of each orbital
-      integer, pointer, save  :: iphorb(:) ! Orbital index of each 
-                                               ! orbital in its atom
-      real(dp), pointer, save :: Datm(:) ! Neutral atom charge 
-                                             ! of each orbital
-      real(dp), pointer, save :: rco(:)  ! Cutoff radius of each orbital
+      integer, pointer, save, public  :: iaorb(:)
+                                ! Atomic index of each orbital
+      integer, pointer, save, public  :: iphorb(:) 
+                         ! Orbital index of each  orbital in its atom
+      real(dp), pointer, save, public :: Datm(:) 
+                         !  Neutral atom charge 
+                         !  of each orbital
+      real(dp), pointer, save, public :: rco(:) 
+                         ! Cutoff radius of each orbital
 
-      integer, pointer, save           :: indxuo(:)
-!        Index of equivalent orbital in "u" cell
+      integer, pointer, save, public           :: indxuo(:)
+                   !        Index of equivalent orbital in "u" cell
 
-      integer, pointer, save     :: iakb(:)
+      integer, pointer, save, public     :: iakb(:)
 !         Atomic index of each KB projector
-      integer, pointer, save     :: iphKB(:)
+      integer, pointer, save, public     :: iphKB(:)
 !         Index of each KB projector in its atom (negative)
-      real(dp), pointer, save   :: rckb(:)
+      real(dp), pointer, save, public   :: rckb(:)
 !         Cutoff radius of each KB projector
 !
+      private
+
       CONTAINS
 
+!----------------------------------------------------------------------
       subroutine initatomlists
 
 C Routine to initialize the atomic lists.
 C
-      use  atmfuncs, only: nofis, nkbfis, izofis, massfis,
-     $                     rcut, atmpopfio, species
-!!      use atm_types     !! To get at species, even though it would come
-                        !! through atmfuncs
 
       integer  ia, io, is, nkba, noa, nol, nokbl, ioa, ikb
 !
@@ -163,7 +170,7 @@ c Initialize atomic lists
      $     na_u, no_u, nokb_u
 
       end subroutine initatomlists
-
+!----------------------------------------------------------------------
 
       subroutine superc( ucell, scell, nsc)
 

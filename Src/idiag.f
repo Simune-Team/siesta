@@ -1,4 +1,4 @@
-C $Id: idiag.f,v 1.5 2000/03/29 07:30:39 jgale Exp $
+C $Id: idiag.f,v 1.6 2004/06/10 16:17:00 wdpgaara Exp $
 
       SUBROUTINE IDIAG (NN,MOLD,MNEW,MLEFT,MRIGHT,MAUX)
 
@@ -6,6 +6,9 @@ C GIVEN A SQUARE INTEGER MATRIX MOLD, FINDS A DIAGONAL MATRIX MNEW,
 C AND TWO MATRICES MLEFT AND MRIGHT OF DETERMINANT ONE, SUCH THAT
 C MNEW = MLEFT * MOLD * MRIGHT
 C Written by J.Moreno and J.M.Soler
+
+      integer :: niter, ibig, i, j, nn, n, iter, mmin, imin
+      integer :: jmin
 
       INTEGER MOLD(NN,NN),MNEW(NN,NN),MLEFT(NN,NN),MRIGHT(NN,NN),
      .        MAUX(NN,NN,2)
@@ -78,6 +81,7 @@ C   MAUX : AUXILIARY ARRAY OF MINIMUM SIZE N1*N3. IF MC IS DIFFERENT
 C          FROM BOTH MA AND MB, YOU CAN MAKE MAUX=MC
 C WRITTEN BY JOSE SOLER. 22/5/90
 
+      integer :: n1, n2, n3, i1, i2, i3, i, j
       INTEGER MA(N1,N2),MB(N2,N3),MC(N1,N3),MAUX(N1,N3)
       DO I3=1,N3
         DO I1=1,N1

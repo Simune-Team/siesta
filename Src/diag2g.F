@@ -85,11 +85,11 @@ C
      .  listh(maxnh), numh(nuo), listhptr(nuo),
      .  listd(maxnd), numd(nuo), listdptr(nuo)
 
-      double precision
+      real*8
      .  Dnew(maxnd,4), e1, e2, ef, Enew(maxnd,4), Entropy, eo(maxo*2),
      .  H(maxnh,4), qo(maxo*2), qtot, S(maxnh), stepf, temp
      
-      double precision
+      real*8
      .  aux(5,2*nuotot), Haux(2,2,nuotot,2,nuo),
      .  psi(2,2,nuotot,2*no), Saux(2,2,nuotot,2,nuo)
 
@@ -102,7 +102,9 @@ C
 C  Internal variables .............................................
       integer           BNode, BTest, i, ie, ierror, iie, iio,
      .                  ind, io, j, jo, nd
-      double precision  ee, pipj, qe, t
+      integer           HighestOccupiedBand
+      logical           lfound
+      real*8            ee, pipj, qe, t
 C  ....................
 
 C Initialize Hamiltonian and overlap matrices in full format .....
@@ -112,7 +114,6 @@ C Indices iuo and juo are for orbital components:
 C Haux(i,js,juo,is,iuo) = <js,juo|H|is,iuo>
       Saux = 0.0d0
       Haux = 0.0d0
-C  ....................
 
 C Copy S,H matrices from sparse to full format ....................
 C Convention: ispin=1 => H11, ispin=2 => H22, ispin=3 => Real(H12),
@@ -130,7 +131,7 @@ C             ispin=4 => Imag(H12)
         enddo
       enddo
 
-c Hermiticity
+C Hermiticity
       do io = 1,no
         do jo = 1,no
           Haux(1,2,jo,1,io) =  Haux(1,1,io,2,jo)
@@ -138,24 +139,19 @@ c Hermiticity
         enddo
       enddo
 
-C ....................
-
 C Solve the eigenvalue problem .......................................
       call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
      .            eo, psi, 2*nuotot, 2*nuo, ierror )
       if (ierror.ne.0) then
         call die('Terminating due to failed diagonalisation')
       endif
-C ....................
 
 C Check if we are done ................................................
       if (.not.getD) return
-C ....................
 
 C Find new Fermi energy and occupation weights ........................
       call fermid( 2, 2, 1, 1.d0, maxo, no, eo, 
      .             temp, qtot, qo, ef, Entropy )
-C ....................
 
 *     write(6,'(/,a,/,(10f7.2))') 'diag2g: eo =', eo
 *     write(6,'(/,a,/,(10f7.2))') 'diag2g: qo =', qo
@@ -170,16 +166,24 @@ C Find weights for local density of states ............................
      .                stepf( (eo(io)-e1)/t ) ) 
         enddo
       endif
-C ....................
       
-c New density and energy-density matrices of unit-cell orbitals .......
+C Create pointer to highest occupied band
+      io = 2*nuotot  + 1
+      lfound = .false.
+      do while (io.gt.1.and..not.lfound)
+        io = io - 1
+        lfound = (abs(qo(io)).gt.1.0d-12)
+      enddo
+      HighestOccupiedBand = io
+
+C New density and energy-density matrices of unit-cell orbitals .......
       nd = listdptr(nuo) + numd(nuo)
       Dnew(1:nd,1:4) = 0.0d0
       Enew(1:nd,1:4) = 0.0d0
 
       BNode = 0
       iie = 0
-      do ie = 1,nuotot*2
+      do ie = 1,HighestOccupiedBand
         if (Node.eq.BNode) then
           iie = iie + 1
           do j = 1,nuotot
@@ -229,6 +233,5 @@ c New density and energy-density matrices of unit-cell orbitals .......
           if (BNode .gt. Nodes-1) BNode = 0
         endif
       enddo
-C ....................
 
       end

@@ -24,7 +24,7 @@ LIBS= -L/usr/local/lib/pgi \
       -lscalapack -l1upblas -l1utools -l.pgi.aux -lredist \
       -lfblacs  -llapack -lblas \
        -l1umpich -lpgiarg $(NETCDF_LIBS)
-SYS=bsd
+SYS=cpu_time
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 #

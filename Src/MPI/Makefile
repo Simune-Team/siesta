@@ -28,24 +28,24 @@ generated: $(TEMPLATES)
 	@touch generated
 #
 $(OBJS): generated  mpi__include.o
-	$(FC) -c $(FREE_F90) Interfaces.f90
+	$(FC) $(FFLAGS_MPI)  $(DEFS) -c $(FREE_F90) Interfaces.f90
 #
 mpi.o:  $(OBJS) mpi__include.o
-	$(FC) -c mpi.F
 #
-module_built: mpi.o $(OBJS) mpi__include.o 
+module_built: mpi.o $(OBJS) 
 	@ar q libmpi_f90.a mpi.o mpi__include.o $(OBJS)
 	-$(RANLIB) libmpi_f90.a
 	@mv libmpi_f90.a ..
-	@mv *.mod ..
+	@cp *.mod ..
 	@touch module_built
 #
 mpi__include.o: mpi__include.f90
-	$(FC) -c $(FREE_F90) -I$(MPI_INCLUDE) mpi__include.f90
+	$(FC) $(DEFS) -c $(FREE_F90) -I$(MPI_INCLUDE) mpi__include.f90
 #
 clean:
-	@rm -f $(SOURCES) $(OBJS) mpi.o mpi__include.o
+	@rm -f $(SOURCES) $(OBJS) mpi.o mpi__include.o *.mod
 	@rm -f module_built generated *.uses
+
 
 
 

@@ -118,14 +118,14 @@ C **********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision, only: dp
       use fdf
       use sys
 #ifdef MPI
       use mpi_siesta
 #endif
-      use diagmemory
-      use phonon
+      use diagmemory, only: memoryfactor, memoryscale, trymemoryincrease
+      use phonon, only: phonon_check
 
       implicit none
 

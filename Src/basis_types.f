@@ -15,13 +15,13 @@
 !     types 'shell_t' and 'kbshell_t'. (See module 'radial')
 !     
 !
-      use atmparams
-      use pseudopotential
+      use atmparams, only: lmaxd, nzetmx, nsemx, nkbmx
+      use pseudopotential, only: pseudopotential_t
       use precision
 
       Implicit None
 
-      type  ground_state_t
+      type, public ::  ground_state_t
           integer                   ::  lmax_valence
           integer                   ::  n(0:3)
           real(dp)                  ::  occupation(0:3)
@@ -29,7 +29,7 @@
           real(dp)                  ::  z_valence
       end type ground_state_t
 
-      type shell_t
+      type, public :: shell_t
           integer                   ::  n          ! n quantum number
           integer                   ::  l          ! angular momentum
           integer                   ::  nzeta      ! Number of PAOs
@@ -37,27 +37,27 @@
           integer                   ::  nzeta_pol
           real(dp)                  ::  rinn       ! Soft confinement
           real(dp)                  ::  vcte       ! Soft confinement
-          real*8, pointer           ::  rc(:)      ! rc's for PAOs
-          real*8, pointer           ::  lambda(:)  ! Contraction factors
+          real(dp), pointer         ::  rc(:)      ! rc's for PAOs
+          real(dp), pointer         ::  lambda(:)  ! Contraction factors
           !!! type(rad_func), pointer   ::  orb(:) ! Actual orbitals 
       end type shell_t
 
-      type lshell_t
+      type, public :: lshell_t
           integer                   ::  l          ! angular momentum
           integer                   ::  nn         ! number of n's for this l
           type(shell_t), pointer    ::  shell(:)   ! One shell for each n
       end type lshell_t
 
-      type kbshell_t
+      type, public :: kbshell_t
           integer                   ::  l          ! angular momentum
           integer                   ::  nkbl       ! No. of projs for this l
-          real*8, pointer           ::  erefkb(:)  ! Reference energies
+          real(dp), pointer         ::  erefkb(:)  ! Reference energies
           !!! type(rad_func), pointer  ::  proj(:) ! Actual projectors
       end type kbshell_t
 !
 !     Main data structure
 !
-      type basis_def_t
+      type, public :: basis_def_t
           character(len=20)         ::  label      ! Long label
           integer                   ::  z          ! Atomic number
           type(ground_state_t)      ::  ground_state
@@ -82,29 +82,30 @@
           type(shell_t), pointer    ::  tmp_shell(:)
       end type basis_def_t
 
-      integer, save                      :: nsp  ! Number of species
-      type(basis_def_t),
+      integer, save, public              :: nsp  ! Number of species
+      type(basis_def_t), public,
      $     allocatable, save, target     :: basis_parameters(:)
 
-!
+!=====================================================================
 !     OLD ARRAYS
+!=====================================================================
 !
-      logical      ,save, allocatable :: semic(:)
-      integer      ,save, allocatable :: lmxkb(:), lmxo(:)
-      integer      ,save, allocatable :: nsemic(:,:), nkbl(:,:)
-      integer      ,save, allocatable :: cnfigmx(:,:)
-      integer      ,save, allocatable :: polorb(:,:,:)
-      integer      ,save, allocatable :: nzeta(:,:,:)
-      real(dp)     ,save, allocatable :: vcte(:,:,:)
-      real(dp)     ,save, allocatable :: rinn(:,:,:)
-      real(dp)     ,save, allocatable :: erefkb(:,:,:)
-      real(dp)     ,save, allocatable :: charge(:)
-      real(dp)     ,save, allocatable :: lambda(:,:,:,:)
-      real(dp)     ,save, allocatable :: rco(:,:,:,:)
-      integer      ,save, allocatable :: iz(:)
-      real(dp)     ,save, allocatable :: smass(:)
-      character(len=10), save, allocatable :: basistype(:)
-      character(len=20), save, allocatable :: atm_label(:)
+      logical      ,save, public, allocatable :: semic(:)
+      integer      ,save, public, allocatable :: lmxkb(:), lmxo(:)
+      integer      ,save, public, allocatable :: nsemic(:,:), nkbl(:,:)
+      integer      ,save, public, allocatable :: cnfigmx(:,:)
+      integer      ,save, public, allocatable :: polorb(:,:,:)
+      integer      ,save, public, allocatable :: nzeta(:,:,:)
+      real(dp)     ,save, public, allocatable :: vcte(:,:,:)
+      real(dp)     ,save, public, allocatable :: rinn(:,:,:)
+      real(dp)     ,save, public, allocatable :: erefkb(:,:,:)
+      real(dp)     ,save, public, allocatable :: charge(:)
+      real(dp)     ,save, public, allocatable :: lambda(:,:,:,:)
+      real(dp)     ,save, public, allocatable :: rco(:,:,:,:)
+      integer      ,save, public, allocatable :: iz(:)
+      real(dp)     ,save, public, allocatable :: smass(:)
+      character(len=10), save, public, allocatable :: basistype(:)
+      character(len=20), save, public, allocatable :: atm_label(:)
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
@@ -117,6 +118,13 @@
         module procedure init_shell, init_kbshell,
      $                   init_lshell, init_basis_def
       end interface
+
+!---------------------------------------------------------
+      public  :: destroy, copy_shell, initialize
+      public  :: write_basis_specs, basis_specs_transfer
+!---------------------------------------------------------
+
+      PRIVATE
 
       CONTAINS
 

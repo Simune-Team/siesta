@@ -99,13 +99,13 @@ C
      .  indxuo(no), listh(maxnh), numh(nuo), listd(maxnd), numd(nuo),
      .  listhptr(*), listdptr(*)
 
-      double precision
+      real*8
      .  Dnew(maxnd,4),
      .  e1, e2, ef, Enew(maxnd,4), eo(maxo*4,nk), Entropy,
      .  H(maxnh,4), kpoint(3,nk), qo(maxo*4,nk), qtot,
      .  S(maxnh), stepf, temp, wk(nk), xij(3,maxnh)
      
-      double precision
+      real*8
      .  aux(5,2*nuotot), Dk(2,2,nuotot,2,nuo), Ek(2,2,nuotot,2,nuo), 
      .  Haux(2,2,nuotot,2,nuo), psi(2,2,nuotot,nuo*2), 
      .  Saux(2,2,nuotot,2,nuo)
@@ -120,7 +120,10 @@ C  Internal variables .............................................
       integer
      .  BNode, BTest, i, ie, ierror, iie, ik, ind, io, iio,
      .  iuo, j, jo, juo, nd
-      double precision
+      integer, allocatable, save :: HighestOccupiedBand(:)
+      logical
+     .  lfound
+      real*8
      .  ckx, ee, kxij, pipj1, pipj2, qe, skx, t
 C  ....................
 
@@ -164,7 +167,7 @@ C                   ispin=3 => Real(H12), ispin=4 => Imag(H12)
           enddo
         enddo
 
-c Hermiticity
+C Hermiticity
         do iuo = 1,nuo
           do juo = 1,nuo
             Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
@@ -172,24 +175,21 @@ c Hermiticity
           enddo
         enddo
 
-C       Find eigenvalues
-C       Possible memory optimization: equivalence Haux and psi
+C Find eigenvalues
+C Possible memory optimization: equivalence Haux and psi
         call cdiag( Haux, 2*nuotot, Saux, 2*nuotot, 2*nuo,
      .              eo(1,ik), psi, 2*nuotot, 0, ierror )
         if (ierror.ne.0) then
           call die('Terminating due to failed diagonalisation')
         endif
       enddo
-C ....................
 
 C Check if we are done ................................................
       if (.not.getD) return
-C ....................
 
 C Find new Fermi energy and occupation weights ........................
       call fermid( 2, 4, nk, wk, maxo, nuotot, eo, 
      .             temp, qtot, qo, ef, Entropy )
-C ....................
 
 *     write(6,'(/,a,/,(10f7.2))') 'diag2k: eo =',(eo(ie,1),ie=1,nuo*2)
 *     write(6,'(/,a,/,(10f7.2))') 'diag2k: qo =',(qo(ie,1),ie=1,nuo*2)
@@ -211,16 +211,27 @@ C Find weights for local density of states ............................
           enddo
         enddo
       endif
-C ....................
       
-c New density and energy-density matrices of unit-cell orbitals .......
+C Create pointer to highest occupied band
+      allocate(HighestOccupiedBand(nk))
+      do ik = 1,nk
+        io = 2*nuotot  + 1
+        lfound = .false.
+        do while (io.gt.1.and..not.lfound)
+          io = io - 1
+          lfound = (abs(qo(io,ik)).gt.1.0d-12)
+        enddo
+        HighestOccupiedBand(ik) = io
+      enddo
+
+C New density and energy-density matrices of unit-cell orbitals .......
       nd = listdptr(nuo) + numd(nuo)
       Dnew(1:nd,1:4) = 0.0d0
       Enew(1:nd,1:4) = 0.0d0
 
       do ik = 1,nk
 
-C       Find eigenvectors 
+C Find eigenvectors 
         Saux = 0.0d0
         Haux = 0.0d0
         do iuo = 1,nuo
@@ -248,7 +259,7 @@ C       Find eigenvectors
           enddo
         enddo
 
-c Hermiticity
+C Hermiticity
         do iuo = 1,nuo
           do juo = 1,nuo
             Haux(1,2,juo,1,iuo) =  Haux(1,1,iuo,2,juo)
@@ -262,14 +273,14 @@ c Hermiticity
           call die('Terminating due to failed diagonalisation')
         endif
 
-C       Store the products of eigenvectors in matrices Dk and Ek
-C       WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
+C Store the products of eigenvectors in matrices Dk and Ek
+C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
         Dk = 0.0d0
         Ek = 0.0d0
 
         BNode = 0
         iie = 0
-        do ie = 1,nuotot*2
+        do ie = 1,HighestOccupiedBand(ik)
           if (Node.eq.BNode) then
             iie = iie + 1
             do j = 1,nuotot
@@ -330,7 +341,7 @@ C       WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
           endif
         enddo
 
-C       Add contribution to density matrices of unit-cell orbitals
+C Add contribution to density matrices of unit-cell orbitals
         do iuo = 1,nuo
           do j = 1,numd(iuo)
             ind = listdptr(iuo) + j
@@ -371,6 +382,8 @@ C       Add contribution to density matrices of unit-cell orbitals
         enddo
 
       enddo
-C ....................
+
+C Free local memory
+      deallocate(HighestOccupiedBand)
 
       end

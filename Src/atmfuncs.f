@@ -11,7 +11,7 @@ C     different chemical species in the calculation:
       use precision
       use sys
       use atm_types
-      use radial, only: rad_get
+      use radial, only: rad_get, rad_func
       use spher_harm, only: rlylm
 
       implicit none 
@@ -28,7 +28,15 @@ C     different chemical species in the calculation:
       real(dp), parameter              :: tiny20=1.e-20_dp
       real(dp), parameter              :: tiny12=1.e-12_dp
 
-      private chk, max_l, max_ilm, message
+      private :: chk, max_l, max_ilm, message
+
+      public  :: nofis, nkbfis, izofis, massfis
+      public  :: rcore, rcut, chcore_sub, epskb, uion
+      public  :: atmpopfio, psch, izvalfis, floating, psover
+      public  :: lofio, symfio, cnfigfio, zetafio, mofio
+      public  :: labelfis, lomaxfis, nztfl
+      public  :: phiatm, all_phi, xphiatm, yphiatm, zphiatm
+      private
                           !
       contains
 !
@@ -40,8 +48,8 @@ C     different chemical species in the calculation:
       integer, intent(in) :: is
 
       if ((is.lt.1).or.(is.gt.nspecies)) then 
-         write(message,'(a,i3,a,i3)')
-     $           "Wrong species", is, ". Have", nspecies
+         write(message,'(2a,i3,a,i3)')
+     $           name, ": Wrong species", is, ". Have", nspecies
          call die(message)
       endif
       end subroutine chk
@@ -412,7 +420,6 @@ C Distances in Bohr,  Energies in Rydbergs
 C  2) Returns exactly zero when |R| > RCUT(IS,0)
 
       real(dp) rmod, dvdr
-      integer i
 
       call chk('vna_sub',is)
 
@@ -443,8 +450,7 @@ C Distances in Bohr, Energies in Rydbergs
 C Density in electrons/Bohr**3
 C  2) Returns exactly zero when |R| > Rchloc
 
-      integer i
-      double precision rmod, dchdr
+      real(dp) :: rmod, dchdr
 
       call chk('psch',is)
 
@@ -475,7 +481,6 @@ C Distances in Bohr, Energies in Rydbergs, Density in electrons/Bohr**3
 C  2) Returns exactly zero when |R| > Rcore
 
       real(dp) rmod, dchdr
-      integer i
 
       call chk('chcore_sub',is)
 
@@ -597,7 +602,7 @@ C 6) Returns exactly zero when |R| > RCUT(IS,IO)
 C 7) RPHIATM with ITYPE = 0 is strictly equivalent to VNA_SUB
 
       real(dp) rmod, phir
-      integer i, l, m, ik
+      integer l, m, ik
 
       phi = 0.0_dp
       dphidr = 0._dp

@@ -81,7 +81,7 @@ C Internal variables ......................................................
      .  Di, Si
 
       external
-     .  chkdim, neighb, timer, memory
+     .  neighb, timer, memory
 C ......................
 
 C Start timer
@@ -107,7 +107,6 @@ C Allocate local memory
         nnia = maxna
         call neighb( scell, 2.d0*rmaxo, na, xa, ia, 0,
      .               nnia, jna, xij, r2ij )
-        call chkdim( 'overfsm', 'maxna', maxna, nnia, 1 )
         do io = lasto(ia-1)+1,lasto(ia)
 
 C Is this orbital on this Node?

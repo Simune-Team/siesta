@@ -1,5 +1,3 @@
-C $Id: ran3.f,v 1.2 1999/01/31 11:43:32 emilio Exp $
-
       FUNCTION ran3(idum)
       INTEGER idum
       INTEGER MBIG,MSEED,MZ

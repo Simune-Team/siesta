@@ -35,6 +35,9 @@ C
 #endif
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer :: nitmax, maxe, maxspn, nk, ik, ispin
+      integer :: ie, ne, nspin, iter
+
 
       PARAMETER (TOL=1.D-10,NITMAX=150)
       DOUBLE PRECISION E(MAXE,MAXSPN,NK),WKE(MAXE,MAXSPN,NK),WK(NK)
@@ -154,8 +157,8 @@ C Obtain the electronic entropy
               DO 135 IE=1,NE
                 DO 130 ISPIN=1,NSPIN
 
-	          W = (NSPIN / 2.0D0) * WKE(IE,ISPIN,IK) / WK(IK)
-	          EIK = (E(IE,ISPIN,IK)-EF) / T
+                  W = (NSPIN / 2.0D0) * WKE(IE,ISPIN,IK) / WK(IK)
+                  EIK = (E(IE,ISPIN,IK)-EF) / T
 
                   ENTROPY = ENTROPY + ( 2.0D0 * WK(IK) / NSPIN ) *
      .                      ENPY(EIK,W)
@@ -218,8 +221,10 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
-
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer :: maxe, maxspn, nk, nspin, nitmax, ispin
+      integer :: ik, ie, ne, iter
+
       DOUBLE PRECISION E(MAXE,MAXSPN,NK),EMIN(4),EMAX(4),
      .                 EF(NSPIN),QTOT(MAXSPN),SUMQ(4),TEMP,
      .                 WKE(MAXE,MAXSPN,NK),WK(NK)
@@ -346,8 +351,9 @@ C Get the Node number
 #ifdef MPI
       use mpi_siesta
 #endif
-
+      
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer :: i, j
 
 C Local variables
       character(len=22), save :: ocf = 'FD'
@@ -587,6 +593,7 @@ C  P. Ordejon, June '03
 C
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer :: i, n
 
       PI = 3.14159265358979D0
       X2=X**2.0D0
@@ -622,7 +629,7 @@ C  P. Ordejon, June 2003
 C
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      INTEGER N
+      INTEGER :: N, i
 
       IF (N .GT. 1000) 
      .     stop 'fermid: Order of Hermite polynomial too large'

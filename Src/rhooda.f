@@ -1,5 +1,4 @@
-      subroutine rhooda( no, indxuo, np, Datm, rhoatm, 
-     .                   iaorb, iphorb, isa )
+      subroutine rhooda( no, np, Datm, rhoatm, iaorb, iphorb, isa )
 C ********************************************************************
 C Finds the Harris density at the mesh points from the atomic
 C occupations.
@@ -7,7 +6,6 @@ C Written by P.Ordejon and J.M.Soler. May'95.
 C Inverted so that grid points are the outer loop, J.D. Gale, Jan'99
 C *********************** InpUT **************************************
 C integer no              : Number of basis orbitals
-C integer indxuo(no)      : Index of equivalent atom in unit cell
 C integer np              : Number of mesh points
 C real*8  Datm(no)        : Occupations of basis orbitals in free atom
 C integer iaorb(*)        : Pointer to atom to which orbital belongs
@@ -20,14 +18,14 @@ C
 C  Modules
 C
       use atmfuncs, only: rcut, phiatm
+      use atomlist, only: indxuo
       use mesh,     only: nsp, dxa, xdop, xdsp
       use meshphi
 C
       implicit none
 
       integer          no, np
-      integer          indxuo(no), 
-     .                 iaorb(*), iphorb(*), isa(*)
+      integer          iaorb(*), iphorb(*), isa(*)
       real             rhoatm(nsp,np)
       real*8           Datm(no), phip
 

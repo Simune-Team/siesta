@@ -782,6 +782,7 @@ C This is the unique return point
       RETURN
       END
 
+
       SUBROUTINE RECCEL( N, A, B, IOPT )
 
 C  CALCULATES RECIPROCAL LATTICE VECTORS B.
@@ -790,6 +791,7 @@ C  2*PI (IF IOPT=1). N IS THE SPACE DIMENSION.
 C  WRITTEN BY J.M.SOLER.
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      integer :: n, iopt, i
       DOUBLE PRECISION A(N,N),B(N,N)
 
       C=1.D0
@@ -824,9 +826,6 @@ C  WRITTEN BY J.M.SOLER.
         STOP
       ENDIF
       END
-
-
-
 
       SUBROUTINE INDARR( IOPT, ND, I1, I2, I, J1, J )
 
@@ -906,6 +905,3 @@ C Next line is non-standard but may be supressed
       ENDIF
 
       END
-
-
-

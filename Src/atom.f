@@ -3,11 +3,29 @@
       use precision
       use sys
       use atmparams
-      use old_atmfuncs
+!----------------------------------------------------------------
+!     old_atmfuncs arrays
+!
+      use old_atmfuncs, only: tabpol, rcpoltb, table, tab2
+      use old_atmfuncs, only: coretab, smasstb, tab2pol
+      use old_atmfuncs, only: izvaltb, chargesave, nkbmax, nomax
+      use old_atmfuncs, only: qtb, slfe
+      use old_atmfuncs, only: chloctab, vlocaltab
+      use old_atmfuncs, only: lmxosave, lmxkbsave, label_save
+      use old_atmfuncs, only: semicsave, izsave, cnfigtb
+      use old_atmfuncs, only: nzetasave, nsemicsave, nkblsave
+      use old_atmfuncs, only: npolorbsave, basistype_save
+      use old_atmfuncs, only: lambdatb, rcotb, rctb
+!
+!     old_atmfuncs procedures
+!
+      use old_atmfuncs, only: labelfis, izofis
+!----------------------------------------------------------------
       use periodic_table
       use basis_types
       use fdf
       use m_radfft
+      use pseudopotential, only: pseudopotential_t
 
       implicit none      
 
@@ -169,7 +187,7 @@
            
 ! Internal variables
  
-       double precision
+       real(dp)
      .  rofi(nrmax), drdi(nrmax), s(nrmax),
      .  vps(nrmax,0:lmaxd), rphi(nrmax,0:lmaxd,nsemx),
      .  vlocal(nrmax), vxc(nrmax), ve(nrmax),
@@ -178,23 +196,22 @@
      .  red_vlocal(nrmax)
 
 
-       double precision 
+       real(dp) 
      .  pi, a, b, zval, flting,
      .  ex, ec, dx, dc, r2, chgvps
      
       
-       double precision
+       real(dp)
      .  Rgauss, Rgauss2, Rchloc
 
        character
      .   icorr*2, irel*3, nicore*4, 
-     .   paste*50,
      .   xcfunc*3, xcauth*4
 
 
        integer 
      .  iz, nrval, ir , nrgauss, nchloc, nzcontr, l, nVna,
-     .  irelt, lun, nsm, nvlocal
+     .  irelt, nsm, nvlocal
     
        logical  new
    
@@ -230,8 +247,8 @@
 ! 
            
            call new_specie(iz,lmxkb, 
-     .         nkbl, erefkb, lmxo,
-     .         nzeta, rco, lambda, atm_label,
+     .         nkbl, lmxo,
+     .         nzeta, atm_label,
      .         npolorb, semic, nsemic, cnfigmx,
      .         is, new, no, nkb) 
 ! 
@@ -242,7 +259,7 @@
 
 ! Reading pseudopotentials*** 
 ! 
-            call read_vps(atm_label, lmxo, lmxkb,
+            call read_vps(lmxo, lmxkb,
      .        nrval,a,b,rofi,drdi,s,vps,
      .        rho, chcore, zval, chgvps, nicore, irel, icorr,basp) 
 
@@ -512,7 +529,7 @@ c    .          'atom: The above configuration will be used ',
 ! Method for the augmentation of the basis set
 !
          if (basistype.ne.'user') then
-             write(6,'(a,73(1h-))') 'atom: '
+             write(6,'(a,73("-"))') 'atom: '
              write(6,'(/,a)') 'atom: SANKEY-TYPE ORBITALS:'
            nzcontr=0
            do l=0,lmxo
@@ -641,7 +658,7 @@ C   Modify by DSP, July 1999
 C**
 
         integer nrval, ir
-        double precision r(nrval),
+        real(dp) r(nrval),
      .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval)
         
         integer  l, nnodo, nn
@@ -740,7 +757,7 @@ C
      .                    cons1=1.0d5,rint=15.0d0)
 
         integer nrval, nrc
-        double precision r(nrval),psi(nrval),psipol(nrval),
+        real(dp) r(nrval),psi(nrval),psipol(nrval),
      .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval)
         
         real(dp) a, rmax, reduc, dl, hi, rnd1, c1, c2, rnodo, cons, gold
@@ -930,10 +947,10 @@ C
          integer l, nm, nrc
           
          real(dp),  parameter  :: Ratio=0.61803399D0       
-         double precision rphi(nrc),rnrm(nrc) 
+         real(dp) rphi(nrc),rnrm(nrc) 
          real(dp) a, b, splnorm, cons1, cons2
 
-         real(dp) rfirst, slopold, slop, rmin, gmin, cmin, rnrmin
+         real(dp) slopold, slop, rmin, gmin, cmin, rnrmin
          real(dp) gmax, cmax, rmax, rnrmax, valmin, valmax, gmed
          real(dp) cmed, rmed, rnrmed, valmed, g1, c1, r, rn1, val1
          real(dp) g2, c2, rn2, val2
@@ -959,7 +976,7 @@ C         Hallar el ultimo maximo de a funcion de onda
           enddo
  10               continue
           nr_max=ir-1
-          rmin=b*(dexp(a*(nr_max-1))-1.0d0)
+          rmin=b*(exp(a*(nr_max-1))-1.0d0)
           rmin=1.01d0*rmin
           nmin=nint(dlog(rmin/b+1.0d0)/a)+1
           nmin=max(nmin,2)
@@ -967,12 +984,12 @@ C         Hallar el ultimo maximo de a funcion de onda
 
           
           call findp(nrc,nmin,rphi,a,b,l,cmin,gmin)
-          rmin=b*(dexp(a*(nmin-1))-1.0d0)
+          rmin=b*(exp(a*(nmin-1))-1.0d0)
           call nrmpal(cmin,gmin,rmin,l,rnrmin)
           rnrmin=1.0d0+rnrmin-rnrm(nmin)
 
           call findp(nrc,nmax,rphi,a,b,l,cmax,gmax)
-          rmax=b*(dexp(a*(nmax-1))-1.0d0)
+          rmax=b*(exp(a*(nmax-1))-1.0d0)
           call nrmpal(cmax,gmax,rmax,l,rnrmax)
           rnrmax=1.0d0+rnrmax-rnrm(nmax)
 
@@ -1002,7 +1019,7 @@ C Under certain circunstances the algorithm is not going to work
           nmed=(nmin+nmax)/2
           do iter=1,nrc
             call findp(nrc,nmed,rphi,a,b,l,cmed,gmed)
-            rmed=b*(dexp(a*(nmed-1))-1.0d0)
+            rmed=b*(exp(a*(nmed-1))-1.0d0)
             call nrmpal(cmed,gmed,rmed,l,rnrmed)
             rnrmed=1.0d0+rnrmed-rnrm(nmed)
 
@@ -1016,7 +1033,7 @@ C Under certain circunstances the algorithm is not going to work
           nmed=(nmin+nmax)/2
           do iter=1,nrc
              call findp(nrc,nmed,rphi,a,b,l,cmed,gmed)
-             rmed=b*(dexp(a*(nmed-1))-1.0d0)
+             rmed=b*(exp(a*(nmed-1))-1.0d0)
              call nrmpal(cmed,gmed,rmed,l,rnrmed)
              rnrmed=1.0d0+rnrmed-rnrm(nmed)
 
@@ -1055,13 +1072,13 @@ C    Ahora ya tenemos el minimo en un intervalo
                n1=nmed-nint((1.0d0-ratio)*(nmed-nmin))
             endif
             call findp(nrc,n1,rphi,a,b,l,c1,g1)
-            r=b*(dexp(a*(n1-1))-1.0d0)
+            r=b*(exp(a*(n1-1))-1.0d0)
             call nrmpal(c1,g1,r,l,rn1)
             rn1=1.0d0+rn1-rnrm(n1)
             val1=(splnorm-rn1)**2
 
             call findp(nrc,n2,rphi,a,b,l,c2,g2)
-            r=b*(dexp(a*(n2-1))-1.0d0)
+            r=b*(exp(a*(n2-1))-1.0d0)
             call nrmpal(c2,g2,r,l,rn2)
             rn2=1.0d0+rn2-rnrm(n2)
             val2=(splnorm-rn2)**2
@@ -1074,7 +1091,7 @@ C    Ahora ya tenemos el minimo en un intervalo
 c              val0=val1
                val1=val2
                call findp(nrc,n2,rphi,a,b,l,c2,g2)
-               r=b*(dexp(a*(n2-1))-1.0d0)
+               r=b*(exp(a*(n2-1))-1.0d0)
                call nrmpal(c2,g2,r,l,rn2)
                rn2=1.0d0+rn2-rnrm(n2)
                val2=(splnorm-rn2)**2
@@ -1085,7 +1102,7 @@ c              val0=val1
 c              val3=val2
                val2=val1
                call findp(nrc,n1,rphi,a,b,l,c1,g1)
-               r=b*(dexp(a*(n1-1))-1.0d0)
+               r=b*(exp(a*(n1-1))-1.0d0)
                call nrmpal(c1,g1,r,l,rn1)
                rn1=1.0d0+rn1-rnrm(n1)
                val1=(splnorm-rn1)**2
@@ -1108,7 +1125,7 @@ c              val3=val2
           subroutine findp(nrc,nm,rphi,a,b,l,cons1,cons2)
           integer nrc, nm, l
           real(dp) a, b, cons1, cons2
-          double precision rphi(nrc)
+          real(dp) rphi(nrc)
 
 C  This routine provides the constants Cons1 and 
 C  Cons2 and described in subroutine 'parabola' 
@@ -1234,7 +1251,7 @@ C     Written by D. Sanchez-Portal, Aug. 1998
 C     *Internal variables* 
 
       real(dp) van, factor, alp, cutoff1, cutoff2,
-     .     gexp, qtot, eps, pi, chc, r, Rchloc, rhor1, rhor
+     .         qtot, eps, pi, chc, r, Rchloc, rhor1, rhor
       integer ir
       character loctype*3
 
@@ -1574,12 +1591,12 @@ C**** If third derivative fit
 
           integer  
      .        nrc,l,nnodes,nprin
-          double precision
+          real(dp)
      .        Zval, rofi(*),vps(*),ve(*),s(nrc),drdi(*),a,b,e,g(*)
      
 C* Internal variables***  
 
-           double precision
+           real(dp)
      .       a2b4, h(nrmax), r2, vtot, rmax, dr,
      .        y(nrmax), dnrm, phi, dsq
            integer
@@ -1653,7 +1670,7 @@ C
 
 C     * Internal variables***
 
-      double precision   dnrm, avgv, phi,
+      real(dp)   dnrm, avgv, phi,
      .     elocal1, elocal2, g(nrmax), vl, vphi, dkbcos
 
       integer  ir, nprin, nnode
@@ -1742,7 +1759,7 @@ C****
 
           implicit none
 
-          double precision
+          real(dp)
      .        rofi(*),vps(*),drdi(*),proj(*),
      .        rphi(*), vlocal(*), dkbcos,ekb
           integer
@@ -1750,7 +1767,7 @@ C****
 
 C* Internal variables***
 
-          double precision 
+          real(dp) 
      .        eps, dnrm, vl, vphi, avgv, r, phi, dknrm,
      .        dincv, rc, rphi2(nrmax,nkbmx), vii(nkbmx),
      .        sum, vij(nkbmx)
@@ -1969,7 +1986,7 @@ C  D. Sanchez-Portal, Aug. 1998
 
            integer nrval, is
  
-           double precision 
+           real(dp) 
      .        chcore(nrmax), rofi(nrmax), flting, a ,b
 
            character nicore*4
@@ -1977,10 +1994,10 @@ C  D. Sanchez-Portal, Aug. 1998
 CInternal variables
 C
            integer nrcore,ir, nr, nmin, nmax, nn, itb
-           double precision r2, chc, r, pi, delt, Rcore, dy,
+           real(dp) r2, chc, r, pi, delt, Rcore, dy,
      .     yp1, ypn
   
-           double precision eps
+           real(dp) eps
             parameter (eps=1.0d-6)  
           
 C****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
@@ -2076,15 +2093,15 @@ C  D. Sanchez-Portal, Aug. 1998
 
            integer nchloc, is
  
-           double precision 
+           real(dp) 
      .        chlocal(nrmax), rofi(nrmax), a ,b, flting
 
           
 CInternal variables
 C
-           integer nr, nmin, nmax, nn, itb, indx, is2
-           double precision chc, r, delt, Rchloc, dy,
-     .     yp1, ypn, rmax
+           integer nr, nmin, nmax, nn, itb
+           real(dp) chc, r, delt, Rchloc, dy,
+     .     yp1, ypn
   
 C****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
 C
@@ -2123,8 +2140,6 @@ C
 
           chloctab(2,1,is)=chloctab(3,1,is)
 
-
-
 C****TABLE WITH THE SECOND DERIVATIVE OF THE LOCAL-PSEUDOTENTIAL***
 C***CHARGE DENSITY****
 
@@ -2134,33 +2149,12 @@ C***CHARGE DENSITY****
          call spline(delt,chloctab(2,1,is),ntbmax,
      .      yp1,ypn,chloctab(2,2,is))
 
-CCALCULATION OF THE ELECTROSTATIC CORRECTION***
-
-         do is2=is,1,-1
-            rmax=chloctab(1,1,is2)*(ntbmax-1)+Rchloc+0.2d0
-            indx=((is-1)*is)/2+is2
-            corrtab(1,1,indx)=rmax/(ntbmax-1)
-            corrtab(1,2,indx)=1.0d0
-            call choverlp(is,is2,rmax,corrtab(2,1,indx),
-     .       corrtab(2,2,indx))
-
-            if(abs(rmax).lt.1.0d-8) corrtab(1,2,indx)=0.0d0
-
-         enddo
-
         elseif( flting.lt.0.0d0) then 
  
 
             do itb=1,ntbmax+1
                chloctab(itb,1,is)=0.0d0
                chloctab(itb,2,is)=0.0d0
-            enddo
-            do is2=is,1,-1
-              indx=((is-1)*is)/2+is2
-              do itb=1,ntbmax+1
-                  corrtab(itb,1,indx)=0.0d0
-                  corrtab(itb,2,indx)=0.0d0
-              enddo
             enddo
 
         endif 
@@ -2178,12 +2172,12 @@ CCALCULATION OF THE ELECTROSTATIC CORRECTION***
 
         integer nvlocal, is
  
-        double precision  red_vlocal(nrmax), rofi(nrmax),
+        real(dp)  red_vlocal(nrmax), rofi(nrmax),
      $                    a ,b, zval, flting
 
-           integer nr, nmin, nmax, nn, itb, indx, is2
-           double precision chc, r, delt, Rvlocal, dy,
-     .     yp1, ypn, rmax
+           integer nr, nmin, nmax, nn, itb
+           real(dp) chc, r, delt, Rvlocal, dy,
+     .     yp1, ypn
   
           integer npoint
           parameter(npoint=4)
@@ -2239,16 +2233,12 @@ C
 
 !
        subroutine new_specie(iz,lmxkb, 
-     .  nkbl, erefkb, lmxo,
-     .  nzeta, rco, lambda, atm_label,
+     .  nkbl, lmxo,
+     .  nzeta, atm_label,
      .  npolorb, semic, nsemic, cnfigmx,
      .  is, new, no, nkb)
 
        implicit none
-
-       double precision 
-     .   rco(nzetmx,0:lmaxd,nsemx), lambda(nzetmx,0:lmaxd,nsemx),
-     .   erefkb(nkbmx,0:lmaxd)
 
        integer
      .  iz, lmxkb, lmxo, nzeta(0:lmaxd,nsemx), npolorb(0:lmaxd,nsemx),
@@ -2372,7 +2362,7 @@ C**ADDING A NEW SPECIES TO THE LIST**
         end subroutine new_specie
 
 !
-        subroutine read_vps(atm_label, lmxo, lmxkb,
+        subroutine read_vps(lmxo, lmxkb,
      .             nrval,a,b,rofi,drdi,s,vps,
      .             rho, chcore, zval, chgvps,
      .             nicore, irel, icorr,basp)
@@ -2385,23 +2375,23 @@ C**
 
        type(basis_def_t), pointer   :: basp
       
-           double precision
+           real(dp)
      .        rofi(nrmax), drdi(nrmax), s(nrmax), vps(nrmax,0:lmaxd),
      .        rho(nrmax), chcore(nrmax) 
 
-           double precision
+           real(dp)
      .         a, b, zval
            
            integer  nrval, lmxo, lmxkb 
 
-           character atm_label*20, nicore*4, irel*3, icorr*2
+           character nicore*4, irel*3, icorr*2
 
 C*Internal variables ****
            
-           double precision 
+           real(dp) 
      .     ve(nrmax)
 
-           double precision 
+           real(dp) 
      .        ea, rpb, chgvps, ztot, zup, zdown, rc_read
 
            integer  
@@ -2614,13 +2604,13 @@ C*
 
                integer l, nrc,is, ikb 
 
-               double precision rc, ekb, proj(nrmax), a, b,
+               real(dp) rc, ekb, proj(nrmax), a, b,
      .            rofi(nrmax)  
 
 C****Internal variables
 C
              integer indx, itb, nr, nmax, nmin, nn, il
-             double precision delt, r, vphi, dy, yp1, ypn
+             real(dp) delt, r, vphi, dy, yp1, ypn
              
 ****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
 C
@@ -2695,7 +2685,7 @@ C****
 
                implicit none
 
-               double precision 
+               real(dp) 
      .            a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .            drdi(nrmax), s(nrmax), ve(nrmax),vlocal(nrmax),
      .            Zval, erefkb(nkbmx,0:lmaxd)
@@ -2708,11 +2698,11 @@ C***Internal variables**
                integer 
      .           l,nprin, nnodes, ighost, nrwf, ikb, ir,
      .           nrc
-               double precision
+               real(dp)
      .           rc(nkbmx,0:lmaxd), dkbcos(nkbmx,0:lmaxd),
      .           ekb(nkbmx,0:lmaxd)
                
-               double precision
+               real(dp)
      .           rphi(nrmax,nkbmx), rmax, dnrm, 
      .           proj(nrmax)
                  
@@ -2864,7 +2854,7 @@ C****
 
                implicit none
 
-               double precision
+               real(dp)
      .            a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .            drdi(nrmax), s(nrmax), ve(nrmax),
      .            rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
@@ -2882,7 +2872,7 @@ C***Internal variables**
 
                 integer noPAO, noPOL
 
-                double precision ePAO(0:lmaxd,nsemx)
+                real(dp) ePAO(0:lmaxd,nsemx)
 
              
                 noPAO=0
@@ -2953,7 +2943,7 @@ C****
 
                implicit none
 
-               double precision
+               real(dp)
      .         a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .         drdi(nrmax), s(nrmax), ve(nrmax),
      .         rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
@@ -2974,7 +2964,7 @@ C***Internal variables**
      .           izeta, nmax, nmin, nn, nr, nrcomp, nsm, nrc1, 
      .           nrc2, nrc3, nrc4, ism, iu1
 
-               double precision
+               real(dp)
      .           eigen(0:lmaxd), rc,
      .           rnrm(nrmax), dnrm, phi, frsp, dfrsp,
      .           cons1, cons2, rnp, spln, eshift, 
@@ -3450,7 +3440,7 @@ C****
 
                implicit none
 
-               double precision
+               real(dp)
      .         a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .         drdi(nrmax), s(nrmax), ve(nrmax),
      .         rphi(nrmax,0:lmaxd,nsemx), 
@@ -3469,7 +3459,7 @@ C***Internal variables**
      .           l,nprin, nnodes, nodd, nrc, ir, indx,
      .           izeta, nmax, nmin, nn, nr, nrcomp, nsm
 
-               double precision
+               real(dp)
      .           eigen(0:lmaxd), rc,
      .           dnrm, phi, eshift,
      .           g(nrmax), r, el, ekin, 
@@ -3690,7 +3680,7 @@ C****
 
                implicit none
 
-               double precision
+               real(dp)
      .         a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .         drdi(nrmax), s(nrmax), ve(nrmax),
      .         rphi(nrmax,0:lmaxd,nsemx), 
@@ -3707,7 +3697,7 @@ C****
      .           l,nprin, nnodes, nodd, nrc, i, ir, indx,
      .           izeta, nmax, nmin, nn, nr, nrcomp, nsm
 
-               double precision
+               real(dp)
      .           eigen(0:lmaxd), rc,
      .           dnrm, phi, eshift,
      .           g(nrmax), r, el, ekin, 
@@ -3943,14 +3933,14 @@ C*
 
                integer l, is, norb, nrc, nzeta, nsemic
 
-               double precision rc, lambda, rphi(nrmax), a, b,
+               real(dp) rc, lambda, rphi(nrmax), a, b,
      .            rofi(nrmax)  
 
 C****Internal variables
 C
              integer itb, nr, nmax, nmin, nn
         
-             double precision delt, r, phi, dy, yp1, ypn
+             real(dp) delt, r, phi, dy, yp1, ypn
              
  
 ****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
@@ -4022,7 +4012,7 @@ C****
 
                implicit none
 
-               double precision
+               real(dp)
      .         a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .         drdi(nrmax), s(nrmax), ve(nrmax),
      .         rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
@@ -4038,7 +4028,7 @@ C****
      .           l,nprin, nnodes, nodd, nrc, i, ir, indx,
      .           izeta, nmax, nmin, nn, nr, nrcomp, nsm
 
-               double precision
+               real(dp)
      .           eigen(0:lmaxd), rc,
      .           dnrm, phi, 
      .           cons, fac, eshift, pi, gexp,
@@ -4324,16 +4314,16 @@ C  Written by D. Sanchez-Portal, Aug. 1998
 C***
                implicit none
 
-               double precision rc, lambda, rphi(nrmax), a, b,
+               real(dp) rc, lambda, rphi(nrmax), a, b,
      .            rofi(nrmax)  
 
 C****Internal variables
 C
              integer nr, nmax, nmin, nn, maxpoint, nrc, ir  
         
-             double precision  r, phi, dy, rmax
+             real(dp)  r, phi, dy, rmax
              
-             double precision
+             real(dp)
      .          aux(nrmax)
 
 ****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
@@ -4380,7 +4370,7 @@ C
 
          implicit none
 
-         double precision  q(1:), qPAO(0:lmaxd,nsemx) 
+         real(dp)  q(1:), qPAO(0:lmaxd,nsemx) 
 
          integer 
      .     nzeta(0:lmaxd,nsemx),polorb(0:lmaxd,nsemx), 
@@ -4392,7 +4382,7 @@ C
 
 C***Internal variables*
 
-        double precision  qatm(0:3)
+        real(dp)  qatm(0:3)
           
         integer noPAO, l, izeta, m, norb, noPol, lpop,
      .     nsm, nvalence, config(0:lmaxd)
@@ -4413,6 +4403,10 @@ C***Internal variables*
           nvalence=nsemic(l)+1
      $        -(cnfigtb(l,nsemic(l)+1,is)-config(l))
           nsm=nvalence
+C Add a check on whether nsemx is large enough
+          if (nsm.gt.nsemx) then
+            call die('need to increase nsemx')
+          endif
           qPAO(l,nsm)=0.0d0
           if(l.le.3) qPAO(l,nsm)=qatm(l) 
         enddo 
@@ -4486,7 +4480,7 @@ C*
           
           implicit none
  
-          double precision
+          real(dp)
      .    Zval, qPAO(0:lmaxd,nsemx), rofi(nrmax), 
      .    rphi(nrmax,0:lmaxd,nsemx),
      .    drdi(nrmax),rco(nzetmx,0:lmaxd,nsemx),a,b, vloc(nrmax) 
@@ -4497,7 +4491,7 @@ C*
 
 C***Internal variables****
 
-         double precision
+         real(dp)
      .    rho(nrmax), chval, ve(nrmax), s(nrmax),eps, phi,
      .    rcocc, dincv, rVna
          
@@ -4605,11 +4599,11 @@ C   D. Sanchez-Portal, Aug. 1998.
            implicit none
 
            integer nVna, is
-           double precision 
+           real(dp) 
      .        Vna(nrmax), rofi(nrmax), a ,b, flting
 
            integer nr, nmin, nmax, nn, itb
-           double precision  yp1, ypn, dy, v, rVna, delt, r
+           real(dp)  yp1, ypn, dy, v, rVna, delt, r
 
 C****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
 C
@@ -4672,14 +4666,14 @@ C Written by D. Sanchez-Portal, Aug. 1998.
 
          implicit none
            
-         double precision slfe, vlocal(nrmax),rofi(nrmax),a,
+         real(dp) slfe, vlocal(nrmax),rofi(nrmax),a,
      .       drdi(nrmax) 
 
          integer nVna 
            
 C*Internal variables**
           
-         double precision slf, a2b4, s(nrmax), g0, g1, g2,
+         real(dp) slf, a2b4, s(nrmax), g0, g1, g2,
      .       g3, g4, d2g, d2u
 
          integer ir
@@ -4731,7 +4725,7 @@ C****
 C
                implicit none
 
-               double precision
+               real(dp)
      .         a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .         ve(nrmax), drdi(nrmax),
      .         rphi(nrmax,0:lmaxd,nsemx), 
@@ -4747,7 +4741,7 @@ C
      .           l, nrc, nsp, ir,indx,
      .           ipol, nsm, nrcomp
 
-               double precision
+               real(dp)
      .           rc, rcpol(nzetmx,0:lmaxd,nsemx),
      .           phipol(nrmax),
      .           rnrm(nrmax), dnrm, phi,
@@ -4973,14 +4967,14 @@ C  Modify by DSP, July 1999
 
                integer l, is, norb, nrc, ipol, nsm
 
-               double precision rc, rphi(nrmax), a, b,
+               real(dp) rc, rphi(nrmax), a, b,
      .            rofi(nrmax)  
 
 C****Internal variables
 C
              integer itb, nr, nmax, nmin, nn
         
-             double precision delt, r, phi, dy, yp1, ypn
+             real(dp) delt, r, phi, dy, yp1, ypn
              
 ****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
 C
@@ -5042,12 +5036,12 @@ C    D. Sanchez-Portal, Aug. 98
  
         implicit none
 
-        double precision 
+        real(dp) 
      .     rofi(nrmax), drdi(nrmax), s(nrmax), a, b
 
 
 C**** Internal variables**
-        double precision 
+        real(dp) 
      .     aa, bb, zt, rpb, ea, ea2
         integer ir
 
@@ -5085,7 +5079,7 @@ C  Modify by DSP, July 1999
 
                implicit none
 
-               double precision
+               real(dp)
      .         a, b, rofi(nrmax),
      .         drdi(nrmax), s(nrmax), 
      .         rco(nzetmx,0:lmaxd,nsemx),
@@ -5103,12 +5097,12 @@ C***Internal variables**
      .           l,nprin, nnodes, nodd, nrc, ir,indx,
      .           izeta
 
-               double precision
+               real(dp)
      .           rc, 
      .           dnrm, phi,
      .           g(nrmax), eorb, eps
 
-               double precision :: v(nrmax)=0.0d0
+               real(dp) :: v(nrmax)=0.0d0
 
              norb=0 
              indx=0
@@ -5217,7 +5211,7 @@ C       Written by Daniel Sanchez-Portal, July 1999
 C 
         integer  l, nrmin, nrval, ir, nrc   
 
-        double precision r(nrval),psi(nrval),psidev(nrval),
+        real(dp)  r(nrval),psi(nrval),psidev(nrval),
      .   el,vps(nrval),g(nrmax),drdi(nrmax),h(nrmax),ve(nrval), 
      .   hi, dnrm, cons, a, ortog, dnrm2
         
@@ -5514,287 +5508,6 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
 
              end subroutine prinput
 
-        SUBROUTINE CHOVERLP(IS1,IS2,RMX,CORR,CORR2)
-        integer, intent(in)   :: is1, is2
-        real(dp), intent(inout)    :: rmx
-        real(dp), intent(out)    :: corr(ntbmax), corr2(ntbmax)
-
-C  Returns a table with the difference between the electrostatic energy 
-C  of two spherical charge-densities and two punctual charges with the 
-C  same total charge as a function of the distance between the centers 
-C  of these charge densities. 
-C  Written by D.Sanchez-Portal. March, 1997.(from routine MATEL, written 
-C  by Jose M. Soler)
-
-C  INTEGER IS1,IS2             :  Species indexes.
-C  RMX                         :  Maximum range of the correction.
-COUTPUT
-C  CORR(NTBMAX)                :  Electrostatic correction energy.
-C  CORR2(NTBMAX)               :  Table with the second derivative 
-C                                 of CORR for spline interpolation.
-C  RMX                         :  Rmx is zero in output is one of 
-C                                 the 'atoms' is not an atom but 
-C                                 just a floating basis set. 
-C Distances in Bohr.
-C Energy in Rydbergs.
-
-C***INTERNAL PARAMETERS****
-C
-C Internal precision parameters  ------------------------------------
-C NQ is the number of radial points in reciprocal space.
-C Npoint , 2npoint+1 is the number of points used by POLINT in the 
-C interpolation.
-C Q2CUT is the required planewave cutoff for the expansion of
-C the 'local-pseudopotential atomic charge density'
-C  (in Ry if lengths are in Bohr).
-C CHERR is a small number to check the precision of the charge density
-C integration.
-C
-C*
-
-        integer nq, npoint, ir
-        real(dp) q2cut, cherr
-        PARAMETER ( NQ     =  512  )
-        PARAMETER ( NPOINT =  4     ) 
-        PARAMETER ( Q2CUT  =  2.5D3 )
-        PARAMETER ( CHERR   =  5.D-2 )
-
-C
-CARRAYS DECLARATION**
-C
-        real(dp) 
-     .    CH(0:NQ,2),VTB(NTBMAX,2),
-     .    V(0:NQ,2),
-     .    GRCH(3),RX(3),RAUX(2*NPOINT+1)
-
-
-          real(dp) cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
-          real(dp) r, vd, vv1, vv2, energ1, energ2, bessph, dev1, devn
-          integer iz1, iz2, itb, nr, nmin, nmax, nn, iq
-
-          real(dp) QTMP       !!! AG
-
-          PI= 4.D0 * ATAN(1.D0)       
-          CONS= 1.0d0/(2.0d0*PI)**1.5D0
-C
-C***CUT-OFF IN REAL AND RECIPROCAL SPACE**
-C
-           QMAX =  SQRT( Q2CUT )
-           RMAX = PI * NQ / QMAX
-           IF(RMX.GT.RMAX) THEN  
-              WRITE(6,*) 'CHOVERLP: THE NUMBER OF INTEGRATION',
-     .             ' POINTS MUST BE INCREASED'
-              write(6,'(a,2f15.6)') 'chovrlap: rmx,rmax =', rmx, rmax
-              call die
-           ENDIF 
-           DELT=PI/QMAX
-           C=4.0D0*PI*DELT
-           DLT=RMX/(NTBMAX-1)
-C
-C* 
-     
-
-C****RADIAL CHARGE DENSITIES(CHECKING TOTAL CHARGE)*
-C
-          IZ1=IZOFIS(IS1)
-          IZ2=IZOFIS(IS2)
-
-          IF((IZ1.LT.0.0D0).OR.(IZ2.LT.0.0D0)) THEN 
-              DO ITB=1,NTBMAX
-                 CORR(ITB)=0.0D0
-                 CORR2(ITB)=0.0D0
-              ENDDO 
-              RMX=0.0D0
-              RETURN
-          ENDIF
-
-          IZ1=IZVALFIS(IS1)
-          IZ2=IZVALFIS(IS2)
-
-
-
-          Z1=0.0D0
-          Z2=0.0D0
-
-          RX(2)=0.0D0
-          RX(3)=0.0D0 
-
-          DO IR=0,NQ
-             R=IR*DELT
-        
-             RX(1)=R
-             
-             CALL PSCH(IS1,RX,CH1,GRCH)
-             CALL PSCH(IS2,RX,CH2,GRCH)
-
-             CH(IR,1)=-CH1
-             CH(IR,2)=-CH2
-
-             Z1=Z1-C*CH1*R*R    
-             Z2=Z2-C*CH2*R*R
-
-           ENDDO
-           
-           IF((ABS(Z1-IZ1).GT.CHERR).OR.
-     .        (ABS(Z2-IZ2).GT.CHERR)) THEN 
-               WRITE(6,*) 'CHOVERLP: THE NUMBER OF INTEGRATION',
-     .           ' POINTS MUST BE INCREASED'
-               WRITE(6,*) 'CHOVERLP: Z1=',Z1,' IZ1=',IZ1
-               WRITE(6,*) 'CHOVERLP: Z2=',Z2,' IZ2=',IZ2
-             call die
-           ENDIF
-
-           DO IR=0,NQ
-             CH(IR,1)=DBLE(IZ1)*CH(IR,1)/Z1
-             CH(IR,2)=DBLE(IZ2)*CH(IR,2)/Z2
-           ENDDO 
-C
-CREAL SPACE INTEGRATION OF POISSON EQUATION***
-C          
-          
-           CALL NUMEROV(NQ,DELT,CH(0,1),V(0,1))
-           CALL NUMEROV(NQ,DELT,CH(0,2),V(0,2))
-           
-           DO ITB=1,NTBMAX
-              R=DLT*(ITB-1)
-              NR=NINT(R/DELT)
-              NMIN=MAX(0,NR-NPOINT)
-              NMAX=MIN(NQ,NR+NPOINT)
-              NN=NMAX-NMIN+1
-              DO IR=1,NN
-                 RAUX(IR)=DELT*(NMIN+IR-1) 
-              ENDDO 
-              CALL POLINT(RAUX,V(NMIN,1),NN,R,VV1,VD)
-              CALL POLINT(RAUX,V(NMIN,2),NN,R,VV2,VD)
- 
-              VTB(ITB,1)=VV1
-              VTB(ITB,2)=VV2
-           ENDDO 
-         
-C****FOURIER-TRANSFORM OF RADIAL CHARGE DENSITY****
-C
-           CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,1), CH(0:NQ,1) )
-           CALL RADFFT( 0, NQ, RMAX, CH(0:NQ,2), CH(0:NQ,2) )
-C
-
-CNEUTRALIZE CHARGE DENSITY FOR FOURIER-SPACE CALCULATION
-C
-           DO IQ=0,NQ
-              R=IQ*QMAX/NQ
-
-              CH1 = (CH(IQ,1)-IZ1*CONS)*CH(IQ,2)
-              CH2=  (CH(IQ,2)-IZ2*CONS)*CH(IQ,1)
-              
-              CH(IQ,1) = CH1
-              CH(IQ,2) = CH2
-
-           ENDDO
-C
-C****THE ELECTROSTATIC ENERGY CORRECTION IS STORED IN 'CORR'*
-C  
-            DO IR=1,NTBMAX
-
-               R=DLT*(IR-1)
-               ENERG1=0.0d0
-               ENERG2=0.0d0
-
-
-               DO IQ=0,NQ
-                  QTMP=IQ*QMAX/NQ
-                  QTMP=QTMP*R 
-                  ENERG1=ENERG1+BESSPH(0,QTMP)*CH(IQ,1)
-                  ENERG2=ENERG2+BESSPH(0,QTMP)*CH(IQ,2)
-               ENDDO 
-
-               ENERG1=ENERG1*QMAX/NQ
-               ENERG2=ENERG2*QMAX/NQ
-   
-               ENERG2=ENERG2*4.0D0*(2.0d0*PI)**2
-               ENERG1=ENERG1*4.0D0*(2.0d0*PI)**2
-              
-               ENERG1=-(ENERG1*R)-(IZ2*(VTB(IR,1)*R-IZ1))
-               ENERG2=-(ENERG2*R)-(IZ1*(VTB(IR,2)*R-IZ2))
-  
-               CORR(IR)=0.5D0*(ENERG1+ENERG2)
-
-            ENDDO 
-
-C***CREATING A TABLE WITH SECOND DERIVATIVES FOR SPLINES**
-C
-            DEV1= huge(1.d0)
-            DEVN= huge(1.d0)
-            CALL SPLINE(DLT,CORR,NTBMAX,DEV1,DEVN,CORR2)
-
-          END subroutine choverlp
-
-
-          SUBROUTINE NUMEROV(NR,DELT,Q,V)
-          integer, intent(in)  :: nr
-          real(dp), intent(in)   :: delt
-          real(dp), intent(in)   :: q(0:nr)
-          real(dp), intent(out)  :: v(0:nr)
-
-C   Being Q(r) a spherical charge density in a homogeneus radial mesh
-C   with distance DELT between consecutive points, this routine returns
-C   the electrostatic potential generated by this charge distribution.
-C   Written by D. Sanchez-Portal, March 1997.
-CINPUT****
-C   INTEGER NR      :    Number of radial points.
-C   REAL(DP)  DELT    :    Distance between consecutive points.
-C   REAL(DP)  Q(0:NR) :    Spherical charge density.
-COUTPUT***
-C   REAL(DP)  V(0:NR) :    Electrostatic potential at mesh points.
-CBEHAVIOUR
-C   Qtot/r asimptotic behaviour is imposed.
-C****
-
-          integer ir
-          real(dp) pi, fourpi, qtot, r, cons
-
-            PI=4.0D0*DATAN(1.0D0)
-            FOURPI=4.0D0*PI
-
-CNUMEROV ALGORITHM* 
-C
-             V(0)=0.0D0
-             V(1)=1.0D0
-
-             DO IR=2,NR
-              V(IR)=2.0D0*V(IR-1)-V(IR-2) - FOURPI*DELT**3*
-     .      ( Q(IR)*IR+10.0D0*Q(IR-1)*(IR-1)+Q(IR-2)*(IR-2) )/12.0D0
-             ENDDO 
-C
-C***
-
-C***CALCULATE TOTAL CHARGE***
-C
-   
-             QTOT=0.0D0
-             DO IR=1,NR
-               R=IR*DELT
-               QTOT=QTOT+R*R*Q(IR)
-             ENDDO
-             QTOT=4.0D0*PI*QTOT*DELT
-C
-C***
-
-C** FIXING QTOT/R ASIMPTOTIC BEHAVIOUR*
-C
-
-             CONS=(QTOT-V(NR))/(NR*DELT)
-             
-             DO IR=1,NR
-                R=IR*DELT
-                V(IR)=V(IR)/(IR*DELT)+CONS
-             ENDDO 
-             V(0)=(4.0D0*V(1)-V(2))/3.0D0
-C
-C***
-
-             RETURN 
-             END subroutine numerov
-
-!
 !--------------------------------------------------------------
 !
 !      The famous "Vanderbilt generalized cutoff"

@@ -1,4 +1,3 @@
-
       SUBROUTINE MATEL( OPERAT, IS1, IS2, IO1, IO2, R12, S12, DSDR )
 C *******************************************************************
 C Finds the overlap or laplacian matrix elements between two atomic

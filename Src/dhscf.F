@@ -1,4 +1,4 @@
-      subroutine dhscf( nspin, norb, iaorb, iphorb, indxuo, nuo,
+      subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
      .                  nuotot, nua, na, isa, xa, indxua, ucell, mscell, 
      .                  G2max, ntm, ifa, istr, iHmat, filrho, fildrh, 
      .                  filevh, filevt, filepsch, filetoch, maxnd, numd,
@@ -22,7 +22,6 @@ C                         nspin=4 => Noncollinear spin
 C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
-C integer indxuo        : Index of equivalent orbital in unit cell
 C integer nuo           : Number of orbitals in a unit cell
 C integer nua           : Number of atoms in unit cell
 C integer na            : Number of atoms in supercell
@@ -145,9 +144,8 @@ C
 
       integer
      .  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
-     .  iaorb(norb), ifa, iHmat, indxua(na), indxuo(norb),
-     .  iphorb(norb), isa(na), istr,
-     .  listd(*), listh(maxnh), listdptr(nuo), listhptr(nuo),
+     .  iaorb(norb), ifa, iHmat, indxua(na), iphorb(norb), isa(na), 
+     .  istr, listd(*), listh(maxnh), listdptr(nuo), listhptr(nuo),
      .  mscell(3,3), ntm(3), numd(nuo), numh(nuo)
 
       real*8
@@ -477,11 +475,11 @@ C Allocate local memory
       call memory('A','S',ntpl*nspin,'dhscf')
       allocate(Vaux(ntpl))
       call memory('A','S',ntpl,'dhscf')
-      allocate(DVxcdn(1,nspin,nspin))
+      allocate(DVxcdn(ntpl,nspin,nspin))
       call memory('A','S',1*nspin*nspin,'dhscf')
 
 C Initialization of DVxcdn
-      DVxcdn(:,:,:) = 0.0
+      DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0
 
 
 
@@ -516,8 +514,8 @@ C Create sparse indexing for Dscf as needed for local mesh
 C ----------------------------------------------------------------------
 
         if (nuo .ne. nuotot) then
-          call CreateLocalDscfPointers( nmpl, nuotot, indxuo, numd,
-     .                                  listdptr, listd, Node, Nodes)
+          call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
+     .      listd, Node, Nodes)
         endif
 
 C ----------------------------------------------------------------------
@@ -525,8 +523,7 @@ C Calculate terms relating to the neutral atoms on the mesh
 C ----------------------------------------------------------------------
 
 C Find Harris (sum of atomic) electron density
-        call rhooda( norb, indxuo, nmpl, datm, rhoatm, 
-     .               iaorb, iphorb, isa )
+        call rhooda( norb, nmpl, datm, rhoatm, iaorb, iphorb, isa )
 
 C Solve Poisson's equation to find Hartree energy of rhoatm
         call reord( rhoatm, rhoatm, nml, nsm, +1)
@@ -555,11 +552,11 @@ C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
 
       if (spiral) then
-        call rhoofdsp(norb, indxuo, nmpl, maxnd, numd, listdptr, listd,
+        call rhoofdsp(norb, nmpl, maxnd, numd, listdptr, listd,
      .                nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb,
      .                isa, qspiral)
       else
-        call rhoofd(norb, indxuo, nmpl, maxnd, numd, listdptr, listd,
+        call rhoofd(norb, nmpl, maxnd, numd, listdptr, listd,
      .              nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa)
       endif
 
@@ -866,11 +863,11 @@ C ----------------------------------------------------------------------
 
       if (iHmat .eq. 1) then
         if (spiral) then
-          call vmatsp( norb, indxuo, nmpl, dvol, nspin, Vscf, maxnd,
+          call vmatsp( norb, nmpl, dvol, nspin, Vscf, maxnd,
      .               numd, listdptr, listd, Hmat, nuo,
      .               nuotot, iaorb, iphorb, isa, qspiral )
         else
-          call vmat( norb, indxuo, nmpl, dvol, nspin, Vscf, maxnd,
+          call vmat( norb, nmpl, dvol, nspin, Vscf, maxnd,
      .               numd, listdptr, listd, Hmat, nuo,
      .               nuotot, iaorb, iphorb, isa )
         endif
@@ -922,13 +919,13 @@ C Vaux is (minus) the potential which multiplies rhoatm
 *         Vaux(1:ntpl) = 0.5d0 * Vaux(1:ntpl)
 *       endif
 
-*       call dfscf( norb, nuo, nuotot, indxuo, ifa, istr, nmpl, maxnd,
+*       call dfscf( norb, nuo, nuotot, ifa, istr, nmpl, maxnd,
 *    .              numd, listdptr, listd, Dscf, datm, dvol, volume, 
 *    .              Vscf, Vaux, DFascf, DFaatm, iaorb, indxua, iphorb, 
 *    .              isa, nspin, fal, stressl )
 
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
-     .              indxua, isa, indxuo, iaorb, iphorb,
+     .              indxua, isa, iaorb, iphorb,
      .              maxnd, numd, listdptr, listd, Dscf, datm,
      .              Vscf, Vaux, dvol, volume, fal, stressl )
 

@@ -161,7 +161,7 @@ C ......................
 
 C Read spin-spiral wavevector (if defined)..........................
       call readsp( qspiral, spiral )
-      if (spiral) then
+      if (spiral.and.Node.eq.0) then
         if (gamma) write(6,*) 
      .    'diagon: WARNING: spin-spiral requires k sampling'
         if (nspin.ne.4) write(6,*)

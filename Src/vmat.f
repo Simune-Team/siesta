@@ -1,4 +1,4 @@
-      subroutine vmat( no, indxuo, np, dvol, nspin, V, nvmax, 
+      subroutine vmat( no, np, dvol, nspin, V, nvmax, 
      .                 numVs, listVsptr, listVs, Vs, 
      .                 nuo, nuotot, iaorb, iphorb, isa )
 
@@ -12,7 +12,6 @@ C Version of vmat that use a direct algorithm to save memory.
 C Modified by J.D.Gale, November'99
 C *********************** INPUT **************************************
 C integer no              : Number of basis orbitals
-C integer indxuo(no)      : Index of equivalent atom in unit cell
 C integer np              : Number of columns in C (local)
 C real*8  dvol            : Volume per mesh point
 C integer nspin           : Number of spin components
@@ -33,7 +32,9 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use atmfuncs, only: rcut, phiatm, all_phi, nsmax=>nspecies
+      use atmfuncs,  only: rcut, phiatm, all_phi
+      use atm_types, only: nsmax=>nspecies
+      use atomlist,  only: indxuo
       use listsc_module, only: listsc
       use mesh, only: dxa, nsp, xdop, xdsp
       use meshdscf
@@ -43,7 +44,7 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   no, np, nvmax, nuo, nuotot, indxuo(no), iaorb(*), nspin,
+     .   no, np, nvmax, nuo, nuotot, iaorb(*), nspin,
      .   iphorb(*), isa(*), numVs(nuo), listVsptr(nuo), listVs(nvmax)
       real
      .   V(nsp,np,nspin)
@@ -370,20 +371,6 @@ C  Add final Vlocal to Vs
         endif
       enddo
 
-C  Free local memory
-      call memory('D','D',size(Vlocal),'vmat')
-      deallocate(Vlocal)
-      call memory('D','I',size(iorb),'vmat')
-      deallocate(iorb)
-      call memory('D','I',size(ilocal),'vmat')
-      deallocate(ilocal)
-      call memory('D','I',size(ilc),'vmat')
-      deallocate(ilc)
-      call memory('D','D',size(Clocal),'vmat')
-      deallocate(Clocal)
-      call memory('D','D',size(VClocal),'vmat')
-      deallocate(VClocal)
-
       if (Parallel) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
@@ -392,6 +379,20 @@ C Free memory
         call memory('D','D',size(DscfL),'meshdscf')
         deallocate(DscfL)
       endif
+
+C  Free local memory
+      call memory('D','D',size(VClocal),'vmat')
+      deallocate(VClocal)
+      call memory('D','D',size(Clocal),'vmat')
+      deallocate(Clocal)
+      call memory('D','D',size(Vlocal),'vmat')
+      deallocate(Vlocal)
+      call memory('D','I',size(iorb),'vmat')
+      deallocate(iorb)
+      call memory('D','I',size(ilc),'vmat')
+      deallocate(ilc)
+      call memory('D','I',size(ilocal),'vmat')
+      deallocate(ilocal)
 
       call timer('vmat',2)
       return

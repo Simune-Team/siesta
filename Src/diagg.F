@@ -96,12 +96,12 @@ C
      .  listh(maxnh), numh(nuo), listhptr(nuo),
      .  listd(maxnd), numd(nuo), listdptr(nuo)
 
-      double precision
+      real*8
      .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), Entropy,
      .  eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
      .  qtot, qs(nspin), S(maxnh), stepf, temp, efs(nspin)
      
-      double precision
+      real*8
      .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin), 
      .  aux(5*nuotot)
 
@@ -114,9 +114,10 @@ C
 C  Internal variables .............................................
       integer           ie, io, iio, ispin, ix, j, jo, BNode, iie, ind,
      .                  BTest, ierror, nd
-      double precision  ee, pipj, qe, t, k(3)
+      integer, allocatable, save :: HighestOccupiedBand(:)
+      logical           lfound
+      real*8            ee, pipj, qe, t, k(3)
 C  ....................
-
 
 C Solve eigenvalue problem .........................................
       do ispin = 1,nspin
@@ -143,19 +144,17 @@ C Solve eigenvalue problem .........................................
         endif
 
         if (getPSI) then
-           do ix=1,3
-             k(ix)=0.0d0
-           enddo
-           call writew(nuotot,nuo,1,k,ispin,
+          do ix = 1,3
+            k(ix) = 0.0d0
+          enddo
+          call writew(nuotot,nuo,1,k,ispin,
      .                eo(1,ispin),psi(1,1,ispin),.true.)
         endif
 
       enddo
-C ....................
 
 C Check if we are done ................................................
       if (.not.getD) return
-C ....................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
@@ -165,7 +164,6 @@ C Find new Fermi energy and occupation weights ........................
         call fermid( nspin, nspin, 1, 1.d0, maxo, no, eo, 
      .             temp, qtot, qo, ef, Entropy )
       endif
-C ....................
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -179,18 +177,29 @@ C Find weights for local density of states ............................
           enddo
         enddo
       endif
-C ....................
       
+C Create pointer to highest occupied band
+      allocate(HighestOccupiedBand(nspin))
+      do ispin = 1,nspin
+        io = 0
+        lfound = .false.
+        do while (io.lt.nuotot.and..not.lfound)
+          io = io + 1
+          lfound = (abs(qo(io,ispin)).lt.1.0d-12)
+        enddo
+        HighestOccupiedBand(ispin) = io
+      enddo
+
 C New density and energy-density matrices of unit-cell orbitals .......
       nd = listdptr(nuo) + numd(nuo)
-      Dnew(1:nd,1:nspin) = 0.d0
-      Enew(1:nd,1:nspin) = 0.d0
+      Dnew(1:nd,1:nspin) = 0.0d0
+      Enew(1:nd,1:nspin) = 0.0d0
 
 C Global operation to form new density matrix
       do ispin = 1,nspin
         BNode = 0
         iie = 0
-        do ie = 1,nuotot
+        do ie = 1,HighestOccupiedBand(ispin)
           if (Node.eq.BNode) then
             iie = iie + 1
             do j = 1,nuotot
@@ -225,6 +234,8 @@ C Global operation to form new density matrix
           endif
         enddo
       enddo
-C ....................
+
+C Free local memory
+      deallocate(HighestOccupiedBand)
 
       end

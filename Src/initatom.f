@@ -20,11 +20,17 @@
 
       use fdf
       use precision
-      use basis_types
+      use basis_types, only: basis_specs_transfer, nsp
       use basis_specs
-      use basis_io
-      use old_atmfuncs
+
+      use basis_io, only: read_basis_ascii, read_basis_netcdf
+      use basis_io, only: dump_basis_ascii, dump_basis_netcdf
+      use basis_io, only: dump_basis_xml
+
+      use old_atmfuncs, only: nsmax, allocate_old_arrays
+      use old_atmfuncs, only: clear_tables, deallocate_old_arrays
       use atom
+      use electrostatic, only: elec_corr_setup
 
       implicit none
 
@@ -47,23 +53,23 @@ c Reading input for the pseudopotentials and atomic orbitals
       if (user_basis_netcdf) then
 
          write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
-         call read_basis_netcdf
+         call read_basis_netcdf()
 
       else if (user_basis) then
 
          write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
-         call read_basis_ascii
+         call read_basis_ascii()
 
       else
 !
 !     New routines in basis_specs and basis_types.
 !
-         call read_basis_specs
-         call basis_specs_transfer
+         call read_basis_specs()
+         call basis_specs_transfer()
 
          nsmax = nsp             !! For old_atmfuncs
-         call allocate_old_arrays
-         call clear_tables
+         call allocate_old_arrays()
+         call clear_tables()
 
          do is = 1,nsp
             call write_basis_specs(6,is)
@@ -80,13 +86,15 @@ c Reading input for the pseudopotentials and atomic orbitals
 
 !        Create the new data structures for atmfuncs.
 
-         call transfer
+         call transfer()
+         call deallocate_old_arrays()
+         call elec_corr_setup()
 
       endif
 
-      call dump_basis_ascii
-      call dump_basis_netcdf
-      call dump_basis_xml
+      call dump_basis_ascii()
+      call dump_basis_netcdf()
+      call dump_basis_xml()
 
       end subroutine initatom
 
