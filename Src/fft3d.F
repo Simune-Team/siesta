@@ -45,13 +45,18 @@ C
 C  Local variables
 C
       integer
+     .  maxmaxtrigs, ntrigs,
      .  n1, n2, n3, n2l, n3l, CMeshG(3), CMeshL(3),
      .  i, n, ng, Node, Nodes, nmeshl, 
      .  ProcessorZ, IOffSet, OldMesh(3)
+      integer, save ::
+     .  maxtrigs
       logical
-     .  LocalPoints
+     .  LocalPoints, lredimension
       real*8
-     .  scale, trigs(256,3)
+     .  scale
+      real*8, dimension(:,:), allocatable, save :: 
+     .  trigs
 #ifdef MPI
       integer
      .  n1lf, nrem, Py, Pz
@@ -62,7 +67,7 @@ C
       external
      .  memory
 
-      save OldMesh, trigs
+      save OldMesh
       data OldMesh/0,0,0/
 
 C
@@ -105,14 +110,33 @@ C
       endif
 
 C
+C  Allocate trigs array
+C
+      if (.not.allocated(trigs)) then
+        maxtrigs = 256
+        allocate(trigs(maxtrigs,3))
+      endif
+C
 C  Initialise the tables for the FFT if the mesh has changed
 C
+ 10   lredimension = .false.
+      maxmaxtrigs = maxtrigs
       do i=1,3
         if (OldMesh(i).ne.Mesh(i)) then
-          call setgpfa(trigs(1:,i), Mesh(i))
+          call setgpfa(trigs(1,i), maxtrigs, ntrigs, Mesh(i))
+          if (ntrigs.gt.maxmaxtrigs) then
+            lredimension = .true.
+            maxmaxtrigs = ntrigs
+          endif
           OldMesh(i) = Mesh(i)
         endif
       enddo
+      if (lredimension) then
+        maxtrigs = maxmaxtrigs
+        deallocate(trigs)
+        allocate(trigs(maxtrigs,3))
+        goto 10
+      endif
 
 C
 C  FFT in X direction
@@ -353,10 +377,17 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
+#ifdef NODAT
+          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
+     .      MPI_real,SNode,1,ZCommunicator,RequestR,MPIerror)
+          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
+     .      MPI_real,BNode,1,ZCommunicator,RequestS,MPIerror)
+#else
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      DAT_single,SNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      DAT_single,BNode,1,ZCommunicator,RequestS,MPIerror)
+#endif
 C
 C  Wait for receive to complete
 C
@@ -431,10 +462,17 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
+#ifdef NODAT
+          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
+     .      MPI_real,BNode,1,ZCommunicator,RequestR,MPIerror)
+          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
+     .      MPI_real,SNode,1,ZCommunicator,RequestS,MPIerror)
+#else
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      DAT_single,BNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      DAT_single,SNode,1,ZCommunicator,RequestS,MPIerror)
+#endif
 C
 C  Wait for receive to complete
 C
@@ -613,10 +651,17 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
+#ifdef NODAT
+          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
+     .      MPI_real,SNode,1,YCommunicator,RequestR,MPIerror)
+          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
+     .      MPI_real,BNode,1,YCommunicator,RequestS,MPIerror)
+#else
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      DAT_single,SNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      DAT_single,BNode,1,YCommunicator,RequestS,MPIerror)
+#endif
 C
 C  Wait for receive to complete
 C
@@ -691,10 +736,17 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
+#ifdef NODAT
+          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
+     .      MPI_real,BNode,1,YCommunicator,RequestR,MPIerror)
+          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
+     .      MPI_real,SNode,1,YCommunicator,RequestS,MPIerror)
+#else
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      DAT_single,BNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      DAT_single,SNode,1,YCommunicator,RequestS,MPIerror)
+#endif
 C
 C  Wait for receive to complete
 C
@@ -3100,10 +3152,10 @@ cdir$ ivdep, shortloop
 *
 *----------------------------------------------------------------------
 *
-      SUBROUTINE SETGPFA(TRIGS,N)
+      SUBROUTINE SETGPFA(TRIGS,maxtrigs,ntrigs,N)
 *
-      REAL*8 TRIGS(*)
-      INTEGER NJ(3)
+      INTEGER maxtrigs,NJ(3),ntrigs
+      REAL*8 TRIGS(maxtrigs)
 *
 *     DECOMPOSE N INTO FACTORS 2,3,5
 *     ------------------------------
@@ -3152,13 +3204,16 @@ cdir$ ivdep, shortloop
 *
       DO 50 K = 1 , NI
       ANGLE = FLOAT(KK) * DEL
-      TRIGS(I) = COS(ANGLE)
-      TRIGS(I+1) = SIN(ANGLE)
+      if (i.lt.maxtrigs) then
+        TRIGS(I) = COS(ANGLE)
+        TRIGS(I+1) = SIN(ANGLE)
+      endif
       I = I + 2
       KK = KK + KINK
       IF (KK.GT.NI) KK = KK - NI
    50 CONTINUE
    60 CONTINUE
+      ntrigs = i
 *
       RETURN
       END

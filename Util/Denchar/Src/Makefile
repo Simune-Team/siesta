@@ -6,11 +6,18 @@ MOD_DIR=Modules
 #default: what denchar 
 default: what denchar
 #
-include arch.make
+include ../../../Src/arch.make
 #
 # Uncomment the following line for debugging support
 #
 #FFLAGS=$(FFLAGS_DEBUG)
+DEFS_MPI=
+MPI_LIBS=
+MPI_INTERFACE=
+MPI_INCLUDE=
+NETCDF_INTERFACE=
+DEFS_CDF=
+NETCDF_INCLUDE=
 #
 what:
 	@echo
@@ -106,5 +113,6 @@ clean:
 	rm -f *.mod
 	(cd fdf ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
-	(cd NetCDF ; $(MAKE) clean )
+	@if [ -d NetCDF ] ;  then (cd NetCDF && $(MAKE) clean ) ; fi
+
 

@@ -1,4 +1,4 @@
-      subroutine rdiag(h,s,n,nm,nml,maxuo,w,z,fv,ierror)
+      subroutine rdiag(h,s,n,nm,nml,maxuo,w,z,ierror)
 C ***************************************************************************
 C Subroutine  to solve all eigenvalues and eigenvectors of the
 C real general eigenvalue problem  H z = w S z,  with H and S
@@ -18,8 +18,6 @@ C integer ierror                   : Flag indicating success code for routine
 C                                  :  0 = success
 C                                  : -1 = repeat call as memory is increased
 C                                  :  1 = fatal error
-C ************************* AUXILIARY ***************************************
-C real*8  fv(5*nml)                : Auxiliary storage array
 C ************************* PARALLEL ****************************************
 C When running in parallel this routine now uses Scalapack to perform a
 C parallel matrix diagonalisation. This requires Scalapack and Blacs to
@@ -37,38 +35,79 @@ C
 C  Modules
 C
       use precision
+      use fdf
 #ifdef MPI
       use mpi
       use parallel
 #endif
       use diagmemory
+      use alloc
 
       implicit          none
 
+      type(allocDefaults) oldDefaults
 #ifdef MPI
 
-      integer           MPIerror, desch(9), descs(9), descz(9)
-      integer           nprow, npcol, ictxt, diwork, liwork, mvfound,
-     .                  mfound, nmmax
-      integer,          dimension(:), allocatable, save :: 
-     .                  iwork,iclustr,ifail 
-      double precision  abstol,orfac
-      double precision, dimension(:), allocatable, save :: 
-     .                  gap, work
-      double precision  dwork
-      logical           BlacsOK, Serial
+      integer                :: desch(9)
+      integer                :: descs(9)
+      integer                :: descz(9)
+      integer                :: MPIerror
+      integer                :: nprow
+      integer                :: npcol
+      integer                :: ictxt
+      integer                :: mvfound
+      integer                :: mfound
+      integer                :: nmmax
+      integer, pointer, save :: iclustr(:)
+      integer, pointer, save :: ifail(:)
+      real*8                 :: abstol
+      real*8                 :: orfac
+      real*8,  pointer, save :: gap(:)
+      logical                :: BlacsOK
+      logical                :: Serial
 #endif
-      character         range
-
-      integer           i1, i2, info, lwork, n, nm, nml, Node, Nodes, 
-     .                  maxuo, ierror
-      character         jobz,uplo
-      double precision  h(nml,nm), s(nml,nm), w(nml),  z(nml,maxuo), 
-     .                  fv(5*nml)
+      character              :: jobz
+      character              :: range
+      character              :: uplo
+      integer                :: i1
+      integer                :: i2
+      integer                :: ierror
+      integer                :: info
+      integer                :: liwork
+      integer                :: lwork
+      integer                :: maxuo
+      integer                :: n
+      integer                :: nm
+      integer                :: nml
+      integer                :: Node
+      integer                :: Nodes
+      integer, pointer, save :: iwork(:)
+      logical                :: DivideConquer
+      logical,          save :: nullified = .false.
+      real*8                 :: h(nml,nm)
+      real*8                 :: s(nml,nm)
+      real*8                 :: w(nml)
+      real*8                 :: z(nml,maxuo)
+      real*8,  pointer, save :: work(:)
 C ......................
 
 C Start time count
       call timer('rdiag',1)
+
+C Nullify pointers
+      if (.not.nullified) then
+        nullify( iwork )
+        nullify( work )
+#ifdef MPI
+        nullify( gap, iclustr, ifail )
+#endif
+        nullified = .true.
+      endif
+
+C Get old allocation defaults and set new ones
+      call alloc_default( old=oldDefaults,
+     .                    copy=.false., shrink=.true.,
+     .                    imin=1, routine='rdiag' )
 
 C Initialise error flag
       ierror = 0
@@ -88,34 +127,36 @@ C Set general Lapack parameters
       uplo='U'
       range='A'
 
+C Set divide and conquer option - serial only
+      if (Nodes.eq.1) then
+        DivideConquer = fdf_boolean( 'DivideAndConquer', .false. )
+      else
+        DivideConquer = .false.
+      endif
+
 #ifdef MPI
       if (.not.Serial) then
 C*****************************
 C  Parallel diagonalisation  *
 C*****************************
 C Accuracy for eigenvalues
-        abstol=1.0d-8
+        abstol = 1.0d-8
 C Accuracy for orthogonalisation
-        orfac=1.0d-3
+        orfac = 1.0d-3
 
 C Calculate sizes of workspace arrays and add margin of error
-        nmmax=(nml/Nodes)+BlockSize
-        lwork=5*nml+max(5*nml,nmmax*nml+2*BlockSize*BlockSize)+
-     .        ((nml/Nodes)+1)*nml
-        liwork=6*max(nml,Nodes+1,4)
-        lwork=nint(MemoryFactor*dble(lwork))
+        nmmax = (nml/Nodes) + BlockSize
+        lwork = 5*nml+max(5*nml,nmmax*nml+2*BlockSize*BlockSize)+
+     .          ((nml/Nodes)+1)*nml
+        liwork = 6*max(nml,Nodes+1,4)
+        lwork = nint(MemoryFactor*dble(lwork))
 
 C Allocate workspace arrays
-        allocate(work(lwork))
-        call memory('A','D',lwork,'rdiag')
-        allocate(iwork(liwork))
-        call memory('A','I',liwork,'rdiag')
-        allocate(iclustr(2*Nodes))
-        call memory('A','I',2*Nodes,'rdiag')
-        allocate(gap(Nodes))
-        call memory('A','D',Nodes,'rdiag')
-        allocate(ifail(nml))
-        call memory('A','I',nml,'rdiag')
+        call realloc( work,    1,lwork,   name='work'  )
+        call realloc( iwork,   1,liwork,  name='iwork' )
+        call realloc( gap,     1,Nodes,   name='gap'     )
+        call realloc( iclustr, 1,2*Nodes, name='iclustr' )
+        call realloc( ifail,   1,nml,     name='ifail'   )
 
 C Get Blacs context and initialise Blacs grid 
         nprow = 1
@@ -154,31 +195,62 @@ C Exit Blacs
         call blacs_gridexit( ictxt )
 
 C Deallocate workspace arrays
-        call memory('D','D',size(work),'rdiag')
-        deallocate(work)
-        call memory('D','I',size(iwork),'rdiag')
-        deallocate(iwork)
-        call memory('D','I',size(iclustr),'rdiag')
-        deallocate(iclustr)
-        call memory('D','D',size(gap),'rdiag')
-        deallocate(gap)
-        call memory('D','I',size(ifail),'rdiag')
-        deallocate(ifail)
+        call dealloc( iwork,   name='iwork'  )
+        call dealloc( work,    name='work'   )
+        call dealloc( ifail,   name='ifail'  )
+        call dealloc( iclustr, name='iclustr')
+        call dealloc( gap,     name='gap'    )
       else
 #endif
 C***************************
 C  Serial diagonalisation  *
 C***************************
-        lwork=5*nml
+        if (DivideConquer) then
+
+C Set size of workspace arrays
+          lwork = 1 + 6*nm + 2*nm*nm
+          liwork = 3 + 5*nm
+
+C Allocate workspace arrays
+          call realloc( work,  1,lwork,  name='work'  )
+          call realloc( iwork, 1,liwork, name='iwork' )
+
+C Call lapack
 #ifdef CRAY
-        call ssygv
+          call ssygvd
 #else
-        call dsygv
+          call dsygvd
 #endif
-     .    (1,jobz,uplo,n,h,nm,s,nm,w,fv,lwork,info)
-        do i1=1,n
-          do i2=1,n
-            z(i1,i2)=h(i1,i2)
+     .      (1,jobz,uplo,n,h,nm,s,nm,w,work,lwork,iwork,liwork,info)
+
+C Deallocate workspace arrays
+          call dealloc( iwork,   name='iwork'  )
+          call dealloc( work,    name='work'   )
+
+        else
+
+C Set size of workspace array
+          lwork = 5*nm
+
+C Allocate workspace array
+          call realloc( work, 1,lwork, name='work' )
+
+C Call lapack
+#ifdef CRAY
+          call ssygv
+#else
+          call dsygv
+#endif
+     .      (1,jobz,uplo,n,h,nm,s,nm,w,work,lwork,info)
+
+C Deallocate workspace array
+          call dealloc( work, name='work' )
+        endif
+
+C Copy eigenvectors into appropriate array
+        do i1 = 1,n
+          do i2 = 1,n
+            z(i2,i1) = h(i2,i1)
           enddo
         enddo
 #ifdef MPI
@@ -230,6 +302,9 @@ C Check error flag
           endif
         endif
       endif
+
+C  Restore old allocation defaults
+      call alloc_default( restore=oldDefaults )
 
 C Stop time count
       call timer('rdiag',2)

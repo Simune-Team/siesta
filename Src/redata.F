@@ -172,7 +172,7 @@ C  Internal variables .................................................
      .  ns_default, nscf_default, pmax_default
 
       integer 
-     .  Node
+     .  Node, Nodes
 
 #ifdef MPI
       integer
@@ -188,7 +188,7 @@ C  Internal variables .................................................
      .  tt_default, wmix_default, wmixk_default
 
       logical
-     .  leqi, qnch
+     .  DaC, leqi, qnch
 
       logical
      .  chebef_default, dc_default, fs_default, inspn_default, 
@@ -198,8 +198,10 @@ C  Internal variables .................................................
 C Get Node number
 #ifdef MPI
       call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
+      call MPI_Comm_Size(MPI_Comm_World,Nodes,MPIerror)
 #else
       Node = 0
+      Nodes = 1
 #endif
 
       ns = 1
@@ -302,8 +304,13 @@ C Planewave cutoff of the real space mesh ...
       endif
 C Global broadcast of values
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(g2max,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(g2max,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 C ...
 
@@ -316,8 +323,13 @@ C Net charge in the cell ...
       endif
 C Global broadcast of values
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(charnet,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(charnet,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 C ...
        
@@ -388,8 +400,13 @@ C     Density Matrix Mixing  (proportion of output DM in new input DM)
       endif
 C Global broadcast of values
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(wmix,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(wmix,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Perform linear mixing each nkick SCF iterations (to kick system
@@ -420,8 +437,13 @@ C     Density Matrix Mixing each nkick SCF iterations
       endif
 C Global broadcast of values
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(wmixkick,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(wmixkick,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Density Matrix Tolerance for achieving Self-Consistency
@@ -432,8 +454,13 @@ C     Density Matrix Tolerance for achieving Self-Consistency
      .   'redata: DM Tolerance for SCF             = ',dDtol
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(dDtol,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(dDtol,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Initial spin density: Maximum polarization, Ferro (false), AF (true)
@@ -494,6 +521,15 @@ C Method to Solve LDA Hamitonian ...
      .     'redata: Method of Calculation            = ',
      .     'Diagonalization'
         endif
+        if (Nodes.eq.1) then
+          DaC  = fdf_boolean('DivideAndConquer',.false.)
+        else
+          DaC  = .false.
+        endif
+        if (Node.eq.0) then
+          write(6,'(a,4x,l1)') 
+     .     'redata: Divide and Conquer               = ',DaC
+        endif
       else if (leqi(method,'ordern')) then
         isolve = 1
         if (Node.eq.0) then
@@ -534,8 +570,13 @@ C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
         MemoryFactor = max(MemoryFactor,1.0d0)
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(MemoryFactor,1,MPI_double_precision,0,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_Bcast(MemoryFactor,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C Memory scale factor for rdiag/cdiag - cannot be less than 1.0
@@ -544,8 +585,13 @@ C Memory scale factor for rdiag/cdiag - cannot be less than 1.0
         MemoryScale = max(MemoryScale,1.0d0)
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(MemoryScale,1,MPI_double_precision,0,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_Bcast(MemoryScale,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C Memory increasing allowed if diagonalisation fails to converge?
@@ -567,8 +613,13 @@ C Electronic temperature for Fermi Smearing ...
         endif
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(temp,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(temp,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 C ...
 
@@ -604,8 +655,13 @@ C Value of the Spin of the system (only used if fixspin = TRUE
      .     'redata: Value of the Spin of the System  = ',ts
         endif
 #ifdef MPI
+#ifdef NODAT
+        call MPI_Bcast(ts,1,MPI_double_precision,0,MPI_Comm_World,
+     .    MPIerror)
+#else
         call MPI_Bcast(ts,1,DAT_double,0,MPI_Comm_World,
      .    MPIerror)
+#endif
 #endif
       else
         ts = 0.0d0
@@ -629,8 +685,13 @@ C     Relative tolerance in total band structure energy
         etol = fdf_double('ON.etol',etol_default)
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(etol,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(etol,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Fermi level parameter
@@ -639,8 +700,13 @@ C     Fermi level parameter
         eta = fdf_physical('ON.eta',eta_default,'Ry')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(eta,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(eta,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Cutoff radius for Localized Wave Functions
@@ -649,8 +715,13 @@ C     Cutoff radius for Localized Wave Functions
         rcoor = fdf_physical('On.RcLWF',rcoor_default,'Bohr')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(rcoor,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(rcoor,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Use continumation LWF files
@@ -710,8 +781,13 @@ C     Cutoff radius to calculate the Chemical Potential by projection
      .                        rccp_default,'Bohr')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(rcoorcp,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(rcoorcp,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Temperature of the Fermi distribution to calculate the
@@ -722,8 +798,13 @@ C     Chemical potential by projection
      .                   tcp_default,'Ry')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(tcp,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(tcp,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
       beta = 1.0d0/tcp
 
@@ -902,8 +983,13 @@ C     Maximum atomic displacement in one CG step
         dxmax = fdf_physical('MD.MaxCGDispl',dxmax_default,'Bohr')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(dxmax,1,MPI_double_precision,0,MPI_Comm_World,
+     .    MPIerror)
+#else
       call MPI_Bcast(dxmax,1,DAT_double,0,MPI_Comm_World,
      .    MPIerror)
+#endif
 #endif
 
 C     Tolerance in the maximum atomic force (def 0.04 eV/Ang)
@@ -912,8 +998,13 @@ C     Tolerance in the maximum atomic force (def 0.04 eV/Ang)
         ftol = fdf_physical('MD.MaxForceTol',ftol_default,'Ry/Bohr')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(ftol,1,MPI_double_precision,0,MPI_Comm_World,
+     .    MPIerror)
+#else
       call MPI_Bcast(ftol,1,DAT_double,0,MPI_Comm_World,
      .    MPIerror)
+#endif
 #endif
 
 C     Tolerance in the maximum residual stress (var cell) def = 1 GPa 
@@ -922,8 +1013,13 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
         strtol = dabs(strtol)
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(strtol,1,MPI_double_precision,0,MPI_Comm_World,
+     .    MPIerror)
+#else
       call MPI_Bcast(strtol,1,DAT_double,0,MPI_Comm_World,
      .    MPIerror)
+#endif
 #endif
 
       if (idyn .eq. 0.and.Node.eq.0) then
@@ -965,8 +1061,13 @@ C     Length of time step for MD
         dt = fdf_physical('MD.LengthTimeStep',dt_default,'fs')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(dt,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(dt,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Quench Option
@@ -1001,8 +1102,13 @@ C      at the given temperature)
         tempinit = fdf_physical('MD.InitialTemperature',ti_default,'K')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(tempinit,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(tempinit,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
       if (Node.eq.0) then
@@ -1030,8 +1136,13 @@ C     Target Temperature
         tt = fdf_physical('MD.TargetTemperature',tt_default,'K')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(tt,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(tt,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
       
 C     Target Pressure
@@ -1040,8 +1151,13 @@ C     Target Pressure
         tp = fdf_physical('MD.TargetPressure',tp_default,'Ry/Bohr**3')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(tp,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(tp,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Mass of Nose variable
@@ -1050,8 +1166,13 @@ C     Mass of Nose variable
         mn = fdf_physical('MD.NoseMass',mn_default,'Ry*fs**2')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(mn,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(mn,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Mass of Parrinello-Rahman variables
@@ -1061,8 +1182,13 @@ C     Mass of Parrinello-Rahman variables
      .                    mpr_default,'Ry*fs**2')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(mpr,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(mpr,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
       if (Node.eq.0) then
@@ -1153,8 +1279,13 @@ C     Relaxation Time for Annealing
       endif
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(taurelax,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(taurelax,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
         
 C     Estimated Bulk modulus (for Pressure annealing)
@@ -1168,8 +1299,13 @@ C     Estimated Bulk modulus (for Pressure annealing)
         endif
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(bulkm,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(bulkm,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     Atomic displacement for force constant calculation
@@ -1178,8 +1314,13 @@ C     Atomic displacement for force constant calculation
         dx = fdf_physical('MD.FCDispl',dx_default,'Bohr')
       endif
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(dx,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(dx,1,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C     First and last atoms to displace for calculation of force constants

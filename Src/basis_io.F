@@ -994,7 +994,7 @@ C     Distances in Bohr. Energy in Rydbergs.
 
 C     Internal precision parameters  ------------------------------------
 C     NQ is the number of radial points in reciprocal space.
-C     Npoint , 2npoint+1 is the number of points used by RATINT in the 
+C     Npoint , 2npoint+1 is the number of points used by POLINT in the 
 C     interpolation.
 C     Q2CUT is the required planewave cutoff for the expansion of
 C     the 'local-pseudopotential atomic charge density'
@@ -1095,8 +1095,8 @@ C
          DO IR=1,NN
             RAUX(IR)=DELT*(NMIN+IR-1) 
          ENDDO 
-         CALL RATINT(RAUX,V(NMIN,1),NN,R,VV1,VD)
-         CALL RATINT(RAUX,V(NMIN,2),NN,R,VV2,VD)
+         CALL POLINT(RAUX,V(NMIN,1),NN,R,VV1,VD)
+         CALL POLINT(RAUX,V(NMIN,2),NN,R,VV2,VD)
  
          VTB(ITB,1)=VV1
          VTB(ITB,2)=VV2

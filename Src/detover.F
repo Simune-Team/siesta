@@ -132,8 +132,13 @@ C Broadcast copy of psi on node n to all other nodes
             enddo
           enddo
         endif
+#ifdef NODAT
+        call MPI_Bcast(psitmp(1,1,1),2*nuotot*noccmax,
+     .    MPI_double_precision,n,MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(psitmp(1,1,1),2*nuotot*noccmax,DAT_double,
      .    n,MPI_Comm_World,MPIerror)
+#endif
 
         do ie = 1,nocc
           do je = 1, noccloc
@@ -202,8 +207,13 @@ C Resize Aux2 for re-use
       call memory('A','Z',nocc*nocc,'detover')
 
 #ifdef MPI
+#ifdef NODAT
+      call MPI_AllReduce(Aux(1,1),Aux2(1,1),nocc*nocc,
+     .  MPI_double_complex,MPI_sum,MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(Aux(1,1),Aux2(1,1),nocc*nocc,DAT_dcomplex,
      .  MPI_sum,MPI_Comm_World,MPIerror)
+#endif
       Aux = Aux2
 #endif
 

@@ -77,6 +77,7 @@ MOD_OBJS=precision.o atom.o atmparams.o atmfuncs.o listsc.o \
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
+arw.o: ionew.o
 initatom.o: basis_specs.o basis_types.o basis_io.o
 atom.o: basis_types.o
 basis_specs.o: pseudopotential.o basis_types.o chemical.o
@@ -144,7 +145,7 @@ linalg.a: Libs/blas.f Libs/lapack.f
 version:
 	sed  "s/SIESTA_ARCH/${SIESTA_ARCH}/g" version.F > temp0.F
 	sed  "s/FFLAGS/${FC} ${FFLAGS}/g" temp0.F > temp.F
-	$(FC) -c $(FFLAGS) $(DEFS) temp.F
+	@($(MAKE) "FC=$(FC)" "FFLAGS=$(FFLAGS)" temp.o)
 	@rm -f temp0.F temp.F
 	@mv temp.o version.o
 	@echo
@@ -158,7 +159,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) \
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o\
           basis_io.o  chemical.o transfer.o atm_types.o\
           atmparams.o atmfuncs.o old_atmfuncs.o radial.o spher_harm.o io.o \
-	  paste.o ionew.o \
+	  paste.o memoryinfo.o memory.o ionew.o \
           chkdim.o basis_specs.o atom.o periodic_table.o\
           pseudopotential.o dot.o xc.o recipes.o arw.o radfft.o\
           bessph.o sys.o timer.o  xml.o $(SYSOBJ)

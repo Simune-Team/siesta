@@ -203,13 +203,25 @@ C Create new distribution of H and S
           enddo
         endif
         do is = 1,nspin
+#ifdef NODAT
+          call MPI_Bcast(Hnew(listhptrg(io)+1,is),numhg(io),
+     .      MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+#else
           call MPI_Bcast(Hnew(listhptrg(io)+1,is),numhg(io),DAT_double,
      .      BNode,MPI_Comm_World,MPIerror)
+#endif
         enddo
+#ifdef NODAT
+        call MPI_Bcast(Snew(listhptrg(io)+1),numhg(io),
+     .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(xijloc(1,listhptrg(io)+1),3*numhg(io),
+     .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(Snew(listhptrg(io)+1),numhg(io),DAT_double,
      .      BNode,MPI_Comm_World,MPIerror)
         call MPI_Bcast(xijloc(1,listhptrg(io)+1),3*numhg(io),DAT_double,
      .      BNode,MPI_Comm_World,MPIerror)
+#endif
       enddo
 
 C Find eigenvalues .........................................
@@ -255,8 +267,13 @@ C Globalise eigenvalues
       do ik = 1,nk
         BNode = BNode + 1
         if (BNode.eq.Nodes) BNode = 0
+#ifdef NODAT
+        call MPI_Bcast(eo(1,1,ik),nuotot*nspin,MPI_double_precision,
+     .    BNode,MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(eo(1,1,ik),nuotot*nspin,DAT_double,BNode,
      .    MPI_Comm_World,MPIerror)
+#endif
       enddo
 
 C Check if we are done ................................................
@@ -381,12 +398,21 @@ C Globalise Dnew/Enew (reference to numhg should be numd)
         call WhichNodeOrb(io,Nodes,BNode)
         call GlobalToLocalOrb(io,BNode,Nodes,iio)
         do ispin = 1,nspin
+#ifdef NODAT
+          call MPI_Reduce(Dnewloc(listhptrg(io)+1,ispin),
+     .      Dnew(listhptr(iio)+1,ispin),numhg(io),MPI_double_precision,
+     .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
+          call MPI_Reduce(Enewloc(listhptrg(io)+1,ispin),
+     .      Enew(listhptr(iio)+1,ispin),numhg(io),MPI_double_precision,
+     .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
+#else
           call MPI_Reduce(Dnewloc(listhptrg(io)+1,ispin),
      .      Dnew(listhptr(iio)+1,ispin),numhg(io),DAT_double,
      .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
           call MPI_Reduce(Enewloc(listhptrg(io)+1,ispin),
      .      Enew(listhptr(iio)+1,ispin),numhg(io),DAT_double,
      .      MPI_sum,BNode,MPI_Comm_World,MPIerror)
+#endif
         enddo
       enddo
 C ....................

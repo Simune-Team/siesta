@@ -1,300 +1,40 @@
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-C    This file contains routines taken or adapted from 
-C    'Numerical Recipes, The Art of Scientific Computing' by
-C    W.H. Press, S.A. Teukolsky, W.T. Veterling and B.P. Flannery,
-C    Cambridge U.P. 1987 and 1992.
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-C * The routines contained in this file are:
-C     SUBROUTINE RATINT
-C     SUBROUTINE SPLINE
-C     SUBROUTINE SPLINT
-C     SUBROUTINE POLINT
-C     SUBROUTINE splin
-C     SUBROUTINE splinu
-C     SUBROUTINE FOUR1
-CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
-
-
-
-
-      SUBROUTINE RATINT(XA,YA,N,X,Y,DY) 
-C*****************************************************
-C Rational  interpolation 
-C Adapted from the Numerical Recipes, 
-C Modified for double precision and combined with 
-C polinomic interpolation by D. Sanchez-Portal, 1996
-C***************************************************** 
-
-      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
-      PARAMETER (TINY=1.D-15)
-      DIMENSION XA(N),YA(N)
-      double precision, dimension(n) :: c, d
-
-      NS=1
-      HH=ABS(X-XA(1))
-      DO 11 I=1,N
-        H=DABS(X-XA(I))
-        IF (H.LT.TINY)THEN
-          Y=YA(I)
-          DY=0.0D0
-          goto 999
-        ELSE IF (H.LT.HH) THEN
-          NS=I
-          HH=H
-        ENDIF
-        C(I)=YA(I)
-        D(I)=YA(I)+TINY
-11    CONTINUE
-      Y=YA(NS)
-      NS=NS-1
-      DO 13 M=1,N-1
-        DO 12 I=1,N-M
-          W=C(I+1)-D(I)
-          H=XA(I+M)-X
-          T=(XA(I)-X)*D(I)/H
-          DD=T-C(I+1)
-          IF(DD.EQ.0.0D0)GOTO 100
-          DD=W/DD
-          D(I)=C(I+1)*DD
-          C(I)=T*DD
-12      CONTINUE
-        IF (2*NS.LT.N-M)THEN
-          DY=C(NS+1)
-        ELSE
-          DY=D(NS)
-          NS=NS-1
-        ENDIF
-        Y=Y+DY
-13    CONTINUE
-
-C*** AS RATIONAL INTERPOLATION DOES NOT CONVERGE,****************** 
-C*************WE TRY WITH A POLYNOMIAL ONE*************************
-
-
-100   CALL POLINT(XA,YA,N,X,Y,DY)
-
-C Exit point
-  999 continue
-
-      RETURN
-      END
-
-
-
-
-
-      SUBROUTINE SPLINE(DELT,Y,N,YP1,YPN,Y2) 
-C****************************************************** 
-C Cubic Spline Interpolation.
-C Adapted from Numerical Recipes routines for an uniform 
-C grid.
-C D. Sanchez-Portal, Oct. 1996.
-C*****************************************************
-
-      IMPLICIT DOUBLE PRECISION(A-H,O-Z)
-      DIMENSION Y(N),Y2(N)
-
-      double precision U(N)  ! automatic array
-    
-      IF (YP1.GT..99D30) THEN
-        Y2(1)=0.0D0
-        U(1)=0.0D0
-      ELSE
-        Y2(1)=-0.5D0
-        U(1)=(3.0D0/DELT)*((Y(2)-Y(1))/DELT-YP1)
-      ENDIF
-      DO 11 I=2,N-1
-        SIG=0.5D0
-        P=SIG*Y2(I-1)+2.0D0
-        Y2(I)=(SIG-1.0D0)/P
-        U(I)=(3.0D0*( Y(I+1)+Y(I-1)-2.0D0*Y(I) )/(DELT*DELT)
-     *      -SIG*U(I-1))/P
-11    CONTINUE
-      IF (YPN.GT..99D30) THEN
-        QN=0.0D0
-        UN=0.0D0
-      ELSE
-        QN=0.5D0
-        UN=(3.0D0/DELT)*(YPN-(Y(N)-Y(N-1))/DELT)
-      ENDIF
-      Y2(N)=(UN-QN*U(N-1))/(QN*Y2(N-1)+1.D0)
-      DO 12 K=N-1,1,-1
-        Y2(K)=Y2(K)*Y2(K+1)+U(K)
-12    CONTINUE
-      RETURN
-      END
-
-
-
-
-
-
-      SUBROUTINE SPLINT(DELT,YA,Y2A,N,X,Y,DYDX) 
-C******************************************************
-C Cubic Spline Interpolation.
-C Adapted from Numerical Recipes routines for an uniform
-C grid.
-C D. Sanchez-Portal, Oct. 1996.
-C*****************************************************
-
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-
-
-      DIMENSION YA(N),Y2A(N)
-      
-      NLO=INT(X/DELT)+1
-      NHI=NLO+1
-
- 
-      IF (DELT.EQ.0.D0) PAUSE 'Bad DELT input.'
-
-      A=NHI-X/DELT-1
-      B=1.0D0-A
-      Y=A*YA(NLO)+B*YA(NHI)+
-     *      ((A**3-A)*Y2A(NLO)+(B**3-B)*Y2A(NHI))*(DELT**2)/6.D0
-
-      DYDX=(YA(NHI)-YA(NLO))/DELT +
-     * (-((3*(A**2)-1.D0)*Y2A(NLO))+
-     * (3*(B**2)-1.D0)*Y2A(NHI))*DELT/6.D0
-      RETURN
-      END
-
-
-
-
-
-
-
-      SUBROUTINE POLINT(XA,YA,N,X,Y,DY) 
-C*****************************************************
-C Polinomic interpolation
-C Adapted from Numerical Recipes for double precision,
-C D. Sanchez-Portal, Oct. 1996
-C*****************************************************
-
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DIMENSION XA(N),YA(N)
-
-      double precision, dimension(n) :: c, d
-
-      NS=1
-      DIF=DABS(X-XA(1))
-      DO 11 I=1,N 
-        DIFT=DABS(X-XA(I))
-        IF (DIFT.LT.DIF) THEN
-          NS=I
-          DIF=DIFT
-        ENDIF
-        C(I)=YA(I)
-        D(I)=YA(I)
-11    CONTINUE
-      Y=YA(NS)
-      NS=NS-1
-      DO 13 M=1,N-1
-        DO 12 I=1,N-M
-          HO=XA(I)-X
-          HP=XA(I+M)-X
-          W=C(I+1)-D(I)
-          DEN=HO-HP
-          IF(DEN.EQ.0.0D0)PAUSE
-          DEN=W/DEN
-          D(I)=HP*DEN
-          C(I)=HO*DEN
-12      CONTINUE
-        IF (2*NS.LT.N-M)THEN
-          DY=C(NS+1)
-        ELSE
-          DY=D(NS)
-          NS=NS-1
-        ENDIF
-        Y=Y+DY
-13    CONTINUE
-
-      RETURN
-      END
-C  (C) Copr. 1986-92 Numerical Recipes Software !E#.
-
-
-
-      SUBROUTINE splin(x,y,n,yp1,ypn,y2)
-C This is routine spline of Num. Recipes with the name changed.
-C J.M.Soler, April'96.
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DIMENSION x(n),y(n),y2(n)
-
-      double precision, dimension(n) ::  u  ! automatic array
-
-      if (yp1.gt..99d30) then
-        y2(1)=0.0d0
-        u(1)=0.0d0
-      else
-        y2(1)=-0.5d0
-        u(1)=(3.d0/(x(2)-x(1)))*((y(2)-y(1))/(x(2)-x(1))-yp1)
-      endif
-      do 11 i=2,n-1
-        sig=(x(i)-x(i-1))/(x(i+1)-x(i-1))
-        p=sig*y2(i-1)+2.0d0
-        y2(i)=(sig-1.d0)/p
-        u(i)=(6.0d0*((y(i+1)-y(i))/(x(i+
-     *1)-x(i))-(y(i)-y(i-1))/(x(i)-x(i-1)))/(x(i+1)-x(i-1))-sig*
-     *u(i-1))/p
-11    continue
-      if (ypn.gt..99d30) then
-        qn=0.0d0
-        un=0.0d0
-      else
-        qn=0.5d0
-        un=(3.0d0/(x(n)-x(n-1)))*(ypn-(y(n)-y(n-1))/(x(n)-x(n-1)))
-      endif
-      y2(n)=(un-qn*u(n-1))/(qn*y2(n-1)+1.d0)
-      do 12 k=n-1,1,-1
-        y2(k)=y2(k)*y2(k+1)+u(k)
-12    continue
-      DO 20 I=1,N
-C        WRITE(*,*)'x(',I,') = ',x(I)
-C        WRITE(*,*)'y(',I,') = ',y(I)
-C        WRITE(*,*)'y2(',I,') = ',y2(I)
-20    CONTINUE
-
-      return
-      END
-C  (C) Copr. 1986-92 Numerical Recipes Software !E#.
-
-
-
-
-      SUBROUTINE splinu(xmin,xmax,ya,y2a,n,x,y,dy)
-C Adapted from the routine splint of Num. Recipes for a uniform grid.
-C J.M.Soler, April'96.
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DIMENSION y2a(n),ya(n)
-      h=(xmax-xmin)/(n-1)
-      klo=(x-xmin)/h+1
-      klo=max(1,klo)
-      klo=min(klo,n-1)
-      khi=klo+1
-      hy=(ya(khi)-ya(klo))/h
-      if (h.eq.0.d0) pause 'bad xa input in splint'
-      a=(xmin+(khi-1)*h-x)/h
-      b=(x-xmin-(klo-1)*h)/h
-      y=a*ya(klo)+b*ya(khi)+((a**3-a)*y2a(klo)+(b**3-b)*y2a(khi))*(h**
-     *2)/6.d0
-      dy=(h*y2a(klo)/6.d0)*((-3.d0)*a**2+1.d0)+
-     *   (h*y2a(khi)/6.d0)*(3.d0*b**2-1.d0)+hy
-
-      return
-      END
+!**********************************************************************
+!    This file contains routines adapted from 'Numerical Recipes, 
+!    The Art of Scientific Computing' by W.H. Press, S.A. Teukolsky, 
+!    W.T. Veterling and B.P. Flannery, Cambridge U.P. 1987 and 1992.
+!**********************************************************************
+! The routines contained in this file are:
+!     SUBROUTINE FOUR1
+!     SUBROUTINE POLINT
+!     SUBROUTINE SPLINE
+!     SUBROUTINE SPLINT
+!**********************************************************************
 
 
       SUBROUTINE FOUR1(DATA,NN,ISIGN)
-C Converted to double precision from same routine in
-C "Numerical Recipes", W.Press et al, Cambridge U.P., 1st ed.
-      IMPLICIT REAL*8 (A-H,O-Z)
-      REAL*8 WR,WI,WPR,WPI,WTEMP,THETA
-      DIMENSION DATA(*)
+!**********************************************************************
+! Discrete Fourier transform. Modified and converted to double 
+! precision from same routine in Numerical Recipes.
+!**********************************************************************
+! Input:
+!   real*8  DATA(NN) : Function to be Fourier transformed
+!   integer NN       : Number of points. Must be a power of 2
+!   integer ISIGN    : ISIG=+1/-1 => Direct/inverse transform
+! Output:
+!   real*8  DATA(NN) : Fourier transformed function
+!**********************************************************************
+      IMPLICIT NONE
+      INTEGER          :: NN, ISIGN
+      DOUBLE PRECISION :: DATA(NN)
+
+      INTEGER          :: I, ISTEP, J, M, MMAX, N
+      DOUBLE PRECISION :: TEMPI, TEMPR, THETA, WI, WPI, WPR, WR, WTEMP
+      DOUBLE PRECISION, PARAMETER :: TWOPI=6.28318530717959D0,
+     .  HALF=0.5D0, ONE=1.D0, TWO=2.D0, ZERO=0.D0
+
       N=2*NN
       J=1
-      DO 11 I=1,N,2
+      DO I=1,N,2
         IF(J.GT.I)THEN
           TEMPR=DATA(J)
           TEMPI=DATA(J+1)
@@ -304,23 +44,24 @@ C "Numerical Recipes", W.Press et al, Cambridge U.P., 1st ed.
           DATA(I+1)=TEMPI
         ENDIF
         M=N/2
-1       IF ((M.GE.2).AND.(J.GT.M)) THEN
+        DO ! until following condition is met
+          IF ((M.LT.2).OR.(J.LE.M)) EXIT
           J=J-M
           M=M/2
-        GO TO 1
-        ENDIF
+        END DO
         J=J+M
-11    CONTINUE
+      END DO ! I
       MMAX=2
-2     IF (N.GT.MMAX) THEN
+      DO ! until following condition is met
+        IF (N.LE.MMAX) EXIT
         ISTEP=2*MMAX
-        THETA=6.28318530717959D0/(ISIGN*MMAX)
-        WPR=(-2.D0)*DSIN(0.5D0*THETA)**2
-        WPI=DSIN(THETA)
-        WR=1.D0
-        WI=0.D0
-        DO 13 M=1,MMAX,2
-          DO 12 I=M,N,ISTEP
+        THETA=TWOPI/(ISIGN*MMAX)
+        WPR=(-TWO)*SIN(HALF*THETA)**2
+        WPI=SIN(THETA)
+        WR=ONE
+        WI=ZERO
+        DO M=1,MMAX,2
+          DO I=M,N,ISTEP
             J=I+MMAX
             TEMPR=WR*DATA(J)-WI*DATA(J+1)
             TEMPI=WR*DATA(J+1)+WI*DATA(J)
@@ -328,16 +69,170 @@ C "Numerical Recipes", W.Press et al, Cambridge U.P., 1st ed.
             DATA(J+1)=DATA(I+1)-TEMPI
             DATA(I)=DATA(I)+TEMPR
             DATA(I+1)=DATA(I+1)+TEMPI
-12        CONTINUE
+          END DO ! I
           WTEMP=WR
           WR=WR*WPR-WI*WPI+WR
           WI=WI*WPR+WTEMP*WPI+WI
-13      CONTINUE
+        END DO ! M
         MMAX=ISTEP
-      GO TO 2
+      END DO ! until (N.LE.MMAX)
+
+      END SUBROUTINE FOUR1
+
+
+
+      SUBROUTINE POLINT(XA,YA,N,X,Y,DY) 
+!*****************************************************************
+! Polinomic interpolation. Modified and adapted to double 
+! precision from same routine of Numerical Recipes.
+! D. Sanchez-Portal, Oct. 1996
+!*****************************************************************
+! Input:
+!   real*8  XA(N) : x values of the function y(x) to interpolate
+!   real*8  YA(N) : y values of the function y(x) to interpolate
+!   integer N     : Number of data points
+!   real*8  X     : x value at which the interpolation is desired
+! Output:
+!   real*8  Y     : interpolated value of y(x) at X
+!   real*8  DY    : accuracy estimate
+!*****************************************************************
+
+      IMPLICIT NONE
+      INTEGER          :: N
+      DOUBLE PRECISION :: XA(N),YA(N), X, Y, DY
+
+      INTEGER          :: I, M, NS
+      DOUBLE PRECISION :: C(N), D(N), DEN, DIF, DIFT, HO, HP, W
+      DOUBLE PRECISION, PARAMETER :: ZERO=0.D0
+
+      NS=1
+      DIF=ABS(X-XA(1))
+      DO I=1,N 
+        DIFT=ABS(X-XA(I))
+        IF (DIFT.LT.DIF) THEN
+          NS=I
+          DIF=DIFT
+        ENDIF
+        C(I)=YA(I)
+        D(I)=YA(I)
+      END DO ! I
+      Y=YA(NS)
+      NS=NS-1
+      DO M=1,N-1
+        DO I=1,N-M
+          HO=XA(I)-X
+          HP=XA(I+M)-X
+          W=C(I+1)-D(I)
+          DEN=HO-HP
+          IF (DEN.EQ.ZERO) STOP 'polint: ERROR. Two XAs are equal'
+          DEN=W/DEN
+          D(I)=HP*DEN
+          C(I)=HO*DEN
+        END DO ! I
+        IF (2*NS.LT.N-M) THEN
+          DY=C(NS+1)
+        ELSE
+          DY=D(NS)
+          NS=NS-1
+        ENDIF
+        Y=Y+DY
+      END DO ! M
+
+      END SUBROUTINE POLINT
+
+
+
+      SUBROUTINE SPLINE(DX,Y,N,YP1,YPN,Y2) 
+!*********************************************************** 
+! Cubic Spline Interpolation. Adapted from Numerical Recipes 
+! routine of same name for a uniform grid and double precision
+! D. Sanchez-Portal, Oct. 1996.
+! Input:
+!   real*8  DX   : x interval between data points
+!   real*8  Y(N) : value of y(x) at data points
+!   integer N    : number of data points
+!   real*8  YP1  : value of dy/dx at X1 (first point)
+!   real*8  YPN  : value of dy/dx at XN (last point)
+! Output:
+!   real*8  Y2(N): array to be used by routine SPLINT
+! Behavior:
+! - If YP1 or YPN are larger than 1E30, the natural spline
+!   condition (d2y/dx2=0) at the corresponding edge point.
+!************************************************************
+
+      IMPLICIT NONE
+      INTEGER          :: N
+      DOUBLE PRECISION :: DX, Y(N), YP1, YPN, Y2(N)
+
+      INTEGER          :: I, K
+      DOUBLE PRECISION :: QN, P, SIG, U(N), UN
+      DOUBLE PRECISION, PARAMETER :: YPMAX=0.99D30, 
+     .  HALF=0.5D0, ONE=1.D0, THREE=3.D0, TWO=2.D0, ZERO=0.D0
+    
+      IF (YP1.GT.YPMAX) THEN
+        Y2(1)=ZERO
+        U(1)=ZERO
+      ELSE
+        Y2(1)=-HALF
+        U(1)=(THREE/DX)*((Y(2)-Y(1))/DX-YP1)
       ENDIF
-      RETURN
-      END
+      DO I=2,N-1
+        SIG=HALF
+        P=SIG*Y2(I-1)+TWO
+        Y2(I)=(SIG-ONE)/P
+        U(I)=(THREE*( Y(I+1)+Y(I-1)-TWO*Y(I) )/(DX*DX)
+     .       -SIG*U(I-1))/P
+      END DO ! I
+      IF (YPN.GT.YPMAX) THEN
+        QN=ZERO
+        UN=ZERO
+      ELSE
+        QN=HALF
+        UN=(THREE/DX)*(YPN-(Y(N)-Y(N-1))/DX)
+      ENDIF
+      Y2(N)=(UN-QN*U(N-1))/(QN*Y2(N-1)+ONE)
+      DO K=N-1,1,-1
+        Y2(K)=Y2(K)*Y2(K+1)+U(K)
+      END DO ! K
+
+      END SUBROUTINE SPLINE
 
 
 
+      SUBROUTINE SPLINT(DX,YA,Y2A,N,X,Y,DYDX) 
+!***************************************************************
+! Cubic Spline Interpolation. Adapted from Numerical Recipes 
+! routine of same name for a uniform grid, double precision,
+! and to return the function derivative in addition to its value
+! D. Sanchez-Portal, Oct. 1996.
+! Input:
+!   real*8  DX    : x interval between data points
+!   real*8  YA(N) : value of y(x) at data points
+!   real*8  Y2A(N): array returned by routine SPLINE
+!   integer N     : number of data points
+!   real*8  X     : point at which interpolation is desired
+!   real*8  Y     : interpolated value of y(x) at point X
+!   real*8  DYDX  : interpolated value of dy/dx at point X
+!***************************************************************
+
+      IMPLICIT NONE
+      INTEGER          :: N
+      DOUBLE PRECISION :: DX, YA(N), Y2A(N), X, Y, DYDX
+
+      INTEGER          :: NHI, NLO
+      DOUBLE PRECISION :: A, B
+      DOUBLE PRECISION, PARAMETER ::
+     .    ONE=1.D0, THREE=3.D0, SIX=6.D0, ZERO=0.D0
+
+      IF (DX.EQ.ZERO) STOP 'splint: ERROR: DX=0'
+      NLO=INT(X/DX)+1
+      NHI=NLO+1
+      A=NHI-X/DX-1
+      B=ONE-A
+      Y=A*YA(NLO)+B*YA(NHI)+
+     .  ((A**3-A)*Y2A(NLO)+(B**3-B)*Y2A(NHI))*(DX**2)/SIX
+      DYDX=(YA(NHI)-YA(NLO))/DX+
+     .     (-((THREE*(A**2)-ONE)*Y2A(NLO))+
+     .     (THREE*(B**2)-ONE)*Y2A(NHI))*DX/SIX
+
+      END SUBROUTINE SPLINT

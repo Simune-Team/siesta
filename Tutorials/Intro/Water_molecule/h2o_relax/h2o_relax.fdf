@@ -23,3 +23,7 @@ MD.num-cg-steps 50              # sanity limit
 MD.max-force-tol 0.04 eV/ang
 #
 Mesh-Cutoff  100 Ry
+#
+Write-Coor-XMOL .true.
+Use-Save-CG   .true.
+Use-Save-XV   .true.

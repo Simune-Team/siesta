@@ -62,7 +62,12 @@ c Get Node number
 #endif
 
 c Find out if there is spiral arrangement of spins
-      spiral = fdf_block('SpinSpiral',iu)
+      if (Node.eq.0) then
+        spiral = fdf_block('SpinSpiral',iu)
+      endif
+#ifdef MPI
+      call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
 
 c Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +

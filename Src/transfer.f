@@ -125,7 +125,7 @@
             spp%orbnl_n(i) = spp%orb_n(io)
 !!            spp%orbnl_n(i) = nsm_pol(io)
             spp%orbnl_z(i) = z_normal(io)
-	    spp%orbnl_pop(i) = qtb(io,is) * (2*l+1)
+            spp%orbnl_pop(i) = qtb(io,is) * (2*l+1)
             spp%orbnl_ispol(i) = .false.
 
             op => spp%orbnl(i)
@@ -154,7 +154,7 @@
             spp%orbnl_n(i) = spp%orb_n(io)
 !!            spp%orbnl_n(i) = nsm_pol(io)
             spp%orbnl_z(i) = z_pol(io)
-	    spp%orbnl_pop(i) = qtb(io,is) * (2*l+1)
+            spp%orbnl_pop(i) = qtb(io,is) * (2*l+1)
             spp%orbnl_ispol(i) = .true.
 
             op => spp%orbnl(i)

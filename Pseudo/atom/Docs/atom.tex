@@ -755,14 +755,18 @@ The file itself is:
 
 	\item Chemical symbol of the nucleus (here {\tt Si}, obviously)
 	\item Exchange-correlation type. Here, {\tt ca} stands for
-          Ceperley-Alder. Other options (to be removed) are {\tt wi}
+          Ceperley-Alder. Other options are {\tt wi}
           (Wigner), {\tt hl} (Hedin-Lundqvist), {\tt gl}
           (Gunnarson-Lundqvist), and {\tt bh} (von Barth-Hedin). The
           ``best'' LDA choice should be {\tt ca}.  It is also possible
           to use a gradient-corrected functional: {\tt pb} indicates use
           of the GGA scheme by Perdew, Burke, and Ernzerhof (PRL 77,
-          3865 (1996).
-
+          3865 (1996), and {\tt bl} selects the BLYP (Becke-Lee-Yang-Parr)
+          GGA scheme (see source file {\tt xc.f} for more details)
+	  By default, the exchange-correlation energy and potential
+	  are computed using the Soler-Balb\'as package, except for
+	  the {\tt wi}, {\tt hl}, {\tt gl}, and {\tt bh} flavors. 
+   
 	\item The character {\tt r} next to {\tt ca} is a flag to perform the
           calculation relativistically, that is, solving the Dirac equation
           instead of the Schrodinger equation. 
@@ -922,7 +926,7 @@ scheme:
         ker     2.00
    Si   ca
          0
-    3    3
+    3    2
     3    0      2.00
     3    1      2.00
       1.80      1.80      0.00       0.0       0.0       0.0
@@ -974,12 +978,18 @@ Currently, the program understands the following {\tt NAME}s:
                    version.
      (The defaults are: use a denser grid up to larger radii.
               Use a larger value for the pseudopotential
-cutoff point.  Use the Soler-Balbas XC package)  
+cutoff point.  Use the Soler-Balbas XC package.)  
                                                                           
 \item  {\tt NEW\_CC:} New core-correction scheme
 \item {\tt OLD\_CC:}  Old core-correction scheme  (see Sect.~\ref{sec:cc})
  
-\item {\tt NO\_PS\_CUTOFFS:} Avoid cutting off the tails of the pseudopotentials.
+\item {\tt USE\_OLD\_EXCORR:} Use the old exchange-correlation package.
+
+\item {\tt NO\_PS\_CUTOFFS:} Avoid cutting off the tails of the
+pseudopotentials. Currently, a simple exponential tapering function is
+used, which introduces a discontinuity in the first derivative of the
+ionic pseudopotential.
+
 \end{itemize}
 
 

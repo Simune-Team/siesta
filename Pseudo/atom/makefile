@@ -9,22 +9,30 @@
 #
 FC= f77
 FFLAGS= -O
+LDFLAGS=
 AUX_OBJS= auxosf.o
 #----------------------------------------------$$$$$
 #
-SRCS=   atm.f  nucl_z.f   difnrl.f   difrel.f   dmixp.f   dsolv1.f   \
-        pseudo.f  wf.f  hsc.f  excorr.f \
-        tm2.f  ker.f  wrapup.f   splift.f   spliq.f  \
-        velect.f   vionic.f   wtrans.f   v0pp.f  chg_mism.f  \
-        dsolv2.f   etotal.f   ext.f  input.f  header.f orban.f   \
-        potran.f   potrv.f potrvs.f  potrw.f   prdiff.f  string.f  root.f  \
-        genrhs.f  logder.f ode.f denplot.f scilib.f  recipes.f \
-	atomxc.f  ldaxc.f ggaxc.f pbexc.f pw92xc.f pzxc.f \
-	pw92c.f exchng.f compat_params.f blypxc.f pcc_exp.f \
-	coreq.f get_unit.f gauleg.f divdif.f symbols.f prversion.f\
-        change_valence.f
 #
-OBJS=$(SRCS:.f=.o)
+XC_OBJS= xc.o
+#
+# Replace definition above with line below to use the 
+# old Soler-Balbas XC routines.
+#
+#XC_OBJS= atomxc.o  ldaxc.o ggaxc.o pbexc.o pw92xc.o pzxc.o \
+#        pw92c.o exchng.o
+#
+MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
+        pseudo.o  wf.o  hsc.o  excorr.o \
+        tm2.o  ker.o  wrapup.o   splift.o   spliq.o  \
+        velect.o   vionic.o   wtrans.o   v0pp.o  chg_mism.o  \
+        dsolv2.o   etotal.o   ext.o  input.o  header.o orban.o   \
+        potran.o   potrv.o potrvs.o  potrw.o   prdiff.o  string.o  root.o  \
+        genrhs.o  logder.o ode.o denplot.o scilib.o  recipes.o \
+	compat_params.o  pcc_exp.o  change_valence.o \
+	coreq.o get_unit.o gauleg.o divdif.o symbols.o prversion.o\
+#
+OBJS= $(MAIN_OBJS) $(XC_OBJS)
 #
 atm:  $(OBJS) $(AUX_OBJS)   
 	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS)

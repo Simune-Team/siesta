@@ -262,12 +262,21 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(hl,maxnhg,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(sl,maxnhg,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
         call MPI_Bcast(hl,maxnhg,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
         call MPI_Bcast(sl,maxnhg,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
+#endif
 #endif
 
 C Find cscc=(2-ct*S*c)*ct and chcc=(ct*H*c+2eta(1-ct*S*c))*ct.
@@ -396,8 +405,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
+#endif
 #endif
 
         do i = 1,nbandsloc
@@ -476,8 +490,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
+#endif
 #endif
 
         do i = 1,nbandsloc
@@ -577,8 +596,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(chccl(1,1),nfmaxg*nloc,MPI_double_precision,
+     .    nn-1,MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(chccl(1,1),nfmaxg*nloc,DAT_double,
      .    nn-1,MPI_Comm_World,MPIerror)
+#endif
 #endif
 
 C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
@@ -620,8 +644,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(chccl(1,1),nfmaxg*nloc,MPI_double_precision,
+     .    nn-1,MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(chccl(1,1),nfmaxg*nloc,DAT_double,
      .    nn-1,MPI_Comm_World,MPIerror)
+#endif
 
 C Find dm=c*cscc and edm=c*chcc. Only the nonzero elements of H.
         do n = 1,nbasisloc
@@ -681,8 +710,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .    MPI_Comm_World,MPIerror)
+#endif
 
 C Build pointer to local orbitals for current working Node
         do m = 1,nbasis
@@ -757,8 +791,13 @@ C Calculate total output charge ...
         qout = qout + dm(i) * s(i)
       enddo
 #ifdef MPI
+#ifdef NODAT
+      call MPI_AllReduce(qout,rtmp,1,MPI_double_precision,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(qout,rtmp,1,DAT_double,MPI_sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       qout = rtmp
 #endif
       if (Node.eq.0) then

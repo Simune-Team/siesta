@@ -75,6 +75,12 @@ C      Other variables converted into parameters by J.M.Soler
        PARAMETER ( CXP  = - 3.D0 * ALP / (PI*A0) )
        PARAMETER ( CXF  = 1.25992104989487319D0 )
 
+cag    Do not attempt to do anything with very small densities,
+cag    as vx can blow up with some compilers (pgi, old versions of g77)
+cag
+       real*8 threshold
+       parameter (threshold = 1.0d-30)
+cag
        integer isp
        real*8 d, ex, ec, z, fz, fzp, rs, vxp, exp_var, beta, sb,
      $        alb, vxf, exf, sqrs, te, be, ecp, vcp, ecf, vcf,
@@ -84,7 +90,7 @@ c      Find density and polarization
 
        IF (NSP .EQ. 2) THEN
          D = DS(1) + DS(2)
-         IF (D .LE. ZERO) THEN
+         IF (D .LE. THRESHOLD) THEN
            EX = ZERO
            EC = ZERO
            VX(1) = ZERO
@@ -100,7 +106,7 @@ C
          FZP = FTRD*((ONEZ+Z)**TRD-(ONEZ-Z)**TRD)/TFTM 
        ELSE
          D = DS(1)
-         IF (D .LE. ZERO) THEN
+         IF (D .LE. THRESHOLD) THEN
            EX = ZERO
            EC = ZERO
            VX(1) = ZERO

@@ -1,0 +1,23 @@
+Silicon, the archetypal semiconductor.
+
+Si:  Focus on the covalent bonding.
+     Look at the charge density.
+
+Si (more): You can carry out 
+           total-energy calculations
+           for different lattice constants
+           to predict the equilibrium 
+           volume and the bulk modulus.
+	   (See README.fit for details)
+           
+
+Si_strele: Electronic Structure.
+           You will get the bands and
+           the Density of States.
+           Use 
+              sh bands.sh
+
+	   and
+        	gnuplot dos.gplot
+ 
+	   

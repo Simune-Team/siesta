@@ -9,12 +9,12 @@ C Finds total exchange-correlation energy and potential in a
 C   periodic cell.
 C This version implements the Local (spin) Density Approximation and
 C   the Generalized-Gradient-Aproximation with the 'explicit mesh 
-C   functional' method of White & Bird, PRB 50, 4954 (1994).
+C   functional' approach of White & Bird, PRB 50, 4954 (1994).
 C Gradients are 'defined' by numerical derivatives, using 2*NN+1 mesh
 C   points, where NN is a parameter defined below
-C Ref: L.C.Balbas et al, cond-mat/0104171
-C Coded by L.C.Balbas and J.M.Soler. December 1996.
-C Stress added by J.L.Martins and J.M.Soler. August 1997.
+C Ref: L.C.Balbas et al, PRB 64, 165110 (2001)
+C Wrtten by J.M.Soler using algorithms developed by 
+C   L.C.Balbas, J.L.Martins and J.M.Soler, Dec.1996 - Aug.1997
 C Parallel version written by J.Gale. June 1999.
 C Argument DVXCDN added by J.Junquera. November 2000.
 C ************************* INPUT ***********************************
@@ -178,7 +178,8 @@ C MPI related variables
      .  NSwap, NDummy, IDen1, IDen2, IOut, INN, MeshDum(3), 
      .  Requests(4), Request, Status(MPI_Status_Size), NReq,
      .  Statuss(MPI_Status_Size,4), Tag, Pleft2, Pright2,
-     .  Pleft3, Pright3, PzMod, PyMod, NMeshPN, JPNN(3,-NN:NN)
+     .  Pleft3, Pright3, PzMod, PyMod, NMeshPN, JPNN(3,-NN:NN),
+     .  nmax, nrleft, nrright, nsleft, nsright
       double precision 
      .  Buffer(4),Buffer2(4)
       logical 
@@ -186,10 +187,10 @@ C MPI related variables
 
       real, dimension(:,:,:), allocatable, save :: 
      .  bdens, bvxc
+      real, dimension(:,:), allocatable, save :: 
+     .  bbuffer, dbuffer
       integer, dimension(:,:), allocatable, save :: 
-     .  PMesh, Statm
-      integer, dimension(:), allocatable, save :: 
-     .  Reqm
+     .  PMesh
 #endif
 
 C Local variables and arrays
@@ -246,12 +247,6 @@ C If GGA and the number of processors is greater than 1 then we need
 C to exchange border densities so that the density derivatives can
 C be calculated.
       if (GGA.and.Nodes.gt.1) then
-
-C Allocate request and status storage
-        allocate(Reqm(4*NMESH(3)))
-        call memory('A','I',4*NMESH(3),'cellxc')
-        allocate(Statm(MPI_Status_Size,4*NMESH(3)))
-        call memory('A','I',4*NMESH(3)*MPI_Status_Size,'cellxc')
 
 C Work out processor grid dimensions
         if (mod(Nodes,ProcessorY).gt.0) then
@@ -354,35 +349,89 @@ C Find size of mesh at nodes to be exchanged with
             PMesh(ix,4) = PMesh(ix,4)*NSM
           enddo
 
-C Loop over points of buffer region
-          do in = 1,nn
+C Find sizes of transfer arrays
+          nrleft = PMesh(1,3)*PMesh(2,3)*nn*nspin
+          nrright = PMesh(1,4)*PMesh(2,4)*nn*nspin
+          nsleft = NSPAN(1)*NSPAN(2)*nn*nspin
+          nsright = NSPAN(1)*NSPAN(2)*nn*nspin
 
-C Loop over spins
+C Allocate arrays for data storage
+          nmax = max(nrleft,nrright)
+          allocate(bbuffer(nmax,2))
+          nmax = max(nsleft,nsright)
+          allocate(dbuffer(nmax,2))
+
+C Build buffer transfer data array
+          nsleft = 0
+          nsright = 0
+          do in = 1,nn
             do is = 1,nspin
 
-C Post density receive
-              NSwap = PMesh(1,3)*PMesh(2,3)
-              call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,DAT_single,
-     $             Pleft3,1,MPI_Comm_World,Requests(1),MPIerror)
-              NSwap = PMesh(1,4)*PMesh(2,4)
-              call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,DAT_single,
-     $             Pright3,2,MPI_Comm_World,Requests(2),MPIerror)
-
-C Post density send
+C Collect data to be sent
               NSwap = NSPAN(1)*NSPAN(2)
-              IDen1 = NSwap*(NMESH(3)-in)+1
-              call MPI_ISend(dens(IDen1,is),NSwap,DAT_single,Pright3,
-     .          1,MPI_Comm_World,Requests(3),MPIerror)
-              IDen1 = NSwap*(in-1)+1
-              call MPI_ISend(dens(IDen1,is),NSwap,DAT_single,Pleft3,
-     .          2,MPI_Comm_World,Requests(4),MPIerror)
+              IDen1 = NSwap*(NMESH(3)-in)
+              dbuffer(nsright+1:nsright+NSwap,2) = 
+     .          dens(IDen1+1:IDen1+NSwap,is)
+              nsright = nsright + NSwap
 
-C Wait for transfers to complete
-              call MPI_WaitAll(4,Requests,Statuss,MPIerror)
+              IDen1 = NSwap*(in-1)
+              dbuffer(nsleft+1:nsleft+NSwap,1) = 
+     .          dens(IDen1+1:IDen1+NSwap,is)
+              nsleft = nsleft + NSwap
 
             enddo
-
           enddo
+
+C Transfers
+#ifdef NODAT
+          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_real,
+     .      Pleft3,1,MPI_Comm_World,Requests(1),MPIerror)
+          call MPI_IRecv(bbuffer(1,2),nrright,MPI_real,
+     .      Pright3,2,MPI_Comm_World,Requests(2),MPIerror)
+          call MPI_ISend(dbuffer(1,1),nsleft,MPI_real,
+     .      Pleft3,2,MPI_Comm_World,Requests(3),MPIerror)
+          call MPI_ISend(dbuffer(1,2),nsright,MPI_real,
+     .      Pright3,1,MPI_Comm_World,Requests(4),MPIerror)
+#else
+          call MPI_IRecv(bbuffer(1,1),nrleft,DAT_single,
+     .      Pleft3,1,MPI_Comm_World,Requests(1),MPIerror)
+          call MPI_IRecv(bbuffer(1,2),nrright,DAT_single,
+     .      Pright3,2,MPI_Comm_World,Requests(2),MPIerror)
+          call MPI_ISend(dbuffer(1,1),nsleft,DAT_single,
+     .      Pleft3,2,MPI_Comm_World,Requests(3),MPIerror)
+          call MPI_ISend(dbuffer(1,2),nsright,DAT_single,
+     .      Pright3,1,MPI_Comm_World,Requests(4),MPIerror)
+#endif
+
+C Wait for transfers to complete
+          call MPI_WaitAll(4,Requests,Statuss,MPIerror)
+
+C Barrier - just in case
+          call MPI_Barrier(MPI_Comm_World,MPIerror)
+
+C Place transferred data in correct arrays
+          nrleft = 0
+          nrright = 0
+          do in = 1,nn
+            do is = 1,nspin
+
+C Sort received data
+              NSwap = PMesh(1,3)*PMesh(2,3)
+              bdens(1:NSwap,2*nn+in,is) = 
+     .          bbuffer(nrleft+1:nrleft+NSwap,1)
+              nrleft = nrleft + NSwap
+
+              NSwap = PMesh(1,4)*PMesh(2,4)
+              bdens(1:NSwap,3*nn+in,is) = 
+     .          bbuffer(nrright+1:nrright+NSwap,2)
+              nrright = nrright + NSwap
+
+            enddo
+          enddo
+
+C Free arrays for data storage
+          deallocate(bbuffer)
+          deallocate(dbuffer)
 
         endif
 
@@ -407,52 +456,99 @@ C Find size of mesh at nodes to be exchanged with
             PMesh(ix,2) = PMesh(ix,2)*NSM
           enddo
 
-C Loop over points of buffer region
-          do in = 1,nn
+C Find size of transfer arrays
+          nrleft = PMesh(1,1)*PMesh(3,1)*nn*nspin
+          nrright = PMesh(1,2)*PMesh(3,2)*nn*nspin
+          nsleft = NSPAN(1)*NMESH(3)*nn*nspin
+          nsright = NSPAN(1)*NMESH(3)*nn*nspin
 
-C Loop over spins
+C Allocate transfer arrays
+          nmax = max(nrleft,nrright)
+          allocate(bbuffer(nmax,2))
+          nmax = max(nsleft,nsright)
+          allocate(dbuffer(nmax,2))
+
+C Fill data array for sending
+          nsleft = 0
+          nsright = 0
+          do in = 1,nn
+            do is = 1,nspin
+
+C Post density sends
+              NSwap = NSPAN(1)
+              IDen1 = (NSPAN(2)-in)*NSPAN(1)
+              do ix = 1,NMESH(3)
+                dbuffer(nsright+1:nsright+NSwap,2) =
+     .            dens(IDen1+1:IDen1+NSwap,is)
+                nsright = nsright + NSwap
+                IDen1 = IDen1 + NSPAN(1)*NSPAN(2)
+              enddo
+              IDen1 = (in-1)*NSPAN(1)
+              do ix = 1,NMESH(3)
+                dbuffer(nsleft+1:nsleft+NSwap,1) =
+     .            dens(IDen1+1:IDen1+NSwap,is)
+                nsleft = nsleft + NSwap
+                IDen1 = IDen1 + NSPAN(1)*NSPAN(2)
+              enddo
+
+            enddo
+          enddo
+
+C Transfers
+#ifdef NODAT
+          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_real,
+     .      Pleft2,1,MPI_Comm_World,Requests(1),MPIerror)
+          call MPI_IRecv(bbuffer(1,2),nrright,MPI_real,
+     .      Pright2,2,MPI_Comm_World,Requests(2),MPIerror)
+          call MPI_ISend(dbuffer(1,1),nsleft,MPI_real,
+     .      Pleft2,2,MPI_Comm_World,Requests(3),MPIerror)
+          call MPI_ISend(dbuffer(1,2),nsright,MPI_real,
+     .      Pright2,1,MPI_Comm_World,Requests(4),MPIerror)
+#else
+          call MPI_IRecv(bbuffer(1,1),nrleft,DAT_single,
+     .      Pleft2,1,MPI_Comm_World,Requests(1),MPIerror)
+          call MPI_IRecv(bbuffer(1,2),nrright,DAT_single,
+     .      Pright2,2,MPI_Comm_World,Requests(2),MPIerror)
+          call MPI_ISend(dbuffer(1,1),nsleft,DAT_single,
+     .      Pleft2,2,MPI_Comm_World,Requests(3),MPIerror)
+          call MPI_ISend(dbuffer(1,2),nsright,DAT_single,
+     .      Pright2,1,MPI_Comm_World,Requests(4),MPIerror)
+#endif
+
+C Wait for transfers to complete
+          call MPI_WaitAll(4,Requests,Statuss,MPIerror)
+
+C Barrier - just in case
+          call MPI_Barrier(MPI_Comm_World,MPIerror)
+
+C Place data in required array location
+          nrleft = 0
+          nrright = 0
+          do in = 1,nn
             do is = 1,nspin
 
 C Post density receives
               do ix = 1,PMesh(3,1)
                 NSwap = PMesh(1,1)
-                IDen1 = (ix-1)*PMesh(1,1)+1
-                call MPI_IRecv(bdens(IDen1,in,is),NSwap,DAT_single,
-     .            Pleft2,ix,MPI_Comm_World,Reqm(ix),MPIerror)
+                IDen1 = (ix-1)*PMesh(1,1)
+                bdens(IDen1+1:IDen1+NSwap,in,is) =
+     .            bbuffer(nrleft+1:nrleft+NSwap,1)
+                nrleft = nrleft + NSwap
               enddo
-              NReq = PMesh(3,1)
               do ix = 1,PMesh(3,2)
                 NSwap = PMesh(1,2)
-                IDen1 = (ix-1)*PMesh(1,2)+1
-                call MPI_IRecv(bdens(IDen1,nn+in,is),NSwap,DAT_single,
-     .            Pright2,PMesh(3,1)+ix,MPI_Comm_World,Reqm(NReq+ix),
-     .            MPIerror)
+                IDen1 = (ix-1)*PMesh(1,2)
+                bdens(IDen1+1:IDen1+NSwap,nn+in,is) =
+     .            bbuffer(nrright+1:nrright+NSwap,2)
+                nrright = nrright + NSwap
               enddo
-              NReq = NReq + PMesh(3,2)
-
-C Post density sends
-              NSwap = NSPAN(1)
-              IDen1 = (NSPAN(2)-in)*NSPAN(1) + 1
-              do ix = 1,NMESH(3)
-                call MPI_ISend(dens(IDen1,is),NSwap,DAT_single,Pright2,
-     .            ix,MPI_Comm_World,Reqm(NReq+ix),MPIerror)
-                IDen1 = IDen1 + NSPAN(1)*NSPAN(2)
-              enddo
-              NReq = NReq + NMESH(3)
-              IDen1 = (in-1)*NSPAN(1) + 1
-              do ix = 1,NMESH(3)
-                call MPI_ISend(dens(IDen1,is),NSwap,DAT_single,Pleft2,
-     .            NMESH(3)+ix,MPI_Comm_World,Reqm(NReq+ix),MPIerror)
-                IDen1 = IDen1 + NSPAN(1)*NSPAN(2)
-              enddo
-              NReq = NReq + NMESH(3)
-
-C Wait for transfers to complete
-              call MPI_WaitAll(NReq,Reqm,Statm,MPIerror)
 
             enddo
-
           enddo
+
+C Free arrays for data storage
+          deallocate(bbuffer)
+          deallocate(dbuffer)
 
         endif
 
@@ -944,21 +1040,39 @@ C Loop over spins
 C Post VXC receive
               NSwap = NSPAN(1)*NSPAN(2)
               Tag = 8*in + 2*is
+#ifdef NODAT
+              call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,MPI_real,
+     $             Pleft3,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
+              call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,MPI_real,
+     $             Pright3,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
+#else
               call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,DAT_single,
      $             Pleft3,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
               call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,DAT_single,
      $             Pright3,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
+#endif
 
 C Post VXC send
               NSwap = PMesh(1,4)*PMesh(2,4)
+#ifdef NODAT
+              call MPI_ISend(bvxc(1,3*nn+in,is),NSwap,MPI_real,
+     .          Pright3,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
+#else
               call MPI_ISend(bvxc(1,3*nn+in,is),NSwap,DAT_single,
      .          Pright3,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
+#endif
               NSwap = PMesh(1,3)*PMesh(2,3)
+#ifdef NODAT
+              call MPI_ISend(bvxc(1,2*nn+in,is),NSwap,MPI_real,
+     .          Pleft3,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
+#else
               call MPI_ISend(bvxc(1,2*nn+in,is),NSwap,DAT_single,
      .          Pleft3,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
+#endif
 
 C Wait for transfers to complete
               call MPI_WaitAll(4,Requests,Statuss,MPIerror)
+              call MPI_Barrier(MPI_Comm_World,MPIerror)
 
             enddo
 
@@ -978,21 +1092,39 @@ C Loop over spins
 C Post VXC receives
               NSwap = NSPAN(1)*NSPAN(3)
               Tag = 8*in + 2*is
+#ifdef NODAT
+              call MPI_IRecv(bdens(1,in,is),NSwap,MPI_real,
+     .          Pleft2,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
+              call MPI_IRecv(bdens(1,nn+in,is),NSwap,MPI_real,
+     .          Pright2,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
+#else
               call MPI_IRecv(bdens(1,in,is),NSwap,DAT_single,
      .          Pleft2,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
               call MPI_IRecv(bdens(1,nn+in,is),NSwap,DAT_single,
      .          Pright2,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
+#endif
 
 C Post VXC sends
               NSwap = PMesh(1,2)*PMesh(3,2)
+#ifdef NODAT
+              call MPI_ISend(bvxc(1,nn+in,is),NSwap,MPI_real,
+     .          Pright2,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
+#else
               call MPI_ISend(bvxc(1,nn+in,is),NSwap,DAT_single,
      .          Pright2,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
+#endif
               NSwap = PMesh(1,1)*PMesh(3,1)
+#ifdef NODAT
+              call MPI_ISend(bvxc(1,in,is),NSwap,MPI_real,
+     .          Pleft2,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
+#else
               call MPI_ISend(bvxc(1,in,is),NSwap,DAT_single,
      .          Pleft2,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
+#endif
 
 C Wait for transfers to complete
               call MPI_WaitAll(4,Requests,Statuss,MPIerror)
+              call MPI_Barrier(MPI_Comm_World,MPIerror)
 
             enddo
 
@@ -1111,8 +1243,13 @@ C Collect together quantities
       Buffer(2) = EC
       Buffer(3) = DX
       Buffer(4) = DC
+#ifdef NODAT
+      call MPI_AllReduce(Buffer,Buffer2,4,MPI_double_precision,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(Buffer,Buffer2,4,DAT_double,MPI_sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       EX = Buffer2(1)
       EC = Buffer2(2)
       DX = Buffer2(3)
@@ -1126,12 +1263,6 @@ C Free memory
         deallocate(bvxc)
         call memory('D','I',size(PMesh),'cellxc')
         deallocate(PMesh)
-      endif
-      if (GGA.and.Nodes.gt.1) then
-        call memory('D','I',size(Reqm),'cellxc')
-        deallocate(Reqm)
-        call memory('D','I',size(Statm),'cellxc')
-        deallocate(Statm)
       endif
 #endif
 

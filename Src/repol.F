@@ -129,7 +129,12 @@ c check for block and read
 
 #ifdef MPI
 C Globalise output
+#ifdef NODAT
+      call MPI_Bcast(displ,3,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(displ,3,DAT_double,0,MPI_Comm_World,MPIerror)
+#endif
       call MPI_Bcast(nmeshk(1,1),9,MPI_integer,0,MPI_Comm_World,
      .  MPIerror)
 #endif

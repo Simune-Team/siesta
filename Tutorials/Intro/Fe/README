@@ -1,0 +1,13 @@
+An example of spin-polarized calculation
+for bulk Fe.
+
+Use bands.sh for band structure plotting.
+(The Fermi level is the first number
+in Fe.bands)
+
+Look in the Out file for data regarding
+the magnetic moment and other relevant
+magnitudes.
+
+Density of States: Use the dos.gplot
+script.

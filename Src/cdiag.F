@@ -38,6 +38,7 @@ C ***************************************************************************
 C
 C Modules
       use precision
+      use fdf
 #ifdef MPI
       use mpi
       use parallel
@@ -56,23 +57,43 @@ C Arguments
       real*8 h_2(2,nh,n), s_2(2,ns,n), z_2(2,nz,n)
 
 C Internal varables and arrays
-      integer           i1,i2,info,lwork,lrwork,Node,Nodes
-      character         jobz,uplo
-      double precision, pointer, save :: rwork(:)
-      logical, save  :: nullified=.false.
+      character               :: jobz
+      character               :: uplo
+      integer                 :: i1
+      integer                 :: i2
+      integer                 :: info
+      integer                 :: lwork
+      integer                 :: liwork
+      integer                 :: lrwork
+      integer                 :: Node
+      integer                 :: Nodes
+      integer,  pointer, save :: iwork(:)
+      logical,           save :: nullified = .false.
+      logical                 :: DivideConquer
+      real*8,   pointer, save :: rwork(:)
+      real*8,   pointer, save :: work(:,:)
       type(allocDefaults) oldDefaults
 #ifdef MPI
-      integer           MPIerror, desch(9), descs(9), descz(9)
-      integer           nprow, npcol, ictxt, liwork,
-     .                  mfound, mvfound
-      integer, pointer, save :: iclustr(:),ifail(:),iwork(:)
-      double precision  abstol,orfac
-      double precision, pointer, save :: gap(:), work(:,:)
-      double complex    dwork(1)
-      double precision  drwork(1)
-      integer           diwork(1)
-      logical           BlacsOK, Serial
-      character         range
+      integer                 :: desch(9)
+      integer                 :: descs(9)
+      integer                 :: descz(9)
+      integer                 :: MPIerror
+      integer                 :: nprow
+      integer                 :: npcol
+      integer                 :: ictxt
+      integer                 :: mfound
+      integer                 :: mvfound
+      integer,  pointer, save :: iclustr(:)
+      integer,  pointer, save :: ifail(:)
+      real*8                  :: abstol
+      real*8                  :: orfac
+      real*8,   pointer, save :: gap(:)
+      complex*16              :: dwork(1)
+      real*8                  :: drwork(1)
+      integer                 :: diwork(1)
+      logical                 :: BlacsOK
+      logical                 :: Serial
+      character               :: range
 #endif
 C ......................
 
@@ -81,12 +102,14 @@ C Start time count
 
 C Nullify pointers
       if (.not.nullified) then
+        nullify( iwork )
         nullify( rwork )
+        nullify( work )
 #ifdef MPI
-        nullify( gap, iclustr,ifail, iwork, work )
+        nullify( gap, iclustr, ifail )
 #endif
         nullified = .true.
-      end if
+      endif
 
 C Get old allocation defaults and set new ones
       call alloc_default( old=oldDefaults,
@@ -113,6 +136,14 @@ C Set general Lapack parameters
         jobz='V'
       endif
       uplo='U'
+
+C Set divide and conquer option - serial only
+      if (Nodes.eq.1) then
+        DivideConquer = fdf_boolean( 'DivideAndConquer', .false. )
+      else
+        DivideConquer = .false.
+      endif
+
 #ifdef MPI
       if (.not.Serial) then
 C*****************************
@@ -209,26 +240,60 @@ C***************************
 C Serial: call lapack routine chegv/zhegv
 C Matrix z used for auxiliary space 
 
-        lwork=nh*n
-        lrwork=3*n-2
-        call realloc( rwork, 1,lrwork, name='rwork' )
+        if (DivideConquer) then
+
+C Set size of workspace arrays
+          lwork = 2*n + 2*n*n
+          lrwork = 1 + 5*n + 2*n*n
+          liwork = 3 + 5*n
+
+C Allocate workspace arrays
+          call realloc( work, 1,2, 1,lwork,  name='work'  )
+          call realloc( rwork,     1,lrwork, name='rwork' )
+          call realloc( iwork,     1,liwork, name='iwork' )
+
+C Call lapack
+#ifdef CRAY
+          call chegvd
+#else
+          call zhegvd
+#endif
+     .      (1,jobz,uplo,n,h_2,nh,s_2,ns,w,work,lwork,rwork,lrwork,
+     .       iwork,liwork,info)
+
+C Deallocate workspace arrays
+          call dealloc( iwork,   name='iwork'  )
+          call dealloc( rwork,   name='rwork'  )
+          call dealloc( work,    name='work'   )
+
+        else
+
+C Set size of workspace arrays
+          lwork = nh*n
+          lrwork = 3*n - 2
+
+C Allocate workspace array
+          call realloc( rwork, 1,lrwork, name='rwork' )
 
 #ifdef CRAY
-        call chegv
+          call chegv
 #else
-        call zhegv
+          call zhegv
 #endif
-     .    (1,jobz,uplo,n,h_2,nh,s_2,ns,w,z_2,lwork,rwork,info)
+     .      (1,jobz,uplo,n,h_2,nh,s_2,ns,w,z_2,lwork,rwork,info)
 
-        call dealloc( rwork, name='rwork' )
+C Deallocate workspace array
+          call dealloc( rwork, name='rwork' )
+        endif
 
 C Move eigenvectors to correct storage location
-        do i2=1,n
-          do i1=1,nh
+        do i2 = 1,n
+          do i1 = 1,nh
             z_2(1,i1,i2)=h_2(1,i1,i2)
             z_2(2,i1,i2)=h_2(2,i1,i2)
           enddo
         enddo
+
 #ifdef MPI
       endif
 #endif
@@ -281,6 +346,6 @@ C Move eigenvectors to correct storage location
 C  Restore old allocation defaults
       call alloc_default( restore=oldDefaults )
 
-c  stop time count
+C  Stop time count
       call timer('cdiag',2)
       end

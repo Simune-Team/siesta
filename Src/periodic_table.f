@@ -7,145 +7,153 @@
 
       CONTAINS
 
-      SUBROUTINE QVLOFZ(IZ,QVAL)  
 
-C Returns an array with the atomic ground states 
-C populations.
-C Input: IZ atomic number
-C Written by A.R.Williams 
+      SUBROUTINE QVLOFZ( Z, QVAL )  
+C Returns the atomic LSD ground state configurations, as an array with 
+C valence population for each angular momentum L. The valence orbitals 
+C for each L are those returned by routine LMXOFZ
+C Originally written by A.R.Williams. Modified by J.M.Soler
 
-      integer, intent(in)  :: iz
-      real(dp), intent(out) :: qval(0:)
+      integer,  intent(in)  :: Z        ! Atomic number
+      real(dp), intent(out) :: QVAL(0:) ! Valence charge for each L
 
-      integer lmax, izmax, nchng
-      PARAMETER (LMAX=3,IZMAX=98,NCHNG=15)
-      real(dp)  :: Q(0:LMAX,0:IZMAX)
-      integer   :: NVAL(0:5),N(0:LMAX),IZCHNG(NCHNG),LCHNG(NCHNG)
+      integer, parameter :: LMAX=3, ZMAX=98, NCHNG=15
+      integer :: I, ICHNG, L, LMXATM, LMXCHM, LCHNG(NCHNG),
+     .           N(0:LMAX), NVAL(0:5), Q(0:LMAX,0:ZMAX), ZCHNG(NCHNG)
 
-      integer i, l, ichng, lmxchm, lmxatm
+      ! Notice: s valence orbital switched for p occupation = 4
+      !           Li, F,Na,Cl, K,Ga,Br,Rb,In, I,Cs,Hf,Tl,At,Fr
+      DATA ZCHNG / 3, 9,11,17,19,31,35,37,49,53,55,72,81,85,87/
+      DATA LCHNG / 0, 0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1/
 
-      DATA IZCHNG /3,9,11,17,19,31,35,37,49,53,55,72,81,85,87/
-      DATA LCHNG  /0,0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1/
+      ! Notice that s valence charge must be consitent with ZCHNG
+      DATA (Q(0,I),I= 0, 2) /0,1,2/
+      DATA (Q(0,I),I= 3,10) /1,2,                      2,2,2,2,0,0/
+      DATA (Q(0,I),I=11,18) /1,2,                      2,2,2,2,0,0/
+      DATA (Q(0,I),I=19,36) /1,2, 2,2,2,1,2,2,2,2,1,2, 2,2,2,2,0,0/
+      DATA (Q(0,I),I=37,54) /1,2, 2,2,1,1,2,1,1,0,1,2, 2,2,2,2,0,0/
+      DATA (Q(0,I),I=55,71) /1,2, 2,                               14*2/
+      DATA (Q(0,I),I=72,86) /       2,2,2,2,2,2,0,1,2, 2,2,2,2,0,0/
+      DATA (Q(0,I),I=87,98) /1,2, 10*2/
 
-      DATA (Q(0,I),I= 0, 2) /0.,1.,2./
-      DATA (Q(0,I),I= 3,10) /1.,2.,  2.,2.,2.,2.,0.,0./
-      DATA (Q(0,I),I=11,18) /1.,2.,  2.,2.,2.,2.,0.,0./
-      DATA (Q(0,I),I=19,30) /1.,2.,  2.,2.,2.,1.,2.,2.,2.,2.,1.,2./
-      DATA (Q(0,I),I=31,36) /        2.,2.,2.,2.,0.,0./
-      DATA (Q(0,I),I=37,48) /1.,2.,  2.,2.,1.,1.,2.,1.,1.,0.,1.,2./
-      DATA (Q(0,I),I=49,54) /        2.,2.,2.,2.,0.,0./
-      DATA (Q(0,I),I=55,71) /1.,2.,  2.,  14*2./
-      DATA (Q(0,I),I=72,80) /           2.,2.,2.,2.,2.,2.,0.,1.,2./
-      DATA (Q(0,I),I=81,86) /        2.,2.,2.,2.,0.,0./
-      DATA (Q(0,I),I=87,98) /1.,2.,  10*2./
+      DATA (Q(1,I),I= 0, 2) / 3*0/                ! H-He
+      DATA (Q(1,I),I= 3,10) / 2*0, 1,2,3,4,5,6/   ! Li-Ne
+      DATA (Q(1,I),I=11,18) / 2*0, 1,2,3,4,5,6/   ! Na-Ar
+      DATA (Q(1,I),I=19,36) /12*0, 1,2,3,4,5,6/   ! K-Kr
+      DATA (Q(1,I),I=37,54) /12*0, 1,2,3,4,5,6/   ! Rb-Xe
+      DATA (Q(1,I),I=55,86) /26*0, 1,2,3,4,5,6/   ! Cs-Rn
+      DATA (Q(1,I),I=87,98) /12*0/                ! Fr-Cf
 
-      DATA (Q(1,I),I= 0,10) / 5*0.,1.,2.,3.,4.,5.,6./
-      DATA (Q(1,I),I=11,18) / 2*0.,1.,2.,3.,4.,5.,6./
-      DATA (Q(1,I),I=19,36) /12*0.,1.,2.,3.,4.,5.,6./
-      DATA (Q(1,I),I=37,54) /12*0.,1.,2.,3.,4.,5.,6./
-      DATA (Q(1,I),I=55,86) /26*0.,1.,2.,3.,4.,5.,6./
-      DATA (Q(1,I),I=87,98) /12*0./
+      DATA (Q(2,I),I= 0,36) /21*0, 1,2,3,5,5,6,7, 8,10,10, 6*0/
+      DATA (Q(2,I),I=37,54) / 2*0, 1,2,4,5,5,7,8,10,10,10, 6*0/
+      DATA (Q(2,I),I=55,71) / 2*0, 1,                      6*0,1,6*0,1/
+      DATA (Q(2,I),I=72,86) /        2,3,4,5,6,7,10,10,10, 6*0/
+      DATA (Q(2,I),I=87,98) / 2*0, 1,2,1,1,3*0,1,2,1/
 
-      DATA (Q(2,I),I= 0,30) /21*0.,1.,2.,3.,5.,5.,6.,7., 8.,10.,10./
-      DATA (Q(2,I),I=31,48) / 8*0.,1.,2.,4.,5.,5.,7.,8.,10.,10.,10./
-      DATA (Q(2,I),I=49,71) / 8*0.,1.,  6*0.,1.,6*0.,1./
-      DATA (Q(2,I),I=72,80) /         2.,3.,4.,5.,6.,7.,10.,10.,10./
-      DATA (Q(2,I),I=81,98) / 8*0.,1.,2.,1.,1.,3*0.,1.,2.,1./
-
-      DATA (Q(3,I),I= 0,64) /58*0.,2.,3.,4.,5.,6.,7.,7./
-      DATA (Q(3,I),I=65,71) /      9.,10.,11.,12.,13.,14.,14./
-      DATA (Q(3,I),I=72,98) /18*0.,0.,2.,3.,5.,6.,7.,7.,7.,9./
+      DATA (Q(3,I),I= 0,71) /58*0, 2,3,4,5,6,7,7,9,10,11,12,13,14,14/
+      DATA (Q(3,I),I=72,98) /18*0, 0,2,3,5,6,7,7,7,9/
  
-      qval(:) = 0.0_dp
+      IF (Z.GT.ZMAX) call die('QVLOFZ: ERROR: Z out of range')
 
-      IF (IZ.GT.IZMAX) call die('QVLOFZ: IZ GREATER THAN IZMAX')
-
-      DO 10 L=0,LMAX
+      ! Find the principal quantum numbers assigned by my own data
+      DO L=0,LMAX
          N(L)=L+1
-  10  CONTINUE
-      DO 20 ICHNG=1,NCHNG
-         IF (IZ.LT.IZCHNG(ICHNG)) GOTO 20
+      END DO
+      DO ICHNG=1,NCHNG
+         IF (ZCHNG(ICHNG).GT.Z) EXIT
          L=LCHNG(ICHNG)
          N(L)=N(L)+1
-  20  CONTINUE
-      CALL LMXOFZ (IZ,LMXCHM,LMXATM)
-      CALL CNFIG (IZ,NVAL)
-      DO 30 L=0,LMXCHM
-         IF (NVAL(L).LT.N(L)) QVAL(L)=2*(2*L+1)+Q(L,IZ)
-         IF (NVAL(L).EQ.N(L)) QVAL(L)=Q(L,IZ)
-         IF (NVAL(L).GT.N(L)) QVAL(L)=0
-  30  CONTINUE
+      END DO
+
+      ! Find the valence principal quantum numbers assigned by GNFIG
+      CALL LMXOFZ (Z,LMXCHM,LMXATM)
+      CALL CNFIG (Z,NVAL)
+
+      ! Check size of QVAL and initialize it (for L>LMXCHM)
+      IF (UBOUND(QVAL,1).LT.LMXCHM) 
+     .  call die('QVLOFZ: ERROR: Size of QVAL too small')
+      QVAL(:) = 0
+
+      ! Make valence occupation consistent with CNFIG valence assignment
+      DO L=0,LMXCHM
+        IF (NVAL(L).GT.N(L)) THEN
+          QVAL(L)=0
+        ELSE
+          QVAL(L) = Q(L,Z) + 2*(2*L+1)*(N(L)-NVAL(L))
+        ENDIF
+      END DO
+
       END subroutine qvlofz
 
 
-      SUBROUTINE LMXOFZ (Z,LMXCHM,LMXATM) 
+      SUBROUTINE LMXOFZ( Z, LMXVAL, LMXATM ) 
+C Given the atomic number Z, returns the maximum angular mometum L
+C which is populated in the atomic ground state configuration:
+C For the valence orbitals => LMXVAL. For any orbitals => LMXATM
+C Originally written by A.R.Williams. Modified by J.M.Soler
 
-C Returns the maximum angular mometum populated in the 
-C atomic ground state configuration LMXATM, and for the 
-C valence shell LMXCHM
-C Input: Z atomic number
-C Written by A.R.Williams 
+      integer,intent(in) :: Z      ! Atomic number
+      integer,intent(out):: LMXVAL ! Max. L for valence states
+      integer,intent(out):: LMXATM ! Max. L for valence and core states
 
-      integer, intent(in)  ::  z
-      integer, intent(out) ::  lmxchm, lmxatm
+      integer, parameter :: NCHNG=17
+      integer :: ICHNG, LCHNG(NCHNG), ZCHNG(NCHNG)
 
-      integer, PARAMETER   :: NCHNG=17
-      INTEGER ZCHNG(NCHNG),LCHNG(NCHNG)
+      !            B,Na,Al, K,Sc,Ga,Rb, Y,In,Cs,La,Ce,Hf,Tl,Fr,Ac,Th
+      DATA ZCHNG / 5,11,13,19,21,31,37,39,49,55,57,58,72,81,87,89,90/
+      DATA LCHNG / 1, 0, 1, 0, 2, 1, 0, 2, 1, 0, 2, 3, 2, 1, 0, 2, 3/
 
-      integer ichng
-
-      DATA ZCHNG /5,11,13,19,21,31,37,39,49,55,57,58,72,81,87,89,90/
-      DATA LCHNG /1, 0, 1, 0, 2, 1, 0, 2, 1, 0, 2, 3, 2, 1, 0, 2, 3/
-
-      LMXCHM=0
+      LMXVAL=0
       LMXATM=0
       DO ICHNG=1,NCHNG
-         IF (Z.LT.ZCHNG(ICHNG)) RETURN
-         LMXCHM=LCHNG(ICHNG)
-         LMXATM=MAX(LMXATM,LMXCHM)
+         IF (ZCHNG(ICHNG).GT.Z) EXIT
+         LMXVAL=LCHNG(ICHNG)
+         LMXATM=MAX(LMXATM,LMXVAL)
       ENDDO
 
       END subroutine lmxofz
 
 
-      SUBROUTINE CNFIG (Z,CONFIG) 
-C Returns the valence configuration for atomic ground state
-C Input: Z Atomic number
-C Written by A.R.Williams 
+      SUBROUTINE CNFIG( Z, NVAL ) 
+C Returns the valence configuration for atomic ground state, i.e.
+C the principal quantum number NVAL of the valence orbilas for each L
+C Originally written by A.R.Williams. Modified by J.M.Soler
 
-      integer, intent(in)  :: z
-      integer, intent(out) :: config(0:)
+      integer,intent(in) :: Z        ! Atomic number
+      integer,intent(out):: NVAL(0:) ! Valence electrons for each L
 
-      integer lmax, nchng
-      PARAMETER (LMAX=3,NCHNG=15)
-      INTEGER ZCHNG(NCHNG),LCHNG(NCHNG)
-      integer l, ichng
+      integer, parameter :: LMAX=3, NCHNG=15
+      integer :: ICHNG, L, LCHNG(NCHNG), ZCHNG(NCHNG)
 
-*     DATA ZCHNG /3,9,11,17,19,31,35,37,49,53,55,72,81,85,87/
-*     DATA ZCHNG /3,11,11,17,19,31,35,37,49,53,55,72,81,85,87/  
+      ! Originally: s valence orbital switched for p occupation = 4
+      !           Li, F,Na,Cl, K,Ga,Br,Rb,In, I,Cs,Hf,Tl,At,Fr
+*     DATA ZCHNG / 3, 9,11,17,19,31,35,37,49,53,55,72,81,85,87/
 
-      DATA ZCHNG /3,11,11,19,19,31,37,37,49,55,55,72,81,87,87/
-      DATA LCHNG /0,0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1/
-      DO 10 L=0,LMAX
-         CONFIG(L)=L+1
-   10 CONTINUE
-      DO 20 ICHNG=1,NCHNG
-         IF (Z.LT.ZCHNG(ICHNG)) GOTO 30
+      ! Changed to: s valence orbital switched for full p occupation
+      !           Li,Na,Na, K, K,Ga,Rb,Rb,In,Cs,Cs,Hf,Tl,Fr,Fr
+      DATA ZCHNG / 3,11,11,19,19,31,37,37,49,55,55,72,81,87,87/
+      DATA LCHNG / 0, 0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1/
+      DO L=0,LMAX
+         NVAL(L)=L+1
+      END DO
+      DO ICHNG=1,NCHNG
+         IF (ZCHNG(ICHNG).GT.Z) EXIT
          L=LCHNG(ICHNG)
-         CONFIG(L)=CONFIG(L)+1
-   20 CONTINUE
-   30 continue
+         NVAL(L)=NVAL(L)+1
+      END DO
 
-      end subroutine cnfig
+      END subroutine cnfig
 
-      FUNCTION SYMBOL( IZ )
-      character*2 symbol
-      integer, intent(in) :: iz
-C RETURNS THE SYMBOL OF THE ELEMENT OF ATOMIC NUMBER IZ
+
+      FUNCTION SYMBOL( Z )
+C Given the atomic number, returns the atomic symbol (e.g. 'Na')
 C Written by J. Soler
 
-      integer, PARAMETER  :: NZ=103
-      CHARACTER*2 NAME(NZ)
+      character(len=2)    :: SYMBOL  ! Atomic symbol
+      integer, intent(in) :: Z       ! Atomic number
+
+      integer, parameter  :: NZ=103
+      character(len=2) :: NAME(NZ)
       DATA NAME /'H' ,'He','Li','Be','B' ,'C' ,'N' ,'O' ,'F' ,'Ne',
      .           'Na','Mg','Al','Si','P' ,'S' ,'Cl','Ar','K' ,'Ca',
      .           'Sc','Ti','V' ,'Cr','Mn','Fe','Co','Ni','Cu','Zn',
@@ -157,30 +165,31 @@ C Written by J. Soler
      .           'Tl','Pb','Bi','Po','At','Rn','Fr','Ra','Ac','Th',
      .           'Pa','U' ,'Np','Pu','Am','Cm','Bk','Cf','Es','Fm',
      .           'Md','No','Lr'/
-      IF (IZ.EQ.0 .OR. IZ.EQ.-100) THEN
+
+      IF (Z.EQ.0 .OR. Z.EQ.-100) THEN
          SYMBOL = 'BS'
-      ELSE IF (IZ.LT.0 .AND. IZ.GT.-100) THEN
-         SYMBOL = NAME(-IZ)
-      ELSE IF (IZ.LT.1 .OR. IZ.GT.NZ) THEN
-         WRITE(6,*) ' SYMBOL: OUT OF RANGE IZ =',IZ
-         SYMBOL = ' '
+      ELSE IF (ABS(Z).LE.NZ) THEN
+         SYMBOL = NAME(ABS(Z))
       ELSE
-         SYMBOL = NAME(IZ)
+         WRITE(6,*) 'SYMBOL: ERROR: No data for Z =', Z
+         SYMBOL = ' '
       ENDIF
+
       END function symbol
 
-      FUNCTION ATMASS(IZ)
-      real(dp)             :: atmass
-      integer, intent(in)  :: iz
 
-C Returns the average atomic mass from the atomic number IZ.
+      FUNCTION ATMASS( Z )
+C Returns the average atomic mass from the atomic number Z.
 C Dta taken from VCH periodic table.
 C Written by J.M.Soler. April'97.
 
-      integer, PARAMETER  :: NA=94
-      character(len=100) message
+      real(dp)             :: ATMASS ! Average atomic mass, in amu
+      integer, intent(in)  :: Z      ! Atomic number
 
-      DOUBLE PRECISION AMASS(0:NA)
+      integer, PARAMETER  :: NZ=94
+      character(len=50) message
+
+      DOUBLE PRECISION AMASS(0:NZ)
       DATA AMASS / 0.00,
      .     1.01,  4.00,  6.94,  9.01, 10.81, 12.01, 14.01, 16.00,
      .    19.00, 20.18, 22.99, 24.31, 26.98, 28.09, 30.97, 32.07,
@@ -195,13 +204,13 @@ C Written by J.M.Soler. April'97.
      .   204.38,207.2 ,208.98,208.98,209.99,222.02,223.02,226.03,
      .   227.03,232.04,231.04,238.03,237.05,244.06/
 
-
-      IF (IZ.LT.0 .OR. IZ.GT.NA) THEN
-         write(message,'(a,i4)') 'ATMASS: NO DATA FOR Z =',IZ
+      IF (Z.LT.0 .OR. Z.GT.NZ) THEN
+         write(message,'(a,i4)') 'ATMASS: ERROR: No data for Z =',Z
          call die(message)
       ELSE
-         ATMASS=AMASS(IZ)
+         ATMASS=AMASS(Z)
       ENDIF
+
       END function atmass
 
       end module periodic_table

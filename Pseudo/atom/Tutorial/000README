@@ -1,0 +1,38 @@
+This directory contains examples of all-electron and
+pseudopotential-generation atomic calculations.
+
+** WARNING: You should thoroughly test a pseudopotential before using it.
+            The input files in this tree are not meant to represent
+            good pseudopotentials.
+
+Input files have a .inp extension, and should be run using the ae.sh
+(all-electron), pg.sh (ps generation), or pt.sh (ps test) shell
+scripts. See the manual (Docs/atom.tex) for details.
+
+After the run, the output information and plotting scripts will reside
+in a sub-directory whose name is that of the input file without the
+.inp extension.
+
+All_electron:  Examples of all-electron calculations.
+
+Si
+Na
+Cu
+Ba
+Fe
+C           : Examples of pseudopotential generation and test.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

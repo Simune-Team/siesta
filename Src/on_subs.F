@@ -660,7 +660,7 @@ C Internal variables..................................................
       integer, dimension(:,:), allocatable ::
      .  listbtmp
       integer
-     .  MPIerror, BNode, kloc, nl, numbtmp, nbpl, nbpmax
+     .  MPIerror, BNode, kloc, nl, nbpl, nbpmax
 #endif
 
       call timer('axb_build1',1)

@@ -1,0 +1,7 @@
+set data style lines
+
+set xlabel "Energy"
+set ylabel "DOS (ev^-1)"
+plot "Si_strele.DOS" using 1:2 ti "Total DOS"
+
+pause -1 " Press enter to finish"

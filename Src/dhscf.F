@@ -361,7 +361,9 @@ C Start time counter
 C Read spin-spiral wavevector (if defined)
       call readsp( qspiral, spiral )
       if (spiral .and. nspin.lt.4) then
+        if (Node.eq.0) then
         write(6,*) 'dhscf: ERROR: spiral is only defined for nspin = 4'
+        endif
         stop
       endif
 
@@ -653,14 +655,29 @@ C ----------------------------------------------------------------------
 
 #ifdef MPI
 C Global reduction of Uscf/DUscf/Uatm
+#ifdef NODAT
+      call MPI_AllReduce(Uscf,Eloc,1,MPI_double_precision,MPI_Sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(Uscf,Eloc,1,DAT_double,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       Uscf = Eloc
+#ifdef NODAT
+      call MPI_AllReduce(DUscf,Eloc,1,MPI_double_precision,MPI_Sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(DUscf,Eloc,1,DAT_double,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       DUscf = Eloc
+#ifdef NODAT
+      call MPI_AllReduce(Uatm,Eloc,1,MPI_double_precision,MPI_Sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(Uatm,Eloc,1,DAT_double,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       Uatm = Eloc
 #endif
 
@@ -679,11 +696,21 @@ C ----------------------------------------------------------------------
 #ifdef MPI
 C Global reduction of Enaatm and Enascf
       Eloc = Enaatm
+#ifdef NODAT
+      call MPI_AllReduce(Eloc,Enaatm,1,MPI_double_precision,MPI_Sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(Eloc,Enaatm,1,DAT_double,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       Eloc = Enascf
+#ifdef NODAT
+      call MPI_AllReduce(Eloc,Enascf,1,MPI_double_precision,MPI_Sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(Eloc,Enascf,1,DAT_double,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
+#endif
 #endif
 
 C ----------------------------------------------------------------------

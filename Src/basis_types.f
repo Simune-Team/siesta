@@ -494,7 +494,7 @@
       integer l,  n, i
 
       write(lun,'(a)') '<basis_specs>'
-         write(lun,'(70(1h=))')
+         write(lun,'(70("="))')
          write(lun,'(a20,1x,a2,i4,4x,a5,g12.5,4x,a7,g12.5)')
      $        atm_label(is), 'Z=',iz(is),
      $        'Mass=', smass(is), 'Charge=', charge(is)
@@ -506,7 +506,8 @@
      $           'L=', l, 'Nsemic=', nsemic(l,is),
      $           'Cnfigmx=', cnfigmx(l,is)
             do n=1,nsemic(l,is)+1
-               write(lun,'(10x,a2,i1,2x,a6,i1,2xa7,i1)')
+               if (nzeta(l,n,is) == 0) exit
+               write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
      $                         'n=', n, 'nzeta=',nzeta(l,n,is),
      $                         'polorb=', polorb(l,n,is)
                write(lun,'(10x,a10,2x,g12.5)') 
@@ -519,28 +520,15 @@
      $                         (lambda(i,l,n,is),i=1,nzeta(l,n,is))
             enddo
          enddo
-         write(lun,'(70(1h-))')
+         write(lun,'(70("-"))')
          do l=0,lmxkb(is)
             write(lun,'(a2,i1,2x,a5,i1,2x,a6,4g12.5)')
      $           'L=', l, 'Nkbl=', nkbl(l,is),
      $           'erefs:  ', (erefkb(i,l,is),i=1,nkbl(l,is))
          enddo
-         write(lun,'(70(1h=))')
+         write(lun,'(70("="))')
       write(lun,'(a)') '</basis_specs>'
 
       end subroutine write_basis_specs
 !-----------------------------------------------------------------------
       end module basis_types
-
-
-
-
-
-
-
-
-
-
-
-
-

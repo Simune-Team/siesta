@@ -243,14 +243,23 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(gl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(hl,nh,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(sl,nh,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
         call MPI_Bcast(gl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(hl,nh,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sl,nh,DAT_double,nn-1,
-     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(hl,nh,DAT_double,nn-1,MPI_Comm_World,MPIerror)
+        call MPI_Bcast(sl,nh,DAT_double,nn-1,MPI_Comm_World,MPIerror)
+#endif
 #endif
 
 C Build pointer for condensing f and fs on local node
@@ -400,10 +409,17 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays if necessary
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .      MPI_Comm_World,MPIerror)
+        call MPI_Bcast(gl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .      MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .      MPI_Comm_World,MPIerror)
         call MPI_Bcast(gl(1,1),ncmax*nbl,DAT_double,nn-1,
      .      MPI_Comm_World,MPIerror)
+#endif
 #endif
 
 C Build pointer for condensing f and fs on local node
@@ -499,8 +515,13 @@ C Globalisation of func1 and func2
         etmp1(i) = func1(i)
         etmp1(3+i) = func2(i)
       enddo
+#ifdef NODAT
+      call MPI_AllReduce(etmp1,etmp2,6,MPI_double_precision,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(etmp1,etmp2,6,DAT_double,MPI_sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       do i=1,3
         func1(i) = etmp2(i)
         func2(i) = etmp2(3+i)

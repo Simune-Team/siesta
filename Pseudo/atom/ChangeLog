@@ -1,3 +1,17 @@
+2002-09  Alberto Garcia  <wdpgaara@lcpxlz.lc.ehu.es>
+
+	* Imported xc.f file from Siesta distribution. It fixes some
+	problems with very small densities. It is the default in the
+	makefile, but the old suite of xc files can be used, if
+	desired. Pzxc.f has been fixed to avoid computing vxc for very
+	small densities, but the fix in xc.f (by J.M. Soler) is in 
+	principle better. Tagged as atom-3-2-1.
+
+Thu Jul 25 15:48:48 2002  Alberto Garcia  <wdpgaara@lcpxbi.wm.lc.ehu.es>
+
+	* Consolidated new version by removing old material from Samples.
+	  Old pswatch program removed from Util.
+
 2002-07-12  Alberto Garcia  <wdpgaara@lg.ehu.es>
 
 	* Major revision with a view to ease analysis of pseudopotentials

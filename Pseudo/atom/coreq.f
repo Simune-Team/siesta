@@ -23,12 +23,15 @@ c
 c     How many points at what spacing? Should go up to q=20, say
 c
       double precision delql
-      parameter (delql = 0.05)
+      parameter (delql = 0.05d0)
       integer nql
       parameter (nql = 400)
 
       integer j, nrpnew
       double precision rmin, rmax, zc, q, dcq
+
+      double precision divdif
+      external divdif
 c
 c     Fourier transform the core charge
 c

@@ -64,6 +64,10 @@ c
 
       endif
 c
+c     Flag to use the old excorr subroutine.
+c
+      if (defined('USE_OLD_EXCORR')) use_excorr = .true.
+c
 c     Avoid cutting off ionic unscreened pseudopotentials
 c
       if (defined('NO_PS_CUTOFFS')) ecuts = 0.d0

@@ -444,8 +444,13 @@ C First calculate total charge of the solution
 
 #ifdef MPI
 C Global reduction of qtot
+#ifdef NODAT
+      call MPI_AllReduce(qtot,rtmp,1,MPI_double_precision,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(qtot,rtmp,1,DAT_double,MPI_sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       qtot = rtmp
 #endif
 

@@ -1,0 +1,9 @@
+Fe calculations within the GGA.
+
+Two pseudopotentials. One of them
+has a small p core, and looks ugly.
+Increasing r_c(p) fixes this, but..
+is the pseudopotential more or less
+transferable?
+
+The "spin" files are experimental.

@@ -81,7 +81,7 @@ C Impose constraint on zero center of mass velocity ....................
         do i = 1,Nat
           do ix=1,3
             va(ix,i) = va(ix,i) - vtot(ix)/nat
-	  enddo
+          enddo
         enddo
 
       endif
@@ -89,8 +89,13 @@ C ...............
 
 C Distribute the velocities over the Nodes
 #ifdef MPI
+#ifdef NODAT
+      call MPI_Bcast(va(1,1),3*Nat,MPI_double_precision,0,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_Bcast(va(1,1),3*Nat,DAT_double,0,
      .  MPI_Comm_World,MPIerror)
+#endif
 #endif
 
       if (nat .le. 1) return
@@ -100,9 +105,9 @@ C Correct velocity to exact temperature .....................
 
       if (abs(tempe-ttemp) .ge. 1.e-4 .and. tempe .ge. 1.e-4) then
         do i = 1,Nat
-	  do ix=1,3
+          do ix=1,3
             va(ix,i) = va(ix,i) * dsqrt(ttemp/tempe)
-	  enddo
+          enddo
         enddo
       endif
 

@@ -1,6 +1,220 @@
 ========================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.2.22
+Date: 2003/04/14 15:10
+Title: Corrected k-grid cutoff
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+For some nonorthorrombic k-sampling grids, the cutoff was overestimated
+A call to minvec was introduced to find the true minimum supercell vector
+
+Files:
+
+kgridinit.F : Introduced call to minvec
+
+=======================================================================
+Version: 1.2.21
+Date: 2003/04/14 15:00
+Title: Cleaning of foreign code
+Author: Jose M. Soler <jose.soler@uam.es>
+
+Description:
+
+To avoid any legal problems, the few routines not written by the siesta 
+team have been cleaned or modified to make them different enough from 
+the original ones. However, apropriate statements of the original
+procedence/authorship have been kept in all the files affected.
+Three routines in recipes.f were eliminated: ratint because it always
+called polint internally, and splin/splinu because they were equivalent 
+to spline/splint.
+
+Files:
+
+arw.f            : Code cleaned and language updated.
+                   Many comments added or corrected.
+arw.F            : Eliminated (changed to arw.f)
+atom.f           : Calls to ratint changed by polint
+basis_io.F       : Calls to ratint changed by polint
+cellxc.F         : Header comments slightly changed
+matel.f          : Calls to splin/splinu changed to spline/splint
+periodic_table.f : Code updated. Some comments added
+recipes.f        : Routines ratint, splin, and splinu eliminated.
+                   Code updated and comments added
+siesta.F         : Copyright statements in header changed
+xc.f             : Header comments slightly changed
+Makefile         : arw.o made dependent of ionew.o
+
+=======================================================================
+Version: 1.2.20
+Date: 2003/1/20 16:00 
+Title: HPCx changes
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+A small number of changes have been made for easy compilation on an
+IBM Regatta machine to enable use with the HPCx service in the UK
+(and elsewhere).
+
+Files:
+
+bands.F           : if NODAT option added for -DNODAT to avoid MPI problems
+broadcast_basis.F : if NODAT option added for -DNODAT to avoid MPI problems
+cellxc.F          : if NODAT option added for -DNODAT to avoid MPI problems
+cgvc.F            : if NODAT option added for -DNODAT to avoid MPI problems
+cgwf.F            : if NODAT option added for -DNODAT to avoid MPI problems
+chempot.F         : if NODAT option added for -DNODAT to avoid MPI problems
+denmat.F          : if NODAT option added for -DNODAT to avoid MPI problems
+detover.F         : if NODAT option added for -DNODAT to avoid MPI problems
+dhscf.F           : if NODAT option added for -DNODAT to avoid MPI problems
+diag2g.F          : if NODAT option added for -DNODAT to avoid MPI problems
+diag2k.F          : if NODAT option added for -DNODAT to avoid MPI problems
+diagg.F           : if NODAT option added for -DNODAT to avoid MPI problems
+diagk.F           : if NODAT option added for -DNODAT to avoid MPI problems
+diagkp.F          : if NODAT option added for -DNODAT to avoid MPI problems
+diagon.F          : if NODAT option added for -DNODAT to avoid MPI problems
+diagsprl.F        : if NODAT option added for -DNODAT to avoid MPI problems
+dipole.F          : if NODAT option added for -DNODAT to avoid MPI problems
+efield.F          : if NODAT option added for -DNODAT to avoid MPI problems
+ener3.F           : if NODAT option added for -DNODAT to avoid MPI problems
+fft3d.F           : if NODAT option added for -DNODAT to avoid MPI problems
+gradient.F        : if NODAT option added for -DNODAT to avoid MPI problems
+iodm.F            : if NODAT option added for -DNODAT to avoid MPI problems
+iohs.F            : if NODAT option added for -DNODAT to avoid MPI problems
+iolwf.F           : if NODAT option added for -DNODAT to avoid MPI problems
+iorho.F           : if NODAT option added for -DNODAT to avoid MPI problems
+ioxv.F            : if NODAT option added for -DNODAT to avoid MPI problems
+kgridinit.F       : if NODAT option added for -DNODAT to avoid MPI problems
+meshmatrix.F      : if NODAT option added for -DNODAT to avoid MPI problems
+mulliken.F        : if NODAT option added for -DNODAT to avoid MPI problems
+ordern.F          : if NODAT option added for -DNODAT to avoid MPI problems
+phonon.F          : if NODAT option added for -DNODAT to avoid MPI problems
+pulayx.F          : if NODAT option added for -DNODAT to avoid MPI problems
+readsp.F          : if NODAT option added for -DNODAT to avoid MPI problems
+redata.F          : if NODAT option added for -DNODAT to avoid MPI problems
+repol.F           : if NODAT option added for -DNODAT to avoid MPI problems
+savepsi.F         : if NODAT option added for -DNODAT to avoid MPI problems
+siesta.F          : if NODAT option added for -DNODAT to avoid MPI problems
+timer.F           : if NODAT option added for -DNODAT to avoid MPI problems
+vmb.F             : if NODAT option added for -DNODAT to avoid MPI problems
+Sys/hpcx.make     : arch.make for HPCx service
+=======================================================================
+Version: 1.2.19
+Date: 2003/1/10 17:00 
+Title: FFT fixed for large meshes 
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+For very large mesh dimensions the array trigs in the FFT was not
+able to cope. Hence this array has been made dynamic. Also a few
+minor changes have been made, firstly to cellxc.F, to solve some
+MPI issues at APAC, and secondly to siesta.F, to optionally avoid
+problems with convergence where the auxiliary mesh changes during
+a variable cell optimisation.
+
+Files:
+
+cellxc.F     : The parallelisation has been altered to involve fewer
+             : transfers, but of larger packets. Should improve 
+             : performance were latency is high and avoids problems
+             : with MPI counters becoming too large.
+fft3d.F      : The array trigs is now dynamically allocated to allow
+             : for larger meshes.
+siesta.F     : An option has been added to fix the auxiliary cell size
+             : to avoid poor convergence behaviour.
+siesta.tex   : New option FixAuxiliaryCell documented
+=======================================================================
+Version: 1.2.18
+Date: 2002/10/09 10:30 
+Title: Fix to spiral spin in parallel
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+Parallel runs were crashing due to an fdf call that was not wrapped to
+only be from Node 0 in readsp.f. This routine is now MPI'd to handle
+the fdf call safely.
+
+Files:
+
+readsp.f    : Removed from distribution
+readsp.F    : Added - readsp.f with wrapping of fdf calls for parallel
+            : execution.
+=======================================================================
+Version: 1.2.17
+Date: 2002/09/13 17:00 
+Title: Changes in xc.f, other cosmetic changes.
+Author: Alberto Garcia
+
+Description:
+
+* There was a subtle numerical instability in the pzxc routine
+when dealing with very small densities (as for large r in the
+atomic program). Jose Soler has rewritten the offending section.
+
+* Added blypxc routine to xc.f
+
+* Cosmetic change in basis_specs.f. The printing of basis
+  specification now skips over shells with nzeta=0...
+
+Files:
+
+xc.f , basis_specs.f
+
+=======================================================================
+Version: 1.2.16
+Date: 2002/09/02 17:00 
+Title: Divide and Conquer + fixes
+Author: Julian Gale <j.gale@ic.ac.uk>
+
+Description:
+
+The option to use divide and conquer Lapack algorithms has been added
+to rdiag and cdiag, as well as tidying up the source code a bit here.
+Also a bug in the order N part for eta .ne. 0 has been corrected, as 
+well as a few fixes for parallel execution related to recently introduced
+functionality. There are also a few bits of cleaning highlighted as a
+result of running the code through the NAG compiler.
+
+Files:
+
+siesta.tex    : DivideAndConquer option documented
+alloc.F90     : optional attribute added for name/routine + checking for
+              : these terms being present before being addressed added
+              : in alloc_err
+basis_types.f : Missing comma in format descriptor added
+cdiag.F       : Divide and Conquer option added for serial execution +
+              : code tidied
+cgwf.F        : Indentation tidied (tabs removed)
+chempot.F     : Indentation tidied (tabs removed)
+dhscf.F       : Spin-spiral I/O handled for parallel version
+diagg.F       : Aux array no longer passed to rdiag
+gradient.F    : Bug fixed for eta .ne. 0 case
+kgrid.F       : Spin-spiral I/O handled for parallel version
+kgridinit.F   : Spin-spiral I/O handled for parallel version
+mulliken.F    : Indentation tidied (tabs removed)
+on_subs.F     : Duplicate definition of numbtmp removed
+pdosk.f       : Explicit declaration of type for dfloat added
+pulayx.F      : Indentation tidied (tabs removed)
+rdiag.F       : Divide and Conquer option added for serial execution +
+              : code tidied. Argument "fv" removed, and allocation now
+              : done using alloc module.
+redata.F      : State of divide and conquer flag output
+siesta.F      : Ekinion zeroed at the start to avoid case where it is
+              : uninitialised. Plus sequence of testing of state of S
+              : is altered to avoid a "size" operation on an unallocated
+              : pointer.
+transfer.f    : Indentation tided (tabs removed)
+version.f     : version number incremented
+vmb.F         : Indentation tided (tabs removed)
+Lib/blas.f    : Updated to include the divide and conquer required routines.
+Lib/lapack.f  : Updated to include the divide and conquer required routines.
+Sys/sgi64-mpi_fermat.make : -lscs flag added for DaC routines
+=======================================================================
 Version: 1.2.15
 Date: 2002/07/14 17:00 
 Title: Cosmetic changes for School

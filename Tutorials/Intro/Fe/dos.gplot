@@ -1,0 +1,8 @@
+set data style lines
+
+set xlabel "Energy"
+set ylabel "DOS (ev^-1)"
+plot "Fe.DOS" using 1:2 ti "Spin_up", \
+     "Fe.DOS" us 1:3 ti "Spin_down"
+
+pause -1 " Press enter to finish"

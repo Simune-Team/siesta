@@ -8,10 +8,10 @@ NumberOfSpecies        1
 PAO.EnergyShift       50 meV
 PAO.BasisSize         DZP
 %block PAO.Basis
-  Fe  2
-  0  2  P
+Fe  2
+ n=4  0  2  P
   6. 0.
-  2  2
+ n=3  2  2
   0. 0.
 %endblock PAO.Basis
 

@@ -1,20 +1,10 @@
-This directory contains examples of all-electron and
-pseudopotential-generation atomic calculations.
+The examples formerly in this directory have been moved and
+consolidated in Tutorial/.
 
-** WARNING: You should thoroughly test a pseudopotential before using it.
-	    The input files in this directory are not meant to represent
-	    good pseudopotentials.
+Only a few scripts remain for historial reasons:
 
-Input files have a .inp extension, and should be run using the ae.sh
-(all-electron), pg.sh (ps generation), or pt.sh (ps test) shell
-scripts. 
+atom.sm, logder.sm,
+plotps.sh, plotx11.sh, plotps.sm: Scripts for SM plotting package.
 
-These scripts assume that the executable (atm) resides in the
-directory above this one. If you want to use the scripts in some
-other place you will have to modify the definition of "prog" in them.
-
-After the run, the output information will reside in a sub-directory
-whose name is that of the input file without the .inp
-extension. Several files are produced (see User.Guide in the Docs directory).
-
+viewps.sh: Script for xmgr plotting program (written by A. Postnikov)
 

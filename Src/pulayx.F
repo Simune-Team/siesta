@@ -353,9 +353,9 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
 
          b(i,i) = 0.0d0
          sum=0.0d0
-	 do is=1,nspin
-	   do ii=1,nbasis
-	     do jj=1,numd(ii)
+         do is=1,nspin
+           do ii=1,nbasis
+             do jj=1,numd(ii)
                ind = listdptr(ii) + jj
                sum=sum+dmnew(ind,is)*dmnew(ind,is)
              enddo
@@ -383,7 +383,7 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
 
            b(i,j)=0.0d0
            sum=0.0d0
-	   do is=1,nspin
+           do is=1,nspin
              do ii=1,nbasis
                do jj=1,numd(ii)
                  ind = listdptr(ii) + jj
@@ -403,8 +403,13 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
 #ifdef MPI
 C Global operations
        do i=1,maxmix
+#ifdef NODAT
+         call MPI_AllReduce(b(1:,i),buffer,maxmix,MPI_double_precision,
+     .     MPI_sum,MPI_Comm_World,MPIerror)
+#else
          call MPI_AllReduce(b(1:,i),buffer,maxmix,DAT_double,
      .     MPI_sum,MPI_Comm_World,MPIerror)
+#endif
          do j=1,maxmix
            b(j,i)=buffer(j)
          enddo
@@ -438,7 +443,7 @@ C Read former matrices for mixing .........
            enddo
          endif
 
-	 do is=1,nspin
+         do is=1,nspin
            do ii=1,nbasis
              do j=1,numd(ii)
                ind = listdptr(ii) + j

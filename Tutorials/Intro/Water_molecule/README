@@ -1,0 +1,14 @@
+A series of simple examples with the
+water molecule.
+
+h2o: Just a simple run with the option
+     of plotting the charge density.
+
+h2o_cell: Playing with the intermolecule
+          separation. For large separations
+          the results should converge to
+          the "real" molecule ones. 
+          
+h2o_relax: An important example of the
+           coordinate relaxation capabilities
+           of Siesta.

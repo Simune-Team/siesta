@@ -280,8 +280,8 @@ PROJECT: Nanowires
 NAME   : Michele Warren
 ADDRESS: Department of Earth Sciences 
          University of Manchester (UK)
-E-MAIL : Michele.Warren@man.ac.uk
-VERSION: 1.1s
+E-MAIL : Michele.Warren@man.ac.uk, m.c.warren@man.ac.uk
+VERSION: 1.1s, 1.1-f1p
 
 NAME   : Ruben Weht
 ADDRESS: Universidad de Buenos Aires
@@ -382,6 +382,15 @@ VERSION: 1.1s
 CONTACT: Emilio
 PROJECT: Alumina surfaces
 
+NAME   : Marie-Liesse Doublet
+ADDRESS: LSDSMS - UMR 5636 - CNRS
+E-MAIL : Marie-Liesse.Doublet@lsd.univ-montp2.fr
+VERSION: 0.15, 1.1p
+PROJECT: Structural relaxation and Molecular dynamic calculations of
+         intercalation componds used as electrode materials in Lithium-Ion
+         Batteries
+CONTACT: Pablo
+
 NAME   : Martin Dove
 ADDRESS: Dept. of Earth Sciences, Cambridge (UK)
 E-MAIL : martin@minp.esc.cam.ac.uk
@@ -409,6 +418,12 @@ ADDRESS: School of Mathematics and Physics
 E-MAIL : J.Kohanoff@qub.ac.uk
 VERSION: 1.1p
 
+NAME   : Christian Kristukat
+ADDRESS: Germany
+E-MAIL : kristukat@physik.tu-berlin.de
+CONTACT: Pablo
+VERSION: ?
+
 NAME   : Young-Jee Lee 
 ADDRESS: Laboratory of Physic, Helsinki University of Technology,
          P.O.Box 1100, FIN-02150 Espoo (Finland)
@@ -416,6 +431,15 @@ E-MAIL : lee@fyslab.hut.fi
 VERSION: 1.1p
 CONTACT: Pablo
 PROJECT: Materials with Fermi instabilities
+
+NAME   : Frederic Lemoigno
+ADDRESS: LSDSMS - UMR 5636 - CNRS
+E-MAIL : lemoigno@lsd.univ-montp2.fr
+VERSION: 1.1p
+PROJECT: Structural relaxation and Molecular dynamic calculations of
+         intercalation componds used as electrode materials in Lithium-Ion
+         Batteries
+CONTACT: Pablo
 
 NAME   : Steven G. Louie
 ADDRESS: Department of Physics
@@ -437,6 +461,15 @@ ADDRESS: OMP/Laboratory of Physic,
 E-MAIL : rni@fyslab.hut.fi
 VERSION: None
 CONTACT: Pablo
+
+NAME   : Manuel Perez Jigato
+ADDRESS: Helsinki University of Technology
+         Laboratory of Physics, Room U203, Otakaari 1M, Otaniemi, Espoo
+         P.O. Box 1100, FIN-02015 HUT, Finland
+E-MAIL : mpj@fyslab.hut.fi
+VERSION: 1.1p
+CONTACT: Pablo
+PROJECT: 
 
 NAME   : Guillaume Poulet
 ADDRESS: Institut de Recherches sur la Catalyse
@@ -496,6 +529,20 @@ ADDRESS: Instituto de Fisica
          Universidade Federal do Rio de Janeiro (Brasil)
 E-MAIL : verissim@if.ufrj.br
 VERSION: 1.2.8p
+CONTACT: EA
+PROJECT: 
+
+NAME   : Michele Warren
+ADDRESS: Dept of Earth Sciences, University of Manchester (UK)
+E-MAIL : Michele.Warren@man.ac.uk, m.c.warren@man.ac.uk
+VERSION: 1.1-f1p
+CONTACT: EA
+PROJECT:
+
+NAME   : Stephen Wells
+ADDRESS: Royal Institution (UK)
+E-MAIL : 
+VERSION: 1.2.18
 CONTACT: EA
 PROJECT: 
 
@@ -631,7 +678,7 @@ ADDRESS: OLD: Institute for Semiconductor Physics
               15236 Frankfurt Oder - Germany
          NEW UNKNOWN
 E-MAIL : mac@ing.unne.edu.ar
-VERSION: 1.1s
+VERSION: 1.1s, 1.1-f1s
 CONTACT: Pablo
 PROJECT: HfO2
 
@@ -752,16 +799,24 @@ VERSION: 1.1s
 CONTACT: Julian
 PROJECT: Durene
 
-NAME   :  Abdel Kenoufi
-ADDRESS:  CERMICS - ENPC 
-          6 et 8 avenue Blaise Pascal
-          Cit? Descartes - Champs sur Marne
-          77455 Marne la Vall?e Cedex 2
-          FRANCE 
-E-MAIL :  kenoufi@lpt1.u-strasbg.fr
-VERSION:  1.1s
-CONTACT:  P. Ordejon
-PROJECT:  Ceramics
+NAME   : Abdel Kenoufi
+ADDRESS: CERMICS - ENPC 
+         6 et 8 avenue Blaise Pascal
+         Cit? Descartes - Champs sur Marne
+         77455 Marne la Vall?e Cedex 2
+         FRANCE 
+E-MAIL : kenoufi@lpt1.u-strasbg.fr
+VERSION: 1.1s
+CONTACT: P. Ordejon
+PROJECT: Ceramics
+
+NAME   : John Kieffer
+ADDRESS: Dept of Engineering, University of Michigan
+E-MAIL : kieffer@umich.edu
+VERSION: 1.1s
+CONTACT: EA
+PROJECT:
+
 
 NAME   : Young-Jee Lee 
 ADDRESS: Laboratory of Physic, Helsinki University of Technology,
@@ -854,12 +909,21 @@ VERSION: 1.1s
 CONTACT: Alberto
 PROJECT: Phonons in CaCl2
 
+NAME   : Paul Peacock
+ADDRESS: Electronic Devices and Materials group,
+         Engineering department,
+         University of Cambridge
+E-MAIL : pwp10@cam.ac.uk
+VERSION: 1.1-f2s
+CONTACT: EA
+PROJECT:
+
 NAME   : Andrei Postnikov
 ADDRESS: Gerhard Mercator University Duisburg,
          Theoretical Low-Temperature Physics, 
          D-47048 Duisburg, Germany
 E-MAIL : postnik@thp.Uni-Duisburg.DE
-VERSION: 1.1s
+VERSION: 1.1s, 1.2.14s
 CONTACT: Jose
 PROJECT: Noncollinear spin in Fe clusters
 
@@ -884,6 +948,20 @@ E-MAIL :
 VERSION:
 CONTACT: Javier
 PROJECT: ??
+
+NAME   : Eliseo Ruiz
+ADDRESS: Universidad de Barcelona
+E-MAIL : eliseo.ruiz@qi.ub.es
+VERSION:
+CONTACT: Pablo
+PROJECT: oxidos con propiedades magneticas
+
+NAME   : Ke San-Huang
+ADDRESS: 
+E-MAIL : shke@duke.edu, shke@softhome.net
+VERSION: 1.1-f2s
+CONTACT: 
+PROJECT: 
 
 NAME   : Philippe Sautet
 ADDRESS: Institut de Recherches sur la Catalyse
@@ -1005,7 +1083,7 @@ ADDRESS: QUP-Center, Department of Physics, Technical University of Denmark
          Phone: (+45) 4525 3316
          Fax: (+45) 4593 1669
 E-MAIL : jalkanen@fysik.dtu.dk
-VERSION:
+VERSION: 1.1-f1p
 CONTACT: Pablo, Emilio
 PROJECT: Biological molecules
 
@@ -1070,6 +1148,17 @@ E-MAIL  : sandreev@fas.harvard.edu
 PROJECT : Calculating band structure and performing geometry optimization in
           carbon nanotubes. 
 VERSION :
+
+NAME    : Jezierski Andrzej
+ADDRESS : Institute of Molecular Physics ,Polish academy of Sciences,
+          60-179 Poznan, M. Smoluchowskiego 17, Poland
+E-MAIL  : jeziersk@ifmpan.poznan.pl
+PROJECT : In our group we calculate the  electronic and magnetic properties of
+          d and f electron systems. We use TB LMTO , FPLAPW, Fhi98md, SPRKKR,
+          ASW methods. Our calculations are performed on PC type computers
+          (P4, P3 (dual) and SGI).
+          http://www.ifmpan.poznan.pl
+VERSION : 0.15
 
 NAME    : Shahriar Anwar
 ADDRESS : Arizona State University
@@ -1140,6 +1229,19 @@ PROJECT : Calculation of physocal properties of fluoride crystals. Phonons
           spectra, pressure induzed phase transitions, etc.
 VERSION : 0.15
 
+NAME    : Stefan Badescu
+ADDRESS : Physics Laboratory at HUT, Helsinki
+E-MAIL  : bcs@fyslab.hut.fi
+PROJECT : Quantum diffusion of H atoms on transition metal surfaces
+VERSION :
+
+NAME    : Jaeil Bai, S. Yoo and  X.C. Zeng
+ADDRESS : Dept. of Chemistry, University of Nebraska
+E-MAIL  : jbai@unlserve.unl.edu
+PROJECT : We are studying silicon cluster and electronic structure of water
+          in confined system
+VERSION :
+
 NAME    : D. Balamurugan (Ph. D Student)
 ADDRESS : Indian Institute of Technology, Kanpur
 E-MAIL  : balad@iitk.ac.in
@@ -1165,6 +1267,38 @@ PROJECT : Calculos ab initio para estudiar propiedades magneticas y
           superficieles de complejos metalicos de la familia del azul de Prusia.
 VERSION : 0.15
 
+NAME    : Gregorz Banach
+ADDRESS : Daresbury Laboratory
+E-MAIL  : G.Banach@dl.ac.uk
+PROJECT : I investigate a perovskites materials like: SrTiO3, AMnO3, A2FeMoO6
+          (A=Sr, Ba,Ca), in particular a multilayer structures of this
+          materials. I am looking for a tools for optimisations of atomic
+          positions and volume of elementary cell
+VERSION : 0.15
+
+NAME    : Maamar Benkraouda
+ADDRESS : PO Box 17551, Physics Dept., UAEU University, Al-Ain, UAE
+E-MAIL  : maamar@uaeu.ac.ae
+PROJECT : I am going to use siesta for band structure calculations and
+          structure optimization for different compounds. I am mainly
+          interested in superconducting materials and graphite like
+          structures
+VERSION : 0.15
+
+NAME    : Savas Berber
+ADDRESS : Michigan State University
+E-MAIL  : berber@pa.msu.edu
+PROJECT : Energetics of nanotube formation
+VERSION :
+
+NAME    : Lee Bo
+ADDRESS : Zhejiang University Physics Department P.R.China
+E-MAIL  : libodorm@css.zju.edu.cn
+PROJECT : I want using this soft to study some surface problem,for example
+          suface adsorption, surface diffuce and some relax surface problem.
+          So i want to get this free soft version.
+VERSION :
+
 NAME    : Jean-Francois Boily 
 ADDRESS : Inst. for Miner. Petro. ETH-Zurich, Switzerland 
 E-MAIL  : boily@erdw.ethz.ch
@@ -1181,6 +1315,14 @@ ADDRESS : 20 Science Park Drive Singapore(118230)
 E-MAIL  : bteckboo@dso.org.sg
 PROJECT : To study the mechanical and electronic properties of carbon nanotubes.
 VERSION :
+
+NAME    : Nacer Bouras
+ADDRESS : Laboratoire des semiconducteurs U.S.T.H.B  Algiers - ALGERIA-
+E-MAIL  : nacer_bouras@caramail.com
+PROJECT : The study of structural,electrical and optical properties,
+          elaboration of band stucture, electronic density ,..  for  SnO^(2)
+          and ZnO
+VERSION : 0.15
 
 NAME    : Alex Bratkovsky 
 ADDRESS : HP Labs, Palo Alto, USA 
@@ -1215,6 +1357,14 @@ PROJECT : Novel Electronic Properties of Carbon Nanotubes.
           polymeric systems and their physical properties. We perform ab-initio,
           tight-binding and quantum transport calculations and would like
           collaborate with you.
+VERSION : 0.15
+
+NAME    : Reyna Caballero
+ADDRESS : UNAM (Universidad Nacional Autonoma de Mexico)
+E-MAIL  : reyna@super.unam.mx
+PROJECT : We work in the Supercomputing Departament, we builded a Cluster,
+          this support many projects of scientific community. The users
+          are of diverse universities
 VERSION : 0.15
 
 NAME    : Florent Calvayrac 
@@ -1264,13 +1414,54 @@ PROJECT : Electronic and structural properties of semiconductor surfaces such
           as Si, Ge
 VERSION : 0.15
 
+NAME    : Nan-yow Chen
+ADDRESS : 101, Section 2 Kuang Fu Road, Hsinchu, Taiwan 300, Republic of China
+E-MAIL  : d877301@phys.nthu.edu.tw
+PROJECT : Study this program and try to use it!
+VERSION : 0.15
+
+NAME    : Hilaire Chevreau
+ADDRESS : Lab. Chimie Theorique, UPMC, Paris6
+E-MAIL  : chevreau@lct.jussieu.fr
+PROJECT : I would be interested to use SIESTA for some MD 
+          open-shell calculations, if it's possible...
+          About my MD experience : I've worked on 
+          FIREBALL during my postdoc (implementation 
+          umbrella sampling mainly), and continue 
+          to do some development on it (some work 
+          on parallelization, etc...). I hope that 
+          this is not a source of conflict for your 
+          group... I'm mainly interested to be able 
+          to use 2 methods instead of only one... 
+          that's very interesting for any studies 
+          of course...
+          Now I have a permanent position in the 
+          lab in paris... 
+          I've worked already with Prof. Francesc Illas 
+          at the U. of Barcelona, 2-3 years ago...
+          (3 months in his group...)
+          Well, I would be interested on a first step 
+          to use SIESTA version MPI for some studies...
+          If you need any more infos... or want to discuss 
+          on some particular points...
+VERSION : 0.15
+ 
+NAME    : Viorel Chihaia
+ADDRESS : Mineralogisch - Kristallographisches Institut, Goettingen Univ.
+E-MAIL  : vchihai@gwdg.de
+PROJECT : static/MD calculation in ice and water systems
+VERSION : 0.15
+
 NAME    : Andrew Chizmeshya
 ADDRESS : Center for Solid State Science, Arizona State U. Tempe, AZ 85287 USA
 E-MAIL  : chizmesh@asu.edu
 PROJECT : My research focuses on the properties of hydroxyl minerals such as
           serpentinites and alkaline earth hydroxides, and their carbonation.
           I am also interested in the interaction of water with the surfaces
-          of these minerals.
+          of these minerals:
+          * dehydroxylation reactions in minerals
+          * structural properties of silicates
+          * elastic properties of hydroxyl minerals
 VERSION : 0.15
 
 NAME    : Jin Choi 
@@ -1280,6 +1471,19 @@ ADDRESS : Department of Physics,
 E-MAIL  : jinchoi@dielc.kaist.ac.kr
 PROJECT : I would like to calculate the biomolecule by using the localized
           orbital basis code, Siesta.
+VERSION : 0.15
+
+NAME    : Yoon Jeong Choi
+ADDRESS : KAIST (Korea Advanced Institute of Science and Technology)
+E-MAIL  : yjchoi@qclab.kaist.ac.kr
+PROJECT : We'll perform DFT calculations for C60-metal complexes to explain
+          where reduciton site is
+VERSION : 0.15
+
+NAME    : Katawut Chuasiripattana
+ADDRESS : University of Exeter
+E-MAIL  : katawut@excc.ex.ac.uk
+PROJECT : Se-GaAs111 adsorption system and nanawire formation
 VERSION : 0.15
 
 NAME    : Soon-Hyo Chung (contact: www)
@@ -1322,6 +1526,32 @@ E-MAIL  : oana@tutor.cc.tut.fi, oana@cc.tut.fi
 PROJECT : DFT calculations on big organig molecules
 VERSION : 0.15
 
+NAME    : Asbjorn Christensen
+ADDRESS : CAMP, Dept. of Physics, Technical University of Denmark,
+          Building 307, DK-2800 Lyngby
+E-MAIL  : asbjorn@fysik.dtu.dk
+PROJECT : I have heard encouraging accounts on good performance of SIESTA
+          from Mads Brandbyge at MIC, Technical University of Denmark.
+          I would like to try SIESTA on some systems of my interest, to see
+          how it performs.
+          I plan to use it for Nitrogenase by FeMo cofactors: structurel
+          aspects, reaction pathways and rate estimation, using the nudged
+          elastic band method; study the influence of environment.
+VERSION :
+
+NAME    : Roman Cosmin 
+ADDRESS : Institut National Politechnique de Grenoble (INPG) - TIMA
+E-MAIL  : cosmin.roman@imag.fr
+PROJECT : I am doing a PhD in NEMS. I need SIESTA in order to evaluate the
+          sensor capabilities of CNTs
+VERSION : 0.15
+
+NAME    : Giuseppe Cruciani 
+ADDRESS : University of Ferrara 
+E-MAIL  : cru@unife.it 
+PROJECT : Simulation of Si/Al ordering in silicates
+VERSION : 0.15
+
 NAME    : Sergio Daniel Dalosto (contact: jose)
 ADDRESS : Post Doc Researcher
           Room 238, Anatomy Chemistry Bldg.
@@ -1349,10 +1579,66 @@ PROJECT : Study of point defect clusters in silicon and interactions with
           boron/carbon.
 VERSION : 0.15
 
+NAME    : Reinaldo Pis Diez
+ADDRESS : Center of Inorganic Chemistry, Natl. Univ. of La Plata, Argentine
+E-MAIL  : pis_diez@quimica.unlp.edu.ar
+PROJECT : Our group is chiefly involved in properties of transition metal
+          clusters and zeolites and their chemical reactivity with molecules
+          of interest in industrial applications related to catalysis.
+          I like programming very much so I consider the possibility of being
+          a contributor in the future
+VERSION :
+
+NAME    : Felix C. Difilippo
+ADDRESS : Oak Ridge National Laboratory
+E-MAIL  : fcd@ornl.gov
+PROJECT : Better Calculations of Scattering Kernels:
+          The efficient design of thermal nuclear reactors depends on
+          accurated calculations of the spectra of the thermal neutrons in
+          equilibrium with  moderating materials. The spectra directly depends
+          on the calculations of the double differential scattering cross
+          section for the neutron interacting with condensed mater.
+          The understanding of the molecular dynamics of the moderator is then
+          esential in this analysis.Until now there were sporadic interactions
+          between Condensed Matter and Reactor Physics, we would like to join
+          both disciplines in this project
+VERSION : 0.15
+
+NAME    : Jianjun Dong
+ADDRESS : Physics Departament, Auburn University,
+          Auburn, Alabama 36849-5311, U.S.A
+E-MAIL  : jjdong@physics.auburn.edu
+PROJECT : (1) Defects and interface structures of wide-band-gap SiC and related
+              materials
+          (2) Defect structure is MCT infared semiconductors.
+          (3) Novel materials formed at high-pressure, such as high-pressure
+              phases of Si3N4, P3N5, and MoN
+VERSION : 0.15
+
+NAME    : Marie-Liesse Doublet
+ADDRESS : LSDSMS - UMR 5636 - CNRS
+E-MAIL  : Marie-Liesse.Doublet@lsd.univ-montp2.fr
+PROJECT : Structural relaxation and Molecular dynamic calculations of
+          intercalation componds used as electrode materials in Lithium-Ion
+          Batteries
+VERSION : 0.15
+
+NAME    : Traian Dumitrica
+ADDRESS : Rice University
+E-MAIL  : traian@rice.edu
+PROJECT : Calculation of electronic properties of carbon nanotubes
+VERSION :
+
 NAME    : Bernd Eberhard 
 ADDRESS : Universitaet Augsburg 
 E-MAIL  : bernd.eberhard@physik.uni-augsburg.de
 PROJECT : Transition metal boundaries, surfaces and interfaces.
+VERSION : 0.15
+
+NAME    : Liu Enfeng
+ADDRESS : Institute of High Performance Computing, Singapore
+E-MAIL  : liuef@ihpc.a-star.edu.sg
+PROJECT : We want to simulate a molecular contacted with two electrodes
 VERSION : 0.15
 
 NAME    : R. A. Evarestov (contact: G.Borstel)
@@ -1366,11 +1652,31 @@ PROJECT : Calculations of point defects in crystals using supercell model.
           University, Germany )
 VERSION : 0.15
 
+NAME    : Wei Fan
+ADDRESS : Institute of Solid-State Physics, Chinese Academy of Science, China
+E-MAIL  : fanw@theory.issp.ac.cn
+PROJECT : I will use the code to simulate the system of metal or semiconductor
+          with large number of atoms
+VERSION : 0.15
+ 
+NAME    : Wang Feng
+ADDRESS : Tsinghua University in Beijing, China
+E-MAIL  : fwang@cams.tsinghua.edu.cn
+PROJECT : I am interesting in and want to learn your SIESTA
+VERSION : 0.15
+
 NAME    : Hermes Fernandes de Souza
 ADDRESS : Universidade Federal do Ceara - Depto. Fisica
 E-MAIL  : hermes@fisica.ufc.br
 PROJECT : We want investigate dopant effect in wide gap material like SrTiO3
           and Ta2O5.
+VERSION : 0.15
+
+NAME    : Tchoffo Fidele 
+ADDRESS : Cameroon yaounde 1 university
+E-MAIL  : ftchoffo@uycdc.uninet.cm
+PROJECT : computer simulation of electronic properties of materials
+          Working on Carbone nanotubes 
 VERSION : 0.15
 
 NAME    : Calin Floare
@@ -1379,6 +1685,26 @@ ADDRESS : Univ Joseph Fourier, Lab. de Spectrometrie Physique,
 E-MAIL  : cfloare@spectro.ujf-grenoble.fr
 PROJECT : Dynamics an reactivity in nanocavities (cyclodextrin inclusion
           compounds).
+VERSION : 0.15
+
+NAME    : Leonardo Fonseca
+ADDRESS : Motorola Inc
+E-MAIL  : l.fonseca@motorola.com
+PROJECT : I have been a user of Siesta since 1998 when I joined Motorola. My
+          group at that time consisted of Paul von Allmen, Rampi Ramprasad,
+          and myself. The code was needed for studies of Carbon based
+          materials for field emission applications
+VERSION : 0.15
+
+NAME    : Michael John Ford
+ADDRESS : University of Technology, Sydney
+E-MAIL  : mike.ford@uts.edu.au
+PROJECT : Modelling of copper silicides and other interface systems.
+          The modellling supports our experimental work to measure the
+          electronic properties of the Cu-Si interface formed when copper
+          is deposited onto  a Si surface. Other interface systems that will
+          be considered in the future include modelling of thiols on gold
+          surfaces to study the phase and stability of the SAM
 VERSION : 0.15
 
 NAME    : David Foulis 
@@ -1425,6 +1751,15 @@ PROJECT : I am working on developing InGaMnAs heterostructures like InGaMnAs
           QWs and InMnAs QDs. I have grown the material by MBE and have done
           some experimental measurements. I want to start developing some
           theory on the strained DMS heterostructures.
+VERSION : 0.15
+
+NAME    : Mario Ernesto Giroldo Valerio
+ADDRESS : Depto. de Fisica - Universidade Federal de Sergipe
+E-MAIL  : mvalerio@fisica.ufs.br
+PROJECT : -Study of materials for laser and optical devices applications
+          -Defects and defcet-controled properties
+          -difusion ans migration in solids
+          -scintilator materials and charge trap defects
 VERSION : 0.15
 
 NAME    : Vladimir Golubev
@@ -1509,6 +1844,12 @@ E-MAIL  : gmhe@263.net
 PROJECT : Study the surface structure of semiconductor, such as Si, Ge(001)
 VERSION :
 
+NAME    : Mathias F.G. Hedouin
+ADDRESS : NPRL-School of Physics University of Birmingham
+E-MAIL  : mathias@nprl.ph.bham.ac.uk
+PROJECT : Calculation of STM pictures of adsorbate onto metallic surface
+VERSION : 0.15
+
 NAME    : Georg Heimel 
 ADDRESS : Institute for Solid State Physics
           Graz University of Technology
@@ -1526,12 +1867,33 @@ PROJECT : We are dealing with organic molecular crystals, in particular with
           need to do dozens of geometry optimizations.
 VERSION : 0.15
 
+NAME    : Zaiter Hichem
+ADDRESS : laboratoire de chimie des materiaux-chaabat ersas- Constantine-
+E-MAIL  : hi_zaiter@hotmail.com
+PROJECT : band structure calculation with numerical basis
+VERSION :
+
 NAME    : Edmund Howard
 ADDRESS : Department of Biochemistry, Molecular Biology and Biophysics
           University of Minnesota
 E-MAIL  : eh@ddt.biochem.umn.edu
 PROJECT : I would like to evaluate SIESTA's performance on muscle proteins and
           peptides.
+VERSION :
+
+NAME    : Hao Hu
+ADDRESS : Dept. of Biochem. & Biophys., UNC-CH
+E-MAIL  : hao@femto.med.unc.edu
+PROJECT : The dynamical and structural properties of small organic molecules
+          in solution, as well as (part of ) some enzymatic reaction systems
+VERSION : 0.15
+
+NAME    : Qing-Miao Hu
+ADDRESS : Institute of Metal Research, Chinese Academy of Sciences
+E-MAIL  : qmhu@imr.ac.cn
+PROJECT : I've red a paper (J. M. Soler, et al.: J. Phys: Condens. Matter)
+          which introduce the SIESTA program. The programm attracted me
+          immediately. Thank you for you shareing it with us
 VERSION :
 
 NAME    : Margaret M. Hurley 
@@ -1581,11 +1943,38 @@ PROJECT : This project is intended to deal with intermetallic alloys that are
           large scale defects (e.g. dislocations, grain boundaries...).
 VERSION : 0.15
 
+NAME    : Yu-Ju Hsieh
+ADDRESS : Taiwan TKU  University
+E-MAIL  : 689180171@s89.tku.edu.tw
+PROJECT : Nano-tube Strcture Properties
+VERSION : 0.15
+
 NAME    : Anguang Hu
 ADDRESS : Department of chemistry, university of western ontario
 E-MAIL  : ahu3@uwo.ca
 PROJECT : Modeling molecular wires
+VERSION : 0.15
+
+NAME    : Hou Huaiyu
+ADDRESS : Shanghai University
+E-MAIL  : hhy74@hotmail.com
+PROJECT : Calculation of the structure of silicates
 VERSION :
+
+NAME    : Song Huajie
+ADDRESS : Institute of Chemical Materials (ICM)
+E-MAIL  : hjsongmoru@hotmail.com
+PROJECT : I am a Chinese postgraduate affiliated with ICM,and itend to use the
+          code to do some theoretical research on adsorption of some organic
+          moleculars onto crystals of my interest for my doctoral dissertation
+VERSION : 0.15
+
+NAME    : Toshiaki IITAKA
+ADDRESS : RIKEN (The Institute of Physical and Chemical Research)
+E-MAIL  : tiitaka@postman.riken.go.jp
+PROJECT : Study of Structure, Stability, Raman Spectrum of High Pressure Phases
+          of Gas Hydrates
+VERSION : 0.15
 
 NAME    : Eyvaz Isaev
 ADDRESS : Theoretical Physics Department, Moscow Steel and Alloys Institute
@@ -1606,12 +1995,57 @@ PROJECT : - performing geometry optimization regarding impurity-metal-doped
           - combining our many-electron method with a LCAO-based band method
 VERSION :
 
+NAME    : Fumiyuki Ishii
+ADDRESS : ADSM, Hiroshima University, Higashihiroshima 739-8530, Japan
+E-MAIL  : fumiyuki@hiroshima-u.ac.jp
+PROJECT : I am very interested in fundamental physics of ferroelectrics,
+          specifically for order-disorder materials such as NaNO2.
+          I have already studied about NaNO2 by first-principles FLAPW
+          calculation, Berry phase theory and effective-Hamiltonian.
+          (J. Phys. Soc. Jpn 71 (2002) 336) Following this study, I will try
+          to calculate  phase transitions process of NaNO2 by the first
+          principle molecule dynamics calculation.
+VERSION : 0.15
+
+NAME    : Seifollah Jalili
+ADDRESS : academic
+E-MAIL  : sjalili@chem.utoronto.ca
+PROJECT : I want to repaet the result of "Metallic bondinf and cluster
+          structure" (Phy. Rev. B 61, 200, 5771) and may be I use it for
+          calculating the Au cluster properties
+VERSION :
+
+NAME    : Jason Jennette
+ADDRESS : Dublin Institute of Technology
+E-MAIL  : jason.jennette@dit.ie
+PROJECT : We wish to use siesta to model the conductance of a system of gold
+          colloids and molecules.  The project has been mainly experimentaly
+          based up to this point and we are now interested in matching theory
+          with experiment.  The ultimate aim of the project is the measurment
+          of the conductance of single organic molecules
+VERSION : 0.15
+
+NAME    : Horng-Tay Jeng
+ADDRESS : National Center for Theoretical Sciences, Taiwan
+E-MAIL  : jeng@phys.nthu.edu.tw
+PROJECT : We are going to see the possibility of using Siesta for investigating
+          electronic and magnetic properties of nanostructrues in our future
+          project
+VERSION : 0.15
+
 NAME    : Zheng Jincheng
 ADDRESS : Department of Physics, National University of Singapore
 E-MAIL  : jincheng_zheng@yahoo.com
 PROJECT : To study the structural and electronic properties of nano-scale
           systems.
 VERSION : 0.15
+
+NAME    : Nathan Johnson
+ADDRESS : University of Louisville
+E-MAIL  : nathan.johnson@louisville.edu
+PROJECT : I'm the system administrator downloading this for the physics
+          department
+VERSION :
 
 NAME    : Marcin Kaczmarski
 ADDRESS : Dept. of Comput. Method in Phys. Institute of Phys.
@@ -1628,6 +2062,28 @@ PROJECT : Calculation of electron and, hopefully, positron wavefunctions and
           annihilation rates. study of defects by positron annihilation.
 VERSION : 0.15
 
+NAME    : Mallikarjun Karadge
+ADDRESS : 314, Old Engineering Bldg, Materials Sci and Engg,
+          State University of New York, Stony Brook, NY 11794-2275
+E-MAIL  : mkaradge@notes.cc.sunysb.edu
+PROJECT : Stability studies of intergrowth structures in HCP/FCT lamellar
+          composites : 
+          The program will be used to calculate free energies for different
+          intergrowth structures (and effect of interstitials on their
+          stability) observed during HCP to FCT transformations e.g in
+          Ti3Al/TiAl and DO19' Co3Pt/L10 CoPt
+VERSION :
+
+NAME    : Smagul Z. Karazhanov
+ADDRESS : Physical-Technical Institute, Mavlyanov Street 2 B,
+          Tashkent 700084, Uzbekistan
+E-MAIL  : smag@physic.uzsci.net
+PROJECT : Band structure calculations of dilute magnetic (i) semiconductors;
+          (ii) A study of electronic structure of the oxygen vacancy in
+          tungsten oxide. Currently I use PEtot code developed at NREL (USA),
+          which can be run only on supercomputers like IBM SP or Cray T3E.
+VERSION : 0.15
+
 NAME    : Marcus Karolewski (contact: www)
 ADDRESS : Department of Chemistry
           University of Alberta
@@ -1636,6 +2092,35 @@ PROJECT : I have a general interest in modelling the energy vs structure
           properties of various kinds of materials in order to  fit interatomic
           potentials (for use in MD simulations).
 VERSION : 
+
+NAME    : Stephen Kelty
+ADDRESS : Dept. of Chemistry, Seton Hall Univ
+E-MAIL  : keltyste@shu.edu
+PROJECT : Our research interests involve investigations of the electronic and
+          structural properties of layered materials. We are especially
+          interested in electronic properties localized at the layer edge.
+          Computational studies are intended to complement experimental STM
+          and AFM investigations of MX(2) layered transition metal
+          dichalcogenides (M = Mo, Nb, Ti, Re; X = S, Se, Te)
+VERSION : 0.15
+
+NAME    : Vladimir Khavryutchenko
+ADDRESS : University Paris-Sud, France 
+E-MAIL  : Vladimir.Khavryutchenko@lpces.u-psud.fr 
+PROJECT : Computation chemistry of silica, computation vibration spectroscopy,
+          software developing
+VERSION :
+
+NAME    : Boris Kiefer
+ADDRESS : Department of Geosciences; Princeton University
+E-MAIL  : bkiefer@princeton.edu
+PROJECT : Molecular dyamics of Ca(OH)_2. This material becomes X-ray amorphous
+          around 11 GPa at room temperature. The simulations will serve to
+          clarify this transition in terms of its microscopic signature and
+          give new insights into the microstructure of amorphous Ca(OH)_2.
+          The vibrational spectra of crystalline and amorphous Ca(OH)_2 will
+          be compared to search for a precursor of amorphization
+VERSION : 0.15
 
 NAME    : Dong-Hee Kim 
 ADDRESS : Department of Physics,
@@ -1658,10 +2143,32 @@ E-MAIL  : kino@issp.u-tokyo.ac.jp
 PROJECT : Electronic structure of solid state physiscs and biophysics.
 VERSION :
 
+NAME    : Michael Kiselev
+ADDRESS : Senior researcher of the Institute of Solution Chemistry,
+          Ivanovo, Russia
+E-MAIL  : mgk@isc-ras.ru
+PROJECT : The study of hydrogen bonds dynamics in alcohols at ambient
+          and supercritical conditions
+          Using Siesta program we are going to calculate OH frequencies
+          in methanol at ambient and supercritical conditions
+VERSION : 0.15
+
 NAME    : Mike Klopov
 ADDRESS : Tallinn Technical University, ehitajate 5
 E-MAIL  : misha@edu.ttu.ee
 PROJECT : HTSC phonons dynamic calculations
+VERSION : 0.15
+
+NAME    : Christian Koitzsch
+ADDRESS : University of Fribourg, Department of Physics, CH-1700 Fribourg,
+          Switzerland
+E-MAIL  : Christian.Koitzsch@unifr.ch
+PROJECT : We are an experimental group mainly involved in angular resolved
+          photoemission. We would like to obtain that program in order to
+          obtain band structures and densities of state for the materials
+          we are working with. Currently we are using the FLAPW Code Wien2K
+          but hope that Siesta's linear scaling can be of advantage for large
+          calculations.
 VERSION : 0.15
 
 NAME    : Ardavan Koohi
@@ -1669,6 +2176,34 @@ ADDRESS : Physics department, Shahid Beheshti university, Tehran, Iran.
 E-MAIL  : akouhi@seai.neda.net.ir
 PROJECT : I want first familier with this code and then define my project.
 VERSION : 0.15
+
+NAME    : Ioannis Koutselas
+ADDRESS : Ass. Prof. Univ. Ioannina
+E-MAIL  : ikoutsel@cc.uoi.gr
+PROJECT : Testing of various compounds in md mode and see if it fits
+          (as result, computer time etc) for these
+VERSION : 0.15
+
+NAME    : Gu Ting Kun
+ADDRESS : Shan Dong University
+E-MAIL  : gutk@sdu.edu.cn
+PROJECT : Liquid metal structure
+VERSION : 0.15
+
+NAME    : Yung-Chiang Lan
+ADDRESS : National Center for High-performance Computing, Taiwan
+E-MAIL  : c00ycl00@nchc.gov.tw
+PROJECT : We hope to study the structure and electron transport of nano-scale
+          semiconductor through the density-functional method.
+VERSION :
+
+NAME    : Simon Lappi
+ADDRESS : North Carloina State University
+E-MAIL  : selappi@unity.ncsu.edu
+PROJECT : Modeling of surface bound dna strands single and double in an effort
+          to understand the lower wavernumber vibrational bands and the energy
+          of strand packing
+VERSION :
 
 NAME    : Sergio Benites Legoas
 ADDRESS : Departamento de Fisica Aplicada, Instituto de Fisica,
@@ -1692,18 +2227,50 @@ E-MAIL  : liju99@mit.edu
 PROJECT : Mechanical properties of graphite, and others.
 VERSION : 0.15
 
+NAME    : Tsung-Lung Li
+ADDRESS : National Chia-Yi University
+E-MAIL  : quantum@mail.ncyu.edu.tw
+PROJECT : Feasibility study on the first-principle simualtion of semiconductor
+          devices such as MOSFETs.
+VERSION : 0.15
+
 NAME    : Steven Liem
 ADDRESS : Dept of chemistry, UMIST
 E-MAIL  : y.liem@umist.ac.uk
 PROJECT : Catalytic reactions on Cu surfaces. Surface resconstruction of Cu
           due to oxygen adsorption
-VERSION :
+VERSION : 0.15
+
+NAME    : Jyh Shing Lin
+ADDRESS : Department of Chemistry Tamkang University (Taiwan)
+E-MAIL  : jsl@mail.tku.edu.tw  and jslcamb@yahoo.com (from July to August)
+PROJECT : From professor V. Heine I began to pay attnetion to your siesta code.
+          I have done some calculations of SiH4/GeH4 adsorbed onto Si(100) and
+          Ge(100) surface using CASTEP. And I will initiate another project
+          concerning about the large organic molecules adsorbed  on Si(100)
+          surface. Professor Heine did mention to me that siesta code with
+          order n scheme should be very efficient for this project
+VERSION : 
+
+NAME    : Sergey Lisenkov
+ADDRESS : Institute of Biochemical Physics RAS
+E-MAIL  : lisenkov@sky.chph.ras.ru
+PROJECT : My project is carbon nanotubes, fullerenes
+VERSION : 0.15
 
 NAME    : L. M. Liu 
 ADDRESS : Institute of Metal Research
           Shenyang City, China 
 E-MAIL  : lmliu@imr.ac.cn
 PROJECT : Do researsh on computation materials
+VERSION : 0.15
+
+NAME    : Lei Liu 
+ADDRESS : Department of physics, University of Louisville
+E-MAIL  : lei.liu@louisville.edu
+PROJECT : To study geometry structure, electronic structure, and electric/heat
+          conductance of one-dimension systems such as single-wall/multi-wall
+          carbon nanotubes.
 VERSION : 0.15
 
 NAME    : Xin Liu
@@ -1723,12 +2290,33 @@ PROJECT : Our group has been focusing on the research of the atomic potentials
           this work.
 VERSION :
 
+NAME    : Francisco López Gejo
+ADDRESS : Università di Torino
+E-MAIL  : francisco.lopez@unito.it
+PROJECT : I am interested on possible mechanisms that cause Germanium doped
+          Silica to be photosensitive. It is known that some point defects
+          play an important role  in this problem. The electronic structure
+          of these defects depends on the local environment (degree of disorder,
+          presence of impurities,...)
+VERSION : 0.15
+
 NAME    : Jose M. López Sancho
 ADDRESS : Instituto de Matemáticas y Física Fundamental CSIC
 E-MAIL  : lopezsancho@imaff.cfmac.csic.es
 PROJECT : Como primer paso quiero conocer el programa y emplearlo en algunos
           casos sencillos. Prefiero la versión en fortran 90, si es posible.
 VERSION :
+
+NAME    : JE Lowther
+ADDRESS : School of Physics, University of the Witwatersrand
+E-MAIL  : lowther@physnet.phys.wits.ac.za
+PROJECT : Fundamental calculations on ultra hard materials including oxides,
+          nitrides.
+          Detailed calculations have been performed on zero-temperature
+          conditions. We should like to investigate the possibility that
+          SIESTA could take these calculations in finite temperature regions
+          and also investigate full MD aspects (e.g.annealling).
+VERSION : 0.15
 
 NAME    : Ted Lowther (contact: www)
 ADDRESS : Professor of Computational Physics
@@ -1740,6 +2328,24 @@ ADDRESS : Professor of Computational Physics
 E-MAIL  : lowther@[146.141.41.2]
 PROJECT :
 VERSION :
+
+NAME    : Wenchang Lu
+ADDRESS : Department of Physics, North Carolina State University
+E-MAIL  : luw@nemo.physics.ncsu.edu
+PROJECT : Calculating the electronic and optical properties of 
+          semiconductor surfaces
+VERSION : 0.15
+
+NAME    : Yanming Ma
+ADDRESS : Steacie Institute for Molecular Sciences,
+          National Research Council of Canada, Ottawa,Ontario, K1A 0R6
+E-MAIL  : Yanming.ma@nrc.ca
+PROJECT : It is my great interesting to learn how to calculate the large
+          system. I know the Siesta is a powerful tool to deal with large
+          system. I have registered to join the workshop in Cambrigde.
+          While, I am sorry for that it is not yet avilable for the research
+          project now.
+VERSION : 0.15
 
 NAME    : Iain MacLeod
 ADDRESS : Dept of Physics, University of Edinburgh, Scotland
@@ -1756,6 +2362,19 @@ PROJECT : Ab initio investigation of amine-nitromethane mixtures.
           and should be associated with this project.
 VERSION : 0.15
 
+NAME    : Laurence Magaud
+ADDRESS : Centre National de la Recherche Scientifique-LEPES
+E-MAIL  : Laurence.Magaud@grenoble.cnrs.fr
+PROJECT : Study of Shockley like surface states on Ni/Cu(111).
+          Noble metal Shockley like surface states have been
+          studied in details but much less information is 
+          available for d band metals. sp-d hybridization 
+          may influence the occurence of surface states.
+          We plan to study the electronic structure of Ni 
+          nanostructures on copper (111) in relation with 
+          STM experiments. 
+VERSION : 0.15
+
 NAME    : GE Maofa 
 ADDRESS : Nano-Molecule Photonics Facility,
           Communication Research Laboratory,
@@ -1766,7 +2385,7 @@ PROJECT : Our group are working on some molecular devices both in experimental
           molecules on metal or non-metal surfaces
 VERSION : 0.15
 
-NAME    : Prof. Brad Marston (contact: www)
+NAME    : Brad Marston (contact: www)
 ADDRESS : Department of Physics, Brown University, Providence,
           RI 02912-1843 USA
 E-MAIL  : marston@physics.brown.edu
@@ -1812,6 +2431,12 @@ E-MAIL  : emedina@ull.es
 PROJECT :
 VERSION : Interested in Win98 version
 
+NAME    : Jose Mejia
+ADDRESS : Universidad de Santiago de Chile
+E-MAIL  : jmejia@lauca.usach.cl
+PROJECT : Calculo de magnetismo no colineal en bicapas magneticas
+VERSION :
+
 NAME    : Manuel Melle-Franco (contact: siesta@polar)
 ADDRESS : Francesco Zerbetto's group
           Dip. di Chimica "G. Ciamician"
@@ -1824,6 +2449,33 @@ ADDRESS : Francesco Zerbetto's group
 E-MAIL  : manu@ciamserv.ciam.unibo.it
 PROJECT : Rotaxanes, catenanes and molecules alike (50-300) atoms
 VERSION : 0.15. Asking for collaboration. Maybe 1.1s?
+
+NAME    : Marcello Merli
+ADDRESS : Dip.to Scienze Terra - University of Pavia - Pavia - Italy
+E-MAIL  : merli@crystal.unipv.it
+PROJECT : We need Siesta code to carry on with our methodological studies on
+          the MEM reconstruction of experimental charge densities...
+VERSION :
+
+NAME    : Herman J.P. van Midden
+ADDRESS : Institute Jozef Stefan, Ljubljana, Slovenija
+E-MAIL  : Herman.vanMidden@ijs.si
+PROJECT : We would like to use your program to study the effects of
+          intercalation of I, Tl, Zn and other elements in Nb3X4 structures
+          with X=S,Se and Te.
+          In general we are interested in Transition metal di/tri calgonanites
+          showing Charge Dendisty Waves. We are not a theoretical physics
+          group, but wish to use the calculatrions to support our experimental
+          work. For this purpose we are currently using CAESAR
+          (http://www.primec.com) but run into the limitations of this method
+          and would like to start using a real abinitio method
+VERSION :
+
+NAME    : Simeoni Mirko
+ADDRESS : University of L'Aquila
+E-MAIL  : mirko.simeoni@aquila.infn.it
+PROJECT :
+VERSION : 0.15
 
 NAME    : Tsuyoshi Miyazaki
 ADDRESS : National Institute for Materials Science, 1-2-1 Sengen, Tsukuba,
@@ -1840,11 +2492,38 @@ PROJECT : Formation and simulation nanostructure (eg., carbon nanotube
           (storage, junction), nanowire...)
 VERSION :
 
+NAME    : Miguel-Angel Moreno Alba 
+ADDRESS : IEM.CSIC. Serrano, 123 
+E-MAIL  : imtm141@fresno.csic.es 
+PROJECT : Calculo de estructuras cristalinas de hielos en nubes estratosfericas
+          polares
+VERSION :
+
+NAME    : Ian Morrison
+ADDRESS : Joule Physics Laboratory, University of Salford, UK
+E-MAIL  : i.morrison@salford.ac.uk
+PROJECT : Ab-Initio studies of structure and dynamics in hydrogen bonded solids.
+VERSION :
+
+NAME    : Yuguang Mu
+ADDRESS : Theoretical Chemistry, Univ. Frankfurt, Germany
+E-MAIL  : ygmu@theochem.uni-frankfurt.de
+PROJECT : ab initio simulation of small peptide in water
+VERSION :
+
 NAME    : Anja Verena Mudring
 ADDRESS : Iowa State University,
           347 Spedding, Ames, Iowa 50010, USA
 E-MAIL  : mudring@iastate.edu
 PROJECT : Co-work with Gerard Tobias and your working group
+VERSION : 0.15
+
+NAME    : Sugata Mukherjee
+ADDRESS : S.N. Bose National Centre for Basic Sciences, Calcutta, India
+E-MAIL  : sugata@bose.res.in
+PROJECT : (a) Simulation of semiconductor clusters
+          (b) Ultrafast laser induced effects in semiconductors
+          (c) Surface electronic structure of metals & semiconductors
 VERSION : 0.15
 
 NAME    : Badis Nabila 
@@ -1853,6 +2532,12 @@ ADDRESS : Departement of Physics,
 E-MAIL  : badis_nabila@yahoo.fr
 PROJECT : I search to calculated a electronics proprietes of a silicon
           materials without and with a lacune.
+VERSION : 0.15
+
+NAME    : Oleksandr Ney
+ADDRESS : MPI of Microstructure Physics, Halle, Germany
+E-MAIL  : oney@mpi-halle.de
+PROJECT : Magnetism and dynamics of oxide interfaces (electronic theory).
 VERSION : 0.15
 
 NAME    : Duc Nguyen-Manh
@@ -1866,6 +2551,20 @@ PROJECT : Development of O(N) method which can bridge the gap between electronic
           tight-binding calculations and in the same time can handle simulations
           of big systems 
 VERSION : 0.15
+
+NAME    : Patrick Nichols
+ADDRESS : University of New Orleans
+E-MAIL  :	pnichols@uno.edu
+PROJECT : We wish to investigate the effect of defects on ferroelectrical
+          materials such as Ba_x Sr_(1-x) Ti O3
+VERSION : 0.15
+
+NAME    : Yung-mau Nie
+ADDRESS : National Center for Theoretical Science, Physics Division, Taiwan
+E-MAIL  : ymnie@phys.cts.nthu.edu.tw
+PROJECT : The phonon studying for the carbon nanotubes. To calculate the
+          vibrational density of states
+VERSION :
 
 NAME    : Pedro Antonio Nieto Fuentes 
 ADDRESS : Universidad Central de Venezuela / IVIC Grupo de Quimica Teorica 
@@ -1913,6 +2612,12 @@ E-MAIL  : ouyangl@umkc.edu
 PROJECT : Test 
 VERSION : 0.15
 
+NAME    : Yifang Ouyang
+ADDRESS : Department of Physics, Guangxi University, Nanning, 530004,China
+E-MAIL  : ouyangyf@gxu.edu.cn
+PROJECT : Calculating the thermodynamic properties of metal oxides
+VERSION : 0.15
+
 NAME    : Kiyoka Ozaki
 ADDRESS : OUS, Okayama University of Science, JAPAN
 E-MAIL  : kiyo@bizland.com
@@ -1927,7 +2632,7 @@ E-MAIL  : john.page@asu.edu
 PROJECT : Dr. G. B. Adams and I are engaged in an ongoing collaboration on
           various aspects of fullerenes. We currently have Siesta 0.12.31 and
           are requesting to upgrade to 0.15
-VERSION :
+VERSION : 0.15
 
 NAME    : Bicai Pan
 ADDRESS : 2406 Ferndale Ave., Ames, Iowa 50010, USA
@@ -1935,6 +2640,12 @@ E-MAIL  : bcpan@iastate.edu
 PROJECT : I am quite interested in the interaction between hydrogen atoms and
           silicon (111)(7x7) surface, as well as the absorption of silicon
           clusters on Si(111)(7x7) surface.
+VERSION : 0.15
+
+NAME    : Andrej I. Panin
+ADDRESS : Saint-Petersburg State University,Quantum Chemistry Dept
+E-MAIL  : andrej@AP2707.spb.edu
+PROJECT : DFT study of catlytic activity of colloid clusters
 VERSION : 0.15
 
 NAME    : Noa Park
@@ -1990,6 +2701,12 @@ PROJECT : I am doing some academic research in NJIT. currently, I use LDA+U
           can compare my results with SIESTA
 VERSION : 0.15
 
+NAME    : Xiaofeng Qian
+ADDRESS : Graduate student of MIT
+E-MAIL  : qianxf@mit.edu
+PROJECT : I am interested in electronic transport
+VERSION :
+
 NAME    : R.S. Rao (contact: siesta@polar)
 ADDRESS : HPPD, Purnima Labs.,
           Bhabha Atomic Research Centre,
@@ -2000,11 +2717,45 @@ PROJECT : Molecular dynamics simulations. We also are interested to examine
           potentials using the results of first principles calculations
 VERSION :
 
+NAME    : A.J. Ramirez-Cuesta
+ADDRESS : Rutherford Appleton Labs
+E-MAIL  : a.j.ramirez-cuesta@rl.ac.uk
+PROJECT : Interested in studying catalysis. In particular propene reactions on
+          FeSbO. Also interested in the motion of Ti interstitials in TiO2
+VERSION :
+
 NAME    : D. Reyes Ardila
 ADDRESS : U. de Santiago de Chile
 E-MAIL  : dreyes@lauca.usach.cl
 PROJECT : Simulation of phenomena in particulated systems
 VERSION :
+
+NAME    : Cristian Rivas
+ADDRESS : university of texas at dallas
+E-MAIL  : cor2282@utdallas.edu
+PROJECT : finding bandstructure of silicon nanowires after MD simulation
+VERSION :
+
+NAME    : Alain Rochefort
+ADDRESS : Physics Engineering Dept., Ecole Polytechnique de Montreal
+E-MAIL  : alain.rochefort@polymtl.ca
+PROJECT : I would be interested to use SIESTA for large scale calculations on
+          SAM structures deposed on metallic surfaces, and to adapt the code
+          to perform electron transport calculations.
+VERSION : 0.15
+
+NAME    : Jan Rosenzweig
+ADDRESS : DAMTP, University of Cambridge (UK)
+E-MAIL  : j.rosenzweig@damtp.cam.ac.uk
+PROJECT : Large-scale protein simulation
+VERSION :
+
+NAME    : Sudip Roy
+ADDRESS : Saarland University
+E-MAIL  : s.roy@mx.uni-saarland.de
+PROJECT : We want to use it in our TiO2 rutile, anatase cluster, solid and
+          surface calculations.
+VERSION : 0.15
 
 NAME    : Yang Rui 
 ADDRESS : Institute of Metal Research, Chinese Academy of Sciences 
@@ -2030,6 +2781,14 @@ PROJECT : Atomic and electronic structure of low-dimensional systems like
           nanodots and nanowires.
 VERSION : 0.15
 
+NAME    : Hiroshi Sakuma
+ADDRESS : Tokyo Institute of Technology, Japan
+E-MAIL  : hsaku@geo.titech.ac.jp
+PROJECT : I am interested in water related with earthquake. I would like to
+          calculate the dipole moment of water under various temperature and
+          pressure conditions
+VERSION :
+
 NAME    : Miguel Angel Salvado Sanchez
 ADDRESS : Dpto. Quimica Fisica y Analitica - Universidad de Oviedo
 E-MAIL  : mass@sauron.quimica.uniovi.es
@@ -2041,6 +2800,43 @@ NAME    : Adlane Sayede (contact: siesta@polar)
 ADDRESS : Algeria ??
 E-MAIL  : sayede_adlane@hotmail.com
 VERSION : ?
+
+NAME    : Roberto Scipioni
+ADDRESS : Oxford University
+E-MAIL  : roberto.scipioni@materials.ox.ac.uk
+PROJECT : Structural modelling of endohedral fullerenes in carbon nanotubes
+          for quantum computing implementation
+VERSION : 0.15
+
+NAME    : Andrew Scott
+ADDRESS : University of Leeds, U.K.
+E-MAIL  : a.j.scott@leeds.ac.uk
+PROJECT : Investigation of segregation at grain boundaries in iron
+VERSION : 0.15
+
+NAME    : Nikolai Sergueev
+ADDRESS : McGill University
+E-MAIL  : sergeyev@physics.mcgill.ca
+PROJECT : I am doing ab-initio calculations of molecules, carbon nano-tubes...
+          I am basically studying their transport properties
+          I would like to check my pseudopotentials using your code. So, I
+          would be really grateful if you could send me Siesta code(0.15)
+VERSION :
+
+NAME    : Howard Sheng
+ADDRESS : Johns Hopkins University
+E-MAIL  : hwsheng@jhu.edu
+PROJECT : I am very grateful to request a copy of SIESTA, which will be used
+          to simulate amorphous solids. Specifically, we will study the phase
+          transformation in an Al-based mulitinery matallic glass under high
+          pressure. Siesta is very suitable for this project. On one hand, we
+          are dealing with multi-component systems, where the interatomic
+          potentials are generally inaccessible. We thus have to resort to
+          the ab initio method. Secondly, a large system will be optimal for
+          the MD simulation of the amorphous phase, where local ordering is
+          expected. But I am not sure if this software is capable of handling
+          f electrons
+VERSION : 0.15
 
 NAME    : David M. Sherman
 ADDRESS : Dept. of Earth Sciences, University of Bristol, UK
@@ -2064,6 +2860,51 @@ E-MAIL  : Huangsp@engr.sc.edu
 PROJECT : Structure of nanocluster bimetallic.
 VERSION : 0.15
 
+NAME    : Koichi Shiraki
+ADDRESS : Graduate School of Science and Technology,
+          Tokyo Institute of Technology
+E-MAIL  : shiraki@geo.titech.ac.jp
+PROJECT : I am studying clay mineralogy. I am specially interested in edge
+          structure of phyllosilicate. Several structure model can be supposed
+          for the edge of clay minerals. But there is no means to investigate
+          it experimentally
+VERSION : 0.15
+
+NAME    : Ke San-Huang
+ADDRESS : duke
+E-MAIL  : shke@duke.edu
+PROJECT : electronic properties of nanostructures
+VERSION : 0.15
+
+NAME    : Abner de Siervo
+ADDRESS : State University of Campinas, SP, Brazil
+E-MAIL  : asiervo@ifi.unicamp.br
+PROJECT : We are a scientific group, that are interesting in study surface
+          problems like : surface alloy, absorption of gas in selected surfaces,
+          catalysis, fundamental process in electron emission, etc.
+          The basis of our research are LEED, AES, XPS, UPS and Photoelectron
+          Diffraction using the Brazilian Synchrotron Light Source facility,
+          and atomic theory. We are starting to use DFT calculation, with codes
+          like the PWSCF program and FHI98md. 
+          The present problem that we are studding is the formation of surface
+          alloy in Sb over Pd(111), and the property of Sb to be a surfactant
+          in the growth process of Pd over Pd(111).
+          We start with FHI98md, but the program for this system use a lot of
+          memory (2.2 Gb) and present some difficulties of convergence.
+          We are very interesting in try to use the Siesta code in this problem.
+          We have many results in PD study, XPS and RHEED about the structure
+          and growth process, but we would like some comparison with ab-initio
+          theory to complement the study
+VERSION : 0.15
+
+NAME    : Rada Simona
+ADDRESS : Babes-Bolyai University, Department of chemistry, Romania
+E-MAIL  : radasimona@yahoo.com, rsimona@chem.ubbcluj.ro
+PROJECT : Nanotubes with applications of actuators (molecular machines)
+           - simulation of molecular dynamics for nanotubes
+           - the design of actuators with nanotubes
+VERSION : 0.15
+
 NAME    : Barton B. Smith 
 ADDRESS : Dept. of Chemistry, Campus Box 215,
           University of Colorado, Boulder, CO 80309-0215, U.S.A. 
@@ -2080,6 +2921,13 @@ NAME    : Bartlomiej Sniezynski
 ADDRESS : AGH, al. Mickewicza 30, 30-059 Krakow, Poland 
 E-MAIL  : sniezyn@agh.edu.pl
 PROJECT : Nanomechanics simulations
+VERSION :
+
+NAME    : Vyacheslav Sokolov
+ADDRESS : Senior Researcher at Fiber Optics Research Center,
+          Russian Academy of Sciences, Moscow
+E-MAIL  : vence@status.comcor.ru
+PROJECT : Vibrations of defects in solids
 VERSION :
 
 NAME    : Gil Speyer
@@ -2108,6 +2956,44 @@ PROJECT : Solid Solution in Minerals of Earth's Mantle from First Principles
           arising from the incorporation of chemical substitution.
 VERSION : 0.15
 
+NAME    : Torsten E.M. Staab
+ADDRESS : University Bonn, HISKP, Nussallee 14-16, D-53115 Bonn, Germany
+E-MAIL  : staab@iskp.uni-bonn.de
+PROJECT : Reference: e-mail to Dr. Pablo Ordejon 19.07.2002 - answer 23.07.2002
+          Myself: I have been a Marie-Curie Fellow (PostDoc) in Risto
+                  Nieminen's group at the Helsinki University of Technology,
+                  Finland in 1998-2001. I have been working there with
+                  electronic structure calculations - both with pseudo
+                  potential plane wave code from Helsinki (FINGER) and a
+                  density functional based tight-binding code (SCC-DFTB) from
+                  Paderbon, Germany (Prof. Frauenheim). Since July 2001 I am
+                  back in Bonn, Germany (Group of Prof. K.Maier).
+          Recommendation: End of June I visited Helsinki and talked to
+                  Young-Joo Lee (a PostDoc from Korea in Risto's group), who
+                  warmly recommeded the use of SIESTA instead of FINGER or DFTB.
+                  He told me about the amazing performance of your code.
+          Project: In Bonn we are investigating among other things Aluminum
+                  alloy for the airplane production (in collaboration with the
+                  Airbus industries) with the technique of positron
+                  annihilation. These alloys are 2024 (Al-Cu-Mg) and 6013
+                  (Al-Mg-Si) and their hardness is coming from the formation
+                  of Cu-precipitations, Mg2Si-precipitations, respectively.
+                  Since positron annihilation is very sensitive to
+                  precipitation, we would like to calculate the atomic
+                  arrangements of the atoms (supercell sizes needed are 1000
+                  atoms and more), and from that - using a code from Helsinki -
+                  the positron annihilation parameters. They in turn can be
+                  directly compared to experimental data. 
+          So, SIESTA could contribute very important information for
+                  interpreting the experimental data on the Aluminum airplane
+                  alloys. 
+          Another topic we would like to deal with are large As-precipitations
+                  formed in so called LT-GaAs after heat treatment. There has
+                  been already done some work in this direction (see e.g. T.
+                  Staab et al. 87 (2001) 045505). Here again large supercells
+                  (1000 atoms and more) are needed.
+VERSION :
+ 
 NAME    : Dimas Suárez
 ADDRESS : Universidad de Oviedo
 E-MAIL  : dimas@correo.uniovi.es
@@ -2136,6 +3022,14 @@ PROJECT : Attempt to study reactive dynamics of polymer analogs (short chain
           confinment-induced chemistry
 VERSION : 0.15
 
+NAME    : Borys Szefczyk
+ADDRESS : Wroclaw University of Technology, Poland
+E-MAIL  : szefczyk@mml.ch.pwr.wroc.pl
+PROJECT : Analysis of the nature of catalytic effects with use of Molecular
+          Dynamics methods. Application to biological systems (enzymes etc.)
+          and inorganic catalysts
+VERSION : 
+
 NAME    : Mingqiu Tan (contact: www)
 ADDRESS : Dept. of Physics, Zhejiang University, Hangzhou 310027, China 
 E-MAIL  : mqtan@css.zju.edu.cn
@@ -2146,7 +3040,7 @@ NAME    : Charbel Tannous
 ADDRESS : LMB, CNRS 6135, UBO, POB; 809, Brest CEDEX, FRANCE
 E-MAIL  : tannous@univ-brest.fr
 PROJECT : Calculation of Polarised Surface band structure of magnetic materials
-VERSION :
+VERSION : 0.15
 
 NAME    : Baudilio Tejerina (contact: www)
 ADDRESS : 208 Spedding Hall. 50011 Ames,
@@ -2154,6 +3048,23 @@ ADDRESS : 208 Spedding Hall. 50011 Ames,
 E-MAIL  : tejerina@si.fi.ameslab.gov
 PROJECT : Surfaces characterization  and their interaction with small molecules.
 VERSION : 0.15
+
+NAME    : Luis Alberto Terrazos Javier
+ADDRESS : Departamento de Fisica da Universidade Federal de Sergipe
+E-MAIL  : lterrazo@fisica.ufs.br
+PROJECT : We are interested in hidrogen atoms in the surface of Cr2O3
+          insulator, in this case we wnat to know if the hidrogen atom is
+          absorved by the Cr2O3 surface. We also are interested in the
+          calculation of properties of moleculas chain in the surface of
+          Au, in this case we want to observe how the moleculas chain is
+          distribuited in the Au surface.
+VERSION : 0.15
+
+NAME    : Yan-Chr Tsai
+ADDRESS : Dept. of phys. Natl. Chung-Cheng Univ. Chia Yi, Taiwan
+E-MAIL  : tyan@phy.ccu.edu.tw
+PROJECT : To calculate the band structure of carbon nanotubes
+VERSION :
 
 NAME    : John S. Tse (siesta@polar)
 ADDRESS : Principal Research Officer
@@ -2178,6 +3089,14 @@ ADDRESS : Penn State University - Erie campus
 E-MAIL  : brt10@psu.edu
 PROJECT : Calculating band off sets in semiconductors.
 VERSION : 0.15
+
+NAME    : Trevor A. Tyson
+ADDRESS : New Jersey Institute of Technology
+E-MAIL  : tyson@adm.njit.edu
+PROJECT : Projects
+          1.  Studying metastable phases of metals ( E vs c/a computations)
+          2.  Electronic structure of transition metal oxides
+VERSION :
 
 NAME    : Laszlo Udvardi
 ADDRESS : Department of Theoretical Physics, TU Budapest
@@ -2210,6 +3129,27 @@ PROJECT : Combining ab initio calculations and simulation techniques I study
           in Pt(111) submonolayer homoepitaxy with or without CO as an
           adsorbates; Oscillatory surface intermixing in binary metallic alloys
 VERSION : 0.15
+
+NAME    : Pedro Venezuela
+ADDRESS : Instituto de Fisica, Universidade Federal Fluminense,
+          Niteroi, RJ, Brazil 
+E-MAIL  : vene@if.uff.br
+PROJECT : I intend to use the SIESTA code to study structural and electronic
+          properties of Amorphous Hydrogenated Carbon-Nitrogen. The disordered
+          network will be generated by a quench from the liquid Monte Carlo
+          process, using empirical potentials. After generating the amorphous
+          network, I will use the SIESTA code to relax the structure and to
+          obtain the electronic structure of the system
+VERSION : 0.15
+
+NAME    : Mohan L. Verma
+ADDRESS : Dept. of Applied Physics
+          Shree Shankaracharya College of Engineering
+          Junwani, Bhilai 490020
+E-MAIL  : mohanssi@rediffmail.com, mohan_anita1971@yahoo.com
+PROJECT : High ionic conducting materials in its various phases
+          (composite/glassy/polymers)
+VERSION :
  
 NAME    : Pablo E. Villamil (contact: www)
 ADDRESS : Carrera 28 # 5-267, Barrio Puerta Roja
@@ -2244,6 +3184,15 @@ PROJECT : The Center for Piezoelectrics by Design is a consortium of
           piezoelectric materials, such as perovskite oxides.
           More information can be obtained at:
           http://www.cpd.wm.edu
+VERSION : 0.15
+
+NAME    : Xiangang WAN
+ADDRESS : National Center for Theoretical Sciences, Taiwan
+E-MAIL  : xgwan@phys.cts.nthu.edu.tw
+PROJECT : I am a post-doctor at National Center for Theoretical Sciences,
+          Taiwan. My present work is connected with the magnetism of transition
+          metal clusters. So I am very interest in rge Siesta. I hope I can
+          use it
 VERSION : 0.15
 
 NAME    : Jiang-long Wang (contact: www)
@@ -2293,6 +3242,12 @@ E-MAIL  : xianghjun@sina.com
 PROJECT : I want this program for study. Thanks a lot.
 VERSION :
 
+NAME    : Changyong Xiao
+ADDRESS : Department of Chemistry, National University of Singapore, Singapore
+E-MAIL  : phyxc@nus.edu.sg
+PROJECT : Electronic calculation of polymers and oligomers
+VERSION : 0.15
+
 NAME    : Ruihua Xie
 ADDRESS : Department of Chemistry, Queen's University, Kingston, ON K7L 3N6
 E-MAIL  : xie@chem.queensu.ca
@@ -2305,6 +3260,12 @@ ADDRESS : Computer Center, NUS, 2 Engineer Drive 4, Singapore 117584
 E-MAIL  : ccezxh@nus.edu.sg
 PROJECT : Explore the GaAs semiconductor properties
 VERSION : 0.15
+
+NAME    : Pengxiang Xu
+ADDRESS : insititute of physics,beijing 603,china
+E-MAIL  : pengxiangxu@21cn.com
+PROJECT : calculating the electron state of new stucture of the carbon nanotubes
+VERSION :
 
 NAME    : Jinlong Yang
 ADDRESS : Professor, Laboratory of Bond Selective Chemistry,
@@ -2319,12 +3280,26 @@ VERSION : 0.15
 
 NAME    : S. Yashonath (siesta@polar)
 ADDRESS : Solid State & Structural Chemistry Unit,
+          Supercomputer Education and Research Centre,
           Indian Institute of Science,
           Bangalore - 560 012, India
-E-MAIL  : yashonat@sscu.iisc.ernet.in
+E-MAIL  : yashonat@sscu.iisc.ernet.in, yashonat@hamsadvani.serc.iisc.ernet.in
 PROJECT : Project involves simulating catalytic processes of organic reactions
           by means of inorganic catalysts. These include zeolites which are
           complex materials with rich variety
+VERSION :
+
+NAME    : Weiguo Yin
+ADDRESS : University of Nebraska at Omaha, USA
+E-MAIL  : wyin@mail.unomaha.edu
+PROJECT : Simulation of ferroelectrics in molecular solids
+VERSION :
+
+NAME    : I.T. Yoon
+ADDRESS : QSRC, Dongguk University
+E-MAIL  : ityoon@hotmail.com
+PROJECT : Band structure and density of states calculation of diluted magnetic
+          semiconductors
 VERSION :
 
 NAME    : Rong Yu 
@@ -2335,6 +3310,36 @@ PROJECT : (1) Calculating atomic structure of interfaces, for example
           (2) Segregation of alloying elements to interfaces of materials
 VERSION :
 
+NAME    : Federico Zahariev
+ADDRESS : University of British Columibia, Vancouver, CANADA
+E-MAIL  : fzahari@chem.ubc.ca
+PROJECT : I am a post-doc at the Chem Dep of UBC. We are a computational
+          chemistry group and would like to use the code in our research on
+          zeolites. We would fully comply with the copyright requirements of
+          the code
+VERSION :
+
+NAME    : R. Q. Zhang
+ADDRESS : City University of Hong Kong
+E-MAIL  : aprqz@cityu.edu.hk
+PROJECT : Our computational efforts are closely related to the experimental
+          activities in the Center Of Super-Diamond and Advanced Films
+          (COSDAF; http://www.cityu.edu.hk/cosdaf/), Established in 1998 as
+          one of the six university-wide research centers, COSDAF is evolved
+          from the Super-Diamond Laboratory of the Department of Physics and
+          Materials Science, City University of Hong Kong. COSDAF aims at
+          carrying out research in the science and technology of diamond and
+          strategically selected functional films. It strives to deliver the
+          cutting-edge thin-film technologies to Hong Kong Industry. The chief
+          theoretician, Dr. R.Q. Zhang, Assistant Professor in Department of
+          Physics and Materials Science, also serves as one of the core members
+          of COSDAF.
+          Our theoretical/computational works include structural, electronic,
+          energetic, kinetic, and dynamic properties/behaviors of
+          gas-phase/surface reactions, materials nucleation and growth
+          processes, nanostructures, and microstructures
+VERSION :
+ 
 NAME    : Wenqing Zhang
 ADDRESS : Princeton Materials Inst., Princeton U
 E-MAIL  : wenqingz@princeton.edu
@@ -2347,6 +3352,15 @@ ADDRESS : Motorola Inc
 E-MAIL  : xzhang@helios.phy.ohiou.edu
 PROJECT : SrTiO3 bulk and surface properties
 VERSION :
+
+NAME    : Yongbin-Zhang
+ADDRESS : Physics department of Yunnan University Kunming Yunnan P.R.China
+E-MAIL  : zybzyb9062@hotmail.com
+PROJECT : Now I am studying Condensed Matter Physics in Department of Physics
+          in Yunnan University in P.R.China. Now I try to model the hydrogen
+          behavior in nano titanium. I want to use several methods including
+          ab initio and classical molecular dynamic.
+VERSION : 0.15
 
 NAME    : Jin Cheng Zheng
 ADDRESS : Department of Physics  
@@ -2372,6 +3386,13 @@ E-MAIL  : lgzhou@imr.ac.cn
 PROJECT : Calculations on the mechanical properties of Metal Hybrides. 
 VERSION : 0.15
 
+NAME    : Weidong Zou
+ADDRESS : Department of Physics,Huazhong University of Science and Techonogy
+E-MAIL  : zouwd@263.net, zouwd@yahoo.com.cn
+PROJECT : I,m looking for a quick, low memory ab initio code for relaxing (3D)
+          structures. As Prof. F. Lemoigno'suggestion, I want to have a try
+          with SIESTA.
+VERSION : 0.15
 
 ============================================================================
 

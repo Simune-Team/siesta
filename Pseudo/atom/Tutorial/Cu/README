@@ -1,0 +1,15 @@
+The d electrons in Cu can be treated
+either as "core" or "valence" (and
+actually as "core but corrected").
+
+Exercises:N
+
+1. Generate and test the "3d in valence" 
+   pseudopotential found here.
+
+2. Prepare an input file for a
+ "3d in core" pseudopotential. Generate
+   the pseudo and test it.
+
+3. Put core corrections to the pseudopotential
+   of case 3.

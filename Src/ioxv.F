@@ -125,16 +125,30 @@ c If data has been read in then broadcast the values to all Nodes
       call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       if (found.and.(task.eq.'read' .or. task.eq.'READ')) then
         call MPI_Bcast(na,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+#ifdef NODAT
+        call MPI_Bcast(cell(1,1),9,MPI_double_precision,0,
+     .    MPI_Comm_World,MPIerror)
+        call MPI_Bcast(vcell(1,1),9,MPI_double_precision,0,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cell(1,1),9,DAT_double,0,
      .    MPI_Comm_World,MPIerror)
         call MPI_Bcast(vcell(1,1),9,DAT_double,0,
      .    MPI_Comm_World,MPIerror)
+#endif
         call MPI_Bcast(isa,na,MPI_integer,0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(iza,na,MPI_integer,0,MPI_Comm_World,MPIerror)
+#ifdef NODAT
+        call MPI_Bcast(xa(1,1),3*na,MPI_double_precision,0,
+     .    MPI_Comm_World,MPIerror)
+        call MPI_Bcast(va(1,1),3*na,MPI_double_precision,0,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(xa(1,1),3*na,DAT_double,0,
      .    MPI_Comm_World,MPIerror)
         call MPI_Bcast(va(1,1),3*na,DAT_double,0,
      .    MPI_Comm_World,MPIerror)
+#endif
       endif
 #endif
 

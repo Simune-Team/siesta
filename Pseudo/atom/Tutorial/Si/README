@@ -1,0 +1,15 @@
+Standard case: Si
+
+Generate a pseudopotential by
+running
+
+pg Si.tm2.inp
+
+(analyze and plot the results)
+
+Then test the resulting pseudopotential
+by running
+
+pt Si.test.inp Si.tm2.vps
+
+(analyze the results).

@@ -7,10 +7,12 @@ C Finds total exchange-correlation energy and potential for a
 C spherical electron density distribution.
 C This version implements the Local (spin) Density Approximation and
 C the Generalized-Gradient-Aproximation with the 'explicit mesh 
-C functional' method of White & Bird, PRB 50, 4954 (1994).
+C functional' approach of White & Bird, PRB 50, 4954 (1994).
 C Gradients are 'defined' by numerical derivatives, using 2*NN+1 mesh
 C   points, where NN is a parameter defined below
-C Coded by L.C.Balbas and J.M.Soler. December 1996. Version 0.5.
+C Ref: L.C.Balbas et al, PRB 64, 165110 (2001)
+C Wrtten by J.M.Soler using algorithms developed by 
+C   L.C.Balbas, J.L.Martins and J.M.Soler, Dec.1996
 C ************************* INPUT ***********************************
 C CHARACTER*(*) FUNCTL : Functional to be used:
 C              'LDA' or 'LSD' => Local (spin) Density Approximation
@@ -22,6 +24,7 @@ C           'PW91' => GGA Perdew & Wang, JCP, 100, 1290 (1994)
 C           'PW92' => LSD Perdew & Wang, PRB, 45, 13244 (1992). This is
 C                     the local density limit of the next:
 C            'PBE' => GGA Perdew, Burke & Ernzerhof, PRL 77, 3865 (1996)
+C            'LYP' => GGA Becke-Lee-Yang-Parr (see subroutine blypxc)
 C                     Uppercase is optional
 C INTEGER IREL         : Relativistic exchange? (0=>no, 1=>yes)
 C INTEGER NR           : Number of radial mesh points
@@ -93,6 +96,7 @@ C Set GGA switch
         GGA = .FALSE.
       ELSEIF ( FUNCTL.EQ.'GGA' .OR. FUNCTL.EQ.'gga') THEN
         GGA = .TRUE.
+        IF (MR.LT.NR) STOP 'ATOMXC: Parameter MR too small'
       ELSE
         WRITE(6,*) 'ATOMXC: Unknown functional ', FUNCTL
         STOP
@@ -287,23 +291,23 @@ C      X-alpha parameter:
        ENDIF
        RS = (3 / (4*PI*D) )**TRD
        VXP = -(3*ALP/(2*PI*A0*RS))
-       EXP = 3*VXP/4
+       EXP_VAR = 3*VXP/4
        IF (IREL .EQ. 1) THEN
          BETA = C014/RS
          SB = SQRT(1+BETA*BETA)
          ALB = LOG(BETA+SB)
          VXP = VXP * (-PFIVE + OPF * ALB / (BETA*SB))
-         EXP = EXP * (ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
+         EXP_VAR = EXP_VAR * (ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
        ENDIF
        VXF = 2**TRD*VXP
-       EXF = 2**TRD*EXP
+       EXF = 2**TRD*EXP_VAR
        IF (NSP .EQ. 2) THEN
-         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP)
-         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP)
-         EX    = EXP + FZ*(EXF-EXP)
+         VX(1) = VXP + FZ*(VXF-VXP) + (1-Z)*FZP*(EXF-EXP_VAR)
+         VX(2) = VXP + FZ*(VXF-VXP) - (1+Z)*FZP*(EXF-EXP_VAR)
+         EX    = EXP_VAR + FZ*(EXF-EXP_VAR)
        ELSE
          VX(1) = VXP
-         EX    = EXP
+         EX    = EXP_VAR
        ENDIF
       END
 
@@ -359,7 +363,8 @@ C       Find diagonal elements of the gradient
       ELSE
         NS = NSPIN
         DO 20 IS = 1,NSPIN
-          DD(IS) = D(IS)
+cag       Avoid negative densities
+          DD(IS) = max(D(IS),0.0d0)
           DO 30 IX = 1,3
             GDD(IX,IS) = GD(IX,IS)
    30     CONTINUE
@@ -369,6 +374,10 @@ C       Find diagonal elements of the gradient
       IF (AUTHOR.EQ.'PBE' .OR. AUTHOR.EQ.'pbe') THEN
         CALL PBEXC( IREL, NS, DD, GDD,
      .              EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
+cag
+      ELSE IF (AUTHOR.EQ.'LYP'.OR.AUTHOR.EQ.'lyp') THEN
+        CALL BLYPXC(NSPIN,D,GD,EPSX,EPSC,dEXdn,dECdn,dEXdgn,dECdgn)
+cag
       ELSEIF (AUTHOR.EQ.'PW91' .OR. AUTHOR.EQ.'pw91') THEN
         CALL PW91XC( IREL, NS, DD, GDD,
      .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
@@ -438,7 +447,7 @@ C *********** OUTPUT ***********************************************
 C REAL*8 EPSX, EPSC : Exchange and correlation energy densities
 C REAL*8 VX(NSPIN), VC(NSPIN) : Exchange and correlation potentials,
 C                               defined as dExc/dD(ispin)
-C REAL*8 DVXDN(NSPIN,NSPIN)  :  Derivative of exchange potential
+C REAL*8 DVXDN(NSPIN,NSPIN)  :  Derivative of exchange potential with
 C                               respect the charge density, defined 
 C                               as DVx(spin1)/Dn(spin2)
 C REAL*8 DVCDN(NSPIN,NSPIN)  :  Derivative of correlation potential
@@ -471,7 +480,8 @@ C       Note: D(1)=D11, D(2)=D22, D(3)=Real(D12), D(4)=Im(D12)
       ELSE
         NS = NSPIN
         DO 10 IS = 1,NSPIN
-          DD(IS) = D(IS)
+cag       Avoid negative densities
+          DD(IS) = max(D(IS),0.0d0)
    10   CONTINUE
       ENDIF
 
@@ -1090,7 +1100,7 @@ C *****************************************************************
 C  Perdew-Zunger parameterization of Ceperley-Alder exchange and 
 C  correlation. Ref: Perdew & Zunger, Phys. Rev. B 23 5075 (1981).
 C  Adapted by J.M.Soler from routine velect of Froyen's 
-C    pseudopotential generation program. Madrid, Jan'97. Version 0.5.
+C    pseudopotential generation program. Madrid, Jan'97.
 C **** Input *****************************************************
 C INTEGER IREL    : relativistic-exchange switch (0=no, 1=yes)
 C INTEGER NSP     : spin-polarizations (1=>unpolarized, 2=>polarized)
@@ -1150,9 +1160,9 @@ C      X-alpha parameter:
        PARAMETER ( ALP = 2.D0 / 3.D0 )
 
 C      Other variables converted into parameters by J.M.Soler
-C      Tiny number added to ONE to avoid numerical errors
+       PARAMETER ( TINY = 1.D-6 )
        PARAMETER ( PI   = 3.14159265358979312D0 )
-       PARAMETER ( ONEZ = 1.0D0 + 1.D-12 ) 
+       PARAMETER ( TWO  = 2.0D0 ) 
        PARAMETER ( HALF = 0.5D0 ) 
        PARAMETER ( TRD  = 1.D0 / 3.D0 ) 
        PARAMETER ( FTRD = 4.D0 / 3.D0 )
@@ -1164,8 +1174,8 @@ C      Tiny number added to ONE to avoid numerical errors
 
 C      Find density and polarization
        IF (NSP .EQ. 2) THEN
-         D1 = MAX(DS(1),0.D0)
-         D2 = MAX(DS(2),0.D0)
+         D1 = MAX(DS(1),ZERO)
+         D2 = MAX(DS(2),ZERO)
          D = D1 + D2
          IF (D .LE. ZERO) THEN
            EX = ZERO
@@ -1176,10 +1186,23 @@ C      Find density and polarization
            VC(2) = ZERO
            RETURN
          ENDIF
+c
+c        Robustness enhancement by Jose Soler (August 2002)
+c
          Z = (D1 - D2) / D
-         FZ = ((ONEZ+Z)**FTRD+(ONEZ-Z)**FTRD-2)/TFTM
-         FZP = FTRD*((ONEZ+Z)**TRD-(ONEZ-Z)**TRD)/TFTM 
-         DFZPDN = FTRD*TRD*((ONEZ+Z)**(-ALP) + (ONEZ-Z)**(-ALP))/TFTM
+         IF (Z .LE. -ONE) THEN
+           FZ = (TWO**FTRD-TWO)/TFTM
+           FZP = -FTRD*TWO**TRD/TFTM
+           DFZPDN = FTRD*TRD*TWO**(-ALP)/TFTM
+         ELSEIF (Z .GE. ONE) THEN
+           FZ = (TWO**FTRD-TWO)/TFTM
+           FZP = FTRD*TWO**TRD/TFTM
+           DFZPDN = FTRD*TRD*TWO**(-ALP)/TFTM
+         ELSE
+           FZ = ((ONE+Z)**FTRD+(ONE-Z)**FTRD-TWO)/TFTM
+           FZP = FTRD*((ONE+Z)**TRD-(ONE-Z)**TRD)/TFTM 
+           DFZPDN = FTRD*TRD*((ONE+Z)**(-ALP) + (ONE-Z)**(-ALP))/TFTM
+         ENDIF
        ELSE
          D = DS(1)
          IF (D .LE. ZERO) THEN
@@ -1197,16 +1220,21 @@ C      Find density and polarization
 
 C      Exchange
        VXP = CXP / RS
-       EXP = 0.75D0 * VXP
+       EXP_VAR = 0.75D0 * VXP
        IF (IREL .EQ. 1) THEN
          BETA = C014/RS
-         SB = SQRT(1+BETA*BETA)
-         ALB = LOG(BETA+SB)
+         IF (BETA .LT. TINY) THEN
+           SB = ONE + HALF*BETA**2
+           ALB = BETA
+         ELSE
+           SB = SQRT(1+BETA*BETA)
+           ALB = LOG(BETA+SB)
+         ENDIF
          VXP = VXP * (-PFIVE + OPF * ALB / (BETA*SB))
-         EXP = EXP *(ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
+         EXP_VAR = EXP_VAR *(ONE-OPF*((BETA*SB-ALB)/BETA**2)**2) 
        ENDIF
        VXF = CXF * VXP
-       EXF = CXF * EXP
+       EXF = CXF * EXP_VAR
        DVXPDN = TRD * VXP / D
        DVXFDN = TRD * VXF / D
 
@@ -1240,7 +1268,7 @@ C      Correlation
          ECF=(C0311+C0014*RS)*RSLOG-C0538-C0096*RS
          VCF=(C0311+CON5*RS)*RSLOG-CON6-CON7*RS
          DVCFDN = (CON5*RS*RSLOG + (CON5-CON7)*RS + C0311)*(-TRD/D)
-         DECFDN = (C0014*RS*RSLOG + (C0014-C0096)*RS + C0311)*(-TRD/D)
+         DECPDN = (C0014*RS*RSLOG + (C0014-C0096)*RS + C0311)*(-TRD/D)
        ENDIF
 
        ISP1 = 1
@@ -1248,35 +1276,35 @@ C      Correlation
 
 C      Find up and down potentials
        IF (NSP .EQ. 2) THEN
-         EX    = EXP + FZ*(EXF-EXP)
+         EX    = EXP_VAR + FZ*(EXF-EXP_VAR)
          EC    = ECP + FZ*(ECF-ECP)
-         VX(1) = VXP + FZ*(VXF-VXP) + (ONEZ-Z)*FZP*(EXF-EXP)
-         VX(2) = VXP + FZ*(VXF-VXP) - (ONEZ+Z)*FZP*(EXF-EXP)
-         VC(1) = VCP + FZ*(VCF-VCP) + (ONEZ-Z)*FZP*(ECF-ECP)
-         VC(2) = VCP + FZ*(VCF-VCP) - (ONEZ+Z)*FZP*(ECF-ECP)
+         VX(1) = VXP + FZ*(VXF-VXP) + (ONE-Z)*FZP*(EXF-EXP_VAR)
+         VX(2) = VXP + FZ*(VXF-VXP) - (ONE+Z)*FZP*(EXF-EXP_VAR)
+         VC(1) = VCP + FZ*(VCF-VCP) + (ONE-Z)*FZP*(ECF-ECP)
+         VC(2) = VCP + FZ*(VCF-VCP) - (ONE+Z)*FZP*(ECF-ECP)
 
 C        Derivatives of exchange potential respect the density
 
          DVXDN(ISP1,ISP1) =
      .             DVXPDN
-     .              +  FZP*(VXF-VXP-EXF+EXP)*( 2.D0*D2/(D*D) )
+     .              +  FZP*(VXF-VXP-EXF+EXP_VAR)*( 2.D0*D2/(D*D) )
      .              +  FZ*(DVXFDN-DVXPDN)+(1-Z)*FZP*(VXF-VXP)/(4.D0*D)
-     .              +  (1-Z)*DFZPDN*(EXF-EXP)*( 2.D0*D2/(D*D) )
+     .              +  (1-Z)*DFZPDN*(EXF-EXP_VAR)*( 2.D0*D2/(D*D) )
          DVXDN(ISP1,ISP2) =
      .                 DVXPDN
-     .              +  FZP*(VXF-VXP-EXF+EXP)*(-2.D0*D1/(D*D) )
+     .              +  FZP*(VXF-VXP-EXF+EXP_VAR)*(-2.D0*D1/(D*D) )
      .              +  FZ*(DVXFDN-DVXPDN)+(1-Z)*FZP*(VXF-VXP)/(4.D0*D)
-     .              +  (1-Z)*DFZPDN*(EXF-EXP)*( -2.D0*D1/(D*D) )
+     .              +  (1-Z)*DFZPDN*(EXF-EXP_VAR)*( -2.D0*D1/(D*D) )
          DVXDN(ISP2,ISP1) =
      .                 DVXPDN
-     .              +  FZP*(VXF-VXP-EXF+EXP)*( 2.D0*D2/(D*D) )
+     .              +  FZP*(VXF-VXP-EXF+EXP_VAR)*( 2.D0*D2/(D*D) )
      .              +  FZ*(DVXFDN-DVXPDN)-(1+Z)*FZP*(VXF-VXP)/(4.D0*D)
-     .              -  (1+Z)*DFZPDN*(EXF-EXP)*( 2.D0*D2/(D*D) )
+     .              -  (1+Z)*DFZPDN*(EXF-EXP_VAR)*( 2.D0*D2/(D*D) )
          DVXDN(ISP2,ISP2) =
      .                 DVXPDN
-     .              +  FZP*(VXF-VXP-EXF+EXP)*(-2.D0*D1/(D*D) )
+     .              +  FZP*(VXF-VXP-EXF+EXP_VAR)*(-2.D0*D1/(D*D) )
      .              +  FZ*(DVXFDN-DVXPDN)-(1+Z)*FZP*(VXF-VXP)/(4.D0*D)
-     .              -  (1+Z)*DFZPDN*(EXF-EXP)*( -2.D0*D1/(D*D) )
+     .              -  (1+Z)*DFZPDN*(EXF-EXP_VAR)*( -2.D0*D1/(D*D) )
 
 C        Derivatives of correlation potential respect the density
 
@@ -1302,7 +1330,7 @@ C        Derivatives of correlation potential respect the density
      .              - (1+Z)*DFZPDN*(ECF-ECP)*( -2.D0*D1/(D*D) )
 
        ELSE
-         EX    = EXP
+         EX    = EXP_VAR
          EC    = ECP
          VX(1) = VXP
          VC(1) = VCP
@@ -1322,3 +1350,260 @@ C      Change from Rydbergs to Hartrees
     5    CONTINUE
    10  CONTINUE
       END
+
+       subroutine blypxc(nspin,dens,gdens,EX,EC,
+     .                   dEXdd,dECdd,dEXdgd,dECdgd) 
+c ***************************************************************
+c Implements Becke gradient exchange functional (A.D. 
+c Becke, Phys. Rev. A 38, 3098 (1988)) and Lee, Yang, Parr
+c correlation functional (C. Lee, W. Yang, R.G. Parr, Phys. Rev. B
+c 37, 785 (1988)), as modificated by Miehlich,Savin,Stoll and Preuss,
+c Chem. Phys. Lett. 157,200 (1989). See also Johnson, Gill and Pople,
+c J. Chem. Phys. 98, 5612 (1993). Some errors were detected in this
+c last paper, so not all of the expressions correspond exactly to those
+c implemented here.
+c Written by Maider Machado. July 1998.
+c **************** INPUT ******************************************** 
+c integer nspin          : Number of spin polarizations (1 or 2)
+c real*8  dens(nspin)    : Total electron density (if nspin=1) or
+c                           spin electron density (if nspin=2)
+c real*8  gdens(3,nspin) : Total or spin density gradient
+c ******** OUTPUT *****************************************************
+c real*8  ex             : Exchange energy density
+c real*8  ec             : Correlation energy density
+c real*8  dexdd(nspin)   : Partial derivative
+c                           d(DensTot*Ex)/dDens(ispin),
+c                           where DensTot = Sum_ispin( DENS(ispin) )
+c                          For a constant density, this is the
+c                          exchange potential
+c real*8  decdd(nspin)   : Partial derivative
+c                           d(DensTot*Ec)/dDens(ispin),
+c                           where DensTot = Sum_ispin( DENS(ispin) )
+c                          For a constant density, this is the
+c                          correlation potential
+c real*8  dexdgd(3,nspin): Partial derivative
+c                           d(DensTot*Ex)/d(GradDens(i,ispin))
+c real*8  decdgd(3,nspin): Partial derivative
+c                           d(DensTot*Ec)/d(GradDens(i,ispin))
+c ********* UNITS ****************************************************
+c Lengths in Bohr
+c Densities in electrons per Bohr**3
+c Energies in Hartrees
+c Gradient vectors in cartesian coordinates
+c ********************************************************************
+ 
+      implicit none
+      integer nspin
+      double precision  dens(nspin), gdens(3,nspin), EX, EC,
+     .                  dEXdd(nspin), dECdd(nspin), dEXdgd(3,nspin),
+     .                  dECdgd(3,nspin)
+
+c Internal variables
+      integer is,ix,ois
+      double precision pi, beta, thd, tthd, thrhlf, half, fothd,
+     .                 d(2),gd(3,2),dmin, ash,gdm(2),denmin,dt, 
+     .                 g(2),x(2),a,b,c,dd,onzthd,gdmin, 	     
+     .                 ga, gb, gc,becke,dbecgd(3,2),
+     .                 dgdx(2), dgdxa, dgdxb, dgdxc,dgdxd,dbecdd(2),
+     .                 den,omega, domega, delta, ddelta,cf,
+     .                 gam11, gam12, gam22, LYPa, LYPb1,
+     .                 LYPb2,dLYP11,dLYP12,dLYP22,LYP,
+     .                 dd1g11,dd1g12,dd1g22,dd2g12,dd2g11,dd2g22,
+     .                 dLYPdd(2),dg11dd(3,2),dg22dd(3,2),
+     .                 dg12dd(3,2),dLYPgd(3,2)
+  
+c Lower bounds of density and its gradient to avoid divisions by zero
+      parameter ( denmin=1.d-8 )
+      parameter (gdmin=1.d-8)
+      parameter (dmin=1.d-5)
+
+c Fix some numerical parameters 
+      parameter ( thd = 1.d0/3.d0, tthd=2.d0/3.d0 )
+      parameter ( thrhlf=1.5d0, half=0.5d0,
+     .            fothd=4.d0/3.d0, onzthd=11.d0/3.d0)
+
+c Empirical parameter for Becke exchange functional (a.u.)
+      parameter(beta= 0.0042d0) 
+
+c Constants for LYP functional (a.u.) 
+      parameter(a=0.04918d0, b=0.132d0, c=0.2533d0, dd=0.349d0)
+
+       pi= 4*atan(1.d0)
+       
+
+c Translate density and its gradient to new variables
+      if (nspin .eq. 1) then
+        d(1) = half * dens(1)
+        d(1) = max(denmin,d(1))
+        d(2) = d(1)
+        dt = max( denmin, dens(1) )
+        do ix = 1,3
+          gd(ix,1) = half * gdens(ix,1)    
+          gd(ix,2) = gd(ix,1)
+        enddo 
+      else
+        d(1) = dens(1)
+        d(2) = dens(2)
+        do is=1,2
+         d(is) = max (denmin,d(is))
+        enddo
+        dt = max( denmin, dens(1)+dens(2) )  
+        do ix = 1,3
+          gd(ix,1) = gdens(ix,1)
+          gd(ix,2) = gdens(ix,2)
+        enddo
+      endif
+
+      gdm(1) = sqrt( gd(1,1)**2 + gd(2,1)**2 + gd(3,1)**2 )
+      gdm(2) = sqrt( gd(1,2)**2 + gd(2,2)**2 + gd(3,2)**2 )
+ 
+      do is=1,2
+      gdm(is)= max(gdm(is),gdmin)
+      enddo
+
+c Find Becke exchange energy
+       ga = -thrhlf*(3.d0/4.d0/pi)**thd
+      do is=1,2
+       if(d(is).lt.dmin) then
+        g(is)=ga
+       else
+        x(is) = gdm(is)/d(is)**fothd
+        gb = beta*x(is)**2
+        ash=log(x(is)+sqrt(x(is)**2+1)) 
+        gc = 1+6*beta*x(is)*ash        
+        g(is) = ga-gb/gc
+       endif
+      enddo
+
+c   Density of energy 
+      becke=(g(1)*d(1)**fothd+g(2)*d(2)**fothd)/dt
+
+      
+c Exchange energy derivatives
+       do is=1,2
+        if(d(is).lt.dmin)then
+         dbecdd(is)=0.
+         do ix=1,3
+          dbecgd(ix,is)=0.
+         enddo
+        else
+        dgdxa=6*beta**2*x(is)**2
+        ash=log(x(is)+sqrt(x(is)**2+1))
+        dgdxb=x(is)/sqrt(x(is)**2+1)-ash
+        dgdxc=-2*beta*x(is)
+        dgdxd=(1+6*beta*x(is)*ash)**2
+        dgdx(is)=(dgdxa*dgdxb+dgdxc)/dgdxd
+        dbecdd(is)=fothd*d(is)**thd*(g(is)-x(is)*dgdx(is))
+        do ix=1,3
+         dbecgd(ix,is)=d(is)**(-fothd)*dgdx(is)*gd(ix,is)/x(is)
+        enddo 
+        endif
+       enddo
+
+c  Lee-Yang-Parr correlation energy
+      den=1+dd*dt**(-thd)
+      omega=dt**(-onzthd)*exp(-c*dt**(-thd))/den
+      delta=c*dt**(-thd)+dd*dt**(-thd)/den
+      cf=3.*(3*pi**2)**tthd/10.
+      gam11=gdm(1)**2
+      gam12=gd(1,1)*gd(1,2)+gd(2,1)*gd(2,2)+gd(3,1)*gd(3,2)
+      gam22=gdm(2)**2
+      LYPa=-4*a*d(1)*d(2)/(den*dt)
+      LYPb1=2**onzthd*cf*a*b*omega*d(1)*d(2)
+      LYPb2=d(1)**(8./3.)+d(2)**(8./3.)
+      dLYP11=-a*b*omega*(d(1)*d(2)/9.*(1.-3.*delta-(delta-11.)
+     .*d(1)/dt)-d(2)**2)
+      dLYP12=-a*b*omega*(d(1)*d(2)/9.*(47.-7.*delta)
+     .-fothd*dt**2)
+      dLYP22=-a*b*omega*(d(1)*d(2)/9.*(1.-3.*delta-(delta-11.)*
+     .d(2)/dt)-d(1)**2)
+
+c    Density of energy
+      LYP=(LYPa-LYPb1*LYPb2+dLYP11*gam11+dLYP12*gam12
+     .+dLYP22*gam22)/dt
+
+c   Correlation energy derivatives
+       domega=-thd*dt**(-fothd)*omega*(11.*dt**thd-c-dd/den)
+       ddelta=thd*(dd**2*dt**(-5./3.)/den**2-delta/dt)
+
+c   Second derivatives with respect to the density
+       dd1g11=domega/omega*dLYP11-a*b*omega*(d(2)/9.*
+     . (1.-3.*delta-2*(delta-11.)*d(1)/dt)-d(1)*d(2)/9.*
+     . ((3.+d(1)/dt)*ddelta-(delta-11.)*d(1)/dt**2))
+
+       dd1g12=domega/omega*dLYP12-a*b*omega*(d(2)/9.*
+     . (47.-7.*delta)-7./9.*d(1)*d(2)*ddelta-8./3.*dt)
+
+      dd1g22=domega/omega*dLYP22-a*b*omega*(1./9.*d(2)
+     . *(1.-3.*delta-(delta-11.)*d(2)/dt)-d(1)*d(2)/9.*
+     . ((3.+d(2)/dt)*ddelta-(delta-11.)*d(2)/dt**2)-2*d(1))
+
+       
+      dd2g22=domega/omega*dLYP22-a*b*omega*(d(1)/9.*
+     . (1.-3.*delta-2*(delta-11.)*d(2)/dt)-d(1)*d(2)/9.*
+     . ((3+d(2)/dt)*ddelta-(delta-11.)*d(2)/dt**2))
+      
+ 
+      dd2g12=domega/omega*dLYP12-a*b*omega*(d(1)/9.*
+     . (47.-7.*delta)-7./9.*d(1)*d(2)*ddelta-8./3.*dt)
+      
+      dd2g11=domega/omega*dLYP11-a*b*omega*(1./9.*d(1)
+     . *(1.-3.*delta-(delta-11.)*d(1)/dt)-d(1)*d(2)/9.*
+     . ((3.+d(1)/dt)*ddelta-(delta-11.)*d(1)/dt**2)-2*d(2))
+
+
+        dLYPdd(1)=-4*a/den*d(1)*d(2)/dt*
+     . (thd*dd*dt**(-fothd)/den
+     . +1./d(1)-1./dt)-2**onzthd*cf*a*b*(domega*d(1)*d(2)*
+     . (d(1)**(8./3.)+d(2)**(8./3.))+omega*d(2)*(onzthd*
+     . d(1)**(8./3.)+d(2)**(8./3.)))+dd1g11*gam11+
+     . dd1g12*gam12+dd1g22*gam22
+
+
+       dLYPdd(2)=-4*a/den*d(1)*d(2)/dt*(thd*dd*dt**(-fothd)/den
+     . +1./d(2)-1./dt)-2**onzthd*cf*a*b*(domega*d(1)*d(2)*
+     . (d(1)**(8./3.)+d(2)**(8./3.))+omega*d(1)*(onzthd*
+     . d(2)**(8./3.)+d(1)**(8./3.)))+dd2g22*gam22+
+     . dd2g12*gam12+dd2g11*gam11
+
+
+c   Second derivatives with respect to the density gradient
+       do is=1,2
+        if (is.eq.1)then
+          ois=2
+        else
+          ois=1
+        endif
+        do ix=1,3
+         dg11dd(ix,is)=2*gd(ix,is)
+         dg22dd(ix,is)=2*gd(ix,is)
+         dg12dd(ix,is)=gd(ix,ois)
+         dLYPgd(ix,is)=dLYP11*dg11dd(ix,is)+dLYP12*dg12dd(ix,is)+
+     .   dLYP22*dg22dd(ix,is)
+        enddo
+       enddo
+
+c    Set output arguments
+       EX=becke
+       EC=LYP
+       do is=1,nspin
+        dEXdd(is)=dbecdd(is)
+        dECdd(is)=dLYPdd(is)
+        do ix=1,3
+         dEXdgd(ix,is)=dbecgd(ix,is)
+         dECdgd(ix,is)=dLYPgd(ix,is)
+        enddo
+       enddo
+       end 
+
+
+
+
+
+
+
+
+
+
+
+

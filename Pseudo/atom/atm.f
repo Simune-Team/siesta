@@ -25,6 +25,7 @@ C     .. Local Scalars ..
 C     ..
 C     .. Local Arrays ..
       double precision econf(100)
+      integer nn(norbmx)
 C     ..
 C     .. Arrays in Common ..
       double precision vn1d(nrmax), 
@@ -188,11 +189,18 @@ c
          if (iter .eq. maxit) iconv = 1
 c
 c  compute orbitals
-c
+c     
+cag      Use another array to avoid passing no directly (it is
+cag      in a common block shared by atm and dsolvX)
+cag
+         do i=1,norb
+            nn(i) = no(i)
+         enddo
+cag
          if (icon2 .lt. 2) then
-            call dsolv1(1,norb,no)
+            call dsolv1(1,norb,nn)
          else
-            call dsolv2(iter,iconv,ispp,1,norb,ncore,no)
+            call dsolv2(iter,iconv,ispp,1,norb,ncore,nn)
          end if
 c
 c  set up output electronic potential from charge density

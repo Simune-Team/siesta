@@ -158,8 +158,13 @@ c write target stress down --------------------------------------------------
 
 #ifdef MPI
 c globalise information
+#ifdef NODAT
+          call MPI_Bcast(tstres(1,1),9,MPI_double_precision,0,
+     .      MPI_Comm_World,MPIerror)
+#else
           call MPI_Bcast(tstres(1,1),9,DAT_double,0,MPI_Comm_World,
      .      MPIerror)
+#endif
 #endif
 
 c moduli of original cell vectors for fractional coor scaling back to au ---
@@ -182,8 +187,13 @@ c           precon = modcel(1)
           endif
 #ifdef MPI
 c globalise information
+#ifdef NODAT
+          call MPI_Bcast(precon,1,MPI_double_precision,0,MPI_Comm_World,
+     .      MPIerror)
+#else
           call MPI_Bcast(precon,1,DAT_double,0,MPI_Comm_World,
      .      MPIerror)
+#endif
 #endif
 
 c dimension of space where E is minimized -----------------------------------
@@ -214,10 +224,17 @@ c initialize and read cgaux and cgcntr if present and wanted ---------------
           endif
 #ifdef MPI
 c globalise information
+#ifdef NODAT
+          call MPI_Bcast(cgaux,2*(na*3+6),MPI_double_precision,0,
+     .      MPI_Comm_World,MPIerror)
+          call MPI_Bcast(cgcntr,21,MPI_double_precision,0,
+     .      MPI_Comm_World,MPIerror)
+#else
           call MPI_Bcast(cgaux,2*(na*3+6),DAT_double,0,MPI_Comm_World,
      .      MPIerror)
           call MPI_Bcast(cgcntr,21,DAT_double,0,MPI_Comm_World,
      .      MPIerror)
+#endif
           call MPI_Bcast(relaxd,1,MPI_logical,0,MPI_Comm_World,
      .      MPIerror)
           call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,

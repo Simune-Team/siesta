@@ -2,42 +2,16 @@
 
 C ***
 C SIESTA Density Functional LCAO program package.
-C Copyright by E.Artacho, P.Ordejon, D.Sanchez-Portal and 
-C   J.M.Soler, 1996, 1997.
-C The use of this program is allowed for non-for-profit research only.
-C Copy or disemination of all or part of this package is not
-C permitted without prior and explicit authorization by the authors.
-C Send comments/suggestions/bug-reports to:
-C   Jose M. Soler: jose.soler@uam.es
-C   Pablo Ordejon: ordejon@icmab.es
+C Copyright by Fundacion General Universidad Autonoma de Madrid:
+C E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal 
+C and J.M.Soler, 1996-2003
 C ***
-C This program uses the flexible data format (FDF) package,
-C copyrighted by A.Garcia and J.M.Soler, 1996, 1997
+C Copy or disemination of all or part of this package is not permitted 
+C without prior and explicit authorization by the authors.
+C Send comments/suggestions/bug-reports to siesta@uam.es
 C ***
-C This program uses exchange-correlation routines copyrighted
-C by C.Balbas, J.L.Martins and J.M.Soler, 1996, 1997.
-C ***
-C Routine idiag copyrighted by J.Moreno and J.M.Soler, 1990.
-C ***
-C Routine pulayx copyrighted by In-Ho Lee and P.Ordejon, 1997.
-C ***
-C This program uses routines from 'Numerical Recipes', copyrighted
-C by W.H.Press, A.A.Teukolsky, W.T.Veterlig and B.P.Flannery.
-C Some of these routines have been modified or their name changed.
-C ***
-C The atomic part uses old routines from unknown authors. If you wrote
-C any of these routines, please let us know, to include the apropriate
-C acknowledgements.
-C ***
-C This module was written by P.Ordejon and J.M.Soler, 1996, 1997, 1998.
-C ***
-C Parallelisation changes introduced JDG, 1998, 1999.
-C ***
-C General architectural issues: Alberto Garcia, 1997, 1998, 1999, 2000
-C ***
-C
+
 C  Modules
-C
       use precision
       use sys
       use interfaces   ! 
@@ -68,7 +42,7 @@ C
      .  level, maxbk, maxk, maxnh, maxnhold,
      .  maxna, maxsav, mscell(3,3), mullipop, ncells,
      .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
-     .  nkpnt, nmove, nnia, ns, nsc(3), nscf, nspin, 
+     .  nkpnt, nmove, nnia, ns, nsc(3), nscold(3), nscf, nspin, 
      .  ntm(3), no_l, nxij, pmax, nkpol, nhist, io_sig
 
       integer
@@ -131,12 +105,12 @@ C
      .  ebk, eo, qo
 
       logical
-     .  chebef, dminit, default, dumpcharge, 
-     .  first, fixspin, found, foundxv, 
-     .  gamma, inspn, itest, last, lastst, mix, mmix, negl, noeta, 
+     .  auxchanged, chebef, dminit, default, dumpcharge, 
+     .  first, fixauxcell, fixspin, found, foundxv, gamma,
+     .  initdmaux, inspn, itest, last, lastst, mix, mmix, negl, noeta, 
      .  outlng, overflow, pulfile, relaxd,
      .  same, savehs, savevh, savevt, savdrh, savrho,
-     .  usesavecg, usesavelwf, usesavedm, usesavexv, 
+     .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
      .  harrisfun, printeigen
@@ -174,6 +148,7 @@ C
      .  tempion / 0.0_dp /
      .  no_l, nnamax /2*1/
      .  nauxpul, nbk, ns, nspin, nxij /5*1/
+     .  nscold / 3*0 /
      .  ncells, nsc, mscell / 1,   1,1,1,   1,0,0, 0,1,0, 0,0,1 /
 c---------------------------------------------------------------------
 
@@ -225,6 +200,7 @@ C Initialize some variables
       DUext = 0.0_dp
       Eharrs = 0.0_dp
       Eions = 0.0_dp
+      Ekinion = 0.0_dp
       Emad =0.0_dp
       FreeE = 0.0_dp
 
@@ -257,8 +233,13 @@ C Read simulation sizes ...............................................
 
 #ifdef MPI
       call MPI_Bcast(na_u,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+#ifdef NODAT
+      call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(ucell(1,1),9,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 
       if (Node.ne.0) then    ! Allocate isa and xa in rest of nodes
          nullify(isa,xa)
@@ -266,8 +247,13 @@ C Read simulation sizes ...............................................
          call realloc(xa,1,3,1,na_u,name='xa',routine='siesta')
       endif
       call MPI_Bcast(isa,na_u,MPI_integer,0,MPI_Comm_World,MPIerror)
+#ifdef NODAT
+      call MPI_Bcast(xa(1,1),3*na_u,MPI_double_precision,0,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_Bcast(xa(1,1),3*na_u,DAT_double,0,MPI_Comm_World,
      .  MPIerror)
+#endif
 #endif
 
 C Allocate arrays based on read sizes ................
@@ -343,6 +329,8 @@ C Find some switches ..................................................
         default   = fdf_boolean('UseSaveData'     , .false.)
         usesavexv = fdf_boolean('MD.UseSaveXV'    , default)
         savehs    = fdf_boolean('SaveHS'          , .false.)
+        fixauxcell= fdf_boolean('FixAuxillaryCell', .false.)
+        initdmaux = fdf_boolean('ReInitialiseDM'  , .false.)
 
         rijmin    = fdf_physical( 'WarningMinimumAtomicDistance',
      .                                              1._dp, 'Bohr' )
@@ -362,8 +350,14 @@ C Find some switches ..................................................
       call MPI_Bcast(default,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(usesavexv,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(savehs,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-
+      call MPI_Bcast(fixauxcell,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+      call MPI_Bcast(initdmaux,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#ifdef NODAT
+      call MPI_Bcast(rijmin,1,MPI_double_precision,0,MPI_Comm_World,
+     .  MPIerror)
+#else
       call MPI_Bcast(rijmin,1,DAT_double,0,MPI_Comm_World,MPIerror)
+#endif
 #endif
 
 C .....................
@@ -615,10 +609,10 @@ C Find required supercell
           nsc(i) = 1 + 2 * rmaxh / veclen
           mscell(i,i) = nsc(i)
         endif
+        nscold(i) = nsc(i)
       enddo
 
 C Find auxiliary supercell (required only for k sampling) ............
-
       call superc( ucell, scell, nsc)
 
 C Initialize atomic velocities to zero ................................
@@ -777,16 +771,24 @@ C Print k-points
         endif
  
 C Find required supercell
+        auxchanged = .false.
         do i = 1,3
           mscell(1:3,i) = 0.0_dp
           if (gamma) then
             nsc(i) = 1
             mscell(i,i) = 1
           else
-            veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-            nsc(i) = 1 + 2 * rmaxh / veclen
-            mscell(i,i) = nsc(i)
+            if (fixauxcell) then
+              nsc(i) = nscold(i)
+              mscell(i,i) = nsc(i)
+            else
+              veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
+              nsc(i) = 1 + 2 * rmaxh / veclen
+              mscell(i,i) = nsc(i)
+            endif
           endif
+          if (nsc(i).ne.nscold(i)) auxchanged = .true.
+          nscold(i) = nsc(i)
         enddo
 
 C Madelung correction for charged systems .............................
@@ -797,10 +799,8 @@ C Madelung correction for charged systems .............................
       endif
 C End variable cell actualization
 
-C auxiliary supercell
-
-        call superc(ucell,  scell, nsc)
-
+C Auxiliary supercell
+      call superc(ucell, scell, nsc)
 
 C Print unit cell for variable cell ...................................
       if ( varcel.and.(IOnode) ) call outcell(ucell)
@@ -985,13 +985,15 @@ C
       endif
 
 C Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      if (allocated(S).and.size(S).lt.maxnh) then
-        call memory('D','D',size(H),'siesta')
-        deallocate(H)
-        call memory('D','D',size(H0),'siesta')
-        deallocate(H0)
-        call memory('D','D',size(S),'siesta')
-        deallocate(S)
+      if (allocated(S)) then
+        if (size(S).lt.maxnh) then
+          call memory('D','D',size(H),'siesta')
+          deallocate(H)
+          call memory('D','D',size(H0),'siesta')
+          deallocate(H0)
+          call memory('D','D',size(S),'siesta')
+          deallocate(S)
+        endif
       endif
       if (.not.allocated(S)) then
         allocate(H(maxnh,nspin))
@@ -1052,12 +1054,21 @@ C set density matrix for first step
       if (istp .ne. 1 .and. (idyn .eq. 7)
      $         .and. usesavedm)  dminit = .true.
 
+C If auxillary cell has changed, optionally reset density matrix
+C and set usesavedata to false to avoid reading back saved copy
+      if (initdmaux.and.auxchanged) then
+        dminit = .true.
+        usesavedmloc = .false.
+      else
+        usesavedmloc = usesavedm
+      endif
+
       if (dminit)
      .   call initdm(Datm, Dscf, Dold, lasto, na_s,
      .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
      .               numh, numhold, listhptr, listhptrold,
      .               listh, listhold, iaorb, found, inspn, 
-     .               usesavedm, no_u)
+     .               usesavedmloc, no_u)
 
 
 C Initialize energy-density matrix to zero for first call to overfsm
@@ -1154,8 +1165,13 @@ C Normalize density matrix to exact charge ...........................
           enddo
         enddo
 #ifdef MPI
+#ifdef NODAT
+        call MPI_AllReduce(qsol,buffer1,1,MPI_double_precision,
+     .    MPI_sum,MPI_Comm_World,MPIerror)
+#else
         call MPI_AllReduce(qsol,buffer1,1,DAT_double,
      .    MPI_sum,MPI_Comm_World,MPIerror)
+#endif
         qsol=buffer1
 #endif
         if (IOnode) then
@@ -1215,8 +1231,13 @@ C Kinetic: energy, forces, stress and matrix elements .................
      .                 Ekin, fal, stressl, H, Node, Nodes) 
 #ifdef MPI
 C Global reduction of energy terms
+#ifdef NODAT
+          call MPI_AllReduce(Ekin,buffer1,1,MPI_double_precision,
+     .      MPI_sum,MPI_Comm_World,MPIerror)
+#else
           call MPI_AllReduce(Ekin,buffer1,1,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
+#endif
           Ekin = buffer1
 #endif
         endif
@@ -1231,8 +1252,13 @@ C Non-local-pseudop: energy, forces, stress and matrix elements .......
      .                Node, Nodes) 
 #ifdef MPI
 C Global reduction of energy terms
+#ifdef NODAT
+          call MPI_AllReduce(Enl,buffer1,1,MPI_double_precision,
+     .      MPI_sum,MPI_Comm_World,MPIerror)
+#else
           call MPI_AllReduce(Enl,buffer1,1,DAT_double,MPI_sum,
      .      MPI_Comm_World,MPIerror)
+#endif
           Enl = buffer1
 #endif
         endif
@@ -1264,8 +1290,13 @@ C Non-SCF part of total energy .......................................
           enddo
 #ifdef MPI
 C Global reduction of E0
+#ifdef NODAT
+          call MPI_AllReduce(E0,buffer1,1,MPI_double_precision,
+     .      MPI_sum,MPI_Comm_World,MPIerror)
+#else
           call MPI_AllReduce(E0,buffer1,1,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
+#endif
           E0 = buffer1
 #endif
           E0 = E0 - Eions + Ena
@@ -1394,8 +1425,13 @@ C ispin=4 => Imag(D12)
           enddo
 #ifdef MPI
 C Global reduction of DEharr
+#ifdef NODAT
+          call MPI_AllReduce(DEharr,buffer1,1,MPI_double_precision,
+     .      MPI_sum,MPI_Comm_World,MPIerror)
+#else
           call MPI_AllReduce(DEharr,buffer1,1,DAT_double,
      .      MPI_sum,MPI_Comm_World,MPIerror)
+#endif
           DEharr = buffer1
 #endif
 C ..................
@@ -1418,8 +1454,13 @@ C Pulay mixing
 
 C Ensure that dDmax is the same on all nodes for convergence test/output
 #ifdef MPI
+#ifdef NODAT
+          call MPI_AllReduce(dDmax,buffer1,1,MPI_double_precision,
+     .      MPI_max,MPI_Comm_World,MPIerror)
+#else
           call MPI_AllReduce(dDmax,buffer1,1,DAT_double,
      .      MPI_max,MPI_Comm_World,MPIerror)
+#endif
           dDmax = buffer1
 #endif
 C ...................
@@ -1536,10 +1577,17 @@ C Write final Kohn-Sham Energy ........................................
 C Global reduction of forces and stresses
       allocate(fatmp(3,na_u))
       call memory('A','D',3*na_u,'siesta')
+#ifdef NODAT
+      call MPI_AllReduce(stressl(1,1),stresstmp(1,1),9,
+     .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
+      call MPI_AllReduce(fal(1,1),fatmp(1,1),3*na_u,
+     .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(stressl(1,1),stresstmp(1,1),9,
      .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
       call MPI_AllReduce(fal(1,1),fatmp(1,1),3*na_u,
      .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+#endif
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
       call memory('D','D',size(fatmp),'siesta')
@@ -1869,7 +1917,7 @@ c     Find the desired energy range
      .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
      .             nbk, bk, ebk, no_u)
 
-#endif                          ! PDOS calc (only in serial version)
+#endif
       endif                     ! PDOS calc (do_pdos)
 
 C Print program's energy decomposition
@@ -2028,8 +2076,13 @@ c Print spin polarization
         enddo
 #ifdef MPI
 C Global reduction of spin components
+#ifdef NODAT
+        call MPI_AllReduce(qspin,qtmp,nspin,
+     .    MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
+#else
         call MPI_AllReduce(qspin,qtmp,nspin,
      .    DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
+#endif
         qspin(1:nspin) = qtmp(1:nspin)
 #endif
         if (nspin .eq. 2) then
@@ -2166,10 +2219,17 @@ c       Find the desired energy range
           call destroy(p)
         endif
 #ifdef MPI
+#ifdef NODAT
+        call MPI_Bcast(e1,1,MPI_double_precision,0,
+     .    MPI_Comm_World,MPIerror)
+        call MPI_Bcast(e2,1,MPI_double_precision,0,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(e1,1,DAT_double,0,
      .    MPI_Comm_World,MPIerror)
         call MPI_Bcast(e2,1,DAT_double,0,
      .    MPI_Comm_World,MPIerror)
+#endif
 #endif
 
 c       Find the density matrix for states between e1 and e2

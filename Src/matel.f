@@ -126,7 +126,7 @@ C Internal variable types and dimensions ----------------------------
 
       DOUBLE PRECISION ::
      .  C, CPROP, DFFR0, DFFRMX, DSRDR, FFL(0:NQ), FFQ(0:NQ),
-     .  Q, R, RI(0:NR), SR, X12(3)
+     .  Q, R, SR, X12(3)
 
       DOUBLE PRECISION, SAVE ::
      .  PI, QMAX, RMAX
@@ -146,7 +146,7 @@ C Internal variable types and dimensions ----------------------------
      .  OLDEFS
 
       EXTERNAL
-     .  PROPOR, RADFFT, SPLIN, SPLINU, TIMER
+     .  PROPOR, RADFFT, SPLINE, SPLINT, TIMER
 C -------------------------------------------------------------------
 
 C Start time counter 
@@ -400,13 +400,12 @@ C           Store new radial function and setup spline interpolation
               IFFR(L3) = NFFR
               CFFR(L3) = 1.D0
               DO IR = 0,NR
-                RI(IR) = IR * RMAX / NR
                 FFR(IR,1,NFFR) = FFL(IR)
               ENDDO
               DFFR0 = HUGE(1.D0)
               DFFRMX = 0.D0
-              CALL SPLIN( RI, FFR(0,1,NFFR), NR+1, DFFR0, DFFRMX,
-     .                    FFR(0,2,NFFR) )
+              CALL SPLINE( RMAX/NR, FFR(0,1,NFFR), NR+1, DFFR0, DFFRMX,
+     .                     FFR(0,2,NFFR) )
 
 C JMS debug
 c              write(41,'(/,a,4i6)') 'if1,if2,nffr =', if1,if2,nffr
@@ -495,7 +494,7 @@ C     Find spherical harmonics times R**L
 C         Interpolate radial functions and obtain SH expansion
           DO IFFY = INDFFY(IFF-1)+1, INDFFY(IFF)
             JFFR = INDFFR(IFFY)
-            CALL SPLINU( 0.D0, RMAX, FFR(0,1,JFFR),
+            CALL SPLINT( RMAX/NR, FFR(0,1,JFFR),
      .                   FFR(0,2,JFFR), NR+1, R, SR, DSRDR )
             JLM = ILMFF(IFFY)
             S12 = S12 + SR * FFY(IFFY) * Y(JLM)

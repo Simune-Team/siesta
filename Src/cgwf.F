@@ -112,7 +112,7 @@ C Set step for line minim: lam (empirically 1.0e-1 works fine)
 
 C Calculate control vectors only if in first SCF step ....................
       if (iscf .eq. 1) then
-	iopt = 0
+        iopt = 0
         call eandg(iopt,eta,enum,lam,
      .             maxnh,numh,listhptr,listh,ncmax,numc,listc,h,s,c,
      .             nbasis,nbands,e3,e,xi,dm,edm,nbasisloc,maxnct)
@@ -140,15 +140,20 @@ C .....................
 
 #ifdef MPI
 C Global reduction of Gnorm
+#ifdef NODAT
+      call MPI_AllReduce(partial,rtmp,1,MPI_double_precision,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(partial,rtmp,1,DAT_double,MPI_sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       partial = rtmp
 #endif
 
 C Loop for the CG minimization ____________________________________________
       do 14 its = 1,itmax
         iter = its
-	numit = numit + 1
+        numit = numit + 1
 
         iout = .true.
         
@@ -158,15 +163,15 @@ C Check if the gradient at current point is negative, and sufficiently
 C large to avoid problems. Otherwise, set a fixed lambda
 C to CG iteration cycle with iout = .false.  ................................
         if (abs(partial) .le. 1.5e-8_dp) then
-  	  lambda = lm*0.4_dp
-	  if (lm .eq. 0.0_dp) lambda=0.4_dp
+          lambda = lm*0.4_dp
+          if (lm .eq. 0.0_dp) lambda=0.4_dp
 C	  iout = .false.
-	  goto 1000
+          goto 1000
         endif
         if (partial .gt. 0.0_dp) then
-	  lambda = -0.0001_dp
-	  iout = .false.
-	  goto 1000
+          lambda = -0.0001_dp
+          iout = .false.
+          goto 1000
         endif
 C ...........................
 
@@ -189,11 +194,11 @@ C cycle with iout = .false.  ................................
           lambda = lm * 0.3_dp
           if (lm .eq. 0.0_dp) lambda = 0.01_dp
           iout = .false.
-	  goto 1000
+          goto 1000
         endif
 C ...........................
 
-	iout = .true.
+        iout = .true.
 
 1000    continue
 
@@ -223,12 +228,12 @@ C ...........................
 
 C Check if minimization has converged ......................................
         if (2.0_dp*abs(fe-fp).le.ftol*(abs(fe)+abs(fp)+eps)) then
-	  if (iout) then
+          if (iout) then
             if (Node.eq.0) then
-	      write(6,"(/a)") 'cgwf:  CG tolerance reached'
+              write(6,"(/a)") 'cgwf:  CG tolerance reached'
             endif
             goto 16
-	  endif
+          endif
         endif
 C ...........................
 
@@ -239,34 +244,49 @@ C Continue if tol not reached ..............................................
         dgg = 0.0_dp
         do i = 1,nbasisloc
           call LocalToGlobalOrb(i,Node,Nodes,ii)
-	  do j = 1,numc(ii)
+          do j = 1,numc(ii)
             gg = gg+g(j,i)**2
             dgg = dgg + (xi(j,i) + g(j,i)) * xi(j,i)
           enddo
         enddo
 #ifdef MPI
+#ifdef NODAT
+        call MPI_AllReduce(gg,rtmp,1,MPI_double_precision,MPI_sum,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_AllReduce(gg,rtmp,1,DAT_double,MPI_sum,
      .    MPI_Comm_World,MPIerror)
+#endif
         gg = rtmp
+#ifdef NODAT
+        call MPI_AllReduce(dgg,rtmp,1,MPI_double_precision,MPI_sum,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_AllReduce(dgg,rtmp,1,DAT_double,MPI_sum,
      .    MPI_Comm_World,MPIerror)
+#endif
         dgg = rtmp
 #endif
         if (gg .eq. 0.0_dp) goto 16
         gam = dgg / gg
         do i = 1,nbasisloc
           call LocalToGlobalOrb(i,Node,Nodes,ii)
-	  do j = 1,numc(ii)
+          do j = 1,numc(ii)
             g(j,i) = -xi(j,i)
-	    if (itest) gam = 0.0_dp
+            if (itest) gam = 0.0_dp
             hg(j,i) = g(j,i) + gam * hg(j,i)
             partial = partial + hg(j,i) * xi(j,i)
             xi(j,i) = hg(j,i)
           enddo
         enddo
 #ifdef MPI
+#ifdef NODAT
+        call MPI_AllReduce(partial,rtmp,1,MPI_double_precision,MPI_sum,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_AllReduce(partial,rtmp,1,DAT_double,MPI_sum,
      .    MPI_Comm_World,MPIerror)
+#endif
         partial = rtmp
 #endif
 

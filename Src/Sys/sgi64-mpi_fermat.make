@@ -28,7 +28,7 @@ DEFS_MPI=-DMPI
 LIBS= -lscalapack -lblacs -lpblas -ltools \
       /usr/local/unsupported/numerical/lib64/blacsCinit_MPI-O2K_64-0.a \
       /usr/local/unsupported/numerical/lib64/blacs_MPI-O2K_64-0.a \
-      -lcomplib.sgimath -lmpi 
+      -lscs -lcomplib.sgimath -lmpi 
 SYS=bsd
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #

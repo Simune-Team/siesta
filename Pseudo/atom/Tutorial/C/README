@@ -1,0 +1,10 @@
+Two schemes for pseudopotential
+generation: Hammann-Schluter-Chiang,
+and Troullier-Martins.
+
+The example is Carbon. Play around
+with the rc's and look at the
+"softness" or "hardness" of the
+resulting pseudopotentials.
+
+

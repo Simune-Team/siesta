@@ -181,15 +181,26 @@ C Read then send to node where density matrix row is stored
                   do im = 1,numc(m)
                     read(unit1,*) bdens(im)
                   enddo
+#ifdef NODAT
+                  call MPI_ISend(bdens,numc(m),MPI_double_precision,
+     .              BNode,1,MPI_Comm_World,Request,MPIerror)
+#else
                   call MPI_ISend(bdens,numc(m),DAT_double,
      .              BNode,1,MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
 
                 elseif (Node.eq.BNode) then
 C Receive density matrix row
                   call GlobalToLocalOrb(m,Node,Nodes,ml)
+#ifdef NODAT
+                  call MPI_IRecv(c(1,ml,is),numc(m),
+     .              MPI_double_precision,0,1,MPI_Comm_World,
+     .              Request,MPIerror)
+#else
                   call MPI_IRecv(c(1,ml,is),numc(m),DAT_double,
      .              0,1,MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
 
                 endif
@@ -284,15 +295,26 @@ C Local read
                 elseif (Node.eq.0) then
 C Read density matrix row and send to node where it is to be stored
                   read(unit1) (bdens(im), im=1,numc(m))
+#ifdef NODAT
+                  call MPI_ISend(bdens,numc(m),MPI_double_precision,
+     .              BNode,1,MPI_Comm_World,Request,MPIerror)
+#else
                   call MPI_ISend(bdens,numc(m),DAT_double,
      .              BNode,1,MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
 
                 elseif (Node.eq.BNode) then
 C Receive density matrix row
                   call GlobalToLocalOrb(m,Node,Nodes,ml)
+#ifdef NODAT
+                  call MPI_IRecv(c(1,ml,is),numc(m),
+     .              MPI_double_precision,0,1,MPI_Comm_World,
+     .              Request,MPIerror)
+#else
                   call MPI_IRecv(c(1,ml,is),numc(m),DAT_double,
      .              0,1,MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
 
                 endif
@@ -378,15 +400,25 @@ C Local write
 #ifdef MPI
             elseif (Node.eq.0) then
 C Receive density matrix row
+#ifdef NODAT
+              call MPI_IRecv(bdens,numc(m),MPI_double_precision,
+     .          BNode,1,MPI_Comm_World,Request,MPIerror)
+#else
               call MPI_IRecv(bdens,numc(m),DAT_double,
      .          BNode,1,MPI_Comm_World,Request,MPIerror)
+#endif
               call MPI_Wait(Request,Status,MPIerror)
 
             elseif (Node.eq.BNode) then
 C Send density matrix row
               call GlobalToLocalOrb(m,Node,Nodes,ml)
+#ifdef NODAT
+              call MPI_ISend(c(1,ml,is),numc(m),MPI_double_precision,
+     .          0,1,MPI_Comm_World,Request,MPIerror)
+#else
               call MPI_ISend(c(1,ml,is),numc(m),DAT_double,
      .          0,1,MPI_Comm_World,Request,MPIerror)
+#endif
               call MPI_Wait(Request,Status,MPIerror)
 
             endif

@@ -146,7 +146,7 @@ C Compute and print Overlap Populations for Orbitals ....................
           if (Node.eq.0) then
             write(6,*) 
             write(6,10) ((ib-1)*ncol+ii,ii=1,imax) 
-            write(6,'(15x,20(x,i1,a7))') 
+            write(6,'(15x,20(1x,i1,a7))') 
      .              (config(ii),sym_label(ii),ii=1,imax)
             write(6,*) 
           endif
@@ -204,7 +204,7 @@ C Compute and print Overlap Populations for Atoms ....................
             write(6,10) ((ib-1)*ncol+ii,ii=1,imax)
             write(6,*) 
           endif
-	  do i = 1,natoms
+          do i = 1,natoms
             do ii = 1,imax
               p(ii) = 0.0
             enddo
@@ -233,8 +233,13 @@ C Compute and print Overlap Populations for Atoms ....................
 #ifdef MPI
 C Global sum of values stored in p
             pb(1:imax)=p(1:imax)
+#ifdef NODAT
+            call MPI_Reduce(pb,p,imax,MPI_double_precision,MPI_sum,
+     .        0,MPI_Comm_World,MPIerror)
+#else
             call MPI_Reduce(pb,p,imax,DAT_double,MPI_sum,
      .        0,MPI_Comm_World,MPIerror)
+#endif
 #endif
 
             if (Node.eq.0) then
@@ -307,18 +312,28 @@ C             Compute charge in each orbital of atom ia
                      qa = qa + qo(nao)
                    endif
                  enddo
-	         qtot = qtot + qa
+                 qtot = qtot + qa
 #ifdef MPI
 C Global sum of values stored in p
                  qb(1:nao)=qo(1:nao)
+#ifdef NODAT
+                 call MPI_Reduce(qb,qo,nao,MPI_double_precision,
+     .             MPI_sum,0,MPI_Comm_World,MPIerror)
+#else
                  call MPI_Reduce(qb,qo,nao,DAT_double,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
+#endif
                  qb(1)=qa
+#ifdef NODAT
+                 call MPI_Reduce(qb(1),qa,1,MPI_double_precision,
+     .             MPI_sum,0,MPI_Comm_World,MPIerror)
+#else
                  call MPI_Reduce(qb(1),qa,1,DAT_double,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
 #endif
+#endif
                  if (Node.eq.0) then
-	           write(6,'(i4,f7.3,8f8.3,(/11x,8f8.3))')
+                   write(6,'(i4,f7.3,8f8.3,(/11x,8f8.3))')
      .               ia, qa, (qo(io),io=1,nao) 
                  endif
                endif 
@@ -327,13 +342,18 @@ C Global sum of values stored in p
 #ifdef MPI
 C Global sum of total charge
             qb(1)=qtot
+#ifdef NODAT
+            call MPI_Reduce(qb(1),qtot,1,MPI_double_precision,MPI_sum,
+     .        0,MPI_Comm_World,MPIerror)
+#else
             call MPI_Reduce(qb(1),qtot,1,DAT_double,MPI_sum,
      .        0,MPI_Comm_World,MPIerror)
 #endif
+#endif
             if (Node.eq.0) then
-	      write(6,"(a,f8.3)") 'mulliken: Qtot = ', qtot
+              write(6,"(a,f8.3)") 'mulliken: Qtot = ', qtot
             endif
-	  enddo
+          enddo
         elseif (nspin .eq. 4) then
           do is = 1,nspin
             qts(is) = 0.0d0
@@ -395,8 +415,13 @@ C Global reduction of terms
             qb(3)=svec(1)
             qb(4)=svec(2)
             qb(5)=svec(3)
+#ifdef NODAT
+            call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
+     .        MPI_Comm_World,MPIerror)
+#else
             call MPI_Reduce(qb,pb,5,DAT_double,MPI_sum,0,
      .        MPI_Comm_World,MPIerror)
+#endif
             qtot=pb(1)
             stot=pb(2)
             svec(1)=pb(3)
@@ -418,8 +443,13 @@ C Global reduction of terms
           qb(3)=svec(1)
           qb(4)=svec(2)
           qb(5)=svec(3)
+#ifdef NODAT
+          call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
+     .        MPI_Comm_World,MPIerror)
+#else
           call MPI_Reduce(qb,pb,5,DAT_double,MPI_sum,0,
      .        MPI_Comm_World,MPIerror)
+#endif
           qtot=pb(1)
           stot=pb(2)
           svec(1)=pb(3)
@@ -427,7 +457,7 @@ C Global reduction of terms
           svec(3)=pb(5)
 #endif
           if (Node.eq.0) then
-            write(6,'(64(1h-),/,2a8,x,2f10.5,3x,3f8.3,/)')
+            write(6,'(64(1h-),/,2a8,1x,2f10.5,3x,3f8.3,/)')
      .        'Total', 'Total', qtot, stot, svec
           endif
         endif

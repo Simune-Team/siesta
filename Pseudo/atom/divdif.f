@@ -1,5 +1,8 @@
-C $Id: divdif.f,v 1.1 2000/02/10 17:56:11 wdpgaara Exp $
+C $Id: divdif.f,v 1.2 2002/09/26 14:32:16 wdpgaara Exp $
 c $Log: divdif.f,v $
+c Revision 1.2  2002/09/26 14:32:16  wdpgaara
+c Replace print by write
+c
 c Revision 1.1  2000/02/10 17:56:11  wdpgaara
 c Implement Fourier transform of core charge.
 c
@@ -58,7 +61,7 @@ C
       if ((z-x(1))*(x(n)-z) .ge. zero) go to 30
 C     Z-VALUE OUTSIDE RANGE,PRINT ERROR MESSAGE.
    20 continue
-      print9000, z
+      write(*,9000) z
       divdif = zero
 c
       return
@@ -70,7 +73,7 @@ C
       if (m .gt. mmax) m = mmax
 C     REQUIRED ORDER OF INTERPOLATION TOO HIGH.PRINT ERROR MESSAGE AND
 C     REDUCE ORDER.
-      print9010, mm, m
+      write(*,9010) mm, m
 C
 C     START ACTUAL CALCULATION.
 C     COMPUTE POINTER,IPOINT,FOR THE LEFT BOUNDARY OF THE INTERVAL IN

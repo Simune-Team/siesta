@@ -83,27 +83,7 @@ C Initialise MPI and set processor number
 
       end program gen_basis
 !
-!     Use private copies of routines to avoid MPI issues
-!
-      subroutine die(str)
-      character(len=*), intent(in), optional   :: str
-      if (present(str)) write(6,'(a)') trim(str)
-      write(6,'(a)') 'Stopping Program'
-      stop
-      end subroutine die
 
-      subroutine bye(str)
-      character(len=*), intent(in), optional   :: str
-      if (present(str)) write(6,'(a)') trim(str)
-      write(6,'(a)') 'Requested End of Run. Bye!!'
-      stop
-      end subroutine bye
-
-      subroutine memory(Task, Type, NElements, CallingRoutine)
-      integer  NElements
-      character(len=1) Task, Type
-      character(len=*) CallingRoutine
-      end subroutine memory
 
 
 

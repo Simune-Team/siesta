@@ -1,4 +1,4 @@
-c $Id: version.h,v 1.2 2002/07/08 18:11:53 wdpgaara Exp $
+c $Id: version.h,v 1.3 2002/07/25 13:56:50 wdpgaara Exp $
 
 c     Version.h
 c
@@ -21,6 +21,6 @@ c     other data statements.
 c
       character*60 version
       data version
-     $     /"ATM Version 3.2b-0 (July 8, 2002, 18:10 CUT)"/
+     $     /"ATM Version 3.2 (July 25, 2002, 13:50 CUT)"/
 
 

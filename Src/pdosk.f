@@ -216,7 +216,7 @@ C                   dpr(ihist,record) = dpr(ihist,record) + pipjs1*gauss
 
  100  ENDDO
 
-      NORM = SIGMA * SQRT(PI) * DFLOAT(NK)
+      NORM = SIGMA * SQRT(PI) * NK
 
       DO IHIST = 1, NHIST
         DO ISPIN = 1, NSPIN

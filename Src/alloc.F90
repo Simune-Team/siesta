@@ -1495,10 +1495,17 @@ if (nodes > 1) then
   L_PEAK_MEM(2) = node
 
 ! Find maximum memory values and their nodes
+#ifdef NODAT
+  call MPI_Reduce(TOT_MEM,G_TOT_MEM,1,MPI_double_precision, &
+    MPI_Sum,0,MPI_Comm_World,MPIerror)
+  call MPI_Reduce(L_PEAK_MEM,G_PEAK_MEM,1,MPI_2double_precision, &
+    MPI_MaxLoc,0,MPI_Comm_World,MPIerror)
+#else
   call MPI_Reduce(TOT_MEM,G_TOT_MEM,1,DAT_double, &
     MPI_Sum,0,MPI_Comm_World,MPIerror)
   call MPI_Reduce(L_PEAK_MEM,G_PEAK_MEM,1,DAT_2double, &
     MPI_MaxLoc,0,MPI_Comm_World,MPIerror)
+#endif
 
 ! Tell the rest of the nodes where the peak is
   if (node == 0) nodePEAK = nint(G_PEAK_MEM(2))
@@ -1566,17 +1573,27 @@ END SUBROUTINE print_report
 
 SUBROUTINE alloc_err( ierr, name, routine, bounds )
 
-integer,                 intent(in) :: ierr
-character(len=*),        intent(in) :: name
-character(len=*),        intent(in) :: routine
-integer, dimension(:,:), intent(in) :: bounds
+implicit none
+
+integer,                    intent(in) :: ierr
+character(len=*), optional, intent(in) :: name
+character(len=*), optional, intent(in) :: routine
+integer, dimension(:,:),    intent(in) :: bounds
 
 integer i
 
 if (ierr/=0) then
   print*, 'alloc_err: allocate status error', ierr
-  print*, 'alloc_err: array ', name, &
-             ' requested by ', routine
+  if (present(name).and.present(routine)) then
+    print*, 'alloc_err: array ', name, &
+               ' requested by ', routine
+  elseif (present(name)) then
+    print*, 'alloc_err: array ', name, &
+               ' requested by unknown'
+  elseif (present(routine)) then
+    print*, 'alloc_err: array unknown', &
+               ' requested by ', routine
+  endif
   print'(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
                       i,bounds(i,1),bounds(i,2),         &
                       i=1,size(bounds,dim=1))
@@ -1588,7 +1605,3 @@ END SUBROUTINE alloc_err
 ! ------------------------------------------------------------------
 
 END MODULE alloc
-
-
-
-

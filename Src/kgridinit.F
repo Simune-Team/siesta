@@ -68,7 +68,7 @@ c Internal variables
 #endif
       double precision  defcut, dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), huge, pi,  
-     .                  scell(3,3), tiny, vmod
+     .                  scell(3,3), scmin(3,3), tiny, vmod
       logical           genlogic, spiral
       parameter (defcut = 0.d0)
       parameter (huge   = 1.d30)
@@ -82,7 +82,12 @@ c Get Node number
 #endif
 
 c Find out if there is spiral arrangement of spins 
-      spiral = fdf_block('SpinSpiral',iu)
+      if (Node.eq.0) then
+        spiral = fdf_block('SpinSpiral',iu)
+      endif
+#ifdef MPI
+      call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
 
 c Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -109,8 +114,13 @@ c Look for kscell or cutoff in input fdf file
 #ifdef MPI
           call MPI_Bcast(kscell(1,1),9,MPI_integer,0,MPI_Comm_World,
      .      MPIerror)
+#ifdef NODAT
+          call MPI_Bcast(displ,3,MPI_double_precision,0,MPI_Comm_World,
+     .      MPIerror)
+#else
           call MPI_Bcast(displ,3,DAT_double,0,MPI_Comm_World,
      .      MPIerror)
+#endif
 #endif
           nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
      .                 kscell(2,1) * kscell(3,2) * kscell(1,3) +
@@ -124,8 +134,13 @@ c         The second argument is the default value
             cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
           endif
 #ifdef MPI
+#ifdef NODAT
+          call MPI_Bcast(cutoff,1,MPI_double_precision,0,
+     .      MPI_Comm_World,MPIerror)
+#else
           call MPI_Bcast(cutoff,1,DAT_double,0,
      .      MPI_Comm_World,MPIerror)
+#endif
 #endif
         endif
       endif
@@ -154,9 +169,10 @@ c Find k-grid supercell
       enddo
 
 c Find actual cutoff
+      call minvec( scell, scmin )
       cutoff = huge
       do i = 1,3
-        vmod = sqrt( scell(1,i)**2 + scell(2,i)**2 + scell(3,i)**2 )
+        vmod = sqrt( scmin(1,i)**2 + scmin(2,i)**2 + scmin(3,i)**2 )
         cutoff = min( cutoff, vmod/2.d0 )
       enddo
 

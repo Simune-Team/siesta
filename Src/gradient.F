@@ -264,12 +264,21 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(hl,maxnhg,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+        call MPI_Bcast(sl,maxnhg,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
         call MPI_Bcast(hl,maxnhg,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
         call MPI_Bcast(sl,maxnhg,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
+#endif
 
 C Build pointer to local orbitals for current working Node
         do k = 1,nbasis
@@ -348,8 +357,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(cl(1,1),ncmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(cl(1,1),ncmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
+#endif
 
 C Build pointer to local orbitals for current working Node
         do k = 1,nbasis
@@ -409,7 +423,7 @@ C End loop over Nodes
 C Calculate second part of energy
       do i = 1,nbandsloc
         do jn = 1,numhij(i)
-          func2 = func2 + (bux1(jn,i) - eta * bux2(jn,i)) * bux2(jn,i)
+          func2 = func2 + bux1(jn,i) * bux2(jn,i)
         enddo
       enddo
 
@@ -448,9 +462,15 @@ C Broadcast arrays
         enddo
 
 C Global reduction of grad
+#ifdef NODAT
+        call MPI_Reduce(cl(1,1),grad(1,1),ncmax*nbl,
+     .    MPI_double_precision,MPI_sum,nn-1,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Reduce(cl(1,1),grad(1,1),ncmax*nbl,
      .    DAT_double,MPI_sum,nn-1,
      .    MPI_Comm_World,MPIerror)
+#endif
 
       enddo
 
@@ -501,8 +521,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(ftl(1,1),nfmaxg*nloc,MPI_double_precision,nn-1,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(ftl(1,1),nfmaxg*nloc,DAT_double,nn-1,
      .    MPI_Comm_World,MPIerror)
+#endif
 
         do mu = 1,nbasisloc
           do muk = 1,numft(iptrlg(mu))
@@ -552,8 +577,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(ftl(1,1),nfmaxg*nloc,MPI_double_precision,nn-1,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(ftl(1,1),nfmaxg*nloc,DAT_double,nn-1,
      .    MPI_Comm_World,MPIerror)
+#endif
 
         do mu = 1,nbasisloc
           do muk = 1,numft(iptrlg(mu))
@@ -621,8 +651,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(ftl2(1,1),nftmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(ftl2(1,1),nftmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
+#endif
         call MPI_Bcast(listftl(1,1),nftmax*nbl,MPI_integer,
      .        nn-1,MPI_Comm_World,MPIerror)
 
@@ -684,8 +719,13 @@ C Place arrays in local storage on broadcast node
         endif
 
 C Broadcast arrays
+#ifdef NODAT
+        call MPI_Bcast(ftl2(1,1),nftmax*nbl,MPI_double_precision,nn-1,
+     .        MPI_Comm_World,MPIerror)
+#else
         call MPI_Bcast(ftl2(1,1),nftmax*nbl,DAT_double,nn-1,
      .        MPI_Comm_World,MPIerror)
+#endif
 
         do i = 1,nbandsloc
 
@@ -721,9 +761,15 @@ C Rezero aux1
 
 #ifdef MPI
 C Global reduction of grad
+#ifdef NODAT
+        call MPI_Reduce(cl(1,1),gl(1,1),ncmax*nbl,
+     .    MPI_double_precision,MPI_sum,nn-1,
+     .    MPI_Comm_World,MPIerror)
+#else
         call MPI_Reduce(cl(1,1),gl(1,1),ncmax*nbl,
      .    DAT_double,MPI_sum,nn-1,
      .    MPI_Comm_World,MPIerror)
+#endif
         if (Node.eq.nn-1) then
           do kl = 1,nbasisloc
             call LocalToGlobalOrb(kl,nn-1,Nodes,k)
@@ -741,8 +787,13 @@ C End loop over Nodes
 C Global reduction of func1 and func2
       rtmp1(1)=func1
       rtmp1(2)=func2
+#ifdef NODAT
+      call MPI_AllReduce(rtmp1,rtmp2,2,MPI_double_precision,MPI_sum,
+     .  MPI_Comm_World,MPIerror)
+#else
       call MPI_AllReduce(rtmp1,rtmp2,2,DAT_double,MPI_sum,
      .  MPI_Comm_World,MPIerror)
+#endif
       func1 = rtmp2(1)
       func2 = rtmp2(2)
 #endif

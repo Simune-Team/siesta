@@ -154,6 +154,11 @@ c
 c     Add the exchange and correlation potential and calculate
 c     the total energy contributions.
 c
+      if ( leqi(icorr,'gl') .or. leqi(icorr,'hl') .or.
+     $     leqi(icorr,'wi') .or. leqi(icorr,'bh') ) then
+         use_excorr = .true.
+      endif
+
       if (use_excorr) then
 
          call excorr(id,cdd,cdu,cdc,vod,vou,vxc,vc,exc,ec)

@@ -279,8 +279,13 @@ C       WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
             enddo
           endif
 #ifdef MPI
+#ifdef NODAT
+          call MPI_Bcast(aux(1,1),4*nuotot,MPI_double_precision,BNode,
+     .      MPI_Comm_World,MPIerror)
+#else
           call MPI_Bcast(aux(1,1),4*nuotot,DAT_double,BNode,
      .      MPI_Comm_World,MPIerror)
+#endif
 #endif
           qe = qo(ie,ik)
           ee = qo(ie,ik) * eo(ie,ik)

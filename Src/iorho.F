@@ -128,8 +128,13 @@ c         Read cell vectors and number of points
           endif
 
 #ifdef MPI
+#ifdef NODAT
+          call MPI_Bcast(cell(1,1),9,MPI_double_precision,0,
+     .      MPI_Comm_World,MPIerror)
+#else
           call MPI_Bcast(cell(1,1),9,DAT_double,0,
      .      MPI_Comm_World,MPIerror)
+#endif
           call MPI_Bcast(mesh,3,MPI_integer,0,MPI_Comm_World,MPIerror)
           call MPI_Bcast(ns,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
@@ -234,14 +239,24 @@ C  If this is Node 0 then read and send density sub-matrix
                       Ind2 = Ind2 + mesh(1)
                     enddo
                   endif
+#ifdef NODAT
+                  call MPI_ISend(bdens,NBlock,MPI_real,BNode,1,
+     .              MPI_Comm_World,Request,MPIerror)
+#else
                   call MPI_ISend(bdens,NBlock,DAT_single,BNode,1,
      .              MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
 
                 elseif (Node.eq.BNode) then
 C  If this is the Node where the density sub-matrix is, then receive
+#ifdef NODAT
+                  call MPI_IRecv(rho(Ind+1,is),NBlock,MPI_real,
+     .              0,1,MPI_Comm_World,Request,MPIerror)
+#else
                   call MPI_IRecv(rho(Ind+1,is),NBlock,DAT_single,
      .              0,1,MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
                   Ind = Ind + NBlock
 
@@ -343,14 +358,24 @@ C  If density sub-matrix is local Node 0 then just write it out
 #ifdef MPI
                 elseif (Node.eq.0) then
 C  If this is Node 0 then recv and write density sub-matrix
+#ifdef NODAT
+                  call MPI_IRecv(bdens,NBlock,MPI_real,BNode,1,
+     .              MPI_Comm_World,Request,MPIerror)
+#else
                   call MPI_IRecv(bdens,NBlock,DAT_single,BNode,1,
      .              MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
 
                 elseif (Node.eq.BNode) then
 C  If this is the Node where the density sub-matrix is, then send
+#ifdef NODAT
+                  call MPI_ISend(rho(Ind+1,is),NBlock,MPI_real,0,1,
+     .              MPI_Comm_World,Request,MPIerror)
+#else
                   call MPI_ISend(rho(Ind+1,is),NBlock,DAT_single,0,1,
      .              MPI_Comm_World,Request,MPIerror)
+#endif
                   call MPI_Wait(Request,Status,MPIerror)
                   Ind = Ind + NBlock
 

@@ -131,7 +131,7 @@ C Solve eigenvalue problem .........................................
           enddo
         enddo
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, maxuo,
-     .              eo(1,ispin), psi(1,1,ispin), aux, ierror )
+     .              eo(1,ispin), psi(1,1,ispin), ierror )
         if (ierror.gt.0) then
           call die('Terminating due to failed diagonalisation')
         elseif (ierror.eq.-1) then
@@ -185,8 +185,13 @@ C Global operation to form new density matrix
             enddo
           endif
 #ifdef MPI
+#ifdef NODAT
+          call MPI_Bcast(aux,nuotot,MPI_double_precision,BNode,
+     .      MPI_Comm_World,MPIerror)
+#else
           call MPI_Bcast(aux,nuotot,DAT_double,BNode,
      .      MPI_Comm_World,MPIerror)
+#endif
 #endif
           qe = qo(ie,ispin)
           ee = qo(ie,ispin) * eo(ie,ispin)

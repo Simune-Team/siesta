@@ -1,0 +1,6 @@
+A somewhat technical example involving
+semicore states. As explained in the
+lecture, the pseudopotential does not
+"know" anything about the 6s and 6p states, so
+the test for the "ground state configuration", 
+which involves those, fails.

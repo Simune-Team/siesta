@@ -10,7 +10,7 @@ default: what fcbuild vibrator
 # for examples and instructions. The variable SIESTA_SYS should be in the 
 # shell environment. 
 #
-SIESTA_SYS?=unknown
+SIESTA_SYS=$(ARCH)
 #
 include Sys/${SIESTA_SYS}.make
 #

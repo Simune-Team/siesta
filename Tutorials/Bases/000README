@@ -1,0 +1,20 @@
+Basis generation
+(Actually, KB projectors and
+PAO generation)
+
+A subdirectory for each series
+of examples. 
+
+Use the "genbasis" command:
+
+$ genbasis Si_sz.fdf Si.tm2.psf
+
+...
+
+$ cd Si_sz
+
+.... Plot KBs and ORBs...
+
+
+(REMEMBER TO PLOT THINGS ON THE SGI's...)
+
