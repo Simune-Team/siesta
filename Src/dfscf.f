@@ -112,7 +112,7 @@ C  Allocate buffers to store partial copies of Dscf and C
       call re_alloc( xgC, 1,9,    1,nsp,  1,maxc,  name='xgC' )
 
 C  Set logical that determines whether we need to use parallel or serial mode
-      Parallel_Run = (Nodes.gt.0)
+      Parallel_Run = (Nodes.gt.1)
 
 C  If parallel, allocate temporary storage for Local Dscf
       if (Parallel_Run) then

@@ -121,7 +121,7 @@ C
 C  Modules
 C
       use precision
-      use parallel,      only : Node
+      use parallel,      only : Node, Nodes
       use atmfuncs,      only : rcut, rcore
       use fdf
       use sys
@@ -483,10 +483,9 @@ C Calculate orbital values on mesh
 C ----------------------------------------------------------------------
 C Create sparse indexing for Dscf as needed for local mesh
 C ----------------------------------------------------------------------
-
-        if (nuo .ne. nuotot .and. nuo .gt. 0) then
+        if (Nodes.gt.1) then
           call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
-     .      listd )
+     .                                  listd )
         endif
 
 C ----------------------------------------------------------------------

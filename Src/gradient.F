@@ -106,7 +106,7 @@ C Internal variables ......................................................
       real(dp) ::
      .  ftmp(2), ftmp2(2)
       real(dp), allocatable, save ::
-     .  bux2g(:),bux1save(:,:),bux2save(:,:), ftG(:,:), fstG(:,:)
+     .  buxg(:,:),bux1save(:,:),bux2save(:,:), ftG(:,:), fstG(:,:)
 #endif
 
       real(dp), allocatable, save ::
@@ -141,8 +141,8 @@ C Allocate local arrays
       call memory('A','D',size(bux1save),'gradient')
       allocate(bux2save(nhijmax,nbandsloc))
       call memory('A','D',size(bux2save),'gradient')
-      allocate(bux2g(nbands))
-      call memory('A','D',size(bux2g),'gradient')
+      allocate(buxg(nbands,2))
+      call memory('A','D',size(buxg),'gradient')
 #endif
 
 C Initialize output and auxiliary varialbles ...............................
@@ -164,7 +164,8 @@ C Initialize output and auxiliary varialbles ...............................
         bux1(i) = 0.0d0
         bux2(i) = 0.0d0
 #ifdef MPI
-        bux2g(i) = 0.0d0
+        buxg(i,1) = 0.0d0
+        buxg(i,2) = 0.0d0
 #endif
       enddo
 
@@ -187,7 +188,7 @@ C Loop over spin
 
 #ifdef MPI
 C Initialise communication arrays
-        call globalinitB(1)
+        call globalinitB(2)
 #endif
 
 C Initialise variables
@@ -242,7 +243,6 @@ C Globalise ft/fst
      .                  fst,fstG,Node)
 #endif
 
-C Hij=CtHC
 C Sij=CtSC
 C multiply FxC and FsxC row by row
         do il = 1,nbandsloc
@@ -259,28 +259,8 @@ C multiply FxC and FsxC row by row
 
 #ifdef MPI
 C Load data into globalisation arrays
-          call globalloadB1(il,nbands,bux2)
+          call globalloadB2(il,nbands,bux1,bux2)
 #endif
-
-C Multiply Hij x Fs and Sij x F row by row
-C (only products of neccesary elements)
-          do ik = 1,numct(il)
-            mu = listct(ik,il)
-            a0 = 0.0d0
-#ifdef MPI
-            do muk = 1,numft2(mu)
-              j = listft2(muk,mu)
-              a0 = a0 + bux1(j)*fstG(muk,mu) 
-     .                + bux2(j)*ftG(muk,mu)
-#else
-            do muk = 1,numft(mu)
-              j = listft(muk,mu)
-              a0 = a0 + bux1(j)*fst(muk,mu) 
-     .                + bux2(j)*ft(muk,mu)
-#endif
-            enddo
-            grad(cttoc(ik,il),mu,is) = - spinfct*a0
-          enddo
 
 #ifdef MPI
 C Reinitialise bux1/2 and save for later in sparse form
@@ -306,7 +286,7 @@ C Restore local bux1/2 terms
           enddo
 
 C Reload data after globalisation
-          call globalreloadB1(il,nbands,bux2,bux2g)
+          call globalreloadB2(il,nbands,bux1,bux2,buxg)
 #endif
 
 C Calculate energy terms & reinitialise bux1/2
@@ -316,7 +296,7 @@ C Calculate energy terms & reinitialise bux1/2
           do jn = 1,numhij(il)
             j = listhij(jn,il)
 #ifdef MPI
-            func2 = func2 + bux1(j)*bux2g(j)
+            func2 = func2 + bux1(j)*buxg(j,2)
 #else
             func2 = func2 + bux1(j)*bux2(j)
 #endif
@@ -324,9 +304,32 @@ C Calculate energy terms & reinitialise bux1/2
             bux2(j) = 0.0d0
           enddo
 
+C Multiply Hij x Fs and Sij x F row by row
+C (only products of neccesary elements)
+          do ik = 1,numct(il)
+            mu = listct(ik,il)
+            kk = ncT2P(mu)
+            if (kk.gt.0) then
+              a0 = 0.0d0
 #ifdef MPI
-C Reinitialise bux2g
-          call globalrezeroB1(il,nbands,bux2g)
+              do muk = 1,numft2(mu)
+                j = listft2(muk,mu)
+                a0 = a0 + buxg(j,1)*fstG(muk,mu) 
+     .                  + buxg(j,2)*ftG(muk,mu)
+#else
+              do muk = 1,numft(mu)
+                j = listft(muk,mu)
+                a0 = a0 + bux1(j)*fst(muk,mu) 
+     .                  + bux2(j)*ft(muk,mu)
+#endif
+              enddo
+              grad(cttoc(ik,il),mu,is) = - spinfct*a0
+            endif
+          enddo
+
+#ifdef MPI
+C Reinitialise buxg
+          call globalrezeroB2(il,nbands,buxg)
 #endif
 
         enddo
@@ -374,8 +377,8 @@ C End loop over spins
 
 C Deallocate local arrays
 #ifdef MPI
-      call memory('D','D',size(bux2g),'gradient')
-      deallocate(bux2g)
+      call memory('D','D',size(buxg),'gradient')
+      deallocate(buxg)
       call memory('D','D',size(bux2save),'gradient')
       deallocate(bux2save)
       call memory('D','D',size(bux1save),'gradient')

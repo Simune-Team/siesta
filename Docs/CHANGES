@@ -1,6 +1,27 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.25
+Date: 2004/12/02  4:00 GMT
+Title: Fix for parallel ON grad
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The algorithm used in gradient.F to calculate the gradients of the
+LWF coefficients has been subtly modified. In the previous version
+it was found that every so often a contribution from one Node to 
+a gradient only present on another node was occuring. This is now
+avoided by computing the first term in the gradient using globalised
+versions of bux1/2 & ft/fst. Consequently it is now restricted to 
+only those basis functions in grad for which the local node is
+responsible. However, bux1 has to be globalised as well as bux2.
+
+Files:
+dhscf.F      Call to create mapping of Dscf to DscfL wrapped by check
+             on number of processors, rather than local number of 
+             orbitals in line with changes for version 1.4.24
+gradient.F   Algorithm modifed as described above
+version.F90, CHANGES
+=======================================================================
 Version: 1.4.24
 Date: 2004/11/28 12:00 GMT
 Title: Zero work on nodes fixes
