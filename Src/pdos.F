@@ -50,10 +50,11 @@ C **********************************************************************
       use atomlist,    only : xa, isa, iphorb, iaorb
       use atmfuncs,    only : zetafio, mofio, lofio, cnfigfio, labelfis
       use flib_wxml
-      use xml,         only : xml_dump_attribute, xml_dump_element
+      use xml,         only : xml_dump_attribute
       use ionew,       only : IOnode
       use densematrix, only : Haux, Saux, psi
       use alloc
+      use units, only : eV
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
       use mpi_siesta,   only : MPI_logical, MPI_Comm_World
@@ -92,18 +93,18 @@ C Internal variables ---------------------------------------------------
       character*40 pos_string
 
       character
-     .  sname*30, fnametot*37, fnamepro*37, paste*53,  point
+     .  sname*30, fnametot*37, fnamepro*37
 
       real(dp)
-     .  delta, ENER, eV
-
-#ifdef MPI
-      integer :: MPIerror
-#endif
+     .  delta, ener
 
       external
-     .  io_assign, io_close, paste, 
-     .  pdosk, timer, pdoskp
+     .  io_assign, io_close,
+     .  pdosk, timer
+
+#ifdef MPI
+      integer :: mpierror
+#endif
 
       type(xmlf_t) :: xf            ! For new XML output
 
@@ -111,17 +112,15 @@ C Internal variables ---------------------------------------------------
 
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
-      eV = 13.6058d0
       if (Node.eq.0) then
         sname = fdf_string('SystemLabel','siesta')
         ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
         if (Nodes.eq.1) ParallelOverK = .false.
       endif
 #ifdef MPI
-      call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,
-     .               MPIerror)
+      call MPI_Bcast(ParallelOverK, 1, MPI_logical, 0,
+     .               MPI_Comm_World, MPIerror)
 #endif
-      point = '.'
 
 C Find number of orbitals per unit cell 
 #ifdef MPI
@@ -131,18 +130,18 @@ C Find number of orbitals per unit cell
 #endif
 
 C Check internal dimensions --------------------------------------------
-      if ( nspin.le.2 .and. gamma) then
-        nhs  = nuotot * nuo
-        npsi = nuotot * maxuo * nspin
-      elseif ( nspin.le.2 .and. .not.gamma) then
-        if (ParallelOverK) then
-          nhs  = 2 * nuotot * nuotot
-          npsi = 2 * nuotot * nuotot
-        else
-          nhs  = 2 * nuotot * nuo
-          npsi = 2 * nuotot * nuo
-        endif
-      endif
+       if ( nspin.le.2 .and. gamma) then
+         nhs  = nuotot * nuo
+         npsi = nuotot * maxuo * nspin
+       elseif ( nspin.le.2 .and. .not.gamma) then
+         if (ParallelOverK) then
+           nhs  = 2 * nuotot * nuotot
+           npsi = 2 * nuotot * nuotot
+         else
+           nhs  = 2 * nuotot * nuo
+           npsi = 2 * nuotot * nuo
+         endif
+       endif
 
 C Allocate local arrays ------------------------------------------------
       call re_alloc(Haux,1,nhs,name='Haux',routine='pdos')
@@ -163,7 +162,7 @@ C Initialize the projected density of states ---------------------------
         enddo
       enddo
 
-C Call appropiate routine ----------------------------------------------
+C  Call appropiate routine ----------------------------------------------
       if (nspin.le.2 .and. gamma) then
         call pdosg( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
@@ -187,20 +186,20 @@ C Call appropiate routine ----------------------------------------------
 
       if (IOnode) then
 C Open file for write on I/O node
-        fnametot = paste(sname,'.DOS')
+        fnametot = trim(sname)//'.DOS'
         call io_assign(iunit1)
         open(unit=iunit1, file=fnametot, form='formatted', 
-     .       statuS='unknown') 
+     .       status='unknown') 
 
 C Output histogram
-        do ihist = 1,nhist
-          ENER = E1 + (ihist-1) * delta
-          write(iunit1,'(3f20.5)') ener*ev,dtot(ihist,1)/ev,
+         do ihist = 1,nhist
+           ENER = E1 + (ihist-1) * delta
+           write(iunit1,'(3f20.5)') ener*ev,dtot(ihist,1)/ev,
      .         dtot(ihist,2)/eV
-        enddo
+         enddo
 
 C Close file for write
-        call io_close(iunit1)
+         call io_close(iunit1)
       endif
 
 C New writing
@@ -208,7 +207,7 @@ C New writing
          call xml_OpenFile("pdos.xml",xf)
          call xml_AddXMLDeclaration(xf,"UTF-8")
 
-        fnamepro = paste(sname,'.PDOS')
+        fnamepro = trim(sname)//'.PDOS'
         call io_assign(iunit2)
         open(iunit2,file=fnamepro,form='formatted',status='unknown')
         call xml_NewElement(xf,"pdos")

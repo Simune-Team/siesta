@@ -359,19 +359,28 @@ C Scale memory by memory factor
       lwork = nint(MemoryFactor*dble(lwork))
 
 C Allocate workspace arrays
-      call re_alloc( work,    1,2*lwork, name='work'  )
-      call re_alloc( rwork,   1,lrwork,  name='rwork' )
-      call re_alloc( iwork,   1,liwork,  name='iwork' )
-      call re_alloc( ifail,   1,n,       name='ifail'   )
+      call re_alloc( work,    1,2*lwork, name='work', 
+     .	routine='cdiag' )
+      call re_alloc( rwork,   1,lrwork,  name='rwork',
+     .  routine='cdiag')
+      call re_alloc( iwork,   1,liwork,  name='iwork',
+     .  routine='cdiag')
+      call re_alloc( ifail,   1,n,       name='ifail',
+     .  routine='cdiag')
 #ifdef MPI
-      call re_alloc( gap,     1,Nodes,   name='gap'     )
-      call re_alloc( iclustr, 1,2*Nodes, name='iclustr' )
+      call re_alloc( gap,     1,Nodes,   name='gap',
+     .  routine='cdiag')
+      call re_alloc( iclustr, 1,2*Nodes, name='iclustr',
+     .  routine='cdiag')
 
       if (Use2D) then
 C Set up workspace arrays for 2D versions of 1D arrays
-        call re_alloc(h2d, 1,2, 1,mat_2d_row, 1,mat_2d_col, name='h2d')
-        call re_alloc(s2d, 1,2, 1,mat_2d_row, 1,mat_2d_col, name='s2d')
-        call re_alloc(z2d, 1,2, 1,mat_2d_row, 1,mat_2d_col, name='z2d')
+        call re_alloc(h2d, 1,2, 1,mat_2d_row, 1,mat_2d_col, name='h2d',
+     .    routine='cdiag')
+        call re_alloc(s2d, 1,2, 1,mat_2d_row, 1,mat_2d_col, name='s2d',
+     .    routine='cdiag')
+        call re_alloc(z2d, 1,2, 1,mat_2d_row, 1,mat_2d_col, name='z2d',
+     .    routine='cdiag')
 
 C For 2D case, copy arrays to new distribution
         call pzgemr2d(n, n, H, 1, 1, desch, h2d, 1, 1, desc_h2d, ictxt)

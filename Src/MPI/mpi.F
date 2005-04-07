@@ -25,7 +25,7 @@
 !       data type.
 !
 #ifndef NODAT
-      USE MPI__INCLUDE, only:
+      USE MPI__INCLUDE, 
 #ifndef CRAY
      &     DAT_single => MPI_real,                                      &
      &     DAT_double => MPI_double_precision,                          &
@@ -45,16 +45,8 @@
 !!****      NOTE fudging of "2complex" on CRAY!!!
 
 #else
-        use mpi__include, only: mpi_real
-        use mpi__include, only: mpi_complex
-        use mpi__include, only: mpi_double_complex
-        use mpi__include, only: mpi_double_precision
-        use mpi__include, only: mpi_2double_precision
+        use mpi__include
 #endif
-        use mpi__include, only: mpi_integer, mpi_character, mpi_logical
-        use mpi__include, only: mpi_maxloc, mpi_sum, mpi_max, mpi_lor
-        use mpi__include, only: mpi_status_size
-        use mpi__include, only: mpi_comm_world
 
 !       ... generic overloads for <choice> argument routines ...
 

@@ -1,11 +1,13 @@
       module m_fermid
 
-      use precision
-      use parallel,   only : Node
-      use fdf
+      use precision,  only : dp
+      use parallel,   only : IOnode
+      use fdf,        only : fdf_boolean, fdf_integer, fdf_string
 #ifdef MPI
       use mpi_siesta
 #endif
+
+      implicit none
 
       public :: fermid, fermispin, stepf
       private :: enpy, derfc, derf, whg, hp
@@ -80,7 +82,7 @@ C Local variables
       
 C Reading whether to do an excited state
       if ( .not. blread) then
-        if ( Node .eq. 0 ) then
+        if ( ionode ) then
           excitd = fdf_boolean('SingleExcitation', .false.)
           if ( excitd ) write(6,'(/a)') 
      .        'fermid: Calculating for lowest-exciton excited state'
@@ -115,7 +117,7 @@ C Determine Fermi level
 
       if (abs(sumq-qtot).lt.tol) then
         if (excitd) then
-          if (Node.eq.0) then
+          if (ionode) then
             write (6,'(/a)') 
      .            'Fermid: Bands full, no excitation possible'
           endif
@@ -125,7 +127,7 @@ C Determine Fermi level
         endif
       endif
       if (sumq.lt.qtot) then
-        if (Node.eq.0) then
+        if (ionode) then
           write(6,*) 'Fermid: Not enough states'
           write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
         endif
@@ -195,7 +197,7 @@ C Obtain the electronic entropy
         if (sumq.ge.qtot) emax = ef
       enddo
 
-      if (Node.eq.0) then
+      if (ionode) then
         write(6,*) 'Fermid: Iteration has not converged.'
         write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
         stop 'Fermid: Iteration has not converged.'
@@ -285,7 +287,7 @@ C calculated here if ne < maxe
 
       do ispin = 1,nspin
         if (sumq(ispin).lt.qtot(ispin)) then
-          if (Node.eq.0) then
+          if (ionode) then
             write(6,*) 'Fermid: Not enough states'
             write(6,*) 'Fermid: ispin,qtot,sumq=',
      .                 ispin,qtot(ispin),sumq(ispin)
@@ -324,7 +326,7 @@ C calculated here if ne < maxe
         enddo
       enddo
 
-      if (Node.eq.0) then
+      if (ionode) then
         write (6,*) 'Fermid: Iteration has not converged.'
         do ispin = 1,nspin
           write (6,*) 'Fermid: ispin,qtot,sumq=',
@@ -378,7 +380,7 @@ C Reading which electronic occupation function to use -------
 
       if ( .not. ocfread) then
 
-        if ( Node .eq. 0 ) then
+        if ( ionode ) then
           ocf = fdf_string('OccupationFunction','FD')
 
           if (leqi(ocf,'FD')) then
@@ -388,7 +390,7 @@ C Reading which electronic occupation function to use -------
           else if (leqi(ocf,'MP')) then
             ocupfnct=2
             nh = fdf_integer('OccupationMPOrder',1)
-            write(6,'(/a,i2)') 
+            write(6,'(/a)') 
      .     'stepf: Methfessel-Paxton step function'
             write(6,'(a,i2)') 
      .     '       Using Hermite-Gauss polynomials of order ',nh
@@ -477,7 +479,7 @@ c Reading which electronic occupation function to use -------
 
       if ( .not. ocfread) then
 
-        if ( Node .eq. 0 ) then
+        if ( ionode ) then
           ocf = fdf_string('OccupationFunction', 'FD')
 
           if (leqi(ocf,'FD')) then

@@ -15,8 +15,9 @@ C
       implicit none
 
       integer, save ::
-     .  WordsInteger, WordsSP, WordsDP, WordsLogical, WordsSC, WordsDC,
-     .  PeakMemory, CurrentMemory, ByteSize(6)
+     .  WordsInteger, WordsSP, WordsDP, WordsLogical, WordsSC, WordsDC, 
+     .  WordsString,
+     .  PeakMemory, CurrentMemory
 
       character(len=30), save ::
      .  PeakRoutine
@@ -28,12 +29,15 @@ C
      .  WordsLogical / 0 /,
      .  WordsSC / 0 /,
      .  WordsDC / 0 /,
+     .  WordsString / 0 /,
      .  PeakMemory / 0 /,
-     .  CurrentMemory / 0 /,
+     .  CurrentMemory / 0 /
+      
+      integer, parameter, dimension(7) :: ByteSize = 
 #ifdef CRAY
-     .  ByteSize /8,8,8,8,8,16/
+     .     (/8,8,8,8,8,16,8/)
 #else
-     .  ByteSize /4,4,8,4,8,16/
+     .     (/4,4,8,4,8,16,4/)
 #endif
 
       end module memoryinfo

@@ -1,5 +1,5 @@
 SystemName	Barium titanate (BaTiO3) cubic structure
-SystemLabel	BaTiO3
+SystemLabel	batio3
 NumberOfSpecies		3
 NumberOfAtoms		5
 %block ChemicalSpeciesLabel
@@ -106,7 +106,3 @@ MaxSCFIterations       2
 
 WriteCoorStep      .true.
 WriteForces        .true.
-
-
-
-

@@ -1,19 +1,30 @@
 module m_wxml_elstack
 
+use m_wxml_error
+
+implicit none
+
 private
 
 !
 ! Simple stack to keep track of which elements have appeared so far
 !
-integer, parameter, private            :: STACK_SIZE = 20
+! Initial stack size:
+integer, parameter, private            :: STACK_SIZE_INIT = 10
+! Multiplier when stack is exceeded:
+real, parameter, private            :: STACK_SIZE_MULT = 1.5
+
+type, private :: elstack_item
+  character(len=100) :: data
+end type
 
 type, public :: elstack_t
 private
-      integer                                    :: n_items
-      character(len=100), dimension(STACK_SIZE)  :: data
+      integer                                   :: n_items
+      type(elstack_item), pointer, dimension(:) :: stack
 end type elstack_t
 
-public  :: push_elstack, pop_elstack, reset_elstack, print_elstack
+public  :: push_elstack, pop_elstack, init_elstack, reset_elstack, print_elstack
 public  :: get_top_elstack, is_empty, get_elstack_signature
 public  :: len
 
@@ -30,12 +41,37 @@ private :: is_empty_elstack
 CONTAINS
 
 !-----------------------------------------------------------------
-subroutine reset_elstack(elstack)
-type(elstack_t), intent(inout)  :: elstack
+subroutine init_elstack(elstack)
+  type(elstack_t), intent(inout)  :: elstack
 
-elstack%n_items = 0
+  allocate(elstack%stack(STACK_SIZE_INIT))
+  elstack%n_items = 0
+
+end subroutine init_elstack
+
+!-----------------------------------------------------------------
+subroutine reset_elstack(elstack)
+  type(elstack_t), intent(inout)  :: elstack
+
+  deallocate(elstack%stack)
+  call init_elstack(elstack)
 
 end subroutine reset_elstack
+
+!-----------------------------------------------------------------
+subroutine resize_elstack(elstack)
+  type(elstack_t), intent(inout)  :: elstack
+  type(elstack_item), pointer, dimension(:) :: temp
+  integer :: s
+
+  s = size(elstack%stack)
+
+  temp=>elstack%stack
+  allocate(elstack%stack(nint(s*STACK_SIZE_MULT)))
+  elstack%stack(:s) = temp
+  deallocate(temp)
+
+end subroutine resize_elstack
 
 !-----------------------------------------------------------------
 function is_empty_elstack(elstack) result(answer)
@@ -61,11 +97,11 @@ type(elstack_t), intent(inout)  :: elstack
 integer   :: n
 
 n = elstack%n_items
-if (n == STACK_SIZE) then
-      stop "*Element stack full"
+if (n == size(elstack%stack)) then
+  call resize_elstack(elstack)
 endif
 n = n + 1
-elstack%data(n) = item
+elstack%stack(n)%data = item
 elstack%n_items = n
 
 end subroutine push_elstack
@@ -75,16 +111,13 @@ subroutine pop_elstack(elstack,item)
 type(elstack_t), intent(inout)     :: elstack
 character(len=*), intent(out)        :: item
 
-!
-! We assume the elstack is not empty... (the user has called is_empty first)
-!
 integer   :: n
 
 n = elstack%n_items
 if (n == 0) then
-      stop "*********Element stack empty"
+      call wxml_error("Element stack empty")
 endif
-item = elstack%data(n)
+item = elstack%stack(n)%data
 elstack%n_items = n - 1
 
 end subroutine pop_elstack
@@ -97,16 +130,13 @@ subroutine get_top_elstack(elstack,item)
 type(elstack_t), intent(in)        :: elstack
 character(len=*), intent(out)        :: item
 
-!
-! We assume the elstack is not empty... (the user has called is_empty first)
-!
 integer   :: n
 
 n = elstack%n_items
 if (n == 0) then
-      stop "*********Element stack empty"
+  call wxml_error("Element stack empty")
 endif
-item = elstack%data(n)
+item = elstack%stack(n)%data
 
 end subroutine get_top_elstack
 
@@ -117,7 +147,7 @@ integer, intent(in)           :: unit
 integer   :: i
 
 do i = elstack%n_items, 1, -1
-      write(unit=unit,fmt=*) trim(elstack%data(i))
+  write(unit=unit,fmt=*) trim(elstack%stack(i)%data)
 enddo
 
 end subroutine print_elstack
@@ -131,10 +161,10 @@ integer   :: i, length, j
 string = ""
 j = 0
 do i = 1, elstack%n_items
-   length = len_trim(elstack%data(i))
+   length = len_trim(elstack%stack(i)%data)
    string(j+1:j+1) = "/"
    j = j+1
-   string(j+1:j+length) = trim(elstack%data(i))
+   string(j+1:j+length) = trim(elstack%stack(i)%data)
    j = j + length
 enddo
 

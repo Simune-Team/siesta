@@ -1,5 +1,10 @@
 module m_wxml_buffer
 
+use m_wxml_escape, only : escape_char_array
+use m_wxml_error
+
+implicit none
+
 !
 ! At this point we use a fixed-size buffer. 
 ! Note however that buffer overflows will only be
@@ -97,9 +102,7 @@ buffer%size = buffer%size + 1
 n = buffer%size
 
 if (n> MAX_BUFF_SIZE) then
-  stop "Buffer overflow: long unbroken string of pcdata or attribute value..."
-!  RETURN
-!
+  call wxml_error("Buffer overflow: long unbroken string of pcdata or attribute value...")
 endif
 
 buffer%str(n:n) = c
@@ -118,12 +121,21 @@ buffer%size = buffer%size + len_s
 n = buffer%size
 
 if (n> MAX_BUFF_SIZE) then
-  stop "Buffer overflow: long unbroken string of pcdata or attribute value..."
-!  RETURN
+  call wxml_error("Buffer overflow: long unbroken string of pcdata or attribute value...")
 endif
 
 buffer%str(last_pos+1:n) = s
 end subroutine add_str_to_buffer
+
+subroutine add_to_buffer_escaping_markup(s,buf)
+character(len=*), intent(in)      ::   s
+type(buffer_t), intent(inout)     ::   buf
+
+character(len=1), dimension(len(s))  :: s_a
+
+call add_to_buffer(escape_char_array(transfer(s,s_a)), buf)
+
+end subroutine add_to_buffer_escaping_markup
 
 !----------------------------------------------------------------
 subroutine reset_buffer(buffer)

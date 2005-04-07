@@ -163,12 +163,13 @@ C
 C
 C  Modules
 C
-      use precision
+      use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
       use atmfuncs,      only : rcut
       use mesh
       use meshphi,       only : endpht
+      use siesta_cml
 
       implicit none
 
@@ -208,10 +209,10 @@ C
 C Functions
 C
       real(dp)
-     .  dismin, ddot, volcel
+     .  dismin, volcel
 
       external
-     .  chkgmx, dismin, ddot,  nfft, reclat, 
+     .  chkgmx, dismin, nfft, reclat, 
      .  timer, volcel, memory
 
       data
@@ -304,7 +305,7 @@ C Loop over cell vectors
 C The reciprocal vectors of the mesh unit cell (cell/ntm)
 C are rcell*ntm, and must be larger than 2*G2max
 
-        vecmod = sqrt( ddot( 3, rcell(1,i), 1, rcell(1,i), 1 ) )
+        vecmod = sqrt(dot_product(rcell(:,i),rcell(:,i)))
         ntm(i) = 2 * sqrt(G2max) / vecmod + 1
 
       enddo
@@ -340,12 +341,6 @@ C to be larger, increase ntm and try again.
 C Store number of mesh points in module array
       nmeshg(1:3) = ntm(1:3)
 
-C Output current mesh dimensions and cut-off
-      if (Node.eq.0) then
-        write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
-     .  ntm(1),' x',ntm(2),' x',ntm(3),' =', ntm(1)*ntm(2)*ntm(3)
-      endif
-
 C Find number of mesh points in unit cell.
       ntp = ntm(1) * ntm(2) * ntm(3)
 
@@ -358,12 +353,22 @@ C Find volume of unit cell and of mesh cell
       volume = volcel( cell )
       dvol = volume / ntp
 
-C Find effective cutoff
-c      G2mesh = 1.0d6
-c      call chkgmx( k0, rcell, ntm, G2mesh )
+C Output current mesh dimensions and cut-off
       if (Node.eq.0) then
         write(6,'(a,2f10.3,a)')
      . 'InitMesh: Mesh cutoff (required, used) =', G2max, G2mesh, ' Ry'
+        write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
+     .  ntm(1),' x',ntm(2),' x',ntm(3),' =', ntp
+      endif
+      if (cml_p) then
+        call cmlStartPropertyList(mainXML)
+        call cmlAddProperty(xf=mainXML, property=ntm,
+     .       dictref='siesta:ntm', title='Mesh')
+        call cmlAddProperty(xf=mainXML, property=G2max, units='Ry',
+     .       dictref='siesta:g2max', title='Requested Cut-Off')     
+        call cmlAddProperty(xf=mainXML, property=G2mesh, units='Ry',
+     .       dictref='siesta:g2mesh', title='Actual Cut-Off')
+        call cmlEndPropertyList(mainXML)
       endif
       G2max = G2mesh
 
@@ -382,10 +387,10 @@ C Loop over mesh directions
       do i = 1,3
 
 C pldist is the distance between mesh planes
-        pldist = 1.0_dp / sqrt(ddot(3,rcmesh(1,i),1,rcmesh(1,i),1))
+        pldist = 1.0_dp / sqrt(dot_product(rcmesh(:,i),rcmesh(:,i)))
 
 C Find number of planes spanned by rmax
-        ne(i) = rmax / pldist + dble( nsm-1 ) / dble( nsm )
+        ne(i) = rmax / pldist + real(nsm-1,kind=dp) / real(nsm,kind=dp)
         ne(i) = max( ne(i), nsm-2 )
 
 C Add ne(i) points to the left and ne(I)+1 points to the
@@ -394,12 +399,6 @@ C possible place within the unit cell.
         nem(i) = nmsc(i) + 2 * ne(i) + 1
 
       enddo
-
-C Some printout for debugging
-*     write(6,'(a,3i6)') 'InitMesh: NM   =', nm 
-*     write(6,'(a,3i6)') 'InitMesh: NMSC =', nmsc 
-*     write(6,'(a,3i6)') 'InitMesh: NE   =', ne 
-*     write(6,'(a,3i6)') 'InitMesh: NEM  =', nem 
 
 C Find total number of extended-mesh points.
       nep = nem(1) * nem(2) * nem(3)
@@ -601,8 +600,7 @@ C real*8  lastra       : Rmax from last call
 C real*8  lastc(3,3)   : Unit cell from last call
 C ----------------------------------------------------------------------
 
-      use precision, only : dp
-
+      use precision,     only : dp
       implicit none
 
 C Passed arguments
@@ -696,7 +694,7 @@ C ----------------------------------------------------------------------
 C integer lastna        : Number of atoms on last call
 C ----------------------------------------------------------------------
 
-      use precision, only : dp
+      use precision,     only : dp
       use mesh
 
       implicit none
@@ -717,10 +715,7 @@ C
      .  lastna
 
       real(dp)
-     .  ddot, dx(3)
-
-      external
-     .  ddot
+     .  dx(3)
 
 C Check size of atom-mesh arrays nad reallocate if necessary
       if (na.ne.lastna) then
@@ -748,7 +743,7 @@ C Find atomic positions relative to mesh
 
 C Find index of extended-mesh cell in which atom is
         do i = 1,3
-          dx(i) = ddot(3,xa(1,ia),1,rcmesh(1,i),1)
+          dx(i) = dot_product(xa(:,ia),rcmesh(:,i))
           ix(i) = int( dx(i) + 100000 ) - 100000
           dx(i) = dx(i) - ix(i)
           ix(i) = mod( ix(i) + 1000*nmsc(i), nmsc(i) )
@@ -799,7 +794,7 @@ C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
-      use precision, only : dp
+      use precision,     only : dp
       use atmfuncs, only: rcore, chcore_sub
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
 
@@ -834,11 +829,6 @@ C
 
       logical
      .  Gradients
-C
-C Functions
-C
-      real(dp)
-     .  ddot
 
       data tiny / 1.0e-12_dp /
 
@@ -862,7 +852,7 @@ C Loop over mesh points inside rmax
 C Loop over sub-points
               do isp = 1,nsp
                 dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
-                r = sqrt( ddot(3,dx,1,dx,1) )
+                r = sqrt(dot_product(dx,dx))
 c                if (r .lt. ra .and. r .gt. tiny) then
                 if (r .lt. ra) then
                   ip = isp + nsp * (ip0 - 1)
@@ -924,7 +914,7 @@ C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
-      use precision, only : dp
+      use precision,     only : dp
       use atmfuncs, only: rcut, phiatm
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
 
@@ -954,12 +944,6 @@ C
       logical 
      .  Gradients
 
-C
-C Functions
-C
-      real(dp)
-     .  ddot
-
 C Check whether forces and/or stress has been requested based on arguments
       Gradients = (Forces.or.Stress)
 
@@ -979,11 +963,10 @@ C Loop over mesh points inside rmax
 C Loop over sub-points
             do isp = 1,nsp
               dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
-              r = sqrt( ddot(3,dx,1,dx,1) )
+              r = sqrt(dot_product(dx,dx))
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
                 call phiatm( is, 0, dx, va, grva )
-!                write(88,*) is, dx, va, grva
                 if (Gradients) then
                   do i = 1,3
                     grva(i) = dvol * grva(i) * drho(ip)
@@ -1023,10 +1006,10 @@ C ----------------------------------------------------------------------
 C real    Chlocal(ntpl)     : Sum of diffuse ionic charge densities
 C ----------------------------------------------------------------------
  
-       use precision, only : dp
+      use precision,     only : dp
       use atmfuncs, only: rcut, psch
-      use atm_types
-      use radial
+      use atm_types, only : species
+      use radial, only : rad_func
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
  
       implicit none
@@ -1049,12 +1032,6 @@ C
 
       type(rad_func), pointer            :: func   
  
-C
-C Functions
-C
-      real(dp)
-     .  ddot
- 
 C Initialise array to zero 
       Chlocal(1:ntpl) = 0.0_dp
  
@@ -1072,7 +1049,7 @@ C Loop over mesh points inside rmax
 C Loop over sub-points
             do isp = 1,nsp
               dx(1:3) = xdop(1:3,iop) + xdsp(1:3,isp) - dxa(1:3,ia)
-              r = sqrt( ddot(3,dx,1,dx,1) )
+              r = sqrt(dot_product(dx,dx))
               if (r .lt. ra) then
                 ip = isp + nsp * (ip0 - 1)
                 call psch( is, dx, pschloc, grpsch )
@@ -1108,12 +1085,12 @@ C ----------------------------------------------------------------------
 C
 C Modules
 C
+      use precision,     only : dp
       use atmfuncs, only : rcut, phiatm
       use mesh,     only : dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
-      use meshphi
+      use meshphi,  only : directphi, nphi, phi, lstpht, listp2, endpht
       use parallel, only : Node
-      use fdf
-      use precision
+      use fdf,      only : fdf_boolean
 #ifdef MPI
       use mpi_siesta
 #endif

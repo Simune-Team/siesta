@@ -8,7 +8,7 @@
 # -----------------------------------------------------------------------------
 
 SystemName       bcc Fe ferro GGA   # Descriptive name of the system
-SystemLabel            Fe           # Short name for naming files
+SystemLabel            fe           # Short name for naming files
 
 # Output options
 

@@ -1,80 +1,92 @@
 module m_wxml_escape
 
-use m_wxml_buffer
+implicit none
 
 private
 
-public  :: add_to_buffer_escaping_markup
+public  :: escape_char_array
 public  :: check_Name
+
+character(len=*), parameter :: LETTER = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
+character(len=*), parameter :: DIGIT  = '1234567890'
+character(len=*), parameter :: ESCAPE = '&<'//'"'//"'"
 
 CONTAINS
 
-subroutine add_to_buffer_escaping_markup(s,buf)
-character(len=*), intent(in)      ::   s
-type(buffer_t), intent(inout)     ::   buf
+!This must accept input in the form of a character array,
+!otherwise calculation of output length is not possible
+!in a specification expression in f90.
+function escape_char_array(s_a) result(s_out)
+  character, dimension(:) :: s_a
+  character(len=size(s_a) + 4*count(s_a=='&')  &
+                          + 3*count(s_a=='<')  &
+                          + 5*count(s_a=='"')  &
+                          + 5*count(s_a=="'")) :: s_out
 
-integer           :: len_s, i
-character(len=1)  :: c
+  integer :: i, i_out
+  character(len=1) :: c
+  
+  i_out = 1
+  do i = 1, size(s_a)
+    c = s_a(i)
+    select case (c)
+      case ('&')
+        s_out(i_out:i_out+4) = '&amp;'
+        i_out=i_out+5
+      case('<')
+        s_out(i_out:i_out+3) = '&lt;'
+        i_out=i_out+4
+      case ('"')
+        s_out(i_out:i_out+3) = '&apos;'
+        i_out=i_out+6
+      case ("'")
+        s_out(i_out:i_out+3) = '&quot;'
+        i_out=i_out+6
+      case default
+        s_out(i_out:i_out) = c
+        i_out = i_out + 1
+    end select
+  enddo
 
-len_s = len(s)
-i = 0
-do 
- if (i==len_s) exit
- i = i + 1
- c = s(i:i)
- if (c == "<") then
-    call add_to_buffer("&lt;",buf)
- else if (c == "&") then
-    call add_to_buffer("&amp;",buf)
- else
-    call add_to_buffer(c,buf)
- endif
-enddo
+end function escape_char_array
 
-end subroutine add_to_buffer_escaping_markup
 
-subroutine check_Name(name)
+function check_Name(name) result(good)
  character(len=*), intent(in) :: name
+ logical :: good
+! Validates a string against the XML requirements for a NAME
+! Is not fully compliant; ignores UTF issues.
 
- integer :: n
+ integer :: n, i
 
- n = len_trim(name)
+ good=.true.
+
+ n = len(name)
  if (n == 0) then
-    write(*,*) "tagName cannot be an empty string: '"
-    stop
+   write(0,*) "tagName is an empty string."
+   good=.false.
+ elseif (good) then
+   if (scan(name(1:1), LETTER//'_'//':') == 0) then
+     write(0,*) "tagName must begin with a letter, underscore or colon: '", name(1:1), "'."
+     good=.false.
+   endif
+ elseif (good) then
+   do i = 1, n
+     if (scan(name(i:i), LETTER//DIGIT//'.'//'-'//'_'//':') == 0) then
+       write(0,*) "tagName contains a forbidden character: '", name(i:i), "'."
+       good=.false.
+       exit
+     endif
+   enddo
+ elseif (good) then
+   if (scan(name(1:1), 'Xx') == 1 .and. &
+       scan(name(2:2), 'Mm') == 1 .and. &
+       scan(name(3:3), 'Ll') == 1) then
+     write(0,*) "tagName cannot start with the characters 'XML'."
+     good=.false.
+   endif
  endif
-
-    if (scan(name(1:1), "1234567890") .ne. 0) then
-       write(*,*) "tagName can not begin with a digit: '", name, "'"
-       stop
-    endif
-
-    if (scan(name(1:1),       &
-       "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ_:") .eq. 0) &
-               then          
-       write(*,*)  &
-       "tagName must begin with a letter, underscore or colon: '", &
-               name, "'"
-       stop
-    endif
-
-    if (scan(name, " ") .ne. 0) then
-       write(*,*) "tagName can not contain whitespace: '", name, "'"
-       stop
-    end if
-
-    if (name(1:1).eq."x" .or. name(1:1) .eq. "X") then
-       if (n == 1) RETURN
-       if (name(2:2).eq."m" .or. name(2:2) .eq. "M") then
-          if (n == 2) RETURN
-          if (name(3:3).eq."l" .or. name(3:3) .eq. "L") then
-             write(*,*) "tagName can not start with the letters XML: '", &
-                  name, "'"
-             stop
-          endif
-       endif
-    endif
-
-end subroutine check_Name
+       
+end function check_Name
 
 end module m_wxml_escape

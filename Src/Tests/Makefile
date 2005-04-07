@@ -4,7 +4,7 @@
 # Location of siesta executable (seen from two levels down)
 #
 SIESTA=../../../siesta
-#SIESTA="mpirun -np 2 ../../../siesta"
+#SIESTA="/opt/mpich-1.2.6-nag/bin/mpirun -np 2 ../../../siesta"
 #
 #
 ###include ../arch.make
@@ -20,11 +20,17 @@ all:  ###   cmpsig   ## Optional: better not activate as of 1.3
 ##cmpsig: cmpsig.f
 ##	$(FC) $(FFLAGS) -o cmpsig cmpsig.f
 #
+xmlcheck: all
+	@for i in ${tests} ; do \
+	  echo "xmllint check $$i.xml ..."; \
+	  xmllint $$i/$$i.xml > /dev/null ; \
+	done
+#
 clean:
 ##	rm -f cmpsig
 	@for i in ${tests} ; do \
 		echo ">>>> Cleaning $$i test..." ; \
-		(cd $$i ; rm -rf work ; rm -f *.out completed) ; \
+		(cd $$i ; rm -rf work ; rm -f *.out *.xml completed) ; \
 	done
 
 

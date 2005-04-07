@@ -44,11 +44,12 @@ C
 C  Modules
 C
       use precision
-      use parallel,     only : Node, Nodes, ProcessorY
+      use parallel,     only : IOnode, Node, Nodes, ProcessorY
       use parallelsubs, only : HowManyMeshPerNode
       use atmfuncs,     only : rcut
       use fdf
       use parsing
+      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -88,11 +89,9 @@ C Find and store the electric field only the first time
       if (frstme) then
         frstme = .false.
         isfield = .false.
-        do ix = 1,3
-          e(ix) = 0.d0
-        enddo
+        e = 0.0_dp
 
-        if (Node.eq.0) then
+        if (ionode) then
 C Read the electric field block from the fdf input file
           found = fdf_block('ExternalElectricField',iu)
           if (found) then
@@ -104,7 +103,7 @@ C Read the electric field block from the fdf input file
             eunits = names(lc(0)+1:lc(1))
             cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
             do ix = 1,3
-              if (e(ix) .ne. 0.d0) isfield = .true.
+              if (e(ix) .ne. 0._dp) isfield = .true.
               e(ix) = e(ix) * cfactor
               e0(ix) = e(ix)
             enddo
@@ -148,13 +147,15 @@ C Check that the field is orthogonal to the bulk directions
           elseif (nbcell .eq. 3) then
             orthog = .false.
             do ix = 1,3
-              e(ix) = 0.0d0
+              e(ix) = 0.0_dp
             enddo
           endif
-          if (Node.eq.0) then
+          if (ionode) then
             if (orthog) then
               write(6,'(/,a,3f12.6,a)')
      .          'efield: Electric field =', e, ' Ry/Bohr/e'
+              if (cml_p) call cmlAddProperty(xf=mainXML, property=e, 
+     .             dictref='siesta:elfield', units='Ry/Bohr/e')
             else
               write(6,'(a,(/,a,3f12.6))')
      .          'efield: ERROR: Non zero bulk electric field.',
@@ -193,7 +194,7 @@ C Find the geometric center of the system
 C Find the mesh index of the origin of the shifted cell
         do ix = 1,3
           xmean = (xmin(ix) + xmax(ix)) / 2
-          i0(ix) = nint( (xmean-0.5d0) * mesh(ix) )
+          i0(ix) = nint( (xmean-0.5_dp) * mesh(ix) )
         enddo
 
 C Find the electric field in mesh coordinates, so that
@@ -204,7 +205,7 @@ C v = e*x = f*index
 
 C Find the potential at the origin of the shifted cell, so that
 C the potential is zero at the center of the cell
-        v0 = (- 0.5d0) * (f(1)*mesh(1) + f(2)*mesh(2) + f(3)*mesh(3))
+        v0 = (- 0.5_dp) * (f(1)*mesh(1) + f(2)*mesh(2) + f(3)*mesh(3))
       endif        
 
       if (isfield) then

@@ -124,7 +124,7 @@ CONTAINS
     if (present(min))        call xml_AddAttribute(xf, 'min', min)
     if (present(max))        call xml_AddAttribute(xf, 'max', max)
     if (present(units))      call xml_AddAttribute(xf, 'units', units)
-    call xml_AddPcdata(xf, ' '//value)
+    call xml_AddPcdata(xf, value)
     call xml_EndElement(xf, 'scalar')
 
   END SUBROUTINE stmAddString
@@ -205,16 +205,14 @@ CONTAINS
     character(len=*), intent(in), optional :: units        ! units
     character(len=*), intent(in), optional :: fmt          ! the format (default 'f10.4')
 
-    character(len=200) :: formt
-
     if (present(fmt)) then
-       formt = fmt
+       call stmAddString(xf, str(value,fmt), id, title, dictref, dataType, &
+         convention, errorValue, errorBasis, min, max, units)
     else
-       formt = '(f10.4)'
+       call stmAddString(xf, trim(str(value,'(f10.4)')), id, title, dictref, dataType, &
+         convention, errorValue, errorBasis, min, max, units)
     endif
 
-    call stmAddString(xf, str(value,formt), id, title, dictref, dataType, &
-       convention, errorValue, errorBasis, min, max, units)
 
   END SUBROUTINE stmAddFloatDP
 
@@ -240,16 +238,13 @@ CONTAINS
     character(len=*), intent(in), optional :: max
     character(len=*), intent(in), optional :: fmt          ! the format (default 'f10.4')
 
-    character(len=200) :: formt
-
     if (present(fmt)) then
-       formt = fmt
+       call stmAddString(xf, str(value,fmt), id, title, dictref, dataType, &
+         convention, errorValue, errorBasis, min, max, units)
     else
-       formt = '(f10.4)'
+       call stmAddString(xf, trim(str(value,'(f10.4)')), id, title, dictref, dataType, &
+         convention, errorValue, errorBasis, min, max, units)
     endif
-
-    call stmAddString(xf, str(value,formt), id, title, dictref, dataType, &
-       convention, errorValue, errorBasis, min, max, units)
 
   END SUBROUTINE stmAddFloatSP
 
@@ -288,16 +283,13 @@ CONTAINS
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
     if (present(type))    call xml_AddAttribute(xf, 'type', type)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
+    ! We must not trim the value of the delimiter - it might be a single space
     call xml_AddAttribute(xf, 'delimiter', delim1)
     call xml_AddAttribute(xf, 'size', nvalue)
 
     call xml_AddPcdata(xf, array(1))
     do i = 2, nvalue
-       if (delim1 .eq. ' ') then
-          call xml_AddPcdata(xf, ' '//array(i))
-       else
-          call xml_AddPcdata(xf, delim1//array(i))
-       endif
+      call xml_AddPcdata(xf, delim1//array(i))
     enddo
     call xml_EndElement(xf, 'array')
 
@@ -388,7 +380,7 @@ CONTAINS
 
     call xml_AddPcdata(xf, array(1))
     do i = 2, nvalue
-       call xml_AddPcdata(xf, array(i))
+       call xml_AddPcdata(xf, array(i), space=.true.)
     enddo
     call xml_EndElement(xf, 'array')
     
@@ -482,7 +474,7 @@ CONTAINS
   ! outputs integer matrix to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE stmAddstringMatrix(xf, nrows, ncols, matrix, id, title, dictref, units)
+  SUBROUTINE stmAddStringMatrix(xf, nrows, ncols, matrix, id, title, dictref, units)
 
     implicit none
     type(xmlf_t),     intent(inout)        :: xf
@@ -507,7 +499,7 @@ CONTAINS
 
     do i = 1, ncols
        do j = 1, nrows
-          call xml_AddPcdata(xf, matrix(j, i))
+          call xml_AddPcdata(xf, matrix(j, i), space=.true.)
        enddo
     enddo
     call xml_EndElement(xf, 'matrix')
@@ -548,7 +540,7 @@ CONTAINS
 
     do i = 1, ncols
        do j = 1, nrows
-          call xml_AddPcdata(xf, matrix(j, i))
+          call xml_AddPcdata(xf, matrix(j, i), space=.true.)
        enddo
     enddo
     call xml_EndElement(xf, 'matrix')
@@ -596,8 +588,7 @@ CONTAINS
     !-------------
     do i = 1, nrows
        do j = 1, ncols
-          !              write(*,*) ">>> 1", i, j
-          call xml_AddPcdata(xf, matrix(j, i), formt)
+          call xml_AddPcdata(xf, matrix(j, i), formt, space=.true.)
        enddo
     enddo
     call xml_EndElement(xf, 'matrix')
@@ -643,7 +634,7 @@ CONTAINS
     call xml_AddAttribute(xf, 'rows', nrows)
     do i = 1, nrows
        do j = 1, ncols
-          call xml_AddPcdata(xf, matrix(j, i), formt)
+          call xml_AddPcdata(xf, matrix(j, i), formt, space=.true.)
        enddo
     enddo
     call xml_EndElement(xf, 'matrix')
@@ -926,7 +917,7 @@ CONTAINS
 
     call xml_AddPcdata(xf, arrf(1), formt)
     do i = 2, nvalue
-       call xml_AddPcdata(xf, arrf(i), formt)
+       call xml_AddPcdata(xf, arrf(i), formt, space=.true.)
     enddo
   END SUBROUTINE STMARCF9DP
 
@@ -954,7 +945,7 @@ CONTAINS
 
     call xml_AddPcdata(xf, arrf(1))
     do i = 2, nvalue
-       call xml_AddPcdata(xf, arrf(i))
+       call xml_AddPcdata(xf, arrf(i), space=.true.)
     enddo
   END SUBROUTINE STMARCF9SP
 

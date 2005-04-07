@@ -16,7 +16,7 @@
       private
 
       public phonon_setup, phonon_set_coords, phonon_restore_coords
-      public phonon_write_forces, phonon_check
+      public phonon_write_forces
       public phonon_num_disps
 
       integer, parameter  :: max_phonon = 100
@@ -28,39 +28,6 @@
 
       CONTAINS
 
-!
-!------------------------------------------------------------------
-!     Two ways to signal a PHONON calculation:
-!     MD.TypeofRun = 'Phonon' or existence of block MD.ATforPhonon
-!
-      function phonon_check(dyntyp)
-      use fdf
-
-      logical             :: phonon_check
-      character(len=*)    :: dyntyp
-
-      logical leqi, block_exists
-      external leqi
-
-#ifdef MPI
-      integer MPIerror
-#endif
-
-      phonon_check = .false.
-
-      if (leqi(dyntyp,'Phonon')) then
-         phonon_check = .true.
-         return
-      endif
-      if (Node.eq.0)
-     $     block_exists = fdf_defined('MD.ATforPhonon')
-#ifdef MPI
-      call MPI_Bcast(block_exists,1,MPI_logical,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
-      if (block_exists) phonon_check = .true.
-      
-      end function phonon_check
 !-------------------------------------------------------------------
 !
 !-------------------------------------------------------------------

@@ -13,6 +13,7 @@ C                   :                    'D' = double precision real
 C                   :                    'L' = logical
 C                   :                    'C' = single precision complex
 C                   :                    'Z' = double precision complex
+C                   :                    'S' = character data (we assume takes one word)
 C integer NElements : number of array elements being 
 C                   : allocated/deallocated
 C character         :
@@ -62,6 +63,9 @@ C Add number of elements to appropriate pointer
       elseif (Type .eq. 'Z' .or. Type .eq. 'z') then
         WordsDC = WordsDC + Sign*NElements
         CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(6)
+      elseif (Type .eq. 'S' .or. Type .eq. 's') then
+        WordsString = WordsString + Sign*NElements
+        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(7)
       endif
 
 C Check whether memory is greater than peak memory so far
@@ -118,7 +122,7 @@ C Find peak memory use over all Nodes
 
 C Output memory use information
       if (Node.eq.0) then
-        write(Unit,*)
+        write(Unit,'(a)') ''
       endif
       if (Level.eq.0) then
         if (Node.eq.0) then
@@ -143,7 +147,7 @@ C Output memory use information
             write(Unit,'(''* Maximum dynamic memory allocated : Node ''
      .          ,i4,'' = '',i5,'' MB'')') n,(maxmemlist(n+1)/1000000)+1
           enddo
-          write(Unit,*)
+          write(Unit,'(a)') ''
           write(Unit,'(''* Maximum memory occured during '',a30)')
      .               PeakRoutine
         endif

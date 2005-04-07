@@ -26,6 +26,7 @@
 ! on whether we need a supercell or not.
 
 C integer isa(na)           : Species index of each atom
+C character*2 elem(na)      : Element name of each atom.
 C integer lasto(0:na)       : Position of last orbital of each atom
 C integer lastkb(0:na)      : Position of last KB proj. of each atom
 C integer iza(na)           : Atomic number of each atom
@@ -33,6 +34,7 @@ C real*8 amass(na)          : Atomic mass of each atom
 C real*8 qa(na)             : Neutral atom charge of each atom
 
       integer, pointer, save, public  :: isa(:) ! 
+      character(len=2), allocatable, save, public :: elem(:)
       integer, pointer, save, public  :: iza(:) ! 
       integer, pointer, save, public  :: lasto(:) ! 
       integer, pointer, save, public  :: lastkb(:)

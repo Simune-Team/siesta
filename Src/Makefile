@@ -40,7 +40,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
 	ordern.o outcell.o outcoor.o overfsm.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
-	timestamp.o propor.o pulayx.o \
+	propor.o pulayx.o \
 	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer.o \
@@ -86,10 +86,10 @@ gen-basis.o: $(FDF)
 MOD_OBJS=precision.o spatial.o parallel.o parallelsubs.o atom.o atmparams.o atmfuncs.o listsc.o \
          memoryinfo.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o parsing.o\
-         alloc.o phonon.o spher_harm.o periodic_table.o version.o \
+         alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o sys.o basis_io.o\
          onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o \
-	 electrostatic.o mneighb.o globalise.o
+	 electrostatic.o mneighb.o globalise.o siesta_cml.o units.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #

@@ -4573,6 +4573,56 @@ the bottleneck and the place where efficiency is most readily
 lost. This is basically just the nature of diagonalisation, but it is
 always worth tuning the BlockSize parameter.
 
+\appendix{XML Output}
+
+From version 2.0, SIESTA includes an option to write its output to an XML file.
+The XML it produces is in accordance with the CMLComp schema (see information...)
+
+There are two primary uses for the XML output.
+
+\item To use SIESTA as part of a large workflow scheme. In such a scenario, the 
+XML output of one SIESTA simulation may be easily parsed in order to direct further 
+simulations. Detailed discussion of this is outwith the scope of this manual.
+
+\item To generate webpages showing SIESTA output in a more accessible, graphically
+rich, fashion. This section will explain how to do this.
+
+Prerequisites:
+
+The translation of the SIESTA XML output to a HTML-based webpage is done using XSLT
+technology. The stylesheets conform to XSLT-1.0 plus EXSLT extensions; an xslt processor
+capable of dealing with this is necessary. The following processors have been tested and 
+are known to work.
+
+\begin{list}
+  \item \texttt{xsltproc} from libxml2 (\url{http://xmlsoft.org})
+  \item \texttt{4xslt} from 4suite (\url{http://4suite.org})
+  \item \texttt{saxon} (\url{http://saxon.sourceforge.net/})
+\end{list}
+
+The generated webpages include support for viewing three-dimensional interactive images
+of the system. If you want to do this, you will also need jMol (\url{http://jmol.sourceforge.net})
+installed; as this is a Java applet, you will also need a working Java Runtime Environment
+and browser plugin - installation instructions for these are outside the scope of this
+manual, though. However, the webpages are still useful and may be viewed without this plugin.
+
+The XSLT stylesheets are to be found in the \texttt{XSLT} subdirectory of the SIESTA
+distribution. To use these to produce the webpage, the output of a SIESTA run, 
+\texttt{SystemLabel.xml} should be taken and placed in an empty directory. The XSLT
+processor should then be run. The necessary invocation differs according to the 
+processor - the following are some examples; consult the documentation for your own
+processor. 
+
+\texttt{xsltproc -o SystemLabel.html \$SIESTA/XSLT/display.xsl SystemLabel.xml}\\
+\texttt{4xslt -o SystemLabel.html SystemLabel.xml \$SIESTA/XSLT/display.xsl}\\
+\texttt{java /usr/share/java/saxon.jar -o SystemLabel.html SystemLabel.xml \$SIESTA/XSLT/display.xsl}
+
+Note that when using saxon, the path to the saxon \.jar may be different on your system.
+
+After this is done, a set of html files will have been created. Point your web-browser at
+\texttt{SystemLabel.html} to view this output.
+
+
 \addcontentsline{toc}{section}{Index}
 \printindex
 

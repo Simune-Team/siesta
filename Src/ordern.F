@@ -74,8 +74,10 @@ C  Modules
       use fdf
       use alloc
       use on_main
-      use parallel,  only : Node, NOdes
+      use parallel,  only : IONode, Node, NOdes
+      use siesta_cml
       use sys,       only : die
+      use units,     only : eV
 #ifdef MPI
       use globalise,  only: setglobalise, globaliseC
       use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
@@ -125,10 +127,10 @@ C Internal variables ..........................................................
      .  aux(:,:)
 
       real(dp) ::
-     .  fe(2), qtot(2)
+     .  fe(2), qtot(nspin)
 
       real(dp) ::
-     .  chpot,emax,emin,eV
+     .  chpot,emax,emin
 
       logical
      .  itest, found
@@ -177,17 +179,17 @@ C Set default sizes for order N arrays
 
       endif
 
-      eV = 1.0d0 / 13.60580d0
-
 C ............................
 
-      if (Node.eq.0) then
+      if (IONode) then
         write(6,"(/a,f12.4)") 'ordern: enum =', enum
       endif
+      if (cml_p) call cmlAddProperty(xf=mainXML, property=enum, 
+     .     dictref='siesta:enum', title='Number of electrons')
 
 C  Check if options are compatible
       if (ioptlwf.eq.0.and.(.not.usesavelwf)) then
-        if (Node.eq.0) then
+        if (IONode) then
           write(6,"(/a)") 'ordern: ERROR: You must use LWF files.'
           write(6,"(a)") '        If you choose ON.functional = Files'
           write(6,"(a)") '        Please set ON.UseSaveLWF = True'
@@ -258,14 +260,22 @@ C and HOMO and LUMO levels ..........
      .               lasto,cell,xa,enum,nbasis,nbasisloc,natoms,
      .               nhmax,chpot,emax,emin)
 
-        eV  = 1.0d0/13.60580d0
-
-        write(6,'(a,f8.4,a)') 'ordern:   Chemical Potential = ',
+        if (ionode) then
+          write(6,'(a,f8.4,a)') 'ordern:   Chemical Potential = ',
      .                         chpot/eV,' eV'
-        write(6,'(a,f8.4,a)') 'ordern:   Maximum Eigenvalue = ',
+          write(6,'(a,f8.4,a)') 'ordern:   Maximum Eigenvalue = ',
      .                         emax/eV,' eV'
-        write(6,'(a,f8.4,a)') 'ordern:   Minimum Eigenvalue = ',
+          write(6,'(a,f8.4,a)') 'ordern:   Minimum Eigenvalue = ',
      .                         emin/eV,' eV'
+        endif
+        if (cml_p) then
+          call cmlAddProperty(xf=mainXML, property=chpot/eV, 
+     .     units='eV', title='Chemical potential')
+          call cmlAddProperty(xf=mainXML, property=emax/eV,
+     .     units='eV', title='Maximum eigenvalue')
+          call cmlAddProperty(xf=mainXML, property=emin/eV, 
+     .     units='eV', title='Minimum eigenvalue')
+        endif
 
         if (noeta) eta = chpot
       endif
@@ -273,7 +283,7 @@ C and HOMO and LUMO levels ..........
 C  Extrapolate wave funcions from those of former time steps if 
 C  iscf = 1 (that is, if we are in a new MD step) ...................
       if (iscf .eq. 1)  then
-        if (Node.eq.0) then
+        if (ionode) then
           write(6,"(/a,i3)") 'ordern: ioptlwf =',ioptlwf
         endif
         if (ioptlwf.eq.0) then
@@ -358,14 +368,13 @@ C Global reduction of qtot
       do is = 1,nspin
         Ecorrec = Ecorrec + eta(is) * (qs(is) - qtot(is))
       enddo
-      if (Node.eq.0) then
-        if (nspin.eq.1) then
-          write(6,'(a,f12.4)') 
-     .      'ordern: qtot (after  DM normalization) = ', qtot(1)
-        else
-          write(6,'(a,f12.4)') 
-     .      'ordern: qtot (after  DM normalization) = ', qtot(1)+qtot(2)
-        endif
+      if (ionode) then
+        write(6,'(a,f12.4)') 
+     .       'ordern: qtot (after  DM normalization) = ', sum(qtot)
+      endif
+      if (cml_p) then
+        call cmlAddProperty(xf=mainXML, property=sum(qtot), 
+     .       dictref='siesta:qtot', title='qtot')
       endif
 
 C Save LWF's to disk .................................................
@@ -373,8 +382,7 @@ C Save LWF's to disk .................................................
      .            found, nspin)
 
       frstme = .false.
-*     call timer( 'ordern', 2 )
-      return
+
       end subroutine ordern
 
       end module m_ordern

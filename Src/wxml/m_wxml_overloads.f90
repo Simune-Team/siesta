@@ -64,7 +64,11 @@ CONTAINS
     logical, intent(in), optional  :: space
     logical, intent(in), optional  :: line_feed
 
-    call xml_AddPcdata_Ch(xf,trim(str(pcdata,fmt)),space,line_feed)
+    if (present(fmt)) then
+      call xml_AddPcdata_Ch(xf,str(pcdata,fmt),space,line_feed)
+    else
+      call xml_AddPcdata_Ch(xf,str(pcdata),space,line_feed)
+    endif
 
   end subroutine xml_AddPcdata_log
 
@@ -76,7 +80,11 @@ CONTAINS
     logical, intent(in), optional  :: space
     logical, intent(in), optional  :: line_feed
 
-    call xml_AddPcdata_Ch(xf,trim(str(pcdata,fmt)),space,line_feed)
+    if (present(fmt)) then
+      call xml_AddPcdata_Ch(xf,str(pcdata,fmt),space,line_feed)
+    else
+      call xml_AddPcdata_Ch(xf,str(pcdata),space,line_feed)
+    endif
 
   end subroutine xml_AddPcdata_int
 
@@ -109,7 +117,11 @@ CONTAINS
     logical, intent(in)           :: value
     character(len=*), intent(in), optional   :: fmt
 
-    call xml_AddAttribute_Ch(xf,name,str(value,fmt))
+    if (present(fmt)) then
+      call xml_AddAttribute_Ch(xf,name,str(value,fmt))
+    else
+      call xml_AddAttribute_Ch(xf,name,str(value))
+    endif
 
   end subroutine xml_AddAttribute_log
 
@@ -119,7 +131,11 @@ CONTAINS
     integer, intent(in)           :: value
     character(len=*), intent(in), optional   :: fmt
 
-    call xml_AddAttribute_Ch(xf,name,str(value,fmt))
+    if (present(fmt)) then
+      call xml_AddAttribute_Ch(xf,name,str(value,fmt))
+    else
+      call xml_AddAttribute_Ch(xf,name,str(value))
+    endif
 
   end subroutine xml_AddAttribute_int
 

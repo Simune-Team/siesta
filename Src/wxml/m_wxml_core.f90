@@ -2,9 +2,10 @@ module m_wxml_core
 
 use m_wxml_buffer
 use m_wxml_escape, only: check_Name
-use m_wxml_escape, only: add_to_buffer_escaping_markup
 use m_wxml_elstack
 use m_wxml_dictionary
+
+implicit none
 
 logical, private, save  :: pcdata_advance_line_default = .false.
 logical, private, save  :: pcdata_advance_space_default = .false.
@@ -15,19 +16,21 @@ integer, private, parameter ::  dp = selected_real_kind(14,100)
 private
 
 type, public :: xmlf_t
-   integer            :: lun
-   type(buffer_t)     :: buffer
-   type(elstack_t)    :: stack
+   character, pointer      :: filename(:)
+   integer                 :: lun
+   type(buffer_t)          :: buffer
+   type(elstack_t)         :: stack
    type(wxml_dictionary_t) :: dict
-   logical            :: start_tag_closed
-   logical            :: root_element_output
-   logical            :: indenting_requested
+   logical                 :: start_tag_closed
+   logical                 :: root_element_output
+   logical                 :: indenting_requested
 end type xmlf_t
 
 public :: xml_OpenFile, xml_NewElement, xml_EndElement, xml_Close
 public :: xml_AddXMLDeclaration
+public :: xml_AddXMLStylesheet
+public :: xml_AddXMLPI
 public :: xml_AddComment, xml_AddCdataSection
-
 public :: xml_AddPcdata, xml_AddAttribute
 interface  xml_AddPcdata
    module procedure xml_AddPcdata_Ch
@@ -48,11 +51,27 @@ private :: get_unit
 private :: add_eol
 private :: write_attributes
 
+!overload error handlers to allow file info
+interface wxml_warning
+  module procedure wxml_warning_xf
+end interface
+interface wxml_error
+  module procedure wxml_error_xf
+end interface
+interface wxml_fatal
+  module procedure wxml_fatal_xf
+end interface
+
 !
 ! Heuristic (approximate) target for justification of output
 ! Large unbroken pcdatas will go beyond this limit
 ! 
 integer, private, parameter  :: COLUMNS = 80
+
+! TOHW - This is the longest string that may be output without
+! a newline. The buffer must not be larger than this, but its size 
+! can be tuned for performance.
+integer, private, parameter  :: xml_recl = 4096
 
 CONTAINS
 
@@ -64,18 +83,25 @@ logical, intent(in), optional :: indent
 
 integer :: iostat
 
+allocate(xf%filename(len(filename)))
+xf%filename=transfer(filename,xf%filename)
+
 call get_unit(xf%lun,iostat)
-if (iostat /= 0) stop "cannot open file"
+if (iostat /= 0) call wxml_fatal(xf, "cannot open file")
 !
 ! Use large I/O buffer in case the O.S./Compiler combination
 ! has hard-limits by default (i.e., NAGWare f95's 1024 byte limit)
 ! This is related to the maximum size of the buffer.
-!
-open(unit=xf%lun, file=filename, form="formatted", status="replace", &
-     action="write", position="rewind", recl=4096)
+! TOHW - This is the longest string that may be output without
+! a newline. The buffer must not be larger than this, but its size 
+! can be tuned for performance.
 
-call reset_elstack(xf%stack)
-call reset_dict(xf%dict)
+open(unit=xf%lun, file=filename, form="formatted", status="replace", &
+     action="write", position="rewind", recl=xml_recl)
+
+call init_elstack(xf%stack)
+
+call init_dict(xf%dict)
 call reset_buffer(xf%buffer)
 
 xf%start_tag_closed = .true.
@@ -99,6 +125,48 @@ else
    call add_to_buffer("<?xml version=""1.0"" ?>", xf%buffer)
 endif
 end subroutine xml_AddXMLDeclaration
+
+!-------------------------------------------------------------------
+subroutine xml_AddXMLStylesheet(xf, href, type, title, media, charset, alternate)
+type(xmlf_t), intent(inout)   :: xf
+character(len=*), intent(in) :: href
+character(len=*), intent(in) :: type
+character(len=*), intent(in), optional :: title
+character(len=*), intent(in), optional :: media
+character(len=*), intent(in), optional :: charset
+logical,          intent(in), optional :: alternate
+
+call add_eol(xf)
+call add_to_buffer("<?xml-stylesheet href=""" //trim(href)// &
+     " type=""" //trim(type)// """", xf%buffer)
+
+if (present(title)) call add_to_buffer(" title="""//trim(title)// """", xf%buffer)
+if (present(media)) call add_to_buffer(" media="""//trim(media)// """", xf%buffer)
+if (present(charset)) call add_to_buffer(" charset="""//trim(charset)// """", xf%buffer)
+if (present(alternate)) then
+   if (alternate) then
+      call add_to_buffer(" alternate=""yes""", xf%buffer)
+   else
+      call add_to_buffer(" alternate=""no""", xf%buffer)
+   endif
+endif
+call add_to_buffer(" ?>", xf%buffer)
+
+end subroutine xml_AddXMLStylesheet
+
+!-------------------------------------------------------------------
+subroutine xml_AddXMLPI(xf, name, data)
+type(xmlf_t), intent(inout)   :: xf
+character(len=*), intent(in) :: name
+character(len=*), intent(in), optional :: data
+
+call add_eol(xf)
+call add_to_buffer("<?" // trim(name) // " ", xf%buffer)
+if(present(data)) call add_to_buffer(data, xf%buffer)
+call add_to_buffer(" ?>", xf%buffer)
+
+end subroutine xml_AddXMLPI
+
 
 !-------------------------------------------------------------------
 subroutine xml_AddComment(xf,comment)
@@ -129,11 +197,14 @@ type(xmlf_t), intent(inout)   :: xf
 character(len=*), intent(in)  :: name
 
 if (is_empty(xf%stack)) then
-   if (xf%root_element_output) stop "two root elements"
+   if (xf%root_element_output) call wxml_error(xf, "two root elements")
    xf%root_element_output = .true.
 endif
 
-call check_Name(name)
+if (.not.check_Name(name)) then
+  call wxml_warning(xf, 'attribute name '//name//' is not valid')
+endif
+
 
 call close_start_tag(xf,">")
 call push_elstack(name,xf%stack)
@@ -150,11 +221,7 @@ character(len=*), intent(in)  :: pcdata
 logical, intent(in), optional  :: space
 logical, intent(in), optional  :: line_feed
 
-type(buffer_t) :: aux_buffer
-
 logical :: advance_line , advance_space
-integer :: n, i, jmax
-integer, parameter   :: chunk_size = 128
 
 advance_line = pcdata_advance_line_default 
 if (present(line_feed)) then
@@ -167,7 +234,7 @@ if (present(space)) then
 endif
 
 if (is_empty(xf%stack)) then
-   stop "pcdata outside element content"
+   call wxml_error(xf, "pcdata outside element content")
 endif
 
 call close_start_tag(xf,">")
@@ -184,22 +251,9 @@ else
    endif
 endif
 if (advance_space) call add_to_buffer(" ",xf%buffer)
-if (len(xf%buffer) > 0) call dump_buffer(xf,lf=.false.)
-!
-! We bypass the buffer for the bulk of the dump
-!
-n = len(pcdata)
-!print *, "writing pcdata of length: ", n
-i = 1
-do
-   jmax = min(i+chunk_size-1,n)
-!   print *, "writing chunk: ", i, jmax
-   call reset_buffer(aux_buffer)
-   call add_to_buffer_escaping_markup(pcdata(i:jmax),aux_buffer)
-   write(unit=xf%lun,fmt="(a)",advance="no") char(aux_buffer)
-   if (jmax == n) exit
-   i = jmax + 1
-enddo
+
+call add_to_buffer_escaping_markup(pcdata, xf%buffer)
+
 end subroutine xml_AddPcdata_Ch
 
 !-------------------------------------------------------------------
@@ -209,18 +263,17 @@ character(len=*), intent(in)  :: name
 character(len=*), intent(in)  :: value
 
 if (is_empty(xf%stack)) then
-   stop "attributes outside element content"
+   call wxml_error(xf, "attributes outside element content")
 endif
 
 if (xf%start_tag_closed)  then
-   stop "attributes outside start tag"
+   call wxml_error(xf, "attributes outside start tag")
 endif
 if (has_key(xf%dict,name)) then
-   stop "duplicate att name"
+   call wxml_error(xf, "duplicate att name")
 endif
 
-call add_key_to_dict(trim(name),xf%dict)
-call add_value_to_dict(trim(value),xf%dict)
+call add_item_to_dict(xf%dict, name, value)
 
 end subroutine xml_AddAttribute_Ch
 
@@ -232,13 +285,12 @@ character(len=*), intent(in)  :: name
 character(len=100)  :: current
 
 if (is_empty(xf%stack)) then
-   stop "Out of elements to close"
+   call wxml_fatal(xf, "Out of elements to close")
 endif
 
 call get_top_elstack(xf%stack,current)
 if (current /= name) then
-   print *, "current, name: ", trim(current), " ", trim(name)
-   stop
+   call wxml_fatal(xf, 'Trying to close '//Trim(name)//' but '//Trim(current)//' is open.') 
 endif
 if (.not. xf%start_tag_closed)  then                ! Empty element
    if (len(xf%dict) > 0) call write_attributes(xf)
@@ -267,6 +319,8 @@ enddo
 
 write(unit=xf%lun,fmt="(a)") char(xf%buffer)
 close(unit=xf%lun)
+
+deallocate(xf%filename)
 
 end subroutine xml_Close
 
@@ -299,14 +353,16 @@ subroutine add_eol(xf)
 type(xmlf_t), intent(inout)   :: xf
 
 integer :: indent_level
-character(len=100), parameter  ::  blanks =  ""
 
 indent_level = len(xf%stack) - 1
+!We must flush here (rather than just adding an eol character)
+!since we don't know what the eol character is on this system.
+!Flushing with a linefeed will get it automatically, though.
 write(unit=xf%lun,fmt="(a)") char(xf%buffer)
 call reset_buffer(xf%buffer)
 
 if (xf%indenting_requested) &
-   call add_to_buffer(blanks(1:indent_level),xf%buffer)
+   call add_to_buffer(repeat(' ',indent_level),xf%buffer)
 
 end subroutine add_eol
 !------------------------------------------------------------
@@ -344,20 +400,21 @@ end subroutine close_start_tag
 subroutine write_attributes(xf)
 type(xmlf_t), intent(inout)   :: xf
 
-integer  :: i, status, size
+integer  :: i, status, size, key_len, value_len
 character(len=100)  :: key, value
 
 do i = 1, len(xf%dict)
    call get_key(xf%dict,i,key,status)
-   call get_value(xf%dict,key,value,status)
-   key = adjustl(key)
-   size = len_trim(key) + len_trim(value) + 4
+   key_len=get_key_len(xf%dict,i)
+   call get_value(xf%dict,key(:key_len),value,status)
+   value_len=get_value_len(xf%dict, key(:key_len))
+   size = key_len + value_len + 4
    if ((len(xf%buffer) + size) > COLUMNS) call add_eol(xf)
    call add_to_buffer(" ", xf%buffer)
-   call add_to_buffer(trim(key), xf%buffer)
+   call add_to_buffer(key(:key_len), xf%buffer)
    call add_to_buffer("=", xf%buffer)
    call add_to_buffer("""",xf%buffer)
-   call add_to_buffer_escaping_markup(trim(value), xf%buffer)
+   call add_to_buffer_escaping_markup(value(:value_len), xf%buffer)
    call add_to_buffer("""", xf%buffer)
 enddo
 
@@ -407,6 +464,55 @@ end subroutine write_attributes
          write(xf%lun,"(4(es20.12))") a
       endif
     end subroutine xml_AddArray_real_sp
+
+!---------------------------------------------------------
+! Error handling/trapping routines:
+
+    subroutine wxml_warning_xf(xf, msg)
+      ! Emit warning, but carry on.
+      type(xmlf_t), intent(in) :: xf
+      character(len=*), intent(in) :: msg
+
+      write(6,'(a)') 'WARNING(wxml) in writing to file ', xmlf_name(xf)
+      write(6,'(a)')  msg
+
+    end subroutine wxml_warning_xf
+
+    subroutine wxml_error_xf(xf, msg)
+      ! Emit error message, clean up file and stop.
+      type(xmlf_t), intent(inout) :: xf
+      character(len=*), intent(in) :: msg
+
+      write(6,'(a)') 'ERROR(wxml) in writing to file ', xmlf_name(xf)
+      write(6,'(a)')  msg
+
+      call xml_Close(xf)
+      stop
+
+    end subroutine wxml_error_xf
+
+    subroutine wxml_fatal_xf(xf, msg)
+      !Emit error message and abort with coredump. Does not try to
+      !close file, so should be used from anything xml_Close might
+      !itself call (to avoid infinite recursion!)
+      !use pxf
+      type(xmlf_t), intent(in) :: xf
+      character(len=*), intent(in) :: msg
+
+      write(6,'(a)') 'ERROR(wxml) in writing to file ', xmlf_name(xf)
+      write(6,'(a)')  msg
+
+      !call abort
+      stop
+
+    end subroutine wxml_fatal_xf
+
+    pure function xmlf_name(xf) result(fn)
+      Type (xmlf_t), intent(in) :: xf
+      character(len=len(xf%filename)) :: fn
+      fn=transfer(xf%filename,fn)
+    end function xmlf_name
+      
 
 end module m_wxml_core
 

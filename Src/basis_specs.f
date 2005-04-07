@@ -258,7 +258,7 @@
      $   write(6,'(2x,i1,a1,i2.2)',advance='no')
      $       gs%n(l),sym(l),nint(gs%occupation(l))
       enddo
-      write(6,*)
+      write(6,'(a)') ''
 
       end subroutine ground_state
 

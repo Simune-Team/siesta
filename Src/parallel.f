@@ -26,5 +26,7 @@ C
       integer, save :: Node = 0
       integer, save :: Nodes = 1
       integer, save :: ProcessorY = 1
+      
+      logical, save :: IOnode
 
       end module parallel

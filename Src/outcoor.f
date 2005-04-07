@@ -20,29 +20,33 @@ c through subroutine reclat.
 c *******************************************************************
 
       use atmfuncs,  only : labelfis
-      use fdf
+      use atomlist,  only : elem
+      use fdf, only : fdf_physical, fdf_string
       use precision, only : dp
+      use siesta_cml
+      use units, only : Ang
 
       implicit          none
 
-      integer           na
-      integer           isa(na)
-      logical           writec
-      character         cohead*(*)
-      real(dp)          xa(3,na), cell(3,3)
+      integer,          intent(in) :: na
+      real(dp),         intent(in) :: cell(3,3)
+      real(dp),         intent(in) :: xa(3,na)
+      integer,          intent(in) :: isa(na)
+      character(len=*), intent(in) :: cohead
+      logical,          intent(in) :: writec
 
 c Internal variables and arrays
 
       character         acf*22, acf_defect*22, acfout*22, 
-     .                  pieceh*20, titl*60, pasteb*60
+     .                  pieceh*20, titl*60
       logical           leqi, frstme
       integer           ia, ix
-      real(dp)          xac(3), recell(3,3), alat
+      real(dp)          recell(3,3), alat
 
-      real(dp), dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable ::
      .                  xap
 
-      external          pasteb, memory
+      external          memory
       save              frstme, acfout, alat
 
       data              frstme /.true./
@@ -62,8 +66,8 @@ c   Coord. option Ang        => Multiply by 0.529177 (Bohr --> Ang)
 c   Coord. option Scaled     => Divide by lattice constant
 c   Coord. option Fractional => Multiply by inverse of lattice vectors
 
-        alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
-        if (alat.eq.0.d0 .and. leqi(acfout,'ScaledCartesian')) then
+        alat = fdf_physical('LatticeConstant',0._dp,'Bohr')
+        if (alat.eq.0._dp .and. leqi(acfout,'ScaledCartesian')) then
            write(6,"(/,2a)") 'outcoor: WARNING: Explicit lattice ',
      .         'constant is needed for ScaledCartesian output.'
            write(6,"(2a)")   'outcoor:          NotScaledCartesianAng',
@@ -87,42 +91,31 @@ c write coordinates according to format
       if (leqi(acfout,'NotScaledCartesianBohr') .or. 
      .    leqi(acfout,'Bohr') ) then
         pieceh = '(Bohr):'
-        do ia = 1,na
-          do ix = 1,3
-            xap(ix,ia) = xa(ix,ia)
-          enddo
-        enddo
+        xap = xa
       else if (leqi(acfout,'NotScaledCartesianAng') .or.
      .         leqi(acfout,'Ang') ) then
         pieceh = '(Ang):'
-        do ia = 1,na
-          do ix = 1,3
-            xap(ix,ia) = 0.529177d0 * xa(ix,ia)
-          enddo
-        enddo
+        xap = xa / Ang
       else if (leqi(acfout,'ScaledCartesian')) then
         pieceh = '(scaled):'
-        do ia = 1,na
-          do ix = 1,3
-            xap(ix,ia) = xa(ix,ia) / alat
-          enddo
-        enddo
+        xap = xa / alat
       else if (leqi(acfout,'ScaledByLatticeVectors') .or. 
      .         leqi(acfout,'Fractional') ) then
         pieceh = '(fractional):'
         call reclat(cell, recell, 0)
-        do ia = 1,na
-          do ix = 1,3
-            xac(ix) = xa(ix,ia)
-          enddo
-          do ix = 1,3
-            xap(ix,ia) = recell(1,ix) * xac(1) +
-     .                   recell(2,ix) * xac(2) +
-     .                   recell(3,ix) * xac(3)
-          enddo
-        enddo
+        xap = matmul(transpose(recell),xa)
+c$$$        do ia = 1,na
+c$$$          do ix = 1,3
+c$$$            xac(ix) = xa(ix,ia)
+c$$$          enddo
+c$$$          do ix = 1,3
+c$$$            xap(ix,ia) = recell(1,ix) * xac(1) +
+c$$$     .                   recell(2,ix) * xac(2) +
+c$$$     .                   recell(3,ix) * xac(3)
+c$$$          enddo
+c$$$        enddo
       else
-        write(6,"(/,'outcoor: ',72(1h*))")
+        write(6,"(/,'outcoor: ',a)") repeat('*',72)
         write(6,"('outcoor:                  INPUT ERROR')")
         write(6,'(a)') 'outcoor: '
         write(6,'(2a)') 'outcoor: You must use one of the following',
@@ -132,18 +125,17 @@ c write coordinates according to format
         write(6,'(a)') 'outcoor:     - ScaledCartesian                '
         write(6,'(2a)') 'outcoor:     - ScaledByLatticeVectors ',
      .                                               '(or Fractional)'
-        write(6,"('outcoor: ',72(1h*))")
+        write(6,"('outcoor: ',a)") repeat('*',72)
         stop 'outcoor: ERROR: Wrong atomic-coordinate output format'
       endif
 
 c writing a heading for the coordinates
 
       if (cohead .eq. ' ') then
-         titl = pasteb( 'outcoor: Atomic coordinates', pieceh )
+         titl = 'outcoor: Atomic coordinates ' // pieceh 
       else
-         titl = pasteb( 'outcoor:', cohead )
-         titl = pasteb( titl, 'atomic coordinates')
-         titl = pasteb( titl, pieceh)
+         titl = 'outcoor: ' // trim(cohead) // 
+     .          ' atomic coordinates ' // pieceh
       endif
 
       write(6,'(/,a)') titl
@@ -157,5 +149,9 @@ C Deallocate local memory
       call memory('D','D',size(xap),'outcoor')
       deallocate(xap)
 
-      return
-      end
+      if (cml_p) then
+        call cmlAddMolecule(xf=mainXML, natoms=na, elements=elem,
+     .     refs=isa, coords=xa/Ang, style='x3', fmt='(f12.6)')
+      endif
+
+      end subroutine outcoor

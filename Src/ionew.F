@@ -12,12 +12,11 @@ c     since most of the "typical" files (output, etc) use them.
 c
 c     Logical units min_lun to min_max are managed by this module.
 
+      use parallel, only : ionode
       use sys
 
       implicit none
 c
-
-      logical, save ::  IOnode
 
       integer, save ::  stdout, stderr
 
@@ -33,12 +32,9 @@ c
       subroutine io_setup
 !
 !     Sets IOnode
-#ifdef MPI
       use parallel, only : Node
       ionode = (node .eq. 0)
-#else
-      ionode = .true.
-#endif
+
       end subroutine io_setup
 
       subroutine io_seterr(unit)

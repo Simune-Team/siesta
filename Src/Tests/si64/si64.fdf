@@ -107,4 +107,3 @@ AtomicCoordinatesFormat  ScaledCartesian
     1.500    1.500    1.000   1 #  Si 63 
     1.750    1.750    1.250   1 #  Si 64 
 %endblock AtomicCoordinatesAndAtomicSpecies
-

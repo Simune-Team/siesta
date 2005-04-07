@@ -1,39 +1,45 @@
-c $Id: ioeig.f,v 1.2 1999/11/26 18:28:16 wdpgaara Exp $
-
-      subroutine ioeig(eo, ef, no, ns, nk, maxo, maxs, maxk)
+      subroutine ioeig(eo, ef, no, ns, nk, maxo, maxs, maxk,
+     .                 kpoints, kweights)
 
 c *******************************************************************
 c Writes eigenvalues of Hamiltonian in k-points of sampling
 c Emilio Artacho, Feb. 1999
-c ********** INPUT **************************************************
-c integer nk           : Number k points
-c real*8  points(3,nk) : k-point coordinates
-c real*8  weight(3,nk) : k-point weight
-c *******************************************************************
 
       use fdf
+      use precision, only : dp
+      use siesta_cml
+      use units, only : eV
+
 
       implicit          none
-      character         paste*33
-      integer           maxo, maxs, maxk, no, ns, nk
-      double precision  eo(maxo, maxs, maxk), ef
+
+      integer,  intent(in) :: maxo
+      integer,  intent(in) :: maxs
+      integer,  intent(in) :: maxk
+      real(dp), intent(in) :: eo(maxo, maxs, maxk)
+      real(dp), intent(in) :: ef
+      integer,  intent(in) :: no
+      integer,  intent(in) :: ns
+      integer,  intent(in) :: nk
+      real(dp), intent(in) :: kpoints(3,nk)
+      real(dp), intent(in) :: kweights(nk)
+      
       external          io_assign, io_close, paste
 
 c Internal 
-      character         sname*30, fname*33
-      integer           ik, iu, io, is
-      logical           frstme
-      double precision  eV
-      save              frstme, fname, eV
-      data              frstme /.true./
+      integer           ik, iu, io, is, nspin
+
+      character(len=33), save :: fname
+      logical, save           :: frstme = .true.
 c -------------------------------------------------------------------
 
       if (frstme) then
-        sname = fdf_string( 'SystemLabel', 'siesta' )
-        fname = paste( sname, '.EIG' )
-        eV = 1.d0 / 13.60580d0
+        fname = fdf_string( 'SystemLabel', 'siesta' )
+        fname = trim(fname) // '.EIG'
         frstme = .false.
       endif
+      
+      nspin=min(ns,2)
 
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      
@@ -42,10 +48,37 @@ c -------------------------------------------------------------------
       write(iu,"(3i6)")   no, min(ns,2), nk
       do ik = 1,nk
         write(iu,"(i5,10f12.5,/,(5x,10f12.5))")
-     .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,min(ns,2))
+     .          ik, ((eo(io,is,ik)/eV,io=1,no),is=1,nspin)
       enddo
 
       call io_close( iu )
 
-      return
-      end
+      if (cml_p) then
+        call cmlStartPropertyList(xf=mainXML, title="Eigenvalues")
+        call cmlAddProperty(xf=mainXML, property=ef/eV, 
+     .       title='Fermi Energy', dictref='siesta:E_Fermi', 
+     .       fmt='(f12.5)', units='eV')
+        call cmlAddProperty(xf=mainXML, property=nk, 
+     .       title='Number of k-points', dictRef='siesta:nkpoints')
+        call cmlEndPropertyList(mainXML)
+        do is = 1,nspin
+          call cmlStartBandList(mainXML)
+          if (nspin.eq.2) then
+            if (is.eq.1) then
+              call xml_addAttribute(xf=mainXML, 
+     .             name='Spin', value='Up')
+            else
+              call xml_addAttribute(xf=mainXML, 
+     .             name='Spin', value='Down')
+            endif
+          endif
+          do ik = 1, nk
+            call cmlAddBand(xf=mainXML, 
+     .           kpoint=kpoints(:, ik), kweight=kweights(ik), 
+     .           bands=eo(1:no,is,ik))
+          enddo
+          call cmlEndBandList(mainXML)
+        enddo
+      endif
+
+      end subroutine ioeig

@@ -29,7 +29,7 @@ C real*8  dm(maxnh,nspin)     : Density matrix in sparse form
 C integer isa(natoms)         : Species index of each atom
 C integer lasto(0:maxa)       : Index of last orbital of each atom
 C                               (lasto(0) = 0) 
-C integer iaorb(nbasis)       : Atomic index of each orbital
+C integer iaorb(nbasis)       : Atomic index of each orbital 19684
 C integer iphorb(nbasis)      : Orbital index of each orbital in its atom
 C ************************* OUTPUT *************************************
 C No output. The results are printed to standard output
@@ -37,10 +37,11 @@ C **********************************************************************
 C
 C  Modules
 C
-      use precision
-      use parallel,     only : Node, Nodes
-      use parallelsubs, only : GetNodeOrbs, GlobalToLocalOrb
+      use precision,    only : dp
+      use parallel,     only : IOnode, Node, Nodes
+      use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
+      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -60,32 +61,35 @@ C
       external
      .  memory
 C Internal parameters ..................................................
-C Number of culumns in printout.  Must be smaller than 20
+C Number of columns in printout.  Must be smaller than 20
       integer ncol, nbasis
       parameter (ncol = 8)
 
 #ifdef MPI
-      integer MPIerror
-      real(dp)
-     .  pb(ncol)
-      real(dp), dimension(:), allocatable, save :: qb
+      integer  :: MPIerror, mpistatus(MPI_STATUS_SIZE)
+      real(dp) :: pb(ncol)
+      real(dp), dimension(:), allocatable :: qb
+      character(len=200) ::  mpibuff ! 200 is sufficiently long for all buffered writes
 #endif
+
       integer i,ia,ib,ii,imax,in,io,ior,ip,is,j,ja,jja,jo,jor,
-     .  ind, nao, nblock, ns, ispec, irow, nrow, nres, 
-     .  config(ncol), config2(8), iNode, itot
+     .  ind, nao, nblock, ns, ispec, irow, nrow,
+     .  config(ncol), iNode, itot
 
       real(dp)
-     .  p(ncol),qa,qas(4),qts(4),qtot,stot,svec(3) 
+     .  p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3),tempvec(5) 
 
-      real(dp), dimension(:),   allocatable, save :: qo
-      real(dp), dimension(:,:), allocatable, save :: qos
+      real(dp), dimension(:),   allocatable :: qo
+      real(dp), dimension(:,:), allocatable :: qos
 
-      character sym_label(ncol)*7, atm_label*20,
-     .     sym_label2(8)*7   
+      character sym_label(ncol)*7, atm_label*20
+
+      character(len=8), allocatable :: orb_label(:)
+      character(len=13) :: atomtitle
 
 C ......................
 
-C Get Node number
+C Get Node numberReduce
 #ifdef MPI
 C Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(nbasistot,Node,Nodes,nbasis)
@@ -97,7 +101,7 @@ C Find number of locally stored orbitals and allocated related arrays
 C iopt = 0 implies no analysis
         return
       elseif (iopt.lt.0 .or. iopt.gt.3) then
-        if (Node.eq.0) then
+        if (ionode) then
           write(6,"(a)") 'mulliken: ERROR: Wrong iopt'
         endif
         return
@@ -106,12 +110,6 @@ C iopt = 0 implies no analysis
 C Allocate local memory
       allocate(qos(nspin,nbasis))
       call memory('A','D',nspin*nbasis,'mulliken')
-      allocate(qo(nbasis))
-      call memory('A','D',nbasis,'mulliken')
-#ifdef MPI
-      allocate(qb(nbasis))
-      call memory('A','D',nbasis,'mulliken')
-#endif
 
       ns=0
       do i = 1,natoms
@@ -120,7 +118,7 @@ C Allocate local memory
 
 C Compute and print Overlap Populations for Orbitals ....................
       if (iopt .eq. 3) then
-        if (Node.eq.0) then
+        if (ionode) then
           write(6,*) 
           write(6,"(a)")'mulliken: Overlap Populations between Orbitals'
         endif
@@ -136,41 +134,61 @@ C Compute and print Overlap Populations for Orbitals ....................
              config(ii)=cnfigfio(isa(iaorb((ib-1)*ncol+ii)),
      .                iphorb((ib-1)*ncol+ii))
           enddo 
-          if (Node.eq.0) then
+          if (ionode) then
             write(6,*) 
             write(6,'(14x,20(2x,i4,3x))')((ib-1)*ncol+ii,ii=1,imax) 
             write(6,'(17x,20(1x,i1,a7))') 
      .              (config(ii),sym_label(ii),ii=1,imax)
           endif
 
-C Loop over the following section so that each Node can print
-C the terms relating to the local orbitals in sequence. Not
-C the most efficient algorithm, but preserves order and keeps
-C memory usage the same as in the serial version.
+! Following algorithm is designed to ensure that terms relating
+! to orbitals are printed out in the correct sequence. It's even
+! less efficient than the algorithm that used to be here - on the
+! other hand, it does actually work properly.
+! (Briefly: iterate over orbitals - 
+!   if it's on the current node, and we are node 0 then print immediately; 
+!   else if it's not, print the output to a buffer & send it to node 0.
+!   if it's not on the current node, then if we're node 0, wait for the
+!   message from whichever node it is on, and print the buffer. 
+!   Otherwise do nothing.
           do itot = 1,nbasistot
             call GlobalToLocalOrb(itot,Node,Nodes,i)
             if (i.gt.0) then
               sym_label(1)=symfio(isa(iaorb(itot)),iphorb(itot))
               config(1)=cnfigfio(isa(iaorb(itot)),iphorb(itot))
               do ii = 1,imax
-                p(ii) = 0.0d0
+                p(ii) = 0._dp
               enddo
               do in = 1,numh(i)
                 ind = listhptr(i)+in
                 j = listh(ind)
                 ii = j - (ib - 1) * ncol
                 if (ii .ge. 1 .and. ii .le. imax) then
-                  p(ii) = 0.d0
+                  p(ii) = 0._dp
                   do is = 1,min(nspin,2)
                     p(ii) = p(ii) + dm(ind,is) * s(ind)
                   enddo
                 endif
               enddo
-              write(6,15) itot,config(1), sym_label(1),(p(ii),ii=1,imax)
-            endif
+              if (ionode) then
+                write(6,15) itot,config(1), sym_label(1),
+     .               (p(ii),ii=1,imax)
 #ifdef MPI
-            call MPI_Barrier( MPI_Comm_World, MPIerror )
+              else
+                write(mpibuff,15) itot,config(1), sym_label(1),
+     .                (p(ii),ii=1,imax)
+                call mpi_send(mpibuff, 200, MPI_Character, 0, io, 
+     .             MPI_Comm_world, mpierror)
+              endif
+            else
+              if (ionode) then
+                call mpi_recv(mpibuff, 200, MPI_Character, 
+     .                MPI_ANY_SOURCE, io,
+     .                MPI_Comm_world, mpistatus, mpierror)
+                write(6,'(a)') mpibuff
 #endif
+              endif
+            endif
           enddo
         enddo
       endif
@@ -178,7 +196,7 @@ C ...................
 
 C Compute and print Overlap Populations for Atoms ....................
       if (iopt .ge. 2) then
-        if (Node.eq.0) then
+        if (ionode) then
           write(6,*) 
           write(6,"(a)")'mulliken: Overlap Populations between Atoms'
         endif
@@ -188,7 +206,7 @@ C Compute and print Overlap Populations for Atoms ....................
         do ib = 1,nblock+ip
           imax = ncol
           if (ib .eq. nblock+1) imax = natoms - nblock * ncol
-          if (Node.eq.0) then
+          if (ionode) then
             write(6,*) 
             write(6,10) ((ib-1)*ncol+ii,ii=1,imax)
           endif
@@ -232,7 +250,7 @@ C Global sum of values stored in p
 #endif
 #endif
 
-            if (Node.eq.0) then
+            if (ionode) then
               write(6,11) i,(p(ii),ii=1,imax)
             endif
           enddo
@@ -242,58 +260,78 @@ C ....................
 
 C Compute and print Mulliken Orbital and Atomic Populations ..........
       if (iopt .ge. 1) then
-        if (Node.eq.0) then
+        if (ionode) then
           write(6,*) 
           write(6,"(a)")'mulliken: Atomic and Orbital Populations:'
         endif
+        if (cml_p) then
+          call cmlStartPropertyList(xf=mainXML, 
+     .       dictRef='siesta:mulliken',
+     .       title='Mulliken Population Analysis')
+        endif
         if (nspin .le. 2) then
           do is = 1,nspin
-            if (nspin .eq. 2.and.Node.eq.0) then
-              if(is .eq. 1) write(6,'(/,a)') 'mulliken: Spin UP '
-              if(is .eq. 2) write(6,'(/,a)') 'mulliken: Spin DOWN '
+            if (nspin .eq. 2) then
+              if(is .eq. 1) then
+                if (ionode) write(6,'(/,a)') 'mulliken: Spin UP '
+                if (cml_p) call cmlStartPropertyList(xf=mainXML, 
+     .               title='SpinUp')
+              elseif(is .eq. 2) then
+                if (ionode) write(6,'(/,a)') 'mulliken: Spin DOWN '
+                if (cml_p) call cmlStartPropertyList(xf=mainXML, 
+     .               title='SpinDown')
+              endif
+            else
+              if (cml_p) call cmlStartPropertyList(xf=mainXML, 
+     .               title='Unpolarized')
             endif
-            qtot = 0.0d0
+            qtot = 0._dp
             do ispec = 1,ns  
 
              atm_label = labelfis(ispec)
-             if (Node.eq.0) then
+             if (ionode) then
                write(6,'(/2a)')'Species: ', atm_label 
                write(6,'(a4,a7,a6)') 'Atom', 'Qatom', 'Qorb'
              endif
 C DSP, Writing symmetries for each orbital. 
 C DSP, Orbitals with a 'P' belong to the polarization shell
              nao = nofis(ispec)
-             nrow=nao/8  
-             nres=nao-8*nrow 
-             nao=0
+             allocate(orb_label(nao))
+             do io=1,nao
+               write(orb_label(io),'(i1,a7)')
+     .              cnfigfio(ispec,io), symfio(ispec,io)
+             enddo
+             nrow=nao/ncol
+             io=1
              do irow=1,nrow 
-               do io=1,8  
-                 nao=nao+1
-                 sym_label2(io)=symfio(ispec,nao) 
-                 config2(io)=cnfigfio(ispec,nao)
-               enddo 
-               if (Node.eq.0) then
-                 write(6,'(15x,8(i1,a7))')
-     .             (config2(io),sym_label2(io),io=1,8)
+               if (ionode) then
+                 write(6,'(15x,8(a8))') orb_label(io:io+ncol-1)
+                 io = io+ncol
                endif
              enddo 
-             do io=1,nres 
-               nao=nao+1 
-               sym_label2(io)=symfio(ispec,nao) 
-               config2(io)=cnfigfio(ispec,nao)
-             enddo 
-             if (Node.eq.0) then
-               write(6,'(15x,8(i1,a7))')
-     .           (config2(io),sym_label2(io),io=1,nres) 
+             if (ionode) then
+               write(6,'(15x,8(a8))') orb_label(io:nao)
              endif
-
+             if (cml_p) then
+               call cmlStartPropertyList(xf=mainXML,
+     .              title=trim(atm_label))
+               call cmlAddProperty(xf=mainXML,
+     .              title='Orbital list', property=orb_label)
+             endif
+             deallocate(orb_label)
+             
              do ia = 1,natoms
                if (isa(ia).eq.ispec) then
 C             Compute charge in each orbital of atom ia
-                 qa = 0.0d0
+                 nao = lasto(ia) - lasto(ia-1)
+                 allocate(qo(nao))
+#ifdef MPI
+                 allocate(qb(nao))
+#endif
+                 qa = 0.0_dp
                  do io = lasto(ia-1)+1,lasto(ia)
                    nao = io - lasto(ia-1)
-                   qo(nao) = 0.0d0
+                   qo(nao) = 0.0_dp
                    call GlobalToLocalOrb(io,Node,Nodes,itot)
                    if (itot.gt.0) then
                      do in = 1,numh(itot)
@@ -305,8 +343,8 @@ C             Compute charge in each orbital of atom ia
                  enddo
                  qtot = qtot + qa
 #ifdef MPI
-C Global sum of values stored in p
-                 qb(1:nao)=qo(1:nao)
+C Global sum of values stored in qo
+                 qb = qo
 #ifdef NODAT
                  call MPI_Reduce(qb,qo,nao,MPI_double_precision,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
@@ -323,34 +361,57 @@ C Global sum of values stored in p
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
 #endif
 #endif
-                 if (Node.eq.0) then
+                 if (ionode) then
                    write(6,'(i4,f7.3,8f8.3,(/11x,8f8.3))')
-     .               ia, qa, (qo(io),io=1,nao) 
+     .               ia, qa, qo 
                  endif
-               endif 
-             enddo 
+                 if (cml_p) then
+                   write(atomtitle,'(a,i8)') 'atom ',ia
+                   call cmlStartPropertyList(xf=mainXML,
+     .                  title=trim(atomtitle))
+                   call cmlAddProperty(xf=mainXML,
+     .                  title="Atomic Charge", property=qa)
+                   call cmlAddProperty(xf=mainXML,
+     .                  title="Orbital Charges", property=qo)
+                   call cmlEndPropertyList(xf=mainXML) !atomtitle
+                 endif 
+                 deallocate(qo)
+#ifdef MPI
+                 deallocate(qb)
+#endif
+               endif
+             enddo
+             if (cml_p) call cmlEndPropertyList(xf=mainXML) !atm_label
             enddo
+
 #ifdef MPI
 C Global sum of total charge
-            qb(1)=qtot
+            qtot_temp = qtot
 #ifdef NODAT
-            call MPI_Reduce(qb(1),qtot,1,MPI_double_precision,MPI_sum,
+            call MPI_Reduce(qtot_temp,qtot,1,MPI_double_precision,MPI_sum,
      .        0,MPI_Comm_World,MPIerror)
 #else
-            call MPI_Reduce(qb(1),qtot,1,DAT_double,MPI_sum,
+            call MPI_Reduce(qtot_temp,qtot,1,DAT_double,MPI_sum,
      .        0,MPI_Comm_World,MPIerror)
 #endif
 #endif
-            if (Node.eq.0) then
+            if (ionode) then
               write(6,"(/a,f8.3)") 'mulliken: Qtot = ', qtot
             endif
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML,
+     .             title="Total Charge", property=qtot)
+              call cmlEndPropertyList(xf=mainXML) ! spins
+            endif
           enddo
+          if (cml_p) call cmlEndPropertyList(xf=mainXML) ! mulliken
+
         elseif (nspin .eq. 4) then
           do is = 1,nspin
-            qts(is) = 0.0d0
+            qts(is) = 0.0_dp
             do io = 1,nbasis
-              qos(is,io) = 0.0d0
-            enddo
+              qos(is,io) = 0.0_dp
+                enddo
           enddo
           do is = 1,nspin
             do io = 1,nbasis
@@ -363,77 +424,87 @@ C Global sum of total charge
               enddo
             enddo
           enddo 
+
           do ispec=1,ns
             atm_label=labelfis(ispec)
-            if (Node.eq.0) then
+            if (ionode) then
               write(6,'(/2a)')'Species: ', atm_label
-              write(6,'(/,a4,a9,4x,2a10,3x,a8,/,64(1h-))')
-     .        'Atom', 'Orb', 'Charge', 'Spin', 'Svec'
+              write(6,'(/,a4,a9,4x,2a10,3x,a8,/,a)')
+     .             'Atom', 'Orb', 'Charge', 'Spin', 'Svec',
+     .             repeat('-', 64)
             endif
 
-           do ia = 1,natoms 
-            if (isa(ia).eq.ispec) then 
-            qas(1:nspin) = 0.d0
-            do iNode = 0,Nodes-1
-              if (iNode.eq.Node) then
-                do io = lasto(ia-1)+1,lasto(ia)  
-                  call GlobalToLocalOrb(io,Node,Nodes,itot)
-                  if (itot.gt.0) then
+            do ia = 1,natoms 
+              if (isa(ia).eq.ispec) then 
+                qas(1:nspin) = 0._dp
+                do iNode = 0,Nodes-1
+                  if (iNode.eq.Node) then
+                    do io = lasto(ia-1)+1,lasto(ia)  
+                      call GlobalToLocalOrb(io,Node,Nodes,itot)
+                      if (itot.gt.0) then
 C DSP, Writing symmetries for each orbital.
 C DSP, Orbitals with a 'P' belong to the polarization shell
-
-                    sym_label(1)=symfio(ispec,iphorb(io))
-                    config(1)=cnfigfio(ispec,iphorb(io))
-                    do is = 1,nspin
-                      qas(is) = qas(is) + qos(is,itot)
-                      qts(is) = qts(is) + qos(is,itot)
+                        sym_label(1)=symfio(ispec,iphorb(io))
+                        config(1)=cnfigfio(ispec,iphorb(io))
+                        do is = 1,nspin
+                          qas(is) = qas(is) + qos(is,itot)
+                          qts(is) = qts(is) + qos(is,itot)
+                        enddo
+                        call spnvec( nspin, qos(1,itot), qtot,stot,svec)
+                        if (ionode) then
+                          write(6,'(i4,i5,i1,a7,2f10.5,3x,3f8.3)')
+     .                         ia, io,config(1),sym_label(1), 
+     .                         qtot, stot, svec
+#ifdef MPI
+                        else
+                          write(mpibuff,'(i4,i5,i1,a7,2f10.5,3x,3f8.3)')
+     .                         ia, io,config(1),sym_label(1), 
+     .                         qtot, stot, svec
+                          call mpi_send(mpibuff, 200, MPI_Character, 
+     .                         0, io, MPI_Comm_world, mpierror)
+                        endif
+                      else
+                        if (ionode) then
+                          call mpi_recv(mpibuff, 200, MPI_Character, 
+     .                          MPI_ANY_SOURCE, io,
+     .                          MPI_Comm_world, mpistatus, mpierror)
+                          write(6,'(a)') mpibuff
+#endif
+                        endif
+                      endif
                     enddo
-                    call spnvec( nspin, qos(1,itot), qtot, stot, svec)
-                    write(6,'(i4,i5,i1,a7,2f10.5,3x,3f8.3)')
-     .                ia, io,config(1),sym_label(1), qtot, stot, svec
                   endif
                 enddo
-              endif
-#ifdef MPI
-              call MPI_Barrier( MPI_Comm_World, MPIerror )
-#endif
-            enddo
-            call spnvec( nspin, qas, qtot, stot, svec )
+                call spnvec( nspin, qas, qtot, stot, svec )
 #ifdef MPI
 C Global reduction of terms
-            qb(1)=qtot
-            qb(2)=stot
-            qb(3)=svec(1)
-            qb(4)=svec(2)
-            qb(5)=svec(3)
+                tempvec(1:3) = svec
+                tempvec(4)   = qtot
+                tempvec(5)   = stot
 #ifdef NODAT
-            call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
-     .        MPI_Comm_World,MPIerror)
+                call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
+     .               MPI_Comm_World,MPIerror)
 #else
-            call MPI_Reduce(qb,pb,5,DAT_double,MPI_sum,0,
-     .        MPI_Comm_World,MPIerror)
+                call MPI_Reduce(qb,pb,5,DAT_double,MPI_sum,0,
+     .               MPI_Comm_World,MPIerror)
 #endif
-            qtot=pb(1)
-            stot=pb(2)
-            svec(1)=pb(3)
-            svec(2)=pb(4)
-            svec(3)=pb(5)
+                svec = tempvec(1:3)
+                qtot = tempvec(4)
+                stot = tempvec(5)
 #endif
-            if (Node.eq.0) then
-              write(6,'(i4,4x,a6,3x,2f10.5,3x,3f8.3,/)')
-     .          ia, 'Total', qtot, stot, svec 
-            endif
-            endif
-           enddo
+                if (ionode) then
+                  write(6,'(i4,4x,a6,3x,2f10.5,3x,3f8.3,/)')
+     .                 ia, 'Total', qtot, stot, svec 
+                endif
+              endif
+            enddo
           enddo 
           call spnvec( nspin, qts, qtot, stot, svec )
 #ifdef MPI
 C Global reduction of terms
-          qb(1)=qtot
-          qb(2)=stot
-          qb(3)=svec(1)
-          qb(4)=svec(2)
-          qb(5)=svec(3)
+          tempvec(1:3) = svec
+          tempvec(4)   = qtot
+          tempvec(5)   = stot
 #ifdef NODAT
           call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
      .        MPI_Comm_World,MPIerror)
@@ -441,15 +512,13 @@ C Global reduction of terms
           call MPI_Reduce(qb,pb,5,DAT_double,MPI_sum,0,
      .        MPI_Comm_World,MPIerror)
 #endif
-          qtot=pb(1)
-          stot=pb(2)
-          svec(1)=pb(3)
-          svec(2)=pb(4)
-          svec(3)=pb(5)
+          svec = tempvec(1:3)
+          qtot = tempvec(4)
+          stot = tempvec(5)
 #endif
-          if (Node.eq.0) then
-            write(6,'(64(1h-),/,2a8,1x,2f10.5,3x,3f8.3,/)')
-     .        'Total', 'Total', qtot, stot, svec
+          if (ionode) then
+            write(6,'(a,/,2a8,1x,2f10.5,3x,3f8.3,/)')
+     .        repeat('-',64), 'Total', 'Total', qtot, stot, svec
           endif
         endif
       endif
@@ -457,19 +526,10 @@ C Global reduction of terms
 C Deallocate local memory
       call memory('D','D',size(qos),'mulliken')
       deallocate(qos)
-      call memory('D','D',size(qo),'mulliken')
-      deallocate(qo)
-#ifdef MPI
-      call memory('D','D',size(qb),'mulliken')
-      deallocate(qb)
-#endif
-
 C ...................
 
 10    format(12x,20(2x,i4,2x))
 11    format(i12,20(1x,f7.3))
-12    format('i = ',i4,'   q = ',f6.3,'   q_orb = ',9f6.3)
-13    format(32x,9f6.3) 
 15    format(i4,1x,i1,a7,20(1x,f8.3))
       return
       end
@@ -497,25 +557,25 @@ c ********************************************************************
       integer           ns
       real(dp)          qs(ns), qt, st, sv(3)
       real(dp)          cosph, costh, sinph, sinth, tiny
-      parameter ( tiny = 1.d-12 )
+      parameter ( tiny = 1.e-12_dp )
 
       if (ns .eq. 1) then
         qt = qs(1)
-        st = 0.0d0
-        sv(1) = 0.0d0
-        sv(2) = 0.0d0
-        sv(3) = 0.0d0
+        st = 0.0_dp
+        sv(1) = 0.0_dp
+        sv(2) = 0.0_dp
+        sv(3) = 0.0_dp
       elseif (ns .eq. 2) then
         qt = qs(1) + qs(2)
         st = qs(1) - qs(2)
-        sv(1) = 0.0d0
-        sv(2) = 0.0d0
+        sv(1) = 0.0_dp
+        sv(2) = 0.0_dp
         sv(3) = st
       elseif (ns .eq. 4) then
         qt = qs(1) + qs(2)
-        st = sqrt( (qs(1)-qs(2))**2 + 4.d0*(qs(3)**2+qs(4)**2) )
+        st = sqrt( (qs(1)-qs(2))**2 + 4._dp*(qs(3)**2+qs(4)**2) )
         costh = ( qs(1) - qs(2) ) / ( st + tiny )
-        sinth = sqrt( 1.0d0 - costh**2 )
+        sinth = sqrt( 1.0_dp - costh**2 )
         cosph =  qs(3) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
         sinph = -qs(4) / ( sqrt( qs(3)**2 + qs(4)**2 ) + tiny )
         sv(1) = st * sinth * cosph

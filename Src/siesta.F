@@ -13,10 +13,10 @@ C ***
 
 C  Modules
       use precision, only: dp
-      use parallel, only: Node, Nodes
-      use atmfuncs, only: rcut, uion
+      use parallel, only: Node, Nodes, IOnode
+      use atmfuncs, only: rcut, uion, izofis
       use atomlist, only: xa, xalast, indxuo, na_u
-      use atomlist, only: isa, indxua, iza, lastkb, lasto
+      use atomlist, only: isa, elem, indxua, iza, lastkb, lasto
       use atomlist, only: qa, amass, qtot, no_u, rmaxo, rmaxkb
       use atomlist, only: rmaxv, na_s, iphorb, iphkb, rco, rckb
       use atomlist, only: datm, no_s, iaorb
@@ -26,7 +26,8 @@ C  Modules
       use fdf
       use sys, only: die, bye
       use parse
-      use ionew, only: io_setup, IOnode
+      use ionew, only: io_setup
+      use periodic_table, only : symbol
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
       use mpi_siesta, only: mpi_integer, mpi_logical
@@ -37,6 +38,7 @@ C  Modules
 #endif
 #endif
       use alloc, only: re_alloc, alloc_report
+
       use phonon, only: phonon_num_disps, phonon_setup
       use phonon, only: phonon_write_forces, phonon_restore_coords
       use phonon, only: phonon_set_coords
@@ -49,6 +51,11 @@ C  Modules
       use parallelsubs, only: getnodeorbs
       use writewave,    only: initwave, wwave
       use iopipes,      only: forcestopipe, coordsfrompipe
+
+      use siesta_cml
+
+      use time, only : timestamp
+      use units
 
       implicit none
 
@@ -81,17 +88,17 @@ C  Modules
      .  numh(:), numhold(:)
 
       real(dp)
-     .  amu, Ang, bcell(3,3), beta, bulkm, 
+     .  bcell(3,3), beta, bulkm, 
      .  charnet, cfmax, cftem, const, cstress(3,3),
-     .  Debye, dipol(3), dDmax, dDtol, DEharr, DEna,
+     .  dipol(3), dDmax, dDtol, DEharr, DEna,
      .  dt, DUext, DUscf, Dxc, dx, dxmax, e1, e2, sigma,
      .  Ecorrec, ef, Eharrs, Eharrs1, Eions, Ekin, Ekinion, Emad, Ena, 
      .  Enaatm, Enascf, Enl, Entrop, Entropy,
-     .  eta(2), etol, Etot, eV, Exc, E0,
+     .  eta(2), etol, Etot, Exc, E0,
      .  factor,
      .  fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
      .  g2cut, g2max, getot,
-     .  kBar, kcutof, kdispl(3), Kelvin,
+     .  kcutof, kdispl(3),
      .  kn, kpr, 
      .  mn, mpr, occtol, Pint, Pmol, Psol
       real(dp)
@@ -134,12 +141,12 @@ C  Modules
      .  first, fixauxcell, fixspin, found, foundxv, gamma,
      .  initdmaux, inspn, itest, last, lastst, mix, mmix, negl, noeta, 
      .  outlng, overflow, overflowed, pulfile, relaxd,
-     .  same, savehs, savevh, savevt, savdrh, savrho,
+     .  savehs, savevh, savevt, savdrh, savrho,
      .  savepsch, savetoch,
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     .  harrisfun, signat, muldeb, eggbox_block
+     .  harrisfun, signat, muldeb, eggbox_block, final
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -172,6 +179,7 @@ C  Modules
      .  nkpnt / 1 /
      .  eggbox_block /.true./
      .  relaxd /.false./
+     .  final /.false./
      .  tiny /1.e-15_dp/
      .  ihuge /1073741823/
       ! maxnh is (initially) the minimum size of all the sparse arrays.
@@ -205,6 +213,7 @@ C Print version information ...........................................
          write(6,'(/,a,i4,a)')
      $        '* Running in serial mode'
 #endif
+         call timestamp('Start of run')
       endif
 C ..................
 
@@ -212,16 +221,6 @@ C Start time counter ..................................................
       call timer( 'siesta', 0 )
       call timer( 'siesta', 1 )
       call timer( 'Setup', 1 )
-
-      if (IOnode)  call timestamp('Start of run')
-
-C Factors of conversion to internal units (Bohr,fs,Ry) ................
-      Ang    = 1._dp / 0.529177_dp
-      eV     = 1._dp / 13.60580_dp
-      kBar   = 1._dp / 1.47108e5_dp
-      Kelvin = eV / 11604.45_dp
-      Debye  = 0.393430_dp
-      amu    = 2.133107_dp
 
 C Nullify arrays
       nullify(Haux,Saux,psi)
@@ -243,6 +242,8 @@ C Initialize some variables
 
 C Initialise read .....................................................
       call reinit(slabel, sname)
+
+      call siesta_cml_init() ! Initialize CML (relies on reinit)
 
 C Set allocation report level .........................................
       if (IOnode) level = fdf_integer( 'alloc_report_level', 0 )
@@ -279,6 +280,14 @@ C Read simulation sizes ...............................................
 
 !! Read number of atoms and coordinates, and unit cell
       if (IOnode) call coor(na_u,ucell)  ! Sets na_u, xa, and isa
+      if (cml_p) then
+        ! We need the names of the elements on node 0
+        allocate(elem(na_u))
+        call memory('A','S',2*na_u,'siesta')
+        do i = 1, na_u
+          elem(i) = symbol(izofis(isa(i)))
+        enddo
+      endif
 
 #ifdef MPI
       call MPI_Bcast(na_u,1,MPI_integer,0,MPI_Comm_World,MPIerror)
@@ -518,6 +527,19 @@ C Find system shape ...................................................
         write(6,'(/,2a)') 'siesta: System type = ', shape
       endif
 
+C Output of initial system details:
+      if (cml_p) then
+        call cmlStartModule(xf=mainXML, title='Initial System')
+        call cmlAddMolecule(xf=mainXML, natoms=na_u, 
+     .       coords=xa/Ang, elements=elem, refs=isa,
+     .       style='x3', fmt='(f12.6)')
+        call cmlAddLattice(xf=mainXML, cell=ucell, units='Ang', 
+     .       dictref='siesta:ucell')
+        call cmlAddProperty(xf=mainXML, property=trim(shape), 
+     .       dictref='siesta:shape')
+        call cmlEndModule(xf=mainXML)
+      endif
+
 C Madelung correction for charged systems .............................
       if (charnet .ne. 0.0_dp) then
         call madelung(ucell, shape, charnet, Emad)
@@ -667,30 +689,7 @@ C Find if only gamma point is used ....................................
 C ....................
 
 C Print k-points ......................................................
-      if (.not.gamma .and. IOnode) then
-        if ( writek ) then
-          write(6,'(/,a)')
-     .     'siesta: k-point coordinates (Bohr**-1) and weights:'
-          write(6,'(a,i4,3f12.6,3x,f12.6)')
-     .      ('siesta: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik),
-     .      ik=1,nkpnt)
-        else
-          call iokp( nkpnt, kpoint, kweight )
-        endif
-        write(6,'(/a,i6)')
-     .    'siesta: k-grid: Number of k-points =', nkpnt
-        write(6,'(a,f10.3,a)')
-     .    'siesta: k-grid: Cutoff             =', kcutof/Ang, ' Ang'
-        write(6,'(a)')
-     .    'siesta: k-grid: Supercell and displacements'
-        write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .                             (kscell(i,1),i=1,3), kdispl(1)
-        write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .                             (kscell(i,2),i=1,3), kdispl(2)
-        write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .                             (kscell(i,3),i=1,3), kdispl(3)
-      endif
-C ....................
+      if (.not.gamma .and. IOnode) call siesta_write_k_points()
 
 C Find required supercell
       do i = 1,3
@@ -757,12 +756,16 @@ C Start loop over coordinate changes
       if (IOnode) then
         write(6,'(/2a)') 'siesta:                 ',
      .                    '=============================='
-        if (idyn .eq. 0) 
-     .   write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
-        if (idyn .gt. 0 .and. idyn .lt. 6) 
-     .   write(6,'(28(" "),a,i6)') 'Begin MD step = ',istep
-        if (idyn .eq. 6)  then
+        select case (idyn)
+        case (0)
+          write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
+          if (cml_p) call cmlStartStep(mainXML, type='CG')
+        case (1:5)
+          write(6,'(28(" "),a,i6)') 'Begin MD step = ',istep
+          if (cml_p) call cmlStartStep(mainXML, type='MD')
+        case (6)
           write(6,'(28(" "),a,i6)') 'Begin FC step = ',istep
+          if (cml_p) call cmlStartStep(mainXML, type='FC')
           if (istep .eq. 0) then
             write(6,'(28(" "),a)') 'Undisplaced coordinates'
           else
@@ -779,14 +782,16 @@ C Start loop over coordinate changes
 C Displace atom by dx...
             xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
           endif
-        endif
-        if (idyn .eq. 7)  then
-           call phonon_set_coords(istep,xa,ucell)
-        endif
+        case (7)
+          call phonon_set_coords(istep,xa,ucell)
+        end select
+
         write(6,'(2a)') '                        ',
      .                    '=============================='
-      else
-        if (idyn .eq. 6)  then
+      else ! not IOnode
+        select case (idyn)
+        ! We don't need to do anything for 0<idyn<6
+        case(6)
           if (istep .ne. 0) then
             iadispl = (istep-mod(istep-1,6))/6 + ia1
             ix = mod(istep-1,6) + 1
@@ -795,9 +800,9 @@ C Displace atom by dx...
 C Displace atom by dx...
             xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
           endif
-        else if (idyn .eq. 7)  then
-           call phonon_set_coords(istep,xa,ucell)
-        endif
+        case(7)
+          call phonon_set_coords(istep,xa,ucell)
+        end select
       endif
 
 C Get coordinates from driver program trough pipe
@@ -850,29 +855,7 @@ C If number of k points has changed - re-size arrays
        endif
  
 C Print k-points 
-        if (IOnode) then
-          if ( writek ) then
-            write(6,'(/,a)')
-     .       'siesta: k-point coordinates (Bohr**-1) and weights:'
-            write(6,'(a,i4,3f12.6,3x,f12.6)')
-     .        ('siesta: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik),
-     .        ik=1,nkpnt)
-          else
-            call iokp( nkpnt, kpoint, kweight )
-          endif
-          write(6,'(/a,i6)')
-     .      'siesta: k-grid: Number of k-points =', nkpnt
-          write(6,'(a,f10.3,a)')
-     .      'siesta: k-grid: Cutoff             =', kcutof/Ang, ' Ang'
-          write(6,'(a)')
-     .      'siesta: k-grid: Supercell and displacements'
-          write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .                               (kscell(i,1),i=1,3), kdispl(1)
-          write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .                               (kscell(i,2),i=1,3), kdispl(2)
-          write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .                               (kscell(i,3),i=1,3), kdispl(3)
-        endif
+        if (IOnode) call siesta_write_k_points()
  
 C Find required supercell
         auxchanged = .false.
@@ -1189,6 +1172,8 @@ C Start of SCF iteration _____________________________________________
       do iscf = 1, nscf
         if (iscf .eq. nscf) last = .true.
         call timer( 'IterSCF', 1 )
+
+        if (cml_p) call cmlStartStep(xf=mainXML, type='SCF')
 
 C Normalize density matrix to exact charge ...........................
         qsol = 0.0_dp
@@ -1541,74 +1526,28 @@ C Save density matrix on disk, after mixing ...........................
      .                   numh, listhptr, listh, Dscf, found )
             endif
           endif
+        endif !last
 C ...................
+        DEna = Enascf - Enaatm
+        Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
+        Eharrs = Etot + DEharr
+        FreeE  = Etot - Temp * Entropy
+C       recalculating the energy in the last iter (for gridcellsampling)
+C       but preserving the value of Eharrs1
+        if (.not.last) Eharrs1 = Eharrs
 
-C Print energies ......................................................
-          DEna = Enascf - Enaatm
-          Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
-          Eharrs = Etot + DEharr
-          Eharrs1 = Eharrs
-          FreeE  = Etot - Temp * Entropy
-          if (IOnode) then
-            if (istp.eq.1 .and. first) write(6,'(/,a,/,(a,f17.6))')
-     .        'siesta: Program''s energy decomposition (eV):',
-     .        'siesta: Eions   =', Eions/eV,
-     .        'siesta: Ena     =', Ena/eV,
-     .        'siesta: Ekin    =', Ekin/eV,
-     .        'siesta: Enl     =', Enl/eV,
-     .        'siesta: DEna    =', DEna/eV,
-     .        'siesta: DUscf   =', DUscf/eV,
-     .        'siesta: DUext   =', DUext/eV,
-     .        'siesta: Exc     =', Exc/eV,
-     .        'siesta: eta*DQ  =', Ecorrec/eV,
-     .        'siesta: Emadel  =', Emad/eV,
-     .        'siesta: Eharris =', Eharrs/eV,
-     .        'siesta: Etot    =', Etot/eV,
-     .        'siesta: FreeEng =', FreeE/eV
-C ...................
+        if (IOnode.and..not.last) then
+          call siesta_write_energies()
 
-C Print total energy and density matrix error .........................
-            if (isolve .eq. 0) then
-              if (fixspin) then
-                if ((iscf .eq. 1).or.muldeb)
-     .                  write(6,'(/,a12,3a14,a8,a7,a11)')
-     .            'siesta: iscf', '   Eharris(eV)', 
-     .            '      E_KS(eV)', '   FreeEng(eV)', 
-     .            '   dDmax', '  Ef_up', '  Ef_dn(eV)'
-                write(6,'(a8,i4,3f14.4,f8.4,2f9.4)')
-     .            'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
-     .                   (Efs(i)/eV,i=1,2)
-
-              else
-                if ((iscf .eq. 1).or.muldeb)
-     .                  write(6,'(/,a12,3a14,2a8)')
-     .            'siesta: iscf', '   Eharris(eV)', 
-     .            '      E_KS(eV)', '   FreeEng(eV)', 
-     .            '   dDmax', '  Ef(eV)'
-                write(6,'(a8,i4,3f14.4,2f8.4)')
-     .            'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
-     .            dDmax, Ef/eV
-              endif
+          if (harrisfun) then 
+            write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
+            if (cml_p) then
+              call cmlStartPropertyList(mainXML, title='SCF Cycle')
+              call cmlAddProperty(xf=mainXML, property=Eharrs/eV, 
+     .             units="eV", dictRef="siesta:Eharrs", fmt="(f14.7)")
+              call cmlEndPropertyList(mainXML)
             endif
-            if (isolve .eq. 1) then
-              write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
-              write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
-     .            'Eharris(eV) = ',Eharrs/eV,
-     .            '  E_KS(eV) = ',Etot/eV,'  dDmax = ',dDmax
-            endif
-            if (signat) call sig(io_sig,'Harris in scf',Eharrs/eV)
-            if (signat) call sig(io_sig,'Etot in scf',Etot/eV)
-            if (signat) call sig(io_sig,'dDmax in scf',dDmax)
           endif
-
-          if (harrisfun) 
-     .      write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
-        else
-C         recalculating the energy in the last iter (for gridcellsampling)
-          DEna = Enascf - Enaatm
-          Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
-          Eharrs = Etot + DEharr
-          FreeE  = Etot - Temp * Entropy
         endif
 C ...................
 
@@ -1626,6 +1565,7 @@ C If last iteration, exit SCF loop ....................................
      .                      scell, nsc, xa, rmaxo, datm )
           endif
           call timer( 'IterSCF', 2 )
+          if (cml_p) call cmlEndStep(mainXML)
           goto 50
         endif
 C ...................
@@ -1637,25 +1577,32 @@ C ...................
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
         first = .false.
+        if (cml_p) call cmlEndStep(mainXML)
       enddo
    50 continue
 C End of SCF iteration_________________________________________________
 
 C Write final Kohn-Sham Energy ........................................
+      if (cml_p) call cmlStartPropertyList(mainXML, 
+     .                                   title='Final KS Energy')
       if (IOnode) then
         if ( .not. harrisfun) 
      .    write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
         if (signat) call sig(io_sig,'Final KS energy',Etot/eV)
+        if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV,
+     .       dictref='siesta:E_KS', units='eV', fmt='(f14.6)')
       endif
 
 C Substract egg box effect form energy ................................
       if (eggbox_block) then
         call eggbox('energy',ucell,na_u,isa,ntm,xa,fa,Etot,
      .               eggbox_block)
-        if (IOnode) then
-          write(6,"(/a,f14.4)") 'siesta: E_KS - E_eggbox = ',Etot/eV
-        endif
+        if (IOnode) 
+     .    write(6,"(/a,f14.4)") 'siesta: E_KS - E_eggbox = ',Etot/eV
+        if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV, 
+     .         dictref='siesta:E_KS_egg', units='eV', fmt='(f14.6)')
       endif
+      if (cml_p) call cmlEndPropertyList(mainXML)
 
 #ifdef MPI
 C Global reduction of forces and stresses
@@ -1721,45 +1668,8 @@ C Add kinetic term to stress tensor ..................................
 C ...................
 
       if (IOnode) then
-        write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
-        if ( writef ) then
-        write(6,'(i6,3f12.6)') (ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
-        else
-          call iofa( na_u, fa )
-        endif
-        write(6,'(40("-"),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
-        write(6,'(40("-"),/,a4, f12.6)') 'Max',fmax*Ang/eV
-        if (signat) call sig(io_sig,'Maximum force',fmax*Ang/eV)
-        write(6,'(a4,f12.6,a)')'Res',fres*Ang/eV,
-     .                   '    sqrt( Sum f_i^2 / 3N )'
-        write(6,'(40("-"),/,a4, f12.6,a)') 'Max',cfmax*Ang/eV, 
-     .                   '    constrained'
-
-C Write Force Constant matrix if FC calculation ...
-
-        if (idyn .eq. 6) then
-          call ofc(fa,dx,na_u)
-        endif
-        if (idyn .eq. 7) then
-          call phonon_write_forces(fa,na_u,ns,ucell,istep)
-        endif
-
-C Write stress tensor and pressure (solid) for any dynamics option ....
-        if ((idyn.ne.0.or.varcel).and.idyn.ne.6.and.idyn.ne.7) then
-          write(6,'(/,a,3(/,a,3f12.6))')
-     .       'siesta: Stress tensor (static) (eV/Ang**3):',
-     .       ('     ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
-          Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
-          write(6,'(/,a,f20.8,a)')
-     .      'siesta: Pressure (static):', Psol/kBar, '  kBar'
-          if (signat) call sig(io_sig,'Pressure kbar',Psol/kBar)
-          write(6,'(/,a,3(/,a,3f12.6))')
-     .       'siesta: Stress tensor (total) (eV/Ang**3):',
-     .       ('     ',(tstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
-          Psol = - ((tstress(1,1)+tstress(2,2) +tstress(3,3))/3.0_dp)
-          write(6,'(/,a,f20.8,a)')
-     .      'siesta: Pressure (total):', Psol/kBar, '  kBar'
-        endif
+        call siesta_write_forces()
+        call siesta_write_stress_pressure()
       endif
 C ...................
 
@@ -1771,21 +1681,6 @@ C Mulliken population analysis .......................................
 C ...................
 
 C Move atoms ..........................................................
-      if (idyn .eq. 0) then 
-        xalast(1:3,1:na_s)=xa(1:3,1:na_s)
-        if (nmove .ne. 0) then
-          call cgvc( na_u, xa, cfa, ucell, cstress, volume, dxmax,
-     .               tp, ftol, strtol, varcel, relaxd, usesavecg )
-!         Propagate the new structure to the virtual supercell
-          call superx( ucell, nsc, na_u, na_s, xa, scell )
-          if (relaxd) then
-            xalast(1:3,1:na_s)=xa(1:3,1:na_s)
-C Exit coordinate relaxation loop
-            call timer( 'IterMD', 2 )
-            goto 60
-          endif
-        endif
-      endif
 
 ! Save the last coordinates for which the density matrix has been calculated
       if (istep.eq.fincoor) then
@@ -1800,45 +1695,58 @@ C Exit coordinate relaxation loop
 
       iunit = 2
 
-      if (idyn .eq. 1) then
-        call verlet2(istp, iunit, iquench, na_u, cfa, dt, 
-     .               amass, ntcon, va, xa, Ekinion, tempion)
-!         Propagate the new structure to the virtual supercell
+      select case(idyn)
+      case(0)
+        if (nmove .ne. 0) then
+          call cgvc( na_u, xa, cfa, ucell, cstress, volume, dxmax,
+     .         tp, ftol, strtol, varcel, relaxd, usesavecg )
+          ! Propagate the new structure to the virtual supercell
           call superx( ucell, nsc, na_u, na_s, xa, scell )
-      
-      elseif (idyn .eq. 2) then
-        call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn, 
-     .            ntcon, va, xa, Ekinion, kn, vn, tempion)
-!         Propagate the new structure to the virtual supercell
-          call superx( ucell, nsc, na_u, na_s, xa, scell )
-
-      elseif (idyn .eq. 3) then
-        call pr(istp, iunit, iquench, na_u, cfa, cstress, tp, dt, amass,
-     .          mpr, ntcon, va, xa, vcell, ucell, Ekinion, kpr, vpr, 
-     .          tempion, Pint)
-!         Propagate the new structure to the virtual supercell
-          call superx( ucell, nsc, na_u, na_s, xa, scell )
-        if (IOnode) then
-          write(6,'(/,a,f12.3,a)')
-     .      'siesta: E_kin PR =', kpr/Kelvin, ' K'
+          if (relaxd) goto 60
+            ! Exit coordinate relaxation loop
         endif
-      
-      elseif (idyn .eq. 4) then
+!----------
+      case(1)
+        call verlet2(istp, iunit, iquench, na_u, cfa, dt, 
+     .       amass, ntcon, va, xa, Ekinion, tempion)
+        ! Propagate the new structure to the virtual supercell
+        call superx( ucell, nsc, na_u, na_s, xa, scell )
+!-----------
+      case (2)
+        call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn, 
+     .       ntcon, va, xa, Ekinion, kn, vn, tempion)
+        ! Propagate the new structure to the virtual supercell
+        call superx( ucell, nsc, na_u, na_s, xa, scell )
+!-----------
+      case (3)
+        call pr(istp, iunit, iquench, na_u, cfa, cstress, tp, dt, amass,
+     .       mpr, ntcon, va, xa, vcell, ucell, Ekinion, kpr, vpr, 
+     .       tempion, Pint)
+        ! Propagate the new structure to the virtual supercell
+        call superx( ucell, nsc, na_u, na_s, xa, scell )
+        if (IOnode) write(6,'(/,a,f12.3,a)')
+     .       'siesta: E_kin PR =', kpr/Kelvin, ' K'
+!-----------
+      case (4)
         call npr(istp, iunit, na_u, cfa, cstress, tp, tt, dt, amass, mn,
-     .           mpr, ntcon, va, xa, vcell, ucell, Ekinion, kn, kpr, vn,
-     .           vpr, tempion, Pint)
-!         Propagate the new structure to the virtual supercell
-          call superx( ucell, nsc, na_u, na_s, xa, scell )
-
-      elseif (idyn .eq. 5) then
+     .       mpr, ntcon, va, xa, vcell, ucell, Ekinion, kn, kpr, vn,
+     .       vpr, tempion, Pint)
+        ! Propagate the new structure to the virtual supercell
+        call superx( ucell, nsc, na_u, na_s, xa, scell )
+!-----------
+      case (5)
         call anneal(istp, iunit, ianneal, taurelax, bulkm,
-     .              na_u, cfa, cstress, tp, tt, dt, amass, ntcon,
-     .              va, xa, ucell, Ekinion, tempion, Pint)
-!         Propagate the new structure to the virtual supercell
-          call superx( ucell, nsc, na_u, na_s, xa, scell )
-      elseif (idyn.eq.8) then
+     .       na_u, cfa, cstress, tp, tt, dt, amass, ntcon,
+     .       va, xa, ucell, Ekinion, tempion, Pint)
+        ! Propagate the new structure to the virtual supercell
+        call superx( ucell, nsc, na_u, na_s, xa, scell )
+!-----------
+      case (6:7)
+        continue !We can't go until after ioxv - see below
+!-----------
+      case (8)
         call forcesToPipe( na_u, Etot, cfa, cstress )
-      endif
+      end select
 
       if (IOnode) then
         if (idyn .gt. 0 .and. idyn .lt. 6) then
@@ -1852,12 +1760,6 @@ C Save last atomic positions and velocities ..........................
       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
 C ...................
 
-      if( .not. harrisfun) then
-         getot = Etot + Ekinion + kn + kpr + vn + vpr
-      else
-         getot = Eharrs1 + Ekinion + kn + kpr + vn + vpr
-      endif
-
 c restore original coordinates after FC displacements ...
       if (idyn .eq. 6 .and. istep .ne. 0) then
         xa(ixdispl,iadispl)=xa(ixdispl,iadispl)-dx
@@ -1870,10 +1772,12 @@ c ...
 C Save atomic positions and velocities accumulatively ................
       if (writmd.and.IOnode) then
          if ( .not. harrisfun) then
+            getot = Etot + Ekinion + kn + kpr + vn + vpr
             call iomd( na_u, isa, iza, 
      .        xa, va, ucell, vcell, varcel, istep, inicoor, 
      .        fincoor, tempion, Etot, getot, volume/Ang**3, Psol/kbar)
          else
+            getot = Eharrs1 + Ekinion + kn + kpr + vn + vpr
             call iomd( na_u, isa, iza, 
      .        xa, va, ucell, vcell, varcel, istep, inicoor, 
      .        fincoor, tempion, Eharrs1, getot, volume/Ang**3,Psol/kbar) 
@@ -1886,19 +1790,30 @@ C Accumulate coor in Xmol file for animation .........................
      .  call pixmol(iza, xa, na_u, slabel, lastst)
 C ...................
 
-C Output memory use at the end of this geometry step
-      call printmemory( 6, 0 )
-
-      call timer( 'IterMD', 2 )
-      enddo
    60 continue
+C Output memory use at the end of this geometry step
+      if (cml_p) call cmlEndStep(mainXML)
+      call printmemory( 6, 0 )
+      call timer( 'IterMD', 2 )
+
+      if (relaxd) exit
+
+      enddo
 C End of coordinate-relaxation loop ==================================
+      final=.true.
+
+      ! We want xalast to equal xa for coordinate relaxation only.
+      if (idyn==0) xalast(1:3,1:na_s)=xa(1:3,1:na_s)
+
+      if (cml_p) then
+        call cmlStartModule(xf=mainXML, title='Finalization')
+      endif
 
       if (IOnode) then
 C Print atomic coordinates (and also unit cell for ParrRah.)
         if (nmove .ne. 0) then
           if (relaxd) 
-     .      call outcoor(ucell, xa, isa, na_u,'Relaxed', .true. )
+     .      call outcoor(ucell, xa, isa, na_u, 'Relaxed', .true. )
           if (.not.relaxd) 
      .      call outcoor(ucell, xa, isa, na_u,
      .                 'Final (unrelaxed)', .true. )
@@ -1980,7 +1895,8 @@ C Print eigenvalues
       endif
 
       if (isolve.eq.0.and.IOnode.and.printeigen) 
-     .     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk)
+     .     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
+     .                kpoint, kweight)
 
 C Compute the projected density of states
       if (IOnode) then
@@ -2038,146 +1954,11 @@ C Broadcast values to all nodes
 
       endif                     ! PDOS calc (do_pdos)
 
-C Print program's energy decomposition
+C Print program's energy decomposition and final forces
       if (IOnode) then
-        write(6,'(/,a,/,(a,f15.6))')
-     .     'siesta: Program''s energy decomposition (eV):',
-     .     'siesta:-Eions   =', (-Eions)/eV,
-     .     'siesta: Ena     =', Ena/eV,
-     .     'siesta: Ekin    =', Ekin/eV,
-     .     'siesta: Enl     =', Enl/eV,
-     .     'siesta: DEna    =', DEna/eV,
-     .     'siesta: DUscf   =', DUscf/eV,
-     .     'siesta: DUext   =', DUext/eV,
-     .     'siesta: Exc     =', Exc/eV,
-     .     'siesta: eta*DQ  =', Ecorrec/eV,
-     .     'siesta: Emadel  =', Emad/eV,
-     .     'siesta: Ekinion =', Ekinion/eV,
-     .     'siesta: Eharris =', (Eharrs1+Ekinion)/eV,
-     .     'siesta: Etot    =', (Etot+Ekinion)/eV,
-     .     'siesta: FreeEng =', (FreeE+Ekinion)/eV
-
-C Signature records
-        if (signat) then
-           call sig(io_sig,'siesta:-Eions   =', (-Eions)/eV)
-           call sig(io_sig,'siesta: Ena     =', Ena/eV)
-           call sig(io_sig,'siesta: Ekin    =', Ekin/eV)
-           call sig(io_sig,'siesta: Enl     =', Enl/eV)
-           call sig(io_sig,'siesta: DEna    =', DEna/eV)
-           call sig(io_sig,'siesta: DUscf   =', DUscf/eV)
-           call sig(io_sig,'siesta: DUext   =', DUext/eV)
-           call sig(io_sig,'siesta: Exc     =', Exc/eV)
-           call sig(io_sig,'siesta: eta*DQ  =', Ecorrec/eV)
-           call sig(io_sig,'siesta: Emadel  =', Emad/eV)
-           call sig(io_sig,'siesta: Ekinion =', Ekinion/eV)
-           call sig(io_sig,'siesta: Eharris =', (Eharrs1+Ekinion)/eV)
-           call sig(io_sig,'siesta: Etot    =', (Etot+Ekinion)/eV)
-           call sig(io_sig,'siesta: FreeEng =', (FreeE+Ekinion)/eV)
-        endif
-
-C Print standard energy decomposition
-        write(6,'(/,a)') 'siesta: Final energy (eV):'
-        write(6,'(a,a15,f15.6)')
-     .    'siesta: ',      'Kinetic =', Ekin/eV,
-     .    'siesta: ',      'Hartree =', Uscf/eV,
-     .    'siesta: ',   'Ext. field =', DUext/eV,
-     .    'siesta: ',  'Exch.-corr. =', Exc/eV,
-     .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
-     .    'siesta: ',      'Ion-ion =', (Ena+Uatm-Enaatm-Eions)/eV,
-     .    'siesta: ',      'Ekinion =', Ekinion/eV,
-     .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
-      endif
-
-C Print atomic forces
-      fmax = 0.0_dp
-      do ix = 1,3
-        ftot(ix) = 0.0_dp
-        do ia = 1,na_u
-          fmax = max( fmax, dabs(fa(ix,ia)) )
-          ftot(ix) = ftot(ix) + fa(ix,ia)
-        enddo
-      enddo
-      if (IOnode) then
-        if (fmax .gt. ftol) then
-          write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
-          write(6,'(a,i6,3f12.6)')
-     .      ('siesta: ', ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
-          write(6,'(a,40("-"),/,a,a4,3f12.6)')
-     .      'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
-        endif
-      endif
-
-C Print constrained atomic forces
-      same = .true.
-      do ia = 1,na_u
-        do ix = 1,3
-          if (cfa(ix,ia) .ne. fa(ix,ia)) same = .false.
-        enddo
-      enddo
-      if (.not.same) then
-        fmax = 0.0_dp
-        do ix = 1,3
-          ftot(ix) = 0.0_dp
-          do ia = 1,na_u
-            fmax = max( fmax, dabs(cfa(ix,ia)) )
-            ftot(ix) = ftot(ix) + cfa(ix,ia)
-          enddo
-        enddo
-        if (IOnode) then
-          if (fmax .gt. ftol) then
-            write(6,'(/,a)') 'siesta: Constrained forces (eV/Ang):'
-            write(6,'(a,i6,3f12.6)')
-     .        ('siesta: ',ia,(cfa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
-            write(6,'(a,40("-"),/,a,a4,3f12.6)')
-     .        'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
-          endif
-        endif
-      endif
-
-C Print stress tensor
-      if (IOnode) then
-        write(6,'(/,a,3(/,a,3f12.6))')
-     .    'siesta: Stress tensor (static) (eV/Ang**3):',
-     .    ('siesta: ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
-      endif
-
-C Print constrained stress tensor
-      same = .true.
-      do ix = 1,3
-        do jx = 1,3
-          if (cstress(jx,ix) .ne. stress(jx,ix)) same = .false.
-        enddo
-      enddo
-      if (IOnode) then
-        if (.not.same)
-     .    write(6,'(/,a,3(/,a,3f12.6))')
-     .      'siesta: Constrained stress tensor (static) (eV/Ang**3):',
-     .      ('siesta: ',(cstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
-      endif
-
-C Find pressure
-      virial = 0.0_dp
-      do ix = 1,3
-        fmean = 0.0_dp
-        do ia = 1,na_u
-          fmean = fmean + fa(ix,ia) / na_u
-        enddo
-        do ia = 1,na_u
-          virial = virial + xalast(ix,ia) * (fa(ix,ia) - fmean)
-        enddo
-      enddo
-      Psol = - (( stress(1,1) + stress(2,2) + stress(3,3) )/3.0_dp)
-      Pmol = Psol - virial / volume / 3.0_dp
-      if (IOnode) then
-        write(6,'(/,a,f18.6,a)')
-     .    'siesta: Cell volume =', volume/Ang**3, ' Ang**3'
-        write(6,'(/,a,/,a,2a20,a,3(/,a,2f20.8,a))')
-     .    'siesta: Pressure (static):',
-     .    'siesta: ','Solid',        'Molecule',      '  Units',
-     .    'siesta: ', Psol,           Pmol,           '  Ry/Bohr**3',
-     .    'siesta: ', Psol*Ang**3/eV, Pmol*Ang**3/eV, '  eV/Ang**3',
-     .    'siesta: ', Psol/kBar,      Pmol/kBar,      '  kBar'
-          if (signat) call sig(io_sig,'Pressure kbar',Psol/kBar)
+        call siesta_write_energies()
+        call siesta_write_forces()
+        call siesta_write_stress_pressure()
       endif
 
 C Print spin polarization
@@ -2209,6 +1990,8 @@ C Global reduction of spin components
      .       'siesta: Total spin polarization (Qup-Qdown) =', 
      .       qspin(1) - qspin(2)
           endif
+          if (cml_p) call cmlAddProperty(xf=mainXML, 
+     .         property=qspin(1)-qspin(2), dictref='siesta:qspin')
         elseif (nspin .eq. 4) then
           call spnvec( nspin, qspin, qaux, stot, svec )
           if (IOnode) then
@@ -2216,19 +1999,30 @@ C Global reduction of spin components
      .       'siesta: Total spin polarization (Qup-Qdown) =', stot
             if (signat) call sig(io_sig,'Tot spin pol',stot)
             write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=stot, 
+     .             dictref='siesta:stot')
+              call cmlAddProperty(xf=mainXML, property=svec,
+     .             dictref='siesta:svec')
+            endif !cml_p
           endif
         endif
       endif
 
 C Print electric dipole
-      if (IOnode) then
-        if (shape .ne. 'bulk') then
+      if (shape .ne. 'bulk') then
+        if (IOnode) then
           write(6,'(/,a,3f12.6)')
      .      'siesta: Electric dipole (a.u.)  =', dipol
           write(6,'(a,3f12.6)')
      .      'siesta: Electric dipole (Debye) =', 
      .      (dipol(ix)/Debye,ix=1,3)
         endif
+        if (cml_p) then
+          call cmlAddProperty(xf=mainXML, property=dipol,
+     .         title='Electric dipole', dictref='siesta:dipol', 
+     .         units='a.u')
+        endif !cml_p
       endif
 
 C Calculation of the bulk polarization using the Berry phase
@@ -2363,13 +2157,7 @@ C Find the LDOS in the real space mesh
    70 continue
 
 C Output memory use up to the end of the program
-#ifdef MPI
-      call MPI_Barrier(MPI_Comm_World,MPIerror)
-#endif
       call printmemory( 6, 1 )
-#ifdef MPI
-      call MPI_Barrier(MPI_Comm_World,MPIerror)
-#endif
 
 c Print allocation report
       call alloc_report( printNow=.true. )
@@ -2388,4 +2176,427 @@ C Finalize MPI
       call MPI_Finalize( MPIerror )
 #endif
 
-      end
+      if (cml_p) then
+        call cmlEndModule(mainXML)
+        call siesta_cml_exit()
+      endif
+
+! End of program
+! Internal subroutines follow.
+
+      contains
+      
+      subroutine siesta_write_k_points()
+      if ( writek ) then
+        write(6,'(/,a)')
+     .       'siesta: k-point coordinates (Bohr**-1) and weights:'
+        write(6,'(a,i4,3f12.6,3x,f12.6)')
+     .       ('siesta: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik),
+     .       ik=1,nkpnt)
+        if (cml_p) then
+          call cmlAddProperty(xf=mainXML, property=kpoint, 
+     .         dictref='siesta:kpoint')
+          call cmlAddProperty(xf=mainXML, property=kweight,
+     .         dictref='siesta:kweight')
+        endif
+      else
+        call iokp( nkpnt, kpoint, kweight )
+      endif
+      write(6,'(/a,i6)')
+     .     'siesta: k-grid: Number of k-points =', nkpnt
+      write(6,'(a,f10.3,a)')
+     .     'siesta: k-grid: Cutoff             =', kcutof/Ang, ' Ang'
+      write(6,'(a)')
+     .     'siesta: k-grid: Supercell and displacements'
+      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
+     .     (kscell(i,1),i=1,3), kdispl(1)
+      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
+     .     (kscell(i,2),i=1,3), kdispl(2)
+      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
+     .     (kscell(i,3),i=1,3), kdispl(3)
+      if (cml_p) then
+        call cmlStartPropertyList(mainXML, title='k-points')
+        call cmlAddProperty(xf=mainXML, property=nkpnt, 
+     .       dictref='siesta:nkpnt')
+        call cmlAddProperty(xf=mainXML, property=kcutof/Ang, 
+     .       dictref='siesta:kcutof', units='Ang')
+        call cmlEndPropertyList(mainXML)
+        call cmlAddProperty(xf=mainXML, property=kscell,
+     .       dictref='siesta:kscell')
+        call cmlAddProperty(xf=mainXML, property=kdispl,
+     .       dictref='siesta:kdispl')
+      endif
+      end subroutine siesta_write_k_points
+
+
+      subroutine siesta_write_forces()
+
+      ! Almost the same forces output whether during simulation
+      ! or at the end. Unfortunately not quite, therefore slightly
+      ! tortuous logic below. If we are content to change format
+      ! of output file slightly, this can be simplified.
+      if (.not.final) then
+        ! print forces to xml every step. 
+        ! output forces to stdout depending on writef
+        if (cml_p) then
+          call cmlStartPropertyList(mainXML, title='Forces')
+          call cmlAddProperty(xf=mainXML, property=fa*Ang/eV,
+     .         dictref='siesta:forces', units='evpa')
+          call cmlAddProperty(xf=mainXML, property=ftot,
+     .         dictref='siesta:ftot')
+          call cmlAddProperty(xf=mainXML, property=fmax, 
+     .         dictref='siesta:fmax')
+          call cmlAddProperty(xf=mainXML, property=fres,
+     .         dictref='siesta:fres')
+          call cmlAddProperty(xf=mainXML, property=cfmax, 
+     .         dictref='siesta:cfmax')
+          call cmlEndPropertyList(mainXML)
+        endif
+        write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
+        if (writef) then
+          write(6,'(i6,3f12.6)')(ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
+        else
+          call iofa( na_u, fa )
+        endif
+        write(6,'(40("-"),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
+        write(6,'(40("-"),/,a4, f12.6)') 'Max',fmax*Ang/eV
+        if (signat) call sig(io_sig,'Maximum force',fmax*Ang/eV)
+        write(6,'(a4,f12.6,a)')'Res',fres*Ang/eV,
+     .       '    sqrt( Sum f_i^2 / 3N )'
+        write(6,'(40("-"),/,a4, f12.6,a)') 'Max',cfmax*Ang/eV, 
+     .       '    constrained'
+      else !not final
+C In finalization, only print forces if sufficiently large.
+        fmax = maxval(abs(fa))
+        ftot = sum(fa, dim=2)
+        if (fmax .gt. ftol) then
+          write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
+          write(6,'(a,i6,3f12.6)')
+     .         ('siesta: ', ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
+          write(6,'(a,40("-"),/,a,a4,3f12.6)')
+     .         'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
+          if (cml_p) then
+            call cmlStartPropertyList(mainXML, title='Force Summary')
+            call cmlAddProperty(xf=mainXML, property=fa*Ang/eV,
+     .           dictref='siesta:forces', units='evpa')
+            call cmlAddProperty(xf=mainXML, property=ftot*Ang/eV, 
+     .           dictref='siesta:ftot', units='evpa')
+            call cmlEndPropertyList(mainXML)
+          endif !cml_p
+        endif
+        if (Any(cfa /= fa)) then
+          fmax = maxval(abs(cfa))
+          ftot = sum(cfa, dim=2)
+          if (fmax .gt. ftol) then
+            write(6,'(/,a)') 'siesta: Constrained forces (eV/Ang):'
+            write(6,'(a,i6,3f12.6)')
+     .           ('siesta: ',ia,(cfa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
+            write(6,'(a,40("-"),/,a,a4,3f12.6)')
+     .           'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
+            if (cml_p) then
+              call cmlStartPropertyList(mainXML,
+     .             title='Constrained Force Summary')
+              call cmlAddProperty(xf=mainXML, property=cfa*Ang/eV, 
+     .             dictref='siesta:cforces', units='evpa')
+              call cmlAddProperty(xf=mainXML, property=ftot*Ang/eV, 
+     .             dictref='siesta:cftot', units='evpa')
+              call cmlEndPropertyList(mainXML)
+            endif !cml_p
+          endif
+        endif
+      endif !final for forces
+
+      end subroutine siesta_write_forces
+
+
+      subroutine siesta_write_stress_pressure()
+! Stress tensor and pressure:
+      
+      if (.not.final) then
+      ! Output depends on dynamics option
+        select case (idyn)
+        case(0:5)
+          if (idyn==0 .and..not.varcel) then
+            continue
+          else
+            write(6,'(/,a,3(/,a,3f12.6))')
+     .           'siesta: Stress tensor (static) (eV/Ang**3):',
+     .           ('     ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+            Psol = - ((stress(1,1) + stress(2,2) + stress(3,3))/3.0_dp)
+            write(6,'(/,a,f20.8,a)')
+     .           'siesta: Pressure (static):', Psol/kBar, '  kBar'
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=stress*Ang**3, 
+     .             dictref='siesta:stress')
+              call cmlAddProperty(xf=mainXML, property=Psol, 
+     .             dictref='siesta:psol', title='Pressure (Static)')
+            endif !cml_p
+            if (signat) call sig(io_sig,'Pressure kbar',Psol/kBar)
+            write(6,'(/,a,3(/,a,3f12.6))')
+     .           'siesta: Stress tensor (total) (eV/Ang**3):',
+     .           ('     ',(tstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+            Psol = - ((tstress(1,1)+tstress(2,2) +tstress(3,3))/3.0_dp)
+            write(6,'(/,a,f20.8,a)')
+     .           'siesta: Pressure (total):', Psol/kBar, '  kBar'
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=tstress*Ang**3, 
+     .             dictref='siesta:tstress')
+              call cmlAddProperty(xf=mainXML, property=Psol,
+     .             dictref='siesta:tpsol', title='Pressure (Total)')
+            endif !cml_p
+          endif !varcel
+        ! Write Force Constant matrix if FC calculation ...
+        case(6)
+          call ofc(fa,dx,na_u)
+        case(7)
+          call phonon_write_forces(fa,na_u,ns,ucell,istep)
+        end select !idyn
+
+      else !final
+
+C Print stress tensor unconditionally
+        write(6,'(/,a,3(/,a,3f12.6))')
+     .       'siesta: Stress tensor (static) (eV/Ang**3):',
+     .       ('siesta: ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+        if (cml_p) then
+          call cmlAddProperty(xf=mainXML, property=stress*Ang**3/eV, 
+     .         dictref='siesta:stress', units='eV/Ang^3')
+        endif !cml_p
+
+C Print constrained stress tensor if different from unconstrained
+        if (Any(cstress /= stress )) then
+             write(6,'(/,a,3(/,a,3f12.6))')
+     .       'siesta: Constrained stress tensor (static) (eV/Ang**3):',
+     .       ('siesta: ',(cstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+          if (cml_p) then
+            call cmlAddProperty(xf=mainXML, property=cstress*Ang**3/eV, 
+     .           dictref='siesta:cstress', units='eV/Ang^3')
+          endif !cml_p
+        endif
+
+C Find pressure
+        virial = 0.0_dp
+        do ix = 1,3
+          fmean = 0.0_dp
+          do ia = 1,na_u
+            fmean = fmean + fa(ix,ia) / na_u
+          enddo
+          do ia = 1,na_u
+            virial = virial + xalast(ix,ia) * (fa(ix,ia) - fmean)
+          enddo
+        enddo
+        Psol = - (( stress(1,1) + stress(2,2) + stress(3,3) )/3.0_dp)
+        Pmol = Psol - virial / volume / 3.0_dp
+        write(6,'(/,a,f18.6,a)')
+     .       'siesta: Cell volume =', volume/Ang**3, ' Ang**3'
+        write(6,'(/,a,/,a,2a20,a,3(/,a,2f20.8,a))')
+     .       'siesta: Pressure (static):',
+     .       'siesta: ','Solid',        'Molecule',      '  Units',
+     .       'siesta: ', Psol,           Pmol,           '  Ry/Bohr**3',
+     .       'siesta: ', Psol*Ang**3/eV, Pmol*Ang**3/eV, '  eV/Ang**3',
+     .       'siesta: ', Psol/kBar,      Pmol/kBar,      '  kBar'
+        if (signat) call sig(io_sig,'Pressure kbar',Psol/kBar)
+        if (cml_p) then
+          call cmlStartPropertyList(mainXML, title='Final Pressure')
+          call cmlAddProperty(xf=mainXML, property=volume/Ang**3, 
+     .         title='cell volume', dictref='siesta:cellvol', 
+     .         units='Ang^3')
+          call cmlAddProperty(xf=mainXML, property=Psol/kBar, 
+     .         title='Pressure of Solid', dictref='siesta:pressSol', 
+     .         units='kbar')
+          call cmlAddProperty(xf=mainXML, property=Pmol/kBar,       
+     .         title='Pressure of Molecule', dictref='siesta:pressMol', 
+     .         units='kbar')
+          call cmlEndPropertyList(mainXML)
+        endif !cml_p
+        
+      endif !final for stress & pressure
+
+      end subroutine siesta_write_stress_pressure
+      
+      
+      subroutine siesta_write_energies()
+      ! Only print out full decomposition at very beginning and end.
+      if ((istp==1.and.first).or.final) then
+        write(6,'(/,a,/,(a,f17.6))')
+     .     'siesta: Program''s energy decomposition (eV):',
+     .     'siesta: Eions   =', Eions/eV,
+     .     'siesta: Ena     =', Ena/eV,
+     .     'siesta: Ekin    =', Ekin/eV,
+     .     'siesta: Enl     =', Enl/eV,
+     .     'siesta: DEna    =', DEna/eV,
+     .     'siesta: DUscf   =', DUscf/eV,
+     .     'siesta: DUext   =', DUext/eV,
+     .     'siesta: Exc     =', Exc/eV,
+     .     'siesta: eta*DQ  =', Ecorrec/eV,
+     .     'siesta: Emadel  =', Emad/eV,
+     .     'siesta: Ekinion =', Ekinion/eV,
+     .     'siesta: Eharris =', (Eharrs1+Ekinion)/eV,
+     .     'siesta: Etot    =', (Etot+Ekinion)/eV,
+     .     'siesta: FreeEng =', (FreeE+Ekinion)/eV
+        if (cml_p) then
+          call cmlStartPropertyList(mainXML,
+     .         title='Energy Decomposition')
+          call cmlAddProperty(xf=mainXML, property=Eions/eV, units='eV', 
+     .         dictref='siesta:Eions', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Ena/eV, units='eV', 
+     .         dictref='siesta:Ena', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Ekin/eV, units='eV', 
+     .         dictref='siesta:Ekin', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Enl/eV, units='eV', 
+     .         dictref='siesta:Enl', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=DEna/eV, units='eV', 
+     .         dictref='siesta:DEna', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=DUscf/eV, units='eV',
+     .         dictref='siesta:DUscf', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=DUext/eV, units='eV', 
+     .         dictref='siesta:DUext', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Exc/eV, units='eV', 
+     .         dictref='siesta:Exc', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML,property=Ecorrec/eV,units='eV', 
+     .         dictref='siesta:Ecorrec', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Emad/eV, units='eV', 
+     .         dictref='siesta:Emad', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML,property=Ekinion/eV,units='eV', 
+     .         dictref='siesta:Ekinion', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=(Eharrs1+Ekinion)/eV,
+     .         units='eV', dictref='siesta:EharrsK', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=(Etot+Ekinion)/eV, 
+     .         units='eV', dictref='siesta:EtotK', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=(FreeE+Ekinion)/eV, 
+     .         units='eV', dictref='siesta:FreeEK', fmt='(f17.6)')
+          call cmlEndPropertyList(mainXML)
+        endif
+      endif
+      ! On all SCF steps, print out the current energy (format depending on type of run)
+      if (.not.final) then
+        ! Print total energy and density matrix error .........................
+        if (cml_p) then
+          call cmlStartPropertyList(mainXML, title='SCF Cycle')
+          ! Eharrs is always output
+          call cmlAddProperty(xf=mainXML, property=Eharrs/eV, 
+     .         units="eV", dictRef="siesta:Eharrs", fmt="(f14.7)")
+        endif
+        ! This chain of if statements determines which properties are output.
+        if (harrisfun) then 
+          write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
+            ! No need for further cml output
+        elseif (isolve==0) then
+          if (cml_p) 
+     .         call cmlAddProperty(xf=mainXML, property=FreeE/eV, 
+     .         units="eV", dictRef="siesta:FreeE",  fmt="(f14.7)")
+          if (fixspin) then
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=Etot/eV, 
+     .             units="eV", dictRef="siesta:Etot",   fmt="(f14.7)")
+              call cmlAddProperty(xf=mainXML, property=FreeE/eV, 
+     .             units="eV", dictRef="siesta:FreeE", fmt="(f14.7)")
+              call cmlAddProperty(xf=mainXML, property=dDmax/eV, 
+     .             units="eV", dictRef="siesta:dDmax",  fmt="(f14.7)")
+            endif
+            if ((iscf .eq. 1).or.muldeb)
+     .           write(6,'(/,a12,3a14,a8,a7,a11)')
+     .           'siesta: iscf', '   Eharris(eV)', 
+     .           '      E_KS(eV)', '   FreeEng(eV)', 
+     .           '   dDmax', '  Ef_up', '  Ef_dn(eV)'
+            write(6,'(a8,i4,3f14.4,f8.4,2f9.4)')
+     .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax, 
+     .           (Efs(i)/eV,i=1,2)
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=Efs(1)/eV, 
+     .             units="eV", dictRef="siesta:Efs",    fmt="(f14.7)")
+              call cmlAddProperty(xf=mainXML, property=Efs(2)/eV, 
+     .             units="eV", dictRef="siesta:Efs",    fmt="(f14.7)")
+            endif
+          else !fixspin
+            if ((iscf .eq. 1).or.muldeb)
+     .           write(6,'(/,a12,3a14,2a8)')
+     .           'siesta: iscf', '   Eharris(eV)', 
+     .           '      E_KS(eV)', '   FreeEng(eV)', 
+     .           '   dDmax', '  Ef(eV)'
+            write(6,'(a8,i4,3f14.4,2f8.4)')
+     .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, 
+     .           dDmax, Ef/eV
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML,property=Ef/eV, 
+     .             units="eV", dictRef="siesta:Ef", fmt="(f14.7)")
+            endif !cml_p
+          endif !fixspin
+        elseif (isolve==1) then
+          write(6,'(/,a15,i4)') 'siesta: iscf = ',iscf
+          write(6,'(a14,f15.4,a13,f15.4,a10,f7.4/)') 
+     .         'Eharris(eV) = ',Eharrs/eV,
+     .         '  E_KS(eV) = ',Etot/eV,'  dDmax = ',dDmax
+          if (cml_p) then
+            call cmlAddProperty(xf=mainXML, property=Etot/eV, 
+     .           units="eV", dictRef="siesta:Etot",   fmt="(f14.7)")
+            call cmlAddProperty(xf=mainXML, property=dDmax/eV, 
+     .           units="eV", dictRef="siesta:dDmax",  fmt="(f14.7)")
+          endif
+        endif !harrisfun/isolve
+        
+        if (cml_p) then
+          call cmlEndPropertyList(mainXML)
+        endif
+        
+        if (signat) call sig(io_sig,'Harris in scf',Eharrs/eV)
+        if (signat) call sig(io_sig,'Etot in scf',Etot/eV)
+        if (signat) call sig(io_sig,'dDmax in scf',dDmax)
+
+      else !final
+      ! Print out additional information in finalization.
+        ! Signature records
+        if (signat) then
+          call sig(io_sig,'siesta: Eions   =', Eions/eV)
+          call sig(io_sig,'siesta: Ena     =', Ena/eV)
+          call sig(io_sig,'siesta: Ekin    =', Ekin/eV)
+          call sig(io_sig,'siesta: Enl     =', Enl/eV)
+          call sig(io_sig,'siesta: DEna    =', DEna/eV)
+          call sig(io_sig,'siesta: DUscf   =', DUscf/eV)
+          call sig(io_sig,'siesta: DUext   =', DUext/eV)
+          call sig(io_sig,'siesta: Exc     =', Exc/eV)
+          call sig(io_sig,'siesta: eta*DQ  =', Ecorrec/eV)
+          call sig(io_sig,'siesta: Emadel  =', Emad/eV)
+          call sig(io_sig,'siesta: Ekinion =', Ekinion/eV)
+          call sig(io_sig,'siesta: Eharris =', (Eharrs1+Ekinion)/eV)
+          call sig(io_sig,'siesta: Etot    =', (Etot+Ekinion)/eV)
+          call sig(io_sig,'siesta: FreeEng =', (FreeE+Ekinion)/eV)
+        endif
+
+        write(6,'(/,a)') 'siesta: Final energy (eV):'
+        write(6,'(a,a15,f15.6)')
+     .    'siesta: ',      'Kinetic =', Ekin/eV,
+     .    'siesta: ',      'Hartree =', Uscf/eV,
+     .    'siesta: ',   'Ext. field =', DUext/eV,
+     .    'siesta: ',  'Exch.-corr. =', Exc/eV,
+     .    'siesta: ', 'Ion-electron =', (Enascf+Enl+DUscf-Uscf-Uatm)/eV,
+     .    'siesta: ',      'Ion-ion =', (Ena+Uatm-Enaatm-Eions)/eV,
+     .    'siesta: ',      'Ekinion =', Ekinion/eV,
+     .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
+        if (cml_p) then
+          call cmlStartPropertyList(xf=mainXML, title='Final Energy')
+          call cmlAddProperty(xf=mainXML, property=Ekin/eV,  units='eV', 
+     .         dictref='siesta:Ekin',  fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Uscf/eV,  units='eV', 
+     .         dictref='siesta:Uscf',  fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=DUext/eV, units='eV', 
+     .         dictref='siesta:DUext', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Exc/eV,   units='eV', 
+     .         dictref='siesta:Exc',   fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, 
+     .         property=(Enascf+Enl+DUscf-Uscf-Uatm)/eV, units='eV', 
+     .         dictref='siesta:I-e', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, 
+     .         property=(Ena+Uatm-Enaatm-Eions)/eV,      units='eV', 
+     .         dictref='siesta:I-I', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML,property=Ekinion/eV,units='eV', 
+     .         dictref='siesta:Ekinion', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=(Etot+Ekinion)/eV,
+     .         units='eV', dictref='siesta:Etot', fmt='(f17.6)')
+          call cmlEndPropertyList(mainXML)
+        endif !cml_p
+      endif !final
+
+      end subroutine siesta_write_energies
+      
+      end program siesta

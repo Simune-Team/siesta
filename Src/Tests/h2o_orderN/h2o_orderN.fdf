@@ -1,5 +1,5 @@
 SystemName          Water molecule, using order-N method
-SystemLabel         h2o
+SystemLabel         h2o_orderN
 NumberOfAtoms       3
 NumberOfSpecies     2
 

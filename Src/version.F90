@@ -15,9 +15,17 @@ implicit none
 
 ! After it is done, this file should be commited.
 
-integer, dimension(3), save  :: num_version = (/1,4,51/)
-character(len=80), parameter :: version_str =  &
-"SIESTA 1.4.51  -- [Extrapol, cdiag fixes] (7 Apr 2005)" 
+integer, dimension(3), save  :: num_version = (/1,4,52/)
+character(len=*), parameter :: version_str =  &
+"SIESTA 1.4.52 [after xml-merge] (8 Apr 2005)"
+character(len=*), parameter :: siesta_arch= &
+"SIESTA_ARCH"
+character(len=*), parameter :: fflags= &
+"FFLAGS"
+
+private
+public :: num_version, version_str
+public :: siesta_arch, fflags
 
 end module version_info
 !================================================================
@@ -33,10 +41,9 @@ use version_info
 implicit none
 
 write(6,'(a)') trim(version_str)
-write(6,'(2a)') 'Architecture  : ', &
-"SIESTA_ARCH"
-write(6,'(2a)') 'Compiler flags: ', &
-"FFLAGS"
+write(6,'(2a)') 'Architecture  : ', siesta_arch
+write(6,'(2a)') 'Compiler flags: ', fflags
+
 #ifdef MPI
 write(6,'(a)') 'PARALLEL version'
 #else
