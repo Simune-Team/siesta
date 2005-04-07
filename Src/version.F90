@@ -15,9 +15,9 @@ implicit none
 
 ! After it is done, this file should be commited.
 
-integer, dimension(3), save  :: num_version = (/1,4,50/)
+integer, dimension(3), save  :: num_version = (/1,4,51/)
 character(len=80), parameter :: version_str =  &
-"SIESTA 1.4.50  -- [Parallel diag np/q fix] (29 Mar 2005)" 
+"SIESTA 1.4.51  -- [Extrapol, cdiag fixes] (7 Apr 2005)" 
 
 end module version_info
 !================================================================

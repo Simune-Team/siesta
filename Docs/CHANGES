@@ -1,6 +1,49 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 1.4.51
+Date: 2005/04/07 15:30 GMT
+Title: Extrapol fixes -- cdiag fix (Toby White)
+Author: Toby White <tow21@cam.ac.uk>
+
+* siesta 1.4.50 (=patch-36) erroneously deleted three lines from 
+  cdiag.F which initialize vl & vu. Restore them.
+* also in rdiag.F make sure that all real variables are initialized
+  to _dp instead of d0; and use parameters one and zero throughout.
+
+* extrapol.F checks for the number of rows of M held on 
+  the current node - if zero, it exits immediately. However,
+  there is an MPI_AllReduce in the middle. If this is
+  skipped on some nodes, the results are unpredictable.
+  This patch fixes the problem such that the MPI_AllReduce
+  is always executed.
+* in addition, :
+  . change all d0 variables to _dp; 
+  . use sys::die instead of stop on error
+  . remove unnecessary if check (if zero don't add, which
+    actually slows code down.)
+  . remove unnecessary "use parallelsubs"
+  . Add intents to all arguments
+  . remove unused dummy variable nmrow
+* siesta.F; remove omitted arg from call to extrapol
+* extrapolon.F: similar changes;
+  . change all d0 to _dp
+  . use sys::die instead of stop on error
+  . remove unnecessary if check (if zero don't add, which
+    actually slows code down.)
+  . remove unnecessary "use mpi_siesta"
+  . use parallel to bring in node instead of arg list.
+  . Add intents to all arguments.
+  . remove unused dummy variable node
+  . improve logic flow to avoid goto's
+  . rename file to extrapolon.f since it no longer requires preprocessing.
+* ordern.F, remove omitted arg from call to extrapolon
+
+ version.F90, Docs/CHANGES
+
+(siesta-devel--reference--1.4--patch-37)
+
+=======================================================================
 Version: 1.4.50
 Date: 2005/03/29 07:30 GMT 
 Title: Parallel diag np/q fix
