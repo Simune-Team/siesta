@@ -297,7 +297,7 @@ C to make it update the structure of c, if needed
         endif
         call extrapolon(istep,iord,nspin,nbasis,nbasisCloc,maxnc,
      .                  numc,listc,aux,numcold,listcold,cold,c,
-     .                  nbasisloc,Node)
+     .                  nbasisloc)
 
 #ifdef MPI
         if (istep.ne.1) then

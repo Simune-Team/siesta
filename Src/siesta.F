@@ -1125,7 +1125,7 @@ C  to make it update the structure of DM, if needed
         itest = .true.
       endif
       if (.not.harrisfun)
-     . call extrapol(istp, iord, nspin, no_s, no_u, no_l, maxnh, 
+     . call extrapol(istp, iord, nspin, no_s, no_l, maxnh, 
      .              numh, listhptr, listh, numhold, listhptrold,
      .              listhold, Dscfsave, Dscf)
 C  If DM have just been read, restore istp

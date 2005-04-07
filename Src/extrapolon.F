@@ -1,6 +1,6 @@
       subroutine extrapolon(istep,iord,nspin,nbasis,nbasisCloc,maxnc,
      .                      numc,listc,aux,numcold,listcold,cold,c,
-     .                      nbasisloc,Node)
+     .                      nbasisloc)
 C ******************************************************************************
 C Subroutine to extrapolate a given matrix M (like the coefficients of the
 C wave functions, or the density matrix) for the next MD step.
@@ -13,6 +13,7 @@ C integer iord                 : Extrapolation order (0 or 1)
 C                                0 = 0th order;  1 = 1st order
 C integer nspin                : Number of spin polarizations (1 or 2)
 C integer nbasis               : Number of rows of matrix M
+C integer nbasisloc            : Number of rows of matrix M held locally
 C integer nbasisCloc           : Maximum number of rows of matrix M (dimension)
 C integer maxnc                : First dimension of M matrix, and maximum
 C                                number of nonzero elements of each column of M
@@ -32,6 +33,8 @@ C real*8 c(maxnc,nbasisCloc,nspin): New matrix M (extrapolated)
 C                                Input: matrix at t-dt
 C                                Output: matrix at t
 C                                If istep = 1, c returned uncahanged
+C **************************** SCRATCH SPACE **********************************
+C real*8 aux(2,nbasis)         : Auxiliary storage array
 C **************************** BEHAVIOUR **************************************
 C The routine allows for the sparse structure of the matrix M to change
 C between MD time steps. On input, the matrices of former steps (c and cold) 
@@ -47,24 +50,28 @@ C Also, in that case numold and listold are only an output, and are set equal
 C to num and list
 C *****************************************************************************
 
-      use precision
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use precision, only : dp
+      use parallel,  only : node
+      use sys,       only : die
 
       implicit none
 
-      integer 
-     .  iord,istep,maxnc,nbasis,nbasisCloc,nspin,Node,nbasisloc
+      integer, intent(in) :: iord
+      integer, intent(in) :: istep
+      integer, intent(in) :: nspin
+      integer, intent(in) :: nbasis
+      integer, intent(in) :: nbasisloc
+      integer, intent(in) :: nbasisCloc
+      integer, intent(in) :: maxnc
+      integer, intent(in) :: numc(maxnc)
+      integer, intent(in) :: listc(maxnc, nbasisCloc)
 
-      integer 
-     .  listc(maxnc,nbasisCloc),listcold(maxnc,nbasisloc),
-     .  numc(nbasisCloc),numcold(nbasisloc)
+      integer, intent(inout) :: numcold(maxnc)
+      integer, intent(inout) :: listcold(maxnc, nbasisCloc)
+      integer, intent(inout) :: cold(maxnc, nbasisCloc, nspin)
+      integer, intent(inout) :: c(maxnc, nbasisCloc, nspin)
 
-      real(dp) ::
-     .  aux(2,nbasis),cold(maxnc,nbasisloc,nspin),
-     .  c(maxnc,nbasisCloc,nspin)
- 
+      real(dp), intent(out) :: aux(2, nbasis)
 C  Internal variables .......................................................
 
       integer
@@ -72,13 +79,16 @@ C  Internal variables .......................................................
 
       real(dp) ::
      .  msave
+
+      logical :: 
+     .  changed
 C ...........................................................................
 
-      if (iord .ne. 0 .and. iord . ne. 1) then
-        if (Node.eq.0) then
-      write(6,*) 'extrapol: Wrong iord: only 0 and 1 order available'
+      if (iord /= 0 .and. iord /= 1) then
+        if (node == 0) then
+          call die ('extrapolon: Wrong iord: '//
+     .              'only 0 and 1 order available')
         endif
-        stop
       endif
 
 C Just initialize numcold and listcold if istep = 1 ...........................
@@ -88,73 +98,74 @@ C Just initialize numcold and listcold if istep = 1 ...........................
           do in = 1,numc(i)
             listcold(in,i) = listc(in,i)
             do ispin = 1,nspin
-              cold(in,i,ispin) = 0.0d0
+              cold(in,i,ispin) = 0.0_dp
             enddo
           enddo
         enddo
-        return
 
       else
 
 C Check if sparse structure has changed .....................................
+        changed = .false.
+
         do i = 1,nbasisloc
-          if (numcold(i).ne.numc(i)) goto 10
+          if (numcold(i).ne.numc(i)) then
+            changed = .true.
+            exit
+          endif
           do in = 1,numc(i)
-            if (listcold(in,i).ne.listc(in,i)) goto 10
+            if (listcold(in,i).ne.listc(in,i)) then
+              changed = .true.
+              exit
+            endif
           enddo
         enddo
-        goto 20
 
 C If sparse structure has changed, re-order c and cold 
 C and change numcold and listcold to current ones .............................
-10      continue
 
-        do i = 1,nbasis
-          do j = 1,2
-            aux(j,i) = 0.0 
-          enddo
-        enddo
-  
-        do i = 1,nbasisloc
-          do ispin = 1,nspin
-            do in = 1,numcold(i)
-              j = listcold(in,i)
-              aux(1,j) = c(in,i,ispin)
-              aux(2,j) = cold(in,i,ispin)
+        if (changed) then
+          aux = 0.0_dp
+          
+          do i = 1,nbasisloc
+            do ispin = 1,nspin
+              do in = 1,numcold(i)
+                j = listcold(in,i)
+                aux(1,j) = c(in,i,ispin)
+                aux(2,j) = cold(in,i,ispin)
+              enddo
+              do in = 1,numc(i)
+                j = listc(in,i)
+                c(in,i,ispin) = aux(1,j)
+                cold(in,i,ispin) = aux(2,j)
+              enddo
+              do in = 1,numcold(i)
+                j = listcold(in,i)
+                aux(1,j) = 0.0_dp
+                aux(2,j) = 0.0_dp
+              enddo
             enddo
+            numcold(i) = numc(i)
             do in = 1,numc(i)
-              j = listc(in,i)
-              c(in,i,ispin) = aux(1,j)
-              cold(in,i,ispin) = aux(2,j)
-            enddo
-            do in = 1,numcold(i)
-              j = listcold(in,i)
-              aux(1,j) = 0.0d0
-              aux(2,j) = 0.0d0
+              listcold(in,i) = listc(in,i)
             enddo
           enddo
-          numcold(i) = numc(i)
-          do in = 1,numc(i)
-            listcold(in,i) = listc(in,i)
-          enddo
-        enddo
+        endif !changed
 
 C Extrapolate matrix M ......................................................
-20      continue
 
         do ispin = 1,nspin
           do i = 1,nbasisloc
             do in = 1,numc(i)
               msave = c(in,i,ispin)
-              if (iord.eq.1 .and. cold(in,i,ispin).ne.0.0d0) then
-                c(in,i,ispin) = 2.0d0*c(in,i,ispin) - cold(in,i,ispin)
+              if (iord == 1) then
+                c(in,i,ispin) = 2.0_dp*c(in,i,ispin) - cold(in,i,ispin)
               endif
               cold(in,i,ispin) = msave
             enddo
           enddo
         enddo
 
-      endif
+      endif !istep==1
 
-      return
       end

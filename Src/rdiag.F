@@ -128,13 +128,15 @@ C Matrices for 2D
       logical,           save :: Use2D = .true.
       logical,           save :: Serial = .true.
       logical                 :: ChangeAlgorithm
-      real(dp)                :: abstol
-      real(dp)                :: one
-      real(dp)                :: orfac
       real(dp)                :: vl
       real(dp)                :: vu
       real(dp), pointer, save :: work(:)
       real(dp), pointer, save :: Zsave(:,:)
+
+      real(dp), parameter     :: abstol = 1.0e-8_dp
+      real(dp), parameter     :: orfac = 1.0e-3_dp
+      real(dp), parameter     :: zero = 0.0_dp
+      real(dp), parameter     :: one = 1.0_dp
 
 C Start time count
       call timer('rdiag',1)
@@ -264,9 +266,6 @@ C Set general Lapack parameters
         jobz   = 'N'
         range  = 'A'
       endif
-      abstol = 1.0d-8
-      orfac  = 1.0d-3
-      one = 1.0d0
 
 C Calculate memory requirements
       if (Serial) then
@@ -470,20 +469,20 @@ C*******************************************************************************
         if (PreRotate.and.ChangeAlgorithm) then
           if (Serial) then
 C Rotate according to eigenvectors from previous cycle
-            call dsymm('L','U',n,n,1.0d0,H,n,Zsave,n,0.0d0,Z,n)
-            call dgemm('T','N',n,n,n,1.0d0,Zsave,n,Z,n,0.0d0,H,n)
+            call dsymm('L','U',n,n,one,H,n,Zsave,n,zero,Z,n)
+            call dgemm('T','N',n,n,n,one,Zsave,n,Z,n,zero,H,n)
 #ifdef MPI
           else
             if (Use2D) then
-              call pdsymm('L','U',n,n,1.0d0,h2d,1,1,desc_h2d,Zsave,1,1,
-     .                     desc_h2d,0.0d0,z2d,1,1,desc_h2d)
-              call pdgemm('T','N',n,n,n,1.0d0,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desch,0.0d0,h2d,1,1,desc_h2d)
+              call pdsymm('L','U',n,n,one,h2d,1,1,desc_h2d,Zsave,1,1,
+     .                     desc_h2d,zero,z2d,1,1,desc_h2d)
+              call pdgemm('T','N',n,n,n,one,Zsave,1,1,desc_h2d,z2d,1,
+     .                     1,desch,zero,h2d,1,1,desc_h2d)
             else
-              call pdsymm('L','U',n,n,1.0d0,H,1,1,desch,Zsave,1,1,desch,
-     .                     0.0d0,Z,1,1,desch)
-              call pdgemm('T','N',n,n,n,1.0d0,Zsave,1,1,desch,Z,1,1,
-     .                     desch,0.0d0,H,1,1,desch)
+              call pdsymm('L','U',n,n,one,H,1,1,desch,Zsave,1,1,desch,
+     .                     zero,Z,1,1,desch)
+              call pdgemm('T','N',n,n,n,one,Zsave,1,1,desch,Z,1,1,
+     .                     desch,zero,H,1,1,desch)
             endif
 #endif
           endif
@@ -569,17 +568,17 @@ C Post-rotate using trial eigenvectors                                         *
 C*******************************************************************************
         if (PreRotate.and.ChangeAlgorithm) then
           if (Serial) then
-            call dgemm('N','N',n,n,n,1.0d0,Zsave,n,Z,n,0.0d0,H,n)
+            call dgemm('N','N',n,n,n,one,Zsave,n,Z,n,zero,H,n)
             call dcopy(n*nm,H(1,1),1,Z(1,1),1)
 #ifdef MPI
           else
             if (Use2D) then
-              call pdgemm('N','N',n,n,n,1.0d0,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desc_h2d,0.0d0,h2d,1,1,desc_h2d)
+              call pdgemm('N','N',n,n,n,one,Zsave,1,1,desc_h2d,z2d,1,
+     .                     1,desc_h2d,zero,h2d,1,1,desc_h2d)
               call dcopy(n*nm,h2d(1,1),1,z2d(1,1),1)
             else
-              call pdgemm('N','N',n,n,n,1.0d0,Zsave,1,1,desch,Z,1,1,
-     .                     desch,0.0d0,H,1,1,desch)
+              call pdgemm('N','N',n,n,n,one,Zsave,1,1,desch,Z,1,1,
+     .                     desch,zero,H,1,1,desch)
               call dcopy(n*nm,H(1,1),1,Z(1,1),1)
             endif
 #endif

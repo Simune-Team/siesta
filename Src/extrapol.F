@@ -1,4 +1,4 @@
-      subroutine extrapol(istep,iord,nspin,nrow,nmrow,nmrowl,nmax,num,
+      subroutine extrapol(istep,iord,nspin,nrow,nmrowl,nmax,num,
      .                    listptr,list,numold,listptrold,listold,
      .                    mm2,mnew)
 C ******************************************************************************
@@ -53,32 +53,31 @@ C *****************************************************************************
 C
 C  Modules
 C
-      use precision
-      use parallel,     only : Node
-      use parallelsubs
+      use precision,    only : dp
+      use parallel,     only : node
+      use sys,          only : die
 #ifdef MPI
       use mpi_siesta
 #endif
 
       implicit none
 
-#ifdef MPI
-      integer
-     .  MPIerror
-      logical
-     .  lbuffer
-#endif
+      integer, intent(in) :: istep
+      integer, intent(in) :: iord
+      integer, intent(in) :: nspin
+      integer, intent(in) :: nrow
+      integer, intent(in) :: nmrowl
+      integer, intent(in) :: nmax
+      integer, intent(in) :: num(nmrowl)
+      integer, intent(in) :: listptr(nmrowl)
+      integer, intent(in) :: list(nmax)
 
-      integer 
-     .  iord,istep,nmax,nmrow,nmrowl,nrow,nspin
+      integer, intent(inout) :: numold(nmrowl)
+      integer, intent(inout) :: listptrold(nmrowl)
+      integer, intent(inout) :: listold(nmax)
+      real(dp), intent(inout) :: mm2(nmax, nspin)
+      real(dp), intent(inout) :: mnew(nmax, nspin)
 
-      integer 
-     .  list(nmax),listold(nmax),num(nmrowl),numold(nmrowl),
-     .  listptr(nmrowl),listptrold(nmrowl)
-
-      real(dp)
-     .  mm2(nmax,nspin),mnew(nmax,nspin)
- 
 C  Internal variables .......................................................
 
       integer
@@ -91,19 +90,30 @@ C  Internal variables .......................................................
 
       external
      .  memory
+
+#ifdef MPI
+      integer
+     .  MPIerror
+      logical
+     .  lbuffer
+#endif
+
 C ...........................................................................
 
 C Find the maximum number of non-zero elements in matrices
-      if (nmrowl.eq.0) goto 999
+      if (nmrowl>0) then
+        nh = listptr(nmrowl) + num(nmrowl)
+      else
+        nh = 0
+        ! in this case, none of the loops will be executed; we'll
+        ! fall straight through everything, but still execute the
+        ! MPI_AllReduce.
+      endif
 
-      nh = listptr(nmrowl) + num(nmrowl)
-
-      if (iord .ne. 0 .and. iord . ne. 1) then
-        if (Node.eq.0) then
-          write(6,*) 'extrapol: Wrong iord: only 0 and 1 order ',
-     .      'available'
+      if (iord /= 0 .and. iord /= 1) then
+        if (node == 0) then
+          call die('extrapol: Wrong iord: only 0 and 1 order available')
         endif
-        stop
       endif
 
 C Just initialize numold and listold if istep = 1 ...........................
@@ -111,10 +121,7 @@ C Just initialize numold and listold if istep = 1 ...........................
         numold(1:nmrowl) = num(1:nmrowl)
         listptrold(1:nmrowl) = listptr(1:nmrowl)
         listold(1:nh) = list(1:nh)
-        mm2(1:nmax,1:nspin) = 0.0d0
-        return
-C .....................
-
+        mm2(1:nmax,1:nspin) = 0.0_dp
       else
 
 C Check if sparse structure has changed .....................................
@@ -165,7 +172,7 @@ C Determine size of auxiliary matrix
           allocate(mtmp(nh))
           call memory('A','D',nh,'extrapol')
 
-          aux(1:nrow) = 0.0d0
+          aux(1:nrow) = 0.0_dp
   
           do ispin = 1,nspin
             do i = 1,nmrowl
@@ -181,7 +188,7 @@ C Determine size of auxiliary matrix
               enddo
               do in = 1,numold(i)
                 j = listold(listptrold(i)+in)
-                aux(j) = 0.0d0
+                aux(j) = 0.0_dp
               enddo
             enddo
             mnew(1:nh,ispin) = mtmp(1:nh)
@@ -216,7 +223,7 @@ C Deallocate local scratch arrays
           call memory('D','D',size(aux),'extrapol')
           deallocate(aux)
 
-        endif
+        endif !changed
 C ..................
 
 C Extrapolate matrix M ......................................................
@@ -224,18 +231,14 @@ C Extrapolate matrix M ......................................................
         do ispin = 1,nspin
           do i = 1,nh
             msave = mnew(i,ispin)
-            if (iord .eq. 1 .and. mm2(i,ispin) .ne. 0.0d0) then
-              mnew(i,ispin) = 2.0d0 * mnew(i,ispin) - mm2(i,ispin)
+            if (iord == 1) then
+              mnew(i,ispin) = 2.0_dp * mnew(i,ispin) - mm2(i,ispin)
             endif
             mm2(i,ispin) = msave
           enddo
         enddo
 C ....................
 
-      endif
+      endif !istep==1
 
-C Common exit point
-  999 continue
-
-      return
       end
