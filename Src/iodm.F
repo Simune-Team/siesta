@@ -4,10 +4,10 @@ C *******************************************************************
 C Reads/writes density matrix from/to file
 C Written by P.Ordejon and J.M.Soler. May 1997.
 C ********* INPUT ***************************************************
-C character task*3 : 'read' or 'write'
-C integer   maxnd  : First dimension of listd and dm
-C integer   nbasis : Number of atomic orbitals
-C integer   nspin  : Number of spins (1 or 2)
+C character task*(*) : 'read' or 'write'
+C integer   maxnd    : First dimension of listd and dm
+C integer   nbasis   : Number of atomic orbitals
+C integer   nspin    : Number of spins (1 or 2)
 C ********* INPUT OR OUTPUT (depending on task) *********************
 C integer numd(nbasis)     : Control vector of DM matrix
 C                            (number of nonzero elements of each row)
@@ -23,29 +23,33 @@ C ******************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,    only : dp
       use parallel,     only : Node, Nodes
-      use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb,
-     .                         GlobalToLocalOrb
-      use fdf
+      use parallelsubs, only : LocalToGlobalOrb
+      use sys,          only : die
+      use fdf,          only : fdf_boolean, fdf_string
       use ionew
 #ifdef MPI
       use mpi_siesta
+      use parallel_subs, only : WhichNodeOrb, GlobalToLocalOrb
 #endif
 
       implicit  none
 
-      character task*(*), paste*33
-      logical   found
-      integer   maxnd, nbasis, nspin
-      integer   listd(maxnd), numd(nbasis), listdptr(nbasis)
-      real(dp)  dm(maxnd,nspin)
+      character(len=*), intent(in) :: task
+      integer, intent(in) :: maxnd
+      integer, intent(in) :: nbasis
+      integer, intent(in) :: nspin
 
-C Internal variables and arrays
-      character(len=33), save :: fname
-      character(len=30)       :: sname
+      integer, intent(inout) :: numd(nbasis)
+      integer, intent(inout) :: listdptr(nbasis)
+      integer, intent(inout) :: listd(maxnd)
+      real(dp), intent(inout) :: dm(maxnd, nspin)
+
+      logical, intent(out) :: found
+
+C Internal variables
       logical   exist1, exist2, exist3
-      logical,           save :: frstme = .true.
       integer   im, is, unit1, unit2, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
       integer, dimension(:), allocatable, save :: numdg
@@ -55,31 +59,62 @@ C Internal variables and arrays
       real(dp), dimension(:), allocatable, save :: buffer
       integer,  dimension(:), allocatable, save :: ibuffer
 #endif
-      external          chkdim, paste, timer,  memory
 
-*     call timer( 'iodm', 1 )
+      
+
+C Saved internal variables:
+      logical,           save :: frstme = .true.
+      character(len=30), save :: sname
+      character(len=33), save :: fnameu
+      character(len=34), save :: fnamef
+      character(len=34), save :: fnamei, fnameo
+      logical,           save :: fmti, fmto
+      character(len=11), save :: formin, formout
+
+! Character formats for formatted I/O
+! We assume that we have no integers greater than (1e10-1)
+! (which is bigger than the largest 32-bit integer)
+!
+! and that floating point accuracy is sufficiently represented
+! by 16 decimal digits of precision (which suffices for 64-bit
+! IEEE floats)
+
+      character(len=*), parameter :: intfmt = '(I11)'
+      character(len=*), parameter :: floatfmt = '(ES22.14)'
+
+C External procedures
+      external          chkdim, memory
 
 C Find file name
       if (frstme) then
-        if (Node.eq.0) then
-          sname = fdf_string('SystemLabel','siesta')
+        if (node == 0) then
+          fmto = fdf_boolean('DM.FormattedFiles', .false.)
+          fmti = fdf_boolean('DM.FormattedInput', fmto)
+          fmto = fdf_boolean('DM.FormattedOutput', fmto)
+          sname = fdf_string('SystemLabel', 'siesta')
+          fnameu = trim(sname) // '.DM'
+          fnamef = trim(sname) // '.DMF'
+          if (fmto) then
+            formout = 'formatted'
+            fnameo = fnamef
+          else
+            formout = 'unformatted'
+            fnameo = fnameu
+          endif
+          if (fmti) then
+            formin = 'formatted'
+            fnamei = fnamef
+          else
+            formin = 'unformatted'
+            fnamei = fnameu
+          endif
         endif
-#ifdef MPI
-        call MPI_Bcast(sname,30,MPI_character,0,MPI_Comm_World,
-     .    MPIerror)
-#endif
-        fname = paste(sname,'.DM')
-        frstme = .false.
       endif
 
 C Find total number of basis functions over all Nodes
 #ifdef MPI
-      if (Nodes.gt.1) then
-        call MPI_AllReduce(nbasis,nbasistot,1,MPI_integer,MPI_sum,
-     .    MPI_Comm_World,MPIerror)
-      else
-        nbasistot = nbasis
-      endif
+      call MPI_AllReduce(nbasis,nbasistot,1,MPI_integer,MPI_sum,
+     .     MPI_Comm_World,MPIerror)
 #else
       nbasistot = nbasis
 #endif
@@ -92,7 +127,7 @@ C Allocate local buffer array for globalised numd
         if (Node.eq.0) then
           inquire (file='SAVE.DM',     exist=exist1)
           inquire (file='SAVE.ctrlDM', exist=exist2)
-          inquire (file=fname,         exist=exist3)
+          inquire (file=fnamei,        exist=exist3)
         endif
 
 #ifdef MPI
@@ -245,10 +280,13 @@ C New-format files
           if (Node.eq.0) then
             write(6,'(/,a)') 'iodm: Reading Density Matrix from files'
             call io_assign(unit1)
-            open( unit1, file=fname,
-     .          form='unformatted', status='unknown' )
+            open( unit1, file=fnamei, form=formin, status='old' )
             rewind(unit1)
-            read(unit1) nb, ns
+            if (fmti) then
+              read(unit1, intfmt) nb, ns
+            else
+              read(unit1) nb, ns
+            endif
           endif
 
 C Communicate the values to all Nodes and adjust to allow for
@@ -263,7 +301,11 @@ C Check dimensions
           call chkdim( 'iodm', 'nspin',  nspin,  ns, 0 )
 
           if (Node.eq.0) then
-            read(unit1) (numdg(m),m=1,nbasistot)
+            if (fmti) then
+              read(unit1, intfmt) (numdg(m),m=1,nbasistot)
+            else
+              read(unit1) (numdg(m),m=1,nbasistot)
+            endif
           endif
 #ifdef MPI
           call MPI_Bcast(numdg,nbasistot,MPI_integer,0,MPI_Comm_World,
@@ -306,10 +348,19 @@ C Create buffer arrays for transfering density matrix between nodes and lists
 #else
               ml = m
 #endif
-              read(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
+              if (fmti) then
+                read(unit1, intfmt) 
+     .               (listd(listdptr(ml)+im),im=1,numd(ml))
+              else
+                read(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
+              endif
 #ifdef MPI
             elseif (Node.eq.0) then
-              read(unit1) (ibuffer(im),im=1,numdg(m))
+              if (fmti) then
+                read(unit1, intfmt) (ibuffer(im),im=1,numdg(m))
+              else
+                read(unit1) (ibuffer(im),im=1,numdg(m))
+              endif
               call MPI_ISend(ibuffer,numdg(m),MPI_integer,
      .          BNode,1,MPI_Comm_World,Request,MPIerror)
               call MPI_Wait(Request,Status,MPIerror)
@@ -339,10 +390,19 @@ C Create buffer arrays for transfering density matrix between nodes and lists
 #else
                 ml = m
 #endif
-                read(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
+                if (fmti) then
+                  read(unit1, floatfmt)
+     .                 (dm(listdptr(ml)+im,is),im=1,numd(ml))
+                else
+                  read(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
+                endif
 #ifdef MPI
               elseif (Node.eq.0) then
-                read(unit1) (buffer(im),im=1,numdg(m))
+                if (fmti) then
+                  read(unit1, floatfmt) (buffer(im),im=1,numdg(m))
+                else
+                  read(unit1) (buffer(im),im=1,numdg(m))
+                endif
 #ifdef NODAT
                 call MPI_ISend(buffer,numdg(m),MPI_double_precision,
      .            BNode,1,MPI_Comm_World,Request,MPIerror)
@@ -391,10 +451,13 @@ C Free buffer array
 
         if (Node.eq.0) then
           call io_assign(unit1)
-          open( unit1, file=fname, form='unformatted', 
-     .      status='unknown' )
+          open( unit1, file=fnameo, form=formout, status='unknown' )
           rewind(unit1)
-          write(unit1) nbasistot, nspin
+          if (fmto) then
+            write(unit1, intfmt) nbasistot, nspin
+          else
+            write(unit1) nbasistot, nspin
+          endif
         endif
 
 C Create globalised numd
@@ -430,7 +493,11 @@ C Write out numd array
           do m = 1,nbasistot
             ndmaxg = max(ndmaxg,numdg(m))
           enddo
-          write(unit1) (numdg(m),m=1,nbasistot)
+          if (fmto) then
+            write(unit1, intfmt) (numdg(m),m=1,nbasistot)
+          else
+            write(unit1) (numdg(m),m=1,nbasistot)
+          endif
 #ifdef MPI
           allocate(buffer(ndmaxg))
           call memory('A','D',ndmaxg,'iodm')
@@ -448,7 +515,12 @@ C Write out listd array
 #else
             ml = m
 #endif
-            write(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
+            if (fmto) then
+              write(unit1, intfmt)
+     .             (listd(listdptr(ml)+im),im=1,numd(ml))
+            else
+              write(unit1) (listd(listdptr(ml)+im),im=1,numd(ml))
+            endif
 #ifdef MPI
           elseif (Node.eq.0) then
             call MPI_IRecv(ibuffer,numdg(m),MPI_integer,BNode,1,
@@ -463,7 +535,11 @@ C Write out listd array
           if (BNode.ne.0) then
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
-              write(unit1) (ibuffer(im),im=1,numdg(m))
+              if (fmto) then
+                write(unit1, intfmt) (ibuffer(im),im=1,numdg(m))
+              else
+                write(unit1) (ibuffer(im),im=1,numdg(m))
+              endif
             endif
           endif
 #endif
@@ -486,7 +562,12 @@ C Write density matrix
 #else
               ml = m
 #endif
-              write(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
+              if (fmto) then
+                write(unit1, floatfmt) 
+     .               (dm(listdptr(ml)+im,is),im=1,numd(ml))
+              else
+                write(unit1) (dm(listdptr(ml)+im,is),im=1,numd(ml))
+              endif
 #ifdef MPI
             elseif (Node.eq.0) then
 #ifdef NODAT
@@ -512,7 +593,11 @@ C Write density matrix
             if (BNode.ne.0) then
               call MPI_Barrier(MPI_Comm_World,MPIerror)
               if (Node.eq.0) then
-                write(unit1) (buffer(im),im=1,numdg(m))
+                if (fmto) then
+                  write(unit1, floatfmt) (buffer(im),im=1,numdg(m))
+                else
+                  write(unit1) (buffer(im),im=1,numdg(m))
+                endif
               endif
             endif
 #endif
@@ -529,9 +614,7 @@ C Write density matrix
 
       else
         if (Node.eq.0) then
-          stop 'iodm: incorrect task'
-        else
-          stop
+          call die('iodm: incorrect task')
         endif
       endif
 
@@ -539,5 +622,4 @@ C Deallocate local buffer array for globalised numd
       call memory('D','I',size(numdg),'iodm')
       deallocate(numdg)
 
-*     call timer( 'iodm', 2 )
-      end
+      end subroutine iodm

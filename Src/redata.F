@@ -13,7 +13,7 @@
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
-C     It uses the FDF (Flexible Data Fromat) package 
+C     It uses the FDF (Flexible Data Format) package 
 C     of J.M.Soler and A.Garcia
 C
 C Writen by P.Ordejon, December'96

@@ -3506,7 +3506,7 @@ to parameter {\tt SystemLabel}.
 printed but the program does not stop.
 
 {\it Default value:} {\tt .false.}
-        
+
 
 \item[{\bf DM.UseSaveDM}] ({\it logical}): 
 \index{DM.UseSaveDM@{\bf DM.UseSaveDM}} 
@@ -3516,6 +3516,42 @@ Instructs to read the density matrix stored in file
 
 {\it Use:} If the required file does not exist, a warning is
 printed but the program does not stop. Overrides {\bf UseSaveData}.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.FormattedFiles}] ({\it logical}): 
+\index{DM.FormattedFiles@{\bf DM.FormattedFiles}} 
+\index{reading saved data!density matrix}
+Instructs to use formatted files for reading and writing
+the density matrix. In this case, the files are labelled
+{\tt SystemLabel}.DMF.
+
+{\it Use:} This makes for much larger files, and slower i/o. However, the
+files are transferable between different computers, which is
+not the case normally.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.FormattedInput}] ({\it logical}): 
+\index{DM.FormattedInput@{\bf DM.FormattedInput}} 
+\index{reading saved data!density matrix}
+Instructs to use formatted files for reading the density
+matrix.
+
+{\it Use:} Overrides the value of {\bf DM.FormattedFiles}.
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.FormattedOutput}] ({\it logical}): 
+\index{DM.FormattedInput@{\bf DM.FormattedOutput}} 
+\index{reading saved data!density matrix}
+Instructs to use formatted files for writing the density
+matrix.
+
+{\it Use:} Overrides the value of {\bf DM.FormattedFiles}.
 
 {\it Default value:} {\tt .false.}
 
