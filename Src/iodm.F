@@ -31,7 +31,7 @@ C
       use ionew
 #ifdef MPI
       use mpi_siesta
-      use parallel_subs, only : WhichNodeOrb, GlobalToLocalOrb
+      use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
 #endif
 
       implicit  none
