@@ -388,8 +388,8 @@ C Global sum of values stored in qo
 C Global sum of total charge
             qtot_temp = qtot
 #ifdef NODAT
-            call MPI_Reduce(qtot_temp,qtot,1,MPI_double_precision,MPI_sum,
-     .        0,MPI_Comm_World,MPIerror)
+            call MPI_Reduce(qtot_temp,qtot,1,MPI_double_precision,
+     $           MPI_sum, 0,MPI_Comm_World,MPIerror)
 #else
             call MPI_Reduce(qtot_temp,qtot,1,DAT_double,MPI_sum,
      .        0,MPI_Comm_World,MPIerror)
