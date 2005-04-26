@@ -932,10 +932,10 @@ CONTAINS
     type(xmlf_t) :: xf
     integer,       intent(in)   :: nvalue     ! the number of values to be output
     real(kind=sp), intent(in)   :: arrf(*)    ! the values to be output
-    character(len=10), optional :: fmt
+    character(len=*), optional :: fmt
 
     integer :: i
-    character(len=10) :: formt
+    character(len=30) :: formt
 
     if (present(fmt)) then
        formt = fmt
@@ -943,9 +943,9 @@ CONTAINS
        formt = '(f8.3)'
     endif
 
-    call xml_AddPcdata(xf, arrf(1))
+    call xml_AddPcdata(xf, arrf(1), formt)
     do i = 2, nvalue
-       call xml_AddPcdata(xf, arrf(i), space=.true.)
+       call xml_AddPcdata(xf, arrf(i), formt, space=.true.)
     enddo
   END SUBROUTINE STMARCF9SP
 

@@ -1,6 +1,5 @@
 module m_wxml_buffer
 
-use m_wxml_escape, only : escape_char_array
 use m_wxml_error
 
 implicit none
@@ -131,9 +130,27 @@ subroutine add_to_buffer_escaping_markup(s,buf)
 character(len=*), intent(in)      ::   s
 type(buffer_t), intent(inout)     ::   buf
 
-character(len=1), dimension(len(s))  :: s_a
+integer           :: len_s, i
+character(len=1)  :: c
 
-call add_to_buffer(escape_char_array(transfer(s,s_a)), buf)
+len_s = len(s)
+i = 0
+do 
+ if (i==len_s) exit
+ i = i + 1
+ c = s(i:i)
+ if (c == "<") then
+    call add_to_buffer("&lt;",buf)
+ else if (c == "&") then
+    call add_to_buffer("&amp;",buf)
+ else if (c == "'") then
+    call add_to_buffer("&quot;",buf)
+ else if (c == '"') then
+    call add_to_buffer("&apos;",buf)
+ else
+    call add_to_buffer(c,buf)
+ endif
+enddo
 
 end subroutine add_to_buffer_escaping_markup
 

@@ -68,7 +68,7 @@ C Internal variables and arrays
       integer, dimension(:), allocatable, save ::
      .  ilc, ilocal, iorb
       logical
-     .  Parallel
+     .  Parallel_Flag
       real*8
      .  Vij1, Vij2, Vij3, Vij4, dxsp(3), phia(maxoa,nsp),
      .  r2cut(nsmax), r2sp, xr(3), Rdi(3), qRdi, cqRdi, sqRdi
@@ -83,7 +83,7 @@ C  Start time counter
       call timer('vmatsp',1)
 
 C  Set algorithm logical
-      Parallel = (nuo .ne. nuotot)
+      Parallel_Flag = (nuo .ne. nuotot)
 
 C  Find value of maxloc
 
@@ -119,7 +119,7 @@ C  Allocate local memory
       allocate(VClocal4(nsp))
       call memory('A','D',nsp,'vmatsp')
 
-      if (Parallel) then
+      if (Parallel_Flag) then
         nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
         allocate(DscfL(nvmaxl,nsd+2))
         call memory('A','D',nvmaxl*(nsd+2),'meshdscf')
@@ -168,7 +168,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
           do il = 1,last
             i = iorb(il)
             iu = indxuo(i)
-            if (Parallel) then
+            if (Parallel_Flag) then
               iul = NeedDscfL(iu)
               if (i .eq. iu) then
                 do ii = 1, numdl(iul)
@@ -375,7 +375,7 @@ C  Add final Vlocal to Vs
       do il = 1,last
         i = iorb(il)
         iu = indxuo(i)
-        if (Parallel) then
+        if (Parallel_Flag) then
           iul = NeedDscfL(iu)
           if (i .eq. iu) then
             do ii = 1, numdl(iul)
@@ -475,7 +475,7 @@ C  Free local memory
       call memory('D','D',size(VClocal4),'vmatsp')
       deallocate(VClocal4)
 
-      if (Parallel) then
+      if (Parallel_Flag) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
      .      nuotot, nspin, DscfL, Vs )

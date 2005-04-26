@@ -1,15 +1,12 @@
 module m_wxml_dictionary
 
   use m_wxml_escape, only : check_Name
+  use m_wxml_array_str
 
   implicit none
 
 private
 !
-! A very rough implementation for now
-! It uses fixed-length buffers for key/value pairs,
-! and the maximum number of dictionary items is hardwired.
-
 integer, parameter, private    :: MAX_ITEMS = 30
 
 type, private :: dict_item
@@ -37,13 +34,13 @@ interface len
    module procedure number_of_entries
 end interface
 public  :: number_of_entries
-public  :: get_key, get_key_len
-public  :: get_value, get_value_len
+public  :: get_key 
+public  :: get_value
 public  :: has_key
 public  :: print_dict
 !
 interface get_value
-   module procedure wxml_get_value
+   module procedure wxml_get_value, wxml_get_value_i
 end interface
 
 CONTAINS
@@ -63,16 +60,13 @@ type(wxml_dictionary_t), intent(in)   :: dict
 character(len=*), intent(in)     :: key
 logical                          :: found
 
-integer  :: n, i
+integer  ::  i
 found = .false.
-n = dict%number_of_items
 do  i = 1, dict%number_of_items
-  if (size(dict%items(i)%key) == len(key)) then
-    if (transfer(dict%items(i)%key,key) == key) then
+    if (dict%items(i)%key .equal. key) then
       found = .true.
       exit
     endif
-  endif
 enddo
 end function has_key
 
@@ -87,13 +81,11 @@ integer  :: i
 
 status = -1
 do  i = 1, dict%number_of_items
-  if (size(dict%items(i)%key) == len(key)) then
-    if (transfer(dict%items(i)%key,key) == key) then
-      value = transfer(dict%items(i)%value,value)
+    if (dict%items(i)%key .equal. key) then
+      call assign_array_to_str(value,dict%items(i)%value)
       status = 0
       exit
     endif
-  endif
 enddo
 
 end subroutine wxml_get_value
@@ -107,50 +99,59 @@ function get_value_len(dict, key) result(value_len)
 
   value_len = 0
   do  i = 1, dict%number_of_items
-    if (size(dict%items(i)%key) == len(key)) then
-      if (transfer(dict%items(i)%key,key) == key) then
+      if (dict%items(i)%key .equal. key) then
         value_len = size(dict%items(i)%value)
         exit
       endif
-    endif
   enddo
 
 end function get_value_len
 
 
 !------------------------------------------------------
-subroutine get_key(dict,i,key,status)
+subroutine get_key(dict,i,key,key_len,status)
 !
 ! Get the i'th key
 !
 type(wxml_dictionary_t), intent(in)            :: dict
 integer, intent(in)                       :: i
 character(len=*), intent(out)             :: key
+integer, intent(out)                      :: key_len
 integer, intent(out)                      :: status
 
 if (i>0 .and. i<=dict%number_of_items) then
-      key = transfer(dict%items(i)%key, key)
+      call assign_array_to_str(key,dict%items(i)%key)
+      key_len = size(dict%items(i)%key)
       status = 0
 else
       key = ""
+      key_len = 0
       status = -1
 endif
 
 end subroutine get_key
-
-function get_key_len(dict, i) result(key_len)
-  type(wxml_dictionary_t), intent(in) :: dict
-  integer, intent(in) :: i
-  integer :: key_len
+!------------------------------------------------------
+subroutine wxml_get_value_i(dict,i,value,value_len,status)
+!
+! Get the i'th value
+!
+type(wxml_dictionary_t), intent(in)            :: dict
+integer, intent(in)                       :: i
+character(len=*), intent(out)             :: value
+integer, intent(out)                      :: value_len
+integer, intent(out)                      :: status
 
 if (i>0 .and. i<=dict%number_of_items) then
-  key_len = size(dict%items(i)%key)
+      call assign_array_to_str(value,dict%items(i)%value)
+      value_len = size(dict%items(i)%value)
+      status = 0
 else
-  key_len = 0
+      value = ""
+      value_len = 0
+      status = -1
 endif
 
-end function get_key_len
-
+end subroutine wxml_get_value_i
 
 subroutine add_item_to_dict(dict, key, value)
 
@@ -159,7 +160,7 @@ subroutine add_item_to_dict(dict, key, value)
   character(len=*), intent(in)          :: value
 
   character(len=len(key)) :: check_key
-  integer  :: n
+  integer  :: n, lenstr
 
   n = dict%number_of_items
   if (n == MAX_ITEMS) then
@@ -176,10 +177,11 @@ subroutine add_item_to_dict(dict, key, value)
   endif
 
   n = n + 1
-  allocate(dict%items(n)%key(len_trim(check_key)))
-  dict%items(n)%key = transfer(trim(check_key),dict%items(n)%key)
+  lenstr=len_trim(check_key)
+  allocate(dict%items(n)%key(lenstr))
+  call assign_str_to_array(dict%items(n)%key,check_key)
   allocate(dict%items(n)%value(len(value)))
-  dict%items(n)%value = transfer(value,dict%items(n)%value)
+  call assign_str_to_array(dict%items(n)%value,value)
 
   dict%number_of_items = n
 

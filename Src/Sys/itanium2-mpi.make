@@ -15,7 +15,7 @@ SYS=scalapack_extra
 DEFS=-DMPI -DNODAT
 MPI_INTERFACE=libmpi_f90.a
 #
-MPIROOT=/usr/local/mpich-1.2.5-10-IntelComp-7.1-GM-2.0
+MPIROOT=/usr/local/mpich
 MPI_INCLUDE=$(MPIROOT)/include
 #
 #MPI_LIBS= $(MPIROOT)/lib/libmpich.a  $(MPIROOT)/lib/libpmpich.a  \

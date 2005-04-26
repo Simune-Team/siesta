@@ -924,7 +924,7 @@ CONTAINS
 
     ! Internal Variables
     character(len=6) :: id1, id0
-    character(len=10):: formt, stylei
+    character(len=20):: formt, stylei
     integer          :: i
 
     if (present(fmt)) then

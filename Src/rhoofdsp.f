@@ -71,7 +71,7 @@ C Internal variables and arrays
      .  ilc, ilocal, iorb
 
       logical
-     .  Parallel
+     .  Parallel_Flag
 
       real*8
      .  Cij(nsp), Dij, Dij1, Dij2, Dij3, Dij4,
@@ -88,7 +88,7 @@ C  Start time counter
       call timer('rhoofdsp',1)
 
 C  Set algorithm logical
-      Parallel = (nuo .ne. nuotot)
+      Parallel_Flag = (nuo .ne. nuotot)
 
 C  Find size of buffers to store partial copies of Dscf and C
       maxloc2 = maxval(endpht(1:np)-endpht(0:np-1))
@@ -113,7 +113,7 @@ C  Allocate local memory
       allocate(Clocal(nsp,maxloc2))
       call memory('A','D',nsp*maxloc2,'rhoofdsp')
 
-      if (Parallel) then
+      if (Parallel_Flag) then
         maxndl = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)
         allocate(DscfL(maxndl,nsd+2))
         call memory('A','D',maxndl*(nsd+2),'meshdscf')
@@ -186,7 +186,7 @@ C  Copy row i of Dscf into row last of Dlocal
             iorb(last) = i
             il = last
             iu = indxuo(i)
-            if (Parallel) then
+            if (Parallel_Flag) then
               iul = NeedDscfL(iu)
               if (i .eq. iu) then
                 do ii = 1, numdl(iul)
@@ -386,7 +386,7 @@ C  Free local memory
       call memory('D','D',size(Clocal),'rhoofdsp')
       deallocate(Clocal)
 
-      if (Parallel) then
+      if (Parallel_Flag) then
         call memory('D','D',size(DscfL),'meshdscf')
         deallocate(DscfL)
       endif

@@ -1,6 +1,8 @@
 module m_wxml_core
 
 use m_wxml_buffer
+use m_wxml_array_str, only: assign_array_to_str
+use m_wxml_array_str, only: assign_str_to_array
 use m_wxml_escape, only: check_Name
 use m_wxml_elstack
 use m_wxml_dictionary
@@ -84,7 +86,7 @@ logical, intent(in), optional :: indent
 integer :: iostat
 
 allocate(xf%filename(len(filename)))
-xf%filename=transfer(filename,xf%filename)
+call assign_str_to_array(xf%filename,filename)
 
 call get_unit(xf%lun,iostat)
 if (iostat /= 0) call wxml_fatal(xf, "cannot open file")
@@ -269,6 +271,7 @@ endif
 if (xf%start_tag_closed)  then
    call wxml_error(xf, "attributes outside start tag")
 endif
+
 if (has_key(xf%dict,name)) then
    call wxml_error(xf, "duplicate att name")
 endif
@@ -404,10 +407,8 @@ integer  :: i, status, size, key_len, value_len
 character(len=100)  :: key, value
 
 do i = 1, len(xf%dict)
-   call get_key(xf%dict,i,key,status)
-   key_len=get_key_len(xf%dict,i)
-   call get_value(xf%dict,key(:key_len),value,status)
-   value_len=get_value_len(xf%dict, key(:key_len))
+   call get_key(xf%dict,i,key,key_len,status)
+   call get_value(xf%dict,i,value,value_len,status)
    size = key_len + value_len + 4
    if ((len(xf%buffer) + size) > COLUMNS) call add_eol(xf)
    call add_to_buffer(" ", xf%buffer)
@@ -509,8 +510,8 @@ end subroutine write_attributes
 
     pure function xmlf_name(xf) result(fn)
       Type (xmlf_t), intent(in) :: xf
-      character(len=len(xf%filename)) :: fn
-      fn=transfer(xf%filename,fn)
+      character(len=size(xf%filename)) :: fn
+      call assign_array_to_str(fn,xf%filename)
     end function xmlf_name
       
 
