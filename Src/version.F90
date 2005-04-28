@@ -15,9 +15,9 @@ implicit none
 
 ! After it is done, this file should be commited.
 
-integer, dimension(3), save  :: num_version = (/8,4,41/)
+integer, dimension(3), save  :: num_version = (/9,4,8/)
 character(len=*), parameter :: version_str =  &
-"SIESTA devel-reference--1.4--patch-41 [fmt IO for DM] (8 Apr 2005)"
+"SIESTA devel-agarcia--1.4--patch-8 [After JG XC] (8 Apr 2005)"
 character(len=*), parameter :: siesta_arch= &
 "SIESTA_ARCH"
 character(len=*), parameter :: fflags= &

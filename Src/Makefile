@@ -83,11 +83,11 @@ gen-basis.o: $(FDF)
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o spatial.o parallel.o parallelsubs.o atom.o atmparams.o atmfuncs.o listsc.o \
-         memoryinfo.o numbvect.o sorting.o \
-	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o parsing.o\
+MOD_OBJS=precision.o spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
+         atmfuncs.o listsc.o memoryinfo.o numbvect.o sorting.o \
+	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
-         basis_types.o xml.o pseudopotential.o basis_specs.o sys.o basis_io.o\
+         basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o \
 	 electrostatic.o mneighb.o globalise.o siesta_cml.o units.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
@@ -137,6 +137,8 @@ propor.o spher_harm.o pseudopotential.o: sys.o
 redata.o dhscf.o: sys.o
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o: fermid.o
 optical.o transition_rate.o: fermid.o
+atom.o xc.o cellxc.o dhscf.o gen-basis.o siesta.o: xcmod.o
+
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
 #
@@ -193,7 +195,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\
 #
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o parallel.o \
-          basis_io.o  chemical.o transfer.o atm_types.o\
+          parsing.o xcmod.o basis_io.o  chemical.o transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
 	  paste.o ionew.o \
           basis_specs.o atom.o periodic_table.o\

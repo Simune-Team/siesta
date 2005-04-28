@@ -29,6 +29,7 @@ C
       use old_atmfuncs, only : clear_tables, allocate_old_arrays
 
       use atom,         only : atom_main, prinput
+      use xcmod,        only : setXC
 C
 C     It has to be MPI-aware since it calls routines down the line...
 C
@@ -76,6 +77,8 @@ C Initialise MPI and set processor number
 !
          filein = "stdin"
          call fdf_init(filein,'gen-basis_out.fdf')
+
+         call setXC
 
          call read_basis_specs()
          call basis_specs_transfer()

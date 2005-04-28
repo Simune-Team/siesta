@@ -1,7 +1,6 @@
-
-      SUBROUTINE FORHAR( NTPL, NSPIN, NML, NTML, NTM, NPCC,
-     .                   XCFUNC, XCAUTH, CELL, RHOATM, RHOPCC,
-     .                   VNA, DRHOOUT, VHARRIS1, VHARRIS2 )
+      subroutine forhar( NTPL, NSPIN, NML, NTML, NTM, NPCC, CELL, 
+     .                   RHOATM, RHOPCC, VNA, DRHOOUT, VHARRIS1, 
+     .                   VHARRIS2 )
 
 C **********************************************************************
 C Build the potentials needed for computing Harris forces:
@@ -19,17 +18,15 @@ C contributions of both spins.
 C Coded by J. Junquera 09/00
 C **********************************************************************
 
-      USE MESH
+      use precision, only : dp
+      use mesh
 
-      IMPLICIT NONE
+      implicit none
 
-      CHARACTER XCFUNC*10, XCAUTH*10
-
-      INTEGER, INTENT(IN) :: NTPL, NSPIN, 
-     .                       NPCC
+      INTEGER, INTENT(IN) :: NTPL, NSPIN, NPCC
       INTEGER, DIMENSION(3), INTENT(IN) :: NML, NTML, NTM
  
-      REAL*8, DIMENSION(3,3), INTENT(IN) :: CELL(3,3) 
+      REAL(dp), DIMENSION(3,3), INTENT(IN) :: CELL(3,3)
       REAL, DIMENSION(NTPL), INTENT(IN) :: VNA, RHOATM, RHOPCC
       REAL, DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: DRHOOUT
       REAL, DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: VHARRIS1
@@ -44,8 +41,6 @@ C INTEGER NSPIN                : Spin polarizations
 C INTEGER NTM(3)               : Number of mesh divisions of each cell
 C                                vector, including subgrid
 C INTEGER NPCC                 : Partial core corrections? (0=no,1=yes)
-C CHARACTER*10 XCFUNC          : Name of xc functional
-C CHARACTER*10 XCAUTH          : Initials of xc version authors
 C REAL*8 CELL(3,3)             : Cell vectors
 C REAL*4 RHOATM(NTPL)          : Harris density at mesh points
 C REAL*4 RHOPCC(NTPL)          : Partial-core-correction density for xc
@@ -69,8 +64,8 @@ C ----------------------------------------------------------------------
 C Internal variables and arrays
 C ----------------------------------------------------------------------
       INTEGER IP, ISPIN, ISPIN2
-      REAL*8 EX, EC, DEX, DEC, STRESSL(3,3)
-      real aux1(1), aux3(3,1)   !! dummy arrays for cellxc
+      REAL(dp) EX, EC, DEX, DEC, STRESSL(3,3)
+      real aux3(3,1)   !! dummy arrays for cellxc
       REAL, DIMENSION(:,:), ALLOCATABLE :: DRHOIN
       REAL, DIMENSION(:,:,:), ALLOCATABLE :: DVXCDN
 
@@ -95,7 +90,7 @@ C ----------------------------------------------------------------------
 
       DO ISPIN = 1, NSPIN
         DRHOIN(1:NTPL,ISPIN) =  RHOATM(1:NTPL)/NSPIN 
-        IF( NPCC .EQ. 1) 
+        IF (NPCC .EQ. 1) 
      .    DRHOIN(1:NTPL,ISPIN) = DRHOIN(1:NTPL,ISPIN) + 
      .                           RHOPCC(1:NTPL)/NSPIN
       ENDDO
@@ -104,9 +99,8 @@ C ----------------------------------------------------------------------
         CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,+1)
       ENDDO
 
-      CALL CELLXC( XCFUNC, XCAUTH, 0, 1, CELL, NTML, NTML, NTPL, 0,
-     .             AUX3, NSPIN, DRHOIN, EX, EC, DEX, DEC, VHARRIS1,
-     .             DVXCDN, STRESSL, 1, AUX1 )
+      CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN, DRHOIN,
+     .             EX, EC, DEX, DEC, VHARRIS1, DVXCDN, STRESSL )
 
       DO ISPIN = 1, NSPIN
         CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,-1)
@@ -149,16 +143,13 @@ C ----------------------------------------------------------------------
         VHARRIS2(IP) = VNA(IP) - VHARRIS2(IP)
       ENDDO
 
-      IF (ALLOCATED(DRHOIN)) THEN
-        CALL MEMORY('D','S',SIZE(DRHOIN),'forhar')
-        DEALLOCATE(DRHOIN)
-      ENDIF
       IF (ALLOCATED(DVXCDN)) THEN
         CALL MEMORY('D','S',SIZE(DVXCDN),'forhar')
         DEALLOCATE(DVXCDN)
       ENDIF
+      IF (ALLOCATED(DRHOIN)) THEN
+        CALL MEMORY('D','S',SIZE(DRHOIN),'forhar')
+        DEALLOCATE(DRHOIN)
+      ENDIF
 
       END SUBROUTINE FORHAR
-
-
-

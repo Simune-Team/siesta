@@ -1,5 +1,5 @@
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
-     .                  nuotot, nua, na, isa, xa, indxua, ucell, mscell, 
+     .                  nuotot, nua, na, isa, xa, indxua, ucell, mscell,
      .                  G2max, ntm, ifa, istr, iHmat, filrho, fildrh, 
      .                  filevh, filevt, filepsch, filetoch, maxnd, numd,
      .                  listdptr, listd, 
@@ -126,6 +126,8 @@ C
       use fdf
       use sys
       use mesh
+      use parsing
+      use xcmod,         only : nXCfunc, XCauth
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -217,8 +219,6 @@ C real*4  Vaux(ntpl)    : Auxiliary potential array
 C real*4  Vna(ntpl)     : Sum of neutral-atom potentials
 C real*8  volume        : Unit cell volume
 C real*4  Vscf(ntpl)    : Hartree potential of selfconsistent density
-C character XCauth*10   : Initials of xc version authors
-C character XCfunc*10   : Name of xc functional
 C real*8  x0(3)         : Center of molecule
 C logical harrisfun     : Harris functional or Kohn-Sham?
 C ----------------------------------------------------------------------
@@ -227,8 +227,8 @@ C
 C Internal variables
 C
       integer
-     .  i, ia, io, ip, iphi, is, ispin, j, ifor, 
-     .  nbcell, nm(3), npcc, nsd, nzero(3), 
+     .  i, ia, io, ip, iphi, is, ispin, j, ifor,
+     .  n, nbcell, nm(3), npcc, nsd, nv, nzero(3), 
      .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3)
 
 #ifdef MPI
@@ -253,15 +253,16 @@ C
 !
 !     Dummy arrays for cellxc call
 !
-      real aux1(1), aux3(3,1)
+      real aux3(3,1)
 
       real(dp)
      .  bcell(3,3), b1Xb2(3), cell(3,3), const,
      .  DEc, DEx, ddot, DStres(3,3), dvol, Ec, Ex, field(3),
-     .  rhotot, rmax, scell(3,3), tiny,
+     .  rhotot, rmax, scell(3,3), tiny, 
      .  Uharrs, volume, volcel, x0(3)
 
-      real(dp), save :: qspiral(3)
+      real(dp), save :: 
+     .  qspiral(3)
 
 #ifdef MPI
       real(dp)
@@ -274,8 +275,8 @@ C
       logical, save :: 
      .  frstme, harrisfun, IsDiag, IsEfld, samesh, samexa, spiral
 
-      character, save ::
-     .  shape*10, XCauth*10, XCfunc*10
+      character(len=10), save ::
+     .  shape
 
       external
      .  cellxc, cross,
@@ -305,18 +306,12 @@ C Start time counter
 
       if (frstme) then
         if (Node.eq.0) then
-          XCfunc = fdf_string('xc.functional','LDA')
-          XCauth = fdf_string('xc.authors','PZ')
           harrisfun = fdf_boolean('Harris_functional',.false.)
           nsm    = fdf_integer('MeshSubDivisions',2)
           nsm    = max(nsm,1)
         endif
 
 #ifdef MPI
-        call MPI_Bcast(XCfunc,10,MPI_character,0,MPI_Comm_World,
-     .    MPIerror)
-        call MPI_Bcast(XCauth,10,MPI_character,0,MPI_Comm_World,
-     .    MPIerror)
         call MPI_Bcast(harrisfun,1,MPI_logical,0,MPI_Comm_World,
      .    MPIerror)
         call MPI_Bcast(nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror)
@@ -341,18 +336,20 @@ C Read spin-spiral wavevector (if defined)
         ifor = 0
       else if (harrisfun) then
         ifor = 1
-        if (.not. ( leqi(XCauth,'PZ') .or. leqi(XCauth,'CA') ) ) then
-           if (Node .eq. 0) then
-             write(6,100)
-             write(6,101)
-             write(6,'(a)')
-     .        'dhscf:   Harris forces for a XC functional different of'
-             write(6,'(a)')
-     .        'dhscf:   Perdew-Zunger has not been implemented yet'
-             write(6,102)
-           endif
-           call die
-        endif
+        do n = 1,nXCfunc
+          if (.not.(leqi(XCauth(n),'PZ').or.leqi(XCauth(n),'CA'))) then
+            if (Node .eq. 0) then
+              write(6,100)
+              write(6,101)
+              write(6,'(a)')
+     .         'dhscf:   Harris forces for a XC functional different of'
+              write(6,'(a)')
+     .         'dhscf:   Perdew-Zunger has not been implemented yet'
+              write(6,102)
+            endif
+            call die
+          endif
+        enddo
       endif
 
 C ----------------------------------------------------------------------
@@ -800,9 +797,8 @@ C ----------------------------------------------------------------------
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,+1)
       enddo
 
-      call cellxc( XCfunc, XCauth, 0, 0, cell, ntml, ntml, ntpl, 0, 
-     .             aux3, nspin, DRho, Ex, Ec, DEx, DEc, Vscf, 
-     .             DVxcdn, stressl, 1, aux1 )
+      call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin, DRho, 
+     .             Ex, Ec, DEx, DEc, Vscf, DVxcdn, stressl )
 
       do ispin = 1,nspin
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,-1)
@@ -874,9 +870,8 @@ C Find contribution of partial-core-correction
         endif
 
         if ( ifor .eq. 1)
-     .    call forhar( ntpl, nspin, nml, ntml, ntm, npcc,
-     .                 XCfunc, XCauth, cell, rhoatm, rhopcc,
-     .                 Vna, DRho, Vscf, Vaux )
+     .    call forhar( ntpl, nspin, nml, ntml, ntm, npcc, cell, 
+     .                 rhoatm, rhopcc, Vna, DRho, Vscf, Vaux )
 
 C Transform spin density into sum and difference
         if (nsd .eq. 2) then

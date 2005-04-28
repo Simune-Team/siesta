@@ -28,6 +28,7 @@ C  Modules
       use parse
       use ionew, only: io_setup
       use periodic_table, only : symbol
+      use xcmod, only: setXC
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
       use mpi_siesta, only: mpi_integer, mpi_logical
@@ -253,8 +254,10 @@ C Set allocation report level .........................................
       call alloc_report( level=level, file=trim(slabel)//'.alloc' )
 C ..................
 
-! Initialize pseudopotentials and atomic orbitals
+C Initialise exchange-correlation functional information
+      call setXC
 
+C Initialize pseudopotentials and atomic orbitals
       if (IOnode) call initatom
       call broadcast_basis
 

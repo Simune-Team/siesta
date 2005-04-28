@@ -1,6 +1,14 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Arch-patch siesta-devel--agarcia--1.4--patch-8:
+
+Merge CVS changes (1.4.52) by Julian Gale of 8 Apr 2005 re: hybrid XC
+=======================================================================
+Arch-patch siesta-devel--agarcia--1.4--patch-(1-7):
+
+Fixes for pgf90 compiler
+=======================================================================
 Arch-patch siesta-devel--reference--1.4--patch-41:
 
 Merge from devel--twhite: Add formatted IO for density matrix. Misc fixes
@@ -56,6 +64,86 @@ Author: Toby White <tow21@cam.ac.uk>
 
 (siesta-devel--reference--1.4--patch-37)
 
+=======================================================================
+Version: 1.4.51
+Date: 2005/04/07 15:30 GMT
+Title: Extrapol fixes -- cdiag fix (Toby White)
+Author: Toby White <tow21@cam.ac.uk>
+
+* siesta 1.4.50 (=patch-36) erroneously deleted three lines from 
+  cdiag.F which initialize vl & vu. Restore them.
+* also in rdiag.F make sure that all real variables are initialized
+  to _dp instead of d0; and use parameters one and zero throughout.
+
+* extrapol.F checks for the number of rows of M held on 
+  the current node - if zero, it exits immediately. However,
+  there is an MPI_AllReduce in the middle. If this is
+  skipped on some nodes, the results are unpredictable.
+  This patch fixes the problem such that the MPI_AllReduce
+  is always executed.
+* in addition, :
+  . change all d0 variables to _dp; 
+  . use sys::die instead of stop on error
+  . remove unnecessary if check (if zero don't add, which
+    actually slows code down.)
+  . remove unnecessary "use parallelsubs"
+  . Add intents to all arguments
+  . remove unused dummy variable nmrow
+* siesta.F; remove omitted arg from call to extrapol
+* extrapolon.F: similar changes;
+  . change all d0 to _dp
+  . use sys::die instead of stop on error
+  . remove unnecessary if check (if zero don't add, which
+    actually slows code down.)
+  . remove unnecessary "use mpi_siesta"
+  . use parallel to bring in node instead of arg list.
+  . Add intents to all arguments.
+  . remove unused dummy variable node
+  . improve logic flow to avoid goto's
+  . rename file to extrapolon.f since it no longer requires preprocessing.
+* ordern.F, remove omitted arg from call to extrapolon
+
+ version.F90, Docs/CHANGES
+
+(siesta-devel--reference--1.4--patch-37)
+
+=======================================================================
+Version: 1.4.52
+Date: 2005/04/08 8:30 GMT
+Title: Hybrid DFT
+Author: Julian Gale <julian@power.curtin.edu.au>
+
+The ability to create hybrid density functionals has been added.
+Note that this currently excludes Hartree-Fock exchange.
+
+Files:
+
+Makefile      xcmod added to MOD & GEN-BASIS objects list
+atom.f        Calls to atomxc modified to reflect change in arguments
+              Pseudopotential functional consistency check modified
+              to only apply to the single functional case.
+cellxc.F      XC functional information now accessed from module
+              Modified to handle hybrid functionals
+              DVol now divided through prior to adding to VXC to
+              avoid divide at end and extra multiplications.
+dfscf.f       Use reference to phiatm removed as not needed
+dhscf.F       Setting of XC data removed from subroutine and from 
+              calls to cellxc & forhar
+forhar.f      Call to cellxc modified inline with argument changes
+              and XC information is no longer passed through. Order
+              of memory deallocations reversed.
+gen-basis.F   Call to setXC added
+rhoofd.f      Use reference to phiatm removed as not needed
+siesta.F      Call to setXC added
+siesta.tex    Documentation added for hybrid functionals
+vmat.f        Use reference to phiatm removed as not needed
+vmatsp.f      Use reference to phiatm removed as not needed
+xc.f          atomxc has been modified to handle hybrid functionals 
+              XC information is now access through a module 
+              Auxillary space for storage of DVol now allocated locally
+xcmod.F       New module added to hold information about the XC 
+              functionals & their weights. Also contains routine to
+              setup XC information.
 =======================================================================
 Version: 1.4.51
 Date: 2005/04/07 15:30 GMT

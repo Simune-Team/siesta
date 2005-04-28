@@ -56,15 +56,14 @@
        
       CONTAINS
 
-
-
-       SUBROUTINE ATOM_MAIN (IZIN,LMXKB_IN,NKBL,EREFKB,
-     .          LMXO, NZETA, 
+        SUBROUTINE ATOM_MAIN(IZIN,LMXKB_IN,NKBL,EREFKB,LMXO, NZETA, 
      .          RCO,LAMBDA_IN,ATM_LABEL,
      .          NPOLORB,SEMIC,NSEMIC,CNFIGMX,CHARGE_IN,SMASS,BASISTYPE, 
      .          ISIN,RINN,VCTE,basp)
 
-       type(basis_def_t), pointer   :: basp
+        implicit none
+
+        type(basis_def_t), pointer   :: basp
 
       integer, intent(in) :: izin  
 !       Atomic number (if IZ is negative it will be regarded as a set of 
@@ -204,9 +203,7 @@
      .  Rgauss, Rgauss2, Rchloc
 
        character
-     .   icorr*2, irel*3, nicore*4, 
-     .   xcfunc*3, xcauth*4
-
+     .   icorr*2, irel*3, nicore*4 
 
        integer 
      .  iz, nrval, ir , nrgauss, nchloc, nzcontr, l, nVna,
@@ -345,18 +342,12 @@ c    .          'atom: The above configuration will be used ',
           call vhrtre(rho_PAO,vePAO,rofi,drdi,s,nrval,a) 
           chargesave(is)=charge
 ! 
+! Check the exchange correlation functionals
 ! 
-! ADD THE EXCHANGE-CORRELATION POTENTIAL****
-! Choosing the adecuate functional for the exchange-correlation****
+          call xc_check(icorr)
 ! 
-          xcfunc = fdf_string('xc.functional','LDA')
-          xcauth = fdf_string('xc.authors','PZ')
-
-        
-            call xc_check(xcfunc,xcauth,icorr)
-! 
-            if (irel.eq.'rel') irelt=1
-            if (irel.ne.'rel') irelt=0 
+          if (irel.eq.'rel') irelt=1
+          if (irel.ne.'rel') irelt=0 
 !
 !        NOTE that atomxc expects true rho(r), not 4pir^2*rho(r)
 !        We use auxrho for that
@@ -372,13 +363,10 @@ c    .          'atom: The above configuration will be used ',
           r2=rofi(2)/(rofi(3)-rofi(2))
           auxrho(1)=auxrho(2) -(auxrho(3)-auxrho(2))*r2
 
+          call atomxc(irelt,nrval,nrmax,rofi,
+     .                1,auxrho,ex,ec,dx,dc,vxc)
 
-          call atomxc(xcfunc,xcauth,irelt,
-     .             nrval,nrmax,rofi,1,auxrho,
-     .             ex,ec,dx,dc,vxc)
-
-
-          ve(1:nrval)=ve(1:nrval)+vxc(1:nrval) 
+          ve(1:nrval)=ve(1:nrval)+vxc(1:nrval)
 
           do ir=2,nrval
             r2=rofi(ir)**2
@@ -391,13 +379,10 @@ c    .          'atom: The above configuration will be used ',
           r2=rofi(2)/(rofi(3)-rofi(2))
           auxrho(1)=auxrho(2) -(auxrho(3)-auxrho(2))*r2
 
+          call atomxc(irelt,nrval,nrmax,rofi,
+     .                1,auxrho,ex,ec,dx,dc,vxc)
 
-          call atomxc(xcfunc,xcauth,irelt,
-     .             nrval,nrmax,rofi,1,auxrho,
-     .             ex,ec,dx,dc,vxc)
-
-
-          vePAO(1:nrval)=vePAO(1:nrval)+vxc(1:nrval) 
+          vePAO(1:nrval)=vePAO(1:nrval)+vxc(1:nrval)
 
 ! 
 ! Now, we are going  to calculate the local pseudopotential and the
@@ -1907,90 +1892,101 @@ C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
 
              end subroutine KBproj
 
-        subroutine xc_check(xcfunc,xcauth,icorr)
+        subroutine xc_check(icorr)
 
-C   Checking the functional used for exchange-correlation energy.
+C Checking the functional used for exchange-correlation energy.
 C Written by D. Sanchez-Portal, Aug. 1998
 
-        character
-     .       xcfunc*3, xcauth*4,icorr*2
+        use xcmod, only : nXCfunc, XCfunc, XCauth
 
-       write(6,'(/a)') 'xc_check: Exchange-correlation functional:'
-       if(((xcauth.eq.'CA').or.(xcauth.eq.'PZ')).and.
-     .    ((xcfunc.eq.'LDA').or.(xcfunc.eq.'LSD'))) then
+C Passed variable
+        character(len=2), intent(in) :: icorr
 
-          write(6,'(a)') 'xc_check: Ceperley-Alder'
-          if(icorr.ne.'ca') then
-           write(6,'(a)')
-     .      'xc_check: WARNING: Pseudopotential generated with'
-           if(icorr.eq.'pw') write(6,'(a)')
-     .      'xc_check: WARNING: Perdew-Wang 1992 functional'
-           if(icorr.eq.'pb') write(6,'(a)')
+C Local variables
+        integer                      :: nf
+
+C Loop over functionals
+        do nf = 1,nXCfunc
+          write(6,'(/a)') 'xc_check: Exchange-correlation functional:'
+          if (((XCauth(nf).eq.'CA').or.(XCauth(nf).eq.'PZ')).and.
+     .       ((XCfunc(nf).eq.'LDA').or.(XCfunc(nf).eq.'LSD'))) then
+
+            write(6,'(a)') 'xc_check: Ceperley-Alder'
+            if (icorr.ne.'ca'.and.nXCfunc.eq.1) then
+              write(6,'(a)')
+     .          'xc_check: WARNING: Pseudopotential generated with'
+              if (icorr.eq.'pw') write(6,'(a)')
+     .          'xc_check: WARNING: Perdew-Wang 1992 functional'
+              if (icorr.eq.'pb') write(6,'(a)')
      .'xc_check: WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-          endif
+            endif
 
-       elseif((xcauth.eq.'PW92').and.
-     .    ((xcfunc.eq.'LDA').or.(xcfunc.eq.'LSD'))) then
+          elseif((XCauth(nf).eq.'PW92').and.
+     .      ((XCfunc(nf).eq.'LDA').or.(XCfunc(nf).eq.'LSD'))) then
 
-          write(6,'(a)') 'xc_check: Perdew-Wang 1992'
-          if(icorr.ne.'pw') then
+            write(6,'(a)') 'xc_check: Perdew-Wang 1992'
+            if (icorr.ne.'pw'.and.nXCfunc.eq.1) then
+              write(6,'(a)')
+     .          'xc_check: WARNING: Pseudopotential generated with'
+              if (icorr.eq.'ca'.and.nXCfunc.eq.1)
+     .      write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
+              if (icorr.eq.'pb'.and.nXCfunc.eq.1) write(6,'(a)')
+     .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
+            endif
+
+          elseif((XCauth(nf).eq.'PBE').and.(XCfunc(nf).eq.'GGA')) then
+
             write(6,'(a)')
-     .        'xc_check: WARNING: Pseudopotential generated with'
-            if(icorr.eq.'ca')
+     .       'xc_check: GGA Perdew, Burke & Ernzerhof 1996'
+            if (icorr.ne.'pb'.and.nXCfunc.eq.1) then
+              write(6,'(a)')
+     .          'xc_check: WARNING: Pseudopotential generated with'
+              if (icorr.eq.'ca'.and.nXCfunc.eq.1)
      .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-            if(icorr.eq.'pb') write(6,'(a)')
-     .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-          endif
-       elseif((xcauth.eq.'PBE').and.(xcfunc.eq.'GGA')) then
-
-          write(6,'(a)')
-     .     'xc_check: GGA Perdew, Burke & Ernzerhof 1996'
-          if(icorr.ne.'pb') then
-           write(6,'(a)')
-     .       'xc_check: WARNING: Pseudopotential generated with'
-           if(icorr.eq.'ca')
-     .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-           if(icorr.eq.'pw')
+              if (icorr.eq.'pw'.and.nXCfunc.eq.1)
      . write(6,'(a)') 'xc_check: WARNING: Perdew-Wang 1992 functional'
-          endif
+            endif
 
-       elseif((xcauth.eq.'LYP').and.(xcfunc.eq.'GGA')) then
+          elseif ((XCauth(nf).eq.'LYP').and.(XCfunc(nf).eq.'GGA')) then
 
-          write(6,'(a)')  'xc_check: GGA Becke Lee Yang Parr'
-          if(icorr.ne.'bl') then
-           write(6,'(a)')
-     .       'xc_check: WARNING: Pseudopotential generated with'
-           if(icorr.eq.'ca')
+            write(6,'(a)')  'xc_check: GGA Becke Lee Yang Parr'
+            if (icorr.ne.'bl'.and.nXCfunc.eq.1) then
+              write(6,'(a)')
+     .         'xc_check: WARNING: Pseudopotential generated with'
+              if (icorr.eq.'ca'.and.nXCfunc.eq.1)
      .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-           if(icorr.eq.'pw')
+              if (icorr.eq.'pw'.and.nXCfunc.eq.1)
      . write(6,'(a)') 'xc_check: WARNING: Perdew-Wang 1992 functional'
-            if(icorr.eq.'pb') write(6,'(a)')
+              if (icorr.eq.'pb'.and.nXCfunc.eq.1) write(6,'(a)')
      .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-          endif
+            endif
 
-       elseif((xcauth.eq.'RPBE').and.(xcfunc.eq.'GGA')) then
+          elseif ((XCauth(nf).eq.'RPBE').and.(XCfunc(nf).eq.'GGA')) then
 
-          write(6,'(a)')  'xc_check: GGA RPBE'
-          if(icorr.ne.'rp') then
-           write(6,'(a)')
+            write(6,'(a)')  'xc_check: GGA RPBE'
+
+            if (icorr.ne.'rp'.and.nXCfunc.eq.1) then
+              write(6,'(a)')
      .       'xc_check: WARNING: Pseudopotential generated with'
-           if(icorr.eq.'ca')
+             if (icorr.eq.'ca'.and.nXCfunc.eq.1)
      .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-           if(icorr.eq.'pw')
+             if (icorr.eq.'pw'.and.nXCfunc.eq.1)
      . write(6,'(a)') 'xc_check: WARNING: Perdew-Wang 1992 functional'
-            if(icorr.eq.'pb') write(6,'(a)')
+             if (icorr.eq.'pb'.and.nXCfunc.eq.1) write(6,'(a)')
      .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-          endif
+           endif
 
-       else
+         else
 
-          write(6,'(a)')
+           write(6,'(a)')
      . 'xc_check: ERROR: Exchange-correlation functional not allowed'
-          write(6,'(a)') 'xc_check: ERROR: xc.functional= ',xcfunc
-          write(6,'(a)') 'xc_check: ERROR: xc.authors= ',xcauth
-         call die
+           write(6,'(a)') 'xc_check: ERROR: xc.functional= ',XCfunc(nf)
+           write(6,'(a)') 'xc_check: ERROR: xc.authors= ',XCauth(nf)
+           call die
 
-       endif
+         endif
+
+       enddo
 
        end subroutine xc_check
 !

@@ -32,7 +32,7 @@ C *********************************************************************
 
 C  Modules
       use precision
-      use atmfuncs,      only: rcut, phiatm, all_phi
+      use atmfuncs,      only: rcut, all_phi
       use atm_types,     only: nsmax=>nspecies
       use atomlist,      only: indxuo
       use listsc_module, only: listsc

@@ -1699,6 +1699,32 @@ implemented in {\sc Siesta}).
 
 {\it Default value:} {\tt PZ}
 
+\item[{\bf XC.hybrid}] ({\it data block}): 
+\index{XC.hybrid@{\bf XC.hybrid}} 
+This data block allows the user to create a hybrid functional by
+mixing the desire amounts of exchange and correlation from each of
+the functionals described under XC.authors.
+The format of the block is that the first line must contain the
+number of functionals to be mixed. On the subsequent lines the
+values of XC.functl and XC.authors must be given and then the
+weights for the exchange and correlation, in that order. If only
+one number is given then the same weight is applied to both
+exchange and correlation.
+
+The following is an example in which a 75:25 mixture of Ceperley-Alder
+and PBE correlation is made, with an equal split of the exchange
+energy:
+
+\begin{verbatim}
+     %block XC.hybrid
+        2
+        LDA CA  0.5 0.75
+        GGA PBE 0.5 0.25
+     %endblock XC.hybrid
+\end{verbatim}
+
+{\it Default value:} {\tt not hybrid}
+
 
 \item[{\bf SpinPolarized}] ({\it logical}): 
 \index{SpinPolarized@{\bf SpinPolarized}} 
