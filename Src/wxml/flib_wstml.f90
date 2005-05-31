@@ -904,10 +904,10 @@ CONTAINS
     type(xmlf_t) :: xf
     integer, intent(in)         :: nvalue   
     real(kind=dp), intent(in)   :: arrf(*) 
-    character(len=10), optional :: fmt
+    character(len=*), optional :: fmt
 
     integer :: i
-    character(len=10) :: formt
+    character(len=30) :: formt
 
     if (present(fmt)) then
        formt = fmt

@@ -7,6 +7,18 @@
 #
 default: what siesta gen-basis # denchar
 #
+configure: configure.ac aclocal.m4
+	autoconf
+M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
+           m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
+           m4/fortran.m4             m4/TW_CHECK_FC_TR15581.m4  m4/TW_FIND_FC_BLAS.m4 \
+           m4/TW_CHECK_BLACS.m4      m4/TW_CHECK_SCALAPACK.m4   m4/TW_FIND_LAPACK.m4  \
+           m4/TW_CHECK_FC_90.m4      m4/TW_FC_CHECK_ABORT.m4    m4/TW_PATH_NETCDF.m4  \
+           m4/TW_CHECK_FC_95.m4      m4/TW_FC_CHECK_DCFUNS.m4   m4/TW_TRY_DC_LAPACK.m4\
+           m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4
+aclocal.m4: $(M4_FILES)
+	cat $(M4_FILES)  > aclocal.m4
+#
 include arch.make
 #
 # Uncomment the following line for debugging support
@@ -22,7 +34,7 @@ what:
 	@echo "Hit ^C to abort..."
 	@sleep 2
 #
-SYSOBJ=$(SYS).o
+SYSOBJ=$(SYS).o pxf.o
 #
 # Note that machine-specific files are now in top Src directory.
 #
@@ -49,7 +61,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
 	siesta.o io.o \
-        spin_init.o coor.o transfer.o \
+        spin_init.o coor.o atm_transfer.o \
         broadcast_basis.o sig.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
         initparallel.o setspatial.o setatomnodes.o uncell.o \
@@ -84,7 +96,7 @@ gen-basis.o: $(FDF)
 # Note : precision must be the first module
 #
 MOD_OBJS=precision.o spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
-         atmfuncs.o listsc.o memoryinfo.o numbvect.o sorting.o \
+         atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
@@ -97,7 +109,7 @@ initatom.o: basis_specs.o basis_types.o basis_io.o
 atom.o: basis_types.o
 basis_specs.o: pseudopotential.o basis_types.o chemical.o
 basis_types.o: pseudopotential.o atmparams.o
-atom.o initatom.o transfer.o  plcharge.o   : old_atmfuncs.o
+atom.o initatom.o atm_transfer.o  plcharge.o   : old_atmfuncs.o
 basis_types.o atom.o old_atmfuncs.o atmfuncs.o: atmparams.o
 atomlwf.o dhscf.o dnaefs.o                 : atmfuncs.o
 efield.o matel.o mulliken.o outcoor.o : atmfuncs.o
@@ -111,6 +123,7 @@ rhoofd.o rhoofdsp.o vmat.o vmatsp.o  : listsc.o
 hsparse.o minvec.o : sorting.o
 chempot.o         : numbvect.o
 memory.o          : memoryinfo.o
+m_memory.o          : memoryinfo.o
 dhscf.o dfscf.o forhar.o rhooda.o rhoofd.o rhoofdsp.o cellxc.o : meshsubs.o
 vmat.o vmatsp.o : meshsubs.o
 dfscf.o rhoofd.o rhoofdsp.o vmat.o vmatsp.o : meshmatrix.o
@@ -120,7 +133,7 @@ iodm.o pdos.o iopipes.o: ionew.o
 coor.o: atomlist.o
 pdos.o radial.o: xml.o
 atm_types.o: radial.o
-transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
+atm_transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
 atmfuncs.o: atm_types.o radial.o
 old_atmfuncs.o atmfuncs.o matel.o: spher_harm.o
 siesta.o parallel.o initparallel.o setspatial.o setatomnodes.o : spatial.o
@@ -195,7 +208,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\
 #
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o parallel.o \
-          parsing.o xcmod.o basis_io.o  chemical.o transfer.o atm_types.o\
+          parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
 	  paste.o ionew.o \
           basis_specs.o atom.o periodic_table.o\
@@ -224,7 +237,7 @@ OTHER_DENCHAR_OBJS=  precision.o \
         f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
         paste.o  radfft.o recipes.o io.o \
         volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
-        atmparams.o atmfuncs.o ionew.o atm_types.o \
+        atmparams.o atmfuncs.o ionew.o atm_types.o m_memory.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
         pseudopotential.o chemical.o xml.o $(SYSOBJ)
 

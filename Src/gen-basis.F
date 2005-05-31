@@ -48,7 +48,7 @@ C
 #ifdef MPI
       integer  MPIerror
 #endif
-      external transfer
+      external atm_transfer
 
 c Reading input for the pseudopotentials and atomic orbitals 
 C Initialise MPI and set processor number
@@ -106,7 +106,7 @@ C Initialise MPI and set processor number
 
 !        Create the new data structures
 
-         call transfer
+         call atm_transfer
 
          call dump_basis_ascii
          call dump_basis_netcdf

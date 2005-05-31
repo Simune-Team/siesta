@@ -4249,6 +4249,7 @@
       RETURN
       END
 *
+#ifndef HAS_DLAMC3
       DOUBLE PRECISION FUNCTION DLAMC3( A, B )
 *
 *  -- LAPACK auxiliary routine (version 3.0) --
@@ -4285,3 +4286,4 @@
 *
       END
 ***********************************************************
+#endif

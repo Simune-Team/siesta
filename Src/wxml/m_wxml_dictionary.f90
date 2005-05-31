@@ -1,6 +1,7 @@
 module m_wxml_dictionary
 
   use m_wxml_escape, only : check_Name
+  use m_wxml_error,  only : wxml_fatal
   use m_wxml_array_str
 
   implicit none
@@ -172,8 +173,7 @@ subroutine add_item_to_dict(dict, key, value)
 !TOHW remove this check? shouldn't be passing blank-prefixed strings anyway.
   check_key=adjustl(key)
   if (.not.check_Name(trim(check_key))) then
-    write(0,*) 'attribute name is invalid'
-    call abort()
+    call wxml_fatal('attribute name is invalid')
   endif
 
   n = n + 1

@@ -120,7 +120,7 @@ C
 C  Modules
 C
       use precision, only : dp
-      use parallel,  only : IOnode,node,  Nodes
+      use parallel,  only : IOnode, Nodes
       use fdf
       use sys
 #ifdef MPI
@@ -171,8 +171,9 @@ C  Internal variables .................................................
       real(dp) :: tcp
 
       character
-     .  annop*22, dyntyp*22, 
-     .  method*6, lwfopt*13
+     .  sname*100, slabel*30,
+     .  annop*22,  dyntyp*22, 
+     .  method*6,  lwfopt*13
 
 #ifdef MPI
       integer
@@ -201,6 +202,17 @@ C  Internal variables .................................................
 C Start of code
       if (cml_p) then
         call cmlStartParameterList(mainXML, title='Input Parameters')
+      endif
+
+C for cml output, find the system name & label
+
+      if (cml_p) then
+        sname = fdf_string('SystemName','')
+        slabel = fdf_string('SystemLabel','')
+        call cmlAddParameter(xf=mainXML, name='SystemName',
+     .      value=trim(sname), dictref='siesta:sname')
+        call cmlAddParameter(xf=mainXML, name='SystemLabel',
+     .      value=trim(slabel), dictref='siesta:slabel')
       endif
 
 C Type of output

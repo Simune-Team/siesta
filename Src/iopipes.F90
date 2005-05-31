@@ -11,9 +11,6 @@ use fdf
 #ifdef MPI
       use mpi_siesta
 #endif
-#ifdef __NAG__
-      use f90_unix_io, only:flush
-#endif
 
   implicit none
 
@@ -71,7 +68,7 @@ subroutine coordsFromPipe( na, xa, cell )
     end do
     if (trim(task)=='quit') then
       write(iuf,*) 'quitting'
-      call flush(iuf)
+      call pxfflush(iuf)
       call die('coordsFromPipe: STOP: requested by driver')
     else if (trim(task)=='begin_coords') then
       read(iuc,*) xunit
@@ -168,7 +165,7 @@ subroutine forcesToPipe( na, energy, forces, stress )
       write(iuf,*) f(:,ia)
     end do
     write(iuf,*) 'end_forces'
-    call flush(iuf)
+    call pxfflush(iuf)
   end if ! IOnode
 
 end subroutine forcesToPipe

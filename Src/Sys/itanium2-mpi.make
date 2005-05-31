@@ -12,7 +12,7 @@ LDFLAG=#-Vaxlib
 RANLIB=echo
 LIBS=  
 SYS=scalapack_extra
-DEFS=-DMPI -DNODAT
+DEFS=-DMPI -DNODAT -DWXML_INIT_FIX -DHAS_DLAMC3 -DALLOC_SAVE_BUG
 MPI_INTERFACE=libmpi_f90.a
 #
 MPIROOT=/usr/local/mpich
@@ -27,11 +27,10 @@ MPI_LIBS=-L$(MPIROOT)/lib \
          -L/usr/local/gm/binary/lib/ -L/usr/local/gm/lib/ \
          -lgm -lpthread -lPEPCF90
 #
-#LAPACK=-L/opt/intel/mkl61/lib/64 -llibmkl_lapack.a
+LAPACK=-L/opt/intel/mkl72/lib/64 -lmkl_lapack64 -lmkl -lguide -lpthread
 #
-LAPACK=-L/opt/intel/mkl61/lib/64 -lmkl_lapack64 -lmkl -lguide -lpthread
 BLACS_LIBS=$(HOME)/lib/libblacs.a
-SCALAPACK_LIBS=-L/home/wdpgaara/lib -lscalapack-arina.GM  \
+SCALAPACK_LIBS=-L$(HOME)/lib -lscalapack-arina.GM  \
                                     -lpblas-arina.GM \
                                     -ltools-arina.GM \
 			            -lredist-arina.GM

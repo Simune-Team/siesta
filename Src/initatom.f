@@ -49,7 +49,7 @@ C Internal variables ...................................................
 
       logical user_basis, user_basis_netcdf
       
-      external transfer
+      external atm_transfer
 
 c Reading input for the pseudopotentials and atomic orbitals 
 
@@ -96,7 +96,7 @@ c Reading input for the pseudopotentials and atomic orbitals
 
 !        Create the new data structures for atmfuncs.
 
-         call transfer()
+         call atm_transfer()
          call deallocate_old_arrays()
          call elec_corr_setup()
 

@@ -23,6 +23,7 @@ contains
       character(len=*), intent(in) :: msg
 
       write(6,'(a)') 'WARNING(wxml)'
+      write(6,'(a)')  msg
 
     end subroutine wxml_warning_base
 
@@ -41,13 +42,13 @@ contains
       !Emit error message and abort with coredump. Does not try to
       !close file, so should be used from anything xml_Close might
       !itself call (to avoid infinite recursion!)
-      !use pxf
+
       character(len=*), intent(in) :: msg
 
       write(6,'(a)') 'ERROR(wxml)'
       write(6,'(a)')  msg
 
-      !call abort
+      call pxfabort
       stop
 
     end subroutine wxml_fatal_base

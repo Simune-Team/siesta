@@ -1,4 +1,4 @@
-      subroutine transfer
+      subroutine atm_transfer
 
       use atm_types, only: maxnorbs, nspecies
       use atm_types, only: species, species_info
@@ -270,7 +270,7 @@
 
       enddo
 
-      end subroutine transfer
+      end subroutine atm_transfer
 
 
 

@@ -42,6 +42,113 @@ ac_config_sub="$SHELL $ac_aux_dir/config.sub"
 ac_configure="$SHELL $ac_aux_dir/configure" # This should be Cygnus configure.
 AC_PROVIDE([AC_CONFIG_AUX_DIR_DEFAULT])dnl
 ])# AC_CONFIG_AUX_DIRS
+dnl @synopsis TW_CHECK_FC_FPP([ACTION_IF_TRUE],[ACTION_IF_FALSE])
+dnl
+dnl Checks whether the currently selected Fortran compiler supports
+dnl cpp-like functionality when called on a suitable fixed-format file.
+dnl If so, ACTION_IF_TRUE is performed; if not, ACTION_IF_FALSE
+dnl 
+dnl @version 1.0
+dnl @author Toby White <tow21@cam.ac.uk>
+dnl
+AC_DEFUN([TW_CHECK_FC_FPP],[
+dnl
+AC_LANG_PUSH(Fortran)
+dnl
+AC_FC_SRCEXT(F)
+dnl
+AC_MSG_CHECKING([whether $FC has an integrated Fortran cpp-style preprocessor for fixed-form source])
+dnl
+AC_COMPILE_IFELSE(
+dnl The program is written in fixed-form source to avoid worrying
+dnl about filename extensions.
+  AC_LANG_SOURCE([[
+      Program test_cpp
+#if 1
+      Integer i
+#else
+      Integer j
+#endif
+      End Program
+   ]]),
+   [AC_MSG_RESULT([yes])
+    m4_ifval([$1],[$1],[])
+   ],
+   [AC_MSG_RESULT([no])
+    m4_ifval([$2],[$2],
+                  [AC_MSG_ERROR([A Fortran compiler with integrated cpp-style preprocessor for fixed-form source is required.])])
+   ]
+)
+AC_LANG_POP(Fortran)
+dnl
+])
+dnl A macro to set various compiler-dependent things that can't be sensibly
+dnl deduced.
+
+AC_DEFUN([TW_FC_ID_FLAGS], [
+AC_REQUIRE([TW_FC_ID])
+
+case $FC_ID in
+
+  Absoft)
+     FFLAGS_DEBUG="-et -g -Rb -Rc -Rp -Rs"
+     ;;
+
+  Digital)
+     FFLAGS_FAST=-O2
+     FFLAGS_DEBUG="-g -Rabc -ei"
+     ;;
+
+  G77)
+     ;;
+
+  Gfortran)
+     ;;
+ 
+  Intel)
+     FFLAGS_DEBUG="-C -g -inline_debug_info"
+     ;;
+
+  Lahey)
+     FFLAGS_DEBUG="--chk aesux --chkglobal -g --trace"
+     FFLAGS_FAST="-O --warn --quiet --tpp --ntrace"
+     ;;
+
+  Nag)
+     # This is a hack - we should test for these next two
+     FCFLAGS="$FCFLAGS -mismatch -kind=byte"
+     FFLAGS_MPI="-kind=byte -mismatch"
+     FFLAGS_DEBUG="-C=all -g -gline -nan"
+     DEFS="$DEFS __NAG__"
+     SYS=nag
+     ;;
+  
+  Portland)
+     FFLAGS_DEBUG="-g -Mbounds"
+     FFLAGS_FAST="-fast"
+     ;;
+
+  SGI)
+     FFLAGS_DEBUG="-g -O0"
+     FFLAGS_FAST="-O3 -OPT:Olimit=0"
+     ;;
+
+  Sun)
+     FFLAGS_DEBUG="-C -g"
+     FFLAGS_FAST="-fast"
+     ;;
+
+  Xlf)
+     FFLAGS_DEBUG="-g -C -qinitauto -qsave -qmaxmem=16000 -qnolm"
+     FFLAGS_FAST="-O3 -qarch=auto -qtune=auto -qcache=auto -qnolm"
+     SYS=xlf
+     ;;
+
+esac
+
+AC_SUBST(FFLAGS_MPI)
+
+])
 AC_DEFUN([ACX_MPI], [
 AC_PREREQ(2.50) dnl for AC_LANG_CASE
 
@@ -125,6 +232,123 @@ else
         :
 fi
 ])dnl ACX_MPI
+dnl @synopsis TW_CHECK_FC_TR15580([ACTION_IF_TRUE],[ACTION_IF_FALSE])
+dnl
+dnl Checks whether the currently selected Fortran compiler is fully
+dnl compliant with the Fortran 95 Floating Point Exception Handling
+dnl Extension, ISO TR15580.
+dnl
+dnl @version 1.0
+dnl @author <tow21@cam.ac.uk>
+dnl
+AC_DEFUN([TW_CHECK_FC_TR15580],[
+dnl
+AC_MSG_CHECKING([$FC for compliance to the Floating Point Exception Handling Extension])
+dnl
+AC_LANG_PUSH(Fortran)
+dnl
+AC_COMPILE_IFELSE(
+dnl The program is written in fixed-form source to avoid worrying
+dnl about filename extensions.
+  AC_LANG_SOURCE([[
+      Program test_tr15580
+
+      Use, Intrinsic :: IEEE_Arithmetic
+      Use, Intrinsic :: IEEE_Exceptions
+      Use, Intrinsic :: IEEE_Features
+
+      End Program test_tr15580
+   ]]),   
+   [AC_MSG_RESULT([yes])
+    m4_ifval([$1],[$1],[])
+   ],
+   [AC_MSG_RESULT([no])
+    m4_ifval([$2],[$2],
+                  [AC_MSG_ERROR([A fully TR15580-compliant compiler is required.])])
+   ]
+)
+AC_LANG_POP(Fortran)
+dnl
+])
+dnl A macro to determine which compiler is being used, in order that
+dnl different flags can be set
+
+AC_DEFUN([TW_FC_ID], [
+AC_REQUIRE([AC_PROG_FC])
+
+FC_ID=
+
+dnl Firstly go by compiler name.
+
+case $FC in 
+   
+   g77*)
+      FC_ID=G77
+      ;;
+
+   gfortran*)
+      FC_ID=Gfortran
+      ;;
+
+   if*)
+      FC_ID=Intel
+      ;;
+
+   lf9*)
+      FC_ID=Lahey
+      ;;
+   
+   pgf*)
+      FC_ID=Portland
+      ;;
+
+   xlf*)
+      FC_ID=Xlf 
+
+esac
+
+dnl then try and disambiguate all f77, f90, and f95 types.
+dnl We should have a choice between
+dnl nag. absoft. sun. sgi. digital. hp. cray. ...?
+
+if test x$FC_ID = x; then
+   tw_fc_v_output=$($FC -V 2>&1 )
+   if test $?; then
+      case $tw_fc_v_output in
+         *NAG*)
+            FC_ID=Nag
+            ;;
+         *Sun*)
+            FC_ID=Sun # there's more than one compiler here ...
+            ;;
+      esac
+   fi
+fi
+ if test x$FC_ID = x; then
+   tw_fc_v_output=$($FC -version 2>&1)
+   if test $?; then
+      case $tw_fc_v_output in
+         *Compaq*)
+            FC_ID=Digital
+            ;;
+         *Digital*)
+            FC_ID=Digital
+            ;;
+         *SGI*)
+            FC_ID=SGI
+            ;;
+      esac
+   fi
+fi   
+   
+AS_IF([test x$FC_ID != x],
+      [AC_MSG_NOTICE([$FC seems to be a $FC_ID compiler])],
+      [FC_ID=unknown; AC_MSG_NOTICE([Could not determine type of compiler])])
+
+dnl for more fun, try and get the version number now ...
+
+
+])# TW_FC_ID
 # This file is part of Autoconf.                       -*- Autoconf -*-
 # Fortran languages support.
 # Copyright (C) 2001, 2003, 2004
@@ -2999,328 +3223,6 @@ dnl AC_SUBST(FPP_SRC_EXT)
 AC_LANG_POP(Preprocessed Fortran)
 
 ])# AC_PROG_FPP
-dnl Macro to check that correct flags have been chosen for 
-dnl compilation with BLACS. Only works with Fortran at the moment.
-
-AC_DEFUN([_TW_TRY_BLACS], [
-ac_ext=f
-AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([[
-      PROGRAM BLACS                   
-      INTEGER MYPNUM, NPROCS        
-      CALL BLACS_PINFO(MYPNUM, NPROCS)
-      END PROGRAM
-   ]])],
-[m4_default([$1],[:])],
-[m4_default([$2],[:])]
-)
-])
-
-
-AC_DEFUN([TW_CHECK_BLACS], [
-#AC_REQUIRE(ACX_MPI)
-tw_blacs_ok=no
-
-# All tests must be run with the MPI fortran compiler.
-save_FC=$FC
-FC=$MPIFC
-
-AC_ARG_WITH(blacs,
-        [AC_HELP_STRING([--with-blacs=<lib>], [use BLACS library <lib>])])
-if test x"$with_blacs" != x; then
-   BLACS_LIBS="$with_blacs"
-fi
-
-save_LIBS=$LIBS
-LIBS="$BLACS_LIBS $LIBS"
-AC_MSG_CHECKING([if we can compile a BLACS program])
-_TW_TRY_BLACS([tw_blacs_ok=yes],[])
-AC_MSG_RESULT([$tw_blacs_ok])
-LIBS=$save_LIBS
-
-if test $tw_blacs_ok != yes; then
-   AC_MSG_CHECKING([for BLACS in -lblacs])
-   save_LIBS=$LIBS
-   LIBS="-lblacs $LIBS"
-   _TW_TRY_BLACS([tw_blacs_ok=yes;BLACS_LIBS=-lblacs],[])
-   AC_MSG_RESULT([$tw_blacs_ok])
-   LIBS=$save_LIBS
-fi
-
-if test $tw_blacs_ok != yes; then
-   AC_MSG_CHECKING([for BLACS in -lblacsF77init -lblacs -lblacsF77init])
-   save_LIBS=$LIBS
-   LIBS="-lblacsF77init -lblacs -lblacsF77init $LIBS"
-   _TW_TRY_BLACS([tw_blacs_ok=yes;BLACS_LIBS="-lblacsF77init -lblacs -lblacsF77init"],[])
-   AC_MSG_RESULT([$tw_blacs_ok])
-   LIBS=$save_LIBS
-fi
-
-# Try in Sun performance library
-if test $tw_blacs_ok != yes; then
-   AC_MSG_CHECKING([for BLACS in -ls3l])
-   save_LIBS=$LIBS
-   LIBS="-ls3l $LIBS"
-   _TW_TRY_BLACS([tw_blacs_ok=yes;BLACS_LIBS="-ls3l"],[])
-   AC_MSG_RESULT([$tw_blacs_ok])
-   LIBS=$save_LIBS
-fi
-
-FC=$save_FC
-
-AC_SUBST(BLACS_LIBS)
-
-# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
-AS_IF([test $tw_blacs_ok = yes],
-      [$1],
-      [m4_default([$2],[AC_MSG_ERROR([Cannot compile correctly with BLACS])])]
-      )
-])dnl TW_CHECK_BLACS
-
-dnl @synopsis TW_CHECK_FC_90([ACTION_IF_TRUE],[ACTION_IF_FALSE])
-dnl
-dnl Checks whether the currently selected Fortran compiler is fully
-dnl compliant with Fortran 90 (ISO/IEC-1539:1991)
-dnl If so, ACTION_IF_TRUE is performed; if not, ACTION_IF_FALSE
-dnl 
-dnl It currently tests for:
-dnl
-dnl Modules
-dnl Private 
-dnl New-style variable declarations.
-dnl
-dnl @version 1.0
-dnl @author Toby White <tow21@cam.ac.uk>
-dnl
-AC_DEFUN([TW_CHECK_FC_90],[
-dnl
-AC_LANG_PUSH(Fortran)
-dnl
-AC_MSG_CHECKING([for Fortran 90 compliance])
-dnl
-AC_COMPILE_IFELSE(
-dnl The program is written in fixed-form source to avoid worrying
-dnl about filename extensions.
-  AC_LANG_SOURCE([[
-      Module test_module
-
-      Implicit None
-      Private
-
-      Contains
-
-      Function test_function() Result(out)
-      Integer :: out
-      out = 0
-      End Function test_function
-
-      End Module test_module
-   ]]),
-   [AC_MSG_RESULT([yes])
-    m4_default([$1],[])
-   ],
-   [AC_MSG_RESULT([no])
-    m4_default([$2],
-               [AC_MSG_ERROR([ A fully Fortran-90-compliant compiler is required.])])
-   ]
-)
-AC_LANG_POP(Fortran)
-dnl
-])
-dnl @synopsis TW_CHECK_FC_95([ACTION_IF_TRUE],[ACTION_IF_FALSE])
-dnl
-dnl Checks whether the currently selected Fortran compiler is fully
-dnl compliant with Fortran 95 (ISO-IEC 1539-1:1997)
-dnl 
-dnl It currently tests for:
-dnl
-dnl Named End Interface
-dnl Derived type initialization
-dnl The Null() intrinsic
-dnl The Forall statement 
-dnl The Cpu_Time intrinsic
-dnl Pure functions
-dnl Elemental functions
-dnl 
-dnl @version 1.0
-dnl @author <tow21@cam.ac.uk>
-dnl
-AC_DEFUN([TW_CHECK_FC_95],[
-dnl
-AC_MSG_CHECKING([for Fortran 95 compliance])
-dnl
-AC_LANG_PUSH(Fortran)
-dnl
-AC_COMPILE_IFELSE(
-dnl The program is written in fixed-form source to avoid worrying
-dnl about filename extensions.
-  AC_LANG_SOURCE([[
-      Program test_f95
-
-!      Interface test_interface
-!      End Interface test_interface
-
-      Type test_type
-        Integer :: i = 1
-      End Type test_type
-
-      Integer, Pointer :: j => Null()
-
-      Integer :: i
-      Real :: a
-
-      Forall (i=1:50)
-      End Forall
-
-      Call CPU_TIME(a)
-
-      Contains
-
-      Pure Integer Function test_pure()
-        test_pure = 0
-      End Function test_pure
-
-      Elemental Integer Function test_elemental(in)
-        Integer, Intent(In) :: in
-        test_elemental = 0
-      End Function test_elemental
-
-      End Program test_f95
-   ]]),
-   [AC_MSG_RESULT([yes])
-    m4_default([$1],[:])
-   ],
-   [AC_MSG_RESULT([no])
-    m4_default([$2], 
-               [AC_MSG_ERROR([A fully Fortran-95-compliant compiler is required.])])
-   ]
-)
-AC_LANG_POP(Fortran)
-dnl
-])
-dnl @synopsis TW_CHECK_FC_FPP_90([ACTION_IF_TRUE],[ACTION_IF_FALSE])
-dnl
-dnl Checks whether the currently selected Fortran compiler supports
-dnl cpp-like functionality when called on a suitable fixed-format file.
-dnl If so, ACTION_IF_TRUE is performed; if not, ACTION_IF_FALSE
-dnl 
-dnl @version 1.0
-dnl @author Toby White <tow21@cam.ac.uk>
-dnl
-AC_DEFUN([TW_CHECK_FC_FPP_90],[
-dnl
-AC_LANG_PUSH(Fortran)
-dnl
-AC_FPP_SRCEXT(F90)
-ac_ext=F90
-dnl
-AC_MSG_CHECKING([whether $FC has an integrated Fortran cpp-style preprocessor for free-form source])
-dnl
-FCFLAGS_save=$FCFLAGS
-FCFLAGS="$FCFLAGS $FPPFLAGS_F90 $FCFLAGS_free"
-AC_COMPILE_IFELSE(
-dnl The program is written in fixed-form source to avoid worrying
-dnl about filename extensions.
-  AC_LANG_SOURCE([[
-Program test_cpp
-#if 1
-  Integer i
-#else
-  Integer j
-#endif
-End Program
-   ]]),
-   [AC_MSG_RESULT([yes])
-    m4_ifval([$1],[$1],[])
-   ],
-   [AC_MSG_RESULT([no])
-    m4_ifval([$2],[$2],
-                  [AC_MSG_ERROR([A Fortran compiler with integrated cpp-style preprocessor for free-from source is required.])])
-   ]
-)
-AC_LANG_POP(Fortran)
-
-FCFLAGS=$FCFLAGS_save
-dnl
-])
-dnl @synopsis TW_CHECK_FC_FPP([ACTION_IF_TRUE],[ACTION_IF_FALSE])
-dnl
-dnl Checks whether the currently selected Fortran compiler supports
-dnl cpp-like functionality when called on a suitable fixed-format file.
-dnl If so, ACTION_IF_TRUE is performed; if not, ACTION_IF_FALSE
-dnl 
-dnl @version 1.0
-dnl @author Toby White <tow21@cam.ac.uk>
-dnl
-AC_DEFUN([TW_CHECK_FC_FPP],[
-dnl
-AC_LANG_PUSH(Fortran)
-dnl
-AC_FC_SRCEXT(F)
-dnl
-AC_MSG_CHECKING([whether $FC has an integrated Fortran cpp-style preprocessor for fixed-form source])
-dnl
-AC_COMPILE_IFELSE(
-dnl The program is written in fixed-form source to avoid worrying
-dnl about filename extensions.
-  AC_LANG_SOURCE([[
-      Program test_cpp
-#if 1
-      Integer i
-#else
-      Integer j
-#endif
-      End Program
-   ]]),
-   [AC_MSG_RESULT([yes])
-    m4_ifval([$1],[$1],[])
-   ],
-   [AC_MSG_RESULT([no])
-    m4_ifval([$2],[$2],
-                  [AC_MSG_ERROR([A Fortran compiler with integrated cpp-style preprocessor for fixed-form source is required.])])
-   ]
-)
-AC_LANG_POP(Fortran)
-dnl
-])
-dnl @synopsis TW_CHECK_FC_TR15580([ACTION_IF_TRUE],[ACTION_IF_FALSE])
-dnl
-dnl Checks whether the currently selected Fortran compiler is fully
-dnl compliant with the Fortran 95 Floating Point Exception Handling
-dnl Extension, ISO TR15580.
-dnl
-dnl @version 1.0
-dnl @author <tow21@cam.ac.uk>
-dnl
-AC_DEFUN([TW_CHECK_FC_TR15580],[
-dnl
-AC_MSG_CHECKING([$FC for compliance to the Floating Point Exception Handling Extension])
-dnl
-AC_LANG_PUSH(Fortran)
-dnl
-AC_COMPILE_IFELSE(
-dnl The program is written in fixed-form source to avoid worrying
-dnl about filename extensions.
-  AC_LANG_SOURCE([[
-      Program test_tr15580
-
-      Use, Intrinsic :: IEEE_Arithmetic
-      Use, Intrinsic :: IEEE_Exceptions
-      Use, Intrinsic :: IEEE_Features
-
-      End Program test_tr15580
-   ]]),   
-   [AC_MSG_RESULT([yes])
-    m4_ifval([$1],[$1],[])
-   ],
-   [AC_MSG_RESULT([no])
-    m4_ifval([$2],[$2],
-                  [AC_MSG_ERROR([A fully TR15580-compliant compiler is required.])])
-   ]
-)
-AC_LANG_POP(Fortran)
-dnl
-])
 dnl @synopsis TW_CHECK_FC_TR15581([ACTION_IF_TRUE],[ACTION_IF_FALSE])
 dnl
 dnl Checks whether the currently selected Fortran compiler is fully
@@ -3371,357 +3273,6 @@ dnl about filename extensions.
 AC_LANG_POP(Fortran)
 dnl
 ])
-dnl Macro to find what paramaters must be passed to the compiler
-dnl and linker to compile with scalapack. Currently only works
-dnl with fortran.
-dnl Macro to check that correct flags have been chosen for 
-dnl ScaLAPACK compilation. Only works with Fortran at the moment.
-
-dnl Must use fixed+free format-compatible line continuation, to avoid
-dnl problems with picky compilers. & in column 6 & 81
-
-AC_DEFUN([_TW_TRY_SCALAPACK], [
-ac_ext=f
-AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([[
-      PROGRAM SCALAPACK                                                    
-      CHARACTER        JOBZ, RANGE, UPLO                                   
-      INTEGER          IA, IB, IBTYPE, IL, INFO, IU, IZ, JA, JB, JZ,             & 
-     &                 LIWORK, LWORK, M, N, NZ                                   
-      DOUBLE PRECISION ABSTOL, ORFAC, VL, VU                                     
-      INTEGER          DESCA(1), DESCB(1), DESCZ(1), ICLUSTR(1),                 &
-     &                 IFAIL(1), IWORK(1)                              
-      DOUBLE PRECISION A(1), B(1), GAP(1), W(1), WORK(1), Z(1) 
-      CALL PDSYGVX( IBTYPE, JOBZ, RANGE, UPLO, N, A, IA, JA, DESCA,  B,          &
-     &              IB,  JB,  DESCB,  VL, VU, IL, IU, ABSTOL, M, NZ, W,          &
-     &              ORFAC,  Z,  IZ,  JZ,  DESCZ,  WORK,  LWORK,  IWORK,          &
-     &              LIWORK, IFAIL, ICLUSTR, GAP, INFO )                    
-      END PROGRAM
-   ]])],
-   [m4_ifval([$1],[$1],[])],
-   [m4_ifval([$2],[$2],[])]
-)
-])
-
-AC_DEFUN([_TW_TRY_SCALAPACK_VN], [
-ac_ext=f
-AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([[
-      PROGRAM SCALAPACK                                                    
-      CHARACTER        NAME, OPTS                                   
-      INTEGER          ICTXT, ISPEC, N1, N2, N3, N4
-      CALL PJLAENV( ICTXT, ISPEC, NAME, OPTS, N1, N2, N3, N4 )
-      END PROGRAM
-   ]])],
-   [m4_ifval([$1],[$1],[])],
-   [m4_ifval([$2],[$2],[])]
-)
-])
-
-
-AC_DEFUN([TW_CHECK_SCALAPACK], [
-#AC_REQUIRE([TW_FIND_BLAS])
-#AC_REQUIRE([TW_CHECK_BLACS])
-tw_scalapack_ok=no
-
-# All tests must be run with the MPI fortran compiler.
-save_FC=$FC
-FC=$MPIFC
-
-AC_ARG_WITH(scalapack,
-        [AC_HELP_STRING([--with-scalapack=<lib>], [use ScaLAPACK library <lib>])])
-case $with_scalapack in
-        yes | "") ;;
-        no) tw_scalapack_ok=disable ;;
-        -* | */* | *.a | *.so | *.so.* | *.o) SCALAPACK_LIBS="$with_scalapack" ;;
-        *) SCALAPACK_LIBS="-l$with_scalapack" ;;
-esac
-
-save_LIBS=$LIBS
-LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
-AC_MSG_CHECKING([if we can compile a ScaLAPACK program])
-_TW_TRY_SCALAPACK([tw_scalapack_ok=yes], [])
-LIBS="$save_LIBS"
-
-if test $tw_scalapack_ok = no; then
-  LIBS="$LIBS -lscalapack $BLACS_LIBS $BLAS_LIBS"
-  _TW_TRY_SCALAPACK([tw_scalapack_ok=yes; SCALAPACK_LIBS=-lscalapack], [])
-  LIBS="$save_LIBS"
-fi
-
-AC_MSG_RESULT([$tw_scalapack_ok])
-if test $tw_scalapack_ok = yes; then
-   AC_MSG_CHECKING([if ScaLAPACK version is sufficiently recent])
-   LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
-   _TW_TRY_SCALAPACK_VN([AC_MSG_RESULT([yes])],
-                        [COMP_LIBS="scalapack_extra.o $COMP_LIBS";
-                         AC_MSG_RESULT([no - using additional SIESTA routines])])
-   LIBS="$save_LIBS"
-fi
-FC=$save_FC
-
-AC_SUBST(SCALAPACK_LIBS)
-
-# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
-AS_IF([test $tw_scalapack_ok = yes],
-      [$1],
-      [m4_default([$2],[AC_MSG_ERROR([Cannot compile correctly with ScaLAPACK])])]
-     )
-])# TW_CHECK_SCALAPACK
-dnl Macro to check how to use functions that NAG requires -dcfuns for.
-dnl DIMAG used.
-
-AC_DEFUN([_TW_DIMAG_PROGRAM],
-[
-      PROGRAM TESTDIMAG
-      DOUBLE PRECISION A
-      DOUBLE COMPLEX B
-      A=DIMAG(B)
-      END PROGRAM
-])
-
-AC_DEFUN([TW_FC_CHECK_DCFUNS], [
-AC_REQUIRE([AC_PROG_FC])
-AC_LANG_ASSERT(Fortran)
-tw_dcfuns_ok=no
-
-
-AC_MSG_CHECKING([how to compile DIMAG])
-
-AC_LINK_IFELSE([_TW_DIMAG_PROGRAM],
-               [tw_dcfuns_ok=yes;
-                AC_MSG_RESULT([default])],[])
-
-if test $tw_dcfuns_ok = no; then
-   FCFLAGS_save=$FCFLAGS
-   FCFLAGS="$FCFLAGS -dcfuns"
-   AC_LINK_IFELSE([_TW_DIMAG_PROGRAM],
-                  [tw_dcfuns_ok=yes;
-                   AC_MSG_RESULT([with -dcfuns])],[]) 
-   if test $tw_dcfuns_ok = no; then
-      FCFLAGS=$FCFLAGS_save
-   fi
-fi
-
-AS_IF([test $tw_dcfuns_ok = yes],
-      [$1],
-      [m4_default([$2],[AC_MSG_ERROR([Cannot compile DIMAG function])])])
-])# TW_FC_CHECK_DCFUNS
-dnl Check how to get at the flush intrinsic.
-
-AC_DEFUN([_TW_TRY_FLUSH_BARE],
-[
-      PROGRAM TESTFLUSH
-      PRINT*
-      CALL FLUSH(5)
-      END PROGRAM TESTFLUSH
-])
-AC_DEFUN([_TW_TRY_FLUSH_NAG],
-[
-      PROGRAM TESTFLUSH
-      USE F90_UNIX_IO, ONLY:FLUSH
-      PRINT*
-      CALL FLUSH(5)
-      END PROGRAM TESTFLUSH
-])
-AC_DEFUN([_TW_TRY_FLUSH_XLF],
-[
-      PROGRAM TESTFLUSH
-      PRINT*
-      CALL FLUSH_(5)
-      END PROGRAM TESTFLUSH
-])
-
-AC_DEFUN([TW_FC_CHECK_FLUSH], [
-AC_REQUIRE([AC_PROG_FC])dnl
-dnl
-AC_MSG_CHECKING([how to compile a FLUSH subroutine])
-dnl
-dnl Try first with nothing
-dnl
-tw_flush_ok=no
-dnl
-AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([_TW_TRY_FLUSH_BARE])],
-    [tw_flush_ok=yes; TW_FLUSH=bare;tw_method=default],
-    [])
-if test $tw_flush_ok = no; then
-   save_LDFLAGS=$LDFLAGS
-   LDFLAGS="$LDFLAGS -Vaxlib"
-   AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([_TW_TRY_FLUSH_BARE])],
-    [tw_flush_ok=yes; TW_FLUSH=INTEL;tw_method="with -Vaxlib"],
-    [])
-   if test $tw_flush_ok = no; then
-      LDFLAGS=$save_LDFLAGS
-   fi
-fi
-if test $tw_flush_ok = no; then
-  AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([_TW_TRY_FLUSH_NAG])],
-    [tw_flush_ok=yes; TW_FLUSH=NAG;tw_method="with f90_unix_io"],
-    [])
-fi
-if test $tw_flush_ok = no; then
-  AC_LINK_IFELSE(
-   [AC_LANG_SOURCE([_TW_TRY_FLUSH_XLF])],
-    [tw_flush_ok=yes; TW_FLUSH=XLF;tw_method="with underscore"],
-    [])
-fi
-AC_MSG_RESULT([$tw_method])
-dnl
-AS_IF([test $tw_flush_ok = yes],
-      [$1],
-      [m4_default([$2],[AC_MSG_ERROR([Cannot compile FLUSH statement])])]
-     )
-dnl
-])# TW_FC_CHECK_FLUSH
-dnl A macro to set various compiler-dependent things that can't be sensibly
-dnl deduced.
-
-AC_DEFUN([TW_FC_ID_FLAGS], [
-AC_REQUIRE([TW_FC_ID])
-
-case $FC_ID in
-
-  Absoft)
-     FFLAGS_DEBUG="-et -g -Rb -Rc -Rp -Rs"
-     ;;
-
-  Digital)
-     FFLAGS_FAST=-O2
-     FFLAGS_DEBUG="-g -Rabc -ei"
-     ;;
-
-  G77)
-     ;;
-
-  Gfortran)
-     ;;
- 
-  Intel)
-     FFLAGS_DEBUG="-C -g -inline_debug_info"
-     ;;
-
-  Lahey)
-     FFLAGS_DEBUG="--chk aesux --chkglobal -g --trace"
-     FFLAGS_FAST="-O --warn --quiet --tpp --ntrace"
-     ;;
-
-  Nag)
-     # This is a hack - we should test for these next two
-     FCFLAGS="$FCFLAGS -mismatch -kind=byte"
-     FFLAGS_MPI="-kind=byte -mismatch"
-     FFLAGS_DEBUG="-C=all -g -gline -nan"
-     DEFS="$DEFS __NAG__"
-     SYS=nag
-     ;;
-  
-  Portland)
-     FFLAGS_DEBUG="-g -Mbounds"
-     FFLAGS_FAST="-fast"
-     ;;
-
-  SGI)
-     FFLAGS_DEBUG="-g -O0"
-     FFLAGS_FAST="-O3 -OPT:Olimit=0"
-     ;;
-
-  Sun)
-     FFLAGS_DEBUG="-C -g"
-     FFLAGS_FAST="-fast"
-     ;;
-
-  Xlf)
-     FFLAGS_DEBUG="-g -C -qinitauto -qsave -qmaxmem=16000 -qnolm"
-     FFLAGS_FAST="-O3 -qarch=auto -qtune=auto -qcache=auto -qnolm"
-     SYS=xlf
-     ;;
-
-esac
-
-AC_SUBST(FFLAGS_MPI)
-
-])
-dnl A macro to determine which compiler is being used, in order that
-dnl different flags can be set
-
-AC_DEFUN([TW_FC_ID], [
-AC_REQUIRE([AC_PROG_FC])
-
-FC_ID=
-
-dnl Firstly go by compiler name.
-
-case $FC in 
-   
-   g77*)
-      FC_ID=G77
-      ;;
-
-   gfortran*)
-      FC_ID=Gfortran
-      ;;
-
-   if*)
-      FC_ID=Intel
-      ;;
-
-   lf9*)
-      FC_ID=Lahey
-      ;;
-   
-   pgf*)
-      FC_ID=Portland
-      ;;
-
-   xlf*)
-      FC_ID=Xlf 
-
-esac
-
-dnl then try and disambiguate all f77, f90, and f95 types.
-dnl We should have a choice between
-dnl nag. absoft. sun. sgi. digital. hp. cray. ...?
-
-if test x$FC_ID = x; then
-   tw_fc_v_output=$($FC -V 2>&1 )
-   if test $?; then
-      case $tw_fc_v_output in
-         *NAG*)
-            FC_ID=Nag
-            ;;
-         *Sun*)
-            FC_ID=Sun # there's more than one compiler here ...
-            ;;
-      esac
-   fi
-fi
- if test x$FC_ID = x; then
-   tw_fc_v_output=$($FC -version 2>&1)
-   if test $?; then
-      case $tw_fc_v_output in
-         *Compaq*)
-            FC_ID=Digital
-            ;;
-         *Digital*)
-            FC_ID=Digital
-            ;;
-         *SGI*)
-            FC_ID=SGI
-            ;;
-      esac
-   fi
-fi   
-   
-AS_IF([test x$FC_ID != x],
-      [AC_MSG_NOTICE([$FC seems to be a $FC_ID compiler])],
-      [FC_ID=unknown; AC_MSG_NOTICE([Could not determine type of compiler])])
-
-dnl for more fun, try and get the version number now ...
-
-
-])# TW_FC_ID
 dnl
 AC_DEFUN([TW_FIND_FC_BLAS], [
 AC_PREREQ(2.50)
@@ -3896,6 +3447,181 @@ AS_IF([test x"$acx_blas_ok" = xyes],
       )
 AC_LANG_POP
 ])
+dnl Macro to check that correct flags have been chosen for 
+dnl compilation with BLACS. Only works with Fortran at the moment.
+
+AC_DEFUN([_TW_TRY_BLACS], [
+ac_ext=f
+AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([[
+      PROGRAM BLACS                   
+      INTEGER MYPNUM, NPROCS        
+      CALL BLACS_PINFO(MYPNUM, NPROCS)
+      END PROGRAM
+   ]])],
+[m4_default([$1],[:])],
+[m4_default([$2],[:])]
+)
+])
+
+
+AC_DEFUN([TW_CHECK_BLACS], [
+#AC_REQUIRE(ACX_MPI)
+tw_blacs_ok=no
+
+# All tests must be run with the MPI fortran compiler.
+save_FC=$FC
+FC=$MPIFC
+
+AC_ARG_WITH(blacs,
+        [AC_HELP_STRING([--with-blacs=<lib>], [use BLACS library <lib>])])
+if test x"$with_blacs" != x; then
+   BLACS_LIBS="$with_blacs"
+fi
+
+save_LIBS=$LIBS
+LIBS="$BLACS_LIBS $LIBS"
+AC_MSG_CHECKING([if we can compile a BLACS program])
+_TW_TRY_BLACS([tw_blacs_ok=yes],[])
+AC_MSG_RESULT([$tw_blacs_ok])
+LIBS=$save_LIBS
+
+if test $tw_blacs_ok != yes; then
+   AC_MSG_CHECKING([for BLACS in -lblacs])
+   save_LIBS=$LIBS
+   LIBS="-lblacs $LIBS"
+   _TW_TRY_BLACS([tw_blacs_ok=yes;BLACS_LIBS=-lblacs],[])
+   AC_MSG_RESULT([$tw_blacs_ok])
+   LIBS=$save_LIBS
+fi
+
+if test $tw_blacs_ok != yes; then
+   AC_MSG_CHECKING([for BLACS in -lblacsF77init -lblacs -lblacsF77init])
+   save_LIBS=$LIBS
+   LIBS="-lblacsF77init -lblacs -lblacsF77init $LIBS"
+   _TW_TRY_BLACS([tw_blacs_ok=yes;BLACS_LIBS="-lblacsF77init -lblacs -lblacsF77init"],[])
+   AC_MSG_RESULT([$tw_blacs_ok])
+   LIBS=$save_LIBS
+fi
+
+# Try in Sun performance library
+if test $tw_blacs_ok != yes; then
+   AC_MSG_CHECKING([for BLACS in -ls3l])
+   save_LIBS=$LIBS
+   LIBS="-ls3l $LIBS"
+   _TW_TRY_BLACS([tw_blacs_ok=yes;BLACS_LIBS="-ls3l"],[])
+   AC_MSG_RESULT([$tw_blacs_ok])
+   LIBS=$save_LIBS
+fi
+
+FC=$save_FC
+
+AC_SUBST(BLACS_LIBS)
+
+# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
+AS_IF([test $tw_blacs_ok = yes],
+      [$1],
+      [m4_default([$2],[AC_MSG_ERROR([Cannot compile correctly with BLACS])])]
+      )
+])dnl TW_CHECK_BLACS
+
+dnl Macro to find what paramaters must be passed to the compiler
+dnl and linker to compile with scalapack. Currently only works
+dnl with fortran.
+dnl Macro to check that correct flags have been chosen for 
+dnl ScaLAPACK compilation. Only works with Fortran at the moment.
+
+dnl Must use fixed+free format-compatible line continuation, to avoid
+dnl problems with picky compilers. & in column 6 & 81
+
+AC_DEFUN([_TW_TRY_SCALAPACK], [
+ac_ext=f
+AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([[
+      PROGRAM SCALAPACK                                                    
+      CHARACTER        JOBZ, RANGE, UPLO                                   
+      INTEGER          IA, IB, IBTYPE, IL, INFO, IU, IZ, JA, JB, JZ,             & 
+     &                 LIWORK, LWORK, M, N, NZ                                   
+      DOUBLE PRECISION ABSTOL, ORFAC, VL, VU                                     
+      INTEGER          DESCA(1), DESCB(1), DESCZ(1), ICLUSTR(1),                 &
+     &                 IFAIL(1), IWORK(1)                              
+      DOUBLE PRECISION A(1), B(1), GAP(1), W(1), WORK(1), Z(1) 
+      CALL PDSYGVX( IBTYPE, JOBZ, RANGE, UPLO, N, A, IA, JA, DESCA,  B,          &
+     &              IB,  JB,  DESCB,  VL, VU, IL, IU, ABSTOL, M, NZ, W,          &
+     &              ORFAC,  Z,  IZ,  JZ,  DESCZ,  WORK,  LWORK,  IWORK,          &
+     &              LIWORK, IFAIL, ICLUSTR, GAP, INFO )                    
+      END PROGRAM
+   ]])],
+   [m4_ifval([$1],[$1],[])],
+   [m4_ifval([$2],[$2],[])]
+)
+])
+
+AC_DEFUN([_TW_TRY_SCALAPACK_VN], [
+ac_ext=f
+AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([[
+      PROGRAM SCALAPACK                                                    
+      CHARACTER        NAME, OPTS                                   
+      INTEGER          ICTXT, ISPEC, N1, N2, N3, N4
+      CALL PJLAENV( ICTXT, ISPEC, NAME, OPTS, N1, N2, N3, N4 )
+      END PROGRAM
+   ]])],
+   [m4_ifval([$1],[$1],[])],
+   [m4_ifval([$2],[$2],[])]
+)
+])
+
+
+AC_DEFUN([TW_CHECK_SCALAPACK], [
+#AC_REQUIRE([TW_FIND_BLAS])
+#AC_REQUIRE([TW_CHECK_BLACS])
+tw_scalapack_ok=no
+
+# All tests must be run with the MPI fortran compiler.
+save_FC=$FC
+FC=$MPIFC
+
+AC_ARG_WITH(scalapack,
+        [AC_HELP_STRING([--with-scalapack=<lib>], [use ScaLAPACK library <lib>])])
+case $with_scalapack in
+        yes | "") ;;
+        no) tw_scalapack_ok=disable ;;
+        -* | */* | *.a | *.so | *.so.* | *.o) SCALAPACK_LIBS="$with_scalapack" ;;
+        *) SCALAPACK_LIBS="-l$with_scalapack" ;;
+esac
+
+save_LIBS=$LIBS
+LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
+AC_MSG_CHECKING([if we can compile a ScaLAPACK program])
+_TW_TRY_SCALAPACK([tw_scalapack_ok=yes], [])
+LIBS="$save_LIBS"
+
+if test $tw_scalapack_ok = no; then
+  LIBS="$LIBS -lscalapack $BLACS_LIBS $BLAS_LIBS"
+  _TW_TRY_SCALAPACK([tw_scalapack_ok=yes; SCALAPACK_LIBS=-lscalapack], [])
+  LIBS="$save_LIBS"
+fi
+
+AC_MSG_RESULT([$tw_scalapack_ok])
+if test $tw_scalapack_ok = yes; then
+   AC_MSG_CHECKING([if ScaLAPACK version is sufficiently recent])
+   LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
+   _TW_TRY_SCALAPACK_VN([AC_MSG_RESULT([yes])],
+                        [COMP_LIBS="scalapack_extra.o $COMP_LIBS";
+                         AC_MSG_RESULT([no - using additional SIESTA routines])])
+   LIBS="$save_LIBS"
+fi
+FC=$save_FC
+
+AC_SUBST(SCALAPACK_LIBS)
+
+# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
+AS_IF([test $tw_scalapack_ok = yes],
+      [$1],
+      [m4_default([$2],[AC_MSG_ERROR([Cannot compile correctly with ScaLAPACK])])]
+     )
+])# TW_CHECK_SCALAPACK
 dnl Available from the GNU Autoconf Macro Archive at:
 dnl http://www.gnu.org/software/ac-archive/htmldoc/acx_lapack.html
 dnl
@@ -3994,6 +3720,122 @@ else
         $2
 fi
 ])dnl ACX_LAPACK
+dnl @synopsis TW_CHECK_FC_90([ACTION_IF_TRUE],[ACTION_IF_FALSE])
+dnl
+dnl Checks whether the currently selected Fortran compiler is fully
+dnl compliant with Fortran 90 (ISO/IEC-1539:1991)
+dnl If so, ACTION_IF_TRUE is performed; if not, ACTION_IF_FALSE
+dnl 
+dnl It currently tests for:
+dnl
+dnl Modules
+dnl Private 
+dnl New-style variable declarations.
+dnl
+dnl @version 1.0
+dnl @author Toby White <tow21@cam.ac.uk>
+dnl
+AC_DEFUN([TW_CHECK_FC_90],[
+dnl
+AC_LANG_PUSH(Fortran)
+dnl
+AC_MSG_CHECKING([for Fortran 90 compliance])
+dnl
+AC_COMPILE_IFELSE(
+dnl The program is written in fixed-form source to avoid worrying
+dnl about filename extensions.
+  AC_LANG_SOURCE([[
+      Module test_module
+
+      Implicit None
+      Private
+
+      Contains
+
+      Function test_function() Result(out)
+      Integer :: out
+      out = 0
+      End Function test_function
+
+      End Module test_module
+   ]]),
+   [AC_MSG_RESULT([yes])
+    m4_default([$1],[])
+   ],
+   [AC_MSG_RESULT([no])
+    m4_default([$2],
+               [AC_MSG_ERROR([ A fully Fortran-90-compliant compiler is required.])])
+   ]
+)
+AC_LANG_POP(Fortran)
+dnl
+])
+dnl Check how to get at the abort intrinsic.
+
+AC_DEFUN([_TW_TRY_ABORT_BARE],
+[
+      PROGRAM TESTABORT
+      CALL ABORT
+      END PROGRAM TESTABORT
+])
+AC_DEFUN([_TW_TRY_ABORT_NAG],
+[
+      PROGRAM TESTABORT
+      USE F90_UNIX_PROC, ONLY:ABORT
+      CALL ABORT
+      END PROGRAM TESTABORT
+])
+AC_DEFUN([_TW_TRY_ABORT_XLF],
+[
+      PROGRAM TESTABORT
+      CALL ABORT_
+      END PROGRAM TESTABORT
+])
+
+AC_DEFUN([TW_FC_CHECK_ABORT], [
+AC_REQUIRE([AC_PROG_FC])dnl
+dnl
+AC_MSG_CHECKING([how to compile a call to ABORT])
+dnl
+dnl Try first with nothing
+dnl
+tw_abort_ok=no
+dnl
+AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_ABORT_BARE])],
+    [tw_abort_ok=yes; TW_ABORT=bare;tw_method=default;DEFS="$DEFS FC_HAVE_ABORT"],
+    [])
+if test $tw_abort_ok = no; then
+   save_LDFLAGS=$LDFLAGS
+   LDFLAGS="$LDFLAGS -Vaxlib"
+   AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_ABORT_BARE])],
+    [tw_abort_ok=yes; TW_ABORT=INTEL;tw_method="with -Vaxlib";DEFS="$DEFS FC_HAVE_ABORT"],
+    [])
+   if test $tw_abort_ok = no; then
+      LDFLAGS=$save_LDFLAGS
+   fi
+fi
+if test $tw_abort_ok = no; then
+  AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_ABORT_NAG])],
+    [tw_abort_ok=yes; TW_ABORT=NAG;tw_method="with f90_unix_proc";DEFS="$DEFS FC_HAVE_ABORT"],
+    [])
+fi
+if test $tw_abort_ok = no; then
+  AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_ABORT_XLF])],
+    [tw_abort_ok=yes; TW_ABORT=XLF;tw_method="with underscore"],
+    [])
+fi
+AC_MSG_RESULT([$tw_method])
+dnl
+AS_IF([test $tw_abort_ok = yes],
+      [$1],
+      [m4_default([$2],[AC_MSG_ERROR([Cannot compile call to ABORT ])])]
+     )
+dnl
+])# TW_FC_CHECK_ABORT
 # autoconf macros for detecting NetCDF (fortan implementation only)
 #
 
@@ -4047,6 +3889,116 @@ else
 fi
 
 ])
+dnl @synopsis TW_CHECK_FC_95([ACTION_IF_TRUE],[ACTION_IF_FALSE])
+dnl
+dnl Checks whether the currently selected Fortran compiler is fully
+dnl compliant with Fortran 95 (ISO-IEC 1539-1:1997)
+dnl 
+dnl It currently tests for:
+dnl
+dnl Named End Interface
+dnl Derived type initialization
+dnl The Null() intrinsic
+dnl The Forall statement 
+dnl The Cpu_Time intrinsic
+dnl Pure functions
+dnl Elemental functions
+dnl 
+dnl @version 1.0
+dnl @author <tow21@cam.ac.uk>
+dnl
+AC_DEFUN([TW_CHECK_FC_95],[
+dnl
+AC_MSG_CHECKING([for Fortran 95 compliance])
+dnl
+AC_LANG_PUSH(Fortran)
+dnl
+AC_COMPILE_IFELSE(
+dnl The program is written in fixed-form source to avoid worrying
+dnl about filename extensions.
+  AC_LANG_SOURCE([[
+      Program test_f95
+
+!      Interface test_interface
+!      End Interface test_interface
+
+      Type test_type
+        Integer :: i = 1
+      End Type test_type
+
+      Integer, Pointer :: j => Null()
+
+      Integer :: i
+      Real :: a
+
+      Forall (i=1:50)
+      End Forall
+
+      Call CPU_TIME(a)
+
+      Contains
+
+      Pure Integer Function test_pure()
+        test_pure = 0
+      End Function test_pure
+
+      Elemental Integer Function test_elemental(in)
+        Integer, Intent(In) :: in
+        test_elemental = 0
+      End Function test_elemental
+
+      End Program test_f95
+   ]]),
+   [AC_MSG_RESULT([yes])
+    m4_default([$1],[:])
+   ],
+   [AC_MSG_RESULT([no])
+    m4_default([$2], 
+               [AC_MSG_ERROR([A fully Fortran-95-compliant compiler is required.])])
+   ]
+)
+AC_LANG_POP(Fortran)
+dnl
+])
+dnl Macro to check how to use functions that NAG requires -dcfuns for.
+dnl DIMAG used.
+
+AC_DEFUN([_TW_DIMAG_PROGRAM],
+[
+      PROGRAM TESTDIMAG
+      DOUBLE PRECISION A
+      DOUBLE COMPLEX B
+      A=DIMAG(B)
+      END PROGRAM
+])
+
+AC_DEFUN([TW_FC_CHECK_DCFUNS], [
+AC_REQUIRE([AC_PROG_FC])
+AC_LANG_ASSERT(Fortran)
+tw_dcfuns_ok=no
+
+
+AC_MSG_CHECKING([how to compile DIMAG])
+
+AC_LINK_IFELSE([_TW_DIMAG_PROGRAM],
+               [tw_dcfuns_ok=yes;
+                AC_MSG_RESULT([default])],[])
+
+if test $tw_dcfuns_ok = no; then
+   FCFLAGS_save=$FCFLAGS
+   FCFLAGS="$FCFLAGS -dcfuns"
+   AC_LINK_IFELSE([_TW_DIMAG_PROGRAM],
+                  [tw_dcfuns_ok=yes;
+                   AC_MSG_RESULT([with -dcfuns])],[]) 
+   if test $tw_dcfuns_ok = no; then
+      FCFLAGS=$FCFLAGS_save
+   fi
+fi
+
+AS_IF([test $tw_dcfuns_ok = yes],
+      [$1],
+      [m4_default([$2],[AC_MSG_ERROR([Cannot compile DIMAG function])])])
+])# TW_FC_CHECK_DCFUNS
 AC_DEFUN([_TW_TRY_DC_LAPACK], [
 ac_ext=f
 AC_LINK_IFELSE(
@@ -4082,3 +4034,117 @@ AS_IF([test $acx_dc_lapack_ok = yes],
       [m4_default([$2],[AC_MSG_ERROR([Need a more complete Lapack library])])]
      )
 ])dnl TW_CHECK_DC_LAPACK
+dnl @synopsis TW_CHECK_FC_FPP_90([ACTION_IF_TRUE],[ACTION_IF_FALSE])
+dnl
+dnl Checks whether the currently selected Fortran compiler supports
+dnl cpp-like functionality when called on a suitable fixed-format file.
+dnl If so, ACTION_IF_TRUE is performed; if not, ACTION_IF_FALSE
+dnl 
+dnl @version 1.0
+dnl @author Toby White <tow21@cam.ac.uk>
+dnl
+AC_DEFUN([TW_CHECK_FC_FPP_90],[
+dnl
+AC_LANG_PUSH(Fortran)
+dnl
+AC_FPP_SRCEXT(F90)
+ac_ext=F90
+dnl
+AC_MSG_CHECKING([whether $FC has an integrated Fortran cpp-style preprocessor for free-form source])
+dnl
+FCFLAGS_save=$FCFLAGS
+FCFLAGS="$FCFLAGS $FPPFLAGS_F90 $FCFLAGS_free"
+AC_COMPILE_IFELSE(
+dnl The program is written in fixed-form source to avoid worrying
+dnl about filename extensions.
+  AC_LANG_SOURCE([[
+Program test_cpp
+#if 1
+  Integer i
+#else
+  Integer j
+#endif
+End Program
+   ]]),
+   [AC_MSG_RESULT([yes])
+    m4_ifval([$1],[$1],[])
+   ],
+   [AC_MSG_RESULT([no])
+    m4_ifval([$2],[$2],
+                  [AC_MSG_ERROR([A Fortran compiler with integrated cpp-style preprocessor for free-from source is required.])])
+   ]
+)
+AC_LANG_POP(Fortran)
+
+FCFLAGS=$FCFLAGS_save
+dnl
+])
+dnl Check how to get at the flush intrinsic.
+
+AC_DEFUN([_TW_TRY_FLUSH_BARE],
+[
+      PROGRAM TESTFLUSH
+      PRINT*
+      CALL FLUSH(5)
+      END PROGRAM TESTFLUSH
+])
+AC_DEFUN([_TW_TRY_FLUSH_NAG],
+[
+      PROGRAM TESTFLUSH
+      USE F90_UNIX_IO, ONLY:FLUSH
+      PRINT*
+      CALL FLUSH(5)
+      END PROGRAM TESTFLUSH
+])
+AC_DEFUN([_TW_TRY_FLUSH_XLF],
+[
+      PROGRAM TESTFLUSH
+      PRINT*
+      CALL FLUSH_(5)
+      END PROGRAM TESTFLUSH
+])
+
+AC_DEFUN([TW_FC_CHECK_FLUSH], [
+AC_REQUIRE([AC_PROG_FC])dnl
+dnl
+AC_MSG_CHECKING([how to compile a call to FLUSH])
+dnl
+dnl Try first with nothing
+dnl
+tw_flush_ok=no
+dnl
+AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_FLUSH_BARE])],
+    [tw_flush_ok=yes; TW_FLUSH=bare;tw_method=default;DEFS="$DEFS FC_HAVE_FLUSH"],
+    [])
+if test $tw_flush_ok = no; then
+   save_LDFLAGS=$LDFLAGS
+   LDFLAGS="$LDFLAGS -Vaxlib"
+   AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_FLUSH_BARE])],
+    [tw_flush_ok=yes; TW_FLUSH=INTEL;tw_method="with -Vaxlib";DEFS="$DEFS FC_HAVE_FLUSH"],
+    [])
+   if test $tw_flush_ok = no; then
+      LDFLAGS=$save_LDFLAGS
+   fi
+fi
+if test $tw_flush_ok = no; then
+  AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_FLUSH_NAG])],
+    [tw_flush_ok=yes; TW_FLUSH=NAG;tw_method="with f90_unix_io";DEFS="$DEFS FC_HAVE_FLUSH"],
+    [])
+fi
+if test $tw_flush_ok = no; then
+  AC_LINK_IFELSE(
+   [AC_LANG_SOURCE([_TW_TRY_FLUSH_XLF])],
+    [tw_flush_ok=yes; TW_FLUSH=XLF;tw_method="with underscore"],
+    [])
+fi
+AC_MSG_RESULT([$tw_method])
+dnl
+AS_IF([test $tw_flush_ok = yes],
+      [$1],
+      [m4_default([$2],[AC_MSG_ERROR([Cannot compile FLUSH statement])])]
+     )
+dnl
+])# TW_FC_CHECK_FLUSH

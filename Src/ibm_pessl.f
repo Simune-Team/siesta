@@ -2,12 +2,6 @@
 !     Auxiliary file for IBM P4 machines 
 !     when using the PESSL library in parallel runs.
 !
-      subroutine flush(lun)
-      integer, intent(in) :: lun
-      external flush_
-      call flush_(lun)
-      end subroutine flush
-
       SUBROUTINE CPUTIM (TIME)
 
       DOUBLE PRECISION TIME

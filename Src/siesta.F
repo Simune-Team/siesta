@@ -751,6 +751,9 @@ C ..................
 C Output memory use before main loop
       call printmemory( 6, 0 )
 
+! Initialization now complete. Flush stdout.
+      if (ionode) call pxfflush(6)
+
 C Start loop over coordinate changes 
 
       do istep = inicoor,fincoor
@@ -1554,6 +1557,9 @@ C       but preserving the value of Eharrs1
         endif
 C ...................
 
+! End of one SCF step - flush stdout
+        if (ionode) call pxfflush(6)
+
 C If last iteration, exit SCF loop ....................................
         if (last) then
           do ispin = 1,nspin
@@ -1798,6 +1804,9 @@ C Output memory use at the end of this geometry step
       if (cml_p) call cmlEndStep(mainXML)
       call printmemory( 6, 0 )
       call timer( 'IterMD', 2 )
+
+! End of one MD step - flush stdout
+      if (ionode) call pxfflush(6)
 
       if (relaxd) exit
 

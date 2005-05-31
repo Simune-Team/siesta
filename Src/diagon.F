@@ -88,6 +88,7 @@ C
       use fdf
       use densematrix,  only : Haux, Saux, psi
       use alloc
+      use m_memory
 #ifdef MPI
       use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
      $                         mpi_logical
@@ -118,7 +119,7 @@ C
       logical, save :: frstme = .true.
 
       external
-     .  diagg, diagk, diag2g, diag2k, io_assign, io_close, memory,
+     .  diagg, diagk, diag2g, diag2k, io_assign, io_close,
      .  readsp, diagsprl
 
 #ifdef MPI
@@ -203,10 +204,10 @@ C Allocate local arrays
       call re_alloc(Haux,1,nhs,name='Haux',routine='diagon')
       call re_alloc(Saux,1,nhs,name='Saux',routine='diagon')
       call re_alloc(psi,1,npsi,name='psi',routine='diagon')
-      allocate(aux(naux))
-      call memory('A','D',naux,'diagon')
-      allocate(muo(nuo))
-      call memory('A','I',nuo,'diagon')
+      allocate(aux(naux),stat=mem_stat)
+      call memory('A','D',naux,'diagon',stat=mem_stat)
+      allocate(muo(nuo),stat=mem_stat)
+      call memory('A','I',nuo,'diagon',stat=mem_stat)
 
 C Check indxuo
       do iuo = 1,nuo
@@ -297,10 +298,10 @@ C Call apropriate routine
       endif
 
 C Free local arrays
-      call memory('D','I',size(muo),'diagon')
-      deallocate(muo)
-      call memory('D','D',size(aux),'diagon')
-      deallocate(aux)
+      deallocate(muo,stat=mem_stat)
+      call memory('D','I',size(muo),'diagon',stat=mem_stat)
+      deallocate(aux,stat=mem_stat)
+      call memory('D','D',size(aux),'diagon',stat=mem_stat)
 
 C Stop time counter
       call timer( 'diagon', 2 )

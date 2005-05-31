@@ -148,7 +148,9 @@ C Loop for the CG minimization
         
         if (Node.eq.0) then
           write(6,33) its,partial*nspin,fp
+          call pxfflush(6)
         endif
+! Flush after each step so user can follow progress
         if (cml_p) then
           call cmlStartStep(mainXML, type='CGWF')
           call cmlStartPropertyList(mainXML, title='cgwf cycle')

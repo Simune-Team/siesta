@@ -29,10 +29,14 @@ CONTAINS
         ! This will work correctly (return an appropriately-sized
         ! string) for integers i s.t. -99999999<=i<=999999999
         integer, intent(in) :: i
+#ifndef WXML_INIT_FIX
         character(len=int(merge(log10(real(max(abs(i),1)))+1, &
                                 log10(real(max(abs(i),1)))+2, &
                           sign(i,1)>0))) :: s
-
+#else
+! Some compilers have trouble with the above
+        character(len=int(log10(real(max(abs(i),1)))+2))  :: s
+#endif
         character(len=4) :: form
         
         write(form,'(a,i1,a)') '(i',len(s),')'

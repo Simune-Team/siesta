@@ -26,7 +26,7 @@ AC_DEFUN([_TW_TRY_FLUSH_XLF],
 AC_DEFUN([TW_FC_CHECK_FLUSH], [
 AC_REQUIRE([AC_PROG_FC])dnl
 dnl
-AC_MSG_CHECKING([how to compile a FLUSH subroutine])
+AC_MSG_CHECKING([how to compile a call to FLUSH])
 dnl
 dnl Try first with nothing
 dnl
@@ -34,14 +34,14 @@ tw_flush_ok=no
 dnl
 AC_LINK_IFELSE(
    [AC_LANG_SOURCE([_TW_TRY_FLUSH_BARE])],
-    [tw_flush_ok=yes; TW_FLUSH=bare;tw_method=default],
+    [tw_flush_ok=yes; TW_FLUSH=bare;tw_method=default;DEFS="$DEFS FC_HAVE_FLUSH"],
     [])
 if test $tw_flush_ok = no; then
    save_LDFLAGS=$LDFLAGS
    LDFLAGS="$LDFLAGS -Vaxlib"
    AC_LINK_IFELSE(
    [AC_LANG_SOURCE([_TW_TRY_FLUSH_BARE])],
-    [tw_flush_ok=yes; TW_FLUSH=INTEL;tw_method="with -Vaxlib"],
+    [tw_flush_ok=yes; TW_FLUSH=INTEL;tw_method="with -Vaxlib";DEFS="$DEFS FC_HAVE_FLUSH"],
     [])
    if test $tw_flush_ok = no; then
       LDFLAGS=$save_LDFLAGS
@@ -50,7 +50,7 @@ fi
 if test $tw_flush_ok = no; then
   AC_LINK_IFELSE(
    [AC_LANG_SOURCE([_TW_TRY_FLUSH_NAG])],
-    [tw_flush_ok=yes; TW_FLUSH=NAG;tw_method="with f90_unix_io"],
+    [tw_flush_ok=yes; TW_FLUSH=NAG;tw_method="with f90_unix_io";DEFS="$DEFS FC_HAVE_FLUSH"],
     [])
 fi
 if test $tw_flush_ok = no; then

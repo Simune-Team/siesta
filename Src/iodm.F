@@ -24,7 +24,7 @@ C
 C  Modules
 C
       use precision,    only : dp
-      use parallel,     only : Node, Nodes
+      use parallel,     only : ionode,  Node, Nodes
       use parallelsubs, only : LocalToGlobalOrb
       use sys,          only : die
       use fdf,          only : fdf_boolean, fdf_string
@@ -56,14 +56,18 @@ C Internal variables
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
       integer   BNode
+#ifdef ALLOC_SAVE_BUG
+      real(dp), dimension(:), allocatable :: buffer
+      integer,  dimension(:), allocatable :: ibuffer
+#else
       real(dp), dimension(:), allocatable, save :: buffer
       integer,  dimension(:), allocatable, save :: ibuffer
 #endif
-
+#endif
       
 
 C Saved internal variables:
-      logical,           save :: frstme = .true.
+      logical,           save :: frstme = .true., scndme = .false.
       character(len=30), save :: sname
       character(len=33), save :: fnameu
       character(len=34), save :: fnamef
@@ -85,29 +89,45 @@ C Saved internal variables:
 C External procedures
       external          chkdim, memory
 
+! We might want to use formatted DM files in order to
+! transfer them between computers. 
+
+! However, whenever the settings are different for input/
+! output, this is only the case for the first step.
+
+! Thereafter, they must be the same; otherwise we will
+! end up reading from the wrong file.
+
+! Therefore, on all steps after the first, the 
+
 C Find file name
-      if (frstme) then
-        if (node == 0) then
+      if (ionode) then
+        if (frstme) then
           fmto = fdf_boolean('DM.FormattedFiles', .false.)
           fmti = fdf_boolean('DM.FormattedInput', fmto)
           fmto = fdf_boolean('DM.FormattedOutput', fmto)
           sname = fdf_string('SystemLabel', 'siesta')
-          fnameu = trim(sname) // '.DM'
-          fnamef = trim(sname) // '.DMF'
-          if (fmto) then
-            formout = 'formatted'
-            fnameo = fnamef
-          else
-            formout = 'unformatted'
-            fnameo = fnameu
-          endif
-          if (fmti) then
-            formin = 'formatted'
-            fnamei = fnamef
-          else
-            formin = 'unformatted'
-            fnamei = fnameu
-          endif
+          frstme = .false.
+          scndme = .true.
+        elseif (scndme) then
+          fmti = fmto
+          scndme = .false.
+        endif
+        fnameu = trim(sname) // '.DM'
+        fnamef = trim(sname) // '.DMF'
+        if (fmto) then
+          formout = 'formatted'
+          fnameo = fnamef
+        else
+          formout = 'unformatted'
+          fnameo = fnameu
+        endif
+        if (fmti) then
+          formin = 'formatted'
+          fnamei = fnamef
+        else
+          formin = 'unformatted'
+          fnamei = fnameu
         endif
       endif
 
