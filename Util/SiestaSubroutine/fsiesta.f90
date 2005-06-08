@@ -118,7 +118,7 @@ subroutine siesta_launch( label, nnodes )
     write(task,*) 'mpirun -np ', nnodes, ' siesta < ', &
         trim(label)//'.fdf > ', trim(label)//'.out &'
   else
-    write(task,*) 'siesta < ', &
+    write(task,*) 'sleep 10; siesta < ', &
         trim(label)//'.fdf > ', trim(label)//'.out &'
   end if
   call system(task)

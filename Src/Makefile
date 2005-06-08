@@ -53,7 +53,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	ordern.o outcell.o outcoor.o overfsm.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	propor.o pulayx.o \
-	ranger.o ran3.o recipes.o reclat.o redata.o redcel.o \
+	ranger.o ran3.o reclat.o redata.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o xc.o xijorb.o \
@@ -95,7 +95,8 @@ gen-basis.o: $(FDF)
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
+MOD_OBJS=precision.o recipes.o \
+         spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
@@ -166,7 +167,7 @@ siesta.o atomlist.o coor.o dfscf.o matel.o: alloc.o
 broadcast_basis.o: atm_types.o 
 atom.o basis_specs.o: periodic_table.o
 #
-$(COM_OBJS): precision.o parallel.o $(MPI_INTERFACE)
+###$(COM_OBJS): precision.o parallel.o $(MPI_INTERFACE)
 #
 # Interfaces to libraries
 #
@@ -194,7 +195,8 @@ dc_lapack.a:  Libs/dc_lapack.f
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
-	@sed  "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g" version.F90 > compinfo.F90
+	@sed  "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g" version.F90  \
+                 | sh doversion.sh > compinfo.F90
 	@($(MAKE) compinfo.o)
 	@mv compinfo.o version.o
 	@rm -f compinfo.F90
@@ -207,12 +209,12 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
-GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o parallel.o \
+GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o recipes.o parallel.o \
           parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
 	  paste.o ionew.o \
           basis_specs.o atom.o periodic_table.o\
-          pseudopotential.o dot.o xc.o recipes.o arw.o  \
+          pseudopotential.o dot.o xc.o  arw.o  \
           sys.o timer.o  xml.o $(SYSOBJ)
 # precision must be the first one here...
 gen-basis.o: precision.o atom.o basis_types.o basis_specs.o basis_io.o $(FDF)
@@ -233,9 +235,9 @@ m_denchar_io.o m_denchar_init.o denchar.o : $(FDF)
 denchar.o: precision.o parallel.o basis_io.o listsc.o 
 denchar.o: m_denchar_init.o m_denchar_io.o m_denchar_work.o m_denchar_geom.o
 #
-OTHER_DENCHAR_OBJS=  precision.o \
+OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
-        paste.o  radfft.o recipes.o io.o \
+        paste.o  radfft.o  io.o \
         volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
         atmparams.o atmfuncs.o ionew.o atm_types.o m_memory.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \

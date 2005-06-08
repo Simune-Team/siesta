@@ -3,6 +3,7 @@
       use precision,  only : dp
       use parallel,   only : IOnode
       use fdf,        only : fdf_boolean, fdf_integer, fdf_string
+      use m_recipes,  only:  derfc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -10,7 +11,7 @@
       implicit none
 
       public :: fermid, fermispin, stepf
-      private :: enpy, derfc, derf, whg, hp
+      private :: enpy,  whg, hp
 
       private
 
@@ -531,45 +532,6 @@ C Ref: Methfessel & Paxton PRB40 (15/Aug/89)
       endif
 
       END function enpy
-
-
-      real(dp) function derfc(X)
-      real(dp), intent(in) :: x
-
-C  COMPLEMENTARY ERROR FUNCTION FROM "NUMERICAL RECIPES"
-C  NOTE: SINGLE PRECISION ACCURACY
-
-      real(dp) :: z, t
-
-      Z = ABS(X)
-      T = 1.0d0/(1.0d0 + 0.5d0*Z)
-      DERFC=T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
-     .      T*(0.09678418D0+T*(-0.18628806D0+
-     .      T*(0.27886807D0+T*(-1.13520398D0+
-     .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
-      if (X.LT.0.D0) DERFC=2.D0-DERFC
-
-      end function derfc
-
-
-      real(dp) function derf(X)
-      real(dp), intent(in) :: x
-
-C  ERROR FUNCTION FROM "NUMERICAL RECIPES"
-C  NOTE: SINGLE PRECISION ACCURACY
-
-      real(dp) :: z, t
-
-      Z = ABS(X)
-      T = 1.0d0/(1.0d0 + 0.5d0*Z)
-      DERF= T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
-     .      T*(0.09678418D0+T*(-0.18628806D0+
-     .      T*(0.27886807D0+T*(-1.13520398D0+
-     .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
-      if (X.LT.0.D0) DERF=2.D0-DERF
-
-      derf = 1.0d0 - derf
-      end function derf
 
 
       real(dp) function whg(x,n)

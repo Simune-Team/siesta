@@ -7,6 +7,7 @@
       use atm_types, only: nspecies, species, elec_corr, npairs
       use radial
       use atmfuncs, only: floating, izvalfis, psch
+      use m_recipes, only: polint
       use m_radfft
       use sys, only: die
 !-----------------------------------------------

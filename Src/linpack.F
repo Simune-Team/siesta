@@ -195,13 +195,13 @@ c     cleve moler, university of new mexico, argonne national lab.
 c
 c     subroutines and functions
 c
-c     blas zaxpy,zscal,izamax
+c     blas zaxpy,zscal,izamax_l
 c     fortran abs
 c
 c     internal variables
 c
       complex*16 t
-      integer izamax,j,k,kp1,l,nm1
+      integer izamax_l,j,k,kp1,l,nm1
 c
       complex*16 zdum
       double precision cabs1
@@ -221,7 +221,7 @@ c
 c
 c        find l = pivot index
 c
-         l = izamax(n-k+1,a(k,k),1) + k - 1
+         l = izamax_l(n-k+1,a(k,k),1) + k - 1
          ipvt(k) = l
 c
 c        zero pivot implies this column already triangularized
@@ -269,7 +269,7 @@ c
       if (cabs1(a(n,n)) .eq. 0.0d0) info = n
       return
       end
-      integer function izamax(n,zx,incx)
+      integer function izamax_l(n,zx,incx)
 c
 c     finds the index of element having max. absolute value.
 c     jack dongarra, 3/11/78.
@@ -280,7 +280,7 @@ c
       double precision smax
       double precision sdcabs1
 c
-      izamax = 1
+      izamax_l = 1
       if(n.le.1)return
       if(incx.eq.1)go to 20
 c
@@ -292,7 +292,7 @@ c
       ix = ix + incx
       do 10 i = 2,n
          if(sdcabs1(zx(ix)).le.smax) go to 5
-         izamax = ix
+         izamax_l = ix
          smax = sdcabs1(zx(ix))
     5    ix = ix + incx
    10 continue
@@ -303,7 +303,7 @@ c
    20 smax = sdcabs1(zx(1))
       do 30 i = 2,n
          if(sdcabs1(zx(i)).le.smax) go to 30
-         izamax = i
+         izamax_l = i
          smax = sdcabs1(zx(i))
    30 continue
       return

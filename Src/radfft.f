@@ -1,4 +1,9 @@
       module m_radfft
+
+      use m_recipes, only: four1
+
+      private
+      public :: radfft
 !
 !     Wrap the subroutine in a module to offer an explicit interface
 !     which simplifies the issue of the shape of F and G. Callers

@@ -5,6 +5,8 @@
 
       implicit none
 
+      private
+
       public :: rad_alloc, rad_get, rad_setup_d2, rad_zero
       public :: radial_read_ascii, radial_dump_ascii
       public :: radial_dump_xml
@@ -17,7 +19,7 @@
          double precision, dimension(:), pointer :: d2  ! Second derivative
       end type rad_func
 
-      private 
+      private :: splint, spline
 
       CONTAINS
 

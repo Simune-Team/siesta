@@ -3,6 +3,8 @@
       use precision
       use sys
       use atmparams
+      use m_recipes, only: spline, polint
+
 !----------------------------------------------------------------
 !     old_atmfuncs arrays
 !
@@ -1445,7 +1447,7 @@ C     of the potential up  to the third derivative.
          dm33=24.0_dp*r
 
          v1=((var1*dm22*dm33+var2*dm13*dm32+var3*dm12*dm23)
-     . -(var3*dm22*dm13+var1*dm32*dm23+var2*dm12*dm33))/(48.0_dp*r*r*r)  
+     . -(var3*dm22*dm13+var1*dm32*dm23+var2*dm12*dm33))/(48.0_dp*r*r*r)
          v2=((var2*dm11*dm33+var3*dm21*dm13+var1*dm23*dm31)
      . -(var2*dm31*dm13+var3*dm23*dm11+var1*dm21*dm33))/(48.0_dp*r*r*r)
          v3=((var3*dm11*dm22+var2*dm12*dm31+var1*dm32*dm21)
@@ -3769,8 +3771,8 @@ C
      .       'NONODES: ERROR Orbital with angular momentum L=',l,
      .       ' not bound in the atom'
                          write(6,'(A)')
-     .       'NONODES: ERROR a cut off radius must be explicitely given' 
-          call die
+     .       'NONODES: ERROR a cut off radius must be explicitely given'
+                         call die
                        endif 
  
                        if(abs(eshift).gt.1.0d-5) then
@@ -4471,7 +4473,7 @@ C Add a check on whether nsemx is large enough
      .                      '(local Pseudopot. screening):' 
           do l=0,lpop 
             write(line,'(7(1x,i1,a1,a1,f5.2,a1))')
-     .          (cnfigtb(l,nsm,is),sym(l),'(',qPAO(l,nsm),')',
+     .          (cnfigtb(l,nsm,is),sym(l),"(",qPAO(l,nsm),")",
      .       nsm=1,nsemic(l)+1-(cnfigtb(l,nsemic(l)+1,is)-config(l)))
             write(6,'(a)') line
  

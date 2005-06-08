@@ -1,15 +1,21 @@
+      module m_recipes
 !**********************************************************************
 !    This file contains routines adapted from 'Numerical Recipes, 
 !    The Art of Scientific Computing' by W.H. Press, S.A. Teukolsky, 
 !    W.T. Veterling and B.P. Flannery, Cambridge U.P. 1987 and 1992.
 !**********************************************************************
 ! The routines contained in this file are:
+!     SUBROUTINE DERF
+!     SUBROUTINE DERFC
 !     SUBROUTINE FOUR1
 !     SUBROUTINE POLINT
 !     SUBROUTINE SPLINE
 !     SUBROUTINE SPLINT
 !**********************************************************************
 
+      public :: derf, derfc, four1, polint, spline, splint
+
+      contains
 
       SUBROUTINE FOUR1(DATA,NN,ISIGN)
 !**********************************************************************
@@ -237,3 +243,44 @@
      .     (THREE*(B**2)-ONE)*Y2A(NHI))*DX/SIX
 
       END SUBROUTINE SPLINT
+
+
+      DOUBLE PRECISION function derfc(X)
+      DOUBLE PRECISION, intent(in) :: x
+
+C  COMPLEMENTARY ERROR FUNCTION FROM "NUMERICAL RECIPES"
+C  NOTE: SINGLE PRECISION ACCURACY
+
+      DOUBLE PRECISION :: z, t
+
+      Z = ABS(X)
+      T = 1.0d0/(1.0d0 + 0.5d0*Z)
+      DERFC=T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
+     .      T*(0.09678418D0+T*(-0.18628806D0+
+     .      T*(0.27886807D0+T*(-1.13520398D0+
+     .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
+      if (X.LT.0.D0) DERFC=2.D0-DERFC
+
+      end function derfc
+
+
+      DOUBLE PRECISION function derf(X)
+      DOUBLE PRECISION, intent(in) :: x
+
+C  ERROR FUNCTION FROM "NUMERICAL RECIPES"
+C  NOTE: SINGLE PRECISION ACCURACY
+
+      DOUBLE PRECISION :: z, t
+
+      Z = ABS(X)
+      T = 1.0d0/(1.0d0 + 0.5d0*Z)
+      DERF= T*EXP(-(Z*Z)-1.26551223D0+T*(1.00002368D0+T*(0.37409196D0+
+     .      T*(0.09678418D0+T*(-0.18628806D0+
+     .      T*(0.27886807D0+T*(-1.13520398D0+
+     .      T*(1.48851587D0+T*(-0.82215223D0+T*.17087277D0)))))))))
+      if (X.LT.0.D0) DERF=2.D0-DERF
+
+      derf = 1.0d0 - derf
+      end function derf
+
+      end module m_recipes

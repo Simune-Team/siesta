@@ -1,9 +1,8 @@
 MODULE alloc
 
-      use precision,  only : sp, dp
-      use parallel,   only : Node
+      use precision, only: sp, dp
+      use parallel,   only : Node, Nodes
 #ifdef MPI
-      use parallel,   only : Nodes
       use mpi_siesta
 #endif
 
@@ -628,6 +627,7 @@ integer,                    intent(in) :: i1min, i1max, i2min, i2max
 character(len=*), optional, intent(in) :: name, routine
 logical,          optional, intent(in) :: copy, shrink
 integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+integer                                :: i1, i2
 ASSOCIATED_ARRAY = associated(array)
 if (ASSOCIATED_ARRAY) then
   old_array => array 
@@ -648,8 +648,13 @@ if (NEEDS_ALLOC) then
   array = 0._dp
 end if
 if (NEEDS_COPY) then
-      array(c(1,1):c(2,1),c(1,2):c(2,2)) =  &
-  old_array(c(1,1):c(2,1),c(1,2):c(2,2))
+!      array(c(1,1):c(2,1),c(1,2):c(2,2)) =  &
+!  old_array(c(1,1):c(2,1),c(1,2):c(2,2))
+  do i2 = c(1,2),c(2,2)
+  do i1 = c(1,1),c(2,1)
+    array(i1,i2) = old_array(i1,i2)
+  end do
+  end do
   call alloc_count( -size(old_array), type, name, routine ) 
   deallocate(old_array)
 end if
@@ -666,6 +671,7 @@ integer,                    intent(in) :: i1min,i1max, i2min,i2max, &
 character(len=*), optional, intent(in) :: name, routine
 logical,          optional, intent(in) :: copy, shrink
 integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+integer                                :: i1, i2, i3
 ASSOCIATED_ARRAY = associated(array)
 if (ASSOCIATED_ARRAY) then
   old_array => array 
@@ -686,15 +692,15 @@ if (NEEDS_ALLOC) then
   array = 0._dp
 end if
 if (NEEDS_COPY) then
-      array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3)) =  &
-  old_array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3))
-!  do i3 = c(1,3),c(2,3)
-!  do i2 = c(1,2),c(2,2)
-!  do i1 = c(1,1),c(2,1)
-!    array(i1,i2,i3) = old_array(i1,i2,i3)
-!  end do
-!  end do
-!  end do
+!      array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3)) =  &
+!  old_array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3))
+  do i3 = c(1,3),c(2,3)
+  do i2 = c(1,2),c(2,2)
+  do i1 = c(1,1),c(2,1)
+    array(i1,i2,i3) = old_array(i1,i2,i3)
+  end do
+  end do
+  end do
   call alloc_count( -size(old_array), type, name, routine ) 
   deallocate(old_array)
 end if

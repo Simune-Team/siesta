@@ -17,7 +17,7 @@ implicit none
 
 integer, dimension(3), save  :: num_version = (/9,4,8/)
 character(len=*), parameter :: version_str =  &
-"SIESTA devel-agarcia--1.4--patch-8 [After JG XC] (8 Apr 2005)"
+"SIESTA_VERSION"
 character(len=*), parameter :: siesta_arch= &
 "SIESTA_ARCH"
 character(len=*), parameter :: fflags= &
@@ -40,7 +40,8 @@ subroutine prversion
 use version_info
 implicit none
 
-write(6,'(a)') trim(version_str)
+write(6,'(a,/,a)') "Siesta Version (Arch framework):", &
+                    trim(version_str)
 write(6,'(2a)') 'Architecture  : ', siesta_arch
 write(6,'(2a)') 'Compiler flags: ', fflags
 

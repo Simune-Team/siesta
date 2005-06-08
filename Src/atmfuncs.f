@@ -35,7 +35,7 @@ C     different chemical species in the calculation:
       public  :: atmpopfio, psch, izvalfis, floating, psover
       public  :: lofio, symfio, cnfigfio, zetafio, mofio
       public  :: labelfis, lomaxfis, nztfl, rphiatm, lmxkbfis
-      public  :: phiatm, all_phi, xphiatm, yphiatm, zphiatm
+      public  :: phiatm, all_phi
       private
                           !
       contains
@@ -646,72 +646,6 @@ C 7) RPHIATM with ITYPE = 0 is strictly equivalent to VNA_SUB
 
       end subroutine rphiatm
 
-      subroutine xphiatm(is,io,r,phi,grphi)
-      integer, intent(in) :: is      ! Species index
-      integer, intent(in) :: io      ! Orbital index (within atom)
-!              IO > 0 =>  Basis orbitals
-!              IO = 0 =>  Local screened pseudopotential
-!              IO < 0 =>  Kleynman-Bylander projectors
-      real(dp), intent(in)  :: r(3)    ! Point vector, relative to atom
-      real(dp), intent(out) :: phi     ! Basis orbital, KB projector, or
-                                     !  local pseudopotential, 
-                                     !  multiplied by y
-      real(dp), intent(out) :: grphi(3)! Gradient of BO, KB proj, or Loc ps
-                                     !  multiplied by x
-
-C  Returns Kleynman-Bylander local pseudopotential, nonlocal projectors,
-C  and atomic basis orbitals multiplied by x (and their gradients)
-
-      call phiatm(is,io,r,phi,grphi)
-      grphi(1:3) = grphi(1:3) * r(1)
-      grphi(1) = phi + grphi(1)
-      phi = r(1) * phi
-
-      end subroutine xphiatm
-
-      subroutine yphiatm(is,io,r,phi,grphi)
-      integer, intent(in) :: is      ! Species index
-      integer, intent(in) :: io      ! Orbital index (within atom)
-!              IO > 0 =>  Basis orbitals
-!              IO = 0 =>  Local screened pseudopotential
-!              IO < 0 =>  Kleynman-Bylander projectors
-      real(dp), intent(in)  :: r(3)    ! Point vector, relative to atom
-      real(dp), intent(out) :: phi     ! Basis orbital, KB projector, or
-                                     !  local pseudopotential, 
-                                     !  multiplied by y
-      real(dp), intent(out) :: grphi(3)! Gradient of BO, KB proj, or Loc ps
-                                     !  multiplied by y
-
-C  Returns Kleynman-Bylander local pseudopotential, nonlocal projectors,
-C  and atomic basis orbitals multiplied by y (and their gradients)
-
-      call phiatm(is,io,r,phi,grphi)
-      grphi(1:3) = grphi(1:3) * r(2)
-      grphi(2) = phi + grphi(2)
-      phi = r(2) * phi
-      end subroutine yphiatm
-
-      subroutine zphiatm(is,io,r,phi,grphi)
-      integer, intent(in) :: is      ! Species index
-      integer, intent(in) :: io      ! Orbital index (within atom)
-!              IO > 0 =>  Basis orbitals
-!              IO = 0 =>  Local screened pseudopotential
-!              IO < 0 =>  Kleynman-Bylander projectors
-      real(dp), intent(in)  :: r(3)    ! Point vector, relative to atom
-      real(dp), intent(out) :: phi     ! Basis orbital, KB projector, or
-                                     !  local pseudopotential, 
-                                     !  multiplied by z
-      real(dp), intent(out) :: grphi(3)! Gradient of BO, KB proj, or Loc ps
-                                     !  multiplied by z
-
-C  Returns Kleynman-Bylander local pseudopotential, nonlocal projectors,
-C  and atomic basis orbitals multiplied by z (and their gradients)
-
-      call phiatm(is,io,r,phi,grphi)
-      grphi(1:3) = grphi(1:3) * r(3)
-      grphi(3) = phi + grphi(3)
-      phi = r(3) * phi
-      end subroutine zphiatm
 
       subroutine all_phi(is,it,r,nphi,phi, grphi)
       integer, intent(in) :: is     ! Species index
