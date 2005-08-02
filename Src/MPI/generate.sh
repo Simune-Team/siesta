@@ -2,7 +2,7 @@
 #
 echo " ===> Generating module files from templates..."
 
-KINDS=$1
+KINDS=`kind_explorer`
 
 rm -f *.uses Interfaces.f90
 

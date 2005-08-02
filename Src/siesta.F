@@ -2349,6 +2349,13 @@ C In finalization, only print forces if sufficiently large.
           if (idyn==0 .and..not.varcel) then
             continue
           else
+            write(6,'(/,a,6f12.6))')
+     .           'siesta: Stress tensor (static) (kbar):',
+     .           (stress(jx,jx)/kbar,jx=1,3),
+     $            stress(1,2)/kbar,
+     $            stress(2,3)/kbar,
+     $            stress(1,3)/kbar
+!
             write(6,'(/,a,3(/,a,3f12.6))')
      .           'siesta: Stress tensor (static) (eV/Ang**3):',
      .           ('     ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
@@ -2362,6 +2369,13 @@ C In finalization, only print forces if sufficiently large.
      .             dictref='siesta:psol', title='Pressure (Static)')
             endif !cml_p
             if (signat) call sig(io_sig,'Pressure kbar',Psol/kBar)
+            write(6,'(/,a,6f12.6))')
+     .           'siesta: Stress tensor (total) (kbar):',
+     .           (tstress(jx,jx)/kbar,jx=1,3),
+     $            tstress(1,2)/kbar,
+     $            tstress(2,3)/kbar,
+     $            tstress(1,3)/kbar
+!
             write(6,'(/,a,3(/,a,3f12.6))')
      .           'siesta: Stress tensor (total) (eV/Ang**3):',
      .           ('     ',(tstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)

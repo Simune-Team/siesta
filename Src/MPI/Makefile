@@ -15,7 +15,7 @@ generated: $(TEMPLATES)
 	@$(MAKE) clean
 	@$(MAKE) kind_explorer
 	@echo "The kind numbers for single and double precision reals follow"
-	@./kind_explorer | sh generate.sh 
+	@sh generate.sh 
 	@sleep 2
 	@touch generated
 #
