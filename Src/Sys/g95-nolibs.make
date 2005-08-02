@@ -20,7 +20,7 @@ MPI_INCLUDE=
 DEFS_MPI=
 #
 LIBS=
-SYS=
+SYS=bsd
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 .F.o:

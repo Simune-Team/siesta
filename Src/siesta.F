@@ -53,10 +53,14 @@ C  Modules
       use writewave,    only: initwave, wwave
       use iopipes,      only: forcestopipe, coordsfrompipe
 
+      use m_broyden_mixing
+
       use siesta_cml
 
       use time, only : timestamp
       use units
+
+      use m_smearing, only: temp
 
       implicit none
 
@@ -70,7 +74,7 @@ C  Modules
      .  iu, iunit,  iv, ix, ixdispl, 
      .  j, ja, jamin, jo, jx, kscell(3,3),
      .  level, maxbk, maxk, maxnh, 
-     .  maxna, maxsav, maxwk, mscell(3,3), mullipop, 
+     .  maxna, maxsav, broyden_maxit, maxwk, mscell(3,3), mullipop, 
      .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
      .  nkpnt, nmove, nnia, ns, nsc(3), nscold(3), nscf, nspin, 
      .  ntm(3), ntcon, no_l, nxij, nwk, pmax, nkpol, nhist, io_sig,
@@ -106,7 +110,7 @@ C  Modules
      .  qaux, qspin(4), qsol,
      .  rc, rcoor, rcoorcp, rijmin, rmax, rmaxh, rmin, r2min,
      .  scell(3,3), stot, stress(3,3), strtol, svec(3),
-     .  taurelax, temp, tempinit, tempion, tiny, tp, ts, tt,
+     .  taurelax, tempinit, tempion, tiny, tp, ts, tt,
      .  tstress(3,3), Uatm, ucell(3,3), Uscf,
      .  vcell(3,3), virial, vn,
      .  volcel, volume, vpr, wmix, wmixkick, 
@@ -147,7 +151,7 @@ C  Modules
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     .  harrisfun, signat, muldeb, eggbox_block, final
+     .  harrisfun, signat, muldeb, eggbox_block, final, Do_Pulay
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -371,7 +375,7 @@ C Read simulation data ................................................
      .            usesavelwf, usesavedm, usesavecg,
      .            mullipop, inspn, maxsav, nkick, wmixkick, 
      .            pulfile, tempinit, dumpcharge, varcel, harrisfun,
-     .            occtol)
+     .            occtol,broyden_maxit)
 
 C Find some switches ..................................................
       if (IOnode) then
@@ -1164,6 +1168,14 @@ C Find overlap matrix ...............................................
      .             fal, stress, S )
 C ..................
 
+      if (IOnode) then
+         Do_Pulay = fdf_boolean("DM.Do_Pulay",.false.)
+      endif
+#ifdef MPI
+      call MPI_Bcast(Do_Pulay,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
+
+
 C Start of SCF iteration _____________________________________________
       first = .true.
       last  = .false.
@@ -1484,17 +1496,23 @@ C ..................
 C Mix input and output energy-density and density matrices ............
 C Following line for using and saving the density matrix without mix ..
           if (wmix.ne.0._dp) then
-C Pulay mixing
+C Pulay or Broyden mixing
             mmix  = mix
             iiscf = iscf
             if (maxsav .le. 0) then
               iiscf = 1
               if (iscf .ne. 1) mmix = .true.
             endif
-            call pulayx( pulfile, iiscf, mmix, no_l, no_s, maxnh,
+            if (broyden_maxit == 0) then
+               call pulayx( pulfile, iiscf, mmix, no_l, no_s, maxnh,
      .                   numh, listhptr, nspin, maxsav, wmix, nkick, 
      .                   wmixkick, auxpul(1,1), auxpul(1,2), nauxpul,
      .                   Dscf, Dold, dDmax)
+            else
+               call broyden_mixing(iscf, mix, no_l, maxnh,
+     .                 numh(1:no_l), listhptr(1:no_l), nspin,
+     $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
+            endif
           endif
 
 C Ensure that dDmax is the same on all nodes for convergence test/output

@@ -89,6 +89,7 @@ C
       use densematrix,  only : Haux, Saux, psi
       use alloc
       use m_memory
+      use sys, only: die
 #ifdef MPI
       use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
      $                         mpi_logical
@@ -193,11 +194,7 @@ C Check internal dimensions ..........................................
         npsi = 2 * (2*nuotot) * (2*maxuo)
         naux = (2*nuotot) * 5
       else
-        if (Node.eq.0) then
-          stop 'diagon: ERROR: incorrect value of nspin'
-        else
-          stop
-        endif
+         call die('diagon: ERROR: incorrect value of nspin')
       endif
 
 C Allocate local arrays
@@ -216,13 +213,10 @@ C Check indxuo
       do io = 1,no
         iuo = indxuo(io)
         if (iuo.le.0 .or. iuo.gt.nuotot) then
-          if (Node.eq.0) then
-            write(6,*) 'diagon: ERROR: invalid index: io, indxuo =',
-     .        io, indxuo(io)
-            stop 'diagon: ERROR: invalid indxuo'
-          else
-            stop
-          endif
+          if (Node.eq.0)
+     $        write(6,*) 'diagon: ERROR: invalid index: io, indxuo =',
+     .                     io, indxuo(io)
+          call die()
         endif
         call GlobalToLocalOrb(indxuo(io),Node,Nodes,iuo)
         if (iuo.gt.0) then
@@ -231,13 +225,10 @@ C Check indxuo
       enddo
       do iuo = 1,nuo
         if (muo(iuo) .ne. muo(1)) then
-          if (Node.eq.0) then
-            write(6,'(/,2a,3i6)') 'diagon: ERROR: inconsistent indxuo',
-     .       '. iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-            stop 'diagon: ERROR: inconsistent indxuo.'
-          else
-            stop
-          endif
+          if (Node.eq.0)
+     $      write(6,'(/,2a,3i6)') 'diagon: ERROR: inconsistent indxuo',
+     .             '. iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
+          call die()
         endif
       enddo
 
@@ -299,9 +290,9 @@ C Call apropriate routine
 
 C Free local arrays
       deallocate(muo,stat=mem_stat)
-      call memory('D','I',size(muo),'diagon',stat=mem_stat)
+      call memory('D','I',nuo,'diagon',stat=mem_stat)
       deallocate(aux,stat=mem_stat)
-      call memory('D','D',size(aux),'diagon',stat=mem_stat)
+      call memory('D','D',naux,'diagon',stat=mem_stat)
 
 C Stop time counter
       call timer( 'diagon', 2 )

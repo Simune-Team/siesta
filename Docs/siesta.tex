@@ -10,6 +10,7 @@
 %
 \documentclass[11pt]{article}
 \usepackage{makeidx}
+\usepackage{url}
 
 \tolerance 10000
 \textheight 22cm
@@ -1681,7 +1682,7 @@ Ref: Perdew and Wang, PRB, 45, 13244 (1992)
 approximation.  Ref: Perdew, Burke and Ernzerhof, PRL 77, 3865
 (1996)\index{GGA} \index{PBE}
 \item {\tt RPBE} (Revised Perdew-Burke-Ernzerhof). Generalized gradients
-approximation.  Ref: Hammer, Hansen & Norskov PRB 59 7413 
+approximation.  Ref: Hammer, Hansen \& Norskov PRB 59 7413 
 (1999)\index{GGA} \index{RPBE}
 \item {\tt LYP} Generalized gradients approximation \index{BLYP}
 that implements Becke gradient exchange functional (A. D.
@@ -1851,11 +1852,51 @@ to parameter {\tt SystemLabel}.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf DM.NumberBroyden}] ({\it integer}):\index{Broyden mixing} 
+\index{DM.NumberBroyden@{\bf DM.NumberBroyden}}\index{SCF!mixing!Broyden} 
+It controls the Broyden-Vanderbilt-Louie-Johnson
+convergence accelerator, which is based on the use of past information
+(up to {\bf DM.NumberBroyden} steps) to construct the input density
+matrix for the next iteration.
+
+See D.D. Johnson, Phys. Rev. B{\bf 38}, 12807 (1988), and references therein;
+Kresse and Furthmuller, Comp. Mat. Sci {\bf 6}, 15 (1996).
+
+If {\bf DM.NumberBroyden} is 0, the program performs linear mixings,
+or, if requested, Pulay mixings.
+
+Broyden mixing takes precedence over Pulay mixing if both are
+specified in the input file.
+
+{\it Default value:} {\tt 0}
+
+\item[{\bf DM.Broyden.Cycle.On.Maxit}] ({\it logical}): 
+\index{DM.Broyden.Cycle.On.Maxit@{\bf DM.Broyden.Cycle.On.Maxit}} 
+\index{SCF!mixing!Broyden} 
+Upon reaching the maximum number of historical data sets which are
+kept for Broyden mixing (see description of variable {\bf
+  DM.NumberBroyden}), throw away the oldest and shift the rest to make
+room for a new data set. This procedure tends, heuristically, to
+perform better than the alternative, which is to re-start the Broyden
+mixing algorithm from a first step of linear mixing.
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf DM.Broyden.Variable.Weight}] ({\it logical}): 
+\index{DM.Broyden.Variable.Weight@{\bf DM.Broyden.Variable.Weight}} 
+\index{SCF!mixing!Broyden} 
+If {\tt .true.}, the different historical data sets used in
+the Broyden mixing (see description of variable {\bf
+  DM.NumberBroyden}) are assigned a weight depending on the
+norm of their residual ${\rho}^{n}_{out}-{\rho}^{n}_{in}$.
+
+{\it Default value:} {\tt .true.}
+
 \item[{\bf DM.NumberKick}] ({\it integer}):\index{Linear mixing kick} 
 \index{DM.NumberKick@{\bf DM.NumberKick}}
-%\index{SCF!mixing!linear!Pulay} 
+%\index{SCF!mixing!linear!Pulay!Broyden} 
 \index{SCF!mixing!linear} 
-Option to skip the Pulay mixing earch certain number of iterations,
+Option to skip the Pulay (or Broyden) mixing earch certain number of iterations,
 and use a linear mixing instead. Linear mixing is done
 every {\bf DM.NumberKick} iterations, using a mixing coefficient
 $\alpha$ given by variable {\bf DM.KickMixingWeight} 
@@ -1866,16 +1907,17 @@ If {\bf DM.MixingWeight}=0, no linear mix is used.
 
 {\it Default value:} {\tt 0}
 
-\item[{\bf DM.KickMixingWeight}] ({\it real}):\index{SCF!mixing!Pulay}
+\item[{\bf DM.KickMixingWeight}] ({\it real}):\index{SCF!mixing!Pulay!Broyden}
 \index{DM.KickMixingWeight@{\bf DM.KickMixingWeight}}
-%\index{SCF!mixing!linear!Pulay} 
+%\index{SCF!mixing!linear!Pulay!Broyden} 
 \index{SCF!mixing!linear} 
 Proportion $\alpha$ of 
 output Density Matrix to be used for the input Density Matrix of 
 next SCF cycle (linear mixing):
 $\rho^{n+1}_{in} = \alpha \rho^{n}_{out} 
 +(1 - \alpha) \rho^{n}_{in}$, for linear mixing kicks within the
-Pulay mixing. This mixing is done every {\bf DM.NumberKick} cycles.
+Pulay or Broyden mixing schemes. 
+This mixing is done every {\bf DM.NumberKick} cycles.
 
 {\it Default value:} {\tt 0.50}
 
@@ -4636,53 +4678,77 @@ lost. This is basically just the nature of diagonalisation, but it is
 always worth tuning the BlockSize parameter.
 
 \appendix{XML Output}
+\index{XML}
+\index{CML}
 
 From version 2.0, SIESTA includes an option to write its output to an XML file.
 The XML it produces is in accordance with the CMLComp schema (see information...)
 
 There are two primary uses for the XML output.
 
-\item To use SIESTA as part of a large workflow scheme. In such a scenario, the 
-XML output of one SIESTA simulation may be easily parsed in order to direct further 
-simulations. Detailed discussion of this is outwith the scope of this manual.
+\begin{itemize}
 
-\item To generate webpages showing SIESTA output in a more accessible, graphically
-rich, fashion. This section will explain how to do this.
+\item To use SIESTA as part of a large workflow scheme. In such a
+scenario, the XML output of one SIESTA simulation may be easily parsed
+in order to direct further simulations. Detailed discussion of this is
+outwith the scope of this manual.
+
+\item To generate webpages showing SIESTA output in a more accessible,
+graphically rich, fashion. This section will explain how to do this.
+
+\end{itemize}
 
 Prerequisites:
 
-The translation of the SIESTA XML output to a HTML-based webpage is done using XSLT
-technology. The stylesheets conform to XSLT-1.0 plus EXSLT extensions; an xslt processor
-capable of dealing with this is necessary. The following processors have been tested and 
-are known to work.
+The translation of the SIESTA XML output to a HTML-based webpage is
+done using XSLT technology. The stylesheets conform to XSLT-1.0 plus
+EXSLT extensions; an xslt processor capable of dealing with this is
+necessary. The following processors have been tested and are known to
+work.
 
-\begin{list}
+\begin{itemize}
   \item \texttt{xsltproc} from libxml2 (\url{http://xmlsoft.org})
   \item \texttt{4xslt} from 4suite (\url{http://4suite.org})
   \item \texttt{saxon} (\url{http://saxon.sourceforge.net/})
-\end{list}
+\end{itemize}
 
-The generated webpages include support for viewing three-dimensional interactive images
-of the system. If you want to do this, you will also need jMol (\url{http://jmol.sourceforge.net})
-installed; as this is a Java applet, you will also need a working Java Runtime Environment
-and browser plugin - installation instructions for these are outside the scope of this
-manual, though. However, the webpages are still useful and may be viewed without this plugin.
+The generated webpages include support for viewing three-dimensional
+interactive images of the system. If you want to do this, you will
+also need jMol (\url{http://jmol.sourceforge.net}) installed; as this
+is a Java applet, you will also need a working Java Runtime
+Environment and browser plugin - installation instructions for these
+are outside the scope of this manual, though. However, the webpages
+are still useful and may be viewed without this plugin.
 
-The XSLT stylesheets are to be found in the \texttt{XSLT} subdirectory of the SIESTA
-distribution. To use these to produce the webpage, the output of a SIESTA run, 
-\texttt{SystemLabel.xml} should be taken and placed in an empty directory. The XSLT
-processor should then be run. The necessary invocation differs according to the 
-processor - the following are some examples; consult the documentation for your own
-processor. 
+The XSLT stylesheets are to be found in the \texttt{XSLT} subdirectory
+of the SIESTA distribution. To use these to produce the webpage, the
+output of a SIESTA run, \texttt{SystemLabel.xml} should be taken and
+placed in an empty directory. The XSLT processor should then be
+run. The necessary invocation differs according to the processor - the
+following are some examples; consult the documentation for your own
+processor.
 
-\texttt{xsltproc -o SystemLabel.html \$SIESTA/XSLT/display.xsl SystemLabel.xml}\\
-\texttt{4xslt -o SystemLabel.html SystemLabel.xml \$SIESTA/XSLT/display.xsl}\\
-\texttt{java /usr/share/java/saxon.jar -o SystemLabel.html SystemLabel.xml \$SIESTA/XSLT/display.xsl}
+\texttt{xsltproc -o SystemLabel.html \$SIESTA/XSLT/display.xsl
+SystemLabel.xml}\\ \texttt{4xslt -o SystemLabel.html SystemLabel.xml
+\$SIESTA/XSLT/display.xsl}\\ \texttt{java /usr/share/java/saxon.jar -o
+SystemLabel.html SystemLabel.xml \$SIESTA/XSLT/display.xsl}
 
-Note that when using saxon, the path to the saxon \.jar may be different on your system.
+Note that when using saxon, the path to the saxon \.jar may be
+different on your system.
 
-After this is done, a set of html files will have been created. Point your web-browser at
-\texttt{SystemLabel.html} to view this output.
+After this is done, a set of html files will have been created. Point
+your web-browser at \texttt{SystemLabel.html} to view this output.
+
+\newpage
+\appendix{Selection of precision for storage}
+\index{Precision selection}
+
+In this section we will discuss the use of the preprocessing symbols
+\texttt{BROYDEN\_DP}\index{Broyden}
+and \texttt{CHARGE\_DP} to determine the kinds of
+real numbers used for storage of the Broyden historic data sets and
+the charge density in the grid, respectively.
+
 
 
 \addcontentsline{toc}{section}{Index}

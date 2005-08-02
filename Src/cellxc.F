@@ -636,6 +636,7 @@ C Initialise buffer regions of Vxc
 #endif
       endif
       stress(1:3,1:3) = 0.0_dp
+      stressl(1:3,1:3) = 0.0_dp
 
 C Loop on mesh points
       do I3 = 0,NMesh(3)-1

@@ -1,9 +1,30 @@
       module sys
 !
-!     Termination routines
+!     Termination and messaging routines, MPI aware
 !
+      public :: die, bye, message
+
       CONTAINS
 
+!--------------------------------------------------------
+      subroutine message(str)
+
+      use parallel, only : Node
+#ifdef MPI
+      use mpi_siesta
+#endif
+
+      character(len=*), intent(in), optional   :: str
+
+
+      if (Node.eq.0) then
+         if (present(str)) then
+            write(6,'(a)') trim(str)
+         endif
+      endif
+
+      end subroutine message
+!------------------------------------------------------------------
 !--------------------------------------------------------
       subroutine die(str)
 

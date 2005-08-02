@@ -1,0 +1,47 @@
+Specifications for the Broyden SCF accelerator
+
+Open issues:
+
+- The method works decently for a single SCF, but there should be
+some way to re-use part of the information (i.e, implicit jacobian) 
+obtained in a cycle for the following cycle.
+
+- It is very hard to define a black-box strategy (possibly involving
+periodic kicks, weight-assignment, re-initialization, etc) that will
+work always. There should be some kind of smart monitoring, and the
+parameters changed on the fly to adapt.
+
+- There is some correlation between the electronic temperature and the
+tolerance for SCF convergence. 
+
+- User-mode specifications
+
+It should be possible to specify Pulay or Broyden-Johnson as the
+accelerator, while keeping the logic of the previous interface. If
+DM.Number.Broyden is specified (and is > 0), it takes precedence over
+any request of Pyulaymixing.  (The precedence is asserted in redata.F,
+which sets maxsav=0 if DM.Number.Broyden > 0).
+
+Common keywords:
+
+MAX.Scf.Iterations
+DM.MixingWeight
+DM.NumberKick       
+DM.KickMixingWeight
+DM.MixSCF1
+DM.Tolerance
+
+Specific keywords for Pulay:
+
+DM.NumberPulay
+DM.PulayOnFile
+
+Specific keywords for Broyden:
+
+DM.NumberBroyden 
+DM.BroydenOnFile                 ! To be implemented
+DM.Broyden.Cycle.On.Maxit        ! re-cycle oldest pieces of history
+DM.Broyden.Variable.Weight       ! set weights according to residual error
+DM.Broyden.Debug
+
+

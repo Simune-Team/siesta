@@ -12,9 +12,8 @@ C                                    IOPT=1 => Require that ND.GE.N
 C **********************************************************************
 C
 C  Modules
-C
-      use precision
-      use sys
+
+      use sys, only: die
 
       implicit none
 
@@ -45,7 +44,6 @@ C
       NM = MAX(N,NM)
       IF ( ND.GE.N ) RETURN
       OVERFLOW = .TRUE.
-      RETURN
       END
 
 

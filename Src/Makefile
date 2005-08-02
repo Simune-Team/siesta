@@ -65,7 +65,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         broadcast_basis.o sig.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
         initparallel.o setspatial.o setatomnodes.o uncell.o \
-        cart2frac.o
+        cart2frac.o 
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -97,12 +97,13 @@ gen-basis.o: $(FDF)
 #
 MOD_OBJS=precision.o recipes.o \
          spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
+         m_mpi_utils.o m_wrappers.o m_history.o \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
-	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o \
+	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
-         onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o \
-	 electrostatic.o mneighb.o globalise.o siesta_cml.o units.o
+         onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
+	 electrostatic.o mneighb.o globalise.o siesta_cml.o units.o m_broyden_mixing.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
@@ -237,7 +238,7 @@ denchar.o: m_denchar_init.o m_denchar_io.o m_denchar_work.o m_denchar_geom.o
 #
 OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
-        paste.o  radfft.o  io.o \
+        paste.o  radfft.o recipes.o io.o  spatial.o\
         volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
         atmparams.o atmfuncs.o ionew.o atm_types.o m_memory.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \

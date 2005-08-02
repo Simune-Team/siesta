@@ -9,7 +9,7 @@ C     are initialized by calling the subroutine 'atom' for all the
 C     different chemical species in the calculation:
 
       use precision
-      use sys
+      use sys, only: die
       use atm_types
       use radial, only: rad_get, rad_func
       use spher_harm, only: rlylm

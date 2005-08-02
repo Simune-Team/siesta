@@ -36,7 +36,7 @@ SolutionMethod       diagon
 ElectronicTemperature  25 meV  
 
 MD.TypeOfRun         cg
-MD.NumCGsteps        50    
+MD.NumCGsteps        0
 MD.MaxCGDispl         0.1  Ang
 MD.MaxForceTol        0.04 eV/Ang
 
