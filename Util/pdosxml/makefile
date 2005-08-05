@@ -1,18 +1,15 @@
 #
 # Makefile for PDOS XML processing
 #
+.SUFFIXES: 
+.SUFFIXES: .f .F .o .a  .f90 .F90
+#
 default: pdos
+include ../../Src/arch.make
 #
-#---------------------------
-MK=$(FLIB_ROOT)/fortran.mk
-include $(MK)
-#---------------------------
+FFLAGS=$(FFLAGS_DEBUG) -I../../Src
 #
-# Uncomment the following line for debugging support
-#
-FFLAGS=$(FFLAGS_DEBUG)
-#
-LIBS=$(LIB_PREFIX)$(LIB_STD) -lflib
+LIBS= ../../Src/libxmlparser.a
 #
 OBJS=  m_orbital_chooser.o m_pdos.o f2kcli.o pdos.o
      
@@ -20,7 +17,7 @@ pdos: $(OBJS)
 	$(FC) $(LDFLAGS) -o $@ $(OBJS)  $(LIBS)
 #
 clean: 
-	rm -f *.o pdos *$(MOD_EXT)
+	rm -f *.o pdos *.o *.*d
 #
 
 

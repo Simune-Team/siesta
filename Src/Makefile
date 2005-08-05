@@ -76,6 +76,14 @@ $(WXML):
 #
 pdos.o : $(WXML)
 #--------------------------------------------------------------
+XMLPARSER=libxmlparser.a
+$(XMLPARSER): 
+	(cd xmlparser ; $(MAKE) module)
+#
+# Routines using xmlparser calls.
+#
+######  somefile.o : $(WXML)
+#--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
 	(cd fdf ; $(MAKE) module)
@@ -203,10 +211,10 @@ version: version.F90
 	@rm -f compinfo.F90
 	@echo
 
-siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML)\
+siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
-	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(MPI_INTERFACE)\
+	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
@@ -257,6 +265,7 @@ clean:
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
+	(cd xmlparser ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
 	(cd NetCDF ; $(MAKE) clean )
 	(cd Libs ; $(MAKE) clean )
