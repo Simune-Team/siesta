@@ -33,11 +33,7 @@ C
 #ifdef MPI
       use mpi_siesta,    only : MPI_logical, MPI_Status_Size
       use mpi_siesta,    only : MPI_Comm_World, MPI_integer
-#ifdef NODAT
       use mpi_siesta,    only : MPI_double_precision
-#else
-      use mpi_siesta,    only : DAT_double
-#endif
 #endif
       use alloc
 
@@ -218,24 +214,14 @@ C Data is on IO node so just read it in
               elseif (Node.eq.0) then
 C Send data to IO node
                 read(unit1)(bdens(im),im=1,numcg(m))
-#ifdef NODAT
                 call MPI_ISend(bdens,numcg(m),MPI_double_precision,
      .            nNode(m),m,MPI_Comm_World,Request,MPIerror)
-#else
-                call MPI_ISend(bdens,numcg(m),DAT_double,
-     .            nNode(m),m,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               elseif (Node.eq.nNode(m)) then
 C Receive data on IO node
                 ndata = numcold(nG2L(m))
-#ifdef NODAT
                 call MPI_IRecv(bdens,ndata,MPI_double_precision,
      .            0,m,MPI_Comm_World,Request,MPIerror)
-#else
-                call MPI_IRecv(bdens,ndata,DAT_double,
-     .            0,m,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
                 do im = 1,ndata
                   cold(im,nG2L(m),is) = bdens(im)
@@ -361,23 +347,13 @@ C Send data to IO node
               do im = 1,ndata
                 bdens(im) = c(im,nG2L(m),is)
               enddo
-#ifdef NODAT
               call MPI_ISend(bdens,ndata,MPI_double_precision,
      .          0,m,MPI_Comm_World,Request,MPIerror)
-#else
-              call MPI_ISend(bdens,ndata,DAT_double,
-     .          0,m,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             elseif (Node.eq.0) then
 C Receive data on IO node
-#ifdef NODAT
               call MPI_IRecv(bdens,numcg(m),MPI_double_precision,
      .          nNode(m),m,MPI_Comm_World,Request,MPIerror)
-#else
-              call MPI_IRecv(bdens,numcg(m),DAT_double,
-     .          nNode(m),m,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
               write(unit1)(bdens(im),im=1,numcg(m))
             endif

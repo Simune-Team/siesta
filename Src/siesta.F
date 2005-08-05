@@ -32,11 +32,7 @@ C  Modules
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
       use mpi_siesta, only: mpi_integer, mpi_logical
-#ifdef NODAT
       use mpi_siesta, only: mpi_double_precision
-#else
-      use mpi_siesta, only: DAT_double
-#endif
 #endif
       use alloc, only: re_alloc, alloc_report
 
@@ -298,13 +294,8 @@ C Read simulation sizes ...............................................
 
 #ifdef MPI
       call MPI_Bcast(na_u,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
       call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,MPI_Comm_World,
      .  MPIerror)
-#else
-      call MPI_Bcast(ucell(1,1),9,DAT_double,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
 
       if (Node.ne.0) then    ! Allocate isa and xa in rest of nodes
          nullify(isa,xa)
@@ -312,13 +303,8 @@ C Read simulation sizes ...............................................
          call re_alloc(xa,1,3,1,na_u,name='xa',routine='siesta')
       endif
       call MPI_Bcast(isa,na_u,MPI_integer,0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
       call MPI_Bcast(xa(1,1),3*na_u,MPI_double_precision,0,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_Bcast(xa(1,1),3*na_u,DAT_double,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
 #endif
 
 C Allocate arrays based on read sizes ................
@@ -421,12 +407,8 @@ C Find some switches ..................................................
       call MPI_Bcast(initdmaux,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(muldeb,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       if (.Not.IONode) signat=.false.
-#ifdef NODAT
       call MPI_Bcast(rijmin,1,MPI_double_precision,0,MPI_Comm_World,
      .  MPIerror)
-#else
-      call MPI_Bcast(rijmin,1,DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
 #endif
 
 C Initialise file SIG for Signature records (whatever they are...) ...
@@ -1201,13 +1183,8 @@ C Normalize density matrix to exact charge ...........................
           enddo
         enddo
 #ifdef MPI
-#ifdef NODAT
         call MPI_AllReduce(qsol,buffer1,1,MPI_double_precision,
      .    MPI_sum,MPI_Comm_World,MPIerror)
-#else
-        call MPI_AllReduce(qsol,buffer1,1,DAT_double,
-     .    MPI_sum,MPI_Comm_World,MPIerror)
-#endif
         qsol = buffer1
 #endif
         if (IOnode) then
@@ -1267,13 +1244,8 @@ C Kinetic: energy, forces, stress and matrix elements .................
      .                 Ekin, fal, stressl, H ) 
 #ifdef MPI
 C Global reduction of energy terms
-#ifdef NODAT
           call MPI_AllReduce(Ekin,buffer1,1,MPI_double_precision,
      .      MPI_sum,MPI_Comm_World,MPIerror)
-#else
-          call MPI_AllReduce(Ekin,buffer1,1,DAT_double,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
-#endif
           Ekin = buffer1
 #endif
         endif
@@ -1304,13 +1276,8 @@ C Check whether maxna has been increased during nlefsm & resize if needed
 
 #ifdef MPI
 C Global reduction of energy terms
-#ifdef NODAT
           call MPI_AllReduce(Enl,buffer1,1,MPI_double_precision,
      .      MPI_sum,MPI_Comm_World,MPIerror)
-#else
-          call MPI_AllReduce(Enl,buffer1,1,DAT_double,MPI_sum,
-     .      MPI_Comm_World,MPIerror)
-#endif
           Enl = buffer1
 #endif
         endif
@@ -1348,13 +1315,8 @@ C Non-SCF part of total energy .......................................
           enddo
 #ifdef MPI
 C Global reduction of E0
-#ifdef NODAT
           call MPI_AllReduce(E0,buffer1,1,MPI_double_precision,
      .      MPI_sum,MPI_Comm_World,MPIerror)
-#else
-          call MPI_AllReduce(E0,buffer1,1,DAT_double,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
-#endif
           E0 = buffer1
 #endif
           E0 = E0 - Eions + Ena
@@ -1471,13 +1433,8 @@ C ispin=4 => Imag(D12)
           enddo
 #ifdef MPI
 C Global reduction of DEharr
-#ifdef NODAT
           call MPI_AllReduce(DEharr,buffer1,1,MPI_double_precision,
      .      MPI_sum,MPI_Comm_World,MPIerror)
-#else
-          call MPI_AllReduce(DEharr,buffer1,1,DAT_double,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
-#endif
           DEharr = buffer1
 #endif
 C ..................
@@ -1517,13 +1474,8 @@ C Pulay or Broyden mixing
 
 C Ensure that dDmax is the same on all nodes for convergence test/output
 #ifdef MPI
-#ifdef NODAT
           call MPI_AllReduce(dDmax,buffer1,1,MPI_double_precision,
      .      MPI_max,MPI_Comm_World,MPIerror)
-#else
-          call MPI_AllReduce(dDmax,buffer1,1,DAT_double,
-     .      MPI_max,MPI_Comm_World,MPIerror)
-#endif
           dDmax = buffer1
 #endif
 C ...................
@@ -1635,17 +1587,10 @@ C Substract egg box effect form energy ................................
 C Global reduction of forces and stresses
       allocate(fatmp(3,na_u))
       call memory('A','D',3*na_u,'siesta')
-#ifdef NODAT
       call MPI_AllReduce(stressl(1,1),stresstmp(1,1),9,
      .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
       call MPI_AllReduce(fal(1,1),fatmp(1,1),3*na_u,
      .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(stressl(1,1),stresstmp(1,1),9,
-     .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-      call MPI_AllReduce(fal(1,1),fatmp(1,1),3*na_u,
-     .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
       call memory('D','D',size(fatmp),'siesta')
@@ -1961,18 +1906,12 @@ C Find the desired energy range
 
 #ifdef MPI
 C Broadcast values to all nodes
-#ifdef NODAT
         call MPI_Bcast(e1,1,MPI_double_precision,0,MPI_Comm_World,
      .                 MPIerror)
         call MPI_Bcast(e2,1,MPI_double_precision,0,MPI_Comm_World,
      .                 MPIerror)
         call MPI_Bcast(sigma,1,MPI_double_precision,0,MPI_Comm_World,
      .                 MPIerror)
-#else
-        call MPI_Bcast(e1,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(e2,1,DAT_double,0,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(sigma,1,DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
         call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
@@ -2005,13 +1944,8 @@ C Print spin polarization
         enddo
 #ifdef MPI
 C Global reduction of spin components
-#ifdef NODAT
         call MPI_AllReduce(qspin,qtmp,nspin,
      .    MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-        call MPI_AllReduce(qspin,qtmp,nspin,
-     .    DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
         qspin(1:nspin) = qtmp(1:nspin)
 #endif
         if (nspin .eq. 2) then
@@ -2143,17 +2077,10 @@ C Find the desired energy range
           call destroy(p)
         endif
 #ifdef MPI
-#ifdef NODAT
         call MPI_Bcast(e1,1,MPI_double_precision,0,
      .    MPI_Comm_World,MPIerror)
         call MPI_Bcast(e2,1,MPI_double_precision,0,
      .    MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(e1,1,DAT_double,0,
-     .    MPI_Comm_World,MPIerror)
-        call MPI_Bcast(e2,1,DAT_double,0,
-     .    MPI_Comm_World,MPIerror)
-#endif
 #endif
 
 C Find the density matrix for states between e1 and e2

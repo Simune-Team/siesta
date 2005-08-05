@@ -185,25 +185,13 @@ C Create new distribution of H and S
         endif
 #ifdef MPI
         do is = 1,nspin
-#ifdef NODAT
           call MPI_Bcast(Hnew(listhptrg(io)+1,is),numhg(io),
      .      MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(Hnew(listhptrg(io)+1,is),numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-#endif
         enddo
-#ifdef NODAT
         call MPI_Bcast(Snew(listhptrg(io)+1),numhg(io),
      .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
         call MPI_Bcast(xijloc(1,listhptrg(io)+1),3*numhg(io),
      .    MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(Snew(listhptrg(io)+1),numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-        call MPI_Bcast(xijloc(1,listhptrg(io)+1),3*numhg(io),DAT_double,
-     .      BNode,MPI_Comm_World,MPIerror)
-#endif
 #endif
       enddo
 
@@ -363,24 +351,14 @@ C Allocate workspace array for global reduction
 
 C Global reduction of dpr matrix
       Sloc(1:nhist,1:nuotot,1:nspin) = 0.0d0
-#ifdef NODAT
       call MPI_AllReduce(dpr(1,1,1),Sloc(1,1,1),nhist*nuotot*nspin,
      .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(dpr(1,1,1),Sloc(1,1,1),nhist*nuotot*nspin,
-     .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
       dpr(1:nhist,1:nuotot,1:nspin) = Sloc(1:nhist,1:nuotot,1:nspin)
 
 C Global reduction of dtot matrix
       Sloc(1:nhist,1:nspin,1) = 0.0d0
-#ifdef NODAT
       call MPI_AllReduce(dtot(1,1),Sloc(1,1,1),nhist*nspin,
      .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(dtot(1,1),Sloc(1,1,1),nhist*nspin,
-     .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
       dtot(1:nhist,1:nspin) = Sloc(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction

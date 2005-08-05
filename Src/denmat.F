@@ -85,11 +85,7 @@ C *******************************************************************
      .                     globalreloadb2, globalrezerob2,
      .                     globalisef
       use mpi_siesta, only: mpi_comm_world, mpi_sum
-#ifdef NODAT
       use mpi_siesta, only: mpi_double_precision
-#else
-      use mpi_siesta, only: DAT_double
-#endif
 #endif
 
       implicit none
@@ -414,13 +410,8 @@ C Calculate total output charge ...
 #ifdef MPI
 C Globalise total charge
       qtmp(1:2) = qout(1:2)
-#ifdef NODAT
       call MPI_AllReduce(qtmp,qout,nspin,MPI_double_precision,
      .  MPI_sum,MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(qtmp,qout,nspin,DAT_double,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
 #endif
 
       if (Node.eq.0) then

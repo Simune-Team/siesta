@@ -58,15 +58,10 @@ C Read lattice constant and unit cell vectors .........................
         lSpinSpiral = fdf_block('SpinSpiral',iu)
       endif
 #ifdef MPI
-#ifdef NODAT
       call MPI_Bcast(alat,1,MPI_double_precision,0,
      .  MPI_Comm_World,MPIerror)
       call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_Bcast(alat,1,DAT_double,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(ucell(1,1),9,DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
       call MPI_Bcast(lSpinSpiral,1,MPI_logical,0,MPI_Comm_World,
      .  MPIerror)
 #endif

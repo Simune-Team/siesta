@@ -10,11 +10,7 @@
       use mpi_siesta, only: mpi_comm_world
       use mpi_siesta, only: mpi_status_size, mpi_integer
       use mpi_siesta, only: mpi_sum, mpi_logical
-#ifdef NODAT
       use mpi_siesta, only: mpi_double_precision
-#else
-      use mpi_siesta, only: DAT_double
-#endif
 
       public :: setglobalise, setglobaliseF, setglobaliseB,
      $          globalisestats, globalinitb, globalloadb2,
@@ -612,22 +608,12 @@ C Load data arrays
         enddo
 
 C Post receives
-#ifdef NODAT
         call MPI_IRecv(gtmp2(1,n),ndata,mpi_double_precision,NNodeNo(n),
      .    NNodeNo(n),MPI_Comm_World,Request(2,n),MPIerror)
-#else
-        call MPI_IRecv(gtmp2(1,n),ndata,DAT_double,NNodeNo(n),
-     .    NNodeNo(n),MPI_Comm_World,Request(2,n),MPIerror)
-#endif
 
 C Post sends
-#ifdef NODAT
         call MPI_ISend(gtmp(1,n),ndata,mpi_double_precision,NNodeNo(n),
      .    Node,MPI_Comm_World,Request(1,n),MPIerror)
-#else
-        call MPI_ISend(gtmp(1,n),ndata,DAT_double,NNodeNo(n),
-     .    Node,MPI_Comm_World,Request(1,n),MPIerror)
-#endif
 
 C Statistics
         nTransferDouble = nTransferDouble + ndata
@@ -868,29 +854,17 @@ C Loop over neighbouring nodes to distribute elements
 C Post receives
         if (ndataBR(n).gt.0) then
           nRequest = nRequest + 1
-#ifdef NODAT
           call MPI_IRecv(buxstore2(1,n),ndataBR(n),MPI_double_precision,
      .                   NNodeNo(n),NNodeNo(n),MPI_Comm_World,
      .                   Request(nRequest),MPIerror)
-#else
-          call MPI_IRecv(buxstore2(1,n),ndataBR(n),DAT_double,
-     .                   NNodeNo(n),NNodeNo(n),MPI_Comm_World,
-     .                   Request(nRequest),MPIerror)
-#endif
         endif
 
 C Post sends
         if (ndataBS(n).gt.0) then
           nRequest = nRequest + 1
-#ifdef NODAT
           call MPI_ISend(buxstore(1,n),ndataBS(n),
      .                   MPI_double_precision,NNodeNo(n),Node,
      .                   MPI_Comm_World,Request(nRequest),MPIerror)
-#else
-          call MPI_ISend(buxstore(1,n),ndataBS(n),
-     .                   DAT_double,NNodeNo(n),Node,
-     .                   MPI_Comm_World,Request(nRequest),MPIerror)
-#endif
         endif
 
 C Statistics
@@ -1371,21 +1345,12 @@ C Load data arrays
           ndataFR(n) = ndataFR(n) + numftG(i,n)
         enddo
 
-#ifdef NODAT
 C Post receives
         call MPI_IRecv(gtmp2(1,n),ndataFR(n),mpi_double_precision,
      $       NNodeNo(n),NNodeNo(n),MPI_Comm_World,Request(2,n),MPIerror)
 C Post sends
         call MPI_ISend(gtmp(1,n),ndataFS(n),mpi_double_precision,
      $       NNodeNo(n),Node,MPI_Comm_World,Request(1,n),MPIerror)
-#else
-C Post receives
-        call MPI_IRecv(gtmp2(1,n),ndataFR(n),DAT_double,NNodeNo(n),
-     .    NNodeNo(n),MPI_Comm_World,Request(2,n),MPIerror)
-C Post sends
-        call MPI_ISend(gtmp(1,n),ndataFS(n),DAT_double,NNodeNo(n),
-     .    Node,MPI_Comm_World,Request(1,n),MPIerror)
-#endif
 
 C Statistics
         nTransferDouble = nTransferDouble + ndataFR(n) + ndataFS(n)

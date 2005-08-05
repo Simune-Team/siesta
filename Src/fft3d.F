@@ -377,17 +377,10 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
-#ifdef NODAT
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      MPI_real,SNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      MPI_real,BNode,1,ZCommunicator,RequestS,MPIerror)
-#else
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      DAT_single,SNode,1,ZCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      DAT_single,BNode,1,ZCommunicator,RequestS,MPIerror)
-#endif
 C
 C  Wait for receive to complete
 C
@@ -462,17 +455,10 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
-#ifdef NODAT
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      MPI_real,BNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
      .      MPI_real,SNode,1,ZCommunicator,RequestS,MPIerror)
-#else
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      DAT_single,BNode,1,ZCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      DAT_single,SNode,1,ZCommunicator,RequestS,MPIerror)
-#endif
 C
 C  Wait for receive to complete
 C
@@ -655,17 +641,10 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
-#ifdef NODAT
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      MPI_real,SNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      MPI_real,BNode,1,YCommunicator,RequestS,MPIerror)
-#else
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      DAT_single,SNode,1,YCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      DAT_single,BNode,1,YCommunicator,RequestS,MPIerror)
-#endif
 C
 C  Wait for receive to complete
 C
@@ -740,17 +719,10 @@ C
 C
 C  Exchange data - send to right and receive from left
 C
-#ifdef NODAT
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      MPI_real,BNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
      .      MPI_real,SNode,1,YCommunicator,RequestS,MPIerror)
-#else
-          call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      DAT_single,BNode,1,YCommunicator,RequestR,MPIerror)
-          call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      DAT_single,SNode,1,YCommunicator,RequestS,MPIerror)
-#endif
 C
 C  Wait for receive to complete
 C

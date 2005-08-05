@@ -82,11 +82,7 @@ C  Modules
       use globalise,  only: setglobalise, globaliseC
       use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
       use mpi_siesta, only: mpi_integer
-#ifdef NODAT
       use mpi_siesta, only: mpi_double_precision
-#else
-      use mpi_siesta, only: DAT_double
-#endif
 #endif
 
       implicit none
@@ -354,13 +350,8 @@ C First calculate total charge of the solution
       endif
 #ifdef MPI
 C Global reduction of qtot
-#ifdef NODAT
       call MPI_AllReduce(qtot,rtmp,nspin,MPI_double_precision,MPI_sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(qtot,rtmp,nspin,DAT_double,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       qtot(1:nspin) = rtmp(1:nspin)
 #endif
 

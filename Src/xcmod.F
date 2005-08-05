@@ -127,17 +127,10 @@ C Globalise data over all nodes
      .                 MPIerror)
         call MPI_Bcast(XCauth,10*nXCfunc,MPI_character,0,MPI_Comm_World,
      .                 MPIerror)
-#ifdef NODAT
         call MPI_Bcast(XCweightX,nXCfunc,MPI_double_precision,0,
      .                 MPI_Comm_World,MPIerror)
         call MPI_Bcast(XCweightC,nXCfunc,MPI_double_precision,0,
      .                 MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(XCweightX,nXCfunc,DAT_double,0,
-     .                 MPI_Comm_World,MPIerror)
-        call MPI_Bcast(XCweightC,nXCfunc,DAT_double,0,
-     .                 MPI_Comm_World,MPIerror)
-#endif
 #endif
 
         end subroutine setXC

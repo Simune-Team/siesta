@@ -107,13 +107,8 @@ C Look for kscell or cutoff in input fdf file
 #ifdef MPI
           call MPI_Bcast(kscell(1,1),9,MPI_integer,0,MPI_Comm_World,
      .      MPIerror)
-#ifdef NODAT
           call MPI_Bcast(displ,3,MPI_double_precision,0,MPI_Comm_World,
      .      MPIerror)
-#else
-          call MPI_Bcast(displ,3,DAT_double,0,MPI_Comm_World,
-     .      MPIerror)
-#endif
 #endif
           nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
      .                 kscell(2,1) * kscell(3,2) * kscell(1,3) +
@@ -127,13 +122,8 @@ C The second argument is the default value
             cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
           endif
 #ifdef MPI
-#ifdef NODAT
           call MPI_Bcast(cutoff,1,MPI_double_precision,0,
      .      MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(cutoff,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
 #endif
         endif
       endif

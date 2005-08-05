@@ -241,13 +241,8 @@ C Compute and print Overlap Populations for Atoms ....................
 #ifdef MPI
 C Global sum of values stored in p
             pb(1:imax)=p(1:imax)
-#ifdef NODAT
             call MPI_Reduce(pb,p,imax,MPI_double_precision,MPI_sum,
      .        0,MPI_Comm_World,MPIerror)
-#else
-            call MPI_Reduce(pb,p,imax,DAT_double,MPI_sum,
-     .        0,MPI_Comm_World,MPIerror)
-#endif
 #endif
 
             if (ionode) then
@@ -345,21 +340,11 @@ C             Compute charge in each orbital of atom ia
 #ifdef MPI
 C Global sum of values stored in qo
                  qb = qo
-#ifdef NODAT
                  call MPI_Reduce(qb,qo,nao,MPI_double_precision,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
-#else
-                 call MPI_Reduce(qb,qo,nao,DAT_double,
-     .             MPI_sum,0,MPI_Comm_World,MPIerror)
-#endif
                  qb(1)=qa
-#ifdef NODAT
                  call MPI_Reduce(qb(1),qa,1,MPI_double_precision,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
-#else
-                 call MPI_Reduce(qb(1),qa,1,DAT_double,
-     .             MPI_sum,0,MPI_Comm_World,MPIerror)
-#endif
 #endif
                  if (ionode) then
                    write(6,'(i4,f7.3,8f8.3,(/11x,8f8.3))')
@@ -387,13 +372,8 @@ C Global sum of values stored in qo
 #ifdef MPI
 C Global sum of total charge
             qtot_temp = qtot
-#ifdef NODAT
             call MPI_Reduce(qtot_temp,qtot,1,MPI_double_precision,
      $           MPI_sum, 0,MPI_Comm_World,MPIerror)
-#else
-            call MPI_Reduce(qtot_temp,qtot,1,DAT_double,MPI_sum,
-     .        0,MPI_Comm_World,MPIerror)
-#endif
 #endif
             if (ionode) then
               write(6,"(/a,f8.3)") 'mulliken: Qtot = ', qtot
@@ -481,13 +461,8 @@ C Global reduction of terms
                 tempvec(1:3) = svec
                 tempvec(4)   = qtot
                 tempvec(5)   = stot
-#ifdef NODAT
                 call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
      .               MPI_Comm_World,MPIerror)
-#else
-                call MPI_Reduce(qb,pb,5,DAT_double,MPI_sum,0,
-     .               MPI_Comm_World,MPIerror)
-#endif
                 svec = tempvec(1:3)
                 qtot = tempvec(4)
                 stot = tempvec(5)
@@ -505,13 +480,8 @@ C Global reduction of terms
           tempvec(1:3) = svec
           tempvec(4)   = qtot
           tempvec(5)   = stot
-#ifdef NODAT
           call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
      .        MPI_Comm_World,MPIerror)
-#else
-          call MPI_Reduce(qb,pb,5,DAT_double,MPI_sum,0,
-     .        MPI_Comm_World,MPIerror)
-#endif
           svec = tempvec(1:3)
           qtot = tempvec(4)
           stot = tempvec(5)

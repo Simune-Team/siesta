@@ -15,11 +15,7 @@ C
       use alloc
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_integer
-#ifdef NODAT
       use mpi_siesta, only: mpi_double_precision
-#else
-      use mpi_siesta, only: DAT_double
-#endif
 #endif
       implicit none
 C
@@ -83,12 +79,8 @@ C Spatial decomposition flag
         rspatial = fdf_physical('RcSpatial',0.0d0,'Bohr')
       endif
 #ifdef MPI
-#ifdef NODAT
       call MPI_Bcast(rspatial,1,MPI_double_precision,0,MPI_Comm_World,
      .  MPIerror)
-#else
-      call MPI_Bcast(rspatial,1,DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
 #endif
 
 C Set ProcessorY  

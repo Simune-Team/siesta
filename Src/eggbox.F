@@ -121,17 +121,10 @@ C Get the scale (default 1 eV)
 C Pass data to other nodes
 #ifdef MPI
            nvreal = maxispe*(maxshell+1)**3
-#ifdef NODAT
            call MPI_Bcast(vreal(0,0,0,1),nvreal,MPI_double_precision,
      .                    0,MPI_Comm_World,MPIerror)
            call MPI_Bcast(escale,1,MPI_double_precision,0,
      .                    MPI_Comm_World,MPIerror)
-#else
-           call MPI_Bcast(vreal(0,0,0,1),nvreal,DAT_double,
-     .                    0,MPI_Comm_World,MPIerror)
-           call MPI_Bcast(escale,1,DAT_double,0,
-     .                    MPI_Comm_World,MPIerror)
-#endif
 #endif
          else
 c          write(6,'a') "eggbox: The eggbox effect will not be removed"

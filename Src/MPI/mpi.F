@@ -24,28 +24,21 @@
 !       as symbolic datatypes, and have them point to the appropriate
 !       data type.
 !
-#ifndef NODAT
-      USE MPI__INCLUDE, 
-#ifndef CRAY
-     &     DAT_single => MPI_real,                                      &
-     &     DAT_double => MPI_double_precision,                          &
-     &     DAT_2double => MPI_2double_precision,                        &
-     &     DAT_complex => MPI_complex,                                  &
-     &     DAT_dcomplex => MPI_double_complex
-#else
+      USE MPI__INCLUDE ,
+#ifdef CRAY
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
      &     DAT_double => MPI_real,                                      &
      &     DAT_2double => MPI_2real,                                    &
      &     DAT_complex => MPI_complex,                                  &
-     &     DAT_2complex => MPI_complex,                                 &
      &     DAT_dcomplex => MPI_complex,                                 &
-     &     DAT_2dcomplex => MPI_complex  
-#endif
-!!****      NOTE fudging of "2complex" on CRAY!!!
-
 #else
-        use mpi__include
+     &     DAT_single => MPI_real,                                      &
+     &     DAT_2single => MPI_2real,                                    &
+     &     DAT_double => MPI_double_precision,                          &
+     &     DAT_2double => MPI_2double_precision,                        &
+     &     DAT_complex => MPI_complex,                                  &
+     &     DAT_dcomplex => MPI_double_complex                           &
 #endif
 
 !       ... generic overloads for <choice> argument routines ...
@@ -74,6 +67,13 @@
 !       USE MPI__sendrecv
 
         IMPLICIT NONE
+
+        integer, parameter :: MPI_real              = DAT_single
+        integer, parameter :: MPI_2real             = DAT_2single
+        integer, parameter :: MPI_double_precision  = DAT_double
+        integer, parameter :: MPI_2double_precision = DAT_2double
+        integer, parameter :: MPI_complex           = DAT_complex
+        integer, parameter :: MPI_double_complex    = DAT_dcomplex
 
 !       ... A.9  Fortran Bindings for Point-to-Point Communication  ...
 

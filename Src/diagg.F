@@ -217,13 +217,8 @@ C Global operation to form new density matrix
               call dcopy(nuotot,psi(1,iie,ispin),1,aux,1)
             endif
 #ifdef MPI
-#ifdef NODAT
             call MPI_Bcast(aux,nuotot,MPI_double_precision,BNode,
      .        MPI_Comm_World,MPIerror)
-#else
-            call MPI_Bcast(aux,nuotot,DAT_double,BNode,
-     .        MPI_Comm_World,MPIerror)
-#endif
 #endif
             ee = qe * eo(ie,ispin)
             do io = 1,nuo

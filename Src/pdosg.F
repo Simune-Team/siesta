@@ -173,13 +173,8 @@ C Transfer data
           if (Node.eq.BNode) then
             Sloc(1:nuotot,1:Bnuo) = Saux(1:nuotot,1:Bnuo)
           endif
-#ifdef NODAT
           call MPI_Bcast(Sloc(1,1),nuotot*Bnuo,
      .      MPI_double_precision,BNode,MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(Sloc(1,1),nuotot*Bnuo,
-     .      DAT_double,BNode,MPI_Comm_World,MPIerror)
-#endif
 
 C Loop over all the energy range
           do ihist = 1, nhist
@@ -250,24 +245,14 @@ C Allocate workspace array for global reduction
 
 C Global reduction of dpr matrix
       tmp(1:nhist,1:nuotot,1:nspin) = 0.0d0
-#ifdef NODAT
       call MPI_AllReduce(dpr(1,1,1),tmp(1,1,1),nhist*nuotot*nspin,
      .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(dpr(1,1,1),tmp(1,1,1),nhist*nuotot*nspin,
-     .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
       dpr(1:nhist,1:nuotot,1:nspin) = tmp(1:nhist,1:nuotot,1:nspin)
 
 C Global reduction of dtot matrix
       tmp(1:nhist,1:nspin,1) = 0.0d0
-#ifdef NODAT
       call MPI_AllReduce(dtot(1,1),tmp(1,1,1),nhist*nspin,
      .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(dtot(1,1),tmp(1,1,1),nhist*nspin,
-     .  DAT_double,MPI_sum,MPI_Comm_World,MPIerror)
-#endif
       dtot(1:nhist,1:nspin) = tmp(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction

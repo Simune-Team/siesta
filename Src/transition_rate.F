@@ -135,13 +135,8 @@ C Allocate workspace array
           enddo
         endif
 #ifdef MPI
-#ifdef NODAT
         call MPI_Bcast(psibandi(1,1),2*nuotot,MPI_double_precision,
      .    BNodei,MPI_Comm_World,MPIerror)
-#else       
-        call MPI_Bcast(psibandi(1,1),2*nuotot,DAT_double,
-     .    BNodei,MPI_Comm_World,MPIerror)
-#endif          
 #endif
 
         AuxLocal(1:2,1:nuotot) = 0.0d0
@@ -163,13 +158,8 @@ C Allocate workspace array
                 enddo
               endif
 #ifdef MPI
-#ifdef NODAT
               call MPI_Bcast(psibandj(1,1),2*nuotot,
      $        MPI_double_precision,BNodej,MPI_Comm_World,MPIerror)
-#else       
-              call MPI_Bcast(psibandj(1,1),2*nuotot,DAT_double,
-     .          BNodej,MPI_Comm_World,MPIerror)
-#endif          
 #endif
 
               do iuo = 1,nuo
@@ -205,13 +195,8 @@ C Allocate workspace array
           endif
         enddo 
 #ifdef MPI
-#ifdef NODAT
         call MPI_Reduce(AuxLocal(1,1),AuxLocal2(1,1),2*nuotot,
      .    MPI_double_precision,MPI_sum,BNodei,MPI_Comm_World,MPIerror)
-#else
-        call MPI_Reduce(AuxLocal(1,1),AuxLocal2(1,1),2*nuotot,
-     .    DAT_double,MPI_sum,BNodei,MPI_Comm_World,MPIerror)
-#endif
         if (Node.eq.BNodei) then
           Aux(1:2,1:nuotot,iie) = AuxLocal2(1:2,1:nuotot)
         endif

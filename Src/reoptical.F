@@ -170,7 +170,6 @@ C Distribute information to all nodes
      .      MPIerror)
           call MPI_Bcast(nbands,1,MPI_integer,0,MPI_Comm_World,
      .      MPIerror)
-#ifdef NODAT
           call MPI_Bcast(displ,1,MPI_double_precision,0,
      .      MPI_Comm_World,MPIerror)
           call MPI_Bcast(wmin,1,MPI_double_precision,0,
@@ -183,20 +182,6 @@ C Distribute information to all nodes
      .      MPI_Comm_World,MPIerror)
           call MPI_Bcast(efield,3,MPI_double_precision,0,
      .      MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(displ,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-          call MPI_Bcast(wmin,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-          call MPI_Bcast(wmax,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-          call MPI_Bcast(smooth,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-          call MPI_Bcast(escissor,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-          call MPI_Bcast(efield,3,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
           call MPI_Bcast(option,12,MPI_character,0,
      .      MPI_Comm_World,MPIerror)
         endif

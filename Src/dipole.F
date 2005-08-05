@@ -123,13 +123,8 @@ C structure of rho
       enddo
 
 #ifdef MPI
-#ifdef NODAT
       call MPI_AllReduce(dipol,d,3,MPI_double_precision,MPI_sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(dipol,d,3,DAT_double,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       dipol(1:3) = d(1:3)
 #endif
 

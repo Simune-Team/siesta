@@ -5,11 +5,7 @@
 #ifdef MPI
       use mpi_siesta, only : MPI_Comm_World, MPI_integer, MPI_logical
       use mpi_siesta, only : MPI_Sum, MPI_Max, MPI_character
-#ifdef NODAT
       use mpi_siesta, only: mpi_double_precision
-#else
-      use mpi_siesta, only: DAT_double
-#endif
       integer, private :: MPIerror
 #endif
 
@@ -35,13 +31,8 @@
       real(dp), intent(inout) :: scalar
 
 #ifdef MPI
-#ifdef NODAT
            call MPI_Bcast(scalar,1,MPI_double_precision,0,
      $            MPI_Comm_World,MPIerror)
-#else
-           call MPI_Bcast(scalar,1,DAT_double,0,
-     $            MPI_Comm_World,MPIerror)
-#endif
 #endif
        end subroutine broadcast_dp
 
@@ -50,13 +41,8 @@
       real(dp), dimension(:), intent(inout) :: a
 
 #ifdef MPI
-#ifdef NODAT
            call MPI_Bcast(a,size(a),MPI_double_precision,0,
      $            MPI_Comm_World,MPIerror)
-#else
-           call MPI_Bcast(a,size(a),DAT_double,0,
-     $            MPI_Comm_World,MPIerror)
-#endif
 #endif
        end subroutine broadcast_v_dp
 
@@ -65,13 +51,8 @@
       real(sp), intent(inout) :: scalar
 
 #ifdef MPI
-#ifdef NODAT
            call MPI_Bcast(scalar,1,MPI_real,0,
      $            MPI_Comm_World,MPIerror)
-#else
-           call MPI_Bcast(scalar,1,DAT_single,0,
-     $            MPI_Comm_World,MPIerror)
-#endif
 #endif
        end subroutine broadcast_sp
 
@@ -112,13 +93,8 @@
 #ifndef MPI
            global = local
 #else
-#ifdef NODAT
            call MPI_AllReduce(local,global,1,MPI_double_precision,
      $            MPI_sum,MPI_Comm_World,MPIerror)
-#else
-           call MPI_AllReduce(local,global,1,DAT_double,
-     $            MPI_sum,MPI_Comm_World,MPIerror)
-#endif
 #endif
        end subroutine Globalize_sum_dp
 
@@ -134,13 +110,8 @@
 #ifndef MPI
            global = local
 #else
-#ifdef NODAT
            call MPI_AllReduce(local,global,n,MPI_double_precision,
      $            MPI_sum,MPI_Comm_World,MPIerror)
-#else
-           call MPI_AllReduce(local,global,n,DAT_double,
-     $            MPI_sum,MPI_Comm_World,MPIerror)
-#endif
 #endif
        end subroutine Globalize_sum_v_dp
 
@@ -163,13 +134,8 @@
 #ifndef MPI
            global = local
 #else
-#ifdef NODAT
            call MPI_AllReduce(local,global,1,MPI_double_precision,
      $            MPI_max,MPI_Comm_World,MPIerror)
-#else
-           call MPI_AllReduce(local,global,1,DAT_double,
-     $            MPI_max,MPI_Comm_World,MPIerror)
-#endif
 #endif
        end subroutine Globalize_max_dp
 

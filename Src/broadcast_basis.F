@@ -41,22 +41,12 @@
      $                  0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(spp%z,1,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
          call MPI_Bcast(spp%mass,1,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(spp%mass,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-#endif
          call MPI_Bcast(spp%zval,1,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
          call MPI_Bcast(spp%self_energy,1,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(spp%self_energy,1,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-#endif
 
          call MPI_Bcast(spp%n_orbnl,1,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
@@ -70,13 +60,8 @@
      $                  0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(spp%orbnl_ispol,maxn_orbnl,MPI_logical,
      $                  0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
          call MPI_Bcast(spp%orbnl_pop,maxn_orbnl,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(spp%orbnl_pop,maxn_orbnl,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-#endif
 
 
 
@@ -88,13 +73,8 @@
      $                  0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(spp%pjnl_n,maxn_pjnl,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
          call MPI_Bcast(spp%pjnl_ekb,maxn_pjnl,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(spp%pjnl_ekb,maxn_pjnl,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-#endif
 
          call MPI_Bcast(spp%norbs,1,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
@@ -107,13 +87,8 @@
      $                  0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(spp%orb_m,maxnorbs,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
          call MPI_Bcast(spp%orb_pop,maxnorbs,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(spp%orb_pop,maxnorbs,DAT_double,
-     $                  0,MPI_Comm_World,MPIerror)
-#endif
 
          call MPI_Bcast(spp%nprojs,1,MPI_integer,
      $                  0,MPI_Comm_World,MPIerror)
@@ -185,7 +160,6 @@
          call rad_zero(func)
       else
          if (Node.ne.0) call rad_alloc(func,func%n)
-#ifdef NODAT
          call MPI_Bcast(func%cutoff,1,MPI_double_precision,
      $        0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(func%delta,1,MPI_double_precision,
@@ -194,16 +168,6 @@
      $        0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(func%d2,func%n,MPI_double_precision,
      $        0,MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(func%cutoff,1,DAT_double,
-     $        0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%delta,1,DAT_double,
-     $        0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%f,func%n,DAT_double,
-     $        0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(func%d2,func%n,DAT_double,
-     $        0,MPI_Comm_World,MPIerror)
-#endif
       endif
       end subroutine broadcast_radial
 

@@ -62,11 +62,7 @@ c
       call MPI_BCAST(n,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 c
       h = 1.0d0/n
-#ifndef NODAT
-      call MPI_BCAST(h,1,DAT_double,0,MPI_COMM_WORLD,ierr)
-#else
       call MPI_BCAST(h,1,mpi_double_precision,0,MPI_COMM_WORLD,ierr)
-#endif
 c
       call system_clock(count2,rate,max)
       print *, 'Process ', myid,                                         &

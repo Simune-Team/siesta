@@ -139,13 +139,8 @@ C Find lattice constant
             alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
           endif
 #ifdef MPI
-#ifdef NODAT
           call MPI_Bcast(alat,1,MPI_double_precision,0,
      .      MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(alat,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
 #endif
           if (alat .eq. 0.d0) then
             if (Node.eq.0) then
@@ -171,17 +166,10 @@ C Find scale used in k point data
               call redcel( alat, caux, ucell, mscell )
             endif
 #ifdef MPI
-#ifdef NODAT
             call MPI_Bcast(alat,1,MPI_double_precision,0,
      .        MPI_Comm_World,MPIerror)
             call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,
      .        MPI_Comm_World,MPIerror)
-#else
-            call MPI_Bcast(alat,1,DAT_double,0,
-     .        MPI_Comm_World,MPIerror)
-            call MPI_Bcast(ucell(1,1),9,DAT_double,0,
-     .        MPI_Comm_World,MPIerror)
-#endif
 #endif
             call reclat( ucell, rcell, 1 )
           elseif (Node.eq.0) then
@@ -413,13 +401,8 @@ C Global broadcast of values
       call MPI_Bcast(overflow,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 
       if (.not. overflow) then
-#ifdef NODAT
          call MPI_Bcast(kpoint(1,1),3*nk,MPI_double_precision,0,
      .     MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(kpoint(1,1),3*nk,DAT_double,0,
-     .     MPI_Comm_World,MPIerror)
-#endif
       endif
 
       if (overflow) then
@@ -867,13 +850,8 @@ C must be handled differently
         endif
 C Pass the wf to the other processors
 #ifdef MPI
-#ifdef NODAT
         call MPI_Bcast(aux(1,1),2*nuotot,MPI_double_precision,
      .        BNode,MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(aux(1,1),2*nuotot,DAT_double,
-     .        BNode,MPI_Comm_World,MPIerror)
-#endif
 #endif
 
 

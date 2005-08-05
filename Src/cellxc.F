@@ -367,7 +367,6 @@ C Collect data to be sent
           enddo
 
 C Transfers
-#ifdef NODAT
           call MPI_IRecv(bbuffer(1,1),nrleft,MPI_real,
      .      Pleft3,1,MPI_Comm_World,Requests(1),MPIerror)
           call MPI_IRecv(bbuffer(1,2),nrright,MPI_real,
@@ -376,16 +375,6 @@ C Transfers
      .      Pleft3,2,MPI_Comm_World,Requests(3),MPIerror)
           call MPI_ISend(dbuffer(1,2),nsright,MPI_real,
      .      Pright3,1,MPI_Comm_World,Requests(4),MPIerror)
-#else
-          call MPI_IRecv(bbuffer(1,1),nrleft,DAT_single,
-     .      Pleft3,1,MPI_Comm_World,Requests(1),MPIerror)
-          call MPI_IRecv(bbuffer(1,2),nrright,DAT_single,
-     .      Pright3,2,MPI_Comm_World,Requests(2),MPIerror)
-          call MPI_ISend(dbuffer(1,1),nsleft,DAT_single,
-     .      Pleft3,2,MPI_Comm_World,Requests(3),MPIerror)
-          call MPI_ISend(dbuffer(1,2),nsright,DAT_single,
-     .      Pright3,1,MPI_Comm_World,Requests(4),MPIerror)
-#endif
 
 C Wait for transfers to complete
           call MPI_WaitAll(4,Requests,Statuss,MPIerror)
@@ -479,7 +468,6 @@ C Post density sends
           enddo
 
 C Transfers
-#ifdef NODAT
           call MPI_IRecv(bbuffer(1,1),nrleft,MPI_real,
      .      Pleft2,1,MPI_Comm_World,Requests(1),MPIerror)
           call MPI_IRecv(bbuffer(1,2),nrright,MPI_real,
@@ -488,16 +476,6 @@ C Transfers
      .      Pleft2,2,MPI_Comm_World,Requests(3),MPIerror)
           call MPI_ISend(dbuffer(1,2),nsright,MPI_real,
      .      Pright2,1,MPI_Comm_World,Requests(4),MPIerror)
-#else
-          call MPI_IRecv(bbuffer(1,1),nrleft,DAT_single,
-     .      Pleft2,1,MPI_Comm_World,Requests(1),MPIerror)
-          call MPI_IRecv(bbuffer(1,2),nrright,DAT_single,
-     .      Pright2,2,MPI_Comm_World,Requests(2),MPIerror)
-          call MPI_ISend(dbuffer(1,1),nsleft,DAT_single,
-     .      Pleft2,2,MPI_Comm_World,Requests(3),MPIerror)
-          call MPI_ISend(dbuffer(1,2),nsright,DAT_single,
-     .      Pright2,1,MPI_Comm_World,Requests(4),MPIerror)
-#endif
 
 C Wait for transfers to complete
           call MPI_WaitAll(4,Requests,Statuss,MPIerror)
@@ -1048,35 +1026,18 @@ C Loop over spins
 C Post VXC receive
               NSwap = NSpan(1)*NSpan(2)
               Tag = 8*in + 2*is
-#ifdef NODAT
               call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,MPI_real,
      .             Pleft3,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
               call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,MPI_real,
      .             Pright3,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
-#else
-              call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,DAT_single,
-     .             Pleft3,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
-              call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,DAT_single,
-     .             Pright3,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
-#endif
 
 C Post VXC send
               NSwap = PMesh(1,4)*PMesh(2,4)
-#ifdef NODAT
               call MPI_ISend(bvxc(1,3*nn+in,is),NSwap,MPI_real,
      .          Pright3,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
-#else
-              call MPI_ISend(bvxc(1,3*nn+in,is),NSwap,DAT_single,
-     .          Pright3,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
-#endif
               NSwap = PMesh(1,3)*PMesh(2,3)
-#ifdef NODAT
               call MPI_ISend(bvxc(1,2*nn+in,is),NSwap,MPI_real,
      .          Pleft3,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
-#else
-              call MPI_ISend(bvxc(1,2*nn+in,is),NSwap,DAT_single,
-     .          Pleft3,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
-#endif
 
 C Wait for transfers to complete
               call MPI_WaitAll(4,Requests,Statuss,MPIerror)
@@ -1100,35 +1061,18 @@ C Loop over spins
 C Post VXC receives
               NSwap = NSpan(1)*NSpan(3)
               Tag = 8*in + 2*is
-#ifdef NODAT
               call MPI_IRecv(bdens(1,in,is),NSwap,MPI_real,
      .          Pleft2,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
               call MPI_IRecv(bdens(1,nn+in,is),NSwap,MPI_real,
      .          Pright2,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
-#else
-              call MPI_IRecv(bdens(1,in,is),NSwap,DAT_single,
-     .          Pleft2,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
-              call MPI_IRecv(bdens(1,nn+in,is),NSwap,DAT_single,
-     .          Pright2,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
-#endif
 
 C Post VXC sends
               NSwap = PMesh(1,2)*PMesh(3,2)
-#ifdef NODAT
               call MPI_ISend(bvxc(1,nn+in,is),NSwap,MPI_real,
      .          Pright2,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
-#else
-              call MPI_ISend(bvxc(1,nn+in,is),NSwap,DAT_single,
-     .          Pright2,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
-#endif
               NSwap = PMesh(1,1)*PMesh(3,1)
-#ifdef NODAT
               call MPI_ISend(bvxc(1,in,is),NSwap,MPI_real,
      .          Pleft2,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
-#else
-              call MPI_ISend(bvxc(1,in,is),NSwap,DAT_single,
-     .          Pleft2,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
-#endif
 
 C Wait for transfers to complete
               call MPI_WaitAll(4,Requests,Statuss,MPIerror)
@@ -1237,13 +1181,8 @@ C Collect together quantities
       Buffer(2) = EC
       Buffer(3) = DX
       Buffer(4) = DC
-#ifdef NODAT
       call MPI_AllReduce(Buffer,Buffer2,4,MPI_double_precision,MPI_sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(Buffer,Buffer2,4,DAT_double,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       EX = Buffer2(1)
       EC = Buffer2(2)
       DX = Buffer2(3)

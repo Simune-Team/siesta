@@ -78,11 +78,7 @@ C *********************************************************************
 #ifdef MPI
       use mpi_siesta,   only : mpi_reduce, mpi_comm_world,
      $                         mpi_sum
-#ifdef NODAT
       use mpi_siesta,   only : mpi_double_precision
-#else
-      use mpi_siesta,   only : DAT_double
-#endif
 #endif
 
       implicit          none
@@ -593,13 +589,8 @@ C Closing loop on k_points
 
 #ifdef MPI
       allocate(epsbuff(nw,2))
-#ifdef NODAT
       call MPI_Reduce(epsimg(1,1),epsbuff(1,1),2*nw,
      .  MPI_double_precision,MPI_sum,0,MPI_Comm_World,MPIerror)
-#else
-      call MPI_Reduce(epsimg(1,1),epsbuff(1,1),2*nw,DAT_double,
-     .  MPI_sum,0,MPI_Comm_World,MPIerror)
-#endif
       epsimg(1:nw,1:2) = epsbuff(1:nw,1:2)
       deallocate(epsbuff)
 #endif

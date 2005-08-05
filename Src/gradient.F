@@ -69,11 +69,7 @@ C ************************************************************************
       use globalise
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_sum
-#ifdef NODAT
       use mpi_siesta, only: mpi_double_precision
-#else
-      use mpi_siesta, only: DAT_double
-#endif
 #endif
 
       implicit none
@@ -342,13 +338,8 @@ C Reinitialise bux1 / bux2
 C Global reduction of func1/2
         ftmp(1) = func1
         ftmp(2) = func2
-#ifdef NODAT
         call MPI_AllReduce(ftmp,ftmp2,2,MPI_double_precision,MPI_sum,
      .    MPI_Comm_World,MPIerror)
-#else
-        call MPI_AllReduce(ftmp,ftmp2,2,DAT_double,MPI_sum,
-     .    MPI_Comm_World,MPIerror)
-#endif
         func1 = ftmp2(1)
         func2 = ftmp2(2)
 #endif

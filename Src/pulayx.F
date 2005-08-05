@@ -391,13 +391,8 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
 #ifdef MPI
 C Global operations
        do i=1,maxmix
-#ifdef NODAT
          call MPI_AllReduce(b(1:,i),buffer,maxmix,MPI_double_precision,
      .     MPI_sum,MPI_Comm_World,MPIerror)
-#else
-         call MPI_AllReduce(b(1:,i),buffer,maxmix,DAT_double,
-     .     MPI_sum,MPI_Comm_World,MPIerror)
-#endif
          do j=1,maxmix
            b(j,i)=buffer(j)
          enddo

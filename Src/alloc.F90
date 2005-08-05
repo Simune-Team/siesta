@@ -1479,17 +1479,10 @@ if (nodes > 1) then
   L_PEAK_MEM(2) = node
 
 ! Find maximum memory values and their nodes
-#ifdef NODAT
   call MPI_Reduce(TOT_MEM,G_TOT_MEM,1,MPI_double_precision, &
     MPI_Sum,0,MPI_Comm_World,MPIerror)
   call MPI_Reduce(L_PEAK_MEM,G_PEAK_MEM,1,MPI_2double_precision, &
     MPI_MaxLoc,0,MPI_Comm_World,MPIerror)
-#else
-  call MPI_Reduce(TOT_MEM,G_TOT_MEM,1,DAT_double, &
-    MPI_Sum,0,MPI_Comm_World,MPIerror)
-  call MPI_Reduce(L_PEAK_MEM,G_PEAK_MEM,1,DAT_2double, &
-    MPI_MaxLoc,0,MPI_Comm_World,MPIerror)
-#endif
 
 ! Tell the rest of the nodes where the peak is
   if (node == 0) nodePEAK = nint(G_PEAK_MEM(2))

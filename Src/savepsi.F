@@ -56,13 +56,8 @@ C Broadcast copy of psi on node n to all other nodes
             enddo
           enddo
         endif
-#ifdef NODAT
         call MPI_Bcast(psitmp(1,1,1),2*nuotot*noccloc,
      .    MPI_double_precision,n,MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(psitmp(1,1,1),2*nuotot*noccloc,DAT_double,
-     .    n,MPI_Comm_World,MPIerror)
-#endif
 
 C Save local part of psiprev
         do iuo = 1,noccloc

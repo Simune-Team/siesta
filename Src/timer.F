@@ -87,13 +87,8 @@ C
 C Sum TIMTOT across all Nodes and ensure that all Nodes have same value here
 #ifdef MPI
          buffer1(1)=timtot
-#ifdef NODAT
          call MPI_AllReduce(buffer1(1),timtot,1,MPI_double_precision,
      .     MPI_sum,MPI_Comm_World,MPIerror)
-#else
-         call MPI_AllReduce(buffer1(1),timtot,1,DAT_double,
-     .     MPI_sum,MPI_Comm_World,MPIerror)
-#endif
 #endif
 
          IF (TIMTOT.LT.TIMMIN) RETURN
@@ -114,13 +109,8 @@ C Sum values across Nodes
              buffer1(1)=TIMETL
              buffer1(2)=AVGTME
              buffer1(3)=FRACTN
-#ifdef NODAT
              call MPI_Reduce(buffer1,buffer2,3,MPI_double_precision,
      .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#else
-             call MPI_Reduce(buffer1,buffer2,3,DAT_double,
-     .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#endif
              TIMETL=buffer2(1)
              AVGTME=buffer2(2)
              FRACTN=buffer2(3)
@@ -144,13 +134,8 @@ C Sum values across Nodes
 #ifdef MPI
              buffer1(1)=TIMETL
              buffer1(2)=FRACTN
-#ifdef NODAT
              call MPI_Reduce(buffer1,buffer2,2,MPI_double_precision,
      .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#else
-             call MPI_Reduce(buffer1,buffer2,2,DAT_double,
-     .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#endif
              TIMETL=buffer2(1)
              FRACTN=buffer2(2)
 #endif
@@ -259,13 +244,8 @@ C
 C Sum TIMTOT across all Nodes and ensure that all Nodes have same value here
 #ifdef MPI
          buffer1(1)=timtot
-#ifdef NODAT
          call MPI_AllReduce(buffer1(1),timtot,1,MPI_double_precision,
      .     MPI_sum,MPI_Comm_World,MPIerror)
-#else
-         call MPI_AllReduce(buffer1(1),timtot,1,DAT_double,
-     .     MPI_sum,MPI_Comm_World,MPIerror)
-#endif
 #endif
 
          IF (TIMTOT.LT.TIMMIN) RETURN
@@ -286,13 +266,8 @@ C Sum values across Nodes
              buffer1(1)=TIMETL
              buffer1(2)=AVGTME
              buffer1(3)=FRACTN
-#ifdef NODAT
              call MPI_Reduce(buffer1,buffer2,3,MPI_double_precision,
      .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#else
-             call MPI_Reduce(buffer1,buffer2,3,DAT_double,
-     .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#endif
              TIMETL=buffer2(1)
              AVGTME=buffer2(2)
              FRACTN=buffer2(3)
@@ -316,13 +291,8 @@ C Sum values across Nodes
 #ifdef MPI
              buffer1(1)=TIMETL
              buffer1(2)=FRACTN
-#ifdef NODAT
              call MPI_Reduce(buffer1,buffer2,2,MPI_double_precision,
      .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#else
-             call MPI_Reduce(buffer1,buffer2,2,DAT_double,
-     .         MPI_sum,0,MPI_Comm_World,MPIerror)
-#endif
              TIMETL=buffer2(1)
              FRACTN=buffer2(2)
 #endif

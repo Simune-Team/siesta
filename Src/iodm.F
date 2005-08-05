@@ -256,24 +256,14 @@ C Create buffer arrays for transfering density matrix between nodes and lists
                 do im = 1,numdg(m)
                   read(unit1,*) buffer(im)
                 enddo
-#ifdef NODAT
                 call MPI_ISend(buffer,numdg(m),MPI_double_precision,
      .            BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-                call MPI_ISend(buffer,numdg(m),DAT_double,
-     .            BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               elseif (Node.eq.BNode) then
                 call GlobalToLocalOrb(m,Node,Nodes,ml)
-#ifdef NODAT
                 call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),
      .            MPI_double_precision,0,1,MPI_Comm_World,Request,
      .            MPIerror)
-#else
-                call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),
-     .            DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               endif
               if (BNode.ne.0) then
@@ -423,24 +413,14 @@ C Create buffer arrays for transfering density matrix between nodes and lists
                 else
                   read(unit1) (buffer(im),im=1,numdg(m))
                 endif
-#ifdef NODAT
                 call MPI_ISend(buffer,numdg(m),MPI_double_precision,
      .            BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-                call MPI_ISend(buffer,numdg(m),DAT_double,
-     .            BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               elseif (Node.eq.BNode) then
                 call GlobalToLocalOrb(m,Node,Nodes,ml)
-#ifdef NODAT
                 call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),
      .            MPI_double_precision,0,1,MPI_Comm_World,Request,
      .            MPIerror)
-#else
-                call MPI_IRecv(dm(listdptr(ml)+1,is),numd(ml),
-     .            DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               endif
               if (BNode.ne.0) then
@@ -590,24 +570,14 @@ C Write density matrix
               endif
 #ifdef MPI
             elseif (Node.eq.0) then
-#ifdef NODAT
               call MPI_IRecv(buffer,numdg(m),MPI_double_precision,
      .          BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-              call MPI_IRecv(buffer,numdg(m),DAT_double,
-     .          BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             elseif (Node.eq.BNode) then
               call GlobalToLocalOrb(m,Node,Nodes,ml)
-#ifdef NODAT
               call MPI_ISend(dm(listdptr(ml)+1,is),numd(ml),
      .          MPI_double_precision,0,1,MPI_Comm_World,Request,
      .          MPIerror)
-#else
-              call MPI_ISend(dm(listdptr(ml)+1,is),numd(ml),DAT_double,
-     .          0,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             endif
             if (BNode.ne.0) then

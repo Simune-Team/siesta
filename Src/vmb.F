@@ -96,13 +96,8 @@ C Impose constraint on zero center of mass velocity ....................
 C Distribute the velocities over the Nodes
 
 #ifdef MPI
-#ifdef NODAT
       call MPI_Bcast(va(1,1),3*nat,MPI_double_precision,0,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_Bcast(va(1,1),3*nat,DAT_double,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
 #endif
 
 

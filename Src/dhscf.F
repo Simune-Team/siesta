@@ -680,29 +680,14 @@ C ----------------------------------------------------------------------
 
 #ifdef MPI
 C Global reduction of Uscf/DUscf/Uatm
-#ifdef NODAT
       call MPI_AllReduce(Uscf,Eloc,1,MPI_double_precision,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(Uscf,Eloc,1,DAT_double,MPI_Sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       Uscf = Eloc
-#ifdef NODAT
       call MPI_AllReduce(DUscf,Eloc,1,MPI_double_precision,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(DUscf,Eloc,1,DAT_double,MPI_Sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       DUscf = Eloc
-#ifdef NODAT
       call MPI_AllReduce(Uatm,Eloc,1,MPI_double_precision,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(Uatm,Eloc,1,DAT_double,MPI_Sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       Uatm = Eloc
 #endif
 
@@ -721,21 +706,11 @@ C ----------------------------------------------------------------------
 #ifdef MPI
 C Global reduction of Enaatm and Enascf
       Eloc = Enaatm
-#ifdef NODAT
       call MPI_AllReduce(Eloc,Enaatm,1,MPI_double_precision,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(Eloc,Enaatm,1,DAT_double,MPI_Sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       Eloc = Enascf
-#ifdef NODAT
       call MPI_AllReduce(Eloc,Enascf,1,MPI_double_precision,MPI_Sum,
      .  MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(Eloc,Enascf,1,DAT_double,MPI_Sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
 #endif
 
 C ----------------------------------------------------------------------

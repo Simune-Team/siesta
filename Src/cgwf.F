@@ -129,13 +129,8 @@ C Calculate gradient for first CG step ...................................
 
 C Global reduction of Gnorm
 #ifdef MPI
-#ifdef NODAT
       call MPI_AllReduce(partial,rtmp(1),1,MPI_double_precision,
      .  MPI_sum,MPI_Comm_World,MPIerror)
-#else
-      call MPI_AllReduce(partial,rtmp(1),1,DAT_double,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-#endif
       partial = rtmp(1)
 #endif
 
@@ -252,13 +247,8 @@ C Global reduction of gg/dgg
 #ifdef MPI
         rtmp2(1) = gg
         rtmp2(2) = dgg
-#ifdef NODAT
         call MPI_AllReduce(rtmp2,rtmp,2,MPI_double_precision,MPI_sum,
      .    MPI_Comm_World,MPIerror)
-#else
-        call MPI_AllReduce(rtmp2,rtmp,2,DAT_double,MPI_sum,
-     .    MPI_Comm_World,MPIerror)
-#endif
         gg = rtmp(1)
         dgg = rtmp(2)
 #endif
@@ -281,13 +271,8 @@ C Global reduction of gg/dgg
 
 C Global reduction of Gnorm
 #ifdef MPI
-#ifdef NODAT
         call MPI_AllReduce(partial,rtmp(1),1,MPI_double_precision,
      .    MPI_sum,MPI_Comm_World,MPIerror)
-#else
-        call MPI_AllReduce(partial,rtmp(1),1,DAT_double,MPI_sum,
-     .    MPI_Comm_World,MPIerror)
-#endif
         partial = rtmp(1)
 #endif
 

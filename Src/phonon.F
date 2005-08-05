@@ -76,13 +76,8 @@
      $          0,MPI_Comm_World,MPIerror)
            call MPI_Bcast(phonon_label,phonon_num_disps,MPI_Character,
      $          0,MPI_Comm_World,MPIerror)
-#ifdef NODAT
            call MPI_Bcast(phonon_disp(1,1),3*phonon_num_disps,
      $          MPI_double_precision,0,MPI_Comm_World,MPIerror)
-#else
-           call MPI_Bcast(phonon_disp(1,1),3*phonon_num_disps,
-     $          DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
 #endif
 
       end subroutine phonon_setup

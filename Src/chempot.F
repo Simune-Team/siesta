@@ -266,23 +266,13 @@ C  Globalise Hdense and Sdense for now
         allocate(dpbuffer1(nu))
         call memory('A','D',nu,'chempot')
         do i = 1,nu
-#ifdef NODAT
           call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-          call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,DAT_double,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
-#endif
           do j = 1,nu
             Sdense(j,i) = dpbuffer1(j)
           enddo
-#ifdef NODAT
           call MPI_AllReduce(Hdense(1:,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-#else
-          call MPI_AllReduce(Hdense(1:,i),dpbuffer1,nu,DAT_double,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
-#endif
           do j = 1,nu
             Hdense(j,i) = dpbuffer1(j)
           enddo

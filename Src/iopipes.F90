@@ -87,17 +87,10 @@ subroutine coordsFromPipe( na, xa, cell )
         cell = cell * fdf_convfac( xunit, siesta_xunit )
         xa   = xa   * fdf_convfac( xunit, siesta_xunit )
 #ifdef MPI
-#ifndef NODAT
-        call MPI_Bcast( cell(1,1), 9, DAT_double, 0, &
-                        MPI_Comm_World, MPIerror)
-        call MPI_Bcast( xa(1,1), 3*na, DAT_double, 0, &
-                        MPI_Comm_World, MPIerror)
-#else
         call MPI_Bcast( cell(1,1), 9, MPI_double_precision, 0, &
                         MPI_Comm_World, MPIerror)
         call MPI_Bcast( xa(1,1), 3*na, MPI_double_precision, 0, &
                         MPI_Comm_World, MPIerror)
-#endif
 #endif
       else
         call die('coordsFromPipe: ERROR: coords not complete')

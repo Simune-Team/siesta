@@ -280,13 +280,8 @@ C If this row is local to this node then copy into buffer
         endif
 
 C Broadcast buffer array
-#ifdef NODAT
         call MPI_Bcast(buffer,maxnog*nspin,MPI_double_precision,BNode,
      .                 MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(buffer,maxnog*nspin,DAT_double,BNode,
-     .                 MPI_Comm_World,MPIerror)
-#endif
 
 C Get pointer for this row of Dscf and see if it is needed for DscfL
         il = NeedDscfL(io)
@@ -436,13 +431,8 @@ C If this is the broadcasting Node then copy the data to the buffer
         endif
 
 C Broadcast the buffer information
-#ifdef NODAT
         call MPI_Bcast(Vi,maxnvg*nspin,MPI_double_precision,in,
      .                 MPI_Comm_World,MPIerror)
-#else
-        call MPI_Bcast(Vi,maxnvg*nspin,DAT_double,in,
-     .                 MPI_Comm_World,MPIerror)
-#endif
 
 C Add those elements that are needed locally to the values already
 C stored in the orbital oriented array

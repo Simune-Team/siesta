@@ -216,13 +216,8 @@ C New density and energy-density matrices of unit-cell orbitals .......
             enddo
           endif
 #ifdef MPI
-#ifdef NODAT
           call MPI_Bcast(aux(1,1),4*no,MPI_double_precision,BNode,
      .      MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(aux(1,1),4*no,DAT_double,BNode,
-     .      MPI_Comm_World,MPIerror)
-#endif
 #endif
           ee = qo(ie) * eo(ie)
           do io = 1,nuo

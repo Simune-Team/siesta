@@ -110,12 +110,8 @@ C Read the electric field block from the fdf input file
           endif
         endif
 #ifdef MPI
-#ifdef NODAT
         call MPI_Bcast(e,3,MPI_double_precision,0,MPI_Comm_World,
      .    MPIerror)
-#else
-        call MPI_Bcast(e,3,DAT_double,0,MPI_Comm_World,MPIerror)
-#endif
         call MPI_Bcast(isfield,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 

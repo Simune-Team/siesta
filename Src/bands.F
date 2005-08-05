@@ -138,13 +138,8 @@ C Find lattice constant
             alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
           endif
 #ifdef MPI
-#ifdef NODAT
           call MPI_Bcast(alat,1,MPI_double_precision,0,
      .      MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(alat,1,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
 #endif
           if (alat .eq. 0.d0) then
             if (Node.eq.0) then
@@ -158,13 +153,8 @@ C Find scale used in k point data
             scale = fdf_string( 'BandLinesScale', 'pi/a' )
           endif
 #ifdef MPI
-#ifdef NODAT
           call MPI_Bcast(scale,30,MPI_double_precision,0,
      .      MPI_Comm_World,MPIerror)
-#else
-          call MPI_Bcast(scale,30,DAT_double,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
 #endif
           if (scale .eq. 'pi/a') then
             pi = 4.d0 * atan(1.d0)
@@ -173,17 +163,10 @@ C Find scale used in k point data
               call redcel( alat, caux, ucell, mscell )
             endif
 #ifdef MPI
-#ifdef NODAT
             call MPI_Bcast(alat,1,MPI_double_precision,0,
      .        MPI_Comm_World,MPIerror)
             call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,
      .        MPI_Comm_World,MPIerror)
-#else
-            call MPI_Bcast(alat,1,DAT_double,0,
-     .        MPI_Comm_World,MPIerror)
-            call MPI_Bcast(ucell(1,1),9,DAT_double,0,
-     .        MPI_Comm_World,MPIerror)
-#endif
 #endif
             call reclat( ucell, rcell, 1 )
           elseif (Node.eq.0) then
@@ -267,13 +250,8 @@ C Global broadcast of values
 #ifdef MPI
       call MPI_Bcast(nk,1,MPI_integer,0,MPI_Comm_World,MPIerror)
       if (nk.le.maxk) then
-#ifdef NODAT
          call MPI_Bcast(kpoint(1,1),3*nk,MPI_double_precision,0,
      .     MPI_Comm_World,MPIerror)
-#else
-         call MPI_Bcast(kpoint(1,1),3*nk,DAT_double,0,
-     .     MPI_Comm_World,MPIerror)
-#endif
       endif
 #endif
 

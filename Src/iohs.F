@@ -226,24 +226,14 @@ C Read Hamiltonian
                 do im = 1,numhg(ih)
                   read(iu) buffer(im)
                 enddo
-#ifdef NODAT
                 call MPI_ISend(buffer,numhg(ih),MPI_double_precision,
      .            BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-                call MPI_ISend(buffer,numhg(ih),DAT_double,
-     .            BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               elseif (Node.eq.BNode) then
                 call GlobalToLocalOrb(ih,Node,Nodes,hl)
-#ifdef NODAT
                 call MPI_IRecv(H(listhptr(hl)+1,is),numh(hl),
      .            MPI_double_precision,0,1,MPI_Comm_World,Request,
      .            MPIerror)
-#else
-                call MPI_IRecv(H(listhptr(hl)+1,is),numh(hl),
-     .            DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               endif
               if (BNode.ne.0) then
@@ -270,24 +260,14 @@ C Read Overlap matrix
               do im = 1,numhg(ih)
                 read(iu) buffer(im)
               enddo
-#ifdef NODAT
               call MPI_ISend(buffer,numhg(ih),MPI_double_precision,
      .          BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-              call MPI_ISend(buffer,numhg(ih),DAT_double,
-     .          BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             elseif (Node.eq.BNode) then
               call GlobalToLocalOrb(ih,Node,Nodes,hl)
-#ifdef NODAT
               call MPI_IRecv(S(listhptr(hl)+1),numh(hl),
      .          MPI_double_precision,0,1,MPI_Comm_World,Request,
      .          MPIerror)
-#else
-              call MPI_IRecv(S(listhptr(hl)+1),numh(hl),
-     .          DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             endif
             if (BNode.ne.0) then
@@ -305,17 +285,10 @@ C Free buffer array
           if (Node.eq.0) then
             read(iu) qtot,temp
 #ifdef MPI
-#ifdef NODAT
             call MPI_Bcast(qtot,1,MPI_double_precision,0,
      .        MPI_Comm_World,MPIerror)
             call MPI_Bcast(temp,1,MPI_double_precision,0,
      .        MPI_Comm_World,MPIerror)
-#else
-            call MPI_Bcast(qtot,1,DAT_double,0,
-     .        MPI_Comm_World,MPIerror)
-            call MPI_Bcast(temp,1,DAT_double,0,
-     .        MPI_Comm_World,MPIerror)
-#endif
 #endif
           endif
 
@@ -342,25 +315,15 @@ C Read interorbital vectors for K point phasing
                 do im = 1,numhg(ih)
                   read(iu) (buffer2(k,im),k=1,3)
                 enddo
-#ifdef NODAT
                 call MPI_ISend(buffer2(1,1),3*numhg(ih),
      .            MPI_double_precision,BNode,1,MPI_Comm_World,
      .            Request,MPIerror)
-#else
-                call MPI_ISend(buffer2(1,1),3*numhg(ih),DAT_double,
-     .            BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               elseif (Node.eq.BNode) then
                 call GlobalToLocalOrb(ih,Node,Nodes,hl)
-#ifdef NODAT
                 call MPI_IRecv(xij(1,listhptr(hl)+1),3*numh(hl),
      .            MPI_double_precision,0,1,MPI_Comm_World,Request,
      .            MPIerror)
-#else
-                call MPI_IRecv(xij(1,listhptr(hl)+1),3*numh(hl),
-     .            DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-#endif
                 call MPI_Wait(Request,Status,MPIerror)
               endif
               if (BNode.ne.0) then
@@ -507,24 +470,14 @@ C Write Hamiltonian
               enddo
 #ifdef MPI
             elseif (Node.eq.0) then
-#ifdef NODAT
               call MPI_IRecv(buffer,numhg(ih),MPI_double_precision,
      .          BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-              call MPI_IRecv(buffer,numhg(ih),DAT_double,
-     .          BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             elseif (Node.eq.BNode) then
               call GlobalToLocalOrb(ih,Node,Nodes,hl)
-#ifdef NODAT
               call MPI_ISend(H(listhptr(hl)+1,is),numh(hl),
      .          MPI_double_precision,0,1,MPI_Comm_World,
      .          Request,MPIerror)
-#else
-              call MPI_ISend(H(listhptr(hl)+1,is),numh(hl),DAT_double,
-     .          0,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             endif
             if (BNode.ne.0) then
@@ -553,24 +506,14 @@ C Write Overlap matrix
             enddo
 #ifdef MPI
           elseif (Node.eq.0) then
-#ifdef NODAT
             call MPI_IRecv(buffer,numhg(ih),MPI_double_precision,
      .        BNode,1,MPI_Comm_World,Request,MPIerror)
-#else
-            call MPI_IRecv(buffer,numhg(ih),DAT_double,
-     .        BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
             call MPI_Wait(Request,Status,MPIerror)
           elseif (Node.eq.BNode) then
             call GlobalToLocalOrb(ih,Node,Nodes,hl)
-#ifdef NODAT
             call MPI_ISend(S(listhptr(hl)+1),numh(hl),
      .        MPI_double_precision,0,1,MPI_Comm_World,
      .        Request,MPIerror)
-#else
-            call MPI_ISend(S(listhptr(hl)+1),numh(hl),DAT_double,
-     .        0,1,MPI_Comm_World,Request,MPIerror)
-#endif
             call MPI_Wait(Request,Status,MPIerror)
           endif
           if (BNode.ne.0) then
@@ -607,25 +550,15 @@ C Allocate buffer array
               enddo
 #ifdef MPI
             elseif (Node.eq.0) then
-#ifdef NODAT
               call MPI_IRecv(buffer2(1,1),3*numhg(ih),
      .          MPI_double_precision,BNode,1,MPI_Comm_World,
      .          Request,MPIerror)
-#else
-              call MPI_IRecv(buffer2(1,1),3*numhg(ih),DAT_double,
-     .          BNode,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             elseif (Node.eq.BNode) then
               call GlobalToLocalOrb(ih,Node,Nodes,hl)
-#ifdef NODAT
               call MPI_ISend(xij(1,listhptr(hl)+1),3*numh(hl),
      .          MPI_double_precision,0,1,MPI_Comm_World,
      .          Request,MPIerror)
-#else
-              call MPI_ISend(xij(1,listhptr(hl)+1),3*numh(hl),
-     .          DAT_double,0,1,MPI_Comm_World,Request,MPIerror)
-#endif
               call MPI_Wait(Request,Status,MPIerror)
             endif
             if (BNode.ne.0) then
