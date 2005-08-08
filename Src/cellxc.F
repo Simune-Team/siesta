@@ -132,7 +132,7 @@ C Argument types and dimensions
       real(dp),      intent(out)  :: DX
       real(dp),      intent(out)  :: EC
       real(dp),      intent(out)  :: EX
-      real(dp),      intent(out)  :: stressl(3,3)
+      real(dp),      intent(inout)  :: stressl(3,3)
 
 C If you change next line, please change also the argument
 C explanations in the header comments
@@ -614,7 +614,6 @@ C Initialise buffer regions of Vxc
 #endif
       endif
       stress(1:3,1:3) = 0.0_dp
-      stressl(1:3,1:3) = 0.0_dp
 
 C Loop on mesh points
       do I3 = 0,NMesh(3)-1
