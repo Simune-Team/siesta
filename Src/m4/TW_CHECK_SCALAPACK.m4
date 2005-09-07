@@ -65,13 +65,13 @@ case $with_scalapack in
 esac
 
 save_LIBS=$LIBS
-LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
+LIBS="$LIBS $SCALAPACK_LIBS  $BLACS_LIBS $LAPACK_LIBS $BLAS_LIBS"
 AC_MSG_CHECKING([if we can compile a ScaLAPACK program])
 _TW_TRY_SCALAPACK([tw_scalapack_ok=yes], [])
 LIBS="$save_LIBS"
 
 if test $tw_scalapack_ok = no; then
-  LIBS="$LIBS -lscalapack $BLACS_LIBS $BLAS_LIBS"
+  LIBS="$LIBS -lscalapack $BLACS_LIBS $LAPACK_LIBS $BLAS_LIBS"
   _TW_TRY_SCALAPACK([tw_scalapack_ok=yes; SCALAPACK_LIBS=-lscalapack], [])
   LIBS="$save_LIBS"
 fi
@@ -79,13 +79,16 @@ fi
 AC_MSG_RESULT([$tw_scalapack_ok])
 if test $tw_scalapack_ok = yes; then
    AC_MSG_CHECKING([if ScaLAPACK version is sufficiently recent])
-   LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
+   LIBS="$LIBS $SCALAPACK_LIBS  $BLACS_LIBS $LAPACK_LIBS $BLAS_LIBS"
    _TW_TRY_SCALAPACK_VN([AC_MSG_RESULT([yes])],
                         [COMP_LIBS="scalapack_extra.o $COMP_LIBS";
                          AC_MSG_RESULT([no - using additional SIESTA routines])])
    LIBS="$save_LIBS"
 fi
 FC=$save_FC
+
+
+
 
 AC_SUBST(SCALAPACK_LIBS)
 

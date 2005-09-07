@@ -53,7 +53,7 @@ C  Modules
 
       use siesta_cml
 
-      use time, only : timestamp
+      use m_timestamp, only : timestamp
       use units
 
       use m_smearing, only: temp

@@ -194,8 +194,8 @@ C Open file for write on I/O node
 C Output histogram
          do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
-           write(iunit1,'(3f20.5)') ener*ev,dtot(ihist,1)/ev,
-     .         dtot(ihist,2)/eV
+           write(iunit1,'(3f20.5)') ener/ev,dtot(ihist,1)*ev,
+     .         dtot(ihist,2)*eV
          enddo
 
 C Close file for write
@@ -225,8 +225,8 @@ C New writing
         allocate(tmp(2*nhist))
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
-           tmp(ihist) = ener*eV
-           write(iunit2,'(f20.5)') ener*eV
+           tmp(ihist) = ener/eV
+           write(iunit2,'(f20.5)') ener/eV
         enddo
         write(iunit2,'(a)') '</energy_values>'
 
@@ -263,10 +263,10 @@ C New writing
 !------------------------------------------------------------
           call xml_NewElement(xf,"data")
           if (nspin.eq.1) then
-             call xml_AddArray(xf,dpr(1:nhist,i,1)/eV)
+             call xml_AddArray(xf,dpr(1:nhist,i,1)*eV)
           elseif (nspin .eq. 2) then
-             tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)/eV
-             tmp(2:2*nhist:2) = dpr(1:nhist,i,2)/eV
+             tmp(1:2*nhist-1:2) = dpr(1:nhist,i,1)*eV
+             tmp(2:2*nhist:2) = dpr(1:nhist,i,2)*eV
              call xml_AddArray(xf,tmp(1:2*nhist),format="(2f20.6)")
           endif
           call xml_EndElement(xf,"data")
@@ -276,10 +276,10 @@ C New writing
           write(iunit2,'(a)') '<data>'
           do ihist = 1,nhist
             if (nspin.eq.1) then
-              write(iunit2,'(f10.5)') dpr(ihist,i,1)/eV
+              write(iunit2,'(f10.5)') dpr(ihist,i,1)*eV
             elseif (nspin .eq. 2) then
-              write(iunit2,'(2f10.5)') dpr(ihist,i,1)/eV,
-     .                                 dpr(ihist,i,2)/eV
+              write(iunit2,'(2f10.5)') dpr(ihist,i,1)*eV,
+     .                                 dpr(ihist,i,2)*eV
             endif
           enddo
           write(iunit2,'(a)') '</data>'

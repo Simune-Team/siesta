@@ -2,8 +2,13 @@
 #
 echo " ===> Generating module files from templates..."
 
-KINDS=`kind_explorer`
+if [ "$#" != 1 ] ; then
+    KINDS=`./kind_explorer`
+else
+    KINDS=$1
+fi
 
+echo $KINDS
 rm -f *.uses Interfaces.f90
 
 for kind in ${KINDS} ; do

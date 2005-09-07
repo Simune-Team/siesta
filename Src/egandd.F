@@ -59,10 +59,10 @@ C **************************************************************************
       use on_core
       use on_main,   only : nbL2G, nbG2L, nbandsloc, ncP2T
       use sys,       only : die
+      use m_mpi_utils, only: broadcast
 #ifdef MPI
       use globalise, only : setglobaliseB, setglobalise, setglobaliseF 
       use globalise, only : globalinitB
-      use mpi_siesta, only: mpi_comm_world, mpi_logical
 #endif
 
       implicit none
@@ -91,9 +91,6 @@ C Internal variables .....................................................
 
       integer       :: i
       integer       :: m, mt, n
-#ifdef MPI
-      integer       :: MPIerror
-#endif
 
       logical, allocatable, save :: lNeeded(:)
       logical,              save :: frstme = .true.
@@ -127,9 +124,8 @@ C Set flag for memory algorithm choice
         if (Node.eq.0) then
           LoMem = fdf_boolean('ON.LowerMemory',.false.)
         endif
-#ifdef MPI
-        call MPI_Bcast(LoMem,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+
+        call Broadcast(LoMem)
 
         frstme = .false.
 

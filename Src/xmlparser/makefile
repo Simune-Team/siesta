@@ -9,7 +9,7 @@ OBJFILES= m_debug.o m_buffer.o m_elstack.o m_dictionary.o m_io.o \
           m_xml_error.o  m_fsm.o  m_xml_parser.o flib_sax.o
 #
 libxmlparser.a: $(OBJFILES)
-	ar cru libxmlparser.a $(OBJFILES)
+	ar $(ARFLAGS_EXTRA) cru libxmlparser.a $(OBJFILES)
 	-$(RANLIB) libxmlparser.a
 	cp libxmlparser.a ..
 	@cp -p *.*d ..

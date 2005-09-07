@@ -29,17 +29,20 @@ DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 #
 # Important (at least for V5.0-1 of the pgf90 compiler...)
-# Compile atom.f without optimization.
+# Compile atom.f and electrostatic.f without optimization.
 #
 atom.o:
 	$(FC) -c $(FFLAGS_DEBUG) atom.f
 #
+electrostatic.o:
+	$(FC) -c $(FFLAGS_DEBUG) electrostatic.f
+#
 .F.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f90.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

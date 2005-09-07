@@ -63,10 +63,7 @@ C ************************************************************************
       use precision
       use on_main,   only : ncG2L,ncT2P,nbG2L,nbL2G,nbandsloc
       use globalise
-#ifdef MPI
-      use mpi_siesta, only: mpi_comm_world, mpi_sum
-      use mpi_siesta, only: mpi_double_precision
-#endif
+      use m_mpi_utils, only: globalize_sum
 
       implicit none
 
@@ -101,8 +98,6 @@ C Internal variables ......................................................
      .  lam123(3),pp,hs,ss, spinfct
 
 #ifdef MPI
-      integer ::
-     .  MPIerror
       real(dp) ::
      .  ftmp(3,2),ftmp2(3,2)
       real(dp), dimension(:), allocatable, save ::
@@ -291,10 +286,10 @@ C Reinitialise bux246
 #ifdef MPI
 C Global reduction of func1/2
         ftmp(1:3,1) = func1(1:3)
-        ftmp(1:3,2) = func2(1:3)
-        call MPI_AllReduce(ftmp(1,1),ftmp2(1,1),6,MPI_double_precision,
-     .    MPI_sum,MPI_Comm_World,MPIerror)
+        call Globalize_sum(ftmp(1:3,1), ftmp2(1:3,1))
         func1(1:3) = ftmp2(1:3,1)
+        ftmp(1:3,2) = func2(1:3)
+        call Globalize_sum(ftmp(1:3,2), ftmp2(1:3,2))
         func2(1:3) = ftmp2(1:3,2)
 #endif
 

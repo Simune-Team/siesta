@@ -10,7 +10,7 @@ OBJFILES= m_wxml_buffer.o m_wxml_array_str.o m_wxml_dictionary.o m_wxml_elstack.
 	  m_wxml_error.o m_wcml_coma.o
 #
 libwxml.a: $(OBJFILES)
-	ar cru libwxml.a $(OBJFILES)
+	ar $(ARFLAGS_EXTRA) cru libwxml.a $(OBJFILES)
 	-$(RANLIB) libwxml.a
 	cp libwxml.a ..
 	@cp -p *.*d ..

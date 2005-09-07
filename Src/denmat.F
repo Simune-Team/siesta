@@ -78,14 +78,13 @@ C *******************************************************************
 
       use precision
       use on_main,   only : ncG2L, ncP2T, ncT2P, nbL2G, nbandsloc
+      use m_mpi_utils, only : globalize_sum
 
 #ifdef MPI
       use globalise, only: setglobalise, maxft2, numft2, listft2,
      .                     globalinitb, globalloadb2, globalcommb,
      .                     globalreloadb2, globalrezerob2,
      .                     globalisef
-      use mpi_siesta, only: mpi_comm_world, mpi_sum
-      use mpi_siesta, only: mpi_double_precision
 #endif
 
       implicit none
@@ -134,12 +133,10 @@ C     nm  : index for basis orbitals connected to basis orbital m
 
 #ifdef MPI
       real(dp) ::
-     .  qtmp(2)
+     .  qtmp(nspin)
       real(dp), allocatable, save ::
      .  ctmp(:,:), chcrowsave(:,:), cscrowsave(:,:), 
      .  ftG(:,:), fstG(:,:)
-      integer ::
-     .  MPIerror
 #else
        real(dp), allocatable :: 
      .     ft(:,:), fst(:,:)
@@ -407,12 +404,17 @@ C Calculate total output charge ...
         enddo
       enddo
 
+C Globalize total charge
 #ifdef MPI
-C Globalise total charge
-      qtmp(1:2) = qout(1:2)
-      call MPI_AllReduce(qtmp,qout,nspin,MPI_double_precision,
-     .  MPI_sum,MPI_Comm_World,MPIerror)
+      qtmp(1:nspin) = qout(1:nspin)
+      call Globalize_sum(qtmp(1:nspin),qout(1:nspin))
 #endif
+
+!! AG  #ifdef MPI
+!! AG      qtmp(1:2) = qout(1:2)
+!! AG      call MPI_AllReduce(qtmp,qout,nspin,MPI_double_precision,
+!! AG     .  MPI_sum,MPI_Comm_World,MPIerror)
+!! AG #endif
 
       if (Node.eq.0) then
         write(6,"(/a,2f12.4)") 

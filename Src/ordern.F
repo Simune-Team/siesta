@@ -80,9 +80,7 @@ C  Modules
       use units,     only : eV
 #ifdef MPI
       use globalise,  only: setglobalise, globaliseC
-      use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
-      use mpi_siesta, only: mpi_integer
-      use mpi_siesta, only: mpi_double_precision
+      use m_mpi_utils, only: globalize_sum, globalize_max  
 #endif
 
       implicit none
@@ -113,8 +111,7 @@ C Internal variables ..........................................................
       integer, save :: nbasisCloc
 
 #ifdef MPI
-      integer ::
-     .  MPIerror, ntmp
+      integer :: ntmp
       real(dp) ::
      .  rtmp(2)
 #endif
@@ -231,8 +228,7 @@ C  Find out number of bands
               enddo
             enddo
 #ifdef MPI
-            call MPI_AllReduce(nbands,ntmp,1,MPI_integer,MPI_max,
-     .                         MPI_Comm_World,MPIerror)
+            call Globalize_max(nbands,ntmp)
             nbands = ntmp
 #endif
 C  Copy coefficients read in from Cold to C ready for extrapolon
@@ -350,8 +346,7 @@ C First calculate total charge of the solution
       endif
 #ifdef MPI
 C Global reduction of qtot
-      call MPI_AllReduce(qtot,rtmp,nspin,MPI_double_precision,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
+      call Globalize_sum(qtot(1:nspin),rtmp(1:nspin))
       qtot(1:nspin) = rtmp(1:nspin)
 #endif
 

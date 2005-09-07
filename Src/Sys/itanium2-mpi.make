@@ -40,13 +40,13 @@ LIBS=  $(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK) \
 COMP_LIBS=
 #
 .F.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f90.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #
 
 

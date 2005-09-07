@@ -1,13 +1,11 @@
 #
 default: module_built
 #
-.SUFFIXES: .o .f90 .a 
-#
 include ../arch.make
 FFLAGS=$(FFLAGS) $(FFLAGS_NETCDF)
 #
 module_built: netcdf.o
-	@ar q libnetcdf_f90.a netcdf.o
+	@ar $(ARFLAGS_EXTRA) cru libnetcdf_f90.a netcdf.o
 	-$(RANLIB) libnetcdf_f90.a
 	@mv libnetcdf_f90.a ..
 	@mv *.mod ..

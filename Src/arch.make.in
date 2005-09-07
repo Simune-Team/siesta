@@ -4,21 +4,25 @@
 SIESTA_ARCH=@SIESTA_ARCH@
 
 FPP=@FPP@
+FPP_OUTPUT=@FPP_OUTPUT@
 FC=@FC@
 RANLIB=@RANLIB@
 
 SYS=@SYS@
 
+SP_KIND=@SP_KIND@
+DP_KIND=@DP_KIND@
+
 FFLAGS=@FCFLAGS@
 FPPFLAGS=@FPPFLAGS@
 LDFLAGS=@LDFLAGS@
+
+ARFLAGS=
 
 FCFLAGS_fixed_f=@FCFLAGS_fixed_f@
 FCFLAGS_free_f90=@FCFLAGS_free_f90@
 FPPFLAGS_fixed_F=@FPPFLAGS_fixed_F@
 FPPFLAGS_free_F90=@FPPFLAGS_free_F90@
-
-FREE_F90=@FCFLAGS_free_f90@
 
 BLAS_LIBS=@BLAS_LIBS@
 LAPACK_LIBS=@LAPACK_LIBS@
@@ -31,12 +35,12 @@ NETCDF_LIBS=@NETCDF_LIBS@
 
 LIBS=$(SCALAPACK_LIBS) $(BLACS_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS)
 
-#This will give you SIESTA's F90 MPI implementation
-#If your compiler vendor offers an alternative, change 
+#SIESTA needs an F90 interface to MPI
+#This will give you SIESTA's own implementation
+#If your compiler vendor offers an alternative, you may change
 #to it here.
 MPI_INTERFACE=@MPI_INTERFACE@
 MPI_INCLUDE=@MPI_INCLUDE@
-FFLAGS_MPI=@FFLAGS_MPI@
 
 #Dependency rules are created by autoconf according to whether
 #discrete preprocessing is necessary or not.
@@ -45,7 +49,7 @@ FFLAGS_MPI=@FFLAGS_MPI@
 .F90.o:
 	@F90_RULE@
 .f.o:
-	$(FC) -c $(FFLAGS) $(FCFLAGS_fixed_f)  $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f)  $<
 .f90.o:
-	$(FC) -c $(FFLAGS) $(FCFLAGS_free_f90)  $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_free_f90)  $<
 

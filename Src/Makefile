@@ -15,7 +15,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
            m4/TW_CHECK_BLACS.m4      m4/TW_CHECK_SCALAPACK.m4   m4/TW_FIND_LAPACK.m4  \
            m4/TW_CHECK_FC_90.m4      m4/TW_FC_CHECK_ABORT.m4    m4/TW_PATH_NETCDF.m4  \
            m4/TW_CHECK_FC_95.m4      m4/TW_FC_CHECK_DCFUNS.m4   m4/TW_TRY_DC_LAPACK.m4\
-           m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4
+           m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
 aclocal.m4: $(M4_FILES)
 	cat $(M4_FILES)  > aclocal.m4
 #
@@ -111,7 +111,7 @@ MOD_OBJS=precision.o recipes.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
-	 electrostatic.o mneighb.o globalise.o siesta_cml.o units.o m_broyden_mixing.o
+	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o units.o m_broyden_mixing.o
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #
@@ -204,11 +204,10 @@ dc_lapack.a:  Libs/dc_lapack.f
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
-	@sed  "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g" version.F90  \
-                 | sh doversion.sh > compinfo.F90
+	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;s'SIESTA_VERSION'$$(cat ../version.info)'g" version.F90 > compinfo.F90
 	@($(MAKE) compinfo.o)
 	@mv compinfo.o version.o
-	@rm -f compinfo.F90
+	#@rm -f compinfo.F90
 	@echo
 
 siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \

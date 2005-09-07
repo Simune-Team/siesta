@@ -46,13 +46,13 @@ siesta.o:
 	$(FC) -c  $(FFLAGS_DEBUG)  $(DEFS)  siesta.F
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FREE_F90_CPP) $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FREE_F90_CPP) $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f90.o:
-	$(FC) -c $(FREE_F90) $(FFLAGS)   $<
+	$(FC) -c $(FREE_F90) $(FFLAGS) $(INCFLAGS)   $<
 #
 
 

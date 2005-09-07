@@ -46,11 +46,11 @@ AC_SUBST(FPPFLAGS_free_F90)
 AC_LANG_POP(Preprocessed Fortran)
 dnl
 if test $ac_cv_fpp_build_rule = direct; then
-     F_RULE=['$(FC) -c $(FFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $< ']
-     F90_RULE=['$(FC) -c $(FFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90) $< ']
+     F_RULE=['$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $< ']
+     F90_RULE=['$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90) $< ']
 elif test $ac_cv_fpp_build_rule = indirect; then
-     F_RULE=['$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f && $(FC) -c -o $*.o $(FFLAGS) $(FCFLAGS_fixed_f) aux_$*.f']
-     F90_RULE=['$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f90 && $(FC) -c -o $*.o $(FFLAGS) $(FCFLAGS_free_f90) aux_$*.f90']
+     F_RULE=['$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f && $(FC) -c -o $*.o $(FFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f) aux_$*.f']
+     F90_RULE=['$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f90 && $(FC) -c -o $*.o $(FFLAGS) $(INCFLAGS) $(FCFLAGS_free_f90) aux_$*.f90']
 fi
 dnl Generate dependency rules according to whether we need
 dnl separate preprocessing stage.
@@ -105,7 +105,7 @@ if test $use_mpi = yes; then
   ACX_MPI([:],AC_MSG_ERROR([Don't know how to compile MPI program]))
   FC=$MPIFC
   MPI_INTERFACE=libmpi_f90.a
-  MPI_INCLUDE=..
+  MPI_INCLUDE=.
   DEFS="$DEFS MPI"
 fi
 AC_SUBST(MPI_INTERFACE)
@@ -118,6 +118,14 @@ dnl TW_CHECK_FC_95([SYS=nag],dnl
 dnl   TW_CHECK_FC_90([SYS=cputim],[])
 dnl                   )
 AC_SUBST(SYS)
+dnl
+dnl Check for compiler kind flags
+dnl
+AC_FC_GET_REAL_KINDS
+SP_KIND=$ac_fc_real_kind_sp
+DP_KIND=$ac_fc_real_kind_dp
+AC_SUBST(SP_KIND)
+AC_SUBST(DP_KIND)
 dnl
 dnl Check whether we need to pass a flag to get at the flush intrinsic.
 TW_FC_CHECK_FLUSH

@@ -1,13 +1,16 @@
-Module siesta_cml
+Module siesta_cmlsubs
 
+  Use flib_wxml, only: xmlf_t      ! help pgf95...
   Use flib_wxml
   Use flib_wcml
 
   Implicit None
-  Public
+  Private
   
-  Logical  :: cml_p = .False.
-  Type(xmlf_t) :: mainXML
+  public :: siesta_cml_init, siesta_cml_exit
+
+  Logical, public      :: cml_p = .False.
+  Type(xmlf_t), public :: mainXML
 
   Contains
 
@@ -15,7 +18,7 @@ Module siesta_cml
       Use fdf, Only : fdf_boolean, fdf_string
       Use parallel, only : nodes, ionode
       Use version_info
-      Use time
+      Use m_timestamp, only: datestring
 
       Character(len=25) :: sname
       Character(len=29) :: fname
@@ -35,12 +38,13 @@ Module siesta_cml
          Call xml_OpenFile(trim(fname), mainXML, .True.)
          Call xml_AddXMLDeclaration(mainxml, 'UTF-8')
          Call xml_NewElement(mainXML, 'cml')
+         Call xml_AddAttribute(mainXML, 'xmlns', 'http://www.xml-cml.org/schema/CML2/Core')
          Call cmlStartMetadataList(mainXML)
          Call cmlAddMetadata(mainXML, name='Program', content='Siesta')
          Call cmlAddMetadata(mainXML, name='Version', content=version_str)
          Call cmlAddMetadata(mainXML, name='Arch',    content=siesta_arch)
          Call cmlAddMetadata(mainXML, name='Flags',   content=fflags)
-         Call cmlAddMetadata(mainXML, name='Initial Timestamp',content=datestring) 
+         Call cmlAddMetadata(mainXML, name='Initial Timestamp',content=datestring()) 
          If (nodes>1) Then
            Call cmlAddMetadata(mainXML, name='Mode', content='Parallel')
          Else
@@ -57,15 +61,15 @@ Module siesta_cml
        
     Subroutine siesta_cml_exit
 
-      use time, only : datestring
+      use m_timestamp, only : datestring
 
 
       If (cml_p) Then
-        Call cmlAddMetadata(mainXML, name='Final Timestamp',content=datestring)
+        Call cmlAddMetadata(mainXML, name='Final Timestamp',content=datestring())
         Call xml_EndElement(mainXML, 'cml')
         Call xml_Close(mainXML)
       Endif !cml_p
 
     End Subroutine siesta_cml_exit
 
-End Module siesta_cml
+End Module siesta_cmlsubs

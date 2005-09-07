@@ -47,18 +47,18 @@ CPP=/usr/local/lib/NAGWare/fpp -P
 #
 .F.o:
 	$(CPP) -fixed $(DEFS) $*.F > aux_$*.f
-	$(FC) -c $(FFLAGS)  $(DEFS) aux_$*.f 
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) aux_$*.f 
 	@rm -f aux_$*.f
 	@mv aux_$*.o $*.o
 .f.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
 	$(CPP) -free $(DEFS) $*.F90 > aux_$*.f90
-	$(FC) -c $(FFLAGS) aux_$*.f90
+	$(FC) -c $(FFLAGS) $(INCFLAGS) aux_$*.f90
 	@rm -f aux_$*.f90
 	@mv aux_$*.o $*.o
 .f90.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #
 
 

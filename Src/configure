@@ -274,7 +274,7 @@ PACKAGE_STRING='siesta 1.4'
 PACKAGE_BUGREPORT='tow21@cam.ac.uk'
 
 ac_unique_file="siesta.F"
-ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os FC FCFLAGS LDFLAGS ac_ct_FC EXEEXT OBJEXT FCFLAGS_fixed_f FCFLAGS_free_f90 FPP FPPFLAGS FPPFLAGS_DEF CC CFLAGS CPPFLAGS ac_ct_CC CPP FPP_OUTPUT FPPFLAGS_fixed_F FPPFLAGS_free_F90 F_RULE F90_RULE RANLIB ac_ct_RANLIB SIESTA_ARCH FFLAGS_MPI MPIFC MPILIBS MPI_INTERFACE MPI_INCLUDE SYS NETCDF_LIBS BLAS_LIBS LAPACK_LIBS BLACS_LIBS SCALAPACK_LIBS COMP_LIBS FFLAGS LIBOBJS LTLIBOBJS'
+ac_subst_vars='SHELL PATH_SEPARATOR PACKAGE_NAME PACKAGE_TARNAME PACKAGE_VERSION PACKAGE_STRING PACKAGE_BUGREPORT exec_prefix prefix program_transform_name bindir sbindir libexecdir datadir sysconfdir sharedstatedir localstatedir libdir includedir oldincludedir infodir mandir build_alias host_alias target_alias DEFS ECHO_C ECHO_N ECHO_T LIBS build build_cpu build_vendor build_os host host_cpu host_vendor host_os FC FCFLAGS LDFLAGS ac_ct_FC EXEEXT OBJEXT FCFLAGS_fixed_f FCFLAGS_free_f90 FPP FPPFLAGS FPPFLAGS_DEF CC CFLAGS CPPFLAGS ac_ct_CC CPP FPP_OUTPUT FPPFLAGS_fixed_F FPPFLAGS_free_F90 F_RULE F90_RULE RANLIB ac_ct_RANLIB SIESTA_ARCH FFLAGS_MPI MPIFC MPILIBS MPI_INTERFACE MPI_INCLUDE SYS SP_KIND DP_KIND NETCDF_LIBS BLAS_LIBS LAPACK_LIBS BLACS_LIBS SCALAPACK_LIBS COMP_LIBS FFLAGS LIBOBJS LTLIBOBJS'
 ac_subst_files=''
 
 # Initialize some variables set by options.
@@ -952,7 +952,7 @@ esac
     else
       echo "$as_me: WARNING: no configuration information is in $ac_dir" >&2
     fi
-    cd "$ac_popdir"
+    cd $ac_popdir
   done
 fi
 
@@ -1786,7 +1786,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -1835,7 +1836,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -1911,7 +1913,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -1980,7 +1983,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2393,7 +2397,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2451,7 +2456,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2567,7 +2573,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2621,7 +2628,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2666,7 +2674,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2710,7 +2719,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_c_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_c_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2861,7 +2871,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2923,7 +2934,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -2980,7 +2992,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3025,7 +3038,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3081,7 +3095,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3127,7 +3142,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3170,7 +3186,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3211,7 +3228,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3252,7 +3270,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3846,7 +3865,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3908,7 +3928,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -3965,7 +3986,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4010,7 +4032,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4066,7 +4089,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4112,7 +4136,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4155,7 +4180,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4196,7 +4222,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4237,7 +4264,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4482,7 +4510,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4567,7 +4596,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fpp_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fpp_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -4622,11 +4652,11 @@ ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$a
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
 if test $ac_cv_fpp_build_rule = direct; then
-     F_RULE='$(FC) -c $(FFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $< '
-     F90_RULE='$(FC) -c $(FFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90) $< '
+     F_RULE='$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $< '
+     F90_RULE='$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90) $< '
 elif test $ac_cv_fpp_build_rule = indirect; then
-     F_RULE='$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f && $(FC) -c -o $*.o $(FFLAGS) $(FCFLAGS_fixed_f) aux_$*.f'
-     F90_RULE='$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f90 && $(FC) -c -o $*.o $(FFLAGS) $(FCFLAGS_free_f90) aux_$*.f90'
+     F_RULE='$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f && $(FC) -c -o $*.o $(FFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f) aux_$*.f'
+     F90_RULE='$(FPP) $(FPPFLAGS) $< $(FPP_OUTPUT) aux_$*.f90 && $(FC) -c -o $*.o $(FFLAGS) $(INCFLAGS) $(FCFLAGS_free_f90) aux_$*.f90'
 fi
 
 
@@ -4961,7 +4991,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5009,7 +5040,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5061,7 +5093,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5111,10 +5144,549 @@ fi
 
   FC=$MPIFC
   MPI_INTERFACE=libmpi_f90.a
-  MPI_INCLUDE=..
+  MPI_INCLUDE=.
   DEFS="$DEFS MPI"
 fi
 
+
+
+
+
+ac_fc_got_kinds=yes
+
+
+echo "$as_me:$LINENO: checking for kind number produced by kind(1.0)" >&5
+echo $ECHO_N "checking for kind number produced by kind(1.0)... $ECHO_C" >&6
+if test "${ac_cv_fc_real_kind_sp+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+ac_ext=f90
+
+echo "$as_me:$LINENO: checking for Fortran flag needed to allow free-form source for .f90 suffix" >&5
+echo $ECHO_N "checking for Fortran flag needed to allow free-form source for .f90 suffix... $ECHO_C" >&6
+if test "${ac_cv_fc_freeform_f90+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_cv_fc_freeform_f90=unknown
+ac_ext=f90
+ac_fc_freeform_FCFLAGS_save=$FCFLAGS
+for ac_flag in none -ffree-form -FR -free "-qfree=f90" "-qfree=f90 -qsuffix=f=$ac_ext"\
+               -qfree "-qfree -qsuffix=f=$ac_ext" -Mfree -Mfreeform \
+               -freeform "-f free" --nfix
+do
+  test "x$ac_flag" != xnone && FCFLAGS="$ac_fc_freeform_FCFLAGS_save $ac_flag"
+  cat >conftest.$ac_ext <<_ACEOF
+
+program freeform
+! FIXME: how to best confuse non-freeform compilers?
+print *, 'Hello ', &
+'world.'
+end program
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_fc_freeform_f90=$ac_flag; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+FCFLAGS=$ac_fc_freeform_FCFLAGS_save
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_freeform_f90" >&5
+echo "${ECHO_T}$ac_cv_fc_freeform_f90" >&6
+if test "x$ac_cv_fc_freeform_f90" = xunknown; then
+  { { echo "$as_me:$LINENO: error: Cannot compile free-form source with .f90 suffix" >&5
+echo "$as_me: error: Cannot compile free-form source with .f90 suffix" >&2;}
+   { (exit 77); exit 77; }; }
+else
+  if test "x$ac_cv_fc_freeform_f90" != xnone; then
+    FCFLAGS_free_f90="$ac_cv_fc_freeform_f90"
+  fi
+
+fi
+
+FCFLAGS_save="$FCFLAGS"
+FCFLAGS="$FCFLAGS $FCFLAGS_free_f90"
+echo "$as_me:$LINENO: checking for kind number produced by kind(1.0)" >&5
+echo $ECHO_N "checking for kind number produced by kind(1.0)... $ECHO_C" >&6
+ac_fc_kind_test=1
+ac_fc_kind_found=no
+while test $ac_fc_kind_test -lt 100
+do
+  cat > conftest.f90 << ACEOF
+subroutine kind_explorer
+  integer, parameter :: sp = kind(1.0)
+  integer, parameter :: mysp = $ac_fc_kind_test
+  real(kind=sp), target :: x
+  real(kind=mysp), pointer :: y
+  y=>x
+end subroutine kind_explorer
+ACEOF
+  eval echo $ac_compile
+  if eval $ac_compile 2>&5
+  then
+    ac_fc_kind_found=yes
+    break
+  fi
+  ac_fc_kind_test=`expr $ac_fc_kind_test + 1`
+done
+if test "$ac_fc_kind_found" = yes; then
+  ac_cv_fc_real_kind_sp=$ac_fc_kind_test
+else
+  ac_cv_fc_real_kind_sp=none
+fi
+
+FCFLAGS="$FCFLAGS_save"
+ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_real_kind_sp" >&5
+echo "${ECHO_T}$ac_cv_fc_real_kind_sp" >&6
+if test $ac_cv_fc_real_kind_sp != no; then
+  ac_fc_real_kind_sp=$ac_cv_fc_real_kind_sp; :
+else
+  ac_got_kinds=no
+
+fi
+
+
+
+echo "$as_me:$LINENO: checking for kind number produced by kind(1.0d0)" >&5
+echo $ECHO_N "checking for kind number produced by kind(1.0d0)... $ECHO_C" >&6
+if test "${ac_cv_fc_real_kind_dp+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+ac_ext=f90
+
+echo "$as_me:$LINENO: checking for Fortran flag needed to allow free-form source for .f90 suffix" >&5
+echo $ECHO_N "checking for Fortran flag needed to allow free-form source for .f90 suffix... $ECHO_C" >&6
+if test "${ac_cv_fc_freeform_f90+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_cv_fc_freeform_f90=unknown
+ac_ext=f90
+ac_fc_freeform_FCFLAGS_save=$FCFLAGS
+for ac_flag in none -ffree-form -FR -free "-qfree=f90" "-qfree=f90 -qsuffix=f=$ac_ext"\
+               -qfree "-qfree -qsuffix=f=$ac_ext" -Mfree -Mfreeform \
+               -freeform "-f free" --nfix
+do
+  test "x$ac_flag" != xnone && FCFLAGS="$ac_fc_freeform_FCFLAGS_save $ac_flag"
+  cat >conftest.$ac_ext <<_ACEOF
+
+program freeform
+! FIXME: how to best confuse non-freeform compilers?
+print *, 'Hello ', &
+'world.'
+end program
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_fc_freeform_f90=$ac_flag; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+FCFLAGS=$ac_fc_freeform_FCFLAGS_save
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_freeform_f90" >&5
+echo "${ECHO_T}$ac_cv_fc_freeform_f90" >&6
+if test "x$ac_cv_fc_freeform_f90" = xunknown; then
+  { { echo "$as_me:$LINENO: error: Cannot compile free-form source with .f90 suffix" >&5
+echo "$as_me: error: Cannot compile free-form source with .f90 suffix" >&2;}
+   { (exit 77); exit 77; }; }
+else
+  if test "x$ac_cv_fc_freeform_f90" != xnone; then
+    FCFLAGS_free_f90="$ac_cv_fc_freeform_f90"
+  fi
+
+fi
+
+FCFLAGS_save="$FCFLAGS"
+FCFLAGS="$FCFLAGS $FCFLAGS_free_f90"
+echo "$as_me:$LINENO: checking for kind number produced by kind(1.0d0)" >&5
+echo $ECHO_N "checking for kind number produced by kind(1.0d0)... $ECHO_C" >&6
+ac_fc_kind_test=1
+ac_fc_kind_found=no
+while test $ac_fc_kind_test -lt 100
+do
+  cat > conftest.f90 << ACEOF
+subroutine kind_explorer
+  integer, parameter :: sp = kind(1.0d0)
+  integer, parameter :: mysp = $ac_fc_kind_test
+  real(kind=sp), target :: x
+  real(kind=mysp), pointer :: y
+  y=>x
+end subroutine kind_explorer
+ACEOF
+  eval echo $ac_compile
+  if eval $ac_compile 2>&5
+  then
+    ac_fc_kind_found=yes
+    break
+  fi
+  ac_fc_kind_test=`expr $ac_fc_kind_test + 1`
+done
+if test "$ac_fc_kind_found" = yes; then
+  ac_cv_fc_real_kind_dp=$ac_fc_kind_test
+else
+  ac_cv_fc_real_kind_dp=none
+fi
+
+FCFLAGS="$FCFLAGS_save"
+ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_real_kind_dp" >&5
+echo "${ECHO_T}$ac_cv_fc_real_kind_dp" >&6
+if test $ac_cv_fc_real_kind_dp != no; then
+  ac_fc_real_kind_dp=$ac_cv_fc_real_kind_dp; :
+else
+  ac_got_kinds=no
+
+fi
+
+
+
+echo "$as_me:$LINENO: checking for kind number produced by selected_real_kind(6,34)" >&5
+echo $ECHO_N "checking for kind number produced by selected_real_kind(6,34)... $ECHO_C" >&6
+if test "${ac_cv_fc_real_kind_ieee_sp+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+ac_ext=f90
+
+echo "$as_me:$LINENO: checking for Fortran flag needed to allow free-form source for .f90 suffix" >&5
+echo $ECHO_N "checking for Fortran flag needed to allow free-form source for .f90 suffix... $ECHO_C" >&6
+if test "${ac_cv_fc_freeform_f90+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_cv_fc_freeform_f90=unknown
+ac_ext=f90
+ac_fc_freeform_FCFLAGS_save=$FCFLAGS
+for ac_flag in none -ffree-form -FR -free "-qfree=f90" "-qfree=f90 -qsuffix=f=$ac_ext"\
+               -qfree "-qfree -qsuffix=f=$ac_ext" -Mfree -Mfreeform \
+               -freeform "-f free" --nfix
+do
+  test "x$ac_flag" != xnone && FCFLAGS="$ac_fc_freeform_FCFLAGS_save $ac_flag"
+  cat >conftest.$ac_ext <<_ACEOF
+
+program freeform
+! FIXME: how to best confuse non-freeform compilers?
+print *, 'Hello ', &
+'world.'
+end program
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_fc_freeform_f90=$ac_flag; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+FCFLAGS=$ac_fc_freeform_FCFLAGS_save
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_freeform_f90" >&5
+echo "${ECHO_T}$ac_cv_fc_freeform_f90" >&6
+if test "x$ac_cv_fc_freeform_f90" = xunknown; then
+  { { echo "$as_me:$LINENO: error: Cannot compile free-form source with .f90 suffix" >&5
+echo "$as_me: error: Cannot compile free-form source with .f90 suffix" >&2;}
+   { (exit 77); exit 77; }; }
+else
+  if test "x$ac_cv_fc_freeform_f90" != xnone; then
+    FCFLAGS_free_f90="$ac_cv_fc_freeform_f90"
+  fi
+
+fi
+
+FCFLAGS_save="$FCFLAGS"
+FCFLAGS="$FCFLAGS $FCFLAGS_free_f90"
+echo "$as_me:$LINENO: checking for kind number produced by selected_real_kind(6,34)" >&5
+echo $ECHO_N "checking for kind number produced by selected_real_kind(6,34)... $ECHO_C" >&6
+ac_fc_kind_test=1
+ac_fc_kind_found=no
+while test $ac_fc_kind_test -lt 100
+do
+  cat > conftest.f90 << ACEOF
+subroutine kind_explorer
+  integer, parameter :: sp = selected_real_kind(6,34)
+  integer, parameter :: mysp = $ac_fc_kind_test
+  real(kind=sp), target :: x
+  real(kind=mysp), pointer :: y
+  y=>x
+end subroutine kind_explorer
+ACEOF
+  eval echo $ac_compile
+  if eval $ac_compile 2>&5
+  then
+    ac_fc_kind_found=yes
+    break
+  fi
+  ac_fc_kind_test=`expr $ac_fc_kind_test + 1`
+done
+if test "$ac_fc_kind_found" = yes; then
+  ac_cv_fc_real_kind_ieee_sp=$ac_fc_kind_test
+else
+  ac_cv_fc_real_kind_ieee_sp=none
+fi
+
+FCFLAGS="$FCFLAGS_save"
+ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_real_kind_ieee_sp" >&5
+echo "${ECHO_T}$ac_cv_fc_real_kind_ieee_sp" >&6
+if test $ac_cv_fc_real_kind_ieee_sp != no; then
+  ac_fc_real_kind_ieee_sp=$ac_cv_fc_real_kind_ieee_sp; :
+else
+  ac_got_kinds=no
+
+fi
+
+
+
+echo "$as_me:$LINENO: checking for kind number produced by selected_real_kind(15,300)" >&5
+echo $ECHO_N "checking for kind number produced by selected_real_kind(15,300)... $ECHO_C" >&6
+if test "${ac_cv_fc_real_kind_ieee_dp+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+ac_ext=f90
+
+echo "$as_me:$LINENO: checking for Fortran flag needed to allow free-form source for .f90 suffix" >&5
+echo $ECHO_N "checking for Fortran flag needed to allow free-form source for .f90 suffix... $ECHO_C" >&6
+if test "${ac_cv_fc_freeform_f90+set}" = set; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  ac_cv_fc_freeform_f90=unknown
+ac_ext=f90
+ac_fc_freeform_FCFLAGS_save=$FCFLAGS
+for ac_flag in none -ffree-form -FR -free "-qfree=f90" "-qfree=f90 -qsuffix=f=$ac_ext"\
+               -qfree "-qfree -qsuffix=f=$ac_ext" -Mfree -Mfreeform \
+               -freeform "-f free" --nfix
+do
+  test "x$ac_flag" != xnone && FCFLAGS="$ac_fc_freeform_FCFLAGS_save $ac_flag"
+  cat >conftest.$ac_ext <<_ACEOF
+
+program freeform
+! FIXME: how to best confuse non-freeform compilers?
+print *, 'Hello ', &
+'world.'
+end program
+_ACEOF
+rm -f conftest.$ac_objext
+if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
+  (eval $ac_compile) 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } &&
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; } &&
+	 { ac_try='test -s conftest.$ac_objext'
+  { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
+  (eval $ac_try) 2>&5
+  ac_status=$?
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); }; }; then
+  ac_cv_fc_freeform_f90=$ac_flag; break
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+fi
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+done
+rm -f conftest.err conftest.$ac_objext conftest.$ac_ext
+FCFLAGS=$ac_fc_freeform_FCFLAGS_save
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_freeform_f90" >&5
+echo "${ECHO_T}$ac_cv_fc_freeform_f90" >&6
+if test "x$ac_cv_fc_freeform_f90" = xunknown; then
+  { { echo "$as_me:$LINENO: error: Cannot compile free-form source with .f90 suffix" >&5
+echo "$as_me: error: Cannot compile free-form source with .f90 suffix" >&2;}
+   { (exit 77); exit 77; }; }
+else
+  if test "x$ac_cv_fc_freeform_f90" != xnone; then
+    FCFLAGS_free_f90="$ac_cv_fc_freeform_f90"
+  fi
+
+fi
+
+FCFLAGS_save="$FCFLAGS"
+FCFLAGS="$FCFLAGS $FCFLAGS_free_f90"
+echo "$as_me:$LINENO: checking for kind number produced by selected_real_kind(15,300)" >&5
+echo $ECHO_N "checking for kind number produced by selected_real_kind(15,300)... $ECHO_C" >&6
+ac_fc_kind_test=1
+ac_fc_kind_found=no
+while test $ac_fc_kind_test -lt 100
+do
+  cat > conftest.f90 << ACEOF
+subroutine kind_explorer
+  integer, parameter :: sp = selected_real_kind(15,300)
+  integer, parameter :: mysp = $ac_fc_kind_test
+  real(kind=sp), target :: x
+  real(kind=mysp), pointer :: y
+  y=>x
+end subroutine kind_explorer
+ACEOF
+  eval echo $ac_compile
+  if eval $ac_compile 2>&5
+  then
+    ac_fc_kind_found=yes
+    break
+  fi
+  ac_fc_kind_test=`expr $ac_fc_kind_test + 1`
+done
+if test "$ac_fc_kind_found" = yes; then
+  ac_cv_fc_real_kind_ieee_dp=$ac_fc_kind_test
+else
+  ac_cv_fc_real_kind_ieee_dp=none
+fi
+
+FCFLAGS="$FCFLAGS_save"
+ac_ext=${FC_SRCEXT-f}
+ac_compile='$FC -c $FCFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext >&5'
+ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $FCFLAGS_SRCEXT conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_fc_compiler_gnu
+
+
+fi
+echo "$as_me:$LINENO: result: $ac_cv_fc_real_kind_ieee_dp" >&5
+echo "${ECHO_T}$ac_cv_fc_real_kind_ieee_dp" >&6
+if test $ac_cv_fc_real_kind_ieee_dp != no; then
+  ac_fc_real_kind_ieee_dp=$ac_cv_fc_real_kind_ieee_dp; :
+else
+  ac_got_kinds=no
+
+fi
+
+
+
+if test $ac_fc_got_kinds != no; then
+  :
+else
+  { { echo "$as_me:$LINENO: error: Could not find all Fortran real kinds" >&5
+echo "$as_me: error: Could not find all Fortran real kinds" >&2;}
+   { (exit 1); exit 1; }; }
+
+fi
+
+
+SP_KIND=$ac_fc_real_kind_sp
+DP_KIND=$ac_fc_real_kind_dp
 
 
 
@@ -5138,7 +5710,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5178,7 +5751,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5221,7 +5795,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5260,7 +5835,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5313,7 +5889,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5352,7 +5929,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5394,7 +5972,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5432,7 +6011,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5492,7 +6072,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5536,7 +6117,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5618,7 +6200,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5725,7 +6308,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5773,7 +6357,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5819,7 +6404,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5867,7 +6453,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5907,7 +6494,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -5958,7 +6546,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6006,7 +6595,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6054,7 +6644,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6113,7 +6704,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6168,7 +6760,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6223,7 +6816,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6271,7 +6865,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6330,7 +6925,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6385,7 +6981,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6440,7 +7037,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6488,7 +7086,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6543,7 +7142,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6591,7 +7191,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6697,7 +7298,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6755,7 +7357,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6811,7 +7414,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6885,7 +7489,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -6968,7 +7573,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -7019,7 +7625,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -7071,7 +7678,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -7124,7 +7732,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -7189,7 +7798,7 @@ case $with_scalapack in
 esac
 
 save_LIBS=$LIBS
-LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
+LIBS="$LIBS $SCALAPACK_LIBS  $BLACS_LIBS $LAPACK_LIBS $BLAS_LIBS"
 echo "$as_me:$LINENO: checking if we can compile a ScaLAPACK program" >&5
 echo $ECHO_N "checking if we can compile a ScaLAPACK program... $ECHO_C" >&6
 
@@ -7220,7 +7829,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -7246,7 +7856,7 @@ rm -f conftest.err conftest.$ac_objext \
 LIBS="$save_LIBS"
 
 if test $tw_scalapack_ok = no; then
-  LIBS="$LIBS -lscalapack $BLACS_LIBS $BLAS_LIBS"
+  LIBS="$LIBS -lscalapack $BLACS_LIBS $LAPACK_LIBS $BLAS_LIBS"
 
 ac_ext=f
 cat >conftest.$ac_ext <<_ACEOF
@@ -7275,7 +7885,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -7306,7 +7917,7 @@ echo "${ECHO_T}$tw_scalapack_ok" >&6
 if test $tw_scalapack_ok = yes; then
    echo "$as_me:$LINENO: checking if ScaLAPACK version is sufficiently recent" >&5
 echo $ECHO_N "checking if ScaLAPACK version is sufficiently recent... $ECHO_C" >&6
-   LIBS="$LIBS $SCALAPACK_LIBS $BLACS_LIBS $BLAS_LIBS"
+   LIBS="$LIBS $SCALAPACK_LIBS  $BLACS_LIBS $LAPACK_LIBS $BLAS_LIBS"
 
 ac_ext=f
 cat >conftest.$ac_ext <<_ACEOF
@@ -7327,7 +7938,8 @@ if { (eval echo "$as_me:$LINENO: \"$ac_link\"") >&5
   cat conftest.err >&5
   echo "$as_me:$LINENO: \$? = $ac_status" >&5
   (exit $ac_status); } &&
-	 { ac_try='test -z "$ac_fc_werror_flag"			 || test ! -s conftest.err'
+	 { ac_try='test -z "$ac_fc_werror_flag"
+			 || test ! -s conftest.err'
   { (eval echo "$as_me:$LINENO: \"$ac_try\"") >&5
   (eval $ac_try) 2>&5
   ac_status=$?
@@ -7356,6 +7968,9 @@ rm -f conftest.err conftest.$ac_objext \
    LIBS="$save_LIBS"
 fi
 FC=$save_FC
+
+
+
 
 
 
@@ -8057,6 +8672,8 @@ s,@MPILIBS@,$MPILIBS,;t t
 s,@MPI_INTERFACE@,$MPI_INTERFACE,;t t
 s,@MPI_INCLUDE@,$MPI_INCLUDE,;t t
 s,@SYS@,$SYS,;t t
+s,@SP_KIND@,$SP_KIND,;t t
+s,@DP_KIND@,$DP_KIND,;t t
 s,@NETCDF_LIBS@,$NETCDF_LIBS,;t t
 s,@BLAS_LIBS@,$BLAS_LIBS,;t t
 s,@LAPACK_LIBS@,$LAPACK_LIBS,;t t
@@ -8228,6 +8845,11 @@ esac
 
 
 
+  if test x"$ac_file" != x-; then
+    { echo "$as_me:$LINENO: creating $ac_file" >&5
+echo "$as_me: creating $ac_file" >&6;}
+    rm -f "$ac_file"
+  fi
   # Let's still pretend it is `configure' which instantiates (i.e., don't
   # use $as_me), people would be surprised to read:
   #    /* config.h.  Generated by config.status.  */
@@ -8266,12 +8888,6 @@ echo "$as_me: error: cannot find input file: $f" >&2;}
 	 fi;;
       esac
     done` || { (exit 1); exit 1; }
-
-  if test x"$ac_file" != x-; then
-    { echo "$as_me:$LINENO: creating $ac_file" >&5
-echo "$as_me: creating $ac_file" >&6;}
-    rm -f "$ac_file"
-  fi
 _ACEOF
 cat >>$CONFIG_STATUS <<_ACEOF
   sed "$ac_vpsub

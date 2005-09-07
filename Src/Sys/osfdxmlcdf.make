@@ -20,15 +20,15 @@ DEFS= $(DEFS_CDF) $(DEFS_MPI)
 CPP=/bin/cpp -P
 #
 .F.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
 	$(CPP) $(DEFS) $< > $*.f90
-	$(FC) -c $(FFLAGS) $*.f90
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $*.f90
 	@rm -f $*.f90
 .f90.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #
 
 

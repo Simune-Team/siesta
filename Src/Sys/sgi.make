@@ -20,11 +20,11 @@ MPI_INCLUDE=/usr/local/include
 DEFS=
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $<
 .f90.o:
-	$(FC) -c $(FFLAGS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $<
 #

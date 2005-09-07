@@ -35,12 +35,12 @@ DEFS= $(DEFS_CDF) $(DEFS_MPI) -DCRAY
 # It could work without it...
 #
 .F.o:
-	$(FC) -c $(FFLAGS) -p . $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) -p . $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS) -p .  $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) -p .  $<
 .F90.o:
-	$(FC) -c $(FFLAGS) -p .  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) -p .  $(DEFS) $<
 .f90.o:
-	$(FC) -c $(FFLAGS) -p .  $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) -p .  $<
 #
 

@@ -5,7 +5,7 @@ include ../arch.make
 #
 module:  libfdf.a
 libfdf.a:	fdf.o fdf_mod.o parse.o
-	ar qv libfdf.a fdf.o fdf_mod.o parse.o
+	ar $(ARFLAGS_EXTRA) cru libfdf.a fdf.o fdf_mod.o parse.o
 	-$(RANLIB) libfdf.a
 	cp libfdf.a ..
 	@cp -p *.*d ..

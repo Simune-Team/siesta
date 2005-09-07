@@ -48,12 +48,12 @@ FREE_F90=-qsuffix=f=f90 -qfree=f90
 FREE_F90_CPP=-qsuffix=cpp=F90 -qfree=f90
 #
 .F.o:
-         $(FC) -c $(FFLAGS) $(DEFS) $<
+         $(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $<
 .f.o:
-         $(FC) -c $(FFLAGS) $<
+         $(FC) -c $(FFLAGS) $(INCFLAGS) $<
 .f90.o:
-         $(FC) -c $(FFLAGS) $(FREE_F90) $<
+         $(FC) -c $(FFLAGS) $(INCFLAGS) $(FREE_F90) $<
 .F90.o:
-         $(FC) -c $(FFLAGS) $(DEFS) $(FREE_F90_CPP) $<
+         $(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $(FREE_F90_CPP) $<
 
 #
