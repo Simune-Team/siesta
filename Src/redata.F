@@ -547,6 +547,12 @@ C Order-N solution parameters ...
 C     Maximum number of CG minimization iterations
 
       call get(ncgmax,'ON.MaxNumIter',ncgmax_default)
+      if (ncgmax<1) then
+      if (ionode)
+     $   write(6,'(a)') "ON.MaxNumIter cannot be less than 1. "//
+     .                  "Resetting to 1"
+         ncgmax = 1 
+      endif
 
 C     Relative tolerance in total band structure energy
 

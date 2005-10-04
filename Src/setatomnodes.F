@@ -18,14 +18,32 @@ C  lbuffercell(ncellpernode)  = if .true. this is a buffer region cell
 C  nspmin(3)                  = lower bound to real cells (not buffers)
 C  nspmax(3)                  = upper bound to real cells (not buffers)
 C  natomsG2L(na)              = pointer from global atom no. to local one
+C  nG2L(na)                   = pointer from global orbital no. to local one
+C  natomsL2G(na)              = pointer from local atom no. to global one
+C  nL2G(no, nodes)            = pointer from local orbital to global one
 C  natomsNode(na)             = pointer to node responsible for each atom
-C
+C  nNode(no)                  = pointer to node responsible for each orbital
+C  nAtomPerNode(nodes)        = no. atoms per node
+C  maxAtomPerNode             = max(nAtomsPerNode)
+C  nOrbPerNode(nodes)         = no. orbitals per node
+C  nCellPerNode(nodes)        = no. cells per node
+C  maxCellPerNode             = max(nCellPerNode)
+C 
 C  Julian Gale, NRI, Curtin University, March 2004
 C
-      use alloc
-      use ionew, only : ionode
-      use precision
-      use spatial
+C
+      use alloc,     only : re_alloc
+      use ionew,     only : ionode
+      use precision, only : dp
+      use spatial,   only : nAtomPerNode, maxAtomPerNode
+     .                    , nCellPerNode, maxCellPerNode
+     .                    , natomsL2G, natomsG2L, nL2G, nG2L
+     .                    , nbufferx, nbuffery, nbufferz
+     .                    , ncellnodeptr
+     .                    , lbuffercell
+     .                    , nAtomsNode, nNode, nOrbPerNode
+     .                    , npgrid
+     .                    , nspcell, nspcellat, nspcellatptr
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
       use mpi_siesta, only: mpi_integer, mpi_max
@@ -64,9 +82,11 @@ C
       integer                                  :: nadd
       integer                                  :: natomnow
       integer                                  :: natomold
-      integer, dimension(:), allocatable, save :: npgridxptr
-      integer, dimension(:), allocatable, save :: npgridyptr
-      integer, dimension(:), allocatable, save :: npgridzptr
+      integer, dimension(:), allocatable       :: npgridxptr
+      integer, dimension(:), allocatable       :: npgridyptr
+      integer, dimension(:), allocatable       :: npgridzptr
+      integer                                  :: nspmax(3)
+      integer                                  :: nspmin(3)
       integer                                  :: nspdiff
       integer                                  :: nspnobuff
       logical                                  :: ldebug
@@ -104,6 +124,7 @@ C
       integer, dimension(:), allocatable, save :: ntmp
 #endif
 C
+
       if (Nodes.eq.1) then
 C**********************
 C  Non-parallel case  *
@@ -229,13 +250,13 @@ C
         lfixy = .false.
         lfixz = .false.
         if (lnon235) then
-          spcelltot = dble(nspcell(1)-2*nbufferx)*
-     .                dble(nspcell(2)-2*nbuffery)*
-     .                dble(nspcell(3)-2*nbufferz)
-          pratio = dble(n)/dble(Nodes)
-          ratiox = pratio - dble(nspcell(1)-2*nbufferx)/spcelltot 
-          ratioy = pratio - dble(nspcell(2)-2*nbuffery)/spcelltot
-          ratioz = pratio - dble(nspcell(3)-2*nbufferz)/spcelltot
+          spcelltot = (nspcell(1)-2*nbufferx)*
+     .                (nspcell(2)-2*nbuffery)*
+     .                (nspcell(3)-2*nbufferz)
+          pratio = real(n, dp)/real(Nodes, dp)
+          ratiox = pratio - (nspcell(1)-2*nbufferx)/spcelltot 
+          ratioy = pratio - (nspcell(2)-2*nbuffery)/spcelltot
+          ratioz = pratio - (nspcell(3)-2*nbufferz)/spcelltot
           ratiox = abs(ratiox)
           ratioy = abs(ratioy)
           ratioz = abs(ratioz)
@@ -253,12 +274,12 @@ C
 C
 C  Calculate optimal target ratios for x-y and x-z
 C
-        targetratioxy = dble(nspcell(2)-2*nbuffery)/
-     .    dble(nspcell(1)-2*nbufferx)
-        targetratioxz = dble(nspcell(3)-2*nbufferz)/
-     .    dble(nspcell(1)-2*nbufferx)
-        targetratioyz = dble(nspcell(3)-2*nbufferz)/
-     .    dble(nspcell(2)-2*nbuffery)
+        targetratioxy = real(nspcell(2)-2*nbuffery, dp)/
+     .    real(nspcell(1)-2*nbufferx, dp)
+        targetratioxz = real(nspcell(3)-2*nbufferz, dp)/
+     .    real(nspcell(1)-2*nbufferx, dp)
+        targetratioyz = real(nspcell(3)-2*nbufferz, dp)/
+     .    real(nspcell(2)-2*nbuffery, dp)
 C
 C  Group factors in proportion to numbers of cells
 C
@@ -275,7 +296,7 @@ C
           do i = 1,ii
             if (lnon235) then
               if (lfixx) then
-                ratioyz = dble(npgrid(3))/dble(npgrid(2))
+                ratioyz = real(npgrid(3), dp)/real(npgrid(2), dp)
                 diffyz = targetratioyz - ratioyz
                 if (diffyz.lt.0.0_dp) then
                   npgrid(2) = n*npgrid(2)
@@ -283,7 +304,7 @@ C
                   npgrid(3) = n*npgrid(3)
                 endif
               elseif (lfixy) then
-                ratioxz = dble(npgrid(3))/dble(npgrid(1))
+                ratioxz = real(npgrid(3), dp)/real(npgrid(1), dp)
                 diffxz = targetratioxz - ratioxz
                 if (diffxz.lt.0.0_dp) then
                   npgrid(1) = n*npgrid(1)
@@ -291,7 +312,7 @@ C
                   npgrid(3) = n*npgrid(3)
                 endif
               else
-                ratioxy = dble(npgrid(2))/dble(npgrid(1))
+                ratioxy = real(npgrid(2), dp)/real(npgrid(1), dp)
                 diffxy = targetratioxy - ratioxy
                 if (diffxy.lt.0.0_dp) then
                   npgrid(1) = n*npgrid(1)
@@ -300,8 +321,8 @@ C
                 endif
               endif
             else
-              ratioxy = dble(npgrid(2))/dble(npgrid(1))
-              ratioxz = dble(npgrid(3))/dble(npgrid(1))
+              ratioxy = real(npgrid(2), dp)/real(npgrid(1), dp)
+              ratioxz = real(npgrid(3), dp)/real(npgrid(1), dp)
               diffxy = targetratioxy - ratioxy
               diffxz = targetratioxz - ratioxz
               if (diffxy.lt.0.0_dp.and.diffxz.lt.0.0_dp) then
@@ -321,9 +342,9 @@ C
 C
 C  Calculate target number of atoms per node in each direction
 C
-        targetx = dble(na)/dble(npgrid(1))
-        targety = dble(na)/dble(npgrid(2))
-        targetz = dble(na)/dble(npgrid(3))
+        targetx = real(na, dp)/real(npgrid(1), dp)
+        targety = real(na, dp)/real(npgrid(2), dp)
+        targetz = real(na, dp)/real(npgrid(3), dp)
 C
 C  Allocate local memory
 C
@@ -331,42 +352,59 @@ C
         allocate(npgridyptr(0:npgrid(2)))
         allocate(npgridzptr(0:npgrid(3)))
 C
+C
+C Now count cells, and divide them in x, y, and z 
+C according to number of nodes available in each direction
+
         npgridxptr(0) = nbufferx
         npgridyptr(0) = nbuffery
         npgridzptr(0) = nbufferz
 C
         maxxy = nspcell(1)*nspcell(2)
         maxx  = nspcell(1)
-C
+
 C  Assign cells to nodes based on cumulative numbers of atoms : X
 C
         natomnow = 0
         natomold = 0
         npgridxptr(1:npgrid(1)) = 0
-        ii = 0
+        ii = 1
         do ix = nbufferx+1,nspcell(1) - nbufferx
-          do iz = nbuffery+1,nspcell(3) - nbuffery
-            do iy = nbufferz+1,nspcell(2) - nbufferz
+          ! Go over each plane of x
+          do iy = nbuffery+1,nspcell(2) - nbuffery
+            do iz = nbufferz+1,nspcell(3) - nbufferz
+              ! Within each plane of x, calculate the index of each cell
               ind = (iz-1)*maxxy + (iy-1)*maxx + ix
+              ! and accumulate the number of atoms in each cell
               natomnow = natomnow + nspcellat(ind)
             enddo
           enddo
-          rnow = dble(natomnow - natomold)
-          fdiff = abs(rnow-targetx)/targetx
-          if (rnow.ge.targetx.or.fdiff.lt.0.10d0) then
-            ii = ii + 1
+          ! natomnow contains all atoms up till now
+          rnow = natomnow - natomold
+          ! rnow contains all atoms on this plane of x, plus
+          ! any previous planes not yet assigned to a node.
+          if (rnow/targetx > 0.90_dp) then
             npgridxptr(ii) = ix
+            ii = ii + 1
+            if (ii == npgrid(1)) exit
+            ! All other atoms must go onto next node
             natomold = natomnow
           endif
         enddo
-        npgridxptr(ii+1:npgrid(1)) = nspcell(1) - nbufferx
+       ! Put all remaining atoms onto next node; in case we still
+       ! have nodes left over, leave them empty.
+        npgridxptr(ii:npgrid(1)) = nspcell(1) - nbufferx
+       ! npgridxptr contains, indexed by processor grid in the x direction,
+       ! the first x cell that processor is responsible for.
+
+C Now repeat the above algorithm for y & z directions.
 C
 C  Assign cells to nodes based on cumulative numbers of atoms : Y
 C
         natomnow = 0
         natomold = 0
         npgridyptr(1:npgrid(2)) = 0
-        ii = 0
+        ii = 1
         do iy = nbuffery+1,nspcell(2) - nbuffery
           do iz = nbufferz+1,nspcell(3) - nbufferz
             do ix = nbufferx+1,nspcell(1) - nbufferx
@@ -374,38 +412,39 @@ C
               natomnow = natomnow + nspcellat(ind)
             enddo
           enddo
-          rnow = dble(natomnow - natomold)
-          fdiff = abs(rnow-targety)/targety
-          if (rnow.ge.targety.or.fdiff.lt.0.10d0) then
-            ii = ii + 1
+          rnow = natomnow - natomold
+          if (rnow/targety > 0.90_dp) then
             npgridyptr(ii) = iy
+            ii = ii + 1
+            if (ii == npgrid(2)) exit
             natomold = natomnow
           endif
         enddo
-        npgridyptr(ii+1:npgrid(2)) = nspcell(2) - nbuffery
+        npgridyptr(ii:npgrid(2)) = nspcell(2) - nbuffery
 C
 C  Assign cells to nodes based on cumulative numbers of atoms : Z
 C
         natomnow = 0
         natomold = 0
         npgridzptr(0:npgrid(3)) = nbufferz
-        ii = 0
+        ii = 1
         do iz = nbufferz+1,nspcell(3) - nbufferz
-          do iy = nbuffery+1,nspcell(2) - nbuffery
-            do ix = nbufferx+1,nspcell(1) - nbufferx
+          do ix = nbufferx+1,nspcell(1) - nbufferx
+            do iy = nbuffery+1,nspcell(2) - nbuffery
               ind = (iz-1)*maxxy + (iy-1)*maxx + ix
               natomnow = natomnow + nspcellat(ind)
             enddo
           enddo
-          rnow = dble(natomnow - natomold)
+          rnow = natomnow - natomold
           fdiff = abs(rnow-targetz)/targetz
-          if (rnow.ge.targetz.or.fdiff.lt.0.10d0) then
-            ii = ii + 1
+          if (rnow/targetz > 0.90_dp) then
             npgridzptr(ii) = iz
+            ii = ii + 1
+            if (ii == npgrid(3)) exit
             natomold = natomnow
           endif
         enddo
-        npgridzptr(ii+1:npgrid(3)) = nspcell(3) - nbufferz
+        npgridzptr(ii:npgrid(3)) = nspcell(3) - nbufferz
 C
 C  Build lists linking cells to nodes
 C
@@ -416,6 +455,8 @@ C
             do ix = 1,npgrid(1)
               n = n + 1
               if (Node.eq.n-1) then
+C Calculate maximum & minimum number of cells that this node
+C will get in each direction:
                 nspmax(1) = npgridxptr(ix) 
                 nspmin(1) = npgridxptr(ix-1)
                 nspmax(2) = npgridyptr(iy)
@@ -423,6 +464,7 @@ C
                 nspmax(3) = npgridzptr(iz)
                 nspmin(3) = npgridzptr(iz-1)
 C
+C Adjust these maxima & minima for buffering
                 nspnobuff = nspcell(1) - 2*nbufferx
                 nspdiff = min(nspnobuff-nspmax(1)+nspmin(1),nbufferx)
                 if (nspdiff.gt.0) nspmin(1) = nspmin(1) - nspdiff
@@ -439,6 +481,7 @@ C
                 nspdiff = min(nspnobuff-nspmax(3)+nspmin(3),nbufferz)
                 if (nspdiff.gt.0) nspmax(3) = nspmax(3) + nspdiff
 C
+C Ensure these maxima & minima are not outside the bounds of the cells.
                 nspmax(1) = min(nspmax(1),nspcell(1)-1)
                 nspmin(1) = max(nspmin(1),1)
                 nspmax(2) = min(nspmax(2),nspcell(2)-1)
@@ -446,6 +489,7 @@ C
                 nspmax(3) = min(nspmax(3),nspcell(3)-1)
                 nspmin(3) = max(nspmin(3),1)
 C
+C nadd is the number of cells we've allocated for this node
                 nadd = (npgridzptr(iz) - npgridzptr(iz-1) + 2*nbufferz)*
      .                 (npgridyptr(iy) - npgridyptr(iy-1) + 2*nbuffery)*
      .                 (npgridxptr(ix) - npgridxptr(ix-1) + 2*nbufferx)
@@ -457,6 +501,7 @@ C
      .              name='ncellnodeptr')
                 endif
 C
+C The lok[xyz] variable below are only necessary when using buffers.
                 do icz = npgridzptr(iz-1)+1-nbufferz,
      .              npgridzptr(iz)+nbufferz
                   lokz = (icz.gt.npgridzptr(iz-1).and.
@@ -608,6 +653,7 @@ C
         nNode(1:maxorb) = 0
         nL2G(1:maxorb,1:Nodes) = 0
         nG2L(1:maxorb) = 0
+
         do ii = 1,ncellpernode
           if (.not.lbuffercell(ii)) then
             ind = ncellnodeptr(ii)

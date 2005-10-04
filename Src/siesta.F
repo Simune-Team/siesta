@@ -54,6 +54,7 @@ C  Modules
       use siesta_cml
 
       use m_timestamp, only : timestamp
+      use m_wallclock, only : wallclock
       use units
 
       use m_smearing, only: temp
@@ -215,6 +216,7 @@ C Print version information ...........................................
      $        '* Running in serial mode'
 #endif
          call timestamp('Start of run')
+         call wallclock('Start of run')
       endif
 C ..................
 
@@ -1449,7 +1451,6 @@ C Print populations at each SCF step if requested before mixing ......
      .                      lasto, iaorb, iphorb )
           endif
 C ..................
-
 C Mix input and output energy-density and density matrices ............
 C Following line for using and saving the density matrix without mix ..
           if (wmix.ne.0._dp) then
@@ -1528,7 +1529,10 @@ C       but preserving the value of Eharrs1
 C ...................
 
 ! End of one SCF step - flush stdout
-        if (ionode) call pxfflush(6)
+        if (ionode) then
+           call pxfflush(6)
+           call wallclock("-------------- end of scf step")
+        endif
 
 C If last iteration, exit SCF loop ....................................
         if (last) then
@@ -1642,6 +1646,7 @@ C ...................
       if (IOnode) then
         call siesta_write_forces()
         call siesta_write_stress_pressure()
+        call wallclock('---- end of geometry step')
       endif
 C ...................
 
@@ -2126,6 +2131,7 @@ c Stop time counter
 C Print final date and time
       if (IOnode) then
         call timestamp('End of run')
+        call wallclock('End of run')
       endif
 
 C Finalize MPI

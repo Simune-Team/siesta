@@ -111,7 +111,8 @@ MOD_OBJS=precision.o recipes.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
-	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o units.o m_broyden_mixing.o
+	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o units.o m_broyden_mixing.o m_wallclock.o
+#
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 #

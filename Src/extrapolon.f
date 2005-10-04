@@ -51,7 +51,7 @@ C to num and list
 C *****************************************************************************
 
       use precision, only : dp
-      use parallel,  only : node
+      use parallel,  only : IONode
       use sys,       only : die
 
       implicit none
@@ -63,13 +63,13 @@ C *****************************************************************************
       integer, intent(in) :: nbasisloc
       integer, intent(in) :: nbasisCloc
       integer, intent(in) :: maxnc
-      integer, intent(in) :: numc(maxnc)
+      integer, intent(in) :: numc(nbasisCloc)
       integer, intent(in) :: listc(maxnc, nbasisCloc)
 
-      integer, intent(inout) :: numcold(maxnc)
-      integer, intent(inout) :: listcold(maxnc, nbasisCloc)
-      integer, intent(inout) :: cold(maxnc, nbasisCloc, nspin)
-      integer, intent(inout) :: c(maxnc, nbasisCloc, nspin)
+      integer, intent(inout) :: numcold(nbasisloc)
+      integer, intent(inout) :: listcold(maxnc, nbasisloc)
+      real(dp), intent(inout) :: cold(maxnc, nbasisloc, nspin)
+      real(dp), intent(inout) :: c(maxnc, nbasisCloc, nspin)
 
       real(dp), intent(out) :: aux(2, nbasis)
 C  Internal variables .......................................................
@@ -85,7 +85,7 @@ C  Internal variables .......................................................
 C ...........................................................................
 
       if (iord /= 0 .and. iord /= 1) then
-        if (node == 0) then
+        if (IONode) then
           call die ('extrapolon: Wrong iord: '//
      .              'only 0 and 1 order available')
         endif

@@ -8,7 +8,7 @@ C
         use precision
         implicit none
 
-        logical                                 :: lspatial
+        logical,                           save :: lspatial
 
         integer,                           save :: maxatompernode = 0
         integer,                           save :: maxcellpernode = 0
@@ -41,13 +41,8 @@ C
         integer,  dimension(:),   pointer, save :: nspcellat
         integer,  dimension(:,:), pointer, save :: nspcellatptr
         integer,  dimension(:,:), pointer, save :: nspcellatptrcell
-        integer,                           save :: nspmax(3)
-        integer,                           save :: nspmin(3)
         logical,  dimension(:),   pointer, save :: lbuffercell
         real(dp),                          save :: spcell(3)
         real(dp),                          save :: spmin(3)
-        real(dp), dimension(:),   pointer, save :: xinbox
-        real(dp), dimension(:),   pointer, save :: yinbox
-        real(dp), dimension(:),   pointer, save :: zinbox
 
       end module spatial

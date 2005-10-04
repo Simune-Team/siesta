@@ -19,13 +19,32 @@ C
 C  lspatialok    = if .true. then the cell can be decomposed
 C                  into boxes
 C
+C  Set in modules:
+C
+C  nspcellat(ncell)        = number of atoms per spatial cell
+C  nspcellatptr(maxspcellat, ncell)  = pointer to global atom number from atom number in cell
+C  nspcellatptrcell =  pointer to image (1-27) of atom in cell
+C  spmin(3)            = min spatial cell length in x, y, z
+C  spcell           =  
+C  nspcell(3)          = no. spatial cells in x, y, z
+C  maxspcell        = 
+C  maxspcellat      = maxval(nspcellat) + a bit extra
+C  
+C  nspcellat(ncell)              = number of atoms per cell
+C  nspcellatptr(natom,ncell)     = pointer to atom from atom number in cell
+C  nspcellatptrcell(natom,ncell) = pointer to image (1-27) of atom in cell
+
+C  
+C
 C  Julian Gale, NRI, Curtin University, March 2004
 C
       use parallel,   only : Node
-      use precision
-      use spatial
-      use alloc
-      use sys
+      use precision,  only : dp
+      use spatial,    only : nspcellat, nspcellatptr, nspcellatptrcell
+     .                     , nbufferx, nbuffery, nbufferz
+     .                     , spmin, spcell, nspcell
+     .                     , maxspcell, maxspcellat
+      use alloc,      only : re_alloc
       implicit none
 C
 C  Passed variables
@@ -76,6 +95,9 @@ C
       real(dp)                    :: xvec1cell(27)
       real(dp)                    :: yvec1cell(27)
       real(dp)                    :: zvec1cell(27)
+      real(dp), dimension(:),   pointer       :: xinbox
+      real(dp), dimension(:),   pointer       :: yinbox
+      real(dp), dimension(:),   pointer       :: zinbox
 C
 C  Set the following according to whether debugging is required
 C
@@ -179,9 +201,9 @@ C  nspcellatptrcell(natom,ncell) = pointer to image (1-27) of atom in cell
 C
 C  Have to loop over cell images in order to fill buffer regions too
 C
-      xdivision = dble(nspcell(1) - 2*nbufferx)
-      ydivision = dble(nspcell(2) - 2*nbuffery)
-      zdivision = dble(nspcell(3) - 2*nbufferz)
+      xdivision = nspcell(1) - 2*nbufferx
+      ydivision = nspcell(2) - 2*nbuffery
+      zdivision = nspcell(3) - 2*nbufferz
       maxxy = nspcell(1)*nspcell(2)
       maxx  = nspcell(1)
       do i = 1,na

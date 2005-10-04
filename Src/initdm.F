@@ -63,6 +63,7 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
+      use units, only : pi
 
       implicit          none
 
@@ -99,7 +100,7 @@ C Internal variables and arrays
      .  MPIerror
 #endif
       real(dp)          aspin, cosph, costh, epsilon, 
-     .                  qio, pi, rate, reals(4),
+     .                  qio, rate, reals(4),
      .                  sinph, sinth, spinat, spio, values(4)
 
       real(dp), dimension(:), allocatable, save ::
@@ -107,7 +108,6 @@ C Internal variables and arrays
 
       data maxat / 1000 /
       data epsilon / 1.d-8 /
-      pi = 4.d0 * atan(1.d0)
 
 C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
