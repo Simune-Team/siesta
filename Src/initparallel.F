@@ -108,10 +108,27 @@ C Find cell parameters
       call uncell(ucell,acell,bcell,ccell,alpha,beta,gamma,degtorad)
 
 C Check that cut-off is less than cell parameter
-      cellmin = acell
-      if (bcell.lt.cellmin) cellmin = bcell
-      if (ccell.lt.cellmin) cellmin = ccell
-      if (cellmin.lt.2.0d0*rcmax) rcmax = 0.5d0*cellmin/dble(Nodes)
+      cellmin = min(acell, bcell, ccell)
+      if (cellmin.lt.2.0_dp*rcmax) then
+        ! how big do we want the cells to be?
+        !  Ideally, each node should have either
+        ! one or zero atoms, which allows for the
+        ! best division of cells to processors.
+        !  Which rather suggests an alternative
+        ! strategy, of course. But anyway.
+        !  They should be small enough that there is
+        ! a reasonable division of cells per node.
+        !  However, they should not be so small that 
+        ! we have so many cells that our accounting
+        ! arrarys become stupidly long. Therefore
+        ! I will arbitrarily decide (for the moment)
+        ! that we should have 
+        if (Nodes<16) then
+          rcmax = 0.5_dp*cellmin/dble(Nodes)
+        else
+          rcmax = cellmin/32._dp
+        endif
+      endif
 
       if (.not.lspatial) then
 C Set BlockSize

@@ -1,17 +1,22 @@
-module m_wrappers
+module m_fdf_global
 
 use precision, only: sp, dp
 use fdf
 use parallel, only: ionode
 use m_mpi_utils, only: broadcast
 
+implicit none
+
 private
 
-public :: get
-interface get
+public :: fdf_global_get
+interface fdf_global_get
    module procedure get_dp, get_int, get_bool
    module procedure get_sp, get_phys, get_str
 end interface
+
+private :: get_dp, get_int, get_bool
+private :: get_sp, get_phys, get_str
 
 CONTAINS
 
@@ -76,4 +81,4 @@ call Broadcast(b)
 
 end subroutine get_bool
 
-end module m_wrappers
+end module m_fdf_global

@@ -12,16 +12,18 @@
       public :: globalize_max, globalize_sum, broadcast
       private
       interface globalize_max
-        module procedure globalize_sum_dp, globalize_sum_int
+        module procedure globalize_max_dp, globalize_max_int
       end interface
       interface globalize_sum
         module procedure globalize_sum_dp, globalize_sum_int
         module procedure globalize_sum_v_dp
+        module procedure globalize_sum_vv_dp
       end interface
       interface broadcast
         module procedure broadcast_dp, broadcast_int, broadcast_logical
         module procedure broadcast_sp, broadcast_char
-        module procedure broadcast_v_dp
+        module procedure broadcast_v_dp, broadcast_v_int
+        module procedure broadcast_vv_dp
       end interface
 
       CONTAINS
@@ -46,6 +48,17 @@
 #endif
        end subroutine broadcast_v_dp
 
+!------------------------------------------------------------
+      subroutine broadcast_vv_dp(a)
+      real(dp), dimension(:,:), intent(inout) :: a
+
+
+#ifdef MPI
+           call MPI_Bcast(a(1,1),size(a),MPI_double_precision,0,
+     $            MPI_Comm_World,MPIerror)
+#endif
+       end subroutine broadcast_vv_dp
+
 !---------------------------------------------------
       subroutine broadcast_sp(scalar)
       real(sp), intent(inout) :: scalar
@@ -65,6 +78,16 @@
      $            MPI_Comm_World,MPIerror)
 #endif
        end subroutine broadcast_int
+!---------------------------------------------------
+      subroutine broadcast_v_int(a)
+      integer, dimension(:), intent(inout) :: a
+
+#ifdef MPI
+           call MPI_Bcast(a,size(a),MPI_integer,0,
+     $            MPI_Comm_World,MPIerror)
+#endif
+       end subroutine broadcast_v_int
+
 !---------------------------------------------------
       subroutine broadcast_char(str)
       character(len=*), intent(inout) :: str
@@ -114,7 +137,25 @@
      $            MPI_sum,MPI_Comm_World,MPIerror)
 #endif
        end subroutine Globalize_sum_v_dp
+!-----------------------------------------------------------
+      subroutine Globalize_sum_vv_dp(local,global)
+      real(dp), intent(in), dimension(:,:)  :: local
+      real(dp), intent(out), dimension(:,:) :: global
 
+      integer :: n
+
+      n = size(local)
+      if ( n /= size(global))
+     $     call die("Globalize_sum_vv_dp error")
+#ifndef MPI
+           global = local
+#else
+           call MPI_AllReduce(local(1,1),global(1,1),n,
+     $            MPI_double_precision,
+     $            MPI_sum,MPI_Comm_World,MPIerror)
+#endif
+       end subroutine Globalize_sum_vv_dp
+!------------------------------------------------------------
       subroutine Globalize_sum_int(local,global)
       integer, intent(in) :: local
       integer, intent(out) :: global

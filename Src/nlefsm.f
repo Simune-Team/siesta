@@ -1,3 +1,19 @@
+      module m_nlefsm
+
+      use precision,     only : dp
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
+      use parallelsubs,  only : GlobalToLocalOrb
+      use atmfuncs,      only : rcut, epskb
+
+      implicit none
+
+      public :: nlefsm
+
+      private
+
+      CONTAINS
+
       subroutine nlefsm( scell, nua, na, isa, xa, indxua, maxna,
      .                   maxnh, maxnd, lasto, lastkb, iphorb, 
      .                   iphKB, numd, listdptr, listd, numh, 
@@ -49,29 +65,24 @@ C *********************************************************************
 C
 C  Modules
 C
-      use precision
-      use parallel,      only : Node, Nodes
-      use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
-      use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut, epskb
 
-      implicit none
+      integer, intent(in) ::
+     .   maxnh, na, maxnd, nspin, nua
+      integer, intent(inout)  :: maxna
 
-      integer
-     .  maxna, maxnh, na, maxnd, nspin, nua
-
-      integer
+      integer, intent(in)  ::
      .  indxua(na), iphKB(*), iphorb(*), isa(na),  
      .  lasto(0:na), lastkb(0:na), listd(maxnd), listh(maxnh),
      .  numd(*), numh(*), listdptr(*), listhptr(*)
 
-      real(dp)
-     .  scell(3,3), Dscf(maxnd,nspin), Enl,
-     .  fa(3,nua), H(maxnh,nspin),
-     .  stress(3,3), xa(3,na), volcel
+      real(dp), intent(in) :: scell(3,3), Dscf(maxnd,nspin),
+     .                        xa(3,na)
+      real(dp), intent(inout) :: fa(3,nua), stress(3,3)
+      real(dp), intent(inout) :: H(maxnh,nspin)
+      real(dp), intent(out)   :: Enl
 
-      external
-     .  neighb, timer, volcel, memory
+      real(dp) ::   volcel
+      external ::   neighb, timer, volcel, memory
 
 C Internal variables ................................................
 C maxno  = maximum number of basis orbitals overlapping a KB projector
@@ -449,4 +460,6 @@ C Deallocate local memory
 
       call timer( 'nlefsm', 2 )
 
-      end
+      end subroutine nlefsm
+
+      end module m_nlefsm

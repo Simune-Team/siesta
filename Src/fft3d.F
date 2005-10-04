@@ -892,7 +892,11 @@ C
      $                ajl, bji, bjk, ajo, bjl, bjo, ajm,
      $                ajn, ajp, bjn, bjp
 
+#ifdef OLD_CRAY
+      integer, parameter :: lvr = CRAY_LVR_PARAMETER
+#else
       integer, parameter :: lvr = 1024
+#endif
 *
 *     ***************************************************************
 *     *                                                             *
@@ -973,7 +977,7 @@ C
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 110 l = 1 , nvex
@@ -1041,7 +1045,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 130 l = 1 , nvex
@@ -1106,7 +1110,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 210 l = 1 , nvex
@@ -1155,7 +1159,7 @@ cdir$ ivdep, shortloop
 *  loop across transforms
 *  ----------------------
       if (kk.eq.n2/2) then
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 230 l = 1 , nvex
@@ -1173,7 +1177,7 @@ cdir$ ivdep, shortloop
 *
       else
 *
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 240 l = 1 , nvex
@@ -1244,7 +1248,7 @@ cdir$ ivdep, shortloop
       jh = jg + jstepl
       if (jh.lt.istart) jh = jh + ninc
       j = 0
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 310 l = 1 , nvex
@@ -1322,7 +1326,7 @@ cdir$ ivdep, shortloop
       jh = jg + jstepl
       if (jh.lt.istart) jh = jh + ninc
       j = 0
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 325 l = 1 , nvex
@@ -1425,7 +1429,7 @@ cdir$ ivdep, shortloop
       jh = jg + jstepl
       if (jh.lt.istart) jh = jh + ninc
       j = 0
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 340 l = 1 , nvex
@@ -1545,7 +1549,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 410 l = 1 , nvex
@@ -1730,7 +1734,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 440 l = 1 , nvex
@@ -1962,7 +1966,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 110 l = 1 , nvex
@@ -2020,7 +2024,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 130 l = 1 , nvex
@@ -2096,7 +2100,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 410 l = 1 , nvex
@@ -2218,7 +2222,7 @@ cdir$ ivdep, shortloop
 *
 *  loop across transforms
 *  ----------------------
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 440 l = 1 , nvex
@@ -2441,7 +2445,7 @@ cdir$ ivdep, shortloop
 *  ----------------------
       if (k.eq.0) then
 *
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 110 l = 1 , nvex
@@ -2492,7 +2496,7 @@ cdir$ ivdep, shortloop
 *
       else
 *
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 130 l = 1 , nvex
@@ -2648,7 +2652,7 @@ cdir$ ivdep, shortloop
 *  ----------------------
       if (k.eq.0) then
 *
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 410 l = 1 , nvex
@@ -2895,7 +2899,7 @@ cdir$ ivdep, shortloop
 *
       else
 *
-#ifdef CRAY
+#ifdef OLD_CRAY
 cdir$ ivdep, shortloop
 #endif
       do 440 l = 1 , nvex

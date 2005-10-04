@@ -5,7 +5,7 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-default: what siesta gen-basis # denchar
+default: what siesta # gen-basis denchar
 #
 configure: configure.ac aclocal.m4
 	autoconf
@@ -49,8 +49,8 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	iodm.o iohs.o iolwf.o ioxv.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
-        minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
-	ordern.o outcell.o outcoor.o overfsm.o \
+        minvec.o mulliken.o naefs.o neighb.o \
+	ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	propor.o pulayx.o \
 	ranger.o ran3.o reclat.o redata.o redcel.o \
@@ -105,14 +105,15 @@ gen-basis.o: $(FDF)
 #
 MOD_OBJS=precision.o recipes.o \
          spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
-         m_mpi_utils.o m_wrappers.o m_history.o m_iorho.o  \
+         m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
 	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
-         units.o m_broyden_mixing.o forhar.o m_wallclock.o m_iostruct.o
+         units.o m_broyden_mixing.o forhar.o m_wallclock.o m_iostruct.o \
+         nlefsm.o overfsm.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
@@ -129,7 +130,7 @@ overfsm.o shaper.o                                : atmfuncs.o
 atomlist.o                                        : atmfuncs.o 
 kinefsm.o naefs.o nlefsm.o overfsm.o              : atmfuncs.o
 siesta.o          : atmfuncs.o phonon.o ordern.o hsparse.o iopipes.o
-redata.o          : phonon.o
+redata.o          : phonon.o m_fdf_global.o
 dfscf.o hsparse.o : atmfuncs.o listsc.o
 rhoofd.o rhoofdsp.o vmat.o vmatsp.o  : listsc.o
 hsparse.o minvec.o : sorting.o
@@ -148,7 +149,7 @@ atm_types.o: radial.o
 atm_transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
 atmfuncs.o: atm_types.o radial.o
 old_atmfuncs.o atmfuncs.o matel.o: spher_harm.o
-siesta.o parallel.o initparallel.o setspatial.o setatomnodes.o : spatial.o
+siesta.o  initparallel.o setspatial.o setatomnodes.o : spatial.o
 ener3.o ener3lomem.o denmat.o gradient.o globalise : spatial.o
 ordern.o atomlwf.o cgwf.o egandd.o ener3.o ener3lomem.o gradient.o denmat.o on_subs.o iolwf.o : onmod.o
 atomlwf.o : mneighb.o
@@ -164,7 +165,8 @@ diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o: fermid.o
 optical.o transition_rate.o: fermid.o
 atom.o xc.o cellxc.o dhscf.o gen-basis.o siesta.o: xcmod.o
 dhscf.o: m_iorho.o forhar.o
-
+sys.o: parallel.o
+m_mpi_utils.o: sys.o
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
 #
@@ -258,6 +260,11 @@ denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS)
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
            $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE)  $(COMP_LIBS) $(LIBS) 
+#----------------------------------------------------------------------------
+MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o 
+mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
+	$(FC) -o mpi_test \
+	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS) 
 #----------------------------------------------------------------------------
 #
 clean: 

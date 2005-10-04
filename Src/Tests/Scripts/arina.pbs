@@ -1,0 +1,19 @@
+#PBS -N tests
+#PBS -joe
+### Number of nodes
+#PBS -l nodes=1:ppn=2
+#PBS -lmem=1gb
+echo Running on `hostname`
+#-----------------------------------------------------------
+echo This jobs runs on the following processors:
+echo `cat $PBS_NODEFILE`
+NPROCS=`wc -l < $PBS_NODEFILE`
+echo This job has allocated $NPROCS nodes
+#
+cd $PBS_O_WORKDIR
+prog=../../../siesta
+
+make SIESTA="mpirun -machinefile $PBS_NODEFILE -np $NPROCS $prog --gm-kill 600 $prog"
+
+
+

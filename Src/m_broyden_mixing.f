@@ -49,8 +49,9 @@ C                              input and output
       logical, intent(in) :: mix_scf1
       integer, intent(in) ::  numd(:), listdptr(:)
       real(dp), intent(in) :: alpha, alpha_kick
-      real(dp), intent(inout) ::  dmax,
-     .  dmnew(maxnd,nspin),dmold(maxnd,nspin)
+      real(dp), intent(inout) :: dmnew(maxnd,nspin),
+     $                           dmold(maxnd,nspin)
+      real(dp), intent(out) ::  dmax
 
 
       logical, save           :: initialization_done = .false.

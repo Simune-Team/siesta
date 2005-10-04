@@ -1,0 +1,21 @@
+#!/bin/bash
+#
+# Script for SGE in Matterhorn at UniZH
+#
+#$ -N tests
+#$ -pe mpich-gm 2
+#$ -cwd
+#$ -j y
+#$ -S /bin/bash
+#$ -v HOME
+#
+#-----------------------------------------------------------
+prog=../../../siesta
+#
+echo This job runs on the following nodes:
+echo `cat $TMP/machines`
+#
+make SIESTA="/opt/64/mpich-gm-pgi/bin/mpirun -np $NSLOTS -machinefile $TMPDIR/machines  -nolocal $prog"
+
+
+

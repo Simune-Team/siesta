@@ -100,7 +100,7 @@ c
          do 100 k = 1, n
             a(k,k) = (1.0d0,0.0d0)/a(k,k)
             t = -a(k,k)
-#ifdef CRAY
+#ifdef OLD_CRAY
             call cscal(k-1,t,a(1,k),1)
 #else
             call zscal(k-1,t,a(1,k),1)
@@ -110,7 +110,7 @@ c
             do 80 j = kp1, n
                t = a(k,j)
                a(k,j) = (0.0d0,0.0d0)
-#ifdef CRAY
+#ifdef OLD_CRAY
                call caxpy(k,t,a(1,k),1,a(1,j),1)
 #else
                call zaxpy(k,t,a(1,k),1,a(1,j),1)
@@ -132,14 +132,14 @@ c
   110       continue
             do 120 j = kp1, n
                t = work(j)
-#ifdef CRAY
+#ifdef OLD_CRAY
                call caxpy(n,t,a(1,j),1,a(1,k),1)
 #else
                call zaxpy(n,t,a(1,j),1,a(1,k),1)
 #endif
   120       continue
             l = ipvt(k)
-#ifdef CRAY
+#ifdef OLD_CRAY
             if (l .ne. k) call cswap(n,a(1,k),1,a(1,l),1)
 #else
             if (l .ne. k) call zswap(n,a(1,k),1,a(1,l),1)
@@ -239,7 +239,7 @@ c
 c           compute multipliers
 c
             t = -(1.0d0,0.0d0)/a(k,k)
-#ifdef CRAY
+#ifdef OLD_CRAY
             call cscal(n-k,t,a(k+1,k),1)
 #else
             call zscal(n-k,t,a(k+1,k),1)
@@ -253,7 +253,7 @@ c
                   a(l,j) = a(k,j)
                   a(k,j) = t
    20          continue
-#ifdef CRAY
+#ifdef OLD_CRAY
                call caxpy(n-k,t,a(k+1,k),1,a(k+1,j),1)
 #else
                call zaxpy(n-k,t,a(k+1,k),1,a(k+1,j),1)

@@ -68,6 +68,7 @@ C Number of columns in printout.  Must be smaller than 20
 #ifdef MPI
       integer  :: MPIerror, mpistatus(MPI_STATUS_SIZE)
       real(dp) :: pb(ncol)
+      real(dp) :: temp1(5), temp2(5) 
       real(dp), dimension(:), allocatable :: qb
       character(len=200) ::  mpibuff ! 200 is sufficiently long for all buffered writes
 #endif
@@ -77,7 +78,7 @@ C Number of columns in printout.  Must be smaller than 20
      .  config(ncol), iNode, itot
 
       real(dp)
-     .  p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3),tempvec(5) 
+     .  p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3)
 
       real(dp), dimension(:),   allocatable :: qo
       real(dp), dimension(:,:), allocatable :: qos
@@ -320,9 +321,6 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
 C             Compute charge in each orbital of atom ia
                  nao = lasto(ia) - lasto(ia-1)
                  allocate(qo(nao))
-#ifdef MPI
-                 allocate(qb(nao))
-#endif
                  qa = 0.0_dp
                  do io = lasto(ia-1)+1,lasto(ia)
                    nao = io - lasto(ia-1)
@@ -339,12 +337,14 @@ C             Compute charge in each orbital of atom ia
                  qtot = qtot + qa
 #ifdef MPI
 C Global sum of values stored in qo
+                 allocate(qb(nao))
                  qb = qo
                  call MPI_Reduce(qb,qo,nao,MPI_double_precision,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
                  qb(1)=qa
                  call MPI_Reduce(qb(1),qa,1,MPI_double_precision,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
+                 deallocate(qb)
 #endif
                  if (ionode) then
                    write(6,'(i4,f7.3,8f8.3,(/11x,8f8.3))')
@@ -361,9 +361,6 @@ C Global sum of values stored in qo
                    call cmlEndPropertyList(xf=mainXML) !atomtitle
                  endif 
                  deallocate(qo)
-#ifdef MPI
-                 deallocate(qb)
-#endif
                endif
              enddo
              if (cml_p) call cmlEndPropertyList(xf=mainXML) !atm_label
@@ -458,14 +455,14 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                 call spnvec( nspin, qas, qtot, stot, svec )
 #ifdef MPI
 C Global reduction of terms
-                tempvec(1:3) = svec
-                tempvec(4)   = qtot
-                tempvec(5)   = stot
-                call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
-     .               MPI_Comm_World,MPIerror)
-                svec = tempvec(1:3)
-                qtot = tempvec(4)
-                stot = tempvec(5)
+                temp1(1:3) = svec
+                temp1(4)   = qtot
+                temp1(5)   = stot
+                call MPI_Reduce(temp1,temp2,5,MPI_double_precision,
+     $               MPI_sum,0, MPI_Comm_World,MPIerror)
+                svec = temp2(1:3)
+                qtot = temp2(4)
+                stot = temp2(5)
 #endif
                 if (ionode) then
                   write(6,'(i4,4x,a6,3x,2f10.5,3x,3f8.3,/)')
@@ -477,14 +474,14 @@ C Global reduction of terms
           call spnvec( nspin, qts, qtot, stot, svec )
 #ifdef MPI
 C Global reduction of terms
-          tempvec(1:3) = svec
-          tempvec(4)   = qtot
-          tempvec(5)   = stot
-          call MPI_Reduce(qb,pb,5,MPI_double_precision,MPI_sum,0,
-     .        MPI_Comm_World,MPIerror)
-          svec = tempvec(1:3)
-          qtot = tempvec(4)
-          stot = tempvec(5)
+          temp1(1:3) = svec
+          temp1(4)   = qtot
+          temp1(5)   = stot
+          call MPI_Reduce(temp1,temp2,5,MPI_double_precision,
+     $         MPI_sum,0,MPI_Comm_World,MPIerror)
+          svec = temp2(1:3)
+          qtot = temp2(4)
+          stot = temp2(5)
 #endif
           if (ionode) then
             write(6,'(a,/,2a8,1x,2f10.5,3x,3f8.3,/)')

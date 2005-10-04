@@ -1355,7 +1355,7 @@ implicit none
 character, intent(in) :: var_type
 
 select case( var_type )
-#ifdef CRAY
+#ifdef OLD_CRAY
   case('I')
     type_mem = 8
   case('R')

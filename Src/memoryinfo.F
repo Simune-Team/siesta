@@ -34,7 +34,7 @@ C
      .  CurrentMemory / 0 /
       
       integer, parameter, dimension(7) :: ByteSize = 
-#ifdef CRAY
+#ifdef OLD_CRAY
      .     (/8,8,8,8,8,16,8/)
 #else
      .     (/4,4,8,4,8,16,4/)

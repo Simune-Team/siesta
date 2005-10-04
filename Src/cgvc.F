@@ -44,7 +44,9 @@ C  Modules
 C
       use precision, only : dp
       use parallel,    only : Node
-      use fdf, only : fdf_block, fdf_physical, fdf_boolean
+      use fdf, only : fdf_block, fdf_physical
+      use m_fdf_global, only: fdf_global_get
+      use m_mpi_utils, only:  broadcast
       use units, only: kBar
 #ifdef MPI
       use mpi_siesta
@@ -126,11 +128,8 @@ c If first call to cgvc, check dim and get target stress --------------------
         if ( varcel ) then
 
 !         Check if we want a constant-volume simulation
-           constant_volume = fdf_boolean("MD.ConstantVolume", .false.)
-#ifdef MPI
-          call MPI_Bcast(constant_volume,1,MPI_logical,0,MPI_Comm_World,
-     .      MPIerror)
-#endif
+          call fdf_global_get(constant_volume,
+     $                        "MD.ConstantVolume", .false.)
 
 c look for target stress and read it if found, otherwise generate it --------
 
@@ -174,13 +173,10 @@ c write target stress down --------------------------------------------------
             write(6,"(a,2x,3f12.3)") 
      .       'cgvc:', tstres(3,1)/kBar, tstres(3,2)/kBar, 
      .       tstres(3,3)/kBar
-          endif
+          endif  ! node0
 
-#ifdef MPI
-c globalise information
-          call MPI_Bcast(tstres(1,1),9,MPI_double_precision,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
+          call broadcast(tstres(1:3,1:3))
+
 
 c moduli of original cell vectors for fractional coor scaling back to au ---
 
@@ -200,11 +196,7 @@ c           precon = modcel(1)
             precon = fdf_physical('MD.PreconditionVariableCell',
      .                           9.4486344d0,'Bohr')
           endif
-#ifdef MPI
-c globalise information
-          call MPI_Bcast(precon,1,MPI_double_precision,0,MPI_Comm_World,
-     .      MPIerror)
-#endif
+          call broadcast(precon)
 
 c dimension of space where E is minimized -----------------------------------
 

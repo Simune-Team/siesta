@@ -17,7 +17,7 @@
 !
 !       Modified by Alberto Garcia, wdpgaara@lg.ehu.es                       
 !
-!       IMPORTANT: In order to support Crays, we need a way
+!       IMPORTANT: In order to support Old Crays, we need a way
 !       to tell MPI that when we use a data type of MPI_double_precision
 !       we really mean "real*8", that is, "double" in most systems.
 !       One way to do this is to use the "DAT_single" and "DAT_double" tags
@@ -25,7 +25,7 @@
 !       data type.
 !
       USE MPI__INCLUDE ,
-#ifdef CRAY
+#ifdef OLD_CRAY
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
      &     DAT_double => MPI_real,                                      &

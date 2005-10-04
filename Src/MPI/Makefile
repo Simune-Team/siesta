@@ -9,9 +9,9 @@ TEMPLATES= mpi__type_s.f90 mpi__type_sv.f90 mpi__type_v.f90 mpi__type_vs.f90
 INCFLAGS=-I$(MPI_INCLUDE)
 #
 Interfaces.f90 V_S.uses VS.uses: $(TEMPLATES)
-	@$(MAKE) kind_explorer
+	if [ -z "$(KINDS)" ] ; then  $(MAKE) kind_explorer ; fi
 	@echo "The kind numbers for single and double precision reals follow"
-	@sh generate.sh $(KINDS)
+	@sh generate.sh "$(KINDS)"
 #
 kind_explorer: kind_explorer.o
 	$(FC) -o kind_explorer $(LDFLAGS) kind_explorer.o

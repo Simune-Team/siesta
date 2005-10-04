@@ -249,6 +249,7 @@ C
         lfixx = .false.
         lfixy = .false.
         lfixz = .false.
+        npgrid(1:3) = 1
         if (lnon235) then
           spcelltot = (nspcell(1)-2*nbufferx)*
      .                (nspcell(2)-2*nbuffery)*
@@ -283,7 +284,6 @@ C
 C
 C  Group factors in proportion to numbers of cells
 C
-        npgrid(1:3) = 1
         n235(1) = n5
         n235(2) = n3
         n235(3) = n2
@@ -294,31 +294,29 @@ C
           ii = n235(ind)
           n = nn235(ind)
           do i = 1,ii
-            if (lnon235) then
-              if (lfixx) then
-                ratioyz = real(npgrid(3), dp)/real(npgrid(2), dp)
-                diffyz = targetratioyz - ratioyz
-                if (diffyz.lt.0.0_dp) then
-                  npgrid(2) = n*npgrid(2)
-                else
-                  npgrid(3) = n*npgrid(3)
-                endif
-              elseif (lfixy) then
-                ratioxz = real(npgrid(3), dp)/real(npgrid(1), dp)
-                diffxz = targetratioxz - ratioxz
-                if (diffxz.lt.0.0_dp) then
-                  npgrid(1) = n*npgrid(1)
-                else
-                  npgrid(3) = n*npgrid(3)
-                endif
+            if (lfixx) then
+              ratioyz = real(npgrid(3), dp)/real(npgrid(2), dp)
+              diffyz = targetratioyz - ratioyz
+              if (diffyz.lt.0.0_dp) then
+                npgrid(2) = n*npgrid(2)
               else
-                ratioxy = real(npgrid(2), dp)/real(npgrid(1), dp)
-                diffxy = targetratioxy - ratioxy
-                if (diffxy.lt.0.0_dp) then
-                  npgrid(1) = n*npgrid(1)
-                else
-                  npgrid(2) = n*npgrid(2)
-                endif
+                npgrid(3) = n*npgrid(3)
+              endif
+            elseif (lfixy) then
+              ratioxz = real(npgrid(3), dp)/real(npgrid(1), dp)
+              diffxz = targetratioxz - ratioxz
+              if (diffxz.lt.0.0_dp) then
+                npgrid(1) = n*npgrid(1)
+              else
+                npgrid(3) = n*npgrid(3)
+              endif
+            elseif (lfixz) then
+              ratioxy = real(npgrid(2), dp)/real(npgrid(1), dp)
+              diffxy = targetratioxy - ratioxy
+              if (diffxy.lt.0.0_dp) then
+                npgrid(1) = n*npgrid(1)
+              else
+                npgrid(2) = n*npgrid(2)
               endif
             else
               ratioxy = real(npgrid(2), dp)/real(npgrid(1), dp)
@@ -336,7 +334,7 @@ C
           enddo
         enddo
         if (ldebug) then
-          write(6,'(/,''  Processor grid = '',3(i4,1x))') 
+          write(6,'(/,'' Arse Processor grid = '',3(i4,1x))') 
      .      (npgrid(n),n=1,3)
         endif
 C
@@ -370,6 +368,8 @@ C
         npgridxptr(1:npgrid(1)) = 0
         ii = 1
         do ix = nbufferx+1,nspcell(1) - nbufferx
+          if (ii == npgrid(1)) exit
+          ! If we've reached the last cell, then all other atoms must go onto next node
           ! Go over each plane of x
           do iy = nbuffery+1,nspcell(2) - nbuffery
             do iz = nbufferz+1,nspcell(3) - nbufferz
@@ -386,8 +386,6 @@ C
           if (rnow/targetx > 0.90_dp) then
             npgridxptr(ii) = ix
             ii = ii + 1
-            if (ii == npgrid(1)) exit
-            ! All other atoms must go onto next node
             natomold = natomnow
           endif
         enddo
@@ -406,6 +404,7 @@ C
         npgridyptr(1:npgrid(2)) = 0
         ii = 1
         do iy = nbuffery+1,nspcell(2) - nbuffery
+          if (ii == npgrid(2)) exit
           do iz = nbufferz+1,nspcell(3) - nbufferz
             do ix = nbufferx+1,nspcell(1) - nbufferx
               ind = (iz-1)*maxxy + (iy-1)*maxx + ix
@@ -416,7 +415,6 @@ C
           if (rnow/targety > 0.90_dp) then
             npgridyptr(ii) = iy
             ii = ii + 1
-            if (ii == npgrid(2)) exit
             natomold = natomnow
           endif
         enddo
@@ -429,6 +427,7 @@ C
         npgridzptr(0:npgrid(3)) = nbufferz
         ii = 1
         do iz = nbufferz+1,nspcell(3) - nbufferz
+          if (ii == npgrid(3)) exit
           do ix = nbufferx+1,nspcell(1) - nbufferx
             do iy = nbuffery+1,nspcell(2) - nbuffery
               ind = (iz-1)*maxxy + (iy-1)*maxx + ix
@@ -436,11 +435,10 @@ C
             enddo
           enddo
           rnow = natomnow - natomold
-          fdiff = abs(rnow-targetz)/targetz
+       print*,ii,"of",npgrid(3), natomnow, "rnow",int(rnow),rnow/targetz
           if (rnow/targetz > 0.90_dp) then
             npgridzptr(ii) = iz
             ii = ii + 1
-            if (ii == npgrid(3)) exit
             natomold = natomnow
           endif
         enddo
@@ -553,9 +551,6 @@ C The lok[xyz] variable below are only necessary when using buffers.
               write(6,*) "Warning: Bad load balancing: ",
      .                   "no cells allocated to node",
      .                   minloc(ncellpernodelist)-1
-              write(6,*) "Try specifying a number of nodes that is ", 
-     .                   "an exact factor of the number of cells:"
-     .                   ,product(nspcell)
            endif
         endif
         deallocate(ncellpernodelist)

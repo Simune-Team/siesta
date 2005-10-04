@@ -126,7 +126,7 @@ C
       use parallel,  only : IOnode, Nodes
       use fdf
       use sys
-      use m_wrappers, only: get
+      use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only: broadcast
 
       use diagmemory, only: memoryfactor
@@ -202,7 +202,7 @@ C  Internal variables .................................................
 
 ! New template, using fdf and broadcast wrappers
 !
-!      call get(param,'ParamName', param_default)
+!      call fdf_global_get(param,'ParamName', param_default)
 !      if (ionode)  write(6,'(a,i)'),
 !     .    'redata: ParamName           = ',param
 !      if (cml_p) call cmlAddParameter(xf=mainXML, name='ParamName',
@@ -228,14 +228,14 @@ C for cml output, find the system name & label
       endif
 
 C Type of output
-      call get(outlng,"LongOutput", .false.)
+      call fdf_global_get(outlng,"LongOutput", .false.)
       if (ionode)      write(6,'(a,4x,l1)')
      .   'redata: Long output                      = ',outlng
       if (cml_p) call cmlAddParameter(xf=mainXML, name='LongOutput',
      .       value=outlng, dictRef='siesta:verbosity')
 
 C Define Number of species ...
-      call get(ns,'NumberOfSpecies', 0)
+      call fdf_global_get(ns,'NumberOfSpecies', 0)
       if (ionode)     write(6,'(a,3x,i2)') 
      .   'redata: Number of Atomic Species         = ',ns
         if (ns .le. 0) call die('redata: ERROR:'// 
@@ -248,7 +248,7 @@ C ...
 C Dump information to plot charge contours
 C by the external DENCHAR application program.
 
-      call get(dumpcharge,'WriteDenchar',.false.)
+      call fdf_global_get(dumpcharge,'WriteDenchar',.false.)
       if (ionode)  write(6,'(a)') 
      .   'redata: Charge density info will appear in .RHO file'
       if (cml_p) call cmlAddParameter(xf=mainXML, 
@@ -258,7 +258,7 @@ C ...
 
 C Perform Mulliken Population Analysis
 
-      call get(mullipop,'WriteMullikenPop', 0)
+      call fdf_global_get(mullipop,'WriteMullikenPop', 0)
       if (mullipop == 0 .and. outlng) mullipop = 1
       if (ionode) then
         select case (mullipop)
@@ -289,7 +289,7 @@ C Perform Mulliken Population Analysis
 C ...
 
 C Planewave cutoff of the real space mesh ...
-      call get(g2max,'MeshCutoff',g2max_default,'Ry')
+      call fdf_global_get(g2max,'MeshCutoff',g2max_default,'Ry')
       if (ionode)   write(6,'(a,f10.4,a)') 
      .   'redata: Mesh Cutoff                      = ',g2max,'  Ry'
       if (cml_p) call cmlAddParameter(xf=mainXML, name='MeshCutOff',
@@ -297,7 +297,7 @@ C Planewave cutoff of the real space mesh ...
 C ...
 
 C Net charge in the cell ...
-      call get(charnet,'NetCharge',0.0_dp)
+      call fdf_global_get(charnet,'NetCharge',0.0_dp)
       if (ionode)  write(6,'(a,f10.4,a)') 
      .   'redata: Net charge of the system         = ',charnet,' |e|'
       if (cml_p) call cmlAddParameter(xf=mainXML, name='NetCharge',
@@ -307,17 +307,17 @@ C ...
 C SCF Loop parameters ...
 C     Maximum number of SCF iterations
 
-      call get(nscf,'MaxSCFIterations',nscf_default)
+      call fdf_global_get(nscf,'MaxSCFIterations',nscf_default)
       if (ionode)  write(6,'(a,i5)') 
      .   'redata: Max. number of SCF Iter          = ',nscf
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='MaxSCFIterations', value=nscf, dictRef='siesta:maxscf')
 
 C Pulay mixing, number of iterations for one Pulay mixing (maxsav)
-      call get(maxsav,'DM.NumberPulay', maxsav_default)
+      call fdf_global_get(maxsav,'DM.NumberPulay', maxsav_default)
 
 C Broyden mixing, number of iterations 
-      call get(broyden_maxit,'DM.NumberBroyden',0)
+      call fdf_global_get(broyden_maxit,'DM.NumberBroyden',0)
       if (ionode) then
         if (broyden_maxit .gt. 0) then
            write(6,'(a,i5,a)') 
@@ -348,7 +348,7 @@ C ...
 C     Mix density matrix on first SCF step
 C     (mix)
 
-      call get(mix,'DM.MixSCF1',.false.)
+      call fdf_global_get(mix,'DM.MixSCF1',.false.)
       if (ionode)   write(6,'(a,4x,l1)')
      .    'redata: Mix DM in first SCF step ?       = ',mix
       if (cml_p) call cmlAddParameter(xf=mainXML, name='DM.MixSCF1',
@@ -357,7 +357,7 @@ C     (mix)
 
 C Use disk or memory to store intermediate Pulay miximg vectors
 C (pulfile)
-      call get(pulfile,'DM.PulayOnFile',.false.)
+      call fdf_global_get(pulfile,'DM.PulayOnFile',.false.)
       if (ionode) then
         if (pulfile.and.Nodes>1) then
           call die('redata: Cannot use DM.PulayOnFile=.true.'//
@@ -371,14 +371,15 @@ C (pulfile)
 C ...
 
 C Density Matrix Mixing  (proportion of output DM in new input DM)
-      call get(wmix,'DM.MixingWeight',wmix_default)
+      call fdf_global_get(wmix,'DM.MixingWeight',wmix_default)
       if (ionode)  write(6,'(a,f10.4,a)') 
      .   'redata: New DM Mixing Weight             = ',wmix
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='DM.MixingWeight', value=wmix, dictRef='siesta:wmix')
 
 C Density Matrix occupancy tolerance
-      call get(occtol,'DM.OccupancyTolerance',occtol_default)
+      call fdf_global_get(occtol,
+     $                    'DM.OccupancyTolerance',occtol_default)
       if (ionode)  write(6,'(a,f14.12)') 
      .   'redata: New DM Occupancy tolerance       = ',occtol
       if (cml_p) call cmlAddParameter(xf=mainXML, 
@@ -388,7 +389,7 @@ C Density Matrix occupancy tolerance
 
 C Perform linear mixing each nkick SCF iterations (to kick system
 C when it is pinned in a poorly convergent SCF loop)
-      call get(nkick,'DM.NumberKick',0)
+      call fdf_global_get(nkick,'DM.NumberKick',0)
       if (ionode) then
         if (nkick .ge. 1) then
           write(6,'(a,i5,a)')
@@ -402,7 +403,8 @@ C when it is pinned in a poorly convergent SCF loop)
      .     name='DM.NumberKick', value=nkick, dictRef='siesta:nkick')
  
 C     Density Matrix Mixing each nkick SCF iterations
-      call get( wmixkick,'DM.KickMixingWeight',wmixkick_default)
+      call fdf_global_get( wmixkick,
+     $                  'DM.KickMixingWeight',wmixkick_default)
       if (ionode) write(6,'(a,f10.4,a)')
      .   'redata: DM Mixing Weight for Kicks       = ',wmixkick
       if (cml_p) call cmlAddParameter(xf=mainXML, 
@@ -411,7 +413,7 @@ C     Density Matrix Mixing each nkick SCF iterations
 
 
 C     Density Matrix Tolerance for achieving Self-Consistency
-      call get(dDtol,'DM.Tolerance',dDtol_default)
+      call fdf_global_get(dDtol,'DM.Tolerance',dDtol_default)
       if (ionode)  write(6,'(a,f12.6,a)') 
      .   'redata: DM Tolerance for SCF             = ',dDtol
       if (cml_p) call cmlAddParameter(xf=mainXML, name='DM.Tolerance', 
@@ -419,7 +421,7 @@ C     Density Matrix Tolerance for achieving Self-Consistency
 
 C     Initial spin density: Maximum polarization, Ferro (false), AF (true)
       if (nspin.eq.2) then
-         call get(inspn,'DM.InitSpinAF',.false.)
+         call fdf_global_get(inspn,'DM.InitSpinAF',.false.)
         if (ionode)  write(6,'(a,4x,l1)')
      .     'redata: Antiferro initial spin density   = ',inspn
         if (cml_p) call cmlAddParameter(xf=mainXML, 
@@ -428,13 +430,13 @@ C     Initial spin density: Maximum polarization, Ferro (false), AF (true)
 C ...
 
 C Use Saved Data
-      call get(usesaveddata,'UseSaveData',.false.)
+      call fdf_global_get(usesaveddata,'UseSaveData',.false.)
       if (ionode)  write(6,'(a,4x,l1)') 
      .   'redata: Using Saved Data (generic)   = ', usesaveddata
 
 C ...
 C Use continuation DM files
-      call get(usesavedm,'DM.UseSaveDM',usesaveddata)
+      call fdf_global_get(usesavedm,'DM.UseSaveDM',usesaveddata)
       if (ionode) write(6,'(a,4x,l1)') 
      .   'redata: Use continuation files for DM    = ',  usesavedm
       if (cml_p) call cmlAddParameter(xf=mainXML, name='DM.UseSaveDM', 
@@ -442,7 +444,7 @@ C Use continuation DM files
 C ...
 
 C Neglect Interactions between non-overlapping orbitals ...
-      call get(negl,'NeglNonOverlapInt',.false.)
+      call fdf_global_get(negl,'NeglNonOverlapInt',.false.)
       if (ionode)  write(6,'(a,4x,l1)') 
      .   'redata: Neglect nonoverlap interactions  = ',negl
       if (cml_p) call cmlAddParameter(xf=mainXML, 
@@ -455,7 +457,7 @@ C Method to Solve LDA Hamiltonian ...
       else
          method_default = 'ordern'
       endif
-      call get(method,'SolutionMethod',method_default)
+      call fdf_global_get(method,'SolutionMethod',method_default)
       if (cml_p)
      $    call cmlAddParameter(xf=mainXML, name='SolutionMethod',
      $       value=method, dictRef='siesta:SCFmethod')
@@ -464,7 +466,7 @@ C
       if (leqi(method,'diagon')) then
          isolve = 0
          if (Nodes.eq.1) then
-            call get(DaC,'Diag.DivideAndConquer',.false.)
+            call fdf_global_get(DaC,'Diag.DivideAndConquer',.false.)
          else
             DaC = .false.
          endif
@@ -501,7 +503,7 @@ C
 C ...
 
 C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
-      call get(MemoryFactor,'Diag.Memory', 1.0_dp )
+      call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
       MemoryFactor = max(MemoryFactor,1.0_dp)
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='Diag.Memory', value=MemoryFactor, 
@@ -509,7 +511,8 @@ C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
 C ...
 
 C Electronic temperature for Fermi Smearing ...
-      call get(temp,'ElectronicTemperature',temp_default,'Ry')
+      call fdf_global_get(temp,
+     $                 'ElectronicTemperature',temp_default,'Ry')
       if (ionode .and. isolve == 0)  write(6,'(a,f10.4,a)') 
      .    'redata: Electronic Temperature           = ',temp,'  Ry'
       if (cml_p) call cmlAddParameter(xf=mainXML, 
@@ -520,7 +523,7 @@ C ...
 C Fix the spin of the system to a given value ; and
 C value of the Spin of the system (only used if fixspin = TRUE)
 
-      call get(fixspin,'FixSpin',.false.)
+      call fdf_global_get(fixspin,'FixSpin',.false.)
       if (ionode)   write(6,'(a,4x,l1)') 
      .         'redata: Fix the spin of the system       = ',fixspin 
       if (fixspin) then
@@ -528,7 +531,7 @@ C value of the Spin of the system (only used if fixspin = TRUE)
      $      call die('redata: ERROR: You can only fix the spin of '//
      .         'the system for collinear spin polarized calculations.')
 
-         call get(ts,'TotalSpin',0.0_dp)
+         call fdf_global_get(ts,'TotalSpin',0.0_dp)
          if (ionode) write(6,'(a,f10.4)') 
      .        'redata: Value of the Spin of the System  = ',ts
       else
@@ -546,7 +549,7 @@ C ...
 C Order-N solution parameters ...
 C     Maximum number of CG minimization iterations
 
-      call get(ncgmax,'ON.MaxNumIter',ncgmax_default)
+      call fdf_global_get(ncgmax,'ON.MaxNumIter',ncgmax_default)
       if (ncgmax<1) then
       if (ionode)
      $   write(6,'(a)') "ON.MaxNumIter cannot be less than 1. "//
@@ -556,7 +559,7 @@ C     Maximum number of CG minimization iterations
 
 C     Relative tolerance in total band structure energy
 
-        call get(etol,'ON.etol',etol_default)
+        call fdf_global_get(etol,'ON.etol',etol_default)
 C ...
 
 C     Fermi level parameter
@@ -572,15 +575,15 @@ C ...
 
 C     Cutoff radius for Localized Wave Functions
 
-      call get(rcoor,'On.RcLWF',rcoor_default,'Bohr')
+      call fdf_global_get(rcoor,'On.RcLWF',rcoor_default,'Bohr')
 
 C     Use continumation LWF files
 
-      call get(usesavelwf,'ON.UseSaveLWF',usesaveddata)
+      call fdf_global_get(usesavelwf,'ON.UseSaveLWF',usesaveddata)
 C ...
 
 C     Option on how to build LWF's (disk or functionals)
-      call get(lwfopt,'ON.functional',"kim")
+      call fdf_global_get(lwfopt,'ON.functional',"kim")
       if (leqi(lwfopt,'files')) then
          ioptlwf = 0
       else if (leqi(lwfopt,'kim')) then
@@ -595,33 +598,34 @@ C     Option to calculate the Chemical potential in O(N)
 C     Option to use the Chemical Potential calculated instead
 C     of the eta variable of the input
 
-      call get(noeta,'ON.ChemicalPotentialUse',.false.)
+      call fdf_global_get(noeta,'ON.ChemicalPotentialUse',.false.)
       if (noeta) then
         ! if so, we must (obviously) calculate the chemical potential
          chebef=.true.
       else
         ! otherwise, we may still want to calculate it but not use it.
-         call get(chebef,'ON.ChemicalPotential',.false.)
+         call fdf_global_get(chebef,'ON.ChemicalPotential',.false.)
       endif
 
 
 C     Cutoff radius to calculate the Chemical Potential by projection
 
-      call get(rcoorcp,'ON.ChemicalPotentialRc',
+      call fdf_global_get(rcoorcp,'ON.ChemicalPotentialRc',
      .                        rcoorcp_default,'Bohr')
 C ...
 
 C     Temperature of the Fermi distribution to calculate the
 C     Chemical potential by projection
 
-      call get(tcp,'ON.ChemicalPotentialTemperature',
+      call fdf_global_get(tcp,'ON.ChemicalPotentialTemperature',
      .                   tcp_default,'Ry')
       beta = 1.0_dp/tcp
 
 C     Order of the Chebishev expansion to calculate the Chemical
 C     potential
       
-      call get(pmax,'ON.ChemicalPotentialOrder',pmax_default)
+      call fdf_global_get(pmax,
+     $           'ON.ChemicalPotentialOrder',pmax_default)
 C ...
 
 
@@ -710,17 +714,17 @@ C ...
 
 C Dynamics parameters ...
 
-      call get(varcel,'MD.VariableCell', .false. )
+      call fdf_global_get(varcel,'MD.VariableCell', .false. )
 ! NB reset below ...
 C ...
 
 C     Type of dynamics 
-      call get(dyntyp,'MD.TypeOfRun',"verlet")
+      call fdf_global_get(dyntyp,'MD.TypeOfRun',"verlet")
 C ...
 
       if (leqi(dyntyp,'cg')) then
          idyn = 0
-         call get(usesavecg,'MD.UseSaveCG', usesaveddata)
+         call fdf_global_get(usesavecg,'MD.UseSaveCG', usesaveddata)
       else if (leqi(dyntyp,'verlet')) then
          idyn = 1
       else if (leqi(dyntyp,'nose')) then
@@ -744,19 +748,21 @@ C ...
 
 C     Maximum number of steps in CG coordinate optimization
       
-      call get(nmove,'MD.NumCGsteps',0)
+      call fdf_global_get(nmove,'MD.NumCGsteps',0)
 
 C     Maximum atomic displacement in one CG step
 
-      call get(dxmax,'MD.MaxCGDispl',dxmax_default,'Bohr')
+      call fdf_global_get(dxmax,'MD.MaxCGDispl',dxmax_default,'Bohr')
 
 C     Tolerance in the maximum atomic force 
 
-      call get(ftol,'MD.MaxForceTol', ftol_default, 'Ry/Bohr')
+      call fdf_global_get(ftol,
+     $            'MD.MaxForceTol', ftol_default, 'Ry/Bohr')
 
 C     Tolerance in the maximum residual stress (var cell) def = 1 GPa 
 
-      call get(strtol,'MD.MaxStressTol', strtol_default, 'Ry/Bohr**3')
+      call fdf_global_get(strtol,
+     $               'MD.MaxStressTol', strtol_default, 'Ry/Bohr**3')
       strtol = abs(strtol)
 
       if (ionode) then
@@ -855,16 +861,16 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
 
   
 C     Initial and final time steps for MD
-       call get(istart,'MD.InitialTimeStep',1)
-       call get(ifinal,'MD.FinalTimeStep',1)
+       call fdf_global_get(istart,'MD.InitialTimeStep',1)
+       call fdf_global_get(ifinal,'MD.FinalTimeStep',1)
 
 C     Length of time step for MD
 
-       call get(dt,'MD.LengthTimeStep',dt_default,'fs')
+       call fdf_global_get(dt,'MD.LengthTimeStep',dt_default,'fs')
 C ...
 
 C     Quench Option
-       call get(qnch,'MD.Quench',.false.)
+       call fdf_global_get(qnch,'MD.Quench',.false.)
        if (qnch .and. (idyn==2 .or. idyn==4)) 
      .    call die('redata: ERROR: You cannot quench and '//
      .         'use a Nose thermostat simultaneously')
@@ -879,7 +885,8 @@ C     Initial Temperature of MD simulation
 C     (draws random velocities from the Maxwell-Boltzmann distribition
 C      at the given temperature)
 
-       call get(tempinit,'MD.InitialTemperature',0.0_dp,'K')
+       call fdf_global_get(tempinit,
+     $             'MD.InitialTemperature',0.0_dp,'K')
 
 
       if (idyn .ge. 1 .and. idyn .le. 5) then
@@ -910,15 +917,16 @@ C      at the given temperature)
       endif
 
 C     Target Temperature and Pressure
-      call get(tt,'MD.TargetTemperature',0.0_dp,'K')
-      call get(tp,'MD.TargetPressure',0.0_dp,'Ry/Bohr**3')
+      call fdf_global_get(tt,'MD.TargetTemperature',0.0_dp,'K')
+      call fdf_global_get(tp,'MD.TargetPressure',0.0_dp,'Ry/Bohr**3')
       
 
 C     Mass of Nose variable
-      call get(mn,'MD.NoseMass',mn_default,'Ry*fs**2')
+      call fdf_global_get(mn,'MD.NoseMass',mn_default,'Ry*fs**2')
 
 C     Mass of Parrinello-Rahman variables
-      call get(mpr,'MD.ParrinelloRahmanMass',mpr_default,'Ry*fs**2')
+      call fdf_global_get(mpr,
+     $             'MD.ParrinelloRahmanMass',mpr_default,'Ry*fs**2')
 
       if (idyn==2 .or. idyn==4) then
         if (ionode) write(6,'(a,f10.4,a)') 
@@ -935,7 +943,8 @@ C     Mass of Parrinello-Rahman variables
       endif
 
 C     Annealing option
-      call get(annop,'MD.AnnealOption','TemperatureAndPressure')
+      call fdf_global_get(annop,
+     $           'MD.AnnealOption','TemperatureAndPressure')
 
       if (idyn .eq. 5) then
          if (leqi(annop,'Temperature')) then
@@ -992,7 +1001,8 @@ C     Annealing option
       endif
 
 C     Relaxation Time for Annealing
-      call get(taurelax,'MD.TauRelax',taurelax_default,'fs')
+      call fdf_global_get(taurelax,
+     $             'MD.TauRelax',taurelax_default,'fs')
       if (idyn==5) then
           write(6,'(a,f10.4,a)') 
      .         'redata: Annealing Relaxation Time        = ',
@@ -1003,7 +1013,8 @@ C     Relaxation Time for Annealing
         
 C     Estimated Bulk modulus (for Pressure annealing)
 
-      call get(bulkm,'MD.BulkModulus',bulkm_default,'Ry/Bohr**3')
+      call fdf_global_get(bulkm,
+     $              'MD.BulkModulus',bulkm_default,'Ry/Bohr**3')
       if (ionode) then
          if (idyn==5 .and. (ianneal==2 .or. ianneal==3))
      $            write(6,'(a,f10.4,a)') 
@@ -1015,12 +1026,12 @@ C     Estimated Bulk modulus (for Pressure annealing)
 
 C     Atomic displacement for force constant calculation
 
-      call get(dx,'MD.FCDispl',dx_default,'Bohr')
+      call fdf_global_get(dx,'MD.FCDispl',dx_default,'Bohr')
 
 C     First and last atoms to displace for calculation of force constants
 
-      call get(ia1,'MD.FCfirst',1)
-      call get(ia2,'MD.FClast',na)
+      call fdf_global_get(ia1,'MD.FCfirst',1)
+      call fdf_global_get(ia2,'MD.FClast',na)
 
       if (idyn==6) then
         if (ionode) then
@@ -1055,7 +1066,7 @@ C Harris density in the first SCF step of each MD step), and
 C MaxSCFIter should be  2, in the second one the SCF 
 C Iteration are computed.
 
-      call get(harrisfun,'Harris_functional',.false.)
+      call fdf_global_get(harrisfun,'Harris_functional',.false.)
 
       if (harrisfun) then
         usesavedm = .false.

@@ -12,6 +12,8 @@
       use mpi_siesta, only: mpi_sum, mpi_logical
       use mpi_siesta, only: mpi_double_precision
 
+      implicit none
+
       public :: setglobalise, setglobaliseF, setglobaliseB,
      $          globalisestats, globalinitb, globalloadb2,
      $          globalcommb, globalreloadb2, globalrezerob2,
@@ -1015,6 +1017,8 @@ C Passed variables
 C Internal variables
       integer          :: i
       integer          :: ig
+      integer          :: j
+      integer          :: jn
       integer          :: m
       integer          :: mu
       integer          :: n
@@ -1065,6 +1069,8 @@ C Passed variables
 C Internal variables
       integer          :: i
       integer          :: ig
+      integer          :: j
+      integer          :: jn
       integer          :: m
       integer          :: mu
       integer          :: n
@@ -1117,6 +1123,8 @@ C Passed variables
 C Internal variables
       integer          :: i
       integer          :: ig
+      integer          :: j
+      integer          :: jn
       integer          :: m
       integer          :: mu
       integer          :: n

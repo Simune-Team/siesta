@@ -23,17 +23,18 @@ C  Modules
       use atomlist, only: superx, superc, initatomlists
 !
       use band, only: initbands, bands
-      use fdf
+      use fdf, only : fdf_block, fdf_convfac, fdf_boolean
+      use m_fdf_global, only: fdf_global_get
       use sys, only: die, bye
       use parse
       use ionew, only: io_setup
       use periodic_table, only : symbol
       use xcmod, only: setXC
 #ifdef MPI
-      use mpi_siesta, only: mpi_comm_world, mpi_sum, mpi_max
-      use mpi_siesta, only: mpi_integer, mpi_logical
-      use mpi_siesta, only: mpi_double_precision
+      use mpi_siesta, only: mpi_comm_world
+      use m_mpi_utils, only : globalize_sum, globalize_max
 #endif
+      use m_mpi_utils, only : broadcast
       use alloc, only: re_alloc, alloc_report
 
       use phonon, only: phonon_num_disps, phonon_setup
@@ -49,7 +50,9 @@ C  Modules
       use writewave,    only: initwave, wwave
       use iopipes,      only: forcestopipe, coordsfrompipe
       use m_iostruct,   only: write_struct, read_struct
-
+      use m_nlefsm,     only: nlefsm
+      use m_overfsm,    only: overfsm
+ 
       use m_broyden_mixing
 
       use siesta_cml
@@ -149,15 +152,9 @@ C  Modules
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     .  harrisfun, muldeb, eggbox_block, final, Do_Pulay,
-     $  use_struct_file
+     .  harrisfun, muldeb, eggbox_block, final, use_struct_file
 
       logical  :: printeigen = .false.       ! AG: Initialize
-
-#ifdef MPI
-      logical
-     .  writei
-#endif
 
       character
      .  filevh*25, filevt*25, fildrh*25, filrho*25,
@@ -169,8 +166,8 @@ C  Modules
      .  anneal, cgvc, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, ioxv, 
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb, nlefsm, 
-     .  nose, npr, overfsm, paste, pulayx, 
+     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
+     .  nose, npr, paste, pulayx, 
      .  redata, reinit, shaper, spnvec, 
      .  timer, verlet2, volcel, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
@@ -251,24 +248,18 @@ C Initialise read .....................................................
       call siesta_cml_init() ! Initialize CML (relies on reinit)
 
 C Set allocation report level .........................................
-      if (IOnode) level = fdf_integer( 'alloc_report_level', 0 )
-#ifdef MPI
-      call MPI_Bcast(level,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
+      call fdf_global_get(level, 'alloc_report_level', 0 )
       call alloc_report( level=level, file=trim(slabel)//'.alloc' )
 C ..................
 
 C Initialise exchange-correlation functional information
-      call setXC
+      call setXC()
 
 C Initialize pseudopotentials and atomic orbitals
-      if (IOnode) call initatom
-      call broadcast_basis
+      if (IOnode) call initatom()
+      call broadcast_basis()
 
-      if (IOnode) atmonly = fdf_defined('Atom-Setup-Only')
-#ifdef MPI
-      call MPI_Bcast(atmonly,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+      call fdf_global_get(atmonly,'Atom-Setup-Only',.false.)
       if (atmonly) call bye("End of atom setup")
 
       if (Node.eq.0) then
@@ -287,8 +278,8 @@ C Read simulation sizes ...............................................
 
 !! Read number of atoms and coordinates, and unit cell
 
+      call fdf_global_get(use_struct_file,"MD.UseStructFile",.false.)
       if (IOnode) then
-         use_struct_file = fdf_boolean("MD.UseStructFile",.false.)
          if (use_struct_file) then
             call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
          else
@@ -305,22 +296,18 @@ C Read simulation sizes ...............................................
         enddo
       endif
 
-#ifdef MPI
-      call MPI_Bcast(use_struct_file,
-     $              1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(na_u,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,MPI_Comm_World,
-     .  MPIerror)
+      call broadcast(na_u)
+      call broadcast(ucell)
 
+#ifdef MPI
       if (Node.ne.0) then    ! Allocate isa and xa in rest of nodes
          nullify(isa,xa)
          call re_alloc(isa,1,na_u,name='isa',routine='siesta')
          call re_alloc(xa,1,3,1,na_u,name='xa',routine='siesta')
       endif
-      call MPI_Bcast(isa,na_u,MPI_integer,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(xa(1,1),3*na_u,MPI_double_precision,0,
-     .  MPI_Comm_World,MPIerror)
 #endif
+      call broadcast(isa(1:na_u))
+      call broadcast(xa(1:3,1:na_u))
 
 C Allocate arrays based on read sizes ................
 !
@@ -352,9 +339,8 @@ C Initialise those arrays that must be pre-initialised
       stress(1:3,1:3) = 0.0_dp
 
       if (IOnode) call spin_init(nspin)
-#ifdef MPI
-      call MPI_Bcast(nspin,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
+      call broadcast(nspin)
+
       allocate(efs(nspin))
       call memory('A','D',nspin,'siesta')
       allocate(qs(nspin))
@@ -379,54 +365,28 @@ C Read simulation data ................................................
      .            occtol,broyden_maxit)
 
 C Find some switches ..................................................
-      if (IOnode) then
-        writek    = fdf_boolean('WriteKpoints'    , outlng )
-        writef    = fdf_boolean('WriteForces'     , outlng )
-        writedm   = fdf_boolean('WriteDM'         , .true. )
-#ifdef MPI
-        writei    = fdf_boolean('WriteEigenvalues', outlng )
-#endif
-        writb     = fdf_boolean('WriteBands'      , outlng )
-        writbk    = fdf_boolean('WriteKbands'     , outlng )
-        writec    = fdf_boolean('WriteCoorStep'   , outlng )
-        writic    = fdf_boolean('WriteCoorInitial', .true. )
-        writmd    = fdf_boolean('WriteMDhistory'  , .false.)
-        writpx    = fdf_boolean('WriteMDXmol'     , .not. writec)
-        default   = fdf_boolean('UseSaveData'     , .false.)
-        usesavexv = fdf_boolean('MD.UseSaveXV'    , default)
-        savehs    = fdf_boolean('SaveHS'          , .false.)
-        fixauxcell= fdf_boolean('FixAuxillaryCell', .false.)
-        initdmaux = fdf_boolean('ReInitialiseDM'  , .false.)
-        muldeb    = fdf_boolean('MullikenInSCF'   , .false.)
-
-        rijmin    = fdf_physical( 'WarningMinimumAtomicDistance',
-     .                                              1._dp, 'Bohr' )
-        if (usesavexv .and. use_struct_file) then
-           write(6,"(a)")
+      call fdf_global_get(writek,'WriteKpoints'    , outlng )
+      call fdf_global_get(writef,'WriteForces'     , outlng )
+      call fdf_global_get(writedm,'WriteDM'     , .true.)
+      call fdf_global_get(writb, 'WriteBands'      , outlng )
+      call fdf_global_get(writbk, 'WriteKbands'     , outlng )
+      call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
+      call fdf_global_get(writic, 'WriteCoorInitial', .true. )
+      call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)
+      call fdf_global_get(writpx, 'WriteMDXmol'     , .not. writec)
+      call fdf_global_get(default, 'UseSaveData'     , .false.)
+      call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
+      call fdf_global_get(savehs, 'SaveHS'          , .false.)
+      call fdf_global_get(fixauxcell, 'FixAuxillaryCell', .false.)
+      call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .false.)
+      call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
+      call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance',
+     .                            1.0_dp, 'Bohr' )
+      if (usesavexv .and. use_struct_file) then
+         if (IOnode)  write(6,"(a)")
      $        "! UseSaveXV cannot coexist with UseStructFile - reset"
            usesavexv = .false.
-        endif
       endif
-#ifdef MPI
-      call MPI_Bcast(writek,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writef,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writedm,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writei,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writb,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writbk,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writec,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writic,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writmd,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(writpx,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(default,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(usesavexv,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(savehs,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(fixauxcell,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(initdmaux,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(muldeb,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(rijmin,1,MPI_double_precision,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
 
 C Read cell shape and atomic positions from a former run ..............
       foundxv = .false.
@@ -565,12 +525,9 @@ C Initialise arrays
       numhold(:) = 0
 
 C Get number of eigenstates that need to be calculated
-      if (IOnode) then
-        neigwanted = fdf_integer('NumberOfEigenStates',no_u)
-      endif
-#ifdef MPI
-      call MPI_Bcast(neigwanted,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
+
+      call fdf_global_get(neigwanted,'NumberOfEigenStates',no_u)
+
 
 C Check number of eigenstates - cannot be larger than number of
 C basis functions or smaller than number of occupied states + 1
@@ -1132,8 +1089,7 @@ C Check for Pulay auxiliary matrices sizes ...................................
         enddo
         nauxpul = nauxpul * nspin * maxsav
 #ifdef MPI
-        call MPI_AllReduce(nauxpul,ntmp,1,MPI_integer,MPI_max,
-     .    MPI_Comm_World,MPIerror)
+        call globalize_max(nauxpul,ntmp)
         nauxpul = ntmp
 #endif
 C Increase nauxpul with safety margin when atoms move
@@ -1160,14 +1116,6 @@ C Find overlap matrix ...............................................
      .             fal, stress, S )
 C ..................
 
-      if (IOnode) then
-         Do_Pulay = fdf_boolean("DM.Do_Pulay",.false.)
-      endif
-#ifdef MPI
-      call MPI_Bcast(Do_Pulay,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-
-
 C Start of SCF iteration _____________________________________________
       first = .true.
       last  = .false.
@@ -1193,8 +1141,7 @@ C Normalize density matrix to exact charge ...........................
           enddo
         enddo
 #ifdef MPI
-        call MPI_AllReduce(qsol,buffer1,1,MPI_double_precision,
-     .    MPI_sum,MPI_Comm_World,MPIerror)
+        call globalize_sum(qsol,buffer1)
         qsol = buffer1
 #endif
         if (IOnode) then
@@ -1254,8 +1201,7 @@ C Kinetic: energy, forces, stress and matrix elements .................
      .                 Ekin, fal, stressl, H ) 
 #ifdef MPI
 C Global reduction of energy terms
-          call MPI_AllReduce(Ekin,buffer1,1,MPI_double_precision,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
+          call globalize_sum(Ekin,buffer1)
           Ekin = buffer1
 #endif
         endif
@@ -1286,8 +1232,7 @@ C Check whether maxna has been increased during nlefsm & resize if needed
 
 #ifdef MPI
 C Global reduction of energy terms
-          call MPI_AllReduce(Enl,buffer1,1,MPI_double_precision,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
+          call globalize_sum(Enl,buffer1)
           Enl = buffer1
 #endif
         endif
@@ -1325,8 +1270,7 @@ C Non-SCF part of total energy .......................................
           enddo
 #ifdef MPI
 C Global reduction of E0
-          call MPI_AllReduce(E0,buffer1,1,MPI_double_precision,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
+          call globalize_sum(E0,buffer1)
           E0 = buffer1
 #endif
           E0 = E0 - Eions + Ena
@@ -1443,8 +1387,7 @@ C ispin=4 => Imag(D12)
           enddo
 #ifdef MPI
 C Global reduction of DEharr
-          call MPI_AllReduce(DEharr,buffer1,1,MPI_double_precision,
-     .      MPI_sum,MPI_Comm_World,MPIerror)
+          call globalize_sum(DEharr,buffer1)
           DEharr = buffer1
 #endif
 C ..................
@@ -1483,8 +1426,7 @@ C Pulay or Broyden mixing
 
 C Ensure that dDmax is the same on all nodes for convergence test/output
 #ifdef MPI
-          call MPI_AllReduce(dDmax,buffer1,1,MPI_double_precision,
-     .      MPI_max,MPI_Comm_World,MPIerror)
+          call globalize_max(dDmax,buffer1)
           dDmax = buffer1
 #endif
 C ...................
@@ -1598,10 +1540,8 @@ C Substract egg box effect form energy ................................
 C Global reduction of forces and stresses
       allocate(fatmp(3,na_u))
       call memory('A','D',3*na_u,'siesta')
-      call MPI_AllReduce(stressl(1,1),stresstmp(1,1),9,
-     .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-      call MPI_AllReduce(fal(1,1),fatmp(1,1),3*na_u,
-     .  MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
+      call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
+      call globalize_sum(fal(1:3,1:na_u),fatmp(1:3,1:na_u))
       stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
       fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
       call memory('D','D',size(fatmp),'siesta')
@@ -1893,9 +1833,7 @@ C Compute the projected density of states
           do_pdos = .false.
         endif
       endif
-#ifdef MPI
-      call MPI_Bcast(do_pdos,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+      call broadcast(do_pdos)
 
       if (do_pdos) then
 C Find the desired energy range
@@ -1915,16 +1853,10 @@ C Find the desired energy range
      $           e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
         endif
 
-#ifdef MPI
-C Broadcast values to all nodes
-        call MPI_Bcast(e1,1,MPI_double_precision,0,MPI_Comm_World,
-     .                 MPIerror)
-        call MPI_Bcast(e2,1,MPI_double_precision,0,MPI_Comm_World,
-     .                 MPIerror)
-        call MPI_Bcast(sigma,1,MPI_double_precision,0,MPI_Comm_World,
-     .                 MPIerror)
-        call MPI_Bcast(nhist,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
+        call broadcast(e1)
+        call broadcast(e2)
+        call broadcast(sigma)
+        call broadcast(nhist)
 
         call pdos( no_s, nspin, nspin, no_l, maxnh,
      .             no_u, numh, listhptr, listh, H, S,
@@ -1953,11 +1885,11 @@ C Print spin polarization
             enddo
           enddo
         enddo
+
 #ifdef MPI
 C Global reduction of spin components
-        call MPI_AllReduce(qspin,qtmp,nspin,
-     .    MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
-        qspin(1:nspin) = qtmp(1:nspin)
+      call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
+      qspin(1:nspin) = qtmp(1:nspin)
 #endif
         if (nspin .eq. 2) then
           if (IOnode) then
@@ -2024,22 +1956,15 @@ C Attention H0, Eold, Dold are used as auxiliary arrays
 c...................................
 
 C Save electron density and potential
-      if (IOnode) then
-        savrho = fdf_boolean( 'SaveRho',    dumpcharge .or. .false.)
-        savdrh = fdf_boolean( 'SaveDeltaRho',               .false.)
-        savevh = fdf_boolean( 'SaveElectrostaticPotential', .false.)
-        savevt = fdf_boolean( 'SaveTotalPotential',         .false.)
-        savepsch = fdf_boolean( 'SaveIonicCharge',          .false.)
-        savetoch = fdf_boolean( 'SaveTotalCharge',          .false.)
-      endif
-#ifdef MPI
-      call MPI_Bcast(savrho,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(savdrh,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(savevh,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(savevt,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(savepsch,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      call MPI_Bcast(savetoch,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+      call fdf_global_get(savrho,'SaveRho',
+     $                      dumpcharge .or. .false.)
+      call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)
+      call fdf_global_get(savevh,'SaveElectrostaticPotential',
+     $                      .false.)
+      call fdf_global_get(savevt,'SaveTotalPotential', .false.)
+      call fdf_global_get(savepsch,'SaveIonicCharge',  .false.)
+      call fdf_global_get(savetoch,'SaveTotalCharge',  .false.)
+
       if (savrho .or. savdrh .or. savevh .or. savevt .or.
      .    savepsch .or. savetoch ) then
         filrho = ' '
@@ -2070,9 +1995,8 @@ c Find local density of states
       if (IOnode) then
         genlogic = fdf_block('LocalDensityOfStates',iu)
       endif
-#ifdef MPI
-      call MPI_Bcast(genlogic,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+      call broadcast(genlogic)
+
       if ( genlogic ) then
 
 C Find the desired energy range
@@ -2086,14 +2010,10 @@ C Find the desired energy range
           e2 = values(p,2)*factor
           call destroy(p)
         endif
-#ifdef MPI
-        call MPI_Bcast(e1,1,MPI_double_precision,0,
-     .    MPI_Comm_World,MPIerror)
-        call MPI_Bcast(e2,1,MPI_double_precision,0,
-     .    MPI_Comm_World,MPIerror)
-#endif
+        call broadcast(e1)
+        call broadcast(e2)
 
-C Find the density matrix for states between e1 and e2
+!       Find the density matrix for states between e1 and e2
         if (isolve .eq. 0) then
           call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                numh, listhptr, listh, numh, listhptr, listh, 
@@ -2101,18 +2021,11 @@ C Find the density matrix for states between e1 and e2
      .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      .                eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
      .                occtol, iscf, neigwanted)
-        else
-          if (IOnode) then
-            write(6,*)
-     .       'siesta: ERROR: LDOS implemented only with diagon'
-          endif
-          goto 70
-        endif
-     
-C Find the LDOS in the real space mesh
-        filrho = paste( slabel, '.LDOS' )
-        g2max = g2cut
-        call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+
+!       Find the LDOS in the real space mesh
+          filrho = paste( slabel, '.LDOS' )
+          g2max = g2cut
+          call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xa, indxua, 
      .              ucell, mscell, g2max, ntm,
      .              0, 0, 0, filrho, ' ', ' ', ' ', ' ', ' ',
@@ -2120,8 +2033,12 @@ C Find the LDOS in the real space mesh
      .              maxnh, numh, listhptr, listh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
      .              dipol, fa, stress, fal, stressl )
-      endif
-   70 continue
+        else
+          if (IOnode)  write(6,*)
+     .       'siesta: ERROR: LDOS implemented only with diagon'
+        endif
+
+      endif ! genlogic
 
 C Output memory use up to the end of the program
       call printmemory( 6, 1 )

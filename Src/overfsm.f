@@ -1,3 +1,18 @@
+      module m_overfsm
+
+      use precision,     only : dp
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GlobalToLocalOrb
+      use atmfuncs,      only : rcut
+      use m_memory,      only : mem_stat, memory
+
+      implicit none
+
+      public :: overfsm
+      private
+
+      CONTAINS
+
       subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
      .                   maxna, maxnh, maxnd, lasto, iphorb, isa, 
      .                   numd, listdptr, listd, numh, listhptr, listh, 
@@ -43,28 +58,19 @@ C ********************** INPUT and OUTPUT *****************************
 C real*8  fa(3,nua)        : Atomic forces (Orthog. part added to input)
 C real*8  stress(3,3)      : Stress tensor (Orthog. part added to input)
 C *********************************************************************
-C
-C  Modules
-C
-      use precision
-      use parallel,      only : Node, Nodes
-      use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut
 
-      implicit none
-
-      integer
+      integer, intent(in) ::
      . maxna, maxnd, maxnh, maxo, na, no, nspin, nua
 
-      integer
+      integer, intent(in) ::
      . indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
      . listd(*), numd(*), listh(maxnh), numh(*), listdptr(*),
      . listhptr(*)
 
-      real(dp)
-     . scell(3,3), Emat(maxnd,nspin), 
-     . fa(3,nua), r2ij(maxna), rmaxo, 
-     . stress(3,3), S(maxnh), xa(3,na), xij(3,maxna)
+      real(dp) , intent(inout)  :: fa(3,nua), stress(3,3)
+      real(dp) , intent(in)     :: scell(3,3), Emat(maxnd,nspin), 
+     .                 r2ij(maxna), rmaxo, xa(3,na), xij(3,maxna)
+      real(dp), intent(out)     :: S(maxnh)
 
 C Internal variables ......................................................
   
@@ -75,11 +81,9 @@ C Internal variables ......................................................
       real(dp)
      .  fij(3), grSij(3) , rij, Sij, volcel, volume
 
-      real(dp), dimension(:), allocatable, save ::
-     .  Di, Si
+      real(dp), dimension(:), allocatable, save ::  Di, Si
 
-      external
-     .  neighb, timer, memory
+      external  neighb, timer
 C ......................
 
 C Start timer
@@ -93,10 +97,10 @@ C Initialize neighb subroutine
      .             nnia, jna, xij, r2ij )
 
 C Allocate local memory
-      allocate(Di(no))
-      call memory('A','D',no,'overfsm')
-      allocate(Si(no))
-      call memory('A','D',no,'overfsm')
+      allocate(Di(no),stat=mem_stat)
+      call memory('A','D',no,'overfsm',mem_stat,id="Di")
+      allocate(Si(no),stat=mem_stat)
+      call memory('A','D',no,'overfsm',mem_stat,id="Si")
 
       Si(1:no) = 0.0d0
       Di(1:no) = 0.0d0
@@ -168,7 +172,8 @@ C Finish timer
       call timer( 'overfsm', 2 )
 
       return
-      end
+      end subroutine overfsm
+      end module m_overfsm
 
 
 

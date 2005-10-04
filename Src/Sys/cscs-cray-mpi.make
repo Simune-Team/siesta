@@ -1,11 +1,12 @@
 SIESTA_ARCH=cscs-cray-mpi
 #
-# For Cray XT-3 at CSCS with MPI
+# For Cray XT-3 at CSCS
 #
 FC=ftn -target=catamount
+FPP=linux-pgf90 -F
 FC_ASIS=$(FC)
 #
-FFLAGS= -fast
+FFLAGS= -g -O0
 FFLAGS_DEBUG= -g -O0
 RANLIB=echo
 COMP_LIBS=dc_lapack.a
@@ -14,33 +15,35 @@ NETCDF_LIBS=         #  /usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
 NETCDF_INTERFACE=    #  libnetcdf_f90.a
 DEFS_CDF=            #  -DCDF
 #
-KINDS="4 8"
+KINDS=4 8
 MPI_LIBS=
 MPI_INTERFACE=libmpi_f90.a
-MPI_INCLUDE= .
-DEFS_MPI= -DMPI
-#
-# There are (were?) some problems with command-line processing compatibility
-# that forced the extraction of "pgi.aux" and "pgiarg" as independent 
-# libraries (details unfortunately lost)
+MPI_INCLUDE=.
+DEFS_MPI=-DMPI
 #
 LIBS= 
-SYS=cpu_time
+SYS=nag
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 #
-# Important (at least for V5.0-1 of the pgf90 compiler...)
-# Compile atom.f without optimization.
+# Important 
+# Compile atom.f and electrostatic.f without optimization.
 #
 atom.o:
 	$(FC) -c $(FFLAGS_DEBUG) atom.f
+electrostatic.o:
+	$(FC) -c $(FFLAGS_DEBUG) electrostatic.f
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FPP) $(DEFS) $<  ; mv $*.f aux_$*.f
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) -o $*.o aux_$*.f
+	rm -f aux_$*.f
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FPP) $(DEFS) $<  ; mv $*.f aux_$*.f90
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) -o $*.o aux_$*.f90
+	rm -f aux_$*.f90
 .f90.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

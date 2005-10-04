@@ -2,10 +2,10 @@
 #
 echo " ===> Generating module files from templates..."
 
-if [ "$#" != 1 ] ; then
+if [ -z "$@" ] ; then
     KINDS=`./kind_explorer`
 else
-    KINDS=$1
+    KINDS=$@
 fi
 
 echo $KINDS
