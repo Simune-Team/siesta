@@ -1,0 +1,1571 @@
+Siesta Version (Arch framework):
+agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-69
+Architecture  : macosx-nag-cdf
+Compiler flags: f95 -O -g -dcfuns -dusty
+SERIAL version
+
+* Running in serial mode
+>> Start of run:   8-SEP-2005  11:59:22
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+#
+# MgCO3 in primitive cell. SZ. Variable cell
+#
+SystemName	MgCo3 R-3c test -- SZ, 100 R -- variable cell at 100 Gpa
+SystemLabel	mgco3
+NumberOfSpecies		3
+NumberOfAtoms	       10
+%block ChemicalSpeciesLabel
+      1      12     Mg
+      2       6     C
+      3       8     O
+%endblock ChemicalSpeciesLabel
+PAO.BasisSize  SZ
+# Rhombohedral primitive cell
+# (HEX 3-fold cell had A=4.635 and C=15.023, so alpha=48.179 degrees
+#  and a=5.67783 Ang)
+LatticeConstant     5.67783 Ang
+%block LatticeParameters
+1.0 1.0 1.0 48.179 48.179 48.179
+%endblock LatticeParameters
+AtomicCoordinatesFormat    Fractional
+%block AtomicCoordinatesAndAtomicSpecies
+  0.0         0.0         0.0      1
+  0.5         0.5         0.5      1
+  0.25        0.25        0.25     2
+ -0.25       -0.25       -0.25     2
+  0.5274     -0.0274      0.25     3
+  0.25        0.5274     -0.0274   3
+ -0.0274      0.25        0.5274   3
+ -0.5274      0.0274     -0.25     3
+ -0.25       -0.5274      0.0274   3
+  0.0274     -0.25       -0.5274   3
+%endblock AtomicCoordinatesAndAtomicSpecies
+kgrid_cutoff 15.0 Ang
+Solution.Method       diagon
+MeshCutoff             100 Ry
+DM.NumberBroyden       4
+DM.UseSaveDM           T
+DM.MixingWeight        0.1         # New DM amount for next SCF cycle
+DM.Tolerance           1.d-4       # Tolerance in maximum difference
+                                   # between input and output DM
+MaxSCFIterations       20
+WriteCoorStep      .true.
+WriteForces        .true.
+MD.TypeOfRun         CG
+MD.Variable-Cell      T
+MD.Target-pressure    100.0 GPa
+MD.Num-CG-steps	     5
+MD.Max-Stress-Tol    2.0 GPa
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: MgCo3 R-3c test -- SZ, 100 R -- variable cell at 100 Gpa   
+reinit: -----------------------------------------------------------------------
+reinit: System Label: mgco3               
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:  1  Label: Mg Atomic number: 12
+ Species number:  2  Label: C Atomic number: 6
+ Species number:  3  Label: O Atomic number: 8
+Ground state valence configuration:   3s02
+Reading pseudopotential information in formatted form from Mg.psf
+Ground state valence configuration:   2s02  2p02
+Reading pseudopotential information in formatted form from C.psf
+Ground state valence configuration:   2s02  2p04
+Reading pseudopotential information in formatted form from O.psf
+For Mg, standard SIESTA heuristics set lmxkb to 1
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+For C, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+For O, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+Mg                   Z=  12    Mass=  24.310        Charge=  0.0000    
+Lmxo=0 Lmxkb=1     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for Mg  (Z =  12)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Valence configuration (pseudopotential and basis set generation):
+3s( 2.00) rc: 2.59
+3p( 0.00) rc: 2.59
+Total valence charge:    2.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  3.5878
+V l=1 = -2*Zval/r beyond r=  3.5878
+All V_l potentials equal beyond r=  2.5600
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  3.5878
+Using large-core scheme for Vlocal
+
+atom: Estimated core radius    3.58779
+
+atom: Including non-local core corrections could be a good idea
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    3.91588
+atom: Maximum radius for r*vlocal+2*Zval:    3.63292
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  2.657845   el= -0.351328   Ekb=  2.184400   kbcos=  0.257081
+   l= 1   rc=  2.657845   el= -0.101748   Ekb=  0.525536   kbcos=  0.270508
+
+KBgen: Total number of  Kleinman-Bylander projectors:    4
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 3s
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.619780
+                 energy =   -0.332103
+                kinetic =    0.289627
+    potential(screened) =   -0.621729
+       potential(ionic) =   -1.387191
+atom: Total number of Sankey-type orbitals:  1
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+ 3s( 2.00)                                                            
+Vna: chval, zval:    2.00000   2.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.619780
+
+atom: _________________________________________________________________________
+
+<basis_specs>
+===============================================================================
+C                    Z=   6    Mass=  12.010        Charge=  0.0000    
+Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for C   (Z =   6)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Valence configuration (pseudopotential and basis set generation):
+2s( 2.00) rc: 1.49
+2p( 2.00) rc: 1.52
+3d( 0.00) rc: 1.58
+Total valence charge:    4.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  1.4666
+V l=1 = -2*Zval/r beyond r=  1.5038
+V l=2 = -2*Zval/r beyond r=  1.5612
+All V_l potentials equal beyond r=  1.5612
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.5612
+
+VLOCAL1: 99.0% of the norm of Vloc inside     17.809 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     40.586 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.88329
+atom: Maximum radius for r*vlocal+2*Zval:    1.62091
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.747182   el= -1.001947   Ekb=  5.181700   kbcos=  0.300603
+   l= 1   rc=  1.747182   el= -0.398598   Ekb= -4.328763   kbcos= -0.367074
+   l= 2   rc=  1.955272   el=  0.002326   Ekb= -1.016175   kbcos= -0.009979
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 2s
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.191849
+                 energy =   -0.983897
+                kinetic =    0.886956
+    potential(screened) =   -1.870853
+       potential(ionic) =   -5.479661
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 2p
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    4.870301
+                 energy =   -0.379093
+                kinetic =    2.545357
+    potential(screened) =   -2.924450
+       potential(ionic) =   -6.433151
+atom: Total number of Sankey-type orbitals:  4
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+ 2s( 2.00)                                                            
+ 2p( 2.00)                                                            
+Vna: chval, zval:    4.00000   4.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   4.870301
+
+atom: _________________________________________________________________________
+
+<basis_specs>
+===============================================================================
+O                    Z=   8    Mass=  16.000        Charge=  0.0000    
+Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for O   (Z =   8)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Valence configuration (pseudopotential and basis set generation):
+2s( 2.00) rc: 1.14
+2p( 4.00) rc: 1.14
+3d( 0.00) rc: 1.14
+Total valence charge:    6.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  1.1278
+V l=1 = -2*Zval/r beyond r=  1.1278
+V l=2 = -2*Zval/r beyond r=  1.1278
+All V_l potentials equal beyond r=  1.1278
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.1278
+
+VLOCAL1: 99.0% of the norm of Vloc inside     34.126 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     77.774 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.37759
+atom: Maximum radius for r*vlocal+2*Zval:    1.18566
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.294105   el= -1.742414   Ekb=  9.135903   kbcos=  0.326910
+   l= 1   rc=  1.294105   el= -0.676589   Ekb= -8.124878   kbcos= -0.395047
+   l= 2   rc=  1.448233   el=  0.002386   Ekb= -2.039267   kbcos= -0.003484
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 2s
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.305093
+                 energy =   -1.723766
+                kinetic =    1.614911
+    potential(screened) =   -3.338677
+       potential(ionic) =  -11.304675
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 2p
+
+SPLIT: PAO cut-off radius determinated from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    3.937239
+                 energy =   -0.658841
+                kinetic =    5.005986
+    potential(screened) =   -5.664827
+       potential(ionic) =  -13.452360
+atom: Total number of Sankey-type orbitals:  4
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+ 2s( 2.00)                                                            
+ 2p( 4.00)                                                            
+Vna: chval, zval:    6.00000   6.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   3.937239
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   12 Mg                      # Species index, atomic number, species label
+    2    6 C                       # Species index, atomic number, species label
+    3    8 O                       # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Mg          1                    # Species label, number of l-shells
+ n=3   0   1                         # n, l, Nzeta 
+   6.620   
+   1.000   
+C           2                    # Species label, number of l-shells
+ n=2   0   1                         # n, l, Nzeta 
+   4.192   
+   1.000   
+ n=2   1   1                         # n, l, Nzeta 
+   4.870   
+   1.000   
+O           2                    # Species label, number of l-shells
+ n=2   0   1                         # n, l, Nzeta 
+   3.305   
+   1.000   
+ n=2   1   1                         # n, l, Nzeta 
+   3.937   
+   1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including defect values,
+siesta: can be found in file out.fdf
+siesta:
+coor:   Atomic-coordinates input format  =     Fractional
+redata: Number of spin components        =     1
+redata: Long output                      =     F
+redata: Number of Atomic Species         =     3
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     NO
+redata: Mesh Cutoff                      =   100.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Max. number of SCF Iter          =    20
+redata: Broyden mixing with     4 saved histories.
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: New DM Mixing Weight             =     0.1000
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000100
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     T
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     F
+redata: Electronic Temperature           =     0.0019  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     CG coord. optimization
+redata: Variable cell                    =     T
+redata: Use continuation files for CG    =     F
+redata: Maximum number of CG moves       =     5
+redata: Max atomic displ per move        =     0.2000  Bohr
+redata: Force tolerance                  =     0.0016  Ry/Bohr
+redata: Stress tolerance                 =     2.0000  GPa
+redata: ***********************************************************************
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1        1
+siesta:     12.51930   5.59740   3.66414  1        2
+siesta:      6.25965   2.79870   1.83207  2        3
+siesta:     -6.25965  -2.79870  -1.83207  2        4
+siesta:      7.25136   0.58061   1.83207  3        5
+siesta:      6.25965   4.12944  -0.20079  3        6
+siesta:      5.26794   3.68605   3.86493  3        7
+siesta:     -7.25136  -0.58061  -1.83207  3        8
+siesta:     -6.25965  -4.12944   0.20079  3        9
+siesta:     -5.26794  -3.68605  -3.86493  3       10
+
+initatomlists: Number of atoms, orbitals, and projectors:        10       34       80
+
+siesta: System type = bulk      
+
+siesta: k-grid: Number of k-points =   108
+siesta: k-grid: Cutoff             =    13.905 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    6   0   0      0.500
+siesta: k-grid:    0   6   0      0.500
+siesta: k-grid:    0   0   6      0.500
+
+superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
+superc: Number of atoms, orbitals, and projectors:    640  2176  5120
+
+* Maximum dynamic memory allocated =     1 MB
+
+siesta:                 ==============================
+                            Begin CG move =      0
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Mg         1
+    0.50000000    0.50000000    0.50000000   1  Mg         2
+    0.25000000    0.25000000    0.25000000   2  C          3
+   -0.25000000   -0.25000000   -0.25000000   2  C          4
+    0.52740000   -0.02740000    0.25000000   3  O          5
+    0.25000000    0.52740000   -0.02740000   3  O          6
+   -0.02740000    0.25000000    0.52740000   3  O          7
+   -0.52740000    0.02740000   -0.25000000   3  O          8
+   -0.25000000   -0.52740000    0.02740000   3  O          9
+    0.02740000   -0.25000000   -0.52740000   3  O         10
+
+superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
+superc: Number of atoms, orbitals, and projectors:    640  2176  5120
+
+outcell: Unit cell vectors (Ang):
+        5.677830    0.000000    0.000000
+        3.786009    4.231299    0.000000
+        3.786009    1.692731    3.877957
+
+outcell: Cell vector modules (Ang)   :    5.677830    5.677830    5.677830
+outcell: Cell angles (23,13,12) (deg):     48.1790     48.1790     48.1790
+outcell: Cell volume (Ang**3)        :     93.1663
+
+xijorb: WARNING: orbital pair      1   341 is multiply connected
+
+InitMesh: Mesh cutoff (required, used) =   100.000   112.857 Ry
+
+InitMesh: MESH =    32 x    32 x    32 =       32768
+
+* Maximum dynamic memory allocated =    11 MB
+
+stepf: Fermi-Dirac step function
+ Broyden: No of relevant DM elements:  9604
+ maxit for broyden:  4
+ cycle on maxit:  T
+ variable weight:  T
+ initial alpha:    0.1000000000000000
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =      5228.674091
+siesta: Ena     =      1092.429478
+siesta: Ekin    =      2100.835149
+siesta: Enl     =      -258.044684
+siesta: DEna    =        -0.000015
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =      -683.847183
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2966.326602
+siesta: Etot    =     -2977.301346
+siesta: FreeEng =     -2977.301346
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -2966.3266    -2977.3013    -2977.3013  1.7526 -2.7526
+timer: Routine,Calls,Time,% = IterSCF        1       9.886  61.37
+siesta:    2    -2967.0421    -2949.8287    -2949.8287  0.8023 -1.9646
+siesta:    3    -2963.3586    -2951.3441    -2951.3441  0.6248 -1.8583
+siesta:    4    -2957.5998    -2954.1342    -2954.1342  0.0411 -2.6459
+siesta:    5    -2957.5948    -2954.7036    -2954.7036  0.0328 -2.6720
+siesta:    6    -2957.5851    -2957.2659    -2957.2659  0.0058 -2.7869
+Cycling the Broyden process...
+siesta:    7    -2957.5850    -2957.5482    -2957.5482  0.0005 -2.7773
+Cycling the Broyden process...
+siesta:    8    -2957.5850    -2957.5746    -2957.5746  0.0001 -2.7772
+Cycling the Broyden process...
+siesta:    9    -2957.5850    -2957.5830    -2957.5830  0.0000 -2.7774
+
+siesta: E_KS(eV) =            -2957.5849
+
+siesta: E_KS - E_eggbox =     -2957.5849
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.000000   -0.000000    0.000000
+     2   -0.000011   -0.000005   -0.000012
+     3   -0.000109   -0.000045   -0.000108
+     4   -0.000123    0.000059   -0.000088
+     5    3.197744   -7.152145   -0.000008
+     6    0.000000    4.290938   -6.554897
+     7   -3.197729    2.861217    6.554888
+     8   -3.197748    7.152147    0.000008
+     9   -0.000002   -4.290942    6.554903
+    10    3.197737   -2.861214   -6.554902
+----------------------------------------
+ Tot   -0.000243    0.000008   -0.000217
+----------------------------------------
+ Max    7.152147
+ Res    3.503678    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    7.152147    constrained
+
+Stress-tensor-Voigt (kbar):       89.90     -224.88     -269.82      175.90       51.48      115.15
+Target enthalpy (eV/cell)    -2899.4357
+
+siesta: Stress tensor (static) (eV/Ang**3):
+         0.056113    0.109788    0.071869
+         0.109788   -0.140356    0.032133
+         0.071869    0.032133   -0.168408
+
+siesta: Pressure (static):        134.93233986  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+         0.056113    0.109788    0.071869
+         0.109788   -0.140356    0.032133
+         0.071869    0.032133   -0.168408
+
+siesta: Pressure (total):        134.93233986  kBar
+
+cgvc: No target stress found, assuming hydrostatic MD.TargetPressure.
+
+cgvc: Target stress (kBar)
+cgvc:     -1000.000       0.000       0.000
+cgvc:         0.000   -1000.000       0.000
+cgvc:         0.000       0.000   -1000.000
+
+* Maximum dynamic memory allocated =    11 MB
+
+siesta:                 ==============================
+                            Begin CG move =      1
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00000000   -0.00000000   -0.00000000   1  Mg         1
+    0.49999999    0.49999999    0.49999998   1  Mg         2
+    0.24999990    0.24999991    0.24999986   2  C          3
+   -0.25000011   -0.25000003   -0.25000011   2  C          4
+    0.53023172   -0.03023171    0.25000000   3  O          5
+    0.25000000    0.53023172   -0.03023171   3  O          6
+   -0.03023170    0.25000000    0.53023171   3  O          7
+   -0.53023172    0.03023170   -0.25000000   3  O          8
+   -0.25000000   -0.53023172    0.03023171   3  O          9
+    0.03023171   -0.25000000   -0.53023171   3  O         10
+
+siesta: k-grid: Number of k-points =   108
+siesta: k-grid: Cutoff             =    13.792 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    6   0   0      0.500
+siesta: k-grid:    0   6   0      0.500
+siesta: k-grid:    0   0   6      0.500
+
+superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
+superc: Number of atoms, orbitals, and projectors:    640  2176  5120
+
+outcell: Unit cell vectors (Ang):
+        5.605459   -0.011680   -0.007646
+        3.729048    4.185154   -0.007646
+        3.729048    1.667264    3.838724
+
+outcell: Cell vector modules (Ang)   :    5.605477    5.605477    5.605477
+outcell: Cell angles (23,13,12) (deg):     48.4177     48.4177     48.4177
+outcell: Cell volume (Ang**3)        :     90.3661
+InitMesh: Mesh cutoff (required, used) =   100.000   102.040 Ry
+
+InitMesh: MESH =    30 x    30 x    30 =       27000
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -2957.9070    -2957.9799    -2957.9799  0.0120 -2.9492
+siesta:    2    -2957.9060    -2957.9046    -2957.9046  0.0071 -2.8690
+siesta:    3    -2957.9057    -2957.9047    -2957.9047  0.0055 -2.8721
+siesta:    4    -2957.9054    -2957.9050    -2957.9050  0.0015 -2.8846
+siesta:    5    -2957.9053    -2957.9052    -2957.9052  0.0000 -2.8880
+
+siesta: E_KS(eV) =            -2957.9052
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000018    0.000008    0.000000
+     2    0.000019    0.000008    0.000007
+     3    0.000008    0.000003    0.000013
+     4    0.000011   -0.000020    0.000018
+     5    3.005917   -6.723103   -0.000018
+     6   -0.000001    4.033527   -6.161690
+     7   -3.005913    2.689585    6.161677
+     8   -3.005922    6.723108    0.000003
+     9    0.000002   -4.033515    6.161663
+    10    3.005902   -2.689574   -6.161676
+----------------------------------------
+ Tot    0.000041    0.000028   -0.000004
+----------------------------------------
+ Max    6.723108
+ Res    3.293497    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    6.723108    constrained
+
+Stress-tensor-Voigt (kbar):       87.31     -236.05     -282.22      180.70       52.89      118.29
+Target enthalpy (eV/cell)    -2901.5037
+
+siesta: Stress tensor (static) (eV/Ang**3):
+         0.054495    0.112781    0.073828
+         0.112781   -0.147330    0.033009
+         0.073828    0.033009   -0.176146
+
+siesta: Pressure (static):        143.65357809  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+         0.054495    0.112781    0.073828
+         0.112781   -0.147330    0.033009
+         0.073828    0.033009   -0.176146
+
+siesta: Pressure (total):        143.65357809  kBar
+
+* Maximum dynamic memory allocated =    11 MB
+
+siesta:                 ==============================
+                            Begin CG move =      2
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00000000   -0.00000000   -0.00000000   1  Mg         1
+    0.49999997    0.49999997    0.49999996   1  Mg         2
+    0.24999975    0.24999976    0.24999963   2  C          3
+   -0.25000028   -0.25000009   -0.25000029   2  C          4
+    0.53476246   -0.03476243    0.25000000   3  O          5
+    0.25000000    0.53476246   -0.03476245   3  O          6
+   -0.03476243    0.25000001    0.53476245   3  O          7
+   -0.53476247    0.03476243   -0.25000000   3  O          8
+   -0.25000001   -0.53476247    0.03476245   3  O          9
+    0.03476245   -0.25000000   -0.53476246   3  O         10
+
+siesta: k-grid: Number of k-points =   108
+siesta: k-grid: Cutoff             =    13.610 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    6   0   0      0.500
+siesta: k-grid:    0   6   0      0.500
+siesta: k-grid:    0   0   6      0.500
+
+superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
+superc: Number of atoms, orbitals, and projectors:    640  2176  5120
+
+outcell: Unit cell vectors (Ang):
+        5.489666   -0.030368   -0.019879
+        3.637909    4.111323   -0.019880
+        3.637909    1.626515    3.775952
+
+outcell: Cell vector modules (Ang)   :    5.489786    5.489786    5.489786
+outcell: Cell angles (23,13,12) (deg):     48.8126     48.8126     48.8126
+outcell: Cell volume (Ang**3)        :     85.9990
+InitMesh: Mesh cutoff (required, used) =   100.000   106.861 Ry
+
+InitMesh: MESH =    30 x    30 x    30 =       27000
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -2958.5169    -2958.7467    -2958.7467  0.0287 -3.1319
+siesta:    2    -2958.5139    -2958.5120    -2958.5120  0.0071 -3.0158
+siesta:    3    -2958.5136    -2958.5121    -2958.5121  0.0055 -3.0194
+siesta:    4    -2958.5132    -2958.5126    -2958.5126  0.0021 -3.0353
+siesta:    5    -2958.5131    -2958.5130    -2958.5130  0.0000 -3.0396
+
+siesta: E_KS(eV) =            -2958.5130
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000013    0.000007   -0.000001
+     2    0.000019    0.000010    0.000005
+     3    0.000017    0.000015    0.000035
+     4    0.000031   -0.000032    0.000028
+     5    2.740821   -6.130200    0.000004
+     6   -0.000005    3.677825   -5.618310
+     7   -2.740825    2.452396    5.618265
+     8   -2.740844    6.130212    0.000007
+     9   -0.000014   -3.677814    5.618266
+    10    2.740821   -2.452409   -5.618291
+----------------------------------------
+ Tot    0.000032    0.000009    0.000009
+----------------------------------------
+ Max    6.130212
+ Res    3.003049    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    6.130212    constrained
+
+Stress-tensor-Voigt (kbar):       37.35     -284.12     -330.02      179.64       52.58      117.59
+Target enthalpy (eV/cell)    -2904.8372
+
+siesta: Stress tensor (static) (eV/Ang**3):
+         0.023311    0.112121    0.073396
+         0.112121   -0.177332    0.032815
+         0.073396    0.032815   -0.205979
+
+siesta: Pressure (static):        192.26372695  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+         0.023311    0.112121    0.073396
+         0.112121   -0.177332    0.032815
+         0.073396    0.032815   -0.205979
+
+siesta: Pressure (total):        192.26372695  kBar
+
+* Maximum dynamic memory allocated =    11 MB
+
+siesta:                 ==============================
+                            Begin CG move =      3
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00000000   -0.00000000   -0.00000000   1  Mg         1
+    0.49999996    0.49999996    0.49999993   1  Mg         2
+    0.24999959    0.24999960    0.24999940   2  C          3
+   -0.25000047   -0.25000014   -0.25000047   2  C          4
+    0.53946498   -0.03946493    0.25000000   3  O          5
+    0.25000000    0.53946497   -0.03946495   3  O          6
+   -0.03946492    0.25000002    0.53946496   3  O          7
+   -0.53946499    0.03946493   -0.25000001   3  O          8
+   -0.25000001   -0.53946499    0.03946496   3  O          9
+    0.03946495   -0.24999999   -0.53946497   3  O         10
+
+siesta: k-grid: Number of k-points =   108
+siesta: k-grid: Cutoff             =    13.422 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    6   0   0      0.500
+siesta: k-grid:    0   6   0      0.500
+siesta: k-grid:    0   0   6      0.500
+
+superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
+superc: Number of atoms, orbitals, and projectors:    640  2176  5120
+
+outcell: Unit cell vectors (Ang):
+        5.369483   -0.049765   -0.032577
+        3.543315    4.034692   -0.032577
+        3.543315    1.584222    3.710801
+
+outcell: Cell vector modules (Ang)   :    5.369812    5.369812    5.369812
+outcell: Cell angles (23,13,12) (deg):     49.2400     49.2400     49.2400
+outcell: Cell volume (Ang**3)        :     81.6116
+InitMesh: Mesh cutoff (required, used) =   100.000   112.235 Ry
+
+InitMesh: MESH =    30 x    30 x    30 =       27000
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -2958.8932    -2959.2886    -2959.2886  0.0658 -3.2459
+siesta:    2    -2958.8897    -2958.8882    -2958.8882  0.0058 -3.1336
+siesta:    3    -2958.8895    -2958.8883    -2958.8883  0.0045 -3.1366
+siesta:    4    -2958.8893    -2958.8888    -2958.8888  0.0020 -3.1504
+siesta:    5    -2958.8892    -2958.8891    -2958.8891  0.0000 -3.1541
+
+siesta: E_KS(eV) =            -2958.8891
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000009    0.000006   -0.000004
+     2    0.000020    0.000010    0.000006
+     3    0.000042   -0.000000    0.000049
+     4    0.000045   -0.000053    0.000052
+     5    2.452317   -5.484997    0.000002
+     6   -0.000014    3.290727   -5.027002
+     7   -2.452365    2.194270    5.026935
+     8   -2.452378    5.485029   -0.000005
+     9   -0.000015   -3.290710    5.026919
+    10    2.452337   -2.194274   -5.026957
+----------------------------------------
+ Tot   -0.000002    0.000008   -0.000005
+----------------------------------------
+ Max    5.485029
+ Res    2.686976    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    5.485029    constrained
+
+Stress-tensor-Voigt (kbar):      -34.63     -355.34     -401.13      179.22       52.45      117.32
+Target enthalpy (eV/cell)    -2907.9517
+
+siesta: Stress tensor (static) (eV/Ang**3):
+        -0.021614    0.111857    0.073223
+         0.111857   -0.221785    0.032738
+         0.073223    0.032738   -0.250365
+
+siesta: Pressure (static):        263.70208843  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+        -0.021614    0.111857    0.073223
+         0.111857   -0.221785    0.032738
+         0.073223    0.032738   -0.250365
+
+siesta: Pressure (total):        263.70208843  kBar
+
+* Maximum dynamic memory allocated =    11 MB
+
+siesta:                 ==============================
+                            Begin CG move =      4
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00000000   -0.00000000   -0.00000000   1  Mg         1
+    0.49999994    0.49999994    0.49999991   1  Mg         2
+    0.24999943    0.24999944    0.24999916   2  C          3
+   -0.25000065   -0.25000020   -0.25000065   2  C          4
+    0.54416750   -0.04416743    0.25000000   3  O          5
+    0.25000000    0.54416749   -0.04416746   3  O          6
+   -0.04416742    0.25000003    0.54416746   3  O          7
+   -0.54416752    0.04416742   -0.25000001   3  O          8
+   -0.25000001   -0.54416751    0.04416746   3  O          9
+    0.04416746   -0.24999999   -0.54416748   3  O         10
+
+siesta: k-grid: Number of k-points =   108
+siesta: k-grid: Cutoff             =    13.234 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    6   0   0      0.500
+siesta: k-grid:    0   6   0      0.500
+siesta: k-grid:    0   0   6      0.500
+
+superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
+superc: Number of atoms, orbitals, and projectors:    640  2176  5120
+
+outcell: Unit cell vectors (Ang):
+        5.249300   -0.069162   -0.045274
+        3.448722    3.958062   -0.045274
+        3.448722    1.541929    3.645649
+
+outcell: Cell vector modules (Ang)   :    5.249951    5.249951    5.249951
+outcell: Cell angles (23,13,12) (deg):     49.6867     49.6867     49.6867
+outcell: Cell volume (Ang**3)        :     77.3699
+InitMesh: Mesh cutoff (required, used) =   100.000   118.025 Ry
+
+InitMesh: MESH =    30 x    30 x    30 =       27000
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -2958.9739    -2959.5510    -2959.5510  0.0196 -3.2936
+siesta:    2    -2958.9701    -2958.9690    -2958.9690  0.0048 -3.1889
+siesta:    3    -2958.9700    -2958.9690    -2958.9690  0.0043 -3.1911
+siesta:    4    -2958.9698    -2958.9695    -2958.9695  0.0017 -3.2028
+siesta:    5    -2958.9698    -2958.9697    -2958.9697  0.0000 -3.2056
+
+siesta: E_KS(eV) =            -2958.9697
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000002    0.000005   -0.000005
+     2    0.000023    0.000012    0.000005
+     3    0.000043    0.000027    0.000072
+     4    0.000066   -0.000076    0.000065
+     5    2.096664   -4.689529    0.000000
+     6   -0.000017    2.813477   -4.297961
+     7   -2.096719    1.876027    4.297866
+     8   -2.096732    4.689563   -0.000009
+     9   -0.000027   -2.813444    4.297856
+    10    2.096673   -1.876032   -4.297932
+----------------------------------------
+ Tot   -0.000024    0.000030   -0.000044
+----------------------------------------
+ Max    4.689563
+ Res    2.297290    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    4.689563    constrained
+
+Stress-tensor-Voigt (kbar):     -129.70     -434.41     -477.92      170.28       49.84      111.46
+Target enthalpy (eV/cell)    -2910.6797
+
+siesta: Stress tensor (static) (eV/Ang**3):
+        -0.080950    0.106277    0.069570
+         0.106277   -0.271135    0.031105
+         0.069570    0.031105   -0.298289
+
+siesta: Pressure (static):        347.34182141  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+        -0.080950    0.106277    0.069570
+         0.106277   -0.271135    0.031105
+         0.069570    0.031105   -0.298289
+
+siesta: Pressure (total):        347.34182141  kBar
+
+* Maximum dynamic memory allocated =    11 MB
+
+siesta:                 ==============================
+                            Begin CG move =      5
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00000000   -0.00000000   -0.00000000   1  Mg         1
+    0.49999992    0.49999992    0.49999988   1  Mg         2
+    0.24999927    0.24999929    0.24999892   2  C          3
+   -0.25000083   -0.25000026   -0.25000084   2  C          4
+    0.54887001   -0.04886992    0.25000000   3  O          5
+    0.25000000    0.54887000   -0.04886996   3  O          6
+   -0.04886991    0.25000004    0.54886997   3  O          7
+   -0.54887004    0.04886992   -0.25000001   3  O          8
+   -0.25000002   -0.54887003    0.04886997   3  O          9
+    0.04886996   -0.24999999   -0.54886999   3  O         10
+
+siesta: k-grid: Number of k-points =   108
+siesta: k-grid: Cutoff             =    13.046 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    6   0   0      0.500
+siesta: k-grid:    0   6   0      0.500
+siesta: k-grid:    0   0   6      0.500
+
+superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
+superc: Number of atoms, orbitals, and projectors:    640  2176  5120
+
+outcell: Unit cell vectors (Ang):
+        5.129117   -0.088558   -0.057971
+        3.354128    3.881431   -0.057972
+        3.354128    1.499636    3.580497
+
+outcell: Cell vector modules (Ang)   :    5.130209    5.130209    5.130209
+outcell: Cell angles (23,13,12) (deg):     50.1539     50.1539     50.1539
+outcell: Cell volume (Ang**3)        :     73.2715
+InitMesh: Mesh cutoff (required, used) =   100.000   124.275 Ry
+
+InitMesh: MESH =    30 x    30 x    30 =       27000
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1    -2958.6914    -2959.4785    -2959.4785  0.0194 -3.2431
+siesta:    2    -2958.6873    -2958.6863    -2958.6863  0.0052 -3.1454
+siesta:    3    -2958.6872    -2958.6864    -2958.6864  0.0046 -3.1470
+siesta:    4    -2958.6871    -2958.6869    -2958.6869  0.0011 -3.1573
+siesta:    5    -2958.6871    -2958.6870    -2958.6870  0.0000 -3.1590
+
+siesta: E_KS(eV) =            -2958.6870
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.000003    0.000002   -0.000008
+     2    0.000026    0.000013    0.000007
+     3    0.000054    0.000014    0.000097
+     4    0.000083   -0.000104    0.000089
+     5    1.705351   -3.814329    0.000006
+     6   -0.000041    2.288395   -3.495858
+     7   -1.705419    1.525896    3.495741
+     8   -1.705439    3.814353   -0.000008
+     9   -0.000029   -2.288362    3.495705
+    10    1.705355   -1.525917   -3.495793
+----------------------------------------
+ Tot   -0.000063   -0.000038   -0.000023
+----------------------------------------
+ Max    3.814353
+ Res    1.868544    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+ Max    3.814353    constrained
+
+Stress-tensor-Voigt (kbar):     -259.83     -544.19     -584.79      158.91       46.51      104.02
+Target enthalpy (eV/cell)    -2912.9551
+
+siesta: Stress tensor (static) (eV/Ang**3):
+        -0.162169    0.099180    0.064924
+         0.099180   -0.339654    0.029028
+         0.064924    0.029028   -0.364994
+
+siesta: Pressure (static):        462.93670333  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+        -0.162169    0.099180    0.064924
+         0.099180   -0.339654    0.029028
+         0.064924    0.029028   -0.364994
+
+siesta: Pressure (total):        462.93670333  kBar
+
+* Maximum dynamic memory allocated =    11 MB
+
+outcoor: Final (unrelaxed) atomic coordinates (fractional): 
+   -0.00000000   -0.00000000   -0.00000000   1  Mg         1
+    0.49999991    0.49999991    0.49999986   1  Mg         2
+    0.24999911    0.24999913    0.24999869   2  C          3
+   -0.25000101   -0.25000031   -0.25000102   2  C          4
+    0.55357253   -0.05357242    0.25000000   3  O          5
+    0.25000000    0.55357252   -0.05357247   3  O          6
+   -0.05357241    0.25000004    0.55357247   3  O          7
+   -0.55357256    0.05357241   -0.25000002   3  O          8
+   -0.25000002   -0.55357255    0.05357248   3  O          9
+    0.05357247   -0.24999999   -0.55357251   3  O         10
+
+outcell: Unit cell vectors (Ang):
+        5.008934   -0.107955   -0.070669
+        3.259534    3.804801   -0.070669
+        3.259534    1.457343    3.515345
+
+outcell: Cell vector modules (Ang)   :    5.010595    5.010595    5.010595
+outcell: Cell angles (23,13,12) (deg):     50.6430     50.6430     50.6430
+outcell: Cell volume (Ang**3)        :     69.3139
+
+siesta: Eigenvalues (eV):
+  ik is    eps
+   1  1 -28.82 -28.04 -25.04 -25.02 -24.84 -24.44 -14.29 -14.12 -14.00 -12.74
+        -12.72 -11.98 -11.43 -10.82  -8.51  -8.48  -7.94  -7.45  -7.45  -7.03
+         -6.60  -6.12  -5.93  -5.91  -1.18  -0.03   4.61   6.92   8.35   8.92
+         10.34  10.50  11.30  12.37
+   2  1 -28.93 -27.99 -24.99 -24.85 -24.79 -24.51 -14.37 -14.28 -13.78 -13.22
+        -12.71 -12.21 -11.43 -10.87  -8.50  -8.13  -7.55  -7.43  -7.27  -6.98
+         -6.79  -6.24  -5.99  -5.71  -1.24  -0.08   3.96   6.99   8.68   9.17
+         10.43  10.56  11.35  12.26
+   3  1 -28.85 -28.04 -24.96 -24.91 -24.86 -24.55 -14.39 -14.18 -13.69 -13.02
+        -12.77 -12.17 -11.35 -10.91  -8.59  -8.52  -7.67  -7.40  -7.29  -6.88
+         -6.80  -6.29  -5.87  -5.74  -1.15  -0.09   4.30   6.92   8.45   8.96
+         10.39  10.41  11.44  12.31
+   4  1 -28.62 -28.17 -25.11 -25.08 -24.82 -24.60 -14.19 -13.63 -13.40 -13.05
+        -12.74 -12.27 -11.20 -10.99  -9.06  -8.70  -7.98  -7.68  -7.34  -6.91
+         -6.58  -6.39  -5.78  -5.64  -0.91  -0.16   5.33   6.79   7.97   8.44
+         10.15  10.24  11.64  12.35
+   5  1 -28.36 -28.35 -25.26 -25.21 -24.71 -24.66 -13.70 -13.47 -13.17 -13.04
+        -12.66 -12.33 -11.48 -11.20  -8.96  -8.95  -7.89  -7.79  -7.55  -7.27
+         -6.47  -6.34  -5.65  -5.61  -0.51  -0.49   6.35   6.60   7.80   7.92
+         10.03  10.08  12.05  12.07
+   6  1 -28.59 -28.16 -25.26 -25.13 -24.80 -24.51 -14.12 -13.70 -13.50 -12.90
+        -12.57 -11.98 -11.24 -11.11  -9.07  -8.62  -8.05  -7.79  -7.45  -7.12
+         -6.58  -6.22  -5.81  -5.71  -0.91  -0.13   5.75   6.85   7.88   8.33
+         10.09  10.26  11.58  12.36
+   7  1 -28.93 -27.99 -24.99 -24.85 -24.79 -24.51 -14.37 -14.28 -13.78 -13.22
+        -12.71 -12.21 -11.43 -10.87  -8.50  -8.13  -7.55  -7.43  -7.27  -6.98
+         -6.79  -6.24  -5.99  -5.71  -1.24  -0.08   3.96   6.99   8.68   9.17
+         10.43  10.56  11.35  12.26
+   8  1 -29.14 -27.86 -24.88 -24.86 -24.53 -24.41 -14.66 -14.66 -14.00 -13.12
+        -12.58 -12.41 -11.86 -10.78  -8.18  -7.74  -7.68  -7.27  -7.19  -6.82
+         -6.67  -6.30  -5.84  -5.59  -1.44  -0.14   2.86   7.04   9.59   9.82
+         10.79  10.80  11.07  11.98
+   9  1 -29.14 -27.86 -24.88 -24.86 -24.53 -24.41 -14.66 -14.66 -14.00 -13.12
+        -12.58 -12.41 -11.86 -10.78  -8.18  -7.74  -7.68  -7.27  -7.19  -6.82
+         -6.67  -6.30  -5.84  -5.59  -1.44  -0.14   2.86   7.04   9.59   9.82
+         10.79  10.80  11.07  11.98
+  10  1 -28.93 -27.99 -24.99 -24.85 -24.79 -24.51 -14.37 -14.28 -13.78 -13.22
+        -12.71 -12.21 -11.43 -10.87  -8.50  -8.13  -7.55  -7.43  -7.27  -6.98
+         -6.79  -6.24  -5.99  -5.71  -1.24  -0.08   3.96   6.99   8.68   9.17
+         10.43  10.56  11.35  12.26
+  11  1 -28.58 -28.23 -25.10 -25.04 -24.79 -24.67 -14.09 -14.01 -13.15 -12.97
+        -12.66 -12.24 -11.29 -11.18  -9.03  -8.73  -7.96  -7.64  -7.16  -7.03
+         -6.60  -6.43  -5.71  -5.66  -0.81  -0.31   5.42   6.61   8.05   8.40
+         10.15  10.22  11.77  12.16
+  12  1 -28.58 -28.23 -25.10 -25.04 -24.79 -24.67 -14.09 -14.01 -13.15 -12.97
+        -12.66 -12.24 -11.29 -11.18  -9.03  -8.73  -7.96  -7.64  -7.16  -7.03
+         -6.60  -6.43  -5.71  -5.66  -0.81  -0.31   5.42   6.61   8.05   8.40
+         10.15  10.22  11.77  12.16
+  13  1 -28.85 -28.04 -24.96 -24.91 -24.86 -24.55 -14.39 -14.18 -13.69 -13.02
+        -12.77 -12.17 -11.35 -10.91  -8.59  -8.52  -7.67  -7.40  -7.29  -6.88
+         -6.80  -6.29  -5.87  -5.74  -1.15  -0.09   4.30   6.92   8.45   8.96
+         10.39  10.41  11.44  12.31
+  14  1 -29.14 -27.86 -24.88 -24.86 -24.53 -24.41 -14.66 -14.66 -14.00 -13.12
+        -12.58 -12.41 -11.86 -10.78  -8.18  -7.74  -7.68  -7.27  -7.19  -6.82
+         -6.67  -6.30  -5.84  -5.59  -1.44  -0.14   2.86   7.04   9.59   9.82
+         10.79  10.80  11.07  11.98
+  15  1 -29.23 -27.84 -24.83 -24.83 -24.36 -24.36 -14.93 -14.91 -14.02 -12.83
+        -12.83 -12.11 -12.11 -10.91  -8.51  -7.48  -7.48  -7.24  -7.24  -6.77
+         -6.43  -6.43  -5.48  -5.48  -1.57  -0.29   2.31   6.99  10.51  10.60
+         10.60  10.99  10.99  11.07
+  16  1 -29.09 -27.94 -24.94 -24.78 -24.51 -24.46 -14.82 -14.76 -13.72 -12.98
+        -12.63 -12.40 -11.78 -10.91  -8.09  -7.92  -7.46  -7.35  -7.08  -6.85
+         -6.77  -6.32  -5.98  -5.55  -1.46  -0.24   3.12   6.95   9.50   9.81
+         10.67  10.80  11.15  11.68
+  17  1 -28.77 -28.14 -25.11 -24.76 -24.71 -24.70 -14.51 -14.39 -13.12 -13.04
+        -12.60 -12.13 -11.40 -11.26  -8.67  -8.49  -7.55  -7.40  -7.24  -6.99
+         -6.76  -6.45  -5.95  -5.66  -1.03  -0.31   4.63   6.88   8.39   8.88
+         10.27  10.45  11.61  11.94
+  18  1 -28.47 -28.37 -25.11 -24.94 -24.85 -24.66 -14.44 -14.10 -12.93 -12.77
+        -12.39 -12.35 -11.36 -11.12  -9.08  -9.02  -7.81  -7.72  -7.22  -6.78
+         -6.63  -6.49  -5.73  -5.65  -0.70  -0.45   5.89   6.12   8.17   8.28
+         10.16  10.24  11.77  12.05
+  19  1 -28.62 -28.17 -25.11 -25.08 -24.82 -24.60 -14.19 -13.63 -13.40 -13.05
+        -12.74 -12.27 -11.20 -10.99  -9.06  -8.70  -7.98  -7.68  -7.34  -6.91
+         -6.58  -6.39  -5.78  -5.64  -0.91  -0.16   5.33   6.79   7.97   8.44
+         10.15  10.24  11.64  12.35
+  20  1 -28.93 -27.99 -24.99 -24.85 -24.79 -24.51 -14.37 -14.28 -13.78 -13.22
+        -12.71 -12.21 -11.43 -10.87  -8.50  -8.13  -7.55  -7.43  -7.27  -6.98
+         -6.79  -6.24  -5.99  -5.71  -1.24  -0.08   3.96   6.99   8.68   9.17
+         10.43  10.56  11.35  12.26
+  21  1 -29.09 -27.94 -24.94 -24.78 -24.51 -24.46 -14.82 -14.76 -13.72 -12.98
+        -12.63 -12.40 -11.78 -10.91  -8.09  -7.92  -7.46  -7.35  -7.08  -6.85
+         -6.77  -6.32  -5.98  -5.55  -1.46  -0.24   3.12   6.95   9.50   9.81
+         10.67  10.80  11.15  11.68
+  22  1 -29.04 -28.00 -24.92 -24.77 -24.66 -24.36 -14.92 -14.76 -13.73 -12.90
+        -12.41 -12.24 -11.95 -10.90  -8.02  -7.87  -7.58  -7.36  -7.31  -6.77
+         -6.71  -6.34  -5.82  -5.79  -1.49  -0.28   3.40   6.80   9.39   9.77
+         10.74  10.82  11.00  11.63
+  23  1 -28.81 -28.12 -25.08 -24.93 -24.72 -24.47 -14.54 -14.47 -13.55 -12.74
+        -12.46 -12.08 -11.48 -11.22  -8.51  -8.12  -7.67  -7.58  -7.16  -7.01
+         -6.81  -6.29  -6.08  -5.77  -1.18  -0.28   4.59   6.85   8.54   9.07
+         10.35  10.53  11.41  11.93
+  24  1 -28.47 -28.31 -25.22 -25.10 -24.69 -24.64 -14.28 -13.85 -13.14 -12.67
+        -12.57 -12.00 -11.70 -11.11  -9.01  -8.79  -7.97  -7.62  -7.45  -6.97
+         -6.57  -6.40  -5.78  -5.68  -0.62  -0.51   5.95   6.56   8.02   8.21
+         10.09  10.23  11.91  11.94
+  25  1 -28.36 -28.35 -25.26 -25.21 -24.71 -24.66 -13.70 -13.47 -13.17 -13.04
+        -12.66 -12.33 -11.48 -11.20  -8.96  -8.95  -7.89  -7.79  -7.55  -7.27
+         -6.47  -6.34  -5.65  -5.61  -0.51  -0.49   6.35   6.60   7.80   7.92
+         10.03  10.08  12.05  12.07
+  26  1 -28.58 -28.23 -25.10 -25.04 -24.79 -24.67 -14.09 -14.01 -13.15 -12.97
+        -12.66 -12.24 -11.29 -11.18  -9.03  -8.73  -7.96  -7.64  -7.16  -7.03
+         -6.60  -6.43  -5.71  -5.66  -0.81  -0.31   5.42   6.61   8.05   8.40
+         10.15  10.22  11.77  12.16
+  27  1 -28.77 -28.14 -25.11 -24.76 -24.71 -24.70 -14.51 -14.39 -13.12 -13.04
+        -12.60 -12.13 -11.40 -11.26  -8.67  -8.49  -7.55  -7.40  -7.24  -6.99
+         -6.76  -6.45  -5.95  -5.66  -1.03  -0.31   4.63   6.88   8.39   8.88
+         10.27  10.45  11.61  11.94
+  28  1 -28.81 -28.12 -25.08 -24.93 -24.72 -24.47 -14.54 -14.47 -13.55 -12.74
+        -12.46 -12.08 -11.48 -11.22  -8.51  -8.12  -7.67  -7.58  -7.16  -7.01
+         -6.81  -6.29  -6.08  -5.77  -1.18  -0.28   4.59   6.85   8.54   9.07
+         10.35  10.53  11.41  11.93
+  29  1 -28.69 -28.16 -25.21 -25.05 -24.77 -24.39 -14.64 -14.09 -13.61 -12.50
+        -12.45 -11.70 -11.51 -11.15  -8.43  -8.38  -8.22  -7.58  -7.55  -7.08
+         -6.59  -6.10  -6.04  -5.97  -1.11  -0.17   5.40   6.75   8.24   8.77
+         10.25  10.54  11.22  12.17
+  30  1 -28.50 -28.22 -25.36 -25.17 -24.75 -24.48 -14.26 -13.71 -13.33 -12.66
+        -12.46 -11.78 -11.44 -11.22  -9.04  -8.66  -8.10  -7.84  -7.55  -7.21
+         -6.55  -6.19  -5.84  -5.75  -0.82  -0.22   6.36   6.80   7.82   8.09
+         10.06  10.23  11.61  12.25
+  31  1 -28.59 -28.16 -25.26 -25.13 -24.80 -24.51 -14.12 -13.70 -13.50 -12.90
+        -12.57 -11.98 -11.24 -11.11  -9.07  -8.62  -8.05  -7.79  -7.45  -7.12
+         -6.58  -6.22  -5.81  -5.71  -0.91  -0.13   5.75   6.85   7.88   8.33
+         10.09  10.26  11.58  12.36
+  32  1 -28.58 -28.23 -25.10 -25.04 -24.79 -24.67 -14.09 -14.01 -13.15 -12.97
+        -12.66 -12.24 -11.29 -11.18  -9.03  -8.73  -7.96  -7.64  -7.16  -7.03
+         -6.60  -6.43  -5.71  -5.66  -0.81  -0.31   5.42   6.61   8.05   8.40
+         10.15  10.22  11.77  12.16
+  33  1 -28.47 -28.37 -25.11 -24.94 -24.85 -24.66 -14.44 -14.10 -12.93 -12.77
+        -12.39 -12.35 -11.36 -11.12  -9.08  -9.02  -7.81  -7.72  -7.22  -6.78
+         -6.63  -6.49  -5.73  -5.65  -0.70  -0.45   5.89   6.12   8.17   8.28
+         10.16  10.24  11.77  12.05
+  34  1 -28.47 -28.31 -25.22 -25.10 -24.69 -24.64 -14.28 -13.85 -13.14 -12.67
+        -12.57 -12.00 -11.70 -11.11  -9.01  -8.79  -7.97  -7.62  -7.45  -6.97
+         -6.57  -6.40  -5.78  -5.68  -0.62  -0.51   5.95   6.56   8.02   8.21
+         10.09  10.23  11.91  11.94
+  35  1 -28.50 -28.22 -25.36 -25.17 -24.75 -24.48 -14.26 -13.71 -13.33 -12.66
+        -12.46 -11.78 -11.44 -11.22  -9.04  -8.66  -8.10  -7.84  -7.55  -7.21
+         -6.55  -6.19  -5.84  -5.75  -0.82  -0.22   6.36   6.80   7.82   8.09
+         10.06  10.23  11.61  12.25
+  36  1 -28.54 -28.18 -25.43 -25.10 -24.81 -24.43 -14.54 -13.45 -13.19 -13.00
+        -12.40 -11.67 -11.24 -11.05  -8.96  -8.76  -8.31  -7.93  -7.75  -7.04
+         -6.53  -6.08  -5.98  -5.73  -0.93  -0.04   6.45   6.81   7.80   8.08
+         10.03  10.38  11.35  12.43
+  37  1 -28.52 -28.26 -25.30 -25.01 -24.84 -24.51 -14.55 -13.61 -13.22 -12.87
+        -12.36 -12.12 -11.34 -10.93  -9.04  -8.97  -8.02  -7.72  -7.61  -6.86
+         -6.54  -6.30  -5.88  -5.68  -0.86  -0.20   6.07   6.55   7.95   8.23
+         10.09  10.32  11.52  12.30
+  38  1 -28.62 -28.17 -25.11 -25.08 -24.82 -24.60 -14.19 -13.63 -13.40 -13.05
+        -12.74 -12.27 -11.20 -10.99  -9.06  -8.70  -7.98  -7.68  -7.34  -6.91
+         -6.58  -6.39  -5.78  -5.64  -0.91  -0.16   5.33   6.79   7.97   8.44
+         10.15  10.24  11.64  12.35
+  39  1 -28.62 -28.17 -25.11 -25.08 -24.82 -24.60 -14.19 -13.63 -13.40 -13.05
+        -12.74 -12.27 -11.20 -10.99  -9.06  -8.70  -7.98  -7.68  -7.34  -6.91
+         -6.58  -6.39  -5.78  -5.64  -0.91  -0.16   5.33   6.79   7.97   8.44
+         10.15  10.24  11.64  12.35
+  40  1 -28.52 -28.26 -25.30 -25.01 -24.84 -24.51 -14.55 -13.61 -13.22 -12.87
+        -12.36 -12.12 -11.34 -10.93  -9.04  -8.97  -8.02  -7.72  -7.61  -6.86
+         -6.54  -6.30  -5.88  -5.68  -0.86  -0.20   6.07   6.55   7.95   8.23
+         10.09  10.32  11.52  12.30
+  41  1 -28.41 -28.33 -25.34 -25.17 -24.69 -24.54 -14.36 -13.77 -12.85 -12.68
+        -12.52 -12.20 -11.41 -11.15  -8.93  -8.90  -7.98  -7.74  -7.62  -7.13
+         -6.45  -6.32  -5.86  -5.74  -0.69  -0.41   6.53   6.64   7.93   7.95
+         10.06  10.21  11.72  12.11
+  42  1 -28.41 -28.33 -25.34 -25.17 -24.69 -24.54 -14.36 -13.77 -12.85 -12.68
+        -12.52 -12.20 -11.41 -11.15  -8.93  -8.90  -7.98  -7.74  -7.62  -7.13
+         -6.45  -6.32  -5.86  -5.74  -0.69  -0.41   6.53   6.64   7.93   7.95
+         10.06  10.21  11.72  12.11
+  43  1 -28.62 -28.17 -25.11 -25.08 -24.82 -24.60 -14.19 -13.63 -13.40 -13.05
+        -12.74 -12.27 -11.20 -10.99  -9.06  -8.70  -7.98  -7.68  -7.34  -6.91
+         -6.58  -6.39  -5.78  -5.64  -0.91  -0.16   5.33   6.79   7.97   8.44
+         10.15  10.24  11.64  12.35
+  44  1 -28.85 -28.04 -24.96 -24.91 -24.86 -24.55 -14.39 -14.18 -13.69 -13.02
+        -12.77 -12.17 -11.35 -10.91  -8.59  -8.52  -7.67  -7.40  -7.29  -6.88
+         -6.80  -6.29  -5.87  -5.74  -1.15  -0.09   4.30   6.92   8.45   8.96
+         10.39  10.41  11.44  12.31
+  45  1 -28.93 -27.99 -24.99 -24.85 -24.79 -24.51 -14.37 -14.28 -13.78 -13.22
+        -12.71 -12.21 -11.43 -10.87  -8.50  -8.13  -7.55  -7.43  -7.27  -6.98
+         -6.79  -6.24  -5.99  -5.71  -1.24  -0.08   3.96   6.99   8.68   9.17
+         10.43  10.56  11.35  12.26
+  46  1 -28.82 -28.04 -25.04 -25.02 -24.84 -24.44 -14.29 -14.12 -14.00 -12.74
+        -12.72 -11.98 -11.43 -10.82  -8.51  -8.48  -7.94  -7.45  -7.45  -7.03
+         -6.60  -6.12  -5.93  -5.91  -1.18  -0.03   4.61   6.92   8.35   8.92
+         10.34  10.50  11.30  12.37
+  47  1 -28.59 -28.16 -25.26 -25.13 -24.80 -24.51 -14.12 -13.70 -13.50 -12.90
+        -12.57 -11.98 -11.24 -11.11  -9.07  -8.62  -8.05  -7.79  -7.45  -7.12
+         -6.58  -6.22  -5.81  -5.71  -0.91  -0.13   5.75   6.85   7.88   8.33
+         10.09  10.26  11.58  12.36
+  48  1 -28.36 -28.35 -25.26 -25.21 -24.71 -24.66 -13.70 -13.47 -13.17 -13.04
+        -12.66 -12.33 -11.48 -11.20  -8.96  -8.95  -7.89  -7.79  -7.55  -7.27
+         -6.47  -6.34  -5.65  -5.61  -0.51  -0.49   6.35   6.60   7.80   7.92
+         10.03  10.08  12.05  12.07
+  49  1 -28.62 -28.17 -25.11 -25.08 -24.82 -24.60 -14.19 -13.63 -13.40 -13.05
+        -12.74 -12.27 -11.20 -10.99  -9.06  -8.70  -7.98  -7.68  -7.34  -6.91
+         -6.58  -6.39  -5.78  -5.64  -0.91  -0.16   5.33   6.79   7.97   8.44
+         10.15  10.24  11.64  12.35
+  50  1 -28.93 -27.99 -24.99 -24.85 -24.79 -24.51 -14.37 -14.28 -13.78 -13.22
+        -12.71 -12.21 -11.43 -10.87  -8.50  -8.13  -7.55  -7.43  -7.27  -6.98
+         -6.79  -6.24  -5.99  -5.71  -1.24  -0.08   3.96   6.99   8.68   9.17
+         10.43  10.56  11.35  12.26
+  51  1 -29.09 -27.94 -24.94 -24.78 -24.51 -24.46 -14.82 -14.76 -13.72 -12.98
+        -12.63 -12.40 -11.78 -10.91  -8.09  -7.92  -7.46  -7.35  -7.08  -6.85
+         -6.77  -6.32  -5.98  -5.55  -1.46  -0.24   3.12   6.95   9.50   9.81
+         10.67  10.80  11.15  11.68
+  52  1 -29.04 -28.00 -24.92 -24.77 -24.66 -24.36 -14.92 -14.76 -13.73 -12.90
+        -12.41 -12.24 -11.95 -10.90  -8.02  -7.87  -7.58  -7.36  -7.31  -6.77
+         -6.71  -6.34  -5.82  -5.79  -1.49  -0.28   3.40   6.80   9.39   9.77
+         10.74  10.82  11.00  11.63
+  53  1 -28.81 -28.12 -25.08 -24.93 -24.72 -24.47 -14.54 -14.47 -13.55 -12.74
+        -12.46 -12.08 -11.48 -11.22  -8.51  -8.12  -7.67  -7.58  -7.16  -7.01
+         -6.81  -6.29  -6.08  -5.77  -1.18  -0.28   4.59   6.85   8.54   9.07
+         10.35  10.53  11.41  11.93
+  54  1 -28.47 -28.31 -25.22 -25.10 -24.69 -24.64 -14.28 -13.85 -13.14 -12.67
+        -12.57 -12.00 -11.70 -11.11  -9.01  -8.79  -7.97  -7.62  -7.45  -6.97
+         -6.57  -6.40  -5.78  -5.68  -0.62  -0.51   5.95   6.56   8.02   8.21
+         10.09  10.23  11.91  11.94
+  55  1 -28.52 -28.26 -25.30 -25.01 -24.84 -24.51 -14.55 -13.61 -13.22 -12.87
+        -12.36 -12.12 -11.34 -10.93  -9.04  -8.97  -8.02  -7.72  -7.61  -6.86
+         -6.54  -6.30  -5.88  -5.68  -0.86  -0.20   6.07   6.55   7.95   8.23
+         10.09  10.32  11.52  12.30
+  56  1 -28.82 -28.04 -25.04 -25.02 -24.84 -24.44 -14.29 -14.12 -14.00 -12.74
+        -12.72 -11.98 -11.43 -10.82  -8.51  -8.48  -7.94  -7.45  -7.45  -7.03
+         -6.60  -6.12  -5.93  -5.91  -1.18  -0.03   4.61   6.92   8.35   8.92
+         10.34  10.50  11.30  12.37
+  57  1 -29.04 -28.00 -24.92 -24.77 -24.66 -24.36 -14.92 -14.76 -13.73 -12.90
+        -12.41 -12.24 -11.95 -10.90  -8.02  -7.87  -7.58  -7.36  -7.31  -6.77
+         -6.71  -6.34  -5.82  -5.79  -1.49  -0.28   3.40   6.80   9.39   9.77
+         10.74  10.82  11.00  11.63
+  58  1 -29.08 -28.08 -24.77 -24.77 -24.43 -24.43 -15.27 -15.10 -13.39 -12.69
+        -12.69 -12.12 -12.12 -11.03  -8.12  -7.54  -7.54  -7.29  -7.29  -7.02
+         -6.33  -6.33  -5.64  -5.64  -1.67  -0.55   3.12   6.45  10.21  10.41
+         10.66  10.66  10.96  10.96
+  59  1 -28.90 -28.18 -24.97 -24.65 -24.64 -24.47 -15.06 -14.98 -13.09 -12.58
+        -12.55 -12.35 -11.76 -11.28  -8.05  -7.85  -7.53  -7.30  -7.16  -6.98
+         -6.63  -6.34  -6.21  -5.69  -1.43  -0.57   4.00   6.45   9.34   9.71
+         10.55  10.79  11.23  11.27
+  60  1 -28.59 -28.30 -25.25 -24.88 -24.70 -24.55 -14.73 -14.33 -12.80 -12.47
+        -12.47 -12.14 -11.82 -11.21  -8.71  -8.43  -7.75  -7.57  -7.43  -6.68
+         -6.68  -6.57  -6.09  -5.76  -0.80  -0.61   5.39   6.76   8.34   8.67
+         10.19  10.48  11.55  11.78
+  61  1 -28.41 -28.33 -25.34 -25.17 -24.69 -24.54 -14.36 -13.77 -12.85 -12.68
+        -12.52 -12.20 -11.41 -11.15  -8.93  -8.90  -7.98  -7.74  -7.62  -7.13
+         -6.45  -6.32  -5.86  -5.74  -0.69  -0.41   6.53   6.64   7.93   7.95
+         10.06  10.21  11.72  12.11
+  62  1 -28.59 -28.16 -25.26 -25.13 -24.80 -24.51 -14.12 -13.70 -13.50 -12.90
+        -12.57 -11.98 -11.24 -11.11  -9.07  -8.62  -8.05  -7.79  -7.45  -7.12
+         -6.58  -6.22  -5.81  -5.71  -0.91  -0.13   5.75   6.85   7.88   8.33
+         10.09  10.26  11.58  12.36
+  63  1 -28.81 -28.12 -25.08 -24.93 -24.72 -24.47 -14.54 -14.47 -13.55 -12.74
+        -12.46 -12.08 -11.48 -11.22  -8.51  -8.12  -7.67  -7.58  -7.16  -7.01
+         -6.81  -6.29  -6.08  -5.77  -1.18  -0.28   4.59   6.85   8.54   9.07
+         10.35  10.53  11.41  11.93
+  64  1 -28.90 -28.18 -24.97 -24.65 -24.64 -24.47 -15.06 -14.98 -13.09 -12.58
+        -12.55 -12.35 -11.76 -11.28  -8.05  -7.85  -7.53  -7.30  -7.16  -6.98
+         -6.63  -6.34  -6.21  -5.69  -1.43  -0.57   4.00   6.45   9.34   9.71
+         10.55  10.79  11.23  11.27
+  65  1 -28.82 -28.28 -24.89 -24.81 -24.66 -24.40 -15.15 -14.96 -13.07 -12.56
+        -12.19 -12.10 -12.05 -11.34  -7.95  -7.87  -7.50  -7.41  -7.41  -6.92
+         -6.70  -6.21  -6.02  -5.97  -1.39  -0.67   4.42   6.12   9.31   9.65
+         10.65  10.78  11.00  11.39
+  66  1 -28.59 -28.34 -25.12 -25.06 -24.59 -24.49 -14.68 -14.64 -12.93 -12.45
+        -12.29 -12.05 -11.61 -11.50  -8.46  -8.26  -7.74  -7.69  -7.12  -7.07
+         -6.64  -6.43  -6.09  -5.93  -0.96  -0.61   5.53   6.38   8.59   8.85
+         10.35  10.43  11.51  11.66
+  67  1 -28.41 -28.33 -25.34 -25.17 -24.69 -24.54 -14.36 -13.77 -12.85 -12.68
+        -12.52 -12.20 -11.41 -11.15  -8.93  -8.90  -7.98  -7.74  -7.62  -7.13
+         -6.45  -6.32  -5.86  -5.74  -0.69  -0.41   6.53   6.64   7.93   7.95
+         10.06  10.21  11.72  12.11
+  68  1 -28.36 -28.35 -25.26 -25.21 -24.71 -24.66 -13.70 -13.47 -13.17 -13.04
+        -12.66 -12.33 -11.48 -11.20  -8.96  -8.95  -7.89  -7.79  -7.55  -7.27
+         -6.47  -6.34  -5.65  -5.61  -0.51  -0.49   6.35   6.60   7.80   7.92
+         10.03  10.08  12.05  12.07
+  69  1 -28.47 -28.31 -25.22 -25.10 -24.69 -24.64 -14.28 -13.85 -13.14 -12.67
+        -12.57 -12.00 -11.70 -11.11  -9.01  -8.79  -7.97  -7.62  -7.45  -6.97
+         -6.57  -6.40  -5.78  -5.68  -0.62  -0.51   5.95   6.56   8.02   8.21
+         10.09  10.23  11.91  11.94
+  70  1 -28.59 -28.30 -25.25 -24.88 -24.70 -24.55 -14.73 -14.33 -12.80 -12.47
+        -12.47 -12.14 -11.82 -11.21  -8.71  -8.43  -7.75  -7.57  -7.43  -6.68
+         -6.68  -6.57  -6.09  -5.76  -0.80  -0.61   5.39   6.76   8.34   8.67
+         10.19  10.48  11.55  11.78
+  71  1 -28.59 -28.34 -25.12 -25.06 -24.59 -24.49 -14.68 -14.64 -12.93 -12.45
+        -12.29 -12.05 -11.61 -11.50  -8.46  -8.26  -7.74  -7.69  -7.12  -7.07
+         -6.64  -6.43  -6.09  -5.93  -0.96  -0.61   5.53   6.38   8.59   8.85
+         10.35  10.43  11.51  11.66
+  72  1 -28.50 -28.36 -25.29 -25.00 -24.71 -24.43 -14.78 -14.23 -12.91 -12.42
+        -12.39 -11.94 -11.60 -11.28  -8.56  -8.40  -8.14  -7.60  -7.53  -6.95
+         -6.63  -6.22  -6.15  -5.90  -0.90  -0.47   6.22   6.26   8.38   8.51
+         10.19  10.52  11.30  11.96
+  73  1 -28.59 -28.30 -25.25 -24.88 -24.70 -24.55 -14.73 -14.33 -12.80 -12.47
+        -12.47 -12.14 -11.82 -11.21  -8.71  -8.43  -7.75  -7.57  -7.43  -6.68
+         -6.68  -6.57  -6.09  -5.76  -0.80  -0.61   5.39   6.76   8.34   8.67
+         10.19  10.48  11.55  11.78
+  74  1 -28.47 -28.31 -25.22 -25.10 -24.69 -24.64 -14.28 -13.85 -13.14 -12.67
+        -12.57 -12.00 -11.70 -11.11  -9.01  -8.79  -7.97  -7.62  -7.45  -6.97
+         -6.57  -6.40  -5.78  -5.68  -0.62  -0.51   5.95   6.56   8.02   8.21
+         10.09  10.23  11.91  11.94
+  75  1 -28.36 -28.35 -25.26 -25.21 -24.71 -24.66 -13.70 -13.47 -13.17 -13.04
+        -12.66 -12.33 -11.48 -11.20  -8.96  -8.95  -7.89  -7.79  -7.55  -7.27
+         -6.47  -6.34  -5.65  -5.61  -0.51  -0.49   6.35   6.60   7.80   7.92
+         10.03  10.08  12.05  12.07
+  76  1 -28.41 -28.33 -25.34 -25.17 -24.69 -24.54 -14.36 -13.77 -12.85 -12.68
+        -12.52 -12.20 -11.41 -11.15  -8.93  -8.90  -7.98  -7.74  -7.62  -7.13
+         -6.45  -6.32  -5.86  -5.74  -0.69  -0.41   6.53   6.64   7.93   7.95
+         10.06  10.21  11.72  12.11
+  77  1 -28.50 -28.36 -25.29 -25.00 -24.71 -24.43 -14.78 -14.23 -12.91 -12.42
+        -12.39 -11.94 -11.60 -11.28  -8.56  -8.40  -8.14  -7.60  -7.53  -6.95
+         -6.63  -6.22  -6.15  -5.90  -0.90  -0.47   6.22   6.26   8.38   8.51
+         10.19  10.52  11.30  11.96
+  78  1 -28.59 -28.34 -25.12 -25.06 -24.59 -24.49 -14.68 -14.64 -12.93 -12.45
+        -12.29 -12.05 -11.61 -11.50  -8.46  -8.26  -7.74  -7.69  -7.12  -7.07
+         -6.64  -6.43  -6.09  -5.93  -0.96  -0.61   5.53   6.38   8.59   8.85
+         10.35  10.43  11.51  11.66
+  79  1 -28.47 -28.31 -25.22 -25.10 -24.69 -24.64 -14.28 -13.85 -13.14 -12.67
+        -12.57 -12.00 -11.70 -11.11  -9.01  -8.79  -7.97  -7.62  -7.45  -6.97
+         -6.57  -6.40  -5.78  -5.68  -0.62  -0.51   5.95   6.56   8.02   8.21
+         10.09  10.23  11.91  11.94
+  80  1 -28.47 -28.37 -25.11 -24.94 -24.85 -24.66 -14.44 -14.10 -12.93 -12.77
+        -12.39 -12.35 -11.36 -11.12  -9.08  -9.02  -7.81  -7.72  -7.22  -6.78
+         -6.63  -6.49  -5.73  -5.65  -0.70  -0.45   5.89   6.12   8.17   8.28
+         10.16  10.24  11.77  12.05
+  81  1 -28.58 -28.23 -25.10 -25.04 -24.79 -24.67 -14.09 -14.01 -13.15 -12.97
+        -12.66 -12.24 -11.29 -11.18  -9.03  -8.73  -7.96  -7.64  -7.16  -7.03
+         -6.60  -6.43  -5.71  -5.66  -0.81  -0.31   5.42   6.61   8.05   8.40
+         10.15  10.22  11.77  12.16
+  82  1 -28.59 -28.16 -25.26 -25.13 -24.80 -24.51 -14.12 -13.70 -13.50 -12.90
+        -12.57 -11.98 -11.24 -11.11  -9.07  -8.62  -8.05  -7.79  -7.45  -7.12
+         -6.58  -6.22  -5.81  -5.71  -0.91  -0.13   5.75   6.85   7.88   8.33
+         10.09  10.26  11.58  12.36
+  83  1 -28.54 -28.18 -25.43 -25.10 -24.81 -24.43 -14.54 -13.45 -13.19 -13.00
+        -12.40 -11.67 -11.24 -11.05  -8.96  -8.76  -8.31  -7.93  -7.75  -7.04
+         -6.53  -6.08  -5.98  -5.73  -0.93  -0.04   6.45   6.81   7.80   8.08
+         10.03  10.38  11.35  12.43
+  84  1 -28.50 -28.22 -25.36 -25.17 -24.75 -24.48 -14.26 -13.71 -13.33 -12.66
+        -12.46 -11.78 -11.44 -11.22  -9.04  -8.66  -8.10  -7.84  -7.55  -7.21
+         -6.55  -6.19  -5.84  -5.75  -0.82  -0.22   6.36   6.80   7.82   8.09
+         10.06  10.23  11.61  12.25
+  85  1 -28.36 -28.35 -25.26 -25.21 -24.71 -24.66 -13.70 -13.47 -13.17 -13.04
+        -12.66 -12.33 -11.48 -11.20  -8.96  -8.95  -7.89  -7.79  -7.55  -7.27
+         -6.47  -6.34  -5.65  -5.61  -0.51  -0.49   6.35   6.60   7.80   7.92
+         10.03  10.08  12.05  12.07
+  86  1 -28.58 -28.23 -25.10 -25.04 -24.79 -24.67 -14.09 -14.01 -13.15 -12.97
+        -12.66 -12.24 -11.29 -11.18  -9.03  -8.73  -7.96  -7.64  -7.16  -7.03
+         -6.60  -6.43  -5.71  -5.66  -0.81  -0.31   5.42   6.61   8.05   8.40
+         10.15  10.22  11.77  12.16
+  87  1 -28.77 -28.14 -25.11 -24.76 -24.71 -24.70 -14.51 -14.39 -13.12 -13.04
+        -12.60 -12.13 -11.40 -11.26  -8.67  -8.49  -7.55  -7.40  -7.24  -6.99
+         -6.76  -6.45  -5.95  -5.66  -1.03  -0.31   4.63   6.88   8.39   8.88
+         10.27  10.45  11.61  11.94
+  88  1 -28.81 -28.12 -25.08 -24.93 -24.72 -24.47 -14.54 -14.47 -13.55 -12.74
+        -12.46 -12.08 -11.48 -11.22  -8.51  -8.12  -7.67  -7.58  -7.16  -7.01
+         -6.81  -6.29  -6.08  -5.77  -1.18  -0.28   4.59   6.85   8.54   9.07
+         10.35  10.53  11.41  11.93
+  89  1 -28.69 -28.16 -25.21 -25.05 -24.77 -24.39 -14.64 -14.09 -13.61 -12.50
+        -12.45 -11.70 -11.51 -11.15  -8.43  -8.38  -8.22  -7.58  -7.55  -7.08
+         -6.59  -6.10  -6.04  -5.97  -1.11  -0.17   5.40   6.75   8.24   8.77
+         10.25  10.54  11.22  12.17
+  90  1 -28.50 -28.22 -25.36 -25.17 -24.75 -24.48 -14.26 -13.71 -13.33 -12.66
+        -12.46 -11.78 -11.44 -11.22  -9.04  -8.66  -8.10  -7.84  -7.55  -7.21
+         -6.55  -6.19  -5.84  -5.75  -0.82  -0.22   6.36   6.80   7.82   8.09
+         10.06  10.23  11.61  12.25
+  91  1 -28.41 -28.33 -25.34 -25.17 -24.69 -24.54 -14.36 -13.77 -12.85 -12.68
+        -12.52 -12.20 -11.41 -11.15  -8.93  -8.90  -7.98  -7.74  -7.62  -7.13
+         -6.45  -6.32  -5.86  -5.74  -0.69  -0.41   6.53   6.64   7.93   7.95
+         10.06  10.21  11.72  12.11
+  92  1 -28.59 -28.16 -25.26 -25.13 -24.80 -24.51 -14.12 -13.70 -13.50 -12.90
+        -12.57 -11.98 -11.24 -11.11  -9.07  -8.62  -8.05  -7.79  -7.45  -7.12
+         -6.58  -6.22  -5.81  -5.71  -0.91  -0.13   5.75   6.85   7.88   8.33
+         10.09  10.26  11.58  12.36
+  93  1 -28.81 -28.12 -25.08 -24.93 -24.72 -24.47 -14.54 -14.47 -13.55 -12.74
+        -12.46 -12.08 -11.48 -11.22  -8.51  -8.12  -7.67  -7.58  -7.16  -7.01
+         -6.81  -6.29  -6.08  -5.77  -1.18  -0.28   4.59   6.85   8.54   9.07
+         10.35  10.53  11.41  11.93
+  94  1 -28.90 -28.18 -24.97 -24.65 -24.64 -24.47 -15.06 -14.98 -13.09 -12.58
+        -12.55 -12.35 -11.76 -11.28  -8.05  -7.85  -7.53  -7.30  -7.16  -6.98
+         -6.63  -6.34  -6.21  -5.69  -1.43  -0.57   4.00   6.45   9.34   9.71
+         10.55  10.79  11.23  11.27
+  95  1 -28.82 -28.28 -24.89 -24.81 -24.66 -24.40 -15.15 -14.96 -13.07 -12.56
+        -12.19 -12.10 -12.05 -11.34  -7.95  -7.87  -7.50  -7.41  -7.41  -6.92
+         -6.70  -6.21  -6.02  -5.97  -1.39  -0.67   4.42   6.12   9.31   9.65
+         10.65  10.78  11.00  11.39
+  96  1 -28.59 -28.34 -25.12 -25.06 -24.59 -24.49 -14.68 -14.64 -12.93 -12.45
+        -12.29 -12.05 -11.61 -11.50  -8.46  -8.26  -7.74  -7.69  -7.12  -7.07
+         -6.64  -6.43  -6.09  -5.93  -0.96  -0.61   5.53   6.38   8.59   8.85
+         10.35  10.43  11.51  11.66
+  97  1 -28.50 -28.36 -25.29 -25.00 -24.71 -24.43 -14.78 -14.23 -12.91 -12.42
+        -12.39 -11.94 -11.60 -11.28  -8.56  -8.40  -8.14  -7.60  -7.53  -6.95
+         -6.63  -6.22  -6.15  -5.90  -0.90  -0.47   6.22   6.26   8.38   8.51
+         10.19  10.52  11.30  11.96
+  98  1 -28.54 -28.18 -25.43 -25.10 -24.81 -24.43 -14.54 -13.45 -13.19 -13.00
+        -12.40 -11.67 -11.24 -11.05  -8.96  -8.76  -8.31  -7.93  -7.75  -7.04
+         -6.53  -6.08  -5.98  -5.73  -0.93  -0.04   6.45   6.81   7.80   8.08
+         10.03  10.38  11.35  12.43
+  99  1 -28.69 -28.16 -25.21 -25.05 -24.77 -24.39 -14.64 -14.09 -13.61 -12.50
+        -12.45 -11.70 -11.51 -11.15  -8.43  -8.38  -8.22  -7.58  -7.55  -7.08
+         -6.59  -6.10  -6.04  -5.97  -1.11  -0.17   5.40   6.75   8.24   8.77
+         10.25  10.54  11.22  12.17
+ 100  1 -28.82 -28.28 -24.89 -24.81 -24.66 -24.40 -15.15 -14.96 -13.07 -12.56
+        -12.19 -12.10 -12.05 -11.34  -7.95  -7.87  -7.50  -7.41  -7.41  -6.92
+         -6.70  -6.21  -6.02  -5.97  -1.39  -0.67   4.42   6.12   9.31   9.65
+         10.65  10.78  11.00  11.39
+ 101  1 -28.80 -28.44 -24.67 -24.67 -24.55 -24.55 -15.41 -15.31 -12.46 -12.46
+        -12.46 -12.23 -12.23 -11.56  -7.69  -7.52  -7.52  -7.41  -7.41  -7.34
+         -6.15  -6.15  -5.89  -5.89  -1.53  -1.06   4.27   5.45  10.01  10.21
+         10.77  10.77  10.89  10.89
+ 102  1 -28.61 -28.51 -24.93 -24.79 -24.56 -24.50 -15.14 -15.10 -12.54 -12.40
+        -12.34 -12.16 -11.83 -11.82  -8.02  -7.78  -7.64  -7.34  -7.19  -7.10
+         -6.54  -6.31  -6.20  -5.93  -1.14  -1.03   5.10   5.53   9.45   9.51
+         10.56  10.78  11.08  11.30
+ 103  1 -28.59 -28.34 -25.12 -25.06 -24.59 -24.49 -14.68 -14.64 -12.93 -12.45
+        -12.29 -12.05 -11.61 -11.50  -8.46  -8.26  -7.74  -7.69  -7.12  -7.07
+         -6.64  -6.43  -6.09  -5.93  -0.96  -0.61   5.53   6.38   8.59   8.85
+         10.35  10.43  11.51  11.66
+ 104  1 -28.50 -28.22 -25.36 -25.17 -24.75 -24.48 -14.26 -13.71 -13.33 -12.66
+        -12.46 -11.78 -11.44 -11.22  -9.04  -8.66  -8.10  -7.84  -7.55  -7.21
+         -6.55  -6.19  -5.84  -5.75  -0.82  -0.22   6.36   6.80   7.82   8.09
+         10.06  10.23  11.61  12.25
+ 105  1 -28.50 -28.22 -25.36 -25.17 -24.75 -24.48 -14.26 -13.71 -13.33 -12.66
+        -12.46 -11.78 -11.44 -11.22  -9.04  -8.66  -8.10  -7.84  -7.55  -7.21
+         -6.55  -6.19  -5.84  -5.75  -0.82  -0.22   6.36   6.80   7.82   8.09
+         10.06  10.23  11.61  12.25
+ 106  1 -28.59 -28.34 -25.12 -25.06 -24.59 -24.49 -14.68 -14.64 -12.93 -12.45
+        -12.29 -12.05 -11.61 -11.50  -8.46  -8.26  -7.74  -7.69  -7.12  -7.07
+         -6.64  -6.43  -6.09  -5.93  -0.96  -0.61   5.53   6.38   8.59   8.85
+         10.35  10.43  11.51  11.66
+ 107  1 -28.61 -28.51 -24.93 -24.79 -24.56 -24.50 -15.14 -15.10 -12.54 -12.40
+        -12.34 -12.16 -11.83 -11.82  -8.02  -7.78  -7.64  -7.34  -7.19  -7.10
+         -6.54  -6.31  -6.20  -5.93  -1.14  -1.03   5.10   5.53   9.45   9.51
+         10.56  10.78  11.08  11.30
+ 108  1 -28.61 -28.51 -24.93 -24.79 -24.56 -24.50 -15.14 -15.10 -12.54 -12.40
+        -12.34 -12.16 -11.83 -11.82  -8.02  -7.78  -7.64  -7.34  -7.19  -7.10
+         -6.54  -6.31  -6.20  -5.93  -1.14  -1.03   5.10   5.53   9.45   9.51
+         10.56  10.78  11.08  11.30
+siesta: Fermi energy =      -3.158955 eV
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =      5228.674091
+siesta: Ena     =      1084.867450
+siesta: Ekin    =      2307.150978
+siesta: Enl     =      -366.370596
+siesta: DEna    =       -51.465660
+siesta: DUscf   =         7.068667
+siesta: DUext   =         0.000000
+siesta: Exc     =      -711.263761
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =     -2958.687073
+siesta: Etot    =     -2958.687013
+siesta: FreeEng =     -2958.687013
+
+siesta: Final energy (eV):
+siesta:       Kinetic =    2307.150978
+siesta:       Hartree =     826.428429
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =    -711.263761
+siesta:  Ion-electron =   -3687.387874
+siesta:       Ion-ion =   -1693.614786
+siesta:       Ekinion =       0.000000
+siesta:         Total =   -2958.687013
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1   -0.000003    0.000002   -0.000008
+siesta:      2    0.000026    0.000013    0.000007
+siesta:      3    0.000054    0.000014    0.000097
+siesta:      4    0.000083   -0.000104    0.000089
+siesta:      5    1.705351   -3.814329    0.000006
+siesta:      6   -0.000041    2.288395   -3.495858
+siesta:      7   -1.705419    1.525896    3.495741
+siesta:      8   -1.705439    3.814353   -0.000008
+siesta:      9   -0.000029   -2.288362    3.495705
+siesta:     10    1.705355   -1.525917   -3.495793
+siesta: ----------------------------------------
+siesta:  Tot   -0.000063   -0.000038   -0.000023
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:    -0.162169    0.099180    0.064924
+siesta:     0.099180   -0.339654    0.029028
+siesta:     0.064924    0.029028   -0.364994
+
+siesta: Constrained stress tensor (static) (eV/Ang**3):
+siesta:    -0.162169    0.099180    0.064924
+siesta:     0.099180   -0.339654    0.029028
+siesta:     0.064924    0.029028   -0.364994
+
+siesta: Cell volume =         73.271451 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00314692          0.00153076  Ry/Bohr**3
+siesta:           0.28893924          0.14054961  eV/Ang**3
+siesta:         462.93670333        225.18774230  kBar
+
+* Maximum dynamic memory allocated : Node    0 =    11 MB
+
+* Maximum memory occured during poison                        
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1     232.565     232.565   100.00
+timer:  Setup             1       2.222       2.222     0.96
+timer:  bands             1       0.001       0.001     0.00
+timer:  writewave         1       0.004       0.004     0.00
+timer:  KSV_init          1       0.001       0.001     0.00
+timer:  IterMD            6      38.374     230.244    99.00
+timer:  hsparse           9       2.263      20.367     8.76
+timer:  overfsm          12       0.056       0.666     0.29
+timer:  IterSCF          40       4.980     199.216    85.66
+timer:  kinefsm          12       0.052       0.620     0.27
+timer:  nlefsm           12       1.655      19.859     8.54
+timer:  DHSCF            40       1.538      61.501    26.44
+timer:  DHSCF1            6       0.745       4.467     1.92
+timer:  DHSCF2            6       2.732      16.392     7.05
+timer:  REORD           252       0.001       0.172     0.07
+timer:  POISON           46       0.023       1.040     0.45
+timer:  DHSCF3           40       0.667      26.674    11.47
+timer:  rhoofd           40       0.364      14.569     6.26
+timer:  cellXC           40       0.077       3.083     1.33
+timer:  vmat             40       0.188       7.529     3.24
+timer:  diagon           34       3.423     116.380    50.04
+timer:  cdiag          7344       0.006      46.003    19.78
+timer:  cdiag1         7344       0.000       2.017     0.87
+timer:  cdiag2         7344       0.001       6.483     2.79
+timer:  cdiag3         7344       0.005      34.243    14.72
+timer:  cdiag4         7344       0.000       2.111     0.91
+timer:  DHSCF4            6       2.320      13.922     5.99
+timer:  dfscf             6       1.557       9.343     4.02
+timer:  optical           1       0.001       0.001     0.00
+  
+>> End of run:   8-SEP-2005  12:03:26

@@ -1,6 +1,6 @@
 # -----------------------------------------------------------------------------
-# FDF for a primitive c-Si supercell 
-# Alberto Garcia, August 2005
+# Primitive c-Si supercell, using STRUCT file
+# Alberto Garcia, August-September 2005
 # -----------------------------------------------------------------------------
 
 SystemName          Primitive silicon
@@ -8,6 +8,7 @@ SystemLabel         si
 
 NumberOfAtoms       2
 NumberOfSpecies     1
+MD.Use-Struct-File  T   # Structural information is read from si.STRUCT_IN
 
 %block ChemicalSpeciesLabel
  1  14  Si
@@ -15,13 +16,6 @@ NumberOfSpecies     1
 
 PAO.BasisSize       DZP
 PAO.EnergyShift     300 meV
-
-LatticeConstant     5.430 Ang
-%block LatticeVectors
-  0.500  0.500  0.000
-  0.000  0.500  0.500
-  0.500  0.000  0.500
-%endblock LatticeVectors
 
 MeshCutoff          200.0 Ry
 %block kgrid-monkhorst-pack
@@ -43,8 +37,3 @@ MD.NumCGsteps        0
 MD.MaxCGDispl         0.1  Ang
 MD.MaxForceTol        0.04 eV/Ang
 
-AtomicCoordinatesFormat  ScaledCartesian
-%block AtomicCoordinatesAndAtomicSpecies
-    0.000    0.000    0.000   1 #  Si  1
-    0.250    0.250    0.250   1 #  Si  2
-%endblock AtomicCoordinatesAndAtomicSpecies

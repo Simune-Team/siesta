@@ -6,6 +6,7 @@ SIESTA=../../../siesta
 completed:
 	@echo ">>>> Running $(name) test..."
 	@if [ -d work ] ; then rm -rf work ; fi; mkdir work
+	@if [ -n "$(EXTRAFILES)" ] ; then cp -f $(EXTRAFILES) work ; fi
 	@for i in `cat $(name).pseudos` ; do \
           echo "    ==> Copying pseudopotential file for $$i..." ;\
           ln ../Pseudos/$$i.psf work/$$i.psf ;\

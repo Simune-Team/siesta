@@ -1,11 +1,11 @@
 Siesta Version (Arch framework):
-agarcia@siesta.arch--2005/siesta-devel--tests--1.4--patch-1
+agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-69
 Architecture  : macosx-nag-cdf
-Compiler flags: f95 -g -dcfuns -dusty
+Compiler flags: f95 -O -g -dcfuns -dusty
 SERIAL version
 
 * Running in serial mode
->> Start of run:   8-AUG-2005  15:32:08
+>> Start of run:   8-SEP-2005  11:51:53
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -14,24 +14,19 @@ SERIAL version
 reinit: Reading from standard input
 ************************** Dump of input data file ****************************
 # -----------------------------------------------------------------------------
-# FDF for a primitive c-Si supercell
-# Alberto Garcia, August 2005
+# Primitive c-Si supercell, using STRUCT file
+# Alberto Garcia, August-September 2005
 # -----------------------------------------------------------------------------
 SystemName          Primitive silicon
 SystemLabel         si
 NumberOfAtoms       2
 NumberOfSpecies     1
+MD.Use-Struct-File  T   # Structural information is read from si.STRUCT_IN
 %block ChemicalSpeciesLabel
  1  14  Si
 %endblock ChemicalSpeciesLabel
 PAO.BasisSize       DZP
 PAO.EnergyShift     300 meV
-LatticeConstant     5.430 Ang
-%block LatticeVectors
-  0.500  0.500  0.000
-  0.000  0.500  0.500
-  0.500  0.000  0.500
-%endblock LatticeVectors
 MeshCutoff          200.0 Ry
 %block kgrid-monkhorst-pack
   4 0 0  0.5
@@ -48,11 +43,6 @@ MD.TypeOfRun         cg
 MD.NumCGsteps        0
 MD.MaxCGDispl         0.1  Ang
 MD.MaxForceTol        0.04 eV/Ang
-AtomicCoordinatesFormat  ScaledCartesian
-%block AtomicCoordinatesAndAtomicSpecies
-    0.000    0.000    0.000   1 #  Si  1
-    0.250    0.250    0.250   1 #  Si  2
-%endblock AtomicCoordinatesAndAtomicSpecies
 ************************** End of input data file *****************************
 
 reinit: -----------------------------------------------------------------------
@@ -232,8 +222,7 @@ siesta: The following are some of the parameters of the simulation.
 siesta: A complete list of the parameters used, including defect values,
 siesta: can be found in file out.fdf
 siesta:
-coor:   Atomic-coordinates input format  =     Cartesian coordinates
-coor:                                          (in units of alat)
+  -- Read structural information from si.STRUCT_IN
 redata: Number of spin components        =     1
 redata: Long output                      =     F
 redata: Number of Atomic Species         =     1
@@ -317,7 +306,7 @@ siesta: FreeEng =      -214.209344
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -215.4725     -214.2093     -214.2093  1.8141 -3.8945
-timer: Routine,Calls,Time,% = IterSCF        1      64.619  84.47
+timer: Routine,Calls,Time,% = IterSCF        1      23.156  77.43
 siesta:    2     -215.4397     -215.4377     -215.4377  0.0097 -3.8041
 siesta:    3     -215.4395     -215.4332     -215.4332  0.0048 -3.8112
 siesta:    4     -215.4393     -215.4394     -215.4394  0.0004 -3.8217
@@ -331,12 +320,15 @@ siesta: E_KS - E_eggbox =      -215.4393
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
- Tot   -0.000632   -0.000630   -0.000630
+ Tot   -0.000631   -0.000630   -0.000630
 ----------------------------------------
  Max    0.021296
  Res    0.020983    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
  Max    0.021296    constrained
+
+Stress-tensor-Voigt (kbar):       11.42       11.42       11.42       10.71       10.71       10.71
+Target enthalpy (eV/cell)     -215.4393
 
 * Maximum dynamic memory allocated =    22 MB
 
@@ -438,7 +430,7 @@ siesta: Eigenvalues (eV):
   32  1 -13.17 -10.81  -8.20  -6.06  -2.23   1.47   1.48   2.94   4.00   4.24
          10.86  11.23  11.82  13.07  15.83  15.93  18.36  20.08  22.61  24.67
          26.89  30.83  42.85  46.87  55.19  84.03
-siesta: Fermi energy =      -3.821544 eV
+siesta: Fermi energy =      -3.821541 eV
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =       380.802124
@@ -476,8 +468,8 @@ siesta: Cell volume =         40.025752 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00007764         -0.00008539  Ry/Bohr**3
-siesta:          -0.00712853         -0.00784009  eV/Ang**3
-siesta:         -11.42129257        -12.56134507  kBar
+siesta:          -0.00712853         -0.00784008  eV/Ang**3
+siesta:         -11.42128582        -12.56133627  kBar
 
 * Maximum dynamic memory allocated : Node    0 =    22 MB
 
@@ -485,34 +477,34 @@ siesta:         -11.42129257        -12.56134507  kBar
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1     269.844     269.844   100.00
-timer:  Setup             1       1.077       1.077     0.40
+timer:  siesta            1      88.199      88.199   100.00
+timer:  Setup             1       0.762       0.762     0.86
 timer:  bands             1       0.001       0.001     0.00
-timer:  writewave         1       0.004       0.004     0.00
+timer:  writewave         1       0.002       0.002     0.00
 timer:  KSV_init          1       0.001       0.001     0.00
-timer:  IterMD            1     268.724     268.724    99.58
-timer:  hsparse           2       2.609       5.219     1.93
-timer:  overfsm           2       2.019       4.038     1.50
-timer:  IterSCF           8      32.239     257.915    95.58
-timer:  kinefsm           2       1.921       3.842     1.42
-timer:  nlefsm            2      13.438      26.875     9.96
-timer:  DHSCF             8      26.751     214.010    79.31
-timer:  DHSCF1            1       3.264       3.264     1.21
-timer:  DHSCF2            1      17.131      17.131     6.35
-timer:  REORD            50       0.002       0.106     0.04
-timer:  POISON            9       0.072       0.651     0.24
-timer:  DHSCF3            8      21.166     169.329    62.75
-timer:  rhoofd            8      13.555     108.438    40.19
-timer:  cellXC            8       0.120       0.964     0.36
-timer:  vmat              8       7.385      59.079    21.89
-timer:  diagon            7       1.782      12.473     4.62
-timer:  cdiag           448       0.005       2.452     0.91
-timer:  cdiag1          448       0.001       0.235     0.09
-timer:  cdiag2          448       0.001       0.630     0.23
-timer:  cdiag3          448       0.003       1.422     0.53
-timer:  cdiag4          448       0.000       0.062     0.02
-timer:  DHSCF4            1      24.262      24.262     8.99
-timer:  dfscf             1      23.277      23.277     8.63
-timer:  optical           1       0.002       0.002     0.00
+timer:  IterMD            1      87.405      87.405    99.10
+timer:  hsparse           2       1.597       3.194     3.62
+timer:  overfsm           2       0.917       1.833     2.08
+timer:  IterSCF           8      10.176      81.406    92.30
+timer:  kinefsm           2       0.866       1.732     1.96
+timer:  nlefsm            2       6.404      12.807    14.52
+timer:  DHSCF             8       7.347      58.778    66.64
+timer:  DHSCF1            1       0.952       0.952     1.08
+timer:  DHSCF2            1       5.459       5.459     6.19
+timer:  REORD            50       0.001       0.031     0.04
+timer:  POISON            9       0.022       0.197     0.22
+timer:  DHSCF3            8       5.614      44.911    50.92
+timer:  rhoofd            8       3.761      30.090    34.12
+timer:  cellXC            8       0.074       0.590     0.67
+timer:  vmat              8       1.743      13.946    15.81
+timer:  diagon            7       1.107       7.749     8.79
+timer:  cdiag           448       0.002       0.978     1.11
+timer:  cdiag1          448       0.000       0.069     0.08
+timer:  cdiag2          448       0.000       0.204     0.23
+timer:  cdiag3          448       0.001       0.608     0.69
+timer:  cdiag4          448       0.000       0.019     0.02
+timer:  DHSCF4            1       7.442       7.442     8.44
+timer:  dfscf             1       7.003       7.003     7.94
+timer:  optical           1       0.001       0.001     0.00
   
->> End of run:   8-AUG-2005  15:37:09
+>> End of run:   8-SEP-2005  11:53:25

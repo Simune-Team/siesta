@@ -44,7 +44,8 @@ C  Modules
 C
       use precision, only : dp
       use parallel,    only : Node
-      use fdf, only : fdf_block, fdf_physical
+      use fdf, only : fdf_block, fdf_physical, fdf_boolean
+      use units, only: kBar
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -71,10 +72,9 @@ C
 
 c Internal variables and arrays
 
-      real(dp), parameter :: kBar = 1.d0/1.47108d5
+      real(dp)            :: new_volume, trace
 
       logical           found
-
       integer           iu, ia, i, j, n, indi
 
 #ifdef MPI
@@ -82,6 +82,7 @@ c Internal variables and arrays
 #endif
 
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
+      real(dp) ::  stress_dif(3,3)
 
       real(dp), dimension(:), allocatable       :: gxa, gfa
       real(dp), dimension(:), allocatable, save :: cgaux
@@ -90,6 +91,9 @@ c Internal variables and arrays
 
       logical, save :: frstme = .true.
       logical, save :: tarstr = .false.
+      logical, save :: constant_volume
+      real(dp), save :: initial_volume
+
       real(dp), save :: cgcntr(0:20) = 0.0_dp
 
       integer, save :: ndeg,
@@ -101,7 +105,8 @@ c Internal variables and arrays
      .                  strain(3,3),
      .                  cellin(3,3)
       
-
+      real(dp) :: volcel
+      external :: volcel
 c ---------------------------------------------------------------------------
 
 C Allocate local memory
@@ -118,9 +123,16 @@ c If first call to cgvc, check dim and get target stress --------------------
 
       if ( frstme ) then
   
-c look for target stress and read it if found, otherwise generate it --------
-
         if ( varcel ) then
+
+!         Check if we want a constant-volume simulation
+           constant_volume = fdf_boolean("MD.ConstantVolume", .false.)
+#ifdef MPI
+          call MPI_Bcast(constant_volume,1,MPI_logical,0,MPI_Comm_World,
+     .      MPIerror)
+#endif
+
+c look for target stress and read it if found, otherwise generate it --------
 
           if (Node.eq.0) then
             tarstr = fdf_block('MD.TargetStress',iu)
@@ -207,6 +219,7 @@ c initialization to 1. for numerical reasons, later substracted ------------
               cellin(i,j) = cell(i,j)
             enddo
           enddo
+          initial_volume = volcel(cellin)
 
         else
 
@@ -254,7 +267,7 @@ c variable cell -------------------------------------------------------------
 
       if ( varcel ) then
 
-c inverse of matrix of cell vectors  (transverse of) ------------------------
+c inverse of matrix of cell vectors  (transpose of) ------------------------
 
         call reclat( cell, celli, 0 )
 
@@ -286,14 +299,27 @@ c symmetrizing the stress tensor --------------------------------------------
            enddo
         enddo
 
-c append stress (substracting target stress) and strain to gxa and gfa ------ 
+c Subtract target stress
+
+        stress_dif = stress - tstres
+!
+!       Take 1/3 of the trace out here if constant-volume needed
+!
+        if (constant_volume) then
+           trace = stress_dif(1,1) + stress_dif(2,2) + stress_dif(3,3)
+           do i=1,3
+              stress_dif(i,i) = stress_dif(i,i) - trace/3.0_dp
+           enddo
+        endif
+
+c append excess stress and strain to gxa and gfa ------ 
 c preconditioning: scale stress and strain so as to behave similarly to x,f -
- 
+
         indi = 3*na
         do i = 1, 3
            do j = i, 3
               indi = indi + 1
-              gfa(indi) = -(stress(i,j) - tstres(i,j))*volume/precon
+              gfa(indi) = -stress_dif(i,j)*volume/precon
               gxa(indi) = strain(i,j) * precon
            enddo
         enddo
@@ -304,7 +330,7 @@ c check stress convergence --------------------------------------------------
         do i = 1, 3
            do j = 1, 3
               relaxd = relaxd .and. 
-     .          ( abs(stress(i,j)-tstres(i,j)) .lt. strtol )
+     .          ( abs(stress_dif(i,j)) .lt. strtol )
            enddo
         enddo
 
@@ -349,6 +375,7 @@ c new cell ------------------------------------------------------------------
            enddo
         enddo
 
+!       cell = cellin + matmul(strain-1.0_dp,cellin)
         do n = 1, 3
            do i = 1, 3
               cell(i,n) = cellin(i,n)
@@ -357,6 +384,13 @@ c new cell ------------------------------------------------------------------
               enddo
            enddo
         enddo
+!
+!       Check new volume here
+!
+        if (constant_volume) then
+           new_volume = volcel(cell)
+           cell =  cell * (initial_volume/new_volume)**(1.0_dp/3.0_dp)
+        endif
 
 c output fractional coordinates to cartesian Bohr, and copy to xa ----------- 
 

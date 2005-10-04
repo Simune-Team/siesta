@@ -14,13 +14,12 @@ c *******************************************************************
 
       implicit none
 
-      real(dp)   :: cell(3,3)
+      real(dp), intent(in)   :: cell(3,3)
 
 c Internal variables and arrays
 
       integer    :: iv, ix
-      real(dp)   :: cellm(3), celang(3), 
-     .              volume, volcel
+      real(dp)   :: cellm(3), celang(3), volume, volcel
 
       external volcel
 
@@ -33,30 +32,19 @@ c Writing cell vectors
 c Cell-vector modules
 
       do iv = 1,3
-        cellm(iv) = 0.0_dp
-        do ix = 1,3
-          cellm(iv) = cellm(iv) + cell(ix,iv)*cell(ix,iv)
-        enddo
+        cellm(iv) = dot_product(cell(:,iv),cell(:,iv))
         cellm(iv) = sqrt(cellm(iv))
       enddo
 
 c Cell-vector angles
 
-      celang(1) = 0.0_dp
-      do ix = 1,3
-         celang(1) = celang(1) + cell(ix,1)*cell(ix,2)
-      enddo
+      celang(1) = dot_product(cell(:,1),cell(:,2))
       celang(1) = acos(celang(1)/(cellm(1)*cellm(2)))*180._dp/pi
-      celang(2) = 0.0_dp
-      do ix = 1,3
-         celang(2) = celang(2) + cell(ix,1)*cell(ix,3)
-      enddo
+      celang(2) = dot_product(cell(:,1),cell(:,3))
       celang(2) = acos(celang(2)/(cellm(1)*cellm(3)))*180._dp/pi
-      celang(3) = 0.0_dp
-      do ix = 1,3
-         celang(3) = celang(3) + cell(ix,2)*cell(ix,3)
-      enddo
+      celang(3) = dot_product(cell(:,2),cell(:,3))
       celang(3) = acos(celang(3)/(cellm(2)*cellm(3)))*180._dp/pi
+
       write(6,'(/,a,3f12.6)')
      . 'outcell: Cell vector modules (Ang)   :',
      .          (cellm(iv)/Ang,iv=1,3)

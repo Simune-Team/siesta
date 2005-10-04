@@ -343,6 +343,10 @@ files in your directory:
  (contains the memory use of some subroutines and arrays)
 \item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
  (contains the final positions and velocities)
+\item h2o.STRUCT\_OUT
+\index{Systemlabel.STRUCT\_OUT@{Systemlabel.STRUCT\_OUT}}
+ (contains the final cell vectors and positions in
+ ``crystallographic'' format)
 \item h2o.DM\index{Systemlabel.DM@{\it Systemlabel.}DM}
  (contains the density matrix to allow a restart)
 \item h2o.ANI\index{Systemlabel.ANI@{\it Systemlabel.}.ANI}
@@ -1337,6 +1341,32 @@ The reading is done this way:
 \end{verbatim}
 where {\tt xa(ix,ia)} is the {\tt ix} coordinate of atom 
 {\tt iai}, and {\tt isa(ia)} is the species index of atom {\tt ia}.
+
+\item[{\bf UseStructFile}] ({\it logical}): 
+\index{UseStructFile@{\bf UseStructFile}}\index{Systemlabel.STRUCT\_IN}
+Logical variable to control whether the structural information
+is read from an external file of name {\tt SystemLabel}.STRUCT\_IN.
+If \texttt{.true.}, all other structural information in the fdf file
+will be ignored. 
+
+The format of the file is implied by the following code:
+
+\begin{verbatim}
+read(*,*) ((cell(ixyz,ivec),ixyz=1,3),ivec=1,3)  ! Cell vectors, in Angstroms
+read(*,*) na
+do ia = 1,na
+   read(iu,*) isa(ia), dummy, xfrac(1:3,ia)  ! Species number
+                                             ! Dummy numerical column
+                                             ! Fractional coordinates
+enddo
+\end{verbatim}
+
+{\it Warning:} Note that the resulting geometry could be clobbered if
+an XV file is read after this file. The setting of {\bf UseStructFile}
+to {\tt .true.} will thus override the setting of {\bf
+UseSaveXV}.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
+
+{\it Default value:} {\tt .false.}
 
 
 \item[{\bf SuperCell}] ({\it data block}): 
@@ -2819,10 +2849,27 @@ any notice).
 If true, the lattice is relaxed together with the atomic coordinates
 in the conjugate gradient minimization. It allows to target
 hydrostatic pressures or arbitrary stress tensors.  See {\bf
-MD.MaxStressTol}, {\bf MD.TargetPressure}, {\bf MD.TargetStress}, and
+MD.MaxStressTol}, {\bf MD.TargetPressure}, {\bf MD.TargetStress}, {\bf
+  MD.ConstantVolume}, and
 {\bf MD.PreconditionVariableCell}.
 
 {\it Use:} Used only if MD.TypeOfRun is {\tt CG}. 
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf MD.ConstantVolume}] ({\it logical}):
+\index{MD.ConstantVolume@{\bf MD.ConstantVolume}}
+\index{constant-volume cell relaxation}
+If true, the cell volume is kept constant in a variable-cell
+relaxation: only the cell shape and the atomic coordinates are allowed
+to change in the conjugate gradient minimization. 
+Note that it does not make much sense to specify a target stress or
+pressure in this case, except for anisotropic (traceless) stresses.
+See {\bf MD.VariableCell}, {\bf MD.TargetStress}.
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG}.  and
+ MD.VariableCell is
+ {\tt .true.}. 
 
 {\it Default value:} {\tt .false.}
 
@@ -3541,14 +3588,6 @@ Sets the level of the allocation report, printed in file
 
 {\it Default value:} {\tt 0}
 
-        
-\item[{\bf SignatureRecords}] ({\it logical}):
-\index{SignatureRecords@{\bf SignatureRecords}}
-If true, some information is stored in the SIG file.
-
-{\it Default value:} {\tt .false.}
-
-        
 \end{description}
 
 
@@ -4090,6 +4129,14 @@ above for obtaining a {\tt .xtl} file with coordinates in
 CERIUS-readable format. See the SIES2ARC\index{SIES2ARC}
 utility in Util/ directory
 for generating .arc files for CERIUS animation.
+
+\item{\bf STRUCT\_OUT file:}
+\index{Systemlabel.STRUCT\_OUT@{Systemlabel.STRUCT\_OUT}}
+Siesta always produces a {\tt .STRUCT\_OUT} file with cell vectors in {\AA}
+and atomic positions in fractional coordinates. This file, renamed to
+{\tt SystemLabel}.STRUCT\_IN can be used for crystal-structure input.
+See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
+
 
 \end{itemize}
 

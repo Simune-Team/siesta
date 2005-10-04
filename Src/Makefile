@@ -62,7 +62,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         ofc.o poison.o readsp.o radfft.o \
 	siesta.o io.o \
         spin_init.o coor.o atm_transfer.o \
-        broadcast_basis.o sig.o eggbox.o dsyevds.o zheevds.o \
+        broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
         initparallel.o setspatial.o setatomnodes.o uncell.o \
         cart2frac.o 
@@ -91,7 +91,7 @@ $(FDF):
 # Routines using fdf calls.
 #
 dhscf.o initdm.o iodm.o iohs.o iolwf.o  grdsam.o : $(FDF)
-recoor.o outcoor.o ioxv.o kgrid.o kgridinit.o ksv.o : $(FDF)
+recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
@@ -105,13 +105,14 @@ gen-basis.o: $(FDF)
 #
 MOD_OBJS=precision.o recipes.o \
          spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
-         m_mpi_utils.o m_wrappers.o m_history.o m_iorho.o \
+         m_mpi_utils.o m_wrappers.o m_history.o m_iorho.o  \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
-	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o units.o m_broyden_mixing.o forhar.o m_wallclock.o
+	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
+         units.o m_broyden_mixing.o forhar.o m_wallclock.o m_iostruct.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)

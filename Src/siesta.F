@@ -48,6 +48,7 @@ C  Modules
       use parallelsubs, only: getnodeorbs
       use writewave,    only: initwave, wwave
       use iopipes,      only: forcestopipe, coordsfrompipe
+      use m_iostruct,   only: write_struct, read_struct
 
       use m_broyden_mixing
 
@@ -74,7 +75,7 @@ C  Modules
      .  maxna, maxsav, broyden_maxit, maxwk, mscell(3,3), mullipop, 
      .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
      .  nkpnt, nmove, nnia, ns, nsc(3), nscold(3), nscf, nspin, 
-     .  ntm(3), ntcon, no_l, nxij, nwk, pmax, nkpol, nhist, io_sig,
+     .  ntm(3), ntcon, no_l, nxij, nwk, pmax, nkpol, nhist, 
      .  neigwanted, neigmin
 
 #ifdef MPI
@@ -96,7 +97,7 @@ C  Modules
      .  dt, DUext, DUscf, Dxc, dx, dxmax, e1, e2, sigma,
      .  Ecorrec, ef, Eharrs, Eharrs1, Eions, Ekin, Ekinion, Emad, Ena, 
      .  Enaatm, Enascf, Enl, Entrop, Entropy,
-     .  eta(2), etol, Etot, Exc, E0,
+     .  eta(2), etol, Etot, Etot_output, Exc, E0,
      .  factor,
      .  fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
      .  g2cut, g2max, getot,
@@ -148,7 +149,8 @@ C  Modules
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     .  harrisfun, signat, muldeb, eggbox_block, final, Do_Pulay
+     .  harrisfun, muldeb, eggbox_block, final, Do_Pulay,
+     $  use_struct_file
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -284,7 +286,16 @@ C Initialize pseudopotentials and atomic orbitals
 C Read simulation sizes ...............................................
 
 !! Read number of atoms and coordinates, and unit cell
-      if (IOnode) call coor(na_u,ucell)  ! Sets na_u, xa, and isa
+
+      if (IOnode) then
+         use_struct_file = fdf_boolean("MD.UseStructFile",.false.)
+         if (use_struct_file) then
+            call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
+         else
+            call coor(na_u,ucell) ! Sets na_u, xa, and isa
+         endif
+      endif
+
       if (cml_p) then
         ! We need the names of the elements on node 0
         allocate(elem(na_u))
@@ -295,6 +306,8 @@ C Read simulation sizes ...............................................
       endif
 
 #ifdef MPI
+      call MPI_Bcast(use_struct_file,
+     $              1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(na_u,1,MPI_integer,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,MPI_Comm_World,
      .  MPIerror)
@@ -384,12 +397,15 @@ C Find some switches ..................................................
         savehs    = fdf_boolean('SaveHS'          , .false.)
         fixauxcell= fdf_boolean('FixAuxillaryCell', .false.)
         initdmaux = fdf_boolean('ReInitialiseDM'  , .false.)
-        signat    = fdf_boolean('SignatureRecords', .false.)
         muldeb    = fdf_boolean('MullikenInSCF'   , .false.)
 
         rijmin    = fdf_physical( 'WarningMinimumAtomicDistance',
      .                                              1._dp, 'Bohr' )
-
+        if (usesavexv .and. use_struct_file) then
+           write(6,"(a)")
+     $        "! UseSaveXV cannot coexist with UseStructFile - reset"
+           usesavexv = .false.
+        endif
       endif
 #ifdef MPI
       call MPI_Bcast(writek,1,MPI_logical,0,MPI_Comm_World,MPIerror)
@@ -408,17 +424,9 @@ C Find some switches ..................................................
       call MPI_Bcast(fixauxcell,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(initdmaux,1,MPI_logical,0,MPI_Comm_World,MPIerror)
       call MPI_Bcast(muldeb,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-      if (.Not.IONode) signat=.false.
       call MPI_Bcast(rijmin,1,MPI_double_precision,0,MPI_Comm_World,
      .  MPIerror)
 #endif
-
-C Initialise file SIG for Signature records (whatever they are...) ...
-      if (signat) then
-        call io_assign(io_sig)
-        call sig_setup(io_sig)
-      endif
-C .....................
 
 C Read cell shape and atomic positions from a former run ..............
       foundxv = .false.
@@ -1571,7 +1579,6 @@ C Write final Kohn-Sham Energy ........................................
       if (IOnode) then
         if ( .not. harrisfun) 
      .    write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
-        if (signat) call sig(io_sig,'Final KS energy',Etot/eV)
         if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV,
      .       dictref='siesta:E_KS', units='eV', fmt='(f14.6)')
       endif
@@ -1749,16 +1756,15 @@ c ...
 C Save atomic positions and velocities accumulatively ................
       if (writmd.and.IOnode) then
          if ( .not. harrisfun) then
-            getot = Etot + Ekinion + kn + kpr + vn + vpr
-            call iomd( na_u, isa, iza, 
-     .        xa, va, ucell, vcell, varcel, istep, inicoor, 
-     .        fincoor, tempion, Etot, getot, volume/Ang**3, Psol/kbar)
+            Etot_output = Etot
          else
-            getot = Eharrs1 + Ekinion + kn + kpr + vn + vpr
-            call iomd( na_u, isa, iza, 
-     .        xa, va, ucell, vcell, varcel, istep, inicoor, 
-     .        fincoor, tempion, Eharrs1, getot, volume/Ang**3,Psol/kbar) 
+            Etot_output = Eharrs1
          endif
+         getot = Etot_output + Ekinion + kn + kpr + vn + vpr
+         call iomd( na_u, isa, iza, 
+     .        xa, va, ucell, vcell, varcel, istep, inicoor, 
+     .        fincoor, tempion, Etot_output, getot,
+     $        volume/Ang**3, Psol/kbar)
       endif
 
 C Accumulate coor in Xmol file for animation .........................
@@ -1966,7 +1972,6 @@ C Global reduction of spin components
           if (IOnode) then
             write(6,'(/,a,f12.6)')
      .       'siesta: Total spin polarization (Qup-Qdown) =', stot
-            if (signat) call sig(io_sig,'Tot spin pol',stot)
             write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
             if (cml_p) then
               call cmlAddProperty(xf=mainXML, property=stot, 
@@ -2223,7 +2228,6 @@ C Finalize MPI
         endif
         write(6,'(40("-"),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
         write(6,'(40("-"),/,a4, f12.6)') 'Max',fmax*Ang/eV
-        if (signat) call sig(io_sig,'Maximum force',fmax*Ang/eV)
         write(6,'(a4,f12.6,a)')'Res',fres*Ang/eV,
      .       '    sqrt( Sum f_i^2 / 3N )'
         write(6,'(40("-"),/,a4, f12.6,a)') 'Max',cfmax*Ang/eV, 
@@ -2278,7 +2282,7 @@ C In finalization, only print forces if sufficiently large.
 
       if (.not.final) then
 !
-!           Write Voigt components of total stress tensor
+!           Write Voigt components of total stress tensor 
 !
             write(6,'(/,a,6f12.2))')
      .           'Stress-tensor-Voigt (kbar):',
@@ -2286,6 +2290,14 @@ C In finalization, only print forces if sufficiently large.
      $            tstress(1,2)/kbar,
      $            tstress(2,3)/kbar,
      $            tstress(1,3)/kbar
+!
+!      Write "target enthalpy" (E + pV, where p is the *target* pressure)
+            write(6,"(a,f14.4)") "Target enthalpy (eV/cell)",
+     $           (FreeE + tp*volume)/eV
+!
+!      Write out structural information in "crystallography" format
+!
+            call write_struct( ucell, na_u, isa, iza, xa )
 
       ! Output depends on dynamics option
         select case (idyn)
@@ -2293,13 +2305,6 @@ C In finalization, only print forces if sufficiently large.
           if (idyn==0 .and..not.varcel) then
             continue
           else
-            write(6,'(/,a,6f12.6))')
-     .           'siesta: Stress tensor (static) (kbar):',
-     .           (stress(jx,jx)/kbar,jx=1,3),
-     $            stress(1,2)/kbar,
-     $            stress(2,3)/kbar,
-     $            stress(1,3)/kbar
-!
             write(6,'(/,a,3(/,a,3f12.6))')
      .           'siesta: Stress tensor (static) (eV/Ang**3):',
      .           ('     ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
@@ -2312,7 +2317,6 @@ C In finalization, only print forces if sufficiently large.
               call cmlAddProperty(xf=mainXML, property=Psol, 
      .             dictref='siesta:psol', title='Pressure (Static)')
             endif !cml_p
-            if (signat) call sig(io_sig,'Pressure kbar',Psol/kBar)
 !
             write(6,'(/,a,3(/,a,3f12.6))')
      .           'siesta: Stress tensor (total) (eV/Ang**3):',
@@ -2377,7 +2381,6 @@ C Find pressure
      .       'siesta: ', Psol,           Pmol,           '  Ry/Bohr**3',
      .       'siesta: ', Psol*Ang**3/eV, Pmol*Ang**3/eV, '  eV/Ang**3',
      .       'siesta: ', Psol/kBar,      Pmol/kBar,      '  kBar'
-        if (signat) call sig(io_sig,'Pressure kbar',Psol/kBar)
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='Final Pressure')
           call cmlAddProperty(xf=mainXML, property=volume/Ang**3, 
@@ -2521,29 +2524,8 @@ C Find pressure
           call cmlEndPropertyList(mainXML)
         endif
         
-        if (signat) call sig(io_sig,'Harris in scf',Eharrs/eV)
-        if (signat) call sig(io_sig,'Etot in scf',Etot/eV)
-        if (signat) call sig(io_sig,'dDmax in scf',dDmax)
-
       else !final
       ! Print out additional information in finalization.
-        ! Signature records
-        if (signat) then
-          call sig(io_sig,'siesta: Eions   =', Eions/eV)
-          call sig(io_sig,'siesta: Ena     =', Ena/eV)
-          call sig(io_sig,'siesta: Ekin    =', Ekin/eV)
-          call sig(io_sig,'siesta: Enl     =', Enl/eV)
-          call sig(io_sig,'siesta: DEna    =', DEna/eV)
-          call sig(io_sig,'siesta: DUscf   =', DUscf/eV)
-          call sig(io_sig,'siesta: DUext   =', DUext/eV)
-          call sig(io_sig,'siesta: Exc     =', Exc/eV)
-          call sig(io_sig,'siesta: eta*DQ  =', Ecorrec/eV)
-          call sig(io_sig,'siesta: Emadel  =', Emad/eV)
-          call sig(io_sig,'siesta: Ekinion =', Ekinion/eV)
-          call sig(io_sig,'siesta: Eharris =', (Eharrs1+Ekinion)/eV)
-          call sig(io_sig,'siesta: Etot    =', (Etot+Ekinion)/eV)
-          call sig(io_sig,'siesta: FreeEng =', (FreeE+Ekinion)/eV)
-        endif
 
         write(6,'(/,a)') 'siesta: Final energy (eV):'
         write(6,'(a,a15,f15.6)')
