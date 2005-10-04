@@ -62,6 +62,8 @@ C ----------------------------------------------------------------------
       end module mesh
 
       module meshphi
+
+      use precision, only : grid_p
 C
 C Stores quantities that are connected with phi on the mesh
 C
@@ -86,7 +88,7 @@ C ----------------------------------------------------------------------
       integer, dimension(:), allocatable, save :: lstpht
       integer, dimension(:), allocatable, save :: listp2
 
-      real,    dimension(:,:), allocatable, save :: phi
+      real(grid_p),    dimension(:,:), allocatable, save :: phi
 
       end module meshphi
 
@@ -794,7 +796,7 @@ C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
-      use precision,     only : dp
+      use precision,     only : dp, grid_p
       use atmfuncs, only: rcore, chcore_sub
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
 
@@ -807,11 +809,11 @@ C
       integer,  intent(in)    :: indxua(*)
       integer,  intent(in)    :: nsd
       real(dp), intent(in)    :: dvol, volume
-      real,     intent(in)    :: Vscf(ntpl,*)
-      real,     intent(in)    :: Vaux(ntpl)
+      real(grid_p),     intent(in)    :: Vscf(ntpl,*)
+      real(grid_p),     intent(in)    :: Vaux(ntpl)
       logical,  intent(in)    :: Forces
       logical,  intent(in)    :: Stress
-      real,     intent(out)   :: rhopcc(ntpl)
+      real(grid_p),     intent(out)   :: rhopcc(ntpl)
       real(dp), intent(inout) :: fal(3,*)
       real(dp), intent(inout) :: stressl(3,3)
 
@@ -914,7 +916,7 @@ C real*8  fal(3,:)     : Local copy of atomic forces
 C real*8  stressl(3,3)  : Local copy of stress tensor
 C ----------------------------------------------------------------------
 
-      use precision,     only : dp
+      use precision,     only : dp, grid_p
       use atmfuncs, only: rcut, phiatm
       use mesh,     only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
 
@@ -926,9 +928,9 @@ C
       integer,  intent(in)    :: na, isa(na), ntpl
       integer,  intent(in)    :: indxua(*)
       real(dp), intent(in)    :: dvol, volume
-      real,     intent(in)    :: drho(*)
+      real(grid_p),     intent(in)    :: drho(*)
       logical,  intent(in)    :: Forces, Stress
-      real,     intent(out)   :: vna(ntpl)
+      real(grid_p),     intent(out)   :: vna(ntpl)
       real(dp), intent(inout) :: fal(3,*)
       real(dp), intent(inout) :: stressl(3,3)
 
@@ -1006,7 +1008,7 @@ C ----------------------------------------------------------------------
 C real    Chlocal(ntpl)     : Sum of diffuse ionic charge densities
 C ----------------------------------------------------------------------
  
-      use precision,     only : dp
+      use precision,     only : dp, grid_p
       use atmfuncs, only: rcut, psch
       use atm_types, only : species
       use radial, only : rad_func
@@ -1019,7 +1021,7 @@ C Passed arguments
 C
       integer, intent(in)  :: na, isa(na), ntpl
       integer, intent(in)  :: indxua(*)
-      real,    intent(out) :: Chlocal(ntpl)
+      real(grid_p),    intent(out) :: Chlocal(ntpl)
  
 C
 C Internal variables
@@ -1033,7 +1035,7 @@ C
       type(rad_func), pointer            :: func   
  
 C Initialise array to zero 
-      Chlocal(1:ntpl) = 0.0_dp
+      Chlocal(1:ntpl) = 0.0_grid_p
  
       do ia = 1,na
         iua = indxua(ia)
@@ -1085,7 +1087,7 @@ C ----------------------------------------------------------------------
 C
 C Modules
 C
-      use precision,     only : dp
+      use precision,     only : dp, grid_p
       use atmfuncs, only : rcut, phiatm
       use mesh,     only : dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
       use meshphi,  only : directphi, nphi, phi, lstpht, listp2, endpht
@@ -1191,23 +1193,23 @@ C Add an extra margin of error to nlist to minimise reallocations
 C Adjust dimensions of phi if necessary
       if (allocated(phi)) then
         if (nphi.gt.(size(phi,2))) then
-          call memory('D','S',size(phi),'meshphi')
+          call memory('D','X',size(phi),'meshphi')
           deallocate(phi)
           if (DirectPhi) then
             allocate(phi(nsp,nphi))
-            call memory('A','S',nsp*nphi,'meshphi')
+            call memory('A','X',nsp*nphi,'meshphi')
           else
             allocate(phi(nsp,nliste))
-            call memory('A','S',nsp*nliste,'meshphi')                       
+            call memory('A','X',nsp*nliste,'meshphi')                       
           endif                                                             
         endif                                                               
       else                                                                  
         if (DirectPhi) then                                                 
           allocate(phi(nsp,nphi))                                           
-          call memory('A','S',nsp*nphi,'meshphi')                           
+          call memory('A','X',nsp*nphi,'meshphi')                           
         else                                                                
           allocate(phi(nsp,nliste))                                         
-          call memory('A','S',nsp*nliste,'meshphi')                         
+          call memory('A','X',nsp*nliste,'meshphi')                         
         endif                                                               
       endif
 
@@ -1263,7 +1265,7 @@ C Find indexes and values of atomic orbitals at mesh points
      .                           phip, grphi )
                     phi(isp,n) = phip
                   else
-                    phi(isp,n) = 0.0
+                    phi(isp,n) = 0.0_grid_p
                   endif
                 enddo
               endif

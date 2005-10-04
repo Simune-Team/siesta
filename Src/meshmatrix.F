@@ -3,6 +3,7 @@ C
 C Stores quantities that are connected with Dscf in mesh local
 C form when data is distributed for parallel execution
 C
+      use precision, only: dp
       implicit none
 
 C ----------------------------------------------------------------------
@@ -16,7 +17,7 @@ C                                      : Dscf is needed in DscfL
 C integer nrowsDscfL                   : Number of rows of DscfL
 C integer numdl(nrowsDscfL)            : Number of non-zero elements in
 C                                      : a row of DscfL
-C real*8  DscfL(maxndl,nrowsDscfL)     : Local copy of Dscf elements
+C real(dp)  DscfL(maxndl,nrowsDscfL)     : Local copy of Dscf elements
 C                                      : needed for the local mesh
 C ----------------------------------------------------------------------
 
@@ -27,7 +28,7 @@ C ----------------------------------------------------------------------
       integer, dimension(:), allocatable, save :: NeedDscfL
       integer, dimension(:), allocatable, save :: numdl
 
-      real*8,  dimension(:,:), allocatable, save :: DscfL
+      real(dp),  dimension(:,:), allocatable, save :: DscfL
 
       end module meshdscf
 

@@ -26,7 +26,7 @@ C ********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision, only: dp, grid_p
       use parallel,   only : Node, Nodes, ProcessorY
 #ifdef MPI
       use mpi_siesta
@@ -34,9 +34,12 @@ C
 
       implicit none
 
-      integer           M1, M2, M3, ntm(3), nsm
-      real              rho(M1,M2,M3)
-      real(dp)          cell(3,3), dipol(3), volcel, X0(3)
+      integer, intent(in)          ::       M1, M2, M3, ntm(3), nsm
+      real(grid_p), intent(in)     ::       rho(M1,M2,M3)
+      real(dp), intent(in)         ::       cell(3,3), X0(3)
+      real(dp), intent(out)        ::       dipol(3)
+
+      real(dp)  :: volcel
       external          reclat, volcel
 
 C Internal variables and arrays
@@ -67,7 +70,7 @@ C Find origin in lattice coordinates
       enddo
 
 C Initialize dipole
-      dipol(1:3) = 0.0d0
+      dipol(1:3) = 0.0_dp
 
 C Check that ProcessorY is a factor of the number of processors
       if (mod(Nodes,ProcessorY).gt.0) then
@@ -102,18 +105,18 @@ C structure of rho
       do I3 = 1,M3
         I30 = I30 + 1
         D(3) = dble(I30-1) / dble(MG3) - X0L(3)
-        IF (D(3) .LT. -0.5D0) D(3) = D(3) + 1.D0
-        IF (D(3) .GT. +0.5D0) D(3) = D(3) - 1.D0
+        IF (D(3) .LT. - 0.5_dp) D(3) = D(3) + 1.0_dp
+        IF (D(3) .GT. + 0.5_dp) D(3) = D(3) - 1.0_dp
         I20 = Yoffset
         do I2 = 1,M2
           I20 = I20 + 1
           D(2) = dble(I20-1) / dble(MG2) - X0L(2)
-          IF (D(2) .LT. -0.5D0) D(2) = D(2) + 1.D0
-          IF (D(2) .GT. +0.5D0) D(2) = D(2) - 1.D0
+          IF (D(2) .LT. - 0.5_dp) D(2) = D(2) + 1.0_dp
+          IF (D(2) .GT. + 0.5_dp) D(2) = D(2) - 1.0_dp
           do I1 = 1,M1
             D(1) = dble(I1-1) / dble(MG1) - X0L(1)
-            IF (D(1) .LT. -0.5D0) D(1) = D(1) + 1.D0
-            IF (D(1) .GT. +0.5D0) D(1) = D(1) - 1.D0
+            IF (D(1) .LT. - 0.5_dp) D(1) = D(1) + 1.0_dp
+            IF (D(1) .GT. + 0.5_dp) D(1) = D(1) - 1.0_dp
             do IX = 1,3
               DX = cell(IX,1)*D(1) + cell(IX,2)*D(2) + cell(IX,3)*D(3)
               dipol(IX) = dipol(IX) - DX * rho(I1,I2,I3) * dvol

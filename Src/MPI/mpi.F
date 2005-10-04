@@ -75,6 +75,15 @@
         integer, parameter :: MPI_complex           = DAT_complex
         integer, parameter :: MPI_double_complex    = DAT_dcomplex
 
+!
+!       Interim hack to support flexible precision in grid arrays
+!
+#ifdef GRID_DP
+        integer, parameter :: MPI_grid_real         = DAT_double
+#else
+        integer, parameter :: MPI_grid_real         = DAT_single
+#endif
+
 !       ... A.9  Fortran Bindings for Point-to-Point Communication  ...
 
         INTERFACE

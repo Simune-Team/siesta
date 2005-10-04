@@ -17,6 +17,8 @@ C *********************************************************************
 C
 C  Modules
 C
+      use precision, only: dp, grid_p
+
       use atmfuncs, only: rcut, phiatm
       use atomlist, only: indxuo
       use mesh,     only: nsp, dxa, xdop, xdsp
@@ -24,20 +26,22 @@ C
 C
       implicit none
 
-      integer          no, np
-      integer          iaorb(*), iphorb(*), isa(*)
-      real             rhoatm(nsp,np)
-      real*8           Datm(no), phip
+      integer, intent(in)       ::    no, np
+      integer, intent(in)       ::    iaorb(*), iphorb(*), isa(*)
+      real(grid_p), intent(out) ::    rhoatm(nsp,np)
+      real(dp), intent(in)      ::    Datm(no)
 
-      integer          i, ip, isp, iu, kn, iop, is, iphi, ia, ix
-      real*8           Ci, gradCi(3), r2o, r2sp, dxsp(3) 
+      real(dp)     :: phip
+
+      integer      ::  i, ip, isp, iu, kn, iop, is, iphi, ia, ix
+      real(dp)     ::  Ci, gradCi(3), r2o, r2sp, dxsp(3) 
 
 C  Loop on mesh points
       do ip = 1,np
 
 C  Initialise rhoatm
         do isp = 1, nsp
-          rhoatm(isp,ip) = 0.0
+          rhoatm(isp,ip) = 0.0_grid_p
         enddo
 
 C  Loop on orbitals of mesh point

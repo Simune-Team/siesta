@@ -291,7 +291,7 @@ C Call apropriate routine
 C Free local arrays
       call memory('D','I',size(muo),'diagon',stat=mem_stat)
       deallocate(muo,stat=mem_stat)
-      call memory('D','D',size(aux),'diagon',stat=mem_stat)
+      call memory('D','I',nuo,'diagon',stat=mem_stat)
       deallocate(aux,stat=mem_stat)
 
 C Stop time counter

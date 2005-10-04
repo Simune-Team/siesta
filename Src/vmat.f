@@ -31,7 +31,7 @@ C                           elements are summed up
 C *********************************************************************
 
 C  Modules
-      use precision
+      use precision,     only: dp, grid_p
       use atmfuncs,      only: rcut, all_phi
       use atm_types,     only: nsmax=>nspecies
       use atomlist,      only: indxuo
@@ -47,8 +47,7 @@ C Argument types and dimensions
       integer
      .   no, np, nvmax, nuo, nuotot, iaorb(*), nspin,
      .   iphorb(*), isa(*), numVs(nuo), listVsptr(nuo), listVs(nvmax)
-      real
-     .   V(nsp,np,nspin)
+      real(grid_p), intent(in)  ::  V(nsp,np,nspin)
       real(dp)
      .   dvol, Vs(nvmax,nspin)
 
@@ -104,17 +103,17 @@ C  Allocate local memory
         nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
         allocate(DscfL(nvmaxl,nspin))
         call memory('A','D',nvmaxl*nspin,'meshdscf')
-        DscfL(1:nvmaxl,1:nspin) = 0.0d0
+        DscfL(1:nvmaxl,1:nspin) = 0.0_dp
       endif
 
 C  Full initializations done only once
       ilocal(1:no) = 0
       iorb(0:maxloc) = 0
-      Vlocal(:,:) = 0.0
+      Vlocal(:,:) = 0.0_dp
       last = 0
 
 C  Find atomic cutoff radii
-      r2cut(:) = 0.0d0
+      r2cut(:) = 0.0_dp
       do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
@@ -211,7 +210,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
           ilocal(iorb(1:last)) = 0
           iorb(1:last) = 0
           ijl = (last+1)*(last+2)/2
-          Vlocal(1:ijl,1:nspin) = 0.0d0
+          Vlocal(1:ijl,1:nspin) = 0.0_dp
           last = 0
         endif
 
@@ -254,7 +253,7 @@ C  Generate or retrieve phi values
                 if (r2sp.lt.r2cut(is)) then
                   call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
                 else
-                  phia(:,isp) = 0.0d0
+                  phia(:,isp) = 0.0_dp
                 endif
               enddo
             endif
@@ -279,7 +278,7 @@ C  Loop on second orbital of mesh point (only for jc.le.ic)
               jl = ilc(jc)
 
 C  Loop over sub-points
-              Vij = 0.0d0
+              Vij = 0.0_dp
               do isp = 1,nsp
                 Vij = Vij + VClocal(isp) * Clocal(isp,jc)
               enddo
@@ -290,7 +289,7 @@ C  Loop over sub-points
                 ijl = jl*(jl+1)/2 + il + 1
               endif
               if (ic.ne.jc.and.il.eq.jl) then
-                Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + 2.0*Vij
+                Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + 2.0_dp*Vij
               else
                 Vlocal(ijl,ispin) = Vlocal(ijl,ispin) + Vij
               endif

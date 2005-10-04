@@ -28,7 +28,9 @@ C real    rhoscf(nsp,np)  : SCF density at mesh points
 C *********************************************************************
 
 C  Modules
-      use precision
+
+      use precision, only: dp, grid_p
+
       use atmfuncs,  only: rcut, all_phi
       use atm_types, only: nsmax=>nspecies
       use atomlist,  only: indxuo
@@ -45,14 +47,11 @@ C Argument types and dimensions
      .   no, np, nspin, maxnd, nuo, nuotot, iaorb(*),
      .   iphorb(*), isa(*), numd(nuo), listdptr(nuo), listd(maxnd)
 
-      real
-     .   rhoscf(nsp,np,nspin)
+      real(grid_p), intent(out) ::   rhoscf(nsp,np,nspin)
 
-      real(dp)
-     .   Dscf(maxnd,nspin)
+      real(dp)  ::  Dscf(maxnd,nspin)
 
-      external
-     .   memory, timer
+      external  ::   memory, timer
 
 C Internal variables and arrays
       integer, parameter ::
@@ -109,8 +108,8 @@ C Redistribute Dscf to DscfL form
      .    nspin, Dscf, DscfL )
       endif
 
-C  Find atomic cutoff radiae
-      r2cut(:) = 0.0d0
+C  Find atomic cutoff radii
+      r2cut(:) = 0.0_dp
       do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
@@ -119,8 +118,8 @@ C  Find atomic cutoff radiae
       enddo
 
 C  Initializations
-      rhoscf(:,:,:) = 0.0
-      Dlocal(:,:) = 0.0d0
+      rhoscf(:,:,:) = 0.0_grid_p
+      Dlocal(:,:) = 0.0_dp
       ilocal(:) = 0
       iorb(:) = 0
       last = 0
@@ -258,7 +257,7 @@ C  Generate or retrieve phi values
                 if (r2sp.lt.r2cut(is)) then
                   call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
                 else
-                  phia(:,isp) = 0.0d0
+                  phia(:,isp) = 0.0_dp
                 endif
               enddo
             endif

@@ -21,7 +21,7 @@ C
 C
 C  Modules
 C
-      use precision
+      use precision,    only :dp, grid_p
       use parallel,     only : Node, Nodes, ProcessorY
       use parallelsubs, only : HowManyMeshPerNode
 #ifdef MPI
@@ -33,7 +33,7 @@ C
 C
 C  Passed arguments
 C
-      real 
+      real(grid_p)
      .  f(*)
       integer
      .  Mesh(3), isn, nsm
@@ -55,7 +55,7 @@ C
 #ifdef MPI
       integer
      .  n1lf, nrem, Py, Pz
-      real, dimension(:), allocatable, save :: 
+      real(grid_p), dimension(:), allocatable, save :: 
      .  ft
 #endif
 
@@ -149,7 +149,7 @@ C
 C  Allocate local memory
 C
       allocate(ft(2*n1lf*n2*n3l))
-      call memory('A','S',2*n1lf*n2*n3l,'fft')
+      call memory('A','X',2*n1lf*n2*n3l,'fft')
 C
 C  Redistribute data to be distributed by X and Z
 C
@@ -171,7 +171,7 @@ C
 C
 C  Free local memory ready for re-use
 C
-      call memory('D','S',size(ft),'fft')
+      call memory('D','X',size(ft),'fft')
       deallocate(ft)
 C
 C  Find new distributed x dimension
@@ -183,7 +183,7 @@ C
 C  Allocate local memory
 C
       allocate(ft(2*n1lf*n2l*n3))
-      call memory('A','S',2*n1lf*n2l*n3,'fft')
+      call memory('A','X',2*n1lf*n2l*n3,'fft')
 C
 C  Redistribute data to be distributed by X and Y
 C
@@ -201,7 +201,7 @@ C
 C
 C  Free local memory
 C
-      call memory('D','S',size(ft),'fft')
+      call memory('D','X',size(ft),'fft')
       deallocate(ft)
 #else
 C
@@ -222,7 +222,7 @@ C
 C  Scale values
 C
       if (LocalPoints.and.isn.gt.0) then
-        scale=1.0d0/dble(ng)
+        scale=1.0_dp/dble(ng)
         do i=1,2*n
           f(i)=f(i)*scale
         enddo
@@ -248,7 +248,7 @@ C  Use the processor grid to divide communicator according to Z
 C
 C  Julian Gale, July 1999
 C
-      use precision
+      use precision,   only : dp, grid_p
       use mpi_siesta
       use parallel,    only : ProcessorY
 
@@ -259,7 +259,7 @@ C  Passed arguments
 C
       integer
      .  n1, n2, n2l, n1lf, n3l, Node, Nodes, idir, nsm
-      real
+      real(grid_p)
      .  f(2,n1,n2l,n3l), ft(2,n1lf,n2,n3l)
 C
 C  Local variables
@@ -276,7 +276,7 @@ C
 
       logical, save :: firsttimeZ = .true.
 
-      real, dimension(:,:,:,:), allocatable, save :: 
+      real(grid_p), dimension(:,:,:,:), allocatable, save :: 
      .  ftmp,ftmp2
 
       if (firsttimeZ) then
@@ -321,16 +321,16 @@ C
 C  Allocate local memory and initialise
 C
       allocate(ftmp(2,n1lmax,BlockSizeYMax,n3l))
-      call memory('A','S',2*n1lmax*BlockSizeYMax*n3l,'redistribXZ')
+      call memory('A','X',2*n1lmax*BlockSizeYMax*n3l,'redistribXZ')
       allocate(ftmp2(2,n1lmax,BlockSizeYMax,n3l))
-      call memory('A','S',2*n1lmax*BlockSizeYMax*n3l,'redistribXZ')
+      call memory('A','X',2*n1lmax*BlockSizeYMax*n3l,'redistribXZ')
       do i = 1,n3l
         do j = 1,BlockSizeYMax
           do k = 1,n1lmax
-            ftmp(1,k,j,i) = 0.0
-            ftmp(2,k,j,i) = 0.0
-            ftmp2(1,k,j,i) = 0.0
-            ftmp2(2,k,j,i) = 0.0
+            ftmp(1,k,j,i) = 0.0_grid_p
+            ftmp(2,k,j,i) = 0.0_grid_p
+            ftmp2(1,k,j,i) = 0.0_grid_p
+            ftmp2(2,k,j,i) = 0.0_grid_p
           enddo
         enddo
       enddo
@@ -378,9 +378,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_real,SNode,1,ZCommunicator,RequestR,MPIerror)
+     .      MPI_grid_real,SNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_real,BNode,1,ZCommunicator,RequestS,MPIerror)
+     .      MPI_grid_real,BNode,1,ZCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -456,9 +456,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_real,BNode,1,ZCommunicator,RequestR,MPIerror)
+     .      MPI_grid_real,BNode,1,ZCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*BlockSizeYMax*n3l,
-     .      MPI_real,SNode,1,ZCommunicator,RequestS,MPIerror)
+     .      MPI_grid_real,SNode,1,ZCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -485,9 +485,9 @@ C
 C
 C  Free local memory
 C
-      call memory('D','S',size(ftmp2),'redistribXZ')
+      call memory('D','X',size(ftmp2),'redistribXZ')
       deallocate(ftmp2)
-      call memory('D','S',size(ftmp),'redistribXZ')
+      call memory('D','X',size(ftmp),'redistribXZ')
       deallocate(ftmp)
 
       return
@@ -512,7 +512,7 @@ C  Need to improve communication later.
 C
 C  Julian Gale, July 1999
 C
-      use precision
+      use precision,   only: dp, grid_p
       use mpi_siesta
       use parallel,    only : ProcessorY
 
@@ -523,7 +523,7 @@ C  Passed arguments
 C
       integer
      .  n1, n3, n2l, n1lf, n3l, nsm, Node, Nodes, idir
-      real
+      real(grid_p)
      .  f(2,n1,n2l,n3l), ft(2,n1lf,n2l,n3)
 C
 C  Local variables
@@ -540,7 +540,7 @@ C
 
       logical, save :: firsttimeY = .true.
 
-      real, dimension(:,:,:,:), allocatable, save :: 
+      real(grid_p), dimension(:,:,:,:), allocatable, save :: 
      .  ftmp,ftmp2
 
       if (firsttimeY) then
@@ -577,16 +577,16 @@ C
 C  Allocate local memory and initialise
 C
       allocate(ftmp(2,n1lmax,n2l,BlockSizeZMax))
-      call memory('A','S',2*n1lmax*n2l*BlockSizeZMax,'redistribXY')
+      call memory('A','X',2*n1lmax*n2l*BlockSizeZMax,'redistribXY')
       allocate(ftmp2(2,n1lmax,n2l,BlockSizeZMax))
-      call memory('A','S',2*n1lmax*n2l*BlockSizeZMax,'redistribXY')
+      call memory('A','X',2*n1lmax*n2l*BlockSizeZMax,'redistribXY')
       do i = 1,BlockSizeZMax
         do j = 1,n2l
           do k = 1,n1lmax
-            ftmp(1,k,j,i) = 0.0
-            ftmp(2,k,j,i) = 0.0
-            ftmp2(1,k,j,i) = 0.0
-            ftmp2(2,k,j,i) = 0.0
+            ftmp(1,k,j,i) = 0.0_grid_p
+            ftmp(2,k,j,i) = 0.0_grid_p
+            ftmp2(1,k,j,i) = 0.0_grid_p
+            ftmp2(2,k,j,i) = 0.0_grid_p
           enddo
         enddo
       enddo
@@ -642,9 +642,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_real,SNode,1,YCommunicator,RequestR,MPIerror)
+     .      MPI_grid_real,SNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_real,BNode,1,YCommunicator,RequestS,MPIerror)
+     .      MPI_grid_real,BNode,1,YCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -720,9 +720,9 @@ C
 C  Exchange data - send to right and receive from left
 C
           call MPI_IRecv(ftmp2(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_real,BNode,1,YCommunicator,RequestR,MPIerror)
+     .      MPI_grid_real,BNode,1,YCommunicator,RequestR,MPIerror)
           call MPI_ISend(ftmp(1,1,1,1),2*n1lmax*n2l*BlockSizeZMax,
-     .      MPI_real,SNode,1,YCommunicator,RequestS,MPIerror)
+     .      MPI_grid_real,SNode,1,YCommunicator,RequestS,MPIerror)
 C
 C  Wait for receive to complete
 C
@@ -749,9 +749,9 @@ C
 C
 C  Free local memory
 C
-      call memory('D','S',size(ftmp2),'redistribXY')
+      call memory('D','X',size(ftmp2),'redistribXY')
       deallocate(ftmp2)
-      call memory('D','S',size(ftmp),'redistribXY')
+      call memory('D','X',size(ftmp),'redistribXY')
       deallocate(ftmp)
 
       return
@@ -803,10 +803,13 @@ C
 *----------------------------------------------------------------------
 *
       SUBROUTINE GPFA(A,B,TRIGS,INC,JUMP,N,LOT,ISIGN)
+
+      use precision, only: dp, grid_p
+
       IMPLICIT NONE
 *
-      REAL    A(*), B(*) 
-      REAL*8  TRIGS(*)
+      REAL(grid_p) ::     A(*), B(*) 
+      REAL(dp)  TRIGS(*)
       INTEGER INC, JUMP, N, LOT, ISIGN
 C
       INTEGER 
@@ -856,6 +859,8 @@ C
 *
       RETURN
       END
+
+
 *     fortran version of *gpfa2* -
 *     radix-2 section of self-sorting, in-place, generalized pfa
 *     central radix-2 and radix-8 passes included
@@ -864,10 +869,30 @@ C
 *-------------------------------------------------------------------
 *
       subroutine gpfa2f(a,b,trigs,inc,jump,n,mm,lot,isign)
-      real    a(*), b(*) 
-      real*8  trigs(*)
-      integer inc, jump, n, lot, isign
-      data lvr/1024/
+      use precision, only: dp, grid_p
+
+      real(grid_p) ::     a(*), b(*)
+      real(dp)     ::     trigs(*)
+      integer inc, jump, n, mm, lot, isign
+
+      integer  n2, inq, jstepx, ninc, ink, m2, m8,
+     $         m, mh, nblox, left, istart, nb, nvex,
+     $         la, mu, ipass, jstep, jstepl, jjj, ja,
+     $         nu, jb, jc, jd, j, l, kk, k, je, jf,
+     $         jg, jh, laincl, ll, ji, jj, jk, jl, jm,
+     $         jn, jo, jp
+
+      real(dp) :: s, aja, ajc, t0, t2, ajb, ajd,
+     $                t1, t3, bja, bjc, u0, u2, bjb,
+     $                bjd, u1, u3, co1, si1, co2, si2,
+     $                co3, si3, ss, c1, c2, c3, aje,
+     $                ajf, ajg, ajh, bje, bjf, bjg,
+     $                bjh, co4, si4, co5, si5, co6, si6,
+     $                co7, si7, aji, bjm, ajj, bjj, ajk,
+     $                ajl, bji, bjk, ajo, bjl, bjo, ajm,
+     $                ajn, ajp, bjn, bjp
+
+      integer, parameter :: lvr = 1024
 *
 *     ***************************************************************
 *     *                                                             *
@@ -1850,11 +1875,28 @@ cdir$ ivdep, shortloop
 *-------------------------------------------------------------------
 *
       subroutine gpfa3f(a,b,trigs,inc,jump,n,mm,lot,isign)
-      real    a(*), b(*)
-      real*8  trigs(*)
-      integer inc, jump, n, lot, isign
-      data sin60/0.866025403784437/
-      data lvr/128/
+      use precision, only: dp, grid_p
+
+      real(grid_p) ::     a(*), b(*)
+      real(dp)     ::     trigs(*)
+      integer inc, jump, n, mm, lot, isign
+
+      real(dp), parameter :: sin60 = 0.866025403784437_dp
+
+      integer      :: je, jf, jg, jh, laincl, ll, ji
+      integer      :: n3, inq, jstepx, ninc, ink, mu, m, mh,
+     $                nblox, left, istart, nb, nvex, la,
+     $                ipass, jstep, jstepl, jjj, ja, nu, jb,
+     $                jc, j, l, kk, k, jd
+
+      real(dp) :: s, ajb, ajc, t1, aja, t2, t3, bjb, bjc,
+     $                u1, bja, u2, u3, co1, si1, co2, si2, ajd,
+     $                bjd
+      real(dp) :: c1, aje, ajg, ajf, ajh, bje,
+     $                bjf, bjg, bjh, aji, bji
+
+
+      integer, parameter :: lvr = 128
 *
 *     ***************************************************************
 *     *                                                             *
@@ -2274,12 +2316,35 @@ cdir$ ivdep, shortloop
 *-------------------------------------------------------------------
 *
       subroutine gpfa5f(a,b,trigs,inc,jump,n,mm,lot,isign)
-      real    a(*), b(*)
-      real*8  trigs(*)
-      integer inc, jump, n, lot, isign
-      data sin36/0.587785252292473/, sin72/0.951056516295154/,
-     *      qrt5/0.559016994374947/
-      data lvr/128/
+      use precision, only : dp, grid_p
+
+      real(grid_p) ::     a(*), b(*)
+      real(dp)     ::     trigs(*)
+      integer inc, jump, n, mm, lot, isign
+
+      real(dp), parameter :: sin36 = 0.587785252292473_dp,
+     $                       sin72 = 0.951056516295154_dp,
+     $                       qrt5  = 0.559016994374947_dp
+      integer, parameter  :: lvr = 128
+
+      integer      ::  inq, jstepx, ninc, ink, mu, m, mh,
+     $                 nblox, n5, left, istart, nb, nvex, la,
+     $                 ipass, jstep, jstepl, kk, k, jjj, ja,
+     $                 nu, jb, jc, jd, je, j, laincl, ll, l,
+     $                 jf, jg, jh, ji, jj, jk, jl, jm, jn, jo,
+     $                 jp, jq, jr, js, jt, ju, jv, jw, jx, jy
+
+      real(dp) ::  s, c1, c2, c3, co1, si1, co2, si2, co3,
+     $                 si3, co4, si4, ajb, aje, t1, ajc, ajd,
+     $                 t2, t3, t4, t5, t6, aja, t7, t8, t9, t10,
+     $                 t11, bjb, bje, u1, bjc, bjd, u2, u3, u4,
+     $                 u5, u6, bja, u7, u8, u9, u10, u11, ajf,
+     $                 ajk, bjf, bjk, ajg, ajj, ajh, aji, ajl,
+     $                 ajq, bjg, bjj, bjh, bji, bjl, bjq, ajo,
+     $                 ajm, ajn, ajr, ajw, bjo, bjm, bjn, bjr,
+     $                 bjw, ajt, ajs, ajx, ajp, ax, bjt, bjs,
+     $                 bjx, bjp, bx, ajv, ajy, aju, bjv, bjy,
+     $                 bju
 *
 *     ***************************************************************
 *     *                                                             *
@@ -3099,6 +3164,7 @@ cdir$ ivdep, shortloop
 *
       return
       end
+
 *        SUBROUTINE 'SETGPFA'
 *        SETUP ROUTINE FOR SELF-SORTING IN-PLACE
 *            GENERALIZED PRIME FACTOR (COMPLEX) FFT [GPFA]
@@ -3126,8 +3192,14 @@ cdir$ ivdep, shortloop
 *
       SUBROUTINE SETGPFA(TRIGS,maxtrigs,ntrigs,N)
 *
+      use precision, only : dp
+
       INTEGER maxtrigs,NJ(3),ntrigs
-      REAL*8 TRIGS(maxtrigs)
+      REAL(dp) TRIGS(maxtrigs)
+
+      integer       :: nn, n, ifac, ll, kk, ip, iq, ir,
+     $                 i, ni, irot, kink, k
+      real(dp)      :: angle, twopi, del
 *
 *     DECOMPOSE N INTO FACTORS 2,3,5
 *     ------------------------------
@@ -3162,20 +3234,20 @@ cdir$ ivdep, shortloop
       NJ(2) = 3**IQ
       NJ(3) = 5**IR
 *
-      TWOPI = 4.0 * ASIN(1.0)
+      TWOPI = 4.0_dp * ASIN(1.0_dp)
       I = 1
 *
       DO 60 LL = 1 , 3
       NI = NJ(LL)
       IF (NI.EQ.1) GO TO 60
 *
-      DEL = TWOPI / FLOAT(NI)
+      DEL = TWOPI / real(NI,kind=dp)
       IROT = N / NI
       KINK = MOD(IROT,NI)
       KK = 0
 *
       DO 50 K = 1 , NI
-      ANGLE = FLOAT(KK) * DEL
+      ANGLE = real(KK,kind=dp) * DEL
       if (i.lt.maxtrigs) then
         TRIGS(I) = COS(ANGLE)
         TRIGS(I+1) = SIN(ANGLE)

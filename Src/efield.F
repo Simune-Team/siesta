@@ -43,7 +43,8 @@ c **********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision, only: dp, grid_p
+
       use parallel,     only : IOnode, Node, Nodes, ProcessorY
       use parallelsubs, only : HowManyMeshPerNode
       use atmfuncs,     only : rcut
@@ -57,7 +58,7 @@ C
       implicit          none
 
       integer           na, isa(na), mesh(3), nsm
-      real              v(*)
+      real(grid_p), intent(inout)  ::  v(*)
       real(dp)          cell(3,3), ddot, field(3), xa(3,na)
       external          cross, ddot, reclat, shaper
 
@@ -103,7 +104,7 @@ C Read the electric field block from the fdf input file
             eunits = names(lc(0)+1:lc(1))
             cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
             do ix = 1,3
-              if (e(ix) .ne. 0._dp) isfield = .true.
+              if (e(ix) .ne. 0.0_dp) isfield = .true.
               e(ix) = e(ix) * cfactor
               e0(ix) = e(ix)
             enddo
@@ -174,8 +175,8 @@ C Find reciprocal unit cell and distance between lattice planes
 
 C Find the geometric center of the system
         do ix = 1,3
-          xmin(ix) =  1.d30
-          xmax(ix) = -1.d30
+          xmin(ix) =  1.0e30_dp
+          xmax(ix) = -1.0e30_dp
         enddo
         do ia = 1,na
           is = isa(ia)

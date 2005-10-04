@@ -14,20 +14,19 @@ C REAL*4 FCLUST(NSM,NSM,NSM,NM1,NM2,NM3) : CLUSTered data
 C REAL*4 FSEQ(NSM*NM1,NSM*NM2,NSM*NM3)   : SEQuential data
 C ********************************************************************
 
+      use precision, only: grid_p
+
       IMPLICIT NONE
-      INTEGER
-     .  NM(3), NSM, ITR 
-      REAL
-     .  FCLUST(*), FSEQ(*)
+      INTEGER, intent(in)         ::   NM(3), NSM, ITR 
+      REAL(grid_p), intent(inout) ::   FCLUST(*), FSEQ(*)
      
       INTEGER 
      .  I, I0, I1, I2, I3, IS, IS1, IS2, IS3,
      .  J, J0, NSM3, NTM(3), NAUX
 
-      external
-     .  memory
+      external ::  memory
 
-      real, dimension(:), allocatable, save :: AUX
+      real(grid_p), dimension(:), allocatable, save :: AUX
       integer, dimension(:), allocatable, save :: JS
      
       CALL TIMER('REORD',1)
@@ -41,7 +40,7 @@ C
 C  Allocate local memory
 C
       allocate(AUX(NAUX))
-      call memory('A','S',naux,'reord')
+      call memory('A','X',naux,'reord')
       allocate(JS(NSM3))
       call memory('A','I',nsm3,'reord')
 

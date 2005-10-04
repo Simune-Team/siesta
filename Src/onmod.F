@@ -1,6 +1,6 @@
       module on_main
 
-        use precision
+        use precision, only: dp, on_p
 
         implicit none
 
@@ -26,8 +26,8 @@ C
         real(dp), pointer, save :: cold(:,:,:)
         real(dp), pointer, save :: xi(:,:,:)
 
-        real*4,   pointer, save :: g(:,:,:)
-        real*4,   pointer, save :: hg(:,:,:)
+        real(on_p),   pointer, save :: g(:,:,:)
+        real(on_p),   pointer, save :: hg(:,:,:)
 
       end module on_main
 

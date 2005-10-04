@@ -31,7 +31,7 @@ C real    rhoscf(nsp,np)  : SCF density at mesh points
 C *********************************************************************
 
 C  Modules
-      use precision
+      use precision, only: dp, grid_p
       use atmfuncs,  only: rcut, all_phi
       use atm_types, only: nsmax=>nspecies
       use atomlist,  only: indxuo
@@ -47,10 +47,9 @@ C Argument types and dimensions
      .   no, np, nspin, maxnd, nuo, nuotot, iaorb(*),
      .   iphorb(*), isa(*), numd(nuo), listdptr(nuo), listd(maxnd)
 
-      real
-     .   rhoscf(nsp,np,nspin)
+      real(grid_p), intent(out) ::  rhoscf(nsp,np,nspin)
 
-      real*8
+      real(dp)
      .   Dscf(maxnd,nspin), q(3)
 
       external
@@ -73,15 +72,15 @@ C Internal variables and arrays
       logical
      .  Parallel_Flag
 
-      real*8
+      real(dp)
      .  Cij(nsp), Dij, Dij1, Dij2, Dij3, Dij4,
      .  dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp,
      .  xr(3), Rdi(3), qRdi, cqRdi, sqRdi
 
-      real*8, dimension(:,:), allocatable ::
+      real(dp), dimension(:,:), allocatable ::
      .  Clocal, Dlocal
 
-      real*8, dimension(:,:,:), allocatable, save ::
+      real(dp), dimension(:,:,:), allocatable, save ::
      .  DlocalSp
 
 C  Start time counter
@@ -123,7 +122,7 @@ C Redistribute Dscf to DscfL form
       endif
 
 C  Find atomic cutoff radiae
-      r2cut(:) = 0.0d0
+      r2cut(:) = 0.0_dp
       do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
@@ -132,9 +131,9 @@ C  Find atomic cutoff radiae
       enddo
 
 C  Initializations
-      rhoscf(:,:,:) = 0.0
-      Dlocal(:,:) = 0.0d0
-      DlocalSp(:,:,:) = 0.d0
+      rhoscf(:,:,:) = 0.0_grid_p
+      Dlocal(:,:) = 0.0_dp
+      DlocalSp(:,:,:) = 0.0_dp
       ilocal(:) = 0
       iorb(:) = 0
       last = 0
@@ -291,7 +290,7 @@ C  Generate or retrieve phi values for all orbitals up to nc
                 if (r2sp.lt.r2cut(is)) then
                   call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
                 else
-                  phia(:,isp) = 0.d0
+                  phia(:,isp) = 0.0_dp
                 endif
               enddo
             endif

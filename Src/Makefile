@@ -44,9 +44,9 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o dynamics.o \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
-	fixed.o forhar.o gradient.o grdsam.o \
+	fixed.o gradient.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
-	iodm.o iohs.o iolwf.o iorho.o ioxv.o ipack.o iopipes.o \
+	iodm.o iohs.o iolwf.o ioxv.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o nlefsm.o \
@@ -90,7 +90,7 @@ $(FDF):
 #
 # Routines using fdf calls.
 #
-dhscf.o initdm.o iodm.o iohs.o iolwf.o iorho.o grdsam.o : $(FDF)
+dhscf.o initdm.o iodm.o iohs.o iolwf.o  grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
@@ -105,13 +105,13 @@ gen-basis.o: $(FDF)
 #
 MOD_OBJS=precision.o recipes.o \
          spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
-         m_mpi_utils.o m_wrappers.o m_history.o \
+         m_mpi_utils.o m_wrappers.o m_history.o m_iorho.o \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
-	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o units.o m_broyden_mixing.o m_wallclock.o
+	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o units.o m_broyden_mixing.o forhar.o m_wallclock.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
@@ -162,6 +162,7 @@ redata.o dhscf.o: sys.o
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o: fermid.o
 optical.o transition_rate.o: fermid.o
 atom.o xc.o cellxc.o dhscf.o gen-basis.o siesta.o: xcmod.o
+dhscf.o: m_iorho.o forhar.o
 
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
@@ -246,7 +247,7 @@ denchar.o: m_denchar_init.o m_denchar_io.o m_denchar_work.o m_denchar_geom.o
 #
 OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
-        paste.o  radfft.o recipes.o io.o  spatial.o\
+        paste.o  radfft.o io.o  spatial.o\
         volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
         atmparams.o atmfuncs.o ionew.o atm_types.o m_memory.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
@@ -255,7 +256,7 @@ OTHER_DENCHAR_OBJS=  precision.o recipes.o \
 denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) 
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
-           $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE)  $(LIBS) 
+           $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE)  $(COMP_LIBS) $(LIBS) 
 #----------------------------------------------------------------------------
 #
 clean: 

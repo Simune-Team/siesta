@@ -1,3 +1,13 @@
+      module m_forhar
+      use precision, only : dp, grid_p
+      use mesh
+
+      implicit none
+
+      public :: forhar
+      private
+
+      CONTAINS
       subroutine forhar( NTPL, NSPIN, NML, NTML, NTM, NPCC, CELL, 
      .                   RHOATM, RHOPCC, VNA, DRHOOUT, VHARRIS1, 
      .                   VHARRIS2 )
@@ -18,22 +28,20 @@ C contributions of both spins.
 C Coded by J. Junquera 09/00
 C **********************************************************************
 
-      use precision, only : dp
-      use mesh
-
-      implicit none
 
       INTEGER, INTENT(IN) :: NTPL, NSPIN, NPCC
       INTEGER, DIMENSION(3), INTENT(IN) :: NML, NTML, NTM
  
       REAL(dp), DIMENSION(3,3), INTENT(IN) :: CELL(3,3)
-      REAL, DIMENSION(NTPL), INTENT(IN) :: VNA, RHOATM, RHOPCC
-      REAL, DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: DRHOOUT
-      REAL, DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: VHARRIS1
-      REAL, DIMENSION(NTPL), INTENT(INOUT) :: VHARRIS2
+      REAL(grid_p), DIMENSION(NTPL), INTENT(IN) :: VNA, RHOATM, RHOPCC
+      REAL(grid_p), DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: DRHOOUT
+      REAL(grid_p), DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: VHARRIS1
+      REAL(grid_p), DIMENSION(NTPL), INTENT(INOUT) :: VHARRIS2
       
       EXTERNAL REORD, CELLXC
-       
+
+! AG: Note:  REAL*4 variables are really REAL(kind=grid_p)
+!
 C ***** INPUT **********************************************************
 C INTEGER NTPL                 : Number of Mesh Total Points in unit cell 
 C                                (including subpoints) locally. 
@@ -65,22 +73,22 @@ C Internal variables and arrays
 C ----------------------------------------------------------------------
       INTEGER IP, ISPIN, ISPIN2
       REAL(dp) EX, EC, DEX, DEC, STRESSL(3,3)
-      real aux3(3,1)   !! dummy arrays for cellxc
-      REAL, DIMENSION(:,:), ALLOCATABLE :: DRHOIN
-      REAL, DIMENSION(:,:,:), ALLOCATABLE :: DVXCDN
+      real(grid_p) aux3(3,1)   !! dummy arrays for cellxc
+      REAL(grid_p), DIMENSION(:,:), ALLOCATABLE :: DRHOIN
+      REAL(grid_p), DIMENSION(:,:,:), ALLOCATABLE :: DVXCDN
 
       ALLOCATE(DRHOIN(NTPL,NSPIN))
-      CALL MEMORY('A','S',ntpl*nspin,'forhar')
+      CALL MEMORY('A','X',ntpl*nspin,'forhar')
       ALLOCATE(DVXCDN(NTPL,NSPIN,NSPIN))
-      CALL MEMORY('A','S',ntpl,'forhar')
+      CALL MEMORY('A','X',ntpl,'forhar')
 
 C ----------------------------------------------------------------------
 C Initialize some variables
 C ----------------------------------------------------------------------
-      VHARRIS1(:,:) = 0.0     
-      VHARRIS2(:)   = 0.0     
-      DRHOIN(:,:)   = 0.0
-      DVXCDN(:,:,:) = 0.0
+      VHARRIS1(:,:) = 0.0_grid_p
+      VHARRIS2(:)   = 0.0_grid_p
+      DRHOIN(:,:)   = 0.0_grid_p
+      DVXCDN(:,:,:) = 0.0_grid_p
 
 C ----------------------------------------------------------------------
 C Compute exchange-correlation energy and potential and
@@ -144,12 +152,13 @@ C ----------------------------------------------------------------------
       ENDDO
 
       IF (ALLOCATED(DVXCDN)) THEN
-        CALL MEMORY('D','S',SIZE(DVXCDN),'forhar')
+        CALL MEMORY('D','X',SIZE(DVXCDN),'forhar')
         DEALLOCATE(DVXCDN)
       ENDIF
       IF (ALLOCATED(DRHOIN)) THEN
-        CALL MEMORY('D','S',SIZE(DRHOIN),'forhar')
+        CALL MEMORY('D','X',SIZE(DRHOIN),'forhar')
         DEALLOCATE(DRHOIN)
       ENDIF
 
       END SUBROUTINE FORHAR
+      end module m_forhar

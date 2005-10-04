@@ -127,6 +127,8 @@ C
       use sys
       use mesh
       use parsing
+      use m_iorho,       only : write_rho
+      use m_forhar,      only : forhar
       use xcmod,         only : nXCfunc, XCauth
 #ifdef MPI
       use mpi_siesta
@@ -158,7 +160,7 @@ C        cross(a,b,c)   : Finds the cross product of two vectors
 C        dfscf(...)     : Finds SCF contribution to atomic forces
 C        dipole(...)    : Finds electric dipole moment
 C        efield(...)    : Adds potential of an external electric field
-C        iorho(...)     : Saves electron density on a file
+C        write_rho(...)     : Saves electron density on a file
 C        poison(...)    : Solves Poisson equation
 C        reord(...)     : Reorders electron density and potential arrays
 C        rhooda(...)    : Finds Harris electron density in the mesh
@@ -183,7 +185,6 @@ C real*8  Ec            : Correlation energy
 C real*8  Ex            : Exchange energy
 C real*8  field(3)      : External electric field
 C logical frstme        : First time this routine is called?
-C logical found         : File found?
 C integer i             : General-purpose index
 C integer ia            : Atom index
 C integer io            : Orbital index
@@ -236,24 +237,24 @@ C
      .  MPIerror
 #endif
 
-      real, dimension(:), allocatable, save ::
+      real(grid_p), dimension(:), allocatable, save ::
      .  Vaux
 
-      real, dimension(:), allocatable, save ::
+      real(grid_p), dimension(:), allocatable, save ::
      .  rhopcc, rhoatm, Vna
 
-      real, dimension(:,:), allocatable, save ::
+      real(grid_p), dimension(:,:), allocatable, save ::
      .  DRho, Vscf
 
-      real, dimension(:,:,:), allocatable, save ::
+      real(grid_p), dimension(:,:,:), allocatable, save ::
      .  DVxcdn
 
-      real, dimension(:), allocatable::
+      real(grid_p), dimension(:), allocatable::
      .  Chlocal, Totchar
 !
 !     Dummy arrays for cellxc call
 !
-      real aux3(3,1)
+      real(grid_p) ::  aux3(3,1)
 
       real(dp)
      .  bcell(3,3), b1Xb2(3), cell(3,3), const,
@@ -261,16 +262,13 @@ C
      .  rhotot, rmax, scell(3,3), tiny, 
      .  Uharrs, volume, volcel, x0(3)
 
-      real(dp), save :: 
-     .  qspiral(3)
+      real(dp), save ::  qspiral(3)
 
 #ifdef MPI
-      real(dp)
-     .  Eloc
+      real(dp)  ::  Eloc
 #endif
 
-      logical
-     .  found, leqi
+      logical :: leqi
 
       logical, save :: 
      .  frstme, harrisfun, IsDiag, IsEfld, samesh, samexa, spiral
@@ -281,7 +279,7 @@ C
       external
      .  cellxc, cross,
      .  dfscf,  dipole, ddot,  
-     .  efield, iorho, poison, 
+     .  efield, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
      .  memory, readsp
@@ -292,9 +290,9 @@ C
      .  rmax, scell, tiny, Uharrs, volume
 
       data
-     .  G2mesh / 0.0d0 /
+     .  G2mesh / 0.0_dp /
      .  nzero / 3*0 /,
-     .  tiny  / 1.D-12 /,
+     .  tiny  / 1.e-12_dp /,
      .  frstme /.true./
 
 C ----------------------------------------------------------------------
@@ -357,7 +355,7 @@ C Orbital initialisation : part 1
 C ----------------------------------------------------------------------
 
 C Find the maximum orbital radius
-      rmax = 0.0d0
+      rmax = 0.0_dp
       do io = 1,norb
         ia = iaorb(io)
         iphi = iphorb(io)
@@ -412,17 +410,17 @@ C ----------------------------------------------------------------------
 
 C Allocate memory related to ntpl
         if (allocated(rhoatm)) then
-          call memory('D','S',size(rhoatm),'dhscf')
+          call memory('D','X',size(rhoatm),'dhscf')
           deallocate(rhoatm)
         endif
         if (allocated(Vna)) then
-          call memory('D','S',size(Vna),'dhscf')
+          call memory('D','X',size(Vna),'dhscf')
           deallocate(Vna)
         endif
         allocate(rhoatm(ntpl))
-        call memory('A','S',ntpl,'dhscf')
+        call memory('A','X',ntpl,'dhscf')
         allocate(Vna(ntpl))
-        call memory('A','S',ntpl,'dhscf')
+        call memory('A','X',ntpl,'dhscf')
 
 C Find if there are partial-core-corrections for any atom
         npcc = 0
@@ -432,11 +430,11 @@ C Find if there are partial-core-corrections for any atom
 
 C Allocate memory for PCC density
         if (allocated(rhopcc)) then
-          call memory('D','S',size(rhopcc),'dhscf')
+          call memory('D','X',size(rhopcc),'dhscf')
           deallocate(rhopcc)
         endif
         allocate(rhopcc(ntpl*npcc+1))
-        call memory('A','S',ntpl*npcc,'dhscf')
+        call memory('A','X',ntpl*npcc,'dhscf')
 
 C Stop time counter for mesh initialization
         call timer( 'DHSCF1', 2 )
@@ -448,16 +446,16 @@ C ----------------------------------------------------------------------
 
 C Allocate local memory
       allocate(DRho(ntpl,nspin))
-      call memory('A','S',ntpl*nspin,'dhscf')
+      call memory('A','X',ntpl*nspin,'dhscf')
       allocate(Vscf(ntpl,nspin))
-      call memory('A','S',ntpl*nspin,'dhscf')
+      call memory('A','X',ntpl*nspin,'dhscf')
       allocate(Vaux(ntpl))
-      call memory('A','S',ntpl,'dhscf')
+      call memory('A','X',ntpl,'dhscf')
       allocate(DVxcdn(ntpl,nspin,nspin))
-      call memory('A','S',1*nspin*nspin,'dhscf')
+      call memory('A','X',1*nspin*nspin,'dhscf')
 
 C Initialization of DVxcdn
-      DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0
+      DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0_grid_p
 
       if (.not.samexa) then
 C ----------------------------------------------------------------------
@@ -542,8 +540,7 @@ C ----------------------------------------------------------------------
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, +1)
         enddo
-        call iorho( 'write', filrho, cell, ntm, nsm, ntpl, nspin,
-     .              DRho, found )
+        call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho)
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
         enddo
@@ -556,7 +553,7 @@ C ----------------------------------------------------------------------
       if (filepsch .ne. ' ' .or. filetoch .ne. ' ') then
 
         allocate(Chlocal(ntpl))
-        call memory('A','S',ntpl,'dhscf')
+        call memory('A','X',ntpl,'dhscf')
 
 C Find diffuse ionic charge on mesh
         call LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
@@ -564,31 +561,29 @@ C Find diffuse ionic charge on mesh
 C Save diffuse ionic charge 
         if (filepsch .ne. ' ') then
           call reord( Chlocal, Chlocal, nml, nsm, +1)
-          call iorho( 'write', filepsch, cell, ntm, nsm, ntpl, 1, 
-     .      Chlocal, found )
+          call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
           call reord( Chlocal, Chlocal, nml, nsm, -1)
         endif
 
 C Save total (ionic+electronic) charge 
         if ( filetoch .ne. ' ') then
           allocate(Totchar(ntpl))
-          call memory('A','S',ntpl,'dhscf')
+          call memory('A','X',ntpl,'dhscf')
         
-          Totchar(:) = 0.0
+          Totchar(:) = 0.0_grid_p
           do ispin = 1,nsd
             Totchar(1:ntpl) = Totchar(1:ntpl) + 
      .                        Chlocal(1:ntpl)/nsd + DRho(1:ntpl,ispin)
           enddo
           call reord( Totchar, Totchar, nml, nsm, +1)
-          call iorho( 'write', filetoch, cell, ntm, nsm, ntpl, 1, 
-     .      Totchar, found )
+          call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
           call reord( Totchar, Totchar, nml, nsm, -1)
 
-          call memory('D','S',ntpl,'dhscf')
+          call memory('D','X',ntpl,'dhscf')
           deallocate(Totchar)
         endif 
 
-        call memory('D','S',ntpl,'dhscf')
+        call memory('D','X',ntpl,'dhscf')
         deallocate(Chlocal)
       endif
 
@@ -604,8 +599,7 @@ C ----------------------------------------------------------------------
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, +1)
         enddo
-        call iorho( 'write', fildrh, cell, ntm, nsm, ntpl, nspin,
-     .              DRho, found )
+        call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
         enddo
@@ -623,11 +617,11 @@ C Transform spin density into sum and difference
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
 C ----------------------------------------------------------------------
-      dipol(1:3) = 0.0d0
+      dipol(1:3) = 0.0_dp
       if (shape .ne. 'bulk') then
 
 C Find center of system
-        x0(1:3) = 0.0d0
+        x0(1:3) = 0.0_dp
         do ia = 1,nua
           x0(1:3) = x0(1:3) + xa(1:3,ia) / nua
         enddo
@@ -655,7 +649,7 @@ C Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
 C ----------------------------------------------------------------------
 
 C Initialise Vscf
-      Vscf(1:ntpl,1) = 0.0d0
+      Vscf(1:ntpl,1) = 0.0_grid_p
 
 C Solve Poisson's equation
       call reord( DRho, DRho, nml, nsm, +1)
@@ -695,8 +689,8 @@ C ----------------------------------------------------------------------
 C Add neutral-atom potential to Vscf
 C ----------------------------------------------------------------------
 
-      Enaatm = 0.0d0
-      Enascf = 0.0d0
+      Enaatm = 0.0_dp
+      Enascf = 0.0_dp
       do ip = 1,ntpl
         Enaatm = Enaatm + dvol * Vna(ip) * rhoatm(ip)
         Enascf = Enascf + dvol * Vna(ip) * ( rhoatm(ip) + DRho(ip,1) )
@@ -735,8 +729,7 @@ C ----------------------------------------------------------------------
 
       if (filevh .ne. ' ') then
         call reord( Vscf, Vscf, nml, nsm, +1)
-        call iorho( 'write', filevh, cell, ntm, nsm, ntpl, 1, Vscf, 
-     .    found )
+        call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf)
         call reord( Vscf, Vscf, nml, nsm, -1)
       endif
 
@@ -752,8 +745,8 @@ C Get back spin density from sum and difference
       if (nsd .eq. 2) then
         do ip = 1,ntpl
           rhotot = DRho(ip,1)
-          DRho(ip,1) = 0.5d0 * ( rhotot - DRho(ip,2) )
-          DRho(ip,2) = 0.5d0 * ( rhotot + DRho(ip,2) )
+          DRho(ip,1) = 0.5_dp * ( rhotot - DRho(ip,2) )
+          DRho(ip,2) = 0.5_dp * ( rhotot + DRho(ip,2) )
         enddo
       endif
 
@@ -799,8 +792,7 @@ C ----------------------------------------------------------------------
         do ispin = 1,nspin
           call reord( Vscf(1,ispin), Vscf(1,ispin), nml, nsm, +1)
         enddo
-        call iorho( 'write', filevt, cell, ntm, nsm, ntpl, nspin,
-     .              Vscf, found )
+        call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
         do ispin = 1,nspin
           call reord( Vscf(1,ispin), Vscf(1,ispin), nml, nsm, -1)
         enddo
@@ -864,7 +856,7 @@ C Find contribution of neutral-atom potential
 
 C Vaux is (minus) the potential which multiplies rhoatm
 *       if (nsd .eq. 2) then
-*         Vaux(1:ntpl) = 0.5d0 * Vaux(1:ntpl)
+*         Vaux(1:ntpl) = 0.5_grid_p * Vaux(1:ntpl)
 *       endif
 
         call dfscf( ifa, istr, na, norb, nuo, nuotot, nmpl, nspin,
@@ -887,19 +879,19 @@ C ----------------------------------------------------------------------
 C Free locally allocated memory
 C ----------------------------------------------------------------------
       if (allocated(DVxcdn)) then
-        call memory('D','S',size(DVxcdn),'dhscf')
+        call memory('D','X',size(DVxcdn),'dhscf')
         deallocate(DVxcdn)
       endif
       if (allocated(Vaux)) then
-        call memory('D','S',size(Vaux),'dhscf')
+        call memory('D','X',size(Vaux),'dhscf')
         deallocate(Vaux)
       endif
       if (allocated(Vscf)) then
-        call memory('D','S',size(Vscf),'dhscf')
+        call memory('D','X',size(Vscf),'dhscf')
         deallocate(Vscf)
       endif
       if (allocated(DRho)) then
-        call memory('D','S',size(DRho),'dhscf')
+        call memory('D','X',size(DRho),'dhscf')
         deallocate(DRho)
       endif
 
@@ -910,3 +902,4 @@ C ----------------------------------------------------------------------
 102   format('dhscf: ',71(1h*))
 
       end
+

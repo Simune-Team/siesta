@@ -1030,7 +1030,7 @@ C  Internal variables ...
      .  itmax
       parameter (itmax=200)
 
-      real
+      real(dp)
      .  tol
       parameter (tol=0.0001d0)
 
@@ -1275,7 +1275,7 @@ C  Internal variables ...
      .  itmax
       parameter (itmax=500)
 
-      real
+      real(dp)
      .  tol
       parameter (tol=0.000001d0)
 

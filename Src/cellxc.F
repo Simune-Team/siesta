@@ -106,7 +106,7 @@ C ********* ROUTINES CALLED *****************************************
 C GGAXC, LDAXC, RECLAT, TIMER, VOLCEL
 C *******************************************************************
 
-      use precision,    only : dp
+      use precision,    only : dp, grid_p
       use xcmod,        only : nXCfunc, XCfunc, XCauth
       use xcmod,        only : XCweightX, XCweightC
 #ifdef MPI
@@ -136,11 +136,12 @@ C Argument types and dimensions
 
 C If you change next line, please change also the argument
 C explanations in the header comments
+!!! Pending (AG)
 *     real(dp)
-      real,          intent(in)   :: Dens(maxp,nspin)
-      real,          intent(out)  :: DVXCDN(maxp,nspin,nspin)
-      real,          intent(out)  :: VXC(maxp,nspin)
-      real,          intent(in)   :: XMesh(3,*)
+      real(grid_p),          intent(in)   :: Dens(maxp,nspin)
+      real(grid_p),          intent(out)  :: DVXCDN(maxp,nspin,nspin)
+      real(grid_p),          intent(out)  :: VXC(maxp,nspin)
+      real(grid_p),          intent(in)   :: XMesh(3,*)
 
 C Fix the order of the numerical derivatives
 C NN is the number of points used in each coordinate and direction,
@@ -154,7 +155,7 @@ C                   EUnit=0.03674903 => eV
 
 C Fix switch to skip points with zero density
       logical,       parameter    :: skip0 = .true.
-      real(dp),      parameter    :: denmin = 1.0d-15
+      real(dp),      parameter    :: denmin = 1.0e-15_dp
 
 C Parameter mspin must be equal or larger than nspin
       integer,       parameter    :: mspin = 4
@@ -175,9 +176,9 @@ C MPI related variables
       logical 
      .  NoLocalPoints
 
-      real, dimension(:,:,:), allocatable, save :: 
+      real(grid_p), dimension(:,:,:), allocatable, save :: 
      .  bdens, bvxc
-      real, dimension(:,:), allocatable, save :: 
+      real(grid_p), dimension(:,:), allocatable, save :: 
      .  bbuffer, dbuffer
       integer, dimension(:,:), allocatable, save :: 
      .  PMesh
@@ -281,17 +282,17 @@ C Check that this Node was some points
         call HowManyMeshPerNode(MeshNSM, Node, Nodes, NDummy, MeshDum)
         NoLocalPoints = (NDummy.eq.0)
         if (NoLocalPoints) then
-          EX = 0.0d0
-          EC = 0.0d0
-          DX = 0.0d0
-          DC = 0.0d0
+          EX = 0.0_dp
+          EC = 0.0_dp
+          DX = 0.0_dp
+          DC = 0.0_dp
           if (GGA) then
             do IS = 1,nspin
               do I3 = 0,NMesh(3)-1
                 do I2 = 0,NMesh(2)-1
                   do I1 = 0,NMesh(1)-1
                     IP = 1+I1+NSpan(1)*I2+NSpan(1)*NSpan(2)*I3
-                    VXC(IP,IS) = 0.0
+                    VXC(IP,IS) = 0.0_grid_p
                   enddo
                 enddo
               enddo
@@ -303,11 +304,11 @@ C Check that this Node was some points
 C Allocate memory for border densities and potential
         allocate(bdens(NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
      .           4*NN,nspin))
-        call memory('A','S',NSpan(1)*max(BlockSizeYMax,BlockSizeZMax)*
+        call memory('A','X',NSpan(1)*max(BlockSizeYMax,BlockSizeZMax)*
      .              4*NN*nspin,'cellxc')
         allocate(bvxc(NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
      .           4*NN,nspin))
-        call memory('A','S',NSpan(1)*max(BlockSizeYMax,BlockSizeZMax)*
+        call memory('A','X',NSpan(1)*max(BlockSizeYMax,BlockSizeZMax)*
      .              4*NN*nspin,'cellxc')
         allocate(PMesh(3,4))
         call memory('A','I',12,'cellxc')
@@ -367,13 +368,13 @@ C Collect data to be sent
           enddo
 
 C Transfers
-          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_real,
+          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_grid_real,
      .      Pleft3,1,MPI_Comm_World,Requests(1),MPIerror)
-          call MPI_IRecv(bbuffer(1,2),nrright,MPI_real,
+          call MPI_IRecv(bbuffer(1,2),nrright,MPI_grid_real,
      .      Pright3,2,MPI_Comm_World,Requests(2),MPIerror)
-          call MPI_ISend(dbuffer(1,1),nsleft,MPI_real,
+          call MPI_ISend(dbuffer(1,1),nsleft,MPI_grid_real,
      .      Pleft3,2,MPI_Comm_World,Requests(3),MPIerror)
-          call MPI_ISend(dbuffer(1,2),nsright,MPI_real,
+          call MPI_ISend(dbuffer(1,2),nsright,MPI_grid_real,
      .      Pright3,1,MPI_Comm_World,Requests(4),MPIerror)
 
 C Wait for transfers to complete
@@ -468,13 +469,13 @@ C Post density sends
           enddo
 
 C Transfers
-          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_real,
+          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_grid_real,
      .      Pleft2,1,MPI_Comm_World,Requests(1),MPIerror)
-          call MPI_IRecv(bbuffer(1,2),nrright,MPI_real,
+          call MPI_IRecv(bbuffer(1,2),nrright,MPI_grid_real,
      .      Pright2,2,MPI_Comm_World,Requests(2),MPIerror)
-          call MPI_ISend(dbuffer(1,1),nsleft,MPI_real,
+          call MPI_ISend(dbuffer(1,1),nsleft,MPI_grid_real,
      .      Pleft2,2,MPI_Comm_World,Requests(3),MPIerror)
-          call MPI_ISend(dbuffer(1,2),nsright,MPI_real,
+          call MPI_ISend(dbuffer(1,2),nsright,MPI_grid_real,
      .      Pright2,1,MPI_Comm_World,Requests(4),MPIerror)
 
 C Wait for transfers to complete
@@ -535,7 +536,7 @@ C Find weights of numerical derivation from Lagrange interp. formula
         enddo
         DGDM(IN) = F1 / F2
       enddo
-      DGDM(0) = 0.0d0
+      DGDM(0) = 0.0_dp
 
 C Find total number of mesh points
 #ifdef MPI
@@ -583,9 +584,9 @@ C Initialize output
       EC = 0.0_dp
       DX = 0.0_dp
       DC = 0.0_dp
-      VXC(1:maxp,1:nspin) = 0.0
+      VXC(1:maxp,1:nspin) = 0.0_grid_p
       if (ider.eq.1) then
-        DVXCDN(1:maxp,1:nspin,1:nspin) = 0.0d0
+        DVXCDN(1:maxp,1:nspin,1:nspin) = 0.0_grid_p
       endif
 
       if (GGA) then
@@ -597,7 +598,7 @@ C Initialise buffer regions of Vxc
               NSwap = NSpan(1)*BlockSizeZMax
               do in = 1,2*nn
                 do ix = 1,NSwap
-                  bvxc(ix,in,is) = 0.0d0
+                  bvxc(ix,in,is) = 0.0_grid_p
                 enddo
               enddo
             endif
@@ -605,7 +606,7 @@ C Initialise buffer regions of Vxc
               NSwap = NSpan(1)*BlockSizeYMax
               do in = 1,2*nn
                 do ix = 1,NSwap
-                  bvxc(ix,2*nn+in,is) = 0.0d0
+                  bvxc(ix,2*nn+in,is) = 0.0_grid_p
                 enddo
               enddo
             endif
@@ -627,11 +628,11 @@ C Skip point if density=0
         if (skip0) then
           dentot = 0.0_dp
           do IS = 1,MIN(nspin,2)
-            dentot = dentot + MAX(0.0,Dens(IP,IS))
+            dentot = dentot + MAX(0.0_grid_p,Dens(IP,IS))
           enddo
           if (dentot .lt. denmin) then
             do IS = 1,nspin
-              VXC(IP,IS) = 0.0
+              VXC(IP,IS) = 0.0_grid_p
             enddo
             goto 210
           endif
@@ -1025,17 +1026,17 @@ C Loop over spins
 C Post VXC receive
               NSwap = NSpan(1)*NSpan(2)
               Tag = 8*in + 2*is
-              call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,MPI_real,
+              call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,MPI_grid_real,
      .             Pleft3,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
-              call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,MPI_real,
+              call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,MPI_grid_real,
      .             Pright3,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
 
 C Post VXC send
               NSwap = PMesh(1,4)*PMesh(2,4)
-              call MPI_ISend(bvxc(1,3*nn+in,is),NSwap,MPI_real,
+              call MPI_ISend(bvxc(1,3*nn+in,is),NSwap,MPI_grid_real,
      .          Pright3,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
               NSwap = PMesh(1,3)*PMesh(2,3)
-              call MPI_ISend(bvxc(1,2*nn+in,is),NSwap,MPI_real,
+              call MPI_ISend(bvxc(1,2*nn+in,is),NSwap,MPI_grid_real,
      .          Pleft3,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
 
 C Wait for transfers to complete
@@ -1060,17 +1061,17 @@ C Loop over spins
 C Post VXC receives
               NSwap = NSpan(1)*NSpan(3)
               Tag = 8*in + 2*is
-              call MPI_IRecv(bdens(1,in,is),NSwap,MPI_real,
+              call MPI_IRecv(bdens(1,in,is),NSwap,MPI_grid_real,
      .          Pleft2,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
-              call MPI_IRecv(bdens(1,nn+in,is),NSwap,MPI_real,
+              call MPI_IRecv(bdens(1,nn+in,is),NSwap,MPI_grid_real,
      .          Pright2,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
 
 C Post VXC sends
               NSwap = PMesh(1,2)*PMesh(3,2)
-              call MPI_ISend(bvxc(1,nn+in,is),NSwap,MPI_real,
+              call MPI_ISend(bvxc(1,nn+in,is),NSwap,MPI_grid_real,
      .          Pright2,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
               NSwap = PMesh(1,1)*PMesh(3,1)
-              call MPI_ISend(bvxc(1,in,is),NSwap,MPI_real,
+              call MPI_ISend(bvxc(1,in,is),NSwap,MPI_grid_real,
      .          Pleft2,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
 
 C Wait for transfers to complete
@@ -1189,9 +1190,9 @@ C Collect together quantities
 
 C Free memory
       if (GGA.and.Nodes.gt.1.and..not.NoLocalPoints) then
-        call memory('D','S',size(bdens),'cellxc')
+        call memory('D','X',size(bdens),'cellxc')
         deallocate(bdens)
-        call memory('D','S',size(bvxc),'cellxc')
+        call memory('D','X',size(bvxc),'cellxc')
         deallocate(bvxc)
         call memory('D','I',size(PMesh),'cellxc')
         deallocate(PMesh)

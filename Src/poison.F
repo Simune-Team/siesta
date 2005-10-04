@@ -30,7 +30,7 @@ C *********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,   only : dp, grid_p
       use parallel,    only : Node, Nodes, ProcessorY
 #ifdef MPI
       use mpi_siesta
@@ -43,10 +43,10 @@ C
 #endif
 
       integer           N1, N2, N3, Mesh(3), NSM
-      real              RHO(N1*N2*N3), V(N1*N2*N3)
+      real(grid_p)      RHO(N1*N2*N3), V(N1*N2*N3)
       real(dp)          CELL(3,3), STRESS(3,3), U
 
-      real, dimension(:,:), allocatable, save :: CG
+      real(grid_p), dimension(:,:), allocatable, save :: CG
 
       integer           I, I1, I2, I3, IX, J, J1, J2, J3, JX,
      .                  NP, NG, NG2, NG3, 
@@ -58,8 +58,8 @@ C
       externaL          CHKGMX, FFT, RECLAT, VOLCEL, memory
       save              K0, TINY
 
-      data K0   /3*0.D0/
-      data TINY /1.D-15/
+      data K0   /3*0.0_dp/
+      data TINY /1.0e-15_dp/
 
 #ifdef MPI
 C Place MPI barrier here so that any waiting time for all
@@ -73,7 +73,7 @@ C Start timer
 
 C Allocate local memory
       allocate(CG(2,n1*n2*n3))
-      call memory('A','S',2*n1*n2*n3,'poison')
+      call memory('A','X',2*n1*n2*n3,'poison')
 
 C Find unit cell volume
       VOLUME = VOLCEL( CELL )
@@ -83,13 +83,13 @@ C Find reciprocal lattice vectors
 
 C Find maximun planewave cutoff
       NP = N1 * N2 * N3
-      G2MAX = 1.D30
+      G2MAX = 1.0e30_dp
       call chkgmx( K0, B, Mesh, G2MAX )
 
 C Copy density to complex array
       do I = 1, NP
         CG(1,I) = RHO(I)
-        CG(2,I) = 0.0
+        CG(2,I) = 0.0_grid_p
       enddo
 
 C Find fourier transform of density
@@ -98,7 +98,7 @@ C Find fourier transform of density
 C Initialize stress contribution
       do IX = 1,3
         do JX = 1,3
-          STRESS(JX,IX) = 0.D0
+          STRESS(JX,IX) = 0.0_dp
         enddo
       enddo
 
@@ -113,8 +113,8 @@ C Work out processor grid dimensions
       Pz = Node - (Py - 1)*ProcessorZ + 1
 
 C Multiply by 8*PI/G2 to get the potential
-      PI = 4.0d0 * atan(1.0d0)
-      U = 0.D0
+      PI = 4.0_dp * atan(1.0_dp)
+      U = 0.0_dp
       NG2 = Mesh(2)
       NG3 = Mesh(3)
       BlockSizeY = ((NG2/NSM)/ProcessorY)*NSM
@@ -156,10 +156,10 @@ C Multiply by 8*PI/G2 to get the potential
             J3L = J3 - J3min 
             J = 1 + J1 + N1 * J2L + N1 * N2 * J3L
             if (G2.LT.G2MAX .AND. G2.GT.TINY) then
-              VG = 8.D0 * PI / G2
+              VG = 8.0_dp * PI / G2
               DU = VG * ( CG(1,J)**2 + CG(2,J)**2 )
               U = U + DU
-              C = 2.D0 * DU / G2
+              C = 2.0_dp * DU / G2
               DO IX = 1,3
                 DO JX = 1,3
                   STRESS(JX,IX) = STRESS(JX,IX) + C * G(IX) * G(JX)
@@ -168,16 +168,16 @@ C Multiply by 8*PI/G2 to get the potential
               CG(1,J) = VG * CG(1,J)
               CG(2,J) = VG * CG(2,J)
             else
-              CG(1,J) = 0.0D0
-              CG(2,J) = 0.0D0
+              CG(1,J) = 0.0_dp
+              CG(2,J) = 0.0_dp
             endif
           enddo
         enddo
       enddo
 
       NG = Mesh(1)*Mesh(2)*Mesh(3)
-      U = 0.5D0 * U * VOLUME / DBLE(NG)**2
-      C = 0.5D0 / DBLE(NG)**2
+      U = 0.5_dp * U * VOLUME / DBLE(NG)**2
+      C = 0.5_dp / DBLE(NG)**2
       do IX = 1,3
         do JX = 1,3
           STRESS(JX,IX) = C * STRESS(JX,IX)

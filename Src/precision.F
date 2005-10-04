@@ -16,10 +16,16 @@
       integer, parameter :: broyden_p = sp
 #endif
 
-#ifdef CHARGE_DP
-      integer, parameter :: charge_p = dp
+#ifdef GRID_DP
+      integer, parameter :: grid_p = dp
 #else
-      integer, parameter :: charge_p = sp
+      integer, parameter :: grid_p = sp
+#endif
+
+#ifdef ON_DP
+      integer, parameter :: on_p = dp
+#else
+      integer, parameter :: on_p = sp
 #endif
 
       end module precision

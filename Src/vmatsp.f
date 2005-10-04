@@ -33,7 +33,7 @@ C                           elements are summed up
 C *********************************************************************
 
 C  Modules
-      use precision
+      use precision, only: dp, grid_p
       use atmfuncs,  only: rcut, all_phi
       use atm_types, only: nsmax=>nspecies
       use atomlist,  only: indxuo
@@ -48,9 +48,8 @@ C Argument types and dimensions
       integer
      .   no, np, nvmax, nuo, nuotot, iaorb(*), nspin,
      .   iphorb(*), isa(*), numVs(nuo), listVsptr(nuo), listVs(nvmax)
-      real
-     .   V(nsp,np,nspin)
-      real*8
+      real(grid_p), intent(in)  ::  V(nsp,np,nspin)
+      real(dp)
      .   dvol, Vs(nvmax,nspin), q(3)
       external
      .   memory, timer, ipack
@@ -69,14 +68,14 @@ C Internal variables and arrays
      .  ilc, ilocal, iorb
       logical
      .  Parallel_Flag
-      real*8
+      real(dp)
      .  Vij1, Vij2, Vij3, Vij4, dxsp(3), phia(maxoa,nsp),
      .  r2cut(nsmax), r2sp, xr(3), Rdi(3), qRdi, cqRdi, sqRdi
-      real*8, dimension(:),   allocatable, save :: 
+      real(dp), dimension(:),   allocatable, save :: 
      .  VClocal, VClocal1, VClocal2, VClocal3, VClocal4    
-      real*8, dimension(:,:), allocatable, save :: 
+      real(dp), dimension(:,:), allocatable, save :: 
      .  Clocal, Vlocal
-      real*8, dimension(:,:,:), allocatable, save ::
+      real(dp), dimension(:,:,:), allocatable, save ::
      .  VlocalSp
 
 C  Start time counter
@@ -123,18 +122,18 @@ C  Allocate local memory
         nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
         allocate(DscfL(nvmaxl,nsd+2))
         call memory('A','D',nvmaxl*(nsd+2),'meshdscf')
-        DscfL(1:nvmaxl,1:nsd+2) = 0.0d0
+        DscfL(1:nvmaxl,1:nsd+2) = 0.0_dp
       endif
 
 C  Full initializations done only once
       ilocal(1:no) = 0
       iorb(0:maxloc) = 0
-      Vlocal(:,:) = 0.0
-      VlocalSp(:,:,:) = 0.0
+      Vlocal(:,:) = 0.0_dp
+      VlocalSp(:,:,:) = 0.0_dp
       last = 0
 
 C  Find atomic cutoff radiae
-      r2cut(:) = 0.0d0
+      r2cut(:) = 0.0_dp
       do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
@@ -246,8 +245,8 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
           ilocal(iorb(1:last)) = 0
           iorb(1:last) = 0
           ijl = (last+1)*(last+2)/2
-          Vlocal(1:ijl,1:nsd) = 0.0d0
-          VlocalSp(1:last,1:last,1:nsd) = 0.0d0
+          Vlocal(1:ijl,1:nsd) = 0.0_dp
+          VlocalSp(1:last,1:last,1:nsd) = 0.0_dp
           last = 0
         endif
 
@@ -290,7 +289,7 @@ C  Generate or retrieve phi values for all orbitals up to nc
                 if (r2sp.lt.r2cut(is)) then
                   call all_phi( is, +1, dxsp, nphiloc, phia(:,isp) )
                 else
-                  phia(:,isp) = 0.d0
+                  phia(:,isp) = 0.0_dp
                 endif
               enddo
             endif
@@ -336,10 +335,10 @@ C  Loop on second orbital of mesh point (NOT only for jc.le.ic)
             jl = ilc(jc)
   
 C           Loop over sub-points
-            Vij1 = 0.0d0
-            Vij2 = 0.0d0
-            Vij3 = 0.0d0
-            Vij4 = 0.0d0
+            Vij1 = 0.0_dp
+            Vij2 = 0.0_dp
+            Vij3 = 0.0_dp
+            Vij4 = 0.0_dp
             do isp = 1,nsp
               Vij1 = Vij1 + VClocal1(isp) * Clocal(isp,jc)
               Vij2 = Vij2 + VClocal2(isp) * Clocal(isp,jc)
@@ -355,8 +354,8 @@ C           Loop over sub-points
 
             if (jc.le.ic) then
               if (ic.ne.jc.and.il.eq.jl) then
-                Vlocal(ijl,1) = Vlocal(ijl,1) + 2.0*Vij1
-                Vlocal(ijl,2) = Vlocal(ijl,2) + 2.0*Vij2
+                Vlocal(ijl,1) = Vlocal(ijl,1) + 2.0_dp*Vij1
+                Vlocal(ijl,2) = Vlocal(ijl,2) + 2.0_dp*Vij2
               else
                 Vlocal(ijl,1) = Vlocal(ijl,1) + Vij1
                 Vlocal(ijl,2) = Vlocal(ijl,2) + Vij2

@@ -10,6 +10,7 @@ C                   :            'D' -> deallocate
 C character*1 Type  : type of variable = 'I' = integer
 C                   :                    'S' = single precision real
 C                   :                    'D' = double precision real
+C                   :                    'X' = grid precision real
 C                   :                    'L' = logical
 C                   :                    'C' = single precision complex
 C                   :                    'Z' = double precision complex
@@ -57,6 +58,18 @@ C Add number of elements to appropriate pointer
       elseif (Type .eq. 'D' .or. Type .eq. 'd') then
         WordsDP = WordsDP + Sign*NElements
         CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(3)
+!
+!     Support for flexible precision in grid-related arrays
+!
+      elseif (Type .eq. 'X' .or. Type .eq. 'x') then
+#ifdef GRID_DP
+        WordsDP = WordsDP + Sign*NElements
+        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(3)
+#else
+        WordsSP = WordsSP + Sign*NElements
+        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(2)
+#endif
+
       elseif (Type .eq. 'L' .or. Type .eq. 'l') then
         WordsLogical = WordsLogical + Sign*NElements
         CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(4)

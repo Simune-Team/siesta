@@ -39,31 +39,33 @@ C *********************************************************************
 C    6  10        20        30        40        50        60        7072
 
 C  Modules
-      use precision
+      use precision, only: dp, grid_p
       use atmfuncs, only: rcut, all_phi
       use atm_types, only: nsmax=>nspecies
       use atomlist, only: indxuo
       use listsc_module, only: listsc
       use mesh, only: dxa, nsp, xdop, xdsp
       use meshphi, only: endpht, lstpht, listp2
-      use meshdscf
+      use meshdscf, only: DscfL, nrowsDscfL, needDscfL
+      use meshdscf, only: listDl, listDlPtr, numdL
       use alloc
       use parallel, only: Nodes
 
       implicit none
 
 C  Passed arguments
-      integer
+      integer, intent(in) ::
      .   ifa, istr, na, no, nuo, nuotot, np, nspin,  
      .   indxua(na), isa(na), iaorb(no), iphorb(no), 
      .   maxnd, numd(nuo), listdptr(nuo), listd(maxnd)
 
-      real
+      real(grid_p), intent(in) ::
      .   Vscf(nsp,np,nspin), Vatm(nsp,np)
 
-      real(dp)
-     .   Datm(nuotot), Dscf(maxnd,nspin), dvol,
-     .   Fal(3,*), Stressl(9), VolCel
+      real(dp), intent(in) ::
+     .   Datm(nuotot), Dscf(maxnd,nspin), dvol, VolCel
+
+      real(dp), intent(inout) :: Fal(3,*), Stressl(9)
 
 C Internal variables
       integer, parameter ::
@@ -141,13 +143,13 @@ C  Range 4-12 for stress
       end if
 
 C  Initialise variables
-      D(:,:,:) = 0.0d0
+      D(:,:,:) = 0.0_dp
       ibuff(:) = 0
       iob(:) = 0
       last = 0
 
-C  Find atomic cutoff radiae
-      r2cut(:) = 0.0d0
+C  Find atomic cutoff radii
+      r2cut(:) = 0.0_dp
       do i = 1,nuotot
         ia = iaorb(i)
         is = isa(ia)
@@ -156,7 +158,7 @@ C  Find atomic cutoff radiae
       enddo
 
 C  Evaluate constants
-      rvol = 1.0d0 / VolCel
+      rvol = 1.0_dp / VolCel
 
 C  Loop over grid points
       do ip = 1,np
@@ -251,8 +253,8 @@ C  Calculate all phi values and derivatives at all subpoints
                 call all_phi( is,+1, dxsp(:,isp), nphiloc,
      .                        phia(:,isp), grada(:,:,isp))
               else
-                phia(:,isp) = 0.0d0
-                grada(1:3,:,isp) = 0.0d0
+                phia(:,isp) = 0.0_dp
+                grada(1:3,:,isp) = 0.0_dp
               endif
             enddo
           endif
@@ -273,11 +275,11 @@ C  If stress required. Generate stress derivatives
           endif
         enddo
 
-C  Copy potential to a duoble precision array
+C  Copy potential to a double precision array
         V(1:nsp,1:nspin) = Vscf(1:nsp,ip,1:nspin)
 
 C  Factor two for nondiagonal elements for non-collinear spin
-        V(1:nsp,3:nspin) = 2.d0 * V(1:nsp,3:nspin)
+        V(1:nsp,3:nspin) = 2.0_dp * V(1:nsp,3:nspin)
 
 C  Loop on first orbital of mesh point
         do ic = 1,nc
@@ -297,11 +299,11 @@ C  Find Sum_{j,spin}(Vscf*Dij*Cj) for every subpoint
 C  Some loops are not done using f90 form as this
 C  leads to much slower execution on machines with stupid f90
 C  compilers at the moment
-          CDV(1:nsp) = 0.d0
+          CDV(1:nsp) = 0.0_dp
           do ispin = 1,nspin
 
 C  Loop on second orbital of mesh point
-            CD(1:nsp) = 0.d0
+            CD(1:nsp) = 0.0_dp
             do jc = 1,nc
               jb = ibc(jc)
               Dji = D(jb,ib,ispin)
@@ -317,12 +319,12 @@ C  Loop on second orbital of mesh point
           do isp = 1,nsp
             CDV(isp) = CDV(isp) - 
      .                 C(isp,ic) * Datm(iu) * Vatm(isp,ip)
-            CDV(isp) = 2.d0 * dVol * CDV(isp)
+            CDV(isp) = 2.0_dp * dVol * CDV(isp)
           end do
 
 C  Add 2*Dscf_ij*<Cj|Vscf|gCi> to forces
           do ix = ix1,ix2
-            DF(ix) = 0.d0
+            DF(ix) = 0.0_dp
             do isp = 1, nsp
               DF(ix) = DF(ix) + gCi(ix,isp) * CDV(isp)
             enddo
