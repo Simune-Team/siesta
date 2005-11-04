@@ -1,4 +1,4 @@
-      subroutine outcoor(cell, xa, isa, na, cohead, writec) 
+      subroutine outcoor(cell, xa, na, cohead, writec) 
 c *******************************************************************
 c Writes atomic coordinates in format given by fdf:AtomCoorFormatOut
 c Default: same format as was used for the reading.
@@ -20,7 +20,7 @@ c through subroutine reclat.
 c *******************************************************************
 
       use atmfuncs,  only : labelfis
-      use atomlist,  only : elem
+      use atomlist,  only : isa, cisa, elem
       use fdf, only : fdf_physical, fdf_string
       use precision, only : dp
       use siesta_cml
@@ -31,7 +31,6 @@ c *******************************************************************
       integer,          intent(in) :: na
       real(dp),         intent(in) :: cell(3,3)
       real(dp),         intent(in) :: xa(3,na)
-      integer,          intent(in) :: isa(na)
       character(len=*), intent(in) :: cohead
       logical,          intent(in) :: writec
 
@@ -151,7 +150,9 @@ C Deallocate local memory
 
       if (cml_p) then
         call cmlAddMolecule(xf=mainXML, natoms=na, elements=elem,
-     .     refs=isa, coords=xa/Ang, style='x3', fmt='(f12.6)')
+     .     refs=cisa, coords=xa/Ang, style='x3', fmt='(f12.6)')
+        call cmlAddLattice(xf=mainXML, cell=cell, units='Ang', 
+     .       dictref='siesta:ucell')
       endif
 
       end subroutine outcoor

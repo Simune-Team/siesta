@@ -140,7 +140,7 @@ logical,          intent(in), optional :: alternate
 
 call add_eol(xf)
 call add_to_buffer("<?xml-stylesheet href=""" //trim(href)// &
-     " type=""" //trim(type)// """", xf%buffer)
+     """ type=""" //trim(type)// """", xf%buffer)
 
 if (present(title)) call add_to_buffer(" title="""//trim(title)// """", xf%buffer)
 if (present(media)) call add_to_buffer(" media="""//trim(media)// """", xf%buffer)
@@ -357,7 +357,10 @@ type(xmlf_t), intent(inout)   :: xf
 
 integer :: indent_level
 
-indent_level = len(xf%stack) - 1
+! In case we still have a zero-length stack, we must make
+! sure indent_level is not less than zero.
+indent_level = max(len(xf%stack) - 1, 0)
+
 !We must flush here (rather than just adding an eol character)
 !since we don't know what the eol character is on this system.
 !Flushing with a linefeed will get it automatically, though.

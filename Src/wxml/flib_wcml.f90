@@ -17,19 +17,20 @@ module flib_wcml
   integer, private, parameter ::  dp = selected_real_kind(14,100)
   
 ! CMLUnits
-  character(len=40), parameter :: U_ANGSTR = 'units:angstrom'
-  character(len=40), parameter :: U_PMETER = 'units:pm'
-  character(len=40), parameter :: U_DEGREE = 'units:degree'
-  character(len=40), parameter :: U_RADIAN = 'units:radian'
-  character(len=40), parameter :: U_INVCM  = 'units:cm-1'
-  character(len=40), parameter :: U_KCALMO = 'units:kcal-mole'
-  character(len=40), parameter :: U_EVOLT  = 'units:ev'
-  character(len=40), parameter :: U_SECOND = 'units:second'
-  character(len=40), parameter :: U_VOLT   = 'units:volt'
+  character(len=*), parameter :: U_ANGSTR = 'units:angstrom'
+  character(len=*), parameter :: U_PMETER = 'units:pm'
+  character(len=*), parameter :: U_DEGREE = 'units:degree'
+  character(len=*), parameter :: U_RADIAN = 'units:radian'
+  character(len=*), parameter :: U_INVCM  = 'units:cm-1'
+  character(len=*), parameter :: U_KCALMO = 'units:kcal-mole'
+  character(len=*), parameter :: U_EVOLT  = 'units:ev'
+  character(len=*), parameter :: U_SECOND = 'units:second'
+  character(len=*), parameter :: U_VOLT   = 'units:volt'
 
 
 ! CMLCore
   PUBLIC :: cmlAddCoordinates
+  PUBLIC :: cmlAddLattice
   PUBLIC :: cmlAddCrystal
   PUBLIC :: cmlAddAngle
   PUBLIC :: cmlAddLength
@@ -47,8 +48,6 @@ module flib_wcml
   PUBLIC :: cmlEndPropertyList
 
 ! CMLComp
-  PUBLIC :: cmlAddLattice
-  PUBLIC :: cmlAddLatticeVector
   PUBLIC :: cmlAddParameter
   PUBLIC :: cmlStartStep
   PUBLIC :: cmlEndStep
@@ -62,6 +61,11 @@ module flib_wcml
   INTERFACE cmlAddCoordinates
      MODULE PROCEDURE cmlAddCoordinatesSP
      MODULE PROCEDURE cmlAddCoordinatesDP
+  END INTERFACE
+
+  INTERFACE cmlAddLattice
+     MODULE PROCEDURE cmlAddLatticeSP
+     MODULE PROCEDURE cmlAddLatticeDP
   END INTERFACE
 
   INTERFACE cmlAddCrystal
@@ -89,16 +93,6 @@ module flib_wcml
      MODULE PROCEDURE cmlAddMoleculeDP
      MODULE PROCEDURE cmlAddMolecule3SP
      MODULE PROCEDURE cmlAddMolecule3DP
-  END INTERFACE
-
-  INTERFACE cmlAddLattice
-     MODULE PROCEDURE cmlAddLatticeSP
-     MODULE PROCEDURE cmlAddLatticeDP
-  END INTERFACE
-
-  INTERFACE cmlAddLatticeVector
-     MODULE PROCEDURE cmlAddLatticeVectorSP
-     MODULE PROCEDURE cmlAddLatticeVectorDP
   END INTERFACE
 
   INTERFACE cmlAddProperty
@@ -911,7 +905,7 @@ CONTAINS
     integer, intent(in)                    :: natoms             ! number of atoms
     real(kind=dp), intent(in)              :: coords(3, natoms)  ! atomic coordinates
     character(len=*), intent(in)           :: elements(natoms)   ! chemical element types
-    integer,          intent(in), optional :: refs(natoms)       ! id
+    character(len=*), intent(in), optional :: refs(natoms)       ! id
     character(len=*), intent(in), optional :: id                 ! id
     character(len=*), intent(in), optional :: title              ! the title
     character(len=*), intent(in), optional :: dictref            ! the dictionary reference
@@ -926,6 +920,12 @@ CONTAINS
     character(len=6) :: id1, id0
     character(len=20):: formt, stylei
     integer          :: i
+    logical          :: have_refs
+
+    have_refs = (present(refs))
+    if (have_refs) then
+       if (size(refs) /= natoms) STOP "refs"
+    endif
 
     if (present(fmt)) then
        formt = fmt
@@ -945,8 +945,8 @@ CONTAINS
        id0 = adjustl(id0)
        id1 = 'a'
        id1(2:) = id0
-       call cmlAddAtom(xf=xf, elem=elements(i), id=id1)
-       if (present(refs)) call xml_AddAttribute(xf, 'ref', refs(i))
+       call cmlAddAtom(xf=xf, elem=elements(i), id=trim(id1))
+       if (have_refs)  call xml_AddAttribute(xf, 'ref', trim(refs(i)))
        if (stylei .eq. 'x3') then
           call CMLATX39DP(xf, coords(1, i), coords(2, i), coords(3, i), formt)
        elseif (stylei .eq. 'xFrac') then
@@ -975,7 +975,7 @@ CONTAINS
     integer, intent(in)                    :: natoms          ! number of atoms
     character(len=*), intent(in)           :: elements(*)     ! chemical element types
     real(kind=sp), intent(in)              :: coords(3, *)    ! atomic coordinates
-    integer,          intent(in), optional :: refs(natoms)    ! id
+    character(len=*), intent(in), optional :: refs(natoms)    ! id
     character(len=*), intent(in), optional :: id              ! id
     character(len=*), intent(in), optional :: title           ! the title
     character(len=*), intent(in), optional :: dictref         ! the dictionary reference
@@ -1005,8 +1005,8 @@ CONTAINS
        id0 = adjustl(id0)
        id1 = 'a'
        id1(2:) = id0
-       call cmlAddAtom(xf=xf, elem=elements(i), id=id1)
-       if (present(refs)) call xml_AddAttribute(xf, 'ref', refs(i))
+       call cmlAddAtom(xf=xf, elem=elements(i), id=trim(id1))
+       if (present(refs)) call xml_AddAttribute(xf, 'ref', trim(refs(i)))
        if (stylei .eq. 'x3') then
           call CMLATX39SP(xf, coords(1, i), coords(2, i), coords(3, i), formt)
        elseif (stylei .eq. 'xFrac') then
@@ -1067,7 +1067,7 @@ CONTAINS
        id0 = adjustl(id0)
        id1 = 'a'
        id1(2:) = id0
-       call cmlAddAtom(xf=xf, elem=elements(i), id=id1)
+       call cmlAddAtom(xf=xf, elem=elements(i), id=trim(id1))
        if (trim(stylei) .eq. 'x3') then
           call CMLATX39DP(xf, x(i), y(i), z(i), formt)
        elseif (stylei .eq. 'xFrac') then
@@ -1133,7 +1133,7 @@ CONTAINS
        id0 = adjustl(id0)
        id1 = 'a'
        id1(2:) = id0
-       call cmlAddAtom(xf=xf, elem=elements(i), id=id1)
+       call cmlAddAtom(xf=xf, elem=elements(i), id=trim(id1))
        if (stylei .eq. 'x3') then
           call CMLATX39SP(xf, x(i), y(i), z(i), formt)
        else if (stylei .eq. 'xFrac') then
@@ -1443,7 +1443,7 @@ CONTAINS
   ! 1. creates and writes an SP Lattice element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddLatticeSP(xf, cell, units, title, id, dictref, conv, lattType, spaceType, fmt)
+  SUBROUTINE cmlAddLatticeSP(xf, cell, units, title, id, dictref, conv, spaceType, fmt)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
@@ -1452,39 +1452,21 @@ CONTAINS
     character(len=*), intent(in), optional :: id           ! id
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
-    character(len=*), intent(in), optional :: conv         ! format
-    character(len=*), intent(in), optional :: lattType     ! 
+    character(len=*), intent(in), optional :: conv         ! convention
+!    character(len=*), intent(in), optional :: lattType     ! 
     character(len=*), intent(in), optional :: spaceType    !
     character(len=*), intent(in), optional :: fmt         
 
-    ! Internal Variables
-    integer           :: i
-    character(len=10) :: formt
+    real(sp)   :: a, b, c, alpha, beta, gamma
+    
+    a = sqrt(dot_product(cell(:,1), cell(:,1)))
+    b = sqrt(dot_product(cell(:,2), cell(:,2)))
+    c = sqrt(dot_product(cell(:,3), cell(:,3)))
+    alpha = acos(dot_product(cell(:,1),cell(:,2))/sqrt(a*b))
+    beta = acos(dot_product(cell(:,1),cell(:,3))/sqrt(a*c))
+    gamma = acos(dot_product(cell(:,2),cell(:,3))/sqrt(b*c))
 
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'   
-    endif
-
-    call xml_NewElement(xf, 'lattice')
-    if (present(id)) call xml_AddAttribute(xf, 'id', id)
-    if (present(title)) call xml_AddAttribute(xf, 'title', title)
-    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
-    if (present(lattType)) call xml_AddAttribute(xf, 'latticeType', lattType)
-    if (present(spaceType)) call xml_AddAttribute(xf, 'spaceType', spaceType)
-
-    do i = 1,3
-       call xml_NewElement(xf, 'latticeVector')
-       if (present(units)) call xml_AddAttribute(xf, 'units', units)
-       call xml_AddAttribute(xf, 'dictRef', 'cml:latticeVector')
-       call xml_AddPcdata(xf, cell(1,i), formt, space=.true.)
-       call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
-       call xml_AddPcdata(xf, cell(3,i), formt)
-       call xml_EndElement(xf, 'latticeVector')
-    enddo
-    call xml_EndElement(xf, 'lattice')
+    call cmlAddCrystal(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, units, 'units:radians', spaceType, fmt)
 
   END SUBROUTINE cmlAddLatticeSP
 
@@ -1493,7 +1475,7 @@ CONTAINS
   ! 2. creates and writes DP Lattice element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddLatticeDP(xf, cell, units, title, id, dictref, conv, lattType, spaceType, fmt)
+  SUBROUTINE cmlAddLatticeDP(xf, cell, units, title, id, dictref, conv, spaceType, fmt)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
@@ -1502,128 +1484,30 @@ CONTAINS
     character(len=*), intent(in), optional :: id           ! id
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
-    character(len=*), intent(in), optional :: conv         ! format
-    character(len=*), intent(in), optional :: lattType     ! 
+    character(len=*), intent(in), optional :: conv         ! 
+!    character(len=*), intent(in), optional :: lattType     ! 
     character(len=*), intent(in), optional :: spaceType    !
     character(len=*), intent(in), optional :: fmt         
 
-    ! Internal Variables
-    integer           :: i
-    character(len=10) :: formt
+    real(dp)   :: a, b, c, alpha, beta, gamma
 
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'   
-    endif
+    a = sqrt(dot_product(cell(:,1), cell(:,1)))
+    b = sqrt(dot_product(cell(:,2), cell(:,2)))
+    c = sqrt(dot_product(cell(:,3), cell(:,3)))
+    alpha = acos(dot_product(cell(:,1),cell(:,2))/sqrt(a*b))
+    beta = acos(dot_product(cell(:,1),cell(:,3))/sqrt(a*c))
+    gamma = acos(dot_product(cell(:,2),cell(:,3))/sqrt(b*c))
 
-    call xml_NewElement(xf, 'lattice')
-    if (present(id)) call xml_AddAttribute(xf, 'id', id)
-    if (present(title)) call xml_AddAttribute(xf, 'title', title)
-    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
-    if (present(lattType)) call xml_AddAttribute(xf, 'latticeType', lattType)
-    if (present(spaceType)) call xml_AddAttribute(xf, 'spaceType', spaceType)
-
-    do i = 1,3
-       call xml_NewElement(xf, 'latticeVector')
-       if (present(units)) call xml_AddAttribute(xf, 'units', units)
-       call xml_AddAttribute(xf, 'dictRef', 'cml:latticeVector')
-       Call xml_AddPcdata(xf, cell(1,i), formt)
-       Call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
-       call xml_AddPcdata(xf, cell(3,i), formt, space=.true.)
-       call xml_EndElement(xf, 'latticeVector')
-    enddo
-    
-    call xml_EndElement(xf, 'lattice')
+    call cmlAddCrystal(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, units, 'units:radians', spaceType, fmt)
 
   END SUBROUTINE cmlAddLatticeDP
 
 
   ! -------------------------------------------------
-  ! 1. creates a DP Lattice Vector element
-  ! -------------------------------------------------
-  
-  SUBROUTINE cmlAddLatticeVectorDP(xf, vector, title, id, dictref, conv, units, periodic, fmt)
-    implicit none
-    type(xmlf_t), intent(inout) :: xf
-    real(kind=dp), intent(in) :: vector(3)
-    character(len=*), intent(in), optional :: title        
-    character(len=*), intent(in), optional :: id           
-    character(len=*), intent(in), optional :: dictref     
-    character(len=*), intent(in), optional :: conv        
-    character(len=*), intent(in), optional :: units       
-    character(len=*), intent(in), optional :: periodic    
-    character(len=*), intent(in), optional :: fmt         
-
-    ! Deal with optional things
-    ! that have defaults
-    character(len=10) :: formt
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'   
-    endif
-
-    call xml_NewElement(xf, 'latticeVector')
-    if (present(id)) call xml_AddAttribute(xf, 'id', id)
-    if (present(title)) call xml_AddAttribute(xf, 'title', title)
-    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
-    if (present(units)) call xml_AddAttribute(xf, 'units', units)
-    if (present(periodic)) call xml_AddAttribute(xf, 'periodic', periodic)
-    Call xml_AddPcdata(xf, vector(1), formt, space=.true.)
-    Call xml_AddPcdata(xf, vector(2), formt, space=.true.)
-    call xml_AddPcdata(xf, vector(3), formt)
-    call xml_EndElement(xf, 'latticeVector')
-
-  END SUBROUTINE cmlAddLatticeVectorDP
-
-
-  ! -------------------------------------------------
-  ! 2. creates a SP Lattice Vector element
-  ! -------------------------------------------------
-
-  SUBROUTINE cmlAddLatticeVectorSP(xf, vector, title, id, dictref, conv, units, periodic, fmt)
-    implicit none
-    type(xmlf_t), intent(inout) :: xf
-    real(kind=sp), intent(in) :: vector(3)
-    character(len=*), intent(in), optional :: title        
-    character(len=*), intent(in), optional :: id           
-    character(len=*), intent(in), optional :: dictref     
-    character(len=*), intent(in), optional :: conv        
-    character(len=*), intent(in), optional :: units       ! should this be optional
-    character(len=*), intent(in), optional :: periodic    
-    character(len=*), intent(in), optional :: fmt         
-
-    ! Deal with optional things
-    ! that have defaults
-    character(len=10) :: formt
-    if (present(fmt)) then
-       formt = fmt
-    else
-       formt = '(f8.3)'   
-    endif
-
-    call xml_NewElement(xf, 'latticeVector')
-    if (present(id)) call xml_AddAttribute(xf, 'id', id)
-    if (present(title)) call xml_AddAttribute(xf, 'title', title)
-    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
-    if (present(units)) call xml_AddAttribute(xf, 'units', units)
-    if (present(units)) call xml_AddAttribute(xf, 'periodic', periodic)
-    Call xml_AddPcdata(xf, vector(1), formt, space=.true.)
-    Call xml_AddPcdata(xf, vector(2), formt, space=.true.)
-    call xml_AddPcdata(xf, vector(3), formt)
-    call xml_EndElement(xf, 'latticeVector')
-
-  END SUBROUTINE cmlAddLatticeVectorSP
-
-  ! -------------------------------------------------
   ! 1. creates and writes a DP <cell> element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddCrystalDP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, lenunits, angunits, fmt)
+  SUBROUTINE cmlAddCrystalDP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, lenunits, angunits, spaceType, fmt)
     implicit none
     type(xmlf_t), intent(inout) :: xf
     real(kind=dp), intent(in)               :: a, b, c      ! cell parameters
@@ -1633,8 +1517,10 @@ CONTAINS
     character(len=*), intent(in), optional :: id           ! id
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
+    character(len=*), intent(in), optional :: conv         ! convention
     character(len=*), intent(in), optional :: lenunits     ! units for length (default = angstrom)
     character(len=*), intent(in), optional :: angunits     ! units for angles (default = degree)
+    character(len=*), intent(in), optional :: spaceType    ! spacegroup
     character(len=*), intent(in), optional :: fmt          ! format
 
     ! Flush on entry and exit
@@ -1649,21 +1535,30 @@ CONTAINS
     if (present(lenunits)) then
        lunits = lenunits
     else
-       lunits = 'units:angstrom'
+       lunits = U_ANGSTR
     endif
     if (present(angunits)) then
        aunits = angunits
     else
-       aunits = 'units:degree'
+       aunits = U_DEGREE
     endif
 
-    call stmAddStartTag(xf=xf, name='crystal', id=id, title=title, dictref=dictref)
+    call xml_NewElement(xf=xf, name='crystal')
+    if (present(id))      call xml_AddAttribute(xf, 'id', id)
+    if (present(title))   call xml_AddAttribute(xf, 'title', title)
+    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictRef)
+    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
     call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=formt)
     call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=formt)
     call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=formt)
     call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=formt)
     call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta',  units=aunits, fmt=formt)
     call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=formt)
+    if (present(spaceType)) then
+      call xml_NewElement(xf, 'symmetry')
+      call xml_AddAttribute(xf, 'spaceGroup', spaceType)
+      call xml_EndElement(xf, 'symmetry')
+    endif
     call xml_EndElement(xf, 'crystal')
 
   END SUBROUTINE cmlAddCrystalDP
@@ -1672,7 +1567,7 @@ CONTAINS
   ! 2. creates and writes a SP <cell> element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddCrystalSP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, lenunits, angunits, fmt)
+  SUBROUTINE cmlAddCrystalSP(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, lenunits, angunits, spaceType, fmt)
     implicit none
     type(xmlf_t), intent(inout) :: xf
     real(kind=sp), intent(in)     :: a, b, c      ! cell parameters
@@ -1682,8 +1577,10 @@ CONTAINS
     character(len=*), intent(in), optional :: id           ! id
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
+    character(len=*), intent(in), optional :: conv         ! convention
     character(len=*), intent(in), optional :: lenunits     ! units for length (' ' = angstrom)
     character(len=*), intent(in), optional :: angunits     ! units for angles (' ' = degree)
+    character(len=*), intent(in), optional :: spaceType    ! spacegroup
     character(len=*), intent(in), optional :: fmt          ! format
 
     ! Flush on entry and exit
@@ -1706,14 +1603,24 @@ CONTAINS
        aunits = U_DEGREE
     endif
 
-    call stmAddStartTag(xf, 'crystal', id, title, dictref)
-    call stmAddScalar(xf, a, ' ', 'a', 'cml:a', lunits, formt)
-    call stmAddScalar(xf, b, ' ', 'b', 'cml:b', lunits, formt)
-    call stmAddScalar(xf, c, ' ', 'c', 'cml:c', lunits, formt)
-    call stmAddScalar(xf, alpha, ' ', 'alpha', 'cml:alpha', aunits, formt)
-    call stmAddScalar(xf, beta, ' ', 'beta', 'cml:beta', aunits, formt)
-    call stmAddScalar(xf, gamma, ' ', 'gamma', 'cml:gamma', aunits, formt)
+    call xml_NewElement(xf=xf, name='crystal')
+    if (present(id))      call xml_AddAttribute(xf, 'id', id)
+    if (present(title))   call xml_AddAttribute(xf, 'title', title)
+    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictRef)
+    if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
+    call stmAddScalar(xf=xf, value=a, title='a', dictref='cml:a', units=lunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=b, title='b', dictref='cml:b', units=lunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=c, title='c', dictref='cml:c', units=lunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=alpha, title='alpha', dictref='cml:alpha', units=aunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=beta,  title='beta',  dictref='cml:beta', units=aunits, fmt=formt)
+    call stmAddScalar(xf=xf, value=gamma, title='gamma', dictref='cml:gamma', units=aunits, fmt=formt)
+    if (present(spaceType)) then
+      call xml_NewElement(xf, 'symmetry')
+      call xml_AddAttribute(xf, 'spaceGroup', spaceType)
+      call xml_EndElement(xf, 'symmetry')
+    endif
     call xml_EndElement(xf, 'crystal')
+
 
   END SUBROUTINE cmlAddCrystalSP
   
@@ -1745,8 +1652,8 @@ CONTAINS
     ! Flush on entry and exit
     call xml_NewElement(xf, 'eigen')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
-    if (present(title))   call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(dictref)) call xml_AddAttribute(xf, 'title', title)
+    if (present(title))   call xml_AddAttribute(xf, 'title', title)
+    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictRef)
     call stmAddArray(xf=xf, nvalue=n, array=eigval, title='eigenvalues', dictref=dictRef, fmt=fmt)
     call stmAddMatrix(xf=xf, ncols=n, nrows=n, matrix=eigvec, title='eigenvectors', fmt=fmt)
     call xml_EndElement(xf, 'eigen')
@@ -1782,8 +1689,8 @@ CONTAINS
     ! Flush on entry and exit
     call xml_NewElement(xf, 'eigen')
     if (present(id))      call xml_AddAttribute(xf, 'id', id)
-    if (present(title))   call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(dictref)) call xml_AddAttribute(xf, 'title', title)
+    if (present(title)) call xml_AddAttribute(xf, 'title', title)
+    if (present(dictRef))   call xml_AddAttribute(xf, 'dictRef', dictref)
     call stmAddArray(xf=xf, nvalue=n, array=eigval, title='eigenvalues', dictref=dictRef, fmt=fmt)
     call stmAddMatrix(xf=xf, ncols=n, nrows=n, matrix=eigvec, title='eigenvectors', fmt=fmt)
     call xml_EndElement(xf, 'eigen')

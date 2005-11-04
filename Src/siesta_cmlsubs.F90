@@ -37,22 +37,24 @@ Module siesta_cmlsubs
          Write(fname,'(a,a)') Trim(sname),'.xml'
          Call xml_OpenFile(trim(fname), mainXML, .True.)
          Call xml_AddXMLDeclaration(mainxml, 'UTF-8')
+         Call xml_AddXMLStylesheet(mainXML, 'display.xsl', 'text/xsl')
          Call xml_NewElement(mainXML, 'cml')
          Call xml_AddAttribute(mainXML, 'xmlns', 'http://www.xml-cml.org/schema/CML2/Core')
+         Call xml_AddAttribute(mainXML, name='xmlns:siesta', value='http://www.uam.es/siesta/namespace')
          Call cmlStartMetadataList(mainXML)
-         Call cmlAddMetadata(mainXML, name='Program', content='Siesta')
-         Call cmlAddMetadata(mainXML, name='Version', content=version_str)
-         Call cmlAddMetadata(mainXML, name='Arch',    content=siesta_arch)
-         Call cmlAddMetadata(mainXML, name='Flags',   content=fflags)
-         Call cmlAddMetadata(mainXML, name='Initial Timestamp',content=datestring()) 
+         Call cmlAddMetadata(mainXML, name='siesta:Program', content='Siesta')
+         Call cmlAddMetadata(mainXML, name='siesta:Version', content=version_str)
+         Call cmlAddMetadata(mainXML, name='siesta:Arch',    content=siesta_arch)
+         Call cmlAddMetadata(mainXML, name='siesta:Flags',   content=fflags)
+         Call cmlAddMetadata(mainXML, name='siesta:StartTime',content=datestring()) 
          If (nodes>1) Then
-           Call cmlAddMetadata(mainXML, name='Mode', content='Parallel')
+           Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Parallel')
          Else
-           Call cmlAddMetadata(mainXML, name='Mode', content='Serial')
+           Call cmlAddMetadata(mainXML, name='siesta:Mode', content='Serial')
          Endif
-         Call cmlAddMetadata(mainXML, name='Nodes', content=nodes)
+         Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=nodes)
 #ifdef CDF
-         Call cmlAddMetadata(mainXML, name='NetCDF',  content='true')
+         Call cmlAddMetadata(mainXML, name='siesta:NetCDF',  content='true')
 #endif
          Call cmlEndMetadataList(mainXML)
       Endif !cml_p
@@ -65,7 +67,7 @@ Module siesta_cmlsubs
 
 
       If (cml_p) Then
-        Call cmlAddMetadata(mainXML, name='Final Timestamp',content=datestring())
+        Call cmlAddMetadata(mainXML, name='siesta:EndTime',content=datestring())
         Call xml_EndElement(mainXML, 'cml')
         Call xml_Close(mainXML)
       Endif !cml_p

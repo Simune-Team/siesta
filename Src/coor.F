@@ -18,7 +18,7 @@ C integer na  : Number of atoms in unit cell
 
       use precision, only : dp
       use sys
-      use atomlist,  only : xa, isa
+      use atomlist,  only : xa, isa, cisa
       use fdf
       use alloc
       use parallel,  only : Node
@@ -213,6 +213,13 @@ C end of Node.eq.0
 C distribute data
         call broadcast(isa(1:na))
         call broadcast(xa(1:3,1:na))
+
+        ! Construct references: cannot use isa alone, since 
+        ! refs may not start with a number.
+        allocate(cisa(na))
+        do ia=1, nua
+           write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
+        enddo
 
 C Expand the coordinates to whole supercell
 

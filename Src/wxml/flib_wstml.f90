@@ -286,6 +286,7 @@ CONTAINS
     ! We must not trim the value of the delimiter - it might be a single space
     call xml_AddAttribute(xf, 'delimiter', delim1)
     call xml_AddAttribute(xf, 'size', nvalue)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:string')
 
     call xml_AddPcdata(xf, array(1))
     do i = 2, nvalue
@@ -332,6 +333,7 @@ CONTAINS
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'delimiter', delim1)
     call xml_AddAttribute(xf, 'size', nvalue)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:boolean')
 
     call xml_AddPcdata(xf, array(1))
     do i = 2, nvalue
@@ -376,6 +378,7 @@ CONTAINS
     if (present(units))   call xml_AddAttribute(xf, 'units', units)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:integer')
 
 
     call xml_AddPcdata(xf, array(1))
@@ -423,6 +426,7 @@ CONTAINS
     if (present(units))   call xml_AddAttribute(xf, 'units', units)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:double')
     call STMARCF9DP(xf, nvalue, array)
     call xml_EndElement(xf, 'array')
 
@@ -464,6 +468,7 @@ CONTAINS
     if (present(units))   call xml_AddAttribute(xf, 'units', units)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:float')
     call STMARCF9SP(xf, nvalue, array, fmt)
     call xml_EndElement(xf, 'array')
 
@@ -494,8 +499,9 @@ CONTAINS
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(title)) call xml_AddAttribute(xf, 'title', title)
     if (present(units))   call xml_AddAttribute(xf, 'units', units)
-    call xml_AddAttribute(xf, 'cols', ncols)
+    call xml_AddAttribute(xf, 'columns', ncols)
     call xml_AddAttribute(xf, 'rows', nrows)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:string')
 
     do i = 1, ncols
        do j = 1, nrows
@@ -535,8 +541,9 @@ CONTAINS
     if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(title)) call xml_AddAttribute(xf, 'title', title)
     if (present(units))   call xml_AddAttribute(xf, 'units', units)
-    call xml_AddAttribute(xf, 'cols', ncols)
+    call xml_AddAttribute(xf, 'columns', ncols)
     call xml_AddAttribute(xf, 'rows', nrows)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:integer')
 
     do i = 1, ncols
        do j = 1, nrows
@@ -546,6 +553,43 @@ CONTAINS
     call xml_EndElement(xf, 'matrix')
 
   END SUBROUTINE stmAddIntegerMatrix
+
+  ! -------------------------------------------------
+
+  SUBROUTINE stmAddLogicalMatrix(xf, nrows, ncols, matrix, id, title, dictref, units)
+
+    implicit none
+    type(xmlf_t) :: xf
+    integer, intent(in)                    :: nrows         ! the number of rows to be output
+    integer, intent(in)                    :: ncols         ! the number of rows to be output
+    logical, intent(in)                    :: matrix(ncols,nrows) ! the values to be output
+    character(len=*), intent(in), optional :: id            ! the id
+    character(len=*), intent(in), optional :: title         ! the title
+    character(len=*), intent(in), optional :: dictref       ! the dictionary reference
+    character(len=*), intent(in), optional :: units         ! scienitific units (default ' ')
+    
+    ! splits data into lines wherever it overflows the workspace
+    ! Flush on entry and exit
+    integer ::  i, j 
+
+    call xml_NewElement(xf, 'matrix')
+    if (present(id))      call xml_AddAttribute(xf, 'id', id)
+    if (present(dictref))   call xml_AddAttribute(xf, 'dictRef', dictref)
+    if (present(title)) call xml_AddAttribute(xf, 'title', title)
+    if (present(units))   call xml_AddAttribute(xf, 'units', units)
+    call xml_AddAttribute(xf, 'columns', ncols)
+    call xml_AddAttribute(xf, 'rows', nrows)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:boolean')
+    
+    do i = 1, ncols
+       do j = 1, nrows
+          call xml_AddPcdata(xf, matrix(j, i), space=.true.)
+       enddo
+    enddo
+    call xml_EndElement(xf, 'matrix')
+    
+  END SUBROUTINE stmAddLogicalMatrix
+
 
 
   ! -------------------------------------------------
@@ -583,8 +627,9 @@ CONTAINS
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(units))   call xml_AddAttribute(xf, 'units', units)
-    call xml_AddAttribute(xf, 'cols', ncols)
+    call xml_AddAttribute(xf, 'columns', ncols)
     call xml_AddAttribute(xf, 'rows', nrows)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:double')
     !-------------
     do i = 1, nrows
        do j = 1, ncols
@@ -630,8 +675,9 @@ CONTAINS
     if (present(title))   call xml_AddAttribute(xf, 'title', title)
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(units))   call xml_AddAttribute(xf, 'units', units)
-    call xml_AddAttribute(xf, 'cols', ncols)
+    call xml_AddAttribute(xf, 'columns', ncols)
     call xml_AddAttribute(xf, 'rows', nrows)
+    call xml_AddAttribute(xf, 'dataType', 'xsd:float')
     do i = 1, nrows
        do j = 1, ncols
           call xml_AddPcdata(xf, matrix(j, i), formt, space=.true.)

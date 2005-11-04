@@ -12,6 +12,9 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
       use fdf,       only : fdf_string
       use units,      only: Ang
       use m_mpi_utils, only: broadcast
+      use atomlist,   only: xa, isa, cisa
+      use alloc, only    : re_alloc
+      use sys,   only    : die
       
       implicit none
 
@@ -24,11 +27,6 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
       subroutine read_struct( na, cell)
 !     
-
-      use atomlist, only : xa, isa
-      use alloc, only    : re_alloc
-      use sys,   only    : die
-
       integer, intent(out)  ::          na
       real(dp), intent(out) ::          cell(3,3)
 
@@ -79,6 +77,11 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
       call broadcast(isa(1:na))
       call broadcast(xa(1:3,1:na))
 
+! Construct references
+      allocate(cisa(na))
+      do ia = 1, na
+         write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
+      enddo
 
       end subroutine read_struct
 !--------------------------------------------------------------------------

@@ -1514,7 +1514,8 @@ end if
 
 if (node == 0) then
 
-  if (REPORT_LEVEL < 4) rewind(REPORT_UNIT)
+! AG: Allow multiple batches of information
+!!!      if (REPORT_LEVEL < 4) rewind(REPORT_UNIT)
 
   call date_and_time( date, time, zone )
 

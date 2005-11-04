@@ -59,9 +59,9 @@ CONTAINS
         character(len=merge(4,5,l)) :: s
         
         if (l) then
-          s='True'
+          s='true'
         else
-          s='False'
+          s='false'
         endif
       end function str_logical
 

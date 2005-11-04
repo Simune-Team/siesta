@@ -113,7 +113,7 @@ MOD_OBJS=precision.o recipes.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
 	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
-         units.o  zmatrix.o m_broyden_mixing.o forhar.o m_wallclock.o m_iostruct.o \
+         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
          nlefsm.o overfsm.o conjgr.o conjgr_old.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)

@@ -1,6 +1,3 @@
-#FIXME: output of real & int kind query looks ugly,
-# because output of FREEFORM is interspersed. How
-# to avoid?
 
 # AC_FC_REAL_KIND([KIND_DECLARATION], [VARIABLE_SUFFIX], [ACTION_IF_SUCCESS], [ACTION_IF_FAIL])
 # -------------------
@@ -17,8 +14,6 @@ AC_CACHE_CHECK([for kind number produced by $1],
                 ac_cv_fc_real_kind_[]$2[],
 [dnl
 AC_LANG_PUSH([Fortran])
-ac_ext=f90
-AC_FC_FREEFORM([f90])
 FCFLAGS_save="$FCFLAGS"
 FCFLAGS="$FCFLAGS $FCFLAGS_free_f90"
 AC_MSG_CHECKING([for kind number produced by $1])
@@ -26,7 +21,7 @@ ac_fc_kind_test=1
 ac_fc_kind_found=no
 while test $ac_fc_kind_test -lt 100
 do
-  cat > conftest.f90 << ACEOF
+  cat > conftest.$ac_ext << ACEOF
 dnl The program below will fail to compile if 
 dnl sp != mysp; ie if the kind produced by the 
 dnl supplied kind declaration ($1) is not the same
@@ -46,16 +41,15 @@ dnl supported by the compiler. Here we only test up to
 dnl 99, which is more than enough on all compilers tried
 dnl so far
 dnl
-subroutine kind_explorer
-  integer, parameter :: sp = $1
-  integer, parameter :: mysp = $ac_fc_kind_test
-  real(kind=sp), target :: x
-  real(kind=mysp), pointer :: y
-  y=>x
-end subroutine kind_explorer
+      subroutine kind_explorer
+      integer, parameter :: sp = $1
+      integer, parameter :: mysp = $ac_fc_kind_test
+      real(kind=sp), target :: x
+      real(kind=mysp), pointer :: y
+      y=>x
+      end subroutine kind_explorer
 ACEOF
 dnl
-  eval echo $ac_compile
   if eval $ac_compile 2>&5
   then
     ac_fc_kind_found=yes
@@ -93,8 +87,6 @@ AC_CACHE_CHECK([for kind number produced by $1],
                 ac_cv_fc_int_kind_[]$2[],
 [dnl
 AC_LANG_PUSH([Fortran])
-ac_ext=f90
-AC_FC_FREEFORM([f90])
 FCFLAGS_save="$FCFLAGS"
 FCFLAGS="$FCFLAGS $FCFLAGS_free_f90"
 AC_MSG_CHECKING([for kind number produced by $1])
@@ -122,16 +114,15 @@ dnl supported by the compiler. Here we only test up to
 dnl 99, which is more than enough on all compilers tried
 dnl so far
 dnl
-subroutine kind_explorer
-  integer, parameter :: sp = $1
-  integer, parameter :: mysp = $ac_fc_kind_test
-  integer(kind=sp), target :: x
-  integer(kind=mysp), pointer :: y
-  y=>x
-end subroutine kind_explorer
+      subroutine kind_explorer
+      integer, parameter :: sp = $1
+      integer, parameter :: mysp = $ac_fc_kind_test
+      integer(kind=sp), target :: x
+      integer(kind=mysp), pointer :: y
+      y=>x
+      end subroutine kind_explorer
 ACEOF
 dnl
-  eval echo $ac_compile
   if eval $ac_compile 2>&5
   then
     ac_fc_kind_found=yes

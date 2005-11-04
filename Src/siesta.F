@@ -16,7 +16,7 @@ C  Modules
       use parallel, only: Node, Nodes, IOnode
       use atmfuncs, only: rcut, uion, izofis
       use atomlist, only: xa, xalast, indxuo, na_u
-      use atomlist, only: isa, elem, indxua, iza, lastkb, lasto
+      use atomlist, only: isa, cisa, elem, indxua, iza, lastkb, lasto
       use atomlist, only: qa, amass, qtot, no_u, rmaxo, rmaxkb
       use atomlist, only: rmaxv, na_s, iphorb, iphkb, rco, rckb
       use atomlist, only: datm, no_s, iaorb
@@ -479,12 +479,12 @@ C Find system shape ...................................................
 C Output of initial system details:
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Initial System')
-        call cmlAddMolecule(xf=mainXML, natoms=na_u,
-     .       coords=xa/Ang, elements=elem, refs=isa,
+        call cmlAddMolecule(xf=mainXML, natoms=na_u, 
+     .       coords=xa/Ang, elements=elem, refs=cisa,
      .       style='x3', fmt='(f12.6)')
-        call cmlAddLattice(xf=mainXML, cell=ucell, units='Ang',
-     .       dictref='siesta:ucell')
-        call cmlAddProperty(xf=mainXML, property=trim(shape),
+        call cmlAddLattice(xf=mainXML, cell=ucell, 
+     .       units='units:angstrom', dictref='siesta:ucell')
+        call cmlAddProperty(xf=mainXML, property=trim(shape), 
      .       dictref='siesta:shape')
         call cmlEndModule(xf=mainXML)
       endif
@@ -763,8 +763,8 @@ C Print Z-matrix coordinates
         if (lUseZmatrix) then
           call write_Zmatrix
         endif
-C Print atomic coordinates 
-        call outcoor( ucell, xa, isa, na_u, ' ', writec )
+C Print atomic coordinates ............................................
+        call outcoor( ucell, xa, na_u, ' ', writec )
       endif
 C ...................
 
@@ -1743,10 +1743,10 @@ C End of coordinate-relaxation loop ==================================
       if (IOnode) then
 C Print atomic coordinates (and also unit cell for ParrRah.)
         if (nmove .ne. 0) then
-          if (relaxd) then
-            call outcoor(ucell, xa, isa, na_u,'Relaxed', .true. )
-          else
-            call outcoor(ucell, xa, isa, na_u,
+          if (relaxd) 
+     .      call outcoor(ucell, xa, na_u, 'Relaxed', .true. )
+          if (.not.relaxd) 
+     .      call outcoor(ucell, xa, na_u,
      .                 'Final (unrelaxed)', .true. )
           endif
           if (lUseZmatrix) call write_Zmatrix
@@ -1762,7 +1762,6 @@ C Print coordinates in cerius format in a separate file
 
         if (fdf_boolean('WriteCoorCerius',.false.))
      .     call coceri(iza, xa, ucell, na_u, sname, slabel)
-      endif
 
 C Find and print wavefunctions at selected k-points
       if (nwk.gt.0) then
