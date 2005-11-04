@@ -45,43 +45,33 @@ C
       use precision, only : dp
       use parallel,    only : Node
       use fdf, only : fdf_block, fdf_physical
+
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only:  broadcast
       use units, only: kBar
-#ifdef MPI
-      use mpi_siesta
-#endif
+!
+!     Use old-style conjugate-gradient routine
+!     Use the new one only for the Zmatrix case
+!
+      use m_conjgr_old, only: conjgr
 
       implicit none
 
 ! Subroutine arguments:
 
       integer, intent(in) :: na
-      real(dp), intent(in) :: fa(3,na),
-     .                        volume,
-     .                        dxmax,
-     .                        tp,
-     .                        ftol
-      logical, intent(in) :: varcel,
-     .                       usesavecg
-    
-      real(dp), intent(inout) :: xa(3,na),
-     .                           stress(3,3),
-     .                           strtol,
-     .                           cell(3,3)
-
+      real(dp), intent(in) :: fa(3,na), volume, dxmax,
+     .                        tp, ftol, strtol
+      logical, intent(in) :: varcel, usesavecg
+      real(dp), intent(inout) :: xa(3,na), stress(3,3), cell(3,3)
       logical, intent(out) :: relaxd
 
 c Internal variables and arrays
 
-      real(dp)            :: new_volume, trace
+      real(dp)            :: new_volume, trace, ftol_tmp
 
       logical           found
       integer           iu, ia, i, j, n, indi
-
-#ifdef MPI
-      integer           MPIerror
-#endif
 
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
@@ -121,17 +111,17 @@ C Allocate local memory
         call memory('A','D',6*na+12,'cgvc')
       endif
 
-c If first call to cgvc, check dim and get target stress --------------------
+C If first call to cgvc, check dim and get target stress --------------------
 
       if ( frstme ) then
   
         if ( varcel ) then
 
-!         Check if we want a constant-volume simulation
+C Check if we want a constant-volume simulation
           call fdf_global_get(constant_volume,
-     $                        "MD.ConstantVolume", .false.)
+     .                        "MD.ConstantVolume", .false.)
 
-c look for target stress and read it if found, otherwise generate it --------
+C Look for target stress and read it if found, otherwise generate it --------
 
           if (Node.eq.0) then
             tarstr = fdf_block('MD.TargetStress',iu)
@@ -161,7 +151,7 @@ c look for target stress and read it if found, otherwise generate it --------
               enddo
             endif
 
-c write target stress down --------------------------------------------------
+C Write target stress down --------------------------------------------------
 
             write(6,"(/a)") 'cgvc: Target stress (kBar)'
             write(6,"(a,2x,3f12.3)") 
@@ -178,7 +168,7 @@ c write target stress down --------------------------------------------------
           call broadcast(tstres(1:3,1:3))
 
 
-c moduli of original cell vectors for fractional coor scaling back to au ---
+C Moduli of original cell vectors for fractional coor scaling back to au ---
 
           do n = 1, 3
              modcel(n) = 0.0_dp
@@ -188,29 +178,21 @@ c moduli of original cell vectors for fractional coor scaling back to au ---
              modcel(n) = dsqrt( modcel(n) )
           enddo
 
-          if (Node.eq.0) then
-c scale factor for strain variables to share magnitude with coordinates -----
-c ---- (a length in Bohrs typical of bond lengths ..) -----------------------
+C Scale factor for strain variables to share magnitude with coordinates 
+C ---- (a length in Bohrs typical of bond lengths ..) ------------------
 
-c           precon = modcel(1)
-            precon = fdf_physical('MD.PreconditionVariableCell',
+          call fdf_global_get(precon,'MD.PreconditionVariableCell',
      .                           9.4486344d0,'Bohr')
-          endif
-          call broadcast(precon)
 
-c dimension of space where E is minimized -----------------------------------
+C Dimension of space where E is minimized ------------------------------
 
           ndeg = na*3 + 6
 
-c initialize absolute strain and save initial cell vectors -----------------
-c initialization to 1. for numerical reasons, later substracted ------------
+C Initialize absolute strain and save initial cell vectors -------------
+C Initialization to 1. for numerical reasons, later substracted --------
 
-          do i = 1, 3
-            do j = 1, 3
-              strain(i,j) = 1._dp
-              cellin(i,j) = cell(i,j)
-            enddo
-          enddo
+          strain(1:3,1:3) = 1.0_dp
+          cellin(1:3,1:3) = cell(1:3,1:3)
           initial_volume = volcel(cellin)
 
         else
@@ -219,23 +201,17 @@ c initialization to 1. for numerical reasons, later substracted ------------
 
         endif
 
-c initialize and read cgaux and cgcntr if present and wanted ---------------
+C Initialize and read cgaux and cgcntr if present and wanted ---------------
 
         if (usesavecg) then
           if (Node.eq.0) then
             call iocg( 'read', ndeg*2, cgaux, cgcntr, relaxd, found )
           endif
-#ifdef MPI
-c globalise information
-          call MPI_Bcast(cgaux,2*(na*3+6),MPI_double_precision,0,
-     .      MPI_Comm_World,MPIerror)
-          call MPI_Bcast(cgcntr,21,MPI_double_precision,0,
-     .      MPI_Comm_World,MPIerror)
-          call MPI_Bcast(relaxd,1,MPI_logical,0,MPI_Comm_World,
-     .      MPIerror)
-          call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,
-     .      MPIerror)
-#endif
+          call broadcast(cgaux)
+          call broadcast(cgcntr)
+          call broadcast(relaxd)
+          call broadcast(found)
+
           if ( found ) then
             linmin = cgcntr(1)
           else
@@ -255,18 +231,18 @@ c globalise information
         frstme = .false.
       endif
 
-c variable cell -------------------------------------------------------------
+C Variable cell -------------------------------------------------------------
 
       if ( varcel ) then
 
-c inverse of matrix of cell vectors  (transpose of) ------------------------
+C Inverse of matrix of cell vectors  (transpose of) ------------------------
 
         call reclat( cell, celli, 0 )
 
-c transform coordinates and forces to fractional ---------------------------- 
-c but scale them again to Bohr by using the (fix) moduli of the original ----
-c lattice vectors (allows using maximum displacement as before) -------------
-c convergence is checked here for input forces as compared with ftol --------
+C Transform coordinates and forces to fractional ---------------------------- 
+C but scale them again to Bohr by using the (fix) moduli of the original ----
+C lattice vectors (allows using maximum displacement as before) -------------
+C convergence is checked here for input forces as compared with ftol --------
 
         relaxd = .true.
         do ia = 1, na
@@ -274,15 +250,15 @@ c convergence is checked here for input forces as compared with ftol --------
             indi = 3*(ia - 1) + n
             gxa(indi) = 0.0_dp
             gfa(indi) = 0.0_dp
+            relaxd = relaxd .and. ( abs(fa(n,ia)) .lt. ftol )
             do i = 1, 3
               gxa(indi) = gxa(indi) + celli(i,n) * xa(i,ia) * modcel(n)
               gfa(indi) = gfa(indi) + cell(i,n) * fa(i,ia) / modcel(n)
-              relaxd = relaxd .and. ( abs(fa(i,ia)) .lt. ftol )
             enddo
           enddo
         enddo
 
-c symmetrizing the stress tensor --------------------------------------------
+C Symmetrizing the stress tensor --------------------------------------------
 
         do i = 1, 3
            do j = i+1, 3
@@ -291,7 +267,7 @@ c symmetrizing the stress tensor --------------------------------------------
            enddo
         enddo
 
-c Subtract target stress
+C Subtract target stress
 
         stress_dif = stress - tstres
 !
@@ -304,8 +280,8 @@ c Subtract target stress
            enddo
         endif
 
-c append excess stress and strain to gxa and gfa ------ 
-c preconditioning: scale stress and strain so as to behave similarly to x,f -
+C Append excess stress and strain to gxa and gfa ------ 
+C preconditioning: scale stress and strain so as to behave similarly to x,f -
 
         indi = 3*na
         do i = 1, 3
@@ -316,32 +292,33 @@ c preconditioning: scale stress and strain so as to behave similarly to x,f -
            enddo
         enddo
 
-c check stress convergence --------------------------------------------------
+C Check stress convergence --------------------------------------------------
 
-        strtol = abs(strtol)
         do i = 1, 3
            do j = 1, 3
               relaxd = relaxd .and. 
-     .          ( abs(stress_dif(i,j)) .lt. strtol )
+     .          ( abs(stress_dif(i,j)) .lt. abs(strtol) )
            enddo
         enddo
 
-c call conjugate gradient minimization -------------------------------------- 
+C Call conjugate gradient minimization -------------------------------------- 
 
-        if ( .not. relaxd )
-     .     call conjgr( ndeg, gxa, gfa, dxmax, 0._dp, cgcntr, cgaux )
+        if ( .not. relaxd ) then
+           ftol_tmp = 0.0_dp
+           call conjgr(ndeg,gxa,gfa,dxmax, ftol_tmp ,cgcntr,cgaux )
+        endif
 
 
-c fixed cell ----------------------------------------------------------------
+C Fixed cell ----------------------------------------------------------------
 
       else
 
         call conjgr( 3*na, xa, fa, dxmax, ftol, cgcntr, cgaux )
-        relaxd = int(cgcntr(0)) .eq. 0
+        relaxd = (int(cgcntr(0)) .eq. 0)
 
       endif
 
-c checking line minimizations and convergence -------------------------------
+C Checking line minimizations and convergence -------------------------------
 
       if (nint(cgcntr(1)) .ne. linmin) then
         if (Node.eq.0) then
@@ -352,11 +329,11 @@ c checking line minimizations and convergence -------------------------------
         linmin = nint(cgcntr(1))
       endif
 
-c transform back if variable cell ------------------------------------------- 
+C Transform back if variable cell ------------------------------------------- 
 
       if ( varcel .and. (.not. relaxd) ) then
 
-c new cell ------------------------------------------------------------------
+C New cell ------------------------------------------------------------------
 
         indi = 3*na
         do i = 1, 3
@@ -367,24 +344,13 @@ c new cell ------------------------------------------------------------------
            enddo
         enddo
 
-!       cell = cellin + matmul(strain-1.0_dp,cellin)
-        do n = 1, 3
-           do i = 1, 3
-              cell(i,n) = cellin(i,n)
-              do j = 1, 3
-                 cell(i,n) = cell(i,n) + (strain(i,j)-1._dp)*cellin(j,n)         
-              enddo
-           enddo
-        enddo
-!
-!       Check new volume here
-!
+        cell = cellin + matmul(strain-1.0_dp,cellin)
         if (constant_volume) then
            new_volume = volcel(cell)
            cell =  cell * (initial_volume/new_volume)**(1.0_dp/3.0_dp)
         endif
 
-c output fractional coordinates to cartesian Bohr, and copy to xa ----------- 
+C Output fractional coordinates to cartesian Bohr, and copy to xa ----------- 
 
         do ia = 1, na
           do i = 1, 3
@@ -398,7 +364,7 @@ c output fractional coordinates to cartesian Bohr, and copy to xa -----------
 
       endif
 
-c save cgaux ----------------------------------------------------------------
+C Save cgaux ----------------------------------------------------------------
 
       if (Node.eq.0) 
      .  call iocg( 'write', ndeg*2, cgaux, cgcntr, relaxd, found )

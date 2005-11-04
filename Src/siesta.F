@@ -36,7 +36,6 @@ C  Modules
 #endif
       use m_mpi_utils, only : broadcast
       use alloc, only: re_alloc, alloc_report
-
       use phonon, only: phonon_num_disps, phonon_setup
       use phonon, only: phonon_write_forces, phonon_restore_coords
       use phonon, only: phonon_set_coords
@@ -60,6 +59,9 @@ C  Modules
       use m_timestamp, only : timestamp
       use m_wallclock, only : wallclock
       use units
+      use zmatrix,      only: lUseZmatrix, iofaZmat
+      use zmatrix,      only: CartesianForce_to_ZmatForce
+      use zmatrix,      only: write_Zmatrix
 
       use m_smearing, only: temp
 
@@ -96,16 +98,13 @@ C  Modules
       real(dp)
      .  bcell(3,3), beta, bulkm, 
      .  charnet, cfmax, cftem, const, cstress(3,3),
-     .  dipol(3), dDmax, dDtol, DEharr, DEna,
+     .  dipol(3), dDmax, dDtol, dEmax, dEtol, DEharr, DEna,
      .  dt, DUext, DUscf, Dxc, dx, dxmax, e1, e2, sigma,
      .  Ecorrec, ef, Eharrs, Eharrs1, Eions, Ekin, Ekinion, Emad, Ena, 
-     .  Enaatm, Enascf, Enl, Entrop, Entropy,
+     .  Elast, Enaatm, Enascf, Enl, Entrop, Entropy,
      .  eta(2), etol, Etot, Etot_output, Exc, E0,
-     .  factor,
-     .  fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
-     .  g2cut, g2max, getot,
-     .  kcutof, kdispl(3),
-     .  kn, kpr, 
+     .  factor, fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
+     .  g2cut, g2max, getot, kcutof, kdispl(3), kn, kpr, 
      .  mn, mpr, occtol, Pint, Pmol, Psol
       real(dp)
      .  qaux, qspin(4), qsol,
@@ -144,7 +143,7 @@ C  Modules
 
       logical
      .  auxchanged, chebef, dminit, default, dumpcharge, 
-     .  first, fixauxcell, fixspin, found, foundxv, gamma,
+     .  final, first, fixauxcell, fixspin, found, foundxv, gamma,
      .  initdmaux, inspn, itest, last, lastst, mix, mmix, negl, noeta, 
      .  outlng, overflow, overflowed, pulfile, relaxd,
      .  savehs, savevh, savevt, savdrh, savrho,
@@ -152,7 +151,8 @@ C  Modules
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     .  harrisfun, muldeb, eggbox_block, final, use_struct_file
+     .  harrisfun, muldeb, eggbox_block, use_struct_file,
+     $  require_energy_convergence
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -163,7 +163,7 @@ C  Modules
      .  slabel*20, sname*150, shape*10, message*79
 
       external
-     .  anneal, cgvc, fixed,
+     .  anneal, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, ioxv, 
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
@@ -179,8 +179,8 @@ C  Modules
      .  kcutof, kscell, kdispl / 0._dp, 9*0, 3*0._dp /
      .  nkpnt / 1 /
      .  eggbox_block /.true./
+     .  final  /.false./
      .  relaxd /.false./
-     .  final /.false./
      .  tiny /1.e-15_dp/
      .  ihuge /1073741823/
       ! maxnh is (initially) the minimum size of all the sparse arrays.
@@ -206,13 +206,18 @@ C Initialise MPI and set processor number
 
 C Print version information ...........................................
       if (IOnode) then
-         call prversion
+        call prversion
 #ifdef MPI
-         write(6,'(/,a,i4,a)')
-     $        '* Running on ', Nodes, ' nodes in parallel'
+        if (Nodes.gt.1) then
+          write(6,'(/,a,i4,a)')
+     .        '* Running on ', Nodes, ' nodes in parallel'
+        else
+          write(6,'(/,a,i4,a)')
+     .        '* Running in serial mode with MPI'
+        endif
 #else
-         write(6,'(/,a,i4,a)')
-     $        '* Running in serial mode'
+        write(6,'(/,a,i4,a)')
+     .        '* Running in serial mode'
 #endif
          call timestamp('Start of run')
          call wallclock('Start of run')
@@ -237,6 +242,7 @@ C Initialize some variables
       Eharrs1 = 0.0_dp
       Eions = 0.0_dp
       Ekinion = 0.0_dp
+      Elast = 0.0_dp
       Emad = 0.0_dp
       Entrop = 0.0_dp
       Entropy = 0.0_dp
@@ -279,35 +285,20 @@ C Read simulation sizes ...............................................
 !! Read number of atoms and coordinates, and unit cell
 
       call fdf_global_get(use_struct_file,"MD.UseStructFile",.false.)
-      if (IOnode) then
-         if (use_struct_file) then
-            call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
-         else
-            call coor(na_u,ucell) ! Sets na_u, xa, and isa
-         endif
+      if (use_struct_file) then
+         call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
+      else
+         call coor(na_u,ucell)  ! Sets na_u, xa, and isa
       endif
 
       if (cml_p) then
-        ! We need the names of the elements on node 0
+C We need the names of the elements on node 0
         allocate(elem(na_u))
         call memory('A','S',2*na_u,'siesta')
         do i = 1, na_u
           elem(i) = symbol(izofis(isa(i)))
         enddo
       endif
-
-      call broadcast(na_u)
-      call broadcast(ucell)
-
-#ifdef MPI
-      if (Node.ne.0) then    ! Allocate isa and xa in rest of nodes
-         nullify(isa,xa)
-         call re_alloc(isa,1,na_u,name='isa',routine='siesta')
-         call re_alloc(xa,1,3,1,na_u,name='xa',routine='siesta')
-      endif
-#endif
-      call broadcast(isa(1:na_u))
-      call broadcast(xa(1:3,1:na_u))
 
 C Allocate arrays based on read sizes ................
 !
@@ -351,10 +342,9 @@ C Initialise those arrays that must be pre-initialised
       call memory('A','D',3*nspin,'siesta')
 
 C Read simulation data ................................................
-      call redata(na_u, ns, nspin, outlng, 
-     .            g2cut, charnet, negl, nscf, dDtol, mix, wmix, 
-     .            isolve, temp, fixspin, ts, ncgmax, ftol, strtol, 
-     .            eta, etol, rcoor, 
+      call redata(na_u, ns, nspin, outlng, g2cut, charnet, negl, nscf, 
+     .            dDtol, dEtol, mix, wmix, isolve, temp, fixspin, ts, 
+     .            ncgmax, ftol, strtol, eta, etol, rcoor, 
      .            ioptlwf, chebef, noeta, rcoorcp, beta, pmax,
      .            idyn, istart, ifinal, nmove, ianneal, iquench,
      .            dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
@@ -362,7 +352,7 @@ C Read simulation data ................................................
      .            usesavelwf, usesavedm, usesavecg,
      .            mullipop, inspn, maxsav, nkick, wmixkick, 
      .            pulfile, tempinit, dumpcharge, varcel, harrisfun,
-     .            occtol,broyden_maxit)
+     .            occtol,broyden_maxit,require_energy_convergence)
 
 C Find some switches ..................................................
       call fdf_global_get(writek,'WriteKpoints'    , outlng )
@@ -489,12 +479,12 @@ C Find system shape ...................................................
 C Output of initial system details:
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Initial System')
-        call cmlAddMolecule(xf=mainXML, natoms=na_u, 
+        call cmlAddMolecule(xf=mainXML, natoms=na_u,
      .       coords=xa/Ang, elements=elem, refs=isa,
      .       style='x3', fmt='(f12.6)')
-        call cmlAddLattice(xf=mainXML, cell=ucell, units='Ang', 
+        call cmlAddLattice(xf=mainXML, cell=ucell, units='Ang',
      .       dictref='siesta:ucell')
-        call cmlAddProperty(xf=mainXML, property=trim(shape), 
+        call cmlAddProperty(xf=mainXML, property=trim(shape),
      .       dictref='siesta:shape')
         call cmlEndModule(xf=mainXML)
       endif
@@ -704,7 +694,7 @@ C ..................
 C Output memory use before main loop
       call printmemory( 6, 0 )
 
-! Initialization now complete. Flush stdout.
+C Initialization now complete. Flush stdout.
       if (ionode) call pxfflush(6)
 
 C Start loop over coordinate changes 
@@ -744,12 +734,11 @@ C Displace atom by dx...
         case (7)
           call phonon_set_coords(istep,xa,ucell)
         end select
-
         write(6,'(2a)') '                        ',
      .                    '=============================='
       else ! not IOnode
         select case (idyn)
-        ! We don't need to do anything for 0<idyn<6
+C We don't need to do anything for 0<idyn<6
         case(6)
           if (istep .ne. 0) then
             iadispl = (istep-mod(istep-1,6))/6 + ia1
@@ -770,11 +759,14 @@ C Get coordinates from driver program trough pipe
       end if
 
       if (IOnode) then
-C Print atomic coordinates ............................................
+C Print Z-matrix coordinates
+        if (lUseZmatrix) then
+          call write_Zmatrix
+        endif
+C Print atomic coordinates 
         call outcoor( ucell, xa, isa, na_u, ' ', writec )
       endif
 C ...................
-
 
 C Actualize things if variable cell ...................................
       auxchanged = .false.
@@ -814,7 +806,7 @@ C If number of k points has changed - re-size arrays
        endif
  
 C Print k-points 
-        if (IOnode) call siesta_write_k_points()
+       if (IOnode) call siesta_write_k_points()
  
 C Find required supercell
         auxchanged = .false.
@@ -930,7 +922,7 @@ C List of nonzero Hamiltonian matrix elements .........................
       do while (overflow)
          nh = maxnh
          call re_alloc(listh,1,maxnh,name='listh',routine='siesta',
-     .                 shrink=.false.)
+     .                 copy=.false.)
          call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh )
          if (nh .gt. maxnh) then
@@ -1445,7 +1437,7 @@ C ..................
 C Save density matrix on disk, after mixing ...........................
           if (writedm) then
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
-              if (istp .eq.1)
+              if (istp.eq.1)
      .        call iodm( 'write', maxnh, no_l, nspin,
      .                   numh, listhptr, listh, Dscf, found )
             else
@@ -1453,24 +1445,25 @@ C Save density matrix on disk, after mixing ...........................
      .                   numh, listhptr, listh, Dscf, found )
             endif
           endif
-        endif !last
-C ...................
+        endif !not last
+
+C Print energies ......................................................
         DEna = Enascf - Enaatm
         Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
         Eharrs = Etot + DEharr
         FreeE  = Etot - Temp * Entropy
-C       recalculating the energy in the last iter (for gridcellsampling)
-C       but preserving the value of Eharrs1
+C Recalculating the energy in the last iter (for gridcellsampling)
+C but preserving the value of Eharrs1
         if (.not.last) Eharrs1 = Eharrs
 
         if (IOnode.and..not.last) then
           call siesta_write_energies()
 
-          if (harrisfun) then 
+          if (harrisfun) then
             write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
             if (cml_p) then
               call cmlStartPropertyList(mainXML, title='SCF Cycle')
-              call cmlAddProperty(xf=mainXML, property=Eharrs/eV, 
+              call cmlAddProperty(xf=mainXML, property=Eharrs/eV,
      .             units="eV", dictRef="siesta:Eharrs", fmt="(f14.7)")
               call cmlEndPropertyList(mainXML)
             endif
@@ -1504,7 +1497,13 @@ C If last iteration, exit SCF loop ....................................
 C ...................
 
 C If converged, make last iteration to find forces ....................
-        if (dDmax.lt.dDtol) last = .true.
+        dEmax = abs(Etot - Elast)
+        Elast = Etot
+        if (require_energy_convergence) then
+           if (dDmax.lt.dDtol.and.dEmax.lt.dEtol) last = .true.
+        else
+           if (dDmax.lt.dDtol) last = .true.
+        endif
 C ...................
 
         call timer( 'IterSCF', 2 )
@@ -1516,7 +1515,7 @@ C ...................
 C End of SCF iteration_________________________________________________
 
 C Write final Kohn-Sham Energy ........................................
-      if (cml_p) call cmlStartPropertyList(mainXML, 
+      if (cml_p) call cmlStartPropertyList(mainXML,
      .                                   title='Final KS Energy')
       if (IOnode) then
         if ( .not. harrisfun) 
@@ -1529,9 +1528,9 @@ C Substract egg box effect form energy ................................
       if (eggbox_block) then
         call eggbox('energy',ucell,na_u,isa,ntm,xa,fa,Etot,
      .               eggbox_block)
-        if (IOnode) 
+        if (IOnode)
      .    write(6,"(/a,f14.4)") 'siesta: E_KS - E_eggbox = ',Etot/eV
-        if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV, 
+        if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV,
      .         dictref='siesta:E_KS_egg', units='eV', fmt='(f14.6)')
       endif
       if (cml_p) call cmlEndPropertyList(mainXML)
@@ -1579,6 +1578,12 @@ C Write atomic forces .................................................
       enddo
       fres = dsqrt( fres / (3.0_dp*na_u) )
 
+C Calculate and output Zmatrix forces
+      if (lUseZmatrix) then
+        call CartesianForce_to_ZmatForce(na_u,xa,fa)
+        if (IOnode) call iofaZmat
+      endif
+
 C Add kinetic term to stress tensor ..................................
       do ia = 1,na_u
         do jx = 1,3
@@ -1588,25 +1593,20 @@ C Add kinetic term to stress tensor ..................................
           enddo
         enddo
       enddo
-C ...................
 
+C Force output .......................................................
       if (IOnode) then
         call siesta_write_forces()
         call siesta_write_stress_pressure()
         call wallclock('---- end of geometry step')
       endif
-C ...................
 
 C Mulliken population analysis .......................................
       call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
 
-C ...................
-
-C Move atoms ..........................................................
-
-! Save the last coordinates for which the density matrix has been calculated
+C Save the last coordinates for which the density matrix has been calculated
       if (istep.eq.fincoor) then
         xalast(1:3,1:na_s)=xa(1:3,1:na_s)
       endif
@@ -1619,11 +1619,18 @@ C Move atoms ..........................................................
 
       iunit = 2
 
+C Move atoms ..........................................................
       select case(idyn)
       case(0)
         if (nmove .ne. 0) then
-          call cgvc( na_u, xa, cfa, ucell, cstress, volume, dxmax,
+          if (lUseZmatrix) then
+             call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
+     $            volume, dxmax, tp, ftol, strtol, varcel,
+     $            relaxd, usesavecg )
+          else
+             call cgvc( na_u, xa, cfa, ucell, cstress, volume, dxmax,
      .         tp, ftol, strtol, varcel, relaxd, usesavecg )
+          endif
           ! Propagate the new structure to the virtual supercell
           call superx( ucell, nsc, na_u, na_s, xa, scell )
           if (relaxd) goto 60
@@ -1631,35 +1638,35 @@ C Move atoms ..........................................................
         endif
 !----------
       case(1)
-        call verlet2(istp, iunit, iquench, na_u, cfa, dt, 
+         call verlet2(istp, iunit, iquench, na_u, cfa, dt,
      .       amass, ntcon, va, xa, Ekinion, tempion)
         ! Propagate the new structure to the virtual supercell
         call superx( ucell, nsc, na_u, na_s, xa, scell )
 !-----------
       case (2)
-        call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn, 
+         call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn,
      .       ntcon, va, xa, Ekinion, kn, vn, tempion)
         ! Propagate the new structure to the virtual supercell
         call superx( ucell, nsc, na_u, na_s, xa, scell )
 !-----------
       case (3)
-        call pr(istp, iunit, iquench, na_u, cfa, cstress, tp, dt, amass,
-     .       mpr, ntcon, va, xa, vcell, ucell, Ekinion, kpr, vpr, 
-     .       tempion, Pint)
+         call pr(istp, iunit, iquench, na_u, cfa, cstress, tp, dt,
+     .           amass, mpr, ntcon, va, xa, vcell, ucell, Ekinion, 
+     .           kpr, vpr, tempion, Pint)
         ! Propagate the new structure to the virtual supercell
         call superx( ucell, nsc, na_u, na_s, xa, scell )
         if (IOnode) write(6,'(/,a,f12.3,a)')
      .       'siesta: E_kin PR =', kpr/Kelvin, ' K'
 !-----------
       case (4)
-        call npr(istp, iunit, na_u, cfa, cstress, tp, tt, dt, amass, mn,
-     .       mpr, ntcon, va, xa, vcell, ucell, Ekinion, kn, kpr, vn,
-     .       vpr, tempion, Pint)
+         call npr(istp, iunit, na_u, cfa, cstress, tp, tt, dt,
+     .            amass, mn, mpr, ntcon, va, xa, vcell, ucell, 
+     .            Ekinion, kn, kpr, vn, vpr, tempion, Pint)
         ! Propagate the new structure to the virtual supercell
         call superx( ucell, nsc, na_u, na_s, xa, scell )
 !-----------
       case (5)
-        call anneal(istp, iunit, ianneal, taurelax, bulkm,
+         call anneal(istp, iunit, ianneal, taurelax, bulkm,
      .       na_u, cfa, cstress, tp, tt, dt, amass, ntcon,
      .       va, xa, ucell, Ekinion, tempion, Pint)
         ! Propagate the new structure to the virtual supercell
@@ -1669,7 +1676,7 @@ C Move atoms ..........................................................
         continue !We can't go until after ioxv - see below
 !-----------
       case (8)
-        call forcesToPipe( na_u, Etot, cfa, cstress )
+         call forcesToPipe( na_u, Etot, cfa, cstress )
       end select
 
       if (IOnode) then
@@ -1678,20 +1685,18 @@ C Move atoms ..........................................................
      .      'siesta: Temp_ion =', tempion, ' K'
         endif
       endif
-C ...................
 
 C Save last atomic positions and velocities ..........................
       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
 C ...................
 
-c restore original coordinates after FC displacements ...
+C Restore original coordinates after FC displacements
       if (idyn .eq. 6 .and. istep .ne. 0) then
         xa(ixdispl,iadispl)=xa(ixdispl,iadispl)-dx
       endif
       if (idyn .eq. 7) then
            call phonon_restore_coords(istep,xa,ucell)
       endif
-c ...
 
 C Save atomic positions and velocities accumulatively ................
       if (writmd.and.IOnode) then
@@ -1719,14 +1724,14 @@ C Output memory use at the end of this geometry step
       call printmemory( 6, 0 )
       call timer( 'IterMD', 2 )
 
-! End of one MD step - flush stdout
+C End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
 
       if (relaxd) exit
 
       enddo
 C End of coordinate-relaxation loop ==================================
-      final=.true.
+      final = .true.
 
       ! We want xalast to equal xa for coordinate relaxation only.
       if (idyn==0) xalast(1:3,1:na_s)=xa(1:3,1:na_s)
@@ -1738,14 +1743,15 @@ C End of coordinate-relaxation loop ==================================
       if (IOnode) then
 C Print atomic coordinates (and also unit cell for ParrRah.)
         if (nmove .ne. 0) then
-          if (relaxd) 
-     .      call outcoor(ucell, xa, isa, na_u, 'Relaxed', .true. )
-          if (.not.relaxd) 
-     .      call outcoor(ucell, xa, isa, na_u,
+          if (relaxd) then
+            call outcoor(ucell, xa, isa, na_u,'Relaxed', .true. )
+          else
+            call outcoor(ucell, xa, isa, na_u,
      .                 'Final (unrelaxed)', .true. )
+          endif
+          if (lUseZmatrix) call write_Zmatrix
           if ( varcel ) call outcell(ucell)
         endif
-
 
 C Print coordinates in xmol format in a separate file
 
@@ -1897,7 +1903,7 @@ C Global reduction of spin components
      .       'siesta: Total spin polarization (Qup-Qdown) =', 
      .       qspin(1) - qspin(2)
           endif
-          if (cml_p) call cmlAddProperty(xf=mainXML, 
+          if (cml_p) call cmlAddProperty(xf=mainXML,
      .         property=qspin(1)-qspin(2), dictref='siesta:qspin')
         elseif (nspin .eq. 4) then
           call spnvec( nspin, qspin, qaux, stot, svec )
@@ -1906,7 +1912,7 @@ C Global reduction of spin components
      .       'siesta: Total spin polarization (Qup-Qdown) =', stot
             write(6,'(a,3f12.6)') 'siesta: Spin vector =', svec
             if (cml_p) then
-              call cmlAddProperty(xf=mainXML, property=stot, 
+              call cmlAddProperty(xf=mainXML, property=stot,
      .             dictref='siesta:stot')
               call cmlAddProperty(xf=mainXML, property=svec,
      .             dictref='siesta:svec')
@@ -1926,7 +1932,7 @@ C Print electric dipole
         endif
         if (cml_p) then
           call cmlAddProperty(xf=mainXML, property=dipol,
-     .         title='Electric dipole', dictref='siesta:dipol', 
+     .         title='Electric dipole', dictref='siesta:dipol',
      .         units='a.u')
         endif !cml_p
       endif
@@ -2043,10 +2049,10 @@ C Find the desired energy range
 C Output memory use up to the end of the program
       call printmemory( 6, 1 )
 
-c Print allocation report
+C Print allocation report
       call alloc_report( printNow=.true. )
 
-c Stop time counter
+C Stop time counter
       call timer( 'siesta', 2 )
       call timer( 'all', 3 )
 

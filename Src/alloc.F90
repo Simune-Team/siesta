@@ -2,6 +2,7 @@ MODULE alloc
 
       use precision, only: sp, dp
       use parallel,   only : Node, Nodes
+      use sys, only: die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -1575,13 +1576,10 @@ if (ierr/=0) then
                ' requested by ', routine
   endif
   print '(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
-                      i,bounds(i,1),bounds(i,2),         &
-                      i=1,size(bounds,dim=1))
-#ifdef MPI
-  call mpi_abort(mpi_comm_world,ierr,mpierror)
-#else
-  stop 'alloc_err: allocate error'
-#endif
+                      i,bounds(1,i),bounds(2,i),         &
+                      i=1,size(bounds,dim=2))
+
+  call die('alloc_err: allocate error')
 end if
 
 END SUBROUTINE alloc_err

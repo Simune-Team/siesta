@@ -48,7 +48,6 @@ C *******************************************************************
 
       use precision
       use on_main
-      use siesta_cml
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -89,10 +88,10 @@ C  Internal variables .................................................
 C ..........................
 
 C Set step for line minim: lam (empirically 1.0e-1 works fine) 
-      lam = 1.0_dp
-      lm = 0.0_dp
+      lam = 1.0d0
+      lm = 0.0d0
       iter = 0
-      partial = 0.0_dp
+      partial = 0.0d0
       itest = .false.
       numit = 0
 
@@ -142,33 +141,20 @@ C Loop for the CG minimization
         iout = .true.
         
         if (Node.eq.0) then
-          write(6,33) its,partial*nspin,fp
-          call pxfflush(6)
+          write(6,33) its,partial*dble(nspin),fp
         endif
-! Flush after each step so user can follow progress
-        if (cml_p) then
-          call cmlStartStep(mainXML, type='CGWF')
-          call cmlStartPropertyList(mainXML, title='cgwf cycle')
-          call cmlAddProperty(xf=mainXML, property=partial*nspin, 
-     .         dictref='siesta:grad', title='gradient')
-          call cmlAddProperty(xf=mainXML, property=fp,
-     .         dictref='siesta:Eb', title='E_b', units='Ry')         
-          call cmlEndPropertyList(mainXML)
-          call cmlEndStep(mainXML)
-        endif
-        
 
 C Check if the gradient at current point is negative, and sufficiently
 C large to avoid problems. Otherwise, set a fixed lambda
 C to CG iteration cycle with iout = .false.  ................................
         if (abs(partial) .le. 1.5e-8) then
-          lambda = lm*0.4_dp
-          if (lm .eq. 0.0) lambda=0.4_dp
+          lambda = lm*0.4d0
+          if (lm .eq. 0.0) lambda=0.4d0
 C         iout = .false.
           goto 1000
         endif
-        if (partial .gt. 0.0_dp) then
-          lambda = -0.0001_dp
+        if (partial .gt. 0.0e0) then
+          lambda = -0.0001d0
           iout = .false.
           goto 1000
         endif
@@ -187,9 +173,9 @@ C Check if the solution of the line minimization is reasonable
 C (ie, lambda is small)
 C Otherwise, set a fixed lambda and return to CG iteration 
 C cycle with iout = .false.  ................................
-        if (abs(lambda) .ge. 10.0_dp) then
-          lambda = lm * 0.3_dp
-          if (lm .eq. 0.0) lambda = 0.01_dp
+        if (abs(lambda) .ge. 10.0e0) then
+          lambda = lm * 0.3d0
+          if (lm .eq. 0.0) lambda = 0.01d0
           iout = .false.
           goto 1000
         endif
@@ -212,7 +198,7 @@ C Calculate average lambda (lm) during CG minimization .....................
         lm = float(its-1) / float(its) * lm + lambda / float(its)
 
 C Calculate energy and gradient at current point ...........................
-        partial = 0.0_dp
+        partial = 0.0d0
         iopt = 2
         call eandg(iopt,eta,qs,lam,nhmax,numh,listh,listhptr,ncmax,
      .             numc,listc,h,s,c,nbasis,nbasisloc,nbands,e3,fe,xi,
@@ -231,8 +217,8 @@ C Check if minimization has converged ......................................
 C Continue if tol not reached
         fp = fe
         elamb = fe
-        gg = 0.0_dp
-        dgg = 0.0_dp
+        gg = 0.0d0
+        dgg = 0.0d0
         do is = 1,nspin
           do i = 1,nbasisloc
             ii = ncP2T(i)
@@ -253,13 +239,13 @@ C Global reduction of gg/dgg
         dgg = rtmp(2)
 #endif
 
-        if (gg .eq. 0.0_dp) goto 16
+        if (gg .eq. 0.0d0) goto 16
         gam = dgg / gg
         do is = 1,nspin
           do i = 1,nbasisCloc
             do j = 1,numc(i)
               g(j,i,is) = - xi(j,i,is)
-              if (itest) gam = 0.0_dp
+              if (itest) gam = 0.0d0
               hg(j,i,is) = g(j,i,is) + gam*hg(j,i,is)
               if (ncT2P(i).gt.0) then
                 partial = partial + hg(j,i,is)*xi(j,i,is)

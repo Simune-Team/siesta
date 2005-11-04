@@ -98,6 +98,7 @@ C
       logical                                  :: lokx
       logical                                  :: loky
       logical                                  :: lokz
+      logical                                  :: lpgridinput
       real(dp)                                 :: diffxy
       real(dp)                                 :: diffxz
       real(dp)                                 :: diffyz
@@ -206,8 +207,16 @@ C**************************
 C
 C  Set debugging flag
 C
-c        ldebug = .false.
-        ldebug = (Node.eq.0)
+        ldebug = .false.
+c        ldebug = (Node.eq.0)
+C
+C  Has the processor grid been previously specifed?
+C
+        lpgridinput = (npgrid(1)*npgrid(2)*npgrid(3).eq.Nodes)
+C
+C  Processor grid has already been set
+C
+        if (lpgridinput) goto 999
 C
 C  Find factors of number of processors (2,3,5)
 C
@@ -231,6 +240,10 @@ C
           endif
         enddo
 C
+C  Initialise npgrid
+C
+        npgrid(1:3) = 1
+C
 C  Set flag to indicate whether there is a factor other than 2,3 or 5
 C
         lnon235 = (n.ne.1)
@@ -249,12 +262,11 @@ C
         lfixx = .false.
         lfixy = .false.
         lfixz = .false.
-        npgrid(1:3) = 1
         if (lnon235) then
           spcelltot = (nspcell(1)-2*nbufferx)*
      .                (nspcell(2)-2*nbuffery)*
      .                (nspcell(3)-2*nbufferz)
-          pratio = real(n, dp)/real(Nodes, dp)
+          pratio = real(n,dp)/real(Nodes,dp)
           ratiox = pratio - (nspcell(1)-2*nbufferx)/spcelltot 
           ratioy = pratio - (nspcell(2)-2*nbuffery)/spcelltot
           ratioz = pratio - (nspcell(3)-2*nbufferz)/spcelltot
@@ -275,12 +287,12 @@ C
 C
 C  Calculate optimal target ratios for x-y and x-z
 C
-        targetratioxy = real(nspcell(2)-2*nbuffery, dp)/
-     .    real(nspcell(1)-2*nbufferx, dp)
-        targetratioxz = real(nspcell(3)-2*nbufferz, dp)/
-     .    real(nspcell(1)-2*nbufferx, dp)
-        targetratioyz = real(nspcell(3)-2*nbufferz, dp)/
-     .    real(nspcell(2)-2*nbuffery, dp)
+        targetratioxy = real(nspcell(2)-2*nbuffery,dp)/
+     .    real(nspcell(1)-2*nbufferx,dp)
+        targetratioxz = real(nspcell(3)-2*nbufferz,dp)/
+     .    real(nspcell(1)-2*nbufferx,dp)
+        targetratioyz = real(nspcell(3)-2*nbufferz,dp)/
+     .    real(nspcell(2)-2*nbuffery,dp)
 C
 C  Group factors in proportion to numbers of cells
 C
@@ -295,7 +307,7 @@ C
           n = nn235(ind)
           do i = 1,ii
             if (lfixx) then
-              ratioyz = real(npgrid(3), dp)/real(npgrid(2), dp)
+              ratioyz = real(npgrid(3),dp)/real(npgrid(2),dp)
               diffyz = targetratioyz - ratioyz
               if (diffyz.lt.0.0_dp) then
                 npgrid(2) = n*npgrid(2)
@@ -303,7 +315,7 @@ C
                 npgrid(3) = n*npgrid(3)
               endif
             elseif (lfixy) then
-              ratioxz = real(npgrid(3), dp)/real(npgrid(1), dp)
+              ratioxz = real(npgrid(3),dp)/real(npgrid(1),dp)
               diffxz = targetratioxz - ratioxz
               if (diffxz.lt.0.0_dp) then
                 npgrid(1) = n*npgrid(1)
@@ -311,7 +323,7 @@ C
                 npgrid(3) = n*npgrid(3)
               endif
             elseif (lfixz) then
-              ratioxy = real(npgrid(2), dp)/real(npgrid(1), dp)
+              ratioxy = real(npgrid(2),dp)/real(npgrid(1),dp)
               diffxy = targetratioxy - ratioxy
               if (diffxy.lt.0.0_dp) then
                 npgrid(1) = n*npgrid(1)
@@ -319,8 +331,8 @@ C
                 npgrid(2) = n*npgrid(2)
               endif
             else
-              ratioxy = real(npgrid(2), dp)/real(npgrid(1), dp)
-              ratioxz = real(npgrid(3), dp)/real(npgrid(1), dp)
+              ratioxy = real(npgrid(2),dp)/real(npgrid(1),dp)
+              ratioxz = real(npgrid(3),dp)/real(npgrid(1),dp)
               diffxy = targetratioxy - ratioxy
               diffxz = targetratioxz - ratioxz
               if (diffxy.lt.0.0_dp.and.diffxz.lt.0.0_dp) then
@@ -333,16 +345,19 @@ C
             endif
           enddo
         enddo
+
+ 999    continue             ! Use goto to avoid re-indenting code too much
+
         if (ldebug) then
-          write(6,'(/,'' Arse Processor grid = '',3(i4,1x))') 
+          write(6,'(/,''  Processor grid = '',3(i4,1x))') 
      .      (npgrid(n),n=1,3)
         endif
 C
 C  Calculate target number of atoms per node in each direction
 C
-        targetx = real(na, dp)/real(npgrid(1), dp)
-        targety = real(na, dp)/real(npgrid(2), dp)
-        targetz = real(na, dp)/real(npgrid(3), dp)
+        targetx = real(na,dp)/real(npgrid(1),dp)
+        targety = real(na,dp)/real(npgrid(2),dp)
+        targetz = real(na,dp)/real(npgrid(3),dp)
 C
 C  Allocate local memory
 C
@@ -424,7 +439,7 @@ C  Assign cells to nodes based on cumulative numbers of atoms : Z
 C
         natomnow = 0
         natomold = 0
-        npgridzptr(0:npgrid(3)) = nbufferz
+        npgridzptr(1:npgrid(3)) = 0
         ii = 1
         do iz = nbufferz+1,nspcell(3) - nbufferz
           if (ii == npgrid(3)) exit
@@ -435,7 +450,6 @@ C
             enddo
           enddo
           rnow = natomnow - natomold
-       print*,ii,"of",npgrid(3), natomnow, "rnow",int(rnow),rnow/targetz
           if (rnow/targetz > 0.90_dp) then
             npgridzptr(ii) = iz
             ii = ii + 1
@@ -551,6 +565,9 @@ C The lok[xyz] variable below are only necessary when using buffers.
               write(6,*) "Warning: Bad load balancing: ",
      .                   "no cells allocated to node",
      .                   minloc(ncellpernodelist)-1
+              write(6,*) "Try specifying a number of nodes that is ",
+     .                   "an exact factor of the number of cells:"
+     .                   ,product(nspcell)
            endif
         endif
         deallocate(ncellpernodelist)
@@ -585,9 +602,9 @@ C
         enddo
 
         if (ionode) then
-           allocate(natompernodelist(nodes))
+          allocate(natompernodelist(nodes))
         else
-           allocate(natompernodelist(0))
+          allocate(natompernodelist(0))
         endif
 #ifdef MPI
         call mpi_gather(natompernode,1,mpi_integer,
@@ -597,11 +614,11 @@ C
         natompernodelist=natompernode
 #endif
         if (ionode) then
-           write(6,*)
-           do i=0,nodes-1
-              write(6,'(''  Atoms per Processor = '',2(i8,1x))') 
+          write(6,*)
+          do i = 0,nodes-1
+            write(6,'(''  Atoms per Processor = '',2(i8,1x))') 
      .             i,natompernodelist(i+1)
-           enddo
+          enddo
         endif
         deallocate(natompernodelist)
 C
@@ -686,9 +703,9 @@ C
 C
 C  Free local memory
 C
-        deallocate(npgridxptr)
-        deallocate(npgridyptr)
         deallocate(npgridzptr)
+        deallocate(npgridyptr)
+        deallocate(npgridxptr)
       endif
 C
 

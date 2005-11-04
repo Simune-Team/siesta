@@ -396,6 +396,7 @@ C Find weighted spherical harmonics at special points ---------------
    20   CONTINUE
    30 CONTINUE
 C -------------------------------------------------------------------
+      ILM = 0
 
 C Expand FUNC in spherical harmonics at each radius -----------------
       NY = 0

@@ -64,11 +64,13 @@ c Reading input for the pseudopotentials and atomic orbitals
 
          write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
          call read_basis_netcdf()
+         call elec_corr_setup()
 
       else if (user_basis) then
 
          write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
          call read_basis_ascii()
+         call elec_corr_setup()
 
       else
 !

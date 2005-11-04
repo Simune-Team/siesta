@@ -39,12 +39,12 @@ SYSOBJ=$(SYS).o pxf.o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
-	chempot.o coceri.o conjgr.o constr.o coxmol.o cross.o \
-	denmat.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
+	chempot.o coceri.o constr.o coxmol.o cross.o \
+	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o dynamics.o \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
-	fixed.o gradient.o grdsam.o \
+	fixed.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o ioxv.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
@@ -58,7 +58,8 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	savepsi.o shaper.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o xc.o xijorb.o \
 	cellxc.o cdiag.o rdiag.o \
-        cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
+        cgvc.o cgvc_zmatrix.o \
+        iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
 	siesta.o io.o \
         spin_init.o coor.o atm_transfer.o \
@@ -104,16 +105,16 @@ gen-basis.o: $(FDF)
 # Note : precision must be the first module
 #
 MOD_OBJS=precision.o recipes.o \
-         spatial.o parallel.o parallelsubs.o sys.o parsing.o xcmod.o atom.o atmparams.o \
+         spatial.o parallel.o parallelsubs.o sys.o parsing.o chemical.o xcmod.o atom.o atmparams.o \
          m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
-         onmod.o chemical.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
+         onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
 	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
-         units.o m_broyden_mixing.o forhar.o m_wallclock.o m_iostruct.o \
-         nlefsm.o overfsm.o
+         units.o  zmatrix.o m_broyden_mixing.o forhar.o m_wallclock.o m_iostruct.o \
+         nlefsm.o overfsm.o conjgr.o conjgr_old.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
@@ -149,11 +150,11 @@ atm_types.o: radial.o
 atm_transfer.o: atm_types.o atmfuncs.o radial.o periodic_table.o
 atmfuncs.o: atm_types.o radial.o
 old_atmfuncs.o atmfuncs.o matel.o: spher_harm.o
-siesta.o  initparallel.o setspatial.o setatomnodes.o : spatial.o
-ener3.o ener3lomem.o denmat.o gradient.o globalise : spatial.o
-ordern.o atomlwf.o cgwf.o egandd.o ener3.o ener3lomem.o gradient.o denmat.o on_subs.o iolwf.o : onmod.o
+siesta.o parallel.o initparallel.o setspatial.o setatomnodes.o : spatial.o
+ener3.o ener3lomem.o denmat.o denmatlomem.o gradient.o gradientlomem.o globalise : spatial.o
+ordern.o atomlwf.o cgwf.o egandd.o ener3.o ener3lomem.o gradient.o gradientlomem.o denmat.o denmatlomem.o on_subs.o iolwf.o : onmod.o
 atomlwf.o : mneighb.o
-gradient.o ener3.o ener3lomem.o denmat.o : globalise.o
+gradient.o gradientlomem.o ener3.o ener3lomem.o denmat.o denmatlomem.o : globalise.o
 #
 diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o ionew.o: sys.o
 atmfuncs.o atom.o basis_specs.o: sys.o
@@ -167,6 +168,7 @@ atom.o xc.o cellxc.o dhscf.o gen-basis.o siesta.o: xcmod.o
 dhscf.o: m_iorho.o forhar.o
 sys.o: parallel.o
 m_mpi_utils.o: sys.o
+cgvc.o cgvc_zmatrix.o: conjgr.o conjgr_old.o
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
 #

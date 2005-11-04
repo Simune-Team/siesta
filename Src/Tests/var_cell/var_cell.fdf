@@ -1,7 +1,7 @@
 #
 # MgCO3 in primitive cell. SZ. Variable cell
 #
-SystemName	MgCo3 R-3c test -- SZ, 100 Ry -- variable cell at 50 Gpa
+SystemName	MgCo3 R-3c test -- SZ, 100 R -- variable cell at 100 Gpa
 SystemLabel	var_cell
 NumberOfSpecies		3
 NumberOfAtoms	       10
@@ -12,6 +12,7 @@ NumberOfAtoms	       10
 %endblock ChemicalSpeciesLabel
 
 PAO.BasisSize  SZ
+Diag.Divide-and-Conquer F
 
 # Rhombohedral primitive cell
 # (HEX 3-fold cell had A=4.635 and C=15.023, so alpha=48.179 degrees
@@ -53,7 +54,7 @@ WriteForces        .true.
 
 MD.TypeOfRun         CG
 MD.Variable-Cell      T
-MD.Target-pressure    50.0 GPa
+MD.Target-pressure   100.0 GPa
 MD.Num-CG-steps	     5
 MD.Max-Stress-Tol    2.0 GPa
 

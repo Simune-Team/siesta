@@ -29,12 +29,12 @@ C Internal variables ..................................................
       integer
      .  i,il,imu,mu,n
 
-C  Initialize numt list ...............................................
+C  Initialize numt list 
       do il = 1,nbandsloc
         numct(il) = 0
       enddo
 
-C  Construct information for transpose of C ............................
+C  Construct information for transpose of C 
       do mu = 1,nbasisCloc
         do imu = 1,numc(mu)
           i = listc(imu,mu)
@@ -42,11 +42,28 @@ C  Construct information for transpose of C ............................
           if (il.gt.0) then
             numct(il) = numct(il) + 1
             n = numct(il)
-            if (n.gt.ntmax) then
-              ntmax = n + 10
-              call re_alloc(listct,1,ntmax,1,nbandsloc,name='listct')
-              call re_alloc(cttoc,1,ntmax,1,nbandsloc,name='cttoc')
-            endif
+            ntmax = max(ntmax,n)
+          endif
+        enddo
+      enddo
+
+C  Re-size arrays
+      call re_alloc(listct,1,ntmax,1,nbandsloc,name='listct')
+      call re_alloc(cttoc,1,ntmax,1,nbandsloc,name='cttoc')
+
+C  Reinitialize numt list 
+      do il = 1,nbandsloc
+        numct(il) = 0
+      enddo
+
+C  Construct information for transpose of C 
+      do mu = 1,nbasisCloc
+        do imu = 1,numc(mu)
+          i = listc(imu,mu)
+          il = nbG2L(i)
+          if (il.gt.0) then
+            numct(il) = numct(il) + 1
+            n = numct(il)
             listct(n,il) = mu
             cttoc(n,il) = imu
           endif
@@ -208,7 +225,6 @@ C Internal variables..................................................
 
 C Ensure arrays are large enough at entrance
       call re_alloc(nindv,1,max(maxnf,nbasis),name='nindv')
-      call re_alloc(listf,1,maxnf,1,nbandsloc,name='listf')
 
 C Initialize internal variables .......................................
       nind = 0
@@ -216,7 +232,7 @@ C Initialize internal variables .......................................
         indon(i) = 0
       enddo
       do i = 1,maxnf
-        nindv(i)=0
+        nindv(i) = 0
       enddo
 
 C Initialise number of local bands
@@ -244,9 +260,7 @@ C Find out C control vectors  - get number of elements
           nloc = nloc + 1
           numf(nloc) = nind
         endif
-        if (nind.gt.maxnf) then
-          maxnf = nind
-        endif
+        maxnf = max(maxnf,nind)
         do in = 1,nind
           j = nindv(in)
           nindv(in) = 0
@@ -351,10 +365,8 @@ C Internal variables..................................................
 
 C Ensure arrays are large enough on entry
       call re_alloc(nindv,1,max(ncmax,nbands),name='nindv')
-      call re_alloc(numhij,1,nbandsloc,name='numhij')
-      call re_alloc(listhij,1,maxnhij,1,nbandsloc,name='listhij')
 
-C Initialize internal variables .......................................
+C Initialize internal variables
       nind = 0
       do i = 1,nbands
         indon(i) = 0
@@ -363,7 +375,33 @@ C Initialize internal variables .......................................
         nindv(i) = 0
       enddo
 
-C Find out C control vectors ..........................................
+C Find out C dimensions
+      do il = 1,nbandsloc
+        do in = 1,numf(il)
+          k = ncG2L(listf(in,il))
+          do kn = 1,numc(k)
+            j = listc(kn,k)
+            if (indon(j) .eq. 0) then
+              indon(j) = 1
+              nind = nind + 1
+              nindv(nind) = j
+            endif
+          enddo
+        enddo
+        maxnhij = max(nind,maxnhij)
+        do in = 1,nind
+          j = nindv(in)
+          nindv(in) = 0
+          indon(j) = 0
+        enddo
+        nind = 0
+      enddo
+
+C  Re-size arrays
+      call re_alloc(numhij,1,nbandsloc,name='numhij')
+      call re_alloc(listhij,1,maxnhij,1,nbandsloc,name='listhij')
+
+C Find out C control vectors 
       do il = 1,nbandsloc
         do in = 1,numf(il)
           k = ncG2L(listf(in,il))
@@ -377,11 +415,6 @@ C Find out C control vectors ..........................................
           enddo
         enddo
         numhij(il) = nind
-        if (nind.gt.maxnhij) then
-          maxnhij = nind
-          call re_alloc(nindv,1,max(maxnhij,nbands),name='nindv')
-          call re_alloc(listhij,1,maxnhij,1,nbandsloc,name='listhij')
-        endif
         do in = 1,nind
           j = nindv(in)
           nindv(in) = 0

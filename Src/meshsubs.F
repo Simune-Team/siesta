@@ -357,10 +357,10 @@ C Find volume of unit cell and of mesh cell
 
 C Output current mesh dimensions and cut-off
       if (Node.eq.0) then
-        write(6,'(a,2f10.3,a)')
-     . 'InitMesh: Mesh cutoff (required, used) =', G2max, G2mesh, ' Ry'
         write(6,'(/,a,3(i6,a),i12)') 'InitMesh: MESH =',
      .  ntm(1),' x',ntm(2),' x',ntm(3),' =', ntp
+        write(6,'(a,2f10.3,a)')
+     . 'InitMesh: Mesh cutoff (required, used) =', G2max, G2mesh, ' Ry'
       endif
       if (cml_p) then
         call cmlStartPropertyList(mainXML)
@@ -376,7 +376,7 @@ C Output current mesh dimensions and cut-off
 
 C Find mesh-cell vectors
       do i = 1,3
-        do j= 1,3
+        do j = 1,3
           cmesh(j,i) = cell(j,i) / nm(i)
         enddo
       enddo
@@ -714,7 +714,7 @@ C
      .  i, ia, ix(3)
 
       integer, save ::
-     .  lastna
+     .  lastna = 0
 
       real(dp)
      .  dx(3)

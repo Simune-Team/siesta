@@ -53,7 +53,7 @@
       call MPI_Abort(MPI_Comm_World,1,MPIerror)
       stop
 #else
-      stop
+      call pxfabort()
 #endif
       end subroutine die
 !------------------------------------------------------------------

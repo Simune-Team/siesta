@@ -5,7 +5,7 @@
       contains
 
       subroutine parse( line, nn, lc, names, nv, values,
-     .                  ni, integers, nr, reals )
+     .                  ni, integers, nr, reals, order )
 
 c **********************************************************************
 c Extracts the names and numbers in an input line.
@@ -23,6 +23,8 @@ c integer   ni          : Number of integers present in line
 c integer   integers(*) : Integer numbers present in line
 c integer   nr          : Number of reals present in line
 c real*8    reals(*)    : Real numbers present in line
+c integer   order(*)    : Pointer indicating the order in which the
+c                       : values were read. Optional argument
 c ********* Behaviour **************************************************
 c Names are returned consecutively in string names. Name i may be
 c   extracted as name = names(lc(i-1)+1:lc(i))
@@ -36,9 +38,12 @@ c Apostrophes enclosing strings are removed in output names.
 c Double apostrophes inside a name are left unchanged.
 c The size of arrays names, values, integers and reals must be long
 c  enough to contain all instances present in line. No check is made.
+c The order array has values of 0 => string, 1 => integer, 2 => real
+c to indicate the order in which the data entries were read.
 
       implicit          none
       integer, intent(out)           :: integers(:), lc(0:)
+      integer, intent(out), optional :: order(:)
       integer, intent(out)           :: ni, nn, nr, nv
       character(len=*), intent(out)  :: names
       character(len=*), intent(in)   :: line
@@ -47,7 +52,7 @@ c  enough to contain all instances present in line. No check is made.
 
 c     Internal variables
       logical
-     .  isinteger, isreal, opened
+     .  isinteger, isreal, opened, lsetorder
 !
 !     Automatic arrays
 !
@@ -56,14 +61,17 @@ c     Internal variables
 
       character  c
       character fmtstr*10
-      integer    i, i1, i2, ic, iw, ll, ndot, nexp, nsign
+      integer    i, i1, i2, ic, iw, ll, ndot, nexp, nsign, ntot
 c
       names = ' '
+
+c     Is order argument present?
+      lsetorder = (present(order))
 
 c     Check line length
       ll = len(line)
 
-c     Clasify line characters
+c     Classify line characters
       isblank(0) = .true.
       isdigit(0) = .false.
       isdot(0)   = .false.
@@ -99,6 +107,7 @@ c     Initialize number of instances
 
 c     Iterate on 'words'
       i2 = 0
+      ntot = 0
       do iw = 1,ll
 
 c       Locate first character of word
@@ -177,6 +186,8 @@ c       Add word to proper class
  9000     format('(i',i2.2,')')
           read(line(i1:i2),fmt=fmtstr) integers(ni)
           values(nv) = integers(ni)
+          ntot = ntot + 1
+          if (lsetorder) order(ntot) = 1
         elseif (isreal) then
           nr = nr + 1
           nv = nv + 1
@@ -184,8 +195,12 @@ c       Add word to proper class
  9020     format('(g',i2.2,'.0)')
           read(line(i1:i2),fmt=fmtstr) reals(nr)
           values(nv) = reals(nr)
+          ntot = ntot + 1
+          if (lsetorder) order(ntot) = 2
         else
           nn = nn + 1
+          ntot = ntot + 1
+          if (lsetorder) order(ntot) = 0
 c         Remove enclosing apostrophes if present
           if (line(i1:i1).eq.'''' .and. line(i2:i2).eq.'''') then
             lc(nn) = lc(nn-1) + i2 - i1 - 1

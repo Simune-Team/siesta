@@ -38,6 +38,10 @@ C
         integer,          save :: MaxBandsSendB
         integer,          save :: MaxBasisSendC
         integer, pointer, save :: NNodeNo(:)
+        integer, pointer, save :: NNodeInBux(:)
+        integer, pointer, save :: NNodeInBux2(:)
+        integer, pointer, save :: NNodeInBuxPreN(:)
+        integer, pointer, save :: NNodeInBux2PreN(:)
         integer, pointer, save :: Node2NNodePtr(:)
         integer, pointer, save :: NNodeBandsSendB(:)
         integer, pointer, save :: NNodeBasisSendC(:)
@@ -49,8 +53,8 @@ C
         integer, pointer, save :: numftL(:,:)
         integer, pointer, save :: numhijG(:,:)
         integer, pointer, save :: numhijL(:,:)
-        integer, pointer, save :: listhijG(:,:)
-        integer, pointer, save :: listhijL(:,:)
+        integer, pointer, save :: listhijG(:)
+        integer, pointer, save :: listhijL(:)
         integer, pointer, save, public  :: listft2(:,:)
         integer, pointer, save :: listftG(:,:)
         integer, pointer, save :: listftL(:,:)
@@ -67,8 +71,8 @@ C
         integer, pointer, save :: ndataBR2(:)
         integer, pointer, save :: ndataFR(:)
         integer, pointer, save :: ndataFS(:)
-        real(dp),pointer, save :: buxstore(:,:)
-        real(dp),pointer, save :: buxstore2(:,:)
+        real(dp),pointer, save :: buxstore(:)
+        real(dp),pointer, save :: buxstore2(:)
 C
 C  Statistics for data transfer
 C
@@ -124,6 +128,10 @@ C Nullify arrays on firstcall
         nullify(ndataBR)
         nullify(ndataBS)
         nullify(ndataBR2)
+        nullify(NNodeInBux)
+        nullify(NNodeInBux2)
+        nullify(NNodeInBuxPreN)
+        nullify(NNodeInBux2PreN)
         nullify(buxstore)
         nullify(buxstore2)
         firstcall = .false.
@@ -189,6 +197,10 @@ C Size data counter arrays
       call re_alloc(ndataBR,1,NNodes,name='ndataBR')
       call re_alloc(ndataBS,1,NNodes,name='ndataBS')
       call re_alloc(ndataBR2,1,NNodes,name='ndataBR2')
+      call re_alloc(NNodeInBux,1,NNodes,name='NNodeInBux')
+      call re_alloc(NNodeInBux2,1,NNodes,name='NNodeInBux2')
+      call re_alloc(NNodeInBuxPreN,1,NNodes,name='NNodeInBuxPreN')
+      call re_alloc(NNodeInBux2PreN,1,NNodes,name='NNodeInBux2PreN')
 
 C----------------------------------------------
 C Find elements of C/grad to be communicated  -
@@ -456,29 +468,27 @@ C Wait for everything to finish
 C Find total size of listhijG array
       MaxListHijG = 0
       do n = 1,NNodes
-        nsize = 0
+        NNodeInBux2PreN(n) = MaxListHijG
         do i = 1,NNodeBandsSendB(n)
-          nsize = nsize + numhijG(i,n)
+          MaxListHijG = MaxListHijG + numhijG(i,n)
         enddo
-        MaxListHijG = max(MaxListHijG,nsize)
       enddo
 
 C Find total size of listhijL array
       MaxListHijL = 0
       do n = 1,NNodes
-        nsize = 0
+        NNodeInBuxPreN(n) = MaxListHijL
         do il = 1,nbandsloc
           ig = NNodeBandsSendListB2(il,n)
           if (ig.gt.0) then
-            nsize = nsize + numhij(il)
+            MaxListHijL = MaxListHijL + numhij(il)
           endif
         enddo
-        MaxListHijL = max(MaxListHijL,nsize)
       enddo
 
 C Allocate listhij arrays
-      call re_alloc(listhijG,1,MaxListHijG,1,NNodes,name='listhijG')
-      call re_alloc(listhijL,1,MaxListHijL,1,NNodes,name='listhijL')
+      call re_alloc(listhijG,1,MaxListHijG,name='listhijG')
+      call re_alloc(listhijL,1,MaxListHijL,name='listhijL')
 
 C Build array of listhij to be sent
       nRequest = 0
@@ -491,7 +501,7 @@ C Build array of listhij to be sent
           ig = NNodeBandsSendListB2(il,n)
           if (ig.gt.0) then
             do jn = 1,numhij(il)
-              listhijL(ndataBS(n)+jn,n) = listhij(jn,il)
+              listhijL(NNodeInBuxPreN(n)+ndataBS(n)+jn) = listhij(jn,il)
             enddo
             ndataBS(n) = ndataBS(n) + numhij(il)
             ndataBR(n) = ndataBR(n) + numhijG(ig,n)
@@ -500,14 +510,15 @@ C Build array of listhij to be sent
 
 C Post receives
         nRequest = nRequest + 1
-        call MPI_IRecv(listhijG(1,n),ndataBR(n),MPI_integer,
-     .    NNodeNo(n),NNodeNo(n),MPI_Comm_World,Request(nRequest),
-     .    MPIerror)
+        call MPI_IRecv(listhijG(NNodeInBux2PreN(n)+1),ndataBR(n),
+     .    MPI_integer,NNodeNo(n),NNodeNo(n),MPI_Comm_World,
+     .    Request(nRequest),MPIerror)
 
 C Post sends
         nRequest = nRequest + 1
-        call MPI_ISend(listhijL(1,n),ndataBS(n),MPI_integer,
-     .    NNodeNo(n),Node,MPI_Comm_World,Request(nRequest),MPIerror)
+        call MPI_ISend(listhijL(NNodeInBuxPreN(n)+1),ndataBS(n),
+     .    MPI_integer,NNodeNo(n),Node,MPI_Comm_World,Request(nRequest),
+     .    MPIerror)
 
 C Statistics
         nTransferInteger = nTransferInteger + ndataBS(n)
@@ -527,9 +538,9 @@ C Free communication arrays
       deallocate(Request)
 
 C Free workspace array
-      call memory('D','L',size(LBneededG),'globalise')
+      call memory('D','L',size(lBneededG),'globalise')
       deallocate(lBneededG)
-      call memory('D','L',size(LBneededL),'globalise')
+      call memory('D','L',size(lBneededL),'globalise')
       deallocate(lBneededL)
 
 C Call timer
@@ -717,10 +728,20 @@ C Passed variables
       integer
      .  narray
 
+C Local variables
+      integer
+     .  n
+
+C Copy pointers scaled by number of arrays
+      do n = 1,NNodes
+        NNodeInBux(n) = narray*NNodeInBuxPreN(n)
+        NNodeInBux2(n) = narray*NNodeInBux2PreN(n)
+      enddo
+
 C Allocate space for storing array values to be communicated
-      call re_alloc(buxstore,1,narray*MaxListHijL,1,NNodes,
+      call re_alloc(buxstore,1,narray*MaxListHijL,
      .  name='buxstore',shrink=.false.)
-      call re_alloc(buxstore2,1,narray*MaxListHijG,1,NNodes,
+      call re_alloc(buxstore2,1,narray*MaxListHijG,
      .  name='buxstore2',shrink=.false.)
 
 C Initialise data counters
@@ -750,6 +771,7 @@ C Passed variables
 
 C Internal variables
       integer          :: i
+      integer          :: iadd
       integer          :: ig
       integer          :: mu
       integer          :: n
@@ -762,9 +784,10 @@ C Set pointer to global band and NNodeSendB element
         if (ig.gt.0) then
 
 C Load data arrays
+          iadd = ndataBS(n) + NNodeInBux(n)
           do i = 1,numhij(ibandloc)
             mu = listhij(i,ibandloc)
-            buxstore(ndataBS(n)+i,n) = bux1(mu)
+            buxstore(iadd+i) = bux1(mu)
           enddo
           ndataBS(n) = ndataBS(n) + numhij(ibandloc)
           ndataBR(n) = ndataBR(n) + numhijG(ig,n)
@@ -793,6 +816,7 @@ C Passed variables
 
 C Internal variables
       integer          :: i
+      integer          :: iadd
       integer          :: ig
       integer          :: mu
       integer          :: n
@@ -805,10 +829,11 @@ C Set pointer to global band and NNodeSendB element
         if (ig.gt.0) then
   
 C Load data arrays
+          iadd = ndataBS(n) + NNodeInBux(n)
           do i = 1,numhij(ibandloc)
             mu = listhij(i,ibandloc)
-            buxstore(ndataBS(n)+i,n) = bux1(mu)
-            buxstore(ndataBS(n)+numhij(ibandloc)+i,n) = bux2(mu)
+            buxstore(iadd+i) = bux1(mu)
+            buxstore(iadd+numhij(ibandloc)+i) = bux2(mu)
           enddo
           ndataBS(n) = ndataBS(n) + 2*numhij(ibandloc)
           ndataBR(n) = ndataBR(n) + 2*numhijG(ig,n)
@@ -856,15 +881,15 @@ C Loop over neighbouring nodes to distribute elements
 C Post receives
         if (ndataBR(n).gt.0) then
           nRequest = nRequest + 1
-          call MPI_IRecv(buxstore2(1,n),ndataBR(n),MPI_double_precision,
-     .                   NNodeNo(n),NNodeNo(n),MPI_Comm_World,
-     .                   Request(nRequest),MPIerror)
+          call MPI_IRecv(buxstore2(NNodeInBux2(n)+1),ndataBR(n),
+     .                   MPI_double_precision,NNodeNo(n),NNodeNo(n),
+     .                   MPI_Comm_World,Request(nRequest),MPIerror)
         endif
 
 C Post sends
         if (ndataBS(n).gt.0) then
           nRequest = nRequest + 1
-          call MPI_ISend(buxstore(1,n),ndataBS(n),
+          call MPI_ISend(buxstore(NNodeInBux(n)+1),ndataBS(n),
      .                   MPI_double_precision,NNodeNo(n),Node,
      .                   MPI_Comm_World,Request(nRequest),MPIerror)
         endif
@@ -912,6 +937,7 @@ C Passed variables
 
 C Internal variables
       integer          :: i
+      integer          :: iadd
       integer          :: ig
       integer          :: j
       integer          :: jn
@@ -933,8 +959,9 @@ C Set pointer to global band and NNodeSendB element
 
 C Load globalised data arrays
           do i = 1,numhijG(ig,n)
-            mu = listhijG(ndataBR2(n)+i,n)
-            buxg(mu) = buxg(mu) + buxstore2(ndataBR(n)+i,n)
+            mu = listhijG(ndataBR2(n)+i+NNodeInBux2PreN(n))
+            buxg(mu) = buxg(mu) + 
+     .        buxstore2(ndataBR(n)+i+NNodeInBux2(n))
           enddo
           ndataBR(n) = ndataBR(n) + numhijG(ig,n)
           ndataBR2(n) = ndataBR2(n) + numhijG(ig,n)
@@ -985,10 +1012,11 @@ C Set pointer to global band and NNodeSendB element
 
 C Load globalised data arrays
           do i = 1,numhijG(ig,n)
-            mu = listhijG(ndataBR2(n)+i,n)
-            buxg(mu,1) = buxg(mu,1) + buxstore2(ndataBR(n)+i,n)
-            buxg(mu,2) = buxg(mu,2) + buxstore2(ndataBR(n)+
-     .        numhijG(ig,n)+i,n)
+            mu = listhijG(ndataBR2(n)+i+NNodeInBux2PreN(n))
+            buxg(mu,1) = buxg(mu,1) + 
+     .        buxstore2(ndataBR(n)+i+NNodeInBux2(n))
+            buxg(mu,2) = buxg(mu,2) + 
+     .        buxstore2(ndataBR(n)+numhijG(ig,n)+i+NNodeInBux2(n))
           enddo
           ndataBR(n) = ndataBR(n) + 2*numhijG(ig,n)
           ndataBR2(n) = ndataBR2(n) + numhijG(ig,n)
@@ -1016,6 +1044,7 @@ C Passed variables
 
 C Internal variables
       integer          :: i
+      integer          :: iadd
       integer          :: ig
       integer          :: j
       integer          :: jn
@@ -1026,7 +1055,7 @@ C Internal variables
 C Rezero based on local elements
       do jn = 1,numhij(ibandloc)
         j = listhij(jn,ibandloc)
-        buxg(j) = 0.0d0
+        buxg(j) = 0.0_dp
       enddo
 
 C Loop over neighbouring nodes
@@ -1040,9 +1069,10 @@ C Find pointer to start of listhijG values
           m = ndataBR2(n) - numhijG(ig,n)
       
 C Zero globalised data arrays
-          do i = 1,numhijG(ig,n)
-            mu = listhijG(m+i,n)
-            buxg(mu) = 0.0d0
+          iadd = m + NNodeInBux2PreN(n)
+          do i = iadd+1,iadd+numhijG(ig,n)
+            mu = listhijG(i)
+            buxg(mu) = 0.0_dp
           enddo
 
         endif
@@ -1068,6 +1098,7 @@ C Passed variables
 
 C Internal variables
       integer          :: i
+      integer          :: iadd
       integer          :: ig
       integer          :: j
       integer          :: jn
@@ -1078,8 +1109,8 @@ C Internal variables
 C Rezero based on local elements
       do jn = 1,numhij(ibandloc)
         j = listhij(jn,ibandloc)
-        buxg(j,1) = 0.0d0
-        buxg(j,2) = 0.0d0
+        buxg(j,1) = 0.0_dp
+        buxg(j,2) = 0.0_dp
       enddo
 
 C Loop over neighbouring nodes
@@ -1093,10 +1124,11 @@ C Find pointer to start of listhijG values
           m = ndataBR2(n) - numhijG(ig,n)
 
 C Zero globalised data arrays
-          do i = 1,numhijG(ig,n)
-            mu = listhijG(m+i,n)
-            buxg(mu,1) = 0.0d0
-            buxg(mu,2) = 0.0d0
+          iadd = m + NNodeInBux2PreN(n)
+          do i = iadd+1,iadd+numhijG(ig,n)
+            mu = listhijG(i)
+            buxg(mu,1) = 0.0_dp
+            buxg(mu,2) = 0.0_dp
           enddo
 
         endif
@@ -1122,6 +1154,7 @@ C Passed variables
 
 C Internal variables
       integer          :: i
+      integer          :: iadd
       integer          :: ig
       integer          :: j
       integer          :: jn
@@ -1132,9 +1165,9 @@ C Internal variables
 C Rezero based on local elements
       do jn = 1,numhij(ibandloc)
         j = listhij(jn,ibandloc)
-        buxg(j,1) = 0.0d0
-        buxg(j,2) = 0.0d0
-        buxg(j,3) = 0.0d0
+        buxg(j,1) = 0.0_dp
+        buxg(j,2) = 0.0_dp
+        buxg(j,3) = 0.0_dp
       enddo
 
 C Loop over neighbouring nodes
@@ -1148,11 +1181,12 @@ C Find pointer to start of listhijG values
           m = ndataBR2(n) - numhijG(ig,n)
 
 C Zero globalised data arrays
-          do i = 1,numhijG(ig,n)
-            mu = listhijG(m+i,n)
-            buxg(mu,1) = 0.0d0
-            buxg(mu,2) = 0.0d0
-            buxg(mu,3) = 0.0d0
+          iadd = m + NNodeInBux2PreN(n)
+          do i = iadd+1,iadd+numhijG(ig,n)
+            mu = listhijG(i)
+            buxg(mu,1) = 0.0_dp
+            buxg(mu,2) = 0.0_dp
+            buxg(mu,3) = 0.0_dp
           enddo
 
         endif
@@ -1182,6 +1216,7 @@ C Passed variables
 
 C Internal variables
       integer          :: i
+      integer          :: iadd
       integer          :: ig
       integer          :: mu
       integer          :: n
@@ -1194,11 +1229,12 @@ C Set pointer to global band and NNodeSendB element
         if (ig.gt.0) then
 
 C Load data arrays
+          iadd = ndataBS(n) + NNodeInBux(n)
           do i = 1,numhij(ibandloc)
             mu = listhij(i,ibandloc)
-            buxstore(ndataBS(n)+i,n) = bux1(mu)
-            buxstore(ndataBS(n)+numhij(ibandloc)+i,n) = bux2(mu)
-            buxstore(ndataBS(n)+2*numhij(ibandloc)+i,n) = bux3(mu)
+            buxstore(iadd+i) = bux1(mu)
+            buxstore(numhij(ibandloc)+iadd+i) = bux2(mu)
+            buxstore(2*numhij(ibandloc)+iadd+i) = bux3(mu)
           enddo
           ndataBS(n) = ndataBS(n) + 3*numhij(ibandloc)
           ndataBR(n) = ndataBR(n) + 3*numhijG(ig,n)
@@ -1251,12 +1287,13 @@ C Set pointer to global band and NNodeSendB element
             
 C Load globalised data arrays
           do i = 1,numhijG(ig,n)
-            mu = listhijG(ndataBR2(n)+i,n)
-            buxg(mu,1) = buxg(mu,1) + buxstore2(ndataBR(n)+i,n)
-            buxg(mu,2) = buxg(mu,2) + buxstore2(ndataBR(n)+
-     .        numhijG(ig,n)+i,n)
-            buxg(mu,3) = buxg(mu,3) + buxstore2(ndataBR(n)+
-     .        2*numhijG(ig,n)+i,n)
+            mu = listhijG(ndataBR2(n)+i+NNodeInBux2PreN(n))
+            buxg(mu,1) = buxg(mu,1) + 
+     .        buxstore2(ndataBR(n)+i+NNodeInBux2(n))
+            buxg(mu,2) = buxg(mu,2) + 
+     .        buxstore2(ndataBR(n)+numhijG(ig,n)+i+NNodeInBux2(n))
+            buxg(mu,3) = buxg(mu,3) + 
+     .        buxstore2(ndataBR(n)+2*numhijG(ig,n)+i+NNodeInBux2(n))
           enddo
           ndataBR(n) = ndataBR(n) + 3*numhijG(ig,n)
           ndataBR2(n) = ndataBR2(n) + numhijG(ig,n)

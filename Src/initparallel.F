@@ -40,18 +40,22 @@ C
 #endif
       integer       :: ii
       integer       :: maxorb
+      integer       :: ncell(3)
+      integer       :: ncelltotal
       logical       :: lspatialok
       logical, save :: first = .true.
       real(dp)      :: acell
       real(dp)      :: bcell
       real(dp)      :: ccell
       real(dp)      :: cellmin
+      real(dp)      :: cscale
       real(dp)      :: alpha
       real(dp)      :: beta
       real(dp)      :: gamma
       real(dp)      :: degtorad
       real(dp)      :: rcmax
       real(dp)      :: rcmaxopt
+      real(dp), save:: tiny = 1.0d-6
 
 C  Initialise on first call
       if (first) then
@@ -83,6 +87,16 @@ C Spatial decomposition flag
      .  MPIerror)
 #endif
 
+C Processor grid
+      if (Node.eq.0) then
+        npgrid(1) = fdf_integer('ProcessorGridX',1)
+        npgrid(2) = fdf_integer('ProcessorGridY',1)
+        npgrid(3) = fdf_integer('ProcessorGridZ',1)
+      endif
+#ifdef MPI
+      call MPI_Bcast(npgrid,3,MPI_integer,0,MPI_Comm_World,MPIerror)
+#endif
+
 C Set ProcessorY  
 #ifdef MPI
       if (Node.eq.0) then
@@ -100,6 +114,24 @@ C Override spatial cut-off
         rcmax = rspatial
       else
         rcmax = max(rmaxh,rcoor)
+
+C Check that this will lead to a reasonable number of domains relative to 
+C number of processors and if not then modify
+        ncell(1) = abs(ucell(1,1)/rcmax) + 1
+        ncell(2) = abs(ucell(2,2)/rcmax) + 1
+        ncell(3) = abs(ucell(3,3)/rcmax) + 1
+        ncelltotal = ncell(1)*ncell(2)*ncell(3)
+        if (ncelltotal.lt.Nodes) then
+          cscale = dble(2*Nodes)/dble(ncelltotal)
+          cscale = cscale**(1.0d0/3.0d0)
+          ncell(1) = ncell(1)*cscale + 1
+          ncell(2) = ncell(2)*cscale + 1
+          ncell(3) = ncell(3)*cscale + 1
+          rcmax = (ucell(1,1)-tiny)/dble(ncell(1))
+          rcmax = min(rcmax,(ucell(2,2)-tiny)/dble(ncell(2)))
+          rcmax = min(rcmax,(ucell(3,3)-tiny)/dble(ncell(3)))
+        endif
+
         rcmaxopt = rcmax
       endif
 

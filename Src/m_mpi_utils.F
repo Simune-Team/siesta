@@ -23,7 +23,8 @@
         module procedure broadcast_dp, broadcast_int, broadcast_logical
         module procedure broadcast_sp, broadcast_char
         module procedure broadcast_v_dp, broadcast_v_int
-        module procedure broadcast_vv_dp
+        module procedure broadcast_vv_dp, broadcast_vv_int
+
       end interface
 
       CONTAINS
@@ -87,6 +88,17 @@
      $            MPI_Comm_World,MPIerror)
 #endif
        end subroutine broadcast_v_int
+
+!------------------------------------------------------------
+      subroutine broadcast_vv_int(a)
+      integer, dimension(:,:), intent(inout) :: a
+
+
+#ifdef MPI
+           call MPI_Bcast(a(1,1),size(a),MPI_integer,0,
+     $            MPI_Comm_World,MPIerror)
+#endif
+       end subroutine broadcast_vv_int
 
 !---------------------------------------------------
       subroutine broadcast_char(str)

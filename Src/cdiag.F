@@ -120,14 +120,14 @@ C Matrices for 2D
       integer,  pointer, save :: ifail(:)
       integer,  pointer, save :: iwork(:)
       logical,           save :: AllInOne = .false.
-      logical,           save :: DivideConquer = .false.
+      logical,           save :: DivideConquer = .true.
       logical,           save :: DoRead = .true.
       logical,           save :: FirstCall = .true.
       logical,           save :: NoExpert = .false.
       logical,           save :: ParallelOverK = .false.
       logical,           save :: PreRotate = .false.
       logical,           save :: SaveEigenvectors = .false.
-      logical,           save :: Use2D = .false.
+      logical,           save :: Use2D = .true.
       logical,           save :: Serial = .true.
       logical                 :: ChangeAlgorithm
       real(dp)                :: abstol
@@ -173,7 +173,7 @@ C Set algorithm logicals
         DoRead = .false.
         if (Node.eq.0) then
           AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
-          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.false.)
+          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
           NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
           ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
           PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
@@ -197,6 +197,7 @@ C Set algorithm logicals
         Serial = (Nodes.eq.1.or.ParallelOverK)
         if (Serial) Use2D = .false.
         if (DivideConquer.and..not.Serial) AllInOne = .false.
+        if (AllInOne.and.Serial) DivideConquer = .false.
         if (PreRotate) SaveEigenvectors = .true.
         if (SaveEigenvectors) then
           if (Use2D) then

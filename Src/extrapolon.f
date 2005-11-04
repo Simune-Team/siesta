@@ -71,7 +71,7 @@ C *****************************************************************************
       real(dp), intent(inout) :: cold(maxnc, nbasisloc, nspin)
       real(dp), intent(inout) :: c(maxnc, nbasisCloc, nspin)
 
-      real(dp), intent(out) :: aux(2, nbasis)
+      real(dp), intent(out) :: aux(2,nbasis)
 C  Internal variables .......................................................
 
       integer

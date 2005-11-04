@@ -904,12 +904,13 @@ c
 C Returns conversion factor between a subset of physical units
 C Written by J.M.Soler. Dec'96.
 c Modified by Alberto Garcia, Jan'97.
+C Modified by Rainer Hoft, Mar'05 to include angles and torques
 
       IMPLICIT      NONE
       CHARACTER*(*) FROM, TO
       INTEGER       IU, IFROM, ITO, NU
 
-      PARAMETER ( NU = 54 )
+      PARAMETER ( NU = 64 )
       CHARACTER         DIM(NU)*10, NAME(NU)*10
       DOUBLE PRECISION  UNIT(NU)
 c
@@ -977,11 +978,23 @@ c
      .  'MomInert', 'Ry*fs**2  ', 2.17991d-48,
      .  'Efield  ', 'V/m       ', 1.d0,
      .  'Efield  ', 'V/nm      ', 1.d9 /
-      DATA (DIM(IU), NAME(IU), UNIT(IU), IU=51,54) /
+      DATA (DIM(IU), NAME(IU), UNIT(IU), IU=51,60) /
      .  'Efield  ', 'V/Ang     ', 1.d10,
      .  'Efield  ', 'V/Bohr    ', 1.8897268d10,
      .  'Efield  ', 'Ry/Bohr/e ', 2.5711273d11,
-     .  'Efield  ', 'Har/Bohr/e', 5.1422546d11 /
+     .  'Efield  ', 'Har/Bohr/e', 5.1422546d11,
+     .  'angle   ', 'deg       ', 1.d0,
+     .  'angle   ', 'rad       ', 5.72957795d1,
+     .  'torque  ', 'eV/deg    ', 1.0d0,
+     .  'torque  ', 'eV/rad    ', 1.745533d-2,
+     .  'torque  ', 'Ry/deg    ', 13.6058d0,
+     .  'torque  ', 'Ry/rad    ', 0.237466d0 /
+      DATA (DIM(IU), NAME(IU), UNIT(IU), IU=61,64) /
+     .  'torque  ', 'meV/deg   ', 1.0d-3,
+     .  'torque  ', 'meV/rad   ', 1.745533d-5,
+     .  'torque  ', 'mRy/deg   ', 13.6058d-3,
+     .  'torque  ', 'mRy/rad   ', 0.237466d-3 /
+
 c
       IFROM = 0
       ITO   = 0

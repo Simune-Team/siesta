@@ -201,31 +201,41 @@ C ********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision, only : dp
 
       IMPLICIT NONE
 
 C Argument types and dimensions
-      CHARACTER         MODE*4
-      INTEGER           NA, NAMOVE, NNA, NX
-      INTEGER           IA0, IAMOVE(*), ISC, JAN(*)
-      real(dp)          CELL(*), RANGE, R2IJ(*),
-     .                  X0(NX), XA(NX,NA), XIJ(NX,*)
+      character(len=4), intent(in) :: mode
+      integer,          intent(in) :: nx
+      real(dp),         intent(in) :: range
+      integer,          intent(in) :: na
+      real(dp),         intent(in) :: xa(nx, na)
+      integer,          intent(in) :: namove
+      integer,          intent(in) :: iamove(*)
+      integer,          intent(in) :: ia0
+      integer,          intent(in) :: isc
+      real(dp),         intent(in) :: x0(nx)
+
+      real(dp),         intent(inout) :: cell(nx*nx)
+      integer,          intent(inout) :: nna
+
+      integer,          intent(out) :: jan(nna)
+      real(dp),         intent(out) :: xij(nx, nna)
+      real(dp),         intent(out) :: r2ij(nna)
 
 C NCR is the ratio between range radius and mesh-planes distance.
 C It fixes the size (and number) of mesh cells.
 C Recommended values are between 1 and 3
-      INTEGER NCR
-      PARAMETER ( NCR = 2 )
+      integer, parameter :: NCR = 2
 
 C DXMARG and DXRANG are used for automatic CELL generation
 C DXMARG is the minimum margin relative to coordinate range
 C DXRANG is the minimum margin relative to RANGE
 C EPS is a small number to be subtracted from 1
-      real(dp) :: DXMARG, DXRANG, EPS 
-      PARAMETER ( DXMARG = 0.1D0  )
-      PARAMETER ( DXRANG = 1.0D0  )
-      PARAMETER ( EPS    = 1.D-14 )
+      real(dp), parameter :: DXMARG = 0.1_dp
+      real(dp), parameter :: DXRANG = 1.0_dp
+      real(dp), parameter :: EPS  = 1.0e-14_dp
 
 C Variable-naming hints:
 C   Character(s) indicates
@@ -349,6 +359,7 @@ c
 
       DATA FRSTME /.TRUE./
       DATA MAXNA  / 0 /
+      DATA RNGMAX  / 0.0_dp /
 
 C Allocate local memory - check for change in number of atoms
 C and if there has been one then re-initialise

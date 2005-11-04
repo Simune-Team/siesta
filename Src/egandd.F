@@ -224,7 +224,7 @@ C.........................
 #ifdef MPI
 C Initialise communication arrays - call here to avoid increasing size of arrays later
         if (LoMem) then
-          call globalinitB(2)
+          call globalinitB(1)
         else
           call globalinitB(3)
         endif
@@ -253,11 +253,19 @@ C.........................
 
 C Calculate the energy and Gradient at current point .......................
       if (iopt .eq. 2) then
-        call gradient(c,eta,qs,h,s,nbasis,nbasisloc,nbands,ncmax,
-     .                maxnct,maxnf,maxnft,nhmax,maxnhij,numc,
-     .                listc,numct,listct,cttoc,numf,listf,numft,listft,
-     .                fttof,numh,listh,listhptr,numhij,listhij,f,fs,
-     .                grad,e,nbasisCloc,nspin,Node)
+        if (LoMem) then
+          call gradientlomem(c,eta,qs,h,s,nbasis,nbasisloc,nbands,ncmax,
+     .                  maxnct,maxnf,maxnft,nhmax,maxnhij,numc,
+     .                  listc,numct,listct,cttoc,numf,listf,numft,
+     .                  listft,fttof,numh,listh,listhptr,numhij,
+     .                  listhij,f,fs,grad,e,nbasisCloc,nspin,Node)
+        else
+          call gradient(c,eta,qs,h,s,nbasis,nbasisloc,nbands,ncmax,
+     .                  maxnct,maxnf,maxnft,nhmax,maxnhij,numc,
+     .                  listc,numct,listct,cttoc,numf,listf,numft,
+     .                  listft,fttof,numh,listh,listhptr,numhij,
+     .                  listhij,f,fs,grad,e,nbasisCloc,nspin,Node)
+        endif
         goto 999
       endif
 C.........................
@@ -265,11 +273,19 @@ C.........................
 C Calculate density matrix .................................................
 C-JMS Modified denmat argument list
       if (iopt .eq. 3) then
-        call denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
-     .              maxnct,maxnf,maxnft,nhmax,maxnhij,numc,listc,
-     .              numct,listct,cttoc,numf,listf,numft,listft,
-     .              fttof,numh,listh,listhptr,numhij,listhij,
-     .              dm,edm,nbasisCloc,nspin,Node)
+        if (LoMem) then
+          call denmatlomem(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
+     .                     maxnct,maxnf,maxnft,nhmax,maxnhij,numc,listc,
+     .                     numct,listct,cttoc,numf,listf,numft,listft,
+     .                     fttof,numh,listh,listhptr,numhij,listhij,
+     .                     dm,edm,nbasisCloc,nspin,Node)
+        else
+          call denmat(c,eta,h,s,qs,nbasis,nbasisloc,nbands,ncmax,
+     .                maxnct,maxnf,maxnft,nhmax,maxnhij,numc,listc,
+     .                numct,listct,cttoc,numf,listf,numft,listft,
+     .                fttof,numh,listh,listhptr,numhij,listhij,
+     .                dm,edm,nbasisCloc,nspin,Node)
+        endif
         goto 999
       endif
 C.........................

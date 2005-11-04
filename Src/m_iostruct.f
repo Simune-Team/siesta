@@ -8,9 +8,10 @@ c     Reads and Saves structural information in "crystallography" format
 c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
       use precision, only : dp
-      use parallel,  only : Node
+      use parallel,  only : IONode
       use fdf,       only : fdf_string
       use units,      only: Ang
+      use m_mpi_utils, only: broadcast
       
       implicit none
 
@@ -23,8 +24,7 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
       subroutine read_struct( na, cell)
 !     
-!     To be called by IOnode only...
-!     
+
       use atomlist, only : xa, isa
       use alloc, only    : re_alloc
       use sys,   only    : die
@@ -42,28 +42,43 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
 
       if (frstme) then
-         sname = fdf_string( 'SystemLabel', 'siesta' )
-         fname = paste( sname, '.STRUCT_IN' )
+         if (IOnode) then
+            sname = fdf_string( 'SystemLabel', 'siesta' )
+            fname = paste( sname, '.STRUCT_IN' )
+         endif
          frstme = .false.
       endif
 
-      call io_assign( iu )
-      open(iu,file=fname,form='formatted', status='old', iostat=iostat)      
-      if (iostat /= 0) call die(trim(fname) // " not found")
+      if (IOnode) then
+         call io_assign( iu )
+         open(iu,file=fname,form='formatted',
+     $                      status='old', iostat=iostat)      
+         if (iostat /= 0) call die(trim(fname) // " not found")
 
-      read(iu,*) ((cell(ix,iv),ix=1,3),iv=1,3)
-      cell = cell * Ang
-      read(iu,*) na
+         read(iu,*) ((cell(ix,iv),ix=1,3),iv=1,3)
+         cell = cell * Ang
+         read(iu,*) na
+      endif
+
+      call broadcast(na)
+      call broadcast(cell(1:3,1:3))
+
       nullify(isa,xa)
       call re_alloc(isa,1,na,name='isa',routine='read_struct')
       call re_alloc(xa,1,3,1,na,name='xa',routine='read_struct')
-      do ia = 1,na
-         read(iu,*) isa(ia), dummy, xfrac(1:3)
-         xa(:,ia) = matmul(cell,xfrac(1:3))
-      enddo
+      if (IOnode) then
+         do ia = 1,na
+            read(iu,*) isa(ia), dummy, xfrac(1:3)
+            xa(:,ia) = matmul(cell,xfrac(1:3))
+         enddo
+         call io_close( iu )
+         write(*,*)
+     $         " -- Read structural information from " // trim(fname)
+      endif
 
-      call io_close( iu )
-      write(*,*) " -- Read structural information from " // trim(fname)
+      call broadcast(isa(1:na))
+      call broadcast(xa(1:3,1:na))
+
 
       end subroutine read_struct
 !--------------------------------------------------------------------------
@@ -91,7 +106,8 @@ c     Internal variables and arrays
       save       fname
 
 C     Only do reading and writing for IOnode
-      if (Node /= 0) RETURN
+
+      if (.not. IOnode) RETURN
 
       if (frstme) then
          sname = fdf_string( 'SystemLabel', 'siesta' )

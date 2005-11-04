@@ -1,15 +1,16 @@
       subroutine redata(na, ns, nspin, outlng, g2max,
-     .                  charnet, negl, nscf, dDtol, mix, wmix, isolve, 
-     .                  temp, fixspin, ts, ncgmax, ftol, strtol, eta, 
-     .                  etol, rcoor, 
-     .                  ioptlwf, chebef, noeta, rcoorcp, beta, pmax,
-     .                  idyn, istart, ifinal, nmove, ianneal, iquench,
-     .                  dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
-     .                  bulkm, taurelax, 
-     .                  usesavelwf, usesavedm, usesavecg,
-     .                  mullipop, inspn, maxsav, nkick, wmixkick, 
-     .                  pulfile, tempinit, dumpcharge, varcel, 
-     .                  harrisfun, occtol, broyden_maxit )
+     .  charnet, negl, nscf, dDtol, dEtol, mix, wmix,
+     $  isolve, 
+     .  temp, fixspin, ts, ncgmax, ftol, strtol, eta, 
+     .  etol, rcoor, 
+     .  ioptlwf, chebef, noeta, rcoorcp, beta, pmax,
+     .  idyn, istart, ifinal, nmove, ianneal, iquench,
+     .  dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
+     .  bulkm, taurelax, 
+     .  usesavelwf, usesavedm, usesavecg,
+     .  mullipop, inspn, maxsav, nkick, wmixkick, 
+     .  pulfile, tempinit, dumpcharge, varcel, 
+     .  harrisfun, occtol, broyden_maxit, require_energy_convergence )
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
@@ -32,7 +33,8 @@ C logical negl             : True = Neglect interactions between
 C                            non-overlaping orbitals (coming from
 C                            KB projectors)
 C integer nscf             : Maximum number of SCF cycles per time step
-C real*8 dDtol             : Maximum Density Matrix tolerance
+C real*8 dDtol             : Maximum Density Matrix tolerance in SCF
+C real*8 dEtol             : Maximum energy tolerance in SCF
 C logical mix              : Perform mix in first SCF step
 C real*8 wmix              : Amount of output DM for new DM
 C integer isolve           : Method of solution.  0 = Diagonalization
@@ -117,6 +119,7 @@ C logical harrisfun        : swith that indicates if harris functional will
 C                            be used or not
 C real*8  occtol           : Occupancy threshold for DM build
 C integer broyden_maxit    : Number of histories saved in Broyden mixing
+C logical require_energy_convergence  : Impose E. conv. criterion?
 C **********************************************************************
 
 C
@@ -128,7 +131,7 @@ C
       use sys
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only: broadcast
-
+      use units,     only : eV
       use diagmemory, only: memoryfactor
 
       use siesta_cml
@@ -144,14 +147,14 @@ C
      .  mullipop, ncgmax, nkick, nmove, ns, nscf, pmax
 
       real(dp), intent(out) ::
-     .  beta, bulkm, charnet,
+     .  beta, bulkm, charnet, dEtol,
      .  dDtol, dt, dx, dxmax, eta(2), etol, ftol, g2max,
      .  mn, mpr, occtol, rcoor, rcoorcp, strtol,
      .  taurelax, temp, tempinit, tp, ts, tt, wmix, wmixkick
       logical, intent(out) ::
      .  chebef, dumpcharge, fixspin, inspn, mix, negl, noeta, 
      .  outlng, pulfile, usesavecg, usesavelwf, usesavedm, varcel,
-     .  harrisfun
+     .  harrisfun, require_energy_convergence
 
 C na_diag      : maximum number of atoms with diagon as default method
 C g2max_default : Mesh cutoff default, in Ry
@@ -170,6 +173,7 @@ C temp_default  : Electronic temperature default, in Ry
       real(dp), parameter :: wmix_default = 0.25_dp
       real(dp), parameter :: wmixkick_default = 0.5_dp
       real(dp), parameter :: dDtol_default = 1.0e-4_dp
+      real(dp), parameter :: dEtol_default = 1.0e-4_dp * eV
       real(dp), parameter :: occtol_default = 1.0e-12_dp
       real(dp), parameter :: etol_default = 1.0e-8_dp
       real(dp), parameter :: rcoor_default = 9.5_dp
@@ -419,7 +423,27 @@ C     Density Matrix Tolerance for achieving Self-Consistency
       if (cml_p) call cmlAddParameter(xf=mainXML, name='DM.Tolerance', 
      .     value=dDtol, dictRef='siesta:dDtol')
 
-C     Initial spin density: Maximum polarization, Ferro (false), AF (true)
+C  Require Energy convergence for achieving Self-Consistency?
+      call fdf_global_get(require_energy_convergence,
+     $     'DM.RequireEnergyConvergence',.false.)
+      if (ionode)  write(6,'(a,4x,l1)') 
+     .   'redata: Require Energy convergence for SCF = ',
+     $            require_energy_convergence
+      if (cml_p) call cmlAddParameter(xf=mainXML,
+     $     name='DM.RequireEnergyConvergence', 
+     .     value=require_energy_convergence,
+     $     dictRef='siesta:ReqEnergyConv')
+
+C Energy tolerance for achieving Self-Consistency
+      call fdf_global_get(dEtol,'DM.EnergyTolerance',dEtol_default,"Ry")
+      if (ionode)  write(6,'(a,f12.6,a)') 
+     .   'redata: DM Energy tolerance for SCF      = ',dEtol/eV,' eV'
+      if (cml_p) call cmlAddParameter(xf=mainXML,
+     $     name='DM.EnergyTolerance', 
+     .     value=dEtol, dictRef='siesta:dEtol')
+
+
+C Initial spin density: Maximum polarization, Ferro (false), AF (true)
       if (nspin.eq.2) then
          call fdf_global_get(inspn,'DM.InitSpinAF',.false.)
         if (ionode)  write(6,'(a,4x,l1)')
@@ -465,11 +489,8 @@ C Method to Solve LDA Hamiltonian ...
 C
       if (leqi(method,'diagon')) then
          isolve = 0
-         if (Nodes.eq.1) then
-            call fdf_global_get(DaC,'Diag.DivideAndConquer',.false.)
-         else
-            DaC = .false.
-         endif
+C        DivideAndConquer is now the default
+         call fdf_global_get(DaC,'Diag.DivideAndConquer',.true.)
          if (ionode)  then
             write(6,'(a,4x,a)') 
      .           'redata: Method of Calculation            = ',
@@ -943,6 +964,7 @@ C     Mass of Parrinello-Rahman variables
       endif
 
 C     Annealing option
+      ianneal = 0
       call fdf_global_get(annop,
      $           'MD.AnnealOption','TemperatureAndPressure')
 

@@ -119,7 +119,7 @@ C Matrices for 2D
       integer,  pointer, save :: ifail(:)
       integer,  pointer, save :: iwork(:)
       logical,           save :: AllInOne = .false.
-      logical,           save :: DivideConquer = .false.
+      logical,           save :: DivideConquer = .true.
       logical,           save :: DoRead = .true.
       logical,           save :: FirstCall = .true.
       logical,           save :: NoExpert = .false.
@@ -170,7 +170,7 @@ C Set algorithm logicals
         DoRead = .false.
         if (Node.eq.0) then
           AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
-          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.false.)
+          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
           NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
           PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
           Use2D         = fdf_boolean('Diag.Use2D',.true.)
@@ -190,6 +190,7 @@ C Set algorithm logicals
 #endif
         Serial = (Nodes.eq.1)
         if (Serial) Use2D = .false.
+        if (AllInOne.and.Serial) DivideConquer = .false.
         if (neigvec.ne.n) PreRotate = .false.
         if (PreRotate) SaveEigenvectors = .true.
         if (Nodes.eq.1) Use2D = .false.

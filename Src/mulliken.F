@@ -373,7 +373,7 @@ C Global sum of total charge
      $           MPI_sum, 0,MPI_Comm_World,MPIerror)
 #endif
             if (ionode) then
-              write(6,"(/a,f8.3)") 'mulliken: Qtot = ', qtot
+              write(6,"(/a,f12.3)") 'mulliken: Qtot = ', qtot
             endif
             if (cml_p) then
               call cmlAddProperty(xf=mainXML,

@@ -1,5 +1,3 @@
-c $Id: iocg.f,v 1.2 1999/11/26 18:28:14 wdpgaara Exp $
-
       subroutine iocg( task, naux, cgaux, cgcntr, relaxd, found )
 
 c**************************************************************************
