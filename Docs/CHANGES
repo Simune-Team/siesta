@@ -1,26 +1,1836 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
-Arch-patch siesta-devel--agarcia--1.4--patch-8:
+____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2005/siesta-devel--reference--1.4
+--------------------------------------------------------------------
 
-Merge CVS changes (1.4.52) by Julian Gale of 8 Apr 2005 re: hybrid XC
-=======================================================================
-Arch-patch siesta-devel--agarcia--1.4--patch-(1-7):
+2005-11-04 17:14:34 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-16
 
-Fixes for pgf90 compiler
-=======================================================================
-Arch-patch siesta-devel--reference--1.4--patch-41:
+    Summary:
+      New starlink autoconf. CML update. MD scripts. New walltime analysis. 
+    Revision:
+      siesta-devel--reference--1.4--patch-16
 
-Merge from devel--twhite: Add formatted IO for density matrix. Misc fixes
-=======================================================================
-Arch-patch siesta-devel--reference--1.4--patch-40:
+    * Merge from Toby White's ac-update branch -- New starlink autoconf
+      (Add m4/fortran.m4 to list of files to be merged into aclocal.m4)
+    
+    * Merge CML generation patches along twhite@siesta.arch--2005/siesta-devel--xml--1.4,
+      up to patch-3:
+    
+       XML changes to conform better to CML schema
+       Add stylesheet decelaration.
+       fix lattice
+    
+      (Note: siesta_cml.f90 patches applied in effect to siesta_cmlsubs.F90)
+    
+    * Add simple MD analysis scripts
+    
+    * Improve walltime printing:
+    
+      A new module m_walltime implements a "wall_time(t)" call similar to 
+      "cpu_time(t)", including checks for wraparound of the system counter.
+      With the new routine, timer has been enhanced to print also elapsed times.
+      The new table (and a line for IterSCF) goes to standard output.
+    
+      To Do: Rationalize MPI calls.
+             Integrate both cpu and walltime information in the same table.
+    
+    
+    * Do not rewind alloc_report file, to allow for multiple batches of information.
+    
 
-Add code for non-standard routine abort in nag.f
-=======================================================================
-Arch-patch siesta-devel--reference--1.4--patch-39:
+    new files:
+     Src/.arch-ids/m_walltime.f90.id Src/m_walltime.f90
+     Util/MD/.arch-ids/=id Util/MD/.arch-ids/tpe.sh.id
+     Util/MD/.arch-ids/voigt.sh.id Util/MD/tpe.sh Util/MD/voigt.sh
 
-Merge of Jon Wakelin's and Toby White's XML-output code.
+    modified files:
+     Src/Makefile Src/aclocal.m4 Src/alloc.F90 Src/atomlist.f
+     Src/configure Src/coor.F Src/m4/TW_FC_KINDS.m4
+     Src/m4/fortran.m4 Src/m_iostruct.f Src/m_wallclock.f90
+     Src/outcoor.f Src/siesta.F Src/siesta_cmlsubs.F90 Src/timer.F
+     Src/wxml/flib_wcml.f90 Src/wxml/flib_wstml.f90
+     Src/wxml/m_wxml_core.f90 Src/wxml/m_wxml_text.F90 version.info
+
+    renamed files:
+     Util/PyAtom/.arch-ids/shape.sh.id
+       ==> Util/MD/.arch-ids/shape.sh.id
+     Util/PyAtom/shape.sh
+       ==> Util/MD/shape.sh
+
+    new directories:
+     Util/MD Util/MD/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-79
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-80
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-81
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-82
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-83
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-84
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-85
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-86
+     twhite@siesta.arch--2005/siesta-devel--xml--1.4--base-0
+     twhite@siesta.arch--2005/siesta-devel--xml--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-devel--xml--1.4--patch-2
+     twhite@siesta.arch--2005/siesta-devel--xml--1.4--patch-3
+     twhite@siesta.arch--2005/siesta-test--ac-update--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-test--ac-update--1.4--patch-2
+
 =======================================================================
+
+2005-11-04 15:22:47 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-15
+
+    Summary:
+      Merge of J. Gale's branch: O(N), D&C, zmatrix, dEtol + bug fixes
+    Revision:
+      siesta-devel--reference--1.4--patch-15
+
+    * Order N lower memory option expanded
+    
+    (1) Lower memory version of gradient and denmat have been added: Here the algorithm is
+        adapted along the lines of ener3lomem.F such that the size of the buxstore(2)
+        communication arrays is reduced by a factor of 2 relative to the standard versions.
+        Since these arrays can be the largest ones, it makes it feasible to run larger
+        order N jobs.
+    
+        Files involved: denmatlomem.F, gradientlomem.F, egandd.F
+    
+    (2) Parallel division of work in order N: A check is now added to ensure that the 
+        number of domains created is larger than the number of processors so that no processor
+        should be without work. 
+    
+        Files involved: initparallel.F
+    
+    (3) Reduce alloc/dealloc in order N set up: The algorithm for subroutines in on_subs.F 
+        has been changed to ensure that the resizing of arrays is performed just once in 
+        each case.
+    
+        Files involved: on_subs.F
+    
+    * Divide and conquer could now be made the default algorithm for diagonalisation:
+      (Actual setting pending)
+    
+        Files involved: redata.F, rdiag.F, cdiag.F
+    
+    * Z-matrix optimisation included
+    
+    (1) Z-matrix added: This allows a Z-matrix block to be specified for the structural
+        input, with the ability to specify symbolic variables, constants and constraints,
+        as well as offering control over the optimisation process. 
+    
+        Files: zmatrix.F, siesta.F, cgvc_zmatrix.F, coor.F, conjgr.F
+              
+        Also added example and test case.
+    
+    (2) parsing routine extended: The option to return an array that indicates the order
+        in which parameters were read has been added.
+    
+        Files: parsing.f
+    
+    (3) Makefile: New routines zmatrix.F, gradientlomem.F & denmatlomem.F added
+    
+    (4) New units added: Units relevant to angular degrees of freedom added
+    
+        Files: fdf/fdf.f
+    
+    (5) Mesh output returned to standard form: The output of the mesh details had been changed
+        and so the format has been restored to the existing format (same information - different
+        line spacing)
+    
+        Files: meshsubs.F
+    
+    (6) coor.f renamed to coor.F
+    
+    * Energy convergence criterion added for SCF
+    * Introduce new fdf symbol DM.RequireEnergyConvergence to make the test
+      optional. (At least, to reproduce old test results)
+    
+    BUG FIXES
+    
+     -  initparallel.F modified so that ncell is set based on absolute size of ucell
+        to allow for negative cell parameters
+     -  Format for Qtot from mulliken increased to f12.3 to avoid ******
+     -  Banner changed to better handle 1 node being run with MPI
+    
+      Corrections to order N from Toby:
+     - setatomnodes.f - error in referencing of y index when counting number of atoms in X blocks
+     - declared sizes of numc/numcold corrected to nbasisloc in extrapolon.f
+    
+    * Initializations:
+    
+    - lastna in meshsubs.F
+    - ilm in spher_harm.f
+    - rngmax in ranger.f
+    - CartesianB and CartesianF in zmatrix.F
+    
+     ( Note ** : stressl MUST NOT be initialized to zero in cellxc (inout) )
+    
+    Other:
+    
+    - User pxfabort in sys.F
+    - Add intents to arguments in ranger.f
+    - Replace "shrink=false" by "copy=.false." in re_alloc of listh in siesta.F
+    - Use units module in zmatrix.F
+    - Import IOnode in zmatrix.F
+    - Add deg in units.f90
+    
+    * Declare iamove as (*) in ranger
+    * Initialize ianneal in redata.F
+    * Fix bug in alloc_err bounds array
+    
+    * Go back to "traditional" h2o test (without Broyden).
+    * Reset target pressure to 100 Gpa in var_cell test.
+    
+    ** Add elec_corr_setup call to user.basis case. 
+
+    new files:
+     Examples/Zmatrix/.arch-ids/=id
+     Examples/Zmatrix/.arch-ids/h2oZ.fdf.id
+     Examples/Zmatrix/h2oZ.fdf Src/.arch-ids/cgvc_zmatrix.F.id
+     Src/.arch-ids/conjgr_old.f.id Src/.arch-ids/coor.F.id
+     Src/.arch-ids/denmatlomem.F.id
+     Src/.arch-ids/gradientlomem.F.id Src/.arch-ids/zmatrix.F.id
+     Src/Tests/Outs/.arch-ids/h2oZ.out.id Src/Tests/Outs/h2oZ.out
+     Src/Tests/h2oZ/.arch-ids/=id
+     Src/Tests/h2oZ/.arch-ids/h2oZ.fdf.id
+     Src/Tests/h2oZ/.arch-ids/h2oZ.pseudos.id
+     Src/Tests/h2oZ/.arch-ids/makefile.id Src/Tests/h2oZ/h2oZ.fdf
+     Src/Tests/h2oZ/h2oZ.pseudos Src/Tests/h2oZ/makefile
+     Src/cgvc_zmatrix.F Src/conjgr_old.f Src/coor.F
+     Src/denmatlomem.F Src/gradientlomem.F Src/zmatrix.F
+
+    removed files:
+     Src/.arch-ids/coor.f.id Src/coor.f
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile
+     Src/Tests/Makefile Src/Tests/h2o/h2o.fdf
+     Src/Tests/var_cell/var_cell.fdf Src/alloc.F90 Src/cdiag.F
+     Src/cgvc.F Src/cgwf.F Src/conjgr.f Src/egandd.F
+     Src/extrapolon.f Src/fdf/fdf.f Src/globalise.F Src/initatom.f
+     Src/initparallel.F Src/iocg.f Src/m_iostruct.f
+     Src/m_mpi_utils.F Src/meshsubs.F Src/mulliken.F Src/on_subs.F
+     Src/parsing.f Src/ranger.f Src/rdiag.F Src/redata.F
+     Src/setatomnodes.F Src/siesta.F Src/spher_harm.f Src/sys.F
+     Src/units.f90 Src/version.F90 version.info
+
+    new directories:
+     Examples/Zmatrix Examples/Zmatrix/.arch-ids Src/Tests/h2oZ
+     Src/Tests/h2oZ/.arch-ids
+
+    new patches:
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--base-0
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-1
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-2
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-3
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-4
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-5
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-6
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-7
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-8
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-9
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-10
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-11
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-12
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-13
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-14
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-15
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-16
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-17
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-18
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-19
+     jgale@siesta.arch--2005/siesta-devel--jgale--1.4--patch-20
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--base-0
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-1
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-2
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-3
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-4
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-5
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-6
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-7
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-8
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-9
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-10
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-11
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-12
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-13
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-14
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-15
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-16
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-17
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-18
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-19
+     siesta@uam.es--2005/siesta-devel--jg-merge--1.4--patch-20
+     twhite@siesta.arch--2005/siesta-devel--zmatrix--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-devel--zmatrix--1.4--patch-3
+
+=======================================================================
+
+2005-10-04 13:59:58 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-14
+
+    Summary:
+      Assorted bug and portability fixes -- more wrappers
+    Revision:
+      siesta-devel--reference--1.4--patch-14
+
+    * Fix mpi bug (incorrect use of temporary arrays for reduction
+      operation) in mulliken.F.
+    
+    * Merge O(N) spatial-decomposition bugfixes from From Toby White's
+      dedicated branch (up to patch-10):
+    
+      globalise.F    - declare variables.
+      initparallel.F - don't make too many spatial cells.
+      setatomnodes.F - correct initialization so that non-2-3-5 
+                       case works.
+    
+    * Portability fixes, mostly dealing with MPI support.
+    
+    * More wrapping of MPI calls in several routines. New program
+      mpi_test.F90 to test wrappers.
+    
+    * Assorted bug fixes (wrapping of fdf calls) and cosmetic changes.
+    
+
+    new files:
+     Src/.arch-ids/mpi_test.F90.id
+     Src/Confs/.arch-ids/matterhorn-serial.conf.id
+     Src/Confs/matterhorn-serial.conf
+     Src/Tests/Scripts/.arch-ids/=id
+     Src/Tests/Scripts/.arch-ids/arina.pbs.id
+     Src/Tests/Scripts/.arch-ids/matterhorn-gm.sge.id
+     Src/Tests/Scripts/arina.pbs
+     Src/Tests/Scripts/matterhorn-gm.sge Src/mpi_test.F90
+
+    modified files:
+     Src/MPI/Makefile Src/MPI/generate.sh Src/MPI/mpi.F
+     Src/Makefile Src/Sys/cscs-cray-mpi.make Src/Sys/cscs-cray.make
+     Src/Tests/Makefile Src/Tests/h2o/h2o.fdf Src/alloc.F90
+     Src/arch.make.in Src/cgvc.F Src/fft3d.F Src/globalise.F
+     Src/initparallel.F Src/linpack.F Src/m_broyden_mixing.f
+     Src/m_fdf_global.F90 Src/m_mpi_utils.F Src/memoryinfo.F
+     Src/mulliken.F Src/nlefsm.f Src/overfsm.f Src/redata.F
+     Src/setatomnodes.F Src/siesta.F version.info
+
+    renamed files:
+     Src/.arch-ids/m_wrappers.F90.id
+       ==> Src/.arch-ids/m_fdf_global.F90.id
+     Src/m_wrappers.F90
+       ==> Src/m_fdf_global.F90
+
+    new directories:
+     Src/Tests/Scripts Src/Tests/Scripts/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--base-0
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-3
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-4
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-5
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-6
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-7
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-8
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-9
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-10
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-11
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-12
+     agarcia@siesta.arch--2005/siesta--mpiwrap--1.4--patch-13
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-72
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-73
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-74
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-75
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-76
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-77
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-78
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-8
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-9
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-10
+
+=======================================================================
+
+2005-10-04 13:49:31 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-13
+
+    Summary:
+      New kind of structure input -- constant-volume variable-cell - no sig
+    Revision:
+      siesta-devel--reference--1.4--patch-13
+
+    * Using the option UseStructFile, the structural information will be
+    read from SiestaLabel.STRUCT_IN. This option is incompatible with
+    UseSaveXV, and will prevail.
+    
+    * Siesta now always produces a SiestaLabel.STRUCT_OUT file.
+    
+    The .STRUCT_XX files have the cell vectors in Ang and the atomic
+    positions in atomic coordinates.
+    
+    * The option MD.ConstantVolume will result in a constant-volume
+    variable-cell simulation (i.e., only the cell shape and the atomic
+    positions change).
+    
+    * After every MD or relaxation step, Siesta now writes the "enthalpy"
+    E+pV, where p is actually the target pressure.
+    
+    * New tests: var_cell and constant_volume.
+    
+    * Changed si test to use the new UseStructFile feature.
+    
+    * Removed "sig" fossils from source.
+    
+    
+
+    new files:
+     Src/.arch-ids/m_iostruct.f.id
+     Src/Tests/Outs/.arch-ids/constant_volume.out.id
+     Src/Tests/Outs/.arch-ids/var_cell.out.id
+     Src/Tests/Outs/constant_volume.out Src/Tests/Outs/var_cell.out
+     Src/Tests/constant_volume/.arch-ids/=id
+     Src/Tests/constant_volume/.arch-ids/constant_volume.fdf.id
+     Src/Tests/constant_volume/.arch-ids/constant_volume.pseudos.id
+     Src/Tests/constant_volume/.arch-ids/makefile.id
+     Src/Tests/constant_volume/constant_volume.fdf
+     Src/Tests/constant_volume/constant_volume.pseudos
+     Src/Tests/constant_volume/makefile
+     Src/Tests/si/.arch-ids/si.STRUCT_IN.id
+     Src/Tests/si/si.STRUCT_IN Src/Tests/var_cell/.arch-ids/=id
+     Src/Tests/var_cell/.arch-ids/makefile.id
+     Src/Tests/var_cell/.arch-ids/var_cell.fdf.id
+     Src/Tests/var_cell/.arch-ids/var_cell.pseudos.id
+     Src/Tests/var_cell/makefile Src/Tests/var_cell/var_cell.fdf
+     Src/Tests/var_cell/var_cell.pseudos Src/m_iostruct.f
+
+    removed files:
+     Src/.arch-ids/sig.f.id Src/Tests/.arch-ids/cmpsig.f.id
+     Src/Tests/.arch-ids/do.sh.id Src/Tests/Sigs/.arch-ids/=id
+     Src/Tests/Sigs/.arch-ids/batio3.sig.id
+     Src/Tests/Sigs/.arch-ids/fe.sig.id
+     Src/Tests/Sigs/.arch-ids/h2o.sig.id
+     Src/Tests/Sigs/.arch-ids/h2o_dos.sig.id
+     Src/Tests/Sigs/.arch-ids/h2o_orderN.sig.id
+     Src/Tests/Sigs/.arch-ids/si64.sig.id
+     Src/Tests/Sigs/.arch-ids/sih.sig.id Src/Tests/Sigs/batio3.sig
+     Src/Tests/Sigs/fe.sig Src/Tests/Sigs/h2o.sig
+     Src/Tests/Sigs/h2o_dos.sig Src/Tests/Sigs/h2o_orderN.sig
+     Src/Tests/Sigs/si64.sig Src/Tests/Sigs/sih.sig
+     Src/Tests/cmpsig.f Src/Tests/do.sh Src/sig.f
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile
+     Src/Tests/Makefile Src/Tests/Outs/si.out Src/Tests/si/makefile
+     Src/Tests/si/si.fdf Src/Tests/test.mk Src/cgvc.F Src/outcell.f
+     Src/siesta.F version.info
+
+    new directories:
+     Src/Tests/constant_volume Src/Tests/constant_volume/.arch-ids
+     Src/Tests/var_cell Src/Tests/var_cell/.arch-ids
+
+    removed directories:
+     Src/Tests/Sigs Src/Tests/Sigs/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-70
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-71
+
+=======================================================================
+
+2005-10-04 13:43:52 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-12
+
+    Summary:
+      Flexible precision for grid arrays (and some O(N) work arrays)
+    Revision:
+      siesta-devel--reference--1.4--patch-12
+
+    * Arrays on the grid were previously single-precision. Now they can be
+    made double precision by defining the pre-processor symbol GRID_DP, i.e.:
+    
+    DEFS= -DGRID_DP   in arch.make, or, if using configure:
+    
+    DEFS="GRID_DP" ./configure
+    
+    * When doing I/O of the grid arrays to file, SINGLE PRECISION is used,
+    regardless of the internal representation chosen.
+    
+    * iorho.F has been turned into m_iorho.F, and the subroutine 'iorho'
+    split in three: 'write_rho' (the only one currently in use within Siesta),
+    'read_rho', and 'check_rho'.  dhscf.F has been updated accordingly.
+    
+    * forhar.F has been turned into a module.
+    
+    * An extra pre-processor symbol ON_DP has been introduced to switch the
+    precision of some work arrays defined in module 'on_main' in file onmod.F.
+    
+    * Some cosmetic changes in makefiles (notably for denchar support).
+    
+    modified files:
+     Src/MPI/mpi.F Src/Makefile Src/Tests/h2o/h2o.fdf Src/cellxc.F
+     Src/chempot.F Src/dfscf.f Src/dhscf.F Src/diagon.F
+     Src/dipole.F Src/efield.F Src/fft3d.F Src/forhar.f
+     Src/m_iorho.F Src/m_memory.F Src/memory.F Src/meshmatrix.F
+     Src/meshsubs.F Src/onmod.F Src/poison.F Src/precision.F
+     Src/reord.f Src/rhooda.f Src/rhoofd.f Src/rhoofdsp.f
+     Src/siesta.F Src/vmat.f Src/vmatsp.f version.info
+
+    renamed files:
+     Src/.arch-ids/iorho.F.id
+       ==> Src/.arch-ids/m_iorho.F.id
+     Src/iorho.F
+       ==> Src/m_iorho.F
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--base-0
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-3
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-4
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-5
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-6
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-7
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-8
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-9
+     agarcia@siesta.arch--2005/siesta--grid-reals--1.4--patch-10
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-69
+
+=======================================================================
+
+2005-10-04 13:39:54 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-11
+
+    Summary:
+      O(N) spatial bugfixes merge + simple wallclock stamper
+    Revision:
+      siesta-devel--reference--1.4--patch-11
+
+    * (use m_wallclock) call wallclock("some description") will
+      write out in file "CLOCK" the elapsed wall-clock time at that
+      point in the program.
+    
+    * Merge O(N) spatial-decomposition bugfixes, up to patch-7 of T. White's branch:
+    
+       deallocation order change
+       use units in initdm
+       spatial bugfix
+       extrapolon array declarations
+       Don't allow ON.MaxIter = 0 in redata.
+       fix misdeclaration in extrapolon.F
+    
+    
+
+    new files:
+     Src/.arch-ids/m_wallclock.f90.id Src/m_wallclock.f90
+
+    modified files:
+     Src/Makefile Src/diagon.F Src/extrapolon.f Src/initdm.F
+     Src/redata.F Src/setatomnodes.F Src/setspatial.f Src/siesta.F
+     Src/spatial.F version.info
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-67
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-68
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--base-0
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-2
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-3
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-4
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-5
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-6
+     twhite@siesta.arch--2005/siesta-bugfix--spatial--1.4--patch-7
+
+=======================================================================
+
+2005-09-07 09:24:37 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-10
+
+    Summary:
+      Fix bug in xc.f
+    Revision:
+      siesta-devel--reference--1.4--patch-10
+
+    * In pzxc, DECPDN was erroneously given the value that should have
+    been assigned to DECFDN when rs>1.0. This bug only affects (apparently
+    very mildly, if at all) spin-polarized calculations with CA xc.
+    
+    (Reported on Aug. 12, 2005 by Zhiqin Zhao <zzhao@ee.duke.edu>)
+    
+
+    modified files:
+     Pseudo/atom/xc.f Src/xc.f version.info
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-66
+
+=======================================================================
+
+2005-09-07 09:23:39 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-9
+
+    Summary:
+      Add output of Voigt components of stress tensor in Kbar.
+    Revision:
+      siesta-devel--reference--1.4--patch-9
+
+    * The output is done after every geometry iteration, and not at the end.
+
+    modified files:
+     Src/siesta.F
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-64
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-65
+
+=======================================================================
+
+2005-09-07 09:07:43 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-8
+
+    Summary:
+      Changes for portability -- new Test building framework
+    Revision:
+      siesta-devel--reference--1.4--patch-8
+
+    * New building method for tests (in Src/Tests) that allows stand-alone 
+    running of each test, and easier changes in the running method.
+    
+    * Updates to the autoconf procedures, mostly in the area of parallel support.
+      New Src/Confs directory created to hold small files containing the right
+      invocation of configure for several computers.
+    
+    * Updated MPI makefile (by Toby White)
+    
+    * Changes to support several architectures and compilers, 
+      including clusters at ETH and the Univ. of Zurich, and the Cray at
+      the CSCS. Apart from .make  (and Confs/*.sh files), some files had
+      to be changed due to quirks in pgf90...:
+    
+       * electrostatic.f has to be compiled without optimization.
+       * some module interfaces have to be made even more explicit.
+    
+    * Modification of the structure of the siesta_cml hierarchy, as well as
+      that of the timestamp support subroutines.
+    
+
+    new files:
+     Src/.arch-ids/siesta_cmlsubs.F90.id Src/Confs/.arch-ids/=id
+     Src/Confs/.arch-ids/arina-mpi.conf.id
+     Src/Confs/.arch-ids/arina-serial.conf.id
+     Src/Confs/.arch-ids/matterhorn-gm.conf.id
+     Src/Confs/.arch-ids/pegasus-mpi.conf.id
+     Src/Confs/arina-mpi.conf Src/Confs/arina-serial.conf
+     Src/Confs/matterhorn-gm.conf Src/Confs/pegasus-mpi.conf
+     Src/Sys/.arch-ids/cscs-cray-mpi.make.id
+     Src/Sys/.arch-ids/cscs-cray.make.id
+     Src/Sys/.arch-ids/pgf90-matterhorn-gm.make.id
+     Src/Sys/.arch-ids/pgf90-matterhorn-mpich.make.id
+     Src/Sys/.arch-ids/pgf95-matterhorn.make.id
+     Src/Sys/cscs-cray-mpi.make Src/Sys/cscs-cray.make
+     Src/Sys/pgf90-matterhorn-gm.make
+     Src/Sys/pgf90-matterhorn-mpich.make
+     Src/Sys/pgf95-matterhorn.make Src/Tests/.arch-ids/test.mk.id
+     Src/Tests/Outs/.arch-ids/fe_broyden.out.id
+     Src/Tests/Outs/.arch-ids/mgco3.out.id
+     Src/Tests/Outs/.arch-ids/si.out.id
+     Src/Tests/Outs/fe_broyden.out Src/Tests/Outs/mgco3.out
+     Src/Tests/Outs/si.out Src/Tests/Pseudos/.arch-ids/C.psf.id
+     Src/Tests/Pseudos/.arch-ids/Mg.psf.id Src/Tests/Pseudos/C.psf
+     Src/Tests/Pseudos/Mg.psf
+     Src/Tests/batio3/.arch-ids/makefile.id
+     Src/Tests/batio3/makefile
+     Src/Tests/bessel/.arch-ids/makefile.id
+     Src/Tests/bessel/makefile Src/Tests/fe/.arch-ids/makefile.id
+     Src/Tests/fe/makefile
+     Src/Tests/fe_broyden/.arch-ids/makefile.id
+     Src/Tests/fe_broyden/makefile
+     Src/Tests/floating/.arch-ids/makefile.id
+     Src/Tests/floating/makefile
+     Src/Tests/h2o/.arch-ids/makefile.id Src/Tests/h2o/makefile
+     Src/Tests/h2o_dos/.arch-ids/makefile.id
+     Src/Tests/h2o_dos/makefile
+     Src/Tests/h2o_orderN/.arch-ids/makefile.id
+     Src/Tests/h2o_orderN/makefile Src/Tests/mgco3/.arch-ids/=id
+     Src/Tests/mgco3/.arch-ids/makefile.id
+     Src/Tests/mgco3/.arch-ids/mgco3.fdf.id
+     Src/Tests/mgco3/.arch-ids/mgco3.pseudos.id
+     Src/Tests/mgco3/makefile Src/Tests/mgco3/mgco3.fdf
+     Src/Tests/mgco3/mgco3.pseudos Src/Tests/si/.arch-ids/=id
+     Src/Tests/si/.arch-ids/makefile.id
+     Src/Tests/si/.arch-ids/si.fdf.id
+     Src/Tests/si/.arch-ids/si.pseudos.id Src/Tests/si/makefile
+     Src/Tests/si/si.fdf Src/Tests/si/si.pseudos
+     Src/Tests/si64/.arch-ids/makefile.id Src/Tests/si64/makefile
+     Src/Tests/sih/.arch-ids/makefile.id Src/Tests/sih/makefile
+     Src/Tests/test.mk Src/m4/.arch-ids/TW_FC_KINDS.m4.id
+     Src/m4/TW_FC_KINDS.m4 Src/siesta_cmlsubs.F90
+
+    removed files:
+     Src/.arch-ids/doversion.sh.id Src/doversion.sh
+
+    modified files:
+     Src/Libs/makefile Src/MPI/Makefile Src/MPI/generate.sh
+     Src/Makefile Src/NetCDF/Makefile Src/Sys/compaq-mpi.make
+     Src/Sys/darwin.make Src/Sys/g95-nolibs.make Src/Sys/hpcx.make
+     Src/Sys/ibm-regatta-p4.make Src/Sys/ibmp3-mpi.make
+     Src/Sys/ibmp3.make Src/Sys/intel-mkl.make
+     Src/Sys/intel-nolibs.make Src/Sys/itanium2-mpi.make
+     Src/Sys/itanium2.make Src/Sys/lahey-lam.make
+     Src/Sys/lahey-mpich.make Src/Sys/lahey-nolibs.make
+     Src/Sys/lahey.make Src/Sys/macosx-nag-mpi.make
+     Src/Sys/macosx-nag.make Src/Sys/macosx-xlf.make
+     Src/Sys/nolibs.make Src/Sys/osfdxml-mpich.make
+     Src/Sys/osfdxml.make Src/Sys/osfdxmlcdf.make
+     Src/Sys/pgf90-lam.make Src/Sys/pgf90-mpich.make
+     Src/Sys/pgf90-nolibs.make Src/Sys/pgf90.make Src/Sys/sgi.make
+     Src/Sys/sgi64-cdf.make Src/Sys/sgi64-lam-cdf.make
+     Src/Sys/sgi64-lam.make Src/Sys/sgi64-mpi_fermat.make
+     Src/Sys/sgi64-mpich-cdf.make Src/Sys/sgi64-mpich.make
+     Src/Sys/sgin32-mpi.make Src/Sys/sun-nolibs.make
+     Src/Sys/t3e.make Src/Tests/Makefile Src/Tests/h2o/h2o.fdf
+     Src/aclocal.m4 Src/arch.make.in Src/configure Src/configure.ac
+     Src/denmat.F Src/egandd.F Src/ener3.F Src/ener3lomem.F
+     Src/fdf/makefile Src/gradient.F Src/m4/TW_CHECK_SCALAPACK.m4
+     Src/ordern.F Src/pdos.F Src/siesta.F Src/siesta_cml.f90
+     Src/timestamp.f90 Src/wxml/makefile Src/xmlparser/makefile
+     version.info
+
+    renamed files:
+     Src/.arch-ids/siesta_cml.F90.id
+       ==> Src/.arch-ids/siesta_cml.f90.id
+     Src/siesta_cml.F90
+       ==> Src/siesta_cml.f90
+
+    new directories:
+     Src/Confs Src/Confs/.arch-ids Src/Tests/mgco3
+     Src/Tests/mgco3/.arch-ids Src/Tests/si Src/Tests/si/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--base-0
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-3
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-4
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-5
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-6
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-7
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-8
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-9
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-10
+     agarcia@siesta.arch--2005/siesta--cscs-fix--1.4--patch-11
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-48
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-49
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-50
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-51
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-52
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-53
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-54
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-55
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-56
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-57
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-58
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-59
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-60
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-61
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-62
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-63
+     agarcia@siesta.arch--2005/siesta-devel--tests--1.4--base-0
+     agarcia@siesta.arch--2005/siesta-devel--tests--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--tests--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta-devel--tests--1.4--patch-3
+     agarcia@siesta.arch--2005/siesta-devel--tests--1.4--patch-4
+     twhite@siesta.arch--2005/siesta-bugfix--mpimake--1.4--base-0
+     twhite@siesta.arch--2005/siesta-bugfix--mpimake--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-bugfix--mpimake--1.4--patch-2
+     twhite@siesta.arch--2005/siesta-bugfix--mpimake--1.4--patch-3
+     twhite@siesta.arch--2005/siesta-bugfix--mpimake--1.4--patch-4
+     twhite@siesta.arch--2005/siesta-bugfix--mpimake--1.4--patch-5
+
+=======================================================================
+
+2005-08-08 14:02:46 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-7
+
+    Summary:
+      BUGfix -- stressl was initialized to zero in cellxc.
+    Revision:
+      siesta-devel--reference--1.4--patch-7
+
+    * (Bug introduced in:
+           siesta@uam.es--2005/siesta-devel--reference--1.4--patch--3)
+    
+      The wrong intent specification had led to an incorrect zeroing
+      of stressl in cellxc.F, what resulted in very wrong values for
+      the stress tensor and the pressure. Fixed.
+    
+
+    modified files:
+     Src/cellxc.F version.info
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-46
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-47
+
+=======================================================================
+
+2005-08-05 14:25:41 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-6
+
+    Summary:
+      Integration of xml parser (SAX version) -- pdosxml direct compilation
+    Revision:
+      siesta-devel--reference--1.4--patch-6
+
+    * Copied xmlf90/sax, and adapted the makefile.
+      Modified appropriately the main Makefile.
+    
+    * Util/pdosxml/pdos is an exhibit for the use of the XML parser (SAX version)
+      The makefile has been changed to pick up the relevant library and modules
+      from ../../Src
+    
+
+    new files:
+     Src/xmlparser/.arch-ids/=id
+     Src/xmlparser/.arch-ids/flib_sax.f90.id
+     Src/xmlparser/.arch-ids/m_buffer.f90.id
+     Src/xmlparser/.arch-ids/m_charset.f90.id
+     Src/xmlparser/.arch-ids/m_converters.f90.id
+     Src/xmlparser/.arch-ids/m_debug.f90.id
+     Src/xmlparser/.arch-ids/m_dictionary.f90.id
+     Src/xmlparser/.arch-ids/m_elstack.f90.id
+     Src/xmlparser/.arch-ids/m_entities.f90.id
+     Src/xmlparser/.arch-ids/m_fsm.f90.id
+     Src/xmlparser/.arch-ids/m_io.f90.id
+     Src/xmlparser/.arch-ids/m_reader.f90.id
+     Src/xmlparser/.arch-ids/m_xml_error.f90.id
+     Src/xmlparser/.arch-ids/m_xml_parser.f90.id
+     Src/xmlparser/.arch-ids/makefile.id Src/xmlparser/flib_sax.f90
+     Src/xmlparser/m_buffer.f90 Src/xmlparser/m_charset.f90
+     Src/xmlparser/m_converters.f90 Src/xmlparser/m_debug.f90
+     Src/xmlparser/m_dictionary.f90 Src/xmlparser/m_elstack.f90
+     Src/xmlparser/m_entities.f90 Src/xmlparser/m_fsm.f90
+     Src/xmlparser/m_io.f90 Src/xmlparser/m_reader.f90
+     Src/xmlparser/m_xml_error.f90 Src/xmlparser/m_xml_parser.f90
+     Src/xmlparser/makefile
+
+    modified files:
+     Src/Makefile Util/pdosxml/makefile version.info
+
+    new directories:
+     Src/xmlparser Src/xmlparser/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta--xmlparser--1.4--base-0
+     agarcia@siesta.arch--2005/siesta--xmlparser--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta--xmlparser--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-45
+
+=======================================================================
+
+2005-08-05 14:17:41 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-5
+
+    Summary:
+      Get rid of NODAT hack
+    Revision:
+      siesta-devel--reference--1.4--patch-5
+
+    (From Toby White)
+    
+    * In MPI/mpi.F, rename all MPI_(realprecision) constants to 
+      DAT_(real_precision) according to machine type. Then
+      recreate MPI_(realprecision) so now it always points to
+      correct precision. Remove NODAT hack.
+    * Go through all .F and .F90 files, and remove all
+      references to NODAT and DAT_anything.
+    
+    (AG: In merging, the new redata.F has been discarded, as the
+         version closest to reference had done away with direct MPI calls.
+         Also, m_mpi_utils has been updated to remove the NODAT sections)
+
+    modified files:
+     Src/MPI/mpi.F Src/MPI/pi3.F Src/alloc.F90 Src/bands.F
+     Src/broadcast_basis.F Src/cellxc.F Src/cgvc.F Src/cgwf.F
+     Src/chempot.F Src/denmat.F Src/detover.F Src/dhscf.F
+     Src/diag2g.F Src/diag2k.F Src/diagg.F Src/diagk.F Src/diagkp.F
+     Src/diagsprl.F Src/dipole.F Src/efield.F Src/eggbox.F
+     Src/ener3.F Src/ener3lomem.F Src/fft3d.F Src/globalise.F
+     Src/gradient.F Src/initparallel.F Src/iodm.F Src/iohs.F
+     Src/iolwf.F Src/iopipes.F90 Src/iorho.F Src/ioxv.F
+     Src/kgridinit.F Src/m_mpi_utils.F Src/meshmatrix.F
+     Src/mulliken.F Src/optical.F Src/ordern.F Src/pdosg.F
+     Src/pdosk.F Src/pdoskp.F Src/phonon.F Src/pulayx.F Src/pxf.F90
+     Src/readsp.F Src/reoptical.F Src/repol.F Src/savepsi.F
+     Src/siesta.F Src/siesta_cml.F90 Src/timer.F
+     Src/transition_rate.F Src/vmb.F Src/writewave.F Src/xcmod.F
+
+    modified directories:
+     Src/m4
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-43
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-44
+     twhite@siesta.arch--2005/siesta-bugfix--parallel-tidy--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-bugfix--parallel-tidy--1.4--patch-2
+
+=======================================================================
+
+2005-08-02 14:07:31 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-4
+
+    Summary:
+      
+    Revision:
+      siesta-devel--reference--1.4--patch-4
+
+    
+    Patches applied:
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-41
+       Support for LAM at ETH, pgf90
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-42
+       Print out stress tensor in kbar
+    
+
+    new files:
+     Src/Sys/.arch-ids/pgf90-lam.make.id Src/Sys/pgf90-lam.make
+
+    modified files:
+     Src/MPI/Makefile Src/MPI/generate.sh Src/siesta.F
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-41
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-42
+
+=======================================================================
+
+2005-08-02 13:36:28 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-3
+
+    Summary:
+      Integration of Broyden mixing. Real kinds discovery for MPI
+    Revision:
+      siesta-devel--reference--1.4--patch-3
+
+    * A new method for SCF convergence acceleration, based on
+    the Broyden-Vanderbilt-Louie-Johnson scheme,  has been implemented.
+    
+    The major new pieces of code are m_broyden_mixing.f (similar in structure
+    to pulayx) and m_broyddj.f90, which implements the method and takes care
+    of hiding all the storage complexity.
+    
+     [ The patches (later taken back)
+    
+     * agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-5
+       Annealing framework
+    
+     * agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-6
+       Fine-tuning of annealing framework
+    
+     contain an early attempt to couple the Broyden scheme to a
+     simulated-anealing kind of procedure. ]
+    
+    * To aid in the parallelization of m_broyddj.f90, a new set of MPI wrapper
+    routines (in module m_mpi_utils) has been implemented. These simplify the
+    calls to the most common MPI routines, and are generic, thus avoiding the
+    need to worry about the MPI type qualifiers.
+    
+    * Similar wrappers for fdf calls have been implemented in m_wrappers.F90.
+      They are mainly used in redata.F, which has been slimmed down significantly.
+      
+    * A new stub module m_options is a prototype for a program-wide repository
+      of runtime options, to be phased in in stages.
+    
+    * Some of the arrays in m_broyddj.f90 can be single or double precision. 
+      Precision is selected through the pre-processor symbol BROYDEN_DP, which
+      is checked-for in precision.F. The same will be done in the future for
+      the arrays on the grid.
+    
+    * The input variables related to the Broyden mixing method are documented
+      in the manual. The H2O test has been converted to use the Broyden method,
+      and a new fe_broyden test added.
+    
+    * Misc: Added top-level Specs directory to hold Specification documents (...).
+            Added Specs/Broyden.spec.
+    
+     -----------
+    * A simple program "kind_explorer" now finds the kind
+    parameters for real numbers, and feeds them to configure.sh
+    in the MPI building process.
+    
+    To Do: Somehow connect the mpif.h kind parameters and
+    the native ones.
+    
+    * Add some comments in precision.F
+    
+     -----------
+    
+    * Portability and cosmetic fixes:
+    
+       Include spatial.o in denchar object list
+       Initialize stressl in cellxc
+       Removed size() on deallocated array in diagon.F
+       Fix SYS in g95-nolibs.make
+    
+
+    new files:
+     Specs/.arch-ids/=id Specs/.arch-ids/Broyden.specs.id
+     Specs/Broyden.specs Src/.arch-ids/m_broyddj.f90.id
+     Src/.arch-ids/m_broyden_mixing.f.id
+     Src/.arch-ids/m_history.f90.id Src/.arch-ids/m_mpi_utils.F.id
+     Src/.arch-ids/m_options.f90.id Src/.arch-ids/m_smearing.f.id
+     Src/.arch-ids/m_wrappers.F90.id
+     Src/MPI/.arch-ids/kind_explorer.f90.id
+     Src/MPI/kind_explorer.f90 Src/Tests/fe_broyden/.arch-ids/=id
+     Src/Tests/fe_broyden/.arch-ids/fe_broyden.fdf.id
+     Src/Tests/fe_broyden/.arch-ids/fe_broyden.pseudos.id
+     Src/Tests/fe_broyden/fe_broyden.fdf
+     Src/Tests/fe_broyden/fe_broyden.pseudos Src/m_broyddj.f90
+     Src/m_broyden_mixing.f Src/m_history.f90 Src/m_mpi_utils.F
+     Src/m_options.f90 Src/m_smearing.f Src/m_wrappers.F90
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/MPI/Makefile Src/Makefile
+     Src/Sys/g95-nolibs.make Src/Tests/Makefile
+     Src/Tests/h2o/h2o.fdf Src/Tests/si64/si64.fdf Src/atmfuncs.f
+     Src/cellxc.F Src/chkdim.f Src/diagon.F Src/precision.F
+     Src/redata.F Src/siesta.F Src/sys.F version.info
+
+    new directories:
+     Specs Specs/.arch-ids Src/Tests/fe_broyden
+     Src/Tests/fe_broyden/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--base-0
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-3
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-4
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-5
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-6
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-7
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-8
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-9
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-10
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-11
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-12
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-13
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-14
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-15
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-16
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-17
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-18
+     agarcia@siesta.arch--2005/siesta-devel--ag-bau--1.4--patch-19
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-33
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-34
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-35
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-36
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-37
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-38
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-39
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-40
+
+=======================================================================
+
+2005-06-08 12:55:52 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-2
+
+    Summary:
+      Siesta 1.4.55 and .56, recipes.f as module, g95, version id
+    Revision:
+      siesta-devel--reference--1.4--patch-2
+
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-26
+       Patch for Siesta 1.4.55
+    
+    Version: 1.4.55
+    Date: 2005/06/02 11:30 GMT
+    Title: U option in matel
+    Author: Jose M. Soler <jose.soler@uam.es>
+    
+    Added ability of matel of calculating electrostatic interaction
+    between two atom-centered charge distributions ('U' option).
+    This option is not used in siesta, but has been included to
+    maintain a unique version of matel from other codes.
+    
+    Files:
+    atmfuncs.f    xphiatm, yphiatm, and zphiatm moved to matel
+    fermid.F      derf and derfc moved to recipes.f
+    matel.f       New option 'U'
+    recipes.f     Functions derf and derfc moved here from fermid.F
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-27
+       Change local name of izamax in linpack.F
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-28
+       Two array copies rewritten as do loops in alloc.F90
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-29
+       fsiesta: sleep 10 seconds before start of siesta
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-30
+       Siesta 1.4.56 plus modularization of recipes.f
+    
+    (Part of 1.4.56 committed in two previous patches)
+           -- linpack.F
+           -- alloc.F90
+    
+    Version: 1.4.56
+    Date: 2005/06/02 12:30 GMT
+    Title: Patches to compiler/system bugs
+    Author: Eduardo Anglada <eduardo.anglada@uam.es>
+    
+    Miscellaneous patches to apparent compiler or system bugs.
+    
+    Files:
+    atom.f        Single quotes changed to double quotes
+    
+    * (A. Garcia)
+    
+    - Modularization of recipes.f, and thus
+      changes in atom.f, electrostatic.f, radial.f, radfft.f, fermid.F, and matel.f
+    
+    - Fix of calls to spline and splint in matel to pass whole array section.
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-31
+       Support for g95 -- atom.f fix -- Makefile fix
+    
+    * Added Src/Sys/g95-nolibs.make 
+      (g95 can be obtained from http://g95.sourceforge.net/)
+    * Fixed a bug in atom.f introduced in the previous patch.
+    * Put recipes.o near the front of the modules list to
+      satisfy dependencies.
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-32
+       Add arch version string to executable
+    
+    A  hook has been added to {arch}/=hook, which is called
+    by a simple script in $HOME/.arch-params/hook:
+    
+    #!/bin/sh
+    hook="$ARCH_TREE_ROOT/{arch}/=hook"
+    if [ -x "$hook" ] ;  then
+      "$hook" $@
+    fi
+    
+    The only useful task of the hook is a "pre-commit"
+    generation of a version.info file, which is
+    also being commited in this patch.
+    
+    * A script Src/doversion.sh inserts the contents
+    of version.info into an appropriate place in version.F90.
+    
+    NOTE: This does not quite work, as by the time the hook is
+    run, the changeset has already been finalized, and the
+    new version.info is not committed.
+
+    new files:
+     .arch-ids/version.info.id Src/.arch-ids/doversion.sh.id
+     Src/Sys/.arch-ids/g95-nolibs.make.id Src/Sys/g95-nolibs.make
+     Src/doversion.sh version.info
+
+    modified files:
+     Src/Makefile Src/alloc.F90 Src/atmfuncs.f Src/atom.f
+     Src/electrostatic.f Src/fermid.F Src/linpack.F Src/matel.f
+     Src/radfft.f Src/radial.f Src/recipes.f Src/version.F90
+     Util/SiestaSubroutine/fsiesta.f90
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-25
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-26
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-27
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-28
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-29
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-30
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-31
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-32
+
+=======================================================================
+
+2005-05-31 11:01:07 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-1
+
+    Summary:
+      Fix Src/Tests/Makefile and h2o.fdf
+    Revision:
+      siesta-devel--reference--1.4--patch-1
+
+    Changes to the test makefile and h2o.fdf
+    had been inadvertently commited.
+    
+
+    modified files:
+     Src/Tests/Makefile Src/Tests/h2o/h2o.fdf
+
+=======================================================================
+
+2005-05-31 10:47:37 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	base-0
+
+    Summary:
+      tag of siesta@uam.es--2004/siesta-devel--reference--1.4--patch-46
+    Revision:
+      siesta-devel--reference--1.4--base-0
+
+    (automatically generated log message)
+
+    new patches:
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--base-0
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-1
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-2
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-3
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-4
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-5
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-6
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-7
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-8
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-9
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-10
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-11
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-12
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-13
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-14
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-15
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-16
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-17
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-18
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-19
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-20
+     agarcia@siesta.arch--2004/siesta-devel--pseudoxml--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--base-0
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-3
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-4
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-5
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-6
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-7
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-8
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-9
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-10
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-11
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-12
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-13
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-14
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-15
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-16
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-17
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-18
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-19
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-20
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-21
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-22
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-23
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-24
+     siesta@uam.es--2004/siesta-candidate--reference--1.1--base-0
+     siesta@uam.es--2004/siesta-candidate--reference--1.1--patch-1
+     siesta@uam.es--2004/siesta-candidate--reference--1.3--base-0
+     siesta@uam.es--2004/siesta-candidate--reference--1.3--patch-1
+     siesta@uam.es--2004/siesta-candidate--reference--1.3--patch-2
+     siesta@uam.es--2004/siesta-devel--reference--0.11--base-0
+     siesta@uam.es--2004/siesta-devel--reference--0.11--patch-1
+     siesta@uam.es--2004/siesta-devel--reference--1.0--base-0
+     siesta@uam.es--2004/siesta-devel--reference--1.0--patch-1
+     siesta@uam.es--2004/siesta-devel--reference--1.0--patch-2
+     siesta@uam.es--2004/siesta-devel--reference--1.0--patch-3
+     siesta@uam.es--2004/siesta-devel--reference--1.0--patch-4
+     siesta@uam.es--2004/siesta-devel--reference--1.0--patch-5
+     siesta@uam.es--2004/siesta-devel--reference--1.2--base-0
+     siesta@uam.es--2004/siesta-devel--reference--1.2--patch-1
+     siesta@uam.es--2004/siesta-devel--reference--1.2--patch-2
+     siesta@uam.es--2004/siesta-devel--reference--1.2--patch-3
+     siesta@uam.es--2004/siesta-devel--reference--1.2--patch-4
+     siesta@uam.es--2004/siesta-devel--reference--1.2--patch-5
+     siesta@uam.es--2004/siesta-devel--reference--1.2--patch-6
+     siesta@uam.es--2004/siesta-devel--reference--1.2--patch-7
+     siesta@uam.es--2004/siesta-devel--reference--1.4--base-0
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-1
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-2
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-3
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-4
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-5
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-6
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-7
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-8
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-9
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-10
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-11
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-12
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-13
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-14
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-15
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-16
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-17
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-18
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-19
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-20
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-21
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-22
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-23
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-24
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-25
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-26
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-27
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-28
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-29
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-30
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-31
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-32
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-33
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-34
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-35
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-36
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-37
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-38
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-39
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-40
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-41
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-42
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-43
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-44
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-45
+     siesta@uam.es--2004/siesta-devel--reference--1.4--patch-46
+     siesta@uam.es--2004/siesta-release--reference--0.9--base-0
+     siesta@uam.es--2004/siesta-release--reference--0.11--base-0
+     siesta@uam.es--2004/siesta-release--reference--0.11--patch-1
+     siesta@uam.es--2004/siesta-release--reference--1.1--base-0
+     siesta@uam.es--2004/siesta-release--reference--1.1--patch-1
+     siesta@uam.es--2004/siesta-release--reference--1.1--patch-2
+     siesta@uam.es--2004/siesta-release--reference--1.3--base-0
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--base-0
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-1
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-2
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-3
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-4
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-5
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-6
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-7
+     twhite@siesta.arch--2004/siesta-devel--autoconf--1.4--patch-8
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--base-0
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-1
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-2
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-3
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-4
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-5
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-6
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-7
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-8
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix--1.4--patch-11
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-3
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-4
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-6
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-7
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-9
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-10
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-11
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-13
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-14
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-15
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-17
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-18
+     twhite@siesta.arch--2004/siesta-devel--tw-bugfix-2--1.4--patch-20
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--base-0
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-1
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-2
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-3
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-4
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-5
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-6
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-7
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-8
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-9
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-10
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-11
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-12
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-13
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-14
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-15
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-16
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-17
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-18
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-19
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-20
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-21
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-22
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-23
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--base-0
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-1
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-2
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-3
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-4
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-5
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-6
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-7
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-8
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-9
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-10
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-11
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-12
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-13
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-14
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-15
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-16
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-17
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-18
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-19
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-20
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-21
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-22
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-2
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-3
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-4
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-5
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-7
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-8
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-9
+
+
+____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2004/siesta-devel--reference--1.4
+--------------------------------------------------------------------
+
+2005-05-31 10:40:32 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-46
+
+    Summary:
+      Fixes, compilation symbols, flush & abort
+    Revision:
+      siesta-devel--reference--1.4--patch-46
+
+    * Fixes for Intel compiler.
+    * Checks for alloc/dealloc completion status
+    * Pre-processing symbols
+    * Portable flush and abort subroutines (Toby White)
+    * Cosmetic changes (Toby White, Julian Gale, Alberto Garcia)
+    
+    Patches applied:
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-10
+       Allow all nodes to write in sys.F
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-11
+       Fix typo in sys.F
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-12
+       Workaround for allocatable issues in Intel compiler
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-13
+       Add checks for alloc/dealloc completion status
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-14
+       Add m_memory to previous patch
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-15
+       New pre-processing symbols for WXML and Scalapack_extra
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-16
+       Add flush to nag.f
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-17
+       Remove debug output in memory.F
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-18
+       Cosmetic issues: transfer, count.
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-19
+       fix format in sys.F -- proc id
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-20
+       remove memorys from memory.F
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-21
+       Portable flush and abort routines (Toby White)
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-22
+       Flush output after every step
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-23
+       frstme and fmt i/o issues in iodm -- chmods
+    
+     * agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-24
+       Some fixes by Julian Gale (from Siesta 1.4.54)
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-1
+       Rename trasnfer -> atm_transfer
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-2
+       Rename count -> alloc_count
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-3
+       Include system name in cml output
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-4
+       Fix flush & abort issues
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-5
+       fix for previous changeset
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-7
+       iodm fix
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-8
+       Periodic flush of stdout
+    
+     * twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-9
+       reset dm.formattedinput on second time around.
+    
+
+    new files:
+     Src/.arch-ids/m_memory.F.id Src/.arch-ids/pxf.F90.id
+     Src/m4/.arch-ids/TW_FC_CHECK_ABORT.m4.id
+     Src/m4/TW_FC_CHECK_ABORT.m4 Src/m_memory.F Src/pxf.F90
+
+    modified files:
+     Src/Makefile Src/Sys/README Src/Sys/itanium2-mpi.make
+     Src/Sys/itanium2.make Src/Sys/osfdxml.make Src/Sys/sgi.make
+     Src/Tests/Makefile Src/Tests/h2o/h2o.fdf Src/aclocal.m4
+     Src/alloc.F90 Src/atm_transfer.f Src/cgwf.F Src/configure
+     Src/configure.ac Src/diagon.F Src/fdf/Coords.dat
+     Src/fdf/Otherfile Src/fdf/TODO Src/fdf/coords.fdf
+     Src/fdf/fdf.Standard Src/fdf/fdf.h Src/fdf/fdfdefs.h
+     Src/fdf/makefile Src/fdf/sample.fdf Src/gen-basis.F
+     Src/ibm_pessl.f Src/initatom.f Src/iodm.F Src/iopipes.F90
+     Src/m4/TW_FC_CHECK_FLUSH.m4 Src/memory.F Src/nag.f Src/pdos.F
+     Src/pdoskp.F Src/redata.F Src/scalapack_extra.F Src/siesta.F
+     Src/sys.F Src/wxml/flib_wstml.f90 Src/wxml/m_wxml_core.f90
+     Src/wxml/m_wxml_dictionary.f90 Src/wxml/m_wxml_error.f90
+     Src/wxml/m_wxml_text.F90 Src/xlf.f
+
+    renamed files:
+     Src/.arch-ids/scalapack_extra.f.id
+       ==> Src/.arch-ids/scalapack_extra.F.id
+     Src/.arch-ids/transfer.f.id
+       ==> Src/.arch-ids/atm_transfer.f.id
+     Src/scalapack_extra.f
+       ==> Src/scalapack_extra.F
+     Src/transfer.f
+       ==> Src/atm_transfer.f
+     Src/wxml/.arch-ids/m_wxml_text.f90.id
+       ==> Src/wxml/.arch-ids/m_wxml_text.F90.id
+     Src/wxml/m_wxml_text.f90
+       ==> Src/wxml/m_wxml_text.F90
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-10
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-11
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-12
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-13
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-14
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-15
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-16
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-17
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-18
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-19
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-20
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-21
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-22
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-23
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-24
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-1
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-2
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-3
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-4
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-5
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-7
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-8
+     twhite@siesta.arch--2005/siesta-devel--tw-bugfix--1.4--patch-9
+
+=========================================================================
+
+2005-04-28 07:41:26 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-45
+
+    Summary:
+      Merge of CVS 1.4.52 by J. Gale: hybrid XC + fixes
+    Revision:
+      siesta-devel--reference--1.4--patch-45
+
+    Changes:
+    
+    * Version CVS 1.4.52 (see below) plus the following fixes:
+    
+    * Use of real (sp) constant in max expression in cellxc.F 
+    * Make xcmod entities private by default.
+    * Fix Makefile to remove duplicates of sys.o and parsing.o,
+      and to include dependencies on xcmod.o
+    
+    ---------------------------------------------------------------------------
+    Version: 1.4.52
+    Date: 2005/04/08 8:30 GMT
+    Title: Hybrid DFT
+    Author: Julian Gale <julian@power.curtin.edu.au>
+    
+    The ability to create hybrid density functionals has been added.
+    Note that this currently excludes Hartree-Fock exchange.
+    
+    Files:
+    
+    Makefile      xcmod added to MOD & GEN-BASIS objects list
+    atom.f        Calls to atomxc modified to reflect change in arguments
+                  Pseudopotential functional consistency check modified
+                  to only apply to the single functional case.
+    cellxc.F      XC functional information now accessed from module
+                  Modified to handle hybrid functionals
+                  DVol now divided through prior to adding to VXC to
+                  avoid divide at end and extra multiplications.
+    dfscf.f       Use reference to phiatm removed as not needed
+    dhscf.F       Setting of XC data removed from subroutine and from 
+                  calls to cellxc & forhar
+    forhar.f      Call to cellxc modified inline with argument changes
+                  and XC information is no longer passed through. Order
+                  of memory deallocations reversed.
+    gen-basis.F   Call to setXC added
+    rhoofd.f      Use reference to phiatm removed as not needed
+    siesta.F      Call to setXC added
+    siesta.tex    Documentation added for hybrid functionals
+    vmat.f        Use reference to phiatm removed as not needed
+    vmatsp.f      Use reference to phiatm removed as not needed
+    xc.f          atomxc has been modified to handle hybrid functionals 
+                  XC information is now access through a module 
+                  Auxillary space for storage of DVol now allocated locally
+    xcmod.F       New module added to hold information about the XC 
+                  functionals & their weights. Also contains routine to
+                  setup XC information.
+    
+    
+
+    new files:
+     Src/.arch-ids/xcmod.F.id Src/xcmod.F
+
+    modified files:
+     Docs/CHANGES Docs/siesta.tex Src/Makefile Src/atom.f
+     Src/cellxc.F Src/dfscf.f Src/dhscf.F Src/forhar.f
+     Src/gen-basis.F Src/rhoofd.f Src/siesta.F Src/version.F90
+     Src/vmat.f Src/vmatsp.f Src/xc.f
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-8
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-9
+
+=========================================================================
+
+2005-04-26 08:09:25 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-44
+
+    Summary:
+      Streamline wxml after XML merge
+    Revision:
+      siesta-devel--reference--1.4--patch-44
+
+    Some changes had to be made to the wxml subsystem
+    to avoid problems with the pgf90 compiler and to
+    avoid the use of the transfer intrinsic.
+    
+    
+
+    new files:
+     Src/wxml/.arch-ids/m_wxml_array_str.f90.id
+     Src/wxml/m_wxml_array_str.f90
+
+    modified files:
+     Src/Sys/itanium2-mpi.make Src/rhoofdsp.f Src/vmatsp.f
+     Src/wxml/flib_wcml.f90 Src/wxml/flib_wstml.f90
+     Src/wxml/m_wxml_buffer.f90 Src/wxml/m_wxml_core.f90
+     Src/wxml/m_wxml_dictionary.f90 Src/wxml/m_wxml_escape.f90
+     Src/wxml/makefile
+
+    new patches:
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-16
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-17
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-18
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-19
+     agarcia@siesta.arch--2004/siesta-devel--agarcia--1.4--patch-20
+     agarcia@siesta.arch--2004/siesta-devel--pseudoxml--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--base-0
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-2
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-3
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-4
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-5
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-6
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.4--patch-7
+
+=========================================================================
+
+2005-04-08 15:40:10 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-43
+
+    Summary:
+      Fix typo in iodm.F
+    Revision:
+      siesta-devel--reference--1.4--patch-43
+
+
+    modified files:
+     Src/iodm.F
+
+=========================================================================
+
+2005-04-08 15:39:41 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-42
+
+    Summary:
+      Wrap long line in mulliken.F
+    Revision:
+      siesta-devel--reference--1.4--patch-42
+
+
+    modified files:
+     Src/mulliken.F
+
+=========================================================================
+
+2005-04-08 13:34:34 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-41
+
+    Summary:
+      Merge from devel-twhite: Fmt IO for DM.
+    Revision:
+      siesta-devel--reference--1.4--patch-41
+
+    Unformatted DM files are not transferrable between machines
+    (indeed, between compilers on the same machine). This allows
+    for formatted files, which are larger and less efficient, but
+    allow transfer. The default remains unformatted.
+    
+    * iodm.F:
+      . three new fdf variables
+        DM.FormattedFiles - formatted input & output of DM files
+        DM.FormattedInput - formatted input DM.
+        DM.FormattedOutput - formatted output DM
+      . In the case of formatted i/o, a file with the extension .DMF is used
+      . All i/o is the same as new-style unformatted, except formatted
+        -  I11 for integers
+        -  ES22.15 for floats
+        (this preserves max accuracy for standard 32-bit integers and 64-bit doubles.
+      . Also tidy up declarations, and correct comments.
+    
+    * redata.F: correct spelling error in comment.
+    
+    * Docs/siesta.tex: Document three new options
+    
+    * Remove executablt flag from Src/pdos.F, Src/pdosk.F, and Docs/CHANGES
+    * Add executable flag to Src/configure
+
+    modified files:
+     Docs/CHANGES Docs/siesta.tex Src/iodm.F Src/redata.F
+     Src/version.F90
+
+    new patches:
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-22
+     twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-23
+
+=========================================================================
+
+2005-04-08 13:20:28 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-40
+
+    Summary:
+      add code for abort with NAG compiler
+    Revision:
+      siesta-devel--reference--1.4--patch-40
+
+    Patches applied:
+    
+     * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-22
+       Allow for formatted DM files.
+    
+     * twhite@siesta.arch--2004/siesta-devel--twhite--1.4--patch-23
+       Fix permissions
+    
+
+    modified files:
+     Src/nag.f
+
+=========================================================================
+
+2005-04-07 21:28:56 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-39
+
+    Summary:
+      Merge of xml work by Jon Wakelin and Toby White
+    Revision:
+      siesta-devel--reference--1.4--patch-39
+
+    Jon Wakelin started the XML-fication of the output, and
+    after his departure from Cambridge Toby White made
+    substantial improvements.
+    
+    For the details of the changes, please see the patch logs
+    for version twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4
+    
+    
+    
+    
+
+    new files:
+     Src/.arch-ids/siesta_cml.F90.id Src/.arch-ids/units.f90.id
+     Src/siesta_cml.F90 Src/units.f90
+     Src/wxml/.arch-ids/m_wcml_coma.f90.id
+     Src/wxml/.arch-ids/m_wxml_error.f90.id
+     Src/wxml/m_wcml_coma.f90 Src/wxml/m_wxml_error.f90
+
+    modified files:
+     Docs/siesta.tex Src/MPI/mpi.F Src/MPI/mpi__include.f90
+     Src/Makefile Src/Tests/Makefile Src/Tests/batio3/batio3.fdf
+     Src/Tests/bessel/bessel.fdf Src/Tests/do.sh
+     Src/Tests/fe/fe.fdf Src/Tests/floating/floating.fdf
+     Src/Tests/h2o_orderN/h2o_orderN.fdf Src/Tests/si64/si64.fdf
+     Src/atomlist.f Src/basis_specs.f Src/cdiag.F Src/cgwf.F
+     Src/diagk.F Src/efield.F Src/fermid.F Src/ioeig.f Src/ionew.F
+     Src/memory.F Src/memoryinfo.F Src/meshsubs.F Src/mulliken.F
+     Src/ordern.F Src/outcell.f Src/outcoor.f Src/parallel.f
+     Src/pdos.F Src/periodic_table.f Src/phonon.F Src/redata.F
+     Src/siesta.F Src/timestamp.f90 Src/version.F90
+     Src/wxml/flib_wcml.f90 Src/wxml/flib_wstml.f90
+     Src/wxml/m_wxml_buffer.f90 Src/wxml/m_wxml_core.f90
+     Src/wxml/m_wxml_dictionary.f90 Src/wxml/m_wxml_elstack.f90
+     Src/wxml/m_wxml_escape.f90 Src/wxml/m_wxml_overloads.f90
+     Src/wxml/m_wxml_text.f90 Src/wxml/makefile
+     {arch}/siesta-devel/siesta-devel--reference/siesta-devel--reference--1.4/siesta@uam.es--2004/patch-log/patch-24
+
+    renamed files:
+     Src/.arch-ids/timestamp.f.id
+       ==> Src/.arch-ids/timestamp.f90.id
+     Src/timestamp.f
+       ==> Src/timestamp.f90
+
+    new patches:
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--base-0
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-1
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-2
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-3
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-4
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-5
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-6
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-7
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-8
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-9
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-10
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-11
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-12
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-13
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-14
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-15
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-16
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-17
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-18
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-19
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-20
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-21
+     twhite@siesta.arch--2004/siesta-devel--xml-merge--1.4--patch-22
+
+=========================================================================
+
+2005-04-07 14:35:49 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-38
+
+    Summary:
+      Siesta 1.4.51 (dummy import to rename extrapolon + CHANGES, version.F90)
+    Revision:
+      siesta-devel--reference--1.4--patch-38
+
+    
+    Version: 1.4.51
+    Date: 2005/04/07 15:30 GMT
+    Title: Extrapol fixes -- cdiag fix (Toby White)
+    Author: Toby White <tow21@cam.ac.uk>
+    
+    The only real change in this patch is the actual renaming of extrapolon.F
+    to extrapolon.f, which was documented but not performed in patch-37. It was
+    put in the cvs version.
+    
+    Also, CHANGES and version.F90 are in "cvs form".
+    
+
+    modified files:
+     Docs/CHANGES Src/version.F90
+
+    renamed files:
+     Src/.arch-ids/extrapolon.F.id
+       ==> Src/.arch-ids/extrapolon.f.id
+     Src/extrapolon.F
+       ==> Src/extrapolon.f
+=========================================================================
 
 Version: 1.4.51
 Date: 2005/04/07 15:30 GMT
