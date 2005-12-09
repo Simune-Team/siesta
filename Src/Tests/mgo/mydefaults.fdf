@@ -1,0 +1,42 @@
+%block kgrid_Monkhorst_Pack < Kgrid
+AtomicCoordinatesFormat Fractional
+AtomicCoorFormatOut     Fractional
+
+SpinPolarized           .false.     # Spin unpolarized calculation
+SolutionMethod          diagon      # OrderN or Diagon
+DM.MixingWeight         0.0700
+DM.NumberBroyden        3           # Number of SCF steps between pulay
+mixing
+MD.TypeOfRun            cg          # Type of dynamics
+Use-Save-CG             .false.
+Use-Save-XV             .false.
+
+# Output options
+WriteCoorInitial        .true.
+WriteCoorStep           .false.
+WriteForces             .false.
+WriteKpoints            .true.
+WriteEigenvalues        .false.
+WriteKbands             .false.
+WriteBands              .false.
+WriteMullikenPop        0
+WriteCoorXmol           .false.
+WriteMDCoorXmol         .false.
+WriteMDhistory          .false.
+
+# Options for saving/reading information
+MD.UseStructFile           .true.    # read VASP-like structure file
+DM.UseSaveDM               .false.   # Use DM Continuation files
+MD.UseSaveXV               .false.   # Use stored positions and
+velocities
+MD.UseSaveCG               .false.   # Use stored positions and
+velocities
+SaveRho                    .false.   # Write valence pseudocharge at the
+mesh
+SaveDeltaRho               .false.   # Write RHOscf-RHOatm at the mesh
+SaveElectrostaticPotential .false.   # Write the total elect. pot. at
+the mesh
+SaveTotalPotential         .false.   # Write the total pot. at the mesh
+WriteSiestaDim             .false.   # Write minimum dim to siesta.h and
+stop
+WriteDenchar               .false.   # Write information for DENCHAR

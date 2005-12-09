@@ -53,12 +53,12 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	propor.o pulayx.o \
-	ranger.o ran3.o reclat.o redata.o redcel.o \
+	ranger.o ran3.o reclat.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o xc.o xijorb.o \
 	cellxc.o cdiag.o rdiag.o \
-        cgvc.o cgvc_zmatrix.o \
+        cgvc.o cgvc_zmatrix.o  \
         iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
 	siesta.o io.o \
@@ -114,7 +114,8 @@ MOD_OBJS=precision.o recipes.o \
          onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
 	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
          units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
-         nlefsm.o overfsm.o conjgr.o conjgr_old.o
+         nlefsm.o overfsm.o conjgr.o conjgr_old.o redata.o \
+         m_broyddj_nocomm.o optim.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)

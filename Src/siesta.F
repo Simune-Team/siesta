@@ -62,6 +62,8 @@ C  Modules
       use zmatrix,      only: lUseZmatrix, iofaZmat
       use zmatrix,      only: CartesianForce_to_ZmatForce
       use zmatrix,      only: write_Zmatrix
+      use m_optim,      only:optim
+      use m_redata,     only: redata
 
       use m_smearing, only: temp
 
@@ -152,7 +154,7 @@ C  Modules
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
      .  harrisfun, muldeb, eggbox_block, use_struct_file,
-     $  require_energy_convergence
+     $  require_energy_convergence, broyden_optim
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -168,7 +170,7 @@ C  Modules
      .  iodm, ioxv, 
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
      .  nose, npr, paste, pulayx, 
-     .  redata, reinit, shaper, spnvec, 
+     .  reinit, shaper, spnvec, 
      .  timer, verlet2, volcel, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
 
@@ -352,7 +354,8 @@ C Read simulation data ................................................
      .            usesavelwf, usesavedm, usesavecg,
      .            mullipop, inspn, maxsav, nkick, wmixkick, 
      .            pulfile, tempinit, dumpcharge, varcel, harrisfun,
-     .            occtol,broyden_maxit,require_energy_convergence)
+     .            occtol,broyden_maxit,require_energy_convergence,
+     $            broyden_optim)
 
 C Find some switches ..................................................
       call fdf_global_get(writek,'WriteKpoints'    , outlng )
@@ -372,18 +375,19 @@ C Find some switches ..................................................
       call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
       call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance',
      .                            1.0_dp, 'Bohr' )
-      if (usesavexv .and. use_struct_file) then
-         if (IOnode)  write(6,"(a)")
-     $        "! UseSaveXV cannot coexist with UseStructFile - reset"
-           usesavexv = .false.
-      endif
 
 C Read cell shape and atomic positions from a former run ..............
       foundxv = .false.
       if (usesavexv) then
         call ioxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
-        if (IOnode.and..not.foundxv) write(6,'(/,a)')
-     .    'siesta: WARNING: XV file not found'
+        if (IOnode) then
+           if (.not.foundxv) then
+              write(6,'(/,a)') 'siesta: WARNING: XV file not found'
+           else
+              write(6,"(a)")
+     $       "! Info in XV file prevails over previous structure input"
+           endif
+         endif
       endif
 C ..................
 
@@ -1628,8 +1632,15 @@ C Move atoms ..........................................................
      $            volume, dxmax, tp, ftol, strtol, varcel,
      $            relaxd, usesavecg )
           else
-             call cgvc( na_u, xa, cfa, ucell, cstress, volume, dxmax,
-     .         tp, ftol, strtol, varcel, relaxd, usesavecg )
+             if (broyden_optim) then
+                call optim( na_u, xa, cfa, ucell, cstress, volume,
+     $               dxmax, tp, ftol, strtol, varcel,
+     $               relaxd, usesavecg )
+             else
+                call cgvc( na_u, xa, cfa, ucell, cstress, volume,
+     $               dxmax, tp, ftol, strtol, varcel,
+     $               relaxd, usesavecg )
+             endif
           endif
           ! Propagate the new structure to the virtual supercell
           call superx( ucell, nsc, na_u, na_s, xa, scell )
@@ -1748,10 +1759,9 @@ C Print atomic coordinates (and also unit cell for ParrRah.)
           if (.not.relaxd) 
      .      call outcoor(ucell, xa, na_u,
      .                 'Final (unrelaxed)', .true. )
-          endif
-          if (lUseZmatrix) call write_Zmatrix
-          if ( varcel ) call outcell(ucell)
         endif
+        if (lUseZmatrix) call write_Zmatrix
+        if ( varcel ) call outcell(ucell)
 
 C Print coordinates in xmol format in a separate file
 
@@ -1762,6 +1772,8 @@ C Print coordinates in cerius format in a separate file
 
         if (fdf_boolean('WriteCoorCerius',.false.))
      .     call coceri(iza, xa, ucell, na_u, sname, slabel)
+
+       endif ! IONode
 
 C Find and print wavefunctions at selected k-points
       if (nwk.gt.0) then

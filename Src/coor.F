@@ -214,12 +214,6 @@ C distribute data
         call broadcast(isa(1:na))
         call broadcast(xa(1:3,1:na))
 
-        ! Construct references: cannot use isa alone, since 
-        ! refs may not start with a number.
-        allocate(cisa(na))
-        do ia=1, nua
-           write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
-        enddo
 
 C Expand the coordinates to whole supercell
 
@@ -245,6 +239,13 @@ C Expand index isa
 
       endif
 C  end of not lUseZmatrix
+
+        ! Construct references: cannot use isa alone, since 
+        ! refs may not start with a number.
+        allocate(cisa(na))
+        do ia=1, nua
+           write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
+        enddo
 
       contains
 

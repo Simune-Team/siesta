@@ -10,7 +10,7 @@
 FC= f77
 FFLAGS= -O
 LDFLAGS=
-AUX_OBJS= auxosf.o
+AUX_OBJS= auxf95.o
 #----------------------------------------------$$$$$
 #
 #

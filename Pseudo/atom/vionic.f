@@ -206,7 +206,7 @@ c
          if (ispp .eq. 'r') then
             ispp = ' '
             if (irel .ne. 'rel') then
-               write(6,9000) irel
+               write(6,9000)
  9000          format(//'Pseudopotential is not relativistic!!!!',
      &               /' setting up potentials equal to down!!!',//)
                do 220 i = 1, lmax

@@ -1482,9 +1482,8 @@ enddo
 \end{verbatim}
 
 {\it Warning:} Note that the resulting geometry could be clobbered if
-an XV file is read after this file. The setting of {\bf UseStructFile}
-to {\tt .true.} will thus override the setting of {\bf
-UseSaveXV}.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
+an XV file is read after this file. It is up to the user to remove
+any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
 
 {\it Default value:} {\tt .false.}
 
@@ -2298,6 +2297,12 @@ or, if requested, Pulay mixings.
 Broyden mixing takes precedence over Pulay mixing if both are
 specified in the input file.
 
+{\bf Note:} The Broyden mixing algorithm is still in development,
+notably with regard to the effect of its various modes of operation, and
+the assigment of weights. In its default mode, its effectiveness is
+very similar to Pulay mixing. As memory usage is not yet optimized,
+casual users might want to stick with Pulay mixing for now.
+
 {\it Default value:} {\tt 0}
 
 \item[{\bf DM.Broyden.Cycle.On.Maxit}] ({\it logical}): 
@@ -2332,7 +2337,7 @@ every {\bf DM.NumberKick} iterations, using a mixing coefficient
 $\alpha$ given by variable {\bf DM.KickMixingWeight} 
 (instead of the usual mixing {\bf DM.MixingWeight}).
 This allows in some difficult cases to bring the SCF out of
-loops in which the selfconsistency is stocked.
+loops in which the selfconsistency is stuck.
 If {\bf DM.MixingWeight}=0, no linear mix is used.
 
 {\it Default value:} {\tt 0}
@@ -3218,7 +3223,10 @@ implemented. Note that some options specified in later variables
 If the system contains just one atom, {\tt CG} is the only 
 available dynamics option.
 \begin{itemize}
-\item {\tt CG} (Coordinate optimization by conjugate gradients)
+\item {\tt CG} (Coordinate optimization by conjugate
+  gradients). Optionally, the optimization can include the cell
+  vectors, and it can be done using a modified Broyden scheme, instead
+  of conjugate gradients.
 \item {\tt Verlet} (Standard Verlet algorithm MD)
 \item Nose  (MD with temperature controlled  by means of a Nos\'e 
 thermostat)
@@ -3239,28 +3247,55 @@ displacements. These are choosen with the help of the program {\sc
 Phonon} \footnote{{\sc Phonon} is \copyright\ copyright by Krzysztof
 Parlinski}  \index{Phonon program} \index{Force Constants
 Matrix!using phonon@using {\sc Phonon}} for phonon calculations). See
-also {\tt MD.ATforPhonon} block.
+also {\tt MD.ATforPhonon} block. (Deprecated.)
 \item {\tt Forces} (Receive coordinates from, and return forces to,
 an external driver program, using Unix pipes for communication.
 The routines in module Util/SiestaSubroutine/fsiesta.f90 allow the
 user's program to perform this communication transparently, as if
 siesta were a conventional force-field subroutine. See file README
 in that directory for details. WARNING: if this option is specified
-without a driver program sending data, siesta may hung up without
+without a driver program sending data, siesta may hang without
 any notice).
 \end{itemize}
     
 {\it Default value:} {\tt Verlet} ({\tt CG} for one atom systems)
 
+\item[{\bf Optim.Broyden}] ({\it logical}):
+\index{Optim.Broyden@{\bf Optim.Broyden}} \index{Broyden optimization}
+If true, the coordinates (and maybe the cell) are relaxed
+using a modified Broyden scheme (See D.D. Johnson, PRB 38, 12807
+(1988)).
+Related parameters:
+\begin{itemize}
+
+\item {\bf Optim.Broyden.History.Steps}: Number of relaxation steps
+during which the modified Broyden algorithm builds up the Jacobian
+matrix. Default value: {\tt 5}.
+
+\item {\bf Optim.Broyden.Cycle.On.Maxit}: Upon reaching the maximum
+number of history data sets which are kept for Jacobian estimation,
+throw away the oldest and shift the rest to make room
+for a new data set. The alternative is to re-start the Broyden minimization
+algorithm from a first step of a diagonal inverse Jacobian. Default
+value: {\tt .true.}
+
+{\bf Optim.Broyden.Initial.Inverse.Jacobian}: Initial inverse Jacobian
+for the optimization procedure. The default value ({\tt 1.0}) seems to
+work well.
+\end{itemize}
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG}. 
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf MD.VariableCell}] ({\it logical}):
 \index{MD.VariableCell@{\bf MD.VariableCell}} \index{cell relaxation}
 If true, the lattice is relaxed together with the atomic coordinates
-in the conjugate gradient minimization. It allows to target
+in the conjugate gradient (or Broyden) minimization. It allows to target
 hydrostatic pressures or arbitrary stress tensors.  See {\bf
 MD.MaxStressTol}, {\bf MD.TargetPressure}, {\bf MD.TargetStress}, {\bf
-  MD.ConstantVolume}, and
-{\bf MD.PreconditionVariableCell}.
+  MD.ConstantVolume}, {\bf MD.PreconditionVariableCell}, and {\bf Optim.Broyden}.
 
 {\it Use:} Used only if MD.TypeOfRun is {\tt CG}. 
 
@@ -3497,7 +3532,11 @@ cell size and shape)
 \item[{\bf MD.TauRelax}] ({\it real time}): 
 \index{MD.TauRelax@{\bf MD.TauRelax}} 
 Relaxation time to reach target temperature
-and/or pressure in annealing MD.
+and/or pressure in annealing MD. Note that this is a ``relaxation
+time'', and as such it gives a rough estimate of the time needed to
+achieve the given targets. As a normal simulation also exhibits
+oscillations, the actual time needed to reach the {\it averaged}
+targets will be significantly longer.
 
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Anneal}
 

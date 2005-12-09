@@ -1,11 +1,14 @@
 # -----------------------------------------------------------------------------
 # FDF for interstitial H in a cubic c-Si supercell with 64 atoms
 #
+# Broyden Optimization
+#
 # E. Artacho, April 1999
+# A. Garcia, December 2005
 # -----------------------------------------------------------------------------
 
 SystemName          H in 64-atom silicon
-SystemLabel         sih
+SystemLabel         sih_op_broyden
 
 NumberOfAtoms       65
 NumberOfSpecies     2
@@ -27,26 +30,26 @@ PAO.EnergyShift     300 meV
 
 LatticeConstant     5.430 Ang
 %block LatticeVectors
-  2.000  0.000  0.000
-  0.000  2.000  0.000
-  0.000  0.000  2.000
+2.0 0.0 0.0
+0.0 2.0 0.0
+0.0 0.0 2.0
 %endblock LatticeVectors
 
 MeshCutoff          40.0 Ry
 
 MaxSCFIterations    50  
 DM.MixingWeight      0.3 
-DM.NumberPulay       4  
+DM.NumberPulay       4
 DM.Tolerance         1.d-3
 DM.UseSaveDM             
 
 SolutionMethod       diagon    
+NumberOfEigenstates   150
 ElectronicTemperature  25 meV  
 
 MD.TypeOfRun         cg
 MD.NumCGsteps        50    
-MD.MaxCGDispl         0.1  Ang
-MD.MaxForceTol        0.04 eV/Ang
+Optim.Broyden T
 
 AtomicCoordinatesFormat  ScaledCartesian
 %block AtomicCoordinatesAndAtomicSpecies

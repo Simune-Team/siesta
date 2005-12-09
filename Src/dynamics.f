@@ -1311,6 +1311,7 @@ C  Modules
 C
       use precision
       use parallel,   only : Node
+      use sys,        only : die
 
       implicit none
 
@@ -1345,6 +1346,9 @@ C ....................................................................
         endif
         stop
       endif
+
+!!!      if (taurelax/dt .lt. 0.1) return
+
       ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
@@ -1475,31 +1479,26 @@ C Compute internal pressure  (pressin = 1/3 Tr (press))   at current time
 C Compute kinetic energy
       kin = (3.0d0 / 2.0d0) * pgas * vol
 
+      write(*,*) "Anneal: Kinetic Energy= ", kin
+
       if (ianneal .eq. 1 .or. ianneal .eq. 3) then
 C Correct velocities to reach target termperature
       if (kin .eq. 0.0) then
         rfac2 = 1.0d0 + dt/taurelax
       else
+         
         rfac2 = (1.0d0 + dt/taurelax * (tekin/kin -1.0d0))
       endif
-      if (rfac2 .le. 0.0) then
-        write(6,*) 'Wrong anneal parameter'
-        stop
-      endif
+      if (rfac2 .le. 0.0) call die('Wrong anneal parameter')
       rfac = sqrt(rfac2)
+      write(*,*) "Anneal: Velocity scale factor = ", rfac
 
-      do ia = 1,natoms
-        do i = 1,3
-          sdot(i,ia) = rfac * sdot(i,ia) 
-        enddo
-      enddo
+      sdot(1:3,1:natoms) = rfac * sdot(1:3,1:natoms)
 
 C Compute again pressure, with corrected velocities
-      do i = 1,3
-        do j = 1,3
-          press(i,j) = 0.0d0
-        enddo
-      enddo
+
+      press(1:3,1:3) = 0.0_dp
+
       do ia = 1,natoms
         do i = 1,3
           hs(i) = 0.0d0
@@ -1518,11 +1517,8 @@ C Compute again pressure, with corrected velocities
         pgas = pgas + press(i,i) / vol
       enddo
       pgas = pgas / 3.0d0
-      do j = 1,3
-        do i = 1,3
-          press(i,j) = press(i,j) / vol - stress(i,j)
-        enddo
-      enddo
+
+      press(1:3,1:3) = press(1:3,1:3)/vol - stress(1:3,1:3)
 
 C Compute internal pressure  (pressin = 1/3 Tr (press))   at current time
       pressin = 0.0
@@ -1541,6 +1537,7 @@ C Correct new possitions according to corrected velocities
       enddo
 
       if (ianneal .eq. 2 .or. ianneal .eq. 3) then
+
 C Correct cell shape to reach target pressure
       do i = 1,3
         do j = 1,3
@@ -1559,6 +1556,7 @@ C Correct cell shape to reach target pressure
           h(i,j) = rfac * h(i,j)
         enddo
       enddo
+      write(*,*) "Anneal: Cell scale factor = ", rfac
       endif
 
 C Save current atomic positions as old ones, 
@@ -1606,6 +1604,7 @@ C Deallocate local memory
       call memory('D','D',size(sunc),'anneal')
       deallocate(sunc)
 
+!!!      taurelax = taurelax - dt
       return
       end
 

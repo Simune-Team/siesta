@@ -1,3 +1,9 @@
+      module m_redata
+
+      public :: redata
+      private
+      CONTAINS
+
       subroutine redata(na, ns, nspin, outlng, g2max,
      .  charnet, negl, nscf, dDtol, dEtol, mix, wmix,
      $  isolve, 
@@ -10,7 +16,8 @@
      .  usesavelwf, usesavedm, usesavecg,
      .  mullipop, inspn, maxsav, nkick, wmixkick, 
      .  pulfile, tempinit, dumpcharge, varcel, 
-     .  harrisfun, occtol, broyden_maxit, require_energy_convergence )
+     .  harrisfun, occtol, broyden_maxit, require_energy_convergence,
+     $  broyden_optim)
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
@@ -120,6 +127,7 @@ C                            be used or not
 C real*8  occtol           : Occupancy threshold for DM build
 C integer broyden_maxit    : Number of histories saved in Broyden mixing
 C logical require_energy_convergence  : Impose E. conv. criterion?
+C logical broyden_optim    : Broyden for forces instead of CG
 C **********************************************************************
 
 C
@@ -154,7 +162,7 @@ C
       logical, intent(out) ::
      .  chebef, dumpcharge, fixspin, inspn, mix, negl, noeta, 
      .  outlng, pulfile, usesavecg, usesavelwf, usesavedm, varcel,
-     .  harrisfun, require_energy_convergence
+     .  harrisfun, require_energy_convergence, broyden_optim
 
 C na_diag      : maximum number of atoms with diagon as default method
 C g2max_default : Mesh cutoff default, in Ry
@@ -767,6 +775,10 @@ C ...
      .        'not recognised')
       endif
 
+C     Broyden or Conjugate Gradients...
+
+      call fdf_global_get(broyden_optim,'Optim.Broyden',.false.)
+
 C     Maximum number of steps in CG coordinate optimization
       
       call fdf_global_get(nmove,'MD.NumCGsteps',0)
@@ -880,6 +892,10 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
        end select
       endif
 
+      if (ionode) write(6,'(a,l1)') 
+     .     'redata: Broyden Optimization             = ', broyden_optim
+      if (cml_p) call cmlAddParameter(xf=mainXML,
+     .       name='Optim.Broyden', value=broyden_optim)
   
 C     Initial and final time steps for MD
        call fdf_global_get(istart,'MD.InitialTimeStep',1)
@@ -1026,7 +1042,7 @@ C     Relaxation Time for Annealing
       call fdf_global_get(taurelax,
      $             'MD.TauRelax',taurelax_default,'fs')
       if (idyn==5) then
-          write(6,'(a,f10.4,a)') 
+          if (ionode) write(6,'(a,f10.4,a)') 
      .         'redata: Annealing Relaxation Time        = ',
      .         taurelax,'  fs'
           if (cml_p) call cmlAddParameter(xf=mainXML, 
@@ -1100,3 +1116,4 @@ C Iteration are computed.
       if (cml_p)    call cmlEndParameterList(mainXML)
 
       end subroutine redata
+      end module m_redata
