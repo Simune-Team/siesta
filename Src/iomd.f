@@ -38,7 +38,7 @@ c *******************************************************************
       integer           istep, istep0, istepf
       logical           varcel
       double precision  cell(3,3), xa(3,na), va(3,na), vcell(3,3),
-     .                  temp, eks, getot, volume, Psol
+     .                  temp, eks, getot, volume, Psol, eV
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
@@ -49,13 +49,14 @@ c Internal variables and arrays
       integer    ia, iupos, iuene, iucel, iv, ix
       logical    frstme, formt
       save       frstme, formt, fnpos, fnene, 
-     .           fncel, iupos, iuene, iucel
+     .           fncel, iupos, iuene, iucel, eV
 
       data frstme /.true./
 
 
 c Find name of file
       if (frstme) then
+        eV = 13.60580d0
         formt = formtt
         sname = fdf_string( 'SystemLabel', 'siesta' )
         fnene = paste( sname, '.MDE' )
@@ -89,14 +90,14 @@ c Open file
       endif
 
       if(istep . eq . istep0) then
-        write(iuene,"(6a)") 'Step','        T (K)','     E_KS (eV)',
-     .     '    E_tot (eV)','     Vol (A^3)','      P (kBar)' 
+        write(iuene,"(6a)") '# Step','     T (K)','     E_KS (eV)',
+     .     '    E_tot (eV)','   Vol (A^3)','    P (kBar)' 
       endif
 
 c Write data on files
 
-      write(iuene,'(i4,3x,f10.2,2(2x,f12.4),2(2x,f12.3))') 
-     .            istep, temp, eks, getot, volume, Psol
+      write(iuene,'(i6,1x,f9.2,2(1x,f13.5),1x,f11.3,1x,f11.3)') 
+     .            istep, temp, eks*eV, getot*eV, volume, Psol
       if ( formt ) then
         write(iupos,*) istep
         do ia = 1,na
