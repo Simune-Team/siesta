@@ -100,9 +100,9 @@ C Allocate local memory
       call neighb( scell, 2.0d0*rmaxo, na, xa, 0, 0,
      .             nnia, jna, xij, r2ij )
 
-      Ekin = 0.0d0
-      Di(1:no) = 0.0d0
-      Ti(1:no) = 0.0d0
+      Ekin = 0.0_dp
+      Di(1:no) = 0.0_dp
+      Ti(1:no) = 0.0_dp
 
       do ia = 1,nua
         nnia = maxna
@@ -113,6 +113,8 @@ C Allocate local memory
 C Is this orbital on this Node?
           call GlobalToLocalOrb(io,Node,Nodes,iio)
           if (iio.gt.0) then
+            ioa = iphorb(io)
+            is = isa(ia)
 
 C Valid orbital 
             do j = 1,numd(iio)
@@ -127,9 +129,7 @@ C Valid orbital
               jua = indxua(ja)
               rij = sqrt( r2ij(jn) )
               do jo = lasto(ja-1)+1,lasto(ja)
-                ioa = iphorb(io)
                 joa = iphorb(jo)
-                is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
                   call matel( 'T', is, js, ioa, joa, xij(1,jn),
@@ -150,7 +150,7 @@ C Valid orbital
             enddo
             do j = 1,numd(iio)
               jo = listd(listdptr(iio)+j)
-              Di(jo) = 0.0d0
+              Di(jo) = 0.0_dp
             enddo
             do j = 1,numh(iio)
               ind = listhptr(iio)+j
@@ -158,7 +158,7 @@ C Valid orbital
               do ispin = 1,nspin
                 H(ind,ispin) = H(ind,ispin) + Ti(jo)
               enddo
-              Ti(jo) = 0.0d0
+              Ti(jo) = 0.0_dp
             enddo
           endif
         enddo
