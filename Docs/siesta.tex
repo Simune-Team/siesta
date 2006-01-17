@@ -1786,7 +1786,7 @@ should be varied or not. A value of 0 implies that the coordinate is fixed, whil
 A zmatrix block may also contain the following, additional, sections, which
 are designed to make it easier to read.
 
-\item \texttt{constant}: Instead of specifying a numerical value, it is possible to specify a symbol
+\item \texttt{constants}: Instead of specifying a numerical value, it is possible to specify a symbol
 within the above geometry definitions. This section allows the user to define the value
 of the symbol as a constant. The format is just a symbol followed by the value:
 
@@ -1863,7 +1863,17 @@ An example of a Z-matrix input for a benzene molecule over a metal surface is:
     %endblock Zmatrix
 \end{verbatim}
 
-Here the species 1, 2 and 3 represent H, C, and the metal of the surface, respectively.
+Here the species 1, 2 and 3 represent H, C, and the metal of the
+surface, respectively.
+
+(Note: the above example shows the usefulness of symbolic names 
+for the relevant coordinates, in particular for those which are
+allowed to vary. The current output options for Zmatrix information
+work best when this approach is taken. By using a ``fixed'' symbolic
+zmatrix block and specifying the actual coordinates in a ``variables''
+section, one can monitor the progress of the optimization and
+easily reconstruct the coordinates of intermediate steps in the
+original format.)
 
 {\it Use:} Specifies the geometry of the system according to a Z-matrix
 {\it Default value:} Geometry is not specified using a Z-matrix
@@ -4138,7 +4148,6 @@ printed but the program does not stop. Overrides {\bf UseSaveData}.
  
 {\it Default value:} {\tt .false.}
 
-
 \item[{\bf MD.UseSaveCG}] ({\it logical}): 
 \index{MD.UseSaveCG@{\bf MD.UseSaveCG}} 
 \index{reading saved data!CG}
@@ -4150,6 +4159,22 @@ together with {\bf MD.UseSaveXV} = {\tt .true.} with the XV
 file generated in the same run as the CG file.
 If the required file does not exist, a warning is
 printed but the program does not stop. Overrides {\bf UseSaveData}.
+
+{\it Default value:} {\tt .false.}
+        
+
+\item[{\bf MD.UseSaveZM}] ({\it logical}): 
+\index{MD.UseSaveZM@{\bf MD.UseSaveZM}} 
+\index{reading saved data!ZM}
+Instructs the program to read the zmatrix information stored
+in file {\tt SystemLabel}.ZM by a previous run.
+
+{\it Use:} If the required file does not exist, a warning is
+printed but the program does not stop. Overrides {\bf UseSaveData}.
+
+{\it Warning:} Note that the resulting geometry could be clobbered if
+an XV file is read after this file. It is up to the user to remove
+any XV files.\index{MD.UseSaveXV@{\bf MD.UseSaveXV}}.
 
 {\it Default value:} {\tt .false.}
         

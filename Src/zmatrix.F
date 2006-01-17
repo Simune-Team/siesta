@@ -8,6 +8,7 @@ C**************************************************************************
 
         use precision, only : dp
         use units, only : Ang, eV, deg
+        use sys, only: die
 
         implicit none
 
@@ -82,6 +83,18 @@ C       v2 = a*v1 + B
         real(dp), pointer, save :: coeffA(:)
         real(dp), pointer, save :: coeffB(:)
 
+        real(dp), save  :: scale_length, scale_angle 
+        real(dp), save  :: zmatrix_alat
+      ! AG: convenience variables
+
+      public :: read_Zmatrix, lUseZmatrix, iofaZmat
+      public :: CartesianForce_to_ZmatForce, write_Zmatrix
+      public :: VaryZmat, Zmat, ZmatForce, ZmatForceVar
+      public :: iZmattoVars, ZmatType, Zmat_to_Cartesian
+      public :: coeffA, coeffB, iNextDept
+      public :: ZmatForceTolLen, ZmatForceTolAng
+      public :: ZmatMaxDisplLen, ZmatMaxDisplAng
+      private 
 
       contains
 
@@ -156,6 +169,8 @@ C Local variables
         integer                       :: MPIerror
         real(dp)                      :: physicals(4)
 #endif
+
+      zmatrix_alat = alat     ! AG: For future processing
 
 C Nullify pointers
         if (firsttime) then
@@ -300,8 +315,11 @@ C Initialise number of molecules and Cartesian blocks
 C Read data block up to endblock statement
           eof = .false.
           nAtoms = 0
+          write(*,"(a)") "%block Zmatrix"
+
           read(iu,'(a)',end=10,err=10) line
           do while (.not.eof.and.index(line,'%endblock').eq.0)
+            write(*,"(a)") trim(line)
             lastc = index(line,'#') - 1
             if (lastc .le. 0) lastc = len(line)
             if (index(line(1:lastc),'#').ne.0) then
@@ -620,6 +638,7 @@ C End of parsing input line
           enddo
   10      continue
 C Done reading Z-matrix
+          write(*,"(a)") "%endblock Zmatrix"
 
         endif
 C Done with if(Node.eq.0)        
@@ -814,6 +833,18 @@ C Fourth atom and up -> general case
 C End looping over molecules          
         enddo
 
+        if (ZmatUnitsAng == 0) then
+           scale_angle = 1.0_dp
+        else
+           scale_angle = deg
+        endif
+
+        if (ZmatUnitsLen == 0) then
+           scale_length = 1.0_dp
+        else
+           scale_length = Ang
+        endif
+
 C Output Z-matrix coordinates
         if (Node.eq.0) then
           call write_Zmatrix
@@ -890,6 +921,7 @@ C
         integer               :: k
         integer               :: nStart
         integer               :: nAtoms
+        integer               :: jindex
         character(len=4)      :: lenstr
         character(len=4)      :: angstr
 C
@@ -900,13 +932,13 @@ C
         endif
         if (ZmatUnitsAng.eq.0) then
           angstr = 'rad'
-        elseif (ZmatUnitsLen.eq.1) then
+        elseif (ZmatUnitsAng.eq.1) then
           angstr = 'deg'
         endif
 
-        write (6,'(/)') 
-        write(6,'(''zmatrix: Atomic forces (eV/'',a4,
+        write(6,'(/,''zmatrix: Atomic forces (eV/'',a4,
      .            ''; eV/'',a4,'')'')') lenstr,angstr
+        write(6,'(''zmatrix: (No information if symbols are used)'')')
 C  Print molecule forces in the user's units
         do m = 1,nZmol
           nStart = nZmolStartAtom(m)
@@ -931,10 +963,15 @@ C  Print cartesian forces in the user's units
      .          (ZmatForce(3*(i-1)+k)*(1+(Ang-1)*ZmatUnitsLen)/eV
      .          ,k=1,3),i=nStart,nStart+nAtoms-1)
         enddo
+        write (6,'(/)') 
 
 C  Print variables' forces in user's units
-        write(6,'(''Variable forces: '')')
+        write(6,'(''Variable forces (eV/'',a4,
+     .            ''; eV/'',a4,'')'')') lenstr,angstr
         do i = 1,nVars
+           jindex = iVarstoZmat(i)
+           if (.not.VaryZmat(jindex)) cycle
+
           if (ZmatType(iVarstoZmat(i)).eq.1) then
             write(6,*) ZmatVarNames(i), ZmatForceVar(i)*
      .                      (1+(deg-1)*ZmatUnitsAng)/eV
@@ -1208,13 +1245,17 @@ C  Output Z matrix information
         endif
         if (ZmatUnitsAng.eq.0) then
           angstr = 'rad'
-        elseif (ZmatUnitsLen.eq.1) then
+        elseif (ZmatUnitsAng.eq.1) then
           angstr = 'deg'
         endif
+
 
 C  Write molecule coordinates in user's units
         write(6,'(/,''zmatrix: Z-matrix coordinates: ('',a4,
      .            ''; '',a4,'')'')') lenstr,angstr
+        write(6,'(''zmatrix: '',
+     $              ''(Fractional coordinates have been converted '',
+     $              ''to cartesian)'')')
         do m = 1,nZmol
           nStart = nZmolStartAtom(m)
           nAtoms = nZmolAtoms(m)
@@ -1238,7 +1279,9 @@ C  Write cartesian coordinates in user's units
           write(6,'(3f16.8)')((Zmat(3*(i-1)+k)/(1+(Ang-1)*ZmatUnitsLen),
      .                         k=1,3),i=nStart,nStart+nAtoms-1)
         enddo
-        write(6,'(/)') 
+        write(6,'(/)')
+
+        call print_variables()
 
       end subroutine write_Zmatrix
 
@@ -1393,5 +1436,104 @@ C
         z = zi - rji*zji + rn*zn + rp*zp
 C
       end subroutine z2c
+
+!-------------------------------------------------------------
+
+      function user_print(i,offset) result(x)
+!
+!     Converts variables and constants to the
+!     format originally supplied by the user.
+!
+      use m_cell, only  : cart2frac
+
+      ! Index of Zmatrix variable
+      integer, intent(in)  :: i
+      real(dp), intent(in), optional :: offset
+      real(dp)             :: x  ! final value
+
+      real(dp) :: xin
+      real(dp) :: r(3), rfrac(3)
+      integer  :: natom, k
+!
+!     Offset: prepared to deal with origin shift... *****
+!
+C  ZmatType(3*na) defines the component type:
+C    1 - angle
+C    2 - bond length
+C    3 - pure cartesian (molecule)
+C    4 - scaled cartesian (molecule)
+C    5 - fractional cartesian (molecule)
+C    6 - pure cartesian
+C    7 - scaled cartesian (scaled by lattice constant)
+C    8 - fractional cartesian (scaled by lattice vectors)
+
+      xin = Zmat(i)
+      if (present(offset)) then
+         xin = xin + offset
+      endif
+
+      select case (ZmatType(i))
+
+      case(1)
+         x =  xin/scale_angle
+      case(2,3,6)
+         x=   xin/scale_length
+      case(4,7)
+         x =  xin / zmatrix_alat
+      case(5,8)
+   
+         ! Get other cart coords and compute fractional coords
+         ! we assume that any use of fractional coordinates is
+         ! on a whole-atom basis, i.e., there are no bond lenghts
+         ! or angles involved, so Zmat(base+1:base+3) is homogeneous
+   
+         natom = 1 + (i-1)/3
+         r(1:3) = Zmat(3*(natom-1)+1:3*(natom-1)+3)
+         call cart2frac(r,rfrac)
+         k = i - 3*(natom-1)
+         x = rfrac(k)
+
+      case default
+         call die("Wrong type for Zmatrix coordinate")
+      end select
+
+      end function user_print
+
+!----------------------------------------------------
+      subroutine print_variables()
+      use m_cell, only  : ucell, celli
+
+      integer  :: i, jindex
+      integer  :: ivars
+
+      external          io_assign, io_close
+
+!     Update celli, just in case
+      call reclat(ucell,celli,0)
+!
+      call io_assign( ivars )
+      open(ivars, file="ZMATRIX_VARS", form='formatted',
+     $     position='rewind', status='unknown')
+
+        write(6,"(a)") "Z-matrix Symbol Section -------"
+        write(6,"(a)") "Variables"
+        do i = 1, nVars
+           jindex = iVarstoZmat(i)
+           if (.not.VaryZmat(jindex)) cycle
+           print *, ZmatVarNames(i), user_print(jindex)
+           write(unit=ivars, fmt="(a20,g25.15)")
+     $          ZmatVarNames(i), user_print(jindex)
+        enddo
+        call io_close(ivars)
+
+        write(6,"(a)") "Constants"
+        do i = 1, nVars
+           jindex = iVarstoZmat(i)
+           if (VaryZmat(jindex)) cycle
+           print *, ZmatVarNames(i), user_print(jindex)
+        enddo
+        write(6,"(a,/)") "------------ End of Z-matrix Information"
+
+        end subroutine print_variables
 
       end module zmatrix

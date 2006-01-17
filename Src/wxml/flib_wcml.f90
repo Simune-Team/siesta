@@ -1462,9 +1462,9 @@ CONTAINS
     a = sqrt(dot_product(cell(:,1), cell(:,1)))
     b = sqrt(dot_product(cell(:,2), cell(:,2)))
     c = sqrt(dot_product(cell(:,3), cell(:,3)))
-    alpha = acos(dot_product(cell(:,1),cell(:,2))/sqrt(a*b))
-    beta = acos(dot_product(cell(:,1),cell(:,3))/sqrt(a*c))
-    gamma = acos(dot_product(cell(:,2),cell(:,3))/sqrt(b*c))
+    alpha = acos(dot_product(cell(:,1),cell(:,2))/(a*b))
+    beta = acos(dot_product(cell(:,1),cell(:,3))/(a*c))
+    gamma = acos(dot_product(cell(:,2),cell(:,3))/(b*c))
 
     call cmlAddCrystal(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, units, 'units:radians', spaceType, fmt)
 
@@ -1494,9 +1494,9 @@ CONTAINS
     a = sqrt(dot_product(cell(:,1), cell(:,1)))
     b = sqrt(dot_product(cell(:,2), cell(:,2)))
     c = sqrt(dot_product(cell(:,3), cell(:,3)))
-    alpha = acos(dot_product(cell(:,1),cell(:,2))/sqrt(a*b))
-    beta = acos(dot_product(cell(:,1),cell(:,3))/sqrt(a*c))
-    gamma = acos(dot_product(cell(:,2),cell(:,3))/sqrt(b*c))
+    alpha = acos(dot_product(cell(:,1),cell(:,2))/(a*b))
+    beta = acos(dot_product(cell(:,1),cell(:,3))/(a*c))
+    gamma = acos(dot_product(cell(:,2),cell(:,3))/(b*c))
 
     call cmlAddCrystal(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, units, 'units:radians', spaceType, fmt)
 

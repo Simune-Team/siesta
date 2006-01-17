@@ -46,7 +46,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
 	fixed.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
-	iodm.o iohs.o iolwf.o ioxv.o ipack.o iopipes.o \
+	iodm.o iohs.o iolwf.o ioxv.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o \
@@ -104,7 +104,7 @@ gen-basis.o: $(FDF)
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o recipes.o \
+MOD_OBJS=precision.o m_cell.o recipes.o \
          spatial.o parallel.o parallelsubs.o sys.o parsing.o chemical.o xcmod.o atom.o atmparams.o \
          m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \

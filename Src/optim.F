@@ -8,7 +8,7 @@
      .                 tp, ftol, strtol, varcel, relaxd,
      $                 usesavejacobian)
 c ***************************************************************************
-c (Variable-cell not ready) Broyden geometry optimization
+c Broyden geometry optimization
 c
 c   Energy minimization including atomic coordinates and unit cell vectors.
 c   It allows an external target stress:

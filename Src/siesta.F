@@ -14,6 +14,7 @@ C ***
 C  Modules
       use precision, only: dp
       use parallel, only: Node, Nodes, IOnode
+      use m_cell,   only: ucell
       use atmfuncs, only: rcut, uion, izofis
       use atomlist, only: xa, xalast, indxuo, na_u
       use atomlist, only: isa, cisa, elem, indxua, iza, lastkb, lasto
@@ -113,7 +114,7 @@ C  Modules
      .  rc, rcoor, rcoorcp, rijmin, rmax, rmaxh, rmin, r2min,
      .  scell(3,3), stot, stress(3,3), strtol, svec(3),
      .  taurelax, tempinit, tempion, tiny, tp, ts, tt,
-     .  tstress(3,3), Uatm, ucell(3,3), Uscf,
+     .  tstress(3,3), Uatm, Uscf,
      .  vcell(3,3), virial, vn,
      .  volcel, volume, vpr, wmix, wmixkick, 
      .  xmax, xmin, stressl(3,3), veclen
@@ -145,16 +146,18 @@ C  Modules
 
       logical
      .  auxchanged, chebef, dminit, default, dumpcharge, 
-     .  final, first, fixauxcell, fixspin, found, foundxv, gamma,
+     .  final, first, fixauxcell, fixspin, found, foundxv, foundzm,
+     .  gamma,
      .  initdmaux, inspn, itest, last, lastst, mix, mmix, negl, noeta, 
      .  outlng, overflow, overflowed, pulfile, relaxd,
      .  savehs, savevh, savevt, savdrh, savrho,
      .  savepsch, savetoch,
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
+     .  usesavezm,
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
      .  harrisfun, muldeb, eggbox_block, use_struct_file,
-     $  require_energy_convergence, broyden_optim
+     $  require_energy_convergence, broyden_optim, struct_only
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -167,7 +170,7 @@ C  Modules
       external
      .  anneal, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, ioxv, 
+     .  iodm, ioxv, iozm,
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
      .  nose, npr, paste, pulayx, 
      .  reinit, shaper, spnvec, 
@@ -293,6 +296,7 @@ C Read simulation sizes ...............................................
          call coor(na_u,ucell)  ! Sets na_u, xa, and isa
       endif
 
+
       if (cml_p) then
 C We need the names of the elements on node 0
         allocate(elem(na_u))
@@ -369,12 +373,29 @@ C Find some switches ..................................................
       call fdf_global_get(writpx, 'WriteMDXmol'     , .not. writec)
       call fdf_global_get(default, 'UseSaveData'     , .false.)
       call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
+      call fdf_global_get(usesavezm, 'MD.UseSaveZM'    , default)
       call fdf_global_get(savehs, 'SaveHS'          , .false.)
       call fdf_global_get(fixauxcell, 'FixAuxillaryCell', .false.)
       call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .false.)
       call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
       call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance',
      .                            1.0_dp, 'Bohr' )
+
+C Read Z-matrix coordinates and forces from file
+      if (lUseZmatrix) then
+        foundzm = .false.
+        if (usesavezm) then
+            call iozm('read',ucell,vcell,xa,foundzm)
+            if (IOnode) then
+                if (.not.foundzm) then
+                   write(6,'(/,a)') 'siesta: WARNING: ZM file not found'
+                else
+                    write(6,'(/,a)') 
+     .        "! Info in XV file prevails over previous structure input"
+                endif
+            endif
+        endif
+      endif
 
 C Read cell shape and atomic positions from a former run ..............
       foundxv = .false.
@@ -407,8 +428,9 @@ C ..................
 
 
 C Initialize atom lists 
-      call initatomlists
+      call initatomlists()    ! Sets iza
       qtot = qtot - charnet
+
 
 C Calculate spin populations for fixed spin case...
       if (fixspin) then
@@ -492,6 +514,16 @@ C Output of initial system details:
      .       dictref='siesta:shape')
         call cmlEndModule(xf=mainXML)
       endif
+
+! early exit if only checking the structure
+
+      call fdf_global_get(struct_only,'Output-Structure-Only',.false.)
+      if (struct_only) then
+         if (IONode) call write_struct( ucell, na_u, isa, iza, xa )
+         call bye("End of structure processing")
+      endif
+      
+!!! --------------------- End of Structure Generation section
 
 C Madelung correction for charged systems .............................
       if (charnet .ne. 0.0_dp) then
@@ -1602,7 +1634,7 @@ C Force output .......................................................
       if (IOnode) then
         call siesta_write_forces()
         call siesta_write_stress_pressure()
-        call wallclock('---- end of geometry step')
+        call wallclock('--- end of geometry step')
       endif
 
 C Mulliken population analysis .......................................
@@ -1699,6 +1731,8 @@ C Move atoms ..........................................................
 
 C Save last atomic positions and velocities (before moving atoms for consist)
       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
+      if (lUseZmatrix)
+     .  call iozm('write',ucell,vcell,xa,foundzm)
 C ...................
 
 C Restore original coordinates after FC displacements
