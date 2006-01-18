@@ -2,8 +2,395 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 ____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2005/siesta-devel--reference--1.5
+--------------------------------------------------------------------
+
+NOTE: The arch patches appear to be all committed by A. Garcia. That is because
+he is the person in charge of the merges. To identify the developer responsible
+for a given patch, see the "new patches" section of each log.
+
+
+2006-01-18 16:45:48 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-8
+
+    Summary:
+      Bug fix regarding limited eigenvectors & spin (by Pablo Ordejon)
+    Revision:
+      siesta-devel--reference--1.5--patch-8
+
+    When telling siesta not to find all eigenvectors, and with spin polarisation,
+    there were still some misadjustments.
+    
+    
+    
+
+    modified files:
+     Src/siesta.F
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta--my-changes--0.1--patch-3
+
+
+2006-01-18 16:44:22 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-7
+
+    Summary:
+      Several bugs fixed in optical and pulayx
+    Revision:
+      siesta-devel--reference--1.5--patch-7
+
+    BUGs Fixed:
+                                                                                    
+        subroutines optical, transition_rate and diagpol:
+          *The subroutine was not able to deal correctly with the
+           calculation of the optical properties of a molecule using
+           only gamma point.
+          *The scissor correction was not applied at the right place
+          *The populations used to calculate the dielectric constant
+           were incorrect (by a factor of two). Fortunately this only
+           translate in an incorrect normalization factor which, at the
+           end, was corrected (inadvertently) due to the use of Ry instead
+           of atomic units.
+        subroutine pulayx:
+          *The case of the subroutine inver failing was not conveniently
+           treated in all the cases due to the use of the function mod.
+                                                                                    
+    Other changes:
+        subroutine optical:
+          *The default mesh for the calculation of the optical properties of
+           molecules and atoms has been changed to gamma point. Thus, in these
+           cases the Optical.Mesh block does not need to be specified.
+          *Some cosmetics
+        subroutine reoptical:
+          *Some cosmetics.
+          *Ensuring the default option 'polycrystal' for the polarization type.
+        subroutine ksv_pol:
+          *Modification of the call to subroutine diagpol, which now has
+           and additional parameter.
+        subroutine phirphi_opt.f
+          *Cosmetics and minor changes
+        Docs/siesta.tex
+          *Has been changed according to this new default
+          *A new reference has been added to the list of SIESTA references.
+          *Sanchez-Portal's affiliation has been updated.
+    
+    
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/diagpol.f Src/ksv.f
+     Src/optical.F Src/phirphi_opt.f Src/pulayx.F Src/reoptical.F
+     Src/transition_rate.F
+
+    new patches:
+     dsanchez@siesta.arch--2005/siesta--optical--0.1--patch-1
+
+
+2006-01-17 14:16:51 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-6
+
+    Summary:
+      Assignments moved outside inner loop in kinefsm to save cputime
+    Revision:
+      siesta-devel--reference--1.5--patch-6
+
+    Patches applied:
+    
+     * jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-2
+       Assignments moved outside inner loop in kinefsm to save cputime.
+    
+
+    modified files:
+     Src/kinefsm.f
+
+    new patches:
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-2
+
+
+2006-01-17 14:05:29 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-5
+
+    Summary:
+      Added compilation support for SGI-Altix and Intel9+MKL8
+    Revision:
+      siesta-devel--reference--1.5--patch-5
+
+    New files in Src/Sys for SGI-Altix and (library locations site-dependent)
+    Intel Fortran Compiler V.7 with Intel MKL V.8.
+    
+
+    new files:
+     Src/Sys/.arch-ids/intel9-mkl8.make.id
+     Src/Sys/.arch-ids/sgi-altix.make.id Src/Sys/intel9-mkl8.make
+     Src/Sys/sgi-altix.make
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-27
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-28
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-4
+
+
+2006-01-17 14:01:54 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-4
+
+    Summary:
+      Zmatrix information output and re-starting options (+fixes)
+    Revision:
+      siesta-devel--reference--1.5--patch-4
+
+    The program now writes a summary of the zmatrix *explicit* variables
+    at each step of the optimization phase.
+    
+    New option MD.UseSaveZM added to preserve Zmatrix information accross runs.
+    
+    New zmatrix test.
+    
+    Other fixes:
+    
+    - Remove comment from optim.F implying that it does not work for variable cell
+    relaxations.
+    
+    - Fix computation of lattice angles in wxml/flib_wcml.f90.
+    
+
+    new files:
+     Src/.arch-ids/iozm.F.id Src/.arch-ids/m_cell.f.id
+     Src/Tests/Reference/.arch-ids/zmatrix.out.id
+     Src/Tests/Reference/zmatrix.out
+     Src/Tests/zmatrix/.arch-ids/=id
+     Src/Tests/zmatrix/.arch-ids/Zmatrix.data.id
+     Src/Tests/zmatrix/.arch-ids/makefile.id
+     Src/Tests/zmatrix/.arch-ids/zmatrix.fdf.id
+     Src/Tests/zmatrix/.arch-ids/zmatrix.pseudos.id
+     Src/Tests/zmatrix/Zmatrix.data Src/Tests/zmatrix/makefile
+     Src/Tests/zmatrix/zmatrix.fdf
+     Src/Tests/zmatrix/zmatrix.pseudos Src/iozm.F Src/m_cell.f
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile
+     Src/Tests/Makefile Src/Tests/Reference/h2oZ.out Src/optim.F
+     Src/siesta.F Src/wxml/flib_wcml.f90 Src/zmatrix.F
+
+    new directories:
+     Src/Tests/zmatrix Src/Tests/zmatrix/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--ag-uspex--1.5--base-0
+     agarcia@siesta.arch--2005/siesta-devel--ag-uspex--1.5--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--ag-uspex--1.5--patch-2
+     agarcia@siesta.arch--2005/siesta-devel--ag-uspex--1.5--patch-3
+     agarcia@siesta.arch--2005/siesta-devel--ag-uspex--1.5--patch-4
+     agarcia@siesta.arch--2005/siesta-devel--ag-uspex--1.5--patch-5
+     agarcia@siesta.arch--2005/siesta-devel--ag-uspex--1.5--patch-6
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-18
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-23
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-29
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-30
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-31
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-3
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-7
+
+
+2006-01-17 10:47:32 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-3
+
+    Summary:
+      XC: Add revPBE functional -- fix call to blypxc for non-collinear spin
+    Revision:
+      siesta-devel--reference--1.5--patch-3
+
+    A new routine has been added to xc.f to implement the "revPBE" functional
+    (which only differs from PBE in the change of a parameter). The new "author"
+    code in the fdf file is "revPBE".
+    
+    The call to blypxc was not correct in the case of non-collinear spin. Fixed.
+    
+    
+
+    modified files:
+     Docs/siesta.tex Src/siesta.F Src/xc.f
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta--my-changes--0.1--patch-2
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-6
+
+
+2006-01-17 10:42:36 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-2
+
+    Summary:
+      Units of energy in MDE are now eV
+    Revision:
+      siesta-devel--reference--1.5--patch-2
+
+    Patches applied:
+    
+     * eartacho@siesta.arch--2005/siesta--my-changes--0.1--patch-1
+       Bug fixed: units of energy in MDE now eV
+    
+
+    modified files:
+     Src/iomd.f
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta--my-changes--0.1--patch-1
+
+
+2005-12-09 11:21:52 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-1
+
+    Summary:
+      Broyden algorithm for geometry optimization. Assorted fixes.
+    Revision:
+      siesta-devel--reference--1.5--patch-1
+
+    * Broyden algorithm for geometry optimization
+    
+      It is a drop-in replacement for the conjugate-gradients algorithm (including
+      the variable-cell case). It seems to work better in all cases analyzed,
+      even with the standard defaults.
+    
+      (selected by the new Optim.Broyden boolean fdf variable. See the manual
+       for a full set of options, but note that the defaults seem to work well)
+    
+      The code is in the new routine optim.F, which just calls the same code in
+      m_broyddj.f90 used for the SCF minimization. Actually, a special
+      version without interprocess communication has been prepared, so that
+      in a parallel run, with the coordinates and forces replicated in all 
+      processors, all will be doing the same kinds of operations.
+     
+      Some new tests have been added: h2o_op_broyden, sih_op_broyden.
+      The var_cell test is now done with the Broyden algorithm.
+    
+    * Wrap some calls and I/O statements for MPI operation.
+      (I/O in redata, calls to coxmol and coceri)
+    
+    * Give XV file priority over struct-file input
+    
+    * Update FFLAGS in cscs-cray-mpi.make
+    
+    * New Tests/Reference directory to hold recent output files (for checks on
+      new installations, rather than correctness tests).
+    
+    * Add proper CML references for the zmatrix case.
+    
+    * Atom cosmetic fixes:  non-standard write in atom/vionic.f,
+      generic f95 aux file.
+    
+    * Annealing proto-code. Some experimental code to achieve a given
+      temperature "exactly" after a Md.TauRelax time. This is not physical, just
+      expeditive. The code is not yet enabled. 
+    
+      The si test has been changed to an example of annealing.
+    
+    
+    
+
+    new files:
+     Pseudo/atom/.arch-ids/auxf95.f.id Pseudo/atom/auxf95.f
+     Src/.arch-ids/m_broyddj_nocomm.f90.id Src/.arch-ids/optim.F.id
+     Src/Tests/Reference/.arch-ids/=id
+     Src/Tests/Reference/.arch-ids/batio3.out.id
+     Src/Tests/Reference/.arch-ids/bessel.out.id
+     Src/Tests/Reference/.arch-ids/constant_volume.out.id
+     Src/Tests/Reference/.arch-ids/fe.out.id
+     Src/Tests/Reference/.arch-ids/fe_broyden.out.id
+     Src/Tests/Reference/.arch-ids/floating.out.id
+     Src/Tests/Reference/.arch-ids/h2o.out.id
+     Src/Tests/Reference/.arch-ids/h2oZ.out.id
+     Src/Tests/Reference/.arch-ids/h2o_dos.out.id
+     Src/Tests/Reference/.arch-ids/h2o_op_broyden.out.id
+     Src/Tests/Reference/.arch-ids/h2o_orderN.out.id
+     Src/Tests/Reference/.arch-ids/mgco3.out.id
+     Src/Tests/Reference/.arch-ids/si.out.id
+     Src/Tests/Reference/.arch-ids/si64.out.id
+     Src/Tests/Reference/.arch-ids/sih.out.id
+     Src/Tests/Reference/.arch-ids/sih_op_broyden.out.id
+     Src/Tests/Reference/.arch-ids/var_cell.out.id
+     Src/Tests/Reference/batio3.out Src/Tests/Reference/bessel.out
+     Src/Tests/Reference/constant_volume.out
+     Src/Tests/Reference/fe.out Src/Tests/Reference/fe_broyden.out
+     Src/Tests/Reference/floating.out Src/Tests/Reference/h2o.out
+     Src/Tests/Reference/h2oZ.out Src/Tests/Reference/h2o_dos.out
+     Src/Tests/Reference/h2o_op_broyden.out
+     Src/Tests/Reference/h2o_orderN.out
+     Src/Tests/Reference/mgco3.out Src/Tests/Reference/si.out
+     Src/Tests/Reference/si64.out Src/Tests/Reference/sih.out
+     Src/Tests/Reference/sih_op_broyden.out
+     Src/Tests/Reference/var_cell.out
+     Src/Tests/h2o_op_broyden/.arch-ids/=id
+     Src/Tests/h2o_op_broyden/.arch-ids/h2o_op_broyden.fdf.id
+     Src/Tests/h2o_op_broyden/.arch-ids/h2o_op_broyden.pseudos.id
+     Src/Tests/h2o_op_broyden/.arch-ids/makefile.id
+     Src/Tests/h2o_op_broyden/h2o_op_broyden.fdf
+     Src/Tests/h2o_op_broyden/h2o_op_broyden.pseudos
+     Src/Tests/h2o_op_broyden/makefile Src/Tests/mgo/.arch-ids/=id
+     Src/Tests/mgo/.arch-ids/Kgrid.id
+     Src/Tests/mgo/.arch-ids/makefile.id
+     Src/Tests/mgo/.arch-ids/mgo.STRUCT_IN.id
+     Src/Tests/mgo/.arch-ids/mgo.fdf.id
+     Src/Tests/mgo/.arch-ids/mgo.pseudos.id
+     Src/Tests/mgo/.arch-ids/mydefaults.fdf.id Src/Tests/mgo/Kgrid
+     Src/Tests/mgo/makefile Src/Tests/mgo/mgo.STRUCT_IN
+     Src/Tests/mgo/mgo.fdf Src/Tests/mgo/mgo.pseudos
+     Src/Tests/mgo/mydefaults.fdf
+     Src/Tests/sih_op_broyden/.arch-ids/=id
+     Src/Tests/sih_op_broyden/.arch-ids/makefile.id
+     Src/Tests/sih_op_broyden/.arch-ids/sih_op_broyden.fdf.id
+     Src/Tests/sih_op_broyden/.arch-ids/sih_op_broyden.pseudos.id
+     Src/Tests/sih_op_broyden/makefile
+     Src/Tests/sih_op_broyden/sih_op_broyden.fdf
+     Src/Tests/sih_op_broyden/sih_op_broyden.pseudos
+     Src/m_broyddj_nocomm.f90 Src/optim.F
+
+    modified files:
+     Docs/siesta.tex Pseudo/atom/makefile Pseudo/atom/vionic.f
+     Src/Makefile Src/Sys/cscs-cray-mpi.make Src/Tests/Makefile
+     Src/Tests/si/si.fdf Src/Tests/sih/sih.fdf
+     Src/Tests/var_cell/var_cell.fdf Src/coor.F Src/dynamics.f
+     Src/redata.F Src/siesta.F version.info
+
+    new directories:
+     Src/Tests/Reference Src/Tests/Reference/.arch-ids
+     Src/Tests/h2o_op_broyden Src/Tests/h2o_op_broyden/.arch-ids
+     Src/Tests/mgo Src/Tests/mgo/.arch-ids Src/Tests/sih_op_broyden
+     Src/Tests/sih_op_broyden/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--base-0
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-1
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-2
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-3
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-4
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-5
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-6
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-7
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-8
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-9
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-10
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-11
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-12
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-13
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-14
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-15
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-16
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-17
+
+
+2005-11-06 11:39:29 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	base-0
+
+    Summary:
+      tag of siesta@uam.es--2005/siesta-devel--reference--1.4--patch-18
+    Revision:
+      siesta-devel--reference--1.5--base-0
+
+    (automatically generated log message)
+    (Detailed patch list omitted)
+
+____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2005/siesta-devel--reference--1.4
 --------------------------------------------------------------------
+
+2005-11-06 11:32:34 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-18
+
+	Added Release Notes for interim release 1.5
+	Modified version.F90 to set version number to 1.5.0
+        Modified top-level README
+
+2005-11-06 11:04:34 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-17
+
+	Updated this (Docs/CHANGES)  file
 
 2005-11-04 17:14:34 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-16
 
