@@ -439,15 +439,19 @@ C Calculate spin populations for fixed spin case...
             write(message,'(2a)')
      .       'siesta: ERROR: You can only fix the spin of the system',
      .       'for collinear spin polarized calculations.'
-             call die(message)
+            call die(message)
           endif
         endif
         do i = 1,2
           qs(i) = (qtot + (3-2*i)*ts) / 2.0_dp
         enddo
       else
-        qs(1) = qtot
-        qs(2:nspin) = 0.0_dp
+        qs(1:nspin) = 0.0_dp
+        if (nspin .le. 2) then
+          do ispin = 1,nspin
+            qs(ispin) = qtot/nspin
+          enddo
+        endif
       endif
 C ..................
 
