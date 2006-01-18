@@ -1,4 +1,4 @@
-      subroutine transition_rate(psi, ek, temp, efermi, Sr, 
+      subroutine transition_rate( ng, psi, ek, temp, efermi, Sr, 
      .                           Aux, Aux2, numh, listhptr, listh, 
      .                           indxuo, no, nuo, nuotot, xij, 
      .                           maxnh, nbands, kpoint, matrix )
@@ -7,15 +7,14 @@ C Finds the matrix element for the dipolar transition between to states
 C Written by DSP. August 1999
 C Restyled for f90 version by JDG. June 2004
 C **************************** INPUT ********************************** 
-C real*8  psi(2,nuotot,nuo)   : Wavefunctions in current k point
+C integer ng                  : first dimension of psi, Aux and Aux2
+C real*8  psi(ng,nuotot,nuo)  : Wavefunctions in current k point
 C real*8  ek(nuotot)          : Eigenvalues
 C real*8  temp                : Electronic temperature
 C real*8  efermi              : Fermi level 
 C real*8  Sr(maxnh)           : Position operator matrix elements (sparse)
-C real*8  Sr2(maxnh)          : Position operator matrix elements (sparse)
-C real*8  Sr3(maxnh)          : Position operator matrix elements (sparse)
-C real*8  Aux(2,nuotot,nuo)   : Auxiliary space
-C real*8  Aux2(2,nuotot,nuo)  : Auxiliary space
+C real*8  Aux(ng,nuotot,nuo)  : Auxiliary space
+C real*8  Aux2(ng,nuotot,nuo)  : Auxiliary space
 C integer numh(nuo)           : Number of nonzero elements of each row
 C                               of hamiltonian matrix
 C integer listhptr(nuo)       : Pointer to start of row in listh
@@ -57,12 +56,12 @@ C *********************************************************************
 C Passed variables
       integer nuo, nuotot, maxnh, no,
      .  listh(maxnh), numh(nuo), listhptr(nuo),
-     .  indxuo(no), nbands
+     .  indxuo(no), nbands, ng
 
       real(dp)
      .  xij(3,maxnh), Sr(maxnh), 
-     .  psi(2,nuotot,nuo), kpoint(3), Aux(2,nuotot,nuo), 
-     .  Aux2(2,nuotot,nuo), ek(nuo), temp, efermi 
+     .  psi(ng,nuotot,nuo), kpoint(3), Aux(ng,nuotot,nuo), 
+     .  Aux2(ng,nuotot,nuo), ek(nuo), temp, efermi 
 
       character
      .  matrix*1
@@ -70,7 +69,7 @@ C Passed variables
 C Internal variables
       integer 
      .  ind, iuo, juo, j, ie, iie, iio, jje, je, jo, 
-     .  BNodei, Bnodej, BTest
+     .  BNodei, Bnodej, BTest, ig
       real(dp)
      .  kxij, skxij, ckxij, pipj1, pipj2,
      .  f1,  f2
@@ -89,13 +88,21 @@ C Internal variables
 C Start timer
       call timer('transrate',1)
 
+C Check input matrix
+      if(matrix.ne.'P'.and.matrix.ne.'R') then
+        write(6,'(/a)')
+     .   'transrate: matrix only can take values R or P'
+        stop
+      endif
+                                                                                
+
 C Initialise matrix elements to zero
       do iuo = 1,nuo
         do juo = 1,nuotot
-          Aux(1,juo,iuo) = 0.0d0
-          Aux(2,juo,iuo) = 0.0d0
-          Aux2(1,juo,iuo) = 0.0d0
-          Aux2(2,juo,iuo) = 0.0d0
+         do ig=1,ng
+          Aux(ig,juo,iuo) = 0.0d0
+          Aux2(ig,juo,iuo) = 0.0d0
+         enddo 
         enddo 
       enddo 
           
@@ -105,23 +112,27 @@ C Compute matrix elements
           ind = listhptr(iuo) + j
           jo = listh(ind)
           juo = indxuo(jo)
-          kxij = kpoint(1) * xij(1,ind) +
-     .           kpoint(2) * xij(2,ind) +
-     .           kpoint(3) * xij(3,ind) 
-          ckxij = dcos(kxij)
-          skxij = dsin(kxij)
-          Aux2(1,juo,iuo) = Aux2(1,juo,iuo) + Sr(ind)*ckxij
-          Aux2(2,juo,iuo) = Aux2(2,juo,iuo) + Sr(ind)*skxij
+          if(ng.gt.1) then 
+           kxij = kpoint(1) * xij(1,ind) +
+     .            kpoint(2) * xij(2,ind) +
+     .            kpoint(3) * xij(3,ind) 
+           ckxij = dcos(kxij)
+           skxij = dsin(kxij)
+           Aux2(1,juo,iuo) = Aux2(1,juo,iuo) + Sr(ind)*ckxij
+           Aux2(2,juo,iuo) = Aux2(2,juo,iuo) + Sr(ind)*skxij
+          else
+           Aux2(1,juo,iuo) = Aux2(1,juo,iuo) + Sr(ind)
+          endif
         enddo 
       enddo 
 
 C Allocate workspace array
 #ifdef MPI
-      allocate(AuxLocal2(2,nuotot))
+      allocate(AuxLocal2(ng,nuotot))
 #endif
-      allocate(AuxLocal(2,nuotot))
-      allocate(psibandi(2,nuotot))
-      allocate(psibandj(2,nuotot))
+      allocate(AuxLocal(ng,nuotot))
+      allocate(psibandi(ng,nuotot))
+      allocate(psibandj(ng,nuotot))
  
       BNodei = 0
       iie = 0
@@ -130,16 +141,17 @@ C Allocate workspace array
         if (Node.eq.BNodei) then
           iie = iie + 1 
           do j = 1,nuotot 
-            psibandi(1,j) = psi(1,j,iie)
-            psibandi(2,j) = psi(2,j,iie)
+            do ig=1,ng
+              psibandi(ig,j) = psi(ig,j,iie)
+            enddo 
           enddo
         endif
 #ifdef MPI
-        call MPI_Bcast(psibandi(1,1),2*nuotot,MPI_double_precision,
+        call MPI_Bcast(psibandi(1,1),ng*nuotot,MPI_double_precision,
      .    BNodei,MPI_Comm_World,MPIerror)
 #endif
 
-        AuxLocal(1:2,1:nuotot) = 0.0d0
+        AuxLocal(1:ng,1:nuotot) = 0.0d0
 
         BNodej = 0
         jje = 0
@@ -153,38 +165,45 @@ C Allocate workspace array
             if (f1*(2.0d0-f2).gt.tiny) then 
               if (Node.eq.BNodej) then
                 do j = 1,nuotot 
-                  psibandj(1,j) = psi(1,j,jje)
-                  psibandj(2,j) = psi(2,j,jje)
+                  do ig=1,ng
+                    psibandj(ig,j) = psi(ig,j,jje)
+                  enddo 
                 enddo
               endif
 #ifdef MPI
-              call MPI_Bcast(psibandj(1,1),2*nuotot,
+              call MPI_Bcast(psibandj(1,1),ng*nuotot,
      $        MPI_double_precision,BNodej,MPI_Comm_World,MPIerror)
 #endif
 
               do iuo = 1,nuo
                 call LocalToGlobalOrb(iuo,Node,Nodes,iio)
                 do juo = 1,nuotot
-                
-                  pipj1 = psibandi(1,iio)*psibandj(1,juo) +
-     .                    psibandi(2,iio)*psibandj(2,juo)
-                  pipj2 = psibandi(1,iio)*psibandj(2,juo) -
-     .                    psibandi(2,iio)*psibandj(1,juo) 
+                 if(ng.eq.2) then  
+                   pipj1 = psibandi(1,iio)*psibandj(1,juo) +
+     .                     psibandi(2,iio)*psibandj(2,juo)
+                   pipj2 = psibandi(1,iio)*psibandj(2,juo) -
+     .                     psibandi(2,iio)*psibandj(1,juo) 
 
-                  AuxLocal(1,je) = AuxLocal(1,je)
-     .               + pipj1*Aux2(1,juo,iuo)
-     .               - pipj2*Aux2(2,juo,iuo)
+                   AuxLocal(1,je) = AuxLocal(1,je)
+     .                + pipj1*Aux2(1,juo,iuo)
+     .                - pipj2*Aux2(2,juo,iuo)
 
-                  AuxLocal(2,je) = AuxLocal(2,je)
-     .               + pipj1*Aux2(2,juo,iuo)
-     .               + pipj2*Aux2(1,juo,iuo)
+                   AuxLocal(2,je) = AuxLocal(2,je)
+     .                + pipj1*Aux2(2,juo,iuo)
+     .                + pipj2*Aux2(1,juo,iuo)
+                  else 
+                   pipj1 = psibandi(1,iio)*psibandj(1,juo) 
+                      
+                   AuxLocal(1,je) = AuxLocal(1,je)
+     .                + pipj1*Aux2(1,juo,iuo)
+                  endif
 
-         
                 enddo 
               enddo  
               if (matrix.eq.'P') then 
-                AuxLocal(1,je) = AuxLocal(1,je)/(ek(je)-ek(ie))
-                AuxLocal(2,je) = AuxLocal(2,je)/(ek(je)-ek(ie)) 
+                do ig=1,ng
+                 AuxLocal(ig,je) = AuxLocal(ig,je)/(ek(je)-ek(ie))
+                enddo 
               endif 
             endif 
           endif 
@@ -195,14 +214,14 @@ C Allocate workspace array
           endif
         enddo 
 #ifdef MPI
-        call MPI_Reduce(AuxLocal(1,1),AuxLocal2(1,1),2*nuotot,
+        call MPI_Reduce(AuxLocal(1,1),AuxLocal2(1,1),ng*nuotot,
      .    MPI_double_precision,MPI_sum,BNodei,MPI_Comm_World,MPIerror)
         if (Node.eq.BNodei) then
-          Aux(1:2,1:nuotot,iie) = AuxLocal2(1:2,1:nuotot)
+          Aux(1:ng,1:nuotot,iie) = AuxLocal2(1:ng,1:nuotot)
         endif
 #else
         if (Node.eq.BNodei) then
-          Aux(1:2,1:nuotot,iie) = AuxLocal(1:2,1:nuotot)
+          Aux(1:ng,1:nuotot,iie) = AuxLocal(1:ng,1:nuotot)
         endif
 #endif
         BTest = ie/BlockSize

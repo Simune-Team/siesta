@@ -33,7 +33,7 @@ C real*8  S(maxnh)            : Overlap in sparse form
 C real*8  AuxSr(maxnh)        : Auxiliar matrix (outside H0)
 C real*8  AuxSr2(maxnh)       : Auxiliar matrix (outside Eold)
 C real*8  AuxSr3(maxnh)       : Auxiliar matrix (outside Dold)
-C real*8  xijo(3,maxnh)       : Vectors between orbital centers (sparse)
+C real*8  xijo(3,*)           : Vectors between orbital centers (sparse)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
@@ -91,7 +91,7 @@ C Passed variables
       integer           nua, maxna, jna(maxna), lasto(0:na),lastkb(0:na)
       integer           iphKB(*), indxua(na)
       real(dp)          ek(nuotot), qspin(2), H(maxnh,nspin), 
-     .                  S(maxnh), xijo(3,maxnh),
+     .                  S(maxnh), xijo(3,*),
      .                  ucell(3,3), efermi, temp, AuxSr(maxnh), 
      .                  AuxSr2(maxnh),AuxSr3(maxnh), 
      .                  scell(3,3), xij(3,maxna), r2ij(maxna),
@@ -102,7 +102,7 @@ C Internal variables
      .  iie, ik, io, ispin, iuo, ix, iy,  is, ia, ntote, 
      .  nbands, ixmin, ije, j, maxhs, maxpsi,
      .  kscell(3,3), nk, nmeshk(3), npol, ipol, 
-     .  ie, je, iw, nwi, nwf, nw, iu
+     .  ie, je, iw, nwi, nwf, nw, iu, ngamma
 
 #ifdef MPI
       integer                     :: MPIerror
@@ -163,6 +163,16 @@ C Set initial value of nkopt
 C Find the integration grid in reciprocal space   
       nk = nmeshk(1)*nmeshk(2)*nmeshk(3)
 
+C Use only gamma for atoms and molecules
+C unless otherwise requested
+       if (((shape.eq.'atom').or.(shape.eq.'molecule'))
+     .              .and.(nk.eq.0)) then 
+            do ix=1,3
+              nmeshk(ix)=1
+            enddo 
+            nk=1
+       endif
+
 C If nk.ne.0
       if (nk.ne.0) then
         do ix = 1,3
@@ -201,7 +211,13 @@ C If nk.eq.0
       endif
 
 C Check whether nkopt is greater than 0
-      if (nkopt.eq.0) goto 999
+      if (nkopt.eq.0) then
+          write(6,'(/a)') 
+     .     'optical: no grid specified for optical calculation' 
+          write(6,'(/a)')
+     .     'optical: no calculation performed'
+          goto 999
+      endif 
 
       if (nspin.eq.1) then 
 C Total number of valence electrons in the unit cell
@@ -264,20 +280,6 @@ C Check sizes of K point arrays
 
 C Check size of remaining arrays
       call re_alloc(ekloc,1,nuotot,name='ekloc',routine='optical')
-
-C Apply scissor operator if required
-      do iuo = 1,nuotot
-        ekloc(iuo) = ek(iuo)
-      enddo
-      efermiloc = efermi
-      if (escissor.gt.0.0d0) then
-        efermiloc = efermiloc + 0.5d0*escissor
-        do iuo = 1,nuotot
-          if (ekloc(iuo).gt.efermi) then
-            ekloc(iuo) = ekloc(iuo) + escissor
-          endif
-        enddo
-      endif
       
 C******************PI*************************************
       pi = dacos(-1.0d0)
@@ -295,15 +297,17 @@ C Obtain the points and weigths for the kspace integration
         kscell(ix,ix) = nmeshk(ix)
         displ(ix) = dsp
       enddo
+      ngamma = 2
       nk = nkopt
       call kgrid( ucell, kscell, displ, nk, kopt, wgthopt )
-        
+       
       if (nk.eq.1 .and. abs(kopt(1,1)).lt.tiny .and.
      .                  abs(kopt(2,1)).lt.tiny .and.
      .                  abs(kopt(3,1)).lt.tiny) then
         gamma = .true.
+        ngamma = 1
       endif
-
+     
 C Depending on the selected option, the meaning of the vector
 C efield changes 
       if (Node.eq.0) then
@@ -340,9 +344,9 @@ C of the electric field
         endif
 
         if (Node.eq.0) then
-          write(6,'(a)') 
+          write(6,'(/a)') 
      .       'Optical: electric field direction'
-          write(6,'(/a,3f12.5)') 'Optical: ',
+          write(6,'(a,3f12.5)') 'Optical: ',
      .              (efield(ix),ix=1,3)
         endif
 
@@ -402,23 +406,24 @@ C now stands for the propagation direction.
           inplane(ix,2) = inplane(ix,2)/dsqrt(dmod)
         enddo
         if (Node.eq.0) then
-          write(6,'(a)')
+          write(6,'(/a)')
      .'Optical: Vectors defining the plane that contains the Efield:'
-          do iy = 1,2
-             write(6,'(/a,3f12.5)')
-     .           'Optical: ', (inplane(ix,iy),ix=1,3)
-          enddo 
+             write(6,'(a,3f12.5)')
+     .           'Optical: ', (inplane(ix,1),ix=1,3)
+             write(6,'(a,3f12.5)')
+     .           'Optical: ', (inplane(ix,2),ix=1,3)
         endif 
       endif 
 
 C Allocate Haux/Saux/psi arrays to required size
       if (nspin.le.2 .and. gamma) then
         maxhs = nuotot*nuo
-        maxpsi = nuotot*nuo*nspin
+        maxpsi = nuotot*nuo
       else
         maxhs = 2*nuotot*nuo
-        maxpsi = 2*nuotot*nuo*nspin
+        maxpsi = 2*nuotot*nuo
       endif
+    
       call re_alloc(Haux,1,maxhs,name='Haux',routine='optical')
       call re_alloc(Saux,1,maxhs,name='Saux',routine='optical')
       call re_alloc(psi,1,maxpsi,name='psi',routine='optical')
@@ -427,10 +432,10 @@ C What kind of matrix elements will be used.
 C Real space is possible for molecules and atoms
 C For infinte media we will need caculate everything
 C using the momentum
-       matrix = 'P'
+       matrix = 'P' 
        if (((shape.eq.'atom').or.(shape.eq.'molecule'))
      .                                   .and.gamma) matrix = 'R' 
-       
+      
 C Construction of the matrix elements of the scalar product n*r 
        if ( option.eq.'polarized') then 
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
@@ -438,9 +443,9 @@ C Construction of the matrix elements of the scalar product n*r
      .                    listhptr, listh, indxuo, indxua, iaorb,
      .                    efield, jna, xij, r2ij, matrix, AuxSr) 
          do io = 1,maxnh
-           AuxSr2(io) = 0.0d0 
+           AuxSr2(io) = 0.0d0
            AuxSr3(io) = 0.0d0
-         enddo 
+         enddo
        elseif( option.eq.'unpolarized') then
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh, 
@@ -454,7 +459,7 @@ C Construction of the matrix elements of the scalar product n*r
      .                    AuxSr2)
          do io = 1,maxnh
            AuxSr3(io) = 0.0d0
-         enddo 
+         enddo
        else  
          do ix = 1,3
            xv(ix) = 0.0d0
@@ -497,18 +502,24 @@ C Begin the BZ integration
           do ix = 1,3
             kint(ix) = kopt(ix,ik)
           enddo            
-
+             
 C Find Wavefunctions 
           if (nspin.le.2) then 
             call diagpol( ispin, nspin, nuo, no, nuotot,
      .                    maxnh, numh, listhptr, listh, H, S,
-     .                    xijo, indxuo, kint, ekloc, psi,
-     .                    Haux, Saux )
+     .                    xijo, indxuo, kint, ek, psi, 
+     .                    ngamma, Haux, Saux )
           elseif (nspin.eq.4) then  
             call die('Optical: ERROR: nspin=4 not yet implemented')
           else
             call die('Optical: ERROR: incorrect value of nspin')
           endif
+
+C Copy eigenvalues to an auxiliar array
+           efermiloc = efermi
+           do iuo = 1,nuotot
+               ekloc(iuo)=ek(iuo)
+           enddo
        
           if (option.eq.'polarized') then 
             npol = 1
@@ -517,58 +528,72 @@ C Find Wavefunctions
           else
             npol = 3
           endif
+
+C Apply scissor operator if required
+           if (escissor.gt.0.0d0) then
+             efermiloc = efermiloc + 0.5d0*escissor
+             do iuo = 1,nuotot
+               if (ekloc(iuo).gt.efermi) then
+                  ekloc(iuo) = ekloc(iuo) + escissor
+               endif
+             enddo
+           endif
            
           do ipol = 1,npol            
 
 C Matrix elements for the dipolar transition are stored in Haux
             if (ipol.eq.1) then      
-              call transition_rate(psi, ekloc, temp, efermiloc, 
+              call transition_rate( ngamma, psi, ek, 
+     .                             temp, efermi, 
      .                             AuxSr, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no, 
      .                             nuo, nuotot, xijo, maxnh, nbands, 
      .                             kint, matrix )
             elseif(ipol.eq.2) then 
-              call transition_rate(psi, ekloc, temp, efermiloc, 
+              call transition_rate( ngamma, psi, ek, 
+     .                             temp, efermi, 
      .                             AuxSr2, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no,
      .                             nuo, nuotot, xijo, maxnh, nbands, 
      .                             kint, matrix )
             else 
-              call transition_rate(psi, ekloc, temp, efermiloc, 
+              call transition_rate( ngamma, psi, ek, 
+     .                             temp, efermi, 
      .                             AuxSr3, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no,
      .                             nuo, nuotot, xijo, maxnh, nbands, 
      .                             kint, matrix )
             endif          
-                   
+
             do ie = 1,nbands
               call GlobalToLocalOrb(ie,Node,Nodes,iie)
               if (iie.gt.0) then
-                f1 = 2.0d0*stepf((ekloc(ie)-efermiloc)/temp)/
-     .             dble(nspin)
+                f1 = stepf((ekloc(ie)-efermiloc)/temp)
                 do je = 1,nbands 
                   if (dabs(ekloc(ie)-ekloc(je)).gt.ediffmin) then 
-
-                    f2 = 2.0d0*stepf((ekloc(je)-efermiloc)/temp)/
-     .                   dble(nspin)
+                    f2 = stepf((ekloc(je)-efermiloc)/temp)
                     if (f1*(1.0d0-f2).gt.tiny) then 
                       ediff = ekloc(je) - ekloc(ie)
                       if ((ediff.ge.min(wmin-2.0d0*smooth,0.0d0)).and.
      .                        (ediff.le.wmax+2.0d0*smooth)) then
-                        ije = 2*(je-1)+2*nuotot*(iie-1)
-                        T = Haux(1+ije)**2+Haux(2+ije)**2 
+                        ije = ngamma*(je-1)+ngamma*nuotot*(iie-1)
+                        if(ngamma.eq.2) then 
+                          T = Haux(1+ije)**2+Haux(2+ije)**2 
+                        else
+                          T = Haux(1+ije)**2
+                        endif
                         T = T*f1*(1.0d0-f2)/dble(npol)
                         T = 4.0d0*(pi**2)*T/volume
                         T = 2.0d0*T*wgthopt(ik)/dble(nspin)
-                        
                         wi = max(wmin,ediff-20.0d0*smooth) 
                         wf = min(wmax,ediff+20.0d0*smooth) 
                         nwi = int((wi-wmin)/dw)+1
                         nwf = int((wf-wmin)/dw)+1 
                         do iw = nwi,nwf
                           w = wmin + (iw-1)*dw
+C The factor of two comes from the fact that smooth is in Ry instead of Ha.
                           epsimg(iw,ispin) = epsimg(iw,ispin) +
-     .      dexp(-((ediff-w)/smooth)**2)*T/(dsqrt(pi)*smooth)
+     .      2.0d0*dexp(-((ediff-w)/smooth)**2)*T/(dsqrt(pi)*smooth)
                         enddo 
                       endif
                     endif
@@ -607,7 +632,8 @@ C Output results
             w = wmin + (iw-1)*dw
             dmod = dmod + epsimg(iw,ispin)*w*dw*volume
           enddo 
-          fsum(ispin) = dmod
+C A factor of 4 due to the integration in Ry rather than in a.u.
+          fsum(ispin) = dmod/4.0d0
         enddo 
       
         write(iu,'(a)') '## Minimum and maximum energy in eV'
@@ -617,12 +643,12 @@ C Output results
         write(iu,'(a,i3)') '## ',nspin
         if (nspin.gt.1) then 
           write(iu,'(a)') '## f-sum rule spin 1' 
-          write(iu,'(a,f10.4)') '## ',fsum(1)/8.0d0/pi**2/qspin(1) 
+          write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/qspin(1) 
           write(iu,'(a)') '## f-sum rule spin 2'
-          write(iu,'(a,f10.4)') '## ',fsum(2)/8.0d0/pi**2/qspin(2) 
+          write(iu,'(a,f10.4)') '## ',fsum(2)/2.0d0/pi**2/qspin(2) 
         else
           write(iu,'(a)') '## f-sum rule'
-          write(iu,'(a,f10.4)') '## ',fsum(1)/8.0d0/pi**2/dble(ntote)
+          write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/dble(ntote)
         endif   
         do iw = 1,nwf
           w = wmin + (iw-1)*dw
@@ -630,13 +656,13 @@ C Output results
         enddo 
         call io_close(iu)
       endif
-     
+  
       if (nspin.eq.2) ntote = nint(qspin(1)+qspin(2))
       if (nspin.eq.2) fsum(1) = fsum(1) + fsum(2)
       if (Node.eq.0) then
         write(6,'((/a,f10.6),3(/,2a))') 
      .   'Optical: Checking f-sum rule',
-     .       fsum(1)/8.0d0/pi**2/dble(ntote),
+     .       fsum(1)/2.0d0/pi**2/dble(ntote),
      .   'Optical: ',
      .   'For insulators and closed shell systems', 
      .   'Optical: this number should be close',

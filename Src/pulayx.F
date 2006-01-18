@@ -411,7 +411,9 @@ C Otherwise, use only last step
          do i=1,maxmix
            coeff(i)=0.0d0
          enddo
-         coeff(mod(iscf,maxsav)) = 1.0d0
+         j=mod(iscf,maxmix)
+         if(j.eq.0) j=maxmix
+         coeff(j) = 1.0d0
        endif
 
 C ........

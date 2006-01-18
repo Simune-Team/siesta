@@ -135,6 +135,20 @@ C Read BZ sampling grid
 
 C Read whether this is a polarised, unpolarised or polycrystal calc
           option = fdf_string('Optical.PolarizationType','polycrystal')
+          if(option.ne.'polycrystal' .and. option.ne.'unpolarized' 
+     +         .and. option.ne.'polarized' ) then 
+               write(6,'(/a)')
+     + 'reoptical: WARNING '
+              write(6,'(a,a)')
+     + 'reoptical: read Optical.PolarizationType: ',option
+              write(6,'(a,/a,/a)')
+     + 'reoptical: input Optical.PolarizationType must be one of ',
+     + 'reoptical: the followings: ', 
+     + 'reoptical: polarized, unpolarized, or polycrystal' 
+              write(6,'(a)')
+     + 'reoptical: Assuming Optical.PolarizationType = polycrystal'
+              option='polycrystal'
+          endif
 
 C Read datablock for electric field
           if (option.ne.'polycrystal') then

@@ -71,7 +71,9 @@
    \Large{\it Institut de Ci\`encia de Materiales, CSIC, Barcelona} \\ \\
 
 {\Large Daniel S\'anchez-Portal} &
-   \Large{\it Universidad del Pa\'{\i}s Vasco, San Sebasti\'an} \\ \\
+   \Large{\it Unidad de F\'{\i}sica de Materiales,} \\ 
+                                 &
+   \Large{\it Centro Mixto CSIC-UPV/EHU, San Sebasti\'an} \\ \\
 
 {\Large Jos\'e M. Soler} &
    \Large{\it Universidad Aut\'onoma de Madrid}
@@ -217,6 +219,13 @@ and D. S\'anchez-Portal, J. Phys.: Condens. Matter {\bf 14}, 2745-2779 (2002)
 
 Extensive description of the {\sc Siesta} method.
 
+\item 
+``Computing the properties of materials from first principles 
+with  {\sc Siesta}", D. S\'anchez-Portal, P. Ordej\'on, 
+and E. Canadell, Structure and Bonding {\bf 113},
+103-170 (2004).
+
+Extensive review of applications as of summer 2003.
 \end{itemize}
 
 For more information you can visit the web page 
@@ -2665,7 +2674,8 @@ example:
 The three values represent the number of mesh points in
 the direction of each reciprocal lattice vector.
 
-{\it Default value:} Empty.
+{\it Default value:} Empty in general. For atoms 
+or molecules a k-sampling of only one point is assumed.
 
 \item[{\bf Optical.OffsetMesh}] ({\it logical}):
 \index{Optical.OffsetMesh@{\bf Optical.OffsetMesh}}
@@ -4147,6 +4157,7 @@ in file {\tt SystemLabel}.XV by a previous run.
 printed but the program does not stop. Overrides {\bf UseSaveData}.
  
 {\it Default value:} {\tt .false.}
+
 
 \item[{\bf MD.UseSaveCG}] ({\it logical}): 
 \index{MD.UseSaveCG@{\bf MD.UseSaveCG}} 

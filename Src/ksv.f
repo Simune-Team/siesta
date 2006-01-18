@@ -336,7 +336,7 @@ C Find Wavefunctions
                     call diagpol( ispin, nspin, nuo, no,
      .                  nuotot, maxnh, numh, listhptr, 
      .                  listh, H, S, xijo, indxuo, kint,
-     .                  ek, psi, Haux, Saux )
+     .                  ek, psi, 2, Haux, Saux )
                   elseif (nspin.eq.4) then  
                     stop 'KSV_pol: ERROR: nspin=4 not yet implemented'
                   else

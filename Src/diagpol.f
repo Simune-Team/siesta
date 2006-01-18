@@ -1,6 +1,6 @@
       subroutine diagpol( ispin, nspin, nuo, no, nuotot,
      .                    maxnh, numh, listhptr, listh, H, S,
-     .                    xij, indxuo, kpoint, eo, psi,
+     .                    xij, indxuo, kpoint, eo, psi, ng, 
      .                    Haux, Saux )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, 
@@ -23,7 +23,7 @@ C integer listh(maxnh)        : Nonzero hamiltonian-matrix element
 C                               column indexes for each matrix row
 C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
-C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
+C real*8  xij(3,*)            : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
@@ -31,8 +31,9 @@ C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the number of orbitals in unit cell
 C real*8  kpoint(3)           : k point vectors
 C real*8  psi                 : Workspace array
-C real*8  Haux(2,nuotot,nuo)  : Workspace for dense H
-C real*8  Saux(2,nuotot,nuo)  : Workspace for dense S
+C integer ng                  : first dimension of Haux, and Saux
+C real*8  Haux(ng,nuotot,nuo) : Workspace for dense H
+C real*8  Saux(ng,nuotot,nuo) : Workspace for dense S
 C *************************** OUTPUT **********************************
 C real*8 eo(nuotot)           : Eigenvalues
 C *************************** UNITS ***********************************
@@ -47,12 +48,15 @@ C *********************************************************************
 
       integer
      .  maxnh, nuotot, no, nspin, nuo, indxuo(no), listh(maxnh), 
-     .  listhptr(nuo), numh(nuo)
+     .  listhptr(nuo), numh(nuo), ng
 
       real(dp)
      .  eo(nuotot), H(maxnh,nspin), kpoint(3), S(maxnh), 
-     .  xij(3,maxnh), psi(2,nuotot,nuo), Haux(2,nuotot,nuo),
-     .  Saux(2,nuotot,nuo)
+     .  xij(3,*), psi(ng,nuotot,nuo), Haux(ng,nuotot,nuo),
+     .  Saux(ng,nuotot,nuo)
+
+      logical 
+     .  gamma
 
       external          cdiag
 
@@ -70,20 +74,29 @@ C Solve eigenvalue problem .........................................
           ind = listhptr(iuo) + j
           jo = listh(ind)
           juo = indxuo(jo)
-          kxij = kpoint(1) * xij(1,ind) +
-     .           kpoint(2) * xij(2,ind) +
-     .           kpoint(3) * xij(3,ind)
-          ckxij = cos(kxij)
-          skxij = sin(kxij)
-          Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
-          Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
-          Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
-          Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
+          if(ng.eq.2) then 
+           kxij = kpoint(1) * xij(1,ind) +
+     .            kpoint(2) * xij(2,ind) +
+     .            kpoint(3) * xij(3,ind)
+           ckxij = cos(kxij)
+           skxij = sin(kxij)
+           Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
+           Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
+           Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
+           Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
+          else 
+           Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)
+           Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)
+          endif
         enddo
       enddo
-      call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+      if(ng.eq.2) then 
+       call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
      .            nuotot, 1, ierror)
-
+      else
+       call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+     .            nuotot, 1, ierror)
+      endif
 C Check error flag and take appropriate action
       if (ierror.gt.0) then
         call die('Terminating due to failed diagonalisation')
@@ -96,19 +109,30 @@ C Repeat diagonalisation with increased memory to handle clustering
             ind = listhptr(iuo) + j
             jo = listh(ind)
             juo = indxuo(jo)
-            kxij = kpoint(1) * xij(1,ind) +
-     .             kpoint(2) * xij(2,ind) +
-     .             kpoint(3) * xij(3,ind)
-            ckxij = cos(kxij)
-            skxij = sin(kxij)
-            Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
-            Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
-            Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
-            Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
-          enddo
+          if(ng.eq.2) then
+           kxij = kpoint(1) * xij(1,ind) +
+     .            kpoint(2) * xij(2,ind) +
+     .            kpoint(3) * xij(3,ind)
+           ckxij = cos(kxij)
+           skxij = sin(kxij)
+           Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)*ckxij
+           Saux(2,juo,iuo) = Saux(2,juo,iuo) - S(ind)*skxij
+           Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)*ckxij
+           Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
+          else
+           Saux(1,juo,iuo) = Saux(1,juo,iuo) + S(ind)
+           Haux(1,juo,iuo) = Haux(1,juo,iuo) + H(ind,ispin)
+          endif
         enddo
-        call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
-     .              nuotot, 1, ierror)
+      enddo
+      if(ng.eq.2) then
+       call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+     .            nuotot, 1, ierror)
+      else
+       call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo, psi,
+     .            nuotot, 1, ierror)
+      endif
+
       endif
 
       end

@@ -5,6 +5,7 @@
      .                        indxua, iaorb, dk, 
      .                        jna, xij, r2ij, matrix, Sp)
 C *********************************************************************
+C If matrix='R'
 C Finds the matrix elements of the dk*r between basis
 C orbitals, where dk is a given vector and r is the position operator,
 C or the momentum operator plus a correction due to the non-local 
@@ -12,9 +13,28 @@ C potential in the case of an infinite solid.
 C
 C  S_a,b(R_a,R_b) =  <phi_a(r-R_a-t_a)|dk*r|phi_b(r-R_b-t_b)>
 C
+C  
 C  Being R_a and R_b lattice vectors, and t_a and t_b the coordiantes
 C  of atoms a and b in the unit cell
 C
+C If matrix='P'
+C Finds the matrix elements of the -i*dk*p (i.e. minus dk dot gradient )
+C between basis orbitals, phi_a(r-R_a) and phi_b(r-R_b),
+C where dk is a given vector and p is the momentum operator,
+C a correction must be included due to the use of non-local pseudoptentials
+C VNL=|f(r-R_c)><f(r'-R_c)|
+C
+C  S_a,b(R_a,R_b) = -i*2.0d0*<phi_a(r-R_a-t_a)|dk*p|phi_b(r-R_b-t_b)>+
+C    <phi_a(r-R_a-t_a)|f(r-R_c)><f(r'-R_c)|dk*(r'-R_c)|phi_b(r'-R_b-t_b)>
+C   -<phi_a(r-R_a-t_a)|dk*(r-R_c)|f(r-R_c)><f(r'-R_c)|phi_b(r'-R_b-t_b)>
+C
+C  The factor of two in front of dk*p is related to the use of Ry and
+C  Bohr instead of Ha and Ry. The factor will be canceled out
+C  afterwards when we divide by (E_i-E-j), the energy denominator.
+C  Being R_a and R_b lattice vectors, and t_a and t_b the coordiantes
+C  of atoms a and b in the unit cell
+C
+
 C Energies in Ry. Lengths in Bohr.
 C Written by DSP August 1999 ( Based in routine overfsm and nlefsm)
 C Restyled for f90 version by JDG. June 2004
@@ -122,8 +142,15 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      .  neighb, matel
       
 C Start timer
-      call timer('phirphi',1)
+      call timer('phirphiopt',1)
 
+C Check input matrix
+      if(matrix.ne.'P'.and.matrix.ne.'R') then 
+        write(6,'(/a)') 
+     .   'phirphi_opt: matrix only can take values R or P'
+        stop
+      endif
+ 
 C Nullify pointers
       if (frstme) then
         nullify(Si,Vi,listed,needed)
@@ -417,6 +444,7 @@ C within the same atom
                             dint1 = dint1 + dx*phi1*dphi2dr*r**2
                             dint2 = dint2 + dx*phi1*phi2*r
                           enddo 
+C The factor of two because we use Ry for the Hamiltonian
                           Sir0 =
      .                 -2.0d0*(dk(1)*(dint1*dintg1(1)+dint2*dintg2(1))+
      .                         dk(2)*(dint1*dintg1(2)+dint2*dintg2(2))+
@@ -434,7 +462,7 @@ C Matrix elements between different atoms are taken from the
 C gradient of the overlap 
                       call matel('S', is, js, ioa, joa, xij(1,jn),
      .                           Sij, grSij )
- 
+C The factor of two because we use Ry for the Hamiltonian
                       Si(jo) =
      .                  2.0d0*(grSij(1)*dk(1)
      .             +           grSij(2)*dk(2)
@@ -470,7 +498,7 @@ C Reduce size of arrays
       call re_alloc(listed,1,1,name='listed',routine='phirphi_opt')
 
 C Stop timer
-      call timer('phirphi',2)
+      call timer('phirphiopt',2)
 
       return
       end
