@@ -137,10 +137,14 @@ dnl Check for each relevant library in turn
 dnl in each case, assume that a system-supplied version is better;
 dnl otherwise fallback to SIESTA-supplied version.
 dnl We need NetCDF and BLAS for both serial and parallel builds.
+dnl
 dnl 1: netcdf
-TW_PATH_NETCDF([],
-	        [AC_MSG_NOTICE(Using netCDF packaged with SIESTA); NETCDF_LIBS=libnetcdf.a])
-AC_SUBST(NETCDF_LIBS)
+AC_ARG_WITH(netcdf,
+        [AC_HELP_STRING([--with-netcdf=<lib>], [use NetCDF library <lib>])])
+if test x$with_netcdf != xno; then
+  TW_PATH_NETCDF([DEFS="$DEFS CDF";COMP_LIBS="libnetcdf_f90.a $COMP_LIBS"],
+               [if test ! -z $with_netcdf; then AC_MSG_ERROR([Could not find NetCDF library.]); fi])
+fi
 dnl 
 dnl Linear Algebra libraries
 dnl
@@ -149,13 +153,13 @@ AC_ARG_WITH(siesta-blas,
            [AC_HELP_STRING([--with-siesta-blas], [use BLAS library packaged with SIESTA])])
 if test "x$with_siesta_blas" = xyes; then
    AC_MSG_NOTICE([Using BLAS library packaged with SIESTA])
-   COMP_LIBS="libblas.a"
+   COMP_LIBS="libblas.a $COMP_LIBS"
    # if we're using SIESTA's blas, we have to use SIESTA's lapack as well, since we can't
    # test for lapack without a blas library already built. Would not make much sense anyway.
    with_siesta_lapack=yes
 else
    TW_FIND_FC_BLAS([],
-                   [AC_MSG_NOTICE(Using BLAS packaged with SIESTA); BLAS_LIBS="libblas.a"; COMP_LIBS="libblas.a"])
+                   [AC_MSG_NOTICE(Using BLAS packaged with SIESTA); BLAS_LIBS="libblas.a"; COMP_LIBS="libblas.a $COMP_LIBS"])
 fi
 dnl
 # Check for LAPACK

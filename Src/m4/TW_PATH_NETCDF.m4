@@ -1,6 +1,5 @@
-# autoconf macros for detecting NetCDF (fortan implementation only)
-#
-
+dnl autoconf macros for detecting NetCDF (fortan implementation only)
+dnl
 AC_DEFUN([_TW_TRY_NETCDF], [
 ac_ext=f
 AC_LINK_IFELSE(
@@ -13,41 +12,35 @@ AC_LINK_IFELSE(
    [m4_ifval([$2],[$2],[])]
 )
 ])
-
+dnl
 AC_DEFUN([TW_PATH_NETCDF],[
 tw_netcdf_ok=no
-
-AC_LANG([Fortran])
-
-AC_ARG_WITH(netCDF,
-        [AC_HELP_STRING([--with-netCDF=<lib>], [use netCDF library <lib>])])
-if test x"$with_netCDF" != x; then
-    NETCDF_LIBS="$with_netCDF"
+dnl
+AC_LANG_PUSH([Fortran])
+dnl
+case $with_netcdf in
+  yes | "") ;;
+  no) tw_netcdf_ok=disable ;;
+  -* | */* | *.a | *.so | *.so.* | *.o) NETCDF_LIBS="$with_netcdf" ;;
+   *) NETCDF_LIBS="-l$with_netcdf" ;;
+esac
+dnl
+if test $tw_netcdf_ok != disable; then
+  if test "x$NETCDF_LIBS" = x; then
+     NETCDF_LIBS="-lnetcdf"
+  fi
+dnl
+  AC_MSG_CHECKING([for netcdf])
+  save_LIBS="$LIBS"
+  LIBS="$LIBS $NETCDF_LIBS"
+  _TW_TRY_NETCDF([tw_netcdf_ok=yes],[])
+  AC_MSG_RESULT([$tw_netcdf_ok])
+  LIBS="$save_LIBS"
 fi
-dnl case $with_netCDF in
-dnl     -* | */* | *.a | *.so | *.so.* | *.o) NETCDF_LIBS="$with_netCDF" ;;
-dnl     *) NETCDF_LIBS="-l$with_netCDF " ;;
-dnl esac
-
-if test "x$NETCDF_LIBS" = x; then
-   NETCDF_LIBS="-lnetcdf"
-fi
-
-AC_MSG_CHECKING([for netcdf])
-save_LIBS="$LIBS"
-LIBS="$LIBS $NETCDF_LIBS"
-#LIBS="-lnetcdf"
-_TW_TRY_NETCDF([tw_netcdf_ok=yes],[])
-AC_MSG_RESULT([$tw_netcdf_ok])
-LIBS="$save_LIBS"
-
-# Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
-if test x"$tw_netcdf_ok" = xyes; then
-        ifelse([$1],,AC_DEFINE(HAVE_NETCDF,1,[Define if you have NetCDF library.]),[$1])
-        :
-else
-        tw_netcdf_ok=no
-        $2
-fi
-
+dnl
+dnl Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
+AS_IF([test $tw_netcdf_ok = yes],
+      [ifelse([$1],,AC_DEFINE(HAVE_NETCDF,1,[Define if you have NetCDF library.]),[$1])],
+      [NETCDF_LIBS="";tw_netcdf_ok=no;$2])
+AC_LANG_POP
 ])
