@@ -20,10 +20,9 @@ c through subroutine reclat.
 c *******************************************************************
 
       use atmfuncs,  only : labelfis
-      use atomlist,  only : isa, cisa, elem
+      use atomlist,  only : isa
       use fdf, only : fdf_physical, fdf_string
       use precision, only : dp
-      use siesta_cml
       use units, only : Ang
 
       implicit          none
@@ -147,12 +146,5 @@ c writing the coordinates
 C Deallocate local memory
       call memory('D','D',size(xap),'outcoor')
       deallocate(xap)
-
-      if (cml_p) then
-        call cmlAddMolecule(xf=mainXML, natoms=na, elements=elem,
-     .     refs=cisa, coords=xa/Ang, style='x3', fmt='(f12.6)')
-        call cmlAddLattice(xf=mainXML, cell=cell, units='Ang', 
-     .       dictref='siesta:ucell')
-      endif
 
       end subroutine outcoor

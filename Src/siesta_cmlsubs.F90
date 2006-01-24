@@ -39,7 +39,7 @@ Module siesta_cmlsubs
          Call xml_AddXMLDeclaration(mainxml, 'UTF-8')
          Call xml_AddXMLStylesheet(mainXML, 'display.xsl', 'text/xsl')
          Call xml_NewElement(mainXML, 'cml')
-         Call xml_AddAttribute(mainXML, 'xmlns', 'http://www.xml-cml.org/schema/CML2/Core')
+         Call xml_AddAttribute(mainXML, 'xmlns', 'http://www.xml-cml.org/schema/cml2/core')
          Call xml_AddAttribute(mainXML, name='xmlns:siesta', value='http://www.uam.es/siesta/namespace')
          Call cmlStartMetadataList(mainXML)
          Call cmlAddMetadata(mainXML, name='siesta:Program', content='Siesta')
@@ -55,6 +55,8 @@ Module siesta_cmlsubs
          Call cmlAddMetadata(mainXML, name='siesta:Nodes', content=nodes)
 #ifdef CDF
          Call cmlAddMetadata(mainXML, name='siesta:NetCDF',  content='true')
+#else
+         Call cmlAddMetadata(mainXML, name='siesta:NetCDF',  content='false')
 #endif
          Call cmlEndMetadataList(mainXML)
       Endif !cml_p

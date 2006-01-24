@@ -805,6 +805,7 @@ C Print Z-matrix coordinates
         endif
 C Print atomic coordinates ............................................
         call outcoor( ucell, xa, na_u, ' ', writec )
+        call siesta_write_positions()
       endif
 C ...................
 
@@ -1737,6 +1738,7 @@ C Save last atomic positions and velocities (before moving atoms for consist)
       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
       if (lUseZmatrix)
      .  call iozm('write',ucell,vcell,xa,foundzm)
+      call siesta_write_positions
 C ...................
 
 C Restore original coordinates after FC displacements
@@ -1798,6 +1800,7 @@ C Print atomic coordinates (and also unit cell for ParrRah.)
      .      call outcoor(ucell, xa, na_u,
      .                 'Final (unrelaxed)', .true. )
         endif
+        call siesta_write_positions()
         if (lUseZmatrix) call write_Zmatrix
         if ( varcel ) call outcell(ucell)
 
@@ -2159,7 +2162,7 @@ C Finalize MPI
         call cmlAddProperty(xf=mainXML, property=nkpnt, 
      .       dictref='siesta:nkpnt')
         call cmlAddProperty(xf=mainXML, property=kcutof/Ang, 
-     .       dictref='siesta:kcutof', units='Ang')
+     .       dictref='siesta:kcutof', units='units:angstrom')
         call cmlEndPropertyList(mainXML)
         call cmlAddProperty(xf=mainXML, property=kscell,
      .       dictref='siesta:kscell')
@@ -2534,5 +2537,14 @@ C Find pressure
       endif !final
 
       end subroutine siesta_write_energies
+
+      subroutine siesta_write_positions
+        if (cml_p) then
+          call cmlAddMolecule(xf=mainXML, natoms=na_u, elements=elem,
+     .           refs=cisa, coords=xa/Ang, style='x3', fmt='(f12.6)')
+          call cmlAddLattice(xf=mainXML, cell=ucell, 
+     .           units='units:angstrom', dictref='siesta:ucell')
+        endif
+      end subroutine siesta_write_positions
       
       end program siesta

@@ -25,11 +25,12 @@ c *******************************************************************
 C
 C  Modules
 C
-      use precision
-      use parallel,  only : Node
-      use fdf
+      use fdf,        only : fdf_string
+      use parallel,   only : Node
+      use precision,  only : dp
 #ifdef MPI
-      use mpi_siesta
+      use mpi_siesta, only : MPI_Bcast, MPI_Comm_World, 
+     . MPI_Integer, MPI_Double_Precision, MPI_Logical 
 #endif
 
       implicit          none
@@ -55,7 +56,7 @@ C Only do reading and writing for IOnode
 C Find name of file
         if (frstme) then
           sname = fdf_string( 'SystemLabel', 'siesta' )
-          fname = paste( sname, '.XV' )
+          fname = paste( sname, '.XV')
           frstme = .false.
         endif
 
@@ -105,7 +106,6 @@ C Write data on file
      .        isa(ia),iza(ia),(xa(ix,ia),ix=1,3),(va(ix,ia),ix=1,3)
           enddo
 
-C Close file
           call io_close( iu )
 
         endif
