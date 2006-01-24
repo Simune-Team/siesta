@@ -10,6 +10,185 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 
+2006-01-24 16:48:19 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-14
+
+    Summary:
+      Coherent restarting for MD jobs (interim fix)
+    Revision:
+      siesta-devel--reference--1.5--patch-14
+
+    The XV file contains the positions and velocities *at different
+    times*. This poses problems for the continuation of MD runs.
+    
+    Until we can re-design the MD output code, an interim fix has been
+    prepared:
+    
+    For the velocity-Verlet algorithm (in routine 'verlet2'), the fix is to read the
+    'old' forces as well as the 'current' positions and 'old' velocities.
+    Forces are written to VERLET_FORCES at each step, and are read in the
+    first step if the XV file has been read. 
+    
+    For the modified Verlet algorithm (in routine 'nose'), the fix is to read the
+    'old' positions, AND the values of the Nose variables (current and old).
+    
+    The information is written to NOSE_RESTART at each step, and is read in the
+    first step if the XV file has been read. 
+    
+    The code in ioxv.F has been put in a module, to hold the new variable
+    xv_file_read. 'dynamics.f' has also been turned into a module.
+    
+    Fixes for the other MD flavors are forthcoming.
+    
+    
+
+    new files:
+     Src/Tests/md/.arch-ids/=id Src/Tests/md/.arch-ids/makefile.id
+     Src/Tests/md/.arch-ids/md.fdf.id
+     Src/Tests/md/.arch-ids/md.pseudos.id Src/Tests/md/makefile
+     Src/Tests/md/md.fdf Src/Tests/md/md.pseudos
+
+    modified files:
+     Src/Makefile Src/Sys/intel9-mkl8.make Src/Tests/Makefile
+     Src/dynamics.f Src/ioxv.F Src/m_mpi_utils.F Src/siesta.F
+     Src/sys.F
+
+    new directories:
+     Src/Tests/md Src/Tests/md/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-32
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-33
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-34
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-35
+     agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-36
+
+
+2006-01-24 13:46:16 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-13
+
+    Summary:
+      Parallel over K option extended to band calculations + assorted fixes
+    Revision:
+      siesta-devel--reference--1.5--patch-13
+
+    (By Julian Gale)
+    
+    * K point parallelism was previously only enabled for the regular SCF procedure. It has
+    now been extended to the determination of the band structure.
+    
+    * The case sensitivity for some zmatrix input commands has been handled by
+    converting the input line to lower case.
+    
+    * A new module "files" has been added that contains the system label and a 
+    parameter that is used to define the label length in subroutines to 
+    ensure consistency.
+    
+    * nrowsDscfL caused an error due to an out of bounds reference in
+    dfscf.f rhoofd.f rhoofdsp.f vmat.f, and vmatsp.f. Fixed.
+    
+    
+
+    new files:
+     Src/.arch-ids/files.f.id Src/files.f
+
+    modified files:
+     Src/Makefile Src/bands.F Src/cdiag.F Src/coceri.f Src/coxmol.f
+     Src/dfscf.f Src/iocg.f Src/iodm.F Src/ioeig.f Src/iofa.f
+     Src/iohs.F Src/iokp.f Src/iolwf.F Src/iomd.f Src/ioxv.F
+     Src/iozm.F Src/m_iostruct.f Src/ofc.f Src/optical.F
+     Src/parallel.f Src/pdos.F Src/phonon.F Src/pixmol.f
+     Src/plcharge.F Src/pulayx.F Src/redata.F Src/reinit.F
+     Src/rhoofd.f Src/rhoofdsp.f Src/siesta.F
+     Src/siesta_cmlsubs.F90 Src/vmat.f Src/vmatsp.f Src/writewave.F
+     Src/zmatrix.F
+
+    new patches:
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-8
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-9
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-10
+     jgale@siesta.arch--2005/siesta--my-changes--0.1--patch-13
+
+
+2006-01-24 10:49:10 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-12
+
+    Summary:
+      Added code to compute Born effective charges
+    Revision:
+      siesta-devel--reference--1.5--patch-12
+
+    (Code from Tom Archer and Miguel Pruneda)
+    
+    The Born effective charge tensor is calculated by finite differences, 
+    using the polarization differences in the small displacements
+    generated in the FC type of run.
+    
+    They can be used by Vibra to obtain LO-TO splittings and infrared
+    activities but VIBRA still needs to be updated to do so (Tom Archer has a 
+    working version).
+    
+
+    new files:
+     Src/.arch-ids/obc.f.id Src/obc.f
+
+    modified files:
+     Docs/siesta.tex Src/Makefile Src/siesta.F
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta--my-changes--0.1--patch-4
+     eartacho@siesta.arch--2005/siesta--my-changes--0.1--patch-5
+
+
+2006-01-24 10:34:24 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-11
+
+    Summary:
+      XML output additions and fixes
+    Revision:
+      siesta-devel--reference--1.5--patch-11
+
+    * Correct cml namespace
+    * Print out positions & cell at every step.
+    * Backported from xmlf90 - PMR added lattice & latticeVectors to CML, so we can use it.
+
+    modified files:
+     Src/ioxv.F Src/outcoor.f Src/siesta.F Src/siesta_cmlsubs.F90
+
+    new patches:
+     twhite@siesta.arch--2005/siesta-devel--xmltidy--1.5--patch-1
+     twhite@siesta.arch--2005/siesta-devel--xmltidy--1.5--patch-2
+
+
+2006-01-23 15:26:33 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-10
+
+    Summary:
+      Proper configure test for NetCDF
+    Revision:
+      siesta-devel--reference--1.5--patch-10
+
+    Patches applied:
+    
+     * twhite@siesta.arch--2005/siesta-devel--netcdf--1.5--patch-1
+       
+    
+
+    modified files:
+     Src/NetCDF/Makefile Src/aclocal.m4 Src/arch.make.in
+     Src/configure Src/configure.ac Src/m4/TW_PATH_NETCDF.m4
+
+    new patches:
+     twhite@siesta.arch--2005/siesta-devel--netcdf--1.5--patch-1
+
+
+2006-01-18 16:51:14 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-9
+
+    Summary:
+      Update CHANGES file
+    Revision:
+      siesta-devel--reference--1.5--patch-9
+
+
+    modified files:
+     Docs/CHANGES
+
+
 2006-01-18 16:45:48 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-8
 
     Summary:
