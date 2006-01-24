@@ -1,7 +1,4 @@
-c $Id: pixmol.f,v 1.5 2003/05/21 22:29:31 emilio Exp $
-
-      subroutine pixmol(iza, xa, na, slabel, last)
-
+      subroutine pixmol(iza, xa, na, last)
 c *******************************************************************
 c Writes and accumulates coordinates to be animated by Xmol
 c Written by E. Artacho. February 1999. Modified to open/close 2003
@@ -13,29 +10,30 @@ c character slabel*20 : Label for file naming
 c logical   last      : true if last time step
 c *******************************************************************
 
+      use precision,      only: dp
       use periodic_table, only: symbol
+      use files,          only: slabel, label_length
 
       implicit          none
-      character         slabel*20, paste*24
-      integer           na
-      integer           iza(na)
-      double precision  xa(3,na)
-      logical           last
+
+      character(len=label_length+4)       :: paste
+      integer                             :: na
+      integer                             :: iza(na)
+      real(dp)                            :: xa(3,na)
+      logical                             :: last
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
  
-      character         fname*24
-      logical           frstme
-      integer           unit, i, ia
-      double precision  Ang
-      save              frstme, Ang, unit, fname
-      data              frstme /.true./
+      character(len=label_length+4), save :: fname
+      integer                             :: i, ia
+      integer,                       save :: unit
+      logical,                       save :: frstme = .true.
+      real(dp),                      save :: Ang = 1.0_dp/0.529177_dp
 c -------------------------------------------------------------------
 
       if ( frstme ) then
         fname = paste(slabel,'.ANI')
-        Ang  = 1.d0 / 0.529177d0
         frstme = .false.
       endif
 

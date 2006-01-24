@@ -1,6 +1,5 @@
       subroutine ioxv( task, cell, vcell,
      .                 na, isa, iza, xa, va, found )
-
 c *******************************************************************
 c Saves positions and velocities.
 c J.M.Soler. July 1997.
@@ -25,7 +24,7 @@ c *******************************************************************
 C
 C  Modules
 C
-      use fdf,        only : fdf_string
+      use files,      only : slabel, label_length
       use parallel,   only : Node
       use precision,  only : dp
 #ifdef MPI
@@ -35,28 +34,29 @@ C
 
       implicit          none
 
-      character         task*(*), paste*33
       logical           found
       integer           na, isa(na), iza(na)
       real(dp)          cell(3,3), va(3,na), vcell(3,3), xa(3,na)
+      character(len=*) ::         task
+
+      character(len=label_length+3) :: paste
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
-      character  sname*30, fname*33
+      character(len=label_length+3), save ::   fname
+      logical, save :: frstme = .true.
+
       integer    ia, iu, iv, ix
 #ifdef MPI
       integer    MPIerror
 #endif
-      logical, save :: frstme = .true.
-      save       fname
 
 C Only do reading and writing for IOnode
       if (Node.eq.0) then
 
 C Find name of file
         if (frstme) then
-          sname = fdf_string( 'SystemLabel', 'siesta' )
-          fname = paste( sname, '.XV')
+          fname = paste( slabel, '.XV')
           frstme = .false.
         endif
 

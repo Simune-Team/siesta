@@ -9,7 +9,7 @@ c Emilio Artacho, Feb. 1999
       use precision, only : dp
       use siesta_cml
       use units, only : eV
-
+      use files, only : slabel, label_length
 
       implicit          none
 
@@ -29,17 +29,17 @@ c Emilio Artacho, Feb. 1999
 c Internal 
       integer           ik, iu, io, is, nspin
 
-      character(len=33), save :: fname
-      logical, save           :: frstme = .true.
+      character(len=label_length+4), save :: fname
+      logical, save                       :: frstme = .true.
 c -------------------------------------------------------------------
 
       if (frstme) then
-        fname = fdf_string( 'SystemLabel', 'siesta' )
+        fname = slabel
         fname = trim(fname) // '.EIG'
         frstme = .false.
       endif
       
-      nspin=min(ns,2)
+      nspin = min(ns,2)
 
       call io_assign( iu )
       open( iu, file=fname, form='formatted', status='unknown' )      

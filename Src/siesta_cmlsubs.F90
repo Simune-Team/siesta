@@ -15,16 +15,15 @@ Module siesta_cmlsubs
   Contains
 
     Subroutine siesta_cml_init( )
-      Use fdf, Only : fdf_boolean, fdf_string
+      Use fdf,   Only : fdf_boolean, fdf_string
+      Use files, only : slabel, label_length
       Use parallel, only : nodes, ionode
       Use version_info
       Use m_timestamp, only: datestring
 
-      Character(len=25) :: sname
-      Character(len=29) :: fname
+      Character(len=label_length+4) :: fname
 
-      sname=''
-      fname=''
+      fname = ' '
 
       If (IOnode) Then
          cml_p = fdf_boolean( 'WriteXML', .True. )
@@ -33,8 +32,7 @@ Module siesta_cmlsubs
       Endif !IOnode
 
       If (cml_p) Then
-         sname = fdf_string('SystemLabel','siesta')
-         Write(fname,'(a,a)') Trim(sname),'.xml'
+         Write(fname,'(a,a)') Trim(slabel),'.xml'
          Call xml_OpenFile(trim(fname), mainXML, .True.)
          Call xml_AddXMLDeclaration(mainxml, 'UTF-8')
          Call xml_AddXMLStylesheet(mainXML, 'display.xsl', 'text/xsl')

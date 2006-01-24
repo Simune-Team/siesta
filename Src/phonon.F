@@ -138,6 +138,7 @@ C Input forces are in Ry/Bohr
 C Forces written to file are in  eV/Ang
 
       use fdf
+      use files, only : slabel, label_length
 
       implicit          none
 
@@ -163,24 +164,25 @@ C real*8 disp(3)              : fractional displacement
       external          io_assign, io_close, paste, timer,
      .                  memory, leqi
 
-c     Internal variables and arrays
-      character fname*33, sname*40, paste*33, atname*2
-      logical   frstme
-      integer   i, j, ix, unit1, ia, isp, iunit
-      real(dp)  Ang, eV
-      character acf*50
+C Internal variables and arrays
+      character(len=label_length+7)       :: paste
+      character(len=label_length+7), save :: fname
+      character(len=40)                   :: sname
+      character(len=2)                    :: atname
+      logical,                       save :: frstme = .true.
+      integer                             :: i, j, ix
+      integer                             :: unit1, ia, isp, iunit
+      real(dp)                            :: Ang, eV
+      character(len=50)                   :: acf
 
-      save      frstme, fname
-      data      frstme /.true./
-
-c     Define conversion factors
+C Define conversion factors
       Ang = 1.d0 / 0.529177d0
       eV  = 1.d0 / 13.60580d0
 
       atnum = phonon_atnum(istep)
       disp(1:3) = phonon_disp(istep,1:3)
 
-c     Find file name
+C Find file name
       if (frstme) then
          allocate(xa(3,na))
          allocate(isa(na))
@@ -188,10 +190,10 @@ c     Find file name
 
          acf = fdf_string('AtomicCoordinatesFormat',' ')
          if (.not. (leqi(acf,'Fractional') .or.
-     $              leqi(acf,'ScaledByLatticeVectors'))) then
+     .              leqi(acf,'ScaledByLatticeVectors'))) then
             call die
-     $          ("phonon_write_forces:" //
-     $           "Cannot deal with non-fractional coords")
+     .          ("phonon_write_forces:" //
+     .           "Cannot deal with non-fractional coords")
          endif
 
          if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',iunit) )
@@ -201,7 +203,7 @@ c     Find file name
             enddo
          else
             call die("phonon_write_forces:" //
-     $               "Cannot read fractional atomic coords")
+     .               "Cannot read fractional atomic coords")
          endif
          if ( fdf_block('PhononLabels',iunit) )  then
             do ia = 1, ns
@@ -210,8 +212,7 @@ c     Find file name
          else
             call die("phonon_write_forces: Cannot read PhononLabels")
          endif
-        sname = fdf_string('SystemLabel','siesta')
-        fname = paste(sname,'.PHONON')
+        fname = paste(slabel,'.PHONON')
         sname = fdf_string('SystemName','siesta')
         frstme = .false.
         call io_assign(unit1)
@@ -224,11 +225,11 @@ c     Find file name
       call io_assign(unit1)
       open( unit1, file=fname, position='append' )
       write(unit1,'(3f10.6,4x,3f10.6)') (xa(ix,atnum),ix=1,3),
-     $     (disp(ix), ix=1,3)
+     .     (disp(ix), ix=1,3)
       do i=1,na
         write(unit1,'(i3,1x,a2,3f10.6,3x,3f12.6)')
-     $        i, phonon_label(isa(i)), (xa(ix,i),ix=1,3),
-     $        (fa(ix,i)* Ang/eV, ix=1,3)
+     .        i, phonon_label(isa(i)), (xa(ix,i),ix=1,3),
+     .        (fa(ix,i)* Ang/eV, ix=1,3)
       enddo
 
       call io_close(unit1)

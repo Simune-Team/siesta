@@ -81,6 +81,7 @@ C
       use precision
       use parallel,   only : Node, Nodes
       use fdf
+      use files,      only : slabel, label_length
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -103,8 +104,7 @@ C
       logical
      .  pulfile, mix
 
-      character
-     .  paste*33
+      character(len=label_length+3) :: paste
 
       external
      .  io_assign, io_close, paste, memory
@@ -127,25 +127,10 @@ C Internal variables ....................................................
       real(dp), dimension(:), allocatable, save ::
      .  coeff
 
-      character
-     .  fname1*33, fname2*33, sname*30
-
-      logical, save :: frstme = .true.
-
-      save sname
+      character(len=label_length+3) :: fname1
+      character(len=label_length+3) :: fname2
 
 C ........................
-
-       if (frstme) then
-         if (Node.eq.0) then
-           sname = fdf_string('SystemLabel','siesta')
-         endif
-#ifdef MPI
-         call MPI_Bcast(sname,30,MPI_character,0,MPI_Comm_World,
-     .     MPIerror)
-#endif
-         frstme = .false.
-       endif
 
 #ifdef MPI
 C Check that this is not a parallel run with pulfile=.true.
@@ -177,8 +162,8 @@ C ........................
 
        if (maxsav .gt. 1) then
 C Open direct access files ..............................................
-         fname1 = paste(sname,'.P1')
-         fname2 = paste(sname,'.P2')
+         fname1 = paste(slabel,'.P1')
+         fname2 = paste(slabel,'.P2')
 
          if (pulfile) then
            call io_assign(jtape)

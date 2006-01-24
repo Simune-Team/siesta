@@ -39,6 +39,7 @@ C
       use precision
       use fdf
       use parallel,   only : Node, Nodes, BlockSize, ProcessorY
+      use parallel,   only : ParallelOverK, ResetFirstCall
       use diagmemory, only : MemoryFactor
 #ifdef MPI
       use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
@@ -124,7 +125,6 @@ C Matrices for 2D
       logical,           save :: DoRead = .true.
       logical,           save :: FirstCall = .true.
       logical,           save :: NoExpert = .false.
-      logical,           save :: ParallelOverK = .false.
       logical,           save :: PreRotate = .false.
       logical,           save :: SaveEigenvectors = .false.
       logical,           save :: Use2D = .true.
@@ -143,6 +143,12 @@ C Matrices for 2D
      .           , one_z  = (1.0_dp, 0.0_dp)
 C Start time count
       call timer('cdiag',1)
+
+C Check whether first call needs to be reset due to a change of algorithm
+      if (ResetFirstCall) then
+        FirstCall = .true.
+        ResetFirstCall = .false.
+      endif
 
 C Nullify pointers
       if (FirstCall) then
@@ -175,7 +181,6 @@ C Set algorithm logicals
           AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
           DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
           NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
-          ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
           PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
           Use2D         = fdf_boolean('Diag.Use2D',.true.)
         endif
@@ -183,29 +188,27 @@ C Set algorithm logicals
         lBtmp(1) = AllInOne
         lBtmp(2) = DivideConquer
         lBtmp(3) = NoExpert
-        lBtmp(4) = ParallelOverK
-        lBtmp(5) = PreRotate
-        lBtmp(6) = Use2D
-        call MPI_Bcast(lBtmp,6,MPI_logical,0,MPI_Comm_World,MPIerror)
+        lBtmp(4) = PreRotate
+        lBtmp(5) = Use2D
+        call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
         AllInOne = lBtmp(1)
         DivideConquer = lBtmp(2) 
         NoExpert = lBtmp(3) 
-        ParallelOverK = lBtmp(4) 
-        PreRotate = lBtmp(5) 
-        Use2D = lBtmp(6)
+        PreRotate = lBtmp(4) 
+        Use2D = lBtmp(5)
 #endif
-        Serial = (Nodes.eq.1.or.ParallelOverK)
-        if (Serial) Use2D = .false.
-        if (DivideConquer.and..not.Serial) AllInOne = .false.
-        if (AllInOne.and.Serial) DivideConquer = .false.
-        if (PreRotate) SaveEigenvectors = .true.
-        if (SaveEigenvectors) then
-          if (Use2D) then
-            call die('Zsave not dimensioned in cdiag')
-          else
-            call re_alloc( Zsave, 1,2, 1,n, 1,nm, name='Zsave', 
-     .                     routine='cdiag' )
-          endif
+      endif
+      Serial = (Nodes.eq.1.or.ParallelOverK)
+      if (Serial) Use2D = .false.
+      if (DivideConquer.and..not.Serial) AllInOne = .false.
+      if (AllInOne.and.Serial) DivideConquer = .false.
+      if (PreRotate) SaveEigenvectors = .true.
+      if (SaveEigenvectors) then
+        if (Use2D) then
+          call die('Zsave not dimensioned in cdiag')
+        else
+          call re_alloc( Zsave, 1,2, 1,n, 1,nm, name='Zsave', 
+     .                   routine='cdiag' )
         endif
       endif
 

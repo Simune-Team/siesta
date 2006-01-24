@@ -100,7 +100,11 @@ C  Allocate local memory
       call memory('A','D',nsp,'vmat')
 
       if (ParallelLocal) then
-        nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
+        if (nrowsDscfL.gt.0) then
+          nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
+        else
+          nvmaxl = 1
+        endif
         allocate(DscfL(nvmaxl,nspin))
         call memory('A','D',nvmaxl*nspin,'meshdscf')
         DscfL(1:nvmaxl,1:nspin) = 0.0_dp

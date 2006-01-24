@@ -38,13 +38,15 @@ C
       use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb,
      .                         GlobalToLocalOrb, GetNodeOrbs
       use fdf
+      use files,        only : slabel, label_length
 #ifdef MPI
       use mpi_siesta
 #endif
 
       implicit          none
 
-      character         task*(*), paste*33
+      character         task*(*)
+      character(len=label_length+3) :: paste
       logical           gamma
       integer           maxnh, nuotot, nspin
       integer           listh(maxnh), numh(*), listhptr(*)
@@ -53,7 +55,7 @@ C
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
-      character  sname*30, fname*33
+      character(len=label_length+3) :: fname
       integer    im, is, iu, ju, k, mnh, ns
       integer    ih,hl,nuo,maxnhtot,maxhg
       integer, dimension(:), allocatable :: numhg
@@ -69,14 +71,7 @@ c Internal variables and arrays
 
 C Find name of file
       if (frstme) then
-        if (Node.eq.0) then
-          sname = fdf_string( 'SystemLabel', 'siesta' )
-        endif
-#ifdef MPI
-        call MPI_Bcast(sname,30,MPI_character,0,MPI_Comm_World,
-     .    MPIerror)
-#endif
-        fname = paste( sname, '.HS' )
+        fname = paste( slabel, '.HS' )
         frstme = .false.
       endif
 

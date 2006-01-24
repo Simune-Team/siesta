@@ -1,8 +1,5 @@
-c $Id: iomd.f,v 1.6 2003/05/21 22:29:31 emilio Exp $
-
       subroutine iomd( na, isa, iza, xa, va, cell, vcell, varcel, istep,
      .                 istep0, istepf, temp, eks, getot, volume, Psol)
-
 c *******************************************************************
 c Saves positions, cell, and energies in a MD run (accumulative)
 c J.Kohanoff August 1998, slightly modified by E. Artacho, Feb. 1999
@@ -30,41 +27,41 @@ c real*8  volume     : cell volume in Ang**3
 c real*8  Psol       : total pressure (static plus kinetik) in kBar
 c *******************************************************************
 
-      use fdf
+      use precision,  only : dp
+      use files,      only : slabel, label_length
 
       implicit          none
-      character         paste*33
+
       integer           na, isa(na), iza(na)
       integer           istep, istep0, istepf
       logical           varcel
-      double precision  cell(3,3), xa(3,na), va(3,na), vcell(3,3),
+      real(dp)          cell(3,3), xa(3,na), va(3,na), vcell(3,3),
      .                  temp, eks, getot, volume, Psol, eV
-      external          io_assign, io_close, paste
 
 c Internal variables and arrays
-      logical    formtt
-      parameter  ( formtt = .false. )
+      logical, save ::     formtt = .false.
+      character(len=label_length+4)       :: paste
+      character(len=label_length+4), save :: fncel
+      character(len=label_length+4), save :: fnene
+      character(len=label_length+4), save :: fnpos
 
-      character  sname*30, fnpos*33, fncel*33, fnene*33
       integer    ia, iupos, iuene, iucel, iv, ix
-      logical    frstme, formt
-      save       frstme, formt, fnpos, fnene, 
-     .           fncel, iupos, iuene, iucel, eV
+      logical    formt
+      save       formt, iupos, iuene, iucel, eV
+      logical, save :: frstme = .true.
 
-      data frstme /.true./
-
+      external          io_assign, io_close, paste
 
 c Find name of file
       if (frstme) then
         eV = 13.60580d0
         formt = formtt
-        sname = fdf_string( 'SystemLabel', 'siesta' )
-        fnene = paste( sname, '.MDE' )
+        fnene = paste( slabel, '.MDE' )
         if (formt) then
-          fnpos = paste( sname, '.MDX' )
-          if (varcel) fncel = paste( sname, '.MDC' )
+          fnpos = paste( slabel, '.MDX' )
+          if (varcel) fncel = paste( slabel, '.MDC' )
         else
-          fnpos = paste( sname, '.MD' )
+          fnpos = paste( slabel, '.MD' )
         endif
         frstme = .false.
       endif
@@ -94,7 +91,7 @@ c Open file
      .     '    E_tot (eV)','   Vol (A^3)','    P (kBar)' 
       endif
 
-c Write data on files
+C Write data on files
 
       write(iuene,'(i6,1x,f9.2,2(1x,f13.5),1x,f11.3,1x,f11.3)') 
      .            istep, temp, eks*eV, getot*eV, volume, Psol
@@ -114,7 +111,7 @@ c Write data on files
         if ( varcel ) write(iupos) cell, vcell
       endif
 
-c Close file
+C Close file
 
       call io_close( iuene )
       call io_close( iupos )
@@ -122,7 +119,6 @@ c Close file
 
       return
       end
-
 
 c *******************************************************************
 c Wind to end of file of an unformatted file

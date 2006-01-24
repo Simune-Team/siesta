@@ -1,4 +1,4 @@
-      subroutine reinit(slabel, sname) 
+      subroutine reinit(sname) 
 
 C Subroutine to initialise the reading of the data for SIESTA 
 C
@@ -7,7 +7,7 @@ C     of J.M.Soler and A.Garcia
 C
 C Taken from redata. Writen by P.Ordejon, December'96
 C **************************** OUTPUT *********************************
-C character*20 slabel      : System Label (to name output files)
+C character    slabel      : System Label (to name output files)
 C character*59 sname       : System Name
 C **********************************************************************
 
@@ -17,6 +17,7 @@ C
       use precision
       use parallel,    only : Node
       use fdf
+      use files,       only : slabel, label_length
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -24,7 +25,7 @@ C
       implicit none
 
       character
-     .  slabel*20, sname*59, string*20
+     .  sname*59, string*20
 
 C  Internal variables .................................................
       character
@@ -135,7 +136,7 @@ C Global broadcast of strings
 #ifdef MPI
       call MPI_Bcast(sname,59,MPI_character,0,MPI_Comm_World,
      .  MPIerror)
-      call MPI_Bcast(slabel,20,MPI_character,0,MPI_Comm_World,
+      call MPI_Bcast(slabel,label_length,MPI_character,0,MPI_Comm_World,
      .  MPIerror)
 #endif
 

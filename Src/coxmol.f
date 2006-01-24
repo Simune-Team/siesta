@@ -1,7 +1,4 @@
-c $Id: coxmol.f,v 1.4 2001/01/29 18:02:05 wdpgaara Exp $
-
-      subroutine coxmol(iza, xa, na, slabel)
-
+      subroutine coxmol(iza, xa, na )
 c *******************************************************************
 c Writes coordinates in format to be read by Xmol
 c Written by E. Artacho. December 1997.
@@ -12,20 +9,23 @@ c integer   na        : Number of atoms
 c character slabel*20 : Label for file naming
 c ******************************************************************
 
+      use precision,      only: dp
       use periodic_table, only: symbol
+      use files,          only: slabel, label_length
 
       implicit          none
-      character         slabel*20, paste*24
-      integer           na
-      integer           iza(na)
-      double precision  xa(3,na)
+
+      character(len=label_length+4) :: paste
+      integer                       :: na
+      integer                       :: iza(na)
+      real(dp)                      :: xa(3,na)
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
  
-      character         fname*24
-      integer           unit, i, ia
-      double precision  Ang
+      character(len=label_length+4) :: fname
+      integer                       :: unit, i, ia
+      real(dp)                      :: Ang
 
       Ang  = 1.d0 / 0.529177d0
 

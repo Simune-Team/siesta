@@ -1,5 +1,4 @@
       subroutine iozm( task, cell, vcell, xa, found )
-
 c *******************************************************************
 c Saves Z-matrix coordinates and forces
 c R. C. Hoft    January 2006
@@ -25,6 +24,7 @@ C
       use precision
       use parallel,  only : Node
       use fdf
+      use files,     only : slabel, label_length
       use zmatrix,   only : Zmat, ZmatForce, ZmatForceVar
       use zmatrix,   only : Zmat_to_Cartesian
       use atomlist,  only : na_u
@@ -34,27 +34,28 @@ C
 
       implicit          none
 
-      character         task*(*), paste*33
-      logical           found
-      real(dp)          cell(3,3), vcell(3,3), xa(3,na_u)
+      character(len=*)                    :: task
+      character(len=label_length+3)       :: paste
+      logical                             :: found
+      real(dp)                            :: cell(3,3)
+      real(dp)                            :: vcell(3,3)
+      real(dp)                            :: xa(3,na_u)
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
-      character  sname*30, fname*33
+      character(len=label_length+3), save :: fname
+      logical,                       save :: frstme = .true.
       integer    ia, iu, iv, ix, k
 #ifdef MPI
       integer    MPIerror
 #endif
-      logical, save :: frstme = .true.
-      save       fname
 
 C Only do reading and writing for IOnode
       if (Node.eq.0) then
 
 C Find name of file
         if (frstme) then
-          sname = fdf_string( 'SystemLabel', 'siesta' )
-          fname = paste( sname, '.ZM' )
+          fname = paste( slabel, '.ZM' )
           frstme = .false.
         endif
 

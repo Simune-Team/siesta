@@ -7,14 +7,15 @@ c     Reads and Saves structural information in "crystallography" format
 
 c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
-      use precision, only : dp
-      use parallel,  only : IONode
-      use fdf,       only : fdf_string
-      use units,      only: Ang
-      use m_mpi_utils, only: broadcast
-      use atomlist,   only: xa, isa, cisa
-      use alloc, only    : re_alloc
-      use sys,   only    : die
+      use precision,   only : dp
+      use parallel,    only : IONode
+      use fdf,         only : fdf_string
+      use units,       only : Ang
+      use m_mpi_utils, only : broadcast
+      use atomlist,    only : xa, isa, cisa
+      use alloc,       only : re_alloc
+      use sys,         only : die
+      use files,       only : slabel, label_length
       
       implicit none
 
@@ -32,17 +33,17 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
       real(dp) :: xfrac(3)
       integer  :: dummy
-      character  sname*30, fname*33
-      integer    ia, iu, iv, ix, iostat
-      logical, save :: frstme = .true.
-      character         paste*33
+      character(len=label_length+10), save :: fname
+      integer                              :: ia, iu, iv
+      integer                              :: ix, iostat
+      logical,                        save :: frstme = .true.
+      character(len=label_length+10)       :: paste
       external          io_assign, io_close, paste
 
 
       if (frstme) then
          if (IOnode) then
-            sname = fdf_string( 'SystemLabel', 'siesta' )
-            fname = paste( sname, '.STRUCT_IN' )
+            fname = paste( slabel, '.STRUCT_IN' )
          endif
          frstme = .false.
       endif
@@ -97,24 +98,22 @@ c     real*8  xa(3,na)   : Atomic positions
       integer, intent(in)  ::          na, isa(na), iza(na)
       real(dp), intent(in) ::          cell(3,3), xa(3,na)
 
-      character         paste*33
+      character(len=label_length+11)       :: paste
       external          io_assign, io_close, paste, reclat
 
 c     Internal variables and arrays
-      real(dp) :: celli(3,3)
-      real(dp) :: xfrac(3)
-      character  sname*30, fname*33
-      integer    ia, iu, iv, ix
-      logical, save :: frstme = .true.
-      save       fname
+      real(dp)                             :: celli(3,3)
+      real(dp)                             :: xfrac(3)
+      character(len=label_length+11), save :: fname
+      integer                              :: ia, iu, iv, ix
+      logical,                        save :: frstme = .true.
 
 C     Only do reading and writing for IOnode
 
       if (.not. IOnode) RETURN
 
       if (frstme) then
-         sname = fdf_string( 'SystemLabel', 'siesta' )
-         fname = paste( sname, '.STRUCT_OUT' )
+         fname = paste( slabel, '.STRUCT_OUT' )
          frstme = .false.
       endif
 

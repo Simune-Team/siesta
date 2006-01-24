@@ -28,6 +28,7 @@ C
       use parallelsubs, only : LocalToGlobalOrb
       use sys,          only : die
       use fdf,          only : fdf_boolean, fdf_string
+      use files,        only : slabel, label_length
       use ionew
 #ifdef MPI
       use mpi_siesta
@@ -68,12 +69,11 @@ C Internal variables
 
 C Saved internal variables:
       logical,           save :: frstme = .true., scndme = .false.
-      character(len=30), save :: sname
-      character(len=33), save :: fnameu
-      character(len=34), save :: fnamef
-      character(len=34), save :: fnamei, fnameo
-      logical,           save :: fmti, fmto
-      character(len=11), save :: formin, formout
+      character(len=label_length+3), save :: fnameu
+      character(len=label_length+4), save :: fnamef
+      character(len=label_length+4), save :: fnamei, fnameo
+      logical,                       save :: fmti, fmto
+      character(len=11),             save :: formin, formout
 
 ! Character formats for formatted I/O
 ! We assume that we have no integers greater than (1e10-1)
@@ -106,15 +106,14 @@ C Find file name
           fmto = fdf_boolean('DM.FormattedFiles', .false.)
           fmti = fdf_boolean('DM.FormattedInput', fmto)
           fmto = fdf_boolean('DM.FormattedOutput', fmto)
-          sname = fdf_string('SystemLabel', 'siesta')
           frstme = .false.
           scndme = .true.
         elseif (scndme) then
           fmti = fmto
           scndme = .false.
         endif
-        fnameu = trim(sname) // '.DM'
-        fnamef = trim(sname) // '.DMF'
+        fnameu = trim(slabel) // '.DM'
+        fnamef = trim(slabel) // '.DMF'
         if (fmto) then
           formout = 'formatted'
           fnameo = fnamef

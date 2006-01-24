@@ -13,7 +13,7 @@ C ***
 
 C  Modules
       use precision, only: dp
-      use parallel, only: Node, Nodes, IOnode
+      use parallel, only: Node, Nodes, IOnode, ParallelOverK
       use m_cell,   only: ucell
       use atmfuncs, only: rcut, uion, izofis
       use atomlist, only: xa, xalast, indxuo, na_u
@@ -56,6 +56,8 @@ C  Modules
       use m_broyden_mixing
 
       use siesta_cml
+
+      use files,       only : slabel, label_length
 
       use m_timestamp, only : timestamp
       use m_wallclock, only : wallclock
@@ -162,10 +164,15 @@ C  Modules
       logical  :: printeigen = .false.       ! AG: Initialize
 
       character
-     .  filevh*25, filevt*25, fildrh*25, filrho*25,
-     .  filepsch*25, filetoch*25,
-     .  line*150, paste*25,
-     .  slabel*20, sname*150, shape*10, message*79
+     .  line*150, sname*150, shape*10, message*79
+
+      character(len=label_length+5) :: fildrh
+      character(len=label_length+5) :: filepsch
+      character(len=label_length+5) :: filetoch
+      character(len=label_length+5) :: filevh
+      character(len=label_length+5) :: filevt
+      character(len=label_length+5) :: filrho
+      character(len=label_length+5) :: paste
 
       external
      .  anneal, cgvc, cgvc_zmatrix, fixed,
@@ -254,7 +261,7 @@ C Initialize some variables
       FreeE = 0.0_dp
 
 C Initialise read .....................................................
-      call reinit(slabel, sname)
+      call reinit(sname)
 
       call siesta_cml_init() ! Initialize CML (relies on reinit)
 
@@ -382,6 +389,10 @@ C Find some switches ..................................................
      .                            1.0_dp, 'Bohr' )
       call fdf_global_get(bornz,  'BornCharge'   , .false.)
       if (idyn.ne.6) bornz = .false.
+
+#ifdef MPI
+      call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
+#endif
 
 C Read Z-matrix coordinates and forces from file
       if (lUseZmatrix) then
@@ -1769,7 +1780,7 @@ C Save atomic positions and velocities accumulatively ................
 C Accumulate coor in Xmol file for animation .........................
       lastst = fincoor .le. istep
       if (writpx.and.IOnode) 
-     .  call pixmol(iza, xa, na_u, slabel, lastst)
+     .  call pixmol(iza, xa, na_u, lastst)
 C ...................
 
 C******************Born charge calculation***************************
@@ -1852,12 +1863,12 @@ C Print atomic coordinates (and also unit cell for ParrRah.)
 C Print coordinates in xmol format in a separate file
 
         if (fdf_boolean('WriteCoorXmol',.false.)) 
-     .     call coxmol(iza, xa, na_u, slabel)
+     .     call coxmol(iza, xa, na_u )
 
 C Print coordinates in cerius format in a separate file
 
         if (fdf_boolean('WriteCoorCerius',.false.))
-     .     call coceri(iza, xa, ucell, na_u, sname, slabel)
+     .     call coceri(iza, xa, ucell, na_u, sname )
 
        endif ! IONode
 
@@ -2054,7 +2065,7 @@ C Attention H0, Eold, Dold are used as auxiliary arrays
      .             Eold(1,1), Dold(1,1),
      .             xijo, indxuo, indxua, ebk, ef, temp,
      .             isa, iphorb, iphKB, iaorb, lasto, lastkb,
-     .             jna, xij, r2ij, shape, slabel)
+     .             jna, xij, r2ij, shape )
 
 c...................................
 

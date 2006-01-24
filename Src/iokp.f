@@ -1,7 +1,4 @@
-c $Id: iokp.f,v 1.2 1999/11/26 18:28:16 wdpgaara Exp $
-
       subroutine iokp( nk, points, weight )
-
 c *******************************************************************
 c Saves k-points (only writing) Bohr^-1
 c Emilio Artacho, Feb. 1999
@@ -12,24 +9,24 @@ c real*8  weight(3,nk) : k-point weight
 c *******************************************************************
 
       use fdf
+      use files,     only : slabel, label_length
+      use precision, only : dp
 
       implicit          none
-      character         paste*33
-      integer           nk
-      double precision  points(3,*), weight(*)
+
+      character(len=label_length+3) :: paste
+      integer                       :: nk
+      real(dp)                      :: points(3,*), weight(*)
       external          io_assign, io_close, paste
 
 c Internal 
-      character  sname*30, fname*33
-      integer    ik, iu, ix
-      logical    frstme
-      save       frstme, fname
-      data frstme /.true./
+      character(len=label_length+3), save :: fname
+      integer                             :: ik, iu, ix
+      logical,                       save :: frstme = .true.
 c -------------------------------------------------------------------
 
       if (frstme) then
-        sname = fdf_string( 'SystemLabel', 'siesta' )
-        fname = paste( sname, '.KP' )
+        fname = paste( slabel, '.KP' )
         frstme = .false.
       endif
 

@@ -1,7 +1,4 @@
-c $Id: iofa.f,v 1.2 1999/11/26 18:28:16 wdpgaara Exp $
-
       subroutine iofa( na, fa )
-
 c *******************************************************************
 c Writes forces in eV/Ang
 c Emilio Artacho, Feb. 1999
@@ -11,27 +8,27 @@ c real*8  fa(3,na)     : Forces on the atoms
 c *******************************************************************
 
       use fdf
+      use files,     only : slabel, label_length
+      use precision, only : dp
 
       implicit          none
-      character         paste*33
-      integer           na
-      double precision  fa(3,*)
+
+      character(len=label_length+3) :: paste
+      integer                       :: na
+      real(dp)                      :: fa(3,*)
       external          io_assign, io_close, paste
 
 c Internal 
-      character         sname*30, fname*33
-      integer           ia, iu, ix
-      logical           frstme
-      double precision  Ang, eV
-      save              frstme, fname, eV, Ang
-      data frstme        /.true./
+      character(len=label_length+3), save :: fname
+      integer                             :: ia, iu, ix
+      logical,                       save :: frstme = .true.
+      real(dp),                      save :: Ang, eV
 c -------------------------------------------------------------------
 
       if (frstme) then
         Ang    = 1.d0 / 0.529177d0
         eV     = 1.d0 / 13.60580d0
-        sname  = fdf_string( 'SystemLabel', 'siesta' )
-        fname  = paste( sname, '.FA' )
+        fname  = paste( slabel, '.FA' )
         frstme = .false.
       endif
 

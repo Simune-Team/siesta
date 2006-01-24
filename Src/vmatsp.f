@@ -119,7 +119,11 @@ C  Allocate local memory
       call memory('A','D',nsp,'vmatsp')
 
       if (Parallel_Flag) then
-        nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
+        if (nrowsDscfL.gt.0) then
+          nvmaxl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
+        else
+          nvmaxl = 1
+        endif
         allocate(DscfL(nvmaxl,nsd+2))
         call memory('A','D',nvmaxl*(nsd+2),'meshdscf')
         DscfL(1:nvmaxl,1:nsd+2) = 0.0_dp

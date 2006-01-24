@@ -1,5 +1,4 @@
-      subroutine coceri(iza, xa, cell, na, sname, slabel)
-
+      subroutine coceri(iza, xa, cell, na, sname )
 c *******************************************************************
 c Writes coordinates in format to be read by CERIUS
 c
@@ -16,53 +15,60 @@ c character slabel*20 : Label for file naming
 c character sname*150 : Label for the title  
 c ******************************************************************
 
+      use precision,      only: dp
       use periodic_table, only: symbol
+      use files,          only: slabel, label_length
 
       implicit          none
-      character         slabel*20, sname*150, paste*24
-      integer           na
-      integer           iza(na)
-      double precision  xa(3,na), cell(3,3)
+
+      character(len=150)            :: sname
+      character(len=label_length+4) :: paste
+      integer                       :: na
+      integer                       :: iza(na)
+      real(dp)                      :: cell(3,3)
+      real(dp)                      :: xa(3,na)
       external          io_assign, io_close, paste
 
 c Internal variables and arrays
  
-      character         fname*24
-      integer           unit,ix, iv,  i, ia
-      double precision  celang(3), cellm(3), recell(3,3),
-     .                  xac(3), pi, Ang 
+      character(len=label_length+4) :: fname
+      integer                       :: unit, ix, iv, i, ia
+      real(dp)                      :: celang(3)
+      real(dp)                      :: cellm(3)
+      real(dp)                      :: recell(3,3)
+      real(dp)                      :: xac(3)
+      real(dp),                save :: pi = 3.1415926_dp
+      real(dp),                save :: Ang = 0.529177_dp
 
 !     automatic array
 
-      double precision        :: xap(3,na)
-
-      data pi, Ang      / 3.1415926d0, 0.529177d0 /
+      real(dp)                      :: xap(3,na)
 
 c Find lattice parameters out of lattice vectors: first modules:
 
       do iv = 1, 3
-         cellm(iv) = 0.d0
-         do ix = 1, 3
-            cellm(iv) = cellm(iv) + cell(ix,iv)*cell(ix,iv)
-         enddo
-         cellm(iv) = sqrt(cellm(iv))
+        cellm(iv) = 0.0d0
+        do ix = 1, 3
+          cellm(iv) = cellm(iv) + cell(ix,iv)*cell(ix,iv)
+        enddo
+        cellm(iv) = sqrt(cellm(iv))
       enddo
 
 c and angles
 
       celang(1) = 0.d0
       do ix = 1, 3
-         celang(1) = celang(1) + cell(ix,2)*cell(ix,3)
+        celang(1) = celang(1) + cell(ix,2)*cell(ix,3)
       enddo
       celang(1) = acos(celang(1)/(cellm(2)*cellm(3)))*180.d0/pi
       celang(2) = 0.d0
       do ix = 1, 3
-         celang(2) = celang(2) + cell(ix,1)*cell(ix,3)
+        celang(2) = celang(2) + cell(ix,1)*cell(ix,3)
       enddo
       celang(2) = acos(celang(2)/(cellm(1)*cellm(3)))*180.d0/pi
       celang(3) = 0.d0
       do ix = 1, 3
-         celang(3) = celang(3) + cell(ix,1)*cell(ix,2)
+        celang(3) = celang(3) + cell(ix,1)*cell(ix,2)
       enddo
       celang(3) = acos(celang(3)/(cellm(1)*cellm(2)))*180.d0/pi
 

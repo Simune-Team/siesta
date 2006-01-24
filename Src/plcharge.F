@@ -1,7 +1,6 @@
-      SUBROUTINE PLCHARGE( MAXO, MAXA, MAXUO, MAXNH, MAXNA, NSPIN, 
+      subroutine plcharge( MAXO, MAXA, MAXUO, MAXNH, MAXNA, NSPIN, 
      .                     ISA, IPHORB, INDXUO, LASTO, 
      .                     CELL, NSC, XA, RMAXO, DATM )
-
 C **********************************************************************
 C Prepare the data files to plot charge density at the points of a plane 
 C in real space.
@@ -17,6 +16,7 @@ C **********************************************************************
       use precision
       use old_atmfuncs
       use fdf
+      use files,         only : slabel, label_length
       use parallel,      only : Node, Nodes
 #ifdef MPI
       use mpi_siesta
@@ -24,13 +24,13 @@ C **********************************************************************
 
       implicit none
 
-      INTEGER, INTENT(IN) ::
+      integer, intent(in) ::
      .  MAXO, MAXA, MAXUO, MAXNH, MAXNA, NSPIN
 
-      INTEGER, INTENT(IN) ::
+      integer, intent(in) ::
      .  LASTO(0:MAXA), ISA(MAXA), IPHORB(MAXO), INDXUO(MAXO), NSC(3)
 
-      real(dp), INTENT(IN) ::
+      real(dp), intent(in) ::
      .  CELL(3,3), XA(3,MAXA), RMAXO, DATM(MAXO)
 
 C ****** INPUT *********************************************************
@@ -58,19 +58,18 @@ C **********************************************************************
 
 C Internal variables ---------------------------------------------------
 
-      CHARACTER*33 PASTE
+      character(len=label_length+4) :: fname1
+      character(len=label_length+4) :: fname2
+      character(len=label_length+4) :: paste
 
-      CHARACTER*30
-     .  SNAME, FNAME1, FNAME2
-
-      INTEGER
+      integer
      .  UNIT1, UNIT2, IL, IA, J
 
 #ifdef MPI
-      INTEGER MPIerror, MAXNHG
+      integer MPIerror, MAXNHG
 #endif
 
-      EXTERNAL
+      external
      .  IO_ASSIGN, IO_CLOSE, PASTE
 
 #ifdef MPI
@@ -79,64 +78,63 @@ C Internal variables ---------------------------------------------------
 #endif
 
 C Write only if we are in the node 0 -----------------------------------
-      IF (Node .EQ. 0) THEN
+      if (Node .eq. 0) then
 C Assign the name of the output file -----------------------------------
-        SNAME = FDF_STRING('SystemLabel','siesta')
-        FNAME1 = PASTE(sname,'.DIM')
-        FNAME2 = PASTE(sname,'.PLD')
+        FNAME1 = paste(slabel,'.DIM')
+        FNAME2 = paste(slabel,'.PLD')
 
-        CALL IO_ASSIGN(UNIT1)
-          OPEN ( UNIT = UNIT1, FILE = FNAME1, FORM = 'UNFORMATTED',
-     .           STATUS = 'UNKNOWN' )
+        call IO_ASSIGN(UNIT1)
+        open( UNIT = UNIT1, FILE = FNAME1, FORM = 'UNFORMATTED',
+     .        STATUS = 'UNKNOWN' )
 
-            WRITE(UNIT1)MAXA
-            WRITE(UNIT1)MAXO
-            WRITE(UNIT1)MAXUO 
-            WRITE(UNIT1)NSPIN
+        write(UNIT1) MAXA
+        write(UNIT1) MAXO
+        write(UNIT1) MAXUO 
+        write(UNIT1) NSPIN
 #ifdef MPI
-            WRITE(UNIT1)MAXNHG
+        write(UNIT1) MAXNHG
 #else
-            WRITE(UNIT1)MAXNH
+        write(UNIT1) MAXNH
 #endif
-            WRITE(UNIT1)MAXNA
+        write(UNIT1) MAXNA
 
-        CALL IO_CLOSE(UNIT1)
+        call IO_CLOSE(UNIT1)
 
-        CALL IO_ASSIGN(UNIT2)
+        call IO_ASSIGN(UNIT2)
 
-        OPEN ( UNIT = UNIT2, FILE = FNAME2, FORM = 'UNFORMATTED',
-     .         STATUS = 'UNKNOWN' )
+        open( UNIT = UNIT2, FILE = FNAME2, FORM = 'UNFORMATTED',
+     .        STATUS = 'UNKNOWN' )
 C Dump the tables into a file ------------------------------------------
 
-        WRITE(UNIT2) RMAXO
-C       WRITE(6,*) RMAXO
+        write(UNIT2) RMAXO
+C       write(6,*) RMAXO
 
-        DO IL = 1, MAXO
-          WRITE(UNIT2)IPHORB(IL), INDXUO(IL), DATM(IL)
-        ENDDO
+        do IL = 1, MAXO
+          write(UNIT2)IPHORB(IL), INDXUO(IL), DATM(IL)
+        enddo
 
-        DO IA = 1, MAXA
-          WRITE(UNIT2)ISA(IA)
-        ENDDO
+        do IA = 1, MAXA
+          write(UNIT2)ISA(IA)
+        enddo
 
-        DO IA = 0, MAXA
-          WRITE(UNIT2)LASTO(IA)
-        ENDDO
+        do IA = 0, MAXA
+          write(UNIT2)LASTO(IA)
+        enddo
         
-        DO IA = 1,3
-          WRITE(UNIT2)(CELL(J,IA),J=1,3)
-        ENDDO
+        do IA = 1,3
+          write(UNIT2)(CELL(J,IA),J=1,3)
+        enddo
 
-        WRITE(UNIT2)(NSC(IA),IA=1,3)
+        write(UNIT2)(NSC(IA),IA=1,3)
 
-        DO IA = 1, MAXA
-          WRITE(UNIT2)(XA(J,IA),J=1,3)
-        ENDDO
+        do IA = 1, MAXA
+          write(UNIT2)(XA(J,IA),J=1,3)
+        enddo
 
-        CALL IO_CLOSE(UNIT2)
+        call IO_CLOSE(UNIT2)
  
-      ENDIF
+      endif
 
-      RETURN
+      return
 
-      END
+      end

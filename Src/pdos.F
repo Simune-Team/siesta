@@ -44,17 +44,18 @@ C REAL*8  EO(MAXUO,MAXSPN,NK) : Eigenvalues
 C INTEGER NUOTOT              : Total number of orbitals in unit cell
 C **********************************************************************
 
-      use precision,   only : dp
-      use parallel,    only : Node, Nodes
+      use precision,    only : dp
+      use parallel,     only : Node, Nodes
       use fdf
-      use atomlist,    only : xa, isa, iphorb, iaorb
-      use atmfuncs,    only : zetafio, mofio, lofio, cnfigfio, labelfis
+      use atomlist,     only : xa, isa, iphorb, iaorb
+      use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
       use flib_wxml
-      use xml,         only : xml_dump_attribute
-      use ionew,       only : IOnode
-      use densematrix, only : Haux, Saux, psi
+      use xml,          only : xml_dump_attribute
+      use ionew,        only : IOnode
+      use densematrix,  only : Haux, Saux, psi
       use alloc
-      use units, only : eV
+      use units,        only : eV
+      use files,        only : slabel, label_length
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
       use mpi_siesta,   only : MPI_logical, MPI_Comm_World
@@ -76,8 +77,8 @@ C **********************************************************************
      .  gamma
 
 C Dynamic arrays -------------------------------------------------------
-      real(dp), DIMENSION(:,:)  , ALLOCATABLE :: DTOT
-      real(dp), DIMENSION(:,:,:), ALLOCATABLE :: DPR
+      real(dp), dimension(:,:)  , allocatable :: DTOT
+      real(dp), dimension(:,:,:), allocatable :: DPR
 
 C Internal variables ---------------------------------------------------
       integer
@@ -92,8 +93,8 @@ C Internal variables ---------------------------------------------------
 
       character*40 pos_string
 
-      character
-     .  sname*30, fnametot*37, fnamepro*37
+      character(len=label_length+5) :: fnamepro
+      character(len=label_length+4) :: fnametot
 
       real(dp)
      .  delta, ener
@@ -113,7 +114,6 @@ C Internal variables ---------------------------------------------------
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
       if (Node.eq.0) then
-        sname = fdf_string('SystemLabel','siesta')
         ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
         if (Nodes.eq.1) ParallelOverK = .false.
       endif
@@ -186,7 +186,7 @@ C  Call appropiate routine ----------------------------------------------
 
       if (IOnode) then
 C Open file for write on I/O node
-        fnametot = trim(sname)//'.DOS'
+        fnametot = trim(slabel)//'.DOS'
         call io_assign(iunit1)
         open(unit=iunit1, file=fnametot, form='formatted', 
      .       status='unknown') 
@@ -207,7 +207,7 @@ C New writing
          call xml_OpenFile("pdos.xml",xf)
          call xml_AddXMLDeclaration(xf,"UTF-8")
 
-        fnamepro = trim(sname)//'.PDOS'
+        fnamepro = trim(slabel)//'.PDOS'
         call io_assign(iunit2)
         open(iunit2,file=fnamepro,form='formatted',status='unknown')
         call xml_NewElement(xf,"pdos")

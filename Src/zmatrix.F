@@ -322,6 +322,7 @@ C Read data block up to endblock statement
             write(*,"(a)") trim(line)
             lastc = index(line,'#') - 1
             if (lastc .le. 0) lastc = len(line)
+            call upper2lower(line,lastc)
             if (index(line(1:lastc),'#').ne.0) then
               continue
             elseif (index(line(1:lastc),'mol').ne.0) then
@@ -1535,5 +1536,24 @@ C    8 - fractional cartesian (scaled by lattice vectors)
         write(6,"(a,/)") "------------ End of Z-matrix Information"
 
         end subroutine print_variables
+
+      subroutine upper2lower(string,nchar)
+C
+C  upper2lower accepts a string of nchar characters and replaces
+C  any lowercase letters by uppercase ones.
+C
+      character string*(*)
+      character char*1
+      integer nchar, ncopy, i, itemp
+C
+      ncopy = nchar
+      if (ncopy.le.0) ncopy = len(string)
+      do i = 1,ncopy
+        if (lge(string(I:I),'A').and.lle(string(I:I),'Z')) then
+          itemp = ichar(string(i:i))-ichar('A')+ichar('a')
+          string(I:I) = char(itemp)
+        endif
+      enddo
+      end subroutine upper2lower
 
       end module zmatrix

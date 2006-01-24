@@ -495,6 +495,7 @@ C
       use precision
       use parallel,    only : Node, Nodes
       use fdf
+      use files,       only : slabel, label_length
       use densematrix, only : Haux, Saux, psi
       use alloc
 #ifdef MPI
@@ -509,12 +510,12 @@ C
       logical           gamma
       real(dp)          ef, H(maxnh,nspin), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
-      character         paste*30
+      character(len=label_length+4) :: paste
       external          io_assign, io_close, paste, memory
 C *********************************************************************
 
       logical
-     .  getD, getPSI, fixspin
+     .  fixspin
 
       integer
      .  io, iu, iuo, naux, nuo
@@ -524,16 +525,17 @@ C *********************************************************************
      .  temp, wk, Entropy
 
 C Dynamic arrays
-      real(dp), allocatable, save :: aux(:)
-      real(dp), allocatable, save :: ek(:,:,:)
-      integer,  allocatable, save :: muo(:)
+      integer,  allocatable,   save :: muo(:)
+      logical,                 save :: getD = .false.
+      logical,                 save :: getPSI = .true.
+      real(dp), allocatable,   save :: aux(:)
+      real(dp), allocatable,   save :: ek(:,:,:)
 
-      character sname*30, fname*33, fform*11
+      character(len=label_length+4) :: fname
+      character(len=11)             :: fform
 
       parameter ( eV = 1.d0 / 13.60580d0 )
-      save getD, getPSI, Dnew, Enew, e1, e2, qk, qtot, temp, wk
-      data getD /.false./
-      data getPSI /.true./
+      save Dnew, Enew, e1, e2, qk, qtot, temp, wk
       data Dnew, Enew, e1, e2, qk, qtot, temp, wk /8*0.d0/
 
 C Get local number of orbitals
@@ -615,8 +617,7 @@ C Find output file name, and open for Node 0
 
         fform = 'unformatted'
 
-        sname = fdf_string('SystemLabel','siesta')
-        fname = paste(sname,'.WFS')
+        fname = paste(slabel,'.WFS')
 
         call io_assign( iu )
         open(iu, file=fname, form=fform, status='unknown' )
@@ -700,6 +701,7 @@ C This is the only exit point
       use parallel,     only : Node, Nodes, BlockSize
       use parallelsubs, only : GlobalToLocalOrb
       use fdf
+      use files,        only : slabel, label_length
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
       use atomlist,     only : isa, iaorb, iphorb
 
@@ -726,11 +728,11 @@ C  Internal variables .............................................
 
       logical, save :: frstime = .true.
 
-      character sname*30, fname*33, paste*33, fform*11
+      character(len=label_length+4), save :: fname
+      character(len=label_length+4)       :: paste
+      character(len=11),             save :: fform
 
       real(dp), dimension(:,:), allocatable :: aux
-
-      save sname, fform, fname
 
       external paste, io_assign, io_close
 
@@ -748,8 +750,7 @@ C Find file name, and open for Node 0
       if (frstime) then
 
         if (Node.eq.0) then
-          sname = fdf_string('SystemLabel','siesta')
-          fname = paste(sname,'.WFS')
+          fname = paste(slabel,'.WFS')
         endif
 
         frstime = .false.

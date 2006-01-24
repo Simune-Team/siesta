@@ -113,7 +113,11 @@ C  Allocate local memory
       call memory('A','D',nsp*maxloc2,'rhoofdsp')
 
       if (Parallel_Flag) then
-        maxndl = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)
+        if (nrowsDscfL.gt.0) then
+          maxndl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
+        else
+          maxndl = 1
+        endif
         allocate(DscfL(maxndl,nsd+2))
         call memory('A','D',maxndl*(nsd+2),'meshdscf')
 C Redistribute Dscf to DscfL form

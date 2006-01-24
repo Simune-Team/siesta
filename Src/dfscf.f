@@ -118,7 +118,11 @@ C  Set logical that determines whether we need to use parallel or serial mode
 
 C  If parallel, allocate temporary storage for Local Dscf
       if (Parallel_Run) then
-        maxndl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
+        if (nrowsDscfL.gt.0) then
+          maxndl = listdlptr(nrowsDscfL) + numdl(nrowsDscfL)
+        else
+          maxndl = 1
+        endif
         allocate(DscfL(maxndl,nspin))
         call memory('A','D',maxndl*nspin,'meshdscf')
 

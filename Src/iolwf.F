@@ -28,6 +28,7 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs
       use fdf
+      use files,         only : slabel, label_length
       use on_main,       only : c, cold, numc, numcold, listc, listcold
       use on_main,       only : xi, g, hg
 #ifdef MPI
@@ -39,24 +40,23 @@ C
 
       implicit  none
 
-      character task*(*), paste*33
+      character task*(*)
+      character(len=label_length+4) :: paste
       logical   found
       integer   nbasis, nbasisCloc, nbasisloc, nspin, maxnc
       external  chkdim, io_assign, io_close, paste, timer, memory
 
 C Internal variables and arrays
-      character fname*33, sname*30
-      logical   exist3
-      integer   im, is, unit1, m, nb, ncmax, ns 
-      logical, save :: frstme = .true.
+      character(len=label_length+4),       save :: fname
+      logical                                   :: exist3
+      logical,                             save :: frstme = .true.
       integer,  dimension(:), allocatable, save :: numcg
+      integer   im, is, unit1, m, nb, ncmax, ns 
 #ifdef MPI
       integer   MPIerror, n, ndata, Request, Status(MPI_Status_Size)
       real(dp), dimension(:), allocatable, save :: bdens
       integer,  dimension(:), allocatable, save :: idens
 #endif
-
-      save      fname
 
 *     call timer( 'iolwf', 1 )
 
@@ -71,8 +71,7 @@ C Allocate local buffer array
 C Find file name
       if (frstme) then
         if (Node.eq.0) then
-          sname = fdf_string('SystemLabel','siesta')
-          fname = paste(sname,'.LWF')
+          fname = paste(slabel,'.LWF')
         endif
         frstme = .false.
       endif

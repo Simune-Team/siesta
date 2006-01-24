@@ -3,7 +3,7 @@
      .                    listhptr, listh, H, S, AuxSr, AuxSr2, AuxSr3,
      .                    xijo, indxuo, indxua, ek, efermi, temp,
      .                    isa, iphorb, iphkb, iaorb, lasto, lastkb, 
-     .                    jna, xij, r2ij, shape, label )
+     .                    jna, xij, r2ij, shape )
 C *********************************************************************
 C Calculates the imaginary part of the dielectric function using
 C first order perturbation theory.
@@ -75,6 +75,7 @@ C *********************************************************************
       use alloc
       use sys,          only : die
       use m_fermid,     only : stepf
+      use files,        only : slabel, label_length
 #ifdef MPI
       use mpi_siesta,   only : mpi_reduce, mpi_comm_world,
      $                         mpi_sum
@@ -128,8 +129,11 @@ C Internal variables
      .  smooth, T, volcel, volume, xv(3), w,
      .  wmin, wmax, wi, wf, escissor
 
-      character         paste*30, shape*10, option*12, matrix*1,
-     .                  label*20, filename*30
+      character(len=label_length+7) :: filename
+      character(len=label_length+7) :: paste
+      character(len=10)             :: shape
+      character(len=12)             :: option
+      character(len=1)              :: matrix
 
       external          io_assign, io_close,
      .                  paste, volcel
@@ -623,7 +627,7 @@ C Closing loop on k_points
 C Output results
       if (Node.eq.0) then
         call io_assign(iu)
-        filename = paste( label, '.EPSIMG' )
+        filename = paste( slabel, '.EPSIMG' )
         open(iu,file=filename, status='unknown')
         nwf = int((wmax-wmin)/dw) + 1
         do ispin = 1,nspin

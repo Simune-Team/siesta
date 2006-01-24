@@ -6,7 +6,7 @@
 
       subroutine redata(na, ns, nspin, outlng, g2max,
      .  charnet, negl, nscf, dDtol, dEtol, mix, wmix,
-     $  isolve, 
+     .  isolve, 
      .  temp, fixspin, ts, ncgmax, ftol, strtol, eta, 
      .  etol, rcoor, 
      .  ioptlwf, chebef, noeta, rcoorcp, beta, pmax,
@@ -17,7 +17,7 @@
      .  mullipop, inspn, maxsav, nkick, wmixkick, 
      .  pulfile, tempinit, dumpcharge, varcel, 
      .  harrisfun, occtol, broyden_maxit, require_energy_convergence,
-     $  broyden_optim)
+     .  broyden_optim)
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
@@ -136,6 +136,7 @@ C
       use precision, only : dp
       use parallel,  only : IOnode, Nodes
       use fdf
+      use files,     only : slabel
       use sys
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only: broadcast
@@ -205,8 +206,7 @@ C  Internal variables .................................................
       real(dp) :: tcp
 
       character
-     .  sname*100, slabel*30,
-     .  annop*22,  dyntyp*22, 
+     .  sname*100, annop*22,  dyntyp*22, 
      .  method*6,  lwfopt*13, method_default*6
 
       logical  ::  DaC, leqi, qnch, usesaveddata
@@ -232,7 +232,6 @@ C for cml output, find the system name & label
 
       if (cml_p) then
         sname = fdf_string('SystemName','')
-        slabel = fdf_string('SystemLabel','')
         call cmlAddParameter(xf=mainXML, name='SystemName',
      .      value=trim(sname), dictref='siesta:sname')
         call cmlAddParameter(xf=mainXML, name='SystemLabel',

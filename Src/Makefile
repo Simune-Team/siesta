@@ -104,7 +104,7 @@ gen-basis.o: $(FDF)
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o m_cell.o recipes.o \
+MOD_OBJS=precision.o m_cell.o recipes.o files.o \
          spatial.o parallel.o parallelsubs.o sys.o parsing.o chemical.o xcmod.o atom.o atmparams.o \
          m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
@@ -131,8 +131,8 @@ efield.o matel.o mulliken.o outcoor.o : atmfuncs.o
 overfsm.o shaper.o                                : atmfuncs.o
 atomlist.o                                        : atmfuncs.o 
 kinefsm.o naefs.o nlefsm.o overfsm.o              : atmfuncs.o
-siesta.o          : atmfuncs.o phonon.o ordern.o hsparse.o iopipes.o
-redata.o          : phonon.o m_fdf_global.o
+siesta.o          : atmfuncs.o phonon.o ordern.o hsparse.o iopipes.o files.o
+redata.o          : phonon.o m_fdf_global.o files.o
 dfscf.o hsparse.o : atmfuncs.o listsc.o
 rhoofd.o rhoofdsp.o vmat.o vmatsp.o  : listsc.o
 hsparse.o minvec.o : sorting.o
@@ -170,6 +170,9 @@ dhscf.o: m_iorho.o forhar.o
 sys.o: parallel.o
 m_mpi_utils.o: sys.o
 cgvc.o cgvc_zmatrix.o: conjgr.o conjgr_old.o
+plcharge.o redata.o writewave.o m_iostruct.f pulayx.o phonon.o pdos.o bands.o optical.o : files.o
+ioxv.o iozm.o iolwf.o iohs.o iodm.o ofc.o iomd.o iokp.o iofa.o ioeig.o iocg.o coceri.o : files.o
+pixmol.o coxmol.o reinit.o : files.o
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
 #

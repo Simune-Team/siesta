@@ -15,19 +15,23 @@ c logical found : Has DM been found in disk? (Only when task='read')
 c**************************************************************************
 
       use fdf
+      use files,     only : slabel, label_length
+      use precision, only : dp
 
       implicit          none
-      character         task*(*), paste*33
+
+      character(len=label_length+3) :: paste
+      character         task*(*)
       logical           found, relaxd
       integer           naux
-      double precision  cgaux(naux), cgcntr(0:20)
+      real(dp)          cgaux(naux), cgcntr(0:20)
 
       external          chkdim, io_assign, io_close, paste
 
 
 c Internal variables and arrays ------------------------------------------
 
-      character fname*33, sname*30
+      character(len=label_length+3) :: fname
       logical   exist1, frstme
       integer   nauxr, i, unit1
 
@@ -39,8 +43,7 @@ c ------------------------------------------------------------------------
 c find file name ---------------------------------------------------------
 
       if (frstme) then
-        sname = fdf_string('SystemLabel','siesta')
-        fname = paste(sname,'.CG')
+        fname = paste(slabel,'.CG')
         frstme = .false.
       endif
 

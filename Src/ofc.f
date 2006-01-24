@@ -21,6 +21,7 @@ C *******************************************************************
 
       use precision
       use fdf
+      use files, only : slabel, label_length
 
       implicit          none
 
@@ -30,15 +31,14 @@ C *******************************************************************
      .                  memory
 
 C Internal variables and arrays
-      character fname*33, sname*30, line*132, paste*33
-      logical   frstme
-      integer   i, ix, unit1, nwritten, n
-      real(dp)  Ang, eV, rdummy
+      character(len=label_length+3), save :: fname
+      character(len=label_length+3)       :: paste
+      character(len=132)                  :: line
+      logical,                       save :: frstme = .true.
+      integer,                       save :: nwritten = 0
+      integer                             :: i, ix, unit1, n
+      real(dp)                            :: Ang, eV, rdummy
       real(dp), dimension(:,:), allocatable, save :: fres
-
-      save      frstme, fname, nwritten
-      data      frstme /.true./
-      data      nwritten / 0 /
 
 C Allocate local array for storing residual forces
       if (.not.allocated(fres)) then
@@ -52,8 +52,7 @@ C Define conversion factors
 
 C Find file name
       if (frstme) then
-        sname = fdf_string('SystemLabel','siesta')
-        fname = paste(sname,'.FC')
+        fname = paste(slabel,'.FC')
       endif
 
       call io_assign(unit1)

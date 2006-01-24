@@ -314,10 +314,12 @@ C  Modules
 C
       use precision
       use parallel,     only : Node, Nodes
+      use parallel,     only : ParallelOverK, ResetFirstCall
       use parallelsubs, only : GetNodeOrbs
       use fdf
       use densematrix
       use alloc
+      use files,        only : slabel, label_length
 
       implicit          none
 
@@ -328,12 +330,12 @@ C
       real(dp)          ef, ek(maxo,maxspn,maxk),
      .                  H(maxnh,nspin), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
-      character         paste*30
+      character(len=label_length+6) :: paste
       external          io_assign, io_close, paste, memory
 C *********************************************************************
 
-      character 
-     .  fname*30, sname*25, string*10
+      character(len=label_length+6) :: fname
+      character(len=10)             :: string
 
       logical
      .  getD, getPSI, fixspin
@@ -341,6 +343,9 @@ C *********************************************************************
       integer
      .  ik, il, io, ispin, iu, iuo, 
      .  naux, nuo, nhs
+
+      logical
+     .  SaveParallelOverK
 
       real(dp)
      .  Dnew, qs(2), e1, e2, efs(2), emax, emin, Enew, eV, qk, qtot,
@@ -420,8 +425,13 @@ C Find the band energies
       if (nspin.le.2) then
 C fixspin and qs are not used in diagk, since getD=.false. ...
         fixspin = .false.
-        qs(1)=0.0d0
-        qs(2)=0.0d0
+        qs(1) = 0.0_dp
+        qs(2) = 0.0_dp
+
+C Handle parallel over K points option which is not allowed for here
+        SaveParallelOverK = ParallelOverK
+        ParallelOverK = .false.
+        ResetFirstCall = .true.
 
         call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
      .              maxo, numh, listhptr, listh, numh, listhptr, 
@@ -430,6 +440,10 @@ C fixspin and qs are not used in diagk, since getD=.false. ...
      .              ek, qk, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              nuotot, occtol, 1 )
+
+        ParallelOverK = SaveParallelOverK
+        ResetFirstCall = .false.
+
       elseif (nspin.eq.4) then
         call diag2k(nuo, no, maxuo, maxnh, maxnh, maxo,
      .              numh, listhptr, listh, numh, listhptr, 
@@ -450,8 +464,7 @@ C Write bands
       if (writeb.and.Node.eq.0) then
 
 C Find name of output file and open it
-        sname = fdf_string('SystemLabel','siesta')
-        fname = paste(sname,'.bands')
+        fname = paste(slabel,'.bands')
         call io_assign(iu)
         open( iu, file=fname, status='unknown')
 
