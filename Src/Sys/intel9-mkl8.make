@@ -11,7 +11,7 @@ FC=ifort
 #
 FFLAGS= -w -xP -O3 -mp1
 FFLAGS_DEBUG= -g 
-LDFLAGS=
+LDFLAGS= -static
 COMP_LIBS=
 RANLIB=echo
 #

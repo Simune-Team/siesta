@@ -42,11 +42,11 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
-	diagsprl.o dipole.o dismin.o dnaefs.o dot.o dynamics.o \
+	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
 	fixed.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
-	iodm.o iohs.o iolwf.o ioxv.o iozm.o ipack.o iopipes.o \
+	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         minvec.o mulliken.o naefs.o neighb.o \
@@ -115,7 +115,7 @@ MOD_OBJS=precision.o m_cell.o recipes.o files.o \
 	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
          units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
          nlefsm.o overfsm.o conjgr.o conjgr_old.o redata.o \
-         m_broyddj_nocomm.o optim.o
+         m_broyddj_nocomm.o optim.o ioxv.o dynamics.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)

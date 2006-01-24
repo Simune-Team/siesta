@@ -1,3 +1,11 @@
+      module m_ioxv
+
+      logical, public, save   :: xv_file_read = .false.
+
+      public :: ioxv
+
+      CONTAINS
+
       subroutine ioxv( task, cell, vcell,
      .                 na, isa, iza, xa, va, found )
 c *******************************************************************
@@ -116,7 +124,10 @@ C Write data on file
 C If data has been read in then broadcast the values to all Nodes
 #ifdef MPI
       call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+#endif
       if (found.and.(task.eq.'read' .or. task.eq.'READ')) then
+         xv_file_read = .true.
+#ifdef MPI
         call MPI_Bcast(na,1,MPI_integer,0,MPI_Comm_World,MPIerror)
         call MPI_Bcast(cell(1,1),9,MPI_double_precision,0,
      .    MPI_Comm_World,MPIerror)
@@ -128,8 +139,10 @@ C If data has been read in then broadcast the values to all Nodes
      .    MPI_Comm_World,MPIerror)
         call MPI_Bcast(va(1,1),3*na,MPI_double_precision,0,
      .    MPI_Comm_World,MPIerror)
-      endif
 #endif
+      endif
 
-      return
-      end
+      end subroutine ioxv
+
+      end module m_ioxv
+

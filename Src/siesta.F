@@ -67,8 +67,10 @@ C  Modules
       use zmatrix,      only: write_Zmatrix
       use m_optim,      only:optim
       use m_redata,     only: redata
+      use m_ioxv,       only: ioxv 
 
       use m_smearing, only: temp
+      use m_dynamics, only: nose, verlet2, npr, anneal, pr
 
       implicit none
 
@@ -175,13 +177,13 @@ C  Modules
       character(len=label_length+5) :: paste
 
       external
-     .  anneal, cgvc, cgvc_zmatrix, fixed,
+     .  cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, ioxv, iozm,
+     .  iodm, iozm,
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
-     .  nose, npr, paste, pulayx, 
+     .  paste, pulayx, 
      .  reinit, shaper, spnvec, 
-     .  timer, verlet2, volcel, xijorb, memory,
+     .  timer, volcel, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
 
       type(parsed_line), pointer  :: p

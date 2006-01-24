@@ -2,6 +2,8 @@
 !
 !     Termination and messaging routines, MPI aware
 !
+      logical, save, public   :: stop_flag = .false.
+
       public :: die, bye, message
 
       CONTAINS

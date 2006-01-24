@@ -1,3 +1,20 @@
+      module m_dynamics
+
+      use precision
+      use parallel,   only : Node
+      use m_ioxv,     only : xv_file_read
+      use sys,        only : die, stop_flag
+      use atomlist,   only : iza
+      use units,      only : Ang, eV
+      use m_mpi_utils, only : broadcast
+
+      implicit none
+
+      public :: npr, nose, verlet2, pr, anneal
+      private
+
+      CONTAINS
+
       subroutine npr(istep,iunit,natoms,fa,stress,tp,tt,dt,
      .               ma,mn,mpr,ntcon,va,xa,hdot,h,kin,kn,kpr,vn,vpr,
      .               temp,pressin)
@@ -66,10 +83,6 @@ C real*8 temp           : Instantaneous system temperature
 C real*8 pressin        : Instantaneous system pressure
 C *****************************************************************************
 C
-C  Modules
-C
-      use precision
-      use parallel,   only : Node
 
       implicit none
 
@@ -87,8 +100,8 @@ C Internal variables ...........................................................
      .  ct,i,ia,info,j,k
 
       real(dp)
-     .  Ang,aux1(3,3),aux2(3,3),diff,dt2,dtby2,
-     .  eV,f(3,3),fi(3,3),fovermp,
+     .  aux1(3,3),aux2(3,3),diff,dt2,dtby2,
+     .  f(3,3),fi(3,3),fovermp,
      .  g(3,3),gdot(3,3),gi(3,3),
      .  hi(3,3),hnew(3,3),hlast(3,3),hold(3,3),hs(3),
      .  pgas,press(3,3),pressin,
@@ -136,9 +149,6 @@ C Define constants and conversion factors ......................................
       dtby2 = dt/2.0d0
       twodt = dt*2.0d0
       tol   = 1.0d-12
-
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
 
       if (iunit .eq. 1) then
 C  convert target temperature into target kinetic energy
@@ -494,8 +504,7 @@ C Deallocate local memory
       call memory('D','D',size(suncdot),'npr')
       deallocate(suncdot)
 
-      return
-      end
+      end subroutine npr
     
       subroutine pr(istep,iunit,iquench,natoms,fa,stress,tp,dt,
      .               ma,mpr,ntcon,va,xa,hdot,h,kin,kpr,vpr,
@@ -563,11 +572,6 @@ C real*8 vpr            : Potential energyy of P-R variables
 C real*8 temp           : Instantaneous system temperature 
 C real*8 pressin        : Instantaneous system pressure 
 C *****************************************************************************
-C
-C  Modules
-C
-      use precision
-      use parallel,   only : Node
 
       implicit none
 
@@ -586,7 +590,7 @@ C Internal variables ...........................................................
 
       real(dp)
      .  a1,a2,Ang,aux1(3,3),aux2(3,3),diff,dot,dt2,dtby2,
-     .  eV,f(3,3),fi(3,3),fovermp,
+     .  f(3,3),fi(3,3),fovermp,
      .  g(3,3),gdot(3,3),gi(3,3),
      .  hi(3,3),hnew(3,3),hlast(3,3),hold(3,3),hs(3),
      .  pgas,press(3,3),pressin,
@@ -632,8 +636,6 @@ C Define constants and conversion factors ......................................
       dtby2 = dt/2.0d0
       twodt = dt*2.0d0
       tol   = 1.0d-12
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
 
       if (iunit .eq. 1) then
 C  convert F/m in (eV/Angstrom)/amu  to  Angstrom/fs**2
@@ -1009,8 +1011,7 @@ C Deallocate local memory
       call memory('D','D',size(suncdot),'pr')
       deallocate(suncdot)
 
-      return
-      end
+      end subroutine pr
     
       subroutine nose(istep,iunit,natoms,fa,tt,dt,
      .                ma,mn,ntcon,va,xa,kin,kn,vn,
@@ -1062,12 +1063,6 @@ C real*8 vn             : Potential energyy of Nose var
 C real*8 temp           : Instantaneous system temperature 
 C *****************************************************************************
 C
-C  Modules
-C
-      use precision
-      use parallel,   only : Node
-
-      implicit none
 
       integer 
      .   natoms,ntcon,istep,iunit
@@ -1084,10 +1079,13 @@ C Internal variables .........................................................
       integer
      .  ct,i,ia
 
+      integer  :: iacc, dummy_iza, old_natoms
+      real(dp) :: old_dt
+
       save x,xold
 
       real(dp)
-     .  Ang,diff,dt2,dtby2,eV,fact,fovermp,
+     .  diff,dt2,dtby2,fact,fovermp,
      .  tekin,temp,tol,twodt,
      .  x,xdot,xlast,xnew,xold
 
@@ -1125,9 +1123,6 @@ C Define constants and conversion factors .....................................
       twodt = dt*2.0d0
       tol   = 1.0d-12
 
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
-
       if (iunit .eq. 1) then
 C  convert target ionic temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in eV if Temp is in Kelvin)
@@ -1143,15 +1138,83 @@ C  convert F/m in (Ry/Bohr)/amu  to  Bohr/fs**2
       endif
 C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
-        x = 0.0d0
-        xold = 0.0d0
-        do ia = 1,natoms
-          do i = 1,3
-            xaold(i,ia) = xa(i,ia) - dt * va(i,ia)
-     .                + (dt2/2.0d0) * fovermp * fa(i,ia) / ma(ia)
-          enddo
-        enddo
-      endif
+
+         if (.not. xv_file_read) then
+
+C     Compute old positions in terms of current positions and velocities
+C     if the time step is the first of the simulation 
+!     and we start from x(t), v(t) *at the same time*.
+!     (e.g., when the velocities are constructed from
+!      the Boltzmann distribution).
+!     In this case the algorithm works out well.
+!     Nose variables are set to zero, as there is currently no
+!     better way to initialize them...
+
+            x = 0.0d0
+            xold = 0.0d0
+            do ia = 1,natoms
+               do i = 1,3
+                  xaold(i,ia) = xa(i,ia) - dt * va(i,ia)
+     .                 + (dt2/2.0d0) * fovermp * fa(i,ia) / ma(ia)
+               enddo
+            enddo
+
+         else
+
+!         For restarts, we need information about the old 
+!         positions, and the Nose variables
+!
+           if (Node .eq. 0) then
+            call io_assign(iacc)
+            open(unit=iacc,file="NOSE_RESTART", form="formatted",
+     $           status="old", action="read", position="rewind")
+            read(iacc,*) old_natoms, old_dt
+            read(iacc,*) x, xold
+            if (old_natoms .ne. natoms) then
+               write(6,"(a)") "Wrong number of atoms in NOSE_RESTART"
+               stop_flag = .true.
+            else
+               do ia = 1, natoms
+                  read(iacc,*) dummy_iza, (xaold(i,ia),i=1,3) ! old positions
+                  if (dummy_iza .ne. iza(ia)) then
+                     write(6,"(a)")
+     $                     "Wrong species number in NOSE_RESTART"
+                     stop_flag = .true.
+                     exit  ! loop
+                  endif
+               enddo
+            endif
+            call io_close(iacc)
+            if (.not. stop_flag) then
+               write(6,*)
+     $         "MD restart: Read old positions and Nose variables",
+     $              " from NOSE_RESTART"
+               if (abs(old_dt - dt) .gt. 1.0d-8) then
+                  write(6,*) "**WARNING: Timestep has changed. Old: ",
+     $                 old_dt, " New: ", dt
+                  write(6,*) "**WARNING: Approximating old positions."
+                  ! First order, using the positions and velocities 
+                  ! at t-old_dt (positions from NOSE_RESTART, velocities
+                  !              from XV file)
+                  xaold(1:3,1:natoms) = xaold(1:3,1:natoms) -
+     $                              (dt-old_dt) * va(1:3,1:natoms)
+               endif  ! dt /= old_dt
+            endif     ! still processing
+
+            endif     ! IONode
+            
+            call broadcast(stop_flag)
+            if (stop_flag) then
+               stop_flag = .false.
+               call die()  ! Proper way to stop MPI...
+            endif
+
+            call broadcast(x)
+            call broadcast(xold)
+            call broadcast(xaold(1:3,1:natoms))
+
+         endif     ! xv_file_read
+      endif        ! istep == 1
 C ..................
 
 C Compute uncorrected next positions .....................................
@@ -1213,12 +1276,9 @@ C ...................
 
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
-      do i = 1,3
-        do ia = 1,natoms
-          xaold(i,ia) = xa(i,ia)
-          xa(i,ia) = xanew(i,ia)
-        enddo
-      enddo
+
+      xaold(1:3,1:natoms) = xa(1:3,1:natoms)
+      xa(1:3,1:natoms) = xanew(1:3,1:natoms)
 
       xold = x
       x = xnew
@@ -1236,11 +1296,25 @@ C Instantaneous temperature (Kelvin)
       else
         temp = kin / (0.5d0 * (3.d0 * natoms - ct) * 8.617d-5 * eV)
       endif
- 
+
+      if (Node .eq. 0) then
+!
+!       Save (now old) positions and nose variables to NOSE_RESTART
+!
+         call io_assign(iacc)
+         open(unit=iacc,file="NOSE_RESTART", form="formatted",
+     $        status="unknown", action= "write", position="rewind")
+         write(iacc,*) natoms, dt
+         write(iacc,*) x, xold
+         do ia = 1, natoms
+            write(iacc,*) iza(ia), (xaold(i,ia),i=1,3) ! forces
+         enddo
+         call io_close(iacc)
+      endif
+
 C .....................
 
-      return
-      end
+      end subroutine nose
 
       subroutine anneal(istep,iunit,ianneal,taurelax,bulkm,
      .               natoms,fa,stress,tp,tt,dt,
@@ -1306,14 +1380,7 @@ C real*8 kin            : Kinetic energy of the atomic system
 C real*8 temp           : Instantaneous system temperature 
 C real*8 pressin        : Instantaneous system pressure 
 C *****************************************************************************
-C
-C  Modules
-C
-      use precision
-      use parallel,   only : Node
-      use sys,        only : die
 
-      implicit none
 
       integer 
      .   natoms,ntcon,istep,ianneal,iunit
@@ -1329,7 +1396,7 @@ C Internal variables ...........................................................
      .  ct,i,ia,info,j,k
 
       real(dp)
-     .  Ang,dt2,eV,fovermp,hi(3,3),hs(3),
+     .  dt2,fovermp,hi(3,3),hs(3),
      .  pgas,press(3,3),pressin,rfac,rfac2,
      .  tekin,temp,twodt,vol,volcel
 
@@ -1369,9 +1436,6 @@ C Allocate local memory
 C Define constants and conversion factors .......................................
       dt2   = dt**2
       twodt = dt*2.0d0
-
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
 
       if (iunit .eq. 1) then
 C  convert target ionic temperature into target kinetic energy
@@ -1606,7 +1670,7 @@ C Deallocate local memory
 
 !!!      taurelax = taurelax - dt
       return
-      end
+      end subroutine anneal
 
 
       subroutine verlet1(istep,iunit,iquench,natoms,fa,dt,ma,ntcon,va,
@@ -1651,13 +1715,6 @@ C real*8 kin            : Kinetic energy at current time step
 C real*8 temp           : Instantaneous system temperature 
 C *****************************************************************************
 C
-C  Modules
-C
-      use precision
-      use parallel,   only : Node
-
-      implicit none
-
       integer 
      .   natoms,ntcon,istep,iquench,iunit
 
@@ -1674,7 +1731,7 @@ C Internal variables ..........................................................
      .  ct,i,ia
 
       real(dp)
-     .  Ang,dot,dt2,eV,fovermp,temp,twodt
+     .  dot,dt2,fovermp,temp,twodt
 
       real(dp), dimension(:,:), allocatable, save ::
      .  xanew
@@ -1703,9 +1760,6 @@ C Allocate local memory
 C Define constants and conversion factors .....................................
       dt2   = dt**2
       twodt = dt*2.0d0
-
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
 
       if (iunit .eq. 1) then
 C  convert F/m in (eV/Amstrong)/amu  to  Amstrong/fs**2
@@ -1794,8 +1848,7 @@ C Deallocate local memory
       call memory('D','D',size(xanew),'verlet1')
       deallocate(xanew)
 
-      return
-      end
+      end subroutine verlet1
     
       subroutine verlet2(istep,iunit,iquench,natoms,fa,dt,ma,ntcon,va,
      .                   xa,kin,temp)
@@ -1838,13 +1891,6 @@ C ************************* OUTOPUT *******************************************
 C real*8 kin            : Kinetic energy at current time step 
 C real*8 temp           : Instantaneous system temperature
 C *****************************************************************************
-C
-C  Modules
-C
-      use precision
-      use parallel,   only : Node
-
-      implicit none
 
       integer 
      .   natoms,ntcon,istep,iquench,iunit
@@ -1861,8 +1907,11 @@ C Internal variables ..........................................................
       integer
      .  ct,i,ia
 
+      integer :: old_natoms, iacc, dummy_iza
+      real(dp) :: old_dt
+
       real(dp)
-     .  Ang,dot,dt2,dtby2,eV,fovermp,temp
+     .  dot,dt2,dtby2,fovermp,temp
 
       real(dp), dimension(:,:), allocatable, save ::
      .  accold,vold
@@ -1892,9 +1941,6 @@ C Define constants and conversion factors .....................................
       dt2   = dt**2
       dtby2 = dt/2.0d0
 
-      Ang = 1.d0 / 0.529177d0
-      eV  = 1.d0 / 13.60580d0
-
       if (iunit .eq. 1) then
 C  convert F/m in (eV/Amstrong)/amu  to  Amstrong/fs**2
         fovermp = 0.009579038
@@ -1904,25 +1950,105 @@ C  convert F/m in (Ry/Bohr)/amu  to  Bohr/fs**2
       endif
 C ........................
 
-C Compute old accelerations and velocities 
-C  if the time step is the first of the simulation ...........................
+      
       if (istep .eq. 1) then
-        do ia = 1,natoms
-          do i = 1,3
-            accold(i,ia) = fovermp * fa(i,ia) / ma(ia)
-            vold(i,ia) = va(i,ia) - dt * accold(i,ia)
-          enddo
-        enddo
-      endif
-C ....................
 
-C Compute velocities at current time step ...................................
-      do ia = 1,natoms
-        do i = 1,3
-          va(i,ia) = vold(i,ia) + dtby2 
-     .               * (accold(i,ia) + fovermp * fa(i,ia) / ma(ia))
-        enddo
-      enddo
+         if (.not. xv_file_read) then
+
+C     Compute old accelerations and velocities 
+C     if the time step is the first of the simulation ...........................
+!     and we start from x(t), v(t) *at the same time*.
+!     (e.g., when the velocities are constructed from
+!      the Boltzmann distribution).
+!     In this case the algorithm works out well.
+
+            do ia = 1,natoms
+               do i = 1,3
+                  accold(i,ia) = fovermp * fa(i,ia) / ma(ia)
+                  vold(i,ia) = va(i,ia) - dt * accold(i,ia)
+               enddo
+            enddo
+
+        else
+
+!         For restarts, we need information about the old 
+!         forces, in order to match the velocities
+!         correctly (the velocities in the XV file are
+!         one time step behind, so they are already the
+!         "old" velocities).
+!
+          if (Node .eq. 0) then
+           call io_assign(iacc)
+           open(unit=iacc,file="VERLET_FORCES", form="formatted",
+     $          status="old", action="read", position="rewind")
+           read(iacc,*) old_natoms, old_dt
+           if (old_natoms .ne. natoms) then
+               write(6,"(a)") "Wrong number of atoms in VERLET_FORCES"
+               stop_flag = .true.
+           else
+              do ia = 1, natoms
+                 read(iacc,*) dummy_iza, (accold(i,ia),i=1,3) ! forces
+                 if (dummy_iza .ne. iza(ia)) then
+                    write(6,"(a)")
+     $                   "Wrong species number in VERLET_FORCES"
+                    stop_flag = .true.
+                    exit        ! loop
+                 endif
+                 accold(:,ia) = fovermp * accold(:,ia) / ma(ia)
+                 vold(:,ia)  = va(:,ia)
+              enddo
+           endif
+           call io_close(iacc)
+           if (.not. stop_flag) then
+            write(6,*) "MD restart: Read old forces from VERLET_FORCES"
+            if (abs(old_dt - dt) .gt. 1.0d-8) then
+               write(6,*) "Timestep has changed. Old: ", old_dt,
+     $                     " New: ", dt
+            endif
+           endif ! still processing
+
+          endif             ! IONode
+
+          call broadcast(stop_flag)
+          if (stop_flag) then
+             stop_flag = .false.
+             call die()         ! Proper way to stop MPI...
+          endif
+
+          call broadcast(accold(1:3,1:natoms))
+          call broadcast(vold(1:3,1:natoms))
+
+       endif      ! XV file read
+
+      endif    ! first step
+
+C ....................
+C Compute velocities at current time step, 
+! using the previous step's velocities and the previous and current forces.
+
+      if ((istep .eq. 1) .and. xv_file_read) then
+!
+!        Use old time step in case it is different, only in 
+!        the first step.
+!
+         do ia = 1,natoms
+            do i = 1,3
+               va(i,ia) = vold(i,ia) + 0.5d0 * old_dt
+     .              * (accold(i,ia) + fovermp * fa(i,ia) / ma(ia))
+            enddo
+         enddo
+         
+      else
+!
+!        Current timestep.
+!
+         do ia = 1,natoms
+            do i = 1,3
+               va(i,ia) = vold(i,ia) + dtby2 
+     .              * (accold(i,ia) + fovermp * fa(i,ia) / ma(ia))
+            enddo
+         enddo
+      endif    
 
 C Quench option if iquench = 0 ..............................................
       if (iquench .eq. 1) then
@@ -1972,8 +2098,23 @@ C Instantaneous temperature (Kelvin)
         temp = 2.0d0*kin/(3.0d0*natoms-ct)/8.617d-5/eV
       endif
 
+!
+!       Save (now old) forces to VERLET_FORCES
+!
+      if (Node .eq. 0) then
+         call io_assign(iacc)
+         open(unit=iacc,file="VERLET_FORCES", form="formatted",
+     $        status="unknown", action= "write", position="rewind")
+         write(iacc,*) natoms, dt
+         do ia = 1, natoms
+            write(iacc,*) iza(ia), (fa(i,ia),i=1,3) ! forces
+         enddo
+         call io_close(iacc)
+      endif
 C .....................
 
-      return
-      end
+      end subroutine verlet2
+
+      end module m_dynamics
+
     

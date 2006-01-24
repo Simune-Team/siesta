@@ -52,7 +52,7 @@
 !------------------------------------------------------------
       subroutine broadcast_vv_dp(a)
       real(dp), dimension(:,:), intent(inout) :: a
-
+  !! Only for contiguous array sections !!
 
 #ifdef MPI
            call MPI_Bcast(a(1,1),size(a),MPI_double_precision,0,

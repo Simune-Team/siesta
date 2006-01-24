@@ -20,7 +20,7 @@
 #
 tests= h2o h2o_dos h2o_orderN floating bessel si mgco3 \
        var_cell constant_volume batio3 fe fe_broyden sih si64 \
-       h2oZ sih_op_broyden h2o_op_broyden zmatrix
+       h2oZ sih_op_broyden h2o_op_broyden zmatrix md
 #
 all: 
 	@for i in ${tests} ; do \
