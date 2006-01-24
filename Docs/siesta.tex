@@ -2599,6 +2599,44 @@ to create small changes in the polarization.
 {\it Use:} Only compatible with {\bf SolutionMethod} = diagon.\\
 {\it Default value:} Empty. No calculation performed.
 
+\item[{\bf BornCharge}] ({\it logical}):\index{Born effective charges}
+\index{BornCharge@{\bf BornCharge}}
+If true, the Born effective charge tensor is calculated for each atom
+by finite differences, by calculating the change in electric polarization 
+(see {\bf PolarizationGrids}) induced by the small displacements generated 
+for the force constants calculation (see {\bf MD.TypeOfRun} = {\tt FC}):
+\begin{equation}\label {eq:effective_charge}
+Z^*_{i,\alpha,\beta}=\frac{\Omega_0}{e} \left. {\frac{\partial{P_\alpha}}
+{\partial{u_{i,\beta}}}}\right|_{q=0}
+\end{equation}
+where e is the charge of an electron and $\Omega_0$ is the unit cell volume.
+
+To calculate the Born charges it is necessary to specify both the Born 
+charge flag and the mesh used to calculate the polarization, for example:
+\begin{verbatim}
+%block PolarizationGrids
+7  3  3
+3  7  3
+3  3  7
+%endblock PolarizationGrids
+BornCharge True
+\end{verbatim}
+
+The Born effective charge matrix is then written to the file 
+{\it SystemLabel}.{\tt BC}.
+
+The method by which the polarization is calculated may introduce an arbitrary 
+phase (poalrization quantum), which in general is far larger than the change 
+in polarization which results from the atomic displacement. It is removed 
+during the calculation of the Born effective charge tensor. 
+
+The Born effective charges allow the calculation of LO-TO splittings and 
+infrared activities. The version of the Vibra utility code in which these
+magnitudes are calculated is not yet distributed with SIESTA, but can be 
+obtained form Tom Archer (archert@tcd.ie).
+
+{\it Use:} Only used if {\bf MD.TypeOfRun} is {\tt FC}.
+{\it Default value:} {\tt false}
 
 \item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
 optical absorption} 
@@ -3263,8 +3301,10 @@ temperature and/or pressure (see variable MD.AnnealOption below)
 \item {\tt FC}  (Compute force constants matrix\index{Force Constants
 Matrix} for phonon
 calculations. The output can be analyzed to extract phonon
-frequencies and vectors with the VIBRA/index{VIBRA} package in the Util/
-directory)
+frequencies and vectors with the VIBRA\index{VIBRA} package in the Util/
+directory. For computing the Born effective charges together with the
+force constants, see {\bf BornCharge}
+\index{BornCharge@{\bf BornCharge}})
 \item {\tt Phonon} (Compute forces for a specified set of atomic
 displacements. These are choosen with the help of the program {\sc
 Phonon} \footnote{{\sc Phonon} is \copyright\ copyright by Krzysztof

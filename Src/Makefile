@@ -66,7 +66,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
         initparallel.o setspatial.o setatomnodes.o uncell.o \
-        cart2frac.o 
+        cart2frac.o obc.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a

@@ -157,7 +157,7 @@ C  Modules
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
      .  harrisfun, muldeb, eggbox_block, use_struct_file,
-     $  require_energy_convergence, broyden_optim, struct_only
+     $  require_energy_convergence, broyden_optim, struct_only, bornz
 
       logical  :: printeigen = .false.       ! AG: Initialize
 
@@ -380,6 +380,8 @@ C Find some switches ..................................................
       call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
       call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance',
      .                            1.0_dp, 'Bohr' )
+      call fdf_global_get(bornz,  'BornCharge'   , .false.)
+      if (idyn.ne.6) bornz = .false.
 
 C Read Z-matrix coordinates and forces from file
       if (lUseZmatrix) then
@@ -1648,7 +1650,8 @@ C Mulliken population analysis .......................................
      .               lasto, iaorb, iphorb )
 
 C Save the last coordinates for which the density matrix has been calculated
-      if (istep.eq.fincoor) then
+C or at every coor step if calculating the BECs (the polarisation uses xalast)
+      if ( (istep.eq.fincoor) .or. bornz ) then
         xalast(1:3,1:na_s)=xa(1:3,1:na_s)
       endif
 
@@ -1734,7 +1737,7 @@ C Move atoms ..........................................................
         endif
       endif
 
-C Save last atomic positions and velocities (before moving atoms for consist)
+C Save last atomic positions and velocities (it should be before moving atoms!)
       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
       if (lUseZmatrix)
      .  call iozm('write',ucell,vcell,xa,foundzm)
@@ -1768,6 +1771,48 @@ C Accumulate coor in Xmol file for animation .........................
       if (writpx.and.IOnode) 
      .  call pixmol(iza, xa, na_u, slabel, lastst)
 C ...................
+
+C******************Born charge calculation***************************
+      if (bornz) then
+         if (mod(istep,2) .eq. 0 ) then
+            if (nkpol.lt.1) then
+               write(6,'(/,a,f12.6)')
+     .       'siesta: specify polarization grid for BC calculation'
+               write(6,'(a,f12.6)')
+     .       'siesta: The Born charge matrix will not be calculated'
+               goto 80
+            endif
+            write(6,'(/,a,f12.6)')
+     .   'siesta: Calculating polarization. '
+
+c     find total population of spin up and down
+            if (nspin .ge. 2) then
+               do ispin = 1,nspin
+                  qspin(ispin) = 0.0_dp
+                  do io = 1,no_l
+                     do j = 1,numh(io)
+                        ind = listhptr(io)+j
+                        qspin(ispin)=qspin(ispin)
+     .                       +Dscf(ind,ispin)*S(ind)
+                     enddo
+                  enddo
+               enddo
+            endif
+            if (nkpol.gt.0) then
+               call KSV_pol(na_u, na_s, xalast, rmaxo, scell, ucell,
+     .              no_u, no_l, no_s, nspin, qspin, maxna,
+     .              maxnh, nkpol, numh, listhptr, listh,
+     .              H, S, H0, xijo, indxuo, isa, iphorb,
+     .              iaorb, lasto, jna, xij, r2ij,shape,
+     .              nkpol,kpol,wgthpol, polR, polxyz)
+            endif
+            if (nkpol.gt.0.and.IOnode) then
+               call obc( polxyz, polR, ucell, dx, nspin, node )
+            endif
+         endif
+      endif
+   80 continue
+C*************End born charge calculation******************
 
    60 continue
 C Output memory use at the end of this geometry step
@@ -1992,7 +2037,7 @@ C Print electric dipole
 C Calculation of the bulk polarization using the Berry phase
 C formulas by King-Smith and Vanderbilt
 C Attention H0 is used as an auxiliary array
-      if (nkpol.gt.0) then
+      if (nkpol.gt.0 .and. .not.bornz) then
         call KSV_pol(na_u, na_s, xalast, rmaxo, scell, ucell,
      .               no_u, no_l, no_s, nspin, qspin, maxna, 
      .               maxnh, nkpol, numh, listhptr, listh, 
