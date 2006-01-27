@@ -10,6 +10,126 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 
+2006-01-27 17:12:51 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-18
+
+    Summary:
+      Added rPBE and revPBE xc functionals to the ATM ps generation program
+    Revision:
+      siesta-devel--reference--1.5--patch-18
+
+    * Code for rPBE taken from Siesta xc.f previous to the 
+    hybrid-DFT-related architectural changes by J. Gale.
+    
+    * revPBE is just PBE with a parameter change.
+    
+    * Version bumped up to 3.2.2. 
+    
+    * Manual updated (a ps version is no longer in the source tree. 
+    Users are advised to generate it or to download it).
+    
+    
+
+    new files:
+     Pseudo/atom/.arch-ids/revpbexc.f.id
+     Pseudo/atom/.arch-ids/rpbexc.f.id
+     Pseudo/atom/Docs/.arch-ids/README.id Pseudo/atom/Docs/README
+     Pseudo/atom/revpbexc.f Pseudo/atom/rpbexc.f
+
+    removed files:
+     Pseudo/atom/Docs/.arch-ids/atom_2up.ps.id
+     Pseudo/atom/Docs/atom_2up.ps
+
+    modified files:
+     Pseudo/atom/ChangeLog Pseudo/atom/Docs/atom.tex
+     Pseudo/atom/Tutorial/000README Pseudo/atom/ggaxc.f
+     Pseudo/atom/header.f Pseudo/atom/input.f Pseudo/atom/makefile
+     Pseudo/atom/velect.f Pseudo/atom/version.h
+     Pseudo/atom/wrapup.f Pseudo/atom/xc.f
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-15
+
+
+2006-01-27 17:09:47 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-17
+
+    Summary:
+      Clean restarts for Parrinello-Rahman and Nose-PR MD (interim fix)
+    Revision:
+      siesta-devel--reference--1.5--patch-17
+
+    *   Added md_pr and md_npr tests for PR and NPR MD.
+    
+    *   Streamlined 'pr' and 'npr' in dynamics.f with vector notation, and
+        implemented an ad-hoc restarting mechanism using files to hold
+        the 'old' coordinates and cell vectors (and Nose variables in 'npr').
+    
+        Routine 'anneal' is left unchanged for now.
+    
+
+    new files:
+     Src/Tests/Reference/.arch-ids/md_npr.out.id
+     Src/Tests/Reference/.arch-ids/md_pr.out.id
+     Src/Tests/Reference/md_npr.out Src/Tests/Reference/md_pr.out
+     Src/Tests/md_npr/.arch-ids/=id
+     Src/Tests/md_npr/.arch-ids/makefile.id
+     Src/Tests/md_npr/.arch-ids/md_npr.fdf.id
+     Src/Tests/md_npr/.arch-ids/md_npr.pseudos.id
+     Src/Tests/md_npr/makefile Src/Tests/md_npr/md_npr.fdf
+     Src/Tests/md_npr/md_npr.pseudos Src/Tests/md_pr/.arch-ids/=id
+     Src/Tests/md_pr/.arch-ids/makefile.id
+     Src/Tests/md_pr/.arch-ids/md_pr.fdf.id
+     Src/Tests/md_pr/.arch-ids/md_pr.pseudos.id
+     Src/Tests/md_pr/makefile Src/Tests/md_pr/md_pr.fdf
+     Src/Tests/md_pr/md_pr.pseudos
+
+    modified files:
+     Src/Makefile Src/dynamics.f
+
+    new directories:
+     Src/Tests/md_npr Src/Tests/md_npr/.arch-ids Src/Tests/md_pr
+     Src/Tests/md_pr/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-6
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-7
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-8
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-9
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-10
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-11
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-12
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-13
+
+
+2006-01-27 17:00:35 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-16
+
+    Summary:
+      Bug fixes: ang in dynamics, gen-basis compilation, D&C in Fe test
+    Revision:
+      siesta-devel--reference--1.5--patch-16
+
+    *   Remove duplicate variable ang in dynamics@pr
+    *   Add m_walltime to gen-basis obj list
+    *   Move function call with side effects outside if stmt in chemical.f
+    *   Import node from parallel in timer
+    
+    *   Do not use Divide and Conquer in Fe test (to maintain *some*
+        continuity in the test results -- but the test itself is very
+        numerically unstable...)
+
+    modified files:
+     Src/Makefile Src/Tests/fe/fe.fdf Src/chemical.f Src/dynamics.f
+     Src/timer.F version.info
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--base-0
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-1
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-2
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-3
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-4
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-5
+
+
+
 2006-01-24 16:48:19 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-14
 
     Summary:
