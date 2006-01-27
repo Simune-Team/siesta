@@ -234,7 +234,7 @@ GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o recipes.o parallel.o \
 	  paste.o ionew.o \
           basis_specs.o atom.o periodic_table.o\
           pseudopotential.o dot.o xc.o  arw.o  \
-          sys.o timer.o  xml.o $(SYSOBJ)
+          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
 # precision must be the first one here...
 gen-basis.o: precision.o atom.o basis_types.o basis_specs.o basis_io.o $(FDF)
 gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \

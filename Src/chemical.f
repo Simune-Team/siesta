@@ -80,7 +80,7 @@
 
       character(len=20) label
       integer z
-      logical floating, bessel
+      logical floating, bessel, found
 
       nsp = fdf_integer('Number_of_species',0)
       if (nsp.eq.0) call die("No species found!!!")
@@ -90,7 +90,8 @@
       chemical_list%no_of_species = nsp
      
       nullify(bp)
-      if (.not. fdf_block('Chemical_species_label',bp) )
+      found = fdf_block('Chemical_species_label',bp)
+      if (.not. found )
      $     call die("Block Chemical_species_label does not exist.")
 
       ns_read = 0

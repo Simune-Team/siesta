@@ -589,7 +589,7 @@ C Internal variables ...........................................................
      .  ct,i,info,ia,j,k
 
       real(dp)
-     .  a1,a2,Ang,aux1(3,3),aux2(3,3),diff,dot,dt2,dtby2,
+     .  a1,a2,aux1(3,3),aux2(3,3),diff,dot,dt2,dtby2,
      .  f(3,3),fi(3,3),fovermp,
      .  g(3,3),gdot(3,3),gi(3,3),
      .  hi(3,3),hnew(3,3),hlast(3,3),hold(3,3),hs(3),

@@ -179,6 +179,7 @@ C  J.SOLER (JSOLER AT EMDUAM11) DEC/90
 
       use precision
       use m_walltime
+      use parallel, only: node
 
       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
 

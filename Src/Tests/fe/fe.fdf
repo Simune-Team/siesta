@@ -68,6 +68,7 @@ DM.Tolerance          1.d-3         # Tolerance in maximum difference
 DM.UseSaveDM          true          # to use continuation files
 DM.NumberPulay         3
 
+Diag.DivideAndConquer .false.
 SolutionMethod        diagon        # OrderN or Diagon
 ElectronicTemperature  25 meV       # Temp. for Fermi smearing
 
