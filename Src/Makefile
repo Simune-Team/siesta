@@ -132,6 +132,7 @@ overfsm.o shaper.o                                : atmfuncs.o
 atomlist.o                                        : atmfuncs.o 
 kinefsm.o naefs.o nlefsm.o overfsm.o              : atmfuncs.o
 siesta.o          : atmfuncs.o phonon.o ordern.o hsparse.o iopipes.o files.o
+siesta.o	  : dynamics.o
 redata.o          : phonon.o m_fdf_global.o files.o
 dfscf.o hsparse.o : atmfuncs.o listsc.o
 rhoofd.o rhoofdsp.o vmat.o vmatsp.o  : listsc.o
