@@ -10,7 +10,8 @@
 FC= f77
 FFLAGS= -O
 LDFLAGS=
-AUX_OBJS= auxf95.o
+AUX_OBJS= auxf95.o   # Change if you do not have
+#                    Â#a fortran-90 compiler
 #----------------------------------------------$$$$$
 #
 #
@@ -20,7 +21,7 @@ XC_OBJS= xc.o
 # old Soler-Balbas XC routines.
 #
 #XC_OBJS= atomxc.o  ldaxc.o ggaxc.o pbexc.o pw92xc.o pzxc.o \
-#        pw92c.o exchng.o
+#        pw92c.o exchng.o ## Not really old: rpbexc.o revpbexc.o
 #
 MAIN_OBJS= atm.o  nucl_z.o   difnrl.o   difrel.o   dmixp.o   dsolv1.o   \
         pseudo.o  wf.o  hsc.o  excorr.o \

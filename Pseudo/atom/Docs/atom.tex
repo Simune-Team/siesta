@@ -50,7 +50,7 @@
 \par\vspace{3cm}
 \hrulefill
 \par\vspace{3cm}
-{\Large {\bf Version 3.2, July 2002}}
+{\Large {\bf Version 3.2.2, January 2006}}
 \par\vspace{2cm}
 \hrulefill
 
@@ -135,6 +135,10 @@ M. C. Payne, M. P. Teter, D. C. Allan, T. A. Arias and
 J. D. Joannopoulos, ``Iterative minimization techniques for ab initio
 total-energy calculations: molecular dynamics and conjugate
 gradients'', Rev. Mod. Phys. 64, 1045, (1992)
+
+Also, the book by Richard Martin
+``Electronic Structure: Basic Theory and Practical Methods''
+(Cambridge University Press) has a chapter on pseudopotentials.
 
 \item Use in {\sc SIESTA}:
 
@@ -760,9 +764,13 @@ The file itself is:
           (Gunnarson-Lundqvist), and {\tt bh} (von Barth-Hedin). The
           ``best'' LDA choice should be {\tt ca}.  It is also possible
           to use a gradient-corrected functional: {\tt pb} indicates use
-          of the GGA scheme by Perdew, Burke, and Ernzerhof (PRL 77,
-          3865 (1996), and {\tt bl} selects the BLYP (Becke-Lee-Yang-Parr)
-          GGA scheme (see source file {\tt xc.f} for more details)
+          of the PBE scheme by Perdew, Burke, and Ernzerhof (PRL 77,
+          3865 (1996)),{\tt rp} indicates the RPBE
+          scheme by Hammer, Hansen, and Norskov, (PRB 59, 7413 (1999)),
+          {\tt rv} indicates the revPBE
+          scheme by Zhang and Yang, (PRL 80,890(1998)), 
+          and {\tt bl} selects the BLYP (Becke-Lee-Yang-Parr)
+          scheme (see source file {\tt xc.f} for more details).
 	  By default, the exchange-correlation energy and potential
 	  are computed using the Soler-Balb\'as package, except for
 	  the {\tt wi}, {\tt hl}, {\tt gl}, and {\tt bh} flavors. 

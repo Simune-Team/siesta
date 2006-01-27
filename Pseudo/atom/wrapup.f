@@ -415,7 +415,7 @@ c
 c
 c  Find the jobname and date.
 c
-      ray(1) = 'ATM3'
+      ray(1) = 'ATM 3.2.2'
       call cal_date(ray(2))
 c  
       read(pot_id,'(4a10)') (ray(i),i=3,6)

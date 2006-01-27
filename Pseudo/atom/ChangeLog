@@ -1,3 +1,9 @@
+2006-01-27    <wdpgaara@lcmxaa.lc.ehu.es>
+
+	* Added RPBE and revPBE exchange and correlation functionals.
+          Updated manual. Put complete version (now 3.2.2) in header
+	  and wrapup routines.
+
 2002-09  Alberto Garcia  <wdpgaara@lcpxlz.lc.ehu.es>
 
 	* Imported xc.f file from Siesta distribution. It fixes some

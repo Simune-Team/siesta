@@ -205,7 +205,10 @@ c
 c
          r(1) = 0.0d0
 
-         is_gga = (leqi(icorr,'pb') .or. leqi(icorr,'bl'))
+         is_gga = (leqi(icorr,'pb')        ! PBE
+     $              .or. leqi(icorr,'bl')  ! BLYP
+     $              .or. leqi(icorr,'rp')  ! RPBE
+     $              .or. leqi(icorr,'rv')) ! revPBE
 
          if (icorr .eq. 'ca') then
             call atomxc('LDA','ca',relflag,nr,nrmax,r,nspin,dens,
@@ -215,6 +218,12 @@ c
      .           ex,ec,dx,dc,vxcarr)
          elseif(icorr .eq. 'pb') then
             call atomxc('GGA','pbe',relflag,nr,nrmax,r,nspin,dens,   
+     .           ex,ec,dx,dc,vxcarr)
+         elseif(icorr .eq. 'rp') then
+            call atomxc('GGA','rpbe',relflag,nr,nrmax,r,nspin,dens,   
+     .           ex,ec,dx,dc,vxcarr)
+         elseif(icorr .eq. 'rv') then
+            call atomxc('GGA','revpbe',relflag,nr,nrmax,r,nspin,dens,   
      .           ex,ec,dx,dc,vxcarr)
          elseif(icorr .eq. 'bl') then
             call atomxc('GGA','lyp',relflag,nr,nrmax,r,nspin,dens,

@@ -30,6 +30,12 @@ C after JLM
       IF (AUTHOR.EQ.'PBE' .OR. AUTHOR.EQ.'pbe') THEN
         CALL PBEXC( IREL, NSPIN, D, GD,
      .              EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
+      ELSE IF (AUTHOR.EQ.'RPBE' .OR. AUTHOR.EQ.'rpbe') THEN
+        CALL RPBEXC( IREL, NSPIN, D, GD,
+     .              EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
+      ELSE IF (AUTHOR.EQ.'REVPBE' .OR. AUTHOR.EQ.'revpbe') THEN
+        CALL REVPBEXC( IREL, NSPIN, D, GD,
+     .              EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
       ELSE IF (AUTHOR.EQ.'LYP'.OR.AUTHOR.EQ.'lyp') THEN
         CALL BLYPXC(NSPIN,D,GD,EPSX,EPSC,dEXdd,dECdd,dEXdgd,dECdgd)
       ELSE

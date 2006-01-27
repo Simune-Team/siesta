@@ -299,7 +299,7 @@ c
 c
 c   find jobname and date and printout.
 c
-      ray(1) = 'ATM3'
+      ray(1) = 'ATM 3.2.2'
       call cal_date(ray(2))
 cag
       ncp = ncore + 1
