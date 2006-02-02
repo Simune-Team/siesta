@@ -546,7 +546,9 @@ C             Add neutralizing-charge corrections
               ENDIF
 
 C             Setup spline interpolation
-              DFFR0 = HUGE(1.0_dp)
+!!            Force derivative, rather than second derivative, to zero
+!!              DFFR0 = HUGE(1.0_dp)
+              DFFR0 = 0.0_dp
               DFFRMX = 0.0_dp
               CALL SPLINE( RMAX/NRTAB, FFR(0:NRTAB,1,NFFR), NRTAB+1, 
      .                     DFFR0, DFFRMX, FFR(0:NRTAB,2,NFFR) )
