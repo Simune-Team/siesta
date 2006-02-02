@@ -380,7 +380,15 @@ C Calculate corrected atomic coordinates at next time step ................
         snew(:,ia) = twodt * matmul(fi,sunc(:,ia) + suncdot(:))
         if (debug .and. IOnode) print *, snew(:,ia)
       enddo
-
+!---------------------------------------------------------
+!     This is the place to store the current magnitudes
+!
+!      do ia = 1,natoms
+!         xa(:,ia) = matmul(h,s(:,ia))
+!         va(:,ia) = matmul(h,sdot(:,ia))
+!      enddo
+!      call add_to_md_file(xa,va,cell=h,vcell=hdot,nose=x,nosedot=xdot)
+!---------------------------------------------------------
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
 
@@ -831,6 +839,16 @@ C Compute gas pressure again, in case quench has happened
       endif  ! quench
 C ....................
           
+!---------------------------------------------------------
+!     This is the place to store the current magnitudes
+!
+!      do ia = 1,natoms
+!         xa(:,ia) = matmul(h,s(:,ia))
+!         va(:,ia) = matmul(h,sdot(:,ia))
+!      enddo
+!      call add_to_md_file(xa,va,cell=h,vcell=hdot)
+!---------------------------------------------------------
+
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
 
@@ -1114,7 +1132,7 @@ C Compute uncorrected velocities and kinetic energy ......................
 C ..................
 
 C Compute initial guess for Nose variables at next time step .............
-      xnew = 2.0d0 * x - xold
+      xnew = 2.0_dp * x - xold
 C ...................
 
 C Start selfconsistency loop to calculate Nose variable ..................
@@ -1124,11 +1142,11 @@ C Start selfconsistency loop to calculate Nose variable ..................
         
 C xdot and hdot (time derivatives at current time), and related stuff
       xdot = (xnew - xold) / twodt
-      fact = (1.0/(1.0+xdot*dtby2))
+      fact = (1.0_dp/(1.0_dp+xdot*dtby2))
 
 C  Compute Nose variable for next iteration
-      xnew = 2.0d0 * x - xold 
-     .       + (dt2/mn) * 2.0 * (fact**2 * kin - tekin)
+      xnew = 2.0_dp * x - xold 
+     .       + (dt2/mn) * 2.0_dp * (fact**2 * kin - tekin)
 
 C Check if selfconsistency has been reached
       diff = abs(xnew - xlast)
@@ -1150,7 +1168,17 @@ C and corrected velocities and kinetic energy at current time step .........
       enddo
       kin = kin * fact**2 
 C ...................
-
+!----------------------------------------------------------------
+!     Here we can save x, xa, va for MD  (experimental)
+!
+!     call add_to_md_file(xa,va,nose=x,nosedot=xdot)
+        write(99,*) natoms
+        write(99,*) x
+        do ia = 1,natoms
+          write(99,'(i4,3f14.8,3x,3f14.8)')
+     .      iza(ia),(xa(i,ia),i=1,3),(va(i,ia),i=1,3)
+        enddo
+!----------------------------------------------------------------
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
 
@@ -1280,6 +1308,8 @@ C Internal variables ...........................................................
       real(dp), dimension(:,:), allocatable, save ::
      .  s,sdot,snew,sold,sunc
 
+      real(dp), dimension(3) :: xdum, xaold
+      logical :: have_t_target, have_p_target
        external
      .  volcel, memory
 C ....................................................................
@@ -1314,6 +1344,9 @@ C Define constants and conversion factors ......................................
       dt2   = dt**2
       twodt = dt*2.0d0
 
+      have_t_target = (ianneal .eq. 1 .or. ianneal .eq. 3)
+      have_p_target = (ianneal .eq. 2 .or. ianneal .eq. 3)
+
       if (iunit .eq. 1) then
 C  convert target ionic temperature into target kinetic energy
 C  Ekin=1/2*(3N-3)*kB*Temp  (yields Ekin in eV if Temp is in Kelvin)
@@ -1333,66 +1366,39 @@ C  calculate cell volume at current time
 C ........................
 
 C Compute Parrinello-Rahman variables (H and scaled coordinates) ............
-C Compute Inverse of H and G at current time 
+C Compute Inverse of H at current time 
       call inver(h,hi,3,3,info)
       if (info .ne. 0) stop 'anneal: INVER failed'
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
-        do i = 1,3
-          s(i,ia) = 0.0d0
-          do j = 1,3
-            s(i,ia) = s(i,ia) + hi(i,j) * xa(j,ia)
-          enddo
-        enddo
+         s(1:3,ia) = matmul(hi,xa(1:3,ia))
       enddo
 
 C Initialize variables if current time step is the first of the simulation
       if (istep .eq. 1) then
         do ia = 1,natoms
-          do i = 1,3
-            sold(i,ia) = 0.0d0
-            do j = 1,3
-              sold(i,ia) = sold(i,ia) + hi(i,j)*(xa(j,ia)-dt*va(j,ia)
-     .                     + (dt2/2.0d0) * fovermp * fa(j,ia) / ma(ia))
-            enddo
-          enddo
+           xaold(1:3) = xa(1:3,ia) - dt*va(1:3,ia)
+     $          + (dt2/2.0_dp) * fovermp * fa(1:3,ia) / ma(ia)
+           sold(1:3,ia) = matmul(hi,xaold(1:3))
         enddo
       endif
 C ..................
 
 C Compute uncorrected next positions .....................................
       do ia = 1,natoms
-        do i = 1,3
-          sunc(i,ia) = -sold(i,ia) + 2.0d0 * s(i,ia)
-          do k = 1,3
-            sunc(i,ia) = sunc(i,ia) + 
-     .                   dt2 * hi(i,k) * fovermp * fa(k,ia) / ma(ia)
-          enddo
-        enddo
+         xdum(1:3) =  (dt2*fovermp/ma(ia)) * matmul(hi,fa(1:3,ia))     
+         sunc(1:3,ia) = -sold(1:3,ia) + 2.0_dp*s(1:3,ia) + xdum(:)
       enddo
 C ...................
 
 C Calculate uncorrected velocities at current time
-      do ia = 1,natoms
-        do i = 1,3
-          sdot(i,ia) = (sunc(i,ia) - sold(i,ia)) / twodt
-        enddo
-      enddo
+      sdot = (sunc - sold) / twodt
 
 C Calculate pressure tensor at current time and ideal gas pressure
-      do i = 1,3
-        do j = 1,3
-          press(i,j) = 0.0d0
-        enddo
-      enddo
+      press = 0.0_dp
       do ia = 1,natoms
-        do i = 1,3
-          hs(i) = 0.0d0
-          do j = 1,3
-            hs(i) = hs(i) + h(i,j) * sdot(j,ia)
-          enddo
-        enddo
+        hs(1:3) = matmul(h,sdot(1:3,ia))
         do j = 1,3
           do i = 1,3
             press(i,j) = press(i,j) + ma(ia) * hs(i) * hs(j) / fovermp
@@ -1404,11 +1410,8 @@ C Calculate pressure tensor at current time and ideal gas pressure
         pgas = pgas + press(i,i) / vol
       enddo
       pgas = pgas / 3.0d0
-      do j = 1,3
-        do i = 1,3
-          press(i,j) = press(i,j) / vol - stress(i,j)
-        enddo
-      enddo
+
+      press = press/vol -stress
 
 C Compute internal pressure  (pressin = 1/3 Tr (press))   at current time
       pressin = 0.0d0
@@ -1420,19 +1423,18 @@ C Compute internal pressure  (pressin = 1/3 Tr (press))   at current time
 C Compute kinetic energy
       kin = (3.0d0 / 2.0d0) * pgas * vol
 
-      write(*,*) "Anneal: Kinetic Energy= ", kin
+      if (IOnode) write(*,*) "Anneal: Kinetic Energy= ", kin
 
-      if (ianneal .eq. 1 .or. ianneal .eq. 3) then
+      if (have_t_target) then
 C Correct velocities to reach target termperature
       if (kin .eq. 0.0) then
         rfac2 = 1.0d0 + dt/taurelax
       else
-         
         rfac2 = (1.0d0 + dt/taurelax * (tekin/kin -1.0d0))
       endif
       if (rfac2 .le. 0.0) call die('Wrong anneal parameter')
       rfac = sqrt(rfac2)
-      write(*,*) "Anneal: Velocity scale factor = ", rfac
+      if (IOnode) write(*,*) "Anneal: Velocity scale factor = ", rfac
 
       sdot(1:3,1:natoms) = rfac * sdot(1:3,1:natoms)
 
@@ -1441,12 +1443,7 @@ C Compute again pressure, with corrected velocities
       press(1:3,1:3) = 0.0_dp
 
       do ia = 1,natoms
-        do i = 1,3
-          hs(i) = 0.0d0
-          do j = 1,3
-            hs(i) = hs(i) + h(i,j) * sdot(j,ia)
-          enddo
-        enddo
+        hs(1:3) = matmul(h,sdot(1:3,ia))
         do j = 1,3
           do i = 1,3
             press(i,j) = press(i,j) + ma(ia) * hs(i) * hs(j) / fovermp
@@ -1471,13 +1468,9 @@ C Compute internal pressure  (pressin = 1/3 Tr (press))   at current time
 
 
 C Correct new possitions according to corrected velocities
-      do ia = 1,natoms
-        do i = 1,3
-          snew(i,ia) = sold(i,ia) + twodt * sdot(i,ia)
-        enddo
-      enddo
+      snew = sold + twodt * sdot
 
-      if (ianneal .eq. 2 .or. ianneal .eq. 3) then
+      if (have_p_target) then
 
 C Correct cell shape to reach target pressure
       do i = 1,3
@@ -1489,36 +1482,34 @@ C Correct cell shape to reach target pressure
             rfac2 = 1.0 + (dt / taurelax) * (press(i,i) - tp) 
      .                    / (0.5 * bulkm)
           endif
-          if (rfac2 .le. 0.0) then
-            write(6,*) 'Wrong anneal parameter'
-            stop
-          endif
+          if (rfac2 .le. 0.0) call die('Wrong anneal parameter')
           rfac = sqrt(rfac2)
           h(i,j) = rfac * h(i,j)
         enddo
       enddo
-      write(*,*) "Anneal: Cell scale factor = ", rfac
+      if (IOnode)  write(*,*) "Anneal: Cell scale factor = ", rfac
       endif
+
+!---------------------------------------------------------
+!     This is the place to store the current magnitudes
+!
+!      do ia = 1,natoms
+!         xa(:,ia) = matmul(h,s(:,ia))
+!         va(:,ia) = matmul(h,sdot(:,ia))
+!      enddo
+!      call add_to_md_file(xa,va,cell=h)
+!---------------------------------------------------------
 
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
-      do i = 1,3
-        do ia = 1,natoms
-          sold(i,ia) = s(i,ia)
-          s(i,ia) = snew(i,ia)
-        enddo
-      enddo
+
+      sold = s
+      s = snew
 
 C Transform back to absolute coordinates 
       do ia = 1,natoms
-        do i = 1,3
-          xa(i,ia) = 0.0d0
-          va(i,ia) = 0.0d0
-          do j = 1,3
-            xa(i,ia) = xa(i,ia) + h(i,j) * s(j,ia)
-            va(i,ia) = va(i,ia) + h(i,j) * sdot(j,ia)
-          enddo
-        enddo
+         xa(:,ia) = matmul(h,s(:,ia))
+         va(:,ia) = matmul(h,sdot(:,ia))
       enddo
 C ....................
 
@@ -1546,7 +1537,6 @@ C Deallocate local memory
       deallocate(sunc)
 
 !!!      taurelax = taurelax - dt
-      return
       end subroutine anneal
 
 
@@ -1940,6 +1930,12 @@ C Quench velocity components going uphill
 
       endif
 C ................
+
+!---------------------------------------------------------
+!     This is the place to store the current magnitudes
+!
+!      call add_to_md_file(xa,va,cell=h,vcell=hdot)
+!---------------------------------------------------------
 
 C Compute positions at next time step.....................................
       do ia = 1,natoms

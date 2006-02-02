@@ -1,8 +1,8 @@
 #
 # MgCO3 in primitive cell. SZ Harris. Some MD steps in Nose MD
 #
-SystemName	MgCo3 MD test -- SZ, 100 Ry  Harris
-SystemLabel	md
+SystemName	MgCo3 MD Nose test -- SZ, 100 Ry  Harris
+SystemLabel	md_nose
 NumberOfSpecies		3
 NumberOfAtoms	       10
 %block ChemicalSpeciesLabel

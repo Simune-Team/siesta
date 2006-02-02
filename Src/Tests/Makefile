@@ -18,9 +18,10 @@
 # See also test.mk for details
 #
 #
-tests= h2o h2o_dos h2o_orderN floating bessel si mgco3 \
+tests= h2o h2o_dos h2o_orderN floating bessel mgco3 \
        var_cell constant_volume batio3 fe fe_broyden sih si64 \
-       h2oZ sih_op_broyden h2o_op_broyden zmatrix md
+       h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr \
+       md_anneal md_verlet md_nose 
 #
 all: 
 	@for i in ${tests} ; do \

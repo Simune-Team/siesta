@@ -1,15 +1,15 @@
 # -----------------------------------------------------------------------------
 # Primitive c-Si supercell, using STRUCT file
 # Annealing, HarrisFunctional
-# Alberto Garcia, August-December 2005
+# Alberto Garcia, August-December 2005, January 2006
 # -----------------------------------------------------------------------------
 
 SystemName          Primitive silicon, Annealing, Harris, Struct File
-SystemLabel         si
+SystemLabel         md_anneal
 
 NumberOfAtoms       2
 NumberOfSpecies     1
-MD.Use-Struct-File  T   # Structural information is read from si.STRUCT_IN
+MD.Use-Struct-File  T   # Structural information is read from md_anneal.STRUCT_IN
 
 %block ChemicalSpeciesLabel
  1  14  Si
@@ -24,22 +24,18 @@ MeshCutoff          100.0 Ry
   0 0 2  0.5
 %endblock kgrid-monkhorst-pack
 
-MaxSCFIterations    20  
-DM.MixingWeight      0.2 
-DM.NumberPulay       3
-DM.Tolerance         1.d-3
 
 SolutionMethod       diagon    
 ElectronicTemperature  100 K
-
 HarrisFunctional T
 
 MD.TypeOfRun         anneal
-MD.AnnealOptions  Temperature
+MD.AnnealOptions  TemperatureAndPressure
 MD.InitialTemperature 100 K
 MD.TargetTemperature 600 K
+MD.TargetPressure 40 GPa
 MD.LengthTimeStep  1 fs
 MD.TauRelax       25 fs
-MD.FinalTimeStep  120
+MD.FinalTimeStep  100
 
 

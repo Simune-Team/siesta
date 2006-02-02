@@ -1,7 +1,6 @@
 #
 # Single-test makefile
 #
-name=si
-EXTRAFILES="si.STRUCT_IN"
+name=md_verlet
 #
 include ../test.mk
