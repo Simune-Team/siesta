@@ -67,7 +67,7 @@ c   pt = 4 pseudopotential test
 c   pm = 5 pseudopotential test + valence charge modify
 c
       job = -1
-      read(5,9000,end=999) type, title
+      read(5,9000,err=999,end=999) type, title
  9000 format(3x,a2,5a10)
 c
 c  if type = ' ' , no more data, program ends

@@ -96,7 +96,7 @@ c
             
             if ((job.lt.1.or.job.gt.3) .and.
      $           (nconf .ge. 2)) then
-               call prdiff(nconf,econf)
+               call prdiff(nconf,econf,jobold)
             endif
             nconf = 0
          endif
