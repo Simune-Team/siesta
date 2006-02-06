@@ -157,13 +157,11 @@ C  Modules
      .  savehs, savevh, savevt, savdrh, savrho,
      .  savepsch, savetoch,
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
-     .  usesavezm,
+     .  usesavezm, writeig,
      .  writbk, writmd, writpx, writb, writec, writef, 
      .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
      .  harrisfun, muldeb, eggbox_block, use_struct_file,
      $  require_energy_convergence, broyden_optim, struct_only, bornz
-
-      logical  :: printeigen = .false.       ! AG: Initialize
 
       character
      .  line*150, sname*150, shape*10, message*79
@@ -376,6 +374,7 @@ C Find some switches ..................................................
       call fdf_global_get(writedm,'WriteDM'     , .true.)
       call fdf_global_get(writb, 'WriteBands'      , outlng )
       call fdf_global_get(writbk, 'WriteKbands'     , outlng )
+      call fdf_global_get(writeig,'WriteEigenvalues',  .outlng )
       call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
       call fdf_global_get(writic, 'WriteCoorInitial', .true. )
       call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)
@@ -1406,7 +1405,7 @@ C Solve eigenvalue problem .........................................
      .                  eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
      .                  occtol, iscf, neigwanted)
             Ecorrec = 0.0_dp
-            printeigen = .true.
+!
           elseif (isolve .eq. 1) then
             if (.not. gamma) call die("Cannot do O(N) with k-points.")
             call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,isa,qa,
@@ -1911,7 +1910,7 @@ C Find and print bands
       endif
 
 C Print eigenvalues
-      if (IOnode .and. printeigen) then
+      if (IOnode .and. writeig) then
         if (isolve.eq.0 .and. no_l.lt.1000) then
           if (nspin .le. 2) then
             write(6,'(/,a,/,a4,a3,a7)')
@@ -1936,7 +1935,7 @@ C Print eigenvalues
         endif
       endif
 
-      if (isolve.eq.0.and.IOnode.and.printeigen) 
+      if (isolve.eq.0.and.IOnode)
      .     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
      .                kpoint, kweight)
 
