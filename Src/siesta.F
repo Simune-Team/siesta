@@ -391,9 +391,7 @@ C Find some switches ..................................................
       call fdf_global_get(bornz,  'BornCharge'   , .false.)
       if (idyn.ne.6) bornz = .false.
 
-#ifdef MPI
       call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
-#endif
 
 C Read Z-matrix coordinates and forces from file
       if (lUseZmatrix) then
@@ -1788,13 +1786,13 @@ C******************Born charge calculation***************************
       if (bornz) then
          if (mod(istep,2) .eq. 0 ) then
             if (nkpol.lt.1) then
-               write(6,'(/,a,f12.6)')
+               if (IOnode) write(6,'(/,a,f12.6)')
      .       'siesta: specify polarization grid for BC calculation'
-               write(6,'(a,f12.6)')
+               if (IOnode) write(6,'(a,f12.6)')
      .       'siesta: The Born charge matrix will not be calculated'
                goto 80
             endif
-            write(6,'(/,a,f12.6)')
+            if (IOnode) write(6,'(/,a,f12.6)')
      .   'siesta: Calculating polarization. '
 
 c     find total population of spin up and down

@@ -66,8 +66,9 @@ C *********************************************************************
 C
 C  Modules
 C
-      use precision
-      use parallel,      only : Node
+      use precision,     only : dp
+      use parallel,      only : IOnode
+      use sys,           only : die
       use fdf
       use parsing
       use atmfuncs,      only : izvalfis
@@ -146,10 +147,12 @@ C Total number of valence electrons in the unit cell
           ntote=ntote+izvalfis(is)
         enddo 
         if (mod(ntote,2).ne.0) then 
-          write(6,'(/,a,/,a,/a)')
+           if (IOnode) then
+              write(6,'(/,a,/,a,/a)')
      .      'KSV_pol: Odd total number of electrons',
      .      'KSV_pol: This is hardly an insulator',
      .      'KSV_pol: No polarization calculation performed' 
+           endif
           goto 999
         else 
 C Number of occupied bands for each spin component
@@ -162,10 +165,12 @@ c     .    'KSV_pol: Number of occupied bands ', nocc(1)
       else
         dq=dabs(qspin(1)-qspin(2))
         if (dabs(dq-nint(dq)).gt.1.0d-2) then 
-          write(6,'(/,a,/,a,/a)')
+           if (IOnode) then
+              write(6,'(/,a,/,a,/a)')
      .    'KSV_pol: Spin polarization should have an integer value',
      .    'KSV_pol: This is not an insulator for both spin components',
      .    'KSV_pol: No polarization calculation performed'
+           endif
           goto 999
         endif 
         nocc(1)=nint(qspin(1))
@@ -174,9 +179,11 @@ c     .    'KSV_pol: Number of occupied bands ', nocc(1)
 
 C Check parameter maxkpol 
       if (nkpol .gt. maxkpol) then
-        write(6,'(/,a,/,a)')
+         if (IONode) then
+            write(6,'(/,a,/,a)')
      .    'KSV_pol: WARNING: parameter maxkpol too small',
      .    'KSV_pol: No polarization calculation performed'
+         endif
         goto 999
       endif
 
@@ -210,18 +217,21 @@ C Check indxuo
       do io = 1,no
         iuo = indxuo(io)
         if (indxuo(io).le.0 .or. indxuo(io).gt.no) then
-          write(6,*) 'KSV_pol: invalid index: io, indxuo =',
-     .      io, indxuo(io)
-          stop 'KSV_pol: invalid indxuo'
+           if (IOnode) then
+              write(6,*) 'KSV_pol: invalid index: io, indxuo =',
+     .             io, indxuo(io)
+           endif
+          call die('KSV_pol: invalid indxuo')
         endif
         muo(iuo) = muo(iuo) + 1
       enddo
       do iuo = 1,nuo
         if (muo(iuo) .ne. muo(1)) then
-          write(6,'(/,2a,3i6)') 
-     .      'KSV_pol: ERROR: inconsistent indxuo.',
-     .      ' iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-          stop 'KSV_pol: ERROR: inconsistent indxuo.'
+           if (IOnode)
+     .        write(6,'(/,2a,3i6)') 
+     .          'KSV_pol: ERROR: inconsistent indxuo.',
+     .          ' iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
+          call die('KSV_pol: ERROR: inconsistent indxuo.')
         endif
       enddo
       
@@ -338,9 +348,9 @@ C Find Wavefunctions
      .                  listh, H, S, xijo, indxuo, kint,
      .                  ek, psi, 2, Haux, Saux )
                   elseif (nspin.eq.4) then  
-                    stop 'KSV_pol: ERROR: nspin=4 not yet implemented'
+               call die('KSV_pol: ERROR: nspin=4 not yet implemented')
                   else
-                    stop 'KSV_pol: ERROR: incorrect value of nspin'
+                  call die('KSV_pol: ERROR: incorrect value of nspin')
                   endif
                 endif  
 
@@ -406,7 +416,8 @@ C Phase { i.e. Im[ln(det)] } of the individual determinants
                       phase=phase+pi/2.0d0
                     endif
                   else
-                    write(6,*) 'KSV_pol: ERROR!!!!, determinant zero'
+                    if (IOnode)
+     $               write(6,*) 'KSV_pol: ERROR!!!!, determinant zero'
                   endif
                 endif
                 phase=phase-nint(phase/(2.0d0*pi))*2.0d0*pi        
@@ -456,7 +467,8 @@ C product of all the determinants
      .                +polR(igrd,ispin)
                   endif
                 else
-                   write(6,*) 'KSV_pol: ERROR!!!!, determinant zero'
+                   if (IOnode)
+     $              write(6,*) 'KSV_pol: ERROR!!!!, determinant zero'
                 endif
               endif
 
@@ -471,11 +483,11 @@ C In practice I think it is more accurate.
         
         else
           if (igrd.eq.1) then  
-            write(6,'(/,2a)')
+            if (IOnode) write(6,'(/,2a)')
      .        'KSV_pol: Polarization not calculated along the',
      .        ' first lattice vector'
           else 
-            write(6,'(/,a,i3,a)')
+            if (IOnode) write(6,'(/,a,i3,a)')
      .        'KSV_pol: Polarization not calculated along the',
      .        igrd,'th lattice vector'
           endif 
@@ -558,7 +570,7 @@ C Deallocate local memory
       call memory('D','D',size(psiprev),'ksv_pol')
       deallocate(psiprev)
 
-      if (nkpol.gt.0.and.Node.eq.0) then
+      if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin
           if (nspin.gt.1) then
             if (ispin.eq.1) write(6,'(/,a)')
