@@ -39,6 +39,7 @@ C  Modules
       use meshdscf
       use meshphi
       use parallel,  only: Node, Nodes
+      use sys,       only: die
 
       implicit none
 
@@ -158,7 +159,7 @@ C             last runs circularly over rows of Dlocal
               if (last .gt. maxloc) last = 1
               if (iorb(last) .le. 0) goto 10
             enddo
-            stop 'rhoofd: no slot available in Dlocal'
+            call die('rhoofd: no slot available in Dlocal')
    10       continue
 
 C  Copy row i of Dscf into row last of Dlocal

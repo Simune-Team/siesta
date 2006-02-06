@@ -22,6 +22,8 @@ CONTAINS
 subroutine wall_time(t)
 real(dp), intent(out)  :: t
 
+real(dp)  :: elapsed_time
+
 integer       :: count_rate_int
 integer       :: count
 

@@ -28,6 +28,7 @@ C  Modules
 C
       use precision, only: dp, grid_p
       use parallel,   only : Node, Nodes, ProcessorY
+      use sys, only: die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -73,11 +74,9 @@ C Initialize dipole
       dipol(1:3) = 0.0_dp
 
 C Check that ProcessorY is a factor of the number of processors
-      if (mod(Nodes,ProcessorY).gt.0) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
       ProcessorZ = Nodes/ProcessorY
 
 C Calculate coarse mesh sizes

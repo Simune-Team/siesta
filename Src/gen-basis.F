@@ -87,10 +87,9 @@ C Initialise MPI and set processor number
          call allocate_old_arrays
          call clear_tables
 
-         if (nsp .gt. 1) then
-            write(6,'(//,a,//)') "JUST A SINGLE SPECIES ALLOWED..."
-            STOP
-         endif
+         if (nsp .gt. 1)
+     $        call die("gen-basis: JUST A SINGLE SPECIES ALLOWED...")
+
          do is = 1,nsp
             call write_basis_specs(6,is)
             basp=>basis_parameters(is)

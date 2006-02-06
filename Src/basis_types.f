@@ -17,7 +17,8 @@
 !
       use atmparams, only: lmaxd, nzetmx, nsemx, nkbmx
       use pseudopotential, only: pseudopotential_t
-      use precision
+      use precision, only: dp
+      use sys, only : die
 
       Implicit None
 
@@ -374,19 +375,19 @@
       lmax = max(lmax,lmaxkb)
       if (lmax .gt. lmaxd) then
          write(6,*) "Increment lmaxd to ", lmax
-         STOP "lmaxd"
+         call die()
       endif
       if (nzeta_max .gt. nzetmx) then
          write(6,*) "Increment nzetmx to ", nzeta_max
-         STOP "nzetmx"
+         call die()
       endif
       if (nsemi_max .gt. nsemx) then
          write(6,*) "Increment nsemx to ", nsemi_max
-         STOP "nsemx"
+         call die()
       endif
       if (nkb_max .gt. nkbmx) then
          write(6,*) "Increment nkbmx to ", nkb_max
-         STOP "nkb_max"
+         call die()
       endif
 !
 !     ALLOCATE old arrrays

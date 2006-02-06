@@ -57,6 +57,7 @@ C
       use precision
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
+      use sys,           only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -226,7 +227,7 @@ C   (which will determine the reduce space) -
           if (Node.eq.0) then
             write(6,*) 'chempot: ERROR: zero neighbors for orbital ',i
           endif
-          stop
+          CALL DIE()
         endif
         nu = numh(mu) 
 
@@ -846,14 +847,15 @@ c
 C Converted to double precision from same routine in
 C "Numerical Recipes", W.Press et al, Cambridge U.P.
 c  ***************************************************     
+      use precision, only: dp
+      use sys, only      : die
       IMPLICIT NONE
       INTEGER ITMAX
-      REAL*8 ZBRENT,TOL,X1,X2,FUNC,EPS
+      real(dp)  ZBRENT,TOL,X1,X2,FUNC,EPS
       EXTERNAL FUNC
-      PARAMETER (ITMAX=300,EPS=3.E-4)
+      PARAMETER (ITMAX=300,EPS=3.0E-4_dp)
       INTEGER ITER
-      REAL*8 A,B,C,D,E,FA,FB,FC,P,Q,R,
-     *S,TOL1,XM
+      real(dp) A,B,C,D,E,FA,FB,FC,P,Q,R,S,TOL1,XM
 
 c      integer ix
 
@@ -867,7 +869,7 @@ c      enddo
       B=X2
       FA=FUNC(A)
       FB=FUNC(B)
-      IF(FB*FA.GT.0.) STOP 'ZBRENT: Root must be bracketed'
+      IF(FB*FA.GT.0.) call die('ZBRENT: Root must be bracketed')
       C=B
       D=B-A
       E=D
@@ -926,7 +928,7 @@ c      enddo
         ENDIF
         FB=FUNC(B)
 11    CONTINUE
-      STOP 'ZBRENT exceeding maximum iterations.'
+      CALL DIE('ZBRENT exceeding maximum iterations.')
 C      ZBRENT=B
 C      RETURN
       END
@@ -937,11 +939,15 @@ C      RETURN
 C Cholesky decompositin of symmetric matrix
 C Converted to double precision from same routine in
 C "Numerical Recipes", W.Press et al, Cambridge U.P.
+
+      use precision, only: dp
+      use sys,       only: die
+
       implicit none
       integer n,np
-      real*8 a(np,np),p(n)
+      real(dp) a(np,np),p(n)
       integer i,j,k
-      real*8 sum
+      real(dp) sum
 
       do i=1,n
         do j=i,n
@@ -950,7 +956,7 @@ C "Numerical Recipes", W.Press et al, Cambridge U.P.
             sum=sum-a(i,k)*a(j,k)
           enddo
           if (i .eq. j) then
-            if (sum .le. 0.) stop 'choldc failed'
+            if (sum .le. 0.) CALL DIE( 'choldc failed')
             p(i)=sqrt(sum)
           else
             a(j,i)=sum/p(i)

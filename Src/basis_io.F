@@ -6,7 +6,7 @@
 !     Alberto Garcia, 2000, 2001
 !
       use chemical
-      use sys
+      use sys, only: die
       use precision
 #ifdef CDF
       use atmparams, only:NTBMAX
@@ -287,7 +287,7 @@ c
       integer, intent(in):: status
       if (status .ne. nf90_noerr) then
          print  *, trim(nf90_strerror(status))
-         stop 'Stopped'
+         call die()
       endif
       end subroutine check
 
@@ -663,7 +663,7 @@ c
       integer, intent(in):: status
       if (status .ne. nf90_noerr) then
          print  *, trim(nf90_strerror(status))
-         stop 'Stopped'
+         call die()
       endif
       end subroutine check
 

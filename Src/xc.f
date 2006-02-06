@@ -50,6 +50,7 @@ C *******************************************************************
       use precision, only : dp
       use xcmod,     only : nXCfunc, XCfunc, XCauth
       use xcmod,     only : XCweightX, XCweightC
+      use sys,       only: die
 
 C Next line is nonstandard but may be suppressed
       implicit none
@@ -106,7 +107,7 @@ C Set GGA switch
           if ( XCfunc(nf).ne.'LDA' .and. XCfunc(nf).ne.'lda' .and.
      .         XCfunc(nf).ne.'LSD' .and. XCfunc(nf).ne.'lsd' ) then
             write(6,*) 'ATOMXC: Unknown functional ', XCfunc(nf)
-            stop
+            call die()
           endif 
         endif
       enddo
@@ -293,11 +294,21 @@ C Densities in electrons/Bohr**3
 C Energies in Hartrees
 C *****************************************************************
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      use precision, only: dp
+      implicit none
 
-      integer :: nsp, irel
-      PARAMETER (ZERO=0.D0,ONE=1.D0,PFIVE=.5D0,OPF=1.5D0,C014=0.014D0)
-      DIMENSION DS(NSP), VX(NSP)
+      integer, intent(in) :: nsp, irel
+      real(dp), intent(in)             :: DS(NSP)
+      real(dp), intent(out)            :: VX(NSP)
+      real(dp), intent(out)            :: EX
+
+      real(dp), parameter :: zero = 0.0_dp, one = 1.0_dp
+      real(dp), parameter :: pfive = 0.5_dp, opf = 1.5_dp
+      real(dp), parameter :: C014 = 0.014_dp
+
+      real(dp) :: pi, trd, ftrd, tftm, a0
+      real(dp) :: alp, d1, d2, d, z, fz, fzp, rs, vxp, exp_var
+      real(dp) :: beta, sb, vxf, exf, alb
 
       PI=4*ATAN(ONE)
       TRD = ONE/3
@@ -365,6 +376,7 @@ C Written by L.C.Balbas and J.M.Soler, Dec'96. Version 0.5.
 C Modified by V.M.Garcia-Suarez to include non-collinear spin. June 2002
 
       use precision, only : dp
+      use sys,       only : die
 
       implicit          none
 
@@ -436,7 +448,7 @@ cag
      .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
       ELSE
         WRITE(6,*) 'GGAXC: Unknown author ', AUTHOR
-        STOP
+        call die()
       ENDIF
 
       IF (nspin .EQ. 4) THEN
@@ -511,6 +523,7 @@ C Lengths in Bohr, energies in Hartrees
 C ******************************************************************
 
       use precision, only : dp
+      use sys,       only : die
 
       implicit          none
 
@@ -556,7 +569,7 @@ cag       Avoid negative densities
         CALL PW92XC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
       ELSE
         WRITE(6,*) 'LDAXC: Unknown author ', AUTHOR
-        STOP
+        call die()
       ENDIF
 
       IF (nspin .EQ. 4) THEN
@@ -631,7 +644,7 @@ C Internal variables
       INTEGER
      .  IS, IX
 
-      DOUBLE PRECISION
+      real(dp)
      .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
      .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
      .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
@@ -829,7 +842,7 @@ C Internal variables
       INTEGER
      .  IS, IX
 
-      DOUBLE PRECISION
+      real(dp)
      .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
      .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
      .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
@@ -1381,57 +1394,56 @@ C Densities in electrons/Bohr**3
 C Energies in Hartrees
 C *****************************************************************
 
-       IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-       integer :: nsp, irel, isp1, isp2, isp
-       DIMENSION DS(NSP), VX(NSP), VC(NSP), 
-     .           DVXDN(NSP,NSP), DVCDN(NSP,NSP)
+      use precision, only: dp
 
-       PARAMETER (ZERO=0.D0,ONE=1.D0,PFIVE=.5D0,OPF=1.5D0,PNN=.99D0)
-       PARAMETER (PTHREE=0.3D0,PSEVF=0.75D0,C0504=0.0504D0) 
-       PARAMETER (C0254=0.0254D0,C014=0.014D0,C0406=0.0406D0)
-       PARAMETER (C15P9=15.9D0,C0666=0.0666D0,C11P4=11.4D0)
-       PARAMETER (C045=0.045D0,C7P8=7.8D0,C88=0.88D0,C20P59=20.592D0)
-       PARAMETER (C3P52=3.52D0,C0311=0.0311D0,C0014=0.0014D0)
-       PARAMETER (C0538=0.0538D0,C0096=0.0096D0,C096=0.096D0)
-       PARAMETER (C0622=0.0622D0,C004=0.004D0,C0232=0.0232D0)
-       PARAMETER (C1686=0.1686D0,C1P398=1.3981D0,C2611=0.2611D0)
-       PARAMETER (C2846=0.2846D0,C1P053=1.0529D0,C3334=0.3334D0)
-Cray       PARAMETER (ZERO=0.0,ONE=1.0,PFIVE=0.5,OPF=1.5,PNN=0.99)
-Cray       PARAMETER (PTHREE=0.3,PSEVF=0.75,C0504=0.0504) 
-Cray       PARAMETER (C0254=0.0254,C014=0.014,C0406=0.0406)
-Cray       PARAMETER (C15P9=15.9,C0666=0.0666,C11P4=11.4)
-Cray       PARAMETER (C045=0.045,C7P8=7.8,C88=0.88,C20P59=20.592)
-Cray       PARAMETER (C3P52=3.52,C0311=0.0311,C0014=0.0014)
-Cray       PARAMETER (C0538=0.0538,C0096=0.0096,C096=0.096)
-Cray       PARAMETER (C0622=0.0622,C004=0.004,C0232=0.0232)
-Cray       PARAMETER (C1686=0.1686,C1P398=1.3981,C2611=0.2611)
-Cray       PARAMETER (C2846=0.2846,C1P053=1.0529,C3334=0.3334)
+      implicit none
+      
+       integer  :: nsp, irel, isp1, isp2, isp
+       real(dp) :: DS(NSP), VX(NSP), VC(NSP), 
+     .           DVXDN(NSP,NSP), DVCDN(NSP,NSP)
+       real(dp), parameter ::
+     $      ZERO=0.D0,ONE=1.D0,PFIVE=.5D0,OPF=1.5D0,PNN=.99D0,
+     $      PTHREE=0.3D0,PSEVF=0.75D0,C0504=0.0504D0,
+     $      C0254=0.0254D0,C014=0.014D0,C0406=0.0406D0,
+     $      C15P9=15.9D0,C0666=0.0666D0,C11P4=11.4D0,
+     $      C045=0.045D0,C7P8=7.8D0,C88=0.88D0,C20P59=20.592D0,
+     $      C3P52=3.52D0,C0311=0.0311D0,C0014=0.0014D0,
+     $      C0538=0.0538D0,C0096=0.0096D0,C096=0.096D0,
+     $      C0622=0.0622D0,C004=0.004D0,C0232=0.0232D0,
+     $      C1686=0.1686D0,C1P398=1.3981D0,C2611=0.2611D0,
+     $      C2846=0.2846D0,C1P053=1.0529D0,C3334=0.3334D0
 
 C    Ceperly-Alder 'ca' constants. Internal energies in Rydbergs.
-       PARAMETER (CON1=1.D0/6, CON2=0.008D0/3, CON3=0.3502D0/3) 
-       PARAMETER (CON4=0.0504D0/3, CON5=0.0028D0/3, CON6=0.1925D0/3)
-       PARAMETER (CON7=0.0206D0/3, CON8=9.7867D0/6, CON9=1.0444D0/3)
-       PARAMETER (CON10=7.3703D0/6, CON11=1.3336D0/3)
-Cray       PARAMETER (CON1=1.0/6, CON2=0.008/3, CON3=0.3502/3) 
-Cray       PARAMETER (CON4=0.0504/3, CON5=0.0028/3, CON6=0.1925/3)
-Cray       PARAMETER (CON7=0.0206/3, CON8=9.7867/6, CON9=1.0444/3)
-Cray       PARAMETER (CON10=7.3703/6, CON11=1.3336/3) 
+       real(dp), parameter ::
+     $      CON1=1.D0/6, CON2=0.008D0/3, CON3=0.3502D0/3,
+     $      CON4=0.0504D0/3, CON5=0.0028D0/3, CON6=0.1925D0/3,
+     $      CON7=0.0206D0/3, CON8=9.7867D0/6, CON9=1.0444D0/3,
+     $      CON10=7.3703D0/6, CON11=1.3336D0/3
 
 C      X-alpha parameter:
-       PARAMETER ( ALP = 2.D0 / 3.D0 )
+       real(dp), PARAMETER :: ALP = 2.D0 / 3.D0 
 
 C      Other variables converted into parameters by J.M.Soler
-       PARAMETER ( TINY = 1.D-6 )
-       PARAMETER ( PI   = 3.14159265358979312D0 )
-       PARAMETER ( TWO  = 2.0D0 ) 
-       PARAMETER ( HALF = 0.5D0 ) 
-       PARAMETER ( TRD  = 1.D0 / 3.D0 ) 
-       PARAMETER ( FTRD = 4.D0 / 3.D0 )
-       PARAMETER ( TFTM = 0.51984209978974638D0 )
-       PARAMETER ( A0   = 0.52106176119784808D0 )
-       PARAMETER ( CRS  = 0.620350490899400087D0 )
-       PARAMETER ( CXP  = (- 3.D0) * ALP / (PI*A0) )
-       PARAMETER ( CXF  = 1.25992104989487319D0 )
+       real(dp), parameter ::
+     $       TINY = 1.D-6 ,
+     $       PI   = 3.14159265358979312_dp,
+     $       TWO  = 2.0D0,
+     $       HALF = 0.5D0,
+     $       TRD  = 1.D0 / 3.D0,
+     $       FTRD = 4.D0 / 3.D0,
+     $       TFTM = 0.51984209978974638D0,
+     $       A0   = 0.52106176119784808D0,
+     $       CRS  = 0.620350490899400087D0,
+     $       CXP  = (- 3.D0) * ALP / (PI*A0),
+     $       CXF  = 1.25992104989487319D0 
+
+       real(dp)  :: d1, d2, d, z, fz, fzp
+       real(dp)  :: ex, ec, dfzpdn, rs, vxp, exp_var
+       real(dp)  :: beta, sb, alb, vxf, exf, dvxpdn
+       real(dp)  :: dvxfdn, sqrs, te, be, ecp, vcp
+       real(dp)  :: dtedn, be2, dbedn, dvcpdn, decpdn
+       real(dp)  :: ecf, vcf, dvcfdn, decfdn, rslog
+
 
 C      Find density and polarization
        IF (NSP .EQ. 2) THEN

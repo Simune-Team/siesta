@@ -1,5 +1,7 @@
       module writewave
 
+      use sys, only: die
+
       implicit none
 
       integer :: maxlin
@@ -263,9 +265,8 @@ C Find coordinates of k point
                   endif
                 else
                   overflow = .true.
-                  if (.not. Frstime) then
-                    stop 'writewave: invalid initialization'
-                  endif
+                  if (.not. Frstime)
+     $                 call die('writewave: invalid initialization')
                 endif
 
 
@@ -361,9 +362,8 @@ C Store indexes of wave functions to printout
                 else 
 
                   overflow = .true.
-                  if (.not. Frstime) then
-                    stop 'writewave: invalid initialization'
-                  endif
+                  if (.not. Frstime)
+     $                 call die('writewave: invalid initialization')
 
                   call memory('D','I',size(nwflist),'writewave')
                   deallocate(nwflist)
@@ -591,9 +591,9 @@ C Check indxuo
           if (Node.eq.0) then
             write(6,*) 'writewave: invalid index: io, indxuo =',
      .        io, indxuo(io)
-            stop 'writewave: invalid indxuo'
+            call die('writewave: invalid indxuo')
           else
-            stop
+            call die()
           endif
         endif
         muo(iuo) = muo(iuo) + 1
@@ -603,9 +603,9 @@ C Check indxuo
           if (Node.eq.0) then
           write(6,'(/,2a,3i6)') 'writewave: ERROR: inconsistent indxuo.'
      .     ,' iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-            stop 'writewave: ERROR: inconsistent indxuo.'
+            call die('writewave: ERROR: inconsistent indxuo.')
           else
-            stop 
+            call die()
           endif
         endif
       enddo

@@ -106,6 +106,8 @@
 !     .. Local Scalars ..
       INTEGER            IC
       REAL(WP)           RMACH
+
+      real(wp)           ONE
 !     ..
 !     .. External Functions ..
       INTEGER            ROUNDING_MODE

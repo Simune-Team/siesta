@@ -8,13 +8,11 @@ c
 c Alberto Garcia, December 30, 1996
 c Rewritten as a single subroutine 
 c with multiple entry points, March 7, 1998
-c
-c This scheme is actually the closest in spirit to f90 modules, but
-c in perfectly legal f77.
-c
+c Now hybrid to comply with Siesta "die" interface.
 c---------------------------------------------------------------
 c
       subroutine io
+      use sys, only: die
 c
 c     Logical unit management. Units 0 to min_lun-1 are "reserved",
 c     since most of the "typical" files (output, etc) use them.
@@ -81,8 +79,7 @@ c
             if (.not. used) return
          endif
       enddo
-      write(stderr,'(a)') 'No luns available in io_assign'
-      stop 'LUN'
+      call die('No luns available in io_assign')
 c
 c===
 c
@@ -98,11 +95,7 @@ c     open(15,....)
 c
       inquire(unit=lun, opened=used, iostat=iostat)
       if (iostat .ne. 0) used = .true.
-      if (used) then
-         write(stderr,'(a,i3,a)')
-     $        'Cannot reserve unit',lun,'. Already connected'
-         stop 'LUN'
-      endif
+      if (used) call die('Cannot reserve unit. Already connected')
       if (lun .ge. min_lun .and. lun .le. max_lun)
      $                      lun_is_free(lun) = .false.
 

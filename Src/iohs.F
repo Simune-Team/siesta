@@ -39,6 +39,7 @@ C
      .                         GlobalToLocalOrb, GetNodeOrbs
       use fdf
       use files,        only : slabel, label_length
+      use sys,          only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -123,9 +124,9 @@ C Check dimensions
               write(ju,'(6x,a,i8,a)') 'parameter ( maxnh =', maxnhtot, 
      .          ' )'
               call io_close( ju )
-              stop 'iohs: BAD DIMENSIONS'
+              call die('iohs: BAD DIMENSIONS')
             else
-              stop
+              call die()
             endif
           endif
 
@@ -343,9 +344,9 @@ C Close file
         else
           if (Node.eq.0) then
             write(6,*) 'iohs: ERROR: file not found: ', fname
-            stop 'iohs: ERROR: file not found'
+            call die('iohs: ERROR: file not found')
           else
-            stop 
+            call die()
           endif
         endif
 

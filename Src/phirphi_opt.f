@@ -79,6 +79,7 @@ C *********************************************************************
       use atm_types,    only : nspecies
       use parallelsubs, only : GlobalToLocalOrb, LocalToGlobalOrb
       use alloc,        only : re_alloc
+      use sys,          only : die
 
       implicit none
 
@@ -145,11 +146,8 @@ C Start timer
       call timer('phirphiopt',1)
 
 C Check input matrix
-      if(matrix.ne.'P'.and.matrix.ne.'R') then 
-        write(6,'(/a)') 
-     .   'phirphi_opt: matrix only can take values R or P'
-        stop
-      endif
+      if(matrix.ne.'P'.and.matrix.ne.'R')
+     $   call die('phirphi_opt: matrix only can take values R or P')
  
 C Nullify pointers
       if (frstme) then

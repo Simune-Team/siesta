@@ -13,6 +13,8 @@
 !     SUBROUTINE SPLINT
 !**********************************************************************
 
+      use sys, only: die
+
       public :: derf, derfc, four1, polint, spline, splint
 
       contains
@@ -131,7 +133,7 @@
           HP=XA(I+M)-X
           W=C(I+1)-D(I)
           DEN=HO-HP
-          IF (DEN.EQ.ZERO) STOP 'polint: ERROR. Two XAs are equal'
+          IF (DEN.EQ.ZERO) call die('polint: ERROR. Two XAs are equal')
           DEN=W/DEN
           D(I)=HP*DEN
           C(I)=HO*DEN
@@ -231,7 +233,7 @@
       DOUBLE PRECISION, PARAMETER ::
      .    ONE=1.D0, THREE=3.D0, SIX=6.D0, ZERO=0.D0
 
-      IF (DX.EQ.ZERO) STOP 'splint: ERROR: DX=0'
+      IF (DX.EQ.ZERO) call die('splint: ERROR: DX=0')
       NLO=INT(X/DX)+1
       NHI=NLO+1
       A=NHI-X/DX-1

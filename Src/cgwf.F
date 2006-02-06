@@ -320,6 +320,7 @@ C real*8 lambda               : Distance to minimum
 C *******************************************************************
 
       use precision
+      use sys, only: die
 
       implicit none
 
@@ -374,13 +375,7 @@ C Set up linear equations system to calculate polinomial coeffs.............
       enddo
 
       call inver(b,bi,5,5,info)
-      if (info .ne. 0) then
-        if (Node.eq.0) then
-          stop 'cgwf: INVER failed'
-        else
-          stop
-        endif
-      endif
+      if (info .ne. 0) call die('cgwf: INVER failed')
 
       do jj = 1,5
         e0 = e0 + bi(2,jj) * e(jj)

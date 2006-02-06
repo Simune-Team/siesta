@@ -230,6 +230,7 @@ C real*8 tempe          : Instantaneous system temperature
 C *****************************************************************************
 
       use precision, only : dp
+      use sys,       only : die
 
       implicit none
 
@@ -249,10 +250,8 @@ C Internal variables ..........................................................
 
 C ........................
 
-      if (iunit .ne. 1 .and. iunit .ne. 2) then
-        write(6,*) 'temp: Wrong iunit option;  must be 1 or 2'
-        stop
-      endif
+      if (iunit .ne. 1 .and. iunit .ne. 2)
+     $     call die('temp: Wrong iunit option;  must be 1 or 2')
 
 C Define constants and conversion factors .....................................
 

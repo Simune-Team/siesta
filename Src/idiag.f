@@ -1,5 +1,8 @@
       SUBROUTINE IDIAG (NN,MOLD,MNEW,MLEFT,MRIGHT,MAUX)
 
+      use sys, only: die
+      use parallel, only: ionode
+
 C GIVEN A SQUARE INTEGER MATRIX MOLD, FINDS A DIAGONAL MATRIX MNEW,
 C AND TWO MATRICES MLEFT AND MRIGHT OF DETERMINANT ONE, SUCH THAT
 C MNEW = MLEFT * MOLD * MRIGHT
@@ -65,8 +68,9 @@ C Written by J.Moreno and J.M.Soler
             MAUX(N,I,1)=0
    40     CONTINUE
    50   CONTINUE
-          WRITE(6,*)'IDIAG: ERROR. ITERATION HAS NOT CONVERGED. N=',N
-          STOP 'IDIAG: ERROR. ITERATION HAS NOT CONVERGED.'
+          if (IOnode)
+     $       WRITE(6,*)'IDIAG: ERROR. ITERATION HAS NOT CONVERGED. N=',N
+          call die()
    60 CONTINUE
       END
 

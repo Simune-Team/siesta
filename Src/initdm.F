@@ -60,6 +60,7 @@ C
       use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
       use fdf
       use parsing
+      use sys,          only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -261,10 +262,8 @@ C Read spin as + or - (maximun value)
               if (Node.eq.0) then
                 write(6,'(/,a)')
      .          'intdm: ERROR: Bad atom index in DM.InitSpin, line', iat
-                stop 'intdm: ERROR: Bad atom index in DM.InitSpin'
-              else
-                stop
               endif
+              call die('intdm: ERROR: Bad atom index in DM.InitSpin')
             endif
             if (abs(theta(nat)).gt.1.d-12) noncol = .true.
           enddo
@@ -272,18 +271,19 @@ C Read spin as + or - (maximun value)
           if (Node.eq.0) then
             write(6,'(a)') 
      .         'initdm: ERROR: Too many atom entries in DM.InitSpin'
-            stop 'initdm: ERROR: Too many atom entries in DM.InitSpin'
+           call die('initdm: ERROR: Too many' //
+     $              ' atom entries in DM.InitSpin')
           else
-            stop
+            call die()
           endif
 
    40     continue
           if (Node.eq.0) then
             write(6,*)
      .       'initdm: ERROR: bad syntax in DM.InitSpin, line', iat
-            stop 'initdm: ERROR: bad syntax in DM.InitSpin'
+            call die('initdm: ERROR: bad syntax in DM.InitSpin')
           else
-            stop
+            call die()
           endif
 
    50     continue

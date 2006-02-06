@@ -124,7 +124,7 @@ C
       use parallel,      only : Node, Nodes
       use atmfuncs,      only : rcut, rcore
       use fdf
-      use sys
+      use sys,           only : die
       use mesh
       use parsing
       use m_iorho,       only : write_rho
@@ -321,12 +321,8 @@ C Set mesh sub-division variables & perform one off allocation
 
 C Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
-        if (spiral .and. nspin.lt.4) then
-          if (Node.eq.0) then
-            write(6,*) 'dhscf: ERROR: spiral defined but nspin < 4'
-          endif
-          stop
-        endif
+        if (spiral .and. nspin.lt.4)
+     $    call die('dhscf: ERROR: spiral defined but nspin < 4')
 
       endif
 

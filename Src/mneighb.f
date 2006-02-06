@@ -1,6 +1,7 @@
       module neighbour
 
-        use precision
+        use precision, only: dp
+        use sys, only: die
 
         integer,  pointer, save :: jan(:)
 
@@ -1004,8 +1005,7 @@ C  WRITTEN BY J.M.SOLER.
           B(3,I)=B(3,I)*CI
   20    CONTINUE
       ELSE
-        WRITE(6,*) 'RECCEL: NOT PREPARED FOR N =', N
-        STOP
+         call die('RECCEL: NOT PREPARED FOR N>3')
       ENDIF
       end subroutine reccel
 

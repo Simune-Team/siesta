@@ -104,8 +104,8 @@ gen-basis.o: $(FDF)
 # This is crude but will have to do for now.
 # Note : precision must be the first module
 #
-MOD_OBJS=precision.o m_cell.o recipes.o files.o \
-         spatial.o parallel.o parallelsubs.o sys.o parsing.o chemical.o xcmod.o atom.o atmparams.o \
+MOD_OBJS=precision.o sys.o m_cell.o recipes.o files.o \
+         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o xcmod.o atom.o atmparams.o \
          m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
 	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \

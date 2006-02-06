@@ -22,6 +22,8 @@ C Does not check that N(j) > 0
 C If TASK=-1 and IND is not in the range (1:N(1)*N(2)*...*N(ND)),
 C   the program stops with an error message
 C *********************************************************************
+      
+      use sys, only: die
 
       IMPLICIT NONE
       INTEGER  IND, ND, TASK
@@ -37,13 +39,13 @@ C *********************************************************************
         ENDDO
         IND = 1 + IND
       ELSE
-        IF (IND.LT.1) STOP 'IPACK: ERROR: IND < 1'
+        IF (IND.LT.1) call die('IPACK: ERROR: IND < 1')
         IJ = IND - 1
         DO J = 1,ND
           I(J) = MOD( IJ, N(J) )
           IJ = (IJ-I(J)) / N(J)
         ENDDO
-        IF (IJ.GT.0) STOP 'IPACK: ERROR: IND out of range'
+        IF (IJ.GT.0) call die('IPACK: ERROR: IND out of range')
       ENDIF
 
       END

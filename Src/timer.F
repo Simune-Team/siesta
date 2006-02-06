@@ -37,21 +37,28 @@ C
       use mpi_siesta
 #endif
 
-      implicit real(dp)(A-H,O-Z)
+      implicit none
 
-      real :: treal
+      real :: treal     ! Default real for call to cpu_time
 
-      integer :: nmax, iopt, nprogs, iprog
-      PARAMETER (NMAX=500,ZERO=0.D0,HUNDRD=100.D0,TIMMIN=1.D-6)
-      DIMENSION TIME1(NMAX),TIMET(NMAX)
+      integer :: iopt, iprog
+
+      integer, parameter :: NMAX=500
+      real(dp), parameter :: ZERO=0.0_dp,HUNDRD=100.0_dp,
+     $                       TIMMIN=1.0e-6_dp
+      real(dp) :: TIME1(NMAX),TIMET(NMAX)
+
+      integer, save  :: nprogs = 0
+      real(dp), save :: time0  = 0.0_dp
+
+      real(dp) :: time, timtot, timetl, avgtme, fractn
 #ifdef MPI
-      dimension buffer1(3),buffer2(3)
+      real(dp) ::  buffer1(3),buffer2(3)
       integer mpierror
 #endif
       INTEGER NCALLS(NMAX)
       CHARACTER*10 PROGS(NMAX),PROG*(*)
-      SAVE PROGS,NPROGS,TIME0,TIME1,TIMET,NCALLS
-      DATA NPROGS,TIME0 /0,ZERO/
+      SAVE PROGS,TIME1,TIMET,NCALLS
 
 !!      CALL CPUTIM (TIME)
       call cpu_time( treal)         ! Standard Fortran95
@@ -181,27 +188,24 @@ C  J.SOLER (JSOLER AT EMDUAM11) DEC/90
       use m_walltime
       use parallel, only: node
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+      implicit none
 
-      integer :: nmax, iopt, nprogs, iprog
-      PARAMETER (NMAX=500,ZERO=0.D0,HUNDRD=100.D0,TIMMIN=1.D-6)
-      DIMENSION TIME1(NMAX),TIMET(NMAX)
+      integer :: iopt, iprog
+      integer, parameter :: NMAX=500
+      real(dp), parameter :: ZERO=0.0_dp,HUNDRD=100.0_dp,
+     $                       TIMMIN=1.0e-6_dp
+      real(dp) :: TIME1(NMAX),TIMET(NMAX)
       integer ::  wt = 6  ! Use standard output
+
+      integer, save  :: nprogs = 0
+      real(dp), save :: time0  = 0.0_dp
+
+      real(dp) :: time, timtot, timetl, avgtme, fractn
 
       INTEGER NCALLS(NMAX)
       CHARACTER*10 PROGS(NMAX),PROG*(*)
-      SAVE PROGS,NPROGS,TIME0,TIME1,TIMET,NCALLS,count_rate,wt
-      DATA NPROGS,TIME0 /0,ZERO/
+      SAVE PROGS,TIME1,TIMET,NCALLS,wt
 
-C       logical, save  :: first = .true.
-
-C       if (first) then
-C          call io_assign(wt)
-C          open(unit=wt,file="WALLTIME",form="formatted",status="unknown",
-C      $        action="write",position="rewind")
-C          first = .false.
-C       endif
-            
       call wall_time(time)
 
       IF (IOPT.EQ.0) THEN

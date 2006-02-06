@@ -28,6 +28,7 @@
 !----------------------------------------------------------------
 
       use periodic_table, only: symbol
+      use sys,            only: die
 
       implicit none
 
@@ -216,7 +217,7 @@
             enddo
          enddo
          spp%n_pjnl = n
-         if (ntot .ne. spp%nprojs) stop 'KB indexing...'
+         if (ntot .ne. spp%nprojs) call die('KB indexing...')
 
 
          allocate(spp%pjnl(spp%n_pjnl))

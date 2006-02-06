@@ -109,6 +109,7 @@ C *******************************************************************
       use precision,    only : dp, grid_p
       use xcmod,        only : nXCfunc, XCfunc, XCauth
       use xcmod,        only : XCweightX, XCweightC
+      use sys,          only :die
 #ifdef MPI
 C  Modules
       use parallel,     only : Node, Nodes, ProcessorY
@@ -210,21 +211,19 @@ C Set GGA switch
           if ( XCfunc(nf).ne.'LDA' .and. XCfunc(nf).ne.'lda' .and.
      .         XCfunc(nf).ne.'LSD' .and. XCfunc(nf).ne.'lsd' ) then
             write(6,*) 'cellXC: Unknown functional ', XCfunc(nf)
-            stop
+            call die()
           endif
         endif
       enddo
 
 C Check ider
-      if (ider.ne.0 .and. GGA) then
-        write(6,*) 'cellXC: ider=1 available only for LDA'
-        stop
-      endif
+      if (ider.ne.0 .and. GGA)
+     $     call die('cellXC: ider=1 available only for LDA')
 
 C Check value of mspin
       if (mspin.lt.nspin) then
         write(6,*) 'cellXC: parameter mspin must be at least ', nspin
-        stop
+        call die()
       endif
 
 #ifdef MPI
@@ -234,11 +233,9 @@ C be calculated.
       if (GGA.and.Nodes.gt.1) then
 
 C Work out processor grid dimensions
-        if (mod(Nodes,ProcessorY).gt.0) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
         ProcessorZ = Nodes/ProcessorY
 
 C Work out grid coordinates of local node in processor grid
@@ -275,7 +272,7 @@ C difference interval - if not then exit!
             write(6,'(''  ERROR - number of fine mesh points per '',
      .        ''Node must be greater than finite difference order '')')
           endif
-          stop
+          call die()
         endif
 
 C Check that this Node was some points 

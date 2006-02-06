@@ -47,6 +47,7 @@ C *********************************************************************
       use parallel,     only : BlockSize, Node, Nodes
       use parallelsubs, only : LocalToGlobalOrb
       use m_fermid,     only : stepf
+      use sys,          only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -89,12 +90,8 @@ C Start timer
       call timer('transrate',1)
 
 C Check input matrix
-      if(matrix.ne.'P'.and.matrix.ne.'R') then
-        write(6,'(/a)')
-     .   'transrate: matrix only can take values R or P'
-        stop
-      endif
-                                                                                
+      if(matrix.ne.'P'.and.matrix.ne.'R')
+     $  call die('transrate: matrix only can take values R or P')
 
 C Initialise matrix elements to zero
       do iuo = 1,nuo

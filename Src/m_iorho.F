@@ -76,11 +76,9 @@ C Internal variables and arrays
 
 #ifdef MPI
 C Work out density block dimensions
-      if (mod(Nodes,ProcessorY).gt.0) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
       ProcessorZ = Nodes/ProcessorY
       BlockSizeY = ((((mesh(2)/nsm)-1)/ProcessorY) + 1)*nsm
       allocate(bdens(BlockSizeY*mesh(1)))
@@ -295,11 +293,9 @@ C Internal variables and arrays
 
 #ifdef MPI
 C Work out density block dimensions
-      if (mod(Nodes,ProcessorY).gt.0) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
       ProcessorZ = Nodes/ProcessorY
       BlockSizeY = ((((mesh(2)/nsm)-1)/ProcessorY) + 1)*nsm
       allocate(bdens(BlockSizeY*mesh(1)))

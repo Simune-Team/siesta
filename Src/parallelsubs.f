@@ -5,6 +5,7 @@ C
       use parallel, only : BlockSize, ProcessorY
       use spatial,  only : lspatial, nNode, nL2G, nG2L,
      .                     nOrbPerNode
+      use sys,      only : die
 
       implicit none
 
@@ -334,11 +335,9 @@ C  Local variables
      .  ProcessorZ
 
 C  Check that ProcessorY is a factor of the number of processors
-      if (mod(Nodes,ProcessorY).gt.0) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
       ProcessorZ = Nodes/ProcessorY
 
 C  Find processor grid location
@@ -475,11 +474,10 @@ C  Trap zero mesh size case
       endif
 
 C  Check that ProcessorY is a factor of the number of processors
-      if (mod(Nodes,ProcessorY).gt.0) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
+
       ProcessorZ = Nodes/ProcessorY
 
 C  Find blocksizes along axes
@@ -555,11 +553,9 @@ C  Trap zero mesh size case
       endif
 
 C  Check that ProcessorY is a factor of the number of processors
-      if (mod(Nodes,ProcessorY).gt.0) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
       ProcessorZ = Nodes/ProcessorY
 
 C  Find processor grid location

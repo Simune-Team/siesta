@@ -32,6 +32,7 @@ C  Modules
 C
       use precision,   only : dp, grid_p
       use parallel,    only : Node, Nodes, ProcessorY
+      use sys,         only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -104,11 +105,9 @@ C Initialize stress contribution
 
 C Work out processor grid dimensions
       ProcessorZ = Nodes/ProcessorY
-      if (ProcessorY*ProcessorZ.ne.Nodes) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (ProcessorY*ProcessorZ.ne.Nodes) 
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
       Py = (Node/ProcessorZ) + 1
       Pz = Node - (Py - 1)*ProcessorZ + 1
 
@@ -206,6 +205,9 @@ C Free local memory
 
       subroutine nfft( N )
 
+      use sys, only: die
+      use parallel, only: ionode
+
 C CHANGES N INTO THE NEXT INTEGER ALLOWED BY THE FFT ROUTINE
 C WRITTEN BY J.M.SOLER. MAY/95.
 
@@ -226,6 +228,7 @@ C WRITTEN BY J.M.SOLER. MAY/95.
         ENDDO
         IF (NREM .EQ. 1) RETURN
       ENDDO
-      WRITE(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
-      STOP
+      if (Ionode)
+     $    write(6,*) 'NFFT: NO SUITABLE INTEGER FOUND FOR N =', NMIN
+      call die()
       END

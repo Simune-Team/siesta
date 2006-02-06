@@ -53,6 +53,8 @@
 !   real*8  Y(NR) : Intermediate array used in the Numerov method
 !***********************************************************************
       USE IONEW
+      use sys, only: die
+
       IMPLICIT NONE
       INTEGER          :: NR, L, NPRIN, NNODE
       DOUBLE PRECISION :: H(NR), S(NR), E, G(NR), Y(NR),
@@ -108,7 +110,7 @@
         IF (IOnode) WRITE(6,'(A,/,A,F3.0,2(A,I2),2(A,F12.5))')
      .   ' EGOFV: ERROR: Too many iterations. Stopping.',
      .   ' Z=',Z,'  L=',L,'  NNODE=',NNODE,'  E=',E,'  DE=',DE
-        STOP
+        call die()
       END IF
 
       ! Find true waveftn G from auxiliary function Y and normalize

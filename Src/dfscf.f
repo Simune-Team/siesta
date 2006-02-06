@@ -50,6 +50,7 @@ C  Modules
       use meshdscf, only: listDl, listDlPtr, numdL
       use alloc
       use parallel, only: Nodes
+      use sys,      only: die
 
       implicit none
 
@@ -193,7 +194,7 @@ C  last runs circularly over rows of D
               if (last .gt. maxb) last = 1
               if (iob(last) .le. 0) goto 10
             enddo
-            stop 'rhoofd: no slot available in D'
+            call die('rhoofd: no slot available in D')
    10       continue
 
 C  Copy row i of Dscf into row last of D

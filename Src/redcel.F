@@ -15,6 +15,7 @@ C
 C  Modules
 C
       use precision, only : dp
+      use sys,       only : die
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -47,7 +48,7 @@ C Lattice vectors
      .     'redcel: ERROR: Double input for lattice vectors'
          call MPI_Abort(MPI_Comm_World,1,MPIerror)
 #else
-         stop 'redcel: ERROR: Double input for lattice vectors'
+         call die('redcel: ERROR: Double input for lattice vectors')
 #endif
       endif
 
@@ -103,7 +104,7 @@ C Super cell ..........................................
      .      'redcel: ERROR: LatticeConstant required'
           call MPI_Abort(MPI_Comm_World,1,MPIerror)
 #else
-          stop 'redcel: ERROR: LatticeConstant required'
+          call die('redcel: ERROR: LatticeConstant required')
 #endif
         endif
         do i = 1,3

@@ -800,12 +800,17 @@ C  THEIR PRODUCT WITH DIRECT LATTICE VECTORS A IS 1 (IF IOPT=0) OR
 C  2*PI (IF IOPT=1). N IS THE SPACE DIMENSION.
 C  WRITTEN BY J.M.SOLER.
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      integer :: n, iopt, i
-      DOUBLE PRECISION A(N,N),B(N,N)
+      use precision, only: dp
+      use sys,       only: die
 
-      C=1.D0
-      IF (IOPT.EQ.1) C=2.D0*ACOS(-1.D0)
+      implicit none
+      integer :: n, iopt, i
+      real(dp) ::  A(N,N),B(N,N)
+
+      real(dp) :: c, ci
+
+      C=1.0_dp
+      IF (IOPT.EQ.1) C=2.0_dp*ACOS(-1.0_dp)
 
       IF (N .EQ. 1) THEN
         B(1,1) = C / A(1,1)
@@ -832,8 +837,7 @@ C  WRITTEN BY J.M.SOLER.
           B(3,I)=B(3,I)*CI
   20    CONTINUE
       ELSE
-        WRITE(6,*) 'RECCEL: NOT PREPARED FOR N =', N
-        STOP
+         call die('RECCEL: NOT PREPARED FOR N>3')
       ENDIF
       END
 

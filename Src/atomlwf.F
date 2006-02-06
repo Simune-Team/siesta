@@ -240,7 +240,7 @@ C Check that there is an integer number of electrons
         if (Node.eq.0) then
           write(6,*) 'cspa: Wrong total charge; non integer:',qtot
         endif
-        stop
+        call die()
       endif
 C ..................
 
@@ -276,7 +276,7 @@ C (or the number of electrons)
             write(6,*) 'cspa: Wrong atomic charge for atom ',ia
             write(6,*) '      qa = ',qa(ia),'  Must be an integer!!'
           endif
-          stop
+          call die()
         endif
         if (ioptlwf .eq. 1) then
           indexi = ( ( nelectr + 2 ) / 2 )
@@ -291,7 +291,7 @@ C (or the number of electrons)
               write(6,*) '      Ordejon-Mauri for atoms with an even'
               write(6,*) '      number of electrons.'
             endif
-            stop
+            call die()
           endif
           indexi = ( ( nelectr ) / 2 )
         else
@@ -431,7 +431,7 @@ C   occupied and 0.1 if empty)
           write(6,*) 'cspa: Number of LWFs larger than  basis set size'
           write(6,*) '      Increase basis set, or use less LWFs'
         endif
-        stop
+        call die()
       endif
 
       if ((ioptlwf .eq. 2) .and. (nbands .ne. nqtot/2)) then
@@ -440,7 +440,7 @@ C   occupied and 0.1 if empty)
           write(6,*) '      Something went wrong in generating the'
           write(6,*) '      LWFs for the Ordejon-Mauri functional'
         endif
-        stop
+        call die()
       endif
 
 
@@ -594,7 +594,7 @@ C If 32 or less electrons, populate lowest s, p, d and f orbitals
           write(6,*) 'cspa: Cannot build initial guess in initguess.'
           write(6,*) '      Reason: Too many electrons for this routine'
         endif
-        stop
+        call die()
       endif 
 
       if (lmaxp .gt. lomaxfis(is)) then
@@ -603,7 +603,7 @@ C If 32 or less electrons, populate lowest s, p, d and f orbitals
           write(6,*) '      Reason: Max. angular moment for atom ',ia,
      .               '      is not large enough'
         endif
-        stop
+        call die()
       endif 
 
       if (ne .gt. 32) then
@@ -611,7 +611,7 @@ C If 32 or less electrons, populate lowest s, p, d and f orbitals
           write(6,*) 'cspa: Cannot build initial guess in initguess.'
           write(6,*) '      Too many valence electrons in atom ',ia
         endif
-        stop
+        call die()
       endif 
 
       if (l .le. lmaxp) then

@@ -13,7 +13,7 @@ use m_mpi_utils, only: Globalize_sum
 use parallel, only: ionode
 use alloc, only: re_alloc, de_alloc
 
-use sys, only: message
+use sys, only: message, die
 
 implicit none
 
@@ -331,14 +331,14 @@ subroutine dlinds(n,a,np1,ainv,np)
       call dgetrf(n,n,ainv,np,ipiv,info)
       if (info.ne.0) then
          write(6,*) 'Error in DGETRF. INFO:',info
-         stop 'INV'
+         call die()
       endif
 
       lwork = n
       call dgetri(n,ainv,np,ipiv,work,lwork,info)
       if (info.ne.0) then
          write(6,*) 'Error in DGETRI. INFO:',info
-         stop 'INV'
+         call die()
       endif
 
       end subroutine dlinds

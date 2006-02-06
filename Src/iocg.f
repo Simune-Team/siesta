@@ -17,6 +17,7 @@ c**************************************************************************
       use fdf
       use files,     only : slabel, label_length
       use precision, only : dp
+      use sys,  only      : die
 
       implicit          none
 
@@ -85,7 +86,7 @@ c write it ---------------------------------------------------------------
         call io_close(unit1)
 
       else
-        stop 'iocg: Incorrect task'
+        call die('iocg: Incorrect task')
       endif
 
       return

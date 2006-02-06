@@ -82,6 +82,7 @@ C
       use parallel,   only : Node, Nodes
       use fdf
       use files,      only : slabel, label_length
+      use sys,        only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -134,12 +135,8 @@ C ........................
 
 #ifdef MPI
 C Check that this is not a parallel run with pulfile=.true.
-       if (pulfile.and.Nodes.gt.1) then
-         if (Node.eq.0) then
-           write(6,*) 'pulayx: cannot use pulay on file in parallel'
-         endif
-         stop
-       endif
+       if (pulfile.and.Nodes.gt.1)
+     $     call die('pulayx: cannot use pulay on file in parallel')
 #endif
 
 C Check some input and dimensions .......................................
@@ -150,12 +147,8 @@ C Check some input and dimensions .......................................
        numel = numel*nspin
 
        if (.not.pulfile) then
-         if (dimaux .lt. numel*maxsav) then
-           if (Node.eq.0) then
-             write(6,*) 'pulayx: dimaux too small'
-           endif
-           stop
-         endif
+         if (dimaux .lt. numel*maxsav)
+     $         call die('pulayx: dimaux too small')
        endif
          
 C ........................

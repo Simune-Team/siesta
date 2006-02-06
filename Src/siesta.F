@@ -374,7 +374,7 @@ C Find some switches ..................................................
       call fdf_global_get(writedm,'WriteDM'     , .true.)
       call fdf_global_get(writb, 'WriteBands'      , outlng )
       call fdf_global_get(writbk, 'WriteKbands'     , outlng )
-      call fdf_global_get(writeig,'WriteEigenvalues',  .outlng )
+      call fdf_global_get(writeig,'WriteEigenvalues', outlng )
       call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
       call fdf_global_get(writic, 'WriteCoorInitial', .true. )
       call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)

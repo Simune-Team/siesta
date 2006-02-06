@@ -24,6 +24,7 @@ c *******************************************************************
       use fdf, only : fdf_physical, fdf_string
       use precision, only : dp
       use units, only : Ang
+      use sys,   only: die
 
       implicit          none
 
@@ -124,7 +125,8 @@ c$$$        enddo
         write(6,'(2a)') 'outcoor:     - ScaledByLatticeVectors ',
      .                                               '(or Fractional)'
         write(6,"('outcoor: ',a)") repeat('*',72)
-        stop 'outcoor: ERROR: Wrong atomic-coordinate output format'
+        call
+     $   die('outcoor: ERROR: Wrong atomic-coordinate output format')
       endif
 
 c writing a heading for the coordinates

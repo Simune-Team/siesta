@@ -1,5 +1,7 @@
       module band
 
+      use sys, only: die
+
       implicit none
 
       integer :: maxlin
@@ -402,10 +404,8 @@ C Check indxuo
           if (Node.eq.0) then
             write(6,*) 'bands: invalid index: io, indxuo =',
      .        io, indxuo(io)
-            stop 'bands: invalid indxuo'
-          else
-            stop
           endif
+          call die( 'bands: invalid indxuo')
         endif
         muo(iuo) = muo(iuo) + 1
       enddo
@@ -414,10 +414,8 @@ C Check indxuo
           if (Node.eq.0) then
           write(6,'(/,2a,3i6)') 'bands: ERROR: inconsistent indxuo.',
      .     ' iuo, muo(iuo), muo(1) =', iuo, muo(iuo), muo(1)
-            stop 'bands: ERROR: inconsistent indxuo.'
-          else
-            stop 
           endif
+          call die('bands: ERROR: inconsistent indxuo.')
         endif
       enddo
 
@@ -453,11 +451,7 @@ C Handle parallel over K points option which is not allowed for here
      .              Haux, Saux, psi, Haux, Saux, aux,
      .              nuotot, occtol, 1 )
       else
-        if (Node.eq.0) then
-          stop 'bands: ERROR: incorrect value of nspin'
-        else
-          stop
-        endif
+        call die( 'bands: ERROR: incorrect value of nspin')
       endif
 
 C Write bands 

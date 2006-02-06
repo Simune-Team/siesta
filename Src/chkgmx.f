@@ -2,16 +2,22 @@
 C
 C  Modules
 C
-      use precision
-      use parallel, only : Node
-
-      IMPLICIT DOUBLE PRECISION (A-H,K,O-Z)
+      use precision, only: dp
+      use sys,       only: die
+      use parallel,  only : Node
 
       integer :: i, j, i1, i2, i3
 
-      PARAMETER (ZERO=0.D0,HALF=.5D0,TINY=1.D-8,BIG=1.D20)
+      real(dp), parameter :: ZERO=0.0_dp,HALF=0.5_dp,
+     $                       TINY=1.0e-8_dp,BIG=1.0e20_dp
+
+      real(dp), intent(inout) :: g2max
       real(dp) K(3),BG(3,3),BM(3,3),G(3)
+      real(dp) :: r, gmod, gmax, g2msh
       INTEGER MESH(3)
+
+      real(dp) :: ddot
+      external :: ddot
 
       DO I=1,3
         DO J=1,3
@@ -34,12 +40,7 @@ C
           ENDDO
         ENDDO
       ENDDO
-      IF (GMAX.LT.ZERO) THEN
-        if (Node.eq.0) then
-          WRITE (6,*) 'CHKGMX: K NOT IN FIRST BZ'
-        endif
-        STOP
-      END IF
+      IF (GMAX.LT.ZERO) call die('CHKGMX: K NOT IN FIRST BZ')
       G2MSH=GMAX*GMAX-TINY
       IF (G2MSH.LT.G2MAX) THEN
         if (Node.eq.0) then

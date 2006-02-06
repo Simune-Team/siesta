@@ -1,7 +1,7 @@
 MODULE alloc
 
       use precision, only: sp, dp
-      use parallel,   only : Node, Nodes
+      use parallel,   only : Node, Nodes, ionode
       use sys, only: die
 #ifdef MPI
       use mpi_siesta
@@ -1354,6 +1354,7 @@ INTEGER FUNCTION type_mem( var_type )
 !
 implicit none
 character, intent(in) :: var_type
+character(len=40)     :: message
 
 select case( var_type )
 #ifdef OLD_CRAY
@@ -1376,8 +1377,9 @@ case('D')
 case('S')
   type_mem = 1
 case default
-  print*, 'alloc_count: ERROR: unknown type = ', var_type
-  stop
+  write(message,"(2a)") &
+    'alloc_count: ERROR: unknown type = ', var_type
+  call die(trim(message))
 end select
 
 END FUNCTION type_mem
@@ -1565,18 +1567,18 @@ integer mpierror
 #endif
 
 if (ierr/=0) then
-  print*, 'alloc_err: allocate status error', ierr
+  if (ionode) print*, 'alloc_err: allocate status error', ierr
   if (present(name).and.present(routine)) then
-    print*, 'alloc_err: array ', name, &
+    if (ionode) print*, 'alloc_err: array ', name, &
                ' requested by ', routine
   elseif (present(name)) then
-    print*, 'alloc_err: array ', name, &
+    if (ionode) print*, 'alloc_err: array ', name, &
                ' requested by unknown'
   elseif (present(routine)) then
-    print*, 'alloc_err: array unknown', &
+    if (ionode) print* , 'alloc_err: array unknown', &
                ' requested by ', routine
   endif
-  print '(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
+  if (ionode) print '(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
                       i,bounds(1,i),bounds(2,i),         &
                       i=1,size(bounds,dim=2))
 

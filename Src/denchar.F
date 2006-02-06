@@ -24,6 +24,7 @@ C
       USE BASIS_IO
       USE LISTSC_MODULE, ONLY: LISTSC_INIT
       USE FDF
+      use sys, only: die
 
 C     It has to be MPI-aware since it calls routines down the line...
 C
@@ -257,7 +258,7 @@ C Read Density Matrix from files ---------------------------------------
           WRITE(6,*)' DENSITY MATRIX NOT FOUND              '
           WRITE(6,*)' CHECK YOU HAVE COPIED IT FROM THE       '
           WRITE(6,*)' DIRECTORY WHERE YOU HAVE RUN SIESTA   '
-          STOP
+          call die()
         ENDIF 
       ENDIF
 

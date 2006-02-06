@@ -51,6 +51,7 @@ C
       use fdf
       use parsing
       use siesta_cml
+      use sys,          only: die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -223,11 +224,9 @@ C Find local number of mesh points
 #endif
 
 C Check that ProcessorY is a factor of the number of processors
-        if (mod(Nodes,ProcessorY).gt.0) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
+      if (mod(Nodes,ProcessorY).gt.0)
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
         ProcessorZ = Nodes/ProcessorY
 
 C Calculate blocking sizes

@@ -3,7 +3,7 @@
       use precision
       use parallel,   only : Node, IONode
       use m_ioxv,     only : xv_file_read
-      use sys,        only : die, stop_flag
+      use sys,        only : die
       use atomlist,   only : iza
       use units,      only : Ang, eV
       use m_mpi_utils, only : broadcast
@@ -172,9 +172,9 @@ C Compute G=HtH at current time
 
 C Compute Inverse of H and G at current time 
       call inver(h,hi,3,3,info)
-      if (info .ne. 0) stop 'npr: INVER failed'
+      if (info .ne. 0) call die('npr: INVER failed')
       call inver(g,gi,3,3,info)
-      if (info .ne. 0) stop 'npr: INVER failed'
+      if (info .ne. 0) call die( 'npr: INVER failed')
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -215,32 +215,21 @@ C Initialize variables if current time step is the first of the simulation
                   read(iacc,*) (hold(j,i),j=1,3)
                enddo
                read(iacc,*) old_natoms
-               if (old_natoms .ne. natoms) then
-                  write(6,"(a)") "Wrong number of atoms in NPR_RESTART"
-                  stop_flag = .true.
-               else
-                  do ia = 1, natoms
-                     read(iacc,*) dummy_iza, (xaold(i),i=1,3)
-                     if (dummy_iza .ne. iza(ia)) then
-                        write(6,"(a)")
-     $                       "Wrong species number in NPR_RESTART"
-                        stop_flag = .true.
-                        exit    ! loop
-                     endif
-                     sold(1:3,ia) = matmul(hi,xaold(1:3))
-                     if (debug .and. IOnode) print *, sold(:,ia)
-                  enddo
-               endif
+               if (old_natoms .ne. natoms)
+     $              call die("Wrong number of atoms in NPR_RESTART")
+               do ia = 1, natoms
+                  read(iacc,*) dummy_iza, (xaold(i),i=1,3)
+                  if (dummy_iza .ne. iza(ia))
+     $                 call die("Wrong species number in NPR_RESTART")
+                  sold(1:3,ia) = matmul(hi,xaold(1:3))
+                  if (debug .and. IOnode) print *, sold(:,ia)
+               enddo
                call io_close(iacc)
-               if (.not. stop_flag) 
-     $             write(6,*)
-     $                 "MD restart: Read old positions, cell",
-     $                 " and Nose variables from NPR_RESTART"
+               write(6,*)
+     $            "MD restart: Read old positions, cell",
+     $            " and Nose variables from NPR_RESTART"
 
             endif               ! IONODE
-
-            call broadcast(stop_flag)
-            if (stop_flag) call die()  ! Proper way to stop MPI...
 
             call broadcast(x)
             call broadcast(xold)
@@ -299,7 +288,7 @@ C xdot and hdot (time derivatives at current time), and related stuff
       enddo
 
       call inver(aux1,fi,3,3,info)
-      if (info .ne. 0) stop 'npr: INVER failed'
+      if (info .ne. 0) call die('npr: INVER failed')
       fi = fi/twodt
       if (debug .and. IOnode) print *, "fi:\n", fi
 
@@ -603,9 +592,9 @@ C Compute G=HtH at current time
 
 C Compute Inverse of H and G at current time 
       call inver(h,hi,3,3,info)
-      if (info .ne. 0) stop 'pr: INVER failed'
+      if (info .ne. 0) call die('pr: INVER failed')
       call inver(g,gi,3,3,info)
-      if (info .ne. 0) stop 'pr: INVER failed'
+      if (info .ne. 0) call die( 'pr: INVER failed')
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -642,32 +631,21 @@ C Initialize variables if current time step is the first of the simulation
                   read(iacc,*) (hold(j,i),j=1,3)
                enddo
                read(iacc,*) old_natoms
-               if (old_natoms .ne. natoms) then
-                  write(6,"(a)") "Wrong number of atoms in PR_RESTART"
-                  stop_flag = .true.
-               else
-                  do ia = 1, natoms
-                     read(iacc,*) dummy_iza, (xaold(i),i=1,3)
-                     if (dummy_iza .ne. iza(ia)) then
-                        write(6,"(a)")
-     $                       "Wrong species number in PR_RESTART"
-                        stop_flag = .true.
-                        exit    ! loop
-                     endif
-                     sold(1:3,ia) = matmul(hi,xaold(1:3))
-                     if (debug .and. IOnode) print *, sold(:,ia)
-                  enddo
-               endif
+               if (old_natoms .ne. natoms)
+     $              call die("Wrong number of atoms in PR_RESTART")
+               do ia = 1, natoms
+                  read(iacc,*) dummy_iza, (xaold(i),i=1,3)
+                  if (dummy_iza .ne. iza(ia))
+     $                 call die("Wrong species number in PR_RESTART")
+                  sold(1:3,ia) = matmul(hi,xaold(1:3))
+                  if (debug .and. IOnode) print *, sold(:,ia)
+               enddo
                call io_close(iacc)
-               if (.not. stop_flag) 
-     $             write(6,*)
+               write(6,*)
      $                 "MD restart: Read old positions and cell",
      $                 " from PR_RESTART"
 
             endif               ! IONODE
-
-            call broadcast(stop_flag)
-            if (stop_flag) call die()  ! Proper way to stop MPI...
 
             call broadcast(sold(1:3,1:natoms))
             call broadcast(hold(1:3,1:3))
@@ -716,7 +694,7 @@ C hdot (time derivatives at current time), and related stuff
       enddo
 
       call inver(aux1,fi,3,3,info)
-      if (info .ne. 0) stop 'pr: INVER failed'
+      if (info .ne. 0) call die( 'pr: INVER failed')
 
       fi = fi/twodt
       if (debug .and. IOnode) print *, "fi:\n", fi
@@ -992,12 +970,8 @@ C Internal variables .........................................................
      .  xanew,xaold
 C .............................................................................
 
-      if (iunit .ne. 1 .and. iunit .ne. 2) then
-        if (Node.eq.0) then
-          write(6,*) 'nose: Wrong iunit option;  must be 1 or 2'
-        endif
-        stop
-      endif
+      if (iunit .ne. 1 .and. iunit .ne. 2)
+     $    call die('nose: Wrong iunit option;  must be 1 or 2')
       ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
@@ -1068,42 +1042,30 @@ C     if the time step is the first of the simulation
      $           status="old", action="read", position="rewind")
             read(iacc,*) old_natoms, old_dt
             read(iacc,*) x, xold
-            if (old_natoms .ne. natoms) then
-               write(6,"(a)") "Wrong number of atoms in NOSE_RESTART"
-               stop_flag = .true.
-            else
-               do ia = 1, natoms
-                  read(iacc,*) dummy_iza, (xaold(i,ia),i=1,3) ! old positions
-                  if (dummy_iza .ne. iza(ia)) then
-                     write(6,"(a)")
-     $                     "Wrong species number in NOSE_RESTART"
-                     stop_flag = .true.
-                     exit  ! loop
-                  endif
-               enddo
-            endif
+            if (old_natoms .ne. natoms)
+     $           call die("Wrong number of atoms in NOSE_RESTART")
+            do ia = 1, natoms
+               read(iacc,*) dummy_iza, (xaold(i,ia),i=1,3) ! old positions
+               if (dummy_iza .ne. iza(ia))
+     $              call die("Wrong species number in NOSE_RESTART")
+            enddo
             call io_close(iacc)
-            if (.not. stop_flag) then
-               write(6,*)
+            write(6,*)
      $         "MD restart: Read old positions and Nose variables",
      $              " from NOSE_RESTART"
-               if (abs(old_dt - dt) .gt. 1.0d-8) then
-                  write(6,*) "**WARNING: Timestep has changed. Old: ",
-     $                 old_dt, " New: ", dt
-                  write(6,*) "**WARNING: Approximating old positions."
+            if (abs(old_dt - dt) .gt. 1.0d-8) then
+               write(6,*) "**WARNING: Timestep has changed. Old: ",
+     $              old_dt, " New: ", dt
+               write(6,*) "**WARNING: Approximating old positions."
                   ! First order, using the positions and velocities 
                   ! at t-old_dt (positions from NOSE_RESTART, velocities
                   !              from XV file)
-                  xaold(1:3,1:natoms) = xaold(1:3,1:natoms) -
+               xaold(1:3,1:natoms) = xaold(1:3,1:natoms) -
      $                              (dt-old_dt) * va(1:3,1:natoms)
-               endif  ! dt /= old_dt
-            endif     ! still processing
+            endif               ! dt /= old_dt
 
-            endif     ! IONode
+           endif                  ! IONode
             
-            call broadcast(stop_flag)
-            if (stop_flag) call die()  ! Proper way to stop MPI...
-
             call broadcast(x)
             call broadcast(xold)
             call broadcast(xaold(1:3,1:natoms))
@@ -1314,12 +1276,8 @@ C Internal variables ...........................................................
      .  volcel, memory
 C ....................................................................
 
-      if (iunit .ne. 1 .and. iunit .ne. 2) then
-        if (Node.eq.0) then
-          write(6,*) 'anneal: Wrong iunit option;  must be 1 or 2'
-        endif
-        stop
-      endif
+      if (iunit .ne. 1 .and. iunit .ne. 2)
+     $    call die('anneal: Wrong iunit option;  must be 1 or 2')
 
 !!!      if (taurelax/dt .lt. 0.1) return
 
@@ -1368,7 +1326,7 @@ C ........................
 C Compute Parrinello-Rahman variables (H and scaled coordinates) ............
 C Compute Inverse of H at current time 
       call inver(h,hi,3,3,info)
-      if (info .ne. 0) stop 'anneal: INVER failed'
+      if (info .ne. 0) call die('anneal: INVER failed')
 
 C Calculate scaled coordinates (referred to matrix H) at current time
       do ia = 1,natoms
@@ -1607,12 +1565,9 @@ C Internal variables ..........................................................
 
 C ........................
 
-      if (iunit .ne. 1 .and. iunit .ne. 2) then
-        if (Node.eq.0) then
-          write(6,*) 'verlet1: Wrong iunit option;  must be 1 or 2'
-        endif
-        stop
-      endif
+      if (iunit .ne. 1 .and. iunit .ne. 2)
+     $     call die('verlet1: Wrong iunit option;  must be 1 or 2')
+
       ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
@@ -1784,12 +1739,9 @@ C Internal variables ..........................................................
      .  accold,vold
 C ........................
 
-      if (iunit .ne. 1 .and. iunit .ne. 2) then
-        if (Node.eq.0) then
-          write(6,*) 'verlet2: Wrong iunit option;  must be 1 or 2'
-        endif
-        stop
-      endif
+      if (iunit .ne. 1 .and. iunit .ne. 2)
+     $     call die('verlet2: Wrong iunit option;  must be 1 or 2')
+
       ct = 3 + ntcon
       if (natoms .eq. 1) ct = 0
 
@@ -1849,38 +1801,23 @@ C     if the time step is the first of the simulation ..........................
            open(unit=iacc,file="VERLET_FORCES", form="formatted",
      $          status="old", action="read", position="rewind")
            read(iacc,*) old_natoms, old_dt
-           if (old_natoms .ne. natoms) then
-               write(6,"(a)") "Wrong number of atoms in VERLET_FORCES"
-               stop_flag = .true.
-           else
-              do ia = 1, natoms
-                 read(iacc,*) dummy_iza, (accold(i,ia),i=1,3) ! forces
-                 if (dummy_iza .ne. iza(ia)) then
-                    write(6,"(a)")
-     $                   "Wrong species number in VERLET_FORCES"
-                    stop_flag = .true.
-                    exit        ! loop
-                 endif
-                 accold(:,ia) = fovermp * accold(:,ia) / ma(ia)
-                 vold(:,ia)  = va(:,ia)
-              enddo
-           endif
+           if (old_natoms .ne. natoms)
+     $          call die("Wrong number of atoms in VERLET_FORCES")
+           do ia = 1, natoms
+              read(iacc,*) dummy_iza, (accold(i,ia),i=1,3) ! forces
+              if (dummy_iza .ne. iza(ia)) 
+     $             call die("Wrong species number in VERLET_FORCES")
+              accold(:,ia) = fovermp * accold(:,ia) / ma(ia)
+              vold(:,ia)  = va(:,ia)
+           enddo
            call io_close(iacc)
-           if (.not. stop_flag) then
-            write(6,*) "MD restart: Read old forces from VERLET_FORCES"
-            if (abs(old_dt - dt) .gt. 1.0d-8) then
-               write(6,*) "Timestep has changed. Old: ", old_dt,
-     $                     " New: ", dt
-            endif
-           endif ! still processing
+           write(6,*) "MD restart: Read old forces from VERLET_FORCES"
+           if (abs(old_dt - dt) .gt. 1.0d-8) then
+              write(6,*) "Timestep has changed. Old: ", old_dt,
+     $             " New: ", dt
+           endif
 
           endif             ! IONode
-
-          call broadcast(stop_flag)
-          if (stop_flag) then
-             stop_flag = .false.
-             call die()         ! Proper way to stop MPI...
-          endif
 
           call broadcast(accold(1:3,1:natoms))
           call broadcast(vold(1:3,1:natoms))
@@ -1899,10 +1836,8 @@ C Compute velocities at current time step,
 !        the first step.
 !
          do ia = 1,natoms
-            do i = 1,3
-               va(i,ia) = vold(i,ia) + 0.5d0 * old_dt
-     .              * (accold(i,ia) + fovermp * fa(i,ia) / ma(ia))
-            enddo
+            va(:,ia) = vold(:,ia) + 0.5_dp * old_dt
+     .           * (accold(:,ia) + fovermp * fa(:,ia) / ma(ia))
          enddo
          
       else
@@ -1910,10 +1845,8 @@ C Compute velocities at current time step,
 !        Current timestep.
 !
          do ia = 1,natoms
-            do i = 1,3
-               va(i,ia) = vold(i,ia) + dtby2 
-     .              * (accold(i,ia) + fovermp * fa(i,ia) / ma(ia))
-            enddo
+            va(:,ia) = vold(:,ia) + dtby2 
+     .           * (accold(:,ia) + fovermp * fa(:,ia) / ma(ia))
          enddo
       endif    
 
@@ -1941,7 +1874,7 @@ C Compute positions at next time step.....................................
       do ia = 1,natoms
         do i = 1,3
           xa(i,ia) = xa(i,ia) + dt * va(i,ia) 
-     .                  + dt2 / 2.0d0 * fovermp * fa(i,ia) / ma(ia)
+     .                  + dt2 / 2.0_dp * fovermp * fa(i,ia) / ma(ia)
         enddo
       enddo
 C ...................
@@ -1960,7 +1893,7 @@ C Kinetic energy of atoms
       kin = 0.0d0
       do ia = 1,natoms
         do i = 1,3
-          kin = kin + 0.5d0 * ma(ia) * va(i,ia)**2 / fovermp
+          kin = kin + 0.5_dp * ma(ia) * va(i,ia)**2 / fovermp
         enddo
       enddo
 

@@ -1,7 +1,7 @@
       module atom
 
-      use precision
-      use sys
+      use precision, only: dp
+      use sys,       only: die
       use atmparams
       use m_recipes, only: spline, polint
 
@@ -765,7 +765,7 @@ c       endif
         if(rmax.gt.rint) then 
           write(6,*) 'POLARIZATION: Rc for the polarization orbitals'
           write(6,*) 'must be smaller than ',rint,' Bohr'
-         call die
+         call die()
         endif
 
         do ir=nrc+1,nrval 
@@ -890,7 +890,7 @@ CInitialized c1 and c2 to arbitrary values.............
             write(6,*)'orbital has failed !!!!!!!!!'
             write(6,*)'Please try with a Rc no bigger than ',rnd1,
      .        ' Bohr'
-          call die
+          call die()
                           
 100       continue
           dnrm=0.0d0
@@ -1984,7 +1984,7 @@ C Loop over functionals
      . 'xc_check: ERROR: Exchange-correlation functional not allowed'
            write(6,'(a)') 'xc_check: ERROR: xc.functional= ',XCfunc(nf)
            write(6,'(a)') 'xc_check: ERROR: xc.authors= ',XCauth(nf)
-           call die
+           call die()
 
          endif
 
@@ -2278,7 +2278,7 @@ C**ADDING A NEW SPECIES TO THE LIST**
               write(6,"(2a,i4)") 
      .        'new_specie: ERROR: Parameter lmaxd must be increased ',
      .        'to at least ', lmax 
-              call die
+              call die()
           endif                
 
           nzetamax=0
@@ -2525,7 +2525,7 @@ C the 'text' variable.
      .            'read_vps: Pseudo-core for hartree and xc-correction'
            write(6,'(a)') 'Siesta cannot use this pseudopotential'
            write(6,'(a)') 'Use option pe instead of ph in ATOM program'
-           STOP
+           call die()
              elseif(nicore.eq.'fcec') then
                write(6,'(a)') 'read_vps: Full-core for xc-correction'
              elseif(nicore.eq.'fche') then
@@ -2533,7 +2533,7 @@ C the 'text' variable.
      .            'read_vps: Full-core for hartree and xc-correction'
            write(6,'(a)') 'Siesta cannot use this pseudopotential'
            write(6,'(a)') 'Use option pe instead of ph in ATOM program'
-           STOP
+           call die()
              endif
 
            endif

@@ -4,6 +4,7 @@
       use parallel,   only : IOnode
       use fdf,        only : fdf_boolean, fdf_integer, fdf_string
       use m_recipes,  only:  derfc
+      use sys,        only:  die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -47,8 +48,6 @@ C *********************************************************************
 C
 C  Modules
 C
-
-CCCCCCCCCC      implicit real(dp)(A-H,O-Z)
 
 C Passed variables
       integer        :: maxe
@@ -122,7 +121,7 @@ C Determine Fermi level
             write (6,'(/a)') 
      .            'Fermid: Bands full, no excitation possible'
           endif
-          stop
+          call die()
         else
           return
         endif
@@ -132,7 +131,7 @@ C Determine Fermi level
           write(6,*) 'Fermid: Not enough states'
           write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
         endif
-        stop
+        call die()
       endif
       T = max(temp,1.d-6)
       drange = T*sqrt(-log(tol*0.01d0))
@@ -201,10 +200,9 @@ C Obtain the electronic entropy
       if (ionode) then
         write(6,*) 'Fermid: Iteration has not converged.'
         write(6,*) 'Fermid: qtot,sumq=',qtot,sumq
-        stop 'Fermid: Iteration has not converged.'
-      else
-        stop
       endif
+      call die('Fermid: Iteration has not converged.')
+
 
       end subroutine fermid
 
@@ -293,7 +291,7 @@ C calculated here if ne < maxe
             write(6,*) 'Fermid: ispin,qtot,sumq=',
      .                 ispin,qtot(ispin),sumq(ispin)
           endif
-          stop
+          call die()
         ENDIF
       enddo
       T = max(temp,1.0d-6)
@@ -333,10 +331,9 @@ C calculated here if ne < maxe
           write (6,*) 'Fermid: ispin,qtot,sumq=',
      .               ispin,qtot(ispin),sumq(ispin)
         enddo 
-        stop 'Fermid: Iteration has not converged.'
-      else
-        stop
       endif
+      call die('Fermid: Iteration has not converged.')
+
 100   continue
       entropy = 0.0d0
 
@@ -396,8 +393,8 @@ C Reading which electronic occupation function to use -------
             write(6,'(a,i2)') 
      .     '       Using Hermite-Gauss polynomials of order ',nh
           else
-            stop 'fermid: Error: Allowed values for OccupationFunction 
-     . are FD and MP'
+            call die('fermid: Error: Allowed values '
+     $               // 'for OccupationFunction are FD and MP')
           endif
         endif
 #ifdef MPI
@@ -447,7 +444,7 @@ C Get contribution to step function at order I
 
       else
 
-        stop 'Stepf: Incorrect step function'
+        call die( 'Stepf: Incorrect step function')
 
       endif
 
@@ -493,8 +490,8 @@ c Reading which electronic occupation function to use -------
             write(6,'(a,i2)')
      .     '       Using Hermite-Gauss polynomials of order ',nh
           else
-            stop 'Fermid: Error: Allowed values for OccupationFunction 
-     . are FD and MP'
+            call die('fermid: Error: Allowed values '
+     $               // 'for OccupationFunction are FD and MP')
           endif
         endif
 #ifdef MPI
@@ -527,7 +524,7 @@ C Ref: Methfessel & Paxton PRB40 (15/Aug/89)
 
       else
 
-        stop 'Stepf: Incorrect step function'
+        call die( 'Stepf: Incorrect step function')
 
       endif
 
@@ -594,7 +591,7 @@ C Local variables
       real(dp) :: hm2
 
       if (n .gt. 1000) 
-     .     stop 'Fermid: Order of Hermite polynomial too large'
+     .     call die('Fermid: Order of Hermite polynomial too large')
 
 
       hp = 1.0d0

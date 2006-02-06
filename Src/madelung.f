@@ -19,6 +19,7 @@ C  Modules
 C
       use precision
       use parallel,   only : Node
+      use sys, only: die
 
       implicit none
 
@@ -50,7 +51,7 @@ C (cluster or molecule, with SC, FCC or BCC cell) .....................
      .      'madelung: WARNING: Continue only if you really know'
      .      ,' what you are doing.'
         endif
-        Emad = 0.0d0
+        Emad = 0.0_dp
         return
       else
         call typecell(cell,ctype,lv)
@@ -66,36 +67,32 @@ C (cluster or molecule, with SC, FCC or BCC cell) .....................
      .        'madelung: WARNING: Continue only if you really know'
      .        ,' what you are doing.'
           endif
-          Emad = 0.0d0
+          Emad = 0.0_dp
           return
         else if (ctype .eq. 'sc') then
-          alpha = 5.6745947
+          alpha = 5.6745947_dp
           if (Node.eq.0) then
             write(6,'(a)')
      .        'madelung: Charged system with SC cell'
           endif
         else if (ctype .eq. 'bcc') then
-          alpha = 7.278473
+          alpha = 7.278473_dp
           if (Node.eq.0) then
             write(6,'(a)')
      .        'madelung: Charged system with BCC cell'
           endif
         else if (ctype .eq. 'fcc') then
-          alpha = 9.1697536
+          alpha = 9.1697536_dp
           if (Node.eq.0) then
             write(6,'(a)')
      .        'madelung: Charged system with FCC cell'
           endif
         else
-          if (Node.eq.0) then
-            write(6,'(a)')
-     .        'madelung: ERROR: Wrong type of cell'
-          endif
-          stop
+          call die('madelung: ERROR: Wrong type of cell')
         endif
       endif
 
-      Emad = charnet**2 * alpha / (2.0d0 * lv)
+      Emad = charnet**2 * alpha / (2.0_dp * lv)
 C ...................
       return
       end

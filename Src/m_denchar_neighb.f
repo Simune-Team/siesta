@@ -1,5 +1,8 @@
       module m_denchar_neighb
 
+      use precision, only: dp
+      use sys,       only: die
+
       public :: neighb
       private
 
@@ -96,14 +99,14 @@ C Define space dimension
 
 C Argument types and dimensions
       INTEGER           IA, ISC, JAN(*), NA, NNA
-      DOUBLE PRECISION  CELL(NX,NX), RANGE, R2IJ(*),
+      REAL(DP)  CELL(NX,NX), RANGE, R2IJ(*),
      .                  XA(NX,NA), XIJ(NX,*)
-      DOUBLE PRECISION  XPO(3)
+      REAL(DP)  XPO(3)
 
 C Internal variables
       LOGICAL           FRSTME, SAMCEL
       INTEGER           IAMOVE(1), IX, JX
-      DOUBLE PRECISION  CELAST(NX,NX), RGLAST, X0(NX)
+      REAL(DP)  CELAST(NX,NX), RGLAST, X0(NX)
       LOGICAL FIRST
       SAVE  
       DATA FRSTME / .TRUE. /
@@ -378,7 +381,7 @@ C Argument types and dimensions
       CHARACTER         MODE*4
       INTEGER           NA, NAMOVE, NNA, NX
       INTEGER           IA0, IAMOVE(*), ISC, JAN(*)
-      DOUBLE PRECISION  CELL(*), RANGE, R2IJ(*),
+      REAL(DP)  CELL(*), RANGE, R2IJ(*),
      .                  X0(NX), XA(NX,NA), XIJ(NX,*)
 
 C NCR is the ratio between range radius and mesh-planes distance.
@@ -391,7 +394,7 @@ C DXMARG and DXRANG are used for automatic CELL generation
 C DXMARG is the minimum margin relative to coordinate range
 C DXRANG is the minimum margin relative to RANGE
 C EPS is a small number to be subtracted from 1
-      DOUBLE PRECISION DXMARG, DXRANG, EPS 
+      REAL(DP) DXMARG, DXRANG, EPS 
       PARAMETER ( DXMARG = 0.1D0  )
       PARAMETER ( DXRANG = 1.0D0  )
       PARAMETER ( EPS    = 1.D-14 )
@@ -492,18 +495,18 @@ c
      .  IANEXT, IAPREV, IEMA, I1EMX, I2EMX, IMX, I1MX, I2MX,
      .  NEMX, NMX, NNX, IA1M, IMESH, IDNM
 
-      DOUBLE PRECISION
+      REAL(DP)
      .  DISMIN, DDOT, DPLANE, 
      .  R2, RANGE2, RNGMAX, RRANGE,
      .  XDIFF, XMARG, XMAX, XMIN
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  DMX, DX, DX0M
 
-      double precision, dimension(:), allocatable, save ::
+      real(dp), dimension(:), allocatable, save ::
      .  CELMSH, RCELL, RMCELL
 
-      double precision, dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), allocatable, save ::
      .  DXAM, DXNM
 
       LOGICAL
@@ -949,7 +952,6 @@ C This is the unique return point
 
       END subroutine ranger
 
-C!-------------------------------------------------------------------
 
       SUBROUTINE RECCEL( N, A, B, IOPT )
 
@@ -958,11 +960,14 @@ C  THEIR PRODUCT WITH DIRECT LATTICE VECTORS A IS 1 (IF IOPT=0) OR
 C  2*PI (IF IOPT=1). N IS THE SPACE DIMENSION.
 C  WRITTEN BY J.M.SOLER.
 
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
-      DOUBLE PRECISION A(N,N),B(N,N)
+      implicit none
+      integer :: n, iopt, i
+      real(dp) ::  A(N,N),B(N,N)
 
-      C=1.D0
-      IF (IOPT.EQ.1) C=2.D0*ACOS(-1.D0)
+      real(dp) :: c, ci
+
+      C=1.0_dp
+      IF (IOPT.EQ.1) C=2.0_dp*ACOS(-1.0_dp)
 
       IF (N .EQ. 1) THEN
         B(1,1) = C / A(1,1)
@@ -989,8 +994,7 @@ C  WRITTEN BY J.M.SOLER.
           B(3,I)=B(3,I)*CI
   20    CONTINUE
       ELSE
-        WRITE(6,*) 'RECCEL: NOT PREPARED FOR N =', N
-        STOP
+         call die('RECCEL: NOT PREPARED FOR N>3')
       ENDIF
       END subroutine reccel
 

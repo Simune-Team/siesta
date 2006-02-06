@@ -39,7 +39,7 @@ C  Modules
       use mesh, only: nsp, dxa, xdop, xdsp, cmesh, nmeshg, nsm
       use meshdscf
       use meshphi
-
+      use sys, only : die
       implicit none
 
 C Argument types and dimensions
@@ -179,7 +179,7 @@ C             last runs circularly over rows of Dlocal
               if (last .gt. maxloc) last = 1
               if (iorb(last) .le. 0) goto 10
             enddo
-            stop 'rhoofdsp: no slot available in Dlocal'
+            call die('rhoofdsp: no slot available in Dlocal')
    10       continue
 
 C  Copy row i of Dscf into row last of Dlocal

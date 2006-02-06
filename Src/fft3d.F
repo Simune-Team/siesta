@@ -24,6 +24,7 @@ C
       use precision,    only :dp, grid_p
       use parallel,     only : Node, Nodes, ProcessorY
       use parallelsubs, only : HowManyMeshPerNode
+      use sys,          only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -90,11 +91,9 @@ C
 C  Work out processor grid size
 C
       ProcessorZ = Nodes/ProcessorY
-      if (ProcessorY*ProcessorZ.ne.Nodes) then
-        write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .    '' number of processors!'')')
-        stop
-      endif
+      if (ProcessorY*ProcessorZ.ne.Nodes) 
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
 
 C
 C  Allocate trigs array
@@ -251,6 +250,7 @@ C
       use precision,   only : dp, grid_p
       use mpi_siesta
       use parallel,    only : ProcessorY
+      use sys,         only : die
 
       implicit none
 
@@ -284,11 +284,9 @@ C
 C  Determine processor grid coordinates
 C
         ProcessorZ = Nodes/ProcessorY
-        if (ProcessorY*ProcessorZ.ne.Nodes) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
+        if (ProcessorY*ProcessorZ.ne.Nodes) 
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
         Py = (Node/ProcessorZ) + 1
         Pz = Node - (Py - 1)*ProcessorZ + 1
 C
@@ -515,6 +513,7 @@ C
       use precision,   only: dp, grid_p
       use mpi_siesta
       use parallel,    only : ProcessorY
+      use sys,         only : die
 
       implicit none
 
@@ -548,11 +547,9 @@ C
 C  Determine processor grid coordinates
 C
         ProcessorZ = Nodes/ProcessorY
-        if (ProcessorY*ProcessorZ.ne.Nodes) then
-          write(6,'(''ERROR: ProcessorY must be a factor of the'',
-     .      '' number of processors!'')')
-          stop
-        endif
+        if (ProcessorY*ProcessorZ.ne.Nodes) 
+     $     call die('ERROR: ProcessorY must be a factor of the' //
+     $     ' number of processors!')
         Py = (Node/ProcessorZ) + 1
         Pz = Node - (Py - 1)*ProcessorZ + 1
 C

@@ -31,6 +31,7 @@ C
       use files,         only : slabel, label_length
       use on_main,       only : c, cold, numc, numcold, listc, listcold
       use on_main,       only : xi, g, hg
+      use sys,           only : die
 #ifdef MPI
       use mpi_siesta,    only : MPI_logical, MPI_Status_Size
       use mpi_siesta,    only : MPI_Comm_World, MPI_integer
@@ -368,11 +369,7 @@ C Free local workspace
         deallocate(numcg)
 
       else
-        if (Node.eq.0) then
-          stop 'iolwf: incorrect task'
-        else
-          stop 
-        endif
+         call die('iolwf: incorrect task')
       endif
 
 #ifdef MPI

@@ -79,6 +79,7 @@ C
       use fdf
       use parsing
       use parallel,  only : Node
+      use sys,       only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -187,14 +188,8 @@ C Look for block and read it if found ---------------------------------------
               goto 50
             endif
           enddo
-          if (Node.eq.0) then
-            write(6,'(/,a)') 
-     .     'grdsam: ERROR: Number of points in block larger than MAXPT'
-            stop 
-     .     'grdsam: ERROR: Number of points in block larger than MAXPT'
-          else
-            stop
-          endif
+          call die('grdsam: ERROR: Number of points' //
+     $             ' in block larger than MAXPT')
    50     continue
         endif
         blread = .true.

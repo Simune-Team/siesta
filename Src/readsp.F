@@ -16,6 +16,7 @@ C  Modules
 C
       use precision
       use parallel,   only : Node
+      use sys,        only : die
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -86,7 +87,7 @@ C Spiral arrangement for spins ........................................
          else
             write(6,*) 'redata: ERROR: ReciprocalCoordinates must be
      .      ''Cubic'' or ''ReciprocalLatticeVectors'' '
-            stop 'redata: ERROR: ReciprocalCoordinates for Spiral '
+          call die('redata: ERROR: ReciprocalCoordinates for Spiral')
          endif
       else
          spiral = .false.
