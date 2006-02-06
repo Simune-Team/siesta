@@ -9,6 +9,333 @@ NOTE: The arch patches appear to be all committed by A. Garcia. That is because
 he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
+2006-02-06 15:07:50 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-26
+
+    Summary:
+      Declare all variables. Replace 'stop' with 'die'.
+    Revision:
+      siesta-devel--reference--1.5--patch-26
+
+    All variables should now be explicitly declared.
+    
+    Stop statements have been replaced by calls to "die" for proper
+    behavior under MPI. "die" calls MPI_Abort, which should terminate
+    the whole set of processes even if called only by the master node.
+    
+
+    modified files:
+     Src/Libs/machine.F Src/Makefile Src/alloc.F90 Src/arw.f
+     Src/atm_transfer.f Src/atom.f Src/atomlwf.F Src/bands.F
+     Src/basis_io.F Src/basis_types.f Src/bessph.f Src/cellxc.F
+     Src/cgwf.F Src/chempot.F Src/chkgmx.f Src/denchar.F
+     Src/dfscf.f Src/dhscf.F Src/dipole.F Src/dynamics.f
+     Src/efield.F Src/fermid.F Src/fft3d.F Src/gen-basis.F
+     Src/grdsam.F Src/idiag.f Src/initdm.F Src/io.f Src/iocg.f
+     Src/iohs.F Src/iolwf.F Src/ipack.f Src/m_broyddj.f90
+     Src/m_broyddj_nocomm.f90 Src/m_denchar_neighb.f Src/m_iorho.F
+     Src/m_walltime.f90 Src/madelung.f Src/mneighb.f Src/outcoor.f
+     Src/parallelsubs.f Src/phirphi_opt.f Src/poison.F Src/pulayx.F
+     Src/ranger.f Src/readsp.F Src/recipes.f Src/redcel.F
+     Src/rhoofd.f Src/rhoofdsp.f Src/siesta.F Src/sys.F Src/timer.F
+     Src/transition_rate.F Src/vmb.F Src/writewave.F Src/xc.f
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-20
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-22
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-23
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-26
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-27
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-28
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-29
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-30
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-32
+
+
+2006-02-06 15:02:25 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-25
+
+    Summary:
+      Unwrap setting of ParallelOverK in siesta. Wrap KSV and BEC IO.
+    Revision:
+      siesta-devel--reference--1.5--patch-25
+
+    ParallelOverK was set inside an #ifdef MPI block, but it was used in the
+    main code later on. Unwrapped.
+    
+    Wrapp IO in KSV and Born Effective Charges code for MPI.
+    
+
+    modified files:
+     Src/ksv.f Src/siesta.F
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-24
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-31
+
+
+2006-02-06 14:59:54 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-24
+
+    Summary:
+      Proper account of WriteEigenvalues. EIG file always written
+    Revision:
+      siesta-devel--reference--1.5--patch-24
+
+    Eigenvalues are only written to the OUT file if WriteEigenvalues
+    (or LongOutput) is set to .true.  in the fdf file. The EIG file is
+    always written.
+    
+    
+
+    modified files:
+     Src/siesta.F
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-21
+
+
+2006-02-06 14:58:05 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-23
+
+    Summary:
+      Integrated some third-party code by A. Postnikov and F. ElMellouhi
+    Revision:
+      siesta-devel--reference--1.5--patch-23
+
+    Contributed code is in Util/Contrib
+    
+    
+
+    new files:
+     Util/Contrib/.arch-ids/=id Util/Contrib/.arch-ids/README.id
+     Util/Contrib/APostnikov/.arch-ids/=id
+     Util/Contrib/APostnikov/.arch-ids/Makefile.id
+     Util/Contrib/APostnikov/.arch-ids/README.id
+     Util/Contrib/APostnikov/.arch-ids/displa.f.id
+     Util/Contrib/APostnikov/.arch-ids/eig2bxsf.f.id
+     Util/Contrib/APostnikov/.arch-ids/fillbox.f.id
+     Util/Contrib/APostnikov/.arch-ids/hit.f.id
+     Util/Contrib/APostnikov/.arch-ids/intpl04.f.id
+     Util/Contrib/APostnikov/.arch-ids/inver3.f.id
+     Util/Contrib/APostnikov/.arch-ids/itochar.f.id
+     Util/Contrib/APostnikov/.arch-ids/makebox.f.id
+     Util/Contrib/APostnikov/.arch-ids/md2axsf.f.id
+     Util/Contrib/APostnikov/.arch-ids/read_ev.f.id
+     Util/Contrib/APostnikov/.arch-ids/read_xv.f.id
+     Util/Contrib/APostnikov/.arch-ids/rho2xsf.f.id
+     Util/Contrib/APostnikov/.arch-ids/rho2xsf_bac.f.id
+     Util/Contrib/APostnikov/.arch-ids/test_md.f.id
+     Util/Contrib/APostnikov/.arch-ids/vib2xsf.f.id
+     Util/Contrib/APostnikov/.arch-ids/w_arrow.f.id
+     Util/Contrib/APostnikov/.arch-ids/w_movie.f.id
+     Util/Contrib/APostnikov/.arch-ids/wraxsf1.f.id
+     Util/Contrib/APostnikov/.arch-ids/wraxsf2.f.id
+     Util/Contrib/APostnikov/.arch-ids/xv2xsf.f.id
+     Util/Contrib/APostnikov/Makefile
+     Util/Contrib/APostnikov/README
+     Util/Contrib/APostnikov/displa.f
+     Util/Contrib/APostnikov/eig2bxsf.f
+     Util/Contrib/APostnikov/fillbox.f
+     Util/Contrib/APostnikov/hit.f
+     Util/Contrib/APostnikov/intpl04.f
+     Util/Contrib/APostnikov/inver3.f
+     Util/Contrib/APostnikov/itochar.f
+     Util/Contrib/APostnikov/makebox.f
+     Util/Contrib/APostnikov/md2axsf.f
+     Util/Contrib/APostnikov/read_ev.f
+     Util/Contrib/APostnikov/read_xv.f
+     Util/Contrib/APostnikov/rho2xsf.f
+     Util/Contrib/APostnikov/rho2xsf_bac.f
+     Util/Contrib/APostnikov/test_md.f
+     Util/Contrib/APostnikov/vib2xsf.f
+     Util/Contrib/APostnikov/w_arrow.f
+     Util/Contrib/APostnikov/w_movie.f
+     Util/Contrib/APostnikov/wraxsf1.f
+     Util/Contrib/APostnikov/wraxsf2.f
+     Util/Contrib/APostnikov/xv2xsf.f
+     Util/Contrib/FElMellouhi/.arch-ids/=id
+     Util/Contrib/FElMellouhi/.arch-ids/DxFormat.f90.id
+     Util/Contrib/FElMellouhi/.arch-ids/DxView.cfg.id
+     Util/Contrib/FElMellouhi/.arch-ids/DxView.net.id
+     Util/Contrib/FElMellouhi/.arch-ids/README.id
+     Util/Contrib/FElMellouhi/DxFormat.f90
+     Util/Contrib/FElMellouhi/DxView.cfg
+     Util/Contrib/FElMellouhi/DxView.net
+     Util/Contrib/FElMellouhi/README Util/Contrib/README
+
+    new directories:
+     Util/Contrib Util/Contrib/.arch-ids Util/Contrib/APostnikov
+     Util/Contrib/APostnikov/.arch-ids Util/Contrib/FElMellouhi
+     Util/Contrib/FElMellouhi/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-25
+
+
+2006-02-02 15:24:55 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-22
+
+    Summary:
+      Auxiliary files for configuration tests in atom + "err=" fix
+    Revision:
+      siesta-devel--reference--1.5--patch-22
+
+    * New files AE_ECONF, PT_ECONF, and ECONF_DIFFS are produced if
+    a pseudopotential test is run with the customary structure for the
+    input file (first an ae series, then a corresponding pt series).
+    
+    The last line of ECONF_DIFFS contains the max abs value of the
+    excitation energy differences, as well as the mean abs and rms values.
+    
+    This is useful for externally-driven optimization of pseudopotentials.
+    
+    * Also, to help some compilers, add err= clause to read stmt in atom/input.f
+
+    modified files:
+     Pseudo/atom/atm.f Pseudo/atom/input.f Pseudo/atom/prdiff.f
+     version.info
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-17
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-19
+
+
+2006-02-02 14:03:43 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-21
+
+    Summary:
+      Fix matel to avoid non-zero gradients of overlaps in some cases
+    Revision:
+      siesta-devel--reference--1.5--patch-21
+
+    Problem: (As restated by A. Postnikov in the Siesta list, after a message
+              by Hongjun Xiang <xhongjun@MAIL.USTC.EDU.CN>)
+    --------
+    
+    erroneous values of some gradients as delivered by matel.
+    I.e., the analytical gradient of the overlap of each basis function
+    with itself is not zero, contrary to expectation. An example for Al s-function:
+      ia,io,ioa,ja,jo,joa:  1  1  1    1  1  1  xij=  0.0000  0.0000  0.0000
+       S =  1.00000E+00  grad S =  0.00000E+00  0.00000E+00 -9.71745E-03
+       T =  4.00390E-01  grad T =  0.00000E+00  0.00000E+00 -1.54155E-02
+    The values in the last column must be zero.
+    
+    Jose Soler wrote:
+    
+    The simplest and most apropriate solution to this problem is to simply
+    change the line
+       DFFR0 = HUGE
+     into
+       DFFR0 = 0
+    
+    That changes the boundary condition of the spline interpolation from
+    (d2FFR/dR2)_0=0 to (dFFR/dR)_0=0 and makes the error in the force of
+    order 1.e-12 rather than 1.e-2.
+    
+    Done.
+    
+
+    modified files:
+     Src/matel.f
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-18
+
+
+2006-02-02 14:00:17 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-20
+
+    Summary:
+      New organization of MD tests -- dynamics stubs for MD output
+    Revision:
+      siesta-devel--reference--1.5--patch-20
+
+    * The MD tests are now  md_{verlet,nose,pr,npr,anneal}. Sample outputs
+    have been added to Src/Tests/Reference.
+    
+    * Code stubs have been added to dynamics.f to output synchronous MD
+    information.  (with a view to merge D. Grimwood's approach in the
+    future). See also md_utils.f90 for a skeleton of an MD writer (format
+    to be agreed upon).
+    
+
+    new files:
+     Src/.arch-ids/md_utils.f90.id
+     Src/Tests/Reference/.arch-ids/md_nose.out.id
+     Src/Tests/Reference/.arch-ids/md_verlet.out.id
+     Src/Tests/Reference/md_nose.out
+     Src/Tests/Reference/md_verlet.out
+     Src/Tests/md_verlet/.arch-ids/=id
+     Src/Tests/md_verlet/.arch-ids/makefile.id
+     Src/Tests/md_verlet/.arch-ids/md_verlet.fdf.id
+     Src/Tests/md_verlet/.arch-ids/md_verlet.pseudos.id
+     Src/Tests/md_verlet/makefile Src/Tests/md_verlet/md_verlet.fdf
+     Src/Tests/md_verlet/md_verlet.pseudos Src/md_utils.f90
+
+    modified files:
+     Src/Tests/Makefile Src/Tests/Reference/h2oZ.out
+     Src/Tests/Reference/md_anneal.out
+     Src/Tests/Reference/md_npr.out Src/Tests/Reference/md_pr.out
+     Src/Tests/Reference/zmatrix.out Src/Tests/md_anneal/makefile
+     Src/Tests/md_anneal/md_anneal.fdf Src/Tests/md_nose/makefile
+     Src/Tests/md_nose/md_nose.fdf Src/dynamics.f
+
+    renamed files:
+     Src/Tests/Reference/.arch-ids/si.out.id
+       ==> Src/Tests/Reference/.arch-ids/md_anneal.out.id
+     Src/Tests/Reference/si.out
+       ==> Src/Tests/Reference/md_anneal.out
+     Src/Tests/md/.arch-ids/=id
+       ==> Src/Tests/md_nose/.arch-ids/=id
+     Src/Tests/md/.arch-ids/makefile.id
+       ==> Src/Tests/md_nose/.arch-ids/makefile.id
+     Src/Tests/md/.arch-ids/md.fdf.id
+       ==> Src/Tests/md_nose/.arch-ids/md_nose.fdf.id
+     Src/Tests/md/.arch-ids/md.pseudos.id
+       ==> Src/Tests/md_nose/.arch-ids/md_nose.pseudos.id
+     Src/Tests/md/md.fdf
+       ==> Src/Tests/md_nose/md_nose.fdf
+     Src/Tests/md/md.pseudos
+       ==> Src/Tests/md_nose/md_nose.pseudos
+     Src/Tests/si/.arch-ids/=id
+       ==> Src/Tests/md_anneal/.arch-ids/=id
+     Src/Tests/si/.arch-ids/makefile.id
+       ==> Src/Tests/md_anneal/.arch-ids/makefile.id
+     Src/Tests/si/.arch-ids/si.STRUCT_IN.id
+       ==> Src/Tests/md_anneal/.arch-ids/md_anneal.STRUCT_IN.id
+     Src/Tests/si/.arch-ids/si.fdf.id
+       ==> Src/Tests/md_anneal/.arch-ids/md_anneal.fdf.id
+     Src/Tests/si/.arch-ids/si.pseudos.id
+       ==> Src/Tests/md_anneal/.arch-ids/md_anneal.pseudos.id
+     Src/Tests/si/si.STRUCT_IN
+       ==> Src/Tests/md_anneal/md_anneal.STRUCT_IN
+     Src/Tests/si/si.fdf
+       ==> Src/Tests/md_anneal/md_anneal.fdf
+     Src/Tests/si/si.pseudos
+       ==> Src/Tests/md_anneal/md_anneal.pseudos
+
+    new directories:
+     Src/Tests/md_anneal/.arch-ids Src/Tests/md_nose/.arch-ids
+     Src/Tests/md_verlet Src/Tests/md_verlet/.arch-ids
+
+    removed directories:
+     Src/Tests/md/.arch-ids Src/Tests/si/.arch-ids
+
+    renamed directories:
+     Src/Tests/md
+       ==> Src/Tests/md_nose
+     Src/Tests/si
+       ==> Src/Tests/md_anneal
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-14
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-16
+
+
+2006-01-27 17:17:14 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-19
+
+    Summary:
+      Update CHANGES file
+    Revision:
+      siesta-devel--reference--1.5--patch-19
+
+
+    modified files:
+     Docs/CHANGES version.info
 
 2006-01-27 17:12:51 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-18
 
