@@ -45,7 +45,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Large 6 November 2005 }
+{\Large 7 February 2006 }
 
 \vspace{1.5cm}
 
@@ -90,8 +90,7 @@
 \vspace{1cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal
-and J.M.Soler, 1996-2004
+D.S\'anchez-Portal and J.M.Soler, 1996-2006
 
 \end{center}
 
@@ -118,12 +117,17 @@ It uses the standard Kohn-Sham selfconsistent density functional
 method in the local density (LDA-LSD) or generalized gradient (GGA)
 approximations.
 \item
-Uses norm-conserving pseudopotentials in its fully nonlocal
+It uses norm-conserving pseudopotentials in its fully nonlocal
 (Kleinman-Bylander) form.
 \item
-The basis set is a very general and flexible linear combination of 
-numerical atomic orbitals (LCAO). It allows arbitrary angular
-momenta, multiple-zeta, polarized and off-site orbitals.
+It uses atomic orbitals as basis set, allowing unlimited multiple-zeta
+and angular momenta, polarization and off-site orbitals. The radial
+shape of every orbital is numerical and any shape can be used and provided 
+by the user, with the only condition that it has to be of finite support,
+i.e., it has to be strictly zero beyond a user-provided distance from the 
+corresponding nucleus.
+Finite-support basis sets are the key for calculating the Hamiltonian 
+and overlap matrices in $O(N)$ operations.
 \item
 Projects the electron wavefunctions and density onto a real-space
 grid in order to calculate the Hartree and exchange-correlation
@@ -136,10 +140,7 @@ time and memory scale linearly with the number of atoms.
 Simulations with several hundred atoms are feasible with
 modest workstations.
 \item
-It is written in Fortran 90. In particular, memory is allocated
-dynamically, so there is no need to recompile the program when
-the problem size changes.
-
+It is written in Fortran 90 and memory is allocated dynamically.  
 \item
 It may be compiled for serial or parallel execution (under MPI).
 (Note: This feature might not be available in all distributions.)
@@ -198,7 +199,7 @@ Int. J. Quantum Chem., {\bf 65}, 453 (1997).
 Description of the present method and code.
 
 \item
-``Linear-scaling ab-initio calulations for large and complex systems"
+``Linear-scaling ab-initio calculations for large and complex systems"
 E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
 J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
 
@@ -234,15 +235,39 @@ For more information you can visit the web page
 The following is a short description of the compilation procedures
 and of the datafile format for the {\sc Siesta} code.
 
+\section{VERSION UPDATE}
+If you have a previous version of {\sc Siesta}, the update is simply
+replacing the old {\tt siesta} directory tree with the new one, saving
+the {\tt arch.make} file that you built to compile {\sc Siesta} for
+your architecture (the format of this file has changed slightly, but
+you should be able to translate the immportan fields, such as library
+locations and compiler switches, to the new version).
+You also have the option of using the new {\tt configure} script
+(see below) to see whether the automatically generated {\tt arch.make} file
+provides anything new or interesting for your setup.
+  If you have working files within the old {\sc Siesta} tree, including
+pseudopotential etc., you will have to fish them out. That is why we recommend
+working directories outside the package.
+
 \section{QUICK START}
 
 \subsection{Compilation}
-Unpack the {\sc Siesta} distribution. Go to the {\tt Src/Sys}
-subdirectory and take a look at the {\tt .make} files there. If one of
-them suits your platform, copy it or link it to {\tt
-Src/arch.make}. If you intend to create a parallel version of {\sc
+Unpack the {\sc Siesta} distribution. Go to the {\tt Src} directory, 
+where the source code resides together with the Makefile. You will
+need a file called {\tt arch.make} to suit your particular computer
+setup. The command {\tt ./configure}  will start an automatic scan of 
+your system and try to build
+an {\tt arch.make} for you. Please note that the configure script
+might need some help in order to find your Fortran compiler, and that
+the created arch.make may not be optimal, mostly in regard to compiler
+switches, but the process should provide a reasonable working
+file. Type {\tt ./configure --help} to see the flags understood by the
+script, and take a look at the {\tt Src/Confs} subdirectory for some
+examples of their explicit use. You can also create your own {\tt arch.make}
+by looking at the examples in the {\tt Src/Sys} subdirectory.
+If you intend to create a parallel version of {\sc
 Siesta}, make sure you have all the extra support libraries ({\tt MPI,
-scalapack, blacs...}).  Type {\tt make}. The executable should work
+scalapack, blacs...}). Type {\tt make}. The executable should work
 for any job (This is not exactly true, since some of the parameters in
 the atomic routines are still hardwired (see {\tt Src/atmparams.f}) ,
 but those would seldom need to be changed.)
@@ -250,20 +275,23 @@ but those would seldom need to be changed.)
 \subsection{Running the program}
 
 Some example FDF files are provided in the {\tt Examples}
-directory. (Actually, this directory contains basically the {\tt .fdf}
+directory. This directory contains basically the {\tt .fdf}
 files and the pseudopotential generation input files. A faster way to
 test your installation of {\sc Siesta} is implemented in directory
 {\tt Src/Tests}\index{Tests}. On the other hand, at some point you
-will have to generate your own pseudopotentials and run your own jobs,
-so what follows is also of interest.)
+will have to generate your own pseudopotentials and run your own jobs.
 
 Probably the simplest to start with is the water-molecule
-example. It is advisable to create independent subdirectories for each
+example. It is advisable to create independent directories for each
 job, so that everything is clean and neat, and out of the {\tt siesta}
 directory, so that one can easily update version by replacing the
-whole {\tt siesta} tree:
+whole {\tt siesta} tree. Go to your favorite working directory and:
 
-{\tt mkdir h2o}
+{\tt \$ mkdir h2o}
+
+{\tt \$ cd h2o}
+
+{\tt \$ cp $\sim$/siesta/Examples/H20/h2o.fdf .}
 
 \noindent
 We need to generate the required pseudopotentials
@@ -283,9 +311,9 @@ for details regarding what follows.)
 Now the pseudopotential-generation program, called atm, 
 should be compiled.
 
-{\tt \$ cd Samples}
+{\tt \$ cd Tutorial/O}
 
-{\tt \$ cat o.tm2.inp}
+{\tt \$ cat O.tm2.inp}
 
 \noindent
 This is the input file, for the oxygen pseudopotential, 
@@ -307,27 +335,23 @@ you will need to understand in the future:
 ------------------------------------------------------------
 \end{verbatim}
 
-{\tt \$ pg.sh o.tm2.inp}
+To generate the pseudopotential do the following;
+
+{\tt \$ sh ../pg.sh O.tm2.inp}
 
 \noindent
-Now there should be a new subdirectory called o.tm2 (o for o-xygen)
-and {\tt o.tm2.vps} (unformatted) and {\tt o.tm2.psf} (ASCII) files.
+Now there should be a new subdirectory called O.tm2 (O for oxygen)
+and {\tt O.tm2.vps} (unformatted) and {\tt O.tm2.psf} (ASCII) files.
 
-{\tt \$ cp o.tm2.psf $\sim$/siesta/h2o/O.psf}
+{\tt \$ cp O.tm2.psf $\sim$/whateveryourworkingdir/h2o/O.psf}
 
 \noindent
 copies the generated pseudopotential file to your working directory. 
 (The unformatted and ASCII files are functionally equivalent, but
 the latter is more transportable and easier to look at, if you so
-desire.)
-
-{\tt \$ pg.sh h.tm2.inp}
-
-{\tt \$ cp h.tm2.psf $\sim$/siesta/h2o/H.psf}
-
-\noindent
-repeats the process for hydrogen.
-
+desire.) The same could be repeated for the pseudopotential for H,
+but you may as well copy {\tt H.psf} from {\tt siesta/Examples/Vps/}
+to your {\tt h2o} working directory.
 
 \noindent
 Now you are ready to run the program:
@@ -335,25 +359,22 @@ Now you are ready to run the program:
 {\tt siesta < h2o.fdf | tee h2o.out}
 
 \noindent
-(Actually, if you are running the parallel version
-you should use some other invocation, such as {\tt mpirun -np 2 siesta
-...}, but we cannot go into that
-here.)
+(If you are running the parallel version you should use some other 
+invocation, such as {\tt mpirun -np 2 siesta ...}, but we cannot 
+go into that here.)
 
-After a successful run of the program, you should have the following
-files in your directory:
+After a successful run of the program, you should have many
+files in your directory including the following:
 \begin{itemize}
 
 \item out.fdf\index{out.fdf}
  (contains all the data used, explicit or default-ed) 
 \item O.ion and H.ion\index{species.ionl@{\it species.}ion}
  (complete information about the basis and KB projectors)
-\item siesta.size\index{siesta.size}
- (contains the memory use of some subroutines and arrays)
 \item h2o.XV\index{Systemlabel.XV@{\it Systemlabel.}XV}
  (contains the final positions and velocities)
 \item h2o.STRUCT\_OUT
-\index{Systemlabel.STRUCT\_OUT@{Systemlabel.STRUCT\_OUT}}
+\index{Systemlabel.STRUCT\_OUT@{{\it Systemlabel}.STRUCT\_OUT}}
  (contains the final cell vectors and positions in
  ``crystallographic'' format)
 \item h2o.DM\index{Systemlabel.DM@{\it Systemlabel.}DM}
@@ -366,6 +387,8 @@ files in your directory:
  (contains the eigenvalues of the Kohn-Sham Hamiltonian)
 \item h2o.out\index{Systemlabel.out@{\it Systemlabel.}out}
  (standard output)
+\item h2o.xml\index{Systemlabel.xml@{\it Systemlabel.}xml}
+ (XML marked-up output)
 \end{itemize}
 
 The last one is the standard output of the program, that you
@@ -376,7 +399,7 @@ the default values that siesta has chosen for you, before
 studying the input-explanation section and start changing them.
 
 Now look at the other data files in {\tt Examples}
-(all with and .fdf suffix) choose one and repeat the process for it.
+(all with an .fdf suffix) choose one and repeat the process for it.
 
 
 \section{PSEUDOPOTENTIAL HANDLING}
@@ -414,7 +437,7 @@ generated for {\sc Siesta}.
 It is important to stress at this point that neither the {\sc Siesta} 
 method nor the program
 are bound to the use of any particular kind of atomic orbitals. The
-user can feed to {\sc Siesta} the atomic basis set he/she choses by
+user can feed into {\sc Siesta} the atomic basis set he/she choses by
 means of radial tables (see {\bf User.Basis} below), the
 only limitations being: $(i)$ the functions have to be atomic-like (radial 
 functions mutiplied by spherical harmonics), and $(ii)$ they have to be
@@ -445,11 +468,11 @@ for a given basis size but it has the important advantages mentioned above.
 More about it in:
 
 \noindent
-``Linear-scaling ab-initio calulations for large and complex systems"
+``Linear-scaling ab-initio calculations for large and complex systems"
 E. Artacho, D. S\'anchez-Portal, P. Ordej\'on, A. Garc\'{\i}a and
 J. M. Soler, Phys. Stat. Sol. (b) {\bf 215}, 809 (1999).
 
-(Note: In addition to {\sc Siesta} we provide the program {\sc
+In addition to {\sc Siesta} we provide the program {\sc
 Gen-basis}\index{Gen-basis@{\sc Gen-basis}}, which reads {\sc
 Siesta}'s input and generates basis files for later use. {\sc
 Gen-basis} is compiled automatically at the same time as {\sc
@@ -489,8 +512,18 @@ is widely used: starting from the expansion in Gaussians of one atomic
 orbital, the most contracted gaussians are used to define the first
 orbital of the double-$\zeta$ and the most extended ones for the second.
   For strictly localized functions there was a first proposal
- of using the excited states of the confined atoms, but it would work only 
+of using the excited states of the confined atoms, but it would work only 
 for tight confinement (see {\bf PAO.BasisType} {\tt nodes} below).
+  This construction was proposed and tested in D. S\'anchez-Portal 
+{\it et al.}, J. Phys.: Condens. Matter {\bf 8}, 3859-3880 (1996).
+ 
+  We found that the basis set convergence is slow, requiring high levels
+of multiple-$\zeta$ to achieve what other schemes do at the double-$\zeta$
+level. 
+  This scheme is related with the basis sets used in the OpenMX project
+[see T. Ozaki, Phys. Rev. B {\bf 67}, 155108 (2003); T. Ozaki and H. Kino, 
+Phys. Rev. B {\bf 69}, 195113 (2004)]. 
+
   We then proposed an extension of the split valence idea of Quantum Chemistry 
 to strictly localized NAO which has become the standard and has been used
 quite succesfully in many systems (see {\bf PAO.BasisType} {\tt split} below).
@@ -502,8 +535,8 @@ at $r_{m}$.
   Within exactly the same
 Hilbert space, the second orbital can be chosen to be the difference between
 the smooth one and the original PAO, which gives a basis orbital strictly
-confined within the matching radius $r_{m}$, i.e., smaller than the
-original PAO! 
+confined within the matching radius $r_{m}$ (smaller than the
+original PAO!) continuously differenciable throughout. 
 
   Extra parameters have thus appeared: one $r_m$ per orbital to be doubled. 
 The user can again introduce them by hand (see {\bf PAO.Basis} below).
@@ -513,7 +546,8 @@ split norm. Variational optimization
 of this split norm performed on different systems
 shows a very general and stable performance for values around
 15\% (except for the $\sim 50\%$ for hydrogen). 
-  It generalizes to multiple-$\zeta$ trivially.
+  It generalizes to multiple-$\zeta$ trivially by adding an additional
+matching radius per new zeta.
 
   Angular flexibility is obtained by adding shells of higher angular 
 momentum.
@@ -527,9 +561,10 @@ of the $l$ orbitals by the field.
 
   Finally, the method allows the inclusion of offsite orbitals (not centered
 around any specific atom). The orbitals again can be of any shape, including
-atomic orbitals as if an atom would be there (useful for basis-set
-superposition-error calculations). Bessel functions can also be added
-to the basis set.
+atomic orbitals as if an atom would be there (useful for calculating the
+counterpoise correction for basis-set superposition errors). 
+Bessel functions for any radius and any excitation level can also be 
+added anywhere to the basis set.
 
 \subsection{Range: cutoff radii of orbitals}
 
@@ -556,10 +591,10 @@ is enforced.
 
   The first proposal (and quite a standard among {\sc Siesta}
 users) uses an infinite square-well potential.
-  It has been widely and succesfully used for minimal bases within 
-the ab initio tight-binding scheme of Sankey and 
-collaborators using the {\sc Fireball } program, but also 
-for more flexible bases using the methodology of {\sc Siesta}.
+  It was oroginally proposed and has been widely and succesfully used 
+by Otto Sankey and collaborators, for minimal bases within 
+the ab initio tight-binding scheme, using the {\sc Fireball } program, 
+but also for more flexible bases using the methodology of {\sc Siesta}.
   This scheme has the disadavantage, however, of generating 
 orbitals with a discontinuous derivative at $r_c$. 
   This discontinuity is more pronounced for smaller $r_c$'s and
@@ -616,21 +651,33 @@ systems.
 
 \section{COMPILING THE PROGRAM}
 
-The compilation of the program is done using a Makefile
+The compilation of the program is done using a {\tt Makefile}
 that is provided with the code.\index{Makefile}
-This Makefile will generate the executable for any of several
+This {\tt Makefile} will generate the executable for any of several
 architectures, with a  minimum of tuning required from the
-user. The instructions are in directory siesta/Src/Sys, where 
+user in a separate file called {\tt arch.make} to reside in
+the {\tt Src/} directory. 
+The instructions are in directory {\tt siesta/Src/Sys}, where 
 there are also a number of {\tt .make} files
 already prepared for several architectures and
 operating sistems.\index{platforms}\index{architectures}
 If none of these fit your needs, you will have to prepare
-one on your own. Note that some systems require running a program such as
+one on your own. 
+By typing 
+
+\noindent 
+{\tt \$ ./configure} 
+
+\noindent
+the autoconf utility will query your 
+computer and come up with a reasonably working {\tt arch.make}.
+It can be then further modified by the user to include optimisation flags
+for the compiler etc.
+Note that some systems require running a program such as
 ranlib\index{ranlib} to index object code libraries.
-Once you have decided which {\tt *.make} you want to use,
-you just need to copy or link it to the {\tt Src} directory 
-as {\tt arch.make}.
-Then, just compile using the {\tt make} utility, as usual.
+Once you have chosen a {\tt .make} file from the {\tt Src/Sys}
+directory, or have generated your own {\tt arch.make},
+just compile using the {\tt make} utility, as usual.
 
 \section{INPUT DATA FILE}
 
@@ -705,6 +752,22 @@ These are some examples:
            %include mydefaults.fdf  
 \end{verbatim}
 
+Note that there is a lot of information that can be 
+passed to {\sc Siesta} in the input file via fdf tags
+(see most of the manual). Almost all of the tags are
+optional: {\sc Siesta} will assign a default if a given tag
+is not found when needed (see {\tt out.fdf}).
+The only tags that are mandatory in any input file are
+{\bf NumberOfSpecies}, \index{NumberOfSpecies@{\bf NumberOfSpecies}}
+{\bf NumberOfAtoms}, \index{NumberOfAtoms@{\bf NumberOfAtoms}}
+and {\bf ChemicalSpeciesLabel} 
+\index{ChemicalSpeciesLabel@{\bf ChemicalSpeciesLabel}}
+in addition to introducing the atomic positions, either through
+{\bf AtomicCoordinatesAndAtomicSpecies}, 
+\index{AtomicCoordinatesAndAtomicSpecies@{\bf 
+AtomicCoordinatesAndAtomicSpecies}}
+or via {\bf Zmatrix}. \index{Zmatrix@{\bf Zmatrix}}
+
 Here follows a description of the variables that you can
 define in your {\sc Siesta} input file, with their data types and
 default values.
@@ -730,13 +793,6 @@ containing a nickname of the system, used to name output files.
 
 {\it Default value:} {\tt siesta}\index{siesta}
 
-\item[{\bf NumberOfAtoms}] ({\it integer}): 
-\index{NumberOfAtoms@{\bf NumberOfAtoms}}
-Number of atoms in the simulation.
-
-{\it Default value:} There is no default. You must supply this variable.
-
-
 \item[{\bf NumberOfSpecies}] ({\it integer}): 
 \index{NumberOfSpecies@{\bf NumberOfSpecies}}
 Number of different atomic species in the simulation. 
@@ -745,6 +801,11 @@ pseudopotential or basis set are counted as different species.
 
 {\it Default value:} There is no default. You must supply this variable.
 
+\item[{\bf NumberOfAtoms}] ({\it integer}): 
+\index{NumberOfAtoms@{\bf NumberOfAtoms}}
+Number of atoms in the simulation.
+
+{\it Default value:} There is no default. You must supply this variable.
 
 \item[{\bf ChemicalSpeciesLabel}] ({\it data block}): 
 \index{ChemicalSpeciesLabel@{\bf ChemicalSpeciesLabel}} 
@@ -773,7 +834,7 @@ Negative atomic numbers are used for {\it ghost} atoms\index{ghost atoms}
 
 {\it Use:} This block is mandatory.
 
-{\it Default:} No default. 
+{\it Default:} There is no default. You must supply this block.
 
 \item[{\bf PhononLabels}] ({\it data block}): 
 \index{PhononLabels@{\bf PhononLabels}} 
@@ -971,6 +1032,12 @@ defined so they have\index{basis!polarization} the minimum angular
 momentum $l$ such that there are not occupied orbitals with the same
 $l$ in the valence shell of the ground-state atomic
 configuration. They polarize the corresponding $l-1$ shell.
+
+{\bf Note}: The ground-state atomic configuration used internally
+by {\sc Siesta} is defined in the source file {\tt Src/periodic\_table.f}. 
+For some elements (e.g., Pd), the configuration might not be the
+standard one.\index{Ground-state atomic configuration}.
+
 \end{itemize}
 
 {\it Default value:} {\tt STANDARD}
@@ -1251,22 +1318,26 @@ above.
 \vspace{5pt}
 \subsection{Lattice, coordinates, $k$-sampling}
 
-The position types, and behviours of the atoms in the simulation
+The position types, and behaviours of the atoms in the simulation
 must be specified using the flags described in this section.
 
-Firstly, the size of the cell itself must be specified, using
+Firstly, the size of the cell itself should be specified, using
 some combination of the flags
 \textbf{LatticeConstant}, \textbf{LatticeParameters},
 and \textbf{LatticeVectors}, and \textbf{SuperCell}.
+If nothing is specified, {\sc Siesta} will construct a cubic
+cell in which the atoms will reside as a cluster.
 
 Secondly, the positions of the atoms within the cells
-must be specified, using either the traditional SIESTA
+must be specified, using either the traditional {\sc Siesta}
 input format (a modified xyz format) which must be described 
 within
 a \textbf{AtomicCoordinatesAndAtomicSpecies} block, or 
 (from version 1.4) the newer Z-Matrix format, using a
 \textbf{ZMatrix} block. The two formats cannot and
-should not be mixed.
+should not be mixed, but one of them must be used: 
+this is one of the few pieces of information {\sc Siesta}
+needs to find in the input (for which there is no default).
 
 The advantage of the traditional format is that it is
 much easier to set up a system. However, when working
@@ -1459,22 +1530,28 @@ assumed.
 \end{verbatim}
 }
 
-
 \item[{\bf AtomicCoordinatesAndAtomicSpecies}] ({\it data block}): 
 \index{AtomicCoordinatesAndAtomicSpecies@{\bf 
 AtomicCoordinatesAndAtomicSpecies}} 
-The reading is done this way:
+Block specifying the position and species of each atom.
+One line per atom, the reading is done this way:
 \begin{verbatim}
        From ia = 1 to natoms
             read: xa(ix,ia), isa(ia)
 \end{verbatim}
 where {\tt xa(ix,ia)} is the {\tt ix} coordinate of atom 
-{\tt iai}, and {\tt isa(ia)} is the species index of atom {\tt ia}.
+{\tt iai} in the format (units) specified by
+{\bf AtomCoordinatesFormat}, and {\tt isa(ia)} is the species 
+index of atom {\tt ia}.
+
+{\it Default:} There is no default. The positions must be introduced
+either using this block or the $Z$ matrix (see {\bf Zmatrix}).
 
 \item[{\bf UseStructFile}] ({\it logical}): 
-\index{UseStructFile@{\bf UseStructFile}}\index{Systemlabel.STRUCT\_IN}
+\index{UseStructFile@{\bf UseStructFile}}
+\index{Systemlabel.STRUCT\_IN@{{\it Systemlabel}.STRUCT\_IN}}
 Logical variable to control whether the structural information
-is read from an external file of name {\tt SystemLabel}.STRUCT\_IN.
+is read from an external file of name {\it SystemLabel}.STRUCT\_IN.
 If \texttt{.true.}, all other structural information in the fdf file
 will be ignored. 
 
@@ -1650,62 +1727,7 @@ before applying them to move the atoms. For nonlinear constraints
 (like 'rigid'), this does not impose the exact conservation of the 
 constrained magnitude, unless the displacement steps are very small.
 
-
 {\it Default value:} No constraints
-
-\item[{\bf ZM.UnitsLength}] ({\it length}):
-\index{ZM.UnitsLength@{\bf ZM.UnitsLength}}
-Parameter that specifies the units of length used during Z-matrix input.
-
-{\it Use:} This option allows the user to chose between inputing distances
-in Bohr or Angstroms within the Z-matrix data block.
-
-{\it Default value:} {\tt Bohr}
-
-\item[{\bf ZM.UnitsAngle}] ({\it angle}):
-\index{ZM.UnitsAngle@{\bf ZM.UnitsAngle}}
-Parameter that specifies the units of angles used during Z-matrix input.
-
-{\it Use:} This option allows the user to chose between inputing angles
-in radians or degrees within the Z-matrix data block.
-
-{\it Default value:} {\tt rad}
-
-\item[{\bf ZM.ForceTolLength}] ({\it real force}):
-\index{ZM.ForceTolLength@{\bf ZM.ForceTolLength}}
-Parameter that controls the convergence with respect to forces on Z-matrix lengths
-
-{\it Use:} This option sets the convergence criteria for the forces that
-act on Z-matrix components with units of length.
-
-{\it Default value:} {\tt $0.00155574$ Ry/Bohr}
-
-\item[{\bf ZM.ForceTolAngle}] ({\it torque}):
-\index{ZM.ForceTolAngle@{\bf ZM.ForceTolAngle}}
-Parameter that controls the convergence with respect to forces on Z-matrix angles
-
-{\it Use:} This option sets the convergence criteria for the forces that
-act on Z-matrix components with units of angle.
-
-{\it Default value:} {\tt $0.00356549$ Ry/rad}
-
-\item[{\bf ZM.MaxDisplLength}] ({\it real length}):
-\index{ZM.MaxDisplLength@{\bf ZM.MaxDisplLength}}
-Parameter that controls the maximum change in a Z-matrix length during an 
-optimisation step.
-
-{\it Use:} This option sets the maximum displacement for a Z-matrix length
-
-{\it Default value:} {\tt 0.2 Bohr}
-
-\item[{\bf ZM.MaxDisplAngle}] ({\it real angle}):
-\index{ZM.MaxDisplAngle@{\bf ZM.MaxDisplAngle}}
-Parameter that controls the maximum change in a Z-matrix angle during an 
-optimisation step.
-
-{\it Use:} This option sets the maximum displacement for a Z-matrix angle
-
-{\it Default value:} {\tt 0.003 rad }
 
 \item[{\bf Zmatrix}] ({\it data block}): 
 \index{Zmatrix@{\bf Zmatrix}} 
@@ -1736,7 +1758,8 @@ Below is an example of a Z-matrix input for a water molecule:
 The sections that can be used within the Zmatrix block are as follows:
 
 Firstly, all atomic positions must be specified within either a 
-``\texttt{molecule}'' block or a ``\texttt{cartesian}'' block. Any atoms subject to
+``\texttt{molecule}'' block or a ``\texttt{cartesian}'' block. 
+Any atoms subject to
 constraints more complicated than ``do not change this coordinate
 of this atom'' must be specified within a ``\texttt{molecule}'' block.
 
@@ -2632,10 +2655,11 @@ during the calculation of the Born effective charge tensor.
 
 The Born effective charges allow the calculation of LO-TO splittings and 
 infrared activities. The version of the Vibra utility code in which these
-magnitudes are calculated is not yet distributed with SIESTA, but can be 
+magnitudes are calculated is not yet distributed with {\sc Siesta}, but can be 
 obtained form Tom Archer (archert@tcd.ie).
 
 {\it Use:} Only used if {\bf MD.TypeOfRun} is {\tt FC}.
+
 {\it Default value:} {\tt false}
 
 \item[{\bf OpticalCalculation}] ({\it logical}):\index{Dielectric function,
@@ -2970,19 +2994,22 @@ is greater than zero then the number of partially occupied states
 increases, depending on the band gap.
 The value specified must greater than the number of occupied states
 and less than the number of basis functions.
+
 {\it Default value:} {\tt all orbitals}
 
 \item[{\bf Diag.DivideAndConquer}] ({\it logical}): 
 \index{Diag.DivideAndConquer@{\bf Diag.DivideAndConquer}} 
 Logical to select whether the normal or Divide and Conquer algorithms are
 used within the Lapack diagonalisation routines. 
+
 {\it Default value:} {\tt false}
 
 \item[{\bf Diag.AllInOne}] ({\it logical}): 
 \index{Diag.AllInOne@{\bf Diag.AllInOne}} 
 Logical to select whether a single call to lapack/scalapack is made to 
 perform the diagonalisation or whether the individual steps are controlled
-by SIESTA. Normally this option should not need to be used.
+by {\sc Siesta}. Normally this option should not need to be used.
+
 {\it Default value:} {\tt false}
 
 \item[{\bf Diag.NoExpert}] ({\it logical}): 
@@ -2990,6 +3017,7 @@ by SIESTA. Normally this option should not need to be used.
 Logical to select whether the simple or expert versions of the lapack/
 scalapack routines are used. Usually the expert routines are faster, but
 may require slightly more memory.
+
 {\it Default value:} {\tt false}
 
 \item[{\bf Diag.PreRotate}] ({\it logical}): 
@@ -2999,6 +3027,7 @@ previously saved eigenvectors to create a near diagonal matrix and then
 back transformed afterwards. This is included for future options, but
 currently should not make any difference except to increase the 
 computational work!
+
 {\it Default value:} {\tt false}
 
 \item[{\bf Diag.Use2D}] ({\it logical}): 
@@ -3007,6 +3036,7 @@ Logical to select whether a 1-D or 2-D data decomposition should be used
 when calling scalapack. The use of 2-D leads to superior scaling to 
 large numbers of processors and is therefore the default. This option 
 only influences the parallel performance.
+
 {\it Default value:} {\tt true}
 
 %End diagonalisation options
@@ -3889,7 +3919,7 @@ the coordinates are accumulated in {\sc XMol} {\tt xyz} format in the
 {\it Systemlabel}.ANI file.
 \index{WriteMDhistory@{\bf WriteMDhistory}}
 \index{output!atomic coordinates!history}
-For using the SIES2ARC utility\index{SIES2ARC}
+For using the {\sc Sies2arc} utility\index{Sies2arc@{\sc Sies2arc}}
 for generating a CERIUS .arc animation file,
 WriteCoorStep should be {\tt .true.}
 
@@ -3918,8 +3948,8 @@ Otherwise, it does not.
 If {\tt .true.} it writes the Hamiltonian eigenvalues for the sampling
 $\vec k$ points, in the main output file.
 Otherwise it does not, but writes them in the file {\it Systemlabel}.EIG
-to be used by the EIG2DOS\index{EIG2DOS} postprocessing utility 
-(in the Util/ directory) for obtaining the density of
+to be used by the {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}} postprocessing 
+utility (in the Util/ directory) for obtaining the density of
 states.\index{density of states}
 
 {\it Use:} Only if {\bf SolutionMethod} is {\tt diagon}.
@@ -3951,7 +3981,8 @@ the Hamiltonian eigenvalues corresponding to the $\vec k$ vectors
 defined for band plotting, in the main output file.  Otherwise it does
 not. They are, however, dumped into the file {\it Systemlabel}.bands
 to be used by postprocessing utilities for plotting the band
-structure.\index{band structure} The GNUBANDS\index{GNUBANDS} program
+structure.\index{band structure} The {\sc Gnubands}\index{Gnubands@{\sc 
+Gnubands}} program
 (found in the Util/ directory) reads the {\it Systemlabel}.bands from
 standard input and dumps to standard output a file directly plotable
 by {\sc Gnuplot}.\index{Gnuplot@{\sc Gnuplot}}
@@ -4006,13 +4037,15 @@ $xy$, $yz$, $z^2$, $xz$, and $x^2-y^2$ for $d$ orbitals.
 
 \item[{\bf WriteCoorXmol}] ({\it logical}): 
 \index{WriteCoorXmol@{\bf WriteCoorXmol}}\index{XMol@{\sc XMol}}
+\index{JMol@{\sc JMol}}
 If {\tt .true.} it originates the writing of an extra file
 named {\it SystemLabel}{\tt .xyz} containing the final atomic
 coordinates in a format directly readable by {\sc XMol}.\footnote{XMol
 is under \copyright\ copyright of Research Equipment Inc., dba Minnesota
 Supercomputer Center Inc.} Coordinates come out in {\AA}ngstr\"om
 independently of what specified in {\bf AtomicCoordinatesFormat} and
-in {\bf AtomCoorFormatOut}.
+in {\bf AtomCoorFormatOut}. There is a present {\sc Java} implementation 
+of {\sc XMol} called {\sc JMol}.
 
 {\it Default value:} {\tt .false.}
         
@@ -4021,8 +4054,8 @@ in {\bf AtomCoorFormatOut}.
 \index{WriteCoorCerius@{\bf WriteCoorCerius}}\index{Cerius2@{\sc Cerius2}}
 If {\tt .true.} it originates the writing of an extra file
 named {\it SystemLabel}{\tt .xtl} containing the final atomic
-coordinates in a format directly readable by CERIUS.\footnote{CERIUS
-is under \copyright\ copyright of Molecular Simulations Inc.} 
+coordinates in a format directly readable by {\sc Cerius}.\footnote{{\sc 
+Cerius} is under \copyright\ copyright of Molecular Simulations Inc.} 
 Coordinates come out in 
 {\tt Fractional} format (the same as {\tt ScaledByLatticeVectors})
 independently of what specified in {\bf AtomicCoordinatesFormat} and
@@ -4044,7 +4077,8 @@ coordinates of the simulation in a format directly readable by
 {\bf AtomicCoordinatesFormat} and in {\bf AtomCoorFormatOut}.
 This file is accumulative even for different runs.
 There is the alternative for animation by generating a .arc file for 
-CERIUS. It is through the SIES2ARC\index{SIES2ARC} postprocessing utility 
+CERIUS. It is through the {\sc Sies2arc}\index{Sies2arc@{\sc Sies2arc}} 
+postprocessing utility 
 in the Util/ directory, and it requires the coordinates to be
 accumulated in the output file, i.e., WriteCoorStep = {\tt .true.}
  
@@ -4576,11 +4610,14 @@ See the {\bf WriteKpoints} data descriptor above.
 
 
 \subsection{Charge densities and potentials}
-(files SystemLabel.RHO, SystemLabel.DRHO, SystemLabel.VH, SystemLabel.VT) 
+(files {\it SystemLabel}.{\tt RHO}, {\it SystemLabel}.{\tt DRHO}, 
+{\it SystemLabel}.{\tt VH}, {\it SystemLabel}.{\tt VT}) 
 See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf SaveElectrostaticPotential},
 and {\bf SaveTotalPotential} data descriptors above.
 3D-plots of these files can be done using the pacakges
-PLRHO/index{PLRHO} and GRID2CUBE/index{GRID2CUBE} in the Util/
+{\sc Plrho}\index{Plrho@{\sc Plrho}} and {\sc Grid2cube}
+\index{Grid2cube@{\sc Grid2cube}} in the Util/
+\index{output!total charge}
 directory.
 
 
@@ -4607,7 +4644,7 @@ kAtEndOfLine1, kPointLabel \\
 kAtEndOfLastLine, kPointLabel \\
 
 \noindent
-The GNUBANDS\index{GNUBANDS} postprocessing utility
+The {\sc Gnubands}\index{Gnubands@{\sc Gnubands}} postprocessing utility
 program (found in the Util/ directory) reads the {\it Systemlabel}.bands
 for plotting.
 See the {\bf BandLines} data descriptor above for more information.
@@ -4633,7 +4670,7 @@ file and generates a readable file.
 The Hamiltonian eigenvalues for the sampling $\vec k$ points are
 dumped into SystemLabel.EIG in a format analogous to SystemLabel.bands,
 but without the kmin, kmax, emin, emax information, and without
-the abscissa. The EIG2DOS\index{EIG2DOS}
+the abscissa. The {\sc Eig2dos}\index{Eig2dos@{\sc Eig2dos}}
 postprocessing utility can be then used to obtain the density of
 states.\index{density of states} 
 See the {\bf WriteEigenvalues} descriptor above.
@@ -4653,15 +4690,15 @@ XMol-readable format.
 Molecular Simulations Inc.}\index{Cerius2@{\sc Cerius2}}
 See {\bf WriteCoorCerius} data descriptor in subsection {\bf Output options}
 above for obtaining a {\tt .xtl} file with coordinates in 
-CERIUS-readable format. See the SIES2ARC\index{SIES2ARC}
+CERIUS-readable format. See the {\sc Sies2arc}\index{Sies2arc@{\sc Sies2arc}}
 utility in Util/ directory
 for generating .arc files for CERIUS animation.
 
 \item{\bf STRUCT\_OUT file:}
-\index{Systemlabel.STRUCT\_OUT@{Systemlabel.STRUCT\_OUT}}
+\index{Systemlabel.STRUCT\_OUT@{{\it Systemlabel}.STRUCT\_OUT}}
 Siesta always produces a {\tt .STRUCT\_OUT} file with cell vectors in {\AA}
 and atomic positions in fractional coordinates. This file, renamed to
-{\tt SystemLabel}.STRUCT\_IN can be used for crystal-structure input.
+{\it SystemLabel}.STRUCT\_IN can be used for crystal-structure input.
 See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
 
 
@@ -4797,6 +4834,25 @@ the memory use is still acceptable.
 
 \subsection{Known but unsolved problems and bugs}
 
+\begin{itemize}
+
+\item
+Input (fdf) files in the DOS standard are not correctly read by 
+{\sc Siesta} on Unix machines. The program crashes at the very 
+beginning. 
+
+{\it Solution:} Easy, just run {\tt \$ dos2unix} {\it yourinput.}{\tt fdf}
+
+\item
+$k$-points are not properly generated ({\tt kgrid}) if using a
+{\bf SuperCell} block with a non-dioagonal matrix. 
+
+{\it Solution:} Make an empty run with {\bf SuperCell} first to generate 
+the whole geometry, and then run for the large unit cell (without the 
+{\bf SuperCell}) with $k$-points at will.
+
+\end{itemize}
+
 The following are known problems of the order-{\it N} methods used:
 
 \begin{itemize}
@@ -4822,22 +4878,24 @@ The following are major projected changes and improvements.
 \begin{itemize}
 
 \item
-Subtraction of the energy and forces of the isolated atoms placed
-on the uniform real-space grid, in order to partially cancel the
-'energy rippling' (egg-box effect) introduced by that grid.
+Smoothening of the eggbox by filtering and alternatively
+by moving to atomic grids.
 
 \item
-Spectral analysis of DOS weighted for different orbitals or atoms
-(just for the diagonalization option). The information is now
-available only through {\bf SaveHS}. 
+HF and hybrid functionals.
+
+\item
+Introduction of {\sc TranSiesta} in Util/ .
+
+\item
+QM/MM.
 
 \item
 Solution of the Poisson-Boltzman equation for molecules in solution,
 using multigrid methods.
 
 \item
-Implementation of the Li-Nunes-Vanderbilt order-$N$ functional
-(R. W. Nunes and D. Vanderbilt, PRB {\bf 50}, 17611 (1994)).
+Implementation of other linear-scaling solvers.
 
 \end{itemize}
 
@@ -4993,6 +5051,7 @@ energy   & Hz         & 6.6262E-34 \\
 energy   & THz        & 6.6262E-22 \\
 energy   & cm-1       & 1.986E-23 \\
 energy   & cm**-1     & 1.986E-23 \\
+energy   & cm\^-1      & 1.986E-23 \\
 force    & N          & 1.E0 \\
 force    & eV/Ang     & 1.60219E-9 \\
 force    & Ry/Bohr    & 4.11943E-8 \\
@@ -5007,6 +5066,7 @@ pressure & MPa        & 1.E6 \\
 pressure & GPa        & 1.E9 \\
 pressure & atm        & 1.01325E5 \\
 pressure & bar        & 1.E5 \\
+pressure & Kbar       & 1.E8 \\
 pressure & Mbar       & 1.E11 \\
 pressure & Ry/Bohr**3 & 1.47108E13 \\
 pressure & eV/Ang**3  & 1.60219E11 \\
@@ -5025,6 +5085,16 @@ Efield   & V/Ang      & 1.E10 \\
 Efield   & V/Bohr     & 1.8897268E10 \\
 Efield   & Ry/Bohr/e  & 2.5711273E11 \\
 Efield   & Har/Bohr/e & 5.1422546E11 \\
+angle    & deg        & 1.d0 \\
+angle    & rad        & 5.72957795E1 \\
+torque   & eV/deg     & 1.E0 \\
+torque   & eV/rad     & 1.745533E-2 \\
+torque   & Ry/deg     & 13.6058E0 \\
+torque   & Ry/rad     & 0.237466E0 \\
+torque   & meV/deg    & 1.E-3 \\
+torque   & meV/rad    & 1.745533E-5 \\
+torque   & mRy/deg    & 13.6058E-3 \\
+torque   & mRy/rad    & 0.237466E-3 \\
 \hline
 \end{tabular}
 \end{center}
@@ -5136,10 +5206,15 @@ by the parameter {\bf BlockSize}.\index{BlockSize@{\bf Blocksize}}
 For optimal performance, this parameter
 should be adjusted according to the size of problem and the machine
 being used. Very small and very large values tend to be inefficient
-and typically values in the range 8 - 20 tend to be optimal. Parts of
+and typically values in the range 8 - 32 tend to be optimal. Parts of
 the code that parallelise in this way are, evaluation of the kinetic
 energy, the non-local pseudopotential contribution, determination of
-the overlap integrals and matrix diagonalisation/order N.
+the overlap integrals and matrix diagonalisation/order N. Note that 
+for matrix diagonalisation, the default option is now to transform the
+Hamiltonian and Overlap matrices into a 2-D blocked distribution since
+this gives better scaling within Scalapack. The 1-D block cyclic
+data distribution can be maintained by setting the option {\bf Diag.Use2D}
+to false.
 
 \item
 For operations that are grid based, a 2-D block cyclic distribution
@@ -5167,11 +5242,21 @@ been distributed to each Node. This mode is selected using the
 {\bf ParallelOverK} \index{ParallelOverk@{\bf ParallelOverK}}
 option.
 
-It should be noted that at the moment the parallelisation of the order-N
-part is primarily done in order to be able to access large amounts of
-distributed memory, rather than for parallel efficiency. For efficiency,
-this requires a spatial decomposition which is not included in this
-version.
+The order-N facility of SIESTA has been rewritten for the present version 
+to parallelise over spatial regions with a domain decomposition. In the 
+ideal situation, each domain interacts with only the neighbouring domains
+if the size of the domains is greater than the Wannier function radius and
+the range of matrix elements in the Hamiltonian. In order to achieve load
+balance, it may be advantageous to use smaller domain sizes. The domain 
+size can be controlled through the {\bf RcSpatial} option. 
+
+In the current implementation of the domain decomposition parallelisation,
+both the local elements of the orbital coefficients in the Wannier functions
+and those connected via the transpose are locally stored on each node in order
+to minimise communication. However, this leads to greater demands on the memory
+and works best when the system size to processor ratio is high. Work is in 
+progress to offer a modified algorithm with higher communication, but lower
+memory demands. 
 
 In order to use the parallel version of the code you must have the following
 libraries installed on your computer :
@@ -5251,30 +5336,34 @@ the bottleneck and the place where efficiency is most readily
 lost. This is basically just the nature of diagonalisation, but it is
 always worth tuning the BlockSize parameter.
 
-\appendix{XML Output}
+\newpage
+\section{APPENDIX: XML Output}
 \index{XML}
 \index{CML}
 
-From version 2.0, SIESTA includes an option to write its output to an XML file.
-The XML it produces is in accordance with the CMLComp schema (see information...)
+From version 2.0, {\sc Siesta} includes an option to write its output to an 
+XML file. The XML it produces is in accordance with the CML schema version 
+2.2 (see http://www.xml-cml.org).
 
-There are two primary uses for the XML output.
+The main motivation for standarised XML (CML) output is as a step
+towards standarising formats for uses like the following.
 
 \begin{itemize}
 
-\item To use SIESTA as part of a large workflow scheme. In such a
-scenario, the XML output of one SIESTA simulation may be easily parsed
+\item To have {\sc Siesta} communicating with other softwares, either
+usual postprocessing or as part of a larger workflow scheme. In such a
+scenario, the XML output of one {\sc Siesta} simulation may be easily parsed
 in order to direct further simulations. Detailed discussion of this is
 outwith the scope of this manual.
 
-\item To generate webpages showing SIESTA output in a more accessible,
+\item To generate webpages showing {\sc Siesta} output in a more accessible,
 graphically rich, fashion. This section will explain how to do this.
 
 \end{itemize}
 
 Prerequisites:
 
-The translation of the SIESTA XML output to a HTML-based webpage is
+The translation of the {\sc Siesta} XML output to a HTML-based webpage is
 done using XSLT technology. The stylesheets conform to XSLT-1.0 plus
 EXSLT extensions; an xslt processor capable of dealing with this is
 necessary. The following processors have been tested and are known to
@@ -5294,36 +5383,47 @@ Environment and browser plugin - installation instructions for these
 are outside the scope of this manual, though. However, the webpages
 are still useful and may be viewed without this plugin.
 
-The XSLT stylesheets are to be found in the \texttt{XSLT} subdirectory
-of the SIESTA distribution. To use these to produce the webpage, the
-output of a SIESTA run, \texttt{SystemLabel.xml} should be taken and
+XSLT stylesheets are being developed within a CML project, and they
+are directly applicable to {\sc Siesta}. They can be found in
+
+{\tt http://www.eminerals.org/siesta/XSLT}
+
+To use these to produce the webpage, the
+output of a {\sc Siesta} run, \texttt{SystemLabel.xml} should be taken and
 placed in an empty directory. The XSLT processor should then be
 run. The necessary invocation differs according to the processor - the
 following are some examples; consult the documentation for your own
 processor.
 
-\texttt{xsltproc -o SystemLabel.html \$SIESTA/XSLT/display.xsl
-SystemLabel.xml}\\ \texttt{4xslt -o SystemLabel.html SystemLabel.xml
+\texttt{xsltproc -o SystemLabel.xhtml \$SIESTA/XSLT/display.xsl
+SystemLabel.xml}\\ \texttt{4xslt -o SystemLabel.xhtml SystemLabel.xml
 \$SIESTA/XSLT/display.xsl}\\ \texttt{java /usr/share/java/saxon.jar -o
-SystemLabel.html SystemLabel.xml \$SIESTA/XSLT/display.xsl}
+SystemLabel.xhtml SystemLabel.xml \$SIESTA/XSLT/display.xsl}
 
 Note that when using saxon, the path to the saxon \.jar may be
 different on your system.
 
 After this is done, a set of html files will have been created. Point
-your web-browser at \texttt{SystemLabel.html} to view this output.
+your web-browser at \texttt{SystemLabel.xhtml} to view this output.
 
 \newpage
-\appendix{Selection of precision for storage}
+\section{APPENDIX: Selection of precision for storage}
 \index{Precision selection}
 
-In this section we will discuss the use of the preprocessing symbols
-\texttt{BROYDEN\_DP}\index{Broyden}
-and \texttt{CHARGE\_DP} to determine the kinds of
-real numbers used for storage of the Broyden historic data sets and
-the charge density in the grid, respectively.
+Some of the real arrays used in Siesta are by default
+single-precision, to save memory. This applies to the grid-related
+magnitudes, and to the historical data sets in Broyden mixing. The
+defaults can be changed by using pre-processing symbols at compile
+time:
 
-
+\begin{itemize}
+\item Add {\tt -DGRID\_DP} to the {\tt DEFS} variable in {\tt
+  arch.make} to use double-precision arrays on the grid.
+\item Add {\tt -DBROYDEN\_DP} to the {\tt DEFS} variable in {\tt
+  arch.make} to use double-precision arrays for the Broyden historical
+  data sets. (Remember that the Broyden mixing for SCF convergence
+  acceleration is an experimental feature.)\index{Broyden mixing} 
+\end{itemize}
 
 \addcontentsline{toc}{section}{Index}
 \printindex
