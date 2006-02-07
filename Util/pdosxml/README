@@ -7,6 +7,8 @@ You need an XML parser to extract the information you want.
 
 Here we give an implementation of a PDOS processor using the Fortran
 XML parser by Alberto Garcia (see http://lcdx00.wm.lc.ehu.es/ag/xml )
+(Relevant SAX code included in the Siesta distribution in the Src/xmlparser
+directory)
 
 
 1. Edit m_orbital_chooser.f90 to select the orbitals whose PDOS you
