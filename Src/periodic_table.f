@@ -27,11 +27,15 @@ C Originally written by A.R.Williams. Modified by J.M.Soler
       DATA LCHNG / 0, 0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1/
 
       ! Notice that s valence charge must be consitent with ZCHNG
+!
+!     Notice: For Pd, the ground state configuration is set as
+!                     4d9-5s1.
+!
       DATA (Q(0,I),I= 0, 2) /0,1,2/
       DATA (Q(0,I),I= 3,10) /1,2,                      2,2,2,2,0,0/
       DATA (Q(0,I),I=11,18) /1,2,                      2,2,2,2,0,0/
       DATA (Q(0,I),I=19,36) /1,2, 2,2,2,1,2,2,2,2,1,2, 2,2,2,2,0,0/
-      DATA (Q(0,I),I=37,54) /1,2, 2,2,1,1,2,1,1,0,1,2, 2,2,2,2,0,0/
+      DATA (Q(0,I),I=37,54) /1,2, 2,2,1,1,2,1,1,1,1,2, 2,2,2,2,0,0/
       DATA (Q(0,I),I=55,71) /1,2, 2,                               14*2/
       DATA (Q(0,I),I=72,86) /       2,2,2,2,2,2,0,1,2, 2,2,2,2,0,0/
       DATA (Q(0,I),I=87,98) /1,2, 10*2/
@@ -45,7 +49,7 @@ C Originally written by A.R.Williams. Modified by J.M.Soler
       DATA (Q(1,I),I=87,98) /12*0/                ! Fr-Cf
 
       DATA (Q(2,I),I= 0,36) /21*0, 1,2,3,5,5,6,7, 8,10,10, 6*0/
-      DATA (Q(2,I),I=37,54) / 2*0, 1,2,4,5,5,7,8,10,10,10, 6*0/
+      DATA (Q(2,I),I=37,54) / 2*0, 1,2,4,5,5,7,8, 9,10,10, 6*0/
       DATA (Q(2,I),I=55,71) / 2*0, 1,                      6*0,1,6*0,1/
       DATA (Q(2,I),I=72,86) /        2,3,4,5,6,7,10,10,10, 6*0/
       DATA (Q(2,I),I=87,98) / 2*0, 1,2,1,1,3*0,1,2,1/
