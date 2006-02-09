@@ -27,6 +27,10 @@ c
      &                 viodj, viouj, cc
       double precision rcut(10), v(nrmax)
 c
+      double precision absval, minabs, maxabs, norm1, norm2
+      double precision fourier_area(5), dummy_real
+      integer n_channels, lun
+
       double precision cutoff_function
       external cutoff_function
 
@@ -293,7 +297,7 @@ cag               fcut = exp(-5*(r(j)-r(jcut)))
                v(j) = viod(lp,j)/r(j)
   110       continue
 c
-            call potran(lo(i)+1,v,r,nr,zion)
+            call potran(lo(i)+1,v,r,nr,zion,dummy_real)
             call potrv(v,r,nr-120,lo(i),zion)
 c
          else
@@ -323,12 +327,42 @@ cag               fcut = exp(-5*(r(j)-r(jcut)))
                v(j) = viou(lp,j)/r(j)
   140       continue
 c
-            call potran(lo(i)+1,v,r,nr,zion)
+            call potran(lo(i)+1,v,r,nr,zion,fourier_area(lo(i)+1))
             call potrv(v,r,nr-120,lo(i),zion)
 c
          end if
 c
   150 continue
+c
+c     Write out the Fourier area for each pseudo channel
+c
+      call get_unit(lun)
+      open(unit=lun,file="FOURIER_AREA",form="formatted",
+     $     status="unknown")
+      rewind(lun)
+c
+c     Compute also the minimum, maximum, mean, and root-mean-square.
+c
+      n_channels = 0
+      maxabs = -1.0d0
+      minabs = 1.0d10
+      norm1 = 0.0d0
+      norm2 = 0.0d0
+      do j=lo(ncp) + 1, lo(norb) + 1
+         absval = fourier_area(j)
+         if (absval .gt. maxabs) maxabs = absval
+         if (absval .lt. minabs) minabs = absval
+         norm1 = norm1 + absval
+         norm2 = norm2 + absval*absval
+         n_channels =  n_channels + 1
+      enddo
+      norm1 = norm1 / n_channels
+      norm2 = sqrt( norm2 / n_channels)
+      write(lun,"(i4)") n_channels
+      write(lun,"(5f10.5)") (fourier_area(j),j=lo(ncp)+1,lo(norb)+1)
+      write(lun,"(4f10.5)") minabs, maxabs, norm1, norm2
+      close(lun)
+c
       write(6,9020)
 c
 c   Convert spin-polarized potentials back to nonspin-polarized

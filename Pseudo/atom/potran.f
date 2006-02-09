@@ -1,5 +1,5 @@
 C
-      subroutine potran(i,vd,r,nr,zion)
+      subroutine potran(i,vd,r,nr,zion,fourier_area)
 c
       implicit none
 c
@@ -22,7 +22,7 @@ C     .. Parameters ..
       parameter (zero=0.D0,one=1.D0)
 C     ..
 C     .. Scalar Arguments ..
-      double precision zion
+      double precision zion, fourier_area
       integer i, nr
 C     ..
 C     .. Array Arguments ..
@@ -100,7 +100,8 @@ c
          vline = vline + 7*abs(vql(j)) + 32*abs(vql(j+1)) +
      &           12*abs(vql(j+2)) + 32*abs(vql(j+3)) + 7*abs(vql(j+4))
    50 continue
-      write(6,9020) i - 1, vline/90
+      fourier_area = vline/90
+      write(6,9020) i - 1, fourier_area
  9020 format(1x,'The Fourier(q^2/(4pi*zion)*V(q)) absolute',
      &      ' area for l=',i1,' is ',f10.6)
 c
