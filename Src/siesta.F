@@ -4,7 +4,7 @@ C ***
 C SIESTA Density Functional LCAO program package.
 C Copyright by Fundacion General Universidad Autonoma de Madrid:
 C E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal 
-C and J.M.Soler, 1996-2003
+C and J.M.Soler, 1996-2006
 C ***
 C Copy or disemination of all or part of this package is not permitted 
 C without prior and explicit authorization by the authors.
@@ -70,6 +70,7 @@ C  Modules
 
       use m_smearing, only: temp
       use m_dynamics, only: nose, verlet2, npr, anneal, pr
+      use md_out,     only: md_v_format
 
       implicit none
 
@@ -286,7 +287,7 @@ C Initialize pseudopotentials and atomic orbitals
         write(6,'(a)')  'siesta: The following are some of the '//
      .                           'parameters of the simulation.'
         write(6,'(a)')  'siesta: A complete list of the parameters '//
-     .                           'used, including defect values,'
+     .                           'used, including default values,'
         write(6,'(a,a)')'siesta: can be found in file out.fdf'
         write(6,'(a)')  'siesta:'
       endif
@@ -445,14 +446,10 @@ C Initialize atom lists
 
 C Calculate spin populations for fixed spin case...
       if (fixspin) then
-        if (nspin .ne. 2) then
-          if (Node.eq.0) then
-            write(message,'(2a)')
-     .       'siesta: ERROR: You can only fix the spin of the system',
-     .       'for collinear spin polarized calculations.'
-            call die(message)
-          endif
-        endif
+        if (nspin .ne. 2)
+     $   call die('siesta: ERROR: ' //
+     $        'You can only fix the spin of the system' //
+     $        ' for collinear spin polarized calculations.')
         do i = 1,2
           qs(i) = (qtot + (3-2*i)*ts) / 2.0_dp
         enddo
@@ -641,13 +638,9 @@ C the dimensions and repeat the initialisation
         endif
         nwk = 0
         call initwave( maxwk, no_u, nwk, wfk, overflow )
-        if (overflow) then
-          write(message,'(2a)')
-     .      'siesta: ERROR: Unsuccessful initialization of',
-     .      '        list of wavefunctions to print'
-           call die(message)
-         endif
-
+        if (overflow)
+     $   call die('siesta: ERROR: Unsuccessful initialization of' //
+     $            ' list of wavefunctions to print')
       endif
 C ......................
 
@@ -892,11 +885,8 @@ C End variable cell actualization
 C Auxiliary supercell
       call superc(ucell, scell, nsc)
 
-C Print unit cell for variable cell ...................................
-      if ( varcel.and.(IOnode) ) call outcell(ucell)
-C ...................
-
-C Find unit cell volume ...............................................
+C Print unit cell and find its volume
+      if (IOnode) call outcell(ucell)
       volume = volcel( ucell )
 C ...................
 
@@ -1749,7 +1739,8 @@ C Move atoms ..........................................................
         endif
       endif
 
-C Save last atomic positions and velocities (it should be before moving atoms!)
+C Save last atomic positions and velocities 
+C (it should be before moving atoms!)
       call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
       if (lUseZmatrix)
      .  call iozm('write',ucell,vcell,xa,foundzm)
@@ -1776,6 +1767,7 @@ C Save atomic positions and velocities accumulatively ................
      .        xa, va, ucell, vcell, varcel, istep, inicoor, 
      .        fincoor, tempion, Etot_output, getot,
      $        volume/Ang**3, Psol/kbar)
+         call md_v_format(na_u,isa,xa,ucell)
       endif
 
 C Accumulate coor in Xmol file for animation .........................

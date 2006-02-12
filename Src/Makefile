@@ -115,7 +115,7 @@ MOD_OBJS=precision.o sys.o m_cell.o recipes.o files.o \
 	 electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
          units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
          nlefsm.o overfsm.o conjgr.o conjgr_old.o redata.o \
-         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o
+         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o
 #
 COM_OBJS=$(OBJS) $(SYSOBJ)
 ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
