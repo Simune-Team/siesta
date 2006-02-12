@@ -52,7 +52,7 @@
 ! Auxiliary:
 !   real*8  Y(NR) : Intermediate array used in the Numerov method
 !***********************************************************************
-      USE IONEW
+      USE PARALLEL, ONLY: IONODE
       use sys, only: die
 
       IMPLICIT NONE
@@ -224,7 +224,7 @@
 ! Output:
 !   real*8  G(N) : Normalized wavefunction
 !***********************************************************************
-      USE IONEW
+      USE PARALLEL, ONLY: IONODE
       IMPLICIT NONE
       INTEGER          :: N
       DOUBLE PRECISION :: G(N), S(N)

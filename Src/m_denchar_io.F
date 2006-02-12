@@ -1,7 +1,8 @@
       module m_denchar_io
 
       use m_denchar_geom
-      use ionew
+
+      external :: io_assign, io_close
 
       public :: readpla
 

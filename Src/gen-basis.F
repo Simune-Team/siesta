@@ -11,9 +11,9 @@ C RESTRICTION: Just a single species allowed
 C
 !!      use f2kcli
       use fdf
-      use ionew
+
       use precision
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, IOnode
       use basis_types, only: nsp, basis_specs_transfer
       use basis_types, only: iz, lmxkb, nkbl, 
      .           erefkb, lmxo, nzeta, rco, 
@@ -30,6 +30,7 @@ C
 
       use atom,         only : atom_main, prinput
       use xcmod,        only : setXC
+      use sys,          only : die
 C
 C     It has to be MPI-aware since it calls routines down the line...
 C
@@ -61,7 +62,7 @@ C Initialise MPI and set processor number
       Nodes = 1
 #endif
 
-      call io_setup     ! Initialize IOnode
+      IOnode = (Node .eq. 0)
 
       if (Ionode) then
 !

@@ -106,8 +106,7 @@ C Set GGA switch
         else
           if ( XCfunc(nf).ne.'LDA' .and. XCfunc(nf).ne.'lda' .and.
      .         XCfunc(nf).ne.'LSD' .and. XCfunc(nf).ne.'lsd' ) then
-            write(6,*) 'ATOMXC: Unknown functional ', XCfunc(nf)
-            call die()
+            call die('ATOMXC: Unknown functional ' // XCfunc(nf))
           endif 
         endif
       enddo
@@ -447,8 +446,7 @@ cag
         CALL PW91XC( IREL, NS, DD, GDD,
      .               EPSX, EPSC, DEXDN, DECDN, DEXDGN, DECDGN )
       ELSE
-        WRITE(6,*) 'GGAXC: Unknown author ', AUTHOR
-        call die()
+        call die('GGAXC: Unknown author ' // trim(AUTHOR))
       ENDIF
 
       IF (nspin .EQ. 4) THEN
@@ -568,8 +566,7 @@ cag       Avoid negative densities
       ELSEIF ( AUTHOR.EQ.'PW92' .OR. AUTHOR.EQ.'pw92' ) THEN
         CALL PW92XC( IREL, NS, DD, EPSX, EPSC, VXD, VCD )
       ELSE
-        WRITE(6,*) 'LDAXC: Unknown author ', AUTHOR
-        call die()
+        call die('LDAXC: Unknown author ' // trim(AUTHOR))
       ENDIF
 
       IF (nspin .EQ. 4) THEN

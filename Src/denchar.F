@@ -18,7 +18,6 @@ C
       use m_denchar_work
       use m_denchar_geom
 
-      use ionew
       USE PRECISION
       USE PARALLEL
       USE BASIS_IO
@@ -165,7 +164,7 @@ C Initialise MPI and set processor number
       if (Nodes /= 1)
      $            print *, "You are running denchar on several nodes!"
 
-      call io_setup     ! Initialize IOnode
+      IONode = (Node .eq. 0)
 
 C Set up fdf -----------------------------------------------------------
 !      narg = command_argument_count()

@@ -45,13 +45,12 @@ C INTEGER NUOTOT              : Total number of orbitals in unit cell
 C **********************************************************************
 
       use precision,    only : dp
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, IOnode
       use fdf
       use atomlist,     only : xa, isa, iphorb, iaorb
       use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
       use flib_wxml
       use xml,          only : xml_dump_attribute
-      use ionew,        only : IOnode
       use densematrix,  only : Haux, Saux, psi
       use alloc
       use units,        only : eV

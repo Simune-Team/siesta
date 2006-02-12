@@ -2,7 +2,7 @@
 
       use precision
       use alloc
-      use ionew, only: IOnode
+      use parallel, only: IOnode
       use  atmfuncs, only: nofis, nkbfis, izofis, massfis,
      $                     rcut, atmpopfio
       use atm_types, only: species

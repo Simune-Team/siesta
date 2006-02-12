@@ -1,9 +1,10 @@
       module pseudopotential
 
-      use sys
-      use precision
-      use ionew
+      use sys, only: die
+      use precision, only: dp
       
+      external :: io_assign, io_close
+
       private
 
       public :: pseudopotential_t, pseudo_read, pseudo_header_print

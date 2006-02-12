@@ -29,7 +29,6 @@ C
       use sys,          only : die
       use fdf,          only : fdf_boolean, fdf_string
       use files,        only : slabel, label_length
-      use ionew
 #ifdef MPI
       use mpi_siesta
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb

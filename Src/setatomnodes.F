@@ -33,7 +33,7 @@ C  Julian Gale, NRI, Curtin University, March 2004
 C
 C
       use alloc,     only : re_alloc
-      use ionew,     only : ionode
+      use parallel,  only : ionode
       use precision, only : dp
       use spatial,   only : nAtomPerNode, maxAtomPerNode
      .                    , nCellPerNode, maxCellPerNode

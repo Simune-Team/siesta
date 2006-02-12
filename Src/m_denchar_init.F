@@ -1,10 +1,10 @@
       module m_denchar_init
 
-      use ionew
-
       integer, dimension(3), save  :: num_version = (/1,1,0/)
       character(len=80), parameter :: version_str =
      . "DENCHAR 1.1.0 -- [Translation into F90] (Feb 04, 2002)"
+
+      external :: io_assign, io_close
 
       CONTAINS
 

@@ -28,7 +28,6 @@ C  Modules
       use m_fdf_global, only: fdf_global_get
       use sys, only: die, bye
       use parse
-      use ionew, only: io_setup
       use periodic_table, only : symbol
       use xcmod, only: setXC
 #ifdef MPI
@@ -214,7 +213,7 @@ C Initialise MPI and set processor number
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
 #endif
 
-      call io_setup     ! Initialize IOnode
+      IOnode = (Node .eq. 0)
 
 C Print version information ...........................................
       if (IOnode) then

@@ -108,7 +108,7 @@ MOD_OBJS=precision.o sys.o m_cell.o recipes.o files.o \
          spatial.o parallel.o parallelsubs.o  parsing.o chemical.o xcmod.o atom.o atmparams.o \
          m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
          atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
-	 atomlist.o ionew.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
+	 atomlist.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
          alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
          basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
          onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
@@ -144,8 +144,6 @@ dhscf.o dfscf.o forhar.o rhooda.o rhoofd.o rhoofdsp.o cellxc.o : meshsubs.o
 vmat.o vmatsp.o : meshsubs.o
 dfscf.o rhoofd.o rhoofdsp.o vmat.o vmatsp.o : meshmatrix.o
 siesta.o: atomlist.o 
-old_atmfuncs.o atomlist.o siesta.o atom.o arw.o pseudopotential.o: ionew.o
-iodm.o pdos.o iopipes.o: ionew.o
 coor.o: atomlist.o
 pdos.o radial.o: xml.o
 atm_types.o: radial.o
@@ -158,7 +156,7 @@ ordern.o atomlwf.o cgwf.o egandd.o ener3.o ener3lomem.o gradient.o gradientlomem
 atomlwf.o : mneighb.o
 gradient.o gradientlomem.o ener3.o ener3lomem.o denmat.o denmatlomem.o : globalise.o
 #
-diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o ionew.o: sys.o
+diag2g.o diag2k.o diagg.o diagk.o diagkp.o diagsprl.o : sys.o
 atmfuncs.o atom.o basis_specs.o: sys.o
 chkdim.o coor.o diagpol.o matel.o old_atmfuncs.o periodic_table.o: sys.o
 pdos.o: atmfuncs.o atomlist.o
@@ -177,7 +175,7 @@ pixmol.o coxmol.o reinit.o : files.o
 #----------------------------------------------------
 matel.o basis_io.o atom.o : radfft.o
 #
-basis_io.o: ionew.o atm_types.o atmfuncs.o radial.o sys.o chemical.o\
+basis_io.o:  atm_types.o atmfuncs.o radial.o sys.o chemical.o\
             basis_types.o xml.o
 basis_io.o: $(FDF) $(NETCDF_INTERFACE)
 siesta.o bands.o efield.o fixed.o grdsam.o writewave.o: parsing.o
@@ -232,7 +230,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER)
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o recipes.o parallel.o \
           parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
-	  paste.o ionew.o \
+	  paste.o  \
           basis_specs.o atom.o periodic_table.o\
           pseudopotential.o dot.o xc.o  arw.o  \
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
@@ -259,9 +257,9 @@ OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
         paste.o  radfft.o io.o  spatial.o\
         volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
-        atmparams.o atmfuncs.o ionew.o atm_types.o m_memory.o \
+        atmparams.o atmfuncs.o atm_types.o m_memory.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
-        pseudopotential.o chemical.o xml.o $(SYSOBJ)
+        pseudopotential.o chemical.o xml.o files.o $(SYSOBJ)
 
 denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) 
 	$(FC) -o denchar \

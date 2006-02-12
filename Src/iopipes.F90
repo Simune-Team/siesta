@@ -5,14 +5,17 @@ module iopipes
 ! in module fsiesta.
 ! J.M.Soler and A.Garcia. Nov.2003
 
-use precision
-use ionew
+use precision, only: dp
+use parallel, only: IOnode
 use fdf
+use sys, only: die
 #ifdef MPI
       use mpi_siesta
 #endif
 
   implicit none
+
+  external :: io_assign, io_close
 
 PUBLIC :: coordsFromPipe, forcesToPipe
 

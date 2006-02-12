@@ -1,6 +1,6 @@
       module m_denchar_work
 
-      use ionew
+      use parallel, only: ionode
       use m_denchar_neighb
       use m_denchar_io
       use m_denchar_geom
