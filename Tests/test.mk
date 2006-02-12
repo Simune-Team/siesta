@@ -1,7 +1,7 @@
 #
 # Single-test makefile template
 #
-SIESTA=../../../siesta
+SIESTA=../../../Src/siesta
 #
 completed:
 	@echo ">>>> Running $(name) test..."

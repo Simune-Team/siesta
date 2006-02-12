@@ -1,20 +1,23 @@
-Basis generation
-(Actually, KB projectors and
-PAO generation)
+Basis generation (Actually, KB projectors and PAO generation)
 
-A subdirectory for each series
-of examples. 
+A subdirectory for each series of examples. 
 
-Use the "genbasis" command:
+Instructions:
 
-$ genbasis Si_sz.fdf Si.tm2.psf
+(We assume that you did not move this directory from its place
+in the Siesta distribution...)
 
-...
+Go into each subdirectory and use the gen-basis.sh script above. For
+example:
+
+$ cd Si
+$ sh ../gen-basis.sh Si_sz.fdf Si.tm2.psf
+
+Then go into the working subdirectory and use the plotting scripts,
+as per the instructions printed by the script:
 
 $ cd Si_sz
 
-.... Plot KBs and ORBs...
+.... Plot using the scripts ....
 
-
-(REMEMBER TO PLOT THINGS ON THE SGI's...)
 

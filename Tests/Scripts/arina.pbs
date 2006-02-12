@@ -11,7 +11,7 @@ NPROCS=`wc -l < $PBS_NODEFILE`
 echo This job has allocated $NPROCS nodes
 #
 cd $PBS_O_WORKDIR
-prog=../../../siesta
+prog=../../../Src/siesta
 
 make SIESTA="mpirun -machinefile $PBS_NODEFILE -np $NPROCS $prog --gm-kill 600 $prog"
 

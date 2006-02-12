@@ -10,7 +10,7 @@
 #$ -v HOME
 #
 #-----------------------------------------------------------
-prog=../../../siesta
+prog=../../../Src/siesta
 #
 echo This job runs on the following nodes:
 echo `cat $TMP/machines`

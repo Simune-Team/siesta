@@ -1,15 +1,15 @@
 #!/bin/sh
 #
 # Script to run a basis generation calculation
+# Do not move directory from Siesta tree, or modify
+# the lines below to help the script find the gen-basis program
+# (note also re-definition of prog further down)
 #
+BASIS_TUTORIAL_DIR=`dirname $0`
+EXEC_DIR=${BASIS_TUTORIAL_DIR}/../../Src
+GEN_BASIS_PROGRAM=${EXEC_DIR}/gen-basis
+prog=${GEN_BASIS_PROGRAM} 
 #
-# Set this or use environment variable...
-#
-DEFAULT_DIR=${HOME}/beta/siesta/Util/Basis
-SIESTA_BASIS_UTILS_DIR=${SIESTA_BASIS_UTILS_DIR:-${DEFAULT_DIR}}
-#
-default="$HOME/beta/siesta/Src/gen-basis"
-prog=${GEN_BASIS:-$default}
 #
 if [ "$#" != 2 ] 
 then
@@ -33,11 +33,15 @@ then
 fi
 #
 mkdir $dirname ; cd $dirname
+
+prog=../$prog
+BASIS_TUTORIAL_DIR=../${BASIS_TUTORIAL_DIR}
+
 cp ../$fdf_file .
 #
 #  Make the pseudo file have the same root as the run Label
 #
-ln -sf ../$pseudo_file ./$label.psf
+ln -sf ../$pseudo_file $label.psf
 #
 $prog < $fdf_file > OUT
 ln -fs OUT $label.OUT
@@ -56,7 +60,7 @@ echo " *** For postscript output, use the .gps files"
 #
 #  Copy plotting scripts
 #
-cp -f ${SIESTA_BASIS_UTILS_DIR}/*.gp* .
+cp -f ${BASIS_TUTORIAL_DIR}/*.gp* .
 #
 # Rename files
 #
