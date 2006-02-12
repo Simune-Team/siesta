@@ -1,12 +1,29 @@
-      module m_optim
-      
-      public :: optim
+      module m_broyden_optim
+!
+!     Broyden geometry optimization
+!      
+      use precision, only : dp
+      use fdf,          only: fdf_block
+      use m_fdf_global, only: fdf_global_get
+      use m_mpi_utils, only:  broadcast
+      use units, only: kBar
+!
+      use m_broyddj_nocomm, only: broyden_t
+      use m_broyddj_nocomm, only: broyden_reset, broyden_step,
+     $                     broyden_destroy, broyden_init,
+     $                     broyden_is_setup
+
+      use m_memory, only: memory, mem_stat
+      use parallel, only : ionode
+
+      implicit none
+
+      public :: broyden_optimizer
       private
 
       CONTAINS
-      subroutine optim( na, xa, fa, cell, stress, volume, dxmax, 
-     .                 tp, ftol, strtol, varcel, relaxd,
-     $                 usesavejacobian)
+      subroutine broyden_optimizer( na, xa, fa, cell, stress,
+     $     volume, dxmax, tp, ftol, strtol, varcel, relaxd)
 c ***************************************************************************
 c Broyden geometry optimization
 c
@@ -34,7 +51,6 @@ c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
 c logical varcel        : true if variable cell optimization
-c logical usesavecg     : true if we're using saved CG files.
 c *************************** INPUT AND OUTPUT ******************************
 c real*8 xa(3,na)       : Atomic coordinates
 c                         input: current step; output: next step
@@ -50,27 +66,13 @@ c ***************************************************************************
 C
 C  Modules
 C
-      use precision, only : dp
-      use fdf,          only: fdf_block
-      use m_fdf_global, only: fdf_global_get
-      use m_mpi_utils, only:  broadcast
-      use units, only: kBar
-!
-      use m_broyddj_nocomm, only: broyden_t
-      use m_broyddj_nocomm, only: broyden_reset, broyden_step,
-     $                     broyden_destroy, broyden_init,
-     $                     broyden_is_setup
-
-      use m_memory, only: memory, mem_stat
-      use parallel, only : ionode
-      implicit none
 
 ! Subroutine arguments:
 
       integer, intent(in) :: na
       real(dp), intent(in) :: fa(3,na), volume, dxmax,
      .                        tp, ftol, strtol
-      logical, intent(in) :: varcel, usesavejacobian
+      logical, intent(in) :: varcel
       real(dp), intent(inout) :: xa(3,na), stress(3,3), cell(3,3)
       logical, intent(out) :: relaxd
 
@@ -117,25 +119,27 @@ c ---------------------------------------------------------------------------
 
       if (.not. initialization_done) then
 
-          call fdf_global_get(maxit,"Optim.Broyden.History.Steps",5)
+          call fdf_global_get(maxit,"MD.Broyden.History.Steps",5)
           call fdf_global_get(cycle_on_maxit,
-     $              "Optim.Broyden.Cycle.On.Maxit",.true.)
+     $              "MD.Broyden.Cycle.On.Maxit",.true.)
           call fdf_global_get(variable_weight,
-     $         "Optim.Broyden.Variable.Weight",.false.)
+     $         "MD.Broyden.Variable.Weight",.false.)
           call fdf_global_get(broyden_debug,
-     $         "Optim.Broyden.Debug",.false.)
+     $         "MD.Broyden.Debug",.false.)
           call fdf_global_get(jinv0,
-     $         "Optim.Broyden.Initial.Inverse.Jacobian",1.0_dp)
+     $         "MD.Broyden.Initial.Inverse.Jacobian",1.0_dp)
 
          if (ionode) then
-          print *, "-----optim-----"
-          print *, "optim: max_history for broyden: ", maxit
-          print *, "optim: cycle on maxit: ", cycle_on_maxit
-          print *, "optim: variable weight: ", variable_weight
-          if (variable_weight) print *,
-     $         "Variable weight not implemented yet"
-          print *, "optim: initial inverse jacobian: ", jinv0
-          print *, "-----optim-----"
+          write(6,*) 
+          write(6,'(a,i3)')
+     $         "Broyden_optim: max_history for broyden: ", maxit
+          write(6,'(a,l1)')
+     $         "Broyden_optim: cycle on maxit: ", cycle_on_maxit
+          if (variable_weight) write(6,'(a)')
+     $         "Broyden_optim: Variable weight not implemented yet"
+          write(6,'(a,f8.4)')
+     $         "Broyden_optim: initial inverse jacobian: ", jinv0
+          write(6,*) 
         endif
 
          call broyden_init(br,debug=broyden_debug)
@@ -153,7 +157,7 @@ C If first call to optim, check dim and get target stress --------------------
          else
             numel = 3*na
          endif
-         print *, "Broyden_optim: No of elements: ", numel
+         write(6,'(a,i6)') "Broyden_optim: No of elements: ", numel
 
         if ( varcel ) then
 
@@ -168,7 +172,7 @@ C Look for target stress and read it if found, otherwise generate it --------
 
             if (tarstr) then
                write(6,'(/a,a)')
-     $              'optim: Reading %block MD.TargetStress',
+     $              'Broyden_optim: Reading %block MD.TargetStress',
      .                        ' (units of MD.TargetPressure).'
                read(iu,*, end=50) sxx, syy, szz, sxy, sxz, syz
                tstres(1,1) = - sxx * tp
@@ -182,7 +186,8 @@ C Look for target stress and read it if found, otherwise generate it --------
                tstres(3,2) = - syz * tp
    50          continue
             else
-              write(6,'(/a,a)') 'optim: No target stress found, ',
+              write(6,'(/a,a)')
+     $              'Broyden_optim: No target stress found, ',
      .                'assuming hydrostatic MD.TargetPressure.'
               do i = 1, 3
                 do j = 1, 3
@@ -194,15 +199,15 @@ C Look for target stress and read it if found, otherwise generate it --------
 
 C Write target stress down --------------------------------------------------
 
-            write(6,"(/a)") 'optim: Target stress (kBar)'
+            write(6,"(/a)") 'Broyden_optim: Target stress (kBar)'
             write(6,"(a,2x,3f12.3)") 
-     .       'optim:', tstres(1,1)/kBar, tstres(1,2)/kBar, 
+     .       'Broyden_optim:', tstres(1,1)/kBar, tstres(1,2)/kBar, 
      .       tstres(1,3)/kBar
             write(6,"(a,2x,3f12.3)") 
-     .       'optim:', tstres(2,1)/kBar, tstres(2,2)/kBar, 
+     .       'Broyden_optim:', tstres(2,1)/kBar, tstres(2,2)/kBar, 
      .       tstres(2,3)/kBar
             write(6,"(a,2x,3f12.3)") 
-     .       'optim:', tstres(3,1)/kBar, tstres(3,2)/kBar, 
+     .       'Broyden_optim:', tstres(3,1)/kBar, tstres(3,2)/kBar, 
      .       tstres(3,3)/kBar
           endif  ! node0
 
@@ -251,11 +256,14 @@ C Variable cell -------------------------------------------------------------
       if ( varcel ) then
 
          allocate(gfa(numel), stat=mem_stat)
-         call memory('A','D',numel,'optim',stat=mem_stat,id="gfa")
+         call memory('A','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="gfa")
          allocate(gxa(numel), stat=mem_stat)
-         call memory('A','D',numel,'optim',stat=mem_stat,id="gxa")
+         call memory('A','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="gxa")
          allocate (rnew(numel), stat=mem_stat)
-         call memory('A','D',numel,'optim',stat=mem_stat,id="rnew")
+         call memory('A','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rnew")
 
 C Inverse of matrix of cell vectors  (transpose of) ------------------------
 
@@ -354,11 +362,14 @@ C Fixed cell ----------------------------------------------------------------
            endif
 
            allocate (rold(numel), stat=mem_stat)
-           call memory('A','D',numel,'optim',stat=mem_stat,id="rold")
+           call memory('A','D',numel,'Broyden_optim',
+     $          stat=mem_stat,id="rold")
            allocate (rnew(numel), stat=mem_stat)
-           call memory('A','D',numel,'optim',stat=mem_stat,id="rnew")
+           call memory('A','D',numel,'Broyden_optim',
+     $          stat=mem_stat,id="rnew")
            allocate (rdiff(numel),stat=mem_stat)
-           call memory('A','D',numel,'optim',stat=mem_stat,id="rdiff")
+           call memory('A','D',numel,'Broyden_optim',
+     $          stat=mem_stat,id="rdiff")
 
            weight = 1.0_dp
            indi = 0
@@ -412,23 +423,29 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
       ! Deallocate local memory
 
         deallocate (rnew, stat=mem_stat)
-        call memory('D','D',numel,'optim',stat=mem_stat,id="rnew")
+        call memory('D','D',numel,'Broyden_optim',
+     $       stat=mem_stat,id="rnew")
         deallocate (gxa, stat=mem_stat)
-        call memory('D','D',numel,'optim',stat=mem_stat,id="gxa")
+        call memory('D','D',numel,'Broyden_optim',
+     $       stat=mem_stat,id="gxa")
         deallocate (gfa, stat=mem_stat)
-        call memory('D','D',numel,'optim',stat=mem_stat,id="gfa")
+        call memory('D','D',numel,'Broyden_optim',
+     $       stat=mem_stat,id="gfa")
 
       else
 
          deallocate (rold, stat=mem_stat)
-         call memory('D','D',numel,'optim',stat=mem_stat,id="rold")
+         call memory('D','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rold")
          deallocate (rnew, stat=mem_stat)
-         call memory('D','D',numel,'optim',stat=mem_stat,id="rnew")
+         call memory('D','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rnew")
          deallocate (rdiff, stat=mem_stat)
-         call memory('D','D',numel,'optim',stat=mem_stat,id="rdiff")
+         call memory('D','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rdiff")
 
       endif ! variable cell
 
-      end subroutine optim
-      end module m_optim
+      end subroutine broyden_optimizer
+      end module m_broyden_optim
 

@@ -3314,20 +3314,30 @@ implemented. Note that some options specified in later variables
 If the system contains just one atom, {\tt CG} is the only 
 available dynamics option.
 \begin{itemize}
+
 \item {\tt CG} (Coordinate optimization by conjugate
-  gradients). Optionally, the optimization can include the cell
-  vectors, and it can be done using a modified Broyden scheme, instead
-  of conjugate gradients.
+  gradients). Optionally (see variable MD.VariableCell below), the
+  optimization can include the cell vectors.
+
+\item {\tt Broyden} (Coordinate optimization by a modified Broyden
+  scheme). Optionally, (see variable MD.VariableCell below), the
+  optimization can include the cell vectors.
+
 \item {\tt Verlet} (Standard Verlet algorithm MD)
-\item Nose  (MD with temperature controlled  by means of a Nos\'e 
+
+\item {\tt Nose}  (MD with temperature controlled  by means of a Nos\'e 
 thermostat)
+
 \item {\tt ParrinelloRahman}  (MD with pressure controlled by 
 the Parrinello-Rahman method)
+
 \item {\tt NoseParrinelloRahman}  (MD with temperature controlled
 by means of a Nos\'e thermostat and pressure controlled by 
 the Parrinello-Rahman method)
+
 \item {\tt Anneal}  (MD with annealing to a desired
 temperature and/or pressure (see variable MD.AnnealOption below)
+
 \item {\tt FC}  (Compute force constants matrix\index{Force Constants
 Matrix} for phonon
 calculations. The output can be analyzed to extract phonon
@@ -3335,12 +3345,14 @@ frequencies and vectors with the VIBRA\index{VIBRA} package in the Util/
 directory. For computing the Born effective charges together with the
 force constants, see {\bf BornCharge}
 \index{BornCharge@{\bf BornCharge}})
+
 \item {\tt Phonon} (Compute forces for a specified set of atomic
 displacements. These are choosen with the help of the program {\sc
 Phonon} \footnote{{\sc Phonon} is \copyright\ copyright by Krzysztof
 Parlinski}  \index{Phonon program} \index{Force Constants
 Matrix!using phonon@using {\sc Phonon}} for phonon calculations). See
 also {\tt MD.ATforPhonon} block. (Deprecated.)
+
 \item {\tt Forces} (Receive coordinates from, and return forces to,
 an external driver program, using Unix pipes for communication.
 The routines in module Util/SiestaSubroutine/fsiesta.f90 allow the
@@ -3351,35 +3363,7 @@ without a driver program sending data, siesta may hang without
 any notice).
 \end{itemize}
     
-{\it Default value:} {\tt Verlet} ({\tt CG} for one atom systems)
-
-\item[{\bf Optim.Broyden}] ({\it logical}):
-\index{Optim.Broyden@{\bf Optim.Broyden}} \index{Broyden optimization}
-If true, the coordinates (and maybe the cell) are relaxed
-using a modified Broyden scheme (See D.D. Johnson, PRB 38, 12807
-(1988)).
-Related parameters:
-\begin{itemize}
-
-\item {\bf Optim.Broyden.History.Steps}: Number of relaxation steps
-during which the modified Broyden algorithm builds up the Jacobian
-matrix. Default value: {\tt 5}.
-
-\item {\bf Optim.Broyden.Cycle.On.Maxit}: Upon reaching the maximum
-number of history data sets which are kept for Jacobian estimation,
-throw away the oldest and shift the rest to make room
-for a new data set. The alternative is to re-start the Broyden minimization
-algorithm from a first step of a diagonal inverse Jacobian. Default
-value: {\tt .true.}
-
-{\bf Optim.Broyden.Initial.Inverse.Jacobian}: Initial inverse Jacobian
-for the optimization procedure. The default value ({\tt 1.0}) seems to
-work well.
-\end{itemize}
-
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG}. 
-
-{\it Default value:} {\tt .false.}
+{\it Default value:} {\tt Verlet} ({\tt CG} for one-atom systems)
 
 
 \item[{\bf MD.VariableCell}] ({\it logical}):
@@ -3390,7 +3374,7 @@ hydrostatic pressures or arbitrary stress tensors.  See {\bf
 MD.MaxStressTol}, {\bf MD.TargetPressure}, {\bf MD.TargetStress}, {\bf
   MD.ConstantVolume}, {\bf MD.PreconditionVariableCell}, and {\bf Optim.Broyden}.
 
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG}. 
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden}
 
 {\it Default value:} {\tt .false.}
 
@@ -3399,12 +3383,12 @@ MD.MaxStressTol}, {\bf MD.TargetPressure}, {\bf MD.TargetStress}, {\bf
 \index{constant-volume cell relaxation}
 If true, the cell volume is kept constant in a variable-cell
 relaxation: only the cell shape and the atomic coordinates are allowed
-to change in the conjugate gradient minimization. 
+to change in the conjugate gradient (or Broyden) minimization. 
 Note that it does not make much sense to specify a target stress or
 pressure in this case, except for anisotropic (traceless) stresses.
 See {\bf MD.VariableCell}, {\bf MD.TargetStress}.
 
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG}.  and
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden}  and
  MD.VariableCell is
  {\tt .true.}. 
 
@@ -3413,11 +3397,11 @@ See {\bf MD.VariableCell}, {\bf MD.TargetStress}.
 
 \item[{\bf MD.NumCGsteps}] ({\it integer}): 
 \index{MD.NumCGsteps@{\bf MD.NumCGsteps}} 
-Maximum number of conjugate gradient minimization
+Maximum number of conjugate gradient (or Broyden) minimization
 moves (the minimization will stop
 if tolerance is reached before; see MD.MaxForceTol below).
 
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG}
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden}
     
 {\it Default value:} {\tt 0}
 
@@ -3425,7 +3409,9 @@ if tolerance is reached before; see MD.MaxForceTol below).
 \index{MD.MaxCGDispl@{\bf MD.MaxCGDispl}} 
 Maximum atomic displacements on a {\tt CG} optimization move.
 
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG}
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG}. (For the Broyden
+optimization method, it is only possible to limit indirectly the {\it initial\/}
+atomic displacements using {\bf MD.Broyden.Initial.Inverse.Jacobian}.)
     
 {\it Default value:} {\tt 0.2 Bohr}
 
@@ -3441,8 +3427,8 @@ due to atomic displacements. It is also
 used for the application of the {\bf MD.MaxCGDispl} value to
 the strain components.
  
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG} and Md.VariableCell
-is {\tt .true.}
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden} and
+Md.VariableCell is {\tt .true.}
    
 {\it Default value:} {\tt 5.0 Ang}
  
@@ -3454,7 +3440,7 @@ Run stops if the maximum atomic force is
 smaller than {\bf MD.MaxForceTol} (see {\bf MD.MaxStressTol}
 for variable cell).
 
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG}
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden}
     
 {\it Default value:} {\tt 0.04 eV/Ang}
 
@@ -3465,8 +3451,9 @@ Stress tolerance in variable-cell CG optimization. Run stops
 if the maximum atomic force is smaller than {\bf MD.MaxForceTol}
 and the maximum stress component is smaller than {\bf MD.MaxStressTol}.
 
-{\it Use:} Used only if MD.TypeOfRun is {\tt CG} and Md.VariableCell
-is {\tt .true.}
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden} and
+Md.VariableCell is {\tt .true.}
+
 Special consideration is needed if used with Sankey-type basis sets, since 
 the combination of orbital kinks at the cutoff radii and the finite-grid
 integration originate discontinuities in the
@@ -3477,13 +3464,52 @@ stress happens to be in a discontinuity.
    
 {\it Default value:} {\tt 1.0 GPa}
  
+
+\item [{\bf MD.Broyden.History.Steps}] ({\it integer}):
+\index{MD.Broyden.History.Steps@{\bf MD.Broyden.History.Steps}}
+\index{Broyden optimization} 
+
+Number of relaxation steps during which the modified Broyden algorithm builds up
+the Jacobian matrix. (See D.D. Johnson, PRB 38, 12807
+(1988)).
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt Broyden}. 
+
+{\it Default value:} {\tt 5}
+
+\item [{\bf MD.Broyden.Cycle.On.Maxit}] ({\it logical}):
+\index{MD.Broyden.Cycle.On.Maxit@{\bf MD.Broyden.Cycle.On.Maxit}}
+
+Upon reaching the maximum number of history data sets which are kept
+for Jacobian estimation, throw away the oldest and shift the rest to
+make room for a new data set. The alternative is to re-start the
+Broyden minimization algorithm from a first step of a diagonal inverse
+Jacobian (which might be useful when the minimization is
+stuck). 
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt Broyden}. 
+
+{\it Default value:} {\tt .true.}
+
+\item[{\bf MD.Broyden.Initial.Inverse.Jacobian}] ({\it real}):
+\index{MD.Broyden.Initial.Inverse.Jacobian@
+{\bf MD.Broyden.Initial.Inverse.Jacobian}}
+
+Initial inverse Jacobian for the optimization procedure. (The units 
+are those implied by the internal Siesta usage (Bohr for lenghts and
+Ry for energies). The default value seems to work well for most systems.
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt Broyden}. 
+
+{\it Default value:} {\tt 1.0}
+
    
 \item[{\bf MD.InitialTimeStep}] ({\it integer}): 
 \index{MD.InitialTimeStep@{\bf MD.InitialTimeStep}} 
 Initial time step of the MD simulation.
 In the current version of {\sc Siesta} it must be 1.
 
-{\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
+{\it Use:} Used only if MD.TypeOfRun is not {\tt CG} or {\tt Broyden}
     
 {\it Default value:} {\tt 1}
 
@@ -3491,7 +3517,7 @@ In the current version of {\sc Siesta} it must be 1.
 \index{MD.FinalTimeStep@{\bf MD.FinalTimeStep}} 
 Final time step of the MD simulation.
 
-{\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
+{\it Use:} Used only if MD.TypeOfRun is not {\tt CG} or {\tt Broyden}
     
 {\it Default value:} {\tt 1}
 
@@ -3499,7 +3525,7 @@ Final time step of the MD simulation.
 \index{MD.LengthTimeStep@{\bf MD.LengthTimeStep}} 
 Length of the time step of the MD simulation.
 
-{\it Use:} Used only if MD.TypeOfRun is not {\tt CG}
+{\it Use:} Used only if MD.TypeOfRun is not {\tt CG} or {\tt Broyden}
     
 {\it Default value:} {\tt 1.0 fs}
 
@@ -5163,6 +5189,10 @@ NETCDF_LIBS=-L/path/to/netcdf-3.5/library/directory -lnetcdf
 NETCDF_INTERFACE=libnetcdf_f90.a
 DEFS_CDF=-DCDF
 \end{verbatim}
+
+({\sc Siesta} currently includes an old f90 interface to NetCDF in the
+Src/NetCDF directory. Current versions of NetCDF now come with their
+own, so that directory will disappear in the near future.)
 
 While it might seem a hassle to have to install the library, the 
 added functionality is quite large, and it is set to grow in future

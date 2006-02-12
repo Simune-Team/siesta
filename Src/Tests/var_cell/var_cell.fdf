@@ -53,14 +53,13 @@ WriteCoorStep      .true.
 WriteForces        .true.
 HarrisFunctional T
 
-MD.TypeOfRun         CG
+MD.TypeOfRun         Broyden
 MD.Variable-Cell      T
 MD.Target-pressure   100.0 GPa
 MD.Num-CG-steps	     30
 MD.Max-Stress-Tol    2.0 GPa
 
-Optim.Broyden T
-Optim.Broyden.Initial.Inverse.Jacobian 1.0
-Optim.Broyden.History.Steps 6
+MD.Broyden.Initial.Inverse.Jacobian 1.0
+MD.Broyden.History.Steps 6
 
 

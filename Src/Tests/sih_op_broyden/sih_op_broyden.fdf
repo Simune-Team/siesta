@@ -47,9 +47,8 @@ SolutionMethod       diagon
 NumberOfEigenstates   150
 ElectronicTemperature  25 meV  
 
-MD.TypeOfRun         cg
+MD.TypeOfRun         Broyden
 MD.NumCGsteps        50    
-Optim.Broyden T
 
 AtomicCoordinatesFormat  ScaledCartesian
 %block AtomicCoordinatesAndAtomicSpecies

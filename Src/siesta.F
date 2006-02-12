@@ -65,7 +65,7 @@ C  Modules
       use zmatrix,      only: lUseZmatrix, iofaZmat
       use zmatrix,      only: CartesianForce_to_ZmatForce
       use zmatrix,      only: write_Zmatrix
-      use m_optim,      only:optim
+      use m_broyden_optim,      only:broyden_optimizer
       use m_redata,     only: redata
       use m_ioxv,       only: ioxv 
 
@@ -1678,14 +1678,17 @@ C Move atoms ..........................................................
       case(0)
         if (nmove .ne. 0) then
           if (lUseZmatrix) then
+             if (broyden_optim)
+     $          write(6,'(a)') 'siesta: Broyden method ' //
+     $            'not implemented yet for Zmatrix relaxation'
              call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
      $            volume, dxmax, tp, ftol, strtol, varcel,
      $            relaxd, usesavecg )
           else
              if (broyden_optim) then
-                call optim( na_u, xa, cfa, ucell, cstress, volume,
-     $               dxmax, tp, ftol, strtol, varcel,
-     $               relaxd, usesavecg )
+                call broyden_optimizer( na_u, xa, cfa, ucell,
+     $               cstress, volume, dxmax, tp, ftol, strtol,
+     $               varcel, relaxd )
              else
                 call cgvc( na_u, xa, cfa, ucell, cstress, volume,
      $               dxmax, tp, ftol, strtol, varcel,

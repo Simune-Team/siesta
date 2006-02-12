@@ -1,7 +1,22 @@
       module m_redata
 
+      use precision, only : dp
+      use parallel,  only : IOnode, Nodes
+      use fdf
+      use files,     only : slabel
+      use sys
+      use m_fdf_global, only: fdf_global_get
+      use m_mpi_utils, only: broadcast
+      use units,     only : eV
+      use diagmemory, only: memoryfactor
+
+      use siesta_cml
+
+      implicit none
+
       public :: redata
       private
+
       CONTAINS
 
       subroutine redata(na, ns, nspin, outlng, g2max,
@@ -125,27 +140,11 @@ C logical varcel           : variable shape for CG optimization or dynamics
 C logical harrisfun        : swith that indicates if harris functional will
 C                            be used or not
 C real*8  occtol           : Occupancy threshold for DM build
-C integer broyden_maxit    : Number of histories saved in Broyden mixing
+C integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
 C logical require_energy_convergence  : Impose E. conv. criterion?
 C logical broyden_optim    : Broyden for forces instead of CG
 C **********************************************************************
 
-C
-C  Modules
-C
-      use precision, only : dp
-      use parallel,  only : IOnode, Nodes
-      use fdf
-      use files,     only : slabel
-      use sys
-      use m_fdf_global, only: fdf_global_get
-      use m_mpi_utils, only: broadcast
-      use units,     only : eV
-      use diagmemory, only: memoryfactor
-
-      use siesta_cml
-
-      implicit none
 
 ! Subroutine arguments:
       integer, intent(in)  :: na, nspin
@@ -327,7 +326,7 @@ C     Maximum number of SCF iterations
 C Pulay mixing, number of iterations for one Pulay mixing (maxsav)
       call fdf_global_get(maxsav,'DM.NumberPulay', maxsav_default)
 
-C Broyden mixing, number of iterations 
+C Broyden SCF mixing, number of iterations 
       call fdf_global_get(broyden_maxit,'DM.NumberBroyden',0)
       if (ionode) then
         if (broyden_maxit .gt. 0) then
@@ -753,6 +752,15 @@ C ...
       if (leqi(dyntyp,'cg')) then
          idyn = 0
          call fdf_global_get(usesavecg,'MD.UseSaveCG', usesaveddata)
+!
+!        Support the old Broyden switch  for now
+         call fdf_global_get(broyden_optim,'Optim.Broyden',.false.)
+         if (broyden_optim)
+     $      write(6,'(a)') '**Note: FDF symbol "Optim.Broyden" is '
+     $              // 'deprecated. (Accepted for now.) See manual.'
+      else if (leqi(dyntyp,'broyden')) then
+         idyn = 0
+         broyden_optim = .true.
       else if (leqi(dyntyp,'verlet')) then
          idyn = 1
       else if (leqi(dyntyp,'nose')) then
@@ -774,11 +782,7 @@ C ...
      .        'not recognised')
       endif
 
-C     Broyden or Conjugate Gradients...
-
-      call fdf_global_get(broyden_optim,'Optim.Broyden',.false.)
-
-C     Maximum number of steps in CG coordinate optimization
+C     Maximum number of steps in CG/Broyden coordinate optimization
       
       call fdf_global_get(nmove,'MD.NumCGsteps',0)
 
@@ -800,20 +804,28 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
       if (ionode) then
         select case (idyn)
           case(0)
-             write(6,'(a,a)') 
+             if (broyden_optim) then
+                write(6,'(a,a)') 
+     .            'redata: Dynamics option                  = ',
+     .            '    Broyden coord. optimization'
+             else
+                write(6,'(a,a)') 
      .            'redata: Dynamics option                  = ',
      .            '    CG coord. optimization'
+             endif
              write(6,'(a,4x,l1)')
      .            'redata: Variable cell                    = ', varcel
-             write(6,'(a,4x,l1)')
+             if (.not. broyden_optim) then
+                write(6,'(a,4x,l1)')
      .            'redata: Use continuation files for CG    = ',
      .             usesavecg
-          write(6,'(a,i5)') 
-     .         'redata: Maximum number of CG moves       = ', nmove
-          write(6,'(a,f10.4,a)') 
+                write(6,'(a,f10.4,a)') 
      .         'redata: Max atomic displ per move        = ',
      .         dxmax,'  Bohr'
-          write(6,'(a,f10.4,a)') 
+             endif
+             write(6,'(a,i5)') 
+     .         'redata: Maximum number of CG moves       = ', nmove
+             write(6,'(a,f10.4,a)') 
      .         'redata: Force tolerance                  = ',
      .         ftol,'  Ry/Bohr'
           if (varcel) 
@@ -821,10 +833,15 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
      .           'redata: Stress tolerance                 = ',
      .           strtol/6.79773e-5_dp, '  GPa'
              if (cml_p) then
-                call cmlAddParameter(xf=mainXML, 
+                if (broyden_optim) then
+                   call cmlAddParameter(xf=mainXML, 
+     .               name='MD.TypeOfRun', value='Broyden')
+                else
+                   call cmlAddParameter(xf=mainXML, 
      .               name='MD.TypeOfRun', value='CG')
-                call cmlAddParameter(xf=mainXML,
+                   call cmlAddParameter(xf=mainXML,
      .               name='MD.UseSaveCG', value=usesavecg)
+                endif
                 call cmlAddParameter(xf=mainXML,
      .               name='MD.NumCGSteps', value=nmove)
                 call cmlAddParameter(xf=mainXML,
@@ -891,11 +908,6 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
        end select
       endif
 
-      if (ionode) write(6,'(a,l1)') 
-     .     'redata: Broyden Optimization             = ', broyden_optim
-      if (cml_p) call cmlAddParameter(xf=mainXML,
-     .       name='Optim.Broyden', value=broyden_optim)
-  
 C     Initial and final time steps for MD
        call fdf_global_get(istart,'MD.InitialTimeStep',1)
        call fdf_global_get(ifinal,'MD.FinalTimeStep',1)
@@ -1114,5 +1126,27 @@ C Iteration are computed.
       if (ionode)   write(6,'(2a)') 'redata: ', repeat('*', 71)
       if (cml_p)    call cmlEndParameterList(mainXML)
 
+!     Warn the user about deprecated symbols...
+
+          call deprecated("Optim.Broyden.History.Steps")
+          call deprecated("Optim.Broyden.Cycle.On.Maxit")
+          call deprecated("Optim.Broyden.Variable.Weight")
+          call deprecated("Optim.Broyden.Debug")
+          call deprecated("Optim.Broyden.Initial.Inverse.Jacobian")
+
+
       end subroutine redata
+!--------------------------------
+      subroutine deprecated(str)
+      character(len=*), intent(in) :: str
+
+      if (.not. ionode) RETURN
+
+      if (fdf_defined(trim(str))) then
+         write(6,'(a)') '**Warning: FDF symbol ' // trim(str) //
+     $                ' is deprecated. See the manual.'
+      endif
+
+      end subroutine deprecated
+
       end module m_redata

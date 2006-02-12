@@ -19,10 +19,10 @@ AtomicCoordinatesFormat  Ang
 
 DM.Number.Pulay 3
 
-MD.TypeOfRun CG
-MD.NumCGSteps 20
 WriteForces T
-Optim.Broyden T               # Broyden Optimization
-Optim.Broyden.History.Steps 6
-Optim.Broyden.Initial.Inverse.Jacobian 1.0
+
+MD.TypeOfRun Broyden
+MD.NumCGSteps 20
+MD.Broyden.History.Steps 6
+MD.Broyden.Initial.Inverse.Jacobian 1.0
 
