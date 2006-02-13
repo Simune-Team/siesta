@@ -57,7 +57,7 @@ C#############################
 C  Read line and process it  #
 C#############################
         iline = iline + 1
-        read(5,'(a)',err=10) line
+        read(5,'(a)',err=10,end=10) line
         call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *    maxword)
 C######################
@@ -89,7 +89,7 @@ C  Lattice Parameters  #
 C#######################
         if (index(words(2),'LatticePar').ne.0) then
           ndimen = 3
-          read(5,'(a)',err=10) line
+          read(5,'(a)',err=10,end=10) line
           call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *      maxword)
           a = floats(1)*scale
@@ -103,26 +103,26 @@ C  Generate cell in standard orientation for coordinate output
 C
           call cell(rvl,a,b,c,alpha,beta,gamma)
           ndimen = 3
-          read(5,'(a)',err=10) line
+          read(5,'(a)',err=10,end=10) line
         endif
 C####################
 C  Lattice Vectors  #
 C####################
         if (index(words(2),'LatticeVec').ne.0) then
           ndimen = 3
-          read(5,'(a)',err=10) line
+          read(5,'(a)',err=10,end=10) line
           call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *      maxword)
           rvl(1,1)=floats(1)*scale
           rvl(2,1)=floats(2)*scale
           rvl(3,1)=floats(3)*scale
-          read(5,'(a)',err=10) line
+          read(5,'(a)',err=10,end=10) line
           call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *      maxword)
           rvl(1,2)=floats(1)*scale
           rvl(2,2)=floats(2)*scale
           rvl(3,2)=floats(3)*scale
-          read(5,'(a)',err=10) line
+          read(5,'(a)',err=10,end=10) line
           call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *      maxword)
           rvl(1,3)=floats(1)*scale
@@ -132,7 +132,7 @@ C####################
           print *,' Rv : ',rvl(1,2),rvl(2,2),rvl(3,2)
           print *,' Rv : ',rvl(1,3),rvl(2,3),rvl(3,3)
           call uncell(rvl,a,b,c,alpha,beta,gamma)
-          read(5,'(a)',err=10) line
+          read(5,'(a)',err=10,end=10) line
         endif
 C####################
 C  Number of atoms  #
@@ -159,13 +159,13 @@ C  Species labels  #
 C###################
         if (index(words(2),'ChemicalSp').ne.0) then
           do i = 1,nsp
-            read(5,'(a)',err=10) line
+            read(5,'(a)',err=10,end=10) line
             call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *        maxword)
             nat(i) = nint(floats(2))
             label(i) = words(1)(1:5)
           enddo
-          read(5,'(a)',err=10) line
+          read(5,'(a)',err=10,end=10) line
         endif
 C***********************
 C  Configuration dump  *
@@ -175,7 +175,7 @@ C
 C  Read coordinates
 C
           do i = 1,numat
-            read(5,'(a)',err=10) line
+            read(5,'(a)',err=10,end=10) line
             call linepro(line,nword,words,nfloat,floats,nlorder,iline,
      *        maxword)
             x(i) = floats(1)

@@ -269,23 +269,33 @@ If you intend to create a parallel version of {\sc
 Siesta}, make sure you have all the extra support libraries ({\tt MPI,
 scalapack, blacs...}). Type {\tt make}. The executable should work
 for any job (This is not exactly true, since some of the parameters in
-the atomic routines are still hardwired (see {\tt Src/atmparams.f}) ,
+the atomic routines are still hardwired (see {\tt Src/atmparams.f}),
 but those would seldom need to be changed.)
 
 \subsection{Running the program}
 
-Some example FDF files are provided in the {\tt Examples}
-directory. This directory contains basically the {\tt .fdf}
-files and the pseudopotential generation input files. A faster way to
-test your installation of {\sc Siesta} is implemented in directory
-{\tt Src/Tests}\index{Tests}. On the other hand, at some point you
-will have to generate your own pseudopotentials and run your own jobs.
+A fast way to test your installation of {\sc Siesta} and get a feeling
+for the workings of the program is implemented in directory
+{\tt Tests}\index{Tests}. In it you can find several subdirectories
+with pre-packaged FDF files and pseudopotential references. Everything
+is automated: after compiling {\sc Siesta} you can just go into any
+subdirectory and type {\tt make}. The program does its work in
+subdirectory {\tt work}, and there you can find all the resulting
+files. For convenience, the output file is copied to the parent
+directory. A collection of reference output files can be found in {\tt
+  Tests/Reference}. Please note that small numerical and
+formatting differences are to be expected, depending on the compiler.
 
-Probably the simplest to start with is the water-molecule
-example. It is advisable to create independent directories for each
-job, so that everything is clean and neat, and out of the {\tt siesta}
-directory, so that one can easily update version by replacing the
-whole {\tt siesta} tree. Go to your favorite working directory and:
+Other examples are provided in the {\tt Examples} directory. This
+directory contains basically the {\tt .fdf} files and the
+pseudopotential generation input files. Since at some point you will
+have to generate your own pseudopotentials and run your own jobs, we
+describe here the whole process by means of the simple example of the
+water-molecule. It is advisable to create independent directories for
+each job, so that everything is clean and neat, and out of the {\tt
+siesta} directory, so that one can easily update version by replacing
+the whole {\tt siesta} tree. Go to your favorite working directory
+and:
 
 {\tt \$ mkdir h2o}
 
@@ -308,8 +318,9 @@ for details regarding what follows.)
 {\tt \$ make}
 
 \noindent
-Now the pseudopotential-generation program, called atm, 
-should be compiled.
+Now the pseudopotential-generation program, called {\tt atm}, 
+should be compiled (you might want to change the definition of
+the compiler in the makefile).
 
 {\tt \$ cd Tutorial/O}
 
@@ -647,7 +658,12 @@ of the atom.
 gives orbitals better adapted to ionic situations in the condensed
 systems.
 
-  More information about basis sets can be found in the proposed literature.
+  More information about basis sets can be found in the proposed
+  literature.
+
+The directory {\tt Tutorials/Bases} in the main {\sc Siesta
+  distribution} contains some tutorial material for the generation of
+basis sets and KB projectors.
 
 \section{COMPILING THE PROGRAM}
 
@@ -663,21 +679,29 @@ already prepared for several architectures and
 operating sistems.\index{platforms}\index{architectures}
 If none of these fit your needs, you will have to prepare
 one on your own. 
-By typing 
+The command
 
 \noindent 
 {\tt \$ ./configure} 
 
 \noindent
-the autoconf utility will query your 
-computer and come up with a reasonably working {\tt arch.make}.
-It can be then further modified by the user to include optimisation flags
-for the compiler etc.
-Note that some systems require running a program such as
-ranlib\index{ranlib} to index object code libraries.
-Once you have chosen a {\tt .make} file from the {\tt Src/Sys}
-directory, or have generated your own {\tt arch.make},
-just compile using the {\tt make} utility, as usual.
+ will start an automatic scan of your system and try to build
+an {\tt arch.make} for you. Please note that the configure script
+might need some help in order to find your Fortran compiler, and that
+the created arch.make may not be optimal, mostly in regard to compiler
+switches, but the process should provide a reasonable working
+file. Type {\tt ./configure --help} to see the flags understood by the
+script, and take a look at the {\tt Src/Confs} subdirectory for some
+examples of their explicit use. You can fine tune {\tt arch.make}
+by looking at the examples in the {\tt Src/Sys} subdirectory.
+If you intend to create a parallel version of {\sc
+Siesta}, make sure you have all the extra support libraries ({\tt MPI,
+scalapack, blacs...}). 
+
+After {\tt arch.make} is ready, ype {\tt make}. The executable should work
+for any job (This is not exactly true, since some of the parameters in
+the atomic routines are still hardwired (see {\tt Src/atmparams.f}) ,
+but those would seldom need to be changed.)
 
 \section{INPUT DATA FILE}
 

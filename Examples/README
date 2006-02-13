@@ -3,3 +3,6 @@ pseudopotential-generation input files (see Tutorial in Pseudo/atom).
 (You don't need to generate your pseudos to run these examples, 
 but it is very advisable to know how to generate and test 
 pseudopotentials, as explained within the Pseudo/atom directory).
+
+Other, ready-to-run examples, can be fund in directory Tests in the main distribution.
+

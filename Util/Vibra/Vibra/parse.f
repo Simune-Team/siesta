@@ -1,5 +1,5 @@
 
-      subroutine parse( line, nn, lc, names, nv, values,
+      subroutine parse_vibra( line, nn, lc, names, nv, values,
      .                  ni, integers, nr, reals )
 
 c **********************************************************************

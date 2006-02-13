@@ -12,14 +12,11 @@ c Written by P.Ordejon, August'98
 c
 c **********************************************************************
 
+      use fdf
 
       implicit none
 
       include 'vibra.h'
-
-c  define FDF calls ...
-      include 'fdf/fdfdefs.h'
-c ...
 
 c Internal variables ...
 

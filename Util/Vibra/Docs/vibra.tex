@@ -32,11 +32,11 @@
 
 \vspace{3cm}
 
-{\Huge {\bf VIBRA Package, Version 0.1.1}}
+{\Huge {\bf VIBRA Package, Version 0.2}}
 
 \vspace{3cm}
 
-{\Large {\it June, 2003}}
+{\Large {\it February 2006}}
 
 \vspace{3cm}
 
@@ -204,46 +204,9 @@ in any direction in the Brillouin zone.
 
 \noindent
 The compilation of the programs is done using a Makefile
-that is provided with the code.
-This Makefile will generate the executable in several
-architectures, with a  minimum of tuning required from the
-user. The instructions are in directory Vibra/Sys.
-There are a few files  in this directory,
-already prepared for several architectures and
-operating sistems: 
-\begin{itemize}
-\item[-] linux.make (for Linux systems),
-\item[-] osf.make (for DEC alphas), 
-\item[-] osfdxml.make (for DEC alphas with the dxml math library), 
-\item[-] ibm.make (for IBM RISC), 
-\item[-] ibmessl.make (for IBM RISC with the ESSL math library), 
-\item[-] freebsd.make (for FreeBSD), 
-\item[-] sgi.make (for SGI) 
-      (check that the options are right for your machine).
-\item[-] cray.make (for Cray machines).
-\item[-] hp.make (for HP-UX).
-\item[-] unknown.make (for the most general options and codes).
-\end{itemize}
-\noindent
-If none of these fit your needs, you will have to build
-one by your own. Note that some systems require running
-ranlib (or versions thereof) and others don't.
-Once you have decided which *.make you want to use,
-you just need to define an environment variable
-in your shell; for instance, for Linux:
-
-\vspace{2pt}
-{\tt ARCH=linux ; export ARCH} \hspace{1cm} within sh, ksh or bash,
-
-\vspace{1pt}
-{\tt setenv ARCH linux} \hspace{2.5cm} if you use csh.
-
-\vspace{2pt}
-\noindent
-Usually it is better to define these variables in your
-.login, .profile or .cshrc, so that they are defined
-whenever you log in.
-Then, just compile using the make utility, as usual.
+that is provided with the code. Type 'make' after having
+compiled Siesta in the main Src directory, and everything
+should work.
 
 \noindent
 There is  one parameter file which contain
@@ -260,6 +223,8 @@ those of the physical system under study.  However, if you
 specify numbers smaller than needed, the code will stop, 
 and will give you an error message specifying the correct
 dimensions that you need to change in the vibra.h file.
+(This restriction will be lifted in future versions of
+the programs.)
 
 \end{itemize}
 
@@ -280,7 +245,7 @@ given in any order, or to be omitted in favor of default values.
 \noindent
 In the current version of VIBRA, data are 
 supplied in FDF-0.6 language.
-Please, refer to documentation in Vibra/fdf for details.
+Please, refer to documentation in the top Src/fdf for details.
 
 \noindent
 The two programs in the VIBRA package (FCBUILD and VIBRATOR)

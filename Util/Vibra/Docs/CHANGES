@@ -1,6 +1,16 @@
 =======================================================================
                   VIBRA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 0.2
+Date: 2006/02/13
+Title: New compilation scheme
+Author: Alberto Garcia <wdpgaara@lg.ehu.es>
+
+Description:
+
+Vibra now uses the top arch.make. fdf and Sys directories removed.
+
+====================================================================
 Version: 0.1.1 
 Date: 2003/06/21 
 Title: Small bug reported by Stephanie Reich and example files

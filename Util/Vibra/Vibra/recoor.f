@@ -18,6 +18,8 @@ c integer isa(na)           : atomic species of different atoms
 c integer xmass(na)         : atomic masses of different atoms
 c *******************************************************************
 
+      use fdf
+
       implicit          none
       logical           overflow
       integer           na
@@ -34,8 +36,6 @@ c Internal variables and arrays
 
 
 c enable FDF input/output
-
-      include 'fdf/fdfdefs.h'
 
       data origin /3*0.d0/
 

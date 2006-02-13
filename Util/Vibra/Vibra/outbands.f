@@ -1,5 +1,7 @@
       subroutine outbands(iunits, nspin, maxuo, nuo, maxk, nk, 
      .                   nlines, lastk, label, kpoint, ek, ef)
+
+      use fdf
 C *********************************************************************
 C Writes output with energies at k-point lines.
 C Extracted from bands.f (written by J.Soler, August 1997),
@@ -50,7 +52,6 @@ C  Internal variables ...
 
       character         paste*30
       external          io_assign, io_close, paste
-      include          'fdf/fdfdefs.h'
 C ...
 
       if (iunits .eq. 0) then

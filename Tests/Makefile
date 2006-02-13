@@ -15,7 +15,8 @@
 #          make SIESTA=/some/path/to/siesta-program ....
 #
 #
-# See also test.mk for details
+# See also test.mk for details, and the scripts in Scripts for 
+# examples of other options for batch processing.
 #
 #
 tests= h2o h2o_dos h2o_orderN floating bessel mgco3 si2x1h \

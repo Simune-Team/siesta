@@ -1,5 +1,5 @@
-SIESTA 1.5
-November 6, 2005
+SIESTA 1.5.X
+February 13, 2006
 
 www.uam.es/siesta
 
@@ -10,6 +10,8 @@ In the Docs/ directory:
 * LaTeX source for the manual (in siesta.tex)
 
 The code itself can be found under Src/
+Examples and other tutorial material in Tests/, Tutorials/, and Examples/
+
 Please see the User Guide for compilation and other instructions.
 
 

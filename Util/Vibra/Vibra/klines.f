@@ -69,6 +69,8 @@ C
 C If only given points (not lines) are desired, simply specify 1 as 
 C the number of points along the line.
 C *********************************************************************
+      use fdf
+
       implicit          none
 
       integer maxlin
@@ -78,8 +80,7 @@ C *********************************************************************
       double precision  kpoint(3,maxk)
       character         label(maxlin)*8
 
-      external          parse
-      include          'fdf/fdfdefs.h'
+      external          parse_vibra
 C *********************************************************************
 
 C  Internal variables 
@@ -156,8 +157,8 @@ C           Read and parse data line
             read(iu,'(a)',end=50) line
             lastc = index(line,'#') - 1
             if (lastc .le. 0) lastc = len(line)
-            call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
+            call parse_vibra( line(1:lastc), nn, lc,
+     $           names, nv, values, ni, integs, nr, reals )
 
 C           Check if data are already finished
             if (nv .ge. 3) then
