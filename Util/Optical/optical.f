@@ -12,7 +12,8 @@ C  This program calculates several optical properties
 C  out of the imaginary part of the dielectric
 C  function using the Kramers-Kroning relations
 C   Written by Pablo Ordejon
-C   Slightly modify by DSP, December 2000
+C   Modified by DSP, December 2000
+C   Modified by DSP, January  2006
 
 
        COMMON /EPSILON/ E1,E2
@@ -21,7 +22,8 @@ C   Slightly modify by DSP, December 2000
        PARAMETER (NEMX=10000)
        REAL*8 E,E1(NEMX),E2(NEMX),ESTEP
        REAL*8 K,OMEGA(NEMX),REFL,N, OMG
-       REAL*8 LAMBDA, COND
+       REAL*8 LAMBDA, COND, drude, gamm
+       LOGICAL DRUD
 C  FROM eV to cm**-1
        PARAMETER (LAMBDA=8067.422)
 C   from eV to (meter*ohm)**-1 (conductivity)
@@ -29,7 +31,10 @@ C   from eV to (meter*ohm)**-1 (conductivity)
 C
 C
 C
+       DRUD=.false.
+       GAMM=0.0d0
        OPEN(UNIT=7,FILE='e2.dat',status='unknown')
+       READ(7,*) DRUDE
        DO 10 I=1,NEMX+1
          READ(7,*,END=15) OMG,E
          IF(I.LE.NEMX) THEN
@@ -50,19 +55,19 @@ C
 20     ENDDO
 C
 C
-       OPEN(UNIT=8,FILE='e1.out',status='unknown')
+       OPEN(UNIT=8,FILE='e1.interband.out',status='unknown')
        DO 100 I=1,NE
           E=OMEGA(I)
           CALL INTEG1(E,K)
-          K=1.0D0+2.0D0/(4.0D0*DATAN(1.0D0))*K
+          K=2.0D0/(4.0D0*DATAN(1.0D0))*K
           E1(I)=K
-          WRITE(8,*) E,K
+          WRITE(8,*) E,1.0d0+K
 100    CONTINUE
        CLOSE(8)
 C
 C
 
-       OPEN(UNIT=8,FILE='e2.out',status='unknown')
+       OPEN(UNIT=8,FILE='e2.interband.out',status='unknown')
        DO 110 I=1,NE
           E=OMEGA(I)
           CALL INTEG2(E,K)
@@ -70,9 +75,47 @@ C
           WRITE(8,*) E,K
 110    CONTINUE
        CLOSE(8)
+      
+       DO I=1,NE
+          E1(I)=1.0d0+E1(I)
+       ENDDO
 
-
+C      Drude term?
+       IF(DRUDE.gt.1.0d-4) THEN
+       WRITE(6,*) "Do you want to include a Drude term?"
+       WRITE(6,*) "This is typically needed for metals"
+       WRITE(6,*) "if yes: enter 1, if no: enter 0"
+       READ(5,*) i
+       IF(I.eq.1) THEN
+         DRUD=.true.
+       ELSEIF(I.eq.0) THEN
+         DRUD=.false.
+       ELSE
+          stop "not a valid answer"
+       ENDIF
+       
+       if(DRUD) then 
+         WRITE(6,*) "We need an empirical relaxation time"
+         WRITE(6,*) "Enter the invers in Ha units"
+         READ(5,*) gamm
+         IF(gamm.eq.0.0d0) gamm=1.0d-10
+         OPEN(UNIT=7,FILE='e1.Drude.out',status='unknown')
+         OPEN(UNIT=8,FILE='e2.Drude.out',status='unknown')
+         do i=1,ne
+             e=omega(i)/13.6058d0
+             e1(i)=e1(i) - drude/(e**2+gamm**2)
+             e2(i)=e2(i) + gamm*drude/(e+1.0d-20)/(e**2+gamm**2)    
+             write(7,*) omega(i), -drude/(e**2+gamm**2)
+             write(8,*) omega(i), gamm*drude/(e+1.0d-20)/(e**2+gamm**2)
+         enddo
+         CLOSE(7)
+         CLOSE(8) 
+       endif
+       ENDIF
+       
 C
+       OPEN(UNIT=14, FILE='epsilon_real.out', status='unknown')
+       OPEN(UNIT=15, FILE='epsilon_img.out',status='unknown')
        OPEN(UNIT=9,FILE='refrac_index.out',status='unknown')
        OPEN(UNIT=10,FILE='absorp_index.out',status='unknown')
        OPEN(UNIT=11,FILE='reflectance.out',status='unknown')
@@ -85,6 +128,8 @@ C  OPTICAL  CONDUCTIVITY IN (ohm*m)**-1
            K=DSQRT((DSQRT(E1(I)**2+E2(I)**2)-E1(I))/2.0D0)
            N=DSQRT((DSQRT(E1(I)**2+E2(I)**2)+E1(I))/2.0D0)
            REFL=((N-1)**2+K**2)/(((N+1)**2+K**2))
+          WRITE(14,*) OMEGA(I), E1(I)
+          WRITE(15,*) OMEGA(I), E2(I)
           WRITE(9,*)  OMEGA(I),N
           WRITE(10,*) OMEGA(I),K
           WRITE(11,*) OMEGA(I),REFL
@@ -95,7 +140,10 @@ C  OPTICAL  CONDUCTIVITY IN (ohm*m)**-1
        CLOSE(9)
        CLOSE(10)
        CLOSE(11)
-
+       CLOSE(12)
+       CLOSE(13)
+       CLOSE(14)
+       CLOSE(15)
 
 
        STOP

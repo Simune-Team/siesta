@@ -113,7 +113,7 @@ C Internal variables
      .  iie, ik, io, ispin, iuo, ix, iy,  is, ia, ntote, 
      .  nbands, ixmin, ije, j, maxhs, maxpsi,
      .  kscell(3,3), nk, nmeshk(3), npol, ipol, 
-     .  ie, je, iw, nwi, nwf, nw, iu, ngamma
+     .  ie, je, iw, nwi, nwf, nw, iu, ngamma, ig
 
 #ifdef MPI
       integer                     :: MPIerror
@@ -132,12 +132,12 @@ C Internal variables
       real(dp), pointer,     save :: kopt(:,:)
       real(dp), pointer,     save :: wgthopt(:)
       real(dp), allocatable, save :: epsbuff(:,:)
-
+      real(dp), allocatable, save :: intraband(:,:)
       real(dp)
      .  cutoff, displ(3), dmod, dsp, dw, ediff, efield(3),
      .  fsum(2), f1, f2, inplane(3,2), kint(3), pi,
      .  smooth, T, volcel, volume, xv(3), w,
-     .  wmin, wmax, wi, wf, escissor
+     .  wmin, wmax, wi, wf, escissor, omega_p2(2),aux_p2(2)
 
       character(len=label_length+7) :: filename
       character(len=label_length+7) :: paste
@@ -449,7 +449,19 @@ C using the momentum
        matrix = 'P' 
        if (((shape.eq.'atom').or.(shape.eq.'molecule'))
      .                                   .and.gamma) matrix = 'R' 
-      
+
+C parameter npol
+          if (option.eq.'polarized') then
+            npol = 1
+          elseif (option.eq.'unpolarized') then
+            npol = 2
+          else
+            npol = 3
+          endif
+C Allocate intraband array to calculate the Drude contribution
+C for metals
+           allocate(intraband(ngamma,nuo))
+
 C Construction of the matrix elements of the scalar product n*r 
        if ( option.eq.'polarized') then 
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
@@ -504,9 +516,12 @@ C Construction of the matrix elements of the scalar product n*r
 
 C Initialize array for the dielectric function
        do ix = 1,nw
-         epsimg(ix,1) = 0.0d0
-         epsimg(ix,2) = 0.0d0
+         epsimg(ix,1) = 0.0_dp
+         epsimg(ix,2) = 0.0_dp
        enddo
+C... For Drude formula.....
+         omega_p2(1) = 0.0_dp  
+         omega_p2(2) = 0.0_dp
 
 C Begin the BZ integration
       do ik = 1,nk
@@ -534,14 +549,6 @@ C Copy eigenvalues to an auxiliar array
            do iuo = 1,nuotot
                ekloc(iuo)=ek(iuo)
            enddo
-       
-          if (option.eq.'polarized') then 
-            npol = 1
-          elseif (option.eq.'unpolarized') then 
-            npol = 2
-          else
-            npol = 3
-          endif
 
 C Apply scissor operator if required
            if (escissor.gt.0.0d0) then
@@ -562,26 +569,39 @@ C Matrix elements for the dipolar transition are stored in Haux
      .                             AuxSr, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no, 
      .                             nuo, nuotot, xijo, maxnh, nbands, 
-     .                             kint, matrix )
+     .                             kint, matrix,intraband)
             elseif(ipol.eq.2) then 
               call transition_rate( ngamma, psi, ek, 
      .                             temp, efermi, 
      .                             AuxSr2, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no,
      .                             nuo, nuotot, xijo, maxnh, nbands, 
-     .                             kint, matrix )
+     .                             kint, matrix,intraband )
             else 
               call transition_rate( ngamma, psi, ek, 
      .                             temp, efermi, 
      .                             AuxSr3, Haux, Saux, numh, 
      .                             listhptr, listh, indxuo, no,
      .                             nuo, nuotot, xijo, maxnh, nbands, 
-     .                             kint, matrix )
+     .                             kint, matrix,intraband)
             endif          
 
             do ie = 1,nbands
               call GlobalToLocalOrb(ie,Node,Nodes,iie)
               if (iie.gt.0) then
+C Drude term for metals
+                T=0.0_dp
+                do ig=1,ngamma
+                   T = T+ intraband(ig,iie)**2
+                enddo
+                T = T/dble(npol)
+                T = 4.0d0*pi*T/volume
+                T = 2.0d0*T*wgthopt(ik)/dble(nspin)
+                ediff=ekloc(ie)-efermiloc
+C factor of two because smooth is in Ry rather than in Ha
+               omega_p2(ispin)= omega_p2(ispin) +
+     .         2.0d0*dexp(-(ediff/smooth)**2)*T/(dsqrt(pi)*smooth)
+
                 f1 = stepf((ekloc(ie)-efermiloc)/temp)
                 do je = 1,nbands 
                   if (dabs(ekloc(ie)-ekloc(je)).gt.ediffmin) then 
@@ -632,6 +652,10 @@ C Closing loop on k_points
      .  MPI_double_precision,MPI_sum,0,MPI_Comm_World,MPIerror)
       epsimg(1:nw,1:2) = epsbuff(1:nw,1:2)
       deallocate(epsbuff)
+      call MPI_Reduce(omega_p2(1),aux_p2(1),nspin,
+     .  MPI_double_precision,MPI_sum,0,MPI_Comm_World,MPIerror)
+      omega_p2(1)=aux_p2(1)
+      if(nspin.gt.1) omega_p2(2)=aux_p2(2)
 #endif
 
 C Output results
@@ -660,9 +684,15 @@ C A factor of 4 due to the integration in Ry rather than in a.u.
           write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/qspin(1) 
           write(iu,'(a)') '## f-sum rule spin 2'
           write(iu,'(a,f10.4)') '## ',fsum(2)/2.0d0/pi**2/qspin(2) 
+          write(iu,'(a)') '## wp^2 in Ha^2 for Drude, spin 1'
+          write(iu,'(a,f10.4)') '## ',omega_p2(1)
+          write(iu,'(a)') '## wp^2 in Ha^2 for Drude, spin 2'
+          write(iu,'(a,f10.4)') '## ',omega_p2(2)
         else
           write(iu,'(a)') '## f-sum rule'
           write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/dble(ntote)
+          write(iu,'(a)') '## wp^2 in Ha^2 for Drude'
+          write(iu,'(a,f10.4)') '## ',omega_p2(1)
         endif   
         do iw = 1,nwf
           w = wmin + (iw-1)*dw

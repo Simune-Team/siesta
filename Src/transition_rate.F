@@ -11,7 +11,8 @@
       subroutine transition_rate( ng, psi, ek, temp, efermi, Sr, 
      .                           Aux, Aux2, numh, listhptr, listh, 
      .                           indxuo, no, nuo, nuotot, xij, 
-     .                           maxnh, nbands, kpoint, matrix )
+     .                           maxnh, nbands, kpoint, matrix,
+     .                           intraband )
 C *********************************************************************
 C Finds the matrix element for the dipolar transition between to states
 C Written by DSP. August 1999
@@ -72,7 +73,8 @@ C Passed variables
       real(dp)
      .  xij(3,maxnh), Sr(maxnh), 
      .  psi(ng,nuotot,nuo), kpoint(3), Aux(ng,nuotot,nuo), 
-     .  Aux2(ng,nuotot,nuo), ek(nuo), temp, efermi 
+     .  Aux2(ng,nuotot,nuo), ek(nuo), temp, efermi,
+     .  intraband(ng,nuo)
 
       character
      .  matrix*1
@@ -80,10 +82,10 @@ C Passed variables
 C Internal variables
       integer 
      .  ind, iuo, juo, j, ie, iie, iio, jje, je, jo, 
-     .  BNodei, Bnodej, BTest, ig
+     .  BNodei, Bnodej, BTest, ig 
       real(dp)
      .  kxij, skxij, ckxij, pipj1, pipj2,
-     .  f1,  f2
+     .  f1,  f2, intrb(2), intrb2(2)
 
 #ifdef MPI
       integer                     :: MPIerror
@@ -107,9 +109,12 @@ C Initialise matrix elements to zero
       do iuo = 1,nuo
         do juo = 1,nuotot
          do ig=1,ng
-          Aux(ig,juo,iuo) = 0.0d0
-          Aux2(ig,juo,iuo) = 0.0d0
+          Aux(ig,juo,iuo) = 0.0_dp
+          Aux2(ig,juo,iuo) = 0.0_dp
          enddo 
+        enddo 
+        do ig=1,ng
+           intraband(ig,iuo)=0.0_dp
         enddo 
       enddo 
           
@@ -157,6 +162,52 @@ C Allocate workspace array
         call MPI_Bcast(psibandi(1,1),ng*nuotot,MPI_double_precision,
      .    BNodei,MPI_Comm_World,MPIerror)
 #endif
+
+C Compute the intra-band contribution to include a Drude-like term
+C for metals
+       if(matrix.eq.'P') then 
+             intrb(:)=0.0_dp
+             do iuo = 1,nuo
+                call LocalToGlobalOrb(iuo,Node,Nodes,iio)
+                do juo = 1,nuotot
+                 if(ng.eq.2) then
+                   pipj1 = psibandi(1,iio)*psibandi(1,juo) +
+     .                     psibandi(2,iio)*psibandi(2,juo)
+                   pipj2 = psibandi(1,iio)*psibandi(2,juo) -
+     .                     psibandi(2,iio)*psibandi(1,juo)
+
+C The factor 1/2 is necessary because the in subroutine phirphi_opt
+C we have added a factor of 2, to be canceled by the energy denominator
+C in Ry (rather than in Ha). For the calculation of the 
+C Drude term we do not have the energy denominator 
+                   intrb(1) = intrb(1)
+     .                + 0.5_dp * (pipj1*Aux2(1,juo,iuo)
+     .                - pipj2*Aux2(2,juo,iuo))
+                                                                                
+                   intrb(2) = intrb(2)
+     .                + 0.5_dp * (pipj1*Aux2(2,juo,iuo)
+     .                + pipj2*Aux2(1,juo,iuo))
+                  else
+                   pipj1 = psibandi(1,iio)*psibandi(1,juo) 
+                                                                                
+                   intrb(1) = intrb(1)
+     .                + 0.5_dp* (pipj1*Aux2(1,juo,iuo))
+                   intrb(2) = 0.0_dp
+                  endif
+                enddo
+              enddo
+#ifdef MPI
+        call MPI_Reduce(intrb,intrb2,2,
+     .    MPI_double_precision,MPI_sum,BNodei,MPI_Comm_World,MPIerror)
+        if (Node.eq.BNodei) then
+          intraband(1:ng,iie) = intrb2(1:ng)
+        endif
+#else
+        if (Node.eq.BNodei) then
+          intraband(1:ng,iie) = intrb(1:ng)
+        endif
+#endif
+        endif
 
         AuxLocal(1:ng,1:nuotot) = 0.0d0
 

@@ -1,4 +1,4 @@
-
+## Written by D. Sanchez-Portal 2001-2006
 
 The programs contained in this directory calculate different
 optical properties of a solid out of the file 
@@ -51,13 +51,22 @@ cases it can create pathological problems. Anyway, it can be easily
 desactivated by setting THRESHOLD to zero.
 
 
-The program optical.f reads a file called 'e2.dat' containing the imaginary part
-of the dieletric function, and creates a file 'e1.out' that contains the 
-real part of the  dieletric function, 'e2.out' the imaginary part calculated
-back out of the data in 'e1.out', this serves as a cross check of the quality 
-of the Kramers-Kroning transformation. 
-Also creates the files:
+The program optical.f reads a file called 'e2.dat' containing 
+the imaginary part of the dieletric function, and creates the
+file 'e1.interband.out' that contains the real part of the dieletric function, 
+'e2.interband.out' is the imaginary part calculated back 
+from the data in 'e1.interband.out', this serves as a cross check 
+of the quality of the Kramers-Kroning transformation. 
 
+For metals it is also necessary to include a Drude term (associated
+to intraband transitions) of the form w_p^2/w(w+i*gamma) where
+w_p^2 has been calculated by SIESTA and appears at the beginning
+of the file Systemlabel.EPSIMG, and gamma is an empirical parameter,
+the invers of the relaxation time.
+
+Also creates the files:
+'epsilon_real.out'  containing the real part of the dielectric function
+'epsilon_img.out'  containing the imaginary part of the dielectric function
 'refrac_index.out'   containing the refraction index
 'absorp_index.out'  containing the extintion coefficient
 'absorp_coef.out'    containing the absorption coefficient in cm**-1

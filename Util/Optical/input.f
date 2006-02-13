@@ -16,7 +16,7 @@ C Written by Daniel Sanchez-Portal
        REAL*8 E(2),E2(NEMX,2),ESTEP
        REAL*8 OMEGA(NEMX), OMG, eV
        REAL*8 EMAX, EMIN, FSUM(2), THRESHOLD, THRES
-       REAL*8 C,P,SUM,A,B, EPSMIN, SUM2 , EMAXP
+       REAL*8 C,P,SUM,A,B, EPSMIN, SUM2 , EMAXP, DRUDE(2)
        PARAMETER (THRESHOLD=0.80)
        PARAMETER (eV= 13.6058d0)     
        PARAMETER (EPSMIN=0.01)
@@ -36,6 +36,9 @@ C
           READ(5,*) 
           READ(5,'(a,f10.4)') CHAR, FSUM(ISP)
           write(6,*)  CHAR,FSUM(ISP)
+          READ(5,*)
+          READ(5,'(a,f10.4)') CHAR, DRUDE(ISP)
+          write(6,*)  CHAR, DRUDE(ISP)
        ENDDO 
        DO 10 I=1,NEMX+1
          READ(5,*,END=15) OMG,(E(ISP),ISP=1,NSPIN)
@@ -107,11 +110,12 @@ C
            open (unit=1,file='e2.dat',status='unknown') 
          else
            if(isp.eq.1) then 
-             open (unit=1,file='e2.dat.spin1',status='unknown')
+           open (unit=1,file='e2.dat.spin1',status='unknown')
            else
-             open (unit=1,file='e2.dat.spin2',status='unknown')
+           open (unit=1,file='e2.dat.spin2',status='unknown')
            endif
          endif
+          write(1,*) drude(isp)
           do i=1,lasti
             write(1,*) omega(i),e2(i,isp)
          enddo               
