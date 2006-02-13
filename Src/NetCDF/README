@@ -1,6 +1,15 @@
 The routines in this directory implement a fortran90 interface
 to the NetCDF library. Its use is optional in SIESTA.
 
+! References and Credits:
+!   Written by
+!    Robert Pincus
+!    Cooperative Institue for Meteorological Satellite Studies
+!    University of Wisconsin - Madison
+!    1225 W. Dayton St. 
+!    Madison, Wisconsin 53706
+!    Robert.Pincus@ssec.wisc.edu
+
 NOTE
 
 Some (old) versions of Compaq compilers cannot deal with the code in

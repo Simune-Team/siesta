@@ -48,6 +48,7 @@ by inserting the line
 in arch.make. This works at least with GNU make.
 
 * The Portland Group's pgf90 compiler (at least version 5.0-1) 
-produces bad code when compiling atom.f with optimization. A special
-rule for atom.o has been inserted in the pgf90-*.make files so that
-no optimization is used.
+produces bad code when compiling atom.f and electrostatic.f 
+with optimization. A special set of rules has been inserted in 
+some files so that no optimization is used. You might
+need to consider it for your own arch.make.
