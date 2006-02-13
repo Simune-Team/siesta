@@ -9,6 +9,616 @@ NOTE: The arch patches appear to be all committed by A. Garcia. That is because
 he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
+2006-02-13 14:43:00 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-36
+
+    Summary:
+      More documentation and fixes for Examples, Tutorials, and Util
+    Revision:
+      siesta-devel--reference--1.5--patch-36
+
+    * Expanded and created README files for Examples, Tutorials, and Util
+    * Cleaned up Denchar (removed Tests directory from distribution) 
+      and Vibra (new compilation scheme, using the top-level arch.make)
+    * Fixed end-of-file handling in sies2arc.
+    
+    
+
+    new files:
+     Tests/.arch-ids/README.id Tests/README
+     Tutorials/.arch-ids/README.id Tutorials/README
+     Util/Vibra/Vibra/.arch-ids/io.f.id Util/Vibra/Vibra/io.f
+
+    removed files:
+     Util/Basis/.arch-ids/=id Util/Basis/.arch-ids/gen-basis.sh.id
+     Util/Basis/.arch-ids/kbs.gplot.id
+     Util/Basis/.arch-ids/kbs.gps.id
+     Util/Basis/.arch-ids/orbs.gplot.id
+     Util/Basis/.arch-ids/orbs.gps.id
+     Util/Basis/.arch-ids/setup_plot.sh.id
+     Util/Basis/.arch-ids/subkb.gplot.id
+     Util/Basis/.arch-ids/suborb.gplot.id
+     Util/Basis/.arch-ids/vdens.gplot.id
+     Util/Basis/.arch-ids/vdens.gps.id Util/Basis/gen-basis.sh
+     Util/Basis/kbs.gplot Util/Basis/kbs.gps Util/Basis/orbs.gplot
+     Util/Basis/orbs.gps Util/Basis/setup_plot.sh
+     Util/Basis/subkb.gplot Util/Basis/suborb.gplot
+     Util/Basis/vdens.gplot Util/Basis/vdens.gps
+     Util/Denchar/Src/.arch-ids/=id
+     Util/Denchar/Src/MPI/.arch-ids/=id
+     Util/Denchar/Src/NetCDF/.arch-ids/=id
+     Util/Denchar/Src/fdf/.arch-ids/=id
+     Util/Denchar/Tests/.arch-ids/=id
+     Util/Denchar/Tests/Si/.arch-ids/=id
+     Util/Denchar/Tests/Si/2D/.arch-ids/=id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.DEL.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.SCF.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF1.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF2.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF3.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF4.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF5.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF6.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF7.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.CON.WF8.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.fdf.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/Si.psf.id
+     Util/Denchar/Tests/Si/2D/.arch-ids/contour.gplot.id
+     Util/Denchar/Tests/Si/2D/Si.CON.DEL
+     Util/Denchar/Tests/Si/2D/Si.CON.SCF
+     Util/Denchar/Tests/Si/2D/Si.CON.WF1
+     Util/Denchar/Tests/Si/2D/Si.CON.WF2
+     Util/Denchar/Tests/Si/2D/Si.CON.WF3
+     Util/Denchar/Tests/Si/2D/Si.CON.WF4
+     Util/Denchar/Tests/Si/2D/Si.CON.WF5
+     Util/Denchar/Tests/Si/2D/Si.CON.WF6
+     Util/Denchar/Tests/Si/2D/Si.CON.WF7
+     Util/Denchar/Tests/Si/2D/Si.CON.WF8
+     Util/Denchar/Tests/Si/2D/Si.fdf
+     Util/Denchar/Tests/Si/2D/Si.psf
+     Util/Denchar/Tests/Si/2D/contour.gplot
+     Util/Denchar/Tests/Si/3D/.arch-ids/=id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.DRHO.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.RHO.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF1.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF2.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF3.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF4.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF5.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF6.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF7.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.WF8.cube.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.fdf.id
+     Util/Denchar/Tests/Si/3D/.arch-ids/Si.psf.id
+     Util/Denchar/Tests/Si/3D/Si.DRHO.cube
+     Util/Denchar/Tests/Si/3D/Si.RHO.cube
+     Util/Denchar/Tests/Si/3D/Si.WF1.cube
+     Util/Denchar/Tests/Si/3D/Si.WF2.cube
+     Util/Denchar/Tests/Si/3D/Si.WF3.cube
+     Util/Denchar/Tests/Si/3D/Si.WF4.cube
+     Util/Denchar/Tests/Si/3D/Si.WF5.cube
+     Util/Denchar/Tests/Si/3D/Si.WF6.cube
+     Util/Denchar/Tests/Si/3D/Si.WF7.cube
+     Util/Denchar/Tests/Si/3D/Si.WF8.cube
+     Util/Denchar/Tests/Si/3D/Si.fdf
+     Util/Denchar/Tests/Si/3D/Si.psf
+     Util/Denchar/Tests/SiH3/.arch-ids/=id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/=id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/H.psf.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/Si.psf.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.DEL.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.DOWN.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.MAG.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.UP.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF1.DOWN.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF1.UP.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF2.DOWN.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF2.UP.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF3.DOWN.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF3.UP.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF4.DOWN.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF4.UP.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF5.DOWN.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF5.UP.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF6.DOWN.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.CON.WF6.UP.id
+     Util/Denchar/Tests/SiH3/2D/.arch-ids/SiH3.fdf.id
+     Util/Denchar/Tests/SiH3/2D/H.psf
+     Util/Denchar/Tests/SiH3/2D/Si.psf
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.DEL
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.DOWN
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.MAG
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.UP
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF1.DOWN
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF1.UP
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF2.DOWN
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF2.UP
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF3.DOWN
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF3.UP
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF4.DOWN
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF4.UP
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF5.DOWN
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF5.UP
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF6.DOWN
+     Util/Denchar/Tests/SiH3/2D/SiH3.CON.WF6.UP
+     Util/Denchar/Tests/SiH3/2D/SiH3.fdf
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/=id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/H.psf.id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/Si.psf.id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/SiH3.DRHO.cube.id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/SiH3.RHO.DOWN.cube.id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/SiH3.RHO.UP.cube.id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/SiH3.WF5.DOWN.cube.id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/SiH3.WF5.UP.cube.id
+     Util/Denchar/Tests/SiH3/3D/.arch-ids/SiH3.fdf.id
+     Util/Denchar/Tests/SiH3/3D/H.psf
+     Util/Denchar/Tests/SiH3/3D/Si.psf
+     Util/Denchar/Tests/SiH3/3D/SiH3.DRHO.cube
+     Util/Denchar/Tests/SiH3/3D/SiH3.RHO.DOWN.cube
+     Util/Denchar/Tests/SiH3/3D/SiH3.RHO.UP.cube
+     Util/Denchar/Tests/SiH3/3D/SiH3.WF5.DOWN.cube
+     Util/Denchar/Tests/SiH3/3D/SiH3.WF5.UP.cube
+     Util/Denchar/Tests/SiH3/3D/SiH3.fdf
+     Util/Vibra/Vibra/Sys/.arch-ids/=id
+     Util/Vibra/Vibra/Sys/.arch-ids/cray.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/freebsd.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/hp.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/ibm.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/ibmessl.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/linux.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/osf.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/osfdxml.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/sgi.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/t3e.make.id
+     Util/Vibra/Vibra/Sys/.arch-ids/unknown.make.id
+     Util/Vibra/Vibra/Sys/cray.make
+     Util/Vibra/Vibra/Sys/freebsd.make Util/Vibra/Vibra/Sys/hp.make
+     Util/Vibra/Vibra/Sys/ibm.make
+     Util/Vibra/Vibra/Sys/ibmessl.make
+     Util/Vibra/Vibra/Sys/linux.make Util/Vibra/Vibra/Sys/osf.make
+     Util/Vibra/Vibra/Sys/osfdxml.make
+     Util/Vibra/Vibra/Sys/sgi.make Util/Vibra/Vibra/Sys/t3e.make
+     Util/Vibra/Vibra/Sys/unknown.make
+     Util/Vibra/Vibra/fdf/.arch-ids/=id
+     Util/Vibra/Vibra/fdf/.arch-ids/Coords.dat.id
+     Util/Vibra/Vibra/fdf/.arch-ids/Otherfile.id
+     Util/Vibra/Vibra/fdf/.arch-ids/README.id
+     Util/Vibra/Vibra/fdf/.arch-ids/TODO.id
+     Util/Vibra/Vibra/fdf/.arch-ids/coords.fdf.id
+     Util/Vibra/Vibra/fdf/.arch-ids/fdf.Standard.id
+     Util/Vibra/Vibra/fdf/.arch-ids/fdf.f.id
+     Util/Vibra/Vibra/fdf/.arch-ids/fdf.f90.id
+     Util/Vibra/Vibra/fdf/.arch-ids/fdf.h.id
+     Util/Vibra/Vibra/fdf/.arch-ids/fdfdefs.h.id
+     Util/Vibra/Vibra/fdf/.arch-ids/io.f.id
+     Util/Vibra/Vibra/fdf/.arch-ids/io_sample.f.id
+     Util/Vibra/Vibra/fdf/.arch-ids/makefile.id
+     Util/Vibra/Vibra/fdf/.arch-ids/sample.f.id
+     Util/Vibra/Vibra/fdf/.arch-ids/sample.f90.id
+     Util/Vibra/Vibra/fdf/.arch-ids/sample.fdf.id
+     Util/Vibra/Vibra/fdf/Coords.dat Util/Vibra/Vibra/fdf/Otherfile
+     Util/Vibra/Vibra/fdf/README Util/Vibra/Vibra/fdf/TODO
+     Util/Vibra/Vibra/fdf/coords.fdf
+     Util/Vibra/Vibra/fdf/fdf.Standard Util/Vibra/Vibra/fdf/fdf.f
+     Util/Vibra/Vibra/fdf/fdf.f90 Util/Vibra/Vibra/fdf/fdf.h
+     Util/Vibra/Vibra/fdf/fdfdefs.h Util/Vibra/Vibra/fdf/io.f
+     Util/Vibra/Vibra/fdf/io_sample.f Util/Vibra/Vibra/fdf/makefile
+     Util/Vibra/Vibra/fdf/sample.f Util/Vibra/Vibra/fdf/sample.f90
+     Util/Vibra/Vibra/fdf/sample.fdf
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Examples/README README
+     Tests/Makefile Util/Denchar/Docs/denchar.tex
+     Util/PyAtom/README.scripts Util/README Util/Vibra/Docs/CHANGES
+     Util/Vibra/Docs/vibra.tex Util/Vibra/README
+     Util/Vibra/Vibra/Makefile Util/Vibra/Vibra/fcbuild.f
+     Util/Vibra/Vibra/klines.f Util/Vibra/Vibra/outbands.f
+     Util/Vibra/Vibra/parse.f Util/Vibra/Vibra/recoor.f
+     Util/Vibra/Vibra/vibrator.f Util/sies2arc/sies2arc.f
+
+    renamed files:
+     Util/Denchar/Src/.arch-ids/README.id
+       ==> Util/Denchar/.arch-ids/README-Source.id
+     Util/Denchar/Src/README
+       ==> Util/Denchar/README-Source
+
+    removed directories:
+     Util/Basis Util/Basis/.arch-ids Util/Denchar/Src
+     Util/Denchar/Src/.arch-ids Util/Denchar/Src/MPI
+     Util/Denchar/Src/MPI/.arch-ids Util/Denchar/Src/NetCDF
+     Util/Denchar/Src/NetCDF/.arch-ids Util/Denchar/Src/fdf
+     Util/Denchar/Src/fdf/.arch-ids Util/Denchar/Tests
+     Util/Denchar/Tests/.arch-ids Util/Denchar/Tests/Si
+     Util/Denchar/Tests/Si/.arch-ids Util/Denchar/Tests/Si/2D
+     Util/Denchar/Tests/Si/2D/.arch-ids Util/Denchar/Tests/Si/3D
+     Util/Denchar/Tests/Si/3D/.arch-ids Util/Denchar/Tests/SiH3
+     Util/Denchar/Tests/SiH3/.arch-ids Util/Denchar/Tests/SiH3/2D
+     Util/Denchar/Tests/SiH3/2D/.arch-ids
+     Util/Denchar/Tests/SiH3/3D
+     Util/Denchar/Tests/SiH3/3D/.arch-ids Util/Vibra/Vibra/Sys
+     Util/Vibra/Vibra/Sys/.arch-ids Util/Vibra/Vibra/fdf
+     Util/Vibra/Vibra/fdf/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-50
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-51
+
+
+2006-02-12 20:04:44 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-35
+
+    Summary:
+      Re-organization of Tutorials and Tests
+    Revision:
+      siesta-devel--reference--1.5--patch-35
+
+       Updated script in Tutorials/Bases so that it works out of the box
+       Removed Tutorials/Intro 
+       Moved Tests from Src to top directory
+       Removed mgo test and added si2x1h test (formerly in Tutorials/Intro)
+    
+
+    new files:
+     Tests/si2x1h/.arch-ids/=id Tests/si2x1h/.arch-ids/makefile.id
+     Tests/si2x1h/.arch-ids/si2x1h.fdf.id
+     Tests/si2x1h/.arch-ids/si2x1h.pseudos.id Tests/si2x1h/makefile
+     Tests/si2x1h/si2x1h.fdf Tests/si2x1h/si2x1h.pseudos
+
+    removed files:
+     Src/Tests/mgo/.arch-ids/=id Src/Tests/mgo/.arch-ids/Kgrid.id
+     Src/Tests/mgo/.arch-ids/makefile.id
+     Src/Tests/mgo/.arch-ids/mgo.STRUCT_IN.id
+     Src/Tests/mgo/.arch-ids/mgo.fdf.id
+     Src/Tests/mgo/.arch-ids/mgo.pseudos.id
+     Src/Tests/mgo/.arch-ids/mydefaults.fdf.id Src/Tests/mgo/Kgrid
+     Src/Tests/mgo/makefile Src/Tests/mgo/mgo.STRUCT_IN
+     Src/Tests/mgo/mgo.fdf Src/Tests/mgo/mgo.pseudos
+     Src/Tests/mgo/mydefaults.fdf Tutorials/Intro/.arch-ids/=id
+     Tutorials/Intro/Fe/.arch-ids/=id
+     Tutorials/Intro/Fe/.arch-ids/Fe.fdf.id
+     Tutorials/Intro/Fe/.arch-ids/Fe.psf.id
+     Tutorials/Intro/Fe/.arch-ids/README.id
+     Tutorials/Intro/Fe/.arch-ids/bands.sh.id
+     Tutorials/Intro/Fe/.arch-ids/dos.gplot.id
+     Tutorials/Intro/Fe/Fe.fdf Tutorials/Intro/Fe/Fe.psf
+     Tutorials/Intro/Fe/README Tutorials/Intro/Fe/bands.sh
+     Tutorials/Intro/Fe/dos.gplot Tutorials/Intro/MgO/.arch-ids/=id
+     Tutorials/Intro/MgO/.arch-ids/Mg.psf.id
+     Tutorials/Intro/MgO/.arch-ids/MgO.fdf.id
+     Tutorials/Intro/MgO/.arch-ids/O.psf.id
+     Tutorials/Intro/MgO/.arch-ids/README.id
+     Tutorials/Intro/MgO/.arch-ids/cont.gplot.id
+     Tutorials/Intro/MgO/.arch-ids/plot.sh.id
+     Tutorials/Intro/MgO/.arch-ids/raw.in.id
+     Tutorials/Intro/MgO/Mg.psf Tutorials/Intro/MgO/MgO.fdf
+     Tutorials/Intro/MgO/O.psf Tutorials/Intro/MgO/README
+     Tutorials/Intro/MgO/cont.gplot Tutorials/Intro/MgO/plot.sh
+     Tutorials/Intro/MgO/raw.in Tutorials/Intro/Si/.arch-ids/=id
+     Tutorials/Intro/Si/.arch-ids/README.fit.id
+     Tutorials/Intro/Si/.arch-ids/README.id
+     Tutorials/Intro/Si/.arch-ids/README.plot.id
+     Tutorials/Intro/Si/.arch-ids/Si.fdf.id
+     Tutorials/Intro/Si/.arch-ids/Si.psf.id
+     Tutorials/Intro/Si/.arch-ids/Si_strele.fdf.id
+     Tutorials/Intro/Si/.arch-ids/bands.sh.id
+     Tutorials/Intro/Si/.arch-ids/cont.gplot.id
+     Tutorials/Intro/Si/.arch-ids/dos.gplot.id
+     Tutorials/Intro/Si/.arch-ids/fit.sh.id
+     Tutorials/Intro/Si/.arch-ids/plot.sh.id
+     Tutorials/Intro/Si/.arch-ids/raw.in.id
+     Tutorials/Intro/Si/README Tutorials/Intro/Si/README.fit
+     Tutorials/Intro/Si/README.plot Tutorials/Intro/Si/Si.fdf
+     Tutorials/Intro/Si/Si.psf Tutorials/Intro/Si/Si_strele.fdf
+     Tutorials/Intro/Si/bands.sh Tutorials/Intro/Si/cont.gplot
+     Tutorials/Intro/Si/dos.gplot Tutorials/Intro/Si/fit.sh
+     Tutorials/Intro/Si/plot.sh Tutorials/Intro/Si/raw.in
+     Tutorials/Intro/Si_surface/.arch-ids/=id
+     Tutorials/Intro/Si_surface/.arch-ids/H.psf.id
+     Tutorials/Intro/Si_surface/.arch-ids/Si.psf.id
+     Tutorials/Intro/Si_surface/.arch-ids/Si2x1.fdf.id
+     Tutorials/Intro/Si_surface/H.psf
+     Tutorials/Intro/Si_surface/Si.psf
+     Tutorials/Intro/Si_surface/Si2x1.fdf
+     Tutorials/Intro/Water_molecule/.arch-ids/=id
+     Tutorials/Intro/Water_molecule/.arch-ids/README.id
+     Tutorials/Intro/Water_molecule/README
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids/=id
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids/H.psf.id
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids/O.psf.id
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids/cont.gplot.id
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids/h2o.fdf.id
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids/plot.sh.id
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids/raw.in.id
+     Tutorials/Intro/Water_molecule/h2o/H.psf
+     Tutorials/Intro/Water_molecule/h2o/O.psf
+     Tutorials/Intro/Water_molecule/h2o/cont.gplot
+     Tutorials/Intro/Water_molecule/h2o/h2o.fdf
+     Tutorials/Intro/Water_molecule/h2o/plot.sh
+     Tutorials/Intro/Water_molecule/h2o/raw.in
+     Tutorials/Intro/Water_molecule/h2o_cell/.arch-ids/=id
+     Tutorials/Intro/Water_molecule/h2o_cell/.arch-ids/H.psf.id
+     Tutorials/Intro/Water_molecule/h2o_cell/.arch-ids/O.psf.id
+     Tutorials/Intro/Water_molecule/h2o_cell/.arch-ids/h2o_cell.fdf.id
+     Tutorials/Intro/Water_molecule/h2o_cell/H.psf
+     Tutorials/Intro/Water_molecule/h2o_cell/O.psf
+     Tutorials/Intro/Water_molecule/h2o_cell/h2o_cell.fdf
+     Tutorials/Intro/Water_molecule/h2o_relax/.arch-ids/=id
+     Tutorials/Intro/Water_molecule/h2o_relax/.arch-ids/O.psf.id
+     Tutorials/Intro/Water_molecule/h2o_relax/.arch-ids/h2o_relax.fdf.id
+     Tutorials/Intro/Water_molecule/h2o_relax/O.psf
+     Tutorials/Intro/Water_molecule/h2o_relax/h2o_relax.fdf
+
+    modified files:
+     Tests/Makefile Tests/Scripts/arina.pbs
+     Tests/Scripts/matterhorn-gm.sge Tests/test.mk
+     Tutorials/Bases/000README Tutorials/Bases/gen-basis.sh
+
+    renamed files:
+
+	All in Src/Tests...
+
+    new directories:
+     Tests/.arch-ids Tests/Outs/.arch-ids Tests/Pseudos/.arch-ids
+     Tests/Reference/.arch-ids Tests/Scripts/.arch-ids
+     Tests/batio3/.arch-ids Tests/bessel/.arch-ids
+     Tests/constant_volume/.arch-ids Tests/fe/.arch-ids
+     Tests/fe_broyden/.arch-ids Tests/floating/.arch-ids
+     Tests/h2o/.arch-ids Tests/h2oZ/.arch-ids
+     Tests/h2o_dos/.arch-ids Tests/h2o_op_broyden/.arch-ids
+     Tests/h2o_orderN/.arch-ids Tests/md_anneal/.arch-ids
+     Tests/md_nose/.arch-ids Tests/md_npr/.arch-ids
+     Tests/md_pr/.arch-ids Tests/md_verlet/.arch-ids
+     Tests/mgco3/.arch-ids Tests/si2x1h Tests/si2x1h/.arch-ids
+     Tests/si64/.arch-ids Tests/sih/.arch-ids
+     Tests/sih_op_broyden/.arch-ids Tests/var_cell/.arch-ids
+     Tests/zmatrix/.arch-ids
+
+    removed directories:
+     Src/Tests/.arch-ids Src/Tests/Outs/.arch-ids
+     Src/Tests/Pseudos/.arch-ids Src/Tests/Reference/.arch-ids
+     Src/Tests/Scripts/.arch-ids Src/Tests/batio3/.arch-ids
+     Src/Tests/bessel/.arch-ids Src/Tests/constant_volume/.arch-ids
+     Src/Tests/fe/.arch-ids Src/Tests/fe_broyden/.arch-ids
+     Src/Tests/floating/.arch-ids Src/Tests/h2o/.arch-ids
+     Src/Tests/h2oZ/.arch-ids Src/Tests/h2o_dos/.arch-ids
+     Src/Tests/h2o_op_broyden/.arch-ids
+     Src/Tests/h2o_orderN/.arch-ids Src/Tests/md_anneal/.arch-ids
+     Src/Tests/md_nose/.arch-ids Src/Tests/md_npr/.arch-ids
+     Src/Tests/md_pr/.arch-ids Src/Tests/md_verlet/.arch-ids
+     Src/Tests/mgco3/.arch-ids Src/Tests/mgo
+     Src/Tests/mgo/.arch-ids Src/Tests/si64/.arch-ids
+     Src/Tests/sih/.arch-ids Src/Tests/sih_op_broyden/.arch-ids
+     Src/Tests/var_cell/.arch-ids Src/Tests/zmatrix/.arch-ids
+     Tutorials/Intro Tutorials/Intro/.arch-ids Tutorials/Intro/Fe
+     Tutorials/Intro/Fe/.arch-ids Tutorials/Intro/MgO
+     Tutorials/Intro/MgO/.arch-ids Tutorials/Intro/Si
+     Tutorials/Intro/Si/.arch-ids Tutorials/Intro/Si_surface
+     Tutorials/Intro/Si_surface/.arch-ids
+     Tutorials/Intro/Water_molecule
+     Tutorials/Intro/Water_molecule/.arch-ids
+     Tutorials/Intro/Water_molecule/h2o
+     Tutorials/Intro/Water_molecule/h2o/.arch-ids
+     Tutorials/Intro/Water_molecule/h2o_cell
+     Tutorials/Intro/Water_molecule/h2o_cell/.arch-ids
+     Tutorials/Intro/Water_molecule/h2o_relax
+     Tutorials/Intro/Water_molecule/h2o_relax/.arch-ids
+
+    renamed directories:
+     Src/Tests
+       ==> Tests
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-45
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-46
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-47
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-48
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-49
+
+
+2006-02-12 18:54:18 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-34
+
+    Summary:
+      Added more options to MD output. Unit cell printed always 
+    Revision:
+      siesta-devel--reference--1.5--patch-34
+
+    (Undocumented changes)
+    
+    If MD output is enabled, a file called MD_CAR is written with cell and
+    coordinate information in a vienese format.
+    
+    Also if MD output is enabled, and if NetCDF support is compiled in, a
+    file called MD.nc is produced.
+    
+    * The unit cell vectors are printed regardless of the setting of VariableCell.
+    
+
+    new files:
+     Src/.arch-ids/md_out.F90.id Src/md_out.F90
+
+    modified files:
+     Src/Makefile Src/siesta.F
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-42
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-43
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-44
+
+
+2006-02-12 18:49:03 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-33
+
+    Summary:
+      Assorted fixes: removed ionew module, wrapping, variable declarations.
+    Revision:
+      siesta-devel--reference--1.5--patch-33
+
+    * Removed ionew.F.
+      All references to 'io_assign' and 'io_close' are resolved by io.f.
+      IOnode is taken from module 'parallel'.
+    
+    * Wrap write statements in die in xc.f
+    
+    * Fix compilation of denchar and gen-basis
+    
+    * Declare variable in mpi_utils
+    
+    
+
+    removed files:
+     Src/.arch-ids/ionew.F.id Src/ionew.F
+
+    modified files:
+     Src/Makefile Src/arw.f Src/atomlist.f Src/denchar.F
+     Src/gen-basis.F Src/iodm.F Src/iopipes.F90
+     Src/m_denchar_init.F Src/m_denchar_io.F Src/m_denchar_work.f
+     Src/m_mpi_utils.F Src/pdos.F Src/pseudopotential.f
+     Src/setatomnodes.F Src/siesta.F Src/xc.f
+     Tutorials/Pseudos/README
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-37
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-39
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-40
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-41
+
+
+2006-02-12 18:45:29 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-32
+
+    Summary:
+      Better user-interface for Broyden optimization
+    Revision:
+      siesta-devel--reference--1.5--patch-32
+
+    Broyden optimization is now selected by 
+    
+    MD.TypeOfRun Broyden
+    (The fdf symbol Optim.Broyden is still honored, but is deprecated)
+    
+    Broyden optimization options are prefixed by MD.Broyden, instead of
+    Optim.Broyden.
+    
+    Updated the manual.
+    
+    
+    
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile
+     Src/Tests/h2o_op_broyden/h2o_op_broyden.fdf
+     Src/Tests/sih_op_broyden/sih_op_broyden.fdf
+     Src/Tests/var_cell/var_cell.fdf Src/broyden_optim.F
+     Src/redata.F Src/siesta.F
+
+    renamed files:
+     Src/.arch-ids/optim.F.id
+       ==> Src/.arch-ids/broyden_optim.F.id
+     Src/optim.F
+       ==> Src/broyden_optim.F
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-38
+
+
+2006-02-09 12:12:10 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-31
+
+    Summary:
+      (atom) More output for ps optimization. More Fe examples in Tutorial
+    Revision:
+      siesta-devel--reference--1.5--patch-31
+
+    Added output of Fourier norm of pseudopotential to FOURIER_AREA file, to aid
+    in automatic optimization.
+    
+    Put more examples in ../atom/Tutorial/Fe, including a small-core pseudopotential.
+    
+
+    new files:
+     Pseudo/atom/Tutorial/Fe/.arch-ids/Fe.3d74s1.inp.id
+     Pseudo/atom/Tutorial/Fe/.arch-ids/Fe.sc.inp.id
+     Pseudo/atom/Tutorial/Fe/.arch-ids/Fe.sc.opt.inp.id
+     Pseudo/atom/Tutorial/Fe/.arch-ids/Fe.test.sc.inp.id
+     Pseudo/atom/Tutorial/Fe/Fe.3d74s1.inp
+     Pseudo/atom/Tutorial/Fe/Fe.sc.inp
+     Pseudo/atom/Tutorial/Fe/Fe.sc.opt.inp
+     Pseudo/atom/Tutorial/Fe/Fe.test.sc.inp
+
+    modified files:
+     Pseudo/atom/Tutorial/Fe/README Pseudo/atom/potran.f
+     Pseudo/atom/wrapup.f version.info
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-33
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-34
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-35
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--1.5--patch-36
+
+
+2006-02-07 10:19:22 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-30
+
+    Summary:
+      Update Release Notes
+    Revision:
+      siesta-devel--reference--1.5--patch-30
+
+
+    removed files:
+     Util/Contrib/APostnikov/.arch-ids/rho2xsf_bac.f.id
+     Util/Contrib/APostnikov/rho2xsf_bac.f
+
+    modified files:
+     Docs/release.notes_1.5 Util/pdosxml/README
+
+
+2006-02-07 08:59:43 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-29
+
+    Summary:
+      Changes to the manual
+    Revision:
+      siesta-devel--reference--1.5--patch-29
+
+    The manual has been updated. Notable changes:
+    
+    * Parallelization issues (J. Gale)
+    * Configure support and other new features and issues (E. Artacho, A. Garcia)
+    
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex version.info
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta--my-changes--0.2--base-0
+     eartacho@siesta.arch--2005/siesta--my-changes--0.2--patch-1
+     eartacho@siesta.arch--2005/siesta--my-changes--0.2--patch-2
+     eartacho@siesta.arch--2005/siesta--my-changes--0.2--patch-3
+     eartacho@siesta.arch--2005/siesta--my-changes--0.2--patch-4
+     jgale@siesta.arch--2005/siesta--my-changes--0.2--patch-1
+
+
+2006-02-07 08:51:40 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-28
+
+    Summary:
+      Change ground state configuration of Pd
+    Revision:
+      siesta-devel--reference--1.5--patch-28
+
+    In order to be able to specify spin polarization, the d-shell must
+    not be completely full. For Pd, the configuration 4d10 has been
+    changed to 4d9-5s1.
+    
+
+    modified files:
+     Src/periodic_table.f
+
+
+2006-02-06 18:50:36 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-27
+
+    Summary:
+      Update CHANGES file and version.info
+    Revision:
+      siesta-devel--reference--1.5--patch-27
+
+
+    modified files:
+     Docs/CHANGES version.info
+
 2006-02-06 15:07:50 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-26
 
     Summary:
