@@ -1,13 +1,92 @@
 =======================================================================
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
-____________________________________________________________________
-** CHANGES ALONG siesta@uam.es--2005/siesta-devel--reference--1.5
---------------------------------------------------------------------
 
 NOTE: The arch patches appear to be all committed by A. Garcia. That is because
 he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
+
+____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2005/siesta--pre-release--2.0
+--------------------------------------------------------------------
+
+2006-02-13 17:02:08 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-2
+
+    Summary:
+      Added a Drude term for optical properties of metals
+    Revision:
+      siesta--pre-release--2.0--patch-2
+
+    Up to now only the contribution from inter-band transitions was
+    taken into account for the calculation of the dielectric function.
+    This is enough for insulators or semiconductors. However, for 
+    metals it is necessary to include a term associated with intra-band
+    transitions. Here we  assume that it has the form of the Drude 
+    dielectric function 
+    
+    epsilon_intraband(w)= 1 -wp^2/w*(w+i*gamma),
+    
+    where wp^2 is calculated by SIESTA, while gamma (the inverse of 
+    the relaxation time) is considered an empirical parameter with 
+    which we can play during the analysis of the data.
+    
+    (Updated also Util/Optical)
+
+    modified files:
+     Src/optical.F Src/transition_rate.F Util/Optical/README
+     Util/Optical/input.f Util/Optical/optical.f
+     Util/Optical/si.EPSIMG
+
+    new patches:
+     dsanchez@siesta.arch--2005/siesta--optical--0.2--patch-1
+
+
+2006-02-13 16:59:36 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-1
+
+    Summary:
+      Cosmetic changes for switch to 2.0
+    Revision:
+      siesta--pre-release--2.0--patch-1
+
+    * version triad in version.F90 set to 2.0.0
+    * release_notes_1.5 moved to release_notes_2.0
+    * Top-level README updated
+    * Docs/siesta.tex updated.
+
+    modified files:
+     Docs/release.notes_2.0 Docs/siesta.tex README Src/version.F90
+     version.info
+
+    renamed files:
+     Docs/.arch-ids/release.notes_1.5.id
+       ==> Docs/.arch-ids/release.notes_2.0.id
+     Docs/release.notes_1.5
+       ==> Docs/release.notes_2.0
+
+2006-02-13 16:06:52 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	base-0
+
+    Summary:
+      tag of siesta@uam.es--2005/siesta--copyright-stamp--1.5--patch-3
+    Revision:
+      siesta--pre-release--2.0--base-0
+
+    (automatically generated log message)
+
+--------------------------------------------------------------------
+** A Special branch was used for copyright stamping, leading up to
+
+      siesta@uam.es--2005/siesta--copyright-stamp--1.5--patch-3
+
+____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2005/siesta-devel--reference--1.5
+--------------------------------------------------------------------
+
+2006-02-13 15:00:00 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-37
+
+    Summary:
+      Update to CHANGES file
+    Revision:
+      siesta-devel--reference--1.5--patch-37
 
 2006-02-13 14:43:00 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-36
 
