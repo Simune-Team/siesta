@@ -1,6 +1,6 @@
 ! F2KCLI : Fortran 200x Command Line Interface
 ! copyright Interactive Software Services Ltd. 2001
-! For conditions of use see manual.txt
+! For conditions of use see f2kcli_manual.txt
 !
 ! Platform    : Unix/Linux
 ! Compiler    : Any Fortran 9x compiler supporting IARGC/GETARG

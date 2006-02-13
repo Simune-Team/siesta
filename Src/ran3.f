@@ -1,3 +1,7 @@
+!    This file contains routines adapted from 'Numerical Recipes, 
+!    The Art of Scientific Computing' by W.H. Press, S.A. Teukolsky, 
+!    W.T. Veterling and B.P. Flannery, Cambridge U.P. 1987 and 1992.
+
       FUNCTION ran3(idum)
       INTEGER idum
       INTEGER MBIG,MSEED,MZ
