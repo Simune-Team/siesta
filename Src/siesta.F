@@ -2260,11 +2260,11 @@ C Finalize MPI
         else
           call iofa( na_u, fa )
         endif
-        write(6,'(40("-"),/,a4,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
-        write(6,'(40("-"),/,a4, f12.6)') 'Max',fmax*Ang/eV
-        write(6,'(a4,f12.6,a)')'Res',fres*Ang/eV,
+        write(6,'(40("-"),/,a6,3f12.6)') 'Tot',(ftot(ix)*Ang/eV,ix=1,3)
+        write(6,'(40("-"),/,a6, f12.6)') 'Max',fmax*Ang/eV
+        write(6,'(a6,f12.6,a)')'Res',fres*Ang/eV,
      .       '    sqrt( Sum f_i^2 / 3N )'
-        write(6,'(40("-"),/,a4, f12.6,a)') 'Max',cfmax*Ang/eV, 
+        write(6,'(40("-"),/,a6, f12.6,a)') 'Max',cfmax*Ang/eV, 
      .       '    constrained'
       else !not final
 C In finalization, only print forces if sufficiently large.
@@ -2274,7 +2274,7 @@ C In finalization, only print forces if sufficiently large.
           write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
           write(6,'(a,i6,3f12.6)')
      .         ('siesta: ', ia,(fa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
-          write(6,'(a,40("-"),/,a,a4,3f12.6)')
+          write(6,'(a,40("-"),/,a,a6,3f12.6)')
      .         'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
           if (cml_p) then
             call cmlStartPropertyList(mainXML, title='Force Summary')
