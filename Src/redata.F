@@ -132,10 +132,8 @@ C logical inspn            : Spin initialization for spin-polarized
 C                              .true.  -> Antiferro
 C                              .false. -> Ferro
 C integer maxsav           : Number of density-matrices stored for Pulay
-C                            mixing. Pulay mixing is done every maxsav 
-C                            iterations, the rest is linear mixing.
-C                              .lt.2 => linear mixing only
-C                              .ge.2 => pulay mixing
+C                            mixing. .lt.2 => linear mixing only
+C                                    .ge.2 => pulay mixing
 C integer nkick            : Perform a linear mixing eack nkick scf cycles
 C real*8 wmixkick          : Mixing parameter for linear mixing each nkick scf
 C                            cycles
@@ -350,7 +348,7 @@ C Broyden SCF mixing, number of iterations
            endif
         else if  (maxsav .gt. 1) then
           write(6,'(a,i5,a)') 
-     .     'redata: One Pulay mixing every           = ',maxsav,
+     .     'redata: Performing Pulay mixing using    = ',maxsav,
      .     ' iterations'
         else
            write(6,'(a)')'redata: Mixing is linear'
@@ -375,7 +373,7 @@ C     (mix)
      .     value=mix, dictRef='siesta:mix')
 
 
-C Use disk or memory to store intermediate Pulay miximg vectors
+C Use disk or memory to store intermediate Pulay mixing vectors
 C (pulfile)
       call fdf_global_get(pulfile,'DM.PulayOnFile',.false.)
       if (ionode) then
