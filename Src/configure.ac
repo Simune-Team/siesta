@@ -1,4 +1,14 @@
-AC_INIT([siesta],[1.4],[tow21@cam.ac.uk])
+dnl 
+dnl This file is part of the SIESTA package.
+dnl
+dnl Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+dnl E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+dnl and J.M.Soler, 1996-2006.
+dnl 
+dnl Use of this software constitutes agreement with the full conditions
+dnl given in the SIESTA license, as signed by all legitimate users.
+dnl
+AC_INIT([siesta],[2.0],[tow21@cam.ac.uk])
 AC_CONFIG_SRCDIR([siesta.F])
 dnl
 dnl All macros are kept in Src/m4:
