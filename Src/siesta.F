@@ -80,7 +80,7 @@ C  Modules
 
       use m_smearing, only: temp
       use m_dynamics, only: nose, verlet2, npr, anneal, pr
-      use md_out,     only: md_v_format
+      use md_out,     only: md_v_format, md_netcdf
 
       implicit none
 
@@ -1781,6 +1781,13 @@ C Save atomic positions and velocities accumulatively ................
      .        fincoor, tempion, Etot_output, getot,
      $        volume/Ang**3, Psol/kbar)
          call md_v_format(na_u,isa,xa,ucell)
+#ifdef CDF
+         call md_netcdf( na_u, isa, iza, 
+     .        xa, va, ucell, vcell, varcel, 
+     .        tempion, Etot_output, getot,
+     $        volume/Ang**3, Psol/kbar)
+#endif
+
       endif
 
 C Accumulate coor in Xmol file for animation .........................

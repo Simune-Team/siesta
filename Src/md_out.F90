@@ -13,6 +13,7 @@ module md_out
 use units, only: Ang
 use precision, only: dp
 use sys,      only: die
+use files,    only: slabel
 
 integer, private, save   :: ncid 
 
@@ -43,8 +44,9 @@ external :: reclat, io_assign
 if (first) then
 
     call io_assign(iomd)
-    open(unit=iomd, file="MD_CAR", form='formatted', position='append', &
-       action="write", status='unknown')
+    open(unit=iomd, file=trim(slabel)//".MD_CAR", &
+         form='formatted', position='append', &
+         action="write", status='unknown')
 
        nspecies = maxval(isa(1:na))
        allocate(natoms(nspecies))
@@ -56,7 +58,7 @@ if (first) then
      first = .false.
 endif
 
-write(iomd,"(a)") "--- arbitrary title ---"
+write(iomd,"(a)") "---" // trim(slabel) //" ---"
 write(iomd,"(f10.1)") 1.0
 do i=1, 3
    write(iomd,"(3f16.9)") cell(:,i)/Ang
@@ -105,13 +107,13 @@ integer        :: atom_no
 
 if (first) then              ! Open or Create the dataset
 
-    iret = nf90_open("MD.nc",NF90_SHARE+NF90_WRITE,ncid)
+    iret = nf90_open(trim(slabel)//".MD.nc",NF90_SHARE+NF90_WRITE,ncid)
 
     if (iret /= nf90_noerr) then
 
        ! Need to create the dataset first...
 
-       iret = nf90_create("MD.nc",NF90_SHARE+NF90_WRITE,ncid)
+       iret = nf90_create(trim(slabel)//".MD.nc",NF90_SHARE+NF90_WRITE,ncid)
        call check(iret)
        iret = nf90_def_dim(ncid,'xyz',3,xyz_id)
        call check(iret)
