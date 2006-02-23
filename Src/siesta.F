@@ -80,8 +80,10 @@ C  Modules
 
       use m_smearing, only: temp
       use m_dynamics, only: nose, verlet2, npr, anneal, pr
-      use md_out,     only: md_v_format, md_netcdf
-
+      use md_out,     only: md_v_format
+#ifdef CDF
+      use md_out,     only: md_netcdf
+#endif
       implicit none
 
       integer

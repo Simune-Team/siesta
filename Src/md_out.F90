@@ -15,9 +15,10 @@ use precision, only: dp
 use sys,      only: die
 use files,    only: slabel
 
-integer, private, save   :: ncid 
-
-public :: md_v_format, md_netcdf
+public :: md_v_format
+#ifdef CDF
+public :: md_netcdf
+#endif
 
 CONTAINS
 
@@ -58,7 +59,7 @@ if (first) then
      first = .false.
 endif
 
-write(iomd,"(a)") "---" // trim(slabel) //" ---"
+write(iomd,"(a)") "---" // trim(slabel) //"---"
 write(iomd,"(f10.1)") 1.0
 do i=1, 3
    write(iomd,"(3f16.9)") cell(:,i)/Ang
@@ -74,14 +75,14 @@ call reclat(cell,celli,0)
 call pxfflush(iomd)
 
 end subroutine md_v_format
+
+#ifdef CDF
 !--------------------------------------------------------
 
 subroutine md_netcdf(na,isa,iza,xa,va,cell,vcell,varcel, &
                      temp, eks, tot_energy, volume, Psol)
 
-#ifdef CDF
 use netcdf
-#endif
 
 integer, intent(in)                 :: na
 integer, dimension(na), intent(in)   :: isa, iza 
@@ -91,22 +92,22 @@ logical, intent(in)                    :: varcel
 real(dp), intent(in)               :: temp, eks, tot_energy
 real(dp), intent(in)               :: volume, Psol
 
-#ifdef CDF
-logical, save :: first = .true.
 
 integer iret
-integer, save  :: xyz_id, atom_id, step_id, abc_id
-integer, save  :: xa_id, va_id, cell_id, vcell_id
-integer, save  :: eks_id, etot_id, temp_id, psol_id
-integer, save  :: isa_id, iza_id
-integer, save  :: volume_id
+integer  :: ncid 
+integer  :: xyz_id, atom_id, step_id, abc_id
+integer  :: xa_id, va_id, cell_id, vcell_id
+integer  :: eks_id, etot_id, temp_id, psol_id
+integer  :: isa_id, iza_id
+integer  :: volume_id
 
 integer, save  :: step_no
 
 integer        :: atom_no
 
-if (first) then              ! Open or Create the dataset
-
+!
+!  Attempt to open. If the file does not exist, create and initialize it
+!
     iret = nf90_open(trim(slabel)//".MD.nc",NF90_SHARE+NF90_WRITE,ncid)
 
     if (iret /= nf90_noerr) then
@@ -194,9 +195,10 @@ if (first) then              ! Open or Create the dataset
        iret = nf90_put_var(ncid, iza_id, iza(1:na), start = (/ 1 /) )
        call check(iret)
 
-    else
+    endif  ! File creation
 
-       ! Get the ids...
+! Now append the interesting information
+
        iret = nf90_inq_dimid(ncid, "step", step_id)
        iret = nf90_inq_dimid(ncid, "xyz", xyz_id)
        iret = nf90_inq_dimid(ncid, "abc", abc_id)
@@ -230,14 +232,7 @@ if (first) then              ! Open or Create the dataset
        iret = nf90_inq_varid(ncid, "vcell", vcell_id)
        call check(iret)
 
-
-    endif      ! create or just open
-
-     first = .false.
-endif
-
     step_no = step_no + 1
-    print *, " step_no ", step_no
 
 ! put values
     iret = nf90_put_var(ncid, temp_id, temp, start = (/ step_no /) )
@@ -270,28 +265,30 @@ endif
     iret = nf90_put_var(ncid, vcell_id, vcell, start = (/1, 1, step_no /), &
                         count = (/3, 3, 1 /) )
        call check(iret)
+!
+!   Close file at every step, to avoid leaving it in an undefined
+!   state in the event of a crash
+!
+    iret = nf90_close(ncid)
+    call check(iret)
 
-#endif
 end subroutine md_netcdf
 
-#ifdef CDF
 subroutine check(code)
 use netcdf, only: nf90_noerr, nf90_strerror
 integer, intent(in) :: code
 if (code /= nf90_noerr) call die("netCDF error: " // NF90_STRERROR(code))
 end subroutine check
-#endif
 
 subroutine close_md_netcdf()
-#ifdef CDF
 use netcdf, only: nf90_close
 
 integer :: iret
 
  iret = nf90_close(ncid)
  call check(iret)
-#endif
 end subroutine close_md_netcdf
+#endif
 
 end module md_out
 
