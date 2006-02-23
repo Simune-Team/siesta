@@ -531,7 +531,7 @@ C Output of initial system details:
      .       coords=xa/Ang, elements=elem, refs=cisa,
      .       style='x3', fmt='(f12.6)')
         call cmlAddLattice(xf=mainXML, cell=ucell, 
-     .       units='units:angstrom', dictref='siesta:ucell')
+     .       units='siestaUnits:angstrom', dictref='siesta:ucell')
         call cmlAddProperty(xf=mainXML, property=trim(shape), 
      .       dictref='siesta:shape')
         call cmlEndModule(xf=mainXML)
@@ -762,13 +762,13 @@ C Start loop over coordinate changes
         select case (idyn)
         case (0)
           write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='CG')
+          if (cml_p) call cmlStartStep(mainXML, type='CG', index=istp)
         case (1:5)
           write(6,'(28(" "),a,i6)') 'Begin MD step = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='MD')
+          if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
         case (6)
           write(6,'(28(" "),a,i6)') 'Begin FC step = ',istep
-          if (cml_p) call cmlStartStep(mainXML, type='FC')
+          if (cml_p) call cmlStartStep(mainXML, type='FC', index=istep)
           if (istep .eq. 0) then
             write(6,'(28(" "),a)') 'Undisplaced coordinates'
           else
@@ -1175,7 +1175,7 @@ C Start of SCF iteration _____________________________________________
         if (iscf .eq. nscf) last = .true.
         call timer( 'IterSCF', 1 )
 
-        if (cml_p) call cmlStartStep(xf=mainXML, type='SCF')
+        if (cml_p) call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
 
 C Normalize density matrix to exact charge ...........................
         qsol = 0.0_dp
@@ -1516,7 +1516,8 @@ C but preserving the value of Eharrs1
             if (cml_p) then
               call cmlStartPropertyList(mainXML, title='SCF Cycle')
               call cmlAddProperty(xf=mainXML, property=Eharrs/eV,
-     .             units="eV", dictRef="siesta:Eharrs", fmt="(f14.7)")
+     .             units="siestaUnits:eV", dictRef="siesta:Eharrs", 
+     .             fmt="(f14.7)")
               call cmlEndPropertyList(mainXML)
             endif
           endif
@@ -1573,7 +1574,8 @@ C Write final Kohn-Sham Energy ........................................
         if ( .not. harrisfun) 
      .    write(6,"(/a,f14.4)")  'siesta: E_KS(eV) =        ', Etot/eV
         if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV,
-     .       dictref='siesta:E_KS', units='eV', fmt='(f14.6)')
+     .       dictref='siesta:E_KS', units='siestaUnits:eV', 
+     .       fmt='(f14.6)')
       endif
 
 C Substract egg box effect form energy ................................
@@ -1583,7 +1585,8 @@ C Substract egg box effect form energy ................................
         if (IOnode)
      .    write(6,"(/a,f14.4)") 'siesta: E_KS - E_eggbox = ',Etot/eV
         if (cml_p) call cmlAddProperty(xf=mainXML, property=Etot/eV,
-     .         dictref='siesta:E_KS_egg', units='eV', fmt='(f14.6)')
+     .         dictref='siesta:E_KS_egg', units='siestaUnits:eV', 
+     .         fmt='(f14.6)')
       endif
       if (cml_p) call cmlEndPropertyList(mainXML)
 
@@ -2044,7 +2047,7 @@ C Print electric dipole
         if (cml_p) then
           call cmlAddProperty(xf=mainXML, property=dipol,
      .         title='Electric dipole', dictref='siesta:dipol',
-     .         units='a.u')
+     .         units='siestaUnits:atomic')
         endif !cml_p
       endif
 
@@ -2221,7 +2224,7 @@ C Finalize MPI
         call cmlAddProperty(xf=mainXML, property=nkpnt, 
      .       dictref='siesta:nkpnt')
         call cmlAddProperty(xf=mainXML, property=kcutof/Ang, 
-     .       dictref='siesta:kcutof', units='units:angstrom')
+     .       dictref='siesta:kcutof', units='siestaUnits:angstrom')
         call cmlEndPropertyList(mainXML)
         call cmlAddProperty(xf=mainXML, property=kscell,
      .       dictref='siesta:kscell')
@@ -2243,7 +2246,7 @@ C Finalize MPI
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='Forces')
           call cmlAddProperty(xf=mainXML, property=fa*Ang/eV,
-     .         dictref='siesta:forces', units='evpa')
+     .         dictref='siesta:forces', units='siestaUnits:evpa')
           call cmlAddProperty(xf=mainXML, property=ftot,
      .         dictref='siesta:ftot')
           call cmlAddProperty(xf=mainXML, property=fmax, 
@@ -2279,9 +2282,9 @@ C In finalization, only print forces if sufficiently large.
           if (cml_p) then
             call cmlStartPropertyList(mainXML, title='Force Summary')
             call cmlAddProperty(xf=mainXML, property=fa*Ang/eV,
-     .           dictref='siesta:forces', units='evpa')
+     .           dictref='siesta:forces', units='siestaUnits:evpa')
             call cmlAddProperty(xf=mainXML, property=ftot*Ang/eV, 
-     .           dictref='siesta:ftot', units='evpa')
+     .           dictref='siesta:ftot', units='siestaUnits:evpa')
             call cmlEndPropertyList(mainXML)
           endif !cml_p
         endif
@@ -2298,9 +2301,9 @@ C In finalization, only print forces if sufficiently large.
               call cmlStartPropertyList(mainXML,
      .             title='Constrained Force Summary')
               call cmlAddProperty(xf=mainXML, property=cfa*Ang/eV, 
-     .             dictref='siesta:cforces', units='evpa')
+     .             dictref='siesta:cforces', units='siestaUnits:evpa')
               call cmlAddProperty(xf=mainXML, property=ftot*Ang/eV, 
-     .             dictref='siesta:cftot', units='evpa')
+     .             dictref='siesta:cftot', units='siestaUnits:evpa')
               call cmlEndPropertyList(mainXML)
             endif !cml_p
           endif
@@ -2380,7 +2383,7 @@ C Print stress tensor unconditionally
      .       ('siesta: ',(stress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
         if (cml_p) then
           call cmlAddProperty(xf=mainXML, property=stress*Ang**3/eV, 
-     .         dictref='siesta:stress', units='eV/Ang^3')
+     .         dictref='siesta:stress', units='siestaUnits:eV_Ang__3')
         endif !cml_p
 
 C Print constrained stress tensor if different from unconstrained
@@ -2390,7 +2393,8 @@ C Print constrained stress tensor if different from unconstrained
      .       ('siesta: ',(cstress(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
           if (cml_p) then
             call cmlAddProperty(xf=mainXML, property=cstress*Ang**3/eV, 
-     .           dictref='siesta:cstress', units='eV/Ang^3')
+     .           dictref='siesta:cstress', 
+     .           units='siestaUnits:eV_Ang__3')
           endif !cml_p
         endif
 
@@ -2419,13 +2423,13 @@ C Find pressure
           call cmlStartPropertyList(mainXML, title='Final Pressure')
           call cmlAddProperty(xf=mainXML, property=volume/Ang**3, 
      .         title='cell volume', dictref='siesta:cellvol', 
-     .         units='Ang^3')
+     .         units='siestaUnits:Ang__3')
           call cmlAddProperty(xf=mainXML, property=Psol/kBar, 
      .         title='Pressure of Solid', dictref='siesta:pressSol', 
-     .         units='kbar')
+     .         units='siestaUnits:kbar')
           call cmlAddProperty(xf=mainXML, property=Pmol/kBar,       
      .         title='Pressure of Molecule', dictref='siesta:pressMol', 
-     .         units='kbar')
+     .         units='siestaUnits:kbar')
           call cmlEndPropertyList(mainXML)
         endif !cml_p
         
@@ -2456,34 +2460,48 @@ C Find pressure
         if (cml_p) then
           call cmlStartPropertyList(mainXML,
      .         title='Energy Decomposition')
-          call cmlAddProperty(xf=mainXML, property=Eions/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Eions/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Eions', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=Ena/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Ena/eV,
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Ena', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=Ekin/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Ekin/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekin', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=Enl/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Enl/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Enl', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=DEna/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=DEna/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:DEna', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=DUscf/eV, units='eV',
+          call cmlAddProperty(xf=mainXML, property=DUscf/eV, 
+     .         units='siestaUnits:eV',
      .         dictref='siesta:DUscf', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=DUext/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=DUext/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=Exc/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Exc/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML,property=Ecorrec/eV,units='eV', 
+          call cmlAddProperty(xf=mainXML,property=Ecorrec/eV,
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Ecorrec', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=Emad/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Emad/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Emad', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML,property=Ekinion/eV,units='eV', 
+          call cmlAddProperty(xf=mainXML,property=Ekinion/eV,
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekinion', fmt='(f17.6)')
           call cmlAddProperty(xf=mainXML, property=(Eharrs1+Ekinion)/eV,
-     .         units='eV', dictref='siesta:EharrsK', fmt='(f17.6)')
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:EharrsK', fmt='(f17.6)')
           call cmlAddProperty(xf=mainXML, property=(Etot+Ekinion)/eV, 
-     .         units='eV', dictref='siesta:EtotK', fmt='(f17.6)')
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:EtotK', fmt='(f17.6)')
           call cmlAddProperty(xf=mainXML, property=(FreeE+Ekinion)/eV, 
-     .         units='eV', dictref='siesta:FreeEK', fmt='(f17.6)')
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:FreeEK', fmt='(f17.6)')
           call cmlEndPropertyList(mainXML)
         endif
       endif
@@ -2494,7 +2512,8 @@ C Find pressure
           call cmlStartPropertyList(mainXML, title='SCF Cycle')
           ! Eharrs is always output
           call cmlAddProperty(xf=mainXML, property=Eharrs/eV, 
-     .         units="eV", dictRef="siesta:Eharrs", fmt="(f14.7)")
+     .         units="siestaUnits:eV", 
+     .         dictRef="siesta:Eharrs", fmt="(f14.7)")
         endif
         ! This chain of if statements determines which properties are output.
         if (harrisfun) then 
@@ -2503,15 +2522,19 @@ C Find pressure
         elseif (isolve==0) then
           if (cml_p) 
      .         call cmlAddProperty(xf=mainXML, property=FreeE/eV, 
-     .         units="eV", dictRef="siesta:FreeE",  fmt="(f14.7)")
+     .         units="siestaUnits:eV", 
+     .         dictRef="siesta:FreeE",  fmt="(f14.7)")
           if (fixspin) then
             if (cml_p) then
               call cmlAddProperty(xf=mainXML, property=Etot/eV, 
-     .             units="eV", dictRef="siesta:Etot",   fmt="(f14.7)")
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:Etot",   fmt="(f14.7)")
               call cmlAddProperty(xf=mainXML, property=FreeE/eV, 
-     .             units="eV", dictRef="siesta:FreeE", fmt="(f14.7)")
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:FreeE", fmt="(f14.7)")
               call cmlAddProperty(xf=mainXML, property=dDmax/eV, 
-     .             units="eV", dictRef="siesta:dDmax",  fmt="(f14.7)")
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:dDmax",  fmt="(f14.7)")
             endif
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,a8,a7,a11)')
@@ -2523,9 +2546,11 @@ C Find pressure
      .           (Efs(i)/eV,i=1,2)
             if (cml_p) then
               call cmlAddProperty(xf=mainXML, property=Efs(1)/eV, 
-     .             units="eV", dictRef="siesta:Efs",    fmt="(f14.7)")
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:Efs",    fmt="(f14.7)")
               call cmlAddProperty(xf=mainXML, property=Efs(2)/eV, 
-     .             units="eV", dictRef="siesta:Efs",    fmt="(f14.7)")
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:Efs",    fmt="(f14.7)")
             endif
           else !fixspin
             if ((iscf .eq. 1).or.muldeb)
@@ -2538,7 +2563,8 @@ C Find pressure
      .           dDmax, Ef/eV
             if (cml_p) then
               call cmlAddProperty(xf=mainXML,property=Ef/eV, 
-     .             units="eV", dictRef="siesta:Ef", fmt="(f14.7)")
+     .             units="siestaUnits:eV", 
+     .             dictRef="siesta:Ef", fmt="(f14.7)")
             endif !cml_p
           endif !fixspin
         elseif (isolve==1) then
@@ -2548,9 +2574,11 @@ C Find pressure
      .         '  E_KS(eV) = ',Etot/eV,'  dDmax = ',dDmax
           if (cml_p) then
             call cmlAddProperty(xf=mainXML, property=Etot/eV, 
-     .           units="eV", dictRef="siesta:Etot",   fmt="(f14.7)")
+     .           units="siestaUnits:eV", 
+     .           dictRef="siesta:Etot",   fmt="(f14.7)")
             call cmlAddProperty(xf=mainXML, property=dDmax/eV, 
-     .           units="eV", dictRef="siesta:dDmax",  fmt="(f14.7)")
+     .           units="siestaUnits:eV", 
+     .           dictRef="siesta:dDmax",  fmt="(f14.7)")
           endif
         endif !harrisfun/isolve
         
@@ -2573,24 +2601,32 @@ C Find pressure
      .    'siesta: ',        'Total =', (Etot+Ekinion)/eV
         if (cml_p) then
           call cmlStartPropertyList(xf=mainXML, title='Final Energy')
-          call cmlAddProperty(xf=mainXML, property=Ekin/eV,  units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Ekin/eV,  
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekin',  fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=Uscf/eV,  units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Uscf/eV,  
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Uscf',  fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=DUext/eV, units='eV', 
+          call cmlAddProperty(xf=mainXML, property=DUext/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:DUext', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML, property=Exc/eV,   units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Exc/eV,   
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Exc',   fmt='(f17.6)')
           call cmlAddProperty(xf=mainXML, 
-     .         property=(Enascf+Enl+DUscf-Uscf-Uatm)/eV, units='eV', 
+     .         property=(Enascf+Enl+DUscf-Uscf-Uatm)/eV, 
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:I-e', fmt='(f17.6)')
           call cmlAddProperty(xf=mainXML, 
-     .         property=(Ena+Uatm-Enaatm-Eions)/eV,      units='eV', 
+     .         property=(Ena+Uatm-Enaatm-Eions)/eV,
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:I-I', fmt='(f17.6)')
-          call cmlAddProperty(xf=mainXML,property=Ekinion/eV,units='eV', 
+          call cmlAddProperty(xf=mainXML, property=Ekinion/eV,
+     .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekinion', fmt='(f17.6)')
           call cmlAddProperty(xf=mainXML, property=(Etot+Ekinion)/eV,
-     .         units='eV', dictref='siesta:Etot', fmt='(f17.6)')
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Etot', fmt='(f17.6)')
           call cmlEndPropertyList(mainXML)
         endif !cml_p
       endif !final
@@ -2601,8 +2637,8 @@ C Find pressure
         if (cml_p) then
           call cmlAddMolecule(xf=mainXML, natoms=na_u, elements=elem,
      .           refs=cisa, coords=xa/Ang, style='x3', fmt='(f12.6)')
-          call cmlAddLattice(xf=mainXML, cell=ucell, 
-     .           units='units:angstrom', dictref='siesta:ucell')
+          call cmlAddLattice(xf=mainXML, cell=ucell/Ang, 
+     .           units='siestaUnits:Ang', dictref='siesta:ucell')
         endif
       end subroutine siesta_write_positions
       

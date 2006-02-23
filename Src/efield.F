@@ -163,7 +163,8 @@ C Check that the field is orthogonal to the bulk directions
               write(6,'(/,a,3f12.6,a)')
      .          'efield: Electric field =', e, ' Ry/Bohr/e'
               if (cml_p) call cmlAddProperty(xf=mainXML, property=e, 
-     .             dictref='siesta:elfield', units='Ry/Bohr/e')
+     .             dictref='siesta:elfield', 
+     .             units='siestaUnits:Ry_Bohr_e')
             else
               write(6,'(a,(/,a,3f12.6))')
      .          'efield: ERROR: Non zero bulk electric field.',

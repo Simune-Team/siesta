@@ -1,6 +1,6 @@
 module flib_wcml
 
-  use flib_wxml, only: xmlf_t
+  use flib_wxml, only: xmlf_t, str
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
   use flib_wxml, only: xml_EndElement
   use flib_wstml, only: stmAddScalar
@@ -173,7 +173,7 @@ CONTAINS
   ! -------------------------------------------------
   ! writes a Module start/end Tag to xml channel
   ! -------------------------------------------------
-  SUBROUTINE cmlStartModule(xf, id, title, conv, dictref, ref, role)
+  SUBROUTINE cmlStartModule(xf, id, title, conv, dictref, ref, role, serial)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
@@ -183,6 +183,7 @@ CONTAINS
     character(len=*), intent(in), optional :: dictref
     character(len=*), intent(in), optional :: ref
     character(len=*), intent(in), optional :: role
+    character(len=*), intent(in), optional :: serial
     
     call xml_NewElement(xf, 'module')
     if (present(id)) call xml_AddAttribute(xf, 'id', id)
@@ -191,6 +192,7 @@ CONTAINS
     if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref)) call xml_AddAttribute(xf, 'ref', ref)
     if (present(role)) call xml_AddAttribute(xf, 'role', role)
+    if (present(serial)) call xml_AddAttribute(xf, 'serial', serial)
     
   END SUBROUTINE cmlStartModule
 
@@ -275,26 +277,22 @@ CONTAINS
   ! writes a step start Tag to xml channel
   ! -------------------------------------------------
 
-  SUBROUTINE cmlStartStep(xf, type, id, title, conv, dictref, ref, role)
+  SUBROUTINE cmlStartStep(xf, type, index, id, title, conv, ref)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
     character(len=*), intent(in), optional :: type
     character(len=*), intent(in), optional :: id
+    integer, intent(in), optional :: index
     character(len=*), intent(in), optional :: title
     character(len=*), intent(in), optional :: conv
-    character(len=*), intent(in), optional :: dictref
     character(len=*), intent(in), optional :: ref
-    character(len=*), intent(in), optional :: role
-    
-    call xml_NewElement(xf, 'step')
-    if (present(type)) call xml_AddAttribute(xf, 'type', type)
-    if (present(id)) call xml_AddAttribute(xf, 'id', id)
-    if (present(title)) call xml_AddAttribute(xf, 'title', title)
-    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
-    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
-    if (present(ref)) call xml_AddAttribute(xf, 'ref', ref)
-    if (present(role)) call xml_AddAttribute(xf, 'role', role)
+
+    if (present(index)) then
+      call cmlStartModule(xf, id, title, conv, type, ref, 'step', str(index))
+    else
+      call cmlStartModule(xf, id, title, conv, type, ref, 'step')
+    endif
     
   END SUBROUTINE cmlStartStep
 
@@ -303,7 +301,7 @@ CONTAINS
     implicit none
     type(xmlf_t), intent(inout) :: xf
 
-    Call xml_EndElement(xf, 'step')
+    Call xml_EndElement(xf, 'module')
     
   END SUBROUTINE cmlEndStep
 
@@ -333,7 +331,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))    call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddScalar(xf=xf, value=property, units=units, fmt=fmt)
+    call stmAddScalar(xf=xf, value=property, datatype='xsd:double', units=units, fmt=fmt)
     call xml_EndElement(xf, 'property')
 
   END SUBROUTINE cmlAddPropScalarDP
@@ -361,7 +359,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref)) call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddScalar(xf=xf, value=property, units=units, fmt=fmt)
+    call stmAddScalar(xf=xf, value=property, datatype='xsd:float', units=units, fmt=fmt)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropScalarSP
   
@@ -387,7 +385,7 @@ CONTAINS
     if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
     if (present(conv))    call xml_AddAttribute(xf, 'convention', conv)
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
-    call stmAddScalar(xf=xf, value=property, units=units)
+    call stmAddScalar(xf=xf, value=property, datatype='xsd:integer', units=units)
     call xml_EndElement(xf, 'property')
   END SUBROUTINE cmlAddPropScalarI
 
@@ -920,12 +918,6 @@ CONTAINS
     character(len=6) :: id1, id0
     character(len=20):: formt, stylei
     integer          :: i
-    logical          :: have_refs
-
-    have_refs = (present(refs))
-    if (have_refs) then
-       if (size(refs) /= natoms) STOP "refs"
-    endif
 
     if (present(fmt)) then
        formt = fmt
@@ -946,7 +938,7 @@ CONTAINS
        id1 = 'a'
        id1(2:) = id0
        call cmlAddAtom(xf=xf, elem=elements(i), id=trim(id1))
-       if (have_refs)  call xml_AddAttribute(xf, 'ref', trim(refs(i)))
+       if (present(refs)) call xml_AddAttribute(xf, 'ref', trim(refs(i)))
        if (stylei .eq. 'x3') then
           call CMLATX39DP(xf, coords(1, i), coords(2, i), coords(3, i), formt)
        elseif (stylei .eq. 'xFrac') then
@@ -1443,7 +1435,7 @@ CONTAINS
   ! 1. creates and writes an SP Lattice element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddLatticeSP(xf, cell, units, title, id, dictref, conv, spaceType, fmt)
+  SUBROUTINE cmlAddLatticeSP(xf, cell, units, title, id, dictref, conv, lattType, spaceType, fmt)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
@@ -1453,21 +1445,37 @@ CONTAINS
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
     character(len=*), intent(in), optional :: conv         ! convention
-!    character(len=*), intent(in), optional :: lattType     ! 
+    character(len=*), intent(in), optional :: lattType 
     character(len=*), intent(in), optional :: spaceType    !
     character(len=*), intent(in), optional :: fmt         
 
-    real(sp)   :: a, b, c, alpha, beta, gamma
+    integer :: i
+    character(len=10) :: formt
+    if (present(fmt)) then
+       formt = fmt
+    else
+       formt = '(f8.3)'   
+    endif
+
+    call xml_NewElement(xf, 'lattice')
+    if (present(id)) call xml_AddAttribute(xf, 'id', id)
+    if (present(title)) call xml_AddAttribute(xf, 'title', title)
+    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
+    if (present(lattType)) call xml_AddAttribute(xf, 'latticeType', lattType)
+    if (present(spaceType)) call xml_AddAttribute(xf, 'spaceType', spaceType)
+
+    do i = 1,3
+       call xml_NewElement(xf, 'latticeVector')
+       if (present(units)) call xml_AddAttribute(xf, 'units', units)
+       call xml_AddAttribute(xf, 'dictRef', 'cml:latticeVector')
+       call xml_AddPcdata(xf, cell(1,i), formt)
+       call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
+       call xml_AddPcdata(xf, cell(3,i), formt, space=.true.)
+       call xml_EndElement(xf, 'latticeVector')
+    enddo
+    call xml_EndElement(xf, 'lattice')
     
-    a = sqrt(dot_product(cell(:,1), cell(:,1)))
-    b = sqrt(dot_product(cell(:,2), cell(:,2)))
-    c = sqrt(dot_product(cell(:,3), cell(:,3)))
-    alpha = acos(dot_product(cell(:,1),cell(:,2))/(a*b))
-    beta = acos(dot_product(cell(:,1),cell(:,3))/(a*c))
-    gamma = acos(dot_product(cell(:,2),cell(:,3))/(b*c))
-
-    call cmlAddCrystal(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, units, 'units:radians', spaceType, fmt)
-
   END SUBROUTINE cmlAddLatticeSP
 
 
@@ -1475,7 +1483,7 @@ CONTAINS
   ! 2. creates and writes DP Lattice element
   ! -------------------------------------------------
 
-  SUBROUTINE cmlAddLatticeDP(xf, cell, units, title, id, dictref, conv, spaceType, fmt)
+  SUBROUTINE cmlAddLatticeDP(xf, cell, units, title, id, dictref, conv, lattType, spaceType, fmt)
 
     implicit none
     type(xmlf_t), intent(inout) :: xf
@@ -1485,20 +1493,36 @@ CONTAINS
     character(len=*), intent(in), optional :: title        ! title
     character(len=*), intent(in), optional :: dictref      ! dictref
     character(len=*), intent(in), optional :: conv         ! 
-!    character(len=*), intent(in), optional :: lattType     ! 
+    character(len=*), intent(in), optional :: lattType     ! 
     character(len=*), intent(in), optional :: spaceType    !
     character(len=*), intent(in), optional :: fmt         
 
-    real(dp)   :: a, b, c, alpha, beta, gamma
+    integer :: i
+    character(len=10) :: formt
+    if (present(fmt)) then
+       formt = fmt
+    else
+       formt = '(f8.3)'   
+    endif
 
-    a = sqrt(dot_product(cell(:,1), cell(:,1)))
-    b = sqrt(dot_product(cell(:,2), cell(:,2)))
-    c = sqrt(dot_product(cell(:,3), cell(:,3)))
-    alpha = acos(dot_product(cell(:,1),cell(:,2))/(a*b))
-    beta = acos(dot_product(cell(:,1),cell(:,3))/(a*c))
-    gamma = acos(dot_product(cell(:,2),cell(:,3))/(b*c))
+    call xml_NewElement(xf, 'lattice')
+    if (present(id)) call xml_AddAttribute(xf, 'id', id)
+    if (present(title)) call xml_AddAttribute(xf, 'title', title)
+    if (present(dictref)) call xml_AddAttribute(xf, 'dictRef', dictref)
+    if (present(conv)) call xml_AddAttribute(xf, 'convention', conv)
+    if (present(lattType)) call xml_AddAttribute(xf, 'latticeType', lattType)
+    if (present(spaceType)) call xml_AddAttribute(xf, 'spaceType', spaceType)
 
-    call cmlAddCrystal(xf, a, b, c, alpha, beta, gamma, id, title, dictref, conv, units, 'units:radians', spaceType, fmt)
+    do i = 1,3
+       call xml_NewElement(xf, 'latticeVector')
+       if (present(units)) call xml_AddAttribute(xf, 'units', units)
+       call xml_AddAttribute(xf, 'dictRef', 'cml:latticeVector')
+       call xml_AddPcdata(xf, cell(1,i), formt)
+       call xml_AddPcdata(xf, cell(2,i), formt, space=.true.)
+       call xml_AddPcdata(xf, cell(3,i), formt, space=.true.)
+       call xml_EndElement(xf, 'latticeVector')
+    enddo
+    call xml_EndElement(xf, 'lattice')
 
   END SUBROUTINE cmlAddLatticeDP
 
@@ -1814,7 +1838,7 @@ CONTAINS
     if (present(units)) then
        call xml_NewElement(xf, 'scalar')
        call xml_AddAttribute(xf, 'units', units)
-       call xml_AddPcdata(xf, value)
+       call xml_AddPcdata(xf, value, formt)
        call xml_EndElement(xf, 'scalar')
     else
        call xml_AddAttribute(xf, 'value', value, formt)
@@ -1865,10 +1889,10 @@ CONTAINS
     if (present(units)) then
        call xml_NewElement(xf, 'scalar')
        call xml_AddAttribute(xf, 'units', units)
-       call xml_AddPcdata(xf, value)
+       call xml_AddPcdata(xf, value, formt)
        call xml_EndElement(xf, 'scalar')
     else
-       call xml_AddAttribute(xf, 'value', value)
+       call xml_AddAttribute(xf, 'value', value, formt)
     endif
     call xml_EndElement(xf, 'parameter')
 
@@ -1976,7 +2000,7 @@ CONTAINS
     write(y,fmt) y3
     write(z,fmt) z3
 
-    call xml_AddAttribute(xf, 'xyz3', trim(x)//' '//trim(adjustl(y))//' '//trim(adjustl(z)) )
+    call xml_AddAttribute(xf, 'xyz3', trim(adjustl(x))//' '//trim(adjustl(y))//' '//trim(adjustl(z)) )
 
   END SUBROUTINE CMLATXYZ39DP
 
@@ -1997,7 +2021,7 @@ CONTAINS
     write(y,fmt) y3
     write(z,fmt) z3
 
-    call xml_AddAttribute(xf, 'xyz3', trim(x)//' '//trim(adjustl(y))//' '//trim(adjustl(z)) )
+    call xml_AddAttribute(xf, 'xyz3', trim(adjustl(x))//' '//trim(adjustl(y))//' '//trim(adjustl(z)) )
 
   END SUBROUTINE CMLATXYZ39SP
   
@@ -2017,7 +2041,7 @@ CONTAINS
     write(y,fmt) y3
     write(z,fmt) z3
 
-    call xml_AddAttribute(xf, 'xyzFrac', trim(x)//' '//trim(adjustl(y))//' '//trim(adjustl(z)) )
+    call xml_AddAttribute(xf, 'xyzFrac', trim(adjustl(x))//' '//trim(adjustl(y))//' '//trim(adjustl(z)) )
 
   END SUBROUTINE CMLATXYZFRACT9DP
 
@@ -2037,7 +2061,7 @@ CONTAINS
     write(y,fmt) y3
     write(z,fmt) z3
 
-    call xml_AddAttribute(xf, 'xyzFrac', trim(x)//' '//trim(y)//' '//trim(z))
+    call xml_AddAttribute(xf, 'xyzFrac', trim(adjustl(x))//' '//trim(y)//' '//trim(z))
 
   END SUBROUTINE CMLATXYZFRACT9SP
 
@@ -2052,9 +2076,15 @@ CONTAINS
     real(kind=dp), intent(in)     :: x3, y3, z3 ! coordinates
     character(len=*), intent(in) :: fmt        ! format (default '(f8.3)')
 
-    call xml_AddAttribute(xf, 'x3', x3, fmt)
-    call xml_AddAttribute(xf, 'y3', y3, fmt)
-    call xml_AddAttribute(xf, 'z3', z3, fmt)
+    character(len=45) :: x, y, z
+
+    write(x,fmt) x3
+    write(y,fmt) y3
+    write(z,fmt) z3
+
+    call xml_AddAttribute(xf, 'x3', x)
+    call xml_AddAttribute(xf, 'y3', y)
+    call xml_AddAttribute(xf, 'z3', z)
 
   END SUBROUTINE CMLATX39DP
 
@@ -2068,9 +2098,15 @@ CONTAINS
     real(kind=sp), intent(in)     :: x3, y3, z3 ! coordinates
     character(len=*), intent(in) :: fmt        ! format (default '(f8.3)')
 
-    call xml_AddAttribute(xf, 'x3', x3, fmt)
-    call xml_AddAttribute(xf, 'y3', y3, fmt)
-    call xml_AddAttribute(xf, 'z3', z3, fmt)
+    character(len=45) :: x, y, z
+
+    write(x,fmt) x3
+    write(y,fmt) y3
+    write(z,fmt) z3
+
+    call xml_AddAttribute(xf, 'x3', x)
+    call xml_AddAttribute(xf, 'y3', y)
+    call xml_AddAttribute(xf, 'z3', z)
 
   END SUBROUTINE CMLATX39SP
 
@@ -2085,9 +2121,15 @@ CONTAINS
     real(kind=dp), intent(in)     :: xFract, yFract, zFract ! coordinates
     character(len=*), intent(in) :: fmt                    ! format (default '(f8.3)')
 
-    call xml_AddAttribute(xf, 'xFract', xFract, fmt)
-    call xml_AddAttribute(xf, 'yFract', yFract, fmt)
-    call xml_AddAttribute(xf, 'zFract', zFract, fmt)
+    character(len=45) :: x, y, z
+
+    write(x,fmt) xFract
+    write(y,fmt) yFract
+    write(z,fmt) zFract
+
+    call xml_AddAttribute(xf, 'xFract', x)
+    call xml_AddAttribute(xf, 'yFract', y)
+    call xml_AddAttribute(xf, 'zFract', z)
 
   END SUBROUTINE CMLATXF9DP
   
@@ -2101,9 +2143,15 @@ CONTAINS
     real(kind=sp)     :: xFract, yFract, zFract   ! fractional coordinates
     character(len=*) :: fmt                      ! format (default '(f8.3)')
 
-    call xml_AddAttribute(xf, 'xFract', xFract, fmt)
-    call xml_AddAttribute(xf, 'yFract', yFract, fmt)
-    call xml_AddAttribute(xf, 'zFract', zFract, fmt)
+    character(len=45) :: x, y, z
+
+    write(x,fmt) xFract
+    write(y,fmt) yFract
+    write(z,fmt) zFract
+
+    call xml_AddAttribute(xf, 'xFract', x)
+    call xml_AddAttribute(xf, 'yFract', y)
+    call xml_AddAttribute(xf, 'zFract', z)
 
   END SUBROUTINE CMLATXF9SP
 
@@ -2118,8 +2166,13 @@ CONTAINS
     real(kind=dp)     :: x2, y2   ! coordinates
     character(len=*) :: fmt      ! format (default f8.3)
 
-    call xml_AddAttribute(xf, 'x2', x2, fmt)
-    call xml_AddAttribute(xf, 'y2', y2, fmt)
+    character(len=45) :: x, y
+
+    write(x,fmt) x2
+    write(y,fmt) y2
+
+    call xml_AddAttribute(xf, 'x2', x)
+    call xml_AddAttribute(xf, 'y2', y)
     call xml_AddPcdata(xf, '>')
 
   END SUBROUTINE CMLATXY9DP
@@ -2134,8 +2187,13 @@ CONTAINS
     real(kind=sp)     :: x2, y2   ! coordinates
     character(len=*) :: fmt      ! format (default f8.3)
 
-    call xml_AddAttribute(xf, 'x2', x2, fmt)
-    call xml_AddAttribute(xf, 'y2', y2, fmt)
+    character(len=45) :: x, y
+
+    write(x,fmt) x2
+    write(y,fmt) y2
+
+    call xml_AddAttribute(xf, 'x2', x)
+    call xml_AddAttribute(xf, 'y2', y)
     call xml_AddPcdata(xf, '>')
 
   END SUBROUTINE CMLATXY9SP

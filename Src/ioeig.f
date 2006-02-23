@@ -67,7 +67,7 @@ c -------------------------------------------------------------------
         call cmlStartPropertyList(xf=mainXML, title="Eigenvalues")
         call cmlAddProperty(xf=mainXML, property=ef/eV, 
      .       title='Fermi Energy', dictref='siesta:E_Fermi', 
-     .       fmt='(f12.5)', units='eV')
+     .       fmt='(f12.5)', units='siestaUnits:ev')
         call cmlAddProperty(xf=mainXML, property=nk, 
      .       title='Number of k-points', dictRef='siesta:nkpoints')
         call cmlEndPropertyList(mainXML)

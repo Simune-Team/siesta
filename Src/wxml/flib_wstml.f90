@@ -427,7 +427,7 @@ CONTAINS
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
     call xml_AddAttribute(xf, 'dataType', 'xsd:double')
-    call STMARCF9DP(xf, nvalue, array)
+    call STMARCF9DP(xf, nvalue, array, formt)
     call xml_EndElement(xf, 'array')
 
   END SUBROUTINE stmAddFloatArrayDP
@@ -469,7 +469,7 @@ CONTAINS
     if (present(ref))     call xml_AddAttribute(xf, 'ref', ref)
     call xml_AddAttribute(xf, 'size', nvalue)
     call xml_AddAttribute(xf, 'dataType', 'xsd:float')
-    call STMARCF9SP(xf, nvalue, array, fmt)
+    call STMARCF9SP(xf, nvalue, array, formt)
     call xml_EndElement(xf, 'array')
 
   END SUBROUTINE stmAddFloatArraySP

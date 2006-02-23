@@ -311,7 +311,7 @@ C Planewave cutoff of the real space mesh ...
       if (ionode)   write(6,'(a,f10.4,a)') 
      .   'redata: Mesh Cutoff                      = ',g2max,'  Ry'
       if (cml_p) call cmlAddParameter(xf=mainXML, name='MeshCutOff',
-     .     value=g2max, dictRef='siesta:g2max', units='Ry')
+     .     value=g2max, dictRef='siesta:g2max', units='siestaUnits:Ry')
 C ...
 
 C Net charge in the cell ...
@@ -319,7 +319,8 @@ C Net charge in the cell ...
       if (ionode)  write(6,'(a,f10.4,a)') 
      .   'redata: Net charge of the system         = ',charnet,' |e|'
       if (cml_p) call cmlAddParameter(xf=mainXML, name='NetCharge',
-     .   value=charnet, dictRef='siesta:NetCharge', units='|e|')
+     .   value=charnet, dictRef='siesta:NetCharge', 
+     .   units='siestaUnits:e__')
 C ...
        
 C SCF Loop parameters ...
@@ -552,7 +553,7 @@ C Electronic temperature for Fermi Smearing ...
      .    'redata: Electronic Temperature           = ',temp,'  Ry'
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='ElectronicTemperature', value=temp, 
-     .     dictRef='siesta:etemp', units='Ry')
+     .     dictRef='siesta:etemp', units='siestaUnits:Ry')
 C ...
 
 C Fix the spin of the system to a given value ; and
@@ -713,15 +714,19 @@ C ...
      .         value=etol, dictref='siesta:etol')
           if (nspin==2) then
             call cmlAddParameter(xf=mainXML, name='ON.eta_alpha',
-     .           value=eta(1), dictref='siesta:eta1', units='Ry')
+     .           value=eta(1), dictref='siesta:eta1',
+     .           units='siestaUnits:Ry')
             call cmlAddParameter(xf=mainXML, name='ON.eta_beta',
-     .           value=eta(2), dictref='siesta:eta2', units='Ry')
+     .           value=eta(2), dictref='siesta:eta2',
+     .           units='siestaUnits:Ry')
           else
             call cmlAddParameter(xf=mainXML, name='ON.eta',
-     .           value=eta(1), dictref='siesta:eta', units='Ry')
+     .           value=eta(1), dictref='siesta:eta', 
+     .           units='siestaUnits:Ry')
           endif
           call cmlAddParameter(xf=mainXML, name='On.RcLWF',
-     .         value=rcoor, dictref='siesta:rcoor', units='Bohr')
+     .         value=rcoor, dictref='siesta:rcoor', 
+     .         units='siestaUnits:Bohr')
           call cmlAddParameter(xf=mainXML, name='On.UseSaveLWF',
      .         value=usesavelwf, dictref='siesta:usesavelwf')
           call cmlAddParameter(xf=mainXML, name='ON.functional',
@@ -735,10 +740,11 @@ C ...
      .           dictref='siesta:noeta')
             call cmlAddParameter(xf=mainXML,
      .           name='ON.ChemicalPotentialRc', value=rcoorcp, 
-     .           dictref='siesta:rcoorcp', units='Bohr')
+     .           dictref='siesta:rcoorcp', units='siestaUnits:Bohr')
             call cmlAddParameter(xf=mainXML,
      .           name='ON.ChemicalPotentialTemperature',
-     .           value=tcp, dictref='siesta:tcp', units='Ry')
+     .           value=tcp, dictref='siesta:tcp', 
+     .           units='siestaUnits:Ry')
             call cmlAddParameter(xf=mainXML,
      .           name='ON.ChemicalPotentialOrder', value=pmax,
      .         dictref='siesta:pmax')
@@ -853,12 +859,14 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
                 call cmlAddParameter(xf=mainXML,
      .               name='MD.NumCGSteps', value=nmove)
                 call cmlAddParameter(xf=mainXML,
-     .               name='MD.MaxCGDispl', value=dxmax, units='Bohr')
+     .               name='MD.MaxCGDispl', value=dxmax,
+     .               units='siestaUnits:Bohr')
                 call cmlAddParameter(xf=mainXML,
-     .               name='MD.MaxForceTol', value=ftol, units='Ry/Bohr')
+     .               name='MD.MaxForceTol', value=ftol,
+     .               units='siestaUnits:Ry_Bohr')
                 if (varcel) call cmlAddParameter(xf=mainXML,
      .               name='MD.MaxStressTol',
-     $               value=strtol, units='Ry/Bohr**3')
+     .               value=strtol, units='siestaUnits:Ry_Bohr__3')
              endif
          case(1)
           write(6,'(a,a)') 
@@ -964,9 +972,9 @@ C      at the given temperature)
           call cmlAddParameter(xf=mainXML, name='MD.FinalTimeStep',
      .         value=ifinal)
           call cmlAddParameter(xf=mainXML, name='MD.LengthTimeStep',
-     .         value=dt, units='fs')
+     .         value=dt, units='siestaUnits:fs')
           call cmlAddParameter(xf=mainXML, name='MD.InitialTemperature',
-     .         value=tempinit, units='K')
+     .         value=tempinit, units='siestaUnits:K')
           if (idyn/=5) call cmlAddParameter(xf=mainXML, 
      .         name='MD.Quench', value=qnch)
         endif
@@ -988,14 +996,15 @@ C     Mass of Parrinello-Rahman variables
         if (ionode) write(6,'(a,f10.4,a)') 
      .  'redata: Nose mass                        = ',mn,'  Ry/fs**2'
         if (cml_p) call cmlAddParameter(xf=mainXML,
-     .       name='MD.NoseMass', value=mn, units='Ry/fs**2')
+     .       name='MD.NoseMass', value=mn, units='siestaUnits:Ry_fs__2')
       endif
 
       if (idyn==3 .or. idyn==4) then
         if (ionode) write(6,'(a,f10.4,a)') 
      .  'redata: Parrinello-Rahman mass           = ',mpr,'  Ry/fs**2'
         if (cml_p) call cmlAddParameter(xf=mainXML,
-     .       name='MD.ParrinelloRahmanMass', value=mn, units='Ry/fs**2')
+     .       name='MD.ParrinelloRahmanMass', value=mn,
+     .       units='siestaUnits:Ry_fs__2')
       endif
 
 C     Annealing option
@@ -1045,7 +1054,8 @@ C     Annealing option
         if (ionode) write(6,'(a,f10.4,a)') 
      .    'redata: Target Temperature               = ',tt,'  Kelvin'
         if (cml_p) call cmlAddParameter(xf=mainXML, 
-     .       name='MD.TargetTemperature', value=tt, units='K')
+     .       name='MD.TargetTemperature', value=tt, 
+     .       units='siestaUnits:K')
       endif
 
       if (idyn==3 .or. idyn==4 .or. 
@@ -1054,7 +1064,8 @@ C     Annealing option
      .       'redata: Target Pressure                  = ',
      .       tp, '  Ry/Bohr**3'
         if (cml_p) call cmlAddParameter(xf=mainXML, 
-     .       name='MD.TargetPressure', value=tp, units='Ry/Bohr**3')
+     .       name='MD.TargetPressure', value=tp, 
+     .       units='siestaUnits:Ry_Bohr__3')
       endif
 
 C     Relaxation Time for Annealing
@@ -1065,7 +1076,8 @@ C     Relaxation Time for Annealing
      .         'redata: Annealing Relaxation Time        = ',
      .         taurelax,'  fs'
           if (cml_p) call cmlAddParameter(xf=mainXML, 
-     .         name='MD.TauRelax', value=taurelax, units='fs')
+     .         name='MD.TauRelax', value=taurelax, 
+     .         units='siestaUnits:fs')
        endif
         
 C     Estimated Bulk modulus (for Pressure annealing)
@@ -1079,7 +1091,8 @@ C     Estimated Bulk modulus (for Pressure annealing)
      .           bulkm,'  Ry/Bohr**3'
       endif
       if (cml_p) call cmlAddParameter(xf=mainXML, 
-     .     name='MD.BulkModulus', value=bulkm, units='Ry/Bohr**3')
+     .     name='MD.BulkModulus', value=bulkm, 
+     .     units='siestaUnits:Ry_Bohr__3')
 
 C     Atomic displacement for force constant calculation
 
@@ -1101,7 +1114,7 @@ C     First and last atoms to displace for calculation of force constants
         endif
         if (cml_p) then
           call cmlAddParameter(xf=mainXML, name='MD.FCDispl',
-     .         value=dx, units='Bohr')
+     .         value=dx, units='siestaUnits:Bohr')
           call cmlAddParameter(xf=mainXML, name='MD.FCFirst',
      .         value=ia1)
           call cmlAddParameter(xf=mainXML, name='MD.FCLast',

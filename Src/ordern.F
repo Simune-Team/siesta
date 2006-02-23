@@ -272,11 +272,11 @@ C and HOMO and LUMO levels ..........
         endif
         if (cml_p) then
           call cmlAddProperty(xf=mainXML, property=chpot/eV, 
-     .     units='eV', title='Chemical potential')
+     .     units='siestaUnits:ev', title='Chemical potential')
           call cmlAddProperty(xf=mainXML, property=emax/eV,
-     .     units='eV', title='Maximum eigenvalue')
+     .     units='siestaUnits:ev', title='Maximum eigenvalue')
           call cmlAddProperty(xf=mainXML, property=emin/eV, 
-     .     units='eV', title='Minimum eigenvalue')
+     .     units='siestaUnits:ev', title='Minimum eigenvalue')
         endif
 
         if (noeta) eta = chpot
