@@ -2012,7 +2012,7 @@ AC_CACHE_CHECK([for Fortran flag needed to allow fixed-form source for .$1 suffi
 [ac_cv_fc_fixedform_$1=unknown
 ac_ext=$1
 ac_fc_fixedform_FCFLAGS_save=$FCFLAGS
-for ac_flag in none -FI "-qfixed -qsuffix=$ac_ext" -fixed --fix -Mnofree
+for ac_flag in none -FI "-qfixed -qsuffix=cpp=$ac_ext" -fixed --fix -Mnofree
 do
   test "x$ac_flag" != xnone && FCFLAGS="$ac_fc_fixedform_FCFLAGS_save $ac_flag"
   AC_COMPILE_IFELSE([
@@ -2139,6 +2139,7 @@ if test "x$ac_cv_fpp_fixedform_F" = x; then
   AC_MSG_WARN([Cannot compile fixed-form preprocessable Fortran with a .F extension.])
 else
   if test "$ac_cv_fpp_fixedform_F" != none; then
+    FPPFLAGS_fixed_F="$ac_cv_fpp_fixedform_F"
     AC_SUBST(FPPFLAGS_fixed_F, "$ac_cv_fpp_fixedform_F")
   fi
 fi
@@ -2251,6 +2252,7 @@ AC_LANG_POP([Fortran])dnl
 #               -Mfree, -Mfreeform: PGI (no flag for preprocessing available)
 #                        -freeform: SGI compiler
 #                          -f free: Absoft Fortran
+#                       -fpp -free: NAG Fortran
 # We try to test the "more popular" flags first, by some prejudiced
 # notion of popularity.
 AC_DEFUN([AC_FPP_FREEFORM],
@@ -2266,7 +2268,7 @@ AC_CACHE_CHECK([for Fortran flag needed to allow free-form source for ._ac_ppext
    ac_fpp_freeform_FCFLAGS_save=$FCFLAGS
    for ac_flag in none -ffree-form -FR -free "-qfree=f90" "-qfree=f90 -qsuffix=cpp=_ac_ppext"\
                   -qfree "-qfree -qsuffix=cpp=_ac_ppext" -Mfree -Mfreeform \
-                  -freeform "-f free" --nfix
+                  -freeform "-f free" --nfix "-fpp -free"
    do
       test "x$ac_flag" != xnone && FCFLAGS="$ac_fpp_freeform_FCFLAGS_save $ac_flag"
       AC_COMPILE_IFELSE([
@@ -3185,7 +3187,7 @@ if test $ac_fc_testing_fpp = direct; then
   fi
 
   ac_first_save_FPPFLAGS=$FPPFLAGS
-  FPPFLAGS="$FPPFLAGS $FPPFLAGS_F"
+  FPPFLAGS="$FPPFLAGS $FPPFLAGS_fixed_F"
 fi
 
 # We need to skip the following tests if we're trying direct compilation 

@@ -1841,7 +1841,7 @@ else
   ac_cv_fc_fixedform_f=unknown
 ac_ext=f
 ac_fc_fixedform_FCFLAGS_save=$FCFLAGS
-for ac_flag in none -FI "-qfixed -qsuffix=$ac_ext" -fixed --fix -Mnofree
+for ac_flag in none -FI "-qfixed -qsuffix=cpp=$ac_ext" -fixed --fix -Mnofree
 do
   test "x$ac_flag" != xnone && FCFLAGS="$ac_fc_fixedform_FCFLAGS_save $ac_flag"
   cat >conftest.$ac_ext <<_ACEOF
@@ -2865,6 +2865,7 @@ echo "$as_me: WARNING: Cannot compile fixed-form preprocessable Fortran with a .
 else
   if test "$ac_cv_fpp_fixedform_F" != none; then
     FPPFLAGS_fixed_F="$ac_cv_fpp_fixedform_F"
+    FPPFLAGS_fixed_F="$ac_cv_fpp_fixedform_F"
 
   fi
 fi
@@ -2928,7 +2929,7 @@ rm -f conftest.err conftest.$ac_objext \
   fi
 
   ac_first_save_FPPFLAGS=$FPPFLAGS
-  FPPFLAGS="$FPPFLAGS $FPPFLAGS_F"
+  FPPFLAGS="$FPPFLAGS $FPPFLAGS_fixed_F"
 fi
 
 # We need to skip the following tests if we're trying direct compilation
@@ -3954,6 +3955,7 @@ echo "$as_me: WARNING: Cannot compile fixed-form preprocessable Fortran with a .
 else
   if test "$ac_cv_fpp_fixedform_F" != none; then
     FPPFLAGS_fixed_F="$ac_cv_fpp_fixedform_F"
+    FPPFLAGS_fixed_F="$ac_cv_fpp_fixedform_F"
 
   fi
 fi
@@ -4017,7 +4019,7 @@ rm -f conftest.err conftest.$ac_objext \
   fi
 
   ac_first_save_FPPFLAGS=$FPPFLAGS
-  FPPFLAGS="$FPPFLAGS $FPPFLAGS_F"
+  FPPFLAGS="$FPPFLAGS $FPPFLAGS_fixed_F"
 fi
 
 # We need to skip the following tests if we're trying direct compilation
@@ -4692,7 +4694,7 @@ else
    ac_fpp_freeform_FCFLAGS_save=$FCFLAGS
    for ac_flag in none -ffree-form -FR -free "-qfree=f90" "-qfree=f90 -qsuffix=cpp=F90"\
                   -qfree "-qfree -qsuffix=cpp=F90" -Mfree -Mfreeform \
-                  -freeform "-f free" --nfix
+                  -freeform "-f free" --nfix "-fpp -free"
    do
       test "x$ac_flag" != xnone && FCFLAGS="$ac_fpp_freeform_FCFLAGS_save $ac_flag"
       cat >conftest.$ac_ext <<_ACEOF
