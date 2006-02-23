@@ -39,7 +39,7 @@ integer, dimension(:), allocatable, save   :: natoms
 integer, save :: iomd
 logical, save :: first = .true.
 
-integer  :: nspecies
+integer  :: nspecies, i
 external :: reclat, io_assign
 
 if (first) then
