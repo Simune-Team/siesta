@@ -46,7 +46,7 @@ c *******************************************************************
 
 c Internal variables and arrays
 
-      character         acf*22, acf_defect*22, acfout*22, 
+      character         acf*22, acf_default*22, acfout*22, 
      .                  pieceh*20, titl*60
       logical           leqi, frstme
       integer           ia, ix
@@ -65,8 +65,8 @@ c--------------------------------------------------------------------
 
 C read format for output of atomic coordinates
 
-        acf_defect = 'NotScaledCartesianBohr'
-        acf = fdf_string('AtomicCoordinatesFormat',acf_defect)
+        acf_default = 'NotScaledCartesianBohr'
+        acf = fdf_string('AtomicCoordinatesFormat',acf_default)
         acfout = fdf_string('AtomCoorFormatOut',acf)
 
 c Scale atomic coordinates

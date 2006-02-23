@@ -60,7 +60,7 @@ C **********************************************************************
 
       CHARACTER  LINE*150
 
-      INTEGER  NATINPL_DEFECT, IDIMEN, IUNIT, IAT, IX
+      INTEGER  NATINPL_DEFAULT, IDIMEN, IUNIT, IAT, IX
  
       DOUBLE PRECISION  VAUX1(3), VAUX2(3)
 
@@ -82,7 +82,7 @@ C **********************************************************************
       IF (IDIMEN .EQ. 2) THEN
 
 C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
-        NATINPL_DEFECT = 0
+        NATINPL_DEFAULT = 0
         NATINPLA = 0
   
         NULLIFY(BP)

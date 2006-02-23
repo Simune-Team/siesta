@@ -92,12 +92,12 @@ C **********************************************************************
 C Internal variables ---------------------------------------------------
 
       CHARACTER 
-     .  OGP*22, OGP_DEFECT*22,
-     .  CPF*22, CPF_DEFECT*22,
-     .  UCD*22, UCD_DEFECT*22
+     .  OGP*22, OGP_DEFAULT*22,
+     .  CPF*22, CPF_DEFAULT*22,
+     .  UCD*22, UCD_DEFAULT*22
 
       INTEGER
-     .  IUNIT, IX, JX, NPX_DEFECT, NPY_DEFECT, NPZ_DEFECT,
+     .  IUNIT, IX, JX, NPX_DEFAULT, NPY_DEFAULT, NPZ_DEFAULT,
      .  IND1, IND2, IND3
 
       DOUBLE PRECISION
@@ -116,9 +116,9 @@ C Internal variables ---------------------------------------------------
       DATA COLIN  /.FALSE./
 
 
-      CPF_DEFECT = 'Bohr'
+      CPF_DEFAULT = 'Bohr'
 
-      CPF = FDF_STRING('Denchar.CoorUnits',CPF_DEFECT)
+      CPF = FDF_STRING('Denchar.CoorUnits',CPF_DEFAULT)
 
       IF (LEQI(CPF,'bohr')) then
         ISCALE = 1
@@ -129,8 +129,8 @@ C Internal variables ---------------------------------------------------
         STOP
       ENDIF
 
-      UCD_DEFECT = 'Ele/bohr**3'
-      UCD = FDF_STRING('Denchar.DensityUnits',UCD_DEFECT)
+      UCD_DEFAULT = 'Ele/bohr**3'
+      UCD = FDF_STRING('Denchar.DensityUnits',UCD_DEFAULT)
       IF (LEQI(UCD,'ele/bohr**3')) then
         IUNITCD = 1
       ELSEIF (LEQI(UCD,'ele/ang**3')) then
@@ -148,15 +148,15 @@ C Internal variables ---------------------------------------------------
        STOP
       ENDIF
 
-      NPX_DEFECT = 50
-      NPY_DEFECT = 50
-      NPZ_DEFECT = 50
-      NPX = FDF_INTEGER('Denchar.NumberPointsX',NPX_DEFECT)
-      NPY = FDF_INTEGER('Denchar.NumberPointsY',NPY_DEFECT)
+      NPX_DEFAULT = 50
+      NPY_DEFAULT = 50
+      NPZ_DEFAULT = 50
+      NPX = FDF_INTEGER('Denchar.NumberPointsX',NPX_DEFAULT)
+      NPY = FDF_INTEGER('Denchar.NumberPointsY',NPY_DEFAULT)
       IF (IDIMEN .EQ. 2) THEN
         NPZ = 1
       ELSE IF (IDIMEN .EQ. 3) THEN
-        NPZ = FDF_INTEGER('Denchar.NumberPointsZ',NPZ_DEFECT)
+        NPZ = FDF_INTEGER('Denchar.NumberPointsZ',NPZ_DEFAULT)
       ENDIF
 
       XMIN = FDF_PHYSICAL('Denchar.MinX',-3.D0,'Bohr')
@@ -171,8 +171,8 @@ C Internal variables ---------------------------------------------------
         ZMAX = FDF_PHYSICAL('Denchar.MaxZ', 3.D0,'Bohr')
       ENDIF
 
-      OGP_DEFECT = 'NormalVector'
-      OGP = FDF_STRING('Denchar.PlaneGeneration',OGP_DEFECT)
+      OGP_DEFAULT = 'NormalVector'
+      OGP = FDF_STRING('Denchar.PlaneGeneration',OGP_DEFAULT)
       IF (LEQI(OGP,'normalvector')) then
         IOPTION = 1
       ELSEIF (LEQI(OGP,'twolines')) then

@@ -3086,7 +3086,7 @@ C
                           rco(1,l,nsm)=rofi(nrval-2)
                        endif
                   write(6,'(/,A,/,A,f10.6,A)')
-     .        'SPLIT: PAO cut-off radius determinated from an',
+     .        'SPLIT: PAO cut-off radius determined from an',
      .        'SPLIT: energy shift=',eshift,' Ry'
 
                  endif  

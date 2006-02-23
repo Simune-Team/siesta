@@ -61,7 +61,7 @@ C Internal variables --------------------------------------------------
      .  SNAME, FNAME1
 
       CHARACTER 
-     .  TYPRUN*2, TYPRUN_DEFECT*2
+     .  TYPRUN*2, TYPRUN_DEFAULT*2
 
 
       INTEGER
@@ -76,8 +76,8 @@ C Assign the name of the output file -----------------------------------
       SNAME = FDF_STRING('SystemLabel','siesta')
       FNAME1 = PASTE(sname,'.DIM')
 
-      TYPRUN_DEFECT = '2D'
-      TYPRUN = FDF_STRING('Denchar.TypeOfRun',TYPRUN_DEFECT)
+      TYPRUN_DEFAULT = '2D'
+      TYPRUN = FDF_STRING('Denchar.TypeOfRun',TYPRUN_DEFAULT)
       IF (LEQI(TYPRUN,'2D')) THEN
         IDIMEN  = 2
       ELSE IF (LEQI(TYPRUN,'3D')) THEN
