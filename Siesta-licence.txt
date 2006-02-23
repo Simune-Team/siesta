@@ -12,16 +12,16 @@ community.
 
 "The Authors" are:
     Emilio Artacho, 		University of Cambridge
-    Julian Gale, 		Imperial College, London
+    Julian Gale, 		Curtin Institute of Technology, Perth
     Alberto Garcia,		Universidad del Pais Vasco, Bilbao
-    Javier Junquera, 		Rutgers University
-    Pablo Ordejon		ICMAB-CSIC, Barcelona
-    Daniel Sanchez-Portal, 	Universidad del Pais Vasco, San Sebastian
+    Javier Junquera, 		Universidad de Cantabria, Santander
+    Pablo Ordejon,		ICMAB-CSIC, Barcelona
+    Daniel Sanchez-Portal, 	Centro Mixto CSIC-UPV, San Sebastian
     Jose M. Soler, 		Universidad Autonoma de Madrid
 
 Although we, the Authors, acknowledge that a limited number of auxiliary 
 subroutines were written by (or are based on previous subroutines written 
-by) other authors consider that the implementation of all the basic 
+by) other authors, consider that the implementation of all the basic 
 algorithms of the SIESTA program is ours.
 
 The SIESTA team ("the Developers") are the Authors and:
@@ -78,12 +78,12 @@ containing results wholly or partially derived from the results of use of the
 SIESTA package, the following papers must be cited in the normal manner:
 
 1. "Self-consistent order-N density-functional calculations for very large 
-systems", P. Ordejón, E. Artacho and J. M. Soler, Phys. Rev. B (Rapid 
+systems", P. Ordejon, E. Artacho and J. M. Soler, Phys. Rev. B (Rapid 
 Comm.) 53, R10441-10443 (1996).
 
 2. "The SIESTA method for ab initio order-N materials simulation" J. M. 
-Soler, E. Artacho, J. D. Gale, A. García, J. Junquera, P. Ordejón, and D. 
-Sánchez-Portal, J. Phys.: Condens. Matt. 14, 2745-2779 (2002).
+Soler, E. Artacho, J. D. Gale, A. Garcia, J. Junquera, P. Ordejon, and D. 
+Sanchez-Portal, J. Phys.: Condens. Matt. 14, 2745-2779 (2002).
 
 Other papers relevant to the SIESTA package and method should be cited 
 as best scientific practice dictates.
