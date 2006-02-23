@@ -402,7 +402,7 @@ files in your directory including the following:
  (XML marked-up output)
 \end{itemize}
 
-The last one is the standard output of the program, that you
+The Systemlabel.out is the standard output of the program, that you
 have already seen passing on the screen. Have a look at it
 and refer to the output-explanation section if necessary.
 You may also want to look at the out.fdf file to see all
@@ -4900,6 +4900,17 @@ $k$-points are not properly generated ({\tt kgrid}) if using a
 {\it Solution:} Make an empty run with {\bf SuperCell} first to generate 
 the whole geometry, and then run for the large unit cell (without the 
 {\bf SuperCell}) with $k$-points at will.
+
+\item 
+For some systems the program stops with the error message
+
+{\tt "Failure to converge standard eigenproblem
+Stopping Program from Node:    0}
+
+It is related to the Divide \& Conquer algorithm of
+diagonalisation.
+
+{\it Solution:} If it happens, disable Diag.DivideAndConquer and run again. 
 
 \end{itemize}
 

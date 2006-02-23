@@ -1,3 +1,48 @@
+# Copyright (C) 2001, 2003-2005
+# Free Software Foundation, Inc.
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2, or (at your option)
+# any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+# 02111-1307, USA.
+#
+# As a special exception, the Free Software Foundation gives unlimited
+# permission to copy, distribute and modify the configure scripts that
+# are the output of Autoconf.  You need not follow the terms of the GNU
+# General Public License when using or distributing such scripts, even
+# though portions of the text of Autoconf appear in them.  The GNU
+# General Public License (GPL) does govern all other use of the material
+# that constitutes the Autoconf program.
+#
+# Certain portions of the Autoconf source text are designed to be copied
+# (in certain cases, depending on the input) into the output of
+# Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+# source text consists of comments plus executable code that decides which
+# of the data portions to output in any given case.  We call these
+# comments and executable code the "non-data" portions.  Autoconf never
+# copies any of the non-data portions into its output.
+#
+# This special exception to the GPL applies to versions of Autoconf
+# released by the Free Software Foundation.  When you make and
+# distribute a modified version of Autoconf, you may extend this special
+# exception to the GPL to apply to your modified version as well, *unless*
+# your modified version has the potential to copy into its output some
+# of the text that was the non-data portion of the version that you started
+# with.  (In other words, unless your change moves or copies text from
+# the non-data portions to the data portions.)  If your modification has
+# such potential, you must delete any notice of this special exception
+# to the GPL from your modified version.
+#
 # AC_CONFIG_AUX_DIR(DIR)
 # ----------------------
 # Find install-sh, config.sub, config.guess, and Cygnus configure
@@ -42,6 +87,50 @@ ac_config_sub="$SHELL $ac_aux_dir/config.sub"
 ac_configure="$SHELL $ac_aux_dir/configure" # This should be Cygnus configure.
 AC_PROVIDE([AC_CONFIG_AUX_DIR_DEFAULT])dnl
 ])# AC_CONFIG_AUX_DIRS
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl @synopsis TW_CHECK_FC_FPP([ACTION_IF_TRUE],[ACTION_IF_FALSE])
 dnl
 dnl Checks whether the currently selected Fortran compiler supports
@@ -82,6 +171,50 @@ dnl about filename extensions.
 AC_LANG_POP(Fortran)
 dnl
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl A macro to set various compiler-dependent things that can't be sensibly
 dnl deduced.
 
@@ -149,6 +282,51 @@ esac
 AC_SUBST(FFLAGS_MPI)
 
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.  
+dnl
+dnl Copyright Steven G. Johnson <stevenj@alum.mit.edu> 
+dnl Modified by Toby White <tow21@cam.ac.uk>
+
 AC_DEFUN([ACX_MPI], [
 AC_PREREQ(2.50) dnl for AC_LANG_CASE
 
@@ -232,6 +410,50 @@ else
         :
 fi
 ])dnl ACX_MPI
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl @synopsis TW_CHECK_FC_TR15580([ACTION_IF_TRUE],[ACTION_IF_FALSE])
 dnl
 dnl Checks whether the currently selected Fortran compiler is fully
@@ -270,6 +492,50 @@ dnl about filename extensions.
 AC_LANG_POP(Fortran)
 dnl
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl A macro to determine which compiler is being used, in order that
 dnl different flags can be set
 
@@ -3408,6 +3674,50 @@ _AC_FPP_BUILD_RULE
 AC_LANG_POP(Preprocessed Fortran)
 
 ])# AC_PROG_FPP
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl @synopsis TW_CHECK_FC_TR15581([ACTION_IF_TRUE],[ACTION_IF_FALSE])
 dnl
 dnl Checks whether the currently selected Fortran compiler is fully
@@ -3458,6 +3768,50 @@ dnl about filename extensions.
 AC_LANG_POP(Fortran)
 dnl
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl
 AC_DEFUN([TW_FIND_FC_BLAS], [
 AC_PREREQ(2.50)
@@ -3632,6 +3986,50 @@ AS_IF([test x"$acx_blas_ok" = xyes],
       )
 AC_LANG_POP
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006 
+
 dnl Macro to check that correct flags have been chosen for 
 dnl compilation with BLACS. Only works with Fortran at the moment.
 
@@ -3709,6 +4107,50 @@ AS_IF([test $tw_blacs_ok = yes],
       [m4_default([$2],[AC_MSG_ERROR([Cannot compile correctly with BLACS])])]
       )
 ])dnl TW_CHECK_BLACS
+
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
 
 dnl Macro to find what paramaters must be passed to the compiler
 dnl and linker to compile with scalapack. Currently only works
@@ -3810,9 +4252,49 @@ AS_IF([test $tw_scalapack_ok = yes],
       [m4_default([$2],[AC_MSG_ERROR([Cannot compile correctly with ScaLAPACK])])]
      )
 ])# TW_CHECK_SCALAPACK
-dnl Available from the GNU Autoconf Macro Archive at:
-dnl http://www.gnu.org/software/ac-archive/htmldoc/acx_lapack.html
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
 dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
 
 AC_DEFUN([_TW_TRY_LAPACK], [
 ac_ext=f
@@ -3908,6 +4390,50 @@ else
         $2
 fi
 ])dnl ACX_LAPACK
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006
+
 dnl @synopsis TW_CHECK_FC_90([ACTION_IF_TRUE],[ACTION_IF_FALSE])
 dnl
 dnl Checks whether the currently selected Fortran compiler is fully
@@ -3958,6 +4484,50 @@ dnl about filename extensions.
 AC_LANG_POP(Fortran)
 dnl
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl Check how to get at the abort intrinsic.
 
 AC_DEFUN([_TW_TRY_ABORT_BARE],
@@ -4024,6 +4594,50 @@ AS_IF([test $tw_abort_ok = yes],
      )
 dnl
 ])# TW_FC_CHECK_ABORT
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl autoconf macros for detecting NetCDF (fortan implementation only)
 dnl
 AC_DEFUN([_TW_TRY_NETCDF], [
@@ -4070,6 +4684,50 @@ AS_IF([test $tw_netcdf_ok = yes],
       [NETCDF_LIBS="";tw_netcdf_ok=no;$2])
 AC_LANG_POP
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006
+
 dnl @synopsis TW_CHECK_FC_95([ACTION_IF_TRUE],[ACTION_IF_FALSE])
 dnl
 dnl Checks whether the currently selected Fortran compiler is fully
@@ -4141,6 +4799,50 @@ dnl about filename extensions.
 AC_LANG_POP(Fortran)
 dnl
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl Macro to check how to use functions that NAG requires -dcfuns for.
 dnl DIMAG used.
 
@@ -4180,6 +4882,50 @@ AS_IF([test $tw_dcfuns_ok = yes],
       [$1],
       [m4_default([$2],[AC_MSG_ERROR([Cannot compile DIMAG function])])])
 ])# TW_FC_CHECK_DCFUNS
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 AC_DEFUN([_TW_TRY_DC_LAPACK], [
 ac_ext=f
 AC_LINK_IFELSE(
@@ -4215,6 +4961,50 @@ AS_IF([test $acx_dc_lapack_ok = yes],
       [m4_default([$2],[AC_MSG_ERROR([Need a more complete Lapack library])])]
      )
 ])dnl TW_CHECK_DC_LAPACK
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl @synopsis TW_CHECK_FC_FPP_90([ACTION_IF_TRUE],[ACTION_IF_FALSE])
 dnl
 dnl Checks whether the currently selected Fortran compiler supports
@@ -4260,6 +5050,50 @@ AC_LANG_POP(Fortran)
 FCFLAGS=$FCFLAGS_save
 dnl
 ])
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 dnl Check how to get at the flush intrinsic.
 
 AC_DEFUN([_TW_TRY_FLUSH_BARE],
@@ -4329,6 +5163,50 @@ AS_IF([test $tw_flush_ok = yes],
      )
 dnl
 ])# TW_FC_CHECK_FLUSH
+dnl This program is free software; you can redistribute it and/or modify
+dnl it under the terms of the GNU General Public License as published by
+dnl the Free Software Foundation; either version 2, or (at your option)
+dnl any later version.
+dnl
+dnl This program is distributed in the hope that it will be useful,
+dnl but WITHOUT ANY WARRANTY; without even the implied warranty of
+dnl MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+dnl GNU General Public License for more details.
+dnl
+dnl You should have received a copy of the GNU General Public License
+dnl along with this program; if not, write to the Free Software
+dnl Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA
+dnl 02111-1307, USA.
+dnl
+dnl As a special exception, the Free Software Foundation gives unlimited
+dnl permission to copy, distribute and modify the configure scripts that
+dnl are the output of Autoconf.  You need not follow the terms of the GNU
+dnl General Public License when using or distributing such scripts, even
+dnl though portions of the text of Autoconf appear in them.  The GNU
+dnl General Public License (GPL) does govern all other use of the material
+dnl that constitutes the Autoconf program.
+dnl
+dnl Certain portions of the Autoconf source text are designed to be copied
+dnl (in certain cases, depending on the input) into the output of
+dnl Autoconf.  We call these the "data" portions.  The rest of the Autoconf
+dnl source text consists of comments plus executable code that decides which
+dnl of the data portions to output in any given case.  We call these
+dnl comments and executable code the "non-data" portions.  Autoconf never
+dnl copies any of the non-data portions into its output.
+dnl
+dnl This special exception to the GPL applies to versions of Autoconf
+dnl released by the Free Software Foundation.  When you make and
+dnl distribute a modified version of Autoconf, you may extend this special
+dnl exception to the GPL to apply to your modified version as well, *unless*
+dnl your modified version has the potential to copy into its output some
+dnl of the text that was the non-data portion of the version that you started
+dnl with.  (In other words, unless your change moves or copies text from
+dnl the non-data portions to the data portions.)  If your modification has
+dnl such potential, you must delete any notice of this special exception
+dnl to the GPL from your modified version.
+dnl
+dnl Copyright Toby White <tow21@cam.ac.uk>  2004-2006     
+
 
 # AC_FC_REAL_KIND([KIND_DECLARATION], [VARIABLE_SUFFIX], [ACTION_IF_SUCCESS], [ACTION_IF_FAIL])
 # -------------------
