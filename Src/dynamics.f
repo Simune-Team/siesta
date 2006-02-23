@@ -17,6 +17,7 @@
       use atomlist,   only : iza
       use units,      only : Ang, eV
       use m_mpi_utils, only : broadcast
+      use files,      only : slabel
 
       implicit none
 
@@ -26,6 +27,7 @@
 
       real(dp), parameter  :: tol = 1.0e-12_dp
       logical, parameter   :: debug = .false.
+      character(len=60)    :: restart_file
 
       CONTAINS
 
@@ -135,6 +137,7 @@ C Internal variables ...........................................................
 
 C ......................................................................
 
+      restart_file = trim(slabel) // ".NPR_RESTART"
       if (iunit .ne. 1 .and. iunit .ne. 2)
      $   call die('pr: Wrong iunit option;  must be 1 or 2')
 
@@ -218,7 +221,7 @@ C Initialize variables if current time step is the first of the simulation
 
             if (IOnode) then
                call io_assign(iacc)
-               open(unit=iacc,file="NPR_RESTART", form="formatted",
+               open(unit=iacc,file=restart_file, form="formatted",
      $              status="old", action="read", position="rewind")
                read(iacc,*) x, xold
                do i = 1,3
@@ -410,7 +413,7 @@ C Transform back to absolute coordinates
 !
       if (Node .eq. 0) then
          call io_assign(iacc)
-         open(unit=iacc,file="NPR_RESTART", form="formatted",
+         open(unit=iacc,file=restart_file, form="formatted",
      $        status="unknown", action= "write", position="rewind")
          write(iacc,*) x, xold 
          do i = 1,3
@@ -562,6 +565,8 @@ C Internal variables
       real(dp) :: volcel
       external :: volcel, memory
 C ...............................................................................
+      
+      restart_file = trim(slabel) // ".PR_RESTART"
 
       if (iunit .ne. 1 .and. iunit .ne. 2)
      $   call die('pr: Wrong iunit option;  must be 1 or 2')
@@ -635,7 +640,7 @@ C Initialize variables if current time step is the first of the simulation
 
             if (IOnode) then
                call io_assign(iacc)
-               open(unit=iacc,file="PR_RESTART", form="formatted",
+               open(unit=iacc,file=restart_file, form="formatted",
      $              status="old", action="read", position="rewind")
                do i = 1,3
                   read(iacc,*) (hold(j,i),j=1,3)
@@ -855,7 +860,7 @@ C Transform back to absolute coordinates
 !
       if (Node .eq. 0) then
          call io_assign(iacc)
-         open(unit=iacc,file="PR_RESTART", form="formatted",
+         open(unit=iacc,file=restart_file, form="formatted",
      $        status="unknown", action= "write", position="rewind")
          do i = 1,3
             write(iacc,*) (hold(j,i),j=1,3)
@@ -980,6 +985,8 @@ C Internal variables .........................................................
      .  xanew,xaold
 C .............................................................................
 
+      restart_file = trim(slabel) // ".NOSE_RESTART"
+
       if (iunit .ne. 1 .and. iunit .ne. 2)
      $    call die('nose: Wrong iunit option;  must be 1 or 2')
       ct = 3 + ntcon
@@ -1048,7 +1055,7 @@ C     if the time step is the first of the simulation
 !
            if (Node .eq. 0) then
             call io_assign(iacc)
-            open(unit=iacc,file="NOSE_RESTART", form="formatted",
+            open(unit=iacc,file=restart_file, form="formatted",
      $           status="old", action="read", position="rewind")
             read(iacc,*) old_natoms, old_dt
             read(iacc,*) x, xold
@@ -1144,12 +1151,6 @@ C ...................
 !     Here we can save x, xa, va for MD  (experimental)
 !
 !     call add_to_md_file(xa,va,nose=x,nosedot=xdot)
-        write(99,*) natoms
-        write(99,*) x
-        do ia = 1,natoms
-          write(99,'(i4,3f14.8,3x,3f14.8)')
-     .      iza(ia),(xa(i,ia),i=1,3),(va(i,ia),i=1,3)
-        enddo
 !----------------------------------------------------------------
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
@@ -1179,7 +1180,7 @@ C Instantaneous temperature (Kelvin)
 !       Save (now old) positions and nose variables to NOSE_RESTART
 !
          call io_assign(iacc)
-         open(unit=iacc,file="NOSE_RESTART", form="formatted",
+         open(unit=iacc,file=restart_file, form="formatted",
      $        status="unknown", action= "write", position="rewind")
          write(iacc,*) natoms, dt
          write(iacc,*) x, xold
@@ -1749,6 +1750,7 @@ C Internal variables ..........................................................
      .  accold,vold
 C ........................
 
+      restart_file = trim(slabel) // ".VERLET_RESTART"
       if (iunit .ne. 1 .and. iunit .ne. 2)
      $     call die('verlet2: Wrong iunit option;  must be 1 or 2')
 
@@ -1808,20 +1810,20 @@ C     if the time step is the first of the simulation ..........................
 !
           if (Node .eq. 0) then
            call io_assign(iacc)
-           open(unit=iacc,file="VERLET_FORCES", form="formatted",
+           open(unit=iacc,file=restart_file, form="formatted",
      $          status="old", action="read", position="rewind")
            read(iacc,*) old_natoms, old_dt
            if (old_natoms .ne. natoms)
-     $          call die("Wrong number of atoms in VERLET_FORCES")
+     $          call die("Wrong number of atoms in VERLET_RESTART")
            do ia = 1, natoms
               read(iacc,*) dummy_iza, (accold(i,ia),i=1,3) ! forces
               if (dummy_iza .ne. iza(ia)) 
-     $             call die("Wrong species number in VERLET_FORCES")
+     $             call die("Wrong species number in VERLET_RESTART")
               accold(:,ia) = fovermp * accold(:,ia) / ma(ia)
               vold(:,ia)  = va(:,ia)
            enddo
            call io_close(iacc)
-           write(6,*) "MD restart: Read old forces from VERLET_FORCES"
+           write(6,*) "MD restart: Read old forces from VERLET_RESTART"
            if (abs(old_dt - dt) .gt. 1.0d-8) then
               write(6,*) "Timestep has changed. Old: ", old_dt,
      $             " New: ", dt
@@ -1915,11 +1917,11 @@ C Instantaneous temperature (Kelvin)
       endif
 
 !
-!       Save (now old) forces to VERLET_FORCES
+!       Save (now old) forces to VERLET_RESTART
 !
       if (Node .eq. 0) then
          call io_assign(iacc)
-         open(unit=iacc,file="VERLET_FORCES", form="formatted",
+         open(unit=iacc,file=restart_file, form="formatted",
      $        status="unknown", action= "write", position="rewind")
          write(iacc,*) natoms, dt
          do ia = 1, natoms
