@@ -3375,7 +3375,8 @@ displacements. These are choosen with the help of the program {\sc
 Phonon} \footnote{{\sc Phonon} is \copyright\ copyright by Krzysztof
 Parlinski}  \index{Phonon program} \index{Force Constants
 Matrix!using phonon@using {\sc Phonon}} for phonon calculations). See
-also {\tt MD.ATforPhonon} block. (Deprecated.)
+also {\tt MD.ATforPhonon} block. (Deprecated feature which might be
+removed in future versions.)
 
 \item {\tt Forces} (Receive coordinates from, and return forces to,
 an external driver program, using Unix pipes for communication.
@@ -4760,18 +4761,25 @@ See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
 The trajectory of a molecular dynamics run (or a conjugate gradient
 minimization) can be accumulated in different files: SystemLabel.MD,
 SystemLabel.MDE, and SystemLabel.ANI. The first keeps the whole trajectory
-information, meaning positions and velocities at every time step, 
-including lattice vectors if the cell varies. In an unformatted form.
+information, meaning updated positions and velocities at every time step, 
+including lattice vectors if the cell varies.
 The second gives global infomation (energy, temperature, etc),
-and the third has the coordintes in a form suited for XMol animation.
+and the third has the coordinates in a form suited for XMol animation.
 See the {\bf WriteMDhistory} and {\bf WriteMDXmol} data descriptors 
 above for information. {\sc Siesta} always append new information on these
 files, making them accumulative even for different runs.
 
-The {\tt iomd} subroutine is prepared for the changing of the 
-unformatted file SystemLabel.MD towards the ASCII formatted files
+The {\tt iomd} subroutine can generate both
+an unformatted file SystemLabel.MD (default) or  ASCII formatted files
 SystemLabel.MDX and SystemLabel.MDC carrying the atomic and lattice
-trajectories. respectively.
+trajectories, respectively. Edit the file to change the settings if desired.
+
+If {\sc Siesta} is compiled with netCDF support, an additional file
+SystemLabel.MD.nc is generated. Its structure is currently
+experimental and subject to change. Example Python commands for
+processing and plotting can be found in {\tt
+Util/MD/md.py}.\index{Python language}
+
 
 \subsection{Force Constant Matrix file}
 \index{output!molecular dynamics!Force Constants Matrix}
@@ -4795,26 +4803,36 @@ are written in file {\it SystemLabel}.{\tt PHONON}.  The format is the
 following: Comment line, cell vectors in {\AA}, and for each
 displacement: atom displaced and its coordinates plus fractional
 displacement, cartesian components of forces on all the atoms in units
-of eV/\AA.
+of eV/\AA. 
 
 
 \subsection{Intermediate and restart files}
 
 \begin{itemize}
 \item {\bf Positions and velocities:}
+
 Every time the atoms move, either during coordinate relaxation or
-molecular dynamics, their positions and velocities are stored
-to allow a restart, in file SystemLabel.XV, where SystemLabel
-is the value of that FDF descriptor (or siesta by default).
-The shape of the
-unit cell and its associated 'velocity' (in Parrinello-Rahman
-dynamics) are also stored in this file.
+molecular dynamics, their updated positions and current velocities are
+stored in file SystemLabel.XV, where SystemLabel is the value of that
+FDF descriptor (or siesta by default).  The shape of the unit cell and
+its associated 'velocity' (in Parrinello-Rahman dynamics) are also
+stored in this file. For MD runs of type Verlet, Parrinello-Rahman,
+Nose, or Nose-Parrinello-Rahman, a file named
+SystemLabel.VERLET\_RESTART, SystemLabel.PR\_RESTART,
+SystemLabel.NOSE\_RESTART, or SystemLabel.NPR\_RESTART, respectively, is
+created to hold the values of auxiliary variables needed for a
+completely seamless continuation. Due to the introduction of this
+enhanced continuation feature in Siesta 2.0, an MD run made with
+Siesta 1.3 cannot be directly restarted with Siesta 2.0: the user
+would need to create the right kind of restart file in addition to
+setting the MD.UseSaveXV flag in the FDF file. 
+
 
 \item {\bf Conjugate-gradient history information:}
 Together with the SystemLabel.XV file, the information
 stored in the SystemLabel.CG file allows a smooth
 continuation of an interrupted conjugate-gradient relaxation
-process.
+process. (No such feature exists yet for a Broyden-based relaxation.)
 
 \item {\bf Localized Wave Functions:} 
 At the end of each conjugate gradient
@@ -4887,15 +4905,16 @@ the memory use is still acceptable.
 \begin{itemize}
 
 \item
-Input (fdf) files in the DOS standard are not correctly read by 
-{\sc Siesta} on Unix machines. The program crashes at the very 
-beginning. 
+Input (fdf) files with CRLF line endings (the DOS standard) are not
+correctly read by {\sc Siesta} on Unix machines. 
 
-{\it Solution:} Easy, just run {\tt \$ dos2unix} {\it yourinput.}{\tt fdf}
+{\it Solution:} Please convert to the normal LF-terminated form. This
+is easy, running for example: {\tt \$ dos2unix} {\it yourinput.}{\tt
+fdf}
 
 \item
 $k$-points are not properly generated ({\tt kgrid}) if using a
-{\bf SuperCell} block with a non-dioagonal matrix. 
+{\bf SuperCell} block with a non-diagonal matrix. 
 
 {\it Solution:} Make an empty run with {\bf SuperCell} first to generate 
 the whole geometry, and then run for the large unit cell (without the 
@@ -4907,7 +4926,7 @@ For some systems the program stops with the error message
 {\tt "Failure to converge standard eigenproblem
 Stopping Program from Node:    0}
 
-It is related to the Divide \& Conquer algorithm of
+It is related to the use of the Divide \& Conquer algorithm for
 diagonalisation.
 
 {\it Solution:} If it happens, disable Diag.DivideAndConquer and run again. 
@@ -4939,7 +4958,7 @@ The following are major projected changes and improvements.
 \begin{itemize}
 
 \item
-Smoothening of the eggbox by filtering and alternatively
+Smoothing of the eggbox effect by filtering and alternatively
 by moving to atomic grids.
 
 \item
@@ -4957,6 +4976,9 @@ using multigrid methods.
 
 \item
 Implementation of other linear-scaling solvers.
+
+\item 
+An enhanced MD history framework.
 
 \end{itemize}
 
@@ -5229,15 +5251,15 @@ DEFS_CDF=-DCDF
 Src/NetCDF directory. Current versions of NetCDF now come with their
 own, so that directory will disappear in the near future.)
 
-While it might seem a hassle to have to install the library, the 
-added functionality is quite large, and it is set to grow in future
-releases of {\sc Siesta}. The area in which this is already beginning to be
-felt is in the visualization of atomic information. When a NetCDF file
-is accessed by means of a scripting language with the proper
-interface (Python, {\tt http://www.python.org} is highly recommended
-in this regard), one can explore and plot its contents very easily.
-See the Utils/PyAtom directory for some example scripts.
-\index{Python language}
+While it might seem a hassle to have to install the library, the added
+functionality is quite large, and it is set to grow in future releases
+of {\sc Siesta}. The area in which this is already beginning to be
+felt is in the visualization of atomic and molecular dynamics
+information. When a NetCDF file is accessed by means of a scripting
+language with the proper interface (Python, {\tt
+http://www.python.org} is highly recommended in this regard), one can
+explore and plot its contents very easily.  See the Utils/PyAtom and Utils/MD
+directories for some example scripts.  \index{Python language}
 
 
 \newpage
