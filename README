@@ -12,10 +12,11 @@ In the Docs/ directory:
 The code itself can be found under Src/
 Examples and other tutorial material in Tests/, Tutorials/, and Examples/
 
-Please see the manual (siesta.pdf in the top directory) for
-compilation and other instructions.
-
 The pseudopotential generation code and related materials can be found
 under Pseudo/.
 
+Please see the manual for compilation and other instructions.
+
+Please be sure to follow the terms and conditions stated in SIESTA_LICENCE,
+a hardcopy of which you should have signed.
 
