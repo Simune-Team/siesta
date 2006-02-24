@@ -16,7 +16,7 @@ FC=ftn -target=catamount
 FPP=linux-pgf90 -F
 FC_ASIS=$(FC)
 #
-FFLAGS= -g -fastsse
+FFLAGS=-fastsse
 FFLAGS_DEBUG= -g -O0
 RANLIB=echo
 COMP_LIBS=dc_lapack.a
