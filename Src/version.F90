@@ -50,7 +50,7 @@ subroutine prversion
 use version_info
 implicit none
 
-write(6,'(a,/,a)') "Siesta Version (Arch framework):", &
+write(6,'(2a)') "Siesta Version: ", &
                     trim(version_str)
 write(6,'(2a)') 'Architecture  : ', siesta_arch
 write(6,'(2a)') 'Compiler flags: ', fflags

@@ -36,7 +36,7 @@ xmlcheck: all
 #
 batch:
 	@for i in ${tests} ; do \
-		(qsub $(HOME)/bin/runit.sh "make tests=$$i") ; \
+		(qsub $(HOME)/bin/sge_run.sh "make tests=$$i") ; \
 	done
 clean:
 	@for i in ${tests} ; do \

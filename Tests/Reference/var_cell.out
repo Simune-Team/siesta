@@ -1,11 +1,10 @@
-Siesta Version (Arch framework):
-agarcia@siesta.arch--2005/siesta-devel--agarcia--1.5--patch-11
-Architecture  : powerpc-apple-darwin8.3.0--Xlf
-Compiler flags: xlf95 -g  -O2 -qarch=auto -qtune=auto -qcache=auto -qnolm
+Siesta Version: siesta-2.0-release
+Architecture  : intel9-mkl8
+Compiler flags: ifort -u -xP -O3 -mp1
 SERIAL version
 
 * Running in serial mode
->> Start of run:   7-DEC-2005  11:18:33
+>> Start of run:  24-FEB-2006  12:54:00
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -59,26 +58,25 @@ MaxSCFIterations       20
 WriteCoorStep      .true.
 WriteForces        .true.
 HarrisFunctional T
-MD.TypeOfRun         CG
+MD.TypeOfRun         Broyden
 MD.Variable-Cell      T
 MD.Target-pressure   100.0 GPa
 MD.Num-CG-steps	     30
 MD.Max-Stress-Tol    2.0 GPa
-Optim.Broyden T
-Optim.Broyden.Initial.Mixing 1.0
-Optim.Number.Broyden 6
+MD.Broyden.Initial.Inverse.Jacobian 1.0
+MD.Broyden.History.Steps 6
 ************************** End of input data file *****************************
 
 reinit: -----------------------------------------------------------------------
 reinit: System Name: MgCo3 R-3c Harris -- SZ, 100 R -- variable cell at 100 Gpa 
 reinit: -----------------------------------------------------------------------
-reinit: System Label: var_cell            
+reinit: System Label: var_cell                                                    
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:  1  Label: Mg Atomic number: 12
- Species number:  2  Label: C Atomic number: 6
- Species number:  3  Label: O Atomic number: 8
+ Species number:            1  Label: Mg Atomic number:          12
+ Species number:            2  Label: C Atomic number:           6
+ Species number:            3  Label: O Atomic number:           8
 Ground state valence configuration:   3s02
 Reading pseudopotential information in formatted form from Mg.psf
 Ground state valence configuration:   2s02  2p02
@@ -151,7 +149,7 @@ SPLIT: Orbitals with angular momentum L= 0
 
 SPLIT: Basis orbitals for state 3s
 
-SPLIT: PAO cut-off radius determinated from an
+SPLIT: PAO cut-off radius determined from an
 SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
@@ -236,7 +234,7 @@ SPLIT: Orbitals with angular momentum L= 0
 
 SPLIT: Basis orbitals for state 2s
 
-SPLIT: PAO cut-off radius determinated from an
+SPLIT: PAO cut-off radius determined from an
 SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
@@ -251,7 +249,7 @@ SPLIT: Orbitals with angular momentum L= 1
 
 SPLIT: Basis orbitals for state 2p
 
-SPLIT: PAO cut-off radius determinated from an
+SPLIT: PAO cut-off radius determined from an
 SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
@@ -337,7 +335,7 @@ SPLIT: Orbitals with angular momentum L= 0
 
 SPLIT: Basis orbitals for state 2s
 
-SPLIT: PAO cut-off radius determinated from an
+SPLIT: PAO cut-off radius determined from an
 SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
@@ -352,7 +350,7 @@ SPLIT: Orbitals with angular momentum L= 1
 
 SPLIT: Basis orbitals for state 2p
 
-SPLIT: PAO cut-off radius determinated from an
+SPLIT: PAO cut-off radius determined from an
 SPLIT: energy shift=  0.020000 Ry
 
    izeta = 1
@@ -410,7 +408,7 @@ prinput: ----------------------------------------------------------------------
 siesta: ******************** Simulation parameters ****************************
 siesta:
 siesta: The following are some of the parameters of the simulation.
-siesta: A complete list of the parameters used, including defect values,
+siesta: A complete list of the parameters used, including default values,
 siesta: can be found in file out.fdf
 siesta:
 coor:   Atomic-coordinates input format  =     Fractional
@@ -439,14 +437,11 @@ redata: Method of Calculation            =     Diagonalization
 redata: Divide and Conquer               =     F
 redata: Electronic Temperature           =     0.0019  Ry
 redata: Fix the spin of the system       =     F
-redata: Dynamics option                  =     CG coord. optimization
+redata: Dynamics option                  =     Broyden coord. optimization
 redata: Variable cell                    =     T
-redata: Use continuation files for CG    =     F
 redata: Maximum number of CG moves       =    30
-redata: Max atomic displ per move        =     0.2000  Bohr
 redata: Force tolerance                  =     0.0016  Ry/Bohr
 redata: Stress tolerance                 =     2.0000  GPa
-redata: Broyden Optimization             = T
 redata: ***********************************************************************
 
 siesta: Atomic coordinates (Bohr) and species
@@ -461,7 +456,7 @@ siesta:     -7.25136  -0.58061  -1.83207  3        8
 siesta:     -6.25965  -4.12944   0.20079  3        9
 siesta:     -5.26794  -3.68605  -3.86493  3       10
 
-initatomlists: Number of atoms, orbitals, and projectors:        10       34       80
+initatomlists: Number of atoms, orbitals, and projectors:     10    34    80
 
 siesta: System type = bulk      
 
@@ -514,17 +509,17 @@ InitMesh: Mesh cutoff (required, used) =   100.000   112.857 Ry
 * Maximum dynamic memory allocated =    11 MB
 
 stepf: Fermi-Dirac step function
- Broyden: No of relevant DM elements:  9604
- maxit for broyden:  4
+ Broyden: No of relevant DM elements:         9604
+ maxit for broyden:            4
  cycle on maxit:  T
  variable weight:  T
- initial alpha:  0.100000000000000006
+ initial alpha:   0.100000000000000     
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =      5228.674091
-siesta: Ena     =      1092.429478
+siesta: Ena     =      1092.429444
 siesta: Ekin    =      2100.835149
-siesta: Enl     =      -258.044684
+siesta: Enl     =      -258.044678
 siesta: DEna    =        -0.000015
 siesta: DUscf   =         0.000000
 siesta: DUext   =         0.000000
@@ -532,69 +527,68 @@ siesta: Exc     =      -683.847183
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2966.326602
-siesta: Etot    =     -2977.301346
-siesta: FreeEng =     -2977.301346
+siesta: Eharris =     -2966.326649
+siesta: Etot    =     -2977.301374
+siesta: FreeEng =     -2977.301374
 
-siesta: Eharris(eV) =   -2966.326602
+siesta: Eharris(eV) =   -2966.326649
 
 
-siesta: Eharris(eV) =   -2966.326602
+siesta: Eharris(eV) =   -2966.326649
 
-timer: Routine,Calls,Time,% = IterSCF        1       3.200  74.42
-elaps: Routine,Calls,Wall,% = IterSCF        1       3.200  73.23
+timer: Routine,Calls,Time,% = IterSCF        1       2.249  69.20
+elaps: Routine,Calls,Wall,% = IterSCF        1       2.263  56.51
 
-siesta: E_KS - E_eggbox =     -2949.8287
+siesta: E_KS - E_eggbox =     -2949.8288
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000000    0.000000   -0.000000
+     1    0.000000    0.000000    0.000000
      2   -0.000013   -0.000006   -0.000013
-     3   -0.000130   -0.000058   -0.000131
-     4   -0.000144    0.000066   -0.000101
-     5    2.760348   -6.173876   -0.000004
-     6    0.000004    3.704020   -5.658328
-     7   -2.760336    2.469868    5.658324
-     8   -2.760346    6.173878    0.000002
-     9   -0.000003   -3.704021    5.658325
-    10    2.760350   -2.469872   -5.658324
+     3   -0.000131   -0.000058   -0.000131
+     4   -0.000181    0.000027   -0.000041
+     5    2.760277   -6.173724   -0.000005
+     6    0.000003    3.703924   -5.658185
+     7   -2.760272    2.469805    5.658183
+     8   -2.760284    6.173727    0.000003
+     9    0.000000   -3.703925    5.658183
+    10    2.760283   -2.469810   -5.658184
 ----------------------------------------
- Tot   -0.000271   -0.000001   -0.000249
+   Tot   -0.000317   -0.000040   -0.000192
 ----------------------------------------
- Max    6.173878
- Res    3.024446    sqrt( Sum f_i^2 / 3N )
+   Max    6.173727
+   Res    3.024371    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    6.173878    constrained
+   Max    6.173727    constrained
 
-Stress-tensor-Voigt (kbar):      567.99      382.08      355.53      103.89       30.41       68.01
+Stress-tensor-Voigt (kbar):      567.99      382.09      355.54      103.89       30.41       68.01
 Target enthalpy (eV/cell)    -2891.6795
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.354509    0.064843    0.042447
-         0.064843    0.238470    0.018978
-         0.042447    0.018978    0.221902
+         0.354510    0.064841    0.042446
+         0.064841    0.238476    0.018978
+         0.042446    0.018978    0.221909
 
-siesta: Pressure (static):       -435.19955510  kBar
+siesta: Pressure (static):       -435.20677323  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.354509    0.064843    0.042447
-         0.064843    0.238470    0.018978
-         0.042447    0.018978    0.221902
+         0.354510    0.064841    0.042446
+         0.064841    0.238476    0.018978
+         0.042446    0.018978    0.221909
 
-siesta: Pressure (total):       -435.19955510  kBar
- -----optim-----
- optim: max_history for broyden:  6
- optim: cycle on maxit:  T
- optim: variable weight:  F
- optim: initial inverse jacobian:  1.00000000000000000
- -----optim-----
- Broyden_optim: No of elements:  36
+siesta: Pressure (total):       -435.20677323  kBar
+ 
+Broyden_optim: max_history for broyden:   6
+Broyden_optim: cycle on maxit: T
+Broyden_optim: initial inverse jacobian:   1.0000
+ 
+Broyden_optim: No of elements:     36
 
-optim: No target stress found, assuming hydrostatic MD.TargetPressure.
+Broyden_optim: No target stress found, assuming hydrostatic MD.TargetPressure.
 
-optim: Target stress (kBar)
-optim:     -1000.000       0.000       0.000
-optim:         0.000   -1000.000       0.000
-optim:         0.000       0.000   -1000.000
+Broyden_optim: Target stress (kBar)
+Broyden_optim:     -1000.000       0.000       0.000
+Broyden_optim:         0.000   -1000.000       0.000
+Broyden_optim:         0.000       0.000   -1000.000
 
 * Maximum dynamic memory allocated =    11 MB
 
@@ -606,13 +600,13 @@ outcoor: Atomic coordinates (fractional):
     0.00000000    0.00000000    0.00000000   1  Mg         1
     0.49999995    0.49999995    0.49999993   1  Mg         2
     0.24999953    0.24999953    0.24999930   2  C          3
-   -0.25000052   -0.25000017   -0.25000053   2  C          4
-    0.53740597   -0.03740599    0.24999998   3  O          5
-    0.25000001    0.53740600   -0.03740600   3  O          6
-   -0.03740593    0.25000006    0.53740605   3  O          7
-   -0.53740597    0.03740600   -0.24999998   3  O          8
-   -0.25000001   -0.53740600    0.03740599   3  O          9
-    0.03740598   -0.25000004   -0.53740602   3  O         10
+   -0.25000065   -0.25000036   -0.25000051   2  C          4
+    0.53740572   -0.03740575    0.24999998   3  O          5
+    0.25000001    0.53740574   -0.03740575   3  O          6
+   -0.03740570    0.25000004    0.53740578   3  O          7
+   -0.53740574    0.03740574   -0.24999999   3  O          8
+   -0.25000000   -0.53740573    0.03740575   3  O          9
+    0.03740574   -0.25000003   -0.53740577   3  O         10
 
 siesta: k-grid: Number of k-points =   108
 siesta: k-grid: Cutoff             =    13.016 Ang
@@ -625,58 +619,58 @@ superc: Internal auxiliary supercell:     4 x     4 x     4  =      64
 superc: Number of atoms, orbitals, and projectors:    640  2176  5120
 
 outcell: Unit cell vectors (Ang):
-        5.251635   -0.028239   -0.018485
-        3.480776    3.932515   -0.018485
-        3.480776    1.556261    3.611518
+        5.251635   -0.028238   -0.018485
+        3.480776    3.932513   -0.018485
+        3.480776    1.556261    3.611517
 
-outcell: Cell vector modules (Ang)   :    5.251744    5.251744    5.251744
+outcell: Cell vector modules (Ang)   :    5.251743    5.251743    5.251743
 outcell: Cell angles (23,13,12) (deg):     48.7948     48.7948     48.7948
-outcell: Cell volume (Ang**3)        :     75.2463
+outcell: Cell volume (Ang**3)        :     75.2462
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
 InitMesh: Mesh cutoff (required, used) =   100.000   116.744 Ry
 
-siesta: Eharris(eV) =   -2965.796842
+siesta: Eharris(eV) =   -2965.796807
 
 
-siesta: Eharris(eV) =   -2965.796842
+siesta: Eharris(eV) =   -2965.796807
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000025   -0.000011   -0.000007
-     2    0.000019    0.000009    0.000003
-     3    0.000003    0.000006    0.000067
-     4    0.000042   -0.000085    0.000056
-     5    3.774751   -8.442723   -0.000001
-     6   -0.000009    5.065189   -7.737697
-     7   -3.774715    3.377503    7.737656
-     8   -3.774769    8.442762    0.000007
-     9    0.000006   -5.065158    7.737617
-    10    3.774732   -3.377501   -7.737664
+     1   -0.000028   -0.000010   -0.000007
+     2    0.000017    0.000008    0.000005
+     3    0.000005    0.000005    0.000070
+     4    0.000048   -0.000060    0.000007
+     5    3.774804   -8.442869   -0.000013
+     6   -0.000012    5.065286   -7.737848
+     7   -3.774787    3.377570    7.737787
+     8   -3.774839    8.442892    0.000006
+     9    0.000006   -5.065275    7.737784
+    10    3.774797   -3.377558   -7.737786
 ----------------------------------------
- Tot    0.000033   -0.000009    0.000036
+   Tot    0.000011   -0.000011    0.000005
 ----------------------------------------
- Max    8.442762
- Res    4.135887    sqrt( Sum f_i^2 / 3N )
+   Max    8.442892
+   Res    4.135962    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    8.442762    constrained
+   Max    8.442892    constrained
 
-Stress-tensor-Voigt (kbar):      453.52       49.25       -8.47      225.91       66.12      147.88
-Target enthalpy (eV/cell)    -2901.8853
+Stress-tensor-Voigt (kbar):      453.52       49.24       -8.48      225.91       66.12      147.88
+Target enthalpy (eV/cell)    -2901.8854
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.283060    0.140998    0.092299
-         0.140998    0.030739    0.041267
-         0.092299    0.041267   -0.005286
+         0.283059    0.141001    0.092301
+         0.141001    0.030734    0.041268
+         0.092301    0.041268   -0.005292
 
-siesta: Pressure (static):       -164.76659182  kBar
+siesta: Pressure (static):       -164.75935445  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.283060    0.140998    0.092299
-         0.140998    0.030739    0.041267
-         0.092299    0.041267   -0.005286
+         0.283059    0.141001    0.092301
+         0.141001    0.030734    0.041268
+         0.092301    0.041268   -0.005292
 
-siesta: Pressure (total):       -164.76659182  kBar
+siesta: Pressure (total):       -164.75935445  kBar
 
 * Maximum dynamic memory allocated =    11 MB
 
@@ -685,16 +679,16 @@ siesta:                 ==============================
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000020   -0.00000019   -0.00000019   1  Mg         1
-    0.50000010    0.50000010    0.50000006   1  Mg         2
-    0.24999955    0.24999958    0.24999969   2  C          3
-   -0.25000019   -0.25000045   -0.25000020   2  C          4
-    0.56751512   -0.06751521    0.24999995   3  O          5
-    0.24999994    0.56751501   -0.06751528   3  O          6
-   -0.06751480    0.25000023    0.56751520   3  O          7
-   -0.56751527    0.06751535   -0.24999992   3  O          8
-   -0.24999997   -0.56751485    0.06751489   3  O          9
-    0.06751498   -0.25000010   -0.56751512   3  O         10
+   -0.00000022   -0.00000021   -0.00000021   1  Mg         1
+    0.50000009    0.50000009    0.50000006   1  Mg         2
+    0.24999957    0.24999958    0.24999971   2  C          3
+   -0.25000027   -0.25000046   -0.25000036   2  C          4
+    0.56751358   -0.06751384    0.24999981   3  O          5
+    0.24999991    0.56751360   -0.06751392   3  O          6
+   -0.06751342    0.25000022    0.56751371   3  O          7
+   -0.56751388    0.06751378   -0.25000000   3  O          8
+   -0.24999995   -0.56751355    0.06751357   3  O          9
+    0.06751354   -0.25000009   -0.56751361   3  O         10
 
 siesta: k-grid: Number of k-points =   108
 siesta: k-grid: Cutoff             =    11.817 Ang
@@ -707,58 +701,58 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.501531   -0.144820   -0.094801
-        2.893722    3.451251   -0.094801
-        2.893722    1.293788    3.200973
+        4.501575   -0.144815   -0.094797
+        2.893755    3.451280   -0.094798
+        2.893755    1.293803    3.200998
 
-outcell: Cell vector modules (Ang)   :    4.504858    4.504858    4.504858
-outcell: Cell angles (23,13,12) (deg):     51.8520     51.8519     51.8520
-outcell: Cell volume (Ang**3)        :     52.2552
+outcell: Cell vector modules (Ang)   :    4.504901    4.504902    4.504901
+outcell: Cell angles (23,13,12) (deg):     51.8518     51.8518     51.8518
+outcell: Cell volume (Ang**3)        :     52.2564
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   105.276 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   105.274 Ry
 
-siesta: Eharris(eV) =   -2956.020155
+siesta: Eharris(eV) =   -2956.021863
 
 
-siesta: Eharris(eV) =   -2956.020155
+siesta: Eharris(eV) =   -2956.021863
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000152    0.000043    0.000074
-     2   -0.000080   -0.000083   -0.000050
-     3    0.000296    0.000079   -0.000010
-     4    0.000180    0.000317   -0.000021
-     5    1.024147   -2.290659    0.000016
-     6    0.000022    1.374293   -2.099327
-     7   -1.024296    0.916422    2.099355
-     8   -1.024158    2.290608    0.000015
-     9    0.000002   -1.374393    2.099474
-    10    1.024197   -0.916380   -2.099440
+     1    0.000127    0.000043    0.000096
+     2   -0.000097   -0.000109   -0.000033
+     3    0.000294    0.000100   -0.000040
+     4    0.000185    0.000251    0.000070
+     5    1.024353   -2.291005    0.000017
+     6    0.000014    1.374495   -2.099614
+     7   -1.024445    0.916564    2.099667
+     8   -1.024303    2.290983   -0.000008
+     9   -0.000007   -1.374558    2.099750
+    10    1.024328   -0.916515   -2.099785
 ----------------------------------------
- Tot    0.000462    0.000246    0.000086
+   Tot    0.000449    0.000249    0.000118
 ----------------------------------------
- Max    2.290659
- Res    1.122157    sqrt( Sum f_i^2 / 3N )
+   Max    2.291005
+   Res    1.122324    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    2.290659    constrained
+   Max    2.291005    constrained
 
-Stress-tensor-Voigt (kbar):     -908.69    -1196.67    -1237.81      160.93       47.10      105.35
-Target enthalpy (eV/cell)    -2901.7135
+Stress-tensor-Voigt (kbar):     -908.64    -1196.61    -1237.74      160.92       47.10      105.34
+Target enthalpy (eV/cell)    -2901.7149
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.567152    0.100442    0.065752
-         0.100442   -0.746897    0.029398
-         0.065752    0.029398   -0.772569
+        -0.567120    0.100438    0.065750
+         0.100438   -0.746858    0.029396
+         0.065750    0.029396   -0.772527
 
-siesta: Pressure (static):       1114.38899811  kBar
+siesta: Pressure (static):       1114.32840153  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.567152    0.100442    0.065752
-         0.100442   -0.746897    0.029398
-         0.065752    0.029398   -0.772569
+        -0.567120    0.100438    0.065750
+         0.100438   -0.746858    0.029396
+         0.065750    0.029396   -0.772527
 
-siesta: Pressure (total):       1114.38899811  kBar
+siesta: Pressure (total):       1114.32840153  kBar
 
 * Maximum dynamic memory allocated =    11 MB
 
@@ -767,16 +761,16 @@ siesta:                 ==============================
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000034    0.00000027    0.00000039   1  Mg         1
-    0.49999982    0.49999969    0.49999967   1  Mg         2
-    0.25000056    0.25000044    0.25000035   2  C          3
-   -0.24999964   -0.24999918   -0.24999958   2  C          4
-    0.56782843   -0.06782857    0.24999997   3  O          5
-    0.25000002    0.56782844   -0.06782843   3  O          6
-   -0.06782865    0.25000002    0.56782823   3  O          7
-   -0.56782859    0.06782853   -0.24999995   3  O          8
-   -0.24999996   -0.56782853    0.06782840   3  O          9
-    0.06782848   -0.25000000   -0.56782854   3  O         10
+    0.00000023    0.00000021    0.00000037   1  Mg         1
+    0.49999975    0.49999957    0.49999964   1  Mg         2
+    0.25000057    0.25000049    0.25000032   2  C          3
+   -0.24999971   -0.24999938   -0.24999954   2  C          4
+    0.56782835   -0.06782836    0.24999996   3  O          5
+    0.24999997    0.56782827   -0.06782829   3  O          6
+   -0.06782853    0.25000004    0.56782803   3  O          7
+   -0.56782844    0.06782835   -0.25000002   3  O          8
+   -0.24999998   -0.56782840    0.06782827   3  O          9
+    0.06782824   -0.25000003   -0.56782844   3  O         10
 
 siesta: k-grid: Number of k-points =   108
 siesta: k-grid: Cutoff             =    12.076 Ang
@@ -789,58 +783,58 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.571309   -0.160808   -0.105267
-        2.928336    3.513912   -0.105267
-        2.928335    1.309264    3.262590
+        4.571326   -0.160804   -0.105265
+        2.928350    3.513923   -0.105265
+        2.928350    1.309270    3.262599
 
-outcell: Cell vector modules (Ang)   :    4.575347    4.575348    4.575349
-outcell: Cell angles (23,13,12) (deg):     52.1935     52.1935     52.1935
-outcell: Cell volume (Ang**3)        :     55.3031
+outcell: Cell vector modules (Ang)   :    4.575365    4.575365    4.575366
+outcell: Cell angles (23,13,12) (deg):     52.1934     52.1934     52.1934
+outcell: Cell volume (Ang**3)        :     55.3036
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   102.488 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   102.487 Ry
 
-siesta: Eharris(eV) =   -2959.934231
+siesta: Eharris(eV) =   -2959.934746
 
 
-siesta: Eharris(eV) =   -2959.934231
+siesta: Eharris(eV) =   -2959.934746
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000243   -0.000077   -0.000101
-     2    0.000162    0.000117    0.000066
-     3   -0.000303   -0.000096   -0.000039
-     4   -0.000239   -0.000252   -0.000032
-     5    0.428674   -0.958582   -0.000007
-     6    0.000029    0.575100   -0.878557
-     7   -0.428491    0.383470    0.878590
-     8   -0.428551    0.958532   -0.000012
-     9    0.000021   -0.575015    0.878429
-    10    0.428554   -0.383450   -0.878437
+     1   -0.000207   -0.000069   -0.000122
+     2    0.000188    0.000153    0.000063
+     3   -0.000302   -0.000117   -0.000018
+     4   -0.000241   -0.000217   -0.000082
+     5    0.428559   -0.958491    0.000026
+     6    0.000006    0.575037   -0.878495
+     7   -0.428442    0.383435    0.878479
+     8   -0.428504    0.958416    0.000011
+     9    0.000020   -0.574981    0.878343
+    10    0.428535   -0.383404   -0.878325
 ----------------------------------------
- Tot   -0.000387   -0.000252   -0.000099
+   Tot   -0.000389   -0.000237   -0.000120
 ----------------------------------------
- Max    0.958582
- Res    0.469570    sqrt( Sum f_i^2 / 3N )
+   Max    0.958491
+   Res    0.469520    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.958582    constrained
+   Max    0.958491    constrained
 
-Stress-tensor-Voigt (kbar):     -493.84     -616.48     -633.98       68.53       20.06       44.86
-Target enthalpy (eV/cell)    -2903.9901
+Stress-tensor-Voigt (kbar):     -493.82     -616.44     -633.95       68.52       20.06       44.86
+Target enthalpy (eV/cell)    -2903.9904
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.308226    0.042775    0.028001
-         0.042775   -0.384771    0.012519
-         0.028001    0.012519   -0.395697
+        -0.308216    0.042768    0.027996
+         0.042768   -0.384749    0.012517
+         0.027996    0.012517   -0.395675
 
-siesta: Pressure (static):        581.43292625  kBar
+siesta: Pressure (static):        581.40384930  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.308226    0.042775    0.028001
-         0.042775   -0.384771    0.012519
-         0.028001    0.012519   -0.395697
+        -0.308216    0.042768    0.027996
+         0.042768   -0.384749    0.012517
+         0.027996    0.012517   -0.395675
 
-siesta: Pressure (total):        581.43292625  kBar
+siesta: Pressure (total):        581.40384930  kBar
 
 * Maximum dynamic memory allocated =    11 MB
 
@@ -849,19 +843,19 @@ siesta:                 ==============================
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000053    0.00000045    0.00000059   1  Mg         1
-    0.49999969    0.49999953    0.49999952   1  Mg         2
-    0.25000072    0.25000058    0.25000040   2  C          3
-   -0.24999959   -0.24999892   -0.24999951   2  C          4
-    0.55974276   -0.05974298    0.24999994   3  O          5
-    0.25000001    0.55974285   -0.05974280   3  O          6
-   -0.05974316    0.24999995    0.55974257   3  O          7
-   -0.55974297    0.05974289   -0.24999996   3  O          8
-   -0.24999999   -0.55974304    0.05974287   3  O          9
-    0.05974293   -0.24999999   -0.55974298   3  O         10
+    0.00000042    0.00000038    0.00000058   1  Mg         1
+    0.49999960    0.49999939    0.49999947   1  Mg         2
+    0.25000073    0.25000065    0.25000036   2  C          3
+   -0.24999967   -0.24999917   -0.24999942   2  C          4
+    0.55964884   -0.05964882    0.24999998   3  O          5
+    0.24999999    0.55964878   -0.05964871   3  O          6
+   -0.05964913    0.24999996    0.55964847   3  O          7
+   -0.55964891    0.05964884   -0.25000003   3  O          8
+   -0.25000000   -0.55964895    0.05964882   3  O          9
+    0.05964877   -0.25000004   -0.55964901   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.408 Ang
+siesta: k-grid: Cutoff             =    12.412 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -871,58 +865,58 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.781255   -0.127536   -0.083487
-        3.093124    3.648185   -0.083487
-        3.093124    1.382941    3.376937
+        4.783886   -0.127105   -0.083205
+        3.095200    3.649858   -0.083205
+        3.095200    1.383869    3.378358
 
-outcell: Cell vector modules (Ang)   :    4.783684    4.783685    4.783685
-outcell: Cell angles (23,13,12) (deg):     51.2266     51.2266     51.2265
-outcell: Cell volume (Ang**3)        :     61.4057
+outcell: Cell vector modules (Ang)   :    4.786298    4.786298    4.786299
+outcell: Cell angles (23,13,12) (deg):     51.2146     51.2146     51.2146
+outcell: Cell volume (Ang**3)        :     61.4841
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
-InitMesh: Mesh cutoff (required, used) =   100.000   144.770 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   144.591 Ry
 
-siesta: Eharris(eV) =   -2964.311206
+siesta: Eharris(eV) =   -2964.352067
 
 
-siesta: Eharris(eV) =   -2964.311206
+siesta: Eharris(eV) =   -2964.352067
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000284   -0.000093   -0.000112
-     2    0.000191    0.000127    0.000074
-     3   -0.000079    0.000014    0.000046
-     4    0.000000   -0.000187    0.000049
-     5    1.281766   -2.866795   -0.000019
-     6    0.000021    1.719917   -2.627410
-     7   -1.281655    1.146805    2.627393
-     8   -1.281696    2.866738   -0.000003
-     9    0.000008   -1.719761    2.627187
-    10    1.281681   -1.146784   -2.627218
+     1   -0.000237   -0.000079   -0.000126
+     2    0.000215    0.000163    0.000072
+     3   -0.000076   -0.000017    0.000072
+     4    0.000000   -0.000134   -0.000013
+     5    1.256899   -2.811227    0.000010
+     6    0.000020    1.686598   -2.576521
+     7   -1.256829    1.124557    2.576481
+     8   -1.256870    2.811150    0.000016
+     9    0.000000   -1.686479    2.576319
+    10    1.256842   -1.124558   -2.576304
 ----------------------------------------
- Tot   -0.000047   -0.000020   -0.000014
+   Tot   -0.000034   -0.000026    0.000006
 ----------------------------------------
- Max    2.866795
- Res    1.404333    sqrt( Sum f_i^2 / 3N )
+   Max    2.811227
+   Res    1.377122    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    2.866795    constrained
+   Max    2.811227    constrained
 
-Stress-tensor-Voigt (kbar):       12.34     -189.27     -218.04      112.66       32.97       73.75
-Target enthalpy (eV/cell)    -2906.3469
+Stress-tensor-Voigt (kbar):       21.28     -170.88     -198.31      107.38       31.43       70.29
+Target enthalpy (eV/cell)    -2906.3572
 
 siesta: Stress tensor (static) (eV/Ang**3):
-         0.007699    0.070315    0.046029
-         0.070315   -0.118131    0.020580
-         0.046029    0.020580   -0.136091
+         0.013284    0.067022    0.043873
+         0.067022   -0.106652    0.019616
+         0.043873    0.019616   -0.123773
 
-siesta: Pressure (static):        131.65945297  kBar
+siesta: Pressure (static):        115.96721842  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-         0.007699    0.070315    0.046029
-         0.070315   -0.118131    0.020580
-         0.046029    0.020580   -0.136091
+         0.013284    0.067022    0.043873
+         0.067022   -0.106652    0.019616
+         0.043873    0.019616   -0.123773
 
-siesta: Pressure (total):        131.65945297  kBar
+siesta: Pressure (total):        115.96721842  kBar
 
 * Maximum dynamic memory allocated =    13 MB
 
@@ -931,19 +925,19 @@ siesta:                 ==============================
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000042   -0.00000036   -0.00000045   1  Mg         1
-    0.50000025    0.50000035    0.50000028   1  Mg         2
-    0.24999693    0.24999694    0.24999699   2  C          3
-   -0.25000287   -0.25000303   -0.25000286   2  C          4
-    0.56465119   -0.06464971    0.25000064   3  O          5
-    0.25000014    0.56465035   -0.06465030   3  O          6
-   -0.06464980    0.25000063    0.56465103   3  O          7
-   -0.56465045    0.06465030   -0.25000009   3  O          8
-   -0.24999977   -0.56465031    0.06465043   3  O          9
-    0.06465040   -0.25000014   -0.56465047   3  O         10
+   -0.00000047   -0.00000042   -0.00000058   1  Mg         1
+    0.50000031    0.50000047    0.50000036   1  Mg         2
+    0.24999667    0.24999672    0.24999676   2  C          3
+   -0.25000320   -0.25000338   -0.25000329   2  C          4
+    0.56232196   -0.06232174    0.25000019   3  O          5
+    0.24999981    0.56232150   -0.06232214   3  O          6
+   -0.06232107    0.25000101    0.56232246   3  O          7
+   -0.56232177    0.06232179   -0.24999997   3  O          8
+   -0.24999968   -0.56232173    0.06232181   3  O          9
+    0.06232215   -0.24999990   -0.56232146   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.174 Ang
+siesta: k-grid: Cutoff             =    12.304 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -953,79 +947,79 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.631317   -0.151834   -0.099393
-        2.975037    3.552647   -0.099393
-        2.975037    1.330144    3.295740
+        4.701747   -0.144176   -0.094380
+        3.027707    3.600028   -0.094380
+        3.027707    1.353693    3.337158
 
-outcell: Cell vector modules (Ang)   :    4.634871    4.634871    4.634871
-outcell: Cell angles (23,13,12) (deg):     51.9216     51.9216     51.9216
-outcell: Cell volume (Ang**3)        :     57.0294
+outcell: Cell vector modules (Ang)   :    4.704904    4.704904    4.704904
+outcell: Cell angles (23,13,12) (deg):     51.6806     51.6806     51.6806
+outcell: Cell volume (Ang**3)        :     59.2267
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
-InitMesh: Mesh cutoff (required, used) =   100.000   155.528 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   150.487 Ry
 
-siesta: Eharris(eV) =   -2961.361574
+siesta: Eharris(eV) =   -2963.044998
 
 
-siesta: Eharris(eV) =   -2961.361574
+siesta: Eharris(eV) =   -2963.044998
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000193    0.000017    0.000052
-     2   -0.000156   -0.000100   -0.000098
-     3    0.000222    0.000090    0.000064
-     4    0.000218    0.000123    0.000038
-     5    0.801860   -1.793848    0.000086
-     6   -0.000068    1.076136   -1.644043
-     7   -0.802161    0.717667    1.643896
-     8   -0.802037    1.793850    0.000003
-     9   -0.000008   -1.076265    1.644099
-    10    0.802039   -0.717637   -1.644090
+     1    0.000093   -0.000020    0.000094
+     2   -0.000165   -0.000168   -0.000084
+     3    0.000256    0.000110    0.000042
+     4    0.000237    0.000141    0.000062
+     5    0.994744   -2.225040   -0.000014
+     6   -0.000078    1.334876   -2.039211
+     7   -0.994871    0.890177    2.039154
+     8   -0.994877    2.225023   -0.000023
+     9   -0.000087   -1.334970    2.039276
+    10    0.994776   -0.890102   -2.039325
 ----------------------------------------
- Tot    0.000102    0.000032    0.000007
+   Tot    0.000028    0.000026   -0.000030
 ----------------------------------------
- Max    1.793850
- Res    0.878760    sqrt( Sum f_i^2 / 3N )
+   Max    2.225040
+   Res    1.089999    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    1.793850    constrained
+   Max    2.225040    constrained
 
-Stress-tensor-Voigt (kbar):     -312.23     -492.25     -517.97      100.60       29.44       65.85
-Target enthalpy (eV/cell)    -2905.0239
+Stress-tensor-Voigt (kbar):     -130.21     -307.01     -332.26       98.80       28.92       64.67
+Target enthalpy (eV/cell)    -2905.8842
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.194878    0.062789    0.041102
-         0.062789   -0.307237    0.018376
-         0.041102    0.018376   -0.323285
+        -0.081267    0.061664    0.040366
+         0.061664   -0.191617    0.018048
+         0.040366    0.018048   -0.207375
 
-siesta: Pressure (static):        440.81724467  kBar
+siesta: Pressure (static):        256.48959151  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.194878    0.062789    0.041102
-         0.062789   -0.307237    0.018376
-         0.041102    0.018376   -0.323285
+        -0.081267    0.061664    0.040366
+         0.061664   -0.191617    0.018048
+         0.040366    0.018048   -0.207375
 
-siesta: Pressure (total):        440.81724467  kBar
+siesta: Pressure (total):        256.48959151  kBar
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
 siesta:                 ==============================
                             Begin CG move =      6
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000052   -0.00000046   -0.00000061   1  Mg         1
-    0.50000027    0.50000044    0.50000034   1  Mg         2
-    0.24999544    0.24999550    0.24999561   2  C          3
-   -0.25000419   -0.25000458   -0.25000421   2  C          4
-    0.56267568   -0.06267370    0.25000090   3  O          5
-    0.25000013    0.56267452   -0.06267459   3  O          6
-   -0.06267380    0.25000087    0.56267554   3  O          7
-   -0.56267470    0.06267449   -0.25000017   3  O          8
-   -0.24999969   -0.56267458    0.06267478   3  O          9
-    0.06267467   -0.25000022   -0.56267479   3  O         10
+   -0.00000056   -0.00000063   -0.00000085   1  Mg         1
+    0.49999998    0.50000023    0.49999997   1  Mg         2
+    0.24999178    0.24999198    0.24999218   2  C          3
+   -0.25000770   -0.25000836   -0.25000805   2  C          4
+    0.56333491   -0.06333484    0.25000027   3  O          5
+    0.24999917    0.56333376   -0.06333591   3  O          6
+   -0.06333302    0.25000265    0.56333656   3  O          7
+   -0.56333494    0.06333469   -0.25000015   3  O          8
+   -0.24999952   -0.56333517    0.06333496   3  O          9
+    0.06333587   -0.24999976   -0.56333436   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.227 Ang
+siesta: k-grid: Cutoff             =    12.293 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -1035,79 +1029,79 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.667162   -0.145596   -0.095309
-        3.003587    3.575200   -0.095309
-        3.003587    1.342908    3.314776
+        4.664768   -0.158653   -0.103857
+        2.992260    3.582122   -0.103857
+        2.992260    1.337844    3.324541
 
-outcell: Cell vector modules (Ang)   :    4.670405    4.670404    4.670405
-outcell: Cell angles (23,13,12) (deg):     51.7411     51.7410     51.7410
-outcell: Cell volume (Ang**3)        :     58.0381
+outcell: Cell vector modules (Ang)   :    4.668620    4.668619    4.668620
+outcell: Cell angles (23,13,12) (deg):     52.0610     52.0610     52.0610
+outcell: Cell volume (Ang**3)        :     58.5255
 
 InitMesh: MESH =    30 x    30 x    30 =       27000
-InitMesh: Mesh cutoff (required, used) =   100.000   152.831 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   153.551 Ry
 
-siesta: Eharris(eV) =   -2962.108133
+siesta: Eharris(eV) =   -2962.636514
 
 
-siesta: Eharris(eV) =   -2962.108133
+siesta: Eharris(eV) =   -2962.636514
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000288    0.000016    0.000085
-     2   -0.000185   -0.000139   -0.000137
-     3    0.000329    0.000125    0.000087
-     4    0.000310    0.000194    0.000044
-     5    1.055659   -2.361734    0.000124
-     6   -0.000127    1.416800   -2.164475
-     7   -1.056142    0.944831    2.164277
-     8   -1.055920    2.361695    0.000023
-     9   -0.000029   -1.416983    2.164541
-    10    1.055920   -0.944819   -2.164545
+     1    0.000178   -0.000213    0.000356
+     2   -0.000029   -0.000470   -0.000167
+     3    0.000995    0.000443    0.000205
+     4    0.000965    0.000493    0.000266
+     5    0.808881   -1.809725   -0.000049
+     6   -0.000056    1.085797   -1.658366
+     7   -0.809989    0.723794    1.658332
+     8   -0.809254    1.809515   -0.000049
+     9   -0.000214   -1.085831    1.658562
+    10    0.808662   -0.723892   -1.658815
 ----------------------------------------
- Tot    0.000102   -0.000014    0.000024
+   Tot    0.000139   -0.000088    0.000275
 ----------------------------------------
- Max    2.361734
- Res    1.156939    sqrt( Sum f_i^2 / 3N )
+   Max    1.809725
+   Res    0.886515    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    2.361734    constrained
+   Max    1.809725    constrained
 
-Stress-tensor-Voigt (kbar):     -218.67     -417.54     -445.95      111.13       32.52       72.75
-Target enthalpy (eV/cell)    -2905.5240
+Stress-tensor-Voigt (kbar):     -184.15     -332.58     -353.78       82.93       24.28       54.30
+Target enthalpy (eV/cell)    -2905.6562
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.136482    0.069363    0.045405
-         0.069363   -0.260605    0.020300
-         0.045405    0.020300   -0.278336
+        -0.114936    0.051762    0.033890
+         0.051762   -0.207578    0.015154
+         0.033890    0.015154   -0.220812
 
-siesta: Pressure (static):        360.71998669  kBar
+siesta: Pressure (static):        290.17124194  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.136482    0.069363    0.045405
-         0.069363   -0.260605    0.020300
-         0.045405    0.020300   -0.278336
+        -0.114936    0.051762    0.033890
+         0.051762   -0.207578    0.015154
+         0.033890    0.015154   -0.220812
 
-siesta: Pressure (total):        360.71998669  kBar
+siesta: Pressure (total):        290.17124194  kBar
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
 siesta:                 ==============================
                             Begin CG move =      7
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000195    0.00000089    0.00000093   1  Mg         1
-    0.49999894    0.49999928    0.49999845   1  Mg         2
-    0.24998206    0.24998222    0.24998306   2  C          3
-   -0.25001633   -0.25001844   -0.25001681   2  C          4
-    0.56375836   -0.06375597    0.25000279   3  O          5
-    0.24999824    0.56375448   -0.06375901   3  O          6
-   -0.06375686    0.25000178    0.56375794   3  O          7
-   -0.56375747    0.06375646   -0.25000062   3  O          8
-   -0.24999933   -0.56375895    0.06375835   3  O          9
-    0.06375773   -0.25000144   -0.56375920   3  O         10
+    0.00000227   -0.00000762    0.00000398   1  Mg         1
+    0.50000179    0.49999034    0.49999201   1  Mg         2
+    0.24996009    0.24996230    0.24996294   2  C          3
+   -0.25003469   -0.25004077   -0.25003853   2  C          4
+    0.56936615   -0.06938070    0.24999520   3  O          5
+    0.24999138    0.56936713   -0.06937741   3  O          6
+   -0.06939357    0.24999370    0.56935922   3  O          7
+   -0.56937953    0.06936492   -0.25000758   3  O          8
+   -0.25000293   -0.56938514    0.06937025   3  O          9
+    0.06936632   -0.25000765   -0.56938786   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.056 Ang
+siesta: k-grid: Cutoff             =    12.081 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -1117,80 +1111,80 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.538571   -0.171915   -0.112535
-        2.898228    3.496907   -0.112534
-        2.898230    1.295799    3.249926
+        4.249706   -0.305586   -0.200067
+        2.605995    3.370800   -0.200071
+        2.605978    1.165141    3.169358
 
-outcell: Cell vector modules (Ang)   :    4.543219    4.543209    4.543221
-outcell: Cell angles (23,13,12) (deg):     52.5001     52.5001     52.5000
-outcell: Cell volume (Ang**3)        :     54.6345
+outcell: Cell vector modules (Ang)   :    4.265373    4.265388    4.265384
+outcell: Cell angles (23,13,12) (deg):     56.3380     56.3380     56.3374
+outcell: Cell volume (Ang**3)        :     50.2246
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   104.340 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   124.491 Ry
 
-siesta: Eharris(eV) =   -2959.090522
+siesta: Eharris(eV) =   -2953.712916
 
 
-siesta: Eharris(eV) =   -2959.090522
+siesta: Eharris(eV) =   -2953.712916
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.001504   -0.001085   -0.000548
-     2    0.000053   -0.000119   -0.000277
-     3    0.001156    0.000594    0.000329
-     4    0.001275    0.000480    0.000212
-     5    1.040198   -2.328536   -0.000081
-     6    0.000137    1.397310   -2.133377
-     7   -1.041510    0.931093    2.133647
-     8   -1.040542    2.327504   -0.000104
-     9   -0.000301   -1.396271    2.133287
-    10    1.040853   -0.931280   -2.132989
+     1   -0.007418   -0.000326   -0.005579
+     2   -0.005860    0.002278    0.000473
+     3    0.005502    0.002937    0.001133
+     4    0.005510    0.001632    0.001700
+     5   -0.654323    1.467721   -0.001182
+     6    0.000243   -0.879708    1.344693
+     7    0.662515   -0.590442   -1.340319
+     8    0.657838   -1.466618   -0.001415
+     9    0.000206    0.882720   -1.345909
+    10   -0.653079    0.585041    1.348820
 ----------------------------------------
- Tot   -0.000185   -0.000310    0.000098
+   Tot    0.011133    0.005236    0.002416
 ----------------------------------------
- Max    2.328536
- Res    1.140362    sqrt( Sum f_i^2 / 3N )
+   Max    1.467721
+   Res    0.719053    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    2.328536    constrained
+   Max    1.467721    constrained
 
-Stress-tensor-Voigt (kbar):     -593.64     -796.15     -825.10      113.17       33.11       74.08
-Target enthalpy (eV/cell)    -2903.9831
+Stress-tensor-Voigt (kbar):    -1264.15    -1089.79    -1064.75      -97.33      -28.57      -63.81
+Target enthalpy (eV/cell)    -2898.9468
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.370517    0.070637    0.046235
-         0.070637   -0.496912    0.020668
-         0.046235    0.020668   -0.514979
+        -0.789011   -0.060748   -0.039828
+        -0.060748   -0.680188   -0.017833
+        -0.039828   -0.017833   -0.664559
 
-siesta: Pressure (static):        738.29519817  kBar
+siesta: Pressure (static):       1139.56428884  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.370517    0.070637    0.046235
-         0.070637   -0.496912    0.020668
-         0.046235    0.020668   -0.514979
+        -0.789011   -0.060748   -0.039828
+        -0.060748   -0.680188   -0.017833
+        -0.039828   -0.017833   -0.664559
 
-siesta: Pressure (total):        738.29519817  kBar
+siesta: Pressure (total):       1139.56428884  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
 siesta:                 ==============================
                             Begin CG move =      8
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000463   -0.00000862   -0.00000790   1  Mg         1
-    0.49999843    0.49999850    0.49999604   1  Mg         2
-    0.24997065    0.24997138    0.24997282   2  C          3
-   -0.25002543   -0.25003021   -0.25002725   2  C          4
-    0.56764296   -0.06764643    0.25000194   3  O          5
-    0.24999710    0.56764214   -0.06764533   3  O          6
-   -0.06764726    0.24999996    0.56764328   3  O          7
-   -0.56764273    0.06764155   -0.25000138   3  O          8
-   -0.25000050   -0.56764698    0.06764487   3  O          9
-    0.06764518   -0.25000278   -0.56764560   3  O         10
+   -0.00001236   -0.00001258   -0.00001467   1  Mg         1
+    0.49998925    0.49999138    0.49999067   1  Mg         2
+    0.24998770    0.24998964    0.24998880   2  C          3
+   -0.25000942   -0.25001399   -0.25001186   2  C          4
+    0.56860728   -0.06860880    0.24999809   3  O          5
+    0.24999566    0.56860532   -0.06860963   3  O          6
+   -0.06860525    0.24999951    0.56861285   3  O          7
+   -0.56860754    0.06860658   -0.25000352   3  O          8
+   -0.25000126   -0.56860995    0.06860598   3  O          9
+    0.06860983   -0.25000373   -0.56860693   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.027 Ang
+siesta: k-grid: Cutoff             =    11.991 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -1200,80 +1194,80 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.411370   -0.223455   -0.146269
-        2.775001    3.436463   -0.146266
-        2.775007    1.240700    3.208049
+        4.368428   -0.236104   -0.154560
+        2.736940    3.412921   -0.154559
+        2.736938    1.223689    3.189757
 
-outcell: Cell vector modules (Ang)   :    4.419448    4.419423    4.419454
-outcell: Cell angles (23,13,12) (deg):     53.9465     53.9465     53.9464
-outcell: Cell volume (Ang**3)        :     52.4042
+outcell: Cell vector modules (Ang)   :    4.377533    4.377529    4.377533
+outcell: Cell angles (23,13,12) (deg):     54.3298     54.3298     54.3297
+outcell: Cell volume (Ang**3)        :     51.4698
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   112.315 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   115.048 Ry
 
-siesta: Eharris(eV) =   -2956.749881
+siesta: Eharris(eV) =   -2955.501718
 
 
-siesta: Eharris(eV) =   -2956.749881
+siesta: Eharris(eV) =   -2955.501718
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.002349    0.001365    0.000803
-     2   -0.000719   -0.000414    0.000292
-     3    0.001496    0.000772    0.000513
-     4    0.001657    0.000452    0.000237
-     5    0.216308   -0.485942    0.000221
-     6   -0.000633    0.289762   -0.445839
-     7   -0.217998    0.194366    0.444579
-     8   -0.218905    0.485814    0.000714
-     9   -0.000710   -0.292964    0.445055
-    10    0.215921   -0.194264   -0.446626
+     1    0.007937    0.002386    0.003671
+     2    0.006085    0.000849    0.001021
+     3    0.000273   -0.000049    0.000409
+     4    0.000128    0.000742   -0.000031
+     5   -0.008022    0.010241    0.002411
+     6   -0.000507   -0.009709    0.008683
+     7    0.000487   -0.002250   -0.014121
+     8    0.002195   -0.012597    0.002469
+     9   -0.000547    0.003402   -0.011419
+    10   -0.008414    0.006603    0.006863
 ----------------------------------------
- Tot   -0.001235   -0.001053   -0.000051
+   Tot   -0.000386   -0.000383   -0.000044
 ----------------------------------------
- Max    0.485942
- Res    0.238069    sqrt( Sum f_i^2 / 3N )
+   Max    0.014121
+   Res    0.006177    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.485942    constrained
+   Max    0.014121    constrained
 
-Stress-tensor-Voigt (kbar):     -898.14     -952.48     -960.17       30.34        8.89       19.86
-Target enthalpy (eV/cell)    -2901.8751
+Stress-tensor-Voigt (kbar):    -1012.76    -1059.81    -1066.57       26.27        7.71       17.20
+Target enthalpy (eV/cell)    -2900.8321
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.560570    0.018937    0.012398
-         0.018937   -0.594485    0.005548
-         0.012398    0.005548   -0.599286
+        -0.632109    0.016399    0.010733
+         0.016399   -0.661472    0.004811
+         0.010733    0.004811   -0.665696
 
-siesta: Pressure (static):        936.93150094  kBar
+siesta: Pressure (static):       1046.38107820  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.560570    0.018937    0.012398
-         0.018937   -0.594485    0.005548
-         0.012398    0.005548   -0.599286
+        -0.632109    0.016399    0.010733
+         0.016399   -0.661472    0.004811
+         0.010733    0.004811   -0.665696
 
-siesta: Pressure (total):        936.93150094  kBar
+siesta: Pressure (total):       1046.38107820  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
 siesta:                 ==============================
                             Begin CG move =      9
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-    0.00000240   -0.00000167   -0.00000102   1  Mg         1
-    0.49999550    0.49999533    0.49999382   1  Mg         2
-    0.24996827    0.24996952    0.24997138   2  C          3
-   -0.25002608   -0.25003308   -0.25002945   2  C          4
-    0.56894541   -0.06895562    0.25000079   3  O          5
-    0.24999437    0.56894142   -0.06895660   3  O          6
-   -0.06895704    0.24999818    0.56894556   3  O          7
-   -0.56895479    0.06894287   -0.25000379   3  O          8
-   -0.25000299   -0.56895979    0.06894741   3  O          9
-    0.06894692   -0.25000609   -0.56895870   3  O         10
+   -0.00000159   -0.00000421   -0.00000312   1  Mg         1
+    0.49999763    0.49999670    0.49999662   1  Mg         2
+    0.24998433    0.24998658    0.24998616   2  C          3
+   -0.25001216   -0.25001706   -0.25001503   2  C          4
+    0.56687076   -0.06688357    0.24999662   3  O          5
+    0.24999387    0.56686955   -0.06688335   3  O          6
+   -0.06688375    0.24999658    0.56687322   3  O          7
+   -0.56688208    0.06687003   -0.25000535   3  O          8
+   -0.25000237   -0.56688544    0.06687105   3  O          9
+    0.06687299   -0.25000577   -0.56688416   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.011 Ang
+siesta: k-grid: Cutoff             =    12.079 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -1283,80 +1277,80 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.350162   -0.247818   -0.162215
-        2.716031    3.407092   -0.162213
-        2.716038    1.214334    3.187510
+        4.369909   -0.251449   -0.164608
+        2.726493    3.424260   -0.164608
+        2.726489    1.219017    3.204172
 
-outcell: Cell vector modules (Ang)   :    4.360233    4.360208    4.360240
-outcell: Cell angles (23,13,12) (deg):     54.6588     54.6587     54.6586
-outcell: Cell volume (Ang**3)        :     51.3210
+outcell: Cell vector modules (Ang)   :    4.380232    4.380230    4.380235
+outcell: Cell angles (23,13,12) (deg):     54.7237     54.7237     54.7235
+outcell: Cell volume (Ang**3)        :     52.1224
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   116.466 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   115.504 Ry
 
-siesta: Eharris(eV) =   -2955.326571
+siesta: Eharris(eV) =   -2956.459330
 
 
-siesta: Eharris(eV) =   -2955.326571
+siesta: Eharris(eV) =   -2956.459330
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.005060   -0.002383   -0.001512
-     2   -0.001349   -0.000724   -0.000336
-     3    0.002631    0.001055    0.000810
-     4    0.002588    0.001203    0.000764
-     5   -0.173575    0.388744   -0.001302
-     6   -0.000635   -0.232271    0.356786
-     7    0.173873   -0.156621   -0.355342
-     8    0.174794   -0.389984   -0.001007
-     9   -0.000617    0.235034   -0.356677
-    10   -0.173841    0.154799    0.357871
+     1   -0.002255   -0.001146   -0.000513
+     2   -0.002006   -0.002069   -0.005975
+     3    0.004192    0.001703    0.001479
+     4    0.004160    0.002013    0.001262
+     5    0.070472   -0.156335   -0.001034
+     6   -0.000249    0.094850   -0.142962
+     7   -0.069691    0.061830    0.143870
+     8   -0.069379    0.156490   -0.000924
+     9   -0.000290   -0.092856    0.144133
+    10    0.070352   -0.063341   -0.143044
 ----------------------------------------
- Tot   -0.001191   -0.001147    0.000055
+   Tot    0.005306    0.001139   -0.003707
 ----------------------------------------
- Max    0.389984
- Res    0.190695    sqrt( Sum f_i^2 / 3N )
+   Max    0.156490
+   Res    0.076690    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.389984    constrained
+   Max    0.156490    constrained
 
-Stress-tensor-Voigt (kbar):    -1026.00    -1040.58    -1042.66        8.14        2.38        5.33
-Target enthalpy (eV/cell)    -2900.5863
+Stress-tensor-Voigt (kbar):     -902.74     -908.03     -909.34        2.95        0.78        1.93
+Target enthalpy (eV/cell)    -2901.6477
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.640375    0.005081    0.003325
-         0.005081   -0.649474    0.001485
-         0.003325    0.001485   -0.650771
+        -0.563441    0.001840    0.001204
+         0.001840   -0.566744    0.000485
+         0.001204    0.000485   -0.567559
 
-siesta: Pressure (static):       1036.41678415  kBar
+siesta: Pressure (static):        906.70573204  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.640375    0.005081    0.003325
-         0.005081   -0.649474    0.001485
-         0.003325    0.001485   -0.650771
+        -0.563441    0.001840    0.001204
+         0.001840   -0.566744    0.000485
+         0.001204    0.000485   -0.567559
 
-siesta: Pressure (total):       1036.41678415  kBar
+siesta: Pressure (total):        906.70573204  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
 siesta:                 ==============================
                             Begin CG move =     10
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000157   -0.00000612   -0.00000537   1  Mg         1
-    0.49999399    0.49999370    0.49999213   1  Mg         2
-    0.24996776    0.24996903    0.24997113   2  C          3
-   -0.25002616   -0.25003372   -0.25002980   2  C          4
-    0.56712142   -0.06713227    0.25000011   3  O          5
-    0.24999317    0.56711718   -0.06713325   3  O          6
-   -0.06713387    0.24999719    0.56712173   3  O          7
-   -0.56713042    0.06711828   -0.25000447   3  O          8
-   -0.25000388   -0.56713596    0.06712331   3  O          9
-    0.06712289   -0.25000718   -0.56713485   3  O         10
+   -0.00000644   -0.00000930   -0.00000790   1  Mg         1
+    0.49999386    0.49999088    0.49998309   1  Mg         2
+    0.24999288    0.24999488    0.24999504   2  C          3
+   -0.25000363   -0.25000836   -0.25000638   2  C          4
+    0.56742440   -0.06743524    0.24999569   3  O          5
+    0.24999306    0.56742325   -0.06743509   3  O          6
+   -0.06743567    0.24999555    0.56742647   3  O          7
+   -0.56743339    0.06742338   -0.25000613   3  O          8
+   -0.25000323   -0.56743686    0.06742487   3  O          9
+    0.06742645   -0.25000665   -0.56743613   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.060 Ang
+siesta: k-grid: Cutoff             =    12.045 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -1366,80 +1360,80 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.375749   -0.245380   -0.160619
-        2.734909    3.424532   -0.160617
-        2.734916    1.222774    3.202859
+        4.348052   -0.254983   -0.166921
+        2.709284    3.410329   -0.166914
+        2.709280    1.211330    3.192378
 
-outcell: Cell vector modules (Ang)   :    4.385566    4.385538    4.385573
-outcell: Cell angles (23,13,12) (deg):     54.5584     54.5584     54.5583
-outcell: Cell volume (Ang**3)        :     52.0783
+outcell: Cell vector modules (Ang)   :    4.358719    4.358718    4.358761
+outcell: Cell angles (23,13,12) (deg):     54.8480     54.8482     54.8477
+outcell: Cell volume (Ang**3)        :     51.5318
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   114.972 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   116.838 Ry
 
-siesta: Eharris(eV) =   -2956.381883
+siesta: Eharris(eV) =   -2955.658043
 
 
-siesta: Eharris(eV) =   -2956.381883
+siesta: Eharris(eV) =   -2955.658043
 
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.002325   -0.001155   -0.000714
-     2   -0.000620   -0.000391   -0.000110
-     3    0.000761    0.000243    0.000305
-     4    0.000748    0.000326    0.000195
-     5    0.117814   -0.264515   -0.000523
-     6   -0.000574    0.158690   -0.242197
-     7   -0.118591    0.105117    0.242577
-     8   -0.118135    0.263317   -0.000252
-     9   -0.000662   -0.157964    0.241793
-    10    0.117705   -0.106093   -0.241739
+     1    0.001520    0.000848   -0.000430
+     2    0.003141    0.001427    0.001495
+     3   -0.000373    0.000454    0.000145
+     4    0.000254   -0.000566   -0.000335
+     5    0.034632   -0.039014    0.006134
+     6    0.015329    0.031096   -0.039057
+     7   -0.005634    0.026034    0.044587
+     8   -0.005945    0.051334    0.006330
+     9    0.015531   -0.021712    0.043993
+    10    0.033442   -0.009201   -0.037767
 ----------------------------------------
- Tot   -0.003880   -0.002425   -0.000665
+   Tot    0.091898    0.040699    0.025095
 ----------------------------------------
- Max    0.264515
- Res    0.129346    sqrt( Sum f_i^2 / 3N )
+   Max    0.051334
+   Res    0.023231    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.264515    constrained
+   Max    0.051334    constrained
 
-Stress-tensor-Voigt (kbar):     -920.00     -938.90     -941.58       10.55        3.09        6.90
-Target enthalpy (eV/cell)    -2901.5939
+Stress-tensor-Voigt (kbar):     -988.91    -1001.19    -1003.05        6.86        2.03        4.49
+Target enthalpy (eV/cell)    -2901.0115
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.574212    0.006586    0.004309
-         0.006586   -0.586006    0.001927
-         0.004309    0.001927   -0.587684
+        -0.617222    0.004281    0.002805
+         0.004281   -0.624889    0.001264
+         0.002805    0.001264   -0.626049
 
-siesta: Pressure (static):        933.49286273  kBar
+siesta: Pressure (static):        997.71793938  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.574212    0.006586    0.004309
-         0.006586   -0.586006    0.001927
-         0.004309    0.001927   -0.587684
+        -0.617222    0.004281    0.002805
+         0.004281   -0.624889    0.001264
+         0.002805    0.001264   -0.626049
 
-siesta: Pressure (total):        933.49286273  kBar
+siesta: Pressure (total):        997.71793938  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
 siesta:                 ==============================
                             Begin CG move =     11
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000669   -0.00001161   -0.00001076   1  Mg         1
-    0.49999235    0.49999179    0.49999051   1  Mg         2
-    0.24996840    0.24996950    0.24997197   2  C          3
-   -0.25002535   -0.25003320   -0.25002919   2  C          4
-    0.56804193   -0.06805534    0.24999836   3  O          5
-    0.24999143    0.56803766   -0.06805621   3  O          6
-   -0.06805707    0.24999509    0.56804262   3  O          7
-   -0.56805241    0.06803761   -0.25000581   3  O          8
-   -0.25000584   -0.56805816    0.06804328   3  O          9
-    0.06804309   -0.25000899   -0.56805731   3  O         10
+   -0.00000546   -0.00000811   -0.00000717   1  Mg         1
+    0.49999513    0.49999265    0.49998599   1  Mg         2
+    0.24999214    0.24999432    0.24999435   2  C          3
+   -0.25000419   -0.25000911   -0.25000710   2  C          4
+    0.56725498   -0.06725871    0.24999995   3  O          5
+    0.24999728    0.56725344   -0.06725892   3  O          6
+   -0.06725878    0.24999979    0.56725722   3  O          7
+   -0.56725687    0.06725390   -0.25000187   3  O          8
+   -0.24999901   -0.56726025    0.06725512   3  O          9
+    0.06725674   -0.25000245   -0.56725948   3  O         10
 
 siesta: k-grid: Number of k-points =   108
-siesta: k-grid: Cutoff             =    12.029 Ang
+siesta: k-grid: Cutoff             =    12.051 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    6   0   0      0.500
 siesta: k-grid:    0   6   0      0.500
@@ -1449,77 +1443,77 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.348918   -0.251791   -0.164815
-        2.712240    3.408812   -0.164812
-        2.712248    1.212639    3.190132
+        4.353077   -0.253781   -0.166134
+        2.713531    3.413272   -0.166128
+        2.713527    1.213228    3.194754
 
-outcell: Cell vector modules (Ang)   :    4.359317    4.359290    4.359326
-outcell: Cell angles (23,13,12) (deg):     54.7635     54.7635     54.7634
-outcell: Cell volume (Ang**3)        :     51.4346
+outcell: Cell vector modules (Ang)   :    4.363632    4.363631    4.363669
+outcell: Cell angles (23,13,12) (deg):     54.8093     54.8094     54.8089
+outcell: Cell volume (Ang**3)        :     51.6520
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   116.676 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   116.515 Ry
 
-siesta: Eharris(eV) =   -2955.508719
+siesta: Eharris(eV) =   -2955.822720
 
 
-siesta: Eharris(eV) =   -2955.508719
+siesta: Eharris(eV) =   -2955.822720
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000353    0.000096    0.000110
-     2   -0.000443   -0.000315   -0.000030
-     3    0.001208    0.000488    0.000426
-     4    0.001240    0.000454    0.000296
-     5   -0.068679    0.157907    0.002802
-     6    0.003136   -0.095092    0.143633
-     7    0.071820   -0.060117   -0.144324
-     8    0.071876   -0.156459    0.003040
-     9    0.003148    0.093512   -0.144289
-    10   -0.068525    0.065567    0.143284
+     1    0.002821    0.001147    0.000972
+     2    0.003748    0.001680    0.002321
+     3   -0.000017    0.000469    0.000218
+     4    0.000475   -0.000281   -0.000186
+     5    0.051702   -0.119422    0.001154
+     6   -0.000519    0.068629   -0.110564
+     7   -0.054374    0.048070    0.107345
+     8   -0.054495    0.117854    0.001330
+     9   -0.000388   -0.072608    0.107131
+    10    0.050778   -0.046045   -0.109729
 ----------------------------------------
- Tot    0.015134    0.006040    0.004948
+   Tot   -0.000268   -0.000507   -0.000007
 ----------------------------------------
- Max    0.157907
- Res    0.076964    sqrt( Sum f_i^2 / 3N )
+   Max    0.119422
+   Res    0.058035    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.157907    constrained
+   Max    0.119422    constrained
 
-Stress-tensor-Voigt (kbar):    -1007.41    -1022.15    -1024.24        8.24        2.41        5.38
-Target enthalpy (eV/cell)    -2900.8319
+Stress-tensor-Voigt (kbar):     -975.20     -990.57     -992.68        8.58        2.53        5.61
+Target enthalpy (eV/cell)    -2901.1563
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.628767    0.005140    0.003360
-         0.005140   -0.637971    0.001503
-         0.003360    0.001503   -0.639276
+        -0.608667    0.005355    0.003504
+         0.005355   -0.618256    0.001576
+         0.003504    0.001576   -0.619574
 
-siesta: Pressure (static):       1017.93498020  kBar
+siesta: Pressure (static):        986.14877046  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.628767    0.005140    0.003360
-         0.005140   -0.637971    0.001503
-         0.003360    0.001503   -0.639276
+        -0.608667    0.005355    0.003504
+         0.005355   -0.618256    0.001576
+         0.003504    0.001576   -0.619574
 
-siesta: Pressure (total):       1017.93498020  kBar
+siesta: Pressure (total):        986.14877046  kBar
 Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
 siesta:                 ==============================
                             Begin CG move =     12
                         ==============================
 
 outcoor: Atomic coordinates (fractional):                   
-   -0.00000501   -0.00001034   -0.00000936   1  Mg         1
-    0.49999155    0.49999080    0.49998967   1  Mg         2
-    0.24996717    0.24996830    0.24997107   2  C          3
-   -0.25002607   -0.25003461   -0.25003034   2  C          4
-    0.56751515   -0.06752584    0.25000330   3  O          5
-    0.24999579    0.56751045   -0.06752681   3  O          6
-   -0.06752774    0.24999958    0.56751604   3  O          7
-   -0.56752295    0.06751068   -0.25000090   3  O          8
-   -0.25000133   -0.56752924    0.06751694   3  O          9
-    0.06751680   -0.25000463   -0.56752846   3  O         10
+   -0.00000135   -0.00000426   -0.00000296   1  Mg         1
+    0.50000147    0.49999882    0.49999310   1  Mg         2
+    0.24999223    0.24999536    0.24999528   2  C          3
+   -0.25000270   -0.25000881   -0.25000667   2  C          4
+    0.56750959   -0.06752103    0.24999815   3  O          5
+    0.24999513    0.56750591   -0.06752330   3  O          6
+   -0.06752050    0.24999796    0.56751142   3  O          7
+   -0.56751901    0.06750792   -0.25000360   3  O          8
+   -0.25000085   -0.56752220    0.06750864   3  O          9
+    0.06750934   -0.25000443   -0.56752229   3  O         10
 
 siesta: k-grid: Number of k-points =   108
 siesta: k-grid: Cutoff             =    12.046 Ang
@@ -1532,629 +1526,276 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.348715   -0.254843   -0.166811
-        2.709831    3.410694   -0.166808
-        2.709840    1.211562    3.192658
+        4.339212   -0.259150   -0.169648
+        2.700285    3.406520   -0.169642
+        2.700281    1.207306    3.189972
 
-outcell: Cell vector modules (Ang)   :    4.359369    4.359340    4.359378
-outcell: Cell angles (23,13,12) (deg):     54.8428     54.8428     54.8427
-outcell: Cell volume (Ang**3)        :     51.5469
+outcell: Cell vector modules (Ang)   :    4.350253    4.350252    4.350290
+outcell: Cell angles (23,13,12) (deg):     54.9696     54.9697     54.9692
+outcell: Cell volume (Ang**3)        :     51.4001
 
 InitMesh: MESH =    24 x    24 x    24 =       13824
-InitMesh: Mesh cutoff (required, used) =   100.000   116.796 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   117.483 Ry
 
-siesta: Eharris(eV) =   -2955.678856
+siesta: Eharris(eV) =   -2955.483315
 
 
-siesta: Eharris(eV) =   -2955.678856
+siesta: Eharris(eV) =   -2955.483315
 
 
 siesta: Atomic forces (eV/Ang):
-     1    0.000059   -0.000051    0.000012
-     2    0.000870    0.000277    0.000331
-     3    0.001415    0.000575    0.000500
-     4    0.001454    0.000538    0.000367
-     5    0.028851   -0.012660    0.007823
-     6    0.021344    0.020147   -0.014396
-     7    0.010151    0.019206    0.024557
-     8    0.010445    0.029504    0.008213
-     9    0.021151   -0.005028    0.024124
-    10    0.029154    0.002356   -0.014399
+     1   -0.001856   -0.001220   -0.000961
+     2   -0.002684   -0.001206   -0.000416
+     3    0.000196    0.000250    0.000676
+     4    0.000336    0.000047    0.000581
+     5   -0.010647    0.025727   -0.001113
+     6   -0.000167   -0.014407    0.023702
+     7    0.012102   -0.011250   -0.022712
+     8    0.011902   -0.024912   -0.000968
+     9   -0.000307    0.016362   -0.022376
+    10   -0.010757    0.009385    0.023565
 ----------------------------------------
- Tot    0.124894    0.054863    0.037133
+   Tot   -0.001881   -0.001223   -0.000022
 ----------------------------------------
- Max    0.029504
- Res    0.014570    sqrt( Sum f_i^2 / 3N )
+   Max    0.025727
+   Res    0.012438    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
- Max    0.029504    constrained
+   Max    0.025727    constrained
 
-Stress-tensor-Voigt (kbar):     -987.43     -998.80    -1000.40        6.35        1.86        4.15
-Target enthalpy (eV/cell)    -2901.0120
+Stress-tensor-Voigt (kbar):    -1034.12    -1024.50    -1023.11       -5.38       -1.57       -3.53
+Target enthalpy (eV/cell)    -2900.8542
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.616301    0.003964    0.002591
-         0.003964   -0.623393    0.001161
-         0.002591    0.001161   -0.624396
+        -0.645442   -0.003355   -0.002202
+        -0.003355   -0.639438   -0.000981
+        -0.002202   -0.000981   -0.638568
 
-siesta: Pressure (static):        995.54448573  kBar
+siesta: Pressure (static):       1027.24535427  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.616301    0.003964    0.002591
-         0.003964   -0.623393    0.001161
-         0.002591    0.001161   -0.624396
+        -0.645442   -0.003355   -0.002202
+        -0.003355   -0.639438   -0.000981
+        -0.002202   -0.000981   -0.638568
 
-siesta: Pressure (total):        995.54448573  kBar
+siesta: Pressure (total):       1027.24535427  kBar
+Cycling the Broyden process...
 
-* Maximum dynamic memory allocated =    14 MB
+* Maximum dynamic memory allocated =    13 MB
 
-outcoor: Relaxed atomic coordinates (fractional):           
-   -0.00000501   -0.00001034   -0.00000936   1  Mg         1
-    0.49999155    0.49999080    0.49998967   1  Mg         2
-    0.24996717    0.24996830    0.24997107   2  C          3
-   -0.25002607   -0.25003461   -0.25003034   2  C          4
-    0.56751515   -0.06752584    0.25000330   3  O          5
-    0.24999579    0.56751045   -0.06752681   3  O          6
-   -0.06752774    0.24999958    0.56751604   3  O          7
-   -0.56752295    0.06751068   -0.25000090   3  O          8
-   -0.25000133   -0.56752924    0.06751694   3  O          9
-    0.06751680   -0.25000463   -0.56752846   3  O         10
+siesta:                 ==============================
+                            Begin CG move =     13
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00000188   -0.00000535   -0.00000400   1  Mg         1
+    0.49999951    0.49999667    0.49999207   1  Mg         2
+    0.24999220    0.24999545    0.24999595   2  C          3
+   -0.25000266   -0.25000860   -0.25000603   2  C          4
+    0.56754237   -0.06754816    0.25000012   3  O          5
+    0.24999727    0.56753847   -0.06755084   3  O          6
+   -0.06754798    0.24999965    0.56754341   3  O          7
+   -0.56754653    0.06754077   -0.25000149   3  O          8
+   -0.24999910   -0.56754943    0.06754161   3  O          9
+    0.06754171   -0.25000232   -0.56755021   3  O         10
+
+siesta: k-grid: Number of k-points =   108
+siesta: k-grid: Cutoff             =    12.048 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    6   0   0      0.500
+siesta: k-grid:    0   6   0      0.500
+siesta: k-grid:    0   0   6      0.500
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:   1250  4250 10000
 
 outcell: Unit cell vectors (Ang):
-        4.348715   -0.254843   -0.166811
-        2.709831    3.410694   -0.166808
-        2.709840    1.211562    3.192658
+        4.348424   -0.255387   -0.167185
+        2.709231    3.410877   -0.167180
+        2.709228    1.211305    3.192975
 
-outcell: Cell vector modules (Ang)   :    4.359369    4.359340    4.359378
-outcell: Cell angles (23,13,12) (deg):     54.8428     54.8428     54.8427
-outcell: Cell volume (Ang**3)        :     51.5469
+outcell: Cell vector modules (Ang)   :    4.359124    4.359124    4.359159
+outcell: Cell angles (23,13,12) (deg):     54.8579     54.8580     54.8576
+outcell: Cell volume (Ang**3)        :     51.5598
 
-siesta: Eigenvalues (eV):
-  ik is    eps
-   1  1 -31.76 -29.30 -27.98 -27.89 -27.52 -26.71 -18.56 -17.44 -17.27 -16.47
-        -16.39 -15.20 -15.03 -12.43 -12.38 -11.95 -11.89 -11.61 -10.87 -10.45
-        -10.07  -9.23  -9.19  -8.57  -1.99   0.42   6.40   7.33  10.75  11.12
-         11.61  11.63  14.02  17.20
-   2  1 -32.03 -29.25 -27.85 -27.49 -27.29 -26.84 -18.35 -17.88 -17.57 -16.87
-        -16.62 -15.55 -15.02 -12.54 -12.15 -12.03 -11.61 -11.39 -10.64 -10.35
-        -10.19  -9.24  -8.64  -8.52  -2.15   0.58   6.04   7.42  10.82  11.30
-         11.54  11.94  13.95  17.61
-   3  1 -31.87 -29.51 -27.70 -27.55 -27.31 -26.96 -18.66 -17.85 -17.30 -16.69
-        -16.59 -15.14 -14.93 -12.79 -12.36 -12.07 -11.69 -11.20 -10.92 -10.33
-        -10.12  -9.27  -8.67  -8.46  -2.01   0.39   6.23   7.38  10.64  11.21
-         11.45  11.69  14.05  17.00
-   4  1 -31.31 -29.86 -28.21 -27.85 -27.25 -27.00 -18.30 -17.33 -17.16 -16.52
-        -16.11 -15.29 -14.53 -12.99 -12.70 -12.39 -11.92 -11.22 -10.98 -10.26
-        -10.00  -9.36  -8.95  -8.54  -1.61  -0.12   6.68   7.20  10.44  10.87
-         11.05  11.44  14.39  16.21
-   5  1 -30.48 -30.37 -28.65 -28.22 -27.26 -26.91 -17.43 -17.25 -16.97 -16.56
-        -15.74 -15.28 -14.63 -13.68 -12.59 -12.58 -11.65 -11.50 -10.98 -10.30
-         -9.82  -9.62  -9.04  -8.67  -0.93  -0.83   6.95   7.04  10.46  10.64
-         10.99  11.12  15.19  15.38
-   6  1 -31.13 -29.70 -28.47 -28.22 -27.45 -26.73 -18.22 -17.12 -16.84 -16.32
-        -16.07 -15.12 -14.37 -13.37 -12.76 -12.39 -11.93 -11.18 -10.90 -10.62
-         -9.88  -9.75  -9.10  -8.67  -1.53  -0.12   6.86   7.14  10.61  10.79
-         11.12  11.39  14.50  16.23
-   7  1 -32.03 -29.25 -27.85 -27.49 -27.29 -26.84 -18.35 -17.88 -17.57 -16.87
-        -16.62 -15.55 -15.02 -12.54 -12.15 -12.03 -11.61 -11.39 -10.64 -10.35
-        -10.19  -9.24  -8.64  -8.52  -2.15   0.58   6.04   7.42  10.82  11.30
-         11.54  11.94  13.95  17.61
-   8  1 -32.48 -28.84 -27.58 -27.49 -26.89 -26.73 -18.54 -18.06 -17.66 -17.24
-        -16.61 -16.17 -15.91 -12.76 -12.49 -11.30 -11.27 -10.80 -10.58 -10.27
-        -10.23  -8.74  -8.56  -8.52  -2.49   1.09   5.37   7.53  11.32  11.60
-         12.17  12.27  13.70  20.87
-   9  1 -32.48 -28.84 -27.58 -27.49 -26.89 -26.73 -18.54 -18.06 -17.66 -17.24
-        -16.61 -16.17 -15.91 -12.76 -12.49 -11.30 -11.27 -10.80 -10.58 -10.27
-        -10.23  -8.74  -8.56  -8.52  -2.49   1.09   5.37   7.53  11.32  11.60
-         12.17  12.27  13.70  20.87
-  10  1 -32.03 -29.25 -27.85 -27.49 -27.29 -26.84 -18.35 -17.88 -17.57 -16.87
-        -16.62 -15.55 -15.02 -12.54 -12.15 -12.03 -11.61 -11.39 -10.64 -10.35
-        -10.19  -9.24  -8.64  -8.52  -2.15   0.58   6.04   7.42  10.82  11.30
-         11.54  11.94  13.95  17.61
-  11  1 -31.19 -30.15 -27.96 -27.75 -27.32 -27.08 -18.19 -17.93 -17.04 -16.39
-        -15.74 -15.14 -14.42 -13.88 -12.53 -12.29 -11.88 -11.39 -10.58 -10.16
-         -9.99  -9.73  -8.67  -8.61  -1.42  -0.38   6.75   7.17  10.48  10.75
-         11.12  11.38  14.53  15.59
-  12  1 -31.19 -30.15 -27.96 -27.75 -27.32 -27.08 -18.19 -17.93 -17.04 -16.39
-        -15.74 -15.14 -14.42 -13.88 -12.53 -12.29 -11.88 -11.39 -10.58 -10.16
-         -9.99  -9.73  -8.67  -8.61  -1.42  -0.38   6.75   7.17  10.48  10.75
-         11.12  11.38  14.53  15.59
-  13  1 -31.87 -29.51 -27.70 -27.55 -27.31 -26.96 -18.66 -17.85 -17.30 -16.69
-        -16.59 -15.14 -14.93 -12.79 -12.36 -12.07 -11.69 -11.20 -10.92 -10.33
-        -10.12  -9.27  -8.67  -8.46  -2.01   0.39   6.23   7.38  10.64  11.21
-         11.45  11.69  14.05  17.00
-  14  1 -32.48 -28.84 -27.58 -27.49 -26.89 -26.73 -18.54 -18.06 -17.66 -17.24
-        -16.61 -16.17 -15.91 -12.76 -12.49 -11.30 -11.27 -10.80 -10.58 -10.27
-        -10.23  -8.74  -8.56  -8.52  -2.49   1.09   5.37   7.53  11.32  11.60
-         12.17  12.27  13.70  20.87
-  15  1 -32.64 -28.79 -27.42 -27.42 -26.67 -26.67 -18.81 -17.86 -17.29 -17.29
-        -17.23 -16.28 -16.28 -13.26 -12.88 -10.83 -10.83 -10.51 -10.51 -10.23
-        -10.23  -8.88  -8.43  -8.43  -2.65   1.22   5.06   7.55  11.74  11.74
-         12.49  12.49  13.57  21.90
-  16  1 -32.35 -29.08 -27.73 -27.34 -26.97 -26.70 -18.74 -17.93 -17.47 -17.00
-        -16.62 -16.25 -15.59 -12.62 -12.52 -11.79 -10.94 -10.82 -10.58 -10.37
-        -10.20  -9.14  -8.74  -8.45  -2.43   0.84   5.60   7.54  11.35  11.63
-         12.06  12.29  13.74  18.04
-  17  1 -31.64 -29.83 -27.97 -27.35 -27.34 -26.90 -18.55 -18.38 -16.72 -16.53
-        -16.14 -15.19 -14.57 -13.79 -12.15 -12.08 -11.55 -11.13 -10.80 -10.51
-         -9.89  -9.77  -8.79  -8.55  -1.77  -0.05   6.49   7.39  10.73  11.19
-         11.34  11.67  14.22  15.68
-  18  1 -30.91 -30.61 -27.80 -27.59 -27.41 -27.07 -18.68 -18.28 -16.37 -16.16
-        -15.40 -15.20 -14.65 -13.86 -12.71 -12.35 -11.72 -11.57 -10.44 -10.23
-        -10.15  -9.58  -8.77  -8.56  -1.15  -0.71   6.98   7.08  10.56  10.71
-         11.21  11.26  14.60  15.09
-  19  1 -31.31 -29.86 -28.21 -27.85 -27.25 -27.00 -18.30 -17.33 -17.16 -16.52
-        -16.11 -15.29 -14.53 -12.99 -12.70 -12.39 -11.92 -11.22 -10.98 -10.26
-        -10.00  -9.36  -8.95  -8.54  -1.61  -0.12   6.68   7.20  10.44  10.87
-         11.05  11.44  14.39  16.21
-  20  1 -32.03 -29.25 -27.85 -27.49 -27.29 -26.84 -18.35 -17.88 -17.57 -16.87
-        -16.62 -15.55 -15.02 -12.54 -12.15 -12.03 -11.61 -11.39 -10.64 -10.35
-        -10.19  -9.24  -8.64  -8.52  -2.15   0.58   6.04   7.42  10.82  11.30
-         11.54  11.94  13.95  17.61
-  21  1 -32.35 -29.08 -27.73 -27.34 -26.97 -26.70 -18.74 -17.93 -17.47 -17.00
-        -16.62 -16.25 -15.59 -12.62 -12.52 -11.79 -10.94 -10.82 -10.58 -10.37
-        -10.20  -9.14  -8.74  -8.45  -2.43   0.84   5.60   7.54  11.35  11.63
-         12.06  12.29  13.74  18.04
-  22  1 -32.23 -29.23 -27.73 -27.34 -27.24 -26.62 -18.76 -17.67 -17.58 -16.73
-        -16.34 -15.98 -15.86 -12.53 -12.28 -11.84 -11.10 -10.97 -10.80 -10.29
-        -10.16  -9.35  -8.89  -8.60  -2.39   0.67   5.81   7.53  11.39  11.61
-         12.17  12.18  13.72  16.95
-  23  1 -31.68 -29.58 -28.12 -27.77 -27.30 -26.66 -18.37 -17.99 -17.25 -16.19
-        -15.97 -15.56 -14.83 -13.25 -12.11 -11.82 -11.56 -11.36 -10.90 -10.47
-         -9.99  -9.83  -9.16  -8.65  -1.90   0.10   6.49   7.42  10.97  11.27
-         11.48  11.86  14.09  15.92
-  24  1 -30.80 -30.36 -28.23 -28.16 -27.24 -26.84 -18.26 -17.78 -16.72 -16.07
-        -15.50 -15.02 -14.79 -13.85 -12.69 -12.19 -11.80 -11.44 -10.75 -10.26
-        -10.13  -9.54  -9.19  -8.66  -1.06  -0.78   6.98   7.15  10.65  10.70
-         11.16  11.27  14.94  15.07
-  25  1 -30.48 -30.37 -28.65 -28.22 -27.26 -26.91 -17.43 -17.25 -16.97 -16.56
-        -15.74 -15.28 -14.63 -13.68 -12.59 -12.58 -11.65 -11.50 -10.98 -10.30
-         -9.82  -9.62  -9.04  -8.67  -0.93  -0.83   6.95   7.04  10.46  10.64
-         10.99  11.12  15.19  15.38
-  26  1 -31.19 -30.15 -27.96 -27.75 -27.32 -27.08 -18.19 -17.93 -17.04 -16.39
-        -15.74 -15.14 -14.42 -13.88 -12.53 -12.29 -11.88 -11.39 -10.58 -10.16
-         -9.99  -9.73  -8.67  -8.61  -1.42  -0.38   6.75   7.17  10.48  10.75
-         11.12  11.38  14.53  15.59
-  27  1 -31.64 -29.83 -27.97 -27.35 -27.34 -26.90 -18.55 -18.38 -16.72 -16.53
-        -16.14 -15.19 -14.57 -13.79 -12.15 -12.08 -11.55 -11.13 -10.80 -10.51
-         -9.89  -9.77  -8.79  -8.55  -1.77  -0.05   6.49   7.39  10.73  11.19
-         11.34  11.67  14.22  15.68
-  28  1 -31.68 -29.58 -28.12 -27.77 -27.30 -26.66 -18.37 -17.99 -17.25 -16.20
-        -15.97 -15.56 -14.83 -13.25 -12.11 -11.82 -11.56 -11.36 -10.90 -10.47
-         -9.99  -9.83  -9.16  -8.65  -1.90   0.10   6.49   7.42  10.97  11.27
-         11.48  11.86  14.09  15.92
-  29  1 -31.33 -29.58 -28.46 -28.09 -27.44 -26.61 -18.53 -17.22 -17.19 -15.86
-        -15.80 -15.11 -14.84 -12.70 -12.55 -11.99 -11.65 -11.40 -11.28 -11.08
-         -9.85  -9.79  -9.54  -8.76  -1.73   0.04   6.85   7.30  10.93  11.06
-         11.54  11.62  14.17  16.08
-  30  1 -30.76 -29.83 -28.90 -28.34 -27.40 -26.65 -18.18 -17.26 -16.40 -15.94
-        -15.87 -15.10 -14.18 -13.70 -12.82 -12.27 -11.77 -11.43 -11.07 -10.84
-        -10.01  -9.61  -9.47  -8.76  -1.33  -0.34   7.07   7.13  10.73  10.81
-         11.17  11.26  14.74  15.86
-  31  1 -31.13 -29.70 -28.47 -28.22 -27.45 -26.73 -18.22 -17.12 -16.84 -16.32
-        -16.07 -15.12 -14.37 -13.37 -12.76 -12.39 -11.93 -11.18 -10.90 -10.62
-         -9.88  -9.75  -9.10  -8.67  -1.53  -0.12   6.86   7.14  10.61  10.79
-         11.12  11.39  14.50  16.23
-  32  1 -31.19 -30.15 -27.96 -27.75 -27.32 -27.08 -18.19 -17.93 -17.04 -16.39
-        -15.74 -15.14 -14.42 -13.88 -12.53 -12.29 -11.88 -11.39 -10.58 -10.16
-         -9.99  -9.73  -8.67  -8.61  -1.42  -0.38   6.75   7.17  10.48  10.75
-         11.12  11.38  14.53  15.59
-  33  1 -30.91 -30.61 -27.80 -27.59 -27.41 -27.07 -18.68 -18.28 -16.37 -16.16
-        -15.40 -15.20 -14.65 -13.86 -12.71 -12.35 -11.72 -11.57 -10.44 -10.23
-        -10.15  -9.58  -8.77  -8.56  -1.15  -0.71   6.98   7.08  10.56  10.71
-         11.21  11.26  14.60  15.09
-  34  1 -30.80 -30.36 -28.23 -28.16 -27.24 -26.84 -18.26 -17.78 -16.72 -16.07
-        -15.50 -15.02 -14.79 -13.85 -12.69 -12.19 -11.80 -11.44 -10.75 -10.26
-        -10.13  -9.54  -9.19  -8.66  -1.06  -0.78   6.98   7.15  10.65  10.70
-         11.16  11.27  14.94  15.07
-  35  1 -30.76 -29.83 -28.90 -28.34 -27.40 -26.65 -18.18 -17.26 -16.40 -15.94
-        -15.87 -15.10 -14.18 -13.70 -12.82 -12.27 -11.77 -11.43 -11.07 -10.84
-        -10.01  -9.61  -9.47  -8.76  -1.33  -0.34   7.07   7.13  10.73  10.81
-         11.17  11.26  14.74  15.86
-  36  1 -30.84 -29.61 -29.06 -28.20 -27.54 -26.65 -18.59 -16.85 -16.39 -16.14
-        -15.43 -15.05 -14.46 -13.13 -12.70 -12.43 -11.96 -11.46 -11.36 -10.98
-        -10.01  -9.71  -9.39  -8.74  -1.48  -0.07   7.09   7.12  10.73  10.83
-         11.25  11.33  14.48  16.37
-  37  1 -30.96 -30.10 -28.48 -27.99 -27.34 -26.77 -18.70 -17.53 -16.35 -15.98
-        -15.73 -15.18 -14.59 -13.17 -13.00 -12.13 -12.05 -11.37 -10.91 -10.51
-        -10.07  -9.46  -9.27  -8.70  -1.43  -0.31   7.02   7.16  10.60  10.86
-         11.22  11.26  14.45  15.85
-  38  1 -31.31 -29.86 -28.21 -27.85 -27.25 -27.00 -18.30 -17.33 -17.16 -16.52
-        -16.11 -15.29 -14.53 -12.99 -12.70 -12.39 -11.92 -11.22 -10.98 -10.26
-        -10.00  -9.36  -8.95  -8.54  -1.61  -0.12   6.68   7.20  10.44  10.87
-         11.05  11.44  14.39  16.21
-  39  1 -31.31 -29.86 -28.21 -27.85 -27.25 -27.00 -18.30 -17.33 -17.16 -16.52
-        -16.11 -15.29 -14.53 -12.99 -12.70 -12.39 -11.92 -11.22 -10.98 -10.26
-        -10.00  -9.36  -8.95  -8.54  -1.61  -0.12   6.68   7.20  10.44  10.87
-         11.05  11.44  14.39  16.21
-  40  1 -30.96 -30.10 -28.48 -27.99 -27.34 -26.77 -18.70 -17.53 -16.35 -15.98
-        -15.73 -15.18 -14.59 -13.17 -13.00 -12.13 -12.05 -11.37 -10.91 -10.51
-        -10.07  -9.46  -9.27  -8.70  -1.43  -0.31   7.02   7.16  10.60  10.86
-         11.22  11.26  14.45  15.85
-  41  1 -30.48 -30.26 -28.80 -28.44 -27.06 -26.80 -18.26 -17.39 -16.41 -15.81
-        -15.63 -15.42 -14.32 -13.58 -12.71 -12.59 -11.58 -11.26 -11.11 -10.68
-        -10.03  -9.83  -9.15  -8.96  -1.10  -0.68   7.13   7.17  10.75  10.80
-         11.13  11.23  14.89  15.46
-  42  1 -30.48 -30.26 -28.80 -28.44 -27.06 -26.80 -18.26 -17.39 -16.41 -15.81
-        -15.63 -15.42 -14.32 -13.58 -12.71 -12.59 -11.58 -11.26 -11.11 -10.68
-        -10.03  -9.83  -9.15  -8.96  -1.10  -0.68   7.13   7.17  10.75  10.80
-         11.13  11.23  14.89  15.46
-  43  1 -31.31 -29.86 -28.21 -27.85 -27.25 -27.00 -18.30 -17.33 -17.16 -16.52
-        -16.11 -15.29 -14.53 -12.99 -12.70 -12.39 -11.92 -11.22 -10.98 -10.26
-        -10.00  -9.36  -8.95  -8.54  -1.61  -0.12   6.68   7.20  10.44  10.87
-         11.05  11.44  14.39  16.21
-  44  1 -31.87 -29.51 -27.70 -27.55 -27.31 -26.96 -18.66 -17.85 -17.30 -16.69
-        -16.59 -15.14 -14.93 -12.79 -12.36 -12.07 -11.69 -11.20 -10.92 -10.33
-        -10.12  -9.27  -8.67  -8.46  -2.01   0.39   6.23   7.38  10.64  11.21
-         11.45  11.69  14.05  17.00
-  45  1 -32.03 -29.25 -27.85 -27.49 -27.29 -26.84 -18.35 -17.88 -17.57 -16.87
-        -16.62 -15.55 -15.02 -12.54 -12.15 -12.03 -11.61 -11.39 -10.64 -10.35
-        -10.19  -9.24  -8.64  -8.52  -2.15   0.58   6.04   7.42  10.82  11.30
-         11.54  11.94  13.95  17.61
-  46  1 -31.76 -29.30 -27.98 -27.89 -27.52 -26.71 -18.56 -17.44 -17.27 -16.47
-        -16.39 -15.20 -15.03 -12.43 -12.38 -11.95 -11.89 -11.61 -10.87 -10.45
-        -10.07  -9.23  -9.19  -8.57  -1.99   0.42   6.40   7.33  10.75  11.12
-         11.61  11.63  14.02  17.20
-  47  1 -31.13 -29.70 -28.47 -28.22 -27.45 -26.73 -18.22 -17.12 -16.84 -16.32
-        -16.07 -15.12 -14.37 -13.37 -12.76 -12.39 -11.93 -11.18 -10.90 -10.62
-         -9.88  -9.75  -9.10  -8.67  -1.53  -0.12   6.86   7.14  10.61  10.79
-         11.12  11.39  14.50  16.23
-  48  1 -30.48 -30.37 -28.65 -28.22 -27.26 -26.91 -17.43 -17.25 -16.97 -16.56
-        -15.74 -15.28 -14.63 -13.68 -12.59 -12.58 -11.65 -11.50 -10.98 -10.30
-         -9.82  -9.62  -9.04  -8.67  -0.93  -0.83   6.95   7.04  10.46  10.64
-         10.99  11.12  15.19  15.38
-  49  1 -31.31 -29.86 -28.21 -27.85 -27.25 -27.00 -18.30 -17.33 -17.16 -16.52
-        -16.11 -15.29 -14.53 -12.99 -12.70 -12.39 -11.92 -11.22 -10.98 -10.26
-        -10.00  -9.36  -8.95  -8.54  -1.61  -0.12   6.68   7.20  10.44  10.87
-         11.05  11.44  14.39  16.21
-  50  1 -32.03 -29.25 -27.85 -27.49 -27.29 -26.84 -18.35 -17.88 -17.57 -16.87
-        -16.62 -15.55 -15.02 -12.54 -12.15 -12.03 -11.61 -11.39 -10.64 -10.35
-        -10.19  -9.24  -8.64  -8.52  -2.15   0.58   6.04   7.42  10.82  11.30
-         11.54  11.94  13.95  17.61
-  51  1 -32.35 -29.08 -27.73 -27.34 -26.97 -26.70 -18.74 -17.93 -17.47 -17.00
-        -16.62 -16.25 -15.59 -12.62 -12.52 -11.79 -10.94 -10.82 -10.58 -10.37
-        -10.20  -9.14  -8.74  -8.45  -2.43   0.84   5.60   7.54  11.35  11.63
-         12.06  12.29  13.74  18.04
-  52  1 -32.23 -29.23 -27.73 -27.34 -27.24 -26.62 -18.76 -17.67 -17.58 -16.73
-        -16.34 -15.98 -15.86 -12.53 -12.28 -11.84 -11.10 -10.97 -10.80 -10.29
-        -10.16  -9.35  -8.89  -8.60  -2.39   0.67   5.81   7.53  11.39  11.61
-         12.17  12.18  13.72  16.95
-  53  1 -31.68 -29.58 -28.12 -27.77 -27.30 -26.66 -18.37 -17.99 -17.25 -16.20
-        -15.97 -15.56 -14.83 -13.25 -12.11 -11.82 -11.56 -11.36 -10.90 -10.47
-         -9.99  -9.83  -9.16  -8.65  -1.90   0.10   6.49   7.42  10.97  11.27
-         11.48  11.86  14.09  15.92
-  54  1 -30.80 -30.36 -28.23 -28.16 -27.24 -26.84 -18.26 -17.78 -16.72 -16.07
-        -15.50 -15.02 -14.79 -13.85 -12.69 -12.19 -11.80 -11.44 -10.75 -10.26
-        -10.13  -9.54  -9.19  -8.66  -1.06  -0.78   6.98   7.15  10.65  10.70
-         11.16  11.27  14.94  15.07
-  55  1 -30.96 -30.10 -28.48 -27.99 -27.34 -26.77 -18.70 -17.53 -16.35 -15.98
-        -15.73 -15.18 -14.59 -13.17 -13.00 -12.13 -12.05 -11.37 -10.91 -10.51
-        -10.07  -9.46  -9.27  -8.70  -1.43  -0.31   7.02   7.16  10.60  10.86
-         11.22  11.26  14.45  15.85
-  56  1 -31.76 -29.30 -27.98 -27.89 -27.52 -26.71 -18.56 -17.44 -17.27 -16.47
-        -16.39 -15.20 -15.03 -12.43 -12.38 -11.95 -11.89 -11.61 -10.87 -10.45
-        -10.07  -9.23  -9.19  -8.57  -1.99   0.42   6.40   7.33  10.75  11.12
-         11.61  11.63  14.02  17.20
-  57  1 -32.23 -29.23 -27.73 -27.34 -27.24 -26.62 -18.76 -17.67 -17.58 -16.73
-        -16.34 -15.98 -15.86 -12.53 -12.28 -11.84 -11.10 -10.97 -10.80 -10.29
-        -10.16  -9.35  -8.89  -8.60  -2.39   0.67   5.81   7.53  11.39  11.61
-         12.17  12.18  13.72  16.95
-  58  1 -32.26 -29.54 -27.36 -27.36 -26.81 -26.81 -19.01 -17.75 -17.08 -17.08
-        -16.43 -16.00 -16.00 -12.85 -12.47 -11.31 -11.31 -10.59 -10.59 -10.10
-        -10.05 -10.05  -8.69  -8.69  -2.50   0.49   5.73   7.52  11.83  11.83
-         12.42  12.42  13.60  15.56
-  59  1 -31.86 -29.81 -27.93 -27.28 -27.08 -26.70 -18.71 -18.22 -16.82 -16.48
-        -16.33 -15.71 -15.19 -12.82 -12.23 -11.85 -11.18 -10.90 -10.73 -10.50
-        -10.15  -9.98  -9.31  -8.70  -2.12   0.00   6.31   7.50  11.52  11.70
-         11.89  12.18  13.84  15.04
-  60  1 -31.09 -30.18 -28.56 -27.74 -27.09 -26.74 -18.57 -18.09 -16.36 -16.25
-        -15.47 -15.19 -14.34 -14.08 -12.40 -11.77 -11.42 -11.38 -10.95 -10.67
-        -10.21  -9.65  -9.55  -8.83  -1.29  -0.70   6.96   7.39  10.95  11.10
-         11.39  11.56  14.58  14.86
-  61  1 -30.48 -30.26 -28.80 -28.44 -27.06 -26.80 -18.26 -17.39 -16.41 -15.81
-        -15.63 -15.42 -14.32 -13.58 -12.71 -12.59 -11.58 -11.26 -11.11 -10.68
-        -10.03  -9.83  -9.15  -8.96  -1.10  -0.68   7.13   7.17  10.75  10.80
-         11.13  11.23  14.89  15.46
-  62  1 -31.13 -29.70 -28.47 -28.22 -27.45 -26.73 -18.22 -17.12 -16.84 -16.32
-        -16.07 -15.12 -14.37 -13.37 -12.76 -12.39 -11.93 -11.18 -10.90 -10.62
-         -9.88  -9.75  -9.10  -8.67  -1.53  -0.12   6.86   7.14  10.61  10.79
-         11.12  11.39  14.50  16.23
-  63  1 -31.68 -29.58 -28.12 -27.77 -27.30 -26.66 -18.37 -17.99 -17.25 -16.20
-        -15.97 -15.56 -14.83 -13.25 -12.11 -11.82 -11.56 -11.36 -10.90 -10.47
-         -9.99  -9.83  -9.16  -8.65  -1.90   0.10   6.49   7.42  10.97  11.27
-         11.48  11.86  14.09  15.92
-  64  1 -31.86 -29.81 -27.93 -27.28 -27.08 -26.70 -18.71 -18.22 -16.82 -16.48
-        -16.33 -15.71 -15.19 -12.82 -12.23 -11.85 -11.18 -10.90 -10.73 -10.50
-        -10.15  -9.98  -9.31  -8.70  -2.12   0.00   6.31   7.50  11.52  11.70
-         11.89  12.19  13.84  15.04
-  65  1 -31.63 -30.10 -27.73 -27.60 -27.12 -26.65 -18.71 -17.99 -17.19 -16.04
-        -16.04 -15.71 -14.96 -12.36 -12.11 -12.05 -11.45 -11.29 -10.99 -10.46
-        -10.31  -9.77  -9.43  -8.91  -1.96  -0.28   6.58   7.43  11.54  11.70
-         12.03  12.05  13.83  14.71
-  66  1 -31.03 -30.24 -28.32 -28.16 -26.96 -26.71 -18.24 -18.13 -16.73 -16.26
-        -15.40 -15.21 -14.24 -13.57 -12.27 -11.88 -11.43 -11.40 -11.10 -10.76
-        -10.23  -9.97  -9.54  -9.00  -1.39  -0.65   7.05   7.36  11.16  11.26
-         11.51  11.67  14.40  14.91
-  67  1 -30.48 -30.26 -28.80 -28.44 -27.06 -26.80 -18.26 -17.39 -16.41 -15.81
-        -15.63 -15.42 -14.32 -13.58 -12.71 -12.59 -11.58 -11.26 -11.11 -10.68
-        -10.03  -9.83  -9.15  -8.96  -1.10  -0.68   7.13   7.17  10.75  10.80
-         11.13  11.23  14.89  15.46
-  68  1 -30.48 -30.37 -28.65 -28.22 -27.26 -26.91 -17.43 -17.25 -16.97 -16.56
-        -15.74 -15.28 -14.63 -13.68 -12.59 -12.58 -11.65 -11.50 -10.98 -10.30
-         -9.82  -9.62  -9.04  -8.67  -0.93  -0.83   6.95   7.04  10.46  10.64
-         10.99  11.12  15.19  15.38
-  69  1 -30.80 -30.36 -28.23 -28.16 -27.24 -26.84 -18.26 -17.78 -16.72 -16.07
-        -15.50 -15.02 -14.79 -13.85 -12.69 -12.19 -11.80 -11.44 -10.75 -10.26
-        -10.13  -9.54  -9.19  -8.66  -1.06  -0.78   6.98   7.15  10.65  10.70
-         11.16  11.27  14.94  15.07
-  70  1 -31.09 -30.18 -28.56 -27.74 -27.09 -26.74 -18.57 -18.09 -16.36 -16.25
-        -15.47 -15.19 -14.34 -14.08 -12.40 -11.77 -11.42 -11.38 -10.95 -10.67
-        -10.21  -9.65  -9.55  -8.83  -1.29  -0.70   6.96   7.39  10.95  11.10
-         11.39  11.56  14.58  14.86
-  71  1 -31.03 -30.24 -28.32 -28.16 -26.96 -26.71 -18.24 -18.13 -16.73 -16.26
-        -15.40 -15.21 -14.24 -13.57 -12.27 -11.88 -11.43 -11.40 -11.10 -10.76
-        -10.23  -9.97  -9.54  -9.00  -1.39  -0.65   7.05   7.36  11.16  11.26
-         11.51  11.67  14.40  14.91
-  72  1 -30.71 -30.32 -28.76 -28.00 -27.18 -26.64 -18.54 -17.55 -16.79 -15.76
-        -15.63 -14.88 -14.32 -13.41 -12.42 -12.09 -11.60 -11.33 -11.27 -10.75
-        -10.38 -10.09  -9.34  -9.06  -1.29  -0.62   7.25   7.25  11.05  11.07
-         11.47  11.55  14.46  15.18
-  73  1 -31.09 -30.18 -28.56 -27.74 -27.09 -26.74 -18.57 -18.09 -16.36 -16.25
-        -15.47 -15.19 -14.34 -14.08 -12.40 -11.77 -11.42 -11.38 -10.95 -10.67
-        -10.21  -9.65  -9.55  -8.83  -1.29  -0.70   6.96   7.39  10.95  11.10
-         11.39  11.56  14.58  14.86
-  74  1 -30.80 -30.36 -28.23 -28.16 -27.24 -26.84 -18.26 -17.78 -16.72 -16.07
-        -15.50 -15.02 -14.79 -13.85 -12.69 -12.19 -11.80 -11.44 -10.75 -10.26
-        -10.13  -9.54  -9.19  -8.66  -1.06  -0.78   6.98   7.15  10.65  10.70
-         11.16  11.27  14.94  15.07
-  75  1 -30.48 -30.37 -28.65 -28.22 -27.26 -26.91 -17.43 -17.25 -16.97 -16.56
-        -15.74 -15.28 -14.63 -13.68 -12.59 -12.58 -11.65 -11.50 -10.98 -10.30
-         -9.82  -9.62  -9.04  -8.67  -0.93  -0.83   6.95   7.04  10.46  10.64
-         10.99  11.12  15.19  15.38
-  76  1 -30.48 -30.26 -28.80 -28.44 -27.06 -26.80 -18.26 -17.39 -16.41 -15.81
-        -15.63 -15.42 -14.32 -13.58 -12.71 -12.59 -11.58 -11.26 -11.11 -10.68
-        -10.03  -9.83  -9.15  -8.96  -1.10  -0.68   7.13   7.17  10.75  10.80
-         11.13  11.23  14.89  15.46
-  77  1 -30.71 -30.32 -28.76 -28.00 -27.18 -26.64 -18.54 -17.55 -16.79 -15.76
-        -15.63 -14.88 -14.32 -13.41 -12.42 -12.09 -11.60 -11.33 -11.27 -10.75
-        -10.38 -10.09  -9.34  -9.06  -1.29  -0.62   7.25   7.25  11.05  11.07
-         11.47  11.55  14.46  15.18
-  78  1 -31.03 -30.24 -28.32 -28.16 -26.96 -26.71 -18.24 -18.13 -16.73 -16.26
-        -15.40 -15.21 -14.24 -13.57 -12.27 -11.88 -11.43 -11.40 -11.10 -10.76
-        -10.23  -9.97  -9.54  -9.00  -1.39  -0.65   7.05   7.36  11.16  11.26
-         11.51  11.67  14.40  14.91
-  79  1 -30.80 -30.36 -28.23 -28.16 -27.24 -26.84 -18.26 -17.78 -16.72 -16.07
-        -15.50 -15.02 -14.79 -13.85 -12.69 -12.19 -11.80 -11.44 -10.75 -10.26
-        -10.13  -9.54  -9.19  -8.66  -1.06  -0.78   6.98   7.15  10.65  10.70
-         11.16  11.27  14.94  15.07
-  80  1 -30.91 -30.61 -27.80 -27.59 -27.41 -27.07 -18.68 -18.28 -16.37 -16.16
-        -15.40 -15.20 -14.65 -13.86 -12.71 -12.35 -11.72 -11.57 -10.44 -10.23
-        -10.15  -9.58  -8.77  -8.56  -1.15  -0.71   6.98   7.08  10.56  10.71
-         11.21  11.26  14.60  15.09
-  81  1 -31.19 -30.15 -27.96 -27.75 -27.32 -27.08 -18.19 -17.93 -17.04 -16.39
-        -15.75 -15.14 -14.42 -13.88 -12.53 -12.29 -11.88 -11.39 -10.58 -10.16
-         -9.99  -9.73  -8.67  -8.61  -1.42  -0.38   6.75   7.17  10.48  10.75
-         11.12  11.38  14.53  15.59
-  82  1 -31.13 -29.70 -28.47 -28.22 -27.45 -26.73 -18.22 -17.12 -16.84 -16.32
-        -16.07 -15.12 -14.37 -13.37 -12.76 -12.39 -11.93 -11.18 -10.90 -10.62
-         -9.88  -9.75  -9.10  -8.67  -1.53  -0.12   6.86   7.14  10.61  10.79
-         11.12  11.39  14.50  16.23
-  83  1 -30.84 -29.61 -29.06 -28.20 -27.54 -26.65 -18.59 -16.85 -16.39 -16.14
-        -15.43 -15.05 -14.46 -13.13 -12.70 -12.43 -11.96 -11.46 -11.36 -10.98
-        -10.01  -9.71  -9.39  -8.74  -1.48  -0.07   7.09   7.12  10.73  10.83
-         11.25  11.33  14.48  16.37
-  84  1 -30.76 -29.83 -28.90 -28.34 -27.40 -26.65 -18.18 -17.26 -16.40 -15.94
-        -15.87 -15.10 -14.18 -13.70 -12.82 -12.27 -11.77 -11.43 -11.07 -10.84
-        -10.01  -9.61  -9.47  -8.76  -1.33  -0.34   7.07   7.13  10.73  10.81
-         11.17  11.26  14.74  15.86
-  85  1 -30.48 -30.37 -28.65 -28.22 -27.26 -26.91 -17.43 -17.25 -16.97 -16.56
-        -15.74 -15.28 -14.63 -13.68 -12.59 -12.58 -11.65 -11.50 -10.98 -10.30
-         -9.82  -9.62  -9.04  -8.67  -0.93  -0.83   6.95   7.04  10.46  10.64
-         10.99  11.12  15.19  15.38
-  86  1 -31.19 -30.15 -27.96 -27.75 -27.32 -27.08 -18.19 -17.93 -17.04 -16.39
-        -15.74 -15.14 -14.42 -13.88 -12.53 -12.29 -11.88 -11.39 -10.58 -10.16
-         -9.99  -9.73  -8.67  -8.61  -1.42  -0.38   6.75   7.17  10.48  10.75
-         11.12  11.38  14.53  15.59
-  87  1 -31.64 -29.83 -27.97 -27.35 -27.34 -26.90 -18.55 -18.38 -16.72 -16.53
-        -16.14 -15.19 -14.57 -13.79 -12.15 -12.08 -11.55 -11.13 -10.80 -10.51
-         -9.89  -9.77  -8.79  -8.55  -1.77  -0.05   6.49   7.39  10.73  11.19
-         11.34  11.67  14.22  15.68
-  88  1 -31.68 -29.58 -28.12 -27.77 -27.30 -26.66 -18.37 -17.99 -17.25 -16.20
-        -15.97 -15.56 -14.83 -13.25 -12.11 -11.82 -11.56 -11.36 -10.90 -10.47
-         -9.99  -9.83  -9.16  -8.65  -1.90   0.10   6.49   7.42  10.97  11.27
-         11.48  11.86  14.09  15.92
-  89  1 -31.33 -29.58 -28.46 -28.09 -27.44 -26.61 -18.53 -17.22 -17.19 -15.86
-        -15.80 -15.11 -14.84 -12.70 -12.55 -11.99 -11.65 -11.40 -11.28 -11.08
-         -9.85  -9.79  -9.54  -8.76  -1.73   0.04   6.85   7.30  10.93  11.06
-         11.54  11.62  14.17  16.08
-  90  1 -30.76 -29.83 -28.90 -28.34 -27.40 -26.65 -18.18 -17.26 -16.40 -15.94
-        -15.87 -15.10 -14.18 -13.70 -12.82 -12.27 -11.77 -11.43 -11.07 -10.84
-        -10.01  -9.61  -9.47  -8.76  -1.33  -0.34   7.07   7.13  10.73  10.81
-         11.17  11.26  14.74  15.86
-  91  1 -30.48 -30.26 -28.80 -28.44 -27.06 -26.80 -18.26 -17.39 -16.41 -15.81
-        -15.63 -15.42 -14.32 -13.58 -12.71 -12.59 -11.58 -11.26 -11.11 -10.68
-        -10.03  -9.83  -9.15  -8.96  -1.10  -0.68   7.13   7.17  10.75  10.80
-         11.13  11.23  14.89  15.46
-  92  1 -31.13 -29.70 -28.47 -28.22 -27.45 -26.73 -18.22 -17.12 -16.84 -16.32
-        -16.07 -15.12 -14.37 -13.37 -12.76 -12.39 -11.93 -11.18 -10.90 -10.62
-         -9.88  -9.75  -9.10  -8.67  -1.53  -0.12   6.86   7.14  10.61  10.79
-         11.12  11.39  14.50  16.23
-  93  1 -31.68 -29.58 -28.12 -27.77 -27.30 -26.66 -18.37 -17.99 -17.25 -16.20
-        -15.97 -15.56 -14.83 -13.25 -12.11 -11.82 -11.56 -11.36 -10.90 -10.47
-         -9.99  -9.83  -9.16  -8.65  -1.90   0.10   6.49   7.42  10.97  11.27
-         11.48  11.86  14.09  15.92
-  94  1 -31.86 -29.81 -27.93 -27.28 -27.08 -26.70 -18.71 -18.22 -16.82 -16.48
-        -16.33 -15.71 -15.19 -12.82 -12.23 -11.85 -11.18 -10.90 -10.73 -10.50
-        -10.15  -9.98  -9.31  -8.70  -2.12   0.00   6.31   7.50  11.52  11.70
-         11.89  12.18  13.84  15.04
-  95  1 -31.63 -30.10 -27.73 -27.60 -27.12 -26.65 -18.71 -17.99 -17.19 -16.04
-        -16.04 -15.71 -14.96 -12.36 -12.11 -12.05 -11.45 -11.29 -10.99 -10.46
-        -10.31  -9.77  -9.43  -8.91  -1.96  -0.28   6.58   7.43  11.54  11.70
-         12.03  12.05  13.83  14.71
-  96  1 -31.03 -30.24 -28.32 -28.16 -26.96 -26.71 -18.24 -18.13 -16.73 -16.26
-        -15.40 -15.21 -14.24 -13.57 -12.27 -11.88 -11.43 -11.40 -11.10 -10.76
-        -10.23  -9.97  -9.54  -9.00  -1.39  -0.65   7.05   7.36  11.16  11.26
-         11.51  11.67  14.40  14.91
-  97  1 -30.71 -30.32 -28.76 -28.00 -27.18 -26.64 -18.54 -17.55 -16.79 -15.76
-        -15.63 -14.88 -14.32 -13.41 -12.42 -12.09 -11.60 -11.33 -11.27 -10.75
-        -10.38 -10.09  -9.34  -9.06  -1.29  -0.62   7.25   7.25  11.05  11.07
-         11.47  11.55  14.46  15.18
-  98  1 -30.84 -29.61 -29.06 -28.20 -27.54 -26.65 -18.59 -16.85 -16.39 -16.14
-        -15.43 -15.05 -14.46 -13.13 -12.70 -12.43 -11.96 -11.46 -11.36 -10.98
-        -10.01  -9.71  -9.39  -8.74  -1.48  -0.07   7.09   7.12  10.73  10.83
-         11.25  11.33  14.48  16.37
-  99  1 -31.33 -29.58 -28.46 -28.09 -27.44 -26.61 -18.53 -17.22 -17.19 -15.86
-        -15.80 -15.11 -14.84 -12.70 -12.55 -11.99 -11.65 -11.40 -11.28 -11.08
-         -9.85  -9.79  -9.54  -8.76  -1.73   0.04   6.85   7.30  10.93  11.06
-         11.54  11.62  14.17  16.08
- 100  1 -31.63 -30.10 -27.73 -27.60 -27.12 -26.65 -18.71 -17.99 -17.19 -16.04
-        -16.04 -15.71 -14.96 -12.36 -12.11 -12.05 -11.45 -11.29 -10.99 -10.46
-        -10.31  -9.77  -9.43  -8.91  -1.96  -0.28   6.58   7.43  11.54  11.70
-         12.03  12.05  13.83  14.71
- 101  1 -31.54 -30.57 -27.22 -27.22 -27.02 -27.02 -18.82 -18.36 -16.59 -16.59
-        -16.07 -16.07 -14.43 -12.50 -12.34 -11.82 -11.34 -11.34 -10.93 -10.93
-         -9.71  -9.71  -9.21  -9.21  -1.89  -0.74   6.61   7.25  12.01  12.01
-         12.24  12.24  13.67  13.96
- 102  1 -31.07 -30.77 -27.88 -27.56 -26.92 -26.78 -18.48 -18.42 -16.65 -16.30
-        -16.14 -15.51 -13.71 -13.31 -11.87 -11.81 -11.68 -11.53 -10.96 -10.85
-         -9.96  -9.83  -9.54  -9.24  -1.36  -1.09   7.03   7.22  11.72  11.73
-         11.85  12.01  14.07  14.12
- 103  1 -31.03 -30.24 -28.32 -28.16 -26.96 -26.71 -18.24 -18.13 -16.73 -16.26
-        -15.40 -15.21 -14.24 -13.57 -12.27 -11.88 -11.43 -11.40 -11.10 -10.76
-        -10.23  -9.97  -9.54  -9.00  -1.39  -0.65   7.05   7.36  11.16  11.26
-         11.51  11.67  14.40  14.91
- 104  1 -30.76 -29.83 -28.90 -28.34 -27.40 -26.65 -18.18 -17.26 -16.40 -15.94
-        -15.87 -15.10 -14.18 -13.70 -12.82 -12.27 -11.77 -11.43 -11.07 -10.84
-        -10.01  -9.61  -9.47  -8.76  -1.33  -0.34   7.07   7.13  10.73  10.81
-         11.17  11.26  14.74  15.86
- 105  1 -30.76 -29.83 -28.90 -28.34 -27.40 -26.65 -18.18 -17.26 -16.40 -15.94
-        -15.87 -15.10 -14.18 -13.70 -12.82 -12.27 -11.77 -11.43 -11.07 -10.84
-        -10.01  -9.61  -9.47  -8.76  -1.33  -0.34   7.07   7.13  10.73  10.81
-         11.17  11.26  14.74  15.86
- 106  1 -31.03 -30.24 -28.32 -28.16 -26.96 -26.71 -18.24 -18.13 -16.73 -16.26
-        -15.40 -15.21 -14.24 -13.57 -12.27 -11.88 -11.43 -11.40 -11.10 -10.76
-        -10.23  -9.97  -9.54  -9.00  -1.39  -0.65   7.05   7.36  11.16  11.26
-         11.51  11.67  14.40  14.91
- 107  1 -31.07 -30.77 -27.88 -27.56 -26.92 -26.78 -18.48 -18.42 -16.65 -16.30
-        -16.14 -15.51 -13.71 -13.31 -11.87 -11.81 -11.68 -11.53 -10.96 -10.85
-         -9.96  -9.83  -9.54  -9.24  -1.36  -1.09   7.03   7.22  11.72  11.73
-         11.85  12.01  14.07  14.12
- 108  1 -31.07 -30.77 -27.88 -27.56 -26.92 -26.78 -18.48 -18.42 -16.65 -16.30
-        -16.14 -15.51 -13.71 -13.31 -11.87 -11.81 -11.68 -11.53 -10.96 -10.85
-         -9.96  -9.83  -9.54  -9.24  -1.36  -1.09   7.03   7.22  11.72  11.73
-         11.85  12.01  14.07  14.12
-siesta: Fermi energy =      -5.369910 eV
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: Mesh cutoff (required, used) =   100.000   116.832 Ry
+
+siesta: Eharris(eV) =   -2955.698927
+
+
+siesta: Eharris(eV) =   -2955.698927
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000098   -0.000206   -0.000114
+     2   -0.000144    0.000149    0.000525
+     3    0.000786    0.000325   -0.000073
+     4    0.000780    0.000329   -0.000019
+     5   -0.003425    0.006998   -0.000018
+     6   -0.000104   -0.004561    0.006267
+     7    0.003077   -0.003092   -0.006482
+     8    0.002898   -0.007246    0.000100
+     9   -0.000331    0.004195   -0.006562
+    10   -0.003435    0.002860    0.006335
+----------------------------------------
+   Tot    0.000200   -0.000248   -0.000040
+----------------------------------------
+   Max    0.007246
+   Res    0.003490    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.007246    constrained
+
+Stress-tensor-Voigt (kbar):     -992.07     -999.61    -1000.68        4.22        1.24        2.77
+Target enthalpy (eV/cell)    -2901.0180
+
+siesta: Stress tensor (static) (eV/Ang**3):
+        -0.619196    0.002634    0.001727
+         0.002634   -0.623904    0.000773
+         0.001727    0.000773   -0.624571
+
+siesta: Pressure (static):        997.45684229  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+        -0.619196    0.002634    0.001727
+         0.002634   -0.623904    0.000773
+         0.001727    0.000773   -0.624571
+
+siesta: Pressure (total):        997.45684229  kBar
+
+* Maximum dynamic memory allocated =    13 MB
+
+outcoor: Relaxed atomic coordinates (fractional):           
+   -0.00000188   -0.00000535   -0.00000400   1  Mg         1
+    0.49999951    0.49999667    0.49999207   1  Mg         2
+    0.24999220    0.24999545    0.24999595   2  C          3
+   -0.25000266   -0.25000860   -0.25000603   2  C          4
+    0.56754237   -0.06754816    0.25000012   3  O          5
+    0.24999727    0.56753847   -0.06755084   3  O          6
+   -0.06754798    0.24999965    0.56754341   3  O          7
+   -0.56754653    0.06754077   -0.25000149   3  O          8
+   -0.24999910   -0.56754943    0.06754161   3  O          9
+    0.06754171   -0.25000232   -0.56755021   3  O         10
+
+outcell: Unit cell vectors (Ang):
+        4.348424   -0.255387   -0.167185
+        2.709231    3.410877   -0.167180
+        2.709228    1.211305    3.192975
+
+outcell: Cell vector modules (Ang)   :    4.359124    4.359124    4.359159
+outcell: Cell angles (23,13,12) (deg):     54.8579     54.8580     54.8576
+outcell: Cell volume (Ang**3)        :     51.5598
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =      5228.674091
-siesta: Ena     =      1067.474936
-siesta: Ekin    =      2502.130217
-siesta: Enl     =      -410.763437
-siesta: DEna    =      -141.622137
-siesta: DUscf   =        27.587028
+siesta: Ena     =      1067.508869
+siesta: Ekin    =      2501.977335
+siesta: Enl     =      -410.723669
+siesta: DEna    =      -141.596861
+siesta: DUscf   =        27.593936
 siesta: DUext   =         0.000000
-siesta: Exc     =      -749.317165
+siesta: Exc     =      -749.284204
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =     -2955.678856
-siesta: Etot    =     -2933.184649
-siesta: FreeEng =     -2933.184649
+siesta: Eharris =     -2955.698927
+siesta: Etot    =     -2933.198685
+siesta: FreeEng =     -2933.198685
 
 siesta: Final energy (eV):
-siesta:       Kinetic =    2502.130217
-siesta:       Hartree =     684.625749
+siesta:       Kinetic =    2501.977335
+siesta:       Hartree =     684.643560
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -749.317165
-siesta:  Ion-electron =   -3545.695523
-siesta:       Ion-ion =   -1824.927927
+siesta:   Exch.-corr. =    -749.284204
+siesta:  Ion-electron =   -3545.410446
+siesta:       Ion-ion =   -1825.124931
 siesta:       Ekinion =       0.000000
-siesta:         Total =   -2933.184649
+siesta:         Total =   -2933.198685
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.616301    0.003964    0.002591
-siesta:     0.003964   -0.623393    0.001161
-siesta:     0.002591    0.001161   -0.624396
+siesta:    -0.619196    0.002634    0.001727
+siesta:     0.002634   -0.623904    0.000773
+siesta:     0.001727    0.000773   -0.624571
 
 siesta: Constrained stress tensor (static) (eV/Ang**3):
-siesta:    -0.616301    0.003964    0.002591
-siesta:     0.003964   -0.623393    0.001161
-siesta:     0.002591    0.001161   -0.624396
+siesta:    -0.619196    0.002634    0.001727
+siesta:     0.002634   -0.623904    0.000773
+siesta:     0.001727    0.000773   -0.624571
 
-siesta: Cell volume =         51.546859 Ang**3
+siesta: Cell volume =         51.559772 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
-siesta:           0.00676744          0.00676021  Ry/Bohr**3
-siesta:           0.62136328          0.62069985  eV/Ang**3
-siesta:         995.54448573        994.48154962  kBar
+siesta:           0.00678044          0.00678458  Ry/Bohr**3
+siesta:           0.62255686          0.62293682  eV/Ang**3
+siesta:         997.45684229        998.06560887  kBar
 
-* Maximum dynamic memory allocated : Node    0 =    14 MB
+* Maximum dynamic memory allocated : Node    0 =    13 MB
 
 * Maximum memory occured during ranger                        
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      92.810      92.810   100.00
-timer:  Setup             1       0.600       0.600     0.65
-timer:  bands             1       0.000       0.000     0.00
+timer:  siesta            1      69.141      69.141   100.00
+timer:  Setup             1       0.648       0.648     0.94
+timer:  bands             1       0.001       0.001     0.00
 timer:  writewave         1       0.000       0.000     0.00
-timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD           13       7.091      92.180    99.32
-timer:  hsparse          16       0.550       8.800     9.48
-timer:  overfsm          26       0.024       0.620     0.67
-timer:  IterSCF          26       2.969      77.200    83.18
-timer:  kinefsm          26       0.022       0.570     0.61
-timer:  nlefsm           26       0.992      25.790    27.79
-timer:  DHSCF            26       1.243      32.320    34.82
-timer:  DHSCF1           13       0.197       2.560     2.76
-timer:  DHSCF2           13       1.165      15.140    16.31
-timer:  REORD           234       0.000       0.010     0.01
-timer:  POISON           39       0.002       0.080     0.09
-timer:  DHSCF3           26       0.215       5.600     6.03
-timer:  rhoofd           26       0.110       2.850     3.07
-timer:  cellXC           39       0.013       0.490     0.53
-timer:  vmat             26       0.090       2.330     2.51
-timer:  diagon           13       1.379      17.930    19.32
-timer:  cdiag          2808       0.003       9.130     9.84
-timer:  cdiag1         2808       0.001       3.620     3.90
-timer:  cdiag2         2808       0.000       0.650     0.70
-timer:  cdiag3         2808       0.001       3.800     4.09
-timer:  cdiag4         2808       0.000       0.130     0.14
-timer:  DHSCF4           13       0.693       9.010     9.71
-timer:  dfscf            13       0.422       5.490     5.92
+timer:  KSV_init          1       0.001       0.001     0.00
+timer:  IterMD           14       4.890      68.458    99.01
+timer:  hsparse          17       0.353       5.997     8.67
+timer:  overfsm          28       0.014       0.385     0.56
+timer:  IterSCF          28       2.055      57.552    83.24
+timer:  kinefsm          28       0.013       0.354     0.51
+timer:  nlefsm           28       0.634      17.754    25.68
+timer:  DHSCF            28       0.925      25.902    37.46
+timer:  DHSCF1           14       0.110       1.541     2.23
+timer:  DHSCF2           14       0.782      10.949    15.84
+timer:  REORD           252       0.000       0.027     0.04
+timer:  POISON           42       0.004       0.176     0.25
+timer:  DHSCF3           28       0.229       6.405     9.26
+timer:  rhoofd           28       0.124       3.458     5.00
+timer:  cellXC           42       0.012       0.495     0.72
+timer:  vmat             28       0.088       2.464     3.56
+timer:  diagon           14       0.935      13.089    18.93
+timer:  cdiag          3024       0.002       5.091     7.36
+timer:  cdiag1         3024       0.000       0.154     0.22
+timer:  cdiag2         3024       0.000       0.668     0.97
+timer:  cdiag3         3024       0.001       3.959     5.73
+timer:  cdiag4         3024       0.000       0.158     0.23
+timer:  DHSCF4           14       0.499       6.992    10.11
+timer:  dfscf            14       0.321       4.494     6.50
 timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      93.850      93.850   100.00
-elaps:  Setup             1       0.610       0.610     0.65
+elaps:  siesta            1      70.630      70.630   100.00
+elaps:  Setup             1       1.388       1.388     1.96
 elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.000       0.000     0.00
+elaps:  writewave         1       0.001       0.001     0.00
 elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD           13       7.169      93.200    99.31
-elaps:  hsparse          16       0.560       8.960     9.55
-elaps:  overfsm          26       0.024       0.630     0.67
-elaps:  IterSCF          26       2.999      77.980    83.09
-elaps:  kinefsm          26       0.023       0.600     0.64
-elaps:  nlefsm           26       1.004      26.110    27.82
-elaps:  DHSCF            26       1.248      32.440    34.57
-elaps:  DHSCF1           13       0.196       2.550     2.72
-elaps:  DHSCF2           13       1.171      15.220    16.22
-elaps:  REORD           234       0.000       0.010     0.01
-elaps:  POISON           39       0.005       0.190     0.20
-elaps:  DHSCF3           26       0.216       5.610     5.98
-elaps:  rhoofd           26       0.107       2.780     2.96
-elaps:  cellXC           39       0.013       0.520     0.55
-elaps:  vmat             26       0.090       2.350     2.50
-elaps:  diagon           13       1.405      18.260    19.46
-elaps:  cdiag          2808       0.003       9.470    10.09
-elaps:  cdiag1         2808       0.001       3.910     4.17
-elaps:  cdiag2         2808       0.000       0.810     0.86
-elaps:  cdiag3         2808       0.001       4.020     4.28
-elaps:  cdiag4         2808       0.000       0.160     0.17
-elaps:  DHSCF4           13       0.695       9.030     9.62
-elaps:  dfscf            13       0.424       5.510     5.87
+elaps:  IterMD           14       4.943      69.205    97.98
+elaps:  hsparse          17       0.353       5.993     8.49
+elaps:  overfsm          28       0.014       0.388     0.55
+elaps:  IterSCF          28       2.074      58.060    82.20
+elaps:  kinefsm          28       0.013       0.353     0.50
+elaps:  nlefsm           28       0.634      17.755    25.14
+elaps:  DHSCF            28       0.925      25.898    36.67
+elaps:  DHSCF1           14       0.110       1.543     2.18
+elaps:  DHSCF2           14       0.782      10.948    15.50
+elaps:  REORD           252       0.000       0.026     0.04
+elaps:  POISON           42       0.004       0.175     0.25
+elaps:  DHSCF3           28       0.229       6.406     9.07
+elaps:  rhoofd           28       0.124       3.459     4.90
+elaps:  cellXC           42       0.012       0.495     0.70
+elaps:  vmat             28       0.088       2.467     3.49
+elaps:  diagon           14       0.936      13.098    18.54
+elaps:  cdiag          3024       0.002       5.114     7.24
+elaps:  cdiag1         3024       0.000       0.162     0.23
+elaps:  cdiag2         3024       0.000       0.689     0.97
+elaps:  cdiag3         3024       0.001       3.932     5.57
+elaps:  cdiag4         3024       0.000       0.158     0.22
+elaps:  DHSCF4           14       0.499       6.990     9.90
+elaps:  dfscf            14       0.321       4.492     6.36
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:   7-DEC-2005  11:20:07
+>> End of run:  24-FEB-2006  12:55:10
