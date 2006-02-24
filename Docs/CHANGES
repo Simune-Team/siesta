@@ -10,6 +10,501 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2005/siesta--pre-release--2.0
 --------------------------------------------------------------------
 
+2006-02-24 16:06:00 GMT Alberto Garcia <wdpgaara@lg.ehu.es>	patch-30
+
+	2.0 release point
+	Will move to new branch siesta--release--2.0
+
+2006-02-24 15:39:13 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-29
+
+    Summary:
+      Add pathscale .make files
+    Revision:
+      siesta--pre-release--2.0--patch-29
+
+
+    new files:
+     Src/Sys/.arch-ids/pathscale-mpi.make.id
+     Src/Sys/.arch-ids/pathscale.make.id Src/Sys/pathscale-mpi.make
+     Src/Sys/pathscale.make
+
+    modified files:
+     Src/Sys/cscs-cray-mpi.make
+
+
+2006-02-24 14:55:21 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-28
+
+    Summary:
+      Remove version.o dependency from Makefile
+    Revision:
+      siesta--pre-release--2.0--patch-28
+
+
+    modified files:
+     Src/Makefile
+
+
+2006-02-24 12:06:18 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-27
+
+    Summary:
+      Update Reference outputs + cosmetic changes in version.F90 
+    Revision:
+      siesta--pre-release--2.0--patch-27
+
+    * New outputs in Tests/Reference
+    * New SGE script in Tests/Scripts
+    * Cosmetic change to version line in version.F90
+    
+
+    new files:
+     Tests/Reference/.arch-ids/si2x1h.out.id
+     Tests/Reference/si2x1h.out
+     Tests/Scripts/.arch-ids/sge_run.sh.id Tests/Scripts/sge_run.sh
+
+    modified files:
+     Src/version.F90 Tests/Makefile Tests/Reference/batio3.out
+     Tests/Reference/bessel.out Tests/Reference/constant_volume.out
+     Tests/Reference/fe.out Tests/Reference/fe_broyden.out
+     Tests/Reference/floating.out Tests/Reference/h2o.out
+     Tests/Reference/h2oZ.out Tests/Reference/h2o_dos.out
+     Tests/Reference/h2o_op_broyden.out
+     Tests/Reference/h2o_orderN.out Tests/Reference/md_anneal.out
+     Tests/Reference/md_nose.out Tests/Reference/md_npr.out
+     Tests/Reference/md_pr.out Tests/Reference/md_verlet.out
+     Tests/Reference/mgco3.out Tests/Reference/si64.out
+     Tests/Reference/sih.out Tests/Reference/sih_op_broyden.out
+     Tests/Reference/var_cell.out Tests/Reference/zmatrix.out
+
+
+2006-02-24 11:48:08 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-26
+
+    Summary:
+      Update top-file README and SIESTA_LICENCE
+    Revision:
+      siesta--pre-release--2.0--patch-26
+
+
+    new files:
+     .arch-ids/SIESTA_LICENCE.id SIESTA_LICENCE
+
+    modified files:
+     README
+
+
+2006-02-24 11:33:10 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-25
+
+    Summary:
+      Include information about pdf manual files
+    Revision:
+      siesta--pre-release--2.0--patch-25
+
+
+    new files:
+     Docs/.arch-ids/README.id Docs/README
+     Util/Denchar/Docs/.arch-ids/README.id Util/Denchar/Docs/README
+
+    modified files:
+     Docs/release.notes_2.0 Pseudo/atom/Docs/README README
+     Util/Denchar/Docs/denchar.tex
+
+
+2006-02-24 10:56:42 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-24
+
+    Summary:
+      Remove ancillary files from top of distribution
+    Revision:
+      siesta--pre-release--2.0--patch-24
+
+    Old release-related and administrative files have been removed from
+    the code distribution, as well as the Specs directory.
+    
+    
+
+    removed files:
+     .arch-ids/PACKAGING.id .arch-ids/Siesta-licence.pdf.id
+     .arch-ids/Siesta-licence.txt.id .arch-ids/build_parallel.sh.id
+     .arch-ids/build_serial.sh.id .arch-ids/copyright.id
+     .arch-ids/cover.collab.id .arch-ids/cover.indeps.id
+     .arch-ids/cover.parallel.id .arch-ids/dempi.py.id
+     .arch-ids/put_copyright.sh.id .arch-ids/user.list.id PACKAGING
+     Siesta-licence.pdf Siesta-licence.txt Specs/.arch-ids/=id
+     Specs/.arch-ids/Broyden.specs.id Specs/Broyden.specs
+     build_parallel.sh build_serial.sh copyright cover.collab
+     cover.indeps cover.parallel dempi.py put_copyright.sh
+     user.list
+
+    removed directories:
+     Specs Specs/.arch-ids
+
+
+2006-02-24 10:52:25 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-23
+
+    Summary:
+      Update MD restart info and output options in manual
+    Revision:
+      siesta--pre-release--2.0--patch-23
+
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex
+
+
+2006-02-23 22:24:47 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-22
+
+    Summary:
+      Deactivated pre-commit hook to update version.info. Set to 2.0-release
+    Revision:
+      siesta--pre-release--2.0--patch-22
+
+    The atomatic updating of version.info has been deactivated 
+    (in file {arch}/=hook) in the pre-release branch so that the
+    version string can be fixed to "siesta-2.0-release".
+    
+
+    modified files:
+     version.info {arch}/=hook
+
+
+2006-02-23 22:21:50 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-21
+
+    Summary:
+      Declare variable in md_out.F90
+    Revision:
+      siesta--pre-release--2.0--patch-21
+
+
+    modified files:
+     Src/md_out.F90
+
+
+2006-02-23 19:09:10 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-20
+
+    Summary:
+      Use slabel-prefixed restart files in dynamics.f
+    Revision:
+      siesta--pre-release--2.0--patch-20
+
+
+    modified files:
+     Src/dynamics.f
+
+
+2006-02-23 15:08:40 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-19
+
+    Summary:
+      Close MD netCDF file at each step. Wrap netcdf code completely
+    Revision:
+      siesta--pre-release--2.0--patch-19
+
+    * Surround all the MD netcdf code with preprocessor directives.
+    * Close MD netcdf file at each step to avoid leaving it in an
+      undefined state.
+    
+
+    modified files:
+     Src/md_out.F90 Src/siesta.F
+
+
+2006-02-23 11:59:15 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-18
+
+    Summary:
+      Remove -u flag from g95-cdf.conf
+    Revision:
+      siesta--pre-release--2.0--patch-18
+
+
+    modified files:
+     Src/Confs/g95-cdf.conf
+
+
+2006-02-23 11:50:54 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-17
+
+    Summary:
+      Update affiliations in Siesta-licence.txt
+    Revision:
+      siesta--pre-release--2.0--patch-17
+
+
+    modified files:
+     Siesta-licence.txt
+
+
+2006-02-23 11:40:55 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-16
+
+    Summary:
+      Update dependencies in Makefile
+    Revision:
+      siesta--pre-release--2.0--patch-16
+
+
+    modified files:
+     Src/Makefile
+
+
+2006-02-23 11:27:25 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-15
+
+    Summary:
+      Correct typos
+    Revision:
+      siesta--pre-release--2.0--patch-15
+
+
+    modified files:
+     Src/atom.f Src/m_denchar_geom.f Src/m_denchar_init.F
+     Src/m_denchar_io.F Src/outcoor.f
+
+
+2006-02-23 10:58:05 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-14
+
+    Summary:
+      Enable experimental netCDF output for MD + md.py script in Util/MD
+    Revision:
+      siesta--pre-release--2.0--patch-14
+
+    * Simple netCDF output enabled in siesta.F (netCDF needs to be compiled in).
+      Produces a slabel.MD.nc file.
+    * A new experimental python script for processing of the new netCDF format MD 
+      file has been added to Util/MD.
+    * Add option to write MD history to md_anneal test.
+    
+    * Vienese output file now called slabel.MD_CAR.
+    
+    
+    
+
+    new files:
+     Src/Confs/.arch-ids/g95-cdf.conf.id Src/Confs/g95-cdf.conf
+     Util/MD/.arch-ids/md.py.id Util/MD/md.py
+
+    modified files:
+     Src/md_out.F90 Src/siesta.F Tests/md_anneal/md_anneal.fdf
+
+
+2006-02-23 10:29:37 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-13
+
+    Summary:
+      Removed Outs directory from Tests
+    Revision:
+      siesta--pre-release--2.0--patch-13
+
+    The old tests outputs will move to a web-page, but will not be part of the distribution.
+    
+
+    removed files:
+     Tests/Outs/.arch-ids/=id Tests/Outs/.arch-ids/README.id
+     Tests/Outs/.arch-ids/batio3.out.id
+     Tests/Outs/.arch-ids/constant_volume.out.id
+     Tests/Outs/.arch-ids/fe.out.id
+     Tests/Outs/.arch-ids/fe_broyden.out.id
+     Tests/Outs/.arch-ids/h2o.out.id
+     Tests/Outs/.arch-ids/h2oZ.out.id
+     Tests/Outs/.arch-ids/h2o_dos.out.id
+     Tests/Outs/.arch-ids/h2o_orderN.out.id
+     Tests/Outs/.arch-ids/mgco3.out.id
+     Tests/Outs/.arch-ids/si.out.id
+     Tests/Outs/.arch-ids/si64.out.id
+     Tests/Outs/.arch-ids/sih.out.id
+     Tests/Outs/.arch-ids/var_cell.out.id Tests/Outs/README
+     Tests/Outs/batio3.out Tests/Outs/constant_volume.out
+     Tests/Outs/fe.out Tests/Outs/fe_broyden.out Tests/Outs/h2o.out
+     Tests/Outs/h2oZ.out Tests/Outs/h2o_dos.out
+     Tests/Outs/h2o_orderN.out Tests/Outs/mgco3.out
+     Tests/Outs/si.out Tests/Outs/si64.out Tests/Outs/sih.out
+     Tests/Outs/var_cell.out
+
+    removed directories:
+     Tests/Outs Tests/Outs/.arch-ids
+
+
+2006-02-23 10:25:10 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-12
+
+    Summary:
+      XML output fixes
+    Revision:
+      siesta--pre-release--2.0--patch-12
+
+    * Units attribute in XML output now specified with siestaUnits prefix.
+    * Namespace and stylesheet declarations in siesta_cmlsubs.F90
+    * Bug fixes and extensions in wxml/flib_cml.f90 and wxml/flib_wstml.f90
+    
+
+    modified files:
+     Src/efield.F Src/ioeig.f Src/meshsubs.F Src/ordern.F
+     Src/redata.F Src/siesta.F Src/siesta_cmlsubs.F90
+     Src/wxml/flib_wcml.f90 Src/wxml/flib_wstml.f90
+
+    new patches:
+     twhite@siesta.arch--2005/siesta-devel--release--1.5--patch-4
+     twhite@siesta.arch--2005/siesta-devel--xmltidy--1.5--patch-3
+     twhite@siesta.arch--2005/siesta-devel--xmltidy--1.5--patch-4
+
+
+2006-02-23 08:46:59 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-11
+
+    Summary:
+      Upgrade to latest Starlink fortran.m4 - m4 copyright merge
+    Revision:
+      siesta--pre-release--2.0--patch-11
+
+    * Upgrade fortran.m4 to latest version which properly
+    supports case-insensitive filesystems.
+    
+    (Undocumented in previous patch: copyright stamping of m4 files)
+    (Configure.ac has now Version 2.0 instead of 1.4)
+    
+
+    modified files:
+     Src/aclocal.m4 Src/configure Src/m4/fortran.m4
+
+    new patches:
+     twhite@siesta.arch--2005/siesta-devel--release--1.5--patch-3
+
+
+2006-02-23 08:42:23 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-10
+
+    Summary:
+      Mention DivAndConq problem in manual
+    Revision:
+      siesta--pre-release--2.0--patch-10
+
+    Patches applied:
+    
+     * twhite@siesta.arch--2005/siesta-devel--release--1.5--patch-1
+       Documentation update
+    
+     * twhite@siesta.arch--2005/siesta-devel--release--1.5--patch-2
+       m4 copyright notices
+    
+
+    modified files:
+     Docs/siesta.tex Src/aclocal.m4 Src/configure.ac
+     Src/m4/ACX_MPI.m4 Src/m4/TW_CHECK_BLACS.m4
+     Src/m4/TW_CHECK_FC_90.m4 Src/m4/TW_CHECK_FC_95.m4
+     Src/m4/TW_CHECK_FC_FPP.m4 Src/m4/TW_CHECK_FC_FPP_90.m4
+     Src/m4/TW_CHECK_FC_TR15580.m4 Src/m4/TW_CHECK_FC_TR15581.m4
+     Src/m4/TW_CHECK_SCALAPACK.m4 Src/m4/TW_FC_CHECK_ABORT.m4
+     Src/m4/TW_FC_CHECK_DCFUNS.m4 Src/m4/TW_FC_CHECK_FLUSH.m4
+     Src/m4/TW_FC_ID.m4 Src/m4/TW_FC_ID_FLAGS.m4
+     Src/m4/TW_FC_KINDS.m4 Src/m4/TW_FIND_FC_BLAS.m4
+     Src/m4/TW_FIND_LAPACK.m4 Src/m4/TW_PATH_NETCDF.m4
+     Src/m4/TW_TRY_DC_LAPACK.m4 Src/m4/ac_config_aux_dirs.m4
+
+    new patches:
+     twhite@siesta.arch--2005/siesta-devel--release--1.5--patch-1
+     twhite@siesta.arch--2005/siesta-devel--release--1.5--patch-2
+
+
+2006-02-22 10:19:05 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-9
+
+    Summary:
+      Removed Out directories from Examples
+    Revision:
+      siesta--pre-release--2.0--patch-9
+
+
+    removed files:
+     Examples/Fe/Out/.arch-ids/=id
+     Examples/Fe/Out/.arch-ids/Fe.out.id Examples/Fe/Out/Fe.out
+     Examples/H2O/Out/.arch-ids/=id
+     Examples/H2O/Out/.arch-ids/h2o.out.id Examples/H2O/Out/h2o.out
+     Examples/MgO/Out/.arch-ids/=id
+     Examples/MgO/Out/.arch-ids/MgO.out.id Examples/MgO/Out/MgO.out
+     Examples/SiH/Out/.arch-ids/=id
+     Examples/SiH/Out/.arch-ids/sih.ANI.id
+     Examples/SiH/Out/.arch-ids/sih.out.id Examples/SiH/Out/sih.ANI
+     Examples/SiH/Out/sih.out
+
+    modified files:
+     Examples/README
+
+    removed directories:
+     Examples/Fe/Out Examples/Fe/Out/.arch-ids Examples/H2O/Out
+     Examples/H2O/Out/.arch-ids Examples/MgO/Out
+     Examples/MgO/Out/.arch-ids Examples/SiH/Out
+     Examples/SiH/Out/.arch-ids
+
+
+2006-02-16 13:53:40 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-8
+
+    Summary:
+      Update configure
+    Revision:
+      siesta--pre-release--2.0--patch-8
+
+
+    modified files:
+     Src/configure
+
+
+2006-02-16 13:53:17 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-7
+
+    Summary:
+      Update version number and add copyright to configure.ac
+    Revision:
+      siesta--pre-release--2.0--patch-7
+
+
+    modified files:
+     Src/configure Src/configure.ac
+
+
+2006-02-16 13:49:09 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-6
+
+    Summary:
+      Divide and Conquer default was wrong in manual
+    Revision:
+      siesta--pre-release--2.0--patch-6
+
+
+    modified files:
+     Docs/siesta.tex
+
+
+2006-02-15 15:32:54 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-5
+
+    Summary:
+      Clarify Pulay line in redata output
+    Revision:
+      siesta--pre-release--2.0--patch-5
+
+    (D. Grimwood) The text output next to the value of "maxsav" was ambiguous.
+    
+
+    modified files:
+     Src/redata.F
+
+
+2006-02-14 09:14:02 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-4
+
+    Summary:
+      Small cosmetic changes
+    Revision:
+      siesta--pre-release--2.0--patch-4
+
+    Patches applied:
+    
+     * eartacho@siesta.arch--2005/siesta--my-changes--0.3--patch-1
+       Cosmetics output
+    
+
+    modified files:
+     Src/atomlist.f Src/siesta.F
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta--my-changes--0.3--patch-1
+
+
+2006-02-13 17:09:08 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-3
+
+    Summary:
+      Update to CHANGES file
+    Revision:
+      siesta--pre-release--2.0--patch-3
+
+
+    modified files:
+     Docs/CHANGES
+
 2006-02-13 17:02:08 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-2
 
     Summary:
