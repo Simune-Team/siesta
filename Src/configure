@@ -7358,7 +7358,9 @@ LIBS="$save_LIBS"
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 if test $acx_dc_lapack_ok = yes; then
-  :
+  { echo "$as_me:$LINENO: using DC_LAPACK routines packaged with SIESTA due to bug in library. Linker flag might be needed to avoid duplicate symbols" >&5
+echo "$as_me: using DC_LAPACK routines packaged with SIESTA due to bug in library. Linker flag might be needed to avoid duplicate symbols" >&6;}
+          COMP_LIBS="dc_lapack.a $COMP_LIBS"
 else
   { echo "$as_me:$LINENO: using additional LAPACK routines packaged with SIESTA" >&5
 echo "$as_me: using additional LAPACK routines packaged with SIESTA" >&6;}
