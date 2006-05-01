@@ -162,7 +162,8 @@ end subroutine end_element
 subroutine pcdata_chunk(chunk)
 character(len=*), intent(in) :: chunk
 
-integer :: nspin
+integer :: nspin, ndata_spin
+integer, dimension(10) :: nspin_dummy
 
 if (len_trim(chunk) == 0) RETURN     ! skip empty chunk
 
@@ -178,7 +179,13 @@ endif
 
 if (in_nspin) then
 !
-   read(chunk,fmt=*) nspin
+! This is the only safe way to read the numeric element content
+!
+   call build_data_array(chunk,nspin_dummy,ndata_spin)
+   if (ndata_spin /= 1) &
+      write(unit=0,fmt="(a)") &
+        "Too many numbers in nspin element. Taking first one."
+   nspin = nspin_dummy(1)
    spin_polarized = (nspin == 2)
    if (spin_polarized) then
       write(unit=0,fmt="(a)") "NOTE: Spin polarized system"
