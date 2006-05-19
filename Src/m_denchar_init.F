@@ -10,6 +10,8 @@
 !
       module m_denchar_init
 
+      use files,       only : slabel, label_length
+
       integer, dimension(3), save  :: num_version = (/1,1,0/)
       character(len=80), parameter :: version_str =
      . "DENCHAR 1.1.0 -- [Translation into F90] (Feb 04, 2002)"
@@ -57,8 +59,7 @@ C Internal variables --------------------------------------------------
 
       CHARACTER*33 PASTE
 
-      CHARACTER*30
-     .  SNAME, FNAME1
+      CHARACTER*30 FNAME1
 
       CHARACTER 
      .  TYPRUN*2, TYPRUN_DEFAULT*2
@@ -73,8 +74,10 @@ C Internal variables --------------------------------------------------
       EXTERNAL PASTE, LEQI
 
 C Assign the name of the output file -----------------------------------
-      SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME1 = PASTE(sname,'.DIM')
+        slabel = fdf_string('SystemLabel','siesta')
+        write(6,'(a,a)') 
+     .   'denchar reinit: System Label: ',slabel
+      FNAME1 = PASTE(slabel,'.DIM')
 
       TYPRUN_DEFAULT = '2D'
       TYPRUN = FDF_STRING('Denchar.TypeOfRun',TYPRUN_DEFAULT)
@@ -167,8 +170,7 @@ C Internal variables ---------------------------------------------------
 
       CHARACTER*33 PASTE
 
-      CHARACTER*30
-     .  SNAME, FNAME
+      CHARACTER*30 FNAME
 
       INTEGER
      .  UNIT1, IL, IA, J
@@ -177,8 +179,8 @@ C Internal variables ---------------------------------------------------
 
 
 C Assign the name of the output file -----------------------------------
-      SNAME = FDF_STRING('SystemLabel','siesta')
-      FNAME = PASTE(sname,'.PLD')
+
+      FNAME = PASTE(slabel,'.PLD')
 
       CALL IO_ASSIGN(UNIT1)
 
