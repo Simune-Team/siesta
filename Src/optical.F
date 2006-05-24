@@ -76,9 +76,10 @@ C k vectors in reciprocal atomic units.
 C Energies in Rydbergs.
 C *********************************************************************
 
+      use precision,    only : dp
       use fdf
       use atmfuncs,     only : izvalfis
-      use densematrix
+      use densematrix,  only : Haux, Saux, psi
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
       use parsing,      only : parse

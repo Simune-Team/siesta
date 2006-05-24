@@ -370,8 +370,8 @@ C Declare internal variables ----------------------------------------
      .  W(MAXL+1), WSP,
      .  X(3,MAXSP), Y(MAXLM), YSP(MAXSP,MAXLM),
      .  Z(MAXL+1)
-      EXTERNAL
-     .  CHKDIM, DDOT, TIMER
+      EXTERNAL CHKDIM, DDOT
+*     EXTERNAL TIMER
 C -------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------

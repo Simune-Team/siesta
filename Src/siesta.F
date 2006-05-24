@@ -789,6 +789,10 @@ C Displace atom by dx...
           endif
         case (7)
           call phonon_set_coords(istep,xa,ucell)
+        case (8)
+          write(6,'(28(" "),a,i6)') 'Begin Server step = ',istep
+          if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
+
         end select
         write(6,'(2a)') '                        ',
      .                    '=============================='

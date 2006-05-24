@@ -192,7 +192,8 @@ else
 #FIXME: also need to test if we have all necessary calls. eg dsygst
      if test $siesta_lapack = yes; then
         TW_CHECK_DC_LAPACK(
-         [:],
+         [AC_MSG_NOTICE([using DC_LAPACK routines packaged with SIESTA due to bug in library. Linker flag might be needed to avoid duplicate symbols])
+          COMP_LIBS="dc_lapack.a $COMP_LIBS"],
          [AC_MSG_NOTICE([using additional LAPACK routines packaged with SIESTA])
           COMP_LIBS="dc_lapack.a $COMP_LIBS"]
         )

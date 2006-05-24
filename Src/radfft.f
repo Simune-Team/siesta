@@ -112,8 +112,8 @@ C Internal variable types and dimensions ----------------------------
       real(dp), DIMENSION(:,:,:), ALLOCATABLE, SAVE ::
      .  P
 
-      external
-     .  bessph, timer, memory
+      external bessph, memory
+*     external timer
 C -------------------------------------------------------------------
 
 C Start time counter ------------------------------------------------

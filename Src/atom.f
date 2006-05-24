@@ -1916,77 +1916,74 @@ C Passed variable
 
 C Local variables
         integer                      :: nf
+        character(len=40)            :: ps_string
+
+        ps_string = "Unknown atomic XC code"
+        if (icorr .eq. "ca") ps_string ="Ceperley-Alder"
+        if (icorr .eq. "pw") ps_string ="Perdew-Wang 1992"
+        if (icorr .eq. "pb")
+     $         ps_string ="GGA Perdew, Burke & Ernzerhof 1996"
+        if (icorr .eq. "rp") ps_string ="GGA RPBE"
+        if (icorr .eq. "rv") ps_string ="GGA revPBE"
+        if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
 
 C Loop over functionals
         do nf = 1,nXCfunc
+
           write(6,'(/a)') 'xc_check: Exchange-correlation functional:'
           if (((XCauth(nf).eq.'CA').or.(XCauth(nf).eq.'PZ')).and.
      .       ((XCfunc(nf).eq.'LDA').or.(XCfunc(nf).eq.'LSD'))) then
 
             write(6,'(a)') 'xc_check: Ceperley-Alder'
-            if (icorr.ne.'ca'.and.nXCfunc.eq.1) then
-              write(6,'(a)')
-     .          'xc_check: WARNING: Pseudopotential generated with'
-              if (icorr.eq.'pw') write(6,'(a)')
-     .          'xc_check: WARNING: Perdew-Wang 1992 functional'
-              if (icorr.eq.'pb') write(6,'(a)')
-     .'xc_check: WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-            endif
+            if (icorr.ne.'ca'.and.nXCfunc.eq.1)
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
 
           elseif((XCauth(nf).eq.'PW92').and.
      .      ((XCfunc(nf).eq.'LDA').or.(XCfunc(nf).eq.'LSD'))) then
 
             write(6,'(a)') 'xc_check: Perdew-Wang 1992'
-            if (icorr.ne.'pw'.and.nXCfunc.eq.1) then
-              write(6,'(a)')
-     .          'xc_check: WARNING: Pseudopotential generated with'
-              if (icorr.eq.'ca'.and.nXCfunc.eq.1)
-     .      write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-              if (icorr.eq.'pb'.and.nXCfunc.eq.1) write(6,'(a)')
-     .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-            endif
+            if (icorr.ne.'pw'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
 
           elseif((XCauth(nf).eq.'PBE').and.(XCfunc(nf).eq.'GGA')) then
 
             write(6,'(a)')
      .       'xc_check: GGA Perdew, Burke & Ernzerhof 1996'
-            if (icorr.ne.'pb'.and.nXCfunc.eq.1) then
-              write(6,'(a)')
-     .          'xc_check: WARNING: Pseudopotential generated with'
-              if (icorr.eq.'ca'.and.nXCfunc.eq.1)
-     .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-              if (icorr.eq.'pw'.and.nXCfunc.eq.1)
-     . write(6,'(a)') 'xc_check: WARNING: Perdew-Wang 1992 functional'
-            endif
+            if (icorr.ne.'pb'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
 
           elseif ((XCauth(nf).eq.'LYP').and.(XCfunc(nf).eq.'GGA')) then
 
             write(6,'(a)')  'xc_check: GGA Becke Lee Yang Parr'
-            if (icorr.ne.'bl'.and.nXCfunc.eq.1) then
-              write(6,'(a)')
-     .         'xc_check: WARNING: Pseudopotential generated with'
-              if (icorr.eq.'ca'.and.nXCfunc.eq.1)
-     .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-              if (icorr.eq.'pw'.and.nXCfunc.eq.1)
-     . write(6,'(a)') 'xc_check: WARNING: Perdew-Wang 1992 functional'
-              if (icorr.eq.'pb'.and.nXCfunc.eq.1) write(6,'(a)')
-     .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-            endif
+            if (icorr.ne.'bl'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
 
           elseif ((XCauth(nf).eq.'RPBE').and.(XCfunc(nf).eq.'GGA')) then
 
             write(6,'(a)')  'xc_check: GGA RPBE'
+            if (icorr.ne.'rp'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
 
-            if (icorr.ne.'rp'.and.nXCfunc.eq.1) then
-              write(6,'(a)')
-     .       'xc_check: WARNING: Pseudopotential generated with'
-             if (icorr.eq.'ca'.and.nXCfunc.eq.1)
-     .    write(6,'(a)') 'xc_check: WARNING: Ceperly-Alder functional'
-             if (icorr.eq.'pw'.and.nXCfunc.eq.1)
-     . write(6,'(a)') 'xc_check: WARNING: Perdew-Wang 1992 functional'
-             if (icorr.eq.'pb'.and.nXCfunc.eq.1) write(6,'(a)')
-     .'xc_check:WARNING: GGA Perdew, Burke & Ernzerhof 1996 functional'
-           endif
+          elseif ((XCauth(nf).eq.'revPBE')
+     $                  .and.(XCfunc(nf).eq.'GGA')) then
+
+            write(6,'(a)')  'xc_check: GGA revPBE'
+            if (icorr.ne.'rp'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
 
          else
 
