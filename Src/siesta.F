@@ -589,8 +589,8 @@ C so that the Fermi level can be estimated
       neigwanted = min(neigwanted,no_u)
 
 C Find k-grid for Brillouin zone integration ..........................
-C Call kgrid once to get the dimensions and a second time to actually
-C initialise the data - could be made more efficient in future!
+C Call kgridinit to get the dimensions and then kgrid to actually
+C initialise the data 
       nkpnt = 1
       call kgridinit( ucell, kscell, kdispl, kcutof, nkpnt )
       maxk = nkpnt
@@ -690,8 +690,8 @@ C Find if only gamma point is used ....................................
       if (nkpol.gt.0) gamma = .false.
 C ....................
 
-C Print k-points ......................................................
-      if (.not.gamma .and. IOnode) call siesta_write_k_points()
+C Print k-point information (even if gamma point)
+      if (IOnode) call siesta_write_k_points()
 
 C Find required supercell
       do i = 1,3
@@ -2223,7 +2223,7 @@ C Finalize MPI
       write(6,'(/a,i6)')
      .     'siesta: k-grid: Number of k-points =', nkpnt
       write(6,'(a,f10.3,a)')
-     .     'siesta: k-grid: Cutoff             =', kcutof/Ang, ' Ang'
+     .     'siesta: k-grid: Cutoff (effective) =', kcutof/Ang, ' Ang'
       write(6,'(a)')
      .     'siesta: k-grid: Supercell and displacements'
       write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
