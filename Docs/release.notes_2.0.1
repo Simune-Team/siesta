@@ -1,0 +1,81 @@
+*  Fix file prefix identification in m_denchar_init
+
+    m_denchar_init was not aware of the new 'files' module which
+    stores the filename prefix. Thus the call to iodm failed to
+    find the density-matrix file.
+    
+
+    modified files:
+     Src/m_denchar_init.F
+
+*   Siesta-server steps treated correctly for CML output
+
+    When Siesta is used as a server (MD.TypeOfRun forces), each
+    "step" is labelled as "FS" ("force server") and the right
+    module element is opened in the CML output.
+    
+    (Note that in principle there is no "Finalization" module in this
+    mode of operation.)
+    
+    modified files:
+     Src/siesta.F
+
+*   Add revPBE to xc_check in atom.f -- tidy 
+
+    The recently added revPBE functional was not included in the check
+    in atom.f. The code has been re-organized to reduce clutter.
+    
+    modified files:
+     Src/atom.f
+
+*   Fix reading of nspin variable in pdosxml
+
+    The data for nspin is contained in pcdata, and its reading as a single
+    fortran item is tricky in some platforms. The only safe way to process 
+    it is to use the logic involved in the "build_data_array" suite.
+    
+    modified files:
+     Pseudo/atom/Tutorial/pt.sh Util/pdosxml/m_pdos.f90
+
+*   Fix import of dp in optical.F
+
+    Fix external decl of timer and dp in optical.F
+    
+    modified files:
+     Src/optical.F
+
+*   Use fixed dc_lapack.f together with any system libraries
+
+    Javier Junquera got a new version of DLAED6 (part of LAPACK's
+    divide-and-conquer package) from Ren-Cang Li <rcli@cs.uky.edu>. It
+    partially solves some strange numerical instability problems. Codes 
+    produced by most compiler flag combinations now work (exceptions include
+     "-xP -mp1" for the Intel compiler).
+    
+    As the "Divide and Conquer" code in most system libraries is
+    buggy, provisions have been made in configure to always compile
+    dc_lapack.f. In some cases this feature needs a supporting loader
+    flag (such as -Wl,-z muldefs for the GNU loader) to allow multiple
+    definition of symbols. An example of configure driver for the Intel
+    Fortran compiler is in Src/Confs/intel9mkl8-safe.conf.
+    
+    Also, the unused routines zheevd and dsyevd have been removed from
+    dc_lapack.f
+    
+    new files:
+     Src/Confs/intel9mkl8-safe.conf
+
+    modified files:
+     Src/Libs/dc_lapack.f Src/configure Src/configure.ac
+
+*   Remove external declaration of 'timer' in spher_harm and radfft.
+
+    Timer is declared external but not used in spher_harm and radfft.
+    A problem appears only when compiling denchar from clean source.
+    
+    modified files:
+     Src/radfft.f Src/spher_harm.f
+
+
+
+
