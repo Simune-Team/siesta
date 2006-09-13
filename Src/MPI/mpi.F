@@ -31,7 +31,7 @@
      &     DAT_double => MPI_real,                                      &
      &     DAT_2double => MPI_2real,                                    &
      &     DAT_complex => MPI_complex,                                  &
-     &     DAT_dcomplex => MPI_complex,                                 &
+     &     DAT_dcomplex => MPI_complex                                  &
 #else
      &     DAT_single => MPI_real,                                      &
      &     DAT_2single => MPI_2real,                                    &
