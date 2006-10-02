@@ -10,6 +10,25 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2006-10-02 09:08:05 GMT Alberto Garcia <albertog@icmab.es>      patch-3
+
+    Summary:
+      Implementation of the Wu-Cohen functional
+    Revision:
+      siesta-devel--reference--2.1--patch-3
+
+    A new routine "wcxc" has been added to xc.f (courtesy of Marivi
+    Fdez. Serra and Julian Gale, with contributions from Alberto Garcia).
+    
+    The new xc code (for both Atom and Siesta) is "wc".
+
+    modified files:
+     Docs/CHANGES Docs/siesta.ind Docs/siesta.tex
+     Pseudo/atom/ChangeLog Pseudo/atom/Docs/atom.tex
+     Pseudo/atom/makefile Pseudo/atom/velect.f
+     Pseudo/atom/version.h Pseudo/atom/xc.f Src/atom.f Src/xc.f
+     Src/xcmod.F
+
 2006-05-24 18:56:49 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-2
 
     Summary:
