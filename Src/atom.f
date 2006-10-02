@@ -1925,6 +1925,7 @@ C Local variables
      $         ps_string ="GGA Perdew, Burke & Ernzerhof 1996"
         if (icorr .eq. "rp") ps_string ="GGA RPBE"
         if (icorr .eq. "rv") ps_string ="GGA revPBE"
+        if (icorr .eq. "wc") ps_string ="GGA Wu-Cohen"
         if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
 
 C Loop over functionals
@@ -1981,6 +1982,15 @@ C Loop over functionals
 
             write(6,'(a)')  'xc_check: GGA revPBE'
             if (icorr.ne.'rp'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
+          elseif ((XCauth(nf).eq.'WC')
+     $                  .and.(XCfunc(nf).eq.'GGA')) then
+
+            write(6,'(a)')  'xc_check: GGA Wu-Cohen'
+            if (icorr.ne.'wc'.and.nXCfunc.eq.1) 
      $          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"

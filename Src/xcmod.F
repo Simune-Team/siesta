@@ -115,7 +115,7 @@ C Read XC functionals
 C Output data for hybrid functionals
           if (nXCfunc.gt.1) then
             write(6,'(/,''xc:'')')
-            write(6,'(''xc:  Hydrid exchange-correlation functional:'')
+            write(6,'(''xc:  Hybrid exchange-correlation functional:'')
      .        ')
             write(6,'(''xc:'')')
             write(6,'(''xc: Number Functional Authors  '',

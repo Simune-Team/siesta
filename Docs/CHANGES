@@ -7,6 +7,120 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 ____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
+--------------------------------------------------------------------
+
+2006-05-24 18:56:49 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-2
+
+    Summary:
+      New logic for k-point grid generation from kgrid_cutoff
+    Revision:
+      siesta-devel--reference--2.1--patch-2
+
+    The previous algorithm created a diagonal supercell so that the length
+    of the shortest vector was greater than twice the kgrid_cutoff.  But
+    there might be an equivalent supercell (same volume, generating the
+    same lattice points), but with shorter vectors (more "spherical").  Half of
+    the shortest resulting lattice vector is the effective cutoff.  This
+    effective cutoff was just reported, but the more spherical
+    cell was not used anymore.  The kgrid was generated as the reciprocal cell of
+    the chosen diagonal supercell.  In some cases, the program ended
+    up using a much shorter cutoff than requested.
+    
+    The fix, as suggested by Jose Soler, is to start the procedure with
+    the most "spherical" unit cell, thus generating an optimal supercell
+    in the spirit of the Moreno-Soler paper.
+    
+    A number of other changes have been made to the code:
+    
+    1. Minvec has been turned into a module, and the routine now reports
+    also the transformation matrix.  (Change to gchkmx needed, including
+    an auxiliary array to avoid aliasing of arguments).
+    
+    2. Even though the program can find the optimal k-grid displacements,
+    those given by the user in a Monkhorst-Pack block are not overriden
+    (in case there are good reasons for the choice, such as the need to
+    have the gamma point in the set). The program will nevertheless print
+    a line telling the user about the more suitable displacement(s).
+    
+    3. The program now reports the effective cutoff even for Gamma-point-only
+    calculations.
+    
+    4. The multiplication factors of the effective supercell are made
+    explicitly positive (changing kdsc and mr after the call to idiag). This
+    might fix a long-standing issue with non-diagonal MP supercells.
+    
+    Version info updated for development branch.
+    
+    Note: There is *no provision for backward compatibility*, although it is
+    still possible to re-use the kgrid supercells reported by previous versions
+    to reproduce the old behavior for a given kgrid_cutoff.
+    
+    To Do: Tidy up the kgridinit/kgrid code redundancy.
+    
+    The manual has been updated to reflect the new algorithm outline, and
+    to stress the format of the MP supercell input.
+    
+    Also, the manual now mentions the Divide and Conquer issue, and 
+    the version number on the cover has been changed to 2.0.X.
+    
+    
+
+    modified files:
+     Docs/siesta.tex Src/Makefile Src/chkgmx.f Src/kgrid.F
+     Src/kgridinit.F Src/minvec.f Src/siesta.F version.info
+
+
+2006-05-24 14:00:50 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-1
+
+    Summary:
+      Merge patches from release-2.0 branch
+    Revision:
+      siesta-devel--reference--2.1--patch-1
+
+    Assorted bugfixes backported to the development branch:
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-1
+       Remove external declaration of 'timer' in spher_harm and radfft.
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-2
+       Bug fix in dlaed6 in dc_lapack.f
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-3
+       Use dc_lapack.f together with any system libraries
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-4
+       Fix import of dp in optical.F
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-5
+       Fix reading of nspin variable in pdosxml
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-6
+       Add revPBE to xc_check in atom.f -- tidy 
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-7
+       Fix version.F90 triad.
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-8
+       Siesta-server steps treated correctly for CML output
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-9
+       Fix file prefix identification in m_denchar_init
+    
+
+    new files:
+     Src/Confs/.arch-ids/intel9mkl8-safe.conf.id
+     Src/Confs/intel9mkl8-safe.conf
+
+    modified files:
+     Pseudo/atom/Tutorial/ae.sh Pseudo/atom/Tutorial/pg.sh
+     Pseudo/atom/Tutorial/pt.sh Src/Libs/dc_lapack.f Src/atom.f
+     Src/configure Src/configure.ac Src/m_denchar_init.F
+     Src/optical.F Src/radfft.f Src/siesta.F Src/spher_harm.f
+     Util/pdosxml/m_pdos.f90 version.info
+
+
+____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2005/siesta--pre-release--2.0
 --------------------------------------------------------------------
 

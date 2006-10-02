@@ -11,14 +11,15 @@ FC= f77
 FFLAGS= -O
 LDFLAGS=
 AUX_OBJS= auxf95.o   # Change if you do not have
-#                    Â#a fortran-90 compiler
+#                    # a fortran-90 compiler
 #----------------------------------------------$$$$$
 #
 #
 XC_OBJS= xc.o
 #
 # Replace definition above with line below to use the 
-# old Soler-Balbas XC routines.
+# old Soler-Balbas XC routines.  ***NOT RECOMMENDED, as the routines
+# below are not up-to-date***
 #
 #XC_OBJS= atomxc.o  ldaxc.o ggaxc.o pbexc.o pw92xc.o pzxc.o \
 #        pw92c.o exchng.o ## Not really old: rpbexc.o revpbexc.o

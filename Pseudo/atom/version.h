@@ -21,6 +21,6 @@ c     other data statements.
 c
       character*60 version
       data version
-     $     /"ATM Version 3.2.2 (Jan 27, 2006, 16:25 CUT)"/
+     $     /"ATM Version 3.2.3 (Oct 2, 2006, 8:56 CUT)"/
 
 

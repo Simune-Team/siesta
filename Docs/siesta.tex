@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.0.X}}
+{\Huge {\bf S I E S T A \, \, 2.1-devel-p-3}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large 24 May 2006 }
+{\Large Oct 2, 2006 }
 
 \vspace{1.5cm}
 
@@ -59,7 +59,7 @@
    \Large{\it Curtin University of Technology, Perth} \\ \\
 
 {\Large Alberto Garc\'{\i}a} &
-   \Large{\it Universidad del Pa\'{\i}s Vasco, Bilbao} \\ \\
+   \Large{\it Institut de Ci\`encia de Materials, CSIC, Barcelona} \\ \\
 
 {\Large Javier Junquera} &
    \Large{\it Universidad de Cantabria, Santander} \\ \\
@@ -2191,6 +2191,9 @@ approximation.  Ref: Y. Zhang and W. Yang, PRL 80, 890
 \item {\tt RPBE} (Revised Perdew-Burke-Ernzerhof). Generalized gradients
 approximation.  Ref: Hammer, Hansen and Norskov PRB 59, 7413 
 (1999)\index{GGA} \index{RPBE}
+\item {\tt WC} (Wu-Cohen modification of PBE functional). Generalized gradients
+approximation.  Ref: Z. Wu and R.E. Cohen, PRB 73, 235116 (2006)
+\index{GGA} \index{WC}
 \item {\tt LYP} Generalized gradients approximation \index{BLYP}
 that implements Becke gradient exchange functional (A. D.
 Becke, Phys. Rev. A {\bf 38}, 3098 (1988)) and Lee, Yang, Parr
@@ -3035,7 +3038,7 @@ and less than the number of basis functions.
 Logical to select whether the normal or Divide and Conquer algorithms are
 used within the Lapack diagonalisation routines. 
 
-(Note: Some system library implementations of the D&C algorithm are
+(Note: Some system library implementations of the D\&C algorithm are
 buggy. It is advisable to use Siesta's own (fixed) version -- configure will
 try to do that.)
 
