@@ -179,10 +179,10 @@ GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o recipes.o parallel.o \
 # precision must be the first one here...
 gen-basis.o: $(FDF)
 gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
-                 $(GEN-BASIS_OBJS)
+                 $(GEN-BASIS_OBJS) $(COMP_LIBS)
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(NETCDF_INTERFACE) $(LIBS) 
+               $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
 # Denchar is now at the main source level...
