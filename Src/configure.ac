@@ -157,7 +157,7 @@ dnl 1: netcdf
 AC_ARG_WITH(netcdf,
         [AC_HELP_STRING([--with-netcdf=<lib>], [use NetCDF library <lib>])])
 if test x$with_netcdf != xno; then
-  TW_PATH_NETCDF([DEFS="$DEFS CDF";COMP_LIBS="libnetcdf_f90.a $COMP_LIBS"],
+  TW_PATH_NETCDF([DEFS="$DEFS CDF";NETCDF_INTERFACE="libnetcdf_f90.a"],
                [if test ! -z $with_netcdf; then AC_MSG_ERROR([Could not find NetCDF library.]); fi])
 fi
 dnl 
@@ -218,6 +218,7 @@ dnl ACX_MPI should do something for us.
 dnl
 dnl
 AC_SUBST(NETCDF_LIBS)
+AC_SUBST(NETCDF_INTERFACE)
 AC_SUBST(BLAS_LIBS)
 AC_SUBST(LAPACK_LIBS)
 AC_SUBST(BLACS_LIBS)

@@ -122,13 +122,13 @@ redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o ofc.o : $(FDF)
 readsp.o eggbox.o iopipes.o : $(FDF)
 #
-atom.o basis_specs.o: $(FDF)
+atom.o basis_io.o basis_specs.o: $(FDF)
 gen-basis.o: $(FDF)
 #
 #
 ALL_OBJS=$(OBJS) $(SYSOBJ)
 #
-basis_io.o: $(FDF) $(NETCDF_INTERFACE)
+basis_io.o md_out.o: $(NETCDF_INTERFACE)
 #
 # Interfaces to libraries
 #
@@ -179,10 +179,10 @@ GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o recipes.o parallel.o \
 # precision must be the first one here...
 gen-basis.o: $(FDF)
 gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
-                 $(GEN-BASIS_OBJS) $(COMP_LIBS)
+                 $(GEN-BASIS_OBJS) 
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+               $(NETCDF_INTERFACE) $(LIBS) 
 #
 #------------------------------------------------------------------------
 # Denchar is now at the main source level...
@@ -201,10 +201,10 @@ OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
         pseudopotential.o chemical.o xml.o files.o $(SYSOBJ)
 
-denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) 
+denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
-           $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE)  $(COMP_LIBS) $(LIBS) 
+           $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #----------------------------------------------------------------------------
 MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o 
 mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
