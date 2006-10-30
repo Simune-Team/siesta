@@ -8,7 +8,19 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine minvec(B0,BMIN)
+      module m_minvec
+
+      use precision
+      use sorting
+      use sys
+
+      implicit         none
+
+      public :: minvec
+
+      CONTAINS
+
+      subroutine minvec(B0,BMIN,C)
 C *******************************************************************
 C  FINDS THE LATTICE BASIS OF MINIMUM LENGTH, I.E. SUCH TAHT ANY 
 C  OTHER BASIS (NOT EQUIVALENT BY SYMMETRY) HAS ONE VECTOR LONGER.
@@ -21,19 +33,17 @@ C *******************************************************************
 
 C
 C  Modules
-C
-      use precision
-      use sorting
-      use sys
 
-      implicit         none
+      real(dp), intent(in)  ::        B0(3,3)
+      real(dp), intent(out) ::        BMIN(3,3)
+      real(dp), intent(out) ::        C(3,3)
 
-      real(dp)         B0(3,3),BMIN(3,3),ddot,VOLCEL
+      real(dp)        :: ddot,VOLCEL
       external         ddot,RECLAT,VOLCEL
 
       integer          I,I1,I2,I3,ITER,J,NITER,IAUX(3)
       real(dp)         AUX(3,3),B(3,3),B2(1,3),BNEW(3),BNEW2,
-     .                 C(3,3),EPS,VNEW,V0
+     .                 EPS,VNEW,V0
 
       PARAMETER (EPS=1.D-8,NITER=100)
 
@@ -103,9 +113,9 @@ C
           BMIN(J,I)=B(J,I)
         ENDDO
       ENDDO
-      
-      CONTAINS
 
+      CONTAINS
+      
       subroutine volnew(A,ANEW,INEW,VOL)
       integer          INEW
       real(dp)         A(3,3),ANEW(3),AUX(3,3),VOL
@@ -115,3 +125,4 @@ C
       end subroutine volnew
 
       end subroutine minvec
+      end module m_minvec

@@ -15,6 +15,7 @@ C
       use precision, only: dp
       use sys,       only: die
       use parallel,  only : Node
+      use m_minvec,  only : minvec
 
       integer :: i, j, i1, i2, i3
 
@@ -22,7 +23,7 @@ C
      $                       TINY=1.0e-8_dp,BIG=1.0e20_dp
 
       real(dp), intent(inout) :: g2max
-      real(dp) K(3),BG(3,3),BM(3,3),G(3)
+      real(dp) K(3),BG(3,3),BM(3,3),G(3), ctransf(3,3), baux(3,3)
       real(dp) :: r, gmod, gmax, g2msh
       INTEGER MESH(3)
 
@@ -32,9 +33,14 @@ C
       DO I=1,3
         DO J=1,3
           BM(J,I)=BG(J,I)*MESH(I)
+          Baux(J,I)=BG(J,I)*MESH(I)
         ENDDO
       ENDDO
-      CALL MINVEC (BM,BM)
+!
+!     Use Baux to avoid aliasing of arguments, as one is intent(in)
+!     and the other intent(out)...
+!
+      CALL MINVEC (Baux,BM, ctransf)
       GMAX=BIG
       DO I3=-1,1
         DO I2=-1,1

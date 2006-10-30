@@ -55,8 +55,10 @@ c **********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,  only : dp
+      use units,      only : Ang
       use parallel,   only : Node
+      use m_minvec,   only : minvec
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -65,20 +67,25 @@ C
       implicit          none
 
 C Passed variables
-      integer           kscell(3,3), nk
-      real(dp)          cell(3,3), cutoff, displ(3)
-      external          idiag, reclat
+      integer, intent(inout)   :: kscell(3,3), nk
+      real(dp), intent(in)     :: cell(3,3)
+      real(dp), intent(inout)  :: cutoff, displ(3)
+
+      external                 ::  idiag, reclat
+      real(dp), external       ::  volcel
 
 C Internal variables
       integer           i, ir, iu, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
-     .                  ng(3), ni, nkr(3), nktot
+     .                  ng(3), ni, nkr(3), nktot, factor(3,3),
+     $                  proj(3,3)
 #ifdef MPI
       integer           MPIerror
 #endif
       real(dp)          defcut, dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), huge, pi,  
      .                  scell(3,3), scmin(3,3), tiny, vmod
+      real(dp)          ctransf(3,3)
       logical           genlogic, spiral
       parameter (defcut = 0.d0)
       parameter (huge   = 1.d30)
@@ -138,31 +145,52 @@ C The second argument is the default value
         endif
       endif
 
-C Find kscell from required cutoff
+
+C Find kscell from required cutoff (i.e., if nktot is still zero)
+C If kgrid_cutoff is zero, we will end up with nktot = 1
+C and kscell as the unit matrix.
+C
       if (nktot .eq. 0) then
+        call minvec( cell, scmin, ctransf )
+!        print "(a,\,3(3f15.8,\))", "Rounded unit cell vectors: ",
+!     $         ((scmin(i,j)/Ang,i=1,3),j=1,3)
         nktot = 1
         do j = 1,3
-          do i = 1,3
-            kscell(j,i) = 0
-          enddo
-          vmod = sqrt( cell(1,j)**2 + cell(2,j)**2 + cell(3,j)**2 )
-          kscell(j,j) = int(cutoff/(vmod/2.d0)) + 1
-          if (mod(kscell(j,j),2) .eq. 0) displ(j) = 0.5d0
-          nktot = nktot * kscell(j,j)
+          factor(j,1:3) = 0
+          vmod = sqrt( scmin(1,j)**2 + scmin(2,j)**2 + scmin(3,j)**2 )
+          factor(j,j) = int(cutoff/(vmod/2.d0)) + 1
+CC          if (mod(factor(j),2) .eq. 0) displ(j) = 0.5d0
+          nktot = nktot * factor(j,j)
         enddo
-      endif
+C
+C       Generate actual supercell skeleton
+C
+!!        print "(a,3i4)", "Factors from rounded cell: ", 
+!!     $         (factor(j,j),j=1,3)
+        kscell = matmul(ctransf, factor)
+!!        print "(a,\,3(3i4,\))", "Kscell from required cutoff: ",
+!!     $         ((kscell(i,j),j=1,3),i=1,3)
 
+      endif
+C 
+C Now we have kscell, either from MP input, or from kgrid_cutoff input
 C Find k-grid supercell
+C
+!!      scell = matmul(cell,kscell)
       do i = 1,3
         do ix = 1,3
           scell(ix,i) = cell(ix,1) * kscell(1,i) +
      .                  cell(ix,2) * kscell(2,i) +
      .                  cell(ix,3) * kscell(3,i)
         enddo
+        vmod = sqrt( scell(1,i)**2 + scell(2,i)**2 + scell(3,i)**2 )
+!!        print *, i, vmod/Ang
       enddo
+!!      print "(a,\,3(3f15.8,\))",  "K grid supercell vectors: ",
+!!     $         ((scell(i,j)/Ang,i=1,3),j=1,3)
 
 C Find actual cutoff
-      call minvec( scell, scmin )
+      call minvec( scell, scmin, ctransf )
       cutoff = huge
       do i = 1,3
         vmod = sqrt( scmin(1,i)**2 + scmin(2,i)**2 + scmin(3,i)**2 )
@@ -171,13 +199,51 @@ C Find actual cutoff
 
 C Find equivalent diagonal supercell
       call idiag( 3, kscell, kdsc, ml, mr, maux )
-      do i = 1,3
-        do ix = 1,3
-          dscell(ix,i) = scell(ix,1) * mr(1,i) +
-     .                   scell(ix,2) * mr(2,i) +
-     .                   scell(ix,3) * mr(3,i)
-        enddo
+      proj(:,:) = 0  ! Possible sign changes
+      do i = 1, 3
+         proj(i,i) = 1
+         if (kdsc(i,i) < 0) proj(i,i) = -1
       enddo
+      kdsc = matmul(kdsc,proj)
+      mr = matmul(mr,proj)
+!!      print *, "Eq. diagonal supercell: ", (kdsc(i,i),i=1,3)
+!!      print *, "Mright: ",
+!!     $         ((mr(i,j),j=1,3),i=1,3)
+!!      print *, "Mleft: ",
+!!     $         ((ml(i,j),j=1,3),i=1,3)
+!!      print *, "check:", matmul(ml,matmul(kscell,mr))
+C
+C     Set the displacements
+C
+      do j = 1, 3
+         if (mod(kdsc(j,j),2) .eq. 0) then
+            if (genlogic .and. displ(j) /= 0.5d0) then
+               if (Node .eq. 0)
+     $           write(6,"(a,i4,a,2f8.2)")
+     $            "k-point displ. along", j, " input, could be: ",
+     $           displ(j), 0.5d0
+            else
+               displ(j) = 0.5d0
+            endif
+         else
+            if (genlogic .and. displ(j) /= 0.0d0) then
+               if (Node .eq. 0)
+     $           write(6,"(a,i4,a,2f8.2)")
+     $            "k-point displ. along", j, " input, could be: ",
+     $           displ(j), 0.0d0
+            else
+               displ(j) = 0.0d0
+            endif
+         endif
+      enddo
+C
+C     Equivalent supercell DA with the property that there exists
+C     a primitive cell (pa') such that DA_i = N_i*pa'_i
+C     (See Moreno and Soler)
+C
+      dscell = matmul(scell,mr)
+!!      print *, "Dscell cell vectors: ",
+!!     $         ((dscell(i,j)/Ang,i=1,3),j=1,3)
 
 C Find k-grid unit vectors
       call reclat( dscell, gridk, 1 )
@@ -189,6 +255,7 @@ C Find grid origin in cartesian coordinates
      .            gscell(ix,2) * displ(2) +
      .            gscell(ix,3) * displ(3)
       enddo
+!!      print *, "Grid origin in cartesian coords ", (dkx(i), i=1,3)
 
 C Find grid origin in gridk coordinates
       pi = 4.d0 * atan(1.d0)
@@ -197,10 +264,11 @@ C Find grid origin in gridk coordinates
      .             dkx(2) * dscell(2,i) +
      .             dkx(3) * dscell(3,i) ) / (2*pi)
       enddo
+!!      print *, "Grid origin in grid coords ", (dkg(i), i=1,3)
 
 C Some printout for debugging
-*     write(6,'(/,a,/,(3f12.6,i6,f12.6))') 'kgrid: gridK,ng,dg =',
-*    .  ((gridk(ix,i),ix=1,3),kdsc(i,i),dkg(i),i=1,3)
+!!      write(6,'(/,a,/,(3f12.6,i6,f12.6))') 'kgrid: gridK,ng,dg =',
+!!     .  ((gridk(ix,i),ix=1,3),kdsc(i,i),dkg(i),i=1,3)
 
 C Find total range of grid indexes
       do j = 1,3
@@ -231,7 +299,7 @@ C Select reflection plane
 C Find k points and weights
         nk = nkr(ir)
       endif
+!!      print *, "nk: ", nk
 
       return
       end
-

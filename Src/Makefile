@@ -62,7 +62,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
-        minvec.o mulliken.o naefs.o neighb.o \
+        mulliken.o minvec.o naefs.o neighb.o \
 	ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	propor.o pulayx.o \
@@ -231,6 +231,7 @@ pristine:  clean
 
 
 # DO NOT DELETE THIS LINE - used by make depend
+agminvec.o: precision.o sorting.o sys.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
@@ -262,7 +263,7 @@ cgwf.o: onmod.o precision.o sys.o
 chemical.o: sys.o
 chempot.o: numbvect.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
-chkgmx.o: parallel.o precision.o sys.o
+chkgmx.o: minvec.o parallel.o precision.o sys.o
 coceri.o: files.o periodic_table.o precision.o
 conjgr.o: precision.o
 conjgr_old.o: precision.o
@@ -330,8 +331,8 @@ iopipes.o: parallel.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: atomlist.o files.o parallel.o precision.o zmatrix.o
 ipack.o: sys.o
-kgrid.o: parallel.o precision.o
-kgridinit.o: parallel.o precision.o
+kgrid.o: parallel.o precision.o units.o
+kgridinit.o: minvec.o parallel.o precision.o units.o
 kinefsm.o: atmfuncs.o parallel.o parallelsubs.o precision.o
 ksv.o: alloc.o atmfuncs.o densematrix.o parallel.o parsing.o precision.o sys.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
@@ -339,6 +340,7 @@ m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
 m_broyden_mixing.o: m_broyddj.o m_memory.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o
 m_denchar_geom.o: precision.o sys.o
+m_denchar_init.o: files.o
 m_denchar_io.o: m_denchar_geom.o
 m_denchar_neighb.o: precision.o sys.o
 m_denchar_work.o: atmfuncs.o chemical.o listsc.o m_denchar_geom.o
@@ -425,7 +427,7 @@ siesta.o: m_wallclock.o md_out.o nlefsm.o ordern.o overfsm.o parallel.o
 siesta.o: parallelsubs.o periodic_table.o phonon.o precision.o redata.o
 siesta.o: siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
-siesta_cmlsubs.o: files.o parallel.o timestamp.o
+siesta_cmlsubs.o: files.o parallel.o timestamp.o version.o
 spatial.o: precision.o
 spher_harm.o: precision.o sys.o
 spin_init.o: precision.o
@@ -458,6 +460,7 @@ m_fermid.o: fermid.o
 m_forhar.o: forhar.o
 m_hsparse.o: hsparse.o
 m_ioxv.o: ioxv.o
+m_minvec.o: minvec.o
 m_nlefsm.o: nlefsm.o
 m_ordern.o: ordern.o
 m_overfsm.o: overfsm.o

@@ -34,6 +34,7 @@ c **********************************************************************
 C
 C  Modules
 C
+      use units,        only : Ang
       use precision
       use parallel,     only : Node
       use fdf
@@ -43,16 +44,17 @@ C
 
       implicit          none
 
-      integer           kscell(3,3), nk
-      real(dp)          cell(3,3), displ(3), 
-     .                  points(3,*), weight(*)
+      integer, intent(inout)  ::          kscell(3,3), nk
+      real(dp), intent(in)    ::          cell(3,3)
+      real(dp), intent(inout) ::          displ(3)
+      real(dp), intent(out)   ::          points(3,*), weight(*)
 c ----------------------------------------------------------------------
 
 c Internal variables
       integer           i, i1, i2, i3, igmax(3), igmin(3), iu,
      .                  ir, ik, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
-     .                  ng(3), ni, nkr(3), nktot
+     .                  ng(3), ni, nkr(3), nktot, proj(3,3)
 #ifdef MPI
       integer           MPIerror
 #endif
@@ -78,7 +80,6 @@ C Find total number of points (determinant of kscell)
      .             kscell(1,1) * kscell(3,2) * kscell(2,3) -
      .             kscell(2,1) * kscell(1,2) * kscell(3,3) -
      .             kscell(3,1) * kscell(2,2) * kscell(1,3) )
-
 C Find k-grid supercell
       do i = 1,3
         do ix = 1,3
@@ -90,17 +91,18 @@ C Find k-grid supercell
 
 C Find equivalent diagonal supercell
       call idiag( 3, kscell, kdsc, ml, mr, maux )
-      do i = 1,3
-        do ix = 1,3
-          dscell(ix,i) = scell(ix,1) * mr(1,i) +
-     .                   scell(ix,2) * mr(2,i) +
-     .                   scell(ix,3) * mr(3,i)
-        enddo
+      proj(:,:) = 0  ! Possible sign changes
+      do i = 1, 3
+         proj(i,i) = 1
+         if (kdsc(i,i) < 0) proj(i,i) = -1
       enddo
+      kdsc = matmul(kdsc,proj)
+      mr = matmul(mr,proj)
+      dscell = matmul(scell,mr)
 
 C Find k-grid unit vectors
       call reclat( dscell, gridk, 1 )
-
+ 
 C Find grid origin in cartesian coordinates
       call reclat( scell, gscell, 1 )
       do ix = 1,3
