@@ -62,7 +62,7 @@ OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
-        mulliken.o minvec.o naefs.o neighb.o \
+        m_check_supercell.o mulliken.o minvec.o naefs.o neighb.o \
 	ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	propor.o pulayx.o \
@@ -231,7 +231,6 @@ pristine:  clean
 
 
 # DO NOT DELETE THIS LINE - used by make depend
-agminvec.o: precision.o sorting.o sys.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
@@ -290,8 +289,8 @@ diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o precision.o
-dynamics.o: atomlist.o ioxv.o m_mpi_utils.o parallel.o precision.o sys.o
-dynamics.o: units.o
+dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
+dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
 efield.o: siesta_cml.o sys.o
 egandd.o: alloc.o globalise.o m_mpi_utils.o onmod.o onmod.o precision.o sys.o
@@ -339,6 +338,7 @@ m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
 m_broyden_mixing.o: m_broyddj.o m_memory.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o
+m_check_supercell.o: minvec.o parallel.o precision.o
 m_denchar_geom.o: precision.o sys.o
 m_denchar_init.o: files.o
 m_denchar_io.o: m_denchar_geom.o
@@ -375,7 +375,7 @@ old_atmfuncs.o: atmparams.o precision.o sys.o
 on_subs.o: alloc.o onmod.o onmod.o spatial.o
 onmod.o: precision.o
 optical.o: alloc.o atmfuncs.o densematrix.o fermid.o files.o parallel.o
-optical.o: parallelsubs.o parsing.o sys.o
+optical.o: parallelsubs.o parsing.o precision.o sys.o
 ordern.o: alloc.o globalise.o m_mpi_utils.o onmod.o parallel.o precision.o
 ordern.o: siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
@@ -422,12 +422,13 @@ setspatial.o: alloc.o parallel.o precision.o spatial.o
 shaper.o: atmfuncs.o precision.o
 siesta.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o densematrix.o
 siesta.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o m_broyden_mixing.o
-siesta.o: m_cell.o m_fdf_global.o m_iostruct.o m_mpi_utils.o m_smearing.o
-siesta.o: m_wallclock.o md_out.o nlefsm.o ordern.o overfsm.o parallel.o
-siesta.o: parallelsubs.o periodic_table.o phonon.o precision.o redata.o
-siesta.o: siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o zmatrix.o
+siesta.o: m_cell.o m_check_supercell.o m_fdf_global.o m_iostruct.o
+siesta.o: m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o nlefsm.o ordern.o
+siesta.o: overfsm.o parallel.o parallelsubs.o periodic_table.o phonon.o
+siesta.o: precision.o redata.o siesta_cml.o sys.o timestamp.o units.o
+siesta.o: writewave.o xcmod.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
-siesta_cmlsubs.o: files.o parallel.o timestamp.o version.o
+siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 spatial.o: precision.o
 spher_harm.o: precision.o sys.o
 spin_init.o: precision.o

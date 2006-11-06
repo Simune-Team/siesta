@@ -1640,6 +1640,18 @@ with the supercell given as a normal unit cell.
 Logical variable to control whether the auxiliary cell is changed
 during a variable cell optimisation.
 
+\item[{\bf NaiveAuxiliaryCell}] ({\it logical}): 
+\index{NaiveAuxiliaryCell@{\bf NaiveAuxiliaryCell}} 
+
+If true, the program does not check whether the auxiliary cell
+constructed with a naive algorithm is appropriate. This variable
+is only useful if one wishes to reproduce calculations done with
+previous versions in which the auxiliary cell was not large enough, 
+as indicated by warnings such as:\\
+\texttt{xijorb: WARNING: orbital pair 1  341 is multiply connected}
+
+Only small numerical differences in the results are to be expected.
+
 {\it Default value:} {\tt .false.}
 
 
@@ -3035,7 +3047,7 @@ and less than the number of basis functions.
 Logical to select whether the normal or Divide and Conquer algorithms are
 used within the Lapack diagonalisation routines. 
 
-(Note: Some system library implementations of the D&C algorithm are
+(Note: Some system library implementations of the D\&C algorithm are
 buggy. It is advisable to use Siesta's own (fixed) version -- configure will
 try to do that.)
 
