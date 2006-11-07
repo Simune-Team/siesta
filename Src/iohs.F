@@ -8,8 +8,8 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine iohs( task, gamma, nuotot, nspin, maxnh, numh, 
-     .                 listhptr, listh, H, S, qtot, temp, xij )
+      subroutine iohs( task, gamma, no_u, no_s, nspin, indxuo, maxnh, 
+     .                 numh, listhptr, listh, H, S, qtot, temp, xij )
 C *********************************************************************
 C Saves the hamiltonian and overlap matrices, and other data required
 C to obtain the bands and density of states
@@ -20,8 +20,10 @@ C *************************** INPUT **********************************
 C character*(*) task          : 'read'/'READ' or 'write'/'WRITE'
 C logical       gamma         : Is only gamma point used?
 C ******************** INPUT or OUTPUT (depending on task) ***********
-C integer nuotot              : Number of basis orbitals per unit cell
+C integer no_u                : Number of basis orbitals per unit cell
+C integer no_s                : Number of basis orbitals per supercell
 C integer nspin               : Spin polarization (1 or 2)
+C integer indxuo(no_s)        : Index of orbitals in supercell
 C integer maxnh               : First dimension of listh, H, S and
 C                               second of xij
 C integer numh(nuo)           : Number of nonzero elements of each row
@@ -59,13 +61,13 @@ C
       character         task*(*)
       character(len=label_length+3) :: paste
       logical           gamma
-      integer           maxnh, nuotot, nspin
-      integer           listh(maxnh), numh(*), listhptr(*)
+      integer           maxnh, no_u, no_s, nspin
+      integer           indxuo(no_s), listh(maxnh), numh(*), listhptr(*)
       real(dp)          H(maxnh,nspin), S(maxnh),
      .                  qtot, temp, xij(3,maxnh)
       external          io_assign, io_close, paste
 
-c Internal variables and arrays
+C Internal variables and arrays
       character(len=label_length+3) :: fname
       integer    im, is, iu, ju, k, mnh, ns
       integer    ih,hl,nuo,maxnhtot,maxhg
@@ -76,7 +78,7 @@ c Internal variables and arrays
       real(dp), dimension(:),   allocatable :: buffer
       real(dp), dimension(:,:), allocatable :: buffer2
 #endif
-      logical    baddim, found, frstme
+      logical    baddim, found, frstme, gammaonfile
       save       frstme, fname
       data frstme /.true./
 
@@ -112,13 +114,20 @@ C Open file
             open( iu, file=fname, status='old' )      
 
 C Read dimensions
-            read(iu) nuotot, ns, mnh
+            read(iu) no_u, no_s, ns, mnh
+
+C Read logical
+            read(iu) gammaonfile
           endif
 #ifdef MPI
-          call MPI_Bcast(nuotot,1,MPI_integer,0,MPI_Comm_World,
+          call MPI_Bcast(no_u,1,MPI_integer,0,MPI_Comm_World,
+     .      MPIerror)
+          call MPI_Bcast(no_s,1,MPI_integer,0,MPI_Comm_World,
      .      MPIerror)
           call MPI_Bcast(ns,1,MPI_integer,0,MPI_Comm_World,MPIerror)
           call MPI_Bcast(mnh,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+          call MPI_Bcast(gammaonfile,1,MPI_logical,0,MPI_Comm_World,
+     .      MPIerror)
 #endif
 
 C Check dimensions
@@ -140,27 +149,43 @@ C Check dimensions
             endif
           endif
 
+C Check whether file is compatible from a gamma point of view
+          if (.not.gamma.and.gammaonfile) then
+            call die('iohs: Non-gamma information not present')
+          endif
+
+C Read indxuo
+          if (.not.gamma) then
+            if (Node.eq.0) then
+              read(iu) (indxuo(ih),ih=1,no_s)
+            endif
+#ifdef MPI
+            call MPI_Bcast(indxuo,no_s,MPI_integer,0,MPI_Comm_World,
+     .        MPIerror)
+#endif
+          endif
+
 C Allocate local array for global numh
-          allocate(numhg(nuotot))
-          call memory('A','I',nuotot,'iohs')
+          allocate(numhg(no_u))
+          call memory('A','I',no_u,'iohs')
 
 C Read numh and send to appropriate Node
           if (Node.eq.0) then
-            do ih = 1,nuotot
+            do ih = 1,no_u
               read(iu) numhg(ih)
             enddo
           endif
 #ifdef MPI
-          call MPI_Bcast(numhg,nuotot,MPI_integer,0,MPI_Comm_World,
+          call MPI_Bcast(numhg,no_u,MPI_integer,0,MPI_Comm_World,
      .      MPIerror)
 #endif
-          call GetNodeOrbs(nuotot,Node,Nodes,nuo)
+          call GetNodeOrbs(no_u,Node,Nodes,nuo)
           do ih = 1,nuo
             call LocalToGlobalOrb(ih,Node,Nodes,hl)
             numh(ih) = numhg(hl)
           enddo
           maxhg = 0
-          do ih = 1,nuotot
+          do ih = 1,no_u
             maxhg = max(maxhg,numhg(ih))
           enddo
 
@@ -178,7 +203,7 @@ C Create buffer arrays for transfering density matrix between nodes and lists
           call memory('A','I',maxhg,'iohs')
 #endif
 
-          do ih = 1,nuotot
+          do ih = 1,no_u
 #ifdef MPI
             call WhichNodeOrb(ih,Nodes,BNode)
             if (BNode.eq.0.and.Node.eq.BNode) then
@@ -216,7 +241,7 @@ C Create buffer arrays for transfering density matrix between nodes and lists
 
 C Read Hamiltonian
           do is = 1,nspin
-            do ih = 1,nuotot
+            do ih = 1,no_u
 #ifdef MPI
               call WhichNodeOrb(ih,Nodes,BNode)
               if (BNode.eq.0.and.Node.eq.BNode) then
@@ -250,7 +275,7 @@ C Read Hamiltonian
           enddo
 
 C Read Overlap matrix
-          do ih = 1,nuotot
+          do ih = 1,no_u
 #ifdef MPI
             call WhichNodeOrb(ih,Nodes,BNode)
             if (BNode.eq.0.and.Node.eq.BNode) then
@@ -305,7 +330,7 @@ C Allocate buffer array
             call memory('A','D',3*maxhg,'iohs')
 #endif
 C Read interorbital vectors for K point phasing
-            do ih = 1,nuotot
+            do ih = 1,no_u
 #ifdef MPI
               call WhichNodeOrb(ih,Nodes,BNode)
               if (BNode.eq.0.and.Node.eq.BNode) then
@@ -368,16 +393,24 @@ C Open file
           open( iu, file=fname, form='unformatted', status='unknown' )      
 
 C Write overall data
-          write(iu) nuotot, nspin, maxnhtot
+          write(iu) no_u, no_s, nspin, maxnhtot
+
+C Read logical
+          write(iu) gamma
 
 C Allocate local array for global numh
-          allocate(numhg(nuotot))
-          call memory('A','I',nuotot,'iohs')
+          allocate(numhg(no_u))
+          call memory('A','I',no_u,'iohs')
+
+C Write out indxuo
+          if (.not.gamma) then
+            write(iu) (indxuo(ih),ih=1,no_s)
+          endif
 
         endif
 
 C Create globalised numh
-        do ih = 1,nuotot
+        do ih = 1,no_u
 #ifdef MPI
           call WhichNodeOrb(ih,Nodes,BNode)
           if (BNode.eq.0.and.Node.eq.BNode) then
@@ -406,10 +439,10 @@ C Create globalised numh
         if (Node.eq.0) then
 C Write numh
           maxhg = 0
-          do ih = 1,nuotot
+          do ih = 1,no_u
             maxhg = max(maxhg,numhg(ih))
           enddo
-          do ih = 1,nuotot
+          do ih = 1,no_u
             write(iu) numhg(ih)
           enddo
 #ifdef MPI
@@ -421,7 +454,7 @@ C Write numh
         endif
 
 C Write listh
-        do ih = 1,nuotot
+        do ih = 1,no_u
 #ifdef MPI
           call WhichNodeOrb(ih,Nodes,BNode)
           if (BNode.eq.0.and.Node.eq.BNode) then
@@ -447,7 +480,7 @@ C Write listh
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
               do im = 1,numhg(ih)
-                write(iu) ibuffer(im)
+                write(iu) ibuffer(ih)
               enddo
             endif
           endif
@@ -463,7 +496,7 @@ C Write listh
 
 C Write Hamiltonian
         do is=1,nspin
-          do ih=1,nuotot
+          do ih=1,no_u
 #ifdef MPI
             call WhichNodeOrb(ih,Nodes,BNode)
             if (BNode.eq.0.and.Node.eq.BNode) then
@@ -499,7 +532,7 @@ C Write Hamiltonian
         enddo
 
 C Write Overlap matrix
-        do ih=1,nuotot
+        do ih = 1,no_u
 #ifdef MPI
           call WhichNodeOrb(ih,Nodes,BNode)
           if (BNode.eq.0.and.Node.eq.BNode) then
@@ -507,7 +540,7 @@ C Write Overlap matrix
 #else
             hl = ih
 #endif
-            do im=1,numh(hl)
+            do im = 1,numh(hl)
               write(iu) S(listhptr(hl)+im)
             enddo
 #ifdef MPI
@@ -525,7 +558,7 @@ C Write Overlap matrix
           if (BNode.ne.0) then
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
-              do im=1,numhg(ih)
+              do im = 1,numhg(ih)
                 write(iu) buffer(im)
               enddo
             endif
@@ -543,7 +576,7 @@ C Allocate buffer array
           allocate(buffer2(3,maxhg))
           call memory('A','D',3*maxhg,'iohs')
 #endif
-          do ih=1,nuotot
+          do ih = 1,no_u
 #ifdef MPI
             call WhichNodeOrb(ih,Nodes,BNode)
             if (BNode.eq.0.and.Node.eq.BNode) then
@@ -551,7 +584,7 @@ C Allocate buffer array
 #else
               hl = ih
 #endif
-              do im=1,numh(hl)
+              do im = 1,numh(hl)
                 write(iu) (xij(k,listhptr(hl)+im),k=1,3)
               enddo
 #ifdef MPI

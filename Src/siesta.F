@@ -1405,8 +1405,9 @@ C Save present density matrix ........................................
 
 C Save Hamiltonian and overlap matrices ............................
         if (savehs) then
-          call iohs( 'write', gamma, no_u, nspin, maxnh,
-     .               numh, listhptr, listh, H, S, qtot, temp, xijo )
+          call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
+     $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
+     $               xijo )
         endif
 
 C Solve eigenvalue problem .........................................
