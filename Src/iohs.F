@@ -494,6 +494,7 @@ C Write listh
         endif
 #endif
 
+
 C Write Hamiltonian
         do is=1,nspin
           do ih=1,no_u
@@ -566,6 +567,14 @@ C Write Overlap matrix
 #endif
         enddo
 
+#ifdef MPI
+          if (Node .eq. 0) then
+C Free buffer array
+             call memory('D','D',size(buffer),'iohs')
+             deallocate(buffer)
+          endif
+#endif
+
         if (Node.eq.0) then
           write(iu) qtot,temp
         endif
@@ -573,8 +582,10 @@ C Write Overlap matrix
         if (.not.gamma) then
 #ifdef MPI
 C Allocate buffer array
-          allocate(buffer2(3,maxhg))
-          call memory('A','D',3*maxhg,'iohs')
+          if (Node .eq. 0) then
+             allocate(buffer2(3,maxhg))
+             call memory('A','D',3*maxhg,'iohs')
+          endif
 #endif
           do ih = 1,no_u
 #ifdef MPI
@@ -611,11 +622,13 @@ C Allocate buffer array
 #endif
           enddo
 #ifdef MPI
+          if (Node .eq. 0) then
 C Free buffer array
-          call memory('D','D',size(buffer2),'iohs')
-          deallocate(buffer2)
+             call memory('D','D',size(buffer2),'iohs')
+             deallocate(buffer2)
+          endif
 #endif
-        endif
+        endif   ! not gamma
 
         if (Node.eq.0) then
 C Deallocate local array for global numh
