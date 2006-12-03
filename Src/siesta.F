@@ -696,13 +696,15 @@ C Print k-point information (even if gamma point)
       if (IOnode) call siesta_write_k_points()
 
 C Find required supercell
+C 2*rmaxh is used to guarantee that two given orbitals in the
+C supercell can only overlap once
 
       if (gamma) then
          nsc(1:3) = 1
       else
          do i=1,3
             veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-            nsc(i) = 1 + 2 * rmaxh / veclen
+            nsc(i) = ceiling( 2 * rmaxh / veclen )
          enddo
          if (.not. naiveauxcell)
      $        call check_sc_factors(ucell,nsc,2*rmaxh)
@@ -888,7 +890,7 @@ C Find required supercell
         else
            do i=1,3
               veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-              nsc(i) = 1 + 2 * rmaxh / veclen
+              nsc(i) = ceiling( 2 * rmaxh / veclen )
            enddo
            if (.not. naiveauxcell)
      $         call check_sc_factors(ucell,nsc,2*rmaxh)
