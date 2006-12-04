@@ -90,8 +90,11 @@ subroutine fmixmd( t0, tf, dtfast, dtconv, dtsamp, ffast, fconv, &
   end do ! it
 
 ! Stop siesta processes
+  print *, "About to stop ffast..."
   call siesta_quit( ffast )
+  print *, "About to stop fconv..."
   call siesta_quit( fconv )
+  print *, "After call to siesta_quit"
 
 end
 

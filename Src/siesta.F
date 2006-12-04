@@ -128,13 +128,13 @@ C  Modules
      .  mn, mpr, occtol, Pint, Pmol, Psol
       real(dp)
      .  qaux, qspin(4), qsol,
-     .  rc, rcoor, rcoorcp, rijmin, rmax, rmaxh, rmin, r2min,
+     .  rcoor, rcoorcp, rijmin, rmax, rmaxh, rmin, r2min,
      .  scell(3,3), stot, stress(3,3), strtol, svec(3),
      .  taurelax, tempinit, tempion, tiny, tp, ts, tt,
      .  tstress(3,3), Uatm, Uscf,
      .  vcell(3,3), virial, vn,
      .  volcel, volume, vpr, wmix, wmixkick, 
-     .  xmax, xmin, stressl(3,3), veclen
+     .  stressl(3,3), veclen
 
       real(dp), dimension(:), allocatable ::
      .  efs, kweight, qs, r2ij
@@ -187,7 +187,7 @@ C  Modules
       character(len=label_length+5) :: filrho
       character(len=label_length+5) :: paste
 
-      external
+      external :: automatic_cell,
      .  cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
@@ -487,39 +487,7 @@ C ......................
 
 C Automatic cell generation ...........................................
       if (volcel(ucell) .lt. 1.0d-8) then
-        ucell(1:3,1:3) = 0.0_dp
-        scell(1:3,1:3) = 0.0_dp
-        do ix = 1,3
-          xmin =  huge(1._dp)
-          xmax = -xmin
-          do ia = 1,na_u
-            is = isa(ia)
-            rc = rcut(is,0)
-            xmin = min( xmin, xa(ix,ia)-rc )
-            xmax = max( xmax, xa(ix,ia)+rc )
-          enddo
-C         Use a 10% margin for atomic movements
-          ucell(ix,ix) = 1.10_dp * (xmax - xmin)
-          scell(ix,ix) = ucell(ix,ix)
-        enddo
-C build cubic cell if system is charged
-        if (charnet .ne. 0.0_dp) then
-          xmax = -huge(1._dp)
-          do ix = 1,3
-            if (ucell(ix,ix) .gt. xmax) xmax = ucell(ix,ix)
-          enddo
-          do ix = 1,3
-            ucell(ix,ix) = xmax
-            scell(ix,ix) = xmax
-          enddo
-        endif
-C
-        volume = volcel( ucell )
-        if (IOnode) then
-          write(6,'(/,a,3(/,a,3f12.6))')
-     .      'siesta: Automatic unit cell vectors (Ang):',
-     .      ('siesta:', (ucell(ix,iv)/Ang,ix=1,3), iv =1,3)
-        endif
+         call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
       endif
 
 C Find system shape ...................................................
@@ -826,6 +794,9 @@ C Displace atom by dx...
 C Get coordinates from driver program trough pipe
       if (idyn.eq.8 .and. istep.ne.inicoor) then
         call coordsFromPipe( na_u, xa, ucell )
+        if (volcel(ucell) < 1.0e-8_dp) then
+           call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
+        endif
       end if
 
       if (IOnode) then
@@ -841,7 +812,8 @@ C ...................
 
 C Actualize things if variable cell ...................................
       auxchanged = .false.
-      if ( varcel .and. (istep.ne.inicoor) .and. (.not.gamma) ) then
+      if ( (varcel .or. idyn.eq.8)
+     $     .and. (istep.ne.inicoor) .and. (.not.gamma) ) then
 
 C k-grid 
         nkpnt = maxk
@@ -1896,7 +1868,7 @@ C Print atomic coordinates (and also unit cell for ParrRah.)
         endif
         call siesta_write_positions()
         if (lUseZmatrix) call write_Zmatrix
-        if ( varcel ) call outcell(ucell)
+        if ( varcel .or. (idyn.eq.8)) call outcell(ucell)
 
 C Print coordinates in xmol format in a separate file
 
@@ -2370,8 +2342,8 @@ C In finalization, only print forces if sufficiently large.
 
       ! Output depends on dynamics option
         select case (idyn)
-        case(0:5)
-          if (idyn==0 .and..not.varcel) then
+        case(0:5,8)
+          if (idyn==0 .and. (.not.varcel)) then
             continue
           else
             write(6,'(/,a,3(/,a,3f12.6))')

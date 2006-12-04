@@ -1,5 +1,10 @@
+** NOTE **
+The file "fsiesta.f90" implementing the helper routines for Siesta-as-Server
+is now in the main source directory (Src), in order to be compiled with the
+appropriate flags and flush routine.
+**
 
-This directory contains support routines for siesta-as-a-subroutine in 
+This directory documents support routines for siesta-as-a-subroutine in 
 Unix/Linux, using pipes for communication between the user's program
 and one or more siesta processes. To use the package, you must:
 1) Write a normal fdf data file for the siesta program (see the siesta
@@ -47,6 +52,11 @@ and one or more siesta processes. To use the package, you must:
    the communication pipes still exist after yor program terminates
    (normally or abnormally). In that case, simply remove them, as if
    they were normal files.
+6) Make sure that you have a working "flush" subroutine in your system,
+   and that it is compiled-in (in file pxf.F90 in the main source directory)
+   through the appropriate preprocessor symbols. Otherwise the process 
+   might hang. The compilation of fsiesta.f90 in the main directory should
+   automate this, but you should check.
 
 ! Subroutines usage:
 !   call siesta_launch( label, nnodes )
@@ -88,6 +98,12 @@ and one or more siesta processes. To use the package, you must:
 !   and a supercell is generated automatically by siesta so that the 
 !   different images do not overlap. In this case the stress returned
 !   has no physical meaning.
+!   ** Note ** : Further calls with no cell information will reset the
+!   unit cell to a *different* one (since it is computed from the coordinates,
+!   and these would have changed. If you would like to maintain the same
+!   cell, you need to pass it explicitly (maybe doing a preliminary run
+!   to get the automatically generated cell, and copying it to the fdf file
+!   or to the client code itself.
 ! - The stress is defined as dE/d(strain)/Volume, with a positive sign
 !   when the system tends to contract (negative pressure)
 ! - The following events result in a stopping error message:
@@ -102,5 +118,6 @@ and one or more siesta processes. To use the package, you must:
 !
 ! Note: the routines that handle the other side of the communication 
 ! are in module iopipes of the siesta program.
-! J.M.Soler and A.Garcia. Jan 2004.
+! J.M.Soler and A.Garcia. Jan 2004, Dec 2006
+
 

@@ -51,13 +51,14 @@ SYSOBJ=$(SYS).o pxf.o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
+OBJS = automatic_cell.o \
+        arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
-	fixed.o gradient.o gradientlomem.o grdsam.o \
+	fixed.o fsiesta.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
@@ -241,6 +242,7 @@ atom.o: atmparams.o basis_types.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: pseudopotential.o recipes.o sys.o xcmod.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
+automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
 basis_io.o: atm_types.o atmparams.o basis_types.o chemical.o precision.o
