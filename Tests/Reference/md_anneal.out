@@ -1,10 +1,11 @@
-Siesta Version: siesta-2.0-release
-Architecture  : intel9-mkl8
-Compiler flags: ifort -u -xP -O3 -mp1
+Siesta Version: siesta-2.0.1
+Architecture  : powerpc-apple-darwin8.8.0--unknown
+Compiler flags: g95 -g -O2
 SERIAL version
+NetCDF-capable
 
 * Running in serial mode
->> Start of run:  24-FEB-2006  12:55:15
+>> Start of run:   5-DEC-2006  13:33:07
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -53,7 +54,7 @@ reinit: System Label: md_anneal
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:            1  Label: Si Atomic number:          14
+ Species number:  1  Label: Si Atomic number: 14
 Ground state valence configuration:   3s02  3p02
 Reading pseudopotential information in formatted form from Si.psf
 For Si, standard SIESTA heuristics set lmxkb to 2
@@ -62,19 +63,19 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 
 <basis_specs>
 ===============================================================================
-Si                   Z=  14    Mass=  28.090        Charge=  0.0000    
+Si                   Z=  14    Mass=  28.090        Charge=  .00000    
 Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
-               vcte:    0.0000    
-               rinn:    0.0000    
-                rcs:    0.0000    
+               vcte:    .00000    
+               rinn:    .00000    
+                rcs:    .00000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
-               vcte:    0.0000    
-               rinn:    0.0000    
-                rcs:    0.0000    
+               vcte:    .00000    
+               rinn:    .00000    
+                rcs:    .00000    
             lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
@@ -183,6 +184,7 @@ Si          2                    # Species label, number of l-shells
 
 prinput: ----------------------------------------------------------------------
 
+Dumping basis to NetCDF file Si.ion.nc
 
 siesta: ******************** Simulation parameters ****************************
 siesta:
@@ -237,11 +239,12 @@ initatomlists: Number of atoms, orbitals, and projectors:      2     8    18
 siesta: System type = bulk      
 
 siesta: k-grid: Number of k-points =     4
-siesta: k-grid: Cutoff             =     3.840 Ang
+siesta: k-grid: Cutoff (effective) =     3.840 Ang
 siesta: k-grid: Supercell and displacements
 siesta: k-grid:    2   0   0      0.500
 siesta: k-grid:    0   2   0      0.500
 siesta: k-grid:    0   0   2      0.500
+Naive supercell factors:     5    5    5
 
 superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:    250  1000  2250
@@ -292,8 +295,8 @@ siesta: Eharris(eV) =    -213.847468
 
 siesta: Eharris(eV) =    -213.847468
 
-timer: Routine,Calls,Time,% = IterSCF        1       0.492  66.58
-elaps: Routine,Calls,Wall,% = IterSCF        1       0.493  63.68
+timer: Routine,Calls,Time,% = IterSCF        1       2.243  66.76
+elaps: Routine,Calls,Wall,% = IterSCF        1       2.438  62.62
 
 siesta: E_KS - E_eggbox =      -213.7687
 
@@ -314,17 +317,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.050723   -0.036465    0.050723
          0.050723    0.050723   -0.036465
 
-siesta: Pressure (static):         58.42370543  kBar
+siesta: Pressure (static):         58.42370547  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.036546    0.050860    0.050695
          0.050860   -0.036695    0.050769
          0.050695    0.050769   -0.036474
 
-siesta: Pressure (total):         58.59492697  kBar
- Anneal: Kinetic Energy=   9.499992404768428E-004
- Anneal: Velocity scale factor =    1.09544511784033     
- Anneal: Cell scale factor =   0.986243753623667     
+siesta: Pressure (total):         58.59492701  kBar
+ Anneal: Kinetic Energy=  0.0009499992404768539
+ Anneal: Velocity scale factor =  1.0954451178403277
+ Anneal: Cell scale factor =  0.9862437536249428
 
 siesta: Temp_ion =     120.000 K
 
@@ -357,7 +360,7 @@ siesta: Eharris(eV) =    -213.708560
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000000    0.000001
+   Tot   -0.000000    0.000000    0.000001
 ----------------------------------------
    Max    0.257007
    Res    0.194522    sqrt( Sum f_i^2 / 3N )
@@ -372,17 +375,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.052846   -0.051852    0.051766
          0.055061    0.051766   -0.052083
 
-siesta: Pressure (static):         83.30206616  kBar
+siesta: Pressure (static):         83.30206603  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.052143    0.053013    0.055029
          0.053013   -0.052129    0.051819
          0.055029    0.051819   -0.052093
 
-siesta: Pressure (total):         83.50929800  kBar
- Anneal: Kinetic Energy=   1.299374903996918E-003
- Anneal: Velocity scale factor =    1.06558380837892     
- Anneal: Cell scale factor =   0.987259081384471     
+siesta: Pressure (total):         83.50929788  kBar
+ Anneal: Kinetic Energy=  0.001299374903983174
+ Anneal: Velocity scale factor =  1.0655838083797888
+ Anneal: Cell scale factor =  0.9872590813792643
 
 siesta: Temp_ion =     155.305 K
 
@@ -415,7 +418,7 @@ siesta: Eharris(eV) =    -213.562731
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000001    0.000000
+   Tot   -0.000000    0.000001    0.000000
 ----------------------------------------
    Max    0.343717
    Res    0.213704    sqrt( Sum f_i^2 / 3N )
@@ -430,17 +433,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.055123   -0.075888    0.053456
          0.060417    0.053456   -0.076581
 
-siesta: Pressure (static):        122.09079908  kBar
+siesta: Pressure (static):        122.09079899  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.076289    0.055352    0.060367
          0.055352   -0.076235    0.053533
          0.060367    0.053533   -0.076598
 
-siesta: Pressure (total):        122.36578083  kBar
- Anneal: Kinetic Energy=   1.570750327911644E-003
- Anneal: Velocity scale factor =    1.05126278657970     
- Anneal: Cell scale factor =   0.988849042180319     
+siesta: Pressure (total):        122.36578074  kBar
+ Anneal: Kinetic Energy=  0.001570750326904986
+ Anneal: Velocity scale factor =  1.0512627866239486
+ Anneal: Cell scale factor =  0.9888490421780436
 
 siesta: Temp_ion =     182.729 K
 
@@ -475,10 +478,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Tot    0.000000    0.000001    0.000000
 ----------------------------------------
-   Max    0.428026
+   Max    0.428027
    Res    0.254106    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.428026    constrained
+   Max    0.428027    constrained
 
 Stress-tensor-Voigt (kbar):     -156.19     -155.17     -156.23       89.15       85.91      106.64
 Target enthalpy (eV/cell)     -204.0478
@@ -488,17 +491,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.055361   -0.096451    0.053524
          0.066627    0.053524   -0.097484
 
-siesta: Pressure (static):        155.53051963  kBar
+siesta: Pressure (static):        155.53051915  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.097485    0.055643    0.066557
          0.055643   -0.096846    0.053623
          0.066557    0.053623   -0.097509
 
-siesta: Pressure (total):        155.86164917  kBar
- Anneal: Kinetic Energy=   1.760988225343967E-003
- Anneal: Velocity scale factor =    1.04377806860575     
- Anneal: Cell scale factor =   0.990203873194615     
+siesta: Pressure (total):        155.86164868  kBar
+ Anneal: Kinetic Energy=  0.00176098821747101
+ Anneal: Velocity scale factor =  1.043778068883031
+ Anneal: Cell scale factor =  0.9902038731489992
 
 siesta: Temp_ion =     201.953 K
 
@@ -531,7 +534,7 @@ siesta: Eharris(eV) =    -213.254491
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000000    0.000001    0.000000
+   Tot   -0.000001    0.000001   -0.000000
 ----------------------------------------
    Max    0.485879
    Res    0.291385    sqrt( Sum f_i^2 / 3N )
@@ -546,17 +549,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.057915   -0.112123    0.053852
          0.070762    0.053852   -0.112742
 
-siesta: Pressure (static):        180.16422845  kBar
+siesta: Pressure (static):        180.16422813  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.112724    0.058237    0.070673
          0.058237   -0.112547    0.053969
          0.070673    0.053969   -0.112774
 
-siesta: Pressure (total):        180.53795472  kBar
- Anneal: Kinetic Energy=   1.883958903413223E-003
- Anneal: Velocity scale factor =    1.03972191212601     
- Anneal: Cell scale factor =   0.991191877449107     
+siesta: Pressure (total):        180.53795440  kBar
+ Anneal: Kinetic Energy=  0.001883958890187892
+ Anneal: Velocity scale factor =  1.0397219125345682
+ Anneal: Cell scale factor =  0.9911918774341137
 
 siesta: Temp_ion =     214.379 K
 
@@ -604,17 +607,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.058832   -0.125714    0.052430
          0.075953    0.052430   -0.126948
 
-siesta: Pressure (static):        202.40735745  kBar
+siesta: Pressure (static):        202.40735644  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.126612    0.059182    0.075847
          0.059182   -0.126151    0.052562
          0.075847    0.052562   -0.126988
 
-siesta: Pressure (total):        202.81186210  kBar
- Anneal: Kinetic Energy=   1.946962681920648E-003
- Anneal: Velocity scale factor =    1.03783688010379     
- Anneal: Cell scale factor =   0.992111002040617     
+siesta: Pressure (total):        202.81186108  kBar
+ Anneal: Kinetic Energy=  0.0019469626771805254
+ Anneal: Velocity scale factor =  1.0378368802411508
+ Anneal: Cell scale factor =  0.9921110020409492
 
 siesta: Temp_ion =     220.746 K
 
@@ -662,17 +665,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.059785   -0.144651    0.052115
          0.082104    0.052115   -0.146646
 
-siesta: Pressure (static):        233.19256925  kBar
+siesta: Pressure (static):        233.19256883  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.145649    0.060152    0.081982
          0.060152   -0.145088    0.052260
          0.081982    0.052260   -0.146694
 
-siesta: Pressure (total):        233.61666797  kBar
- Anneal: Kinetic Energy=   1.937044890834525E-003
- Anneal: Velocity scale factor =    1.03812570367408     
- Anneal: Cell scale factor =   0.993383711438084     
+siesta: Pressure (total):        233.61666755  kBar
+ Anneal: Kinetic Energy=  0.0019370448962127604
+ Anneal: Velocity scale factor =  1.0381257035166807
+ Anneal: Cell scale factor =  0.9933837114427132
 
 siesta: Temp_ion =     219.744 K
 
@@ -720,17 +723,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.060737   -0.165124    0.051542
          0.088936    0.051542   -0.167233
 
-siesta: Pressure (static):        265.92151610  kBar
+siesta: Pressure (static):        265.92151701  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.165891    0.061108    0.088800
          0.061108   -0.165543    0.051696
          0.088800    0.051696   -0.167290
 
-siesta: Pressure (total):        266.35080927  kBar
- Anneal: Kinetic Energy=   1.875581387676574E-003
- Anneal: Velocity scale factor =    1.03998183287523     
- Anneal: Cell scale factor =   0.994712107158840     
+siesta: Pressure (total):        266.35081017  kBar
+ Anneal: Kinetic Energy=  0.0018755813901563743
+ Anneal: Velocity scale factor =  1.0399818327979582
+ Anneal: Cell scale factor =  0.9947121072229765
 
 siesta: Temp_ion =     213.533 K
 
@@ -766,7 +769,7 @@ siesta: Atomic forces (eV/Ang):
    Tot   -0.004995    0.024325    0.015617
 ----------------------------------------
    Max    0.831711
-   Res    0.554845    sqrt( Sum f_i^2 / 3N )
+   Res    0.554846    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.831711    constrained
 
@@ -778,17 +781,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.062967   -0.181922    0.049920
          0.094794    0.049920   -0.183716
 
-siesta: Pressure (static):        292.88945037  kBar
+siesta: Pressure (static):        292.88944982  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.183115    0.063330    0.094645
          0.063330   -0.182313    0.050081
          0.094645    0.050081   -0.183782
 
-siesta: Pressure (total):        293.31332084  kBar
- Anneal: Kinetic Energy=   1.789432857059624E-003
- Anneal: Velocity scale factor =    1.04279172087118     
- Anneal: Cell scale factor =   0.995774934685163     
+siesta: Pressure (total):        293.31332028  kBar
+ Anneal: Kinetic Energy=  0.0017894328370573348
+ Anneal: Velocity scale factor =  1.0427917215540778
+ Anneal: Cell scale factor =  0.9957749346199696
 
 siesta: Temp_ion =     204.827 K
 
@@ -836,17 +839,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.065603   -0.197101    0.048900
          0.097699    0.048900   -0.198988
 
-siesta: Pressure (static):        317.50689969  kBar
+siesta: Pressure (static):        317.50690058  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.198760    0.065950    0.097536
          0.065950   -0.197458    0.049067
          0.097536    0.049067   -0.199066
 
-siesta: Pressure (total):        317.91984342  kBar
- Anneal: Kinetic Energy=   1.673992903374271E-003
- Anneal: Velocity scale factor =    1.04699626975126     
- Anneal: Cell scale factor =   0.996759118797472     
+siesta: Pressure (total):        317.91984431  kBar
+ Anneal: Kinetic Energy=  0.001673992865144882
+ Anneal: Velocity scale factor =  1.0469962712366836
+ Anneal: Cell scale factor =  0.9967591188790411
 
 siesta: Temp_ion =     193.162 K
 
@@ -881,10 +884,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Tot   -0.015786    0.015364   -0.009966
 ----------------------------------------
-   Max    1.000536
+   Max    1.000537
    Res    0.704493    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.000536    constrained
+   Max    1.000537    constrained
 
 Stress-tensor-Voigt (kbar):     -341.54     -341.71     -341.93      105.71       78.05      163.45
 Target enthalpy (eV/cell)     -203.9960
@@ -894,17 +897,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.065657   -0.212959    0.048544
          0.102190    0.048544   -0.213323
 
-siesta: Pressure (static):        341.33428406  kBar
+siesta: Pressure (static):        341.33428556  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.213173    0.065980    0.102016
          0.065980   -0.213276    0.048715
          0.102016    0.048715   -0.213415
 
-siesta: Pressure (total):        341.72901166  kBar
- Anneal: Kinetic Energy=   1.535633061472966E-003
- Anneal: Velocity scale factor =    1.05284037449960     
- Anneal: Cell scale factor =   0.997682517608697     
+siesta: Pressure (total):        341.72901314  kBar
+ Anneal: Kinetic Energy=  0.001535633023975977
+ Anneal: Velocity scale factor =  1.0528403762213288
+ Anneal: Cell scale factor =  0.9976825176935853
 
 siesta: Temp_ion =     179.180 K
 
@@ -952,17 +955,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.065076   -0.228213    0.046941
          0.105790    0.046941   -0.228772
 
-siesta: Pressure (static):        366.84731858  kBar
+siesta: Pressure (static):        366.84731961  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.230226    0.065368    0.105605
          0.065368   -0.228484    0.047113
          0.105605    0.047113   -0.228881
 
-siesta: Pressure (total):        367.21832025  kBar
- Anneal: Kinetic Energy=   1.398658343131236E-003
- Anneal: Velocity scale factor =    1.05972318873286     
- Anneal: Cell scale factor =   0.998677202669680     
+siesta: Pressure (total):        367.21832125  kBar
+ Anneal: Kinetic Energy=  0.0013986583202897063
+ Anneal: Velocity scale factor =  1.0597231899889341
+ Anneal: Cell scale factor =  0.9986772026701088
 
 siesta: Temp_ion =     165.338 K
 
@@ -1010,17 +1013,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.066068   -0.241805    0.045178
          0.110526    0.045178   -0.241606
 
-siesta: Pressure (static):        388.72723500  kBar
+siesta: Pressure (static):        388.72723599  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.244751    0.066325    0.110329
          0.066325   -0.242027    0.045349
          0.110329    0.045349   -0.241737
 
-siesta: Pressure (total):        389.07442105  kBar
- Anneal: Kinetic Energy=   1.281915664584842E-003
- Anneal: Velocity scale factor =    1.06670458731143     
- Anneal: Cell scale factor =   0.999504209546243     
+siesta: Pressure (total):        389.07442203  kBar
+ Anneal: Kinetic Energy=  0.0012819156555319683
+ Anneal: Velocity scale factor =  1.0667045879001718
+ Anneal: Cell scale factor =  0.9995042095329914
 
 siesta: Temp_ion =     153.541 K
 
@@ -1068,17 +1071,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.066315   -0.254494    0.044224
          0.114058    0.044224   -0.252229
 
-siesta: Pressure (static):        406.54619196  kBar
+siesta: Pressure (static):        406.54618869  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.254782    0.066534    0.113847
          0.066534   -0.254669    0.044392
          0.113847    0.044392   -0.252391
 
-siesta: Pressure (total):        406.87298670  kBar
- Anneal: Kinetic Energy=   1.195723291545880E-003
- Anneal: Velocity scale factor =    1.07269726386797     
- Anneal: Cell scale factor =    1.00019026812524     
+siesta: Pressure (total):        406.87298341  kBar
+ Anneal: Kinetic Energy=  0.0011957232748299649
+ Anneal: Velocity scale factor =  1.072697265110469
+ Anneal: Cell scale factor =  1.000190267938518
 
 siesta: Temp_ion =     144.831 K
 
@@ -1126,17 +1129,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.066451   -0.266819    0.042621
          0.117665    0.042621   -0.262697
 
-siesta: Pressure (static):        426.05230774  kBar
+siesta: Pressure (static):        426.05231172  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.268490    0.066632    0.117439
          0.066632   -0.266949    0.042784
          0.117439    0.042784   -0.262900
 
-siesta: Pressure (total):        426.36445394  kBar
- Anneal: Kinetic Energy=   1.142142571118723E-003
- Anneal: Velocity scale factor =    1.07685870058587     
- Anneal: Cell scale factor =    1.00086750089055     
+siesta: Pressure (total):        426.36445789  kBar
+ Anneal: Kinetic Energy=  0.001142142562308579
+ Anneal: Velocity scale factor =  1.0768587013008406
+ Anneal: Cell scale factor =  1.0008675008736945
 
 siesta: Temp_ion =     139.417 K
 
@@ -1184,17 +1187,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.067194   -0.276564    0.041214
          0.118580    0.041214   -0.270313
 
-siesta: Pressure (static):        441.00564092  kBar
+siesta: Pressure (static):        441.00564597  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.279100    0.067334    0.118340
          0.067334   -0.276652    0.041364
          0.118340    0.041364   -0.270569
 
-siesta: Pressure (total):        441.30920430  kBar
- Anneal: Kinetic Energy=   1.122013356406266E-003
- Anneal: Velocity scale factor =    1.07852027331396     
- Anneal: Cell scale factor =    1.00136352388532     
+siesta: Pressure (total):        441.30920933  kBar
+ Anneal: Kinetic Energy=  0.001122013368460932
+ Anneal: Velocity scale factor =  1.0785202723018288
+ Anneal: Cell scale factor =  1.0013635241832506
 
 siesta: Temp_ion =     137.382 K
 
@@ -1242,17 +1245,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.067006   -0.285313    0.040505
          0.118715    0.040505   -0.276624
 
-siesta: Pressure (static):        453.68986967  kBar
+siesta: Pressure (static):        453.68986989  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.287757    0.067104    0.118467
          0.067104   -0.285363    0.040632
          0.118467    0.040632   -0.276948
 
-siesta: Pressure (total):        453.99161219  kBar
- Anneal: Kinetic Energy=   1.141617135868908E-003
- Anneal: Velocity scale factor =    1.07690136006991     
- Anneal: Cell scale factor =    1.00177748891494     
+siesta: Pressure (total):        453.99161239  kBar
+ Anneal: Kinetic Energy=  0.0011416171654637037
+ Anneal: Velocity scale factor =  1.076901357666088
+ Anneal: Cell scale factor =  1.0017774890747997
 
 siesta: Temp_ion =     139.364 K
 
@@ -1285,12 +1288,12 @@ siesta: Eharris(eV) =    -211.666656
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.015395    0.008307    0.003705
+   Tot   -0.015396    0.008307    0.003705
 ----------------------------------------
-   Max    1.035451
+   Max    1.035452
    Res    0.834060    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.035451    constrained
+   Max    1.035452    constrained
 
 Stress-tensor-Voigt (kbar):     -474.28     -471.43     -451.98      105.61       62.66      188.53
 Target enthalpy (eV/cell)     -203.7345
@@ -1300,17 +1303,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.065861   -0.294217    0.039017
          0.117917    0.039017   -0.281697
 
-siesta: Pressure (static):        465.58814497  kBar
+siesta: Pressure (static):        465.58814679  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.296022    0.065917    0.117668
          0.065917   -0.294238    0.039108
          0.117668    0.039108   -0.282101
 
-siesta: Pressure (total):        465.89671558  kBar
- Anneal: Kinetic Energy=   1.201147329743372E-003
- Anneal: Velocity scale factor =    1.07229583890025     
- Anneal: Cell scale factor =    1.00211298796100     
+siesta: Pressure (total):        465.89671736  kBar
+ Anneal: Kinetic Energy=  0.0012011473974447718
+ Anneal: Velocity scale factor =  1.0722958339114628
+ Anneal: Cell scale factor =  1.0021129881771005
 
 siesta: Temp_ion =     145.379 K
 
@@ -1358,17 +1361,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.064679   -0.299684    0.038371
          0.116231    0.038371   -0.283423
 
-siesta: Pressure (static):        472.30072601  kBar
+siesta: Pressure (static):        472.30072017  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.301357    0.064697    0.115996
          0.064697   -0.299687    0.038408
          0.115996    0.038408   -0.283914
 
-siesta: Pressure (total):        472.62448392  kBar
- Anneal: Kinetic Energy=   1.298459463909955E-003
- Anneal: Velocity scale factor =    1.06564185435646     
- Anneal: Cell scale factor =    1.00223411086843     
+siesta: Pressure (total):        472.62447806  kBar
+ Anneal: Kinetic Energy=  0.0012984595656717226
+ Anneal: Velocity scale factor =  1.0656418478996086
+ Anneal: Cell scale factor =  1.0022341106374815
 
 siesta: Temp_ion =     155.213 K
 
@@ -1416,17 +1419,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.061554   -0.303430    0.037772
          0.113445    0.037772   -0.283870
 
-siesta: Pressure (static):        476.59032770  kBar
+siesta: Pressure (static):        476.59032689  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.305154    0.061543    0.113244
          0.061543   -0.303432    0.037739
          0.113244    0.037739   -0.284446
 
-siesta: Pressure (total):        476.93666004  kBar
- Anneal: Kinetic Energy=   1.426924513597214E-003
- Anneal: Velocity scale factor =    1.05819850788094     
- Anneal: Cell scale factor =    1.00227172546272     
+siesta: Pressure (total):        476.93665921  kBar
+ Anneal: Kinetic Energy=  0.0014269246337223359
+ Anneal: Velocity scale factor =  1.0581985015251527
+ Anneal: Cell scale factor =  1.0022717255422338
 
 siesta: Temp_ion =     168.195 K
 
@@ -1461,10 +1464,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Tot    0.011783    0.010584    0.006103
 ----------------------------------------
-   Max    0.975557
+   Max    0.975556
    Res    0.766903    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.975557    constrained
+   Max    0.975556    constrained
 
 Stress-tensor-Voigt (kbar):     -494.89     -492.90     -456.03       93.68       61.29      176.03
 Target enthalpy (eV/cell)     -203.6961
@@ -1474,17 +1477,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.058499   -0.307622    0.038372
          0.110016    0.038372   -0.283981
 
-siesta: Pressure (static):        480.90005264  kBar
+siesta: Pressure (static):        480.90005589  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.308884    0.058473    0.109868
          0.058473   -0.307642    0.038257
          0.109868    0.038257   -0.284629
 
-siesta: Pressure (total):        481.27492558  kBar
- Anneal: Kinetic Energy=   1.572849541559417E-003
- Anneal: Velocity scale factor =    1.05117064098865     
- Anneal: Cell scale factor =    1.00228459982554     
+siesta: Pressure (total):        481.27492882  kBar
+ Anneal: Kinetic Energy=  0.0015728496592888133
+ Anneal: Velocity scale factor =  1.0511706358275583
+ Anneal: Cell scale factor =  1.0022845999669012
 
 siesta: Temp_ion =     182.941 K
 
@@ -1532,17 +1535,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.055098   -0.311026    0.038765
          0.105262    0.038765   -0.283687
 
-siesta: Pressure (static):        484.33834525  kBar
+siesta: Pressure (static):        484.33834331  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.312186    0.055075    0.105184
          0.055075   -0.311085    0.038564
          0.105184    0.038564   -0.284380
 
-siesta: Pressure (total):        484.74437101  kBar
- Anneal: Kinetic Energy=   1.720909223807700E-003
- Anneal: Velocity scale factor =    1.04522150828034     
- Anneal: Cell scale factor =    1.00226737657149     
+siesta: Pressure (total):        484.74436905  kBar
+ Anneal: Kinetic Energy=  0.0017209093047342607
+ Anneal: Velocity scale factor =  1.0452215052999656
+ Anneal: Cell scale factor =  1.0022673761627892
 
 siesta: Temp_ion =     197.903 K
 
@@ -1575,7 +1578,7 @@ siesta: Eharris(eV) =    -211.545896
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.007816    0.036143   -0.018676
+   Tot   -0.007817    0.036143   -0.018676
 ----------------------------------------
    Max    0.859595
    Res    0.726512    sqrt( Sum f_i^2 / 3N )
@@ -1590,17 +1593,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.052108   -0.312328    0.039997
          0.099462    0.039997   -0.282423
 
-siesta: Pressure (static):        485.38730071  kBar
+siesta: Pressure (static):        485.38729695  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.314104    0.052109    0.099464
          0.052109   -0.312439    0.039716
          0.099464    0.039716   -0.283129
 
-siesta: Pressure (total):        485.82397959  kBar
- Anneal: Kinetic Energy=   1.858657948091989E-003
- Anneal: Velocity scale factor =    1.04051384427833     
- Anneal: Cell scale factor =    1.00218375689965     
+siesta: Pressure (total):        485.82397580  kBar
+ Anneal: Kinetic Energy=  0.001858657985893892
+ Anneal: Velocity scale factor =  1.0405138430794598
+ Anneal: Cell scale factor =  1.0021837568531797
 
 siesta: Temp_ion =     211.822 K
 
@@ -1648,17 +1651,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.048837   -0.314297    0.041736
          0.093061    0.041736   -0.280506
 
-siesta: Pressure (static):        486.67930638  kBar
+siesta: Pressure (static):        486.67930129  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.316482    0.048879    0.093144
          0.048879   -0.314470    0.041391
          0.093144    0.041391   -0.281191
 
-siesta: Pressure (total):        487.14352329  kBar
- Anneal: Kinetic Energy=   1.972874295742692E-003
- Anneal: Velocity scale factor =    1.03709562455477     
- Anneal: Cell scale factor =    1.00205424593847     
+siesta: Pressure (total):        487.14351815  kBar
+ Anneal: Kinetic Energy=  0.0019728743032315877
+ Anneal: Velocity scale factor =  1.0370956243432725
+ Anneal: Cell scale factor =  1.0020542457574468
 
 siesta: Temp_ion =     223.364 K
 
@@ -1706,17 +1709,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.044561   -0.313974    0.044195
          0.086183    0.044195   -0.277446
 
-siesta: Pressure (static):        485.68133933  kBar
+siesta: Pressure (static):        485.68133822  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.318024    0.044656    0.086340
          0.044656   -0.314210    0.043808
          0.086340    0.043808   -0.278080
 
-siesta: Pressure (total):        486.16631471  kBar
- Anneal: Kinetic Energy=   2.052302340949939E-003
- Anneal: Velocity scale factor =    1.03493703021068     
- Anneal: Cell scale factor =    1.00184827785523     
+siesta: Pressure (total):        486.16631355  kBar
+ Anneal: Kinetic Energy=  0.0020523023580645873
+ Anneal: Velocity scale factor =  1.0349370297630918
+ Anneal: Cell scale factor =  1.0018482777522804
 
 siesta: Temp_ion =     231.391 K
 
@@ -1764,17 +1767,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.041619   -0.313308    0.046384
          0.079233    0.046384   -0.275031
 
-siesta: Pressure (static):        484.16173807  kBar
+siesta: Pressure (static):        484.16174113  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.318305    0.041776    0.079448
          0.041776   -0.313600    0.045982
          0.079448    0.045982   -0.275584
 
-siesta: Pressure (total):        484.65770217  kBar
- Anneal: Kinetic Energy=   2.097550151155485E-003
- Anneal: Velocity scale factor =    1.03377857941606     
- Anneal: Cell scale factor =    1.00168114327664     
+siesta: Pressure (total):        484.65770519  kBar
+ Anneal: Kinetic Energy=  0.002097550121286873
+ Anneal: Velocity scale factor =  1.0337785801646857
+ Anneal: Cell scale factor =  1.0016811432631882
 
 siesta: Temp_ion =     235.963 K
 
@@ -1822,17 +1825,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.039613   -0.313317    0.048674
          0.070598    0.048674   -0.273604
 
-siesta: Pressure (static):        483.81762286  kBar
+siesta: Pressure (static):        483.81761818  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.319138    0.039832    0.070854
          0.039832   -0.313651    0.048284
          0.070854    0.048284   -0.274060
 
-siesta: Pressure (total):        484.31585072  kBar
- Anneal: Kinetic Energy=   2.116063405923626E-003
- Anneal: Velocity scale factor =    1.03331851845610     
- Anneal: Cell scale factor =    1.00157640262643     
+siesta: Pressure (total):        484.31584600  kBar
+ Anneal: Kinetic Energy=  0.0021160633328885306
+ Anneal: Velocity scale factor =  1.033318520255571
+ Anneal: Cell scale factor =  1.001576402581898
 
 siesta: Temp_ion =     237.834 K
 
@@ -1880,17 +1883,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.037042   -0.311711    0.051177
          0.064094    0.051177   -0.271816
 
-siesta: Pressure (static):        481.81250263  kBar
+siesta: Pressure (static):        481.81249188  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.318850    0.037320    0.064369
          0.037320   -0.312070    0.050822
          0.064369    0.050822   -0.272167
 
-siesta: Pressure (total):        482.30637006  kBar
- Anneal: Kinetic Energy=   2.116845333872476E-003
- Anneal: Velocity scale factor =    1.03329925991956     
- Anneal: Cell scale factor =    1.00144874434908     
+siesta: Pressure (total):        482.30635930  kBar
+ Anneal: Kinetic Energy=  0.002116845283650898
+ Anneal: Velocity scale factor =  1.0332992611560483
+ Anneal: Cell scale factor =  1.001448743901825
 
 siesta: Temp_ion =     237.913 K
 
@@ -1923,7 +1926,7 @@ siesta: Eharris(eV) =    -211.640638
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.026536    0.032934   -0.010171
+   Tot   -0.026536    0.032934   -0.010170
 ----------------------------------------
    Max    1.297222
    Res    0.836466    sqrt( Sum f_i^2 / 3N )
@@ -1938,17 +1941,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.035895   -0.310146    0.054412
          0.057583    0.054412   -0.270437
 
-siesta: Pressure (static):        480.03510928  kBar
+siesta: Pressure (static):        480.03511191  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.318547    0.036224    0.057853
-         0.036224   -0.310510    0.054112
+         0.036224   -0.310511    0.054112
          0.057853    0.054112   -0.270683
 
-siesta: Pressure (total):        480.51992957  kBar
- Anneal: Kinetic Energy=   2.110831022499414E-003
- Anneal: Velocity scale factor =    1.03344774762841     
- Anneal: Cell scale factor =    1.00134856910294     
+siesta: Pressure (total):        480.51993219  kBar
+ Anneal: Kinetic Energy=  0.002110830981035348
+ Anneal: Velocity scale factor =  1.033447748654959
+ Anneal: Cell scale factor =  1.0013485692601678
 
 siesta: Temp_ion =     237.305 K
 
@@ -1996,17 +1999,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.035021   -0.308875    0.058202
          0.050827    0.058202   -0.269871
 
-siesta: Pressure (static):        478.91827889  kBar
+siesta: Pressure (static):        478.91828435  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.318379    0.035388    0.051069
          0.035388   -0.309226    0.057971
          0.051069    0.057971   -0.270023
 
-siesta: Pressure (total):        479.39191097  kBar
- Anneal: Kinetic Energy=   2.109910611177853E-003
- Anneal: Velocity scale factor =    1.03347054451977     
- Anneal: Cell scale factor =    1.00130290945221     
+siesta: Pressure (total):        479.39191644  kBar
+ Anneal: Kinetic Energy=  0.002109910540917598
+ Anneal: Velocity scale factor =  1.0334705462607319
+ Anneal: Cell scale factor =  1.0013029097280677
 
 siesta: Temp_ion =     237.212 K
 
@@ -2054,17 +2057,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.033696   -0.306291    0.061674
          0.045091    0.061674   -0.268651
 
-siesta: Pressure (static):        475.48093838  kBar
+siesta: Pressure (static):        475.48093333  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.315836    0.034085    0.045279
          0.034085   -0.306611    0.061520
          0.045279    0.061520   -0.268726
 
-siesta: Pressure (total):        475.94396885  kBar
- Anneal: Kinetic Energy=   2.126442991864870E-003
- Anneal: Velocity scale factor =    1.03306399875743     
- Anneal: Cell scale factor =    1.00121867103242     
+siesta: Pressure (total):        475.94396385  kBar
+ Anneal: Kinetic Energy=  0.002126442834578157
+ Anneal: Velocity scale factor =  1.0330640025959308
+ Anneal: Cell scale factor =  1.0012186708293507
 
 siesta: Temp_ion =     238.883 K
 
@@ -2097,7 +2100,7 @@ siesta: Eharris(eV) =    -211.725164
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.019317    0.014709    0.001435
+   Tot   -0.019318    0.014709    0.001435
 ----------------------------------------
    Max    1.267800
    Res    0.917782    sqrt( Sum f_i^2 / 3N )
@@ -2112,17 +2115,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.033094   -0.302940    0.066093
          0.039665    0.066093   -0.269001
 
-siesta: Pressure (static):        472.64019515  kBar
+siesta: Pressure (static):        472.64020029  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.313607    0.033484    0.039777
          0.033484   -0.303211    0.066016
          0.039777    0.066016   -0.269023
 
-siesta: Pressure (total):        473.09659407  kBar
- Anneal: Kinetic Energy=   2.166646276193054E-003
- Anneal: Velocity scale factor =    1.03210061435481     
- Anneal: Cell scale factor =    1.00123902072388     
+siesta: Pressure (total):        473.09659928  kBar
+ Anneal: Kinetic Energy=  0.002166646055745845
+ Anneal: Velocity scale factor =  1.0321006195417441
+ Anneal: Cell scale factor =  1.0012390209445405
 
 siesta: Temp_ion =     242.945 K
 
@@ -2170,17 +2173,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.033915   -0.300265    0.070484
          0.034845    0.070484   -0.268982
 
-siesta: Pressure (static):        469.46573574  kBar
+siesta: Pressure (static):        469.46574463  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.310437    0.034283    0.034860
          0.034283   -0.300476    0.070476
          0.034860    0.070476   -0.268983
 
-siesta: Pressure (total):        469.92142997  kBar
- Anneal: Kinetic Energy=   2.237242392700359E-003
- Anneal: Velocity scale factor =    1.03049070626963     
- Anneal: Cell scale factor =    1.00124047116194     
+siesta: Pressure (total):        469.92143893  kBar
+ Anneal: Kinetic Energy=  0.0022372420928230942
+ Anneal: Velocity scale factor =  1.0304907128975556
+ Anneal: Cell scale factor =  1.0012404716495997
 
 siesta: Temp_ion =     250.079 K
 
@@ -2213,7 +2216,7 @@ siesta: Eharris(eV) =    -211.779922
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.012235   -0.015346   -0.004181
+   Tot   -0.012235   -0.015347   -0.004181
 ----------------------------------------
    Max    1.156502
    Res    0.946062    sqrt( Sum f_i^2 / 3N )
@@ -2228,17 +2231,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.034939   -0.296064    0.075094
          0.030805    0.075094   -0.268451
 
-siesta: Pressure (static):        464.93188631  kBar
+siesta: Pressure (static):        464.93189134  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.306744    0.035261    0.030707
          0.035261   -0.296211    0.075139
          0.030707    0.075139   -0.268465
 
-siesta: Pressure (total):        465.39488865  kBar
- Anneal: Kinetic Energy=   2.343558911381387E-003
- Anneal: Velocity scale factor =    1.02824503729813     
- Anneal: Cell scale factor =    1.00121407634829     
+siesta: Pressure (total):        465.39489376  kBar
+ Anneal: Kinetic Energy=  0.0023435585953090073
+ Anneal: Velocity scale factor =  1.028245043678453
+ Anneal: Cell scale factor =  1.001214076910126
 
 siesta: Temp_ion =     260.823 K
 
@@ -2273,10 +2276,10 @@ siesta: Atomic forces (eV/Ang):
 ----------------------------------------
    Tot   -0.006111   -0.000432   -0.005386
 ----------------------------------------
-   Max    1.187626
+   Max    1.187627
    Res    0.955201    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.187626    constrained
+   Max    1.187627    constrained
 
 Stress-tensor-Voigt (kbar):     -486.66     -469.11     -431.76       58.20      127.80       44.64
 Target enthalpy (eV/cell)     -203.8887
@@ -2286,17 +2289,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.036071   -0.292708    0.079694
          0.028082    0.079694   -0.269418
 
-siesta: Pressure (static):        462.03106839  kBar
+siesta: Pressure (static):        462.03107712  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.303746    0.036323    0.027863
          0.036323   -0.292793    0.079768
          0.027863    0.079768   -0.269481
 
-siesta: Pressure (total):        462.51107110  kBar
- Anneal: Kinetic Energy=   2.487374687881759E-003
- Anneal: Velocity scale factor =    1.02550613758218     
- Anneal: Cell scale factor =    1.00128827370958     
+siesta: Pressure (total):        462.51107996  kBar
+ Anneal: Kinetic Energy=  0.0024873744840599567
+ Anneal: Velocity scale factor =  1.0255061412443147
+ Anneal: Cell scale factor =  1.0012882741741884
 
 siesta: Temp_ion =     275.356 K
 
@@ -2344,17 +2347,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.037747   -0.290275    0.084378
          0.026196    0.084378   -0.270667
 
-siesta: Pressure (static):        459.94102609  kBar
+siesta: Pressure (static):        459.94102979  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.301033    0.037910    0.025858
          0.037910   -0.290309    0.084450
          0.025858    0.084450   -0.270817
 
-siesta: Pressure (total):        460.44839999  kBar
- Anneal: Kinetic Energy=   2.669165265805753E-003
- Anneal: Velocity scale factor =    1.02245777300131     
- Anneal: Cell scale factor =    1.00138469819660     
+siesta: Pressure (total):        460.44840388  kBar
+ Anneal: Kinetic Energy=  0.0026691651949382507
+ Anneal: Velocity scale factor =  1.0224577741103669
+ Anneal: Cell scale factor =  1.0013846985017898
 
 siesta: Temp_ion =     293.726 K
 
@@ -2402,17 +2405,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.039574   -0.286776    0.088101
          0.025278    0.088101   -0.272459
 
-siesta: Pressure (static):        457.37146397  kBar
+siesta: Pressure (static):        457.37147331  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.297912    0.039634    0.024831
          0.039634   -0.286781    0.088137
          0.024831    0.088137   -0.272726
 
-siesta: Pressure (total):        457.91689604  kBar
- Anneal: Kinetic Energy=   2.884832670960100E-003
- Anneal: Velocity scale factor =    1.01933016512851     
- Anneal: Cell scale factor =    1.00151888590255     
+siesta: Pressure (total):        457.91690561  kBar
+ Anneal: Kinetic Energy=  0.002884832666852877
+ Anneal: Velocity scale factor =  1.0193301651837077
+ Anneal: Cell scale factor =  1.0015188863093532
 
 siesta: Temp_ion =     315.520 K
 
@@ -2445,7 +2448,7 @@ siesta: Eharris(eV) =    -211.864819
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000994   -0.012348   -0.015869
+   Tot   -0.000995   -0.012348   -0.015869
 ----------------------------------------
    Max    1.224840
    Res    0.946473    sqrt( Sum f_i^2 / 3N )
@@ -2460,17 +2463,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.041350   -0.282942    0.092222
          0.025082    0.092222   -0.273761
 
-siesta: Pressure (static):        454.13745336  kBar
+siesta: Pressure (static):        454.13745302  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.294342    0.041304    0.024548
          0.041304   -0.282945    0.092187
          0.024548    0.092187   -0.274166
 
-siesta: Pressure (total):        454.73108584  kBar
- Anneal: Kinetic Energy=   3.128208175430003E-003
- Anneal: Velocity scale factor =    1.01630955840956     
- Anneal: Cell scale factor =    1.00162328340516     
+siesta: Pressure (total):        454.73108579  kBar
+ Anneal: Kinetic Energy=  0.0031282082870855436
+ Anneal: Velocity scale factor =  1.0163095571296812
+ Anneal: Cell scale factor =  1.001623283323691
 
 siesta: Temp_ion =     340.114 K
 
@@ -2518,17 +2521,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.043332   -0.279907    0.096434
          0.025851    0.096434   -0.275229
 
-siesta: Pressure (static):        451.35632587  kBar
+siesta: Pressure (static):        451.35634912  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.290626    0.043186    0.025261
          0.043186   -0.279941    0.096297
          0.025261    0.096297   -0.275785
 
-siesta: Pressure (total):        452.00675048  kBar
- Anneal: Kinetic Energy=   3.388509482664570E-003
- Anneal: Velocity scale factor =    1.01355126636965     
- Anneal: Cell scale factor =    1.00173842197126     
+siesta: Pressure (total):        452.00677408  kBar
+ Anneal: Kinetic Energy=  0.003388509744148768
+ Anneal: Velocity scale factor =  1.0135512638081983
+ Anneal: Cell scale factor =  1.0017384234164555
 
 siesta: Temp_ion =     366.418 K
 
@@ -2564,7 +2567,7 @@ siesta: Atomic forces (eV/Ang):
    Tot   -0.014697   -0.006941   -0.014936
 ----------------------------------------
    Max    1.120922
-   Res    0.909461    sqrt( Sum f_i^2 / 3N )
+   Res    0.909462    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    1.120922    constrained
 
@@ -2576,17 +2579,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.045508   -0.278754    0.098502
          0.027893    0.098502   -0.277614
 
-siesta: Pressure (static):        450.60476405  kBar
+siesta: Pressure (static):        450.60476630  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.287889    0.045278    0.027281
          0.045278   -0.278854    0.098237
          0.027281    0.098237   -0.278320
 
-siesta: Pressure (total):        451.31794627  kBar
- Anneal: Kinetic Energy=   3.654853390093163E-003
- Anneal: Velocity scale factor =    1.01112944522579     
- Anneal: Cell scale factor =    1.00191053952968     
+siesta: Pressure (total):        451.31794892  kBar
+ Anneal: Kinetic Energy=  0.003654853693223609
+ Anneal: Velocity scale factor =  1.0111294426672766
+ Anneal: Cell scale factor =  1.0019105400975923
 
 siesta: Temp_ion =     393.333 K
 
@@ -2634,17 +2637,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.049032   -0.277858    0.099696
          0.030563    0.099696   -0.279866
 
-siesta: Pressure (static):        450.77169424  kBar
+siesta: Pressure (static):        450.77170313  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.286733    0.048745    0.029969
          0.048745   -0.278056    0.099288
          0.029969    0.099288   -0.280711
 
-siesta: Pressure (total):        451.55105655  kBar
- Anneal: Kinetic Energy=   3.921439844403395E-003
- Anneal: Velocity scale factor =    1.00903016029217     
- Anneal: Cell scale factor =    1.00207142393122     
+siesta: Pressure (total):        451.55106586  kBar
+ Anneal: Kinetic Energy=  0.003921440196256051
+ Anneal: Velocity scale factor =  1.009030157707111
+ Anneal: Cell scale factor =  1.0020714242216824
 
 siesta: Temp_ion =     420.272 K
 
@@ -2677,7 +2680,7 @@ siesta: Eharris(eV) =    -211.919198
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.016007   -0.000490   -0.040438
+   Tot   -0.016006   -0.000490   -0.040438
 ----------------------------------------
    Max    1.114522
    Res    0.851068    sqrt( Sum f_i^2 / 3N )
@@ -2690,19 +2693,19 @@ Target enthalpy (eV/cell)     -204.0093
 siesta: Stress tensor (static) (eV/Ang**3):
         -0.285148    0.051950    0.033005
          0.051950   -0.277237    0.100335
-         0.033005    0.100335   -0.282511
+         0.033005    0.100335   -0.282512
 
-siesta: Pressure (static):        451.22910156  kBar
+siesta: Pressure (static):        451.22911574  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.285451    0.051638    0.032465
          0.051638   -0.277557    0.099780
          0.032465    0.099780   -0.283473
 
-siesta: Pressure (total):        452.07597789  kBar
- Anneal: Kinetic Energy=   4.181625579191399E-003
- Anneal: Velocity scale factor =    1.00723592478553     
- Anneal: Cell scale factor =    1.00225389450218     
+siesta: Pressure (total):        452.07599250  kBar
+ Anneal: Kinetic Energy=  0.004181625949675408
+ Anneal: Velocity scale factor =  1.007235922387513
+ Anneal: Cell scale factor =  1.0022538950337643
 
 siesta: Temp_ion =     446.565 K
 
@@ -2717,7 +2720,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.740425    2.360006    0.000000
-        0.000000    2.707277    2.324619
+        0.000000    2.707278    2.324619
         2.229959    0.000000    2.607012
 
 outcell: Cell vector modules (Ang)   :    3.616567    3.568361    3.430631
@@ -2727,10 +2730,10 @@ outcell: Cell volume (Ang**3)        :     31.5755
 InitMesh: MESH =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   100.000   101.610 Ry
 
-siesta: Eharris(eV) =    -211.932024
+siesta: Eharris(eV) =    -211.932025
 
 
-siesta: Eharris(eV) =    -211.932024
+siesta: Eharris(eV) =    -211.932025
 
 
 siesta: Atomic forces (eV/Ang):
@@ -2750,17 +2753,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.055330   -0.276919    0.100276
          0.035851    0.100276   -0.284637
 
-siesta: Pressure (static):        451.45821580  kBar
+siesta: Pressure (static):        451.45821169  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.283967    0.055027    0.035394
          0.055027   -0.277381    0.099579
          0.035394    0.099579   -0.285688
 
-siesta: Pressure (total):        452.37221615  kBar
- Anneal: Kinetic Energy=   4.425560636799274E-003
- Anneal: Velocity scale factor =    1.00574293760927     
- Anneal: Cell scale factor =    1.00239898327559     
+siesta: Pressure (total):        452.37221246  kBar
+ Anneal: Kinetic Energy=  0.004425561036300554
+ Anneal: Velocity scale factor =  1.0057429352972058
+ Anneal: Cell scale factor =  1.0023989832807865
 
 siesta: Temp_ion =     471.215 K
 
@@ -2775,7 +2778,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.746470    2.351709    0.000000
-        0.000000    2.712178    2.309867
+        0.000000    2.712179    2.309867
         2.224962    0.000000    2.613267
 
 outcell: Cell vector modules (Ang)   :    3.615748    3.562499    3.432145
@@ -2808,17 +2811,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.058537   -0.276089    0.099649
          0.039001    0.099649   -0.286322
 
-siesta: Pressure (static):        451.76394525  kBar
+siesta: Pressure (static):        451.76394370  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.283597    0.058277    0.038651
          0.058277   -0.276702    0.098824
          0.038651    0.098824   -0.287431
 
-siesta: Pressure (total):        452.74307939  kBar
- Anneal: Kinetic Energy=   4.643135643373175E-003
- Anneal: Velocity scale factor =    1.00454203933052     
- Anneal: Cell scale factor =    1.00251157675581     
+siesta: Pressure (total):        452.74307827  kBar
+ Anneal: Kinetic Energy=  0.004643135987044765
+ Anneal: Velocity scale factor =  1.0045420375214411
+ Anneal: Cell scale factor =  1.002511576500198
 
 siesta: Temp_ion =     493.201 K
 
@@ -2851,7 +2854,7 @@ siesta: Eharris(eV) =    -211.957360
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.049448    0.034335   -0.044285
+   Tot   -0.049448    0.034335   -0.044284
 ----------------------------------------
    Max    1.146499
    Res    0.725505    sqrt( Sum f_i^2 / 3N )
@@ -2866,17 +2869,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.062292   -0.275549    0.097824
          0.042506    0.097824   -0.286739
 
-siesta: Pressure (static):        451.11109800  kBar
+siesta: Pressure (static):        451.11110969  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.282433    0.062104    0.042277
          0.062104   -0.276314    0.096892
          0.042277    0.096892   -0.287875
 
-siesta: Pressure (total):        452.15062798  kBar
- Anneal: Kinetic Energy=   4.817885816530453E-003
- Anneal: Velocity scale factor =    1.00365513270279     
- Anneal: Cell scale factor =    1.00253878335938     
+siesta: Pressure (total):        452.15064007  kBar
+ Anneal: Kinetic Energy=  0.004817886070723918
+ Anneal: Velocity scale factor =  1.0036551314589328
+ Anneal: Cell scale factor =  1.0025387840633206
 
 siesta: Temp_ion =     510.860 K
 
@@ -2924,17 +2927,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.066268   -0.274687    0.095752
          0.046810    0.095752   -0.286465
 
-siesta: Pressure (static):        450.14929652  kBar
+siesta: Pressure (static):        450.14928799  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.281732    0.066176    0.046707
          0.066176   -0.275591    0.094741
          0.046707    0.094741   -0.287595
 
-siesta: Pressure (total):        451.24099588  kBar
- Anneal: Kinetic Energy=   4.935582635846613E-003
- Anneal: Velocity scale factor =    1.00309277650280     
- Anneal: Cell scale factor =    1.00251761518857     
+siesta: Pressure (total):        451.24098771  kBar
+ Anneal: Kinetic Energy=  0.004935582864106863
+ Anneal: Velocity scale factor =  1.0030927754378804
+ Anneal: Cell scale factor =  1.0025176151220514
 
 siesta: Temp_ion =     522.754 K
 
@@ -2950,7 +2953,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 outcell: Unit cell vectors (Ang):
         2.763898    2.323695    0.000000
         0.000000    2.726427    2.267454
-        2.206866    0.000000    2.633094
+        2.206867    0.000000    2.633094
 
 outcell: Cell vector modules (Ang)   :    3.610913    3.546090    3.435614
 outcell: Cell angles (23,13,12) (deg):     60.6554     60.5494     60.3452
@@ -2967,12 +2970,12 @@ siesta: Eharris(eV) =    -211.976931
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.045595    0.036667   -0.040566
+   Tot   -0.045595    0.036667   -0.040565
 ----------------------------------------
-   Max    1.043145
+   Max    1.043144
    Res    0.636795    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.043145    constrained
+   Max    1.043144    constrained
 
 Stress-tensor-Voigt (kbar):     -450.93     -441.40     -460.46      113.01      147.60       81.39
 Target enthalpy (eV/cell)     -204.0985
@@ -2982,17 +2985,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.070515   -0.274470    0.093184
          0.050776    0.093184   -0.286297
 
-siesta: Pressure (static):        449.79483128  kBar
+siesta: Pressure (static):        449.79484206  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.281444    0.070536    0.050797
          0.070536   -0.275495    0.092124
          0.050797    0.092124   -0.287393
 
-siesta: Pressure (total):        450.92755553  kBar
- Anneal: Kinetic Energy=   4.986967076337274E-003
- Anneal: Velocity scale factor =    1.00285549084679     
- Anneal: Cell scale factor =    1.00249953917028     
+siesta: Pressure (total):        450.92756665  kBar
+ Anneal: Kinetic Energy=  0.004986967143303187
+ Anneal: Velocity scale factor =  1.0028554905407052
+ Anneal: Cell scale factor =  1.0024995397742973
 
 siesta: Temp_ion =     527.947 K
 
@@ -3025,7 +3028,7 @@ siesta: Eharris(eV) =    -211.983725
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.045005    0.040730   -0.049898
+   Tot   -0.045005    0.040729   -0.049898
 ----------------------------------------
    Max    0.952178
    Res    0.598111    sqrt( Sum f_i^2 / 3N )
@@ -3040,17 +3043,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.075545   -0.274809    0.089649
          0.055012    0.089649   -0.286347
 
-siesta: Pressure (static):        450.48922882  kBar
+siesta: Pressure (static):        450.48922852  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.282372    0.075686    0.055147
          0.075686   -0.275929    0.088573
          0.055147    0.088573   -0.287382
 
-siesta: Pressure (total):        451.64915761  kBar
- Anneal: Kinetic Energy=   4.962787764941341E-003
- Anneal: Velocity scale factor =    1.00296654219565     
- Anneal: Cell scale factor =    1.00249211400798     
+siesta: Pressure (total):        451.64915759  kBar
+ Anneal: Kinetic Energy=  0.0049627877086354
+ Anneal: Velocity scale factor =  1.0029665424555008
+ Anneal: Cell scale factor =  1.0024921141718472
 
 siesta: Temp_ion =     525.503 K
 
@@ -3098,17 +3101,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.080746   -0.276573    0.084806
          0.059003    0.084806   -0.286594
 
-siesta: Pressure (static):        452.27759680  kBar
+siesta: Pressure (static):        452.27760247  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.283748    0.081005    0.059235
          0.081005   -0.277758    0.083745
          0.059235    0.083745   -0.287545
 
-siesta: Pressure (total):        453.44800847  kBar
- Anneal: Kinetic Energy=   4.855567219996852E-003
- Anneal: Velocity scale factor =    1.00347215836208     
- Anneal: Cell scale factor =    1.00249469009523     
+siesta: Pressure (total):        453.44801433  kBar
+ Anneal: Kinetic Energy=  0.004855567127641993
+ Anneal: Velocity scale factor =  1.0034721588070994
+ Anneal: Cell scale factor =  1.0024946905017753
 
 siesta: Temp_ion =     514.668 K
 
@@ -3141,12 +3144,12 @@ siesta: Eharris(eV) =    -211.996508
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.043115    0.033606   -0.055663
+   Tot   -0.043115    0.033605   -0.055663
 ----------------------------------------
-   Max    0.736449
+   Max    0.736448
    Res    0.580935    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.736449    constrained
+   Max    0.736448    constrained
 
 Stress-tensor-Voigt (kbar):     -455.43     -448.42     -460.33      138.40      125.74       99.14
 Target enthalpy (eV/cell)     -204.1423
@@ -3156,17 +3159,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.086015   -0.278661    0.079498
          0.061568    0.079498   -0.286462
 
-siesta: Pressure (static):        453.56434518  kBar
+siesta: Pressure (static):        453.56434158  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.284256    0.086382    0.061875
          0.086382   -0.279878    0.078483
          0.061875    0.078483   -0.287310
 
-siesta: Pressure (total):        454.72623741  kBar
- Anneal: Kinetic Energy=   4.665077659323832E-003
- Anneal: Velocity scale factor =    1.00442707383153     
- Anneal: Cell scale factor =    1.00247102876401     
+siesta: Pressure (total):        454.72623395  kBar
+ Anneal: Kinetic Energy=  0.0046650775241257264
+ Anneal: Velocity scale factor =  1.0044270745366115
+ Anneal: Cell scale factor =  1.0024710288434702
 
 siesta: Temp_ion =     495.419 K
 
@@ -3180,7 +3183,7 @@ superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
 superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
-        2.787586    2.277106    0.000000
+        2.787586    2.277105    0.000000
         0.000000    2.746369    2.218458
         2.174761    0.000000    2.659410
 
@@ -3199,12 +3202,12 @@ siesta: Eharris(eV) =    -212.004148
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.039874    0.029554   -0.052309
+   Tot   -0.039874    0.029553   -0.052309
 ----------------------------------------
-   Max    0.799044
-   Res    0.603936    sqrt( Sum f_i^2 / 3N )
+   Max    0.799043
+   Res    0.603935    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.799044    constrained
+   Max    0.799043    constrained
 
 Stress-tensor-Voigt (kbar):     -456.50     -450.81     -458.02      145.50      118.77      102.94
 Target enthalpy (eV/cell)     -204.1564
@@ -3214,17 +3217,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.090349   -0.280153    0.075075
          0.063894    0.075075   -0.285140
 
-siesta: Pressure (static):        453.97507050  kBar
+siesta: Pressure (static):        453.97506055  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.284919    0.090810    0.064252
          0.090810   -0.281369    0.074132
          0.064252    0.074132   -0.285872
 
-siesta: Pressure (total):        455.10899186  kBar
- Anneal: Kinetic Energy=   4.401754722666645E-003
- Anneal: Velocity scale factor =    1.00588144672221     
- Anneal: Cell scale factor =    1.00237013537939     
+siesta: Pressure (total):        455.10898200  kBar
+ Anneal: Kinetic Energy=  0.004401754641119589
+ Anneal: Velocity scale factor =  1.0058814471992088
+ Anneal: Cell scale factor =  1.0023701355705115
 
 siesta: Temp_ion =     468.809 K
 
@@ -3240,9 +3243,9 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 outcell: Unit cell vectors (Ang):
         2.793907    2.263763    0.000000
         0.000000    2.752080    2.208004
-        2.165742    0.000000    2.665713
+        2.165742    0.000000    2.665714
 
-outcell: Cell vector modules (Ang)   :    3.595906    3.528346    3.434598
+outcell: Cell vector modules (Ang)   :    3.595906    3.528346    3.434599
 outcell: Cell angles (23,13,12) (deg):     60.9418     60.6640     60.5914
 outcell: Cell volume (Ang**3)        :     31.3221
 
@@ -3272,17 +3275,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.094421   -0.282685    0.069824
          0.065253    0.069824   -0.284334
 
-siesta: Pressure (static):        455.19847940  kBar
+siesta: Pressure (static):        455.19846719  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.285553    0.094958    0.065638
          0.094958   -0.283871    0.068973
          0.065638    0.068973   -0.284944
 
-siesta: Pressure (total):        456.28731277  kBar
- Anneal: Kinetic Energy=   4.076928840523919E-003
- Anneal: Velocity scale factor =    1.00793075455312     
- Anneal: Cell scale factor =    1.00230173752159     
+siesta: Pressure (total):        456.28730063  kBar
+ Anneal: Kinetic Energy=  0.004076928689716748
+ Anneal: Velocity scale factor =  1.007930755579312
+ Anneal: Cell scale factor =  1.0023017370100027
 
 siesta: Temp_ion =     435.985 K
 
@@ -3315,7 +3318,7 @@ siesta: Eharris(eV) =    -212.021379
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.014873    0.030344   -0.029139
+   Tot   -0.014873    0.030343   -0.029139
 ----------------------------------------
    Max    0.975366
    Res    0.701905    sqrt( Sum f_i^2 / 3N )
@@ -3330,17 +3333,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.097661   -0.283378    0.064759
          0.066303    0.064759   -0.282576
 
-siesta: Pressure (static):        454.27202402  kBar
+siesta: Pressure (static):        454.27201444  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.284951    0.098254    0.066691
          0.098254   -0.284509    0.064017
          0.066691    0.064017   -0.283062
 
-siesta: Pressure (total):        455.30158895  kBar
- Anneal: Kinetic Energy=   3.709348071982875E-003
- Anneal: Velocity scale factor =    1.01067614943069     
- Anneal: Cell scale factor =    1.00217275614106     
+siesta: Pressure (total):        455.30157938  kBar
+ Anneal: Kinetic Energy=  0.003709347683419993
+ Anneal: Velocity scale factor =  1.0106761526160504
+ Anneal: Cell scale factor =  1.0021727555737492
 
 siesta: Temp_ion =     398.840 K
 
@@ -3388,17 +3391,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.101455   -0.285310    0.059476
          0.067870    0.059476   -0.281898
 
-siesta: Pressure (static):        454.93749917  kBar
+siesta: Pressure (static):        454.93751679  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.285005    0.102083    0.068242
          0.102083   -0.286365    0.058852
          0.068242    0.058852   -0.282267
 
-siesta: Pressure (total):        455.89779557  kBar
- Anneal: Kinetic Energy=   3.323638114689543E-003
- Anneal: Velocity scale factor =    1.01419893174303     
- Anneal: Cell scale factor =    1.00211388059503     
+siesta: Pressure (total):        455.89781308  kBar
+ Anneal: Kinetic Energy=  0.003323637603342428
+ Anneal: Velocity scale factor =  1.0141989369462192
+ Anneal: Cell scale factor =  1.002113881604383
 
 siesta: Temp_ion =     359.863 K
 
@@ -3431,7 +3434,7 @@ siesta: Eharris(eV) =    -212.041663
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.015945    0.006149   -0.044580
+   Tot   -0.015944    0.006149   -0.044579
 ----------------------------------------
    Max    1.124761
    Res    0.816453    sqrt( Sum f_i^2 / 3N )
@@ -3446,17 +3449,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.103926   -0.287038    0.054811
          0.066967    0.054811   -0.279369
 
-siesta: Pressure (static):        453.84255590  kBar
+siesta: Pressure (static):        453.84256901  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.283814    0.104572    0.067303
          0.104572   -0.288005    0.054309
          0.067303    0.054309   -0.279630
 
-siesta: Pressure (total):        454.72922134  kBar
- Anneal: Kinetic Energy=   2.941931928166386E-003
- Anneal: Velocity scale factor =    1.01857745592063     
- Anneal: Cell scale factor =    1.00193810434744     
+siesta: Pressure (total):        454.72923424  kBar
+ Anneal: Kinetic Energy=  0.0029419314134678715
+ Anneal: Velocity scale factor =  1.0185774625763944
+ Anneal: Cell scale factor =  1.0019381049348477
 
 siesta: Temp_ion =     321.290 K
 
@@ -3489,7 +3492,7 @@ siesta: Eharris(eV) =    -212.053323
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.019710    0.010282   -0.030270
+   Tot   -0.019709    0.010282   -0.030270
 ----------------------------------------
    Max    1.168149
    Res    0.871912    sqrt( Sum f_i^2 / 3N )
@@ -3504,17 +3507,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.105471   -0.288555    0.050246
          0.066271    0.050246   -0.277832
 
-siesta: Pressure (static):        453.54584328  kBar
+siesta: Pressure (static):        453.54583690  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.283332    0.106121    0.066556
          0.106121   -0.289426    0.049865
          0.066556    0.049865   -0.277999
 
-siesta: Pressure (total):        454.35928715  kBar
- Anneal: Kinetic Energy=   2.585243689424861E-003
- Anneal: Velocity scale factor =    1.02381286293932     
- Anneal: Cell scale factor =    1.00182779769168     
+siesta: Pressure (total):        454.35928047  kBar
+ Anneal: Kinetic Energy=  0.002585243190301671
+ Anneal: Velocity scale factor =  1.0238128712548273
+ Anneal: Cell scale factor =  1.00182779764517
 
 siesta: Temp_ion =     285.246 K
 
@@ -3547,7 +3550,7 @@ siesta: Eharris(eV) =    -212.066897
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.022642    0.019976   -0.029422
+   Tot   -0.022642    0.019976   -0.029421
 ----------------------------------------
    Max    1.207792
    Res    0.920160    sqrt( Sum f_i^2 / 3N )
@@ -3562,17 +3565,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.106236   -0.290023    0.046592
          0.064990    0.046592   -0.274895
 
-siesta: Pressure (static):        451.90532597  kBar
+siesta: Pressure (static):        451.90532726  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.281779    0.106880    0.065210
          0.106880   -0.290795    0.046328
          0.065210    0.046328   -0.274986
 
-siesta: Pressure (total):        452.65203267  kBar
- Anneal: Kinetic Energy=   2.272551522988046E-003
- Anneal: Velocity scale factor =    1.02972213762455     
- Anneal: Cell scale factor =    1.00163021402047     
+siesta: Pressure (total):        452.65203357  kBar
+ Anneal: Kinetic Energy=  0.0022725510375542113
+ Anneal: Velocity scale factor =  1.0297221480306322
+ Anneal: Cell scale factor =  1.001630214254555
 
 siesta: Temp_ion =     253.647 K
 
@@ -3605,7 +3608,7 @@ siesta: Eharris(eV) =    -212.081006
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.018282    0.019461   -0.018260
+   Tot   -0.018282    0.019460   -0.018260
 ----------------------------------------
    Max    1.220111
    Res    0.958182    sqrt( Sum f_i^2 / 3N )
@@ -3620,17 +3623,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.105200   -0.290936    0.042812
          0.064354    0.042812   -0.273039
 
-siesta: Pressure (static):        450.96322972  kBar
+siesta: Pressure (static):        450.96321909  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.281009    0.105829    0.064496
          0.105829   -0.291612    0.042659
          0.064496    0.042659   -0.273074
 
-siesta: Pressure (total):        451.65577952  kBar
- Anneal: Kinetic Energy=   2.020303337078609E-003
- Anneal: Velocity scale factor =    1.03578677961938     
- Anneal: Cell scale factor =    1.00150443583472     
+siesta: Pressure (total):        451.65576840  kBar
+ Anneal: Kinetic Energy=  0.0020203027412284327
+ Anneal: Velocity scale factor =  1.0357867956865097
+ Anneal: Cell scale factor =  1.0015044357065093
 
 siesta: Temp_ion =     228.157 K
 
@@ -3663,12 +3666,12 @@ siesta: Eharris(eV) =    -212.096750
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.013383    0.023138   -0.014204
+   Tot   -0.013384    0.023138   -0.014204
 ----------------------------------------
-   Max    1.221916
-   Res    0.986902    sqrt( Sum f_i^2 / 3N )
+   Max    1.221915
+   Res    0.986901    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.221916    constrained
+   Max    1.221915    constrained
 
 Stress-tensor-Voigt (kbar):     -449.31     -467.42     -432.94      167.45       62.76      100.40
 Target enthalpy (eV/cell)     -204.2728
@@ -3678,17 +3681,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.103902   -0.291156    0.039218
          0.062612    0.039218   -0.270214
 
-siesta: Pressure (static):        449.23859161  kBar
+siesta: Pressure (static):        449.23858229  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.280437    0.104513    0.062663
          0.104513   -0.291741    0.039169
          0.062663    0.039169   -0.270218
 
-siesta: Pressure (total):        449.89374289  kBar
- Anneal: Kinetic Energy=   1.841283315879416E-003
- Anneal: Velocity scale factor =    1.04106992283409     
- Anneal: Cell scale factor =    1.00131984238294     
+siesta: Pressure (total):        449.89373296  kBar
+ Anneal: Kinetic Energy=  0.0018412825610678945
+ Anneal: Velocity scale factor =  1.0410699472134404
+ Anneal: Cell scale factor =  1.001319841465505
 
 siesta: Temp_ion =     210.067 K
 
@@ -3721,7 +3724,7 @@ siesta: Eharris(eV) =    -212.113546
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.013018    0.016816   -0.025664
+   Tot   -0.013018    0.016816   -0.025663
 ----------------------------------------
    Max    1.217195
    Res    1.006293    sqrt( Sum f_i^2 / 3N )
@@ -3736,17 +3739,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.102253   -0.291112    0.036093
          0.060695    0.036093   -0.268104
 
-siesta: Pressure (static):        447.40351063  kBar
+siesta: Pressure (static):        447.40351455  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.279211    0.102840    0.060640
          0.102840   -0.291607    0.036139
          0.060640    0.036139   -0.268109
 
-siesta: Pressure (total):        448.04141765  kBar
- Anneal: Kinetic Energy=   1.745790475129681E-003
- Anneal: Velocity scale factor =    1.04431784613093     
- Anneal: Cell scale factor =    1.00118488204027     
+siesta: Pressure (total):        448.04142079  kBar
+ Anneal: Kinetic Energy=  0.0017457895659222346
+ Anneal: Velocity scale factor =  1.0443178786959042
+ Anneal: Cell scale factor =  1.0011848825764156
 
 siesta: Temp_ion =     200.417 K
 
@@ -3779,7 +3782,7 @@ siesta: Eharris(eV) =    -212.131315
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.016147    0.018395   -0.023184
+   Tot   -0.016146    0.018394   -0.023183
 ----------------------------------------
    Max    1.227443
    Res    1.006681    sqrt( Sum f_i^2 / 3N )
@@ -3794,17 +3797,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.099569   -0.291934    0.032529
          0.058135    0.032529   -0.266518
 
-siesta: Pressure (static):        446.83551404  kBar
+siesta: Pressure (static):        446.83550709  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.278971    0.100124    0.057956
+        -0.278970    0.100124    0.057956
          0.100124   -0.292343    0.032661
          0.057956    0.032661   -0.266560
 
-siesta: Pressure (total):        447.47873578  kBar
- Anneal: Kinetic Energy=   1.742844938483059E-003
- Anneal: Velocity scale factor =    1.04442351897706     
- Anneal: Cell scale factor =    1.00108807227739     
+siesta: Pressure (total):        447.47872793  kBar
+ Anneal: Kinetic Energy=  0.0017428438022020262
+ Anneal: Velocity scale factor =  1.0444235598086613
+ Anneal: Cell scale factor =  1.0010880717788024
 
 siesta: Temp_ion =     200.119 K
 
@@ -3837,7 +3840,7 @@ siesta: Eharris(eV) =    -212.152168
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.008210    0.011869   -0.022403
+   Tot   -0.008210    0.011869   -0.022402
 ----------------------------------------
    Max    1.223168
    Res    0.997542    sqrt( Sum f_i^2 / 3N )
@@ -3852,17 +3855,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.095499   -0.291585    0.028567
          0.055467    0.028567   -0.264823
 
-siesta: Pressure (static):        445.34463943  kBar
+siesta: Pressure (static):        445.34463869  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.278279    0.096010    0.055146
          0.096010   -0.291908    0.028769
          0.055146    0.028769   -0.264950
 
-siesta: Pressure (total):        446.01700784  kBar
- Anneal: Kinetic Energy=   1.834836252659066E-003
- Anneal: Velocity scale factor =    1.04127886449148     
- Anneal: Cell scale factor =    1.00098961683569     
+siesta: Pressure (total):        446.01700597  kBar
+ Anneal: Kinetic Energy=  0.0018348348338199324
+ Anneal: Velocity scale factor =  1.041278910631344
+ Anneal: Cell scale factor =  1.00098961673147
 
 siesta: Temp_ion =     209.415 K
 
@@ -3887,15 +3890,15 @@ outcell: Cell volume (Ang**3)        :     31.2702
 InitMesh: MESH =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   100.000   102.441 Ry
 
-siesta: Eharris(eV) =    -212.175111
+siesta: Eharris(eV) =    -212.175110
 
 
-siesta: Eharris(eV) =    -212.175111
+siesta: Eharris(eV) =    -212.175110
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.007783    0.015533   -0.003592
+   Tot    0.007783    0.015533   -0.003591
 ----------------------------------------
    Max    1.202855
    Res    0.971305    sqrt( Sum f_i^2 / 3N )
@@ -3910,17 +3913,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.090065   -0.289542    0.025530
          0.051138    0.025530   -0.262663
 
-siesta: Pressure (static):        441.66178611  kBar
+siesta: Pressure (static):        441.66179394  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.275630    0.090514    0.050664
          0.090514   -0.289779    0.025780
          0.050664    0.025780   -0.262927
 
-siesta: Pressure (total):        442.38488140  kBar
- Anneal: Kinetic Energy=   2.018945416009738E-003
- Anneal: Velocity scale factor =    1.03582341998835     
- Anneal: Cell scale factor =    1.00086668707591     
+siesta: Pressure (total):        442.38488785  kBar
+ Anneal: Kinetic Energy=  0.0020189438194932355
+ Anneal: Velocity scale factor =  1.0358234630949106
+ Anneal: Cell scale factor =  1.0008666873144543
 
 siesta: Temp_ion =     228.020 K
 
@@ -3953,12 +3956,12 @@ siesta: Eharris(eV) =    -212.197496
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.001578    0.017437   -0.008080
+   Tot    0.001578    0.017436   -0.008079
 ----------------------------------------
-   Max    1.164235
+   Max    1.164234
    Res    0.934167    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.164235    constrained
+   Max    1.164234    constrained
 
 Stress-tensor-Voigt (kbar):     -439.82     -462.09     -419.01      136.45       35.66       75.43
 Target enthalpy (eV/cell)     -204.3646
@@ -3968,17 +3971,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.084793   -0.288255    0.021991
          0.047708    0.021991   -0.261075
 
-siesta: Pressure (static):        439.51945685  kBar
+siesta: Pressure (static):        439.51946401  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.274514    0.085164    0.047081
          0.085164   -0.288412    0.022258
          0.047081    0.022258   -0.261525
 
-siesta: Pressure (total):        440.31020371  kBar
- Anneal: Kinetic Energy=   2.285053311750384E-003
- Anneal: Velocity scale factor =    1.02945557284683     
- Anneal: Cell scale factor =    1.00078487122532     
+siesta: Pressure (total):        440.31020927  kBar
+ Anneal: Kinetic Energy=  0.0022850515947286775
+ Anneal: Velocity scale factor =  1.0294556092618292
+ Anneal: Cell scale factor =  1.0007848709014793
 
 siesta: Temp_ion =     254.911 K
 
@@ -4011,7 +4014,7 @@ siesta: Eharris(eV) =    -212.221086
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.009715    0.026461    0.005789
+   Tot    0.009715    0.026461    0.005790
 ----------------------------------------
    Max    1.114241
    Res    0.884806    sqrt( Sum f_i^2 / 3N )
@@ -4026,17 +4029,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.078737   -0.286543    0.019096
          0.044566    0.019096   -0.259021
 
-siesta: Pressure (static):        436.92623884  kBar
+siesta: Pressure (static):        436.92624814  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.273413    0.079014    0.043802
          0.079014   -0.286632    0.019342
          0.043802    0.019342   -0.259698
 
-siesta: Pressure (total):        437.79588449  kBar
- Anneal: Kinetic Energy=   2.615276366297553E-003
- Anneal: Velocity scale factor =    1.02331813795493     
- Anneal: Cell scale factor =    1.00067609569086     
+siesta: Pressure (total):        437.79589201  kBar
+ Anneal: Kinetic Energy=  0.0026152745369915314
+ Anneal: Velocity scale factor =  1.0233181677500665
+ Anneal: Cell scale factor =  1.0006760966296429
 
 siesta: Temp_ion =     288.281 K
 
@@ -4061,15 +4064,15 @@ outcell: Cell volume (Ang**3)        :     31.3197
 InitMesh: MESH =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   100.000   101.225 Ry
 
-siesta: Eharris(eV) =    -212.244822
+siesta: Eharris(eV) =    -212.244823
 
 
-siesta: Eharris(eV) =    -212.244822
+siesta: Eharris(eV) =    -212.244823
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.009906    0.015700    0.004586
+   Tot    0.009907    0.015700    0.004587
 ----------------------------------------
    Max    1.029605
    Res    0.826430    sqrt( Sum f_i^2 / 3N )
@@ -4084,17 +4087,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.072038   -0.285140    0.015698
          0.040533    0.015698   -0.258067
 
-siesta: Pressure (static):        435.64852306  kBar
+siesta: Pressure (static):        435.64851980  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.273338    0.072215    0.039661
          0.072215   -0.285178    0.015886
          0.039661    0.015886   -0.258992
 
-siesta: Pressure (total):        436.60204721  kBar
- Anneal: Kinetic Energy=   2.982105636897792E-003
- Anneal: Velocity scale factor =    1.01806482353534     
- Anneal: Cell scale factor =    1.00063861179829     
+siesta: Pressure (total):        436.60204200  kBar
+ Anneal: Kinetic Energy=  0.00298210364111548
+ Anneal: Velocity scale factor =  1.0180648486655726
+ Anneal: Cell scale factor =  1.0006386119259025
 
 siesta: Temp_ion =     325.350 K
 
@@ -4110,7 +4113,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 outcell: Unit cell vectors (Ang):
         2.877140    2.061514    0.000000
         0.000000    2.857897    2.124164
-        2.046324    0.000000    2.722341
+        2.046324    0.000000    2.722342
 
 outcell: Cell vector modules (Ang)   :    3.539460    3.560849    3.405670
 outcell: Cell angles (23,13,12) (deg):     61.5206     60.7630     62.1306
@@ -4127,12 +4130,12 @@ siesta: Eharris(eV) =    -212.270226
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.019135    0.022189    0.007112
+   Tot    0.019136    0.022189    0.007113
 ----------------------------------------
-   Max    0.927867
+   Max    0.927866
    Res    0.752004    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.927867    constrained
+   Max    0.927866    constrained
 
 Stress-tensor-Voigt (kbar):     -436.60     -453.32     -413.94      104.17       20.86       57.83
 Target enthalpy (eV/cell)     -204.4224
@@ -4142,17 +4145,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.064936   -0.282926    0.012921
          0.037035    0.012921   -0.257186
 
-siesta: Pressure (static):        433.58468444  kBar
+siesta: Pressure (static):        433.58467694  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.272501    0.065017    0.036093
          0.065017   -0.282935    0.013021
          0.036093    0.013021   -0.258361
 
-siesta: Pressure (total):        434.61988295  kBar
- Anneal: Kinetic Energy=   3.354331315481978E-003
- Anneal: Velocity scale factor =    1.01388942498777     
- Anneal: Cell scale factor =    1.00060456244213     
+siesta: Pressure (total):        434.61987331  kBar
+ Anneal: Kinetic Energy=  0.0033543291233127342
+ Anneal: Velocity scale factor =  1.0138894468944373
+ Anneal: Cell scale factor =  1.0006045620179815
 
 siesta: Temp_ion =     362.964 K
 
@@ -4170,7 +4173,7 @@ outcell: Unit cell vectors (Ang):
         0.000000    2.864031    2.122454
         2.041626    0.000000    2.723987
 
-outcell: Cell vector modules (Ang)   :    3.537913    3.564756    3.404165
+outcell: Cell vector modules (Ang)   :    3.537913    3.564756    3.404166
 outcell: Cell angles (23,13,12) (deg):     61.5472     60.7615     62.2117
 outcell: Cell volume (Ang**3)        :     31.3751
 
@@ -4185,7 +4188,7 @@ siesta: Eharris(eV) =    -212.295651
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.032415    0.023037    0.003892
+   Tot    0.032415    0.023036    0.003894
 ----------------------------------------
    Max    0.802510
    Res    0.672762    sqrt( Sum f_i^2 / 3N )
@@ -4200,17 +4203,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.057028   -0.280203    0.011116
          0.032515    0.011116   -0.255351
 
-siesta: Pressure (static):        430.45824307  kBar
+siesta: Pressure (static):        430.45825757  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.271119    0.057023    0.031545
          0.057023   -0.280203    0.011109
          0.031545    0.011109   -0.256758
 
-siesta: Pressure (total):        431.56696424  kBar
- Anneal: Kinetic Energy=   3.701306329719354E-003
- Anneal: Velocity scale factor =    1.01074221509954     
- Anneal: Cell scale factor =    1.00050649766092     
+siesta: Pressure (total):        431.56697641  kBar
+ Anneal: Kinetic Energy=  0.0037013039604349165
+ Anneal: Velocity scale factor =  1.0107422346056927
+ Anneal: Cell scale factor =  1.0005064975496107
 
 siesta: Temp_ion =     398.027 K
 
@@ -4235,20 +4238,20 @@ outcell: Cell volume (Ang**3)        :     31.4059
 InitMesh: MESH =    18 x    18 x    18 =        5832
 InitMesh: Mesh cutoff (required, used) =   100.000   100.122 Ry
 
-siesta: Eharris(eV) =    -212.319358
+siesta: Eharris(eV) =    -212.319359
 
 
-siesta: Eharris(eV) =    -212.319358
+siesta: Eharris(eV) =    -212.319359
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.033565    0.013604    0.006595
+   Tot    0.033565    0.013604    0.006596
 ----------------------------------------
-   Max    0.772676
+   Max    0.772677
    Res    0.599147    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.772676    constrained
+   Max    0.772677    constrained
 
 Stress-tensor-Voigt (kbar):     -433.70     -445.04     -409.37       78.31       13.13       44.04
 Target enthalpy (eV/cell)     -204.4571
@@ -4258,17 +4261,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.048950   -0.277759    0.008316
          0.028447    0.008316   -0.253903
 
-siesta: Pressure (static):        428.20131881  kBar
+siesta: Pressure (static):        428.20130098  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.270690    0.048877    0.027487
          0.048877   -0.277769    0.008194
          0.027487    0.008194   -0.255508
 
-siesta: Pressure (total):        429.37030174  kBar
- Anneal: Kinetic Energy=   3.991393190606921E-003
- Anneal: Velocity scale factor =    1.00852509503179     
- Anneal: Cell scale factor =    1.00042895939132     
+siesta: Pressure (total):        429.37028144  kBar
+ Anneal: Kinetic Energy=  0.003991390800717158
+ Anneal: Velocity scale factor =  1.008525111988711
+ Anneal: Cell scale factor =  1.0004289586999107
 
 siesta: Temp_ion =     427.341 K
 
@@ -4301,10 +4304,10 @@ siesta: Eharris(eV) =    -212.342328
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.002598    0.007396   -0.012590
+   Tot   -0.002597    0.007395   -0.012588
 ----------------------------------------
    Max    0.763930
-   Res    0.538267    sqrt( Sum f_i^2 / 3N )
+   Res    0.538268    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.763930    constrained
 
@@ -4316,17 +4319,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.039200   -0.276419    0.004447
          0.023447    0.004447   -0.255192
 
-siesta: Pressure (static):        427.77645976  kBar
+siesta: Pressure (static):        427.77647910  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.269848    0.039081    0.022531
          0.039081   -0.276449    0.004217
          0.022531    0.004217   -0.256953
 
-siesta: Pressure (total):        428.98738044  kBar
- Anneal: Kinetic Energy=   4.202637262207357E-003
- Anneal: Velocity scale factor =    1.00710059410226     
- Anneal: Cell scale factor =    1.00052181506832     
+siesta: Pressure (total):        428.98739727  kBar
+ Anneal: Kinetic Energy=  0.004202634737130601
+ Anneal: Velocity scale factor =  1.0071006102853999
+ Anneal: Cell scale factor =  1.0005218155295246
 
 siesta: Temp_ion =     448.688 K
 
@@ -4359,7 +4362,7 @@ siesta: Eharris(eV) =    -212.367045
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.009252    0.014240   -0.006162
+   Tot   -0.009252    0.014239   -0.006160
 ----------------------------------------
    Max    0.765580
    Res    0.492885    sqrt( Sum f_i^2 / 3N )
@@ -4374,17 +4377,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.030868   -0.273316    0.002313
          0.019355    0.002313   -0.254285
 
-siesta: Pressure (static):        425.33025729  kBar
+siesta: Pressure (static):        425.33025717  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.269184    0.030720    0.018510
          0.030720   -0.273373    0.001987
          0.018510    0.001987   -0.256152
 
-siesta: Pressure (total):        426.56257512  kBar
- Anneal: Kinetic Energy=   4.319234187739125E-003
- Anneal: Velocity scale factor =    1.00637323821005     
- Anneal: Cell scale factor =    1.00046845079641     
+siesta: Pressure (total):        426.56257242  kBar
+ Anneal: Kinetic Energy=  0.004319231395944457
+ Anneal: Velocity scale factor =  1.006373255161849
+ Anneal: Cell scale factor =  1.0004684511818043
 
 siesta: Temp_ion =     460.470 K
 
@@ -4417,7 +4420,7 @@ siesta: Eharris(eV) =    -212.389907
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.015258    0.011558   -0.009915
+   Tot   -0.015257    0.011557   -0.009913
 ----------------------------------------
    Max    0.763876
    Res    0.476782    sqrt( Sum f_i^2 / 3N )
@@ -4432,17 +4435,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.022216   -0.269263    0.001620
          0.014701    0.001620   -0.252711
 
-siesta: Pressure (static):        421.42967172  kBar
+siesta: Pressure (static):        421.42966710  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.267424    0.022058    0.013943
          0.022058   -0.269346    0.001219
          0.013943    0.001219   -0.254632
 
-siesta: Pressure (total):        422.66001299  kBar
- Anneal: Kinetic Energy=   4.328752083065828E-003
- Anneal: Velocity scale factor =    1.00631557094726     
- Anneal: Cell scale factor =    1.00036695626990     
+siesta: Pressure (total):        422.66000569  kBar
+ Anneal: Kinetic Energy=  0.004328749078082124
+ Anneal: Velocity scale factor =  1.0063155891144306
+ Anneal: Cell scale factor =  1.0003669563796318
 
 siesta: Temp_ion =     461.432 K
 
@@ -4475,7 +4478,7 @@ siesta: Eharris(eV) =    -212.408908
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.005118    0.015844   -0.013833
+   Tot   -0.005117    0.015842   -0.013831
 ----------------------------------------
    Max    0.754919
    Res    0.498174    sqrt( Sum f_i^2 / 3N )
@@ -4490,17 +4493,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.014404   -0.265252    0.000711
          0.010308    0.000711   -0.251463
 
-siesta: Pressure (static):        418.09325804  kBar
+siesta: Pressure (static):        418.09326058  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.266361    0.014250    0.009651
          0.014250   -0.265357    0.000261
          0.009651    0.000261   -0.253386
 
-siesta: Pressure (total):        419.29612568  kBar
- Anneal: Kinetic Energy=   4.232913773003846E-003
- Anneal: Velocity scale factor =    1.00690792250250     
- Anneal: Cell scale factor =    1.00028143731242     
+siesta: Pressure (total):        419.29612551  kBar
+ Anneal: Kinetic Energy=  0.004232910580936448
+ Anneal: Velocity scale factor =  1.0069079426726102
+ Anneal: Cell scale factor =  1.000281436511901
 
 siesta: Temp_ion =     451.747 K
 
@@ -4533,12 +4536,12 @@ siesta: Eharris(eV) =    -212.424748
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.001181    0.015325   -0.011934
+   Tot    0.001181    0.015324   -0.011931
 ----------------------------------------
-   Max    0.742399
+   Max    0.742400
    Res    0.545726    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.742399    constrained
+   Max    0.742400    constrained
 
 Stress-tensor-Voigt (kbar):     -424.76     -419.41     -403.28       11.33       -0.47       10.38
 Target enthalpy (eV/cell)     -204.5111
@@ -4548,17 +4551,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.007211   -0.261656    0.000176
          0.007028    0.000176   -0.249828
 
-siesta: Pressure (static):        414.66691485  kBar
+siesta: Pressure (static):        414.66692301  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.265112    0.007073    0.006479
-         0.007073   -0.261774   -0.000294
+        -0.265112    0.007074    0.006479
+         0.007074   -0.261774   -0.000294
          0.006479   -0.000294   -0.251706
 
-siesta: Pressure (total):        415.81840404  kBar
- Anneal: Kinetic Energy=   4.044712128590769E-003
- Anneal: Velocity scale factor =    1.00815170082911     
- Anneal: Cell scale factor =    1.00016696436299     
+siesta: Pressure (total):        415.81840950  kBar
+ Anneal: Kinetic Energy=  0.0040447087469924715
+ Anneal: Velocity scale factor =  1.0081517242027211
+ Anneal: Cell scale factor =  1.0001669644783788
 
 siesta: Temp_ion =     432.729 K
 
@@ -4581,7 +4584,7 @@ outcell: Cell angles (23,13,12) (deg):     61.6596     60.7510     62.5387
 outcell: Cell volume (Ang**3)        :     31.6548
 
 InitMesh: MESH =    18 x    20 x    18 =        6480
-InitMesh: Mesh cutoff (required, used) =   100.000   102.964 Ry
+InitMesh: Mesh cutoff (required, used) =   100.000   102.965 Ry
 
 siesta: Eharris(eV) =    -212.437198
 
@@ -4591,12 +4594,12 @@ siesta: Eharris(eV) =    -212.437198
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.002581    0.011156   -0.001896
+   Tot    0.002582    0.011156   -0.001894
 ----------------------------------------
-   Max    0.738027
-   Res    0.615853    sqrt( Sum f_i^2 / 3N )
+   Max    0.738028
+   Res    0.615854    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.738027    constrained
+   Max    0.738028    constrained
 
 Stress-tensor-Voigt (kbar):     -425.37     -415.23     -401.69        0.62       -2.77        4.66
 Target enthalpy (eV/cell)     -204.5141
@@ -4606,17 +4609,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.000500   -0.259041   -0.001266
          0.003346   -0.001266   -0.248921
 
-siesta: Pressure (static):        413.01839652  kBar
+siesta: Pressure (static):        413.01841350  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.265495    0.000386    0.002907
          0.000386   -0.259161   -0.001731
          0.002907   -0.001731   -0.250714
 
-siesta: Pressure (total):        414.09762412  kBar
- Anneal: Kinetic Energy=   3.783177269813007E-003
- Anneal: Velocity scale factor =    1.01008254938706     
- Anneal: Cell scale factor =    1.00009582538199     
+siesta: Pressure (total):        414.09763844  kBar
+ Anneal: Kinetic Energy=  0.0037831735510611285
+ Anneal: Velocity scale factor =  1.0100825787116419
+ Anneal: Cell scale factor =  1.0000958258937453
 
 siesta: Temp_ion =     406.300 K
 
@@ -4649,7 +4652,7 @@ siesta: Eharris(eV) =    -212.448832
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000330    0.002647   -0.008532
+   Tot    0.000331    0.002647   -0.008530
 ----------------------------------------
    Max    0.879958
    Res    0.689442    sqrt( Sum f_i^2 / 3N )
@@ -4664,19 +4667,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.005427   -0.255488   -0.001651
          0.000251   -0.001651   -0.247417
 
-siesta: Pressure (static):        410.00144418  kBar
+siesta: Pressure (static):        410.00145230  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.264861   -0.005513   -0.000080
         -0.005513   -0.255601   -0.002086
         -0.000080   -0.002086   -0.249092
 
-siesta: Pressure (total):        410.99162119  kBar
- Anneal: Kinetic Energy=   3.474717113980955E-003
- Anneal: Velocity scale factor =    1.01272740736817     
- Anneal: Cell scale factor =   0.999984214262281     
+siesta: Pressure (total):        410.99162666  kBar
+ Anneal: Kinetic Energy=  0.003474712914673429
+ Anneal: Velocity scale factor =  1.012727446519927
+ Anneal: Cell scale factor =  0.999984214523268
 
-siesta: Temp_ion =     375.130 K
+siesta: Temp_ion =     375.129 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -4707,12 +4710,12 @@ siesta: Eharris(eV) =    -212.457967
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.008399    0.010607   -0.007150
+   Tot    0.008400    0.010606   -0.007148
 ----------------------------------------
-   Max    1.003036
-   Res    0.763431    sqrt( Sum f_i^2 / 3N )
+   Max    1.003035
+   Res    0.763432    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.003036    constrained
+   Max    1.003035    constrained
 
 Stress-tensor-Voigt (kbar):     -424.29     -405.84     -397.98      -16.76       -3.82       -4.92
 Target enthalpy (eV/cell)     -204.5161
@@ -4722,17 +4725,17 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.010404   -0.253205   -0.001996
         -0.002840   -0.001996   -0.246864
 
-siesta: Pressure (static):        408.47945985  kBar
+siesta: Pressure (static):        408.47948497  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.264815   -0.010462   -0.003069
         -0.010462   -0.253303   -0.002383
-        -0.003069   -0.002383   -0.248399
+        -0.003069   -0.002383   -0.248400
 
-siesta: Pressure (total):        409.36993782  kBar
- Anneal: Kinetic Energy=   3.149084152481824E-003
- Anneal: Velocity scale factor =    1.01607182172528     
- Anneal: Cell scale factor =   0.999932524020613     
+siesta: Pressure (total):        409.36996028  kBar
+ Anneal: Kinetic Energy=  0.0031490794034298966
+ Anneal: Velocity scale factor =  1.0160718754555667
+ Anneal: Cell scale factor =  0.9999325249415112
 
 siesta: Temp_ion =     342.223 K
 
@@ -4765,10 +4768,10 @@ siesta: Eharris(eV) =    -212.466574
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.004150    0.002320   -0.011612
+   Tot    0.004152    0.002319   -0.011608
 ----------------------------------------
    Max    1.120177
-   Res    0.836064    sqrt( Sum f_i^2 / 3N )
+   Res    0.836065    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    1.120177    constrained
 
@@ -4780,19 +4783,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.015063   -0.249184   -0.001537
         -0.005690   -0.001537   -0.245567
 
-siesta: Pressure (static):        405.36551634  kBar
+siesta: Pressure (static):        405.36555237  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.264282   -0.015094   -0.005824
         -0.015094   -0.249260   -0.001862
         -0.005824   -0.001862   -0.246950
 
-siesta: Pressure (total):        406.15206715  kBar
- Anneal: Kinetic Energy=   2.833113346175047E-003
- Anneal: Velocity scale factor =    1.02003763381465     
- Anneal: Cell scale factor =   0.999832886446381     
+siesta: Pressure (total):        406.15210053  kBar
+ Anneal: Kinetic Energy=  0.0028331079369384184
+ Anneal: Velocity scale factor =  1.02003770913238
+ Anneal: Cell scale factor =  0.9998328879299935
 
-siesta: Temp_ion =     310.294 K
+siesta: Temp_ion =     310.293 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -4823,12 +4826,12 @@ siesta: Eharris(eV) =    -212.472949
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.003646    0.002271   -0.012432
+   Tot    0.003648    0.002270   -0.012429
 ----------------------------------------
-   Max    1.219605
+   Max    1.219604
    Res    0.896126    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.219605    constrained
+   Max    1.219604    constrained
 
 Stress-tensor-Voigt (kbar):     -423.94     -394.94     -394.65      -30.66       -2.67      -11.81
 Target enthalpy (eV/cell)     -204.5143
@@ -4838,19 +4841,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.019125   -0.246450   -0.001418
         -0.007320   -0.001418   -0.245090
 
-siesta: Pressure (static):        403.82612585  kBar
+siesta: Pressure (static):        403.82616601  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.264599   -0.019135   -0.007368
         -0.019135   -0.246501   -0.001669
         -0.007368   -0.001669   -0.246317
 
-siesta: Pressure (total):        404.50957601  kBar
- Anneal: Kinetic Energy=   2.553327944045646E-003
- Anneal: Velocity scale factor =    1.02435109144974     
- Anneal: Cell scale factor =   0.999786311729107     
+siesta: Pressure (total):        404.50961350  kBar
+ Anneal: Kinetic Energy=  0.0025533217944111912
+ Anneal: Velocity scale factor =  1.0243511964264191
+ Anneal: Cell scale factor =  0.9997863129130541
 
-siesta: Temp_ion =     282.021 K
+siesta: Temp_ion =     282.020 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -4863,7 +4866,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.920049    2.030539    0.000000
-        0.000000    2.897365    2.121159
+        0.000000    2.897365    2.121160
         2.026193    0.000000    2.730457
 
 outcell: Cell vector modules (Ang)   :    3.556652    3.590827    3.400126
@@ -4881,12 +4884,12 @@ siesta: Eharris(eV) =    -212.479205
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.006201    0.009030   -0.021729
+   Tot    0.006202    0.009028   -0.021726
 ----------------------------------------
-   Max    1.301219
+   Max    1.301218
    Res    0.945650    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.301219    constrained
+   Max    1.301218    constrained
 
 Stress-tensor-Voigt (kbar):     -424.49     -391.47     -394.13      -36.35       -1.49      -14.28
 Target enthalpy (eV/cell)     -204.5132
@@ -4896,19 +4899,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.022693   -0.244308   -0.000757
         -0.008940   -0.000757   -0.244926
 
-siesta: Pressure (static):        402.77730950  kBar
+siesta: Pressure (static):        402.77731883  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.264940   -0.022689   -0.008914
         -0.022689   -0.244335   -0.000928
         -0.008914   -0.000928   -0.245995
 
-siesta: Pressure (total):        403.36311713  kBar
- Anneal: Kinetic Energy=   2.335806256131551E-003
- Anneal: Velocity scale factor =    1.02840204194896     
- Anneal: Cell scale factor =   0.999760882867879     
+siesta: Pressure (total):        403.36312379  kBar
+ Anneal: Kinetic Energy=  0.0023357991551793008
+ Anneal: Velocity scale factor =  1.028402186222214
+ Anneal: Cell scale factor =  0.9997608841716754
 
-siesta: Temp_ion =     260.040 K
+siesta: Temp_ion =     260.039 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -4939,12 +4942,12 @@ siesta: Eharris(eV) =    -212.486055
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.010219   -0.000671   -0.012794
+   Tot    0.010219   -0.000673   -0.012791
 ----------------------------------------
-   Max    1.355362
-   Res    0.981098    sqrt( Sum f_i^2 / 3N )
+   Max    1.355361
+   Res    0.981099    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.355362    constrained
+   Max    1.355361    constrained
 
 Stress-tensor-Voigt (kbar):     -425.59     -388.49     -393.75      -39.67        0.47      -16.18
 Target enthalpy (eV/cell)     -204.5128
@@ -4954,19 +4957,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.024770   -0.242465    0.000383
         -0.010193    0.000383   -0.244844
 
-siesta: Pressure (static):        402.11335383  kBar
+siesta: Pressure (static):        402.11335687  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.265630   -0.024761   -0.010102
         -0.024761   -0.242474    0.000294
         -0.010102    0.000294   -0.245758
 
-siesta: Pressure (total):        402.61102484  kBar
- Anneal: Kinetic Energy=   2.200146657342133E-003
- Anneal: Velocity scale factor =    1.03132408837904     
- Anneal: Cell scale factor =   0.999742354616283     
+siesta: Pressure (total):        402.61102523  kBar
+ Anneal: Kinetic Energy=  0.0022001385703725148
+ Anneal: Velocity scale factor =  1.0313242730478134
+ Anneal: Cell scale factor =  0.9997423542980899
 
-siesta: Temp_ion =     246.331 K
+siesta: Temp_ion =     246.330 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -4989,18 +4992,18 @@ outcell: Cell volume (Ang**3)        :     31.8843
 InitMesh: MESH =    18 x    20 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   101.690 Ry
 
-siesta: Eharris(eV) =    -212.493867
+siesta: Eharris(eV) =    -212.493868
 
 
-siesta: Eharris(eV) =    -212.493867
+siesta: Eharris(eV) =    -212.493868
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.001932   -0.005375   -0.014772
+   Tot    0.001933   -0.005376   -0.014768
 ----------------------------------------
    Max    1.394373
-   Res    1.001103    sqrt( Sum f_i^2 / 3N )
+   Res    1.001104    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    1.394373    constrained
 
@@ -5012,19 +5015,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.025989   -0.240555    0.001889
         -0.010751    0.001889   -0.245054
 
-siesta: Pressure (static):        401.08405703  kBar
+siesta: Pressure (static):        401.08408741  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.265421   -0.025987   -0.010606
-        -0.025987   -0.240555    0.001881
-        -0.010606    0.001881   -0.245817
+        -0.025987   -0.240555    0.001880
+        -0.010606    0.001880   -0.245817
 
-siesta: Pressure (total):        401.50596255  kBar
- Anneal: Kinetic Energy=   2.162814318089238E-003
- Anneal: Velocity scale factor =    1.03219093290927     
- Anneal: Cell scale factor =   0.999744638118391     
+siesta: Pressure (total):        401.50599035  kBar
+ Anneal: Kinetic Energy=  0.0021628053094643125
+ Anneal: Velocity scale factor =  1.0321911456086699
+ Anneal: Cell scale factor =  0.999744638465845
 
-siesta: Temp_ion =     242.558 K
+siesta: Temp_ion =     242.557 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5055,10 +5058,10 @@ siesta: Eharris(eV) =    -212.502072
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.007724   -0.022838   -0.007851
+   Tot   -0.007723   -0.022840   -0.007848
 ----------------------------------------
    Max    1.414052
-   Res    1.011913    sqrt( Sum f_i^2 / 3N )
+   Res    1.011914    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    1.414052    constrained
 
@@ -5067,22 +5070,22 @@ Target enthalpy (eV/cell)     -204.5155
 
 siesta: Stress tensor (static) (eV/Ang**3):
         -0.264936   -0.027076   -0.011077
-        -0.027076   -0.238002    0.003129
-        -0.011077    0.003129   -0.244579
+        -0.027076   -0.238002    0.003128
+        -0.011077    0.003128   -0.244579
 
-siesta: Pressure (static):        399.22254624  kBar
+siesta: Pressure (static):        399.22254110  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.264991   -0.027095   -0.010893
         -0.027095   -0.238009    0.003194
         -0.010893    0.003194   -0.245193
 
-siesta: Pressure (total):        399.58340175  kBar
- Anneal: Kinetic Energy=   2.234188554341460E-003
- Anneal: Velocity scale factor =    1.03055829267947     
- Anneal: Cell scale factor =   0.999705825998774     
+siesta: Pressure (total):        399.58339408  kBar
+ Anneal: Kinetic Energy=  0.0022341783598936035
+ Anneal: Velocity scale factor =  1.0305585186011719
+ Anneal: Cell scale factor =  0.9997058249007704
 
-siesta: Temp_ion =     249.771 K
+siesta: Temp_ion =     249.770 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5113,12 +5116,12 @@ siesta: Eharris(eV) =    -212.509897
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.009373   -0.039550   -0.010017
+   Tot   -0.009372   -0.039552   -0.010014
 ----------------------------------------
-   Max    1.411215
-   Res    1.004037    sqrt( Sum f_i^2 / 3N )
+   Max    1.411214
+   Res    1.004038    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.411215    constrained
+   Max    1.411214    constrained
 
 Stress-tensor-Voigt (kbar):     -422.61     -378.63     -391.52      -43.96        8.97      -15.76
 Target enthalpy (eV/cell)     -204.5182
@@ -5128,19 +5131,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.027381   -0.236285    0.005469
         -0.010041    0.005469   -0.243896
 
-siesta: Pressure (static):        397.26964560  kBar
+siesta: Pressure (static):        397.26967606  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.263770   -0.027437   -0.009836
         -0.027437   -0.236320    0.005597
         -0.009836    0.005597   -0.244364
 
-siesta: Pressure (total):        397.58655521  kBar
- Anneal: Kinetic Energy=   2.414279495621373E-003
- Anneal: Velocity scale factor =    1.02685833492783     
- Anneal: Cell scale factor =   0.999657259778957     
+siesta: Pressure (total):        397.58658318  kBar
+ Anneal: Kinetic Energy=  0.00241426826076914
+ Anneal: Velocity scale factor =  1.0268585489152449
+ Anneal: Cell scale factor =  0.999657260832082
 
-siesta: Temp_ion =     267.969 K
+siesta: Temp_ion =     267.968 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5153,7 +5156,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.935153    2.046849    0.000000
-        0.000000    2.889196    2.119763
+        0.000000    2.889197    2.119763
         2.032728    0.000000    2.726666
 
 outcell: Cell vector modules (Ang)   :    3.578368    3.583413    3.400984
@@ -5171,12 +5174,12 @@ siesta: Eharris(eV) =    -212.516642
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.011687   -0.044855    0.000438
+   Tot   -0.011687   -0.044857    0.000441
 ----------------------------------------
-   Max    1.383597
-   Res    0.979714    sqrt( Sum f_i^2 / 3N )
+   Max    1.383601
+   Res    0.979716    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.383597    constrained
+   Max    1.383601    constrained
 
 Stress-tensor-Voigt (kbar):     -420.61     -374.76     -390.04      -42.48       12.42      -13.41
 Target enthalpy (eV/cell)     -204.5216
@@ -5186,19 +5189,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.026404   -0.233816    0.007578
         -0.008576    0.007578   -0.243112
 
-siesta: Pressure (static):        394.84464424  kBar
+siesta: Pressure (static):        394.84465258  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.262522   -0.026511   -0.008369
         -0.026511   -0.233905    0.007749
         -0.008369    0.007749   -0.243442
 
-siesta: Pressure (total):        395.13755726  kBar
- Anneal: Kinetic Energy=   2.694174225130589E-003
- Anneal: Velocity scale factor =    1.02206994783606     
- Anneal: Cell scale factor =   0.999606643595341     
+siesta: Pressure (total):        395.13756324  kBar
+ Anneal: Kinetic Energy=  0.0026941622761557445
+ Anneal: Velocity scale factor =  1.0220701314497538
+ Anneal: Cell scale factor =  0.999606642883845
 
-siesta: Temp_ion =     296.254 K
+siesta: Temp_ion =     296.252 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5214,7 +5217,7 @@ outcell: Unit cell vectors (Ang):
         0.000000    2.886342    2.118676
         2.033889    0.000000    2.725594
 
-outcell: Cell vector modules (Ang)   :    3.582518    3.580469    3.400818
+outcell: Cell vector modules (Ang)   :    3.582518    3.580470    3.400818
 outcell: Cell angles (23,13,12) (deg):     61.6898     60.6307     62.5260
 outcell: Cell volume (Ang**3)        :     31.9468
 
@@ -5229,12 +5232,12 @@ siesta: Eharris(eV) =    -212.521380
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.002535   -0.037326    0.007561
+   Tot   -0.002534   -0.037329    0.007564
 ----------------------------------------
-   Max    1.343713
-   Res    0.944699    sqrt( Sum f_i^2 / 3N )
+   Max    1.343716
+   Res    0.944700    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.343713    constrained
+   Max    1.343716    constrained
 
 Stress-tensor-Voigt (kbar):     -419.62     -372.03     -390.97      -39.92       17.76      -11.08
 Target enthalpy (eV/cell)     -204.5251
@@ -5244,19 +5247,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.024749   -0.232030    0.010898
         -0.007100    0.010898   -0.243813
 
-siesta: Pressure (static):        393.91614286  kBar
+siesta: Pressure (static):        393.91614631  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.261906   -0.024918   -0.006913
         -0.024918   -0.232199    0.011086
         -0.006913    0.011086   -0.244021
 
-siesta: Pressure (total):        394.20716114  kBar
- Anneal: Kinetic Energy=   3.057788916111828E-003
- Anneal: Velocity scale factor =    1.01713500784985     
- Anneal: Cell scale factor =   0.999656063301046     
+siesta: Pressure (total):        394.20716247  kBar
+ Anneal: Kinetic Energy=  0.0030577762456881915
+ Anneal: Velocity scale factor =  1.0171351597309726
+ Anneal: Cell scale factor =  0.999656062337069
 
-siesta: Temp_ion =     332.998 K
+siesta: Temp_ion =     332.997 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5269,7 +5272,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.940443    2.053462    0.000000
-        0.000000    2.883166    2.117136
+        0.000000    2.883166    2.117137
         2.034893    0.000000    2.724656
 
 outcell: Cell vector modules (Ang)   :    3.586490    3.576998    3.400668
@@ -5279,42 +5282,42 @@ outcell: Cell volume (Ang**3)        :     31.9457
 InitMesh: MESH =    18 x    20 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   100.637 Ry
 
-siesta: Eharris(eV) =    -212.525307
+siesta: Eharris(eV) =    -212.525308
 
 
-siesta: Eharris(eV) =    -212.525307
+siesta: Eharris(eV) =    -212.525308
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.013788   -0.043800    0.000216
+   Tot    0.013790   -0.043802    0.000221
 ----------------------------------------
-   Max    1.268986
-   Res    0.893182    sqrt( Sum f_i^2 / 3N )
+   Max    1.268990
+   Res    0.893183    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.268986    constrained
+   Max    1.268990    constrained
 
 Stress-tensor-Voigt (kbar):     -417.86     -371.19     -392.95      -35.07       22.89       -7.96
 Target enthalpy (eV/cell)     -204.5292
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.260602   -0.021655   -0.005114
-        -0.021655   -0.231402    0.014115
+        -0.260602   -0.021656   -0.005114
+        -0.021656   -0.231402    0.014115
         -0.005114    0.014115   -0.245147
 
-siesta: Pressure (static):        393.68637480  kBar
+siesta: Pressure (static):        393.68640250  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.260803   -0.021890   -0.004965
         -0.021890   -0.231676    0.014288
         -0.004965    0.014288   -0.245257
 
-siesta: Pressure (total):        393.99835233  kBar
- Anneal: Kinetic Energy=   3.480062534341208E-003
- Anneal: Velocity scale factor =    1.01267764535015     
- Anneal: Cell scale factor =   0.999750746254587     
+siesta: Pressure (total):        393.99837822  kBar
+ Anneal: Kinetic Energy=  0.003480049217402251
+ Anneal: Velocity scale factor =  1.0126777691343585
+ Anneal: Cell scale factor =  0.9997507461411512
 
-siesta: Temp_ion =     375.670 K
+siesta: Temp_ion =     375.668 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5345,12 +5348,12 @@ siesta: Eharris(eV) =    -212.528414
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.013873   -0.031031   -0.004150
+   Tot    0.013875   -0.031033   -0.004145
 ----------------------------------------
-   Max    1.194421
-   Res    0.840619    sqrt( Sum f_i^2 / 3N )
+   Max    1.194419
+   Res    0.840620    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.194421    constrained
+   Max    1.194419    constrained
 
 Stress-tensor-Voigt (kbar):     -417.06     -370.70     -393.89      -30.67       28.22       -2.98
 Target enthalpy (eV/cell)     -204.5336
@@ -5360,19 +5363,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.018847   -0.230971    0.017485
         -0.001957    0.017485   -0.245800
 
-siesta: Pressure (static):        393.52617871  kBar
+siesta: Pressure (static):        393.52619664  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.260303   -0.019145   -0.001861
         -0.019145   -0.231370    0.017614
         -0.001861    0.017614   -0.245842
 
-siesta: Pressure (total):        393.88067900  kBar
- Anneal: Kinetic Energy=   3.931349217440133E-003
- Anneal: Velocity scale factor =    1.00895753715698     
- Anneal: Cell scale factor =   0.999805790376060     
+siesta: Pressure (total):        393.88069550  kBar
+ Anneal: Kinetic Energy=  0.003931335344120013
+ Anneal: Velocity scale factor =  1.0089576385785464
+ Anneal: Cell scale factor =  0.9998057902269931
 
-siesta: Temp_ion =     421.273 K
+siesta: Temp_ion =     421.272 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5388,7 +5391,7 @@ outcell: Unit cell vectors (Ang):
         0.000000    2.876549    2.112755
         2.036082    0.000000    2.723448
 
-outcell: Cell vector modules (Ang)   :    3.593429    3.569071    3.400411
+outcell: Cell vector modules (Ang)   :    3.593430    3.569071    3.400411
 outcell: Cell angles (23,13,12) (deg):     61.6984     60.6095     62.4993
 outcell: Cell volume (Ang**3)        :     31.9294
 
@@ -5403,12 +5406,12 @@ siesta: Eharris(eV) =    -212.530287
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.010561   -0.043697    0.004502
+   Tot    0.010561   -0.043701    0.004507
 ----------------------------------------
-   Max    1.095773
-   Res    0.780559    sqrt( Sum f_i^2 / 3N )
+   Max    1.095778
+   Res    0.780561    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    1.095773    constrained
+   Max    1.095778    constrained
 
 Stress-tensor-Voigt (kbar):     -415.84     -370.00     -396.09      -23.95       35.66        0.15
 Target enthalpy (eV/cell)     -204.5380
@@ -5418,19 +5421,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.014597   -0.230393    0.022196
          0.000052    0.022196   -0.247209
 
-siesta: Pressure (static):        393.56175629  kBar
+siesta: Pressure (static):        393.56176189  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.259547   -0.014949    0.000091
         -0.014949   -0.230930    0.022256
          0.000091    0.022256   -0.247216
 
-siesta: Pressure (total):        393.97585162  kBar
- Anneal: Kinetic Energy=   4.380665109657870E-003
- Anneal: Velocity scale factor =    1.00600539305424     
- Anneal: Cell scale factor =   0.999912340879758     
+siesta: Pressure (total):        393.97585625  kBar
+ Anneal: Kinetic Energy=  0.004380650637525857
+ Anneal: Velocity scale factor =  1.006005478513285
+ Anneal: Cell scale factor =  0.9999123395743233
 
-siesta: Temp_ion =     466.678 K
+siesta: Temp_ion =     466.677 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5461,12 +5464,12 @@ siesta: Eharris(eV) =    -212.530389
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.012498   -0.027307    0.014152
+   Tot    0.012501   -0.027309    0.014157
 ----------------------------------------
-   Max    0.998338
-   Res    0.719961    sqrt( Sum f_i^2 / 3N )
+   Max    0.998342
+   Res    0.719962    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.998338    constrained
+   Max    0.998342    constrained
 
 Stress-tensor-Voigt (kbar):     -414.56     -369.89     -399.34      -16.50       41.05        3.69
 Target enthalpy (eV/cell)     -204.5419
@@ -5476,19 +5479,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.009907   -0.230185    0.025651
          0.002321    0.025651   -0.249245
 
-siesta: Pressure (static):        394.11352114  kBar
+siesta: Pressure (static):        394.11351429  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.258746   -0.010299    0.002305
         -0.010299   -0.230866    0.025622
          0.002305    0.025622   -0.249247
 
-siesta: Pressure (total):        394.59818951  kBar
- Anneal: Kinetic Energy=   4.799354071996990E-003
- Anneal: Velocity scale factor =    1.00374616118925     
- Anneal: Cell scale factor =    1.00006072815916     
+siesta: Pressure (total):        394.59818214  kBar
+ Anneal: Kinetic Energy=  0.004799339248553525
+ Anneal: Velocity scale factor =  1.0037462342805143
+ Anneal: Cell scale factor =  1.0000607261541146
 
-siesta: Temp_ion =     508.988 K
+siesta: Temp_ion =     508.986 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5519,12 +5522,12 @@ siesta: Eharris(eV) =    -212.527966
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.001480   -0.009417    0.016612
+   Tot   -0.001479   -0.009421    0.016619
 ----------------------------------------
-   Max    0.888936
-   Res    0.660231    sqrt( Sum f_i^2 / 3N )
+   Max    0.888941
+   Res    0.660232    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.888936    constrained
+   Max    0.888941    constrained
 
 Stress-tensor-Voigt (kbar):     -412.93     -372.86     -402.30      -10.03       45.33        7.37
 Target enthalpy (eV/cell)     -204.5442
@@ -5534,19 +5537,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.005845   -0.231897    0.028425
          0.004665    0.028425   -0.251072
 
-siesta: Pressure (static):        395.47112686  kBar
+siesta: Pressure (static):        395.47114257  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.257730   -0.006257    0.004600
-        -0.006257   -0.232719    0.028295
-         0.004600    0.028295   -0.251093
+        -0.006257   -0.232719    0.028296
+         0.004600    0.028296   -0.251093
 
-siesta: Pressure (total):        396.03112188  kBar
- Anneal: Kinetic Energy=   5.166739364055812E-003
- Anneal: Velocity scale factor =    1.00206206255419     
- Anneal: Cell scale factor =    1.00019627461512     
+siesta: Pressure (total):        396.03113759  kBar
+ Anneal: Kinetic Energy=  0.005166724068000134
+ Anneal: Velocity scale factor =  1.0020621277406658
+ Anneal: Cell scale factor =  1.0001962744783048
 
-siesta: Temp_ion =     546.113 K
+siesta: Temp_ion =     546.111 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5559,7 +5562,7 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.951260    2.062883    0.000000
-        0.000000    2.866604    2.102440
+        0.000000    2.866604    2.102441
         2.035775    0.000000    2.723909
 
 outcell: Cell vector modules (Ang)   :    3.600753    3.554951    3.400597
@@ -5569,20 +5572,20 @@ outcell: Cell volume (Ang**3)        :     31.8739
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   100.336 Ry
 
-siesta: Eharris(eV) =    -212.526557
+siesta: Eharris(eV) =    -212.526558
 
 
-siesta: Eharris(eV) =    -212.526557
+siesta: Eharris(eV) =    -212.526558
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.016291   -0.042594    0.006183
+   Tot    0.016292   -0.042597    0.006189
 ----------------------------------------
-   Max    0.759849
-   Res    0.596449    sqrt( Sum f_i^2 / 3N )
+   Max    0.759854
+   Res    0.596450    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.759849    constrained
+   Max    0.759854    constrained
 
 Stress-tensor-Voigt (kbar):     -415.05     -375.09     -406.89       -2.82       53.88       15.35
 Target enthalpy (eV/cell)     -204.5477
@@ -5592,19 +5595,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
         -0.001347   -0.233158    0.033864
          0.009681    0.033864   -0.253902
 
-siesta: Pressure (static):        398.37620286  kBar
+siesta: Pressure (static):        398.37621139  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.259049   -0.001757    0.009580
         -0.001757   -0.234112    0.033630
          0.009580    0.033630   -0.253960
 
-siesta: Pressure (total):        399.01066654  kBar
- Anneal: Kinetic Energy=   5.463054347509900E-003
- Anneal: Velocity scale factor =    1.00086705550210     
- Anneal: Cell scale factor =    1.00039552839833     
+siesta: Pressure (total):        399.01067558  kBar
+ Anneal: Kinetic Energy=  0.005463038557757204
+ Anneal: Velocity scale factor =  1.0008671157627311
+ Anneal: Cell scale factor =  1.0003955272654388
 
-siesta: Temp_ion =     576.056 K
+siesta: Temp_ion =     576.055 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5627,20 +5630,20 @@ outcell: Cell volume (Ang**3)        :     31.8538
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   100.603 Ry
 
-siesta: Eharris(eV) =    -212.524553
+siesta: Eharris(eV) =    -212.524554
 
 
-siesta: Eharris(eV) =    -212.524553
+siesta: Eharris(eV) =    -212.524554
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.013735   -0.030247    0.009699
+   Tot    0.013737   -0.030248    0.009706
 ----------------------------------------
-   Max    0.634209
-   Res    0.543915    sqrt( Sum f_i^2 / 3N )
+   Max    0.634214
+   Res    0.543917    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.634209    constrained
+   Max    0.634214    constrained
 
 Stress-tensor-Voigt (kbar):     -413.02     -374.91     -408.89        5.26       57.65       20.38
 Target enthalpy (eV/cell)     -204.5505
@@ -5650,19 +5653,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.003671   -0.232933    0.036319
          0.012844    0.036319   -0.255104
 
-siesta: Pressure (static):        398.24199726  kBar
+siesta: Pressure (static):        398.24203928  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.257785    0.003284    0.012723
          0.003284   -0.234001    0.035983
          0.012723    0.035983   -0.255209
 
-siesta: Pressure (total):        398.94355223  kBar
- Anneal: Kinetic Energy=   5.677008070632121E-003
- Anneal: Velocity scale factor =    1.00008098134953     
- Anneal: Cell scale factor =    1.00048889982246     
+siesta: Pressure (total):        398.94359522  kBar
+ Anneal: Kinetic Energy=  0.005676992157940128
+ Anneal: Velocity scale factor =  1.0000810376322595
+ Anneal: Cell scale factor =  1.000488900346137
 
-siesta: Temp_ion =     597.677 K
+siesta: Temp_ion =     597.675 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5693,12 +5696,12 @@ siesta: Eharris(eV) =    -212.519445
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.008847   -0.019565    0.010438
+   Tot    0.008849   -0.019568    0.010445
 ----------------------------------------
-   Max    0.654472
-   Res    0.502180    sqrt( Sum f_i^2 / 3N )
+   Max    0.654477
+   Res    0.502182    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.654472    constrained
+   Max    0.654477    constrained
 
 Stress-tensor-Voigt (kbar):     -411.83     -375.99     -410.76       14.54       61.18       25.06
 Target enthalpy (eV/cell)     -204.5517
@@ -5708,19 +5711,19 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.009418   -0.233511    0.038609
          0.015766    0.038609   -0.256218
 
-siesta: Pressure (static):        398.77071119  kBar
+siesta: Pressure (static):        398.77069813  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.257044    0.009074    0.015639
          0.009074   -0.234671    0.038183
          0.015639    0.038183   -0.256375
 
-siesta: Pressure (total):        399.52824445  kBar
- Anneal: Kinetic Energy=   5.808509055576079E-003
- Anneal: Velocity scale factor =   0.999626293961911     
- Anneal: Cell scale factor =    1.00057443115627     
+siesta: Pressure (total):        399.52823293  kBar
+ Anneal: Kinetic Energy=  0.005808492618231939
+ Anneal: Velocity scale factor =  0.9996263495229515
+ Anneal: Cell scale factor =  1.0005744305535893
 
-siesta: Temp_ion =     610.966 K
+siesta: Temp_ion =     610.964 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5743,42 +5746,42 @@ outcell: Cell volume (Ang**3)        :     31.7974
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   101.157 Ry
 
-siesta: Eharris(eV) =    -212.511853
+siesta: Eharris(eV) =    -212.511854
 
 
-siesta: Eharris(eV) =    -212.511853
+siesta: Eharris(eV) =    -212.511854
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.006433   -0.009549   -0.000441
+   Tot    0.006421   -0.009478   -0.000710
 ----------------------------------------
-   Max    0.701590
-   Res    0.469222    sqrt( Sum f_i^2 / 3N )
+   Max    0.701581
+   Res    0.469253    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.701590    constrained
+   Max    0.701581    constrained
 
-Stress-tensor-Voigt (kbar):     -410.35     -375.96     -411.38       22.91       64.03       30.22
+Stress-tensor-Voigt (kbar):     -410.35     -375.96     -411.33       22.90       64.02       30.22
 Target enthalpy (eV/cell)     -204.5515
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.256055    0.014580    0.018975
-         0.014580   -0.233424    0.040466
-         0.018975    0.040466   -0.256554
+        -0.256055    0.014580    0.018976
+         0.014580   -0.233422    0.040459
+         0.018976    0.040459   -0.256526
 
-siesta: Pressure (static):        398.42975184  kBar
+siesta: Pressure (static):        398.41379186  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.256120    0.014296    0.018859
-         0.014296   -0.234654    0.039963
-         0.018859    0.039963   -0.256760
+        -0.256120    0.014296    0.018860
+         0.014296   -0.234652    0.039956
+         0.018860    0.039956   -0.256732
 
-siesta: Pressure (total):        399.23152773  kBar
- Anneal: Kinetic Energy=   5.859924200512017E-003
- Anneal: Velocity scale factor =   0.999454012453544     
- Anneal: Cell scale factor =    1.00060740516724     
+siesta: Pressure (total):        399.21556980  kBar
+ Anneal: Kinetic Energy=  0.005859958599147292
+ Anneal: Velocity scale factor =  0.9994538981929725
+ Anneal: Cell scale factor =  1.0006056265668872
 
-siesta: Temp_ion =     616.161 K
+siesta: Temp_ion =     616.165 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5791,52 +5794,52 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.958162    2.059611    0.000000
-        0.000000    2.855445    2.082686
-        2.029228    0.000000    2.729542
+        0.000000    2.855444    2.082687
+        2.029228    0.000000    2.729537
 
-outcell: Cell vector modules (Ang)   :    3.604542    3.534282    3.401201
+outcell: Cell vector modules (Ang)   :    3.604542    3.534282    3.401197
 outcell: Cell angles (23,13,12) (deg):     61.7765     60.6835     62.5067
 outcell: Cell volume (Ang**3)        :     31.7605
 
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   101.437 Ry
 
-siesta: Eharris(eV) =    -212.500756
+siesta: Eharris(eV) =    -212.500737
 
 
-siesta: Eharris(eV) =    -212.500756
+siesta: Eharris(eV) =    -212.500737
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.007939   -0.000557    0.014775
+   Tot    0.007907   -0.000557    0.014734
 ----------------------------------------
-   Max    0.741416
-   Res    0.449281    sqrt( Sum f_i^2 / 3N )
+   Max    0.741442
+   Res    0.449298    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.741416    constrained
+   Max    0.741442    constrained
 
-Stress-tensor-Voigt (kbar):     -409.96     -378.29     -413.90       32.69       67.88       34.24
+Stress-tensor-Voigt (kbar):     -409.96     -378.29     -413.90       32.69       67.89       34.24
 Target enthalpy (eV/cell)     -204.5495
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.255841    0.020617    0.021463
+        -0.255839    0.020617    0.021465
          0.020617   -0.234831    0.042932
-         0.021463    0.042932   -0.258087
+         0.021465    0.042932   -0.258083
 
-siesta: Pressure (static):        399.88541940  kBar
+siesta: Pressure (static):        399.88293969  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.255876    0.020406    0.021370
+        -0.255874    0.020406    0.021372
          0.020406   -0.236109    0.042370
-         0.021370    0.042370   -0.258334
+         0.021372    0.042370   -0.258330
 
-siesta: Pressure (total):        400.71851199  kBar
- Anneal: Kinetic Energy=   5.829755482370327E-003
- Anneal: Velocity scale factor =   0.999554736771605     
- Anneal: Cell scale factor =    1.00071374206730     
+siesta: Pressure (total):        400.71603568  kBar
+ Anneal: Kinetic Energy=  0.00582982328254116
+ Anneal: Velocity scale factor =  0.9995545092497914
+ Anneal: Cell scale factor =  1.000713517184014
 
-siesta: Temp_ion =     613.113 K
+siesta: Temp_ion =     613.119 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5849,52 +5852,52 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.959513    2.056923    0.000000
-        0.000000    2.852974    2.077058
-        2.026639    0.000000    2.731490
+        0.000000    2.852974    2.077059
+        2.026639    0.000000    2.731485
 
-outcell: Cell vector modules (Ang)   :    3.604116    3.528971    3.401221
+outcell: Cell vector modules (Ang)   :    3.604116    3.528971    3.401216
 outcell: Cell angles (23,13,12) (deg):     61.7917     60.7063     62.5231
 outcell: Cell volume (Ang**3)        :     31.7216
 
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   101.709 Ry
 
-siesta: Eharris(eV) =    -212.487982
+siesta: Eharris(eV) =    -212.487960
 
 
-siesta: Eharris(eV) =    -212.487982
+siesta: Eharris(eV) =    -212.487960
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.015091    0.006036    0.019490
+   Tot    0.015095    0.006033    0.019498
 ----------------------------------------
-   Max    0.762486
-   Res    0.439647    sqrt( Sum f_i^2 / 3N )
+   Max    0.762516
+   Res    0.439660    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.762486    constrained
+   Max    0.762516    constrained
 
 Stress-tensor-Voigt (kbar):     -409.91     -382.11     -415.77       41.95       69.48       39.41
 Target enthalpy (eV/cell)     -204.5463
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.255829    0.026311    0.024656
-         0.026311   -0.237188    0.043968
-         0.024656    0.043968   -0.259224
+        -0.255829    0.026312    0.024656
+         0.026312   -0.237188    0.043969
+         0.024656    0.043969   -0.259224
 
-siesta: Pressure (static):        401.74524178  kBar
+siesta: Pressure (static):        401.74536769  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.255842    0.026182    0.024596
-         0.026182   -0.238491    0.043366
-         0.024596    0.043366   -0.259502
+         0.026182   -0.238492    0.043367
+         0.024596    0.043367   -0.259501
 
-siesta: Pressure (total):        402.59636161  kBar
- Anneal: Kinetic Energy=   5.721086442057714E-003
- Anneal: Velocity scale factor =   0.999926267048298     
- Anneal: Cell scale factor =    1.00079107543831     
+siesta: Pressure (total):        402.59649097  kBar
+ Anneal: Kinetic Energy=  0.005721138209829844
+ Anneal: Velocity scale factor =  0.9999260867319497
+ Anneal: Cell scale factor =  1.0007910668242412
 
-siesta: Temp_ion =     602.131 K
+siesta: Temp_ion =     602.137 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5907,52 +5910,52 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 
 outcell: Unit cell vectors (Ang):
         2.960833    2.053474    0.000000
-        0.000000    2.850938    2.071311
-        2.023619    0.000000    2.733651
+        0.000000    2.850938    2.071312
+        2.023618    0.000000    2.733645
 
-outcell: Cell vector modules (Ang)   :    3.603233    3.523943    3.401159
+outcell: Cell vector modules (Ang)   :    3.603232    3.523944    3.401154
 outcell: Cell angles (23,13,12) (deg):     61.8082     60.7314     62.5446
-outcell: Cell volume (Ang**3)        :     31.6824
+outcell: Cell volume (Ang**3)        :     31.6823
 
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   101.957 Ry
 
-siesta: Eharris(eV) =    -212.474215
+siesta: Eharris(eV) =    -212.474192
 
 
-siesta: Eharris(eV) =    -212.474215
+siesta: Eharris(eV) =    -212.474192
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.018631    0.001085    0.010275
+   Tot    0.018632    0.001083    0.010283
 ----------------------------------------
-   Max    0.764631
-   Res    0.442794    sqrt( Sum f_i^2 / 3N )
+   Max    0.764659
+   Res    0.442806    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.764631    constrained
+   Max    0.764659    constrained
 
 Stress-tensor-Voigt (kbar):     -410.43     -386.29     -417.65       51.29       70.94       43.50
-Target enthalpy (eV/cell)     -204.5423
+Target enthalpy (eV/cell)     -204.5422
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.256166    0.032054    0.027171
-         0.032054   -0.239793    0.044895
-         0.027171    0.044895   -0.260379
+        -0.256166    0.032055    0.027171
+         0.032055   -0.239794    0.044896
+         0.027171    0.044896   -0.260379
 
-siesta: Pressure (static):        403.93359185  kBar
+siesta: Pressure (static):        403.93369869  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
-        -0.256168    0.032011    0.027150
-         0.032011   -0.241100    0.044274
-         0.027150    0.044274   -0.260674
+        -0.256167    0.032012    0.027150
+         0.032012   -0.241101    0.044275
+         0.027150    0.044275   -0.260674
 
-siesta: Pressure (total):        404.78978491  kBar
- Anneal: Kinetic Energy=   5.545777119612011E-003
- Anneal: Velocity scale factor =    1.00055601083680     
- Anneal: Cell scale factor =    1.00086606788600     
+siesta: Pressure (total):        404.78989697  kBar
+ Anneal: Kinetic Energy=  0.005545819985492611
+ Anneal: Velocity scale factor =  1.0005558520381845
+ Anneal: Cell scale factor =  1.0008660604256019
 
-siesta: Temp_ion =     584.416 K
+siesta: Temp_ion =     584.420 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -5966,51 +5969,51 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 outcell: Unit cell vectors (Ang):
         2.962191    2.049259    0.000000
         0.000000    2.849376    2.065454
-        2.020255    0.000000    2.736018
+        2.020254    0.000000    2.736013
 
-outcell: Cell vector modules (Ang)   :    3.601949    3.519239    3.401062
-outcell: Cell angles (23,13,12) (deg):     61.8267     60.7578     62.5717
+outcell: Cell vector modules (Ang)   :    3.601949    3.519239    3.401058
+outcell: Cell angles (23,13,12) (deg):     61.8267     60.7577     62.5717
 outcell: Cell volume (Ang**3)        :     31.6441
 
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   102.178 Ry
 
-siesta: Eharris(eV) =    -212.460073
+siesta: Eharris(eV) =    -212.460051
 
 
-siesta: Eharris(eV) =    -212.460073
+siesta: Eharris(eV) =    -212.460051
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.018483    0.018017    0.007435
+   Tot    0.018483    0.018013    0.007441
 ----------------------------------------
-   Max    0.756957
-   Res    0.462035    sqrt( Sum f_i^2 / 3N )
+   Max    0.756985
+   Res    0.462047    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.756957    constrained
+   Max    0.756985    constrained
 
 Stress-tensor-Voigt (kbar):     -410.11     -392.15     -420.37       60.54       71.25       46.72
-Target enthalpy (eV/cell)     -204.5376
+Target enthalpy (eV/cell)     -204.5375
 
 siesta: Stress tensor (static) (eV/Ang**3):
         -0.255967    0.037741    0.029140
-         0.037741   -0.243467    0.045087
-         0.029140    0.045087   -0.262072
+         0.037741   -0.243468    0.045088
+         0.029140    0.045088   -0.262072
 
-siesta: Pressure (static):        406.69379851  kBar
+siesta: Pressure (static):        406.69401419  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.255969    0.037786    0.029161
-         0.037786   -0.244758    0.044469
-         0.029161    0.044469   -0.262369
+         0.037786   -0.244759    0.044470
+         0.029161    0.044470   -0.262369
 
-siesta: Pressure (total):        407.54226944  kBar
- Anneal: Kinetic Energy=   5.316673335553903E-003
- Anneal: Velocity scale factor =    1.00144092465333     
- Anneal: Cell scale factor =    1.00097223500251     
+siesta: Pressure (total):        407.54249427  kBar
+ Anneal: Kinetic Energy=  0.005316708862507623
+ Anneal: Velocity scale factor =  1.0014407815814361
+ Anneal: Cell scale factor =  1.00097222953353
 
-siesta: Temp_ion =     561.264 K
+siesta: Temp_ion =     561.268 K
 
 * Maximum dynamic memory allocated =     5 MB
 
@@ -6024,98 +6027,98 @@ superc: Number of atoms, orbitals, and projectors:    250  1000  2250
 outcell: Unit cell vectors (Ang):
         2.963492    2.044290    0.000000
         0.000000    2.848479    2.059581
-        2.016619    0.000000    2.738679
+        2.016618    0.000000    2.738673
 
-outcell: Cell vector modules (Ang)   :    3.600195    3.515068    3.401046
-outcell: Cell angles (23,13,12) (deg):     61.8477     60.7857     62.6035
+outcell: Cell vector modules (Ang)   :    3.600195    3.515069    3.401041
+outcell: Cell angles (23,13,12) (deg):     61.8477     60.7856     62.6035
 outcell: Cell volume (Ang**3)        :     31.6091
 
 InitMesh: MESH =    20 x    18 x    18 =        6480
 InitMesh: Mesh cutoff (required, used) =   100.000   102.359 Ry
 
-siesta: Eharris(eV) =    -212.446519
+siesta: Eharris(eV) =    -212.446497
 
 
-siesta: Eharris(eV) =    -212.446519
+siesta: Eharris(eV) =    -212.446497
 
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.026009   -0.014289    0.022475
+   Tot    0.026009   -0.014293    0.022482
 ----------------------------------------
-   Max    0.736875
-   Res    0.490414    sqrt( Sum f_i^2 / 3N )
+   Max    0.736903
+   Res    0.490425    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.736875    constrained
+   Max    0.736903    constrained
 
-Stress-tensor-Voigt (kbar):     -411.55     -397.50     -423.53       70.27       71.39       48.62
+Stress-tensor-Voigt (kbar):     -411.55     -397.50     -423.53       70.27       71.40       48.62
 Target enthalpy (eV/cell)     -204.5326
 
 siesta: Stress tensor (static) (eV/Ang**3):
-        -0.256851    0.043727    0.030281
-         0.043727   -0.246840    0.045158
-         0.030281    0.045158   -0.264059
+        -0.256850    0.043728    0.030281
+         0.043728   -0.246841    0.045158
+         0.030281    0.045158   -0.264058
 
-siesta: Pressure (static):        410.02796963  kBar
+siesta: Pressure (static):        410.02816669  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
         -0.256864    0.043858    0.030343
-         0.043858   -0.248097    0.044561
-         0.030343    0.044561   -0.264342
+         0.043858   -0.248098    0.044562
+         0.030343    0.044562   -0.264342
 
-siesta: Pressure (total):        410.85772357  kBar
- Anneal: Kinetic Energy=   5.041210434867945E-003
- Anneal: Velocity scale factor =    1.00261019255722     
- Anneal: Cell scale factor =    1.00109402290267     
+siesta: Pressure (total):        410.85793395  kBar
+ Anneal: Kinetic Energy=  0.005041239862802763
+ Anneal: Velocity scale factor =  1.00261006089535
+ Anneal: Cell scale factor =  1.0010940132070276
 
-siesta: Temp_ion =     533.428 K
+siesta: Temp_ion =     533.431 K
 
 * Maximum dynamic memory allocated =     5 MB
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =       380.802124
-siesta: Ena     =       111.787883
-siesta: Ekin    =        86.941495
-siesta: Enl     =        32.642883
-siesta: DEna    =         4.321408
-siesta: DUscf   =         0.096094
+siesta: Ena     =       111.787856
+siesta: Ekin    =        86.941569
+siesta: Enl     =        32.642909
+siesta: DEna    =         4.321382
+siesta: DUscf   =         0.096093
 siesta: DUext   =         0.000000
-siesta: Exc     =       -67.411729
+siesta: Exc     =       -67.411754
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
-siesta: Ekinion =         0.068948
-siesta: Eharris =      -212.377571
-siesta: Etot    =      -212.355141
-siesta: FreeEng =      -212.355141
+siesta: Ekinion =         0.068949
+siesta: Eharris =      -212.377548
+siesta: Etot    =      -212.355120
+siesta: FreeEng =      -212.355120
 
 siesta: Final energy (eV):
-siesta:       Kinetic =      86.941495
-siesta:       Hartree =       8.956339
+siesta:       Kinetic =      86.941569
+siesta:       Hartree =       8.956327
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =     -67.411729
-siesta:  Ion-electron =     -98.887140
-siesta:       Ion-ion =    -142.023055
-siesta:       Ekinion =       0.068948
-siesta:         Total =    -212.355141
+siesta:   Exch.-corr. =     -67.411754
+siesta:  Ion-electron =     -98.887189
+siesta:       Ion-ion =    -142.023021
+siesta:       Ekinion =       0.068949
+siesta:         Total =    -212.355120
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1    0.736875    0.305969    0.326108
-siesta:      2   -0.710867   -0.320258   -0.303632
+siesta:      1    0.736903    0.305927    0.326135
+siesta:      2   -0.710894   -0.320221   -0.303652
 siesta: ----------------------------------------
-siesta:    Tot    0.026009   -0.014289    0.022475
+siesta:    Tot    0.026009   -0.014293    0.022482
 
 siesta: Stress tensor (static) (eV/Ang**3):
-siesta:    -0.256851    0.043727    0.030281
-siesta:     0.043727   -0.246840    0.045158
-siesta:     0.030281    0.045158   -0.264059
+siesta:    -0.256850    0.043728    0.030281
+siesta:     0.043728   -0.246841    0.045158
+siesta:     0.030281    0.045158   -0.264058
 
-siesta: Cell volume =         31.609135 Ang**3
+siesta: Cell volume =         31.609087 Ang**3
 
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00278726          0.00298607  Ry/Bohr**3
-siesta:           0.25591656          0.27417096  eV/Ang**3
-siesta:         410.02796963        439.27505788  kBar
+siesta:           0.25591669          0.27417123  eV/Ang**3
+siesta:         410.02816669        439.27549198  kBar
 
 * Maximum dynamic memory allocated : Node    0 =     5 MB
 
@@ -6123,67 +6126,67 @@ siesta:         410.02796963        439.27505788  kBar
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1     116.216     116.216   100.00
-timer:  Setup             1       0.193       0.193     0.17
+timer:  siesta            1     584.132     584.132   100.00
+timer:  Setup             1       0.635       0.635     0.11
 timer:  bands             1       0.001       0.001     0.00
-timer:  writewave         1       0.000       0.000     0.00
-timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD          100       1.160     116.019    99.83
-timer:  hsparse         104       0.013       1.386     1.19
-timer:  overfsm         200       0.003       0.573     0.49
-timer:  IterSCF         200       0.562     112.464    96.77
-timer:  kinefsm         200       0.002       0.496     0.43
-timer:  nlefsm          200       0.316      63.209    54.39
-timer:  DHSCF           200       0.238      47.557    40.92
-timer:  DHSCF1          100       0.048       4.804     4.13
-timer:  DHSCF2          100       0.143      14.289    12.30
-timer:  REORD          1800       0.000       0.078     0.07
-timer:  POISON          300       0.001       0.413     0.36
-timer:  DHSCF3          200       0.072      14.420    12.41
-timer:  rhoofd          200       0.044       8.728     7.51
-timer:  cellXC          300       0.004       1.162     1.00
-timer:  vmat            200       0.023       4.546     3.91
-timer:  diagon          100       0.005       0.494     0.42
-timer:  cdiag           800       0.000       0.086     0.07
-timer:  cdiag1          800       0.000       0.006     0.01
-timer:  cdiag2          800       0.000       0.010     0.01
-timer:  cdiag3          800       0.000       0.050     0.04
-timer:  cdiag4          800       0.000       0.004     0.00
-timer:  DHSCF4          100       0.140      14.023    12.07
-timer:  dfscf           100       0.108      10.778     9.27
-timer:  optical           1       0.000       0.000     0.00
+timer:  writewave         1       0.003       0.003     0.00
+timer:  KSV_init          1       0.001       0.001     0.00
+timer:  IterMD          100       5.835     583.465    99.89
+timer:  hsparse         104       0.207      21.568     3.69
+timer:  overfsm         200       0.012       2.438     0.42
+timer:  IterSCF         200       2.724     544.740    93.26
+timer:  kinefsm         200       0.011       2.280     0.39
+timer:  nlefsm          200       1.308     261.569    44.78
+timer:  DHSCF           200       1.376     275.249    47.12
+timer:  DHSCF1          100       0.332      33.209     5.69
+timer:  DHSCF2          100       0.698      69.822    11.95
+timer:  REORD          1800       0.000       0.179     0.03
+timer:  POISON          300       0.004       1.167     0.20
+timer:  DHSCF3          200       0.214      42.703     7.31
+timer:  rhoofd          200       0.106      21.117     3.62
+timer:  cellXC          300       0.041      12.158     2.08
+timer:  vmat            200       0.062      12.313     2.11
+timer:  diagon          100       0.031       3.074     0.53
+timer:  cdiag           800       0.001       0.707     0.12
+timer:  cdiag1          800       0.000       0.362     0.06
+timer:  cdiag2          800       0.000       0.060     0.01
+timer:  cdiag3          800       0.000       0.153     0.03
+timer:  cdiag4          800       0.000       0.017     0.00
+timer:  DHSCF4          100       1.294     129.405    22.15
+timer:  dfscf           100       0.659      65.931    11.29
+timer:  optical           1       0.001       0.001     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1     117.352     117.352   100.00
-elaps:  Setup             1       0.227       0.227     0.19
-elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.000       0.000     0.00
-elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD          100       1.171     117.119    99.80
-elaps:  hsparse         104       0.013       1.384     1.18
-elaps:  overfsm         200       0.003       0.569     0.49
-elaps:  IterSCF         200       0.564     112.830    96.15
-elaps:  kinefsm         200       0.002       0.493     0.42
-elaps:  nlefsm          200       0.316      63.203    53.86
-elaps:  DHSCF           200       0.238      47.570    40.54
-elaps:  DHSCF1          100       0.048       4.825     4.11
-elaps:  DHSCF2          100       0.143      14.290    12.18
-elaps:  REORD          1800       0.000       0.072     0.06
-elaps:  POISON          300       0.001       0.400     0.34
-elaps:  DHSCF3          200       0.072      14.411    12.28
-elaps:  rhoofd          200       0.044       8.738     7.45
-elaps:  cellXC          300       0.004       1.172     1.00
-elaps:  vmat            200       0.023       4.539     3.87
-elaps:  diagon          100       0.005       0.499     0.42
-elaps:  cdiag           800       0.000       0.090     0.08
-elaps:  cdiag1          800       0.000       0.010     0.01
-elaps:  cdiag2          800       0.000       0.011     0.01
-elaps:  cdiag3          800       0.000       0.045     0.04
-elaps:  cdiag4          800       0.000       0.004     0.00
-elaps:  DHSCF4          100       0.140      14.025    11.95
-elaps:  dfscf           100       0.108      10.776     9.18
-elaps:  optical           1       0.000       0.000     0.00
+elaps:  siesta            1     661.806     661.806   100.00
+elaps:  Setup             1       0.930       0.930     0.14
+elaps:  bands             1       0.001       0.001     0.00
+elaps:  writewave         1       0.003       0.003     0.00
+elaps:  KSV_init          1       0.001       0.001     0.00
+elaps:  IterMD          100       6.608     660.843    99.85
+elaps:  hsparse         104       0.238      24.802     3.75
+elaps:  overfsm         200       0.014       2.705     0.41
+elaps:  IterSCF         200       3.055     610.980    92.32
+elaps:  kinefsm         200       0.013       2.530     0.38
+elaps:  nlefsm          200       1.455     291.094    43.98
+elaps:  DHSCF           200       1.531     306.207    46.27
+elaps:  DHSCF1          100       0.370      36.990     5.59
+elaps:  DHSCF2          100       0.775      77.534    11.72
+elaps:  REORD          1800       0.000       0.183     0.03
+elaps:  POISON          300       0.004       1.317     0.20
+elaps:  DHSCF3          200       0.240      47.977     7.25
+elaps:  rhoofd          200       0.117      23.489     3.55
+elaps:  cellXC          300       0.046      13.777     2.08
+elaps:  vmat            200       0.069      13.840     2.09
+elaps:  diagon          100       0.033       3.348     0.51
+elaps:  cdiag           800       0.001       0.754     0.11
+elaps:  cdiag1          800       0.000       0.392     0.06
+elaps:  cdiag2          800       0.000       0.065     0.01
+elaps:  cdiag3          800       0.000       0.171     0.03
+elaps:  cdiag4          800       0.000       0.017     0.00
+elaps:  DHSCF4          100       1.436     143.586    21.70
+elaps:  dfscf           100       0.734      73.439    11.10
+elaps:  optical           1       0.001       0.001     0.00
   
->> End of run:  24-FEB-2006  12:57:12
+>> End of run:   5-DEC-2006  13:44:09

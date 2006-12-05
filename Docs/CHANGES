@@ -7,6 +7,569 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 ____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2006/siesta--release--2.0
+--------------------------------------------------------------------
+
+==> Release of Siesta-2.0.1
+    Final edits of:
+     Release notes for 2.0.1
+     siesta.tex/siesta.ind
+     version.info
+     CHANGES
+     version.F90
+    Regeneration of Tests/Reference/*.out files     (leading to patch-26)
+
+2006-12-05 09:54:27 GMT	Alberto Garcia <albertog@icmab.es>	patch-25
+
+    Summary:
+      Set target stress to zero in constant-volume variable-cell runs
+
+    Revision:
+      siesta--release--2.0--patch-25
+
+    Constant-volume variable cell calculations are performed by
+    making the stress tensor traceless. There is a further step
+    of volume coercion to remove residual errors. 
+    New code guarantees that the target stress is zero, and also prints 
+    the volume before the coercion to provide a check on the algorithm.
+
+    modified files:
+     Src/cgvc.F
+
+
+2006-12-05 09:34:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-24
+
+    Summary:
+      Fix polarization basis specs for cases with two unocupied shells
+    Revision:
+      siesta--release--2.0--patch-24
+
+    For atoms with a ground state configuration of the form
+    
+    ns0 np0 (n-1)dX
+    
+    a basis-spec of "szp" or "dzp" did not work, as the program tried to
+    polarize the s-shell, for which no PAOs were generated. Fixed by
+    explictly checking this special case in routine autobasis in 
+    the basis_specs module.
+    
+    (This case might apply to Pt, which in 2.0 is presumed to have a 
+    "6s0 5d10" configuration.)
+
+    modified files:
+     Src/basis_specs.f
+
+
+2006-12-04 14:48:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-23
+
+    Summary:
+      Fixes for Siesta-as-Server
+    Revision:
+      siesta--release--2.0--patch-23
+
+    A number of fixes were needed for the proper functioning of the
+    Siesta-as-Server package (also known as "SiestaAsSubroutine")
+    (in addition to the purely cosmetic of openning the right CML context,
+    already committed):
+    
+    - iopipes.F90 had to be properly parallelized.
+    
+    - fsiesta.f90 has been moved from Util?/... tothe main source directory
+      in order to be compiled with the proper flushing routine.
+      A couple of issues having to do with optional arguments have also been fixed.
+    
+    - The makefile in Util/SiestaSubroutine/FmixMD/Src has been modified to
+      deal with the new place for fsiesta.f90.
+    
+    - Two new tests have been added. One of them tests the driving of a parallel
+      Siesta calculation. A new script "test.sh" automates these tests.
+    
+    In the main code, it has been noted that the "Forces" option (i.e.,
+    the computation of energy, forces, and stresses from geometry read
+    through pipes from a client program) should be assimilated to a
+    "variable cell" calculation, in the sense that the unit cell might be
+    different from call to call. Appropriate checks have been included to
+    regenerate k-point and supercell information if needed.
+    
+    In the same vein, if the client inputs a null unit cell, Siesta should
+    generate an automatic one, at any step. A new routine "automatic_cell.f"
+    has been written and is now called at the beginning of the initialization
+    section, and after every reading of geometry from pipes. 
+    
+    A null unit cell will be input whenever siesta_forces is not passed 
+    the optional "cell" parameter. This might happen during MD or relaxation
+    for a molecule. The actual unit cell used will then vary from step to
+    step. To avoid this, the cell should be passed explicitly in siesta_forces,
+    at every step (as it is done in the 'driver?' exampl).
+    
+    Other changes:
+    
+    - New Sys/intel9-cmkl8-mpi.make file for parallel compilation in Rocks cluster.
+    
+    - A new script in Tests/Scripts automates the handling of mpd daemons
+    in an interactive single-nod run (when allowed).
+    
+    
+
+    new files:
+     Src/.arch-ids/automatic_cell.f.id
+     Src/Sys/.arch-ids/intel9-cmkl8-mpi.make.id
+     Src/Sys/intel9-cmkl8-mpi.make Src/automatic_cell.f
+     Tests/Scripts/.arch-ids/simple_parallel.sh.id
+     Tests/Scripts/simple_parallel.sh
+     Util/SiestaSubroutine/FmixMD/.arch-ids/parallel.sh.id
+     Util/SiestaSubroutine/FmixMD/.arch-ids/test.sh.id
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/para.f90.id
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/simple.f90.id
+     Util/SiestaSubroutine/FmixMD/Src/para.f90
+     Util/SiestaSubroutine/FmixMD/Src/simple.f90
+     Util/SiestaSubroutine/FmixMD/parallel.sh
+     Util/SiestaSubroutine/FmixMD/test.sh
+
+    removed files:
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/fsiesta.f90.id
+     Util/SiestaSubroutine/FmixMD/Src/fsiesta.f90
+
+    modified files:
+     Src/Makefile Src/fsiesta.f90 Src/iopipes.F90 Src/siesta.F
+     Util/SiestaSubroutine/FmixMD/README
+     Util/SiestaSubroutine/FmixMD/Src/Makefile
+     Util/SiestaSubroutine/FmixMD/Src/fmixmd.f90
+     Util/SiestaSubroutine/README
+
+    renamed files:
+     Util/SiestaSubroutine/.arch-ids/fsiesta.f90.id
+       ==> Src/.arch-ids/fsiesta.f90.id
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/makefile.id
+       ==> Util/SiestaSubroutine/FmixMD/Src/.arch-ids/Makefile.id
+     Util/SiestaSubroutine/FmixMD/Src/makefile
+       ==> Util/SiestaSubroutine/FmixMD/Src/Makefile
+     Util/SiestaSubroutine/fsiesta.f90
+       ==> Src/fsiesta.f90
+
+
+2006-12-03 17:27:29 GMT	Alberto Garcia <albertog@icmab.es>	patch-22
+
+    Summary:
+      Make fix for elongated supercell factors more robust
+    Revision:
+      siesta--release--2.0--patch-22
+
+    Two algorithms are now used in the calculation of the correct (diagonal)
+    factors for the auxiliary supercell. The one leading to the smallest
+    supercell is chosen. (Unfortunately we have no closed algorithm.)
+    
+    The new code is in m_check_supercell.f
+    The corresponding section in siesta.F has been made a bit clearer 
+    
+    
+    modified files:
+     Src/m_check_supercell.f Src/siesta.F version.info
+
+
+2006-11-09 14:22:34 GMT	Alberto Garcia <albertog@icmab.es>	patch-21
+
+    Summary:
+      Bugfix in iohs for parallel execution
+    Revision:
+      siesta--release--2.0--patch-21
+
+    The allocation and deallocation of some arrays have to be done only by the
+    master node.
+    
+    
+    modified files:
+     Src/iohs.F
+
+
+2006-11-07 14:46:59 GMT	Alberto Garcia <albertog@icmab.es>	patch-20
+
+    Summary:
+      Enhancement of iohs to deal with k-points
+    Revision:
+      siesta--release--2.0--patch-20
+
+    In order to recreate H and S for any given k point more information
+    needs to be output in iohs. Now (breaking compatibility with previous
+    versions):
+    
+    1) indxuo is passed in and written to file if it's not a gamma point run
+    2) the number of orbitals in the supercell is written to file
+    3) a logical indicating whether the file was written for gamma only 
+    has been added
+    4) a check has been added to ensure gamma/non-gamma compatibility
+    
+    (J. Gale, M. Fernandez-Serra)
+    
+
+    modified files:
+     Src/iohs.F Src/siesta.F Tests/fe/fe.fdf Tests/h2o/h2o.fdf
+
+
+
+2006-11-07 14:11:34 GMT	Alberto Garcia <albertog@icmab.es>	patch-19
+
+    Summary:
+      Parallel handling of spin check for KSV
+    Revision:
+      siesta--release--2.0--patch-19
+
+    The check on the spins being integer was failing in parallel because the
+    spins weren't being globally summed. This is now fixed in siesta.F
+    
+    (by Julian Gale) 
+    
+    
+    modified files:
+     Src/siesta.F
+
+
+2006-11-06 15:51:51 GMT	Alberto Garcia <albertog@icmab.es>	patch-18
+
+    Summary:
+      Appropriate supercell for elongated unit cells
+    Revision:
+      siesta--release--2.0--patch-18
+
+    The algorithm used to construct the auxiliary supercell for the
+    calculation of matrix elements with k-point sampling simply multiplies
+    each lattice vector by the appropriate factor (diagonal
+    supercell). This causes a problem when the unit cell is elongated (see
+    for example the mgco3 test in Tests/). In these cases, some lattice
+    points are actually closer than the shortest cell vector would
+    indicate, with the result that the supercell is too small and some
+    atoms "see" multiple images. This appears in the program as a warning
+    of the type:
+    
+       xijorb: WARNING: orbital pair      1   341 is multiply connected
+    
+    The fix involves an iterative increase of the supercell factors until
+    the minimum-distance criterion is satisfied. (See new file
+    m_check_supercell.f)
+    
+    The old behavior can be recovered by setting the fdf variable
+    NaiveAuxiliaryCell to .true. .
+    
+
+    new files:
+     Src/.arch-ids/m_check_supercell.f.id Src/m_check_supercell.f
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile Src/siesta.F
+
+
+2006-10-30 16:44:01 GMT	Alberto Garcia <albertog@icmab.es>	patch-17
+
+    Summary:
+      Fixes in Makefile: denchar deps and netcdf interface
+    Revision:
+      siesta--release--2.0--patch-17
+
+    * denchar might need COMP_LIBS, but the dependency was not explicit
+    * Configure did not generate a proper NETCDF_INTERFACE, putting
+      libnetcdf_f90.a in COMP_LIBS instead. Fixed in arch.make.in and configure.ac.
+    
+    modified files:
+     Src/Makefile Src/arch.make.in Src/configure Src/configure.ac
+
+
+2006-10-30 14:50:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-16
+
+    Summary:
+      Fix format issue in DxFormat.f90
+    Revision:
+      siesta--release--2.0--patch-16
+
+    modified files:
+     Util/Contrib/FElMellouhi/DxFormat.f90
+
+
+2006-10-30 14:46:42 GMT	Alberto Garcia <albertog@icmab.es>	patch-15
+
+    Summary:
+      New logic for k-point grid generation from kgrid_cutoff
+    Revision:
+      siesta--release--2.0--patch-15
+
+    The previous algorithm created a diagonal supercell so that the length
+    of the shortest vector was greater than twice the kgrid_cutoff.  But
+    there might be an equivalent supercell (same volume, generating the
+    same lattice points), but with shorter vectors (more "spherical").  Half of
+    the shortest resulting lattice vector is the effective cutoff.  This
+    effective cutoff was just reported, but the more spherical
+    cell was not used anymore.  The kgrid was generated as the reciprocal cell of
+    the chosen diagonal supercell.  In some cases, the program ended
+    up using a much shorter cutoff than requested.
+    
+    The fix, as suggested by Jose Soler, is to start the procedure with
+    the most "spherical" unit cell, thus generating an optimal supercell
+    in the spirit of the Moreno-Soler paper.
+    
+    A number of other changes have been made to the code:
+    
+    1. Minvec has been turned into a module, and the routine now reports
+    also the transformation matrix.  (Change to gchkmx needed, including
+    an auxiliary array to avoid aliasing of arguments).
+    
+    2. Even though the program can find the optimal k-grid displacements,
+    those given by the user in a Monkhorst-Pack block are not overriden
+    (in case there are good reasons for the choice, such as the need to
+    have the gamma point in the set). The program will nevertheless print
+    a line telling the user about the more suitable displacement(s).
+    
+    3. The program now reports the effective cutoff even for Gamma-point-only
+    calculations.
+    
+    4. The multiplication factors of the effective supercell are made
+    explicitly positive (changing kdsc and mr after the call to idiag). This
+    might fix a long-standing issue with non-diagonal MP supercells.
+    
+    Version info updated for development branch.
+    
+    Note: There is *no provision for backward compatibility*, although it is
+    still possible to re-use the kgrid supercells reported by previous versions
+    to reproduce the old behavior for a given kgrid_cutoff.
+    
+    To Do: Tidy up the kgridinit/kgrid code redundancy.
+    
+    The manual has been updated to reflect the new algorithm outline, and
+    to stress the format of the MP supercell input.
+    
+    Also, the manual now mentions the Divide and Conquer issue, and 
+    the version number on the cover has been changed to 2.0.X.
+    
+
+    modified files:
+     Docs/siesta.tex Src/Makefile Src/chkgmx.f Src/kgrid.F
+     Src/kgridinit.F Src/minvec.f Src/siesta.F version.info
+
+2006-10-30 14:41:13 GMT	Alberto Garcia <albertog@icmab.es>	patch-14
+
+    Summary:
+      Fix bug in iohs.F (write statement)
+    Revision:
+      siesta--release--2.0--patch-14
+
+    As reported by kbevan@purdue.edu and Marivi Fernandez-Serra, there was an 
+    obvious bug in a write statement in the parallel section of iohs.F. It has
+    been fixed.
+
+    modified files:
+     Src/iohs.F
+
+
+2006-10-30 14:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-13
+
+    Summary:
+      Export all the environment in sge_run.sh
+    Revision:
+      siesta--release--2.0--patch-13
+
+    modified files:
+     Tests/Scripts/sge_run.sh
+
+
+2006-10-30 14:39:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-12
+
+    Summary:
+      Add COMP_LIBS to gen-basis link stage
+    Revision:
+      siesta--release--2.0--patch-12
+
+
+    modified files:
+     Src/Makefile
+
+
+2006-09-13 15:35:24 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-11
+
+    Summary:
+      Fix syntax error in preprocessor block in mpi.F
+    Revision:
+      siesta--release--2.0--patch-11
+
+
+    modified files:
+     Src/MPI/mpi.F
+
+2006-08-28 14:03:41 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-10
+
+    Summary:
+      Add file with release notes for forthcoming 2.0.1
+    Revision:
+      siesta--release--2.0--patch-10
+
+
+    new files:
+     Docs/.arch-ids/release.notes_2.0.1.id Docs/release.notes_2.0.1
+
+
+2006-05-19 09:11:20 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-9
+
+    Summary:
+      Fix file prefix identification in m_denchar_init
+    Revision:
+      siesta--release--2.0--patch-9
+
+    m_denchar_init was not aware of the new 'files' module which
+    stores the filename prefix. Thus the call to iodm failed to
+    find the density-matrix file.
+    
+
+    modified files:
+     Src/m_denchar_init.F
+
+
+2006-05-19 09:09:21 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-8
+
+    Summary:
+      Siesta-server steps treated correctly for CML output
+    Revision:
+      siesta--release--2.0--patch-8
+
+    When Siesta is used as a server (MD.TypeOfRun forces), each
+    "step" is labelled as "FS" ("force server") and the right
+    module element is opened in the CML output.
+    
+    (Note that in principle there is no "Finalization" module in this
+    mode of operation.)
+    
+    modified files:
+     Src/siesta.F
+
+2006-05-11 10:15:30 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-7
+
+    Summary:
+      Fix version.F90 triad.
+    Revision:
+      siesta--release--2.0--patch-7
+
+    2.0.x is not a good choice for the version triad. Kept it at 2.0.0, and
+    used a manually-generated version.info to hold the arch patch-level.
+    
+
+    modified files:
+     Src/version.F90 version.info
+
+
+2006-05-11 10:12:55 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-6
+
+    Summary:
+      Add revPBE to xc_check in atom.f -- tidy 
+    Revision:
+      siesta--release--2.0--patch-6
+
+    The recently added revPBE functional was not included in the check
+    in atom.f. The code has been re-organized to reduce clutter.
+    
+    modified files:
+     Src/atom.f
+
+2006-05-01 18:28:21 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-5
+
+    Summary:
+      Fix reading of nspin variable in pdosxml
+    Revision:
+      siesta--release--2.0--patch-5
+
+    * The data for nspin is contained in pcdata, and its reading as a single
+      fortran item is tricky in some platforms. The only safe way to process 
+      it is to use the logic involved in the "build_data_array" suite.
+    
+    modified files:
+     Pseudo/atom/Tutorial/ae.sh Pseudo/atom/Tutorial/pg.sh
+     Pseudo/atom/Tutorial/pt.sh Util/pdosxml/m_pdos.f90
+     version.info
+
+
+2006-05-01 18:23:40 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-4
+
+    Summary:
+      Fix import of dp in optical.F
+    Revision:
+      siesta--release--2.0--patch-4
+
+    modified files:
+     Src/optical.F
+
+2006-05-01 18:18:41 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-3
+
+    Summary:
+      Use dc_lapack.f together with any system libraries
+    Revision:
+      siesta--release--2.0--patch-3
+
+    As the "Divide and Conquer" code in most system libraries is
+    buggy, provisions have been made in configure to always compile
+    dc_lapack.f. In some cases this feature needs a supporting loader
+    flag (such as -Wl,-z muldefs for the GNU loader) to allow multiple
+    definition of symbols. An example of configure driver for the Intel
+    Fortran compiler is in Src/Confs/intel9mkl8-safe.conf.
+    
+    Also, the unused routines zheevd and dsyevd have been removed from
+    dc_lapack.f
+    
+    Version triad in Src/version.F90 set to 2.0.x in anticipation of
+    the release of a fix.
+    
+    
+
+    new files:
+     Src/Confs/.arch-ids/intel9mkl8-safe.conf.id
+     Src/Confs/intel9mkl8-safe.conf
+
+    modified files:
+     Src/Libs/dc_lapack.f Src/configure Src/configure.ac
+     Src/version.F90 version.info
+
+2006-03-09 21:08:50 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-2
+
+    Summary:
+      Bug fix in dlaed6 in dc_lapack.f
+    Revision:
+      siesta--release--2.0--patch-2
+
+    Javier Junquera got a new version of DLAED6 (part of LAPACK's
+    divide-and-conquer package) from Ren-Cang Li <rcli@cs.uky.edu>. It
+    partially solves some strange numerical instability problems. Codes 
+    produced by most compiler flag combinations now work (exceptions include
+     "-xP -mp1" for the Intel compiler).
+    
+    It should be noted that the problem persists in many vendor-compiled
+    libraries (MKL, ACML, veclib, etc). It is not possible at this point
+    to use both the new fortran version and DLAED6 and the compiled
+    versions of the rest of the linear algebra routines. This will be
+    solved in a forthcoming patch.
+    
+    
+
+    modified files:
+     Src/Libs/dc_lapack.f
+
+
+2006-02-25 00:54:32 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	patch-1
+
+    Summary:
+      Remove external declaration of 'timer' in spher_harm and radfft.
+    Revision:
+      siesta--release--2.0--patch-1
+
+    Timer is declared external but not used in spher_harm and radfft.
+    A problem appears only when compiling denchar from clean source.
+    
+
+    modified files:
+     Src/radfft.f Src/spher_harm.f
+
+2006-02-24 16:18:02 GMT	Alberto Garcia <wdpgaara@lg.ehu.es>	base-0
+
+    Summary:
+      tag of siesta@uam.es--2005/siesta--pre-release--2.0--patch-30
+    Revision:
+      siesta--release--2.0--base-0
+
+
+____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2005/siesta--pre-release--2.0
 --------------------------------------------------------------------
 

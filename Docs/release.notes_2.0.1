@@ -1,29 +1,239 @@
-*  Fix file prefix identification in m_denchar_init
+RELEASE NOTES FOR SIESTA-2.0.1
+December 5, 2006
+
+This is the first bug-fix package after the release of Siesta-2.0
+
+Summary of changed items:
+
+*   New logic for k-point grid generation from kgrid_cutoff
+*   Set target stress to zero in constant-volume variable-cell runs
+*   Fix polarization basis specs for cases with two unocupied shells
+*   New .make file for parallel compilation in Rocks clusters
+*   Appropriate supercell for elongated unit cells
+*   Enhancement of iohs to deal with k-points, and bug fix
+*   Parallel handling of spin check for KSV
+*   Fix file prefix identification in m_denchar_init
+*   Fixes in Makefile: denchar deps and netcdf interface, gen-basis link
+*   Fix format issue in Util/Contrib/FElMellouhi/DxFormat.f90
+*   Siesta-server fixes
+*   Add revPBE to xc_check in atom.f 
+*   Fix reading of nspin variable in pdosxml
+*   Fix import of dp in optical.F
+*   Use new dc_lapack.f (Divide & Conquer) together with any system libraries
+*   Remove external declaration of 'timer' in spher_harm and radfft.
+*   Export all the environment in sge_run.sh
+*   Fix syntax error in preprocessor block in mpi.F
+
+Changes in detail:
+
+*   New logic for k-point grid generation from kgrid_cutoff
+
+    The previous algorithm created a diagonal supercell so that the length
+    of its shortest vector was greater than twice the kgrid_cutoff.  But
+    there might be an equivalent supercell (same volume, generating the
+    same lattice points), with shorter vectors (more "spherical").  Half of
+    the shortest resulting lattice vector is the effective cutoff.  This
+    effective cutoff was just reported, but the more spherical
+    cell was not used anymore.  The kgrid was generated as the reciprocal cell of
+    the chosen diagonal supercell.  In some cases, the program ended
+    up using a much shorter cutoff than requested.
+    
+    The fix is to start the procedure with
+    the most "spherical" unit cell, thus generating an optimal supercell
+    in the spirit of the Moreno-Soler paper.
+    
+    A number of other changes have been made to the code:
+    
+    1. Minvec has been turned into a module, and the routine now reports
+    also the transformation matrix.  (Change to gchkmx needed, including
+    an auxiliary array to avoid aliasing of arguments).
+    
+    2. Even though the program can find the optimal k-grid displacements,
+    those given by the user in a Monkhorst-Pack block are not overriden
+    (in case there are good reasons for the choice, such as the need to
+    have the gamma point in the set). The program will nevertheless print
+    a line telling the user about the more suitable displacement(s).
+    
+    3. The program now reports the effective cutoff even for Gamma-point-only
+    calculations.
+    
+    4. The multiplication factors of the effective supercell are made
+    explicitly positive (changing kdsc and mr after the call to idiag). This
+    might fix a long-standing issue with non-diagonal MP supercells.
+    
+    Note: There is *no provision for backward compatibility*, although it is
+    still possible to re-use the kgrid supercells reported by previous versions
+    to reproduce the old behavior for a given kgrid_cutoff.
+    
+    The manual has been updated to reflect the new algorithm outline, and
+    to stress the format of the MP supercell input.
+    
+    modified files:
+     Docs/siesta.tex Src/Makefile Src/chkgmx.f Src/kgrid.F
+     Src/kgridinit.F Src/minvec.f Src/siesta.F version.info
+
+*   Set target stress to zero in constant-volume variable-cell runs
+
+    Constant-volume variable cell calculations are performed by
+    making the stress tensor traceless. There is a further step
+    of volume coercion to remove residual errors. 
+    New code guarantees that the target stress is zero, and also prints 
+    the volume before the coercion to provide a check on the algorithm.
+    
+    modified files:
+     Src/cgvc.F
+
+*   Fix polarization basis specs for cases with two unocupied shells
+
+    For atoms with a ground state configuration of the form
+    
+    ns0 np0 (n-1)dX
+    
+    a basis-spec of "szp" or "dzp" did not work, as the program tried to
+    polarize the s-shell, for which no PAOs were generated. Fixed by
+    explictly checking this special case in routine autobasis in 
+    the basis_specs module.
+    
+    (This case might apply to Pt, which in 2.0 is presumed to have a 
+    "6s0 5d10" configuration.)
+
+    modified files:
+     Src/basis_specs.f
+
+*   New .make file for parallel compilation in Rocks clusters
+
+    (Location of libraries will still be system dependent)
+
+    Added file: Sys/intel9-cmkl8-mpi.make 
+
+*   Appropriate supercell for elongated unit cells
+
+    The algorithm used to construct the auxiliary supercell for the
+    calculation of matrix elements with k-point sampling simply multiplies
+    each lattice vector by the appropriate factor (diagonal
+    supercell). This causes a problem when the unit cell is elongated (see
+    for example the mgco3 test in Tests/). In these cases, some lattice
+    points are actually closer than the shortest cell vector would
+    indicate, with the result that the supercell is too small and some
+    atoms "see" multiple images. This appears in the program as a warning
+    of the type:
+    
+       xijorb: WARNING: orbital pair      1   341 is multiply connected
+    
+    The resulting numerical errors are typically very small.
+
+    The fix involves an iterative increase of the supercell factors until
+    the minimum-distance criterion is satisfied. (See new file
+    m_check_supercell.f)
+    
+    The old behavior can be recovered by setting the fdf variable
+    NaiveAuxiliaryCell to .true. .
+
+    new files:
+     Src/m_check_supercell.f
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile Src/siesta.F
+
+*   Enhancement of iohs to deal with k-points, and bug fix
+
+    In order to recreate H and S for any given k point more information
+    needs to be output in iohs. Now (breaking compatibility with previous
+    versions):
+    
+    1) indxuo is passed in and written to file if it's not a gamma point run
+    2) the number of orbitals in the supercell is written to file
+    3) a logical indicating whether the file was written for gamma only 
+    has been added
+    4) a check has been added to ensure gamma/non-gamma compatibility
+    
+    (J. Gale, M. Fernandez-Serra)
+    
+    There was also an obvious bug in a write statement in the 
+    parallel section of iohs.F. It has been fixed.    
+
+    modified files:
+     Src/iohs.F Src/siesta.F 
+
+*   Parallel handling of spin check for KSV
+
+    The check on the spins being integer was failing in parallel because the
+    spins weren't being globally summed. This is now fixed in siesta.F
+    
+    modified files:
+     Src/siesta.F 
+
+*   Fix file prefix identification in m_denchar_init
 
     m_denchar_init was not aware of the new 'files' module which
     stores the filename prefix. Thus the call to iodm failed to
     find the density-matrix file.
-    
 
     modified files:
      Src/m_denchar_init.F
 
-*   Siesta-server steps treated correctly for CML output
+*   Fixes in Makefile: denchar deps and netcdf interface, gen-basis link
 
-    When Siesta is used as a server (MD.TypeOfRun forces), each
-    "step" is labelled as "FS" ("force server") and the right
-    module element is opened in the CML output.
-    
-    (Note that in principle there is no "Finalization" module in this
-    mode of operation.)
+    * denchar might need COMP_LIBS, but the dependency was not explicit
+    * Configure did not generate a proper NETCDF_INTERFACE, putting
+      libnetcdf_f90.a in COMP_LIBS instead. 
+      Fixed in arch.make.in and configure.ac.
+    * Add COMP_LIBS to gen-basis link stage
     
     modified files:
-     Src/siesta.F
+     Src/Makefile Src/arch.make.in Src/configure Src/configure.ac
 
-*   Add revPBE to xc_check in atom.f -- tidy 
+*   Fix format issue in Util/Contrib/FElMellouhi/DxFormat.f90
+    
+    modified files:
+     Util/Contrib/FElMellouhi/DxFormat.f90
+
+*   Siesta-server fixes
+    
+    A number of fixes were needed for the proper functioning of the
+    Siesta-as-Server package (also known as "SiestaAsSubroutine")
+
+    - When Siesta is used as a server (MD.TypeOfRun forces), each
+      "step" is now labelled as "FS" ("force server") and the right
+      module element is opened in the CML output.
+    
+    - iopipes.F90 had to be properly parallelized.
+    
+    - fsiesta.f90 has been moved from Util/... to the main source directory
+      in order to be compiled with the proper flushing routine.
+      Two issues having to do with optional arguments have also been fixed.
+    
+    - The makefile in Util/SiestaSubroutine/FmixMD/Src has been modified to
+      deal with the new location of fsiesta.f90.
+    
+    - Two new tests have been added. One of them tests the driving of a parallel
+      Siesta calculation. A new script "test.sh" automates these tests.
+    
+    In the main code, it has been noted that the "Forces" option (i.e.,
+    the computation of energy, forces, and stresses from geometry read
+    through pipes from a client program) should be assimilated to a
+    "variable cell" calculation, in the sense that the unit cell might be
+    different from call to call. Appropriate checks have been included to
+    regenerate k-point and supercell information if needed.
+    
+    In the same vein, if the client inputs a null unit cell, Siesta should
+    generate an automatic one, at any step. A new routine "automatic_cell.f"
+    has been written and is now called at the beginning of the initialization
+    section, and after every reading of geometry from pipes. 
+    
+    A null unit cell will be input whenever siesta_forces is not passed 
+    the optional "cell" parameter. This might happen during MD or relaxation
+    for a molecule. The actual unit cell used will then vary from step to
+    step. To avoid this, the cell should be passed explicitly in siesta_forces,
+    at every step (as it is done in the 'driver' example).
+    
+    modified files:
+     Src/siesta.F Util/SiestaSubroutine directory
+
+*   Add revPBE to xc_check in atom.f
 
     The recently added revPBE functional was not included in the check
-    in atom.f. The code has been re-organized to reduce clutter.
+    in atom.f.
     
     modified files:
      Src/atom.f
@@ -35,7 +245,7 @@
     it is to use the logic involved in the "build_data_array" suite.
     
     modified files:
-     Pseudo/atom/Tutorial/pt.sh Util/pdosxml/m_pdos.f90
+     Util/pdosxml/m_pdos.f90
 
 *   Fix import of dp in optical.F
 
@@ -44,9 +254,9 @@
     modified files:
      Src/optical.F
 
-*   Use fixed dc_lapack.f together with any system libraries
+*   Use new dc_lapack.f (Divide & Conquer) together with any system libraries
 
-    Javier Junquera got a new version of DLAED6 (part of LAPACK's
+    We got a new version of DLAED6 (part of LAPACK's
     divide-and-conquer package) from Ren-Cang Li <rcli@cs.uky.edu>. It
     partially solves some strange numerical instability problems. Codes 
     produced by most compiler flag combinations now work (exceptions include
@@ -76,6 +286,16 @@
     modified files:
      Src/radfft.f Src/spher_harm.f
 
+*   Export all the environment in sge_run.sh
 
+    This is a script to automate submission of jobs to SGE
 
+    modified files:
+     Tests/Scripts/sge_run.sh
 
+*   Fix syntax error in preprocessor block in mpi.F
+    
+    It affected only a few compilers
+
+    modified files:
+     Src/MPI/mpi.F
