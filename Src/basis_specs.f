@@ -936,11 +936,28 @@ c (according to atmass subroutine).
          ! (that is the reason why 'occupied' is dimensioned to 0:4)
 
             loop_angmom: do l=1,4
-            if (.not. basp%ground_state%occupied(l)) then
+               if (.not. basp%ground_state%occupied(l)) then
                   ls=>basp%lshell(l-1)
-                  ls%shell(1)%polarized = .true.
-                  ls%shell(1)%nzeta_pol = 1
-                  exit loop_angmom
+                  s => ls%shell(1)
+        
+              ! Check whether shell to be polarized is occupied in the gs.
+              ! (i.e., whether PAOs are going to be generated for it)
+              ! If it is not, mark it for PAO generation anyway.
+              ! This will happen for confs of the type s0 p0 dn
+
+                  if (s%nzeta == 0) then
+                     write(6,"(a,i2,a)") "Marking shell with l=",
+     $                l-1, " for PAO generation and polarization."
+                     s%nzeta = nzeta
+                     allocate(s%rc(1:s%nzeta))
+                     allocate(s%lambda(1:s%nzeta))
+                     s%rc(1:s%nzeta) = 0.d0
+                     s%lambda(1:s%nzeta) = 1.d0
+                  endif
+                  s%polarized = .true.
+                  s%nzeta_pol = 1
+
+                  exit loop_angmom  ! Polarize only one shell!
                endif
             enddo loop_angmom
 
