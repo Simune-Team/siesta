@@ -58,7 +58,7 @@ C
 
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only:  broadcast
-      use units, only: kBar
+      use units, only: kBar, Ang
 !
 !     Use old-style conjugate-gradient routine
 !     Use the new one only for the Zmatrix case
@@ -163,6 +163,11 @@ C Look for target stress and read it if found, otherwise generate it --------
 
 C Write target stress down --------------------------------------------------
 
+            if (constant_volume) then
+               tstres(:,:) = 0.0_dp
+               write(6,"(a)") "***Target stress set to zero " //
+     $              "for constant-volume calculation"
+            endif
             write(6,"(/a)") 'cgvc: Target stress (kBar)'
             write(6,"(a,2x,3f12.3)") 
      .       'cgvc:', tstres(1,1)/kBar, tstres(1,2)/kBar, 
@@ -357,6 +362,8 @@ C New cell ------------------------------------------------------------------
         cell = cellin + matmul(strain-1.0_dp,cellin)
         if (constant_volume) then
            new_volume = volcel(cell)
+           if (Node.eq.0) write(6,"(a,f12.4)")
+     $          "Volume before coercion: ",  new_volume/Ang**3
            cell =  cell * (initial_volume/new_volume)**(1.0_dp/3.0_dp)
         endif
 
