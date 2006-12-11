@@ -32,11 +32,11 @@
 
 \vspace{3cm}
 
-{\Huge {\bf VIBRA Package, Version 0.2}}
+{\Huge {\bf VIBRA Package, Version 0.3}}
 
 \vspace{3cm}
 
-{\Large {\it February 2006}}
+{\Large {\it July 2006}}
 
 \vspace{3cm}
 
@@ -409,6 +409,15 @@ always 1.
 \item[{\bf Eigenvectors}] ({\it logical}): If {\tt true} both eigenvalues
 and eigenvectors are computed. If {\tt false},  only eigenvalues
 are obtained.
+
+{\it Default value:} false
+
+\item[{\bf Intensities}] ({\it logical}): If {\tt true} then the Infra-Red
+intensities are computed. In order to do this the Born effective charges
+must have been computed along with the force constants and the .BC file
+must be present in the current directory. The intensities are estimated 
+according to formula (6) in the paper by Fernandez-Torre et al in J. Phys.
+Chem. A, 108, 10535-10541 (2004).
 
 {\it Default value:} false
 

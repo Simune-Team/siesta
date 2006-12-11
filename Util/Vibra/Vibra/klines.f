@@ -114,13 +114,8 @@ C  Internal variables
       save frstme
       data frstme /.true./
 
-
-C       Check dimensions ...
-        call chkdim('klines','maxlin',maxlin,nlines,1)
-C ...
-
-C       Find if there are band-lines data
-        if ( fdf_block('BandLines',iu) ) then
+C     Find if there are band-lines data
+      if ( fdf_block('BandLines',iu) ) then
 
 C         Find lattice constant
           alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
@@ -219,11 +214,11 @@ C             No more lines to read => Exit do loop
             write(6,'(a)') 'klines: ERROR. Parameter maxlin too small'
    50     continue
           nlines = il - 1
-        else
-C         No k-point data available => return with nk=0
-          write(6,'(a)') 'klines: WARNING: No k-points specified!!!'
-          goto 999
-        endif
+      else
+C No k-point data available => return with nk=0
+        write(6,'(a)') 'klines: WARNING: No k-points specified!!!'
+        goto 999
+      endif
 
 C Check parameter maxk 
       if (nk .gt. maxk) then

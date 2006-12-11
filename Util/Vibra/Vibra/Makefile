@@ -16,18 +16,29 @@
 .SUFFIXES:
 .SUFFIXES: .f .o .a 
 #
-default: what fcbuild vibrator
+default: what copy_fdf fcbuild vibrator
 #
 # You should have compiled Siesta in the main Src directory before
 # attempting to compile the Vibra package.
 #
 include ../../../Src/arch.make
 #
+# (Note: The following is needed only if INFLAGS is not included
+#  in the compilation rules in arch.make, but it is kept here in
+#  case a crippled version of arch.make is used.)
+#
+# The fdf module file also needs to be present in the current directory
+# Unfortunately the naming convention for the fdf module is compiler specific
+# and so you might need to edit this. Should work for Intel and IBM compilers.
+#
+copy_fdf:
+	cp -fp ../../../Src/fdf.mod .
+#
 # Uncomment the following line for debugging support
 #
 FFLAGS=$(FFLAGS_DEBUG)
 #
-what:
+what:   
 	@echo
 	@echo "Compilation architecture to be used:  $(SIESTA_ARCH)"
 	@echo

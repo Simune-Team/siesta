@@ -1,6 +1,23 @@
 =======================================================================
                   VIBRA CHANGES: TOP IS MOST RECENT
 =======================================================================
+Version: 0.3
+Date: 2006/12/11
+Title: Computation of infrared intensities
+Author: Julian Gale <julian@ivec.org>
+
+Description:
+
+An option has been introduced to compute infra-red intensities. In
+order to do this the Born effective charges must have been computed
+along with the force constants and the .BC file must be present in the
+current directory. The intensities are estimated according to formula
+(6) in the paper by Fernandez-Torre et al in J. Phys.  Chem. A, 108,
+10535-10541 (2004).
+
+Explicit copy of fdf.mod to deal with faulty arch.make's.
+
+====================================================================
 Version: 0.2
 Date: 2006/02/13
 Title: New compilation scheme

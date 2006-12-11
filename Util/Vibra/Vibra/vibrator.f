@@ -20,6 +20,8 @@ c of J.M.Soler and A. Garcia,
 c
 c Written by P.Ordejon, August'98
 c
+c Modified to add Infra-red intensity calculation by J.D. Gale, July'06
+c
 c **********************************************************************
 
       use fdf
@@ -30,7 +32,7 @@ c **********************************************************************
 
 c Internal variables ...
 
-      logical overflow, eigen
+      logical overflow, eigen, intensity
 
       character
      .  filein*20, fileout*20, fname*33
@@ -41,7 +43,7 @@ c Internal variables ...
 
       integer 
      .  i, i1, i2, iatom, imass(maxa), imasssc(maxasc), iunit, 
-     .  ik, iunit2, iunit3, ix, j,
+     .  ik, iunit2, iunit3, ind, ix, j,
      .  ij, ii, iq, jj, jx, icall, 
      .  lx, ly, lz, lxmax, lymax, lzmax, 
      .  llx, lly, llz,
@@ -67,18 +69,19 @@ c Internal variables ...
      .        phi(3,maxa,3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
       real*8 pp(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz),
      .       pn(3,maxa,-maxx:maxx,-maxy:maxy,-maxz:maxz)
+      real*8 IRinten(3*maxa), BornQ(3,3,maxa)
 
       real*8
      .  b(3,maxa), cell(3,3), r(3), scell(3,3), xa(3,maxasc),xmass(maxa)
 
       real*8
-     .  correct, dmin, q(3), qr(maxnq), r2, rl(3)
+     .  correct, dmin, q(3), qr(maxnq), r2, rl(3), rmass
 
 c Correction terms to satisfy translational modes
       real*8 zero(3,3,maxa), zeroo(3,3)
 
 c Work space for diagonalization.
-      complex dc(maxd,maxd),phase
+      complex dc(maxd,maxd),phase,IRtrm,vecmw(3)
       real*8 work(maxd),work2(2,maxd)
       real*8 dd(maxd,maxd),zr(maxd,maxd),zi(maxd,maxd),omega(maxd)
 
@@ -243,6 +246,15 @@ c Determine whether eigenvectors are computed, or only eigenvalues ...
          write(6,'(a,i5)') 'Computing Eigenvalues only'
       endif
 
+c Determine whether IR intensities are to be computed
+      intensity = fdf_boolean('Intensities',.false.)
+
+c If intensities are requested then eigenvectors must be computed
+      if (intensity) then
+        eigen = .true.
+        icall = 3
+      endif
+
 C *************** END READ DATA FROM FDF FILE ********************
 
 c Build lattice vector of the supercell ...
@@ -331,6 +343,19 @@ c Average  displacements
       call io_close(iunit2)
 c ...
 
+c If intensities are required then read Born effective charges
+      if (intensity) then
+        call io_assign(iunit2)
+        fname = paste(slabel,'.BC')
+        open(iunit2,file=fname,status='old')
+        read(iunit2,*)
+        do j = 1,natoms
+          do ii = 1,3
+            read(iunit2,*) (BornQ(ij,ii,j),ij=1,3)
+          enddo
+        enddo
+        call io_close(iunit2)
+      endif
 
 c =================================================================
 c Now form phibar(1). This force constant matrix is hermitian.
@@ -511,6 +536,38 @@ c zr(i,j)=i'th component of j'th eigenvector. zr is the real part, and
 c zi is the imaginary part. Our matrix is real, so we should get zero inmaginary
 c part.!!
 c =================================================================
+c Compute the IR intensities if requested
+      if (intensity) then
+
+c Loop over modes
+        do i = 1,3*natoms
+          IRinten(i) = 0.0d0
+          do ij = 1,3
+            IRtrm = (0.0d0,0.0d0)
+            ind = - 3
+            do j = 1,natoms
+              ind = ind + 3
+
+c Mass weight eigenvectors
+              rmass = 1.0d0/sqrt(xmass(j))
+              do ii = 1,3
+                vecmw(ii) = dcmplx(zr(ind+ii,i),zi(ind+ii,i))
+                vecmw(ii) = vecmw(ii)*rmass
+              enddo
+
+c Multiply eigenvectors by Born effective charges
+              do ii = 1,3
+                IRtrm = IRtrm + BornQ(ii,ij,j)*vecmw(ii)
+              enddo
+
+            enddo
+            IRinten(i) = IRinten(i) + IRtrm*IRtrm
+          enddo
+        enddo
+
+      endif
+
+c =================================================================
 c write out eigenvalues.
         do 5 i=1,3*natoms
 c convert to cm**-1. the conversion factor is xmagic (511**2)
@@ -547,6 +604,9 @@ c         go to end of file
 	  do 20 i=1,3*natoms
 	    write(iunit3,'(a,i5)')     'Eigenvector  = ',i
 	    write(iunit3,'(a,f12.6)')  'Frequency    = ',omega(i)
+            if (intensity) then
+	      write(iunit3,'(a,f12.6)')  'IR Intensity = ',IRinten(i)
+            endif
 	    write(iunit3,'(a)')        'Eigenmode (real part)'
 	    write(iunit3,'(3e12.4)') (zr(j,i),j=1,3*natoms)
 	    write(iunit3,'(a)')        'Eigenmode (imaginary part)'
