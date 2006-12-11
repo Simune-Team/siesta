@@ -45,7 +45,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Large Oct 2, 2006 }
+{\Large Dec 8, 2006 }
 
 \vspace{1.5cm}
 
@@ -1389,7 +1389,8 @@ may be used: \textbf{ZM.UnitsLength}, \textbf{ZM.UnitsAngle},
 In addition, this section also shows the flags used to control
 the calculation of $k$-points; \textbf{kgrid\_cutoff},
 \textbf{kgrid\_Monkhorst\_Pack}, \textbf{BandLinesScale},
-\textbf{BandLines}, \textbf{WaveFuncKPointsScale}, \textbf{WaveFuncKPoints}.
+\textbf{BandLines}, \textbf{BandPoints},
+\textbf{WaveFuncKPointsScale}, \textbf{WaveFuncKPoints}.
 
 
 \begin{description}
@@ -2049,7 +2050,8 @@ Overrides {\bf kgrid\_cutoff}
 
 \item[{\bf BandLinesScale}] ({\it string}): 
 \index{BandLinesScale@{\bf BandLinesScale}} 
-Specifies the scale of the k vectors given in {\bf BandLines} below.
+Specifies the scale of the k vectors given in {\bf BandLines} 
+and {\bf BandPoints} below.
 The options are:
 \begin{itemize}
 \item {\tt pi/a} (k-vector coordinates are given in cartesian 
@@ -2084,8 +2086,31 @@ always 1.
 {\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
 The band k points are unrelated and compatible with any k-grid used
 to calculate the total energy and charge density.
+This block is superseded by {\bf BandPoints} if both are present.
 
 {\it Default value:} No band energies calculated.
+
+
+\item[{\bf BandPoints}] ({\it data block}): 
+\index{BandPoints@{\bf BandPoints}} 
+Band energies are calculated for the list of arbitrary $k$ points 
+given in the block. Units defined by {\bf BandLinesScale} as 
+for {\bf BandLines}. The generated {\it Systemlabel}.{\tt bands} file
+will contain the $k$ point coordinates (in a.u.) and the corresponding
+band energies (in eV). Example:
+
+\begin{verbatim}
+     %block BandPoints
+        0.000  0.000  0.000   # This is a comment. eg this is gamma
+        1.000  0.000  0.000 
+        0.500  0.500  0.500   
+     %endblock BandPoints
+\end{verbatim}
+
+{\it Use:} Used only if {\bf SolutionMethod} = {\tt diagon}.
+The band $k$ points are unrelated and compatible with any k-grid used
+to calculate the total energy and charge density. If both present, this 
+block supersedes {\bf BandLines}.
 
 
 \item[{\bf WaveFuncKPointsScale}] ({\it string}): 

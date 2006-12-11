@@ -20,6 +20,10 @@
       character, save :: label(maxlin)*8
       integer, save   :: lastk(maxlin), nlines
 
+      public  :: initbands, bands
+
+      private
+
       contains
 
       subroutine initbands( maxk, nk, kpoint )
@@ -27,6 +31,7 @@ C *********************************************************************
 C Finds band k-points
 C Based on initialisation part of subroutine bands from original code.
 C Written by J.Soler, August 1997 and August 1998.
+C BandPoints option by EA, November 2006.
 C **************************** INPUT **********************************
 C integer maxk           : Last dimension of kpoint
 C *************************** OUTPUT **********************************
@@ -36,14 +41,18 @@ C *************************** UNITS ***********************************
 C Lengths in atomic units (Bohr).
 C k vectors in reciprocal atomic units.
 C ***************** BEHAVIOUR *****************************************
-C - If nk=0 on input, k-points are read from labels BandLines and 
-C   BandLinesScale of the input fdf data file. If these labels are 
-C   not present, it returns with nk=0.
+C - If nk=0 on input, k-points are read from labels BandLines or
+C   BandPoints, and BandLinesScale of the input fdf data file. 
+C   If these labels are not present, it returns with nk=0.
+C - BandLines for band-like representation, BandPoints for arbitrary
+C   k points. BandPoints supersede BandLines.
 C - Allowed values for BandLinesScale are ReciprocalLatticeVectors and
 C   pi/a (default). If another value is given, it returns with nk=0
 C   after printing a warning.
 C - If nk>maxk, k points and bands are not calculated and no warning
 C   is printed before return
+C - If BandPoints, nlines is given a negative value, for routine bands
+C   to do the appropriate writing
 C ***************** USAGE *********************************************
 C Example of fdf band lines specification for an FCC lattice.
 C Last column is an optional LaTex label (for plot)
@@ -110,7 +119,7 @@ C *********************************************************************
      .  scale*30
 
       logical
-     .  BandLinesPresent
+     .  BandLinesPresent, BandPointsPresent
 
       integer
      .  ik, il, integs(4), iu, ix, 
@@ -138,12 +147,18 @@ C Find k points if they are not given in argument
 C Find if there are band-lines data
         if (Node.eq.0) then
           BandLinesPresent = fdf_defined('BandLines')
+CEA
+          BandPointsPresent = fdf_defined('BandPoints')
         endif
 #ifdef MPI
         call MPI_Bcast(BandLinesPresent,1,MPI_logical,0,MPI_Comm_World,
      .    MPIerror)
+CEA
+        call MPI_Bcast(BandPointsPresent,1,MPI_logical,0,MPI_Comm_World,
+     .    MPIerror)
 #endif
-        if ( BandLinesPresent ) then
+
+        if ( BandLinesPresent .or. BandPointsPresent ) then
 
 C Find lattice constant
           if (Node.eq.0) then
@@ -188,8 +203,16 @@ C Find scale used in k point data
      .              ' ReciprocalLatticeVectors',
      .        'bands: No band calculation performed'
           endif
+CEA
+        else
+C No k-point data available => go to exit point
+          goto 999
+        endif
 
-C Loop on data lines
+C For BandLines: Loop on data lines
+CEA
+        if ( BandLinesPresent .and. (.not. BandPointsPresent) ) then
+        
           if (Node.eq.0) then
             nk = 0
             BandLinesPresent = fdf_block('BandLines',iu)
@@ -252,9 +275,55 @@ C No more lines to read => Exit do loop
    50       continue
             nlines = il - 1
           endif
-        else
-C No k-point data available => go to exit point
-          goto 999
+        endif
+
+C For BandPoints: Loop on data points
+CEA
+        if ( BandPointsPresent ) then
+        
+          if (Node.eq.0) then
+            nk = 0
+            BandPointsPresent = fdf_block('BandPoints',iu)
+            do il = 1,maxlin
+
+C Read and parse data line
+              read(iu,'(a)',end=51) line
+              lastc = index(line,'#') - 1
+              if (lastc .le. 0) lastc = len(line)
+              call parse( line(1:lastc), nn, lc, names, nv, values,
+     .                  ni, integs, nr, reals )
+
+C Check if data are already finished
+              if (nv .ge. 3) then
+
+C Add to total number of k points
+                nk = nk + 1
+
+C If there is room to store k points
+                if (nk .le. maxk) then
+
+C Accumulate new point
+                  if (scale .eq. 'pi/a') then
+                    kpoint(1,nk) = values(1) * pi / alat
+                    kpoint(2,nk) = values(2) * pi / alat
+                    kpoint(3,nk) = values(3) * pi / alat
+                  elseif (scale .eq. 'ReciprocalLatticeVectors') then
+                    do ix = 1,3
+                      kpoint(ix,nk) = rcell(ix,1) * values(1) +
+     .                                rcell(ix,2) * values(2) +
+     .                                rcell(ix,3) * values(3)
+                    enddo
+                  endif
+                endif
+              else
+C No more lines to read => Exit do loop
+                goto 51
+              endif
+            enddo
+            write(6,'(a)') 'bands: ERROR. Parameter maxlin too small'
+   51       continue
+            nlines = - 3
+          endif
         endif
       endif
 
@@ -273,6 +342,7 @@ C This is the only exit point
 
       end subroutine initbands
 
+
       subroutine bands( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
      .                  writeb, nk, kpoint, ek, nuotot, occtol )
@@ -280,6 +350,7 @@ C *********************************************************************
 C Finds band energies at selected k-points.
 C Written by J.Soler, August 1997 and August 1998.
 C Initialisation moved into a separate routine, JDG Jan 2000.
+C Option for arbitrary points (instead of lines), EA Dec 2006.
 C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
 C integer nspin               : Number of spin components
@@ -320,6 +391,9 @@ C ***************** BEHAVIOUR *****************************************
 C - When writeb=true, bands are saved in file sys_name.bands, where
 C   sys_name is the value of fdf label SystemLabel, or 'siesta'
 C   by default.
+C - When nlines is negative, eigenvalues are written for the 
+C   preselected k points (as introduced through BandPoints).
+C   Otherwise written as lines for band-like representation (BandLines)
 C *********************************************************************
 C
 C  Modules
@@ -491,42 +565,51 @@ C Find and write the ranges of k and ek
             enddo
           enddo
         enddo
-        write(iu,*) 0.d0, path
+C Write path for BandLines but not for BandPoints
+        if (nlines .ge. 0) write(iu,*) 0.d0, path
         write(iu,*) emin/eV, emax/eV
 
 C Write eigenvalues
         write(iu,*) nuotot, min(nspin,2), nk
         path = 0.d0
         do ik = 1,nk
-          if (ik .gt. 1)
-     .      path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
-     .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
-     .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
-          write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
-     .      path, ((ek(io,ispin,ik)/eV,io=1,nuotot),
-     .      ispin=1,min(nspin,2))
+          if (nlines .ge. 0) then 
+            if (ik .gt. 1)
+     .        path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
+     .                            (kpoint(2,ik)-kpoint(2,ik-1))**2 +
+     .                            (kpoint(3,ik)-kpoint(3,ik-1))**2 )
+            write(iu,'(f10.6,10f12.4,/,(10x,10f12.4))')
+     .        path, ((ek(io,ispin,ik)/eV,io=1,nuotot),
+     .        ispin=1,min(nspin,2))
+          else
+            write(iu,'(3f9.5,8f12.4,/,(27x,8f12.4))')
+     .        kpoint(1,ik), kpoint(2,ik), kpoint(3,ik),
+     .           ((ek(io,ispin,ik)/eV,io=1,nuotot),ispin=1,min(nspin,2))
+          endif
         enddo
 
 C Write abscisas of line ends and their labels
-        write(iu,*) nlines
-        il = 1
-        path = 0.d0
-        do ik = 1,nk
-          if (ik .gt. 1)
-     .      path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
-     .                          (kpoint(2,ik)-kpoint(2,ik-1))**2 +
-     .                          (kpoint(3,ik)-kpoint(3,ik-1))**2 )
-          if (ik .eq. lastk(il)) then
+        if ( nlines .ge. 0 ) then
+          write(iu,*) nlines
+          il = 1
+          path = 0.d0
+          do ik = 1,nk
+            if (ik .gt. 1)
+     .        path = path + sqrt( (kpoint(1,ik)-kpoint(1,ik-1))**2 +
+     .                            (kpoint(2,ik)-kpoint(2,ik-1))**2 +
+     .                            (kpoint(3,ik)-kpoint(3,ik-1))**2 )
+            if (ik .eq. lastk(il)) then
 C Put label between quotes
-            if (label(il) .eq. ' ') then
-              string = ''' '''
-            else
-              string = paste( ''''//label(il),'''' )
+              if (label(il) .eq. ' ') then
+                string = ''' '''
+              else
+                string = paste( ''''//label(il),'''' )
+              endif
+              write(iu,'(f12.6,3x,a)') path, string
+              il = il + 1
             endif
-            write(iu,'(f12.6,3x,a)') path, string
-            il = il + 1
-          endif
-        enddo
+          enddo
+        endif
 
 C Close output file
         call io_close(iu)
