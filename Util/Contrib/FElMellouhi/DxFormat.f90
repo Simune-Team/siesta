@@ -717,7 +717,7 @@
       
 !     Writing data (origin of cell)
       Do i=1, 3
-         Write(WRITE_UNIT,220) 0,0,0
+         Write(WRITE_UNIT,220) 0.0,0.0,0.0
       End do
       
       Write(WRITE_UNIT,*) 'object "vectors' // trim(label) // '" class field'

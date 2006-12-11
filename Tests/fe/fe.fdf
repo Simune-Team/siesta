@@ -87,3 +87,5 @@ AtomicCoordinatesFormat     Fractional
 %block AtomicCoordinatesAndAtomicSpecies
   0.000000000000    0.000000000000    0.000000000000  1 
 %endblock AtomicCoordinatesAndAtomicSpecies
+
+save-hs T
