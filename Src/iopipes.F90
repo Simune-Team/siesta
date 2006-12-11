@@ -15,10 +15,15 @@ module iopipes
 ! in module fsiesta.
 ! J.M.Soler and A.Garcia. Nov.2003
 
+! *** Note ***
+! Make sure that you have a working "flush" subroutine in your system,
+! and that it is compiled-in in file pxf.F90 through the appropriate
+! preprocessor symbols. Otherwise the process might hang.
+
 use precision, only: dp
 use parallel, only: IOnode
 use fdf
-use sys, only: die
+use sys, only: die, bye
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -79,26 +84,44 @@ subroutine coordsFromPipe( na, xa, cell )
       read(iuc,*) task
       if (trim(task)/='wait') exit
     end do
-    if (trim(task)=='quit') then
-      write(iuf,*) 'quitting'
-      call pxfflush(iuf)
-      call die('coordsFromPipe: STOP: requested by driver')
-    else if (trim(task)=='begin_coords') then
-      read(iuc,*) xunit
-      read(iuc,*) eunit
-      read(iuc,*) cell
-      read(iuc,*) n
-      if (n /= na) call die('coordsFromPipe: ERROR: na mismatch')
-      read(iuc,*) xa
-      read(iuc,*) task
+  endif
+
+#ifdef MPI
+  call MPI_Bcast(task,80, MPI_Character,0,  &
+                 MPI_Comm_World, MPIerror)
+#endif
+
+   if (trim(task)=='quit') then
+      if (IOnode) then
+         write(iuf,*) 'quitting'
+         call pxfflush(iuf)
+      endif
+      call bye('coordsFromPipe: STOP requested by driver')
+
+   else if (trim(task)=='begin_coords') then
+      if (IONode) then
+         read(iuc,*) xunit
+         read(iuc,*) eunit
+         read(iuc,*) cell
+         read(iuc,*) n
+         if (n /= na) call die('coordsFromPipe: ERROR: na mismatch')
+         read(iuc,*) xa
+         read(iuc,*) task
+      endif
+#ifdef MPI
+      call MPI_Bcast(task,80, MPI_Character,0,  &
+                     MPI_Comm_World, MPIerror)
+#endif
       if (trim(task)=='end_coords') then
-        print '(/,3a,/,(3f12.6))', &
+        if (IOnode) then
+           print '(/,3a,/,(3f12.6))', &
           'coordsFromPipe: cell (',trim(xunit),') =', cell
-        print '(  3a,/,(3f12.6))', &
+           print '(  3a,/,(3f12.6))', &
           'coordsFromPipe: xa (',trim(xunit),') =', xa
         ! Convert coordinate units
-        cell = cell * fdf_convfac( xunit, siesta_xunit )
-        xa   = xa   * fdf_convfac( xunit, siesta_xunit )
+           cell = cell * fdf_convfac( xunit, siesta_xunit )
+           xa   = xa   * fdf_convfac( xunit, siesta_xunit )
+        endif
 #ifdef MPI
         call MPI_Bcast( cell(1,1), 9, MPI_double_precision, 0, &
                         MPI_Comm_World, MPIerror)
@@ -111,7 +134,6 @@ subroutine coordsFromPipe( na, xa, cell )
     else
       call die('coordsFromPipe: ERROR: unknown task')
     end if ! task
-  end if ! IOnode
 
 end subroutine coordsFromPipe
 
@@ -147,17 +169,20 @@ subroutine forcesToPipe( na, energy, forces, stress )
     firstTime = .false.
   end if ! (firstTime .and. IOnode)
 
+  if (IOnode) then
+
 ! Convert physical units
   funit = trim(eunit)//'/'//trim(xunit)
   sunit = trim(eunit)//'/'//trim(xunit)//'**3'
-  e = energy * fdf_convfac( siesta_eunit, eunit )
-  s = stress * fdf_convfac( siesta_sunit, sunit )
-  f = forces * fdf_convfac( siesta_funit, funit )
+   e = energy * fdf_convfac( siesta_eunit, eunit )
+   s = stress * fdf_convfac( siesta_sunit, sunit )
+   f = forces * fdf_convfac( siesta_funit, funit )
 
 ! Print forces in output file
-  print '(/,3a,f12.6)',    'forcesToPipe: energy (',trim(eunit),') =', e
-  print '(3a,/,(3f12.6))', 'forcesToPipe: stress (',trim(sunit),') =', s
-  print '(3a,/,(3f12.6))', 'forcesToPipe: forces (',trim(funit),') =', f
+   print '(/,3a,f12.6)',    'forcesToPipe: energy (',trim(eunit),') =', e
+   print '(3a,/,(3f12.6))', 'forcesToPipe: stress (',trim(sunit),') =', s
+   print '(3a,/,(3f12.6))', 'forcesToPipe: forces (',trim(funit),') =', f
+  endif
 
 ! Write forces to pipe
   if (IOnode) then

@@ -51,13 +51,14 @@ SYSOBJ=$(SYS).o pxf.o
 #
 # Note that machine-specific files are now in top Src directory.
 #
-OBJS = arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
+OBJS = automatic_cell.o \
+        arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
-	fixed.o gradient.o gradientlomem.o grdsam.o \
+	fixed.o fsiesta.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
@@ -231,7 +232,6 @@ pristine:  clean
 
 
 # DO NOT DELETE THIS LINE - used by make depend
-agminvec.o: precision.o sorting.o sys.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
@@ -242,6 +242,7 @@ atom.o: atmparams.o basis_types.o old_atmfuncs.o periodic_table.o precision.o
 atom.o: pseudopotential.o recipes.o sys.o xcmod.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
+automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
 basis_io.o: atm_types.o atmparams.o basis_types.o chemical.o precision.o
@@ -290,8 +291,8 @@ diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 dipole.o: parallel.o precision.o sys.o
 dnaefs.o: atmfuncs.o precision.o
-dynamics.o: atomlist.o ioxv.o m_mpi_utils.o parallel.o precision.o sys.o
-dynamics.o: units.o
+dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
+dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
 efield.o: siesta_cml.o sys.o
 egandd.o: alloc.o globalise.o m_mpi_utils.o onmod.o onmod.o precision.o sys.o
@@ -375,7 +376,7 @@ old_atmfuncs.o: atmparams.o precision.o sys.o
 on_subs.o: alloc.o onmod.o onmod.o spatial.o
 onmod.o: precision.o
 optical.o: alloc.o atmfuncs.o densematrix.o fermid.o files.o parallel.o
-optical.o: parallelsubs.o parsing.o sys.o
+optical.o: parallelsubs.o parsing.o precision.o sys.o
 ordern.o: alloc.o globalise.o m_mpi_utils.o onmod.o parallel.o precision.o
 ordern.o: siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o

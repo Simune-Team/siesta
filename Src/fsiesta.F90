@@ -37,7 +37,9 @@ module fsiesta
 ! Behaviour:
 ! - If nnodes is not present among siesta_launch arguments, or nnodes<2, 
 !   a serial siesta process will be launched. Otherwise, a parallel 
-!   mpirun process will be launched.
+!   mpirun process will be launched. In this case, the mpi launching
+!   command (e.g., "mpiexec <options> -n ") can be specified in the 
+!   optional argument mpi_launcher
 ! - If siesta_units is not called, length='Ang', energy='eV' are
 !   used by default. If it is called more than once, the units in the
 !   last call become in effect.
@@ -66,6 +68,14 @@ module fsiesta
 ! - siesta_units may be called either before or after siesta_launch
 ! J.M.Soler and A.Garcia. Nov.2003
 
+! *** Note ***
+! Make sure that you have a working "flush" subroutine in your system,
+! otherwise the process might hang.
+
+#ifdef __NAG__
+  use f90_unix_proc, only: system
+#endif
+
   implicit none
 
 PUBLIC :: siesta_launch, siesta_units, siesta_forces, siesta_quit
@@ -93,13 +103,14 @@ CONTAINS
 
 !---------------------------------------------------
 
-subroutine siesta_launch( label, nnodes )
+subroutine siesta_launch( label, nnodes, mpi_launcher )
   implicit none
   character(len=*),  intent(in) :: label
   integer, optional, intent(in) :: nnodes
+  character(len=*),  intent(in), optional :: mpi_launcher
 
   character(len=32) :: cpipe, fpipe
-  character(len=80) :: task
+  character(len=80) :: task, mpi_command
   integer           :: ip, iu
 
 !  print*, 'siesta_launch: launching process ', trim(label)
@@ -118,17 +129,23 @@ subroutine siesta_launch( label, nnodes )
 ! Open this side of pipes
   call open_pipes( label )
 
-! Send wait message to coordenates pipe
+! Send wait message to coordinates pipe
   ip = idx( label )
   iu = p(ip)%iuc
   write(iu,*) 'wait'
+  call pxfflush(iu)
 
 ! Start siesta process
   if (present(nnodes) .and. nnodes>1) then
-    write(task,*) 'mpirun -np ', nnodes, ' siesta < ', &
+     if (present(mpi_launcher)) then
+        mpi_command = mpi_launcher
+     else
+        mpi_command =  'mpirun -np '
+     endif
+    write(task,*) trim(mpi_command),  nnodes, ' siesta < ', &
         trim(label)//'.fdf > ', trim(label)//'.out &'
   else
-    write(task,*) 'sleep 10; siesta < ', &
+    write(task,*) 'sleep 2; siesta < ', &
         trim(label)//'.fdf > ', trim(label)//'.out &'
   end if
   call system(task)
@@ -173,12 +190,13 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
   if (present(cell)) then
     c = cell
   else
+!**AG: Careful with this ...
     c = 0._dp
   end if
 
 ! Print coords for debugging
   print'(/,2a)',         'siesta_forces: label = ', trim(label)
-  print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',cell
+  print'(3a,/,(3f12.6))','siesta_forces: cell (',trim(xunit),') =',c
   print'(3a,/,(3f12.6))','siesta_forces: xa (',trim(xunit),') =', xa
 
 ! Write coordinates to pipe
@@ -194,35 +212,30 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
     write(iu,*) xa(:,ia)
   end do
   write(iu,*) 'end_coords'
-  call flush(iu)
+  call pxfflush(iu)
 
 ! Read forces from pipe
   iu = p(ip)%iuf
   read(iu,*) message
   if (message=='error') then
     read(iu,*) message
-    print*, 'siesta_forces: siesta ERROR:'
-    print*, trim(message)
-    stop
+    call die( 'siesta_forces: siesta ERROR:' // trim(message))
   else if (message/='begin_forces') then
-    print*, 'siesta_forces: ERROR: unexpected header:'
-    print*, trim(message)
-    stop
+    call die('siesta_forces: ERROR: unexpected header:' // trim(message))
   end if
   read(iu,*) e
   read(iu,*) s
   read(iu,*) n
   if (n /= na) then
     print*, 'siesta_forces: ERROR: na mismatch: na, n =', na, n
-    stop
+    call die()
   end if
   do ia = 1,na
     read(iu,*) f(:,ia)
   end do
   read(iu,*) message
   if (message/='end_forces') then
-    print*, 'siesta_forces: ERROR: unexpected trailer:'
-    print*, trim(message)
+    call die('siesta_forces: ERROR: unexpected trailer:' // trim(message))
   end if
 
 ! Print forces for debugging
@@ -238,29 +251,38 @@ subroutine siesta_forces( label, na, xa, cell, energy, fa, stress )
 end subroutine siesta_forces
 
 !---------------------------------------------------
+subroutine siesta_quit( label )
+  implicit none
+  character(len=*), intent(in) :: label
 
-recursive subroutine siesta_quit( label )
+  integer :: ip
+
+  if (label == 'all') then
+    ! Stop all siesta processes
+    do ip = 1,np
+      call siesta_quit_process( p(ip)%label )
+    end do
+  else
+    ! Stop one siesta process
+     call siesta_quit_process( label )
+  endif
+
+end subroutine siesta_quit
+
+subroutine siesta_quit_process(label)
   implicit none
   character(len=*), intent(in) :: label
 
   integer :: ip, iuc, iuf
   character(len=20) message
 
-  if (label == 'all') then
-    ! Stop all siesta processes
-    do ip = 1,np
-      call siesta_quit( p(ip)%label )
-    end do
-  else
-    ! Stop one siesta process
     ip = idx(label)      ! Find process index
-    if (ip==0) then
-      print*, 'siesta_quit: ERROR: unknown label: ', trim(label)
-      stop
-    end if
+    if (ip==0) &
+      call die('siesta_quit: ERROR: unknown label: ' // trim(label))
+
     iuc = p(ip)%iuc      ! Find cooordinates pipe unit
     write(iuc,*) 'quit'  ! Send quit signal through pipe
-    call flush(iuc)
+    call pxfflush(iuc)
     iuf = p(ip)%iuf                  ! Find forces pipe unit
     read(iuf,*) message              ! Receive response from pipe
     if (message == 'quitting') then  ! Check answer
@@ -273,12 +295,10 @@ recursive subroutine siesta_quit( label )
       end if
       np = np - 1                    ! Remove process
     else
-      print*, 'siesta_quit: ERROR: unexpected response: ', trim(message)
-      stop
+      call die('siesta_quit: ERROR: unexpected response: ' // trim(message))
     end if ! (message)
-  end if ! (label)
 
-end subroutine siesta_quit
+end subroutine siesta_quit_process
 
 !---------------------------------------------------
 
@@ -291,7 +311,7 @@ subroutine open_pipes( label )
 
 ! Check that pipe does not exist already
   if (idx(label) /= 0) &
-    print*, 'open_pipes: ERROR: pipes for ', trim(label), &
+    print *, 'open_pipes: ERROR: pipes for ', trim(label), &
             ' already opened'
 
 ! Get io units for pipes
@@ -363,5 +383,16 @@ integer function idx( label )
 end function idx
 
 !---------------------------------------------------
+!
+! Private copy of die
+!
+subroutine die(msg)
+character(len=*), intent(in), optional :: msg
+
+if (present(msg)) then
+   write(6,*) msg
+endif
+STOP
+end subroutine die
 
 end module fsiesta
