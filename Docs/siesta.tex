@@ -2090,7 +2090,6 @@ This block is superseded by {\bf BandPoints} if both are present.
 
 {\it Default value:} No band energies calculated.
 
-
 \item[{\bf BandPoints}] ({\it data block}): 
 \index{BandPoints@{\bf BandPoints}} 
 Band energies are calculated for the list of arbitrary $k$ points 
@@ -2112,6 +2111,7 @@ The band $k$ points are unrelated and compatible with any k-grid used
 to calculate the total energy and charge density. If both present, this 
 block supersedes {\bf BandLines}.
 
+{\it Default value:} No band energies calculated.
 
 \item[{\bf WaveFuncKPointsScale}] ({\it string}): 
 \index{WaveFuncKPointsScale@{\bf WaveFuncKPointsScale}} 
@@ -3623,6 +3623,31 @@ The quench option allows structural relaxations of
 only atomic coordinates (with {\bf MD.TypeOfRun} = {\tt Verlet})
 or atomic coordinates AND cell shape 
 (with {\bf MD.TypeOfRun} = {\tt ParrinelloRahman}).
+{\bf MD.Quench} is superseded by {\bf MD.FireQuench} (see below).
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf MD.FireQuench}] ({\it logical}): 
+\index{MD.FireQuench@{\bf MD.FireQuench}} 
+Logical option to perform a FIRE quench during a Verlet molecular dynamics
+run, as described by Bitzek {\it et al.} in Phys. Rev. Lett. {\bf 97},
+170201 (2006). It is a relaxation algorithm, and thus the dynamics
+are of no interest per se: the initial time-step can be played with
+(it uses {\bf MD.LengthTimeStep} as initial $\Delta t$),
+as well as the initial temperature (recommended 0) and the atomic
+masses (recommended equal). Preliminary tests seem to indicate that 
+the combination of $\Delta t = 5$ fs and a value of 20 for the atomic 
+masses works reasonably. The dynamics stops when the force
+tolerance is reached ({\bf MD.MaxForceTol}). The other
+parameters controlling the algorithm (initial damping, 
+increase and decrease thereof etc.) are hardwired in the code,
+at the recommended values in the cited paper,
+including $\Delta t_{max} = 10$ fs.
+
+{\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Verlet}. 
+It is incompatible with Nose thermostat options. No variable
+cell option implemented for this at this stage.
+{\bf MD.FireQuench} supersedes {\bf MD.Quench}.
 
 {\it Default value:} {\tt .false.}
 

@@ -108,7 +108,7 @@ C integer ianneal          : Annealing option for idyn = 5
 C                             1 = Temperature 
 C                             2 = Pressure
 C                             3 = Temperature and Pressure
-C integer iquench          : Quench option: 0 = No;  1 = Yes
+C integer iquench          : Quench option: 0 = No; 1 = Yes; 2 = Fire
 C real*8 dt                : Length of time step (fs)
 C real*8 dx                : Atomic displacement for Force Constants
 C                             calculation
@@ -216,7 +216,7 @@ C  Internal variables .................................................
      .  sname*100, annop*22,  dyntyp*22, 
      .  method*6,  lwfopt*13, method_default*6
 
-      logical  ::  DaC, leqi, qnch, usesaveddata
+      logical  ::  DaC, leqi, qnch, qnch2, usesaveddata
       external ::  leqi
 
 ! New template, using fdf and broadcast wrappers
@@ -935,14 +935,13 @@ C ...
 
 C     Quench Option
        call fdf_global_get(qnch,'MD.Quench',.false.)
-       if (qnch .and. (idyn==2 .or. idyn==4)) 
+       call fdf_global_get(qnch2,'MD.FireQuench',.false.)
+       if ((qnch .or. qnch2) .and. (idyn==2 .or. idyn==4)) 
      .    call die('redata: ERROR: You cannot quench and '//
      .         'use a Nose thermostat simultaneously')
-       if (qnch) then
-          iquench = 1
-       else
-          iquench = 0
-       endif
+       iquench = 0
+       if (qnch)  iquench = 1
+       if (qnch2) iquench = 2
 C ...
 
 C     Initial Temperature of MD simulation
@@ -963,8 +962,15 @@ C      at the given temperature)
      .      'redata: Length of MD time step           = ',dt,'  fs'
           write(6,'(a,f10.4,a)') 
      .      'redata: Initial Temperature of MD run    = ',tempinit,'  K'
-          if (idyn .ne. 5) write(6,'(a,4x,l1)') 
+          if (idyn .ne. 5) then 
+            if (qnch2) then
+               write(6,'(a,4x,l1)') 
+     .      'redata: Perform a MD Fire quench         = ',qnch2
+            else
+               write(6,'(a,4x,l1)') 
      .      'redata: Perform a MD quench              = ',qnch
+            endif
+          endif
         endif
         if (cml_p) then
           call cmlAddParameter(xf=mainXML, name='MD.InitialTimeStep',
@@ -975,8 +981,15 @@ C      at the given temperature)
      .         value=dt, units='siestaUnits:fs')
           call cmlAddParameter(xf=mainXML, name='MD.InitialTemperature',
      .         value=tempinit, units='siestaUnits:K')
-          if (idyn/=5) call cmlAddParameter(xf=mainXML, 
-     .         name='MD.Quench', value=qnch)
+          if (idyn/=5) then 
+            if(qnch2) then
+              call cmlAddParameter(xf=mainXML, 
+     .        name='MD.FireQuench', value=qnch2)
+            else
+              call cmlAddParameter(xf=mainXML, 
+     .        name='MD.Quench', value=qnch)
+            endif
+          endif
         endif
       endif
 

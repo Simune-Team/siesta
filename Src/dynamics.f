@@ -1708,8 +1708,10 @@ C integer istep         : Number of time step during the simulation
 C integer iunit         : Units option: 1 or 2 (see UNITS above)
 C integer iquench       : Option for quenching:
 C                              0 = no quenching (standard dynamics)
-C                              1 = power quenching (set to cero velocity
+C                              1 = power quenching (set to zero velocity
 C                                 components opposite to force)
+C                              2 = "fire" quenching, as in
+C                                  Bitzek et al, PRL 97, 170201 (2006)
 C integer natoms        : Number of atoms in the simulation cell
 C real*8 fa(3,natoms)   : Atomic forces 
 C real*8 dt             : Length of the time step
@@ -1720,7 +1722,7 @@ C                         (used only if istep = 1)
 C ******************* INPUT AND OUTPUT ****************************************
 C real*8 xa(3,natoms)   : Atomic coordinates 
 C                        (input: current time step; output: next time step)
-C ************************* OUTOPUT *******************************************
+C ************************** OUTPUT *******************************************
 C real*8 kin            : Kinetic energy at current time step 
 C real*8 temp           : Instantaneous system temperature
 C *****************************************************************************
@@ -1748,6 +1750,15 @@ C Internal variables ..........................................................
 
       real(dp), dimension(:,:), allocatable, save ::
      .  accold,vold
+
+C Related to FIRE quenching
+      integer, parameter  :: firenmin = 5
+      integer, save       :: firenpos
+      real(dp), parameter :: firefinc = 1.1_dp, firefdec = 0.5_dp,
+     .                       firealf0 = 0.1_dp, firefalf = 0.99_dp,
+     .                       dtmax = 10.0_dp
+      real(dp), save      :: firealf
+      real(dp)            :: magv, magf
 C ........................
 
       restart_file = trim(slabel) // ".VERLET_RESTART"
@@ -1784,6 +1795,12 @@ C ........................
       
       if (istep .eq. 1) then
 
+C Initialise FIRE quench if that is the option
+         if (iquench .eq. 2) then
+            firealf = firealf0
+            firenpos = 0
+         endif
+
          if (.not. xv_file_read) then
 
 C     Compute old accelerations and velocities 
@@ -1800,7 +1817,7 @@ C     if the time step is the first of the simulation ..........................
                enddo
             enddo
 
-        else
+         else
 
 !         For restarts, we need information about the old 
 !         forces, in order to match the velocities
@@ -1862,7 +1879,7 @@ C Compute velocities at current time step,
          enddo
       endif    
 
-C Quench option if iquench = 0 ..............................................
+C Quench option if iquench = 1 ..............................................
       if (iquench .eq. 1) then
 
 C Quench velocity components going uphill
@@ -1875,6 +1892,60 @@ C Quench velocity components going uphill
 
       endif
 C ................
+
+C Fire quench option if iquench = 2 .........................................
+      if (iquench .eq. 2) then
+
+C Compute power
+         dot = 0.0
+         do ia = 1,natoms
+           do i = 1,3
+             dot = dot + va(i,ia) * fa(i,ia)
+           enddo
+         enddo
+
+         if (dot .le. 0.0) then
+C If uphill: quench, reduce time step & go back to initial damping alpha
+            va(:,:) = 0.0
+            dt = firefdec * dt
+            firealf = firealf0
+            firenpos = 0
+         else
+C If downhill: Compute magnitudes of v and F, and ...
+            magv = 0.0
+            magf = 0.0
+            do ia = 1,natoms
+              do i = 1,3
+                magv = magv + va(i,ia) * va(i,ia)
+                magf = magf + fa(i,ia) * fa(i,ia)
+              enddo
+            enddo
+            magv = sqrt( magv )
+            magf = sqrt( magf )
+C ... damp velocities, and ...
+            do ia = 1,natoms
+              do i = 1,3
+                va(i,ia) = (1.0_dp - firealf)*va(i,ia) + 
+     .                     firealf * magv * fa(i,ia) / magf
+              enddo
+            enddo
+C ... increase dt and decreas firealf if Npos > Nmin
+            if ( firenpos .gt. firenmin ) then
+               dt = dt * firefinc
+               if (dt .gt. dtmax) dt = dtmax
+               firealf = firealf * firefalf
+            endif
+            firenpos = firenpos + 1
+         endif
+
+         if (Node .eq. 0)
+     $     write(6,"('FIRE: istep, dt, firenpos, firealf, magv'/
+     .           'FIRE: ', i6, f10.4, i4, f10.4, f12.4)")
+     .            istep, dt, firenpos, firealf, magv
+
+      endif
+C ................
+
 
 !---------------------------------------------------------
 !     This is the place to store the current magnitudes

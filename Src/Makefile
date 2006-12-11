@@ -427,7 +427,7 @@ siesta.o: m_wallclock.o md_out.o nlefsm.o ordern.o overfsm.o parallel.o
 siesta.o: parallelsubs.o periodic_table.o phonon.o precision.o redata.o
 siesta.o: siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
-siesta_cmlsubs.o: files.o parallel.o timestamp.o version.o
+siesta_cmlsubs.o: files.o parallel.o timestamp.o
 spatial.o: precision.o
 spher_harm.o: precision.o sys.o
 spin_init.o: precision.o

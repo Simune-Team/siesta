@@ -1713,7 +1713,17 @@ C Move atoms ..........................................................
          call verlet2(istp, iunit, iquench, na_u, cfa, dt,
      .       amass, ntcon, va, xa, Ekinion, tempion)
         ! Propagate the new structure to the virtual supercell
-        call superx( ucell, nsc, na_u, na_s, xa, scell )
+         call superx( ucell, nsc, na_u, na_s, xa, scell )
+        ! Check convergence for quenching runs (which are
+          really relaxations)
+         if ( iquench .ne. 0 ) then
+            relaxd = .true.
+            do ia = 1, na_u
+              do i = 1, 3
+                relaxd = relaxd .and. ( abs(cfa(i,ia)) .lt. ftol )
+              enddo
+            enddo
+         endif
 !-----------
       case (2)
          call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn,

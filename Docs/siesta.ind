@@ -1,6 +1,6 @@
 \begin{theindex}
 
-  \item {\bf AllocReportLevel}, 59
+  \item {\bf AllocReportLevel}, 60
   \item animation, 59
   \item antiferromagnetic initial DM, 37
   \item architectures, 11
@@ -33,7 +33,7 @@
   \item Berry phase, 38
   \item Bessel functions, 20
   \item \%block, 12
-  \item {\bf BlockSize}, 54
+  \item {\bf BlockSize}, 55
   \item {\bf Blocksize}, 77
   \item BLYP, 33
   \item Born effective charges, 39
@@ -59,7 +59,7 @@
 
   \indexspace
 
-  \item density of states, 57, 67
+  \item density of states, 58, 67
   \item {\bf Diag.AllInOne}, 45
   \item {\bf Diag.DivideAndConquer}, 45
   \item {\bf Diag.Memory}, 55
@@ -69,13 +69,13 @@
   \item {\bf Diag.Use2D}, 45
   \item Dielectric function, optical absorption, 40
   \item diffuse orbitals, 15
-  \item {\bf DirectPhi}, 55
+  \item {\bf DirectPhi}, 56
   \item {\bf DM.Broyden.Cycle.On.Maxit}, 36
   \item {\bf DM.Broyden.Variable.Weight}, 36
   \item {\bf DM.EnergyTolerance}, 37
   \item {\bf DM.FormattedFiles}, 60
   \item {\bf DM.FormattedInput}, 60
-  \item {\bf DM.FormattedOutput}, 60
+  \item {\bf DM.FormattedOutput}, 61
   \item {\bf DM.InitSpin}, 37
   \item {\bf DM.InitSpinAF}, 37
   \item {\bf DM.KickMixingWeight}, 36
@@ -95,7 +95,7 @@
   \item egg-box effect, 42--44
   \item {\bf EggboxRemove}, 43
   \item {\bf EggboxScale}, 44
-  \item {\sc Eig2dos}, 57, 67
+  \item {\sc Eig2dos}, 58, 67
   \item {\bf ElectronicTemperature}, 45, 46
   \item {\bf ExternalElectricField}, 38
 
@@ -108,7 +108,7 @@
   \item {\bf FixAuxiliaryCell}, 24
   \item fixed spin state, 34
   \item {\bf FixSpin}, 34
-  \item Force Constants Matrix, 49, 53, 54
+  \item Force Constants Matrix, 49, 54
     \subitem using {\sc Phonon}, 49, 54
 
   \indexspace
@@ -119,7 +119,7 @@
   \item {\bf GeometryConstraints}, 24
   \item GGA, 33
   \item ghost atoms, 14, 20
-  \item {\sc Gnubands}, 58, 66
+  \item {\sc Gnubands}, 58, 67
   \item {\sc Gnuplot}, 58
   \item grid, 35
   \item {\sc Grid2cube}, 66
@@ -137,7 +137,7 @@
 
   \indexspace
 
-  \item {\sc JMol}, 58
+  \item {\sc JMol}, 59
 
   \indexspace
 
@@ -167,12 +167,13 @@
   \item {\bf MD.Broyden.Cycle.On.Maxit}, 51
   \item {\bf MD.Broyden.History.Steps}, 51
   \item  {\bf MD.Broyden.Initial.Inverse.Jacobian}, 51
-  \item {\bf MD.BulkModulus}, 53
+  \item {\bf MD.BulkModulus}, 54
   \item {\bf MD.ConstantVolume}, 50
-  \item {\bf MD.FCDispl}, 53
+  \item {\bf MD.FCDispl}, 54
   \item {\bf MD.FCfirst}, 54
   \item {\bf MD.FClast}, 54
   \item {\bf MD.FinalTimeStep}, 51
+  \item {\bf MD.FireQuench}, 52
   \item {\bf MD.InitialTemperature}, 52
   \item {\bf MD.InitialTimeStep}, 51
   \item {\bf MD.LengthTimeStep}, 51
@@ -189,7 +190,7 @@
   \item {\bf MD.TauRelax}, 53
   \item {\bf MD.TypeOfRun}, 49
   \item {\bf MD.UseSaveCG}, 61
-  \item {\bf MD.UseSaveXV}, 24, 60, 61
+  \item {\bf MD.UseSaveXV}, 24, 61
   \item {\bf MD.UseSaveZM}, 61
   \item {\bf MD.UseStructFile}, 67
   \item {\bf MD.VariableCell}, 49
@@ -199,7 +200,7 @@
   \item {\bf MeshSubDivisions}, 35
   \item {\tt MINIMAL}, 16
   \item minimal basis, 15
-  \item Mulliken population analysis, 56, 58, 65
+  \item Mulliken population analysis, 57, 58, 65
   \item {\bf MullikenInSCF}, 37
   \item multiple-$\zeta$, 15, 16
 
@@ -233,7 +234,7 @@
   \item {\bf ON.LowerMemory}, 48
   \item {\bf ON.MaxNumIter}, 47
   \item {\bf ON.RcLWF}, 47
-  \item {\bf ON.UseSaveLWF}, 60
+  \item {\bf ON.UseSaveLWF}, 61
   \item {\bf Optical.Broaden}, 41
   \item {\bf Optical.EnergyMaximum}, 40
   \item {\bf Optical.EnergyMinimum}, 40
@@ -247,22 +248,22 @@
   \item out.fdf, 7
   \item {\tt out.fdf}, 65
   \item output
-    \subitem $\delta \rho(\vec r)$, 61
+    \subitem $\delta \rho(\vec r)$, 62
     \subitem atomic coordinates
       \subsubitem history, 57
-      \subsubitem in a dynamics step, 56, 57, 64
+      \subsubitem in a dynamics step, 57, 64
       \subsubitem initial, 57, 64
-    \subitem band $\vec k$ points, 56, 57, 64
-    \subitem band structure, 56, 58, 64
+    \subitem band $\vec k$ points, 57, 58, 65
+    \subitem band structure, 57, 58, 65
     \subitem basis, 65
     \subitem charge density, 61
-    \subitem charge density for DENCHAR code, 63
+    \subitem charge density for DENCHAR code, 64
     \subitem customization, 64
-    \subitem density matrix, 57
-    \subitem eigenvalues, 56, 57, 64, 67
-    \subitem electrostatic potential, 61
-    \subitem forces, 56, 57, 64, 66
-    \subitem grid $\vec k$ points, 56, 57, 64, 66
+    \subitem density matrix, 58
+    \subitem eigenvalues, 57, 58, 65, 67
+    \subitem electrostatic potential, 62
+    \subitem forces, 57, 65, 66
+    \subitem grid $\vec k$ points, 57, 65, 66
     \subitem Hamiltonian \& overlap, 61
     \subitem ionic charge, 62
     \subitem local density of states, 62
@@ -272,11 +273,11 @@
       \subsubitem Force Constants Matrix, 68
       \subsubitem history, 59, 67
       \subsubitem PHONON forces file, 68
-    \subitem Mulliken analysis, 56, 58, 65
+    \subitem Mulliken analysis, 57, 58, 65
     \subitem projected density of states, 63
     \subitem total charge, 62, 66
     \subitem total potential, 62
-    \subitem wave functions, 56, 58, 64
+    \subitem wave functions, 57, 58, 65
 
   \indexspace
 
@@ -306,9 +307,9 @@
     \subitem example generation, 6
     \subitem files, 64
     \subitem generation, 7
-    \subitem writing KB projectors, 65
-    \subitem writing vlocal, 65
-  \item Pseudopotentials, 65
+    \subitem writing KB projectors, 66
+    \subitem writing vlocal, 66
+  \item Pseudopotentials, 66
   \item Pulay mixing, 35
   \item PW92, 33
   \item Python language, 68, 76
@@ -316,13 +317,13 @@
 
   \indexspace
 
-  \item {\bf RcSpatial}, 55
+  \item {\bf RcSpatial}, 56
   \item reading saved data, 60
     \subitem all, 60
     \subitem CG, 61
-    \subitem density matrix, 60
-    \subitem localized wave functions (order-$N$), 60
-    \subitem XV, 60
+    \subitem density matrix, 60, 61
+    \subitem localized wave functions (order-$N$), 61
+    \subitem XV, 61
     \subitem ZM, 61
   \item READWF, 58, 67
   \item revPBE, 33
@@ -331,8 +332,8 @@
 
   \indexspace
 
-  \item {\bf SaveDeltaRho}, 61
-  \item {\bf SaveElectrostaticPotential}, 61
+  \item {\bf SaveDeltaRho}, 62
+  \item {\bf SaveElectrostaticPotential}, 62
   \item {\bf SaveHS}, 61
   \item {\bf SaveIonicCharge}, 62
   \item {\bf SaveMemory}, 56
@@ -394,26 +395,26 @@
 
   \indexspace
 
-  \item {\bf WarningMinimumAtomicDistance}, 59
+  \item {\bf WarningMinimumAtomicDistance}, 60
   \item wave functions, 58
   \item {\bf WaveFuncKPoints}, 32, 58, 67
   \item {\bf WaveFuncKPointsScale}, 32
   \item WC, 33
-  \item {\bf WriteBands}, 56, 58, 64
+  \item {\bf WriteBands}, 57, 58, 65
   \item {\bf WriteCoorCerius}, 59
   \item {\bf WriteCoorInitial}, 57, 64
-  \item {\bf WriteCoorStep}, 56, 57, 64
-  \item {\bf WriteCoorXmol}, 58
-  \item {\bf WriteDenchar}, 63
-  \item {\bf WriteDM}, 57
-  \item {\bf WriteEigenvalues}, 56, 57, 64
-  \item {\bf WriteForces}, 56, 57, 64
-  \item {\bf WriteKbands}, 56, 57, 64
-  \item {\bf WriteKpoints}, 56, 57, 64
+  \item {\bf WriteCoorStep}, 57, 64
+  \item {\bf WriteCoorXmol}, 59
+  \item {\bf WriteDenchar}, 64
+  \item {\bf WriteDM}, 58
+  \item {\bf WriteEigenvalues}, 57, 58, 65
+  \item {\bf WriteForces}, 57, 65
+  \item {\bf WriteKbands}, 57, 58, 65
+  \item {\bf WriteKpoints}, 57, 65
   \item {\bf WriteMDhistory}, 57, 59
   \item {\bf WriteMDXmol}, 59
-  \item {\bf WriteMullikenPop}, 56, 58, 65
-  \item {\bf WriteWaveFunctions}, 56, 58, 64
+  \item {\bf WriteMullikenPop}, 57, 58, 65
+  \item {\bf WriteWaveFunctions}, 57, 58, 65
 
   \indexspace
 
@@ -421,7 +422,7 @@
   \item {\bf XC.functional}, 33
   \item {\bf XC.hybrid}, 34
   \item XML, 80
-  \item {\sc XMol}, 58, 59, 67
+  \item {\sc XMol}, 59, 67
 
   \indexspace
 
