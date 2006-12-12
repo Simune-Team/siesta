@@ -10,6 +10,345 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2006-12-12 09:56:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
+
+    Summary:
+      Appropriate supercell for elongated unit cells
+    Revision:
+      siesta-devel--reference--2.1--patch-10
+
+        The algorithm used to construct the auxiliary supercell for the
+        calculation of matrix elements with k-point sampling simply multiplies
+        each lattice vector by the appropriate factor (diagonal
+        supercell). This causes a problem when the unit cell is elongated (see
+        for example the mgco3 test in Tests/). In these cases, some lattice
+        points are actually closer than the shortest cell vector would
+        indicate, with the result that the supercell is too small and some
+        atoms "see" multiple images. This appears in the program as a warning
+        of the type:
+        
+           xijorb: WARNING: orbital pair      1   341 is multiply connected
+        
+        The resulting numerical errors are typically very small.
+    
+        The fix involves an iterative increase of the supercell factors until
+        the minimum-distance criterion is satisfied. (See new file
+        m_check_supercell.f)
+        
+        The old behavior can be recovered by setting the fdf variable
+        NaiveAuxiliaryCell to .true. .
+
+    new files:
+     Src/.arch-ids/m_check_supercell.f.id Src/m_check_supercell.f
+
+    modified files:
+     Docs/siesta.tex Src/Makefile Src/siesta.F version.info
+
+    new patches:
+     siesta@uam.es--2006/siesta--release--2.0--patch-18
+     siesta@uam.es--2006/siesta--release--2.0--patch-22
+
+
+2006-12-11 16:29:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-9
+
+    Summary:
+      Fixes for Siesta-as-Server (from 2.0.1)
+    Revision:
+      siesta-devel--reference--2.1--patch-9
+
+    A number of fixes were needed for the proper functioning of the
+    Siesta-as-Server package (also known as "SiestaAsSubroutine")
+    (in addition to the purely cosmetic of openning the right CML context,
+    already committed):
+    
+    - iopipes.F90 had to be properly parallelized.
+    
+    - fsiesta.f90 has been moved from Util/... to the main source directory
+      in order to be compiled with the proper flushing routine.
+      A couple of issues having to do with optional arguments have also been fixed.
+    
+    - The makefile in Util/SiestaSubroutine/FmixMD/Src has been modified to
+      deal with the new place for fsiesta.f90.
+    
+    - Two new tests have been added. One of them tests the driving of a parallel
+      Siesta calculation. A new script "test.sh" automates these tests.
+    
+    In the main code, it has been noted that the "Forces" option (i.e.,
+    the computation of energy, forces, and stresses from geometry read
+    through pipes from a client program) should be assimilated to a
+    "variable cell" calculation, in the sense that the unit cell might be
+    different from call to call. Appropriate checks have been included to
+    regenerate k-point and supercell information if needed.
+    
+    In the same vein, if the client inputs a null unit cell, Siesta should
+    generate an automatic one, at any step. A new routine "automatic_cell.f"
+    has been written and is now called at the beginning of the initialization
+    section, and after every reading of geometry from pipes. 
+    
+    A null unit cell will be input whenever siesta_forces is not passed 
+    the optional "cell" parameter. This might happen during MD or relaxation
+    for a molecule. The actual unit cell used will then vary from step to
+    step. To avoid this, the cell should be passed explicitly in siesta_forces,
+    at every step (as it is done in the 'driver?' exampl).
+    
+    Other changes:
+    
+    - New Sys/intel9-cmkl8-mpi.make file for parallel compilation in Rocks cluster.
+    
+    - A new script in Tests/Scripts automates the handling of mpd daemons
+    in an interactive single-nod run (when allowed).
+    
+    Changes over 2.0.1 fix:
+    
+    * fsiesta.f90 renamed to fsiesta.F90 to enable NAG-specific module handling.
+    * Makefile: rerun of "make dep".
+
+    new files:
+     Src/.arch-ids/automatic_cell.f.id
+     Src/Sys/.arch-ids/intel9-cmkl8-mpi.make.id
+     Src/Sys/intel9-cmkl8-mpi.make Src/automatic_cell.f
+     Tests/Scripts/.arch-ids/simple_parallel.sh.id
+     Tests/Scripts/simple_parallel.sh
+     Util/SiestaSubroutine/FmixMD/.arch-ids/parallel.sh.id
+     Util/SiestaSubroutine/FmixMD/.arch-ids/test.sh.id
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/para.f90.id
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/simple.f90.id
+     Util/SiestaSubroutine/FmixMD/Src/para.f90
+     Util/SiestaSubroutine/FmixMD/Src/simple.f90
+     Util/SiestaSubroutine/FmixMD/parallel.sh
+     Util/SiestaSubroutine/FmixMD/test.sh
+
+    removed files:
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/fsiesta.f90.id
+     Util/SiestaSubroutine/FmixMD/Src/fsiesta.f90
+
+    modified files:
+     Src/Makefile Src/fsiesta.F90 Src/iopipes.F90 Src/siesta.F
+     Util/SiestaSubroutine/FmixMD/README
+     Util/SiestaSubroutine/FmixMD/Src/Makefile
+     Util/SiestaSubroutine/FmixMD/Src/fmixmd.f90
+     Util/SiestaSubroutine/README
+
+    renamed files:
+     Util/SiestaSubroutine/.arch-ids/fsiesta.f90.id
+       ==> Src/.arch-ids/fsiesta.F90.id
+     Util/SiestaSubroutine/FmixMD/Src/.arch-ids/makefile.id
+       ==> Util/SiestaSubroutine/FmixMD/Src/.arch-ids/Makefile.id
+     Util/SiestaSubroutine/FmixMD/Src/makefile
+       ==> Util/SiestaSubroutine/FmixMD/Src/Makefile
+     Util/SiestaSubroutine/fsiesta.f90
+       ==> Src/fsiesta.F90
+
+    new patches:
+     siesta@uam.es--2006/siesta--release--2.0--patch-23
+
+
+2006-12-11 15:58:25 GMT	Alberto Garcia <albertog@icmab.es>	patch-8
+
+    Summary:
+      Fixes from release-2.0 branch
+    Revision:
+      siesta-devel--reference--2.1--patch-8
+
+    A new set of fixes carried over from the 2.0 release branch.
+    See individual patch logs or the 2.0.1 release notes for
+    more information.
+    
+    Patches applied:
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-11
+       Fix syntax error in preprocessor block in mpi.F
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-12
+       Add COMP_LIBS to gen-basis link stage
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-13
+       Export all the environment in sge_run.sh
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-14
+       Fix bug in iohs.F (write statement)
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-16
+       Fix format issue in DxFormat.f90
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-17
+       Fixes in Makefile: denchar deps and netcdf interface
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-19
+       Parallel handling of spin check for KSV
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-20
+       Enhancement of iohs to deal with k-points
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-21
+       Bugfix in iohs for parallel execution
+    
+     * siesta@uam.es--2006/siesta--release--2.0--patch-25
+       Set target stress to zero in constant-volume variable-cell runs
+    
+
+    modified files:
+     Src/MPI/mpi.F Src/Makefile Src/arch.make.in Src/cgvc.F
+     Src/configure Src/configure.ac Src/iohs.F Src/siesta.F
+     Tests/Scripts/sge_run.sh Tests/fe/fe.fdf Tests/h2o/h2o.fdf
+     Util/Contrib/FElMellouhi/DxFormat.f90
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-13
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-16
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-29
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-36
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-43
+     jgale@siesta.arch--2005/siesta-general--jgale--2.1--patch-25
+     siesta@uam.es--2006/siesta--release--2.0--patch-11
+     siesta@uam.es--2006/siesta--release--2.0--patch-12
+     siesta@uam.es--2006/siesta--release--2.0--patch-13
+     siesta@uam.es--2006/siesta--release--2.0--patch-14
+     siesta@uam.es--2006/siesta--release--2.0--patch-16
+     siesta@uam.es--2006/siesta--release--2.0--patch-17
+     siesta@uam.es--2006/siesta--release--2.0--patch-19
+     siesta@uam.es--2006/siesta--release--2.0--patch-20
+     siesta@uam.es--2006/siesta--release--2.0--patch-21
+     siesta@uam.es--2006/siesta--release--2.0--patch-25
+
+
+2006-12-11 15:32:32 GMT	Alberto Garcia <albertog@icmab.es>	patch-7
+
+    Summary:
+      Enhancements to the vibra package
+    Revision:
+      siesta-devel--reference--2.1--patch-7
+
+    (Julian Gale)
+    
+    An option has been introduced to compute infra-red intensities. In
+    order to do this the Born effective charges must have been computed
+    along with the force constants and the .BC file must be present in the
+    current directory. The intensities are estimated according to formula
+    (6) in the paper by Fernandez-Torre et al in J. Phys.  Chem. A, 108,
+    10535-10541 (2004).
+    
+    Explicit copy of fdf.mod to deal with faulty arch.make's.
+    
+    Removal of chkdim call from klines.
+    
+    AG: Fixes for portability in Makefile and vibrator.f
+    
+    Patches applied:
+    
+     * jgale@siesta.arch--2005/siesta-general--jgale--2.1--patch-1
+       Call to chkdim removed from klines
+    
+     * jgale@siesta.arch--2005/siesta-general--jgale--2.1--patch-19
+       Copying of fdf module to Vibra directory for build automated
+    
+     * jgale@siesta.arch--2005/siesta-general--jgale--2.1--patch-20
+       Calculation of the IR intensities added to the Vibra package
+    
+
+    modified files:
+     Util/Vibra/Docs/CHANGES Util/Vibra/Docs/vibra.tex
+     Util/Vibra/Vibra/Makefile Util/Vibra/Vibra/klines.f
+     Util/Vibra/Vibra/vibrator.f
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-50
+     jgale@siesta.arch--2005/siesta-general--jgale--2.1--patch-1
+     jgale@siesta.arch--2005/siesta-general--jgale--2.1--patch-19
+     jgale@siesta.arch--2005/siesta-general--jgale--2.1--patch-20
+
+
+2006-12-11 15:30:16 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
+
+    Summary:
+      New "fire-quench" damped-dynamics optimization algorithm
+    Revision:
+      siesta-devel--reference--2.1--patch-6
+
+    (Emilio Artacho)
+    
+    A damped dynamics (named FIRE) by Bitzek et al, PRL 97, 170201 (2006).
+    Introduced in subroutine verlet2 (velocity Verlet), in dynamics.f,
+    just after the power quench option. Convergence is controlled by
+    MaxForceTol. No variable cell option included at this point. The
+    parameters controlling the algorithm have been taken from the original
+    paper and harwired into the routine.
+    Controlled by MD.FireQuench (logical), partly tunable by changing
+    the initial time step MD.LengthTimeStep, and the block AtomicMass.
+    
+    (New test sih_fire )
+    
+    
+
+    new files:
+     Tests/Reference/.arch-ids/sih_fire.out.id
+     Tests/Reference/sih_fire.out Tests/sih_fire/.arch-ids/=id
+     Tests/sih_fire/.arch-ids/makefile.id
+     Tests/sih_fire/.arch-ids/sih_fire.fdf.id
+     Tests/sih_fire/.arch-ids/sih_fire.pseudos.id
+     Tests/sih_fire/makefile Tests/sih_fire/sih_fire.fdf
+     Tests/sih_fire/sih_fire.pseudos
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile Src/dynamics.f
+     Src/redata.F Src/siesta.F Tests/Makefile
+
+    new directories:
+     Tests/sih_fire Tests/sih_fire/.arch-ids
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta-devel--eartacho--2.1--patch-4
+
+
+2006-12-11 14:19:35 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+    Summary:
+      New block BandPoints accepts arbitrary k-points
+    Revision:
+      siesta-devel--reference--2.1--patch-5
+
+    (Emilio Artacho)
+    
+    Instead of introducing lines of k-points for band calculations,
+    BandPoints allows for arbitrary k-points. Useful for other purposes
+    such as obtaining densities of states etc.
+    
+    New test: Tests/si_bandpoints 
+    Reference values in Tests/Reference/si_bandpoints.bands
+    
+    new files:
+     Tests/Reference/.arch-ids/si_bandpoints.bands.id
+     Tests/Reference/si_bandpoints.bands
+     Tests/si_bandpoints/.arch-ids/=id
+     Tests/si_bandpoints/.arch-ids/makefile.id
+     Tests/si_bandpoints/.arch-ids/si_bandpoints.fdf.id
+     Tests/si_bandpoints/.arch-ids/si_bandpoints.pseudos.id
+     Tests/si_bandpoints/makefile
+     Tests/si_bandpoints/si_bandpoints.fdf
+     Tests/si_bandpoints/si_bandpoints.pseudos
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/bands.F Tests/Makefile
+
+    new directories:
+     Tests/si_bandpoints Tests/si_bandpoints/.arch-ids
+
+    new patches:
+     eartacho@siesta.arch--2005/siesta-devel--eartacho--2.1--patch-1
+     eartacho@siesta.arch--2005/siesta-devel--eartacho--2.1--patch-2
+     eartacho@siesta.arch--2005/siesta-devel--eartacho--2.1--patch-3
+
+
+2006-10-02 09:09:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+    Summary:
+      Update CHANGES
+    Revision:
+      siesta-devel--reference--2.1--patch-4
+
+
+    modified files:
+     Docs/CHANGES
 2006-10-02 09:08:05 GMT Alberto Garcia <albertog@icmab.es>      patch-3
 
     Summary:
