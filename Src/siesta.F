@@ -61,6 +61,7 @@ C  Modules
       use m_iostruct,   only: write_struct, read_struct
       use m_nlefsm,     only: nlefsm
       use m_overfsm,    only: overfsm
+      use m_check_supercell, only: check_sc_factors
  
       use m_broyden_mixing
 
@@ -163,7 +164,7 @@ C  Modules
       logical
      .  auxchanged, chebef, dminit, default, dumpcharge, 
      .  final, first, fixauxcell, fixspin, found, foundxv, foundzm,
-     .  gamma,
+     .  gamma, naiveauxcell,
      .  initdmaux, inspn, itest, last, lastst, mix, mmix, negl, noeta, 
      .  outlng, overflow, overflowed, pulfile, relaxd,
      .  savehs, savevh, savevt, savdrh, savrho,
@@ -395,7 +396,8 @@ C Find some switches ..................................................
       call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
       call fdf_global_get(usesavezm, 'MD.UseSaveZM'    , default)
       call fdf_global_get(savehs, 'SaveHS'          , .false.)
-      call fdf_global_get(fixauxcell, 'FixAuxillaryCell', .false.)
+      call fdf_global_get(fixauxcell, 'FixAuxiliaryCell', .false.)
+      call fdf_global_get(naiveauxcell, 'NaiveAuxiliaryCell', .false.)
       call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .false.)
       call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
       call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance',
@@ -662,18 +664,26 @@ C Print k-point information (even if gamma point)
       if (IOnode) call siesta_write_k_points()
 
 C Find required supercell
-      do i = 1,3
-        mscell(1:3,i) = 0.0_dp
-        if (gamma) then
-          nsc(i) = 1
-          mscell(i,i) = 1
-        else
-          veclen = sqrt( ucell(1,i)**2 + ucell(2,i)**2 + ucell(3,i)**2 )
-          nsc(i) = 1 + 2 * rmaxh / veclen
-          mscell(i,i) = nsc(i)
-        endif
-        nscold(i) = nsc(i)
+C 2*rmaxh is used to guarantee that two given orbitals in the
+C supercell can only overlap once
+
+      if (gamma) then
+         nsc(1:3) = 1
+      else
+         do i=1,3
+            veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
+            nsc(i) = ceiling( 2 * rmaxh / veclen )
+         enddo
+         if (.not. naiveauxcell)
+     $        call check_sc_factors(ucell,nsc,2*rmaxh)
+      endif
+
+      mscell = 0.0_dp
+      do i = 1, 3
+         mscell(i,i) = nsc(i)
+         nscold(i) = nsc(i)
       enddo
+
 
 C Find auxiliary supercell (required only for k sampling) ............
       call superc( ucell, scell, nsc)
@@ -842,24 +852,27 @@ C Print k-points
        if (IOnode) call siesta_write_k_points()
  
 C Find required supercell
+
         auxchanged = .false.
-        do i = 1,3
-          mscell(1:3,i) = 0.0_dp
-          if (gamma) then
-            nsc(i) = 1
-            mscell(i,i) = 1
-          else
-            if (fixauxcell) then
-              nsc(i) = nscold(i)
-              mscell(i,i) = nsc(i)
-            else
+
+        if (gamma) then
+           nsc(1:3) = 1
+        else if (fixauxcell) then
+           nsc(i) = nscold(i)
+        else
+           do i=1,3
               veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
-              nsc(i) = 1 + 2 * rmaxh / veclen
-              mscell(i,i) = nsc(i)
-            endif
-          endif
-          if (nsc(i).ne.nscold(i)) auxchanged = .true.
-          nscold(i) = nsc(i)
+              nsc(i) = ceiling( 2 * rmaxh / veclen )
+           enddo
+           if (.not. naiveauxcell)
+     $         call check_sc_factors(ucell,nsc,2*rmaxh)
+        endif
+
+        mscell = 0.0_dp
+        do i = 1, 3
+           mscell(i,i) = nsc(i)
+           if (nsc(i).ne.nscold(i)) auxchanged = .true.
+           nscold(i) = nsc(i)
         enddo
 
 C Madelung correction for charged systems .............................

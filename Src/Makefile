@@ -63,7 +63,7 @@ OBJS = automatic_cell.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
-        mulliken.o minvec.o naefs.o neighb.o \
+        m_check_supercell.o mulliken.o minvec.o naefs.o neighb.o \
 	ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	propor.o pulayx.o \
@@ -340,6 +340,7 @@ m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
 m_broyden_mixing.o: m_broyddj.o m_memory.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o
+m_check_supercell.o: minvec.o parallel.o precision.o
 m_denchar_geom.o: precision.o sys.o
 m_denchar_init.o: files.o
 m_denchar_io.o: m_denchar_geom.o
