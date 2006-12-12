@@ -60,10 +60,6 @@
 ! Default energy-shift to define the cut off radius of orbitals
 ! In Rydbergs
 
-        real(dp), parameter             :: splnorm_default=0.15d0
-! Default norm-percentage for the automatic definition of
-! multiple-zeta orbitals with the 'SPLIT' option
-
         character(len=1)     :: sym(0:4) = (/ 's','p','d','f','g' /)
 
 !---------------------------------------------------------------------
@@ -73,7 +69,7 @@
         SUBROUTINE ATOM_MAIN(IZIN,LMXKB_IN,NKBL,EREFKB,LMXO, NZETA, 
      .          RCO,LAMBDA_IN,ATM_LABEL,
      .          NPOLORB,SEMIC,NSEMIC,CNFIGMX,CHARGE_IN,SMASS,BASISTYPE, 
-     .          ISIN,RINN,VCTE,basp)
+     .          ISIN,RINN,VCTE,split_norm,basp)
 
         implicit none
 
@@ -141,6 +137,9 @@
 
       real(dp), intent(in) :: vcte(0:lmaxd,nsemx), rinn(0:lmaxd,nsemx)
 !       Parameters for soft-confinement potential
+
+      real(dp), intent(in) :: split_norm(0:lmaxd,nsemx)
+!      User-defined split_norm values
 !
 !     Former arguments, no longer used
 !
@@ -562,10 +561,10 @@ c    .          'atom: The above configuration will be used ',
      .    'atom: for an anion of charge ',charge 
          endif
 
-         call Basis_gen(Zval,is, a,b,rofi,drdi,s,
+         call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO, nrval, lmxo,nsemic,
      .                   nzeta, rco, lambda, npolorb,
-     .                   basistype, rphi, no, rinn, vcte)
+     .                   basistype, rphi, no, rinn, vcte, split_norm)
  
       else
           if (abs(charge-zval+chgvps).gt.1.0d-3) then 
@@ -580,10 +579,11 @@ c    .          'atom: The above configuration will be used ',
      .  'atom: to generate the pseudopotential'
           endif
 
-        call Basis_gen(Zval,is, a,b,rofi,drdi,s,
+        call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps, vePAO, vePAO, nrval, lmxo,nsemic,
      .                   nzeta, rco, lambda, npolorb,
-     .                   basistype, rphi, no, rinn, vcte)
+     .                   basistype, rphi, no, rinn, vcte,
+     $                   split_norm)
       endif
         write(6,'(a,i3)')
      .      'atom: Total number of Sankey-type orbitals:', no
@@ -2847,11 +2847,11 @@ C
 C
         end  subroutine KBgen
 !
-              subroutine Basis_gen(Zval,is, a,b,rofi,drdi,s,
+              subroutine Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO, nrval, lmxo,nsemic, 
      .                   nzeta, rco, lambda, polorb,
      .                   basis_type, rphi, notot,
-     $                   rinn, vcte)
+     $                   rinn, vcte, split_norm)
 
 C****
 C Generates the basis set and stores all the information in the 
@@ -2869,10 +2869,11 @@ C****
      .            drdi(nrmax), s(nrmax), ve(nrmax),
      .            rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .            lambda(nzetmx, 0:lmaxd,nsemx), vePAO(nrmax),
-     .            Zval,rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx)
+     .            Zval,rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
+     $            split_norm(0:lmaxd,nsemx)
 
                integer
-     .           nrval, lmxo, notot, is, nzeta(0:lmaxd,nsemx),
+     .           nrval, lmxo, notot, is, iz, nzeta(0:lmaxd,nsemx),
      .           polorb(0:lmaxd,nsemx),nsemic(0:lmaxd)
 
                character
@@ -2889,12 +2890,12 @@ C***Internal variables**
                 noPOL=0
                 if(basis_type.eq.'split') then  
 
-                 call SPLIT(Zval,is, a,b,rofi,drdi,s,
+                 call SPLIT(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO, 
      .                   nrval, lmxo, nsemic,
      .                   nzeta, rco, lambda,
      .                   rphi, ePAO, noPAO,
-     $                   rinn, vcte)
+     $                   rinn, vcte, split_norm)
          
                 elseif(basis_type.eq.'nodes') then 
  
@@ -2925,10 +2926,10 @@ C***Internal variables**
 
 C***Polarization orbitals*
 C 
-                  call POLgen(is,a,b,rofi,drdi,
+                  call POLgen(is, iz, a,b,rofi,drdi,
      .               ePAO,rphi,rco,vps,vePAO,
      .               polorb,lmxo,nsemic,noPOL,
-     $               rinn, vcte,nrval) 
+     $               rinn, vcte,nrval, split_norm) 
 C
 C
 
@@ -2939,11 +2940,11 @@ C
           end subroutine basis_gen
 !
 
-           subroutine SPLIT(Zval,is,a,b,rofi,drdi,s,
+           subroutine SPLIT(Zval,is, iz, a,b,rofi,drdi,s,
      .             vps,ve,vePAO,
      .             nrval,lmxo, nsemic,
      .             nzeta,rco,lambda, rphi, ePAO, norb,
-     $             rinn,vcte) 
+     $             rinn,vcte,split_norm) 
 C****
 C Calculates the atomic orbitals basis set, using the option SPLIT 
 C for the generation of the augmentation orbitals.
@@ -2953,17 +2954,20 @@ C****
 
                implicit none
 
+               type(basis_def_t), pointer   :: basp
+
                real(dp)
      .         a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .         drdi(nrmax), s(nrmax), ve(nrmax),
      .         rphi(nrmax,0:lmaxd,nsemx), rco(nzetmx,0:lmaxd,nsemx),
      .         lambda(nzetmx,0:lmaxd,nsemx), Zval,vePAO(nrmax),
      .         ePAO(0:lmaxd,nsemx),
-     .         rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx)
+     .         rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
+     .         split_norm(0:lmaxd,nsemx)
 
 
                integer
-     .           nrval, lmxo, is, nzeta(0:lmaxd,nsemx),
+     .           nrval, lmxo, is, iz, nzeta(0:lmaxd,nsemx),
      .           norb, nsemic(0:lmaxd)
 
 
@@ -2978,7 +2982,7 @@ C***Internal variables**
      .           eigen(0:lmaxd), rc,
      .           rnrm(nrmax), dnrm, phi, frsp, dfrsp,
      .           cons1, cons2, rnp, spln, eshift, 
-     .           splnorm, g(nrmax), r, el, ekin, 
+     .           g(nrmax), r, el, ekin,
      .           r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .           epot, epot2, rh, dy, eorb, eps, 
      .           over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
@@ -2998,10 +3002,6 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
            eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
 
-C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
-
-           splnorm=fdf_double('PAO.SplitNorm',splnorm_default)
- 
 c junquera
              call io_assign(iu1)
              filename = paste(labelfis(is),'.POT.CONF')
@@ -3077,17 +3077,23 @@ C
                  endif  
 C
 
-CIF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE***
-C****LEFT UNTOUCHED**
+C IF THE COMPRESSION FACTOR IS NEGATIVE OR ZERO THE ORBITALS ARE
+C LEFT UNTOUCHED
              if(lambda(1,l,nsm).le.0.0d0) lambda(1,l,nsm)=1.0d0
 !
 ! SOFT-CONFINEMENT 
 !
-C Calculate the soft confinement potential for a given atomic specie
-C and angular momentum *************************************************
+C Calculate the soft confinement potential for a given atomic species
+C and angular momentum 
+!!AG** rco might not be the PAO cutoff radius! See below
+
               nrcomp = nint(dlog(rco(1,l,nsm)/b+1.0d0)/a)+1
               rcsan = rofi(nrcomp+1) + 1.d-6
-
+!
+!             Fractional rinn indicated by a negative value
+!
+              if (rinn(l,nsm) < 0.0_dp) rinn(l,nsm) = -rinn(l,nsm)*rcsan
+              
               write(iu1,'(a,i3)')
      .      '#    Soft confinement for shell nsm = ',nsm
               write(iu1,'(a,i3)')
@@ -3101,10 +3107,9 @@ C and angular momentum *************************************************
 
 
               do ir = 1, nrval
-                if(rofi(ir) .lt. rinn(l,nsm)) then
+                if(rofi(ir) .le. rinn(l,nsm)) then
                   vsoft(ir) = 0.d0
-                elseif (rofi(ir) .gt. rinn(l,nsm) .and.
-     .                  rofi(ir) .lt. rcsan) then
+                elseif (rofi(ir) .lt. rcsan) then
                   exponent = -(rcsan-rinn(l,nsm))/(rofi(ir)-rinn(l,nsm))
                   if( abs(exponent) .gt. 500.d0) then
                     vsoft(ir) = 0.d0
@@ -3145,6 +3150,10 @@ C**** SPLIT OPTION FOR THE GENERATION OF THE BASIS SET****
                   rco(izeta,l,nsm)=rc*lambda(1,l,nsm)
                   
                 if(izeta.eq.1) then 
+
+!
+!AG**    Soft-confinement setup might need to go here
+!
 C****Generate PAO orbitals for the first shell of the basis set***
 C 
                    nnodes=nsm
@@ -3160,6 +3169,7 @@ C
                       g(ir)=rphi(ir,l,nsm)/(rofi(ir)**(l+1))
                    enddo 
                    g(1)=g(2)         
+
                 else              ! izeta > 1...
        
 C***Cut-off radius for double-Z, triple-Z,..., if it is set to**** 
@@ -3197,15 +3207,17 @@ C**
                    write(6,'(/,A,I2,A,I2,A,I2)')
      .            'SPLIT: WARNING: Split-orbital with zeta=',izeta,
      .            ' and zeta=',i,' are identical for l=',l
+                   call die()
                  endif
                 enddo
-            else 
+            else        ! Generate multiple zeta
 
             rc=rco(1,l,nsm)/lambda(1,l,nsm)
             nrc=nint(log(rc/b+1.0d0)/a)+1
-            spln=splnorm
+
+            spln = split_norm(l,nsm)
             if(izeta.gt.2) then
-              spln=spln/(2.0d0*(izeta-2) )
+              spln=split_norm(l,nsm)/(2.0d0*(izeta-2) )
             endif
 
             call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
@@ -3223,7 +3235,7 @@ C
      .                                   .lt.1.0d-5) then
                    write(6,'(/,A,I2,A,I2,A,I2)')
      .            'SPLIT: WARNING: Split-orbital with zeta=',izeta,
-     .            ' and zeta=',i,' are identicals for l=',l
+     .            ' and zeta=',i,' are identical for l=',l
                 endif
              enddo
 
@@ -4722,10 +4734,10 @@ C*Internal variables**
    
            end subroutine slfe_local
 !
-            subroutine POLgen(is,a,b, rofi, drdi,
+            subroutine POLgen(is,iz,a,b, rofi, drdi,
      .          ePAO,rphi,rco,vps,ve,
      .          polorb,lmxo, nsemic,norb,
-     $          rinn,vcte,nrval)
+     $          rinn,vcte,nrval, split_norm)
 C****
 C Calculates the polarization  orbitals for the basis set augmentation.
 C Written by D. Sanchez-Portal, Aug. 1998.
@@ -4740,10 +4752,11 @@ C
      .         rphi(nrmax,0:lmaxd,nsemx), 
      .         rco(nzetmx,0:lmaxd,nsemx),
      .         ePAO(0:lmaxd,nsemx),
-     .         rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx)
+     .         rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
+     $         split_norm(0:lmaxd,nsemx)
 
                integer
-     .           lmxo, is, norb, polorb(0:lmaxd,nsemx), 
+     .           lmxo, is, iz, norb, polorb(0:lmaxd,nsemx), 
      .           nsemic(0:lmaxd), nrval
 
                integer
@@ -4755,15 +4768,11 @@ C
      .           phipol(nrmax),
      .           rnrm(nrmax), dnrm, phi,
      .           cons1, cons2, spln, 
-     .           splnorm, g(nrmax), r, ekin, 
+     .           g(nrmax), r, ekin, 
      .           r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .           epot, epot2, eorb, eps,
      $           rcsan, exponent, vsoft(nrmax), vePAOsoft(nrmax)
 
-
-C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
-
-           splnorm=fdf_double('PAO.SplitNorm',splnorm_default)
 
  
              norb=0 
@@ -4776,7 +4785,7 @@ C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
      .    'POLgen: Perturbative polarization orbital with L= ',l+1
                   goto 50
                 endif
-              enddo
+               enddo
 
 50            continue
 
@@ -4784,17 +4793,24 @@ C***READING SPLNORM TO GENERATE THE SPLIT IF Rmatch IS ZERO IN INPUT****
               do nsm=1,nsemic(l)+1
 
                if (polorb(l,nsm).gt.0) then 
+
 !
 ! Soft-confinement
 !
 C Calculate the soft-confinement potential for the polarization orbitals
               nrcomp = nint(dlog(rco(1,l,nsm)/b+1.0d0)/a)+1
               rcsan = rofi(nrcomp+1) + 1.d-6
+!
+!             Fractional rinn indicated by a negative value
+!             (By this time rinn might have been already reset while 
+!             generating the PAOs we are polarizing now)
+!
+              if (rinn(l,nsm) < 0.0_dp) rinn(l,nsm) = -rinn(l,nsm)*rcsan
+
               do ir = 1, nrval
-                if(rofi(ir) .lt. rinn(l,nsm)) then
+                if(rofi(ir) .le. rinn(l,nsm)) then
                   vsoft(ir) = 0.d0
-                elseif (rofi(ir) .gt. rinn(l,nsm) .and.
-     .                  rofi(ir) .lt. rcsan) then
+                elseif (rofi(ir) .lt. rcsan) then
                   exponent = -(rcsan-rinn(l,nsm))/
      .                        (rofi(ir)-rinn(l,nsm))
                   if(exponent .gt. -100.d0) then
@@ -4825,11 +4841,12 @@ C Calculate the soft-confinement potential for the polarization orbitals
                   rc=rco(1,l,nsm) 
                   rcpol(ipol,l,nsm)=rc
                   nrc=nint(log(rc/b+1.0d0)/a)+1
-C**Generate the polarization function perturbatively from the original PAO**
-C 
 
-            call polarization(a,rofi,rphi(1,l,nsm),vps(1,l),
-     .            vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
+!                 Generate the polarization function perturbatively 
+!                 from the original PAO**
+
+                  call polarization(a,rofi,rphi(1,l,nsm),vps(1,l),
+     .                 vePAOsoft,drdi,nrc,l,ePAO(l,nsm),g,nrc)
 
                        dnrm=0.0d0
                        do ir=2,nrc-1
@@ -4842,15 +4859,17 @@ C
                        g(1)=g(2)
                        g(nrc)=0.0d0
                        phipol(nrc)=0.0d0
-c               elseif(ipol.gt.1) then  
+
                 else
+
+!                  Multiple shells can be generated using the split scheme
+
                    rc=rco(1,l,nsm) 
                    nrc=nint(log(rc/b+1.0d0)/a)+1
-C***Multiple shells can be generated using the split scheme***
        
-            spln=splnorm
+            spln=split_norm(l,nsm)
             if(ipol.gt.2) then
-              spln=spln/(2.0d0*(ipol-2) )
+              spln=split_norm(l,nsm)/(2.0d0*(ipol-2) )
             endif
 
             call parabola(a,b,nrc,phipol,rnrm,
@@ -4892,11 +4911,8 @@ C****Normalization of basis functions***
             endif
 C****
 
-
 C*Calculation of the mean value of kinetic and potential energy**
 C    Potential and kinetic energy of the orbital
-
-
 
              ekin=0.0d0 
              epot=0.0d0
@@ -4922,9 +4938,6 @@ C    Potential and kinetic energy of the orbital
              enddo
              eorb=ekin+epot
        
-
-
-
             if(ipol.eq.1) then  
 
              write(6,'(/,(3x,a,i2),2(/,a25,f12.6))')
@@ -4950,9 +4963,6 @@ C    Potential and kinetic energy of the orbital
             indx=indx+1
             call comPOL(is,a,b,rofi,g,l,
      .             nsm,rcpol(ipol,l,nsm),ipol,nrc,indx)
-
-
-
 
               enddo 
         

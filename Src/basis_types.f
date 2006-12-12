@@ -46,6 +46,7 @@
           integer                   ::  nzeta      ! Number of PAOs
           logical                   ::  polarized  
           integer                   ::  nzeta_pol
+          real(dp)                  ::  split_norm ! Split norm value
           real(dp)                  ::  rinn       ! Soft confinement
           real(dp)                  ::  vcte       ! Soft confinement
           real(dp), pointer         ::  rc(:)      ! rc's for PAOs
@@ -108,6 +109,7 @@
       integer      ,save, public, allocatable :: cnfigmx(:,:)
       integer      ,save, public, allocatable :: polorb(:,:,:)
       integer      ,save, public, allocatable :: nzeta(:,:,:)
+      real(dp)     ,save, public, allocatable :: split_norm(:,:,:)
       real(dp)     ,save, public, allocatable :: vcte(:,:,:)
       real(dp)     ,save, public, allocatable :: rinn(:,:,:)
       real(dp)     ,save, public, allocatable :: erefkb(:,:,:)
@@ -156,6 +158,7 @@
       target%nzeta_pol = source%nzeta_pol
       target%rinn = source%rinn
       target%vcte = source%vcte
+      target%split_norm = source%split_norm
 
       allocate(target%rc(1:size(source%rc)))
       allocate(target%lambda(1:size(source%lambda)))
@@ -174,6 +177,7 @@
       p%nzeta_pol = 0
       p%rinn = 0._dp
       p%vcte = 0._dp
+      p%split_norm = 0.0_dp
       nullify(p%rc,p%lambda)
       end subroutine init_shell
 
@@ -263,6 +267,7 @@
       write(6,'(5x,a20,i20)') 'Nzeta'           ,     p%nzeta
       write(6,'(5x,a20,l20)') 'Polarized?       ',    p%polarized
       write(6,'(5x,a20,i20)') 'Nzeta pol'           , p%nzeta_pol
+      write(6,'(5x,a20,g20.10)') 'split_norm'     , p%split_norm
       write(6,'(5x,a20,g20.10)') 'rinn'           , p%rinn
       write(6,'(5x,a20,g20.10)') 'vcte'           , p%vcte
       write(6,'(5x,a)') 'rc and lambda for each nzeta:'
@@ -409,6 +414,7 @@
      $          nkbl(0:lmaxd,nsp))
       allocate (polorb(0:lmaxd,nsemx,nsp))
       allocate (nzeta(0:lmaxd,nsemx,nsp))
+      allocate (split_norm(0:lmaxd,nsemx,nsp))
       allocate (vcte(0:lmaxd,nsemx,nsp))
       allocate (rinn(0:lmaxd,nsemx,nsp))
       allocate (erefkb(nkbmx,0:lmaxd,nsp))
@@ -428,6 +434,7 @@
 
       nkbl(:,:) = 0
       nzeta(:,:,:) = 0
+      split_norm(:,:,:) = 0.d0
       vcte(:,:,:) = 0.d0
       rinn(:,:,:) = 0.d0
       polorb(:,:,:) = 0
@@ -465,6 +472,7 @@
                cnfigmx(l,isp) = max(cnfigmx(l,isp),s%n)
                nzeta(l,n,isp) = s%nzeta
                polorb(l,n,isp) = s%nzeta_pol
+               split_norm(l,n,isp) = s%split_norm
                vcte(l,n,isp) = s%vcte
                rinn(l,n,isp) = s%rinn
 !
@@ -519,6 +527,8 @@
                write(lun,'(10x,a2,i1,2x,a6,i1,2x,a7,i1)')
      $                         'n=', n, 'nzeta=',nzeta(l,n,is),
      $                         'polorb=', polorb(l,n,is)
+               write(lun,'(10x,a10,2x,g12.5)') 
+     $                         'splnorm:', split_norm(l,n,is)
                write(lun,'(10x,a10,2x,g12.5)') 
      $                         'vcte:', vcte(l,n,is)
                write(lun,'(10x,a10,2x,g12.5)') 

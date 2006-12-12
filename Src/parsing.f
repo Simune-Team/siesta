@@ -11,6 +11,9 @@
       module parsing
 
       implicit none
+      
+      public :: parse
+      private
 
       contains
 

@@ -11,6 +11,7 @@
       module xcmod
 
         use precision, only : dp
+        use parsing, only: parse
 
         implicit none
 

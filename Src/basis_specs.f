@@ -154,6 +154,17 @@
       character(len=1), parameter   ::
      $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
+!     Default Soft-confinement parameters set by the user
+!
+      logical, save   :: lsoft
+      real(dp), save  :: softRc, softPt
+
+! Default norm-percentage for the automatic definition of
+! multiple-zeta orbitals with the 'SPLIT' option
+
+      real(dp), parameter       :: splnorm_default=0.15_dp
+      real(dp), parameter       :: splnormH_default=-1.0_dp
+      real(dp), save            :: global_splnorm, global_splnorm_H
       integer           isp  ! just an index dummy variable for the whole module
 
       public :: read_basis_specs
@@ -171,13 +182,14 @@
       character(len=15) :: basis_size
       character(len=10) :: basistype_generic
 
+      
       type(ground_state_t), pointer :: gs
 
       integer nns, noccs, i, ns_read, l
       logical synthetic_atoms, found, reparametrize_pseudos
       real(dp) :: new_a, new_b
 
-
+!------------------------------------------------------------------------
       reparametrize_pseudos =
      $   fdf_boolean('ReparametrizePseudos',.false.)
       if (reparametrize_pseudos) then
@@ -190,6 +202,25 @@
       basistype_generic=fdf_string('PAO.BasisType',basistype_default)
       call type_name(basistype_generic)
 
+C Read information about defaults for soft confinement
+
+      lsoft  = fdf_boolean('PAO.SoftDefault',.false.)
+      softRc = fdf_double('PAO.SoftInnerRadius',0.9d0)
+      softPt = fdf_double('PAO.SoftPotential',40.0d0)
+
+C Sanity checks on values
+
+      softRc = max(softRc,0.00d0)
+      softRc = min(softRc,0.99d0)
+      softPt = abs(softPt)
+!
+!     Read defaults for split_norm parameter
+
+      global_splnorm = fdf_double('PAO.SplitNorm',splnorm_default)
+      global_splnorm_H = fdf_double('PAO.SplitNormH',splnormH_default)
+      if (global_splnorm_H < 0.0_dp) global_splnorm_H = global_splnorm
+
+!------------------------------------------------------------------
 !
 !     Use standard routine in chemical module to process the
 !     chemical species
@@ -550,7 +581,7 @@
 
       subroutine repaobasis
 
-      integer isp, ish, nn, i, ind, l, indexp
+      integer isp, ish, nn, i, ind, l, indexp, index_splnorm
 
       nullify(bp)
       If (.not.fdf_block('PAO.Basis',bp)) RETURN
@@ -603,6 +634,24 @@
                call die("Bad format of (n), l, nzeta line in PAO.Basis")
             endif
             ! Optional stuff: Polarization and Soft-confinement Potential
+
+            if (search(p,"S",index_splnorm)) then
+               if (match(p,"v",after=index_splnorm)) then
+                  s%split_norm = values(p,ind=1,after=index_splnorm)
+                  if (s%split_norm == 0.0_dp)
+     $               write(6,"(a)")
+     $               "WARNING: zero split_norm after S in PAO.Basis"
+               else
+                  call die("Specify split_norm after S in PAO.Basis")
+               endif
+            else
+               if (abs(basp%z).eq.1) then
+                  s%split_norm = global_splnorm_H
+               else
+                  s%split_norm = global_splnorm
+               endif
+            endif
+
             if (search(p,"P",indexp)) then
                s%polarized = .true.
                if (match(p,"i",after=indexp)) then
@@ -611,6 +660,7 @@
                   s%nzeta_pol = 1
                endif
             endif
+
             if (search(p,"E",indexp)) then
                if (match(p,"vv",after=indexp)) then
                   s%vcte = values(p,ind=1,after=indexp)
@@ -618,7 +668,14 @@
                else
                   call die("Need vcte and rinn after E in PAO.Basis")
                endif
+            elseif (lsoft) then
+               s%vcte = softPt 
+               s%rinn = -softRc
+            else
+               s%vcte = 0.0_dp
+               s%rinn = 0.0_dp
             endif
+
             call destroy(p)
 
             allocate(s%rc(s%nzeta),s%lambda(s%nzeta))
@@ -630,7 +687,16 @@
             do i=1,s%nzeta
                s%rc(i) = values(p,i)
             enddo
+            if (s%split_norm /= 0.0_dp) then
+               ! Set rc of the second zeta to zero
+!               if (s%nzeta > 2)
+!     $        call die("Ambiguity: nzeta > 2 and split_norm specified")
+               write(6,"(a)")
+     $          "Setting rc(2:) to zero as per split_norm specification"
+               s%rc(2:) = 0.0_dp
+            endif
             call destroy(p)
+
             ! Optional scale factors. They MUST be reals, or else...
             if (.not. fdf_bline(bp,line)) then
                if (ish.ne.basp%nshells_tmp)
@@ -652,10 +718,10 @@
                endif
                call destroy(p)
             endif
+
          enddo shells
          ! Clean up for this species
       enddo loop
-
 !
 !        OK, now classify the states by l-shells
 !
@@ -877,20 +943,53 @@ c (according to atmass subroutine).
       character(len=*), intent(inout)  ::  str
 
 
-      if(leqi(str,'STANDARD')) str='dzp'
-      if(leqi(str,'DZP'))  str='dzp'
-      if(leqi(str,'DZ')) str='dz'
       if(leqi(str,'MINIMAL')) str='sz'
       if(leqi(str,'SZ'))  str='sz'
       if(leqi(str,'SZP')) str='szp'
+      if(leqi(str,'SZP1')) str='szp'
+      if(leqi(str,'SZSP')) str='szp'
+      if(leqi(str,'SZ1P')) str='szp'
+|
+      if(leqi(str,'DZ')) str='dz'
+      if(leqi(str,'STANDARD')) str='dzp'
+      if(leqi(str,'DZP'))  str='dzp'
+      if(leqi(str,'DZP1'))  str='dzp'
+      if(leqi(str,'DZ1P'))  str='dzp'
+      if(leqi(str,'DZSP'))  str='dzp'
+      if(leqi(str,'DZP2'))  str='dzp2'
+      if(leqi(str,'DZDP'))  str='dzp2'
+      if(leqi(str,'DZ2P'))  str='dzp2'
+!
+      if(leqi(str,'TZ')) str='tz'
+      if(leqi(str,'TZP')) str='tzp'
+      if(leqi(str,'TZ1P')) str='tzp'
+      if(leqi(str,'TZP1')) str='tzp'
+      if(leqi(str,'TZSP')) str='tzp'
+      if(leqi(str,'TZP2')) str='tzp2'
+      if(leqi(str,'TZ2P')) str='tzp2'
+      if(leqi(str,'TZDP')) str='tzp2'
+      if(leqi(str,'TZP3')) str='tzp3'
+      if(leqi(str,'TZ3P')) str='tzp3'
+      if(leqi(str,'TZTP')) str='tzp3'
  
       if( (str.ne.'szp').and.(str.ne.'sz').and.
-     .    (str.ne.'dz') .and.(str.ne.'dzp') ) then
+     .     (str.ne.'dz') .and.(str.ne.'dzp') .and.
+     .     (str.ne.'tz') .and.(str.ne.'tzp') .and.
+     .     (str.ne.'dzp2') .and.
+     .     (str.ne.'tzp2') .and. (str.ne.'tzp3') ) then
 
-         write(6,'(/,2a,/,a)')
+         write(6,'(/,2a,/,9(a,/))')
      .   'size_name: Incorrect basis-size option specified,',
      .   ' active options are:',
-     .   'SZ, SZP, DZ, DZP, and STANDARD'
+     .   '  SZ or MINIMAL', 
+     .   '  SZP, SZSP, SZ1P, SZP1',
+     $   '  DZ ',
+     $   '  DZP, DZSP, DZP1, DZ1P or STANDARD',
+     $   '  DZDP, DZP2, DZ2P ',
+     $   '  TZ ',
+     $   '  TZP, TZSP, TZP1, TZ1P',
+     $   '  TZDP, TZP2, TZ2P',
+     $   '  TZTP, TZP3, TZ3P'
 
          call die
       endif
@@ -967,7 +1066,7 @@ c (according to atmass subroutine).
 !     It sets the defaults if a species has not been included
 !     in the PAO.Basis block
 !
-      integer l, nzeta
+      integer l, nzeta, nzeta_pol
 
       loop: do isp=1, nsp
          basp=>basis_parameters(isp)
@@ -992,6 +1091,7 @@ c (according to atmass subroutine).
 
          if (basp%basis_size(1:2) .eq. 'sz') nzeta = 1
          if (basp%basis_size(1:2) .eq. 'dz') nzeta = 2
+         if (basp%basis_size(1:2) .eq. 'tz') nzeta = 3
 
          loop_l: do l=0, basp%lmxo
             ls=>basp%lshell(l)
@@ -1008,9 +1108,21 @@ c (according to atmass subroutine).
                s%nzeta = 0
             endif
             s%polarized = .false.
+            if (abs(basp%z).eq.1) then
+               s%split_norm = global_splnorm_H
+            else
+               s%split_norm = global_splnorm
+            endif
             s%nzeta_pol = 0
-            s%rinn = 0.d0
-            s%vcte = 0.d0
+
+            if (lsoft) then
+               s%vcte = softPt 
+               s%rinn = -softRc
+            else
+               s%rinn = 0.d0
+               s%vcte = 0.d0
+            endif
+
             if (s%nzeta .ne.0) then
                allocate(s%rc(1:s%nzeta))
                allocate(s%lambda(1:s%nzeta))
@@ -1029,6 +1141,15 @@ c (according to atmass subroutine).
 
          ! note that we go up to l=4 to make the loop simpler.
          ! (that is the reason why 'occupied' is dimensioned to 0:4)
+
+            select case (basp%basis_size(4:4))
+              case (' ', '1')
+                 nzeta_pol = 1
+              case ('2')
+                 nzeta_pol = 2
+              case ('3')
+                 nzeta_pol = 3
+            end select
 
             loop_angmom: do l=1,4
                if (.not. basp%ground_state%occupied(l)) then
@@ -1050,7 +1171,7 @@ c (according to atmass subroutine).
                      s%lambda(1:s%nzeta) = 1.d0
                   endif
                   s%polarized = .true.
-                  s%nzeta_pol = 1
+                  s%nzeta_pol = nzeta_pol
 
                   exit loop_angmom  ! Polarize only one shell!
                endif

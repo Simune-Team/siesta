@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.1-devel-p-3}}
+{\Huge {\bf S I E S T A \, \, 2.1-devel}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large Dec 8, 2006 }
+{\Large Dec 13, 2006 }
 
 \vspace{1.5cm}
 
@@ -1130,6 +1130,47 @@ specified in that block are zero for zetas higher than one.
 
 {\it Default value:} {\tt 0.15} (sensible values range between 0.05 and 0.5).
 
+\item[{\bf PAO.SplitNormH}] ({\it real}):
+\index{PAO.SplitNormH@{\bf PAO.SplitNormH}}\index{basis!split valence
+  for H}
+This option is as per {\bf PAO.SplitNorm} but allows a separate
+default to be
+specified for hydrogen which typically needs larger values than those
+for other
+elements.
+
+
+\item[{\bf PAO.SoftDefault}] ({\it boolean}):
+\index{PAO.SoftDefault@{\bf PAO.SoftDefault}}\index{basis!default soft
+  confinement}
+If set to true then this option causes soft confinement to be the
+default form
+of potential during orbital generation. The default potential and
+inner radius
+are set by the commands given below.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf PAO.SoftInnerRadius}] ({\it real}):
+\index{PAO.SoftInnerRadius@{\bf
+    PAO.SoftInnerRadius}}\index{basis!default soft confinement radius}
+For default soft confinement, the inner radius is set at a fraction of
+the outer
+confinement radius determined by the energy shift. This option
+controls the fraction
+of the confinement radius to be used.
+
+{\it Default value:} {\tt 0.9}
+
+\item[{\bf PAO.SoftPotential}] ({\it real}):
+\index{PAO.SoftPotential@{\bf PAO.SoftPotential}}\index{basis!default
+  soft confinement potential}
+For default soft confinement, this option controls the value of the
+potential used
+for all orbitals.
+
+{\it Default value:} {\tt 40.0 Ry}
+
 
 \item[{\bf PS.lmax}]  ({\it data block}): 
 \index{PS.lmax@{\bf PS.lmax}}
@@ -1234,8 +1275,11 @@ parameters that are used to construct the atomic basis. There is no
 need to enter information for all the species present in the
 calculation. The basis\index{basis!PAO} for the species not mentioned in
 this block will be generated automatically using the parameters {\bf
-PAO.BasisSize}, {\bf PAO.BasisType}, {\bf PAO.EnergyShift} and {\bf
-PAO.SplitNorm}. Some parameters can be set to zero, or
+PAO.BasisSize}, {\bf PAO.BasisType}, {\bf PAO.EnergyShift}, {\bf
+PAO.SplitNorm} (or {\bf PAO.SplitNormH}), and the soft-confinement
+defaults, if used (See {\bf PAO.SoftDefault}). 
+
+Some parameters can be set to zero, or
 left out completely.  In these cases the values will be generated from the
 magnitudes defined above, or from the appropriate default values. For
 example, the radii\index{cutoff radius} will be obtained from {\bf
@@ -1253,7 +1297,7 @@ O    2  nodes  1.0   # Label, l_shells, type (opt), ionic_charge (opt)
      1 1  P 2        # l, Nzeta, PolOrb (opt), NzetaPol (opt)
      3.50            #     rc(izeta=1,Nzeta)(Bohr)
 H    1               # Label, l_shells, type (opt), ionic_charge (opt)
-     0 2             # l, Nzeta
+     0 2 S 0.2       # l, Nzeta, Per-shell split norm parameter
      5.00  0.00      #     rc(izeta=1,Nzeta)(Bohr)
 %endblock PAO.Basis
 \end{verbatim}
@@ -1265,12 +1309,14 @@ the routines in {\tt Src/basis\_specs.f} for detailed information):
 
 \begin{verbatim}
     From js = 1 to  nspecies 
-         read: label(is), l_shells(is), { type(is) }, { ionic_charge(is) }
-         From lsh=1 to l_shells(is)
-              read: { n }, l, nzls(l,is), { PolOrb(l+1) }, { NzetaPol(l+1) },
-               {SoftConfFlag(l,is)}, {PrefactorSoft(l,is)}, {InnerRadSoft(l,is)}
-              read: rcls(izeta,il,is), from izeta = 1 to nzls(l,is)
-              read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
+       read: label(is), l_shells(is), { type(is) }, { ionic_charge(is) }
+       From lsh=1 to l_shells(is)
+        read: 
+         { n }, l(lsh), nzls(lsh,is), { PolOrb(l+1) }, { NzetaPol(l+1) },
+         {SplitNormfFlag(lsh,is)}, {SplitNormValue(lsh,is)}
+         {SoftConfFlag(lsh,is)}, {PrefactorSoft(lsh,is)}, {InnerRadSoft(lsh,is)}
+           read: rcls(izeta,lsh,is), from izeta = 1 to nzls(l,is)
+           read: { contrf(izeta,il,is) }, from izeta = 1 to nzls(l,is)
 \end{verbatim}
 
 \noindent
@@ -1285,7 +1331,10 @@ Kind of basis set generation procedure for species {\tt is}.
 Same options as {\bf PAO.BasisType}
 \item[-] {\tt ionic\_charge(is)}: {\it Optional input}. 
 Net charge of species {\tt is}. This is  only used for
-basis set generation purposes. {\it Default value}: {\tt 0.0} (neutral atom)
+basis set generation purposes. {\it Default value}: {\tt 0.0} (neutral
+atom). Note that if the pseudopotential was generated in an ionic
+configuration, and no charge is specified in PAO.Basis, the ionic
+charge setting will be that of pseudopotential generation.
 \item[-] {\tt n}: Principal quantum number of the shell. This is an optional 
 input for normal atoms, however it must be specified when there are
 {\it semicore} states (i.e. when states that usually are not 
@@ -1293,8 +1342,7 @@ considered to belong to the
 valence shell have been included in the calculation)
 \item[-] {\tt l}: Angular momentum of 
 basis orbitals of this shell
-\item[-] {\tt nzls(l,is)}: Number of 'zetas' for angular 
-momentum l of species {\tt is}
+\item[-] {\tt nzls(lsh,is)}: Number of 'zetas' for this shell.
 \item[-] {\tt PolOrb(l+1)}: {\it Optional input}. If set equal to {\tt P}, a 
 shell of  
 polarization functions (with angular momentum $l+1$)  will be constructed 
@@ -1302,24 +1350,29 @@ from the first-zeta orbital of angular momentum $l$. {\it Default value}: ' '
 (blank = No polarization orbitals). 
 \item[-] {\tt NzetaPol(l+1)}: {\it Optional input}. Number of
 'zetas' for the 
-polarization shell (generated automatically in a split valence fashion). 
+polarization shell (generated automatically in a split-valence fashion). 
 Only active if {\tt PolOrb = P}. {\it Default value}: {\tt 1} 
+\item[-] {\tt SplitNormFlag(lsh,is)}:\index{basis!soft confinement potential}
+{\it Optional input}. If set equal to 
+{\tt S}, the following number sets the split-norm parameter for that shell.
 \item[-] {\tt SoftConfFlag(l,is)}:\index{basis!soft confinement potential}
 {\it Optional input}. If set equal to 
 {\tt E}, the new soft confinement potential proposed in formula (1) of
 the paper by J. Junquera {\it et al.}, Phys. Rev. B {\bf 64}, 235111 (2001),
-is used instead of the Sankey hard well potential.
+is used instead of the Sankey hard-well potential.
 \item[-] {\tt PrefactorSoft(l,is)}: {\it Optional input}. Prefactor
 of the soft confinement potential ($V_{0}$ in the formula). Units in Ry. 
 {\it Default value}: 0 Ry.
 \item[-] {\tt InnerRadSoft(l,is)}: {\it Optional input}. Inner radius where
 the soft confinemet potential starts off ($r_{i}$ in the foormula). 
+If negative, the inner radius will be computed as the given fraction
+of the PAO cutoff radius.
 Units in bohrs. {\it Default value}: 0 bohrs. 
 \item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of 
-each 'zeta' for each angular momentum {\tt l} of species {\tt is}
+each 'zeta' for this shell.
 \item[-] {\tt contrf(izeta,l,is)}: {\it Optional input}. 
 Contraction factor\index{scale factor} of 
-each 'zeta' for each angular momentum {\tt l} of species {\tt is}.
+each 'zeta' for this shell.
 {\it Default value}: {\tt 1.0}
 \end{itemize} 
 
@@ -1337,13 +1390,13 @@ unbound states of the atom, their shape depending very much on the
 cutoff radius, not converging by increasing it, similarly to the
 multiple-zeta orbitals generated with the {\tt nodes} option. 
 Using {\bf PAO.EnergyShift} makes no sense, and a cut off 
-radius different from zero must be explicitely given (the same cutoff radius
+radius different from zero must be explicitly given (the same cutoff radius
 as the orbitals they polarize is usually a sensible choice).
 
 A species with atomic number = -100 will be considered by {\sc Siesta} as
 a constant-pseudopotential atom, {\it i.e.}, the basis functions
 generated will be spherical Bessel functions\index{Bessel functions}
-with the specified $r_c$. In this case, $r_c$ has to be given, 
+with the specified $r_c$. In this case, $r_c$ has to be given, as
 {\bf EnergyShift} will not calculate it.\index{basis!Bessel functions}
 
 Other negative atomic numbers will be interpreted by {\sc Siesta} as 
@@ -1354,7 +1407,8 @@ but neither pseudopotential nor electrons are considered for that
 ghost atom. Useful for BSSE\index{basis!basis set superposition 
 error (BSSE)} correction.
 
-{\it Use:} This block is optional, except when Bessel functions are present. 
+{\it Use:} This block is optional, except when Bessel functions or
+semicore states are present. 
 
 {\it Default:} Basis characteristics defined by global definitions given
 above.
@@ -4967,6 +5021,42 @@ could be far from the actual charge density, and
 the calculation would most probably not converge.
 \end{itemize}
 
+
+\section{SPECIALIZED OPTIONS}
+
+Experimental or very low-level options.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf Reparametrize.Pseudos}] ({\it logical}): 
+\index{Reparametrize.Pseudos@{\bf Reparametrize.Pseudos}}
+
+By changing the $a$ and $b$ parameters of the logarithmic grid, a new one
+with a more homogeneous overall grid-point separation can be used for
+the generation of basis sets and projectors. For example, by using
+$a=5x10^{-4}$ and $b=10$, the grid point separations at $r=0$ and 10 bohrs are
+0.005 and 0.01 bohrs, respectively. More points are needed to reach r's of
+the order of a hundred bohrs, but the extra computational effort is negligible.
+
+\item[{\bf New.A.Parameter}] ({\it real}):
+\index{New.A.Parameter@{\bf
+    New.A.Parameter}}\index{basis!reparametrization of pseudopotential}
+
+New setting for the pseudopotential grid's $a$ parameter
+
+{\it Default value:} { $5.0x10^{-4}$}
+
+\item[{\bf New.B.Parameter}] ({\it real}):
+\index{New.B.Parameter@{\bf
+    New.B.Parameter}}\index{basis!reparametrization of pseudopotential}
+
+New setting for the pseudopotential grid's $b$ parameter
+
+{\it Default value:} { $10.0$}
+
+\end{description}
 
 \section{PROBLEM HANDLING}
 

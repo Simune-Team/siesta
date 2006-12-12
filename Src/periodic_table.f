@@ -15,6 +15,10 @@
 
       implicit none
 
+      public :: qvlofz, lmxofz, cnfig, symbol, atmass
+
+      private
+
       CONTAINS
 
 

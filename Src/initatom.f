@@ -36,7 +36,7 @@
      .           lambda,
      .           atm_label, polorb, semic, nsemic,
      .           cnfigmx, charge, smass, basistype,
-     $           rinn, vcte 
+     $           rinn, vcte, split_norm
       use basis_types, only: write_basis_specs
       use basis_types, only: basis_def_t, basis_parameters
       use basis_specs, only: read_basis_specs
@@ -101,7 +101,7 @@ c Reading input for the pseudopotentials and atomic orbitals
      .           lambda(1,0,1,is),
      .           atm_label(is), polorb(0,1,is), semic(is), nsemic(0,is),
      .           cnfigmx(0,is),charge(is), smass(is), basistype(is), is,
-     $           rinn(0,1,is), vcte(0,1,is),basp)
+     $           rinn(0,1,is), vcte(0,1,is), split_norm(0,1,is), basp)
          enddo 
 
          call prinput(nsp)

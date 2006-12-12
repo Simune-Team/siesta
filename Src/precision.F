@@ -38,5 +38,7 @@
       integer, parameter :: on_p = sp
 #endif
 
+      public
+
       end module precision
 

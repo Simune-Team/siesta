@@ -2,6 +2,8 @@ module m_wxml_error
 
 implicit none
 
+public :: wxml_fatal
+
 interface wxml_warning
   module procedure wxml_warning_base
 end interface

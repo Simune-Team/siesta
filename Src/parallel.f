@@ -41,4 +41,6 @@ C
       logical, save :: ParallelOverK
       logical, save :: ResetFirstCall = .false.
 
+      public
+
       end module parallel
