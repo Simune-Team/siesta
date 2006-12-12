@@ -14,7 +14,7 @@
       use alloc
       use parallel, only: IOnode
       use  atmfuncs, only: nofis, nkbfis, izofis, massfis,
-     $                     rcut, atmpopfio
+     $                     rcut, atmpopfio, zvalfis
       use atm_types, only: species
 
       implicit none
@@ -69,6 +69,7 @@ C real*8 qa(na)             : Neutral atom charge of each atom
       real(dp), save, public     :: rmaxkb ! Max cuoff for KB projectors
 
       real(dp), save, public     :: qtot ! Total number of electrons
+      real(dp), save, public     :: zvaltot ! Total number of pseudoprotons
 
 
       integer, pointer, save, public  :: iaorb(:)
@@ -141,8 +142,10 @@ c Initialize atomic lists
       rmaxkb = 0._dp
       lasto(0) = 0
       lastkb(0) = 0
+      zvaltot = 0.0_dp
       do ia = 1,na_u
         is = isa(ia)
+        zvaltot = zvaltot + zvalfis(is)
         noa  = nofis(is)
         nkba = nkbfis(is)
         lasto(ia)  = lasto(ia-1)  + noa

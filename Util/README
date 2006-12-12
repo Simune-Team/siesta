@@ -32,6 +32,8 @@ Macroave:    Macroscopic averaging for interfaces and surfaces (by J. Junquera)
 SiestaSubroutine: Code and examples of the driving of Siesta by an external
                   agent.
 
+VCA:         Some utilities to help in Virtual-Crystal calculations.
+
 Other useful resources:
 
 Directory Tutorials/Bases contains examples and scripts to help

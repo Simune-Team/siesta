@@ -212,10 +212,19 @@ mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
 	$(FC) -o mpi_test \
 	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS) 
 #----------------------------------------------------------------------------
+MIXPS_OBJS= f2kcli.o flib_spline.o mixps.o  pseudopotential.o sys.o \
+            io.o pxf.o parallel.o periodic_table.o
+
+mixps: $(MPI_INTERFACE)  $(MIXPS_OBJS)
+	$(FC) -o mixps \
+	       $(LDFLAGS) $(MIXPS_OBJS) $(MPI_INTERFACE) $(LIBS) 
+#
+#------------------------------------------------------------------------
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
 	rm -f siesta gen-basis denchar *.o  *.a *.pcl *.pc
+	rm -f mixps mpi_test
 	rm -f *.mod
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
@@ -261,7 +270,7 @@ cgvc.o: conjgr_old.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
 cgvc.o: units.o
 cgvc_zmatrix.o: conjgr.o parallel.o precision.o zmatrix.o
 cgwf.o: onmod.o precision.o sys.o
-chemical.o: sys.o
+chemical.o: precision.o sys.o
 chempot.o: numbvect.o parallel.o parallelsubs.o precision.o sys.o
 chkdim.o: sys.o
 chkgmx.o: minvec.o parallel.o precision.o sys.o
@@ -306,6 +315,7 @@ extrapolon.o: parallel.o precision.o sys.o
 fermid.o: parallel.o precision.o recipes.o sys.o
 fft3d.o: parallel.o parallelsubs.o precision.o sys.o
 fixed.o: parallel.o parsing.o precision.o
+flib_spline.o: precision.o
 forhar.o: meshsubs.o precision.o
 gen-basis.o: atom.o basis_io.o basis_specs.o basis_types.o old_atmfuncs.o
 gen-basis.o: parallel.o precision.o sys.o xcmod.o
@@ -366,6 +376,7 @@ meshmatrix.o: atomlist.o meshsubs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: atm_types.o atmfuncs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: radial.o siesta_cml.o
 minvec.o: precision.o sorting.o sys.o
+mixps.o: f2kcli.o flib_spline.o precision.o pseudopotential.o sys.o
 mneighb.o: alloc.o precision.o sys.o
 mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o

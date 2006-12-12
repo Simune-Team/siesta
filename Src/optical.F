@@ -78,7 +78,7 @@ C *********************************************************************
 
       use precision,    only : dp
       use fdf
-      use atmfuncs,     only : izvalfis
+      use atmfuncs,     only : zvalfis
       use densematrix,  only : Haux, Saux, psi
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
@@ -110,8 +110,9 @@ C Passed variables
      .                  xa(3,na)
 
 C Internal variables 
+      real(dp) ntote      !!*** Note: needed to deal with synthetics
       integer
-     .  iie, ik, io, ispin, iuo, ix, iy,  is, ia, ntote, 
+     .  iie, ik, io, ispin, iuo, ix, iy,  is, ia, 
      .  nbands, ixmin, ije, j, maxhs, maxpsi,
      .  kscell(3,3), nk, nmeshk(3), npol, ipol, 
      .  ie, je, iw, nwi, nwf, nw, iu, ngamma, ig
@@ -239,7 +240,7 @@ C Total number of valence electrons in the unit cell
         ntote = 0
         do ia = 1,nua
           is = isa(ia) 
-          ntote = ntote + izvalfis(is)
+          ntote = ntote + zvalfis(is)
         enddo 
         if (nbands.le.nint(ntote/2.0d0)) then 
           if (Node.eq.0) then
@@ -691,7 +692,7 @@ C A factor of 4 due to the integration in Ry rather than in a.u.
           write(iu,'(a,f10.4)') '## ',omega_p2(2)
         else
           write(iu,'(a)') '## f-sum rule'
-          write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/dble(ntote)
+          write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/ntote
           write(iu,'(a)') '## wp^2 in Ha^2 for Drude'
           write(iu,'(a,f10.4)') '## ',omega_p2(1)
         endif   
@@ -702,12 +703,12 @@ C A factor of 4 due to the integration in Ry rather than in a.u.
         call io_close(iu)
       endif
   
-      if (nspin.eq.2) ntote = nint(qspin(1)+qspin(2))
+      if (nspin.eq.2) ntote = (qspin(1)+qspin(2))
       if (nspin.eq.2) fsum(1) = fsum(1) + fsum(2)
       if (Node.eq.0) then
         write(6,'((/a,f10.6),3(/,2a))') 
      .   'Optical: Checking f-sum rule',
-     .       fsum(1)/2.0d0/pi**2/dble(ntote),
+     .       fsum(1)/2.0d0/pi**2/ntote,
      .   'Optical: ',
      .   'For insulators and closed shell systems', 
      .   'Optical: this number should be close',

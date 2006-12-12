@@ -39,7 +39,7 @@ C     chemical species present in the calculation.
 
       logical, save, public, allocatable    ::  semicsave(:)
      
-      integer, save, public, allocatable         :: izvaltb(:)
+      real(dp), save, public, allocatable        :: zvaltb(:)
       integer, save, public, allocatable         :: lmxkbsave(:)
       real(dp), save, public, allocatable        :: smasstb(:)
       real(dp), save, public, allocatable        :: chargesave(:)
@@ -69,7 +69,7 @@ C     chemical species present in the calculation.
 !
 !     Public routines
 !
-      public :: labelfis, izofis, izvalfis, nkbfis
+      public :: labelfis, izofis, zvalfis, nkbfis
       public :: massfis, lomaxfis, nofis, lmxkbfis
       public :: cnfigfio, lofio, mofio
       public :: atmpopfio , epskb, rcut
@@ -122,7 +122,7 @@ C     chemical species present in the calculation.
         allocate(nzetasave(0:lmaxd,nsemx,nsmax))
         allocate(nomax(nsmax))
         allocate(nkbmax(nsmax))
-        allocate(izvaltb(nsmax))
+        allocate(zvaltb(nsmax))
         allocate(cnfigtb(0:lmaxd,nsemx,nsmax))
         allocate(nkblsave(0:lmaxd,nsmax))
 !
@@ -161,7 +161,7 @@ C     chemical species present in the calculation.
         deallocate(nzetasave)
         deallocate(nomax)
         deallocate(nkbmax)
-        deallocate(izvaltb)
+        deallocate(zvaltb)
         deallocate(cnfigtb)
         deallocate(nkblsave)
         deallocate(semicsave)
@@ -220,14 +220,14 @@ C     chemical species present in the calculation.
 
       end function izofis
 !
-      FUNCTION IZVALFIS( IS )
-      integer :: izvalfis          ! Valence charge
+      FUNCTION ZVALFIS( IS )
+      real(dp) :: zvalfis          ! Valence charge
       integer, intent(in) :: is            ! Species index
 
-      call check_is('izvalfis',is)
+      call check_is('zvalfis',is)
  
-      izvalfis=izvaltb(is)
-      end function izvalfis
+      zvalfis=zvaltb(is)
+      end function zvalfis
 !
       FUNCTION LABELFIS (IS)
       character(len=20) ::  labelfis  ! Atomic label

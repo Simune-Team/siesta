@@ -152,8 +152,8 @@ c writing a heading for the coordinates
 
 c writing the coordinates
 
-      write(6,'(3f14.8,i4,2x,a6,i6)')
-     .  ((xap(ix,ia),ix=1,3),isa(ia),labelfis(isa(ia)),ia,ia=1,na)
+      write(6,'(3f14.8,i4,2x,i6,2x,a)')
+     .  ((xap(ix,ia),ix=1,3),isa(ia),ia,trim(labelfis(isa(ia))),ia=1,na)
 
 C Deallocate local memory
       call memory('D','D',size(xap),'outcoor')

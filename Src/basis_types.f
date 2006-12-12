@@ -84,6 +84,7 @@
           ! 
           logical                   ::  floating   
           logical                   ::  bessel
+          logical                   ::  synthetic
           character(len=20)         ::  basis_type
           character(len=20)         ::  basis_size
           logical                   ::  semic      ! 

@@ -14,13 +14,15 @@
       use sys,       only: die
       use atmparams
       use m_recipes, only: spline, polint
+      use basis_types, only: basis_parameters
+      use basis_types, only: ground_state_t
 
 !----------------------------------------------------------------
 !     old_atmfuncs arrays
 !
       use old_atmfuncs, only: tabpol, rcpoltb, table, tab2
       use old_atmfuncs, only: coretab, smasstb, tab2pol
-      use old_atmfuncs, only: izvaltb, chargesave, nkbmax, nomax
+      use old_atmfuncs, only: zvaltb, chargesave, nkbmax, nomax
       use old_atmfuncs, only: qtb, slfe
       use old_atmfuncs, only: chloctab, vlocaltab
       use old_atmfuncs, only: lmxosave, lmxkbsave, label_save
@@ -236,14 +238,21 @@
       charge = charge_in
       lambda(:,:,:) = lambda_in(:,:,:)
 
-             if (iz.gt.0) then  
+!!** AG: Symbol is not adequate. Should use the label
+
+             if (iz.gt.200) then  
                write(6,'(3a,i4,a)')
-     .         'atom: Called for ', symbol(iz), '  (Z =', iz,')' 
+     .         'atom: Called for (synthetic) ', atm_label,
+     $               '  (Z =', iz,')' 
+
+             else if (iz.gt.0) then  
+               write(6,'(3a,i4,a)')
+     .         'atom: Called for ', atm_label, '  (Z =', iz,')' 
 
              elseif((iz.lt.0).and.(iz.ne.-100)) then  
 
                write(6,'(3a,i4,a,a)')
-     .         'atom: Called for ', symbol(abs(iz)), '  (Z =', iz,')',
+     .         'atom: Called for ', atm_label, '  (Z =', iz,')',
      .         ' ( Floating basis ) ' 
 
              elseif(iz.eq.-100) then
@@ -285,11 +294,11 @@
      .  'atom: with net charge', zval-chgvps
             endif 
 !
-!           AG: Note zval-chgvps = (Znuc-Zcore)-true_zval
-!           Example: Ba with 5s and 5p in the core:
+!           AG: Note zval-chgvps = (Znuc-Zcore)-gen_zval
+!           Example: Ba with 5s and 5p in the valence:
 !           zval from atom (scaled with zratio): 10 (5s2 5p6 6s2)
 !           chgvps (only 5s2 and 5p6 occupied in ref config): 8
-!           true_zval = chgvps
+!           gen_zval = chgvps
 !           ==> net charge (zval-chgvps) = 2
 !           Znuc = 56,  Zcore= Z(Xe)-2-6 = 54-2-6 = 46
 !           Znuc-Zcore-true_val = 56 - 46 - 8 = 2
@@ -315,15 +324,15 @@ c    .          'atom: The above configuration will be used ',
             endif
 ! 
 !  
-!  Save readed valence charge***
+!  Save read valence charge
 !  This can be different from the standard one if we have included semicore
 !  states in the valence shell.
-!  For example: Ba with 5s and 5p in the core: zval=10 (5s2 5p6 6s2)
+!  For example: Ba with 5s and 5p in the valence: zval=10 (5s2 5p6 6s2)
 ! 
-            izvaltb(is)=nint(zval)
+            zvaltb(is)= zval
 
-! IF IZ IS NEGATIVE WE WILL HAVE FLOATING ORBITALS IN THE ATOMIC POSITIONS*
-! IF IZ POSITIVE WE WILL HAVE REAL ATOMS*
+! IF IZ IS NEGATIVE WE WILL HAVE FLOATING ORBITALS IN THE ATOMIC POSITIONS
+! IF IZ POSITIVE WE WILL HAVE REAL ATOMS
 ! 
            flting=dsign(1.0d0,dble(iz))
            iz=abs(iz)
@@ -585,7 +594,7 @@ c    .          'atom: The above configuration will be used ',
 ! Calculate initial populations for the atomic orbitals*
 ! 
          call atm_pop(is,iz,qtb(1:,is),qPAO,lmxo,
-     .        nzeta,semic,nsemic,npolorb) 
+     .        nzeta,semic,nsemic,npolorb,basp) 
 
 ! Screening of the atomic local pseudopotential
 ! 
@@ -614,7 +623,7 @@ c    .          'atom: The above configuration will be used ',
 ! ONLY FOR FLOATING ORBS
            call set_mesh(a,b,rofi,drdi,s)
            flting=dsign(1.0d0,dble(iz)) 
-           izvaltb(is)=0
+           zvaltb(is)=0.0_dp
            chargesave(is) = 0.d0
 ! No core charge
            call  comcore(is,a,b,rofi,chcore,
@@ -2481,53 +2490,7 @@ C We are going to find the charge configuration
 C used for the pseudopotential generation using the information given in
 C the 'text' variable.
 
-            chgvps=0.0d0
-
-            if(irel.eq.'isp') then
-               write(6,'(/,2a)')
-     .          'read_vps: Pseudopotential generated from an ',
-     .          'atomic spin-polarized calculation'
-
-               write(6,'(/,a)') 'read_vps: Valence configuration '//
-     .                 '(pseudopotential and basis set generation):'
-
-               do l=0,min(lmax,3)
-                  itext=l*17
-                  read(text(itext+1:),err=5000,fmt=8080)
-     $                 orb, zdown, zup, rc_read
- 8080             format(a2,f4.2,1x,f4.2,1x,f4.2)
-                  chgvps = chgvps + zdown + zup
-                  write(6,8085) orb, zdown, zup, rc_read
- 8085             format(a2,'(',f4.2,',',f4.2,') rc: ',f4.2)
-               enddo
-
-            else
-               if(irel.eq.'rel') then
-                  write(6,'(/,2a)')
-     .          'read_vps: Pseudopotential generated from a ',
-     .                 'relativistic atomic calculation'
-                  write(6,'(2a)')
-     .          'read_vps: There are spin-orbit pseudopotentials ',
-     .                 'available'
-                  write(6,'(2a)')
-     .          'read_vps: Spin-orbit interaction is not included in ',
-     .                 'this calculation'
-               endif
-
-               write(6,'(/,a)') 'read_vps: Valence configuration '//
-     .                 '(pseudopotential and basis set generation):'
-
-               do l=0,min(lmax,3)
-                  itext=l*17
-                  read(text(itext+1:),err=5000,fmt=8090)
-     $                 orb, ztot, rc_read
- 8090             format(a2,f5.2,4x,f5.2)
-                  chgvps = chgvps + ztot
-                  write(6,8095) orb, ztot, rc_read
- 8095             format(a2,'(',f5.2,') rc: ',f4.2)
-               enddo
-
-           endif
+           chgvps = vp%gen_zval
 
            write(6,'(a,f10.5)') 'Total valence charge: ', chgvps
 
@@ -2559,10 +2522,10 @@ C the 'text' variable.
 
            rofi(1:nrval) = vp%r(1:nrval)
 
-C***Calculate drdi and s **
-C****drdi is the derivative of the radial distance respect to the mesh index
-Ci.e. rofi(ir)= b*[ exp( a*(i-1) ) - 1 ] and therefore **
-Cdrdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b] *
+C    Calculate drdi and s 
+C    drdi is the derivative of the radial distance respect to the mesh index
+C    i.e. rofi(ir)= b*[ exp( a*(i-1) ) - 1 ] and therefore 
+C    drdi=dr/di =a*b*exp(a*(i-1))= a*[rofi(ir)+b] 
 
            rpb=b
            ea=exp(a)
@@ -2738,10 +2701,10 @@ C***Internal variables**
      .           rphi(nrmax,nkbmx), rmax, dnrm, 
      .           proj(nrmax)
                  
-C**The atomic wavefunctions and/or its energy derivatives are* 
-C**calculated only inside a sphere of radius Rmax. To define the***  
-C**KB projectors they will not be need very far from the nucleus,** 
-C**and this limitation simplifies the handling of not bound states*
+C  The atomic wavefunctions and/or its energy derivatives are
+C  calculated only inside a sphere of radius Rmax. To define the
+C  KB projectors they will not be needed very far from the nucleus,
+C  and this limitation simplifies the handling of not bound states
 C 
          parameter (Rmax=6.0d0)
 C
@@ -4391,7 +4354,7 @@ C
          end subroutine compress_PAO
 !
        subroutine atm_pop(is,iz,q,qPAO,lmxo,
-     .       nzeta,semic,nsemic,polorb) 
+     .       nzeta,semic,nsemic,polorb,basp) 
 C
 C Returns the ground states atomic population for each species.
 C This information is required for the screening of the local 
@@ -4402,14 +4365,15 @@ C
 
          implicit none
 
-         real(dp)  q(1:), qPAO(0:lmaxd,nsemx) 
+         real(dp), intent(out) ::   q(1:), qPAO(0:lmaxd,nsemx) 
 
-         integer 
+         integer, intent(in)   ::
      .     nzeta(0:lmaxd,nsemx),polorb(0:lmaxd,nsemx), 
      .     nsemic(0:lmaxd),iz,
      .     lmxo ,is 
 
-         logical semic
+         logical, intent(in)   ::    semic
+         type(basis_def_t), pointer   :: basp
 
 
 C***Internal variables*
@@ -4417,15 +4381,12 @@ C***Internal variables*
         real(dp)  qatm(0:3)
           
         integer noPAO, l, izeta, m, norb, noPol, lpop,
-     .     nsm, nvalence, config(0:lmaxd)
+     .     nsm, nvalence, config(0:lmaxd), i, j
         character*70  line
 
-        qatm(0:3)=0.0d0
-        call qvlofz(iz,qatm)  
-        do l=0,lmaxd          ! AG*** Why? Totally useless
-           config(l)=l+1
-        enddo
-        call cnfig(iz,config)
+        qatm(0:3) = basp%ground_state%occupation(0:3)
+        config(:) = 0
+        config(0:3) = basp%ground_state%n(0:3)
 
         qPAO(0:lmaxd,1:nsemx) = 0.d0  ! AG
 !
@@ -4434,6 +4395,7 @@ C***Internal variables*
         do l=0,lmxo 
           nvalence=nsemic(l)+1
      $        -(cnfigtb(l,nsemic(l)+1,is)-config(l))
+!!          print *, "l, config(l), nvalence:", l, config(l), nvalence
           nsm=nvalence
 C Add a check on whether nsemx is large enough
           if (nsm.gt.nsemx) then
@@ -4487,7 +4449,7 @@ C Add a check on whether nsemx is large enough
 
         lpop=min(3,lmxo)  
           write(6,'(/,2a)') 'atm_pop: Valence configuration',
-     .                      '(local Pseudopot. screening):' 
+     .                      ' (for local Pseudopot. screening):' 
           do l=0,lpop 
             write(line,'(7(1x,i1,a1,a1,f5.2,a1))')
      .          (cnfigtb(l,nsm,is),sym(l),"(",qPAO(l,nsm),")",
@@ -5423,7 +5385,7 @@ C Written by D. Sanchez-Portal, Aug. 1998.
         subroutine prinput(ntotsp)
 
 C**
-C Prints the values of the parameter which have been actually 
+C Prints the values of the parameters which have been actually 
 C used in the generation of the basis (cut-off radius, contraction
 C factors, and BasisType option to augment the basis set).
 C The information is written in the same format as required for the 
@@ -5437,11 +5399,13 @@ C**
          character(len=10), parameter  :: basistype_default='split'
 
 C***Internal variables
-          integer is, nshell, l, lo, nzt, izt, nsm
+          integer is, nshell, l, lo, nzt, izt, nsm, i
+          logical :: synthetic_atoms = .false.
           
           character basistype*10
           character(len=11) rcchar(nzetmx), lambdachar(nzetmx)
 
+          type(ground_state_t), pointer ::  gs
 
              write(6,'(/a,58("-"))')
      .            'prinput: Basis input '
@@ -5457,10 +5421,37 @@ C***Internal variables
                 write(6,'(2(1x,i4),1x,2a)')
      .                  is,izofis(is),labelfis(is), 
      .              '    # Species index, atomic number, species label' 
+                if (izofis(is) > 200) synthetic_atoms = .true.
              enddo 
              write(6,'(a)')
      .                  '%endblock ChemicalSpeciesLabel' 
 
+!
+!            Possible SyntheticAtoms block here
+!
+             if (synthetic_atoms) then
+                write(6,'(/a)')        
+     .               '%block SyntheticAtoms   # Valence config'
+
+                do is=1,ntotsp
+                   if (izofis(is) < 200) cycle
+                   gs => basis_parameters(is)%ground_state
+                   write(6,"(i3)") is
+                   do i = 0, 3
+                      write(6,fmt="(i3)",advance="no") gs%n(i)
+                   enddo
+                   write(6,*)
+                   do i = 0, 3
+                      write(6,fmt="(f9.5)",advance="no")
+     $                      gs%occupation(i)
+                   enddo
+                   write(6,*)
+                enddo 
+                write(6,'(a)') "%endblock SyntheticAtoms"
+             endif     ! synthetic_atoms
+!
+!
+                
              write(6,'(/a)')        
      .   '%block PAO.Basis                 # Define Basis set'
              do is=1, ntotsp  
@@ -5475,11 +5466,11 @@ C***Internal variables
                if(basistype_save(is).eq.basistype) then  
 
                 if(abs(chargesave(is)).lt.1.0d-4) then 
-                     write(6,'(a10,1x,i2,20x,a)')
+                     write(6,'(a,1x,i2,20x,a)')
      .                labelfis(is), nshell,
      .                 '# Species label, number of l-shells'
                 else
-                    write(6,'(a10,1x,i2,1x,f7.3,12x,2a)')
+                    write(6,'(a,1x,i2,1x,f7.3,12x,2a)')
      .                labelfis(is), nshell, chargesave(is),
      .                  '# Label, l-shells,',
      .              ' ionic net charge'
@@ -5488,12 +5479,12 @@ C***Internal variables
                else 
 
                if(abs(chargesave(is)).lt.1.0d-4) then
-                     write(6,'(a10,1x,i2,1x,a,10x,2a)')
+                     write(6,'(a,1x,i2,1x,a,10x,2a)')
      .             labelfis(is), nshell, basistype_save(is), 
      .                  '# Species label, l-shells,',
      .                  ' basis type '
                 else
-                    write(6,'(a10,1x,i2,1x,a,1x,f7.3,1x,2a)')
+                    write(6,'(a,1x,i2,1x,a,1x,f7.3,1x,2a)')
      .              labelfis(is), nshell, basistype_save(is),
      .              chargesave(is),
      .                  '# Label, l-shells, type,',

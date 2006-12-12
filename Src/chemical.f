@@ -11,12 +11,13 @@
       module chemical
 
       use sys
+      use precision, only: dp
 
       implicit none
 
       private
       public number_of_species, atomic_number, species_label
-      public is_floating, is_bessel
+      public is_floating, is_bessel, is_synthetic
       public read_chemical_types
 !
 !     Species information
@@ -58,7 +59,7 @@
       call check(i)
       atomic_number = chemical_list%z(i)
       end function atomic_number
-
+! -------
       function is_floating(i)
       logical is_floating
       integer, intent(in)  :: i
@@ -66,6 +67,7 @@
       call check(i)
       is_floating = (chemical_list%z(i) .le. 0)
       end function is_floating
+! -------
 
       function is_bessel(i)
       logical is_bessel
@@ -74,7 +76,16 @@
       call check(i)
       is_bessel = (chemical_list%z(i) .eq. -100)
       end function is_bessel
+! -------
+!     Checks whether we are dealing with a synthetic atom
+!
+      function is_synthetic(i)
+      logical is_synthetic
+      integer, intent(in)  :: i
 
+      call check(i)
+      is_synthetic = (chemical_list%z(i) .gt. 200)
+      end function is_synthetic
 !---
       subroutine read_chemical_types
 
@@ -89,8 +100,8 @@
       character(len=132) line
 
       character(len=20) label
-      integer z
-      logical floating, bessel, found
+      integer  z
+      logical floating, bessel, found, synthetic
 
       nsp = fdf_integer('Number_of_species',0)
       if (nsp.eq.0) call die("No species found!!!")
@@ -118,6 +129,7 @@
         z = integers(p,2)
         floating = (z.le.0)
         bessel = (z.eq.-100)
+        synthetic = (z.gt.200)
 
         if (.not.floating) then
          write(6,*) 'Species number: ', isp,

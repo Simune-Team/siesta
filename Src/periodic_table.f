@@ -184,6 +184,8 @@ C Written by J. Soler
          SYMBOL = 'BS'
       ELSE IF (ABS(Z).LE.NZ) THEN
          SYMBOL = NAME(ABS(Z))
+      ELSE IF (Z.GT.200) THEN
+         write(SYMBOL,'(a1,i1)') 'S', mod(Z-200,10)
       ELSE
          WRITE(6,*) 'SYMBOL: ERROR: No data for Z =', Z
          SYMBOL = ' '

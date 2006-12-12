@@ -70,8 +70,8 @@
 
       integer is, j, i, l, nrp_tables, core_flag, nor, nk, m
 
-      character(len=20) filename
-      character(len=20) dummy
+      character(len=40) filename
+      character(len=40) dummy
                                 !
       call read_chemical_types
       nspecies = number_of_species()
@@ -462,7 +462,7 @@ c
       integer aux(maxnorbs)
 
       integer is, j, i, l
-      character*20 filename
+      character*40 filename
 
       do is = 1, nspecies
          spp => species(is)
@@ -695,7 +695,7 @@ c
       integer, intent(in)      :: is
 
       type(species_info), pointer  ::   spp
-      character*20 filename
+      character*40 filename
       character*30 fileid
       integer i, l, ispol, lun, lun2, zeta, n_series
 
@@ -822,7 +822,7 @@ c
          write(unit,'(a2,28x,a)') p%symbol, "# Symbol"
          write(unit,'(a20,10x,a)') p%label, "# Label"
          write(unit,'(i5,25x,a)') p%z, "# Atomic number"
-         write(unit,'(i5,25x,a)') p%zval, "# Valence charge"
+         write(unit,'(g22.12,25x,a)') p%zval, "# Valence charge"
          write(unit,'(g22.12,4x,a)') p%mass, "# Mass "
          write(unit,'(g22.12,4x,a)') p%self_energy, "# Self energy "
          write(unit,'(2i4,22x,a)') p%lmax_basis, p%n_orbnl,
@@ -849,7 +849,7 @@ c
       integer, intent(in)      :: is
 
       type(species_info), pointer  ::   spp
-      character*20 filename
+      character*40 filename
       integer i, ispol, lun
 
       spp => species(is)

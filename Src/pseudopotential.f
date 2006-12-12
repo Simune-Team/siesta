@@ -18,6 +18,8 @@
       private
 
       public :: pseudopotential_t, pseudo_read, pseudo_header_print
+      public :: pseudo_write_formatted
+      public :: read_ps_conf
 
       integer, parameter        :: nrmax = 1500
 
@@ -27,6 +29,7 @@
         integer                 :: nr
         integer                 :: nrval
         real(dp)                :: zval
+        real(dp)                :: gen_zval  ! Generation valence charge
         logical                 :: relativistic
         character(len=10)       :: correlation
         character(len=2)        :: icorr
@@ -94,6 +97,11 @@
      .       (p%method(i),i=1,6), p%text,
      .       p%npotd, p%npotu, p%nr, p%b, p%a, p%zval
 
+!
+!       Old style vps files should have the right info in text.
+!
+        call read_ps_conf(p%irel,p%npotd-1,p%text,p%gen_zval)
+
         p%nrval = p%nr + 1
         allocate(p%r(1:p%nrval))
         read(io_ps) (p%r(j),j=2,p%nrval)
@@ -133,9 +141,9 @@
         character(len=*), intent(in) :: fname
         type(pseudopotential_t)                    :: p
 
-        integer io_ps, i, j
+        integer io_ps, i, j, ios
         character(len=70) dummy
-        real(dp) :: r2
+        real(dp) :: r2, gen_zval_inline
 
         call io_assign(io_ps)
         open(io_ps,file=fname,form='formatted',status='unknown')
@@ -145,13 +153,33 @@
  8000   format(1x,i2)
  8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
  8010   format(1x,6a10,/,1x,a70)
- 8015   format(1x,2i3,i5,3g20.12)
+ 8015   format(1x,2i3,i5,4g20.12)
  8030   format(4(g20.12))
  8040   format(1x,a)
 
         read(io_ps,8005) p%name, p%icorr, p%irel, p%nicore
         read(io_ps,8010) (p%method(i),i=1,6), p%text
-        read(io_ps,8015) p%npotd, p%npotu, p%nr, p%b, p%a, p%zval
+        read(io_ps,8015,iostat=ios)
+     $       p%npotd, p%npotu, p%nr, p%b, p%a, p%zval,
+     $       gen_zval_inline
+        if (ios < 0) gen_zval_inline = 0.0_dp
+        call read_ps_conf(p%irel,p%npotd-1,p%text,p%gen_zval)
+!
+!       (Some .psf files contain an extra field corresponding
+!       to the ps valence charge at generation time. If that
+!       field is not present, the information has to be decoded
+!       from the "text" variable.
+!
+!       "Zero" pseudos have gen_zval = 0, so they need a special case.
+
+        if (p%gen_zval == 0.0_dp) then
+           if (gen_zval_inline == 0.0_dp) then
+              if (p%method(1) /= "ZEROPSEUDO")
+     $             call die("Cannot get gen_zval")
+           else
+              p%gen_zval = gen_zval_inline
+           endif
+        endif
 
         p%nrval = p%nr + 1
         allocate(p%r(1:p%nrval))
@@ -195,6 +223,54 @@
         call io_close(io_ps)
         end subroutine pseudo_read_formatted
 !------
+!----
+        subroutine pseudo_write_formatted(fname,p)
+        character(len=*), intent(in) :: fname
+        type(pseudopotential_t), intent(in)     :: p
+
+        integer io_ps, i, j
+
+        call io_assign(io_ps)
+        open(io_ps,file=fname,form='formatted',status='unknown',
+     $       action="write",position="rewind")
+        write(6,'(3a)') 'Writing pseudopotential information ',
+     $       'in formatted form to ', trim(fname)
+
+ 8000   format(1x,i2)
+ 8005   format(1x,a2,1x,a2,1x,a3,1x,a4)
+ 8010   format(1x,6a10,/,1x,a70)
+ 8015   format(1x,2i3,i5,4g20.12)
+ 8030   format(4(g20.12))
+ 8040   format(1x,a)
+
+        write(io_ps,8005) p%name, p%icorr, p%irel, p%nicore
+        write(io_ps,8010) (p%method(i),i=1,6), p%text
+        write(io_ps,8015) p%npotd, p%npotu, p%nr, p%b, p%a, p%zval,
+     $                    p%gen_zval
+
+        write(io_ps,8040) "Radial grid follows"
+        write(io_ps,8030) (p%r(j),j=2,p%nrval)
+
+        do i=1,p%npotd
+           write(io_ps,8040) "Down potential follows (l on next line)"
+           write(io_ps,8000) p%ldown(i)
+           write(io_ps,8030) (p%vdown(i,j), j=2,p%nrval)
+        enddo
+
+        do i=1,p%npotu
+           write(io_ps,8040) "Up potential follows (l on next line)"
+           write(io_ps,8000) p%lup(i)
+           write(io_ps,8030) (p%vup(i,j), j=2,p%nrval)
+        enddo
+
+        write(io_ps,8040) "Core charge follows"
+        write(io_ps,8030) (p%chcore(j),j=2,p%nrval)
+        write(io_ps,8040) "Valence charge follows"
+        write(io_ps,8030) (p%chval(j),j=2,p%nrval)
+
+        call io_close(io_ps)
+        end subroutine pseudo_write_formatted
+!------
 
         subroutine vps_init(p)
         type(pseudopotential_t)  :: p
@@ -236,6 +312,75 @@ c$$$        write(s(n:),8010) (p%method(i),i=1,6), p%text
 c$$$
 c$$$        end subroutine pseudo_header_string
 !--------
+!
+      subroutine read_ps_conf(irel,lmax,text,chgvps)
+!
+!     Attempt to decode the valence configuration used for
+!     the generation of the pseudopotential
+!     (At least, the valence charge)
+
+      character(len=3), intent(in)  :: irel
+      integer, intent(in)           :: lmax
+      character(len=70), intent(in) :: text
+      real(dp), intent(out)         :: chgvps
+
+      integer  :: l, itext
+      real(dp) :: ztot, zup, zdow, rc_read
+      character(len=2) :: orb
+
+      chgvps=0.0_dp
+
+            if(irel.eq.'isp') then
+               write(6,'(/,2a)')
+     .          'Pseudopotential generated from an ',
+     .          'atomic spin-polarized calculation'
+
+               write(6,'(/,a)') 'Valence configuration '//
+     .                 'for pseudopotential generation:'
+
+               do l=0,min(lmax,3)
+                  itext=l*17
+                  read(text(itext+1:),err=5000,fmt=8080)
+     $                 orb, zdown, zup, rc_read
+ 8080             format(a2,f4.2,1x,f4.2,1x,f4.2)
+                  chgvps = chgvps + zdown + zup
+                  write(6,8085) orb, zdown, zup, rc_read
+ 8085             format(a2,'(',f4.2,',',f4.2,') rc: ',f4.2)
+               enddo
+
+            else
+               if(irel.eq.'rel') then
+                  write(6,'(/,2a)')
+     .          'Pseudopotential generated from a ',
+     .                 'relativistic atomic calculation'
+                  write(6,'(2a)')
+     .          'There are spin-orbit pseudopotentials ',
+     .                 'available'
+                  write(6,'(2a)')
+     .          'Spin-orbit interaction is not included in ',
+     .                 'this calculation'
+               endif
+
+               write(6,'(/,a)') 'Valence configuration '//
+     .                 'for pseudopotential generation:'
+
+               do l=0,min(lmax,3)
+                  itext=l*17
+                  read(text(itext+1:),err=5000,fmt=8090)
+     $                 orb, ztot, rc_read
+ 8090             format(a2,f5.2,4x,f5.2)
+                  chgvps = chgvps + ztot
+                  write(6,8095) orb, ztot, rc_read
+ 8095             format(a2,'(',f5.2,') rc: ',f4.2)
+               enddo
+
+           endif
+           return
+
+ 5000    continue       ! Error return: set chgvps to zero
+
+         end subroutine read_ps_conf
+
         end module pseudopotential
 
 

@@ -16,7 +16,7 @@
       use precision, only: dp
       use atm_types, only: nspecies, species, elec_corr, npairs
       use radial
-      use atmfuncs, only: floating, izvalfis, psch
+      use atmfuncs, only: floating, zvalfis, psch
       use m_recipes, only: polint
       use m_radfft
       use sys, only: die
@@ -107,7 +107,8 @@ C     integration.
 
       REAL(DP) cons, qmax, rmax, delt, c, dlt, z1, z2, ch1, ch2, pi
       REAL(DP) r, vd, vv1, vv2, energ1, energ2, bessph
-      integer iz1, iz2, itb, nr, nmin, nmax, nn, iq, ir
+      integer itb, nr, nmin, nmax, nn, iq, ir
+      real(dp) zval1, zval2
 
       REAL(DP) QTMP             
 
@@ -128,8 +129,8 @@ C
       C=4.0_DP*PI*DELT
       DLT=RMX/(NTBMAX-1)
 
-      IZ1=IZVALFIS(IS1)
-      IZ2=IZVALFIS(IS2)
+      ZVAL1=ZVALFIS(IS1)
+      ZVAL2=ZVALFIS(IS2)
 
       Z1=0.0_DP
       Z2=0.0_DP
@@ -152,18 +153,18 @@ C
 
       ENDDO
            
-      IF((ABS(Z1-IZ1).GT.CHERR).OR.
-     .     (ABS(Z2-IZ2).GT.CHERR)) THEN 
+      IF((ABS(Z1-ZVAL1).GT.CHERR).OR.
+     .     (ABS(Z2-ZVAL2).GT.CHERR)) THEN 
             WRITE(6,*) 'CH_OVERLAP: THE NUMBER OF INTEGRATION',
      .           ' POINTS MUST BE INCREASED'
-            WRITE(6,*) 'CH_OVERLAP: Z1=',Z1,' IZ1=',IZ1
-            WRITE(6,*) 'CH_OVERLAP: Z2=',Z2,' IZ2=',IZ2
+            WRITE(6,*) 'CH_OVERLAP: Z1=',Z1,' ZVAL1=',ZVAL1
+            WRITE(6,*) 'CH_OVERLAP: Z2=',Z2,' ZVAL2=',ZVAL2
          call die
       ENDIF
 
       DO IR=0,NQ
-         CH(IR,1)=real(IZ1,dp)*CH(IR,1)/Z1
-         CH(IR,2)=real(IZ2,dp)*CH(IR,2)/Z2
+         CH(IR,1)=real(ZVAL1,dp)*CH(IR,1)/Z1
+         CH(IR,2)=real(ZVAL2,dp)*CH(IR,2)/Z2
       ENDDO 
 C
 C     REAL SPACE INTEGRATION OF POISSON EQUATION
@@ -198,8 +199,8 @@ CNEUTRALIZE CHARGE DENSITY FOR FOURIER-SPACE CALCULATION
 C
       DO IQ=0,NQ
          R=IQ*QMAX/NQ
-         CH1 = (CH(IQ,1)-IZ1*CONS)*CH(IQ,2)
-         CH2=  (CH(IQ,2)-IZ2*CONS)*CH(IQ,1)
+         CH1 = (CH(IQ,1)-ZVAL1*CONS)*CH(IQ,2)
+         CH2=  (CH(IQ,2)-ZVAL2*CONS)*CH(IQ,1)
          CH(IQ,1) = CH1
          CH(IQ,2) = CH2
       ENDDO
@@ -226,8 +227,8 @@ C
          ENERG2=ENERG2*4.0_DP*(2.0_dp*PI)**2
          ENERG1=ENERG1*4.0_DP*(2.0_dp*PI)**2
               
-         ENERG1=-(ENERG1*R)-(IZ2*(VTB(IR,1)*R-IZ1))
-         ENERG2=-(ENERG2*R)-(IZ1*(VTB(IR,2)*R-IZ2))
+         ENERG1=-(ENERG1*R)-(ZVAL2*(VTB(IR,1)*R-ZVAL1))
+         ENERG2=-(ENERG2*R)-(ZVAL1*(VTB(IR,2)*R-ZVAL2))
   
          CORR(IR)=0.5_DP*(ENERG1+ENERG2)
 

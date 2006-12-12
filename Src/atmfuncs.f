@@ -42,7 +42,7 @@ C     different chemical species in the calculation:
 
       public  :: nofis, nkbfis, izofis, massfis
       public  :: rcore, rcut, chcore_sub, epskb, uion
-      public  :: atmpopfio, psch, izvalfis, floating, psover
+      public  :: atmpopfio, psch, zvalfis, floating, psover
       public  :: lofio, symfio, cnfigfio, zetafio, mofio
       public  :: labelfis, lomaxfis, nztfl, rphiatm, lmxkbfis
       public  :: phiatm, all_phi
@@ -84,14 +84,14 @@ C     different chemical species in the calculation:
 
       end function izofis
 
-      FUNCTION IZVALFIS( IS )
-      integer :: izvalfis          ! Valence charge
+      FUNCTION ZVALFIS( IS )
+      real(dp) :: zvalfis          ! Valence charge
       integer, intent(in) :: is            ! Species index
 
-      call chk('izvalfis',is)
+      call chk('zvalfis',is)
  
-      izvalfis= species(is)%zval
-      end function izvalfis
+      zvalfis= species(is)%zval
+      end function zvalfis
 !
       FUNCTION LABELFIS (IS)
       character(len=20) ::  labelfis  ! Atomic label

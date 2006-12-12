@@ -154,7 +154,7 @@
       character(len=1), parameter   ::
      $                           sym(0:4) = (/ 's','p','d','f','g' /)
 
-      integer           isp         ! just an index dummy variable for the whole module
+      integer           isp  ! just an index dummy variable for the whole module
 
       public :: read_basis_specs
 
@@ -171,6 +171,10 @@
       character(len=15) :: basis_size
       character(len=10) :: basistype_generic
 
+      type(ground_state_t), pointer :: gs
+
+      integer nns, noccs, i, ns_read, l
+      logical synthetic_atoms, found
 
       basis_size=fdf_string('PAO.BasisSize',basis_size_default)
       call size_name(basis_size)
@@ -181,13 +185,15 @@
 !     Use standard routine in chemical module to process the
 !     chemical species
 !
-      call read_chemical_types
+      call read_chemical_types()
       nsp = number_of_species()
 
       allocate(basis_parameters(nsp))
       do isp=1,nsp
          call initialize(basis_parameters(isp))
       enddo
+
+      synthetic_atoms = .false.
 
       do isp=1,nsp
          basp=>basis_parameters(isp)
@@ -196,18 +202,95 @@
          basp%z = atomic_number(isp)
          basp%floating = is_floating(isp)
          basp%bessel = is_bessel(isp)
+         basp%synthetic = is_synthetic(isp)
 
          basp%basis_size = basis_size
          basp%basis_type = basistype_generic
          if (basp%floating) then
             basp%mass = 1.d40   ! big but not too big, as it is used
                                 ! later in computations
+         else if (basp%synthetic) then
+            basp%mass = -1.0_dp      ! Signal -- Set later
          else
-            basp%mass = atmass(abs(basp%z))
+            basp%mass = atmass(abs(int(basp%z)))
          endif
-         if (.not. basp%bessel) then
-            call ground_state(abs(basp%z),basp%ground_state)
+         if (basp%bessel) then
+            ! do nothing here
+         else if (basp%synthetic) then
+            synthetic_atoms = .true.
+            ! Will set gs later
             call pseudo_read(basp%label,basp%pseudopotential)
+         else
+            call ground_state(abs(int(basp%z)),basp%ground_state)
+            call pseudo_read(basp%label,basp%pseudopotential)
+         endif
+      enddo
+
+      if (synthetic_atoms) then
+
+         nullify(bp)
+         found = fdf_block('SyntheticAtoms',bp)
+         if (.not. found )
+     $        call die("Block SyntheticAtoms does not exist.")
+         ns_read = 0
+         loop: DO
+           if (.not. fdf_bline(bp,line)) exit loop
+           ns_read = ns_read + 1
+           p => digest(line)
+           if (.not. match(p,"i"))
+     $       call die("Wrong format in SyntheticAtoms")
+           isp = integers(p,1)
+           if (isp .gt. nsp .or. isp .lt. 1)
+     $       call die("Wrong specnum in SyntheticAtoms")
+           basp=>basis_parameters(isp)
+           gs => basp%ground_state
+           call destroy(p)
+           if (.not. fdf_bline(bp,line)) call die("No n info")
+           p => digest(line)
+           nns = nintegers(p)
+           if (nns .lt. 4)
+     $       call die("Please give all valence n's " //
+     $                 "in SyntheticAtoms block")
+           gs%n = 0
+           do i = 1, nns
+              gs%n(i-1) = integers(p,i)
+           enddo
+           call destroy(p)
+           if (.not. fdf_bline(bp,line))
+     $          call die("No occupation info")
+           p => digest(line)
+           noccs = nvalues(p)
+           if (noccs .lt. nns) call die("Need more occupations")
+           gs%occupation(:) = 0.0_dp
+           do i = 1, noccs
+              gs%occupation(i-1) = values(p,i)
+           enddo
+           gs%lmax_valence = nns-1
+           gs%occupied(0:3) = (gs%occupation .gt. 0.0_dp)
+           gs%occupied(4) = .false.
+           gs%z_valence = sum(gs%occupation(0:noccs-1))
+           write(6,'(a,i2)',advance='no')
+     $          'Ground state valence configuration (synthetic): '
+           do l=0,3
+              if (gs%occupied(l))
+     $             write(6,'(2x,i1,a1,f8.5)',advance='no')
+     $             gs%n(l),sym(l), gs%occupation(l)
+           enddo
+           write(6,'(a)') ''
+
+           call destroy(p)
+        enddo loop
+        write(6,"(a,i2)") "Number of synthetic species: ", ns_read
+
+      endif
+!
+!  Defer this here in case there are synthetic atoms
+      do isp=1,nsp
+         basp=>basis_parameters(isp)
+         if (basp%synthetic) then
+            gs => basp%ground_state
+            if (gs%z_valence .lt. 0.001)
+     $           call die("Synthetic species not detailed")
          endif
          call semicore_check(isp)
       enddo
@@ -843,7 +926,7 @@ c (according to atmass subroutine).
 
         zval_vps = basp%pseudopotential%zval
         zval = basp%ground_state%z_valence
-
+        
         if(abs(Zval-zval_vps).lt.tiny) return
 
         ndiff=nint(abs(Zval-zval_vps))
@@ -936,11 +1019,28 @@ c (according to atmass subroutine).
          ! (that is the reason why 'occupied' is dimensioned to 0:4)
 
             loop_angmom: do l=1,4
-            if (.not. basp%ground_state%occupied(l)) then
+               if (.not. basp%ground_state%occupied(l)) then
                   ls=>basp%lshell(l-1)
-                  ls%shell(1)%polarized = .true.
-                  ls%shell(1)%nzeta_pol = 1
-                  exit loop_angmom
+                  s => ls%shell(1)
+        
+              ! Check whether shell to be polarized is occupied in the gs.
+              ! (i.e., whether PAOs are going to be generated for it)
+              ! If it is not, mark it for PAO generation anyway.
+              ! This will happen for confs of the type s0 p0 dn
+
+                  if (s%nzeta == 0) then
+                     write(6,"(a,i2,a)") "Marking shell with l=",
+     $                l-1, " for PAO generation and polarization."
+                     s%nzeta = nzeta
+                     allocate(s%rc(1:s%nzeta))
+                     allocate(s%lambda(1:s%nzeta))
+                     s%rc(1:s%nzeta) = 0.d0
+                     s%lambda(1:s%nzeta) = 1.d0
+                  endif
+                  s%polarized = .true.
+                  s%nzeta_pol = 1
+
+                  exit loop_angmom  ! Polarize only one shell!
                endif
             enddo loop_angmom
 

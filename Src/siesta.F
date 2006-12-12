@@ -29,6 +29,7 @@ C  Modules
       use atomlist, only: xa, xalast, indxuo, na_u
       use atomlist, only: isa, cisa, elem, indxua, iza, lastkb, lasto
       use atomlist, only: qa, amass, qtot, no_u, rmaxo, rmaxkb
+      use atomlist, only: zvaltot
       use atomlist, only: rmaxv, na_s, iphorb, iphkb, rco, rckb
       use atomlist, only: datm, no_s, iaorb
       use atomlist, only: superx, superc, initatomlists
@@ -456,6 +457,8 @@ C ..................
 C Initialize atom lists 
       call initatomlists()    ! Sets iza
       qtot = qtot - charnet
+      write(6,fmt="(a,f12.6)") "Total number of electrons: ", qtot
+      write(6,fmt="(a,f12.6)") "Total ionic charge: ", zvaltot
 
 
 C Calculate spin populations for fixed spin case...

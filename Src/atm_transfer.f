@@ -29,7 +29,7 @@
 !
 !     old_atmfuncs procedures
 !
-      use old_atmfuncs, only: labelfis, izofis, izvalfis
+      use old_atmfuncs, only: labelfis, izofis, zvalfis
       use old_atmfuncs, only: massfis, lomaxfis, nofis
       use old_atmfuncs, only: cnfigfio, lofio, mofio
       use old_atmfuncs, only: atmpopfio, epskb, rcut
@@ -75,7 +75,7 @@
          else
             spp%symbol = symbol(abs(spp%z))
          endif
-         spp%zval  = izvalfis(is)
+         spp%zval  = zvalfis(is)
          spp%mass  = massfis(is)
          spp%self_energy  = slfe(is)
 

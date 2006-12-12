@@ -59,6 +59,8 @@
          endif
          write(6,'(a,i4)') 'Stopping Program from Node: ', Node
 !!                                       endif
+         if (Node .eq. 0) call pxfflush(6)
+
 #ifdef MPI
       call MPI_Abort(MPI_Comm_World,1,MPIerror)
       stop
@@ -91,6 +93,9 @@
          endif
          write(6,'(a)') 'Requested End of Run. Bye!!'
 !!                                       endif
+
+         if (Node .eq. 0) call pxfflush(6)
+
 #ifdef MPI
       call MPI_Finalize(rc)
       stop

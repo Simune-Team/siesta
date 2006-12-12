@@ -81,7 +81,7 @@ C
       use sys,           only : die
       use fdf
       use parsing
-      use atmfuncs,      only : izvalfis
+      use atmfuncs,      only : zvalfis
       use densematrix
       use alloc
 
@@ -101,9 +101,10 @@ C
 C *********************************************************************
 
 C Internal variables 
+      real(dp)  ntote   !!** Needed to deal with synthetics
       integer
      .  ik, il, io, ispin, iuo, ix, i,
-     .  iy, npl, jo, is, ia, ntote, nocc(2),
+     .  iy, npl, jo, is, ia, nocc(2),
      .  nk2D(3), kscell(3,3), igrd, 
      .  nk, nmeshk(3,3), Nptot, 
      .  notcal(3), nhs, npsi
@@ -154,9 +155,18 @@ C Total number of valence electrons in the unit cell
         ntote=0
         do ia=1,nua
           is=isa(ia) 
-          ntote=ntote+izvalfis(is)
-        enddo 
-        if (mod(ntote,2).ne.0) then 
+          ntote=ntote+zvalfis(is)
+        enddo
+        if ((nint(ntote) - ntote) .gt. 1.0e-6_dp) then
+           if (IOnode)
+     .       write(6,'(/,a,/,a,/a)')
+     .      'KSV_pol: Non-integer number of electrons',
+     .      'KSV_pol: This is hardly an insulator',
+     .      'KSV_pol: No polarization calculation performed' 
+           goto 999
+        endif
+        ntote = nint(ntote)
+        if (mod(int(ntote),2).ne.0) then 
            if (IOnode) then
               write(6,'(/,a,/,a,/a)')
      .      'KSV_pol: Odd total number of electrons',
@@ -270,7 +280,7 @@ C Nuclear component
         polion(ix) = 0.0d0
         do ia = 1,nua
           is = isa(ia)
-          dmod = ddot(3,rcell(1,ix),1,xa(1,ia),1)*izvalfis(is)/nspin
+          dmod = ddot(3,rcell(1,ix),1,xa(1,ia),1)*zvalfis(is)/nspin
           polion(ix) = polion(ix) + 
      .     dmod*dsqrt(ddot(3,ucell(1,ix),1,ucell(1,ix),1))/(2.0d0*pi) 
         enddo 

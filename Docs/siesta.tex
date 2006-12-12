@@ -856,6 +856,29 @@ different basis or pseudopotential, for example.
 Negative atomic numbers are used for {\it ghost} atoms\index{ghost atoms} 
 (see {\bf PAO.basis}).
 
+Atomic numbers over 200 are used to represent {\it synthetic atoms}
+\index{synthetic atoms} (created for example as a ``mixture'' of two
+real ones for a ``virtual crystal'' (VCA)\index{VCA} calculation). In
+this special case a new 'SyntheticAtoms' block
+\index{SyntheticAtoms@{\bf SyntheticAtoms}}  must be present to give
+{\sc Siesta} information about the ``ground state'' of the synthetic
+atom.
+
+\begin{verbatim}
+         %block Chemical_Species_label
+            1   201 ON-0.50000
+         %endblock Chemical_Species_label
+         %block SyntheticAtoms
+         1               # Species index
+         2 2 3 4         # n numbers for valence states  with l=0,1,2,3
+         2.0 3.5 0.0 0.0 # occupations of valence states with l=0,1,2,3
+         %endblock SyntheticAtoms
+\end{verbatim}
+
+Pseudopotentials for synthetic atoms can be created using the {\tt
+  mixps} program\index{mixps program} in the main source directory
+  ({\tt make mixps}). See also the {\tt Util/VCA} directory.
+
 {\it Use:} This block is mandatory.
 
 {\it Default:} There is no default. You must supply this block.

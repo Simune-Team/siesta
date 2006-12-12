@@ -42,7 +42,7 @@
          character(len=20)               ::  label
          integer                         ::  z          ! Atomic number
          real(dp)                        ::  mass
-         integer                         ::  zval       ! Valence charge
+         real(dp)                        ::  zval       ! Valence charge
          real(dp)                        ::  self_energy !Electrostatic
                                                          !self-energy
 !
