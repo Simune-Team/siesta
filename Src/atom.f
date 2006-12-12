@@ -310,11 +310,11 @@
 !           go to -2*(Znuc-Zcore).....
 !
 !           Set 'charge':
-!              1. If 'charge' is zero (that is, not set in the fdf file)
+!              1. If 'charge' is not set in the fdf file
 !                 then set it to zval-chgvps.
 !              2. If 'charge' is equal to zval-chgvps, set it to that.
 !
-            if ((abs(charge).eq.0.d0).or. 
+            if ((abs(charge).eq.huge(1.0_dp)).or. 
      .          (abs(charge-(zval-chgvps)).lt.1.0d-3)) then   
 c             write(6,'(/,2a)') 
 c    .          'atom: The above configuration will be used ', 

@@ -210,7 +210,7 @@
       p%nshells_tmp = -1
       p%label = 'Unknown'
       p%semic = .false.
-      p%ionic_charge = 0.d0
+      p%ionic_charge = huge(1.0_dp)  ! To signal it was not set
       nullify(p%tmp_shell)
       nullify(p%lshell)
       nullify(p%kbshell)
