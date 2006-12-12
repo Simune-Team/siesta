@@ -124,8 +124,8 @@
       use basis_types, only: basis_def_t, shell_t, lshell_t, kbshell_t
       use basis_types, only: nsp, basis_parameters, ground_state_t
       use basis_types, only: destroy, copy_shell, initialize
-      use pseudopotential
-      use periodic_table
+      use pseudopotential, only: pseudo_read, pseudo_reparametrize
+      use periodic_table, only: qvlofz, lmxofz, cnfig, symbol, atmass
       use chemical
       use sys
 
@@ -174,7 +174,16 @@
       type(ground_state_t), pointer :: gs
 
       integer nns, noccs, i, ns_read, l
-      logical synthetic_atoms, found
+      logical synthetic_atoms, found, reparametrize_pseudos
+      real(dp) :: new_a, new_b
+
+
+      reparametrize_pseudos =
+     $   fdf_boolean('ReparametrizePseudos',.false.)
+      if (reparametrize_pseudos) then
+         new_a = fdf_double("NewAParameter",5.0e-4_dp)
+         new_b = fdf_double("NewBParameter",10.0_dp)
+      endif
 
       basis_size=fdf_string('PAO.BasisSize',basis_size_default)
       call size_name(basis_size)
@@ -224,6 +233,9 @@
             call ground_state(abs(int(basp%z)),basp%ground_state)
             call pseudo_read(basp%label,basp%pseudopotential)
          endif
+         if (reparametrize_pseudos)
+     $       call pseudo_reparametrize(p=basp%pseudopotential,
+     $                             a=new_a, b=new_b)
       enddo
 
       if (synthetic_atoms) then

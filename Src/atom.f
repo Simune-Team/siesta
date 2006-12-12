@@ -953,11 +953,14 @@ C Algorithm based on routine for Golden Section Search
 C from Numerical Recipes.
 C
 
-         integer l, nm, nrc
+         real(dp), intent(in)    ::  a, b
+         real(dp), intent(in)    ::  rphi(nrc), rnrm(nrc)
+         integer, intent(in)     ::  nrc, l
+         real(dp), intent(in)    ::  splnorm
+         real(dp), intent(out)   ::  cons1, cons2
+         integer, intent(out)    ::  nm
           
          real(dp),  parameter  :: Ratio=0.61803399D0       
-         real(dp) rphi(nrc),rnrm(nrc) 
-         real(dp) a, b, splnorm, cons1, cons2
 
          real(dp) slopold, slop, rmin, gmin, cmin, rnrmin
          real(dp) gmax, cmax, rmax, rnrmax, valmin, valmax, gmed
@@ -966,24 +969,21 @@ C
          integer n0, n1, n2, n3
          integer ir, nr_max, nmin, nmax, nmed, iter, nlast
 
-C         Hallar el maximo de la funcion de onda
-c         rfirst=0.05d0
-c         nfirst=nint(dlog(rfirst/b+1.0d0)/a)+1
-c         slopold=0.0d0
-c         do ir=nfirst,nrc
-c            slop=rphi(ir)-rphi(ir-1)
-c            if(slop*slopold.lt.0.0d0) goto 10
-c            slopold=slop
-c         enddo
-C         Hallar el ultimo maximo de a funcion de onda
+!         do ir= 1, nrc
+!            write(77,*) ir, b*(exp(a*(ir-1))-1.0d0), rphi(ir), rnrm(ir)
+!         enddo
+!         call pxfflush(77)
+         
+C         Find the last maximum of the wavefunction
+
           nlast=nrc-2
           slopold=0.0d0
           do ir=nlast,2,-1
              slop=rphi(ir)-rphi(ir-1)
-             if(slop*slopold.lt.0.0d0) goto 10
+             if(slop*slopold.lt.0.0d0) exit
              slopold=slop
           enddo
- 10               continue
+
           nr_max=ir-1
           rmin=b*(exp(a*(nr_max-1))-1.0d0)
           rmin=1.01d0*rmin
@@ -991,7 +991,9 @@ C         Hallar el ultimo maximo de a funcion de onda
           nmin=max(nmin,2)
           nmax=nrc-1
 
-          
+!
+!         Initial brackets
+!
           call findp(nrc,nmin,rphi,a,b,l,cmin,gmin)
           rmin=b*(exp(a*(nmin-1))-1.0d0)
           call nrmpal(cmin,gmin,rmin,l,rnrmin)
@@ -1002,24 +1004,31 @@ C         Hallar el ultimo maximo de a funcion de onda
           call nrmpal(cmax,gmax,rmax,l,rnrmax)
           rnrmax=1.0d0+rnrmax-rnrm(nmax)
 
+!
+!         Start the algorithm to find the matching point at
+!         which the *total* norm of the parabola+tail = splitnorm
+!         (compare with the JPC paper: there it appears that only
+!         the tail should have a norm=splitnorm.
+!
 
 C Under certain circunstances the algorithm is not going to work
           if(rnrmin.gt.splnorm.and.rnrmax.gt.splnorm) then
-             if(rnrmin.gt.rnrmax) then
-               nm=nmax
-               cons1=cmax
-               cons2=gmax
-               splnorm=rnrmax
-             else
-               nm=nmin
-               cons1=cmin
-               cons2=gmin
-               splnorm=rnrmin
-             endif
+
+!!             if(rnrmin.gt.rnrmax) then
+!!               nm=nmax
+!!               cons1=cmax
+!!               cons2=gmax
+!!               splnorm=rnrmax
+!!             else
+!!               nm=nmin
+!!               cons1=cmin
+!!               cons2=gmin
+!!               splnorm=rnrmin
+!!             endif
              write(6,'(/,A,/,A)')
      .    'parabola: The program failed in finding a SPLIT orbital ',
      .    'parabola: with the desired splitnorm'
-             return
+             call die()
           endif
 
 
@@ -1132,18 +1141,21 @@ c              val3=val2
 
 
           subroutine findp(nrc,nm,rphi,a,b,l,cons1,cons2)
-          integer nrc, nm, l
-          real(dp) a, b, cons1, cons2
-          real(dp) rphi(nrc)
+          integer, intent(in)   ::  nrc, nm, l
+          real(dp), intent(in)  ::  a, b
+          real(dp), intent(out) ::  cons1, cons2
+          real(dp), intent(in)  ::  rphi(nrc)
 
 C  This routine provides the constants Cons1 and 
 C  Cons2 and described in subroutine 'parabola' 
+C  for fitting at point of index nm
 
           real(dp) rm, rm1, rm2, drdi_local, frsp
           real(dp) dfrsp
-          rm=b*(exp(a*(nm-1)) + 1.0d0) 
-          rm1=b*(exp(a*(nm-2)) + 1.0d0)
-          rm2=b*(exp(a*nm) + 1.0d0)
+
+          rm=b*(exp(a*(nm-1)) - 1.0d0)         ! There was a + 1.0d0 here...
+          rm1=b*(exp(a*(nm-2)) -  1.0d0)       ! and here
+          rm2=b*(exp(a*nm) - 1.0d0)            ! and here
           drdi_local =a*b*exp(a*(nm-1))
 
           frsp=rphi(nm)/rm
@@ -1153,12 +1165,15 @@ C  Cons2 and described in subroutine 'parabola'
 
           cons1= 0.5d0*(dfrsp*rm-l*frsp)/(rm**(l+2))
           cons2= frsp/(rm**l)-cons1*(rm**2)
- 
+
           end subroutine findp
- 
+!
+!
           subroutine nrmpal(c1,c2,r,l,dnrm)
-          real(dp) c1, c2, r, dnrm
-          integer l
+          real(dp), intent(in)  :: c1, c2, r
+          real(dp), intent(out) :: dnrm
+          integer, intent(in)   :: l
+
 C returns the norm of a parabolic function
 C    f(r')= r'^l (c1*r'^2 + c2)  r'< r
 C           0 otherwise
