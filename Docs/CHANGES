@@ -10,6 +10,269 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2006-12-12 16:55:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-13
+
+    Summary:
+      Reparametrization of pseudopotentials
+    Revision:
+      siesta-devel--reference--2.1--patch-13
+
+    * By changing the a and b parameters of the logarithmic grid, a new one
+    with a more homogeneous overall grid-point separation can be used for
+    the generation of basis sets and projectors. For example, by using
+    a=5x10-4 and b=10, the grid point separations at r=0 and 10 bohrs are 0.005
+    and 0.01 bohrs, respectively. More points are needed to reach r's of the order
+    of a hundred bohrs, but the extra computational effort is negligible.
+    
+    This behavior is triggered by the boolean fdf symbol Reparametrize.Pseudos.
+    
+    Further tuning can be achieved by the use of two other fdf symbols. The
+    processing syntax and defaults are:
+    
+             new_a = fdf_double("NewAParameter",5.0e-4_dp)
+             new_b = fdf_double("NewBParameter",10.0_dp)
+    
+    * New test: h2o_reparam
+    
+    * Bug fix:
+    
+    In routine findp in atom.f, the radius was wrongly computed as
+    
+    r = b*(exp(a*(i-1)) + 1)
+    
+    instead of
+    
+    r = b*(exp(a*(i-1)) - 1)
+    
+    The bug was dramatically exposed when using a re-parametrization in which
+    b is no longer small (10.0 vs 1.0e-4).
+    
+    
+
+    new files:
+     Tests/Reference/.arch-ids/h2o_reparam.out.id
+     Tests/Reference/h2o_reparam.out
+     Tests/h2o_reparam/.arch-ids/=id
+     Tests/h2o_reparam/.arch-ids/h2o_reparam.fdf.id
+     Tests/h2o_reparam/.arch-ids/h2o_reparam.pseudos.id
+     Tests/h2o_reparam/.arch-ids/makefile.id
+     Tests/h2o_reparam/h2o_reparam.fdf
+     Tests/h2o_reparam/h2o_reparam.pseudos
+     Tests/h2o_reparam/makefile
+
+    modified files:
+     Src/Makefile Src/atmparams.f Src/atom.f Src/basis_specs.f
+     Src/pseudopotential.f Tests/Makefile
+
+    new directories:
+     Tests/h2o_reparam Tests/h2o_reparam/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-20
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-21
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-41
+
+
+2006-12-12 14:26:27 GMT	Alberto Garcia <albertog@icmab.es>	patch-12
+
+    Summary:
+      Changes to support synthetic atoms (VCA)
+    Revision:
+      siesta-devel--reference--2.1--patch-12
+
+    Support for dealing with "synthetic atoms" has been added. Their basic
+    feature is that they cannot be assigned a true integer atomic number:
+    
+     - One could mix the pseudopotentials of two elements to generate
+       an appropriate hybrid to be used in a "virtual crystal approximation".
+       (See description of mixps program below)
+       (Note that the ATOM program also allows the treatment of "atoms" with
+        a fractional Z. This is an alternative choice for mixtures involving
+        atoms which are contiguous in the periodic table.
+        See Pseudo/atom/Tutorial/ON)
+    
+     - By mixing a true atom's pseudopotential with a "null" pseudopotential,
+       a "partial occupation" can be simulated.
+    
+    Comparatively minor changes were needed to have Siesta process correctly
+    synthetic species:
+    
+    * Atomic numbers greater than 200 signal a synthetic atom. The symbol
+      returned (in module periodic_table) is SX, where X is an integer from
+      1 to 9. 
+      In order to generate an appropriate "neutral atom" configuration, some
+      extra information is needed about the "ground state" of the synthetic
+      atom.  It is taken from a SyntheticAtoms block (read in basis_specs.f).
+      For example:
+    
+             %block Chemical_Species_label
+                1   201 ON-0.50000
+             %endblock Chemical_Species_label
+             %block SyntheticAtoms
+             1               # Species index
+             2 2 3 4         # n numbers for valence states  with l=0,1,2,3
+             2.0 3.5 0.0 0.0 # occupations of valence states with l=0,1,2,3
+             %endblock SyntheticAtoms
+    
+    * Changes in data structures and helper functions to support synthetic
+      species:
+    
+      New logical component "synthetic" in basis_types.f
+      In atm_types, zval is now a real number.
+      In atmfuncs, izvalfis has been renamed zvalfis, and now returns a real.
+      (Same in old_atmfuncs, where the izvaltb array has been renamed zvaltb
+       and now holds real numbers).
+      Atm_transfer uses zvalfis.
+      In basis_io, zval is now printed as a real number. Filename length enlarged
+      to support long labels.
+    
+      Calculation of total number of "pseudoprotons" in atomlist. Printed
+      in siesta, together with the total number of electrons.
+      
+      Electrostatic.f uses real instead of integer nuclear charges.
+      Optical.F and ksv.F use now a real "total number of electrons"
+    
+    * Pseudopotential module changes:
+    
+      - New routine read_ps_conf to crack the information about the configuration
+        used to generate the pseudopotential (and used in atom to set the vps
+        charge). Synthetic species do not have the appropriate text block in the
+        .psf file, so the ability to process a new field ("gen_zval") has been
+        added to read_pseudo_formatted (this extra field is optional and appears
+        only in "synthetic" .psf files).
+    
+      - New routine write_pseudo_formatted added.
+    
+    * Atom.f changes:
+    
+      - The code now in pseudopotential::read_ps_conf has been removed.
+      - The species label and not the atomic number is now used for
+        identification of the species.
+      - Routine prinput now outputs a SyntheticAtoms block if needed.
+    
+    * The output format in Outcoor.f has been changed to allow for long
+      species labels. The label now comes last, and the atom number next
+      to last. This could break non-supported user scripts.
+    
+    
+    A new program (mixps) has been written to mix pseudopotentials. It
+    takes as command-line arguments the names (actually labels) of the two
+    atoms involved (A and B), and the mixing parameter. Then it combines
+    the information in A.psf and B.psf and creates a new file AB-0.xxxxx.psf,
+    where 0.xxxxx is the mixing parameter (to five decimal places) specified.
+    It outputs also a SyntheticAtoms block suitable for use by Siesta, and
+    a MIXLABEL file which contains the final label used (useful for scripts).
+    
+    This program is located in the top directory to ease compilation.
+    
+    The new directory Util/VCA contains some documentation and the
+    Programs zerops.f and zerops_rel.f to generate "null
+    pseudopotentials".  The resulting pseudos can also be found in
+    Tests/Pseudos.
+    
+    
+    New tests:
+    
+    oxyn:    Molecule made up of ON hybrids
+    partial: Molecule made up of O-Zero hybrids (a very artificial 
+                                                 partial occupation)
+    
+    The 'partial' test introduces a new idiom for tests: the use of
+    a general script to perform more complicated operations. The handling
+    of paths is still very primitive.
+    
+    NOTES:
+    
+    - The basis set is generated by Siesta using the "mixed"
+    pseudopotential. There is no provision at this time to "mix" basis
+    sets, or in general to build a basis set using information about the
+    basis sets for the atoms involved in the mix. On the other hand, basis
+    sets for synthetic atoms can be optimized as usual.
+    
+    - PseudoCore charges are mixed if they exist in the individual atoms'
+    pseudopotential files. This might lead to extra non-linearities in the
+    solid-state calculation.
+    
+    - Once Siesta reads the new .psf file for the hybrid, it generates a
+    local-pseudopotential charge and a local pseudopotential from it. Note
+    that this means that the local pseudopotential is not a true mix of
+    the local pseudopotentials of the individual atoms.
+    
+    - Once Siesta reads the "neutral-atom configuration" from the
+    SyntheticAtoms block, it generates the appropriate neutral-atom potential
+    using the local pseudopotential and the atomic charge density.
+
+    new files:
+     Pseudo/atom/Tutorial/ON/.arch-ids/=id
+     Pseudo/atom/Tutorial/ON/.arch-ids/ON.tm2.inp.id
+     Pseudo/atom/Tutorial/ON/.arch-ids/README.id
+     Pseudo/atom/Tutorial/ON/ON.tm2.inp
+     Pseudo/atom/Tutorial/ON/README
+     Src/.arch-ids/flib_spline.f90.id Src/.arch-ids/mixps.f.id
+     Src/flib_spline.f90 Src/mixps.f Tests/.arch-ids/script.mk.id
+     Tests/Pseudos/.arch-ids/ON-0.34560.psf.id
+     Tests/Pseudos/.arch-ids/Zero.nrl.psf.id
+     Tests/Pseudos/.arch-ids/Zero.rel.psf.id
+     Tests/Pseudos/ON-0.34560.psf Tests/Pseudos/Zero.nrl.psf
+     Tests/Pseudos/Zero.rel.psf
+     Tests/Reference/.arch-ids/oxyn.out.id
+     Tests/Reference/.arch-ids/partial.out.id
+     Tests/Reference/oxyn.out Tests/Reference/partial.out
+     Tests/oxyn/.arch-ids/=id Tests/oxyn/.arch-ids/makefile.id
+     Tests/oxyn/.arch-ids/oxyn.fdf.id
+     Tests/oxyn/.arch-ids/oxyn.pseudos.id Tests/oxyn/makefile
+     Tests/oxyn/oxyn.fdf Tests/oxyn/oxyn.pseudos
+     Tests/partial/.arch-ids/=id
+     Tests/partial/.arch-ids/makefile.id
+     Tests/partial/.arch-ids/script.sh.id Tests/partial/makefile
+     Tests/partial/script.sh Tests/script.mk Util/VCA/.arch-ids/=id
+     Util/VCA/.arch-ids/README.id Util/VCA/.arch-ids/zerops.f.id
+     Util/VCA/.arch-ids/zerops_rel.f.id Util/VCA/README
+     Util/VCA/zerops.f Util/VCA/zerops_rel.f
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile
+     Src/atm_transfer.f Src/atm_types.f Src/atmfuncs.f Src/atom.f
+     Src/atomlist.f Src/basis_io.F Src/basis_specs.f
+     Src/basis_types.f Src/chemical.f Src/electrostatic.f Src/ksv.f
+     Src/old_atmfuncs.f Src/optical.F Src/outcoor.f
+     Src/periodic_table.f Src/pseudopotential.f Src/siesta.F
+     Src/sys.F Util/README version.info
+
+    new directories:
+     Pseudo/atom/Tutorial/ON Pseudo/atom/Tutorial/ON/.arch-ids
+     Tests/oxyn Tests/oxyn/.arch-ids Tests/partial
+     Tests/partial/.arch-ids Util/VCA Util/VCA/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--base-0
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-1
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-2
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-3
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-4
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-5
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-6
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-7
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-8
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-9
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-11
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-12
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-13
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-14
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-16
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-17
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-18
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-19
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-25
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-39
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-40
+
+
+    Summary:
+      Update CHANGES
+    Revision:
+      siesta-devel--reference--2.1--patch-11
+
 2006-12-12 09:56:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
 
     Summary:
