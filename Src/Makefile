@@ -62,7 +62,7 @@ OBJS = automatic_cell.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
-	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
+	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
         m_check_supercell.o mulliken.o minvec.o naefs.o neighb.o \
 	ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
@@ -92,7 +92,7 @@ OBJS = automatic_cell.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o conjgr.o conjgr_old.o redata.o \
-        m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o
+        m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o molecularmechanics.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -375,10 +375,12 @@ memoryinfo.o: precision.o
 meshmatrix.o: atomlist.o meshsubs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: atm_types.o atmfuncs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: radial.o siesta_cml.o
+metaforce.o: parallel.o parsing.o precision.o
 minvec.o: precision.o sorting.o sys.o
 mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
+molecularmechanics.o: parallel.o parsing.o precision.o sys.o units.o
 mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o precision.o
@@ -437,10 +439,10 @@ shaper.o: atmfuncs.o precision.o
 siesta.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o densematrix.o
 siesta.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o m_broyden_mixing.o
 siesta.o: m_cell.o m_check_supercell.o m_fdf_global.o m_iostruct.o
-siesta.o: m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o nlefsm.o ordern.o
-siesta.o: overfsm.o parallel.o parallelsubs.o periodic_table.o phonon.o
-siesta.o: precision.o redata.o siesta_cml.o sys.o timestamp.o units.o
-siesta.o: writewave.o xcmod.o zmatrix.o
+siesta.o: m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o metaforce.o
+siesta.o: molecularmechanics.o nlefsm.o ordern.o overfsm.o parallel.o
+siesta.o: parallelsubs.o periodic_table.o phonon.o precision.o redata.o
+siesta.o: siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o
 spatial.o: precision.o

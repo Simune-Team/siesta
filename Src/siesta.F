@@ -41,6 +41,8 @@ C  Modules
       use parse
       use periodic_table, only : symbol
       use xcmod, only: setXC
+      use molecularmechanics, only : inittwobody, twobody
+      use metaforce, only: lMetaForce, initmeta, meta
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
       use m_mpi_utils, only : globalize_sum, globalize_max
@@ -122,8 +124,8 @@ C  Modules
      .  dipol(3), dDmax, dDtol, dEmax, dEtol, DEharr, DEna,
      .  dt, DUext, DUscf, Dxc, dx, dxmax, e1, e2, sigma,
      .  Ecorrec, ef, Eharrs, Eharrs1, Eions, Ekin, Ekinion, Emad, Ena, 
-     .  Elast, Enaatm, Enascf, Enl, Entrop, Entropy,
-     .  eta(2), etol, Etot, Etot_output, Exc, E0,
+     .  Elast, Enaatm, Enascf, Enl, Entrop, Entropy, Emeta,
+     .  eta(2), etol, Etot, Etot_output, Exc, E0, Emm,
      .  factor, fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
      .  g2cut, g2max, getot, kcutof, kdispl(3), kn, kpr, 
      .  mn, mpr, occtol, Pint, Pmol, Psol
@@ -270,6 +272,8 @@ C Initialize some variables
       Ekinion = 0.0_dp
       Elast = 0.0_dp
       Emad = 0.0_dp
+      Emeta = 0.0_dp
+      Emm = 0.0_dp
       Entrop = 0.0_dp
       Entropy = 0.0_dp
       FreeE = 0.0_dp
@@ -286,6 +290,9 @@ C ..................
 
 C Initialise exchange-correlation functional information
       call setXC()
+
+C Initialise force field component
+      call inittwobody
 
 C Initialize pseudopotentials and atomic orbitals
       if (IOnode) call initatom()
@@ -690,6 +697,9 @@ C supercell can only overlap once
 
 C Find auxiliary supercell (required only for k sampling) ............
       call superc( ucell, scell, nsc)
+
+C Initialise metadynamic forces if required
+      call initmeta
 
 C Initialize atomic velocities to zero ................................
       if (.not. foundxv) then
@@ -1360,6 +1370,11 @@ C Orthonormalization forces ...........................................
         endif
 C ..................
 
+C Metadynamics forces
+        if (lMetaForce.and.(first.or.last)) then
+          call meta(xa,na_u,ucell,Emeta,fa,stress,last,last)
+        endif
+
 C Find entropy ........................................................
 C Entropy is returned from the call to diagon. To add to the energy
 C the entropy computed from the input charge, here it is assigned to the one
@@ -1494,9 +1509,15 @@ C Save density matrix on disk, after mixing ...........................
           endif
         endif !not last
 
+C Add on force field contribution if required
+        if (first.or.last) then
+          call twobody(na_u,xa,isa,ucell,Emm,ifa,fa,istr,stress)
+        endif
+
 C Print energies ......................................................
         DEna = Enascf - Enaatm
-        Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad
+        Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec + Emad + Emm +
+     .         Emeta
         Eharrs = Etot + DEharr
         FreeE  = Etot - Temp * Entropy
 C Recalculating the energy in the last iter (for gridcellsampling)
@@ -2470,6 +2491,8 @@ C Find pressure
      .     'siesta: Exc     =', Exc/eV,
      .     'siesta: eta*DQ  =', Ecorrec/eV,
      .     'siesta: Emadel  =', Emad/eV,
+     .     'siesta: Emeta   =', Emeta/eV,
+     .     'siesta: Emolmec =', Emm/eV,
      .     'siesta: Ekinion =', Ekinion/eV,
      .     'siesta: Eharris =', (Eharrs1+Ekinion)/eV,
      .     'siesta: Etot    =', (Etot+Ekinion)/eV,
@@ -2507,6 +2530,12 @@ C Find pressure
           call cmlAddProperty(xf=mainXML, property=Emad/eV, 
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Emad', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Emeta/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Emeta', fmt='(f17.6)')
+          call cmlAddProperty(xf=mainXML, property=Emm/eV, 
+     .         units='siestaUnits:eV', 
+     .         dictref='siesta:Emm', fmt='(f17.6)')
           call cmlAddProperty(xf=mainXML,property=Ekinion/eV,
      .         units='siestaUnits:eV', 
      .         dictref='siesta:Ekinion', fmt='(f17.6)')

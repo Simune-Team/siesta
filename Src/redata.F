@@ -1116,6 +1116,12 @@ C     First and last atoms to displace for calculation of force constants
       call fdf_global_get(ia1,'MD.FCfirst',1)
       call fdf_global_get(ia2,'MD.FClast',na)
 
+C     Check that last atom doesn't exceed total number
+      if (idyn.eq.6.and.ia2.gt.na) then
+        call die('redata: ERROR:'//
+     .    'Last atom for phonons is greater than number of atoms.')
+      endif
+
       if (idyn==6) then
         if (ionode) then
           write(6,'(a,f10.4,a)')

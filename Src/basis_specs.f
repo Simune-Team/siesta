@@ -949,7 +949,7 @@ c (according to atmass subroutine).
       if(leqi(str,'SZP1')) str='szp'
       if(leqi(str,'SZSP')) str='szp'
       if(leqi(str,'SZ1P')) str='szp'
-|
+!
       if(leqi(str,'DZ')) str='dz'
       if(leqi(str,'STANDARD')) str='dzp'
       if(leqi(str,'DZP'))  str='dzp'
