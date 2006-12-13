@@ -3002,22 +3002,6 @@ C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
            eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
 
-c junquera
-             call io_assign(iu1)
-             filename = paste(labelfis(is),'.POT.CONF')
-             open(unit=iu1,file=filename,status='unknown')
-             write(iu1,'(2a)')
-     .         '# Soft confinement potential for ',labelfis(is)
-             write(iu1,'(2a)')
-     .         '#               V_0 * Exp(-(r_ext-r_inn)/(r-r_inn))'
-             write(iu1,'(2a)')
-     .         '#   V_soft(r) = -----------------------------------'
-             write(iu1,'(2a)')
-     .         '#                           (r_ext - r)            '
-             write(iu1,'(2a)')
-     .         '#                                                  '
-c end junquera
-
              norb=0 
              indx=0
 !
@@ -3087,59 +3071,25 @@ C Calculate the soft confinement potential for a given atomic species
 C and angular momentum 
 !!AG** rco might not be the PAO cutoff radius! See below
 
-              nrcomp = nint(dlog(rco(1,l,nsm)/b+1.0d0)/a)+1
-              rcsan = rofi(nrcomp+1) + 1.d-6
-!
-!             Fractional rinn indicated by a negative value
-!
-              if (rinn(l,nsm) < 0.0_dp) rinn(l,nsm) = -rinn(l,nsm)*rcsan
-              
-              write(iu1,'(a,i3)')
-     .      '#    Soft confinement for shell nsm = ',nsm
-              write(iu1,'(a,i3)')
-     .      '#    Soft confinement for shell l = ',l
-              write(iu1,'(a,f10.4,a)')
-     .      '#        Inner radius    (r_inn) = ', rinn(l,nsm),' bohrs'
-              write(iu1,'(a,f10.4,a)')
-     .      '#        External radius (r_ext) = ',   rcsan,' bohrs'
-             write(iu1,'(a,f10.4,a)')
-     .      '#        Prefactor       (V_0)   = ', vcte(l,nsm),' Ry'
-
-
-              do ir = 1, nrval
-                if(rofi(ir) .le. rinn(l,nsm)) then
-                  vsoft(ir) = 0.d0
-                elseif (rofi(ir) .lt. rcsan) then
-                  exponent = -(rcsan-rinn(l,nsm))/(rofi(ir)-rinn(l,nsm))
-                  if( abs(exponent) .gt. 500.d0) then
-                    vsoft(ir) = 0.d0
-                  else
-                    vsoft(ir) = vcte(l,nsm) / (rcsan-rofi(ir)) *
-     .                          exp(exponent)
-                  endif
-                else
-                  vsoft(ir) = 0.d0
-                endif
-              enddo
-
-              do ir = 1, nrcomp + 1
-                write(iu1,'(2f20.7)') rofi(ir),vsoft(ir)
-              enddo
-
-              write(iu1,*)
+              call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
+     $                       a, b, rco(1,l,nsm),rofi,nrval,
+     $                       vsoft,plot=.true.)
 
               do ir = 1, nrval
                 vePAOsoft(ir) = vePAO(ir) + vsoft(ir)
               enddo
-!
-! END Soft-Confinement
-!
+
+! END SOFT-CONFINEMENT 
+
               do izeta=1, nzeta(l,nsm)
 
 C****COMPRESSION FACTOR IS ONLY ACTIVE FOR THE INITIAL PAO WHEN USING****
 C**** SPLIT OPTION FOR THE GENERATION OF THE BASIS SET****
                  lambda(izeta,l,nsm)=lambda(1,l,nsm)
 
+! Note that rco is redefined here, to make it fall on an odd-numbered
+! grid point.
+!
                   rc=rco(izeta,l,nsm)/lambda(1,l,nsm)
                   nrc=nint(log(rc/b+1.0d0)/a)+1
                   nodd=mod(nrc,2)
@@ -4794,42 +4744,14 @@ C
 
                if (polorb(l,nsm).gt.0) then 
 
-!
-! Soft-confinement
-!
 C Calculate the soft-confinement potential for the polarization orbitals
-              nrcomp = nint(dlog(rco(1,l,nsm)/b+1.0d0)/a)+1
-              rcsan = rofi(nrcomp+1) + 1.d-6
-!
-!             Fractional rinn indicated by a negative value
-!             (By this time rinn might have been already reset while 
-!             generating the PAOs we are polarizing now)
-!
-              if (rinn(l,nsm) < 0.0_dp) rinn(l,nsm) = -rinn(l,nsm)*rcsan
 
-              do ir = 1, nrval
-                if(rofi(ir) .le. rinn(l,nsm)) then
-                  vsoft(ir) = 0.d0
-                elseif (rofi(ir) .lt. rcsan) then
-                  exponent = -(rcsan-rinn(l,nsm))/
-     .                        (rofi(ir)-rinn(l,nsm))
-                  if(exponent .gt. -100.d0) then
-                    vsoft(ir) = vcte(l,nsm) / (rcsan-rofi(ir)) *
-     .                  exp(exponent)
-                  else
-                    vsoft(ir) = 0.d0
-                  endif
-                else
-                  vsoft(ir) = 0.d0
-                endif
-              enddo
+              call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
+     $                       a, b, rco(1,l,nsm),rofi,nrval,vsoft)
 
               do ir = 1, nrval
                 vePAOsoft(ir) = ve(ir) + vsoft(ir)
               enddo
-!
-!  End soft-confinement
-!
 
                do ipol=1,polorb(l,nsm)
 
@@ -5581,6 +5503,82 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
        endif
 
        end function vander
+!----------------------------------------------------- Soft Confinement
+       subroutine build_vsoft(is,l,nsm,rinn,vcte,a,b,
+     $                        rc,rofi,nrval,vsoft,plot)
 
+       integer, intent(in)             :: is
+       integer, intent(in)             :: l, nsm
+       integer, intent(in)             :: nrval
+       real(dp), intent(inout)         :: rinn
+       real(dp), intent(in)            :: vcte
+       real(dp), intent(in)            :: a, b
+       real(dp), intent(in)            :: rc
+       real(dp), intent(in)            :: rofi(*)
+       real(dp), intent(out)           :: vsoft(*)
+       logical, intent(in), optional   :: plot
+
+       character(len=80)   :: filename
+       integer             :: nrcomp, iu, ir
+       real(dp)            :: rcsan, exponent
+       logical             :: write_to_file
+
+       write_to_file = .false.
+       if (present(plot)) then
+          write_to_file = plot
+       endif
+       
+
+       nrcomp = nint(log(rc/b+1.0_dp)/a)+1
+       rcsan = rofi(nrcomp+1) + 1.0e-6_dp
+!
+!      Fractional rinn indicated by a negative value
+!
+       if (rinn < 0.0_dp) rinn = -rinn*rcsan
+            
+       if (write_to_file) then
+          write(filename,"(a,i1,a,i1,a,a)")
+     $         trim(labelfis(is)) // ".L", l, ".", nsm,
+     $         ".", "confpot"
+          call io_assign(iu)
+          open(unit=iu,file=filename,status='unknown')
+          write(iu,'(2a)')
+     .         '# Soft confinement potential for ', labelfis(is)
+          write(iu,'(a,2i3)')
+     .         '#    Soft confinement for shell l, nsm = ',l, nsm
+          write(iu,'(a,f10.4,a)')
+     .         '#        Inner radius    (r_inn) = ', rinn,' bohrs'
+          write(iu,'(a,f10.4,a)')
+     .         '#        External radius (r_ext) = ',   rcsan,' bohrs'
+          write(iu,'(a,f10.4,a)')
+     .         '#        Prefactor       (V_0)   = ', vcte,' Ry'
+       endif
+
+       do ir = 1, nrval
+          if(rofi(ir) .le. rinn) then
+             ! This avoids the singularity
+             vsoft(ir) = 0.0_dp
+          elseif (rofi(ir) .lt. rcsan) then
+             exponent = -(rcsan-rinn)/(rofi(ir)-rinn)
+             ! The maximum exponent is machine-dependent
+             if( abs(exponent) .gt. 500.0_dp) then
+                vsoft(ir) = 0.0_dp
+             else
+                vsoft(ir) = vcte / (rcsan-rofi(ir)) *
+     .               exp(exponent)
+             endif
+          else
+             vsoft(ir) = 0.0_dp
+          endif
+       enddo
+
+       if (write_to_file) then
+          do ir = 1, nrcomp + 1
+             write(iu,'(2f20.7)') rofi(ir),vsoft(ir)
+          enddo
+          call io_close(iu)
+       endif
+
+       end subroutine build_vsoft
 
        end module atom
