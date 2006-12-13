@@ -10,6 +10,306 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2006-12-13 13:55:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-19
+
+    Summary:
+      Printout of info on interatomic distances
+    Revision:
+      siesta-devel--reference--2.1--patch-19
+
+    A new routine "bonds" based on "shaper" has been created to compute
+    the interatomic distances. Output is to file "slabel.BONDS" upon first
+    reading the structural information, and to file "slabel.BONDS_FINAL"
+    after the last geometry iteration. The neighbors are identified by
+    atom number and symbol, but the positions reported are those of the
+    equivalent atom in the unit cell.
+    
+    Distances are computed up to a maximum of Max.Bond.Distance (default
+    6.0 Bohr).
+    
+    A new routine "sort" based on indexx from Numerical Recipes has been
+    added to file "recipes.f".
+    
+
+    new files:
+     Src/.arch-ids/bonds.f.id Src/bonds.f
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile Src/recipes.f
+     Src/siesta.F version.info
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-23
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-38
+
+
+2006-12-13 11:26:57 GMT	Alberto Garcia <albertog@icmab.es>	patch-18
+
+    Summary:
+      Simple molecular mechanics and metadynamics
+    Revision:
+      siesta-devel--reference--2.1--patch-18
+
+    (From Julian Gale's jgale@siesta.arch--2005/siesta-general--jgale--2.1)
+    
+    * molecularmechanics.f90 - new routine added and called from siesta.F to
+     compute a C6/C8/C10 dispersion term using either the undamped Cn/r**n
+     or the Tang-Toennes damped forms. 
+    
+    * siesta.F has been modified and a routine metaforce.F added to
+    introduce a Gaussian force between a pair of atoms. This is useful for
+    a metadynamics approach.
+    
+    New test: graphite_c6  (stripped-down version)
+
+    new files:
+     Src/.arch-ids/metaforce.F.id
+     Src/.arch-ids/molecularmechanics.F90.id Src/metaforce.F
+     Src/molecularmechanics.F90
+     Tests/Reference/.arch-ids/graphite_c6.out.id
+     Tests/Reference/graphite_c6.out
+     Tests/graphite_c6/.arch-ids/=id
+     Tests/graphite_c6/.arch-ids/graphite_c6.fdf.id
+     Tests/graphite_c6/.arch-ids/graphite_c6.pseudos.id
+     Tests/graphite_c6/.arch-ids/makefile.id
+     Tests/graphite_c6/graphite_c6.fdf
+     Tests/graphite_c6/graphite_c6.pseudos
+     Tests/graphite_c6/makefile
+
+    modified files:
+     Src/Makefile Src/basis_specs.f Src/redata.F Src/siesta.F
+     Tests/Makefile
+
+    new directories:
+     Tests/graphite_c6 Tests/graphite_c6/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-49
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-51
+
+
+2006-12-13 10:49:32 GMT	Alberto Garcia <albertog@icmab.es>	patch-17
+
+    Summary:
+      Scripting utilities
+    Revision:
+      siesta-devel--reference--2.1--patch-17
+
+    Util/Scripting contains some proof-of-concept and prototype
+    python modules and scripts. 
+    
+    Most of the functionality is based on the ASE package of the CAMPOS
+    project. See http://oldwww.fysik.dtu.dk/CAMPOS
+    
+    The necessary modules are in the Siesta directory. The package can
+    also be installed in the appropriate Python directory using the
+    setup.py file provided. The scripts in the top directory could
+    then be transported anywhere.
+    
+    Note that the location of the siesta executable must be specified
+    in the scripts at this point.
+    
+    Directory scripts/ contains some general-purpose utilities.
+
+    new files:
+     Util/Scripting/.arch-ids/=id
+     Util/Scripting/.arch-ids/README.id
+     Util/Scripting/.arch-ids/amoeba.py.id
+     Util/Scripting/.arch-ids/ase.py.id
+     Util/Scripting/.arch-ids/ase_newton.py.id
+     Util/Scripting/.arch-ids/ase_relax.py.id
+     Util/Scripting/.arch-ids/ase_verlet.py.id
+     Util/Scripting/.arch-ids/bond.py.id
+     Util/Scripting/.arch-ids/client.py.id
+     Util/Scripting/.arch-ids/h2o.py.id
+     Util/Scripting/.arch-ids/setup.py.id
+     Util/Scripting/.arch-ids/simplex_optim.py.id
+     Util/Scripting/README Util/Scripting/Siesta/.arch-ids/=id
+     Util/Scripting/Siesta/.arch-ids/Interface.py.id
+     Util/Scripting/Siesta/.arch-ids/__init__.py.id
+     Util/Scripting/Siesta/.arch-ids/calculator.py.id
+     Util/Scripting/Siesta/.arch-ids/read_struct.py.id
+     Util/Scripting/Siesta/.arch-ids/server.py.id
+     Util/Scripting/Siesta/.arch-ids/siesta.py.id
+     Util/Scripting/Siesta/Interface.py
+     Util/Scripting/Siesta/__init__.py
+     Util/Scripting/Siesta/calculator.py
+     Util/Scripting/Siesta/read_struct.py
+     Util/Scripting/Siesta/server.py
+     Util/Scripting/Siesta/siesta.py Util/Scripting/amoeba.py
+     Util/Scripting/ase.py Util/Scripting/ase_newton.py
+     Util/Scripting/ase_relax.py Util/Scripting/ase_verlet.py
+     Util/Scripting/bond.py Util/Scripting/client.py
+     Util/Scripting/h2o.py Util/Scripting/scripts/.arch-ids/=id
+     Util/Scripting/scripts/.arch-ids/plot_struct_jmol.py.id
+     Util/Scripting/scripts/.arch-ids/plot_struct_rasmol.py.id
+     Util/Scripting/scripts/.arch-ids/pr_after_nose.py.id
+     Util/Scripting/scripts/.arch-ids/struct_to_bplot.py.id
+     Util/Scripting/scripts/.arch-ids/struct_to_cif.py.id
+     Util/Scripting/scripts/.arch-ids/struct_to_pdb.py.id
+     Util/Scripting/scripts/.arch-ids/transf.py.id
+     Util/Scripting/scripts/plot_struct_jmol.py
+     Util/Scripting/scripts/plot_struct_rasmol.py
+     Util/Scripting/scripts/pr_after_nose.py
+     Util/Scripting/scripts/struct_to_bplot.py
+     Util/Scripting/scripts/struct_to_cif.py
+     Util/Scripting/scripts/struct_to_pdb.py
+     Util/Scripting/scripts/transf.py Util/Scripting/setup.py
+     Util/Scripting/simplex_optim.py
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex
+
+    new directories:
+     Util/Scripting Util/Scripting/.arch-ids Util/Scripting/Siesta
+     Util/Scripting/Siesta/.arch-ids Util/Scripting/scripts
+     Util/Scripting/scripts/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-5
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-6
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-12
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-15
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-19
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-25
+
+
+2006-12-12 18:20:47 GMT	Alberto Garcia <albertog@icmab.es>	patch-16
+
+    Summary:
+      Change handling of default charge for basis generation
+    Revision:
+      siesta-devel--reference--2.1--patch-16
+
+    Formerly, if the user did not specify the charge to be used
+    for the generation of the basis, it was assumed to be zero. Thus
+    there was no way to distinguish a "zero value" from a "non specified
+    value". This caused problems in some cases if the pseudopotential
+    was generated with an ionic configuration. A "zero charge" would not
+    then override the ionic charge setting.
+
+    modified files:
+     Src/atom.f Src/basis_types.f
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-46
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-47
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-48
+
+
+2006-12-12 18:18:34 GMT	Alberto Garcia <albertog@icmab.es>	patch-15
+
+    Summary:
+      More flexible basis-generation options
+    Revision:
+      siesta-devel--reference--2.1--patch-15
+
+    * Allow more symbols as PAO.BasisSize specification:
+    
+      SZ
+      SZP, SZSP, SZ1P, SZP1          
+      DZ
+      DZP, DZSP, DZP1, DZ1P              
+      DZDP, DZP2, DZ2P              
+      TZ
+      TZP, TZSP, TZP1, TZ1P
+      TZDP, TZP2, TZ2P
+      TZTP, TZP3, TZ3P
+    
+      np or pn means n polarization shells. 
+      sp, dp, tp: singly, doubly, triply polarized
+    
+      (Julian Gale, Alberto Garcia)
+    
+    * Per-shell split-valence specification
+    
+    Using the idiom "S number" anywhere on the first line of a shell entry
+    in PAO.Basis, one can select the split norm parameter for the multiple
+    zeta generation on that shell. If no indication is given, the program will
+    use the global default split_norm (0.15) or one introduced through the
+    appropriate fdf symbol. Optimizing a basis set using S numbers is more
+    robust than using extra rc's.
+    
+    Example:
+    
+    %block PAO.Basis
+    Ta         3  3.28
+     n=6   0   2  S 0.25  E  44.5  1.98
+       5.872      0.0
+       1.000      1.000   
+     n=6   1  1 E  89.0  0.6
+       7.5896
+       1.000      
+     n=5   2   2 S 0.37  E  31.1  1.717
+       5.633       0.0
+       1.000       1.0
+    %endblock PAO.Basis
+    
+    (Alberto Garcia)
+    
+    * A new global fdf symbol PAO.SplitNormH controls the split-norm
+      parameter for hydrogen atoms (defined as those with atomic number 1).
+      There is no default: it falls back to the value of PAO.SplitNorm
+      (Julian Gale)
+    
+    * Implemented default soft-confinement settings through fdf symbols
+      (Julian Gale)
+      It is triggered by fdf_boolean('PAO.SoftDefault',.false.)
+      Then, the following symbols are searched for, with the 
+      indicated defaults:
+    
+          softRc = fdf_double('PAO.SoftInnerRadius',0.9d0)
+          softPt = fdf_double('PAO.SoftPotential',40.0d0)
+    
+    * Negative values of rinn in the E section of PAO.Basis mean that
+      rinn will be the given fraction of the PAO cutoff.
+    
+    * Simplified the handling of defaults for soft confinement and
+      split_norm values by setting them in basis_specs.f
+    
+    * Documented new features in siesta.tex
+      (added also the options for reparametrization of pseudopotentials)
+    
+    * Assorted cosmetic fixes for module accesibility
+    
+
+    new files:
+     Tests/Reference/.arch-ids/h2o_basis.out.id
+     Tests/Reference/h2o_basis.out Tests/h2o_basis/.arch-ids/=id
+     Tests/h2o_basis/.arch-ids/h2o_basis.fdf.id
+     Tests/h2o_basis/.arch-ids/h2o_basis.pseudos.id
+     Tests/h2o_basis/.arch-ids/makefile.id
+     Tests/h2o_basis/h2o_basis.fdf
+     Tests/h2o_basis/h2o_basis.pseudos Tests/h2o_basis/makefile
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/atom.f Src/basis_specs.f
+     Src/basis_types.f Src/gen-basis.F Src/initatom.f
+     Src/parallel.f Src/parsing.f Src/periodic_table.f
+     Src/precision.F Src/wxml/m_wxml_error.f90 Src/xcmod.F
+     Tests/Makefile Tests/h2o/h2o.fdf version.info
+
+    new directories:
+     Tests/h2o_basis Tests/h2o_basis/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-22
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-42
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-45
+
+
+2006-12-12 17:01:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-14
+
+    Summary:
+      Update CHANGES
+    Revision:
+      siesta-devel--reference--2.1--patch-14
+
+
+    modified files:
+     Docs/CHANGES version.info
+
+
 2006-12-12 16:55:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-13
 
     Summary:
