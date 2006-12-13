@@ -16,6 +16,7 @@
       use sys, only: die
 
       public :: derf, derfc, four1, polint, spline, splint
+      public :: sort
 
       contains
 
@@ -284,5 +285,68 @@ C  NOTE: SINGLE PRECISION ACCURACY
 
       derf = 1.0d0 - derf
       end function derf
+
+c
+      subroutine sort(n,arrin,indx)
+c     sorts an array by the heapsort method
+c     w. h. preuss et al. numerical recipes  (called indexx there)
+C     .. Scalar Arguments ..
+      integer n
+C     ..
+C     .. Array Arguments ..
+      double precision arrin(n)
+      integer indx(n)
+C     ..
+C     .. Local Scalars ..
+      double precision q
+      integer i, indxt, ir, j, l
+C     ..
+
+      if (n < 2) call die("Sort called for n<2")
+      do 10 j = 1, n
+         indx(j) = j
+ 10       continue
+      l = n/2 + 1
+      ir = n
+ 20    continue
+      if (l .gt. 1) then
+         l = l - 1
+         indxt = indx(l)
+         q = arrin(indxt)
+      else
+         indxt = indx(ir)
+         q = arrin(indxt)
+         indx(ir) = indx(1)
+         ir = ir - 1
+         if (ir .eq. 1) then
+            indx(1) = indxt
+c
+            return
+c
+         end if
+      end if
+      i = l
+      j = l + l
+ 30    continue
+      if (j .le. ir) then
+         if (j .lt. ir) then
+            if (arrin(indx(j)) .lt. arrin(indx(j+1))) j = j + 1
+         end if
+         if (q .lt. arrin(indx(j))) then
+            indx(i) = indx(j)
+            i = j
+            j = j + j
+         else
+            j = ir + 1
+         end if
+c
+         go to 30
+c
+      end if
+      indx(i) = indxt
+c
+      go to 20
+c
+      end subroutine sort
 
       end module m_recipes

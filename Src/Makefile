@@ -52,7 +52,7 @@ SYSOBJ=$(SYS).o pxf.o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS = automatic_cell.o \
-        arw.o  atomlwf.o bands.o bessph.o cgwf.o chkdim.o chkgmx.o \
+        arw.o  atomlwf.o bands.o bessph.o bonds.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
@@ -260,6 +260,7 @@ basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
 basis_specs.o: pseudopotential.o sys.o
 basis_types.o: atmparams.o precision.o pseudopotential.o sys.o
 bessph.o: parallel.o precision.o sys.o
+bonds.o: atmfuncs.o precision.o recipes.o sorting.o units.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
 broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o m_mpi_utils.o
 broyden_optim.o: parallel.o precision.o units.o

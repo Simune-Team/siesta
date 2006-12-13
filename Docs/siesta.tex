@@ -4321,6 +4321,20 @@ message is printed.
 
 {\it Default value:} {\tt 1.0 Bohr}
 
+\item[{\bf MaxBondDistance}] ({\it physical}): 
+\index{MaxBondDistance@{\bf MaxBondDistance}}
+{\sc Siesta} prints the interatomic
+distances\index{interatomic distances}, up to
+a range of {\tt MaxBondDistance}, to file 
+{\tt SystemLabel.BONDS} upon first
+reading the structural information, and to file
+{\tt SystemLabel.BONDS\_FINAL}
+after the last geometry iteration. The neighbors are identified by
+atom number and symbol, but the positions reported are those of the
+equivalent atom in the unit cell.
+
+{\it Default value:} {\tt 6.0 Bohr}
+
         
 \item[{\bf AllocReportLevel}] ({\it integer}): 
 \index{AllocReportLevel@{\bf AllocReportLevel}}

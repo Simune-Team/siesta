@@ -36,6 +36,7 @@ C  Modules
 !
       use band, only: initbands, bands
       use fdf, only : fdf_block, fdf_convfac, fdf_boolean
+      use fdf, only : fdf_physical
       use m_fdf_global, only: fdf_global_get
       use sys, only: die, bye
       use parse
@@ -128,7 +129,7 @@ C  Modules
      .  eta(2), etol, Etot, Etot_output, Exc, E0, Emm,
      .  factor, fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
      .  g2cut, g2max, getot, kcutof, kdispl(3), kn, kpr, 
-     .  mn, mpr, occtol, Pint, Pmol, Psol
+     .  mn, mpr, occtol, Pint, Pmol, Psol, rmax_bonds
       real(dp)
      .  qaux, qspin(4), qsol,
      .  rcoor, rcoorcp, rijmin, rmax, rmaxh, rmin, r2min,
@@ -191,7 +192,7 @@ C  Modules
       character(len=label_length+5) :: paste
 
       external :: automatic_cell,
-     .  cgvc, cgvc_zmatrix, fixed,
+     .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
@@ -504,6 +505,13 @@ C Find system shape ...................................................
       call shaper( ucell, na_u, isa, xa, shape, nbcell, bcell )
       if (IOnode) then
         write(6,'(/,2a)') 'siesta: System type = ', shape
+      endif
+
+C Find interatomic distances (output in file BONDS)
+      if (IOnode) then
+        rmax_bonds = fdf_physical("MaxBondDistance", 6.0_dp, "Bohr")
+        call bonds( ucell, na_u, isa, xa,
+     $       rmax_bonds, trim(slabel)// ".BONDS" )
       endif
 
 C Output of initial system details:
@@ -1913,6 +1921,11 @@ C Print coordinates in cerius format in a separate file
 
         if (fdf_boolean('WriteCoorCerius',.false.))
      .     call coceri(iza, xa, ucell, na_u, sname )
+
+C Find interatomic distances (output in file BONDS_FINAL)
+
+        call bonds( ucell, na_u, isa, xa,
+     $       rmax_bonds, trim(slabel) // ".BONDS_FINAL" )
 
        endif ! IONode
 
