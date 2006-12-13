@@ -3510,12 +3510,15 @@ removed in future versions.)
 
 \item {\tt Forces} (Receive coordinates from, and return forces to,
 an external driver program, using Unix pipes for communication.
-The routines in module Util/SiestaSubroutine/fsiesta.f90 allow the
+The routines in module fsiesta.f90 allow the
 user's program to perform this communication transparently, as if
 siesta were a conventional force-field subroutine. See file README
 in that directory for details. WARNING: if this option is specified
 without a driver program sending data, siesta may hang without
 any notice).
+
+See directory Util/Scripting \index{Scripting} for other driving options.
+
 \end{itemize}
     
 {\it Default value:} {\tt Verlet} ({\tt CG} for one-atom systems)

@@ -1,0 +1,24 @@
+The scripts
+
+h2o.py
+bond.py
+client.py
+ase.py
+ase_relax.py
+ase_newton.py
+ase_verlet.py
+
+perform Siesta calculations (calling the program directly or
+using it as a server). Their interface to Siesta is implemented
+in modules in the Siesta directory.
+
+The script simplex_optim.py is a crude driver for a basis set
+optimization.
+
+Please note that the location of the Siesta executable must
+be specified in the scripts at this point.
+
+Directory scripts/ contains some general-purpose utilities.
+
+The Siesta package can be installed in the appropriate Python
+directory using the setup.py file.
