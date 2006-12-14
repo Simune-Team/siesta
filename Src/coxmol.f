@@ -25,6 +25,7 @@ c ******************************************************************
 
       implicit          none
 
+      character(len=2) :: sym
       character(len=label_length+4) :: paste
       integer                       :: na
       integer                       :: iza(na)
@@ -52,8 +53,10 @@ c Find file name
 
       write(unit,'(i5)') na
       write(unit,*)
-      write(unit,'(a2,2x,3f12.6)')
-     .     ( symbol(iza(ia)), (xa(i,ia)/Ang,i=1,3), ia=1,na )
+      do ia = 1, na
+         sym =  symbol(iza(ia))
+         write(unit,'(a2,2x,3f12.6)') sym, (xa(i,ia)/Ang,i=1,3)
+      enddo
 
       call io_close(unit)
       

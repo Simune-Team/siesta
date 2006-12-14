@@ -125,7 +125,7 @@
       use basis_types, only: nsp, basis_parameters, ground_state_t
       use basis_types, only: destroy, copy_shell, initialize
       use pseudopotential, only: pseudo_read, pseudo_reparametrize
-      use periodic_table, only: qvlofz, lmxofz, cnfig, symbol, atmass
+      use periodic_table, only: qvlofz, lmxofz, cnfig, atmass
       use chemical
       use sys
 
@@ -641,6 +641,7 @@ C Sanity checks on values
                   if (s%split_norm == 0.0_dp)
      $               write(6,"(a)")
      $               "WARNING: zero split_norm after S in PAO.Basis"
+                  s%split_norm_specified = .true.
                else
                   call die("Specify split_norm after S in PAO.Basis")
                endif
@@ -687,13 +688,14 @@ C Sanity checks on values
             do i=1,s%nzeta
                s%rc(i) = values(p,i)
             enddo
-            if (s%split_norm /= 0.0_dp) then
-               ! Set rc of the second zeta to zero
-!               if (s%nzeta > 2)
-!     $        call die("Ambiguity: nzeta > 2 and split_norm specified")
-               write(6,"(a)")
-     $          "Setting rc(2:) to zero as per split_norm specification"
-               s%rc(2:) = 0.0_dp
+            if (s%split_norm_specified) then
+               do i = 2, s%nzeta
+                  if (s%rc(i) /= 0.0_dp) then
+                     write(6,"(a,i1,a,f8.4)")
+     $                "Warning: Per-shell split_norm parameter " //
+     $                "will not apply to zeta-", i, ". rc=", s%rc(i)
+                  endif
+               enddo
             endif
             call destroy(p)
 

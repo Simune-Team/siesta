@@ -309,9 +309,6 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 ! Start timer
 !
   call timer('MolMec', 1 )
-  if (Node .eq. 0)  &
-     write(6,"(a)") "Adding two-body interactions..."
-     
 !
 ! Allocate workspace arrays
 !

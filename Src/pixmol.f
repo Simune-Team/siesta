@@ -42,6 +42,8 @@ c Internal variables and arrays
       real(dp),                      save :: Ang = 1.0_dp/0.529177_dp
 c -------------------------------------------------------------------
 
+      character(len=2) :: sym
+
       if ( frstme ) then
         fname = paste(slabel,'.ANI')
         frstme = .false.
@@ -53,8 +55,10 @@ c -------------------------------------------------------------------
 
       write(unit,'(i5)') na
       write(unit,*)
-      write(unit,'(a2,2x,3f12.6)')
-     .     ( symbol(iza(ia)), (xa(i,ia)/Ang,i=1,3), ia=1,na )
+      do ia = 1, na
+         sym =  symbol(iza(ia))
+         write(unit,'(a2,2x,3f12.6)') sym , (xa(i,ia)/Ang,i=1,3)
+      enddo
 
       call io_close(unit)
       

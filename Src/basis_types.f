@@ -47,6 +47,9 @@
           logical                   ::  polarized  
           integer                   ::  nzeta_pol
           real(dp)                  ::  split_norm ! Split norm value
+          logical                   ::  split_norm_specified ! in a
+                                                             ! S value
+                                                             ! construct
           real(dp)                  ::  rinn       ! Soft confinement
           real(dp)                  ::  vcte       ! Soft confinement
           real(dp), pointer         ::  rc(:)      ! rc's for PAOs
@@ -178,6 +181,7 @@
       p%rinn = 0._dp
       p%vcte = 0._dp
       p%split_norm = 0.0_dp
+      p%split_norm_specified = .false.
       nullify(p%rc,p%lambda)
       end subroutine init_shell
 

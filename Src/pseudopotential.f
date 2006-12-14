@@ -292,6 +292,7 @@
             write(io_ps,9040) j, p%r(j), (p%vdown(i,j),i=1,p%npotd),
      $                        p%chval(j)
          enddo
+         call io_close(io_ps)
          end subroutine pseudo_dump
 
 !------

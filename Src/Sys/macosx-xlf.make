@@ -20,6 +20,9 @@ SIESTA_ARCH=macosx-xlf
 #      ONE HAS TO BE EXTRA CAREFUL WHEN DELETING FILES, DUE TO THE
 #      CASE-INSENSITIVENESS OF THE FILE SYSTEM ON THE MAC.
 #
+.SUFFIXES:
+.SUFFIXES: .f .F .o .a .f90 .F90
+#
 FC=xlf
 FC_ASIS=$(FC)
 FREE_F90=-qsuffix=f=f90 -qfree=f90
@@ -27,7 +30,7 @@ FREE_F90_CPP=-qsuffix=cpp=F90 -qfree=f90
 #
 RANLIB=ranlib
 #
-FFLAGS=-O
+FFLAGS=-O3 -qarch=auto -qtune=auto -qcache=auto -qnolm
 FFLAGS_DEBUG= -g -O0
 LDFLAGS=
 COMP_LIBS=
@@ -41,17 +44,19 @@ MPI_INTERFACE=
 MPI_INCLUDE=
 DEFS_MPI=
 #
-LIBS=  $(MPI_LIBS)  $(NETCDF_LIBS) 
-COMP_LIBS=linalg.a
+DEFS_EXTRA= -WF,-DFC_HAVE_ABORT
+#
+LINEAR_ALGEBRA_LIBS=-Wl,-framework -Wl,vecLib
+#
+LIBS=  $(MPI_LIBS)  $(LINEAR_ALGEBRA_LIBS) $(NETCDF_LIBS) 
+COMP_LIBS=dc_lapack.a
 SYS=xlf
-DEFS= $(DEFS_CDF) $(DEFS_MPI)
+DEFS= $(DEFS_CDF) $(DEFS_MPI) $(DEFS_EXTRA)
 #
-%.o : %.mod
+# Beta compiler crashes on these, or takes a long time...
 #
-# Beta compiler crashes on these...
-#
-atom.o:
-	$(FC) -c $(FFLAGS_DEBUG)  atom.f
+parsing.o:
+	$(FC) -c $(FFLAGS_DEBUG)  parsing.f
 siesta.o:
 	$(FC) -c  $(FFLAGS_DEBUG)  $(DEFS)  siesta.F
 #

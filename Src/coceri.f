@@ -42,6 +42,7 @@ c ******************************************************************
 c Internal variables and arrays
  
       character(len=label_length+4) :: fname
+      character(len=2)              :: sym
       integer                       :: unit, ix, iv, i, ia
       real(dp)                      :: celang(3)
       real(dp)                      :: cellm(3)
@@ -122,9 +123,11 @@ c Write file
       write(unit,'(/,a)') 'ATOMS'
       write(unit,'(2a)') 'NAME       X          Y          Z     ',
      .                             'CHARGE   TEMP    OCCUP   SCAT'
-      write(unit,'(2x,a2,3f11.5,3f8.4,3x,a2)')
-     .  ( symbol(iza(ia)), (xap(i,ia),i=1,3),
-     .                0.d0, 0.d0, 1.d0, symbol(iza(ia)), ia=1,na )
+      do ia = 1, na
+         sym =  symbol(iza(ia))
+         write(unit,'(2x,a2,3f11.5,3f8.4,3x,a2)')
+     .     sym, (xap(i,ia),i=1,3), 0.d0, 0.d0, 1.d0, sym
+      enddo
       write(unit,'(a)') 'EOF'
 
       call io_close(unit)

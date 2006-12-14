@@ -164,6 +164,9 @@ C Originally written by A.R.Williams. Modified by J.M.Soler
 
 
       FUNCTION SYMBOL( Z )
+
+!! ** This function should not be called from within an I/O statement
+
 C Given the atomic number, returns the atomic symbol (e.g. 'Na')
 C Written by J. Soler
 

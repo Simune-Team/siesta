@@ -8,6 +8,11 @@ mixps=../../../Src/mixps
 cp ../../Pseudos/O.psf .
 cp ../../Pseudos/Zero.nrl.psf .
 
+if [ ! -x $mixps ] ; then
+  echo "Compiling $mixps..."
+  (cd ../../../Src ; make mixps)
+fi
+
 $mixps O Zero.nrl 0.5
 
 #
