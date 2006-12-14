@@ -7,7 +7,7 @@
 #$ -cwd
 #$ -j y
 #$ -S /bin/bash
-#$ -v HOME
+#$ -V               # Add all environment variables
 #
 #-----------------------------------------------------------
 prog=../../../Src/siesta

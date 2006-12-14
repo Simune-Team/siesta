@@ -35,14 +35,27 @@ module_built: mpi.o mpi__include.o Interfaces.o
 	@cp *.mod ..
 	@touch module_built
 #
+#-----------------------------------------------------------------------
+# Tests of the MPI installation
+#
+# Straight MPI test
+#
 pi3:    pi3.o
 	$(FC) -o pi3 $(LDFLAGS) pi3.o ../$(MPI_INTERFACE) $(MPI_LIBS) 
+#
+# Blacs test
 #
 blacs_prb:    blacs_prb.o
 	$(FC) -o blacs_prb $(LDFLAGS) blacs_prb.o ../$(MPI_INTERFACE) $(LIBS) 
 #
-pblas_prb:    pblas_prb.o
-	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o ../$(MPI_INTERFACE) $(LIBS) 
+# Pblas test. You might need to uncomment the following line
+# in those systems where pdlaprnt is not in the standard library.
+#
+#EXTRA_ROUTINE=pdlaprnt.o
+#
+pblas_prb:    pblas_prb.o 
+	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o $(EXTRA_ROUTINE) \
+              ../$(MPI_INTERFACE) $(LIBS) 
 #
 clean:
 	@rm -f Interfaces.f90 *.o *.mod
