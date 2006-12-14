@@ -1,8 +1,8 @@
 This directory contains programs or scripts that can be helpful
 in connection with the program SIESTA:
 
-vpsa2bin:    Converts formatted pseudopotential files to unformatted.
-vpsb2asc:    Converts unformatted pseudopotential files to formatted.
+vpsa2bin:    Converts formatted pseudopotential files to unformatted form.
+vpsb2asc:    Converts unformatted pseudopotential files to formatted form.
 
 Plrho/plrho: Plots in 3D the electron density and other functions 
              calculated by siesta (by Jose M. Soler)
@@ -26,13 +26,15 @@ readwf:      Converts wavefunction coeffs file to readable form (by P. Ordejon)
 plstm:       Simple program for STM simulations (by P. Ordejon)
 gnubands:    Utility for simple band structure (and phonon dispersion) plots.
 grid2cube:   Converts Siesta grid files to Gaussian Cube (by P. Ordejon)
+grid2val:    Stream evaluator for Siesta grid files (by A. Garcia)
 sies2arc:    Converts output coordinates to the arc movie format (by J. Gale)
 Macroave:    Macroscopic averaging for interfaces and surfaces (by J. Junquera)
 
 SiestaSubroutine: Code and examples of the driving of Siesta by an external
-                  agent.
+                  agent (by J. Soler and A. Garcia)
+Scripting:   Experimental scripting modules in Python (by A. Garcia)
 
-VCA:         Some utilities to help in Virtual-Crystal calculations.
+VCA:         Utilities to help in Virtual-Crystal calculations (by A. Garcia)
 
 Other useful resources:
 
