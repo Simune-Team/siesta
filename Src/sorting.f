@@ -82,6 +82,12 @@ C *******************************************************************
       INTEGER           I, N, INDX(:), INDXT, IR, J, L, M
       DOUBLE PRECISION  X(:,:), Q
 
+!
+!     Important: avoid instabilities leading to compiler-dependent
+!     behavior by introducing a smearing in the .LT. test
+!
+      double precision, parameter :: delta = 1.0d-12
+
       DO 1 J=1,N
          INDX(J)=J
    1  CONTINUE
@@ -107,9 +113,9 @@ C *******************************************************************
          J=L+L
    3     IF (J.LE.IR) THEN
             IF (J.LT.IR) THEN
-               IF (X(1,INDX(J)).LT.X(1,INDX(J+1))) J=J+1
+               IF (X(1,INDX(J)).LT.(X(1,INDX(J+1)) - delta)) J=J+1
             ENDIF
-            IF (Q.LT.X(1,INDX(J))) THEN
+            IF (Q.LT.(X(1,INDX(J)) - delta)) THEN
                INDX(I)=INDX(J)
                I=J
                J=J+J
