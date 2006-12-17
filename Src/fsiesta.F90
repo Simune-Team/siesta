@@ -72,6 +72,10 @@ module fsiesta
 ! Make sure that you have a working "flush" subroutine in your system,
 ! otherwise the process might hang.
 
+#ifdef __NAG__
+  use f90_unix_proc, only: system
+#endif
+
   implicit none
 
 PUBLIC :: siesta_launch, siesta_units, siesta_forces, siesta_quit
