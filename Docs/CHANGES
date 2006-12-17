@@ -10,6 +10,257 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2006-12-17 22:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-28
+
+    (Manual entry)
+
+    Summary:
+      Update of CHANGES file and Reference outputs (Siesta-BSC-base-C1)
+    Revision:
+      siesta-devel--reference--2.1--patch-28
+
+    Final packaging for the Siesta-BSC-base candidate.
+    
+
+2006-12-17 18:36:41 GMT	Alberto Garcia <albertog@icmab.es>	patch-27
+
+    Summary:
+      Safeguard in floating point comparison in sorting routine
+    Revision:
+      siesta-devel--reference--2.1--patch-27
+
+    To avoid instabilities leading to compiler-dependent
+    behavior, a smearing in the .LT. tests has been introduced
+    in routine ordix in module sorting.
+    
+    The smearing parameter has been set to
+    
+          double precision, parameter :: delta = 1.0d-12
+    
+    
+
+    modified files:
+     Src/sorting.f Src/version.F90 version.info
+
+    new patches:
+     siesta@uam.es--2006/siesta--release--2.0--patch-27
+
+
+2006-12-17 18:26:01 GMT	Alberto Garcia <albertog@icmab.es>	patch-26
+
+    Summary:
+      Allow lifting of even/odd restrictions in radial grid
+    Revision:
+      siesta-devel--reference--2.1--patch-26
+
+    The old code in arw.f needed to work with an odd number of points in 
+    the radial grid. That restriction has been lifted by coding a new
+    "Simpson" integration routine (routine integrator in arw.f).
+    
+    Those sections of atom.f in which the number of points is redefined
+    to make it odd (thus shifting the cutoff radii in the process) have
+    been wrapped in if tests. If the fdf symbol 'Restricted.Radial.Grid' is
+    set to .false., those sections will not be executed. 
+    
+    Together with the 'Reparametrize.Pseudos' feature, this change will
+    allow a tighter mapping between the rc's specified externally (e.g.,
+    by a simplex driver) and those actually used by the program.
+    
+    * New test:
+    
+        h2o_radialgrid
+
+    new files:
+     Tests/h2o_radialgrid/.arch-ids/=id
+     Tests/h2o_radialgrid/.arch-ids/h2o_radialgrid.fdf.id
+     Tests/h2o_radialgrid/.arch-ids/h2o_radialgrid.pseudos.id
+     Tests/h2o_radialgrid/.arch-ids/makefile.id
+     Tests/h2o_radialgrid/h2o_radialgrid.fdf
+     Tests/h2o_radialgrid/h2o_radialgrid.pseudos
+     Tests/h2o_radialgrid/makefile
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Makefile Src/arw.f
+     Src/atom.f Src/basis_specs.f Src/version.F90 Tests/Makefile
+     Tests/h2o_basis/h2o_basis.fdf version.info
+
+    new directories:
+     Tests/h2o_radialgrid Tests/h2o_radialgrid/.arch-ids
+
+
+2006-12-17 18:01:18 GMT	Alberto Garcia <albertog@icmab.es>	patch-25
+
+    Summary:
+      Allow user-directed switching of 'findp bug'
+    Revision:
+      siesta-devel--reference--2.1--patch-25
+
+    * In order to make it easier to compare with previous calculations,
+    a new symbol, PAO.Keep.Findp.Bug, is now read. If .true., the old
+    code in findp is enabled.
+    
+    * Other fixes: 
+    
+     - Removal of a spurious io_close call in atom.f 
+     - More clear warning when rc(nzeta > 1) /= 0 if a per-shell
+       split-norm is specified.
+    
+    * New test:
+      
+      h2o_findp_bug
+    
+
+    new files:
+     Tests/Reference/.arch-ids/h2o_findp_bug.out.id
+     Tests/Reference/h2o_findp_bug.out
+     Tests/h2o_findp_bug/.arch-ids/=id
+     Tests/h2o_findp_bug/.arch-ids/h2o_findp_bug.fdf.id
+     Tests/h2o_findp_bug/.arch-ids/h2o_findp_bug.pseudos.id
+     Tests/h2o_findp_bug/.arch-ids/makefile.id
+     Tests/h2o_findp_bug/h2o_findp_bug.fdf
+     Tests/h2o_findp_bug/h2o_findp_bug.pseudos
+     Tests/h2o_findp_bug/makefile
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/Sys/macosx-xlf.make
+     Src/atom.f Src/basis_specs.f Tests/Makefile
+
+    new directories:
+     Tests/h2o_findp_bug Tests/h2o_findp_bug/.arch-ids
+
+
+2006-12-14 18:34:34 GMT	Alberto Garcia <albertog@icmab.es>	patch-24
+
+    Summary:
+      Fixes for latest features.
+    Revision:
+      siesta-devel--reference--2.1--patch-24
+
+    * In basis_specs.f, the explicit rc's for multiple-zeta orbitals were set
+      erroneously to zero. Now the user is warned of a possible conflict with
+      the specified split_norm parameter.
+    
+    * In pseudopotential.f, a call to io_close was missing in the dumping routine.
+    
+    * Function symbol was called inside I/O statements in pixmol, coxmol,
+      and coceri.
+    
+    * Molecularmechanics.F90 always printed a sentence about two-body potentials,
+      even if they were not used. Removed.
+    
+    * oxyn and partial tests added to Tests/Makefile.
+    
+    * Tests/partial/script.sh now compiles mixps if it is not built.
+    
+    * Src/Sys/macosx-xlf.make modified to compile parsing.f without optimization.
+    
+    * Tests/h2o/h2o.fdf is back to the classic version (removal of
+      reparametrization option)
+    
+
+    modified files:
+     Src/Sys/macosx-xlf.make Src/basis_specs.f Src/basis_types.f
+     Src/coceri.f Src/coxmol.f Src/molecularmechanics.F90
+     Src/periodic_table.f Src/pixmol.f Src/pseudopotential.f
+     Src/version.F90 Tests/Makefile Tests/h2o/h2o.fdf
+     Tests/partial/script.sh version.info
+
+
+2006-12-14 11:13:48 GMT	Alberto Garcia <albertog@icmab.es>	patch-23
+
+    Summary:
+      Add grid function evaluator program
+    Revision:
+      siesta-devel--reference--2.1--patch-23
+
+    
+    New program /Util/grid2val : a "stream evaluator" for functions
+    defined on the grid.
+    
+
+    new files:
+     Util/.arch-ids/grid2val.f.id Util/grid2val.f
+
+    modified files:
+     Src/version.F90 Util/README version.info
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta--alchemy--0.1--patch-24
+
+
+2006-12-14 10:52:11 GMT	Alberto Garcia <albertog@icmab.es>	patch-22
+
+    Summary:
+      New auxiliary files for compilation and execution
+    Revision:
+      siesta-devel--reference--2.1--patch-22
+
+    Added pdlaprnt.f file from PBLAS to Src/MPI, with an optional Makefile symbol
+    to enable its compilation. That routine is missing in some system libraries,
+    and it is needed to compile the pblas test.
+    
+    Modified Confs/matterhorn* to add a warning related to the need to compile
+    some files without optimization
+    
+    Added Confs/macosx-nag-cdf.sh
+    
+    Tests/Scripts now contains cryst-mpd.sge and simple_parallel.sh for runs
+    on a Rocks cluster (batch and single-node-interactive) using mpd.
+    
+    Added Src/Sys/mare-nostrum.make (experimental)
+    
+    
+
+    new files:
+     Src/Confs/.arch-ids/macosx-nag-cdf.conf.id
+     Src/Confs/macosx-nag-cdf.conf Src/MPI/.arch-ids/pdlaprnt.f.id
+     Src/MPI/pdlaprnt.f Src/Sys/.arch-ids/mare-nostrum.make.id
+     Src/Sys/mare-nostrum.make
+     Tests/Scripts/.arch-ids/cryst-mpd.sge.id
+     Tests/Scripts/cryst-mpd.sge
+
+    modified files:
+     Src/Confs/matterhorn-gm.conf Src/Confs/matterhorn-serial.conf
+     Src/MPI/Makefile Tests/Scripts/matterhorn-gm.sge
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-24
+     agarcia@siesta.arch--2006/siesta-devel--agarcia--2.1--patch-37
+
+
+2006-12-13 15:12:04 GMT	Alberto Garcia <albertog@icmab.es>	patch-21
+
+    Summary:
+      Packaging of soft-confinement code in a subroutine
+    Revision:
+      siesta-devel--reference--2.1--patch-21
+
+    The computation of the soft-confinement potential has been moved to
+    the routine "build_vsoft" at the end of the atom module.
+    
+    The naming convention for the relevant files has changed. There is
+    now a file per (l,nsm) shell, with a name of the form
+    
+    AtomLabel.Ll.nsm.confpot
+    
+    where l is the angular momentum.
+    
+
+    modified files:
+     Src/atom.f Src/version.F90 version.info
+
+
+2006-12-13 14:05:57 GMT	Alberto Garcia <albertog@icmab.es>	patch-20
+
+    Summary:
+      Update CHANGES. Set version to 2.1.20
+    Revision:
+      siesta-devel--reference--2.1--patch-20
+
+
+    modified files:
+     Docs/CHANGES Src/version.F90 version.info
+
 2006-12-13 13:55:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-19
 
     Summary:
