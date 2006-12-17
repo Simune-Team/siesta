@@ -5057,6 +5057,8 @@ $a=5x10^{-4}$ and $b=10$, the grid point separations at $r=0$ and 10 bohrs are
 0.005 and 0.01 bohrs, respectively. More points are needed to reach r's of
 the order of a hundred bohrs, but the extra computational effort is negligible.
 
+{\it Default value:} { \tt .false.}
+
 \item[{\bf New.A.Parameter}] ({\it real}):
 \index{New.A.Parameter@{\bf
     New.A.Parameter}}\index{basis!reparametrization of pseudopotential}
@@ -5073,11 +5075,23 @@ New setting for the pseudopotential grid's $b$ parameter
 
 {\it Default value:} { $10.0$}
 
+\item[{\bf Restricted.Radial.Grid}] ({\it logical}): 
+\index{Restricted.Radial.Grid@{\bf Restricted.Radial.Grid}}
+
+In normal operation of the basis-set and projector generation code the
+radial grid is restricted to having an odd number of points, and the
+cutoffs are shifted accordingly. Thisrestriction can be lifted by
+setting this parameter to {\tt .false.}
+
+{\it Default value:} { \tt .true.}
+
 \item[{\bf PAO.Keep.Findp.Bug}] ({\it logical}): 
 \index{PAO.Keep.Findp.Bug@{\bf PAO.Keep.Findp.Bug}}
 
 Switch on old code in routine findp in file atom.f to test
 the effect of a (now corrected) bug.
+
+{\it Default value:} { \tt .false.}
 
 \end{description}
 

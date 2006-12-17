@@ -167,6 +167,10 @@
       real(dp), save            :: global_splnorm, global_splnorm_H
       integer           isp  ! just an index dummy variable for the whole module
 
+!
+      logical, save, public     :: restricted_grid
+      logical, parameter        :: restricted_grid_default = .true.
+
       public :: read_basis_specs
 
       private
@@ -197,6 +201,15 @@
          new_b = fdf_double("NewBParameter",10.0_dp)
       endif
 
+!
+!     Whether or not to restrict integration grids to an odd number
+!     of points (and hence to shift rcs accordingly)     
+!
+      restricted_grid =
+     $     fdf_boolean("Restricted.Radial.Grid",
+     $                  restricted_grid_default)
+!
+!
       basis_size=fdf_string('PAO.BasisSize',basis_size_default)
       call size_name(basis_size)
       basistype_generic=fdf_string('PAO.BasisType',basistype_default)

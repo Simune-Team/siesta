@@ -24,8 +24,6 @@ n=1  0  2   S 0.35  P 2 E 30.0 -0.5     # Split norm, fractional r_inner
     1.0 1.0
 %endblock PAO.Basis
 
-ReparametrizePseudos T           # Finer grid
-
 AtomicCoordinatesFormat  Ang
 %block AtomicCoordinatesAndAtomicSpecies
  0.000  0.000  0.000  1

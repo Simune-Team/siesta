@@ -343,6 +343,7 @@
     \subitem ZM, 64
   \item READWF, 61, 69
   \item {\bf Reparametrize.Pseudos}, 72
+  \item {\bf Restricted.Radial.Grid}, 72
   \item revPBE, 35
   \item rippling, 44--46
   \item RPBE, 35

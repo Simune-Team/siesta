@@ -224,7 +224,7 @@
 ! Output:
 !   real*8  G(N) : Normalized wavefunction
 !***********************************************************************
-      USE PARALLEL, ONLY: IONODE
+
       IMPLICIT NONE
       INTEGER          :: N
       DOUBLE PRECISION :: G(N), S(N)
@@ -232,24 +232,7 @@
       INTEGER          :: I
       DOUBLE PRECISION :: NORM, SRNRM
 
-      ! Check that number of points is odd
-      IF (MOD(N,2).NE.1.and.IOnode) 
-     .  WRITE(6,*) ' NRMLZG: N SHOULD BE ODD. N =',N
-
-      ! Use Simpson's rule to integrate Norm=G*S*G
-      NORM = 0.D0
-      DO I = 2,N-1,2
-         NORM=NORM + G(I)*S(I)*G(I)
-      END DO
-      NORM = NORM * 2.D0
-      DO I = 3,N-2,2
-         NORM=NORM + G(I)*S(I)*G(I)
-      END DO
-      NORM = NORM * 2.D0
-      DO I = 1,N,N-1
-         NORM=NORM + G(I)*S(I)*G(I)
-      END DO
-      NORM = NORM/3.D0
+      call integrator(g(1:n)*g(1:n),s,n,norm)
 
       ! Normalize wavefunction
       SRNRM = SQRT(NORM)
@@ -258,7 +241,6 @@
       END DO
 
       END SUBROUTINE NRMLZG
-
 
 
       SUBROUTINE BCORGN(E,H,S,L,ZDR,Y2)
@@ -534,23 +516,9 @@
       ! potential at the origin V0:
       ! QT = Int(4*pi*r**2*rho*dr) = Int((4*pi*r**2*rho)*(dr/di)*di)
       ! V0 = Int(4*pi*r*rho*dr) =  Int((4*pi*r**2*rho)/r*(dr/di)*di)
-      V0=0.D0
-      QT=0.D0
-      DO IR=2,NR-1,2
-        DZ=DRDI(IR)*R2RHO(IR)
-        QT=QT+DZ
-        V0=V0+DZ/R(IR)
-      ENDDO
-      V0=V0+V0
-      QT=QT+QT
-      DO IR=3,NR-2,2
-        DZ=DRDI(IR)*R2RHO(IR)
-        QT=QT+DZ
-        V0=V0+DZ/R(IR)
-      ENDDO
-      DZ=DRDI(NR)*R2RHO(NR)
-      QT=(QT+QT+DZ)/3.D0
-      V0=(V0+V0+DZ/R(NR))/3.D0
+
+      call integrator(r2rho(2:nr),drdi(2:nr),nr-1,QT)
+      call integrator(r2rho(2:nr)/r(2:nr),drdi(2:nr),nr-1,V0)
 
       ! Fix V(1) and V(2) to start Numerov integration. To find a 
       ! particular solution of the inhomog. eqn, V(2) is fixed by 
@@ -584,3 +552,69 @@
       ENDDO
 
       END SUBROUTINE VHRTRE
+
+      SUBROUTINE INTEGRATOR(F,S,NP,VAL)
+!***********************************************************************
+! Integrates a radial function tabulated on a logarithmic grid,
+! using a generalized Simpson's rule valid for both even and odd
+! number of points. Note that the "h" is 1 as the reparametrization
+! involves a mapping of integers to reals.
+!
+! Alberto Garcia, Dec. 2006, based on code by Art Williams.
+!
+! Input:
+!   real*8  F(NP) : Function to be integrated.
+!   real*8  S(NP) : Metric function defined for a logarithmic mesh
+!                    r(j) = B*(exp(A*(j-1)) - 1),   j=1,2,...,NP
+!                  as  S(j) = (dr/dj)^2 = (A*r(j))^2
+!   integer NP    : Number of radial points (including r(1)=0)
+! Output:
+!   real*8  VAL   : Value of the integral
+!***********************************************************************
+
+      IMPLICIT NONE
+      INTEGER          :: NP
+      DOUBLE PRECISION :: F(NP), S(NP)
+
+      INTEGER          :: I, N
+      DOUBLE PRECISION :: VAL
+
+      IF (MOD(NP,2).EQ.1) THEN        
+         N = NP               ! ODD
+      ELSE
+         IF (NP .EQ. 2) THEN
+          ! Special case of trapezoidal rule
+            VAL = 0.5D0 * (F(1)*S(1) + F(2)*S(2))
+            RETURN
+         ENDIF
+         N = NP - 3           ! EVEN: TAKE A FINAL FOUR-POINT INTERVAL
+      ENDIF
+!
+!     STANDARD EXTENDED SIMPSON RULE WITH ALTERNATING 4/3 AND 2/3 FACTORS
+!     FOR THE SECTION MADE UP OF PAIRS OF INTERVALS (THREE-POINT SEGMENTS)
+!
+      VAL = 0.D0
+      DO I = 2,N-1,2
+         VAL=VAL + F(I)*S(I)
+      END DO
+      VAL = VAL * 2.D0
+      DO I = 3,N-2,2
+         VAL=VAL + F(I)*S(I)
+      END DO
+      VAL = VAL * 2.D0
+      DO I = 1,N,N-1                ! first and last points at 1/3
+         VAL=VAL + F(I)*S(I)
+      END DO
+      VAL = VAL/3.D0
+
+      IF (MOD(NP,2).EQ.0) THEN           ! EVEN
+!        ADD THE CONTRIBUTION OF THE 
+!        FINAL FOUR-POINT SEGMENT USING SIMPSON'S 3/8 RULE
+!        (SEE NUMERICAL RECIPES (FORTRAN), P. 105)
+         I = NP - 3
+         VAL = VAL +
+     $      (3.D0/8.D0) * ( (F(I)*S(I) + F(I+3)*S(I+3)) +
+     $         3.D0 * (F(I+1)*S(I+1) + F(I+2)*S(I+2)) )
+      ENDIF
+
+      END SUBROUTINE INTEGRATOR
