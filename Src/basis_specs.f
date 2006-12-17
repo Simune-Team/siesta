@@ -691,8 +691,8 @@ C Sanity checks on values
             if (s%split_norm_specified) then
                do i = 2, s%nzeta
                   if (s%rc(i) /= 0.0_dp) then
-                     write(6,"(a,i1,a,f8.4)")
-     $                "Warning: Per-shell split_norm parameter " //
+                     write(6,"(/,a,i1,a,f8.4,/)")
+     $                "*Warning: Per-shell split_norm parameter " //
      $                "will not apply to zeta-", i, ". rc=", s%rc(i)
                   endif
                enddo

@@ -23,14 +23,14 @@ SIESTA_ARCH=macosx-xlf
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a .f90 .F90
 #
-FC=xlf
+FC=xlf95
 FC_ASIS=$(FC)
 FREE_F90=-qsuffix=f=f90 -qfree=f90
 FREE_F90_CPP=-qsuffix=cpp=F90 -qfree=f90
 #
 RANLIB=ranlib
 #
-FFLAGS=-O3 -qarch=auto -qtune=auto -qcache=auto -qnolm
+FFLAGS=-g -O3 -qarch=auto -qtune=auto -qcache=auto -qnolm
 FFLAGS_DEBUG= -g -O0
 LDFLAGS=
 COMP_LIBS=
@@ -53,22 +53,26 @@ COMP_LIBS=dc_lapack.a
 SYS=xlf
 DEFS= $(DEFS_CDF) $(DEFS_MPI) $(DEFS_EXTRA)
 #
+FCFLAGS_fixed_f=-qfixed -qsuffix=cpp=f
+FCFLAGS_free_f90=-qfree=f90 -qsuffix=f=f90
+FPPFLAGS_fixed_F=-qfixed -qsuffix=cpp=F
+FPPFLAGS_free_F90=-qfree=f90 -qsuffix=cpp=F90
+#
 # Beta compiler crashes on these, or takes a long time...
 #
 parsing.o:
-	$(FC) -c $(FFLAGS_DEBUG)  parsing.f
+	$(FC) -c $(FFLAGS_DEBUG)  $(FCFLAGS_fixed_f) parsing.f
 siesta.o:
-	$(FC) -c  $(FFLAGS_DEBUG)  $(DEFS)  siesta.F
+	$(FC) -c  $(FFLAGS_DEBUG)  $(DEFS) $(FPPFLAGS_fixed_F) siesta.F
 #
 .F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $<
-.f.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $(FPPFLAGS_fixed_F)  $< 
 .F90.o:
-	$(FC) -c $(FREE_F90_CPP) $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(DEFS) $(FPPFLAGS_free_F90) $< 
+.f.o:
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f)  $<
 .f90.o:
-	$(FC) -c $(FREE_F90) $(FFLAGS) $(INCFLAGS)   $<
-#
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_free_f90)  $<
 
 
 
