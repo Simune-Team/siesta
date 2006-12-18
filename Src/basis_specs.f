@@ -171,6 +171,8 @@
       logical, save, public     :: restricted_grid
       logical, parameter        :: restricted_grid_default = .true.
 
+      real(dp), save, public    :: rmax_radial_grid
+      
       public :: read_basis_specs
 
       private
@@ -209,6 +211,15 @@
      $     fdf_boolean("Restricted.Radial.Grid",
      $                  restricted_grid_default)
 !
+!     If non-zero, the value will be the maximum value of the
+!     radial coordinate
+!
+      if (reparametrize_pseudos) then
+         rmax_radial_grid = fdf_double('Rmax.Radial.Grid',50.0_dp)
+      else
+         rmax_radial_grid = fdf_double('Rmax.Radial.Grid',0.0_dp)
+      endif
+
 !
       basis_size=fdf_string('PAO.BasisSize',basis_size_default)
       call size_name(basis_size)

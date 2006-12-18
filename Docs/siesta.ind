@@ -27,6 +27,7 @@
     \subitem ghost atoms, 22
     \subitem minimal, 17
     \subitem PAO, 16, 17, 20
+    \subitem point at infinity, 72
     \subitem polarization, 17, 21
     \subitem reparametrization of pseudopotential, 72
     \subitem soft confinement potential, 21
@@ -346,6 +347,7 @@
   \item {\bf Restricted.Radial.Grid}, 72
   \item revPBE, 35
   \item rippling, 44--46
+  \item {\bf     Rmax.Radial.Grid}, 72
   \item RPBE, 35
 
   \indexspace

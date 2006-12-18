@@ -10,6 +10,44 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2006-12-18 16:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-29
+
+(Interim manual entry -- to be replaced by the automatic version later)
+
+Summary: Point at infinity set closer in atom for reparametrized calculations
+Keywords:
+
+If the reference energy of a KB projector is not specified, the
+program first computes a solution of Schrodinger's equation which is
+zero at r(nrval), i.e., the largest radius, which is typically of the
+order of 120 bohr (this is determined by the pseudopotential file).
+
+If the pseudopotential is reparametrized the number of radial points
+needed increases substantially. This uncovers a weakness in the
+routines in arw.f: they do not rescale the wavefunction as they
+integrate the equation, so overflows can occur in some situations
+(this has been seen with the pgf90 on opterons and with the NAG
+compiler on a Mac).
+
+One solution (error-prone) could be to re-write the arw routines.
+Another one is to re-define the point-at-infinity so that overflows do
+not occur. It has been found that setting Rmax.Radial.Grid (new fdf
+symbol) to 50.0 (implicit bohr units) removes the problem, while
+maintaining numerical accuracy up to 10^-4 eV in total energy.  (The
+eigenvalues for KB generation (reported as "el" in the output) are of
+course higher, and in some cases the corresponding rc is slightly
+larger.) This insensitivity is due to the fact that all the relevant
+KB projector information is constructed from the shape of the radial
+function inside a much smaller box of radius 6 bohrs (harwired in the
+program).
+
+PAOs (which need a similar integration to infinity if an energy shift
+is used) are not affected at all by the change.
+
+The new fdf symbol Rmax.Radial.Grid does not need to be used if
+Reparametrize.Pseudos is set (its default is then set to 50.0).
+
+
 2006-12-17 22:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-28
 
     (Manual entry)
