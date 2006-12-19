@@ -4891,6 +4891,26 @@ could be far from the actual charge density, and
 the calculation would most probably not converge.
 \end{itemize}
 
+\section{SPECIALIZED OPTIONS}
+
+Experimental or very low-level options.
+
+\begin{description}
+\itemsep 10pt
+\parsep 0pt
+
+\item[{\bf PAO.Keep.Findp.Bug}] ({\it logical}): 
+\index{PAO.Keep.Findp.Bug@{\bf PAO.Keep.Findp.Bug}}
+
+Switch on old code in routine findp in file atom.f to test
+the effect of a bug (corrected in version 2.0.1) which affected the
+automatic generation of multiple-zeta orbitals.
+
+{\it Default value:} { \tt .false.}
+
+\end{description}
+
+
 
 \section{PROBLEM HANDLING}
 

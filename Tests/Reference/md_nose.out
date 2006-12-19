@@ -1,11 +1,10 @@
 Siesta Version: siesta-2.0.1
-Architecture  : powerpc-apple-darwin8.8.0--unknown
-Compiler flags: g95 -g -O2
+Architecture  : intel9-mkl8
+Compiler flags: ifort -w -O2 -mp
 SERIAL version
-NetCDF-capable
 
 * Running in serial mode
->> Start of run:   5-DEC-2006  13:45:05
+>> Start of run:  19-DEC-2006  16:48:09
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -68,9 +67,9 @@ reinit: System Label: md_nose
 reinit: -----------------------------------------------------------------------
 
 initatom: Reading input for the pseudopotentials and atomic orbitals ----------
- Species number:  1  Label: Mg Atomic number: 12
- Species number:  2  Label: C Atomic number: 6
- Species number:  3  Label: O Atomic number: 8
+ Species number:            1  Label: Mg Atomic number:          12
+ Species number:            2  Label: C Atomic number:           6
+ Species number:            3  Label: O Atomic number:           8
 Ground state valence configuration:   3s02
 Reading pseudopotential information in formatted form from Mg.psf
 Ground state valence configuration:   2s02  2p02
@@ -89,13 +88,13 @@ Use PS.lmax or PS.KBprojectors blocks to override.
 
 <basis_specs>
 ===============================================================================
-Mg                   Z=  12    Mass=  24.310        Charge=  .00000    
+Mg                   Z=  12    Mass=  24.310        Charge=  0.0000    
 Lmxo=0 Lmxkb=1     BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=3
           n=1  nzeta=1  polorb=0
-               vcte:    .00000    
-               rinn:    .00000    
-                rcs:    .00000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
             lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
@@ -165,19 +164,19 @@ atom: _________________________________________________________________________
 
 <basis_specs>
 ===============================================================================
-C                    Z=   6    Mass=  12.010        Charge=  .00000    
+C                    Z=   6    Mass=  12.010        Charge=  0.0000    
 Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
-               vcte:    .00000    
-               rinn:    .00000    
-                rcs:    .00000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
-               vcte:    .00000    
-               rinn:    .00000    
-                rcs:    .00000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
             lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
@@ -266,19 +265,19 @@ atom: _________________________________________________________________________
 
 <basis_specs>
 ===============================================================================
-O                    Z=   8    Mass=  16.000        Charge=  .00000    
+O                    Z=   8    Mass=  16.000        Charge=  0.0000    
 Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
 L=0  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
-               vcte:    .00000    
-               rinn:    .00000    
-                rcs:    .00000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
             lambdas:    1.0000    
 L=1  Nsemic=0  Cnfigmx=2
           n=1  nzeta=1  polorb=0
-               vcte:    .00000    
-               rinn:    .00000    
-                rcs:    .00000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
             lambdas:    1.0000    
 -------------------------------------------------------------------------------
 L=0  Nkbl=1  erefs: 0.17977+309
@@ -398,9 +397,6 @@ O           2                    # Species label, number of l-shells
 
 prinput: ----------------------------------------------------------------------
 
-Dumping basis to NetCDF file Mg.ion.nc
-Dumping basis to NetCDF file C.ion.nc
-Dumping basis to NetCDF file O.ion.nc
 
 siesta: ******************** Simulation parameters ****************************
 siesta:
@@ -509,7 +505,7 @@ siesta: Ena     =      1092.429444
 siesta: Ekin    =      2069.792750
 siesta: Enl     =      -254.036133
 siesta: DEna    =        15.976650
-siesta: DUscf   =         0.158309
+siesta: DUscf   =         0.158308
 siesta: DUext   =         0.000000
 siesta: Exc     =      -679.226103
 siesta: eta*DQ  =         0.000000
@@ -524,13 +520,13 @@ siesta: Eharris(eV) =   -2966.548610
 
 siesta: Eharris(eV) =   -2966.548610
 
-timer: Routine,Calls,Time,% = IterSCF        1       4.944  61.04
-elaps: Routine,Calls,Wall,% = IterSCF        1       5.715  58.53
+timer: Routine,Calls,Time,% = IterSCF        1       1.665  64.64
+elaps: Routine,Calls,Wall,% = IterSCF        1       1.665  63.43
 
 siesta: E_KS - E_eggbox =     -2945.3446
 
 siesta: Atomic forces (eV/Ang):
-     1   -0.000000    0.000000   -0.000000
+     1    0.000000    0.000000    0.000000
      2   -0.000014   -0.000006   -0.000014
      3   -0.000129   -0.000059   -0.000133
      4    0.000129    0.000059    0.000133
@@ -556,14 +552,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.067429    0.290131    0.019735
          0.044140    0.019735    0.272902
 
-siesta: Pressure (static):       -520.08734078  kBar
+siesta: Pressure (static):       -520.08734514  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.410507    0.067196    0.043947
          0.067196    0.289944    0.019580
          0.043947    0.019580    0.272774
 
-siesta: Pressure (total):       -519.76473750  kBar
+siesta: Pressure (total):       -519.76474186  kBar
 
 siesta: Temp_ion =     600.000 K
 
@@ -627,14 +623,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.069035    0.277607    0.030392
          0.040216    0.030392    0.270835
 
-siesta: Pressure (static):       -512.50150758  kBar
+siesta: Pressure (static):       -512.50150858  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.410893    0.068803    0.040017
          0.068803    0.277420    0.030238
          0.040023    0.030237    0.270707
 
-siesta: Pressure (total):       -512.17890430  kBar
+siesta: Pressure (total):       -512.17890529  kBar
 
 siesta: Temp_ion =     532.274 K
 
@@ -698,14 +694,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.064578    0.280724    0.038559
          0.033447    0.038560    0.283660
 
-siesta: Pressure (static):       -523.52170047  kBar
+siesta: Pressure (static):       -523.52170160  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.415312    0.064400    0.033496
          0.064398    0.280667    0.038579
          0.033508    0.038579    0.283654
 
-siesta: Pressure (total):       -523.18736952  kBar
+siesta: Pressure (total):       -523.18737065  kBar
 
 siesta: Temp_ion =     587.797 K
 
@@ -769,14 +765,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.058147    0.293681    0.040978
          0.027005    0.040980    0.305088
 
-siesta: Pressure (static):       -545.25924943  kBar
+siesta: Pressure (static):       -545.25924859  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.421309    0.058090    0.027441
          0.058089    0.293677    0.041008
          0.027459    0.041010    0.304854
 
-siesta: Pressure (total):       -544.66050831  kBar
+siesta: Pressure (total):       -544.66050747  kBar
 
 siesta: Temp_ion =     762.078 K
 
@@ -840,14 +836,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.046538    0.322139    0.039198
          0.019506    0.039202    0.336459
 
-siesta: Pressure (static):       -582.34041059  kBar
+siesta: Pressure (static):       -582.34041211  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.430578    0.046645    0.020408
          0.046645    0.322129    0.039117
          0.020431    0.039121    0.335755
 
-siesta: Pressure (total):       -581.30932137  kBar
+siesta: Pressure (total):       -581.30932289  kBar
 
 siesta: Temp_ion =    1025.429 K
 
@@ -871,11 +867,11 @@ siesta: FreeEng =     -2944.290371
 
 siesta: Final energy (eV):
 siesta:       Kinetic =    2394.500650
-siesta:       Hartree =    1091.768535
+siesta:       Hartree =    1091.768539
 siesta:    Ext. field =       0.000000
 siesta:   Exch.-corr. =    -722.933065
-siesta:  Ion-electron =   -4161.300459
-siesta:       Ion-ion =   -1547.518908
+siesta:  Ion-electron =   -4161.300468
+siesta:       Ion-ion =   -1547.518904
 siesta:       Ekinion =       1.192877
 siesta:         Total =   -2944.290371
 
@@ -904,7 +900,7 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00395859         -0.00556539  Ry/Bohr**3
 siesta:          -0.36346437         -0.51099506  eV/Ang**3
-siesta:        -582.34041059       -818.71319072  kBar
+siesta:        -582.34041211       -818.71319225  kBar
 
 * Maximum dynamic memory allocated : Node    0 =     7 MB
 
@@ -912,67 +908,67 @@ siesta:        -582.34041059       -818.71319072  kBar
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      46.287      46.287   100.00
-timer:  Setup             1       2.134       2.134     4.61
-timer:  bands             1       0.002       0.002     0.00
-timer:  writewave         1       0.005       0.005     0.01
-timer:  KSV_init          1       0.002       0.002     0.00
-timer:  IterMD            5       8.824      44.121    95.32
-timer:  hsparse           6       0.414       2.482     5.36
-timer:  overfsm          10       0.059       0.595     1.28
-timer:  IterSCF          10       4.106      41.061    88.71
-timer:  kinefsm          10       0.055       0.545     1.18
-timer:  nlefsm           10       0.221       2.212     4.78
-timer:  DHSCF            10       3.797      37.966    82.02
-timer:  DHSCF1            1       0.718       0.718     1.55
-timer:  DHSCF2            5       1.925       9.624    20.79
-timer:  REORD            90       0.001       0.046     0.10
-timer:  POISON           15       0.023       0.349     0.75
-timer:  DHSCF3           10       0.526       5.257    11.36
-timer:  rhoofd           10       0.183       1.828     3.95
-timer:  cellXC           15       0.209       3.135     6.77
-timer:  vmat             10       0.101       1.013     2.19
-timer:  diagon            5       0.008       0.042     0.09
-timer:  rdiag             5       0.007       0.033     0.07
-timer:  rdiag1            5       0.001       0.004     0.01
-timer:  rdiag2            5       0.001       0.003     0.01
-timer:  rdiag3            5       0.003       0.017     0.04
-timer:  rdiag4            5       0.000       0.001     0.00
-timer:  DHSCF4            5       4.470      22.349    48.28
-timer:  dfscf             5       1.993       9.965    21.53
-timer:  optical           1       0.002       0.002     0.00
+timer:  siesta            1      10.676      10.676   100.00
+timer:  Setup             1       0.723       0.723     6.77
+timer:  bands             1       0.000       0.000     0.00
+timer:  writewave         1       0.001       0.001     0.01
+timer:  KSV_init          1       0.000       0.000     0.00
+timer:  IterMD            5       1.990       9.948    93.18
+timer:  hsparse           6       0.052       0.310     2.90
+timer:  overfsm          10       0.016       0.162     1.52
+timer:  IterSCF          10       0.948       9.476    88.75
+timer:  kinefsm          10       0.015       0.146     1.37
+timer:  nlefsm           10       0.072       0.723     6.77
+timer:  DHSCF            10       0.851       8.510    79.71
+timer:  DHSCF1            1       0.327       0.327     3.06
+timer:  DHSCF2            5       0.613       3.065    28.70
+timer:  REORD            90       0.000       0.013     0.12
+timer:  POISON           15       0.013       0.202     1.89
+timer:  DHSCF3           10       0.192       1.922    18.00
+timer:  rhoofd           10       0.067       0.671     6.28
+timer:  cellXC           15       0.026       0.388     3.63
+timer:  vmat             10       0.083       0.828     7.75
+timer:  diagon            5       0.002       0.008     0.07
+timer:  rdiag             5       0.001       0.007     0.07
+timer:  rdiag1            5       0.000       0.001     0.01
+timer:  rdiag2            5       0.000       0.000     0.00
+timer:  rdiag3            5       0.001       0.005     0.05
+timer:  rdiag4            5       0.000       0.000     0.00
+timer:  DHSCF4            5       0.639       3.195    29.92
+timer:  dfscf             5       0.445       2.223    20.82
+timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      53.289      53.289   100.00
-elaps:  Setup             1       2.813       2.813     5.28
-elaps:  bands             1       0.002       0.002     0.00
-elaps:  writewave         1       0.005       0.005     0.01
-elaps:  KSV_init          1       0.004       0.004     0.01
-elaps:  IterMD            5      10.088      50.442    94.66
-elaps:  hsparse           6       0.475       2.849     5.35
-elaps:  overfsm          10       0.066       0.664     1.25
-elaps:  IterSCF          10       4.679      46.789    87.80
-elaps:  kinefsm          10       0.074       0.736     1.38
-elaps:  nlefsm           10       0.247       2.472     4.64
-elaps:  DHSCF            10       4.288      42.884    80.47
-elaps:  DHSCF1            1       0.804       0.804     1.51
-elaps:  DHSCF2            5       2.214      11.069    20.77
-elaps:  REORD            90       0.001       0.053     0.10
-elaps:  POISON           15       0.026       0.385     0.72
-elaps:  DHSCF3           10       0.581       5.807    10.90
-elaps:  rhoofd           10       0.202       2.022     3.79
-elaps:  cellXC           15       0.229       3.434     6.44
-elaps:  vmat             10       0.113       1.135     2.13
-elaps:  diagon            5       0.009       0.046     0.09
-elaps:  rdiag             5       0.007       0.036     0.07
-elaps:  rdiag1            5       0.001       0.004     0.01
-elaps:  rdiag2            5       0.001       0.003     0.01
-elaps:  rdiag3            5       0.004       0.019     0.04
-elaps:  rdiag4            5       0.000       0.001     0.00
-elaps:  DHSCF4            5       5.037      25.185    47.26
-elaps:  dfscf             5       2.208      11.041    20.72
-elaps:  optical           1       0.002       0.002     0.00
+elaps:  siesta            1      12.202      12.202   100.00
+elaps:  Setup             1       0.772       0.772     6.32
+elaps:  bands             1       0.000       0.000     0.00
+elaps:  writewave         1       0.001       0.001     0.00
+elaps:  KSV_init          1       0.000       0.000     0.00
+elaps:  IterMD            5       2.285      11.423    93.62
+elaps:  hsparse           6       0.052       0.310     2.54
+elaps:  overfsm          10       0.016       0.163     1.34
+elaps:  IterSCF          10       1.090      10.901    89.34
+elaps:  kinefsm          10       0.015       0.149     1.22
+elaps:  nlefsm           10       0.072       0.721     5.91
+elaps:  DHSCF            10       0.851       8.511    69.75
+elaps:  DHSCF1            1       0.327       0.327     2.68
+elaps:  DHSCF2            5       0.613       3.064    25.11
+elaps:  REORD            90       0.000       0.013     0.11
+elaps:  POISON           15       0.013       0.202     1.65
+elaps:  DHSCF3           10       0.192       1.921    15.74
+elaps:  rhoofd           10       0.067       0.671     5.50
+elaps:  cellXC           15       0.026       0.386     3.16
+elaps:  vmat             10       0.083       0.825     6.76
+elaps:  diagon            5       0.002       0.009     0.08
+elaps:  rdiag             5       0.001       0.007     0.06
+elaps:  rdiag1            5       0.000       0.001     0.01
+elaps:  rdiag2            5       0.000       0.000     0.00
+elaps:  rdiag3            5       0.001       0.005     0.04
+elaps:  rdiag4            5       0.000       0.000     0.00
+elaps:  DHSCF4            5       0.639       3.195    26.19
+elaps:  dfscf             5       0.445       2.223    18.22
+elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:   5-DEC-2006  13:45:58
+>> End of run:  19-DEC-2006  16:48:21

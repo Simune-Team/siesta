@@ -1130,11 +1130,29 @@ c              val3=val2
 C  This routine provides the constants Cons1 and 
 C  Cons2 and described in subroutine 'parabola' 
 
+          logical  :: first_time = .true.   ! will be saved
+          logical, save  :: keep_findp_bug  
+
           real(dp) rm, rm1, rm2, drdi_local, frsp
           real(dp) dfrsp
-          rm=b*(exp(a*(nm-1)) + 1.0d0) 
-          rm1=b*(exp(a*(nm-2)) + 1.0d0)
-          rm2=b*(exp(a*nm) + 1.0d0)
+
+          if (first_time) then
+             keep_findp_bug = fdf_boolean("PAO.Keep.Findp.Bug", .false.)
+             first_time = .false.
+          endif
+
+          if (keep_findp_bug) then
+             ! old, wrong code
+             rm=b*(exp(a*(nm-1)) + 1.0d0) 
+             rm1=b*(exp(a*(nm-2)) + 1.0d0)
+             rm2=b*(exp(a*nm) + 1.0d0)
+          else
+             ! correct code
+             rm=b*(exp(a*(nm-1)) - 1.0d0)     
+             rm1=b*(exp(a*(nm-2)) -  1.0d0)   
+             rm2=b*(exp(a*nm) - 1.0d0)        
+          endif
+
           drdi_local =a*b*exp(a*(nm-1))
 
           frsp=rphi(nm)/rm
