@@ -2,23 +2,130 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-NOTE: The arch patches appear to be all committed by A. Garcia. That is because
-he is the person in charge of the merges. To identify the developer responsible
-for a given patch, see the "new patches" section of each log.
-
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta--release--2.0
 --------------------------------------------------------------------
 
-==> Release of Siesta-2.0.1
-    Final edits of:
-     Release notes for 2.0.1
-     siesta.tex/siesta.ind
-     version.info
-     CHANGES
-     version.F90
-    Regeneration of Tests/Reference/*.out files     (leading to patch-26)
+2006-12-19 16:30 GMT , leading to patch-30
 
+    (Siesta 2.0.1 release)
+     Update of CHANGES and release.notes_2.0.1
+
+2006-12-19 16:10:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-29
+
+    Summary:
+      Fix error in findp. Allow user control of fix
+    Revision:
+      siesta--release--2.0--patch-29
+
+    A programming error has been fixed in routine findp, which is used in
+    the automatic generation of multiple-zeta orbitals with the split-norm
+    method.  The fix leads to slightly different basis orbitals, leading
+    to small differences in energies and other magnitudes.
+    
+    In order to make it easier to compare with previous calculations,
+    a new symbol, PAO.Keep.Findp.Bug, is now read. If .true., the old
+    code in findp is enabled.
+    
+    * New test:
+    
+      h2o_findp_bug
+    
+    
+
+    new files:
+     Tests/h2o_findp_bug/.arch-ids/=id
+     Tests/h2o_findp_bug/.arch-ids/h2o_findp_bug.fdf.id
+     Tests/h2o_findp_bug/.arch-ids/h2o_findp_bug.pseudos.id
+     Tests/h2o_findp_bug/.arch-ids/makefile.id
+     Tests/h2o_findp_bug/h2o_findp_bug.fdf
+     Tests/h2o_findp_bug/h2o_findp_bug.pseudos
+     Tests/h2o_findp_bug/makefile
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex Src/atom.f Tests/Makefile
+     Tests/Reference/batio3.out Tests/Reference/bessel.out
+     Tests/Reference/constant_volume.out Tests/Reference/fe.out
+     Tests/Reference/fe_broyden.out Tests/Reference/floating.out
+     Tests/Reference/h2o.out Tests/Reference/h2oZ.out
+     Tests/Reference/h2o_dos.out Tests/Reference/h2o_op_broyden.out
+     Tests/Reference/h2o_orderN.out Tests/Reference/md_anneal.out
+     Tests/Reference/md_nose.out Tests/Reference/md_npr.out
+     Tests/Reference/md_pr.out Tests/Reference/md_verlet.out
+     Tests/Reference/mgco3.out Tests/Reference/si2x1h.out
+     Tests/Reference/si64.out Tests/Reference/sih.out
+     Tests/Reference/sih_op_broyden.out
+     Tests/Reference/var_cell.out Tests/Reference/zmatrix.out
+
+    new directories:
+     Tests/h2o_findp_bug Tests/h2o_findp_bug/.arch-ids
+
+
+2006-12-17 15:58:47 GMT	Alberto Garcia <albertog@icmab.es>	patch-28
+
+    Summary:
+      Fixes for NAG compilation 
+    Revision:
+      siesta--release--2.0--patch-28
+
+    * NAG compiler on Mac:  f90_unix_proc module needed 
+      in fsiesta.f90. This file had to be renamed to 
+      fsiesta.F90
+    
+    * Added new Src/Confs/macosx-nag-cdf.sh file.
+
+    new files:
+     Src/Confs/.arch-ids/macosx-nag-cdf.conf.id
+     Src/Confs/macosx-nag-cdf.conf
+
+    modified files:
+     Src/fsiesta.F90
+
+    renamed files:
+     Src/.arch-ids/fsiesta.f90.id
+       ==> Src/.arch-ids/fsiesta.F90.id
+     Src/fsiesta.f90
+       ==> Src/fsiesta.F90
+
+
+2006-12-15 11:58:45 GMT	Alberto Garcia <albertog@icmab.es>	patch-27
+
+    Summary:
+      Safeguard in floating point comparison in sorting routine
+    Revision:
+      siesta--release--2.0--patch-27
+
+    To avoid instabilities leading to compiler-dependent
+    behavior, a smearing in the .LT. tests has been introduced
+    in routine ordix in module sorting.
+    
+    (Intel compiler found a .LT. b true even if a == b to
+    full printed precision)
+    
+    The smearing parameter has been set to
+    
+          double precision, parameter :: delta = 1.0d-12
+    
+
+    modified files:
+     Src/sorting.f
+
+
+2006-12-05 13:22:51 GMT	Alberto Garcia <albertog@icmab.es>	patch-26
+
+    Summary:
+      Preparation for 2.0.1 release
+    Revision:
+      siesta--release--2.0--patch-26
+
+        Final edits of:
+         Release notes for 2.0.1
+         siesta.tex/siesta.ind
+         version.info
+         CHANGES
+         version.F90
+        Regeneration of Tests/Reference/*.out files
+    
 2006-12-05 09:54:27 GMT	Alberto Garcia <albertog@icmab.es>	patch-25
 
     Summary:

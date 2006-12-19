@@ -23,6 +23,7 @@ Summary of changed items:
 *   Remove external declaration of 'timer' in spher_harm and radfft.
 *   Export all the environment in sge_run.sh
 *   Fix syntax error in preprocessor block in mpi.F
+*   Fix error in findp. Allow user control of fix
 
 Changes in detail:
 
@@ -299,3 +300,22 @@ Changes in detail:
 
     modified files:
      Src/MPI/mpi.F
+
+*   Fix error in findp. Allow user control of fix
+
+    A programming error has been fixed in routine findp, which is used in
+    the automatic generation of multiple-zeta orbitals with the split-norm
+    method.  The fix leads to slightly different basis orbitals, leading
+    to small differences in energies and other magnitudes.
+    
+    In order to make it easier to compare with previous calculations,
+    a new symbol, PAO.Keep.Findp.Bug, is now read. If .true., the old
+    code in findp is enabled.
+    
+    * New test:
+    
+      h2o_findp_bug
+
+    modified files:
+     Src/atom.f
+
