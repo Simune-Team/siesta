@@ -10,6 +10,18 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-01-10 9:24:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-30
+
+(Interim manual entry -- to be replaced by the automatic version later)
+
+Summary: Parallel bug fix and cleanup in writewave.F
+Keywords: 
+
+(Julian Gale)
+
+The code in writewave.F has been cleaned up a bit and a fix for a bug
+appearing in parallel execution has been fixed.
+
 2006-12-18 16:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-29
 
 (Interim manual entry -- to be replaced by the automatic version later)
