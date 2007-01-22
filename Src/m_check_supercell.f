@@ -45,7 +45,7 @@
 !
       nsc = original_nsc
       call check_sc_factors2(ucell, nsc, rmax)
-      vol1 = nsc(1) * nsc(2) * nsc(3)      
+      vol2 = nsc(1) * nsc(2) * nsc(3)      
       nsc2 = nsc
 
       if (vol1 > vol2) then
