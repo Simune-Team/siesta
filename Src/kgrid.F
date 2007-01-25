@@ -22,12 +22,14 @@ c integer kscell(3,3): Supercell reciprocal of k-grid unit cell
 c                      scell(ix,i) = sum_j cell(ix,j)*kscell(j,i)
 c real*8  displ(3)   : Grid origin in k-grid-vector coordinates:
 c                      origin(ix) = sum_j gridk(ix,j)*displ(j)
-c integer nk         : Dimension of arrays points and weight
 c ***************** OUTPUT *********************************************
 c real*8  points(3,nk) : K-point cartesian coordinates
 c                        Only if input_nk .ge. output_nk
 c real*8  weight(nk)   : K-point weights 
 c                        Only if input_nk .ge. output_nk
+c ***************** INPUT/OUTPUT ***************************************
+c integer nk           : In:  Dimension of kpoint and weight
+c                        Out: Total number of k-points
 c ***************** UNITS **********************************************
 c points returned in units reciprocal of cell
 c **********************************************************************
@@ -37,6 +39,7 @@ C
       use units,        only : Ang
       use precision
       use parallel,     only : Node
+      use sys,          only : die
       use fdf
 #ifdef MPI
       use mpi_siesta
@@ -44,17 +47,19 @@ C
 
       implicit          none
 
-      integer, intent(inout)  ::          kscell(3,3), nk
+      integer, intent(in)     ::          kscell(3,3)
       real(dp), intent(in)    ::          cell(3,3)
-      real(dp), intent(inout) ::          displ(3)
+      real(dp), intent(in)    ::          displ(3)
       real(dp), intent(out)   ::          points(3,*), weight(*)
+      integer, intent(inout)  ::          nk
 c ----------------------------------------------------------------------
 
 c Internal variables
       integer           i, i1, i2, i3, igmax(3), igmin(3), iu,
      .                  ir, ik, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
-     .                  ng(3), ni, nkr(3), nktot, proj(3,3)
+     .                  ng(3), ni, nkr(3), nktot, proj(3,3),
+     .                  nk_in
 #ifdef MPI
       integer           MPIerror
 #endif
@@ -64,6 +69,8 @@ c Internal variables
       external          idiag, reclat
       logical           spiral
       parameter (tiny   = 1.d-12)
+
+      nk_in = nk
 
 C Find out if there is spiral arrangement of spins
       if (Node.eq.0) then
@@ -159,6 +166,7 @@ C Find k points and weights
       do i2 = igmin(2),igmax(2)
       do i1 = igmin(1),igmax(1)
         nk = nk + 1
+        if (nk > nk_in) call die("k-point array overflow")
         d(1) = i1 + dkg(1)
         d(2) = i2 + dkg(2)
         d(3) = i3 + dkg(3)

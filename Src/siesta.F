@@ -812,7 +812,7 @@ C Displace atom by dx...
         end select
       endif
 
-C Get coordinates from driver program trough pipe
+C Get coordinates from driver program through pipe
       if (idyn.eq.8 .and. istep.ne.inicoor) then
         call coordsFromPipe( na_u, xa, ucell )
         if (volcel(ucell) < 1.0e-8_dp) then
@@ -831,9 +831,14 @@ C Print atomic coordinates ............................................
       endif
 C ...................
 
-C Actualize things if variable cell ...................................
+C Actualize things if unit cell might have changed
       auxchanged = .false.
-      if ( (varcel .or. idyn.eq.8)
+      if ( (varcel
+     $     .or. (idyn .eq. 8)   ! Force/stress evaluation
+     $     .or. (idyn .eq. 3)   ! Parrinello-Rahman
+     $     .or. (idyn .eq. 4)   ! Nose-Parrinello-Rahman
+     $     .or. (idyn .eq. 5)   ! Anneal
+     $      )
      $     .and. (istep.ne.inicoor) .and. (.not.gamma) ) then
 
 C k-grid 

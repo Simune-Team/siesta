@@ -11,7 +11,7 @@
       subroutine kgridinit( cell, kscell, displ, cutoff, nk )
 
 c **********************************************************************
-c Finds Monkhost-Pack k-point coordinates and weights.
+c Finds k-point coordinates and weights.
 c This version assumes no symmetry except time reversal, i.e.
 c inversion in reciprocal space.
 c Refs: H.J.Monkhorst and J.D.Pack, Phys Rev B 13, 5188 (1976)
@@ -19,31 +19,19 @@ c       J.Moreno and J.M.Soler, Phys Rev B 45, 13891 (1992)
 c Written by J.M.Soler. July 1997.
 c ***************** INPUT **********************************************
 c real*8  cell(3,3)  : Unit cell vectors in real space cell(ixyz,ivec)
+c ***************** OUTPUT *********************************************
 c integer kscell(3,3): Supercell reciprocal of k-grid unit cell
 c                      scell(ix,i) = sum_j cell(ix,j)*kscell(j,i)
 c real*8  displ(3)   : Grid origin in k-grid-vector coordinates:
 c                      origin(ix) = sum_j gridk(ix,j)*displ(j)
-c real*8  cutoff     : Minimum k-grid cutoff required
-c                      Not used unless det(kscell)=0
-c integer nk         : Dimension of arrays points and weight
-c ***************** OUTPUT *********************************************
-c integer kscell(3,3)  : Supercell reciprocal of k-grid unit cell
-c                        Only if det(kscell)=0 on input
-c real*8  displ(3)     : Grid origin in k-grid-vector coordinates:
-c                        Only if det(kscell)=0 on input
-c real*8  cutoff       : Actual k-grid cutoff
-c integer nk           : Actual number of irreducible k-points
+c real*8  cutoff     : Actual k-grid cutoff
+c integer nk         : Estimate of actual number of irreducible k-points
 c ***************** UNITS **********************************************
 c cutoff must be in the same units as cell
 c ***************** BEHAVIOUR ******************************************
-c - If det(kscell).ne.0, input cutoff is not used
-c - If det(kscell).eq.0, kscell and displ are generated according to
-c   input cutoff
-c - If det(kscell).eq.0 .AND. cutoff.le.0.d0, they are readed
-c   from the input fdf data file.
 c   The relevant fdf labels are kgrid_cutoff and kgrid_Monkhorst_Pack.
 c   If both are present, kgrid_Monkhorst_Pack has priority. If none is
-c   present, the cutoff defect is cero, producing only the gamma point.
+c   present, the cutoff default is zero, producing only the gamma point.
 c   Examples of fdf data specifications:
 c     kgrid_cutoff  50. Bohr
 c     %block kgrid_Monkhorst_Pack  # Defines kscell and displ
@@ -67,9 +55,9 @@ C
       implicit          none
 
 C Passed variables
-      integer, intent(inout)   :: kscell(3,3), nk
-      real(dp), intent(in)     :: cell(3,3)
-      real(dp), intent(inout)  :: cutoff, displ(3)
+      real(dp), intent(in)   :: cell(3,3)
+      integer, intent(out)   :: kscell(3,3), nk
+      real(dp), intent(out)  :: cutoff, displ(3)
 
       external                 ::  idiag, reclat
       real(dp), external       ::  volcel
@@ -83,13 +71,13 @@ C Internal variables
       integer           MPIerror
 #endif
       real(dp)          defcut, dkg(3), dkx(3), dscell(3,3),
-     .                  gridk(3,3), gscell(3,3), huge, pi,  
+     .                  gridk(3,3), gscell(3,3), pi,  
      .                  scell(3,3), scmin(3,3), tiny, vmod
       real(dp)          ctransf(3,3)
-      logical           genlogic, spiral
+      logical           mp_block_present, spiral
       parameter (defcut = 0.d0)
-      parameter (huge   = 1.d30)
       parameter (tiny   = 1.d-12)
+      logical, parameter  :: debug = .false.
 
 C Find out if there is spiral arrangement of spins 
       if (Node.eq.0) then
@@ -99,23 +87,16 @@ C Find out if there is spiral arrangement of spins
       call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
-C Find total number of points (determinant of kscell)
-      nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
-     .             kscell(2,1) * kscell(3,2) * kscell(1,3) +
-     .             kscell(3,1) * kscell(1,2) * kscell(2,3) -
-     .             kscell(1,1) * kscell(3,2) * kscell(2,3) -
-     .             kscell(2,1) * kscell(1,2) * kscell(3,3) -
-     .             kscell(3,1) * kscell(2,2) * kscell(1,3) )
+!        ALWAYS look for kscell or cutoff in input fdf file
 
-C Look for kscell or cutoff in input fdf file
-      if ( nktot.eq.0 .and. cutoff.lt.tiny ) then
-        if (Node.eq.0) then
-          genlogic = fdf_block('kgrid_Monkhorst_Pack',iu)
-        endif
+      if (Node.eq.0) then
+         mp_block_present = fdf_block('kgrid_Monkhorst_Pack',iu)
+      endif
 #ifdef MPI
-        call MPI_Bcast(genlogic,1,MPI_logical,0,MPI_Comm_World,MPIerror)
+      call MPI_Bcast(mp_block_present,
+     $                 1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
-        if ( genlogic ) then
+      if ( mp_block_present ) then
           if (Node.eq.0) then
             do i = 1,3
               read(iu,*) (kscell(j,i),j=1,3), displ(i)
@@ -133,8 +114,9 @@ C Look for kscell or cutoff in input fdf file
      .                 kscell(1,1) * kscell(3,2) * kscell(2,3) -
      .                 kscell(2,1) * kscell(1,2) * kscell(3,3) -
      .                 kscell(3,1) * kscell(2,2) * kscell(1,3) )
-        else
-C The second argument is the default value
+
+      else   ! No MP block found
+
           if (Node.eq.0) then
             cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
           endif
@@ -142,34 +124,33 @@ C The second argument is the default value
           call MPI_Bcast(cutoff,1,MPI_double_precision,0,
      .      MPI_Comm_World,MPIerror)
 #endif
-        endif
-      endif
+!         Find kscell from required cutoff.
+!         If kgrid_cutoff is zero, we will end up with nktot = 1
+!         and kscell as the unit matrix.
 
-
-C Find kscell from required cutoff (i.e., if nktot is still zero)
-C If kgrid_cutoff is zero, we will end up with nktot = 1
-C and kscell as the unit matrix.
-C
-      if (nktot .eq. 0) then
-        call minvec( cell, scmin, ctransf )
-!        print "(a,\,3(3f15.8,\))", "Rounded unit cell vectors: ",
-!     $         ((scmin(i,j)/Ang,i=1,3),j=1,3)
-        nktot = 1
-        do j = 1,3
-          factor(j,1:3) = 0
-          vmod = sqrt( scmin(1,j)**2 + scmin(2,j)**2 + scmin(3,j)**2 )
-          factor(j,j) = int(cutoff/(vmod/2.d0)) + 1
-CC          if (mod(factor(j),2) .eq. 0) displ(j) = 0.5d0
-          nktot = nktot * factor(j,j)
-        enddo
+          call minvec( cell, scmin, ctransf )
+          if (debug)
+     $         print "(a,\,3(3f15.8,\))", "Rounded unit cell vectors: ",
+     $         ((scmin(i,j)/Ang,i=1,3),j=1,3)
+          nktot = 1
+          do j = 1,3
+             factor(j,1:3) = 0
+             vmod = sqrt(scmin(1,j)**2 + scmin(2,j)**2 + scmin(3,j)**2)
+             factor(j,j) = int(cutoff/(vmod/2.d0)) + 1
+             nktot = nktot * factor(j,j)
+          enddo
 C
 C       Generate actual supercell skeleton
 C
-!!        print "(a,3i4)", "Factors from rounded cell: ", 
-!!     $         (factor(j,j),j=1,3)
-        kscell = matmul(ctransf, factor)
-!!        print "(a,\,3(3i4,\))", "Kscell from required cutoff: ",
-!!     $         ((kscell(i,j),j=1,3),i=1,3)
+          if (debug)
+     $         print "(a,3i4)", "Factors from rounded cell: ", 
+     $         (factor(j,j),j=1,3)
+
+          kscell = matmul(ctransf, factor)
+
+          if (debug)
+     $         print "(a,\,3(3i4,\))", "Kscell from required cutoff: ",
+     $         ((kscell(i,j),j=1,3),i=1,3)
 
       endif
 C 
@@ -184,14 +165,15 @@ C
      .                  cell(ix,3) * kscell(3,i)
         enddo
         vmod = sqrt( scell(1,i)**2 + scell(2,i)**2 + scell(3,i)**2 )
-!!        print *, i, vmod/Ang
+        if (debug) print *, i, vmod/Ang
       enddo
-!!      print "(a,\,3(3f15.8,\))",  "K grid supercell vectors: ",
-!!     $         ((scell(i,j)/Ang,i=1,3),j=1,3)
+      if (debug)
+     $     print "(a,\,3(3f15.8,\))",  "K grid supercell vectors: ",
+     $         ((scell(i,j)/Ang,i=1,3),j=1,3)
 
 C Find actual cutoff
       call minvec( scell, scmin, ctransf )
-      cutoff = huge
+      cutoff = huge(1.d0)
       do i = 1,3
         vmod = sqrt( scmin(1,i)**2 + scmin(2,i)**2 + scmin(3,i)**2 )
         cutoff = min( cutoff, vmod/2.d0 )
@@ -213,29 +195,36 @@ C Find equivalent diagonal supercell
 !!     $         ((ml(i,j),j=1,3),i=1,3)
 !!      print *, "check:", matmul(ml,matmul(kscell,mr))
 C
-C     Set the displacements
+C     Set the default displacements for optimal folding
+C     (unless the user has requested otherwise)
 C
       do j = 1, 3
          if (mod(kdsc(j,j),2) .eq. 0) then
-            if (genlogic .and. displ(j) /= 0.5d0) then
+            if (mp_block_present .and. displ(j) /= 0.5d0) then
                if (Node .eq. 0)
-     $           write(6,"(a,i4,a,2f8.2)")
-     $            "k-point displ. along", j, " input, could be: ",
-     $           displ(j), 0.5d0
+     $           write(6,"(f8.3,a,i4,a,f8.3)") displ(j),
+     $            " k-point displ. along", j, " input. Could be: ",
+     $           0.5d0
             else
                displ(j) = 0.5d0
             endif
          else
-            if (genlogic .and. displ(j) /= 0.0d0) then
+            if (mp_block_present .and. displ(j) /= 0.0d0) then
                if (Node .eq. 0)
-     $           write(6,"(a,i4,a,2f8.2)")
-     $            "k-point displ. along", j, " input, could be: ",
-     $           displ(j), 0.0d0
+     $           write(6,"(f8.3,a,i4,a,f8.3)") displ(j),
+     $            " k-point displ. along", j, " input. Could be: ",
+     $           0.0d0
             else
                displ(j) = 0.0d0
             endif
          endif
       enddo
+
+!
+!  We could stop here and hand over the rest to kgrid, but in the current
+!  setup we need an estimate of the number of k-points to allocate the
+!  relevant arrays in the main program.
+!
 C
 C     Equivalent supercell DA with the property that there exists
 C     a primitive cell (pa') such that DA_i = N_i*pa'_i
@@ -301,5 +290,4 @@ C Find k points and weights
       endif
 !!      print *, "nk: ", nk
 
-      return
       end
