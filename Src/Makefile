@@ -75,7 +75,9 @@ OBJS = automatic_cell.o \
         cgvc.o cgvc_zmatrix.o  \
         iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
-	siesta.o io.o \
+	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
+	scfconvergence_test.o post_scf_work.o \
+	siesta_todo.o siesta_init.o siesta_analysis.o siesta_end.o siesta.o io.o \
         spin_init.o coor.o atm_transfer.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
@@ -241,6 +243,17 @@ pristine:  clean
 
 
 # DO NOT DELETE THIS LINE - used by make depend
+siesta.o:siesta_todo.o siesta_init.o
+siesta_init.o:siesta_todo.o
+siesta_end.o:siesta_todo.o
+siesta_analysis.o:siesta_todo.o
+state_init.o:siesta_todo.o
+siesta_move.o:siesta_todo.o
+setup_hamiltonian.o:siesta_todo.o
+compute_dm.o:siesta_todo.o
+mixer.o:siesta_todo.o
+scfconvergence_test.o:siesta_todo.o
+post_scf_work.o:siesta_todo.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
@@ -437,13 +450,15 @@ savepsi.o: parallel.o parallelsubs.o precision.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 shaper.o: atmfuncs.o precision.o
-siesta.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o densematrix.o
-siesta.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o m_broyden_mixing.o
-siesta.o: m_cell.o m_check_supercell.o m_fdf_global.o m_iostruct.o
-siesta.o: m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o metaforce.o
-siesta.o: molecularmechanics.o nlefsm.o ordern.o overfsm.o parallel.o
-siesta.o: parallelsubs.o periodic_table.o phonon.o precision.o redata.o
-siesta.o: siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o zmatrix.o
+
+siesta_todo.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o densematrix.o
+siesta_todo.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o m_broyden_mixing.o
+siesta_todo.o: m_cell.o m_check_supercell.o m_fdf_global.o m_iostruct.o
+siesta_todo.o: m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o metaforce.o
+siesta_todo.o: molecularmechanics.o nlefsm.o ordern.o overfsm.o parallel.o
+siesta_todo.o: parallelsubs.o periodic_table.o phonon.o precision.o redata.o
+siesta_todo.o: siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o zmatrix.o
+
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o
 spatial.o: precision.o
