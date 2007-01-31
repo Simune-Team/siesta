@@ -19,7 +19,8 @@
 !------------------------------------------------------------------------- BEGIN
       call siesta_init()
 
-      ! Start loop over coordinate changes
+      ! Begin of coordinate relaxation iteration
+      ! Notice that this loop is not indented
       relaxd = .false.
       istep = inicoor
       DO WHILE ((istep.le.fincoor) .AND. (.not. relaxd))

@@ -75,6 +75,7 @@ OBJS = automatic_cell.o \
         cgvc.o cgvc_zmatrix.o  \
         iocg.o ioeig.o iofa.o iokp.o iomd.o repol.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
+	write_md_record.o \
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
 	scfconvergence_test.o post_scf_work.o \
 	siesta_todo.o siesta_init.o struct_init.o \
@@ -256,6 +257,7 @@ compute_dm.o:siesta_todo.o
 mixer.o:siesta_todo.o
 scfconvergence_test.o:siesta_todo.o
 post_scf_work.o:siesta_todo.o
+write_md_record.o:siesta_todo.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o

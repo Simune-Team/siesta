@@ -7,6 +7,190 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 ____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2006/siesta-bsc--reference--2.1
+--------------------------------------------------------------------
+2007-01-31 10:15:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
+
+Summary: Consolidate geometry updates at the end of loop
+Keywords: 
+
+* Move comment about start of geometry loop to the right place in
+ siesta.F 
+
+* For idyn cases 6 (force constant), 7 (phonon interface), and 8
+(server calculation), move the coordinate updates from the beginning
+to the end of the geometry loop. The logic of geometry output to file XV
+has been maintained. For cases 6 and 7, any output to a MD history file
+is now done with the current (distorted) coordinates, instead of with
+the restored (undisplaced) coordinates (bug of original version).
+
+Note that the logic of XV output for the true MD cases has been maintained.
+(next step's geometry, current step's velocities).
+
+The MD output (together with any pixmol output) has been encapsulated
+in a new file write_md_record.F
+
+New-files: Src/.arch-ids/write_md_record.F.id
+    Src/write_md_record.F
+Modified-files: Src/Makefile Src/siesta.F Src/siesta_init.F
+    Src/siesta_move.F Src/state_init.F
+
+
+2007-01-31 10:06:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
+
+    Summary:
+      Created struct_init for initial geometry setup. New test force_2
+    Revision:
+      siesta-bsc--reference--2.1--patch-2
+
+    Struct_init has been detached from siesta_init to perform a self-contained
+    geometry setup.
+    
+    Notes:
+    
+    * Ns is now set in initatom, and it is "intent(in)" in redata.
+    
+    * Those variables which have to do with structural input 
+    are read twice: once in struct_init, and then in redata, pending a
+    re-structuring of the latter. In some cases local variables are
+    used.
+    
+    * iza is still set up in initatomlists. This means that some of the
+    structural output has to be kept in siesta_init for now. The fix is to
+    compute iza in coor or in read_struct.
+    
+    * va and vcell are zeroed out if an XV file is not used. But the
+    zmatrix i/o routine is in principle able to read vcell (?).
+    
+    * Put the calls to struct_init and initatomlists closer.
+    Do the array initialization inside of initatomlists.
+    
+    New test "force_2" for force-constant calculation with a smaller
+    runtime than "force_constants"
+    
+    (Note: the initial coordinate output and other details are now output
+    in a different order from that in the base version)
+    
+
+    new files:
+     Src/.arch-ids/struct_init.F.id Src/struct_init.F
+     Tests/Reference/.arch-ids/force_2.out.id
+     Tests/Reference/force_2.out Tests/force_2/.arch-ids/=id
+     Tests/force_2/.arch-ids/FC.fdf.id
+     Tests/force_2/.arch-ids/force_2.fdf.id
+     Tests/force_2/.arch-ids/force_2.pseudos.id
+     Tests/force_2/.arch-ids/makefile.id Tests/force_2/FC.fdf
+     Tests/force_2/force_2.fdf Tests/force_2/force_2.pseudos
+     Tests/force_2/makefile
+
+    modified files:
+     Src/Makefile Src/atomlist.f Src/initatom.f Src/redata.F
+     Src/siesta_init.F Src/siesta_todo.F
+
+    new directories:
+     Tests/force_2 Tests/force_2/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta-bsc--agarcia--2.1--patch-1
+     agarcia@siesta.arch--2006/siesta-bsc--agarcia--2.1--patch-2
+
+
+2007-01-25 13:17:04 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
+
+    Summary:
+      First stage of siesta.F splitting at BSC
+    Revision:
+      siesta-bsc--reference--2.1--patch-1
+
+    The first coding session at BSC on January 19, 2007 resulted in a first
+    splitting of siesta.F into blocks.
+    
+    A new module "siesta_todo.F" was created holding most of the variables
+    declared in siesta.F, as well as all the 'use' statements. External
+    subroutines are kept for now in siesta.F. "siesta_todo.F" also
+    contains the output routines which were formerly internal routines of
+    the main program.
+    
+    Several new files were created:
+    
+    siesta_init
+     state_init
+      setup_hamiltonian
+      compute_dm
+      mixer
+      scfconvergence_test
+      post_scf_work
+     siesta_move
+    siesta_analysis
+    siesta_end
+    
+    siesta.F is now much smaller, and has calls to those routines plus
+    the minimum logic to control the geometry and scf loops. No attempt
+    has been made to tidy up any of the blocks yet.
+    
+    The scf loop has been re-structured to separate the "last" pass which
+    was performed after scf convergence. Some more work is needed to
+    clarify the behavior in borderline and non-standard cases.
+    
+    The Makefile was updated.
+    
+    Added new file Src/Sys/marenostrum-mpi.make.
+    
+    Added new file Tests/compare.sh to automate comparisons with reference
+    output (works best if the reference output is from the same platform,
+    to avoid rounding differences).
+    
+    Added new test Tests/force_constants to exercise the idyn=6 code.
+    
+
+    new files:
+     Src/.arch-ids/compute_dm.F.id Src/.arch-ids/mixer.F.id
+     Src/.arch-ids/post_scf_work.F.id
+     Src/.arch-ids/scfconvergence_test.F.id
+     Src/.arch-ids/setup_hamiltonian.F.id
+     Src/.arch-ids/siesta_analysis.F.id
+     Src/.arch-ids/siesta_end.F.id Src/.arch-ids/siesta_init.F.id
+     Src/.arch-ids/siesta_move.F.id Src/.arch-ids/siesta_todo.F.id
+     Src/.arch-ids/state_init.F.id
+     Src/Sys/.arch-ids/marenostrum-mpi.make.id
+     Src/Sys/marenostrum-mpi.make Src/compute_dm.F Src/mixer.F
+     Src/post_scf_work.F Src/scfconvergence_test.F
+     Src/setup_hamiltonian.F Src/siesta_analysis.F Src/siesta_end.F
+     Src/siesta_init.F Src/siesta_move.F Src/siesta_todo.F
+     Src/state_init.F Tests/.arch-ids/bsc-Makefile.id
+     Tests/.arch-ids/bsc-test.mk.id Tests/.arch-ids/compara.id
+     Tests/.arch-ids/compare.sh.id
+     Tests/Reference/.arch-ids/force_constants.out.id
+     Tests/Reference/force_constants.out Tests/bsc-Makefile
+     Tests/bsc-test.mk Tests/compara Tests/compare.sh
+     Tests/force_constants/.arch-ids/=id
+     Tests/force_constants/.arch-ids/FC.fdf.id
+     Tests/force_constants/.arch-ids/force_constants.fdf.id
+     Tests/force_constants/.arch-ids/force_constants.pseudos.id
+     Tests/force_constants/.arch-ids/makefile.id
+     Tests/force_constants/FC.fdf
+     Tests/force_constants/force_constants.fdf
+     Tests/force_constants/force_constants.pseudos
+     Tests/force_constants/makefile
+
+    modified files:
+     Src/Makefile Src/siesta.F Src/version.F90 version.info
+
+    new directories:
+     Tests/force_constants Tests/force_constants/.arch-ids
+
+
+2007-01-25 10:02:43 GMT	Alberto Garcia <albertog@icmab.es>	base-0
+
+    Summary:
+      tag of siesta@uam.es--2006/siesta-devel--reference--2.1--patch-29
+    Revision:
+      siesta-bsc--reference--2.1--base-0
+
+    (automatically generated log message)
+
+
+____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 

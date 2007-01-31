@@ -389,9 +389,6 @@
 ! Initialise metadynamic forces if required
       call initmeta
 
-
-! Begin of coordinate relaxation iteration ============================
-! Notice that this loop is not indented
       if (idyn .eq. 0) then
         inicoor = 0
         fincoor = nmove

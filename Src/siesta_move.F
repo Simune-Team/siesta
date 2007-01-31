@@ -198,11 +198,84 @@
         ! Propagate the new structure to the virtual supercell
         call superx( ucell, nsc, na_u, na_s, xa, scell )
 
-      case (6:7)
-        continue !We can't go until after ioxv - see below
+      case (6)
+
+        ! Save current atomic positions and velocities 
+        call ioxv( 'write', ucell, vcell, na_u, isa, iza,  
+     &             xa, va, foundxv)
+        if (lUseZmatrix) then
+          call iozm('write',ucell,vcell,xa,foundzm)
+        endif
+        call siesta_write_positions()
+
+        ! Save atomic positions and velocities accumulatively and
+        ! accumulate coor in Xmol file for animation 
+        ! (for this case, any MD file will contain the right series
+        !  of snapshots, unlike in the original version)
+        call write_md_record( istep )
+
+        ! Undo the last atom displacement
+        if (istep .gt. inicoor) then
+          iadispl = (istep-mod(istep-1,6))/6+ia1
+          ix = mod(istep-1,6)+1
+          ixdispl = (ix - mod(ix-1,2) +1)/2
+          xa(ixdispl,iadispl) = xa(ixdispl,iadispl) - dx
+        endif
+
+        ! Next atomic displacement 
+        if (istep .lt. fincoor) then
+          iadispl = ((istep+1)-mod(istep,6))/6+ia1
+          ix = mod(istep,6)+1
+          ixdispl = (ix - mod(ix-1,2) +1)/2
+          dx=-dx
+          xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
+        endif
+
+      case (7)
+          ! Save current atomic positions and velocities 
+          call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+     &                foundxv)
+          if (lUseZmatrix) then
+            call iozm('write',ucell,vcell,xa,foundzm)
+          endif
+          call siesta_write_positions()
+
+        ! Save atomic positions and velocities accumulatively and
+        ! accumulate coor in Xmol file for animation 
+        ! (for this case, any MD file will contain the right series
+        !  of snapshots, unlike in the original version)
+          call write_md_record( istep )
+
+          ! Restore original coordinates after FC displacements
+          if (istep.gt.inicoor) then
+            call phonon_restore_coords(istep,xa,ucell)
+          endif
+
+          ! Modify coordinates
+          if (istep .lt. fincoor) then
+            call phonon_set_coords(istep+1,xa,ucell)
+          endif
 
       case (8)
-         call forcesToPipe( na_u, Etot, cfa, cstress )
+          call forcesToPipe( na_u, Etot, cfa, cstress )
+
+          ! Save current atomic positions and velocities 
+          call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+     &             foundxv)
+          if (lUseZmatrix) then
+            call iozm('write',ucell,vcell,xa,foundzm)
+          endif
+          call siesta_write_positions()
+
+          ! Save atomic positions and velocities accumulatively and
+          ! accumulate coor in Xmol file for animation 
+          call write_md_record( istep )
+
+          ! Get coordinates from driver program trough pipe
+          call coordsFromPipe( na_u, xa, ucell )
+          if (volcel(ucell) < 1.0e-8_dp) then
+            call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
+          endif
       end select
 
       if (IOnode) then
@@ -212,49 +285,23 @@
         endif
       endif
 
-! Save last atomic positions and velocities 
-! (it should be before moving atoms!)
-      call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
-      if (lUseZmatrix)
-     .  call iozm('write',ucell,vcell,xa,foundzm)
-      call siesta_write_positions()
-! ...................
+      ! Save atomic positions and velocities for MD cases
+      ! It really should be done before moving the atoms...
+      ! As it is, ucell and xa contain NEXT STEP's values,
+      ! whereas vcell and va are the CURRENT velocities
+      if (idyn.ne.6 .and. idyn.ne.7 .and. idyn.ne.8) then
+        call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
+     &             foundxv)
+        if (lUseZmatrix)
+     .    call iozm('write',ucell,vcell,xa,foundzm)
+        call siesta_write_positions()
 
-! Restore original coordinates after FC displacements
-      if (idyn .eq. 6 .and. istep .ne. 0) then
-        xa(ixdispl,iadispl)=xa(ixdispl,iadispl)-dx
+        ! Save atomic positions and velocities accumulatively and
+        ! accumulate coor in Xmol file for animation 
+        ! (Again, the geometry and its time derivatives are out
+        !  of step)
+        call write_md_record( istep )
       endif
-      if (idyn .eq. 7) then
-           call phonon_restore_coords(istep,xa,ucell)
-      endif
-
-! Save atomic positions and velocities accumulatively ................
-      if (writmd.and.IOnode) then
-         if ( .not. harrisfun) then
-            Etot_output = Etot
-         else
-            Etot_output = Eharrs1
-         endif
-         getot = Etot_output + Ekinion + kn + kpr + vn + vpr
-         call iomd( na_u, isa, iza, 
-     .        xa, va, ucell, vcell, varcel, istep, inicoor, 
-     .        fincoor, tempion, Etot_output, getot,
-     $        volume/Ang**3, Psol/kbar)
-         call md_v_format(na_u,isa,xa,ucell)
-#ifdef CDF
-         call md_netcdf( na_u, isa, iza, 
-     .        xa, va, ucell, vcell, varcel, 
-     .        tempion, Etot_output, getot,
-     $        volume/Ang**3, Psol/kbar)
-#endif
-
-      endif
-
-! Accumulate coor in Xmol file for animation .........................
-      lastst = fincoor .le. istep
-      if (writpx.and.IOnode) 
-     .  call pixmol(iza, xa, na_u, lastst)
-! ...................
 
 !******************Born charge calculation***************************
       if (bornz) then

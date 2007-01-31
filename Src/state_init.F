@@ -31,24 +31,18 @@
         case (6)
           write(6,'(28(" "),a,i6)') 'Begin FC step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FC', index=istep)
+
           if (istep .eq. 0) then
             write(6,'(28(" "),a)') 'Undisplaced coordinates'
           else
             iadispl = (istep-mod(istep-1,6))/6+ia1
-            write(6,'(28(" "),a,i6)') 'displace atom   ',
-     .        iadispl
+            write(6,'(28(" "),a,i6)') 'displace atom   ', iadispl
             ix = mod(istep-1,6)+1
             ixdispl = (ix - mod(ix-1,2) +1)/2
-            write(6,'(28(" "),a,i6)') 'in direction    ',
-     .        ixdispl
-            dx=-dx
-            write(6,'(28(" "),a,f8.4,a)') 'by       ',
-     .                      dx, ' Bohr'
-! Displace atom by dx...
-            xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
+            write(6,'(28(" "),a,i6)') 'in direction    ', ixdispl
+            write(6,'(28(" "),a,f8.4,a)') 'by       ', dx, ' Bohr'
           endif
-        case (7)
-          call phonon_set_coords(istep,xa,ucell)
+
         case (8)
           write(6,'(28(" "),a,i6)') 'Begin Server step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
@@ -56,41 +50,17 @@
         end select
         write(6,'(2a)') '                        ',
      .                    '=============================='
-      else ! not IOnode
-        select case (idyn)
-! We don't need to do anything for 0<idyn<6
-        case(6)
-          if (istep .ne. 0) then
-            iadispl = (istep-mod(istep-1,6))/6 + ia1
-            ix = mod(istep-1,6) + 1
-            ixdispl = (ix - mod(ix-1,2) +1)/2
-            dx = - dx
-! Displace atom by dx...
-            xa(ixdispl,iadispl) = xa(ixdispl,iadispl) + dx
-          endif
-        case(7)
-          call phonon_set_coords(istep,xa,ucell)
-        end select
-      endif
 
-! Get coordinates from driver program trough pipe
-      if (idyn.eq.8 .and. istep.ne.inicoor) then
-        call coordsFromPipe( na_u, xa, ucell )
-        if (volcel(ucell) < 1.0e-8_dp) then
-           call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
-        endif
-      end if
-
-      if (IOnode) then
-! Print Z-matrix coordinates
+        ! Print Z-matrix coordinates
         if (lUseZmatrix) then
-          call write_Zmatrix
+          call write_Zmatrix()
         endif
-! Print atomic coordinates ............................................
+
+        ! Print atomic coordinates
         call outcoor( ucell, xa, na_u, ' ', writec )
         call siesta_write_positions()
       endif
-! ...................
+
 
 ! Actualize things if variable cell ...................................
       auxchanged = .false.
