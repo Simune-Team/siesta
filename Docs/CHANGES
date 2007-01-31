@@ -10,6 +10,41 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-bsc--reference--2.1
 --------------------------------------------------------------------
 
+2007-01-31 10:21:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+Summary: Kgrid setup streamlined. Bands. Proximity check. Hsparse allocation 
+Keywords: 
+
+* The kgrid handling is now done through a new module kpoint_grid, which exports
+the new routine setup_Kpoint_grid, and holds kpoint and other arrays.
+
+The kgrid is initialized for the first geometry in siesta_init, and then 
+updated in the geometry loop (the conditions of the update are those of the
+original reference version: varcel or server calculation)
+
+Kgridinit (still outside the new module) has had its nkpnt argument
+made "intent(out)".
+
+* The setup of the band k-points has been moved to a new routine
+'setup_bands' in module 'band' in file 'bands.F', which also holds
+now nbk, maxbk, and bk. The setup routine is called right before the
+band calculation *after* the geometry loop, instead of at the beginning
+of the run (with the initial geometry).
+The influence of nbk on 'gamma' has been removed, as it could conflict with
+the self-consistent calculation.
+
+(* The similar Writewave and KSV initializations have not been
+refactored yet)
+
+* The 'proximity check' code has been put into a new subroutine with
+that name. Some of the local loop variables have been renamed.
+
+* After the call to hsparse, the code for allocation of some arrays
+has been simplified.
+
+(This was the end of the second iteration of work at BSC by JMC, MQ, and AG
+on 30 January).
+
 2007-01-31 10:19:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
 
 Summary: Initialize vol2 correctly in m_check_supercell.f

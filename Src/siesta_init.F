@@ -1,5 +1,6 @@
       subroutine siesta_init()
       USE SIESTA_TODO
+      USE Kpoint_grid
       implicit none
 
       external :: automatic_cell,
@@ -50,9 +51,8 @@
 
 ! Nullify arrays
       nullify(Haux,Saux,psi)
-      nullify(bk,H,H0,S,kpol,wgthpol)
-      nullify(Dold,Dscf,Dscfsave,Eold,Escf)
-      nullify(listh,listhold,listhptr,listhptrold)
+      nullify(kpol,wgthpol)
+      nullify(listhptr,listhptrold)
       nullify(numh,numhold)
 
 ! Initialize some variables
@@ -256,47 +256,17 @@
       enddo
       neigwanted = min(neigwanted,no_u)
 
-! Find k-grid for Brillouin zone integration ..........................
-! Call kgridinit to get the dimensions and then kgrid to actually
-! initialise the data 
-      nkpnt = 1
-      call kgridinit( ucell, kscell, kdispl, kcutof, nkpnt )
-      maxk = nkpnt
-      allocate(kpoint(3,maxk))
-      call memory('A','D',3*maxk,'siesta')
-      allocate(kweight(maxk))
-      call memory('A','D',maxk,'siesta')
-      kpoint(1:3,1) = 0.0_dp
-      kweight(1) = 1.0_dp
+      ! Find k-grid for Brillouin zone integration 
+      ! Call kgridinit to get the dimensions and then kgrid to actually
+      ! initialise the data 
+      call setup_Kpoint_grid( ucell )
+
       allocate(eo(no_u,nspin,maxk))
       call memory('A','D',no_u*nspin*maxk,'siesta')
       allocate(qo(no_u,nspin,maxk))
       call memory('A','D',no_u*nspin*maxk,'siesta')
-      call kgrid( ucell, kscell, kdispl,
-     .            nkpnt, kpoint, kweight )
-! ......................
 
-! Find number of band k-points ........................................
-      nbk = 0
-      maxbk = 1
-      call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
-     .              copy=.false.)
-!
-      call initbands( maxbk, nbk, bk )
-!
-      if (nbk .gt. maxbk) then
-! If there wasn't enough space to store bands on first call correct
-! the dimensions and repeat the initialisation
-        maxbk = max(nbk,1)
-        call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
-     .                copy=.false.)
-        nbk = 0
-        call initbands( maxbk, nbk, bk )
-      endif
-      allocate(ebk(no_u,nspin,maxbk))
-      call memory('A','D',no_u*nspin*maxbk,'siesta')
 
-! ......................
 
 ! Find number of k-points for wavefunction printout ....................
       nwk = 0
@@ -346,7 +316,10 @@
       else
         gamma = .false.
       endif
-      if (nbk .gt. 0) gamma = .false.
+      ! eliminado por conflicto con la diagonalizacion
+      ! codigo de bandas movido a siesta_analysis
+!      if (nbk .gt. 0) gamma = .false.
+
       if (nwk .gt. 1) gamma = .false.
       if (nwk .eq. 1) then
         if (abs(wfk(1,1)).gt.tiny .and.
@@ -387,7 +360,7 @@
       call superc( ucell, scell, nsc)
 
 ! Initialise metadynamic forces if required
-      call initmeta
+      call initmeta()
 
       if (idyn .eq. 0) then
         inicoor = 0
@@ -399,7 +372,7 @@
         inicoor = 0
         fincoor = (ia2-ia1+1)*3*2
       else if (idyn .eq. 7) then
-        call phonon_setup
+        call phonon_setup()
         inicoor = 1
         fincoor = phonon_num_disps
       else if (idyn .eq. 8) then

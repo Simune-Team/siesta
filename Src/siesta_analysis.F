@@ -1,5 +1,6 @@
       subroutine siesta_analysis( first, relaxd, iscf )
       USE SIESTA_TODO
+      USE band
       implicit none
       logical :: first, relaxd
       integer :: iscf
@@ -62,7 +63,14 @@
      .              nwk, wfk, no_u, gamma, occtol )
       endif
 
-! Find and print bands
+      ! Find and print bands
+      ! Find number of band k-points 
+      call setup_bands( )
+
+
+      allocate(ebk(no_u,nspin,maxbk))
+      call memory('A','D',no_u*nspin*maxbk,'siesta')
+
       if (nbk.gt.0) then
         call bands( no_s, nspin, nspin, no_u, no_l, maxnh, maxbk,
      .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,

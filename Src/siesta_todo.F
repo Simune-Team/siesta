@@ -12,7 +12,7 @@
       use atomlist, only: datm, no_s, iaorb
       use atomlist, only: superx, superc, initatomlists
 !
-      use band, only: initbands, bands
+      use band, only: setup_bands, bands
       use fdf, only : fdf_block, fdf_convfac, fdf_boolean
       use fdf, only : fdf_physical
       use m_fdf_global, only: fdf_global_get
@@ -67,6 +67,8 @@
 #ifdef CDF
       use md_out,     only: md_netcdf
 #endif
+      use Kpoint_grid
+
       implicit none
 
       integer
@@ -77,15 +79,14 @@
      .  iquench, is, isel, 
      .  isolve, ispin, istp, istpsave, istart, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
-     .  j, ja, jamin, jo, jx,
-     .  level, maxbk, maxk,  
+     .  j, ja, jo, jx,
+     .  level,  
      .  maxsav, broyden_maxit, maxwk, mullipop, 
      .  nkick, nbcell, ncgmax, nh,
      .  nmove, nnia, nscf, 
      .  ntm(3), ntcon, nwk, pmax, nkpol, nhist, 
      .  neigwanted, neigmin
 
-      integer :: nkpnt=1
       integer :: ihuge=1073741823
       ! maxnh is (initially) the minimum size of all the sparse arrays.
       ! It must be 1 (not 0) since we frequently use the F77 idiom of
@@ -95,14 +96,12 @@
       integer :: no_l=1
       integer :: nnamax=1
       integer :: nauxpul=1
-      integer :: nbk=1
       integer :: ns=1   ! AG** do not initialize
       integer :: nspin=1
       integer :: nxij=1
 
       integer, dimension(3)   :: nscold = 0
       integer, dimension(3)   :: nsc = 1
-      integer, dimension(3,3) :: kscell = 0
       integer, dimension(3,3) :: mscell = 
      .                    reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
 
@@ -131,15 +130,13 @@
      .  mn, mpr, occtol, Pint, Pmol, Psol, rmax_bonds
 
       real(dp) :: e1=-1.0_dp, e2=-1.0_dp
-      real(dp) :: kcutof=0.0_dp
       real(dp) :: tiny = 1.0E-15_dp
       real(dp) :: tempion=0.0_dp
 
-      real(dp), dimension(3) :: kdispl = 0.0_dp
 
       real(dp)
      .  qaux, qspin(4), qsol,
-     .  rcoor, rcoorcp, rijmin, rmax, rmaxh, rmin, r2min,
+     .  rcoor, rcoorcp, rijmin, rmax, rmaxh,
      .  scell(3,3), stot, stress(3,3), strtol, svec(3),
      .  taurelax, tempinit, tp, ts, tt,
      .  tstress(3,3), Uatm, Uscf,
@@ -150,18 +147,18 @@
       real(dp), external:: volcel
 
       real(dp), dimension(:), allocatable ::
-     .  efs, kweight, qs, r2ij
+     .  efs, qs, r2ij
 
       real(dp), pointer, save :: 
      .  H0(:), S(:), wgthpol(:)
 
       real(dp), dimension(:,:), allocatable :: 
-     .  auxpul, cfa, fa, fal, kpoint, 
+     .  auxpul, cfa, fa, fal,
      .  polR, polxyz, va, xij, xijo, wfk
 
       real(dp), pointer, save ::
      .  Dold(:,:), Dscf(:,:), Dscfsave(:,:), Eold(:,:), Escf(:,:),
-     .  bk(:,:), H(:,:), kpol(:,:)
+     .  H(:,:), kpol(:,:)
 
 #ifdef MPI
       real(dp)

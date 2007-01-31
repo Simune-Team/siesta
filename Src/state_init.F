@@ -1,5 +1,6 @@
       subroutine state_init( istep )
       USE SIESTA_TODO
+      USE Kpoint_grid
       implicit none
 
       integer :: istep
@@ -67,44 +68,23 @@
       if ( (varcel .or. idyn.eq.8)
      $     .and. (istep.ne.inicoor) .and. (.not.gamma) ) then
 
-! k-grid 
-        nkpnt = maxk
-        call kgridinit( ucell, kscell, kdispl, kcutof, nkpnt )
+        call setup_Kpoint_grid( ucell )
 
-! If number of k points has changed - re-size arrays
-        if (nkpnt .gt. maxk) then
-          call memory('D','D',size(kpoint),'siesta')
-          deallocate(kpoint)
-          call memory('D','D',size(kweight),'siesta')
-          deallocate(kweight)
-          allocate(kpoint(3,nkpnt))
-          call memory('A','D',3*nkpnt,'siesta')
-          allocate(kweight(nkpnt))
-          call memory('A','D',nkpnt,'siesta')
-          kpoint(1:3,1)=0.0_dp
-          kweight(1)=1.0_dp
-          call kgrid( ucell, kscell, kdispl,
-     .      nkpnt, kpoint, kweight )
+        if (size(eo,dim=3) .lt. maxk) then
           call memory('D','D',size(eo),'siesta')
           deallocate(eo)
           call memory('D','D',size(qo),'siesta')
           deallocate(qo)
-          allocate(eo(no_u,nspin,nkpnt))
-          call memory('A','D',no_u*nspin*nkpnt,'siesta')
-          allocate(qo(no_u,nspin,nkpnt))
-          call memory('A','D',no_u*nspin*nkpnt,'siesta')
-          maxk = nkpnt
-       else
-          call kgrid( ucell, kscell, kdispl,
-     .                nkpnt, kpoint, kweight )
+          allocate(eo(no_u,nspin,maxk))
+          call memory('A','D',no_u*nspin*maxk,'siesta')
+          allocate(qo(no_u,nspin,maxk))
+          call memory('A','D',no_u*nspin*maxk,'siesta')
+        endif
 
-       endif
+        ! Print k-points 
+        if (IOnode) call siesta_write_k_points()
  
-! Print k-points 
-       if (IOnode) call siesta_write_k_points()
- 
-! Find required supercell
-
+        ! Find required supercell
         auxchanged = .false.
 
         if (gamma) then
@@ -183,35 +163,19 @@
         overflow = .false.
       endif
       if (overflow) goto 144
-! ..................
 
-! Check if any two atoms are unreasonably close .......................
-      do ia = 1,na_s
-        r2min = huge(1._dp)
-        jamin = 0
-        nnia = maxna
-        call neighb( scell, rmax, na_s, xa, ia, isel,
-     .               nnia, jna, xij, r2ij )
-        do j = 1,nnia
-          ja = jna(j)
-          if ( r2ij(j).lt.r2min .and. ja.ge.ia ) then
-!           Check that it is not the same atom
-            if ( ja.ne.ia .or. r2ij(j).gt.1.d-12 ) then
-              r2min = r2ij(j)
-              jamin = ja
-            endif
-          endif
-        enddo
-        rmin = sqrt( r2min )
-        if (IOnode) then
-          if ( rmin .lt. rijmin ) write(6,'(a,2i6,a,f12.6,a)')
-     .      'siesta: WARNING: Atoms', ia, jamin, ' too close: rij =',
-     .       rmin/Ang, ' Ang'
-        endif
-      enddo
-! ..................
 
-! List of nonzero Hamiltonian matrix elements .........................
+      ! Check if any two atoms are unreasonably close
+      call proximity_check( )
+
+      ! List of nonzero Hamiltonian matrix elements
+      if (istp==1) then 
+        ! Nullify arrays
+        nullify(Dscf,Dscfsave,Dold,Eold,Escf)
+        nullify(listhold,listh)
+        nullify(H,H0,S)
+      endif
+
       overflow=.true.
       overflowed=.false.
       do while (overflow)
@@ -221,36 +185,31 @@
          call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh )
          if (nh .gt. maxnh) then
-      ! Increase maxnh with safety margin for when atoms move
+            ! Increase maxnh with safety margin for when atoms move
             maxnh = 1.05 * nh + 40
             overflowed=.true.
          else
             overflow=.false.
          endif
       enddo
-      ! In first step, allocate anyway (to catch corner case
-      ! where one node has nh=0, and doesn't overflow)
-      if (istp==1) then
-        call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .                routine='siesta',copy=.false.)
-        call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     .                routine='siesta',copy=.false.)
-        call re_alloc(listhold,1,maxnh,name='listhold',
-     .                routine='siesta',copy=.false.)
-        ! Initialise Dscfsave to avoid problems in extrapol
-        Dscfsave(1:maxnh,1:nspin) = 0.0_dp
-        listhold(1:maxnh) = 0
-      elseif (overflowed) then
-        ! We need to preserve the contents of these arrays
-        ! when reallocating.
+
+
+      if (overflowed.or.istp==1) then
+        ! In first step, allocate anyway (to catch corner case
+        ! where one node has nh=0, and doesn't overflow)
         call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
      .                routine='siesta',copy=.true.)
         call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
      .                routine='siesta',copy=.true.)
         call re_alloc(listhold,1,maxnh,name='listhold',
      .                routine='siesta',copy=.true.)
-      endif
-      if (istp==1.or.overflowed) then
+
+        if (istp==1) then
+          ! Initialise Dscfsave to avoid problems in extrapol
+          Dscfsave(1:maxnh,1:nspin) = 0.0_dp
+          listhold(1:maxnh) = 0
+        endif
+
         call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .                routine='siesta',copy=.false.)
         call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',
@@ -259,7 +218,7 @@
      .                routine='siesta',copy=.false.)
       endif
 
-! Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
+      ! Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc(H,1,maxnh,1,nspin,name='H',
      .              routine='siesta',shrink=.false.,copy=.false.)
       call re_alloc(H0,1,maxnh,name='H0',routine='siesta',

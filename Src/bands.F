@@ -9,22 +9,46 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       module band
-
-      use sys, only: die
-
+      use precision, only: dp
+      use sys,       only: die
+      use alloc,     only: re_alloc
       implicit none
-
-      integer :: maxlin
-      parameter (maxlin = 1000)
-
-      character, save :: label(maxlin)*8
-      integer, save   :: lastk(maxlin), nlines
-
-      public  :: initbands, bands
-
       private
 
+      integer, public :: nbk, maxbk
+
+      integer, parameter :: maxlin = 1000
+
+      real(dp), pointer, save, public :: bk(:,:)
+
+      character, save :: label(maxlin)*8
+      integer,   save :: lastk(maxlin), nlines
+
+      public  :: setup_bands, bands
+      
       contains
+
+      subroutine setup_bands( )
+        implicit none
+        ! Find number of band k-points
+        nullify(bk)
+        nbk = 0
+        maxbk = 1
+        call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
+     .                copy=.false.)
+
+        call initbands( maxbk, nbk, bk )
+
+        if (nbk .gt. maxbk) then
+          ! If there wasn't enough space to store bands on first call correct
+          ! the dimensions and repeat the initialisation
+          maxbk = max(nbk,1)
+          call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
+     .                  copy=.false.)
+          nbk = 0
+          call initbands( maxbk, nbk, bk )
+        endif
+      end subroutine setup_bands
 
       subroutine initbands( maxk, nk, kpoint )
 C *********************************************************************

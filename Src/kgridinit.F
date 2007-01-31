@@ -67,7 +67,8 @@ C
       implicit          none
 
 C Passed variables
-      integer, intent(inout)   :: kscell(3,3), nk
+      integer, intent(inout)   :: kscell(3,3)
+      integer, intent(out)     :: nk
       real(dp), intent(in)     :: cell(3,3)
       real(dp), intent(inout)  :: cutoff, displ(3)
 
