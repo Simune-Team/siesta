@@ -101,8 +101,17 @@ C real*8 qa(na)             : Neutral atom charge of each atom
 
 C Routine to initialize the atomic lists.
 C
-
       integer  ia, io, is, nkba, noa, nol, nokbl, ioa, ikb
+
+      nullify(indxua,iza,lastkb,lasto,qa,amass,xalast)
+      call re_alloc(indxua,1,na_u,name='indxua',routine='siesta')
+      call re_alloc(iza,1,na_u,name='iza',routine='siesta')
+      call re_alloc(lastkb,0,na_u,name='lastkb',routine='siesta')
+      call re_alloc(lasto,0,na_u,name='lasto',routine='siesta')
+      call re_alloc(qa,1,na_u,name='qa',routine='siesta')
+      call re_alloc(xalast,1,3,1,na_u,name='xalast',routine='siesta')
+      call re_alloc(amass,1,na_u,name='amass',routine='siesta')
+
 !
 !     Find number of orbitals and KB projectors in cell
 !

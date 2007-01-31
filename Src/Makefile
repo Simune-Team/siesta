@@ -77,7 +77,8 @@ OBJS = automatic_cell.o \
         ofc.o poison.o readsp.o radfft.o \
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
 	scfconvergence_test.o post_scf_work.o \
-	siesta_todo.o siesta_init.o siesta_analysis.o siesta_end.o siesta.o io.o \
+	siesta_todo.o siesta_init.o struct_init.o \
+        siesta_analysis.o siesta_end.o siesta.o io.o \
         spin_init.o coor.o atm_transfer.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
@@ -243,8 +244,9 @@ pristine:  clean
 
 
 # DO NOT DELETE THIS LINE - used by make depend
-siesta.o:siesta_todo.o siesta_init.o
+siesta.o:siesta_todo.o 
 siesta_init.o:siesta_todo.o
+struct_init.o:siesta_todo.o
 siesta_end.o:siesta_todo.o
 siesta_analysis.o:siesta_todo.o
 state_init.o:siesta_todo.o

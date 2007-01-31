@@ -55,9 +55,9 @@ C Modified for introduction of dynamic memory in SIESTA by JDG Sept 99
 !
 C ***************************** INPUT *********************************
 C integer na               : Number of atoms
+C integer ns               : Number of species
 C integer nspin            : Spin polarization
 C **************************** OUTPUT *********************************
-C integer ns               : Number of species
 C real*8 charnet           : Net charge (in units of |e|)
 C logical outlng           : Long (true) or short (false) output
 C real*8 g2max             : PW cutoff energy (Ry)
@@ -155,12 +155,12 @@ C **********************************************************************
 
 
 ! Subroutine arguments:
-      integer, intent(in)  :: na, nspin
+      integer, intent(in)  :: na, ns, nspin
 
       integer, intent(out) :: 
      .  ia1, ia2, ianneal, idyn, ifinal, ioptlwf,
      .  iquench, isolve, istart, maxsav, broyden_maxit,
-     .  mullipop, ncgmax, nkick, nmove, ns, nscf, pmax
+     .  mullipop, ncgmax, nkick, nmove, nscf, pmax
 
       real(dp), intent(out) ::
      .  beta, bulkm, charnet, dEtol,
@@ -252,8 +252,7 @@ C Type of output
       if (cml_p) call cmlAddParameter(xf=mainXML, name='LongOutput',
      .       value=outlng, dictRef='siesta:verbosity')
 
-C Define Number of species ...
-      call fdf_global_get(ns,'NumberOfSpecies', 0)
+C Write about Number of species, as before
       if (ionode)     write(6,'(a,3x,i2)') 
      .   'redata: Number of Atomic Species         = ',ns
         if (ns .le. 0) call die('redata: ERROR:'// 

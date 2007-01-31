@@ -86,11 +86,29 @@
       call inittwobody()
 
 ! Initialize pseudopotentials and atomic orbitals
-      if (IOnode) call initatom()
+      if (IOnode) call initatom(ns)
       call broadcast_basis()
 
       call fdf_global_get(atmonly,'Atom-Setup-Only',.false.)
       if (atmonly) call bye("End of atom setup")
+
+! Read geometry
+
+      call struct_init()      ! Sets na_u, isa, ucell
+
+! Initialize atom lists
+
+      call initatomlists()    ! Sets iza
+
+! early exit if only checking the structure
+
+      call fdf_global_get(struct_only,'Output-Structure-Only',.false.)
+      if (struct_only) then
+         if (IONode) call write_struct( ucell, na_u, isa, iza, xa )
+         call bye("End of structure processing")
+      endif
+      
+!  --   End of Initial Structure Processing --
 
       if (Node.eq.0) then
         write(6,'(/,a,20("*"),a,28("*"))')
@@ -104,50 +122,13 @@
         write(6,'(a)')  'siesta:'
       endif
 
-! Read simulation sizes ...............................................
-
-!! Read number of atoms and coordinates, and unit cell
-
-      call fdf_global_get(use_struct_file,"MD.UseStructFile",.false.)
-      if (use_struct_file) then
-         call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
-      else
-         call coor(na_u,ucell)  ! Sets na_u, xa, and isa
-      endif
-
-
-      if (cml_p) then
-! We need the names of the elements on node 0
-        allocate(elem(na_u))
-        call memory('A','S',2*na_u,'siesta')
-        do i = 1, na_u
-          elem(i) = symbol(izofis(isa(i)))
-        enddo
-      endif
-
-! Allocate arrays based on read sizes ................
-!
-!     Those living in module atomlists
-!
-      nullify(indxua,iza,lastkb,lasto,qa,amass,xalast)
-      call re_alloc(indxua,1,na_u,name='indxua',routine='siesta')
-      call re_alloc(iza,1,na_u,name='iza',routine='siesta')
-      call re_alloc(lastkb,0,na_u,name='lastkb',routine='siesta')
-      call re_alloc(lasto,0,na_u,name='lasto',routine='siesta')
-      call re_alloc(qa,1,na_u,name='qa',routine='siesta')
-      call re_alloc(xalast,1,3,1,na_u,name='xalast',routine='siesta')
-      call re_alloc(amass,1,na_u,name='amass',routine='siesta')
-
-!
-!     Others
+! Allocate other arrays based on read sizes ................
 !
       allocate(cfa(3,na_u))
       call memory('A','D',3*na_u,'siesta')
       allocate(fa(3,na_u))
       call memory('A','D',3*na_u,'siesta')
       allocate(fal(3,na_u))
-      call memory('A','D',3*na_u,'siesta')
-      allocate(va(3,na_u))
       call memory('A','D',3*na_u,'siesta')
 
 ! Initialise those arrays that must be pre-initialised
@@ -188,12 +169,9 @@
       call fdf_global_get(writbk, 'WriteKbands'     , outlng )
       call fdf_global_get(writeig,'WriteEigenvalues', outlng )
       call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
-      call fdf_global_get(writic, 'WriteCoorInitial', .true. )
       call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)
       call fdf_global_get(writpx, 'WriteMDXmol'     , .not. writec)
       call fdf_global_get(default, 'UseSaveData'     , .false.)
-      call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
-      call fdf_global_get(usesavezm, 'MD.UseSaveZM'    , default)
       call fdf_global_get(savehs, 'SaveHS'          , .false.)
       call fdf_global_get(fixauxcell, 'FixAuxiliaryCell', .false.)
       call fdf_global_get(naiveauxcell, 'NaiveAuxiliaryCell', .false.)
@@ -206,55 +184,8 @@
 
       call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
 
-! Read Z-matrix coordinates and forces from file
-      if (lUseZmatrix) then
-        foundzm = .false.
-        if (usesavezm) then
-            call iozm('read',ucell,vcell,xa,foundzm)
-            if (IOnode) then
-                if (.not.foundzm) then
-                   write(6,'(/,a)') 'siesta: WARNING: ZM file not found'
-                else
-                    write(6,'(/,a)') 
-     .        "! Info in XV file prevails over previous structure input"
-                endif
-            endif
-        endif
-      endif
-
-! Read cell shape and atomic positions from a former run ..............
-      foundxv = .false.
-      if (usesavexv) then
-        call ioxv('read', ucell, vcell, na_u, isa, iza, xa, va, foundxv)
-        if (IOnode) then
-           if (.not.foundxv) then
-              write(6,'(/,a)') 'siesta: WARNING: XV file not found'
-           else
-              write(6,"(a)")
-     $       "! Info in XV file prevails over previous structure input"
-           endif
-         endif
-      endif
-! ..................
-
-! Read cell shape and atomic positions from driver program through pipe
-      if (idyn.eq.8) then
-        call coordsFromPipe( na_u, xa, ucell )
-      end if
-! .....................
-
-! Dump initial coordinates to output ..................................
-      if ( writic.and.(IOnode) ) then
-        write(6,'(/a)') 'siesta: Atomic coordinates (Bohr) and species'
-        write(6,"('siesta: ',2x,3f10.5,i3,3x,i6)")
-     .           ( (xa(ix,ia), ix=1,3), isa(ia), ia, ia=1, na_u)
-      endif
-! ..................
-
-
-! Initialize atom lists 
-      call initatomlists()    ! Sets iza
-      qtot = qtot - charnet
+      qtot = qtot - charnet     ! qtot set in initatomlists
+                                ! charnet set in redata
       write(6,fmt="(a,f12.6)") "Total number of electrons: ", qtot
       write(6,fmt="(a,f12.6)") "Total ionic charge: ", zvaltot
 
@@ -285,47 +216,6 @@
         rmaxh = 2.0_dp*rmaxo + 2.0_dp*rmaxkb
       endif
 ! ......................
-
-! Automatic cell generation ...........................................
-      if (volcel(ucell) .lt. 1.0d-8) then
-         call automatic_cell(ucell,scell,na_u,xa,isa,charnet)
-      endif
-
-! Find system shape ...................................................
-      call shaper( ucell, na_u, isa, xa, shape, nbcell, bcell )
-      if (IOnode) then
-        write(6,'(/,2a)') 'siesta: System type = ', shape
-      endif
-
-! Find interatomic distances (output in file BONDS)
-      if (IOnode) then
-        rmax_bonds = fdf_physical("MaxBondDistance", 6.0_dp, "Bohr")
-        call bonds( ucell, na_u, isa, xa,
-     $       rmax_bonds, trim(slabel)// ".BONDS" )
-      endif
-
-! Output of initial system details:
-      if (cml_p) then
-        call cmlStartModule(xf=mainXML, title='Initial System')
-        call cmlAddMolecule(xf=mainXML, natoms=na_u, 
-     .       coords=xa/Ang, elements=elem, refs=cisa,
-     .       style='x3', fmt='(f12.6)')
-        call cmlAddLattice(xf=mainXML, cell=ucell, 
-     .       units='siestaUnits:angstrom', dictref='siesta:ucell')
-        call cmlAddProperty(xf=mainXML, property=trim(shape), 
-     .       dictref='siesta:shape')
-        call cmlEndModule(xf=mainXML)
-      endif
-
-! early exit if only checking the structure
-
-      call fdf_global_get(struct_only,'Output-Structure-Only',.false.)
-      if (struct_only) then
-         if (IONode) call write_struct( ucell, na_u, isa, iza, xa )
-         call bye("End of structure processing")
-      endif
-      
-!!! ======================== End of Structure Generation section
 
 ! Madelung correction for charged systems .............................
       if (charnet .ne. 0.0_dp) then
@@ -499,12 +389,6 @@
 ! Initialise metadynamic forces if required
       call initmeta
 
-! Initialize atomic velocities to zero ................................
-      if (.not. foundxv) then
-        va(1:3,1:na_u) = 0.0_dp
-        vcell(1:3,1:3) = 0.0_dp
-      endif
-! ..................
 
 ! Begin of coordinate relaxation iteration ============================
 ! Notice that this loop is not indented

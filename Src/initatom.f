@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine initatom
+      subroutine initatom(ns)
 
 ! Routine to initialize the Pseudopotentials and Atomic Orbitals.
 ! Substantially modified by Alberto Garcia (2000)
@@ -51,6 +51,8 @@
       use electrostatic, only: elec_corr_setup
 
       implicit none
+
+      integer, intent(out) :: ns   ! Number of species
 
 C Internal variables ...................................................
       integer is
@@ -117,6 +119,8 @@ c Reading input for the pseudopotentials and atomic orbitals
       call dump_basis_ascii()
       call dump_basis_netcdf()
       call dump_basis_xml()
+
+      ns = nsp      ! Set number of species for main program
 
       end subroutine initatom
 

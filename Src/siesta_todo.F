@@ -96,7 +96,7 @@
       integer :: nnamax=1
       integer :: nauxpul=1
       integer :: nbk=1
-      integer :: ns=1
+      integer :: ns=1   ! AG** do not initialize
       integer :: nspin=1
       integer :: nxij=1
 
