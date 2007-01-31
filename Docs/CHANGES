@@ -9,6 +9,20 @@ for a given patch, see the "new patches" section of each log.
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-bsc--reference--2.1
 --------------------------------------------------------------------
+
+2007-01-31 10:19:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+Summary: Initialize vol2 correctly in m_check_supercell.f
+Keywords: 
+
+(This patch is needed so that tests run in a predictable manner:
+the uninitialized vol2 had an influence on code path and led to
+erratic differences in outputs).
+The base version (in siesta-devel--bsc--base--2.1, a branch of
+siesta-devel--reference--2.1--patch-29) has also been corrected.
+
+Modified-files: Src/m_check_supercell.f
+
 2007-01-31 10:15:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
 
 Summary: Consolidate geometry updates at the end of loop
