@@ -92,7 +92,8 @@ OBJS = automatic_cell.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o conjgr.o conjgr_old.o redata.o \
-        m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o molecularmechanics.o
+        m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
+        molecularmechanics.o filter.o filter_subs.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -258,7 +259,7 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o basis_types.o old_atmfuncs.o periodic_table.o precision.o
-atom.o: pseudopotential.o recipes.o sys.o xcmod.o basis_specs.o
+atom.o: pseudopotential.o recipes.o sys.o xcmod.o basis_specs.o filter.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o

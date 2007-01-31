@@ -2070,6 +2070,9 @@ C
            real(dp) r2, chc, r, pi, delt, Rcore, dy,
      .     yp1, ypn
   
+      logical   :: filterPCC
+      real(dp)  :: kmaxpcc,grid,filterFactor,minnorm
+      
            real(dp) eps
             parameter (eps=1.0d-6)  
           
@@ -2132,6 +2135,38 @@ C*TABLE WITH THE PSEUDO_CORE DATA
      .    'comcore: WARNING to at least ntbmax = ', 
      .            nint(Rcore/deltmax)+2 
             endif 
+
+      filterPCC = fdf_boolean("PCC.Filter",.false.)
+
+      if (filterPCC) then
+         
+         !Filter the real chcore
+         do ir=2,nrval
+            r=rofi(ir)
+            r2=4.0d0*pi*r*r
+            chcore(ir)=chcore(ir)/r2
+         enddo
+
+         minnorm = fdf_double("PCC.minnorm",0.999_dp)
+         kmaxpcc = fdf_double("PCC.FilterCutoff",-10.0_dp)
+         if (kmaxpcc .eq. -10.0)then
+            filterFactor = fdf_double("PCC.FilterFactor",1.0_dp)
+            grid = fdf_physical('MeshCutoff',100.0_dp,'Ry')
+            kmaxpcc = filterFactor*sqrt(grid)
+         endif
+         write(6,"(A,f8.3)")"Corecharge: Filtered PCC cutoff" //
+     $    " (Bohr^-1):",kmaxpcc
+         call filter(0,nrcore,rofi(1:nrcore), 
+     $        chcore(1:nrcore),kmaxpcc,0,minnorm)   
+         
+         !Store chcore*r2
+         do ir=2,nrval
+            r=rofi(ir)
+            r2=4.0d0*pi*r*r
+            chcore(ir)=chcore(ir)*r2
+         enddo
+
+      endif
    
             coretab(1,1,is)=delt
             do itb=2,ntbmax
@@ -3019,7 +3054,10 @@ C***Internal variables**
      .           r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .           epot, epot2, rh, dy, eorb, eps, 
      .           over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
-     $           exponent, dlt, d, dn, norm(nsemx), rcsan
+     $           exponent, dlt, d, dn, norm(nsemx), rcsan,
+     $     kmax,grid,filterFactor,minnorm
+      real(dp),allocatable,dimension(:) :: forb !filtered orbital
+      logical :: filterOrbitals
 
                parameter (dlt=0.60d0)
 
@@ -3415,6 +3453,51 @@ C Potential energy after compression
 
             norb=norb+(2*l+1)
             indx=indx+1
+!Filter
+                  filterOrbitals = fdf_boolean("PAO.Filter",.false.)
+
+                  kmax = fdf_double("PAO.FilterCutoff",-10.0_dp)
+                  if (kmax .eq. -10.0)then
+                     filterFactor = fdf_double("PAO.FilterFactor",
+     $                    0.7_dp)
+                     grid = fdf_physical('MeshCutoff',100.0_dp,'Ry')
+                     kmax = filterFactor*sqrt(grid)
+                  endif          
+
+                  if (filterOrbitals)then
+                     
+                     allocate(forb(1:nrc))
+                     
+                     do ir=1,nrc
+                        if(l .eq. 0) then
+                           forb(ir) = g(ir)
+                        else
+                           forb(ir) = g(ir)*rofi(ir)**(l)
+                        endif
+                     enddo
+
+          
+                     minnorm = fdf_double("PAO.minnorm",0.999_dp)
+                 write(6,"(A,A,f8.3)")"paogen: Filtered orbital cutoff",
+     $                    " (Bohr^-1):",kmax
+                     call filter(l,nrc,rofi(1:nrc),forb(1:nrc),kmax,2,
+     $                    minnorm)
+             
+
+c                    Store the filtered orbital in g
+                     g = 0.0_dp                   
+                     do ir=2,nrc
+                        if(l .eq. 0)then
+                           g(ir) = forb(ir) 
+                        else
+                           g(ir) = forb(ir)/rofi(ir)**l
+                        endif
+                     enddo
+                     g(1) = g(2)    
+                     deallocate(forb)
+                     
+                  endif !End of filtering
+
             call comBasis(is,a,b,rofi,g,l,
      .              rco(izeta,l,nsm),lambda(izeta,l,nsm),izeta,
      .              nsm,nrc,indx)
@@ -4511,8 +4594,10 @@ C***Internal variables****
 
          real(dp)
      .    rho(nrmax), chval, ve(nrmax), s(nrmax),eps, phi,
-     .    rcocc, dincv, rVna
-         
+     .    rcocc, dincv, rVna,kmax,tail,filterfactor,grid,minnorm
+       
+         logical filterVna
+  
          integer
      .    nrc,ir, l, ncocc
 
@@ -4600,6 +4685,28 @@ C****CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL
           ve(1)= ( ve(2)*rofi(3)**2 - ve(3)*rofi(2)**2 ) /
      .          (      rofi(3)**2 -      rofi(2)**2 )
          
+!Filter
+               !Filter the high-k components of Vna
+      filterVna = fdf_boolean("Vna.Filter",.false.)
+
+      if (filterVna)then
+         kmax = fdf_double("Vna.FilterCutoff",-10.0_dp)
+         minnorm = fdf_double("VNA.minnorm",0.999_dp)
+         if (kmax .eq. -10.0)then
+            filterFactor = fdf_double("Vna.FilterFactor",1.0_dp)
+            grid = fdf_physical('MeshCutoff',100.0_dp,'Ry')
+            kmax = filterFactor*sqrt(grid)
+         endif
+
+         write(6,"(A,f8.3)")"na: Filtered Vna cutoff (Bohr^-1):",
+     $        kmax       
+         
+         call filter(0,nVna,rofi,Ve,kmax,0,minnorm)      
+
+         tail = 0.0_dp
+         
+      endif
+      
 
 C**Construct the common block with the neutral-atom potential**** 
 C
@@ -4770,8 +4877,9 @@ C
      .           epot, epot2, eorb, eps,
      $           rcsan, exponent, vsoft(nrmax), vePAOsoft(nrmax)
 
-
- 
+      logical::filterorbitals
+      real(dp)::kmax,grid,filterFactor,minnorm
+      
              norb=0 
              indx=0
              
@@ -4930,6 +5038,56 @@ C    Potential and kinetic energy of the orbital
 
             norb=norb+(2*(l+1)+1)
             indx=indx+1
+
+!Filter
+                  !Filter the high-k components of the orbital
+                  filterOrbitals = fdf_boolean("PAO.Filter",.false.)
+                  filterOrbitals = .false.
+
+                  kmax = fdf_double("PAO.FilterCutoff",-10.0_dp)
+                  if (kmax .eq. -10.0)then
+                     filterFactor = fdf_double("PAO.FilterFactor",
+     $                    0.7_dp)
+                     grid = fdf_physical('MeshCutoff',100.0_dp,'Ry')
+                     kmax = filterFactor*sqrt(grid)
+                  endif          
+
+                  if (filterOrbitals)then
+
+                     do ir=1,nrc
+                        if(l .eq. 0) then
+                           g(ir) = g(ir)
+                        else
+                           g(ir) = g(ir)*rofi(ir)**(l)
+                        endif
+                     enddo
+
+                     minnorm = fdf_double("PAO.minnorm",0.999_dp)
+                    write(6,"(a,f8.3)")
+     $                 "paogen: Filtered orbital cutoff" //
+     $                    " (Bohr^-1):",kmax
+                     call filter(l,nrc,rofi(1:nrc),g(1:nrc),kmax,2,
+     $                    minnorm)
+                     
+!Store the filtered orbital in g
+                     g = 0.0_dp                   
+                     do ir=2,nrc
+                        if(l .eq. 0)then
+                           g(ir) = g(ir) 
+                        else
+                           g(ir) = g(ir)/rofi(ir)**l
+                        endif
+                     enddo
+                     g(1) = g(2)                   
+
+!tail = 0.0_dp
+!if(g(nrc) .ne. 0)then
+!   tail = -g(nrc)  
+!   g    = g + tail
+!endif
+          
+                  endif
+
             call comPOL(is,a,b,rofi,g,l,
      .             nsm,rcpol(ipol,l,nsm),ipol,nrc,indx)
 

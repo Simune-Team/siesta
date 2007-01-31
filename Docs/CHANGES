@@ -10,8 +10,44 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-01-31 16:18 GMT Alberto Garcia <albertog@icmab.es>      patch-35
+
+Summary: Merge filtering package by Eduardo Anglada
+
+Code that implements the ideas in
+
+Anglada E, Soler JM
+Filtering a distribution simultaneously in real and Fourier space
+PHYSICAL REVIEW B 73 (11): Art. No. 115122 MAR 2006
+
+has been merged.
+
+The filtering is selected by fdf directives of the form:
+
+PAO.Filter .true.
+VNA.filter .true.
+PCC.filter .true.
+
+and the default parameters are determined by heuristics based
+on the value of the MeshCutoff.
+
+(A manual entry is being written)
+
+New tests:
+
+Tests/pb_bulk
+Tests/pb_bulk_1000
+Tests/pb_filter_all
+Tests/pb_filter_basis
+Tests/pb_filter_nopcc
+Tests/pb_filter_pcc
+Tests/pb_filter_vna
+Tests/var_cell_filter
+ 
+New files: Src/filter.f90 Src/filter_subs.f
+
 2007-01-25 16:26 GMT Alberto Garcia <albertog@icmab.es>      patch-34
-    (Manual entry)
+   (Manual entry)
 
     Summary:
       k-point sampling update when kgrid_cutoff is specified
