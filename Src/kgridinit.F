@@ -130,7 +130,7 @@ C Find out if there is spiral arrangement of spins
 
           call minvec( cell, scmin, ctransf )
           if (debug)
-     $         print "(a,\,3(3f15.8,\))", "Rounded unit cell vectors: ",
+     $         print "(a,/,3(3f15.8,/))", "Rounded unit cell vectors: ",
      $         ((scmin(i,j)/Ang,i=1,3),j=1,3)
           nktot = 1
           do j = 1,3
@@ -149,7 +149,7 @@ C
           kscell = matmul(ctransf, factor)
 
           if (debug)
-     $         print "(a,\,3(3i4,\))", "Kscell from required cutoff: ",
+     $         print "(a,/,3(3i4,/))", "Kscell from required cutoff: ",
      $         ((kscell(i,j),j=1,3),i=1,3)
 
       endif
@@ -168,7 +168,7 @@ C
         if (debug) print *, i, vmod/Ang
       enddo
       if (debug)
-     $     print "(a,\,3(3f15.8,\))",  "K grid supercell vectors: ",
+     $     print "(a,/,3(3f15.8,/))",  "K grid supercell vectors: ",
      $         ((scell(i,j)/Ang,i=1,3),j=1,3)
 
 C Find actual cutoff
