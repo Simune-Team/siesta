@@ -6,6 +6,7 @@
 
       subroutine siesta_move( istep, relaxd )
       USE SIESTA_TODO
+      use m_born_charge, only: born_charge
 
       implicit none
 
@@ -118,9 +119,14 @@
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
 
+!     Call the born effective charge routine only in those steps (even) 
+!     in which the dx  is positive.
+      if (bornz .and. (mod(istep,2) .eq. 0)) then
+         call born_charge()
+      endif
+
 ! Save the last coordinates for which the density matrix has been calculated
-! or at every coor step if calculating the BECs (the polarisation uses xalast)
-      if ( (istep.eq.fincoor) .or. bornz ) then
+      if ( (istep.eq.fincoor)) then
         xalast(1:3,1:na_s)=xa(1:3,1:na_s)
       endif
 
@@ -302,52 +308,6 @@
         call write_md_record( istep )
       endif
 
-!******************Born charge calculation***************************
-      if (bornz) then
-        if (mod(istep,2) .eq. 0 ) then
-          if (nkpol.lt.1) then
-            if (IOnode) write(6,'(/,a,f12.6)')
-     .       'siesta: specify polarization grid for BC calculation'
-            if (IOnode) write(6,'(a,f12.6)')
-     .       'siesta: The Born charge matrix will not be calculated'
-            goto 80
-          endif
-          if (IOnode) write(6,'(/,a,f12.6)')
-     .      'siesta: Calculating polarization. '
-
-! Find total population of spin up and down
-          if (nspin .ge. 2) then
-            do ispin = 1,nspin
-              qspin(ispin) = 0.0_dp
-              do io = 1,no_l
-                do j = 1,numh(io)
-                  ind = listhptr(io) + j
-                  qspin(ispin) = qspin(ispin)
-     .              + Dscf(ind,ispin)*S(ind)
-                enddo
-              enddo
-            enddo
-#ifdef MPI
-! Global reduction of spin components
-            call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
-            qspin(1:nspin) = qtmp(1:nspin)
-#endif
-          endif
-          if (nkpol.gt.0) then
-            call KSV_pol(na_u, na_s, xalast, rmaxo, scell, ucell,
-     .                   no_u, no_l, no_s, nspin, qspin, maxna,
-     .                   maxnh, nkpol, numh, listhptr, listh,
-     .                   H, S, H0, xijo, indxuo, isa, iphorb,
-     .                   iaorb, lasto, jna, xij, r2ij,shape,
-     .                   nkpol,kpol,wgthpol, polR, polxyz)
-          endif
-          if (nkpol.gt.0.and.IOnode) then
-            call obc( polxyz, polR, ucell, dx, nspin, node )
-          endif
-        endif
-      endif
-   80 continue
-!*************End born charge calculation******************
 
    60 continue
 ! Output memory use at the end of this geometry step

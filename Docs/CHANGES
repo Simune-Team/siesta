@@ -10,6 +10,20 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-bsc--reference--2.1
 --------------------------------------------------------------------
 
+2007-02-07 7:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-7
+
+Summary: Moved the Born-effective-charge code
+Keywords: 
+
+Created a new module in born_charge.F.
+
+The code is now executed by a call to born_charge() right after the
+end of the force calculation at the end of the geometry loop. There is
+no need to save xalast for this, as the coordinates have not yet been
+moved. (Note that KSV_pol is called with xa instead of xalast).
+
+Created new test 'born' and updated compare.sh
+
 2007-02-07 7:21 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
 
 Summary: Work by Manuel Quero before the meeting on Feb 7th

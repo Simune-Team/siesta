@@ -52,7 +52,8 @@ SYSOBJ=$(SYS).o pxf.o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS = automatic_cell.o \
-        arw.o  atomlwf.o bands.o bessph.o bonds.o cgwf.o chkdim.o chkgmx.o \
+        arw.o  atomlwf.o bands.o bessph.o bonds.o \
+        born_charge.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
@@ -77,7 +78,7 @@ OBJS = automatic_cell.o \
         ofc.o poison.o readsp.o radfft.o \
 	write_md_record.o kpoint_grid.o proximity_check.o\
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
-	scfconvergence_test.o post_scf_work.o \
+	scfconvergence_test.o post_scf_work.o\
 	siesta_todo.o siesta_init.o struct_init.o \
         siesta_analysis.o siesta_end.o siesta.o io.o \
         spin_init.o coor.o atm_transfer.o \
@@ -460,7 +461,8 @@ siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: siesta_todo.o
 siesta_init.o: kpoint_grid.o siesta_todo.o
-siesta_move.o: siesta_todo.o
+siesta_move.o: siesta_todo.o born_charge.o
+born_charge.o: siesta_todo.o
 siesta_todo.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o
 siesta_todo.o: densematrix.o dynamics.o files.o hsparse.o iopipes.o ioxv.o
 siesta_todo.o: kpoint_grid.o m_broyden_mixing.o m_cell.o m_check_supercell.o
