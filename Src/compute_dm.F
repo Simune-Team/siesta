@@ -1,3 +1,9 @@
+      MODULE m_compute_dm
+      private
+      public :: compute_dm
+
+      CONTAINS
+
       subroutine compute_dm( iscf )
       USE SIESTA_TODO
       implicit none
@@ -71,3 +77,4 @@
           endif
 !--------------------------------------------------------------------------- END
       END subroutine compute_dm
+      END MODULE m_compute_dm

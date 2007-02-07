@@ -1,5 +1,13 @@
+      module m_setup_hamiltonian
+      private
+      public :: setup_hamiltonian
+
+      CONTAINS
+
       subroutine setup_hamiltonian( first, last, iscf )
       USE SIESTA_TODO
+      USE m_normalize_dm, only: normalize_dm
+
       implicit none
       logical :: first, last
       integer :: iscf
@@ -21,28 +29,7 @@
             endif
 
             ! Normalize density matrix to exact charge
-            qsol = 0.0_dp
-            do ispin = 1,min(nspin,2)
-              do io = 1,nh
-                qsol = qsol + Dscf(io,ispin) * s(io)
-              enddo
-            enddo
-#ifdef MPI
-            call globalize_sum(qsol,buffer1)
-            qsol = buffer1
-#endif
-        if (IOnode) then
-          if (.not.first .and.
-     .       abs(qsol/qtot-1._dp).gt.1.d-2) write(6,'(a,2f15.6)')
-     .      'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
-        endif
-        do ispin = 1,nspin
-          do io = 1,nh
-            Dscf(io,ispin) = Dscf(io,ispin) * qtot/qsol
-            Escf(io,ispin) = Escf(io,ispin) * qtot/qsol
-          enddo
-        enddo
-! ..................
+            call normalize_dm(first)
 
 ! Initialize Hamiltonian ........................................
         H = 0.0_dp
@@ -242,3 +229,4 @@
         endif
 !--------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
+      END module m_setup_hamiltonian

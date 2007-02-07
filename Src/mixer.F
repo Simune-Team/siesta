@@ -1,3 +1,9 @@
+      MODULE m_mixer
+      private
+      public :: mixer
+
+      CONTAINS
+
       subroutine mixer( iscf )
       USE SIESTA_TODO
       implicit none
@@ -69,3 +75,7 @@
           endif
 !--------------------------------------------------------------------------- END
       END subroutine mixer
+
+      End MODULE m_mixer
+
+

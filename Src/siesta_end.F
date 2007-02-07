@@ -1,3 +1,9 @@
+      MODULE m_siesta_end
+      private
+      public :: siesta_end
+
+      CONTAINS
+
       subroutine siesta_end()
       USE SIESTA_TODO
       implicit none
@@ -41,3 +47,4 @@
       endif      
 !--------------------------------------------------------------------------- END
       END subroutine siesta_end
+      END MODULE m_siesta_end

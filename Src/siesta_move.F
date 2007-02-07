@@ -1,19 +1,26 @@
+      MODULE m_siesta_move
+      private
+      public :: siesta_move
+
+      CONTAINS
+
       subroutine siesta_move( istep, relaxd )
       USE SIESTA_TODO
+
       implicit none
 
-      integer :: istep
-      logical :: relaxd
+      integer  :: istep
+      logical  :: relaxd
 
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
+     .  kinefsm, mulliken, naefs, neighb, !kgrid, kgridinit, 
      .  pulayx, 
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
+     .  ioeig, iofa, iokp, iomd, prversion !, eggbox
 
 
 !------------------------------------------------------------------------- BEGIN
@@ -86,7 +93,7 @@
 ! Calculate and output Zmatrix forces
       if (lUseZmatrix) then
         call CartesianForce_to_ZmatForce(na_u,xa,fa)
-        if (IOnode) call iofaZmat
+        if (IOnode) call iofaZmat()
       endif
 
 ! Add kinetic term to stress tensor ..................................
@@ -200,7 +207,7 @@
 
       case (6)
 
-        ! Save current atomic positions and velocities 
+        ! Save last atomic positions and velocities 
         call ioxv( 'write', ucell, vcell, na_u, isa, iza,  
      &             xa, va, foundxv)
         if (lUseZmatrix) then
@@ -210,8 +217,6 @@
 
         ! Save atomic positions and velocities accumulatively and
         ! accumulate coor in Xmol file for animation 
-        ! (for this case, any MD file will contain the right series
-        !  of snapshots, unlike in the original version)
         call write_md_record( istep )
 
         ! Undo the last atom displacement
@@ -222,7 +227,7 @@
           xa(ixdispl,iadispl) = xa(ixdispl,iadispl) - dx
         endif
 
-        ! Next atomic displacement 
+        ! Displace atom by dx
         if (istep .lt. fincoor) then
           iadispl = ((istep+1)-mod(istep,6))/6+ia1
           ix = mod(istep,6)+1
@@ -232,7 +237,7 @@
         endif
 
       case (7)
-          ! Save current atomic positions and velocities 
+          ! Save last atomic positions and velocities 
           call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &                foundxv)
           if (lUseZmatrix) then
@@ -240,10 +245,8 @@
           endif
           call siesta_write_positions()
 
-        ! Save atomic positions and velocities accumulatively and
-        ! accumulate coor in Xmol file for animation 
-        ! (for this case, any MD file will contain the right series
-        !  of snapshots, unlike in the original version)
+          ! Save atomic positions and velocities accumulatively and
+          ! accumulate coor in Xmol file for animation 
           call write_md_record( istep )
 
           ! Restore original coordinates after FC displacements
@@ -259,7 +262,7 @@
       case (8)
           call forcesToPipe( na_u, Etot, cfa, cstress )
 
-          ! Save current atomic positions and velocities 
+          ! Save last atomic positions and velocities 
           call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
           if (lUseZmatrix) then
@@ -285,10 +288,7 @@
         endif
       endif
 
-      ! Save atomic positions and velocities for MD cases
-      ! It really should be done before moving the atoms...
-      ! As it is, ucell and xa contain NEXT STEP's values,
-      ! whereas vcell and va are the CURRENT velocities
+      ! Save last atomic positions and velocities 
       if (idyn.ne.6 .and. idyn.ne.7 .and. idyn.ne.8) then
         call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
@@ -296,10 +296,9 @@
      .    call iozm('write',ucell,vcell,xa,foundzm)
         call siesta_write_positions()
 
+
         ! Save atomic positions and velocities accumulatively and
         ! accumulate coor in Xmol file for animation 
-        ! (Again, the geometry and its time derivatives are out
-        !  of step)
         call write_md_record( istep )
       endif
 
@@ -361,3 +360,5 @@
 
 !--------------------------------------------------------------------------- END
       END subroutine siesta_move
+
+      END MODULE m_siesta_move

@@ -10,6 +10,26 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-bsc--reference--2.1
 --------------------------------------------------------------------
 
+2007-02-07 7:21 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
+
+Summary: Work by Manuel Quero before the meeting on Feb 7th
+
+New routines:
+
+* new_dm          (code formerly in state_init)
+* normalize_dm    (code formerly in setup_hamiltonian)
+* local_DOS
+* projected_DOS   (code formerly in siesta_analysis)
+
+All the new routines split off from siesta.F have been placed in modules.
+
+(kgrid and kgridinit are still not in the kgrid module, as they are used
+in the KSV and optical sections -- more analysis is needed)
+
+(Jose Soler's new version of the siesta_todo module is still not used)
+
+(Code edited by Alberto Garcia from a package sent by Manuel Quero)
+
 2007-01-31 10:21:37 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
 
 Summary: Kgrid setup streamlined. Bands. Proximity check. Hsparse allocation 

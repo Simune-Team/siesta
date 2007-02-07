@@ -1,5 +1,13 @@
+      MODULE m_post_scf_work
+      private
+      public :: post_scf_work
+
+      CONTAINS
+
       subroutine post_scf_work( first, last, iscf )
       USE SIESTA_TODO
+      USE m_setup_hamiltonian, only: setup_hamiltonian
+
       implicit none
 
       logical :: first, last
@@ -45,3 +53,5 @@
           if (cml_p) call cmlEndStep(mainXML)
 !--------------------------------------------------------------------------- END
       END subroutine post_scf_work
+
+      END MODULE m_post_scf_work

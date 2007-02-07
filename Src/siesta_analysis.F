@@ -1,6 +1,15 @@
+      module m_siesta_analysis
+      private
+      public :: siesta_analysis
+
+      CONTAINS
+
       subroutine siesta_analysis( first, relaxd, iscf )
       USE SIESTA_TODO
       USE band
+      USE m_projected_DOS, only: projected_DOS
+      USE m_local_DOS, only: local_DOS
+
       implicit none
       logical :: first, relaxd
       integer :: iscf
@@ -129,47 +138,7 @@
      .     call ioeig(eo,ef,neigwanted,nspin,nkpnt,no_u,nspin,maxk,
      .                kpoint, kweight)
 
-! Compute the projected density of states
-      if (IOnode) then
-        do_pdos = fdf_block('ProjectedDensityOfStates',iu)
-        if (isolve.ne.0.and.do_pdos) then
-          write(6,*)
-     .         'siesta: ERROR: PDOS implemented only with diagon'
-          do_pdos = .false.
-        endif
-      endif
-      call broadcast(do_pdos)
-
-      if (do_pdos) then
-! Find the desired energy range
-        if (IOnode) then
-          read(iu,'(a)') line
-          p=>digest(line)
-          if (nvalues(p).lt.3 .or. nnames(p).ne.1)
-     $          call die("Wrong format in PDOS block")
-          factor = fdf_convfac( names(p,1), 'Ry' )
-          e1 = values(p,1) * factor
-          e2 = values(p,2) * factor
-          sigma = values(p,3) * factor
-          nhist = integers(p,1)
-          write(6,'(a)') 'siesta: PDOS info: '
-          write(6,'(a,3(f8.2,a),2x,i5)')
-     $           'siesta: e1, e2, sigma, nhist: ',
-     $           e1/eV,' eV',e2/eV,' eV',sigma/eV,' eV', nhist
-        endif
-
-        call broadcast(e1)
-        call broadcast(e2)
-        call broadcast(sigma)
-        call broadcast(nhist)
-
-        call pdos( no_s, nspin, nspin, no_l, maxnh,
-     .             no_u, numh, listhptr, listh, H, S,
-     .             e1, e2, sigma, nhist,
-     .             gamma, xijo, indxuo, nkpnt, kpoint, kweight, eo,
-     .             no_u)
-
-      endif                     ! PDOS calc (do_pdos)
+      call projected_DOS()
 
 ! Print program's energy decomposition and final forces
       if (IOnode) then
@@ -193,8 +162,8 @@
 
 #ifdef MPI
 ! Global reduction of spin components
-      call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
-      qspin(1:nspin) = qtmp(1:nspin)
+        call globalize_sum(qspin(1:nspin),qtmp(1:nspin))
+        qspin(1:nspin) = qtmp(1:nspin)
 #endif
         if (nspin .eq. 2) then
           if (IOnode) then
@@ -297,52 +266,7 @@
       endif
 
 ! Find local density of states
-      if (IOnode) then
-        genlogic = fdf_block('LocalDensityOfStates',iu)
-      endif
-      call broadcast(genlogic)
-
-      if ( genlogic ) then
-
-! Find the desired energy range
-        if (IOnode) then
-          read(iu,'(a)') line
-          p=>digest(line)
-          if (.not. match(p,"vvn"))
-     .       call die("Wrong format in LocalDensityofStates")
-          factor = fdf_convfac( names(p,1), 'Ry' )
-          e1 = values(p,1)*factor
-          e2 = values(p,2)*factor
-          call destroy(p)
-        endif
-        call broadcast(e1)
-        call broadcast(e2)
-
-!       Find the density matrix for states between e1 and e2
-        if (isolve .eq. 0) then
-          call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
-     .                numh, listhptr, listh, numh, listhptr, listh, 
-     .                H, S, qtot, fixspin, qs, temp, e1, e2,
-     .                gamma, xijo, indxuo, nkpnt, kpoint, kweight,
-     .                eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
-     .                occtol, iscf, neigwanted)
-
-!       Find the LDOS in the real space mesh
-          filrho = paste( slabel, '.LDOS' )
-          g2max = g2cut
-          call dhscf( nspin, no_s, iaorb, iphorb, no_l,
-     .              no_u, na_u, na_s, isa, xa, indxua, 
-     .              ucell, mscell, g2max, ntm,
-     .              0, 0, 0, filrho, ' ', ' ', ' ', ' ', ' ',
-     .              maxnh, numh, listhptr, listh, Dscf, Datm,
-     .              maxnh, numh, listhptr, listh, H,
-     .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dipol, fa, stress, fal, stressl )
-        else
-          if (IOnode)  write(6,*)
-     .       'siesta: ERROR: LDOS implemented only with diagon'
-        endif
-
-      endif ! genlogic
+      call local_DOS()
 !--------------------------------------------------------------------------- END
       END subroutine siesta_analysis
+      END module m_siesta_analysis

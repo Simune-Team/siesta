@@ -1,13 +1,20 @@
+      MODULE m_siesta_init
+      private
+      public :: siesta_init
+
+      CONTAINS
+
       subroutine siesta_init()
       USE SIESTA_TODO
-      USE Kpoint_grid
+      USE Kpoint_grid, only: setup_Kpoint_grid
       implicit none
+
 
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
+     .  kinefsm, mulliken, naefs, neighb, !kgrid, kgridinit,
      .  pulayx, 
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
@@ -398,3 +405,5 @@
 !--------------------------------------------------------------------------- END
 
       END subroutine siesta_init
+
+      End MODULE m_siesta_init
