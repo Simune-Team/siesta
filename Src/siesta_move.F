@@ -7,7 +7,7 @@
       subroutine siesta_move( istep, relaxd )
       USE SIESTA_TODO
       use m_born_charge, only: born_charge
-
+      USE siesta_options
       implicit none
 
       integer  :: istep
@@ -125,13 +125,13 @@
          call born_charge()
       endif
 
-      ! Save the coordinates for which the density matrix 
+      ! Save the last coordinates for which the density matrix 
       ! has been calculated
-!!!!!!!!!      if (istep.eq.fincoor) then
+      if (istep.eq.fincoor) then
         xalast(1:3,1:na_s)  = xa(1:3,1:na_s)
         ucell_last(1:3,1:3) = ucell(1:3,1:3)
         scell_last(1:3,1:3) = scell(1:3,1:3)
-!!!!!!!!!      endif
+      endif
 
       Ekinion  = 0.0_dp
       vn       = 0.0_dp

@@ -1,5 +1,6 @@
       subroutine struct_init()
       USE SIESTA_TODO
+      USE siesta_options
       implicit none
 
       external :: automatic_cell,

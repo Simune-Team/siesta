@@ -1,48 +1,71 @@
-! 
-! This file is part of the SIESTA package.
-!
-! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
-! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
-! and J.M.Soler, 1996-2006.
-! 
-! Use of this software constitutes agreement with the full conditions
-! given in the SIESTA license, as signed by all legitimate users.
-!
-      module m_redata
-
-      use precision, only : dp
-      use parallel,  only : IOnode, Nodes
-      use fdf
-      use files,     only : slabel
-      use sys
-      use m_fdf_global, only: fdf_global_get
-      use m_mpi_utils, only: broadcast
-      use units,     only : eV
-      use diagmemory, only: memoryfactor
-
-      use siesta_cml
-
+      MODULE siesta_options
+      USE precision
+      USE units
+      USE parallel, only: ParallelOverK
       implicit none
+      PUBLIC
 
-      public :: redata
-      private
+      logical :: chebef, default, dumpcharge, fixauxcell, fixspin, 
+     &           inspn, initdmaux,          
+     & naiveauxcell, mix, negl, noeta, outlng, pulfile,                  
+     & savehs, savevh, savevt, savdrh, savrho, savepsch, savetoch,       
+     & usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv,        
+     & usesavezm, writeig,writbk, writmd, writpx, writb, writec, 
+     & writef, 
+     & writek, writic, varcel, do_pdos, writedm, atmonly, harrisfun,     
+     & muldeb, require_energy_convergence, broyden_optim, struct_only,   
+     & use_struct_file, bornz
+
+
+      integer  :: ia1, ia2, ianneal, idyn, ifinal, ioptlwf,       
+     &             iquench, isolve, istart, maxsav, broyden_maxit, 
+     &             mullipop, ncgmax, nkick, nmove, nscf, pmax
+
+      real(dp)  :: beta, bulkm, charnet, dEtol, rijmin,                           
+     &             dDtol, dt, dx, dxmax, eta(2), etol, ftol, g2cut,       
+     &             mn, mpr, occtol, rcoor, rcoorcp, strtol,               
+     &             taurelax, temp, tempinit, tp, ts, tt, wmix, wmixkick
+
+
+
+      ! na_diag      : maximum number of atoms with diagon as default method
+      ! g2max_default : Mesh cutoff default, in Ry
+      ! temp_default  : Electronic temperature default, in Ry
+
+      integer, parameter  :: na_diag = 100
+      real(dp), parameter :: g2cut_default = 100.e0_dp
+      real(dp), parameter :: temp_default  = 1.900e-3_dp 
+
+      integer, parameter :: maxsav_default = 0
+      integer, parameter :: nscf_default = 50
+      integer, parameter :: ncgmax_default = 1000
+
+      real(dp), parameter :: wmix_default = 0.25_dp
+      real(dp), parameter :: wmixkick_default = 0.5_dp
+      real(dp), parameter :: dDtol_default = 1.0e-4_dp
+      real(dp), parameter :: dEtol_default = 1.0e-4_dp * eV
+      real(dp), parameter :: occtol_default = 1.0e-12_dp
+      real(dp), parameter :: etol_default = 1.0e-8_dp
+      real(dp), parameter :: rcoor_default = 9.5_dp
+      real(dp), parameter :: rcoorcp_default = 9.5_dp
+      real(dp), parameter :: tcp_default = 0.05_dp
+      integer, parameter  :: pmax_default = 100
+
+      real(dp), parameter :: dxmax_default = 0.2_dp ! Bohr
+      real(dp), parameter :: ftol_default =  0.00155574_dp ! Ry/Bohr 
+                                                           ! 0.04 eV/Ang
+      real(dp), parameter :: strtol_default = 6.79773e-5_dp ! 1 GPa
+      real(dp), parameter :: dt_default = 1.0_dp ! 1 fs
+      real(dp), parameter :: mn_default = 1.0e2_dp ! Nose mass in Ry*fs**2
+      real(dp), parameter :: mpr_default = 1.0e2_dp ! PR mass in Ry*fs**2
+      real(dp), parameter :: taurelax_default = 1.0e2_dp ! fs
+      real(dp), parameter :: bulkm_default = 100*6.79773e-5_dp ! 100 GPa
+      real(dp), parameter :: dx_default = 0.04_dp ! Bohr
+
 
       CONTAINS
 
-      subroutine redata(na, ns, nspin, outlng, g2max,
-     .  charnet, negl, nscf, dDtol, dEtol, mix, wmix,
-     .  isolve, 
-     .  temp, fixspin, ts, ncgmax, ftol, strtol, eta, 
-     .  etol, rcoor, 
-     .  ioptlwf, chebef, noeta, rcoorcp, beta, pmax,
-     .  idyn, istart, ifinal, nmove, ianneal, iquench,
-     .  dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
-     .  bulkm, taurelax, 
-     .  usesavelwf, usesavedm, usesavecg,
-     .  mullipop, inspn, maxsav, nkick, wmixkick, 
-     .  pulfile, tempinit, dumpcharge, varcel, 
-     .  harrisfun, occtol, broyden_maxit, require_energy_convergence,
-     .  broyden_optim)
+      subroutine read_options(na, ns, nspin )
 C *********************************************************************
 C Subroutine to read the data for the SIESTA program
 C
@@ -60,7 +83,7 @@ C integer nspin            : Spin polarization
 C **************************** OUTPUT *********************************
 C real*8 charnet           : Net charge (in units of |e|)
 C logical outlng           : Long (true) or short (false) output
-C real*8 g2max             : PW cutoff energy (Ry)
+C real*8 g2cut             : PW cutoff energy (Ry)
 C logical negl             : True = Neglect interactions between
 C                            non-overlaping orbitals (coming from
 C                            KB projectors)
@@ -153,61 +176,21 @@ C logical require_energy_convergence  : Impose E. conv. criterion?
 C logical broyden_optim    : Broyden for forces instead of CG
 C **********************************************************************
 
+      use precision, only : dp
+      use parallel,  only : IOnode, Nodes
+      use fdf
+      use files,     only : slabel
+      use sys
+      use m_fdf_global, only: fdf_global_get
+      use m_mpi_utils, only: broadcast
+      use units,     only : eV
+      use diagmemory, only: memoryfactor
 
+      use siesta_cml
+
+      implicit none
 ! Subroutine arguments:
       integer, intent(in)  :: na, ns, nspin
-
-      integer, intent(out) :: 
-     .  ia1, ia2, ianneal, idyn, ifinal, ioptlwf,
-     .  iquench, isolve, istart, maxsav, broyden_maxit,
-     .  mullipop, ncgmax, nkick, nmove, nscf, pmax
-
-      real(dp), intent(out) ::
-     .  beta, bulkm, charnet, dEtol,
-     .  dDtol, dt, dx, dxmax, eta(2), etol, ftol, g2max,
-     .  mn, mpr, occtol, rcoor, rcoorcp, strtol,
-     .  taurelax, temp, tempinit, tp, ts, tt, wmix, wmixkick
-      logical, intent(out) ::
-     .  chebef, dumpcharge, fixspin, inspn, mix, negl, noeta, 
-     .  outlng, pulfile, usesavecg, usesavelwf, usesavedm, varcel,
-     .  harrisfun, require_energy_convergence, broyden_optim
-
-C na_diag      : maximum number of atoms with diagon as default method
-C g2max_default : Mesh cutoff default, in Ry
-C temp_default  : Electronic temperature default, in Ry
-
-      integer, parameter  :: na_diag = 100
-      real(dp), parameter :: g2max_default = 100.e0_dp
-      real(dp), parameter :: temp_default  = 1.900e-3_dp 
-!
-! Other defaults
-!
-      integer, parameter :: maxsav_default = 0
-      integer, parameter :: nscf_default = 50
-      integer, parameter :: ncgmax_default = 1000
-
-      real(dp), parameter :: wmix_default = 0.25_dp
-      real(dp), parameter :: wmixkick_default = 0.5_dp
-      real(dp), parameter :: dDtol_default = 1.0e-4_dp
-      real(dp), parameter :: dEtol_default = 1.0e-4_dp * eV
-      real(dp), parameter :: occtol_default = 1.0e-12_dp
-      real(dp), parameter :: etol_default = 1.0e-8_dp
-      real(dp), parameter :: rcoor_default = 9.5_dp
-      real(dp), parameter :: rcoorcp_default = 9.5_dp
-      real(dp), parameter :: tcp_default = 0.05_dp
-      integer, parameter  :: pmax_default = 100
-
-      real(dp), parameter :: dxmax_default = 0.2_dp ! Bohr
-      real(dp), parameter :: ftol_default =  0.00155574_dp ! Ry/Bohr 
-                                                           ! 0.04 eV/Ang
-      real(dp), parameter :: strtol_default = 6.79773e-5_dp ! 1 GPa
-      real(dp), parameter :: dt_default = 1.0_dp ! 1 fs
-      real(dp), parameter :: mn_default = 1.0e2_dp ! Nose mass in Ry*fs**2
-      real(dp), parameter :: mpr_default = 1.0e2_dp ! PR mass in Ry*fs**2
-      real(dp), parameter :: taurelax_default = 1.0e2_dp ! fs
-      real(dp), parameter :: bulkm_default = 100*6.79773e-5_dp ! 100 GPa
-      real(dp), parameter :: dx_default = 0.04_dp ! Bohr
-
 
 C  Internal variables .................................................
       real(dp) :: tcp
@@ -306,11 +289,11 @@ C Perform Mulliken Population Analysis
 C ...
 
 C Planewave cutoff of the real space mesh ...
-      call fdf_global_get(g2max,'MeshCutoff',g2max_default,'Ry')
+      call fdf_global_get(g2cut,'MeshCutoff',g2cut_default,'Ry')
       if (ionode)   write(6,'(a,f10.4,a)') 
-     .   'redata: Mesh Cutoff                      = ',g2max,'  Ry'
+     .   'redata: Mesh Cutoff                      = ',g2cut,'  Ry'
       if (cml_p) call cmlAddParameter(xf=mainXML, name='MeshCutOff',
-     .     value=g2max, dictRef='siesta:g2max', units='siestaUnits:Ry')
+     .     value=g2cut, dictRef='siesta:g2max', units='siestaUnits:Ry')
 C ...
 
 C Net charge in the cell ...
@@ -1174,9 +1157,34 @@ C Iteration are computed.
           call deprecated("Optim.Broyden.Initial.Inverse.Jacobian")
 
 
-      end subroutine redata
-!--------------------------------
+      ! Find some switches 
+      call fdf_global_get(writek,'WriteKpoints'    , outlng )
+      call fdf_global_get(writef,'WriteForces'     , outlng )
+      call fdf_global_get(writedm,'WriteDM'     , .true.)
+      call fdf_global_get(writb, 'WriteBands'      , outlng )
+      call fdf_global_get(writbk, 'WriteKbands'     , outlng )
+      call fdf_global_get(writeig,'WriteEigenvalues', outlng )
+      call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
+      call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)
+      call fdf_global_get(writpx, 'WriteMDXmol'     , .not. writec)
+      call fdf_global_get(default, 'UseSaveData'     , .false.)
+      call fdf_global_get(savehs, 'SaveHS'          , .false.)
+      call fdf_global_get(fixauxcell, 'FixAuxiliaryCell', .false.)
+      call fdf_global_get(naiveauxcell, 'NaiveAuxiliaryCell', .false.)
+      call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .false.)
+      call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
+      call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance',
+     .                            1.0_dp, 'Bohr' )
+      call fdf_global_get(bornz,  'BornCharge'   , .false.)
+      if (idyn.ne.6) bornz = .false.
+
+      call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
+      end subroutine read_options
+
       subroutine deprecated(str)
+      use fdf
+      use parallel,  only : IOnode
+      implicit none
       character(len=*), intent(in) :: str
 
       if (.not. ionode) RETURN
@@ -1188,4 +1196,4 @@ C Iteration are computed.
 
       end subroutine deprecated
 
-      end module m_redata
+      END MODULE siesta_options

@@ -1,6 +1,7 @@
       subroutine proximity_check( )
       USE precision, only:dp
       USE SIESTA_TODO
+      USE siesta_options
       implicit none
 
       integer :: ii, jj, jamin, idxneighJ, nneigbI

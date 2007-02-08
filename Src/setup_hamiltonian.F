@@ -7,7 +7,7 @@
       subroutine setup_hamiltonian( first, last, iscf )
       USE SIESTA_TODO
       USE m_normalize_dm, only: normalize_dm
-
+      USE siesta_options
       implicit none
       logical :: first, last
       integer :: iscf

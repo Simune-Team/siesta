@@ -7,6 +7,7 @@
       subroutine siesta_init()
       USE SIESTA_TODO
       USE Kpoint_grid, only: setup_Kpoint_grid
+      USE siesta_options
       implicit none
 
 
@@ -155,41 +156,8 @@
       call memory('A','D',3*nspin,'siesta')
 
 ! Read simulation data ................................................
-      call redata(na_u, ns, nspin, outlng, g2cut, charnet, negl, nscf, 
-     .            dDtol, dEtol, mix, wmix, isolve, temp, fixspin, ts, 
-     .            ncgmax, ftol, strtol, eta, etol, rcoor, 
-     .            ioptlwf, chebef, noeta, rcoorcp, beta, pmax,
-     .            idyn, istart, ifinal, nmove, ianneal, iquench,
-     .            dt, ia1, ia2, dx, dxmax, tt, tp, mn, mpr, 
-     .            bulkm, taurelax,
-     .            usesavelwf, usesavedm, usesavecg,
-     .            mullipop, inspn, maxsav, nkick, wmixkick, 
-     .            pulfile, tempinit, dumpcharge, varcel, harrisfun,
-     .            occtol,broyden_maxit,require_energy_convergence,
-     $            broyden_optim)
+      call read_options(na_u, ns, nspin )
 
-! Find some switches ..................................................
-      call fdf_global_get(writek,'WriteKpoints'    , outlng )
-      call fdf_global_get(writef,'WriteForces'     , outlng )
-      call fdf_global_get(writedm,'WriteDM'     , .true.)
-      call fdf_global_get(writb, 'WriteBands'      , outlng )
-      call fdf_global_get(writbk, 'WriteKbands'     , outlng )
-      call fdf_global_get(writeig,'WriteEigenvalues', outlng )
-      call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
-      call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)
-      call fdf_global_get(writpx, 'WriteMDXmol'     , .not. writec)
-      call fdf_global_get(default, 'UseSaveData'     , .false.)
-      call fdf_global_get(savehs, 'SaveHS'          , .false.)
-      call fdf_global_get(fixauxcell, 'FixAuxiliaryCell', .false.)
-      call fdf_global_get(naiveauxcell, 'NaiveAuxiliaryCell', .false.)
-      call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .false.)
-      call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
-      call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance',
-     .                            1.0_dp, 'Bohr' )
-      call fdf_global_get(bornz,  'BornCharge'   , .false.)
-      if (idyn.ne.6) bornz = .false.
-
-      call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata

@@ -1,5 +1,6 @@
       subroutine scfconvergence_test( first, iscf, last )
       USE SIESTA_TODO
+      USE siesta_options
       implicit none
 
       logical :: first

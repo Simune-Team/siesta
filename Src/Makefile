@@ -79,7 +79,7 @@ OBJS = automatic_cell.o \
 	write_md_record.o kpoint_grid.o proximity_check.o\
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
 	scfconvergence_test.o post_scf_work.o\
-	siesta_todo.o siesta_init.o struct_init.o \
+	siesta_todo.o siesta_init.o struct_init.o siesta_options.o \
         siesta_analysis.o siesta_end.o siesta.o io.o \
         spin_init.o coor.o atm_transfer.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
@@ -90,13 +90,13 @@ OBJS = automatic_cell.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o xcmod.o atom.o atmparams.o \
         m_mpi_utils.o m_fdf_global.o m_history.o m_iorho.o  \
         atmfuncs.o listsc.o memoryinfo.o m_memory.o numbvect.o sorting.o \
-        atomlist.o atm_types.o old_atmfuncs.o radial.o m_smearing.o \
+        atomlist.o atm_types.o old_atmfuncs.o radial.o \
         alloc.o phonon.o spher_harm.o periodic_table.o version.o timestamp.o \
         basis_types.o xml.o pseudopotential.o basis_specs.o basis_io.o\
         onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
-        nlefsm.o overfsm.o conjgr.o conjgr_old.o redata.o \
+        nlefsm.o overfsm.o conjgr.o conjgr_old.o \
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o molecularmechanics.o
 #--------------------------------------------------------------
 #
@@ -246,6 +246,8 @@ pristine:  clean
 
 
 # DO NOT DELETE THIS LINE - used by make depend
+siesta_options.o: files.o m_fdf_global.o m_mpi_utils.o memoryinfo.o parallel.o
+siesta_options.o: precision.o siesta_cml.o sys.o units.o
 alloc.o: parallel.o precision.o sys.o
 arw.o: parallel.o sys.o
 atm_transfer.o: atm_types.o atmparams.o old_atmfuncs.o periodic_table.o
@@ -373,7 +375,6 @@ m_iostruct.o: sys.o units.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
-m_smearing.o: precision.o
 m_wallclock.o: m_walltime.o
 madelung.o: parallel.o precision.o sys.o
 matel.o: alloc.o atmfuncs.o precision.o radfft.o recipes.o spher_harm.o
@@ -435,8 +436,6 @@ ranger.o: precision.o sys.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
 readsp.o: parallel.o precision.o sys.o
 recipes.o: sys.o
-redata.o: files.o m_fdf_global.o m_mpi_utils.o memoryinfo.o parallel.o
-redata.o: precision.o siesta_cml.o sys.o units.o
 redcel.o: precision.o sys.o
 reinit.o: files.o parallel.o precision.o
 reoptical.o: parallel.o parsing.o precision.o sys.o
@@ -466,10 +465,10 @@ born_charge.o: siesta_todo.o
 siesta_todo.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o
 siesta_todo.o: densematrix.o dynamics.o files.o hsparse.o iopipes.o ioxv.o
 siesta_todo.o: kpoint_grid.o m_broyden_mixing.o m_cell.o m_check_supercell.o
-siesta_todo.o: m_fdf_global.o m_iostruct.o m_mpi_utils.o m_smearing.o
+siesta_todo.o: m_fdf_global.o m_iostruct.o m_mpi_utils.o 
 siesta_todo.o: m_wallclock.o md_out.o metaforce.o molecularmechanics.o nlefsm.o
 siesta_todo.o: ordern.o overfsm.o parallel.o parallelsubs.o periodic_table.o
-siesta_todo.o: phonon.o precision.o redata.o siesta_cml.o sys.o timestamp.o
+siesta_todo.o: phonon.o precision.o siesta_options.o siesta_cml.o sys.o timestamp.o
 siesta_todo.o: units.o writewave.o xcmod.o zmatrix.o
 spatial.o: precision.o
 spher_harm.o: precision.o sys.o

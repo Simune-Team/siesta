@@ -11,7 +11,7 @@
       use atomlist, only: rmaxv, na_s, iphorb, iphkb, rco, rckb
       use atomlist, only: datm, no_s, iaorb
       use atomlist, only: superx, superc, initatomlists
-!
+
       use band, only: setup_bands, bands
       use fdf, only : fdf_block, fdf_convfac, fdf_boolean
       use fdf, only : fdf_physical
@@ -58,10 +58,8 @@
       use zmatrix,      only: CartesianForce_to_ZmatForce
       use zmatrix,      only: write_Zmatrix
       use m_broyden_optim,      only:broyden_optimizer
-      use m_redata,     only: redata
       use m_ioxv,       only: ioxv 
 
-      use m_smearing, only: temp
       use m_dynamics, only: nose, verlet2, npr, anneal, pr
       use md_out,     only: md_v_format
 #ifdef CDF
@@ -73,18 +71,18 @@
 
       integer
      .  fincoor,
-     .  i, ia, ia1, ia2, iadispl, ianneal,
-     .  idyn, ifa, ifinal, ihmat, iiscf, ik, 
-     .  ind, inicoor, io, ioptlwf, iord,
-     .  iquench, is, isel, 
-     .  isolve, ispin, istp, istpsave, istart, istr,
+     .  i, ia, iadispl, 
+     .  ifa, ihmat, iiscf, ik, 
+     .  ind, inicoor, io, iord,
+     .  is, isel, 
+     .  ispin, istp, istpsave, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
      .  j, ja, jo, jx,
      .  level,  
-     .  maxsav, broyden_maxit, maxwk, mullipop, 
-     .  nkick, nbcell, ncgmax, nh,
-     .  nmove, nnia, nscf, 
-     .  ntm(3), ntcon, nwk, pmax, nkpol, nhist, 
+     .  maxwk,  
+     .  nbcell, nh,
+     .  nnia, 
+     .  ntm(3), ntcon, nwk, nkpol, nhist, 
      .  neigwanted, neigmin
 
       integer :: ihuge=1073741823
@@ -118,16 +116,16 @@
      .  numh(:), numhold(:)
 
       real(dp)
-     .  bcell(3,3), beta, bulkm, 
-     .  charnet, cfmax, cftem, const, cstress(3,3),
-     .  dipol(3), dDmax, dDtol, dEmax, dEtol, DEharr, DEna,
-     .  dt, DUext, DUscf, Dxc, dx, dxmax, sigma,
+     .  bcell(3,3), g2max, 
+     .  cfmax, cftem, const, cstress(3,3),
+     .  dipol(3), dDmax, dEmax, DEharr, DEna,
+     .  DUext, DUscf, Dxc, sigma,
      .  Ecorrec, ef, Eharrs, Eharrs1, Eions, Ekin, Ekinion, Emad, Ena, 
      .  Elast, Enaatm, Enascf, Enl, Entrop, Entropy, Emeta,
-     .  eta(2), etol, Etot, Etot_output, Exc, E0, Emm,
-     .  factor, fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
-     .  g2cut, g2max, getot, kn, kpr, 
-     .  mn, mpr, occtol, Pint, Pmol, Psol, rmax_bonds
+     .  Etot, Etot_output, Exc, E0, Emm,
+     .  factor, fmax, fmean, FreeE, fres, ftem, ftot(3),
+     .  getot, kn, kpr, 
+     .  Pint, Pmol, Psol, rmax_bonds
 
       real(dp) :: e1=-1.0_dp, e2=-1.0_dp
       real(dp) :: tiny = 1.0E-15_dp
@@ -136,12 +134,11 @@
 
       real(dp)
      .  qaux, qspin(4), qsol,
-     .  rcoor, rcoorcp, rijmin, rmax, rmaxh,
-     .  scell(3,3), scell_last(3,3), stot, stress(3,3), strtol, svec(3),
-     .  taurelax, tempinit, tp, ts, tt,
+     .  rmax, rmaxh,
+     .  scell(3,3), scell_last(3,3), stot, stress(3,3), svec(3),
      .  tstress(3,3), Uatm, Uscf,
      .  vcell(3,3), virial, vn,
-     .  volume, vpr, wmix, wmixkick, 
+     .  volume, vpr, 
      .  stressl(3,3), veclen
 
       real(dp), external:: volcel
@@ -172,20 +169,10 @@
      .  ebk, eo, qo
 
       logical
-     .  auxchanged, chebef, dminit, default, dumpcharge, 
-     .  fixauxcell, fixspin, found, foundxv, foundzm,
-     .  gamma, naiveauxcell,
-     .  initdmaux, inspn, itest, lastst, mix, mmix, negl, noeta, 
-     .  outlng, overflow, overflowed, pulfile,
-     .  savehs, savevh, savevt, savdrh, savrho,
-     .  savepsch, savetoch,
-     .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
-     .  usesavezm, writeig,
-     .  writbk, writmd, writpx, writb, writec, writef, 
-     .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
-     .  harrisfun, muldeb, use_struct_file,
-     $  require_energy_convergence, broyden_optim, struct_only, bornz
-
+     .  auxchanged, dminit,  
+     .  found, foundxv, foundzm, gamma, 
+     .  itest, lastst, mmix, 
+     .  overflow, overflowed, genlogic
     
       logical :: eggbox_block=.true.
       logical :: final=.false.
@@ -207,6 +194,8 @@
       CONTAINS
       
       subroutine siesta_write_k_points()
+      USE siesta_options
+      implicit none
       if ( writek ) then
         write(6,'(/,a)')
      .       'siesta: k-point coordinates (Bohr**-1) and weights:'
@@ -250,7 +239,8 @@
 
 
       subroutine siesta_write_forces()
-
+      USE siesta_options
+      implicit none
       ! Almost the same forces output whether during simulation
       ! or at the end. Unfortunately not quite, therefore slightly
       ! tortuous logic below. If we are content to change format
@@ -329,6 +319,7 @@
 
 
       subroutine siesta_write_stress_pressure()
+      USE siesta_options
 ! Stress tensor and pressure:
       
 
@@ -455,6 +446,8 @@
       
       
       subroutine siesta_write_energies( first, iscf )
+      USE siesta_options
+      implicit none
       logical :: first
       integer :: iscf
       ! Only print out full decomposition at very beginning and end.

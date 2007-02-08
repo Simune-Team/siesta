@@ -9,6 +9,7 @@
       use m_compute_dm
       use m_post_scf_work
       use m_mixer
+      USE siesta_options
       implicit none
 
       integer :: istep, iscf

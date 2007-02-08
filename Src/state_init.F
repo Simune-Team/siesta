@@ -8,7 +8,7 @@
       USE SIESTA_TODO
       USE Kpoint_grid, only: setup_Kpoint_grid
       USE m_new_dm, only: new_dm
-
+      USE siesta_options
       implicit none
 
       integer :: istep

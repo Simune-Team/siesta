@@ -1,5 +1,6 @@
       subroutine write_md_record( istep )
         USE SIESTA_TODO
+        Use siesta_options
         implicit none
         integer istep
 

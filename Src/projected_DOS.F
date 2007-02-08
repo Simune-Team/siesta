@@ -6,6 +6,8 @@
       
       subroutine projected_DOS()
       USE SIESTA_TODO
+      USE siesta_options
+      implicit none
 
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states

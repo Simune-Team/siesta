@@ -10,6 +10,27 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-02-08 10:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
+
+Summary: Creation of a module to hold the siesta options
+Keywords: 
+
+A new module 'siesta_options' has been created to hold the program
+options (typically those variables that can be specified in the fdf file).
+The catch-all module 'siesta_todo' has been slimmed down accordingly.
+
+Routine redata has been put in the module, renamed as 'read_options'.
+
+A few other option-setting statements in the old siesta.F have been put
+into read_options. 
+
+Some others remain scattered:
+
+1. Those in the Broyden routines.
+2. Those needed to process the initial geometry, read in struct_init.
+
+(Work done at the BSC on Feb 7)
+
 2007-02-08 9:38 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
 
 Summary: Use of xalast in analysis routines. Exit of geometry loop
