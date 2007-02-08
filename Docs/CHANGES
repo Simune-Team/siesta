@@ -7,6 +7,32 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 ____________________________________________________________________
+** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
+--------------------------------------------------------------------
+
+2007-02-08 9:38 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
+
+Summary: Use of xalast in analysis routines. Exit of geometry loop
+Keywords: 
+
+The conditions for the setting and use of xalast have been clarified.
+
+The analysis routines (KSVpol, optical, dhscf (in plotting mode),
+local_DOS) now use the xalast array, which always refers to the atomic
+positions for which the density matrix was computed at the last
+geometry iteration performed (i.e., it is set before moving the atoms).
+
+For consistency, new arrays ucell_last and scell_last are similarly handled.
+
+Apart from those routines, the new setting conditions for xalast affect the
+computation of the virial correction to the "molecular pressure".
+
+In the geometry loop, the ending condition for istep has been
+corrected: it is not increased if the structure is relaxed.
+
+(Work done at BSC in the morning of Feb 7)
+
+____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-bsc--reference--2.1
 --------------------------------------------------------------------
 

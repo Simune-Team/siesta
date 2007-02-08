@@ -29,7 +29,9 @@
       final = .true.
 
       ! We want xalast to equal xa for coordinate relaxation only.
-      if (idyn==0) xalast(1:3,1:na_s)=xa(1:3,1:na_s)
+      ! Possible ERROR !!!!!!!!!!!!!!!!!!!!!!!!
+      ! xlast stores the previos atom possition and it is needed further
+!      if (idyn==0) xalast(1:3,1:na_s)=xa(1:3,1:na_s)
 
       if (cml_p) then
         call cmlStartModule(xf=mainXML, title='Finalization')
@@ -209,7 +211,7 @@
 ! formulas by King-Smith and Vanderbilt
 ! Attention H0 is used as an auxiliary array
       if (nkpol.gt.0 .and. .not.bornz) then
-        call KSV_pol(na_u, na_s, xalast, rmaxo, scell, ucell,
+        call KSV_pol(na_u, na_s, xalast, rmaxo, scell_last, ucell_last,
      .               no_u, no_l, no_s, nspin, qspin, maxna, 
      .               maxnh, nkpol, numh, listhptr, listh, 
      .               H, S, H0, xijo, indxuo, isa, iphorb, 
@@ -219,7 +221,7 @@
 
 ! Calculation of the optical conductivity
 ! Attention H0, Eold, Dold are used as auxiliary arrays
-      call optical(na_u, na_s, xa, scell, ucell,
+      call optical(na_u, na_s, xalast, scell_last, ucell_last,
      .             no_u, no_l, no_s, nspin, qspin,
      .             maxna, maxnh, numh, listhptr, listh, H, S, H0,
      .             Eold(1,1), Dold(1,1),
@@ -255,8 +257,8 @@
         if (savetoch) filetoch = paste( slabel, '.TOCH'  )
         g2max = g2cut
         call dhscf( nspin, no_s, iaorb, iphorb, no_l,
-     .              no_u, na_u, na_s, isa, xa, indxua, 
-     .              ucell, mscell, g2max, ntm,
+     .              no_u, na_u, na_s, isa, xalast, indxua, 
+     .              ucell_last, mscell, g2max, ntm,
      .              0, 0, 0, filrho, fildrh, filevh, filevt,
      .              filepsch, filetoch, 
      .              maxnh, numh, listhptr, listh, Dscf, Datm,

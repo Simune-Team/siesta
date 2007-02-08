@@ -2,7 +2,7 @@
 
       use precision, only: dp
       use parallel, only: Node, Nodes, IOnode, ParallelOverK
-      use m_cell,   only: ucell
+      use m_cell,   only: ucell, ucell_last
       use atmfuncs, only: rcut, uion, izofis
       use atomlist, only: xa, xalast, indxuo, na_u
       use atomlist, only: isa, cisa, elem, indxua, iza, lastkb, lasto
@@ -137,7 +137,7 @@
       real(dp)
      .  qaux, qspin(4), qsol,
      .  rcoor, rcoorcp, rijmin, rmax, rmaxh,
-     .  scell(3,3), stot, stress(3,3), strtol, svec(3),
+     .  scell(3,3), scell_last(3,3), stot, stress(3,3), strtol, svec(3),
      .  taurelax, tempinit, tp, ts, tt,
      .  tstress(3,3), Uatm, Uscf,
      .  vcell(3,3), virial, vn,

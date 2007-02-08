@@ -49,7 +49,6 @@
       call siesta_init()
 
       ! Begin of coordinate relaxation iteration
-      ! Notice that this loop is not indented
       relaxd = .false.
       istep = inicoor
       DO WHILE ((istep.le.fincoor) .AND. (.not. relaxd))
@@ -67,7 +66,7 @@
           last = .true.
         endif
 
-!       Logica alternativa si no queremos hacer el bucle SCF ni una sola vez
+        !Logica alternativa si no queremos hacer el bucle SCF ni una sola vez
         if (nscf .eq. 1) then
           last = .true.
         endif
@@ -107,7 +106,9 @@
         endif
 
         call siesta_move( istep, relaxd )
-        istep = istep + 1
+        if (.not. relaxd) then
+          istep = istep + 1
+        endif
       ENDDO
       ! End of coordinate-relaxation loop 
 
