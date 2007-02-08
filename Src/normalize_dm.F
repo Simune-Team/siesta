@@ -6,7 +6,7 @@
 
       subroutine normalize_dm( first )
       USE SIESTA_TODO
-      
+      use sparse_matrices
       implicit none
       logical :: first
 

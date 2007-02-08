@@ -8,6 +8,7 @@
       USE SIESTA_TODO
       USE m_normalize_dm, only: normalize_dm
       USE siesta_options
+      use sparse_matrices
       implicit none
       logical :: first, last
       integer :: iscf

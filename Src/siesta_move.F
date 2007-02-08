@@ -9,6 +9,7 @@
       use m_born_charge, only: born_charge
       USE siesta_options
       use m_ioxv, only: ioxv
+      use sparse_matrices
       implicit none
 
       integer  :: istep

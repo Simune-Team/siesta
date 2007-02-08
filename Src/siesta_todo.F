@@ -98,12 +98,7 @@
      .  MPIerror, ntmp
 #endif
 
-      integer, dimension(:), allocatable ::
-     .  jna
-
-      integer, pointer, save ::
-     .  listh(:), listhold(:), listhptr(:), listhptrold(:),
-     .  numh(:), numhold(:)
+      integer, dimension(:), allocatable :: jna
 
       real(dp)
      .  bcell(3,3), g2max, 
@@ -136,16 +131,13 @@
       real(dp), dimension(:), allocatable ::
      .  efs, qs, r2ij
 
-      real(dp), pointer, save :: 
-     .  H0(:), S(:), wgthpol(:)
+      real(dp), pointer, save :: wgthpol(:)
 
       real(dp), dimension(:,:), allocatable :: 
      .  auxpul, cfa, fa, fal,
      .  polR, polxyz, va, xij, xijo, wfk
 
-      real(dp), pointer, save ::
-     .  Dold(:,:), Dscf(:,:), Dscfsave(:,:), Eold(:,:), Escf(:,:),
-     .  H(:,:), kpol(:,:)
+      real(dp), pointer, save :: kpol(:,:)
 
 #ifdef MPI
       real(dp)

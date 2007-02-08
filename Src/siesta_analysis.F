@@ -10,6 +10,7 @@
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
       USE siesta_options
+      use sparse_matrices
       implicit none
       logical :: first, relaxd
       integer :: iscf

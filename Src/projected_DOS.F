@@ -6,6 +6,7 @@
       
       subroutine projected_DOS()
       USE SIESTA_TODO
+      use sparse_matrices
       USE siesta_options
       implicit none
 

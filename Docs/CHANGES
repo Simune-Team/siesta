@@ -10,6 +10,16 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-02-08 11:20 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+Summary: New stub module for sparse matrices
+
+A stub module to hold the sparse matrices ('sparse_matrices') has been
+created.  It just holds the relevant variables, without any attempt to
+create derived types yet.
+
+(Work done at BSC in the afternoon of Feb 7)
+
 2007-02-08 11:05 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
 
 Summary: New geometry module

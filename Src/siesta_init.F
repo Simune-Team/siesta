@@ -8,6 +8,7 @@
       USE SIESTA_TODO
       USE Kpoint_grid, only: setup_Kpoint_grid
       USE siesta_options
+      use sparse_matrices
       implicit none
 
 
