@@ -14,6 +14,13 @@
       logical :: first, relaxd
       integer :: iscf
 
+      character(len=label_length+5) :: fildrh
+      character(len=label_length+5) :: filepsch
+      character(len=label_length+5) :: filetoch
+      character(len=label_length+5) :: filevh
+      character(len=label_length+5) :: filevt
+      character(len=label_length+5) :: filrho
+
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
@@ -232,15 +239,6 @@
 !...................................
 
 ! Save electron density and potential
-      call fdf_global_get(savrho,'SaveRho',
-     $                      dumpcharge .or. .false.)
-      call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)
-      call fdf_global_get(savevh,'SaveElectrostaticPotential',
-     $                      .false.)
-      call fdf_global_get(savevt,'SaveTotalPotential', .false.)
-      call fdf_global_get(savepsch,'SaveIonicCharge',  .false.)
-      call fdf_global_get(savetoch,'SaveTotalCharge',  .false.)
-
       if (savrho .or. savdrh .or. savevh .or. savevt .or.
      .    savepsch .or. savetoch ) then
         filrho = ' '

@@ -6,10 +6,12 @@
 
       subroutine local_DOS( )
       USE SIESTA_TODO
-      USE siesta_options, only :occtol, g2cut, isolve, fixspin, temp 
+      USE siesta_options, only :occtol, g2cut, isolve, 
+     &                          fixspin, temp, neigwanted 
       implicit none
 
       integer :: dummy_iscf = 1
+      character(len=label_length+5) :: fildos
 
 ! Find local density of states
       if (IOnode) then
@@ -43,12 +45,12 @@
      .                occtol, dummy_iscf, neigwanted)
 
           !Find the LDOS in the real space mesh
-          filrho = paste( slabel, '.LDOS' )
+          fildos = paste( slabel, '.LDOS' )
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xalast, indxua, 
      .              ucell_last, mscell, g2max, ntm,
-     .              0, 0, 0, filrho, ' ', ' ', ' ', ' ', ' ',
+     .              0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
      .              maxnh, numh, listhptr, listh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,

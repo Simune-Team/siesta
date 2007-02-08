@@ -1448,7 +1448,6 @@ C
 C
       end subroutine z2c
 
-!-------------------------------------------------------------
 
       function user_print(i,offset) result(x)
 !
@@ -1510,9 +1509,9 @@ C    8 - fractional cartesian (scaled by lattice vectors)
 
       end function user_print
 
-!----------------------------------------------------
       subroutine print_variables()
-      use m_cell, only  : ucell, celli
+      use siesta_geom, only: ucell
+      use m_cell, only  : celli
 
       integer  :: i, jindex
       integer  :: ivars

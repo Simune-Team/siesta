@@ -101,7 +101,6 @@
       if (atmonly) call bye("End of atom setup")
 
 ! Read geometry
-
       call struct_init()      ! Sets na_u, isa, ucell
 
 ! Initialize atom lists
@@ -156,7 +155,7 @@
       call memory('A','D',3*nspin,'siesta')
 
 ! Read simulation data ................................................
-      call read_options(na_u, ns, nspin )
+      call read_options( na_u, ns, nspin )
 
 
       qtot = qtot - charnet     ! qtot set in initatomlists

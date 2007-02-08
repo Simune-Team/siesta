@@ -713,7 +713,8 @@ C This is the only exit point
       use fdf
       use files,        only : slabel, label_length
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
-      use atomlist,     only : isa, iaorb, iphorb
+      use siesta_geom,     only : isa
+      use atomlist,     only : iaorb, iphorb
 
 #ifdef MPI
       use mpi_siesta

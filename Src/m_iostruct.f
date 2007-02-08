@@ -22,7 +22,7 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
       use fdf,         only : fdf_string
       use units,       only : Ang
       use m_mpi_utils, only : broadcast
-      use atomlist,    only : xa, isa, cisa
+      use siesta_geom,    only : xa, isa, cisa
       use alloc,       only : re_alloc
       use sys,         only : die
       use files,       only : slabel, label_length
@@ -95,7 +95,7 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
       enddo
 
       end subroutine read_struct
-!--------------------------------------------------------------------------
+
       subroutine write_struct(cell, na, isa, iza, xa )
 
 !     

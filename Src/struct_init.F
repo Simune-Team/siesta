@@ -1,6 +1,7 @@
       subroutine struct_init()
       USE SIESTA_TODO
       USE siesta_options
+      use m_ioxv
       implicit none
 
       external :: automatic_cell,
@@ -21,8 +22,7 @@
 
 !------------------------------------------------------------------------- BEGIN
 
-!! Read number of atoms and coordinates, and unit cell
-
+      !! Read number of atoms and coordinates, and unit cell
       call fdf_global_get(use_struct_file,"MD.UseStructFile",.false.)
       if (use_struct_file) then
          call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
@@ -33,13 +33,13 @@
       allocate(va(3,na_u))
       call memory('A','D',3*na_u,'struct_init')
 
-
+      ! Options readed here instead of siesta_options
       call fdf_global_get(default, 'UseSaveData'     , .false.)
       call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
       call fdf_global_get(usesavezm, 'MD.UseSaveZM'    , default)
       call fdf_global_get(writic, 'WriteCoorInitial', .true. )
 
-! Read Z-matrix coordinates and forces from file
+      ! Read Z-matrix coordinates and forces from file
       if (lUseZmatrix) then
         foundzm = .false.
         if (usesavezm) then

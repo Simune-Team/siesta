@@ -19,9 +19,10 @@
 
       integer  :: ia1, ia2, ianneal, idyn, ifinal, ioptlwf,       
      &             iquench, isolve, istart, maxsav, broyden_maxit, 
-     &             mullipop, ncgmax, nkick, nmove, nscf, pmax
+     &             mullipop, ncgmax, nkick, nmove, nscf, pmax,
+     &             neigwanted, level
 
-      real(dp)  :: beta, bulkm, charnet, dEtol, rijmin,                           
+      real(dp)  :: beta, bulkm, charnet, dEtol, rijmin,                          
      &             dDtol, dt, dx, dxmax, eta(2), etol, ftol, g2cut,       
      &             mn, mpr, occtol, rcoor, rcoorcp, strtol,               
      &             taurelax, temp, tempinit, tp, ts, tt, wmix, wmixkick
@@ -1179,6 +1180,15 @@ C Iteration are computed.
       if (idyn.ne.6) bornz = .false.
 
       call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
+
+      call fdf_global_get(savrho,'SaveRho', dumpcharge)
+      call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)
+      call fdf_global_get(savevh,'SaveElectrostaticPotential',
+     $                      .false.)
+      call fdf_global_get(savevt,'SaveTotalPotential', .false.)
+      call fdf_global_get(savepsch,'SaveIonicCharge',  .false.)
+      call fdf_global_get(savetoch,'SaveTotalCharge',  .false.)
+
       end subroutine read_options
 
       subroutine deprecated(str)

@@ -10,6 +10,19 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-02-08 11:05 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
+
+Summary: New geometry module
+
+A new module siesta_geom has been created to hold basic geometry
+information.
+
+Thus the atomic coordinates no longer live in 'atomlists', and the unit
+cell no longer lives in 'm_cell'. Supercell variables have also be put
+in the new module.
+
++ Some more slimming down of 'siesta_todo'.
+
 2007-02-08 10:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
 
 Summary: Creation of a module to hold the siesta options

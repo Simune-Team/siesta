@@ -28,13 +28,12 @@ C integer na  : Number of atoms in unit cell
 
       use precision, only : dp
       use sys
-      use atomlist,  only : xa, isa, cisa
       use fdf
       use alloc
       use parallel,  only : Node
       use zmatrix
       use m_mpi_utils, only : broadcast
-
+      use siesta_geom
       implicit none
 
       integer,  intent(out) :: na
@@ -46,8 +45,7 @@ C Internal variables and arrays
       integer               :: i, ia, ic, iscale, iua, iunit, ix,
      .                         mscell(3,3), ncells, nsc(3), nua
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
-     .                         origin(3), scell(3,3), ucell(3,3), 
-     .                         volcel, xac(3)
+     .                         origin(3), volcel, xac(3)
       external          digcel, redcel, volcel
 
       logical               :: lOrigin
@@ -119,7 +117,7 @@ C Format of atomic coordinates
      .                                                 '(or Fractional)'
           write(6,"('coor: ',72(1h*))")
 
-          call die
+          call die()
 
         endif
 
@@ -233,7 +231,7 @@ C Find equivalent diagonal combination of cell/supercell
           call digcel( ucell, mscell, dcell, dscell, nsc, isdiag )
 
 C Expand coordinates
-          call superx( dcell, nsc, nua, na, xa, dscell )
+          call superx_coor( dcell, nsc, nua, na, xa, dscell )
 
 C Expand index isa
           ia = 0
@@ -259,7 +257,7 @@ C  end of not lUseZmatrix
 
       contains
 
-      subroutine superx(ucell, NSC, na, maxa, XA, scell )
+      subroutine superx_coor(ucell, NSC, na, maxa, XA, scell )
 C **********************************************************************
 C Generates supercell vectors and atomic positions.
 C Written by J.M.Soler, August 1998
@@ -323,6 +321,6 @@ C Expand atomic positions to supercell
         enddo
       endif
 
-      end subroutine superx
+      end subroutine superx_coor
 
       end subroutine coor

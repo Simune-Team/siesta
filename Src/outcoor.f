@@ -30,7 +30,7 @@ c through subroutine reclat.
 c *******************************************************************
 
       use atmfuncs,  only : labelfis
-      use atomlist,  only : isa
+      use siesta_geom,  only : isa
       use fdf, only : fdf_physical, fdf_string
       use precision, only : dp
       use units, only : Ang

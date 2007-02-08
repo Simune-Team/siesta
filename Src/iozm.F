@@ -37,7 +37,7 @@ C
       use files,     only : slabel, label_length
       use zmatrix,   only : Zmat, ZmatForce, ZmatForceVar
       use zmatrix,   only : Zmat_to_Cartesian
-      use atomlist,  only : na_u
+      use siesta_geom,  only : na_u
 #ifdef MPI
       use mpi_siesta
 #endif

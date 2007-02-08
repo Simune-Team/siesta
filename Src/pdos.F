@@ -57,7 +57,8 @@ C **********************************************************************
       use precision,    only : dp
       use parallel,     only : Node, Nodes, IOnode
       use fdf
-      use atomlist,     only : xa, isa, iphorb, iaorb
+      use siesta_geom,  only : xa, isa
+      use atomlist,     only : iphorb, iaorb
       use atmfuncs,     only : zetafio, mofio, lofio, cnfigfio, labelfis
       use flib_wxml
       use xml,          only : xml_dump_attribute
@@ -105,8 +106,7 @@ C Internal variables ---------------------------------------------------
       character(len=label_length+5) :: fnamepro
       character(len=label_length+4) :: fnametot
 
-      real(dp)
-     .  delta, ener
+      real(dp) delta, ener
 
       external
      .  io_assign, io_close,

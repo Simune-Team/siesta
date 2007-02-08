@@ -10,8 +10,8 @@
 !
       module m_cell
         use precision, only: dp
-        real(dp), public, save  :: ucell(3,3)
-        real(dp), public, save  :: ucell_last(3,3)
+        use siesta_geom, only: ucell
+        implicit none
         real(dp), public, save  :: celli(3,3)
 
         public :: cart2frac, frac2cart

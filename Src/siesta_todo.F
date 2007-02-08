@@ -2,13 +2,12 @@
 
       use precision, only: dp
       use parallel, only: Node, Nodes, IOnode, ParallelOverK
-      use m_cell,   only: ucell, ucell_last
+      use siesta_geom
       use atmfuncs, only: rcut, uion, izofis
-      use atomlist, only: xa, xalast, indxuo, na_u
-      use atomlist, only: isa, cisa, elem, indxua, iza, lastkb, lasto
+      use atomlist, only: indxuo, elem, indxua, iza, lastkb, lasto
       use atomlist, only: qa, amass, qtot, no_u, rmaxo, rmaxkb
       use atomlist, only: zvaltot
-      use atomlist, only: rmaxv, na_s, iphorb, iphkb, rco, rckb
+      use atomlist, only: rmaxv, iphorb, iphkb, rco, rckb
       use atomlist, only: datm, no_s, iaorb
       use atomlist, only: superx, superc, initatomlists
 
@@ -58,7 +57,6 @@
       use zmatrix,      only: CartesianForce_to_ZmatForce
       use zmatrix,      only: write_Zmatrix
       use m_broyden_optim,      only:broyden_optimizer
-      use m_ioxv,       only: ioxv 
 
       use m_dynamics, only: nose, verlet2, npr, anneal, pr
       use md_out,     only: md_v_format
@@ -70,20 +68,12 @@
       implicit none
 
       integer
-     .  fincoor,
-     .  i, ia, iadispl, 
-     .  ifa, ihmat, iiscf, ik, 
+     .  fincoor, i, ia, iadispl, ifa, ihmat, iiscf, ik, 
      .  ind, inicoor, io, iord,
-     .  is, isel, 
-     .  ispin, istp, istpsave, istr,
+     .  is, isel, ispin, istp, istpsave, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
-     .  j, ja, jo, jx,
-     .  level,  
-     .  maxwk,  
-     .  nbcell, nh,
-     .  nnia, 
-     .  ntm(3), ntcon, nwk, nkpol, nhist, 
-     .  neigwanted, neigmin
+     .  j, ja, jo, jx, maxwk, nbcell, nh, nnia, 
+     .  ntm(3), ntcon, nwk, nkpol, nhist, neigmin
 
       integer :: ihuge=1073741823
       ! maxnh is (initially) the minimum size of all the sparse arrays.
@@ -135,7 +125,7 @@
       real(dp)
      .  qaux, qspin(4), qsol,
      .  rmax, rmaxh,
-     .  scell(3,3), scell_last(3,3), stot, stress(3,3), svec(3),
+     .  stot, stress(3,3), svec(3),
      .  tstress(3,3), Uatm, Uscf,
      .  vcell(3,3), virial, vn,
      .  volume, vpr, 
@@ -180,12 +170,6 @@
       character
      .  line*150, sname*150, shape*10, message*79
 
-      character(len=label_length+5) :: fildrh
-      character(len=label_length+5) :: filepsch
-      character(len=label_length+5) :: filetoch
-      character(len=label_length+5) :: filevh
-      character(len=label_length+5) :: filevt
-      character(len=label_length+5) :: filrho
       character(len=label_length+5), external :: paste
 
       type(parsed_line), pointer  :: p
@@ -320,6 +304,7 @@
 
       subroutine siesta_write_stress_pressure()
       USE siesta_options
+      implicit none
 ! Stress tensor and pressure:
       
 
