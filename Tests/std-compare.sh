@@ -4,7 +4,7 @@
 # Please note that the Reference directory was populated
 # with runs with the Intel compiler, which is notoriously flaky.
 # 
-REFERENCE=$HOME/code/ref-2.1.29/Tests
+REFERENCE=../../ref-version/Tests
 #
 tests="h2o h2o_reparam h2o_basis h2o_dos h2o_orderN \
        floating bessel mgco3 si2x1h force_2 born\
