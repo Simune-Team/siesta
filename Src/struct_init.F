@@ -2,6 +2,8 @@
       USE SIESTA_TODO
       USE siesta_options
       use m_ioxv
+      USE alloc, only: re_alloc
+
       implicit none
 
       external :: automatic_cell,
@@ -29,6 +31,10 @@
       else
          call coor(na_u,ucell)  ! Sets na_u, xa, and isa
       endif
+
+!     Prepare iza here: it might be needed by ioxv      
+      nullify(iza)
+      call re_alloc(iza,1,na_u,name='iza',routine='struct_init')
 
       allocate(va(3,na_u))
       call memory('A','D',3*na_u,'struct_init')

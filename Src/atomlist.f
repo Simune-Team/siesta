@@ -16,7 +16,7 @@
       use  atmfuncs, only: nofis, nkbfis, izofis, massfis,
      $                     rcut, atmpopfio, zvalfis
       use atm_types, only: species
-      use siesta_geom, only: na_u, na_s, xa, isa, cisa, xalast
+      use siesta_geom, only: na_u, na_s, xa, isa, xalast
       implicit none
 
       private
@@ -91,9 +91,8 @@ C Routine to initialize the atomic lists.
 C
       integer  ia, io, is, nkba, noa, nol, nokbl, ioa, ikb
 
-      nullify(indxua,iza,lastkb,lasto,qa,amass,xalast)
+      nullify(indxua,lastkb,lasto,qa,amass,xalast)
       call re_alloc(indxua,1,na_u,name='indxua',routine='siesta')
-      call re_alloc(iza,1,na_u,name='iza',routine='siesta')
       call re_alloc(lastkb,0,na_u,name='lastkb',routine='siesta')
       call re_alloc(lasto,0,na_u,name='lasto',routine='siesta')
       call re_alloc(qa,1,na_u,name='qa',routine='siesta')
