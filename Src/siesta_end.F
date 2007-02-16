@@ -6,6 +6,11 @@
 
       subroutine siesta_end()
       USE SIESTA_TODO
+      use alloc, only: alloc_report
+      use siesta_cml
+      use m_timestamp, only : timestamp
+      use m_wallclock, only : wallclock
+      use parallel, only: IOnode
       implicit none
 
       external :: automatic_cell,

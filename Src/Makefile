@@ -231,6 +231,7 @@ clean:
 	rm -f siesta gen-basis denchar *.o  *.a *.pcl *.pc
 	rm -f mixps mpi_test
 	rm -f *.mod
+	rm -f *.bck *~
 	rm -f aux_*.f aux_*.f90
 	(cd fdf ; $(MAKE) clean)
 	(cd wxml ; $(MAKE) clean)
@@ -242,8 +243,6 @@ clean:
 pristine:  clean
 	cp -fp Include/constr.f .
 #
-
-
 
 # DO NOT DELETE THIS LINE - used by make depend
 sparse_matrices.o:precision.o
@@ -462,9 +461,10 @@ siesta_analysis.o: bands.o projected_DOS.o local_DOS.o siesta_todo.o \
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: siesta_todo.o
-siesta_init.o: kpoint_grid.o siesta_todo.o sparse_matrices.o ksvinit.o
-siesta_move.o: siesta_todo.o born_charge.o siesta_options.o ioxv.o sparse_matrices.o
-born_charge.o: siesta_todo.o sparse_matrices.o ksvinit.o
+siesta_init.o: kpoint_grid.o siesta_todo.o sparse_matrices.o atomlist.o  \
+               ksvinit.o  m_fdf_global.o phonon.o m_iostruct.o files.o siesta_cmlsubs.o
+siesta_move.o: siesta_todo.o born_charge.o siesta_options.o ioxv.o sparse_matrices.o atomlist.o
+born_charge.o: siesta_todo.o sparse_matrices.o ksvinit.o siesta_geom.o atomlist.o
 siesta_todo.o: alloc.o atmfuncs.o atomlist.o broyden_optim.o
 siesta_todo.o: densematrix.o dynamics.o files.o hsparse.o iopipes.o 
 siesta_todo.o: kpoint_grid.o m_broyden_mixing.o m_cell.o m_check_supercell.o
@@ -476,7 +476,7 @@ siesta_todo.o: units.o xcmod.o zmatrix.o
 spatial.o: precision.o
 spher_harm.o: precision.o sys.o
 spin_init.o: precision.o
-state_init.o: kpoint_grid.o new_dm.o siesta_todo.o sparse_matrices.o
+state_init.o: kpoint_grid.o new_dm.o siesta_todo.o sparse_matrices.o atomlist.o
 struct_init.o: siesta_todo.o ioxv.o
 sys.o: parallel.o
 timer.o: m_walltime.o parallel.o precision.o

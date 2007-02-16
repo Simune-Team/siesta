@@ -74,19 +74,19 @@ C
 
       implicit none
 
-      integer,  intent(in)          ::  na
-      integer,  intent(in)          ::  iphkb(:), iphorb(:)
-      integer,  intent(in)          ::  isa(na), lastkb(0:na),
-     $                                  lasto(0:na)
-      integer,  intent(in)          ::  nsc(3)
-      real(dp), intent(in)          ::  cell(3,3), xa(3,na)
-      logical,  intent(in)          ::  negl
+      integer,  intent(in)    :: na
+      integer,  intent(in)    :: iphkb(:), iphorb(:)
+      integer,  intent(in)    :: isa(na), lastkb(0:na),
+     $                           lasto(0:na)
+      integer,  intent(in)    :: nsc(3)
+      real(dp), intent(in)    :: cell(3,3), xa(3,na)
+      logical,  intent(in)    :: negl
 
-      integer,  intent(inout)       ::  nlhmax
-      integer,  intent(out)         ::  listh(:), listhptr(:)
-      integer,  intent(out)         ::  numh(:)
+      integer,  intent(inout) :: nlhmax
+      integer,  intent(out)   :: listh(:), listhptr(:)
+      integer,  intent(out)   :: numh(:)
 
-      external          neighb, timer, memory
+      external                   neighb, timer, memory
 
 C Internal variables -----------------
 C maxna  = maximum number of neighbour atoms of any atom
@@ -230,13 +230,13 @@ C Find neighbour atoms within maximum range
           maxna = max(maxna,nna)
         endif
 
-C Don't do the actual work if the neighbour arrays are too small
+C Don't do the current work if the neighbour arrays are too small
         if (.not.overflow) then
 
 C Order neighbours in a well defined way
           call ordvec( tol, 3, nna, xij, index )
           call iorder( jana, 1, nna, index )
-          call order(  r2ij, 1, nna, index )
+          call order ( r2ij, 1, nna, index )
 
 C Loop on orbitals of atom ia
           do io = lasto(ia-1)+1,lasto(ia)
@@ -334,13 +334,9 @@ C Restore conect array for next orbital io
                 jo = listhtmp(j)
                 conect(jo) = .false.
               enddo
-
             endif
-
           enddo
-
         endif
-
       enddo
 
 C If maxna dimension was no good then reset arrays and start again
@@ -481,13 +477,9 @@ C Restore conect array for next orbital io
                   conect(jo) = .false.
                 enddo   
               endif     
-                        
             endif                   
-     
           enddo         
-                          
         enddo             
-                        
       endif           
    
 C Set optimal value of nlhmax for return

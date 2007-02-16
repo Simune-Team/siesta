@@ -13,7 +13,23 @@
       USE m_local_DOS, only: local_DOS
       USE siesta_options
       use sparse_matrices
+      use siesta_geom
+      use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, 
+     .                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
+      use fdf, only : fdf_boolean
+      use writewave,    only: wwave
+      use siesta_cml
+      use files,        only : slabel
+      use zmatrix,      only: lUseZmatrix, write_zmatrix
+      use Kpoint_grid
+      use parallel, only: IOnode
+      use files,       only : label_length
+      use parse
+
       implicit none
+
+      character(len=label_length+5), external :: paste
+
       logical :: first, relaxd
       integer :: iscf
 

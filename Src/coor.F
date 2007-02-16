@@ -45,7 +45,8 @@ C Internal variables and arrays
       integer               :: i, ia, ic, iscale, iua, iunit, ix,
      .                         mscell(3,3), ncells, nsc(3), nua
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
-     .                         origin(3), volcel, xac(3)
+     .                         origin(3),
+     .                         volcel, xac(3)
       external          digcel, redcel, volcel
 
       logical               :: lOrigin

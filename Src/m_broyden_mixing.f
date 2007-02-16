@@ -66,7 +66,7 @@ C                              input and output
 
       logical, save           :: initialization_done = .false.
 
-!---------------------------------------------------------
+
       integer ::   i0,i,is,j, numel,k, global_numel
 
       real(dp), dimension(:), allocatable  :: rold, rnew, rdiff 

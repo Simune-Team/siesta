@@ -6,13 +6,33 @@
 
       subroutine siesta_init()
       USE SIESTA_TODO
-      USE Kpoint_grid, only: setup_Kpoint_grid
+      USE Kpoint_grid, only: setup_Kpoint_grid, gamma_scf, maxk
       USE Band, only: gamma_bands, setup_bands
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
       USE m_ksvinit, only: gamma_polarization, estimate_pol_kpoints
       USE siesta_options
       use sparse_matrices
+      use siesta_geom
+      use atomlist, only: no_u, rmaxkb, amass, lasto, qtot, iza, rmaxo,
+     .                    zvaltot, superc, initatomlists
+      use m_fdf_global, only: fdf_global_get
+      use sys, only: die, bye
+      use xcmod, only: setXC
+      use molecularmechanics, only : inittwobody
+      use metaforce, only: initmeta
+      use m_mpi_utils, only : broadcast
+      use alloc, only: re_alloc, alloc_report
+      use phonon, only: phonon_num_disps, phonon_setup
+      use parallelsubs, only: getnodeorbs
+      use m_iostruct,   only: write_struct, read_struct
+      use m_check_supercell, only: check_sc_factors
+      use files,       only : slabel
+      use siesta_cmlsubs, only: siesta_cml_init
+      use m_timestamp, only : timestamp
+      use m_wallclock, only : wallclock
+      use parallel, only: Node, Nodes, IOnode
       USE densematrix, only: Haux, Saux, Psi
+
       implicit none
 
 

@@ -8,7 +8,18 @@
       USE SIESTA_TODO
       use sparse_matrices
       USE siesta_options
+      use atomlist, only: indxuo, no_s, no_u
+      use fdf, only : fdf_block, fdf_convfac
+      use sys, only: die
+      use m_mpi_utils, only : broadcast
+      use Kpoint_grid
+      use parallel, only: IOnode
+      use parse
+
       implicit none
+
+      type(parsed_line), pointer  :: p
+
 
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states

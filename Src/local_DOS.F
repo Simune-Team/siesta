@@ -9,7 +9,26 @@
       use sparse_matrices
       USE siesta_options, only :occtol, g2cut, isolve, 
      &                          fixspin, temp, neigwanted 
+      use siesta_geom
+      use atomlist, only: indxuo, indxua
+      use atomlist, only: qtot, no_u
+      use atomlist, only: iphorb
+      use atomlist, only: datm, no_s, iaorb
+      use fdf, only : fdf_block, fdf_convfac
+      use sys, only: die
+      use m_mpi_utils, only : broadcast
+      use files,       only : slabel
+      use Kpoint_grid
+      use parallel, only: IOnode
+      use files,       only : label_length
+      use parse
+
       implicit none
+
+      character(len=label_length+5), external :: paste
+
+      type(parsed_line), pointer  :: p
+
 
       integer :: dummy_iscf = 1
       character(len=label_length+5) :: fildos

@@ -1,6 +1,9 @@
       subroutine scfconvergence_test( first, iscf, last )
       USE SIESTA_TODO
       USE siesta_options
+      use siesta_cml
+      use m_wallclock, only : wallclock
+      use parallel, only: IOnode
       implicit none
 
       logical :: first

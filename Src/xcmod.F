@@ -122,7 +122,7 @@ C Output data for hybrid functionals
             write(6,'(''xc: Number Functional Authors  '',
      .        ''   Weight(Ex)   Weight(Ec)'')')
             do n = 1,nXCfunc
-              write(6,'(''xc: '',i4,7x,a3,5x,a10,3x,f5.3,8x,f5.3))')
+            write(6,'(''xc: '',i4,7x,a3,5x,a10,3x,f5.3,8x,f5.3)')
      .          n,XCfunc(n),XCauth(n),XCweightX(n),XCweightC(n)
             enddo
             write(6,'(''xc:'')')

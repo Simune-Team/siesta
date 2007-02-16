@@ -8,6 +8,8 @@
       USE SIESTA_TODO
       use sparse_matrices
       USE siesta_options
+      use siesta_geom
+      use atomlist, only: datm, no_s, iaorb, lasto, no_u
       implicit none
 
       ! Initialize density matrix

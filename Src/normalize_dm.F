@@ -7,6 +7,8 @@
       subroutine normalize_dm( first )
       USE SIESTA_TODO
       use sparse_matrices
+      use atomlist, only: qtot
+      use parallel, only: IOnode
       implicit none
       logical :: first
 

@@ -10,6 +10,9 @@
       use m_post_scf_work
       use m_mixer
       USE siesta_options
+      use siesta_geom
+      use molecularmechanics, only : twobody
+      use parallel, only: IOnode
       implicit none
 
       integer :: istep, iscf

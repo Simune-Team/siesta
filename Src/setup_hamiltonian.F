@@ -1,7 +1,6 @@
       module m_setup_hamiltonian
       private
       public :: setup_hamiltonian
-
       CONTAINS
 
       subroutine setup_hamiltonian( first, last, iscf )
@@ -9,6 +8,15 @@
       USE m_normalize_dm, only: normalize_dm
       USE siesta_options
       use sparse_matrices
+      use siesta_geom
+      use atmfuncs, only: uion
+      use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
+     .                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
+     .                    rmaxo
+      use metaforce, only: lMetaForce, meta
+      use m_nlefsm,     only: nlefsm
+      use m_overfsm,    only: overfsm
+      use siesta_cml
       implicit none
       logical :: first, last
       integer :: iscf
@@ -22,7 +30,6 @@
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
 
 !------------------------------------------------------------------------- BEGIN
             if (cml_p) then

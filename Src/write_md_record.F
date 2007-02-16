@@ -1,6 +1,10 @@
       subroutine write_md_record( istep )
         USE SIESTA_TODO
         Use siesta_options
+        use siesta_geom
+        use atomlist, only: iza
+        use md_out,     only: md_v_format
+        use parallel, only: IOnode
         implicit none
         integer istep
 

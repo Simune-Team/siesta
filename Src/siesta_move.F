@@ -10,6 +10,18 @@
       USE siesta_options
       use m_ioxv, only: ioxv
       use sparse_matrices
+      use siesta_geom
+      use atomlist, only: iaorb, iphorb, iza, amass, no_u, lasto, superx
+      use phonon, only: phonon_setup, phonon_restore_coords,
+     .                  phonon_set_coords
+      use iopipes,      only: forcestopipe, coordsfrompipe
+      use siesta_cml
+      use m_wallclock, only : wallclock
+      use zmatrix,      only: lUseZmatrix, iofaZmat, write_Zmatrix,
+     .                        CartesianForce_to_ZmatForce
+      use m_broyden_optim,      only:broyden_optimizer
+      use m_dynamics, only: nose, verlet2, npr, anneal, pr
+      use parallel, only: IOnode
       implicit none
 
       integer  :: istep

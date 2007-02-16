@@ -5,27 +5,103 @@
       implicit none
       PUBLIC
 
-      logical :: chebef, default, dumpcharge, fixauxcell, fixspin, 
-     &           inspn, initdmaux,          
-     & naiveauxcell, mix, negl, noeta, outlng, pulfile,                  
-     & savehs, savevh, savevt, savdrh, savrho, savepsch, savetoch,       
-     & usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv,        
-     & usesavezm, writeig,writbk, writmd, writpx, writb, writec, 
-     & writef, 
-     & writek, writic, varcel, do_pdos, writedm, atmonly, harrisfun,     
-     & muldeb, require_energy_convergence, broyden_optim, struct_only,   
-     & use_struct_file, bornz
+      logical ::      
+     &  chebef,        ! Compute the chemical potential in ordern?
+     &  default,       ! Temporary used to pass default values in fdf reads
+     &  dumpcharge,    ! Write electron density?
+     &  fixauxcell,    ! Keep the auxiliary supercell fixed?
+     &  fixspin,       ! Keep the total spin fixed?
+     &  inspn,         ! Antiferro spin ordering in initdm?
+     &  initdmaux,     ! Re-initialize DM when auxiliary supercell changes?        
+     &  naiveauxcell,  ! Use naive recipe for auxiliary supercell?
+     &  mix,           ! Mix first SCF step? Used in broyden_mixing
+     &  negl,          ! Neglect hamiltonian matrix elements without overlap?
+     &  noeta,         ! Use computed chemical potential instead of eta in ordern?
+     &  outlng,        ! Long output?
+     &  pulfile,       ! Use file to store Pulay info in pulayx?
+     &  savehs,        ! Write file with Hamiltonian electrostatic potential?
+     &  savevh,        ! Write file with Hartree electrostatic potential?
+     &  savevt,        ! Write file with total effective potential?
+     &  savdrh,        ! Write file with diff. between SCF and atomic density?
+     &  savrho,        ! Write file with electron density?
+     &  savepsch,      ! Write file with ionic (local pseudopotential) charge?
+     &  savetoch,      ! Write file with total charge?
+     &  usesavecg,     ! Use continuation file for CG geometry relaxation?
+     &  usesavelwf,    ! Use continuation file for Wannier functions?
+     &  usesavedm,     ! Use cont. file for density matrix?
+     &  usesavedmloc,  ! Temporary to keep usesavedm value
+     &  usesavexv,     ! Use cont. file for atomic positions and velocities?
+     &  usesavezm,     ! Use cont. file for Z-matrix?
+     &  writeig,       ! Write eigenvalues?
+     &  writbk,        ! Write k vectors of bands?
+     &  writmd,        
+     &  writpx,        ! Write atomic coordinates at every geometry step?
+     &  writb,         ! Write band eigenvalues?
+     &  writec,        ! Write atomic coordinates at every geometry step?
+     &  writef,        ! Write atomic forces at every geometry step?
+     &  writek,        ! Write the k vectors of the BZ integration mesh?
+     &  writic,        ! Write the initial atomic ccordinates?
+     &  varcel,        ! Change unit cell during relaxation or dynamics?
+     &  do_pdos,       ! Compute the projected density of states?
+     &  writedm,       ! Write file with density of states?
+     &  atmonly,       ! Set up pseudoatom information only?
+     &  harrisfun,     ! Use Harris functional?
+     &  muldeb,        ! Write Mulliken polpulations at every SCF step?
+     &  require_energy_convergence, ! to finish SCF iteration?
+     &  broyden_optim, ! Use Broyden method to optimize geometry?
+     &  struct_only,   ! Output initial structure only?
+     &  use_struct_file, ! Read structural information from a special file?
+     &  bornz          ! Calculate Born polarization charges?
 
+      integer  ::
+     &  ia1,           ! Atom index
+     &  ia2,           ! Atom index
+     &  ianneal,       ! Annealing option, read in redata and passed to anneal
+     &  idyn,          ! Geommetry relaxation/dynamics option
+     &  ifinal,        ! Last geommetry iteration step, for some types of dynamics
+     &  ioptlwf,       ! Order-N functional option, read in redata, used in ordern
+     &  iquench,       ! Quenching option, read in redata, used in dynamics routines
+     &  isolve,        ! Option to find density matrix: 0=>diag, 1=>order-N
+     &  istart,        ! First geommetry iteration step for certain types of dynamics
+     &  maxsav,        ! Number of previous density matrices used in Pulay mixing
+     &  broyden_maxit, ! Max. iterations in Broyden geometry relaxation
+     &  mullipop,      ! Option for Mulliken population level of detail
+     &  ncgmax,        ! Max. number of conjugate gradient steps in order-N minim.
+     &  nkick,         ! Period between "kick" steps in SCF iteration
+     &  nmove,         ! Number of geometry iterations
+     &  nscf,          ! Number of SCF iteration steps
+     &  pmax,          
+     &  neigwanted,    ! Wanted number of eigenstates (per k point)
+     &  level          ! Option for allocation report level of detail
 
-      integer  :: ia1, ia2, ianneal, idyn, ifinal, ioptlwf,       
-     &             iquench, isolve, istart, maxsav, broyden_maxit, 
-     &             mullipop, ncgmax, nkick, nmove, nscf, pmax,
-     &             neigwanted, level
-
-      real(dp)  :: beta, bulkm, charnet, dEtol, rijmin,                          
-     &             dDtol, dt, dx, dxmax, eta(2), etol, ftol, g2cut,       
-     &             mn, mpr, occtol, rcoor, rcoorcp, strtol,               
-     &             taurelax, temp, tempinit, tp, ts, tt, wmix, wmixkick
+      real(dp)  ::     
+     &  beta,          ! Inverse temperature for Chebishev expansion.
+     &  bulkm,         ! Bulk modulus
+     &  charnet,       ! Net electric charge
+     &  dEtol, 
+     &  rijmin,        ! Min. permited interatomic distance without warning
+     &  dDtol,         ! Tolerance in change of DM elements to finish SCF iteration
+     &  dt,            ! Time step in dynamics
+     &  dx,            ! Atomic displacement used to calculate Hessian matrix
+     &  dxmax,         ! Max. atomic displacement allowed during geom. relaxation
+     &  eta(2),        ! Chemical-potential param. Read by redata, used in ordern
+     &  etol,          ! Relative tol. in CG minim, read by redata, used in ordern
+     &  ftol,          ! Force tolerance to stop geometry relaxation
+     &  g2cut,         ! Required planewave cutoff of real-space integration mesh
+     &  mn,            ! Mass of Nose thermostat
+     &  mpr,           ! Mass of Parrinello-Rahman variables
+     &  occtol,        ! Occupancy threshold to build DM
+     &  rcoor,         ! Cutoff radius of Localized Wave Functions in ordern
+     &  rcoorcp,       ! Cutoff radius to find Fermi level by projection in ordern
+     &  strtol,        ! Stress tolerance in relaxing the unit cell
+     &  taurelax,      ! Relaxation time to reach desired T and P in anneal
+     &  temp,          
+     &  tempinit,      ! Initial ionic temperature read in redata
+     &  tp,            ! Target pressure. Read in redata. Used in dynamics routines
+     &  ts,            ! Total spin read from redata but not used
+     &  tt,            ! Target temperature. Read in redata. Used in dynamics rout.
+     &  wmix,          ! Mixing weight for DM in SCF iteration
+     &  wmixkick       ! Mixing weight for DM in special "kick" SCF steps
 
 
 
@@ -33,13 +109,13 @@
       ! g2max_default : Mesh cutoff default, in Ry
       ! temp_default  : Electronic temperature default, in Ry
 
-      integer, parameter  :: na_diag = 100
+      integer,  parameter :: na_diag = 100
       real(dp), parameter :: g2cut_default = 100.e0_dp
       real(dp), parameter :: temp_default  = 1.900e-3_dp 
 
-      integer, parameter :: maxsav_default = 0
-      integer, parameter :: nscf_default = 50
-      integer, parameter :: ncgmax_default = 1000
+      integer,  parameter :: maxsav_default = 0
+      integer,  parameter :: nscf_default = 50
+      integer,  parameter :: ncgmax_default = 1000
 
       real(dp), parameter :: wmix_default = 0.25_dp
       real(dp), parameter :: wmixkick_default = 0.5_dp
@@ -50,7 +126,7 @@
       real(dp), parameter :: rcoor_default = 9.5_dp
       real(dp), parameter :: rcoorcp_default = 9.5_dp
       real(dp), parameter :: tcp_default = 0.05_dp
-      integer, parameter  :: pmax_default = 100
+      integer,  parameter :: pmax_default = 100
 
       real(dp), parameter :: dxmax_default = 0.2_dp ! Bohr
       real(dp), parameter :: ftol_default =  0.00155574_dp ! Ry/Bohr 
@@ -67,115 +143,115 @@
       CONTAINS
 
       subroutine read_options(na, ns, nspin )
-C *********************************************************************
-C Subroutine to read the data for the SIESTA program
-C
-C     It uses the FDF (Flexible Data Format) package 
-C     of J.M.Soler and A.Garcia
-C
-C Writen by P.Ordejon, December'96
-C Modified for introduction of dynamic memory in SIESTA by JDG Sept 99
+! *********************************************************************
+! Subroutine to read the data for the SIESTA program
+!
+!     It uses the FDF (Flexible Data Format) package 
+!     of J.M.Soler and A.Garcia
+!
+! Writen by P.Ordejon, December'96
+! Modified for introduction of dynamic memory in SIESTA by JDG Sept 99
 ! Wrapping of most fdf and broadcast calls: A. Garcia, June 2005
 !
-C ***************************** INPUT *********************************
-C integer na               : Number of atoms
-C integer ns               : Number of species
-C integer nspin            : Spin polarization
-C **************************** OUTPUT *********************************
-C real*8 charnet           : Net charge (in units of |e|)
-C logical outlng           : Long (true) or short (false) output
-C real*8 g2cut             : PW cutoff energy (Ry)
-C logical negl             : True = Neglect interactions between
-C                            non-overlaping orbitals (coming from
-C                            KB projectors)
-C integer nscf             : Maximum number of SCF cycles per time step
-C real*8 dDtol             : Maximum Density Matrix tolerance in SCF
-C real*8 dEtol             : Maximum energy tolerance in SCF
-C logical mix              : Perform mix in first SCF step
-C real*8 wmix              : Amount of output DM for new DM
-C integer isolve           : Method of solution.  0 = Diagonalization
-C                                                 1 = Order-N
-C real*8 temp              : Temperature for Fermi smearing (Ry)
-C logical fixspin          : Fix the spin of the system?
-C real*8  ts               : Total spin of the system
-C integer ncgmax           : Maximum number of CG steps for 
-C                            band structure energy minimization
-C real*8 etol              : Relative tolerance in CG minimization
-C                            of band structure energy
-C real*8 eta(2)            : Fermi level parameter of Kim functional
-C real*8 rcoor             : Cutoff radius of LWF's (Bohr)
-C integer ioptlwf          : Option to build LWF's according to:
-C                             0 = Read blindly from disk
-C                             1 = Functional of Kim et al.
-C                             2 = Functional of Ordejon-Mauri
-C logical chebef          : Compute the chemical potential 
-C logical noeta            : Use computed Chem.pot. instead of eta
-C real*8 rcoorcp           : Cutoff (Bohr) to compute the chem.pot.
-C real*8 beta              : Inverse temperature to compute chem.pot.
-C integer pmax             : Order of Chebi expansion for chem.pot.
-C integer idyn             : Atomic dynamics option:
-C                             0 = CG geometry optimization
-C                             1 = Standard MD run (Verlet)
-C                             2 = Nose thermostat MD
-C                             3 = Parrinello-Rahman MD
-C                             4 = Nose thermostat + Parrinello-Rahman MD
-C                             5 = Annealing MD
-C                             6 = Force constants
-C                             7 = Forces for PHONON program
-C                             8 = Force evaluation
-C integer istart           : Initial time step for MD
-C integer ifinal           : Final time step for MD
-C integer nmove            : Number of CG steps in CG optimization
-C real*8 ftol              : Maximum force for CG structure optimization
-C real*8 strtol            : Maximum stress for CG structure optimization
-C integer ianneal          : Annealing option for idyn = 5
-C                             1 = Temperature 
-C                             2 = Pressure
-C                             3 = Temperature and Pressure
-C integer iquench          : Quench option: 0 = No; 1 = Yes; 2 = Fire
-C real*8 dt                : Length of time step (fs)
-C real*8 dx                : Atomic displacement for Force Constants
-C                             calculation
-C integer ia1              : First atom to displace for force constants
-C integer ia2              : Last atom to displace for force constants
-C real*8 dxmax             : Maximum atomic displacement in one CG move
-C real*8 tt                : Target temperature (Kelvin)
-C real*8 tp                : Target Pressure (Ry/Bohr**3)
-C real*8 mn                : Mass of Nose variable (Ry/fs**2)
-C real*8 mpr               : Mass of Parrinello-R. variable (Ry/fs**2)
-C real*8 bulkm             : Estimate of bulk modulus (Ry/Bohr**3)
-C real*8 taurelax          : Annealing time to reach targer T and P (fs)
-C logical usesavelwf       : True = try to use continuation LWF files 
-C                              from disk
-C logical usesavedm        : True = try to use continuation DM files 
-C                              from disk
-C logical usesavecg        : True = try to use continuation CG files
-C                              from disk
-C integer mullipop         : Option for Mulliken Pop. analysis
-C logical inspn            : Spin initialization for spin-polarized
-C                              .true.  -> Antiferro
-C                              .false. -> Ferro
-C integer maxsav           : Number of density-matrices stored for Pulay
-C                            mixing. .lt.2 => linear mixing only
-C                                    .ge.2 => pulay mixing
-C integer nkick            : Perform a linear mixing eack nkick scf cycles
-C real*8 wmixkick          : Mixing parameter for linear mixing each nkick scf
-C                            cycles
-C logical pulfile          : Use file (.true.) or memory (.false.)
-C                            to store Pulay miximg intermediate vectors
-C                            Default: .false.
-C real*8 tempinit          : Initial temperature (Kelvin) of the MD simulation
-C logical dumpcharge       : True: Dump information to plot charge contours
-C                            by the external DENCHAR application program.
-C     (This is now obsolete: info will appear in .RHO file)
-C logical varcel           : variable shape for CG optimization or dynamics
-C logical harrisfun        : swith that indicates if harris functional will
-C                            be used or not
-C real*8  occtol           : Occupancy threshold for DM build
-C integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
-C logical require_energy_convergence  : Impose E. conv. criterion?
-C logical broyden_optim    : Broyden for forces instead of CG
-C **********************************************************************
+! ***************************** INPUT *********************************
+! integer na               : Number of atoms
+! integer ns               : Number of species
+! integer nspin            : Spin polarization
+! **************************** OUTPUT *********************************
+! real*8 charnet           : Net charge (in units of |e|)
+! logical outlng           : Long (true) or short (false) output
+! real*8 g2cut             : PW cutoff energy (Ry)
+! logical negl             : True = Neglect interactions between
+!                            non-overlaping orbitals (coming from
+!                            KB projectors)
+! integer nscf             : Maximum number of SCF cycles per time step
+! real*8 dDtol             : Maximum Density Matrix tolerance in SCF
+! real*8 dEtol             : Maximum energy tolerance in SCF
+! logical mix              : Perform mix in first SCF step
+! real*8 wmix              : Amount of output DM for new DM
+! integer isolve           : Method of solution.  0 = Diagonalization
+!                                                 1 = Order-N
+! real*8 temp              : Temperature for Fermi smearing (Ry)
+! logical fixspin          : Fix the spin of the system?
+! real*8  ts               : Total spin of the system
+! integer ncgmax           : Maximum number of CG steps for 
+!                            band structure energy minimization
+! real*8 etol              : Relative tolerance in CG minimization
+!                            of band structure energy
+! real*8 eta(2)            : Fermi level parameter of Kim functional
+! real*8 rcoor             : Cutoff radius of LWF's (Bohr)
+! integer ioptlwf          : Option to build LWF's according to:
+!                             0 = Read blindly from disk
+!                             1 = Functional of Kim et al.
+!                             2 = Functional of Ordejon-Mauri
+! logical chebef          : Compute the chemical potential 
+! logical noeta            : Use computed Chem.pot. instead of eta
+! real*8 rcoorcp           : Cutoff (Bohr) to compute the chem.pot.
+! real*8 beta              : Inverse temperature to compute chem.pot.
+! integer pmax             : Order of Chebi expansion for chem.pot.
+! integer idyn             : Atomic dynamics option:
+!                             0 = CG geometry optimization
+!                             1 = Standard MD run (Verlet)
+!                             2 = Nose thermostat MD
+!                             3 = Parrinello-Rahman MD
+!                             4 = Nose thermostat + Parrinello-Rahman MD
+!                             5 = Annealing MD
+!                             6 = Force constants
+!                             7 = Forces for PHONON program
+!                             8 = Force evaluation
+! integer istart           : Initial time step for MD
+! integer ifinal           : Final time step for MD
+! integer nmove            : Number of CG steps in CG optimization
+! real*8 ftol              : Maximum force for CG structure optimization
+! real*8 strtol            : Maximum stress for CG structure optimization
+! integer ianneal          : Annealing option for idyn = 5
+!                             1 = Temperature 
+!                             2 = Pressure
+!                             3 = Temperature and Pressure
+! integer iquench          : Quench option: 0 = No; 1 = Yes; 2 = Fire
+! real*8 dt                : Length of time step (fs)
+! real*8 dx                : Atomic displacement for Force Constants
+!                             calculation
+! integer ia1              : First atom to displace for force constants
+! integer ia2              : Last atom to displace for force constants
+! real*8 dxmax             : Maximum atomic displacement in one CG move
+! real*8 tt                : Target temperature (Kelvin)
+! real*8 tp                : Target Pressure (Ry/Bohr**3)
+! real*8 mn                : Mass of Nose variable (Ry/fs**2)
+! real*8 mpr               : Mass of Parrinello-R. variable (Ry/fs**2)
+! real*8 bulkm             : Estimate of bulk modulus (Ry/Bohr**3)
+! real*8 taurelax          : Annealing time to reach targer T and P (fs)
+! logical usesavelwf       : True = try to use continuation LWF files 
+!                              from disk
+! logical usesavedm        : True = try to use continuation DM files 
+!                              from disk
+! logical usesavecg        : True = try to use continuation CG files
+!                              from disk
+! integer mullipop         : Option for Mulliken Pop. analysis
+! logical inspn            : Spin initialization for spin-polarized
+!                              .true.  -> Antiferro
+!                              .false. -> Ferro
+! integer maxsav           : Number of density-matrices stored for Pulay
+!                            mixing. .lt.2 => linear mixing only
+!                                    .ge.2 => pulay mixing
+! integer nkick            : Perform a linear mixing eack nkick scf cycles
+! real*8 wmixkick          : Mixing parameter for linear mixing each nkick scf
+!                            cycles
+! logical pulfile          : Use file (.true.) or memory (.false.)
+!                            to store Pulay miximg intermediate vectors
+!                            Default: .false.
+! real*8 tempinit          : Initial temperature (Kelvin) of the MD simulation
+! logical dumpcharge       : True: Dump information to plot charge contours
+!                            by the external DENCHAR application program.
+!     (This is now obsolete: info will appear in .RHO file)
+! logical varcel           : variable shape for CG optimization or dynamics
+! logical harrisfun        : swith that indicates if harris functional will
+!                            be used or not
+! real*8  occtol           : Occupancy threshold for DM build
+! integer broyden_maxit    : Number of histories saved in Broyden SCF mixing
+! logical require_energy_convergence  : Impose E. conv. criterion?
+! logical broyden_optim    : Broyden for forces instead of CG
+! **********************************************************************
 
       use precision, only : dp
       use parallel,  only : IOnode, Nodes
@@ -190,10 +266,10 @@ C **********************************************************************
       use siesta_cml
 
       implicit none
-! Subroutine arguments:
+      ! Subroutine arguments:
       integer, intent(in)  :: na, ns, nspin
 
-C  Internal variables .................................................
+      !  Internal variables 
       real(dp) :: tcp
 
       character
@@ -203,24 +279,23 @@ C  Internal variables .................................................
       logical  ::  DaC, leqi, qnch, qnch2, usesaveddata
       external ::  leqi
 
-! New template, using fdf and broadcast wrappers
-!
-!      call fdf_global_get(param,'ParamName', param_default)
-!      if (ionode)  write(6,'(a,i)'),
-!     .    'redata: ParamName           = ',param
-!      if (cml_p) call cmlAddParameter(xf=mainXML, name='ParamName',
-!     .                 value=param, dictref='siesta:param')
+      ! New template, using fdf and broadcast wrappers
+      !
+      !      call fdf_global_get(param,'ParamName', param_default)
+      !      if (ionode)  write(6,'(a,i)'),
+      !     .    'redata: ParamName           = ',param
+      !      if (cml_p) call cmlAddParameter(xf=mainXML, name='ParamName',
+      !     .                 value=param, dictref='siesta:param')
 
-!
-!      cml_p is only true in the master node
-!
-C Start of code
+      !
+      !      cml_p is only true in the master node
+      !
+      ! Start of code
       if (cml_p) then
         call cmlStartParameterList(mainXML, title='Input Parameters')
       endif
 
-C for cml output, find the system name & label
-
+      ! for cml output, find the system name & label
       if (cml_p) then
         sname = fdf_string('SystemName','')
         call cmlAddParameter(xf=mainXML, name='SystemName',
@@ -229,14 +304,14 @@ C for cml output, find the system name & label
      .      value=trim(slabel), dictref='siesta:slabel')
       endif
 
-C Type of output
+      ! Type of output
       call fdf_global_get(outlng,"LongOutput", .false.)
       if (ionode)      write(6,'(a,4x,l1)')
      .   'redata: Long output                      = ',outlng
       if (cml_p) call cmlAddParameter(xf=mainXML, name='LongOutput',
      .       value=outlng, dictRef='siesta:verbosity')
 
-C Write about Number of species, as before
+      ! Write about Number of species, as before
       if (ionode)     write(6,'(a,3x,i2)') 
      .   'redata: Number of Atomic Species         = ',ns
         if (ns .le. 0) call die('redata: ERROR:'// 
@@ -244,20 +319,17 @@ C Write about Number of species, as before
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='NumberOfSpecies', value=ns, dictRef='siesta:ns')
 
-C ...
 
-C Dump information to plot charge contours
-C by the external DENCHAR application program.
-
+      ! Dump information to plot charge contours
+      ! by the external DENCHAR application program.
       call fdf_global_get(dumpcharge,'WriteDenchar',.false.)
       if (ionode)  write(6,'(a)') 
      .   'redata: Charge density info will appear in .RHO file'
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='WriteDenChar', value=dumpcharge)
 
-C ...
 
-C Perform Mulliken Population Analysis
+      ! Perform Mulliken Population Analysis
 
       call fdf_global_get(mullipop,'WriteMullikenPop', 0)
       if (mullipop == 0 .and. outlng) mullipop = 1
@@ -287,38 +359,34 @@ C Perform Mulliken Population Analysis
       endif
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='WriteMullikenPop', value=mullipop)
-C ...
 
-C Planewave cutoff of the real space mesh ...
+      ! Planewave cutoff of the real space mesh ...
       call fdf_global_get(g2cut,'MeshCutoff',g2cut_default,'Ry')
       if (ionode)   write(6,'(a,f10.4,a)') 
      .   'redata: Mesh Cutoff                      = ',g2cut,'  Ry'
       if (cml_p) call cmlAddParameter(xf=mainXML, name='MeshCutOff',
      .     value=g2cut, dictRef='siesta:g2max', units='siestaUnits:Ry')
-C ...
 
-C Net charge in the cell ...
+      ! Net charge in the cell ...
       call fdf_global_get(charnet,'NetCharge',0.0_dp)
       if (ionode)  write(6,'(a,f10.4,a)') 
      .   'redata: Net charge of the system         = ',charnet,' |e|'
       if (cml_p) call cmlAddParameter(xf=mainXML, name='NetCharge',
      .   value=charnet, dictRef='siesta:NetCharge', 
      .   units='siestaUnits:e__')
-C ...
        
-C SCF Loop parameters ...
-C     Maximum number of SCF iterations
-
+      ! SCF Loop parameters ...
+      !     Maximum number of SCF iterations
       call fdf_global_get(nscf,'MaxSCFIterations',nscf_default)
       if (ionode)  write(6,'(a,i5)') 
      .   'redata: Max. number of SCF Iter          = ',nscf
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='MaxSCFIterations', value=nscf, dictRef='siesta:maxscf')
 
-C Pulay mixing, number of iterations for one Pulay mixing (maxsav)
+      ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
       call fdf_global_get(maxsav,'DM.NumberPulay', maxsav_default)
 
-C Broyden SCF mixing, number of iterations 
+      ! Broyden SCF mixing, number of iterations 
       call fdf_global_get(broyden_maxit,'DM.NumberBroyden',0)
       if (ionode) then
         if (broyden_maxit .gt. 0) then
@@ -345,10 +413,9 @@ C Broyden SCF mixing, number of iterations
      $     cmlAddParameter(xf=mainXML, name='DM.NumberBroyden',
      .     value=broyden_maxit, dictRef='siesta:broyden_maxit')
       endif
-C ...
 
-C     Mix density matrix on first SCF step
-C     (mix)
+      !     Mix density matrix on first SCF step
+      !     (mix)
 
       call fdf_global_get(mix,'DM.MixSCF1',.false.)
       if (ionode)   write(6,'(a,4x,l1)')
@@ -357,8 +424,8 @@ C     (mix)
      .     value=mix, dictRef='siesta:mix')
 
 
-C Use disk or memory to store intermediate Pulay mixing vectors
-C (pulfile)
+      ! Use disk or memory to store intermediate Pulay mixing vectors
+      ! (pulfile)
       call fdf_global_get(pulfile,'DM.PulayOnFile',.false.)
       if (ionode) then
         if (pulfile.and.Nodes>1) then
@@ -370,16 +437,15 @@ C (pulfile)
       endif
       if (cml_p) call cmlAddParameter(xf=mainXML, name='DM.PulayOnFile',
      .     value=pulfile, dictRef='siesta:pulfile')
-C ...
 
-C Density Matrix Mixing  (proportion of output DM in new input DM)
+      ! Density Matrix Mixing  (proportion of output DM in new input DM)
       call fdf_global_get(wmix,'DM.MixingWeight',wmix_default)
       if (ionode)  write(6,'(a,f10.4,a)') 
      .   'redata: New DM Mixing Weight             = ',wmix
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='DM.MixingWeight', value=wmix, dictRef='siesta:wmix')
 
-C Density Matrix occupancy tolerance
+      ! Density Matrix occupancy tolerance
       call fdf_global_get(occtol,
      $                    'DM.OccupancyTolerance',occtol_default)
       if (ionode)  write(6,'(a,f14.12)') 
@@ -389,8 +455,8 @@ C Density Matrix occupancy tolerance
      .     dictRef='siesta:occtol')
 
 
-C Perform linear mixing each nkick SCF iterations (to kick system
-C when it is pinned in a poorly convergent SCF loop)
+      ! Perform linear mixing each nkick SCF iterations (to kick system
+      ! when it is pinned in a poorly convergent SCF loop)
       call fdf_global_get(nkick,'DM.NumberKick',0)
       if (ionode) then
         if (nkick .ge. 1) then
@@ -404,7 +470,7 @@ C when it is pinned in a poorly convergent SCF loop)
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='DM.NumberKick', value=nkick, dictRef='siesta:nkick')
  
-C     Density Matrix Mixing each nkick SCF iterations
+      ! Density Matrix Mixing each nkick SCF iterations
       call fdf_global_get( wmixkick,
      $                  'DM.KickMixingWeight',wmixkick_default)
       if (ionode) write(6,'(a,f10.4,a)')
@@ -414,14 +480,14 @@ C     Density Matrix Mixing each nkick SCF iterations
      .     dictRef='siesta:wmixkick')
 
 
-C     Density Matrix Tolerance for achieving Self-Consistency
+      ! Density Matrix Tolerance for achieving Self-Consistency
       call fdf_global_get(dDtol,'DM.Tolerance',dDtol_default)
       if (ionode)  write(6,'(a,f12.6,a)') 
      .   'redata: DM Tolerance for SCF             = ',dDtol
       if (cml_p) call cmlAddParameter(xf=mainXML, name='DM.Tolerance', 
      .     value=dDtol, dictRef='siesta:dDtol')
 
-C  Require Energy convergence for achieving Self-Consistency?
+      ! Require Energy convergence for achieving Self-Consistency?
       call fdf_global_get(require_energy_convergence,
      $     'DM.RequireEnergyConvergence',.false.)
       if (ionode)  write(6,'(a,4x,l1)') 
@@ -432,7 +498,7 @@ C  Require Energy convergence for achieving Self-Consistency?
      .     value=require_energy_convergence,
      $     dictRef='siesta:ReqEnergyConv')
 
-C Energy tolerance for achieving Self-Consistency
+      ! Energy tolerance for achieving Self-Consistency
       call fdf_global_get(dEtol,'DM.EnergyTolerance',dEtol_default,"Ry")
       if (ionode)  write(6,'(a,f12.6,a)') 
      .   'redata: DM Energy tolerance for SCF      = ',dEtol/eV,' eV'
@@ -441,7 +507,7 @@ C Energy tolerance for achieving Self-Consistency
      .     value=dEtol, dictRef='siesta:dEtol')
 
 
-C Initial spin density: Maximum polarization, Ferro (false), AF (true)
+      ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
       if (nspin.eq.2) then
          call fdf_global_get(inspn,'DM.InitSpinAF',.false.)
         if (ionode)  write(6,'(a,4x,l1)')
@@ -449,31 +515,27 @@ C Initial spin density: Maximum polarization, Ferro (false), AF (true)
         if (cml_p) call cmlAddParameter(xf=mainXML, 
      .       name='DM.InitSpinAF', value=inspn, dictRef='siesta:inspn')
       endif
-C ...
 
-C Use Saved Data
+      ! Use Saved Data
       call fdf_global_get(usesaveddata,'UseSaveData',.false.)
       if (ionode)  write(6,'(a,4x,l1)') 
      .   'redata: Using Saved Data (generic)   = ', usesaveddata
 
-C ...
-C Use continuation DM files
+      ! Use continuation DM files
       call fdf_global_get(usesavedm,'DM.UseSaveDM',usesaveddata)
       if (ionode) write(6,'(a,4x,l1)') 
      .   'redata: Use continuation files for DM    = ',  usesavedm
       if (cml_p) call cmlAddParameter(xf=mainXML, name='DM.UseSaveDM', 
      .     value=usesavedm, dictRef='siesta:usesavedm')
-C ...
 
-C Neglect Interactions between non-overlapping orbitals ...
+      ! Neglect Interactions between non-overlapping orbitals ...
       call fdf_global_get(negl,'NeglNonOverlapInt',.false.)
       if (ionode)  write(6,'(a,4x,l1)') 
      .   'redata: Neglect nonoverlap interactions  = ',negl
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='NeglNonOverlapInt', value=negl, dictRef='siesta:negl')
-C ...
 
-C Method to Solve LDA Hamiltonian ...
+      ! Method to Solve LDA Hamiltonian ...
       if (na .le. na_diag) then
          method_default = 'diagon'
       else
@@ -484,10 +546,10 @@ C Method to Solve LDA Hamiltonian ...
      $    call cmlAddParameter(xf=mainXML, name='SolutionMethod',
      $       value=method, dictRef='siesta:SCFmethod')
 
-C
+
       if (leqi(method,'diagon')) then
          isolve = 0
-C        DivideAndConquer is now the default
+        ! DivideAndConquer is now the default
          call fdf_global_get(DaC,'Diag.DivideAndConquer',.true.)
          if (ionode)  then
             write(6,'(a,4x,a)') 
@@ -519,17 +581,15 @@ C        DivideAndConquer is now the default
      $   call cmlAddParameter(xf=mainXML, name='Diag.DivideAndConquer',
      $     value=DaC, dictRef='siesta:DaC')
 
-C ...
 
-C Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
+      ! Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
       call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
       MemoryFactor = max(MemoryFactor,1.0_dp)
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='Diag.Memory', value=MemoryFactor, 
      .     dictRef='siesta:MemoryFactor')
-C ...
 
-C Electronic temperature for Fermi Smearing ...
+      ! Electronic temperature for Fermi Smearing ...
       call fdf_global_get(temp,
      $                 'ElectronicTemperature',temp_default,'Ry')
       if (ionode .and. isolve == 0)  write(6,'(a,f10.4,a)') 
@@ -537,11 +597,9 @@ C Electronic temperature for Fermi Smearing ...
       if (cml_p) call cmlAddParameter(xf=mainXML, 
      .     name='ElectronicTemperature', value=temp, 
      .     dictRef='siesta:etemp', units='siestaUnits:Ry')
-C ...
 
-C Fix the spin of the system to a given value ; and
-C value of the Spin of the system (only used if fixspin = TRUE)
-
+      ! Fix the spin of the system to a given value ; and
+      ! value of the Spin of the system (only used if fixspin = TRUE)
       call fdf_global_get(fixspin,'FixSpin',.false.)
       if (ionode)   write(6,'(a,4x,l1)') 
      .         'redata: Fix the spin of the system       = ',fixspin 
@@ -563,11 +621,9 @@ C value of the Spin of the system (only used if fixspin = TRUE)
         call cmlAddParameter(xf=mainXML, name='TotalSpin',
      .       value=ts, dictref='siesta:ts')
       endif
-C ...
 
-C Order-N solution parameters ...
-C     Maximum number of CG minimization iterations
-
+      ! Order-N solution parameters ...
+      !     Maximum number of CG minimization iterations
       call fdf_global_get(ncgmax,'ON.MaxNumIter',ncgmax_default)
       if (ncgmax<1) then
       if (ionode)
@@ -576,12 +632,11 @@ C     Maximum number of CG minimization iterations
          ncgmax = 1 
       endif
 
-C     Relative tolerance in total band structure energy
+      ! Relative tolerance in total band structure energy
 
         call fdf_global_get(etol,'ON.etol',etol_default)
-C ...
 
-C     Fermi level parameter
+      ! Fermi level parameter
       eta(1:2) = 0.0_dp
       if (ionode) then
         eta(1) = fdf_physical('ON.eta',eta(1),'Ry')
@@ -590,18 +645,16 @@ C     Fermi level parameter
         eta(2) = fdf_physical('ON.eta_beta',eta(2),'Ry')
       endif
       call broadcast(eta(1:2))
-C ...
 
-C     Cutoff radius for Localized Wave Functions
+      ! Cutoff radius for Localized Wave Functions
 
       call fdf_global_get(rcoor,'On.RcLWF',rcoor_default,'Bohr')
 
-C     Use continumation LWF files
+      ! Use continumation LWF files
 
       call fdf_global_get(usesavelwf,'ON.UseSaveLWF',usesaveddata)
-C ...
 
-C     Option on how to build LWF's (disk or functionals)
+      ! Option on how to build LWF's (disk or functionals)
       call fdf_global_get(lwfopt,'ON.functional',"kim")
       if (leqi(lwfopt,'files')) then
          ioptlwf = 0
@@ -613,10 +666,9 @@ C     Option on how to build LWF's (disk or functionals)
          call die('redata: wrong ON.funcional option')
       endif
 
-C     Option to calculate the Chemical potential in O(N)
-C     Option to use the Chemical Potential calculated instead
-C     of the eta variable of the input
-
+      ! Option to calculate the Chemical potential in O(N)
+      ! Option to use the Chemical Potential calculated instead
+      ! of the eta variable of the input
       call fdf_global_get(noeta,'ON.ChemicalPotentialUse',.false.)
       if (noeta) then
         ! if so, we must (obviously) calculate the chemical potential
@@ -627,25 +679,20 @@ C     of the eta variable of the input
       endif
 
 
-C     Cutoff radius to calculate the Chemical Potential by projection
-
+      ! Cutoff radius to calculate the Chemical Potential by projection
       call fdf_global_get(rcoorcp,'ON.ChemicalPotentialRc',
      .                        rcoorcp_default,'Bohr')
-C ...
 
-C     Temperature of the Fermi distribution to calculate the
-C     Chemical potential by projection
-
+      ! Temperature of the Fermi distribution to calculate the
+      ! Chemical potential by projection
       call fdf_global_get(tcp,'ON.ChemicalPotentialTemperature',
      .                   tcp_default,'Ry')
       beta = 1.0_dp/tcp
 
-C     Order of the Chebishev expansion to calculate the Chemical
-C     potential
-      
+!     Order of the Chebishev expansion to calculate the Chemical
+!     potential
       call fdf_global_get(pmax,
      $           'ON.ChemicalPotentialOrder',pmax_default)
-C ...
 
 
       if (isolve==1) then
@@ -734,25 +781,20 @@ C ...
           endif !chebef
         endif !cml_p
       endif !Order-N
-C ...
 
-C Dynamics parameters ...
-
+      ! Dynamics parameters ...
       call fdf_global_get(varcel,'MD.VariableCell', .false. )
-! NB reset below ...
-C ...
+      ! NB reset below ...
 
-C     Type of dynamics 
+      ! Type of dynamics 
       call fdf_global_get(dyntyp,'MD.TypeOfRun',"verlet")
-C ...
 
       if (leqi(dyntyp,'cg')) then
          idyn = 0
-         call fdf_global_get(usesavecg,'MD.UseSaveCG', usesaveddata)
-!
-!        Support the old Broyden switch  for now
-         call fdf_global_get(broyden_optim,'Optim.Broyden',.false.)
-         if (broyden_optim)
+        call fdf_global_get(usesavecg,'MD.UseSaveCG', usesaveddata)
+        ! Support the old Broyden switch  for now
+        call fdf_global_get(broyden_optim,'Optim.Broyden',.false.)
+        if (broyden_optim)
      $      write(6,'(a)') '**Note: FDF symbol "Optim.Broyden" is '
      $              // 'deprecated. (Accepted for now.) See manual.'
       else if (leqi(dyntyp,'broyden')) then
@@ -779,21 +821,19 @@ C ...
      .        'not recognised')
       endif
 
-C     Maximum number of steps in CG/Broyden coordinate optimization
+      ! Maximum number of steps in CG/Broyden coordinate optimization
       
       call fdf_global_get(nmove,'MD.NumCGsteps',0)
 
-C     Maximum atomic displacement in one CG step
+      ! Maximum atomic displacement in one CG step
 
       call fdf_global_get(dxmax,'MD.MaxCGDispl',dxmax_default,'Bohr')
 
-C     Tolerance in the maximum atomic force 
-
+      ! Tolerance in the maximum atomic force 
       call fdf_global_get(ftol,
      $            'MD.MaxForceTol', ftol_default, 'Ry/Bohr')
 
-C     Tolerance in the maximum residual stress (var cell) def = 1 GPa 
-
+      ! Tolerance in the maximum residual stress (var cell) def = 1 GPa 
       call fdf_global_get(strtol,
      $               'MD.MaxStressTol', strtol_default, 'Ry/Bohr**3')
       strtol = abs(strtol)
@@ -907,16 +947,14 @@ C     Tolerance in the maximum residual stress (var cell) def = 1 GPa
        end select
       endif
 
-C     Initial and final time steps for MD
+      ! Initial and final time steps for MD
        call fdf_global_get(istart,'MD.InitialTimeStep',1)
        call fdf_global_get(ifinal,'MD.FinalTimeStep',1)
 
-C     Length of time step for MD
-
+      ! Length of time step for MD
        call fdf_global_get(dt,'MD.LengthTimeStep',dt_default,'fs')
-C ...
 
-C     Quench Option
+      ! Quench Option
        call fdf_global_get(qnch,'MD.Quench',.false.)
        call fdf_global_get(qnch2,'MD.FireQuench',.false.)
        if ((qnch .or. qnch2) .and. (idyn==2 .or. idyn==4)) 
@@ -925,12 +963,10 @@ C     Quench Option
        iquench = 0
        if (qnch)  iquench = 1
        if (qnch2) iquench = 2
-C ...
 
-C     Initial Temperature of MD simulation
-C     (draws random velocities from the Maxwell-Boltzmann distribition
-C      at the given temperature)
-
+      ! Initial Temperature of MD simulation
+      ! (draws random velocities from the Maxwell-Boltzmann distribition
+      !  at the given temperature)
        call fdf_global_get(tempinit,
      $             'MD.InitialTemperature',0.0_dp,'K')
 
@@ -976,15 +1012,15 @@ C      at the given temperature)
         endif
       endif
 
-C     Target Temperature and Pressure
+      ! Target Temperature and Pressure
       call fdf_global_get(tt,'MD.TargetTemperature',0.0_dp,'K')
       call fdf_global_get(tp,'MD.TargetPressure',0.0_dp,'Ry/Bohr**3')
       
 
-C     Mass of Nose variable
+      ! Mass of Nose variable
       call fdf_global_get(mn,'MD.NoseMass',mn_default,'Ry*fs**2')
 
-C     Mass of Parrinello-Rahman variables
+      ! Mass of Parrinello-Rahman variables
       call fdf_global_get(mpr,
      $             'MD.ParrinelloRahmanMass',mpr_default,'Ry*fs**2')
 
@@ -1003,7 +1039,7 @@ C     Mass of Parrinello-Rahman variables
      .       units='siestaUnits:Ry_fs__2')
       endif
 
-C     Annealing option
+      ! Annealing option
       ianneal = 0
       call fdf_global_get(annop,
      $           'MD.AnnealOption','TemperatureAndPressure')
@@ -1064,7 +1100,7 @@ C     Annealing option
      .       units='siestaUnits:Ry_Bohr__3')
       endif
 
-C     Relaxation Time for Annealing
+      ! Relaxation Time for Annealing
       call fdf_global_get(taurelax,
      $             'MD.TauRelax',taurelax_default,'fs')
       if (idyn==5) then
@@ -1076,7 +1112,7 @@ C     Relaxation Time for Annealing
      .         units='siestaUnits:fs')
        endif
         
-C     Estimated Bulk modulus (for Pressure annealing)
+      ! Estimated Bulk modulus (for Pressure annealing)
 
       call fdf_global_get(bulkm,
      $              'MD.BulkModulus',bulkm_default,'Ry/Bohr**3')
@@ -1090,16 +1126,16 @@ C     Estimated Bulk modulus (for Pressure annealing)
      .     name='MD.BulkModulus', value=bulkm, 
      .     units='siestaUnits:Ry_Bohr__3')
 
-C     Atomic displacement for force constant calculation
+    ! Atomic displacement for force constant calculation
 
       call fdf_global_get(dx,'MD.FCDispl',dx_default,'Bohr')
 
-C     First and last atoms to displace for calculation of force constants
+    ! First and last atoms to displace for calculation of force constants
 
       call fdf_global_get(ia1,'MD.FCfirst',1)
       call fdf_global_get(ia2,'MD.FClast',na)
 
-C     Check that last atom doesn't exceed total number
+    ! Check that last atom doesn't exceed total number
       if (idyn.eq.6.and.ia2.gt.na) then
         call die('redata: ERROR:'//
      .    'Last atom for phonons is greater than number of atoms.')
@@ -1123,9 +1159,8 @@ C     Check that last atom doesn't exceed total number
      .         value=ia2)
         endif
       endif
-C ...
 
-C Variable cell shape? Depending on input and type of dynamics
+      ! Variable cell shape? Depending on input and type of dynamics
       varcel = varcel .or. (idyn==3) .or. (idyn==4) 
      .                .or. (idyn==5 .and. ianneal==1)
      .                .and. (idyn/=1) .and. (idyn/=2) 
@@ -1133,11 +1168,10 @@ C Variable cell shape? Depending on input and type of dynamics
      .                .and. (.not. (idyn==5 .and. ianneal/=1) )
 
 
-C Harris Forces?. Then DM.UseSaveDM should be false (use always
-C Harris density in the first SCF step of each MD step), and
-C MaxSCFIter should be  2, in the second one the SCF 
-C Iteration are computed.
-
+      ! Harris Forces?. Then DM.UseSaveDM should be false (use always
+      ! Harris density in the first SCF step of each MD step), and
+      ! MaxSCFIter should be  2, in the second one the SCF 
+      ! forces are computed.
       call fdf_global_get(harrisfun,'Harris_functional',.false.)
 
       if (harrisfun) then
@@ -1149,13 +1183,13 @@ C Iteration are computed.
       if (ionode)   write(6,'(2a)') 'redata: ', repeat('*', 71)
       if (cml_p)    call cmlEndParameterList(mainXML)
 
-!     Warn the user about deprecated symbols...
+      ! Warn the user about deprecated symbols...
 
-          call deprecated("Optim.Broyden.History.Steps")
-          call deprecated("Optim.Broyden.Cycle.On.Maxit")
-          call deprecated("Optim.Broyden.Variable.Weight")
-          call deprecated("Optim.Broyden.Debug")
-          call deprecated("Optim.Broyden.Initial.Inverse.Jacobian")
+      call deprecated("Optim.Broyden.History.Steps")
+      call deprecated("Optim.Broyden.Cycle.On.Maxit")
+      call deprecated("Optim.Broyden.Variable.Weight")
+      call deprecated("Optim.Broyden.Debug")
+      call deprecated("Optim.Broyden.Initial.Inverse.Jacobian")
 
 
       ! Find some switches 

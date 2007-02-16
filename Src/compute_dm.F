@@ -8,6 +8,12 @@
       USE SIESTA_TODO
       USE siesta_options
       use sparse_matrices
+      use siesta_geom
+      use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
+     .                    qtot
+      use sys, only: die
+      use m_ordern,     only: ordern
+      use Kpoint_grid
       implicit none
 
       integer :: iscf
@@ -25,7 +31,7 @@
 
 !------------------------------------------------------------------------- BEGIN
 
-! Solve eigenvalue problem .........................................
+! Solve eigenvalue problem 
           if (isolve .eq. 0) then
             call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .                  numh, listhptr, listh, numh, listhptr, listh, 
@@ -47,7 +53,7 @@
             call die('siesta: ERROR: wrong solution method')
           endif
 
-! Harris-functional energy ............................................
+! Harris-functional energy 
           DEharr = 0.0_dp
           do ispin = 1,nspin
 ! const factor takes into account that there are two nondiagonal

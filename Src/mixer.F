@@ -8,6 +8,9 @@
       USE SIESTA_TODO
       USE siesta_options
       use sparse_matrices
+      use siesta_geom
+      use atomlist, only: iaorb, iphorb, lasto, no_s, no_u
+      use m_broyden_mixing
       implicit none
 
       integer :: iscf

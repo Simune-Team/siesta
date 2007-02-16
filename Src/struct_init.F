@@ -4,6 +4,19 @@
       use m_ioxv
       USE alloc, only: re_alloc
 
+      use siesta_geom
+      use atmfuncs, only: izofis
+      use atomlist, only: elem, iza
+      use fdf, only : fdf_physical
+      use m_fdf_global, only: fdf_global_get
+      use periodic_table, only : symbol
+      use iopipes,    only: coordsfrompipe
+      use m_iostruct,   only: read_struct
+      use siesta_cml
+      use files,       only : slabel
+      use zmatrix,      only: lUseZmatrix
+      use parallel, only: IOnode
+
       implicit none
 
       external :: automatic_cell,

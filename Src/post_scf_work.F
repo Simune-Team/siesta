@@ -9,6 +9,10 @@
       USE m_setup_hamiltonian, only: setup_hamiltonian
       USE siesta_options
       use sparse_matrices
+      use siesta_geom
+      use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
+      use molecularmechanics, only : twobody
+      use siesta_cml
       implicit none
 
       logical :: first, last

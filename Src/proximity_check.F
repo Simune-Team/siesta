@@ -2,6 +2,10 @@
       USE precision, only:dp
       USE SIESTA_TODO
       USE siesta_options
+      use siesta_geom
+      use atomlist, only: rco, iphkb, iphorb, indxua, no_s, rckb, rmaxo,
+     .                    rmaxv, no_u, lastkb, lasto, rmaxkb
+      use parallel, only: IOnode
       implicit none
 
       integer :: ii, jj, jamin, idxneighJ, nneigbI

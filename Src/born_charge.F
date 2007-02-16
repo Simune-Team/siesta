@@ -9,7 +9,11 @@
       use siesta_todo
       use siesta_options, only:dx
       use sparse_matrices
+      use parallel, only: Node, Nodes, IOnode, ParallelOverK
       USE m_ksvinit, only: nkpol, kpol, wgthpol
+      use siesta_geom, only: na_u, na_s, xa, scell, ucell, isa
+      use atomlist, only: no_u, indxuo, iphorb, iaorb, lasto
+      use atomlist, only: rmaxo, no_s, no_l
 
       implicit none
 !

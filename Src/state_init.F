@@ -10,6 +10,18 @@
       USE m_new_dm, only: new_dm
       USE siesta_options
       use sparse_matrices
+      use siesta_geom
+      use atomlist, only: rmaxv, iphorb, iphkb, rco, rckb, indxua,no_s,
+     .                    rmaxo, no_u, lastkb, lasto, rmaxkb, superc
+      use alloc, only: re_alloc, alloc_report
+      use m_hsparse,    only: hsparse
+      use m_overfsm,    only: overfsm
+      use m_check_supercell, only: check_sc_factors
+      use siesta_cml
+      use siesta_cmlsubs, only: siesta_cml_init
+      use zmatrix,      only: lUseZmatrix, write_zmatrix
+      use Kpoint_grid
+      use parallel, only: IOnode
       implicit none
 
       integer :: istep
