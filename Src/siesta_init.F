@@ -7,8 +7,12 @@
       subroutine siesta_init()
       USE SIESTA_TODO
       USE Kpoint_grid, only: setup_Kpoint_grid
+      USE Band, only: gamma_bands, setup_bands
+      USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
+      USE m_ksvinit, only: gamma_polarization, estimate_pol_kpoints
       USE siesta_options
       use sparse_matrices
+      USE densematrix, only: Haux, Saux, Psi
       implicit none
 
 
@@ -60,7 +64,6 @@
 
 ! Nullify arrays
       nullify(Haux,Saux,psi)
-      nullify(kpol,wgthpol)
       nullify(listhptr,listhptrold)
       nullify(numh,numhold)
 
@@ -232,82 +235,28 @@
       neigwanted = min(neigwanted,no_u)
 
       ! Find k-grid for Brillouin zone integration 
-      ! Call kgridinit to get the dimensions and then kgrid to actually
-      ! initialise the data 
+      ! NOTE: We need to know whether gamma is .true. or
+      ! not early, in order to decide whether to use an 
+      ! auxiliary supercell for the calculation of matrix elements.
+
       call setup_Kpoint_grid( ucell )
+      gamma = gamma_scf
 
       allocate(eo(no_u,nspin,maxk))
       call memory('A','D',no_u*nspin*maxk,'siesta')
       allocate(qo(no_u,nspin,maxk))
       call memory('A','D',no_u*nspin*maxk,'siesta')
 
+      call setup_bands()
+      gamma = gamma .and. gamma_bands
 
+      call setup_wf_kpoints()
+      gamma = gamma .and. gamma_wavefunctions
 
-! Find number of k-points for wavefunction printout ....................
-      nwk = 0
-      maxwk = 1
-      allocate(wfk(3,maxwk))
-      call memory('A','D',3*maxwk,'siesta')
+      call estimate_pol_kpoints(ucell)
+      gamma = gamma .and. gamma_polarization
 
-      call initwave( maxwk, no_u, nwk, wfk, overflow )
-
-      if (overflow) then
-        if (nwk .gt. maxwk) then
-! If there wasn't enough space to store bands on first call correct
-! the dimensions and repeat the initialisation
-          maxwk = max(nwk,1)
-          call memory('D','D',size(wfk),'siesta')
-          deallocate(wfk)
-          allocate(wfk(3,maxwk))
-          call memory('A','D',3*maxwk,'siesta')
-        endif
-        nwk = 0
-        call initwave( maxwk, no_u, nwk, wfk, overflow )
-        if (overflow)
-     $   call die('siesta: ERROR: Unsuccessful initialization of' //
-     $            ' list of wavefunctions to print')
-      endif
-! ......................
-
-! Find the grid for the calculation of the polarization..............
-      nkpol = 1
-      call re_alloc(kpol,1,3,1,nkpol,name='kpol',routine='siesta',
-     .              copy=.false.)
-      call re_alloc(wgthpol,1,nkpol,name='wgthpol',routine='siesta',
-     .              copy=.false.)
-
-      call KSV_init(ucell, 0, nkpol, kpol, wgthpol)
-
-      call re_alloc(kpol,1,3,1,nkpol,name='kpol',routine='siesta',
-     .              shrink=.false.,copy=.false.)
-      call re_alloc(wgthpol,1,nkpol,name='wgthpol',routine='siesta',
-     .              shrink=.false.,copy=.false.)
-
-! Find if only gamma point is used ....................................
-      if (nkpnt.eq.1 .and. abs(kpoint(1,1)).lt.tiny .and.
-     .                     abs(kpoint(2,1)).lt.tiny .and.
-     .                     abs(kpoint(3,1)).lt.tiny) then
-        gamma = .true.
-      else
-        gamma = .false.
-      endif
-      ! eliminado por conflicto con la diagonalizacion
-      ! codigo de bandas movido a siesta_analysis
-!      if (nbk .gt. 0) gamma = .false.
-
-      if (nwk .gt. 1) gamma = .false.
-      if (nwk .eq. 1) then
-        if (abs(wfk(1,1)).gt.tiny .and.
-     .      abs(wfk(2,1)).gt.tiny .and.
-     .      abs(wfk(3,1)).gt.tiny) then
-          gamma = .false.
-        endif
-      endif
-      if (nkpol.gt.0) gamma = .false.
-! ....................
-
-! Print k-point information (even if gamma point)
-      if (IOnode) call siesta_write_k_points()
+!----------------------------------------------------------------------
 
 ! Find required supercell
 ! 2*rmaxh is used to guarantee that two given orbitals in the

@@ -10,9 +10,11 @@
 !
       module writewave
 
-      use sys, only: die
+      USE precision, only: dp
 
       implicit none
+
+      private
 
       integer :: maxlin
       parameter (maxlin=1000)
@@ -24,9 +26,65 @@
       integer, save, dimension(:), allocatable :: nwflist
       integer, save, dimension(:,:), allocatable :: iwf
 
+      integer, public, save               :: nwk
+      integer, public, save               :: maxwk
+      real(dp), public, pointer, save     :: wfk(:,:)
+      logical, public, save               :: gamma_wavefunctions
+
       logical,    save :: wwf = .false.
 
-      contains
+      public :: setup_wf_kpoints, wwave, writew
+
+      CONTAINS
+
+      subroutine setup_wf_kpoints()
+      USE alloc, only: re_alloc
+      USE sys, only: die
+      USE atomlist, only: no_u
+
+      implicit none
+
+      ! Find number of k-points for wavefunction printout ....................
+
+      logical  :: overflow
+
+      nwk = 0
+      maxwk = 1
+      call re_alloc(wfk,1,3,1,maxwk,name='wfk',
+     $              routine='setup_wf_kpoints')
+
+      call initwave( maxwk, no_u, nwk, wfk, overflow )
+
+      if (overflow) then
+! If there wasn't enough space to store bands on first call correct
+! the dimensions and repeat the initialisation        
+         if (nwk .gt. maxwk) then
+            maxwk = max(nwk,1)
+            call re_alloc(wfk,1,3,1,maxwk,name='wfk',
+     $           routine='setup_wf_kpoints')
+         endif
+         nwk = 0
+         call initwave( maxwk, no_u, nwk, wfk, overflow )
+         if (overflow)
+     $      call die('siesta: ERROR: Unsuccessful initialization of' //
+     $     ' list of wavefunctions to print')
+      endif
+
+      if (nwk == 0) then
+         gamma_wavefunctions = .true.
+      else if (nwk == 1) then
+         if (dot_product(wfk(:,1),wfk(:,1)) < 1.0e-20_dp) then
+            gamma_wavefunctions = .true.
+         else
+            gamma_wavefunctions = .false.
+         endif
+      else  
+         gamma_wavefunctions = .false.
+      endif
+
+      end subroutine setup_wf_kpoints
+
+!-----------------------------------------------------------------------
 
       subroutine initwave( maxk, norb, nk, kpoint, overflow)
 C *********************************************************************
@@ -73,6 +131,7 @@ C
       use parallel,     only : Node
       use fdf
       use parsing
+      use sys,          only : die
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -508,6 +567,7 @@ C
       use files,       only : slabel, label_length
       use densematrix, only : Haux, Saux, psi
       use alloc
+      use sys,         only : die
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
 #endif
@@ -707,7 +767,7 @@ C This is the only exit point
       subroutine writew(nuotot,nuo,ik,k,ispin,eo,psi,gamma)
 
       use precision
-      use sys
+      use sys,          only : die
       use parallel,     only : Node, Nodes, BlockSize
       use parallelsubs, only : GlobalToLocalOrb
       use fdf

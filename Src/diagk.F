@@ -95,7 +95,7 @@ C
       use sys
       use parallel,      only : Node, Nodes, BlockSize
       use parallelsubs,  only : LocalToGlobalOrb
-      use writewave
+      use writewave,     only : writew
       use m_fermid,      only : fermid, fermispin, stepf
 #ifdef MPI
       use mpi_siesta

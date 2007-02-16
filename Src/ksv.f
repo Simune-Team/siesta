@@ -84,6 +84,7 @@ C
       use atmfuncs,      only : zvalfis
       use densematrix
       use alloc
+      USE m_ksvinit,     only : repol
 
       implicit          none
 

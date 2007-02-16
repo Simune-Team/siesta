@@ -20,6 +20,7 @@
       integer, parameter :: maxlin = 1000
 
       real(dp), pointer, save, public :: bk(:,:)
+      logical, public , save          :: gamma_bands
 
       character, save :: label(maxlin)*8
       integer,   save :: lastk(maxlin), nlines
@@ -48,6 +49,9 @@
           nbk = 0
           call initbands( maxbk, nbk, bk )
         endif
+        
+        gamma_bands = (nbk == 0)   ! Flag for use of auxiliary cell
+
       end subroutine setup_bands
 
       subroutine initbands( maxk, nk, kpoint )

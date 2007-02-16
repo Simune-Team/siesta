@@ -6,7 +6,9 @@
 
       subroutine siesta_analysis( first, relaxd, iscf )
       USE SIESTA_TODO
-      USE band
+      USE band, only: nbk, bk, maxbk, bands
+      USE writewave, only: nwk, wfk, wwave
+      USE m_ksvinit, only: nkpol, kpol, wgthpol
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
       USE siesta_options
@@ -82,10 +84,7 @@
      .              nwk, wfk, no_u, gamma, occtol )
       endif
 
-      ! Find and print bands
-      ! Find number of band k-points 
-      call setup_bands( )
-
+      ! Compute bands
 
       allocate(ebk(no_u,nspin,maxbk))
       call memory('A','D',no_u*nspin*maxbk,'siesta')

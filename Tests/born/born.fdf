@@ -1,6 +1,8 @@
 Systemlabel  born
 Systemname   si2 Force constants
 
+LongOutput T
+
 %include FC.fdf
 BornCharge T
 %block PolarizationGrids

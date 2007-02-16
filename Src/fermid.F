@@ -63,7 +63,7 @@ C Passed variables
       integer        :: maxe
       integer        :: maxspn
       integer        :: ne
-      integer        :: nk
+      integer, intent(in)        :: nk
       integer        :: nspin
 
       real(dp)       :: e(maxe,maxspn,nk)
@@ -71,7 +71,7 @@ C Passed variables
       real(dp)       :: qtot
       real(dp)       :: temp
       real(dp)       :: wke(maxe,maxspn,nk)
-      real(dp)       :: wk(nk)
+      real(dp), intent(in)   :: wk(nk)
       real(dp)       :: ef
 
 C Local variables

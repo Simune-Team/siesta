@@ -1,12 +1,17 @@
       module m_born_charge
-      use siesta_todo
-      use sparse_matrices
+
       private
       public :: born_charge
 
       CONTAINS
       
       subroutine born_charge()
+      use siesta_todo
+      use siesta_options, only:dx
+      use sparse_matrices
+      USE m_ksvinit, only: nkpol, kpol, wgthpol
+
+      implicit none
 !
 !     Computes Born-effective charges by finite differences,
 !     using the "force constant calculation" mode of operation.

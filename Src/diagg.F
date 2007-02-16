@@ -88,7 +88,7 @@ C
       use sys
       use parallel,      only : Node, Nodes, BlockSize
       use parallelsubs,  only : LocalToGlobalOrb
-      use writewave
+      use writewave,     only : writew
       use m_fermid,      only : fermid, fermispin, stepf
 
 #ifdef MPI
@@ -118,6 +118,9 @@ C
       real(dp)
      .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin), 
      .  aux(nuotot)
+
+      real(dp), dimension(1), parameter :: wk = (/ 1.0_dp /)
+      integer, parameter                :: nk = 1
 
       logical
      .  getD, getPSI, fixspin
@@ -186,10 +189,10 @@ C Check if we are done ................................................
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
-        call fermispin( nspin, nspin, 1, (/1.d0/), maxo, neigwanted, 
+        call fermispin( nspin, nspin, nk, wk, maxo, neigwanted, 
      .                  eo, temp, qs, qo, efs, Entropy )
       else
-        call fermid( nspin, nspin, 1, (/1.d0/), maxo, neigwanted, eo, 
+        call fermid( nspin, nspin, nk, wk, maxo, neigwanted, eo, 
      .               temp, qtot, qo, ef, Entropy )
       endif
 

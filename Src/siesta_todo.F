@@ -2,7 +2,8 @@
 
       use precision, only: dp
       use parallel, only: Node, Nodes, IOnode, ParallelOverK
-      use siesta_geom
+      use siesta_geom, only: xa, ucell, na_u, isa, xalast, cisa,
+     $                       na_s, scell, ucell_last, scell_last
       use atmfuncs, only: rcut, uion, izofis
       use atomlist, only: indxuo, elem, indxua, iza, lastkb, lasto
       use atomlist, only: qa, amass, qtot, no_u, rmaxo, rmaxkb
@@ -11,12 +12,13 @@
       use atomlist, only: datm, no_s, iaorb
       use atomlist, only: superx, superc, initatomlists
 
-      use band, only: setup_bands, bands
+!      use band, only: setup_bands, bands
       use fdf, only : fdf_block, fdf_convfac, fdf_boolean
       use fdf, only : fdf_physical
       use m_fdf_global, only: fdf_global_get
       use sys, only: die, bye
-      use parse
+      use parse, only: parsed_line, match, digest, destroy
+      use parse, only: names, integers, values, nnames, nvalues
       use periodic_table, only : symbol
       use xcmod, only: setXC
       use molecularmechanics, only : inittwobody, twobody
@@ -31,20 +33,20 @@
       use phonon, only: phonon_write_forces, phonon_restore_coords
       use phonon, only: phonon_set_coords
 
-      use densematrix
+!      use densematrix
 
       use m_ordern,     only: ordern
       use m_hsparse,    only: hsparse
 
       use parallelsubs, only: getnodeorbs
-      use writewave,    only: initwave, wwave
+!      use writewave,    only: initwave, wwave
       use iopipes,      only: forcestopipe, coordsfrompipe
       use m_iostruct,   only: write_struct, read_struct
       use m_nlefsm,     only: nlefsm
       use m_overfsm,    only: overfsm
       use m_check_supercell, only: check_sc_factors
  
-      use m_broyden_mixing
+      use m_broyden_mixing, only: broyden_mixing
 
       use siesta_cml
 
@@ -52,7 +54,7 @@
 
       use m_timestamp, only : timestamp
       use m_wallclock, only : wallclock
-      use units
+      use units, only: Ang                               !!
       use zmatrix,      only: lUseZmatrix, iofaZmat
       use zmatrix,      only: CartesianForce_to_ZmatForce
       use zmatrix,      only: write_Zmatrix
@@ -63,7 +65,9 @@
 #ifdef CDF
       use md_out,     only: md_netcdf
 #endif
-      use Kpoint_grid
+      use Kpoint_grid, only: nkpnt, kpoint, kweight
+      use Kpoint_grid, only: maxk  ! should be nkpnt
+      use Kpoint_grid, only: gamma_scf
 
       implicit none
 
@@ -73,7 +77,7 @@
      .  is, isel, ispin, istp, istpsave, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
      .  j, ja, jo, jx, maxwk, nbcell, nh, nnia, 
-     .  ntm(3), ntcon, nwk, nkpol, nhist, neigmin
+     .  ntm(3), ntcon, nhist, neigmin
 
       integer :: ihuge=1073741823
       ! maxnh is (initially) the minimum size of all the sparse arrays.
@@ -131,13 +135,9 @@
       real(dp), dimension(:), allocatable ::
      .  efs, qs, r2ij
 
-      real(dp), pointer, save :: wgthpol(:)
-
       real(dp), dimension(:,:), allocatable :: 
      .  auxpul, cfa, fa, fal,
-     .  polR, polxyz, va, xij, xijo, wfk
-
-      real(dp), pointer, save :: kpol(:,:)
+     .  polR, polxyz, va, xij, xijo
 
 #ifdef MPI
       real(dp)
@@ -168,51 +168,6 @@
 
 
       CONTAINS
-      
-      subroutine siesta_write_k_points()
-      USE siesta_options
-      implicit none
-      if ( writek ) then
-        write(6,'(/,a)')
-     .       'siesta: k-point coordinates (Bohr**-1) and weights:'
-        write(6,'(a,i4,3f12.6,3x,f12.6)')
-     .       ('siesta: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik),
-     .       ik=1,nkpnt)
-        if (cml_p) then
-          call cmlAddProperty(xf=mainXML, property=kpoint, 
-     .         dictref='siesta:kpoint')
-          call cmlAddProperty(xf=mainXML, property=kweight,
-     .         dictref='siesta:kweight')
-        endif
-      else
-        call iokp( nkpnt, kpoint, kweight )
-      endif
-      write(6,'(/a,i6)')
-     .     'siesta: k-grid: Number of k-points =', nkpnt
-      write(6,'(a,f10.3,a)')
-     .     'siesta: k-grid: Cutoff (effective) =', kcutof/Ang, ' Ang'
-      write(6,'(a)')
-     .     'siesta: k-grid: Supercell and displacements'
-      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .     (kscell(i,1),i=1,3), kdispl(1)
-      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .     (kscell(i,2),i=1,3), kdispl(2)
-      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .     (kscell(i,3),i=1,3), kdispl(3)
-      if (cml_p) then
-        call cmlStartPropertyList(mainXML, title='k-points')
-        call cmlAddProperty(xf=mainXML, property=nkpnt, 
-     .       dictref='siesta:nkpnt')
-        call cmlAddProperty(xf=mainXML, property=kcutof/Ang, 
-     .       dictref='siesta:kcutof', units='siestaUnits:angstrom')
-        call cmlEndPropertyList(mainXML)
-        call cmlAddProperty(xf=mainXML, property=kscell,
-     .       dictref='siesta:kscell')
-        call cmlAddProperty(xf=mainXML, property=kdispl,
-     .       dictref='siesta:kdispl')
-      endif
-      end subroutine siesta_write_k_points
-
 
       subroutine siesta_write_forces()
       USE siesta_options

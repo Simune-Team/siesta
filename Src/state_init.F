@@ -14,6 +14,8 @@
 
       integer :: istep
 
+      logical :: cell_can_change
+
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
@@ -73,10 +75,14 @@
 
 
 ! Actualize things if variable cell ...................................
+      ! This might be updated with PR MD options
+      cell_can_change = (varcel .or. idyn.eq.8)
+
       auxchanged = .false.
-      if ( (varcel .or. idyn.eq.8)
+      if ( cell_can_change
      $     .and. (istep.ne.inicoor) .and. (.not.gamma) ) then
 
+        ! Will print k-points also
         call setup_Kpoint_grid( ucell )
 
         if (size(eo,dim=3) .lt. maxk) then
@@ -90,9 +96,6 @@
           call memory('A','D',no_u*nspin*maxk,'siesta')
         endif
 
-        ! Print k-points 
-        if (IOnode) call siesta_write_k_points()
- 
         ! Find required supercell
         auxchanged = .false.
 
@@ -125,6 +128,8 @@
 ! End variable cell actualization
 
 ! Auxiliary supercell
+      ! Do not move from here, as the coordinates might have changed
+      ! even if not the unit cell
       call superc(ucell, scell, nsc)
 
 ! Print unit cell and find its volume

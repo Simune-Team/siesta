@@ -32,7 +32,8 @@ C                         nspin=4 => Noncollinear spin
 C integer norb          : Total number of basis orbitals in supercell
 C integer iaorb(norb)   : Atom to which each orbital belongs
 C integer iphorb(norb)  : Orbital index (within atom) of each orbital
-C integer nuo           : Number of orbitals in a unit cell
+C integer nuo           : Number of orbitals in a unit cell in this node
+C integer nuotot        : Number of orbitals in a unit cell
 C integer nua           : Number of atoms in unit cell
 C integer na            : Number of atoms in supercell
 C integer isa(na)       : Species index of all atoms in supercell
