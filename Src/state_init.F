@@ -1,4 +1,6 @@
       MODULE m_state_init
+      use write_subs
+      use m_stress
       private
       public :: state_init
 
@@ -26,6 +28,7 @@
 
       integer :: istep
 
+      real(dp):: veclen     ! Length of a unit-cell vector
       logical :: cell_can_change
 
       external :: automatic_cell,

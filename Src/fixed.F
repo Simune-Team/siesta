@@ -82,6 +82,7 @@ C
       use parallel,   only : Node
       use fdf
       use parsing
+      use alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -113,7 +114,7 @@ c Internal variables
      .  i, ia, ia1, ia2, ia3, ic, il, integs(maxw), iu, ix,
      .  jx, lastch, lch(0:maxw), nc, ni, nn, nr, nv, 
      .  maxcnew
-      integer, dimension(:), allocatable, save ::
+      integer, dimension(:), pointer, save ::
      .  iac, ibuffer
 #ifdef MPI
       integer MPIerror
@@ -136,7 +137,11 @@ C Read constraint data only the first time
 
 C Allocate memory for constraints - do only once and preserve contents
         allocate(ctype(maxc))
-        allocate(iac(maxc))
+
+!        allocate(iac(maxc))
+         nullify( iac )
+         call re_alloc( iac, 1, maxc, name='iac', routine='fixed' )
+
         call memory('A','I',maxc,'fixed')
         allocate(xc(3,maxc))
         call memory('A','D',3*maxc,'fixed')
@@ -191,16 +196,22 @@ C
                 ctype(1:maxc) = cbuffer(1:maxc)
                 deallocate(cbuffer)
 C
-                allocate(ibuffer(maxc))
-                call memory('A','I',maxc,'fixed')
-                ibuffer(1:maxc) = iac(1:maxc)
-                call memory('D','I',size(iac),'fixed')
-                deallocate(iac)
-                allocate(iac(maxcnew))
-                call memory('A','I',maxcnew,'fixed')
-                iac(1:maxc) = ibuffer(1:maxc)
-                call memory('D','I',size(ibuffer),'fixed')
-                deallocate(ibuffer)
+! PARA BORRAR
+!                allocate(ibuffer(maxc))
+!                call memory('A','I',maxc,'fixed')
+!                ibuffer(1:maxc) = iac(1:maxc)
+!                call memory('D','I',size(iac),'fixed')
+!                deallocate(iac)
+!                allocate(iac(maxcnew))
+!                iac(1:maxc) = ibuffer(1:maxc)
+!                call memory('A','I',maxcnew,'fixed')
+!                call memory('D','I',size(ibuffer),'fixed')
+!                deallocate(ibuffer)
+
+                 call re_alloc( iac, 1, maxcnew, name='iac',            
+     &                          routine='fixed',                         
+     &                          copy=.true. )
+
 C
                 allocate(dpbuffer2(3,maxc))
                 call memory('A','D',maxc,'fixed')

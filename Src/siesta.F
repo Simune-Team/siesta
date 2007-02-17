@@ -13,41 +13,12 @@
       use siesta_geom
       use molecularmechanics, only : twobody
       use parallel, only: IOnode
+      use m_state_analysis
+      use m_stress
       implicit none
 
       integer :: istep, iscf
       logical :: first, last, relaxd
-
-      external:: automatic_cell ! Finds automatic unit cell
-      external:: bonds          ! Finds interatomic "bonds" (close atom pairs)
-      external:: cgvc           ! CG geometry relaxation including unit cell
-      external:: cgvc_zmatrix   ! CG geometry relaxation using Z-matrix coordinates
-      external:: fixed          ! Orthogonalizes atomic forces & stress to constraints
-      external:: dhscf          ! Finds SCF-dependent part of the Hamiltonian matrix
-      external:: diagon         ! Solves the generalized eigenvalue problem
-      external:: dnaefs         ! Finds a correction to the neutral-atom energy&forces
-      external:: eggbox         ! Subtracts eggbox effect from energy and forces
-      external:: extrapol       ! Extrapolates DM for new geometry
-      external:: initatom       ! Initializes pseudoatom info
-      external:: ioeig          ! I/O of electron eigenenergies
-      external:: iofa           ! I/O of atomic forces
-      external:: iomd           ! I/O of atomic positions and velocities in MD
-      external:: iokp
-      external:: iodm           ! I/O of density matrix
-      external:: iozm           ! I/O of Z-matrix
-      external:: kinefsm        ! Finds kinetic-energy part of the Hamiltonian
-      external:: memory         ! Counts allocated memory sizes
-      external:: mulliken       ! Finds Mulliken population charges
-      external:: naefs          ! Finds neutral-atom part of Hamiltonian, energy&forces
-      external:: neighb         ! Finds lists of neighbor atoms
-      external:: pulayx         ! Mixes density matrix using Pulay algorithm
-      external:: reinit         ! Initializes data read
-      external:: shaper         ! Finds geometry type
-      external:: spnvec         ! Finds spin vector
-      external:: timer          ! Measures and prints CPU time
-      external:: xijorb         ! Finds vectors between basis-orbital centers
-      external:: prversion
-
 
 !------------------------------------------------------------------------- BEGIN
       call siesta_init()
@@ -109,6 +80,7 @@
           STOP 'MALLLL'
         endif
 
+        call state_analysis( istep )
         call siesta_move( istep, relaxd )
         if (.not. relaxd) then
           istep = istep + 1

@@ -172,6 +172,10 @@ MODULE Kpoint_grid
       call MPI_Bcast(kscell(1,1),9,MPI_integer,0,MPI_Comm_World, MPIerror)
       call MPI_Bcast(kdispl,3,MPI_double_precision,0,MPI_Comm_World, MPIerror)
       call MPI_Bcast(firm_displ,1,MPI_logical,0,MPI_Comm_World, MPIerror)
+      call MPI_Bcast(user_requested_mp,1,MPI_logical,0,   &
+                     MPI_Comm_World, MPIerror)
+      call MPI_Bcast(user_requested_cutoff,1,MPI_logical,0,   &
+                     MPI_Comm_World, MPIerror)
 #endif
 
     end subroutine setup_scf_kscell

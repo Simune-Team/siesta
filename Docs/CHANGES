@@ -10,71 +10,400 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
-2007-02-08 11:20 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+2007-02-17 20:00:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-11
 
-Summary: New stub module for sparse matrices
-
-A stub module to hold the sparse matrices ('sparse_matrices') has been
-created.  It just holds the relevant variables, without any attempt to
-create derived types yet.
-
-(Work done at BSC in the afternoon of Feb 7)
-
-2007-02-08 11:05 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
-
-Summary: New geometry module
-
-A new module siesta_geom has been created to hold basic geometry
-information.
-
-Thus the atomic coordinates no longer live in 'atomlists', and the unit
-cell no longer lives in 'm_cell'. Supercell variables have also be put
-in the new module.
-
-+ Some more slimming down of 'siesta_todo'.
-
-2007-02-08 10:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
-
-Summary: Creation of a module to hold the siesta options
+Summary: Fourth session at the BSC
 Keywords: 
 
-A new module 'siesta_options' has been created to hold the program
-options (typically those variables that can be specified in the fdf file).
-The catch-all module 'siesta_todo' has been slimmed down accordingly.
+* New routine state_analysis.F split from siesta_move.F
 
-Routine redata has been put in the module, renamed as 'read_options'.
+* Some variables taken out of siesta_todo and moved to
+various places:
 
-A few other option-setting statements in the old siesta.F have been put
-into read_options. 
+ - New module m_stress in stress.F90 holds stress et al
+  (Some variables could actually be turned into locals
+   in several routines, except perhaps 'stress'.)
+ - mscell et al moved to siesta_geom
+ - nh and nhmax moved to sparse_matrices
 
-Some others remain scattered:
+* write_subs now holds the siesta_write_XX routines
+  formerly in siesta_todo
 
-1. Those in the Broyden routines.
-2. Those needed to process the initial geometry, read in struct_init.
+* Some allocatables changed to pointers in fixed.F and pulayx.F
+  (First step: just use re_alloc instead of allocate/memory
+   In a second step work arrays will live outside)
 
-(Work done at the BSC on Feb 7)
+* Cosmetic changes in m_mpi_utils.F90 (in the context of the
+analysis of the MPI interface)
 
-2007-02-08 9:38 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
+* Changes in coor.F:
+  - mscell, nsc changed to coor_mscell and coord_nsc
+  - routine superx_coor taken out of the coor scope, to
+    avoid clashes with the imported variables in coor.
+    (this supercell does not have anything to do with the
+     auxiliary supercell for matrix elements)
 
-Summary: Use of xalast in analysis routines. Exit of geometry loop
-Keywords: 
 
-The conditions for the setting and use of xalast have been clarified.
+2007-02-15 22:13:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
 
-The analysis routines (KSVpol, optical, dhscf (in plotting mode),
-local_DOS) now use the xalast array, which always refers to the atomic
-positions for which the density matrix was computed at the last
-geometry iteration performed (i.e., it is set before moving the atoms).
+    Summary:
+      Some conversions to Fortran90 by M. Quero
+    Revision:
+      siesta-bsc--master--2.1--patch-10
 
-For consistency, new arrays ucell_last and scell_last are similarly handled.
+    zmatrix.F90, zheevs.F90, siesta_options.F90
+    
+    
 
-Apart from those routines, the new setting conditions for xalast affect the
-computation of the virial correction to the "molecular pressure".
+    modified files:
+     Src/siesta_options.F90 Src/zheevds.F90 Src/zmatrix.F90
 
-In the geometry loop, the ending condition for istep has been
-corrected: it is not increased if the structure is relaxed.
+    renamed files:
+     Src/.arch-ids/siesta_options.F.id
+       ==> Src/.arch-ids/siesta_options.F90.id
+     Src/.arch-ids/zheevds.f.id
+       ==> Src/.arch-ids/zheevds.F90.id
+     Src/.arch-ids/zmatrix.F.id
+       ==> Src/.arch-ids/zmatrix.F90.id
+     Src/siesta_options.F
+       ==> Src/siesta_options.F90
+     Src/zheevds.f
+       ==> Src/zheevds.F90
+     Src/zmatrix.F
+       ==> Src/zmatrix.F90
 
-(Work done at BSC in the morning of Feb 7)
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-16
+     mqag@bsc--2007/siesta-bsc--mqag--2.1--patch-5
+
+
+2007-02-15 21:39:24 GMT	Alberto Garcia <albertog@icmab.es>	patch-9
+
+    Summary:
+      Fix import of no_l in born_charge
+    Revision:
+      siesta-bsc--master--2.1--patch-9
+
+
+    modified files:
+     Src/born_charge.F
+
+
+2007-02-16 02:10:07 GMT	Alberto Garcia <albertog@icmab.es>	patch-8
+
+    Summary:
+      Siesta_todo slimming by M. Quero
+    Revision:
+      siesta-bsc--master--2.1--patch-8
+
+    Module imports in siesta_todo have been almost eliminated.
+    
+    Only the variables declared explicitly as local in the old siesta.F
+    remain in siesta_todo. (Work done by Manuel Quero after the third meeting)
+    
+    (Note: the cosmetic changes in neighb.f, ranger.f, and struct_init.F90,
+    have not been applied)
+    
+    A bug in born_charge.F has been fixed by AG.
+    
+    Patches applied:
+    
+     * mqag@bsc--2007/siesta-bsc--mqag--2.1--patch-3
+       Progressive emptying of siesta_todo
+    
+     * mqag@bsc--2007/siesta-bsc--mqag--2.1--patch-4
+       Add siesta_geom imports to born_charge.F
+    
+
+    modified files:
+     Src/Makefile Src/born_charge.F Src/compute_dm.F Src/coor.F
+     Src/hsparse.f Src/local_DOS.F Src/m_broyden_mixing.f
+     Src/mixer.F Src/new_dm.F Src/normalize_dm.F
+     Src/post_scf_work.F Src/projected_DOS.F Src/proximity_check.F
+     Src/scfconvergence_test.F Src/setup_hamiltonian.F Src/siesta.F
+     Src/siesta_analysis.F Src/siesta_end.F Src/siesta_geom.F90
+     Src/siesta_init.F Src/siesta_move.F Src/siesta_options.F
+     Src/siesta_todo.F Src/sparse_matrices.F90 Src/state_init.F
+     Src/struct_init.F Src/write_md_record.F Src/xcmod.F
+
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-14
+     mqag@bsc--2007/siesta-bsc--mqag--2.1--patch-3
+     mqag@bsc--2007/siesta-bsc--mqag--2.1--patch-4
+
+
+2007-02-16 02:08:19 GMT	Alberto Garcia <albertog@icmab.es>	patch-7
+
+    Summary:
+      Initialize iza in struct_init
+    Revision:
+      siesta-bsc--master--2.1--patch-7
+
+    The array iza might be needed by ioxv in struct_init, but it was initialized
+    only later in atomlist.
+    
+    
+
+    modified files:
+     Src/atomlist.f Src/struct_init.F
+
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-10
+
+
+2007-02-16 02:07:23 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
+
+    Summary:
+      Encapsulation of k-point handling
+    Revision:
+      siesta-bsc--master--2.1--patch-6
+
+    The different k-point grids now live in different modules,
+    and are set up (or their size estimated) early in siesta_init.
+    
+    The scf kgrid has its own module, kpoint_grid, and a more
+    sophisticated (but equivalent) logic inside.  (Except for a cosmetic
+    change when the auxiliary k-point supercell is the trivial one but
+    with permuted rows).
+    
+    The others, notably the polarization grid, are just
+    encapsulated, without much change.
+    
+    Patches applied:
+    
+     * ag@bsc--2007/siesta-bsc--ag--2.1--patch-7
+       New utilities for scf kgrid construction
+    
+     * ag@bsc--2007/siesta-bsc--ag--2.1--patch-8
+       Fix use of uninitialized maxk
+    
+     * ag@bsc--2007/siesta-bsc--ag--2.1--patch-11
+       Move band initialization back to siesta_init
+    
+     * ag@bsc--2007/siesta-bsc--ag--2.1--patch-12
+       Encapsulate k-point processing for wavefunction printout
+    
+     * ag@bsc--2007/siesta-bsc--ag--2.1--patch-13
+       Encapsulation of polarization k-point setup
+
+    new files:
+     Src/.arch-ids/find_kgrid.F.id Src/.arch-ids/setup_kscell.F.id
+     Src/find_kgrid.F Src/setup_kscell.F
+
+    removed files:
+     Src/.arch-ids/repol.F.id Src/repol.F
+
+    modified files:
+     Src/Makefile Src/bands.F Src/born_charge.F Src/dhscf.F
+     Src/diagg.F Src/diagk.F Src/fermid.F Src/kpoint_grid.F90
+     Src/ksv.f Src/ksvinit.F Src/siesta_analysis.F
+     Src/siesta_init.F Src/siesta_todo.F Src/state_init.F
+     Src/writewave.F Tests/born/born.fdf
+
+    renamed files:
+     Src/.arch-ids/ksvinit.f.id
+       ==> Src/.arch-ids/ksvinit.F.id
+     Src/ksvinit.f
+       ==> Src/ksvinit.F
+
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-7
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-8
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-11
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-12
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-13
+
+
+2007-02-09 10:48:32 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+    Summary:
+      More options for running tests
+    Revision:
+      siesta-bsc--master--2.1--patch-5
+
+    Several versions of Makefile and test.mk are provided in Tests:
+    
+    bsc-Makefile, bsc-test.mk  : For BSC work
+    std-Makefile, std-test.mk  : Standard, complete versions
+    
+    The user should link the chosen versions to Makefile and test.mk
+    
+    
+
+    new files:
+     Tests/.arch-ids/bsc-compare.sh.id Tests/bsc-compare.sh
+
+    modified files:
+     Tests/README Tests/bsc-Makefile Tests/bsc-test.mk
+     Tests/std-compare.sh
+
+    renamed files:
+     Tests/.arch-ids/Makefile.id
+       ==> Tests/.arch-ids/std-Makefile.id
+     Tests/.arch-ids/compare.sh.id
+       ==> Tests/.arch-ids/std-compare.sh.id
+     Tests/.arch-ids/test.mk.id
+       ==> Tests/.arch-ids/std-test.mk.id
+     Tests/Makefile
+       ==> Tests/std-Makefile
+     Tests/compare.sh
+       ==> Tests/std-compare.sh
+     Tests/test.mk
+       ==> Tests/std-test.mk
+
+
+2007-02-08 11:15:51 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+    Summary:
+      New stub module for sparse matrices
+    Revision:
+      siesta-bsc--master--2.1--patch-4
+
+    A stub module to hold the sparse matrices ('sparse_matrices') has been
+    created.  It just holds the relevant variables, without any attempt to
+    create derived types yet.
+    
+    (Work done at BSC in the afternoon of Feb 7)
+    
+
+    new files:
+     Src/.arch-ids/sparse_matrices.F90.id Src/sparse_matrices.F90
+
+    modified files:
+     Docs/CHANGES Src/Makefile Src/born_charge.F Src/compute_dm.F
+     Src/local_DOS.F Src/mixer.F Src/new_dm.F Src/normalize_dm.F
+     Src/post_scf_work.F Src/projected_DOS.F
+     Src/setup_hamiltonian.F Src/siesta_analysis.F
+     Src/siesta_init.F Src/siesta_move.F Src/siesta_todo.F
+     Src/state_init.F version.info
+
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-5
+
+
+2007-02-08 10:58:38 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
+
+    Summary:
+      New geometry module
+    Revision:
+      siesta-bsc--master--2.1--patch-3
+
+    A new module siesta_geom has been created to hold basic geometry
+    information.
+    
+    Thus the atomic coordinates no longer live in 'atomlists', and the unit
+    cell no longer lives in 'm_cell'. Supercell variables have also be put
+    in the new module.
+    
+    + Some more slimming down of 'siesta_todo'.
+    
+
+    new files:
+     Src/.arch-ids/siesta_geom.F90.id Src/siesta_geom.F90
+
+    modified files:
+     Docs/CHANGES Src/Makefile Src/atomlist.f Src/coor.F
+     Src/diagsprl.F Src/iozm.F Src/local_DOS.F Src/m_cell.f
+     Src/m_iostruct.f Src/outcoor.f Src/pdos.F
+     Src/siesta_analysis.F Src/siesta_init.F Src/siesta_move.F
+     Src/siesta_options.F Src/siesta_todo.F Src/struct_init.F
+     Src/writewave.F Src/zmatrix.F version.info
+
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-4
+
+
+2007-02-08 10:35:15 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
+
+    Summary:
+      Creation of a module to hold the siesta options
+    Revision:
+      siesta-bsc--master--2.1--patch-2
+
+    A new module 'siesta_options' has been created to hold the program
+    options (typically those variables that can be specified in the fdf file).
+    The catch-all module 'siesta_todo' has been slimmed down accordingly.
+    
+    Routine redata has been put in the module, renamed as 'read_options'.
+    
+    A few other option-setting statements in the old siesta.F have been put
+    into read_options. 
+    
+    Some others remain scattered:
+    
+    1. Those in the Broyden routines.
+    2. Those needed to process the initial geometry, read in struct_init.
+    
+    (Work done at the BSC on Feb 7)
+    
+    
+
+    new files:
+     Src/.arch-ids/siesta_options.F.id Src/siesta_options.F
+
+    removed files:
+     Src/.arch-ids/m_smearing.f.id Src/.arch-ids/redata.F.id
+     Src/m_smearing.f Src/redata.F
+
+    modified files:
+     Docs/CHANGES Src/Makefile Src/compute_dm.F Src/local_DOS.F
+     Src/mixer.F Src/new_dm.F Src/post_scf_work.F
+     Src/projected_DOS.F Src/proximity_check.F
+     Src/scfconvergence_test.F Src/setup_hamiltonian.F Src/siesta.F
+     Src/siesta_analysis.F Src/siesta_init.F Src/siesta_move.F
+     Src/siesta_todo.F Src/state_init.F Src/struct_init.F
+     Src/write_md_record.F version.info
+
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-3
+
+
+2007-02-08 09:52:48 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
+
+    Summary:
+      Use of xalast in analysis routines. Exit of geometry loop
+    Revision:
+      siesta-bsc--master--2.1--patch-1
+
+    The conditions for the setting and use of xalast have been clarified.
+    
+    The analysis routines (KSVpol, optical, dhscf (in plotting mode),
+    local_DOS) now use the xalast array, which always refers to the atomic
+    positions for which the density matrix was computed at the last
+    geometry iteration performed (i.e., it is set before moving the atoms).
+    
+    For consistency, new arrays ucell_last and scell_last are similarly handled.
+    
+    Apart from those routines, the new setting conditions for xalast affect the
+    computation of the virial correction to the "molecular pressure".
+    
+    In the geometry loop, the ending condition for istep has been
+    corrected: it is not increased if the structure is relaxed.
+    
+    (Work done at BSC in the morning of Feb 7)
+    
+    
+
+    new files:
+     Src/.arch-ids/m_siesta.jose.F.id Src/m_siesta.jose.F
+
+    modified files:
+     Docs/CHANGES Src/local_DOS.F Src/m_cell.f Src/siesta.F
+     Src/siesta_analysis.F Src/siesta_move.F Src/siesta_todo.F
+     version.info
+
+    new patches:
+     ag@bsc--2007/siesta-bsc--ag--2.1--patch-2
+
+
+2007-02-08 08:53:10 GMT	Alberto Garcia <albertog@icmab.es>	base-0
+
+    Summary:
+      tag of siesta@uam.es--2006/siesta-bsc--reference--2.1--patch-7
+    Revision:
+      siesta-bsc--master--2.1--base-0
+
+    (automatically generated log message)
 
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-bsc--reference--2.1

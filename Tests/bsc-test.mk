@@ -1,7 +1,7 @@
 #
 # Single-test makefile template
 #
-SIESTA= mpirun -np 1 -machinefile $(HOME)/siesta-test-hfile ../../../Src/siesta
+SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../Src/siesta
 #SIESTA=../../../Src/siesta
 #
 completed:

@@ -93,6 +93,7 @@ C
       use fdf
       use files,      only : slabel, label_length
       use sys,        only : die
+      use alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -131,7 +132,7 @@ C Internal variables ....................................................
 
       real(dp) 
      .  sum
-      real(dp), dimension(:,:), allocatable, save ::
+      real(dp), dimension(:,:), pointer, save ::
      .  b, bi
       real(dp), dimension(:), allocatable, save ::
      .  buffer
@@ -281,8 +282,14 @@ C .......................
 C Perform Pulay mixing if iscf .gt. 2
 
 C Allocate local arrays
-       allocate(b(maxsav+1,maxsav+1))
-       call memory('A','D',(maxsav+1)**2,'pulayx')
+!       allocate(b(maxsav+1,maxsav+1))
+!       call memory('A','D',(maxsav+1)**2,'pulayx')
+
+        nullify( b )
+        call re_alloc( b, 1, maxsav+1, 1, maxsav+1, name='b', 
+     &                 routine='pulayx' )
+
+
        allocate(bi(maxsav+1,maxsav+1))
        call memory('A','D',(maxsav+1)**2,'pulayx')
        allocate(buffer(maxsav))
@@ -481,8 +488,12 @@ C ........
        endif
 
 C Deallocate local arrays
-       call memory('D','D',size(b),'pulayx')
-       deallocate(b)
+!       call memory('D','D',size(b),'pulayx')
+!       deallocate(b)
+
+       call de_alloc( b, name='b' )
+
+
        call memory('D','D',size(bi),'pulayx')
        deallocate(bi)
        call memory('D','D',size(buffer),'pulayx')

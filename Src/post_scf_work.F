@@ -13,6 +13,7 @@
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
       use molecularmechanics, only : twobody
       use siesta_cml
+      use m_stress
       implicit none
 
       logical :: first, last

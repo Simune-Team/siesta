@@ -35,6 +35,9 @@
       logical           :: Server_calculation
       real(dp)          :: local_charnet
 
+      ! Reciprocal unit vectors
+      real(dp):: bcell(3,3)
+
 !------------------------------------------------------------------------- BEGIN
 
       !! Read number of atoms and coordinates, and unit cell

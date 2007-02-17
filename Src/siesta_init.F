@@ -32,9 +32,11 @@
       use m_wallclock, only : wallclock
       use parallel, only: Node, Nodes, IOnode
       USE densematrix, only: Haux, Saux, Psi
-
+      use m_stress
       implicit none
 
+
+      real(dp):: veclen     ! Length of a unit-cell vector
 
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
@@ -275,8 +277,8 @@
 
       call estimate_pol_kpoints(ucell)
       gamma = gamma .and. gamma_polarization
-
-!----------------------------------------------------------------------
+!!      print *, "gamma, gamma_pol: ", gamma, gamma_polarization
+!
 
 ! Find required supercell
 ! 2*rmaxh is used to guarantee that two given orbitals in the
@@ -321,7 +323,7 @@
         fincoor = phonon_num_disps
       else if (idyn .eq. 8) then
         inicoor = 0
-        fincoor = ihuge
+        fincoor = huge(1)
       else
          call die('siesta: wrong idyn')
       endif

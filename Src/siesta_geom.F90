@@ -9,6 +9,18 @@ MODULE siesta_geom
   real(dp)                        :: ucell(3,3), ucell_last(3,3)
   real(dp)                        :: scell(3,3), scell_last(3,3)
 
+  ! Diagonal elements of supercell (it is a diagonal matrix)
+  integer :: nsc(3) = 1
+   
+  ! Previous diagonal elements of supercell
+  integer :: nscold(3) = 0
+
+  ! Matrix of auxiliary supercell
+  integer :: mscell(3,3)
+
+  ! Unit cell "velocity" (time derivative)
+  real(dp):: vcell(3,3)
+
   ! Atomic coordinates
   real(dp), pointer               :: xa(:,:)
   real(dp), pointer               :: xalast(:,:)

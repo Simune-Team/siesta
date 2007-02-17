@@ -13,7 +13,7 @@ REFERENCE=../../ref-version/Tests
 #       md_anneal md_verlet md_nose si_bandpoints sih_fire \
 #       graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid"
 
-tests="h2o mgco3 md_npr  zmatrix born"
+tests="h2o mgco3 md_npr zmatrix born var_cell"
 
 for i in $tests ;do
 echo "---------$i start"

@@ -43,7 +43,8 @@ C Internal variables and arrays
       character             :: acf*22, acf_default*22
       logical               :: isdiag, leqi
       integer               :: i, ia, ic, iscale, iua, iunit, ix,
-     .                         mscell(3,3), ncells, nsc(3), nua
+     .                         coor_mscell(3,3), ncells, 
+     &                         coor_nsc(3), nua
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
      .                         origin(3),
      .                         volcel, xac(3)
@@ -55,7 +56,7 @@ C Internal variables and arrays
 
       if (Node.eq.0) then
 C Read unit cell and supercell
-        call redcel( alat, ucell, scell, mscell )
+        call redcel( alat, ucell, scell, coor_mscell )
 
 C Set cell argument to "supercell" for use by the program
         cell = scell
@@ -150,7 +151,7 @@ C  end of Node.eq.0
 C Distribute data
 
       call broadcast(iscale)
-      call broadcast(mscell(1:3,1:3))
+      call broadcast(coor_mscell(1:3,1:3))
       call broadcast(na)
       call broadcast(nua)
       call broadcast(ncells)
@@ -229,10 +230,11 @@ C Expand the coordinates to whole supercell
         if (ncells.gt.1) then
 
 C Find equivalent diagonal combination of cell/supercell
-          call digcel( ucell, mscell, dcell, dscell, nsc, isdiag )
+          call digcel( ucell, coor_mscell, dcell, dscell,  
+     &                 coor_nsc, isdiag )
 
 C Expand coordinates
-          call superx_coor( dcell, nsc, nua, na, xa, dscell )
+          call superx_coor( dcell, coor_nsc, nua, na, xa, dscell )
 
 C Expand index isa
           ia = 0
@@ -255,10 +257,9 @@ C  end of not lUseZmatrix
         do ia=1, nua
            write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
         enddo
+      end subroutine coor
 
-      contains
-
-      subroutine superx_coor(ucell, NSC, na, maxa, XA, scell )
+      subroutine superx_coor( ucell, NSC, na, maxa, XA, scell )
 C **********************************************************************
 C Generates supercell vectors and atomic positions.
 C Written by J.M.Soler, August 1998
@@ -323,5 +324,3 @@ C Expand atomic positions to supercell
       endif
 
       end subroutine superx_coor
-
-      end subroutine coor

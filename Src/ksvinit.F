@@ -46,7 +46,7 @@
      .              shrink=.false.,copy=.false.)
 
       gamma_polarization = (nkpol == 0) 
-
+!!      print *, "nkpol, gamma_pol: ", nkpol, gamma_polarization
       end subroutine estimate_pol_kpoints
 !
 !------------------------------------------------------------------------

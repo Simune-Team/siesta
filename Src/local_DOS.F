@@ -6,6 +6,7 @@
 
       subroutine local_DOS( )
       USE SIESTA_TODO
+      use m_stress
       use sparse_matrices
       USE siesta_options, only :occtol, g2cut, isolve, 
      &                          fixspin, temp, neigwanted 

@@ -4,6 +4,7 @@
       use siesta_cml
       use m_wallclock, only : wallclock
       use parallel, only: IOnode
+      use write_subs
       implicit none
 
       logical :: first

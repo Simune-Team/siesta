@@ -1,9 +1,0 @@
-echo '==================================================================================================== h2o Begin'
-diff h2o/h2o.out /home/bsc21/bsc21246/siesta-2.1.29/Tests/h2o/h2o.out 
-echo '==================================================================================================== mgco3 Begin'
-diff mgco3/mgco3.out /home/bsc21/bsc21246/siesta-2.1.29/Tests/mgco3/mgco3.out 
-echo '==================================================================================================== md_npr Begin'
-diff md_npr/md_npr.out /home/bsc21/bsc21246/siesta-2.1.29/Tests/md_npr/md_npr.out 
-echo '==================================================================================================== zmatrix Begin'
-diff zmatrix/zmatrix.out /home/bsc21/bsc21246/siesta-2.1.29/Tests/zmatrix/zmatrix.out 
-

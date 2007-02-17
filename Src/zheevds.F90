@@ -14,7 +14,7 @@
 
   integer         :: info
   integer         :: lda
-  integer         :: lldz
+  integer         :: ldz
   integer         :: liwork
   integer         :: lrwork
   integer         :: lwork

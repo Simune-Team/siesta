@@ -17,6 +17,7 @@
       use m_nlefsm,     only: nlefsm
       use m_overfsm,    only: overfsm
       use siesta_cml
+      use m_stress
       implicit none
       logical :: first, last
       integer :: iscf

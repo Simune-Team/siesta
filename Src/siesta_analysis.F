@@ -1,4 +1,6 @@
       module m_siesta_analysis
+      use write_subs
+
       private
       public :: siesta_analysis
 
@@ -25,7 +27,7 @@
       use parallel, only: IOnode
       use files,       only : label_length
       use parse
-
+      use m_stress
       implicit none
 
       character(len=label_length+5), external :: paste
