@@ -16,6 +16,9 @@
       use atomlist, only: rmaxo, no_s
 
       implicit none
+
+      real(dp)                      :: polxyz(3,nspin)  ! Automatic, small
+      real(dp)                      :: polR(3,nspin)  ! Automatic, small
 !
 !     Computes Born-effective charges by finite differences,
 !     using the "force constant calculation" mode of operation.

@@ -43,6 +43,9 @@
 
       real(dp), dimension(3,3)      :: dummy_str, dummy_strl
 
+      real(dp)                      :: polxyz(3,nspin)  ! Automatic, small
+      real(dp)                      :: polR(3,nspin)  ! Automatic, small
+
       external :: 
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,

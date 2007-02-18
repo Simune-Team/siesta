@@ -99,16 +99,10 @@
         ! Will print k-points also
         call setup_Kpoint_grid( ucell )
 
-        if (size(eo,dim=3) .lt. maxk) then
-          call memory('D','D',size(eo),'siesta')
-          deallocate(eo)
-          call memory('D','D',size(qo),'siesta')
-          deallocate(qo)
-          allocate(eo(no_u,nspin,maxk))
-          call memory('A','D',no_u*nspin*maxk,'siesta')
-          allocate(qo(no_u,nspin,maxk))
-          call memory('A','D',no_u*nspin*maxk,'siesta')
-        endif
+        call re_alloc(eo,1,no_u,1,nspin,1,maxk,name="eo",
+     $                routine="state_init")
+        call re_alloc(qo,1,no_u,1,nspin,1,maxk,name="qo",
+     $                routine="state_init")
 
         ! Find required supercell
         auxchanged = .false.

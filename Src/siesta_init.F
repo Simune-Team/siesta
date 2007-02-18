@@ -156,13 +156,14 @@
       endif
 
 ! Allocate other arrays based on read sizes ................
-!
-      allocate(cfa(3,na_u))
-      call memory('A','D',3*na_u,'siesta')
-      allocate(fa(3,na_u))
-      call memory('A','D',3*na_u,'siesta')
-      allocate(fal(3,na_u))
-      call memory('A','D',3*na_u,'siesta')
+
+      nullify(fa,cfa,fal)
+      call re_alloc(fa,1,3,1,na_u,name="fa",
+     $                routine="siesta_init")
+      call re_alloc(cfa,1,3,1,na_u,name="cfa",
+     $                routine="siesta_init")
+      call re_alloc(fal,1,3,1,na_u,name="fal",
+     $                routine="siesta_init")
 
       if (IOnode) call spin_init(nspin)
       call broadcast(nspin)
@@ -171,10 +172,6 @@
       call memory('A','D',nspin,'siesta')
       allocate(qs(nspin))
       call memory('A','D',nspin,'siesta')
-      allocate(polR(3,nspin))
-      call memory('A','D',3*nspin,'siesta')
-      allocate(polxyz(3,nspin))
-      call memory('A','D',3*nspin,'siesta')
 
 ! Read simulation data ................................................
       call read_options( na_u, ns, nspin )
@@ -260,10 +257,11 @@
       call setup_Kpoint_grid( ucell )
       gamma = gamma_scf
 
-      allocate(eo(no_u,nspin,maxk))
-      call memory('A','D',no_u*nspin*maxk,'siesta')
-      allocate(qo(no_u,nspin,maxk))
-      call memory('A','D',no_u*nspin*maxk,'siesta')
+      nullify(eo,qo)
+      call re_alloc(eo,1,no_u,1,nspin,1,maxk,name="eo",
+     $              routine="state_init")
+      call re_alloc(qo,1,no_u,1,nspin,1,maxk,name="qo",
+     $              routine="state_init")
 
       call setup_bands()
       gamma = gamma .and. gamma_bands

@@ -130,19 +130,17 @@
       real(dp), external      :: volcel
 
       real(dp), allocatable   :: auxpul(:,:)! Auxilialy matrices for Pulay mixing
-      real(dp), allocatable   :: cfa(:,:)   ! Atomic forces orthogonalized to geometry constraints
+      real(dp), pointer, save :: cfa(:,:)   ! Atomic forces orthogonalized to geometry constraints
       real(dp), allocatable   :: ebk(:,:,:)! Band energies
       real(dp), allocatable   :: efs(:)     ! Fermi energy for each spin (for fixed spin calculations)
-      real(dp), allocatable   :: eo(:,:,:) ! Hamiltonian eigenvalues
-      real(dp), allocatable   :: fa(:,:)    ! Atomic forces
-      real(dp), allocatable   :: fal(:,:)   ! Local-node part of atomic forces
-      real(dp), allocatable   :: qo(:,:,:) ! Occupations of eigenstates
+      real(dp), pointer, save :: eo(:,:,:)  ! Hamiltonian eigenvalues
+      real(dp), pointer, save :: fa(:,:)    ! Atomic forces
+      real(dp), pointer, save :: fal(:,:)   ! Local-node part of atomic forces
+      real(dp), pointer, save :: qo(:,:,:)  ! Occupations of eigenstates
       real(dp), allocatable   :: qs(:)      ! Spin charges
       real(dp), allocatable   :: r2ij(:)    ! Interatomic distances squared
-      real(dp), allocatable   :: polR(:,:)  ! Macroscopic polarization in unit-cell coordinates
-      real(dp), allocatable   :: polxyz(:,:)! Macroscopic polarization in cartesian coordinates
       real(dp), allocatable   :: va(:,:)    ! Atomic velocities
-      real(dp), allocatable   :: xij(:,:)   ! Ineratomic vectors
+      real(dp), allocatable   :: xij(:,:)   ! Interatomic vectors
       real(dp), allocatable   :: xijo(:,:)  ! Vectors between basis-orbital centers
 
 
