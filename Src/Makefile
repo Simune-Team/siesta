@@ -82,7 +82,8 @@ OBJS = automatic_cell.o \
 	state_init.o siesta_move.o setup_hamiltonian.o compute_dm.o mixer.o\
 	scfconvergence_test.o post_scf_work.o state_analysis.o write_subs.o \
 	siesta_todo.o siesta_init.o struct_init.o siesta_options.o siesta_geom.o \
-        siesta_analysis.o siesta_end.o siesta.o io.o sparse_matrices.o \
+        siesta_analysis.o siesta_end.o siesta_forces.o \
+        siesta.o io.o sparse_matrices.o \
         spin_init.o coor.o atm_transfer.o stress.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
@@ -473,10 +474,8 @@ setup_hamiltonian.o: siesta_geom.o siesta_options.o siesta_todo.o
 setup_hamiltonian.o: sparse_matrices.o stress.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 shaper.o: atmfuncs.o precision.o
-siesta.o: compute_dm.o mixer.o parallel.o post_scf_work.o setup_hamiltonian.o
-siesta.o: siesta_analysis.o siesta_end.o siesta_geom.o siesta_init.o
-siesta.o: siesta_move.o siesta_options.o siesta_todo.o state_analysis.o
-siesta.o: state_init.o
+siesta.o: siesta_analysis.o siesta_end.o siesta_forces.o siesta_init.o
+siesta.o: siesta_move.o siesta_todo.o
 siesta_analysis.o: atomlist.o bands.o files.o kpoint_grid.o ksvinit.o
 siesta_analysis.o: local_DOS.o parallel.o projected_DOS.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o siesta_todo.o
@@ -485,6 +484,9 @@ siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o siesta_todo.o
 siesta_end.o: timestamp.o
+siesta_forces.o: compute_dm.o mixer.o parallel.o post_scf_work.o
+siesta_forces.o: setup_hamiltonian.o siesta_options.o siesta_todo.o
+siesta_forces.o: state_analysis.o state_init.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o kpoint_grid.o
 siesta_init.o: ksvinit.o m_check_supercell.o m_fdf_global.o m_iostruct.o
@@ -570,6 +572,7 @@ m_setup_hamiltonian.o: setup_hamiltonian.o
 m_siesta.o: m_siesta.jose.o
 m_siesta_analysis.o: siesta_analysis.o
 m_siesta_end.o: siesta_end.o
+m_siesta_forces.o: siesta_forces.o
 m_siesta_init.o: siesta_init.o
 m_siesta_move.o: siesta_move.o
 m_state_analysis.o: state_analysis.o

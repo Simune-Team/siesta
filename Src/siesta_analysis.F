@@ -6,7 +6,7 @@
 
       CONTAINS
 
-      subroutine siesta_analysis( first, relaxd, iscf )
+      subroutine siesta_analysis( relaxd )
       USE SIESTA_TODO
       USE band, only: nbk, bk, maxbk, bands
       USE writewave, only: nwk, wfk, wwave
@@ -32,8 +32,7 @@
 
       character(len=label_length+5), external :: paste
 
-      logical :: first, relaxd
-      integer :: iscf
+      logical :: relaxd
 
       character(len=label_length+5) :: fildrh
       character(len=label_length+5) :: filepsch
@@ -171,7 +170,7 @@
 
 ! Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( first, iscf )
+        call siesta_write_energies( first=.false., iscf=0)
         call siesta_write_forces()
         call siesta_write_stress_pressure()
       endif
