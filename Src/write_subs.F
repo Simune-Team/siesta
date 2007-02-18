@@ -90,6 +90,7 @@
       end subroutine siesta_write_forces
 
       subroutine siesta_write_stress_pressure()
+
       use parallel, only: IOnode
       USE siesta_options
       use siesta_geom
@@ -97,7 +98,9 @@
       use m_iostruct,   only: write_struct
       use siesta_cml
       use units
+
       implicit none
+
 ! Stress tensor and pressure:
       
 
@@ -157,7 +160,7 @@
           call ofc(fa,dx,na_u)
         case(7)
 !          call phonon_write_forces(fa,na_u,ns,ucell,istep)
-           if (IOnode) write(*,*) 'phonon suport desactivated'
+           if (IOnode) write(*,*) 'phonon suport deactivated'
         end select !idyn
 
       else !final

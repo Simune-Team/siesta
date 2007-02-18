@@ -32,7 +32,7 @@
       use m_wallclock, only : wallclock
       use parallel, only: Node, Nodes, IOnode
       USE densematrix, only: Haux, Saux, Psi
-      use m_stress
+
       implicit none
 
 
@@ -163,10 +163,6 @@
       call memory('A','D',3*na_u,'siesta')
       allocate(fal(3,na_u))
       call memory('A','D',3*na_u,'siesta')
-
-! Initialise those arrays that must be pre-initialised
-      fal(1:3,1:na_u) = 0.0_dp
-      stress(1:3,1:3) = 0.0_dp
 
       if (IOnode) call spin_init(nspin)
       call broadcast(nspin)

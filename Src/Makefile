@@ -98,7 +98,7 @@ OBJS = automatic_cell.o \
         onmod.o densematrix.o writewave.o on_subs.o fermid.o m_broyddj.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
-        nlefsm.o overfsm.o conjgr.o conjgr_old.o \
+        nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o \
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o molecularmechanics.o
 #--------------------------------------------------------------
 #
@@ -366,7 +366,7 @@ ksv.o: precision.o sys.o
 ksvinit.o: alloc.o parallel.o parsing.o precision.o
 local_DOS.o: atomlist.o files.o kpoint_grid.o m_mpi_utils.o parallel.o
 local_DOS.o: siesta_geom.o siesta_options.o siesta_todo.o sparse_matrices.o
-local_DOS.o: stress.o sys.o
+local_DOS.o: sys.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
 m_broyden_mixing.o: m_broyddj.o m_memory.o m_mpi_utils.o parallel.o precision.o
@@ -423,6 +423,7 @@ ordern.o: siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: atmfuncs.o precision.o siesta_geom.o sys.o units.o
 overfsm.o: atmfuncs.o m_memory.o parallel.o parallelsubs.o precision.o
+overlap.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 parallelsubs.o: parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
@@ -437,9 +438,8 @@ phonon.o: files.o parallel.o precision.o sys.o
 pixmol.o: files.o periodic_table.o precision.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: parallel.o precision.o sys.o
-post_scf_work.o: atomlist.o molecularmechanics.o setup_hamiltonian.o
-post_scf_work.o: siesta_cml.o siesta_geom.o siesta_options.o siesta_todo.o
-post_scf_work.o: sparse_matrices.o stress.o
+post_scf_work.o: atomlist.o setup_hamiltonian.o siesta_cml.o siesta_geom.o
+post_scf_work.o: siesta_options.o siesta_todo.o sparse_matrices.o
 projected_DOS.o: atomlist.o kpoint_grid.o m_mpi_utils.o parallel.o
 projected_DOS.o: siesta_options.o siesta_todo.o sparse_matrices.o sys.o
 propor.o: precision.o sys.o
@@ -467,20 +467,20 @@ scfconvergence_test.o: m_wallclock.o parallel.o siesta_cml.o siesta_options.o
 scfconvergence_test.o: siesta_todo.o write_subs.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_hamiltonian.o: atmfuncs.o atomlist.o metaforce.o nlefsm.o normalize_dm.o
-setup_hamiltonian.o: overfsm.o siesta_cml.o siesta_geom.o siesta_options.o
-setup_hamiltonian.o: siesta_todo.o sparse_matrices.o stress.o
+setup_hamiltonian.o: atmfuncs.o atomlist.o metaforce.o molecularmechanics.o
+setup_hamiltonian.o: nlefsm.o normalize_dm.o overfsm.o siesta_cml.o
+setup_hamiltonian.o: siesta_geom.o siesta_options.o siesta_todo.o
+setup_hamiltonian.o: sparse_matrices.o stress.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 shaper.o: atmfuncs.o precision.o
-siesta.o: compute_dm.o mixer.o molecularmechanics.o parallel.o post_scf_work.o
-siesta.o: setup_hamiltonian.o siesta_analysis.o siesta_end.o siesta_geom.o
-siesta.o: siesta_init.o siesta_move.o siesta_options.o siesta_todo.o
-siesta.o: state_analysis.o state_init.o stress.o
+siesta.o: compute_dm.o mixer.o parallel.o post_scf_work.o setup_hamiltonian.o
+siesta.o: siesta_analysis.o siesta_end.o siesta_geom.o siesta_init.o
+siesta.o: siesta_move.o siesta_options.o siesta_todo.o state_analysis.o
+siesta.o: state_init.o
 siesta_analysis.o: atomlist.o bands.o files.o kpoint_grid.o ksvinit.o
 siesta_analysis.o: local_DOS.o parallel.o projected_DOS.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o siesta_todo.o
-siesta_analysis.o: sparse_matrices.o stress.o write_subs.o writewave.o
-siesta_analysis.o: zmatrix.o
+siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o siesta_todo.o
@@ -491,7 +491,7 @@ siesta_init.o: ksvinit.o m_check_supercell.o m_fdf_global.o m_iostruct.o
 siesta_init.o: m_mpi_utils.o m_wallclock.o metaforce.o molecularmechanics.o
 siesta_init.o: parallel.o parallelsubs.o phonon.o siesta_cmlsubs.o
 siesta_init.o: siesta_geom.o siesta_options.o siesta_todo.o sparse_matrices.o
-siesta_init.o: stress.o sys.o timestamp.o writewave.o xcmod.o
+siesta_init.o: sys.o timestamp.o writewave.o xcmod.o
 siesta_move.o: atomlist.o broyden_optim.o dynamics.o iopipes.o ioxv.o
 siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_move.o: siesta_todo.o stress.o write_subs.o zmatrix.o
@@ -506,9 +506,9 @@ state_analysis.o: atomlist.o born_charge.o m_wallclock.o parallel.o
 state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o siesta_todo.o
 state_analysis.o: sparse_matrices.o stress.o write_subs.o zmatrix.o
 state_init.o: alloc.o atomlist.o hsparse.o kpoint_grid.o m_check_supercell.o
-state_init.o: new_dm.o overfsm.o parallel.o siesta_cml.o siesta_cmlsubs.o
+state_init.o: new_dm.o overlap.o parallel.o siesta_cml.o siesta_cmlsubs.o
 state_init.o: siesta_geom.o siesta_options.o siesta_todo.o sparse_matrices.o
-state_init.o: stress.o write_subs.o zmatrix.o
+state_init.o: write_subs.o zmatrix.o
 stress.o: precision.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
@@ -560,6 +560,7 @@ m_nlefsm.o: nlefsm.o
 m_normalize_dm.o: normalize_dm.o
 m_ordern.o: ordern.o
 m_overfsm.o: overfsm.o
+m_overlap.o: overlap.o
 m_post_scf_work.o: post_scf_work.o
 m_projected_dos.o: projected_DOS.o
 m_radfft.o: radfft.o

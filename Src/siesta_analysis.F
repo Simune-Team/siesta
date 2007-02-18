@@ -27,7 +27,7 @@
       use parallel, only: IOnode
       use files,       only : label_length
       use parse
-      use m_stress
+
       implicit none
 
       character(len=label_length+5), external :: paste
@@ -42,7 +42,9 @@
       character(len=label_length+5) :: filevt
       character(len=label_length+5) :: filrho
 
-      external :: automatic_cell,
+      real(dp), dimension(3,3)      :: dummy_str, dummy_strl
+
+      external :: 
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
@@ -280,7 +282,7 @@
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
      .              maxnh, numh, listhptr, listh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dipol, fa, stress, fal, stressl )
+     .              dipol, fa, dummy_str, fal, dummy_strl )
       endif
 
 ! Find local density of states

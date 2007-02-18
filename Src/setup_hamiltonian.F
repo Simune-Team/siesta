@@ -14,34 +14,42 @@
      .                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
      .                    rmaxo
       use metaforce, only: lMetaForce, meta
+      use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
       use m_overfsm,    only: overfsm
       use siesta_cml
       use m_stress
-      implicit none
-      logical :: first, last
-      integer :: iscf
 
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
+      implicit none
+
+      logical, intent(in) :: first, last
+      integer, intent(in) :: iscf
+
+      real(dp)              :: stressl(3,3)
+
+#ifdef MPI
+      real(dp)              :: stresstmp(3,3)
+      real(dp), allocatable :: fatmp(:,:)
+#endif
+
+      external ::
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
-     .  pulayx, 
+     .  kinefsm, mulliken, naefs, neighb,
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
 
 !------------------------------------------------------------------------- BEGIN
-            if (cml_p) then
-              call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-            endif
+      if (cml_p) then
+         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+      endif
 
-            ! Normalize density matrix to exact charge
-            call normalize_dm(first)
+      ! Normalize density matrix to exact charge
+      call normalize_dm(first)
 
-! Initialize Hamiltonian ........................................
-        H = 0.0_dp
+      ! Initialize Hamiltonian ........................................
+      H = 0.0_dp
 
 ! Initialize forces and stress ...................
         if (first.or.last) then
@@ -205,9 +213,31 @@
         endif
 ! ..................
 
-! Metadynamics forces
+        ! Metadynamics forces
         if (lMetaForce.and.(first.or.last)) then
           call meta(xa,na_u,ucell,Emeta,fa,stress,last,last)
+        endif
+
+        ! Add on force field contribution if required
+        if (first .or. last) then
+           call twobody(na_u,xa,isa,ucell,Emm,ifa,fa,istr,stress)
+        endif
+
+        if (first .or. last) then    ! Could it really be "last" only?
+#ifdef MPI
+           !Global reduction of forces and stresses
+           allocate(fatmp(3,na_u))
+           call memory('A','D',3*na_u,'setup_hamilt')
+           call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
+           call globalize_sum(fal(1:3,1:na_u),fatmp(1:3,1:na_u))
+           stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
+           fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
+           call memory('D','D',size(fatmp),'setup_hamilt')
+           deallocate(fatmp)
+#else
+           stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
+           fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
+#endif
         endif
 
 ! Find entropy ........................................................

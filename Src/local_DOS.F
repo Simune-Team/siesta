@@ -6,7 +6,7 @@
 
       subroutine local_DOS( )
       USE SIESTA_TODO
-      use m_stress
+
       use sparse_matrices
       USE siesta_options, only :occtol, g2cut, isolve, 
      &                          fixspin, temp, neigwanted 
@@ -33,6 +33,8 @@
 
       integer :: dummy_iscf = 1
       character(len=label_length+5) :: fildos
+
+      real(dp)  :: dummy_str(3,3), dummy_strl(3,3)  ! for dhscf call
 
 ! Find local density of states
       if (IOnode) then
@@ -75,7 +77,7 @@
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
      .              maxnh, numh, listhptr, listh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dipol, fa, stress, fal, stressl )
+     .              dipol, fa, dummy_str, fal, dummy_strl )
         else
           if (IOnode)  write(6,*)
      .       'siesta: ERROR: LDOS implemented only with diagon'

@@ -11,10 +11,8 @@
       use m_mixer
       USE siesta_options
       use siesta_geom
-      use molecularmechanics, only : twobody
       use parallel, only: IOnode
       use m_state_analysis
-      use m_stress
       implicit none
 
       integer :: istep, iscf
@@ -54,11 +52,6 @@
           call compute_dm( iscf )
 
           call mixer( iscf )
-
-          if (first) then
-            ! Add on force field contribution if required
-            call twobody(na_u,xa,isa,ucell,Emm,ifa,fa,istr,stress)
-          endif
 
           call scfconvergence_test( first, iscf, last )
 

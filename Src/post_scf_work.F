@@ -11,9 +11,8 @@
       use sparse_matrices
       use siesta_geom
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
-      use molecularmechanics, only : twobody
       use siesta_cml
-      use m_stress
+
       implicit none
 
       logical :: first, last
@@ -31,11 +30,9 @@
 
 
 !------------------------------------------------------------------------- BEGIN
-          ! If converged, make last iteration to find forces
-          call setup_hamiltonian( first, last, iscf )
+          ! If converged, make one last iteration to find forces and stress
 
-          ! Add on force field contribution if required
-          call twobody(na_u,xa,isa,ucell,Emm,ifa,fa,istr,stress)
+          call setup_hamiltonian( first, last, iscf )
 
           ! Print energies
           DEna = Enascf - Enaatm
@@ -44,13 +41,9 @@
           Eharrs = Etot + DEharr
           FreeE  = Etot - Temp * Entropy
 
-          ! If last iteration, exit SCF loop 
-          do ispin = 1,nspin
-            do io = 1,nh
-              Dscf(io,ispin) = Dold(io,ispin)
-              Escf(io,ispin) = Eold(io,ispin)
-            enddo
-          enddo
+          Dscf(1:nh,1:nspin) = Dold(1:nh,1:nspin)
+          Escf(1:nh,1:nspin) = Eold(1:nh,1:nspin)
+
           if (dumpcharge) then
             call plcharge( no_s, na_s, no_u, maxnh, maxna, nspin,
      .                      isa, iphorb, indxuo, lasto,

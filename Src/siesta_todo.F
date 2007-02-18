@@ -150,11 +150,8 @@
       integer :: MPIerror  ! Return error code in MPI routines
       integer :: ntmp      ! Temporary to call an MPI routine
 
-      real(dp):: buffer1        ! Temporary for the result of a globalize operation
-      real(dp):: qtmp(4)        ! Temporary for globalized spin charge
-      real(dp):: stresstmp(3,3) ! Temporary for globalized stress
-
-      real(dp), allocatable:: fatmp(:,:) ! Temporary for globalized atomic forces
+      real(dp):: buffer1   ! Temporary for the result of a globalize operation
+      real(dp):: qtmp(4)   ! Temporary for globalized spin charge
 #     endif
 
       logical:: auxchanged ! Has auxiliary supercell changed?

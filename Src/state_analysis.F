@@ -58,21 +58,6 @@
       endif
       if (cml_p) call cmlEndPropertyList(mainXML)
 
-#ifdef MPI
-! Global reduction of forces and stresses
-      allocate(fatmp(3,na_u))
-      call memory('A','D',3*na_u,'siesta')
-      call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
-      call globalize_sum(fal(1:3,1:na_u),fatmp(1:3,1:na_u))
-      stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
-      fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
-      call memory('D','D',size(fatmp),'siesta')
-      deallocate(fatmp)
-#else
-      stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
-      fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
-#endif
-
 ! Substract egg box effect from the forces 
       if (eggbox_block) then
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)

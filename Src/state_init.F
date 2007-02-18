@@ -1,6 +1,5 @@
       MODULE m_state_init
       use write_subs
-      use m_stress
       private
       public :: state_init
 
@@ -17,7 +16,7 @@
      .                    rmaxo, no_u, lastkb, lasto, rmaxkb, superc
       use alloc, only: re_alloc, alloc_report
       use m_hsparse,    only: hsparse
-      use m_overfsm,    only: overfsm
+      use m_overlap,    only: overlap
       use m_check_supercell, only: check_sc_factors
       use siesta_cml
       use siesta_cmlsubs, only: siesta_cml_init
@@ -330,11 +329,10 @@
 ! ....................
 
 ! Find overlap matrix ...............................................
-      call overfsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo, no_l,
-     .             maxna, maxnh, maxnh, lasto, iphorb, isa, 
-     .             numh, listhptr, listh, numh, listhptr, listh, 
-     .             min(nspin,2), Escf, jna, xij, r2ij,
-     .             fal, stress, S )
+      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
+     .             maxna, maxnh, lasto, iphorb, isa, 
+     .             numh, listhptr, listh, 
+     .             jna, xij, r2ij, S )
 ! ..................
 
 !--------------------------------------------------------------------------- END
