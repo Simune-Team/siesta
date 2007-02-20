@@ -8,70 +8,65 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine kgrid( cell, kscell, displ, nk, points, weight )
-c **********************************************************************
-c Finds Monkhost-Pack k-point coordinates and weights.
-c This version assumes no symmetry except time reversal, i.e.
-c inversion in reciprocal space.
-c Refs: H.J.Monkhorst and J.D.Pack, Phys Rev B 13, 5188 (1976)
-c       J.Moreno and J.M.Soler, Phys Rev B 45, 13891 (1992)
-c Written by J.M.Soler. July 1997.
+      module m_find_kgrid
+      private
+      public :: find_kgrid
+      CONTAINS
+      subroutine find_kgrid ( cell, kscell, displ, firm_displ,
+     $                        time_reversal_symmetry,
+     $                        nk, points, weight, eff_kgrid_cutoff )
+
 c ***************** INPUT **********************************************
 c real*8  cell(3,3)  : Unit cell vectors in real space cell(ixyz,ivec)
 c integer kscell(3,3): Supercell reciprocal of k-grid unit cell
 c                      scell(ix,i) = sum_j cell(ix,j)*kscell(j,i)
+c logical time_reversal_symmetry : Flag to fold k to -k if possible. 
+c ***************** INPUT/OUTPUT  **************************************
 c real*8  displ(3)   : Grid origin in k-grid-vector coordinates:
 c                      origin(ix) = sum_j gridk(ix,j)*displ(j)
-c integer nk         : Dimension of arrays points and weight
 c ***************** OUTPUT *********************************************
-c real*8  points(3,nk) : K-point cartesian coordinates
-c                        Only if input_nk .ge. output_nk
-c real*8  weight(nk)   : K-point weights 
-c                        Only if input_nk .ge. output_nk
-c ***************** UNITS **********************************************
-c points returned in units reciprocal of cell
-c **********************************************************************
-C
+c integer nk           : Actual number of irreducible k-points
+c real(dp) points(3:nk): Kpoints
+c real(dp) weight(nk)  : weights
+c real(dp) eff_kgrid_cutoff : actual equivalent kgrid cutoff 
+
 C  Modules
-C
-      use units,        only : Ang
-      use precision
-      use parallel,     only : Node
-      use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
+
+      use precision,  only : dp
+      use units,      only : pi
+      use m_minvec,   only : minvec
+      use alloc,      only : re_alloc
+      use parallel,   only : Node
 
       implicit          none
 
-      integer, intent(inout)  ::          kscell(3,3), nk
-      real(dp), intent(in)    ::          cell(3,3)
-      real(dp), intent(inout) ::          displ(3)
-      real(dp), intent(out)   ::          points(3,*), weight(*)
-c ----------------------------------------------------------------------
+C Passed variables
+      integer, intent(in)      :: kscell(3,3)
+      real(dp), intent(in)     :: cell(3,3)
+      logical, intent(in)      :: firm_displ
+      logical, intent(in)      :: time_reversal_symmetry
 
-c Internal variables
-      integer           i, i1, i2, i3, igmax(3), igmin(3), iu,
-     .                  ir, ik, ix, j,
+      real(dp), intent(inout)  :: displ(3)
+
+      integer, intent(out)     :: nk
+      real(dp), intent(out)    :: eff_kgrid_cutoff
+      real(dp), pointer        :: points(:,:)
+      real(dp), pointer        :: weight(:)
+
+      external                 ::  idiag, reclat
+
+C Internal variables
+      integer           i, ir, iu, ix, j, i1, i2, i3,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
-     .                  ng(3), ni, nkr(3), nktot, proj(3,3)
-#ifdef MPI
-      integer           MPIerror
-#endif
-      real(dp)          d(3), dkg(3), dkx(3), dscell(3,3),
-     .                  gridk(3,3), gscell(3,3), pi,
-     .                  scell(3,3), tiny, w1, wtot
-      external          idiag, reclat
-      logical           spiral
-      parameter (tiny   = 1.d-12)
+     .                  ng(3), ni, nkr(3), nktot,
+     $                  proj(3,3), igmin(3), igmax(3)
 
-C Find out if there is spiral arrangement of spins
-      if (Node.eq.0) then
-        spiral = fdf_block('SpinSpiral',iu)
-      endif
-#ifdef MPI
-      call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+      real(dp)          cutoff, d(3), dkg(3), dkx(3), dscell(3,3),
+     .                  gridk(3,3), gscell(3,3), 
+     .                  scell(3,3), scmin(3,3), tiny, vmod, w1, wtot
+      real(dp)          ctransf(3,3)
+
+      parameter (tiny   = 1.d-12)
 
 C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -80,16 +75,33 @@ C Find total number of points (determinant of kscell)
      .             kscell(1,1) * kscell(3,2) * kscell(2,3) -
      .             kscell(2,1) * kscell(1,2) * kscell(3,3) -
      .             kscell(3,1) * kscell(2,2) * kscell(1,3) )
+
+C 
 C Find k-grid supercell
+C
       do i = 1,3
         do ix = 1,3
           scell(ix,i) = cell(ix,1) * kscell(1,i) +
      .                  cell(ix,2) * kscell(2,i) +
      .                  cell(ix,3) * kscell(3,i)
         enddo
+        vmod = sqrt( scell(1,i)**2 + scell(2,i)**2 + scell(3,i)**2 )
       enddo
 
-C Find equivalent diagonal supercell
+C Find actual cutoff
+      call minvec( scell, scmin, ctransf )
+      eff_kgrid_cutoff = huge(1.0_dp)
+      do i = 1,3
+        vmod = sqrt( scmin(1,i)**2 + scmin(2,i)**2 + scmin(3,i)**2 )
+        eff_kgrid_cutoff = min( eff_kgrid_cutoff, vmod/2.d0 )
+      enddo
+
+C     Equivalent supercell DA with the property that there exists
+C     a primitive cell (pa') such that DA_i = N_i*pa'_i
+C     (See Moreno and Soler)
+!!    Direct route
+!!    call DIGCEL( ucell, kSCELL, new_ucell, dscell, NSC, ISDIAG )
+
       call idiag( 3, kscell, kdsc, ml, mr, maux )
       proj(:,:) = 0  ! Possible sign changes
       do i = 1, 3
@@ -98,11 +110,37 @@ C Find equivalent diagonal supercell
       enddo
       kdsc = matmul(kdsc,proj)
       mr = matmul(mr,proj)
+C
+C     Set the displacements if not firm (i.e., specified by the
+C     user). Even if firm, warn if a better choice is possible.
+C
+      do j = 1, 3
+         if (mod(kdsc(j,j),2) .eq. 0) then
+            if (firm_displ .and. displ(j) /= 0.5d0) then
+               if (Node .eq. 0)
+     $           write(6,"(a,i4,a,2f8.2)")
+     $            "k-point displ. along", j, " input, could be: ",
+     $           displ(j), 0.5d0
+            else
+               displ(j) = 0.5d0
+            endif
+         else
+            if (firm_displ .and. displ(j) /= 0.0d0) then
+               if (Node .eq. 0)
+     $           write(6,"(a,i4,a,2f8.2)")
+     $            "k-point displ. along", j, " input, could be: ",
+     $           displ(j), 0.0d0
+            else
+               displ(j) = 0.0d0
+            endif
+         endif
+      enddo
+C
       dscell = matmul(scell,mr)
 
 C Find k-grid unit vectors
       call reclat( dscell, gridk, 1 )
- 
+
 C Find grid origin in cartesian coordinates
       call reclat( scell, gscell, 1 )
       do ix = 1,3
@@ -112,7 +150,7 @@ C Find grid origin in cartesian coordinates
       enddo
 
 C Find grid origin in gridk coordinates
-      pi = 4.d0 * atan(1.d0)
+
       do i = 1,3
         dkg(i) = ( dkx(1) * dscell(1,i) +
      .             dkx(2) * dscell(2,i) +
@@ -127,9 +165,9 @@ C Find total range of grid indexes
       enddo
 
 C Find number of points with time-reversal (inversion) symmetry,
-C (if not spiral) after reflection on each alternative plane
-      if (spiral) then
-C       If spin-spiral, use all k points
+C (if possible) after reflection on each alternative plane
+      if (.not. time_reversal_symmetry) then
+        ! Use all k points
         nk = nktot
       else
         do j = 1,3
@@ -152,6 +190,11 @@ C Select reflection plane
         nk = nkr(ir)
       endif
 
+      call re_alloc(points,1,3,1,nk,name='points',
+     $              routine='find_kgrid',copy=.false.)
+      call re_alloc(weight,1,nk,name='weight',
+     $              routine='find_kgrid',copy=.false.)
+
 C Find k points and weights
       w1 = 1.0d0 / nktot
       nk = 0
@@ -170,7 +213,7 @@ C Find k points and weights
      .                    gridk(ix,2)*d(2) +
      .                    gridk(ix,3)*d(3)
         enddo
-        if (spiral) then
+        if (.not. time_reversal_symmetry) then
           weight(nk) = w1
         else
           if ( abs(d(ir))              .lt. tiny .or.
@@ -185,16 +228,11 @@ C Find k points and weights
       enddo
 
 C Check that weight is normalised
-      wtot = 0.0d0
-      do ik = 1,nk
-        wtot = wtot + weight(ik)
-      enddo
+      wtot = sum(weight(1:nk))
       if (abs(wtot-1.0d0) .gt. nk*tiny) then
         w1 = dble(nk)/wtot
-        do ik = 1,nk
-          weight(ik) = w1*weight(ik)
-        enddo
+        weight(1:nk) =  w1*weight(1:nk)
       endif
 
-      return
-      end
+      end subroutine find_kgrid
+      end module m_find_kgrid

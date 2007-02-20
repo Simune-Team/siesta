@@ -34,6 +34,9 @@ C  Modules
       use atomlist, only: datm, no_s, iaorb
       use atomlist, only: superx, superc, initatomlists
 !
+      use kpoint_grid, only: maxk, nkpnt, setup_kpoint_grid
+      use kpoint_grid, only: kpoint, kweight, writek
+!
       use band, only: initbands, bands
       use fdf, only : fdf_block, fdf_convfac, fdf_boolean
       use fdf, only : fdf_physical
@@ -99,11 +102,11 @@ C  Modules
      .  iquench, is, isel, iscf, 
      .  isolve, ispin, istp, istpsave, istart, istep, istr,
      .  iu, iunit,  iv, ix, ixdispl, 
-     .  j, ja, jamin, jo, jx, kscell(3,3),
-     .  level, maxbk, maxk, maxnh, 
+     .  j, ja, jamin, jo, jx,
+     .  level, maxbk, maxnh, 
      .  maxna, maxsav, broyden_maxit, maxwk, mscell(3,3), mullipop, 
      .  nkick, nnamax, nauxpul, nbcell, nbk, ncgmax, nh,
-     .  nkpnt, nmove, nnia, ns, nsc(3), nscold(3), nscf, nspin, 
+     .  nmove, nnia, ns, nsc(3), nscold(3), nscf, nspin, 
      .  ntm(3), ntcon, no_l, nxij, nwk, pmax, nkpol, nhist, 
      .  neigwanted, neigmin
 
@@ -128,7 +131,7 @@ C  Modules
      .  Elast, Enaatm, Enascf, Enl, Entrop, Entropy, Emeta,
      .  eta(2), etol, Etot, Etot_output, Exc, E0, Emm,
      .  factor, fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
-     .  g2cut, g2max, getot, kcutof, kdispl(3), kn, kpr, 
+     .  g2cut, g2max, getot, kn, kpr, 
      .  mn, mpr, occtol, Pint, Pmol, Psol, rmax_bonds
       real(dp)
      .  qaux, qspin(4), qsol,
@@ -141,13 +144,13 @@ C  Modules
      .  stressl(3,3), veclen
 
       real(dp), dimension(:), allocatable ::
-     .  efs, kweight, qs, r2ij
+     .  efs, qs, r2ij
 
       real(dp), pointer, save :: 
      .  H0(:), S(:), wgthpol(:)
 
       real(dp), dimension(:,:), allocatable :: 
-     .  auxpul, cfa, fa, fal, kpoint, 
+     .  auxpul, cfa, fa, fal, 
      .  polR, polxyz, va, xij, xijo, wfk
 
       real(dp), pointer, save ::
@@ -162,8 +165,8 @@ C  Modules
      .  fatmp
 #endif
 
-      real(dp), dimension(:,:,:), allocatable :: 
-     .  ebk, eo, qo
+      real(dp), dimension(:,:,:), allocatable :: ebk
+      real(dp), dimension(:,:,:), pointer :: eo, qo 
 
       logical
      .  auxchanged, chebef, dminit, default, dumpcharge, 
@@ -176,9 +179,10 @@ C  Modules
      .  usesavecg, usesavelwf, usesavedm, usesavedmloc, usesavexv, 
      .  usesavezm, writeig,
      .  writbk, writmd, writpx, writb, writec, writef, 
-     .  writek, writic, varcel, genlogic, do_pdos, writedm, atmonly,
+     .  writic, varcel, genlogic, do_pdos, writedm, atmonly,
      .  harrisfun, muldeb, eggbox_block, use_struct_file,
-     $  require_energy_convergence, broyden_optim, struct_only, bornz
+     $  require_energy_convergence, broyden_optim, struct_only,
+     $  bornz, cell_can_change, change_kgrid_in_md
 
       character
      .  line*150, sname*150, shape*10, message*79
@@ -195,7 +199,7 @@ C  Modules
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
+     .  kinefsm, mulliken, naefs, neighb,
      .  paste, pulayx, 
      .  reinit, shaper, spnvec, 
      .  timer, volcel, xijorb, memory,
@@ -205,8 +209,6 @@ C  Modules
 
       data
      .  e1, e2 / 1._dp, -1._dp /
-     .  kcutof, kscell, kdispl / 0._dp, 9*0, 3*0._dp /
-     .  nkpnt / 1 /
      .  eggbox_block /.true./
      .  final  /.false./
      .  relaxd /.false./
@@ -414,6 +416,8 @@ C Find some switches ..................................................
       call fdf_global_get(bornz,  'BornCharge'   , .false.)
       if (idyn.ne.6) bornz = .false.
 
+      call fdf_global_get(change_kgrid_in_md,
+     $                "ChangeKgridInMD", .false.)
       call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
 
 C Read Z-matrix coordinates and forces from file
@@ -576,24 +580,16 @@ C so that the Fermi level can be estimated
       enddo
       neigwanted = min(neigwanted,no_u)
 
-C Find k-grid for Brillouin zone integration ..........................
-C Call kgridinit to get the dimensions and then kgrid to actually
-C initialise the data 
-      nkpnt = 1
-      call kgridinit( ucell, kscell, kdispl, kcutof, nkpnt )
-      maxk = nkpnt
-      allocate(kpoint(3,maxk))
-      call memory('A','D',3*maxk,'siesta')
-      allocate(kweight(maxk))
-      call memory('A','D',maxk,'siesta')
-      kpoint(1:3,1) = 0.0_dp
-      kweight(1) = 1.0_dp
-      allocate(eo(no_u,nspin,maxk))
-      call memory('A','D',no_u*nspin*maxk,'siesta')
-      allocate(qo(no_u,nspin,maxk))
-      call memory('A','D',no_u*nspin*maxk,'siesta')
-      call kgrid( ucell, kscell, kdispl,
-     .            nkpnt, kpoint, kweight )
+      ! Find k-grid for Brillouin zone integration
+      ! Sets kscell, nkpnt, maxk, kpoint, kweight
+      call setup_Kpoint_grid( ucell )
+
+      nullify(eo,qo)
+      call re_alloc(eo,1,no_u,1,nspin,1,maxk,name="eo",
+     $              routine="state_init")
+      call re_alloc(qo,1,no_u,1,nspin,1,maxk,name="qo",
+     $              routine="state_init")
+
 C ......................
 
 C Find number of band k-points ........................................
@@ -677,9 +673,6 @@ C Find if only gamma point is used ....................................
       endif
       if (nkpol.gt.0) gamma = .false.
 C ....................
-
-C Print k-point information (even if gamma point)
-      if (IOnode) call siesta_write_k_points()
 
 C Find required supercell
 C 2*rmaxh is used to guarantee that two given orbitals in the
@@ -833,49 +826,25 @@ C ...................
 
 C Actualize things if unit cell might have changed
       auxchanged = .false.
-      if ( (varcel
-     $     .or. (idyn .eq. 8)   ! Force/stress evaluation
-     $     .or. (idyn .eq. 3)   ! Parrinello-Rahman
-     $     .or. (idyn .eq. 4)   ! Nose-Parrinello-Rahman
-     $     .or. (idyn .eq. 5)   ! Anneal
-     $      )
+      cell_can_change = ( varcel .or.
+     $                    (idyn .eq. 8)  ! Force/stress evaluation
+     $                  )
+      if (change_kgrid_in_md) then
+         cell_can_change = cell_can_change .or.
+     $        (idyn .eq. 3)      ! Parrinello-Rahman
+     $        .or. (idyn .eq. 4) ! Nose-Parrinello-Rahman
+     $        .or. (idyn .eq. 5) ! Anneal
+      endif
+
+      if (  cell_can_change
      $     .and. (istep.ne.inicoor) .and. (.not.gamma) ) then
 
-C k-grid 
-        nkpnt = maxk
-        call kgridinit( ucell, kscell, kdispl, kcutof, nkpnt )
+        call setup_Kpoint_grid( ucell )
 
-C If number of k points has changed - re-size arrays
-        if (nkpnt .gt. maxk) then
-          call memory('D','D',size(kpoint),'siesta')
-          deallocate(kpoint)
-          call memory('D','D',size(kweight),'siesta')
-          deallocate(kweight)
-          allocate(kpoint(3,nkpnt))
-          call memory('A','D',3*nkpnt,'siesta')
-          allocate(kweight(nkpnt))
-          call memory('A','D',nkpnt,'siesta')
-          kpoint(1:3,1)=0.0_dp
-          kweight(1)=1.0_dp
-          call kgrid( ucell, kscell, kdispl,
-     .      nkpnt, kpoint, kweight )
-          call memory('D','D',size(eo),'siesta')
-          deallocate(eo)
-          call memory('D','D',size(qo),'siesta')
-          deallocate(qo)
-          allocate(eo(no_u,nspin,nkpnt))
-          call memory('A','D',no_u*nspin*nkpnt,'siesta')
-          allocate(qo(no_u,nspin,nkpnt))
-          call memory('A','D',no_u*nspin*nkpnt,'siesta')
-          maxk = nkpnt
-       else
-          call kgrid( ucell, kscell, kdispl,
-     .                nkpnt, kpoint, kweight )
-
-       endif
- 
-C Print k-points 
-       if (IOnode) call siesta_write_k_points()
+        call re_alloc(eo,1,no_u,1,nspin,1,maxk,name="eo",
+     $                routine="state_init")
+        call re_alloc(qo,1,no_u,1,nspin,1,maxk,name="qo",
+     $                routine="state_init")
  
 C Find required supercell
 
@@ -2247,48 +2216,6 @@ C Finalize MPI
 
       contains
       
-      subroutine siesta_write_k_points()
-      if ( writek ) then
-        write(6,'(/,a)')
-     .       'siesta: k-point coordinates (Bohr**-1) and weights:'
-        write(6,'(a,i4,3f12.6,3x,f12.6)')
-     .       ('siesta: ', ik, (kpoint(ix,ik),ix=1,3), kweight(ik),
-     .       ik=1,nkpnt)
-        if (cml_p) then
-          call cmlAddProperty(xf=mainXML, property=kpoint, 
-     .         dictref='siesta:kpoint')
-          call cmlAddProperty(xf=mainXML, property=kweight,
-     .         dictref='siesta:kweight')
-        endif
-      else
-        call iokp( nkpnt, kpoint, kweight )
-      endif
-      write(6,'(/a,i6)')
-     .     'siesta: k-grid: Number of k-points =', nkpnt
-      write(6,'(a,f10.3,a)')
-     .     'siesta: k-grid: Cutoff (effective) =', kcutof/Ang, ' Ang'
-      write(6,'(a)')
-     .     'siesta: k-grid: Supercell and displacements'
-      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .     (kscell(i,1),i=1,3), kdispl(1)
-      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .     (kscell(i,2),i=1,3), kdispl(2)
-      write(6,'(a,3i4,3x,f8.3)') 'siesta: k-grid: ',
-     .     (kscell(i,3),i=1,3), kdispl(3)
-      if (cml_p) then
-        call cmlStartPropertyList(mainXML, title='k-points')
-        call cmlAddProperty(xf=mainXML, property=nkpnt, 
-     .       dictref='siesta:nkpnt')
-        call cmlAddProperty(xf=mainXML, property=kcutof/Ang, 
-     .       dictref='siesta:kcutof', units='siestaUnits:angstrom')
-        call cmlEndPropertyList(mainXML)
-        call cmlAddProperty(xf=mainXML, property=kscell,
-     .       dictref='siesta:kscell')
-        call cmlAddProperty(xf=mainXML, property=kdispl,
-     .       dictref='siesta:kdispl')
-      endif
-      end subroutine siesta_write_k_points
-
 
       subroutine siesta_write_forces()
 

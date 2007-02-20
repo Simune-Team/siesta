@@ -10,6 +10,28 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-02-20 15:50 GMT Alberto Garcia <albertog@icmab.es>      patch-37
+
+Summary: Correction to k-point grid update fix
+
+The previous k-point fix was incorrect, as it changed the interface of
+kgridinit and kgrid, which are used in other parts of the program. A
+cleaner approach uses a module to hold the information about the
+k-point grid for selfconsistency.
+
+The k-point grid used for achieving self-consistency is now
+re-computed inside the geometry loop if:
+
+The calculation is a cell-optimization one (i.e., if MD.VariableCell
+is .true.), or if it is a "siesta-server" run. This is the old default.
+
+Additionally, if the user sets the fdf flag "ChangeKgridInMD" to
+.true., the grid will be recomputed also during MD runs that potentially
+change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
+Anneal.
+
+New test: born
+
 2007-02-02 10:18 GMT Alberto Garcia <albertog@icmab.es>      patch-36
 
 Summary: Add graphite_c6_full test for more realistic vdW test
