@@ -17,7 +17,7 @@ C**************************************************************************
       module zmatrix
 
         use precision, only : dp
-        use units, only : Ang, eV, deg
+        use units, only : Ang, eV, deg, pi
         use sys, only: die
 
         implicit none
@@ -95,6 +95,7 @@ C       v2 = a*v1 + B
 
         real(dp), save  :: scale_length, scale_angle 
         real(dp), save  :: zmatrix_alat
+
       ! AG: convenience variables
 
       public :: read_Zmatrix, lUseZmatrix, iofaZmat
@@ -104,6 +105,8 @@ C       v2 = a*v1 + B
       public :: coeffA, coeffB, iNextDept
       public :: ZmatForceTolLen, ZmatForceTolAng
       public :: ZmatMaxDisplLen, ZmatMaxDisplAng
+
+
       private 
 
       contains
@@ -180,7 +183,14 @@ C Local variables
         real(dp)                      :: physicals(4)
 #endif
 
-      zmatrix_alat = alat     ! AG: For future processing
+        real(dp), external    :: volcel
+        real(dp)              :: dummy_volume
+        logical               :: unknown_cell
+
+       zmatrix_alat = alat     ! AG: For future processing
+
+       dummy_volume = volcel(ucell)
+       unknown_cell = (abs(dummy_volume) < 1.0e-6_dp)
 
 C Nullify pointers
         if (firsttime) then
@@ -344,6 +354,10 @@ C Found new molecule
               if (index(line(1:lastc),'scale').ne.0) then
                 units_type = 1
               elseif (index(line(1:lastc),'frac').ne.0) then
+                if (unknown_cell) then
+                   call die("Cannot use fractional coordinates " //
+     $                 " if unit cell is not specified")
+                endif
                 units_type = 2
               else
                 units_type = 0
@@ -364,6 +378,11 @@ C Found new cartesian(scaled) block
               units_type = 1
             elseif (index(line(1:lastc),'frac').ne.0) then
 C Found new cartesian(fractional) block
+!AG
+              if (unknown_cell) then
+                 call die("Cannot use fractional coordinates " //
+     $                 " if unit cell is not specified")
+              endif
               nZcart = nZcart + 1
               nZcartAtoms(nZcart) = 0
               nZcartStartAtom(nZcart) = nAtoms + 1
@@ -884,20 +903,44 @@ C
         real(dp)              :: y
         real(dp)              :: z
 
+        integer               :: index_i, index_j
+        real(dp)              :: phi_ref
+
 C  Loop over molecules
+
         do m = 1,nZmol
 
           nStart = nZmolStartAtom(m)
           nAtoms = nZmolAtoms(m)
 
+
 C  Loop over atoms within each molecule generating Cartesian coordinates
 C  Use general Z2CGen subroutine which takes special first 3 atoms into account
           do i = nStart,nStart+nAtoms-1
+
+            ! reference atoms in the order i,j,k
+
             RelatedC(1:3,1) = Cartesian(1:3,iZmat(3*i-2))
             RelatedC(1:3,2) = Cartesian(1:3,iZmat(3*i-1))
             RelatedC(1:3,3) = Cartesian(1:3,iZmat(3*i))
+
+            ! Pass explicitly the azimuth angle
+            ! of the atom "i" to which this one 'binds' with respect
+            ! to j
+            index_i = iZmat(3*i-2)
+            if (ZmatType(3*index_i) == 1) then  ! an angle
+               phi_ref = Zmat(3*index_i)
+            else
+               ! i is the first atom in the molecule...
+               ! We pass then phi_ji - pi, where phi_ji
+               ! is the azimuth of j with respect to i.
+               !
+               index_j = iZmat(3*i-1)
+               phi_ref = Zmat(3*index_j) - pi
+            endif
+
             call Z2CGen(i-nStart,Zmat(3*i-2),Zmat(3*i-1),Zmat(3*i),
-     .                      RelatedC,x,y,z)
+     .                      RelatedC,x,y,z, phi_ref)
             Cartesian(1,i) = x
             Cartesian(2,i) = y
             Cartesian(3,i) = z
@@ -1164,6 +1207,9 @@ C  Local variables
       real(dp)        :: RelatedC(3,3)
       real(dp)        :: X,Y,Z
 
+      integer               :: index_i, index_j
+      real(dp)              :: phi_ref_F, phi_ref_B
+
 C  Initialize force
       GetForce = 0.0d0
 C  Add force contributions from all the affected cartesian coordinates 
@@ -1192,22 +1238,45 @@ C  Initialise FD and BD cartesians that come before changed atom
 C  Add force contributions from all atoms later than and
 C     including the changed one in this molecule
             do ca = l,nZmolStartAtom(m)+nZmolAtoms(m)-1
-C  Forward cartesian                
+C  Forward cartesian     
+           
               RelatedC(1:3,1) = CartesianF(1:3,iZmat(3*ca-2))
               RelatedC(1:3,2) = CartesianF(1:3,iZmat(3*ca-1))
               RelatedC(1:3,3) = CartesianF(1:3,iZmat(3*ca))
+
+            ! Pass explicitly the azimuth angle
+            ! of the atom "i" to which this one 'binds' with respect
+            ! to j
+              index_i = iZmat(3*ca-2)
+              if (ZmatType(3*index_i) == 1) then ! an angle
+                 phi_ref_F = ZmatF(3*index_i)
+                 phi_ref_B = ZmatB(3*index_i)
+              else
+               ! i is the first atom in the molecule...
+               ! We pass then phi_ji - pi, where phi_ji
+               ! is the azimuth of j with respect to i.
+               !
+               index_j = iZmat(3*ca-1)
+               phi_ref_F = ZmatF(3*index_j) - pi
+               phi_ref_B = ZmatB(3*index_j) - pi
+            endif
+
               call Z2CGen(ca-nZmolStartAtom(m),ZmatF(3*ca-2),
      .                    ZmatF(3*ca-1),ZmatF(3*ca),RelatedC,
      .                    CartesianF(1,ca),CartesianF(2,ca),
-     .                    CartesianF(3,ca))
+     .                    CartesianF(3,ca), phi_ref_F)
+
 C  Backward cartesian               
+
               RelatedC(1:3,1) = CartesianB(1:3,iZmat(3*ca-2))
               RelatedC(1:3,2) = CartesianB(1:3,iZmat(3*ca-1))
               RelatedC(1:3,3) = CartesianB(1:3,iZmat(3*ca))
+
               call Z2CGen(ca-nZmolStartAtom(m),ZmatB(3*ca-2),
      .                    ZmatB(3*ca-1),ZmatB(3*ca),RelatedC,
      .                    CartesianB(1,ca),CartesianB(2,ca),
-     .                    CartesianB(3,ca))
+     .                    CartesianB(3,ca), phi_ref_B)
+
 C  Add in force constribution     
               X = CartesianForce(1,ca)*
      .            (CartesianF(1,ca)-CartesianB(1,ca))/(2*h)
@@ -1296,7 +1365,8 @@ C  Write cartesian coordinates in user's units
 
       end subroutine write_Zmatrix
 
-      subroutine Z2CGen(atomNr,r,theta,phi,RelatedC,x,y,z)
+      subroutine Z2CGen(atomNr,r,theta,phi,RelatedC,x,y,z,phi_ref)
+      use parallel, only: IONode
 C
 C  Subroutine for generation of cartesian coordinates from Z-matrix
 C  given the following special cases:
@@ -1318,20 +1388,106 @@ C
         real(dp), intent(out)    :: x
         real(dp), intent(out)    :: y
         real(dp), intent(out)    :: z
+!
+        real(dp), intent(in)     :: phi_ref
 C        
+        real(dp), dimension(3), parameter ::
+     $        ex = (/ 1.0_dp, 0.0_dp, 0.0_dp /),
+     $        ez = (/ 0.0_dp, 0.0_dp, 1.0_dp /)
+
+        real(dp), dimension(3)   :: third_atom_coords, tac2
+        real(dp), dimension(3)   :: unit_vector, r2
+        real(dp) :: r2_mod,  angle_2
+
+        real(dp) :: r_1, phi_1, theta_1
+        real(dp) :: x_0, y_0, z_0
+
         if (atomNr.eq.0) then
           x = r
           y = theta
           z = phi
         elseif (atomNr.eq.1) then
+
           x = r*sin(theta)*cos(phi) + RelatedC(1,1)
           y = r*sin(theta)*sin(phi) + RelatedC(2,1)
           z = r*cos(theta) + RelatedC(3,1)
+
         elseif (atomNr.eq.2) then
-          RelatedC(1,3) = RelatedC(1,1)
-          RelatedC(2,3) = RelatedC(2,1)
-          RelatedC(3,3) = RelatedC(3,1) + 1.0d0
+
+                x_0 = RelatedC(1,2)
+                y_0 = RelatedC(2,2)
+                z_0 = RelatedC(3,2)
+                
+                r2 = RelatedC(:,1) - RelatedC(:,2)  ! Note, the atom
+                                                    ! this atom binds to,
+                                                    ! and the previous one
+                r2_mod = sqrt(dot_product(r2,r2))
+                theta_1 = acos(r2(3)/r2_mod)
+
+                if (
+     $               (abs(r2(2)) .gt. 1.0e-8_dp)
+     $               .and.
+     $               (abs(r2(1)) .gt. 1.0e-8_dp)
+     $             ) then
+                   ! Compute explicitly the phi angle
+
+                   phi_1 = atan2(r2(2),r2(1))
+
+                else
+                   ! Take it from the Zmatrix itself
+                   phi_1 = phi_ref
+                endif
+
+                r_1 = r2_mod
+
+          ! Change temporarily the  coordinates of the reference
+          ! atoms for the third atom to:
+
+          ! Atom2 along the x axis, at a distance r_1 from the origin.
+          ! Remember that RelatedC(:,1) refers to the atom to which this
+          ! one "binds" (the "i" in the "i j k" in the Zmatrix spec)
+          RelatedC(:,1) = r_1 * ex
+
+          ! Atom 1 at the origin
+          RelatedC(:,2) = 0.0_dp  ! Note the index: atom1 is now j
+
+          ! Fake reference atom at (0,0,1) over the second 
+          ! Atom k in the Zmatrix spec
+          RelatedC(:,3) = RelatedC(:,1)  + ez
+
           call Z2C(r,theta,phi,RelatedC,x,y,z)
+!
+! We need to rotate and translate the third atom
+
+           ! Original (reduced) positions
+
+            third_atom_coords(1:3) = (/ x, y, z /)  !just computed above
+
+          ! First, rotate by phi_1 around the z axis.
+          ! Use Rodrigues formula (see 'rotation matrix' in Wikipedia)
+            third_atom_coords(1:3) =
+     $           rotate(third_atom_coords,ez,phi_1)
+
+            ! New rotation axis defined by a vector lying on the xy plane,
+            ! forming a phi_1-90 degree angle with the x axis:
+
+            unit_vector = rotate(ex,ez, phi_1-pi/2.0_dp)
+
+            ! Rotate 
+            ! with the unit_vector as axis and an angle of 90-theta_1
+
+            angle_2 = pi/2.0_dp - theta_1
+            tac2(:) = rotate(third_atom_coords,unit_vector,angle_2)
+!
+!           Now translate
+
+            third_atom_coords = tac2 +  (/ x_0, y_0, z_0 /)
+!
+            x = third_atom_coords(1)
+            y = third_atom_coords(2)
+            z = third_atom_coords(3)
+
+            
         elseif(atomNr.gt.2) then
           call Z2C(r,theta,phi,RelatedC,x,y,z)
         endif
@@ -1385,46 +1541,57 @@ C
         real(dp)          :: xp
         real(dp)          :: yp
         real(dp)          :: zp
+
+        real(dp), dimension(3)  :: vec_pos, vec_i, vec_j, vec_k,
+     $                             vec_ji, vec_kj, vec_n, vec_p
 C
 C  Find coordinates for related atoms
 C
         xi = RelatedC(1,1)
         yi = RelatedC(2,1)
         zi = RelatedC(3,1)
+!       vec_i = RelatedC(1:3,1)
         xj = RelatedC(1,2)
         yj = RelatedC(2,2)
         zj = RelatedC(3,2)
+!       vec_j = RelatedC(1:3,2)
         xk = RelatedC(1,3)
         yk = RelatedC(2,3)
         zk = RelatedC(3,3)
+!       vec_k = RelatedC(1:3,3)
 C
 C  Find unit vector along j->i vector
 C
         xji = xi - xj
         yji = yi - yj
         zji = zi - zj
+!       vec_ji = vec_i - vec_j
         rji = xji*xji + yji*yji + zji*zji
         rji = sqrt(rji)
         xji = xji/rji
         yji = yji/rji
         zji = zji/rji
+!       call normalize(vec_ji)
 C
 C  Find j->k vector
 C
         xki = xk - xj
         yki = yk - yj
         zki = zk - zj
+!       vec_kj = vec_k - vec_j
 C
 C  Find unit vector normal to the i-j-k plane
 C
         xn = yji*zki - yki*zji
         yn = zji*xki - zki*xji
         zn = xji*yki - xki*yji
+!       vec_n = cross_product(vec_ji,vec_kj)
         rn = xn*xn + yn*yn + zn*zn
         rn = sqrt(rn)
         xn = xn/rn
         yn = yn/rn
         zn = zn/rn
+!       call normalize(vec_n)
 C
 C  Find unit vector normal to the other 2 directions already found
 C
@@ -1433,6 +1600,7 @@ C
         xp = yn*zji - yji*zn
         yp = zn*xji - zji*xn
         zp = xn*yji - xji*yn
+!       vec_p = cross_product(vec_n,vec_ji)
 C
 C  Find distances along each unit vector
 C
@@ -1442,9 +1610,17 @@ C
 C
 C  Multiply unit vector by distances and add to origin to get position
 C
+!       rji enters with a minus sign as the convention for the angle is
+!       that i is at the vertex, so an angle of less than pi/2 has the
+!       atom "looking back" at j, and so opposite to vec_ji.
+!
         x = xi - rji*xji + rn*xn + rp*xp
         y = yi - rji*yji + rn*yn + rp*yp
         z = zi - rji*zji + rn*zn + rp*zp
+!       vec_pos = vec_i - rji*vec_ji + rn*vec_n + rp*vec_p
+!       x = vec_pos(1)
+!       y = vec_pos(2)
+!       z = vec_pos(3)
 C
       end subroutine z2c
 
@@ -1518,10 +1694,22 @@ C    8 - fractional cartesian (scaled by lattice vectors)
       integer  :: ivars
 
       external          io_assign, io_close
+      real(dp), external    :: volcel
+      real(dp)              :: dummy_volume
+      logical               :: unknown_cell
 
-!     Update celli, just in case
-      call reclat(ucell,celli,0)
-!
+         !     Update celli, just in case
+         !     Wasteful for now, but we cannot assume
+         !     that ucell is known in any other case,
+         !     and celli is not universally updated yet.
+
+
+       dummy_volume = volcel(ucell)
+       unknown_cell = (abs(dummy_volume) < 1.0e-6_dp)
+       if (.not. unknown_cell) then
+          call reclat(ucell,celli,0)
+       endif
+
       call io_assign( ivars )
       open(ivars, file="ZMATRIX_VARS", form='formatted',
      $     position='rewind', status='unknown')
@@ -1553,8 +1741,8 @@ C  upper2lower accepts a string of nchar characters and replaces
 C  any lowercase letters by uppercase ones.
 C
       character string*(*)
-      character char*1
       integer nchar, ncopy, i, itemp
+      intrinsic :: char
 C
       ncopy = nchar
       if (ncopy.le.0) ncopy = len(string)
@@ -1565,5 +1753,58 @@ C
         endif
       enddo
       end subroutine upper2lower
+
+      function cross_product(a,b) result(c)
+      real(dp), dimension(3), intent(in) :: a, b
+      real(dp), dimension(3)             :: c
+
+      c(1) = a(2)*b(3) - a(3)*b(2)
+      c(2) = a(3)*b(1) - a(1)*b(3)
+      c(3) = a(1)*b(2) - a(2)*b(1)
+
+      end function cross_product
+
+      function rotate(x,v,ang) result(y)
+      real(dp), dimension(3), intent(in) :: x, v
+      real(dp), intent(in)               :: ang
+      real(dp), dimension(3)             :: y
+
+      ! Use Rodrigues' formula to rotate a vector x around
+      ! an axis defined by the vector v, by an angle 'ang'
+      ! The rotation is counterclockwise looking down from
+      ! the head to the foot of v.
+      ! v does not need to be a unit vector
+      ! See, for example,  Wikipedia 
+
+      real(dp)                :: cos_ang, sin_ang, dot_wx, v2
+      real(dp), dimension(3)  :: cross_wx, w
+
+      ! Construct a unit vector from v
+
+      v2 = dot_product(v,v)
+      if ( v2 == 0.0_dp) RETURN
+      w  = v/sqrt(v2)
+
+      cos_ang = cos(ang)
+      sin_ang = sin(ang)
+      cross_wx = cross_product(w,x)
+      dot_wx = dot_product(w,x)
+      y = x*cos_ang + cross_wx * sin_ang +
+     $                dot_wx * w * ( 1.0_dp - cos_ang)
+
+      end function rotate
+
+      subroutine normalize(v)
+      real(dp), dimension(3), intent(inout) :: v
+
+      real(dp)                :: v2
+
+      ! Construct a unit vector from v
+
+      v2 = dot_product(v,v)
+      if ( v2 == 0.0_dp) call die("Normalize: zero vector input")
+      v  = v/sqrt(v2)
+
+      end subroutine normalize
 
       end module zmatrix
