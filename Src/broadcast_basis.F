@@ -53,7 +53,7 @@
      $                  0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(spp%mass,1,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
-         call MPI_Bcast(spp%zval,1,MPI_integer,
+         call MPI_Bcast(spp%zval,1,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
          call MPI_Bcast(spp%self_energy,1,MPI_double_precision,
      $                  0,MPI_Comm_World,MPIerror)
