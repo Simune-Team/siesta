@@ -101,10 +101,10 @@ C
 C *********************************************************************
 
 C Internal variables 
-      real(dp)  ntote   !!** Needed to deal with synthetics
+      real(dp)  ntote_real   !!** Needed to deal with synthetics
       integer
      .  ik, il, io, ispin, iuo, ix, i,
-     .  iy, npl, jo, is, ia, nocc(2),
+     .  iy, npl, jo, is, ia, ntote, nocc(2),
      .  nk2D(3), kscell(3,3), igrd, 
      .  nk, nmeshk(3,3), Nptot, 
      .  notcal(3), nhs, npsi
@@ -152,12 +152,12 @@ C Exit if no calculation is going to be performed
 
       if (nspin.eq.1) then 
 C Total number of valence electrons in the unit cell
-        ntote=0
+        ntote_real=0.0_dp
         do ia=1,nua
           is=isa(ia) 
-          ntote=ntote+zvalfis(is)
+          ntote_real=ntote_real+zvalfis(is)
         enddo
-        if ((nint(ntote) - ntote) .gt. 1.0e-6_dp) then
+        if ((nint(ntote_real) - ntote_real) .gt. 1.0e-6_dp) then
            if (IOnode)
      .       write(6,'(/,a,/,a,/a)')
      .      'KSV_pol: Non-integer number of electrons',
@@ -165,8 +165,8 @@ C Total number of valence electrons in the unit cell
      .      'KSV_pol: No polarization calculation performed' 
            goto 999
         endif
-        ntote = nint(ntote)
-        if (mod(int(ntote),2).ne.0) then 
+        ntote = nint(ntote_real)
+        if (mod(ntote,2).ne.0) then 
            if (IOnode) then
               write(6,'(/,a,/,a,/a)')
      .      'KSV_pol: Odd total number of electrons',

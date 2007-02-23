@@ -110,9 +110,9 @@ C Passed variables
      .                  xa(3,na)
 
 C Internal variables 
-      real(dp) ntote      !!*** Note: needed to deal with synthetics
+      real(dp) ntote_real      !!*** Note: needed to deal with synthetics
       integer
-     .  iie, ik, io, ispin, iuo, ix, iy,  is, ia, 
+     .  iie, ik, io, ispin, iuo, ix, iy,  is, ia, ntote,
      .  nbands, ixmin, ije, j, maxhs, maxpsi,
      .  kscell(3,3), nk, nmeshk(3), npol, ipol, 
      .  ie, je, iw, nwi, nwf, nw, iu, ngamma, ig
@@ -237,11 +237,15 @@ C Check whether nkopt is greater than 0
 
       if (nspin.eq.1) then 
 C Total number of valence electrons in the unit cell
-        ntote = 0
+        ntote_real = 0.0_dp
         do ia = 1,nua
           is = isa(ia) 
-          ntote = ntote + zvalfis(is)
+          ntote_real = ntote_real + zvalfis(is)
         enddo 
+        if ((nint(ntote_real) - ntote_real) .gt. 1.0e-6_dp) then
+           call die('Optical: Non-integer number of electrons')
+        endif
+        ntote = nint(ntote_real)
         if (nbands.le.nint(ntote/2.0d0)) then 
           if (Node.eq.0) then
             write(6,'(/a,i5)') 
@@ -692,7 +696,7 @@ C A factor of 4 due to the integration in Ry rather than in a.u.
           write(iu,'(a,f10.4)') '## ',omega_p2(2)
         else
           write(iu,'(a)') '## f-sum rule'
-          write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/ntote
+          write(iu,'(a,f10.4)') '## ',fsum(1)/2.0d0/pi**2/dble(ntote)
           write(iu,'(a)') '## wp^2 in Ha^2 for Drude'
           write(iu,'(a,f10.4)') '## ',omega_p2(1)
         endif   
@@ -703,12 +707,12 @@ C A factor of 4 due to the integration in Ry rather than in a.u.
         call io_close(iu)
       endif
   
-      if (nspin.eq.2) ntote = (qspin(1)+qspin(2))
+      if (nspin.eq.2) ntote = nint(qspin(1)+qspin(2))
       if (nspin.eq.2) fsum(1) = fsum(1) + fsum(2)
       if (Node.eq.0) then
         write(6,'((/a,f10.6),3(/,2a))') 
      .   'Optical: Checking f-sum rule',
-     .       fsum(1)/2.0d0/pi**2/ntote,
+     .       fsum(1)/2.0d0/pi**2/dble(ntote),
      .   'Optical: ',
      .   'For insulators and closed shell systems', 
      .   'Optical: this number should be close',
