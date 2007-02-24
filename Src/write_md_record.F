@@ -5,8 +5,15 @@
         use atomlist, only: iza
         use md_out,     only: md_v_format
         use parallel, only: IOnode
+        use m_energies
+        use m_steps
+
         implicit none
-        integer istep
+
+        integer, intent(in) ::  istep
+
+        real(dp) :: Etot_output
+        logical:: lastst  
 
         ! Save atomic positions and velocities accumulatively
         if (writmd.and.IOnode) then

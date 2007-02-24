@@ -19,6 +19,8 @@
       use m_overfsm,    only: overfsm
       use siesta_cml
       use m_stress
+      use m_energies
+      use m_steps, only: istp
 
       implicit none
 

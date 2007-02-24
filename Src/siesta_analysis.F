@@ -27,6 +27,8 @@
       use parallel, only: IOnode
       use files,       only : label_length
       use parse
+      use m_energies
+      use m_steps
 
       implicit none
 
@@ -173,7 +175,7 @@
 
 ! Print program's energy decomposition and final forces
       if (IOnode) then
-        call siesta_write_energies( first=.false., iscf=0)
+        call siesta_write_energies( first=.false., iscf=0, dDmax=0.0_dp)
         call siesta_write_forces()
         call siesta_write_stress_pressure()
       endif

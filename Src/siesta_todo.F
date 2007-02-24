@@ -10,22 +10,18 @@
 #endif
 
       implicit none
-      integer:: fincoor ! Final step in geommetry iteration
       integer:: i       ! General-purpose index
       integer:: ia      ! Atom index
       integer:: iadispl ! Displaced atom index
       integer:: ifa     ! Calculate forces? 0=>no, 1=>yes
       integer:: ihmat   ! Calculate hamiltonian? 0=>no, 1=>yes
-      integer:: iiscf
       integer:: ik      ! k-vector index
       integer:: ind     ! Index of sparse matrix elements
-      integer:: inicoor ! Initial step in geommetry iteration
       integer:: io      ! Basis-orbital index
       integer:: iord    ! Order of density matrix extrapolation between geom. steps
       integer:: is      ! Species index
       integer:: isel    ! Auxiliary to call neighb: avoid double count of atom pairs?
       integer:: ispin   ! Spin index
-      integer:: istp    ! Geommetry iteration step starting in istp=1
       integer:: istpsave! Temporary to save and restore istp when reading DM from file
       integer:: istr    ! Calculate stress? 0=>no, 1=>yes
       integer:: iu      ! I/O file unit
@@ -63,42 +59,13 @@
       real(dp):: cftem
       real(dp):: const      ! Temporary factor (used in calculation of Harris forces)
       real(dp):: dipol(3)   ! Electric dipole vector
-      real(dp):: dDmax      ! Max. change in density matrix elements
-      real(dp):: dEmax
-      real(dp):: DEharr
-      real(dp):: DEna       ! Neutral-atom energy term, calculated in dnaefs
-      real(dp):: DUext      ! Interaction energy with external electric field,
-                            ! calculated in dhscf
-      real(dp):: DUscf      ! Electrostatic energy of (rhoscf-rhoatm), calc. in dhscf
-      real(dp):: Dxc        ! Integral((epsxc-Vxc)*Rho), calculated in dhscf (not used)
+
       real(dp):: sigma      ! Energy width used to convolute partial density of states
       real(dp):: e1=1       ! Lower bound of calculated eigenvalues
       real(dp):: e2=-1      ! Upper bound of calculated eigenvalues
-      real(dp):: Ecorrec    ! Energy term eta*DeltaQ, calculated in ordern
-      real(dp):: ef         ! Fermi energy
-      real(dp):: Eharrs     ! Harris-functional total energy
-      real(dp):: Eharrs1    ! Same as Eharrs, but preserved in grid cell sampling
-      real(dp):: Eions      ! Self-energy of isolated ions
-      real(dp):: Ekin       ! Kinetic energy of electrons, calculated in kinefsm
-      real(dp):: Ekinion    ! Kinetic energy of ions
-      real(dp):: Elast      ! Total energy in the previous SCF iteration
-      real(dp):: Emad       ! Madelung energy term, calculated in madelung
-      real(dp):: Ena        ! Neutral-atom term in the total energy, calculated in naefs
-      real(dp):: Enaatm     ! Integral of Vna * rhoatm, calculated in dhscf
-      real(dp):: Enascf     ! Integral of Vna * rhoscf, calculated in dhscf
-      real(dp):: Enl        ! Non-local pseudopot. energy term, calculated in nlefsm
-      real(dp):: Emeta      ! Metadynamics energy contribution calculated in meta
-      real(dp):: Entrop     ! Temporary to call diagon
-      real(dp):: Entropy    ! Entropy due to electron state occupations, calc. in diagon
-      real(dp):: Etot       ! Total electronic energy
-      real(dp):: Etot_output ! Temporary to select among different total-energy opts
-      real(dp):: Exc         ! Exchange-correlation energy, calculated in dhscf
-      real(dp):: E0         ! Non-SCF part of total energy
-      real(dp):: Emm        ! Classical two-body term, calculated in twobody
       real(dp):: factor     ! Temporary variable
       real(dp):: fmax       ! Maximum atomic force
       real(dp):: fmean      ! Mean atomic force (total force / number of atoms)
-      real(dp):: FreeE      ! Free energy
       real(dp):: fres       ! Root mean squared atomic force
       real(dp):: ftem       ! Temporary force value
       real(dp):: ftot(3)    ! Total force
@@ -119,8 +86,6 @@
       real(dp):: rmaxh      ! Max. distance between non-zero hamiltonian matrix orbitals
       real(dp):: stot       ! Total spin polarization
       real(dp):: svec(3)    ! Total spin vector in non-collinear-spin calculations
-      real(dp):: Uatm       ! Harris hartree electron energy, calculated in dhscf
-      real(dp):: Uscf       ! SCF hartree electron energy, calculated in dhscf
       real(dp):: virial     ! Virial = Sum(x*f)
       real(dp):: vn         ! Velocity (time derivative) of the Nose thermostat
       real(dp):: volume     ! Unit cell volume
@@ -160,13 +125,11 @@
       logical:: gamma      ! Gamma point (k=0) in BZ only?
       logical:: genlogic   ! Generate local density of states?
       logical:: itest      ! Temporary used to check if DM have just been read
-      logical:: lastst     ! Temporary to check if this is last geometry step
       logical:: mmix       ! Same as mix. Used in pulayx
       logical:: overflow   ! Too short array sizes?
       logical:: overflowed ! Have array sizes been increased?
     
       logical:: eggbox_block=.true. ! Read eggbox info from data file?
-      logical:: final=.false.       ! Last geometry step?
 
       character(len=150) :: line    ! Data line read
       character(len=10)  :: message ! Not used

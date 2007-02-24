@@ -14,6 +14,9 @@
       use sys, only: die
       use m_ordern,     only: ordern
       use Kpoint_grid
+      use m_energies
+      use m_steps, only: istp
+
       implicit none
 
       integer :: iscf

@@ -12,6 +12,7 @@
       use siesta_geom
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
       use siesta_cml
+      use m_energies
 
       implicit none
 

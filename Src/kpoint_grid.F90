@@ -56,14 +56,18 @@ MODULE Kpoint_grid
 #ifdef MPI
        call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
-       scf_kgrid_first_time = .false.
-    endif
-
-    if ( .not. scf_kgrid_first_time   &
-         .and. user_requested_mp    ) then
-         ! no need to set up the kscell again
-    else
        call setup_scf_kscell(ucell, firm_displ)
+
+       scf_kgrid_first_time = .false.
+
+    else
+       if ( user_requested_mp    ) then
+          ! no need to set up the kscell again
+       else
+          ! This was wrong in the old code. Let's reproduce the bug
+          ! by refusing to update the kscell here too
+          !!!! call setup_scf_kscell(ucell, firm_displ)
+       endif
     endif
 
     call find_kgrid(ucell,kscell,kdispl,firm_displ,     &
@@ -162,9 +166,10 @@ MODULE Kpoint_grid
             ! Generate actual supercell skeleton
             kscell = matmul(ctransf, factor)
             ! Avoid confusing permutations
-            if (expansion_factor == 1) then
-               kscell = unit_matrix
-            endif
+            ! Defer implementation to avoid diffs with reference version
+            !!if (expansion_factor == 1) then
+            !!   kscell = unit_matrix
+            !!endif
          endif
       endif
 

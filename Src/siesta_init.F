@@ -32,6 +32,8 @@
       use m_wallclock, only : wallclock
       use parallel, only: Node, Nodes, IOnode
       USE densematrix, only: Haux, Saux, Psi
+      use m_energies
+      use m_steps
 
       implicit none
 

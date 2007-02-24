@@ -1,26 +1,21 @@
-      subroutine scfconvergence_test( first, iscf, last )
+      subroutine scfconvergence_test( first, iscf, last, dDmax )
       USE SIESTA_TODO
       USE siesta_options
       use siesta_cml
       use m_wallclock, only : wallclock
       use parallel, only: IOnode
       use write_subs
+      use m_energies
+
       implicit none
 
-      logical :: first
       integer :: iscf
+      logical :: first
       logical :: last
 
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
-     .  pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
+      real(dp), intent(in) :: dDmax     ! Max. change in density matrix elements
 
+      real(dp):: dEmax
 
 !------------------------------------------------------------------------- BEGIN
           ! convergence test
@@ -45,7 +40,7 @@
 
           ! Print energies
           if (IOnode) then
-            call siesta_write_energies( first, iscf )
+            call siesta_write_energies( first, iscf, dDmax )
 
             if (harrisfun) then
               write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ',Eharrs/eV

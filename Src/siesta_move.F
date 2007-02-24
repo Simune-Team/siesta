@@ -1,6 +1,4 @@
       MODULE m_siesta_move
-      use write_subs
-      use m_stress
 
       private
       public :: siesta_move
@@ -22,11 +20,15 @@
       use phonon, only: phonon_setup, phonon_restore_coords,
      .                  phonon_set_coords
       use iopipes,      only: forcestopipe, coordsfrompipe
+      use m_energies,   only: Ekinion, Etot
+      use write_subs
+      use m_stress
+      use m_steps
 
       implicit none
 
-      integer  :: istep
-      logical  :: relaxd
+      integer, intent(in)   :: istep
+      logical, intent(out)  :: relaxd
 
 !       external :: automatic_cell,
 !      .  bonds, cgvc, cgvc_zmatrix, fixed,

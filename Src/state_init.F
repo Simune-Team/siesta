@@ -1,5 +1,5 @@
       MODULE m_state_init
-      use write_subs
+
       private
       public :: state_init
 
@@ -22,7 +22,11 @@
       use siesta_cmlsubs, only: siesta_cml_init
       use zmatrix,      only: lUseZmatrix, write_zmatrix
       use Kpoint_grid
+      use m_energies, only: Emad
+      use write_subs
+      use m_steps
       use parallel, only: IOnode
+
       implicit none
 
       integer :: istep

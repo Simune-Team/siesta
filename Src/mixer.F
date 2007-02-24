@@ -3,28 +3,24 @@
       public :: mixer
 
       CONTAINS
-
-      subroutine mixer( iscf )
+ 
+      subroutine mixer( iscf, dDmax )
       USE SIESTA_TODO
       USE siesta_options
       use sparse_matrices
       use siesta_geom
       use atomlist, only: iaorb, iphorb, lasto, no_s, no_u
       use m_broyden_mixing
+      use m_steps
+
       implicit none
 
-      integer :: iscf
+      integer, intent(in)   :: iscf
+      real(dp), intent(out) :: dDmax     ! Max. change in density matrix elements
 
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
-     .  pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
+      integer :: iiscf
 
+      external ::  iodm, mulliken, pulayx
 
 !------------------------------------------------------------------------- BEGIN
 ! Mix input and output energy-density and density matrices ............

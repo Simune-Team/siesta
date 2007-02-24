@@ -19,20 +19,13 @@
       use siesta_geom
       USE siesta_options
       use m_stress
+      use m_energies, only: Etot
+
       implicit none
 
       integer  :: istep
 
-!       external :: automatic_cell,
-!      .  bonds, cgvc, cgvc_zmatrix, fixed,
-!      .  dhscf, diagon, dnaefs, extrapol, initatom,
-!      .  iodm, iozm,
-!      .  kinefsm, mulliken, naefs, neighb, !kgrid, kgridinit, 
-!      .  pulayx, 
-!      .  reinit, shaper, spnvec, 
-!      .  timer, xijorb, memory,
-!      .  ioeig, iofa, iokp, iomd, prversion !, eggbox
-
+      external :: eggbox, mulliken, fixed
 
 !------------------------------------------------------------------------- BEGIN
 ! Write final Kohn-Sham Energy 

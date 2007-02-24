@@ -1,6 +1,7 @@
       Module write_subs
       use siesta_todo
       use m_stress
+      use m_steps
 
       private
       public :: siesta_write_forces, siesta_write_stress_pressure,
@@ -98,6 +99,7 @@
       use m_iostruct,   only: write_struct
       use siesta_cml
       use units
+      use m_energies, only: FreeE
 
       implicit none
 
@@ -226,13 +228,18 @@
       end subroutine siesta_write_stress_pressure
       
       
-      subroutine siesta_write_energies( first, iscf )
+      subroutine siesta_write_energies( first, iscf, dDmax )
       USE siesta_options
       use siesta_cml
       use units
+      use m_energies
+
       implicit none
+
       logical :: first
       integer :: iscf
+      real(dp), intent(in) :: dDmax     ! Max. change in density matrix elements
+
       ! Only print out full decomposition at very beginning and end.
       if ((istp==1.and.first).or.final) then
         write(6,'(/,a,/,(a,f17.6))')

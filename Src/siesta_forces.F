@@ -15,13 +15,15 @@
       USE siesta_options
       use parallel, only: IOnode
       use m_state_analysis
+      use m_steps
 
       implicit none
 
       integer, intent(in)  :: istep
 
-      integer :: iscf
-      logical :: first, last
+      integer  :: iscf
+      logical  :: first, last
+      real(dp) :: dDmax     ! Max. change in density matrix elements
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -51,9 +53,9 @@
 
           call compute_dm( iscf )
 
-          call mixer( iscf )
+          call mixer( iscf, dDmax )
 
-          call scfconvergence_test( first, iscf, last )
+          call scfconvergence_test( first, iscf, last, dDmax )
 
           call timer( 'IterSCF', 2 )
           if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )

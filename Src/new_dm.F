@@ -10,6 +10,8 @@
       USE siesta_options
       use siesta_geom
       use atomlist, only: datm, no_s, iaorb, lasto, no_u
+      use m_steps, only: istp
+
       implicit none
 
       ! Initialize density matrix

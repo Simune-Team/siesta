@@ -5,7 +5,7 @@
       use m_siesta_move
       use m_siesta_end
       use m_siesta_forces
-      USE siesta_todo, only: inicoor, fincoor
+      USE m_steps, only: inicoor, fincoor
 
       implicit none
 
