@@ -82,7 +82,7 @@ OBJS = automatic_cell.o \
         spin_init.o coor.o atm_transfer.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
-        initparallel.o setspatial.o setatomnodes.o uncell.o \
+        initparallel.o show_distribution.o setspatial.o setatomnodes.o uncell.o \
         cart2frac.o obc.o \
         precision.o sys.o m_cell.o recipes.o files.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o xcmod.o atom.o atmparams.o \
@@ -455,6 +455,7 @@ savepsi.o: parallel.o parallelsubs.o precision.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 shaper.o: atmfuncs.o precision.o
+show_distribution.o: atomlist.o parallel.o parallelsubs.o sys.o
 siesta.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o densematrix.o
 siesta.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o kpoint_grid.o
 siesta.o: m_broyden_mixing.o m_cell.o m_check_supercell.o m_fdf_global.o

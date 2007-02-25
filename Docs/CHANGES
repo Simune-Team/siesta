@@ -10,154 +10,423 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
-2007-02-22 17:40 GMT Alberto Garcia <albertog@icmab.es>      patch-41
+2007-02-25 20:30:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-46
 
-Summary: New compilation and test-running files for arina
+Summary: Fix allocation of temporary array in savepsi in parallel
+Keywords:
 
-New file Src/Sys/arina-mlib.make for the new library setup
-at the itanium machine at the UPV. Src/Confs/arina-mpi.conf
-is now obsolete.
+Some nodes might not have any occupied orbitals assigned to them, so
+one has to be careful in the allocation of a buffer array in MPI.
+Allocate using the dimensions on the master node.
 
-Update of Tests/Scripts/arina.pbs.
++ Add 'show_distribution' routine to warn (for now) the user
+  when there are nodes which do not handle any orbitals.
 
-2007-02-21 11:15 GMT Alberto Garcia <albertog@icmab.es>      patch-40
++ Add experimental 'compare' target to Makefile.
 
-Summary: Update reference output for benzene test. New script for matterhorn
++ Add 'born_spin' test.
 
-* The old Reference/benzene.out contained debugging output.
-* Updated script to run parallel jobs under SGE on matterhorn.
-* Declare etime in bsd.f
+2007-02-23 16:17:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-45
 
-2007-02-21 10:55 GMT Alberto Garcia <albertog@icmab.es>      patch-39
-
-Summary: Fix units conversion in Util/Optical/optical.f
-
-(Daniel Sanchez)
-
-Optical.f is a program to analyze the file .EPSIMG and obtain the
-optical properties. A unit conversion was done from eV to Ry instead
-of to Ha.
+    Summary:
+      Clean up handling of ntote in ksv and optical
+    Revision:
+      siesta-devel--reference--2.1--patch-45
 
 
-2007-02-21 10:50 GMT Alberto Garcia <albertog@icmab.es>      patch-38
-
-Summary: Fix of zmatrix code to deal with degenerate case
-Keywords: 
-
-(Colin Glass, Alberto Garcia)
-
-The first three atoms in a zmatrix molecule are special.  The torsion
-angle of the third is specified with respect to a plane formed by the
-first two atoms and a notional atom located along the z axis from the
-second. If the second atom is located also along the z axis from the
-first, the plane is undefined. 
-
-The routine to compute the cartesian coordinates from the Zmatrix
-coordinates deals now with the third atom in a more controlled way,
-and uses the phi angle of the second atom (which should be specified
-even if theta=0) to determine correctly the reference plane for the
-torsion.
-
-Notation: the atoms used as reference for the calculation of the
-position of the current atom are:
-
-i: determines the bond length
-j: together with i, determines the angle theta
-k: together with i and j, determines the reference plane for the torsion.
-
-In case of alignment of i,j, and k, we use the azimuth (phi) of i with
-respect to j to fix the reference plane.
-
-If "i" is the first atom in the Zmatrix, its Zmatrix coordinates are X
-Y Z, and we cannot use its "phi angle" as reference, but in fact this
-angle can be easily computed as phi_ref = phi_ji - pi, where phi_ji is
-the azimuth of the j atom with respect to i.
-
-Routine z2cgen is passed phi_ref after checking the above conditions.
-
-This fix only applies only to the calculation of the coordinates of the third
-atom, but it could presumably be generalized to intercept singular cases
-at any link of the zmatrix, at which i, j, and k could lie along a line.
-
-* New checks to detect attempts to use "fractional coordinates" when
-the unit cell is not yet defined at the time of reading the Zmatrix.
-
-2007-02-20 15:50 GMT Alberto Garcia <albertog@icmab.es>      patch-37
-
-Summary: Correction to k-point grid update fix
-
-The previous k-point fix was incorrect, as it changed the interface of
-kgridinit and kgrid, which are used in other parts of the program. A
-cleaner approach uses a module to hold the information about the
-k-point grid for selfconsistency.
-
-The k-point grid used for achieving self-consistency is now
-re-computed inside the geometry loop if:
-
-The calculation is a cell-optimization one (i.e., if MD.VariableCell
-is .true.), or if it is a "siesta-server" run. This is the old default.
-
-Additionally, if the user sets the fdf flag "ChangeKgridInMD" to
-.true., the grid will be recomputed also during MD runs that potentially
-change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
-Anneal.
-
-New test: born
-
-2007-02-02 10:18 GMT Alberto Garcia <albertog@icmab.es>      patch-36
-
-Summary: Add graphite_c6_full test for more realistic vdW test
-Keywords: 
-
-The original graphite test prepared by J. Gale to show an
-example of adding two-body potentials to simulate van der Waals 
-interactions has been added as graphite_c6_full. It is not
-executed by default as it requires significant CPU time.
-
-+ Minor cosmetic changes in filter_subs.f and kgridinit.F
+    modified files:
+     Src/ksv.f Src/optical.F
 
 
-2007-01-31 16:18 GMT Alberto Garcia <albertog@icmab.es>      patch-35
+2007-02-23 16:16:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-44
 
-Summary: Merge filtering package by Eduardo Anglada
+    Summary:
+      Wrap writes for MPI
+    Revision:
+      siesta-devel--reference--2.1--patch-44
 
-Code that implements the ideas in
 
-Anglada E, Soler JM
-Filtering a distribution simultaneously in real and Fourier space
-PHYSICAL REVIEW B 73 (11): Art. No. 115122 MAR 2006
+    modified files:
+     Src/broyden_optim.F Src/siesta.F
 
-has been merged.
 
-The filtering is selected by fdf directives of the form:
+2007-02-23 15:37:15 GMT	Alberto Garcia <albertog@icmab.es>	patch-43
 
-PAO.Filter .true.
-VNA.filter .true.
-PCC.filter .true.
+    Summary:
+      Wrap io_close for MPI in iohs.F
+    Revision:
+      siesta-devel--reference--2.1--patch-43
 
-and the default parameters are determined by heuristics based
-on the value of the MeshCutoff.
+    The calls to io_close were not restricted to the master node.
+    
+    
 
-(A manual entry is being written)
+    modified files:
+     Src/iohs.F
 
-New tests:
 
-Tests/pb_bulk
-Tests/pb_bulk_1000
-Tests/pb_filter_all
-Tests/pb_filter_basis
-Tests/pb_filter_nopcc
-Tests/pb_filter_pcc
-Tests/pb_filter_vna
-Tests/var_cell_filter
- 
-New files: Src/filter.f90 Src/filter_subs.f
+2007-02-23 15:14:11 GMT	Alberto Garcia <albertog@icmab.es>	patch-42
 
-2007-01-25 16:26 GMT Alberto Garcia <albertog@icmab.es>      patch-34
-   (Manual entry)
+    Summary:
+      zval wrongly treated as MPI_integer in broadcast_basis
+    Revision:
+      siesta-devel--reference--2.1--patch-42
+
+    After the introduction of the hybrid-atom capability, zval is a real
+    number. It was however treated as MPI_integer in broadcast_basis.
+    
+
+    modified files:
+     Src/broadcast_basis.F
+
+
+2007-02-22 17:35:07 GMT	Alberto Garcia <albertog@icmab.es>	patch-41
+
+    Summary:
+      New compilation and test-running files for arina
+    Revision:
+      siesta-devel--reference--2.1--patch-41
+
+    New file Src/Sys/arina-mlib.make for the new library setup
+    at the itanium machine at the UPV. Src/Confs/arina-mpi.conf
+    is now obsolete.
+    
+    Update of Tests/Scripts/arina.pbs.
+    
+
+    new files:
+     Src/Sys/.arch-ids/arina-mlib.make.id Src/Sys/arina-mlib.make
+
+    modified files:
+     Docs/CHANGES Docs/siesta.ind Src/Confs/arina-mpi.conf
+     Tests/Scripts/arina.pbs version.info
+
+
+2007-02-21 11:09:21 GMT	Alberto Garcia <albertog@icmab.es>	patch-40
+
+    Summary:
+      Update reference output for benzene test. New script for matterhorn
+    Revision:
+      siesta-devel--reference--2.1--patch-40
+
+    * The old Reference/benzene.out contained debugging output.
+    * Updated script to run parallel jobs under SGE on matterhorn.
+    * Declare etime in bsd.f
+    
+
+    modified files:
+     Docs/CHANGES Docs/siesta.tex Src/bsd.f
+     Tests/Reference/benzene.out Tests/Scripts/matterhorn-gm.sge
+     version.info
+
+
+2007-02-21 10:49:20 GMT	Alberto Garcia <albertog@icmab.es>	patch-39
+
+    Summary:
+      Fix units conversion in Util/Optical/optical.f
+    Revision:
+      siesta-devel--reference--2.1--patch-39
+
+    (Daniel Sanchez)
+    
+    Optical.f is a program to analyze the file .EPSIMG and obtain the
+    optical properties. A unit conversion was done from eV to Ry instead
+    of to Ha.
+    
+
+    modified files:
+     Docs/CHANGES Docs/siesta.tex Src/version.F90
+     Util/Optical/optical.f version.info
+
+
+2007-02-21 10:38:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-38
+
+    Summary:
+      Fix of zmatrix code to deal with degenerate case
+    Revision:
+      siesta-devel--reference--2.1--patch-38
+
+    (Colin Glass, Alberto Garcia)
+    
+    The first three atoms in a zmatrix molecule are special.  The torsion
+    angle of the third is specified with respect to a plane formed by the
+    first two atoms and a notional atom located along the z axis from the
+    second. If the second atom is located also along the z axis from the
+    first, the plane is undefined. 
+    
+    The routine to compute the cartesian coordinates from the Zmatrix
+    coordinates deals now with the third atom in a more controlled way,
+    and uses the phi angle of the second atom (which should be specified
+    even if theta=0) to determine correctly the reference plane for the
+    torsion.
+    
+    Notation: the atoms used as reference for the calculation of the
+    position of the current atom are:
+    
+    i: determines the bond length
+    j: together with i, determines the angle theta
+    k: together with i and j, determines the reference plane for the torsion.
+    
+    In case of alignment of i,j, and k, we use the azimuth (phi) of i with
+    respect to j to fix the reference plane.
+    
+    If "i" is the first atom in the Zmatrix, its Zmatrix coordinates are X
+    Y Z, and we cannot use its "phi angle" as reference, but in fact this
+    angle can be easily computed as phi_ref = phi_ji - pi, where phi_ji is
+    the azimuth of the j atom with respect to i.
+    
+    Routine z2cgen is passed phi_ref after checking the above conditions.
+    
+    This fix only applies only to the calculation of the coordinates of the third
+    atom, but it could presumably be generalized to intercept singular cases
+    at any link of the zmatrix, at which i, j, and k could lie along a line.
+    
+    * New checks to detect attempts to use "fractional coordinates" when
+    the unit cell is not yet defined at the time of reading the Zmatrix.
+    
+    * New test "benzene"
+    
+
+    new files:
+     Tests/Reference/.arch-ids/benzene.out.id
+     Tests/Reference/benzene.out Tests/benzene/.arch-ids/=id
+     Tests/benzene/.arch-ids/benzene.fdf.id
+     Tests/benzene/.arch-ids/benzene.pseudos.id
+     Tests/benzene/.arch-ids/makefile.id Tests/benzene/benzene.fdf
+     Tests/benzene/benzene.pseudos Tests/benzene/makefile
+
+    modified files:
+     Docs/CHANGES Src/version.F90 Src/zmatrix.F Tests/Makefile
+     version.info
+
+    new directories:
+     Tests/benzene Tests/benzene/.arch-ids
+
+    new patches:
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--base-0
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-1
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-2
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-3
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-4
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-5
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-6
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-7
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-8
+     agarcia@siesta.arch--2006/siesta--zmatrix--0.1--patch-9
+
+
+2007-02-20 16:23:24 GMT	Alberto Garcia <albertog@icmab.es>	patch-37
+
+    Summary:
+      Correction to k-point grid update fix
+    Revision:
+      siesta-devel--reference--2.1--patch-37
+
+    The previous k-point fix was incorrect, as it changed the interface of
+    kgridinit and kgrid, which are used in other parts of the program. A
+    cleaner approach uses a module to hold the information about the
+    k-point grid for selfconsistency.
+    
+    The k-point grid used for achieving self-consistency is now
+    re-computed inside the geometry loop if:
+    
+    The calculation is a cell-optimization one (i.e., if MD.VariableCell
+    is .true.), or if it is a "siesta-server" run. This is the old default.
+    
+    Additionally, if the user sets the fdf flag "ChangeKgridInMD" to
+    .true., the grid will be recomputed also during MD runs that potentially
+    change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
+    Anneal.
+    
+    New test: born
+    
+
+    new files:
+     Src/.arch-ids/find_kgrid.F.id Src/.arch-ids/kpoint_grid.F90.id
+     Src/Sys/.arch-ids/intel-checks.make.id
+     Src/Sys/intel-checks.make Src/find_kgrid.F Src/kpoint_grid.F90
+     Tests/Reference/.arch-ids/born.out.id Tests/Reference/born.out
+     Tests/born/.arch-ids/=id Tests/born/.arch-ids/FC.fdf.id
+     Tests/born/.arch-ids/born.fdf.id
+     Tests/born/.arch-ids/born.pseudos.id
+     Tests/born/.arch-ids/makefile.id Tests/born/FC.fdf
+     Tests/born/born.fdf Tests/born/born.pseudos
+     Tests/born/makefile
+
+    modified files:
+     Docs/CHANGES Docs/siesta.ind Docs/siesta.tex Src/Makefile
+     Src/kgrid.F Src/kgridinit.F Src/siesta.F Tests/Makefile
+     version.info
+
+    new directories:
+     Tests/born Tests/born/.arch-ids
+
+
+2007-02-02 10:14:02 GMT	Alberto Garcia <albertog@icmab.es>	patch-36
+
+    Summary:
+      Add graphite_c6_full test for more realistic vdW test
+    Revision:
+      siesta-devel--reference--2.1--patch-36
+
+    The original graphite test prepared by J. Gale to show an
+    example of adding two-body potentials to simulate van der Waals 
+    interactions has been added as graphite_c6_full. It is not
+    executed by default as it requires significant CPU time.
+    
+    + Minor cosmetic changes in filter_subs.f and kgridinit.F
+    
+    
+
+    new files:
+     Tests/Pseudos/.arch-ids/C.pbe.psf.id Tests/Pseudos/C.pbe.psf
+     Tests/graphite_c6_full/.arch-ids/=id
+     Tests/graphite_c6_full/.arch-ids/graphite_c6_full.fdf.id
+     Tests/graphite_c6_full/.arch-ids/graphite_c6_full.pseudos.id
+     Tests/graphite_c6_full/.arch-ids/makefile.id
+     Tests/graphite_c6_full/graphite_c6_full.fdf
+     Tests/graphite_c6_full/graphite_c6_full.pseudos
+     Tests/graphite_c6_full/makefile
+
+    modified files:
+     Docs/CHANGES Src/filter_subs.f Src/kgridinit.F version.info
+
+    new directories:
+     Tests/graphite_c6_full Tests/graphite_c6_full/.arch-ids
+
+
+2007-01-31 16:53:19 GMT	Alberto Garcia <albertog@icmab.es>	patch-35
+
+    Summary:
+      Merge filtering package by Eduardo Anglada
+    Revision:
+      siesta-devel--reference--2.1--patch-35
+
+    Code that implements the ideas in 
+    
+    Anglada E, Soler JM
+    Filtering a distribution simultaneously in real and Fourier space 
+    PHYSICAL REVIEW B 73 (11): Art. No. 115122 MAR 2006 
+    
+    has been merged.
+    
+    The filtering is selected by fdf directives of the form:
+    
+    PAO.Filter .true.
+    VNA.filter .true.
+    PCC.filter .true.
+    
+    and the default parameters are determined by heuristics based
+    on the value of the MeshCutoff.
+    
+    (A manual entry is being written)
+    
+    New tests:
+    
+    Tests/pb_bulk
+    Tests/pb_bulk_1000
+    Tests/pb_filter_all
+    Tests/pb_filter_basis
+    Tests/pb_filter_nopcc
+    Tests/pb_filter_pcc
+    Tests/pb_filter_vna
+    Tests/var_cell_filter
+    
+
+    new files:
+     Src/.arch-ids/filter.f90.id Src/.arch-ids/filter_subs.f.id
+     Src/filter.f90 Src/filter_subs.f
+     Tests/Pseudos/.arch-ids/Pb.psf.id Tests/Pseudos/Pb.psf
+     Tests/Reference/.arch-ids/pb_bulk.out.id
+     Tests/Reference/.arch-ids/pb_bulk_1000.out.id
+     Tests/Reference/.arch-ids/pb_filter_all.out.id
+     Tests/Reference/.arch-ids/pb_filter_basis.out.id
+     Tests/Reference/.arch-ids/pb_filter_nopcc.out.id
+     Tests/Reference/.arch-ids/pb_filter_pcc.out.id
+     Tests/Reference/.arch-ids/pb_filter_vna.out.id
+     Tests/Reference/.arch-ids/var_cell_filter.out.id
+     Tests/Reference/pb_bulk.out Tests/Reference/pb_bulk_1000.out
+     Tests/Reference/pb_filter_all.out
+     Tests/Reference/pb_filter_basis.out
+     Tests/Reference/pb_filter_nopcc.out
+     Tests/Reference/pb_filter_pcc.out
+     Tests/Reference/pb_filter_vna.out
+     Tests/Reference/var_cell_filter.out
+     Tests/pb_bulk/.arch-ids/=id
+     Tests/pb_bulk/.arch-ids/makefile.id
+     Tests/pb_bulk/.arch-ids/pb_bulk.fdf.id
+     Tests/pb_bulk/.arch-ids/pb_bulk.pseudos.id
+     Tests/pb_bulk/makefile Tests/pb_bulk/pb_bulk.fdf
+     Tests/pb_bulk/pb_bulk.pseudos Tests/pb_bulk_1000/.arch-ids/=id
+     Tests/pb_bulk_1000/.arch-ids/makefile.id
+     Tests/pb_bulk_1000/.arch-ids/pb_bulk_1000.fdf.id
+     Tests/pb_bulk_1000/.arch-ids/pb_bulk_1000.pseudos.id
+     Tests/pb_bulk_1000/makefile
+     Tests/pb_bulk_1000/pb_bulk_1000.fdf
+     Tests/pb_bulk_1000/pb_bulk_1000.pseudos
+     Tests/pb_filter_all/.arch-ids/=id
+     Tests/pb_filter_all/.arch-ids/makefile.id
+     Tests/pb_filter_all/.arch-ids/pb_filter_all.fdf.id
+     Tests/pb_filter_all/.arch-ids/pb_filter_all.pseudos.id
+     Tests/pb_filter_all/makefile
+     Tests/pb_filter_all/pb_filter_all.fdf
+     Tests/pb_filter_all/pb_filter_all.pseudos
+     Tests/pb_filter_basis/.arch-ids/=id
+     Tests/pb_filter_basis/.arch-ids/makefile.id
+     Tests/pb_filter_basis/.arch-ids/pb_filter_basis.fdf.id
+     Tests/pb_filter_basis/.arch-ids/pb_filter_basis.pseudos.id
+     Tests/pb_filter_basis/makefile
+     Tests/pb_filter_basis/pb_filter_basis.fdf
+     Tests/pb_filter_basis/pb_filter_basis.pseudos
+     Tests/pb_filter_nopcc/.arch-ids/=id
+     Tests/pb_filter_nopcc/.arch-ids/makefile.id
+     Tests/pb_filter_nopcc/.arch-ids/pb_filter_nopcc.fdf.id
+     Tests/pb_filter_nopcc/.arch-ids/pb_filter_nopcc.pseudos.id
+     Tests/pb_filter_nopcc/makefile
+     Tests/pb_filter_nopcc/pb_filter_nopcc.fdf
+     Tests/pb_filter_nopcc/pb_filter_nopcc.pseudos
+     Tests/pb_filter_pcc/.arch-ids/=id
+     Tests/pb_filter_pcc/.arch-ids/makefile.id
+     Tests/pb_filter_pcc/.arch-ids/pb_filter_pcc.fdf.id
+     Tests/pb_filter_pcc/.arch-ids/pb_filter_pcc.pseudos.id
+     Tests/pb_filter_pcc/makefile
+     Tests/pb_filter_pcc/pb_filter_pcc.fdf
+     Tests/pb_filter_pcc/pb_filter_pcc.pseudos
+     Tests/pb_filter_vna/.arch-ids/=id
+     Tests/pb_filter_vna/.arch-ids/makefile.id
+     Tests/pb_filter_vna/.arch-ids/pb_filter_vna.fdf.id
+     Tests/pb_filter_vna/.arch-ids/pb_filter_vna.pseudos.id
+     Tests/pb_filter_vna/makefile
+     Tests/pb_filter_vna/pb_filter_vna.fdf
+     Tests/pb_filter_vna/pb_filter_vna.pseudos
+     Tests/var_cell_filter/.arch-ids/=id
+     Tests/var_cell_filter/.arch-ids/makefile.id
+     Tests/var_cell_filter/.arch-ids/var_cell_filter.fdf.id
+     Tests/var_cell_filter/.arch-ids/var_cell_filter.pseudos.id
+     Tests/var_cell_filter/makefile
+     Tests/var_cell_filter/var_cell_filter.fdf
+     Tests/var_cell_filter/var_cell_filter.pseudos
+
+    modified files:
+     Docs/CHANGES Src/Makefile Src/atom.f version.info
+
+    new directories:
+     Tests/pb_bulk Tests/pb_bulk/.arch-ids Tests/pb_bulk_1000
+     Tests/pb_bulk_1000/.arch-ids Tests/pb_filter_all
+     Tests/pb_filter_all/.arch-ids Tests/pb_filter_basis
+     Tests/pb_filter_basis/.arch-ids Tests/pb_filter_nopcc
+     Tests/pb_filter_nopcc/.arch-ids Tests/pb_filter_pcc
+     Tests/pb_filter_pcc/.arch-ids Tests/pb_filter_vna
+     Tests/pb_filter_vna/.arch-ids Tests/var_cell_filter
+     Tests/var_cell_filter/.arch-ids
+
+
+2007-01-25 17:34:07 GMT	Alberto Garcia <albertog@icmab.es>	patch-34
 
     Summary:
       k-point sampling update when kgrid_cutoff is specified
+    Revision:
+      siesta-devel--reference--2.1--patch-34
 
     The user can specify a kgrid_cutoff or a Monkhorst-Pack grid
     to determine the k-point sampling. If there are unit-cell
@@ -189,6 +458,30 @@ New files: Src/filter.f90 Src/filter_subs.f
     the old output, extract the information about the MP grid generated
     automatically by the program, and put it in an MP block.
     
+    (Regeneration of reference outputs)
+
+    modified files:
+     Docs/CHANGES Docs/siesta.ind Docs/siesta.tex Src/kgrid.F
+     Src/kgridinit.F Src/siesta.F Tests/Reference/batio3.out
+     Tests/Reference/bessel.out Tests/Reference/constant_volume.out
+     Tests/Reference/fe.out Tests/Reference/fe_broyden.out
+     Tests/Reference/floating.out Tests/Reference/graphite_c6.out
+     Tests/Reference/h2o.out Tests/Reference/h2oZ.out
+     Tests/Reference/h2o_basis.out Tests/Reference/h2o_dos.out
+     Tests/Reference/h2o_findp_bug.out
+     Tests/Reference/h2o_op_broyden.out
+     Tests/Reference/h2o_orderN.out
+     Tests/Reference/h2o_radialgrid.out
+     Tests/Reference/h2o_reparam.out Tests/Reference/md_anneal.out
+     Tests/Reference/md_nose.out Tests/Reference/md_npr.out
+     Tests/Reference/md_pr.out Tests/Reference/md_verlet.out
+     Tests/Reference/mgco3.out Tests/Reference/oxyn.out
+     Tests/Reference/partial.out Tests/Reference/si2x1h.out
+     Tests/Reference/si64.out Tests/Reference/si_bandpoints.out
+     Tests/Reference/sih.out Tests/Reference/sih_fire.out
+     Tests/Reference/sih_op_broyden.out
+     Tests/Reference/var_cell.out Tests/Reference/zmatrix.out
+     version.info
 
 2007-01-22 19:50:32 GMT	Alberto Garcia <albertog@icmab.es>	patch-33
 

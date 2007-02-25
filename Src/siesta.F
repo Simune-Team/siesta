@@ -550,6 +550,7 @@ C Madelung correction for charged systems .............................
 
 C Parallel initialisation
       call initparallel(no_u,na_u,lasto,xa,ucell,rmaxh,rcoor,isolve)
+      if (IOnode) call show_distribution()
 
 C Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)

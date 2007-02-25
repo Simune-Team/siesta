@@ -19,7 +19,9 @@
 # examples of other options for batch processing.
 #
 #
-tests= h2o born h2o_reparam h2o_basis h2o_dos h2o_orderN \
+REFERENCE=../../ref-version/Tests
+
+tests= h2o born born_spin h2o_reparam h2o_basis h2o_dos h2o_orderN \
        floating benzene pb_bulk pb_filter_all bessel mgco3 si2x1h \
        var_cell constant_volume batio3 fe fe_broyden sih si64 \
        h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr \
@@ -45,6 +47,12 @@ clean:
 		(cd $$i ; make clean) ; \
 	done
 
+compare:
+	for i in ${tests} ;do \
+             echo "---------$$i start" ;  \
+             diff $$i/$$i.out ${REFERENCE}/$$i/$$i.out ; \
+             echo "****---------$$i done" ; \
+     done | grep -v " timer: " | grep -v " elaps: " | grep -v " of run"
 
 
 
