@@ -9,9 +9,11 @@
       USE siesta_options
       use sparse_matrices
       use siesta_geom
-      use atomlist, only: iaorb, iphorb, lasto, no_s, no_u
+      use atomlist, only: iaorb, iphorb, lasto, no_s, no_u, no_l
       use m_broyden_mixing
       use m_steps
+      use m_spin,   only: nspin
+      use m_auxpul
 
       implicit none
 

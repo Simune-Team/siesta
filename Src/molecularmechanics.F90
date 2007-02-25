@@ -1,61 +1,60 @@
 module molecularmechanics
 
-use precision, only: dp
+ use precision, only: dp
 
-implicit none
+ implicit none
 
-integer               :: maxMMpot = 10
-integer               :: nMMpot = 0
-integer,  allocatable :: nMMpotptr(:,:)
-integer,  allocatable :: nMMpottype(:)
-logical               :: PotentialsPresent = .false.
-real(dp)              :: MMcutoff
-real(dp), allocatable :: MMpotpar(:,:)
+ integer               :: maxMMpot = 10
+ integer               :: nMMpot = 0
+ integer,  allocatable :: nMMpotptr(:,:)
+ integer,  allocatable :: nMMpottype(:)
+ logical               :: PotentialsPresent = .false.
+ real(dp)              :: MMcutoff
+ real(dp), allocatable :: MMpotpar(:,:)
 
-CONTAINS
+ CONTAINS
 
-subroutine inittwobody
+ subroutine inittwobody()
 
-  use fdf
-  use units,   only : eV, Ang
-  use parsing, only : parse
-  use sys,     only : die
-  use parallel,only : Node
-#ifdef MPI
-  use mpi_siesta
-#endif
-!
-  character(len=130) :: line
-  character(len=80)  :: names
-  character(len=80)  :: scale
-  integer            :: il
-  integer            :: integs(4)
-  integer            :: iu
-  integer            :: lastc
-  integer            :: lc(0:3)
-  integer            :: maxlin
-  integer            :: ni
-  integer            :: nn
-  integer            :: nr
-  integer            :: nv
-#ifdef MPI
-  integer            :: MPIerror
-#endif
-  real(dp)           :: Dscale
-  real(dp)           :: Escale
-  real(dp)           :: reals(4)
-  real(dp)           :: values(4)
+   use fdf
+   use units,   only : eV, Ang
+   use parsing, only : parse
+   use sys,     only : die
+   use parallel,only : Node
+#  ifdef MPI
+   use mpi_siesta
+#  endif
+   character(len=130) :: line
+   character(len=80)  :: names
+   character(len=80)  :: scale
+   integer            :: il
+   integer            :: integs(4)
+   integer            :: iu
+   integer            :: lastc
+   integer            :: lc(0:3)
+   integer            :: maxlin
+   integer            :: ni
+   integer            :: nn
+   integer            :: nr
+   integer            :: nv
+#  ifdef MPI
+   integer            :: MPIerror
+#  endif
+   real(dp)           :: Dscale
+   real(dp)           :: Escale
+   real(dp)           :: reals(4)
+   real(dp)           :: values(4)
 
-!
-! Allocate arrays for dispersion potentials
-!
-  allocate(nMMpotptr(2,maxMMpot))
-  allocate(nMMpottype(maxMMpot))
-  allocate(MMpotpar(6,maxMMpot))
-  MMpotpar(1:6,1:maxMMpot) = 0.0_dp
-!
-! Get potential cutoff
-!
+ !
+ ! Allocate arrays for dispersion potentials
+ !
+   allocate(nMMpotptr(2,maxMMpot))
+   allocate(nMMpottype(maxMMpot))
+   allocate(MMpotpar(6,maxMMpot))
+   MMpotpar(1:6,1:maxMMpot) = 0.0_dp
+ !
+ ! Get potential cutoff
+ !
 #ifdef MPI
   if (Node.eq.0) then
     MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
@@ -211,12 +210,12 @@ end subroutine inittwobody
 
 subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 
-  use parallel,only : Node
+  use parallel,         only : Node
 
   integer,  intent(in)    :: na
   integer,  intent(in)    :: isa(*)
-  integer,  intent(in)    :: ifa
-  integer,  intent(in)    :: istr
+  integer,  intent(in)    :: ifa   ! compute forces if > 0
+  integer,  intent(in)    :: istr  ! compute stress if > 0
   real(dp), intent(in)    :: cell(3,3)
   real(dp), intent(in)    :: xa(3,*)
   real(dp), intent(out)   :: emm

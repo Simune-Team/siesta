@@ -9,10 +9,14 @@
       use sparse_matrices
       USE siesta_options
       use siesta_geom
-      use atomlist, only: datm, no_s, iaorb, lasto, no_u
-      use m_steps, only: istp
+      use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
+      use m_steps,  only: istp
+      use m_spin,   only: nspin
 
       implicit none
+
+      integer:: iord    ! Order of density matrix extrapolation between geom. steps
+      integer:: istpsave! Temporary to save and restore istp when reading DM from file
 
       ! Initialize density matrix
       ! Set density matrix for first step

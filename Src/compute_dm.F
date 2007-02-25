@@ -6,20 +6,30 @@
 
       subroutine compute_dm( iscf )
       USE SIESTA_TODO
+      use precision
       USE siesta_options
       use sparse_matrices
       use siesta_geom
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
-     .                    qtot
+     .                    qtot, no_l
       use sys, only: die
       use m_ordern,     only: ordern
       use Kpoint_grid
       use m_energies
       use m_steps, only: istp
+      use m_rmaxh
+      use m_eo
+      use m_spin,  only: nspin, qs, efs
 
       implicit none
 
-      integer :: iscf
+      integer, intent(in) :: iscf
+
+      integer :: io, ispin
+      real(dp):: const  ! Temporary factor used in calculation of Harris forces
+      ! e1>e2 To signal that we do not want DOS weights  
+      real(dp), parameter  :: e1 = 1.0_dp, e2 = -1.0_dp
+
 
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,

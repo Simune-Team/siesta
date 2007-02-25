@@ -17,7 +17,7 @@
 
       ! Begin of coordinate relaxation iteration
       relaxd = .false.
-      istep = inicoor
+      istep  = inicoor
       DO WHILE ((istep.le.fincoor) .AND. (.not. relaxd))
 
         call siesta_forces(istep)

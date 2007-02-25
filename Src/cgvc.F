@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine cgvc( na, xa, fa, cell, stress, volume, dxmax, 
+      subroutine cgvc( na, xa, fa, cell, stress, dxmax, 
      .                 tp, ftol, strtol, varcel, relaxd, usesavecg )
 c ***************************************************************************
 c Variable-cell conjugate-gradient geometry optimization
@@ -31,7 +31,6 @@ c Written by E. Artacho. November 1998.
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
 c real*8 fa(3,na)       : Atomic forces
-c real*8 volume         : unit cell volume
 c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
@@ -70,7 +69,7 @@ C
 ! Subroutine arguments:
 
       integer, intent(in) :: na
-      real(dp), intent(in) :: fa(3,na), volume, dxmax,
+      real(dp), intent(in) :: fa(3,na), dxmax,
      .                        tp, ftol, strtol
       logical, intent(in) :: varcel, usesavecg
       real(dp), intent(inout) :: xa(3,na), stress(3,3), cell(3,3)
@@ -78,7 +77,7 @@ C
 
 c Internal variables and arrays
 
-      real(dp)            :: new_volume, trace, ftol_tmp
+      real(dp)            :: new_volume, trace, ftol_tmp, volume
 
       logical           found
       integer           iu, ia, i, j, n, indi
@@ -110,6 +109,8 @@ c Internal variables and arrays
       real(dp) :: volcel
       external :: volcel
 c ---------------------------------------------------------------------------
+
+      volume = volcel(cell)
 
 C Allocate local memory
       allocate(gfa(na*3 + 6))

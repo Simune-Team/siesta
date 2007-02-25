@@ -1,3 +1,4 @@
+
       MODULE m_local_DOS
       private
       public :: local_DOS
@@ -12,18 +13,22 @@
       USE siesta_options, only :occtol, g2cut, isolve, 
      &                          fixspin, temp, neigwanted 
       use siesta_geom
-      use atomlist, only: indxuo, indxua
-      use atomlist, only: qtot, no_u
-      use atomlist, only: iphorb
-      use atomlist, only: datm, no_s, iaorb
-      use fdf, only : fdf_block, fdf_convfac
-      use sys, only: die
-      use m_mpi_utils, only : broadcast
-      use files,       only : slabel
+      use atomlist,       only: indxuo, indxua           
+      use atomlist,       only: qtot, no_u, no_l
+      use atomlist,       only: iphorb                   
+      use atomlist,       only: datm, no_s, iaorb        
+      use fdf,            only : fdf_block, fdf_convfac  
+      use sys,            only: die                      
+      use m_mpi_utils,    only : broadcast               
+      use files,          only : slabel                  
       use Kpoint_grid
-      use parallel, only: IOnode
-      use files,       only : label_length
+      use parallel,       only: IOnode                   
+      use files,          only : label_length            
       use parse
+      use m_ntm
+      use m_forces,       only: fa
+      use m_eo
+      use m_spin,         only: nspin, qs, efs
 
       implicit none
 
@@ -35,7 +40,14 @@
       integer :: dummy_iscf = 1
       character(len=label_length+5) :: fildos
 
+      real(dp):: e1  ! Lower bound of energy range
+      real(dp):: e2  ! Upper bound of energy range
+
       real(dp)  :: dummy_str(3,3), dummy_strl(3,3)  ! for dhscf call
+      real(dp)  :: dummy_dipol(3)
+
+      integer   :: iu
+      real(dp)  :: factor, g2max
 
 ! Find local density of states
       if (IOnode) then
@@ -78,7 +90,10 @@
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
      .              maxnh, numh, listhptr, listh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dipol, fa, dummy_str, fal, dummy_strl )
+     .              dummy_dipol, fa, dummy_str, fa, dummy_strl )
+                    ! next to last argument is dummy here,
+                    ! as no forces are calculated
+                    ! todo: make all these optional
         else
           if (IOnode)  write(6,*)
      .       'siesta: ERROR: LDOS implemented only with diagon'

@@ -1,18 +1,21 @@
-      subroutine proximity_check( )
+      subroutine proximity_check(rmax)
       USE precision, only:dp
       USE SIESTA_TODO
       USE siesta_options
       use siesta_geom
-      use atomlist, only: rco, iphkb, iphorb, indxua, no_s, rckb, rmaxo,
-     .                    rmaxv, no_u, lastkb, lasto, rmaxkb
       use parallel, only: IOnode
+      use m_numbs_neighb, only: maxna, jna, r2ij, xij
       implicit none
 
-      integer :: ii, jj, jamin, idxneighJ, nneigbI
+      real(dp), intent(in) :: rmax  ! Range of neighbors
+
+      integer :: ii, jj, jamin, idxneighJ, nneigbI, isel
       real(dp):: rmin, r2min 
 
 
       ! Check if any two atoms are unreasonably close
+
+      isel = 0   ! Get back all neighbors, regardless of whether ja>ia
       do ii = 1,na_s
         r2min = huge(1._dp)
         jamin = 0

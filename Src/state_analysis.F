@@ -20,12 +20,18 @@
       USE siesta_options
       use m_stress
       use m_energies, only: Etot
+      use m_ntm
+      use m_spin,     only: nspin
+      use m_forces
 
       implicit none
 
       integer  :: istep
+      integer  :: ia, jx, ix
+      real(dp) :: volume
 
       external :: eggbox, mulliken, fixed
+      real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
 ! Write final Kohn-Sham Energy 
@@ -60,23 +66,6 @@
       call fixed(ucell,stress,na_u,isa, amass, xa, fa, cstress, cfa, 
      .           ntcon )
 
-! Write atomic forces 
-      fmax = 0.0_dp
-      cfmax = 0.0_dp
-      fres = 0.0_dp
-      do ix = 1,3
-        ftot(ix) = 0.0_dp
-        do ia = 1,na_u
-          ftem = fa(ix,ia)
-          cftem = cfa(ix,ia)
-          ftot(ix) = ftot(ix) + ftem
-          fres = fres + ftem*ftem
-          fmax = max( fmax, dabs(ftem) )
-          cfmax = max( cfmax, dabs(cftem) )
-        enddo
-      enddo
-      fres = dsqrt( fres / (3.0_dp*na_u) )
-
 ! Calculate and output Zmatrix forces
       if (lUseZmatrix) then
         call CartesianForce_to_ZmatForce(na_u,xa,fa)
@@ -84,6 +73,7 @@
       endif
 
 ! Add kinetic term to stress tensor
+      volume = volcel(ucell)
       do ia = 1,na_u
         do jx = 1,3
           do ix = 1,3

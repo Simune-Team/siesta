@@ -9,17 +9,24 @@
       use siesta_todo
       use siesta_options, only:dx
       use sparse_matrices
-      use parallel, only: Node, Nodes, IOnode, ParallelOverK
-      USE m_ksvinit, only: nkpol, kpol, wgthpol
-      use siesta_geom, only: na_u, na_s, xa, scell, ucell, isa
-      use atomlist, only: no_u, indxuo, iphorb, iaorb, lasto
-      use atomlist, only: rmaxo, no_s
+      use parallel,       only: Node, Nodes, IOnode, ParallelOverK
+      USE m_ksvinit,      only: nkpol, kpol, wgthpol
+      use siesta_geom,    only: na_u, na_s, xa, scell, ucell, isa
+      use atomlist,       only: no_u, indxuo, iphorb, iaorb, lasto
+      use atomlist,       only: rmaxo, no_s, no_l
+      use m_numbs_neighb, only: maxna, jna, r2ij, xij
+      use m_spin,         only: nspin
+      use m_ksv,          only: KSV_pol
 
       implicit none
 
-      real(dp)                      :: polxyz(3,nspin)  ! Automatic, small
-      real(dp)                      :: polR(3,nspin)  ! Automatic, small
-!
+      real(dp) :: polxyz(3,nspin)  ! Automatic, small
+      real(dp) :: polR(3,nspin)    ! Automatic, small
+
+      real(dp) :: qspin(4)         ! Local variable
+
+      integer  :: j, ind, io, ispin
+
 !     Computes Born-effective charges by finite differences,
 !     using the "force constant calculation" mode of operation.
 !     It is called only for those steps (even) in which the dx

@@ -13,7 +13,19 @@
       use siesta_geom
       use siesta_cml
       use units
+      use m_forces
       implicit none
+
+      integer :: ia, ix
+      real(dp) :: cfmax, fmax, fres
+      real(dp) :: ftot(3), cftot(3)
+
+        fmax = maxval(abs(fa))
+        ftot = sum(fa, dim=2)
+        cfmax = maxval(abs(cfa))
+        cftot = sum(cfa, dim=2)
+        fres = sqrt( sum(fa**2) / (na_u*3.0_dp))
+
       ! Almost the same forces output whether during simulation
       ! or at the end. Unfortunately not quite, therefore slightly
       ! tortuous logic below. If we are content to change format
@@ -49,8 +61,6 @@
      .       '    constrained'
       else !not final
 ! In finalization, only print forces if sufficiently large.
-        fmax = maxval(abs(fa))
-        ftot = sum(fa, dim=2)
         if (fmax .gt. ftol) then
           write(6,'(/,a)') 'siesta: Atomic forces (eV/Ang):'
           write(6,'(a,i6,3f12.6)')
@@ -67,20 +77,18 @@
           endif !cml_p
         endif
         if (Any(cfa /= fa)) then
-          fmax = maxval(abs(cfa))
-          ftot = sum(cfa, dim=2)
-          if (fmax .gt. ftol) then
+          if (cfmax .gt. ftol) then
             write(6,'(/,a)') 'siesta: Constrained forces (eV/Ang):'
             write(6,'(a,i6,3f12.6)')
      .           ('siesta: ',ia,(cfa(ix,ia)*Ang/eV,ix=1,3),ia=1,na_u)
             write(6,'(a,40("-"),/,a,a4,3f12.6)')
-     .           'siesta: ','siesta: ','Tot',(ftot(ix)*Ang/eV,ix=1,3)
+     .           'siesta: ','siesta: ','Tot',(cftot(ix)*Ang/eV,ix=1,3)
             if (cml_p) then
               call cmlStartPropertyList(mainXML,
      .             title='Constrained Force Summary')
               call cmlAddProperty(xf=mainXML, property=cfa*Ang/eV, 
      .             dictref='siesta:cforces', units='siestaUnits:evpa')
-              call cmlAddProperty(xf=mainXML, property=ftot*Ang/eV, 
+              call cmlAddProperty(xf=mainXML, property=cftot*Ang/eV, 
      .             dictref='siesta:cftot', units='siestaUnits:evpa')
               call cmlEndPropertyList(mainXML)
             endif !cml_p
@@ -93,6 +101,7 @@
       subroutine siesta_write_stress_pressure()
 
       use parallel, only: IOnode
+      use precision
       USE siesta_options
       use siesta_geom
       use atomlist, only: iza
@@ -100,8 +109,15 @@
       use siesta_cml
       use units
       use m_energies, only: FreeE
+      use m_forces,          only: fa
 
       implicit none
+      integer :: ia, jx, ix
+
+      real(dp):: virial     ! Virial = Sum(x*f)
+      real(dp):: Pmol       ! "Molecular pressure" (discounting Virial term)
+      real(dp):: Psol       ! Pressure
+      real(dp):: fmean
 
 ! Stress tensor and pressure:
       
@@ -117,9 +133,11 @@
      $            tstress(2,3)/kbar,
      $            tstress(1,3)/kbar
 !
+!      This use of the volume is OK, as it is called from state_analysis,
+!      before possibly changing the cell.
 !      Write "target enthalpy" (E + pV, where p is the *target* pressure)
             write(6,"(a,f14.4)") "Target enthalpy (eV/cell)",
-     $           (FreeE + tp*volume)/eV
+     $           (FreeE + tp*volume_of_some_cell)/eV
 !
 !      Write out structural information in "crystallography" format
 !
@@ -161,11 +179,15 @@
         case(6)
           call ofc(fa,dx,na_u)
         case(7)
-!          call phonon_write_forces(fa,na_u,ns,ucell,istep)
+!          call phonon_write_forces(fa,na_u,ucell,istep)
            if (IOnode) write(*,*) 'phonon suport deactivated'
         end select !idyn
 
       else !final
+
+           ! AG: Possible BUG 
+           ! The volume here refers to the "old" cell, and
+           ! might be out of date if the cell has changed.
 
 ! Print stress tensor unconditionally
         write(6,'(/,a,3(/,a,3f12.6))')
@@ -200,9 +222,10 @@
           enddo
         enddo
         Psol = - (( stress(1,1) + stress(2,2) + stress(3,3) )/3.0_dp)
-        Pmol = Psol - virial / volume / 3.0_dp
+        Pmol = Psol - virial / volume_of_some_cell / 3.0_dp
         write(6,'(/,a,f18.6,a)')
-     .       'siesta: Cell volume =', volume/Ang**3, ' Ang**3'
+     .       'siesta: Cell volume =',
+     $       volume_of_some_cell/Ang**3, ' Ang**3'
         write(6,'(/,a,/,a,2a20,a,3(/,a,2f20.8,a))')
      .       'siesta: Pressure (static):',
      .       'siesta: ','Solid',        'Molecule',      '  Units',
@@ -211,7 +234,8 @@
      .       'siesta: ', Psol/kBar,      Pmol/kBar,      '  kBar'
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='Final Pressure')
-          call cmlAddProperty(xf=mainXML, property=volume/Ang**3, 
+          call cmlAddProperty(xf=mainXML,
+     $         property=volume_of_some_cell/Ang**3, 
      .         title='cell volume', dictref='siesta:cellvol', 
      .         units='siestaUnits:Ang__3')
           call cmlAddProperty(xf=mainXML, property=Psol/kBar, 
@@ -232,13 +256,17 @@
       USE siesta_options
       use siesta_cml
       use units
-      use m_energies
-
+      use m_energies 
+      use m_spin
       implicit none
 
       logical :: first
       integer :: iscf
       real(dp), intent(in) :: dDmax     ! Max. change in density matrix elements
+
+
+      integer :: i 
+
 
       ! Only print out full decomposition at very beginning and end.
       if ((istp==1.and.first).or.final) then

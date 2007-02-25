@@ -6,11 +6,17 @@
 
       subroutine normalize_dm( first )
       USE SIESTA_TODO
+      use precision
       use sparse_matrices
       use atomlist, only: qtot
       use parallel, only: IOnode
+      use m_spin,   only: nspin
+
       implicit none
+
       logical :: first
+      integer :: io, ispin
+      real(dp):: qsol       ! Total unnormalized electron charge
 
       ! Normalize density matrix to exact charge
       qsol = 0.0_dp

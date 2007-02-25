@@ -14,6 +14,7 @@
       use siesta_geom
       use atomlist, only: rmaxv, iphorb, iphkb, rco, rckb, indxua,no_s,
      .                    rmaxo, no_u, lastkb, lasto, rmaxkb, superc
+      use atomlist, only: no_l
       use alloc, only: re_alloc, alloc_report
       use m_hsparse,    only: hsparse
       use m_overlap,    only: overlap
@@ -26,13 +27,23 @@
       use write_subs
       use m_steps
       use parallel, only: IOnode
+      use alloc, only: re_alloc
+      use m_numbs_neighb
+      use m_spin, only: nspin
+      use m_rmaxh
+      use m_auxpul
+      use m_eo
 
       implicit none
 
       integer :: istep
 
       real(dp):: veclen     ! Length of a unit-cell vector
+      real(dp):: rmax
       logical :: cell_can_change
+
+      integer :: i, ia, ix, io, iadispl, ixdispl, isel, nnamax
+      integer :: nnia      ! Number of neighbors of a given atom
 
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
@@ -44,7 +55,7 @@
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
 
-
+      real(dp), external :: volcel
 !------------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
       istp = istp + 1
@@ -114,7 +125,7 @@
         if (gamma) then
            nsc(1:3) = 1
         else if (fixauxcell) then
-           nsc(i) = nscold(i)
+           nsc(1:3) = nscold(1:3)
         else
            do i=1,3
               veclen = sqrt(ucell(1,i)**2+ucell(2,i)**2+ucell(3,i)**2)
@@ -144,14 +155,21 @@
       ! even if not the unit cell
       call superc(ucell, scell, nsc)
 
-! Print unit cell and find its volume
+! Print unit cell and compute cell volume
+! Possible BUG: 
+! Note that this volume is later used in write_subs and the md output
+! routines, even if the cell later changes.
       if (IOnode) call outcell(ucell)
-      volume = volcel( ucell )
+      volume_of_some_cell = volcel(ucell)
 ! ...................
 
 ! Initialize neighb subroutine ........................................
-  144 ia = 0
-      isel = 0
+  144 continue
+      isel = 0  
+      ! AG ** POSIBLE BUG 
+      ! The last argument should be twice as big, and there
+      ! should be a check for negl (neglect of KB overlap)
+      ! Compare with rmaxh in siesta_init...
       rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb )
       nnia = maxna
       if (allocated(jna)) then
@@ -172,11 +190,13 @@
       call memory('A','D',maxna,'siesta')
       allocate(xij(3,maxna))
       call memory('A','D',3*maxna,'siesta')
-      call neighb( scell, rmax, na_s, xa, ia, isel,
+      ! Initialize neighb subroutine  (ia=0)
+      call neighb( scell, rmax, na_s, xa, 0, isel,
      .             nnia, jna, xij, r2ij )
       nnamax = 0
       do ia = 1,na_s
-        nnia = 0
+        nnia = 0  ! First pass without filling arrays
+                  ! just to get maximum size needed
         call neighb( scell, rmax, na_s, xa, ia, isel,
      .               nnia, jna, xij, r2ij )
         nnamax = max( nnamax, nnia )
@@ -192,7 +212,7 @@
 
 
       ! Check if any two atoms are unreasonably close
-      call proximity_check( )
+      call proximity_check(rmax)
 
       ! List of nonzero Hamiltonian matrix elements
       if (istp==1) then 
@@ -200,6 +220,7 @@
         nullify(Dscf,Dscfsave,Dold,Eold,Escf)
         nullify(listhold,listh)
         nullify(H,H0,S)
+        nullify(xijo)
       endif
 
       overflow=.true.
@@ -272,21 +293,16 @@
 ! ..................
 
 ! Find vectors between orbital centers ................................
-      if (allocated(xijo)) then
-        call memory('D','D',size(xijo),'siesta')
-        deallocate(xijo)
-      endif
+
       if (.not.gamma) then
-        nxij = maxnh
-        allocate(xijo(3,nxij))
-        call memory('A','D',3*nxij,'siesta')
+        call re_alloc(xijo,1,3,1,maxnh,name="xijo",
+     $        routine="state_init",shrink=.false.,copy=.false.)
         call xijorb( negl, scell, na_u, na_s, xa,
      .               lasto, lastkb, rco, rckb,
      .               maxnh, numh, listhptr, listh, xijo )
       else
-        nxij = 1
-        allocate(xijo(3,1))
-        call memory('A','D',3,'siesta')
+        call re_alloc(xijo,1,3,1,1,name="xijo",
+     $        routine="state_init",shrink=.false.,copy=.false.)
       endif
 ! ..................
 
@@ -296,7 +312,7 @@
 ! Check for Pulay auxiliary matrices sizes ...................................
       if (pulfile .or. maxsav .le. 0) then
         nauxpul = 1
-        if (.not.allocated(auxpul)) then
+        if (.not. allocated(auxpul)) then
           allocate(auxpul(nauxpul,2))
           call memory('A','D',2*nauxpul,'siesta')
         endif

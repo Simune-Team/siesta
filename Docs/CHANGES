@@ -10,6 +10,243 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-02-25 20:02:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-16
+
+Summary: Merge of removal of integer and real variables from siesta_todo
+Keywords: 
+
+Inital work done at BSC by M. Quero from Feb 19 to 23, 2007. A. Garcia
+then consolidated some of the modules and removed others, turning some
+variables into locals or arguments (See ag@bsc--2007/ag--vars--1.0)
+
+Some fine tuning still needs to be done, and note that the
+'high-level' handling of major variables, for example as
+
+	call siesta_forces(geom,force_stress)
+
+has not started yet.
+
+New modules:
+
+m_auxpul.F90        : Pulay variables. Will go into a "pulay" module.
+m_dipol.F90         : Dipole
+m_spin.F90          : nspin, qs, efs, plus routine init_spin (replaces
+                      spin_init). Readsp not included, as it needs work.
+m_eo.F90            : eo, qo arrays
+m_forces.F90        : fa, cfa, and ntcon. At the same level as stress.F90,
+                      which has been renamed to m_stress.F90
+m_kinetic.F90       : Kinetic energies of Parrinello/Rahman variables
+m_ntm.F90           : Mesh multipliers. Should probably go in meshsubs.
+m_numbs_neighb.F90  : Variables related to the neighbor calculations.
+m_rmaxh.F90         : Hamiltonian maximum range. Should be clarified.
+
+* Module atomlist now includes no_l
+* Module siesta_geom now includes va (atomic velocities), plus
+  a new variable volume_of_some_cell to pass volume information (to
+  mimic a very likely bug in the old code)
+* Array xijo is now in sparse_matrices
+
+
+2007-02-24 14:04:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-15
+
+    Summary:
+      New m_energies and m_steps modules. Back to old k-point behavior
+    Revision:
+      siesta-bsc--master--2.1--patch-15
+
+    More steps in the slimming of siesta_todo:
+    
+    * Module m_energies contains the energy components
+    * Module m_steps contains inicoor, fincoor, istp, final
+    * Variable dDmax has been turned into an argument of
+      mixer and scfconvergence_test
+    
+    *The old code had a bug in the update of k-points with cell changes:
+    the kscell matrix was kept constant, instead of re-calculating it.
+    This was fixed in the re-structured version, but of course the fix
+    leads to differences in the outputs of some tests, notably var_cell.
+    
+    The bug has been re-activated in kpoint_grid.F90 by commenting out
+    the update of kscell.
+    
+    The resetting of kscell to the unit matrix in case of gamma
+    calculations has been deferred for the same reason.
+    
+    
+    
+    
+
+    new files:
+     Src/.arch-ids/m_energies.F90.id Src/.arch-ids/m_steps.F90.id
+     Src/m_energies.F90 Src/m_steps.F90
+
+    removed files:
+     Src/.arch-ids/m_siesta.jose.F.id Src/m_siesta.jose.F
+
+    modified files:
+     Src/Makefile Src/compute_dm.F Src/kpoint_grid.F90
+     Src/local_DOS.F Src/mixer.F Src/new_dm.F Src/post_scf_work.F
+     Src/scfconvergence_test.F Src/setup_hamiltonian.F Src/siesta.F
+     Src/siesta_analysis.F Src/siesta_forces.F Src/siesta_init.F
+     Src/siesta_move.F Src/siesta_todo.F Src/state_analysis.F
+     Src/state_init.F Src/write_md_record.F Src/write_subs.F
+
+    new patches:
+     ag@bsc--2007/ag--vars--1.0--base-0
+     ag@bsc--2007/ag--vars--1.0--patch-1
+     ag@bsc--2007/ag--vars--1.0--patch-2
+     ag@bsc--2007/ag--vars--1.0--patch-3
+     ag@bsc--2007/ag--vars--1.0--patch-4
+
+
+2007-02-18 23:13:17 GMT	Alberto Garcia <albertog@icmab.es>	patch-14
+
+    Summary:
+      Replacement of some allocatables by pointers and automatics
+    Revision:
+      siesta-bsc--master--2.1--patch-14
+
+    eo, qo        : pointers
+    fa, cfa, fal  : pointers
+    
+    polxyz, polR  : automatic arrays, as they are small
+    
+    (+ really add siesta_forces.F from previous patch)
+
+    new files:
+     Src/.arch-ids/siesta_forces.F.id Src/siesta_forces.F
+
+    modified files:
+     Src/Makefile Src/born_charge.F Src/siesta_analysis.F
+     Src/siesta_init.F Src/siesta_todo.F Src/state_init.F
+
+    new patches:
+     ag@bsc--2007/vars-mem--ag--0.1--patch-4
+     ag@bsc--2007/vars-mem--ag--0.1--patch-5
+
+
+2007-02-18 23:09:35 GMT	Alberto Garcia <albertog@icmab.es>	patch-13
+
+    Summary:
+      Creation of siesta_forces
+    Revision:
+      siesta-bsc--master--2.1--patch-13
+
+    Finally, siesta_forces has been created, clarifying in the process the
+    parameters of siesta_write_energies.
+    
+
+    modified files:
+     Src/Makefile Src/siesta.F Src/siesta_analysis.F
+
+    new patches:
+     ag@bsc--2007/vars-mem--ag--0.1--patch-3
+
+
+2007-02-18 23:08:23 GMT	Alberto Garcia <albertog@icmab.es>	patch-12
+
+    Summary:
+      Clarification of the scope of the stress variables
+    Revision:
+      siesta-bsc--master--2.1--patch-12
+
+    A number of changes to rationalize the use of 'stress':
+    
+    * New routine 'overlap': a simplified version of overfsm adequate
+    for calling from state_init, where only the overlap matrix is needed,
+    and the stress was zero.
+    
+    * Routine setup_hamiltonian now globalizes the stress, and calls
+    the 'twobody' routine. Variable 'stressl' made into a local.
+    
+    * local_DOS, and the writing of charge and potentials, do no need
+    to use the 'stress' variable at all.
+    
+
+    new files:
+     Src/.arch-ids/overlap.f.id Src/overlap.f
+
+    modified files:
+     Src/Makefile Src/local_DOS.F Src/post_scf_work.F
+     Src/setup_hamiltonian.F Src/siesta.F Src/siesta_analysis.F
+     Src/siesta_init.F Src/siesta_todo.F Src/state_analysis.F
+     Src/state_init.F Src/stress.F90 Src/write_subs.F
+
+    new patches:
+     ag@bsc--2007/vars-mem--ag--0.1--base-0
+     ag@bsc--2007/vars-mem--ag--0.1--patch-1
+     ag@bsc--2007/vars-mem--ag--0.1--patch-2
+
+
+2007-02-17 19:34:42 GMT	Alberto Garcia <albertog@icmab.es>	patch-11
+
+    Summary:
+      Fourth session at the BSC
+    Revision:
+      siesta-bsc--master--2.1--patch-11
+
+    * New routine state_analysis.F split from siesta_move.F
+    
+    * Some variables taken out of siesta_todo and moved to
+    various places:
+    
+     - New module m_stress in stress.F90 holds stress et al
+      (Some variables could actually be turned into locals
+       in several routines, except perhaps 'stress'.)
+     - mscell et al moved to siesta_geom
+     - nh and nhmax moved to sparse_matrices
+    
+    * write_subs now holds the siesta_write_XX routines
+      formerly in siesta_todo
+    
+    * Some allocatables changed to pointers in fixed.F and pulayx.F
+      (First step: just use re_alloc instead of allocate/memory
+       In a second step work arrays will live outside)
+    
+    * Cosmetic changes in m_mpi_utils.F90 (in the context of the
+    analysis of the MPI interface)
+    
+    * Changes in coor.F:
+      - mscell, nsc changed to coor_mscell and coord_nsc
+      - routine superx_coor taken out of the coor scope, to
+        avoid clashes with the imported variables in coor.
+        (this supercell does not have anything to do with the
+         auxiliary supercell for matrix elements)
+    
+    AG upon merging:
+    
+    * Fix typo in zmatrix declarations
+    * Declare etime in bsd.f
+    * New trick in Makefile to remove the dependency
+      of siesta_cmlsubs.o on version.o after doing "make dep".
+    * Put an explicit unit cell in h2oZ.fdf to avoid a bug.
+
+    new files:
+     Docs/.arch-ids/BSC-Issues.id Docs/BSC-Issues
+     Src/.arch-ids/state_analysis.F.id Src/.arch-ids/stress.F90.id
+     Src/.arch-ids/write_subs.F.id
+     Src/Sys/.arch-ids/intel-checks.make.id
+     Src/Sys/intel-checks.make Src/state_analysis.F Src/stress.F90
+     Src/write_subs.F
+
+    removed files:
+     Tests/.arch-ids/compara.id Tests/compara
+
+    modified files:
+     Docs/CHANGES Src/Makefile Src/alloc.F90 Src/bsd.f Src/coor.F
+     Src/fixed.F Src/kpoint_grid.F90 Src/ksvinit.F Src/local_DOS.F
+     Src/m_mpi_utils.F Src/parallel.f Src/post_scf_work.F
+     Src/pulayx.F Src/scfconvergence_test.F Src/setup_hamiltonian.F
+     Src/siesta.F Src/siesta_analysis.F Src/siesta_geom.F90
+     Src/siesta_init.F Src/siesta_move.F Src/siesta_todo.F
+     Src/sparse_matrices.F90 Src/state_init.F Src/struct_init.F
+     Src/zheevds.F90 Tests/bsc-Makefile Tests/bsc-compare.sh
+     Tests/bsc-test.mk Tests/h2oZ/h2oZ.fdf version.info
+
+    new patches:
+     mq@bsc--2007/mq--feb16--1.0--patch-1
+
+
 2007-02-17 20:00:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-11
 
 Summary: Fourth session at the BSC

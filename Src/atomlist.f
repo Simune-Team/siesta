@@ -31,6 +31,7 @@
 
 ! Same for "unit", or "real" cell:
       integer, save, public          :: no_u, nokb_u
+      integer, save, public          :: no_l=1  !      Local to node
 
 ! Here 'na' is a generic number. It could be na_u or na_s, depending
 ! on whether we need a supercell or not.

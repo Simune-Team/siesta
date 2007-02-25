@@ -2,23 +2,23 @@
       USE SIESTA_TODO
       USE siesta_options
       use m_ioxv
-      USE alloc, only: re_alloc
+      USE alloc,          only: re_alloc
 
       use siesta_geom
-      use atmfuncs, only: izofis
-      use atomlist, only: elem, iza
-      use fdf, only : fdf_physical
-      use m_fdf_global, only: fdf_global_get
+      use atmfuncs,       only: izofis
+      use atomlist,       only: elem, iza
+      use fdf,            only : fdf_physical
+      use m_fdf_global,   only: fdf_global_get
       use periodic_table, only : symbol
-      use iopipes,    only: coordsfrompipe
-      use m_iostruct,   only: read_struct
+      use iopipes,        only: coordsfrompipe
+      use m_iostruct,     only: read_struct
       use siesta_cml
-      use files,       only : slabel
-      use zmatrix,      only: lUseZmatrix
-      use parallel, only: IOnode
-
+      use files,          only : slabel
+      use zmatrix,        only: lUseZmatrix
+      use parallel,       only: IOnode
       implicit none
 
+      real(dp), external :: volcel
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
@@ -28,6 +28,7 @@
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
+      
 
       logical, external :: leqi  ! It lives in fdf.f
 
@@ -37,6 +38,8 @@
 
       ! Reciprocal unit vectors
       real(dp):: bcell(3,3)
+      integer :: i, ia, ix
+      integer:: nbcell  ! Auxiliary to call shaper routine
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -52,8 +55,8 @@
       nullify(iza)
       call re_alloc(iza,1,na_u,name='iza',routine='struct_init')
 
-      allocate(va(3,na_u))
-      call memory('A','D',3*na_u,'struct_init')
+      nullify(va)
+      call re_alloc(va,1,3,1,na_u,name='va',routine='struct_init')
 
       ! Options readed here instead of siesta_options
       call fdf_global_get(default, 'UseSaveData'     , .false.)

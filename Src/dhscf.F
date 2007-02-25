@@ -352,7 +352,7 @@ C Read spin-spiral wavevector (if defined)
      .         'dhscf:   Perdew-Zunger has not been implemented yet'
               write(6,102)
             endif
-            call die
+            call die()
           endif
         enddo
       endif

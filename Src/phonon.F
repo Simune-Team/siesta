@@ -38,9 +38,6 @@
 
       CONTAINS
 
-!-------------------------------------------------------------------
-!
-!-------------------------------------------------------------------
 !     Read atomic displacements
 !
       subroutine phonon_setup
@@ -141,7 +138,7 @@
 
       end subroutine phonon_restore_coords
 
-      subroutine phonon_write_forces(fa, na, ns, ucell, istep)
+      subroutine phonon_write_forces(fa, na, ucell, istep)
 
 C Writes forces in PHONON format to file
 C Input forces are in Ry/Bohr
@@ -153,7 +150,6 @@ C Forces written to file are in  eV/Ang
       implicit          none
 
       integer           na            ! Number of atoms
-      integer           ns            ! Number of species
       real(dp)          fa(3,na)      ! Forces in Ry/Bohr
       real(dp)          ucell(3,3)    ! Unit cell vectors in Bohrs
       integer           istep         ! PHONON step
@@ -162,7 +158,7 @@ C Forces written to file are in  eV/Ang
 C integer atnum               : number in list of displaced atom 
 C real*8 disp(3)              : fractional displacement
 
-      integer           atnum
+      integer           atnum, ns
       real(dp)          disp(3)
 
 
@@ -191,6 +187,7 @@ C Define conversion factors
 
       atnum = phonon_atnum(istep)
       disp(1:3) = phonon_disp(istep,1:3)
+      ns = maxval(isa(1:na))          ! Compute number of species
 
 C Find file name
       if (frstme) then

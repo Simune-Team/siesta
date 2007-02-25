@@ -33,7 +33,7 @@
 
       CONTAINS
       subroutine broyden_optimizer( na, xa, fa, cell, stress,
-     $     volume, dxmax, tp, ftol, strtol, varcel, relaxd)
+     $     dxmax, tp, ftol, strtol, varcel, relaxd)
 c ***************************************************************************
 c Broyden geometry optimization
 c
@@ -56,7 +56,6 @@ c Written by Alberto Garcia, December 2005
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
 c real*8 fa(3,na)       : Atomic forces
-c real*8 volume         : unit cell volume
 c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
@@ -80,7 +79,7 @@ C
 ! Subroutine arguments:
 
       integer, intent(in) :: na
-      real(dp), intent(in) :: fa(3,na), volume, dxmax,
+      real(dp), intent(in) :: fa(3,na), dxmax,
      .                        tp, ftol, strtol
       logical, intent(in) :: varcel
       real(dp), intent(inout) :: xa(3,na), stress(3,3), cell(3,3)
@@ -88,7 +87,7 @@ C
 
 c Internal variables and arrays
 
-      real(dp)            :: new_volume, trace
+      real(dp)            :: new_volume, trace, volume
 
       logical           found
       integer           iu, ia, i, j, n, indi
@@ -126,6 +125,8 @@ c Internal variables and arrays
       real(dp) :: volcel
       external :: volcel
 c ---------------------------------------------------------------------------
+
+      volume = volcel(cell)
 
       if (.not. initialization_done) then
 

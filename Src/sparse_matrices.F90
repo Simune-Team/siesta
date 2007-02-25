@@ -15,6 +15,7 @@ MODULE sparse_matrices
 
   real(dp), pointer :: Dold(:,:), Dscf(:,:), Dscfsave(:,:), Eold(:,:), &
                        Escf(:,:), H(:,:)
+  real(dp), pointer :: xijo(:,:)
 
   real(dp), pointer :: H0(:), S(:)
 

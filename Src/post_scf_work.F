@@ -13,22 +13,14 @@
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
       use siesta_cml
       use m_energies
-
+      use m_numbs_neighb, only: maxna
+      use m_spin,         only: nspin
       implicit none
 
       logical :: first, last
       integer :: iscf
 
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
-     .  pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
+      external :: plcharge
 
 !------------------------------------------------------------------------- BEGIN
           ! If converged, make one last iteration to find forces and stress

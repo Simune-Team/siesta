@@ -8,13 +8,12 @@
       USE SIESTA_TODO
       USE Kpoint_grid, only: setup_Kpoint_grid, gamma_scf, maxk
       USE Band, only: gamma_bands, setup_bands
-      USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
       USE m_ksvinit, only: gamma_polarization, estimate_pol_kpoints
       USE siesta_options
       use sparse_matrices
       use siesta_geom
       use atomlist, only: no_u, rmaxkb, amass, lasto, qtot, iza, rmaxo,
-     .                    zvaltot, superc, initatomlists
+     .                    zvaltot, superc, initatomlists, no_l
       use m_fdf_global, only: fdf_global_get
       use sys, only: die, bye
       use xcmod, only: setXC
@@ -34,11 +33,21 @@
       USE densematrix, only: Haux, Saux, Psi
       use m_energies
       use m_steps
+      use m_spin
+      use m_rmaxh
+      use m_forces 
+      use m_eo
+      USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
 
       implicit none
 
 
       real(dp):: veclen     ! Length of a unit-cell vector
+
+
+      integer :: i, is, ispin
+      integer :: neigmin     ! Min. number of eigenstates (per k point)
+      integer :: ns          ! Number of species
 
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
@@ -123,6 +132,7 @@
 
 ! Initialize pseudopotentials and atomic orbitals
       if (IOnode) call initatom(ns)
+      call broadcast(ns)
       call broadcast_basis()
 
       call fdf_global_get(atmonly,'Atom-Setup-Only',.false.)
@@ -159,21 +169,13 @@
 
 ! Allocate other arrays based on read sizes ................
 
-      nullify(fa,cfa,fal)
+      nullify(fa,cfa)
       call re_alloc(fa,1,3,1,na_u,name="fa",
      $                routine="siesta_init")
       call re_alloc(cfa,1,3,1,na_u,name="cfa",
      $                routine="siesta_init")
-      call re_alloc(fal,1,3,1,na_u,name="fal",
-     $                routine="siesta_init")
 
-      if (IOnode) call spin_init(nspin)
-      call broadcast(nspin)
-
-      allocate(efs(nspin))
-      call memory('A','D',nspin,'siesta')
-      allocate(qs(nspin))
-      call memory('A','D',nspin,'siesta')
+      call init_spin()
 
 ! Read simulation data ................................................
       call read_options( na_u, ns, nspin )

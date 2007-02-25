@@ -90,6 +90,7 @@ MODULE siesta_options
   real(dp) :: occtol        ! Occupancy threshold to build DM
   real(dp) :: rcoor         ! Cutoff radius of Localized Wave Functions in ordern
   real(dp) :: rcoorcp       ! Cutoff radius to find Fermi level by projection in ordern
+  real(dp) :: rmax_bonds    ! Cutoff length for bond definition
   real(dp) :: strtol        ! Stress tolerance in relaxing the unit cell
   real(dp) :: taurelax      ! Relaxation time to reach desired T and P in anneal
   real(dp) :: temp          

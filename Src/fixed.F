@@ -89,7 +89,8 @@ C
 
       implicit          none
 
-      integer           na, isa(na), ntcon
+      integer, intent(out) :: ntcon
+      integer           na, isa(na)
       real(dp)          amass(na), cell(3,3), cfa(3,na), cstress(3,3),
      .                  fa(3,na), stress(3,3), xa(3,na)
 

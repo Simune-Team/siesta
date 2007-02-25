@@ -12,7 +12,7 @@ c
 c     Put dummy subroutine here so that compilers do not complain
 c     about empty file in serial compilation.
 c
-      subroutine dummy_sub
+      subroutine dummy_sub()
       end
 c
 #ifdef MPI

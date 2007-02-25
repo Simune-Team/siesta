@@ -9,6 +9,13 @@ MODULE siesta_geom
   real(dp)                        :: ucell(3,3), ucell_last(3,3)
   real(dp)                        :: scell(3,3), scell_last(3,3)
 
+  ! Unit cell volume  (dangerous: the old code might have a BUG,
+  ! as the volume is printed at the end 
+  ! without being updated for the final cell change, and used in
+  ! the calculation of Pmol in write_subs.
+
+  real(dp)                        :: volume_of_some_cell
+
   ! Diagonal elements of supercell (it is a diagonal matrix)
   integer :: nsc(3) = 1
    
@@ -24,6 +31,9 @@ MODULE siesta_geom
   ! Atomic coordinates
   real(dp), pointer               :: xa(:,:)
   real(dp), pointer               :: xalast(:,:)
+
+  ! Atomic velocities
+  real(dp), pointer               :: va(:,:)
 
   ! integer isa(na)           : Species index of each atom
   ! character cisa(na)        : Reference string for each atom

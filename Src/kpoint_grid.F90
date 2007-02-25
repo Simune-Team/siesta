@@ -145,7 +145,7 @@ MODULE Kpoint_grid
 
             cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
             if (cutoff /= defcut) then
-               write(6,"(a,f10.5)") "Kgrid cutoff input: ", cutoff
+            !!  write(6,"(a,f10.5)") "Kgrid cutoff input: ", cutoff
                user_requested_cutoff = .true.
             endif
 

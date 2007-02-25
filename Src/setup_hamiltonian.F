@@ -12,7 +12,7 @@
       use atmfuncs, only: uion
       use atomlist, only: no_u, iaorb, iphkb, qtot, indxuo, datm, 
      .                    lastkb, no_s, rmaxv, indxua, iphorb, lasto,
-     .                    rmaxo
+     .                    rmaxo, no_l
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
@@ -21,6 +21,12 @@
       use m_stress
       use m_energies
       use m_steps, only: istp
+      use m_ntm
+      use m_numbs_neighb, only: maxna, jna, r2ij, xij
+      use m_spin,         only: nspin
+      use m_dipol
+      use m_forces,          only: fa
+      use alloc, only: re_alloc, de_alloc
 
       implicit none
 
@@ -28,11 +34,20 @@
       integer, intent(in) :: iscf
 
       real(dp)              :: stressl(3,3)
+      real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic forces
 
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
-      real(dp), allocatable :: fatmp(:,:)
+      real(dp), pointer     :: fatmp(:,:)
 #endif
+
+      integer :: ia, io, is, ispin
+
+      integer:: ifa     ! Calculate forces? 0=>no, 1=>yes
+      integer:: istr    ! Calculate stress? 0=>no, 1=>yes
+      integer:: ihmat   ! Calculate hamiltonian? 0=>no, 1=>yes
+
+      real(dp) :: g2max
 
       external ::
      .  dhscf, diagon, dnaefs, extrapol, initatom,
@@ -54,11 +69,15 @@
       H = 0.0_dp
 
 ! Initialize forces and stress ...................
+
+      nullify(fal)
+      call re_alloc(fal,1,3,1,na_u,name="fal",
+     $              routine="setup_hamiltonian")
+
         if (first.or.last) then
           fa(1:3,1:na_u) = 0.0_dp
-          fal(1:3,1:na_u) = 0.0_dp
           stress(1:3,1:3) = 0.0_dp
-          stressl(1:3,1:3) = 0.0_dp
+          stressl(1:3,1:3) = 0.0_dp  ! fal already initialied
         endif
 ! ..................
 
@@ -222,25 +241,28 @@
 
         ! Add on force field contribution if required
         if (first .or. last) then
-           call twobody(na_u,xa,isa,ucell,Emm,ifa,fa,istr,stress)
+           call twobody(na_u,xa,isa,ucell,Emm,
+     $                  ifa=1,fa=fa,istr=1,stress=stress)
         endif
 
         if (first .or. last) then    ! Could it really be "last" only?
 #ifdef MPI
            !Global reduction of forces and stresses
-           allocate(fatmp(3,na_u))
-           call memory('A','D',3*na_u,'setup_hamilt')
+           nullify(fatmp)
+           call re_alloc(fatmp,1,3,1,na_u,name="fatmp",
+     $              routine="setup_hamiltonian")
            call globalize_sum(stressl(1:3,1:3),stresstmp(1:3,1:3))
            call globalize_sum(fal(1:3,1:na_u),fatmp(1:3,1:na_u))
            stress(1:3,1:3) = stress(1:3,1:3) + stresstmp(1:3,1:3)
            fa(1:3,1:na_u) = fa(1:3,1:na_u) + fatmp(1:3,1:na_u)
-           call memory('D','D',size(fatmp),'setup_hamilt')
-           deallocate(fatmp)
+           call de_alloc(fatmp,routine="setup_hamiltonian")
 #else
            stress(1:3,1:3) = stress(1:3,1:3) + stressl(1:3,1:3)
            fa(1:3,1:na_u) = fa(1:3,1:na_u) + fal(1:3,1:na_u)
 #endif
         endif
+
+        call de_alloc(fal,routine="setup_hamiltonian")
 
 ! Find entropy ........................................................
 ! Entropy is returned from the call to diagon. To add to the energy

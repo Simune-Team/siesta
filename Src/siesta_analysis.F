@@ -11,12 +11,13 @@
       USE band, only: nbk, bk, maxbk, bands
       USE writewave, only: nwk, wfk, wwave
       USE m_ksvinit, only: nkpol, kpol, wgthpol
+      use m_ksv
       USE m_projected_DOS, only: projected_DOS
       USE m_local_DOS, only: local_DOS
       USE siesta_options
       use sparse_matrices
       use siesta_geom
-      use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, 
+      use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
      .                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
       use fdf, only : fdf_boolean
       use writewave,    only: wwave
@@ -29,6 +30,12 @@
       use parse
       use m_energies
       use m_steps
+      use m_ntm
+      use m_numbs_neighb, only: maxna, jna, r2ij, xij
+      use m_spin,         only: nspin
+      use m_dipol
+      use m_eo
+      use m_forces,          only: fa
 
       implicit none
 
@@ -44,9 +51,19 @@
       character(len=label_length+5) :: filrho
 
       real(dp), dimension(3,3)      :: dummy_str, dummy_strl
+      real(dp)                      :: qspin(4)         ! Local
 
       real(dp)                      :: polxyz(3,nspin)  ! Automatic, small
-      real(dp)                      :: polR(3,nspin)  ! Automatic, small
+      real(dp)                      :: polR(3,nspin)    ! Automatic, small
+      real(dp)                      :: qaux             ! Auxiliary to call spnvec (not used later)
+      real(dp)                      :: stot             ! Total spin polarization
+      real(dp)                      :: svec(3)          ! Total spin vector in non-collinear-spin calculations
+      real(dp), allocatable         :: ebk(:,:,:)       ! Band energies
+
+      integer                       :: j, ix, ind, ik, io, ispin
+      integer                       :: maxwk   ! Number of k-points for wavefunction printout
+
+      real(dp) :: g2max
 
       external :: 
      .  bonds, cgvc, cgvc_zmatrix, fixed,
@@ -187,7 +204,6 @@
           do io = 1,no_l
             do j = 1,numh(io)
               ind = listhptr(io)+j
-              jo = listh(ind)
               qspin(ispin) = qspin(ispin) + Dscf(ind,ispin) * S(ind)
             enddo
           enddo
@@ -286,7 +302,10 @@
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
      .              maxnh, numh, listhptr, listh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dipol, fa, dummy_str, fal, dummy_strl )
+     .              dipol, fa, dummy_str, fa, dummy_strl )
+                    ! next to last argument is dummy here,
+                    ! as no forces are calculated
+                    ! todo: make all these optional
       endif
 
 ! Find local density of states

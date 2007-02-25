@@ -8,28 +8,36 @@
       subroutine siesta_move( istep, relaxd )
       USE SIESTA_TODO
       use siesta_geom
-      use zmatrix,      only: lUseZmatrix, iofaZmat, write_Zmatrix,
-     .                        CartesianForce_to_ZmatForce
-      use atomlist, only: iaorb, iphorb, iza, amass, no_u, lasto, superx
-      use m_ioxv, only: ioxv
+      use zmatrix,         only: lUseZmatrix, iofaZmat, write_Zmatrix,
+     .                           CartesianForce_to_ZmatForce
+      use atomlist,        only: iaorb, iphorb, iza, amass, no_u, 
+     .                           lasto, superx
+      use m_ioxv,          only: ioxv
       USE siesta_options
-      use parallel, only: IOnode
+      use parallel,        only: IOnode
       use siesta_cml
-      use m_broyden_optim,      only:broyden_optimizer
-      use m_dynamics, only: nose, verlet2, npr, anneal, pr
-      use phonon, only: phonon_setup, phonon_restore_coords,
-     .                  phonon_set_coords
-      use iopipes,      only: forcestopipe, coordsfrompipe
-      use m_energies,   only: Ekinion, Etot
+      use m_broyden_optim, only: broyden_optimizer
+      use m_dynamics,      only: nose, verlet2, npr, anneal, pr
+      use phonon,          only: phonon_setup, phonon_restore_coords,
+     .                           phonon_set_coords
+      use iopipes,         only: forcestopipe, coordsfrompipe
+      use m_energies,      only: Ekinion, Etot
       use write_subs
       use m_stress
       use m_steps
+      use m_kinetic
+      use m_forces
 
       implicit none
 
       integer, intent(in)   :: istep
       logical, intent(out)  :: relaxd
+      integer               :: i, ia, ix, iadispl, ixdispl
+      integer               :: iunit   ! Physical-units option: 
+                                       ! 1=>(eV,Ang), 2=>(Ry,Bohr)
+      real(dp)              :: Pint    ! Instantaneous pressure                    
 
+      real(dp), external :: volcel
 !       external :: automatic_cell,
 !      .  bonds, cgvc, cgvc_zmatrix, fixed,
 !      .  dhscf, diagon, dnaefs, extrapol, initatom,
@@ -50,11 +58,7 @@
         scell_last(1:3,1:3) = scell(1:3,1:3)
       endif
 
-      Ekinion  = 0.0_dp
-      vn       = 0.0_dp
-      vpr      = 0.0_dp
-      kn       = 0.0_dp
-      kpr      = 0.0_dp
+      Ekinion = 0.0_dp   ! Fossil: already initialized in siesta_init
 
       iunit = 2
 
@@ -67,15 +71,15 @@
      $          write(6,'(a)') 'siesta: Broyden method ' //
      $            'not implemented yet for Zmatrix relaxation'
              call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
-     $            volume, dxmax, tp, ftol, strtol, varcel,
+     $            dxmax, tp, ftol, strtol, varcel,
      $            relaxd, usesavecg )
           else
              if (broyden_optim) then
                 call broyden_optimizer( na_u, xa, cfa, ucell,
-     $               cstress, volume, dxmax, tp, ftol, strtol,
+     $               cstress, dxmax, tp, ftol, strtol,
      $               varcel, relaxd )
              else
-                call cgvc( na_u, xa, cfa, ucell, cstress, volume,
+                call cgvc( na_u, xa, cfa, ucell, cstress,
      $               dxmax, tp, ftol, strtol, varcel,
      $               relaxd, usesavecg )
              endif

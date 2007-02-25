@@ -6,20 +6,29 @@
       
       subroutine projected_DOS()
       USE SIESTA_TODO
+      use precision
       use sparse_matrices
       USE siesta_options
-      use atomlist, only: indxuo, no_s, no_u
+      use atomlist, only: indxuo, no_s, no_u, no_l
       use fdf, only : fdf_block, fdf_convfac
       use sys, only: die
       use m_mpi_utils, only : broadcast
       use Kpoint_grid
       use parallel, only: IOnode
       use parse
+      use m_eo
+      use m_spin,   only: nspin
 
       implicit none
 
       type(parsed_line), pointer  :: p
 
+      integer :: iu
+      real(dp) :: factor
+      integer :: nhist ! Number of histogram intervals in projected DOS
+      real(dp):: e1  ! Lower bound of energy range
+      real(dp):: e2  ! Upper bound of energy range
+      real(dp):: sigma ! Energy width used to convolute partial DOS
 
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states

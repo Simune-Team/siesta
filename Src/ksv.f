@@ -8,6 +8,9 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_ksv
+      public :: KSV_pol
+      CONTAINS
       subroutine KSV_pol( nua, na, xa, rmaxo, scell, ucell, nuotot,
      .                    nuo, no, nspin, qspin, maxna, maxnh, 
      .                    maxkpol, numh, listhptr, listh, H, S, 
@@ -631,4 +634,5 @@ C is turned on. JDG
 
       call timer( 'KSV_pol', 2 )
 
-      end
+      end subroutine KSV_pol
+      end module m_ksv
