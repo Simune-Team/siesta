@@ -374,7 +374,9 @@ C Deallocate local array for global numh
           deallocate(numhg)
 
 C Close file
-          call io_close( iu )
+          if (Node .eq. 0) then
+             call io_close( iu )
+          endif
 
         else
           if (Node.eq.0) then
@@ -634,10 +636,9 @@ C Free buffer array
 C Deallocate local array for global numh
           call memory('D','I',size(numhg),'iohs')
           deallocate(numhg)
-        endif
-
 C Close file
-        call io_close( iu )
+          call io_close( iu )
+        endif
 
       endif
 

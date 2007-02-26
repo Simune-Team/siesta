@@ -10,6 +10,29 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-02-25 22:25:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-17
+
+Summary: Fixes for troublesome bugs in reference code
+
+Patches applied:
+
+ * siesta@uam.es--2006/siesta-devel--reference--2.1--patch-31
+   Parallel bug fix and cleanup in writewave.F
+
+ * siesta@uam.es--2006/siesta-devel--reference--2.1--patch-42
+   zval wrongly treated as MPI_integer in broadcast_basis
+
+ * siesta@uam.es--2006/siesta-devel--reference--2.1--patch-43
+   Wrap io_close for MPI in iohs.F
+
+ * siesta@uam.es--2006/siesta-devel--reference--2.1--patch-45
+   Clean up handling of ntote in ksv and optical
+
+ * siesta@uam.es--2006/siesta-devel--reference--2.1--patch-46
+   Fix allocation of temporary array in savepsi in parallel
+
+
+
 2007-02-25 20:02:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-16
 
 Summary: Merge of removal of integer and real variables from siesta_todo
@@ -162,6 +185,30 @@ m_rmaxh.F90         : Hamiltonian maximum range. Should be clarified.
     * local_DOS, and the writing of charge and potentials, do no need
     to use the 'stress' variable at all.
     
+    (Regeneration of reference outputs)
+
+    modified files:
+     Docs/CHANGES Docs/siesta.ind Docs/siesta.tex Src/kgrid.F
+     Src/kgridinit.F Src/siesta.F Tests/Reference/batio3.out
+     Tests/Reference/bessel.out Tests/Reference/constant_volume.out
+     Tests/Reference/fe.out Tests/Reference/fe_broyden.out
+     Tests/Reference/floating.out Tests/Reference/graphite_c6.out
+     Tests/Reference/h2o.out Tests/Reference/h2oZ.out
+     Tests/Reference/h2o_basis.out Tests/Reference/h2o_dos.out
+     Tests/Reference/h2o_findp_bug.out
+     Tests/Reference/h2o_op_broyden.out
+     Tests/Reference/h2o_orderN.out
+     Tests/Reference/h2o_radialgrid.out
+     Tests/Reference/h2o_reparam.out Tests/Reference/md_anneal.out
+     Tests/Reference/md_nose.out Tests/Reference/md_npr.out
+     Tests/Reference/md_pr.out Tests/Reference/md_verlet.out
+     Tests/Reference/mgco3.out Tests/Reference/oxyn.out
+     Tests/Reference/partial.out Tests/Reference/si2x1h.out
+     Tests/Reference/si64.out Tests/Reference/si_bandpoints.out
+     Tests/Reference/sih.out Tests/Reference/sih_fire.out
+     Tests/Reference/sih_op_broyden.out
+     Tests/Reference/var_cell.out Tests/Reference/zmatrix.out
+     version.info
 
     new files:
      Src/.arch-ids/overlap.f.id Src/overlap.f
@@ -912,6 +959,18 @@ Modified-files: Src/Makefile Src/siesta.F Src/siesta_init.F
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
+
+2007-01-10 9:24:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-30
+
+(Interim manual entry -- to be replaced by the automatic version later)
+
+Summary: Parallel bug fix and cleanup in writewave.F
+Keywords: 
+
+(Julian Gale)
+
+The code in writewave.F has been cleaned up a bit and a fix for a bug
+appearing in parallel execution has been fixed.
 
 2006-12-18 16:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-29
 

@@ -87,7 +87,7 @@ OBJS =  automatic_cell.o \
         coor.o atm_transfer.o \
         broadcast_basis.o eggbox.o dsyevds.o zheevds.o \
         optical.o phirphi_opt.o reoptical.o transition_rate.o \
-        initparallel.o setspatial.o setatomnodes.o uncell.o \
+        initparallel.o show_distribution.o setspatial.o setatomnodes.o uncell.o \
         cart2frac.o obc.o \
         precision.o sys.o m_cell.o recipes.o files.o \
         spatial.o parallel.o parallelsubs.o  parsing.o chemical.o xcmod.o atom.o atmparams.o \
@@ -491,6 +491,7 @@ setup_hamiltonian.o: normalize_dm.o overfsm.o siesta_cml.o siesta_geom.o
 setup_hamiltonian.o: siesta_options.o siesta_todo.o sparse_matrices.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 shaper.o: atmfuncs.o precision.o
+show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
 siesta.o: m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
 siesta.o: siesta_init.o siesta_move.o
 siesta_analysis.o: atomlist.o bands.o files.o kpoint_grid.o ksv.o ksvinit.o

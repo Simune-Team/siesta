@@ -769,7 +769,7 @@ C This is the only exit point
       use precision
       use sys,          only : die
       use parallel,     only : Node, Nodes, BlockSize
-      use parallelsubs, only : GlobalToLocalOrb
+      use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use fdf
       use files,        only : slabel, label_length
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
@@ -882,16 +882,7 @@ C Loop over wavefunctions that should be printed
         indwf = iwf(ik,iw)
 
 C Determine which node handles this wavefunction
-
-        BNode = indwf/BlockSize
-        if (BNode*BlockSize.eq.indwf) then
-          BNode = BNode + 1
-        endif
-11      continue
-        if (BNode .gt. Nodes-1) then
-          BNode =BNode - Nodes
-          goto 11
-        endif
+        call WhichNodeOrb(indwf,Nodes,BNode)
 
         if (Node.eq.BNode) then
 
@@ -920,10 +911,13 @@ C must be handled differently
           endif
 
         endif
+
 C Pass the wf to the other processors
 #ifdef MPI
-        call MPI_Bcast(aux(1,1),2*nuotot,MPI_double_precision,
-     .        BNode,MPI_Comm_World,MPIerror)
+        if (BNode.ne.0) then
+          call MPI_Bcast(aux(1,1),2*nuotot,MPI_double_precision,
+     .          BNode,MPI_Comm_World,MPIerror)
+        endif
 #endif
 
 
@@ -998,3 +992,4 @@ C Deallocate auxiliary arrays
       end subroutine writew
 
       end module writewave
+
