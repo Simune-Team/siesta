@@ -1,5 +1,8 @@
+      module m_struct_init
+      private
+      public :: struct_init
+      CONTAINS
       subroutine struct_init()
-      USE SIESTA_TODO
       USE siesta_options
       use m_ioxv
       USE alloc,          only: re_alloc
@@ -16,6 +19,7 @@
       use files,          only : slabel
       use zmatrix,        only: lUseZmatrix
       use parallel,       only: IOnode
+
       implicit none
 
       real(dp), external :: volcel
@@ -33,7 +37,7 @@
       logical, external :: leqi  ! It lives in fdf.f
 
       character(len=80) :: dummy_str
-      logical           :: Server_calculation
+      logical           :: Server_calculation, foundxv, foundzm
       real(dp)          :: local_charnet
 
       ! Reciprocal unit vectors
@@ -163,3 +167,4 @@
 
 
       END subroutine struct_init
+      end module m_struct_init

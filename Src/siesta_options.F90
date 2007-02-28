@@ -101,6 +101,9 @@ MODULE siesta_options
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
   real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
 
+  character(len=150) :: sname   ! System name, used to initialise read
+
+
   ! na_diag      : maximum number of atoms with diagon as default method
   ! g2max_default : Mesh cutoff default, in Ry
   ! temp_default  : Electronic temperature default, in Ry
@@ -266,7 +269,7 @@ MODULE siesta_options
     !----------------------------------------------------------- Local Variables
     real(dp) :: tcp
 
-    character sname*100, annop*22,  dyntyp*22, &
+    character annop*22,  dyntyp*22, &
               method*6,  lwfopt*13, method_default*6
 
     logical  ::  DaC, leqi, qnch, qnch2, usesaveddata
@@ -291,7 +294,6 @@ MODULE siesta_options
 
     ! for cml output, find the system name & label
     if (cml_p) then
-      sname = fdf_string('SystemName','')
       call cmlAddParameter(xf=mainXML, name='SystemName',             &
                            value=trim(sname), dictref='siesta:sname')
       call cmlAddParameter(xf=mainXML, name='SystemLabel',            &

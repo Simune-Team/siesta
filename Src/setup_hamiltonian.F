@@ -4,7 +4,6 @@
       CONTAINS
 
       subroutine setup_hamiltonian( first, last, iscf )
-      USE SIESTA_TODO
       USE m_normalize_dm, only: normalize_dm
       USE siesta_options
       use sparse_matrices
@@ -27,6 +26,10 @@
       use m_dipol
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
+      use m_gamma
+#ifdef MPI
+      use m_mpi_utils, only: globalize_sum
+#endif
 
       implicit none
 
@@ -39,6 +42,7 @@
 #ifdef MPI
       real(dp)              :: stresstmp(3,3)
       real(dp), pointer     :: fatmp(:,:)
+      real(dp):: buffer1   ! Temporary for the result of a globalize operation
 #endif
 
       integer :: ia, io, is, ispin

@@ -14,9 +14,6 @@
 !
       CONTAINS
 
-      subroutine hsparse( negl, cell, nsc, na, isa, xa,
-     .                    lasto, lastkb, iphorb, iphkb,
-     .                    nlhmax, numh, listhptr, listh )
 C *********************************************************************
 C Routine to find nonzero hamiltonian matrix elements.
 C Writen by J.Soler and P.Ordejon, June 1997
@@ -65,6 +62,9 @@ C *********************************************************************
 C
 C  Modules
 C
+      subroutine hsparse( negl, cell, nsc, na, isa, xa,
+     .                    lasto, lastkb, iphorb, iphkb,
+     .                    nlhmax, numh, listhptr, listh )
       use precision
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, GlobalToLocalOrb
@@ -132,7 +132,7 @@ C Check size of internal arrays
       nua = na / ncells
       nuotot = lasto(nua)
       no = nuotot * ncells
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
+      call GetNodeOrbs(nuotot,Node,Nodes,nuo)  !Numero de orbitales del proceso MPI
 
 C Allocate local arrays
       allocate(conect(no))
@@ -154,53 +154,66 @@ C Find maximum range of basis orbitals and KB projectors
           rmaxo = max( rmaxo, rcut(is,ioa) )
         enddo
       enddo
+
       if (negl) then
         rmax = 2.0d0 * rmaxo
       else
         rmax = 2.0d0 * (rmaxo+rmaxkb)
       endif
 
-C Allocate local arrays that depend on parameters
+      ! Allocate local arrays that depend on parameters
       allocate(knakb(maxnkb))
       call memory('A','I',maxnkb,'hsparse')
       allocate(rckb(maxnkb))
       call memory('A','D',maxnkb,'hsparse')
-  100 if (.not.allocated(jana)) then
-        allocate(jana(maxna))
-        call memory('A','I',maxna,'hsparse')
-      endif
-      if (.not.allocated(index)) then
-        allocate(index(maxna))
-        call memory('A','I',maxna,'hsparse')
-      endif
-      if (.not.allocated(r2ij)) then
-        allocate(r2ij(maxna))
-        call memory('A','D',maxna,'hsparse')
-      endif
-      if (.not.allocated(xij)) then
-        allocate(xij(3,maxna))
-        call memory('A','D',3*maxna,'hsparse')
-      endif
 
-C Initialize neighb subroutine
-      isel = 0
-      ia = 0
-      nna = maxna
-      call neighb( cell, rmax, na, xa, ia, isel,
-     .             nna, jana, xij, r2ij )
-      overflow = (nna.gt.maxna)
-      if (overflow) then
-        call memory('D','I',size(jana),'hsparse')
-        deallocate(jana)
-        call memory('D','I',size(index),'hsparse')
-        deallocate(index)
-        call memory('D','D',size(r2ij),'hsparse')
-        deallocate(r2ij)
-        call memory('D','D',size(xij),'hsparse')
-        deallocate(xij)
-        maxna = nna + nint(0.1*nna)
-        goto 100
-      endif
+100   continue
+      overflow = .true.
+      do while (overflow)
+        if (.not.allocated(jana)) then
+          allocate(jana(maxna))
+          call memory('A','I',maxna,'hsparse')
+        endif
+        if (.not.allocated(index)) then
+          allocate(index(maxna))
+          call memory('A','I',maxna,'hsparse')
+        endif
+        if (.not.allocated(r2ij)) then
+          allocate(r2ij(maxna))
+          call memory('A','D',maxna,'hsparse')
+        endif
+        if (.not.allocated(xij)) then
+          allocate(xij(3,maxna))
+          call memory('A','D',3*maxna,'hsparse')
+        endif
+
+
+        ! OJO esto no hace nada (ia=0) lo que fuerza una logica horrible en el bulce 
+
+        ! Initialize neighb subroutine
+        isel = 0
+        ia = 0
+        nna = maxna
+        call neighb( cell, rmax, na, xa, ia, isel,
+     .               nna, jana, xij, r2ij )
+
+        ! SI lo anterior no modifica nna porque se pregunta esto?
+
+        if (nna.gt.maxna) then
+          call memory('D','I',size(jana),'hsparse')
+          deallocate(jana)
+          call memory('D','I',size(index),'hsparse')
+          deallocate(index)
+          call memory('D','D',size(r2ij),'hsparse')
+          deallocate(r2ij)
+          call memory('D','D',size(xij),'hsparse')
+          deallocate(xij)
+          maxna = nna + nint(0.1*nna)
+        else
+          overflow = .false.
+        endif
+      enddo
+
 
 C Initialize number of neighbour orbitals
       do io = 1,nuo 

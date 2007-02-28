@@ -5,24 +5,19 @@
       CONTAINS
 
       subroutine siesta_end()
-      USE SIESTA_TODO
       use alloc, only: alloc_report
       use siesta_cml
       use m_timestamp, only : timestamp
       use m_wallclock, only : wallclock
       use parallel, only: IOnode
+#ifdef MPI
+      use mpi_siesta, only: MPI_Finalize
+#endif
       implicit none
 
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
-     .  pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
+#ifdef MPI
+      integer MPIerror
+#endif
 
 !------------------------------------------------------------------------- BEGIN
 ! Output memory use up to the end of the program

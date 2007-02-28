@@ -5,10 +5,10 @@
       CONTAINS
 
       subroutine siesta_init()
-      USE SIESTA_TODO
       USE Kpoint_grid, only: setup_Kpoint_grid, gamma_scf, maxk
       USE Band, only: gamma_bands, setup_bands
       USE m_ksvinit, only: gamma_polarization, estimate_pol_kpoints
+      USE m_struct_init, only: struct_init
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -37,10 +37,18 @@
       use m_rmaxh
       use m_forces 
       use m_eo
+      use m_gamma
+      use m_ioxv, only: xv_file_read
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
+#ifdef MPI
+      use mpi_siesta, only: mpi_comm_world
+#endif
 
       implicit none
 
+#ifdef MPI
+      integer :: MPIerror  ! Return error code in MPI routines
+#endif
 
       real(dp):: veclen     ! Length of a unit-cell vector
 
@@ -328,7 +336,7 @@
       endif
 
 ! Build initial velocities according to Maxwell-Bolzmann distribution....
-      if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. foundxv)) 
+      if (idyn .ne. 0 .and. idyn .ne. 6 .and. (.not. xv_file_read)) 
      .    call vmb(na_u,tempinit,amass,xa,isa,va)
 ! ..................
 

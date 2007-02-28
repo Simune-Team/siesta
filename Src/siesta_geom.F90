@@ -9,6 +9,9 @@ MODULE siesta_geom
   real(dp)                        :: ucell(3,3), ucell_last(3,3)
   real(dp)                        :: scell(3,3), scell_last(3,3)
 
+  ! Shape of the system
+  character(len=150)              :: shape*10
+
   ! Unit cell volume  (dangerous: the old code might have a BUG,
   ! as the volume is printed at the end 
   ! without being updated for the final cell change, and used in

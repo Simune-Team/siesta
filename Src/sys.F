@@ -16,7 +16,6 @@
 
       CONTAINS
 
-!--------------------------------------------------------
       subroutine message(str)
 
       use parallel, only : Node
@@ -34,8 +33,6 @@
       endif
 
       end subroutine message
-!------------------------------------------------------------------
-!--------------------------------------------------------
       subroutine die(str)
 
       use parallel, only : Node
@@ -68,7 +65,7 @@
       call pxfabort()
 #endif
       end subroutine die
-!------------------------------------------------------------------
+
       subroutine bye(str)
 
       use parallel, only : Node
@@ -103,6 +100,6 @@
       stop
 #endif
       end subroutine bye
-!-----------------------------------------------------------------
+
       end module sys
 

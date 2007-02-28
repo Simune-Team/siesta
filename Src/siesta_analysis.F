@@ -7,7 +7,6 @@
       CONTAINS
 
       subroutine siesta_analysis( relaxd )
-      USE SIESTA_TODO
       USE band, only: nbk, bk, maxbk, bands
       USE writewave, only: nwk, wfk, wwave
       USE m_ksvinit, only: nkpol, kpol, wgthpol
@@ -36,6 +35,10 @@
       use m_dipol
       use m_eo
       use m_forces,          only: fa
+      use m_gamma 
+#ifdef MPI
+      use m_mpi_utils, only: globalize_sum
+#endif
 
       implicit none
 
@@ -64,6 +67,9 @@
       integer                       :: maxwk   ! Number of k-points for wavefunction printout
 
       real(dp) :: g2max
+#ifdef MPI
+      real(dp):: qtmp(4)   ! Temporary for globalized spin charge
+#endif
 
       external :: 
      .  bonds, cgvc, cgvc_zmatrix, fixed,

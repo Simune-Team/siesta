@@ -4,8 +4,7 @@
 
       CONTAINS
 
-      subroutine new_dm()
-      USE SIESTA_TODO
+      subroutine new_dm( auxchanged )
       use sparse_matrices
       USE siesta_options
       use siesta_geom
@@ -15,8 +14,13 @@
 
       implicit none
 
-      integer:: iord    ! Order of density matrix extrapolation between geom. steps
-      integer:: istpsave! Temporary to save and restore istp when reading DM from file
+      logical:: auxchanged ! Has auxiliary supercell changed?
+
+      logical:: dminit     ! Initialize density matrix?
+      integer:: iord       ! Order of DM extrapolation between geom. steps
+      integer:: istpsave   ! Temporary to save and restore istp when reading DM from file
+      logical:: itest      ! Temporary used to check if DM have just been read
+      logical :: found
 
       ! Initialize density matrix
       ! Set density matrix for first step

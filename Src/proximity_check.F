@@ -1,6 +1,10 @@
+      module m_proximity_check
+      private
+      public :: proximity_check
+      CONTAINS
+
       subroutine proximity_check(rmax)
       USE precision, only:dp
-      USE SIESTA_TODO
       USE siesta_options
       use siesta_geom
       use parallel, only: IOnode
@@ -41,3 +45,4 @@
       enddo
 
       end subroutine proximity_check
+      end module m_proximity_check

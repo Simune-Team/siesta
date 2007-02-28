@@ -1,5 +1,9 @@
+      module m_scfconvergence_test
+      private
+      public :: scfconvergence_test
+      CONTAINS
+
       subroutine scfconvergence_test( first, iscf, last, dDmax )
-      USE SIESTA_TODO
       USE siesta_options
       use siesta_cml
       use m_wallclock, only : wallclock
@@ -60,3 +64,4 @@
 
 !--------------------------------------------------------------------------- END
       END subroutine scfconvergence_test
+      end module m_scfconvergence_test

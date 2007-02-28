@@ -5,7 +5,6 @@
       CONTAINS
       
       subroutine projected_DOS()
-      USE SIESTA_TODO
       use precision
       use sparse_matrices
       USE siesta_options
@@ -18,17 +17,18 @@
       use parse
       use m_eo
       use m_spin,   only: nspin
-
+      use m_gamma
       implicit none
 
       type(parsed_line), pointer  :: p
 
-      integer :: iu
+      integer  :: iu
       real(dp) :: factor
-      integer :: nhist ! Number of histogram intervals in projected DOS
-      real(dp):: e1  ! Lower bound of energy range
-      real(dp):: e2  ! Upper bound of energy range
-      real(dp):: sigma ! Energy width used to convolute partial DOS
+      integer  :: nhist ! Number of histogram intervals in projected DOS
+      real(dp) :: e1    ! Lower bound of energy range
+      real(dp) :: e2    ! Upper bound of energy range
+      real(dp) :: sigma ! Energy width used to convolute partial DOS
+      character(len=150) :: line    ! Data line read
 
 !------------------------------------------------------------------------- BEGIN
 ! Compute the projected density of states

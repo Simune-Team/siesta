@@ -6,9 +6,9 @@
       CONTAINS
 
       subroutine state_init( istep )
-      USE SIESTA_TODO
       USE Kpoint_grid, only: setup_Kpoint_grid
       USE m_new_dm, only: new_dm
+      USE m_proximity_check, only: proximity_check
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -33,6 +33,10 @@
       use m_rmaxh
       use m_auxpul
       use m_eo
+      use m_gamma
+#ifdef MPI
+      use m_mpi_utils, only : globalize_max
+#endif
 
       implicit none
 
@@ -45,6 +49,10 @@
       integer :: i, ia, ix, io, iadispl, ixdispl, isel, nnamax
       integer :: nnia      ! Number of neighbors of a given atom
 
+      logical:: auxchanged ! Has auxiliary supercell changed?
+      logical:: increased
+      logical:: overflow   ! Too short array sizes?
+
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
@@ -54,7 +62,9 @@
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
+#ifdef MPI
+      integer :: ntmp      ! Temporary to call an MPI routine
+#endif
       real(dp), external :: volcel
 !------------------------------------------------------------------------- BEGIN
       call timer( 'IterMD', 1 )
@@ -103,7 +113,7 @@
       endif
 
 
-! Actualize things if variable cell ...................................
+      ! Actualize things if variable cell 
       ! This might be updated with PR MD options
       cell_can_change = (varcel .or. idyn.eq.8)
 
@@ -120,8 +130,6 @@
      $                routine="state_init")
 
         ! Find required supercell
-        auxchanged = .false.
-
         if (gamma) then
            nsc(1:3) = 1
         else if (fixauxcell) then
@@ -142,7 +150,7 @@
            nscold(i) = nsc(i)
         enddo
 
-! Madelung correction for charged systems .............................
+        ! Madelung correction for charged systems 
         if (charnet .ne. 0.0_dp) then
           call madelung(ucell, shape, charnet, Emad)
         endif
@@ -163,52 +171,59 @@
       volume_of_some_cell = volcel(ucell)
 ! ...................
 
-! Initialize neighb subroutine ........................................
-  144 continue
-      isel = 0  
-      ! AG ** POSIBLE BUG 
-      ! The last argument should be twice as big, and there
-      ! should be a check for negl (neglect of KB overlap)
-      ! Compare with rmaxh in siesta_init...
-      rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb )
-      nnia = maxna
-      if (allocated(jna)) then
-        call memory('D','I',size(jna),'siesta')
-        deallocate(jna)
-      endif
-      if (allocated(r2ij)) then
-        call memory('D','D',size(r2ij),'siesta')
-        deallocate(r2ij)
-      endif
-      if (allocated(xij)) then
-        call memory('D','D',size(xij),'siesta')
-        deallocate(xij)
-      endif
-      allocate(jna(maxna))
-      call memory('A','I',maxna,'siesta')
-      allocate(r2ij(maxna))
-      call memory('A','D',maxna,'siesta')
-      allocate(xij(3,maxna))
-      call memory('A','D',3*maxna,'siesta')
-      ! Initialize neighb subroutine  (ia=0)
-      call neighb( scell, rmax, na_s, xa, 0, isel,
-     .             nnia, jna, xij, r2ij )
-      nnamax = 0
-      do ia = 1,na_s
-        nnia = 0  ! First pass without filling arrays
-                  ! just to get maximum size needed
-        call neighb( scell, rmax, na_s, xa, ia, isel,
+      ! Initialize neighb subroutine 
+      overflow = .true.
+      do while (overflow)
+        isel = 0  
+        ! AG ** POSIBLE BUG 
+        ! The last argument should be twice as big, and there
+        ! should be a check for negl (neglect of KB overlap)
+        ! Compare with rmaxh in siesta_init...
+
+        rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb )
+        nnia = maxna
+
+        if (allocated(jna)) then
+          call memory('D','I',size(jna),'siesta')
+          deallocate(jna)
+        endif
+        if (allocated(r2ij)) then
+          call memory('D','D',size(r2ij),'siesta')
+          deallocate(r2ij)
+        endif
+        if (allocated(xij)) then
+          call memory('D','D',size(xij),'siesta')
+          deallocate(xij)
+        endif
+        allocate(jna(maxna))
+        call memory('A','I',maxna,'siesta')
+        allocate(r2ij(maxna))
+        call memory('A','D',maxna,'siesta')
+        allocate(xij(3,maxna))
+        call memory('A','D',3*maxna,'siesta')
+
+
+        ! Initialize neighb subroutine  (ia=0)
+        call neighb( scell, rmax, na_s, xa, 0, isel,
      .               nnia, jna, xij, r2ij )
-        nnamax = max( nnamax, nnia )
+        nnamax = 0
+        ! posible calculo superfluo ¿por que no hacerlo en la celda unidad?
+        do ia = 1,na_s
+          nnia = 0  ! First pass without filling arrays
+                    ! just to get maximum size needed
+          call neighb( scell, rmax, na_s, xa, ia, isel,
+     .                 nnia, jna, xij, r2ij )
+          nnamax = max( nnamax, nnia )
+        enddo
+
+        if (nnamax .gt. maxna) then
+          ! Increase maxna with safety margin when atoms move
+          maxna = nnamax + 0.10 * nnamax + 10  !esto sobra????
+          overflow = .true.
+        else
+          overflow = .false.
+        endif
       enddo
-      if (nnamax .gt. maxna) then
-! Increase maxna with safety margin when atoms move
-        maxna = nnamax + 0.10 * nnamax + 10
-        overflow = .true.
-      else
-        overflow = .false.
-      endif
-      if (overflow) goto 144
 
 
       ! Check if any two atoms are unreasonably close
@@ -223,25 +238,27 @@
         nullify(xijo)
       endif
 
-      overflow=.true.
-      overflowed=.false.
+      increased = .false.
+      overflow  = .true.     
       do while (overflow)
          nh = maxnh
          call re_alloc(listh,1,maxnh,name='listh',routine='siesta',
      .                 copy=.false.)
+
          call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh )
+
          if (nh .gt. maxnh) then
             ! Increase maxnh with safety margin for when atoms move
-            maxnh = 1.05 * nh + 40
-            overflowed=.true.
+            maxnh = 1.05 * nh + 40  !Esto sobra?
+            increased=.true.
          else
             overflow=.false.
          endif
       enddo
 
 
-      if (overflowed.or.istp==1) then
+      if (increased .or. istp==1) then
         ! In first step, allocate anyway (to catch corner case
         ! where one node has nh=0, and doesn't overflow)
         call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
@@ -307,7 +324,7 @@
 ! ..................
 
 !     Initialize density matrix
-      call new_dm()
+      call new_dm( auxchanged )
 
 ! Check for Pulay auxiliary matrices sizes ...................................
       if (pulfile .or. maxsav .le. 0) then

@@ -6,7 +6,6 @@
       CONTAINS
 
       subroutine local_DOS( )
-      USE SIESTA_TODO
       use m_energies
 
       use sparse_matrices
@@ -29,7 +28,7 @@
       use m_forces,       only: fa
       use m_eo
       use m_spin,         only: nspin, qs, efs
-
+      use m_gamma
       implicit none
 
       character(len=label_length+5), external :: paste
@@ -48,6 +47,8 @@
 
       integer   :: iu
       real(dp)  :: factor, g2max
+      logical   :: genlogic   ! Generate local density of states?
+      character(len=150) :: line    ! Data line read
 
 ! Find local density of states
       if (IOnode) then

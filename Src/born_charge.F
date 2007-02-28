@@ -6,7 +6,6 @@
       CONTAINS
       
       subroutine born_charge()
-      use siesta_todo
       use siesta_options, only:dx
       use sparse_matrices
       use parallel,       only: Node, Nodes, IOnode, ParallelOverK
@@ -17,6 +16,10 @@
       use m_numbs_neighb, only: maxna, jna, r2ij, xij
       use m_spin,         only: nspin
       use m_ksv,          only: KSV_pol
+      use siesta_geom,    only: shape
+#ifdef MPI
+      use m_mpi_utils, only: globalize_sum
+#endif
 
       implicit none
 
@@ -26,6 +29,9 @@
       real(dp) :: qspin(4)         ! Local variable
 
       integer  :: j, ind, io, ispin
+#ifdef MPI
+      real(dp):: qtmp(4)   ! Temporary for globalized spin charge
+#endif
 
 !     Computes Born-effective charges by finite differences,
 !     using the "force constant calculation" mode of operation.

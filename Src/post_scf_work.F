@@ -5,7 +5,6 @@
       CONTAINS
 
       subroutine post_scf_work( first, last, iscf )
-      USE SIESTA_TODO
       USE m_setup_hamiltonian, only: setup_hamiltonian
       USE siesta_options
       use sparse_matrices

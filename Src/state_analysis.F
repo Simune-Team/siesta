@@ -7,7 +7,6 @@
       CONTAINS
 
       subroutine state_analysis( istep  )
-      USE SIESTA_TODO
       use siesta_cml
       use m_born_charge, only: born_charge
       use parallel, only: IOnode
@@ -29,6 +28,7 @@
       integer  :: istep
       integer  :: ia, jx, ix
       real(dp) :: volume
+      logical  :: eggbox_block=.true. ! Read eggbox info from data file?
 
       external :: eggbox, mulliken, fixed
       real(dp), external :: volcel

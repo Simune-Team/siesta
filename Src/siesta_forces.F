@@ -6,10 +6,10 @@
       CONTAINS
 
       subroutine siesta_forces(istep)
-      USE SIESTA_TODO
       use m_state_init
       use m_setup_hamiltonian
       use m_compute_dm
+      use m_scfconvergence_test
       use m_post_scf_work
       use m_mixer
       USE siesta_options

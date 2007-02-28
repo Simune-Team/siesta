@@ -5,7 +5,6 @@
       CONTAINS
 
       subroutine compute_dm( iscf )
-      USE SIESTA_TODO
       use precision
       USE siesta_options
       use sparse_matrices
@@ -20,6 +19,10 @@
       use m_rmaxh
       use m_eo
       use m_spin,  only: nspin, qs, efs
+      use m_gamma
+#ifdef MPI
+      use m_mpi_utils, only: globalize_sum
+#endif
 
       implicit none
 
@@ -30,6 +33,9 @@
       ! e1>e2 To signal that we do not want DOS weights  
       real(dp), parameter  :: e1 = 1.0_dp, e2 = -1.0_dp
 
+#ifdef MPI
+      real(dp):: buffer1   ! Temporary for the result of a globalize operation
+#endif
 
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,

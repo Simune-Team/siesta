@@ -6,7 +6,6 @@
       CONTAINS
 
       subroutine siesta_move( istep, relaxd )
-      USE SIESTA_TODO
       use siesta_geom
       use zmatrix,         only: lUseZmatrix, iofaZmat, write_Zmatrix,
      .                           CartesianForce_to_ZmatForce
@@ -35,18 +34,12 @@
       integer               :: i, ia, ix, iadispl, ixdispl
       integer               :: iunit   ! Physical-units option: 
                                        ! 1=>(eV,Ang), 2=>(Ry,Bohr)
-      real(dp)              :: Pint    ! Instantaneous pressure                    
+      real(dp)              :: Pint    ! Instantaneous pressure 
+                
+      logical               :: foundxv  ! dummy for call to ioxv
+      logical               :: foundzm  ! dummy for call to iozm
 
       real(dp), external :: volcel
-!       external :: automatic_cell,
-!      .  bonds, cgvc, cgvc_zmatrix, fixed,
-!      .  dhscf, diagon, dnaefs, extrapol, initatom,
-!      .  iodm, iozm,
-!      .  kinefsm, mulliken, naefs, neighb, !kgrid, kgridinit, 
-!      .  pulayx, 
-!      .  reinit, shaper, spnvec, 
-!      .  timer, xijorb, memory,
-!      .  ioeig, iofa, iokp, iomd, prversion !, eggbox
 
 
 !------------------------------------------------------------------------- BEGIN

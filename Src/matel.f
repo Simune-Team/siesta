@@ -19,7 +19,7 @@
       private
 
 
-      CONTAINS !------------------------------------------
+      CONTAINS 
 
       SUBROUTINE xphiatm(is,io,r,xphi,grxphi)
 C     Calculates x*phiatm and its gradient

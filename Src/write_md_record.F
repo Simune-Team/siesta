@@ -1,5 +1,4 @@
       subroutine write_md_record( istep )
-        USE SIESTA_TODO
         Use siesta_options
         use siesta_geom
         use atomlist,          only: iza
@@ -9,6 +8,9 @@
         use m_steps
         use m_kinetic
         use m_stress, only: tstress
+#ifdef CDF
+        use md_out,     only: md_netcdf
+#endif
 
         implicit none
 
@@ -36,12 +38,12 @@
      .        fincoor, tempion, Etot_output, getot,
      .        volume_of_some_cell/Ang**3, Psol/kbar)
           call md_v_format(na_u,isa,xa,ucell)
-#         ifdef CDF
+#ifdef CDF
             call md_netcdf( na_u, isa, iza, 
      .        xa, va, ucell, vcell, varcel, 
      .        tempion, Etot_output, getot,
      .        volume_of_some_cell/Ang**3, Psol/kbar)
-#         endif
+#endif
 
         endif
 

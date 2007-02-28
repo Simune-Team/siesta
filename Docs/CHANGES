@@ -10,6 +10,26 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-02-27 15:46:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-18
+
+Summary: Final cleanup of siesta_todo
+Keywords: 
+
+(During and after meeting at BSC on Feb 26, 2007)
+
+* New module m_gamma.
+* 'shape' put in siesta_geom.
+* 'sname' put in siesta_options.
+* Signaling role of 'foundxv' taken over by 'xv_file_read' in ioxv.F
+
+* All the other variables have been made local to the appropriate routines.
+
++ Cosmetic changes in state_init and hsparse: conversion of implicit
+  loops with goto to explicit 'do while' loops.
+
++ Conversion of scfconvergence_test and proximity_check into modules.
+
+
 2007-02-25 22:25:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-17
 
 Summary: Fixes for troublesome bugs in reference code

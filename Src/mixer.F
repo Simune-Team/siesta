@@ -5,7 +5,6 @@
       CONTAINS
  
       subroutine mixer( iscf, dDmax )
-      USE SIESTA_TODO
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -14,14 +13,22 @@
       use m_steps
       use m_spin,   only: nspin
       use m_auxpul
+#ifdef MPI
+      use m_mpi_utils, only: globalize_max
+#endif
 
       implicit none
 
-      integer, intent(in)   :: iscf
+      integer,  intent(in)   :: iscf
       real(dp), intent(out) :: dDmax     ! Max. change in density matrix elements
 
       integer :: iiscf
+      logical :: mmix       ! Same as mix. Used in pulayx
+      logical :: found      ! dummy for call to iodm
 
+#ifdef MPI
+      real(dp):: buffer1   ! Temporary for the result of a globalize operation
+#endif
       external ::  iodm, mulliken, pulayx
 
 !------------------------------------------------------------------------- BEGIN

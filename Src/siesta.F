@@ -20,7 +20,7 @@
       istep  = inicoor
       DO WHILE ((istep.le.fincoor) .AND. (.not. relaxd))
 
-        call siesta_forces(istep)
+        call siesta_forces( istep )
 
         call siesta_move( istep, relaxd )
         if (.not. relaxd) then
