@@ -10,6 +10,13 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-03-01 12:00:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-19
+
+Summary: Add character(len=*) routines to alloc.F90
+
+New module procedures realloc_s1 and dealloc_s1
+
+
 2007-02-27 15:46:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-18
 
 Summary: Final cleanup of siesta_todo

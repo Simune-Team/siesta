@@ -175,9 +175,6 @@ PUBLIC ::             &
 PRIVATE      ! Nothing is declared public beyond this point
 
 
-! JMS/AG: It might be necessary to comment out dealloc_s1 due to
-! an apparent bug in the DEC compiler
-
 interface de_alloc
   module procedure dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
                    dealloc_i1, dealloc_i2, dealloc_i3,             &
@@ -186,8 +183,6 @@ interface de_alloc
                    dealloc_r1, dealloc_r2, dealloc_r3
 end interface
 
-! JMS/AG: realloc_s1 removed
-!         due to an apparent bug in the DEC compiler
 ! JMS/AG: realloc_s1s removed 
 !         due to apparent bugs in DEC & SGI compilers
 ! JMS/AG: Due to an apparent bug in the SGI compiler,
@@ -202,7 +197,8 @@ interface re_alloc
     realloc_d4,                                         &
     realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
     realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
-    realloc_d4s
+    realloc_d4s, &
+    realloc_s1
 end interface
 
 !$$$! Real kinds
@@ -1029,6 +1025,67 @@ logical,          optional, intent(in) :: shrink
 call realloc_l3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  DEFAULT%imin, i3max, name, routine, copy, shrink )
 END SUBROUTINE realloc_l3s
+
+SUBROUTINE realloc_s1( array, i1min, i1max, &
+                       name, routine, copy, shrink )
+! Arguments
+implicit none
+character(len=*), dimension(:),      pointer    :: array
+integer,                    intent(in) :: i1min
+integer,                    intent(in) :: i1max
+character(len=*), optional, intent(in) :: name
+character(len=*), optional, intent(in) :: routine
+logical,          optional, intent(in) :: copy
+logical,          optional, intent(in) :: shrink
+
+! Internal variables and arrays
+character, parameter           :: type='S'
+integer, parameter             :: rank=1
+character(len=len(array)), dimension(:), pointer :: old_array
+integer, dimension(2,rank)     :: b, c, new_bounds, old_bounds
+
+! Get old array bounds
+ASSOCIATED_ARRAY = associated(array)
+if (ASSOCIATED_ARRAY) then
+  old_array => array          ! Keep pointer to old array
+  old_bounds(1,:) = lbound(old_array)
+  old_bounds(2,:) = ubound(old_array)
+end if
+
+! Copy new requested array bounds
+new_bounds(1,:) = (/ i1min /)
+new_bounds(2,:) = (/ i1max /)
+
+! Find if it is a new allocation or a true reallocation,
+! and if the contents need to be copied (saved)
+! Argument b returns common bounds
+! Options routine also reads common variable ASSOCIATED_ARRAY,
+! and it sets NEEDS_ALLOC, NEEDS_DEALLOC, and NEEDS_COPY
+call options( b, c, old_bounds, new_bounds, copy, shrink )
+
+! Deallocate old space
+if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
+  call alloc_count( -size(old_array)*len(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+
+! Allocate new space
+if (NEEDS_ALLOC) then
+  allocate( array(b(1,1):b(2,1)), stat=IERR )
+  call alloc_err( IERR, name, routine, new_bounds )
+  call alloc_count( size(array)*len(array), type, name, routine )
+  array = ''
+end if
+
+! Copy contents and deallocate old space
+if (NEEDS_COPY) then
+  array(c(1,1):c(2,1)) = old_array(c(1,1):c(2,1))
+  call alloc_count( -size(old_array)*len(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+
+END SUBROUTINE realloc_s1
+
 ! ==================================================================
 ! ==================================================================
 SUBROUTINE dealloc_i1( array, name, routine )
