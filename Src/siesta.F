@@ -92,6 +92,8 @@ C  Modules
 #ifdef CDF
       use md_out,     only: md_netcdf
 #endif
+      use basis_enthalpy, only: write_basis_enthalpy
+
       implicit none
 
       integer
@@ -2019,6 +2021,7 @@ C Print program's energy decomposition and final forces
         call siesta_write_energies()
         call siesta_write_forces()
         call siesta_write_stress_pressure()
+        call write_basis_enthalpy(FreeE)
       endif
 
 C Print spin polarization

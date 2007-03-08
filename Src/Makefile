@@ -54,7 +54,8 @@ SYSOBJ=$(SYS).o pxf.o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS = automatic_cell.o \
-        arw.o  atomlwf.o bands.o bessph.o bonds.o cgwf.o chkdim.o chkgmx.o \
+        arw.o  atomlwf.o bands.o basis_enthalpy.o \
+        bessph.o bonds.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
@@ -411,6 +412,7 @@ on_subs.o: alloc.o onmod.o onmod.o spatial.o
 onmod.o: precision.o
 optical.o: alloc.o atmfuncs.o densematrix.o fermid.o files.o parallel.o
 optical.o: parallelsubs.o parsing.o precision.o sys.o
+orb_volumes.o: atmfuncs.o atomlist.o precision.o units.o
 ordern.o: alloc.o globalise.o m_mpi_utils.o onmod.o parallel.o precision.o
 ordern.o: siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
@@ -462,8 +464,8 @@ siesta.o: m_broyden_mixing.o m_cell.o m_check_supercell.o m_fdf_global.o
 siesta.o: m_iostruct.o m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o
 siesta.o: metaforce.o molecularmechanics.o nlefsm.o ordern.o overfsm.o
 siesta.o: parallel.o parallelsubs.o periodic_table.o phonon.o precision.o
-siesta.o: redata.o siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o
-siesta.o: zmatrix.o
+siesta.o: redata.o siesta_cml.o sys.o timestamp.o units.o
+siesta.o: write_basis_enthalpy.o writewave.o xcmod.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 spatial.o: precision.o
@@ -480,6 +482,7 @@ vmat.o: meshsubs.o parallel.o precision.o
 vmatsp.o: atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o meshsubs.o
 vmatsp.o: meshsubs.o precision.o
 vmb.o: parallel.o precision.o sys.o
+write_basis_enthalpy.o: atmfuncs.o atomlist.o precision.o units.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 writewave.o: parallelsubs.o parsing.o precision.o sys.o
 xc.o: precision.o sys.o xcmod.o
@@ -488,6 +491,7 @@ xijorb.o: parallel.o parallelsubs.o precision.o
 xml.o: precision.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o sys.o units.o
 band.o: bands.o
+basis_enthalpy.o: write_basis_enthalpy.o
 diagmemory.o: memoryinfo.o
 listsc_module.o: listsc.o
 m_broyden_optim.o: broyden_optim.o
