@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.1.40}}
+{\Huge {\bf S I E S T A \, \, 2.1.48}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large Feb 21, 2007 }
+{\Large March 9, 2007 }
 
 \vspace{1.5cm}
 
@@ -1119,13 +1119,13 @@ specified in that block are zero for the first zeta.
 
 \item[{\bf PAO.SplitNorm}] ({\it real}): 
 \index{PAO.SplitNorm@{\bf PAO.SplitNorm}}\index{basis!split valence} 
-A standard to define default sensible
+A standard to define sensible default
 radii for the split-valence type of basis. It gives the amount of norm that
 the second-$\zeta$ split-off piece has to carry. The split radius is defined
 accordingly. If multiple-$\zeta$\index{multiple-$\zeta$} 
 is used, the corresponding radii are obtained
 by imposing smaller fractions of the SplitNorm (1/2, 1/4 ...) value as
-norm carried by the higher zetas. It has only effect when the block
+norm carried by the higher zetas. It has effect only when the block
 {\bf PAO.Basis} is not present or when the radii
 specified in that block are zero for zetas higher than one.
 
@@ -1365,12 +1365,14 @@ is used instead of the Sankey hard-well potential.
 of the soft confinement potential ($V_{0}$ in the formula). Units in Ry. 
 {\it Default value}: 0 Ry.
 \item[-] {\tt InnerRadSoft(l,is)}: {\it Optional input}. Inner radius where
-the soft confinemet potential starts off ($r_{i}$ in the foormula). 
+the soft confinemet potential starts off ($r_{i}$ in the formula). 
 If negative, the inner radius will be computed as the given fraction
 of the PAO cutoff radius.
 Units in bohrs. {\it Default value}: 0 bohrs. 
 \item[-] {\tt rcls(izeta,l,is)}: Cutoff radius (Bohr) of 
-each 'zeta' for this shell.
+each 'zeta' for this shell. For the second zeta onwards, if this value
+is negative, the actual rc used will be the given fraction of the
+first zeta's rc. 
 \item[-] {\tt contrf(izeta,l,is)}: {\it Optional input}. 
 Contraction factor\index{scale factor} of 
 each 'zeta' for this shell.
@@ -5138,6 +5140,20 @@ Switch on old code in routine findp in file atom.f to test
 the effect of a (now corrected) bug.
 
 {\it Default value:} { \tt .false.}
+
+\item[{\bf BasisPressure}] ({\it real pressure}):
+\index{BasisPressure@{\bf
+    BasisPressure}}\index{basis!effective pressure}
+
+{\sc Siesta} will compute and print the value of the ``effective basis
+enthalpy'' constructed by adding a term of the form
+$p_{basis}V_{orbs}$ to the total energy. Here $p_{basis}$ is a
+fictitious basis pressure and $V_{orbs}$ is the volume of the system's
+orbitals. This is a useful quantity for basis optimization (See
+Anglada {\it et al.\/}). The total basis enthalpy is also written to
+the ASCII file {\tt BASIS\_ENTHALPY}.
+
+{\it Default value:} { $0.2$ GPa}
 
 \end{description}
 

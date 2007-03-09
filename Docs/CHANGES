@@ -10,10 +10,36 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-03-09 9:40:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-48
+
+Summary: Option to use fractional rc's for multiple zeta
+
+If the rc's for multiple-zeta orbitals are given as negative numbers
+in the PAO.Basis block, they are interpreted as the corresponding
+fractions of the rc for the first-zeta orbital.
+
+This is useful in basis optimization, to avoid having to include
+explicitly the constraint that rc(izeta>1) < rc(izeta=1).
+
+Note however that, if the rc's are significantly larger than the
+natural size of the atomic orbital, multiple-zeta orbitals will tend
+to be very similar to the first (this is now flagged by the program as
+a warning). The best procedure to avoid this is to use an explicit
+split-norm value.
+
+2007-03-08 19:30:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-47
+
+Summary: First implementation of basis_enthalpy calculation
+
+New file BASIS_ENTHALPY contains the "effective basis enthalpy"
+of Anglada et al. The pressure is determined from the fdf symbol
+"BasisPressure", with a 0.2 GPa default.
+
+Further work: different weights to different species.
+
 2007-02-25 20:30:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-46
 
 Summary: Fix allocation of temporary array in savepsi in parallel
-Keywords:
 
 Some nodes might not have any occupied orbitals assigned to them, so
 one has to be careful in the allocation of a buffer array in MPI.

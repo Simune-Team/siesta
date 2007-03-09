@@ -3154,15 +3154,29 @@ C and angular momentum
 
               do izeta=1, nzeta(l,nsm)
 
-C****COMPRESSION FACTOR IS ONLY ACTIVE FOR THE INITIAL PAO WHEN USING****
-C**** SPLIT OPTION FOR THE GENERATION OF THE BASIS SET****
+C COMPRESSION FACTOR IS ONLY ACTIVE FOR THE INITIAL PAO WHEN USING
+C SPLIT OPTION FOR THE GENERATION OF THE BASIS SET
+
                  lambda(izeta,l,nsm)=lambda(1,l,nsm)
+
+!
+!                 If rc is negative, treat it as a fractional value
+!
+                  if (rco(izeta,l,nsm) < 0.0_dp) then
+                     if (izeta == 1) then
+                        call die("rc < 0 for first-zeta orbital")
+                     else
+                        rco(izeta,l,nsm) = rco(1,l,nsm) *
+     $                       (-rco(izeta,l,nsm))
+                     endif
+                  endif
+
+                  rc=rco(izeta,l,nsm)/lambda(1,l,nsm)
+                  nrc=nint(log(rc/b+1.0d0)/a)+1
 
 ! Note that rco is redefined here, to make it fall on an odd-numbered
 ! grid point.
 !
-                  rc=rco(izeta,l,nsm)/lambda(1,l,nsm)
-                  nrc=nint(log(rc/b+1.0d0)/a)+1
                   if (restricted_grid) then
                      nodd=mod(nrc,2)
                      if(nodd.eq.0) then
@@ -3234,6 +3248,7 @@ C**
                  endif
                 enddo
             else        ! Generate multiple zeta
+                        ! using split-norm parameters
 
             rc=rco(1,l,nsm)/lambda(1,l,nsm)
             nrc=nint(log(rc/b+1.0d0)/a)+1
@@ -3444,6 +3459,11 @@ C Potential energy after compression
      .         'rmatch =',rco(izeta,l,nsm),
      .         'splitnorm =',spln,
      .         'energy =',eorb 
+            if (spln < 0.05_dp) then
+               write(6,"(a)")
+     $           "* WARNING: effective split_norm is quite small."
+     $              // " Orbitals will be very similar."
+            endif
 
             endif 
 

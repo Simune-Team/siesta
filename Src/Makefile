@@ -269,6 +269,7 @@ atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
+basis_enthalpy.o: atmfuncs.o atomlist.o precision.o units.o
 basis_io.o: atm_types.o atmparams.o basis_types.o chemical.o precision.o
 basis_io.o: pseudopotential.o radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
@@ -458,14 +459,14 @@ setatomnodes.o: alloc.o parallel.o precision.o spatial.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 shaper.o: atmfuncs.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o sys.o
-siesta.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o densematrix.o
-siesta.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o kpoint_grid.o
-siesta.o: m_broyden_mixing.o m_cell.o m_check_supercell.o m_fdf_global.o
-siesta.o: m_iostruct.o m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o
-siesta.o: metaforce.o molecularmechanics.o nlefsm.o ordern.o overfsm.o
+siesta.o: alloc.o atmfuncs.o atomlist.o bands.o basis_enthalpy.o
+siesta.o: broyden_optim.o densematrix.o dynamics.o files.o hsparse.o iopipes.o
+siesta.o: ioxv.o kpoint_grid.o m_broyden_mixing.o m_cell.o m_check_supercell.o
+siesta.o: m_fdf_global.o m_iostruct.o m_mpi_utils.o m_smearing.o m_wallclock.o
+siesta.o: md_out.o metaforce.o molecularmechanics.o nlefsm.o ordern.o overfsm.o
 siesta.o: parallel.o parallelsubs.o periodic_table.o phonon.o precision.o
-siesta.o: redata.o siesta_cml.o sys.o timestamp.o units.o
-siesta.o: write_basis_enthalpy.o writewave.o xcmod.o zmatrix.o
+siesta.o: redata.o siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o
+siesta.o: zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 spatial.o: precision.o
@@ -482,7 +483,6 @@ vmat.o: meshsubs.o parallel.o precision.o
 vmatsp.o: atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o meshsubs.o
 vmatsp.o: meshsubs.o precision.o
 vmb.o: parallel.o precision.o sys.o
-write_basis_enthalpy.o: atmfuncs.o atomlist.o precision.o units.o
 writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 writewave.o: parallelsubs.o parsing.o precision.o sys.o
 xc.o: precision.o sys.o xcmod.o
@@ -491,7 +491,6 @@ xijorb.o: parallel.o parallelsubs.o precision.o
 xml.o: precision.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o sys.o units.o
 band.o: bands.o
-basis_enthalpy.o: write_basis_enthalpy.o
 diagmemory.o: memoryinfo.o
 listsc_module.o: listsc.o
 m_broyden_optim.o: broyden_optim.o
