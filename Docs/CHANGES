@@ -10,6 +10,36 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-03-14 22:30:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-49
+
+Summary: VPATH-aware compilation for multiple executable versions
+
+Added Src/obj_setup.sh script, to be called from any directory on
+which the build is going to take place, and modified slightly some
+makefiles to make them VPATH-proof.  The Tests directory is replicated
+in the "build" directory.
+
+(The pristine Src directory should be "clean", without objects, or else
+the compilation in the build directories will get confused)
+
+Example. From the top Siesta directory:
+
+mkdir Objs
+cd Objs
+sh ../Src/obj_setup.sh
+../Src/configure --enable-fast
+make
+cd Tests
+make clean; make
+cd    # Now a parallel version
+mkdir ParaObjs
+cd ParaObjs
+sh ../Src/obj_setup.sh
+cp ../Src/Sys/parallel.make ./arch.make
+make
+cd Tests
+make clean; make
+
 2007-03-09 9:40:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-48
 
 Summary: Option to use fractional rc's for multiple zeta
