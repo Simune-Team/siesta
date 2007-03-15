@@ -26,7 +26,7 @@
 #       md_anneal md_verlet md_nose si_bandpoints sih_fire \
 #       graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid
 
-tests= h2o mgco3 md_npr zmatrix born var_cell
+tests= h2o mgco3 md_npr si2x1h zmatrix born var_cell
 
 #
 all: 
@@ -47,6 +47,18 @@ clean:
 	@for i in ${tests} ; do \
 		(cd $$i ; make clean) ; \
 	done
+
+compare:
+	@for i in ${tests} ;do \
+             echo "---------$$i start" ;  \
+             diff $$i/$$i.out ${REFERENCE}/$$i/$$i.out ; \
+             echo "****---------$$i done" ; \
+     done | grep -v " timer: " | grep -v " elaps: " | grep -v " of run"
+
+
+
+
+
 
 
 

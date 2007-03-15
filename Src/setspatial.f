@@ -54,7 +54,7 @@ C
      .                     , nbufferx, nbuffery, nbufferz
      .                     , spmin, spcell, nspcell
      .                     , maxspcell, maxspcellat
-      use alloc,      only : re_alloc
+      use alloc,      only : re_alloc, de_alloc
       implicit none
 C
 C  Passed variables
@@ -98,7 +98,7 @@ C
       real(dp)                    :: xdivision
       real(dp)                    :: ydivision
       real(dp)                    :: zdivision
-      real(dp), allocatable, save :: xyzfrac(:,:)
+      real(dp), pointer           :: xyzfrac(:,:)
       real(dp)                    :: xi
       real(dp)                    :: yi
       real(dp)                    :: zi
@@ -134,7 +134,9 @@ C
 C
 C  Allocate local workspace
 C
-      allocate(xyzfrac(3,na))
+      nullify(xyzfrac)
+      call re_alloc(xyzfrac,1,3,1,na,name="xyzfrac",
+     $              routine="setspatial")
 C
       small = 0.000001d0
       degtorad = 4.0d0*atan(1.0d0)/180.0d0
@@ -292,7 +294,10 @@ C
 C
 C  Deallocate local workspace
 C
-      deallocate(xyzfrac)
+      call de_alloc(xyzfrac,routine="setspatial")
+      call de_alloc(xinbox,routine="setspatial")
+      call de_alloc(yinbox,routine="setspatial")
+      call de_alloc(zinbox,routine="setspatial")
 C
       return
       end

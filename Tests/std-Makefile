@@ -48,7 +48,7 @@ clean:
 	done
 
 compare:
-	for i in ${tests} ;do \
+	@for i in ${tests} ;do \
              echo "---------$$i start" ;  \
              diff $$i/$$i.out ${REFERENCE}/$$i/$$i.out ; \
              echo "****---------$$i done" ; \

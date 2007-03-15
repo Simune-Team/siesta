@@ -10,6 +10,10 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-03-15 16:12:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-20
+
+Summary: Pointers in fixed and setspatial. si2x1h test added to bsc-Makefile
+
 2007-03-01 12:00:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-19
 
 Summary: Add character(len=*) routines to alloc.F90
