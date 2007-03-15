@@ -10,6 +10,20 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-03-15 16:19:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-21
+
+Summary: Re-organization of pulay module
+
+Pulayx is now part of a module "m_pulay", which contains the
+nauxpul and auxpul variables. Module m_auxpul has been removed.
+
+The calling sequence for pulayx has been simplified, as some of
+the arguments are now module variables. Argument maxo was innecesary.
+Internal work arrays are now pointers.
+
+The changes affect mixer and state_init (which calls a new routine
+init_pulay_arrays)
+
 2007-03-15 16:12:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-20
 
 Summary: Pointers in fixed and setspatial. si2x1h test added to bsc-Makefile

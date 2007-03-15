@@ -8,9 +8,62 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-       subroutine pulayx(pulfile,iscf,mix,nbasis,maxo,maxnd,numd,
+      module m_pulay
+      use precision, only: dp
+
+      implicit none
+
+      private
+
+      integer            :: nauxpul = 1  ! Max. required size of auxiliary 
+                                         ! sparse Pulay matrices
+      real(dp), pointer  :: auxpul(:,:)  ! Auxilialy matrices 
+                                         ! for Pulay mixing
+
+      public :: pulayx, init_pulay_arrays
+
+      CONTAINS
+
+      subroutine init_pulay_arrays()
+      use siesta_options, only: pulfile, maxsav
+      use alloc
+      use atomlist, only: no_l
+      use m_spin, only: nspin
+      use m_mpi_utils, only: globalize_max
+      use sparse_matrices, only: numh
+
+      implicit none
+
+      integer :: ntmp
+      logical, save  :: first_time = .true.
+
+      if (first_time) then
+         nullify(auxpul)
+         first_time = .false.
+      endif
+
+      if (pulfile .or. maxsav .le. 0) then
+        ! No need for auxiliary arrays
+        nauxpul = 1
+        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",
+     $                routine="init_pulay_arrrays")
+      else
+        nauxpul = sum(numh(1:no_l)) * nspin * maxsav
+#ifdef MPI
+        call globalize_max(nauxpul,ntmp)
+        nauxpul = ntmp
+#endif
+! Increase nauxpul with safety margin when atoms move  ! ???
+        nauxpul = 1.1 * nauxpul + 10
+        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",
+     $                routine="init_pulay_arrrays")
+      endif
+
+      end subroutine init_pulay_arrays
+!
+      subroutine pulayx(pulfile,iscf,mix,nbasis,maxnd,numd,
      .                   listdptr,nspin,maxsav,alpha,nkick,alphakick,
-     .                   savedm,savere,dimaux,dmnew,dmold,dmax)
+     .                   dmnew,dmold,dmax)
 C ***********************************************************************
 C Pulay mixing implemented to accelerate the self-consistency
 C Mixes MAXSAV previous steps.  Linear mixing if MAXAV =< 0
@@ -28,21 +81,18 @@ C                                 .false. = use memory
 C integer iscf               : Current SCF iteration
 C logical mix                : Mix first SCF step (T or F)
 C integer nbasis             : Number of atomic orbitals stored locally
-C integer maxo               : Maximum number of atomic orbitals (global)
 C integer maxnd              : First dimension of D.M., and 
 C                              maximum number of nonzero elements of D.M.
-C integer numd(maxo)         : Control vector of D.M.
+C integer numd(nbasis)       : Control vector of D.M.
 C                              (number of nonzero elements of each row)
-C integer listdptr(maxo)     : Pointer to start of rows in listd
+C integer listdptr(nbasis)   : Pointer to start of rows in listd
 C integer nspin              : Spin polarization (1=unpolarized, 2=polarized)
 C integer maxsav             : Pulay mixing is done every maxsav iterations.
 C                              Remaining iterations are done by linear mixing.
 C real*8 alpha               : Mixing parameter (for linear mixing)
 C integer nkick              : Do a linear mixing (kick) each nkick cycles
 C real*8 alphakick           : Mixing parameter for kick cycles
-C real*4 savedm(dimaux)      : Auxiliary storage (DM in former iterations)
-C real*4 savere(dimaux)      : Auxiliary storage (resuduals in former iterations)
-C integer dimaux             : Auxiliart matrices size
+
 C ********************* INPUT AND OUTPUT*********************************
 C real*8 dmnew(maxnd)        : Density Matrix
 C                              Input: d.m. output in current SCF step
@@ -100,26 +150,20 @@ C
 
       implicit none
 
-      integer 
-     .  dimaux,iscf,maxsav,maxo,maxnd,nbasis,nkick,nspin
+      integer , intent(in) ::  iscf,maxsav,maxnd,
+     $                         nbasis,nkick,nspin
 
-      integer  
-     .  numd(*),listdptr(*)
+      integer , intent(in) :: numd(*),listdptr(*)
+      logical, intent(in) ::  pulfile, mix
 
-      real(dp) 
-     .  alpha,alphakick,dmax,
-     .  dmnew(maxnd,nspin),dmold(maxnd,nspin)
+      real(dp), intent(in)    ::  alpha,alphakick
+      real(dp), intent(inout) ::  dmnew(maxnd,nspin),dmold(maxnd,nspin)
+      real(dp), intent(out)   :: dmax
 
-      real(dp)
-     .  savedm(dimaux), savere(dimaux)
 
-      logical
-     .  pulfile, mix
+      real(dp), pointer :: savedm(:), savere(:)
 
-      character(len=label_length+3) :: paste
-
-      external
-     .  io_assign, io_close, paste, memory
+      external  io_assign, io_close, memory
 
 C Internal variables ....................................................
       integer
@@ -130,19 +174,17 @@ C Internal variables ....................................................
      .  MPIerror
 #endif
 
-      real(dp) 
-     .  sum
-      real(dp), dimension(:,:), pointer, save ::
-     .  b, bi
-      real(dp), dimension(:), allocatable, save ::
-     .  buffer
-      real(dp), dimension(:), allocatable, save ::
-     .  coeff
+      integer  :: real_length        
+      real(dp) ::   ssum
+      real(dp), dimension(:,:), pointer ::  b, bi
+      real(dp), dimension(:), pointer   ::  buffer
+      real(dp), dimension(:), pointer   ::  coeff
 
       character(len=label_length+3) :: fname1
       character(len=label_length+3) :: fname2
 
-C ........................
+      savedm => auxpul(:,1)         ! DM in former iterations
+      savere => auxpul(:,2)         ! Residuals in former iterations
 
 #ifdef MPI
 C Check that this is not a parallel run with pulfile=.true.
@@ -150,7 +192,7 @@ C Check that this is not a parallel run with pulfile=.true.
      $     call die('pulayx: cannot use pulay on file in parallel')
 #endif
 
-C Check some input and dimensions .......................................
+C Check some input and dimensions 
        numel = 0
        do i = 1,nbasis
          numel = numel + numd(i)
@@ -158,24 +200,24 @@ C Check some input and dimensions .......................................
        numel = numel*nspin
 
        if (.not.pulfile) then
-         if (dimaux .lt. numel*maxsav)
-     $         call die('pulayx: dimaux too small')
+         if (size(savere) .lt. numel*maxsav)
+     $         call die('pulayx: dimensions are too small')
        endif
          
-C ........................
 
        if (maxsav .gt. 1) then
-C Open direct access files ..............................................
-         fname1 = paste(slabel,'.P1')
-         fname2 = paste(slabel,'.P2')
+C Open direct access files
+         fname1 = trim(slabel) // '.P1'
+         fname2 = trim(slabel) // '.P2'
 
          if (pulfile) then
            call io_assign(jtape)
            call io_assign(jtap1)
+           inquire(iolength=real_length) savere(1)
            open(unit=jtape,file=fname1,form='unformatted',
-     .       access='direct',recl=8*numel,status='unknown')
+     .       access='direct',recl=real_length*numel,status='unknown')
            open(unit=jtap1,file=fname2,form='unformatted',
-     .       access='direct',recl=8*numel,status='unknown')
+     .       access='direct',recl=real_length*numel,status='unknown')
          endif
 C ........................
 
@@ -253,8 +295,8 @@ C Perform linear mixing if iscf = 1
 C .......................
 
 C Perform linear mixing if iscf = N x nkick
-       if (nkick .le. 0) goto 100
-       if (mod(iscf,nkick).eq.0) then
+
+       if (nkick> 0 .AND. mod(iscf,nkick).eq.0) then
          dmax = 0.0d0
          do is = 1,nspin
            do i = 1,nbasis
@@ -275,29 +317,25 @@ C Perform linear mixing if iscf = N x nkick
          endif
          return
        endif
-100    continue
 
 C .......................
 
 C Perform Pulay mixing if iscf .gt. 2
 
 C Allocate local arrays
-!       allocate(b(maxsav+1,maxsav+1))
-!       call memory('A','D',(maxsav+1)**2,'pulayx')
 
         nullify( b )
         call re_alloc( b, 1, maxsav+1, 1, maxsav+1, name='b', 
      &                 routine='pulayx' )
-
-
-       allocate(bi(maxsav+1,maxsav+1))
-       call memory('A','D',(maxsav+1)**2,'pulayx')
-       allocate(buffer(maxsav))
-       call memory('A','D',maxsav,'pulayx')
-       if (.not.allocated(coeff)) then
-         allocate(coeff(maxsav+1))
-         call memory('A','D',maxsav+1,'pulayx')
-       endif
+        nullify( bi )
+        call re_alloc( bi, 1, maxsav+1, 1, maxsav+1, name='bi', 
+     &                 routine='pulayx' )
+        nullify( coeff )
+        call re_alloc( coeff, 1, maxsav+1, name='coeff', 
+     &                 routine='pulayx' )
+        nullify( buffer )
+        call re_alloc( buffer, 1, maxsav, name='buffer', 
+     &                 routine='pulayx' )
 
 C  Compute current maximum deviation ...........
        dmax = 0.0d0
@@ -335,16 +373,16 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
          endif
 
          b(i,i) = 0.0d0
-         sum=0.0d0
+         ssum=0.0d0
          do is=1,nspin
            do ii=1,nbasis
              do jj=1,numd(ii)
                ind = listdptr(ii) + jj
-               sum=sum+dmnew(ind,is)*dmnew(ind,is)
+               ssum=ssum+dmnew(ind,is)*dmnew(ind,is)
              enddo
            enddo
          enddo
-         b(i,i)=sum
+         b(i,i)=ssum
 
          do j=1,i-1
            if (pulfile) then
@@ -365,17 +403,17 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
            endif
 
            b(i,j)=0.0d0
-           sum=0.0d0
+           ssum=0.0d0
            do is=1,nspin
              do ii=1,nbasis
                do jj=1,numd(ii)
                  ind = listdptr(ii) + jj
-                 sum=sum+dmold(ind,is)*dmnew(ind,is)
+                 ssum=ssum+dmold(ind,is)*dmnew(ind,is)
                enddo
              enddo
            enddo
-           b(i,j)=sum
-           b(j,i)=sum
+           b(i,j)=ssum
+           b(j,i)=ssum
          enddo
          b(i,maxmix+1)=1.0d0
          b(maxmix+1,i)=1.0d0
@@ -488,17 +526,13 @@ C ........
        endif
 
 C Deallocate local arrays
-!       call memory('D','D',size(b),'pulayx')
-!       deallocate(b)
 
        call de_alloc( b, name='b' )
+       call de_alloc( bi, name="bi" )
+       call de_alloc( coeff, name="coeff" )
+       call de_alloc( buffer, name="buffer" )
 
+       end subroutine pulayx
 
-       call memory('D','D',size(bi),'pulayx')
-       deallocate(bi)
-       call memory('D','D',size(buffer),'pulayx')
-       deallocate(buffer)
-
-       return
-       end
+      end module m_pulay
 

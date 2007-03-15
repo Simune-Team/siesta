@@ -8,11 +8,11 @@
       USE siesta_options
       use sparse_matrices
       use siesta_geom
-      use atomlist, only: iaorb, iphorb, lasto, no_s, no_u, no_l
+      use atomlist, only: iaorb, iphorb, lasto, no_u, no_l
       use m_broyden_mixing
       use m_steps
       use m_spin,   only: nspin
-      use m_auxpul
+      use m_pulay
 #ifdef MPI
       use m_mpi_utils, only: globalize_max
 #endif
@@ -29,7 +29,7 @@
 #ifdef MPI
       real(dp):: buffer1   ! Temporary for the result of a globalize operation
 #endif
-      external ::  iodm, mulliken, pulayx
+      external ::  iodm, mulliken
 
 !------------------------------------------------------------------------- BEGIN
 ! Mix input and output energy-density and density matrices ............
@@ -43,10 +43,9 @@
               if (iscf .ne. 1) mmix = .true.
             endif
             if (broyden_maxit == 0) then
-               call pulayx( pulfile, iiscf, mmix, no_l, no_s, maxnh,
+               call pulayx( pulfile, iiscf, mmix, no_l, maxnh,
      .                   numh, listhptr, nspin, maxsav, wmix, nkick, 
-     .                   wmixkick, auxpul(1,1), auxpul(1,2), nauxpul,
-     .                   Dscf, Dold, dDmax)
+     .                   wmixkick, Dscf, Dold, dDmax)
             else
                call broyden_mixing(iscf, mix, no_l, maxnh,
      .                 numh(1:no_l), listhptr(1:no_l), nspin,

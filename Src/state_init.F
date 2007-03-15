@@ -31,7 +31,7 @@
       use m_numbs_neighb
       use m_spin, only: nspin
       use m_rmaxh
-      use m_auxpul
+      use m_pulay, only: init_pulay_arrays
       use m_eo
       use m_gamma
 #ifdef MPI
@@ -57,8 +57,7 @@
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kinefsm, mulliken, naefs, neighb, !kgrid, kgridinit,
-     .  pulayx, 
+     .  kinefsm, mulliken, naefs, neighb,
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
@@ -326,38 +325,8 @@
 !     Initialize density matrix
       call new_dm( auxchanged )
 
-! Check for Pulay auxiliary matrices sizes ...................................
-      if (pulfile .or. maxsav .le. 0) then
-        nauxpul = 1
-        if (.not. allocated(auxpul)) then
-          allocate(auxpul(nauxpul,2))
-          call memory('A','D',2*nauxpul,'siesta')
-        endif
-      else
-        nauxpul = 0
-        do io = 1,no_l
-          nauxpul = nauxpul + numh(io)
-        enddo
-        nauxpul = nauxpul * nspin * maxsav
-#ifdef MPI
-        call globalize_max(nauxpul,ntmp)
-        nauxpul = ntmp
-#endif
-! Increase nauxpul with safety margin when atoms move
-        nauxpul = 1.1 * nauxpul + 10
-        if (allocated(auxpul)) then
-          if (size(auxpul,1).ne.nauxpul) then
-            call memory('D','D',size(auxpul),'siesta')
-            deallocate(auxpul)
-            allocate(auxpul(nauxpul,2))
-            call memory('A','D',2*nauxpul,'siesta')
-          endif
-        else
-          allocate(auxpul(nauxpul,2))
-          call memory('A','D',2*nauxpul,'siesta')
-        endif
-      endif
-! ....................
+!     Check for Pulay auxiliary matrices sizes 
+      call init_pulay_arrays()
 
 ! Find overlap matrix ...............................................
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
