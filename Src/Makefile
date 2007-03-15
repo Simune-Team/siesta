@@ -73,7 +73,7 @@ OBJS =  automatic_cell.o \
 	ranger.o ran3.o reclat.o redcel.o \
 	reinit.o reord.o rhoofd.o rhoofdsp.o rhooda.o \
 	savepsi.o shaper.o timer.o \
-	vmb.o vmat.o vmatsp.o volcel.o xc.o xijorb.o \
+	vmb.o vmat.o vmatsp.o volcel.o xc.o \
 	cellxc.o cdiag.o rdiag.o \
         cgvc.o cgvc_zmatrix.o  \
         iocg.o ioeig.o iofa.o iokp.o iomd.o typecell.o \
@@ -101,7 +101,7 @@ OBJS =  automatic_cell.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o molecularmechanics.o \
-        m_ntm.o m_numbs_neighb.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
+        m_ntm.o m_neighbors.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o
 #--------------------------------------------------------------
 #
@@ -270,9 +270,8 @@ basis_specs.o: pseudopotential.o sys.o
 basis_types.o: atmparams.o precision.o pseudopotential.o sys.o
 bessph.o: parallel.o precision.o sys.o
 bonds.o: atmfuncs.o precision.o recipes.o sorting.o units.o
-born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_numbs_neighb.o
-born_charge.o: m_spin.o parallel.o siesta_geom.o siesta_options.o
-born_charge.o: sparse_matrices.o
+born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_neighbors.o m_spin.o
+born_charge.o: parallel.o siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
 broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o m_mpi_utils.o
 broyden_optim.o: parallel.o precision.o units.o
@@ -342,7 +341,8 @@ globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: globalise.o onmod.o precision.o
 grdsam.o: parallel.o parsing.o precision.o sys.o
-hsparse.o: atmfuncs.o listsc.o parallel.o parallelsubs.o precision.o sorting.o
+hsparse.o: alloc.o atmfuncs.o listsc.o m_neighbors.o parallel.o parallelsubs.o
+hsparse.o: precision.o sorting.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atom.o basis_io.o basis_specs.o basis_types.o electrostatic.o
 initatom.o: old_atmfuncs.o precision.o
@@ -394,7 +394,7 @@ m_iostruct.o: siesta_geom.o sys.o units.o
 m_kinetic.o: precision.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
-m_numbs_neighb.o: precision.o
+m_neighbors.o: alloc.o precision.o siesta_geom.o
 m_options.o: precision.o
 m_pulay.o: alloc.o atomlist.o files.o m_mpi_utils.o m_spin.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
@@ -423,6 +423,8 @@ mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o precision.o
 neighb.o: precision.o
+new.hsparse.o: alloc.o atmfuncs.o listsc.o m_neighbors.o parallel.o
+new.hsparse.o: parallelsubs.o precision.o sorting.o
 new_dm.o: atomlist.o m_spin.o m_steps.o siesta_geom.o siesta_options.o
 new_dm.o: sparse_matrices.o
 nlefsm.o: atmfuncs.o parallel.o parallelsubs.o precision.o
@@ -439,7 +441,8 @@ ordern.o: siesta_cml.o sys.o units.o
 outcell.o: precision.o siesta_cml.o units.o
 outcoor.o: atmfuncs.o precision.o siesta_geom.o sys.o units.o
 overfsm.o: atmfuncs.o m_memory.o parallel.o parallelsubs.o precision.o
-overlap.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
+overlap.o: alloc.o atmfuncs.o m_neighbors.o parallel.o parallelsubs.o
+overlap.o: precision.o
 parallelsubs.o: parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
@@ -454,14 +457,14 @@ phonon.o: files.o parallel.o precision.o sys.o
 pixmol.o: files.o periodic_table.o precision.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: parallel.o precision.o sys.o
-post_scf_work.o: atomlist.o m_energies.o m_numbs_neighb.o m_spin.o
+post_scf_work.o: atomlist.o m_energies.o m_neighbors.o m_spin.o
 post_scf_work.o: setup_hamiltonian.o siesta_cml.o siesta_geom.o
 post_scf_work.o: siesta_options.o sparse_matrices.o
 projected_DOS.o: atomlist.o kpoint_grid.o m_eo.o m_gamma.o m_mpi_utils.o
 projected_DOS.o: m_spin.o parallel.o precision.o siesta_options.o
 projected_DOS.o: sparse_matrices.o sys.o
 propor.o: precision.o sys.o
-proximity_check.o: m_numbs_neighb.o parallel.o precision.o siesta_geom.o
+proximity_check.o: m_neighbors.o parallel.o precision.o siesta_geom.o
 proximity_check.o: siesta_options.o
 pseudopotential.o: flib_spline.o precision.o sys.o
 radfft.o: precision.o recipes.o
@@ -485,11 +488,11 @@ scfconvergence_test.o: siesta_options.o write_subs.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o m_dipol.o m_energies.o
-setup_hamiltonian.o: m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o
-setup_hamiltonian.o: m_numbs_neighb.o m_spin.o m_steps.o m_stress.o metaforce.o
+setup_hamiltonian.o: m_forces.o m_gamma.o m_mpi_utils.o m_neighbors.o m_ntm.o
+setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o metaforce.o
 setup_hamiltonian.o: molecularmechanics.o nlefsm.o normalize_dm.o overfsm.o
 setup_hamiltonian.o: siesta_cml.o siesta_geom.o siesta_options.o
-setup_hamiltonian.o: sparse_matrices.o
+setup_hamiltonian.o: sparse_matrices.o sys.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 shaper.o: atmfuncs.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
@@ -497,7 +500,7 @@ siesta.o: m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
 siesta.o: siesta_init.o siesta_move.o
 siesta_analysis.o: atomlist.o bands.o files.o kpoint_grid.o ksv.o ksvinit.o
 siesta_analysis.o: local_DOS.o m_dipol.o m_energies.o m_eo.o m_forces.o
-siesta_analysis.o: m_gamma.o m_mpi_utils.o m_ntm.o m_numbs_neighb.o m_spin.o
+siesta_analysis.o: m_gamma.o m_mpi_utils.o m_neighbors.o m_ntm.o m_spin.o
 siesta_analysis.o: m_steps.o parallel.o projected_DOS.o siesta_cml.o
 siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o
 siesta_analysis.o: write_subs.o writewave.o zmatrix.o
@@ -529,12 +532,11 @@ state_analysis.o: atomlist.o born_charge.o m_energies.o m_forces.o m_ntm.o
 state_analysis.o: m_spin.o m_stress.o m_wallclock.o parallel.o siesta_cml.o
 state_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o write_subs.o
 state_analysis.o: zmatrix.o
-state_init.o: alloc.o atomlist.o hsparse.o kpoint_grid.o m_check_supercell.o
-state_init.o: m_energies.o m_eo.o m_gamma.o m_mpi_utils.o m_numbs_neighb.o
-state_init.o: m_pulay.o m_rmaxh.o m_spin.o m_steps.o new_dm.o overlap.o
-state_init.o: parallel.o proximity_check.o siesta_cml.o siesta_cmlsubs.o
-state_init.o: siesta_geom.o siesta_options.o sparse_matrices.o write_subs.o
-state_init.o: zmatrix.o
+state_init.o: alloc.o atomlist.o kpoint_grid.o m_check_supercell.o m_energies.o
+state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_neighbors.o m_pulay.o m_rmaxh.o
+state_init.o: m_spin.o m_steps.o new.hsparse.o new_dm.o overlap.o parallel.o
+state_init.o: proximity_check.o siesta_cml.o siesta_cmlsubs.o siesta_geom.o
+state_init.o: siesta_options.o sparse_matrices.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
@@ -558,7 +560,6 @@ writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 writewave.o: parallelsubs.o parsing.o precision.o siesta_geom.o sys.o
 xc.o: precision.o sys.o xcmod.o
 xcmod.o: parallel.o parsing.o precision.o sys.o
-xijorb.o: parallel.o parallelsubs.o precision.o
 xml.o: precision.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
@@ -574,7 +575,7 @@ m_dynamics.o: dynamics.o
 m_fermid.o: fermid.o
 m_find_kgrid.o: find_kgrid.o
 m_forhar.o: forhar.o
-m_hsparse.o: hsparse.o
+m_hsparse.o: new.hsparse.o
 m_ioxv.o: ioxv.o
 m_ksv.o: ksv.o
 m_ksvinit.o: ksvinit.o

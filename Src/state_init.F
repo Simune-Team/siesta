@@ -12,8 +12,8 @@
       USE siesta_options
       use sparse_matrices
       use siesta_geom
-      use atomlist, only: rmaxv, iphorb, iphkb, rco, rckb, indxua,no_s,
-     .                    rmaxo, no_u, lastkb, lasto, rmaxkb, superc
+      use atomlist, only: iphorb, iphkb, rco, rckb, indxua,no_s, rmaxkb,
+     .                    rmaxo, no_u, lastkb, lasto, superc, rmaxv
       use atomlist, only: no_l
       use alloc, only: re_alloc, alloc_report
       use m_hsparse,    only: hsparse
@@ -28,7 +28,7 @@
       use m_steps
       use parallel, only: IOnode
       use alloc, only: re_alloc
-      use m_numbs_neighb
+      use m_neighbors, only: init_neighbor_arrays
       use m_spin, only: nspin
       use m_rmaxh
       use m_pulay, only: init_pulay_arrays
@@ -46,21 +46,12 @@
       real(dp):: rmax
       logical :: cell_can_change
 
-      integer :: i, ia, ix, io, iadispl, ixdispl, isel, nnamax
-      integer :: nnia      ! Number of neighbors of a given atom
+      integer :: i, ix, iadispl, ixdispl
 
       logical:: auxchanged ! Has auxiliary supercell changed?
-      logical:: increased
-      logical:: overflow   ! Too short array sizes?
 
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kinefsm, mulliken, naefs, neighb,
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
+      external ::  madelung, timer
+
 #ifdef MPI
       integer :: ntmp      ! Temporary to call an MPI routine
 #endif
@@ -170,116 +161,68 @@
       volume_of_some_cell = volcel(ucell)
 ! ...................
 
-      ! Initialize neighb subroutine 
-      overflow = .true.
-      do while (overflow)
-        isel = 0  
-        ! AG ** POSIBLE BUG 
-        ! The last argument should be twice as big, and there
-        ! should be a check for negl (neglect of KB overlap)
-        ! Compare with rmaxh in siesta_init...
+      ! Use largest possible range in program, except hsparse...
+      ! 2 * rmaxv: Vna overlap
+      ! 2 * rmaxo: orbital overlap
+      ! rmaxo + rmaxkb: Non-local KB action
+      ! 2.0_dp * (rmaxo+rmaxkb) : Orbital interaction through KB projectors
 
-        rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb )
-        nnia = maxna
+      rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb)
 
-        if (allocated(jna)) then
-          call memory('D','I',size(jna),'siesta')
-          deallocate(jna)
-        endif
-        if (allocated(r2ij)) then
-          call memory('D','D',size(r2ij),'siesta')
-          deallocate(r2ij)
-        endif
-        if (allocated(xij)) then
-          call memory('D','D',size(xij),'siesta')
-          deallocate(xij)
-        endif
-        allocate(jna(maxna))
-        call memory('A','I',maxna,'siesta')
-        allocate(r2ij(maxna))
-        call memory('A','D',maxna,'siesta')
-        allocate(xij(3,maxna))
-        call memory('A','D',3*maxna,'siesta')
+      ! AG: Why not use the largest range and be done with it?
+      if (.not. negl) then
+         rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
+      endif
 
-
-        ! Initialize neighb subroutine  (ia=0)
-        call neighb( scell, rmax, na_s, xa, 0, isel,
-     .               nnia, jna, xij, r2ij )
-        nnamax = 0
-        ! posible calculo superfluo ¿por que no hacerlo en la celda unidad?
-        do ia = 1,na_s
-          nnia = 0  ! First pass without filling arrays
-                    ! just to get maximum size needed
-          call neighb( scell, rmax, na_s, xa, ia, isel,
-     .                 nnia, jna, xij, r2ij )
-          nnamax = max( nnamax, nnia )
-        enddo
-
-        if (nnamax .gt. maxna) then
-          ! Increase maxna with safety margin when atoms move
-          maxna = nnamax + 0.10 * nnamax + 10  !esto sobra????
-          overflow = .true.
-        else
-          overflow = .false.
-        endif
-      enddo
-
+      ! This will set maxna in m_neighbors and resize the arrays there,
+      ! avoiding further checks
+      call init_neighbor_arrays(rmax)
 
       ! Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
-      ! List of nonzero Hamiltonian matrix elements
       if (istp==1) then 
-        ! Nullify arrays
         nullify(Dscf,Dscfsave,Dold,Eold,Escf)
         nullify(listhold,listh)
         nullify(H,H0,S)
         nullify(xijo)
       endif
 
-      increased = .false.
-      overflow  = .true.     
-      do while (overflow)
-         nh = maxnh
-         call re_alloc(listh,1,maxnh,name='listh',routine='siesta',
-     .                 copy=.false.)
+      ! List of nonzero Hamiltonian matrix elements
+      ! and, if applicable,  vectors between orbital centers
 
-         call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
-     .                 iphorb, iphKB, nh, numh, listhptr, listh )
+      ! Listh (and xijo if .not. gamma) are allocated inside hsparse
+      ! nh is set by the routine also
+      nh = maxnh
+      call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
+     .                 iphorb, iphKB, nh, numh, listhptr, listh,
+     $                 gamma, xijo )
 
-         if (nh .gt. maxnh) then
-            ! Increase maxnh with safety margin for when atoms move
-            maxnh = 1.05 * nh + 40  !Esto sobra?
-            increased=.true.
-         else
-            overflow=.false.
-         endif
-      enddo
+      maxnh = nh
+      !OBSOLETE:  if (nh > maxnh)  maxnh = 1.05 * nh + 40 !  safety margin for when atoms move
 
+      ! Use re_alloc regardless of whether nh is greater than the old maxnh or not.
 
-      if (increased .or. istp==1) then
-        ! In first step, allocate anyway (to catch corner case
-        ! where one node has nh=0, and doesn't overflow)
-        call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .                routine='siesta',copy=.true.)
-        call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     .                routine='siesta',copy=.true.)
-        call re_alloc(listhold,1,maxnh,name='listhold',
-     .                routine='siesta',copy=.true.)
+      call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
+     .     routine='siesta',copy=.true.)
+      call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
+     .     routine='siesta',copy=.true.)
+      call re_alloc(listhold,1,maxnh,name='listhold',
+     .     routine='siesta',copy=.true.)
 
-        if (istp==1) then
-          ! Initialise Dscfsave to avoid problems in extrapol
-          Dscfsave(1:maxnh,1:nspin) = 0.0_dp
-          listhold(1:maxnh) = 0
-        endif
-
-        call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
-     .                routine='siesta',copy=.false.)
-        call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',
-     .                routine='siesta',copy=.false.)
-        call re_alloc(Escf,1,maxnh,1,nspin,name='Escf',
-     .                routine='siesta',copy=.false.)
+      if (istp==1) then
+         ! Initialise Dscfsave to avoid problems in extrapol
+         ! This might be superfluous, as alloc fills array with zeroes
+         Dscfsave(1:maxnh,1:nspin) = 0.0_dp
+         listhold(1:maxnh) = 0
       endif
+
+      call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
+     .     routine='siesta',copy=.false.)
+      call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',
+     .     routine='siesta',copy=.false.)
+      call re_alloc(Escf,1,maxnh,1,nspin,name='Escf',
+     .     routine='siesta',copy=.false.)
 
       ! Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc(H,1,maxnh,1,nspin,name='H',
@@ -289,7 +232,6 @@
       call re_alloc(S,1,maxnh,name='S',routine='siesta',
      .              shrink=.false.,copy=.false.)
 
-! ..................
 
 ! Some printout for debugging ........................................
 *     if (IOnode) then
@@ -308,32 +250,16 @@
 *     endif
 ! ..................
 
-! Find vectors between orbital centers ................................
-
-      if (.not.gamma) then
-        call re_alloc(xijo,1,3,1,maxnh,name="xijo",
-     $        routine="state_init",shrink=.false.,copy=.false.)
-        call xijorb( negl, scell, na_u, na_s, xa,
-     .               lasto, lastkb, rco, rckb,
-     .               maxnh, numh, listhptr, listh, xijo )
-      else
-        call re_alloc(xijo,1,3,1,1,name="xijo",
-     $        routine="state_init",shrink=.false.,copy=.false.)
-      endif
-! ..................
-
-!     Initialize density matrix
+      ! Initialize density matrix
       call new_dm( auxchanged )
 
-!     Check for Pulay auxiliary matrices sizes 
+      ! Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
-! Find overlap matrix ...............................................
+      ! Find overlap matrix 
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     .             maxna, maxnh, lasto, iphorb, isa, 
-     .             numh, listhptr, listh, 
-     .             jna, xij, r2ij, S )
-! ..................
+     .             maxnh, lasto, iphorb, isa, 
+     .             numh, listhptr, listh, S)
 
 !--------------------------------------------------------------------------- END
       END subroutine state_init

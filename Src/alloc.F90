@@ -195,10 +195,11 @@ interface re_alloc
     realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  &
     realloc_d3,  realloc_i3,  realloc_l3,  realloc_r3,  &
     realloc_d4,                                         &
-    realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
-    realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
-    realloc_d4s, &
     realloc_s1
+!AG: Dangerous!!!    realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
+!   realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
+!    realloc_d4s, &
+
 end interface
 
 !$$$! Real kinds

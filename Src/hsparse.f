@@ -52,6 +52,8 @@ C                         any locally stored orbitals. In the case
 C                         where parallelisation is over K points then
 C                         the full listh matrix is needed on every
 C                         Node.
+C gamma                 : logical
+C xijo                  : vectors between orbital centers
 C **************************** BEHAVIOR *******************************
 C Equivalent pairs of atoms are assigned the same sparse index, i.e.
 C if atoms i1 and j1 are equivalent, and so are i2 and j2, and the
@@ -64,13 +66,16 @@ C  Modules
 C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
-     .                    nlhmax, numh, listhptr, listh )
+     .                    nlhmax, numh, listhptr, listh, gamma, xijo)
       use precision
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, GlobalToLocalOrb
       use atmfuncs,      only : rcut
       use listsc_module, only : listsc_init
       use sorting
+      use m_neighbors,   only : maxna, jna, xij, r2ij
+      use sys,           only : die
+      use alloc,         only : re_alloc, de_alloc
 
       implicit none
 
@@ -83,45 +88,39 @@ C
       logical,  intent(in)    :: negl
 
       integer,  intent(inout) :: nlhmax
-      integer,  intent(out)   :: listh(:), listhptr(:)
+      integer,  intent(out)   :: listhptr(:)
       integer,  intent(out)   :: numh(:)
+
+      integer,  pointer       :: listh(:)
+      logical, intent(in)     :: gamma
+      real(dp),  pointer      :: xijo(:,:)
 
       external                   neighb, timer, memory
 
-C Internal variables -----------------
-C maxna  = maximum number of neighbour atoms of any atom
-C maxnkb = maximum number of neighbour KB projectors of any orbital
-C tol    = tolerance for comparing vector-coordinates
-      integer,  save ::
-     .  maxna, maxnkb
-      real(dp), save :: tol = 1.0d-8
+
+      real(dp), parameter        :: tol = 1.0d-8   ! tolerance for comparing vector-coordinates
+
+
+      integer      :: maxnkb  = 1000         ! max no. of neighboring KB projectors
 
       integer
-     .  ia, iio, ikb, inkb, io, ioa, is, isel, 
-     .  j, ja, jna, jo, joa, js, 
-     .  ka, kna, ko, koa, ks, maxnain,
+     .  ia, iio, ikb, ind, inkb, io, ioa, is, isel, 
+     .  j, ja, jnat, jo, joa, js, 
+     .  ka, kna, ko, koa, ks, 
      .  ncells, nlh, nna, nnkb, no, nua, nuo, nuotot
 
-      integer, dimension(:), allocatable, save ::
-     .  jana, index, knakb, ibuffer, listhtmp
 
       real(dp)
      .  rci, rcj, rck, rij, rik, rjk,
      .  rmax, rmaxkb, rmaxo
 
-      real(dp), dimension(:), allocatable, save ::
-     .  r2ij, rckb, dpbuffer
+      logical, save :: warn1 = .false.
 
-      real(dp), dimension(:,:), allocatable, save ::
-     .  xij
+      real(dp), dimension(:), pointer :: rckb
+      logical, dimension(:),  pointer :: conect
+      integer, dimension(:),  pointer :: index, knakb, listhtmp
 
-      logical, dimension(:), allocatable, save :: conect
 
-      logical
-     .  overflow, lfillH
-
-      data maxna  / 1000 /
-      data maxnkb / 2000 /
 C -------------------------------------
 
 C Start time counter
@@ -162,58 +161,11 @@ C Find maximum range of basis orbitals and KB projectors
       endif
 
       ! Allocate local arrays that depend on parameters
-      allocate(knakb(maxnkb))
-      call memory('A','I',maxnkb,'hsparse')
-      allocate(rckb(maxnkb))
-      call memory('A','D',maxnkb,'hsparse')
+      call re_alloc(knakb,1,maxnkb, name="knakb")
+      call re_alloc(rckb,1,maxnkb, name="rckb")
+      call re_alloc(index,1,maxna, name="index")
 
-100   continue
-      overflow = .true.
-      do while (overflow)
-        if (.not.allocated(jana)) then
-          allocate(jana(maxna))
-          call memory('A','I',maxna,'hsparse')
-        endif
-        if (.not.allocated(index)) then
-          allocate(index(maxna))
-          call memory('A','I',maxna,'hsparse')
-        endif
-        if (.not.allocated(r2ij)) then
-          allocate(r2ij(maxna))
-          call memory('A','D',maxna,'hsparse')
-        endif
-        if (.not.allocated(xij)) then
-          allocate(xij(3,maxna))
-          call memory('A','D',3*maxna,'hsparse')
-        endif
-
-
-        ! OJO esto no hace nada (ia=0) lo que fuerza una logica horrible en el bulce 
-
-        ! Initialize neighb subroutine
-        isel = 0
-        ia = 0
-        nna = maxna
-        call neighb( cell, rmax, na, xa, ia, isel,
-     .               nna, jana, xij, r2ij )
-
-        ! SI lo anterior no modifica nna porque se pregunta esto?
-
-        if (nna.gt.maxna) then
-          call memory('D','I',size(jana),'hsparse')
-          deallocate(jana)
-          call memory('D','I',size(index),'hsparse')
-          deallocate(index)
-          call memory('D','D',size(r2ij),'hsparse')
-          deallocate(r2ij)
-          call memory('D','D',size(xij),'hsparse')
-          deallocate(xij)
-          maxna = nna + nint(0.1*nna)
-        else
-          overflow = .false.
-        endif
-      enddo
-
+      isel = 0
 
 C Initialize number of neighbour orbitals
       do io = 1,nuo 
@@ -230,25 +182,17 @@ C----------------------------------
 C  Find number of non-zeros in H  _
 C----------------------------------
 C Loop on atoms in unit cell
-      overflow = .false.
-      maxnain = maxna
+
       do ia = 1,nua
 
 C Find neighbour atoms within maximum range
-        nna = maxnain
+        nna = maxna
         call neighb( cell, rmax, na, xa, ia, isel,
-     .               nna, jana, xij, r2ij )
-        if (.not.overflow) overflow = (nna.gt.maxna)
-        if (overflow) then
-          maxna = max(maxna,nna)
-        endif
-
-C Don't do the current work if the neighbour arrays are too small
-        if (.not.overflow) then
+     .               nna, jna, xij, r2ij )
 
 C Order neighbours in a well defined way
           call ordvec( tol, 3, nna, xij, index )
-          call iorder( jana, 1, nna, index )
+          call iorder( jna, 1, nna, index )
           call order ( r2ij, 1, nna, index )
 
 C Loop on orbitals of atom ia
@@ -265,7 +209,7 @@ C Find overlaping KB projectors
               if (.not.negl) then
                 nnkb = 0
                 do kna = 1,nna
-                  ka = jana(kna)
+                  ka = jna(kna)
                   rik = sqrt( r2ij(kna) )
                   do ko = lastkb(ka-1)+1,lastkb(ka)
                     ks = isa(ka)
@@ -274,27 +218,11 @@ C Find overlaping KB projectors
                     if (rci+rck .gt. rik) then
 C Check maxnkb - if too small then increase array sizes
                       if (nnkb.eq.maxnkb) then
-                        allocate(ibuffer(maxnkb))
-                        call memory('A','I',maxnkb,'hsparse')
-                        ibuffer(1:maxnkb) = knakb(1:maxnkb)
-                        call memory('D','I',size(knakb),'hsparse')
-                        deallocate(knakb)
-                        allocate(knakb(maxnkb+100))
-                        call memory('A','I',maxnkb+100,'hsparse')
-                        knakb(1:maxnkb) = ibuffer(1:maxnkb)
-                        call memory('D','I',size(ibuffer),'hsparse')
-                        deallocate(ibuffer)
-                        allocate(dpbuffer(maxnkb))
-                        call memory('A','D',maxnkb,'hsparse')
-                        dpbuffer(1:maxnkb) = rckb(1:maxnkb)
-                        call memory('D','D',size(rckb),'hsparse')
-                        deallocate(rckb)
-                        allocate(rckb(maxnkb+100))
-                        call memory('A','D',maxnkb+100,'hsparse')
-                        rckb(1:maxnkb) = dpbuffer(1:maxnkb)
-                        call memory('D','D',size(dpbuffer),'hsparse')
-                        deallocate(dpbuffer)
-                        maxnkb = maxnkb + 100
+                         maxnkb = maxnkb + 100
+                         call re_alloc(knakb,1,maxnkb,
+     $                        name="knakb",copy=.true.)
+                         call re_alloc(rckb,1,maxnkb,
+     $                        name="rckb",copy=.true.)
                       endif
                       nnkb = nnkb + 1
                       knakb(nnkb) = kna
@@ -306,9 +234,9 @@ C Check maxnkb - if too small then increase array sizes
 
 C Find orbitals connected by direct overlap or
 C through a KB projector
-              do jna = 1,nna
-                ja = jana(jna)
-                rij = sqrt( r2ij(jna) )
+              do jnat = 1,nna
+                ja = jna(jnat)
+                rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
 
 C If not yet connected 
@@ -324,9 +252,9 @@ C Find if jo overlaps with a KB projector
                       do inkb = 1,nnkb
                         rck = rckb(inkb)
                         kna = knakb(inkb)
-                        rjk = sqrt( (xij(1,kna)-xij(1,jna))**2 +
-     .                              (xij(2,kna)-xij(2,jna))**2 +
-     .                              (xij(3,kna)-xij(3,jna))**2 )
+                        rjk = sqrt( (xij(1,kna)-xij(1,jnat))**2 +
+     .                              (xij(2,kna)-xij(2,jnat))**2 +
+     .                              (xij(3,kna)-xij(3,jnat))**2 )
                         if (rcj+rck .gt. rjk) then
                           conect(jo) = .true.
                           goto 50
@@ -349,22 +277,8 @@ C Restore conect array for next orbital io
               enddo
             endif
           enddo
-        endif
       enddo
 
-C If maxna dimension was no good then reset arrays and start again
-      if (overflow) then
-        call memory('D','I',size(jana),'hsparse')
-        deallocate(jana)
-        call memory('D','I',size(index),'hsparse')
-        deallocate(index)
-        call memory('D','D',size(r2ij),'hsparse')
-        deallocate(r2ij)
-        call memory('D','D',size(xij),'hsparse')
-        deallocate(xij)
-        maxna = maxna + nint(0.1*maxna)
-        goto 100
-      endif
 
 C Find optimum value for nlhmax
       if (nuo .gt. 0) then
@@ -375,13 +289,18 @@ C Find optimum value for nlhmax
       else    
         nlh = 0 
       endif     
-      if (nlh.le.nlhmax) then
-        lfillH = .true.
-      else  
-        lfillH = .false.
+
+      nlhmax = nlh
+      call re_alloc(listh,1,nlhmax,name='listh',routine='hsparse')
+      if (.not. gamma) then
+         call re_alloc(xijo,1,3,1,nlhmax,name='xijo',routine='hsparse')
+      else
+         call re_alloc(xijo,1,3,1,1,name='xijo',routine='hsparse')
       endif
 
-      if (lfillH) then
+!
+!     Now fill in the arrays, including xijo if using k-points
+!
 C Set up listhptr
         do io = 1,nuo
           if (io.gt.1) then
@@ -394,17 +313,16 @@ C---------------------------------
 C  Find full H sparsity pattern  -
 C---------------------------------
 C Loop on atoms in unit cell
-        maxnain = maxna
         do ia = 1,nua
 
 C Find neighbour atoms within maximum range
-          nna = maxnain
+          nna = maxna
           call neighb( cell, rmax, na, xa, ia, isel,
-     .                 nna, jana, xij, r2ij )
+     .                 nna, jna, xij, r2ij )
 
 C Order neighbours in a well defined way
           call ordvec( tol, 3, nna, xij, index )
-          call iorder( jana, 1, nna, index )
+          call iorder( jna, 1, nna, index )
           call order(  r2ij, 1, nna, index )
 
 C Loop on orbitals of atom ia
@@ -422,7 +340,7 @@ C Find overlaping KB projectors
               if (.not.negl) then
                 nnkb = 0 
                 do kna = 1,nna
-                  ka = jana(kna)
+                  ka = jna(kna)
                   rik = sqrt( r2ij(kna) )
                   do ko = lastkb(ka-1)+1,lastkb(ka)
                     ks = isa(ka)
@@ -439,13 +357,31 @@ C Find overlaping KB projectors
           
 C Find orbitals connected by direct overlap or
 C through a KB projector
-              do jna = 1,nna
-                ja = jana(jna)
-                rij = sqrt( r2ij(jna) )
+              do jnat = 1,nna
+                ja = jna(jnat)
+                rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
-            
-C If not yet connected 
-                  if (.not.conect(jo)) then
+
+                   if (conect(jo)) then
+
+                      if (.not. gamma) then
+                         ! If already connected and using supercell, 
+                         ! the latter might not be big enough...
+                         ! We warn the user and keep the first instance
+                         ! of xij (same behavior as the old xijorb, as
+                         ! earlier jnats are closer)
+                         if (.not.warn1) then
+                            if (Node.eq.0) then
+                               write(6,'(/,a,2i6,a,/)')
+     .                              'WARNING: orbital pair ',io,jo,
+     .                              ' is multiply connected'
+                            endif
+                            warn1 = .true.
+                         endif
+                      endif
+
+                   else         ! not conect(jo)
+
                     js = isa(ja)
                     joa = iphorb(jo)
                     rcj = rcut(js,joa)
@@ -457,9 +393,9 @@ C Find if jo overlaps with a KB projector
                       do inkb = 1,nnkb
                         rck = rckb(inkb)
                         kna = knakb(inkb)
-                        rjk = sqrt( (xij(1,kna)-xij(1,jna))**2 +
-     .                              (xij(2,kna)-xij(2,jna))**2 +
-     .                              (xij(3,kna)-xij(3,jna))**2 )
+                        rjk = sqrt( (xij(1,kna)-xij(1,jnat))**2 +
+     .                              (xij(2,kna)-xij(2,jnat))**2 +
+     .                              (xij(3,kna)-xij(3,jnat))**2 )
                         if (rcj+rck .gt. rjk) then
                           conect(jo) = .true.
                           goto 55
@@ -469,59 +405,40 @@ C Find if jo overlaps with a KB projector
                     endif
                     if (conect(jo)) then
                       numh(iio) = numh(iio) + 1
-                      if (listhptr(iio)+numh(iio).le.nlhmax)
-     .                    listh(listhptr(iio)+numh(iio)) = jo
+                      ind = listhptr(iio)+numh(iio)
+                      listh(ind) = jo
+                      if (.not. gamma) then
+                         xijo(1:3,ind) = xij(1:3,jnat)
+                      endif
                     endif
-                  endif
+                   endif
                 enddo
               enddo
 
 C Restore conect array for next orbital io
-              if (listhptr(iio)+numh(iio).gt.nlhmax) then
-                do jna = 1,nna
-                  ja = jana(jna)
-                  do jo = lasto(ja-1)+1,lasto(ja)
-                    conect(jo) = .false.
-                  enddo
-                enddo
-              else    
-                do j = 1,numh(iio)
-                  jo = listh(listhptr(iio)+j)
-                  conect(jo) = .false.
-                enddo   
-              endif     
-            endif                   
-          enddo         
-        enddo             
-      endif           
-   
-C Set optimal value of nlhmax for return
-      nlhmax = nlh
 
+              do j = 1,numh(iio)
+                 jo = listh(listhptr(iio)+j)
+                 conect(jo) = .false.
+              enddo   
+     
+            endif     ! iio > 0
+          enddo       ! io
+        enddo         ! ia
+   
 C Initialize listsc
       call listsc_init( nsc, nuotot )
 
 C Deallocate local arrays
-      call memory('D','I',size(listhtmp),'hsparse')
-      deallocate(listhtmp)
-      call memory('D','L',size(conect),'hsparse')
-      deallocate(conect)
-      call memory('D','I',size(jana),'hsparse')
-      deallocate(jana)
-      call memory('D','I',size(index),'hsparse')
-      deallocate(index)
-      call memory('D','I',size(knakb),'hsparse')
-      deallocate(knakb)
-      call memory('D','D',size(rckb),'hsparse')
-      deallocate(rckb)
-      call memory('D','D',size(r2ij),'hsparse')
-      deallocate(r2ij)
-      call memory('D','D',size(xij),'hsparse')
-      deallocate(xij)
+
+      call de_alloc(listhtmp,name="listhtmp")
+      call de_alloc(conect,name="conect")
+      call de_alloc(index,name="index")
+      call de_alloc(knakb,name="knakb")
+      call de_alloc(rckb,name="rckb")
 
       call timer( 'hsparse', 2 )
 
-      return
       end subroutine hsparse
 
       end module m_hsparse

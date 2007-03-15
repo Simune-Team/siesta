@@ -12,7 +12,7 @@
       use atomlist, only: lasto, rmaxo, datm, indxuo, no_s, no_u, iphorb
       use siesta_cml
       use m_energies
-      use m_numbs_neighb, only: maxna
+      use m_neighbors,    only: maxna
       use m_spin,         only: nspin
       implicit none
 

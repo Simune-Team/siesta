@@ -10,6 +10,43 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-03-15 16:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-22
+
+Summary: Reorganization of hsparse/xijorb calls with new neighbor module
+
+* Deactivated 's' routines in alloc.F90, as they are seen as extremely
+dangerous.
+
+* New module m_neighbors houses maxna, jna, r2ij, and xij, and the new
+routine init_neighbor_arrays, which simplifies the logic of the block
+formerly in state_init.  The initialization routine is invoked with a
+larger rmax, appropriate for the workings of hsparse, so that there is
+no need to check again for the appropriate sizes. Actually, this rmax
+is the largest ever needed by the calculation of neighbors, so maxna
+is set once and for all.
+
+This new module (which supersedes m_numb_neighb) could be used
+by other second-level routines (nlefsm, phirphi, etc).
+
+* Hsparse is now called just once from state_init. It allocates listh
+(and xijo, if applicable), and returns the size "nh" of the sparse
+matrices.
+
+* maxnh is always set to nh (and not to some larger value if nh > (the
+old maxnh)).
+
+* The sparse arrays are always re_alloc'ated, as these calls are very
+cheap if they have the right size.
+
+* The code for xijorb and hsparse is almost identical.  It has been
+merged, adding two new arguments to hsparse: gamma and xijo, so that
+hsparse fills xijo also if gamma is false. Multiple-image detection is
+still active.
+
+* Routine xijorb has been deleted.
+
+* Allocatables have been turned into pointers inside hsparse.
+
 2007-03-15 16:19:53 GMT	Alberto Garcia <albertog@icmab.es>	patch-21
 
 Summary: Re-organization of pulay module

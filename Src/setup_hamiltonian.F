@@ -21,12 +21,13 @@
       use m_energies
       use m_steps, only: istp
       use m_ntm
-      use m_numbs_neighb, only: maxna, jna, r2ij, xij
+      use m_neighbors, only: maxna, jna, r2ij, xij
       use m_spin,         only: nspin
       use m_dipol
       use m_forces,          only: fa
       use alloc, only: re_alloc, de_alloc
       use m_gamma
+      use sys, only: die
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -132,18 +133,13 @@
         
 ! Check whether maxna has been increased during nlefsm & resize if needed
           if (maxna.gt.size(jna)) then
-            call memory('D','I',size(jna),'siesta')
-            deallocate(jna)
-            call memory('D','D',size(r2ij),'siesta')
-            deallocate(r2ij)
-            call memory('D','D',size(xij),'siesta')
-            deallocate(xij)
-            allocate(jna(maxna))
-            call memory('A','I',maxna,'siesta')
-            allocate(r2ij(maxna))
-            call memory('A','D',maxna,'siesta')
-            allocate(xij(3,maxna))
-            call memory('A','D',3*maxna,'siesta')
+             call die("Attempt to increase maxna in nlefsm")
+             call re_alloc(jna,1,maxna,name="jna",
+     $            routine="setup_hamiltonian")
+             call re_alloc(xij,1,3,1,maxna,name="xij",
+     $            routine="setup_hamiltonian")
+             call re_alloc(r2ij,1,maxna,name="r2ij",
+     $            routine="setup_hamiltonian")
           endif
 
 #ifdef MPI

@@ -14,6 +14,7 @@
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
+      use m_neighbors,   only : maxna, jna, r2ij, xij
       use alloc,         only : re_alloc, de_alloc
 
       implicit none
@@ -24,9 +25,8 @@
       CONTAINS
 
       subroutine overlap(nua, na, no, scell, xa, indxua, rmaxo,
-     .                   maxna, maxnh, lasto, iphorb, isa, 
-     .                   numh, listhptr, listh, 
-     .                   jna, xij, r2ij, S)
+     .                   maxnh, lasto, iphorb, isa, 
+     .                   numh, listhptr, listh, S)
 C *********************************************************************
 C Computes the overlap matrix
 C Energies in Ry. Lengths in Bohr.
@@ -40,7 +40,6 @@ C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
-C integer maxna            : Maximum number of neighbours of any atom
 C integer maxnh            : First dimension of S and listh
 C integer lasto(0:na)      : Last orbital index of each atom
 C integer iphorb(no)       : Orbital index of each orbital in its atom
@@ -51,20 +50,15 @@ C integer listhptr(nuotot) : Pointer to start of rows (-1) of overlap
 C                            matrix
 C integer listh(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of the overlap matrix
-C integer jna(maxna)       : Aux. space to find neighbours (indexes)
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 
-      integer, intent(in) ::
-     . maxna, maxnh, na, no, nua
+      integer, intent(in) ::  maxnh, na, no, nua
 
       integer, intent(in) ::
-     . indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
+     . indxua(na), iphorb(no), isa(na), lasto(0:na), 
      . listh(maxnh), numh(*), listhptr(*)
-      real(dp) , intent(in)     :: scell(3,3),
-     .                 r2ij(maxna), rmaxo, xa(3,na), xij(3,maxna)
+      real(dp) , intent(in)     :: scell(3,3), rmaxo, xa(3,na)
       real(dp), intent(out)     :: S(maxnh)
 
 C Internal variables ......................................................

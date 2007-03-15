@@ -30,7 +30,7 @@
       use m_energies
       use m_steps
       use m_ntm
-      use m_numbs_neighb, only: maxna, jna, r2ij, xij
+      use m_neighbors,    only: maxna, jna, r2ij, xij
       use m_spin,         only: nspin
       use m_dipol
       use m_eo

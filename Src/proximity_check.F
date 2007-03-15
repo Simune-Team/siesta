@@ -8,10 +8,11 @@
       USE siesta_options
       use siesta_geom
       use parallel, only: IOnode
-      use m_numbs_neighb, only: maxna, jna, r2ij, xij
+      use m_neighbors, only: maxna, jna, r2ij, xij
+
       implicit none
 
-      real(dp), intent(in) :: rmax  ! Range of neighbors
+      real(dp), intent(in)  :: rmax
 
       integer :: ii, jj, jamin, idxneighJ, nneigbI, isel
       real(dp):: rmin, r2min 
