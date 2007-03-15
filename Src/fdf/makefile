@@ -1,6 +1,8 @@
 #
 #  Makefile for fdf example and fdf module.
 #
+INCFLAGS=-I${<D}        # For VPATH operation
+#
 include ../arch.make
 #
 module:  libfdf.a

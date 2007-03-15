@@ -10,6 +10,36 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-03-15 16:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-23
+
+Summary: VPATH-aware compilation for multiple executable versions
+
+Added Src/obj_setup.sh script, to be called from any directory on
+which the build is going to take place, and modified slightly some
+makefiles to make them VPATH-proof.  The Tests directory is replicated
+in the "build" directory (and a fake symbolic link called "Src" added
+so that all the test-running scripts work without change).
+
+(The pristine Src should be "clean", without any object files)
+
+Example. From the top Siesta directory:
+
+mkdir Objs
+cd Objs
+sh ../Src/obj_setup.sh
+../Src/configure --enable-fast
+make
+cd Tests
+make clean; make
+cd    # Now a parallel version
+mkdir ParaObjs
+cd ParaObjs
+sh ../Src/obj_setup.sh
+cp ../Src/Sys/parallel.make ./arch.make
+make
+cd Tests
+make clean; make
+
 2007-03-15 16:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-22
 
 Summary: Reorganization of hsparse/xijorb calls with new neighbor module

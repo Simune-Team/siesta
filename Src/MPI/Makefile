@@ -22,7 +22,7 @@ INCFLAGS=-I$(MPI_INCLUDE)
 Interfaces.f90 V_S.uses VS.uses: $(TEMPLATES)
 	if [ -z "$(KINDS)" ] ; then  $(MAKE) kind_explorer ; fi
 	@echo "The kind numbers for single and double precision reals follow"
-	@sh generate.sh "$(KINDS)"
+	sh ${<D}/generate.sh "$(KINDS)"
 #
 kind_explorer: kind_explorer.o
 	$(FC) -o kind_explorer $(LDFLAGS) kind_explorer.o

@@ -1,5 +1,8 @@
 #!/bin/sh
 #
+### set -x
+dir=$(dirname $0)
+#
 echo " ===> Generating module files from templates..."
 
 if [ -z "$@" ] ; then
@@ -25,31 +28,20 @@ done
 for tag in v s sv vs ; do
 
 sed -e "/_type/s//_integer/" -e "/type/s//integer/" \
-    mpi__type_${tag}.f90 >> Interfaces.f90
+    ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90
 
 for kind in ${KINDS} ; do
 sed -e "/_type/s//_r${kind}/" -e "/type/s//real(${kind})/" \
-    mpi__type_${tag}.f90 >> Interfaces.f90
+    ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90
 sed -e "/_type/s//_c${kind}/" -e "/type/s//complex(${kind})/" \
-    mpi__type_${tag}.f90 >> Interfaces.f90
+    ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90
 
 done
 
 sed -e "/_type/s//_logical/" -e "/type/s//logical/" \
-    mpi__type_${tag}.f90 >> Interfaces.f90
+    ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90
 
 sed -e "/_type/s//_character/" -e "/type/s//character(1)/" \
-    mpi__type_${tag}.f90  >> Interfaces.f90
+    ${dir}/mpi__type_${tag}.f90  >> Interfaces.f90
 
 done
-
-
-
-
-
-
-
-
-
-
-

@@ -15,10 +15,13 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
+VPATH=.
+#
 default: what siesta # gen-basis denchar fsiesta.o
 #
 configure: configure.ac aclocal.m4
-	autoconf
+	autoconf ${<D}/configure.ac
+#
 M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAGS.m4  \
  m4/ACX_MPI.m4             m4/TW_CHECK_FC_TR15580.m4  m4/TW_FC_ID.m4        \
  m4/fortran.m4             m4/TW_CHECK_FC_TR15581.m4  m4/TW_FIND_FC_BLAS.m4 \
@@ -28,7 +31,7 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
  m4/TW_CHECK_FC_FPP_90.m4  m4/TW_FC_CHECK_FLUSH.m4    m4/TW_FC_KINDS.m4
 #
 aclocal.m4: $(M4_FILES)
-	cat $(M4_FILES)  > aclocal.m4
+	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep: 
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90
 	@sed '/^siesta_cmlsubs.o:/s/version.o//'  Makefile > tmp.Makefile
@@ -107,7 +110,7 @@ OBJS =  automatic_cell.o \
 #
 WXML=libwxml.a
 $(WXML): 
-	(cd wxml ; $(MAKE) module)
+	(cd wxml ; $(MAKE) "VPATH=$(VPATH)/wxml" module)
 #
 # Routines using wxml calls.
 #
@@ -115,7 +118,7 @@ pdos.o : $(WXML)
 #--------------------------------------------------------------
 XMLPARSER=libxmlparser.a
 $(XMLPARSER): 
-	(cd xmlparser ; $(MAKE) module)
+	(cd xmlparser ; $(MAKE) "VPATH=$(VPATH)/xmlparser" module)
 #
 # Routines using xmlparser calls.
 #
@@ -123,7 +126,7 @@ $(XMLPARSER):
 #--------------------------------------------------------------
 FDF=libfdf.a
 $(FDF): 
-	(cd fdf ; $(MAKE) module)
+	(cd fdf ; $(MAKE) "VPATH=$(VPATH)/fdf" module)
 #
 # Routines using fdf calls.
 #
@@ -144,30 +147,31 @@ basis_io.o md_out.o: $(NETCDF_INTERFACE)
 # Interfaces to libraries
 #
 libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) )
+	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI" )
 libnetcdf_f90.a: 
-	@(cd NetCDF ; $(MAKE) )
+	@(cd NetCDF ; $(MAKE) "VPATH=$(VPATH)/NetCDF" )
 #
 # Libraries that might need to be compiled
 #
-libblas.a:
+libblas.a: Libs/blas.f
 	@echo "==> Compiling libblas.a in Libs..."
-	@(cd Libs ; $(MAKE) libblas.a)
-liblapack.a:
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" libblas.a)
+liblapack.a: Libs/lapack.f
 	@echo "==> Compiling liblapack.a in Libs..."
-	@(cd Libs ; $(MAKE) liblapack.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" liblapack.a)
 linalg.a: Libs/blas.f Libs/lapack.f
 	@echo "==> Compiling linalg.a in Libs..."
-	@(cd Libs ; $(MAKE) linalg.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" linalg.a)
 dc_lapack.a:  Libs/dc_lapack.f
 	@echo "==> Compiling dc_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) dc_lapack.a)
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" dc_lapack.a)
 #
 
 version: version.F90
 	@echo
 	@echo "==> Incorporating information about present compilation (compiler and flags)"
-	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;s'SIESTA_VERSION'$$(cat ../version.info)'g" version.F90 > compinfo.F90
+	@sed "s'SIESTA_ARCH'${SIESTA_ARCH}'g;s'FFLAGS'${FC} ${FFLAGS}'g;s'SIESTA_VERSION'\
+                                       $$(cat ${<D}/../version.info)'g" $<  > compinfo.F90
 	@($(MAKE) compinfo.o)
 	@mv compinfo.o version.o
 	#@rm -f compinfo.F90
@@ -245,8 +249,8 @@ clean:
 	(cd NetCDF ; $(MAKE) clean )
 	(cd Libs ; $(MAKE) clean )
 #
-pristine:  clean
-	cp -fp Include/constr.f .
+##pristine:  clean
+##	cp -fp Include/constr.f .
 #
 
 # DO NOT DELETE THIS LINE - used by make depend
