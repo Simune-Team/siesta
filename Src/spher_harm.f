@@ -11,6 +11,7 @@
       module spher_harm
       use precision
       use sys
+      use alloc, only: re_alloc, de_alloc
 
       implicit none
 
@@ -244,18 +245,17 @@ C *********************************************************************
       INTEGER MAXLM
       INTEGER           I, L
 
-      real(dp), ALLOCATABLE, SAVE ::   Y(:)
-      real(dp), ALLOCATABLE, SAVE ::   DYDR(:,:)
-
-      EXTERNAL          MEMORY
+      real(dp), pointer  ::   Y(:)
+      real(dp), pointer  ::   DYDR(:,:)
 
       L = MAX( LOFILM(ILM1), LOFILM(ILM2) )
       MAXLM = (L+1)*(L+1)
 
-      allocate(Y(0:MAXLM))
-      call memory('A','D',MAXLM+1,'ylmylm')
-      allocate(DYDR(3,0:MAXLM))
-      call memory('A','D',3*MAXLM+3,'ylmylm')
+      nullify( y )
+      call re_alloc( y, 0, maxlm, name='y', routine='ylmylm' )
+      nullify( dydr )
+      call re_alloc( dydr, 1, 3, 0, maxlm, name='dydr',
+     &               routine='ylmylm' )
 
       CALL RLYLM( L, R, Y, DYDR )
 
@@ -264,10 +264,8 @@ C *********************************************************************
         DYYDR(I) = DYDR(I,ILM1-1)*Y(ILM2-1) + Y(ILM1-1)*DYDR(I,ILM2-1)
       enddo
 
-      call memory('D','D',size(DYDR),'ylmylm')
-      deallocate(DYDR)
-      call memory('D','D',size(Y),'ylmylm')
-      deallocate(Y)
+      call de_alloc( dydr,  name='dydr' )
+      call de_alloc( y,  name='y' )
 
       END subroutine ylmylm
 
@@ -303,16 +301,18 @@ C Makes a radial times spherical-harmonic expansion of a function.
       integer, intent(in)          :: lmax
       interface
          subroutine rlylm_f(lmax,rvec,y,grady)
+         use precision, only: dp
          integer, intent(in)   :: lmax
-         real(selected_real_kind(14)), intent(in)  :: rvec(3)
-         real(selected_real_kind(14)), intent(out) :: y(0:)
-         real(selected_real_kind(14)), intent(out) :: grady(1:,0:)
+         real(dp), intent(in)  :: rvec(3)
+         real(dp), intent(out) :: y(0:)
+         real(dp), intent(out) :: grady(1:,0:)
          end subroutine rlylm_f
 
          subroutine func(i1,i2,rvec,y,grady)
+         use precision, only: dp
          integer, intent(in)   :: i1, i2
-         real(selected_real_kind(14)), intent(in)  :: rvec(3)
-         real(selected_real_kind(14)), intent(out) :: y, grady(3)
+         real(dp), intent(in)  :: rvec(3)
+         real(dp), intent(out) :: y, grady(3)
          end subroutine func
        end interface
 

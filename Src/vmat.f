@@ -50,6 +50,7 @@ C  Modules
       use meshdscf
       use meshphi
       use parallel,      only: Nodes
+      use alloc,         only: re_alloc, de_alloc
 
       implicit none
 
@@ -71,16 +72,15 @@ C Internal variables and arrays
      .  is, isp, ispin, iu, iul, ix, j, jc, jl, 
      .  last, lasta, lastop, maxloc, maxloc2, nc, nlocal, 
      .  nphiloc, nvmaxl
-      integer, dimension(:), allocatable, save ::
-     .  ilc, ilocal, iorb
-      logical
-     .  ParallelLocal
+
+      integer,  pointer :: ilc(:), ilocal(:), iorb(:)
+
+      logical  ParallelLocal
       real(dp)
      .  Vij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
-      real(dp), dimension(:),   allocatable, save :: 
-     .  VClocal
-      real(dp), dimension(:,:), allocatable, save :: 
-     .  Clocal, Vlocal
+
+      real(dp), pointer :: VClocal(:)
+      real(dp), pointer :: Clocal(:,:), Vlocal(:,:)
 
 C  Start time counter
       call timer('vmat',1)
@@ -94,20 +94,28 @@ C  Find value of maxloc
       maxloc = maxloc2 + minloc
       maxloc = min( maxloc, no )
 
-C  Allocate local memory
-      allocate(ilocal(no))
-      call memory('A','I',no,'vmat')
-      allocate(ilc(maxloc2))
-      call memory('A','I',maxloc2,'vmat')
-      allocate(iorb(0:maxloc))
-      call memory('A','I',maxloc+1,'vmat')
+      !  Allocate local memory
+      nullify ( ilocal )
+      call re_alloc( ilocal, 1, no, name='ilocal', routine='vmat' )
+
+      nullify ( ilc )
+      call re_alloc( ilc, 1, maxloc2, name='ilc', routine='vmat' )
+
+      nullify (iorb )
+      call re_alloc( iorb, 0, maxloc, name='iorb', routine='vmat' )
+
       ijl = (maxloc+1)*(maxloc+2)/2
-      allocate(Vlocal(ijl,nspin))
-      call memory('A','D',ijl*nspin,'vmat')
-      allocate(Clocal(nsp,maxloc2))
-      call memory('A','D',nsp*maxloc2,'vmat')
-      allocate(VClocal(nsp))
-      call memory('A','D',nsp,'vmat')
+
+      nullify( Vlocal )
+      call re_alloc( Vlocal, 1, ijl, 1, nspin, name='Vlocal',
+     &               routine='vmat' )
+
+      nullify( Clocal )
+      call re_alloc( Clocal, 1, nsp, 1, maxloc2, name='Clocal',
+     &               routine='vmat' )
+
+      nullify( VClocal )
+      call re_alloc( VClocal, 1, nsp, name='VClocal', routine='vmat' )
 
       if (ParallelLocal) then
         if (nrowsDscfL.gt.0) then
@@ -115,8 +123,8 @@ C  Allocate local memory
         else
           nvmaxl = 1
         endif
-        allocate(DscfL(nvmaxl,nspin))
-        call memory('A','D',nvmaxl*nspin,'meshdscf')
+        call re_alloc( DscfL, 1, nvmaxl, 1, nspin,
+     &                 name='DscfL',  routine='vmat' )
         DscfL(1:nvmaxl,1:nspin) = 0.0_dp
       endif
 
@@ -392,23 +400,17 @@ C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
      .      nuotot, nspin, DscfL, Vs )
 C Free memory 
-        call memory('D','D',size(DscfL),'meshdscf')
-        deallocate(DscfL)
+        call de_alloc( DscfL,  name='DscfL' )
       endif
 
-C  Free local memory
-      call memory('D','D',size(VClocal),'vmat')
-      deallocate(VClocal)
-      call memory('D','D',size(Clocal),'vmat')
-      deallocate(Clocal)
-      call memory('D','D',size(Vlocal),'vmat')
-      deallocate(Vlocal)
-      call memory('D','I',size(iorb),'vmat')
-      deallocate(iorb)
-      call memory('D','I',size(ilc),'vmat')
-      deallocate(ilc)
-      call memory('D','I',size(ilocal),'vmat')
-      deallocate(ilocal)
+      !  Free local memory
+
+      call de_alloc( VClocal,  name='VClocal' )
+      call de_alloc( Clocal,  name='Clocal' )
+      call de_alloc( Vlocal,  name='Vlocal' )
+      call de_alloc( iorb,  name='iorb' )
+      call de_alloc( ilc,  name='ilc' )
+      call de_alloc( ilocal,  name='ilocal' )
 
       call timer('vmat',2)
       return

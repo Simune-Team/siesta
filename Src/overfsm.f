@@ -14,7 +14,7 @@
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
-      use m_memory,      only : mem_stat, memory
+      use alloc,         only : re_alloc, de_alloc
 
       implicit none
 
@@ -91,7 +91,7 @@ C Internal variables ......................................................
       real(dp)
      .  fij(3), grSij(3) , rij, Sij, volcel, volume
 
-      real(dp), dimension(:), allocatable, save ::  Di, Si
+      real(dp), dimension(:), pointer  ::  Di, Si
 
       external  neighb, timer
 C ......................
@@ -107,12 +107,12 @@ C Initialize neighb subroutine
      .             nnia, jna, xij, r2ij )
 
 C Allocate local memory
-      allocate(Di(no),stat=mem_stat)
-      call memory('A','D',no,'overfsm',mem_stat,id="Di")
-      allocate(Si(no),stat=mem_stat)
-      call memory('A','D',no,'overfsm',mem_stat,id="Si")
+      nullify( Di )
+      call re_alloc( Di, 1, no, name='Di', routine='overfsm' )
+      nullify( Si )
+      call re_alloc( Si, 1, no, name='Si', routine='overfsm' )
 
-      Si(1:no) = 0.0d0
+      Si(1:no) = 0.0d0  ! AG: Superfluous
       Di(1:no) = 0.0d0
 
       do ia = 1,nua
@@ -173,15 +173,13 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call memory('D','D',size(Si),'overfsm')
-      deallocate(Si)
-      call memory('D','D',size(Di),'overfsm')
-      deallocate(Di)
+
+      call de_alloc( Si, name='Si' )
+      call de_alloc( Di, name='Di' )
 
 C Finish timer
       call timer( 'overfsm', 2 )
 
-      return
       end subroutine overfsm
       end module m_overfsm
 

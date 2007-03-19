@@ -54,6 +54,7 @@ C *********************************************************************
       use precision
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -70,36 +71,29 @@ C *********************************************************************
      .  xij(3,maxnh), S(maxnh), Sr(maxnh),
      .  psi(2,nuotot,nuo), kpoint(3)
 
-      complex*16  det(2), pipj, determ
+      complex(dp) ::   det(2), pipj, determ
 
 C**** Internal variables ***********************************************
 
-      integer 
-     .  iuo, juo, j, ie, je, jo, ind
-      integer, dimension(:), allocatable, save ::
-     .  Auxint
+      integer :: iuo, juo, j, ie, je, jo, ind
+      integer, dimension(:), pointer ::  Auxint
 #ifdef MPI
-      integer 
-     .  MPIerror, jeg, n, noccloc, noccmax
-      real(dp), dimension(:,:,:), allocatable, save ::
-     .  psitmp
+      integer :: MPIerror, jeg, n, noccloc, noccmax
+      real(dp), dimension(:,:,:), pointer :: psitmp
 #endif
-      real(dp) 
-     .  kxij, skxij, ckxij,pipj1, pipj2
+      real(dp) ::  kxij, skxij, ckxij,pipj1, pipj2
 
-      complex*16, dimension(:,:), allocatable, save ::
-     .  Aux, Aux2
+      complex(dp), dimension(:,:), pointer :: Aux, Aux2
 
 C Allocate local memory
-      allocate(Aux(nocc,nocc))
-      call memory('A','Z',nocc*nocc,'detover')
-      allocate(Aux2(nuotot,nuo))
-      call memory('A','Z',nuotot*nuo,'detover')
-      allocate(Auxint(nocc))
-      call memory('A','I',nocc,'detover')
-
-      Aux2(1:nuotot,1:nuo) = cmplx(0.0d0,0.0d0)
-      Aux(1:nocc,1:nocc) = cmplx(0.0d0,0.0d0)
+      nullify( Aux )
+      call re_alloc( Aux, 1, nocc, 1, nocc, name='Aux',
+     &               routine='detover' )
+      nullify( Aux2 )
+      call re_alloc( Aux2, 1, nuotot, 1, nuo, name='Aux2',
+     &               routine='detover' )
+      nullify( Auxint )
+      call re_alloc( Auxint, 1, nocc, name='Aux', routine='detover' )
 
       do iuo = 1,nuo
         do j = 1,numh(iuo)
@@ -120,8 +114,9 @@ C Allocate local memory
  
 #ifdef MPI
       call GetNodeOrbs(nuotot,0,Nodes,noccmax)
-      allocate(psitmp(2,nuotot,noccmax))
-      call memory('A','D',2*nuotot*noccmax,'detover')
+      nullify( psitmp )
+      call re_alloc( psitmp, 1, 2, 1, nuotot, 1, noccmax, name='psitmp',
+     &               routine='detover' )
 
 C Ultimately this needs modifying so that Aux is distributed
       do n = 0,Nodes-1
@@ -163,9 +158,7 @@ C Broadcast copy of psi on node n to all other nodes
 
       enddo
 
-      call memory('D','D',size(psitmp),'detover')
-      deallocate(psitmp)
-
+      call de_alloc( psitmp, name='psitmp' )
 #else
       do ie = 1,nocc
         do je = 1, nocc
@@ -189,10 +182,8 @@ C Broadcast copy of psi on node n to all other nodes
 #endif
 
 C Resize Aux2 for re-use
-      call memory('D','Z',size(Aux2),'detover')
-      deallocate(Aux2)
-      allocate(Aux2(nocc,nocc))
-      call memory('A','Z',nocc*nocc,'detover')
+      call re_alloc( Aux2, 1, nocc, 1, nocc, name='Aux2',
+     &               routine='detover', copy=.false. )
 
 #ifdef MPI
       call MPI_AllReduce(Aux(1,1),Aux2(1,1),nocc*nocc,
@@ -208,11 +199,8 @@ C Resize Aux2 for re-use
       detr=real(determ)   
 
 C Deallocate local memory
-      call memory('D','I',size(Auxint),'detover')
-      deallocate(Auxint)
-      call memory('D','Z',size(Aux2),'detover')
-      deallocate(Aux2)
-      call memory('D','Z',size(Aux),'detover')
-      deallocate(Aux)
+      call de_alloc( Auxint, name='Auxint' )
+      call de_alloc( Aux2, name='Aux2' )
+      call de_alloc( Aux, name='Aux' )
 
       end

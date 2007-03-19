@@ -50,6 +50,7 @@ C  Modules
       use meshphi
       use parallel,  only: Node, Nodes
       use sys,       only: die
+      use alloc,     only: re_alloc, de_alloc
 
       implicit none
 
@@ -74,8 +75,7 @@ C Internal variables and arrays
      .  iop, ip, iphi, is, isp, iu, iul, j, jc, jl, 
      .  last, lasta, lastop, maxloc, maxloc2, maxndl, nc, nphiloc
 
-      integer, dimension(:), allocatable, save :: 
-     .  ilc, ilocal, iorb
+      integer, dimension(:), pointer :: ilc, ilocal, iorb
 
       logical
      .  ParallelLocal
@@ -83,8 +83,7 @@ C Internal variables and arrays
       real(dp)
      .  Cij(nsp), Dij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
 
-      real(dp), dimension(:,:), allocatable ::
-     .  Clocal, Dlocal
+      real(dp), dimension(:,:), pointer :: Clocal, Dlocal
 
 C  Start time counter
       call timer('rhoofd',1)
@@ -98,17 +97,25 @@ C  Find size of buffers to store partial copies of Dscf and C
       maxloc = min( maxloc, no )
 
 C  Allocate local memory
-      allocate(ilocal(no))
-      call memory('A','I',no,'rhoofd')
-      allocate(ilc(maxloc2))
-      call memory('A','I',maxloc2,'rhoofd')
-      allocate(iorb(0:maxloc))
-      call memory('A','I',maxloc+1,'rhoofd')
+
+      nullify ( ilocal )
+      call re_alloc( ilocal, 1, no, name='ilocal', routine='rhoofd' )
+
+      nullify ( ilc )
+      call re_alloc( ilc, 1, maxloc2, name='ilc', routine='rhoofd' )
+
+      nullify (iorb )
+      call re_alloc( iorb, 0, maxloc, name='iorb', routine='rhoofd' )
+
       ijl = (maxloc+1)*(maxloc+2)/2
-      allocate(Dlocal(ijl,nspin))
-      call memory('A','D',ijl*nspin,'rhoofd')
-      allocate(Clocal(nsp,maxloc2))
-      call memory('A','D',nsp*maxloc2,'rhoofd')
+
+      nullify( Dlocal )
+      call re_alloc( Dlocal, 1, ijl, 1, nspin, name='Dlocal',
+     &               routine='rhoofd' )
+
+      nullify( Clocal )
+      call re_alloc( Clocal, 1, nsp, 1, maxloc2, name='Clocal',
+     &               routine='rhoofd' )
 
       if (ParallelLocal) then
         if (nrowsDscfL.gt.0) then
@@ -116,8 +123,8 @@ C  Allocate local memory
         else
           maxndl = 1
         endif
-        allocate(DscfL(maxndl,nspin))
-        call memory('A','D',maxndl*nspin,'meshdscf')
+        call re_alloc( DscfL, 1, maxndl, 1, nspin,
+     &                 name='DscfL',  routine='rhoofd' )
 C Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
      .    nspin, Dscf, DscfL )
@@ -325,19 +332,13 @@ C  Restore iorb for next point
 
 C  Free local memory
       if (ParallelLocal) then
-        call memory('D','D',size(DscfL),'meshdscf')
-        deallocate(DscfL)
+        call de_alloc( DscfL,  name='DscfL' )
       endif
-      call memory('D','D',size(Clocal),'rhoofd')
-      deallocate(Clocal)
-      call memory('D','D',size(Dlocal),'rhoofd')
-      deallocate(Dlocal)
-      call memory('D','I',size(iorb),'rhoofd')
-      deallocate(iorb)
-      call memory('D','I',size(ilc),'rhoofd')
-      deallocate(ilc)
-      call memory('D','I',size(ilocal),'rhoofd')
-      deallocate(ilocal)
+      call de_alloc( Clocal,  name='Clocal' )
+      call de_alloc( Dlocal,  name='Dlocal' )
+      call de_alloc( iorb,  name='iorb' )
+      call de_alloc( ilc,  name='ilc' )
+      call de_alloc( ilocal,  name='ilocal' )
 
       call timer('rhoofd',2)
       end

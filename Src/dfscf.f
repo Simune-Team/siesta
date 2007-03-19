@@ -58,7 +58,8 @@ C  Modules
       use meshphi, only: endpht, lstpht, listp2
       use meshdscf, only: DscfL, nrowsDscfL, needDscfL
       use meshdscf, only: listDl, listDlPtr, numdL
-      use alloc
+      use alloc,    only: re_alloc, de_alloc, alloc_default,
+     $                    allocDefaults
       use parallel, only: Nodes
       use sys,      only: die
 
@@ -91,12 +92,10 @@ C Internal variables
      .   CD(nsp), CDV(nsp), DF(12), Dji, dxsp(3,nsp),  
      .   gCi(12,nsp), grada(3,maxoa,nsp),
      .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,nspin)
-      integer, pointer, save ::
-     .   ibc(:), iob(:)
-      real(dp), pointer, save ::
-     .   C(:,:), D(:,:,:), gC(:,:,:), xgC(:,:,:)
-      logical ::
-     .   Parallel_Run, nullified=.false.
+!
+      integer, pointer ::  ibc(:), iob(:)
+      real(dp), pointer :: C(:,:), D(:,:,:), gC(:,:,:), xgC(:,:,:)
+      logical ::           Parallel_Run, nullified=.false.
       type(allocDefaults) oldDefaults
 
 C  Start time counter
@@ -134,9 +133,8 @@ C  If parallel, allocate temporary storage for Local Dscf
         else
           maxndl = 1
         endif
-        allocate(DscfL(maxndl,nspin))
-        call memory('A','D',maxndl*nspin,'meshdscf')
-
+        call re_alloc( DscfL, 1, maxndl, 1, nspin,
+     &                 name='DscfL',  routine='dfscf' )
 C Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
      .                   nspin, Dscf, DscfL )
@@ -367,8 +365,7 @@ C  Deallocate local memory
       call de_alloc( D,   name='D'    )
       call de_alloc( C,   name='C'    )
       if (Parallel_Run) then
-        call memory('D','D',size(DscfL),'meshdscf')
-        deallocate(DscfL)
+        call de_alloc( DscfL,  name='DscfL' )
       endif
 
 C  Restore old allocation defaults

@@ -2151,8 +2151,8 @@ C****TABLE WITH THE SECOND DERIVATIVE OF THE PSEUDO_CORE***
 
             yp1=huge(1.d0)
             ypn=huge(1.d0)
-          call spline(delt,coretab(2,1,is),ntbmax,
-     .      yp1,ypn,coretab(2,2,is))
+          call spline(delt,coretab(2:,1,is),ntbmax,
+     .      yp1,ypn,coretab(2:,2,is))
 
  
            end  subroutine comcore
@@ -2219,8 +2219,8 @@ C***CHARGE DENSITY****
          yp1=huge(1.d0)
          ypn=huge(1.d0)
 
-         call spline(delt,chloctab(2,1,is),ntbmax,
-     .      yp1,ypn,chloctab(2,2,is))
+         call spline(delt,chloctab(2:,1,is),ntbmax,
+     .      yp1,ypn,chloctab(2:,2,is))
 
         elseif( flting.lt.0.0d0) then 
  
@@ -2290,8 +2290,8 @@ C
          yp1=huge(1.d0)
          ypn=huge(1.d0)
 
-         call spline(delt,vlocaltab(2,1,is),ntbmax,
-     .      yp1,ypn,vlocaltab(2,2,is))
+         call spline(delt,vlocaltab(2:,1,is),ntbmax,
+     .      yp1,ypn,vlocaltab(2:,2,is))
 
         elseif( flting.lt.0.0d0) then 
  
@@ -2704,8 +2704,8 @@ C
             yp1=huge(1.d0)
             ypn=huge(1.d0)
 
-            call spline(delt,table(3,-indx,is),ntbmax,
-     .        yp1,ypn,tab2(1,-indx,is))
+            call spline(delt,table(3:,-indx,is),ntbmax,
+     .        yp1,ypn,tab2(1:,-indx,is))
 
             end subroutine comkb
 !
@@ -4008,8 +4008,8 @@ C****TABLE WITH THE SECOND DERIVATIVE ***
 
             yp1=huge(1.d0)
             ypn=huge(1.d0)
-            call spline(delt,table(3,norb,is),ntbmax,
-     .        yp1,ypn,tab2(1,norb,is))
+            call spline(delt,table(3:,norb,is),ntbmax,
+     .        yp1,ypn,tab2(1:,norb,is))
 
 C
       end subroutine combasis
@@ -4671,8 +4671,8 @@ C
        yp1=0.d0
        ypn=huge(1.d0)
 
-       call spline(delt,table(3,0,is),ntbmax,
-     .      yp1,ypn,tab2(1,0,is))
+       call spline(delt,table(3:,0,is),ntbmax,
+     .      yp1,ypn,tab2(1:,0,is))
 
        end  subroutine comVna
 !
@@ -5010,8 +5010,8 @@ C
             yp1=huge(1.d0)
             ypn=huge(1.d0)
 
-            call spline(delt,tabpol(3,norb,is),ntbmax,
-     .        yp1,ypn,tab2pol(1,norb,is))
+            call spline(delt,tabpol(3:,norb,is),ntbmax,
+     .        yp1,ypn,tab2pol(1:,norb,is))
         
             end subroutine compol
 !

@@ -63,6 +63,7 @@ C *******************************************************************
       use xcmod,     only : nXCfunc, XCfunc, XCauth
       use xcmod,     only : XCweightX, XCweightC
       use sys,       only: die
+      use alloc,     only: re_alloc, de_alloc
 
 C Next line is nonstandard but may be suppressed
       implicit none
@@ -106,7 +107,7 @@ C Local variables and arrays
      .  DGDM(-NN:NN), DGIDFJ(-NN:NN), DRDM, DVol, 
      .  DVCDN(mspin,mspin), DVXDN(mspin,mspin),
      .  EPSC, EPSX, F1, F2, GD(3,mspin), PI
-      real(dp), allocatable, save :: Aux(:)
+      real(dp), pointer :: Aux(:)
       external
      .  GGAXC, LDAXC
 
@@ -136,7 +137,8 @@ C Initialize output
 
 C Set up workspace array
       if (GGA) then
-        allocate(Aux(NR))
+        nullify( Aux )
+        call re_alloc( Aux, 1, NR, name='Aux', routine='atomxc' )
       endif
 
 C Get number pi
@@ -270,7 +272,7 @@ C Divide by volume element to obtain the potential (per electron)
             VXC(IR,IS) = VXC(IR,IS) / DVol
           enddo
         enddo
-        deallocate(Aux)
+        call de_alloc( aux,  name='aux' )
       endif
 
 C Divide by energy unit

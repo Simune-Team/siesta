@@ -14,6 +14,7 @@ C Stores quantities that are connected with Dscf in mesh local
 C form when data is distributed for parallel execution
 C
       use precision, only: dp
+      use alloc
       implicit none
 
 C ----------------------------------------------------------------------
@@ -33,12 +34,14 @@ C ----------------------------------------------------------------------
 
       integer, save :: nrowsDscfL
 
-      integer, dimension(:), allocatable, save :: listdl
-      integer, dimension(:), allocatable, save :: listdlptr
-      integer, dimension(:), allocatable, save :: NeedDscfL
-      integer, dimension(:), allocatable, save :: numdl
+      integer, dimension(:), pointer, save :: listdl
+      integer, dimension(:), pointer, save :: listdlptr
+      integer, dimension(:), pointer, save :: NeedDscfL
+      integer, dimension(:), pointer, save :: numdl
 
-      real(dp),  dimension(:,:), allocatable, save :: DscfL
+      real(dp), dimension(:,:), pointer, save :: DscfL
+
+      logical, public, save :: nullified_pointers = .false.
 
       end module meshdscf
 
@@ -68,11 +71,12 @@ C Modules
 C
       use atomlist,     only : indxuo
       use meshdscf,     only : listdl, listdlptr, NeedDscfL, 
-     .                         nrowsDscfL, numdl
+     .                         nrowsDscfL, numdl, nullified_pointers
       use meshphi,      only : endpht, lstpht
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use precision
+      use alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -99,13 +103,22 @@ C
      .  MPIerror
 #endif
 
-      integer, dimension(:), allocatable :: ibuffer
+      integer, dimension(:), pointer :: ibuffer
+
+      if (.not. nullified_pointers) then
+        nullify( NeedDscfL )
+        nullify( listdl )
+        nullify( listdlptr )
+        nullify( numdl )
+        nullified_pointers = .true.
+      endif
 
 C Create pointer as to whether a given row of DscfL is needed in NeedDscfL
-      if (.not.allocated(NeedDscfL)) then
-        allocate(NeedDscfL(nuotot))
-        call memory('A','I',nuotot,'CreateLocalDscfPointers')
-      endif
+C This pointer is never deallocated...
+
+      call re_alloc( NeedDscfL, 1, nuotot, name='NeedDscfL',
+     &                 routine='CreateLocalDscfPointers' )
+
       NeedDscfL(1:nuotot) = 0
       do ip = 1,nmpl
         do imp = 1+endpht(ip-1), endpht(ip)
@@ -123,20 +136,12 @@ C Create pointer as to whether a given row of DscfL is needed in NeedDscfL
       enddo
 
 C Allocate/reallocate memory for numdl and listdlptr
-      if (allocated(numdl)) then
-        if (size(numdl).ne.nrowsDscfL) then
-          call memory('D','I',size(numdl),'CreateLocalDscfPointers')
-          deallocate(numdl)
-          call memory('D','I',size(listdlptr),'CreateLocalDscfPointers')
-          deallocate(listdlptr)
-        endif
-      endif
-      if (.not.allocated(numdl)) then
-        allocate(numdl(max(1,nrowsDscfL)))
-        call memory('A','I',max(1,nrowsDscfL),'CreateLocalDscfPointers')
-        allocate(listdlptr(max(1,nrowsDscfL)))
-        call memory('A','I',max(1,nrowsDscfL),'CreateLocalDscfPointers')
-      endif
+
+      call re_alloc( numdl, 1, max(1,nrowsDscfL), name='numdl',
+     &                 routine='CreateLocalDscfPointers' )
+      call re_alloc( listdlptr, 1, max(1,nrowsDscfL), 
+     &                 name='listdlptr',
+     &                 routine='CreateLocalDscfPointers' )
 
 C Distribute information about numd globally
       maxndmax = 0
@@ -161,22 +166,19 @@ C Create listdlptr using numdl
       enddo
 
 C Allocate/reallocate listdl
-      if (allocated(listdl)) then
-        call memory('D','I',size(listdl),'CreateLocalDscfPointers')
-        deallocate(listdl)
-      endif
       if (nrowsDscfL.gt.0) then
         nsize = listdlptr(nrowsDscfL)+numdl(nrowsDscfL)
       else
         nsize = 1
       endif
-      allocate(listdl(nsize))
-      call memory('A','I',nsize,'CreateLocalDscfPointers')
+      call re_alloc( listdl, 1, nsize, name='listdl',
+     &               routine='CreateLocalDscfPointers' )
 
 C Distribute information about listd globally
-      allocate(ibuffer(maxndmax))
-      call memory('A','I',maxndmax,'CreateLocalDscfPointers')
-      ibuffer(1:maxndmax) = 0
+      nullify( ibuffer )
+      call re_alloc( ibuffer, 1, maxndmax, name='ibuffer',
+     &               routine='CreateLocalDscfPointers' )
+      ibuffer(1:maxndmax) = 0      ! AG: superfluous
       do io = 1,nuotot
         call WhichNodeOrb(io,Nodes,BNode)
         if (Node.eq.BNode) then
@@ -196,8 +198,7 @@ C Distribute information about listd globally
           enddo
         endif
       enddo
-      call memory('D','I',size(ibuffer),'CreateLocalDscfPointers')
-      deallocate(ibuffer)
+      call de_alloc( ibuffer, name='ibuffer' )
 
       end subroutine CreateLocalDscfPointers
 
@@ -225,6 +226,7 @@ C ********************************************************************
 C  Modules
       use precision
       use meshdscf, only : nrowsDscfL, numdl, listdlptr, NeedDscfL
+      use alloc,    only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
       use parallel,     only : Node, Nodes
@@ -251,8 +253,7 @@ C Internal variables and arrays
 #ifdef MPI
       integer 
      .  BNode, ii, iio, maxno, maxnog, MPIerror
-      real(dp), dimension(:), allocatable, save :: 
-     .  buffer
+      real(dp), dimension(:), pointer ::  buffer
 #endif
 
 C***********************
@@ -268,13 +269,14 @@ C Find local and global size of maxno
      .  MPI_Comm_World,MPIerror)
 
 C Allocate local Dscf storage array
-      allocate(buffer(maxnog*nspin))
-      call memory('A','D',maxnog*nspin,'matrixOtoM')
+      nullify(buffer)
+      call re_alloc( buffer, 1, maxnog*nspin, name='buffer',
+     &               routine='matrixOtoM' )
 
 C Zero buffer as we will be passing the complete array
 C as the number of explicitly non-zero elements will
 C not be known on all nodes
-      buffer(1:maxnog*nspin) = 0.0d0
+      buffer(1:maxnog*nspin) = 0.0d0  ! AG: superfluous
 
 C Loop over rows of Dscf broadcasting to all other nodes
       do io = 1,nuotot
@@ -306,8 +308,7 @@ C Get pointer for this row of Dscf and see if it is needed for DscfL
       enddo
 
 C Deallocate buffer memory
-      call memory('D','D',size(buffer),'matrixOtoM')
-      deallocate(buffer)
+      call de_alloc(buffer, name="buffer")
 #else
 C*********************
 C  Serial execution  *
@@ -357,6 +358,7 @@ C *********************************************************************
 C  Modules
       use precision
       use meshdscf
+      use alloc, only: re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
       use parallel,     only : Node, Nodes
@@ -378,12 +380,9 @@ C Internal variables and arrays
      .  i, iu, ispin
 
 #ifdef MPI
-      integer 
-     .  ii, in, iul, maxnvg, MPIerror, nVsL, nVsLmax
-      real(dp), dimension(:), allocatable, save :: 
-     .  Vi
-      integer, dimension(:), allocatable, save :: 
-     .  nVsLPtr, listViptr
+      integer :: ii, in, iul, maxnvg, MPIerror, nVsL, nVsLmax
+      real(dp), dimension(:), pointer ::  Vi
+      integer, dimension(:), pointer  ::  nVsLPtr, listViptr
 #endif
       
 C***********************
@@ -399,15 +398,18 @@ C Find the maximum value of maxno on any Node and globally
      .  MPI_max,MPI_Comm_World,MPIerror)
 
 C Allocate buffer memory for transfer of matrix and pointer
-      allocate(Vi(maxnvg*nspin))
-      call memory('A','D',maxnvg*nspin,'matrixMtoO')
-      allocate(nVsLPtr(nuotot))
-      call memory('A','I',nuotot,'matrixMtoO')
-      allocate(listViptr(nuotot))
-      call memory('A','I',nuotot,'matrixMtoO')
+      nullify(Vi)
+      call re_alloc( Vi, 1, maxnvg*nspin, name='Vi',
+     &               routine='matrixMtoO' )
+      nullify(nVsLPtr)
+      call re_alloc( nVsLPtr, 1, nuotot, name='nVsLPtr',
+     &               routine='matrixMtoO' )
+      nullify(listViptr)
+      call re_alloc( listViptr, 1, nuotot, name='listViptr',
+     &               routine='matrixMtoO' )
 
 C Initialise buffers to avoid number trapping errors during transfer
-      Vi(1:maxnvg) = 0.0d0
+      Vi(1:maxnvg) = 0.0d0  ! AG : superfluous
       listViptr(1:nuotot) = 0
 
 C Loop over Nodes for broadcasting of local data
@@ -463,12 +465,9 @@ C stored in the orbital oriented array
       enddo
 
 C Deallocate buffer and pointer memory
-      call memory('D','I',size(listViptr),'matrixMtoO')
-      deallocate(listViptr)
-      call memory('D','I',size(nVsLPtr),'matrixMtoO')
-      deallocate(nVsLPtr)
-      call memory('D','D',size(Vi),'matrixMtoO')
-      deallocate(Vi)
+      call de_alloc(listViptr, name="listViptr")
+      call de_alloc(nVsLPtr, name="nVsLPtr")
+      call de_alloc(Vi, name="Vi")
 #else
 C*********************
 C  Serial execution  *

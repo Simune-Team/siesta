@@ -87,6 +87,7 @@ C *********************************************************************
       use sys,          only : die
       use m_fermid,     only : stepf
       use files,        only : slabel, label_length
+      use units,        only : pi
 #ifdef MPI
       use mpi_siesta,   only : mpi_reduce, mpi_comm_world,
      $                         mpi_sum
@@ -120,24 +121,23 @@ C Internal variables
 #ifdef MPI
       integer                     :: MPIerror
 #endif
-      integer,               save :: nkopt = 0
+      integer,               save :: nkopt = 0  ! AG ???
          
       logical                     :: DoOptical
-      logical,               save :: frstme = .true.
       logical,               save :: gamma  = .false.
 
       real(dp)                    :: efermiloc
-      real(dp),              save :: tiny = 1.0d-9
-      real(dp),              save :: ediffmin = 1.0d-3
-      real(dp), pointer,     save :: ekloc(:)
-      real(dp), pointer,     save :: epsimg(:,:)
-      real(dp), pointer,     save :: kopt(:,:)
-      real(dp), pointer,     save :: wgthopt(:)
-      real(dp), allocatable, save :: epsbuff(:,:)
-      real(dp), allocatable, save :: intraband(:,:)
+      real(dp),        parameter  :: tiny = 1.0d-9
+      real(dp),        parameter  :: ediffmin = 1.0d-3
+      real(dp), pointer           :: ekloc(:)
+      real(dp), pointer           :: epsimg(:,:)
+      real(dp), pointer           :: kopt(:,:)
+      real(dp), pointer           :: wgthopt(:)
+      real(dp), pointer           :: epsbuff(:,:)
+      real(dp), pointer           :: intraband(:,:)
       real(dp)
      .  cutoff, displ(3), dmod, dsp, dw, ediff, efield(3),
-     .  fsum(2), f1, f2, inplane(3,2), kint(3), pi,
+     .  fsum(2), f1, f2, inplane(3,2), kint(3),
      .  smooth, T, volcel, volume, xv(3), w,
      .  wmin, wmax, wi, wf, escissor, omega_p2(2),aux_p2(2)
 
@@ -149,14 +149,6 @@ C Internal variables
 
       external          io_assign, io_close,
      .                  paste, volcel
-
-C Nullify pointers
-      if (frstme) then
-        nullify(ekloc)
-        nullify(epsimg)
-        nullify(kopt)
-        nullify(wgthopt)
-      endif
 
 C Start time counter 
       call timer( 'optical', 1 )
@@ -206,6 +198,7 @@ C If nk.ne.0
         call kgridinit( ucell, kscell,  displ, cutoff, nkopt )
 
 C Resize arrays to fit nkopt
+        nullify(kopt, wgthopt)
         call re_alloc(kopt,1,3,1,nkopt,name='kopt',routine='optical')
         call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
 
@@ -292,6 +285,7 @@ C Total number of valence electrons in the unit cell
 C Find the size of the array to hold the imaginary dielectric constant
       dw = smooth/10
       nw = nint((wmax-wmin)/dw) + 1
+      nullify(epsimg)
       call re_alloc(epsimg,1,nw,1,2,name='epsimg',routine='optical')
       
 C Check sizes of K point arrays
@@ -299,11 +293,9 @@ C Check sizes of K point arrays
       call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
 
 C Check size of remaining arrays
+      nullify(ekloc)
       call re_alloc(ekloc,1,nuotot,name='ekloc',routine='optical')
       
-C******************PI*************************************
-      pi = dacos(-1.0d0)
-
 C The calculation  of the imaginary part of the dielectric 
 C function starts here
 
@@ -466,7 +458,9 @@ C parameter npol
           endif
 C Allocate intraband array to calculate the Drude contribution
 C for metals
-           allocate(intraband(ngamma,nuo))
+          nullify( intraband )
+          call re_alloc( intraband, 1, ngamma, 1, nuo,
+     $                name='intraband', routine='optical')
 
 C Construction of the matrix elements of the scalar product n*r 
        if ( option.eq.'polarized') then 
@@ -653,11 +647,14 @@ C Closing loop on k_points
       enddo 
 
 #ifdef MPI
-      allocate(epsbuff(nw,2))
+      nullify( epsbuff )
+      call re_alloc( epsbuff, 1, nw, 1, 2, name='epsbuff',
+     &               routine='optical' )
       call MPI_Reduce(epsimg(1,1),epsbuff(1,1),2*nw,
      .  MPI_double_precision,MPI_sum,0,MPI_Comm_World,MPIerror)
       epsimg(1:nw,1:2) = epsbuff(1:nw,1:2)
-      deallocate(epsbuff)
+      call de_alloc( epsbuff, name='epsbuff' )
+
       call MPI_Reduce(omega_p2(1),aux_p2(1),nspin,
      .  MPI_double_precision,MPI_sum,0,MPI_Comm_World,MPIerror)
       omega_p2(1)=aux_p2(1)
@@ -724,10 +721,13 @@ C A factor of 4 due to the integration in Ry rather than in a.u.
 C This is the only exit point 
   999 continue
 
-C Resize memory to something small
-      call re_alloc(epsimg,1,1,1,1,name='epsimg',routine='optical')
+C Deallocate internal arrays
+      call de_alloc(epsimg,name='epsimg')
+      call de_alloc(intraband, name="intraband")
+      call de_alloc(ekloc, name="ekloc")
+      call de_alloc(kopt, name="kopt")
+      call de_alloc(wgthopt, name="wgthopt")
 
-      frstme = .false.
       call timer( 'optical', 2 )
 
       end

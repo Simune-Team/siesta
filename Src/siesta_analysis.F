@@ -36,6 +36,7 @@
       use m_eo
       use m_forces,          only: fa
       use m_gamma 
+      use alloc,             only: re_alloc, de_alloc
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -61,7 +62,7 @@
       real(dp)                      :: qaux             ! Auxiliary to call spnvec (not used later)
       real(dp)                      :: stot             ! Total spin polarization
       real(dp)                      :: svec(3)          ! Total spin vector in non-collinear-spin calculations
-      real(dp), allocatable         :: ebk(:,:,:)       ! Band energies
+      real(dp), pointer             :: ebk(:,:,:)       ! Band energies
 
       integer                       :: j, ix, ind, ik, io, ispin
       integer                       :: maxwk   ! Number of k-points for wavefunction printout
@@ -133,8 +134,10 @@
 
       ! Compute bands
 
-      allocate(ebk(no_u,nspin,maxbk))
-      call memory('A','D',no_u*nspin*maxbk,'siesta')
+      nullify( ebk )
+      call re_alloc( ebk, 1, no_u, 1, nspin, 1, maxbk,
+     &               name    = 'ebk',
+     &               routine = 'siesta_analysis' )
 
       if (nbk.gt.0) then
         call bands( no_s, nspin, nspin, no_u, no_l, maxnh, maxbk,
@@ -316,6 +319,9 @@
 
 ! Find local density of states
       call local_DOS()
+
+      call de_alloc( ebk, name="ebk")
+
 !--------------------------------------------------------------------------- END
       END subroutine siesta_analysis
       END module m_siesta_analysis

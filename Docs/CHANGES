@@ -10,6 +10,57 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-03-19 8:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-24
+
+Summary: Allocatables to pointers  I
+
+First merge of the changes Based on work by Manuel Quero from Feb 28 to Mar 16. 
+Allocatable arrays have been turned into pointers in several routines.
+
+Patches applied:
+
+ * ag@bsc--2007/vars--mqag--1.0--base-0
+   tag of ref@bsc--2007/siesta-bsc--master--2.1--patch-23
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-1
+   Siesta_analysis, sphere_harm
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-2
+   Transition_rate
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-3
+   Vmat and vmatsp
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-4
+   Added _z1, _z2, and _r4 support to alloc.F90
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-5
+   Detover, allocating complex arrays
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-6
+   Fft3d 
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-7
+   Old_atmfuncs 
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-8
+   Savepsi
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-9
+   Explicit array-ness in calls to spline
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-10
+   Meshmatrix and routines which use DscfL
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-11
+   xc.f
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-12
+   Overfsm
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-13
+   Optical
+
 2007-03-15 16:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-23
 
 Summary: VPATH-aware compilation for multiple executable versions

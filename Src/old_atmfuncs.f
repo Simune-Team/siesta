@@ -21,54 +21,51 @@ C     chemical species present in the calculation.
       use sys
       use atmparams, only: nzetmx, lmaxd, nsemx
       use atmparams, only: maxos, nkbmx, ntbmax
-
+      use alloc,     only: re_alloc, de_alloc
       implicit none 
 
-      integer, save, public                   ::  nsmax
+      integer,  save, public     ::  nsmax            
 
-      integer, save, public, allocatable    ::  izsave(:)
-      integer, save, public, allocatable    ::  nomax(:)
-      integer, save, public, allocatable    ::  nkbmax(:)
+      integer,  public, pointer  ::  izsave(:)          
+      integer,  public, pointer  ::  nomax(:)           
+      integer,  public, pointer  ::  nkbmax(:)          
 
-      integer, save, public, allocatable    ::  lmxosave(:)
-      integer, save, public, allocatable    ::  nkblsave(:,:)
-      integer, save, public, allocatable    ::  npolorbsave(:,:,:)
-      integer, save, public, allocatable    ::  nsemicsave(:,:)
-      integer, save, public, allocatable    ::  nzetasave(:,:,:)
-      integer, save, public, allocatable    ::  cnfigtb(:,:,:)
+      integer,  public, pointer  ::  lmxosave(:)        
+      integer,  public, pointer  ::  nkblsave(:,:)      
+      integer,  public, pointer  ::  npolorbsave(:,:,:) 
+      integer,  public, pointer  ::  nsemicsave(:,:)    
+      integer,  public, pointer  ::  nzetasave(:,:,:)   
+      integer,  public, pointer  ::  cnfigtb(:,:,:)     
 
-      logical, save, public, allocatable    ::  semicsave(:)
+      logical,  public, pointer  ::  semicsave(:)       
      
-      real(dp), save, public, allocatable        :: zvaltb(:)
-      integer, save, public, allocatable         :: lmxkbsave(:)
-      real(dp), save, public, allocatable        :: smasstb(:)
-      real(dp), save, public, allocatable        :: chargesave(:)
-      real(dp), save, public, allocatable        :: slfe(:)
-      real(dp), save, public, allocatable        :: lambdatb(:,:,:,:)
+      real(dp), public, pointer  :: zvaltb(:)
+      integer,  public, pointer  :: lmxkbsave(:)
+      real(dp), public, pointer  :: smasstb(:)
+      real(dp), public, pointer  :: chargesave(:)
+      real(dp), public, pointer  :: slfe(:)
+      real(dp), public, pointer  :: lambdatb(:,:,:,:)
 
-      real(dp), save, public, allocatable  :: qtb(:,:)
+      real(dp), public, pointer  :: qtb(:,:)
 
-      real(dp), save, public, allocatable  :: table(:,:,:)
-      real(dp), save, public, allocatable  :: tabpol(:,:,:)
-      real(dp), save, public, allocatable  :: tab2(:,:,:)
-      real(dp), save, public, allocatable  :: tab2pol(:,:,:)
+      real(dp), public, pointer      :: table(:,:,:)
+      real(dp), public, pointer      :: tabpol(:,:,:)
+      real(dp), public, pointer      :: tab2(:,:,:)
+      real(dp), public, pointer      :: tab2pol(:,:,:)
 
 
-      real(dp), save, public, allocatable  ::  coretab(:,:,:)
-      real(dp), save, public, allocatable  ::  chloctab(:,:,:)
-      real(dp), save, public, allocatable  ::  vlocaltab(:,:,:)
-      real(dp), save, public, allocatable  ::  rctb(:,:,:)
-      real(dp), save, public, allocatable  ::  rcotb(:,:,:,:)
-      real(dp), save, public, allocatable  ::  rcpoltb(:,:,:,:)
-!
+      real(dp), public, pointer      ::  coretab(:,:,:)
+      real(dp), public, pointer      ::  chloctab(:,:,:)
+      real(dp), public, pointer      ::  vlocaltab(:,:,:)
+      real(dp), public, pointer  ::  rctb(:,:,:)
+      real(dp), public, pointer  ::  rcotb(:,:,:,:)
+      real(dp), public, pointer  ::  rcpoltb(:,:,:,:)
+
 !     PGI compiler cannot allocate these!!!!
-!
       character(len=20), save, public    :: label_save(40)
       character(len=10), save, public    :: basistype_save(40)  
-!--------------------------------------------------------------
-!
+
 !     Public routines
-!
       public :: labelfis, izofis, zvalfis, nkbfis
       public :: massfis, lomaxfis, nofis, lmxkbfis
       public :: cnfigfio, lofio, mofio
@@ -76,7 +73,6 @@ C     chemical species present in the calculation.
       public :: clear_tables, allocate_old_arrays
       public :: deallocate_old_arrays
 
-!--------------------------------------------------------------
 
       PRIVATE
 
@@ -84,14 +80,48 @@ C     chemical species present in the calculation.
 !
       subroutine allocate_old_arrays()
 
-        allocate(rcotb(nzetmx,0:lmaxd,nsemx,nsmax))
-        allocate(rcpoltb(nzetmx,0:lmaxd,nsemx,nsmax))
-        allocate(lambdatb(nzetmx,0:lmaxd,nsemx,nsmax))
-        allocate(qtb(maxos,nsmax))
-        allocate(slfe(nsmax))
-        allocate(rctb(nkbmx,0:lmaxd,nsmax))
-        allocate(smasstb(nsmax))
-        allocate(chargesave(nsmax))
+        !allocate(rcotb(nzetmx,0:lmaxd,nsemx,nsmax))
+        nullify( rcotb )
+        call re_alloc( rcotb, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsmax,
+     &                 name    = 'rcotb', 
+     &                 routine = 'allocate_old_arrays' )
+
+        !allocate(rcpoltb(nzetmx,0:lmaxd,nsemx,nsmax))
+        nullify( rcpoltb )
+        call re_alloc( rcpoltb, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsmax,
+     &                 name    = 'rcpoltb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(lambdatb(nzetmx,0:lmaxd,nsemx,nsmax))
+        nullify( lambdatb )
+        call re_alloc( lambdatb, 1, nzetmx, 0, lmaxd, 1, nsemx,
+     &                 1, nsmax,
+     &                 name    = 'lambdatb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(qtb(maxos,nsmax))
+        nullify( qtb )
+        call re_alloc( qtb, 1, maxos, 1, nsmax,
+     &                 name    = 'qtb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(slfe(nsmax))
+        nullify( slfe )
+        call re_alloc( slfe, 1, nsmax,
+     &                 name    = ' slfe', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(rctb(nkbmx,0:lmaxd,nsmax))
+        nullify( rctb )
+        call re_alloc( rctb, 1, nzetmx, 0, lmaxd, 1, nsemx,
+     &                 name    = 'rctb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(smasstb(nsmax))
+        nullify( smasstb )
+        call re_alloc( smasstb, 1, nsmax,
+     &                 name    = 'smasstb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(chargesave(nsmax))
+        nullify( chargesave )
+        call re_alloc( chargesave, 1, nsmax,
+     &                 name    = 'chargesave', 
+     &                 routine = 'allocate_old_arrays' )
 !
 !       Table: This is a hybrid
 !            negative values of the second index correspond to KB projectors
@@ -104,27 +134,123 @@ C     chemical species present in the calculation.
 !            s=0, p=1, etc)
 !
 !
-        allocate(table((ntbmax+2),-nkbmx*(lmaxd+1):nzetmx*nsemx*
-     .    (lmaxd+1),nsmax))
+!        allocate(table((ntbmax+2),-nkbmx*(lmaxd+1):nzetmx*nsemx*
+!     .           (lmaxd+1),nsmax))
+        nullify( table )
+        call re_alloc( table, 1, ntbmax+2,
+     &                 -nkbmx*(lmaxd+1), nzetmx*nsemx*(lmaxd+1),
+     &                 1, nsmax,
+     &                 name    = 'table', 
+     &                 routine = 'allocate_old_arrays' )
         allocate(tab2(ntbmax,-nkbmx*(lmaxd+1):nzetmx*nsemx*
      .    (lmaxd+1),nsmax))
-!
-        allocate(tabpol((ntbmax+2),nzetmx*nsemx*(lmaxd+1),nsmax))
-        allocate(tab2pol(ntbmax,nzetmx*nsemx*(lmaxd+1),nsmax))
-        allocate(coretab(ntbmax+1,2,nsmax))
-        allocate(chloctab((ntbmax+1),2,nsmax))
-        allocate(vlocaltab((ntbmax+1),2,nsmax))
-        allocate(izsave(nsmax))
-        allocate(lmxkbsave(nsmax))
-        allocate(lmxosave(nsmax))
-        allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
-        allocate(nsemicsave(0:lmaxd,nsmax))
-        allocate(nzetasave(0:lmaxd,nsemx,nsmax))
-        allocate(nomax(nsmax))
-        allocate(nkbmax(nsmax))
-        allocate(zvaltb(nsmax))
-        allocate(cnfigtb(0:lmaxd,nsemx,nsmax))
-        allocate(nkblsave(0:lmaxd,nsmax))
+!        nullify( tab2 )
+!        call re_alloc( tab2, 1, ntbmax,
+!     &                 -nkbmx*(lmaxd+1), nzetmx*nsemx*(lmaxd+1),
+!     &                 1, nsmax,
+!     &                 name    = 'tab2', 
+!     &                 routine = 'allocate_old_arrays' )
+!        allocate(tabpol((ntbmax+2),nzetmx*nsemx*(lmaxd+1),nsmax))
+        nullify( tabpol )
+        call re_alloc( tabpol, 1, ntbmax+2,
+     &                 1, nzetmx*nsemx*(lmaxd+1),
+     &                 1, nsmax,
+     &                 name    = 'tabpol', 
+     &                 routine = 'allocate_old_arrays' )
+!        allocate(tab2pol(ntbmax,nzetmx*nsemx*(lmaxd+1),nsmax))
+        nullify( tab2pol )
+        call re_alloc( tab2pol, 1, ntbmax,
+     &                 1, nzetmx*nsemx*(lmaxd+1),
+     &                 1, nsmax,
+     &                 name    = 'tab2pol', 
+     &                 routine = 'allocate_old_arrays' )
+
+!        allocate(coretab(ntbmax+1,2,nsmax))
+        nullify( coretab )
+        call re_alloc( coretab, 1, ntbmax+1,
+     &                 1, 2,
+     &                 1, nsmax,
+     &                 name    = 'coretab', 
+     &                 routine = 'allocate_old_arrays' )
+
+!        allocate(chloctab((ntbmax+1),2,nsmax))
+        nullify( chloctab )
+        call re_alloc( chloctab, 1, ntbmax+1,
+     &                 1, 2,
+     &                 1, nsmax,
+     &                 name    = 'chloctab', 
+     &                 routine = 'allocate_old_arrays' )
+!        allocate(vlocaltab((ntbmax+1),2,nsmax))
+        nullify( vlocaltab )
+        call re_alloc( vlocaltab, 1, ntbmax+1,
+     &                 1, 2,
+     &                 1, nsmax,
+     &                 name    = 'vlocaltab', 
+     &                 routine = 'allocate_old_arrays' )
+
+        !allocate(izsave(nsmax))
+        nullify( izsave )
+        call re_alloc( izsave, 1, nsmax,
+     &                 name    = 'izsave', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(lmxkbsave(nsmax))
+        nullify( lmxkbsave )
+        call re_alloc( lmxkbsave, 1, nsmax,
+     &                 name    = 'lmxkbsave', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(lmxosave(nsmax))
+        nullify( lmxosave )
+        call re_alloc( lmxosave, 1, nsmax,
+     &                 name    = 'lmxosave', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(npolorbsave(0:lmaxd,nsemx,nsmax))
+        nullify( npolorbsave )
+        call re_alloc( npolorbsave, 0, lmaxd,
+     &                 1, nsemx,
+     &                 1, nsmax,
+     &                 name    = 'npolorbsave', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(nsemicsave(0:lmaxd,nsmax))
+        nullify( nsemicsave )
+        call re_alloc( nsemicsave, 0, lmaxd,
+     &                 1, nsmax,
+     &                 name    = 'npolorbsave', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(nzetasave(0:lmaxd,nsemx,nsmax))
+        nullify( nzetasave )
+        call re_alloc( nzetasave, 0, lmaxd,
+     &                 1, nsemx,
+     &                 1, nsmax,
+     &                 name    = 'nzetasave', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(nomax(nsmax))
+        nullify( nomax )
+        call re_alloc( nomax, 1, nsmax,
+     &                 name    = 'nomax', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(nkbmax(nsmax))
+        nullify( nkbmax )
+        call re_alloc( nkbmax, 1, nsmax,
+     &                 name    = 'nkbmax', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(zvaltb(nsmax))
+        nullify( zvaltb )
+        call re_alloc( zvaltb, 1, nsmax,
+     &                 name    = 'zvaltb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(cnfigtb(0:lmaxd,nsemx,nsmax))
+        nullify( cnfigtb )
+        call re_alloc( cnfigtb, 0, lmaxd,
+     &                 1, nsemx,
+     &                 1, nsmax,
+     &                 name    = 'cnfigtb', 
+     &                 routine = 'allocate_old_arrays' )
+        !allocate(nkblsave(0:lmaxd,nsmax))
+        nullify( nkblsave )
+        call re_alloc( nkblsave, 0, lmaxd,
+     &                 1, nsmax,
+     &                 name    = 'nkblsave', 
+     &                 routine = 'allocate_old_arrays' )
 !
 !       PGI compiler cannot allocate these...
 !        allocate(label_save(nsmax))
@@ -133,42 +259,74 @@ C     chemical species present in the calculation.
         allocate(semicsave(nsmax))
 
         end subroutine allocate_old_arrays
-!---------------------------------------------------------------
+
       subroutine deallocate_old_arrays()
 
-        deallocate(rcotb)
-        deallocate(rcpoltb)
-        deallocate(lambdatb)
-        deallocate(qtb)
-        deallocate(slfe)
-        deallocate(rctb)
-        deallocate(smasstb)
-        deallocate(chargesave)
-!
-        deallocate(table)
-        deallocate(tab2)
-!
-        deallocate(tabpol)
-        deallocate(tab2pol)
-        deallocate(coretab)
-        deallocate(chloctab)
-        deallocate(vlocaltab)
-        deallocate(izsave)
-        deallocate(lmxkbsave)
-        deallocate(lmxosave)
-        deallocate(npolorbsave)
-        deallocate(nsemicsave)
-        deallocate(nzetasave)
-        deallocate(nomax)
-        deallocate(nkbmax)
-        deallocate(zvaltb)
-        deallocate(cnfigtb)
-        deallocate(nkblsave)
-        deallocate(semicsave)
+        !deallocate(rcotb)
+        call de_alloc( rcotb, name='rcotb' )
+        !deallocate(rcpoltb)
+        call de_alloc( rcpoltb, name='rcpoltb' )
+        !deallocate(lambdatb)
+        call de_alloc( lambdatb, name='lambdatb' )
+        !deallocate(qtb)
+        call de_alloc( qtb, name='qtb' )
+        !deallocate(slfe)
+        call de_alloc( slfe, name='slfe' )
+        !deallocate(rctb)
+        call de_alloc( rctb, name='rctb' )
+        !deallocate(smasstb)
+        call de_alloc( smasstb, name='smasstb' )
+        !deallocate(chargesave)
+        call de_alloc( chargesave, name='chargesave' )
+
+        !!   deallocate(table)
+        call de_alloc( table, name='table' )
+
+!!           deallocate(tab2)
+           call de_alloc( tab2, name='tab2' )
+
+           !deallocate(tabpol)
+           call de_alloc( tabpol, name='tabpol' )
+
+           !deallocate(tab2pol)
+           call de_alloc( tab2pol, name='tab2pol' )
+
+           !deallocate(coretab)
+           call de_alloc( coretab, name='coretab' )
+
+           !deallocate(chloctab)
+           call de_alloc( chloctab, name='chloctab' )
+
+           !deallocate(vlocaltab)
+           call de_alloc( vlocaltab, name='vlocaltab' )
+
+        !deallocate(izsave)
+        call de_alloc( izsave, name='izsave' )
+        !deallocate(lmxkbsave)
+        call de_alloc( lmxkbsave, name='lmxkbsave' )
+        !deallocate(lmxosave)
+        call de_alloc( lmxosave, name='lmxosave' )
+        !deallocate(npolorbsave)
+        call de_alloc( npolorbsave, name='npolorbsave' )
+        !deallocate(nsemicsave)
+        call de_alloc( nsemicsave, name='nsemicsave' )
+        !deallocate(nzetasave)
+        call de_alloc( nzetasave, name='nzetasave' )
+        !deallocate(nomax)
+        call de_alloc( nomax, name='nomax' )
+        !deallocate(nkbmax)
+        call de_alloc( nkbmax, name='nkbmax' )
+        !deallocate(zvaltb)
+        call de_alloc( zvaltb, name='zvaltb' )
+        !deallocate(cnfigtb)
+        call de_alloc( cnfigtb, name='cnfigtb' )
+        !deallocate(nkblsave)
+        call de_alloc( nkblsave, name='nkblsave' )
+        !deallocate(semicsave)
+        call de_alloc( semicsave, name='semicsave' )
 
         end subroutine deallocate_old_arrays
 
-!-------------------------------------------------------
       subroutine clear_tables()
 
       integer is
@@ -197,7 +355,6 @@ C     chemical species present in the calculation.
 
            enddo 
        end subroutine clear_tables
-!----------------------------------------------------------------
 
       subroutine check_is(name,is)
       character(len=*), intent(in) :: name
@@ -206,7 +363,7 @@ C     chemical species present in the calculation.
       if ((is.lt.1).or.(is.gt.nsmax)) then 
             write(6,*) trim(name),': THERE ARE NO DATA FOR IS=',IS
             write(6,*) trim(name),': ISMIN= 1, NSMAX= ',nsmax
-         call die
+         call die()
       endif
       end subroutine check_is
 !
@@ -332,7 +489,7 @@ C
             write(6,*) 'CNFIGFIO: THERE ARE NO DATA FOR IO=',IO
             write(6,*) 'CNFIGFIO: IOMIN= 1',
      .           ' IOMAX= ',nomax(is)
-         call die
+         call die()
       endif
 
         norb=0
@@ -359,7 +516,7 @@ C
 20      continue
            write(6,*) 'CNFIGFIO: ERROR: ORBITAL INDEX IO=',IO
            write(6,*) 'CNFIGFIO: ERROR: NOT FOUND'
-        call die
+        call die()
 
 30      lorb=l
         nsmorb=nsm
@@ -495,7 +652,7 @@ C   INTEGER MOFIO  : Quantum number M of orbital or KB projector
 20      continue
         write(6,*) 'MOFIO: ERROR: ORBITAL INDEX IO=',IO
         write(6,*) 'MOFIO: ERROR: NOT FOUND'
-        call die
+        call die()
 
 30      lorb=l 
         mofio=io-norb+lorb
@@ -529,7 +686,7 @@ c       elseif (io.eq.0) then
       end function mofio
 !
 
-!  End of FIOs ----------------------------------------------------
+!  End of FIOs 
 !
 
       FUNCTION EPSKB (IS,IO)
@@ -565,7 +722,7 @@ C
          if(ik.lt.-nkbmax(is)) then
              write(6,*) 'EPSKB: THERE ARE NO DATA FOR IO=',IK
              write(6,*) 'EPSKB: IOMIN= ',-nkbmax(is)
-           CALL DIE
+           CALL DIE()
          endif
 
          nkb=0
@@ -636,7 +793,7 @@ C
 20      continue     
           write(6,*) 'RCUT: ERROR: ORBITAL INDEX IO=',IO
           write(6,*) 'RCUT: ERROR: NOT FOUND'
-        call die
+        call die()
 
 30      lorb=l
         nzetorb=izeta
