@@ -52,6 +52,7 @@ C *********************************************************************
       use atmfuncs,     only : rcut
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
+      use alloc,        only : re_alloc, de_alloc
 
       implicit none
 
@@ -75,13 +76,11 @@ C Internal variables
       real(dp)
      .  grSij(3), rij, Sij, xinv(3)
 
-      real(dp), dimension(:), allocatable, save :: 
-     .  Si
+      real(dp), dimension(:), pointer ::  Si
 
-      real(dp), save :: tiny = 1.0d-9
+      real(dp), parameter  :: tiny = 1.0d-9
 
-      external
-     .  neighb, memory
+      external neighb
 C ......................
 
 C Initialize neighb subroutine 
@@ -90,8 +89,9 @@ C Initialize neighb subroutine
      .             nnia, jna, xij, r2ij )
 
 C Allocate local memory
-      allocate(Si(no))
-      call memory('A','D',no,'phirphi')
+      nullify( Si )
+      call re_alloc( Si, 1, no, name='Si',
+     &               routine='subroutine phirphi' )
 
       do jo = 1,no
         Si(jo) = 0.0d0
@@ -160,8 +160,6 @@ C Allocate local memory
       enddo
 
 C Deallocate local memory
-      call memory('D','D',size(Si),'phirphi')
-      deallocate(Si)
+      call de_alloc( Si, name='Si' )
 
-      return
       end

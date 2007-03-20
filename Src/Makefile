@@ -33,7 +33,8 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
 dep: 
-	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90
+	sfmakedepend --depend=obj --srcdir $(VPATH) --modext=o \
+        $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90
 	@sed '/^siesta_cmlsubs.o:/s/version.o//'  Makefile > tmp.Makefile
 	@mv tmp.Makefile Makefile
 #
@@ -273,7 +274,8 @@ basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
 basis_specs.o: pseudopotential.o sys.o
 basis_types.o: atmparams.o precision.o pseudopotential.o sys.o
 bessph.o: parallel.o precision.o sys.o
-bonds.o: atmfuncs.o precision.o recipes.o sorting.o units.o
+bonds.o: alloc.o atmfuncs.o m_neighbors.o precision.o recipes.o sorting.o
+bonds.o: units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_neighbors.o m_spin.o
 born_charge.o: parallel.o siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
@@ -430,7 +432,8 @@ naefs.o: atmfuncs.o precision.o
 neighb.o: precision.o
 new_dm.o: atomlist.o m_spin.o m_steps.o siesta_geom.o siesta_options.o
 new_dm.o: sparse_matrices.o
-nlefsm.o: atmfuncs.o parallel.o parallelsubs.o precision.o
+nlefsm.o: alloc.o atmfuncs.o m_neighbors.o parallel.o parallelsubs.o
+nlefsm.o: precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
 ofc.o: files.o precision.o
@@ -449,17 +452,17 @@ overlap.o: precision.o
 parallelsubs.o: parallel.o spatial.o sys.o
 pdos.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
 pdos.o: parallelsubs.o precision.o siesta_geom.o units.o xml.o
-pdosg.o: parallel.o parallelsubs.o precision.o sys.o
-pdosk.o: parallel.o parallelsubs.o precision.o sys.o
-pdoskp.o: parallel.o parallelsubs.o precision.o sys.o
+pdosg.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
+pdosk.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
+pdoskp.o: alloc.o parallel.o parallelsubs.o precision.o sys.o units.o
 periodic_table.o: precision.o sys.o
-phirphi.o: atmfuncs.o parallel.o parallelsubs.o precision.o
+phirphi.o: alloc.o atmfuncs.o parallel.o parallelsubs.o precision.o
 phirphi_opt.o: alloc.o atm_types.o atmfuncs.o atmparams.o parallel.o
 phirphi_opt.o: parallelsubs.o precision.o spher_harm.o sys.o
 phonon.o: files.o parallel.o precision.o sys.o
 pixmol.o: files.o periodic_table.o precision.o
 plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
-poison.o: parallel.o precision.o sys.o
+poison.o: alloc.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o m_energies.o m_neighbors.o m_spin.o
 post_scf_work.o: setup_hamiltonian.o siesta_cml.o siesta_geom.o
 post_scf_work.o: siesta_options.o sparse_matrices.o
@@ -470,7 +473,7 @@ propor.o: precision.o sys.o
 proximity_check.o: m_neighbors.o parallel.o precision.o siesta_geom.o
 proximity_check.o: siesta_options.o
 pseudopotential.o: flib_spline.o precision.o sys.o
-radfft.o: precision.o recipes.o
+radfft.o: alloc.o precision.o recipes.o
 radial.o: precision.o xml.o
 ranger.o: precision.o sys.o
 rdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
@@ -479,7 +482,7 @@ recipes.o: sys.o
 redcel.o: precision.o sys.o
 reinit.o: files.o parallel.o precision.o
 reoptical.o: parallel.o parsing.o precision.o sys.o
-reord.o: precision.o
+reord.o: alloc.o precision.o
 rhooda.o: atmfuncs.o atomlist.o meshsubs.o meshsubs.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 rhoofd.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o

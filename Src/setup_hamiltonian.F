@@ -126,22 +126,11 @@
 
 ! Non-local-pseudop: energy, forces, stress and matrix elements .......
         if (first.or.last) then
-          call nlefsm(scell, na_u, na_s, isa, xa, indxua, maxna,
+          call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
      .                maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
      .                numh, listhptr, listh, numh, listhptr, listh, 
      .                min(nspin,2), Dscf, Enl, fal, stressl, H)
         
-! Check whether maxna has been increased during nlefsm & resize if needed
-          if (maxna.gt.size(jna)) then
-             call die("Attempt to increase maxna in nlefsm")
-             call re_alloc(jna,1,maxna,name="jna",
-     $            routine="setup_hamiltonian")
-             call re_alloc(xij,1,3,1,maxna,name="xij",
-     $            routine="setup_hamiltonian")
-             call re_alloc(r2ij,1,maxna,name="r2ij",
-     $            routine="setup_hamiltonian")
-          endif
-
 #ifdef MPI
 ! Global reduction of energy terms
           call globalize_sum(Enl,buffer1)

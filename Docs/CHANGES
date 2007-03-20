@@ -10,6 +10,43 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-03-20 22:50 GMT	Alberto Garcia <albertog@icmab.es>	patch-25
+
+Summary: Allocatables to pointers  II
+Keywords: 
+
+Second merge of the changes Based on work by Manuel Quero from Feb 28 to Mar 16. 
+Allocatable arrays have been turned into pointers in several routines.
+
++ Clarification of the use of the new m_neighbors module.
++ vpath-aware "make dep" target
+
+Patches applied:
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-14
+   radfft
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-15
+   poison
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-16
+   reord
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-17
+   phirphi
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-18
+   PDOS routines
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-19
+   Clarification of m_neighbors use. Nlefsm converted
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-20
+   bonds. Vpath-aware makedepend
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-21
+   shaper
+
 2007-03-19 8:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-24
 
 Summary: Allocatables to pointers  I

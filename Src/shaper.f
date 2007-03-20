@@ -43,6 +43,9 @@ C **********************************************************************
 
       use atmfuncs,  only : rcut
       use precision, only : dp
+      use m_neighbors, only : init_neighbor_arrays
+      use m_neighbors, only : maxna, jna, r2ij, xij
+      use alloc,       only : re_alloc, de_alloc
 
       implicit          none
 
@@ -52,28 +55,10 @@ C **********************************************************************
       CHARACTER         SHAPE*(*)
 
 C Internal variables and arrays
-      integer, save ::
-     .  MAXNA
 
-      integer 
-     .  IA, IN, IS, JA, JS, NNA, maxnain
+      integer :: IA, IN, IS, JA, JS, NNA, maxnain
 
-      integer, dimension(:), allocatable, save :: 
-     .  JAN
-
-      real(dp)
-     .  RI, RIJ, RJ, RMAX, XXJ(3)
-
-      real(dp), dimension(:), allocatable, save :: 
-     .  R2IJ
-
-      real(dp), dimension(:,:), allocatable, save :: 
-     .  XIJ
-
-      logical
-     .  overflow
-
-      data MAXNA / 1000 /
+      real(dp) :: RI, RIJ, RJ, RMAX, XXJ(3)
 
 C Find maximum interaction range
       RMAX = 0.0D0
@@ -81,35 +66,11 @@ C Find maximum interaction range
         IS = ISA(IA)
         RMAX = MAX( RMAX, RCUT(IS,0) )
       enddo
-
-C Allocate local memory
-  100 if (.not.allocated(jan)) then
-        allocate(jan(maxna))
-        call memory('A','I',maxna,'shaper')
-      endif
-      if (.not.allocated(r2ij)) then
-        allocate(r2ij(maxna))
-        call memory('A','D',maxna,'shaper')
-      endif
-      if (.not.allocated(xij)) then
-        allocate(xij(3,maxna))
-        call memory('A','D',3*maxna,'shaper')
-      endif
+      call init_neighbor_arrays(rmax)
 
 C Initialize neighbour-locater routine
       NNA = MAXNA
-      CALL NEIGHB( CELL, 2*RMAX, NA, XA, 0, 0, NNA, JAN, XIJ, R2IJ )
-      overflow = (nna.gt.maxna)
-      if (overflow) then
-        call memory('D','I',size(jan),'shaper')
-        deallocate(jan)
-        call memory('D','D',size(r2ij),'shaper')
-        deallocate(r2ij)
-        call memory('D','D',size(xij),'shaper')
-        deallocate(xij)
-        maxna = nna + nint(0.1*nna)
-        goto 100
-      endif
+      CALL NEIGHB( CELL, 2*RMAX, NA, XA, 0, 0, NNA, JNA, XIJ, R2IJ )
 
 C Main loop
       NV = 0
@@ -121,17 +82,10 @@ C Main loop
 C Find neighbours of atom IA
         NNA = maxnain
         CALL NEIGHB( CELL, RI+RMAX, NA, XA, IA, 0,
-     .               NNA, JAN, XIJ, R2IJ )
-        if (.not.overflow) overflow = (nna.gt.maxna)
-        if (overflow) then
-          maxna = max(maxna,nna)
-        endif
-
-C Don't do the actual work if the neighbour arrays are too small
-        if (.not.overflow) then
+     .               NNA, JNA, XIJ, R2IJ )
 
           do IN = 1,NNA
-            JA = JAN(IN)
+            JA = JNA(IN)
             JS = ISA(JA)
             RJ = RCUT(JS,0)
             RIJ = SQRT(R2IJ(IN))
@@ -151,21 +105,7 @@ C Add to set of linearly independent vectors
               IF (NV .EQ. 3) GOTO 999
             ENDIF
           enddo
-        endif
-
       enddo
-
-C If maxna dimension was no good then reset arrays and start again
-      if (overflow) then
-        call memory('D','I',size(jan),'shaper')
-        deallocate(jan)
-        call memory('D','D',size(r2ij),'shaper')
-        deallocate(r2ij)
-        call memory('D','D',size(xij),'shaper')
-        deallocate(xij)
-        maxna = maxna + nint(0.1*maxna)
-        goto 100
-      endif
 
 C Exit point
   999 continue
@@ -175,28 +115,19 @@ C Exit point
       IF (NV.EQ.2) SHAPE = 'slab'
       IF (NV.EQ.3) SHAPE = 'bulk'
 
-C Deallocate local memory
-      call memory('D','I',size(jan),'shaper')
-      deallocate(jan)
-      call memory('D','D',size(r2ij),'shaper')
-      deallocate(r2ij)
-      call memory('D','D',size(xij),'shaper')
-      deallocate(xij)
-
       end
 
-
-
       SUBROUTINE LIVEC( X, NV, V )
+      use precision, only : dp
 
 C Adds vector X to set of NV linearly-independent vectors V (if true)
 C Written by J.M.Soler. July 1997.
 
       IMPLICIT          NONE
       INTEGER           LV, NV
-      DOUBLE PRECISION  TOL, V(3,3), VV(3), VV2, VVX, X(3), X2
+      real(dp)          TOL, V(3,3), VV(3), VV2, VVX, X(3), X2
 
-      PARAMETER  ( TOL = 1.D-6 ) 
+      PARAMETER  ( TOL = 1.0e-6_dp ) 
 
       LV = NV
       IF (NV .EQ. 0) THEN

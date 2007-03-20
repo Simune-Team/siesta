@@ -10,12 +10,6 @@
 !
       module m_nlefsm
 
-      use precision,     only : dp
-      use parallel,      only : Node, Nodes
-      use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
-      use parallelsubs,  only : GlobalToLocalOrb
-      use atmfuncs,      only : rcut, epskb
-
       implicit none
 
       public :: nlefsm
@@ -24,7 +18,7 @@
 
       CONTAINS
 
-      subroutine nlefsm( scell, nua, na, isa, xa, indxua, maxna,
+      subroutine nlefsm( scell, nua, na, isa, xa, indxua,
      .                   maxnh, maxnd, lasto, lastkb, iphorb, 
      .                   iphKB, numd, listdptr, listd, numh, 
      .                   listhptr, listh, nspin, Dscf, Enl, 
@@ -41,7 +35,6 @@ C integer na               : Number of atoms in supercell
 C integer isa(na)          : Species index of each atom
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 C integer indxua(na)       : Index of equivalent atom in unit cell
-C integer maxna            : Maximum number of atoms for neighb
 C integer maxnh            : First dimension of H and listh
 C integer maxnd            : Maximum number of elements of the
 C                            density matrix
@@ -75,10 +68,16 @@ C *********************************************************************
 C
 C  Modules
 C
+      use precision,     only : dp
+      use parallel,      only : Node, Nodes
+      use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
+      use parallelsubs,  only : GlobalToLocalOrb
+      use atmfuncs,      only : rcut, epskb
+      use m_neighbors,   only : maxna, iana=>jna, r2ki=>r2ij, xki=>xij
+      use alloc,         only : re_alloc, de_alloc
 
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
-      integer, intent(inout)  :: maxna
 
       integer, intent(in)  ::
      .  indxua(na), iphKB(*), iphorb(*), isa(na),  
@@ -92,12 +91,12 @@ C
       real(dp), intent(out)   :: Enl
 
       real(dp) ::   volcel
-      external ::   neighb, timer, volcel, memory
+      external ::   neighb, timer, volcel
 
 C Internal variables ................................................
 C maxno  = maximum number of basis orbitals overlapping a KB projector
-      integer, save ::
-     .  maxno
+
+      integer, save ::  maxno = 2000
   
       integer
      .  ia, ikb, ina, ind, ino,
@@ -105,29 +104,18 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
      .  nkb, nna, nno, no, nuo, nuotot, maxnain, maxkba
 
-      integer, dimension(:), allocatable, save ::
-     .  iano, iana, iono, ibuffer
+      integer, dimension(:), pointer :: iano, iono
 
       real(dp)
      .  Cijk, epsk, fik, rki, rmax, rmaxkb, rmaxo, 
      .  Sik, Sjk, volume
 
-      real(dp), dimension(:), allocatable, save ::
-     .  Di, Vi, r2ki
+      real(dp), dimension(:), pointer :: Di, Vi
+      real(dp), dimension(:,:), pointer :: Ski, xno
+      real(dp), dimension(:,:,:), pointer :: grSki
 
-      real(dp), dimension(:,:), allocatable, save ::
-     .  Ski, xki, xno, dpbuffer2
-
-      real(dp), dimension(:,:,:), allocatable, save ::
-     .  grSki, dpbuffer3
-
-      logical
-     .  within, overflow
-     
-      logical, dimension(:), allocatable, save ::
-     .  listed, listedall
-
-      data maxno  / 2000 /
+      logical ::   within
+      logical, dimension(:), pointer ::  listed, listedall
 C ......................
 
 C Start time counter
@@ -158,18 +146,18 @@ C Initialize arrays Di and Vi only once
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 C Allocate local memory
-      allocate(Di(no))
-      call memory('A','D',no,'nlefsm')
-      allocate(Vi(no))
-      call memory('A','D',no,'nlefsm')
-      allocate(listed(no))
-      call memory('A','L',no,'nlefsm')
-      allocate(listedall(no))
-      call memory('A','L',no,'nlefsm')
+      nullify( Di )
+      call re_alloc( Di, 1, no, name='Di', routine='nlefsm' )
+      nullify( Vi )
+      call re_alloc( Vi, 1, no, name='Vi', routine='nlefsm' )
+      nullify( listed )
+      call re_alloc( listed, 1, no, name='listed', routine='nlefsm' )
+      nullify( listedall )
+      call re_alloc( listedall, 1, no, name='iano', routine='nlefsm' )
 
       Enl = 0.0d0
       do jo = 1,no
-        Di(jo) = 0.0d0
+        Di(jo) = 0.0d0         !AG: superfluous after initial re_alloc
         Vi(jo) = 0.0d0
         listed(jo) = .false.
         listedall(jo) = .false.
@@ -193,47 +181,26 @@ C Find maximum number of KB projectors of one atom = maxkba
       enddo
 
 C Allocate local arrays that depend on saved parameters
-      allocate(iano(maxno))
-      call memory('A','I',maxno,'nlefsm')
-      allocate(iono(maxno))
-      call memory('A','I',maxno,'nlefsm')
-      allocate(xno(3,maxno))
-      call memory('A','D',3*maxno,'nlefsm')
-      allocate(Ski(maxkba,maxno))
-      call memory('A','D',maxkba*maxno,'nlefsm')
-      allocate(grSki(3,maxkba,maxno))
-      call memory('A','D',3*maxkba*maxno,'nlefsm')
-  100 if (.not.allocated(iana)) then
-        allocate(iana(maxna))
-        call memory('A','I',maxna,'nlefsm')
-      endif
-      if (.not.allocated(r2ki)) then
-        allocate(r2ki(maxna))
-        call memory('A','D',maxna,'nlefsm')
-      endif
-      if (.not.allocated(xki)) then
-        allocate(xki(3,maxna))
-        call memory('A','D',3*maxna,'nlefsm')
-      endif
+      nullify( iano )
+      call re_alloc( iano, 1, maxno, name='iano', routine='nlefsm' )
+      nullify( iono )
+      call re_alloc( iono, 1, maxno, name='iono', routine='nlefsm' )
+      nullify( xno )
+      call re_alloc( xno, 1, 3, 1, maxno, name='xno', 
+     &               routine='nlefsm' )
+      nullify( Ski )
+      call re_alloc( Ski, 1, maxkba, 1, maxno, name='Ski', 
+     &               routine='nlefsm' )
+      nullify( grSki )
+      call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno, name='grSki',
+     &               routine='nlefsm' )
 
 C Initialize neighb subroutine
       nna = maxna
       call neighb( scell, rmax, na, xa, 0, 0,
      .             nna, iana, xki, r2ki )
-      overflow = (nna.gt.maxna)
-      if (overflow) then
-        call memory('D','I',size(iana),'nlefsm')
-        deallocate(iana)
-        call memory('D','D',size(r2ki),'nlefsm')
-        deallocate(r2ki)
-        call memory('D','D',size(xki),'nlefsm')
-        deallocate(xki)
-        maxna = nna + nint(0.1*nna)
-        goto 100
-      endif
 
 C Loop on atoms with KB projectors      
-      overflow = .false.
       maxnain = maxna
       do ka = 1,na
         kua = indxua(ka)
@@ -244,13 +211,6 @@ C Find neighbour atoms
         nna = maxnain
         call neighb( scell, rmax, na, xa, ka, 0,
      .               nna, iana, xki, r2ki )
-        if (.not.overflow) overflow = (nna.gt.maxna)
-        if (overflow) then
-          maxna = max(maxna,nna)
-        endif
-
-C Don't do the actual work if the neighbour arrays are too small
-        if (.not.overflow) then
 
 C Find neighbour orbitals
           nno = 0
@@ -277,55 +237,17 @@ C Find overlap between neighbour orbitals and KB projectors
                 if (within) then
 C Check maxno - if too small then increase array sizes
                   if (nno.eq.maxno) then
-                    allocate(ibuffer(maxno))
-                    call memory('A','I',maxno,'nlefsm')
-                    ibuffer(1:maxno) = iano(1:maxno)
-                    call memory('D','I',size(iano),'nlefsm')
-                    deallocate(iano)
-                    allocate(iano(maxno+100))
-                    call memory('A','I',maxno+100,'nlefsm')
-                    iano(1:maxno) = ibuffer(1:maxno)
-                    call memory('D','I',size(ibuffer),'nlefsm')
-                    ibuffer(1:maxno) = iono(1:maxno)
-                    call memory('D','I',size(iono),'nlefsm')
-                    deallocate(iono)
-                    allocate(iono(maxno+100))
-                    call memory('A','I',maxno+100,'nlefsm')
-                    iono(1:maxno) = ibuffer(1:maxno)
-                    deallocate(ibuffer)
-                    allocate(dpbuffer2(3,maxno))
-                    call memory('A','D',3*maxno,'nlefsm')
-                    dpbuffer2(1:3,1:maxno) = xno(1:3,1:maxno)
-                    call memory('D','D',size(xno),'nlefsm')
-                    deallocate(xno)
-                    allocate(xno(3,maxno+100))
-                    call memory('A','D',3*(maxno+100),'nlefsm')
-                    xno(1:3,1:maxno) = dpbuffer2(1:3,1:maxno)
-                    call memory('D','D',size(dpbuffer2),'nlefsm')
-                    deallocate(dpbuffer2)
-                    allocate(dpbuffer2(maxkba,maxno))
-                    call memory('A','D',maxkba*maxno,'nlefsm')
-                    dpbuffer2(1:maxkba,1:maxno) = Ski(1:maxkba,1:maxno)
-                    call memory('D','D',size(Ski),'nlefsm')
-                    deallocate(Ski)
-                    allocate(Ski(maxkba,maxno+100))
-                    call memory('A','D',maxkba*(maxno+100),'nlefsm')
-                    Ski(1:maxkba,1:maxno) = dpbuffer2(1:maxkba,1:maxno)
-                    call memory('D','D',size(dpbuffer2),'nlefsm')
-                    deallocate(dpbuffer2)
-                    allocate(dpbuffer3(3,maxkba,maxno))
-                    call memory('A','D',3*maxkba*maxno,'nlefsm')
-                    dpbuffer3(1:3,1:maxkba,1:maxno) = grSki(1:3,
-     .                1:maxkba,1:maxno)
-                    call memory('D','D',size(grSki),'nlefsm')
-                    deallocate(grSki)
-                    allocate(grSki(3,maxkba,maxno+100))
-                    call memory('A','D',3*maxkba*(maxno+100),'nlefsm')
-                    grSki(1:3,1:maxkba,1:maxno) = dpbuffer3(1:3,
-     .                1:maxkba,1:maxno)
-                    call memory('D','D',size(dpbuffer3),'nlefsm')
-                    deallocate(dpbuffer3)
                     maxno = maxno + 100
+                    call re_alloc( iano, 1, maxno, name='iano',
+     $                   copy=.true., routine='nlefsm' )
+                    call re_alloc( iono, 1, maxno, name='iono',
+     $                   copy=.true., routine='nlefsm' )
+                    call re_alloc( xno, 1, 3, 1, maxno, name='xno', 
+     &                   copy=.true., routine='nlefsm' )
+                    call re_alloc( Ski, 1, maxkba, 1, maxno, name='Ski', 
+     &                   copy=.true., routine='nlefsm' )
+                    call re_alloc( grSki, 1, 3, 1, maxkba, 1, maxno,
+     $                   name='grSki', routine='nlefsm', copy=.true. )
                   endif
                   nno = nno + 1
                   iono(nno) = io
@@ -427,46 +349,20 @@ C Pick up contributions to H and restore Di and Vi
 
           enddo
 
-        endif
-
       enddo
 
-      if (overflow) then
-        call memory('D','I',size(iana),'nlefsm')
-        deallocate(iana)
-        call memory('D','D',size(r2ki),'nlefsm')
-        deallocate(r2ki)
-        call memory('D','D',size(xki),'nlefsm')
-        deallocate(xki)
-        maxna = nna + nint(0.1*nna)
-        goto 100
-      endif
-
 C Deallocate local memory
-      call memory('D','D',size(xki),'nlefsm')
-      deallocate(xki)
-      call memory('D','D',size(r2ki),'nlefsm')
-      deallocate(r2ki)
-      call memory('D','I',size(iana),'nlefsm')
-      deallocate(iana)
-      call memory('D','D',size(grSki),'nlefsm')
-      deallocate(grSki)
-      call memory('D','D',size(Ski),'nlefsm')
-      deallocate(Ski)
-      call memory('D','D',size(xno),'nlefsm')
-      deallocate(xno)
-      call memory('D','I',size(iono),'nlefsm')
-      deallocate(iono)
-      call memory('D','I',size(iano),'nlefsm')
-      deallocate(iano)
-      call memory('D','L',size(listedall),'nlefsm')
-      deallocate(listedall)
-      call memory('D','L',size(listed),'nlefsm')
-      deallocate(listed)
-      call memory('D','D',size(Vi),'nlefsm')
-      deallocate(Vi)
-      call memory('D','D',size(Di),'nlefsm')
-      deallocate(Di)
+
+      call de_alloc( grSki, name='grSki' )
+      call de_alloc( Ski, name='Ski' )
+      call de_alloc( xno, name='xno' )
+      call de_alloc( iono, name='iono' )
+      call de_alloc( iano, name='iano' )
+
+      call de_alloc( listedall, name='listedall' )
+      call de_alloc( listed, name='listed' )
+      call de_alloc( Vi, name='Vi' )
+      call de_alloc( Di, name='Di' )
 
       call timer( 'nlefsm', 2 )
 

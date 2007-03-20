@@ -14,13 +14,17 @@
 
       real(dp), intent(in)  :: rmax
 
-      integer :: ii, jj, jamin, idxneighJ, nneigbI, isel
+      integer :: ii, jj, jamin, idxneighJ, nneigbI, isel, nna
       real(dp):: rmin, r2min 
 
 
       ! Check if any two atoms are unreasonably close
 
       isel = 0   ! Get back all neighbors, regardless of whether ja>ia
+      ! Initialize neighb
+      nna = maxna
+      call neighb( scell, rmax, na_s, xa, 0, isel,
+     .               nna , jna, xij, r2ij )
       do ii = 1,na_s
         r2min = huge(1._dp)
         jamin = 0

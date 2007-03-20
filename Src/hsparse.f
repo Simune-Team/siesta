@@ -166,6 +166,13 @@ C Find maximum range of basis orbitals and KB projectors
       call re_alloc(index,1,maxna, name="index")
 
       isel = 0
+      ! Initialize internal data structures in neighb
+      ! Note that this is necessary if, for example,
+      ! we switch from considering unit-cell numbering
+      ! to supercell numbering...
+      nna = maxna
+      call neighb( cell, rmax, na, xa, 0, isel,
+     .             nna, jna, xij, r2ij )
 
 C Initialize number of neighbour orbitals
       do io = 1,nuo 

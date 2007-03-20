@@ -63,7 +63,7 @@ C **********************************************************************
       use flib_wxml
       use xml,          only : xml_dump_attribute
       use densematrix,  only : Haux, Saux, psi
-      use alloc
+      use alloc,        only : re_alloc, de_alloc
       use units,        only : eV
       use files,        only : slabel, label_length
 #ifdef MPI
@@ -87,8 +87,8 @@ C **********************************************************************
      .  gamma
 
 C Dynamic arrays -------------------------------------------------------
-      real(dp), dimension(:,:)  , allocatable :: DTOT
-      real(dp), dimension(:,:,:), allocatable :: DPR
+      real(dp), dimension(:,:)  , pointer :: DTOT
+      real(dp), dimension(:,:,:), pointer :: DPR
 
 C Internal variables ---------------------------------------------------
       integer
@@ -99,7 +99,7 @@ C Internal variables ---------------------------------------------------
 
       logical, save :: ParallelOverK = .false.
 
-      real(dp), dimension(:), allocatable  :: tmp
+      real(dp), dimension(:), pointer  :: tmp
 
       character*40 pos_string
 
@@ -156,10 +156,12 @@ C Allocate local arrays ------------------------------------------------
       call re_alloc(Haux,1,nhs,name='Haux',routine='pdos')
       call re_alloc(Saux,1,nhs,name='Saux',routine='pdos')
       call re_alloc(psi,1,npsi,name='psi',routine='pdos')
-      allocate(dtot(nhist,2))
-      call memory('A','D',2*nhist,'pdos')
-      allocate(dpr(nhist,nuotot,2))
-      call memory('A','D',2*nhist*nuotot,'pdos')
+      nullify( dtot )
+      call re_alloc( dtot, 1, nhist, 1, 2, name='dtot',
+     &               routine='pdos' )
+      nullify( dpr )
+      call re_alloc( dpr, 1, nhist, 1, nuotot, 1, 2, name='dpr',
+     &               routine='pdos' )
 
 C Initialize the projected density of states ---------------------------
       do ispin = 1, 2
@@ -231,7 +233,9 @@ C New writing
         call xml_AddAttribute(xf,"units","eV")
         write(iunit2,'(a)') '<energy_values units="eV">'
 
-        allocate(tmp(2*nhist))
+        nullify( tmp )
+        call re_alloc( tmp, 1, 2*nhist, name='tmp',
+     &                 routine='pdos' )
         do ihist = 1,nhist
            ENER = E1 + (ihist-1) * delta
            tmp(ihist) = ener/eV
@@ -302,18 +306,15 @@ C Close file
         call io_close(iunit2)
 
 C Free local workspace array
-        deallocate(tmp)
+        call de_alloc( tmp, name='tmp' )
 
       endif
 
 C Free local arrays ----------------------------------------------------
-      call memory('D','D',size(dpr),'pdos')
-      deallocate(dpr)
-      call memory('D','D',size(dtot),'pdos')
-      deallocate(dtot)
+      call de_alloc( dpr, name='dpr' )
+      call de_alloc( dtot, name='dtot' )
 
       call timer( 'pdos', 2)
 
-      return
       end
 

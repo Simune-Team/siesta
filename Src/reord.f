@@ -25,6 +25,7 @@ C REAL*4 FSEQ(NSM*NM1,NSM*NM2,NSM*NM3)   : SEQuential data
 C ********************************************************************
 
       use precision, only: grid_p
+      use alloc,     only: re_alloc, de_alloc
 
       IMPLICIT NONE
       INTEGER, intent(in)         ::   NM(3), NSM, ITR 
@@ -34,10 +35,8 @@ C ********************************************************************
      .  I, I0, I1, I2, I3, IS, IS1, IS2, IS3,
      .  J, J0, NSM3, NTM(3), NAUX
 
-      external ::  memory
-
-      real(grid_p), dimension(:), allocatable, save :: AUX
-      integer, dimension(:), allocatable, save :: JS
+      real(grid_p), dimension(:), pointer :: AUX
+      integer, dimension(:), pointer :: JS
      
       CALL TIMER('REORD',1)
 
@@ -49,10 +48,10 @@ C ********************************************************************
 C
 C  Allocate local memory
 C
-      allocate(AUX(NAUX))
-      call memory('A','X',naux,'reord')
-      allocate(JS(NSM3))
-      call memory('A','I',nsm3,'reord')
+      nullify ( AUX )
+      call re_alloc( AUX, 1, NAUX, name='AUX', routine='reord' )
+      nullify ( JS )
+      call re_alloc( JS, 1, NSM3, name='JS', routine='reord' )
 
       IS = 0
       DO IS3 = 0,NSM-1
@@ -109,10 +108,8 @@ C
 C
 C  Free local memory
 C
-      call memory('D','I',size(JS),'reord')
-      deallocate(JS)
-      call memory('D','S',size(AUX),'reord')
-      deallocate(AUX)
+      call de_alloc( JS,  name='JS' )
+      call de_alloc( AUX,  name='AUX' )
 
       CALL TIMER('REORD',2)
       END

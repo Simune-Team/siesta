@@ -6,7 +6,12 @@ module m_neighbors
 
   private
 
-! First stage: Hold the variables
+! Holds the arrays needed for calls to neighb
+! Users of this module should always initialize neighb
+! by calling it with ia=0
+! (This is necessary since neighb's internal data structures
+! depend on whether the unit cell or the auxiliary supercell
+! are considered, even though the actual neighbors do not).
 
   ! Max. number of neighbor atoms
   integer, public                  :: maxna=200 
@@ -15,16 +20,15 @@ module m_neighbors
   real(dp), pointer, save, public  :: r2ij(:)
   real(dp), pointer, save, public  :: xij(:,:)
 
-! Second stage: Create a "neighboring atoms" sparse data structure
-
   public :: init_neighbor_arrays
 
 CONTAINS
 
   subroutine init_neighbor_arrays(rmax)
+
     ! Resizes neighbor arrays so that a range "rmax" is covered
 
-    use siesta_geom,    only: scell, xa, na_u, na_s
+    use siesta_geom,    only: ucell, xa, na_u
     use alloc,          only: re_alloc
 
     implicit none
@@ -48,14 +52,19 @@ CONTAINS
 
     isel = 0  
 
+    ! It is enough to deal with the unit cell, as images are
+    ! handled also.
+
     ! Initialize neighb subroutine  (ia=0)
     nnia = maxna
-    call neighb( scell, rmax, na_s, xa, 0, isel, nnia, jna, xij, r2ij )
+    call neighb( ucell, rmax, na_u, xa, 0, isel, nnia, jna, xij, r2ij )
+
+    ! Find maximum number of neighbors
     nnamax = 0
     do ia = 1,na_u
        nnia = 0  ! Pass without filling arrays,
                  ! just to get maximum size needed
-       call neighb( scell, rmax, na_s, xa, ia, isel, nnia, jna, xij, r2ij )
+       call neighb( ucell, rmax, na_u, xa, ia, isel, nnia, jna, xij, r2ij )
        nnamax = max( nnamax, nnia )
     enddo
     if (nnamax .gt. maxna) then

@@ -43,6 +43,7 @@ C
       use precision,   only : dp, grid_p
       use parallel,    only : Node, Nodes, ProcessorY
       use sys,         only : die
+      use alloc,       only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -57,7 +58,7 @@ C
       real(grid_p)      RHO(N1*N2*N3), V(N1*N2*N3)
       real(dp)          CELL(3,3), STRESS(3,3), U
 
-      real(grid_p), dimension(:,:), allocatable, save :: CG
+      real(grid_p), dimension(:,:), pointer  :: CG
 
       integer           I, I1, I2, I3, IX, J, J1, J2, J3, JX,
      .                  NP, NG, NG2, NG3, 
@@ -66,7 +67,7 @@ C
      .                  BlockSizeY, BlockSizeZ
       real(dp)          C, B(3,3), DU, G(3), G2, G2MAX, 
      .                  K0(3), PI, TINY, VG, VOLUME, VOLCEL
-      externaL          CHKGMX, FFT, RECLAT, VOLCEL, memory
+      externaL          CHKGMX, FFT, RECLAT, VOLCEL
       save              K0, TINY
 
       data K0   /3*0.0_dp/
@@ -83,8 +84,9 @@ C Start timer
       call timer('POISON',1)
 
 C Allocate local memory
-      allocate(CG(2,n1*n2*n3))
-      call memory('A','X',2*n1*n2*n3,'poison')
+      nullify( CG )
+      call re_alloc( CG, 1, 2, 1, n1*n2*n3, name='CG', 
+     &                 routine='poison' )
 
 C Find unit cell volume
       VOLUME = VOLCEL( CELL )
@@ -207,8 +209,7 @@ C Stop time counter
       call timer('POISON',2)
 
 C Free local memory
-      call memory('D','S',size(CG),'poison')
-      deallocate(CG)
+      call de_alloc( CG, name='CG' )
 
       return
       end
