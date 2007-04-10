@@ -120,6 +120,7 @@ C *******************************************************************
       use xcmod,        only : nXCfunc, XCfunc, XCauth
       use xcmod,        only : XCweightX, XCweightC
       use sys,          only :die
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
 C  Modules
       use parallel,     only : Node, Nodes, ProcessorY
@@ -187,12 +188,10 @@ C MPI related variables
       logical 
      .  NoLocalPoints
 
-      real(grid_p), dimension(:,:,:), allocatable, save :: 
-     .  bdens, bvxc
-      real(grid_p), dimension(:,:), allocatable, save :: 
-     .  bbuffer, dbuffer
-      integer, dimension(:,:), allocatable, save :: 
-     .  PMesh
+      real(grid_p), dimension(:,:,:), pointer :: bdens, bvxc
+      real(grid_p), dimension(:,:),   pointer :: bbuffer, dbuffer
+      integer,      dimension(:,:),   pointer :: PMesh
+
 #endif
 
 C Local variables and arrays
@@ -207,7 +206,7 @@ C Local variables and arrays
      .                  DVCDN(mspin*mspin), DVXDN(mspin*mspin),
      .                  EPSC, EPSX, F1, F2, GD(3,mspin),
      .                  VOLCEL, volume, stress(3,3)
-      external          GGAXC, LDAXC, RECLAT, VOLCEL, memory
+      external          GGAXC, LDAXC, RECLAT, VOLCEL
 
 C Start time counter (intended only for debugging and development)
       call timer( 'cellXC', 1 )
@@ -309,16 +308,20 @@ C Check that this Node was some points
         endif
 
 C Allocate memory for border densities and potential
-        allocate(bdens(NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
-     .           4*NN,nspin))
-        call memory('A','X',NSpan(1)*max(BlockSizeYMax,BlockSizeZMax)*
-     .              4*NN*nspin,'cellxc')
-        allocate(bvxc(NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
-     .           4*NN,nspin))
-        call memory('A','X',NSpan(1)*max(BlockSizeYMax,BlockSizeZMax)*
-     .              4*NN*nspin,'cellxc')
-        allocate(PMesh(3,4))
-        call memory('A','I',12,'cellxc')
+
+        nullify( bdens )
+        call re_alloc( bdens,
+     &                 1, NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
+     &                 1, 4*NN, 1, nspin, name='bdens',
+     &                 routine='cellxc' )
+        nullify( bvxc )
+        call re_alloc( bdens,
+     &                 1,NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
+     &                 1, 4*NN, 1, nspin, name='bvxc',
+     &                 routine='cellxc' )
+        nullify( PMesh )
+        call re_alloc( PMesh, 1, 3, 1, 4, name='PMesh',
+     &                 routine='cellxc' )
 
 C Exchange density information in the Z-direction
         if (NMesh(3).ne.NMeshG(3)) then
@@ -349,9 +352,13 @@ C Find sizes of transfer arrays
 
 C Allocate arrays for data storage
           nmax = max(nrleft,nrright)
-          allocate(bbuffer(nmax,2))
+          nullify( bbuffer )
+          call re_alloc( bbuffer, 1, nmax, 1, 2, name='bbuffer',
+     &                   routine='cellxc' )
           nmax = max(nsleft,nsright)
-          allocate(dbuffer(nmax,2))
+          nullify( dbuffer )
+          call re_alloc( bbuffer, 1, nmax, 1, 2, name='dbuffer',
+     &                   routine='cellxc' )
 
 C Build buffer transfer data array
           nsleft = 0
@@ -411,8 +418,8 @@ C Sort received data
           enddo
 
 C Free arrays for data storage
-          deallocate(dbuffer)
-          deallocate(bbuffer)
+          call de_alloc( dbuffer, name='dbuffer' )
+          call de_alloc( bbuffer, name='bbuffer' )
 
         endif
 
@@ -445,9 +452,13 @@ C Find size of transfer arrays
 
 C Allocate transfer arrays
           nmax = max(nrleft,nrright)
-          allocate(bbuffer(nmax,2))
+          nullify( bbuffer )
+          call re_alloc( bbuffer, 1, nmax, 1, 2, name='bbuffer',
+     &                   routine='cellxc' )
           nmax = max(nsleft,nsright)
-          allocate(dbuffer(nmax,2))
+          nullify( dbuffer )
+          call re_alloc( dbuffer, 1, nmax, 1, 2, name='dbuffer',
+     &                   routine='cellxc' )
 
 C Fill data array for sending
           nsleft = 0
@@ -517,8 +528,8 @@ C Post density receives
           enddo
 
 C Free arrays for data storage
-          deallocate(dbuffer)
-          deallocate(bbuffer)
+          call de_alloc( dbuffer, name='dbuffer' )
+          call de_alloc( bbuffer, name='bbuffer' )
 
         endif
 
@@ -1197,12 +1208,9 @@ C Collect together quantities
 
 C Free memory
       if (GGA.and.Nodes.gt.1.and..not.NoLocalPoints) then
-        call memory('D','X',size(bdens),'cellxc')
-        deallocate(bdens)
-        call memory('D','X',size(bvxc),'cellxc')
-        deallocate(bvxc)
-        call memory('D','I',size(PMesh),'cellxc')
-        deallocate(PMesh)
+        call de_alloc( bdens, name='bdens' )
+        call de_alloc( bvxc, name='bvxc' )
+        call de_alloc( PMesh, name='PMesh' )
       endif
 #endif
 

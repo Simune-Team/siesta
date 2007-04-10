@@ -10,6 +10,7 @@
 !
       module m_forhar
       use precision, only : dp, grid_p
+      use alloc,     only : re_alloc, de_alloc
       use mesh
 
       implicit none
@@ -84,13 +85,16 @@ C ----------------------------------------------------------------------
       INTEGER IP, ISPIN, ISPIN2
       REAL(dp) EX, EC, DEX, DEC, STRESSL(3,3)
       real(grid_p) aux3(3,1)   !! dummy arrays for cellxc
-      REAL(grid_p), DIMENSION(:,:), ALLOCATABLE :: DRHOIN
-      REAL(grid_p), DIMENSION(:,:,:), ALLOCATABLE :: DVXCDN
 
-      ALLOCATE(DRHOIN(NTPL,NSPIN))
-      CALL MEMORY('A','X',ntpl*nspin,'forhar')
-      ALLOCATE(DVXCDN(NTPL,NSPIN,NSPIN))
-      CALL MEMORY('A','X',ntpl,'forhar')
+      real(grid_p), dimension(:,:),   pointer :: drhoin
+      real(grid_p), dimension(:,:,:), pointer :: dvxcdn
+
+      nullify( drhoin )
+      call re_alloc( drhoin, 1, ntpl, 1, nspin, name='drhoin',
+     &               routine='forhar' )
+      nullify( dvxcdn )
+      call re_alloc( dvxcdn, 1, ntpl, 1, nspin, 1, nspin, name='dvxcdn',
+     &               routine='forhar' )
 
 C ----------------------------------------------------------------------
 C Initialize some variables
@@ -161,14 +165,8 @@ C ----------------------------------------------------------------------
         VHARRIS2(IP) = VNA(IP) - VHARRIS2(IP)
       ENDDO
 
-      IF (ALLOCATED(DVXCDN)) THEN
-        CALL MEMORY('D','X',SIZE(DVXCDN),'forhar')
-        DEALLOCATE(DVXCDN)
-      ENDIF
-      IF (ALLOCATED(DRHOIN)) THEN
-        CALL MEMORY('D','X',SIZE(DRHOIN),'forhar')
-        DEALLOCATE(DRHOIN)
-      ENDIF
+      call de_alloc( dvxcdn, name='dvxcdn' )
+      call de_alloc( drhoin, name='drhoin' )
 
       END SUBROUTINE FORHAR
       end module m_forhar

@@ -134,10 +134,9 @@ C Check size of internal arrays
       call GetNodeOrbs(nuotot,Node,Nodes,nuo)  !Numero de orbitales del proceso MPI
 
 C Allocate local arrays
-      allocate(conect(no))
-      call memory('A','L',no,'hsparse')
-      allocate(listhtmp(no))
-      call memory('A','I',no,'hsparse')
+      nullify(conect,listhtmp)
+      call re_alloc(conect,1,no,name="conect",routine="hsparse")
+      call re_alloc(listhtmp,1,no,name="listhtmp",routine="hsparse")
 
 C Find maximum range of basis orbitals and KB projectors
       rmaxo = 0.0d0

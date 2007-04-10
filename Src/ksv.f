@@ -86,7 +86,7 @@ C
       use parsing
       use atmfuncs,      only : zvalfis
       use densematrix
-      use alloc
+      use alloc,         only : re_alloc, de_alloc
       USE m_ksvinit,     only : repol
 
       implicit          none
@@ -113,8 +113,7 @@ C Internal variables
      .  nk, nmeshk(3,3), Nptot, 
      .  notcal(3), nhs, npsi
 
-      integer, dimension(:), allocatable, save ::
-     .  muo
+      integer, dimension(:), pointer ::  muo
          
       real(dp)
      .  difA, pi, rcell(3,3), uR(3,3),  
@@ -124,8 +123,7 @@ C Internal variables
      .  tiny, phase, ph(3,2), Debye,
      .  vaux(3,2), area, J, qspin(2), dq, phaseold(2)
 
-      real(dp), dimension(:), allocatable, save ::
-     .  ek
+      real(dp), dimension(:), pointer ::  ek
 
       parameter (Debye  = 0.393430d0)  
 
@@ -134,8 +132,7 @@ C Internal variables
       external          ddot, io_assign, io_close,
      .                  paste, volcel, reclat, memory
 
-      real(dp), dimension(:), allocatable, save ::
-     .  psi1, psiprev
+      real(dp), dimension(:), pointer :: psi1, psiprev
 
       parameter (  tiny= 1.0d-8  )
 
@@ -218,14 +215,15 @@ C Allocate local memory
       call re_alloc(Saux,1,nhs,name='Saux',routine='KSV_pol')
       call re_alloc(psi,1,npsi,name='psi',routine='KSV_pol')
 
-      allocate(muo(nuotot))
-      call memory('A','I',nuotot,'ksv_pol')
-      allocate(ek(nuotot))
-      call memory('A','D',nuo,'ksv_pol')
-      allocate(psi1(npsi))
-      call memory('A','D',npsi,'ksv_pol')
-      allocate(psiprev(npsi))
-      call memory('A','D',npsi,'ksv_pol')
+      nullify( muo )
+      call re_alloc( muo, 1, nuotot, name='muo', routine='KSV_pol' )
+      nullify( ek )
+      call re_alloc( ek, 1, nuotot, name='ek', routine='KSV_pol' )
+      nullify( psi1 )
+      call re_alloc( psi1, 1, npsi, name='psi1', routine='KSV_pol' )
+      nullify( psiprev )
+      call re_alloc( psiprev, 1, npsi, name='psiprev',
+     &               routine='KSV_pol' )
 
 C Initialise psi
       do io = 1,npsi
@@ -585,14 +583,10 @@ C This is the only exit point
   999 continue
 
 C Deallocate local memory
-      call memory('D','I',size(muo),'ksv_pol')
-      deallocate(muo)
-      call memory('D','D',size(ek),'ksv_pol')
-      deallocate(ek)
-      call memory('D','D',size(psi1),'ksv_pol')
-      deallocate(psi1)
-      call memory('D','D',size(psiprev),'ksv_pol')
-      deallocate(psiprev)
+      call de_alloc( muo, name='muo' )
+      call de_alloc( ek, name='ek' )
+      call de_alloc( psi1, name='psi1' )
+      call de_alloc( psiprev, name='psiprev' )
 
       if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin

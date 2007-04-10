@@ -106,23 +106,23 @@
 !     OLD ARRAYS
 !=====================================================================
 !
-      logical      ,save, public, allocatable :: semic(:)
-      integer      ,save, public, allocatable :: lmxkb(:), lmxo(:)
-      integer      ,save, public, allocatable :: nsemic(:,:), nkbl(:,:)
-      integer      ,save, public, allocatable :: cnfigmx(:,:)
-      integer      ,save, public, allocatable :: polorb(:,:,:)
-      integer      ,save, public, allocatable :: nzeta(:,:,:)
-      real(dp)     ,save, public, allocatable :: split_norm(:,:,:)
-      real(dp)     ,save, public, allocatable :: vcte(:,:,:)
-      real(dp)     ,save, public, allocatable :: rinn(:,:,:)
-      real(dp)     ,save, public, allocatable :: erefkb(:,:,:)
-      real(dp)     ,save, public, allocatable :: charge(:)
-      real(dp)     ,save, public, allocatable :: lambda(:,:,:,:)
-      real(dp)     ,save, public, allocatable :: rco(:,:,:,:)
-      integer      ,save, public, allocatable :: iz(:)
-      real(dp)     ,save, public, allocatable :: smass(:)
-      character(len=10), save, public, allocatable :: basistype(:)
-      character(len=20), save, public, allocatable :: atm_label(:)
+      logical      ,save, public, pointer :: semic(:)
+      integer      ,save, public, pointer :: lmxkb(:), lmxo(:)
+      integer      ,save, public, pointer :: nsemic(:,:), nkbl(:,:)
+      integer      ,save, public, pointer :: cnfigmx(:,:)
+      integer      ,save, public, pointer :: polorb(:,:,:)
+      integer      ,save, public, pointer :: nzeta(:,:,:)
+      real(dp)     ,save, public, pointer :: split_norm(:,:,:)
+      real(dp)     ,save, public, pointer :: vcte(:,:,:)
+      real(dp)     ,save, public, pointer :: rinn(:,:,:)
+      real(dp)     ,save, public, pointer :: erefkb(:,:,:)
+      real(dp)     ,save, public, pointer :: charge(:)
+      real(dp)     ,save, public, pointer :: lambda(:,:,:,:)
+      real(dp)     ,save, public, pointer :: rco(:,:,:,:)
+      integer      ,save, public, pointer :: iz(:)
+      real(dp)     ,save, public, pointer :: smass(:)
+      character(len=10), save, public, pointer :: basistype(:)
+      character(len=20), save, public, pointer :: atm_label(:)
 
 !-----------------------------------------------------------------------
 !-----------------------------------------------------------------------
@@ -139,6 +139,7 @@
 !---------------------------------------------------------
       public  :: destroy, copy_shell, initialize
       public  :: write_basis_specs, basis_specs_transfer
+      public  :: deallocate_spec_arrays
 !---------------------------------------------------------
 
       PRIVATE
@@ -353,6 +354,7 @@
 
 !-----------------------------------------------------------------------
       subroutine basis_specs_transfer
+      use alloc, only: re_alloc
 
       integer lmax, lmaxkb, nzeta_max, nsemi_max, nkb_max
       integer l, isp, n
@@ -412,26 +414,66 @@
 !
 !     ALLOCATE old arrrays
 !
-      allocate (semic(nsp))
-      allocate (lmxkb(nsp),lmxo(nsp))
-      allocate (nsemic(0:lmaxd,nsp), cnfigmx(0:lmaxd,nsp),
-     $          nkbl(0:lmaxd,nsp))
-      allocate (polorb(0:lmaxd,nsemx,nsp))
-      allocate (nzeta(0:lmaxd,nsemx,nsp))
-      allocate (split_norm(0:lmaxd,nsemx,nsp))
-      allocate (vcte(0:lmaxd,nsemx,nsp))
-      allocate (rinn(0:lmaxd,nsemx,nsp))
-      allocate (erefkb(nkbmx,0:lmaxd,nsp))
-      allocate (charge(nsp))
-      allocate (lambda(nzetmx,0:lmaxd,nsemx,nsp))
-      allocate (rco(nzetmx,0:lmaxd,nsemx,nsp))
-      allocate (iz(nsp))
-      allocate (smass(nsp))
-
-      allocate (basistype(nsp))
-      allocate (atm_label(nsp))
-      
-
+      nullify( semic )
+      call re_alloc( semic, 1, nsp, name='semic',
+     &               routine='basis_specs_transfer' )
+      nullify( lmxkb )
+      call re_alloc( lmxkb, 1, nsp, name='lmxkb',
+     &               routine='basis_specs_transfer' )
+      nullify( lmxo )
+      call re_alloc( lmxo, 1, nsp, name='lmxo',
+     &               routine='basis_specs_transfer' )
+      nullify( nsemic )
+      call re_alloc( nsemic, 0, lmaxd, 1, nsp, name='nsemic',
+     &               routine='basis_specs_transfer' )
+      nullify( cnfigmx )
+      call re_alloc( cnfigmx, 0, lmaxd, 1, nsp, name='cnfigmx',
+     &               routine='basis_specs_transfer' )
+      nullify( nkbl )
+      call re_alloc( nkbl, 0, lmaxd, 1, nsp, name='nkbl',
+     &               routine='basis_specs_transfer' )
+      nullify( polorb )
+      call re_alloc( polorb, 0, lmaxd, 1, nsemx, 1, nsp, name='polorb',
+     &               routine='basis_specs_transfer' )
+      nullify( nzeta )
+      call re_alloc( nzeta, 0, lmaxd, 1, nsemx, 1, nsp, name='nzeta',
+     &               routine='basis_specs_transfer' )
+      nullify( split_norm )
+      call re_alloc( split_norm, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               name='split_norm',
+     &               routine='basis_specs_transfer' )
+      nullify( vcte )
+      call re_alloc( vcte, 0, lmaxd, 1, nsemx, 1, nsp, name='vcte',
+     &               routine='basis_specs_transfer' )
+      nullify( rinn )
+      call re_alloc( rinn, 0, lmaxd, 1, nsemx, 1, nsp, name='rinn',
+     &               routine='basis_specs_transfer' )
+      nullify( erefkb )
+      call re_alloc( erefkb, 1, nkbmx, 0, lmaxd, 1, nsp, name='erefkb',
+     &               routine='basis_specs_transfer' )
+      nullify( charge )
+      call re_alloc( charge, 1, nsp, name='charge',
+     &               routine='basis_specs_transfer' )
+      nullify( lambda )
+      call re_alloc( lambda, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               name='lambda',
+     &               routine='basis_specs_transfer' )
+      nullify( rco )
+      call re_alloc( rco, 1, nzetmx, 0, lmaxd, 1, nsemx, 1, nsp,
+     &               name='rco',
+     &               routine='basis_specs_transfer' )
+      nullify( iz )
+      call re_alloc( iz, 1, nsp, name='iz',
+     &               routine='basis_specs_transfer' )
+      nullify( smass )
+      call re_alloc( smass, 1, nsp, name='smass',
+     &               routine='basis_specs_transfer' )
+      nullify( basistype )
+      call re_alloc( basistype, 1, nsp, name='basistype',
+     &               routine='basis_specs_transfer' )
+      nullify( atm_label )
+      call re_alloc( atm_label, 1, nsp, name='atm_label',
+     &               routine='basis_specs_transfer' )
 !
 !     Transfer
 !
@@ -553,5 +595,32 @@
       write(lun,'(a/)') '</basis_specs>'
 
       end subroutine write_basis_specs
+
+      subroutine deallocate_spec_arrays()
+!
+      use alloc, only: de_alloc
+
+      call de_alloc( semic, name='semic')
+      call de_alloc( lmxkb, name='lmxkb')
+      call de_alloc( lmxo, name='lmxo')
+      call de_alloc( nsemic, name='nsemic')
+      call de_alloc( cnfigmx, name='cnfigmx')
+      call de_alloc( nkbl, name='nkbl')
+      call de_alloc( polorb, name='polorb')
+      call de_alloc( nzeta, name='nzeta')
+      call de_alloc( split_norm, name='split_norm')
+      call de_alloc( vcte, name='vcte')
+      call de_alloc( rinn, name='rinn')
+      call de_alloc( erefkb, name='erefkb')
+      call de_alloc( charge, name='charge')
+      call de_alloc( lambda, name='lambda')
+      call de_alloc( rco, name='rco')
+      call de_alloc( iz, name='iz')
+      call de_alloc( smass, name='smass')
+      call de_alloc( basistype, name='basistype')
+      call de_alloc( atm_label, name='atm_label')
+!
+      end subroutine deallocate_spec_arrays
+
 !-----------------------------------------------------------------------
       end module basis_types

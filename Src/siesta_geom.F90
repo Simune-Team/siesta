@@ -44,6 +44,6 @@ MODULE siesta_geom
   ! where isa is the siesta element index, and we allow max 999
   ! such indices 
   integer,  pointer               :: isa(:)
-  character(len=11), allocatable  :: cisa(:) 
+  character(len=11), pointer      :: cisa(:) 
 
 END MODULE siesta_geom

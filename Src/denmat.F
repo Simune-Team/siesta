@@ -89,6 +89,7 @@ C *******************************************************************
       use precision
       use on_main,   only : ncG2L, ncP2T, ncT2P, nbL2G, nbandsloc
       use m_mpi_utils, only : globalize_sum
+      use alloc,     only : re_alloc, de_alloc
 
 #ifdef MPI
       use globalise, only: setglobalise, maxft2, numft2, listft2,
@@ -133,7 +134,7 @@ C     nm  : index for basis orbitals connected to basis orbital m
      .  i, il, in, indm, indn, im, is, j, jn, m, mi, mm, mn, 
      .  n, nh, ni, nm, nn
 
-      real(dp), allocatable, save ::
+      real(dp), pointer ::
      .  cHrow(:), cSrow(:), chcrow(:), cscrow(:), chccCol(:),
      .  csccCol(:)
 
@@ -142,14 +143,12 @@ C     nm  : index for basis orbitals connected to basis orbital m
      .  Hmn, Smn, qout(2), fact, spinfct
 
 #ifdef MPI
-      real(dp) ::
-     .  qtmp(nspin)
-      real(dp), allocatable, save ::
+      real(dp) ::  qtmp(nspin)
+      real(dp), pointer ::
      .  ctmp(:,:), chcrowsave(:,:), cscrowsave(:,:), 
      .  ftG(:,:), fstG(:,:)
 #else
-       real(dp), allocatable :: 
-     .     ft(:,:), fst(:,:)
+       real(dp), pointer ::  ft(:,:), fst(:,:)
 #endif
 
 C Start time counter
@@ -162,34 +161,47 @@ C Start time counter
       endif
 
 C Allocate local arrays
-      allocate(cHrow(nbasis))
-      call memory('A','D',size(cHrow),'denmat')
-      allocate(cSrow(nbasis))
-      call memory('A','D',size(cSrow),'denmat')
-      allocate(chcrow(nbands))
-      call memory('A','D',size(chcrow),'denmat')
-      allocate(cscrow(nbands))
-      call memory('A','D',size(cscrow),'denmat')
-      allocate(chccCol(nbands))
-      call memory('A','D',size(chccCol),'denmat')
-      allocate(csccCol(nbands))
-      call memory('A','D',size(csccCol),'denmat')
+
+      nullify( cHrow )
+      call re_alloc( cHrow, 1, nbasis, name='cHrow', routine='denmat' )
+      nullify( cSrow )
+      call re_alloc( cSrow, 1, nbasis, name='cSrow', routine='denmat' )
+      nullify( chcrow )
+      call re_alloc( chcrow, 1, nbands, name='chcrow',
+     &               routine='denmat' )
+      nullify( cscrow )
+      call re_alloc( cscrow, 1, nbands, name='cscrow',
+     &               routine='denmat' )
+      nullify( chccCol )
+      call re_alloc( chccCol, 1, nbands, name='chccCol',
+     &               routine='denmat' )
+      nullify( csccCol )
+      call re_alloc( csccCol, 1, nbands, name='csccCol',
+     &               routine='denmat' )
+
 #ifdef MPI
-      allocate(chcrowsave(nhijmax,nbandsloc))
-      call memory('A','D',size(chcrowsave),'denmat')
-      allocate(cscrowsave(nhijmax,nbandsloc))
-      call memory('A','D',size(cscrowsave),'denmat')
-      allocate(ctmp(nbands,2))
-      call memory('A','D',size(ctmp),'denmat')
-      allocate(ftG(MaxFt2,nbasisCloc))
-      call memory('A','D',size(ftG),'denmat')
-      allocate(fstG(MaxFt2,nbasisCloc))
-      call memory('A','D',size(fstG),'denmat')
+      nullify( chcrowsave )
+      call re_alloc( chcrowsave, 1, nhijmax, 1, nbandsloc,
+     &               name='chcrowsave', routine='denmat' )
+      nullify( cscrowsave )
+      call re_alloc( cscrowsave, 1, nhijmax, 1, nbandsloc,
+     &               name='cscrowsave', routine='denmat' )
+      nullify( ctmp )
+      call re_alloc( ctmp, 1, nbands, 1, 2,
+     &               name='ctmp', routine='denmat' )
+      nullify( ftG )
+      call re_alloc( ftG, 1, MaxFt2, 1, nbasisCloc,
+     &               name='ftG', routine='denmat' )
+      nullify( fstG )
+      call re_alloc( fstG, 1, MaxFt2, 1, nbasisCloc,
+     &               name='fstG', routine='denmat' )
 #else
-      allocate(ft(nftmax,nbasisCloc))
-      call memory('A','D',size(ft),'denmat')
-      allocate(fst(nftmax,nbasisCloc))
-      call memory('A','D',size(fst),'denmat')
+      nullify( ft )
+      call re_alloc( ft, 1, nftmax, 1, nbasisCloc,
+     &               name='ft', routine='denmat' )
+      nullify( fst )
+      call re_alloc( fst, 1, nftmax, 1, nbasisCloc,
+     &               name='fst', routine='denmat' )
 #endif
 
 C Initialize temporary arrays
@@ -442,34 +454,21 @@ C Normalize ...
 
 C Deallocate local arrays
 #ifdef MPI
-      call memory('D','D',size(fstG),'denmat')
-      deallocate(fstG)
-      call memory('D','D',size(ftG),'denmat')
-      deallocate(ftG)
-      call memory('D','D',size(ctmp),'denmat')
-      deallocate(ctmp)
-      call memory('D','D',size(cscrowsave),'denmat')
-      deallocate(cscrowsave)
-      call memory('D','D',size(chcrowsave),'denmat')
-      deallocate(chcrowsave)
+      call de_alloc( fstG, name='fstG' )
+      call de_alloc( ftG, name='ftG' )
+      call de_alloc( ctmp, name='ctmp' )
+      call de_alloc( cscrowsave, name='cscrowsave' )
+      call de_alloc( chcrowsave, name='chcrowsave' )
 #else
-      call memory('D','D',size(fst),'denmat')
-      deallocate(fst)
-      call memory('D','D',size(ft),'denmat')
-      deallocate(ft)
+      call de_alloc( fst, name='fst' )
+      call de_alloc( ft, name='ft' )
 #endif
-      call memory('D','D',size(csccCol),'denmat')
-      deallocate(csccCol)
-      call memory('D','D',size(chccCol),'denmat')
-      deallocate(chccCol)
-      call memory('D','D',size(cscrow),'denmat')
-      deallocate(cscrow)
-      call memory('D','D',size(chcrow),'denmat')
-      deallocate(chcrow)
-      call memory('D','D',size(cSrow),'denmat')
-      deallocate(cSrow)
-      call memory('D','D',size(cHrow),'denmat')
-      deallocate(cHrow)
+      call de_alloc( csccCol, name='csccCol' )
+      call de_alloc( chccCol, name='chccCol' )
+      call de_alloc( cscrow, name='cscrow' )
+      call de_alloc( chcrow, name='chcrow' )
+      call de_alloc( cSrow, name='cSrow' )
+      call de_alloc( cHrow, name='cHrow' )
 
 C Stop time counter and return ..................
       call timer('denmat',2)

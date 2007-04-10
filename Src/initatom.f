@@ -31,6 +31,7 @@
       use fdf
       use precision
       use basis_types, only: basis_specs_transfer, nsp
+      use basis_types, only: deallocate_spec_arrays
       use basis_types, only: iz, lmxkb, nkbl, 
      .           erefkb, lmxo, nzeta, rco, 
      .           lambda,
@@ -121,6 +122,10 @@ c Reading input for the pseudopotentials and atomic orbitals
       call dump_basis_xml()
 
       ns = nsp      ! Set number of species for main program
+
+      if (.not. user_basis .and. .not. user_basis_netcdf) then
+        call deallocate_spec_arrays()
+      endif
 
       end subroutine initatom
 

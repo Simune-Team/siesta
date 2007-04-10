@@ -59,15 +59,15 @@ C *********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
+      use alloc,         only : re_alloc, de_alloc
 
       implicit none
 
-      integer
-     .  maxna, maxnd, maxnh, maxo, na, no, nspin, nua
+      integer ::  maxna, maxnd, maxnh, maxo, na, no, nspin, nua
 
       integer
      .  indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
@@ -88,21 +88,19 @@ C Internal variables ..................................................
       real(dp)
      .  fij(3), grTij(3) , rij, Tij, volcel, volume
 
-      real(dp), dimension(:), allocatable, save ::
-     .  Di, Ti
+      real(dp), dimension(:), pointer :: Di, Ti
 
-      external
-     .  neighb, volcel, timer, memory
+      external ::  neighb, volcel, timer, memory
 C ......................
 
 C Start timer
       call timer( 'kinefsm', 1 )
 
 C Allocate local memory
-      allocate(Di(no))
-      call memory('A','D',no,'kinefsm')
-      allocate(Ti(no))
-      call memory('A','D',no,'kinefsm')
+      nullify( Di )
+      call re_alloc( Di, 1, no, name='Di', routine='kinefsm' )
+      nullify( Ti )
+      call re_alloc( Ti, 1, no, name='Ti', routine='kinefsm' )
 
       volume = nua * volcel(scell) / na
 
@@ -175,10 +173,8 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call memory('D','D',size(Ti),'kinefsm')
-      deallocate(Ti)
-      call memory('D','D',size(Di),'kinefsm')
-      deallocate(Di)
+      call de_alloc( Ti, name='Ti' )
+      call de_alloc( Di, name='Di' )
 
 C Finish timer
       call timer( 'kinefsm', 2 )

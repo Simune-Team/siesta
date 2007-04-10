@@ -1,7 +1,9 @@
       module m_struct_init
       private
       public :: struct_init
+      
       CONTAINS
+
       subroutine struct_init()
       USE siesta_options
       use m_ioxv
@@ -23,17 +25,8 @@
       implicit none
 
       real(dp), external :: volcel
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
-     .  pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
+      external :: automatic_cell, bonds, iozm, shaper
       
-
       logical, external :: leqi  ! It lives in fdf.f
 
       character(len=80) :: dummy_str
@@ -148,10 +141,10 @@
 
       if (cml_p) then
 ! We need the names of the elements on node 0
-        allocate(elem(na_u))
-        call memory('A','S',2*na_u,'siesta')
+        nullify(elem)
+        call re_alloc(elem,1,na_u,name='elem',routine='struct_init')
         do i = 1, na_u
-          elem(i) = symbol(izofis(isa(i)))
+           elem(i) = symbol(izofis(isa(i)))
         enddo
 
         call cmlStartModule(xf=mainXML, title='Initial System')

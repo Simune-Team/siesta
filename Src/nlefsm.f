@@ -153,7 +153,8 @@ C Allocate local memory
       nullify( listed )
       call re_alloc( listed, 1, no, name='listed', routine='nlefsm' )
       nullify( listedall )
-      call re_alloc( listedall, 1, no, name='iano', routine='nlefsm' )
+      call re_alloc( listedall, 1, no, name='listedall',
+     $               routine='nlefsm' )
 
       Enl = 0.0d0
       do jo = 1,no

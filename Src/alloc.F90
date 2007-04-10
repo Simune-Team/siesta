@@ -1629,7 +1629,7 @@ if (warn_negative .and. t%mem<0._dp) then
     '         Name: ', trim(name),                   &
     '         Size: ', t%mem, ' Bytes',              &
     'Subsequent mismatches will not be reported'
-  warn_negative = .false.
+!!!!!!!  warn_negative = .false.
 end if
 
 END SUBROUTINE tree_add

@@ -10,6 +10,78 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-04-10 08:05 GMT	Alberto Garcia <albertog@icmab.es>	patch-26
+
+Summary: Allocatables to pointers III
+Keywords:
+
+Third installment in the merging of the allocatables->pointers work at BSC.
+
+Patches applied:
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-22
+   cisa in siesta_geom
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-23
+   MolecularMechanics
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-24
+   Forhar
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-25
+   Deallocate basis spec arrays
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-26
+   Fix names in re_alloc/de_alloc statements
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-27
+   kinefsm
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-28
+   ksv
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-29
+   listsc
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-30
+   m_broyden_mixing
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-31
+   Rationalization of chempot
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-32
+   Setatomnodes. Stop if bad load balancing
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-33
+   obc rationalization
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-34
+   ofc rationalization
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-35
+   outcoor
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-36
+   pseudopotential
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-37
+   elem in atomlist and struct_init
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-38
+   atomlwf
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-39
+   bands
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-40
+   broyden_optim
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-41
+   cellxc
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-42
+   denmat and denmatlomem
+
 2007-03-20 22:50 GMT	Alberto Garcia <albertog@icmab.es>	patch-25
 
 Summary: Allocatables to pointers  II

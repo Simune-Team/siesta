@@ -43,7 +43,7 @@ C integer iza(na)           : Atomic number of each atom
 C real*8 amass(na)          : Atomic mass of each atom
 C real*8 qa(na)             : Neutral atom charge of each atom
 
-      character(len=2), allocatable, save, public :: elem(:)
+      character(len=2), pointer, save, public :: elem(:)
 ! elem will contain element names, so is 2 chars in length
       integer, pointer, save, public  :: iza(:) ! 
       integer, pointer, save, public  :: lasto(:) ! 

@@ -77,7 +77,7 @@ C integer nbands            : Number of LWF's
 C ****************************************************************************
 
       use precision
-      use alloc
+      use alloc, only: re_alloc, de_alloc
       use on_main
       use neighbour
       use sys,      only : die
@@ -101,11 +101,9 @@ C  Internal variables .......................................................
 C  nnmax = maximum number of neighbour atoms within rcoor
       integer, save :: nnmax = 1000
 
-      integer, dimension(:), allocatable, save ::
-     .  alist, ilist, numft
+      integer, dimension(:), pointer ::  alist, ilist, numft
 
-      integer, pointer, save ::
-     .  indexloc(:)
+      integer, pointer, save ::        indexloc(:)
 
       integer
      . i,ia,imu,in,index,indexa,indexb,indexi,indexj,iorb,is,j,ja,
@@ -115,8 +113,7 @@ C  nnmax = maximum number of neighbour atoms within rcoor
       integer,                            save :: iseed = 17
       integer,                            save :: nna = 200
 
-      logical, dimension(:), allocatable, save ::
-     .  lneeded
+      logical, dimension(:), pointer ::  lneeded
 
       real(dp) ::
      .  cg,fact(2),qtot,r,rmax,rr(3),rrmod,
@@ -147,10 +144,15 @@ C Check that iopt is correct ................................................
 
 
 C Allocate local arrays
-      allocate(alist(natoms))
-      allocate(ilist(nbasis))
-      allocate(numft(nbasis))
-      allocate(lneeded(nbasis))
+      nullify( alist )
+      call re_alloc( alist, 1, natoms, name='alist', routine='cspa' )
+      nullify( ilist )
+      call re_alloc( ilist, 1, nbasis, name='ilist', routine='cspa' )
+      nullify( numft )
+      call re_alloc( numft, 1, nbasis, name='numft', routine='cspa' )
+      nullify( lneeded )
+      call re_alloc( lneeded, 1, nbasis, name='lneeded',
+     &               routine='cspa' )
 
 C Work out which basis functions are required in local C copy
       lneeded(1:nbasis) = .false.
@@ -507,12 +509,12 @@ C  (or the number of electrons)
       endif
 
 C Deallocate local memory
-      deallocate(lneeded)
-      deallocate(numft)
-      deallocate(ilist)
-      deallocate(alist)
 
-      return
+      call de_alloc( lneeded, name='lneeded' )
+      call de_alloc( numft, name='numft' )
+      call de_alloc( ilist, name='ilist' )
+      call de_alloc( alist, name='alist' )
+
       end
 
       subroutine initguess(ia,iorb,is,ne,cg,cgval,Node)

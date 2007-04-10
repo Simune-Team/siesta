@@ -253,7 +253,8 @@ C  end of not lUseZmatrix
 
         ! Construct references: cannot use isa alone, since 
         ! refs may not start with a number.
-        allocate(cisa(na))
+        nullify(cisa)
+        call re_alloc(cisa,1,na,name="cisa",routine="read_struct")
         do ia=1, nua
            write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
         enddo

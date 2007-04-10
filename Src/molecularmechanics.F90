@@ -4,13 +4,17 @@ module molecularmechanics
 
  implicit none
 
- integer               :: maxMMpot = 10
- integer               :: nMMpot = 0
- integer,  allocatable :: nMMpotptr(:,:)
- integer,  allocatable :: nMMpottype(:)
- logical               :: PotentialsPresent = .false.
- real(dp)              :: MMcutoff
- real(dp), allocatable :: MMpotpar(:,:)
+ private
+
+ integer, parameter    :: maxMMpot = 10
+ integer, save         :: nMMpot = 0
+ integer, save         :: nMMpotptr(2,maxMMpot)
+ integer, save         :: nMMpottype(maxMMpot)
+ logical, save         :: PotentialsPresent = .false.
+ real(dp), save        :: MMcutoff
+ real(dp), save        :: MMpotpar(6,maxMMpot)
+
+ public :: inittwobody, twobody
 
  CONTAINS
 
@@ -45,12 +49,9 @@ module molecularmechanics
    real(dp)           :: reals(4)
    real(dp)           :: values(4)
 
- !
- ! Allocate arrays for dispersion potentials
- !
-   allocate(nMMpotptr(2,maxMMpot))
-   allocate(nMMpottype(maxMMpot))
-   allocate(MMpotpar(6,maxMMpot))
+ ! Allocation of arrays formerly done here moved
+ ! to top of module, as they are really static for now
+
    MMpotpar(1:6,1:maxMMpot) = 0.0_dp
  !
  ! Get potential cutoff
@@ -211,6 +212,7 @@ end subroutine inittwobody
 subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 
   use parallel,         only : Node
+  use alloc,            only : re_alloc, de_alloc
 
   integer,  intent(in)    :: na
   integer,  intent(in)    :: isa(*)
@@ -244,7 +246,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   logical                 :: lallfound2
   logical                 :: lallfound3
   logical                 :: lanyvalidpot
-  logical, allocatable    :: lvalidpot(:)
+  logical, pointer        :: lvalidpot(:)
   real(dp)                :: MMcutoff2
   real(dp)                :: a
   real(dp)                :: b
@@ -311,7 +313,8 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
 ! Allocate workspace arrays
 !
-  allocate(lvalidpot(nMMpot))
+  nullify(lvalidpot)
+  call re_alloc(lvalidpot,1,nMMpot,name="lvalidpot",routine="twobody")
 !
 ! Initialise energy
 !
@@ -661,7 +664,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
 ! Free workspace arrays
 !
-  deallocate(lvalidpot)
+  call de_alloc(lvalidpot,name="lvalidpot")
 !
 ! Stop timer
 !

@@ -17,13 +17,13 @@
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only:  broadcast
       use units, only: kBar
+      use alloc, only: re_alloc, de_alloc
 !
       use m_broyddj_nocomm, only: broyden_t
       use m_broyddj_nocomm, only: broyden_reset, broyden_step,
      $                     broyden_destroy, broyden_init,
      $                     broyden_is_setup
 
-      use m_memory, only: memory, mem_stat
       use parallel, only : ionode
 
       implicit none
@@ -72,10 +72,6 @@ c ******************************** OUTPUT ***********************************
 c logical relaxd        : True when converged
 c ***************************************************************************
 
-C
-C  Modules
-C
-
 ! Subroutine arguments:
 
       integer, intent(in) :: na
@@ -95,8 +91,8 @@ c Internal variables and arrays
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
 
-      real(dp), dimension(:), allocatable       :: gxa, gfa
-      real(dp), dimension(:), allocatable       :: rold, rnew, rdiff
+      real(dp), dimension(:), pointer       :: gxa, gfa
+      real(dp), dimension(:), pointer       :: rold, rnew, rdiff
 
 ! Saved internal variables:
 
@@ -211,15 +207,11 @@ C Look for target stress and read it if found, otherwise generate it --------
 C Write target stress down --------------------------------------------------
 
             write(6,"(/a)") 'Broyden_optim: Target stress (kBar)'
-            write(6,"(a,2x,3f12.3)") 
-     .       'Broyden_optim:', tstres(1,1)/kBar, tstres(1,2)/kBar, 
-     .       tstres(1,3)/kBar
-            write(6,"(a,2x,3f12.3)") 
-     .       'Broyden_optim:', tstres(2,1)/kBar, tstres(2,2)/kBar, 
-     .       tstres(2,3)/kBar
-            write(6,"(a,2x,3f12.3)") 
-     .       'Broyden_optim:', tstres(3,1)/kBar, tstres(3,2)/kBar, 
-     .       tstres(3,3)/kBar
+            do i = 1, 3
+               write(6,"(a,2x,3f12.3)") 
+     .           'Broyden_optim:', tstres(i,1)/kBar, tstres(i,2)/kBar, 
+     .            tstres(i,3)/kBar
+            enddo
           endif  ! node0
 
           call broadcast(tstres(1:3,1:3))
@@ -266,15 +258,15 @@ C Variable cell -------------------------------------------------------------
 
       if ( varcel ) then
 
-         allocate(gfa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gfa")
-         allocate(gxa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gxa")
-         allocate (rnew(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rnew")
+        nullify( gfa )
+        call re_alloc( gfa, 1, numel, name='gfa',
+     &                 routine='broyden_optimizer' )
+        nullify( gxa )
+        call re_alloc( gxa, 1, numel, name='gxa',
+     &                 routine='broyden_optimizer' )
+        nullify( rnew )
+        call re_alloc( rnew, 1, numel, name='rnew',
+     &                 routine='broyden_optimizer' )
 
 C Inverse of matrix of cell vectors  (transpose of) ------------------------
 
@@ -372,15 +364,15 @@ C Fixed cell ----------------------------------------------------------------
 
            endif
 
-           allocate (rold(numel), stat=mem_stat)
-           call memory('A','D',numel,'Broyden_optim',
-     $          stat=mem_stat,id="rold")
-           allocate (rnew(numel), stat=mem_stat)
-           call memory('A','D',numel,'Broyden_optim',
-     $          stat=mem_stat,id="rnew")
-           allocate (rdiff(numel),stat=mem_stat)
-           call memory('A','D',numel,'Broyden_optim',
-     $          stat=mem_stat,id="rdiff")
+          nullify( rold )
+          call re_alloc( rold, 1, numel, name='rold',
+     &                   routine='broyden_optimizer' )
+          nullify( rnew )
+          call re_alloc( rnew, 1, numel, name='rnew',
+     &                   routine='broyden_optimizer' )
+          nullify( rdiff )
+          call re_alloc( rdiff, 1, numel, name='rdiff',
+     &                   routine='broyden_optimizer' )
 
            weight = 1.0_dp
            indi = 0
@@ -433,27 +425,15 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
 
       ! Deallocate local memory
 
-        deallocate (rnew, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="rnew")
-        deallocate (gxa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gxa")
-        deallocate (gfa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gfa")
+        call de_alloc( rnew, name='rnew' )
+        call de_alloc( gxa, name='gxa' )
+        call de_alloc( gfa, name='gfa' )
 
       else
 
-         deallocate (rold, stat=mem_stat)
-         call memory('D','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rold")
-         deallocate (rnew, stat=mem_stat)
-         call memory('D','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rnew")
-         deallocate (rdiff, stat=mem_stat)
-         call memory('D','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rdiff")
+        call de_alloc( rold, name='rold' )
+        call de_alloc( rnew, name='rnew' )
+        call de_alloc( rdiff, name='rdiff' )
 
       endif ! variable cell
 

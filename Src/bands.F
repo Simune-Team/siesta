@@ -139,7 +139,7 @@ C
       integer           maxk, nk
       real(dp)          kpoint(3,maxk)
       character         paste*30
-      external          paste, redcel, memory
+      external          paste, redcel
 C *********************************************************************
 
       character 
@@ -432,7 +432,7 @@ C
       use parallelsubs, only : GetNodeOrbs
       use fdf
       use densematrix
-      use alloc
+      use alloc,        only : re_alloc, de_alloc
       use files,        only : slabel, label_length
 
       implicit          none
@@ -466,8 +466,8 @@ C *********************************************************************
      .  path, temp, wk, Entropy
 
 C Dynamic arrays
-      real(dp), dimension(:), allocatable, save :: aux
-      integer,  dimension(:), allocatable, save :: muo
+      real(dp), dimension(:), pointer :: aux
+      integer,  dimension(:), pointer :: muo
 
       parameter ( eV = 1.d0 / 13.60580d0 )
       save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
@@ -501,10 +501,10 @@ C Allocate local arrays - only aux is relevant here
       call re_alloc(Saux,1,nhs,name='Saux',routine='bands')
       call re_alloc(psi,1,nhs,name='psi',routine='bands')
       naux  = nuotot*5
-      allocate(aux(naux))
-      call memory('A','D',naux,'bands')
-      allocate(muo(nuotot))
-      call memory('A','I',nuotot,'bands')
+      nullify( aux )
+      call re_alloc( aux, 1, naux, name='aux', routine='bands' )
+      nullify( muo )
+      call re_alloc( muo, 1, nuotot, name='muo', routine='bands' )
 
 C Check indxuo 
       do iuo = 1,nuotot
@@ -644,10 +644,8 @@ C Close output file
       endif
 
 C Free local arrays 
-      call memory('D','I',size(muo),'bands')
-      deallocate(muo)
-      call memory('D','D',size(aux),'bands')
-      deallocate(aux)
+      call de_alloc( muo, name='muo' )
+      call de_alloc( aux, name='aux' )
 
 C This is the only exit point 
   999 continue
