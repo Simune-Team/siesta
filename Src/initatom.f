@@ -76,13 +76,13 @@ c Reading input for the pseudopotentials and atomic orbitals
       if (user_basis_netcdf) then
 
          write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
-         call read_basis_netcdf()
+         call read_basis_netcdf(ns)
          call elec_corr_setup()
 
       else if (user_basis) then
 
          write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
-         call read_basis_ascii()
+         call read_basis_ascii(ns)
          call elec_corr_setup()
 
       else
@@ -114,14 +114,13 @@ c Reading input for the pseudopotentials and atomic orbitals
          call atm_transfer()
          call deallocate_old_arrays()
          call elec_corr_setup()
+         ns = nsp               ! Set number of species for main program
 
       endif
 
       call dump_basis_ascii()
       call dump_basis_netcdf()
       call dump_basis_xml()
-
-      ns = nsp      ! Set number of species for main program
 
       if (.not. user_basis .and. .not. user_basis_netcdf) then
         call deallocate_spec_arrays()

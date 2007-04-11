@@ -9,11 +9,10 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine phirphi_opt( nua, na, nuo, no, scell, xa,
-     .                        maxna, maxnh, lasto, 
+     .                        maxnh, lasto, 
      .                        lastkb, iphorb, iphKB, isa, 
      .                        numh, listhptr, listh, indxuo, 
-     .                        indxua, iaorb, dk, 
-     .                        jna, xij, r2ij, matrix, Sp)
+     .                        indxua, iaorb, dk, matrix, Sp)
 C *********************************************************************
 C If matrix='R'
 C Finds the matrix elements of the dk*r between basis
@@ -55,7 +54,6 @@ C integer nuo              : Number of basis orbitals in unit cell
 C integer no               : Number of basis orbitals in super cell
 C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
-C integer maxna            : Maximum number of neighbours of any atom
 C integer maxnh            : First dimension of listh
 C integer lasto(0:na)      : Last orbital index of each atom
 C integer lastkb(0:na)     : Last KB porjector index of each atom
@@ -70,9 +68,6 @@ C integer indxuo(no)       : Index of equivalent orbital in unit cell
 C integer indxua(na)   : Index of equivalent atom in unit cell
 C integer iaorb(no)        : Atom to which orbitals belong
 C real*8  dk(3)            : Vector in k-space
-C integer jna(maxna)       : Aux. space to find neighbours (indexes)
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C character*1 matrix       : 'R' for molecules or atoms, the matrix
 C                             elements of the position operator are 
 C                             calculated
@@ -90,21 +85,21 @@ C *********************************************************************
       use parallelsubs, only : GlobalToLocalOrb, LocalToGlobalOrb
       use alloc,        only : re_alloc
       use sys,          only : die
+      use neighbour,    only : jna=>jan, xij, r2ij
+      use neighbour,    only : mneighb
 
       implicit none
 
 C Passed variables
-      integer
-     .  maxna, maxnh, na, no, nua, nuo
+      integer  maxnh, na, no, nua, nuo
 
       integer
-     .  iphorb(no), isa(na), jna(maxna), lasto(0:na), lastkb(0:na),
+     .  iphorb(no), isa(na), lasto(0:na), lastkb(0:na),
      .  listh(maxnh), listhptr(nuo), numh(nuo), iaorb(no), indxuo(no),
      .  iphKB(*), indxua(na)
       
       real(dp)
-     .  scell(3,3), r2ij(maxna), dk(3),
-     .  Sp(maxnh), xa(3,na), xij(3,maxna)  
+     .  scell(3,3), dk(3), Sp(maxnh), xa(3,na)
 
       character 
      .  matrix*1
@@ -149,8 +144,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp),          save :: tiny = 1.0d-9
       real(dp), pointer, save :: Vi(:)
 
-      external
-     .  neighb, matel
+      external  matel
       
 C Start timer
       call timer('phirphiopt',1)
@@ -245,9 +239,7 @@ C Loop on atoms with KB projectors
           endif
 
 C Find neighbour atoms
-          nna = maxna
-          call neighb( scell, rmax, na, xa, ka, 0,
-     .                 nna, jna, xij, r2ij )
+          call mneighb( scell, rmax, na, xa, ka, 0, nna )
 
 C Find neighbour orbitals
           nno = 0
@@ -370,9 +362,7 @@ C Pick up contributions to H and restore Di and Vi
       endif  
 
 C Initialize neighb subroutine 
-      nnia = maxna
-      call neighb( scell, 2.0d0*rmaxo, na, xa, 0, 0,
-     .             nnia, jna, xij, r2ij )
+      call mneighb( scell, 2.0d0*rmaxo, na, xa, 0, 0, nnia )
 
       do jo = 1,no
         Si(jo) = 0.0d0
@@ -381,9 +371,7 @@ C Initialize neighb subroutine
       do ia = 1,nua 
         
         is = isa(ia)
-        nnia = maxna 
-        call neighb( scell, 2.0d0*rmaxo, na, xa, ia, 0,
-     .               nnia, jna, xij, r2ij )  
+        call mneighb( scell, 2.0d0*rmaxo, na, xa, ia, 0, nnia )
            
         do io = lasto(ia-1)+1,lasto(ia)  
           call GlobalToLocalOrb(io,Node,Nodes,iio)

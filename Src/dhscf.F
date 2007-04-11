@@ -136,11 +136,12 @@ C
       use atmfuncs,      only : rcut, rcore
       use fdf
       use sys,           only : die
-      use mesh
+      use mesh,          only : xdsp, nsm, nsp
       use parsing
       use m_iorho,       only : write_rho
       use m_forhar,      only : forhar
       use xcmod,         only : nXCfunc, XCauth
+      use alloc,         only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -248,20 +249,11 @@ C
      .  MPIerror
 #endif
 
-      real(grid_p), dimension(:), allocatable, save ::
-     .  Vaux
-
-      real(grid_p), dimension(:), allocatable, save ::
-     .  rhopcc, rhoatm, Vna
-
-      real(grid_p), dimension(:,:), allocatable, save ::
-     .  DRho, Vscf
-
-      real(grid_p), dimension(:,:,:), allocatable, save ::
-     .  DVxcdn
-
-      real(grid_p), dimension(:), allocatable::
-     .  Chlocal, Totchar
+      real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
+      real(grid_p), dimension(:),     pointer   :: Vaux
+      real(grid_p), dimension(:,:),   pointer   :: DRho, Vscf
+      real(grid_p), dimension(:,:,:), pointer   :: DVxcdn
+      real(grid_p), dimension(:),     pointer   :: Chlocal, Totchar
 !
 !     Dummy arrays for cellxc call
 !
@@ -293,7 +285,7 @@ C
      .  efield, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
-     .  memory, readsp
+     .  readsp
 
       save
      .  bcell, cell, dvol, field, G2mesh,
@@ -314,6 +306,9 @@ C Start time counter
       call timer( 'DHSCF', 1 )
 
       if (frstme) then
+        nullify(Vna,rhoatm,rhopcc)
+        nullify(vaux,vscf,DRho,DVxcdn)
+        nullify(chlocal,totchar)
         if (Node.eq.0) then
           harrisfun = fdf_boolean('Harris_functional',.false.)
           nsm    = fdf_integer('MeshSubDivisions',2)
@@ -328,7 +323,9 @@ C Start time counter
 
 C Set mesh sub-division variables & perform one off allocation
         nsp = nsm*nsm*nsm
-        allocate(xdsp(3,nsp))
+        nullify( xdsp )
+        call re_alloc( xdsp, 1, 3, 1, nsp, name='xdsp',
+     &                 routine='dhscf' )
 
 C Read spin-spiral wavevector (if defined)
         call readsp( qspiral, spiral )
@@ -416,18 +413,8 @@ C Allocate memory that depends on the mesh
 C ----------------------------------------------------------------------
 
 C Allocate memory related to ntpl
-        if (allocated(rhoatm)) then
-          call memory('D','X',size(rhoatm),'dhscf')
-          deallocate(rhoatm)
-        endif
-        if (allocated(Vna)) then
-          call memory('D','X',size(Vna),'dhscf')
-          deallocate(Vna)
-        endif
-        allocate(rhoatm(ntpl))
-        call memory('A','X',ntpl,'dhscf')
-        allocate(Vna(ntpl))
-        call memory('A','X',ntpl,'dhscf')
+        call re_alloc( rhoatm, 1, ntpl, name='rhoatm', routine='dhscf' )
+        call re_alloc( Vna, 1, ntpl, name='Vna', routine='dhscf' )
 
 C Find if there are partial-core-corrections for any atom
         npcc = 0
@@ -436,12 +423,8 @@ C Find if there are partial-core-corrections for any atom
         enddo
 
 C Allocate memory for PCC density
-        if (allocated(rhopcc)) then
-          call memory('D','X',size(rhopcc),'dhscf')
-          deallocate(rhopcc)
-        endif
-        allocate(rhopcc(ntpl*npcc+1))
-        call memory('A','X',ntpl*npcc,'dhscf')
+        call re_alloc( rhopcc, 1, ntpl*npcc+1, name='rhopcc',
+     &                 routine='dhscf' )
 
 C Stop time counter for mesh initialization
         call timer( 'DHSCF1', 2 )
@@ -452,17 +435,16 @@ C End of mesh initialization
 C ----------------------------------------------------------------------
 
 C Allocate local memory
-      allocate(DRho(ntpl,nspin))
-      call memory('A','X',ntpl*nspin,'dhscf')
-      allocate(Vscf(ntpl,nspin))
-      call memory('A','X',ntpl*nspin,'dhscf')
-      allocate(Vaux(ntpl))
-      call memory('A','X',ntpl,'dhscf')
-      allocate(DVxcdn(ntpl,nspin,nspin))
-      call memory('A','X',1*nspin*nspin,'dhscf')
+      call re_alloc( DRho, 1, ntpl, 1, nspin, name='DRho',
+     &               routine='dhscf' )
+      call re_alloc( Vscf, 1, ntpl, 1, nspin, name='Vscf',
+     &               routine='dhscf' )
+      call re_alloc( Vaux, 1, ntpl, name='Vaux', routine='dhscf' )
+      call re_alloc( DVxcdn, 1, ntpl, 1, nspin, 1, nspin, name='Vaux',
+     &               routine='dhscf' )
 
 C Initialization of DVxcdn
-      DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0_grid_p
+      DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0_grid_p 
 
       if (.not.samexa) then
 C ----------------------------------------------------------------------
@@ -559,8 +541,8 @@ C ----------------------------------------------------------------------
 
       if (filepsch .ne. ' ' .or. filetoch .ne. ' ') then
 
-        allocate(Chlocal(ntpl))
-        call memory('A','X',ntpl,'dhscf')
+        call re_alloc( Chlocal, 1, ntpl, name='Chlocal',
+     &                 routine='dhscf' )
 
 C Find diffuse ionic charge on mesh
         call LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
@@ -574,8 +556,8 @@ C Save diffuse ionic charge
 
 C Save total (ionic+electronic) charge 
         if ( filetoch .ne. ' ') then
-          allocate(Totchar(ntpl))
-          call memory('A','X',ntpl,'dhscf')
+           call re_alloc( Totchar, 1, ntpl, name='Totchar',
+     &          routine='dhscf' )
         
           Totchar(:) = 0.0_grid_p
           do ispin = 1,nsd
@@ -586,12 +568,10 @@ C Save total (ionic+electronic) charge
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
           call reord( Totchar, Totchar, nml, nsm, -1)
 
-          call memory('D','X',ntpl,'dhscf')
-          deallocate(Totchar)
+          call de_alloc( Totchar, name='Totchar' )
         endif 
 
-        call memory('D','X',ntpl,'dhscf')
-        deallocate(Chlocal)
+        call de_alloc( Chlocal, name='Chlocal' )
       endif
 
 C Find difference between selfconsistent and atomic densities
@@ -885,22 +865,9 @@ C Stop time counter
 C ----------------------------------------------------------------------
 C Free locally allocated memory
 C ----------------------------------------------------------------------
-      if (allocated(DVxcdn)) then
-        call memory('D','X',size(DVxcdn),'dhscf')
-        deallocate(DVxcdn)
-      endif
-      if (allocated(Vaux)) then
-        call memory('D','X',size(Vaux),'dhscf')
-        deallocate(Vaux)
-      endif
-      if (allocated(Vscf)) then
-        call memory('D','X',size(Vscf),'dhscf')
-        deallocate(Vscf)
-      endif
-      if (allocated(DRho)) then
-        call memory('D','X',size(DRho),'dhscf')
-        deallocate(DRho)
-      endif
+      call de_alloc( Vaux, name='Vaux' )
+      call de_alloc( Vscf, name='Vscf' )
+      call de_alloc( DRho, name='DRho' )
 
       frstme = .false.
 

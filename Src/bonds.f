@@ -30,46 +30,47 @@ C **********************************************************************
       use units,     only : Ang
       use m_recipes, only : sort
       use sorting,   only : order, iorder
-      use m_neighbors, only: maxna, jna, xij, r2ij
-      use m_neighbors, only: init_neighbor_arrays
       use alloc,       only: re_alloc, de_alloc
-
+      use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
+      use neighbour,   only: mneighb
       implicit          none
 
       INTEGER, intent(in)  ::     NA, ISA(NA)
       real(dp), intent(in) ::     CELL(3,3), XA(3,NA), RMAX
       character(len=*), intent(in) :: filename
 
-      EXTERNAL             ::     NEIGHB, io_assign, io_close
+      EXTERNAL             ::     io_assign, io_close
 
 
-      integer ::  IA, IN, IS, JA, JS, NNA, maxnain, iu
+      integer ::  IA, IN, IS, JA, JS, NNA, iu
 
       integer, dimension(:), pointer ::  index
 
       real(dp) ::   RI, RIJ, RJ
       real(dp), parameter :: tol = 1.0e-8_dp
 
-      call init_neighbor_arrays(rmax)
       nullify(index)
       call re_alloc(index,1,maxna,name="index",routine="bonds")
 
 C Initialize neighbour-locater routine
-      NNA = MAXNA
-      CALL NEIGHB( CELL, RMAX, NA, XA, 0, 0, NNA, JNA, XIJ, R2IJ )
+
+      CALL MNEIGHB( CELL, RMAX, NA, XA, 0, 0, NNA )
 
 C Main loop
 
       call io_assign( iu )
       open(iu,file=filename,form='formatted',
      $     status='replace', action="write")      
-      maxnain = maxna
+
       do IA = 1,NA
 
 C Find neighbours of atom IA
-        NNA = maxnain
-        CALL NEIGHB( CELL, RMAX, NA, XA, IA, 0,
-     .               NNA, JNA, XIJ, R2IJ )
+
+        CALL MNEIGHB( CELL, RMAX, NA, XA, IA, 0, NNA )
+        ! This call will do nothing if the internal neighbor arrays
+        ! did not grow. If tight size were important, one could
+        ! resize to nna instead.
+        call re_alloc(index,1,maxna,name="index",routine="bonds")
 
            if (nna < 2 ) then
               write(iu , *) "Atom ", ia, 

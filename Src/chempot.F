@@ -87,6 +87,7 @@ C
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use sys,           only : die
+      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -107,17 +108,14 @@ C    .  homo, lumo, gap
 
 C Internal variables...
 
-      integer
-     . ind, ipmax, nhmax, nnmaxnew, nvmaxnew
+      integer ::  ind, ipmax, nhmax, nvmaxnew
 #ifdef MPI
       integer
      . MPIerror
 #endif
 
-C nnmax = maximum number of neighbors atoms within rcoor
 C nvmax = maximum number of non-zero elements within a sparse vector v
-      integer, save ::
-     .  nnmax, nvmax
+      integer, save ::   nvmax = 1000
 
 C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       parameter(ipmax = 200)
@@ -129,7 +127,7 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
      .  k, m, mu, nna, norb, nu, num, numloc, numv
 
       integer, dimension(:), pointer :: listvt, numhp, indexloc,
-     &                                  jan, ibuffer, listv
+     &                                  ibuffer, listv
 
       real(dp)  chpotsh, deltae, emean,
      .  rmax, rrmod, ri(3), tol
@@ -137,15 +135,13 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       integer,  dimension(:,:), pointer :: listhp, listhpp
       real(dp), dimension(:),   pointer :: paux, vec
       real(dp), dimension(:,:), pointer :: hbar, Hdense, Sdense
-      real(dp), dimension(:),   pointer :: r2ij, dpbuffer1
-      real(dp), dimension(:,:), pointer :: xij, v, dpbuffer2
-
-      data nnmax / 1000 /
-      data nvmax / 1000 /
+      real(dp), dimension(:),   pointer :: dpbuffer1
+      real(dp), dimension(:,:), pointer :: v, dpbuffer2
 C ...
 
 C Start timer
       call timer( 'chempot', 1 )
+      print *, "CHEMPOT CALLED"
 
 C Assign information for Chebyshev expansion (module variables)
       qtot = enum
@@ -197,19 +193,11 @@ C Allocate arrays that depend on ipmax
       nullify( c )
       call re_alloc( c, 1, ipmax, name='c', routine='chempot' )
 
-C Allocate arrays that depend on nnmax
+C Allocate arrays that depend on maxnna
 
       nullify( indexloc )
-      call re_alloc( indexloc, 1, nnmax, name='indexloc',
-     &               routine='chempot' )
-      nullify( jan )
-      call re_alloc( jan, 1, nnmax, name='jan', routine='chempot' )
-      nullify( r2ij )
-      call re_alloc( r2ij, 1, nnmax, name='r2ij', routine='chempot' )
-      nullify( xij )
-      call re_alloc( xij, 1, 3, 1, nnmax, name='r2ij',
-     &               routine='chempot' )
-
+      call re_alloc( indexloc, 1, max(maxnna,natoms),
+     $           name='indexloc',  routine='chempot' )
 
 C Allocate arrays that depend on nvmax
 
@@ -388,24 +376,7 @@ C Calculate maximum length in unit cell ...
 
 C Initialize routine for neighbour search
       if (2.*rcoor .lt. rmax) then
-         !AG: WARNING: this call will not update nna??
-        nna = nnmax
-        call neighb(cell,rcoor,natoms,xa,0,0,nna,jan,xij,r2ij)
-        if (nna .gt. nnmax) then
-          nnmaxnew = nna + nint(0.1*nna)
-C
-          call re_alloc( indexloc, 1, nnmaxnew, name='indexloc',
-     &                   routine='chempot', copy=.true. )
-          call re_alloc( jan, 1, nnmaxnew, name='jan',
-     &                   routine='chempot', copy=.true. )
-          call re_alloc( r2ij, 1, nnmaxnew, name='r2ij',
-     &                   routine='chempot', copy=.true. )
-          call re_alloc( xij, 1, 3, 1, nnmaxnew, name='xij',
-     &                   routine='chempot', copy=.true. )
-
-C
-          nnmax = nnmaxnew
-        endif
+        call mneighb(cell,rcoor,natoms,xa,0,0,nna)
       endif
 
 C initialize control vectors to zero 
@@ -416,23 +387,16 @@ C Loop over atoms ...............
 
         if (2.0*rcoor .lt. rmax) then
 C  look for neighbors of atom ia
-          nna = nnmax
-          call neighb(cell,rcoor,natoms,xa,ia,0,nna,jan,xij,r2ij)
-          if (nna .gt. nnmax) then
-            nnmaxnew = nna + nint(0.1*nna)
-C
-            call re_alloc( indexloc, 1, nnmaxnew, name='indexloc',
-     &                   routine='chempot', copy=.true. )
-            call re_alloc( jan, 1, nnmaxnew, name='jan',
-     &                   routine='chempot', copy=.true. )
-            call re_alloc( r2ij, 1, nnmaxnew, name='r2ij',
-     &                   routine='chempot', copy=.true. )
-            call re_alloc( xij, 1, 3, 1, nnmaxnew, name='xij',
-     &                   routine='chempot', copy=.true. )
-C
-            nnmax = nnmaxnew
-          endif
-        else     !AG:  What is this for?
+          call mneighb(cell,rcoor,natoms,xa,ia,0,nna)
+            ! No need to copy old contents in indexloc
+          call re_alloc( indexloc, 1, maxnna, name='indexloc',
+     &                   routine='chempot')
+        else    
+          ! Make sure we have enough space
+          ! (Cleaner alternative to initial allocation with  
+          ! max(maxnna,natoms)
+          !call sizeup_neighbour_arrays(natoms)
+          !call re_alloc( indexloc, 1, natoms, name='indexloc')
           nna = natoms
           do jj = 1,natoms
             jan(jj) = jj

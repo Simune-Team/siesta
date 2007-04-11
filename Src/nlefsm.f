@@ -73,7 +73,8 @@ C
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut, epskb
-      use m_neighbors,   only : maxna, iana=>jna, r2ki=>r2ij, xki=>xij
+      use neighbour    , only : iana=>jan, r2ki=>r2ij, xki=>xij
+      use neighbour    , only : mneighb
       use alloc,         only : re_alloc, de_alloc
 
       integer, intent(in) ::
@@ -91,7 +92,7 @@ C
       real(dp), intent(out)   :: Enl
 
       real(dp) ::   volcel
-      external ::   neighb, timer, volcel
+      external ::   timer, volcel
 
 C Internal variables ................................................
 C maxno  = maximum number of basis orbitals overlapping a KB projector
@@ -102,7 +103,7 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
      .  ia, ikb, ina, ind, ino,
      .  io, iio, ioa, is, ispin, ix, 
      .  j, jno, jo, jx, ka, ko, koa, ks, kua,
-     .  nkb, nna, nno, no, nuo, nuotot, maxnain, maxkba
+     .  nkb, nna, nno, no, nuo, nuotot, maxkba
 
       integer, dimension(:), pointer :: iano, iono
 
@@ -197,21 +198,16 @@ C Allocate local arrays that depend on saved parameters
      &               routine='nlefsm' )
 
 C Initialize neighb subroutine
-      nna = maxna
-      call neighb( scell, rmax, na, xa, 0, 0,
-     .             nna, iana, xki, r2ki )
+      call mneighb( scell, rmax, na, xa, 0, 0, nna )
 
 C Loop on atoms with KB projectors      
-      maxnain = maxna
       do ka = 1,na
         kua = indxua(ka)
         ks = isa(ka)
         nkb = lastkb(ka) - lastkb(ka-1)
 
 C Find neighbour atoms
-        nna = maxnain
-        call neighb( scell, rmax, na, xa, ka, 0,
-     .               nna, iana, xki, r2ki )
+        call mneighb( scell, rmax, na, xa, ka, 0, nna )
 
 C Find neighbour orbitals
           nno = 0

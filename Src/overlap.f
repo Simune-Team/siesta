@@ -14,7 +14,7 @@
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
-      use m_neighbors,   only : maxna, jna, r2ij, xij
+      use neighbour,     only : jna=>jan, r2ij, xij, mneighb
       use alloc,         only : re_alloc, de_alloc
 
       implicit none
@@ -71,7 +71,7 @@ C Internal variables ......................................................
 
       real(dp), dimension(:), pointer  :: Si
 
-      external  neighb, timer
+      external  timer
 C ......................
 
 C Start timer
@@ -80,9 +80,7 @@ C Start timer
       volume = nua * volcel(scell) / na
 
 C Initialize neighb subroutine 
-      nnia = maxna
-      call neighb( scell, 2.d0*rmaxo, na, xa, 0, 0,
-     .             nnia, jna, xij, r2ij )
+      call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia )
 
 C Allocate local memory
 
@@ -90,9 +88,7 @@ C Allocate local memory
       call re_alloc(Si,1,no,name="Si",routine="overlap")
 
       do ia = 1,nua
-        nnia = maxna
-        call neighb( scell, 2.d0*rmaxo, na, xa, ia, 0,
-     .               nnia, jna, xij, r2ij )
+        call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
 C Is this orbital on this Node?

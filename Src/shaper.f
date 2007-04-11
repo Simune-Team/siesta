@@ -43,21 +43,19 @@ C **********************************************************************
 
       use atmfuncs,  only : rcut
       use precision, only : dp
-      use m_neighbors, only : init_neighbor_arrays
-      use m_neighbors, only : maxna, jna, r2ij, xij
+      use neighbour, only : jna=>jan, r2ij, xij, mneighb
       use alloc,       only : re_alloc, de_alloc
 
       implicit          none
 
       INTEGER           NA, ISA(NA), NV
       real(dp)          CELL(3,3), XA(3,NA), VECS(3,3)
-      EXTERNAL          NEIGHB, LIVEC
+      EXTERNAL          LIVEC
       CHARACTER         SHAPE*(*)
 
 C Internal variables and arrays
 
-      integer :: IA, IN, IS, JA, JS, NNA, maxnain
-
+      integer :: IA, IN, IS, JA, JS, NNA
       real(dp) :: RI, RIJ, RJ, RMAX, XXJ(3)
 
 C Find maximum interaction range
@@ -66,23 +64,18 @@ C Find maximum interaction range
         IS = ISA(IA)
         RMAX = MAX( RMAX, RCUT(IS,0) )
       enddo
-      call init_neighbor_arrays(rmax)
 
 C Initialize neighbour-locater routine
-      NNA = MAXNA
-      CALL NEIGHB( CELL, 2*RMAX, NA, XA, 0, 0, NNA, JNA, XIJ, R2IJ )
+      CALL MNEIGHB( CELL, 2*RMAX, NA, XA, 0, 0, NNA )
 
 C Main loop
       NV = 0
-      maxnain = maxna
       do IA = 1,NA
         IS = ISA(IA)
         RI = RCUT(IS,0)
 
 C Find neighbours of atom IA
-        NNA = maxnain
-        CALL NEIGHB( CELL, RI+RMAX, NA, XA, IA, 0,
-     .               NNA, JNA, XIJ, R2IJ )
+        CALL MNEIGHB( CELL, RI+RMAX, NA, XA, IA, 0, NNA )
 
           do IN = 1,NNA
             JA = JNA(IN)

@@ -73,7 +73,9 @@ C
       use atmfuncs,      only : rcut
       use listsc_module, only : listsc_init
       use sorting
-      use m_neighbors,   only : maxna, jna, xij, r2ij
+      use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
+      use neighbour,   only: mneighb
+      
       use sys,           only : die
       use alloc,         only : re_alloc, de_alloc
 
@@ -95,7 +97,7 @@ C
       logical, intent(in)     :: gamma
       real(dp),  pointer      :: xijo(:,:)
 
-      external                   neighb, timer, memory
+      external               timer
 
 
       real(dp), parameter        :: tol = 1.0d-8   ! tolerance for comparing vector-coordinates
@@ -166,12 +168,7 @@ C Find maximum range of basis orbitals and KB projectors
 
       isel = 0
       ! Initialize internal data structures in neighb
-      ! Note that this is necessary if, for example,
-      ! we switch from considering unit-cell numbering
-      ! to supercell numbering...
-      nna = maxna
-      call neighb( cell, rmax, na, xa, 0, isel,
-     .             nna, jna, xij, r2ij )
+      call mneighb( cell, rmax, na, xa, 0, isel, nna )
 
 C Initialize number of neighbour orbitals
       do io = 1,nuo 
@@ -192,9 +189,9 @@ C Loop on atoms in unit cell
       do ia = 1,nua
 
 C Find neighbour atoms within maximum range
-        nna = maxna
-        call neighb( cell, rmax, na, xa, ia, isel,
-     .               nna, jna, xij, r2ij )
+         call mneighb( cell, rmax, na, xa, ia, isel, nna )
+         ! in case neighbor arrays have expanded
+         call re_alloc(index,1, maxna, name="index",routine="hsparse")
 
 C Order neighbours in a well defined way
           call ordvec( tol, 3, nna, xij, index )
@@ -322,9 +319,9 @@ C Loop on atoms in unit cell
         do ia = 1,nua
 
 C Find neighbour atoms within maximum range
-          nna = maxna
-          call neighb( cell, rmax, na, xa, ia, isel,
-     .                 nna, jna, xij, r2ij )
+           call mneighb( cell, rmax, na, xa, ia, isel, nna )
+           ! in case neighbor arrays have expanded
+           call re_alloc(index,1, maxna, name="index",routine="hsparse")
 
 C Order neighbours in a well defined way
           call ordvec( tol, 3, nna, xij, index )

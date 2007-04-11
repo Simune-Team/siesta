@@ -61,8 +61,7 @@
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kinefsm, mulliken, naefs, neighb, !kgrid, kgridinit,
-     .  pulayx, 
+     .  kinefsm, mulliken, naefs, pulayx, 
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox

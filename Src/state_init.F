@@ -28,7 +28,6 @@
       use m_steps
       use parallel, only: IOnode
       use alloc, only: re_alloc
-      use m_neighbors, only: init_neighbor_arrays
       use m_spin, only: nspin
       use m_rmaxh
       use m_pulay, only: init_pulay_arrays
@@ -173,10 +172,6 @@
       if (.not. negl) then
          rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
       endif
-
-      ! This will set maxna in m_neighbors and resize the arrays there,
-      ! avoiding further checks
-      call init_neighbor_arrays(rmax)
 
       ! Check if any two atoms are unreasonably close
       call proximity_check(rmax)

@@ -12,10 +12,10 @@
       public :: KSV_pol
       CONTAINS
       subroutine KSV_pol( nua, na, xa, rmaxo, scell, ucell, nuotot,
-     .                    nuo, no, nspin, qspin, maxna, maxnh, 
+     .                    nuo, no, nspin, qspin, maxnh, 
      .                    maxkpol, numh, listhptr, listh, H, S, 
      .                    AuxSr, xijo, indxuo, isa, iphorb, iaorb, 
-     .                    lasto, jna, xij, r2ij,shape, nkpol,kpol,
+     .                    lasto, shape, nkpol,kpol,
      .                    wgthpol, polR, polxyz )
 C *********************************************************************
 C Finds polarization using the method of King-Smith and Vanderbilt
@@ -33,7 +33,6 @@ C integer nuo                 : No. of basis orbitals in the unit cell (local)
 C integer no                  : Number of basis orbitals
 C integer nspin               : Number of spin components
 C real*8  qspin(2)            : Total population of spin up and down
-C integer maxna               : Maximum number of neighbours of any atom
 C integer maxnh               : Maximum number of orbitals interacting  
 C                               with any orbital
 C integer maxk                : Last dimension of kpoint 
@@ -55,9 +54,6 @@ C integer isa(na)             : Species index for each atom
 C integer iphorb(no)          : Orbital index within the atom for each
 C                               orbital
 C integer lasto(0:na)      : Last orbital index of each atom 
-C integer jna(maxna)       : Aux. space to find neighbours (indexes) 
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C *************************** INPUT/OUTPUT ****************************
 C integer  nkpol              :  Maximum number of grid points for the
 C                                bidimensional integrals
@@ -94,14 +90,13 @@ C
       integer           maxkpol, maxnh, nuo, nuotot, no, nspin, na
       integer           indxuo(no), listh(maxnh), numh(nuo), nkpol
       integer           listhptr(nuo), isa(na), iphorb(no), iaorb(no) 
-      integer           nua, maxna, jna(maxna), lasto(0:na)
+      integer           nua, maxna, lasto(0:na)
       real(dp)          ddot, 
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
      .                  polR(3,nspin), polxyz(3,nspin), ucell(3,3),
      .                  wgthpol(maxkpol), AuxSr(maxnh), 
-     .                  scell(3,3), rmaxo, xij(3,maxna), r2ij(maxna),
-     .                  xa(3,na)
+     .                  scell(3,3), rmaxo,  xa(3,na)
 C *********************************************************************
 
 C Internal variables 
@@ -346,9 +341,8 @@ C Calculation of the Jacobian
 
 C Construction of the matrix elements of the scalar product dk*r 
           call phirphi(nua, na, nuo, no, scell, xa, rmaxo,
-     .              maxna, maxnh, lasto, iphorb, isa,
-     .              numh, listhptr, listh, dk,
-     .              jna, xij, r2ij, AuxSr) 
+     .              maxnh, lasto, iphorb, isa,
+     .              numh, listhptr, listh, dk, AuxSr) 
 
 C Begin the bidimensional integration over the path integrals
           do ik = 1, nk

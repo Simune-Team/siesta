@@ -7,8 +7,8 @@
       USE precision, only:dp
       USE siesta_options
       use siesta_geom
-      use parallel, only: IOnode
-      use m_neighbors, only: maxna, jna, r2ij, xij
+      use parallel,  only: IOnode
+      use neighbour, only: jna=>jan, r2ij, mneighb
 
       implicit none
 
@@ -22,15 +22,11 @@
 
       isel = 0   ! Get back all neighbors, regardless of whether ja>ia
       ! Initialize neighb
-      nna = maxna
-      call neighb( scell, rmax, na_s, xa, 0, isel,
-     .               nna , jna, xij, r2ij )
+      call mneighb( scell, rmax, na_s, xa, 0, isel, nna )
       do ii = 1,na_s
         r2min = huge(1._dp)
         jamin = 0
-        nneigbI = maxna
-        call neighb( scell, rmax, na_s, xa, ii, isel,
-     .               nneigbI, jna, xij, r2ij )
+        call mneighb( scell, rmax, na_s, xa, ii, isel, nneigbI )
         do jj = 1,nneigbI
           idxneighJ = jna(jj)
           if ( r2ij(jj).lt.r2min .and. idxneighJ.ge.ii ) then

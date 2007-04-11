@@ -30,7 +30,6 @@
       use m_energies
       use m_steps
       use m_ntm
-      use m_neighbors,    only: maxna, jna, r2ij, xij
       use m_spin,         only: nspin
       use m_dipol
       use m_eo
@@ -76,7 +75,7 @@
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, neighb,
+     .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
      .  pulayx, 
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
@@ -268,10 +267,10 @@
 ! Attention H0 is used as an auxiliary array
       if (nkpol.gt.0 .and. .not.bornz) then
         call KSV_pol(na_u, na_s, xalast, rmaxo, scell_last, ucell_last,
-     .               no_u, no_l, no_s, nspin, qspin, maxna, 
+     .               no_u, no_l, no_s, nspin, qspin, 
      .               maxnh, nkpol, numh, listhptr, listh, 
      .               H, S, H0, xijo, indxuo, isa, iphorb, 
-     .               iaorb, lasto, jna, xij, r2ij,shape,
+     .               iaorb, lasto, shape,
      .               nkpol,kpol,wgthpol, polR, polxyz ) 
       endif
 
@@ -279,11 +278,11 @@
 ! Attention H0, Eold, Dold are used as auxiliary arrays
       call optical(na_u, na_s, xalast, scell_last, ucell_last,
      .             no_u, no_l, no_s, nspin, qspin,
-     .             maxna, maxnh, numh, listhptr, listh, H, S, H0,
+     .             maxnh, numh, listhptr, listh, H, S, H0,
      .             Eold(1,1), Dold(1,1),
      .             xijo, indxuo, indxua, ebk, ef, temp,
      .             isa, iphorb, iphKB, iaorb, lasto, lastkb,
-     .             jna, xij, r2ij, shape )
+     .             shape )
 
 !...................................
 

@@ -13,7 +13,6 @@
       use siesta_geom,    only: na_u, na_s, xa, scell, ucell, isa
       use atomlist,       only: no_u, indxuo, iphorb, iaorb, lasto
       use atomlist,       only: rmaxo, no_s, no_l
-      use m_neighbors,    only: maxna, jna, r2ij, xij
       use m_spin,         only: nspin
       use m_ksv,          only: KSV_pol
       use siesta_geom,    only: shape
@@ -69,10 +68,10 @@
       if (nkpol.gt.0) then
          ! Note use of xa instead of xalast now
          call KSV_pol(na_u, na_s, xa, rmaxo, scell, ucell,
-     .        no_u, no_l, no_s, nspin, qspin, maxna,
+     .        no_u, no_l, no_s, nspin, qspin,
      .        maxnh, nkpol, numh, listhptr, listh,
      .        H, S, H0, xijo, indxuo, isa, iphorb,
-     .        iaorb, lasto, jna, xij, r2ij,shape,
+     .        iaorb, lasto, shape,
      .        nkpol,kpol,wgthpol, polR, polxyz)
       endif
       if (nkpol.gt.0.and.IOnode) then

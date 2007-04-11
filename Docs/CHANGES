@@ -10,6 +10,44 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-04-11 12:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-27
+
+Summary: Allocatables to pointers IV -- new neighbor code + nspecies fix
+Keywords: 
+
+Further changes for allocatables->pointers conversion.  
+
+Neighb and ranger removed in favor of 'mneighb' approach, as it is
+more robust and less confusing.
+
+There has been a slight change in mneighb: maxnna is now a module
+variable, and not an argument of mneighb. Maxnna is given an initial
+value, and the module arrays initialized to that size in the first
+invocation.
+
+Patches applied:
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-43
+   First stages of changeover to mneighb paradigm
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-44
+   New functionality in mneighb. Convert chempot
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-45
+   Converted phirphi*, ksv, and optical
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-46
+   Final changeover to new neighb paradigm
+
+ * ag@bsc--2007/vars--mqag--1.0--patch-47
+   dhscf. Minor change in meshsubs. Cosmetic cleanup of mneighb.
+
+Also: Fix setting of number of species for user basis option
+
+The number of species was not set correctly if the options User.Basis
+or User.Basis.Netcdf were used.
+
+
 2007-04-10 08:05 GMT	Alberto Garcia <albertog@icmab.es>	patch-26
 
 Summary: Allocatables to pointers III

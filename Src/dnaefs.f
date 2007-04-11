@@ -9,8 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine dnaefs( nua, na, scell, xa, indxua, rmaxv,
-     .                   maxna, isa, jna, xij, r2ij,
-     .                   DEna, fa, stress)
+     .                   isa, DEna, fa, stress)
 C *********************************************************************
 C Correction of Neutral Atom energies, forces and stress due to the
 C overlap between ionic (bare pseudopotential) charges.
@@ -24,11 +23,7 @@ C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxv            : Maximum cutoff for NA potential
-C integer maxna            : Maximum number of neighbours of any atom
 C integer isa(na)          : Species index of each atom
-C integer jna(maxna)       : Aux. space to find neighbours (indexes)
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C **************************** OUTPUT *********************************
 C real*8 DEna              : NA energy correction
 C ********************** INPUT and OUTPUT *****************************
@@ -45,18 +40,16 @@ C *********************************************************************
 
       use precision
       use atmfuncs,  only: izofis, psover
+      use neighbour, only: mneighb, jna=>jan, xij, r2ij
 
       implicit none
 
-      integer
-     .  maxna, na, nua
+      integer  na, nua
 
-      integer
-     .  indxua(na), isa(na), jna(maxna)
+      integer  indxua(na), isa(na)
 
       real(dp)
-     .  scell(3,3), DEna, fa(3,nua), r2ij(maxna), rmaxv, 
-     .  stress(3,3), xa(3,na), xij(3,maxna)
+     .  scell(3,3), DEna, fa(3,nua), rmaxv, stress(3,3), xa(3,na)
 
 C Internal variables ......................................................
       integer
@@ -68,9 +61,7 @@ C Internal variables ......................................................
       parameter ( r2min = 1.d-15 )
 C ......................
 
-      nnia = maxna
-      call neighb( scell, 2.0d0*rmaxv, na, xa, 0, 0,
-     .             nnia, jna, xij, r2ij )
+      call mneighb( scell, 2.0d0*rmaxv, na, xa, 0, 0, nnia )
 
       volume = nua * volcel(scell) / na
       DEna = 0.0d0
@@ -78,9 +69,7 @@ C ......................
       do ia = 1,nua
 
 C Find neighbour atoms
-        nnia = maxna
-        call neighb( scell, 2.0d0*rmaxv, na, xa, ia, 0,
-     .               nnia, jna, xij, r2ij )
+        call mneighb( scell, 2.0d0*rmaxv, na, xa, ia, 0, nnia )
         do jn = 1,nnia
           ja = jna(jn)
           jua = indxua(ja)
@@ -105,5 +94,4 @@ C Find neighbour atoms
         enddo
       enddo
 
-      return
       end

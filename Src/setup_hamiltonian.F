@@ -21,7 +21,6 @@
       use m_energies
       use m_steps, only: istp
       use m_ntm
-      use m_neighbors, only: maxna, jna, r2ij, xij
       use m_spin,         only: nspin
       use m_dipol
       use m_forces,          only: fa
@@ -57,7 +56,7 @@
       external ::
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kinefsm, mulliken, naefs, neighb,
+     .  kinefsm, mulliken, naefs,
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
@@ -100,11 +99,9 @@
 ! First time for energy, last time for forces
         if (first.or.last) then
           call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
-     .               maxna, isa, jna, xij, r2ij,
-     .               Ena, fa, stress)
+     .               isa, Ena, fa, stress)
           call dnaefs(na_u, na_s, scell, xa, indxua, rmaxv,
-     .               maxna, isa, jna, xij, r2ij,
-     .               DEna, fa, stress) 
+     .                isa, DEna, fa, stress) 
           Ena = Ena + DEna
         endif
 ! ..................
@@ -112,10 +109,9 @@
 ! Kinetic: energy, forces, stress and matrix elements .................
         if (first.or.last) then
           call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo, no_l,
-     .                 maxna, maxnh, maxnh, lasto, iphorb, isa, 
+     .                 maxnh, maxnh, lasto, iphorb, isa, 
      .                 numh, listhptr, listh, numh, listhptr, listh, 
-     .                 min(nspin,2), Dscf, jna, xij, r2ij,
-     .                 Ekin, fal, stressl, H ) 
+     .                 min(nspin,2), Dscf, Ekin, fal, stressl, H ) 
 #ifdef MPI
 ! Global reduction of energy terms
           call globalize_sum(Ekin,buffer1)
@@ -216,10 +212,9 @@
 ! Orthonormalization forces ...........................................
         if (last) then
            call overfsm(na_u, na_s, no_s, scell, xa, indxua,rmaxo,no_l,
-     .                 maxna, maxnh, maxnh, lasto, iphorb, isa, 
+     .                 maxnh, maxnh, lasto, iphorb, isa, 
      .                 numh, listhptr, listh, numh, listhptr, listh, 
-     .                 min(nspin,2), Escf, jna, xij, r2ij,
-     .                 fal, stressl, S ) 
+     .                 min(nspin,2), Escf, fal, stressl, S ) 
         endif
 ! ..................
 

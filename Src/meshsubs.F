@@ -56,7 +56,7 @@ C ----------------------------------------------------------------------
 
       real(dp),  dimension(:,:), allocatable, save :: dxa
       real(dp),  dimension(:,:), allocatable, save :: xdop
-      real(dp),  dimension(:,:), allocatable, save :: xdsp
+      real(dp),  dimension(:,:), pointer, save :: xdsp ! Allocated in dhscf
 
       integer,                save :: mop
       integer,  dimension(3), save :: ne

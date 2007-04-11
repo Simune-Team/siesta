@@ -9,8 +9,7 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine naefs(nua, na, scell, xa, indxua, rmaxv,
-     .                 maxna, isa, jna, xij, r2ij,
-     .                 Ena, fa, stress)
+     .                 isa, Ena, fa, stress)
 C *********************************************************************
 C Neutral Atom (NA) energy, forces and stress.
 C This is the self energy of rho_na=-Laplacian(v_na(Ry))/(8*pi)
@@ -24,11 +23,7 @@ C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxv            : Maximum cutoff for NA potential
-C integer maxna            : Maximum number of neighbours of any atom
 C integer isa(na)          : Species index of each atom
-C integer jna(maxna)       : Aux. space to find neighbours (indexes)
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C **************************** OUTPUT *********************************
 C real*8 Ena               : NA energy
 C ********************** INPUT and OUTPUT *****************************
@@ -45,32 +40,27 @@ C *********************************************************************
 
       use precision 
       use atmfuncs,  only: izofis
+      use neighbour, only: jna=>jan, xij, mneighb
 
       implicit none
 
-      integer
-     .  maxna, na, nua
+      integer na, nua
 
       integer
-     .  indxua(na), isa(na), jna(maxna)
+     .  indxua(na), isa(na)
 
       real(dp)
-     .  scell(3,3), Ena, fa(3,nua), r2ij(maxna), rmaxv, 
-     .  stress(3,3), xa(3,na), xij(3,maxna)
+     .  scell(3,3), Ena, fa(3,nua), rmaxv, stress(3,3), xa(3,na)
 
 C Internal variables ......................................................
-      integer
-     .  ia, is, ix, ja, jn, js, jx, jua, nnia
+      integer  ia, is, ix, ja, jn, js, jx, jua, nnia
 
-      real(dp)
-     .  fij(3), pi, vij, volcel, volume 
+      real(dp)  fij(3), pi, vij, volcel, volume 
       
 C ......................
 
 C Initialize neighb subroutine
-      nnia = maxna
-      call neighb( scell, 2.d0*rmaxv, na, xa, 0, 0,
-     .             nnia, jna, xij, r2ij )
+      call mneighb( scell, 2.d0*rmaxv, na, xa, 0, 0, nnia )
 
       pi = 4.0d0 * atan(1.0d0)
       volume = nua * volcel(scell) / na
@@ -79,9 +69,7 @@ C Initialize neighb subroutine
       do ia = 1,nua
 
 C Find neighbour atoms
-        nnia = maxna
-        call neighb( scell, 2.0d0*rmaxv, na, xa, ia, 0,
-     .               nnia, jna, xij, r2ij )
+        call mneighb( scell, 2.0d0*rmaxv, na, xa, ia, 0, nnia )
         do jn = 1,nnia
           ja = jna(jn)
           jua = indxua(ja)
@@ -103,6 +91,5 @@ C Find neighbour atoms
         enddo
       enddo
 
-      return
       end
 
