@@ -10,6 +10,107 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-04-17 13:54:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-52
+
+Summary: New method for split-norm calculation
+
+The method for generating multiple-zeta orbitals is based on fitting a
+function of the form r^l (C_1*r^2 +C_2) at a certain point of the
+initial (1st zeta) orbital.
+
+The criterion spelled out in the Siesta JPC paper seems to imply that
+the split-norm parameter refers to the norm of the tail of the initial
+orbital (i.e., the region to the right of the fitting point). However,
+the actual code in Siesta takes it to mean the norm of the tail *plus*
+the norm of the parabolic function in the inner region. The reasons
+are mostly historical, having to do with finding a "good enough, universal"
+default value for the split-norm parameter. 
+
+The problem with the "parabola+tail" method is that it does not always
+work, and this is bad for an unsupervised method like the simplex. For
+example, if the first-zeta orbital has a relatively large slope at or
+near rc , the smallest parabola one can fit (for radii very close to
+rc) has a significant norm, and there is a minimum value for the
+split-norm parameter. Thus the method will not work if the user (or
+simplex) requests a split-norm greater than this value, and Siesta
+will stop.  This behavior is not uncommon.
+
+On the other hand, the norm of the tail region is of course smooth and
+covers monotonically the whole range 0-1. It has very low contrast
+near rc, meaning that in order to fit a 2nd-zeta orbital with a 10%
+reduction in rc, one might need to use "tail-split-norms" of 0.001 or
+smaller.
+
+New code for multiple split orbitals has been written to address these
+issues, while at the same time maintaining backwards compatibility with
+the old procedure. The code is controlled by the new fdf symbols:
+
+* PAO.NewSplitCode
+
+Enables a new, simpler way to match the multiple-zeta radii.
+
+If an old-style (tail+parabola) calculation is being done, perform a
+scan of the tail+parabola norm in the whole range of the 1st-zeta
+orbital, and store that in split_table. The construction of the
+2nd-zeta orbital involves simply scanning split_table to find the
+appropriate place. Due to the idiosyncracies of the old algorithm,
+the new one is not guaranteed to produce exactly the same results,
+as it might settle on a neighboring grid point for the matching.
+
+* PAO.SplitTailNorm
+
+split_table is set to sqrt(1-norm(r)), to more closely match the
+spirit of the JPC paper (the square root is introduced to make the
+split norm values larger for 2nd-zeta radii in the vicinity of rc).
+
+* PAO.FixSplitTable
+
+The old-style split-table is fixed by applying a damping function that
+takes it to zero at the 1st-zeta orbital radius. This option enables
+PAO.NewSplitCode.
+
+
+By default, all three symbols are .false., resulting in the use of the old
+code. In this case, the program now stops if the requested split_norm
+is smaller than the values on the table, and prints an explanation.
+
+2007-04-17 09:54:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-51
+
+    Summary:
+      Fix tag in MPI send/receive in mulliken
+    Revision:
+      siesta-devel--reference--2.1--patch-51
+
+    * The undefined variable 'io' was used as tag... changed to itot, the
+    orbital index.
+    
+    * Trimmed mpibuff before writing.
+    
+    
+
+    modified files:
+     Src/mulliken.F
+
+    new patches:
+     agarcia@siesta.arch--2006/mulliken--agarcia--0.1--patch-1
+
+
+2007-03-19 14:18:58 GMT	Alberto Garcia <albertog@icmab.es>	patch-50
+
+    Summary:
+      Add molecular mechanics documentation
+    Revision:
+      siesta-devel--reference--2.1--patch-50
+
+    Patches applied:
+    
+     * agarcia@siesta.arch--2006/mulliken--agarcia--0.1--patch-1
+       Fix tag in MPI send and receive in calculation of overlap
+    
+
+    modified files:
+     Docs/siesta.ind Docs/siesta.tex
+
 2007-03-14 22:30:31 GMT	Alberto Garcia <albertog@icmab.es>	patch-49
 
 Summary: VPATH-aware compilation for multiple executable versions

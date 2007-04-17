@@ -589,6 +589,9 @@ shows a very general and stable performance for values around
   It generalizes to multiple-$\zeta$ trivially by adding an additional
 matching radius per new zeta.
 
+Note: What is actually used is the norm of the tail {\em plus} the
+norm of the parabola-like inner function.
+
   Angular flexibility is obtained by adding shells of higher angular 
 momentum.
   Ways to generate these so-called polarization orbitals have been
@@ -1169,6 +1172,58 @@ specified for hydrogen which typically needs larger values than those
 for other
 elements.
 
+\item[{\bf PAO.NewSplitCode}] ({\it boolean}): 
+\index{PAO.NewSplitCode@{\bf PAO.NewSplitCode}}\index{basis!new
+  split-valence code} 
+
+Enables a new, simpler way to match the multiple-zeta radii.
+
+If an old-style (tail+parabola) calculation is being done, perform a
+scan of the tail+parabola norm in the whole range of the 1st-zeta
+orbital, and store that in a table. The construction of the
+2nd-zeta orbital involves simply scanning the table to find the
+appropriate place. Due to the idiosyncracies of the old algorithm,
+the new one is not guaranteed to produce exactly the same results,
+as it might settle on a neighboring grid point for the matching.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf PAO.FixSplitTable}] ({\it boolean}): 
+\index{PAO.FixSplitTable@{\bf PAO.FixSplitTable}}\index{basis!fix
+  split-valence table} 
+
+After the scan of the allowable split-norm values, apply a damping
+function to the tail to make sure that the table goes to zero at
+the radius of the first-zeta orbital.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf PAO.SplitTailNorm}] ({\it boolean}): 
+\index{PAO.SplitTailNorm@{\bf PAO.SplitTailNorm}}\index{basis!new
+  split-valence code} 
+
+Use the norm of the tail instead of the full tail+parabola
+norm. This is the behavior described in the JPC paper. (But note
+that, for numerical reasons, the square root of the tail norm is used
+in the algorithm.) This is the preferred mode of operation for
+automatic operation, as in non-supervised basis-optimization runs.
+
+{\it Default value:} {\tt .false.}
+
+As a summary of the above options:
+\begin{itemize}
+\item For complete backwards compatibility, do nothing.
+\item To exercise the new code, set {\tt PAO.NewSplitCode}.
+\item To maintain the old split-norm heuristic, but
+making sure that the program finds a solution (even
+if not optimal, in the sense of producing a second-$\zeta$ $r_c$
+very close to the first-$\zeta$ one), set {\tt PAO.FixSplitTable}
+(this will automatically set {\tt PAO.NewSplitCode}).
+\item If the old heuristic is of no interest (for example, if
+only a robust way of mapping split-norms to radii is needed), set
+{\tt PAO.SplitTailNorm} (this will set {\tt PAO.NewSplitCode}
+automatically).
+\end{itemize}
 
 \item[{\bf PAO.SoftDefault}] ({\it boolean}):
 \index{PAO.SoftDefault@{\bf PAO.SoftDefault}}\index{basis!default soft
