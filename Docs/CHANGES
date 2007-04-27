@@ -10,6 +10,18 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-04-27 16:15:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-53
+
+Summary: Merge of XML tester by Eduardo Anglada
+Keywords: 
+
+* New command-line interface
+* Merged new functionality into old test.mk
+
+* Some of the new tests are not yet properly integrated.
+  (reference output files and xml files have to be
+   re-generated).
+
 2007-04-17 13:54:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-52
 
 Summary: New method for split-norm calculation

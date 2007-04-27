@@ -18,3 +18,22 @@ Siesta program in ../Src).
 Reference output files can be found in directory Reference.
 
 See the Makefile for more options.
+
+Some of the most interesting are:
+
+1) Use a given siesta executable:
+
+make SIESTA=/full/path/to/siesta
+
+2) Name of the directory where siesta is run. 
+This directory is created as a subdirectory in each test.
+You can have several and compare the results using the xml
+parser (see README.xml).
+
+make label="something" 
+
+Of course you can use both:
+
+make SIESTA=/var/foo label="something" 
+
+Comparisons can also be done to external Tests hierarchies.
