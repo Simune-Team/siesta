@@ -182,7 +182,7 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER)
 GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o recipes.o parallel.o \
           parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
-	  paste.o  flib_spline.o \
+	  paste.o  flib_spline.o bessph.o filter.o filter_subs.o \
           basis_specs.o atom.o periodic_table.o\
           pseudopotential.o dot.o xc.o  arw.o  \
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
@@ -199,7 +199,7 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
 #
 DENCHAR_OBJS = m_denchar_init.o m_denchar_geom.o m_denchar_io.o \
                m_denchar_neighb.o m_denchar_work.o \
-               denchar.o 
+               denchar.o flib_spline.o
 #
 m_denchar_io.o m_denchar_init.o denchar.o : $(FDF)
 #

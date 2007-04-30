@@ -9,6 +9,19 @@ for a given patch, see the "new patches" section of each log.
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
+2007-04-30 08:50:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-54
+
+Summary: Portability fixes (matterhorn/pgf90). Wider basis enthalpy field.
+
+ * agarcia@siesta.arch--2006/siesta-fix--matterhorn--0.1--patch-1
+   More denchar and gen-basis objs
+
+ * agarcia@siesta.arch--2006/siesta-fix--matterhorn--0.1--patch-2
+   Wider field in BASIS_ENTHALPY
+
+ * agarcia@siesta.arch--2006/siesta-fix--matterhorn--0.1--patch-3
+   Fix matterhorn Sys files for VPATH compilation
+
 
 2007-04-27 16:15:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-53
 
