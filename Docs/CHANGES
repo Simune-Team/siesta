@@ -10,6 +10,27 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-05-07 15:30:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-28
+
+Summary: Explicit array-ness in calls in initatom and cellxc
+
+The Marenostrum compiler complains if actual arguments with
+array indexes beginning at 0 are written in the old f77 style:
+
+Thus one has to write in initatom:
+
+                call ....
+                 nkbl(0:,is), erefkb(1,0:,is),lmxo(is),
+
+instead of:
+                call ....
+                 nkbl(0,is), erefkb(1,0,is),lmxo(is),
+
+* In cellxc, a similar specification is necessary:
+
+          call HowManyMeshPerNode(MeshNsm,Pleft3,Nodes,NMeshPN,
+     .      PMesh(1:,3))
+
 2007-04-11 12:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-27
 
 Summary: Allocatables to pointers IV -- new neighbor code + nspecies fix

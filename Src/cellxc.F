@@ -336,9 +336,9 @@ C Find Nodes to exchange with
 
 C Find size of mesh at nodes to be exchanged with
           call HowManyMeshPerNode(MeshNsm,Pleft3,Nodes,NMeshPN,
-     .      PMesh(1,3))
+     .      PMesh(1:,3))
           call HowManyMeshPerNode(MeshNsm,Pright3,Nodes,NMeshPN,
-     .      PMesh(1,4))
+     .      PMesh(1:,4))
           do ix = 1,3
             PMesh(ix,3) = PMesh(ix,3)*NSM
             PMesh(ix,4) = PMesh(ix,4)*NSM
@@ -436,9 +436,9 @@ C Find Nodes to exchange with
 
 C Find size of mesh at nodes to be exchanged with
           call HowManyMeshPerNode(MeshNsm,Pleft2,Nodes,NMeshPN,
-     .      PMesh(1,1))
+     .      PMesh(1:,1))
           call HowManyMeshPerNode(MeshNsm,Pright2,Nodes,NMeshPN,
-     .      PMesh(1,2))
+     .      PMesh(1:,2))
           do ix = 1,3
             PMesh(ix,1) = PMesh(ix,1)*NSM
             PMesh(ix,2) = PMesh(ix,2)*NSM
