@@ -10,6 +10,13 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-05-07 11:00:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-29
+
+Summary: Fix wrong allocations in cellxc.F
+
+A few typos in the conversion of allocatables to pointers in cellxc caused
+crashes. Fixed allocation of dbuffer and bvxc.
+
 2007-05-07 15:30:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-28
 
 Summary: Explicit array-ness in calls in initatom and cellxc

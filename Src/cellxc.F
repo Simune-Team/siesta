@@ -315,7 +315,7 @@ C Allocate memory for border densities and potential
      &                 1, 4*NN, 1, nspin, name='bdens',
      &                 routine='cellxc' )
         nullify( bvxc )
-        call re_alloc( bdens,
+        call re_alloc( bvxc,
      &                 1,NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
      &                 1, 4*NN, 1, nspin, name='bvxc',
      &                 routine='cellxc' )
@@ -357,7 +357,7 @@ C Allocate arrays for data storage
      &                   routine='cellxc' )
           nmax = max(nsleft,nsright)
           nullify( dbuffer )
-          call re_alloc( bbuffer, 1, nmax, 1, 2, name='dbuffer',
+          call re_alloc( dbuffer, 1, nmax, 1, 2, name='dbuffer',
      &                   routine='cellxc' )
 
 C Build buffer transfer data array
