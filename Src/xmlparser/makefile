@@ -1,13 +1,15 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-module:  libxmlparser.a test-xml
+module:  libxmlparser.a # Do not build by default: test-xml
 include ../arch.make
 #
 OBJFILES= m_debug.o m_buffer.o m_elstack.o m_dictionary.o m_io.o \
           m_reader.o m_converters.o m_charset.o  m_entities.o \
-          m_xml_error.o  m_fsm.o  m_xml_parser.o flib_sax.o flib_dom.o \
-	  m_dom_attribute.o m_dom_element.o m_dom_node.o m_dom_types.o \
+          m_xml_error.o  m_fsm.o  m_xml_parser.o flib_sax.o
+
+DOM_OBJ_FILES= flib_dom.o \
+          m_dom_attribute.o m_dom_element.o m_dom_node.o m_dom_types.o \
           m_dom_debug.o m_dom_error.o m_dom_nodelist.o m_dom_utils.o \
           m_dom_document.o m_dom_namednodemap.o m_dom_parse.o \
           m_strings.o
@@ -24,11 +26,16 @@ libxmlparser.a: $(OBJFILES)
 INCFLAGS=-I../wxml
 
 test.o: f2kcli.o
-test-xml:test.o f2kcli.o libxmlparser.a ../libwxml.a
-	$(FC) $(FFLAGS) -o test-xml test.o f2kcli.o compare_m.o m_compare_tol.o libxmlparser.a ../libwxml.a
+m_compare_tol.o: $(DOM_OBJ_FILES)
 
-list: list_nodes.o libxmlparser.a ../libwxml.a
-	$(FC) $(FFLAGS)  -o list list_nodes.o libxmlparser.a ../libwxml.a
+test-xml:test.o f2kcli.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
+	$(FC) $(FFLAGS) -o test-xml test.o f2kcli.o \
+                           compare_m.o m_compare_tol.o \
+                           $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
+
+list: list_nodes.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
+	$(FC) $(FFLAGS)  -o list list_nodes.o \
+                            $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
 
 clean:
 	rm -f *.o *.*d *.a test-xml list

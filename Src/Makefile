@@ -142,7 +142,7 @@ basis_io.o md_out.o: $(NETCDF_INTERFACE)
 # Interfaces to libraries
 #
 libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI" )
+	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI" all )
 libnetcdf_f90.a: 
 	@(cd NetCDF ; $(MAKE) "VPATH=$(VPATH)/NetCDF" )
 #

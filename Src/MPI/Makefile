@@ -12,6 +12,7 @@
 .SUFFIXES: .o .F90 .f90 .F .f .a 
 #
 default: module_built 
+all: module_built pi3 blacs_prb pblas_prb
 include ../arch.make
 #
 #
