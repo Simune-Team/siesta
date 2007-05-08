@@ -10,6 +10,32 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-05-08 21:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-30
+
+Summary: Explicit array extents in initatom.f
+
+More fixes for compiler handling of array arguments:
+
+The actual argument (in call to atom in initatom.f):
+
+	nzeta(0:,1,is)
+
+is wrong. It should be:   nzeta(0:,1:,is)
+
+The 0: form was put in a previous patch to avoid an mismatched interface
+error with the Marenostrum compiler. But once this is done, apparently
+one has to go all the way with explicit array extents. Otherwise bad
+code is produced by other compilers (at least by Intel's).
+
+This is mildly confusing, as the dummy arguments are declared
+in f77 style in atom.f:
+
+      integer, intent(in) :: nzeta(0:lmaxd,nsemx)
+
+(or are they?).
+
+There might be other instances of this usage.
+
 2007-05-07 11:00:10 GMT	Alberto Garcia <albertog@icmab.es>	patch-29
 
 Summary: Fix wrong allocations in cellxc.F
