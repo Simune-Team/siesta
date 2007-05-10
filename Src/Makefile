@@ -32,9 +32,14 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 #
 aclocal.m4: $(M4_FILES)
 	cat ${<D}/$(M4_FILES)  > aclocal.m4
-dep: 
+dep:
+	@if [ $(VPATH) == "." ] ; then \
 	sfmakedepend --depend=obj  --modext=o \
-        $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90
+                              *.f *.f90 *.F *.F90 ; \
+        else \
+	sfmakedepend --depend=obj  --modext=o \
+          $(VPATH)/*.f $(VPATH)/*.f90 $(VPATH)/*.F $(VPATH)/*.F90 ; \
+        fi
 	@sed '/^siesta_cmlsubs.o:/s/version.o//'  Makefile > tmp.Makefile
 	@mv tmp.Makefile Makefile
 #
@@ -64,7 +69,7 @@ OBJS =  automatic_cell.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
-	efield.o egandd.o ener3.o ener3lomem.o extrapol.o extrapolon.o \
+	efield.o egandd.o ener3.o ener3lomem.o extrapol.o  extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
@@ -429,8 +434,8 @@ molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
 mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o
-new_dm.o: atomlist.o m_spin.o m_steps.o siesta_geom.o siesta_options.o
-new_dm.o: sparse_matrices.o
+new_dm.o: atomlist.o extrapol.o m_spin.o m_steps.o siesta_geom.o
+new_dm.o: siesta_options.o sparse_matrices.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
@@ -564,3 +569,55 @@ xcmod.o: parallel.o parsing.o precision.o sys.o
 xml.o: precision.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
+band.o: bands.o
+diagmemory.o: memoryinfo.o
+listsc_module.o: listsc.o
+m_born_charge.o: born_charge.o
+m_broyden_optim.o: broyden_optim.o
+m_chempot.o: chempot.o
+m_compute_dm.o: compute_dm.o
+m_conjgr.o: conjgr.o
+m_conjgr_old.o: conjgr_old.o
+m_dynamics.o: dynamics.o
+m_extrapol.o: extrapol.o
+m_fermid.o: fermid.o
+m_find_kgrid.o: find_kgrid.o
+m_forhar.o: forhar.o
+m_hsparse.o: hsparse.o
+m_ioxv.o: ioxv.o
+m_ksv.o: ksv.o
+m_ksvinit.o: ksvinit.o
+m_local_dos.o: local_DOS.o
+m_minvec.o: minvec.o
+m_mixer.o: mixer.o
+m_new_dm.o: new_dm.o
+m_nlefsm.o: nlefsm.o
+m_normalize_dm.o: normalize_dm.o
+m_ordern.o: ordern.o
+m_overfsm.o: overfsm.o
+m_overlap.o: overlap.o
+m_post_scf_work.o: post_scf_work.o
+m_projected_dos.o: projected_DOS.o
+m_proximity_check.o: proximity_check.o
+m_radfft.o: radfft.o
+m_recipes.o: recipes.o
+m_scf_options.o: m_options.o
+m_scfconvergence_test.o: scfconvergence_test.o
+m_setup_hamiltonian.o: setup_hamiltonian.o
+m_siesta_analysis.o: siesta_analysis.o
+m_siesta_end.o: siesta_end.o
+m_siesta_forces.o: siesta_forces.o
+m_siesta_init.o: siesta_init.o
+m_siesta_move.o: siesta_move.o
+m_state_analysis.o: state_analysis.o
+m_state_init.o: state_init.o
+m_struct_init.o: struct_init.o
+m_timestamp.o: timestamp.o
+m_xyz_phiatm.o: matel.o
+mesh.o: meshsubs.o
+meshdscf.o: meshmatrix.o
+meshphi.o: meshsubs.o
+neighbour.o: mneighb.o
+on_core.o: onmod.o
+on_main.o: onmod.o
+version_info.o: version.o

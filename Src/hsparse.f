@@ -294,7 +294,11 @@ C Find optimum value for nlhmax
       endif     
 
       nlhmax = nlh
-      call re_alloc(listh,1,nlhmax,name='listh',routine='hsparse')
+      ! (re)allocate listh, but do not shrink, as it might
+      ! be used for DM extrapolation
+      ! using information from different geometries.
+      call re_alloc(listh,1,nlhmax,name='listh',
+     $     routine='hsparse',SHRINK=.false.)
       if (.not. gamma) then
          call re_alloc(xijo,1,3,1,nlhmax,name='xijo',routine='hsparse')
       else

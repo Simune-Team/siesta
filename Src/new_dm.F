@@ -11,6 +11,7 @@
       use atomlist, only: datm, no_s, iaorb, lasto, no_u, no_l
       use m_steps,  only: istp
       use m_spin,   only: nspin
+      use m_extrapol, only: extrapol
 
       implicit none
 

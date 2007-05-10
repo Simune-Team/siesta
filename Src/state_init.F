@@ -27,7 +27,6 @@
       use write_subs
       use m_steps
       use parallel, only: IOnode
-      use alloc, only: re_alloc
       use m_spin, only: nspin
       use m_rmaxh
       use m_pulay, only: init_pulay_arrays
@@ -194,16 +193,22 @@
      $                 gamma, xijo )
 
       maxnh = nh
-      !OBSOLETE:  if (nh > maxnh)  maxnh = 1.05 * nh + 40 !  safety margin for when atoms move
+      !OBSOLETE: 
+      !  safety margin for when atoms move 
+      !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
 
-      ! Use re_alloc regardless of whether nh is greater than the old maxnh or not.
+      ! Use re_alloc regardless of whether nh is greater than 
+      ! the old maxnh or not, BUT DO NOT SHRINK, as some of
+      ! these arrays are later used in extrapol.
 
       call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .     routine='siesta',copy=.true.)
+     .     routine='siesta',copy=.true.,SHRINK=.false.)
       call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     .     routine='siesta',copy=.true.)
+     .     routine='siesta',copy=.true.,SHRINK=.false.)
       call re_alloc(listhold,1,maxnh,name='listhold',
-     .     routine='siesta',copy=.true.)
+     .     routine='siesta',copy=.true.,SHRINK=.false.)
+      endif
+!==============================================================
 
       if (istp==1) then
          ! Initialise Dscfsave to avoid problems in extrapol
