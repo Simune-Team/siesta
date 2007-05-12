@@ -142,7 +142,7 @@ basis_io.o md_out.o: $(NETCDF_INTERFACE)
 # Interfaces to libraries
 #
 libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI" all )
+	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI")
 libnetcdf_f90.a: 
 	@(cd NetCDF ; $(MAKE) "VPATH=$(VPATH)/NetCDF" )
 #
@@ -211,7 +211,8 @@ OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
         pseudopotential.o chemical.o xml.o files.o $(SYSOBJ)
 
-denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
+denchar: $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
+         $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
            $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 

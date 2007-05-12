@@ -10,6 +10,18 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-05-12 18:00:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-56
+
+Summary: Fixes for compilation of test-xml and MPI tests
+
+* A warning is now printed if the user tries to invoke 'make'
+from the xmlparser or MPI directories to compile test-xml or
+the MPI tests, so that the proper VPATH is used.
+
+* Add pxf.o dependency to test-xml
+
+* Add INCFLAGS to default suffix rule to Intel mkl .make file.
+
 2007-05-07 09:50:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-55
 
 Summary: Portability fixes: xmlparser split. New mpich pe in matterhorn

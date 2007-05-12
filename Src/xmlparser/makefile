@@ -24,18 +24,38 @@ libxmlparser.a: $(OBJFILES)
 #         (Note trick for Intel Fortran Compiler)
 #
 INCFLAGS=-I../wxml
+#
+#
+PARENT_VPATH=`grep '^VPATH' ../Makefile`
+vpath_warning:
+	@echo "** If you are using VPATH, compilations launched from this directory"
+	@echo "** need to provide an explicit VPATH to the 'make' command."
+	@echo "** Use the VPATH in Makefile in the top directory, followed by /xmlparser."
+	@echo "** For example, to compile the XML tester program:"
+	@echo
+	@echo   make $(PARENT_VPATH)/xmlparser test-xml
+	@echo
 
 test.o: f2kcli.o
 m_compare_tol.o: $(DOM_OBJ_FILES)
 
-test-xml:test.o f2kcli.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
+OTHER_OBJS=../pxf.o
+#
+test-xml: vpath_warning  \
+          test.o f2kcli.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
+	@echo
+	@echo  "-- Building test-xml program. "
+	@echo  "-- Some compilers might have trouble with the DOM subsystem. "
+	@echo  "-- Make sure also that 'INCFLAGS' is part of the default compilation rules in arch.make"
+	@echo
 	$(FC) $(FFLAGS) -o test-xml test.o f2kcli.o \
                            compare_m.o m_compare_tol.o \
-                           $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
+                           $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
 
-list: list_nodes.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
+list: vpath_warning \
+       list_nodes.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
 	$(FC) $(FFLAGS)  -o list list_nodes.o \
-                            $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a
+                            $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
 
 clean:
 	rm -f *.o *.*d *.a test-xml list
