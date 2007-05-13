@@ -10,6 +10,15 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-05-13 20:00:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-57
+
+Summary: MareNostrum fixes. zdrot to blas. obj_setup. compare_m syntax
+
+* Add "." to MPI_INCLUDE, and INCFLAGS to default rules in MN's .make file.
+* Remove old MN .make file.
+* Do not link Reference-xml in obj_setup.sh
+* Move zdrot routine from dc_lapack.f to blas.f
+
 2007-05-12 18:00:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-56
 
 Summary: Fixes for compilation of test-xml and MPI tests

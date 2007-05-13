@@ -2,8 +2,8 @@
 # System which gives problems with split
 # To see them, uncomment the PAO.FixSplitTable directive
 #
-SystemName          Ag
-SystemLabel         Ag
+SystemName          Ag test
+SystemLabel         ag
 NumberOfAtoms       1
 NumberOfSpecies     1
 
