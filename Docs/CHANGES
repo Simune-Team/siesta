@@ -11,6 +11,23 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-11 14:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-12
+
+Summary: Option to use fractional rc's for multiple zeta
+
+If the rc's for multiple-zeta orbitals are given as negative numbers
+in the PAO.Basis block, they are interpreted as the corresponding
+fractions of the rc for the first-zeta orbital.
+
+This is useful in basis optimization, to avoid having to include
+explicitly the constraint that rc(izeta>1) < rc(izeta=1).
+
+Note however that, if the rc's are significantly larger than the
+natural size of the atomic orbital, multiple-zeta orbitals will tend
+to be very similar to the first (this is now flagged by the program as
+a warning). The best procedure to avoid this is to use an explicit
+split-norm value.
+
 2007-05-11 14:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-11
 
 Summary: Implementation of basis_enthalpy calculation. Zmatrix dependency
