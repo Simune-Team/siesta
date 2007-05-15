@@ -11,6 +11,14 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-11 09:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
+
+Summary: Re-enabling of kgrid update in variable-cell calculations
+
+* Re-enabled the computation of kscell in kpoint_grid after a cell change.
+
+(Synched the corresponding patches in 2.1 that lead to the same code state)
+
 2007-05-10 21:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
 
 Summary: New treatment of fractional atoms in VCA. Bug fix in lmxo

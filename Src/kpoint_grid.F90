@@ -64,9 +64,8 @@ MODULE Kpoint_grid
        if ( user_requested_mp    ) then
           ! no need to set up the kscell again
        else
-          ! This was wrong in the old code. Let's reproduce the bug
-          ! by refusing to update the kscell here too
-          !!!! call setup_scf_kscell(ucell, firm_displ)
+          ! This was wrong in the old code
+          call setup_scf_kscell(ucell, firm_displ)
        endif
     endif
 

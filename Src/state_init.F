@@ -102,10 +102,17 @@
 
 
       ! Actualize things if variable cell 
-      ! This might be updated with PR MD options
-      cell_can_change = (varcel .or. idyn.eq.8)
-
       auxchanged = .false.
+      cell_can_change = ( varcel .or.
+     $                    (idyn .eq. 8)  ! Force/stress evaluation
+     $                  )
+      if (change_kgrid_in_md) then
+         cell_can_change = cell_can_change .or.
+     $        (idyn .eq. 3)      ! Parrinello-Rahman
+     $        .or. (idyn .eq. 4) ! Nose-Parrinello-Rahman
+     $        .or. (idyn .eq. 5) ! Anneal
+      endif
+
       if ( cell_can_change
      $     .and. (istep.ne.inicoor) .and. (.not.gamma) ) then
 

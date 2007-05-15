@@ -12,6 +12,7 @@ MODULE siesta_options
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: inspn         ! Antiferro spin ordering in initdm?
   logical :: initdmaux     ! Re-initialize DM when auxiliary supercell changes?        
+  logical :: change_kgrid_in_md ! Allow k-point grid to change in MD calculations
   logical :: naiveauxcell  ! Use naive recipe for auxiliary supercell?
   logical :: mix           ! Mix first SCF step? Used in broyden_mixing
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
@@ -1329,6 +1330,7 @@ MODULE siesta_options
     if (idyn.ne.6) then
       bornz = .false.
     endif
+    call fdf_global_get(change_kgrid_in_md,"ChangeKgridInMD", .false.)
     call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
 
     call fdf_global_get(savrho,'SaveRho', dumpcharge)
