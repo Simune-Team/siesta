@@ -11,6 +11,15 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-12 18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-14
+
+Summary: Fix tag in MPI send/receive in mulliken
+
+* The undefined variable 'io' was used as tag... changed to itot, the
+orbital index.
+
+* Trimmed mpibuff before writing.
+
 2007-05-12 18:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-13
 
 Summary: Sync vpath changes. Update siesta.tex
