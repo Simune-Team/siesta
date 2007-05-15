@@ -272,6 +272,35 @@ for any job (This is not exactly true, since some of the parameters in
 the atomic routines are still hardwired (see {\tt Src/atmparams.f}),
 but those would seldom need to be changed.)
 
+Multiple compilations: You can compile as many different versions of
+the {\sc Siesta} executable as you wish (for example, with different
+levels of optimization, serial, parallel, debug, etc) using the 
+VPATH feature of make. 
+
+For example, starting from the top Siesta directory:
+
+\begin{verbatim}
+mkdir Objs
+cd Objs
+sh ../Src/obj_setup.sh
+../Src/configure --enable-fast
+make
+cd Tests
+make clean; make
+cd    #   ----------- Now a parallel version
+mkdir ParaObjs
+cd ParaObjs
+sh ../Src/obj_setup.sh
+cp ../Src/Sys/parallel.make ./arch.make
+make
+cd Tests
+make clean; make
+\end{verbatim}
+
+(The pristine Src directory should be "clean", without objects, or else
+the compilation in the build directories will get confused)
+
+
 \subsection{Running the program}
 
 A fast way to test your installation of {\sc Siesta} and get a feeling
