@@ -564,7 +564,8 @@ c    .          'atom: The above configuration will be used ',
          call Basis_gen(Zval,is, iz, a,b,rofi,drdi,s,
      .                   vps, ve, vePAO, nrval, lmxo,nsemic,
      .                   nzeta, rco, lambda, npolorb,
-     .                   basistype, rphi, no, rinn, vcte, split_norm)
+     .                   basistype, rphi, no, rinn, vcte, split_norm,
+     $                   atm_label)
  
       else
           if (abs(charge-zval+chgvps).gt.1.0d-3) then 
@@ -583,7 +584,7 @@ c    .          'atom: The above configuration will be used ',
      .                   vps, vePAO, vePAO, nrval, lmxo,nsemic,
      .                   nzeta, rco, lambda, npolorb,
      .                   basistype, rphi, no, rinn, vcte,
-     $                   split_norm)
+     $                   split_norm,atm_label)
       endif
         write(6,'(a,i3)')
      .      'atom: Total number of Sankey-type orbitals:', no
@@ -1195,13 +1196,13 @@ C returns the norm of a parabolic function
 C    f(r')= r'^l (c1*r'^2 + c2)  r'< r
 C           0 otherwise
 C
+!         The returned value is \int{ (rf)**2}
           
           dnrm=(c1**2)*r**(2*l+7)/(2*l+7) 
      .     + (2.0d0*c1*c2)*r**(2*l+5)/(2*l+5) 
      .     + (c2**2)*r**(2*l+3)/(2*l+3)
 
           end subroutine nrmpal
-
 
 !---------------------
 
@@ -2917,7 +2918,7 @@ C
      .                   vps, ve, vePAO, nrval, lmxo,nsemic, 
      .                   nzeta, rco, lambda, polorb,
      .                   basis_type, rphi, notot,
-     $                   rinn, vcte, split_norm)
+     $                   rinn, vcte, split_norm,atm_label)
 
 C****
 C Generates the basis set and stores all the information in the 
@@ -2937,7 +2938,7 @@ C****
      .            lambda(nzetmx, 0:lmaxd,nsemx), vePAO(nrmax),
      .            Zval,rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
      $            split_norm(0:lmaxd,nsemx)
-
+               character(len=*) atm_label
                integer
      .           nrval, lmxo, notot, is, iz, nzeta(0:lmaxd,nsemx),
      .           polorb(0:lmaxd,nsemx),nsemic(0:lmaxd)
@@ -2961,7 +2962,7 @@ C***Internal variables**
      .                   nrval, lmxo, nsemic,
      .                   nzeta, rco, lambda,
      .                   rphi, ePAO, noPAO,
-     $                   rinn, vcte, split_norm)
+     $                   rinn, vcte, split_norm,atm_label)
          
                 elseif(basis_type.eq.'nodes') then 
  
@@ -2995,7 +2996,7 @@ C
                   call POLgen(is, iz, a,b,rofi,drdi,
      .               ePAO,rphi,rco,vps,vePAO,
      .               polorb,lmxo,nsemic,noPOL,
-     $               rinn, vcte,nrval, split_norm) 
+     $               rinn, vcte,nrval, split_norm,atm_label) 
 C
 C
 
@@ -3010,7 +3011,7 @@ C
      .             vps,ve,vePAO,
      .             nrval,lmxo, nsemic,
      .             nzeta,rco,lambda, rphi, ePAO, norb,
-     $             rinn,vcte,split_norm) 
+     $             rinn,vcte,split_norm,atm_label) 
 
            use basis_specs, only:  restricted_grid
 C****
@@ -3032,6 +3033,7 @@ C****
      .         ePAO(0:lmaxd,nsemx),
      .         rinn(0:lmaxd,nsemx),vcte(0:lmaxd,nsemx),
      .         split_norm(0:lmaxd,nsemx)
+               character(len=*) atm_label
 
 
                integer
@@ -3047,17 +3049,19 @@ C***Internal variables**
      .           nrc2, nrc3, nrc4, ism
 
                real(dp)
-     .           eigen(0:lmaxd), rc,
+     .           eigen(0:lmaxd), rc, split_table(nrmax),
      .           rnrm(nrmax), dnrm, phi, frsp, dfrsp,
      .           cons1, cons2, rnp, spln, eshift, 
-     .           g(nrmax), r, el, ekin,
+     .           g(nrmax), r, el, ekin, rdummy,
      .           r1, r2, dfdi, d2fdi2, d2fdr2, dr,
      .           epot, epot2, rh, dy, eorb, eps, 
      .           over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
      $           exponent, dlt, d, dn, norm(nsemx), rcsan,
-     $     kmax,grid,filterFactor,minnorm
+     $     kmax,grid,filterFactor,minnorm,
+     $           spln_min
       real(dp),allocatable,dimension(:) :: forb !filtered orbital
       logical :: filterOrbitals
+      logical :: new_split_code, fix_split_table, split_tail_norm
 
                parameter (dlt=0.60d0)
 
@@ -3072,6 +3076,14 @@ C
 C***READING THE ENERGY-SHIFT TO DEFINE THE CUT-OFF RADIUS OF ORBITALS***
 
            eshift=fdf_physical('PAO.EnergyShift',eshift_default,'Ry')
+
+           split_tail_norm=fdf_boolean('PAO.SplitTailNorm',.false.)
+           fix_split_table=fdf_boolean('PAO.FixSplitTable',.false.)
+           if (split_tail_norm .or. fix_split_table) then
+              new_split_code = .true.
+           else
+              new_split_code=fdf_boolean('PAO.NewSplitCode',.false.)
+           endif
 
              norb=0 
              indx=0
@@ -3204,8 +3216,26 @@ C
                       dnrm=dnrm+drdi(ir)*phi*phi
                       rnrm(ir)=dnrm 
                       g(ir)=rphi(ir,l,nsm)/(rofi(ir)**(l+1))
+                      write(99,*) ir, rofi(ir), phi, rnrm(ir)
                    enddo 
                    g(1)=g(2)         
+
+                   if (split_tail_norm) then
+                      write(*,"(a)") "Split based on tail norm"
+                      ! Follows the criterion of the JPC paper, but
+                      ! with more contrast 
+                      !(use the actual math norm (sqrt(int(f^2)))
+
+                      split_table(1:nrc) =
+     $                     sqrt(max(1.0_dp-rnrm(1:nrc),0.0_dp))
+
+                   else
+                   !  Do a full scan of the old method
+                   !  (norm of tail+parabola)
+                      call split_scan(nrc, rofi, drdi, l,
+     $                        rphi(1:,l,nsm),rnrm,atm_label,
+     $                        split_table,fix_split_table)
+                   endif
 
                 else              ! izeta > 1...
        
@@ -3225,20 +3255,14 @@ C*** parameter *
                                   
                 
             if(rco(izeta,l,nsm).gt.1.0d-5) then
+
                rc=rco(izeta,l,nsm)/lambda(1,l,nsm)
-               frsp=rphi(nrc,l,nsm)/rc
-               dfrsp=0.5d0*(rphi(nrc+1,l,nsm)/rofi(nrc+1)
-     .             -rphi(nrc-1,l,nsm)/rofi(nrc-1))
-               dfrsp=dfrsp/drdi(nrc)
+               nrc=nint(log(rc/b+1.0d0)/a)+1
 
-
-C**parabolic split
-            cons1= 0.5d0*(dfrsp*rc-l*frsp)/(rc**(l+2))
-            cons2= frsp/(rc**l)-cons1*rc**2
-            call nrmpal(cons1,cons2,rc,l,rnp)
-            spln=1.0d0-rnrm(nrc)+rnp
+               call fit_parabola(nrc,rofi,drdi,rphi(1:,l,nsm),
+     $              l, cons1, cons2, rnp)
+               spln=split_table(nrc)
 C**
-
                 do i=1,izeta-1
                  if(abs(rco(izeta,l,nsm)-rco(i,l,nsm)).lt.1.0d-5) then
                    write(6,'(/,A,I2,A,I2,A,I2)')
@@ -3247,6 +3271,7 @@ C**
                    call die()
                  endif
                 enddo
+
             else        ! Generate multiple zeta
                         ! using split-norm parameters
 
@@ -3257,16 +3282,32 @@ C**
             if(izeta.gt.2) then
               spln=split_norm(l,nsm)/(2.0d0*(izeta-2) )
             endif
+!
+!!            Maybe fix on the fly in the future?
+!!            if (spln < minval(split_table(1:nrc))
+!!                ...  ! maybe fix split_table
 
-            call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
-     .                   l,spln,cons1,cons2,nsp)
+            if (new_split_code) then
+               call find_split_location(nrc,rofi,drdi,
+     $              rphi(1:,l,nsm),split_table,
+     $              l,spln,cons1,cons2,nsp)
+            else
+               spln_min = minval(split_table(1:nrc))
+               if (spln < spln_min) then
+                  write(6,"(a,f8.5,a,f8.5)")
+     $            "WARNING: Minimum split_norm parameter: ",
+     $            spln_min, ". Will not be able to generate "
+     $            // "orbital with split_norm = ", spln
+                  call die("See manual for new split options")
+               endif
+               call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
+     .              l,spln,cons1,cons2,nsp)
+            endif
 
 C***Cut-off radius for the split orbital with a desired norm*
          nrc=nsp
-         rco(izeta,l,nsm)=
-     .       b*(exp(a*(nsp-1))-1.0d0)*lambda(izeta,l,nsm)
+         rco(izeta,l,nsm)= rofi(nsp) *lambda(izeta,l,nsm)
 C
-
 
              do i=1,izeta-1
                 if(abs(rco(izeta,l,nsm)-rco(i,l,nsm))
@@ -3279,13 +3320,13 @@ C
 
             endif
 
-
             do ir=1,nrval
 C***parabolic split***
                r=rofi(ir)
                if (ir.ge.nrc) then
                  g(ir)=0.0d0
                else
+                 ! Store first-zeta minus second-zeta in g
                  g(ir)=-(cons1*r**2+cons2)*r**(l+1)+rphi(ir,l,nsm) 
                endif
 C*
@@ -4861,7 +4902,7 @@ C*Internal variables**
             subroutine POLgen(is,iz,a,b, rofi, drdi,
      .          ePAO,rphi,rco,vps,ve,
      .          polorb,lmxo, nsemic,norb,
-     $          rinn,vcte,nrval, split_norm)
+     $          rinn,vcte,nrval, split_norm,atm_label)
 C****
 C Calculates the polarization  orbitals for the basis set augmentation.
 C Written by D. Sanchez-Portal, Aug. 1998.
@@ -4879,6 +4920,8 @@ C
      .         rinn(0:lmaxd,nsemx), vcte(0:lmaxd,nsemx),
      $         split_norm(0:lmaxd,nsemx)
 
+               character(len=*) atm_label
+
                integer
      .           lmxo, is, iz, norb, polorb(0:lmaxd,nsemx), 
      .           nsemic(0:lmaxd), nrval
@@ -4889,7 +4932,7 @@ C
 
                real(dp)
      .           rc, rcpol(nzetmx,0:lmaxd,nsemx),
-     .           phipol(nrmax),
+     .           phipol(nrmax), split_table(nrmax),
      .           rnrm(nrmax), dnrm, phi,
      .           cons1, cons2, spln, 
      .           g(nrmax), r, ekin, 
@@ -4897,9 +4940,18 @@ C
      .           epot, epot2, eorb, eps,
      $           rcsan, exponent, vsoft(nrmax), vePAOsoft(nrmax)
 
-      logical::filterorbitals
-      real(dp)::kmax,grid,filterFactor,minnorm
+      logical::filterorbitals, new_split_code, split_tail_norm
+      logical :: fix_split_table
+      real(dp)::kmax,grid,filterFactor,minnorm, spln_min
       
+           split_tail_norm=fdf_boolean('PAO.SplitTailNorm',.false.)
+           fix_split_table=fdf_boolean('PAO.FixSplitTable',.false.)
+           if (split_tail_norm .or. fix_split_table) then
+              new_split_code = .true.
+           else
+              new_split_code=fdf_boolean('PAO.NewSplitCode',.false.)
+           endif
+
              norb=0 
              indx=0
              
@@ -4957,6 +5009,23 @@ C Calculate the soft-confinement potential for the polarization orbitals
                        g(nrc)=0.0d0
                        phipol(nrc)=0.0d0
 
+                   if (split_tail_norm) then
+                      write(*,"(a)") "Split based on tail norm"
+                      ! Follows the criterion of the JPC paper, but
+                      ! with more contrast 
+                      !(use the actual math norm (sqrt(int(f^2)))
+
+                      split_table(1:nrc) =
+     $                     sqrt(max(1.0_dp-rnrm(1:nrc),0.0_dp))
+
+                   else
+                   !  Do a full scan of the old method
+                   !  (norm of tail+parabola)
+                      call split_scan(nrc, rofi, drdi, l+1,
+     $                        phipol,rnrm,atm_label,
+     $                        split_table,fix_split_table)
+                   endif
+
                 else
 
 !                  Multiple shells can be generated using the split scheme
@@ -4969,14 +5038,29 @@ C Calculate the soft-confinement potential for the polarization orbitals
               spln=split_norm(l,nsm)/(2.0d0*(ipol-2) )
             endif
 
-            call parabola(a,b,nrc,phipol,rnrm,
+            if (new_split_code) then
+               call find_split_location(nrc,rofi,drdi,
+     $              phipol,split_table,
+     $              l+1,spln,cons1,cons2,nsp)
+
+            else
+               spln_min = minval(split_table(1:nrc))
+               if (spln < spln_min) then
+                  write(6,"(a,f8.5,a,f8.5)")
+     $            "WARNING: Minimum split_norm parameter: ",
+     $            spln_min, ". Will not be able to generate "
+     $            // "orbital with split_norm = ", spln
+                  call die("See manual for new split options")
+               endif
+               call parabola(a,b,nrc,phipol,rnrm,
      .                   l+1,spln,cons1,cons2,nsp)
+            endif
+
 
 
 C***Cut-off radius for the split orbital with a desired norm* 
          nrc=nsp
-         rcpol(ipol,l,nsm)=b*(exp(a*(nrc-1))-1.0d0)
-C
+         rcpol(ipol,l,nsm)=rofi(nrc)
 
               
             dnrm=0.0d0
@@ -5813,4 +5897,152 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
 
        end subroutine build_vsoft
 
-       end module atom
+       subroutine find_split_location(nrc,rofi,
+     $     drdi,rphi, split_table, l,spln,cons1,cons2,nsp)
+
+       !
+       ! Searches for the right point to fit, and
+       ! fits a parabola.
+
+       integer, intent(in)   :: nrc  ! Index of last point of orbital
+       real(dp), intent(in)  :: rofi(*), drdi(*)
+       real(dp), intent(in)  :: rphi(*) ! orb
+       integer, intent(in)   :: l
+       real(dp), intent(in)  :: spln
+       real(dp), intent(in)  :: split_table(*)  ! Precomputed table
+       real(dp), intent(out) :: cons1, cons2
+       integer, intent(out)  :: nsp
+
+       integer :: ir
+       real(dp) :: parab_norm
+
+       nsp =nrc
+       do ir = nrc, 2, -1
+          if (split_table(ir) > spln) then
+             if (ir == nrc) then ! borderline case
+                nsp = ir
+             else
+                ! Choose closest point
+                if ( (split_table(ir)-spln) >
+     $               (spln-split_table(ir+1)) ) then
+                   nsp = ir + 1
+                else
+                   nsp = ir   
+                endif
+             endif
+             exit
+          endif
+       enddo
+       if (nsp == nrc) then
+          write(6,"(a,f10.6)")
+     $         "Split-norm parameter is too small, "
+     $         // "(degenerate 2nd zeta): ",
+     $          spln
+          call die()
+       endif
+       if (nsp <= 2) then
+          call die("Cannot find split_valence match point")
+       endif
+
+       call fit_parabola(nsp,rofi, drdi,rphi, l,
+     $      cons1,cons2,parab_norm)
+
+       end subroutine find_split_location
+
+       subroutine fit_parabola(nsp,rofi,
+     $     drdi,rphi, l, cons1,cons2,parab_norm)
+
+       ! Fits C1 and C2 to match a parabola to rphi at
+       ! point of index nsp
+
+       integer, intent(in)   :: nsp
+       real(dp), intent(in)  :: rofi(*), drdi(*)
+       real(dp), intent(in)  :: rphi(*)
+       integer, intent(in)   :: l
+       real(dp), intent(out) :: cons1, cons2
+       real(dp), intent(out) :: parab_norm
+
+       integer :: ir
+       real(dp) :: rsp, frsp, dfrsp
+
+       rsp = rofi(nsp)
+       frsp=rphi(nsp)/rsp
+       dfrsp=0.5d0*(rphi(nsp+1)/rofi(nsp+1)
+     .      -rphi(nsp-1)/rofi(nsp-1))
+       dfrsp=dfrsp/drdi(nsp)
+       cons1= 0.5d0*(dfrsp*rsp-l*frsp)/(rsp**(l+2))
+       cons2= frsp/(rsp**l)-cons1*rsp**2
+
+       call nrmpal(cons1,cons2,rsp,l,parab_norm)
+
+       end subroutine fit_parabola
+!---------------------------------
+       subroutine split_scan(nrc,rofi, drdi, l, rphi, rnrm, label,
+     $                       split_table,fix_split_table)
+       !
+       ! Scans the whole orbital, fitting parabolas and
+       ! reporting effective norms to file
+
+       integer, intent(in)   :: nrc  ! Index of last point of orbital
+       real(dp), intent(in)  :: rofi(*), drdi(*)
+       real(dp), intent(in)  :: rphi(*), rnrm(*) ! orb, norm(r)
+       integer, intent(in)   :: l
+       character(len=*), intent(in) :: label
+       real(dp), intent(out) :: split_table(*)
+       logical, intent(in)   :: fix_split_table
+
+       integer :: ir, iu, jr
+       character(len=50) :: fname
+       real(dp) :: cons1, cons2, parab_norm, spln, rmin, rc, factor
+
+       real(dp) :: split_table_raw(nrc)   ! Automatic array
+
+       do ir = 3, nrc-1          ! Have to avoid /0 
+          call fit_parabola(ir, rofi, drdi,rphi, l,
+     $      cons1,cons2,parab_norm)
+          spln = 1.0_dp - rnrm(ir)
+          split_table_raw(ir) =  (spln+parab_norm)
+       enddo
+       split_table_raw(2) = split_table_raw(3)
+       split_table_raw(1) = split_table_raw(2)
+       split_table_raw(nrc) = split_table_raw(nrc-1)
+
+       if (fix_split_table) then
+          jr = nrc - 20         ! heuristic
+          rmin = rofi(jr)
+          rc = rofi(nrc)
+          split_table(1:jr) = split_table_raw(1:jr)
+          do ir = jr+1, nrc
+             factor = dampen(rmin,rc,rofi(ir))
+             split_table(ir) = factor*split_table_raw(ir)
+          enddo
+       else
+          split_table(1:nrc) = split_table_raw(1:nrc)
+       endif
+
+       write(fname,"(3a,i1)") "SPLIT_SCAN.", trim(label), ".", l
+       call io_assign(iu)
+       open(iu,file=trim(fname),form="formatted",
+     $      status="unknown",action="write",
+     $      position="rewind")
+       do ir = 1, nrc
+          write(iu,"(i4,5f14.8)") ir, rofi(ir), rphi(ir),
+     $         (1.0_dp - rnrm(ir)), split_table_raw(ir),
+     $         split_table(ir)
+       enddo
+       call io_close(iu)
+
+       end subroutine split_scan
+
+      function dampen(a,b,r) result (y)
+      real(dp), intent(in) :: a, b, r
+      real(dp)             :: y
+
+      real(dp)             :: x
+      real(dp), parameter  :: tiny = 1.0e-12_dp
+
+      x = (r-a)/(b-a)
+      y = tanh(1.0_dp/(x+tiny) - 1.0_dp)
+      end function dampen
+
+      end module atom
