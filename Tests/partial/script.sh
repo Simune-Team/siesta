@@ -3,17 +3,16 @@
 SIESTA="$1"
 echo "Running script with SIESTA=$SIESTA"
 #
-mixps=../../../Src/mixps
+fractional=../../../Src/fractional
 #
 cp ../../Pseudos/O.psf .
-cp ../../Pseudos/Zero.nrl.psf .
 
-if [ ! -x $mixps ] ; then
-  echo "Compiling $mixps..."
-  (cd ../../../Src ; make mixps)
+if [ ! -x $fractional ] ; then
+  echo "Compiling $fractional..."
+  (cd ../../../Src ; make fractional)
 fi
 
-$mixps O Zero.nrl 0.5
+$fractional O  0.5
 
 #
 cat > Job.fdf << EOF
@@ -25,7 +24,7 @@ NumberOfSpecies     1
 MeshCutoff 200 Ry
 
 %block ChemicalSpeciesLabel
- 1  201  OZero.nrl-0.50000      # Species index, atomic number, species label
+ 1  201  O-Fraction-0.50000      # Species index, atomic number, species label
 %endblock ChemicalSpeciesLabel
 %block SyntheticAtoms
  1  
@@ -34,7 +33,7 @@ MeshCutoff 200 Ry
 %endblock SyntheticAtoms
 
 %block PAO.basis
-OZero.nrl-0.50000  2                 # Species label, number of l-shells
+O-Fraction-0.50000  2                 # Species label, number of l-shells
  n=2   0   2                         # n, l, Nzeta 
  0.0 0.0   
    1.000      1.000   

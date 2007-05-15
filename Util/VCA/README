@@ -13,9 +13,14 @@ a MIXLABEL file which contains the final label used (useful for scripts).
 This program is located in the top directory to ease compilation. Just
 type "make mixps" to compile.
 
-Programs zerops.f and zerops_rel.f generate "null pseudopotentials", which
-can also be found in Tests/Pseudos.
+Program 'fractional' simply multiplies the strength of a pseudopotential
+by a given fraction, to simulate fractional occupation of a site (note
+that it might be necessary to subtract electrostatic interaction energies
+of the relevant ions if total energies are desired -- this is still
+not implemented in a general manner).
 
+This program is located in the top directory to ease compilation. Just
+type "make fractional" to compile.
 
 NOTES:
 

@@ -332,7 +332,13 @@ C Sanity checks on values
            do i = 1, noccs
               gs%occupation(i-1) = values(p,i)
            enddo
-           gs%lmax_valence = nns-1
+           ! Determine the last occupied state in the atom
+           do i = nns, 1, -1
+              if (gs%occupation(i-1) /=0) then
+                 gs%lmax_valence = i-1
+                 exit
+              endif
+           enddo
            gs%occupied(0:3) = (gs%occupation .gt. 0.0_dp)
            gs%occupied(4) = .false.
            gs%z_valence = sum(gs%occupation(0:noccs-1))

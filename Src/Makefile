@@ -226,6 +226,9 @@ denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
            $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+#
+# ---------------------------------------------------------------------------
+# Other auxiliary programs
 #----------------------------------------------------------------------------
 MT_OBJS=precision.o m_mpi_utils.o sys.o parallel.o 
 mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
@@ -238,6 +241,13 @@ MIXPS_OBJS= f2kcli.o flib_spline.o mixps.o  pseudopotential.o sys.o \
 mixps: $(MPI_INTERFACE)  $(MIXPS_OBJS)
 	$(FC) -o mixps \
 	       $(LDFLAGS) $(MIXPS_OBJS) $(MPI_INTERFACE) $(LIBS) 
+#----------------------------------------------------------------------------
+FRACTIONAL_OBJS= f2kcli.o flib_spline.o fractional.o  pseudopotential.o sys.o \
+            io.o pxf.o parallel.o periodic_table.o
+
+fractional: $(MPI_INTERFACE)  $(FRACTIONAL_OBJS)
+	$(FC) -o fractional \
+	       $(LDFLAGS) $(FRACTIONAL_OBJS) $(MPI_INTERFACE) $(LIBS) 
 #
 #------------------------------------------------------------------------
 #

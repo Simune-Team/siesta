@@ -1,0 +1,5 @@
+The intel compiler+library combination  seems to give
+erratic results for this test. The reference output
+has been computed with the libraries including in the
+Siesta distribution.
+
