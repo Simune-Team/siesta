@@ -109,7 +109,8 @@ OBJS =  automatic_cell.o \
         electrostatic.o mneighb.o globalise.o siesta_cmlsubs.o siesta_cml.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
-        m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o molecularmechanics.o \
+        m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
+        molecularmechanics.o filter.o filter_subs.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o
 #--------------------------------------------------------------
@@ -277,7 +278,7 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o basis_specs.o basis_types.o old_atmfuncs.o periodic_table.o
-atom.o: precision.o pseudopotential.o recipes.o sys.o xcmod.o
+atom.o: precision.o pseudopotential.o recipes.o sys.o xcmod.o filter.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
