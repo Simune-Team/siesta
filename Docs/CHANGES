@@ -11,6 +11,57 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-11 15:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-9
+
+Summary: Fix of zmatrix code to deal with degenerate case
+
+* Note: BSC cosmetic change to zmatrix.F90 taken back.
+        In detail: synched patch-38, and copied zmatrix.F from reference-2.1
+        after doing a 'tla mv zmatrix.F0 zmatrix.F.
+        Copied also the benzene test and Reference output, and updated
+        std-Makefile.
+
+(Colin Glass, Alberto Garcia)
+
+The first three atoms in a zmatrix molecule are special.  The torsion
+angle of the third is specified with respect to a plane formed by the
+first two atoms and a notional atom located along the z axis from the
+second. If the second atom is located also along the z axis from the
+first, the plane is undefined. 
+
+The routine to compute the cartesian coordinates from the Zmatrix
+coordinates deals now with the third atom in a more controlled way,
+and uses the phi angle of the second atom (which should be specified
+even if theta=0) to determine correctly the reference plane for the
+torsion.
+
+Notation: the atoms used as reference for the calculation of the
+position of the current atom are:
+
+i: determines the bond length
+j: together with i, determines the angle theta
+k: together with i and j, determines the reference plane for the torsion.
+
+In case of alignment of i,j, and k, we use the azimuth (phi) of i with
+respect to j to fix the reference plane.
+
+If "i" is the first atom in the Zmatrix, its Zmatrix coordinates are X
+Y Z, and we cannot use its "phi angle" as reference, but in fact this
+angle can be easily computed as phi_ref = phi_ji - pi, where phi_ji is
+the azimuth of the j atom with respect to i.
+
+Routine z2cgen is passed phi_ref after checking the above conditions.
+
+This fix only applies only to the calculation of the coordinates of the third
+atom, but it could presumably be generalized to intercept singular cases
+at any link of the zmatrix, at which i, j, and k could lie along a line.
+
+* New checks to detect attempts to use "fractional coordinates" when
+the unit cell is not yet defined at the time of reading the Zmatrix.
+
+* New test "benzene"
+
+
 2007-05-11 15:35:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-8
 
 Summary: Add patchlog for k-point fix
