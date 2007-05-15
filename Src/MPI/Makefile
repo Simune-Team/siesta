@@ -12,6 +12,7 @@
 .SUFFIXES: .o .F90 .f90 .F .f .a 
 #
 default: module_built 
+tests:   vpath_warning  pi3 blacs_prb pblas_prb
 include ../arch.make
 #
 #
@@ -38,14 +39,24 @@ module_built: mpi.o mpi__include.o Interfaces.o
 #-----------------------------------------------------------------------
 # Tests of the MPI installation
 #
+PARENT_VPATH=`grep '^VPATH' ../Makefile`
+vpath_warning:
+	@echo "** If you are using VPATH, compilations launched from this directory"
+	@echo "** need to provide an explicit VPATH to the 'make' command."
+	@echo "** Use the VPATH in Makefile in the top directory, followed by /MPI"
+	@echo "** For example, to compile the tests:"
+	@echo
+	@echo   make $(PARENT_VPATH)/MPI tests
+	@echo
+#
 # Straight MPI test
 #
-pi3:    pi3.o
+pi3:    vpath_warning pi3.o
 	$(FC) -o pi3 $(LDFLAGS) pi3.o ../$(MPI_INTERFACE) $(MPI_LIBS) 
 #
 # Blacs test
 #
-blacs_prb:    blacs_prb.o
+blacs_prb:  vpath_warning  blacs_prb.o
 	$(FC) -o blacs_prb $(LDFLAGS) blacs_prb.o ../$(MPI_INTERFACE) $(LIBS) 
 #
 # Pblas test. You might need to uncomment the following line
@@ -53,7 +64,12 @@ blacs_prb:    blacs_prb.o
 #
 #EXTRA_ROUTINE=pdlaprnt.o
 #
-pblas_prb:    pblas_prb.o 
+pblas_prb:   vpath_warning pblas_prb.o $(EXTRA_ROUTINE)
+	@echo
+	@echo --Attempting to build Pblas test. 
+	@echo --You might need to enable compilation of pdlaprnt.f in the Makefile
+	@echo --if that routine is not in the standard library on your system...
+	@echo
 	$(FC) -o pblas_prb $(LDFLAGS) pblas_prb.o $(EXTRA_ROUTINE) \
               ../$(MPI_INTERFACE) $(LIBS) 
 #

@@ -11,6 +11,31 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-12 17:20:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-16
+
+Summary: Merge of XML tester by Eduardo Anglada. Portability fixes
+
+* Merged XML tester (with simpler command-line interface)
+* Merged new functionality into old test.mk 
+* Split the compilation of libxmlparser.a and the xml-test program, as 
+  some compilers cannot deal with the DOM part.
+* Some of the new tests are not yet properly integrated.
+  (reference output files and xml files have to be
+   re-generated).
+
+* More denchar and gen-basis objs
+
+* Wider field in BASIS_ENTHALPY
+
+* Fix matterhorn Sys files for VPATH compilation. New mpich .make files
+  (the oci.q queue does not support myrinet). New script in Tests/Scripts.
+
+* A warning is now printed if the user tries to invoke 'make'
+from the xmlparser or MPI directories to compile test-xml or
+the MPI tests, so that the proper VPATH is used.
+
+* Add INCFLAGS to default suffix rule to Intel mkl .make file.
+
 2007-05-12 18:50:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-15
 
 Summary: Option to use fractional rc's for multiple zeta

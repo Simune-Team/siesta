@@ -8,12 +8,12 @@
 # Use of this software constitutes agreement with the full conditions
 # given in the SIESTA license, as signed by all legitimate users.
 #
-SIESTA_ARCH=pgf90-matterhorn-mpich
+SIESTA_ARCH=pgf95-matterhorn
 #
-FC=pgf90
+FC=pgf95
 FC_ASIS=$(FC)
 #
-FFLAGS= -fastsse
+FFLAGS= -fast
 FFLAGS_DEBUG= -g -O0
 RANLIB=echo
 COMP_LIBS=dc_lapack.a
@@ -22,19 +22,16 @@ NETCDF_LIBS=         #  /usr/local/netcdf-3.5/lib/pgi/libnetcdf.a
 NETCDF_INTERFACE=    #  libnetcdf_f90.a
 DEFS_CDF=            #  -DCDF
 #
-MPI_ROOT_MYRINET=/opt/64/mpich-gm-pgi
-MYRINET_LIBS=-L/opt/64/gm-2.1.5/lib -lgm
-MPI_LIBS_MYRINET= -L$(MPI_ROOT_MYRINET)/lib -lmpich $(MYRINET_LIBS)
+# Use explicit myrinet libraries instead of default mpich ones
+##MPI_ROOT_MPICH=/opt/64/mpich-pgi
+##MPI_LIBS_MPICH= -L$(MPI_ROOT_MPICH)/lib -lmpich 
 #
-MPI_ROOT_MPICH=/opt/64/mpich-pgi
-MPI_LIBS_MPICH= -L$(MPI_ROOT_MPICH)/lib -lmpich 
-#
-MPI_ROOT=$(MPI_ROOT_MPICH)
-MPI_LIBS=$(MPI_LIBS_MPICH)
-
+MPI_ROOT=/opt/64/mpich-gm-pgi6
+MYRINET=/opt/64/gm-2.1.5/lib
+MPI_LIBS= -L$(MPI_ROOT)/lib -lmpich -L$(MYRINET) -lgm
 #
 MPI_INTERFACE=libmpi_f90.a
-MPI_INCLUDE=$(MPI_ROOT)/include
+MPI_INCLUDE=/opt/64/mpich-gm-pgi6/include
 DEFS_MPI=-DMPI
 #
 
@@ -47,13 +44,15 @@ DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #
 #
 # Important (at least for V5.0-1 of the pgf90 compiler...)
-# Compile atom.f without optimization.
+# Compile atom.f and electrostatic.f without optimization.
+# Make sure to use an explicit dependency and $<, so that these
+# lines work with VPATH.
 #
-atom.o:
-	$(FC) -c $(FFLAGS_DEBUG) atom.f
+atom.o: atom.f
+	$(FC) -c $(FFLAGS_DEBUG) $<
 #
-electrostatic.o:
-	$(FC) -c $(FFLAGS_DEBUG) electrostatic.f
+electrostatic.o: electrostatic.f
+	$(FC) -c $(FFLAGS_DEBUG) $<
 #
 .F.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<

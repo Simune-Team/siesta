@@ -14,12 +14,20 @@
 #
 #          make SIESTA=/some/path/to/siesta-program ....
 #
+#          It is also possible to have separate working directories,
+#          by using the a "label". For example:
+#
+#          make label=finer 
+#     
+#          The default label is "work".
 #
 # See also test.mk for details, and the scripts in Scripts for 
 # examples of other options for batch processing.
 #
 #
 REFERENCE=../../ref-version/Tests
+#
+label=work
 #
 tests= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN \
        floating benzene bessel mgco3 si2x1h force_2 born born_spin\
@@ -28,31 +36,42 @@ tests= h2o h2o_reparam h2o_basis h2o_dos h2o_orderN \
        md_anneal md_verlet md_nose si_bandpoints sih_fire \
        graphite_c6 oxyn partial h2o_findp_bug h2o_radialgrid ag
 #
+#  Need to add the new tests and generate the reference outputs and xml files.
+#
+#
 all: 
-	@for i in ${tests} ; do \
+	for i in ${tests} ; do \
 		(cd $$i ; make completed) ; \
 	done
 #
-xmlcheck: all
-	@for i in ${tests} ; do \
+xmlcheck: 
+	for i in ${tests} ; do \
 		(cd $$i ; make xmlcheck) ; \
 	done
 #
 batch:
 	@for i in ${tests} ; do \
-		(qsub $(HOME)/bin/sge_run.sh "make tests=$$i") ; \
+		(qsub $(HOME)/bin/sge_run.sh "make tests=$$i xmlcheck") ; \
 	done
 clean:
 	@for i in ${tests} ; do \
 		(cd $$i ; make clean) ; \
 	done
-
+#
+#   Global comparisons with other Tests directories
+#
 compare:
 	@for i in ${tests} ;do \
              echo "---------$$i start" ;  \
              diff $$i/$$i.out ${REFERENCE}/$$i/$$i.out ; \
              echo "****---------$$i done" ; \
      done | grep -v " timer: " | grep -v " elaps: " | grep -v " of run"
+
+compare-xml:    # Needs more work
+	for i in ${tests} ;do \
+             echo "---------$$i start of xml comparison" ;  \
+             $(XML-TESTER) $$i/$$i.xml ${REFERENCE}/$$i/$$i.xml ; \
+             echo "****---------$$i xml comparison done" ; done 
 
 
 

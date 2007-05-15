@@ -154,7 +154,7 @@ basis_io.o md_out.o: $(NETCDF_INTERFACE)
 # Interfaces to libraries
 #
 libmpi_f90.a: 
-	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI" )
+	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI")
 libnetcdf_f90.a: 
 	@(cd NetCDF ; $(MAKE) "VPATH=$(VPATH)/NetCDF" )
 #
@@ -191,11 +191,11 @@ siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER)
                $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
-GEN-BASIS_OBJS=gen-basis.o basis_types.o precision.o recipes.o parallel.o \
+GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
           parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
-	  paste.o  flib_spline.o \
-          basis_specs.o atom.o periodic_table.o\
+	  paste.o  flib_spline.o bessph.o filter.o filter_subs.o \
+          basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o dot.o xc.o  arw.o  \
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
 # precision must be the first one here...
@@ -211,7 +211,7 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
 #
 DENCHAR_OBJS = m_denchar_init.o m_denchar_geom.o m_denchar_io.o \
                m_denchar_neighb.o m_denchar_work.o \
-               denchar.o 
+               denchar.o flib_spline.o
 #
 m_denchar_io.o m_denchar_init.o denchar.o : $(FDF)
 #
@@ -223,7 +223,8 @@ OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
         pseudopotential.o chemical.o xml.o files.o $(SYSOBJ)
 
-denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
+denchar: $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
+         $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
            $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 

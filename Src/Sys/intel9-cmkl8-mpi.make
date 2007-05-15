@@ -22,11 +22,11 @@ SYS=nag
 DEFS= $(DEFS_MPI) $(DEFS_CDF)
 #
 .F.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)  $(DEFS) $<
 .f90.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(INCFLAGS) $(FFLAGS)   $<
 #

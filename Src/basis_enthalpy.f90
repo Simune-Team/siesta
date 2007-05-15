@@ -19,7 +19,7 @@ CONTAINS
     basis_pressure = GPa * fdf_physical("BasisPressure",0.2_dp,"GPa")
     basis_enthalpy = E + basis_pressure * orb_vol
 
-    write(6,"(a,f12.6)") "Basis enthalpy = ", basis_enthalpy/eV
+    write(6,"(a,f18.6)") "Basis enthalpy = ", basis_enthalpy/eV
 
     call io_assign(iu)
     open(iu,file="BASIS_ENTHALPY",form="formatted",status="replace")

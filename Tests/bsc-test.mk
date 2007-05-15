@@ -3,28 +3,37 @@
 #
 SIESTA= mpirun -np 4 -machinefile $(HOME)/siesta-test-hfile ../../../Src/siesta
 #SIESTA=../../../Src/siesta
+XML-TESTER=../../Src/xmlparser/test-xml
+XML-REFERENCE=../../Tests/Reference-xml
 #
-completed:
+label=work
+#
+completed: completed_$(label)
+#
+completed_$(label):
 	@echo ">>>> Running $(name) test..."
-	@if [ -d work ] ; then rm -rf work ; fi; mkdir work
-	@if [ -n "$(EXTRAFILES)" ] ; then cp -f $(EXTRAFILES) work ; fi
+	@if [ -d $(label) ] ; then rm -rf $(label) ; fi; mkdir $(label)
+	@if [ -n "$(EXTRAFILES)" ] ; then cp -f $(EXTRAFILES) $(label) ; fi
 	@for i in `cat $(name).pseudos` ; do \
           echo "    ==> Copying pseudopotential file for $$i..." ;\
-          ln ../Pseudos/$$i.psf work/$$i.psf ;\
+          ln ../Pseudos/$$i.psf $(label)/$$i.psf ;\
          done
 	@echo "    ==> Running SIESTA as ${SIESTA}"
-	@(cd work ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf) \
-          && touch completed
-	@if [ -f completed ] ; then cp work/$(name).out work/$(name).xml .;\
+	@(cd $(label) ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf) \
+          && touch completed_$(label)
+	@if [ -f completed_$(label) ] ; then cp $(label)/$(name).out $(label)/$(name).xml .;\
            echo "    ===> SIESTA finished successfully";\
          else \
            echo " **** Test $(name) did not complete successfully";\
          fi
 #
 xmlcheck: completed
-	@echo "---- xmllint check $(name).xml ..."
-	xmllint $(name).xml > /dev/null
+	@echo "    ==> Running xmlcheck for system $(name)"
+	@ln -sf ../tolerances.dat ./tolerances.dat
+	$(XML-TESTER) $(XML-REFERENCE)/$(name).xml $(label)/$(name).xml | tee $(label).diff-xml
+        # The following line erases the file if it is empty
+	@if [ ! -s $(label).diff-xml ] ; then rm -f $(label).diff-xml ; fi
 #
 clean:
 	@echo ">>>> Cleaning $(name) test..."
-	rm -rf work completed $(name).out $(name).xml
+	rm -rf $(label) completed* $(name).out $(name).xml
