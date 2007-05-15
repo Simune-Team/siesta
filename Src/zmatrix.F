@@ -1688,7 +1688,8 @@ C    8 - fractional cartesian (scaled by lattice vectors)
 
 !----------------------------------------------------
       subroutine print_variables()
-      use m_cell, only  : ucell, celli
+      use siesta_geom, only: ucell
+      use m_cell, only  : celli
 
       integer  :: i, jindex
       integer  :: ivars

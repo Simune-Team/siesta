@@ -63,7 +63,7 @@ SYSOBJ=$(SYS).o pxf.o
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS =  automatic_cell.o \
-        arw.o  atomlwf.o bands.o bessph.o bonds.o \
+        arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
@@ -278,12 +278,13 @@ atm_transfer.o: radial.o sys.o
 atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 atom.o: atmparams.o basis_specs.o basis_types.o old_atmfuncs.o periodic_table.o
-atom.o: precision.o pseudopotential.o recipes.o sys.o xcmod.o filter.o
+atom.o: precision.o pseudopotential.o recipes.o sys.o xcmod.o
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 bands.o: alloc.o densematrix.o files.o parallel.o parallelsubs.o parsing.o
 bands.o: precision.o sys.o
+basis_enthalpy.o: atmfuncs.o atomlist.o precision.o siesta_geom.o units.o
 basis_io.o: atm_types.o atmparams.o basis_types.o chemical.o precision.o
 basis_io.o: pseudopotential.o radial.o sys.o xml.o
 basis_specs.o: basis_types.o chemical.o periodic_table.o precision.o
@@ -357,6 +358,7 @@ find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
+fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
 gen-basis.o: atom.o basis_io.o basis_specs.o basis_types.o old_atmfuncs.o
 gen-basis.o: parallel.o precision.o sys.o xcmod.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
@@ -515,12 +517,12 @@ shaper.o: alloc.o atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
 siesta.o: m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
 siesta.o: siesta_init.o siesta_move.o
-siesta_analysis.o: alloc.o atomlist.o bands.o files.o kpoint_grid.o ksv.o
-siesta_analysis.o: ksvinit.o local_DOS.o m_dipol.o m_energies.o m_eo.o
-siesta_analysis.o: m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o
-siesta_analysis.o: m_steps.o parallel.o projected_DOS.o siesta_cml.o
-siesta_analysis.o: siesta_geom.o siesta_options.o sparse_matrices.o
-siesta_analysis.o: write_subs.o writewave.o zmatrix.o
+siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o files.o
+siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
+siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
+siesta_analysis.o: m_ntm.o m_spin.o m_steps.o parallel.o projected_DOS.o
+siesta_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o
+siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o timestamp.o

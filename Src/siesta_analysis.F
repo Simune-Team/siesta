@@ -36,6 +36,7 @@
       use m_forces,          only: fa
       use m_gamma 
       use alloc,             only: re_alloc, de_alloc
+      use basis_enthalpy,    only: write_basis_enthalpy
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -203,6 +204,7 @@
         call siesta_write_energies( first=.false., iscf=0, dDmax=0.0_dp)
         call siesta_write_forces()
         call siesta_write_stress_pressure()
+        call write_basis_enthalpy(FreeE)
       endif
 
 ! Print spin polarization

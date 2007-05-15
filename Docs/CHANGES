@@ -11,6 +11,18 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-11 14:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-11
+
+Summary: Implementation of basis_enthalpy calculation. Zmatrix dependency
+
+New file BASIS_ENTHALPY contains the "effective basis enthalpy"
+of Anglada et al. The pressure is determined from the fdf symbol
+"BasisPressure", with a 0.2 GPa default.
+
+Further work: different weights to different species.
+
+* siesta_geom was needed in zmatrix.F
+
 2007-05-11 14:10:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
 
 Summary: Units conversion in Util/Optical/optical.f. Scripts. Cosmetics
