@@ -214,7 +214,6 @@
      .     routine='siesta',copy=.true.,SHRINK=.false.)
       call re_alloc(listhold,1,maxnh,name='listhold',
      .     routine='siesta',copy=.true.,SHRINK=.false.)
-      endif
 !==============================================================
 
       if (istp==1) then
