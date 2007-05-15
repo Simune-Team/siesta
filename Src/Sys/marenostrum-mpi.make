@@ -40,11 +40,11 @@ DEFS= $(DEFS_MPI) $(DEFS_CDF)
 FREE_F90=-qsuffix=f=f90
 #
 .F90.o:
-	$(FC) -qsuffix=cpp=F90 -c $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F90 -c $(INCFLAGS) $(FFLAGS) $(DEFS) $<
 .f90.o:
-	$(FC) -qsuffix=f=f90 -c $(FFLAGS)   $<
+	$(FC) -qsuffix=f=f90 -c $(INCFLAGS) $(FFLAGS)   $<
 .F.o:
-	$(FC) -qsuffix=cpp=F -c  -qfixed $(FFLAGS) $(DEFS) $<
+	$(FC) -qsuffix=cpp=F -c $(INCFLAGS) -qfixed $(FFLAGS) $(DEFS) $<
 .f.o:
-	$(FC) -qsuffix=f=f -qfixed -c $(FFLAGS)   $<
+	$(FC) -qsuffix=f=f -qfixed -c $(INCFLAGS) $(FFLAGS)   $<
 #
