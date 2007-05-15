@@ -11,6 +11,19 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-11 15:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-7
+
+Summary: Add graphite_c6_full test for more realistic vdW test
+
+The original graphite test prepared by J. Gale to show an
+example of adding two-body potentials to simulate van der Waals 
+interactions has been added as graphite_c6_full. It is not
+executed by default as it requires significant CPU time.
+ 
+Minor cosmetic changes in filter_subs.f and kgridinit.F
+
+Add molecular-mechanics documentation. 
+
 2007-05-11 15:20:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
 
 Summary: Merge filtering package by Eduardo Anglada
