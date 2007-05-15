@@ -34,6 +34,7 @@ sed "s#VPATH=\.#VPATH=${srcdir}#g" ${srcdir}/Makefile > ${destdir}/Makefile
 #
 ( cd ${testdir} ; cd .. ; find Tests  \
               -path *Reference -prune -o  \
+              -path *Reference-xml -prune -o  \
               -path *work -prune      -o  \
               -path *.arch-ids  -prune -o -print \
               | tar -cf - --no-recursion -T- )   | ( cd ${destdir} ; tar xf -)

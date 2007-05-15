@@ -16,14 +16,6 @@ ZM.ForceTolAng 0.0001 eV/deg
 ZM.MaxDisplLen 0.1 Ang
 ZM.MaxDisplAng 20.0 deg
 
-LatticeConstant 1.0 Ang
-%block LatticeVectors
-   7.5         0.000000    0.000000
-   0.000000    5.9         0.000000
-   0.000000    0.000000    5.9
-%endblock LatticeVectors
-
-
 %block Zmatrix
 molecule_cartesian
   1 0 0 0   0.0 0.0 0.0 0 0 0

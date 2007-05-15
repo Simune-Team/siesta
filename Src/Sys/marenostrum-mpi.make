@@ -14,7 +14,7 @@ NETCDF_INTERFACE=
 DEFS_CDF=
 #
 MPI_INTERFACE=    libmpi_f90.a
-MPI_INCLUDE=
+MPI_INCLUDE=.
 MPI_LIBS=         #-lblacsgm
 DEFS_MPI=         -WF,-DMPI
 
