@@ -11,6 +11,27 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Merged from siesta-devel--reference--2.1)
 
+2007-05-11 14:10:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
+
+Summary: Units conversion in Util/Optical/optical.f. Scripts. Cosmetics
+
+* Optical.f is a program to analyze the file .EPSIMG and obtain the
+optical properties. A unit conversion was done from eV to Ry instead
+of to Ha. (Daniel Sanchez)
+
+* Updated script to run parallel jobs under SGE on matterhorn.
+
+* Declare etime in bsd.f
+
+* New file Src/Sys/arina-mlib.make for the new library setup
+at the itanium machine at the UPV. Src/Confs/arina-mpi.conf
+is now obsolete.
+
+* Update of Tests/Scripts/arina.pbs.
+
+* Wrap writes for MPI in siesta_init.F and m_broyden_optim.F
+
+
 2007-05-11 15:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-9
 
 Summary: Fix of zmatrix code to deal with degenerate case

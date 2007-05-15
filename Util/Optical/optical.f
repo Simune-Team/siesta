@@ -75,7 +75,7 @@ C
           WRITE(8,*) E,K
 110    CONTINUE
        CLOSE(8)
-      
+
        DO I=1,NE
           E1(I)=1.0d0+E1(I)
        ENDDO
@@ -93,7 +93,7 @@ C      Drude term?
        ELSE
           stop "not a valid answer"
        ENDIF
-       
+
        if(DRUD) then 
          WRITE(6,*) "We need an empirical relaxation time"
          WRITE(6,*) "Enter the invers in Ha units"
@@ -102,7 +102,9 @@ C      Drude term?
          OPEN(UNIT=7,FILE='e1.Drude.out',status='unknown')
          OPEN(UNIT=8,FILE='e2.Drude.out',status='unknown')
          do i=1,ne
-             e=omega(i)/13.6058d0
+C*****************from eV to Ha****************
+             e=omega(i)/13.6058d0/2.0d0
+C**********************************************
              e1(i)=e1(i) - drude/(e**2+gamm**2)
              e2(i)=e2(i) + gamm*drude/(e+1.0d-20)/(e**2+gamm**2)    
              write(7,*) omega(i), -drude/(e**2+gamm**2)
@@ -112,7 +114,7 @@ C      Drude term?
          CLOSE(8) 
        endif
        ENDIF
-       
+
 C
        OPEN(UNIT=14, FILE='epsilon_real.out', status='unknown')
        OPEN(UNIT=15, FILE='epsilon_img.out',status='unknown')
@@ -123,7 +125,7 @@ C  ABSORPTION COEFFICIENT IN cm**-1
        OPEN(UNIT=12,FILE='absorp_coef.out',status='unknown')
 C  OPTICAL  CONDUCTIVITY IN (ohm*m)**-1
        OPEN(UNIT=13,FILE='conductivity.out',status='unknown')
-         
+
        DO 120 I=1,NE
            K=DSQRT((DSQRT(E1(I)**2+E2(I)**2)-E1(I))/2.0D0)
            N=DSQRT((DSQRT(E1(I)**2+E2(I)**2)+E1(I))/2.0D0)

@@ -190,8 +190,10 @@
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
-      write(6,fmt="(a,f12.6)") "Total number of electrons: ", qtot
-      write(6,fmt="(a,f12.6)") "Total ionic charge: ", zvaltot
+      if (IOnode) then
+         write(6,fmt="(a,f12.6)") "Total number of electrons: ", qtot
+         write(6,fmt="(a,f12.6)") "Total ionic charge: ", zvaltot
+      endif
 
 
 ! Calculate spin populations for fixed spin case...
