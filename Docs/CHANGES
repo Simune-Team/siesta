@@ -7,8 +7,36 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 ____________________________________________________________________
+** CHANGES ALONG ag@bsc--2007/merge-devel--ag--2.3
+--------------------------------------------------------------------
+
+(Initial commit to add patch-31 log and add banner)
+
+____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
+
+2007-05-10 11:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-31
+
+Summary: Avoid shrinking of density-matrix arrays for extrapol.
+
+Routine extrapol has to deal with density-matrices with possibly different
+sparsity patterns. It is essential that their "value" and "list" arrays be
+large enough to allow proper processing.
+
+After the cleanup, the allocation section after the call to hsparse in
+state_init called re_alloc inconditionally, regardless of whether the
+total size of Dscf (nh) had increased or not. Sometimes this led to a
+*shrinkingg* ofthe arrays, and bounds errors in extrapol. The option
+'shrink=.false.' has now been used. (Also, for good measure, shrinking
+is avoided in the allocation of listh, now done inside hsparse.)
+
+Extrapol has been turned into a module, and the assumed-shape idiom used
+to declare the relevant arrays (otherwise bounds errors would result from
+the comparison with the nominal nmax).
+
+* Other: cosmetic change in the 'dep' target to deal properly with
+degenerate vpaths.
 
 2007-05-08 21:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-30
 
