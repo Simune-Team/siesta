@@ -10,6 +10,15 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-05-17 16:05:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-33
+
+Summary: Execute SCF loop when nscf=1
+
+When nscf=1, the scf loop was not entered, and
+the program went directly to the "post-scf" section.
+
+Now, unless nscf<=0, the scf loop is executed at least once.
+
 2007-05-11 15:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-32
 
 Summary: Fix typo in state_init.F
