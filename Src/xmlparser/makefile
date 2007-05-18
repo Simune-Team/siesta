@@ -36,19 +36,20 @@ vpath_warning:
 	@echo   make $(PARENT_VPATH)/xmlparser test-xml
 	@echo
 
-test.o: f2kcli.o
+test.o: m_getopts.o 
+m_getopts.o: f2kcli.o
 m_compare_tol.o: $(DOM_OBJ_FILES)
 
 OTHER_OBJS=../pxf.o
 #
 test-xml: vpath_warning  \
-          test.o f2kcli.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
+          test.o f2kcli.o m_getopts.o $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
 	@echo
 	@echo  "-- Building test-xml program. "
 	@echo  "-- Some compilers might have trouble with the DOM subsystem. "
 	@echo  "-- Make sure also that 'INCFLAGS' is part of the default compilation rules in arch.make"
 	@echo
-	$(FC) $(FFLAGS) -o test-xml test.o f2kcli.o \
+	$(FC) $(FFLAGS) -o test-xml test.o f2kcli.o m_getopts.o \
                            compare_m.o m_compare_tol.o \
                            $(DOM_OBJ_FILES) libxmlparser.a ../libwxml.a $(OTHER_OBJS)
 

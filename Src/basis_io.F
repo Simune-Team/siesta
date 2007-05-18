@@ -34,6 +34,7 @@
       public :: dump_basis_ascii, read_basis_ascii
       public :: dump_basis_xml
       public :: dump_basis_netcdf, read_basis_netcdf
+      public :: read_ion_ascii
 
       type(species_info), pointer        :: spp
 

@@ -5,9 +5,14 @@ use m_strings
 
 implicit none
 
-logical :: test_debug = .false.
+logical, public :: test_debug = .false.
+logical, public :: STOP_ON_ERROR = .false.
+integer, public :: MAX_NUMBER_OF_ERRORS = huge(1)
 
-public compare
+integer  :: n_errors = 0
+
+public  :: compare
+
 private
 
 !This is crude ....
@@ -254,17 +259,19 @@ recursive subroutine compare_node(ref,mod)
 
   !if (n_type_ref /= n_type_mod ) call dump_error(ref,mod,type=n_type_ref)
 
-  !Check node value function should_be_checked. This part is the most complicate.
+  !Check node values. This part is the most complicate.
   sv_ref = getNodevalue(ref)
   sv_mod = getNodevalue(mod)
 
-  sv_ref = clean_string(sv_ref)
-  sv_mod = clean_string(sv_mod)
+ 
 
   !Check values
   !if (test_debug) print *," compare: values:",trim(char(sv_ref))
   
   if (len(sv_ref) > 0) then
+  
+  	sv_ref = clean_string(sv_ref)
+  	sv_mod = clean_string(sv_mod)
 
      if (test_debug) then
         print *,"Name :","|",char(sn_ref),"|"
@@ -362,13 +369,16 @@ recursive function check_node(ref,mod) result (same)
   !Compare values if they aren't numeric
   sv_ref = getNodeValue(ref)
   sv_mod = getNodeValue(mod)
-
-  if ( .not. only_numbers(sv_ref) .and. .not. only_numbers(sv_mod))then
-     if(test_debug) print *," check: values:",char(sv_ref),char(sv_mod)
-     if (sv_ref /= sv_mod) then
-        same = .false.
-        return
-     endif
+  
+  if (len(sv_ref) > 0 .and. len(sv_mod) > 0)then
+	
+	  if ( .not. only_numbers(sv_ref) .and. .not. only_numbers(sv_mod))then
+	     if(test_debug) print *," check: values:",char(sv_ref),char(sv_mod)
+	     if (sv_ref /= sv_mod) then
+	        same = .false.
+	        return
+	     endif
+	  endif
   endif
 
   if (hasAttributes(ref) .and. hasAttributes(mod)) then
@@ -481,7 +491,7 @@ type(fnamedNodeMap),intent(in),optional :: attr
 
 !Internal vars.
 !integer :: n_type_ref, n_type_mod
-type(string) :: sn_ref,sn_mod,sv_ref, sv_mod, snc_mod, snc_ref, svc_mod, svc_ref
+type(string) :: sn_ref,sn_mod,sv_ref, sv_mod
 
 logical ::  name_e = .false., value_e = .false., attr_e= .false.
 character(len=50) :: n_parent_ref,n_parent_mod 
@@ -500,7 +510,7 @@ if (present(value)) value_e = .true.
 if (present(attr)) attr_e = .true.
 
 
-!Find all the info to make the differences report as
+!Find all the info to make the error report as
 !complete as possible.
 
 !Find parent properties.
@@ -511,8 +521,17 @@ call getParentNodeProperties(mod,n_parent_mod)
 sn_ref = getNodeName(ref)
 sn_mod = getNodeValue(mod)
 
-snc_ref = clean_string(sn_ref)
-snc_mod = clean_string(sn_mod)
+!If the name is empty then use the parents name.
+if (len(sn_ref) == 0) then
+	sn_ref = n_parent_ref
+else
+    if(sn_ref=="#text") then
+    	sn_ref = n_parent_ref
+    else
+		sn_ref = clean_string(sn_ref)
+		sn_mod = clean_string(sn_mod)
+	endif
+endif
 
 !Type
 !n_type_ref = getNodeType(ref)
@@ -522,44 +541,62 @@ snc_mod = clean_string(sn_mod)
 sv_ref = getNodevalue(ref)
 sv_mod = getNodevalue(mod)
 
-svc_ref = clean_string(sv_ref)
-svc_mod = clean_string(sv_mod)
+if (len(sv_ref) > 0 .and. len(sv_mod) > 0)then
+	sv_ref = clean_string(sv_ref)
+	sv_mod = clean_string(sv_mod)
+endif
 
 !Attr.
 attr_ref => getAttributes(ref)
 attr_mod => getAttributes(mod)
 
-!If the name is empty then use the parents name.
-if (snc_ref == "" .or. snc_ref=="#text")then
-   snc_ref = n_parent_ref
-endif
+
 
 if ( len(trim(sn_ref)) < 3 ) then
-   call dump_error_heading(snc_ref,parent=n_parent_ref)
+   call dump_error_heading(sn_ref,parent=n_parent_ref)
 else 
-   !if (str_ref == "scalar"
-   call dump_error_heading(snc_ref)
+   call dump_error_heading(sn_ref)
 endif
 
 if (name_e) then  
    print *,"Different names:"
-   print *,"  Ref: ",char(snc_ref)
-   print *,"  Mod: ",char(snc_mod)
-   stop
+   if (len(sn_ref) >0) then
+      print *,"  Ref: ",char(sn_ref)
+   else
+   	  print *,"  Ref: no name"
+   endif
+   if (len(sn_mod)>0) then
+      print *,"  Mod: ",char(sn_mod)
+   else
+   	  print *,"  Mod: no name"
+   endif
+
+   call handle_error()
+
 elseif(value_e)then
    print *, "Different values:"
-   print *,"  Ref: ","|",char(svc_ref),"|"
-   print *,"  Mod: ","|",char(svc_mod),"|"
-   stop
+   if (len(sv_ref) >0) then
+      print *,"  Ref: ","|",char(sv_ref),"|"
+   else
+   	  print *,"  Ref: no value"
+   endif
+   if (len(sv_mod)>0) then
+      print *,"  Mod: ","|",char(sv_mod),"|"	
+   else
+   	  print *,"  Mod: no value"
+   endif
+   call handle_error()
+
 elseif(attr_e)then
    print *, "Different attr:"
    !print *, char(sn_ref),char(sn_mod)
-   stop
+   call handle_error()
+
 else
    
 endif
 
-stop "error"
+call handle_error()
 
 end subroutine dump_error
 
@@ -573,6 +610,21 @@ character(len=*), intent(in), optional :: prop,parent
 print *,"There is an error in node: ","|",trim(char(str)),"|"
 if (present(parent)) print *,"   which is a son of node: ", parent
 end subroutine dump_error_heading
+
+!---------------------------------------------------
+subroutine handle_error()
+
+if (STOP_ON_ERROR) then
+   STOP
+else
+   n_errors = n_errors + 1
+   if (n_errors == MAX_NUMBER_OF_ERRORS) then
+      STOP
+   else
+      continue
+   endif
+endif
+end subroutine handle_error
 
 !---------------------------------------------------
 
@@ -595,15 +647,17 @@ function compare_values(ref,mod,label)
   n_mod = getNodeName(mod)
   v_mod = getNodeValue(mod)
 
-  v_ref = clean_string(v_ref)
-  v_mod = clean_string(v_mod)
+  if (len(v_ref) > 0 .and. len(v_mod) > 0)then
+	  v_ref = clean_string(v_ref)
+	  v_mod = clean_string(v_mod)
+  endif
 
   tol = findTol(trim(label))
 
   !check if there are numbers in the string.
   if ( only_numbers(v_ref) .and. only_numbers(v_mod) )then 
      if (test_debug) print *, "v_ref,v_mod,label,tol",char(v_ref),char(v_mod),"|",label,"|",tol
-     compare_values = compare_only_numbers(v_ref,v_mod,tol)
+     compare_values = compare_only_numbers(v_ref,v_mod,label,tol)
   else
      compare_values = compare_alpha(v_ref,v_mod)
   endif
@@ -650,21 +704,25 @@ function only_numbers(str)
   !Copy, we don't want to modify the xml file.
   c_str = str
 
-  c_str = clean_string(c_str)
-
-  length = len_trim(c_str)
-  if (test_debug) print *,"|",char(c_str),"|"
-  if (test_debug) print *,"length:",length
+  only_numbers = .false.
   
-  position = scan(char(c_str),letters)
-
-  if (position == 0)then
-     only_numbers = .true.
-  else
-     only_numbers = .false.
+  if (len(c_str) >0)then
+	  c_str = clean_string(c_str)
+	
+	  length = len_trim(c_str)
+	  if (test_debug) print *,"|",char(c_str),"|"
+	  if (test_debug) print *,"length:",length
+	  
+	  position = scan(char(c_str),letters)
+	
+	  if (position == 0)then
+	     only_numbers = .true.
+	  else
+	     only_numbers = .false.
+	  endif
+	
+	   if (test_debug) print *,"only_numbers:",only_numbers
   endif
-
-   if (test_debug) print *,"only_numbers:",only_numbers
  
 end function only_numbers
 !---------------------------------------------------
@@ -716,8 +774,9 @@ recursive subroutine remove_new_lines(str)
 end subroutine remove_new_lines
 
 !---------------------------------------------------
-function compare_only_numbers(c_ref,c_mod,tol)
+function compare_only_numbers(c_ref,c_mod,label,tol)
   type(string), intent(in) :: c_ref,c_mod
+  character(len=*)         :: label
   real(dp), intent(in)         :: tol
   logical compare_only_numbers
   
@@ -731,8 +790,10 @@ function compare_only_numbers(c_ref,c_mod,tol)
   ref = c_ref
   mod = c_mod
 
-  ref = clean_string(ref)
-  mod = clean_string(mod)
+  if (len(ref) > 0 .and. len(mod) >0)then
+	  ref = clean_string(ref)
+	  mod = clean_string(mod)
+  endif
 
   !Check if there are whitespaces:
   ws = achar(32)
@@ -744,7 +805,7 @@ function compare_only_numbers(c_ref,c_mod,tol)
      compare_only_numbers = compare_numbers(r_ref,r_mod,tol)
   else
      !There are whitespaces: compare array
-     compare_only_numbers = compare_array(ref,mod,tol)     
+     compare_only_numbers = compare_array(ref,mod,label,tol)     
   endif
 end function compare_only_numbers
 
@@ -826,8 +887,9 @@ function compare_numbers(ref,mod,tol)
 end function compare_numbers
 !---------------------------------------------------
 
-function compare_array(ref,mod,tol)
+function compare_array(ref,mod,label,tol)
   type(string), intent(in) :: ref, mod
+  character(len=*),intent(in) ::label
   real(dp) , intent(in) :: tol
   logical :: compare_array
 
@@ -850,9 +912,9 @@ function compare_array(ref,mod,tol)
      do i=1,length
         
         if (abs(abs(a_ref(i))-abs(a_mod(i))) > tol) then   
-           print *, "Compare array: error in element",i
-           print *, trim(ref), " |", trim(mod)
-           print *,"Values: ",abs(a_ref(i)),abs(a_mod(i))
+           print *, "Compare array: error in array: ",trim(label)
+           !print *, trim(ref), " |", trim(mod)
+           print "(a,i4,2f10.6)"," Index, values: ",i, abs(a_ref(i)),abs(a_mod(i))
            print *," Diff,tol: ", abs(a_ref(i))-abs(a_mod(i)),tol
            compare_array = .false.
            exit
@@ -881,7 +943,7 @@ subroutine find_array(ref,mod,a_ref,a_mod,error)
   l_ref = ref
   l_mod = mod
   
-  ws = achar(32)
+  ws = achar(32) !\n
   pos_ref = index(l_ref,ws)
   pos_mod = index(l_mod,ws)
 
@@ -889,22 +951,31 @@ subroutine find_array(ref,mod,a_ref,a_mod,error)
 
   ws2="  "
   
+  if (test_debug) then
+  	print*,"compairing arrays:"
+  	print*,char(l_ref)
+  	print*,char(l_mod)
+  endif
+  
   do
      pos_ref = index(l_ref,ws2)
-     !print *,"pos_ref:",pos_ref
+     !print *,"pos_ref 2sp:",pos_ref
      if (pos_ref == 0)then
         exit
      else
         l_ref = remove(l_ref,pos_ref,pos_ref)
+        !print *,"New ref without 2ws:",char(l_ref)
      endif
   enddo
  
   do
      pos_mod = index(l_mod,ws2)
+     !print *,"pos_mod 2sp:",pos_mod
      if (pos_mod == 0)then
         exit
      else
         l_mod = remove(l_mod,pos_mod,pos_mod)
+        !print *,"New mod without 2ws:",char(l_mod)
      endif
   enddo
   
@@ -915,15 +986,15 @@ subroutine find_array(ref,mod,a_ref,a_mod,error)
 
      if (pos_ref == 0) exit
 
-     sub_ref = extract(l_ref,1,pos_ref+1)
-     sub_mod = extract(l_mod,1,pos_mod+1)
+     sub_ref = extract(l_ref,1,pos_ref-1)
+     sub_mod = extract(l_mod,1,pos_mod-1)
      
      !Get the scalars from the string.
      r_ref = str_to_scalar(sub_ref)
      r_mod = str_to_Scalar(sub_mod)
      
-     !if (test_debug) print*, "Strings:",char(sub_ref),char(sub_mod)
-     !if (test_debug) print*, "New scalars:",r_ref,r_mod
+     if (test_debug) print*, "Strings ref|mod:",char(sub_ref),"|",char(sub_mod)
+     if (test_debug) print*, "New scalars ref|mod:",r_ref,"|",r_mod
 
      !Remove the previous string
      l_ref = remove(l_ref,1,pos_ref)
@@ -964,6 +1035,9 @@ subroutine find_array(ref,mod,a_ref,a_mod,error)
      a_ref(length) = r_ref
      a_mod(length) = r_mod
   endif
+  
+  !print *,"Final ref:",a_ref
+  !print *,"Final mod:",a_mod
 
 end subroutine find_array
 

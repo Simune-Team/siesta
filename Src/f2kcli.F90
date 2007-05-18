@@ -17,6 +17,8 @@
 ! Date        : February 2001
 !
       MODULE F2KCLI
+#ifndef GFORTRAN
+
 #ifdef __NAG__
       use f90_unix
 #else
@@ -220,7 +222,6 @@
       RETURN
       END SUBROUTINE GET_COMMAND_ARGUMENT
 !
+#endif
       END MODULE F2KCLI
-
-
 

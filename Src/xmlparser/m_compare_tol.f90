@@ -8,10 +8,12 @@ integer, parameter ::  sp = selected_real_kind(6,30)
 integer, parameter ::  dp = selected_real_kind(14,100)
 
 
-!Modify this value to change the default tolerance.
-real(dp) :: tol = 1.E-4
 public :: tol,sp,dp
 public :: findTol
+
+!Modify this value to change the default tolerance.
+real(dp) :: TOL = 1.0E-4
+character(len=256), public :: TOLERANCES_FILE = "tolerances.dat"
 
 private
 
@@ -62,11 +64,11 @@ subroutine find_number_of_tolerance_labels
   integer :: i,io
   character(len=50) :: tmp
 
-  inquire(file="tolerances.dat", exist=fileExists)
+  inquire(file=TOLERANCES_FILE, exist=fileExists)
   if( .not. fileExists) then
      n_labels = -1
   else
-     open(unit=30,file="tolerances.dat")
+     open(unit=30,file=TOLERANCES_FILE)
      do i=1,10000000
         read(30,*,iostat=io) tmp 
         if (io < 0) then 
@@ -86,9 +88,9 @@ subroutine find_tolerances()
   logical :: fileExists
   integer :: i
   
-  inquire(file="tolerances.dat", exist=fileExists)
+  inquire(file=TOLERANCES_FILE, exist=fileExists)
   if( fileExists) then
-     open(unit=30,file="tolerances.dat")
+     open(unit=30,file=TOLERANCES_FILE)
      
      allocate(tolerances(1:n_labels),labels(1:n_labels))
      do i=1,n_labels
