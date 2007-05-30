@@ -41,9 +41,10 @@
           last = .true.
         endif
 
-        !Logica alternativa si no queremos hacer el bucle SCF ni una sola vez
-        if (nscf .eq. 1) then
-          last = .true.
+        ! The SCF loop is executed at least once, 
+        ! except if nscf <= 0.
+        if (nscf <= 0) then
+           last = .true.
         endif
 
         DO WHILE (.not. last)
@@ -62,7 +63,7 @@
 
           iscf = iscf + 1
           first = .false.
-          if (iscf .eq. nscf) then
+          if (iscf > nscf) then
             last = .true.
           endif
 

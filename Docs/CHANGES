@@ -10,6 +10,17 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-05-30 13:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-20
+
+Summary: Execute SCF loop when nscf=1
+
+When nscf=1, the scf loop was not entered, and
+the program went directly to the "post-scf" section.
+
+Now, unless nscf<=0, the scf loop is executed at least once.
+
+(Merged from siesta-bsc--master--2.1)
+
 2007-05-30 13:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-19
 
 Summary: Sync to bsc--2.1. Change banner in CHANGES to bsc--2.3
