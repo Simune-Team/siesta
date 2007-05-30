@@ -7,9 +7,29 @@ he is the person in charge of the merges. To identify the developer responsible
 for a given patch, see the "new patches" section of each log.
 
 ____________________________________________________________________
-** CHANGES ALONG ag@bsc--2007/merge-devel--ag--2.3
+** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
-(Merged from siesta-devel--reference--2.1)
+
+2007-05-30 13:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-19
+
+Summary: Sync to bsc--2.1. Change banner in CHANGES to bsc--2.3
+
+The patches from ag@bsc--2007/merge-devel--ag--2.3 (up to patch-18) were
+copied verbatim into this branch. 
+
+To prepare it for further development:
+
+* The version.info file has been updated
+* The banner in CHANGES has been updated
+* Patch-32 of bsc--2.1 (a typo) has been registered by 'tla sync-tree' (its contents
+  had been already incorporated). Any further bug-fix patches on bsc--2.1
+  should be merged into this branch.
+
+------------------------------------------------------------------------------
+(The following patches were merged from siesta-devel--reference--2.1, 
+originally to branch ag@bsc--2007/merge-devel--ag--2.3
+The patches were then copied verbatim to bsc--2.3; only the dates, and
+the mention of extra patch-logs, are different)
 
 2007-05-13 20:14:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-18
 
