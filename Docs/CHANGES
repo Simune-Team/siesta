@@ -10,6 +10,17 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-06-4 14:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-59
+
+Summary: Undefined var in kgridinit, iohs MPI write, pdosg array bound
+
+* Initialize "genlogic" to .false. before it is used in kgridinit.
+
+* Fix index in write statement in iohs in parallel affecting list array.
+
+* Fix dimension of dpr in pdosg. Clarify names of variables in pdos.
+  In pdosg, dpr was wrongly dimensioned to no_l (modern notation) instead of no_u.
+
 2007-05-17 900:12 GMT	Alberto Garcia <albertog@icmab.es>	patch-58
 
 Summary: Refinements of XML tester. New ioncat program

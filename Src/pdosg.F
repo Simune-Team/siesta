@@ -75,7 +75,7 @@ C **********************************************************************
       real(dp)
      .  H(maxnh,nspin), S(maxnh), E1, E2, sigma, eo(maxo,maxspn),
      .  haux(nuotot,nuo), saux(nuotot,nuo), psi(nuotot,nuo),
-     .  dtot(nhist,2), dpr(nhist,maxuo,2) 
+     .  dtot(nhist,2), dpr(nhist,nuotot,2) 
 
 C Internal variables ---------------------------------------------------
       integer
