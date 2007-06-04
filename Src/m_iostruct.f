@@ -96,17 +96,19 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
 
       end subroutine read_struct
 !--------------------------------------------------------------------------
-      subroutine write_struct(cell, na, isa, iza, xa )
-
+      subroutine write_struct(cell, na, isa, iza, xa, moved )
 !     
 c     real*8  cell(3,3)  : Unit cell vectors
 c     integer na         : Number of atoms
 c     integer isa(na)    : Atomic species index
 c     integer iza(na)    : Atomic numbers
 c     real*8  xa(3,na)   : Atomic positions
+c     logical moved      : True if structure is the "predicted"
+c                          one after application of forces/stress.
 
       integer, intent(in)  ::          na, isa(na), iza(na)
       real(dp), intent(in) ::          cell(3,3), xa(3,na)
+      logical, intent(in), optional :: moved
 
       character(len=label_length+11)       :: paste
       external          io_assign, io_close, paste, reclat
@@ -114,17 +116,24 @@ c     real*8  xa(3,na)   : Atomic positions
 c     Internal variables and arrays
       real(dp)                             :: celli(3,3)
       real(dp)                             :: xfrac(3)
-      character(len=label_length+11), save :: fname
+      character(len=200)                   :: fname
       integer                              :: ia, iu, iv, ix
-      logical,                        save :: frstme = .true.
+
+      logical                              :: atoms_moved_after_forces 
 
 C     Only do reading and writing for IOnode
 
       if (.not. IOnode) RETURN
 
-      if (frstme) then
+      atoms_moved_after_forces = .false.
+      if (present(moved)) then
+         atoms_moved_after_forces = moved
+      endif
+
+      if (atoms_moved_after_forces) then
+         fname = paste( slabel, '.STRUCT_NEXT_ITER' )
+      else
          fname = paste( slabel, '.STRUCT_OUT' )
-         frstme = .false.
       endif
 
       call io_assign( iu )

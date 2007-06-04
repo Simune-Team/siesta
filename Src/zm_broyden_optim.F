@@ -8,26 +8,16 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine cgvc_zmatrix( na, xa, fa, cell, stress, volume, dxmax, 
-     .                 tp, ftol, strtol, varcel, relaxd, usesavecg ) 
-c ***************************************************************************
-c Variable-cell conjugate-gradient geometry optimization
-c
-c   Energy minimization including atomic coordinates and unit cell vectors.
-c   It allows an external target stress:
-c              %block MD.TargetStress
-c                  3.5  0.0  0.0  0.0  0.0  0.0
-c              %endblock MD.TargetStress
-c   corresponding to xx, yy, zz, xy, xz, yz.
-c   In units of (-MD.TargetPressure)
-c   Default: hydrostatic pressure: -1, -1, -1, 0, 0, 0
-c
-c   Based on E({xa},stress), with {xa} in fractional coor
-c   The gradient of the energy given by {cfa} forces (fractional!)
-c   The fractional coordinates are multiplied by the initial cell vectors
-c   to get them in Bohr for dxmax and preconditioning.
-c      
-c Written by E. Artacho. November 1998. 
+      module m_zm_broyden_optim
+      public :: zm_broyden_optimizer
+      private
+
+      CONTAINS
+!
+      subroutine zm_broyden_optimizer( na, xa, fa, cell,
+     .                 stress, volume, dxmax, 
+     .                 tp, ftol, strtol, varcel, relaxd)
+
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
 c real*8 fa(3,na)       : Atomic forces
@@ -38,7 +28,6 @@ c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
 c real*8 strtol         : Maximum stress tolerance
 c logical varcel        : true if variable cell optimization
-c logical usesavecg     : true if we're using saved CG files
 c *************************** INPUT AND OUTPUT ******************************
 c real*8 xa(3,na)       : Atomic coordinates
 c                         input: current step; output: next step
@@ -55,13 +44,17 @@ C
 C  Modules
 C
       use precision,   only : dp
-      use parallel,    only : Node
+      use parallel,    only : Node, IONode
       use fdf,         only : fdf_block, fdf_physical
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only:  broadcast
       use units, only: kBar, Ang
+      use m_broyddj_nocomm, only: broyden_t
+      use m_broyddj_nocomm, only: broyden_reset, broyden_step,
+     $                     broyden_destroy, broyden_init,
+     $                     broyden_is_setup
 
-      use zmatrix,     only : VaryZmat, lUseZmatrix, Zmat
+      use zmatrix,     only : VaryZmat, Zmat
       use zmatrix,     only : CartesianForce_to_ZmatForce
       use zmatrix,     only : ZmatForce,ZmatForceVar
       use zmatrix,     only : iZmattoVars,ZmatType
@@ -69,68 +62,117 @@ C
       use zmatrix,     only : coeffA, coeffB, iNextDept
       use Zmatrix,     only : ZmatForceTolLen, ZmatForceTolAng
       use Zmatrix,     only : ZmatMaxDisplLen, ZmatMaxDisplAng
-      use m_conjgr,    only : conjgr
 
       implicit none
 
 C Subroutine arguments:
       integer,  intent(in)   :: na
-      logical,  intent(in)   :: varcel, usesavecg
+      logical,  intent(in)   :: varcel
       logical,  intent(out)  :: relaxd
       real(dp), intent(in)   :: fa(3,na), volume, dxmax, tp, ftol
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
-      integer             :: iu, ia, i, j, n, indi,indi1,vi,k,ndegi,ndi
+      integer             :: iu, ia, i, j, n, indi,indi1,vi,k
       logical             :: found
-      real(dp)            :: new_volume, trace, ftol_tmp
+      real(dp)            :: new_volume, trace
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
-      real(dp) ::  stress_dif(3,3)
+      real(dp)            ::  stress_dif(3,3)
       real(dp), dimension(:), allocatable :: gxa, gfa
       real(dp)            :: force, force1
 
 C Saved internal variables:
-      integer,       save :: ndeg, linmin
+      integer,       save :: ndeg
       logical,       save :: frstme = .true.
       logical,       save :: tarstr = .false.
       logical,       save :: constant_volume
       real(dp),      save :: initial_volume
 
-      real(dp),      save :: cgcntr(0:20) = 0.0_dp
       real(dp),      save :: tstres(3,3) 
+      real(dp),      save :: cellin(3,3) 
       real(dp),      save :: modcel(3) 
       real(dp),      save :: precon 
-      real(dp),      save :: strain(3,3)
-      real(dp),      save :: cellin(3,3)
+      real(dp),      save :: strain(3,3)  ! Special treatment !!
 
-      real(dp), dimension(:), allocatable, save :: cgaux
-      real(dp), dimension(:), allocatable, save :: ftoln, dxmaxn
-      real(dp), dimension(:), allocatable, save :: ftoln_tmp
+      real(dp), dimension(:), allocatable    :: ftoln, dxmaxn
+      real(dp), dimension(:), allocatable    :: rold, rnew, rdiff
 
+      type(broyden_t), save  :: br
+      logical, save           :: initialization_done = .false.
+
+      real(dp), save :: jinv0
+      integer, save  :: maxit
+      logical, save  :: cycle_on_maxit, variable_weight
+      logical, save  :: broyden_debug
+      real(dp)       :: weight
+
+      integer        :: ndegi, ndi
 
       external          memory
-      real(dp) :: volcel
-      external :: volcel
+      real(dp), external :: volcel
 
 c ---------------------------------------------------------------------------
 
+      if (.not. initialization_done) then
 
-C If first call to cgvc_zmatrix, check dim and get target stress --------------------
+          call fdf_global_get(maxit,"MD.Broyden.History.Steps",5)
+          call fdf_global_get(cycle_on_maxit,
+     $              "MD.Broyden.Cycle.On.Maxit",.true.)
+          call fdf_global_get(variable_weight,
+     $         "MD.Broyden.Variable.Weight",.false.)
+          call fdf_global_get(broyden_debug,
+     $         "MD.Broyden.Debug",.false.)
+          call fdf_global_get(jinv0,
+     $         "MD.Broyden.Initial.Inverse.Jacobian",1.0_dp)
+
+         if (ionode) then
+          write(6,*) 
+          write(6,'(a,i3)')
+     $         "Broyden_optim: max_history for broyden: ", maxit
+          write(6,'(a,l1)')
+     $         "Broyden_optim: cycle on maxit: ", cycle_on_maxit
+          if (variable_weight) write(6,'(a)')
+     $         "Broyden_optim: Variable weight not implemented yet"
+          write(6,'(a,f8.4)')
+     $         "Broyden_optim: initial inverse jacobian: ", jinv0
+          write(6,*) 
+        endif
+
+         call broyden_init(br,debug=broyden_debug)
+         initialization_done = .true.
+
+      endif
 
       if ( frstme ) then
   
-C Look for target stress and read it if found, otherwise generate it --------
+        ! Find number of variables
+        ndeg = 0
+        do ia = 1,na
+           do n = 1,3
+              indi = 3*(ia-1) + n
+              if (VaryZmat(indi)) then
+                 ndeg = ndeg + 1
+              endif
+           enddo
+        enddo
+        if ( varcel ) then
+           ndeg = ndeg + 6      ! Including stress
+        endif
+        if (Ionode) then
+           write(6,'(a,i6)') "Broyden_optim: No of elements: ", ndeg
+        endif
 
         if ( varcel ) then
-     
-C Check if we want a constant-volume simulation
+
           call fdf_global_get(constant_volume,
      .                        "MD.ConstantVolume", .false.)
 
           if (Node.eq.0) then
             tarstr = fdf_block('MD.TargetStress',iu)
 
+            ! Look for target stress and read it if found, 
+            ! otherwise generate it
             if (tarstr) then
               write(6,'(/a,a)')
      $              'cgvc_zmatrix: Reading %block MD.TargetStress',
@@ -158,17 +200,15 @@ C Check if we want a constant-volume simulation
               enddo
             endif
 
-C Write target stress down --------------------------------------------------
-
             if (constant_volume) then
                tstres(:,:) = 0.0_dp
                write(6,"(a)") "***Target stress set to zero " //
      $              "for constant-volume calculation"
             endif
             write(6,"(/a)") 'cgvc_zmatrix: Target stress (kBar)'
-            do i = 1, 3
+            do i=1, 3
                write(6,"(a,2x,3f12.3)") 
-     .              'cgvc_zmatrix:', (tstres(1,j)/kBar,j=1,3)
+     .              'cgvc_zmatrix:', (tstres(i,j)/kBar,j=1,3)
             enddo
           endif
 
@@ -183,93 +223,43 @@ C Moduli of original cell vectors for fractional coor scaling back to au ---
             modcel(n) = dsqrt( modcel(n) )
           enddo
 
-C Scale factor for strain variables to share magnitude with coordinates -----
-C ---- (a length in Bohrs typical of bond lengths ..) -----------------------
+C Scale factor for strain variables to share magnitude with coordinates
+C ---- (a length in Bohrs typical of bond lengths ..) 
 
+          ! AG: This could better be volume^(1/3) by default
           call fdf_global_get(precon,'MD.PreconditionVariableCell',
      .                           9.4486344d0,'Bohr')
 
-C Initialize absolute strain and save initial cell vectors -----------------
-C Initialization to 1. for numerical reasons, later substracted ------------
+C Initialize absolute strain and save initial cell vectors
+C Initialization to 1 for numerical reasons, later substracted
        
           strain(1:3,1:3) = 1.0_dp
           cellin(1:3,1:3) = cell(1:3,1:3)
           initial_volume = volcel(cellin)
 
-        endif             ! varcel
+        endif     ! varcel
 
-        ! Find number of degrees of freedom
-        if (lUseZmatrix) then
-           ndeg = 0
-           do ia = 1,na
-              do n = 1,3
-                 indi = 3*(ia-1) + n
-                 if (VaryZmat(indi)) then
-                    ndeg = ndeg + 1
-                 endif
-              enddo
-           enddo
-        else
-           ndeg = 3*na
-        endif
-        if (varcel) then
-           ndeg = ndeg + 6
-        endif
-
-C Initialize and read cgaux and cgcntr if present and wanted ---------------
-
-        if (.not.allocated(cgaux)) then
-           allocate(cgaux(2*(ndeg)))
-           call memory('A','D',2*ndeg,'cgvc_zmatrix')
-        endif
-        if (usesavecg) then
-          if (Node.eq.0) then
-            call iocg( 'read', ndeg*2, cgaux, cgcntr, relaxd, found )
-          endif
-          call broadcast(cgaux)
-          call broadcast(cgcntr)
-          call broadcast(relaxd)
-          call broadcast(found)
-
-          if ( found ) then
-            linmin = cgcntr(1)
-          else
-            if (Node.eq.0) then
-              write(6,'(/,a)')
-     $              'cgvc_zmatrix: WARNING: CG file not found'
-            endif
-            relaxd = .false.
-            cgcntr(0) = 0
-            linmin = 1
-          endif
-        else
-          relaxd = .false.
-          cgcntr(0) = 0
-          linmin = 1
-        endif
 
         frstme = .false.
-
-      endif      ! First time
+      endif                 ! First time
 
 C Allocate local memory
+
       allocate(gfa(ndeg))
       call memory('A','D',ndeg,'cgvc_zmatrix')
       allocate(gxa(ndeg))
       call memory('A','D',ndeg,'cgvc_zmatrix')
       allocate(ftoln(ndeg))
-      allocate(ftoln_tmp(ndeg))
       call memory('A','D',ndeg,'cgvc_zmatrix')
       allocate(dxmaxn(ndeg))
       call memory('A','D',ndeg,'cgvc_zmatrix')
 
-
-C Variable cell -------------------------------------------------------------
+!      print *, "zm_broyden: cell in : ", cell
+!      print *, "zm_broyden: strain in : ", strain
 
       if ( varcel ) then
 
-C Inverse of matrix of cell vectors  (transverse of) ------------------------
-
+        ! Inverse of matrix of cell vectors  (transpose of)
         call reclat( cell, celli, 0 )
 
 C Transform coordinates and forces to fractional ---------------------------- 
@@ -279,8 +269,8 @@ C convergence is checked here for input forces as compared with ftol --------
 
         relaxd = .true.
         ndegi = 0
-        if (lUseZmatrix) then
-C Loop over degrees of freedom, scaling cartesian coordinates to fractional
+        ! Loop over degrees of freedom, scaling 
+        ! only cartesian coordinates to fractional
           do ia = 1,na
             do n = 1,3
               indi = 3*(ia-1) + n
@@ -323,24 +313,6 @@ C Cartesian coordinate
               endif
             enddo
           enddo
-        else
-C No Z-Matrix
-          do ia = 1,na
-            do n = 1,3
-              ndegi = ndegi + 1
-              ftoln(ndegi) = ftol
-              dxmaxn(ndegi) = dxmax
-              gxa(ndegi) = 0.0_dp
-              gfa(ndegi) = 0.0_dp
-              relaxd = relaxd .and. ( dabs(fa(n,ia)) .lt. ftoln(ndegi) )
-              do i = 1, 3
-                gxa(ndegi) = gxa(ndegi)+celli(i,n)*xa(i,ia)*modcel(n)
-                gfa(ndegi) = gfa(ndegi)+ cell(i,n)*fa(i,ia)/modcel(n)
-              enddo
-            enddo
-          enddo
-        endif
-
 
 C Symmetrizing the stress tensor --------------------------------------------
         do i = 1,3
@@ -370,18 +342,11 @@ C preconditioning: scale stress and strain so as to behave similarly to x,f -
             ndegi = ndegi + 1
             gfa(ndegi) = -stress_dif(i,j)*volume/precon
             gxa(ndegi) = strain(i,j) * precon
-            if (lUseZmatrix) then
-              dxmaxn(ndegi) = ZmatMaxDisplLen
-            else
-              dxmaxn(ndegi) = dxmax
-            endif
+            dxmaxn(ndegi) = ZmatMaxDisplLen
           enddo
         enddo
 
-C  testing
-!!          print *, "ndeg, ndegi:", ndeg, ndegi
-        
-C Check stress convergence --------------------------------------------------
+C Check stress convergence
         strtol = dabs(strtol)
         do i = 1,3
           do j = 1,3
@@ -390,20 +355,11 @@ C Check stress convergence --------------------------------------------------
           enddo
         enddo
 
-C Call conjugate gradient minimization -------------------------------------- 
-        if ( .not. relaxd ) then
-          do i=1,ndeg 
-            ftoln_tmp(i) = 0.d0
-!!            print *, "gxa, gfa ", i, gxa(i), gfa(i)
-          enddo
-          call conjgr(ndeg,gxa,gfa,dxmaxn,ftoln_tmp,cgcntr,cgaux)
-        endif
+      else   ! FIXED CELL
 
-      else     ! Fixed cell
 C Set number of degrees of freedom & variables
-        relaxd = .true.
+         relaxd = .true.
         ndegi = 0
-        if (lUseZmatrix) then
           do i = 1,na
             do k = 1,3
               indi = 3*(i-1)+k
@@ -424,54 +380,34 @@ C Set number of degrees of freedom & variables
                   ftoln(ndegi) = ZmatForceTolLen
                   dxmaxn(ndegi) = ZmatMaxDisplLen
                 endif
-                relaxd=relaxd.and.(abs(force).lt.ftoln(ndegi))
+                relaxd=relaxd.and.(dabs(force).lt.ftoln(ndegi))
               endif
             enddo
           enddo
-        else
-          do i = 1,na
-            do k = 1,3
-              ndegi = ndegi + 1
-              gxa(ndegi) = xa(k,i)
-              gfa(ndegi) = fa(k,i)
-              dxmaxn(ndegi) = dxmax
-              ftoln(ndegi) = ftol
-              relaxd = relaxd .and. ( dabs(fa(k,i)) .lt. ftoln(ndegi) )
-            enddo
-          enddo
-        endif
-
-        if (.not. relaxd) then
-!!           do i=1,ndeg 
-!!              print *, "gxa, gfa ", i, gxa(i), gfa(i)
-!!           enddo
-           call conjgr( ndeg, gxa, gfa, dxmaxn, ftoln, cgcntr, cgaux)
-           relaxd = (int(cgcntr(0)) .eq. 0)
-        endif
 
       endif
-C End of fixed cell
 
-C Checking line minimizations and convergence -------------------------------
+      if (relaxd) RETURN   ! Will leave work arrays allocated
 
-      if (nint(cgcntr(1)) .ne. linmin) then
-        if (Node.eq.0) then
-          write(6,'(/a,i4,a,f10.4)')
-     .      'cgvc_zmatrix: Finished line minimization ', linmin,
-     .      '.  Mean atomic displacement =', cgcntr(18)/sqrt(dble(na))
-        endif
-        linmin = nint(cgcntr(1))
+      if (.not. broyden_is_setup(br)) then
+         call broyden_reset(br,ndeg,maxit,cycle_on_maxit,
+     $        jinv0,0.01_dp)
       endif
+      allocate (rnew(ndeg))
+      call memory('A','D',ndeg,'zm_broyden_optimizer')
+      weight = 1.0_dp
+      call broyden_step(br,gxa,gfa,w=weight,newx=rnew)
 
-C Transform back if variable cell ------------------------------------------- 
-      if ( varcel .and. (.not. relaxd)) then
 
-C New cell ------------------------------------------------------------------
+      ! Transform back
+      if ( varcel) then
+
+        ! New cell
         indi = ndeg-6
         do i = 1,3
           do j = i,3
             indi = indi + 1
-            strain(i,j) = gxa(indi) / precon
+            strain(i,j) = rnew(indi) / precon
             strain(j,i) = strain(i,j)
           enddo
         enddo
@@ -486,8 +422,7 @@ C New cell ------------------------------------------------------------------
 
 C Output fractional coordinates to cartesian Bohr, and copy to xa ----------- 
         ndegi = 0
-        if (lUseZmatrix) then
-          do ia=1,na
+        do ia=1,na
             do k=1,3
               indi = 3*(ia-1)+k
               if (VaryZmat(indi)) then
@@ -500,11 +435,11 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
                       indi1 = 3*(ia-1)+n
                       ! Assume all three coords of this atom
                       ! are variables
-                      ndi = ndegi + n - k   ! correct index
-                      Zmat(j)=Zmat(j)+cell(k,n)*gxa(ndi)/modcel(n)
+                      ndi = ndegi + n - k
+                      Zmat(j)=Zmat(j)+cell(k,n)*rnew(ndi)/modcel(n)
                     enddo
                   else
-                    Zmat(j) = gxa(ndegi)
+                    Zmat(j) = rnew(ndegi)
                   endif
                   Zmat(j) = Zmat(j)*coeffA(j) + coeffB(j)
                   j = iNextDept(j)
@@ -513,25 +448,11 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
             enddo
           enddo  
           call Zmat_to_Cartesian(xa)
-        else
-          do ia = 1,na
-            do k = 1,3
-              ndegi = ndegi+1
-              xa(k,ia) = 0.0_dp
-              do n = 1,3
-                indi1 = 3*(ia-1) + n
-                ndi = ndegi + n - k ! correct index == indi1 in this case
-                xa(k,ia) = xa(k,ia) + cell(k,n) * gxa(ndi) / modcel(n)
-              enddo
-            enddo
-          enddo
-        endif
 
-      else    ! fixed cell
-
-        ! Return coordinates to correct arrays 
+      else
+C Fixed cell
+C Return coordinates to correct arrays 
         ndegi = 0
-        if (lUseZmatrix) then
           do ia = 1,na
             do k = 1,3
               indi = 3*(ia-1)+k
@@ -539,41 +460,31 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
                 ndegi = ndegi + 1
                 j = indi
                 do while (j.ne.0)
-                  Zmat(j) = gxa(ndegi)*coeffA(j)+coeffB(j)
+                  Zmat(j) = rnew(ndegi)*coeffA(j)+coeffB(j)
                   j = iNextDept(j)
                 enddo
               endif
             enddo
           enddo
           call Zmat_to_Cartesian(xa)
-        else
-          do ia = 1,na
-            do k = 1,3
-              ndegi = ndegi + 1
-              xa(k,ia) = gxa(ndegi)
-            enddo
-          enddo
-        endif
-
       endif
 
-C Save cgaux ----------------------------------------------------------------
-
-      if (Node.eq.0) 
-     .  call iocg( 'write', ndeg*2, cgaux, cgcntr, relaxd, found )
+!      print *, "zm_broyden: cell out : ", cell
+!      print *, "zm_broyden: strain out : ", strain
 
 C Deallocate local memory
 
       call memory('D','D',size(dxmaxn),'cgvc_zmatrix')
       deallocate(dxmaxn)
-      call memory('D','D',size(ftoln_tmp),'cgvc_zmatrix')
-      deallocate(ftoln_tmp)
       call memory('D','D',size(ftoln),'cgvc_zmatrix')
       deallocate(ftoln)
       call memory('D','D',size(gxa),'cgvc_zmatrix')
       deallocate(gxa)
       call memory('D','D',size(gfa),'cgvc_zmatrix')
       deallocate(gfa)
+      call memory('D','D',size(rnew),'cgvc_zmatrix')
+      deallocate(rnew)
 
-      return
-      end
+      end subroutine zm_broyden_optimizer
+
+      end module m_zm_broyden_optim

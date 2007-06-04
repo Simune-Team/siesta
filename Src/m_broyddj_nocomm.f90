@@ -125,6 +125,13 @@ real(dp), dimension(:,:), allocatable  :: alpha, alpha_old
 
 n = br%n
 
+if (br%debug .and. ionode) then
+   print *, "Broyden step init --- "
+   do j = 1, n
+      print "(2g20.12)", x(j), F(j)
+   enddo
+endif
+
 !
 !  If just reset, or if we went over the maximum number
 !  of history slots (i.e., if we did not recycle the oldest
@@ -136,6 +143,12 @@ if (br%it == -1 .or. br%it > br%maxit) then
     br%dF(1:n,0) = F(1:n)
     newx(1:n) = x(1:n) + br%jinv0*F(1:n)
     br%u(1:n,0) = newx(1:n) - x(1:n)
+    if (br%debug .and. ionode) then
+       print *, "------- Broyden step end --- "
+       do j = 1, n
+          print "(g20.12)", newx(j)
+       enddo
+    endif
     RETURN
 endif 
 
@@ -297,6 +310,13 @@ endif
 
 br%dF(1:n,br%it) = F(1:n)
 br%u(1:n,br%it) = newx(1:n) - x(1:n)
+
+if (br%debug .and. ionode) then
+   print *, "------- Broyden step end --- "
+   do j = 1, n
+      print "(g20.12)", newx(j)
+   enddo
+endif
 
 end subroutine broyden_step
 

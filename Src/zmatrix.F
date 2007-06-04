@@ -93,19 +93,24 @@ C       v2 = a*v1 + B
         real(dp), pointer, save :: coeffA(:)
         real(dp), pointer, save :: coeffB(:)
 
-        real(dp), save  :: scale_length, scale_angle 
-        real(dp), save  :: zmatrix_alat
 
       ! AG: convenience variables
+        integer, pointer,  save :: species(:) 
+        real(dp), save  :: scale_length, scale_angle 
+        real(dp), save  :: zmatrix_alat
+        logical, save   :: unknown_cell
 
       public :: read_Zmatrix, lUseZmatrix, iofaZmat
       public :: CartesianForce_to_ZmatForce, write_Zmatrix
+      public :: write_canonical_Zmatrix
+      public :: write_canonical_ucell_and_Zmatrix
       public :: VaryZmat, Zmat, ZmatForce, ZmatForceVar
       public :: iZmattoVars, ZmatType, Zmat_to_Cartesian
       public :: coeffA, coeffB, iNextDept
       public :: ZmatForceTolLen, ZmatForceTolAng
       public :: ZmatMaxDisplLen, ZmatMaxDisplAng
-
+      public :: nZmol, nZmolStartAtom, nZmolAtoms
+      public :: nZcart, nZcartStartAtom, nZcartAtoms
 
       private 
 
@@ -185,7 +190,6 @@ C Local variables
 
         real(dp), external    :: volcel
         real(dp)              :: dummy_volume
-        logical               :: unknown_cell
 
        zmatrix_alat = alat     ! AG: For future processing
 
@@ -203,6 +207,7 @@ C Nullify pointers
 
 C Allocate Zmatrix arrays
           call re_alloc(Zmat,1,3*na)
+          call re_alloc(species,1,3*na)
           call re_alloc(ZmatForce,1,3*na)
           call re_alloc(iZmat,1,3*na)
           call re_alloc(VaryZmat,1,3*na)
@@ -722,6 +727,8 @@ C Distribute information over processors
      .                 MPI_Comm_World,MPIerror)
 
 #endif
+
+        species(1:nAtoms) = nspecies(1:nAtoms)
 
 C Check that all variables have been defined
         do i = 1,nVars
@@ -1303,6 +1310,123 @@ C  Cartesian
       end function GetForce
 
 
+      subroutine write_canonical_Zmatrix(filename,iunit)
+!
+!     Write a "canonical" Zmatrix with the following characteristics:
+!     1. No symbolic variables or constants are used.
+!     2. The position coordinates of the first atom in each molecule
+!        are absolute cartesian coordinates.
+!     3. Any "crystal" (non-molecule) coordinates are also absolute cartesians.
+!     4. There is no provision for output of constraints.
+!     5. The units used are those initially specified by the user, and are
+!        specified in fdf form.
+!
+!     The output is to file "OUT.CANON.ZMATRIX" by default, but a new filename
+!     might be specified as an optional argument. If a unit number is used
+!     output is directly appended to it.
+!     
+        implicit none
+        
+        character(len=*), intent(in), optional :: filename
+        integer, intent(in), optional          :: iunit
+C
+C Local variables
+C
+        integer             :: nStart
+        integer             :: nAtoms
+        integer             :: k
+        integer             :: i, iu, js
+        integer             :: m
+        character(len=4)    :: lenstr
+        character(len=4)    :: angstr
+        character(len=90)    :: fname
+
+        integer, dimension(3)             :: mask
+
+C  Output Z matrix information
+        if (ZmatUnitsLen.eq.0) then
+          lenstr = 'Bohr'
+        elseif (ZmatUnitsLen.eq.1) then
+          lenstr = 'Ang'
+        endif
+        if (ZmatUnitsAng.eq.0) then
+          angstr = 'rad'
+        elseif (ZmatUnitsAng.eq.1) then
+          angstr = 'deg'
+        endif
+
+      if (present(iunit)) then
+         iu = iunit
+      else
+         if (present(filename)) then
+            fname = filename
+         else
+            fname = "OUT.CANON.ZMATRIX"
+         endif
+         call io_assign( iu )
+         open(iu, file=trim(fname), form='formatted',
+     $        position='rewind', status='unknown')
+      endif
+
+C  Write molecule coordinates in user's units
+      write(iu,"(2a)") "ZM.UnitsLength ", trim(lenstr)
+      write(iu,"(2a)") "ZM.UnitsAngle ", trim(angstr)
+      write(iu,"(a)") "%block Zmatrix"
+        do m = 1,nZmol
+          write(iu,"(a)") "molecule_cartesian"
+          nStart = nZmolStartAtom(m)
+          nAtoms = nZmolAtoms(m)
+          js = 3*(nStart-1)
+          ! First atom
+          write(iu,'(i2,3i4,3f16.8,3i4)') species(nStart),
+     $          0, 0, 0,
+     $         (Zmat(js+k)/scale_length,k=1,3),
+     $         (to_int(VaryZmat(js+k)),k=1,3)
+
+          ! Start this loop with the second atom in the molecule
+          ! Mask the references for the second and third atom
+          do i=nStart+1,nStart+nAtoms-1
+             js = 3*i-3
+             select case (i-nStart+1) 
+             case (2) 
+                mask = (/ 1, 0, 0 /)
+             case (3)
+                mask = (/ 1, 1, 0 /)
+             case (4:)
+                mask = (/ 1, 1, 1 /)
+             end select
+             ! Use an "intra-molecule" numbering scheme for
+             ! the reference atoms
+             write(iu,'(i2,3i4,3f16.8,3i4)') species(i),
+     $         (iZmat(js+1:js+3)-nStart+1)*mask,
+     .            Zmat(3*i-2)/scale_length,
+     .            Zmat(3*i-1)/scale_angle,
+     .            Zmat(3*i)/scale_angle,
+     $            (to_int(VaryZmat(js+k)),k=1,3)
+
+          enddo
+        enddo
+
+C  Write cartesian coordinates in user's units        
+        do m = 1,nZcart
+          nStart = nZcartStartAtom(m)
+          nAtoms = nZcartAtoms(m)
+          write(iu,"(a)") "cartesian"
+          do i=nStart,nStart+nAtoms-1
+             js = 3*(i-1)
+             write(iu,'(i2,3f16.8,3i4)') species(i),
+     $                            (Zmat(js+k)/scale_length,k=1,3),
+     $                            (to_int(VaryZmat(js+k)),k=1,3)
+          enddo
+
+        enddo
+        write(iu,"(a)") "%endblock Zmatrix"
+        if (.not. present(iunit)) then
+           call io_close(iu)
+        endif
+
+      end subroutine write_canonical_Zmatrix
+
       subroutine write_Zmatrix
 
         implicit none
@@ -1696,7 +1820,6 @@ C    8 - fractional cartesian (scaled by lattice vectors)
       external          io_assign, io_close
       real(dp), external    :: volcel
       real(dp)              :: dummy_volume
-      logical               :: unknown_cell
 
          !     Update celli, just in case
          !     Wasteful for now, but we cannot assume
@@ -1806,5 +1929,68 @@ C
       v  = v/sqrt(v2)
 
       end subroutine normalize
+
+      function to_int(p) result (i)
+      logical, intent(in)   :: p
+      integer               :: i
+
+      if (p) then
+         i = 1
+      else
+         i = 0
+      endif
+      end function to_int
+
+      subroutine write_canonical_ucell_and_Zmatrix(filename,iunit)
+      use m_cell, only: write_canonical_ucell
+!
+!     Write a "canonical" Zmatrix with the following characteristics:
+!     1. No symbolic variables or constants are used.
+!     2. The position coordinates of the first atom in each molecule
+!        are absolute cartesian coordinates.
+!     3. Any "crystal" (non-molecule) coordinates are also absolute cartesians.
+!     4. There is no provision for output of constraints.
+!     5. The units used are those initially specified by the user, and are
+!        specified in fdf form.
+!     6. Unit cell information in fdf-compatible format is also included.
+!
+!     The output is to file "OUT.UCELL.ZMATRIX" by default, but a new filename
+!     might be specified as an optional argument. If a unit number is used
+!     output is directly appended to it.
+!     
+!
+        implicit none
+        
+        character(len=*), intent(in), optional :: filename
+        integer, intent(in), optional          :: iunit
+C
+C Local variables
+C
+        integer             :: iu
+        character(len=90)    :: fname
+
+      if (present(iunit)) then
+         iu = iunit
+      else
+         if (present(filename)) then
+            fname = filename
+         else
+            fname = "OUT.UCELL.ZMATRIX"
+         endif
+         call io_assign( iu )
+         open(iu, file=trim(fname), form='formatted',
+     $        position='rewind', status='unknown')
+      endif
+
+      if (.not. unknown_cell) then
+         call write_canonical_ucell(iunit=iu)
+      endif
+      call write_canonical_Zmatrix(iunit=iu)
+
+      if (.not. present(iunit)) then
+         call io_close(iu)
+      endif
+
+      end subroutine write_canonical_ucell_and_Zmatrix
 
       end module zmatrix

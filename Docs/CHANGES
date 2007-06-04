@@ -10,6 +10,191 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-06-04 15:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-61
+
+Summary: Zmatrix optimization enhancements. Sign change in MM stress.
+
+* Added constant-volume optimization option to the Zmatrix code.
+
+* Broyden option for Zmatrix optimization.
+
+* The zmatrix optimization code for the "variable cell" case has been
+partially fixed. It now fails to work only if some of the coordinates
+of an atom specifed in "cartesian" form are variables (i.e., allowed
+to relax) and others are not.
+
+For example:
+
+cartesian  
+...
+     1  0.3 0.4 0.5    1 0 1
+...
+
+will fail as the second coordinate is not allowed to relax.
+
+     1 0.4 0.2 -0.7    0 0 0         OK
+     1 0.4 0.2 -0.7    1 1 1         OK
+
+
+* New file cell_broyden_optim.F implements "cell-only" optimizations.
+
+This feature is enabled by setting the symbol
+
+MD.RelaxCellOnly 
+
+to .true..
+
+Only the cell parameters are relaxed (by the Broyden method).  The
+atomic coordinates are re-scaled to the new cell, keeping the
+fractional coordinates constant. For Zmatrix calculations, the
+fractional position of the first atom in each molecule is kept fixed,
+and no attempt is made to rescale the bond distances or angles.
+
+* Removal of intra-molecular pressure
+
+If the symbol
+
+MD.RemoveIntramolecularPressure
+
+is set to .true., the contribution to the stress coming from the
+internal degrees of freedom of the molecules will be subtracted.  This
+is done in an approximate manner, using the virial form of the stress,
+and assumming that the "mean force" over the coordinates of the
+molecule represents the "inter-molecular" stress. The correction term
+was already computed in earlier versions ("Pmol"). The correction is
+now computed molecule-by-molecule if the Zmatrix format is used.
+
+NOTE: The reported "Molecular Pressure" might change slightly from
+previous versions as the "current" and not the "next iteration" coordinates
+are used for the computation of the virial term.
+
+
+If the intra-molecular stress is removed, the corrected static and
+total stresses are printed in addition to the uncorrected items.
+
+The corrected Voigt form is also printed.
+
+(New test ch4 to exemplify this feature)
+
+
+* Correction of the sign of the stress in molecularmechanics.F90
+
+For MM potentials, attractive interactions are represented by
+*positive* C coefficients in the MM.Potentials block. Then the
+MM energy is negative, as it should be. However, the sign of
+the stress was wrong in the original implementation. Now (also
+printed as MM-Stress) it should come out as a positive contribution
+(negative pressure), forcing the cell to contract.
+
+(Updated graphite_full test)
+
+
+* New Utils/MM_Examples directory.
+
+An example of the use of MM potentials to introduce van der Waals
+interactions in an approximate manner (for the artificial example
+of fcc He).
+
+* Additional enthalpy-analog output.
+
+The enthalpy is computed in two ways: as the "target enthalpy" using
+the target pressure, and as the "real" enthalpy using the trace of the
+current stress tensor as an estimation of the pressure. Ideally, both
+values should be identical at convergence, but the "target enthalpy"
+might have significant errors coming from the tolerances.
+
+
+* NEW STRUCTURE OUTPUT FILES:
+
+OUT.UCELL.ZMATRIX
+
+It contains the structural information in fdf form, with
+blocks for unit-cell vectors and for Zmatrix coordinates. The
+Zmatrix block is in a ``canonical'' form with the following
+characteristics:
+
+1. No symbolic variables or constants are used.
+2. The position coordinates of the first atom in each molecule
+   are absolute cartesian coordinates.
+3. Any coordinates in ``cartesian'' blocks are also absolute cartesians.
+4. There is no provision for output of constraints.
+5. The units used are those initially specified by the user, and are
+   noted also in fdf form.
+
+Note that the geometry reported is the last one for which forces and
+stresses were computed.
+
+NEXT_ITER.UCELL.ZMATRIX
+
+In the same format but with a possibly updated geometry.
+
+Label.STRUCT_NEXT_ITER.
+
+Structure in crystallographic format (same as Label.STRUCT_OUT) for a
+possibly updated geometry.
+
+(Call performed in siesta_write_positions, which is called after the
+structure has moved after the application of forces/stress.)
+
+
+* New .make file for Hreidar at ETH Zurich.
+
+2007-05-09 14:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-8
+
+Summary: New features for variable-cell optimization. MM Stress sign fix
+
+* New file cell_broyden_optim.F implements "cell-only" optimizations.
+This feature is enabled by setting the symbol
+
+MD.RelaxCellOnly 
+
+to .true..
+
+* Removal of intra-molecular pressure
+If the symbol
+
+MD.RemoveIntramolecularPressure
+
+is set to .true., the contribution to the stress coming from the
+internal degrees of freedom of the molecules will be subtracted.  This
+is done in an approximate manner, using the virial form of the stress,
+and assumming that the "mean force" over the coordinates of the
+molecule represents the "inter-molecular" stress. The correction term
+was already computed in earlier versions ("Pmol"). The correction is
+now computed molecule-by-molecule if the Zmatrix format is used.
+
+* More stress output items.
+
+If the intra-molecular stress is removed, the corrected static and
+total stresses are printed in addition to the uncorrected items.
+
+The corrected Voigt form is also printed.
+
+* New form for the enthalpy
+
+The enthalpy is computed in two ways: as the "target enthalpy" using
+the target pressure, and as the "real" enthalpy using the trace of the
+current stress tensor as an estimation of the pressure. Ideally, both
+values should be identical at convergence, but the "target enthalpy"
+might have significant errors coming from the tolerances.
+
+* Correction of the sign of the stress in molecularmechanics.F90
+
+For MM potentials, attractive interactions are represented by
+*positive* C coefficients in the MM.Potentials block. Then the
+MM energy is negative, as it should be. However, the sign of
+the stress was wrong in the original implementation. Now (also
+printed as MM-Stress) it should come out as a positive contribution
+(negative pressure), forcing the cell to contract.
+
+* New Utils/MM_Examples directory.
+
+An example of the use of MM potentials to introduce van der Waals
+interactions in an approximate manner (for the artificial example
+of fcc He).
+
+* New .make file for Hreidar at ETH Zurich.
+
 2007-06-4 14:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-60
 
 Summary: Origin shift was applied after possible coordinate scaling

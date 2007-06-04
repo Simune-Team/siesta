@@ -1,8 +1,18 @@
 module molecularmechanics
-
+!
+! Add additional interactions through pair-potentials
+! Implementation: Julian Gale (Curtin, AU)
+! Modified by Alberto Garcia  (stress sign fix, plots of V(r))
+!
 use precision, only: dp
 
 implicit none
+
+    ! The original implementation by Julian had the wrong sign
+    ! for the stress tensor. 
+    ! Define sign_change as +1 to recover that behavior
+
+integer, parameter    :: sign_change = -1
 
 integer               :: maxMMpot = 10
 integer               :: nMMpot = 0
@@ -11,6 +21,10 @@ integer,  allocatable :: nMMpottype(:)
 logical               :: PotentialsPresent = .false.
 real(dp)              :: MMcutoff
 real(dp), allocatable :: MMpotpar(:,:)
+
+private
+
+public :: inittwobody, twobody
 
 CONTAINS
 
@@ -60,6 +74,7 @@ subroutine inittwobody
   if (Node.eq.0) then
     MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
   endif
+
   call MPI_Bcast(MMcutoff,1,MPI_double_precision,0,MPI_Comm_World,MPIerror)
 #else
   MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
@@ -207,11 +222,14 @@ subroutine inittwobody
 #endif
   endif
 
+ if (Node .eq. 0)  call plot_functions()
+
 end subroutine inittwobody
 
 subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 
   use parallel,only : Node
+  use units,   only : kbar
 
   integer,  intent(in)    :: na
   integer,  intent(in)    :: isa(*)
@@ -305,6 +323,9 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   real(dp)                :: x
   real(dp)                :: y
   real(dp)                :: z
+
+  real(dp)                :: mm_stress(3,3)
+  integer                 :: jx
 !
 ! Start timer
 !
@@ -314,9 +335,10 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
   allocate(lvalidpot(nMMpot))
 !
-! Initialise energy
+! Initialise energy and mm_stress
 !
   emm = 0.0_dp
+  mm_stress(1:3,1:3) = 0.0_dp
 !
 ! Find number of cell images required
 !
@@ -594,15 +616,18 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 ! Stress
 !
                               ftrm = ftrm*rvol
-                              stress(1,1) = stress(1,1) - ftrm*rx*rx
-                              stress(2,1) = stress(2,1) - ftrm*ry*rx
-                              stress(3,1) = stress(3,1) - ftrm*rz*rx
-                              stress(1,2) = stress(1,2) - ftrm*rx*ry
-                              stress(2,2) = stress(2,2) - ftrm*ry*ry
-                              stress(3,2) = stress(3,2) - ftrm*rz*ry
-                              stress(1,3) = stress(1,3) - ftrm*rx*rz
-                              stress(2,3) = stress(2,3) - ftrm*ry*rz
-                              stress(3,3) = stress(3,3) - ftrm*rz*rz
+                              ! *** Sign_change should be -1 for the correct stress
+                              ! *** See parameter definition above
+                              ! ***
+                   mm_stress(1,1) = mm_stress(1,1) - sign_change*ftrm*rx*rx
+                   mm_stress(2,1) = mm_stress(2,1) - sign_change*ftrm*ry*rx
+                   mm_stress(3,1) = mm_stress(3,1) - sign_change*ftrm*rz*rx
+                   mm_stress(1,2) = mm_stress(1,2) - sign_change*ftrm*rx*ry
+                   mm_stress(2,2) = mm_stress(2,2) - sign_change*ftrm*ry*ry
+                   mm_stress(3,2) = mm_stress(3,2) - sign_change*ftrm*rz*ry
+                   mm_stress(1,3) = mm_stress(1,3) - sign_change*ftrm*rx*rz
+                   mm_stress(2,3) = mm_stress(2,3) - sign_change*ftrm*ry*rz
+                   mm_stress(3,3) = mm_stress(3,3) - sign_change*ftrm*rz*rz
                             endif
                           endif
                         enddo
@@ -659,6 +684,23 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
     enddo
   enddo
+
+!
+! Print and add MM contribution to stress
+!
+  if (istr.ne.0) then
+
+     if (Node .eq. 0 .and. PotentialsPresent)  then
+        write(6,'(/,a,6f12.2))')  'MM-Stress (kbar):',   &
+                (mm_stress(jx,jx)/kbar,jx=1,3),       &
+                 mm_stress(1,2)/kbar,                 &
+                 mm_stress(2,3)/kbar,                 &
+                 mm_stress(1,3)/kbar                  
+     endif
+
+     stress = stress + mm_stress
+  endif
+
 !
 ! Free workspace arrays
 !
@@ -669,5 +711,105 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   call timer('MolMec', 2 )
 
 end subroutine twobody
+
+
+subroutine plot_functions()
+!
+! Writes out V(r) info to files of the form MMpot.NN
+! Units: energy: eV, distance: Ang
+!
+  use units,   only : eV, Ang
+
+integer :: np
+character(len=20) :: fname
+integer, parameter   :: npts = 1000
+
+real(dp) :: rmin, rmax, delta, range
+real(dp) :: etrm, ftrm, r1, r2, factor, br6, ebr6, f6, etrm1
+real(dp) :: df6, ebr8, br8, f8, df8, br10, ebr10, f10, df10, r
+integer  :: i, iu
+
+factor = 1.0_dp       !! ??
+
+do np = 1,nMMpot
+
+write(fname,"(a,i2.2)") "MMpot.", np
+call io_assign(iu)
+open(iu,file=trim(fname),form="formatted",status="replace",  &
+     position="rewind",action="write")
+
+     rmin = 0.1_dp
+     rmax = min(20.0_dp,MMcutoff)
+     range = rmax - rmin
+     delta = range/npts
+     do i = 0, npts
+        r1 = rmin + delta * i
+        r2 = r1*r1
+
+        if (nMMpottype(np).eq.1) then
+           if (MMpotpar(2,np).eq.0.0_dp) then
+              etrm = MMpotpar(1,np)/(r2**3)
+              ftrm = 6.0_dp*factor*etrm/r2
+              etrm = - etrm
+           else
+              br6 = MMpotpar(2,np)*sqrt(r2)
+              ebr6 = exp(-br6)
+              f6 = 1.0_dp + br6*(1.0_dp + 0.5_dp*br6*(1.0_dp + (br6/3.0_dp)*( &
+                   1.0_dp + 0.25_dp*br6*(1.0_dp + 0.2_dp*br6*(1.0_dp + (br6/6.0_dp))))))
+              f6 = 1.0_dp - f6*ebr6
+              etrm1 = MMpotpar(1,np)/(r2**3)
+              df6 = ebr6*(br6*(br6**6))/720.0_dp
+              etrm = - etrm1*f6
+              ftrm = factor*(6.0_dp*etrm1*f6 - etrm1*df6)/r2
+           endif
+        elseif (nMMpottype(np).eq.2) then
+           if (MMpotpar(2,np).eq.0.0_dp) then
+              etrm = MMpotpar(1,np)/(r2**4)
+              ftrm = 8.0_dp*factor*etrm/r2
+              etrm = - etrm
+           else
+              br8 = MMpotpar(2,np)*sqrt(r2)
+              ebr8 = exp(-br8)
+              f8 = 1.0_dp + br8*(1.0_dp + 0.5_dp*br8*(1.0_dp + (br8/3.0_dp)*( &
+                   1.0_dp + 0.25_dp*br8*(1.0_dp + 0.2_dp*br8*(1.0_dp + &
+                   (br8/6.0_dp)*(1.0_dp+(br8/7.0_dp)*(1.0_dp + 0.125_dp*br8)))))))
+              f8 = 1.0_dp - f8*ebr8
+              etrm1 = MMpotpar(1,np)/(r2**4)
+              df8 = ebr8*(br8*(br8**8))/40320.0_dp
+              etrm = - etrm1*f8
+              ftrm = factor*(8.0_dp*etrm1*f8 - etrm1*df8)/r2
+           endif
+        elseif (nMMpottype(np).eq.3) then
+           if (MMpotpar(2,np).eq.0.0_dp) then
+              etrm = MMpotpar(1,np)/(r2**5)
+              ftrm = 10.0_dp*factor*etrm/r2
+              etrm = - etrm
+           else
+              br10 = MMpotpar(2,np)*sqrt(r2)
+              ebr10 = exp(-br10)
+              f10 = 1.0_dp + br10*(1.0_dp + 0.5_dp*br10*(1.0_dp + &
+                   (br10/3.0_dp)*(1.0_dp + 0.25_dp*br10*(1.0_dp + 0.2_dp*br10*( &
+                   1.0_dp + (br10/6.0_dp)*(1.0_dp + (br10/7.0_dp)*(1.0_dp + &
+                   0.125_dp*br10*(1.0_dp + (br10/9.0_dp)*(1.0_dp + 0.1_dp*br10)))))))))
+              f10 = 1.0_dp - f10*ebr10
+              etrm1 = MMpotpar(1,np)/(r2**5)
+              df6 = ebr10*(br10*(br10**10))/3628800.0_dp
+              etrm = - etrm1*f10
+              ftrm = factor*(10.0_dp*etrm1*f10 - etrm1*df10)/r2
+           endif
+        elseif (nMMpottype(np).eq.4) then
+           r = sqrt(r2)
+           etrm = MMpotpar(1,np)*(r - MMpotpar(2,np))
+           ftrm = factor*etrm/r
+           etrm = 0.5_dp*etrm*(r - MMpotpar(2,np))
+        endif
+
+        write(iu,*) r1/Ang, etrm/eV, ftrm*Ang/eV
+
+     enddo  !! points
+     call io_close(iu)
+   enddo     !! nPots
+
+  end subroutine plot_functions
 
 end module molecularmechanics

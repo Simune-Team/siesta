@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.1.49}}
+{\Huge {\bf S I E S T A \, \, 2.1.61}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large March 14, 2007 }
+{\Large June 4, 2007 }
 
 \vspace{1.5cm}
 
@@ -1945,6 +1945,7 @@ that become linear.
 Below is an example of a Z-matrix input for a water molecule:
 \begin{verbatim}
     %block Zmatrix
+
     molecule fractional
       1 0 0 0   0.0 0.0 0.0 0 0 0
       2 1 0 0   HO1 90.0 37.743919 1 0 0
@@ -1979,42 +1980,60 @@ A line is needed for each atom in the molecule; the format of each line should b
 
 \noindent\texttt{    Nspecies i j k r a t ifr ifa ift}
 
-Here the values \texttt{Nspecies}, \texttt{i}, \texttt{j}, \texttt{k}, \texttt{ifr}, \texttt{ifa}, and \texttt{ift} are integers and \texttt{r}, \texttt{a}, and \texttt{t}
-are double precision reals. 
+Here the values \texttt{Nspecies}, \texttt{i}, \texttt{j}, \texttt{k},
+\texttt{ifr}, \texttt{ifa}, and \texttt{ift} are integers and
+\texttt{r}, \texttt{a}, and \texttt{t} are double precision reals.
 
-For most atoms, \texttt{Nspecies} is the species number of the atom, \texttt{r} is distance to atom number
-\texttt{i}, \texttt{a} is the angle made by the present atom with atoms \texttt{j} and \texttt{i}, while \texttt{t} is the torsional
-angle made by the present atom with atoms \texttt{k}, \texttt{j}, and \texttt{i}. The values \texttt{ifr}, \texttt{ifa} and \texttt{ift} are
-integer flags that indicate whether \texttt{r}, \texttt{a}, and \texttt{t}, respectively, should be varied; 0 for fixed, 1 for varying.
+For most atoms, \texttt{Nspecies} is the species number of the atom,
+\texttt{r} is distance to atom number \texttt{i}, \texttt{a} is the
+angle made by the present atom with atoms \texttt{j} and \texttt{i},
+while \texttt{t} is the torsional angle made by the present atom with
+atoms \texttt{k}, \texttt{j}, and \texttt{i}. The values \texttt{ifr},
+\texttt{ifa} and \texttt{ift} are integer flags that indicate whether
+\texttt{r}, \texttt{a}, and \texttt{t}, respectively, should be
+varied; 0 for fixed, 1 for varying.
 
 
-The first three atoms in a molecule are a special case. Because there are insufficient
-atoms defined to specify a distance/angle/torsion, the values are set differently. For
-atom 1, \texttt{r}, \texttt{a}, and \texttt{t}, are the Cartesian coordinates of the atom.  For the
-second atom, \texttt{r}, \texttt{a}, and \texttt{t} are the coordinates in spherical form of the second atom
-relative to the first. Finally, for the third atom, the numbers take their normal form,
-but the torsional angle is defined relative to a notional atom 1 unit in the z-direction
-above the atom \texttt{j}.
+The first three atoms in a molecule are a special case. Because there
+are insufficient atoms defined to specify a distance/angle/torsion,
+the values are set differently. For atom 1, \texttt{r}, \texttt{a},
+and \texttt{t}, are the Cartesian coordinates of the atom.  For the
+second atom, \texttt{r}, \texttt{a}, and \texttt{t} are the
+coordinates in spherical form of the second atom relative to the
+first. Finally, for the third atom, the numbers take their normal
+form, but the torsional angle is defined relative to a notional atom 1
+unit in the z-direction above the atom \texttt{j}.
 
 Secondly. blocks of atoms all of which are subject to the simplest of constraints
 may be specified in one of the following three ways, according to the units used
 to specify their coordinates:
 
 
-\item \texttt{cartesian}: This section specifies a block of atoms whose coordinates are to be
-specified in Cartesian coordinates. Again, an option of ``\texttt{fractional}'' or ``\texttt{scaled}''
-may be added, to specify the units used; and again, in their absence, the value of 
-``\texttt{ZM.UnitsLength}'' is taken.
+\item \texttt{cartesian}: This section specifies a block of atoms
+whose coordinates are to be specified in Cartesian coordinates. Again,
+an option of ``\texttt{fractional}'' or ``\texttt{scaled}'' may be
+added, to specify the units used; and again, in their absence, the
+value of ``\texttt{ZM.UnitsLength}'' is taken.
 
 The format of each atom in the block will look like:
 
 \noindent\texttt{      Nspecies x y z ix iy iz}
 
-Here \texttt{Nspecies}, \texttt{ix}, \texttt{iy}, and \texttt{iz} are integers and \texttt{x}, \texttt{y}, \texttt{z} are reals. \texttt{Nspecies} is the
-species number of the atom being specified, while \texttt{x}, \texttt{y}, and \texttt{z} are the Cartesian]
-coordinates of the atom in whichever units are being used. The values \texttt{ix}, \texttt{iy} and \texttt{iz} 
-are integer flags that indicate whether the \texttt{x}, \texttt{y}, and \texttt{z} coordinates, respectively,
-should be varied or not. A value of 0 implies that the coordinate is fixed, while 1 implies that it should be varied.
+Here \texttt{Nspecies}, \texttt{ix}, \texttt{iy}, and \texttt{iz} are
+integers and \texttt{x}, \texttt{y}, \texttt{z} are
+reals. \texttt{Nspecies} is the species number of the atom being
+specified, while \texttt{x}, \texttt{y}, and \texttt{z} are the
+Cartesian] coordinates of the atom in whichever units are being
+used. The values \texttt{ix}, \texttt{iy} and \texttt{iz} are integer
+flags that indicate whether the \texttt{x}, \texttt{y}, and \texttt{z}
+coordinates, respectively, should be varied or not. A value of 0
+implies that the coordinate is fixed, while 1 implies that it should
+be varied.  {\bf NOTE}: When performing ``variable cell''
+optimization while using a zmatrix format for input, the algorithm
+will not work if some of the coordinates of an atom in a {\tt
+cartesian} block are variables and others are not (i.e., 
+\texttt{ix iy iz} above must all be 0 or 1). This will be fixed in
+future versions of the program.
 
 A zmatrix block may also contain the following, additional, sections, which
 are designed to make it easier to read.
@@ -3662,6 +3681,23 @@ See {\bf MD.VariableCell}, {\bf MD.TargetStress}.
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf MD.RelaxCellOnly}] ({\it logical}):
+\index{MD.RelaxCellOnly@{\bf MD.RelaxCellOnly}} \index{relaxation of
+cell parameters only} 
+
+If true, only the cell parameters are relaxed
+(by the Broyden method).  The atomic coordinates are re-scaled to the
+new cell, keeping the fractional coordinates constant. For Zmatrix
+calculations, the fractional position of the first atom in each
+molecule is kept fixed, and no attempt is made to rescale the bond
+distances or angles. 
+
+{\it Use:} Used only if MD.TypeOfRun is {\tt CG} or {\tt Broyden}  and
+ MD.VariableCell is
+ {\tt .true.}. 
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf MD.NumCGsteps}] ({\it integer}): 
 \index{MD.NumCGsteps@{\bf MD.NumCGsteps}} 
@@ -3700,6 +3736,27 @@ Md.VariableCell is {\tt .true.}
    
 {\it Default value:} {\tt 5.0 Ang}
  
+\item[{\bf MD.RemoveIntramolecularPressure}] ({\it logical}):
+\index{MD.RemoveIntramolecularPressure@{\bf
+MD.RemoveIntramolecularPressure}} \index{removal of intramolecular
+pressure}
+
+If {\tt .true.}, the contribution to the stress coming from the
+internal degrees of freedom of the molecules will be subtracted from
+the stress tensor used in variable-cell optimization or variable-cell
+molecular-dynamics.  This is done in an approximate manner, using the
+virial form of the stress, and assumming that the ``mean force'' over
+the coordinates of the molecule represents the ``inter-molecular''
+stress. The correction term was already computed in earlier versions
+and used to report the ``molecule pressure''. The correction is now
+computed molecule-by-molecule if the Zmatrix format is used.
+
+If the intra-molecular stress is removed, the corrected static and
+total stresses are printed in addition to the uncorrected items.
+The corrected Voigt form is also printed.
+
+{\it Default value:} {\tt .false.}
+
  
 \item[{\bf MD.MaxForceTol}] ({\it real force}): 
 \index{MD.MaxForceTol@{\bf MD.MaxForceTol}} 
@@ -4043,7 +4100,7 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for energy in the molecular mechanics input.
 
-{\it Default value:}  {\tt eV}
+{\it Default value:}  {\tt eV} (Note: Currently this the {\em only} option)
 
 \item[{\bf MM.UnitsDistance}] ({\it units}): \index{MM.UnitsDistance@{\bf
 MM.UnitsDistance}} Specifies the units to be used for distance in the 
@@ -4051,17 +4108,21 @@ molecular mechanics potentials.
 
 {\it Use:} Controls the units for distance in the molecular mechanics input.
 
-{\it Default value:}  {\tt Ang}
+{\it Default value:}  {\tt Ang} (Note: Currently this the {\em only} option)
 
-\item[{\bf MM.Potentials}] ({\it data block}): \index{MM.Potentials@{\bf
-MM.Potentials}} This block allows the input of molecular mechanics potentials
-between species. At present only C6, C8, C10 powers of the Tang-Toennes damped
-dispersion potential, or a harmonic interaction. The format of the input is
-the two species numbers that are to interact, the potential name (C6, C8, C10
-or harm), followed by the potential parameters. For the damped dispersion potentials
-the first number is the coefficient and the second is the exponent of the damping
-term. A value of zero for the latter term implies no damping. For the harmonic
-potential the force constant is given first, followed by r0.
+\item[{\bf MM.Potentials}] ({\it data block}):
+\index{MM.Potentials@{\bf MM.Potentials}} This block allows the input
+of molecular mechanics potentials between species. At present only C6,
+C8, C10 powers of the Tang-Toennes damped dispersion potential, or a
+harmonic interaction. The format of the input is the two species
+numbers that are to interact, the potential name (C6, C8, C10 or
+harm), followed by the potential parameters. For the damped dispersion
+potentials the first number is the coefficient and the second is the
+exponent of the damping term (i.e., a reciprocal length). A value of
+zero for the latter term implies no damping. For the harmonic
+potential the force constant is given first, followed by r0. Positive
+values of the C6, C8, and C10 coefficients imply attractive
+potentials.
 
 {\it Use:} Gives the input for the molecular mechanics potentials.
 
@@ -5088,8 +5149,50 @@ for generating .arc files for CERIUS animation.
 Siesta always produces a {\tt .STRUCT\_OUT} file with cell vectors in {\AA}
 and atomic positions in fractional coordinates. This file, renamed to
 {\it SystemLabel}.STRUCT\_IN can be used for crystal-structure input.
+Note that the geometry reported is the last one for which forces and
+stresses were computed.
 See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
 
+\item{\bf STRUCT\_NEXT\_ITER file:}
+\index{Systemlabel.STRUCT\_NEXT\_ITER@{{\it Systemlabel}.STRUCT\_NEXT\_ITER}}
+This file is always written, in the same format as {\tt .STRUCT\_OUT}
+file. The only difference is that it contains the structural
+information {\em after} it has been updated by the relaxation or the
+molecular-dynamics
+algorithms, and thus it could be used as input (renamed as
+{\it SystemLabel}.STRUCT\_IN) for a continuation run, in the same way
+as the {\tt XV} file.
+
+See {\bf MD.UseStructFile}\index{MD.UseStructFile@{\bf MD.UseStructFile}}.
+
+\item{\bf OUT.UCELL.ZMATRIX file:}
+\index{OUT.UCELL.ZMATRIX}@{{\it OUT.UCELL.ZMATRIX}}
+
+This file is produced if the Zmatrix format is being used for
+input. (Please note that {\it SystemLabel} is not used as a prefix.)
+It contains the structural information in fdf form, with
+blocks for unit-cell vectors and for Zmatrix coordinates. The
+Zmatrix block is in a ``canonical'' form with the following
+characteristics:
+
+\begin{verbatim}
+1. No symbolic variables or constants are used.
+2. The position coordinates of the first atom in each molecule
+   are absolute cartesian coordinates.
+3. Any coordinates in ``cartesian'' blocks are also absolute cartesians.
+4. There is no provision for output of constraints.
+5. The units used are those initially specified by the user, and are
+   noted also in fdf form.
+\end{verbatim}
+
+Note that the geometry reported is the last one for which forces and
+stresses were computed.
+
+\item{\bf NEXT\_ITER.UCELL.ZMATRIX file:}
+\index{NEXT\_ITER.UCELL.ZMATRIX}@{{\it NEXT\_ITER.UCELL.ZMATRIX}}
+
+A file with the same format as {\tt OUT.UCELL.ZMATRIX} but with
+a possibly updated geometry.
 
 \end{itemize}
 

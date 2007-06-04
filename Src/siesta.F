@@ -81,8 +81,11 @@ C  Modules
       use units
       use zmatrix,      only: lUseZmatrix, iofaZmat
       use zmatrix,      only: CartesianForce_to_ZmatForce
-      use zmatrix,      only: write_Zmatrix
+      use zmatrix,      only: write_Zmatrix,
+     $                        write_canonical_ucell_and_Zmatrix
       use m_broyden_optim,      only:broyden_optimizer
+      use m_zm_broyden_optim,      only: zm_broyden_optimizer
+      use m_cell_broyden_optim,      only: cell_broyden_optimizer
       use m_redata,     only: redata
       use m_ioxv,       only: ioxv 
 
@@ -127,6 +130,7 @@ C  Modules
       real(dp)
      .  bcell(3,3), beta, bulkm, 
      .  charnet, cfmax, cftem, const, cstress(3,3),
+     .  mstress(3,3), kin_stress(3,3), ps(3,3),
      .  dipol(3), dDmax, dDtol, dEmax, dEtol, DEharr, DEna,
      .  dt, DUext, DUscf, Dxc, dx, dxmax, e1, e2, sigma,
      .  Ecorrec, ef, Eharrs, Eharrs1, Eions, Ekin, Ekinion, Emad, Ena, 
@@ -134,7 +138,7 @@ C  Modules
      .  eta(2), etol, Etot, Etot_output, Exc, E0, Emm,
      .  factor, fmax, fmean, FreeE, fres, ftem, ftol, ftot(3),
      .  g2cut, g2max, getot, kn, kpr, 
-     .  mn, mpr, occtol, Pint, Pmol, Psol, rmax_bonds
+     .  mn, mpr, occtol, Pint, Pmol, Psol, rmax_bonds, Press
       real(dp)
      .  qaux, qspin(4), qsol,
      .  rcoor, rcoorcp, rijmin, rmax, rmaxh, rmin, r2min,
@@ -184,7 +188,8 @@ C  Modules
      .  writic, varcel, genlogic, do_pdos, writedm, atmonly,
      .  harrisfun, muldeb, eggbox_block, use_struct_file,
      $  require_energy_convergence, broyden_optim, struct_only,
-     $  bornz, cell_can_change, change_kgrid_in_md
+     $  bornz, cell_can_change, change_kgrid_in_md,
+     $  RelaxCellOnly, RemoveIntraMolecularPressure
 
       character
      .  line*150, sname*150, shape*10, message*79
@@ -421,6 +426,9 @@ C Find some switches ..................................................
       call fdf_global_get(change_kgrid_in_md,
      $                "ChangeKgridInMD", .false.)
       call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
+      call fdf_global_get(RelaxCellOnly, 'MD.RelaxCellOnly', .false.)
+      call fdf_global_get(RemoveIntraMolecularPressure,
+     $     'MD.RemoveIntraMolecularPressure', .false.)
 
 C Read Z-matrix coordinates and forces from file
       if (lUseZmatrix) then
@@ -538,8 +546,13 @@ C Output of initial system details:
 ! early exit if only checking the structure
 
       call fdf_global_get(struct_only,'Output-Structure-Only',.false.)
+      if (IONode) then
+         call write_struct( ucell, na_u, isa, iza, xa )
+         if (lUseZmatrix) then
+            call write_canonical_ucell_and_Zmatrix()
+         endif
+      endif
       if (struct_only) then
-         if (IONode) call write_struct( ucell, na_u, isa, iza, xa )
          call bye("End of structure processing")
       endif
       
@@ -1613,10 +1626,20 @@ C Substract egg box effect from the forces ............................
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)
       endif
 C ...................
+      !  Compute stress without internal molecular pressure
+      call remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
 
 C Impose constraints to atomic movements by changing forces ...........
-      call fixed(ucell,stress,na_u,isa, amass, xa, fa, cstress, cfa, 
-     .           ntcon )
+      if (RemoveIntraMolecularPressure) then
+         ! Consider intramolecular pressure-removal as another
+         ! kind of constraint
+         call fixed(ucell,mstress,na_u,isa, amass, xa, fa,
+     $        cstress, cfa, ntcon )
+      else
+         call fixed(ucell,stress,na_u,isa, amass, xa, fa,
+     $        cstress, cfa, ntcon )
+      endif
+
 C ...................
 
 C Write atomic forces .................................................
@@ -1642,15 +1665,18 @@ C Calculate and output Zmatrix forces
         if (IOnode) call iofaZmat
       endif
 
-C Add kinetic term to stress tensor ..................................
+      !  Compute kinetic contribution to stress
+      kin_stress(1:3,1:3) = 0.0_dp
       do ia = 1,na_u
         do jx = 1,3
           do ix = 1,3
-            tstress(ix,jx) = stress(ix,jx) -
+            kin_stress(ix,jx) = kin_stress(ix,jx) -
      .             amu * amass(ia) * va(ix,ia) * va(jx,ia) / volume
           enddo
         enddo
       enddo
+      !  Add kinetic term to stress tensor 
+      tstress = stress + kin_stress
 
 C Force output .......................................................
       if (IOnode) then
@@ -1663,6 +1689,14 @@ C Mulliken population analysis .......................................
       call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
+!
+!     Save structural information in crystallographic format,
+!     and canonical Zmatrix (if applicable) before moving the atoms
+!
+      call write_struct( ucell, na_u, isa, iza, xa )
+      if (lUseZmatrix) then
+         call write_canonical_ucell_and_Zmatrix()
+      endif
 
 C Save the last coordinates for which the density matrix has been calculated
 C or at every coor step if calculating the BECs (the polarisation uses xalast)
@@ -1682,14 +1716,23 @@ C Move atoms ..........................................................
       select case(idyn)
       case(0)
         if (nmove .ne. 0) then
-          if (lUseZmatrix) then
-             if (broyden_optim)
-     $          write(6,'(a)') 'siesta: Broyden method ' //
-     $            'not implemented yet for Zmatrix relaxation'
-             call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
-     $            volume, dxmax, tp, ftol, strtol, varcel,
-     $            relaxd, usesavecg )
+          if (RelaxCellOnly) then
+             call cell_broyden_optimizer( na_u, xa, ucell,
+     $            cstress, volume, tp, strtol,
+     $            varcel, relaxd)
           else
+
+           if (lUseZmatrix) then
+             if (broyden_optim) then
+                call zm_broyden_optimizer( na_u, xa, cfa, ucell,
+     $               cstress, volume, dxmax, tp, ftol, strtol,
+     $               varcel, relaxd)
+             else
+                call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
+     $               volume, dxmax, tp, ftol, strtol, varcel,
+     $               relaxd, usesavecg )
+             endif
+           else
              if (broyden_optim) then
                 call broyden_optimizer( na_u, xa, cfa, ucell,
      $               cstress, volume, dxmax, tp, ftol, strtol,
@@ -1699,7 +1742,9 @@ C Move atoms ..........................................................
      $               dxmax, tp, ftol, strtol, varcel,
      $               relaxd, usesavecg )
              endif
-          endif
+           endif
+          endif  ! RelaxCellOnly
+
           ! Propagate the new structure to the virtual supercell
           call superx( ucell, nsc, na_u, na_s, xa, scell )
           if (relaxd) goto 60
@@ -2303,6 +2348,10 @@ C In finalization, only print forces if sufficiently large.
 
 
       subroutine siesta_write_stress_pressure()
+      use zmatrix, only: nZmol, nZmolStartAtom
+      use zmatrix, only: nZmolAtoms
+
+      integer :: ifirst, ilast, natoms_mol, imol
 ! Stress tensor and pressure:
       
 
@@ -2310,20 +2359,33 @@ C In finalization, only print forces if sufficiently large.
 !
 !           Write Voigt components of total stress tensor 
 !
+            ps = stress + kin_stress
             write(6,'(/,a,6f12.2))')
      .           'Stress-tensor-Voigt (kbar):',
-     .           (tstress(jx,jx)/kbar,jx=1,3),
-     $            tstress(1,2)/kbar,
-     $            tstress(2,3)/kbar,
-     $            tstress(1,3)/kbar
+     .           (ps(jx,jx)/kbar,jx=1,3),
+     $            ps(1,2)/kbar,
+     $            ps(2,3)/kbar,
+     $            ps(1,3)/kbar
+            Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
+            write(6,"(a,f14.4)") "Enthalpy (eV/cell)",
+     $           (FreeE + Press*volume)/eV
+
+            if (RemoveIntraMolecularPressure) then
+               ps = mstress + kin_stress
+               write(6,'(/,a,6f12.2))')
+     .           'Non-Molecular-Stress-Voigt (kbar):',
+     .           (ps(jx,jx)/kbar,jx=1,3),
+     $            ps(1,2)/kbar,
+     $            ps(2,3)/kbar,
+     $            ps(1,3)/kbar
+               Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
+               write(6,"(a,f14.4)") "Non-Molecular Enthalpy (eV/cell)",
+     $              (FreeE + Press*volume)/eV
+            endif
 !
 !      Write "target enthalpy" (E + pV, where p is the *target* pressure)
             write(6,"(a,f14.4)") "Target enthalpy (eV/cell)",
      $           (FreeE + tp*volume)/eV
-!
-!      Write out structural information in "crystallography" format
-!
-            call write_struct( ucell, na_u, isa, iza, xa )
 
       ! Output depends on dynamics option
         select case (idyn)
@@ -2356,7 +2418,39 @@ C In finalization, only print forces if sufficiently large.
               call cmlAddProperty(xf=mainXML, property=Psol,
      .             dictref='siesta:tpsol', title='Pressure (Total)')
             endif !cml_p
-          endif !varcel
+
+            if (RemoveIntraMolecularPressure) then
+             ps = mstress
+             write(6,'(/,a,3(/,a,3f12.6))')
+     .           'siesta: Stress tensor (nonmol) (eV/Ang**3):',
+     .           ('     ',(ps(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+             Psol = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
+             write(6,'(/,a,f20.8,a)')
+     .           'siesta: Pressure (nonmol):', Psol/kBar, '  kBar'
+             if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=ps*Ang**3, 
+     .          dictref='siesta:mstress')
+              call cmlAddProperty(xf=mainXML, property=Psol, 
+     .          dictref='siesta:pmol', title='Pressure (Nonmol)')
+             endif                !cml_p
+!
+             ps = mstress + kin_stress
+             write(6,'(/,a,3(/,a,3f12.6))')
+     .           'siesta: Stress tensor (nonmol+kin) (eV/Ang**3):',
+     .           ('     ',(ps(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+             Psol = - ((ps(1,1)+ps(2,2) +ps(3,3))/3.0_dp)
+             write(6,'(/,a,f20.8,a)')
+     .           'siesta: Pressure (nonmol+kin):', Psol/kBar, '  kBar'
+             if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=ps*Ang**3, 
+     .             dictref='siesta:tmstress')
+              call cmlAddProperty(xf=mainXML, property=Psol,
+     .         dictref='siesta:tpmol', title='Pressure (Nonmol+Kin)')
+             endif                !cml_p
+            endif                 ! Remove intramolecular pressure
+
+          endif                  !varcel
+
         ! Write Force Constant matrix if FC calculation ...
         case(6)
           call ofc(fa,dx,na_u)
@@ -2388,18 +2482,9 @@ C Print constrained stress tensor if different from unconstrained
         endif
 
 C Find pressure
-        virial = 0.0_dp
-        do ix = 1,3
-          fmean = 0.0_dp
-          do ia = 1,na_u
-            fmean = fmean + fa(ix,ia) / na_u
-          enddo
-          do ia = 1,na_u
-            virial = virial + xalast(ix,ia) * (fa(ix,ia) - fmean)
-          enddo
-        enddo
         Psol = - (( stress(1,1) + stress(2,2) + stress(3,3) )/3.0_dp)
-        Pmol = Psol - virial / volume / 3.0_dp
+        Pmol = - (( mstress(1,1) + mstress(2,2) + mstress(3,3) )/3.0_dp)
+!
         write(6,'(/,a,f18.6,a)')
      .       'siesta: Cell volume =', volume/Ang**3, ' Ang**3'
         write(6,'(/,a,/,a,2a20,a,3(/,a,2f20.8,a))')
@@ -2631,6 +2716,18 @@ C Find pressure
       end subroutine siesta_write_energies
 
       subroutine siesta_write_positions
+!
+!      Write out structural information in "crystallography" format,
+!      and in "canonical" (see Zmatrix module) zmatrix format.
+!      By now the structure might have changed in response to forces
+!      and stresses.
+
+        call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
+        if (lUseZmatrix) then
+           call write_canonical_ucell_and_Zmatrix
+     $                         (filename="NEXT_ITER.UCELL.ZMATRIX")
+        endif
+
         if (cml_p) then
           call cmlAddMolecule(xf=mainXML, natoms=na_u, elements=elem,
      .           refs=cisa, coords=xa/Ang, style='x3', fmt='(f12.6)')

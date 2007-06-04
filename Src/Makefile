@@ -100,7 +100,8 @@ OBJS = automatic_cell.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o conjgr.o conjgr_old.o redata.o \
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
-        molecularmechanics.o filter.o filter_subs.o
+        molecularmechanics.o filter.o filter_subs.o zm_broyden_optim.o \
+        cell_broyden_optim.o remove_intramol_pressure.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -303,10 +304,14 @@ broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o m_mpi_utils.o
 broyden_optim.o: parallel.o precision.o units.o
 cart2frac.o: sys.o
 cdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
+cell_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o
+cell_broyden_optim.o: m_mpi_utils.o parallel.o precision.o sys.o units.o
+cell_broyden_optim.o: zmatrix.o
 cellxc.o: meshsubs.o parallel.o parallelsubs.o precision.o sys.o xcmod.o
 cgvc.o: conjgr_old.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
 cgvc.o: units.o
-cgvc_zmatrix.o: conjgr.o parallel.o precision.o zmatrix.o
+cgvc_zmatrix.o: conjgr.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
+cgvc_zmatrix.o: units.o zmatrix.o
 cgwf.o: onmod.o precision.o sys.o
 chemical.o: precision.o sys.o
 chempot.o: numbvect.o parallel.o parallelsubs.o precision.o sys.o
@@ -383,7 +388,7 @@ iopipes.o: parallel.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: atomlist.o files.o parallel.o precision.o zmatrix.o
 ipack.o: sys.o
-kgrid.o: parallel.o precision.o sys.o units.o
+kgrid.o: parallel.o precision.o units.o
 kgridinit.o: minvec.o parallel.o precision.o units.o
 kinefsm.o: atmfuncs.o parallel.o parallelsubs.o precision.o
 kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
@@ -392,7 +397,7 @@ ksv.o: alloc.o atmfuncs.o densematrix.o parallel.o parsing.o precision.o sys.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
 m_broyden_mixing.o: m_broyddj.o m_memory.o m_mpi_utils.o parallel.o precision.o
-m_cell.o: precision.o
+m_cell.o: precision.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
 m_denchar_geom.o: precision.o sys.o
 m_denchar_init.o: files.o
@@ -469,6 +474,7 @@ redata.o: files.o m_fdf_global.o m_mpi_utils.o memoryinfo.o parallel.o
 redata.o: precision.o siesta_cml.o sys.o units.o
 redcel.o: precision.o sys.o
 reinit.o: files.o parallel.o precision.o
+remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o parsing.o precision.o sys.o
 reord.o: precision.o
 repol.o: parallel.o parsing.o precision.o
@@ -483,13 +489,13 @@ setspatial.o: alloc.o parallel.o precision.o spatial.o
 shaper.o: atmfuncs.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o sys.o
 siesta.o: alloc.o atmfuncs.o atomlist.o bands.o basis_enthalpy.o
-siesta.o: broyden_optim.o densematrix.o dynamics.o files.o hsparse.o iopipes.o
-siesta.o: ioxv.o kpoint_grid.o m_broyden_mixing.o m_cell.o m_check_supercell.o
-siesta.o: m_fdf_global.o m_iostruct.o m_mpi_utils.o m_smearing.o m_wallclock.o
-siesta.o: md_out.o metaforce.o molecularmechanics.o nlefsm.o ordern.o overfsm.o
-siesta.o: parallel.o parallelsubs.o periodic_table.o phonon.o precision.o
-siesta.o: redata.o siesta_cml.o sys.o timestamp.o units.o writewave.o xcmod.o
-siesta.o: zmatrix.o
+siesta.o: broyden_optim.o cell_broyden_optim.o densematrix.o dynamics.o files.o
+siesta.o: hsparse.o iopipes.o ioxv.o kpoint_grid.o m_broyden_mixing.o m_cell.o
+siesta.o: m_check_supercell.o m_fdf_global.o m_iostruct.o m_mpi_utils.o
+siesta.o: m_smearing.o m_wallclock.o md_out.o metaforce.o molecularmechanics.o
+siesta.o: nlefsm.o ordern.o overfsm.o parallel.o parallelsubs.o
+siesta.o: periodic_table.o phonon.o precision.o redata.o siesta_cml.o sys.o
+siesta.o: timestamp.o units.o writewave.o xcmod.o zm_broyden_optim.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 spatial.o: precision.o
@@ -512,11 +518,14 @@ xc.o: precision.o sys.o xcmod.o
 xcmod.o: parallel.o parsing.o precision.o sys.o
 xijorb.o: parallel.o parallelsubs.o precision.o
 xml.o: precision.o
+zm_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_mpi_utils.o parallel.o
+zm_broyden_optim.o: precision.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o sys.o units.o
 band.o: bands.o
 diagmemory.o: memoryinfo.o
 listsc_module.o: listsc.o
 m_broyden_optim.o: broyden_optim.o
+m_cell_broyden_optim.o: cell_broyden_optim.o
 m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_dynamics.o: dynamics.o
@@ -535,6 +544,7 @@ m_redata.o: redata.o
 m_scf_options.o: m_options.o
 m_timestamp.o: timestamp.o
 m_xyz_phiatm.o: matel.o
+m_zm_broyden_optim.o: zm_broyden_optim.o
 mesh.o: meshsubs.o
 meshdscf.o: meshmatrix.o
 meshphi.o: meshsubs.o
