@@ -10,6 +10,10 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-06-05 13:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-63
+
+Summary: Correct pseudo in ch4 test
+
 2007-06-05 13:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-62
 
 Summary: Wrap write_struct and zmatrix output for MPI
