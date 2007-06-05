@@ -10,6 +10,28 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-06-04 16:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-22
+
+Summary: Undef var in kgridinit, iohs MPI write, pdosg array bound, Origin shift
+
+* Initialize "genlogic" to .false. before it is used in kgridinit.
+
+* Fix index in write statement in iohs in parallel affecting list array.
+
+* Fix dimension of dpr in pdosg. Clarify names of variables in pdos.
+  In pdosg, dpr was wrongly dimensioned to no_l (modern notation) instead of no_u.
+
+* In routine coor, the origin shift was applied after the section in
+which the coordinates are re-scaled (from Ang to Bohr, or from fractional
+to cartesian, etc). However, it is clear in the manual that the shift
+vector is in the same units and format as the input coordinates.
+
+The shift is now applied right after reading the coordinate block.
+
+NOTE: This does not apply to the Zmatrix routine, which has *its own*
+conventions for origin shift, neither to coordinates read from an XV
+file or a Struct file.
+
 2007-06-04 16:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-21
 
 Summary: Refinements of XML tester. New ioncat program

@@ -148,7 +148,8 @@ C Find origin with which to translate all coordinates
       endif
 C  end of Node.eq.0
 
-C Distribute data
+C Distribute data (some of them just for the zmatrix routine, which
+C is called by all processes)
 
       call broadcast(iscale)
       call broadcast(coor_mscell(1:3,1:3))
@@ -180,9 +181,13 @@ C If Z matrix hasn't been found, read regular atomic coordinates
      .        then
             do ia = 1,nua
               read(iunit,*) (xa(i,ia), i=1,3), isa(ia)
+              if (lOrigin) then
+                 xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
+              endif
             enddo
+
           else
-            call die("coo: You must specify the atomic coordinates")
+            call die("coor: You must specify the atomic coordinates")
           endif
 
 C Scale atomic coordinates
@@ -204,15 +209,6 @@ C   Coord. option = 3 => Multiply by lattice vectors
                 xa(ix,ia) = ucell(ix,1) * xac(1) +
      .                      ucell(ix,2) * xac(2) +
      .                      ucell(ix,3) * xac(3)
-              enddo
-            enddo
-          endif
-
-C Translate atomic coordinates by origin
-          if (lOrigin) then
-            do ia = 1,nua
-              do i = 1,3
-                xa(i,ia) = xa(i,ia) + origin(i)
               enddo
             enddo
           endif

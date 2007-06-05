@@ -92,6 +92,7 @@ C Internal variables
       parameter (huge   = 1.d30)
       parameter (tiny   = 1.d-12)
 
+      genlogic = .false.
 C Find out if there is spiral arrangement of spins 
       if (Node.eq.0) then
         spiral = fdf_block('SpinSpiral',iu)
