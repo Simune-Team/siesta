@@ -10,6 +10,13 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.1
 --------------------------------------------------------------------
 
+2007-06-05 13:30 GMT	Alberto Garcia <albertog@icmab.es>	patch-62
+
+Summary: Wrap write_struct and zmatrix output for MPI
+
+In siesta.F, the geometry output calls before moving the atoms
+were done by all nodes.
+
 2007-06-04 15:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-61
 
 Summary: Zmatrix optimization enhancements. Sign change in MM stress.

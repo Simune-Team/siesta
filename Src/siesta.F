@@ -1693,9 +1693,11 @@ C Mulliken population analysis .......................................
 !     Save structural information in crystallographic format,
 !     and canonical Zmatrix (if applicable) before moving the atoms
 !
-      call write_struct( ucell, na_u, isa, iza, xa )
-      if (lUseZmatrix) then
-         call write_canonical_ucell_and_Zmatrix()
+      if (IONode) then
+         call write_struct( ucell, na_u, isa, iza, xa )
+         if (lUseZmatrix) then
+            call write_canonical_ucell_and_Zmatrix()
+         endif
       endif
 
 C Save the last coordinates for which the density matrix has been calculated
