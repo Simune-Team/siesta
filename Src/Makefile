@@ -207,6 +207,22 @@ gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
                $(NETCDF_INTERFACE) $(LIBS) 
 #
 #------------------------------------------------------------------------
+IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
+          parsing.o xcmod.o basis_io.o  atm_types.o\
+          atmparams.o radial.o io.o memory.o chkdim.o\
+	  paste.o pseudopotential.o chemical.o  \
+          basis_specs.o memoryinfo.o  m_memory.o periodic_table.o\
+          xc.o flib_spline.o atmfuncs.o spher_harm.o\
+          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
+# precision must be the first one here...
+ioncat.o: $(FDF)
+ioncat: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
+                 $(IONCAT_OBJS) $(COMP_LIBS)
+	$(FC) -o ioncat \
+	       $(LDFLAGS) $(IONCAT_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
+               $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+#
+#------------------------------------------------------------------------
 # Denchar is now at the main source level...
 #
 DENCHAR_OBJS = m_denchar_init.o m_denchar_geom.o m_denchar_io.o \
@@ -255,7 +271,7 @@ fractional: $(MPI_INTERFACE)  $(FRACTIONAL_OBJS)
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f siesta gen-basis denchar *.o  *.a *.pcl *.pc
+	rm -f siesta gen-basis ioncat denchar *.o  *.a *.pcl *.pc
 	rm -f mixps mpi_test
 	rm -f *.mod
 	rm -f *.bck *~
@@ -382,6 +398,7 @@ iohs.o: files.o parallel.o parallelsubs.o precision.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
+ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 iopipes.o: parallel.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
@@ -414,6 +431,7 @@ m_energies.o: precision.o
 m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
+m_getopts.o: f2kcli.o
 m_iorho.o: parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o

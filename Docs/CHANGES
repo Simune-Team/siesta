@@ -10,6 +10,59 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-06-04 16:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-21
+
+Summary: Refinements of XML tester. New ioncat program
+Keywords: 
+
+Eduardo Anglada's bugfixes to the XML tester package:
+
+* Apply bugfixes to compare_m.f90.
+* Initialize variable 'len' in m_reader.f90 to suit buggy compilers.
+* Use the 'normalize' DOM function to consolidate adjacent text nodes.
+  (rather than changing the pcdata processing in the SAX parser).
+* Add removal of tolerances.dat and diff output to the 'clean' target
+  in test.mk
+
+New features:
+
+* Use the command-line options processor. Valid options:
+
+ -d       : enable debugging output.
+ -t FILE  : specify tolerances file.
+ -g LOGTOL: specify (minus log10 of) global tolerance
+ -s       : stop after first error
+ -e NUM   : stop after NUM errors
+
+* By default, the tester does not stop after errors.
+
+* Enhance xmlparser/Tests/compare.sh to accept options.
+
+* Modified f2kcli.F90 to fit gfortran (this compiler
+already implements all the functionality, so a 
+preprocessor symbol is used to disable the module).
+
+* Added Src/Sys/gfortran.make
+
+-------------
+
+* New program "ioncat" in Src to analyze the content of .ion files.
+
+ Usage: ioncat [options] Species_Label
+ Options:
+  
+  -s          : Show header information
+  -i          : Print indexes of unique orbitals
+  -j          : Print indexes of unique KB projectors
+  -o ORBINDEX : Generate table for orbital ORBINDEX
+  -k KBINDEX  : Generate table for KB proj KBINDEX
+  -v          : Generate table for Vna potential
+  -Z          : Zoom in near rc for table generation
+  -h          : Print this help message
+
+The accompanying script ionplot.sh shows how to drive 
+ioncat to plot the results.
+
 2007-05-30 13:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-20
 
 Summary: Execute SCF loop when nscf=1

@@ -136,7 +136,7 @@ integer, intent(out)  :: iostat
 !
 character(len=81)  :: str       ! 80 seems like a good compromise?
                                 ! (1 extra for added newline, see below)
-integer            :: len
+integer            :: len=-1    ! initialization for buggy compilers
 !
 read(unit=fb%lun,iostat=iostat,advance="no",size=len,fmt="(a80)") str
 
