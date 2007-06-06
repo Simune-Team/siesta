@@ -165,10 +165,9 @@ MODULE Kpoint_grid
             ! Generate actual supercell skeleton
             kscell = matmul(ctransf, factor)
             ! Avoid confusing permutations
-            ! Defer implementation to avoid diffs with reference version
-            !!if (expansion_factor == 1) then
-            !!   kscell = unit_matrix
-            !!endif
+            if (expansion_factor == 1) then
+               kscell = unit_matrix
+            endif
          endif
       endif
 
