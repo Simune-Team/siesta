@@ -43,7 +43,9 @@ clean:
 	@for i in ${tests} ; do \
 		(cd $$i ; make clean) ; \
 	done
-
+#
+#   Global comparisons with other Tests directories
+#
 compare:
 	@for i in ${tests} ;do \
              echo "---------$$i start" ;  \
@@ -51,6 +53,11 @@ compare:
              echo "****---------$$i done" ; \
      done | grep -v " timer: " | grep -v " elaps: " | grep -v " of run"
 
+compare-xml:    # Needs more work
+	for i in ${tests} ;do \
+             echo "---------$$i start of xml comparison" ;  \
+             $(XML-TESTER) $$i/$$i.xml ${REFERENCE}/$$i/$$i.xml ; \
+             echo "****---------$$i xml comparison done" ; done 
 
 
 

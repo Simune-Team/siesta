@@ -321,6 +321,9 @@ C Call conjugate gradient minimization --------------------------------------
 
         if ( .not. relaxd ) then
            ftol_tmp = 0.0_dp
+!!           do i=1,ndeg 
+!!              print *, "gxa, gfa ", i, gxa(i), gfa(i)
+!!           enddo
            call conjgr(ndeg,gxa,gfa,dxmax, ftol_tmp ,cgcntr,cgaux )
         endif
 
@@ -329,8 +332,13 @@ C Fixed cell ----------------------------------------------------------------
 
       else
 
-        call conjgr( 3*na, xa, fa, dxmax, ftol, cgcntr, cgaux )
-        relaxd = (int(cgcntr(0)) .eq. 0)
+         if (.not. relaxd) then
+!!            do i=1,ndeg 
+!!               print *, "gxa, gfa ", i, gxa(i), gfa(i)
+!!            enddo
+            call conjgr( 3*na, xa, fa, dxmax, ftol, cgcntr, cgaux )
+            relaxd = (int(cgcntr(0)) .eq. 0)           !! ???
+         endif
 
       endif
 

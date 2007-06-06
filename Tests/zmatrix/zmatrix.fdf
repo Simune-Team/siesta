@@ -38,6 +38,7 @@ xc.authors PZ
 HarrisFunctional T
 MD.TypeOfRun CG
 MD.NumCGsteps 4
+MD.VariableCell T
 
 MeshCutoff 60 Ry
 PAO.EnergyShift 0.01 Ry

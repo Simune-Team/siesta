@@ -24,6 +24,8 @@
       use phonon, only: phonon_num_disps, phonon_setup
       use parallelsubs, only: getnodeorbs
       use m_iostruct,   only: write_struct, read_struct
+      use zmatrix,      only: lUseZmatrix
+      use zmatrix,      only: write_canonical_ucell_and_Zmatrix
       use m_check_supercell, only: check_sc_factors
       use files,       only : slabel
       use siesta_cmlsubs, only: siesta_cml_init
@@ -58,7 +60,7 @@
       integer :: ns          ! Number of species
 
       external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
+     .  bonds,  fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
      .  kinefsm, mulliken, naefs, pulayx, 
@@ -155,8 +157,13 @@
 ! early exit if only checking the structure
 
       call fdf_global_get(struct_only,'Output-Structure-Only',.false.)
+      if (IONode) then
+         call write_struct( ucell, na_u, isa, iza, xa )
+         if (lUseZmatrix) then
+            call write_canonical_ucell_and_Zmatrix()
+         endif
+      endif
       if (struct_only) then
-         if (IONode) call write_struct( ucell, na_u, isa, iza, xa )
          call bye("End of structure processing")
       endif
       

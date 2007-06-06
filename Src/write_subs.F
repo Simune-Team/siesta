@@ -1,5 +1,5 @@
       Module write_subs
-      use m_stress
+
       use m_steps
 
       private
@@ -109,39 +109,53 @@
       use siesta_cml
       use units
       use m_energies, only: FreeE
-      use m_forces,          only: fa
+      use m_stress, only: stress, kin_stress, mstress, cstress, tstress
+      use m_forces,   only: fa   ! This does not really belong here  
 
       implicit none
+
       integer :: ia, jx, ix
 
-      real(dp):: virial     ! Virial = Sum(x*f)
       real(dp):: Pmol       ! "Molecular pressure" (discounting Virial term)
-      real(dp):: Psol       ! Pressure
-      real(dp):: fmean
+      real(dp):: Psol       ! Pressure of "solid"
+      real(dp):: Press      ! Pressure
+      real(dp):: ps(3,3)    ! Auxiliary array
 
 ! Stress tensor and pressure:
       
-
       if (.not.final) then
 !
 !           Write Voigt components of total stress tensor 
 !
-            write(6,'(/,a,6f12.2)')
+            ps = stress + kin_stress
+            write(6,'(/,a,6f12.2))')
      .           'Stress-tensor-Voigt (kbar):',
-     .           (tstress(jx,jx)/kbar,jx=1,3),
-     $            tstress(1,2)/kbar,
-     $            tstress(2,3)/kbar,
-     $            tstress(1,3)/kbar
+     .           (ps(jx,jx)/kbar,jx=1,3),
+     $            ps(1,2)/kbar,
+     $            ps(2,3)/kbar,
+     $            ps(1,3)/kbar
+            Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
+            write(6,"(a,f14.4)") "Enthalpy (eV/cell)",
+     $           (FreeE + Press*volume_of_some_cell)/eV
+
+            if (RemoveIntraMolecularPressure) then
+               ps = mstress + kin_stress
+               write(6,'(/,a,6f12.2))')
+     .           'Non-Molecular-Stress-Voigt (kbar):',
+     .           (ps(jx,jx)/kbar,jx=1,3),
+     $            ps(1,2)/kbar,
+     $            ps(2,3)/kbar,
+     $            ps(1,3)/kbar
+               Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
+               write(6,"(a,f14.4)") "Non-Molecular Enthalpy (eV/cell)",
+     $              (FreeE + Press*volume_of_some_cell)/eV
+            endif
 !
 !      This use of the volume is OK, as it is called from state_analysis,
 !      before possibly changing the cell.
 !      Write "target enthalpy" (E + pV, where p is the *target* pressure)
             write(6,"(a,f14.4)") "Target enthalpy (eV/cell)",
      $           (FreeE + tp*volume_of_some_cell)/eV
-!
-!      Write out structural information in "crystallography" format
-!
-            call write_struct( ucell, na_u, isa, iza, xa )
 
       ! Output depends on dynamics option
         select case (idyn)
@@ -174,7 +188,39 @@
               call cmlAddProperty(xf=mainXML, property=Psol,
      .             dictref='siesta:tpsol', title='Pressure (Total)')
             endif !cml_p
-          endif !varcel
+
+            if (RemoveIntraMolecularPressure) then
+             ps = mstress
+             write(6,'(/,a,3(/,a,3f12.6))')
+     .           'siesta: Stress tensor (nonmol) (eV/Ang**3):',
+     .           ('     ',(ps(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+             Psol = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
+             write(6,'(/,a,f20.8,a)')
+     .           'siesta: Pressure (nonmol):', Psol/kBar, '  kBar'
+             if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=ps*Ang**3, 
+     .          dictref='siesta:mstress')
+              call cmlAddProperty(xf=mainXML, property=Psol, 
+     .          dictref='siesta:pmol', title='Pressure (Nonmol)')
+             endif                !cml_p
+!
+             ps = mstress + kin_stress
+             write(6,'(/,a,3(/,a,3f12.6))')
+     .           'siesta: Stress tensor (nonmol+kin) (eV/Ang**3):',
+     .           ('     ',(ps(jx,ix)*Ang**3/eV,jx=1,3),ix=1,3)
+             Psol = - ((ps(1,1)+ps(2,2) +ps(3,3))/3.0_dp)
+             write(6,'(/,a,f20.8,a)')
+     .           'siesta: Pressure (nonmol+kin):', Psol/kBar, '  kBar'
+             if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=ps*Ang**3, 
+     .             dictref='siesta:tmstress')
+              call cmlAddProperty(xf=mainXML, property=Psol,
+     .         dictref='siesta:tpmol', title='Pressure (Nonmol+Kin)')
+             endif                !cml_p
+            endif                 ! Remove intramolecular pressure
+
+          endif                  !varcel
+
         ! Write Force Constant matrix if FC calculation ...
         case(6)
           call ofc(fa,dx,na_u)
@@ -211,18 +257,10 @@
         endif
 
 ! Find pressure
-        virial = 0.0_dp
-        do ix = 1,3
-          fmean = 0.0_dp
-          do ia = 1,na_u
-            fmean = fmean + fa(ix,ia) / na_u
-          enddo
-          do ia = 1,na_u
-            virial = virial + xalast(ix,ia) * (fa(ix,ia) - fmean)
-          enddo
-        enddo
+
         Psol = - (( stress(1,1) + stress(2,2) + stress(3,3) )/3.0_dp)
-        Pmol = Psol - virial / volume_of_some_cell / 3.0_dp
+        Pmol = - (( mstress(1,1) + mstress(2,2) + mstress(3,3) )/3.0_dp)
+
         write(6,'(/,a,f18.6,a)')
      .       'siesta: Cell volume =',
      $       volume_of_some_cell/Ang**3, ' Ang**3'
@@ -472,10 +510,26 @@
 
       subroutine siesta_write_positions()
       use siesta_geom
-      use atomlist, only: elem
+      use atomlist, only: elem, iza
       use siesta_cml
-      use units
+      use units, only: Ang
+      use zmatrix, only: lUseZmatrix, write_canonical_ucell_and_Zmatrix
+      use m_iostruct, only: write_struct
+
       implicit none
+
+!
+!      Write out structural information in "crystallography" format,
+!      and in "canonical" (see Zmatrix module) zmatrix format.
+!      By now the structure might have changed in response to forces
+!      and stresses.
+
+        call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
+        if (lUseZmatrix) then
+           call write_canonical_ucell_and_Zmatrix
+     $                         (filename="NEXT_ITER.UCELL.ZMATRIX")
+        endif
+
         if (cml_p) then
           call cmlAddMolecule(xf=mainXML, natoms=na_u, elements=elem,
      .           refs=cisa, coords=xa/Ang, style='x3', fmt='(f12.6)')

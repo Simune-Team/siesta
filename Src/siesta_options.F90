@@ -19,6 +19,8 @@ MODULE siesta_options
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
   logical :: outlng        ! Long output?
   logical :: pulfile       ! Use file to store Pulay info in pulayx?
+  logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
+  logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
   logical :: savevh        ! Write file with Hartree electrostatic potential?
   logical :: savevt        ! Write file with total effective potential?
@@ -1332,6 +1334,9 @@ MODULE siesta_options
     endif
     call fdf_global_get(change_kgrid_in_md,"ChangeKgridInMD", .false.)
     call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
+    call fdf_global_get(RelaxCellOnly, 'MD.RelaxCellOnly', .false.)
+    call fdf_global_get(RemoveIntraMolecularPressure,   &
+             'MD.RemoveIntraMolecularPressure', .false.)
 
     call fdf_global_get(savrho,'SaveRho', dumpcharge)
     call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)

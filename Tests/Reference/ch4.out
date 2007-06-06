@@ -1,0 +1,772 @@
+Siesta Version:  siesta@uam.es--2006/siesta-devel--reference--2.1--patch-58
+Architecture  : intel-checks
+Compiler flags: ifort -O1 -ftrapuv -CB 
+SERIAL version
+
+* Running in serial mode
+>> Start of run:   4-JUN-2007  10:29:20
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+SystemName methane fcc  With vdW. Pre-packaged molecules
+SystemLabel ch4
+NumberOfSpecies 2
+NumberOfAtoms   5
+%block ChemicalSpeciesLabel
+1    6 C.pbe
+2    1 H.pbe
+%endblock ChemicalSpeciesLabel
+%block PS.lmax
+   C.pbe 2
+%endblock PS.lmax
+PAO.BasisSize   DZP
+kgrid_cutoff    10.0 Ang
+MeshCutoff      200 Ry
+PAO.EnergyShift 0.001 Ry
+# DFT, Grid, SCF
+XC.functional           GGA
+XC.authors              PBE
+MaxSCFIterations        80
+DM.MixingWeight         0.150
+DM.Tolerance            1.d-4
+DM.NumberPulay          5      # Number of SCF steps between pulay mixing
+# Relaxation, smearing, etc.
+ElectronicTemperature   500 K
+#
+# Zmatrix for methane in fcc structure
+#
+LatticeConstant 5.96 Ang
+%block LatticeVectors
+          0.5    0.5   0.0
+          0.5    0.0   0.5
+          0.0    0.5   0.5
+%endblock LatticeVectors
+ZM.UnitsLength Ang
+ZM.UnitsAngle rad
+#
+# Zmatrix block: Only the orientation of the molecule
+# is allowed to vary (three angles). In particular,
+# the CH bond-length is fixed to a value lower than
+# the theoretically optimal, so there is an intramolecular
+# contribution to the stress which is deactivated below
+#
+%block Zmatrix
+molecule_fractional
+ 1   0   0   0      0.0             0.0     0.0          0   0   0
+ 2   1   0   0      CH      0.7             1.5          0   1   1
+ 2   1   2   0      CH      1.91063300      2.09439500   0   0   1
+ 2   1   2   3      CH      1.91063300      2.09439500   0   0   0
+ 2   1   2   4      CH      1.91063300      2.09439500   0   0   0
+constants
+CH 1.060015
+%endblock Zmatrix
+MD.TypeOfRun            Broyden     # Type of dynamics
+MD.VariableCell         T
+MD.RemoveIntraMolecularPressure T
+MD.NumCGsteps           30
+%block MM.Potentials
+1 1 C6 25.065 2.0
+2 2 C6  1.130 2.0
+1 2 C6  4.900 2.0
+%endblock MM.Potentials
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: methane fcc  With vdW. Pre-packaged molecules              
+reinit: -----------------------------------------------------------------------
+reinit: System Label: ch4                                                         
+reinit: -----------------------------------------------------------------------
+Reading two-body potentials
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: C.pbe Atomic number:           6
+ Species number:            2  Label: H.pbe Atomic number:           1
+Ground state valence configuration:   2s02  2p02
+Reading pseudopotential information in formatted form from C.pbe.psf
+
+Valence configuration for pseudopotential generation:
+2s( 2.00) rc: 1.49
+2p( 2.00) rc: 1.52
+3d( 0.00) rc: 1.52
+Dumping pseudopotential information in formatted form in C.psdump
+Ground state valence configuration:   1s01
+Reading pseudopotential information in formatted form from H.pbe.psf
+
+Valence configuration for pseudopotential generation:
+1s( 1.00) rc: 1.43
+2p( 0.00) rc: 1.25
+3d( 0.00) rc: 1.25
+4f( 0.00) rc: 1.25
+Dumping pseudopotential information in formatted form in H.psdump
+relmxkb: Read Max KB Ang. Momentum=    2 for species C.pbe
+For H.pbe, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+C.pbe                Z=   6    Mass=  12.010        Charge= 0.17977+309
+Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=0
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+L=1  Nsemic=0  Cnfigmx=2
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for C.pbe                 (Z =   6)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM 3.2.2 Troullier-Martins                       
+Total valence charge:    4.00000
+
+read_vps: Pseudopotential includes a core correction:
+read_vps: Pseudo-core for xc-correction
+comcore: Pseudo-core radius Rcore=  1.791422
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Perdew, Burke & Ernzerhof 1996
+V l=0 = -2*Zval/r beyond r=  1.4666
+V l=1 = -2*Zval/r beyond r=  1.5038
+V l=2 = -2*Zval/r beyond r=  1.5038
+All V_l potentials equal beyond r=  1.5038
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.5038
+
+VLOCAL1: 99.0% of the norm of Vloc inside     19.196 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     43.748 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.81396
+atom: Maximum radius for r*vlocal+2*Zval:    1.56123
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.682861   el= -1.009802   Ekb=  5.530688   kbcos=  0.309203
+   l= 1   rc=  1.682861   el= -0.388707   Ekb= -3.901042   kbcos= -0.358653
+   l= 2   rc=  1.769164   el=  0.001971   Ekb= -0.965319   kbcos= -0.008918
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 2s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.001000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    5.801806
+                 energy =   -1.009004
+                kinetic =    0.829165
+    potential(screened) =   -1.838170
+       potential(ionic) =   -5.378487
+
+   izeta = 2
+                 rmatch =    3.518811
+              splitnorm =    0.150000
+                 energy =   -0.885169
+                kinetic =    1.273297
+    potential(screened) =   -2.158466
+       potential(ionic) =   -5.945214
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 2p
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.001000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    7.449784
+                 energy =   -0.387885
+                kinetic =    2.312128
+    potential(screened) =   -2.700012
+       potential(ionic) =   -6.078394
+
+   izeta = 2
+                 rmatch =    3.792903
+              splitnorm =    0.150000
+                 energy =   -0.276938
+                kinetic =    3.389980
+    potential(screened) =   -3.666918
+       potential(ionic) =   -7.425500
+
+POLgen: Perturbative polarization orbital with L=  2
+
+POLgen: Polarization orbital for state 2p
+
+   izeta = 1
+                     rc =    7.449784
+                 energy =    0.930146
+                kinetic =    1.972968
+    potential(screened) =   -1.042822
+       potential(ionic) =   -3.697087
+atom: Total number of Sankey-type orbitals: 13
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 2s( 2.00)                                                            
+ 2p( 2.00)                                                            
+Vna: chval, zval:    4.00000   4.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   7.449784
+
+atom: _________________________________________________________________________
+
+<basis_specs>
+===============================================================================
+H.pbe                Z=   1    Mass=  1.0100        Charge= 0.17977+309
+Lmxo=0 Lmxkb=2     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=1
+          n=1  nzeta=2  polorb=1
+            splnorm:   0.15000    
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000      0.0000    
+            lambdas:    1.0000      1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for H.pbe                 (Z =   1)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM 3.2.2 Troullier-Martins                       
+Total valence charge:    1.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: GGA Perdew, Burke & Ernzerhof 1996
+V l=0 = -2*Zval/r beyond r=  1.4166
+V l=1 = -2*Zval/r beyond r=  1.3816
+V l=2 = -2*Zval/r beyond r=  1.3816
+All V_l potentials equal beyond r=  1.4166
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  1.4166
+
+VLOCAL1: 99.0% of the norm of Vloc inside     21.631 Ry
+VLOCAL1: 99.9% of the norm of Vloc inside     49.298 Ry
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    1.66698
+atom: Maximum radius for r*vlocal+2*Zval:    1.39896
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.565833   el= -0.477200   Ekb= -1.851072   kbcos= -0.391986
+   l= 1   rc=  1.646243   el=  0.001076   Ekb= -0.560969   kbcos= -0.025747
+   l= 2   rc=  1.687980   el=  0.002010   Ekb= -0.184546   kbcos= -0.003662
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+atom: Selected multiple-zeta basis: split     
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 1s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.001000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    7.026209
+                 energy =   -0.476249
+                kinetic =    0.864355
+    potential(screened) =   -1.340604
+       potential(ionic) =   -1.858348
+
+   izeta = 2
+                 rmatch =    4.103729
+              splitnorm =    0.150000
+                 energy =   -0.388115
+                kinetic =    1.394286
+    potential(screened) =   -1.782401
+       potential(ionic) =   -2.328147
+
+POLgen: Perturbative polarization orbital with L=  1
+
+POLgen: Polarization orbital for state 1s
+
+   izeta = 1
+                     rc =    7.026209
+                 energy =    0.513965
+                kinetic =    1.105770
+    potential(screened) =   -0.591806
+       potential(ionic) =   -1.053548
+atom: Total number of Sankey-type orbitals:  5
+
+atm_pop: Valence configuration (for local Pseudopot. screening):
+ 1s( 1.00)                                                            
+Vna: chval, zval:    1.00000   1.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   7.026209
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1    6 C.pbe                   # Species index, atomic number, species label
+    2    1 H.pbe                   # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+C.pbe                 2                    # Species label, number of l-shells
+ n=2   0   2                         # n, l, Nzeta 
+   5.802      3.519   
+   1.000      1.000   
+ n=2   1   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   7.450      3.793   
+   1.000      1.000   
+H.pbe                 1                    # Species label, number of l-shells
+ n=1   0   2 P   1                   # n, l, Nzeta, Polarization, NzetaPol
+   7.026      4.104   
+   1.000      1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+coor:   Atomic-coordinates input format  =     Cartesian coordinates
+coor:                                            (in Bohr units)
+read_Zmatrix: Length units: Ang       
+read_Zmatrix: Angle  units: rad       
+read_Zmatrix: Force tolerances:
+read_Zmatrix:    for lengths =     0.001556 Ry/Bohr
+read_Zmatrix:    for angles  =     0.003565 Ry/rad
+
+read_Zmatrix: Maximum displacements:
+read_Zmatrix:    for lengths =     0.200000 Bohr
+read_Zmatrix:    for angles  =     0.003000 rad
+%block Zmatrix
+molecule_fractional
+ 1   0   0   0      0.0             0.0     0.0          0   0   0
+ 2   1   0   0      CH      0.7             1.5          0   1   1
+ 2   1   2   0      CH      1.91063300      2.09439500   0   0   1
+ 2   1   2   3      CH      1.91063300      2.09439500   0   0   0
+ 2   1   2   4      CH      1.91063300      2.09439500   0   0   0
+constants
+CH 1.060015
+%endblock Zmatrix
+
+zmatrix: Z-matrix coordinates: (Ang ; rad )
+zmatrix: (Fractional coordinates have been converted to cartesian)
+molecule    1 (     5 atoms)
+      0.00000000      0.00000000      0.00000000
+      1.06001500      0.70000000      1.50000000
+      1.06001500      1.91063300      2.09439500
+      1.06001500      1.91063300      2.09439500
+      1.06001500      1.91063300      2.09439500
+
+
+Z-matrix Symbol Section -------
+Variables
+Constants
+ ch           1.06001500000000     
+------------ End of Z-matrix Information
+
+redata: Number of spin components        =     1
+redata: Long output                      =     F
+redata: Number of Atomic Species         =     2
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     NO
+redata: Mesh Cutoff                      =   200.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Max. number of SCF Iter          =    80
+redata: Performing Pulay mixing using    =     5 iterations
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: New DM Mixing Weight             =     0.1500
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000100
+redata: Require Energy convergence for SCF =     F
+redata: DM Energy tolerance for SCF      =     0.000100 eV
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     F
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     T
+redata: Electronic Temperature           =     0.0032  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     Broyden coord. optimization
+redata: Variable cell                    =     T
+redata: Maximum number of CG moves       =    30
+redata: Force tolerance                  =     0.0016  Ry/Bohr
+redata: Stress tolerance                 =     1.0000  GPa
+redata: ***********************************************************************
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1        1
+siesta:      0.09128   1.28722   1.53209  2        2
+siesta:     -1.61080   0.40704  -1.11902  2        3
+siesta:      1.65212   0.17565  -1.11902  2        4
+siesta:     -0.13260  -1.86992   0.70596  2        5
+
+initatomlists: Number of atoms, orbitals, and projectors:      5    33    45
+Total number of electrons:     8.000000
+Total ionic charge:     8.000000
+
+siesta: System type = bulk      
+Kgrid cutoff input:   18.89727
+
+siesta: k-grid: Number of k-points =    75
+siesta: k-grid: Cutoff (effective) =    10.536 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    0   5   0      0.000
+siesta: k-grid:    0   0   5      0.000
+siesta: k-grid:    5   0   0      0.000
+Naive supercell factors:     5    5    5
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    625  4125  5625
+
+* Maximum dynamic memory allocated =     1 MB
+
+siesta:                 ==============================
+                            Begin CG move =      0
+                        ==============================
+
+zmatrix: Z-matrix coordinates: (Ang ; rad )
+zmatrix: (Fractional coordinates have been converted to cartesian)
+molecule    1 (     5 atoms)
+      0.00000000      0.00000000      0.00000000
+      1.06001500      0.70000000      1.50000000
+      1.06001500      1.91063300      2.09439500
+      1.06001500      1.91063300      2.09439500
+      1.06001500      1.91063300      2.09439500
+
+
+Z-matrix Symbol Section -------
+Variables
+Constants
+ ch           1.06001500000000     
+------------ End of Z-matrix Information
+
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    625  4125  5625
+
+outcell: Unit cell vectors (Ang):
+        2.980000    2.980000    0.000000
+        2.980000    0.000000    2.980000
+        0.000000    2.980000    2.980000
+
+outcell: Cell vector modules (Ang)   :    4.214356    4.214356    4.214356
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     52.9272
+
+InitMesh: MESH =    30 x    30 x    30 =       27000
+InitMesh: Mesh cutoff (required, used) =   200.000   210.074 Ry
+
+* Maximum dynamic memory allocated =    33 MB
+
+stepf: Fermi-Dirac step function
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =       327.497989
+siesta: Ena     =        78.608453
+siesta: Ekin    =       132.522543
+siesta: Enl     =       -16.122252
+siesta: DEna    =         0.000000
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =       -81.440168
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =        -0.193689
+siesta: Ekinion =         0.000000
+siesta: Eharris =      -224.825134
+siesta: Etot    =      -214.123102
+siesta: FreeEng =      -214.123102
+
+siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
+siesta:    1     -224.8251     -214.1231     -214.1231  1.6215-11.0180
+timer: Routine,Calls,Time,% = IterSCF        1      25.329  81.73
+elaps: Routine,Calls,Wall,% = IterSCF        1      25.459  80.30
+siesta:    2     -225.4655     -219.1003     -219.1003  0.7552 -4.5462
+siesta:    3     -222.1408     -218.9865     -218.9865  0.6265 -6.9999
+siesta:    4     -221.9642     -219.8210     -219.8210  0.4483 -7.2236
+siesta:    5     -221.9128     -221.4947     -221.4947  0.0672 -7.4794
+siesta:    6     -221.8973     -221.9435     -221.9435  0.0022 -7.2981
+siesta:    7     -221.8973     -221.9328     -221.9328  0.0018 -7.3004
+siesta:    8     -221.8972     -221.9005     -221.9005  0.0001 -7.3062
+siesta:    9     -221.8972     -221.8976     -221.8976  0.0000 -7.3068
+
+MM-Stress (kbar):        5.38        5.36        5.42        0.00        0.02        0.00
+
+siesta: E_KS(eV) =             -221.8972
+
+siesta: E_KS - E_eggbox =      -221.8972
+
+zmatrix: Atomic forces (eV/Ang ; eV/rad )
+zmatrix: (No information if symbols are used)
+molecule    1 (     5 atoms)
+     1    0.000000    0.000000    0.000000
+     2    0.000000    0.026045    0.012761
+     3    0.000000    0.000000   -0.008464
+     4    0.000000    0.000000    0.000000
+     5    0.000000    0.000000    0.000000
+
+
+Variable forces (eV/Ang ; eV/rad )
+
+siesta: Atomic forces (eV/Ang):
+----------------------------------------
+   Tot    0.002797   -0.000739   -0.001977
+----------------------------------------
+   Max    1.729778
+   Res    0.959547    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    1.729778    constrained
+
+Stress-tensor-Voigt (kbar):      -75.20      -74.93      -73.92       -0.02        0.34        0.08
+Enthalpy (eV/cell)     -219.4300
+
+Non-Molecular-Stress-Voigt (kbar):        4.29        4.56        5.58       -0.02        0.34        0.08
+Non-Molecular Enthalpy (eV/cell)     -222.0562
+Target enthalpy (eV/cell)     -221.8972
+
+siesta: Stress tensor (static) (eV/Ang**3):
+        -0.046938   -0.000013    0.000052
+        -0.000013   -0.046769    0.000214
+         0.000052    0.000215   -0.046136
+
+siesta: Pressure (static):         74.68560995  kBar
+
+siesta: Stress tensor (total) (eV/Ang**3):
+        -0.046938   -0.000013    0.000052
+        -0.000013   -0.046769    0.000214
+         0.000052    0.000215   -0.046136
+
+siesta: Pressure (total):         74.68560995  kBar
+
+siesta: Stress tensor (nonmol) (eV/Ang**3):
+         0.002680   -0.000013    0.000052
+        -0.000013    0.002849    0.000214
+         0.000052    0.000215    0.003482
+
+siesta: Pressure (nonmol):         -4.81249745  kBar
+
+siesta: Stress tensor (nonmol+kin) (eV/Ang**3):
+         0.002680   -0.000013    0.000052
+        -0.000013    0.002849    0.000214
+         0.000052    0.000215    0.003482
+
+siesta: Pressure (nonmol+kin):         -4.81249745  kBar
+ 
+Broyden_optim: max_history for broyden:   5
+Broyden_optim: cycle on maxit: T
+Broyden_optim: initial inverse jacobian:   1.0000
+ 
+Broyden_optim: No of elements:      9
+
+cgvc_zmatrix: No target stress found, assuming hydrostatic MD.TargetPressure.
+
+cgvc_zmatrix: Target stress (kBar)
+cgvc_zmatrix:         0.000       0.000       0.000
+cgvc_zmatrix:         0.000       0.000       0.000
+cgvc_zmatrix:         0.000       0.000       0.000
+
+* Maximum dynamic memory allocated =    33 MB
+
+outcoor: Relaxed atomic coordinates (Bohr):                 
+    0.00000000    0.00000000    0.00000000   1       1  C.pbe
+    0.09128335    1.28722486    1.53208509   2       2  H.pbe
+   -1.61079826    0.40704258   -1.11902212   2       3  H.pbe
+    1.65211978    0.17565364   -1.11902244   2       4  H.pbe
+   -0.13260451   -1.86992010    0.70596038   2       5  H.pbe
+
+zmatrix: Z-matrix coordinates: (Ang ; rad )
+zmatrix: (Fractional coordinates have been converted to cartesian)
+molecule    1 (     5 atoms)
+      0.00000000      0.00000000      0.00000000
+      1.06001500      0.70000000      1.50000000
+      1.06001500      1.91063300      2.09439500
+      1.06001500      1.91063300      2.09439500
+      1.06001500      1.91063300      2.09439500
+
+
+Z-matrix Symbol Section -------
+Variables
+Constants
+ ch           1.06001500000000     
+------------ End of Z-matrix Information
+
+
+outcell: Unit cell vectors (Ang):
+        2.980000    2.980000    0.000000
+        2.980000    0.000000    2.980000
+        0.000000    2.980000    2.980000
+
+outcell: Cell vector modules (Ang)   :    4.214356    4.214356    4.214356
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     52.9272
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =       327.497989
+siesta: Ena     =        78.608453
+siesta: Ekin    =       170.040229
+siesta: Enl     =       -37.351425
+siesta: DEna    =       -17.793237
+siesta: DUscf   =         2.641658
+siesta: DUext   =         0.000000
+siesta: Exc     =       -90.351217
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Emeta   =         0.000000
+siesta: Emolmec =        -0.193689
+siesta: Ekinion =         0.000000
+siesta: Eharris =      -221.897238
+siesta: Etot    =      -221.897216
+siesta: FreeEng =      -221.897216
+
+siesta: Final energy (eV):
+siesta:       Kinetic =     170.040229
+siesta:       Hartree =     108.736630
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =     -90.351217
+siesta:  Ion-electron =    -379.220461
+siesta:       Ion-ion =     -30.908709
+siesta:       Ekinion =       0.000000
+siesta:         Total =    -221.897216
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1   -0.002486   -0.012927   -0.009357
+siesta:      2    0.081010    1.208028    1.413116
+siesta:      3   -1.495260    0.369760   -1.030248
+siesta:      4    1.539878    0.164177   -1.035886
+siesta:      5   -0.120346   -1.729778    0.660398
+siesta: ----------------------------------------
+siesta:    Tot    0.002797   -0.000739   -0.001977
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:    -0.046938   -0.000013    0.000052
+siesta:    -0.000013   -0.046769    0.000214
+siesta:     0.000052    0.000215   -0.046136
+
+siesta: Constrained stress tensor (static) (eV/Ang**3):
+siesta:     0.002680   -0.000013    0.000052
+siesta:    -0.000013    0.002849    0.000214
+siesta:     0.000052    0.000214    0.003482
+
+siesta: Cell volume =         52.927184 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00050769         -0.00003271  Ry/Bohr**3
+siesta:           0.04661459         -0.00300369  eV/Ang**3
+siesta:          74.68560995         -4.81249745  kBar
+Basis enthalpy =        -218.664844
+
+* Maximum dynamic memory allocated : Node    0 =    33 MB
+
+* Maximum memory occured during vmat                          
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1     163.026     163.026   100.00
+timer:  Setup             1       0.812       0.812     0.50
+timer:  bands             1       0.001       0.001     0.00
+timer:  writewave         1       0.001       0.001     0.00
+timer:  KSV_init          1       0.001       0.001     0.00
+timer:  IterMD            1     162.177     162.177    99.48
+timer:  hsparse           2       1.356       2.712     1.66
+timer:  overfsm           2       0.628       1.256     0.77
+timer:  IterSCF          10      15.732     157.318    96.50
+timer:  kinefsm           2       0.595       1.190     0.73
+timer:  nlefsm            2       4.665       9.330     5.72
+timer:  DHSCF            10      12.760     127.598    78.27
+timer:  DHSCF1            1       0.388       0.388     0.24
+timer:  DHSCF2            1       5.335       5.335     3.27
+timer:  REORD            62       0.000       0.021     0.01
+timer:  POISON           11       0.012       0.135     0.08
+timer:  DHSCF3           10      11.132     111.316    68.28
+timer:  rhoofd           10       6.225      62.249    38.18
+timer:  cellXC           10       0.254       2.544     1.56
+timer:  vmat             10       4.631      46.311    28.41
+timer:  diagon            9       2.058      18.520    11.36
+timer:  cdiag          1350       0.001       1.990     1.22
+timer:  cdiag1         1350       0.000       0.123     0.08
+timer:  cdiag2         1350       0.000       0.346     0.21
+timer:  cdiag3         1350       0.001       1.430     0.88
+timer:  cdiag4         1350       0.000       0.029     0.02
+timer:  MolMec            2       0.001       0.003     0.00
+timer:  DHSCF4            1      10.544      10.544     6.47
+timer:  dfscf             1       9.927       9.927     6.09
+timer:  optical           1       0.001       0.001     0.00
+  
+
+elaps: ELAPSED times:
+elaps:  Routine       Calls   Time/call    Tot.time        %
+elaps:  siesta            1     163.786     163.786   100.00
+elaps:  Setup             1       1.342       1.342     0.82
+elaps:  bands             1       0.001       0.001     0.00
+elaps:  writewave         1       0.001       0.001     0.00
+elaps:  KSV_init          1       0.000       0.000     0.00
+elaps:  IterMD            1     162.406     162.406    99.16
+elaps:  hsparse           2       1.356       2.712     1.66
+elaps:  overfsm           2       0.633       1.266     0.77
+elaps:  IterSCF          10      15.747     157.472    96.14
+elaps:  kinefsm           2       0.595       1.190     0.73
+elaps:  nlefsm            2       4.665       9.330     5.70
+elaps:  DHSCF            10      12.762     127.623    77.92
+elaps:  DHSCF1            1       0.392       0.392     0.24
+elaps:  DHSCF2            1       5.338       5.338     3.26
+elaps:  REORD            62       0.000       0.023     0.01
+elaps:  POISON           11       0.013       0.138     0.08
+elaps:  DHSCF3           10      11.133     111.332    67.97
+elaps:  rhoofd           10       6.225      62.255    38.01
+elaps:  cellXC           10       0.254       2.543     1.55
+elaps:  vmat             10       4.632      46.320    28.28
+elaps:  diagon            9       2.063      18.569    11.34
+elaps:  cdiag          1350       0.001       2.012     1.23
+elaps:  cdiag1         1350       0.000       0.148     0.09
+elaps:  cdiag2         1350       0.000       0.368     0.22
+elaps:  cdiag3         1350       0.001       1.398     0.85
+elaps:  cdiag4         1350       0.000       0.033     0.02
+elaps:  MolMec            2       0.002       0.003     0.00
+elaps:  DHSCF4            1      10.547      10.547     6.44
+elaps:  dfscf             1       9.931       9.931     6.06
+elaps:  optical           1       0.001       0.001     0.00
+  
+>> End of run:   4-JUN-2007  10:32:04

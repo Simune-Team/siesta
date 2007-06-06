@@ -16,6 +16,8 @@
       use parallel,        only: IOnode
       use siesta_cml
       use m_broyden_optim, only: broyden_optimizer
+      use m_zm_broyden_optim,      only: zm_broyden_optimizer
+      use m_cell_broyden_optim,      only: cell_broyden_optimizer
       use m_dynamics,      only: nose, verlet2, npr, anneal, pr
       use phonon,          only: phonon_setup, phonon_restore_coords,
      .                           phonon_set_coords
@@ -59,14 +61,22 @@
       select case(idyn)
       case(0)
         if (nmove .ne. 0) then
-          if (lUseZmatrix) then
-             if (broyden_optim)
-     $          write(6,'(a)') 'siesta: Broyden method ' //
-     $            'not implemented yet for Zmatrix relaxation'
-             call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
-     $            dxmax, tp, ftol, strtol, varcel,
-     $            relaxd, usesavecg )
+          if (RelaxCellOnly) then
+             call cell_broyden_optimizer( na_u, xa, ucell,
+     $            cstress, tp, strtol,
+     $            varcel, relaxd)
           else
+           if (lUseZmatrix) then
+             if (broyden_optim) then
+                call zm_broyden_optimizer( na_u, xa, cfa, ucell,
+     $               cstress, dxmax, tp, ftol, strtol,
+     $               varcel, relaxd)
+             else
+                call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
+     $               dxmax, tp, ftol, strtol, varcel,
+     $               relaxd, usesavecg )
+             endif
+           else
              if (broyden_optim) then
                 call broyden_optimizer( na_u, xa, cfa, ucell,
      $               cstress, dxmax, tp, ftol, strtol,
@@ -76,7 +86,9 @@
      $               dxmax, tp, ftol, strtol, varcel,
      $               relaxd, usesavecg )
              endif
-          endif
+           endif
+          endif ! RelaxCellOnly
+
           ! Propagate the new structure to the virtual supercell
           call superx( ucell, nsc, na_u, na_s, xa, scell )
           if (relaxd) goto 60

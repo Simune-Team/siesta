@@ -12,7 +12,9 @@
       use parallel, only: IOnode
       use m_wallclock, only : wallclock
       use zmatrix,      only: lUseZmatrix, iofaZmat, write_Zmatrix,
-     .                        CartesianForce_to_ZmatForce
+     .                        CartesianForce_to_ZmatForce,
+     .                        write_canonical_ucell_and_Zmatrix
+      use m_iostruct,   only: write_struct
       use sparse_matrices
       use atomlist, only: iaorb, iphorb, iza, amass, no_u, lasto, superx
       use siesta_geom
@@ -62,9 +64,20 @@
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)
       endif
 
-! Impose constraints to atomic movements by changing forces
-      call fixed(ucell,stress,na_u,isa, amass, xa, fa, cstress, cfa, 
-     .           ntcon )
+      !  Compute stress without internal molecular pressure
+      call remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
+
+C Impose constraints to atomic movements by changing forces ...........
+      if (RemoveIntraMolecularPressure) then
+         ! Consider intramolecular pressure-removal as another
+         ! kind of constraint
+         call fixed(ucell,mstress,na_u,isa, amass, xa, fa,
+     $        cstress, cfa, ntcon )
+      else
+         call fixed(ucell,stress,na_u,isa, amass, xa, fa,
+     $        cstress, cfa, ntcon )
+      endif
+C ...................
 
 ! Calculate and output Zmatrix forces
       if (lUseZmatrix) then
@@ -72,16 +85,19 @@
         if (IOnode) call iofaZmat()
       endif
 
-! Add kinetic term to stress tensor
+      !  Compute kinetic contribution to stress
+      kin_stress(1:3,1:3) = 0.0_dp
       volume = volcel(ucell)
       do ia = 1,na_u
         do jx = 1,3
           do ix = 1,3
-            tstress(ix,jx) = stress(ix,jx) -
+            kin_stress(ix,jx) = kin_stress(ix,jx) -
      .             amu * amass(ia) * va(ix,ia) * va(jx,ia) / volume
           enddo
         enddo
       enddo
+      !  Add kinetic term to stress tensor
+      tstress = stress + kin_stress
 
 ! Force output 
       if (IOnode) then
@@ -94,7 +110,17 @@
       call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
-
+!
+!     Save structural information in crystallographic format,
+!     and canonical Zmatrix (if applicable) before moving the atoms
+!
+      if (IOnode) then
+         call write_struct( ucell, na_u, isa, iza, xa )
+         if (lUseZmatrix) then
+            call write_canonical_ucell_and_Zmatrix()
+         endif
+      endif
+!
 !     Call the born effective charge routine only in those steps (even) 
 !     in which the dx  is positive.
       if (bornz .and. (mod(istep,2) .eq. 0)) then
