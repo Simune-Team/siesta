@@ -10,6 +10,19 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.1
 --------------------------------------------------------------------
 
+2007-06-06 08:25:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-34
+
+Summary: Clarify bounds of SCF loop in siesta_forces.
+
+The exit criterion of the scf loop in siesta_forces
+has been clarified: It now exits before completing
+the last scheduled iteration (i.e., iteration number
+nscf) as it is assumed (notably for Harris-functional
+calculations) that it corresponds to the final pass
+for force and stress calculation.
+
+The check on the sign of wmix has been deleted.
+
 2007-05-17 16:05:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-33
 
 Summary: Execute SCF loop when nscf=1
