@@ -27,19 +27,17 @@
 
 !------------------------------------------------------------------------- BEGIN
 
+        ! Initialization tasks for a given geometry
         call state_init( istep )
 
-        ! Start of SCF iteration 
+        ! The current structure of the loop tries to reproduce the
+        ! historical Siesta usage. It should be made more clear.
+
+        ! Start of SCF loop
+
         iscf  = 1
         first = .true.
         last  = .false.
-        if (wmix .le. 0.0_dp) then
-          if (IOnode) then
-            write(6,'(/,a,f15.8)')
-     .     'siesta: WARNING: Mixing weight for SCF loop =', wmix
-          endif
-          last = .true.
-        endif
 
         ! The SCF loop is executed at least once, 
         ! except if nscf <= 0.
@@ -63,20 +61,28 @@
 
           iscf = iscf + 1
           first = .false.
-          if (iscf > nscf) then
+
+          ! The last scheduled iteration is used to compute forces
+          ! and stresses, hence the exit if iscf==nscf.
+          ! The ">" clause catches the nscf==1 case. For this,
+
+          if (iscf >= nscf) then
             last = .true.
           endif
 
         ENDDO
-        ! End of SCF iteration
+
+        ! End of standard SCF loop.
+        ! Do one more pass to compute forces and stresses
 
         if (last) then
           call post_scf_work( first, last, iscf )
         else
-          STOP 'MALLLL'
+          STOP 'Bad logic in SCF loop'
         endif
 
         call state_analysis( istep )
+
 !--------------------------------------------------------------------------- END
         END subroutine siesta_forces
       END module m_siesta_forces
