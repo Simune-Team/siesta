@@ -1,0 +1,6 @@
+Test2 
+Order-N calculation
+The same as Test1 but removing the Pd atoms.
+
+Only one iteration of the SCF cycle (it crashes afterwars: see the example output)
+

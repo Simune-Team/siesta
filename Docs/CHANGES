@@ -10,6 +10,12 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-06-12 12:50:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-27
+
+Summary: Added some load-balancing tests
+
+Added load_1, load_on, and load_particle in Tests.
+
 2007-06-12 07:50:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-26
 
 Summary: Sync to reference--2.1
