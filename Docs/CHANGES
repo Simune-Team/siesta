@@ -10,6 +10,12 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-06-12 07:50:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-26
+
+Summary: Sync to reference--2.1
+
+Sync to pick up the patchlogs for patch-62 and -63.
+
 2007-06-05 08:35:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-25
 
 Summary: Avoid MP-grid permutations in trivial gamma case
