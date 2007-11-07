@@ -8,10 +8,14 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_kinefsm
+      public :: kinefsm
+      CONTAINS
       subroutine kinefsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
      .                  maxnh, maxnd, lasto, iphorb, isa, 
      .                  numd, listdptr, listd, numh, listhptr, listh, 
-     .                  nspin, Dscf, Ekin, fa, stress, H )
+     .                  nspin, Dscf, Ekin, fa, stress, H,
+     .                  forces_and_stress )
 C *********************************************************************
 C Kinetic contribution to energy, forces, stress and matrix elements.
 C Energies in Ry. Lengths in Bohr.
@@ -44,6 +48,7 @@ C integer listh(maxnh)     : Column indexes of the nonzero elements
 C                            of each row of the hamiltonian matrix
 C integer nspin            : Number of spin components of Dscf and H
 C integer Dscf(maxnd,nspin): Density matrix
+C logical forces_and_stress   Determines whether fa and stress are touched
 C **************************** OUTPUT *********************************
 C real*8 Ekin              : Kinetic energy in unit cell
 C ********************** INPUT and OUTPUT *****************************
@@ -74,6 +79,7 @@ C
      .  scell(3,3), Dscf(maxnd,nspin), Ekin, 
      .  fa(3,nua), H(maxnh,nspin), rmaxo, 
      .  stress(3,3), xa(3,na)
+      logical, intent(in)  :: forces_and_stress
 
 C Internal variables ..................................................
   
@@ -136,15 +142,19 @@ C Valid orbital
      .                      Tij, grTij )
                   Ti(jo) = Ti(jo) + Tij
                   Ekin = Ekin + Di(jo) * Tij
-                  do ix = 1,3
-                    fij(ix) = Di(jo) * grTij(ix)
-                    fa(ix,ia)  = fa(ix,ia)  + fij(ix)
-                    fa(ix,jua) = fa(ix,jua) - fij(ix)
-                    do jx = 1,3
-                      stress(jx,ix) = stress(jx,ix) +
-     .                              xij(jx,jn) * fij(ix) / volume
+                  if (forces_and_stress) then
+!                   print *, "No way "
+!                   call pxfflush(6)
+                    do ix = 1,3
+                      fij(ix) = Di(jo) * grTij(ix)
+                      fa(ix,ia)  = fa(ix,ia)  + fij(ix)
+                      fa(ix,jua) = fa(ix,jua) - fij(ix)
+                      do jx = 1,3
+                        stress(jx,ix) = stress(jx,ix) +
+     .                                  xij(jx,jn) * fij(ix) / volume
+                      enddo
                     enddo
-                  enddo
+                  endif 
                 endif
               enddo
             enddo
@@ -171,4 +181,5 @@ C Deallocate local memory
 C Finish timer
       call timer( 'kinefsm', 2 )
 
-      end
+      end subroutine kinefsm
+      end module m_kinefsm

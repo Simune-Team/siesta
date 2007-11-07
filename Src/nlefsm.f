@@ -22,7 +22,7 @@
      .                   maxnh, maxnd, lasto, lastkb, iphorb, 
      .                   iphKB, numd, listdptr, listd, numh, 
      .                   listhptr, listh, nspin, Dscf, Enl, 
-     .                   fa, stress, H )
+     .                   fa, stress, H , forces_and_stress)
 C *********************************************************************
 C Calculates non-local (NL) pseudopotential contribution to total 
 C energy, atomic forces, stress and hamiltonian matrix elements.
@@ -58,6 +58,7 @@ C integer listh(maxnh)     : Nonzero hamiltonian-matrix element column
 C                            indexes for each matrix row
 C integer nspin            : Number of spin components
 C real*8  Dscf(maxnd,nspin): Density matrix
+C logical forces_and_stress   Determines whether fa and stress are touched
 C ******************* INPUT and OUTPUT *********************************
 C real*8 fa(3,na)          : NL forces (added to input fa)
 C real*8 stress(3,3)       : NL stress (added to input stress)
@@ -90,6 +91,7 @@ C
       real(dp), intent(inout) :: fa(3,nua), stress(3,3)
       real(dp), intent(inout) :: H(maxnh,nspin)
       real(dp), intent(out)   :: Enl
+      logical, intent(in)     :: forces_and_stress
 
       real(dp) ::   volcel
       external ::   timer, volcel
@@ -311,15 +313,17 @@ C Loop on KB projectors
                       Vi(jo) = Vi(jo) + epsk * Sik * Sjk
                       Cijk = Di(jo) * epsk
                       Enl = Enl + Cijk * Sik * Sjk
-                      do ix = 1,3
-                        fik = 2.d0 * Cijk * Sjk * grSki(ix,ikb,ino)
-                        fa(ix,ia)  = fa(ix,ia)  - fik
-                        fa(ix,kua) = fa(ix,kua) + fik
-                        do jx = 1,3
-                          stress(jx,ix) = stress(jx,ix) +
-     .                                xno(jx,ino) * fik / volume
+                      if (forces_and_stress) then
+                        do ix = 1,3
+                          fik = 2.d0 * Cijk * Sjk * grSki(ix,ikb,ino)
+                          fa(ix,ia)  = fa(ix,ia)  - fik
+                          fa(ix,kua) = fa(ix,kua) + fik
+                          do jx = 1,3
+                            stress(jx,ix) = stress(jx,ix) +
+     .                                      xno(jx,ino) * fik / volume
+                          enddo
                         enddo
-                      enddo
+                      endif
                     enddo
 
                   endif

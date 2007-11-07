@@ -4,7 +4,8 @@
 # Please note that the Reference directory was populated
 # with runs with the Intel compiler, which is notoriously flaky.
 # 
-REFERENCE=../../ref-version/Tests
+#REFERENCE=../../ref-version/Tests
+REFERENCE=../../ref/Tests
 #
 #tests="h2o h2o_reparam h2o_basis h2o_dos h2o_orderN \
 #       floating bessel mgco3 si2x1h force_2 born\

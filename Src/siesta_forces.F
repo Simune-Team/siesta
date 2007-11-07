@@ -8,6 +8,7 @@
       subroutine siesta_forces(istep)
       use m_state_init
       use m_setup_hamiltonian
+      use m_setup_H0
       use m_compute_dm
       use m_scfconvergence_test
       use m_post_scf_work
@@ -44,17 +45,24 @@
         if (nscf <= 0) then
            last = .true.
         endif
+        
+        call setup_H0()
 
         DO WHILE (.not. last)
           call timer( 'IterSCF', 1 )
 
-          call setup_hamiltonian( first, last, iscf )
+          ! Will use H0 computed above
+          call setup_hamiltonian( iscf )
 
+          call timer( 'compute_dm', 1 )
           call compute_dm( iscf )
+          call timer( 'compute_dm', 2 )
 
           call mixer( iscf, dDmax )
 
+          call timer( 'SCFconv', 1 )
           call scfconvergence_test( first, iscf, last, dDmax )
+          call timer( 'SCFconv', 2 )
 
           call timer( 'IterSCF', 2 )
           if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
@@ -76,7 +84,7 @@
         ! Do one more pass to compute forces and stresses
 
         if (last) then
-          call post_scf_work( first, last, iscf )
+          call post_scf_work( iscf )
         else
           STOP 'Bad logic in SCF loop'
         endif

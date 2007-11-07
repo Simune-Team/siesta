@@ -4,8 +4,8 @@
 
       CONTAINS
 
-      subroutine post_scf_work( first, last, iscf )
-      USE m_setup_hamiltonian, only: setup_hamiltonian
+      subroutine post_scf_work( iscf )
+      USE m_final_H_f_stress, only: final_H_f_stress
       USE siesta_options
       use sparse_matrices
       use siesta_geom
@@ -24,7 +24,10 @@
 !------------------------------------------------------------------------- BEGIN
           ! If converged, make one last iteration to find forces and stress
 
-          call setup_hamiltonian( first, last, iscf )
+          ! Note that here we are using the Dscf guessed by mixer,
+          ! not the last Dscf really computed from Wavefunctions
+          
+          call final_H_f_stress( iscf )
 
           ! Print energies
           DEna = Enascf - Enaatm
@@ -33,6 +36,12 @@
           Eharrs = Etot + DEharr
           FreeE  = Etot - Temp * Entropy
 
+          ! We need the last D really computed from Wavefunctions,
+          ! not the one guessed by mixer as the D_in for a hypothetical
+          ! next iteration. BUT in the old version of the program
+          ! Dold was set equal to Dscf at the end of setup_hamiltonian,
+          ! also in the "last" iteration.  
+          
           Dscf(1:nh,1:nspin) = Dold(1:nh,1:nspin)
           Escf(1:nh,1:nspin) = Eold(1:nh,1:nspin)
 

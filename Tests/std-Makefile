@@ -25,7 +25,9 @@
 # examples of other options for batch processing.
 #
 #
-REFERENCE=../../ref-version/Tests
+REFERENCE=$(HOME)/siesta-work/ref/Tests
+XML-TESTER=test-xml
+
 #
 label=work
 #

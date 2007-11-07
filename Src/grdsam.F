@@ -90,6 +90,7 @@ C
       use parsing
       use parallel,  only : Node
       use sys,       only : die
+      use m_dhscf,   only : dhscf
 #ifdef MPI
       use mpi_siesta
 #endif

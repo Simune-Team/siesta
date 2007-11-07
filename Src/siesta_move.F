@@ -47,11 +47,13 @@
 !------------------------------------------------------------------------- BEGIN
       ! Save the last coordinates for which the density matrix 
       ! has been calculated
-      if (istep.eq.fincoor) then
+ 
+      ! This should be done always
+!!!! AG      if (istep.eq.fincoor) then
         xalast(1:3,1:na_s)  = xa(1:3,1:na_s)
         ucell_last(1:3,1:3) = ucell(1:3,1:3)
         scell_last(1:3,1:3) = scell(1:3,1:3)
-      endif
+!!!! AG      endif
 
       Ekinion = 0.0_dp   ! Fossil: already initialized in siesta_init
 

@@ -16,6 +16,7 @@
       USE siesta_options
       use sparse_matrices
       use siesta_geom
+      use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
      .                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
       use fdf, only : fdf_boolean
@@ -74,7 +75,7 @@
 
       external :: 
      .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
+     .  diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
      .  pulayx, 

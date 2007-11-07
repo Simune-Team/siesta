@@ -19,7 +19,8 @@
       use fdf,            only : fdf_block, fdf_convfac  
       use sys,            only: die                      
       use m_mpi_utils,    only : broadcast               
-      use files,          only : slabel                  
+      use files,          only : slabel     
+      use m_dhscf,        only : dhscf             
       use Kpoint_grid
       use parallel,       only: IOnode                   
       use files,          only : label_length            

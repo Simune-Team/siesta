@@ -8,6 +8,329 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_dhscf
+
+C
+C  Modules
+C
+      use precision
+      use parallel,      only : Node, Nodes
+      use atmfuncs,      only : rcut, rcore
+      use fdf
+      use sys,           only : die
+      use mesh,          only : xdsp, nsm, nsp
+      use parsing
+      use m_iorho,       only : write_rho
+      use m_forhar,      only : forhar
+      use xcmod,         only : nXCfunc, XCauth
+      use alloc,         only : re_alloc, de_alloc
+      use siesta_options, only: harrisfun
+
+#ifdef MPI
+      use mpi_siesta
+#endif
+
+      implicit none
+
+      !! MODULE variables
+
+      ! Arrays that hold data which do not change during the SCF loop
+      real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
+
+      real(dp), save :: Uharrs     ! (Harris) atomic electrostatic energy
+
+      logical, save :: IsDiag, IsEfld, spiral
+
+      character(len=10), save :: shape
+
+      integer, save :: nm(3), nml(3), ntml(3), npcc, nmpl, ntpl, ntopl
+
+      real(dp), save ::  qspiral(3)
+      real(dp), save ::  bcell(3,3), cell(3,3), dvol, field(3),
+     .     rmax, scell(3,3)
+
+      real(dp), save ::  G2mesh =  0.0_dp
+
+      public :: dhscf_init, dhscf
+      private
+
+      CONTAINS
+
+      subroutine dhscf_init(nspin, norb, iaorb, iphorb,
+     $                      nuo, nuotot, nua, na,
+     $                      isa, xa, indxua, ucell,
+     $                      mscell, G2max, ntm,
+     $                      maxnd, numd, listdptr, listd, datm,
+     $                      Fal, stressl)
+
+      integer, intent(in)  :: nspin, norb
+      integer, intent(in)  :: nuo, nuotot, nua
+      integer, intent(in)  :: iaorb(norb), iphorb(norb) 
+      integer, intent(in)  :: na
+      integer, intent(in)  :: isa(na), mscell(3,3), indxua(na)
+      real(dp), intent(in) :: xa(3,na), ucell(3,3)
+      real(dp), intent(in) :: G2max
+      integer, intent(in)  :: maxnd, numd(nuo), listdptr(nuo),
+     $                        listd(maxnd)
+      real(dp), intent(in) :: datm(norb)
+
+      integer, intent(inout)    :: ntm(3)
+      real(dp), intent(inout)     :: Fal(3,nua), stressl(3,3)
+
+
+      real(dp), parameter ::  tiny  = 1.e-12_dp 
+
+      integer io, ia, iphi, is, n, i, j
+      integer nsc(3), nbcell, nsd
+      real(dp) ::  DStres(3,3), volume
+
+      logical :: samesh, samexa
+
+      logical, external :: leqi
+      real(dp), external :: volcel, ddot
+
+#ifdef MPI
+      integer  MPIerror
+#endif
+      
+      real(grid_p), dimension(:,:),   pointer   ::  Vscf
+      real(grid_p)  :: dummy_Drho(1,1), dummy_Vaux(1)
+
+      ! Keeps state
+      logical, save  ::  frstme = .true. 
+
+C ----------------------------------------------------------------------
+C General initialisation
+C ----------------------------------------------------------------------
+
+C Start time counter
+      call timer( 'DHSCF', 1 )
+
+
+!       print *, "dhscf init"
+!       call pxfflush(6)
+      
+      if (frstme) then
+      
+        nullify(Vna,rhoatm,rhopcc)
+
+        ! nsm lives in module mesh in meshsubs
+        if (Node.eq.0) then
+          nsm    = fdf_integer('MeshSubDivisions',2)
+          nsm    = max(nsm,1)
+        endif
+
+#ifdef MPI
+        call MPI_Bcast(nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+#endif
+
+C Set mesh sub-division variables & perform one off allocation
+        nsp = nsm*nsm*nsm
+        nullify( xdsp )
+        call re_alloc( xdsp, 1, 3, 1, nsp, name='xdsp',
+     &                 routine='dhscf' )
+
+C Read spin-spiral wavevector (if defined)
+        call readsp( qspiral, spiral )
+        if (spiral .and. nspin.lt.4)
+     $    call die('dhscf: ERROR: spiral defined but nspin < 4')
+
+      endif   ! First time
+
+      if (harrisfun) then
+        do n = 1,nXCfunc
+          if (.not.(leqi(XCauth(n),'PZ').or.leqi(XCauth(n),'CA'))) then
+            if (Node .eq. 0) then
+              write(6,100)
+              write(6,101)
+              write(6,'(a)')
+     .         'dhscf:   Harris forces for a XC functional different of'
+              write(6,'(a)')
+     .         'dhscf:   Perdew-Zunger has not been implemented yet'
+              write(6,102)
+            endif
+            call die()
+          endif
+        enddo
+      endif
+
+100   format(/,'dhscf: ',71(1h*))
+101   format('dhscf:                  INPUT ERROR')
+102   format('dhscf: ',71(1h*))
+
+
+!       print *, "End of dhscf harris"
+!       call pxfflush(6)
+C ----------------------------------------------------------------------
+C Orbital initialisation : part 1
+C ----------------------------------------------------------------------
+
+C Find the maximum orbital radius
+      rmax = 0.0_dp
+      do io = 1,norb
+        ia = iaorb(io)
+        iphi = iphorb(io)
+        is = isa(ia)
+        rmax = max( rmax, rcut(is,iphi) )
+      enddo
+
+C ----------------------------------------------------------------------
+C Check whether mesh initialisation is needed
+C ----------------------------------------------------------------------
+      call SameMeshAndAtoms( na, xa, ucell, rmax, G2max, G2mesh,
+     .  samesh, samexa )
+
+
+!       print *, "End of dhscf samemesh"
+!       call pxfflush(6)
+C ----------------------------------------------------------------------
+C Initialization due to change of mesh
+C ----------------------------------------------------------------------
+      if ( .not.samesh ) then
+
+C Start time counter for mesh initialization
+        call timer( 'DHSCF1', 1 )
+
+
+
+!       print *, "Enter dhscf mesh init"
+!       call pxfflush(6)
+C ----------------------------------------------------------------------
+C Unit cell handling
+C ----------------------------------------------------------------------
+C Find diagonal unit cell and supercell
+        call digcel( ucell, mscell, cell, scell, nsc, IsDiag )
+        if (.not.IsDiag) then
+          if (Node.eq.0) then
+            write(6,'(/,a,3(/,a,3f12.6,a,i6))')
+     .      'DHSCF: WARNING: New shape of unit cell and supercell:',
+     .     ('DHSCF:',(cell(i,j),i=1,3),'   x',nsc(j),j=1,3)
+          endif
+        endif
+
+C Find the system shape
+        call shaper( cell, nua, isa, xa, shape, nbcell, bcell )
+
+C Find system volume
+        volume = volcel( cell )
+
+C ----------------------------------------------------------------------
+C Mesh initialization 
+C ----------------------------------------------------------------------
+        call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
+     .                 G2max, G2mesh, nsc, nmpl, nm,
+     .                 nml, ntm, ntml, ntpl, ntopl, dvol)
+     
+!       print *, "After initmesh"
+!       call pxfflush(6)
+
+C ----------------------------------------------------------------------
+C Allocate memory that depends on the mesh
+C ----------------------------------------------------------------------
+
+C Allocate memory related to ntpl
+        call re_alloc( rhoatm, 1, ntpl, name='rhoatm', routine='dhscf' )
+        call re_alloc( Vna, 1, ntpl, name='Vna', routine='dhscf' )
+
+C Find if there are partial-core-corrections for any atom
+        npcc = 0
+        do ia = 1,na
+          if (rcore(isa(ia)) .gt. tiny) npcc = 1
+        enddo
+
+C Allocate memory for PCC density
+        call re_alloc( rhopcc, 1, ntpl*npcc+1, name='rhopcc',
+     &                 routine='dhscf' )
+
+C Stop time counter for mesh initialization
+        call timer( 'DHSCF1', 2 )
+
+      endif
+C ----------------------------------------------------------------------
+C End of mesh initialization 
+C ----------------------------------------------------------------------
+
+C Allocate local memory
+      nullify(vscf)
+      call re_alloc( Vscf, 1, ntpl, 1, nspin, name='Vscf',
+     &               routine='dhscf_init' )
+
+      if (.not.samexa) then
+C ----------------------------------------------------------------------
+C Initialize atomic orbitals, density and potential
+C ----------------------------------------------------------------------
+
+C Start time counter for atomic initializations
+        call timer( 'DHSCF2', 1 )
+
+C Initialise quantities relating to the atom-mesh positioning
+        call InitAtomMesh( na, xa)
+
+C Find partial-core-correction energy density
+        !! Vscf and Vaux are not used here
+        if (npcc .eq. 1) then
+          call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
+     .      nsd, dvol, volume, Vscf, dummy_Vaux, Fal, stressl, .false.,
+     .      .false. )
+        endif
+
+C Find neutral-atom potential
+        ! Drho is not used here
+        call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
+     .                          volume, dummy_DRho, Fal, stressl, 
+     .                          .false., .false. )
+
+C Calculate orbital values on mesh
+        call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa )
+
+C ----------------------------------------------------------------------
+C Create sparse indexing for Dscf as needed for local mesh
+C ----------------------------------------------------------------------
+        if (Nodes.gt.1) then
+          call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
+     .                                  listd )
+        endif
+
+C ----------------------------------------------------------------------
+C Calculate terms relating to the neutral atoms on the mesh
+C ----------------------------------------------------------------------
+
+C Find Harris (sum of atomic) electron density
+        call rhooda( norb, nmpl, datm, rhoatm, iaorb, iphorb, isa )
+
+C Solve Poisson's equation to find Hartree energy of rhoatm
+        call reord( rhoatm, rhoatm, nml, nsm, +1)
+        ! Vscf is filled here but not used later
+        ! Uharrs is computed (and saved)
+        ! DStres is computed but not used later
+        call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm,
+     .               Uharrs, Vscf, DStres, nsm )
+        call reord( rhoatm, rhoatm, nml, nsm, -1)
+
+C Stop time counter for atomic initializations
+        call timer( 'DHSCF2', 2 )
+
+C ----------------------------------------------------------------------
+C End of atomic initializations
+C ----------------------------------------------------------------------
+      endif
+
+      if (frstme) then
+        ! Vscf is not used here because we pass "0,0,0" as mesh
+        call efield( cell, nua, isa, xa, (/ 0,0,0 /), nsm, Vscf, field )
+        IsEfld = .false.
+        if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
+      endif
+      frstme = .false.
+
+!       print *, "End of dhscf init"
+!       call pxfflush(6)
+
+      call de_alloc(Vscf,name="Vscf",routine="dhscf_init")
+
+      end subroutine dhscf_init
+
+!--------------------------------------------------
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
      .                  nuotot, nua, na, isa, xa, indxua, ucell, mscell,
      .                  G2max, ntm, ifa, istr, iHmat, filrho, fildrh, 
@@ -128,26 +451,6 @@ C Energies in Rydbergs
 C Distances in Bohr
 C ----------------------------------------------------------------------
 
-C
-C  Modules
-C
-      use precision
-      use parallel,      only : Node, Nodes
-      use atmfuncs,      only : rcut, rcore
-      use fdf
-      use sys,           only : die
-      use mesh,          only : xdsp, nsm, nsp
-      use parsing
-      use m_iorho,       only : write_rho
-      use m_forhar,      only : forhar
-      use xcmod,         only : nXCfunc, XCauth
-      use alloc,         only : re_alloc, de_alloc
-#ifdef MPI
-      use mpi_siesta
-#endif
-
-      implicit none
-
       integer
      .  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
      .  iaorb(norb), ifa, iHmat, indxua(na), iphorb(norb), isa(na), 
@@ -196,7 +499,6 @@ C real*8  dvol          : Mesh-cell volume
 C real*8  Ec            : Correlation energy
 C real*8  Ex            : Exchange energy
 C real*8  field(3)      : External electric field
-C logical frstme        : First time this routine is called?
 C integer i             : General-purpose index
 C integer ia            : Atom index
 C integer io            : Orbital index
@@ -213,7 +515,6 @@ C integer nsd           : Number of diagonal spin values (1 or 2)
 C integer ntpl          : Number of mesh Total Points in unit cell
 C                         (including subpoints) locally
 C integer ntopl         : Total number of nonzero orbital points locally
-C integer nzero(3)      : Auxiliary array with zeros, to call efield
 C real*4  rhoatm(ntpl)  : Harris electron density
 C real*4  rhopcc(ntpl)  : Partial-core-correction density for xc
 C real*4  DRho(ntpl)    : Selfconsistent electron density difference
@@ -226,8 +527,6 @@ C logical samesh        : Same mesh of last call?
 C logical samexa        : Same atomic positions of last call?
 C real*8  scell(3,3)    : Supercell vectors
 C character shape*10    : Name of system shape
-C real*8  tiny          : A small constant
-C real*8  Uharrs        : Hartree energy of Harris electron density
 C real*4  Vaux(ntpl)    : Auxiliary potential array
 C real*4  Vna(ntpl)     : Sum of neutral-atom potentials
 C real*8  volume        : Unit cell volume
@@ -240,32 +539,20 @@ C
 C Internal variables
 C
       integer
-     .  i, ia, io, ip, iphi, is, ispin, j, ifor,
-     .  n, nbcell, nm(3), npcc, nsd, nv, nzero(3), 
-     .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3)
+     .  i, ia, io, ip, iphi, is, ispin, j, n, nsd, nv
+
+      real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
+     $            Ec, Ex, rhotot, x0(3), dummy_DVxcdn(1,1,1),
+     $            volume
 
 #ifdef MPI
-      integer
-     .  MPIerror
+      integer  MPIerror
 #endif
 
-      real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
-      real(grid_p), dimension(:),     pointer   :: Vaux
-      real(grid_p), dimension(:,:),   pointer   :: DRho, Vscf
-      real(grid_p), dimension(:,:,:), pointer   :: DVxcdn
-      real(grid_p), dimension(:),     pointer   :: Chlocal, Totchar
 !
 !     Dummy arrays for cellxc call
 !
       real(grid_p) ::  aux3(3,1)
-
-      real(dp)
-     .  bcell(3,3), b1Xb2(3), cell(3,3), const,
-     .  DEc, DEx, ddot, DStres(3,3), dvol, Ec, Ex, field(3),
-     .  rhotot, rmax, scell(3,3), tiny, 
-     .  Uharrs, volume, volcel, x0(3)
-
-      real(dp), save ::  qspiral(3)
 
 #ifdef MPI
       real(dp)  ::  Eloc
@@ -273,238 +560,37 @@ C
 
       logical :: leqi
 
-      logical, save :: 
-     .  frstme, harrisfun, IsDiag, IsEfld, samesh, samexa, spiral
-
-      character(len=10), save ::
-     .  shape
+      real(dp), external :: volcel, ddot
 
       external
      .  cellxc, cross,
-     .  dfscf,  dipole, ddot,  
+     .  dfscf,  dipole,
      .  efield, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
-     .  timer, vmat, vmatsp, volcel,
+     .  timer, vmat, vmatsp, 
      .  readsp
 
-      save
-     .  bcell, cell, dvol, field, G2mesh,
-     .  nm, nml, ntml, npcc, nzero, nmpl, ntpl, ntopl,
-     .  rmax, scell, tiny, Uharrs, volume
-
-      data
-     .  G2mesh / 0.0_dp /
-     .  nzero / 3*0 /,
-     .  tiny  / 1.e-12_dp /,
-     .  frstme /.true./
-
+      ! Work arrays
+      real(grid_p), dimension(:),     pointer   :: Vaux
+      real(grid_p), dimension(:,:),   pointer   :: DRho, Vscf
+      real(grid_p), dimension(:),     pointer   :: Chlocal, Totchar
+      
 C ----------------------------------------------------------------------
-C General initialisation
+C Start of SCF iteration part
 C ----------------------------------------------------------------------
+      call timer( 'DHSCF3', 1 )
 
-C Start time counter
-      call timer( 'DHSCF', 1 )
+      volume = volcel(cell)
 
-      if (frstme) then
-        nullify(Vna,rhoatm,rhopcc)
-        nullify(vaux,vscf,DRho,DVxcdn)
-        nullify(chlocal,totchar)
-        if (Node.eq.0) then
-          harrisfun = fdf_boolean('Harris_functional',.false.)
-          nsm    = fdf_integer('MeshSubDivisions',2)
-          nsm    = max(nsm,1)
-        endif
+C Allocate local memory -------------------------------------------------
 
-#ifdef MPI
-        call MPI_Bcast(harrisfun,1,MPI_logical,0,MPI_Comm_World,
-     .    MPIerror)
-        call MPI_Bcast(nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
-
-C Set mesh sub-division variables & perform one off allocation
-        nsp = nsm*nsm*nsm
-        nullify( xdsp )
-        call re_alloc( xdsp, 1, 3, 1, nsp, name='xdsp',
-     &                 routine='dhscf' )
-
-C Read spin-spiral wavevector (if defined)
-        call readsp( qspiral, spiral )
-        if (spiral .and. nspin.lt.4)
-     $    call die('dhscf: ERROR: spiral defined but nspin < 4')
-
-      endif
-
-      if (.not.harrisfun) then
-        ifor = 0
-      else if (harrisfun) then
-        ifor = 1
-        do n = 1,nXCfunc
-          if (.not.(leqi(XCauth(n),'PZ').or.leqi(XCauth(n),'CA'))) then
-            if (Node .eq. 0) then
-              write(6,100)
-              write(6,101)
-              write(6,'(a)')
-     .         'dhscf:   Harris forces for a XC functional different of'
-              write(6,'(a)')
-     .         'dhscf:   Perdew-Zunger has not been implemented yet'
-              write(6,102)
-            endif
-            call die()
-          endif
-        enddo
-      endif
-
-C ----------------------------------------------------------------------
-C Orbital initialisation : part 1
-C ----------------------------------------------------------------------
-
-C Find the maximum orbital radius
-      rmax = 0.0_dp
-      do io = 1,norb
-        ia = iaorb(io)
-        iphi = iphorb(io)
-        is = isa(ia)
-        rmax = max( rmax, rcut(is,iphi) )
-      enddo
-
-C ----------------------------------------------------------------------
-C Check whether mesh initialisation is needed
-C ----------------------------------------------------------------------
-      call SameMeshAndAtoms( na, xa, ucell, rmax, G2max, G2mesh,
-     .  samesh, samexa )
-
-C ----------------------------------------------------------------------
-C Initialization due to change of mesh
-C ----------------------------------------------------------------------
-      if ( .not.samesh ) then
-
-C Start time counter for mesh initialization
-        call timer( 'DHSCF1', 1 )
-
-
-C ----------------------------------------------------------------------
-C Unit cell handling
-C ----------------------------------------------------------------------
-C Find diagonal unit cell and supercell
-        call digcel( ucell, mscell, cell, scell, nsc, IsDiag )
-        if (.not.IsDiag) then
-          if (Node.eq.0) then
-            write(6,'(/,a,3(/,a,3f12.6,a,i6))')
-     .      'DHSCF: WARNING: New shape of unit cell and supercell:',
-     .     ('DHSCF:',(cell(i,j),i=1,3),'   x',nsc(j),j=1,3)
-          endif
-        endif
-
-C Find the system shape
-        call shaper( cell, nua, isa, xa, shape, nbcell, bcell )
-
-C Find system volume
-        volume = volcel( cell )
-
-C ----------------------------------------------------------------------
-C Mesh initialization 
-C ----------------------------------------------------------------------
-        call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
-     .                 G2max, G2mesh, nsc, nmpl, nm,
-     .                 nml, ntm, ntml, ntpl, ntopl, dvol)
-
-C ----------------------------------------------------------------------
-C Allocate memory that depends on the mesh
-C ----------------------------------------------------------------------
-
-C Allocate memory related to ntpl
-        call re_alloc( rhoatm, 1, ntpl, name='rhoatm', routine='dhscf' )
-        call re_alloc( Vna, 1, ntpl, name='Vna', routine='dhscf' )
-
-C Find if there are partial-core-corrections for any atom
-        npcc = 0
-        do ia = 1,na
-          if (rcore(isa(ia)) .gt. tiny) npcc = 1
-        enddo
-
-C Allocate memory for PCC density
-        call re_alloc( rhopcc, 1, ntpl*npcc+1, name='rhopcc',
-     &                 routine='dhscf' )
-
-C Stop time counter for mesh initialization
-        call timer( 'DHSCF1', 2 )
-
-      endif
-C ----------------------------------------------------------------------
-C End of mesh initialization 
-C ----------------------------------------------------------------------
-
-C Allocate local memory
+      nullify(DRho,Vscf,Vaux)
       call re_alloc( DRho, 1, ntpl, 1, nspin, name='DRho',
      &               routine='dhscf' )
       call re_alloc( Vscf, 1, ntpl, 1, nspin, name='Vscf',
      &               routine='dhscf' )
       call re_alloc( Vaux, 1, ntpl, name='Vaux', routine='dhscf' )
-      call re_alloc( DVxcdn, 1, ntpl, 1, nspin, 1, nspin, name='Vaux',
-     &               routine='dhscf' )
-
-C Initialization of DVxcdn
-      DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0_grid_p 
-
-      if (.not.samexa) then
-C ----------------------------------------------------------------------
-C Initialize atomic orbitals, density and potential
-C ----------------------------------------------------------------------
-
-C Start time counter for atomic initializations
-        call timer( 'DHSCF2', 1 )
-
-C Initialise quantities relating to the atom-mesh positioning
-        call InitAtomMesh( na, xa)
-
-C Find partial-core-correction energy density
-        if (npcc .eq. 1) then
-          call PartialCoreOnMesh( na, isa, ntpl, rhopcc, indxua,
-     .      nsd, dvol, volume, Vscf, Vaux, Fal, stressl, .false.,
-     .      .false. )
-        endif
-
-C Find neutral-atom potential
-        call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
-     .                          volume, DRho, Fal, stressl, 
-     .                          .false., .false. )
-
-C Calculate orbital values on mesh
-        call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa )
-
-C ----------------------------------------------------------------------
-C Create sparse indexing for Dscf as needed for local mesh
-C ----------------------------------------------------------------------
-        if (Nodes.gt.1) then
-          call CreateLocalDscfPointers( nmpl, nuotot, numd, listdptr, 
-     .                                  listd )
-        endif
-
-C ----------------------------------------------------------------------
-C Calculate terms relating to the neutral atoms on the mesh
-C ----------------------------------------------------------------------
-
-C Find Harris (sum of atomic) electron density
-        call rhooda( norb, nmpl, datm, rhoatm, iaorb, iphorb, isa )
-
-C Solve Poisson's equation to find Hartree energy of rhoatm
-        call reord( rhoatm, rhoatm, nml, nsm, +1)
-        call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm,
-     .               Uharrs, Vscf, DStres, nsm )
-        call reord( rhoatm, rhoatm, nml, nsm, -1)
-
-C Stop time counter for atomic initializations
-        call timer( 'DHSCF2', 2 )
-
-C ----------------------------------------------------------------------
-C End of atomic initializations
-C ----------------------------------------------------------------------
-      endif
-
-C ----------------------------------------------------------------------
-C Start of SCF iteration part
-C ----------------------------------------------------------------------
-      call timer( 'DHSCF3', 1 )
+C-------------------------------------------------------------------------
 
 C Find number of diagonal spin values
       nsd = min( nspin, 2 )
@@ -541,6 +627,7 @@ C ----------------------------------------------------------------------
 
       if (filepsch .ne. ' ' .or. filetoch .ne. ' ') then
 
+        nullify(chlocal)
         call re_alloc( Chlocal, 1, ntpl, name='Chlocal',
      &                 routine='dhscf' )
 
@@ -556,6 +643,7 @@ C Save diffuse ionic charge
 
 C Save total (ionic+electronic) charge 
         if ( filetoch .ne. ' ') then
+           nullify(Totchar)
            call re_alloc( Totchar, 1, ntpl, name='Totchar',
      &          routine='dhscf' )
         
@@ -630,7 +718,9 @@ C Orthogonalize dipole to bulk directions
         endif
       endif
 
-
+! 
+!       print *, "End of dhscf charge"
+!       call pxfflush(6)
 C ----------------------------------------------------------------------
 C Find Hartree potential of DRho = rhoscf-rhoatm. Store it in Vscf
 C ----------------------------------------------------------------------
@@ -698,11 +788,6 @@ C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
 
-      if (frstme) then
-        call efield( cell, nua, isa, xa, nzero, nsm, Vscf, field )
-        IsEfld = .false.
-        if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
-      endif
       if (IsEfld) then
         call reord( Vscf, Vscf, nml, nsm, +1)
         call efield( cell, nua, isa, xa, ntm, nsm, Vscf, field )
@@ -753,7 +838,7 @@ C ----------------------------------------------------------------------
       enddo
 
       call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin, DRho, 
-     .             Ex, Ec, DEx, DEc, Vscf, DVxcdn, stressl )
+     .             Ex, Ec, DEx, DEc, Vscf, dummy_DVxcdn, stressl )
 
       do ispin = 1,nspin
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,-1)
@@ -785,6 +870,9 @@ C ----------------------------------------------------------------------
         enddo
       endif
 
+
+!       print *, "End of dhscf potential"
+!       call pxfflush(6)
 C ----------------------------------------------------------------------
 C Find SCF contribution to hamiltonian matrix elements
 C ----------------------------------------------------------------------
@@ -823,7 +911,7 @@ C Find contribution of partial-core-correction
      .      istr.ne.0 )
         endif
 
-        if ( ifor .eq. 1)
+        if ( harrisfun)
      .    call forhar( ntpl, nspin, nml, ntml, ntm, npcc, cell, 
      .                 rhoatm, rhopcc, Vna, DRho, Vscf, Vaux )
 
@@ -869,11 +957,7 @@ C ----------------------------------------------------------------------
       call de_alloc( Vscf, name='Vscf' )
       call de_alloc( DRho, name='DRho' )
 
-      frstme = .false.
+      end subroutine dhscf
+      end module m_dhscf
 
-100   format(/,'dhscf: ',71(1h*))
-101   format('dhscf:                  INPUT ERROR')
-102   format('dhscf: ',71(1h*))
-
-      end
 

@@ -8,8 +8,11 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_dnaefs
+      public :: dnaefs
+      CONTAINS
       subroutine dnaefs( nua, na, scell, xa, indxua, rmaxv,
-     .                   isa, DEna, fa, stress)
+     .                   isa, DEna, fa, stress, forces_and_stress)
 C *********************************************************************
 C Correction of Neutral Atom energies, forces and stress due to the
 C overlap between ionic (bare pseudopotential) charges.
@@ -24,6 +27,7 @@ C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxv            : Maximum cutoff for NA potential
 C integer isa(na)          : Species index of each atom
+C logical forces_and_stress   Determines whether fa and stress are touched
 C **************************** OUTPUT *********************************
 C real*8 DEna              : NA energy correction
 C ********************** INPUT and OUTPUT *****************************
@@ -50,6 +54,8 @@ C *********************************************************************
 
       real(dp)
      .  scell(3,3), DEna, fa(3,nua), rmaxv, stress(3,3), xa(3,na)
+
+      logical, intent(in)  :: forces_and_stress
 
 C Internal variables ......................................................
       integer
@@ -81,17 +87,20 @@ C Find neighbour atoms
             rij = sqrt( r2ij(jn) )
             call psover( is, js, rij, vij, dvdr )
             DEna = DEna + vij / 2.0d0
-            do ix = 1,3
-              fij(ix) = dvdr * xij(ix,jn) / rij / 2.0d0
-              fa(ix,ia)  = fa(ix,ia)  + fij(ix)
-              fa(ix,jua) = fa(ix,jua) - fij(ix)
-              do jx = 1,3
-                stress(jx,ix) = stress(jx,ix) +
-     .                          xij(jx,jn) * fij(ix) / volume
-              enddo
-            enddo
+            if (forces_and_stress) then
+               do ix = 1,3
+                  fij(ix) = dvdr * xij(ix,jn) / rij / 2.0d0
+                  fa(ix,ia)  = fa(ix,ia)  + fij(ix)
+                  fa(ix,jua) = fa(ix,jua) - fij(ix)
+                  do jx = 1,3
+                     stress(jx,ix) = stress(jx,ix) +
+     .                    xij(jx,jn) * fij(ix) / volume
+                  enddo
+               enddo
+            endif
           endif
         enddo
       enddo
 
-      end
+      end subroutine dnaefs
+      end module m_dnaefs
