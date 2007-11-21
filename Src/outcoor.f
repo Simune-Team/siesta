@@ -30,11 +30,12 @@ c through subroutine reclat.
 c *******************************************************************
 
       use atmfuncs,  only : labelfis
-      use atomlist,  only : isa
+      use siesta_geom,  only : isa
       use fdf, only : fdf_physical, fdf_string
       use precision, only : dp
       use units, only : Ang
       use sys,   only: die
+      use alloc, only: re_alloc, de_alloc
 
       implicit          none
 
@@ -52,10 +53,8 @@ c Internal variables and arrays
       integer           ia, ix
       real(dp)          recell(3,3), alat
 
-      real(dp), dimension(:,:), allocatable ::
-     .                  xap
+      real(dp), dimension(:,:), pointer :: xap
 
-      external          memory
       save              frstme, acfout, alat
 
       data              frstme /.true./
@@ -92,8 +91,8 @@ c Write coordinates at every time or relaxation step?
       if ( (cohead .eq. ' ') .and. ( .not. writec) ) return
 
 C Allocate local memory
-      allocate(xap(3,na))
-      call memory('A','D',3*na,'outcoor')
+      nullify( xap )
+      call re_alloc( xap, 1, 3, 1, na, name='xap', routine='outcoor' )
 
 c write coordinates according to format 
 
@@ -113,16 +112,7 @@ c write coordinates according to format
         pieceh = '(fractional):'
         call reclat(cell, recell, 0)
         xap = matmul(transpose(recell),xa)
-c$$$        do ia = 1,na
-c$$$          do ix = 1,3
-c$$$            xac(ix) = xa(ix,ia)
-c$$$          enddo
-c$$$          do ix = 1,3
-c$$$            xap(ix,ia) = recell(1,ix) * xac(1) +
-c$$$     .                   recell(2,ix) * xac(2) +
-c$$$     .                   recell(3,ix) * xac(3)
-c$$$          enddo
-c$$$        enddo
+
       else
         write(6,"(/,'outcoor: ',a)") repeat('*',72)
         write(6,"('outcoor:                  INPUT ERROR')")
@@ -156,7 +146,6 @@ c writing the coordinates
      .  ((xap(ix,ia),ix=1,3),isa(ia),ia,trim(labelfis(isa(ia))),ia=1,na)
 
 C Deallocate local memory
-      call memory('D','D',size(xap),'outcoor')
-      deallocate(xap)
+      call de_alloc( xap, name='xap' )
 
       end subroutine outcoor

@@ -77,9 +77,9 @@ C integer nbands            : Number of LWF's
 C ****************************************************************************
 
       use precision
-      use alloc
+      use alloc, only: re_alloc, de_alloc
       use on_main
-      use neighbour
+      use neighbour, only: jan, r2ij, xij, mneighb, maxnna
       use sys,      only : die
       use spatial,  only : nL2G
 
@@ -98,14 +98,9 @@ C ****************************************************************************
      .  cell(3,3),qa(natoms),rcoor,rh,xa(3,natoms)
 
 C  Internal variables .......................................................
-C  nnmax = maximum number of neighbour atoms within rcoor
-      integer, save :: nnmax = 1000
 
-      integer, dimension(:), allocatable, save ::
-     .  alist, ilist, numft
-
-      integer, pointer, save ::
-     .  indexloc(:)
+      integer, dimension(:), pointer ::  alist, ilist, numft
+      integer, pointer               ::  indexloc(:)
 
       integer
      . i,ia,imu,in,index,indexa,indexb,indexi,indexj,iorb,is,j,ja,
@@ -115,8 +110,7 @@ C  nnmax = maximum number of neighbour atoms within rcoor
       integer,                            save :: iseed = 17
       integer,                            save :: nna = 200
 
-      logical, dimension(:), allocatable, save ::
-     .  lneeded
+      logical, dimension(:), pointer ::  lneeded
 
       real(dp) ::
      .  cg,fact(2),qtot,r,rmax,rr(3),rrmod,
@@ -147,10 +141,15 @@ C Check that iopt is correct ................................................
 
 
 C Allocate local arrays
-      allocate(alist(natoms))
-      allocate(ilist(nbasis))
-      allocate(numft(nbasis))
-      allocate(lneeded(nbasis))
+      nullify( alist )
+      call re_alloc( alist, 1, natoms, name='alist', routine='cspa' )
+      nullify( ilist )
+      call re_alloc( ilist, 1, nbasis, name='ilist', routine='cspa' )
+      nullify( numft )
+      call re_alloc( numft, 1, nbasis, name='numft', routine='cspa' )
+      nullify( lneeded )
+      call re_alloc( lneeded, 1, nbasis, name='lneeded',
+     &               routine='cspa' )
 
 C Work out which basis functions are required in local C copy
       lneeded(1:nbasis) = .false.
@@ -258,20 +257,26 @@ C Build control vectors of sparse LWF
 C loop over the localized wave funcions (centered at atoms)..................
 
 C Initialize routine for neighbour search
-      call mneighb(cell,rcoor,natoms,xa,0,0,nna,nnmax)
+      ! Note that this will not update nna!!
+      call mneighb(cell,rcoor,natoms,xa,0,0,nna) 
 
 C Allocate local memory
-      call re_alloc(indexloc,1,max(nna,natoms),name='indexloc')
+      call re_alloc(indexloc,1,max(maxnna,natoms),name='indexloc')
 
       index = 0
       do ia = 1,natoms
 
         if (2.0*rcoor .lt. rmax) then
 C Look for neighbours of atom ia
-          call mneighb(cell,rcoor,natoms,xa,ia,0,nna,nnmax)
-C Reallocate array in case nna has increased
-          call re_alloc(indexloc,1,nna,name='indexloc')
+          call mneighb(cell,rcoor,natoms,xa,ia,0,nna)
+          ! Reallocate in case nna has increased  (Tight form)
+          call re_alloc(indexloc,1,nna,name='indexloc',routine="cspa")
         else
+          ! Make sure we have enough space
+          ! (Cleaner alternative to initial allocation with  
+          ! max(maxnna,natoms)
+          !call sizeup_neighbour_arrays(natoms)
+          !call re_alloc( indexloc, 1, natoms, name='indexloc')
           nna = natoms
           do  jj = 1,natoms
             jan(jj) = jj
@@ -463,13 +468,13 @@ C Maximum interacion range between LWF's
       if (2*r .ge. rmax) then
         nhijmax = nbands
       else
-        call mneighb(cell,r,natoms,xa,0,0,nna,nnmax)
+        call mneighb(cell,r,natoms,xa,0,0,nna)   !! ,nnmax)
 
         index = 0
         do ia = 1,natoms
   
 C Look for neighbours of atom ia within maximum interaction range
-          call mneighb(cell,r,natoms,xa,ia,0,nna,nnmax)
+          call mneighb(cell,r,natoms,xa,ia,0,nna) !! ,nnmax)
 
           nhij = 0
 C Loop over the neighbors of ia within rcoor
@@ -507,13 +512,14 @@ C  (or the number of electrons)
       endif
 
 C Deallocate local memory
-      deallocate(lneeded)
-      deallocate(numft)
-      deallocate(ilist)
-      deallocate(alist)
 
-      return
-      end
+      call de_alloc( lneeded, name='lneeded' )
+      call de_alloc( numft, name='numft' )
+      call de_alloc( ilist, name='ilist' )
+      call de_alloc( alist, name='alist' )
+      call de_alloc( indexloc, name='indexloc' )
+
+      end subroutine cspa
 
       subroutine initguess(ia,iorb,is,ne,cg,cgval,Node)
 C *****************************************************************************
@@ -628,5 +634,4 @@ C If 32 or less electrons, populate lowest s, p, d and f orbitals
         cg = cgval
       endif
 
-      return
-      end
+      end subroutine initguess

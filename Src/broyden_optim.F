@@ -17,13 +17,13 @@
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only:  broadcast
       use units, only: kBar
+      use alloc, only: re_alloc, de_alloc
 !
       use m_broyddj_nocomm, only: broyden_t
       use m_broyddj_nocomm, only: broyden_reset, broyden_step,
      $                     broyden_destroy, broyden_init,
      $                     broyden_is_setup
 
-      use m_memory, only: memory, mem_stat
       use parallel, only : ionode
 
       implicit none
@@ -33,7 +33,7 @@
 
       CONTAINS
       subroutine broyden_optimizer( na, xa, fa, cell, stress,
-     $     volume, dxmax, tp, ftol, strtol, varcel, relaxd)
+     $     dxmax, tp, ftol, strtol, varcel, relaxd)
 c ***************************************************************************
 c Broyden geometry optimization
 c
@@ -56,7 +56,6 @@ c Written by Alberto Garcia, December 2005
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
 c real*8 fa(3,na)       : Atomic forces
-c real*8 volume         : unit cell volume
 c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
@@ -73,14 +72,10 @@ c ******************************** OUTPUT ***********************************
 c logical relaxd        : True when converged
 c ***************************************************************************
 
-C
-C  Modules
-C
-
 ! Subroutine arguments:
 
       integer, intent(in) :: na
-      real(dp), intent(in) :: fa(3,na), volume, dxmax,
+      real(dp), intent(in) :: fa(3,na), dxmax,
      .                        tp, ftol, strtol
       logical, intent(in) :: varcel
       real(dp), intent(inout) :: xa(3,na), stress(3,3), cell(3,3)
@@ -88,7 +83,7 @@ C
 
 c Internal variables and arrays
 
-      real(dp)            :: new_volume, trace
+      real(dp)            :: new_volume, trace, volume
 
       logical           found
       integer           iu, ia, i, j, n, indi
@@ -96,8 +91,8 @@ c Internal variables and arrays
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
 
-      real(dp), dimension(:), allocatable       :: gxa, gfa
-      real(dp), dimension(:), allocatable       :: rold, rnew, rdiff
+      real(dp), dimension(:), pointer       :: gxa, gfa
+      real(dp), dimension(:), pointer       :: rold, rnew, rdiff
 
 ! Saved internal variables:
 
@@ -126,6 +121,8 @@ c Internal variables and arrays
       real(dp) :: volcel
       external :: volcel
 c ---------------------------------------------------------------------------
+
+      volume = volcel(cell)
 
       if (.not. initialization_done) then
 
@@ -212,15 +209,11 @@ C Look for target stress and read it if found, otherwise generate it --------
 C Write target stress down --------------------------------------------------
 
             write(6,"(/a)") 'Broyden_optim: Target stress (kBar)'
-            write(6,"(a,2x,3f12.3)") 
-     .       'Broyden_optim:', tstres(1,1)/kBar, tstres(1,2)/kBar, 
-     .       tstres(1,3)/kBar
-            write(6,"(a,2x,3f12.3)") 
-     .       'Broyden_optim:', tstres(2,1)/kBar, tstres(2,2)/kBar, 
-     .       tstres(2,3)/kBar
-            write(6,"(a,2x,3f12.3)") 
-     .       'Broyden_optim:', tstres(3,1)/kBar, tstres(3,2)/kBar, 
-     .       tstres(3,3)/kBar
+            do i = 1, 3
+               write(6,"(a,2x,3f12.3)") 
+     .           'Broyden_optim:', tstres(i,1)/kBar, tstres(i,2)/kBar, 
+     .            tstres(i,3)/kBar
+            enddo
           endif  ! node0
 
           call broadcast(tstres(1:3,1:3))
@@ -267,15 +260,15 @@ C Variable cell -------------------------------------------------------------
 
       if ( varcel ) then
 
-         allocate(gfa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gfa")
-         allocate(gxa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gxa")
-         allocate (rnew(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rnew")
+        nullify( gfa )
+        call re_alloc( gfa, 1, numel, name='gfa',
+     &                 routine='broyden_optimizer' )
+        nullify( gxa )
+        call re_alloc( gxa, 1, numel, name='gxa',
+     &                 routine='broyden_optimizer' )
+        nullify( rnew )
+        call re_alloc( rnew, 1, numel, name='rnew',
+     &                 routine='broyden_optimizer' )
 
 C Inverse of matrix of cell vectors  (transpose of) ------------------------
 
@@ -373,15 +366,15 @@ C Fixed cell ----------------------------------------------------------------
 
            endif
 
-           allocate (rold(numel), stat=mem_stat)
-           call memory('A','D',numel,'Broyden_optim',
-     $          stat=mem_stat,id="rold")
-           allocate (rnew(numel), stat=mem_stat)
-           call memory('A','D',numel,'Broyden_optim',
-     $          stat=mem_stat,id="rnew")
-           allocate (rdiff(numel),stat=mem_stat)
-           call memory('A','D',numel,'Broyden_optim',
-     $          stat=mem_stat,id="rdiff")
+          nullify( rold )
+          call re_alloc( rold, 1, numel, name='rold',
+     &                   routine='broyden_optimizer' )
+          nullify( rnew )
+          call re_alloc( rnew, 1, numel, name='rnew',
+     &                   routine='broyden_optimizer' )
+          nullify( rdiff )
+          call re_alloc( rdiff, 1, numel, name='rdiff',
+     &                   routine='broyden_optimizer' )
 
            weight = 1.0_dp
            indi = 0
@@ -434,27 +427,15 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
 
       ! Deallocate local memory
 
-        deallocate (rnew, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="rnew")
-        deallocate (gxa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gxa")
-        deallocate (gfa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gfa")
+        call de_alloc( rnew, name='rnew' )
+        call de_alloc( gxa, name='gxa' )
+        call de_alloc( gfa, name='gfa' )
 
       else
 
-         deallocate (rold, stat=mem_stat)
-         call memory('D','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rold")
-         deallocate (rnew, stat=mem_stat)
-         call memory('D','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rnew")
-         deallocate (rdiff, stat=mem_stat)
-         call memory('D','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rdiff")
+        call de_alloc( rold, name='rold' )
+        call de_alloc( rnew, name='rnew' )
+        call de_alloc( rdiff, name='rdiff' )
 
       endif ! variable cell
 

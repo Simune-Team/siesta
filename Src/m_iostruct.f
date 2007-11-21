@@ -22,7 +22,7 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
       use fdf,         only : fdf_string
       use units,       only : Ang
       use m_mpi_utils, only : broadcast
-      use atomlist,    only : xa, isa, cisa
+      use siesta_geom,    only : xa, isa, cisa
       use alloc,       only : re_alloc
       use sys,         only : die
       use files,       only : slabel, label_length
@@ -89,21 +89,22 @@ c     Alberto Garcia, Sep. 2005. Based on ioxv by J.M.Soler. July 1997.
       call broadcast(xa(1:3,1:na))
 
 ! Construct references
-      allocate(cisa(na))
+      nullify(cisa)
+      call re_alloc(cisa,1,na,name="cisa",routine="read_struct")
       do ia = 1, na
          write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
       enddo
 
       end subroutine read_struct
-!--------------------------------------------------------------------------
-      subroutine write_struct(cell, na, isa, iza, xa, moved )
+!---------------------------------------------------------------------
+      subroutine write_struct(cell, na, isa, iza, xa, moved)
 !     
 c     real*8  cell(3,3)  : Unit cell vectors
 c     integer na         : Number of atoms
 c     integer isa(na)    : Atomic species index
 c     integer iza(na)    : Atomic numbers
 c     real*8  xa(3,na)   : Atomic positions
-c     logical moved      : True if structure is the "predicted"
+c     logical moved      :  True if structure is the "predicted"
 c                          one after application of forces/stress.
 
       integer, intent(in)  ::          na, isa(na), iza(na)

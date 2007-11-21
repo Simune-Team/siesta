@@ -29,6 +29,7 @@ C *********************************************************************
       use precision
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -47,8 +48,7 @@ C**** Internal variables ***********************************************
 #ifdef MPI
       integer 
      .  MPIerror, iuog, juog, n, noccloc
-      real(dp), dimension(:,:,:), allocatable, save ::
-     .  psitmp
+      real(dp), dimension(:,:,:), pointer ::  psitmp
 #endif
 
 #ifdef MPI
@@ -57,8 +57,9 @@ C**** Internal variables ***********************************************
 ! as some of the nodes might have zero orbitals!
 
       call GetNodeOrbs(nocc,0,Nodes,noccloc)
-      allocate(psitmp(2,nuotot,noccloc))
-      call memory('A','D',2*nuotot*noccloc,'savepsi')
+      nullify( psitmp )
+      call re_alloc( psitmp, 1, 2, 1, nuotot, 1, noccloc,
+     &                 name='psitmp', routine='savepsi' )
 
       do n = 0,Nodes-1
 
@@ -83,8 +84,7 @@ C Save local part of psiprev
 
 
       enddo
-      call memory('D','D',size(psitmp),'savepsi')
-      deallocate(psitmp)
+      call de_alloc( psitmp,  name='psitmp' )
 
 #else
 C Straight serial copy

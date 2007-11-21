@@ -10,13 +10,17 @@
 !
       MODULE LISTSC_MODULE
 
+      private 
       public :: LISTSC_INIT, LISTSC
 
-      integer, private, dimension(:), allocatable, save :: IND1, IND2
+      integer, pointer, save :: IND1(:), IND2(:)
+      logical, save          :: nullified_pointers = .false.
 
       CONTAINS
 
       SUBROUTINE LISTSC_INIT( NSC, NUO )
+      use alloc, only: re_alloc
+
 C *********************************************************************
 C Initializes listsc.
 C Written by J.M.Soler, July 1999
@@ -38,19 +42,13 @@ C *********************************************************************
       NCELLS = NSC(1) * NSC(2) * NSC(3)
       NO = NUO * NCELLS
 
-C     Allocate local storage
-      if (allocated(IND1)) then
-        call memory('D','I',size(IND1),'listsc')
-        deallocate(IND1)
+      if (.not. nullified_pointers) then
+         nullify(ind1, ind2)
+         nullified_pointers = .true.
       endif
-      if (allocated(IND2)) then
-        call memory('D','I',size(IND2),'listsc')
-        deallocate(IND2)
-      endif
-      allocate(IND1(8*NO))
-      call memory('A','I',8*NO,'listsc')
-      allocate(IND2(NO))
-      call memory('A','I',NO,'listsc')
+
+      call re_alloc(IND1,1,8*NO,name="ind1",routine="listsc_init")
+      call re_alloc(IND2,1,NO,name="ind2",routine="listsc_init")
 
 C     Loop on unit cells of an extended supercell 
 C     (twice as large in each direction)

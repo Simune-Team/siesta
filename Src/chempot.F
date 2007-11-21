@@ -8,6 +8,25 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_chempot
+      use precision, only: dp
+      use alloc,     only: re_alloc, de_alloc
+
+      implicit none
+
+      private
+      public :: chempot
+
+        ! Formerly in numbvect
+        integer   p, nb
+        real(dp)    qtot
+        real(dp), dimension(:), pointer ::   c(:), rr(:,:)
+
+        ! Formerly in common
+        real(dp)   :: betap
+
+      CONTAINS
+
       subroutine chempot(h,s,numh,listhptr,listh,rcoor,pmax,beta,
      .                   lasto,cell,xa,enum,nbasis,nbasisloc,
      .                   natoms,maxnh,chpot,emax,emin)
@@ -64,14 +83,14 @@ C *********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use sys,           only : die
+      use neighbour,     only : jan, r2ij, xij, mneighb, maxnna
 #ifdef MPI
       use mpi_siesta
 #endif
-      use numbvect
 
       implicit none
 
@@ -89,69 +108,42 @@ C    .  homo, lumo, gap
 
 C Internal variables...
 
-      integer
-     . ind, ipmax, nhmax, nnmaxnew, nvmaxnew
+      integer ::  ind, ipmax, nhmax, nvmaxnew
 #ifdef MPI
       integer
      . MPIerror
 #endif
 
-C nnmax = maximum number of neighbors atoms within rcoor
 C nvmax = maximum number of non-zero elements within a sparse vector v
-      integer, save ::
-     .  nnmax, nvmax
+      integer, save ::   nvmax = 1000
 
 C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       parameter(ipmax = 200)
 
-      real(dp)
-     .  mu1,mu2
-      parameter(mu1=-1.2d0,mu2=1.2d0)
+      real(dp),  parameter :: mu1=-1.2d0 , mu2=1.2d0
 
       integer
      .  i, ia, ii, iil, imu, iorb, j, ja, ji, jj, jorb, 
      .  k, m, mu, nna, norb, nu, num, numloc, numv
 
-      integer, dimension(:), allocatable, save ::
-     .  listvt, numhp, indexloc, jan, ibuffer, listv
+      integer, dimension(:), pointer :: listvt, numhp, indexloc,
+     &                                  ibuffer, listv
 
-      real(dp)
-     .  betap, chpotsh, deltae, emean,
-     .  numb, rmax, rrmod, ri(3), tol,
-     .  zbrent
-C    .  delta, eref2, eref1, eig2, eig1
+      real(dp)  chpotsh, deltae, emean,
+     .  rmax, rrmod, ri(3), tol
 
-      integer, dimension(:,:), allocatable, save ::
-     .  listhp, listhpp
-
-      real(dp), dimension(:), allocatable, save ::
-     .  paux, vec
-
-      real(dp), dimension(:,:), allocatable, save ::
-     .  hbar, Hdense, Sdense
-
-      real(dp), dimension(:), allocatable, save ::
-     . r2ij, dpbuffer1
-
-      real(dp), dimension(:,:), allocatable, save ::
-     . xij, v, dpbuffer2
-
-C ...
-C common to pass beta to chebfd ...
-      common /beta/betap
-C ...
-      external 
-     .  numb, zbrent, memory
-
-      data nnmax / 1000 /
-      data nvmax / 1000 /
+      integer,  dimension(:,:), pointer :: listhp, listhpp
+      real(dp), dimension(:),   pointer :: paux, vec
+      real(dp), dimension(:,:), pointer :: hbar, Hdense, Sdense
+      real(dp), dimension(:),   pointer :: dpbuffer1
+      real(dp), dimension(:,:), pointer :: v, dpbuffer2
 C ...
 
 C Start timer
       call timer( 'chempot', 1 )
+      print *, "CHEMPOT CALLED"
 
-C Assign information for Chebyshev expansion .................
-C Total charge
+C Assign information for Chebyshev expansion (module variables)
       qtot = enum
       nb = nbasis
       p = pmax
@@ -163,48 +155,57 @@ C Find size of maxnh
       enddo
 
 C Allocate arrays that depend on maxnh
-      allocate(listhp(nhmax,nbasis))
-      call memory('A','I',nhmax*nbasis,'chempot')
-      allocate(listhpp(nhmax,nbasis))
-      call memory('A','I',nhmax*nbasis,'chempot')
-      allocate(paux(nhmax))
-      call memory('A','D',nhmax,'chempot')
-      allocate(vec(nhmax))
-      call memory('A','D',nhmax,'chempot')
-      allocate(hbar(nhmax,nbasis))
-      call memory('A','D',nhmax*nbasis,'chempot')
-      allocate(Hdense(nhmax,nhmax))
-      call memory('A','D',nhmax*nhmax,'chempot')
-      allocate(Sdense(nhmax,nhmax))
-      call memory('A','D',nhmax*nhmax,'chempot')
+
+      nullify( listhp )
+      call re_alloc( listhp, 1, nhmax, 1, nbasis, name='listhp',
+     &               routine='chempot' )
+      nullify( listhpp )
+      call re_alloc( listhpp, 1, nhmax, 1, nbasis, name='listhpp',
+     &               routine='chempot' )
+      nullify( paux )
+      call re_alloc( paux, 1, nhmax, name='paux', routine='chempot' )
+      nullify( vec )
+      call re_alloc( vec, 1, nhmax, name='vec', routine='chempot' )
+      nullify( hbar )
+      call re_alloc( hbar, 1, nhmax, 1, nbasis, name='hbar',
+     &               routine='chempot' )
+      nullify( Hdense )
+      call re_alloc( Hdense, 1, nhmax, 1, nhmax, name='Hdense',
+     &               routine='chempot' )
+      nullify( Sdense )
+      call re_alloc( Sdense, 1, nhmax, 1, nhmax, name='Sdense',
+     &               routine='chempot' )
 
 C Allocate arrays that depend on nbasis
-      allocate(listvt(nbasis))
-      call memory('A','I',nbasis,'chempot')
-      allocate(numhp(nbasis))
-      call memory('A','I',nbasis,'chempot')
-      allocate(rr(nbasis,0:ipmax))
-      call memory('A','D',nbasis*(ipmax+1),'chempot')
+
+      nullify( listvt )
+      call re_alloc( listvt, 1, nbasis, name='listvt',
+     &               routine='chempot' )
+      nullify( numhp )
+      call re_alloc( numhp, 1, nbasis, name='numhp',
+     &               routine='chempot' )
+      nullify( rr )
+      call re_alloc( rr, 1, nbasis, 0, ipmax, name='rr',
+     &               routine='chempot' )
 
 C Allocate arrays that depend on ipmax
-      allocate(c(ipmax))
-      call memory('A','D',ipmax,'chempot')
 
-C Allocate arrays that depend on nnmax
-      allocate(indexloc(nnmax))
-      call memory('A','I',nnmax,'chempot')
-      allocate(jan(nnmax))
-      call memory('A','I',nnmax,'chempot')
-      allocate(r2ij(nnmax))
-      call memory('A','D',nnmax,'chempot')
-      allocate(xij(3,nnmax))
-      call memory('A','D',3*nnmax,'chempot')
+      nullify( c )
+      call re_alloc( c, 1, ipmax, name='c', routine='chempot' )
+
+C Allocate arrays that depend on maxnna
+
+      nullify( indexloc )
+      call re_alloc( indexloc, 1, max(maxnna,natoms),
+     $           name='indexloc',  routine='chempot' )
 
 C Allocate arrays that depend on nvmax
-      allocate(listv(nvmax))
-      call memory('A','I',nvmax,'chempot')
-      allocate(v(nvmax,3))
-      call memory('A','D',3*nvmax,'chempot')
+
+      nullify( listv )
+      call re_alloc( listv, 1, nvmax, name='listv',
+     &               routine='chempot' )
+      nullify( v )
+      call re_alloc( v, 1, nvmax, 1, 3, name='v', routine='chempot' )
 
 C *** Calculate H' = S(-1)*H  (See Gibson et al, PRB 47, 9229 (92)) ***
 C This is done by Choleski decomposition of S, and solving the
@@ -274,8 +275,9 @@ C  see if orbitals ii and jj interact
 
 #ifdef MPI
 C  Globalise Hdense and Sdense for now
-        allocate(dpbuffer1(nu))
-        call memory('A','D',nu,'chempot')
+        nullify( dpbuffer1 )
+        call re_alloc( dpbuffer1, 1, nu, name='dpbuffer1',
+     &                 routine='chempot' )
         do i = 1,nu
           call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
@@ -288,8 +290,7 @@ C  Globalise Hdense and Sdense for now
             Hdense(j,i) = dpbuffer1(j)
           enddo
         enddo
-        call memory('D','D',size(dpbuffer1),'chempot')
-        deallocate(dpbuffer1)
+        call de_alloc( dpbuffer1, name='dpbuffer1',routine="chempot")
 #endif
 
 C  Cholesky factorization:
@@ -356,10 +357,14 @@ C  First scale and shift the hamiltonian ...
       enddo     
 
 C Calculate maximum length in unit cell ...
+  ! i.e, maximum distance among (-1:1) lattice points
+!AG: This seems to be wrong, as the cell vectors are given
+!    by columns...
       rmax = 0.0d0
       do i = -1,1
         do j = -1,1
           do k = -1,1
+            !AG: ri(:) = i*cell(:,1) + j*cell(:,2) + k*cell(:,3)
             ri(1) = i*cell(1,1) + j*cell(2,1) + k*cell(3,1)
             ri(2) = i*cell(1,2) + j*cell(2,2) + k*cell(3,2)
             ri(3) = i*cell(1,3) + j*cell(2,3) + k*cell(3,3)
@@ -371,52 +376,7 @@ C Calculate maximum length in unit cell ...
 
 C Initialize routine for neighbour search
       if (2.*rcoor .lt. rmax) then
-        nna = nnmax
-        call neighb(cell,rcoor,natoms,xa,0,0,nna,jan,xij,r2ij)
-        if (nna .gt. nnmax) then
-          nnmaxnew = nna + nint(0.1*nna)
-C
-          allocate(ibuffer(nnmax))
-          call memory('A','I',nnmax,'chempot')
-          ibuffer(1:nnmax) = indexloc(1:nnmax)
-          call memory('D','I',size(indexloc),'chempot')
-          deallocate(indexloc)
-          allocate(indexloc(nnmaxnew))
-          call memory('A','I',nnmaxnew,'chempot')
-          indexloc(1:nnmax) = ibuffer(1:nnmax)
-          ibuffer(1:nnmax) = jan(1:nnmax)
-          call memory('D','I',size(jan),'chempot')
-          deallocate(jan)
-          allocate(jan(nnmaxnew))
-          call memory('A','I',nnmaxnew,'chempot')
-          jan(1:nnmax) = ibuffer(1:nnmax)
-          call memory('D','I',size(ibuffer),'chempot')
-          deallocate(ibuffer)
-C
-          allocate(dpbuffer1(nnmax))
-          call memory('A','D',nnmax,'chempot')
-          dpbuffer1(1:nnmax) = r2ij(1:nnmax)
-          call memory('D','D',size(r2ij),'chempot')
-          deallocate(r2ij)
-          allocate(r2ij(nnmaxnew))
-          call memory('A','D',nnmaxnew,'chempot')
-          r2ij(1:nnmax) = dpbuffer1(1:nnmax)
-          call memory('D','D',size(dpbuffer1),'chempot')
-          deallocate(dpbuffer1)
-C
-          allocate(dpbuffer2(3,nnmax))
-          call memory('A','D',3*nnmax,'chempot')
-          dpbuffer2(1:3,1:nnmax) = xij(1:3,1:nnmax)
-          call memory('D','D',size(xij),'chempot')
-          deallocate(xij)
-          allocate(xij(3,nnmaxnew))
-          call memory('A','D',3*nnmaxnew,'chempot')
-          xij(1:3,1:nnmax) = dpbuffer2(1:3,1:nnmax)
-          call memory('D','D',size(dpbuffer2),'chempot')
-          deallocate(dpbuffer2)
-C
-          nnmax = nnmaxnew
-        endif
+        call mneighb(cell,rcoor,natoms,xa,0,0,nna)
       endif
 
 C initialize control vectors to zero 
@@ -427,53 +387,16 @@ C Loop over atoms ...............
 
         if (2.0*rcoor .lt. rmax) then
 C  look for neighbors of atom ia
-          nna = nnmax
-          call neighb(cell,rcoor,natoms,xa,ia,0,nna,jan,xij,r2ij)
-          if (nna .gt. nnmax) then
-            nnmaxnew = nna + nint(0.1*nna)
-C
-            allocate(ibuffer(nnmax))
-            call memory('A','I',nnmax,'chempot')
-            ibuffer(1:nnmax) = indexloc(1:nnmax)
-            call memory('D','I',size(indexloc),'chempot')
-            deallocate(indexloc)
-            allocate(indexloc(nnmaxnew))
-            call memory('A','I',nnmaxnew,'chempot')
-            indexloc(1:nnmax) = ibuffer(1:nnmax)
-            ibuffer(1:nnmax) = jan(1:nnmax)
-            call memory('D','I',size(jan),'chempot')
-            deallocate(jan)
-            allocate(jan(nnmaxnew))
-            call memory('A','I',nnmaxnew,'chempot')
-            jan(1:nnmax) = ibuffer(1:nnmax)
-            call memory('D','I',size(ibuffer),'chempot')
-            deallocate(ibuffer)
-C
-            allocate(dpbuffer1(nnmax))
-            call memory('A','D',nnmax,'chempot')
-            dpbuffer1(1:nnmax) = r2ij(1:nnmax)
-            call memory('D','D',size(r2ij),'chempot')
-            deallocate(r2ij)
-            allocate(r2ij(nnmaxnew))
-            call memory('A','D',nnmaxnew,'chempot')
-            r2ij(1:nnmax) = dpbuffer1(1:nnmax)
-            call memory('D','D',size(dpbuffer1),'chempot')
-            deallocate(dpbuffer1)
-C
-            allocate(dpbuffer2(3,nnmax))
-            call memory('A','D',3*nnmax,'chempot')
-            dpbuffer2(1:3,1:nnmax) = xij(1:3,1:nnmax)
-            call memory('D','D',size(xij),'chempot')
-            deallocate(xij)
-            allocate(xij(3,nnmaxnew))
-            call memory('A','D',3*nnmaxnew,'chempot')
-            xij(1:3,1:nnmax) = dpbuffer2(1:3,1:nnmax)
-            call memory('D','D',size(dpbuffer2),'chempot')
-            deallocate(dpbuffer2)
-C
-            nnmax = nnmaxnew
-          endif
-        else
+          call mneighb(cell,rcoor,natoms,xa,ia,0,nna)
+            ! No need to copy old contents in indexloc
+          call re_alloc( indexloc, 1, maxnna, name='indexloc',
+     &                   routine='chempot')
+        else    
+          ! Make sure we have enough space
+          ! (Cleaner alternative to initial allocation with  
+          ! max(maxnna,natoms)
+          !call sizeup_neighbour_arrays(natoms)
+          !call re_alloc( indexloc, 1, natoms, name='indexloc')
           nna = natoms
           do jj = 1,natoms
             jan(jj) = jj
@@ -503,27 +426,10 @@ C Check if ja has already been included in current vector ...
             if (numv .gt. nvmax) then
               nvmaxnew = numv + nint(0.1*numv)
 C
-              allocate(ibuffer(nvmax))
-              call memory('A','I',nvmax,'chempot')
-              ibuffer(1:nvmax) = listv(1:nvmax)
-              call memory('D','I',size(listv),'chempot')
-              deallocate(listv)
-              allocate(listv(nvmaxnew))
-              call memory('A','I',nvmaxnew,'chempot')
-              listv(1:nvmax) = ibuffer(1:nvmax)
-              call memory('D','I',size(ibuffer),'chempot')
-              deallocate(ibuffer)
-C
-              allocate(dpbuffer2(nvmax,3))
-              call memory('A','D',3*nvmax,'chempot')
-              dpbuffer2(1:nvmax,1:3) = v(1:nvmax,1:3)
-              call memory('D','D',size(v),'chempot')
-              deallocate(v)
-              allocate(v(nvmaxnew,3))
-              call memory('A','D',3*nvmaxnew,'chempot')
-              v(1:nvmax,1:3) = dpbuffer2(1:nvmax,1:3)
-              call memory('D','D',size(dpbuffer2),'chempot')
-              deallocate(dpbuffer2)
+              call re_alloc( listv, 1, nvmaxnew, name='listv',
+     &                       routine='chempot', copy=.true. )
+              call re_alloc( v, 1, nvmaxnew, 1, 3, name='v',
+     &                       routine='chempot', copy=.true. )
 C
               nvmax = nvmaxnew
             endif
@@ -601,58 +507,34 @@ C Calculate chemical potential as the root of Nel - Tr(rho) = 0 ...
 
 C Inverse temperature (in units of energy scaled so that the spectrum
 C  lays between (-1,+1)
+
       betap = beta * deltae
-C       write(6,*) 'betap',betap
-C       write(6,*) 'rcoor',rcoor
-C ............
 
 C      do p=1,pmax
          chpotsh=zbrent(numb,mu1,mu2,tol)
-         
-C ...
-
-C Shift and scale the result to absolute energy scale ...
+         ! Shift and scale the result to absolute energy scale ...
          chpot=chpotsh*deltae+emean
-C ...
 
-C      write(20,*) p,chpot*13.6d0
 C      enddo
 
 C Deallocate local arrays 
-      call memory('D','I',size(listhp),'chempot')
-      deallocate(listhp)
-      call memory('D','I',size(listhpp),'chempot')
-      deallocate(listhpp)
-      call memory('D','D',size(paux),'chempot')
-      deallocate(paux)
-      call memory('D','D',size(vec),'chempot')
-      deallocate(vec)
-      call memory('D','D',size(hbar),'chempot')
-      deallocate(hbar)
-      call memory('D','D',size(Hdense),'chempot')
-      deallocate(Hdense)
-      call memory('D','D',size(Sdense),'chempot')
-      deallocate(Sdense)
-      call memory('D','I',size(listvt),'chempot')
-      deallocate(listvt)
-      call memory('D','I',size(numhp),'chempot')
-      deallocate(numhp)
-      call memory('D','D',size(rr),'chempot')
-      deallocate(rr)
-      call memory('D','D',size(c),'chempot')
-      deallocate(c)
-      call memory('D','I',size(indexloc),'chempot')
-      deallocate(indexloc)
-      call memory('D','I',size(jan),'chempot')
-      deallocate(jan)
-      call memory('D','D',size(r2ij),'chempot')
-      deallocate(r2ij)
-      call memory('D','D',size(xij),'chempot')
-      deallocate(xij)
-      call memory('D','I',size(listv),'chempot')
-      deallocate(listv)
-      call memory('D','D',size(v),'chempot')
-      deallocate(v)
+      call de_alloc( listhp, name='listhp' )
+      call de_alloc( listhpp, name='listhpp' )
+      call de_alloc( paux, name='paux' )
+      call de_alloc( vec, name='vec' )
+      call de_alloc( hbar, name='hbar' )
+      call de_alloc( Hdense, name='Hdense' )
+      call de_alloc( Sdense, name='Sdense' )
+      call de_alloc( listvt, name='listvt' )
+      call de_alloc( numhp, name='numhp' )
+      call de_alloc( rr, name='rr' )
+      call de_alloc( c, name='c' )
+      call de_alloc( indexloc, name='indexloc' )
+      call de_alloc( jan, name='jan' )
+      call de_alloc( r2ij, name='r2ij' )
+      call de_alloc( xij, name='xij' )
+      call de_alloc( listv, name='listv' )
+      call de_alloc( v, name='v' )
 
 C  CALCULATION OF THE GAP DISABLED; IT DOES NOT WORK PROPERLY
 
@@ -748,7 +630,7 @@ C      endif
 CC ...
 C
 C      return
-      end        
+      end subroutine chempot
 
 
       function numb(mu)
@@ -759,7 +641,6 @@ C given Chemical Potential mu.
 C
 C Written by Maider Machado and P.Ordejon, June'98
 C **********************************************************************
-      use numbvect
       use precision, only : dp
 
       implicit none
@@ -794,8 +675,7 @@ c      enddo
 c      write(7,*) x,Ne
 c      enddo
 
-      return
-      end
+      end function numb
      
 
       subroutine chebfd(n,mu,c)
@@ -816,10 +696,10 @@ C ***********************************************************************
       INTEGER NMAX      
       REAL*8 B,A
       REAL*8 BMA,BPA
-      REAL*8 C(N),PI, BETA, MU
+      REAL*8 C(N),PI, MU
       PARAMETER(NMAX=200,PI=3.141592653589793D0)
       PARAMETER (A=-1.,B=1.) 
-      COMMON /BETA/BETA
+
       INTEGER J,K
       REAL*8 FAC, Y, F(NMAX)
       REAL*8 SUM
@@ -827,12 +707,12 @@ C ***********************************************************************
       BPA=0.5*(B+A)
       DO K=1,N
         Y= COS(PI*(K-0.5)/N)
-        IF (BETA*(Y*BMA+BPA-MU) .GT. 50.)  THEN
+        IF (BETAP*(Y*BMA+BPA-MU) .GT. 50.)  THEN
           F(K) = 0.0d0
-        ELSE IF (BETA*(Y*BMA+BPA-MU) .LT. -50.) THEN
+        ELSE IF (BETAP*(Y*BMA+BPA-MU) .LT. -50.) THEN
           F(K) = 1.0d0
         ELSE
-          F(K)=1.0D0/(EXP(BETA*(Y*BMA+BPA-MU))+1.0D0)     
+          F(K)=1.0D0/(EXP(BETAP*(Y*BMA+BPA-MU))+1.0D0)     
         ENDIF
       ENDDO
       FAC=2./N
@@ -843,9 +723,8 @@ C ***********************************************************************
   20    CONTINUE
         C(J) =FAC*SUM
   30  CONTINUE  
-      RETURN
-      END
 
+      END subroutine chebfd
 
 
       FUNCTION ZBRENT(FUNC,X1,X2,TOL)
@@ -860,20 +739,23 @@ c  ***************************************************
       use precision, only: dp
       use sys, only      : die
       IMPLICIT NONE
+
       INTEGER ITMAX
-      real(dp)  ZBRENT,TOL,X1,X2,FUNC,EPS
-      EXTERNAL FUNC
+      real(dp)  ZBRENT,TOL,X1,X2,EPS
+
+      interface
+         function func(x) result(y)
+         use precision, only: dp
+         real(dp), intent(in) :: x
+         real(dp)             :: y
+         end function func
+      end interface
+
       PARAMETER (ITMAX=300,EPS=3.0E-4_dp)
       INTEGER ITER
       real(dp) A,B,C,D,E,FA,FB,FC,P,Q,R,S,TOL1,XM
 
 c      integer ix
-
-c      do ix=1,1001
-c        a=(x2-x1)*(ix-1)/1000. + x1
-c        fa=func(a)
-c       write(6,*) a,func(a)
-c      enddo
 
       A=X1
       B=X2
@@ -941,12 +823,10 @@ c      enddo
       CALL DIE('ZBRENT exceeding maximum iterations.')
 C      ZBRENT=B
 C      RETURN
-      END
+      END function zbrent
  
-
-
       subroutine choldc(a,n,np,p)
-C Cholesky decompositin of symmetric matrix
+C Cholesky decomposition of symmetric matrix
 C Converted to double precision from same routine in
 C "Numerical Recipes", W.Press et al, Cambridge U.P.
 
@@ -973,8 +853,7 @@ C "Numerical Recipes", W.Press et al, Cambridge U.P.
           endif
         enddo
       enddo
-      return
-      end
+      end subroutine choldc
 
       subroutine cholsl(a,n,np,p,b,x)
 C Solves linear system for a symmetric matrix 
@@ -983,9 +862,9 @@ C Converted to double precision from same routine in
 C "Numerical Recipes", W.Press et al, Cambridge U.P.
       implicit none
       integer n,np
-      real*8 a(np,np),b(n),p(n),x(n)
+      real(dp) a(np,np),b(n),p(n),x(n)
       integer i,k
-      real*8 sum
+      real(dp) sum
 
       do i=1,n
         sum=b(i)
@@ -1002,7 +881,7 @@ C "Numerical Recipes", W.Press et al, Cambridge U.P.
         x(i)=sum/p(i)
       enddo
       return
-      end
+      end       subroutine cholsl
 
       subroutine lanc1(opt,hbar,nhmax,numh,listhptr,listh,
      .                   maxnh,nbasis,ener,Node)
@@ -1057,21 +936,19 @@ C  Internal variables ...
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr(2)
 
-      real(dp), dimension(:), allocatable, save ::
-     .  hv0, u0, v0
+      real(dp), dimension(:), pointer ::  hv0, u0, v0
 
-      external
-     .   ran3
+      external  ran3
 
 C ...
 
 C  Allocate local memory
-      allocate(hv0(nbasis))
-      call memory('A','D',nbasis,'chempot')
-      allocate(v0(nbasis))
-      call memory('A','D',nbasis,'chempot')
-      allocate(u0(nbasis))
-      call memory('A','D',nbasis,'chempot')
+      nullify( hv0 )
+      call re_alloc( hv0, 1, nbasis, name='hv0', routine='lanc1' )
+      nullify( v0 )
+      call re_alloc( v0, 1, nbasis, name='v0', routine='lanc1' )
+      nullify( u0 )
+      call re_alloc( u0, 1, nbasis, name='u0', routine='lanc1' )
 
 C  An unlikely number ...
       ecomp=4321.0987d0
@@ -1239,16 +1116,12 @@ CC .................
 20    continue
 
 C  Deallocate local memory
-      call memory('D','D',size(hv0),'chempot')
-      deallocate(hv0)
-      call memory('D','D',size(v0),'chempot')
-      deallocate(v0)
-      call memory('D','D',size(u0),'chempot')
-      deallocate(u0)
 
-      return
-      end
+      call de_alloc( hv0, name='hv0' )
+      call de_alloc( v0, name='v0' )
+      call de_alloc( u0, name='u0' )
 
+      end   subroutine lanc1
 
       subroutine lanc2(hbar,nhmax,numh,listhptr,listh,maxnh,nbasis,
      .                 ener,Node)
@@ -1302,23 +1175,21 @@ C  Internal variables ...
      .  a0, b1, b2, c1, diff, ecomp, eivec(2), 
      .  mod, norm, ran3, wr
 
-      real(dp), dimension(:), allocatable, save ::
-     .  hv0, u0, v0, v00
+      real(dp), dimension(:), pointer :: hv0, u0, v0, v00
 
-      external
-     .   ran3
+      external ran3
 
 C ...
 
 C  Allocate local memory
-      allocate(hv0(nbasis))
-      call memory('A','D',nbasis,'chempot')
-      allocate(u0(nbasis))
-      call memory('A','D',nbasis,'chempot')
-      allocate(v0(nbasis))
-      call memory('A','D',nbasis,'chempot')
-      allocate(v00(nbasis))
-      call memory('A','D',nbasis,'chempot')
+      nullify( hv0 )
+      call re_alloc( hv0, 1, nbasis, name='hv0', routine='lanc2' )
+      nullify( u0 )
+      call re_alloc( u0, 1, nbasis, name='u0', routine='lanc2' )
+      nullify( v0 )
+      call re_alloc( v0, 1, nbasis, name='v0', routine='lanc2' )
+      nullify( v00 )
+      call re_alloc( v00, 1, nbasis, name='v00', routine='lanc2' )
 
 C  An unlikely number ...
       ecomp=4321.0987d0
@@ -1437,14 +1308,12 @@ C Calculate eigehvalue of H ...
       enddo
       
 C  Deallocate local memory
-      call memory('D','D',size(hv0),'chempot')
-      deallocate(hv0)
-      call memory('D','D',size(u0),'chempot')
-      deallocate(u0)
-      call memory('D','D',size(v0),'chempot')
-      deallocate(v0)
-      call memory('D','D',size(v00),'chempot')
-      deallocate(v00)
 
-      return
-      end
+      call de_alloc( hv0, name='hv0' )
+      call de_alloc( u0, name='u0' )
+      call de_alloc( v0, name='v0' )
+      call de_alloc( v00, name='v00' )
+
+      end subroutine lanc2
+
+      end module m_chempot

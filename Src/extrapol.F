@@ -8,6 +8,10 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_extrapol
+      public :: extrapol
+      private
+      CONTAINS
       subroutine extrapol(istep,iord,nspin,nrow,nmrowl,nmax,num,
      .                    listptr,list,numold,listptrold,listold,
      .                    mm2,mnew)
@@ -17,6 +21,14 @@ C wave functions, or the density matrix) for the next MD step.
 C The matrix M is given in sparse form.
 C
 C Writen by P.Ordejon, November'96.
+!
+! Modified by A. Garcia, May 2007
+! Use assumed-shape arrays to avoid setting sizes to
+! any particular nmax (sizes can change in between iterations).
+! While care has been taken not to shrink the sizes of the relevant
+! arrays in the calling routines, a explicit size specification in
+! the dummy arguments could lead to bounds-check errors.
+!
 C ******************************* INPUT ***************************************
 C integer istep                : Time step of the simulation
 C integer iord                 : Extrapolation order (0 or 1)
@@ -80,26 +92,22 @@ C
       integer, intent(in) :: nmax
       integer, intent(in) :: num(nmrowl)
       integer, intent(in) :: listptr(nmrowl)
-      integer, intent(in) :: list(nmax)
+      integer, intent(in) :: list(:)
 
       integer, intent(inout) :: numold(nmrowl)
       integer, intent(inout) :: listptrold(nmrowl)
-      integer, intent(inout) :: listold(nmax)
-      real(dp), intent(inout) :: mm2(nmax, nspin)
-      real(dp), intent(inout) :: mnew(nmax, nspin)
+      integer, intent(inout) :: listold(:)     ! Note assumed size
+      real(dp), intent(inout) :: mm2(:,:)      ! last dim nspin
+      real(dp), intent(inout) :: mnew(:,:)     !  "
 
 C  Internal variables .......................................................
 
-      integer
-     .  i,in,ind,ispin,j,nh,nrmax
-      logical
-     .  changed
-      real(dp)
-     .  msave
+      integer   ::  i,in,ind,ispin,j,nh,nrmax, nh_old
+      logical   ::  changed
+      real(dp)  ::  msave
       real(dp), dimension(:), allocatable :: aux, mtmp
 
-      external
-     .  memory
+      external  memory
 
 #ifdef MPI
       integer
@@ -113,6 +121,7 @@ C ...........................................................................
 C Find the maximum number of non-zero elements in matrices
       if (nmrowl>0) then
         nh = listptr(nmrowl) + num(nmrowl)
+        nh_old = listptrold(nmrowl) + numold(nmrowl)
       else
         nh = 0
         ! in this case, none of the loops will be executed; we'll
@@ -139,6 +148,7 @@ C Check if sparse structure has changed .....................................
         do i = 1,nmrowl
           if (numold(i) .ne. num(i)) changed = .true.
         enddo
+
 C Check list arrays if num arrays are unchanged
         if (.not.changed) then
           do i = 1,nh
@@ -164,6 +174,9 @@ C because boundaries between rows may change in either direction
 C Allocate local scratch arrays
           nrmax = nrow
 C Determine size of auxiliary matrix
+!
+! AG: nrmax will be the largest of nh and nh_old....
+!
           do i = 1,nmrowl
             do in = 1,numold(i)
               ind = listptrold(i)+in
@@ -184,6 +197,9 @@ C Determine size of auxiliary matrix
 
           aux(1:nrow) = 0.0_dp
   
+          ! Will crash if nh_old > nh
+          ! and the arrays are shrunk to the new nh
+
           do ispin = 1,nspin
             do i = 1,nmrowl
               do in = 1,numold(i)
@@ -203,6 +219,7 @@ C Determine size of auxiliary matrix
             enddo
             mnew(1:nh,ispin) = mtmp(1:nh)
           enddo
+
           do ispin = 1,nspin
             do i = 1,nmrowl
               do in = 1,numold(i)
@@ -251,4 +268,7 @@ C ....................
 
       endif !istep==1
 
-      end
+      end subroutine extrapol
+      end module m_extrapol
+
+      

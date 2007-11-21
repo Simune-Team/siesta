@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.1.61}}
+{\Huge {\bf S I E S T A \, \, BSC--2.3.26}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 4, 2007 }
+{\Large June 12, 2007 }
 
 \vspace{1.5cm}
 
@@ -2201,9 +2201,10 @@ possible, thus minimizing the number of k-points for a given
 precision). The grid is displaced for even numbers of effective mesh
 divisions.  This parameter is not used if {\bf kgrid\_Monkhorst\_Pack}
 is specified. If the unit cell changes during the calculation (for
-example, in a cell-optimization run, or in a Parrinello-Rahman
-molecular-dynamics run (but see {\bf ChangeKgridInMD}), the k-point
-grid will change accordingly. This is analogous to the changes in the
+example, in a cell-optimization run, the k-point
+grid will change accordingly (see {\bf ChangeKgridInMD} for the case
+of variable-cell molecular-dynamics runs, such as Parrinello-Rahman). 
+This is analogous to the changes in the
 real-space grid, whose fineness is specified by an energy cutoff. If
 sudden changes in the number of k-points are not desired, then the
 Monkhorst-Pack data block should be used instead. In this case there
@@ -2251,8 +2252,8 @@ Overrides {\bf kgrid\_cutoff}
 {\it Default value:} $\Gamma$ point of the (super)cell.
 (Default used only when {\bf kgrid\_cutoff} is not defined).
         
-\item[{\bf ChangeKgridInMD}] ({\it boolean}): 
-\index{ChangeKgridInMD@{\bf ChangeKgridInMD}} 
+\item[{\bf ChangeKgridInMD}] ({\it boolean}):
+\index{ChangeKgridInMD@{\bf ChangeKgridInMD}}
 
 If {\tt .true.}, the k-point grid is
 recomputed at every iteration during MD runs that potentially
@@ -5343,17 +5344,6 @@ New setting for the pseudopotential grid's $a$ parameter
 New setting for the pseudopotential grid's $b$ parameter
 
 {\it Default value:} { $10.0$}
-
-\item[{\bf Rmax.Radial.Grid}] ({\it real}):
-\index{Rmax.Radial.Gridr@{\bf
-    Rmax.Radial.Grid}}\index{basis!point at infinity}
-
-New setting for the maximum value of the radial coordinate for
-integration of the atomic Schrodinger equation.
-
-{\it Default value:} { $50.0$} if {\tt Reparametrize.Pseudos} is set,
-zero otherwise (which means that the maximum radius from the pseudopotential
-file is used).
 
 \item[{\bf Rmax.Radial.Grid}] ({\it real}):
 \index{Rmax.Radial.Gridr@{\bf

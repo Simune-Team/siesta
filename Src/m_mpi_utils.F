@@ -39,7 +39,6 @@
 
       CONTAINS
 
-!------------------------------------------------------------
       subroutine broadcast_dp(scalar)
       real(dp), intent(inout) :: scalar
 
@@ -49,7 +48,6 @@
 #endif
        end subroutine broadcast_dp
 
-!------------------------------------------------------------
       subroutine broadcast_v_dp(a)
       real(dp), dimension(:), intent(inout) :: a
 
@@ -59,7 +57,6 @@
 #endif
        end subroutine broadcast_v_dp
 
-!------------------------------------------------------------
       subroutine broadcast_vv_dp(a)
       real(dp), dimension(:,:), intent(inout) :: a
   !! Only for contiguous array sections !!
@@ -70,7 +67,6 @@
 #endif
        end subroutine broadcast_vv_dp
 
-!---------------------------------------------------
       subroutine broadcast_sp(scalar)
       real(sp), intent(inout) :: scalar
 
@@ -80,7 +76,6 @@
 #endif
        end subroutine broadcast_sp
 
-!---------------------------------------------------
       subroutine broadcast_int(scalar)
       integer, intent(inout) :: scalar
 
@@ -89,7 +84,7 @@
      $            MPI_Comm_World,MPIerror)
 #endif
        end subroutine broadcast_int
-!---------------------------------------------------
+
       subroutine broadcast_v_int(a)
       integer, dimension(:), intent(inout) :: a
 
@@ -99,7 +94,6 @@
 #endif
        end subroutine broadcast_v_int
 
-!------------------------------------------------------------
       subroutine broadcast_vv_int(a)
       integer, dimension(:,:), intent(inout) :: a
 
@@ -110,7 +104,6 @@
 #endif
        end subroutine broadcast_vv_int
 
-!---------------------------------------------------
       subroutine broadcast_char(str)
       character(len=*), intent(inout) :: str
 
@@ -119,7 +112,7 @@
      $            MPI_Comm_World,MPIerror)
 #endif
        end subroutine broadcast_char
-!----------------------------------------------------
+
       subroutine broadcast_logical(scalar)
       logical, intent(inout) :: scalar
 
@@ -129,8 +122,7 @@
 #endif
        end subroutine broadcast_logical
 
-!---------------------------------------------------
-!---------------------------------------------------
+
       subroutine Globalize_sum_dp(local,global)
       real(dp), intent(in) :: local
       real(dp), intent(out) :: global
@@ -159,7 +151,7 @@
      $            MPI_sum,MPI_Comm_World,MPIerror)
 #endif
        end subroutine Globalize_sum_v_dp
-!-----------------------------------------------------------
+
       subroutine Globalize_sum_vv_dp(local,global)
       real(dp), intent(in), dimension(:,:)  :: local
       real(dp), intent(out), dimension(:,:) :: global
@@ -177,7 +169,7 @@
      $            MPI_sum,MPI_Comm_World,MPIerror)
 #endif
        end subroutine Globalize_sum_vv_dp
-!------------------------------------------------------------
+
       subroutine Globalize_sum_int(local,global)
       integer, intent(in) :: local
       integer, intent(out) :: global
@@ -189,7 +181,8 @@
      $            MPI_sum,MPI_Comm_World,MPIerror)
 #endif
        end subroutine Globalize_sum_int
-!-------------------------------------------------------
+
+
       subroutine Globalize_max_dp(local,global)
       real(dp), intent(in) :: local
       real(dp), intent(out) :: global

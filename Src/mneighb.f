@@ -12,16 +12,22 @@
 
         use precision, only: dp
         use sys, only: die
+        use alloc, only : re_alloc, de_alloc
 
-        integer,  pointer, save :: jan(:)
+        private
 
-        real(dp), pointer, save :: r2ij(:)
-        real(dp), pointer, save :: xij(:,:)
+        integer,  save, public           :: maxnna = 200
+        integer,  pointer, save, public  :: jan(:)
+        real(dp), pointer, save, public  :: r2ij(:)
+        real(dp), pointer, save, public  :: xij(:,:)
+        logical,  save       :: pointers_allocated = .false.
+
+        public :: mneighb, sizeup_neighbour_arrays
 
       contains
 
       subroutine mneighb( CELL, range, NA, XA, IA, ISC,
-     .                    NNA, MAXNNA )
+     .                    NNA )
 
 C ********************************************************************
 C Finds the neighbours of an atom in a cell with periodic boundary 
@@ -38,7 +44,7 @@ C                     A routine initialization must be done by
 C                     a first call with IA = 0
 C INTEGER ISC       : Single-counting switch (0=No, 1=Yes). If ISC=1,
 C                     only neighbours with JA.LE.IA are included in JAN
-C INTEGER MAXNNA    : Size of arrays JAN, XIJ and R2IJ
+!!!!! C INTEGER MAXNNA    : Size of arrays JAN, XIJ and R2IJ
 C *********** OUTPUT *************************************************
 C INTEGER NNA       : Number of neighbour atoms within range of IA
 C INTEGER JAN(NNA)  : Atom-index of neighbours
@@ -101,9 +107,6 @@ C      Move atomic positions XA       (Molecular dynamics step)
 C    ENDDO
 C ********************************************************************
 
-      use precision
-      use alloc
-
 C Next line is non-standard but may be supressed
       implicit none
 
@@ -113,11 +116,10 @@ C Define space dimension
 C Argument types and dimensions
       integer, intent(in) :: ia, isc, na
       integer, intent(out) :: nna
-      integer, intent(inout) :: maxnna
       real(dp) :: cell(nx,nx), range, xa(nx,na)
 
 C Internal variables
-      logical, save  :: frstme        = .true.
+
       integer, save  :: iamove(1)     = 0
       real(dp), save :: celast(nx,nx) = 0.0_dp,
      .                  rglast        = 0.0_dp,
@@ -125,25 +127,26 @@ C Internal variables
 
       logical :: samcel
       integer :: IX, JX
+      logical,  save          :: first_time = .true.
 
 C Nullify pointers
-      if (frstme) then
+      if (.not. pointers_allocated) then
         nullify(jan)
         nullify(r2ij)
         nullify(xij)
+      !  Dimension arrays to initial size MAXNNA
+        call re_alloc(jan,1,maxnna,name='jan')
+        call re_alloc(r2ij,1,maxnna,name='r2ij')
+        call re_alloc(xij,1,3,1,maxnna,name='xij')
+        pointers_allocated = .true.
       endif
 
-C Dimension arrays to size MAXNNA
-      call re_alloc(jan,1,maxnna,name='jan')
-      call re_alloc(r2ij,1,maxnna,name='r2ij')
-      call re_alloc(xij,1,3,1,maxnna,name='xij')
-
 C Initialization section
-      IF (FRSTME .OR. IA.LE.0 .OR. range.GT.RGLAST) THEN
+      IF (FIRST_TIME .OR. IA.LE.0 .OR. range.GT.RGLAST) THEN
 
 C Find if cell or range have changed
         samcel = .true.
-        if (frstme) then
+        if (first_time) then
           samcel = .false.
         else
           do IX = 1,NX
@@ -164,7 +167,7 @@ C Store cell and range for comparison in subsequent calls
             enddo
           enddo
           RGLAST = range
-          FRSTME = .false.
+          FIRST_TIME = .false.
 
 C Notify to rangeR that CELL has changed
           call mranger( 'CELL', NX, CELL, range, NA, XA,
@@ -531,8 +534,7 @@ c
 
       logical, save :: frstme = .true.
 
-      external
-     .  DISMIN, DDOT, RECCEL, memory
+      external  DISMIN, DDOT
 
       save
      .  IAM, IEM, IM, 
@@ -1097,6 +1099,34 @@ C Next line is non-standard but may be supressed
       ENDIF
 
       end subroutine indarr
+!
+      subroutine sizeup_neighbour_arrays(n)
+      integer, intent(in) :: n
+
+      ! Makes sure that the neighbour arrays are at
+      ! least of size n
+
+      if (.not. pointers_allocated) then
+        nullify(jan)
+        nullify(r2ij)
+        nullify(xij)
+        !  Dimension arrays to initial size n
+        maxnna = n
+        call re_alloc(jan,1,maxnna,name='jan')
+        call re_alloc(r2ij,1,maxnna,name='r2ij')
+        call re_alloc(xij,1,3,1,maxnna,name='xij')
+        pointers_allocated = .true.
+      else
+         if (n > maxnna) then
+            maxnna = n
+            call re_alloc(jan,1,maxnna,name='jan')
+            call re_alloc(r2ij,1,maxnna,name='r2ij')
+            call re_alloc(xij,1,3,1,maxnna,name='xij')
+         endif
+      endif
+
+      end subroutine sizeup_neighbour_arrays
+
 
       end module neighbour
 

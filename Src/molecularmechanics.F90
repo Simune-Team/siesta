@@ -4,72 +4,70 @@ module molecularmechanics
 ! Implementation: Julian Gale (Curtin, AU)
 ! Modified by Alberto Garcia  (stress sign fix, plots of V(r))
 !
-use precision, only: dp
 
-implicit none
+ use precision, only: dp
+
+ implicit none
 
     ! The original implementation by Julian had the wrong sign
-    ! for the stress tensor. 
+    ! for the stress tensor.
     ! Define sign_change as +1 to recover that behavior
 
-integer, parameter    :: sign_change = -1
+ integer, parameter    :: sign_change = -1
 
-integer               :: maxMMpot = 10
-integer               :: nMMpot = 0
-integer,  allocatable :: nMMpotptr(:,:)
-integer,  allocatable :: nMMpottype(:)
-logical               :: PotentialsPresent = .false.
-real(dp)              :: MMcutoff
-real(dp), allocatable :: MMpotpar(:,:)
 
-private
+ private
 
-public :: inittwobody, twobody
+ integer, parameter    :: maxMMpot = 10
+ integer, save         :: nMMpot = 0
+ integer, save         :: nMMpotptr(2,maxMMpot)
+ integer, save         :: nMMpottype(maxMMpot)
+ logical, save         :: PotentialsPresent = .false.
+ real(dp), save        :: MMcutoff
+ real(dp), save        :: MMpotpar(6,maxMMpot)
 
-CONTAINS
+ public :: inittwobody, twobody
 
-subroutine inittwobody
+ CONTAINS
 
-  use fdf
-  use units,   only : eV, Ang
-  use parsing, only : parse
-  use sys,     only : die
-  use parallel,only : Node
-#ifdef MPI
-  use mpi_siesta
-#endif
-!
-  character(len=130) :: line
-  character(len=80)  :: names
-  character(len=80)  :: scale
-  integer            :: il
-  integer            :: integs(4)
-  integer            :: iu
-  integer            :: lastc
-  integer            :: lc(0:3)
-  integer            :: maxlin
-  integer            :: ni
-  integer            :: nn
-  integer            :: nr
-  integer            :: nv
-#ifdef MPI
-  integer            :: MPIerror
-#endif
-  real(dp)           :: Dscale
-  real(dp)           :: Escale
-  real(dp)           :: reals(4)
-  real(dp)           :: values(4)
+ subroutine inittwobody()
 
-!
-! Allocate arrays for dispersion potentials
-!
-  allocate(nMMpotptr(2,maxMMpot))
-  allocate(nMMpottype(maxMMpot))
-  allocate(MMpotpar(6,maxMMpot))
-  MMpotpar(1:6,1:maxMMpot) = 0.0_dp
-!
-! Get potential cutoff
-!
+   use fdf
+   use units,   only : eV, Ang
+   use parsing, only : parse
+   use sys,     only : die
+   use parallel,only : Node
+#  ifdef MPI
+   use mpi_siesta
+#  endif
+   character(len=130) :: line
+   character(len=80)  :: names
+   character(len=80)  :: scale
+   integer            :: il
+   integer            :: integs(4)
+   integer            :: iu
+   integer            :: lastc
+   integer            :: lc(0:3)
+   integer            :: maxlin
+   integer            :: ni
+   integer            :: nn
+   integer            :: nr
+   integer            :: nv
+#  ifdef MPI
+   integer            :: MPIerror
+#  endif
+   real(dp)           :: Dscale
+   real(dp)           :: Escale
+   real(dp)           :: reals(4)
+   real(dp)           :: values(4)
+
+ ! Allocation of arrays formerly done here moved
+ ! to top of module, as they are really static for now
+
+   MMpotpar(1:6,1:maxMMpot) = 0.0_dp
+ !
+ ! Get potential cutoff
+ !
 #ifdef MPI
   if (Node.eq.0) then
     MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
@@ -222,19 +220,20 @@ subroutine inittwobody
 #endif
   endif
 
- if (Node .eq. 0)  call plot_functions()
+if (Node .eq. 0)  call plot_functions()
 
 end subroutine inittwobody
 
 subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 
-  use parallel,only : Node
-  use units,   only : kbar
+  use parallel,         only : Node
+  use units,            only : kbar
+  use alloc,            only : re_alloc, de_alloc
 
   integer,  intent(in)    :: na
   integer,  intent(in)    :: isa(*)
-  integer,  intent(in)    :: ifa
-  integer,  intent(in)    :: istr
+  integer,  intent(in)    :: ifa   ! compute forces if > 0
+  integer,  intent(in)    :: istr  ! compute stress if > 0
   real(dp), intent(in)    :: cell(3,3)
   real(dp), intent(in)    :: xa(3,*)
   real(dp), intent(out)   :: emm
@@ -263,7 +262,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   logical                 :: lallfound2
   logical                 :: lallfound3
   logical                 :: lanyvalidpot
-  logical, allocatable    :: lvalidpot(:)
+  logical, pointer        :: lvalidpot(:)
   real(dp)                :: MMcutoff2
   real(dp)                :: a
   real(dp)                :: b
@@ -333,7 +332,8 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
 ! Allocate workspace arrays
 !
-  allocate(lvalidpot(nMMpot))
+  nullify(lvalidpot)
+  call re_alloc(lvalidpot,1,nMMpot,name="lvalidpot",routine="twobody")
 !
 ! Initialise energy and mm_stress
 !
@@ -704,7 +704,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
 ! Free workspace arrays
 !
-  deallocate(lvalidpot)
+  call de_alloc(lvalidpot,name="lvalidpot")
 !
 ! Stop timer
 !

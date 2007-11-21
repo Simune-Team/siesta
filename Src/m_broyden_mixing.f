@@ -15,7 +15,7 @@
       use m_broyddj, only: broyden_t, broyden_init, broyden_is_setup
       use m_broyddj, only: broyden_reset, broyden_step
       use fdf
-      use m_memory
+      use alloc,     only: re_alloc, de_alloc
 
       use parallel, only: ionode
       use m_mpi_utils, only: broadcast, globalize_sum, globalize_max
@@ -66,10 +66,10 @@ C                              input and output
 
       logical, save           :: initialization_done = .false.
 
-!---------------------------------------------------------
+
       integer ::   i0,i,is,j, numel,k, global_numel
 
-      real(dp), dimension(:), allocatable  :: rold, rnew, rdiff 
+      real(dp), dimension(:), pointer  :: rold, rnew, rdiff 
 
       type(broyden_t), save ::  br
 
@@ -165,13 +165,15 @@ C                              input and output
 !
 !     Broyden section
 !
-      allocate (rold(numel), stat=mem_stat)
-      call memory('A','D',numel,'broyden',stat=mem_stat,id="rold")
-      allocate (rnew(numel), stat=mem_stat)
-      call memory('A','D',numel,'broyden',stat=mem_stat,id="rnew")
-      allocate (rdiff(numel),stat=mem_stat)
-      call memory('A','D',numel,'broyden',stat=mem_stat,id="rdiff")
-
+      nullify( rold )
+      call re_alloc( rold, 1, numel, name='rold',
+     &               routine='broyden_mixing' )
+      nullify( rnew )
+      call re_alloc( rnew, 1, numel, name='rnew',
+     &               routine='broyden_mixing' )
+      nullify( rdiff )
+      call re_alloc( rdiff, 1, numel, name='rdiff',
+     &               routine='broyden_mixing' )
 !
 !          Copy input to auxiliary arrays
 !          (memory will be saved by inlining the whole thing
@@ -253,12 +255,9 @@ C                              input and output
              enddo
            enddo
 
-       deallocate (rold, stat=mem_stat)
-       call memory('D','D',numel,'broyden',stat=mem_stat,id="rold")
-       deallocate (rnew, stat=mem_stat)
-       call memory('D','D',numel,'broyden',stat=mem_stat,id="rnew")
-       deallocate (rdiff, stat=mem_stat)
-       call memory('D','D',numel,'broyden',stat=mem_stat,id="rdiff")
+           call de_alloc( rold, name='rold' )
+           call de_alloc( rnew, name='rnew' )
+           call de_alloc( rdiff, name='rdiff' )
 
       end subroutine broyden_mixing
 

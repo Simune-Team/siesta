@@ -409,6 +409,7 @@ c$$$        end subroutine pseudo_header_string
 !***********---------------------------------------------
 !
          subroutine pseudo_reparametrize(p,a,b)
+         use alloc, only: re_alloc, de_alloc
 !
 !        Interpolate values into new grid, given by a and b
 !
@@ -423,7 +424,7 @@ c$$$        end subroutine pseudo_header_string
          real(dp), dimension(:), pointer   :: func, tmp, new_r
          real(dp), dimension(:,:), pointer :: tmp2
 
-         real(dp), dimension(:), allocatable :: y2
+         real(dp), dimension(:), pointer   :: y2
 
          rmax = p%r(p%nrval)
          print *, "Reparametrization. rmax: ", rmax
@@ -439,7 +440,7 @@ c$$$        end subroutine pseudo_header_string
             ea2=ea2*ea
          enddo
          new_nrval = ir
-         allocate(new_r(new_nrval))
+         allocate(new_r(new_nrval))   ! Will go in derived type
          print *, "Reparametrization. New nrval: ", new_nrval
 
          rpb=b
@@ -451,9 +452,12 @@ c$$$        end subroutine pseudo_header_string
             ea2=ea2*ea
          enddo
          
-        allocate(y2(p%nrval))
+        call re_alloc( y2, 1, p%nrval, name='y2', 
+     &                 routine='pseudo_reparametrize' )
 !-----------------------------------------------------------------------
 !       Basic idiom to reparametrize
+!       (The alloc module is not used here, as storage is
+!        linked to derived type)
 !       Use natural spline (zero second derivative)
 !
         func => p%chcore
@@ -519,7 +523,7 @@ c$$$        end subroutine pseudo_header_string
         p%a     = a
         p%b     = b
 
-        deallocate(y2)
+        call de_alloc( y2, name='y2' )
 
         call pseudo_write_formatted(trim(p%name)// ".Reparam.psf",p)
         call pseudo_dump(trim(p%name) // ".Reparam.psdump",p)

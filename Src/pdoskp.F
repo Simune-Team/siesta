@@ -65,6 +65,8 @@ C **********************************************************************
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
+      use units,        only : pi
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -91,44 +93,37 @@ C Internal variables ---------------------------------------------------
      .  ik, is, iio, io, iuo, juo, j, jo, ihist, iband, ind, ierror,
      .  maxnhg, nuog, BNode
 
-      integer, dimension(:), allocatable, save ::
-     .  numhg, listhptrg, listhg
+      integer, dimension(:), pointer :: numhg, listhptrg, listhg
 
       real(dp)
-     .  kxij, Ckxij, Skxij, delta, ener, diff, pi, pipj1, pipj2, 
+     .  kxij, Ckxij, Skxij, delta, ener, diff, pipj1, pipj2, 
      .  pipjS1, pipjS2, gauss, norm, wksum
 
-      real(dp), dimension(:), allocatable, save ::
-     .  Snew, Dloc
-
-      real(dp), dimension(:,:), allocatable, save ::
-     .  Hnew, xijloc
+      real(dp), dimension(:), pointer   ::  Snew, Dloc
+      real(dp), dimension(:,:), pointer ::  Hnew, xijloc
 
 #ifdef MPI
-      integer ::
-     .  MPIerror
-      real(dp), dimension(:,:,:), allocatable, save ::
-     .  Sloc
+      integer ::  MPIerror
+      real(dp), dimension(:,:,:), pointer :: Sloc
 #endif
 
-      external
-     .  cdiag
+      external cdiag
 
 C Initialize some variables
       delta = (E2 - E1)/nhist
-      pi = 4.0d0 * atan(1.0D0)
 
 C Globalise list arrays - assumes listh and listd are the same
 
 C Allocate local memory for global list arrays
-      allocate(numhg(nuotot))
-      call memory('A','I',nuotot,'pdoskp')
-      allocate(listhptrg(nuotot))
-      call memory('A','I',nuotot,'pdoskp')
+      nullify( numhg )
+      call re_alloc( numhg, 1, nuotot, name='numhg', routine='pdoskp' )
+      nullify( listhptrg )
+      call re_alloc( listhptrg, 1, nuotot, name='listhptrg',
+     &               routine='pdoskp' )
 
 C Find maximum value in numh and create local storage
-      allocate(Dloc(nuotot))
-      call memory('A','D',nuotot,'pdoskp')
+      nullify( Dloc )
+      call re_alloc( Dloc, 1, nuotot, name='Dloc', routine='pdoskp' )
 
 C Globalise numh
       do io = 1,nuotot
@@ -151,8 +146,9 @@ C Build global listhptr
 
 C Globalse listh
       maxnhg = listhptrg(nuotot) + numhg(nuotot)
-      allocate(listhg(maxnhg))
-      call memory('A','I',maxnhg,'pdoskp')
+      nullify( listhg )
+      call re_alloc( listhg, 1, maxnhg, name='listhg',
+     &               routine='pdoskp' )
       do io = 1,nuotot
         call WhichNodeOrb(io,Nodes,BNode)
         if (Node.eq.BNode) then
@@ -170,12 +166,16 @@ C Globalse listh
 
 C Create new distribution of H and S
       nuog = nuotot
-      allocate(Snew(maxnhg))
-      call memory('A','D',maxnhg,'diagkp')
-      allocate(Hnew(maxnhg,nspin))
-      call memory('A','D',maxnhg*nspin,'diagkp')
-      allocate(xijloc(3,maxnhg))
-      call memory('A','D',3*maxnhg,'diagkp')
+
+      nullify( Snew )
+      call re_alloc( Snew, 1, maxnhg, name='Snew',
+     &               routine='pdoskp' )
+      nullify( Hnew )
+      call re_alloc( Hnew, 1, maxnhg, 1, nspin, name='Hnew',
+     &               routine='pdoskp' )
+      nullify( xijloc )
+      call re_alloc( xijloc, 1, 3, 1, maxnhg, name='xijloc',
+     &               routine='pdoskp' )
 
       do io = 1,nuotot
         call WhichNodeOrb(io,Nodes,BNode)
@@ -339,25 +339,19 @@ C Solo para los Juo que satisfagan el criterio del record...
       enddo
 
 C Free local memory from computation of dpr
-      call memory('D','D',size(xijloc),'diagkp')
-      deallocate(xijloc)
-      call memory('D','D',size(Hnew),'diagkp')
-      deallocate(Hnew)
-      call memory('D','D',size(Snew),'diagkp')
-      deallocate(Snew)
-      call memory('D','D',size(Dloc),'diagkp')
-      deallocate(Dloc)
-      call memory('D','I',size(listhg),'diagkp')
-      deallocate(listhg)
-      call memory('D','I',size(listhptrg),'diagkp')
-      deallocate(listhptrg)
-      call memory('D','I',size(numhg),'diagkp')
-      deallocate(numhg)
+      call de_alloc( xijloc, name='xijloc' )
+      call de_alloc( Hnew, name='Hnew' )
+      call de_alloc( Snew, name='Snew' )
+      call de_alloc( Dloc, name='Dloc' )
+      call de_alloc( listhg, name='listhg' )
+      call de_alloc( listhptrg, name='listhptrg' )
+      call de_alloc( numhg, name='numhg' )
 
 #ifdef MPI
 C Allocate workspace array for global reduction
-      allocate(Sloc(nhist,max(nuotot,nspin),nspin))
-      call memory('A','D',nhist*nuotot*nspin,'pdoskp')
+      nullify( Sloc )
+      call re_alloc( Sloc, 1, nhist, 1, max(nuotot,nspin), 
+     &               1, nspin, name='Sloc', routine='pdoskp' )
 
 C Global reduction of dpr matrix
       Sloc(1:nhist,1:nuotot,1:nspin) = 0.0d0
@@ -372,8 +366,7 @@ C Global reduction of dtot matrix
       dtot(1:nhist,1:nspin) = Sloc(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction
-      call memory('D','D',size(Sloc),'pdoskp')
-      deallocate(Sloc)
+      call de_alloc( Sloc, name='Sloc' )
 #endif
 
       wksum = 0.0d0

@@ -59,6 +59,7 @@ C *********************************************************************
       use parallelsubs, only : LocalToGlobalOrb
       use m_fermid,     only : stepf
       use sys,          only : die
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -89,11 +90,11 @@ C Internal variables
 
 #ifdef MPI
       integer                     :: MPIerror
-      real(dp), allocatable, save :: AuxLocal2(:,:)
+      real(dp), pointer           :: AuxLocal2(:,:)
 #endif
-      real(dp), allocatable, save :: AuxLocal(:,:)
-      real(dp), allocatable, save :: psibandi(:,:)
-      real(dp), allocatable, save :: psibandj(:,:)
+      real(dp), pointer           :: AuxLocal(:,:)
+      real(dp), pointer           :: psibandi(:,:)
+      real(dp), pointer           :: psibandj(:,:)
       real(dp),              save :: ediffmin = 1.0d-3
       real(dp),              save :: tiny = 1.0d-9
 
@@ -140,11 +141,23 @@ C Compute matrix elements
 
 C Allocate workspace array
 #ifdef MPI
-      allocate(AuxLocal2(ng,nuotot))
+      nullify( AuxLocal2 )
+      call re_alloc( AuxLocal2, 1, ng, 1, nuotot,
+     &               name    = 'AuxLocal2',
+     &               routine = 'transition_rate' )
 #endif
-      allocate(AuxLocal(ng,nuotot))
-      allocate(psibandi(ng,nuotot))
-      allocate(psibandj(ng,nuotot))
+      nullify( AuxLocal )
+      call re_alloc( AuxLocal, 1, ng, 1, nuotot,
+     &               name    = 'AuxLocal',
+     &               routine = 'transition_rate' )
+      nullify( psibandi )
+      call re_alloc( psibandi, 1, ng, 1, nuotot,
+     &               name    = 'psibandi',
+     &               routine = 'transition_rate' )
+      nullify( psibandj )
+      call re_alloc( psibandj, 1, ng, 1, nuotot,
+     &               name    = 'psibandj',
+     &               routine = 'transition_rate' )
  
       BNodei = 0
       iie = 0
@@ -290,11 +303,11 @@ C Drude term we do not have the energy denominator
       enddo 
 
 C Free workspace array
-      deallocate(psibandj)
-      deallocate(psibandi)
-      deallocate(AuxLocal)
+      call de_alloc( psibandj,  name='psibandj' )
+      call de_alloc( psibandi,  name='psibandi' )
+      call de_alloc( AuxLocal,  name='AuxLocal' )
 #ifdef MPI
-      deallocate(AuxLocal2)
+      call de_alloc( AuxLocal2,  name='AuxLocal2' )
 #endif
          
 C Stop timer

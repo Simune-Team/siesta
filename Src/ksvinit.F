@@ -8,6 +8,122 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_ksvinit
+      USE precision, only : dp
+
+      private
+
+      integer, public, save           :: nkpol
+      real(dp), pointer, public, save :: wgthpol(:) 
+      real(dp), pointer, public, save :: kpol(:,:)
+      logical, public, save           :: gamma_polarization
+
+      public :: estimate_pol_kpoints, repol
+
+      CONTAINS
+
+      subroutine estimate_pol_kpoints(ucell)
+      USE alloc, only: re_alloc
+
+      implicit none
+
+      real(dp), intent(in)   :: ucell(3,3)
+
+      nullify(kpol,wgthpol)
+
+      ! Find the grid for the calculation of the polarization
+      nkpol = 1
+      call re_alloc(kpol,1,3,1,nkpol,name='kpol',routine='siesta',
+     .              copy=.false.)
+      call re_alloc(wgthpol,1,nkpol,name='wgthpol',routine='siesta',
+     .              copy=.false.)
+
+      call KSV_init(ucell, maxkpol=0)
+
+      call re_alloc(kpol,1,3,1,nkpol,name='kpol',routine='siesta',
+     .              shrink=.false.,copy=.false.)
+      call re_alloc(wgthpol,1,nkpol,name='wgthpol',routine='siesta',
+     .              shrink=.false.,copy=.false.)
+
+      gamma_polarization = (nkpol == 0) 
+!!      print *, "nkpol, gamma_pol: ", nkpol, gamma_polarization
+      end subroutine estimate_pol_kpoints
+!
+!------------------------------------------------------------------------
+      subroutine KSV_init( ucell, maxkpol )
+C *********************************************************************
+C Finds polarization using the method of King-Smith and Vanderbilt
+C ( Geometric Berry phase). Initialisation routine.
+C Written by DSP, March 1999.
+C **************************** INPUT **********************************
+C real*8   ucell(3,3)         : Unit cell vectors
+C integer  maxkpol            : Last dimension of kpoint 
+C *************************** UNITS ***********************************
+C Lengths in atomic units (Bohr).
+C k vectors in reciprocal atomic units.
+C *********************************************************************
+      implicit          none
+      integer           maxkpol
+      double precision  ucell(3,3)
+C *********************************************************************
+
+C Internal variables 
+      integer  ix, iy, kscell(3,3), igrd, nk, nmeshk(3,3)
+         
+      double precision  displ(3), dsp(3), cutoff
+
+      external  timer
+
+C Start time counter 
+      call timer( 'KSV_init', 1 )
+
+C Find the integration grids in reciprocal space   
+C In the first call this is dome to set the rigth 
+C dimension for the arrays which depend on parameter
+C nkpol
+      call repol(nmeshk,dsp) 
+      
+      nk=nmeshk(1,1)*nmeshk(2,1)*nmeshk(3,1)+
+     .  nmeshk(1,2)*nmeshk(2,2)*nmeshk(3,2)+
+     .  nmeshk(1,3)*nmeshk(2,3)*nmeshk(3,3) 
+
+      if (nk.ne.0) then  
+        nkpol=1
+        do igrd=1,3
+          cutoff=0.0d0
+          do ix=1,3
+            do iy= 1,3
+              kscell(ix,iy)=0
+            enddo
+          enddo
+          do ix=1,3
+            if (ix.ne.igrd) then
+              kscell(ix,ix)= nmeshk(ix,igrd)
+              displ(ix)=dsp(igrd)
+            else 
+              kscell(ix,ix)=1
+              displ(ix)=0.0d0
+            endif
+          enddo 
+          nk=kscell(1,1)*kscell(2,2)*kscell(3,3) 
+          if (nk.gt.0) then 
+            call kgridinit( ucell, kscell, displ, cutoff, nk )
+            if (maxkpol.gt.nk) then
+              call kgrid( ucell, kscell,  displ,
+     .                    nk, kpol, wgthpol )
+            endif
+          endif 
+          nkpol=max(nk,nkpol)       
+        enddo  
+      else
+        nkpol=0
+      endif  
+
+      call timer( 'KSV_init', 2 )
+
+      end subroutine ksv_init
+      
+!----------------------------------------------------------------
       subroutine repol(nmeshk,displ)
 
 c *******************************************************************
@@ -138,5 +254,7 @@ C Globalise output
      .  MPIerror)
 #endif
 
-      return
-      end
+      end subroutine repol
+
+      end module m_ksvinit
+

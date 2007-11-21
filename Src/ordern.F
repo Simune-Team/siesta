@@ -88,6 +88,7 @@ C  Modules
       use siesta_cml
       use sys,       only : die
       use units,     only : eV
+      use m_chempot, only : chempot
 #ifdef MPI
       use globalise,  only: setglobalise, globaliseC
       use m_mpi_utils, only: globalize_sum, globalize_max  

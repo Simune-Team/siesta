@@ -18,7 +18,7 @@ C
 C Taken from redata. Writen by P.Ordejon, December'96
 C **************************** OUTPUT *********************************
 C character    slabel      : System Label (to name output files)
-C character*59 sname       : System Name
+C character(len=*) sname       : System Name
 C **********************************************************************
 
 C
@@ -34,8 +34,8 @@ C
 
       implicit none
 
-      character
-     .  sname*59, string*20
+      character(len=*) :: sname
+      character string*20
 
 C  Internal variables .................................................
       character
@@ -129,7 +129,7 @@ C Defile Name of the system ...
         sname = fdf_string('SystemName',sname_default)
         write(6,'(/a,71(1h-))') 'reinit: '
         write(6,'(a,a)') 
-     .   'reinit: System Name: ',sname
+     .   'reinit: System Name: ',trim(sname)
         write(6,'(a,71(1h-))') 'reinit: '
 C ...
 
@@ -144,7 +144,7 @@ C ...
 
 C Global broadcast of strings
 #ifdef MPI
-      call MPI_Bcast(sname,59,MPI_character,0,MPI_Comm_World,
+      call MPI_Bcast(sname,len(sname),MPI_character,0,MPI_Comm_World,
      .  MPIerror)
       call MPI_Bcast(slabel,label_length,MPI_character,0,MPI_Comm_World,
      .  MPIerror)

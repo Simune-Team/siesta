@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine initatom
+      subroutine initatom(ns)
 
 ! Routine to initialize the Pseudopotentials and Atomic Orbitals.
 ! Substantially modified by Alberto Garcia (2000)
@@ -31,6 +31,7 @@
       use fdf
       use precision
       use basis_types, only: basis_specs_transfer, nsp
+      use basis_types, only: deallocate_spec_arrays
       use basis_types, only: iz, lmxkb, nkbl, 
      .           erefkb, lmxo, nzeta, rco, 
      .           lambda,
@@ -51,6 +52,8 @@
       use electrostatic, only: elec_corr_setup
 
       implicit none
+
+      integer, intent(out) :: ns   ! Number of species
 
 C Internal variables ...................................................
       integer is
@@ -73,13 +76,13 @@ c Reading input for the pseudopotentials and atomic orbitals
       if (user_basis_netcdf) then
 
          write(6,'(/a)') 'Reading PAOs and KBs from NetCDF files...'
-         call read_basis_netcdf()
+         call read_basis_netcdf(ns)
          call elec_corr_setup()
 
       else if (user_basis) then
 
          write(6,'(/a)') 'Reading PAOs and KBs from ascii files...'
-         call read_basis_ascii()
+         call read_basis_ascii(ns)
          call elec_corr_setup()
 
       else
@@ -96,12 +99,15 @@ c Reading input for the pseudopotentials and atomic orbitals
          do is = 1,nsp
             call write_basis_specs(6,is)
             basp=>basis_parameters(is)
-            call atom_main( iz(is), lmxkb(is), nkbl(0,is), 
-     .           erefkb(1,0,is),lmxo(is), nzeta(0,1,is), rco(1,0,1,is), 
-     .           lambda(1,0,1,is),
-     .           atm_label(is), polorb(0,1,is), semic(is), nsemic(0,is),
-     .           cnfigmx(0,is),charge(is), smass(is), basistype(is), is,
-     $           rinn(0,1,is), vcte(0,1,is), split_norm(0,1,is), basp)
+            call atom_main( iz(is), lmxkb(is),
+     $           nkbl(0:,is), erefkb(1:,0:,is),lmxo(is),
+     $           nzeta(0:,1:,is), rco(1:,0:,1:,is), 
+     $           lambda(1:,0:,1:,is), atm_label(is),
+     $           polorb(0:,1:,is), semic(is), nsemic(0:,is),
+     $           cnfigmx(0:,is),charge(is),
+     $           smass(is), basistype(is), is,
+     $           rinn(0:,1:,is), vcte(0:,1:,is),
+     $           split_norm(0:,1:,is), basp)
          enddo 
 
          call prinput(nsp)
@@ -111,12 +117,17 @@ c Reading input for the pseudopotentials and atomic orbitals
          call atm_transfer()
          call deallocate_old_arrays()
          call elec_corr_setup()
+         ns = nsp               ! Set number of species for main program
 
       endif
 
       call dump_basis_ascii()
       call dump_basis_netcdf()
       call dump_basis_xml()
+
+      if (.not. user_basis .and. .not. user_basis_netcdf) then
+        call deallocate_spec_arrays()
+      endif
 
       end subroutine initatom
 

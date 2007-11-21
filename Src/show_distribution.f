@@ -1,7 +1,8 @@
       subroutine show_distribution()
       use parallel, only: Nodes
       use parallelsubs
-      use atomlist, only: na_u, lasto
+      use siesta_geom, only: na_u
+      use atomlist, only: lasto
       use sys, only: die
 
       implicit none
@@ -31,7 +32,7 @@
           write(6,"(a)") "Some processors are idle. Check PARALLEL_DIST"
           write(6,"(a)")
      $         "You have too many processors for the system size !!!"
-!          call die()
+          call die()
        endif
 
       end subroutine show_distribution

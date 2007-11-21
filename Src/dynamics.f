@@ -382,7 +382,6 @@ C Calculate corrected atomic coordinates at next time step ................
         snew(:,ia) = twodt * matmul(fi,sunc(:,ia) + suncdot(:))
         if (debug .and. IOnode) print *, snew(:,ia)
       enddo
-!---------------------------------------------------------
 !     This is the place to store the current magnitudes
 !
 !      do ia = 1,natoms
@@ -390,7 +389,6 @@ C Calculate corrected atomic coordinates at next time step ................
 !         va(:,ia) = matmul(h,sdot(:,ia))
 !      enddo
 !      call add_to_md_file(xa,va,cell=h,vcell=hdot,nose=x,nosedot=xdot)
-!---------------------------------------------------------
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
 
@@ -832,7 +830,6 @@ C Compute gas pressure again, in case quench has happened
       endif  ! quench
 C ....................
           
-!---------------------------------------------------------
 !     This is the place to store the current magnitudes
 !
 !      do ia = 1,natoms
@@ -840,7 +837,6 @@ C ....................
 !         va(:,ia) = matmul(h,sdot(:,ia))
 !      enddo
 !      call add_to_md_file(xa,va,cell=h,vcell=hdot)
-!---------------------------------------------------------
 
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
@@ -1147,11 +1143,9 @@ C and corrected velocities and kinetic energy at current time step .........
       enddo
       kin = kin * fact**2 
 C ...................
-!----------------------------------------------------------------
 !     Here we can save x, xa, va for MD  (experimental)
 !
 !     call add_to_md_file(xa,va,nose=x,nosedot=xdot)
-!----------------------------------------------------------------
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
 
@@ -1459,7 +1453,7 @@ C Correct cell shape to reach target pressure
       if (IOnode)  write(*,*) "Anneal: Cell scale factor = ", rfac
       endif
 
-!---------------------------------------------------------
+
 !     This is the place to store the current magnitudes
 !
 !      do ia = 1,natoms
@@ -1467,7 +1461,7 @@ C Correct cell shape to reach target pressure
 !         va(:,ia) = matmul(h,sdot(:,ia))
 !      enddo
 !      call add_to_md_file(xa,va,cell=h)
-!---------------------------------------------------------
+
 
 C Save current atomic positions as old ones, 
 C   and next positions as current ones
@@ -1947,11 +1941,11 @@ C ... increase dt and decreas firealf if Npos > Nmin
 C ................
 
 
-!---------------------------------------------------------
+
 !     This is the place to store the current magnitudes
 !
 !      call add_to_md_file(xa,va,cell=h,vcell=hdot)
-!---------------------------------------------------------
+
 
 C Compute positions at next time step.....................................
       do ia = 1,natoms

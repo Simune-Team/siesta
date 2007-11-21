@@ -42,7 +42,8 @@ C
 C  Julian Gale, NRI, Curtin University, March 2004
 C
 C
-      use alloc,     only : re_alloc
+      use alloc,     only : re_alloc, de_alloc
+      use sys,       only : die
       use parallel,  only : ionode
       use precision, only : dp
       use spatial,   only : nAtomPerNode, maxAtomPerNode
@@ -92,9 +93,9 @@ C
       integer                                  :: nadd
       integer                                  :: natomnow
       integer                                  :: natomold
-      integer, dimension(:), allocatable       :: npgridxptr
-      integer, dimension(:), allocatable       :: npgridyptr
-      integer, dimension(:), allocatable       :: npgridzptr
+      integer, pointer                         :: npgridxptr(:)
+      integer, pointer                         :: npgridyptr(:)
+      integer, pointer                         :: npgridzptr(:)
       integer                                  :: nspmax(3)
       integer                                  :: nspmin(3)
       integer                                  :: nspdiff
@@ -128,11 +129,11 @@ C
       real(dp)                                 :: targetratioxy
       real(dp)                                 :: targetratioxz
       real(dp)                                 :: targetratioyz
-      integer, dimension(:), allocatable       :: ncellpernodelist
-      integer, dimension(:), allocatable       :: natompernodelist
+      integer, dimension(:), pointer           :: ncellpernodelist
+      integer, dimension(:), pointer           :: natompernodelist
 #ifdef MPI
       integer                                  :: MPIerror
-      integer, dimension(:), allocatable, save :: ntmp
+      integer, dimension(:), pointer           :: ntmp
 #endif
 C
 
@@ -371,9 +372,15 @@ C
 C
 C  Allocate local memory
 C
-        allocate(npgridxptr(0:npgrid(1)))
-        allocate(npgridyptr(0:npgrid(2)))
-        allocate(npgridzptr(0:npgrid(3)))
+        nullify( npgridxptr )
+        call re_alloc( npgridxptr, 0, npgrid(1), name='npgridxptr',
+     &                 routine='setatomnodes' )
+        nullify( npgridyptr )
+        call re_alloc( npgridyptr, 0, npgrid(2), name='npgridyptr',
+     &                 routine='setatomnodes' )
+        nullify( npgridzptr )
+        call re_alloc( npgridzptr, 0, npgrid(3), name='npgridzptr',
+     &                 routine='setatomnodes' )
 C
 C
 C Now count cells, and divide them in x, y, and z 
@@ -553,9 +560,17 @@ C The lok[xyz] variable below are only necessary when using buffers.
         enddo
         
         if (ionode) then
-           allocate(ncellpernodelist(nodes))
+          !allocate(ncellpernodelist(nodes))
+          nullify( ncellpernodelist )
+          call re_alloc( ncellpernodelist, 1, nodes , 
+     &                   name    = 'ncellpernodelist',
+     &                   routine = 'setatomnodes' )
         else
-           allocate(ncellpernodelist(0))
+          !allocate(ncellpernodelist(0))
+          nullify( ncellpernodelist )
+          call re_alloc( ncellpernodelist, 0, 0, 
+     &                   name    = 'ncellpernodelist',
+     &                   routine = 'setatomnodes' )
         endif
 #ifdef MPI
         call mpi_gather(ncellpernode,1,mpi_integer,
@@ -578,10 +593,10 @@ C The lok[xyz] variable below are only necessary when using buffers.
               write(6,*) "Try specifying a number of nodes that is ",
      .                   "an exact factor of the number of cells:"
      .                   ,product(nspcell)
+              call die()
            endif
         endif
-        deallocate(ncellpernodelist)
-
+        call de_alloc( ncellpernodelist,  name='ncellpernodelist' )
 C
 C  Find size for atom link array and then allocate
 C
@@ -612,9 +627,17 @@ C
         enddo
 
         if (ionode) then
-          allocate(natompernodelist(nodes))
+          !allocate(natompernodelist(nodes))
+          nullify( natompernodelist )
+          call re_alloc( natompernodelist, 1, nodes , 
+     &                   name    = 'natompernodelist',
+     &                   routine = 'setatomnodes' )
         else
-          allocate(natompernodelist(0))
+          !allocate(natompernodelist(0))
+          nullify( natompernodelist )
+          call re_alloc( natompernodelist, 0, 0 , 
+     &                   name    = 'natompernodelist',
+     &                   routine = 'setatomnodes' )
         endif
 #ifdef MPI
         call mpi_gather(natompernode,1,mpi_integer,
@@ -629,8 +652,11 @@ C
             write(6,'(''  Atoms per Processor = '',2(i8,1x))') 
      .             i,natompernodelist(i+1)
           enddo
+          if (any(natompernodelist==0)) then
+             call die("Bad load balancing. Nodes with no atoms")
+          endif
         endif
-        deallocate(natompernodelist)
+        call de_alloc( natompernodelist,  name='natompernodelist' )
 C
 C  Build lists linking atoms with parallel structure
 C
@@ -655,7 +681,11 @@ C  Globalise data
 C
         maxorb = lasto(na)
 #ifdef MPI
-        allocate(ntmp(max(maxorb,Nodes)))
+        !allocate(ntmp(max(maxorb,Nodes)))
+        nullify( ntmp )
+        call re_alloc( ntmp, 1, max(maxorb,Nodes) , 
+     &                 name    = 'ntmp',
+     &                 routine = 'setatomnodes' )
         ntmp(1:na) = natomsNode(1:na)
         call MPI_AllReduce(ntmp,natomsNode,na,MPI_integer,MPI_max,
      .    MPI_Comm_World,MPIerror)
@@ -708,14 +738,14 @@ C
         ntmp(1:Nodes) = nOrbPerNode(1:Nodes)
         call MPI_AllReduce(ntmp,nOrbPerNode,Nodes,MPI_integer,MPI_max,
      .    MPI_Comm_World,MPIerror)
-        deallocate(ntmp)
+        call de_alloc( ntmp,  name='ntmp' )
 #endif
 C
 C  Free local memory
 C
-        deallocate(npgridzptr)
-        deallocate(npgridyptr)
-        deallocate(npgridxptr)
+        call de_alloc( npgridxptr,  name='npgridxptr' )
+        call de_alloc( npgridyptr,  name='npgridyptr' )
+        call de_alloc( npgridzptr,  name='npgridzptr' )
       endif
 C
 

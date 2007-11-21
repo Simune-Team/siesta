@@ -23,7 +23,7 @@ FC_ASIS=$(FC)
 #
 FFLAGS= -O1 -ftrapuv -CB -u
 FFLAGS_DEBUG= -g 
-LDFLAGS=-Vaxlib 
+LDFLAGS=
 RANLIB=echo
 LIBS=  
 SYS=bsd

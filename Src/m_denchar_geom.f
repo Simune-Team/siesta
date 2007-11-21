@@ -60,7 +60,7 @@ C **********************************************************************
 
       CHARACTER  LINE*150
 
-      INTEGER  NATINPL_DEFAULT, IDIMEN, IUNIT, IAT, IX
+      INTEGER  NATINPL_DEFAULT, IDIMEN, IAT, IX !IUNIT,
  
       DOUBLE PRECISION  VAUX1(3), VAUX2(3)
 

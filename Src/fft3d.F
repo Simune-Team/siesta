@@ -35,6 +35,7 @@ C
       use parallel,     only : Node, Nodes, ProcessorY
       use parallelsubs, only : HowManyMeshPerNode
       use sys,          only : die
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -61,17 +62,12 @@ C
      .  LocalPoints, lredimension
       real(dp)
      .  scale
-      real(dp), dimension(:,:), allocatable, save :: 
-     .  trigs
+      real(dp), dimension(:,:), pointer, save ::   trigs
 #ifdef MPI
       integer
      .  n1lf, nrem, Py, Pz
-      real(grid_p), dimension(:), allocatable, save :: 
-     .  ft
+      real(grid_p), dimension(:), pointer  ::   ft
 #endif
-
-      external
-     .  memory
 
       save OldMesh
       data OldMesh/0,0,0/
@@ -108,9 +104,11 @@ C
 C
 C  Allocate trigs array
 C
-      if (.not.allocated(trigs)) then
+      if (.not.associated(trigs)) then
         maxtrigs = 256
-        allocate(trigs(maxtrigs,3))
+        nullify( trigs )
+        call re_alloc( trigs, 1, maxtrigs, 1, 3, name='trigs',
+     &                 routine='fft' )
       endif
 C
 C  Initialise the tables for the FFT if the mesh has changed
@@ -133,8 +131,8 @@ C
 C  Resize FFT array for trig factors and set OldMesh to 0 to force recalculation
 C
         maxtrigs = maxmaxtrigs
-        deallocate(trigs)
-        allocate(trigs(maxtrigs,3))
+        call re_alloc( trigs, 1, maxtrigs, 1, 3, name='trigs',
+     &                 routine='fft' )
         OldMesh(1:3) = 0
         goto 10
       endif
@@ -157,8 +155,8 @@ C***********************
 C
 C  Allocate local memory
 C
-      allocate(ft(2*n1lf*n2*n3l))
-      call memory('A','X',2*n1lf*n2*n3l,'fft')
+      nullify( ft )
+      call re_alloc( ft, 1, 2*n1lf*n2*n3l, name='ft', routine='fft' )
 C
 C  Redistribute data to be distributed by X and Z
 C
@@ -180,8 +178,7 @@ C
 C
 C  Free local memory ready for re-use
 C
-      call memory('D','X',size(ft),'fft')
-      deallocate(ft)
+      call de_alloc( ft, name='ft' )
 C
 C  Find new distributed x dimension
 C
@@ -191,8 +188,8 @@ C
 C
 C  Allocate local memory
 C
-      allocate(ft(2*n1lf*n2l*n3))
-      call memory('A','X',2*n1lf*n2l*n3,'fft')
+      nullify( ft )   ! AG
+      call re_alloc( ft, 1, 2*n1lf*n2l*n3, name='ft', routine='fft' )
 C
 C  Redistribute data to be distributed by X and Y
 C
@@ -210,8 +207,7 @@ C
 C
 C  Free local memory
 C
-      call memory('D','X',size(ft),'fft')
-      deallocate(ft)
+      call de_alloc( ft, name='ft' )
 #else
 C
 C  FFT in Y direction
@@ -239,7 +235,7 @@ C
 
       return
       end
-
+!-------------------------------------
 #ifdef MPI
       subroutine redistribXZ(f,n1,n2l,n3l,ft,n1lf,n2,idir,nsm,
      .  Node,Nodes)
@@ -261,6 +257,7 @@ C
       use mpi_siesta
       use parallel,    only : ProcessorY
       use sys,         only : die
+      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
@@ -286,8 +283,7 @@ C
 
       logical, save :: firsttimeZ = .true.
 
-      real(grid_p), dimension(:,:,:,:), allocatable, save :: 
-     .  ftmp,ftmp2
+      real(grid_p), dimension(:,:,:,:), pointer  :: ftmp,ftmp2
 
       if (firsttimeZ) then
 C
@@ -328,10 +324,13 @@ C
 C
 C  Allocate local memory and initialise
 C
-      allocate(ftmp(2,n1lmax,BlockSizeYMax,n3l))
-      call memory('A','X',2*n1lmax*BlockSizeYMax*n3l,'redistribXZ')
-      allocate(ftmp2(2,n1lmax,BlockSizeYMax,n3l))
-      call memory('A','X',2*n1lmax*BlockSizeYMax*n3l,'redistribXZ')
+      nullify( ftmp )
+      call re_alloc( ftmp, 1, 2, 1, n1lmax, 1, BlockSizeYMax, 1, n3l,
+     &               name='ftmp', routine='redistribXZ' )
+      nullify( ftmp2 )
+      call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, BlockSizeYMax, 1, n3l,
+     &               name='ftmp2', routine='redistribXZ' )
+
       do i = 1,n3l
         do j = 1,BlockSizeYMax
           do k = 1,n1lmax
@@ -493,12 +492,9 @@ C
 C
 C  Free local memory
 C
-      call memory('D','X',size(ftmp2),'redistribXZ')
-      deallocate(ftmp2)
-      call memory('D','X',size(ftmp),'redistribXZ')
-      deallocate(ftmp)
+      call de_alloc( ftmp2, name='ftmp2' )
+      call de_alloc( ftmp, name='ftmp' )
 
-      return
       end
 
       subroutine redistribXY(f,n1,n2l,n3l,ft,n1lf,n3,idir,nsm,
@@ -524,6 +520,7 @@ C
       use mpi_siesta
       use parallel,    only : ProcessorY
       use sys,         only : die
+      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
@@ -549,8 +546,7 @@ C
 
       logical, save :: firsttimeY = .true.
 
-      real(grid_p), dimension(:,:,:,:), allocatable, save :: 
-     .  ftmp,ftmp2
+      real(grid_p), dimension(:,:,:,:), pointer :: ftmp,ftmp2
 
       if (firsttimeY) then
 C
@@ -583,10 +579,13 @@ C
 C
 C  Allocate local memory and initialise
 C
-      allocate(ftmp(2,n1lmax,n2l,BlockSizeZMax))
-      call memory('A','X',2*n1lmax*n2l*BlockSizeZMax,'redistribXY')
-      allocate(ftmp2(2,n1lmax,n2l,BlockSizeZMax))
-      call memory('A','X',2*n1lmax*n2l*BlockSizeZMax,'redistribXY')
+      nullify( ftmp )
+      call re_alloc( ftmp, 1, 2, 1, n1lmax, 1, n2l, 1, BlockSizeZMax,
+     &               name='ftmp', routine='redistribXY' )
+      nullify( ftmp2 )
+      call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, n2l, 1, BlockSizeZMax,
+     &               name='ftmp2', routine='redistribXY' )
+
       do i = 1,BlockSizeZMax
         do j = 1,n2l
           do k = 1,n1lmax
@@ -756,10 +755,8 @@ C
 C
 C  Free local memory
 C
-      call memory('D','X',size(ftmp2),'redistribXY')
-      deallocate(ftmp2)
-      call memory('D','X',size(ftmp),'redistribXY')
-      deallocate(ftmp)
+      call de_alloc( ftmp2, name='ftmp2' )
+      call de_alloc( ftmp, name='ftmp' )
 
       return
       end

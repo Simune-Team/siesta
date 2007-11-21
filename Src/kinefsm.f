@@ -9,10 +9,9 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine kinefsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
-     .                  maxna, maxnh, maxnd, lasto, iphorb, isa, 
+     .                  maxnh, maxnd, lasto, iphorb, isa, 
      .                  numd, listdptr, listd, numh, listhptr, listh, 
-     .                  nspin, Dscf, jna, xij, r2ij, Ekin, 
-     .                  fa, stress, H )
+     .                  nspin, Dscf, Ekin, fa, stress, H )
 C *********************************************************************
 C Kinetic contribution to energy, forces, stress and matrix elements.
 C Energies in Ry. Lengths in Bohr.
@@ -26,7 +25,6 @@ C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
 C integer maxo             : Second dimension of Dscf and H
-C integer maxna            : Maximum number of neighbours of any atom
 C integer maxnh            : First dimension of H and listh
 C integer maxnd            : First dimension of Dscf and listd
 C integer lasto(0:na)      : Last orbital index of each atom
@@ -46,9 +44,6 @@ C integer listh(maxnh)     : Column indexes of the nonzero elements
 C                            of each row of the hamiltonian matrix
 C integer nspin            : Number of spin components of Dscf and H
 C integer Dscf(maxnd,nspin): Density matrix
-C integer jna(maxna)       : Aux. space to find neighbours (indexes)
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C **************************** OUTPUT *********************************
 C real*8 Ekin              : Kinetic energy in unit cell
 C ********************** INPUT and OUTPUT *****************************
@@ -59,25 +54,26 @@ C *********************************************************************
 C
 C  Modules
 C
-      use precision
+      use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
+      use neighbour,     only : jna=>jan, r2ij, xij, mneighb
+      use alloc,         only : re_alloc, de_alloc
 
       implicit none
 
-      integer
-     .  maxna, maxnd, maxnh, maxo, na, no, nspin, nua
+      integer ::  maxnd, maxnh, maxo, na, no, nspin, nua
 
       integer
-     .  indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
+     .  indxua(na), iphorb(no), isa(na), lasto(0:na), 
      .  listd(maxnd), listh(maxnh), numd(*), numh(*), listdptr(*),
      .  listhptr(*)
 
       real(dp)
      .  scell(3,3), Dscf(maxnd,nspin), Ekin, 
-     .  fa(3,nua), H(maxnh,nspin), r2ij(maxna), rmaxo, 
-     .  stress(3,3), xa(3,na), xij(3,maxna)
+     .  fa(3,nua), H(maxnh,nspin), rmaxo, 
+     .  stress(3,3), xa(3,na)
 
 C Internal variables ..................................................
   
@@ -88,36 +84,30 @@ C Internal variables ..................................................
       real(dp)
      .  fij(3), grTij(3) , rij, Tij, volcel, volume
 
-      real(dp), dimension(:), allocatable, save ::
-     .  Di, Ti
+      real(dp), dimension(:), pointer :: Di, Ti
 
-      external
-     .  neighb, volcel, timer, memory
+      external ::  volcel, timer
 C ......................
 
 C Start timer
       call timer( 'kinefsm', 1 )
 
 C Allocate local memory
-      allocate(Di(no))
-      call memory('A','D',no,'kinefsm')
-      allocate(Ti(no))
-      call memory('A','D',no,'kinefsm')
+      nullify( Di )
+      call re_alloc( Di, 1, no, name='Di', routine='kinefsm' )
+      nullify( Ti )
+      call re_alloc( Ti, 1, no, name='Ti', routine='kinefsm' )
 
       volume = nua * volcel(scell) / na
 
-      nnia = maxna
-      call neighb( scell, 2.0d0*rmaxo, na, xa, 0, 0,
-     .             nnia, jna, xij, r2ij )
+      call mneighb( scell, 2.0d0*rmaxo, na, xa, 0, 0, nnia )
 
       Ekin = 0.0_dp
       Di(1:no) = 0.0_dp
       Ti(1:no) = 0.0_dp
 
       do ia = 1,nua
-        nnia = maxna
-        call neighb( scell, 2.0d0*rmaxo, na, xa, ia, 0,
-     .               nnia, jna, xij, r2ij )
+        call mneighb( scell, 2.0d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
 C Is this orbital on this Node?
@@ -175,10 +165,8 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call memory('D','D',size(Ti),'kinefsm')
-      deallocate(Ti)
-      call memory('D','D',size(Di),'kinefsm')
-      deallocate(Di)
+      call de_alloc( Ti, name='Ti' )
+      call de_alloc( Di, name='Di' )
 
 C Finish timer
       call timer( 'kinefsm', 2 )

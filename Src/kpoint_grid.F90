@@ -11,7 +11,6 @@ MODULE Kpoint_grid
   private
   
   logical, public, save   :: scf_kgrid_first_time = .true.
-  logical, public, save   :: writek
   logical, public, save   :: gamma_scf
   integer, public, save   :: maxk              ! 
   integer, public, save   :: nkpnt             ! Total number of k-points
@@ -57,14 +56,17 @@ MODULE Kpoint_grid
 #ifdef MPI
        call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
-       scf_kgrid_first_time = .false.
-    endif
-
-    if ( .not. scf_kgrid_first_time   &
-         .and. user_requested_mp    ) then
-         ! no need to set up the kscell again
-    else
        call setup_scf_kscell(ucell, firm_displ)
+
+       scf_kgrid_first_time = .false.
+
+    else
+       if ( user_requested_mp    ) then
+          ! no need to set up the kscell again
+       else
+          ! This was wrong in the old code
+          call setup_scf_kscell(ucell, firm_displ)
+       endif
     endif
 
     call find_kgrid(ucell,kscell,kdispl,firm_displ,     &
@@ -142,7 +144,7 @@ MODULE Kpoint_grid
 
             cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
             if (cutoff /= defcut) then
-               write(6,"(a,f10.5)") "Kgrid cutoff input: ", cutoff
+            !!  write(6,"(a,f10.5)") "Kgrid cutoff input: ", cutoff
                user_requested_cutoff = .true.
             endif
 
@@ -182,6 +184,7 @@ MODULE Kpoint_grid
     end subroutine setup_scf_kscell
 
     subroutine siesta_write_k_points()
+      USE siesta_options, only: writek
       USE units, only: Ang
       USE siesta_cml
 

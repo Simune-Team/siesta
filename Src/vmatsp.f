@@ -51,6 +51,7 @@ C  Modules
       use mesh, only: dxa, nsp, xdop, xdsp, cmesh, nmeshg, nsm
       use meshdscf
       use meshphi
+      use alloc, only: re_alloc, de_alloc
 
       implicit none
 
@@ -61,8 +62,7 @@ C Argument types and dimensions
       real(grid_p), intent(in)  ::  V(nsp,np,nspin)
       real(dp)
      .   dvol, Vs(nvmax,nspin), q(3)
-      external
-     .   memory, timer, ipack
+      external memory, timer, ipack
 
 C Internal variables and arrays
 
@@ -74,19 +74,19 @@ C Internal variables and arrays
      .  is, isp, ispin, iu, iul, ix, j, jc, jl, nsd,
      .  last, lasta, lastop, maxloc, maxloc2, nc, nlocal, 
      .  nphiloc, nvmaxl, iii(3)
-      integer, dimension(:), allocatable, save ::
-     .  ilc, ilocal, iorb
-      logical
-     .  Parallel_Flag
+
+      integer, pointer :: ilc(:), ilocal(:), iorb(:)
+
+      logical Parallel_Flag
       real(dp)
      .  Vij1, Vij2, Vij3, Vij4, dxsp(3), phia(maxoa,nsp),
      .  r2cut(nsmax), r2sp, xr(3), Rdi(3), qRdi, cqRdi, sqRdi
-      real(dp), dimension(:),   allocatable, save :: 
-     .  VClocal, VClocal1, VClocal2, VClocal3, VClocal4    
-      real(dp), dimension(:,:), allocatable, save :: 
-     .  Clocal, Vlocal
-      real(dp), dimension(:,:,:), allocatable, save ::
-     .  VlocalSp
+
+      real(dp), pointer :: VClocal(:), VClocal1(:),
+     &                     VClocal2(:), VClocal3(:), VClocal4(:)
+  
+      real(dp), pointer :: Clocal(:,:), Vlocal(:,:)
+      real(dp), pointer :: VlocalSp(:,:,:)
 
 C  Start time counter
       call timer('vmatsp',1)
@@ -103,30 +103,49 @@ C  Find value of maxloc
 C  If spiral, the diagonal elements of Vlocal do not change
       nsd = 2
 
-C  Allocate local memory
-      allocate(ilocal(no))
-      call memory('A','I',no,'vmatsp')
-      allocate(ilc(maxloc2))
-      call memory('A','I',maxloc2,'vmatsp')
-      allocate(iorb(0:maxloc))
-      call memory('A','I',maxloc+1,'vmatsp')
+      !  Allocate local memory
+      nullify ( ilocal )
+      call re_alloc( ilocal, 1, no, name='ilocal', routine='vmatsp' )
+
+      nullify ( ilc )
+      call re_alloc( ilc, 1, maxloc2, name='ilc', routine='vmatsp' )
+
+      nullify (iorb )
+      call re_alloc( iorb, 0, maxloc, name='iorb', routine='vmatsp' )
+
       ijl = (maxloc+1)*(maxloc+2)/2
-      allocate(Vlocal(ijl,nsd))
-      call memory('A','D',ijl*nsd,'vmatsp')
-      allocate(VlocalSp(0:maxloc,0:maxloc,nsd))
-      call memory('A','D',(maxloc+1)*(maxloc+1)*nsd,'vmatsp')
-      allocate(Clocal(nsp,maxloc2))
-      call memory('A','D',nsp*maxloc2,'vmatsp')
-      allocate(VClocal(nsp))
-      call memory('A','D',nsp,'vmatsp')
-      allocate(VClocal1(nsp))
-      call memory('A','D',nsp,'vmatsp')
-      allocate(VClocal2(nsp))
-      call memory('A','D',nsp,'vmatsp')
-      allocate(VClocal3(nsp))
-      call memory('A','D',nsp,'vmatsp')
-      allocate(VClocal4(nsp))
-      call memory('A','D',nsp,'vmatsp')
+
+      nullify( Vlocal )
+      call re_alloc( Vlocal, 1, ijl, 1, nsd, name='Vlocal',
+     &               routine='vmatsp' )
+
+      nullify( VlocalSp )
+      call re_alloc( VlocalSp, 0, maxloc, 0, maxloc, 1, nsd,
+     &               name    = 'VlocalSp',
+     &               routine = 'vmatsp' )
+
+      nullify( Clocal )
+      call re_alloc( Clocal, 1, nsp, 1, maxloc2, name='Clocal',
+     &               routine='vmatsp' )
+
+      nullify( VClocal )
+      call re_alloc( VClocal, 1, nsp, name='VClocal', routine='vmatsp' )
+
+      nullify( VClocal1 )
+      call re_alloc( VClocal1, 1, nsp, name='VClocal1',
+     &               routine = 'vmatsp' )
+
+      nullify( VClocal2 )
+      call re_alloc( VClocal2, 1, nsp, name='VClocal2',
+     &               routine = 'vmatsp' )
+
+      nullify( VClocal3 )
+      call re_alloc( VClocal3, 1, nsp, name='VClocal3',
+     &               routine = 'vmatsp' )
+
+      nullify( VClocal4 )
+      call re_alloc( VClocal4, 1, nsp, name='VClocal4',
+     &               routine = 'vmatsp' )
 
       if (Parallel_Flag) then
         if (nrowsDscfL.gt.0) then
@@ -134,8 +153,8 @@ C  Allocate local memory
         else
           nvmaxl = 1
         endif
-        allocate(DscfL(nvmaxl,nsd+2))
-        call memory('A','D',nvmaxl*(nsd+2),'meshdscf')
+        call re_alloc( DscfL, 1, nvmaxl, 1, nsd+2,
+     &                 name='DscfL',  routine='vmatsp' )
         DscfL(1:nvmaxl,1:nsd+2) = 0.0_dp
       endif
 
@@ -464,37 +483,26 @@ C  Add final Vlocal to Vs
         endif
       enddo
 
-C  Free local memory
-      call memory('D','D',size(Vlocal),'vmatsp')
-      deallocate(Vlocal)
-      call memory('D','D',size(VlocalSp),'vmatsp')
-      deallocate(VlocalSp)
-      call memory('D','I',size(iorb),'vmatsp')
-      deallocate(iorb)
-      call memory('D','I',size(ilocal),'vmatsp')
-      deallocate(ilocal)
-      call memory('D','I',size(ilc),'vmatsp')
-      deallocate(ilc)
-      call memory('D','D',size(Clocal),'vmatsp')
-      deallocate(Clocal)
-      call memory('D','D',size(VClocal),'vmatsp')
-      deallocate(VClocal)
-      call memory('D','D',size(VClocal1),'vmatsp')
-      deallocate(VClocal1)
-      call memory('D','D',size(VClocal2),'vmatsp')
-      deallocate(VClocal2)
-      call memory('D','D',size(VClocal3),'vmatsp')
-      deallocate(VClocal3)
-      call memory('D','D',size(VClocal4),'vmatsp')
-      deallocate(VClocal4)
+      !  Free local memory
+
+      call de_alloc( Vlocal,  name='Vlocal' )
+      call de_alloc( VlocalSp,  name='VlocalSp' )
+      call de_alloc( iorb,  name='iorb' )
+      call de_alloc( ilocal,  name='ilocal' )
+      call de_alloc( ilc,  name='ilc' )
+      call de_alloc( Clocal,  name='Clocal' )
+      call de_alloc( VClocal,  name='VClocal' )
+      call de_alloc( VClocal1,  name='VClocal1' )
+      call de_alloc( VClocal2,  name='VClocal2' )
+      call de_alloc( VClocal3,  name='VClocal3' )
+      call de_alloc( VClocal4,  name='VClocal4' )
 
       if (Parallel_Flag) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
      .      nuotot, nspin, DscfL, Vs )
 C Free memory 
-        call memory('D','D',size(DscfL),'meshdscf')
-        deallocate(DscfL)
+        call de_alloc( DscfL,  name='DscfL' )
       endif
 
       call timer('vmatsp',2)

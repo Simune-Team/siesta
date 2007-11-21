@@ -57,7 +57,8 @@ CONTAINS
 
     use precision, only: dp
     use atmfuncs,  only: lofio, rcut
-    use atomlist,  only: lasto, iphorb, isa, na_u
+    use atomlist,  only: lasto, iphorb
+    use siesta_geom, only: isa, na_u
     use units,     only: pi
 
     real(dp), intent(out) :: orb_vol

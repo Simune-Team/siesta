@@ -8,8 +8,6 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine fixed( cell, stress, na, isa, amass, xa, fa,
-     .                  cstress, cfa, ntcon )
 c **********************************************************************
 c Reads and imposes required constraints to atomic displacements by
 c making zero the forces in those directions. Constraints are specified
@@ -75,78 +73,82 @@ c      ntcon = ntcon+1
 c      end
 c **********************************************************************
 
-C
-C  Modules
-C
+      subroutine fixed( cell, stress, na, isa, amass, xa, fa,
+     .                  cstress, cfa, ntcon )
       use precision
       use parallel,   only : Node
       use fdf
       use parsing
+      use alloc
 #ifdef MPI
       use mpi_siesta
 #endif
 
-      implicit          none
+      implicit none
 
-      integer           na, isa(na), ntcon
-      real(dp)          amass(na), cell(3,3), cfa(3,na), cstress(3,3),
-     .                  fa(3,na), stress(3,3), xa(3,na)
+      integer, intent(in)   :: na, isa(na)
+      real(dp), intent(in)  :: amass(na), cell(3,3), 
+     .                         fa(3,na), stress(3,3), xa(3,na)
+      integer, intent(out)  :: ntcon
+      real(dp), intent(out) :: cfa(3,na), cstress(3,3)
 
-c Internal parameters
-c maxc  : maximum number of constraints
-c maxl  : maximum number of input constraint lines
-c maxw  : maximum number of items in an input constraint line
-      integer maxl, maxw
-      parameter ( maxl  = 10000 )
-      parameter ( maxw  =  1000 )
-      integer, save :: maxc
+      ! Internal parameters
+      ! maxl  : maximum number of input constraint lines
+      ! maxw  : maximum number of items in an input constraint line
+      integer, parameter :: maxl= 10000,  maxw=  1000
 
-c Internal variables
-      logical
-     .  found, frstme
-      character
-     .  line*130,
-     .  name1*10, name2*10, name3*10, name4*10, names*130
-      character(len=10), dimension(:), allocatable, save ::
-     .  ctype, cbuffer
-      integer
-     .  i, ia, ia1, ia2, ia3, ic, il, integs(maxw), iu, ix,
-     .  jx, lastch, lch(0:maxw), nc, ni, nn, nr, nv, 
-     .  maxcnew
-      integer, dimension(:), allocatable, save ::
-     .  iac, ibuffer
+
+      ! Internal variables
+      logical found
+      character line*130, name1*10, name2*10, name3*10, 
+     &          name4*10, names*130
+
+
+      integer i, ia, ia1, ia2, ia3, ic, il, iu, ix,
+     &        jx, lastch, lch(0:maxw), ni, nn, nr, nv, maxcnew
+
+      character(len=10), pointer, save :: ctype(:)
+      integer,           pointer, save :: iac(:)
+      real(dp),          pointer, save :: xc(:,:)
+
+
+      integer   integs(maxw)
+      real(dp)  ddot, fxc, reals(maxw), values(maxw), xnorm
+
+
+      external ddot, constr, memory
+
+      logical,  save :: frstme
+      data              frstme /.true./
+
+      ! maxc  : maximum number of constraints
+      integer, save :: maxc = 1000
+
+      integer,  save :: nc
+      real(dp), save :: xs(6)
+
+
 #ifdef MPI
       integer MPIerror
 #endif
-      real(dp)
-     .  ddot, fxc, reals(maxw), values(maxw), xnorm, xs(6)
-      real(dp), dimension(:,:), allocatable, save ::
-     .  xc, dpbuffer2
-      external
-     .  ddot, constr, memory
-      save
-     .  frstme, nc, xs
-
-      data
-     .  frstme /.true./,
-     .  maxc   / 1000 /
-
-C Read constraint data only the first time
+      ! Read constraint data only the first time
       if (frstme) then
+        ! Allocate memory for constraints - do only once and preserve contents
+         nullify( ctype )
+         call re_alloc( ctype, 1, maxc, name='ctype', routine='fixed' )
 
-C Allocate memory for constraints - do only once and preserve contents
-        allocate(ctype(maxc))
-        allocate(iac(maxc))
-        call memory('A','I',maxc,'fixed')
-        allocate(xc(3,maxc))
-        call memory('A','D',3*maxc,'fixed')
+        nullify( iac )
+        call re_alloc( iac, 1, maxc, name='iac', routine='fixed' )
 
-c Initialise stress constraints to unconstrained state
+        nullify( xc )
+        call re_alloc( xc, 1, 3, 1, maxc, name='xc', routine='fixed' )
+
+        ! Initialise stress constraints to unconstrained state
         xs(1:6) = 0.0d0
 
         nc = 0
 
-C       Look for constraints data block
+        ! Look for constraints data block
         if (Node.eq.0) then
           found = fdf_block('GeometryConstraints',iu)
         endif
@@ -155,10 +157,10 @@ C       Look for constraints data block
 #endif
         if (.not.found) goto 30
 
-C       Loop on data lines
+        ! Loop on data lines
         do 20 il = 1,maxl
 
-C         Read and parse data line
+          ! Read and parse data line
           if(Node.eq.0) then
             read(iu,'(a)',end=30) line
             lastch = index(line,'#') - 1
@@ -169,75 +171,52 @@ C         Read and parse data line
 #endif
           if (lastch .le. 0) lastch = len(line)
           call parse( line(1:lastch), nn, lch, names, nv, values,
-     .                ni, integs, nr, reals )
+     &                ni, integs, nr, reals )
 
-c         Check if constraints are finished
+          ! Check if constraints are finished
           name1 = names(lch(0)+1:lch(1))
           if (name1 .eq. '%end' .or.
-     .        name1 .eq. '%endblock') then
+     &        name1 .eq. '%endblock') then
             goto 30
 
-c         Select type of constraint
+          ! Select type of constraint
           elseif (name1 .eq. 'routine') then
             if (nn.eq.1 .or. names(lch(1)+1:lch(2)) .eq. 'constr') then
               nc = nc + 1
               if (nc.eq.maxc) then
                 maxcnew = nc + nint(0.1*nc)
-C
-                allocate(cbuffer(maxc))
-                cbuffer(1:maxc) = ctype(1:maxc)
-                deallocate(ctype)
-                allocate(ctype(maxcnew))
-                ctype(1:maxc) = cbuffer(1:maxc)
-                deallocate(cbuffer)
-C
-                allocate(ibuffer(maxc))
-                call memory('A','I',maxc,'fixed')
-                ibuffer(1:maxc) = iac(1:maxc)
-                call memory('D','I',size(iac),'fixed')
-                deallocate(iac)
-                allocate(iac(maxcnew))
-                call memory('A','I',maxcnew,'fixed')
-                iac(1:maxc) = ibuffer(1:maxc)
-                call memory('D','I',size(ibuffer),'fixed')
-                deallocate(ibuffer)
-C
-                allocate(dpbuffer2(3,maxc))
-                call memory('A','D',maxc,'fixed')
-                dpbuffer2(1:3,1:maxc) = xc(1:3,1:maxc)
-                call memory('D','D',size(xc),'fixed')
-                deallocate(xc)
-                allocate(xc(3,maxcnew))
-                call memory('A','D',3*maxcnew,'fixed')
-                xc(1:3,1:maxc) = dpbuffer2(1:3,1:maxc)
-                call memory('D','D',size(dpbuffer2),'fixed')
-                deallocate(dpbuffer2)
-C
+
+                call re_alloc( ctype, 1, maxcnew, name='ctype',            
+     &                         routine='fixed', copy=.true. )
+                call re_alloc( iac, 1, maxcnew, name='iac',            
+     &                          routine='fixed', copy=.true. )
+                call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',            
+     &                         routine='fixed', copy=.true. )
                 maxc = maxcnew
               endif
               ctype(nc) = 'routine'
             else
               if (Node.eq.0) then
                 write(6,*) 'fixed: ERROR: user-constraints routine',
-     .                   ' must be called constr'
+     &                   ' must be called constr'
               endif
             endif
 
           elseif (name1 .eq. 'position') then
 
-c           Check syntax
+            ! Check syntax
             if (nr.ne.0 .and. nr.ne.3) then
               if (Node.eq.0) then
                 write(6,'(a,/,a)')
-     .            'fixed: syntax ERROR in %block GeometryConstraints:',
-     .            line(1:lastch)
+     &            'fixed: syntax ERROR in %block GeometryConstraints:',
+     &            line(1:lastch)
               endif
               goto 20
             endif
 
-c           Find constrained atoms
+            ! Find constrained atoms
             if (nn .gt. 1) then
-c             Atoms specified by range. Make list of them.
+              ! Atoms specified by range. Make list of them.
               name2 = names(lch(1)+1:lch(2))
               name3 = names(lch(2)+1:lch(3))
               if (nn.eq.4) name4 = names(lch(3)+1:lch(4))
@@ -259,53 +238,29 @@ c             Atoms specified by range. Make list of them.
               else
                 if (Node.eq.0) then
                   write(6,'(a,/,a)')
-     .            'fixed: syntax ERROR in %block GeometryConstraints:',
-     .            line(1:lastch)
+     &            'fixed: syntax ERROR in %block GeometryConstraints:',
+     &            line(1:lastch)
                 endif
                 goto 20
               endif
             endif
 
-c           Store position constraints
+            ! Store position constraints
             do i = 1,ni
               ia = integs(i)
               if (ia .lt. 0) ia = na + ia + 1
               if (nr .eq. 0) then
-c               Make one constraint for each cartesian coordinate
+                ! Make one constraint for each cartesian coordinate
                 do ix = 1,3
                   nc = nc + 1
                   if (nc.eq.maxc) then
                     maxcnew = nc + nint(0.1*nc)
-C
-                    allocate(cbuffer(maxc))
-                    cbuffer(1:maxc) = ctype(1:maxc)
-                    deallocate(ctype)
-                    allocate(ctype(maxcnew))
-                    ctype(1:maxc) = cbuffer(1:maxc)
-                    deallocate(cbuffer)
-C
-                    allocate(ibuffer(maxc))
-                    call memory('A','I',maxc,'fixed')
-                    ibuffer(1:maxc) = iac(1:maxc)
-                    call memory('D','I',size(iac),'fixed')
-                    deallocate(iac)
-                    allocate(iac(maxcnew))
-                    call memory('A','I',maxcnew,'fixed')
-                    iac(1:maxc) = ibuffer(1:maxc)
-                    call memory('D','I',size(ibuffer),'fixed')
-                    deallocate(ibuffer)
-C
-                    allocate(dpbuffer2(3,maxc))
-                    call memory('A','D',maxc,'fixed')
-                    dpbuffer2(1:3,1:maxc) = xc(1:3,1:maxc)
-                    call memory('D','D',size(xc),'fixed')
-                    deallocate(xc)
-                    allocate(xc(3,maxcnew))
-                    call memory('A','D',3*maxcnew,'fixed')
-                    xc(1:3,1:maxc) = dpbuffer2(1:3,1:maxc)
-                    call memory('D','D',size(dpbuffer2),'fixed')
-                    deallocate(dpbuffer2)
-C
+                    call re_alloc( ctype, 1, maxcnew, name='ctype',            
+     &                             routine='fixed', copy=.true. )
+                    call re_alloc( iac, 1, maxcnew, name='iac',            
+     &                             routine='fixed', copy=.true. )
+                    call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',            
+     &                             routine='fixed', copy=.true. )
                     maxc = maxcnew
                   endif
                   ctype(nc) = 'position'
@@ -316,40 +271,16 @@ C
                   xc(ix,nc) = 1.0d0
                 enddo
               elseif (nr .eq. 3) then
-c               Make only one constraint in the specified direction
+                ! Make only one constraint in the specified direction
                 nc = nc + 1
                 if (nc.eq.maxc) then
                   maxcnew = nc + nint(0.1*nc)
-C
-                  allocate(cbuffer(maxc))
-                  cbuffer(1:maxc) = ctype(1:maxc)
-                  deallocate(ctype)
-                  allocate(ctype(maxcnew))
-                  ctype(1:maxc) = cbuffer(1:maxc)
-                  deallocate(cbuffer)
-C
-                  allocate(ibuffer(maxc))
-                  call memory('A','I',maxc,'fixed')
-                  ibuffer(1:maxc) = iac(1:maxc)
-                  call memory('D','I',size(iac),'fixed')
-                  deallocate(iac)
-                  allocate(iac(maxcnew))
-                  call memory('A','I',maxcnew,'fixed')
-                  iac(1:maxc) = ibuffer(1:maxc)
-                  call memory('D','I',size(ibuffer),'fixed')
-                  deallocate(ibuffer)
-C
-                  allocate(dpbuffer2(3,maxc))
-                  call memory('A','D',maxc,'fixed')
-                  dpbuffer2(1:3,1:maxc) = xc(1:3,1:maxc)
-                  call memory('D','D',size(xc),'fixed')
-                  deallocate(xc)
-                  allocate(xc(3,maxcnew))
-                  call memory('A','D',3*maxcnew,'fixed')
-                  xc(1:3,1:maxc) = dpbuffer2(1:3,1:maxc)
-                  call memory('D','D',size(dpbuffer2),'fixed')
-                  deallocate(dpbuffer2)
-C
+                  call re_alloc( ctype, 1, maxcnew, name='ctype',            
+     &                           routine='fixed', copy=.true. )
+                  call re_alloc( iac, 1, maxcnew, name='iac',            
+     &                           routine='fixed', copy=.true. )
+                  call re_alloc( xc, 1, 3, 1, maxcnew, name='xc',            
+     &                         routine='fixed', copy=.true. )
                   maxc = maxcnew
                 endif
                 ctype(nc) = 'position'
@@ -373,7 +304,7 @@ C
           else
             if (Node.eq.0) then
               write(6,*) 'fixed: ERROR: sorry, constraint type ',
-     .                  name1, ' not implemented yet'
+     &                  name1, ' not implemented yet'
             endif
           endif
    20   continue
@@ -381,7 +312,7 @@ C
         frstme = .false.
       endif
 
-c Copy stress and forces to output arrays 
+      ! Copy stress and forces to output arrays 
       do ix = 1,3
         do jx = 1,3
           cstress(jx,ix) = stress(jx,ix)
@@ -393,7 +324,7 @@ c Copy stress and forces to output arrays
         enddo
       enddo
 
-c Apply constraints
+      ! Apply constraints
       ntcon = 0
       do ic = 1,nc
         if (ctype(ic) .eq. 'routine') then
@@ -408,7 +339,7 @@ c Apply constraints
         endif
       enddo
 
-c Apply stress constraints
+      ! Apply stress constraints
       cstress(1,1) = cstress(1,1) - xs(1)*cstress(1,1)
       cstress(2,2) = cstress(2,2) - xs(2)*cstress(2,2)
       cstress(3,3) = cstress(3,3) - xs(3)*cstress(3,3)
@@ -419,4 +350,4 @@ c Apply stress constraints
       cstress(1,2) = cstress(1,2) - xs(6)*cstress(1,2)
       cstress(2,1) = cstress(2,1) - xs(6)*cstress(2,1)
 
-      end
+      end subroutine fixed

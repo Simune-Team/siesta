@@ -9,9 +9,8 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine phirphi(nua, na, nuo, no, scell, xa, rmaxo,
-     .                   maxna, maxnh, lasto, iphorb, isa, 
-     .                   numh, listhptr, listh, dk, 
-     .                   jna, xij, r2ij, S)
+     .                   maxnh, lasto, iphorb, isa, 
+     .                   numh, listhptr, listh, dk, S)
 C *********************************************************************
 C Finds the matrix elements of the dk*r between basis
 C orbitals, where dk is a given vector and r is the position operator.
@@ -29,7 +28,6 @@ C integer no               : Number of basis orbitals
 C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
-C integer maxna            : Maximum number of neighbours of any atom
 C integer maxnh            : First dimension of listh
 C integer lasto(0:na)      : Last orbital index of each atom
 C integer iphorb(no)       : Orbital index of each orbital in its atom
@@ -41,9 +39,6 @@ C                            of the overlap matrix
 C integer listh(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of the overlap matrix
 C real*8  dk(3)            : Vector in k-space
-C integer jna(maxna)       : Aux. space to find neighbours (indexes)
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 C *********************************************************************
@@ -52,20 +47,21 @@ C *********************************************************************
       use atmfuncs,     only : rcut
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
+      use alloc,        only : re_alloc, de_alloc
+      use neighbour,    only : jna=>jan, xij, r2ij
+      use neighbour,    only : mneighb
 
       implicit none
 
 C Passed variables 
-      integer
-     .  maxna, maxnh, na, no, nua, nuo
+      integer  maxnh, na, no, nua, nuo
 
       integer
-     .  iphorb(no), isa(na), jna(maxna), lasto(0:na), 
+     .  iphorb(no), isa(na), lasto(0:na), 
      .  listh(maxnh), listhptr(nuo), numh(nuo)
       
       real(dp)
-     .  scell(3,3), r2ij(maxna), rmaxo, dk(3),
-     .  S(maxnh), xa(3,na), xij(3,maxna)
+     .  scell(3,3), rmaxo, dk(3), S(maxnh), xa(3,na)
 
 C Internal variables 
       integer
@@ -75,32 +71,26 @@ C Internal variables
       real(dp)
      .  grSij(3), rij, Sij, xinv(3)
 
-      real(dp), dimension(:), allocatable, save :: 
-     .  Si
+      real(dp), dimension(:), pointer ::  Si
 
-      real(dp), save :: tiny = 1.0d-9
+      real(dp), parameter  :: tiny = 1.0d-9
 
-      external
-     .  neighb, memory
 C ......................
 
 C Initialize neighb subroutine 
-      nnia = maxna
-      call neighb( scell, 2.d0*rmaxo, na, xa, 0, 0,
-     .             nnia, jna, xij, r2ij )
+      call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia)
 
 C Allocate local memory
-      allocate(Si(no))
-      call memory('A','D',no,'phirphi')
+      nullify( Si )
+      call re_alloc( Si, 1, no, name='Si',
+     &               routine='subroutine phirphi' )
 
       do jo = 1,no
         Si(jo) = 0.0d0
       enddo
       do ia = 1,nua 
-        nnia = maxna 
         is = isa(ia)
-        call neighb( scell, 2.0d0*rmaxo, na, xa, ia, 0,
-     .               nnia, jna, xij, r2ij )  
+        call mneighb( scell, 2.0d0*rmaxo, na, xa, ia, 0, nnia )
            
         do iio = lasto(ia-1)+1,lasto(ia)  
           call GlobalToLocalOrb(iio,Node,Nodes,io)
@@ -160,8 +150,6 @@ C Allocate local memory
       enddo
 
 C Deallocate local memory
-      call memory('D','D',size(Si),'phirphi')
-      deallocate(Si)
+      call de_alloc( Si, name='Si' )
 
-      return
       end

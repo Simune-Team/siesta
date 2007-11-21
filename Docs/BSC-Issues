@@ -1,0 +1,15 @@
+List of issues that have come up during the restructuring at the BSC
+
+* In siesta_analysis, some routines perform various kinds of
+analysis. They were not completely consistent in their use of
+xalast or xa. This has been "fixed" by using xalast (and, for
+consistency, ucell_last, etc) in all analysis. 
+
+* The k-point construction for the scf calculation is now *really*
+updated after cell changes (for cell optimizations and server-type
+calculations, but still not for PR-type MD calculations). This is
+a change from the reference version (2.1.29), which, due to a bug
+did not update the k-point grid even if the cell varied.
+
+* Vna is not always initialized in NeutralAtomOnMesh, even though
+it is an "intent(out)" variable. (A fix is in bsc--ag branch).

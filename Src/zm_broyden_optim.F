@@ -15,14 +15,13 @@
       CONTAINS
 !
       subroutine zm_broyden_optimizer( na, xa, fa, cell,
-     .                 stress, volume, dxmax, 
+     .                 stress, dxmax, 
      .                 tp, ftol, strtol, varcel, relaxd)
 
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
 c real*8 fa(3,na)       : Atomic forces
 c real*8 stress(3,3)    : Stress tensor components
-c real*8 volume         : unit cell volume
 c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
@@ -69,13 +68,13 @@ C Subroutine arguments:
       integer,  intent(in)   :: na
       logical,  intent(in)   :: varcel
       logical,  intent(out)  :: relaxd
-      real(dp), intent(in)   :: fa(3,na), volume, dxmax, tp, ftol
+      real(dp), intent(in)   :: fa(3,na), dxmax, tp, ftol
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
       integer             :: iu, ia, i, j, n, indi,indi1,vi,k
       logical             :: found
-      real(dp)            :: new_volume, trace
+      real(dp)            :: volume, new_volume, trace
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
       real(dp)            ::  stress_dif(3,3)
@@ -113,6 +112,8 @@ C Saved internal variables:
       real(dp), external :: volcel
 
 c ---------------------------------------------------------------------------
+
+      volume = volcel(cell)
 
       if (.not. initialization_done) then
 

@@ -9,11 +9,11 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine optical( nua, na, xa, scell, ucell, nuotot, nuo, no, 
-     .                    nspin, qspin, maxna, maxnh, numh, 
+     .                    nspin, qspin, maxnh, numh, 
      .                    listhptr, listh, H, S, AuxSr, AuxSr2, AuxSr3,
      .                    xijo, indxuo, indxua, ek, efermi, temp,
      .                    isa, iphorb, iphkb, iaorb, lasto, lastkb, 
-     .                    jna, xij, r2ij, shape )
+     .                    shape )
 C *********************************************************************
 C Calculates the imaginary part of the dielectric function using
 C first order perturbation theory.
@@ -30,7 +30,6 @@ C integer nuo                 : No. of basis orbitals in the unit cell (local)
 C integer no                  : Number of basis orbitals
 C integer nspin               : Number of spin components
 C real*8  qspin(2)            : Total population of spin up and down
-C integer maxna               : Maximum number of neighbours of any atom
 C integer maxnh               : Maximum number of orbitals interacting  
 C                               with any orbital
 C integer numh(nuo)           : Number of nonzero elements of each row 
@@ -60,9 +59,6 @@ C                               each KB projector
 C integer iaorb(no)           : Atom to which orbitals belong
 C integer lasto(0:na)         : Last orbital index of each atom 
 C integer lastkb(0:na)        : Last KB projector of each atom
-C integer jna(maxna)          : Aux. space to find neighbours (indexes) 
-C real*8  xij(3,maxna)        : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)         : Aux. space to find neighbours (distances)
 C *************************** INTERNAL ********************************
 C integer  nkopt              : Maximum number of grid points in the
 C                               BZ integration
@@ -87,6 +83,7 @@ C *********************************************************************
       use sys,          only : die
       use m_fermid,     only : stepf
       use files,        only : slabel, label_length
+      use units,        only : pi
 #ifdef MPI
       use mpi_siesta,   only : mpi_reduce, mpi_comm_world,
      $                         mpi_sum
@@ -100,14 +97,13 @@ C Passed variables
       integer           indxuo(no), listh(maxnh), numh(nuo)
       integer           listhptr(nuo)
       integer           na, isa(na), iphorb(no), iaorb(no) 
-      integer           nua, maxna, jna(maxna), lasto(0:na),lastkb(0:na)
+      integer           nua, lasto(0:na),lastkb(0:na)
       integer           iphKB(*), indxua(na)
       real(dp)          ek(nuotot), qspin(2), H(maxnh,nspin), 
      .                  S(maxnh), xijo(3,*),
      .                  ucell(3,3), efermi, temp, AuxSr(maxnh), 
      .                  AuxSr2(maxnh),AuxSr3(maxnh), 
-     .                  scell(3,3), xij(3,maxna), r2ij(maxna),
-     .                  xa(3,na)
+     .                  scell(3,3), xa(3,na)
 
 C Internal variables 
       real(dp) ntote_real      !!*** Note: needed to deal with synthetics
@@ -120,24 +116,23 @@ C Internal variables
 #ifdef MPI
       integer                     :: MPIerror
 #endif
-      integer,               save :: nkopt = 0
+      integer,               save :: nkopt = 0  ! AG ???
          
       logical                     :: DoOptical
-      logical,               save :: frstme = .true.
       logical,               save :: gamma  = .false.
 
       real(dp)                    :: efermiloc
-      real(dp),              save :: tiny = 1.0d-9
-      real(dp),              save :: ediffmin = 1.0d-3
-      real(dp), pointer,     save :: ekloc(:)
-      real(dp), pointer,     save :: epsimg(:,:)
-      real(dp), pointer,     save :: kopt(:,:)
-      real(dp), pointer,     save :: wgthopt(:)
-      real(dp), allocatable, save :: epsbuff(:,:)
-      real(dp), allocatable, save :: intraband(:,:)
+      real(dp),        parameter  :: tiny = 1.0d-9
+      real(dp),        parameter  :: ediffmin = 1.0d-3
+      real(dp), pointer           :: ekloc(:)
+      real(dp), pointer           :: epsimg(:,:)
+      real(dp), pointer           :: kopt(:,:)
+      real(dp), pointer           :: wgthopt(:)
+      real(dp), pointer           :: epsbuff(:,:)
+      real(dp), pointer           :: intraband(:,:)
       real(dp)
      .  cutoff, displ(3), dmod, dsp, dw, ediff, efield(3),
-     .  fsum(2), f1, f2, inplane(3,2), kint(3), pi,
+     .  fsum(2), f1, f2, inplane(3,2), kint(3),
      .  smooth, T, volcel, volume, xv(3), w,
      .  wmin, wmax, wi, wf, escissor, omega_p2(2),aux_p2(2)
 
@@ -149,14 +144,6 @@ C Internal variables
 
       external          io_assign, io_close,
      .                  paste, volcel
-
-C Nullify pointers
-      if (frstme) then
-        nullify(ekloc)
-        nullify(epsimg)
-        nullify(kopt)
-        nullify(wgthopt)
-      endif
 
 C Start time counter 
       call timer( 'optical', 1 )
@@ -206,6 +193,7 @@ C If nk.ne.0
         call kgridinit( ucell, kscell,  displ, cutoff, nkopt )
 
 C Resize arrays to fit nkopt
+        nullify(kopt, wgthopt)
         call re_alloc(kopt,1,3,1,nkopt,name='kopt',routine='optical')
         call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
 
@@ -292,6 +280,7 @@ C Total number of valence electrons in the unit cell
 C Find the size of the array to hold the imaginary dielectric constant
       dw = smooth/10
       nw = nint((wmax-wmin)/dw) + 1
+      nullify(epsimg)
       call re_alloc(epsimg,1,nw,1,2,name='epsimg',routine='optical')
       
 C Check sizes of K point arrays
@@ -299,11 +288,9 @@ C Check sizes of K point arrays
       call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
 
 C Check size of remaining arrays
+      nullify(ekloc)
       call re_alloc(ekloc,1,nuotot,name='ekloc',routine='optical')
       
-C******************PI*************************************
-      pi = dacos(-1.0d0)
-
 C The calculation  of the imaginary part of the dielectric 
 C function starts here
 
@@ -466,29 +453,29 @@ C parameter npol
           endif
 C Allocate intraband array to calculate the Drude contribution
 C for metals
-           allocate(intraband(ngamma,nuo))
+          nullify( intraband )
+          call re_alloc( intraband, 1, ngamma, 1, nuo,
+     $                name='intraband', routine='optical')
 
 C Construction of the matrix elements of the scalar product n*r 
        if ( option.eq.'polarized') then 
-         call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
+         call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh,
      .                    listhptr, listh, indxuo, indxua, iaorb,
-     .                    efield, jna, xij, r2ij, matrix, AuxSr) 
+     .                    efield, matrix, AuxSr) 
          do io = 1,maxnh
            AuxSr2(io) = 0.0d0
            AuxSr3(io) = 0.0d0
          enddo
        elseif( option.eq.'unpolarized') then
-         call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
+         call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh, 
      .                    listhptr, listh, indxuo, indxua, iaorb,
-     .                    inplane(1,1), jna, xij, r2ij, matrix, 
-     .                    AuxSr)
-         call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
+     .                    inplane(1,1), matrix,  AuxSr)
+         call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh,
      .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    inplane(1,2), jna, xij, r2ij, matrix, 
-     .                    AuxSr2)
+     .                    inplane(1,2), matrix, AuxSr2)
          do io = 1,maxnh
            AuxSr3(io) = 0.0d0
          enddo
@@ -497,26 +484,26 @@ C Construction of the matrix elements of the scalar product n*r
            xv(ix) = 0.0d0
          enddo
          xv(1) = 1.0d0
-         call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
+         call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh, 
      .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    xv, jna, xij, r2ij, matrix, AuxSr)
+     .                    xv, matrix, AuxSr)
          do ix = 1,3
            xv(ix) = 0.0d0
          enddo
          xv(2) = 1.0d0
-         call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
+         call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh, 
      .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    xv, jna, xij, r2ij, matrix, AuxSr2)
+     .                    xv, matrix, AuxSr2)
          do ix = 1,3
            xv(ix) = 0.0d0
          enddo
          xv(3) = 1.0d0
-         call phirphi_opt(nua, na, nuo, no, scell, xa, maxna, maxnh, 
+         call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh,
      .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    xv, jna, xij, r2ij, matrix, AuxSr3)
+     .                    xv, matrix, AuxSr3)
 
        endif
 
@@ -653,11 +640,14 @@ C Closing loop on k_points
       enddo 
 
 #ifdef MPI
-      allocate(epsbuff(nw,2))
+      nullify( epsbuff )
+      call re_alloc( epsbuff, 1, nw, 1, 2, name='epsbuff',
+     &               routine='optical' )
       call MPI_Reduce(epsimg(1,1),epsbuff(1,1),2*nw,
      .  MPI_double_precision,MPI_sum,0,MPI_Comm_World,MPIerror)
       epsimg(1:nw,1:2) = epsbuff(1:nw,1:2)
-      deallocate(epsbuff)
+      call de_alloc( epsbuff, name='epsbuff' )
+
       call MPI_Reduce(omega_p2(1),aux_p2(1),nspin,
      .  MPI_double_precision,MPI_sum,0,MPI_Comm_World,MPIerror)
       omega_p2(1)=aux_p2(1)
@@ -724,10 +714,13 @@ C A factor of 4 due to the integration in Ry rather than in a.u.
 C This is the only exit point 
   999 continue
 
-C Resize memory to something small
-      call re_alloc(epsimg,1,1,1,1,name='epsimg',routine='optical')
+C Deallocate internal arrays
+      call de_alloc(epsimg,name='epsimg')
+      call de_alloc(intraband, name="intraband")
+      call de_alloc(ekloc, name="ekloc")
+      call de_alloc(kopt, name="kopt")
+      call de_alloc(wgthopt, name="wgthopt")
 
-      frstme = .false.
       call timer( 'optical', 2 )
 
       end

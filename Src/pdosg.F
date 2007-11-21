@@ -57,6 +57,8 @@ C **********************************************************************
       use precision
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GetNodeOrbs, LocalToGlobalOrb
+      use units,        only : pi
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -82,23 +84,19 @@ C Internal variables ---------------------------------------------------
      .  ispin, iuo, juo, j, jo, ihist, iband, ind, ierror
 
       real(dp)
-     .  delta, ener, diff, pi, pipj1, gauss, norm
+     .  delta, ener, diff, pipj1, gauss, norm
 
 #ifdef MPI
       integer ::
      .  BNode, Bnuo, ibandg, maxnuo, MPIerror
-      real(dp), dimension(:,:), allocatable, save ::
-     .  Sloc
-      real(dp), dimension(:,:,:), allocatable, save ::
-     .  tmp
+      real(dp), dimension(:,:), pointer ::  Sloc
+      real(dp), dimension(:,:,:), pointer :: tmp
 #endif
 
-      external
-     .  rdiag
+      external rdiag
 
 C Initialize some variables
       delta = (E2 - E1)/nhist
-      pi = 4.0d0 * atan(1.0d0)
 
 C Solve eigenvalue problem for each k-point
       do ispin = 1, nspin
@@ -170,8 +168,9 @@ C Find maximum number of orbitals per node
      .    MPI_Comm_World,MPIerror)
 
 C Allocate workspace array for broadcast overlap matrix
-        allocate(Sloc(nuotot,maxnuo))
-        call memory('A','D',nuotot*maxnuo,'pdosk')
+        nullify( Sloc )
+        call re_alloc( Sloc, 1, nuotot, 1, maxnuo, 
+     &                name='Sloc', routine='pdosg' )
 
 C Loop over nodes broadcasting overlap matrix
         do BNode = 0,Nodes-1
@@ -218,8 +217,7 @@ C End loop over broadcast nodes
         enddo
 
 C Free workspace array for overlap
-        call memory('D','D',size(Sloc),'pdosk')
-        deallocate(Sloc)
+        call de_alloc( Sloc, name='Sloc' )
 
 #else
 C Loop over all the energy range
@@ -250,8 +248,9 @@ C Solo para los Juo que satisfagan el criterio del record...
 
 #ifdef MPI
 C Allocate workspace array for global reduction
-      allocate(tmp(nhist,max(nuotot,nspin),nspin))
-      call memory('A','D',nhist*nuotot*nspin,'pdosk')
+      nullify( tmp )
+      call re_alloc( tmp, 1, nhist, 1, max(nuotot,nspin), 
+     &               1, nspin, name='tmp', routine='pdosg' )
 
 C Global reduction of dpr matrix
       tmp(1:nhist,1:nuotot,1:nspin) = 0.0d0
@@ -266,8 +265,7 @@ C Global reduction of dtot matrix
       dtot(1:nhist,1:nspin) = tmp(1:nhist,1:nspin,1)
 
 C Free workspace array for global reduction
-      call memory('D','D',size(tmp),'pdosk')
-      deallocate(tmp)
+      call de_alloc( tmp, name='tmp' )
 #endif
 
       norm = sigma * sqrt(pi)
@@ -281,5 +279,4 @@ C Free workspace array for global reduction
         enddo
       enddo
 
-      return
       end

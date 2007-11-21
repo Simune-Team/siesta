@@ -8,11 +8,14 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      module m_ksv
+      public :: KSV_pol
+      CONTAINS
       subroutine KSV_pol( nua, na, xa, rmaxo, scell, ucell, nuotot,
-     .                    nuo, no, nspin, qspin, maxna, maxnh, 
+     .                    nuo, no, nspin, qspin, maxnh, 
      .                    maxkpol, numh, listhptr, listh, H, S, 
      .                    AuxSr, xijo, indxuo, isa, iphorb, iaorb, 
-     .                    lasto, jna, xij, r2ij,shape, nkpol,kpol,
+     .                    lasto, shape, nkpol,kpol,
      .                    wgthpol, polR, polxyz )
 C *********************************************************************
 C Finds polarization using the method of King-Smith and Vanderbilt
@@ -30,7 +33,6 @@ C integer nuo                 : No. of basis orbitals in the unit cell (local)
 C integer no                  : Number of basis orbitals
 C integer nspin               : Number of spin components
 C real*8  qspin(2)            : Total population of spin up and down
-C integer maxna               : Maximum number of neighbours of any atom
 C integer maxnh               : Maximum number of orbitals interacting  
 C                               with any orbital
 C integer maxk                : Last dimension of kpoint 
@@ -52,9 +54,6 @@ C integer isa(na)             : Species index for each atom
 C integer iphorb(no)          : Orbital index within the atom for each
 C                               orbital
 C integer lasto(0:na)      : Last orbital index of each atom 
-C integer jna(maxna)       : Aux. space to find neighbours (indexes) 
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C *************************** INPUT/OUTPUT ****************************
 C integer  nkpol              :  Maximum number of grid points for the
 C                                bidimensional integrals
@@ -83,21 +82,21 @@ C
       use parsing
       use atmfuncs,      only : zvalfis
       use densematrix
-      use alloc
+      use alloc,         only : re_alloc, de_alloc
+      USE m_ksvinit,     only : repol
 
       implicit          none
 
       integer           maxkpol, maxnh, nuo, nuotot, no, nspin, na
       integer           indxuo(no), listh(maxnh), numh(nuo), nkpol
       integer           listhptr(nuo), isa(na), iphorb(no), iaorb(no) 
-      integer           nua, maxna, jna(maxna), lasto(0:na)
+      integer           nua, maxna, lasto(0:na)
       real(dp)          ddot, 
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
      .                  polR(3,nspin), polxyz(3,nspin), ucell(3,3),
      .                  wgthpol(maxkpol), AuxSr(maxnh), 
-     .                  scell(3,3), rmaxo, xij(3,maxna), r2ij(maxna),
-     .                  xa(3,na)
+     .                  scell(3,3), rmaxo,  xa(3,na)
 C *********************************************************************
 
 C Internal variables 
@@ -109,8 +108,7 @@ C Internal variables
      .  nk, nmeshk(3,3), Nptot, 
      .  notcal(3), nhs, npsi
 
-      integer, dimension(:), allocatable, save ::
-     .  muo
+      integer, dimension(:), pointer ::  muo
          
       real(dp)
      .  difA, pi, rcell(3,3), uR(3,3),  
@@ -120,8 +118,7 @@ C Internal variables
      .  tiny, phase, ph(3,2), Debye,
      .  vaux(3,2), area, J, qspin(2), dq, phaseold(2)
 
-      real(dp), dimension(:), allocatable, save ::
-     .  ek
+      real(dp), dimension(:), pointer ::  ek
 
       parameter (Debye  = 0.393430d0)  
 
@@ -130,8 +127,7 @@ C Internal variables
       external          ddot, io_assign, io_close,
      .                  paste, volcel, reclat, memory
 
-      real(dp), dimension(:), allocatable, save ::
-     .  psi1, psiprev
+      real(dp), dimension(:), pointer :: psi1, psiprev
 
       parameter (  tiny= 1.0d-8  )
 
@@ -214,14 +210,15 @@ C Allocate local memory
       call re_alloc(Saux,1,nhs,name='Saux',routine='KSV_pol')
       call re_alloc(psi,1,npsi,name='psi',routine='KSV_pol')
 
-      allocate(muo(nuotot))
-      call memory('A','I',nuotot,'ksv_pol')
-      allocate(ek(nuotot))
-      call memory('A','D',nuo,'ksv_pol')
-      allocate(psi1(npsi))
-      call memory('A','D',npsi,'ksv_pol')
-      allocate(psiprev(npsi))
-      call memory('A','D',npsi,'ksv_pol')
+      nullify( muo )
+      call re_alloc( muo, 1, nuotot, name='muo', routine='KSV_pol' )
+      nullify( ek )
+      call re_alloc( ek, 1, nuotot, name='ek', routine='KSV_pol' )
+      nullify( psi1 )
+      call re_alloc( psi1, 1, npsi, name='psi1', routine='KSV_pol' )
+      nullify( psiprev )
+      call re_alloc( psiprev, 1, npsi, name='psiprev',
+     &               routine='KSV_pol' )
 
 C Initialise psi
       do io = 1,npsi
@@ -344,9 +341,8 @@ C Calculation of the Jacobian
 
 C Construction of the matrix elements of the scalar product dk*r 
           call phirphi(nua, na, nuo, no, scell, xa, rmaxo,
-     .              maxna, maxnh, lasto, iphorb, isa,
-     .              numh, listhptr, listh, dk,
-     .              jna, xij, r2ij, AuxSr) 
+     .              maxnh, lasto, iphorb, isa,
+     .              numh, listhptr, listh, dk, AuxSr) 
 
 C Begin the bidimensional integration over the path integrals
           do ik = 1, nk
@@ -581,14 +577,10 @@ C This is the only exit point
   999 continue
 
 C Deallocate local memory
-      call memory('D','I',size(muo),'ksv_pol')
-      deallocate(muo)
-      call memory('D','D',size(ek),'ksv_pol')
-      deallocate(ek)
-      call memory('D','D',size(psi1),'ksv_pol')
-      deallocate(psi1)
-      call memory('D','D',size(psiprev),'ksv_pol')
-      deallocate(psiprev)
+      call de_alloc( muo, name='muo' )
+      call de_alloc( ek, name='ek' )
+      call de_alloc( psi1, name='psi1' )
+      call de_alloc( psiprev, name='psiprev' )
 
       if (nkpol.gt.0.and.IOnode) then
         do ispin = 1,nspin
@@ -630,4 +622,5 @@ C is turned on. JDG
 
       call timer( 'KSV_pol', 2 )
 
-      end
+      end subroutine KSV_pol
+      end module m_ksv

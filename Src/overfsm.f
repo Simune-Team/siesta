@@ -14,7 +14,8 @@
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut
-      use m_memory,      only : mem_stat, memory
+      use neighbour,     only : jna=>jan, r2ij, xij, mneighb
+      use alloc,         only : re_alloc, de_alloc
 
       implicit none
 
@@ -24,9 +25,9 @@
       CONTAINS
 
       subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
-     .                   maxna, maxnh, maxnd, lasto, iphorb, isa, 
+     .                   maxnh, maxnd, lasto, iphorb, isa, 
      .                   numd, listdptr, listd, numh, listhptr, listh, 
-     .                   nspin, Emat, jna, xij, r2ij, fa, stress, S)
+     .                   nspin, Emat, fa, stress, S)
 C *********************************************************************
 C Overlap matrix and orthonormalization contribution to forces and stress.
 C Energies in Ry. Lengths in Bohr.
@@ -40,7 +41,6 @@ C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
 C integer maxo             : Second dimension of Emat
-C integer maxna            : Maximum number of neighbours of any atom
 C integer maxnh            : First dimension of S and listh
 C integer maxnd            : First dimension of Escf and listd
 C integer lasto(0:na)      : Last orbital index of each atom
@@ -59,9 +59,6 @@ C integer listh(maxnh)     : Column indexes of the nonzero elements
 C                            of each row of the overlap matrix
 C integer nspin            : Number of spin components of Emat
 C integer Emat(maxnd,nspin): Energy-Density matrix
-C integer jna(maxna)       : Aux. space to find neighbours (indexes)
-C real*8  xij(3,maxna)     : Aux. space to find neighbours (vectors)
-C real*8  r2ij(maxna)      : Aux. space to find neighbours (distances)
 C **************************** OUTPUT *********************************
 C real*8  S(maxnh)         : Sparse overlap matrix
 C ********************** INPUT and OUTPUT *****************************
@@ -70,16 +67,16 @@ C real*8  stress(3,3)      : Stress tensor (Orthog. part added to input)
 C *********************************************************************
 
       integer, intent(in) ::
-     . maxna, maxnd, maxnh, maxo, na, no, nspin, nua
+     . maxnd, maxnh, maxo, na, no, nspin, nua
 
       integer, intent(in) ::
-     . indxua(na), iphorb(no), isa(na), jna(maxna), lasto(0:na), 
+     . indxua(na), iphorb(no), isa(na), lasto(0:na), 
      . listd(*), numd(*), listh(maxnh), numh(*), listdptr(*),
      . listhptr(*)
 
       real(dp) , intent(inout)  :: fa(3,nua), stress(3,3)
       real(dp) , intent(in)     :: scell(3,3), Emat(maxnd,nspin), 
-     .                 r2ij(maxna), rmaxo, xa(3,na), xij(3,maxna)
+     .                 rmaxo, xa(3,na)
       real(dp), intent(out)     :: S(maxnh)
 
 C Internal variables ......................................................
@@ -91,9 +88,9 @@ C Internal variables ......................................................
       real(dp)
      .  fij(3), grSij(3) , rij, Sij, volcel, volume
 
-      real(dp), dimension(:), allocatable, save ::  Di, Si
+      real(dp), dimension(:), pointer  ::  Di, Si
 
-      external  neighb, timer
+      external  timer
 C ......................
 
 C Start timer
@@ -102,23 +99,19 @@ C Start timer
       volume = nua * volcel(scell) / na
 
 C Initialize neighb subroutine 
-      nnia = maxna
-      call neighb( scell, 2.d0*rmaxo, na, xa, 0, 0,
-     .             nnia, jna, xij, r2ij )
+      call mneighb( scell, 2.d0*rmaxo, na, xa, 0, 0, nnia)
 
 C Allocate local memory
-      allocate(Di(no),stat=mem_stat)
-      call memory('A','D',no,'overfsm',mem_stat,id="Di")
-      allocate(Si(no),stat=mem_stat)
-      call memory('A','D',no,'overfsm',mem_stat,id="Si")
+      nullify( Di )
+      call re_alloc( Di, 1, no, name='Di', routine='overfsm' )
+      nullify( Si )
+      call re_alloc( Si, 1, no, name='Si', routine='overfsm' )
 
-      Si(1:no) = 0.0d0
+      Si(1:no) = 0.0d0  ! AG: Superfluous
       Di(1:no) = 0.0d0
 
       do ia = 1,nua
-        nnia = maxna
-        call neighb( scell, 2.d0*rmaxo, na, xa, ia, 0,
-     .               nnia, jna, xij, r2ij )
+        call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
         do io = lasto(ia-1)+1,lasto(ia)
 
 C Is this orbital on this Node?
@@ -173,15 +166,13 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call memory('D','D',size(Si),'overfsm')
-      deallocate(Si)
-      call memory('D','D',size(Di),'overfsm')
-      deallocate(Di)
+
+      call de_alloc( Si, name='Si' )
+      call de_alloc( Di, name='Di' )
 
 C Finish timer
       call timer( 'overfsm', 2 )
 
-      return
       end subroutine overfsm
       end module m_overfsm
 

@@ -9,22 +9,50 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       module band
-
-      use sys, only: die
-
+      use precision, only: dp
+      use sys,       only: die
+      use alloc,     only: re_alloc
       implicit none
-
-      integer :: maxlin
-      parameter (maxlin = 1000)
-
-      character, save :: label(maxlin)*8
-      integer, save   :: lastk(maxlin), nlines
-
-      public  :: initbands, bands
-
       private
 
+      integer, public :: nbk, maxbk
+
+      integer, parameter :: maxlin = 1000
+
+      real(dp), pointer, save, public :: bk(:,:)
+      logical, public , save          :: gamma_bands
+
+      character, save :: label(maxlin)*8
+      integer,   save :: lastk(maxlin), nlines
+
+      public  :: setup_bands, bands
+      
       contains
+
+      subroutine setup_bands( )
+        implicit none
+        ! Find number of band k-points
+        nullify(bk)
+        nbk = 0
+        maxbk = 1
+        call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
+     .                copy=.false.)
+
+        call initbands( maxbk, nbk, bk )
+
+        if (nbk .gt. maxbk) then
+          ! If there wasn't enough space to store bands on first call correct
+          ! the dimensions and repeat the initialisation
+          maxbk = max(nbk,1)
+          call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
+     .                  copy=.false.)
+          nbk = 0
+          call initbands( maxbk, nbk, bk )
+        endif
+        
+        gamma_bands = (nbk == 0)   ! Flag for use of auxiliary cell
+
+      end subroutine setup_bands
 
       subroutine initbands( maxk, nk, kpoint )
 C *********************************************************************
@@ -111,7 +139,7 @@ C
       integer           maxk, nk
       real(dp)          kpoint(3,maxk)
       character         paste*30
-      external          paste, redcel, memory
+      external          paste, redcel
 C *********************************************************************
 
       character 
@@ -404,7 +432,7 @@ C
       use parallelsubs, only : GetNodeOrbs
       use fdf
       use densematrix
-      use alloc
+      use alloc,        only : re_alloc, de_alloc
       use files,        only : slabel, label_length
 
       implicit          none
@@ -438,8 +466,8 @@ C *********************************************************************
      .  path, temp, wk, Entropy
 
 C Dynamic arrays
-      real(dp), dimension(:), allocatable, save :: aux
-      integer,  dimension(:), allocatable, save :: muo
+      real(dp), dimension(:), pointer :: aux
+      integer,  dimension(:), pointer :: muo
 
       parameter ( eV = 1.d0 / 13.60580d0 )
       save getD, Dnew, Enew, e1, e2, qk, qtot, temp, wk
@@ -473,10 +501,10 @@ C Allocate local arrays - only aux is relevant here
       call re_alloc(Saux,1,nhs,name='Saux',routine='bands')
       call re_alloc(psi,1,nhs,name='psi',routine='bands')
       naux  = nuotot*5
-      allocate(aux(naux))
-      call memory('A','D',naux,'bands')
-      allocate(muo(nuotot))
-      call memory('A','I',nuotot,'bands')
+      nullify( aux )
+      call re_alloc( aux, 1, naux, name='aux', routine='bands' )
+      nullify( muo )
+      call re_alloc( muo, 1, nuotot, name='muo', routine='bands' )
 
 C Check indxuo 
       do iuo = 1,nuotot
@@ -616,10 +644,8 @@ C Close output file
       endif
 
 C Free local arrays 
-      call memory('D','I',size(muo),'bands')
-      deallocate(muo)
-      call memory('D','D',size(aux),'bands')
-      deallocate(aux)
+      call de_alloc( muo, name='muo' )
+      call de_alloc( aux, name='aux' )
 
 C This is the only exit point 
   999 continue

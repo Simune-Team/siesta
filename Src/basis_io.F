@@ -44,12 +44,14 @@
 
       CONTAINS
 
-      subroutine read_basis_netcdf
+      subroutine read_basis_netcdf(ns)
+      integer, intent(out) :: ns
 
 #ifndef CDF
       call die(
      $ '*** You need netCDF to read the new user-defined basis files...'
      $ )
+      ns = 0
       end subroutine  read_basis_netcdf
 #else 
 
@@ -76,6 +78,7 @@
                                 !
       call read_chemical_types
       nspecies = number_of_species()
+      ns = nspecies
 
       allocate(species(nspecies))
 
@@ -310,12 +313,14 @@ c
 #endif
 !=======================================================================
 
-      subroutine read_basis_ascii
+      subroutine read_basis_ascii(ns)
+      integer, intent(out) :: ns
 
       integer is
 
       call read_chemical_types
       nspecies = number_of_species()
+      ns = nspecies
 
       allocate(species(nspecies))
 

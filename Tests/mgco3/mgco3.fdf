@@ -62,4 +62,6 @@ MD.Initial.Time.Step      1
 MD.Final.Time.Step        2
 MD.Length.Time.Step       1.0 fs
 
-
+%block Projected-density-of-states
+-30.00 15.00 0.200 500 eV
+%endblock Projected-density-of-states

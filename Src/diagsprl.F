@@ -89,7 +89,8 @@ C *********************************************************************
 C
 C  Modules
 C
-      use atomlist,     only : iaorb, xa
+      use siesta_geom,  only : xa
+      use atomlist,     only : iaorb
       use precision
       use sys
       use parallel,     only : Node, Nodes, BlockSize

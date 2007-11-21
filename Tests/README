@@ -15,6 +15,16 @@ Automated tests for Siesta.
 Go into any test subdirectory and type 'make' (after having compiled the
 Siesta program in ../Src).
 
+NOTE: You need to choose a Makefile and a test.mk file. Current options are:
+
+bsc-Makefile, bsc-test.mk (for BSC work: setup the hfile also)
+std-Makefile, std-test.mk
+
+For example:
+
+ln -s bsc-Makefile Makefile
+ln -s bsc-test.mk test.mk
+
 Reference output files can be found in directory Reference.
 
 See the Makefile for more options.

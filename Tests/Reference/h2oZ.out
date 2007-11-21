@@ -1,10 +1,10 @@
-Siesta Version: siesta@uam.es--2006/siesta-devel--reference--2.1--patch-34
-Architecture  : intel9 with Siesta libs
-Compiler flags: ifort -w -O2 -mp
+Siesta Version: siesta@uam.es--2006/siesta-devel--reference--2.1--patch-28
+Architecture  : i686-pc-linux-gnu--Intel
+Compiler flags: ifort -O2 -mp
 SERIAL version
 
 * Running in serial mode
->> Start of run:  25-JAN-2007  17:59:35
+>> Start of run:  17-DEC-2006  19:59:44
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -493,8 +493,8 @@ siesta: FreeEng =      -464.639087
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -469.5351     -464.6391     -464.6391  1.2069 -5.7875
-timer: Routine,Calls,Time,% = IterSCF        1       3.687  73.66
-elaps: Routine,Calls,Wall,% = IterSCF        1       3.688  73.66
+timer: Routine,Calls,Time,% = IterSCF        1       3.678  73.96
+elaps: Routine,Calls,Wall,% = IterSCF        1       3.681  73.12
 siesta:    2     -470.5150     -467.7788     -467.7788  0.2683 -0.6880
 siesta:    3     -468.7759     -467.8849     -467.8849  0.1017 -3.1630
 siesta:    4     -468.7570     -468.3990     -468.3990  0.0136 -3.3152
@@ -517,18 +517,18 @@ molecule    1 (     3 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- ho1         0.570013917267359     
- ho2         0.572513359455141     
- hoh         2.135309920406599E-003
+ ho1         0.570013794965242     
+ ho2         0.572512728721452     
+ hoh         2.135314841123915E-003
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.001949    0.093079    0.000003
+   Tot   -0.001956    0.093080    0.000001
 ----------------------------------------
-   Max    0.528724
+   Max    0.528723
    Res    0.307819    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.528724    constrained
+   Max    0.528723    constrained
 
 Stress-tensor-Voigt (kbar):       -4.36       -1.26       -0.49        0.01        0.00        0.00
 Target enthalpy (eV/cell)     -468.7566
@@ -543,14 +543,14 @@ zmatrix: Z-matrix coordinates: (Ang ; deg )
 zmatrix: (Fractional coordinates have been converted to cartesian)
 molecule    1 (     3 atoms)
       0.00000000      0.00000000      0.00000000
-      0.96091104     90.00000000     37.74391900
-      0.96092820    104.17188734     90.00000000
+      0.96091103     90.00000000     37.74391900
+      0.96092819    104.17188734     90.00000000
 
 
 Z-matrix Symbol Section -------
 Variables
- ho1         0.960911038414078     
- ho2         0.960928200999833     
+ ho1         0.960911028554595     
+ ho2         0.960928187609629     
  hoh          104.171887338539     
 Constants
 ------------ End of Z-matrix Information
@@ -583,16 +583,16 @@ molecule    1 (     3 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- ho1         0.362021384190494     
- ho2         0.362586021676535     
- hoh         1.637093398895039E-003
+ ho1         0.362022051515508     
+ ho2         0.362587957627852     
+ hoh         1.637086749415375E-003
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.001177    0.094223    0.000000
+   Tot   -0.001176    0.094231    0.000001
 ----------------------------------------
    Max    0.345847
-   Res    0.188690    sqrt( Sum f_i^2 / 3N )
+   Res    0.188689    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
    Max    0.345847    constrained
 
@@ -609,14 +609,14 @@ zmatrix: Z-matrix coordinates: (Ang ; deg )
 zmatrix: (Fractional coordinates have been converted to cartesian)
 molecule    1 (     3 atoms)
       0.00000000      0.00000000      0.00000000
-      0.96482508     90.00000000     37.74391900
-      0.96485940    104.34377468     90.00000000
+      0.96482506     90.00000000     37.74391900
+      0.96485938    104.34377468     90.00000000
 
 
 Z-matrix Symbol Section -------
 Variables
- ho1         0.964825076828157     
- ho2         0.964859401999667     
+ ho1         0.964825057109191     
+ ho2         0.964859375219258     
  hoh          104.343774677079     
 Constants
 ------------ End of Z-matrix Information
@@ -634,9 +634,9 @@ outcell: Cell volume (Ang**3)        :    287.6773
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -468.7629     -468.7172     -468.7172  0.0063 -3.2729
 siesta:    2     -468.7629     -468.7628     -468.7628  0.0022 -3.2993
-siesta:    3     -468.7628     -468.7572     -468.7572  0.0006 -3.2841
+siesta:    3     -468.7629     -468.7572     -468.7572  0.0006 -3.2841
 siesta:    4     -468.7628     -468.7622     -468.7622  0.0001 -3.2824
-siesta:    5     -468.7628     -468.7627     -468.7627  0.0000 -3.2830
+siesta:    5     -468.7629     -468.7627     -468.7627  0.0000 -3.2830
 
 siesta: E_KS(eV) =             -468.7628
 
@@ -649,18 +649,18 @@ molecule    1 (     3 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- ho1         0.158716754095068     
- ho2         0.157557065774771     
- hoh         1.145768091001345E-003
+ ho1         0.158716637054501     
+ ho2         0.157558258009837     
+ hoh         1.145786096551070E-003
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000541    0.095189    0.000000
+   Tot   -0.000545    0.095189    0.000000
 ----------------------------------------
-   Max    0.167104
+   Max    0.167105
    Res    0.081199    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.167104    constrained
+   Max    0.167105    constrained
 
 Stress-tensor-Voigt (kbar):       -1.35        0.10       -0.49        0.00        0.00        0.00
 Target enthalpy (eV/cell)     -468.7628
@@ -675,14 +675,14 @@ zmatrix: Z-matrix coordinates: (Ang ; deg )
 zmatrix: (Fractional coordinates have been converted to cartesian)
 molecule    1 (     3 atoms)
       0.00000000      0.00000000      0.00000000
-      0.96873912     90.00000000     37.74391900
-      0.96879060    104.51566202     90.00000000
+      0.96873909     90.00000000     37.74391900
+      0.96879056    104.51566202     90.00000000
 
 
 Z-matrix Symbol Section -------
 Variables
- ho1         0.968739115242235     
- ho2         0.968790602999501     
+ ho1         0.968739085663786     
+ ho2         0.968790562828887     
  hoh          104.515662015618     
 Constants
 ------------ End of Z-matrix Information
@@ -699,7 +699,7 @@ outcell: Cell volume (Ang**3)        :    287.6773
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -468.7635     -468.7183     -468.7183  0.0062 -3.2591
-siesta:    2     -468.7635     -468.7634     -468.7634  0.0023 -3.2856
+siesta:    2     -468.7636     -468.7634     -468.7634  0.0023 -3.2856
 siesta:    3     -468.7635     -468.7578     -468.7578  0.0006 -3.2703
 siesta:    4     -468.7635     -468.7628     -468.7628  0.0001 -3.2686
 siesta:    5     -468.7635     -468.7633     -468.7633  0.0000 -3.2692
@@ -715,18 +715,18 @@ molecule    1 (     3 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- ho1        -3.973665138245637E-002
- ho2        -4.251557031000280E-002
- hoh         6.624505589331657E-004
+ ho1        -3.973566598907723E-002
+ ho2        -4.251546969323088E-002
+ hoh         6.624697175875711E-004
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot    0.000017    0.095959   -0.000002
+   Tot    0.000029    0.095954    0.000001
 ----------------------------------------
-   Max    0.208265
-   Res    0.074413    sqrt( Sum f_i^2 / 3N )
+   Max    0.208261
+   Res    0.074412    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.208265    constrained
+   Max    0.208261    constrained
 
 Stress-tensor-Voigt (kbar):        0.12        0.76       -0.49       -0.01        0.00        0.00
 Target enthalpy (eV/cell)     -468.7634
@@ -741,15 +741,15 @@ zmatrix: Z-matrix coordinates: (Ang ; deg )
 zmatrix: (Fractional coordinates have been converted to cartesian)
 molecule    1 (     3 atoms)
       0.00000000      0.00000000      0.00000000
-      0.96824271     90.00000000     37.74391900
-      0.96829202    104.49386219     90.00000000
+      0.96824270     90.00000000     37.74391900
+      0.96829200    104.49386301     90.00000000
 
 
 Z-matrix Symbol Section -------
 Variables
- ho1         0.968242712450237     
- ho2         0.968292023541209     
- hoh          104.493862190033     
+ ho1         0.968242702881193     
+ ho2         0.968292003910029     
+ hoh          104.493863013846     
 Constants
 ------------ End of Z-matrix Information
 
@@ -768,7 +768,7 @@ siesta:    1     -468.7635     -468.7691     -468.7691  0.0008 -3.2721
 siesta:    2     -468.7635     -468.7635     -468.7635  0.0003 -3.2687
 siesta:    3     -468.7635     -468.7642     -468.7642  0.0001 -3.2707
 
-siesta: E_KS(eV) =             -468.7635
+siesta: E_KS(eV) =             -468.7636
 
 zmatrix: Atomic forces (eV/Ang ; eV/deg )
 zmatrix: (No information if symbols are used)
@@ -779,80 +779,80 @@ molecule    1 (     3 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- ho1        -1.520956182735894E-002
- ho2        -1.755374501356000E-002
- hoh         7.203915233914102E-004
+ ho1        -1.520918155779906E-002
+ ho2        -1.755286382840986E-002
+ hoh         7.203898560079549E-004
 
 siesta: Atomic forces (eV/Ang):
 ----------------------------------------
-   Tot   -0.000023    0.095910    0.000000
+   Tot   -0.000030    0.095905    0.000001
 ----------------------------------------
-   Max    0.183335
-   Res    0.064794    sqrt( Sum f_i^2 / 3N )
+   Max    0.183329
+   Res    0.064792    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    0.183335    constrained
+   Max    0.183329    constrained
 
 Stress-tensor-Voigt (kbar):       -0.06        0.68       -0.49       -0.01        0.00        0.00
-Target enthalpy (eV/cell)     -468.7635
+Target enthalpy (eV/cell)     -468.7636
 
 * Maximum dynamic memory allocated =     8 MB
 
 outcoor: Relaxed atomic coordinates (Ang):                  
     0.00000000    0.00000000    0.00000000   1       1  O
-    0.76564233    0.59269366    0.00000000   2       2  H
-   -0.76549197    0.59296837    0.00000000   2       3  H
+    0.76564232    0.59269366    0.00000000   2       2  H
+   -0.76549196    0.59296835    0.00000000   2       3  H
 
 zmatrix: Z-matrix coordinates: (Ang ; deg )
 zmatrix: (Fractional coordinates have been converted to cartesian)
 molecule    1 (     3 atoms)
       0.00000000      0.00000000      0.00000000
-      0.96824271     90.00000000     37.74391900
-      0.96829202    104.49386219     90.00000000
+      0.96824270     90.00000000     37.74391900
+      0.96829200    104.49386301     90.00000000
 
 
 Z-matrix Symbol Section -------
 Variables
- ho1         0.968242712450237     
- ho2         0.968292023541209     
- hoh          104.493862190033     
+ ho1         0.968242702881193     
+ ho2         0.968292003910029     
+ hoh          104.493863013846     
 Constants
 ------------ End of Z-matrix Information
 
 
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =       815.854478
-siesta: Ena     =       174.409695
-siesta: Ekin    =       354.043600
-siesta: Enl     =       -63.147248
-siesta: DEna    =        -3.409665
+siesta: Ena     =       174.409696
+siesta: Ekin    =       354.043603
+siesta: Enl     =       -63.147249
+siesta: DEna    =        -3.409668
 siesta: DUscf   =         0.813479
 siesta: DUext   =         0.000000
-siesta: Exc     =      -115.618932
+siesta: Exc     =      -115.618933
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Emeta   =         0.000000
 siesta: Emolmec =         0.000000
 siesta: Ekinion =         0.000000
-siesta: Eharris =      -468.763479
-siesta: Etot    =      -468.763549
-siesta: FreeEng =      -468.763549
+siesta: Eharris =      -468.763474
+siesta: Etot    =      -468.763550
+siesta: FreeEng =      -468.763550
 
 siesta: Final energy (eV):
-siesta:       Kinetic =     354.043600
-siesta:       Hartree =     395.969995
+siesta:       Kinetic =     354.043603
+siesta:       Hartree =     395.970001
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -115.618932
-siesta:  Ion-electron =   -1101.530945
-siesta:       Ion-ion =      -1.627267
+siesta:   Exch.-corr. =    -115.618933
+siesta:  Ion-electron =   -1101.530958
+siesta:       Ion-ion =      -1.627264
 siesta:       Ekinion =       0.000000
-siesta:         Total =    -468.763549
+siesta:         Total =    -468.763550
 
 siesta: Atomic forces (eV/Ang):
-siesta:      1   -0.001831    0.183335    0.000000
-siesta:      2    0.014034   -0.042976    0.000000
-siesta:      3   -0.012227   -0.044449    0.000000
+siesta:      1   -0.001837    0.183329    0.000001
+siesta:      2    0.014035   -0.042976    0.000000
+siesta:      3   -0.012228   -0.044448    0.000000
 siesta: ----------------------------------------
-siesta:    Tot   -0.000023    0.095910    0.000000
+siesta:    Tot   -0.000030    0.095905    0.000001
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:    -0.000039   -0.000004    0.000000
@@ -864,11 +864,11 @@ siesta: Cell volume =        287.677305 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00000028          0.00000059  Ry/Bohr**3
-siesta:          -0.00002609          0.00005459  eV/Ang**3
-siesta:          -0.04180179          0.08746307  kBar
+siesta:          -0.00002608          0.00005459  eV/Ang**3
+siesta:          -0.04179200          0.08746660  kBar
 
 siesta: Electric dipole (a.u.)  =    0.000082    0.592206    0.000000
-siesta: Electric dipole (Debye) =    0.000209    1.505238    0.000000
+siesta: Electric dipole (Debye) =    0.000209    1.505237    0.000000
 
 * Maximum dynamic memory allocated : Node    0 =     8 MB
 
@@ -876,69 +876,69 @@ siesta: Electric dipole (Debye) =    0.000209    1.505238    0.000000
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      24.846      24.846   100.00
-timer:  Setup             1       0.610       0.610     2.45
-timer:  bands             1       0.001       0.001     0.00
-timer:  writewave         1       0.000       0.000     0.00
+timer:  siesta            1      24.933      24.933   100.00
+timer:  Setup             1       0.572       0.572     2.29
+timer:  bands             1       0.000       0.000     0.00
+timer:  writewave         1       0.001       0.001     0.00
 timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD            5       4.846      24.231    97.53
+timer:  IterMD            5       4.871      24.357    97.69
 timer:  hsparse           6       0.002       0.015     0.06
-timer:  overfsm          10       0.071       0.715     2.88
-timer:  IterSCF          32       0.734      23.493    94.56
-timer:  kinefsm          10       0.067       0.673     2.71
-timer:  nlefsm           10       0.203       2.030     8.17
-timer:  DHSCF            32       0.648      20.722    83.40
-timer:  DHSCF1            1       0.143       0.143     0.58
-timer:  DHSCF2            5       0.353       1.764     7.10
-timer:  REORD           266       0.001       0.165     0.66
-timer:  POISON           37       0.049       1.809     7.28
-timer:  DHSCF3           32       0.538      17.231    69.35
-timer:  rhoofd           32       0.035       1.124     4.52
-timer:  cellXC           32       0.390      12.479    50.23
-timer:  vmat             32       0.042       1.344     5.41
-timer:  diagon           27       0.001       0.019     0.08
-timer:  rdiag            27       0.001       0.017     0.07
-timer:  rdiag1           27       0.000       0.002     0.01
-timer:  rdiag2           27       0.000       0.001     0.00
-timer:  rdiag3           27       0.000       0.011     0.04
-timer:  rdiag4           27       0.000       0.001     0.00
+timer:  overfsm          10       0.073       0.727     2.92
+timer:  IterSCF          32       0.737      23.596    94.64
+timer:  kinefsm          10       0.069       0.688     2.76
+timer:  nlefsm           10       0.200       1.999     8.02
+timer:  DHSCF            32       0.651      20.834    83.56
+timer:  DHSCF1            1       0.147       0.147     0.59
+timer:  DHSCF2            5       0.349       1.747     7.01
+timer:  REORD           266       0.001       0.155     0.62
+timer:  POISON           37       0.047       1.744     6.99
+timer:  DHSCF3           32       0.542      17.343    69.56
+timer:  rhoofd           32       0.039       1.237     4.96
+timer:  cellXC           32       0.396      12.665    50.80
+timer:  vmat             32       0.038       1.207     4.84
+timer:  diagon           27       0.001       0.018     0.07
+timer:  rdiag            27       0.000       0.012     0.05
+timer:  rdiag1           27       0.000       0.001     0.00
+timer:  rdiag2           27       0.000       0.000     0.00
+timer:  rdiag3           27       0.000       0.010     0.04
+timer:  rdiag4           27       0.000       0.000     0.00
 timer:  MolMec           10       0.000       0.000     0.00
-timer:  DHSCF4            5       0.311       1.555     6.26
-timer:  dfscf             5       0.269       1.344     5.41
-timer:  optical           1       0.001       0.001     0.00
+timer:  DHSCF4            5       0.313       1.566     6.28
+timer:  dfscf             5       0.271       1.356     5.44
+timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      24.844      24.844   100.00
-elaps:  Setup             1       0.610       0.610     2.45
+elaps:  siesta            1      25.088      25.088   100.00
+elaps:  Setup             1       0.629       0.629     2.51
 elaps:  bands             1       0.000       0.000     0.00
 elaps:  writewave         1       0.000       0.000     0.00
 elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD            5       4.846      24.230    97.53
-elaps:  hsparse           6       0.002       0.014     0.06
-elaps:  overfsm          10       0.071       0.714     2.88
-elaps:  IterSCF          32       0.734      23.492    94.56
-elaps:  kinefsm          10       0.067       0.675     2.71
-elaps:  nlefsm           10       0.203       2.028     8.16
-elaps:  DHSCF            32       0.648      20.721    83.40
-elaps:  DHSCF1            1       0.143       0.143     0.58
-elaps:  DHSCF2            5       0.353       1.763     7.10
-elaps:  REORD           266       0.001       0.164     0.66
-elaps:  POISON           37       0.049       1.807     7.27
-elaps:  DHSCF3           32       0.538      17.231    69.36
-elaps:  rhoofd           32       0.035       1.123     4.52
-elaps:  cellXC           32       0.390      12.479    50.23
-elaps:  vmat             32       0.042       1.343     5.41
+elaps:  IterMD            5       4.890      24.449    97.45
+elaps:  hsparse           6       0.002       0.015     0.06
+elaps:  overfsm          10       0.073       0.728     2.90
+elaps:  IterSCF          32       0.739      23.646    94.25
+elaps:  kinefsm          10       0.069       0.689     2.75
+elaps:  nlefsm           10       0.200       1.998     7.96
+elaps:  DHSCF            32       0.651      20.831    83.03
+elaps:  DHSCF1            1       0.147       0.147     0.59
+elaps:  DHSCF2            5       0.349       1.746     6.96
+elaps:  REORD           266       0.001       0.163     0.65
+elaps:  POISON           37       0.047       1.745     6.96
+elaps:  DHSCF3           32       0.542      17.340    69.11
+elaps:  rhoofd           32       0.039       1.235     4.92
+elaps:  cellXC           32       0.396      12.665    50.48
+elaps:  vmat             32       0.038       1.208     4.81
 elaps:  diagon           27       0.001       0.017     0.07
 elaps:  rdiag            27       0.001       0.014     0.06
-elaps:  rdiag1           27       0.000       0.001     0.00
+elaps:  rdiag1           27       0.000       0.001     0.01
 elaps:  rdiag2           27       0.000       0.002     0.01
 elaps:  rdiag3           27       0.000       0.009     0.04
 elaps:  rdiag4           27       0.000       0.001     0.00
 elaps:  MolMec           10       0.000       0.000     0.00
-elaps:  DHSCF4            5       0.311       1.555     6.26
-elaps:  dfscf             5       0.269       1.344     5.41
+elaps:  DHSCF4            5       0.313       1.567     6.25
+elaps:  dfscf             5       0.271       1.356     5.41
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:  25-JAN-2007  18:00:00
+>> End of run:  17-DEC-2006  20:00:09

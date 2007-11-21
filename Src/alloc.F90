@@ -17,10 +17,10 @@ MODULE alloc
       use mpi_siesta
 #endif
 
-! ------------------------------------------------------------------
+! ==================================================================
 ! Allocation, reallocation, and deallocation utility routines
 ! Written by J.M.Soler. May 2000.
-! ------------------------------------------------------------------
+! ==================================================================
 ! SUBROUTINE alloc_default( old, new, restore, &
 !                           copy, shrink, imin, routine )
 !   Sets defaults for allocation
@@ -54,7 +54,7 @@ MODULE alloc
 !   call alloc_default( restore=oldDefaults )
 ! Notice that, if the restore call is skipped, the new defaults will
 ! stay in effect until a new call to alloc_dafault is made.
-! ------------------------------------------------------------------
+! ==================================================================
 ! SUBROUTINE alloc_report( level, unit, file, printNow )
 !   Sets the output file for the allocation report
 ! INPUT (optional):
@@ -76,7 +76,7 @@ MODULE alloc
 ! name is open for future use.
 !   If both arguments are absent, a file named 'alloc_report'
 ! is open for future use.
-! ------------------------------------------------------------------
+! ==================================================================
 ! SUBROUTINE realloc( array, [i1min,] i1max,
 !                     [[i2min,] i2max, [[i3min,] i3max]],
 !                     name, routine, copy, shrink )
@@ -146,7 +146,7 @@ MODULE alloc
 ! report in which routine the memory peack occurs. If you want the
 ! routine name to be used for classification, you should include it
 ! as part of the name argument, like in name='matInvert '//'aux'.
-! ---------------------------------------------------------------------
+! ==================================================================---
 ! SUBROUTINE dealloc( array, name, routine )
 ! INPUT (optional):
 !   character*(*) :: name    : Actual array name or a label for it
@@ -161,7 +161,7 @@ MODULE alloc
 ! not be called to deallocate an array not allocated by realloc.
 ! Equally, arrays allocated or reallocated by realloc should be 
 ! deallocated by dealloc.
-! ---------------------------------------------------------------------
+! ==================================================================---
 
 implicit none
 
@@ -175,40 +175,27 @@ PUBLIC ::             &
 PRIVATE      ! Nothing is declared public beyond this point
 
 
-! JMS/AG: It might be necessary to comment out dealloc_s1 due to
-! an apparent bug in the DEC compiler
-
 interface de_alloc
   module procedure dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
                    dealloc_i1, dealloc_i2, dealloc_i3,             &
                    dealloc_l1, dealloc_l2, dealloc_l3,             &
                    dealloc_s1,                         &
-                   dealloc_r1, dealloc_r2, dealloc_r3
+                   dealloc_r1, dealloc_r2, dealloc_r3, dealloc_r4, &
+                   dealloc_z1, dealloc_z2
 end interface
-
-! JMS/AG: realloc_s1 removed
-!         due to an apparent bug in the DEC compiler
-! JMS/AG: realloc_s1s removed 
-!         due to apparent bugs in DEC & SGI compilers
-! JMS/AG: Due to an apparent bug in the SGI compiler,
-!         the following are removed:
-!   realloc_d1s, realloc_i1s, realloc_l1s, realloc_r1s
 
 interface re_alloc
   module procedure &
-    realloc_d1,  realloc_i1,  realloc_l1,  realloc_r1,  &
-    realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  &
-    realloc_d3,  realloc_i3,  realloc_l3,  realloc_r3,  &
+    realloc_d1,  realloc_i1,  realloc_l1,  realloc_r1,  realloc_z1, &
+    realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  realloc_z2, &
+    realloc_d3,  realloc_i3,  realloc_l3,  realloc_r3,  realloc_r4, &
     realloc_d4,                                         &
-    realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
-    realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
-    realloc_d4s
-end interface
+    realloc_s1                                         
+!AG: Dangerous!!!    realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
+!   realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
+!    realloc_d4s, &
 
-!$$$! Real kinds
-!$$$integer, parameter ::          &
-!$$$  SP = kind(1.),               &! Kind single precision
-!$$$  DP = kind(1.d0)               ! Kind double precision
+end interface
 
 ! Derived type to hold allocation default options
 type allocDefaults
@@ -262,7 +249,7 @@ logical :: ASSOCIATED_ARRAY, NEEDS_ALLOC, NEEDS_COPY, NEEDS_DEALLOC
 
 CONTAINS
 
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE alloc_default( old, new, restore,          &
                           routine, copy, shrink, imin )
 implicit none
@@ -280,7 +267,7 @@ if (present(imin))    DEFAULT%imin   = imin
 if (present(routine)) DEFAULT%routine = routine
 if (present(new))     new = DEFAULT
 END SUBROUTINE alloc_default
-! ------------------------------------------------------------------
+! ==================================================================
 
 SUBROUTINE alloc_report( level, unit, file, printNow )
 
@@ -343,7 +330,7 @@ end if
 
 END SUBROUTINE alloc_report
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 SUBROUTINE realloc_i1( array, i1min, i1max, &
                        name, routine, copy, shrink )
@@ -405,7 +392,7 @@ end if
 
 END SUBROUTINE realloc_i1
 
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_i2( array, i1min,i1max, i2min,i2max,       &
                        name, routine, copy, shrink )
 implicit none
@@ -442,7 +429,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_i2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_i3( array, i1min,i1max, i2min,i2max, i3min,i3max, &
                        name, routine, copy, shrink )
 implicit none
@@ -480,7 +467,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_i3
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_r1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
 implicit none
@@ -516,7 +503,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_r1
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_r2( array, i1min,i1max, i2min,i2max, &
                        name, routine, copy, shrink )
 implicit none
@@ -553,7 +540,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_r2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_r3( array, i1min,i1max, i2min,i2max, i3min,i3max, &
                        name, routine, copy, shrink )
 implicit none
@@ -591,7 +578,47 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_r3
-! ------------------------------------------------------------------
+! ==================================================================
+SUBROUTINE realloc_r4( array, i1min,i1max, i2min,i2max, &
+                              i3min,i3max, i4min,i4max, &
+                       name, routine, copy, shrink )
+implicit none
+character, parameter                   :: type='R'
+integer, parameter                     :: rank=4
+real(SP), dimension(:,:,:,:), pointer  :: array, old_array
+integer,                    intent(in) :: i1min,i1max, i2min,i2max, &
+                                          i3min,i3max, i4min,i4max
+character(len=*), optional, intent(in) :: name, routine
+logical,          optional, intent(in) :: copy, shrink
+integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+ASSOCIATED_ARRAY = associated(array)
+if (ASSOCIATED_ARRAY) then
+  old_array => array 
+  old_bounds(1,:) = lbound(old_array)
+  old_bounds(2,:) = ubound(old_array)
+end if
+new_bounds(1,:) = (/ i1min, i2min, i3min, i4min /)
+new_bounds(2,:) = (/ i1max, i2max, i3max, i4max /)
+call options( b, c, old_bounds, new_bounds, copy, shrink )
+if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
+  call alloc_count( -size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+if (NEEDS_ALLOC) then
+  allocate(array(b(1,1):b(2,1),b(1,2):b(2,2), &
+                 b(1,3):b(2,3),b(1,4):b(2,4)),stat=IERR)
+  call alloc_err( IERR, name, routine, new_bounds )
+  call alloc_count( size(array), type, name, routine )
+  array = 0._sp
+end if
+if (NEEDS_COPY) then
+      array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3),c(1,4):c(2,4))= &
+  old_array(c(1,1):c(2,1),c(1,2):c(2,2),c(1,3):c(2,3),c(1,4):c(2,4))
+  call alloc_count( -size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+END SUBROUTINE realloc_r4
+! ==================================================================
 SUBROUTINE realloc_d1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
 implicit none
@@ -627,7 +654,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_d1
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_d2( array, i1min,i1max, i2min,i2max, &
                        name, routine, copy, shrink )
 implicit none
@@ -670,7 +697,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_d2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_d3( array, i1min,i1max, i2min,i2max, i3min,i3max, &
                        name, routine, copy, shrink )
 implicit none
@@ -716,7 +743,8 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_d3
-! ------------------------------------------------------------------
+! ==================================================================
+! ==================================================================
 SUBROUTINE realloc_d4( array, i1min,i1max, i2min,i2max, &
                               i3min,i3max, i4min,i4max, &
                        name, routine, copy, shrink )
@@ -756,7 +784,88 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_d4
-! ------------------------------------------------------------------
+! ==================================================================
+! COMPLEX versions
+!
+SUBROUTINE realloc_z1( array, i1min, i1max,        &
+                       name, routine, copy, shrink )
+implicit none
+character, parameter                   :: type='D'
+integer, parameter                     :: rank=1
+complex(DP), dimension(:),  pointer    :: array, old_array
+integer,                    intent(in) :: i1min, i1max
+character(len=*), optional, intent(in) :: name, routine
+logical,          optional, intent(in) :: copy, shrink
+integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+ASSOCIATED_ARRAY = associated(array)
+if (ASSOCIATED_ARRAY) then
+  old_array => array
+  old_bounds(1,:) = lbound(old_array)
+  old_bounds(2,:) = ubound(old_array)
+end if
+new_bounds(1,:) = (/ i1min /)
+new_bounds(2,:) = (/ i1max /)
+call options( b, c, old_bounds, new_bounds, copy, shrink )
+if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
+  call alloc_count( -2*size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+if (NEEDS_ALLOC) then
+  allocate( array(b(1,1):b(2,1)), stat=IERR )
+  call alloc_err( IERR, name, routine, new_bounds )
+  call alloc_count( 2*size(array), type, name, routine )
+  array = 0._dp
+end if
+if (NEEDS_COPY) then
+  array(c(1,1):c(2,1)) = old_array(c(1,1):c(2,1))
+  call alloc_count( -2*size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+END SUBROUTINE realloc_z1
+! ==================================================================
+SUBROUTINE realloc_z2( array, i1min,i1max, i2min,i2max, &
+                       name, routine, copy, shrink )
+implicit none
+character, parameter                   :: type='D'
+integer, parameter                     :: rank=2
+complex(DP), dimension(:,:),  pointer  :: array, old_array
+integer,                    intent(in) :: i1min, i1max, i2min, i2max
+character(len=*), optional, intent(in) :: name, routine
+logical,          optional, intent(in) :: copy, shrink
+integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+integer                                :: i1, i2
+ASSOCIATED_ARRAY = associated(array)
+if (ASSOCIATED_ARRAY) then
+  old_array => array 
+  old_bounds(1,:) = lbound(old_array)
+  old_bounds(2,:) = ubound(old_array)
+end if
+new_bounds(1,:) = (/ i1min, i2min /)
+new_bounds(2,:) = (/ i1max, i2max /)
+call options( b, c, old_bounds, new_bounds, copy, shrink )
+if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
+  call alloc_count( -2*size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+if (NEEDS_ALLOC) then
+  allocate( array(b(1,1):b(2,1),b(1,2):b(2,2)), stat=IERR )
+  call alloc_err( IERR, name, routine, new_bounds )
+  call alloc_count( 2*size(array), type, name, routine )
+  array = 0._dp
+end if
+if (NEEDS_COPY) then
+!      array(c(1,1):c(2,1),c(1,2):c(2,2)) =  &
+!  old_array(c(1,1):c(2,1),c(1,2):c(2,2))
+  do i2 = c(1,2),c(2,2)
+  do i1 = c(1,1),c(2,1)
+    array(i1,i2) = old_array(i1,i2)
+  end do
+  end do
+  call alloc_count( -2*size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+END SUBROUTINE realloc_z2
+! ==================================================================
 SUBROUTINE realloc_l1( array, i1min,i1max,  &
                        name, routine, copy, shrink )
 implicit none
@@ -792,7 +901,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_l1
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_l2( array, i1min,i1max, i2min,i2max, &
                        name, routine, copy, shrink )
 implicit none
@@ -829,7 +938,7 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_l2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_l3( array, i1min,i1max, i2min,i2max, i3min,i3max, &
                        name, routine, copy, shrink )
 implicit none
@@ -867,8 +976,8 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_l3
-! ------------------------------------------------------------------
-! ------------------------------------------------------------------
+! ==================================================================
+! ==================================================================
 
 SUBROUTINE realloc_i1s( array, i1max, &
                         name, routine, copy, shrink )
@@ -886,7 +995,7 @@ call realloc_i1( array, DEFAULT%imin, i1max, &
 
 END SUBROUTINE realloc_i1s
 
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_i2s( array, i1max, i2max,  &
                         name, routine, copy, shrink )
 implicit none
@@ -897,7 +1006,7 @@ logical,          optional, intent(in) :: copy, shrink
 call realloc_i2( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_i2s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_i3s( array, i1max, i2max, i3max,  &
                         name, routine, copy, shrink )
 implicit none
@@ -909,7 +1018,7 @@ call realloc_i3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  DEFAULT%imin, i3max,                             &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_i3s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_r1s( array, i1max, &
                         name, routine, copy, shrink )
 implicit none
@@ -920,7 +1029,7 @@ logical,          optional, intent(in) :: copy, shrink
 call realloc_r1( array, DEFAULT%imin, i1max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_r1s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_r2s( array, i1max, i2max, &
                         name, routine, copy, shrink )
 implicit none
@@ -931,7 +1040,7 @@ logical,          optional, intent(in) :: copy, shrink
 call realloc_r2( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_r2s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_r3s( array, i1max, i2max, i3max, &
                         name, routine, copy, shrink )
 implicit none
@@ -943,7 +1052,7 @@ call realloc_r3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  DEFAULT%imin, i3max,                             &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_r3s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_d1s( array, i1max, &
                         name, routine, copy, shrink )
 implicit none
@@ -954,7 +1063,7 @@ logical,          optional, intent(in) :: copy, shrink
 call realloc_d1( array, DEFAULT%imin, i1max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_d1s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_d2s( array, i1max, i2max, &
                         name, routine, copy, shrink )
 implicit none
@@ -965,7 +1074,7 @@ logical,          optional, intent(in) :: copy, shrink
 call realloc_d2( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_d2s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_d3s( array, i1max, i2max, i3max, &
                         name, routine, copy, shrink )
 implicit none
@@ -977,7 +1086,7 @@ call realloc_d3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  DEFAULT%imin, i3max,                             &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_d3s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_d4s( array, i1max, i2max, i3max, i4max, &
                         name, routine, copy, shrink )
 implicit none
@@ -989,7 +1098,7 @@ call realloc_d4( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                         DEFAULT%imin, i3max, DEFAULT%imin, i4max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_d4s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_l1s( array, i1max, &
                         name, routine, copy, shrink )
 implicit none
@@ -1002,7 +1111,7 @@ logical,          optional, intent(in) :: shrink
 call realloc_l1( array, DEFAULT%imin, i1max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_l1s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_l2s( array, i1max, i2max, &
                         name, routine, copy, shrink )
 implicit none
@@ -1015,7 +1124,7 @@ logical,          optional, intent(in) :: shrink
 call realloc_l2( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_l2s
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE realloc_l3s( array, i1max, i2max, i3max, &
                         name, routine, copy, shrink )
 implicit none
@@ -1028,8 +1137,69 @@ logical,          optional, intent(in) :: shrink
 call realloc_l3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  DEFAULT%imin, i3max, name, routine, copy, shrink )
 END SUBROUTINE realloc_l3s
-! ------------------------------------------------------------------
-! ------------------------------------------------------------------
+
+SUBROUTINE realloc_s1( array, i1min, i1max, &
+                       name, routine, copy, shrink )
+! Arguments
+implicit none
+character(len=*), dimension(:),      pointer    :: array
+integer,                    intent(in) :: i1min
+integer,                    intent(in) :: i1max
+character(len=*), optional, intent(in) :: name
+character(len=*), optional, intent(in) :: routine
+logical,          optional, intent(in) :: copy
+logical,          optional, intent(in) :: shrink
+
+! Internal variables and arrays
+character, parameter           :: type='S'
+integer, parameter             :: rank=1
+character(len=len(array)), dimension(:), pointer :: old_array
+integer, dimension(2,rank)     :: b, c, new_bounds, old_bounds
+
+! Get old array bounds
+ASSOCIATED_ARRAY = associated(array)
+if (ASSOCIATED_ARRAY) then
+  old_array => array          ! Keep pointer to old array
+  old_bounds(1,:) = lbound(old_array)
+  old_bounds(2,:) = ubound(old_array)
+end if
+
+! Copy new requested array bounds
+new_bounds(1,:) = (/ i1min /)
+new_bounds(2,:) = (/ i1max /)
+
+! Find if it is a new allocation or a true reallocation,
+! and if the contents need to be copied (saved)
+! Argument b returns common bounds
+! Options routine also reads common variable ASSOCIATED_ARRAY,
+! and it sets NEEDS_ALLOC, NEEDS_DEALLOC, and NEEDS_COPY
+call options( b, c, old_bounds, new_bounds, copy, shrink )
+
+! Deallocate old space
+if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
+  call alloc_count( -size(old_array)*len(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+
+! Allocate new space
+if (NEEDS_ALLOC) then
+  allocate( array(b(1,1):b(2,1)), stat=IERR )
+  call alloc_err( IERR, name, routine, new_bounds )
+  call alloc_count( size(array)*len(array), type, name, routine )
+  array = ''
+end if
+
+! Copy contents and deallocate old space
+if (NEEDS_COPY) then
+  array(c(1,1):c(2,1)) = old_array(c(1,1):c(2,1))
+  call alloc_count( -size(old_array)*len(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+
+END SUBROUTINE realloc_s1
+
+! ==================================================================
+! ==================================================================
 SUBROUTINE dealloc_i1( array, name, routine )
 
 ! Arguments
@@ -1045,7 +1215,7 @@ end if
 
 END SUBROUTINE dealloc_i1
 
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_i2( array, name, routine )
 implicit none
 integer, dimension(:,:),    pointer    :: array
@@ -1055,7 +1225,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_i2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_i3( array, name, routine )
 implicit none
 integer, dimension(:,:,:),  pointer    :: array
@@ -1065,7 +1235,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_i3
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_r1( array, name, routine )
 implicit none
 real(SP), dimension(:),     pointer    :: array
@@ -1075,7 +1245,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_r1
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_r2( array, name, routine )
 implicit none
 real(SP), dimension(:,:),   pointer    :: array
@@ -1085,7 +1255,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_r2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_r3( array, name, routine )
 implicit none
 real(SP), dimension(:,:,:), pointer    :: array
@@ -1095,7 +1265,17 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_r3
-! ------------------------------------------------------------------
+! ==================================================================
+SUBROUTINE dealloc_r4( array, name, routine )
+implicit none
+real(SP), dimension(:,:,:,:), pointer  :: array
+character(len=*), optional, intent(in) :: name, routine
+if (associated(array)) then
+  call alloc_count( -size(array), 'R', name, routine ) 
+  deallocate(array)
+end if
+END SUBROUTINE dealloc_r4
+! ==================================================================
 SUBROUTINE dealloc_d1( array, name, routine )
 implicit none
 real(DP), dimension(:),     pointer    :: array
@@ -1105,7 +1285,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_d1
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_d2( array, name, routine )
 implicit none
 real(DP), dimension(:,:),   pointer    :: array
@@ -1115,7 +1295,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_d2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_d3( array, name, routine )
 implicit none
 real(DP), dimension(:,:,:), pointer    :: array
@@ -1125,7 +1305,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_d3
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_d4( array, name, routine )
 implicit none
 real(DP), dimension(:,:,:,:), pointer  :: array
@@ -1135,7 +1315,29 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_d4
-! ------------------------------------------------------------------
+! ==================================================================
+! COMPLEX versions
+!
+SUBROUTINE dealloc_z1( array, name, routine )
+implicit none
+complex(DP), dimension(:),   pointer   :: array
+character(len=*), optional, intent(in) :: name, routine
+if (associated(array)) then
+  call alloc_count( -2*size(array), 'D', name, routine ) 
+  deallocate(array)
+end if
+END SUBROUTINE dealloc_z1
+! ==================================================================
+SUBROUTINE dealloc_z2( array, name, routine )
+implicit none
+complex(DP), dimension(:,:),  pointer  :: array
+character(len=*), optional, intent(in) :: name, routine
+if (associated(array)) then
+  call alloc_count( -2*size(array), 'D', name, routine ) 
+  deallocate(array)
+end if
+END SUBROUTINE dealloc_z2
+! ==================================================================
 SUBROUTINE dealloc_l1( array, name, routine )
 implicit none
 logical, dimension(:),      pointer    :: array
@@ -1145,7 +1347,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_l1
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_l2( array, name, routine )
 implicit none
 logical, dimension(:,:),    pointer    :: array
@@ -1155,7 +1357,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_l2
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_l3( array, name, routine )
 implicit none
 logical, dimension(:,:,:),  pointer    :: array
@@ -1165,7 +1367,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_l3
-! ------------------------------------------------------------------
+! ==================================================================
 SUBROUTINE dealloc_s1( array, name, routine )
 implicit none
 character(len=*), dimension(:), pointer :: array
@@ -1175,7 +1377,7 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_s1
-! ------------------------------------------------------------------
+! ==================================================================
 
 SUBROUTINE options( final_bounds, common_bounds, &
                     old_bounds, new_bounds, copy, shrink )
@@ -1253,7 +1455,7 @@ end if
 
 END SUBROUTINE options
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 SUBROUTINE alloc_count( delta_size, type, name, routine )
 
@@ -1355,7 +1557,7 @@ end if
 
 END SUBROUTINE alloc_count
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 INTEGER FUNCTION type_mem( var_type )
 !
@@ -1394,7 +1596,7 @@ end select
 
 END FUNCTION type_mem
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 RECURSIVE SUBROUTINE tree_add( t, name, delta_mem )
 
@@ -1427,12 +1629,12 @@ if (warn_negative .and. t%mem<0._dp) then
     '         Name: ', trim(name),                   &
     '         Size: ', t%mem, ' Bytes',              &
     'Subsequent mismatches will not be reported'
-  warn_negative = .false.
+!!!!!!!  warn_negative = .false.
 end if
 
 END SUBROUTINE tree_add
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 RECURSIVE SUBROUTINE tree_peak( t )
 
@@ -1447,7 +1649,7 @@ call tree_peak( t%right )
 
 END SUBROUTINE tree_peak
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 RECURSIVE SUBROUTINE tree_print( t )
 
@@ -1466,7 +1668,7 @@ call tree_print( t%right )
 
 END SUBROUTINE tree_print
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 SUBROUTINE print_report
 
@@ -1560,7 +1762,7 @@ end if
 
 END SUBROUTINE print_report
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 SUBROUTINE alloc_err( ierr, name, routine, bounds )
 
@@ -1597,6 +1799,6 @@ end if
 
 END SUBROUTINE alloc_err
 
-! ------------------------------------------------------------------
+! ==================================================================
 
 END MODULE alloc

@@ -34,7 +34,7 @@
 
       CONTAINS
       subroutine cell_broyden_optimizer( na, xa, cell, stress,
-     $     volume, tp, strtol, varcel, relaxd)
+     $           tp, strtol, varcel, relaxd)
 c ***************************************************************************
 c Broyden geometry optimization (Cell Only)
 c
@@ -51,7 +51,6 @@ c Written by Alberto Garcia, April 2007
 
 c ******************************** INPUT ************************************
 c na                    : number of atoms (will need to keep fractional coords)
-c real*8 volume         : unit cell volume
 c real*8 tp             : Target pressure
 c logical varcel        : true if variable cell optimization
 c *************************** INPUT AND OUTPUT ******************************
@@ -71,7 +70,7 @@ C
 
 ! Subroutine arguments:
 
-      real(dp), intent(in) :: volume,  tp,  strtol
+      real(dp), intent(in) :: tp,  strtol
       logical, intent(in) :: varcel
       real(dp), intent(inout) :: stress(3,3), cell(3,3)
       integer, intent(in)  :: na
@@ -80,7 +79,7 @@ C
 
 c Internal variables and arrays
 
-      real(dp)            :: new_volume, trace
+      real(dp)       :: volume, new_volume, trace
 
       logical           found
       integer           iu, ia, i, j, n, indi
@@ -119,6 +118,7 @@ c Internal variables and arrays
       external :: volcel
 c ---------------------------------------------------------------------------
 
+      volume = volcel(cell)
       if (.not. initialization_done) then
 
           call fdf_global_get(maxit,"MD.Broyden.History.Steps",5)
