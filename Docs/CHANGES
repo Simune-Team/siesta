@@ -7,6 +7,21 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2007-11-22  17:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
+
+Summary: Fixed computation of chemical potential in O(N) (P.Ordejon)
+
+* Chempot, rather than updated, has been substituted by the version
+in the "cecam" branch of the 2.0 fixes branch. However, some constructions
+have been updated to the post-BSC-cleaning structure:
+
+- Use of the smarter mneighb routine.
+- Some arrays are now pointers instead of allocatables.
+
+* A new test (Tests/h2o_4) has been added.
+
+* NOTE that the new code does not yet work in Parallel.
+
 2007-11-22  17:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
 
 Summary: Optimization enhancements (fire algorithm, step control).

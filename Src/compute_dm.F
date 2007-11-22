@@ -51,9 +51,9 @@
 !
           elseif (isolve .eq. 1) then
             if (.not. gamma) call die("Cannot do O(N) with k-points.")
-            call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,isa,qa,
-     .                  rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,etol,eta,
-     .                  qtot,maxnh,numh,listhptr,listh,H,S,
+            call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,iaorb,
+     .                  isa,qa,rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,
+     .                  etol,eta,qtot,maxnh,numh,listhptr,listh,H,S,
      .                  chebef,noeta,rcoorcp,beta,pmax,Dscf,Escf,
      .                  Ecorrec,nspin,qs)
             Entrop = 0.0_dp
