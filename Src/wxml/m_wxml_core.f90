@@ -407,7 +407,7 @@ subroutine write_attributes(xf)
 type(xmlf_t), intent(inout)   :: xf
 
 integer  :: i, status, size, key_len, value_len
-character(len=100)  :: key, value
+character(len=200)  :: key, value
 
 do i = 1, len(xf%dict)
    call get_key(xf%dict,i,key,key_len,status)

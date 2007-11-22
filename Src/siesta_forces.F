@@ -6,6 +6,7 @@
       CONTAINS
 
       subroutine siesta_forces(istep)
+      use siesta_cml
       use m_state_init
       use m_setup_hamiltonian
       use m_compute_dm
@@ -48,6 +49,9 @@
         DO WHILE (.not. last)
           call timer( 'IterSCF', 1 )
 
+          if (cml_p) 
+     $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+
           call setup_hamiltonian( first, last, iscf )
 
           call compute_dm( iscf )
@@ -69,6 +73,8 @@
           if (iscf >= nscf) then
             last = .true.
           endif
+
+          if (cml_p) call cmlEndStep(mainXML)
 
         ENDDO
 

@@ -11,14 +11,39 @@
  <metadataList>
   <metadata name="siesta:Program" content="Siesta" />
   <metadata name="siesta:Version"
-   content="siesta@uam.es--2006/siesta-devel--reference--2.1--patch-29" />
+   content=" siesta@uam.es--2006/siesta-devel--reference--2.4--patch-3" />
   <metadata name="siesta:Arch" content="i686-apple-darwin8.7.1--unknown" />
-  <metadata name="siesta:Flags" content="ifort  -g -O3 -axP -ip -msse3" />
-  <metadata name="siesta:StartTime" content="2007-01-09T11-19-30" />
+  <metadata name="siesta:Flags" content="pgf90 -g  -fast" />
+  <metadata name="siesta:StartTime" content="2007-10-30T12-06-56" />
   <metadata name="siesta:Mode" content="Serial" />
   <metadata name="siesta:Nodes" content="1" />
   <metadata name="siesta:NetCDF" content="false" />
  </metadataList>
+ <module title="Initial System">
+  <molecule>
+   <atomArray>
+    <atom elementType="Fe" id="a1" ref="siesta:e001"
+     x3="    0.000000                                 "
+     y3="    0.000000                                 "
+     z3="    0.000000                                 " />
+   </atomArray>
+  </molecule>
+  <lattice dictRef="siesta:ucell">
+   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
+   2.712 2.712 2.712
+   </latticeVector>
+   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
+   2.712 -2.712 2.712
+   </latticeVector>
+   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
+   2.712 2.712 -2.712
+   </latticeVector>
+  </lattice>
+  <property dictRef="siesta:shape">
+   <scalar>bulk
+   </scalar>
+  </property>
+ </module>
  <parameterList title="Input Parameters">
   <parameter name="SystemName" dictRef="siesta:sname" value="bcc Fe ferro GGA" />
   <parameter name="SystemLabel" dictRef="siesta:slabel" value="fe" />
@@ -82,31 +107,6 @@
    </scalar>
   </parameter>
  </parameterList>
- <module title="Initial System">
-  <molecule>
-   <atomArray>
-    <atom elementType="Fe" id="a1" ref="siesta:e001"
-     x3="    0.000000                                 "
-     y3="    0.000000                                 "
-     z3="    0.000000                                 " />
-   </atomArray>
-  </molecule>
-  <lattice dictRef="siesta:ucell">
-   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
-   2.712 2.712 2.712
-   </latticeVector>
-   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
-   2.712 -2.712 2.712
-   </latticeVector>
-   <latticeVector units="siestaUnits:angstrom" dictRef="cml:latticeVector">
-   2.712 2.712 -2.712
-   </latticeVector>
-  </lattice>
-  <property dictRef="siesta:shape">
-   <scalar>bulk
-   </scalar>
-  </property>
- </module>
  <propertyList title="k-points">
   <property dictRef="siesta:nkpnt">
    <scalar dataType="xsd:integer">1183
@@ -199,7 +199,7 @@
      </scalar>
     </property>
     <property dictRef="siesta:DEna">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-0.000013                                                                                           
+     <scalar dataType="xsd:double" units="siestaUnits:eV">0.000002                                                                                            
      </scalar>
     </property>
     <property dictRef="siesta:DUscf">
@@ -211,7 +211,7 @@
      </scalar>
     </property>
     <property dictRef="siesta:Exc">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-393.596467                                                                                         
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-393.596496                                                                                         
      </scalar>
     </property>
     <property dictRef="siesta:Ecorrec">
@@ -235,29 +235,29 @@
      </scalar>
     </property>
     <property dictRef="siesta:EharrsK">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-781.882372                                                                                         
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-781.882385                                                                                         
      </scalar>
     </property>
     <property dictRef="siesta:EtotK">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.057981                                                                                         
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.057994                                                                                         
      </scalar>
     </property>
     <property dictRef="siesta:FreeEK">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.057981                                                                                         
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.057994                                                                                         
      </scalar>
     </property>
    </propertyList>
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-781.8823719                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-781.8823847                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.0579806                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.0579936                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.2100680                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.2100699                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -265,15 +265,15 @@
   <module dictRef="SCF" role="step" serial="2">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2935906                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2935961                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1263805                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1263874                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-6.2765415                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-6.2765398                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -281,15 +281,15 @@
   <module dictRef="SCF" role="step" serial="3">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2459816                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2459921                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1204267                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1204380                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-6.0973527                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-6.0973520                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -297,15 +297,15 @@
   <module dictRef="SCF" role="step" serial="4">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2281966                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2282095                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1804154                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1804286                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.7868397                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.7868409                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -313,15 +313,15 @@
   <module dictRef="SCF" role="step" serial="5">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2257915                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2258033                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1784981                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.1785102                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8430035                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8430037                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -329,15 +329,15 @@
   <module dictRef="SCF" role="step" serial="6">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2357345                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2357509                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2232860                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2233028                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8035222                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8035223                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -345,15 +345,15 @@
   <module dictRef="SCF" role="step" serial="7">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2340710                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2340771                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2234122                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2234183                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8887626                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8887642                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -361,15 +361,15 @@
   <module dictRef="SCF" role="step" serial="8">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2363055                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2363183                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2335545                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2335675                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.9078197                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.9078195                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -377,15 +377,15 @@
   <module dictRef="SCF" role="step" serial="9">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2369139                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2369240                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2353598                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2353696                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.9089612                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.9089619                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -393,15 +393,15 @@
   <module dictRef="SCF" role="step" serial="10">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2411535                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2411642                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2388430                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2388490                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8737744                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8737781                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -409,15 +409,15 @@
   <module dictRef="SCF" role="step" serial="11">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2409011                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2409062                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2348865                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2348883                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8782831                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8782898                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -425,15 +425,15 @@
   <module dictRef="SCF" role="step" serial="12">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2415514                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2415613                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2326717                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2326817                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8726043                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8726103                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -441,15 +441,15 @@
   <module dictRef="SCF" role="step" serial="13">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2418164                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2418232                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2306584                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2306632                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8784307                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8784362                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -457,15 +457,15 @@
   <module dictRef="SCF" role="step" serial="14">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2418599                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2418644                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2308605                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2308640                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8845477                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8845451                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -473,15 +473,15 @@
   <module dictRef="SCF" role="step" serial="15">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2419921                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2420022                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2379988                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2380203                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8939982                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8940105                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -489,15 +489,15 @@
   <module dictRef="SCF" role="step" serial="16">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2419972                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2420038                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2391816                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2391974                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8935225                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8935314                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -505,15 +505,15 @@
   <module dictRef="SCF" role="step" serial="17">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2423968                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2424362                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2460217                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2460625                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8861152                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8861142                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -521,15 +521,15 @@
   <module dictRef="SCF" role="step" serial="18">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2423860                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2423995                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2458108                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2458250                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8872817                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8872818                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -537,15 +537,15 @@
   <module dictRef="SCF" role="step" serial="19">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2424491                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2424660                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2428249                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2428406                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8967741                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8967376                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -553,15 +553,15 @@
   <module dictRef="SCF" role="step" serial="20">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2424808                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2424874                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2412120                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2412210                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8956756                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8956736                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -569,15 +569,15 @@
   <module dictRef="SCF" role="step" serial="21">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2424007                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2424104                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2410479                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2410566                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8944536                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8944425                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -585,15 +585,15 @@
   <module dictRef="SCF" role="step" serial="22">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2425223                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2425429                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2434383                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2434215                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8898844                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8898904                                                                                          
      </scalar>
     </property>
    </propertyList>
@@ -601,105 +601,106 @@
   <module dictRef="SCF" role="step" serial="23">
    <propertyList title="SCF Cycle">
     <property dictRef="siesta:Eharrs">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2425385                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2425857                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:FreeE">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2443802                                                                                        
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.2443916                                                                                        
      </scalar>
     </property>
     <property dictRef="siesta:Ef">
-     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8896312                                                                                          
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-5.8896177                                                                                          
      </scalar>
     </property>
    </propertyList>
   </module>
-  <module dictRef="SCF" role="step" serial="24" />
-  <propertyList title="Final KS Energy">
-   <property dictRef="siesta:E_KS">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243198                                                                                         
-    </scalar>
-   </property>
-   <property dictRef="siesta:E_KS_egg">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243198                                                                                         
-    </scalar>
-   </property>
-  </propertyList>
-  <propertyList title="Forces">
-   <property dictRef="siesta:forces">
-    <matrix units="siestaUnits:evpa" columns="3" rows="1" dataType="xsd:double">
-    0.000 0.000 0.000
-    </matrix>
-   </property>
-   <property dictRef="siesta:ftot">
-    <array size="3" dataType="xsd:double">0.000 0.000 0.000
-    </array>
-   </property>
-   <property dictRef="siesta:fmax">
-    <scalar dataType="xsd:double">0.0000
-    </scalar>
-   </property>
-   <property dictRef="siesta:fres">
-    <scalar dataType="xsd:double">0.0000
-    </scalar>
-   </property>
-   <property dictRef="siesta:cfmax">
-    <scalar dataType="xsd:double">0.0000
-    </scalar>
-   </property>
-  </propertyList>
-  <propertyList title="Mulliken Population Analysis" dictRef="siesta:mulliken">
-   <propertyList title="SpinUp">
-    <propertyList title="Fe">
-     <property title="Orbital list">
-      <array delimiter=" " size="15" dataType="xsd:string">4s       4s      
-       3dxy     3dyz     3dz2     3dxz     3dx2-y2  3dxy     3dyz     3dz2    
-       3dxz     3dx2-y2  4Ppy     4Ppz     4Ppx    
-      </array>
-     </property>
-     <propertyList title="atom        1">
-      <property title="Atomic Charge">
-       <scalar dataType="xsd:double">5.1563
-       </scalar>
-      </property>
-      <property title="Orbital Charges">
-       <array size="15" dataType="xsd:double">-0.151 0.446 0.905 0.905 0.968
-       0.905 0.968 -0.029 -0.029 -0.022 -0.029 -0.022 0.114 0.114 0.114
-       </array>
-      </property>
-     </propertyList>
-    </propertyList>
-    <property title="Total Charge">
-     <scalar dataType="xsd:double">5.1563
+  <module title="SCF Finalization">
+   <propertyList title="Final KS Energy">
+    <property dictRef="siesta:E_KS">
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243196                                                                                         
+     </scalar>
+    </property>
+    <property dictRef="siesta:E_KS_egg">
+     <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243196                                                                                         
      </scalar>
     </property>
    </propertyList>
-   <propertyList title="SpinDown">
-    <propertyList title="Fe">
-     <property title="Orbital list">
-      <array delimiter=" " size="15" dataType="xsd:string">4s       4s      
-       3dxy     3dyz     3dz2     3dxz     3dx2-y2  3dxy     3dyz     3dz2    
-       3dxz     3dx2-y2  4Ppy     4Ppz     4Ppx    
-      </array>
-     </property>
-     <propertyList title="atom        1">
-      <property title="Atomic Charge">
-       <scalar dataType="xsd:double">2.8437
-       </scalar>
-      </property>
-      <property title="Orbital Charges">
-       <array size="15" dataType="xsd:double">-0.244 0.544 0.539 0.539 0.343
-       0.539 0.343 -0.050 -0.050 -0.042 -0.050 -0.042 0.158 0.158 0.158
-       </array>
-      </property>
-     </propertyList>
-    </propertyList>
-    <property title="Total Charge">
-     <scalar dataType="xsd:double">2.8437
+   <propertyList title="Forces">
+    <property dictRef="siesta:forces">
+     <matrix units="siestaUnits:evpa" columns="3" rows="1" dataType="xsd:double">
+     0.000 0.000 0.000
+     </matrix>
+    </property>
+    <property dictRef="siesta:ftot">
+     <array size="3" dataType="xsd:double">0.000 0.000 0.000
+     </array>
+    </property>
+    <property dictRef="siesta:fmax">
+     <scalar dataType="xsd:double">0.0000
+     </scalar>
+    </property>
+    <property dictRef="siesta:fres">
+     <scalar dataType="xsd:double">0.0000
+     </scalar>
+    </property>
+    <property dictRef="siesta:cfmax">
+     <scalar dataType="xsd:double">0.0000
      </scalar>
     </property>
    </propertyList>
-  </propertyList>
+   <propertyList title="Mulliken Population Analysis" dictRef="siesta:mulliken">
+    <propertyList title="SpinUp">
+     <propertyList title="Fe">
+      <property title="Orbital list">
+       <array delimiter=" " size="15" dataType="xsd:string">4s       4s      
+        3dxy     3dyz     3dz2     3dxz     3dx2-y2  3dxy     3dyz     3dz2    
+        3dxz     3dx2-y2  4Ppy     4Ppz     4Ppx    
+       </array>
+      </property>
+      <propertyList title="atom        1">
+       <property title="Atomic Charge">
+        <scalar dataType="xsd:double">5.1564
+        </scalar>
+       </property>
+       <property title="Orbital Charges">
+        <array size="15" dataType="xsd:double">-0.151 0.446 0.905 0.905 0.968
+        0.905 0.968 -0.029 -0.029 -0.022 -0.029 -0.022 0.114 0.114 0.114
+        </array>
+       </property>
+      </propertyList>
+     </propertyList>
+     <property title="Total Charge">
+      <scalar dataType="xsd:double">5.1564
+      </scalar>
+     </property>
+    </propertyList>
+    <propertyList title="SpinDown">
+     <propertyList title="Fe">
+      <property title="Orbital list">
+       <array delimiter=" " size="15" dataType="xsd:string">4s       4s      
+        3dxy     3dyz     3dz2     3dxz     3dx2-y2  3dxy     3dyz     3dz2    
+        3dxz     3dx2-y2  4Ppy     4Ppz     4Ppx    
+       </array>
+      </property>
+      <propertyList title="atom        1">
+       <property title="Atomic Charge">
+        <scalar dataType="xsd:double">2.8436
+        </scalar>
+       </property>
+       <property title="Orbital Charges">
+        <array size="15" dataType="xsd:double">-0.244 0.544 0.539 0.539 0.343
+        0.539 0.343 -0.050 -0.050 -0.042 -0.050 -0.042 0.158 0.158 0.158
+        </array>
+       </property>
+      </propertyList>
+     </propertyList>
+     <property title="Total Charge">
+      <scalar dataType="xsd:double">2.8436
+      </scalar>
+     </property>
+    </propertyList>
+   </propertyList>
+  </module>
   <molecule>
    <atomArray>
     <atom elementType="Fe" id="a1" ref="siesta:e001"
@@ -742,7 +743,7 @@
   </lattice>
   <propertyList title="Eigenvalues">
    <property title="Fermi Energy" dictRef="siesta:E_Fermi">
-    <scalar dataType="xsd:double" units="siestaUnits:ev">-5.88963                                                                                            
+    <scalar dataType="xsd:double" units="siestaUnits:ev">-5.88962                                                                                            
     </scalar>
    </property>
    <property title="Number of k-points" dictRef="siesta:nkpoints">
@@ -826,7 +827,7 @@
    <band kpoint="-0.5346959  1.0693917  0.5346959"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.785 -0.678 -0.525 -0.514 -0.452
-    -0.312 0.097 1.159 1.433 2.021 2.439 3.353 3.738 4.949 7.057
+    -0.312 0.097 1.159 1.433 2.020 2.439 3.353 3.738 4.949 7.057
     </array>
    </band>
    <band kpoint="-0.4455799 -0.0891160 -0.5346959"
@@ -861,7 +862,7 @@
    </band>
    <band kpoint="-0.4455799  0.3564639 -0.0891160"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -874,7 +875,7 @@
    <band kpoint="-0.4455799  0.5346959  0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint="-0.4455799  0.6238118  0.1782320"
@@ -1023,14 +1024,14 @@
    </band>
    <band kpoint="-0.2673479  0.2673479  0.0000000"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.924 -0.638 -0.614 -0.530 -0.528
+    <array size="15" dataType="xsd:double">-0.924 -0.639 -0.614 -0.530 -0.528
     -0.513 1.063 1.768 1.950 2.358 2.519 2.747 3.414 3.493 3.916
     </array>
    </band>
    <band kpoint="-0.2673479  0.3564639  0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint="-0.2673479  0.4455799  0.1782320"
@@ -1149,7 +1150,7 @@
    </band>
    <band kpoint="-0.0891160 -0.3564639 -0.4455799"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -1198,7 +1199,7 @@
    <band kpoint="-0.0891160  0.3564639  0.2673479"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint="-0.0891160  0.4455799  0.3564639"
@@ -1210,7 +1211,7 @@
    <band kpoint="-0.0891160  0.5346959  0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint="-0.0891160  0.6238118  0.5346959"
@@ -1239,7 +1240,7 @@
    </band>
    <band kpoint=" 0.0000000 -0.2673479 -0.2673479"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.924 -0.638 -0.614 -0.530 -0.528
+    <array size="15" dataType="xsd:double">-0.924 -0.639 -0.614 -0.530 -0.528
     -0.513 1.063 1.768 1.950 2.358 2.519 2.747 3.414 3.493 3.916
     </array>
    </band>
@@ -1275,7 +1276,7 @@
    </band>
    <band kpoint=" 0.0000000  0.2673479  0.2673479"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.924 -0.638 -0.614 -0.530 -0.528
+    <array size="15" dataType="xsd:double">-0.924 -0.639 -0.614 -0.530 -0.528
     -0.513 1.063 1.768 1.950 2.358 2.519 2.747 3.414 3.493 3.916
     </array>
    </band>
@@ -1306,7 +1307,7 @@
    <band kpoint=" 0.0891160 -0.5346959 -0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.4455799 -0.3564639"
@@ -1318,7 +1319,7 @@
    <band kpoint=" 0.0891160 -0.3564639 -0.2673479"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.2673479 -0.1782320"
@@ -1365,7 +1366,7 @@
    </band>
    <band kpoint=" 0.0891160  0.3564639  0.4455799"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -1486,12 +1487,12 @@
    <band kpoint=" 0.2673479 -0.3564639 -0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.2673479  0.0000000"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.924 -0.638 -0.614 -0.530 -0.528
+    <array size="15" dataType="xsd:double">-0.924 -0.639 -0.614 -0.530 -0.528
     -0.513 1.063 1.768 1.950 2.358 2.519 2.747 3.414 3.493 3.916
     </array>
    </band>
@@ -1642,7 +1643,7 @@
    <band kpoint=" 0.4455799 -0.5346959 -0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.4455799  0.0000000"
@@ -1653,7 +1654,7 @@
    </band>
    <band kpoint=" 0.4455799 -0.3564639  0.0891160"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -1690,7 +1691,7 @@
    <band kpoint=" 0.5346959 -1.0693917 -0.5346959"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.785 -0.678 -0.525 -0.514 -0.452
-    -0.312 0.097 1.159 1.433 2.021 2.439 3.353 3.738 4.949 7.057
+    -0.312 0.097 1.159 1.433 2.020 2.439 3.353 3.738 4.949 7.057
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.9802758 -0.4455799"
@@ -1816,7 +1817,7 @@
    <band kpoint="-0.4455799  0.7129278  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.766 -0.659 -0.596 -0.527 -0.431
-    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.357
+    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.356
     </array>
    </band>
    <band kpoint="-0.4455799  0.8020438  0.1782320"
@@ -1845,7 +1846,7 @@
    </band>
    <band kpoint="-0.3564639 -0.0891160 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.445
+    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.446
     -0.315 0.241 0.953 1.811 2.011 2.607 3.010 3.720 4.656 7.025
     </array>
    </band>
@@ -1881,7 +1882,7 @@
    </band>
    <band kpoint="-0.3564639  0.4455799 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -2152,7 +2153,7 @@
    <band kpoint="-0.0891160  0.7129278  0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.766 -0.659 -0.596 -0.527 -0.431
-    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.357
+    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.356
     </array>
    </band>
    <band kpoint=" 0.0000000 -0.4455799 -0.6238118"
@@ -2242,7 +2243,7 @@
    <band kpoint=" 0.0891160 -0.4455799 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.3564639 -0.4455799"
@@ -2254,7 +2255,7 @@
    <band kpoint=" 0.0891160 -0.2673479 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.1782320 -0.2673479"
@@ -2301,7 +2302,7 @@
    </band>
    <band kpoint=" 0.0891160  0.4455799  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -2506,7 +2507,7 @@
    <band kpoint=" 0.3564639 -0.2673479 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint=" 0.3564639 -0.1782320  0.0000000"
@@ -2626,7 +2627,7 @@
    <band kpoint=" 0.5346959 -0.9802758 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.770 -0.682 -0.531 -0.510 -0.504
-    -0.261 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
+    -0.262 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.8911598 -0.5346959"
@@ -2662,7 +2663,7 @@
    <band kpoint=" 0.5346959 -0.4455799 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.3564639  0.0000000"
@@ -2710,7 +2711,7 @@
    <band kpoint=" 0.6238118 -0.9802758 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.770 -0.682 -0.531 -0.510 -0.504
-    -0.261 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
+    -0.262 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.8911598 -0.4455799"
@@ -2769,7 +2770,7 @@
    </band>
    <band kpoint=" 0.6238118 -0.0891160  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.445
+    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.446
     -0.315 0.241 0.953 1.811 2.011 2.607 3.010 3.720 4.656 7.025
     </array>
    </band>
@@ -2782,7 +2783,7 @@
    <band kpoint="-0.3564639  0.0000000 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.758 -0.638 -0.631 -0.538 -0.419
-    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.763 8.830
+    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.762 8.830
     </array>
    </band>
    <band kpoint="-0.3564639  0.0891160 -0.6238118"
@@ -2794,7 +2795,7 @@
    <band kpoint="-0.3564639  0.1782320 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.669 -0.606 -0.521 -0.489
-    -0.338 0.374 0.882 1.420 2.408 2.773 3.211 3.687 4.361 5.856
+    -0.338 0.374 0.881 1.420 2.408 2.773 3.211 3.687 4.361 5.856
     </array>
    </band>
    <band kpoint="-0.3564639  0.2673479 -0.4455799"
@@ -2908,7 +2909,7 @@
    <band kpoint="-0.2673479  0.6238118  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.642 -0.631 -0.538 -0.446
-    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.725 4.461 6.901
+    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.724 4.461 6.901
     </array>
    </band>
    <band kpoint="-0.2673479  0.7129278  0.0891160"
@@ -2938,7 +2939,7 @@
    <band kpoint="-0.1782320 -0.1782320 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.721 -0.695 -0.613 -0.525 -0.460
-    -0.231 0.449 0.506 1.868 2.104 2.353 2.978 3.914 4.272 6.864
+    -0.231 0.449 0.506 1.868 2.104 2.352 2.978 3.914 4.272 6.864
     </array>
    </band>
    <band kpoint="-0.1782320 -0.0891160 -0.6238118"
@@ -3100,7 +3101,7 @@
    <band kpoint=" 0.0000000 -0.2673479 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.642 -0.631 -0.538 -0.446
-    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.725 4.461 6.901
+    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.724 4.461 6.901
     </array>
    </band>
    <band kpoint=" 0.0000000 -0.1782320 -0.5346959"
@@ -3160,7 +3161,7 @@
    <band kpoint=" 0.0000000  0.6238118  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.642 -0.631 -0.538 -0.446
-    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.725 4.461 6.901
+    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.724 4.461 6.901
     </array>
    </band>
    <band kpoint=" 0.0000000  0.7129278  0.3564639"
@@ -3172,7 +3173,7 @@
    <band kpoint=" 0.0891160 -0.4455799 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.766 -0.659 -0.596 -0.527 -0.431
-    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.357
+    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.356
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.3564639 -0.6238118"
@@ -3634,7 +3635,7 @@
    <band kpoint=" 0.5346959  0.1782320  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.669 -0.606 -0.521 -0.489
-    -0.338 0.374 0.882 1.420 2.408 2.773 3.211 3.687 4.361 5.856
+    -0.338 0.374 0.881 1.420 2.408 2.773 3.211 3.687 4.361 5.856
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.9802758 -0.7129278"
@@ -3688,7 +3689,7 @@
    <band kpoint=" 0.6238118 -0.2673479  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.642 -0.631 -0.538 -0.446
-    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.725 4.461 6.901
+    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.724 4.461 6.901
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.1782320  0.0891160"
@@ -3760,7 +3761,7 @@
    <band kpoint=" 0.7129278 -0.4455799 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.766 -0.659 -0.596 -0.527 -0.431
-    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.357
+    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.356
     </array>
    </band>
    <band kpoint=" 0.7129278 -0.3564639  0.0000000"
@@ -3778,7 +3779,7 @@
    <band kpoint=" 0.7129278 -0.1782320  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.721 -0.695 -0.613 -0.525 -0.460
-    -0.231 0.449 0.506 1.868 2.104 2.353 2.978 3.914 4.272 6.864
+    -0.231 0.449 0.506 1.868 2.104 2.352 2.978 3.914 4.272 6.864
     </array>
    </band>
    <band kpoint=" 0.7129278 -0.0891160  0.2673479"
@@ -3790,7 +3791,7 @@
    <band kpoint=" 0.7129278  0.0000000  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.758 -0.638 -0.631 -0.538 -0.419
-    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.763 8.830
+    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.762 8.830
     </array>
    </band>
    <band kpoint="-0.2673479  0.0000000 -0.8020438"
@@ -3868,7 +3869,7 @@
    <band kpoint="-0.2673479  1.0693917  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.736 -0.713 -0.581 -0.510 -0.431
-    0.013 0.150 0.533 1.380 2.024 2.538 2.881 3.899 4.517 4.810
+    0.013 0.150 0.533 1.380 2.024 2.538 2.881 3.899 4.516 4.810
     </array>
    </band>
    <band kpoint="-0.1782320 -0.0891160 -0.8020438"
@@ -4294,12 +4295,12 @@
    <band kpoint=" 0.2673479 -0.0891160 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint=" 0.2673479  0.0000000 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.924 -0.638 -0.614 -0.530 -0.528
+    <array size="15" dataType="xsd:double">-0.924 -0.639 -0.614 -0.530 -0.528
     -0.513 1.063 1.768 1.950 2.358 2.519 2.747 3.414 3.493 3.916
     </array>
    </band>
@@ -4378,7 +4379,7 @@
    <band kpoint=" 0.3564639 -0.0891160 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.870 -0.647 -0.622 -0.532 -0.508
-    -0.491 0.854 1.444 1.757 2.401 2.615 3.059 3.346 3.560 4.050
+    -0.491 0.854 1.444 1.757 2.401 2.615 3.058 3.346 3.560 4.050
     </array>
    </band>
    <band kpoint=" 0.3564639  0.0000000 -0.1782320"
@@ -4503,7 +4504,7 @@
    </band>
    <band kpoint=" 0.5346959 -0.7129278 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.693 -0.677 -0.649 -0.504 -0.502
+    <array size="15" dataType="xsd:double">-0.694 -0.677 -0.649 -0.504 -0.502
     -0.083 0.338 0.410 0.611 3.336 3.404 3.446 3.756 4.431 9.735
     </array>
    </band>
@@ -4582,7 +4583,7 @@
    <band kpoint=" 0.6238118 -0.8020438 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.714 -0.677 -0.626 -0.506 -0.498
-    -0.075 0.197 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
+    -0.075 0.196 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.7129278 -0.6238118"
@@ -4666,12 +4667,12 @@
    <band kpoint=" 0.7129278 -0.8020438 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.714 -0.677 -0.626 -0.506 -0.498
-    -0.075 0.197 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
+    -0.075 0.196 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
     </array>
    </band>
    <band kpoint=" 0.7129278 -0.7129278 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.693 -0.677 -0.649 -0.504 -0.502
+    <array size="15" dataType="xsd:double">-0.694 -0.677 -0.649 -0.504 -0.502
     -0.083 0.338 0.410 0.611 3.336 3.404 3.446 3.756 4.431 9.735
     </array>
    </band>
@@ -4816,7 +4817,7 @@
    <band kpoint="-0.1782320  0.0891160 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.731 -0.713 -0.578 -0.516 -0.443
-    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.998
+    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.997
     </array>
    </band>
    <band kpoint="-0.1782320  0.1782320 -0.7129278"
@@ -4834,7 +4835,7 @@
    <band kpoint="-0.1782320  0.3564639 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.669 -0.606 -0.521 -0.489
-    -0.338 0.374 0.882 1.420 2.408 2.773 3.211 3.687 4.361 5.856
+    -0.338 0.374 0.881 1.420 2.408 2.773 3.211 3.687 4.361 5.856
     </array>
    </band>
    <band kpoint="-0.1782320  0.4455799 -0.4455799"
@@ -4858,7 +4859,7 @@
    <band kpoint="-0.1782320  0.7129278 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.721 -0.695 -0.613 -0.525 -0.460
-    -0.231 0.449 0.506 1.868 2.104 2.353 2.978 3.914 4.272 6.864
+    -0.231 0.449 0.506 1.868 2.104 2.352 2.978 3.914 4.272 6.864
     </array>
    </band>
    <band kpoint="-0.1782320  0.8020438 -0.0891160"
@@ -5194,7 +5195,7 @@
    <band kpoint=" 0.1782320  0.7129278  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.721 -0.695 -0.613 -0.525 -0.460
-    -0.231 0.449 0.506 1.868 2.104 2.353 2.978 3.914 4.272 6.864
+    -0.231 0.449 0.506 1.868 2.104 2.352 2.978 3.914 4.272 6.864
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.4455799 -0.8911598"
@@ -5506,7 +5507,7 @@
    <band kpoint=" 0.5346959  0.3564639  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.669 -0.606 -0.521 -0.489
-    -0.338 0.374 0.882 1.420 2.408 2.773 3.211 3.687 4.361 5.856
+    -0.338 0.374 0.881 1.420 2.408 2.773 3.211 3.687 4.361 5.856
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.8020438 -0.8911598"
@@ -5518,7 +5519,7 @@
    <band kpoint=" 0.6238118 -0.7129278 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.714 -0.677 -0.626 -0.506 -0.498
-    -0.075 0.197 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
+    -0.075 0.196 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.6238118 -0.7129278"
@@ -5601,7 +5602,7 @@
    </band>
    <band kpoint=" 0.7129278 -0.7129278 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.706 -0.655 -0.655 -0.500 -0.500
+    <array size="15" dataType="xsd:double">-0.706 -0.655 -0.655 -0.501 -0.501
     0.101 0.101 0.276 0.861 3.219 3.219 3.242 4.212 4.212 7.725
     </array>
    </band>
@@ -5668,7 +5669,7 @@
    <band kpoint=" 0.8020438 -0.9802758 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.718 -0.690 -0.630 -0.508 -0.451
-    -0.065 0.207 0.428 1.877 2.243 2.304 2.945 3.993 4.461 7.106
+    -0.065 0.207 0.427 1.877 2.243 2.304 2.945 3.993 4.461 7.106
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.8911598 -0.8020438"
@@ -5686,7 +5687,7 @@
    <band kpoint=" 0.8020438 -0.7129278 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.714 -0.677 -0.626 -0.506 -0.498
-    -0.075 0.197 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
+    -0.075 0.196 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.6238118 -0.5346959"
@@ -5740,19 +5741,19 @@
    <band kpoint=" 0.8020438  0.0891160  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.731 -0.713 -0.578 -0.516 -0.443
-    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.998
+    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.997
     </array>
    </band>
    <band kpoint=" 0.8911598 -1.0693917 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.736 -0.713 -0.581 -0.510 -0.430
+    <array size="15" dataType="xsd:double">-0.736 -0.713 -0.582 -0.510 -0.430
     0.013 0.150 0.533 1.380 2.024 2.538 2.882 3.898 4.517 4.810
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.9802758 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.718 -0.690 -0.630 -0.508 -0.451
-    -0.065 0.207 0.428 1.877 2.243 2.304 2.945 3.993 4.461 7.106
+    -0.065 0.207 0.427 1.877 2.243 2.304 2.945 3.993 4.461 7.106
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.8911598 -0.7129278"
@@ -5823,7 +5824,7 @@
    </band>
    <band kpoint="-0.0891160  0.0000000 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
+    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.475 -0.465 -0.433
     0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.797 4.151 4.304
     </array>
    </band>
@@ -5836,7 +5837,7 @@
    <band kpoint="-0.0891160  0.1782320 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.731 -0.713 -0.578 -0.516 -0.443
-    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.998
+    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.997
     </array>
    </band>
    <band kpoint="-0.0891160  0.2673479 -0.7129278"
@@ -5865,7 +5866,7 @@
    </band>
    <band kpoint="-0.0891160  0.6238118 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.445
+    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.446
     -0.315 0.241 0.953 1.811 2.011 2.607 3.010 3.720 4.656 7.025
     </array>
    </band>
@@ -5890,19 +5891,19 @@
    <band kpoint="-0.0891160  0.9802758  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
-    0.136 0.351 0.466 1.078 1.259 1.731 3.458 3.796 4.151 4.305
+    0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.796 4.151 4.305
     </array>
    </band>
    <band kpoint="-0.0891160  1.0693917  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.771 -0.771 -0.469 -0.437 -0.437
+    <array size="15" dataType="xsd:double">-0.771 -0.771 -0.469 -0.438 -0.437
     0.315 0.315 0.331 1.224 1.225 1.337 3.401 3.907 4.287 4.288
     </array>
    </band>
    <band kpoint=" 0.0000000 -0.0891160 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
-    0.136 0.351 0.466 1.078 1.259 1.731 3.458 3.796 4.151 4.305
+    0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.796 4.151 4.305
     </array>
    </band>
    <band kpoint=" 0.0000000  0.0000000 -0.8911598"
@@ -5974,7 +5975,7 @@
    <band kpoint=" 0.0000000  0.9802758  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
-    0.136 0.351 0.466 1.078 1.259 1.731 3.458 3.796 4.151 4.305
+    0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.796 4.151 4.305
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.1782320 -0.9802758"
@@ -6160,7 +6161,7 @@
    <band kpoint=" 0.2673479  0.0000000 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.642 -0.631 -0.538 -0.446
-    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.725 4.461 6.901
+    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.724 4.461 6.901
     </array>
    </band>
    <band kpoint=" 0.2673479  0.0891160 -0.5346959"
@@ -6249,7 +6250,7 @@
    </band>
    <band kpoint=" 0.3564639  0.0891160 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -6285,7 +6286,7 @@
    </band>
    <band kpoint=" 0.3564639  0.6238118  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.445
+    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.446
     -0.315 0.241 0.953 1.811 2.011 2.607 3.010 3.720 4.656 7.025
     </array>
    </band>
@@ -6322,7 +6323,7 @@
    <band kpoint=" 0.4455799 -0.0891160 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint=" 0.4455799  0.0000000 -0.4455799"
@@ -6333,7 +6334,7 @@
    </band>
    <band kpoint=" 0.4455799  0.0891160 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.806 -0.663 -0.592 -0.520 -0.501
+    <array size="15" dataType="xsd:double">-0.806 -0.664 -0.592 -0.520 -0.501
     -0.436 0.493 1.290 1.581 2.203 2.560 3.319 3.572 4.044 4.491
     </array>
    </band>
@@ -6370,7 +6371,7 @@
    <band kpoint=" 0.5346959 -0.6238118 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.770 -0.682 -0.531 -0.510 -0.504
-    -0.261 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
+    -0.262 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.5346959 -0.8911598"
@@ -6406,7 +6407,7 @@
    <band kpoint=" 0.5346959 -0.0891160 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.787 -0.674 -0.541 -0.513 -0.475
-    -0.367 0.221 1.193 1.470 2.067 2.474 3.348 3.685 4.737 5.896
+    -0.367 0.221 1.193 1.470 2.066 2.474 3.348 3.685 4.737 5.896
     </array>
    </band>
    <band kpoint=" 0.5346959  0.0000000 -0.3564639"
@@ -6496,7 +6497,7 @@
    <band kpoint=" 0.6238118  0.0000000 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.642 -0.631 -0.538 -0.446
-    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.725 4.461 6.901
+    -0.359 0.384 1.002 1.641 2.337 2.472 2.813 3.724 4.461 6.901
     </array>
    </band>
    <band kpoint=" 0.6238118  0.0891160 -0.1782320"
@@ -6538,12 +6539,12 @@
    <band kpoint=" 0.7129278 -0.6238118 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.714 -0.677 -0.626 -0.506 -0.498
-    -0.075 0.197 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
+    -0.075 0.196 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
     </array>
    </band>
    <band kpoint=" 0.7129278 -0.5346959 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.693 -0.677 -0.649 -0.504 -0.502
+    <array size="15" dataType="xsd:double">-0.694 -0.677 -0.649 -0.504 -0.502
     -0.083 0.338 0.410 0.611 3.336 3.404 3.446 3.756 4.431 9.735
     </array>
    </band>
@@ -6604,7 +6605,7 @@
    <band kpoint=" 0.8020438 -0.8911598 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.718 -0.690 -0.630 -0.508 -0.451
-    -0.065 0.207 0.428 1.877 2.243 2.304 2.945 3.993 4.461 7.106
+    -0.065 0.207 0.427 1.877 2.243 2.304 2.945 3.993 4.461 7.106
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.8020438 -0.8911598"
@@ -6622,7 +6623,7 @@
    <band kpoint=" 0.8020438 -0.6238118 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.714 -0.677 -0.626 -0.506 -0.498
-    -0.075 0.197 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
+    -0.075 0.196 0.427 0.887 3.016 3.184 3.337 3.910 4.460 7.938
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.5346959 -0.6238118"
@@ -6676,7 +6677,7 @@
    <band kpoint=" 0.8020438  0.1782320  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.731 -0.713 -0.578 -0.516 -0.443
-    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.998
+    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.997
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.9802758 -0.9802758"
@@ -6772,7 +6773,7 @@
    <band kpoint=" 0.9802758 -0.8911598 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.718 -0.690 -0.630 -0.508 -0.451
-    -0.065 0.207 0.428 1.877 2.243 2.304 2.945 3.993 4.461 7.106
+    -0.065 0.207 0.427 1.877 2.243 2.304 2.945 3.993 4.461 7.106
     </array>
    </band>
    <band kpoint=" 0.9802758 -0.8020438 -0.7129278"
@@ -6790,7 +6791,7 @@
    <band kpoint=" 0.9802758 -0.6238118 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.770 -0.682 -0.531 -0.510 -0.504
-    -0.261 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
+    -0.262 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
     </array>
    </band>
    <band kpoint=" 0.9802758 -0.5346959 -0.4455799"
@@ -6826,12 +6827,12 @@
    <band kpoint=" 0.9802758 -0.0891160  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
-    0.136 0.351 0.466 1.078 1.259 1.731 3.458 3.796 4.151 4.305
+    0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.796 4.151 4.305
     </array>
    </band>
    <band kpoint=" 0.9802758  0.0000000  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
+    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.475 -0.465 -0.433
     0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.797 4.151 4.304
     </array>
    </band>
@@ -6843,7 +6844,7 @@
    </band>
    <band kpoint=" 0.0000000  0.0891160 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
+    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.475 -0.465 -0.433
     0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.797 4.151 4.304
     </array>
    </band>
@@ -6862,7 +6863,7 @@
    <band kpoint=" 0.0000000  0.3564639 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.758 -0.638 -0.631 -0.538 -0.419
-    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.763 8.830
+    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.762 8.830
     </array>
    </band>
    <band kpoint=" 0.0000000  0.4455799 -0.6238118"
@@ -6886,7 +6887,7 @@
    <band kpoint=" 0.0000000  0.7129278 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.758 -0.638 -0.631 -0.538 -0.419
-    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.763 8.830
+    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.762 8.830
     </array>
    </band>
    <band kpoint=" 0.0000000  0.8020438 -0.2673479"
@@ -6903,7 +6904,7 @@
    </band>
    <band kpoint=" 0.0000000  0.9802758 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
+    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.475 -0.465 -0.433
     0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.797 4.151 4.304
     </array>
    </band>
@@ -6915,14 +6916,14 @@
    </band>
    <band kpoint=" 0.0891160 -0.0891160 -1.0693917"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.771 -0.771 -0.469 -0.437 -0.437
+    <array size="15" dataType="xsd:double">-0.771 -0.771 -0.469 -0.438 -0.437
     0.315 0.315 0.331 1.224 1.225 1.337 3.401 3.907 4.287 4.288
     </array>
    </band>
    <band kpoint=" 0.0891160  0.0000000 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
-    0.136 0.351 0.466 1.078 1.259 1.731 3.458 3.796 4.151 4.305
+    0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.796 4.151 4.305
     </array>
    </band>
    <band kpoint=" 0.0891160  0.0891160 -0.8911598"
@@ -6945,7 +6946,7 @@
    </band>
    <band kpoint=" 0.0891160  0.3564639 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.445
+    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.446
     -0.315 0.241 0.953 1.811 2.011 2.607 3.010 3.720 4.656 7.025
     </array>
    </band>
@@ -6976,7 +6977,7 @@
    <band kpoint=" 0.0891160  0.8020438 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.731 -0.713 -0.578 -0.516 -0.443
-    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.998
+    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.997
     </array>
    </band>
    <band kpoint=" 0.0891160  0.8911598 -0.0891160"
@@ -6987,7 +6988,7 @@
    </band>
    <band kpoint=" 0.0891160  0.9802758  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
+    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.475 -0.465 -0.433
     0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.797 4.151 4.304
     </array>
    </band>
@@ -7018,7 +7019,7 @@
    <band kpoint=" 0.1782320  0.1782320 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.721 -0.695 -0.613 -0.525 -0.460
-    -0.231 0.449 0.506 1.868 2.104 2.353 2.978 3.914 4.272 6.864
+    -0.231 0.449 0.506 1.868 2.104 2.352 2.978 3.914 4.272 6.864
     </array>
    </band>
    <band kpoint=" 0.1782320  0.2673479 -0.6238118"
@@ -7042,7 +7043,7 @@
    <band kpoint=" 0.1782320  0.5346959 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.669 -0.606 -0.521 -0.489
-    -0.338 0.374 0.882 1.420 2.408 2.773 3.211 3.687 4.361 5.856
+    -0.338 0.374 0.881 1.420 2.408 2.773 3.211 3.687 4.361 5.856
     </array>
    </band>
    <band kpoint=" 0.1782320  0.6238118 -0.2673479"
@@ -7060,7 +7061,7 @@
    <band kpoint=" 0.1782320  0.8020438 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.731 -0.713 -0.578 -0.516 -0.443
-    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.998
+    -0.134 0.343 0.561 1.416 1.800 2.647 2.926 3.910 4.345 4.997
     </array>
    </band>
    <band kpoint=" 0.1782320  0.8911598  0.0000000"
@@ -7072,7 +7073,7 @@
    <band kpoint=" 0.2673479 -0.2673479 -1.0693917"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.736 -0.713 -0.581 -0.510 -0.431
-    0.013 0.150 0.533 1.380 2.024 2.538 2.881 3.899 4.517 4.810
+    0.013 0.150 0.533 1.380 2.024 2.538 2.881 3.899 4.516 4.810
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.1782320 -0.9802758"
@@ -7210,7 +7211,7 @@
    <band kpoint=" 0.3564639  0.5346959 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.669 -0.606 -0.521 -0.489
-    -0.338 0.374 0.882 1.420 2.408 2.773 3.211 3.687 4.361 5.856
+    -0.338 0.374 0.881 1.420 2.408 2.773 3.211 3.687 4.361 5.856
     </array>
    </band>
    <band kpoint=" 0.3564639  0.6238118 -0.0891160"
@@ -7222,7 +7223,7 @@
    <band kpoint=" 0.3564639  0.7129278  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.758 -0.638 -0.631 -0.538 -0.419
-    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.763 8.830
+    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.762 8.830
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.4455799 -1.0693917"
@@ -7252,7 +7253,7 @@
    <band kpoint=" 0.4455799 -0.0891160 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.766 -0.659 -0.596 -0.527 -0.431
-    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.357
+    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.356
     </array>
    </band>
    <band kpoint=" 0.4455799  0.0000000 -0.6238118"
@@ -7306,7 +7307,7 @@
    <band kpoint=" 0.5346959 -0.5346959 -1.0693917"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.785 -0.678 -0.525 -0.514 -0.452
-    -0.312 0.097 1.159 1.433 2.021 2.439 3.353 3.738 4.949 7.057
+    -0.312 0.097 1.159 1.433 2.020 2.439 3.353 3.738 4.949 7.057
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.4455799 -0.9802758"
@@ -7390,7 +7391,7 @@
    <band kpoint=" 0.6238118 -0.5346959 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.770 -0.682 -0.531 -0.510 -0.504
-    -0.261 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
+    -0.262 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.4455799 -0.8911598"
@@ -7449,7 +7450,7 @@
    </band>
    <band kpoint=" 0.6238118  0.3564639 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.445
+    <array size="15" dataType="xsd:double">-0.767 -0.657 -0.605 -0.527 -0.446
     -0.315 0.241 0.953 1.811 2.011 2.607 3.010 3.720 4.656 7.025
     </array>
    </band>
@@ -7504,7 +7505,7 @@
    <band kpoint=" 0.7129278 -0.0891160 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.766 -0.659 -0.596 -0.527 -0.431
-    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.357
+    -0.237 0.103 0.922 1.767 1.976 2.595 3.018 3.722 4.850 8.356
     </array>
    </band>
    <band kpoint=" 0.7129278  0.0000000 -0.3564639"
@@ -7522,7 +7523,7 @@
    <band kpoint=" 0.7129278  0.1782320 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.721 -0.695 -0.613 -0.525 -0.460
-    -0.231 0.449 0.506 1.868 2.104 2.353 2.978 3.914 4.272 6.864
+    -0.231 0.449 0.506 1.868 2.104 2.352 2.978 3.914 4.272 6.864
     </array>
    </band>
    <band kpoint=" 0.7129278  0.2673479 -0.0891160"
@@ -7534,7 +7535,7 @@
    <band kpoint=" 0.7129278  0.3564639  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.758 -0.638 -0.631 -0.538 -0.419
-    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.763 8.830
+    -0.235 0.149 0.955 1.526 2.278 2.552 2.766 3.722 4.762 8.830
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.8020438 -1.0693917"
@@ -7617,14 +7618,14 @@
    </band>
    <band kpoint=" 0.8911598 -0.8911598 -1.0693917"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.736 -0.713 -0.581 -0.510 -0.430
+    <array size="15" dataType="xsd:double">-0.736 -0.713 -0.582 -0.510 -0.430
     0.013 0.150 0.533 1.380 2.024 2.538 2.882 3.898 4.517 4.810
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.8020438 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.718 -0.690 -0.630 -0.508 -0.451
-    -0.065 0.207 0.428 1.877 2.243 2.304 2.945 3.993 4.461 7.106
+    -0.065 0.207 0.427 1.877 2.243 2.304 2.945 3.993 4.461 7.106
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.7129278 -0.8911598"
@@ -7708,7 +7709,7 @@
    <band kpoint=" 0.9802758 -0.8020438 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.718 -0.690 -0.630 -0.508 -0.451
-    -0.065 0.207 0.428 1.877 2.243 2.304 2.945 3.993 4.461 7.106
+    -0.065 0.207 0.427 1.877 2.243 2.304 2.945 3.993 4.461 7.106
     </array>
    </band>
    <band kpoint=" 0.9802758 -0.7129278 -0.8020438"
@@ -7726,7 +7727,7 @@
    <band kpoint=" 0.9802758 -0.5346959 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.770 -0.682 -0.531 -0.510 -0.504
-    -0.261 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
+    -0.262 0.140 1.026 1.055 2.417 2.658 3.420 3.772 4.802 7.437
     </array>
    </band>
    <band kpoint=" 0.9802758 -0.4455799 -0.5346959"
@@ -7762,12 +7763,12 @@
    <band kpoint=" 0.9802758  0.0000000 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
-    0.136 0.351 0.466 1.078 1.259 1.731 3.458 3.796 4.151 4.305
+    0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.796 4.151 4.305
     </array>
    </band>
    <band kpoint=" 0.9802758  0.0891160  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.474 -0.465 -0.433
+    <array size="15" dataType="xsd:double">-0.765 -0.764 -0.475 -0.465 -0.433
     0.136 0.351 0.466 1.078 1.258 1.731 3.458 3.797 4.151 4.304
     </array>
    </band>
@@ -7785,7 +7786,7 @@
    </band>
    <band kpoint=" 1.0693917 -0.8911598 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.736 -0.713 -0.581 -0.510 -0.430
+    <array size="15" dataType="xsd:double">-0.736 -0.713 -0.582 -0.510 -0.430
     0.013 0.150 0.533 1.380 2.024 2.538 2.882 3.898 4.517 4.810
     </array>
    </band>
@@ -7810,7 +7811,7 @@
    <band kpoint=" 1.0693917 -0.5346959 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.785 -0.678 -0.525 -0.514 -0.452
-    -0.312 0.097 1.159 1.433 2.021 2.439 3.353 3.738 4.949 7.057
+    -0.312 0.097 1.159 1.433 2.020 2.439 3.353 3.738 4.949 7.057
     </array>
    </band>
    <band kpoint=" 1.0693917 -0.4455799 -0.4455799"
@@ -7828,7 +7829,7 @@
    <band kpoint=" 1.0693917 -0.2673479 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.736 -0.713 -0.581 -0.510 -0.431
-    0.013 0.150 0.533 1.380 2.024 2.538 2.881 3.899 4.517 4.810
+    0.013 0.150 0.533 1.380 2.024 2.538 2.881 3.899 4.516 4.810
     </array>
    </band>
    <band kpoint=" 1.0693917 -0.1782320 -0.1782320"
@@ -7839,7 +7840,7 @@
    </band>
    <band kpoint=" 1.0693917 -0.0891160 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.771 -0.771 -0.469 -0.437 -0.437
+    <array size="15" dataType="xsd:double">-0.771 -0.771 -0.469 -0.438 -0.437
     0.315 0.315 0.331 1.224 1.225 1.337 3.401 3.907 4.287 4.288
     </array>
    </band>
@@ -7884,7 +7885,7 @@
    <band kpoint="-0.5346959  0.4455799 -0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint="-0.5346959  0.5346959  0.0000000"
@@ -7956,7 +7957,7 @@
    <band kpoint="-0.4455799  0.2673479 -0.1782320"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint="-0.4455799  0.3564639 -0.0891160"
@@ -7980,13 +7981,13 @@
    <band kpoint="-0.4455799  0.6238118  0.1782320"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint="-0.4455799  0.7129278  0.2673479"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint="-0.4455799  0.8020438  0.3564639"
@@ -7998,7 +7999,7 @@
    <band kpoint="-0.4455799  0.8911598  0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.535 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.671 3.098 3.176 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.901 4.664 6.794
     </array>
    </band>
    <band kpoint="-0.4455799  0.9802758  0.5346959"
@@ -8045,7 +8046,7 @@
    </band>
    <band kpoint="-0.3564639  0.3564639  0.0000000"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.807 -0.507 -0.470 -0.320 -0.308
+    <array size="15" dataType="xsd:double">-0.807 -0.506 -0.470 -0.320 -0.308
     -0.289 0.714 1.615 1.882 2.063 2.590 3.366 3.503 3.641 4.291
     </array>
    </band>
@@ -8130,7 +8131,7 @@
    <band kpoint="-0.2673479  0.3564639  0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint="-0.2673479  0.4455799  0.1782320"
@@ -8141,7 +8142,7 @@
    </band>
    <band kpoint="-0.2673479  0.5346959  0.2673479"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.281
+    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.280
     -0.178 0.598 0.723 1.454 2.690 2.881 3.307 3.760 4.200 5.926
     </array>
    </band>
@@ -8154,7 +8155,7 @@
    <band kpoint="-0.2673479  0.7129278  0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint="-0.2673479  0.8020438  0.5346959"
@@ -8172,7 +8173,7 @@
    <band kpoint="-0.1782320 -0.2673479 -0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint="-0.1782320 -0.1782320 -0.3564639"
@@ -8232,7 +8233,7 @@
    <band kpoint="-0.1782320  0.6238118  0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint="-0.1782320  0.7129278  0.5346959"
@@ -8244,7 +8245,7 @@
    <band kpoint="-0.0891160 -0.4455799 -0.5346959"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint="-0.0891160 -0.3564639 -0.4455799"
@@ -8298,7 +8299,7 @@
    <band kpoint="-0.0891160  0.3564639  0.2673479"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint="-0.0891160  0.4455799  0.3564639"
@@ -8333,7 +8334,7 @@
    </band>
    <band kpoint=" 0.0000000 -0.3564639 -0.3564639"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.807 -0.507 -0.470 -0.320 -0.308
+    <array size="15" dataType="xsd:double">-0.807 -0.506 -0.470 -0.320 -0.308
     -0.289 0.714 1.615 1.882 2.063 2.590 3.366 3.503 3.641 4.291
     </array>
    </band>
@@ -8381,7 +8382,7 @@
    </band>
    <band kpoint=" 0.0000000  0.3564639  0.3564639"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.807 -0.507 -0.470 -0.320 -0.308
+    <array size="15" dataType="xsd:double">-0.807 -0.506 -0.470 -0.320 -0.308
     -0.289 0.714 1.615 1.882 2.063 2.590 3.366 3.503 3.641 4.291
     </array>
    </band>
@@ -8418,7 +8419,7 @@
    <band kpoint=" 0.0891160 -0.3564639 -0.2673479"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.2673479 -0.1782320"
@@ -8472,7 +8473,7 @@
    <band kpoint=" 0.0891160  0.4455799  0.5346959"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.7129278 -0.5346959"
@@ -8484,7 +8485,7 @@
    <band kpoint=" 0.1782320 -0.6238118 -0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.5346959 -0.3564639"
@@ -8544,7 +8545,7 @@
    <band kpoint=" 0.1782320  0.2673479  0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint=" 0.1782320  0.3564639  0.5346959"
@@ -8562,7 +8563,7 @@
    <band kpoint=" 0.2673479 -0.7129278 -0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.6238118 -0.3564639"
@@ -8573,7 +8574,7 @@
    </band>
    <band kpoint=" 0.2673479 -0.5346959 -0.2673479"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.281
+    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.280
     -0.178 0.598 0.723 1.454 2.690 2.881 3.307 3.760 4.200 5.926
     </array>
    </band>
@@ -8586,7 +8587,7 @@
    <band kpoint=" 0.2673479 -0.3564639 -0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.2673479  0.0000000"
@@ -8669,7 +8670,7 @@
    </band>
    <band kpoint=" 0.3564639 -0.3564639  0.0000000"
     weight="0.455166135640E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.807 -0.507 -0.470 -0.320 -0.308
+    <array size="15" dataType="xsd:double">-0.807 -0.506 -0.470 -0.320 -0.308
     -0.289 0.714 1.615 1.882 2.063 2.590 3.366 3.503 3.641 4.291
     </array>
    </band>
@@ -8718,7 +8719,7 @@
    <band kpoint=" 0.4455799 -0.8911598 -0.4455799"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.535 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.671 3.098 3.176 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.901 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.8020438 -0.3564639"
@@ -8730,13 +8731,13 @@
    <band kpoint=" 0.4455799 -0.7129278 -0.2673479"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.6238118 -0.1782320"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.5346959 -0.0891160"
@@ -8760,7 +8761,7 @@
    <band kpoint=" 0.4455799 -0.2673479  0.1782320"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.1782320  0.2673479"
@@ -8832,7 +8833,7 @@
    <band kpoint=" 0.5346959 -0.4455799  0.0891160"
     weight="0.455166135640E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.3564639  0.1782320"
@@ -8904,7 +8905,7 @@
    <band kpoint="-0.4455799  0.5346959 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint="-0.4455799  0.6238118  0.0000000"
@@ -8951,7 +8952,7 @@
    </band>
    <band kpoint="-0.3564639  0.0000000 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.261
     -0.258 0.427 1.293 1.857 2.029 2.519 3.260 3.759 4.651 5.225
     </array>
    </band>
@@ -8963,7 +8964,7 @@
    </band>
    <band kpoint="-0.3564639  0.1782320 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.776 -0.515 -0.499 -0.312 -0.290
+    <array size="15" dataType="xsd:double">-0.775 -0.515 -0.499 -0.312 -0.290
     -0.263 0.739 1.242 1.341 2.714 2.861 3.473 3.507 3.871 4.502
     </array>
    </band>
@@ -8987,7 +8988,7 @@
    </band>
    <band kpoint="-0.3564639  0.5346959  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.462 -0.326 -0.262
     -0.258 0.427 1.293 1.857 2.029 2.519 3.261 3.759 4.652 5.225
     </array>
    </band>
@@ -9048,7 +9049,7 @@
    <band kpoint="-0.2673479  0.1782320 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.873 -0.494 -0.487 -0.323 -0.313
-    -0.298 1.132 1.412 1.546 2.841 2.846 3.054 3.469 3.538 4.002
+    -0.298 1.132 1.413 1.546 2.841 2.846 3.054 3.469 3.538 4.002
     </array>
    </band>
    <band kpoint="-0.2673479  0.2673479 -0.1782320"
@@ -9071,7 +9072,7 @@
    </band>
    <band kpoint="-0.2673479  0.5346959  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.482 -0.345 -0.284
+    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.481 -0.345 -0.284
     -0.242 0.591 1.092 1.990 2.168 2.670 3.126 3.785 4.334 5.148
     </array>
    </band>
@@ -9132,7 +9133,7 @@
    <band kpoint="-0.1782320  0.1782320 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.954 -0.471 -0.470 -0.374 -0.307
-    -0.306 1.642 1.643 1.785 2.675 2.821 2.821 3.556 3.557 3.799
+    -0.306 1.642 1.643 1.785 2.676 2.821 2.821 3.556 3.557 3.799
     </array>
    </band>
    <band kpoint="-0.1782320  0.2673479 -0.0891160"
@@ -9186,7 +9187,7 @@
    <band kpoint="-0.0891160 -0.2673479 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.723 -0.502 -0.481 -0.346 -0.284
-    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.147
+    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.148
     </array>
    </band>
    <band kpoint="-0.0891160 -0.1782320 -0.4455799"
@@ -9239,7 +9240,7 @@
    </band>
    <band kpoint="-0.0891160  0.5346959  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.482 -0.345 -0.284
+    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.481 -0.345 -0.284
     -0.242 0.591 1.092 1.990 2.168 2.670 3.126 3.785 4.334 5.148
     </array>
    </band>
@@ -9263,7 +9264,7 @@
    </band>
    <band kpoint=" 0.0000000 -0.3564639 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.462 -0.326 -0.262
     -0.258 0.427 1.293 1.857 2.029 2.519 3.261 3.759 4.652 5.225
     </array>
    </band>
@@ -9323,7 +9324,7 @@
    </band>
    <band kpoint=" 0.0000000  0.5346959  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.462 -0.326 -0.262
     -0.258 0.427 1.293 1.857 2.029 2.519 3.261 3.759 4.652 5.225
     </array>
    </band>
@@ -9354,7 +9355,7 @@
    <band kpoint=" 0.0891160 -0.2673479 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint=" 0.0891160 -0.1782320 -0.2673479"
@@ -9408,7 +9409,7 @@
    <band kpoint=" 0.0891160  0.5346959  0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.6238118 -0.6238118"
@@ -9420,7 +9421,7 @@
    <band kpoint=" 0.1782320 -0.5346959 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.304 -0.280
-    -0.143 0.239 1.076 1.099 2.474 2.744 3.504 3.848 4.874 7.540
+    -0.143 0.239 1.077 1.099 2.474 2.744 3.504 3.848 4.874 7.540
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.4455799 -0.4455799"
@@ -9468,7 +9469,7 @@
    <band kpoint=" 0.1782320  0.1782320  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.954 -0.471 -0.470 -0.374 -0.307
-    -0.306 1.642 1.643 1.785 2.675 2.821 2.821 3.556 3.557 3.799
+    -0.306 1.642 1.643 1.785 2.676 2.821 2.821 3.556 3.557 3.799
     </array>
    </band>
    <band kpoint=" 0.1782320  0.2673479  0.2673479"
@@ -9497,13 +9498,13 @@
    </band>
    <band kpoint=" 0.2673479 -0.6238118 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.299 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.768 8.169
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.5346959 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.281
+    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.280
     -0.105 0.344 0.778 1.019 2.844 3.043 3.465 3.813 4.604 7.809
     </array>
    </band>
@@ -9552,7 +9553,7 @@
    <band kpoint=" 0.2673479  0.1782320  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.873 -0.494 -0.487 -0.323 -0.313
-    -0.298 1.132 1.412 1.546 2.841 2.846 3.054 3.469 3.538 4.002
+    -0.298 1.132 1.413 1.546 2.841 2.846 3.054 3.469 3.538 4.002
     </array>
    </band>
    <band kpoint=" 0.2673479  0.2673479  0.3564639"
@@ -9606,7 +9607,7 @@
    <band kpoint=" 0.3564639 -0.2673479 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint=" 0.3564639 -0.1782320  0.0000000"
@@ -9635,7 +9636,7 @@
    </band>
    <band kpoint=" 0.3564639  0.1782320  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.776 -0.515 -0.499 -0.312 -0.290
+    <array size="15" dataType="xsd:double">-0.775 -0.515 -0.499 -0.312 -0.290
     -0.263 0.739 1.242 1.341 2.714 2.861 3.473 3.507 3.871 4.502
     </array>
    </band>
@@ -9653,7 +9654,7 @@
    </band>
    <band kpoint=" 0.4455799 -0.8020438 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.547 -0.515 -0.294 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.546 -0.515 -0.294 -0.281
     0.027 0.279 0.485 0.938 3.091 3.258 3.420 3.982 4.532 8.000
     </array>
    </band>
@@ -9671,7 +9672,7 @@
    </band>
    <band kpoint=" 0.4455799 -0.5346959 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.281
+    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.280
     -0.105 0.344 0.778 1.019 2.844 3.043 3.465 3.813 4.604 7.809
     </array>
    </band>
@@ -9726,7 +9727,7 @@
    <band kpoint=" 0.5346959 -0.9802758 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.303 -0.280
-    -0.142 0.239 1.076 1.099 2.475 2.744 3.504 3.848 4.873 7.540
+    -0.142 0.239 1.077 1.099 2.475 2.744 3.504 3.848 4.873 7.540
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.8911598 -0.5346959"
@@ -9737,7 +9738,7 @@
    </band>
    <band kpoint=" 0.5346959 -0.8020438 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.547 -0.515 -0.294 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.546 -0.515 -0.294 -0.281
     0.027 0.279 0.485 0.938 3.091 3.258 3.420 3.982 4.532 8.000
     </array>
    </band>
@@ -9749,14 +9750,14 @@
    </band>
    <band kpoint=" 0.5346959 -0.6238118 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.299 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.768 8.169
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.5346959 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.304 -0.280
-    -0.143 0.239 1.076 1.099 2.474 2.744 3.504 3.848 4.874 7.540
+    -0.143 0.239 1.077 1.099 2.474 2.744 3.504 3.848 4.874 7.540
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.4455799 -0.0891160"
@@ -9767,14 +9768,14 @@
    </band>
    <band kpoint=" 0.5346959 -0.3564639  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.462 -0.326 -0.262
     -0.258 0.427 1.293 1.857 2.029 2.519 3.261 3.759 4.652 5.225
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.2673479  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.723 -0.502 -0.481 -0.346 -0.284
-    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.147
+    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.148
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.1782320  0.1782320"
@@ -9791,7 +9792,7 @@
    </band>
    <band kpoint=" 0.5346959  0.0000000  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.261
     -0.258 0.427 1.293 1.857 2.029 2.519 3.260 3.759 4.651 5.225
     </array>
    </band>
@@ -9810,7 +9811,7 @@
    <band kpoint=" 0.6238118 -0.9802758 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.303 -0.280
-    -0.142 0.239 1.076 1.099 2.475 2.744 3.504 3.848 4.873 7.540
+    -0.142 0.239 1.077 1.099 2.475 2.744 3.504 3.848 4.873 7.540
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.8911598 -0.4455799"
@@ -9947,7 +9948,7 @@
    </band>
    <band kpoint="-0.3564639  0.9802758  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
+    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.269
     0.033 0.288 0.488 1.948 2.316 2.380 3.017 4.061 4.528 7.159
     </array>
    </band>
@@ -9996,13 +9997,13 @@
    <band kpoint="-0.2673479  0.4455799 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint="-0.2673479  0.5346959 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.723 -0.502 -0.481 -0.346 -0.284
-    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.147
+    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.148
     </array>
    </band>
    <band kpoint="-0.2673479  0.6238118  0.0000000"
@@ -10013,14 +10014,14 @@
    </band>
    <band kpoint="-0.2673479  0.7129278  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.260
+    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.259
     -0.112 0.357 0.785 1.698 2.388 2.484 2.929 3.842 4.581 7.392
     </array>
    </band>
    <band kpoint="-0.2673479  0.8020438  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
-    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.529 7.159
+    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.530 7.159
     </array>
    </band>
    <band kpoint="-0.2673479  0.8911598  0.2673479"
@@ -10031,7 +10032,7 @@
    </band>
    <band kpoint="-0.2673479  0.9802758  0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
+    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.269
     0.033 0.288 0.488 1.948 2.316 2.380 3.017 4.061 4.528 7.159
     </array>
    </band>
@@ -10068,7 +10069,7 @@
    <band kpoint="-0.1782320  0.2673479 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.873 -0.494 -0.487 -0.323 -0.313
-    -0.298 1.132 1.412 1.546 2.841 2.846 3.054 3.469 3.538 4.002
+    -0.298 1.132 1.413 1.546 2.841 2.846 3.054 3.469 3.538 4.002
     </array>
    </band>
    <band kpoint="-0.1782320  0.3564639 -0.1782320"
@@ -10104,7 +10105,7 @@
    <band kpoint="-0.1782320  0.8020438  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
-    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.529 7.159
+    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.530 7.159
     </array>
    </band>
    <band kpoint="-0.1782320  0.8911598  0.3564639"
@@ -10181,7 +10182,7 @@
    </band>
    <band kpoint="-0.0891160  0.7129278  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.260
+    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.259
     -0.112 0.357 0.785 1.698 2.388 2.484 2.929 3.842 4.581 7.392
     </array>
    </band>
@@ -10283,7 +10284,7 @@
    </band>
    <band kpoint=" 0.0891160 -0.2673479 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.482 -0.345 -0.284
+    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.481 -0.345 -0.284
     -0.242 0.591 1.092 1.990 2.168 2.670 3.126 3.785 4.334 5.148
     </array>
    </band>
@@ -10338,7 +10339,7 @@
    <band kpoint=" 0.0891160  0.5346959  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.723 -0.502 -0.481 -0.346 -0.284
-    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.147
+    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.148
     </array>
    </band>
    <band kpoint=" 0.0891160  0.6238118  0.3564639"
@@ -10356,7 +10357,7 @@
    <band kpoint=" 0.1782320 -0.4455799 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.3564639 -0.5346959"
@@ -10416,7 +10417,7 @@
    <band kpoint=" 0.1782320  0.4455799  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint=" 0.1782320  0.5346959  0.3564639"
@@ -10433,13 +10434,13 @@
    </band>
    <band kpoint=" 0.2673479 -0.5346959 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.299 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.768 8.169
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.4455799 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.281
+    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.280
     -0.105 0.344 0.778 1.019 2.844 3.043 3.465 3.813 4.604 7.809
     </array>
    </band>
@@ -10488,7 +10489,7 @@
    <band kpoint=" 0.2673479  0.2673479  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.873 -0.494 -0.487 -0.323 -0.313
-    -0.298 1.132 1.412 1.546 2.841 2.846 3.054 3.469 3.538 4.002
+    -0.298 1.132 1.413 1.546 2.841 2.846 3.054 3.469 3.538 4.002
     </array>
    </band>
    <band kpoint=" 0.2673479  0.3564639  0.2673479"
@@ -10517,7 +10518,7 @@
    </band>
    <band kpoint=" 0.3564639 -0.5346959 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.551 -0.511 -0.290 -0.279
+    <array size="15" dataType="xsd:double">-0.601 -0.551 -0.511 -0.289 -0.279
     0.010 0.275 0.662 0.699 3.220 3.261 3.557 3.924 4.595 9.283
     </array>
    </band>
@@ -10583,7 +10584,7 @@
    </band>
    <band kpoint=" 0.4455799 -0.8020438 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.292 -0.284
+    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.291 -0.284
     -0.096 0.502 0.700 0.780 3.245 3.278 3.488 3.640 4.477 8.630
     </array>
    </band>
@@ -10685,13 +10686,13 @@
    </band>
    <band kpoint=" 0.5346959 -0.5346959 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.551 -0.511 -0.290 -0.279
+    <array size="15" dataType="xsd:double">-0.601 -0.551 -0.511 -0.289 -0.279
     0.010 0.275 0.662 0.699 3.220 3.261 3.557 3.924 4.595 9.283
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.4455799 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.281
+    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.280
     -0.105 0.344 0.778 1.019 2.844 3.043 3.465 3.813 4.604 7.809
     </array>
    </band>
@@ -10703,7 +10704,7 @@
    </band>
    <band kpoint=" 0.5346959 -0.2673479 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.482 -0.345 -0.284
+    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.481 -0.345 -0.284
     -0.242 0.591 1.092 1.990 2.168 2.670 3.126 3.785 4.334 5.148
     </array>
    </band>
@@ -10745,7 +10746,7 @@
    </band>
    <band kpoint=" 0.6238118 -0.8911598 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.631 -0.545 -0.477 -0.298 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.767 8.168
     </array>
    </band>
@@ -10769,14 +10770,14 @@
    </band>
    <band kpoint=" 0.6238118 -0.5346959 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.299 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.768 8.169
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.4455799 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.3564639 -0.0891160"
@@ -10835,7 +10836,7 @@
    </band>
    <band kpoint=" 0.7129278 -0.8020438 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.292 -0.284
+    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.291 -0.284
     -0.096 0.502 0.700 0.780 3.245 3.278 3.488 3.640 4.477 8.630
     </array>
    </band>
@@ -10968,7 +10969,7 @@
    <band kpoint="-0.2673479  1.0693917  0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.590 -0.570 -0.429 -0.342 -0.248
-    0.093 0.232 0.587 1.449 2.104 2.608 2.942 3.968 4.583 4.934
+    0.093 0.233 0.587 1.449 2.104 2.608 2.942 3.968 4.583 4.934
     </array>
    </band>
    <band kpoint="-0.1782320 -0.0891160 -0.8020438"
@@ -10985,7 +10986,7 @@
    </band>
    <band kpoint="-0.1782320  0.0891160 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.372 -0.290
+    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.371 -0.290
     -0.205 0.637 0.872 1.811 2.243 2.509 3.038 3.853 4.237 6.452
     </array>
    </band>
@@ -11003,7 +11004,7 @@
    </band>
    <band kpoint="-0.1782320  0.3564639 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.776 -0.515 -0.499 -0.312 -0.290
+    <array size="15" dataType="xsd:double">-0.775 -0.515 -0.499 -0.312 -0.290
     -0.263 0.739 1.242 1.341 2.714 2.861 3.473 3.507 3.871 4.502
     </array>
    </band>
@@ -11040,7 +11041,7 @@
    <band kpoint="-0.1782320  0.8911598  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.577 -0.435 -0.305 -0.270
-    0.130 0.341 0.376 1.753 1.850 2.514 2.951 4.231 4.415 4.680
+    0.130 0.341 0.376 1.753 1.850 2.514 2.952 4.231 4.415 4.680
     </array>
    </band>
    <band kpoint="-0.1782320  0.9802758  0.2673479"
@@ -11070,7 +11071,7 @@
    <band kpoint="-0.0891160  0.0891160 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.757 -0.476 -0.447 -0.394 -0.331
-    -0.248 0.955 1.035 1.853 2.286 2.592 3.151 3.862 4.001 5.411
+    -0.248 0.955 1.035 1.853 2.287 2.592 3.151 3.862 4.001 5.411
     </array>
    </band>
    <band kpoint="-0.0891160  0.1782320 -0.4455799"
@@ -11213,7 +11214,7 @@
    </band>
    <band kpoint=" 0.0891160 -0.2673479 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.260
+    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.259
     -0.112 0.357 0.785 1.698 2.388 2.484 2.929 3.842 4.581 7.392
     </array>
    </band>
@@ -11328,7 +11329,7 @@
    <band kpoint=" 0.1782320  0.1782320 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.954 -0.471 -0.470 -0.374 -0.307
-    -0.306 1.642 1.643 1.785 2.675 2.821 2.821 3.556 3.557 3.799
+    -0.306 1.642 1.643 1.785 2.676 2.821 2.821 3.556 3.557 3.799
     </array>
    </band>
    <band kpoint=" 0.1782320  0.2673479 -0.0891160"
@@ -11370,7 +11371,7 @@
    <band kpoint=" 0.2673479 -0.4455799 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.3564639 -0.6238118"
@@ -11381,7 +11382,7 @@
    </band>
    <band kpoint=" 0.2673479 -0.2673479 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.281
+    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.280
     -0.178 0.598 0.723 1.454 2.690 2.881 3.307 3.760 4.200 5.926
     </array>
    </band>
@@ -11394,7 +11395,7 @@
    <band kpoint=" 0.2673479 -0.0891160 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint=" 0.2673479  0.0000000 -0.2673479"
@@ -11478,7 +11479,7 @@
    <band kpoint=" 0.3564639 -0.0891160 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.845 -0.496 -0.476 -0.328 -0.322
-    -0.287 0.911 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
+    -0.287 0.912 1.492 1.807 2.461 2.701 3.199 3.430 3.631 4.118
     </array>
    </band>
    <band kpoint=" 0.3564639  0.0000000 -0.1782320"
@@ -11507,7 +11508,7 @@
    </band>
    <band kpoint=" 0.3564639  0.3564639  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.776 -0.515 -0.499 -0.312 -0.290
+    <array size="15" dataType="xsd:double">-0.775 -0.515 -0.499 -0.312 -0.290
     -0.263 0.739 1.242 1.341 2.714 2.861 3.473 3.507 3.871 4.502
     </array>
    </band>
@@ -11519,7 +11520,7 @@
    </band>
    <band kpoint=" 0.4455799 -0.7129278 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.292 -0.284
+    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.291 -0.284
     -0.096 0.502 0.700 0.780 3.245 3.278 3.488 3.640 4.477 8.630
     </array>
    </band>
@@ -11633,7 +11634,7 @@
    </band>
    <band kpoint=" 0.5346959 -0.2673479 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.281
+    <array size="15" dataType="xsd:double">-0.678 -0.530 -0.503 -0.325 -0.280
     -0.178 0.598 0.723 1.454 2.690 2.881 3.307 3.760 4.200 5.926
     </array>
    </band>
@@ -11658,7 +11659,7 @@
    <band kpoint=" 0.5346959  0.0891160  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.757 -0.476 -0.447 -0.394 -0.331
-    -0.248 0.955 1.035 1.853 2.286 2.592 3.151 3.862 4.001 5.411
+    -0.248 0.955 1.035 1.853 2.287 2.592 3.151 3.862 4.001 5.411
     </array>
    </band>
    <band kpoint=" 0.5346959  0.1782320  0.1782320"
@@ -11676,7 +11677,7 @@
    <band kpoint=" 0.6238118 -0.8911598 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.624 -0.538 -0.503 -0.314 -0.279
-    -0.077 0.361 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
+    -0.077 0.362 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.8020438 -0.7129278"
@@ -11741,7 +11742,7 @@
    </band>
    <band kpoint=" 0.6238118  0.0891160  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.372 -0.290
+    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.371 -0.290
     -0.205 0.637 0.872 1.811 2.243 2.509 3.038 3.853 4.237 6.452
     </array>
    </band>
@@ -11790,7 +11791,7 @@
    <band kpoint=" 0.7129278 -0.4455799 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.7129278 -0.3564639 -0.1782320"
@@ -11801,7 +11802,7 @@
    </band>
    <band kpoint=" 0.7129278 -0.2673479 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.260
+    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.259
     -0.112 0.357 0.785 1.698 2.388 2.484 2.929 3.842 4.581 7.392
     </array>
    </band>
@@ -11844,7 +11845,7 @@
    <band kpoint=" 0.8020438 -0.8911598 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.624 -0.538 -0.503 -0.314 -0.279
-    -0.077 0.361 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
+    -0.077 0.362 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.8020438 -0.5346959"
@@ -11855,7 +11856,7 @@
    </band>
    <band kpoint=" 0.8020438 -0.7129278 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.292 -0.284
+    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.291 -0.284
     -0.096 0.502 0.700 0.780 3.245 3.278 3.488 3.640 4.477 8.630
     </array>
    </band>
@@ -11975,7 +11976,7 @@
    </band>
    <band kpoint="-0.1782320  0.9802758  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.600 -0.364 -0.295 -0.254
+    <array size="15" dataType="xsd:double">-0.601 -0.599 -0.364 -0.295 -0.254
     0.227 0.283 0.458 1.366 1.662 1.996 3.389 3.831 4.231 4.442
     </array>
    </band>
@@ -11988,7 +11989,7 @@
    <band kpoint="-0.0891160 -0.0891160 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.607 -0.586 -0.363 -0.314 -0.261
-    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.162 4.331
+    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.163 4.331
     </array>
    </band>
    <band kpoint="-0.0891160  0.0000000 -0.8020438"
@@ -12005,7 +12006,7 @@
    </band>
    <band kpoint="-0.0891160  0.1782320 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.372 -0.290
+    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.371 -0.290
     -0.205 0.637 0.872 1.811 2.243 2.509 3.038 3.853 4.237 6.452
     </array>
    </band>
@@ -12059,7 +12060,7 @@
    </band>
    <band kpoint="-0.0891160  0.9802758  0.1782320"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.600 -0.364 -0.295 -0.254
+    <array size="15" dataType="xsd:double">-0.601 -0.599 -0.364 -0.295 -0.254
     0.227 0.283 0.458 1.366 1.662 1.996 3.389 3.831 4.231 4.442
     </array>
    </band>
@@ -12198,7 +12199,7 @@
    <band kpoint=" 0.0891160  0.5346959 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.757 -0.476 -0.447 -0.394 -0.331
-    -0.248 0.955 1.035 1.853 2.286 2.592 3.151 3.862 4.001 5.411
+    -0.248 0.955 1.035 1.853 2.287 2.592 3.151 3.862 4.001 5.411
     </array>
    </band>
    <band kpoint=" 0.0891160  0.6238118  0.0000000"
@@ -12228,7 +12229,7 @@
    <band kpoint=" 0.1782320 -0.2673479 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
-    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.529 7.159
+    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.530 7.159
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.1782320 -0.7129278"
@@ -12264,7 +12265,7 @@
    <band kpoint=" 0.1782320  0.2673479 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.873 -0.494 -0.487 -0.323 -0.313
-    -0.298 1.132 1.412 1.546 2.841 2.846 3.054 3.469 3.538 4.002
+    -0.298 1.132 1.413 1.546 2.841 2.846 3.054 3.469 3.538 4.002
     </array>
    </band>
    <band kpoint=" 0.1782320  0.3564639 -0.1782320"
@@ -12323,7 +12324,7 @@
    </band>
    <band kpoint=" 0.2673479 -0.0891160 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.482 -0.345 -0.284
+    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.481 -0.345 -0.284
     -0.242 0.591 1.092 1.990 2.168 2.670 3.126 3.785 4.334 5.148
     </array>
    </band>
@@ -12348,7 +12349,7 @@
    <band kpoint=" 0.2673479  0.2673479 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.873 -0.494 -0.487 -0.323 -0.313
-    -0.298 1.132 1.412 1.546 2.841 2.846 3.054 3.469 3.538 4.002
+    -0.298 1.132 1.413 1.546 2.841 2.846 3.054 3.469 3.538 4.002
     </array>
    </band>
    <band kpoint=" 0.2673479  0.3564639 -0.0891160"
@@ -12413,7 +12414,7 @@
    </band>
    <band kpoint=" 0.3564639  0.0000000 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.807 -0.507 -0.470 -0.320 -0.308
+    <array size="15" dataType="xsd:double">-0.807 -0.506 -0.470 -0.320 -0.308
     -0.289 0.714 1.615 1.882 2.063 2.590 3.366 3.503 3.641 4.291
     </array>
    </band>
@@ -12461,7 +12462,7 @@
    </band>
    <band kpoint=" 0.4455799 -0.5346959 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.547 -0.515 -0.294 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.546 -0.515 -0.294 -0.281
     0.027 0.279 0.485 0.938 3.091 3.258 3.420 3.982 4.532 8.000
     </array>
    </band>
@@ -12479,7 +12480,7 @@
    </band>
    <band kpoint=" 0.4455799 -0.2673479 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.281
+    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.280
     -0.105 0.344 0.778 1.019 2.844 3.043 3.465 3.813 4.604 7.809
     </array>
    </band>
@@ -12557,13 +12558,13 @@
    </band>
    <band kpoint=" 0.5346959 -0.3564639 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.551 -0.511 -0.290 -0.279
+    <array size="15" dataType="xsd:double">-0.601 -0.551 -0.511 -0.289 -0.279
     0.010 0.275 0.662 0.699 3.220 3.261 3.557 3.924 4.595 9.283
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.2673479 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.281
+    <array size="15" dataType="xsd:double">-0.641 -0.541 -0.497 -0.301 -0.280
     -0.105 0.344 0.778 1.019 2.844 3.043 3.465 3.813 4.604 7.809
     </array>
    </band>
@@ -12575,7 +12576,7 @@
    </band>
    <band kpoint=" 0.5346959 -0.0891160 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.482 -0.345 -0.284
+    <array size="15" dataType="xsd:double">-0.723 -0.501 -0.481 -0.345 -0.284
     -0.242 0.591 1.092 1.990 2.168 2.670 3.126 3.785 4.334 5.148
     </array>
    </band>
@@ -12612,7 +12613,7 @@
    <band kpoint=" 0.6238118 -0.8020438 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.624 -0.538 -0.503 -0.314 -0.279
-    -0.077 0.361 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
+    -0.077 0.362 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.7129278 -0.8020438"
@@ -12677,7 +12678,7 @@
    </band>
    <band kpoint=" 0.6238118  0.1782320  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.372 -0.290
+    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.371 -0.290
     -0.205 0.637 0.872 1.811 2.243 2.509 3.038 3.853 4.237 6.452
     </array>
    </band>
@@ -12689,7 +12690,7 @@
    </band>
    <band kpoint=" 0.7129278 -0.8911598 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.544 -0.499 -0.325 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.544 -0.499 -0.325 -0.280
     -0.029 0.377 0.453 1.885 2.401 2.690 3.141 4.042 4.382 7.015
     </array>
    </band>
@@ -12773,7 +12774,7 @@
    </band>
    <band kpoint=" 0.8020438 -0.8911598 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.574 -0.532 -0.528 -0.312 -0.285
+    <array size="15" dataType="xsd:double">-0.574 -0.532 -0.528 -0.312 -0.284
     0.092 0.224 0.401 1.865 2.454 2.699 3.127 4.126 4.505 6.840
     </array>
    </band>
@@ -12797,7 +12798,7 @@
    </band>
    <band kpoint=" 0.8020438 -0.5346959 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.547 -0.515 -0.294 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.546 -0.515 -0.294 -0.281
     0.027 0.279 0.485 0.938 3.091 3.258 3.420 3.982 4.532 8.000
     </array>
    </band>
@@ -12816,7 +12817,7 @@
    <band kpoint=" 0.8020438 -0.2673479 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
-    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.529 7.159
+    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.530 7.159
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.1782320 -0.0891160"
@@ -12857,14 +12858,14 @@
    </band>
    <band kpoint=" 0.8911598 -0.8911598 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.544 -0.499 -0.325 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.544 -0.499 -0.325 -0.280
     -0.029 0.377 0.453 1.885 2.401 2.690 3.141 4.042 4.382 7.015
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.8020438 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.624 -0.538 -0.503 -0.314 -0.279
-    -0.077 0.361 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
+    -0.077 0.362 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.7129278 -0.5346959"
@@ -12912,7 +12913,7 @@
    <band kpoint=" 0.8911598 -0.0891160  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.607 -0.586 -0.363 -0.314 -0.261
-    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.162 4.331
+    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.163 4.331
     </array>
    </band>
    <band kpoint=" 0.8911598  0.0000000  0.1782320"
@@ -12984,7 +12985,7 @@
    <band kpoint="-0.0891160  0.8911598 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.607 -0.586 -0.363 -0.314 -0.261
-    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.162 4.331
+    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.163 4.331
     </array>
    </band>
    <band kpoint="-0.0891160  0.9802758  0.0000000"
@@ -13031,7 +13032,7 @@
    </band>
    <band kpoint=" 0.0000000  0.3564639 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.261
     -0.258 0.427 1.293 1.857 2.029 2.519 3.260 3.759 4.651 5.225
     </array>
    </band>
@@ -13043,7 +13044,7 @@
    </band>
    <band kpoint=" 0.0000000  0.5346959 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.261
     -0.258 0.427 1.293 1.857 2.029 2.519 3.260 3.759 4.651 5.225
     </array>
    </band>
@@ -13079,7 +13080,7 @@
    </band>
    <band kpoint=" 0.0891160 -0.1782320 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.600 -0.364 -0.295 -0.254
+    <array size="15" dataType="xsd:double">-0.601 -0.599 -0.364 -0.295 -0.254
     0.227 0.283 0.458 1.366 1.662 1.996 3.389 3.831 4.231 4.442
     </array>
    </band>
@@ -13133,7 +13134,7 @@
    </band>
    <band kpoint=" 0.0891160  0.6238118 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.372 -0.290
+    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.371 -0.290
     -0.205 0.637 0.872 1.811 2.243 2.509 3.038 3.853 4.237 6.452
     </array>
    </band>
@@ -13152,7 +13153,7 @@
    <band kpoint=" 0.0891160  0.8911598  0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.607 -0.586 -0.363 -0.314 -0.261
-    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.162 4.331
+    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.163 4.331
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.2673479 -0.9802758"
@@ -13164,7 +13165,7 @@
    <band kpoint=" 0.1782320 -0.1782320 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.577 -0.435 -0.305 -0.270
-    0.130 0.341 0.376 1.753 1.850 2.514 2.951 4.231 4.415 4.680
+    0.130 0.341 0.376 1.753 1.850 2.514 2.952 4.231 4.415 4.680
     </array>
    </band>
    <band kpoint=" 0.1782320 -0.0891160 -0.8020438"
@@ -13199,7 +13200,7 @@
    </band>
    <band kpoint=" 0.1782320  0.3564639 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.776 -0.515 -0.499 -0.312 -0.290
+    <array size="15" dataType="xsd:double">-0.775 -0.515 -0.499 -0.312 -0.290
     -0.263 0.739 1.242 1.341 2.714 2.861 3.473 3.507 3.871 4.502
     </array>
    </band>
@@ -13217,7 +13218,7 @@
    </band>
    <band kpoint=" 0.1782320  0.6238118 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.372 -0.290
+    <array size="15" dataType="xsd:double">-0.679 -0.510 -0.455 -0.371 -0.290
     -0.205 0.637 0.872 1.811 2.243 2.509 3.038 3.853 4.237 6.452
     </array>
    </band>
@@ -13235,7 +13236,7 @@
    </band>
    <band kpoint=" 0.2673479 -0.3564639 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
+    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.269
     0.033 0.288 0.488 1.948 2.316 2.380 3.017 4.061 4.528 7.159
     </array>
    </band>
@@ -13248,12 +13249,12 @@
    <band kpoint=" 0.2673479 -0.1782320 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
-    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.529 7.159
+    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.530 7.159
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.0891160 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.260
+    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.259
     -0.112 0.357 0.785 1.698 2.388 2.484 2.929 3.842 4.581 7.392
     </array>
    </band>
@@ -13266,13 +13267,13 @@
    <band kpoint=" 0.2673479  0.0891160 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.723 -0.502 -0.481 -0.346 -0.284
-    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.147
+    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.148
     </array>
    </band>
    <band kpoint=" 0.2673479  0.1782320 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint=" 0.2673479  0.2673479 -0.3564639"
@@ -13343,7 +13344,7 @@
    </band>
    <band kpoint=" 0.3564639  0.0000000 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.462 -0.326 -0.262
     -0.258 0.427 1.293 1.857 2.029 2.519 3.261 3.759 4.652 5.225
     </array>
    </band>
@@ -13367,7 +13368,7 @@
    </band>
    <band kpoint=" 0.3564639  0.3564639 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.776 -0.515 -0.499 -0.312 -0.290
+    <array size="15" dataType="xsd:double">-0.775 -0.515 -0.499 -0.312 -0.290
     -0.263 0.739 1.242 1.341 2.714 2.861 3.473 3.507 3.871 4.502
     </array>
    </band>
@@ -13379,7 +13380,7 @@
    </band>
    <band kpoint=" 0.3564639  0.5346959  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.261
     -0.258 0.427 1.293 1.857 2.029 2.519 3.260 3.759 4.651 5.225
     </array>
    </band>
@@ -13398,7 +13399,7 @@
    <band kpoint=" 0.4455799 -0.4455799 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.535 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.671 3.098 3.176 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.901 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.3564639 -0.8020438"
@@ -13410,13 +13411,13 @@
    <band kpoint=" 0.4455799 -0.2673479 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.1782320 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint=" 0.4455799 -0.0891160 -0.5346959"
@@ -13440,7 +13441,7 @@
    <band kpoint=" 0.4455799  0.1782320 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.762 -0.510 -0.496 -0.330 -0.285
-    -0.256 0.751 1.061 1.609 2.582 2.833 3.294 3.684 3.931 4.546
+    -0.256 0.751 1.061 1.609 2.582 2.834 3.294 3.684 3.931 4.546
     </array>
    </band>
    <band kpoint=" 0.4455799  0.2673479 -0.1782320"
@@ -13470,7 +13471,7 @@
    <band kpoint=" 0.5346959 -0.6238118 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.303 -0.280
-    -0.142 0.239 1.076 1.099 2.475 2.744 3.504 3.848 4.873 7.540
+    -0.142 0.239 1.077 1.099 2.475 2.744 3.504 3.848 4.873 7.540
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.5346959 -0.8911598"
@@ -13481,7 +13482,7 @@
    </band>
    <band kpoint=" 0.5346959 -0.4455799 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.547 -0.515 -0.294 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.546 -0.515 -0.294 -0.281
     0.027 0.279 0.485 0.938 3.091 3.258 3.420 3.982 4.532 8.000
     </array>
    </band>
@@ -13493,14 +13494,14 @@
    </band>
    <band kpoint=" 0.5346959 -0.2673479 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.299 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.768 8.169
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.1782320 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.304 -0.280
-    -0.143 0.239 1.076 1.099 2.474 2.744 3.504 3.848 4.874 7.540
+    -0.143 0.239 1.077 1.099 2.474 2.744 3.504 3.848 4.874 7.540
     </array>
    </band>
    <band kpoint=" 0.5346959 -0.0891160 -0.4455799"
@@ -13511,14 +13512,14 @@
    </band>
    <band kpoint=" 0.5346959  0.0000000 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.711 -0.513 -0.462 -0.326 -0.262
     -0.258 0.427 1.293 1.857 2.029 2.519 3.261 3.759 4.652 5.225
     </array>
    </band>
    <band kpoint=" 0.5346959  0.0891160 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.723 -0.502 -0.481 -0.346 -0.284
-    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.147
+    -0.242 0.591 1.092 1.989 2.169 2.670 3.126 3.786 4.334 5.148
     </array>
    </band>
    <band kpoint=" 0.5346959  0.1782320 -0.1782320"
@@ -13535,7 +13536,7 @@
    </band>
    <band kpoint=" 0.5346959  0.3564639  0.0000000"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.262
+    <array size="15" dataType="xsd:double">-0.712 -0.513 -0.463 -0.326 -0.261
     -0.258 0.427 1.293 1.857 2.029 2.519 3.260 3.759 4.651 5.225
     </array>
    </band>
@@ -13553,7 +13554,7 @@
    </band>
    <band kpoint=" 0.6238118 -0.6238118 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.631 -0.545 -0.477 -0.298 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.767 8.168
     </array>
    </band>
@@ -13577,14 +13578,14 @@
    </band>
    <band kpoint=" 0.6238118 -0.2673479 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.299 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.768 8.169
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.1782320 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.652 -0.531 -0.463 -0.313 -0.273
-    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.814 7.198
+    -0.119 0.243 0.864 1.400 2.399 2.831 3.321 3.809 4.815 7.198
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.0891160 -0.3564639"
@@ -13662,7 +13663,7 @@
    <band kpoint=" 0.7129278 -0.2673479 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.534 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.670 3.098 3.177 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.900 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.7129278 -0.1782320 -0.3564639"
@@ -13673,7 +13674,7 @@
    </band>
    <band kpoint=" 0.7129278 -0.0891160 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.260
+    <array size="15" dataType="xsd:double">-0.627 -0.525 -0.468 -0.356 -0.259
     -0.112 0.357 0.785 1.698 2.388 2.484 2.929 3.842 4.581 7.392
     </array>
    </band>
@@ -13709,7 +13710,7 @@
    </band>
    <band kpoint=" 0.8020438 -0.8020438 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.574 -0.532 -0.528 -0.312 -0.285
+    <array size="15" dataType="xsd:double">-0.574 -0.532 -0.528 -0.312 -0.284
     0.092 0.224 0.401 1.865 2.454 2.699 3.127 4.126 4.505 6.840
     </array>
    </band>
@@ -13733,7 +13734,7 @@
    </band>
    <band kpoint=" 0.8020438 -0.4455799 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.547 -0.515 -0.294 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.546 -0.515 -0.294 -0.281
     0.027 0.279 0.485 0.938 3.091 3.258 3.420 3.982 4.532 8.000
     </array>
    </band>
@@ -13752,7 +13753,7 @@
    <band kpoint=" 0.8020438 -0.1782320 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
-    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.529 7.159
+    0.033 0.288 0.488 1.948 2.316 2.380 3.016 4.061 4.530 7.159
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.0891160 -0.1782320"
@@ -13788,12 +13789,12 @@
    <band kpoint=" 0.8911598 -0.8911598 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.559 -0.559 -0.503 -0.294 -0.294
-    0.206 0.206 0.324 2.201 2.201 2.323 3.026 4.349 4.349 7.029
+    0.206 0.206 0.324 2.201 2.201 2.323 3.027 4.349 4.349 7.029
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.8020438 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.574 -0.532 -0.528 -0.312 -0.285
+    <array size="15" dataType="xsd:double">-0.574 -0.532 -0.528 -0.312 -0.284
     0.092 0.224 0.401 1.865 2.454 2.699 3.127 4.126 4.505 6.840
     </array>
    </band>
@@ -13805,7 +13806,7 @@
    </band>
    <band kpoint=" 0.8911598 -0.6238118 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.631 -0.545 -0.477 -0.298 -0.279
+    <array size="15" dataType="xsd:double">-0.630 -0.545 -0.477 -0.298 -0.279
     -0.044 0.215 0.746 0.985 2.810 3.027 3.490 3.913 4.767 8.168
     </array>
    </band>
@@ -13818,7 +13819,7 @@
    <band kpoint=" 0.8911598 -0.4455799 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.610 -0.535 -0.500 -0.309 -0.280
-    0.005 0.218 0.557 1.333 2.671 3.098 3.176 3.900 4.664 6.794
+    0.005 0.218 0.557 1.333 2.671 3.098 3.177 3.901 4.664 6.794
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.3564639 -0.3564639"
@@ -13836,7 +13837,7 @@
    <band kpoint=" 0.8911598 -0.1782320 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.584 -0.577 -0.435 -0.305 -0.270
-    0.130 0.341 0.376 1.753 1.850 2.514 2.951 4.231 4.415 4.680
+    0.130 0.341 0.376 1.753 1.850 2.514 2.952 4.231 4.415 4.680
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.0891160 -0.0891160"
@@ -13890,7 +13891,7 @@
    <band kpoint=" 0.9802758 -0.6238118 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.303 -0.280
-    -0.142 0.239 1.076 1.099 2.475 2.744 3.504 3.848 4.873 7.540
+    -0.142 0.239 1.077 1.099 2.475 2.744 3.504 3.848 4.873 7.540
     </array>
    </band>
    <band kpoint=" 0.9802758 -0.5346959 -0.4455799"
@@ -13907,7 +13908,7 @@
    </band>
    <band kpoint=" 0.9802758 -0.3564639 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
+    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.269
     0.033 0.288 0.488 1.948 2.316 2.380 3.017 4.061 4.528 7.159
     </array>
    </band>
@@ -13919,7 +13920,7 @@
    </band>
    <band kpoint=" 0.9802758 -0.1782320 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.600 -0.364 -0.295 -0.254
+    <array size="15" dataType="xsd:double">-0.601 -0.599 -0.364 -0.295 -0.254
     0.227 0.283 0.458 1.366 1.662 1.996 3.389 3.831 4.231 4.442
     </array>
    </band>
@@ -14028,7 +14029,7 @@
    <band kpoint=" 0.0891160  0.0891160 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.607 -0.586 -0.363 -0.314 -0.261
-    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.162 4.331
+    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.163 4.331
     </array>
    </band>
    <band kpoint=" 0.0891160  0.1782320 -0.8020438"
@@ -14099,7 +14100,7 @@
    </band>
    <band kpoint=" 0.1782320 -0.0891160 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.600 -0.364 -0.295 -0.254
+    <array size="15" dataType="xsd:double">-0.601 -0.599 -0.364 -0.295 -0.254
     0.227 0.283 0.458 1.366 1.662 1.996 3.389 3.831 4.231 4.442
     </array>
    </band>
@@ -14172,7 +14173,7 @@
    <band kpoint=" 0.2673479 -0.2673479 -1.0693917"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.590 -0.570 -0.429 -0.342 -0.248
-    0.093 0.232 0.587 1.449 2.104 2.608 2.942 3.968 4.583 4.934
+    0.093 0.233 0.587 1.449 2.104 2.608 2.942 3.968 4.583 4.934
     </array>
    </band>
    <band kpoint=" 0.2673479 -0.1782320 -0.9802758"
@@ -14255,7 +14256,7 @@
    </band>
    <band kpoint=" 0.3564639 -0.2673479 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
+    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.269
     0.033 0.288 0.488 1.948 2.316 2.380 3.017 4.061 4.528 7.159
     </array>
    </band>
@@ -14364,7 +14365,7 @@
    <band kpoint=" 0.4455799  0.0891160 -0.5346959"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint=" 0.4455799  0.1782320 -0.4455799"
@@ -14448,7 +14449,7 @@
    <band kpoint=" 0.5346959  0.0891160 -0.4455799"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.692 -0.529 -0.437 -0.313 -0.276
-    -0.217 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
+    -0.216 0.311 1.239 1.517 2.123 2.557 3.431 3.763 4.809 6.016
     </array>
    </band>
    <band kpoint=" 0.5346959  0.1782320 -0.3564639"
@@ -14490,7 +14491,7 @@
    <band kpoint=" 0.6238118 -0.5346959 -0.9802758"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.303 -0.280
-    -0.142 0.239 1.076 1.099 2.475 2.744 3.504 3.848 4.873 7.540
+    -0.142 0.239 1.077 1.099 2.475 2.744 3.504 3.848 4.873 7.540
     </array>
    </band>
    <band kpoint=" 0.6238118 -0.4455799 -0.8911598"
@@ -14579,7 +14580,7 @@
    </band>
    <band kpoint=" 0.7129278 -0.4455799 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.292 -0.284
+    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.291 -0.284
     -0.096 0.502 0.700 0.780 3.245 3.278 3.488 3.640 4.477 8.630
     </array>
    </band>
@@ -14652,7 +14653,7 @@
    <band kpoint=" 0.8020438 -0.6238118 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.624 -0.538 -0.503 -0.314 -0.279
-    -0.077 0.361 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
+    -0.077 0.362 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
     </array>
    </band>
    <band kpoint=" 0.8020438 -0.5346959 -0.8020438"
@@ -14663,7 +14664,7 @@
    </band>
    <band kpoint=" 0.8020438 -0.4455799 -0.7129278"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.292 -0.284
+    <array size="15" dataType="xsd:double">-0.623 -0.545 -0.536 -0.291 -0.284
     -0.096 0.502 0.700 0.780 3.245 3.278 3.488 3.640 4.477 8.630
     </array>
    </band>
@@ -14729,14 +14730,14 @@
    </band>
    <band kpoint=" 0.8911598 -0.7129278 -0.8911598"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.596 -0.544 -0.499 -0.325 -0.281
+    <array size="15" dataType="xsd:double">-0.596 -0.544 -0.499 -0.325 -0.280
     -0.029 0.377 0.453 1.885 2.401 2.690 3.141 4.042 4.382 7.015
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.6238118 -0.8020438"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.624 -0.538 -0.503 -0.314 -0.279
-    -0.077 0.361 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
+    -0.077 0.362 0.590 1.363 2.689 2.989 3.259 3.876 4.448 6.793
     </array>
    </band>
    <band kpoint=" 0.8911598 -0.5346959 -0.7129278"
@@ -14784,7 +14785,7 @@
    <band kpoint=" 0.8911598  0.0891160 -0.0891160"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.607 -0.586 -0.363 -0.314 -0.261
-    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.162 4.331
+    0.063 0.486 0.489 1.373 1.394 2.383 3.408 3.936 4.163 4.331
     </array>
    </band>
    <band kpoint=" 0.8911598  0.1782320  0.0000000"
@@ -14826,7 +14827,7 @@
    <band kpoint=" 0.9802758 -0.5346959 -0.6238118"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.664 -0.540 -0.442 -0.303 -0.280
-    -0.142 0.239 1.076 1.099 2.475 2.744 3.504 3.848 4.873 7.540
+    -0.142 0.239 1.077 1.099 2.475 2.744 3.504 3.848 4.873 7.540
     </array>
    </band>
    <band kpoint=" 0.9802758 -0.4455799 -0.5346959"
@@ -14843,7 +14844,7 @@
    </band>
    <band kpoint=" 0.9802758 -0.2673479 -0.3564639"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.270
+    <array size="15" dataType="xsd:double">-0.584 -0.549 -0.483 -0.331 -0.269
     0.033 0.288 0.488 1.948 2.316 2.380 3.017 4.061 4.528 7.159
     </array>
    </band>
@@ -14855,7 +14856,7 @@
    </band>
    <band kpoint=" 0.9802758 -0.0891160 -0.1782320"
     weight="0.910332271279E-03                                                                                  ">
-    <array size="15" dataType="xsd:double">-0.601 -0.600 -0.364 -0.295 -0.254
+    <array size="15" dataType="xsd:double">-0.601 -0.599 -0.364 -0.295 -0.254
     0.227 0.283 0.458 1.366 1.662 1.996 3.389 3.831 4.231 4.442
     </array>
    </band>
@@ -14928,7 +14929,7 @@
    <band kpoint=" 1.0693917 -0.2673479 -0.2673479"
     weight="0.910332271279E-03                                                                                  ">
     <array size="15" dataType="xsd:double">-0.590 -0.570 -0.429 -0.342 -0.248
-    0.093 0.232 0.587 1.449 2.104 2.608 2.942 3.968 4.583 4.934
+    0.093 0.233 0.587 1.449 2.104 2.608 2.942 3.968 4.583 4.934
     </array>
    </band>
    <band kpoint=" 1.0693917 -0.1782320 -0.1782320"
@@ -14960,19 +14961,19 @@
     </scalar>
    </property>
    <property dictRef="siesta:Ekin">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">770.612500                                                                                          
+    <scalar dataType="xsd:double" units="siestaUnits:eV">770.614966                                                                                          
     </scalar>
    </property>
    <property dictRef="siesta:Enl">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-473.838213                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-473.839778                                                                                         
     </scalar>
    </property>
    <property dictRef="siesta:DEna">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">0.789775                                                                                            
+    <scalar dataType="xsd:double" units="siestaUnits:eV">0.789590                                                                                            
     </scalar>
    </property>
    <property dictRef="siesta:DUscf">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">0.020402                                                                                            
+    <scalar dataType="xsd:double" units="siestaUnits:eV">0.020395                                                                                            
     </scalar>
    </property>
    <property dictRef="siesta:DUext">
@@ -14980,7 +14981,7 @@
     </scalar>
    </property>
    <property dictRef="siesta:Exc">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-390.489377                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-390.490084                                                                                         
     </scalar>
    </property>
    <property dictRef="siesta:Ecorrec">
@@ -15004,25 +15005,25 @@
     </scalar>
    </property>
    <property dictRef="siesta:EharrsK">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.242539                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.242586                                                                                         
     </scalar>
    </property>
    <property dictRef="siesta:EtotK">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243198                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243196                                                                                         
     </scalar>
    </property>
    <property dictRef="siesta:FreeEK">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.245774                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.245772                                                                                         
     </scalar>
    </property>
   </propertyList>
   <propertyList title="Final Energy">
    <property dictRef="siesta:Ekin">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">770.612500                                                                                          
+    <scalar dataType="xsd:double" units="siestaUnits:eV">770.614966                                                                                          
     </scalar>
    </property>
    <property dictRef="siesta:Uscf">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">86.229594                                                                                           
+    <scalar dataType="xsd:double" units="siestaUnits:eV">86.230033                                                                                           
     </scalar>
    </property>
    <property dictRef="siesta:DUext">
@@ -15030,15 +15031,15 @@
     </scalar>
    </property>
    <property dictRef="siesta:Exc">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-390.489377                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-390.490084                                                                                         
     </scalar>
    </property>
    <property dictRef="siesta:I-e">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-819.142252                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-819.144446                                                                                         
     </scalar>
    </property>
    <property dictRef="siesta:I-I">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-429.453663                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-429.453666                                                                                         
     </scalar>
    </property>
    <property dictRef="siesta:Ekinion">
@@ -15046,7 +15047,7 @@
     </scalar>
    </property>
    <property dictRef="siesta:Etot">
-    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243198                                                                                         
+    <scalar dataType="xsd:double" units="siestaUnits:eV">-782.243196                                                                                         
     </scalar>
    </property>
   </propertyList>
@@ -15062,18 +15063,18 @@
     </scalar>
    </property>
    <property title="Pressure of Solid" dictRef="siesta:pressSol">
-    <scalar dataType="xsd:double" units="siestaUnits:kbar">9.7520
+    <scalar dataType="xsd:double" units="siestaUnits:kbar">9.8353
     </scalar>
    </property>
    <property title="Pressure of Molecule" dictRef="siesta:pressMol">
-    <scalar dataType="xsd:double" units="siestaUnits:kbar">9.7520
+    <scalar dataType="xsd:double" units="siestaUnits:kbar">9.8353
     </scalar>
    </property>
   </propertyList>
   <property dictRef="siesta:qspin">
-   <scalar dataType="xsd:double">2.3125
+   <scalar dataType="xsd:double">2.3129
    </scalar>
   </property>
  </module>
- <metadata name="siesta:EndTime" content="2007-01-09T11-21-48" />
+ <metadata name="siesta:EndTime" content="2007-10-30T12-10-44" />
 </cml>

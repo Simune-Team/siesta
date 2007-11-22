@@ -16,6 +16,7 @@ private
   !-------------------------------------------------------   
   public :: getTagName
   public :: getElementsByTagName
+  public :: getElementsByTagAttrName
   public :: getAttribute
   public :: getAttributeNode
   public :: setAttribute
@@ -42,7 +43,9 @@ CONTAINS
   end function getTagName
 
   !-----------------------------------------------------------
-  function getElementsByTagName(element, tag) result(nodelist)
+ 
+
+ function getElementsByTagName(element, tag) result(nodelist)
     type(fnode), pointer         :: element
     character(len=*), intent(in) :: tag
     type(fnodeList), pointer     :: nodelist 
@@ -66,6 +69,7 @@ CONTAINS
     ! Could replace the calls to helper methods by direct lookups of node 
     ! components to make it faster.
     ! 
+    
     do
        if (.not. associated(np)) exit
        select case(np%nodeType)
@@ -100,6 +104,47 @@ CONTAINS
   end function getElementsByTagName
 
   !-----------------------------------------------------------
+
+ function getElementsByTagAttrName(element, tag, attr,value) result(nodelist)
+    type(fnode), pointer         :: element
+    character(len=*), intent(in) :: tag,attr
+    character(len=*), intent(in) :: value
+
+    type(fnodeList), pointer     :: nodelist, sametag
+    integer                      :: i, length
+    type(fnode), pointer         :: np, attr_n
+    logical                      :: dom_debug_local
+    type(string)                 :: value_s,name_s
+
+    nodelist => null()
+
+    dom_debug_local = .false.
+
+    sameTag => getElementsByTagName(element,tag)
+    if (dom_debug .or. dom_debug_local) then
+       print *, "Going into search for nodes with tag: ", trim(tag)
+       print *, "Going into search for node with attr: ", trim(attr)
+    endif
+
+    length=getLength(sameTag)
+
+    do i=0,length-1
+       np => item(sameTag,i)
+       attr_n => getAttributeNode(np,attr)
+       if (associated(attr_n)) then
+          name_s = getNodeName(attr_n)
+          value_s = getNodeValue(attr_n)
+          if (len(value_s) > 0) then
+             if (trim(char(value_s)) == trim(value))then
+                call append(nodelist,np)
+             endif
+          endif
+       endif
+    enddo
+
+  end function getElementsByTagAttrName
+
+!--------------------------------------------------------------
 
   function getAttribute(element, name)
     

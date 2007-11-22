@@ -3,7 +3,7 @@
 
 program test_xml
 use flib_dom
-use compare_m, only: test_debug, compare
+use compare_m, only: compare_debug, compare
 use compare_m, only: STOP_ON_ERROR, MAX_NUMBER_OF_ERRORS
 
 use compare_tol_m, only: TOLERANCES_FILE, TOL, dp
@@ -22,6 +22,7 @@ character(len=1000) reference_file,modified_file
 
 !     Process options
 !
+
       n_opts = 0
       do
          call getopts('dse:g:t:x:',opt_name,opt_arg,n_opts,iostat)
@@ -29,7 +30,7 @@ character(len=1000) reference_file,modified_file
          select case(opt_name)
          case ('d', '+d')
             ! Debug
-            test_debug = .true.
+            compare_debug = .true.
          case ('s', '+s')
             ! Stop on any error
             STOP_ON_ERROR = .true.
@@ -68,13 +69,16 @@ character(len=1000) reference_file,modified_file
          STOP "Cannot get second file"
       endif
 
-if (test_debug) then
+if (compare_debug) then
    write(0,"(a,a)") "Will try to use tolerances file: ", trim(TOLERANCES_FILE)
    inquire(file=TOLERANCES_FILE, exist=fileExists)
-   if( .not. fileExists) then
+   if(fileExists) then
+      write(6,*) " ** Tolerances file found!"
+   else
       write(0,*) " ** Tolerances file not found. Will use global tol"
+      write(0,"(a,g12.6)") "Using global tolerance: ", tol
    endif
-   write(0,"(a,g12.6)") "Using global tolerance: ", tol
+  
 endif
    
 !Parse the files

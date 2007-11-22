@@ -73,6 +73,20 @@ compare-xml:    # Needs more work
              $(XML-TESTER) $$i/$$i.xml ${REFERENCE}/$$i/$$i.xml ; \
              echo "****---------$$i xml comparison done" ; done 
 
+update-xml:
+	for i in ${tests};\
+        do \
+             echo "---------Updating $$i xml files" ;   \
+             cp $$i/$(label)/$$i.xml Reference-xml/$$i.xml ; \
+        done
+
+xmllint:
+	for i in ${tests} ;\
+        do \
+            echo "---------$$i Check xml file" ;  \
+            xmllint $$i/$$i.xml >/dev/null ; \
+        done 
+
 
 
 

@@ -7,6 +7,38 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2007-11-22  18:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+Summary: xml tester update (Eduardo Anglada)
+
+New files:
+A  Src/xmlparser/corresponding_node.f90
+A  Src/xmlparser/string_utilities.f90
+
+Changes in the xml output:
+M  Src/state_analysis.F
+M  Src/siesta_move.F
+M  Src/setup_hamiltonian.F
+M  Src/siesta_forces.F
+M  Src/scfconvergence_test.F
+M  Src/post_scf_work.F
+
+Changes in the xml tester:
+M  Src/wxml/m_wxml_core.f90
+M  Src/wxml/flib_wstml.f90
+M  Src/xmlparser/makefile               
+M  Src/xmlparser/m_dom_element.f90
+M  Src/xmlparser/m_strings.f90
+M  Src/xmlparser/compare_m.f90
+M  Src/xmlparser/test.f90
+
+Changes in the tests makefiles
+M  Tests/std-Makefile
+M  Tests/std-test.mk
+
+Upgraded xml reference outputs:
+...
+
 2007-11-22  17:55:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
 
 Summary: Fixes for denchar compilation and wavefunction output
