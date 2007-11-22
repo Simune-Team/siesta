@@ -2,9 +2,46 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
+
+2007-11-22  17:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
+
+Summary: Optimization enhancements (fire algorithm, step control).
+
+
+* Step-size control has been add to the Broyden optimizers (Standard, ZM,
+  and Cell-only). There is no theoretical justification for this procedure,
+  so the Hessian is not likely to improve very much... it is probably best
+  to combine a size-limited CG series with another small-Jinv Broyden series.
+
+* New FORCE_STRESS for direct output of the energy, forces, and stress
+  (in internal Siesta units).
+
+* Re-implemented the FIRE optimization algorithm, both for geometry
+  and (experimentally) for SCF.
+
+  The advantages for the SCF mixing are:
+
+  * Trivial algorithm (also in parallel)
+  * Initial dt can be just set to alpha. 
+  * Adaptive changes to alpha.
+  * There should be no need for kicks.
+
+  (Set DM.FIRE.Mixing to T to enable)
+  Could also set DM.Fire.Nmin  to 2, 3, 4  instead of the default 5
+  (Actually, this number could be akin to the DM.Number{Pulay,Broyden}...)
+
+* Added .make files for opterons and matgas cluster at ICMAB in parallel.
+
+* Compilation fixes(uncovered by a new version of g95)
+
+  * External statements referring to obsolete names
+  * Continuation lines.
+  * Statement order.
+
 
 2007-11-22  17:35:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
 

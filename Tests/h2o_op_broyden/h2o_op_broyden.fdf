@@ -21,8 +21,9 @@ DM.Number.Pulay 3
 
 WriteForces T
 
+MD.MaxForceTol          0.01 eV/Ang
 MD.TypeOfRun Broyden
-MD.NumCGSteps 20
+MD.NumCGSteps 40
 MD.Broyden.History.Steps 6
 MD.Broyden.Initial.Inverse.Jacobian 1.0
 

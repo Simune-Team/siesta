@@ -113,7 +113,9 @@ OBJS =  automatic_cell.o \
         molecularmechanics.o filter.o filter_subs.o zm_broyden_optim.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
-        m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o
+        m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o \
+       get_target_stress.o fire_optim.o zm_fire_optim.o \
+       cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -313,13 +315,15 @@ bonds.o: alloc.o atmfuncs.o mneighb.o precision.o recipes.o sorting.o units.o
 born_charge.o: atomlist.o ksv.o ksvinit.o m_mpi_utils.o m_spin.o parallel.o
 born_charge.o: siesta_geom.o siesta_options.o sparse_matrices.o
 broadcast_basis.o: atm_types.o parallel.o radial.o
-broyden_optim.o: alloc.o m_broyddj_nocomm.o m_fdf_global.o m_mpi_utils.o
+broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o m_mpi_utils.o
 broyden_optim.o: parallel.o precision.o units.o
 cart2frac.o: sys.o
 cdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
 cell_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o
 cell_broyden_optim.o: m_mpi_utils.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
+cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
+cell_fire_optim.o: precision.o siesta_options.o sys.o zmatrix.o
 cellxc.o: alloc.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
 cellxc.o: xcmod.o
 cgvc.o: conjgr_old.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
@@ -377,12 +381,15 @@ extrapolon.o: parallel.o precision.o sys.o
 fermid.o: parallel.o precision.o recipes.o sys.o
 fft3d.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
+fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
+fire_optim.o: precision.o siesta_options.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
 forhar.o: alloc.o meshsubs.o precision.o
 fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
 gen-basis.o: atom.o basis_io.o basis_specs.o basis_types.o old_atmfuncs.o
 gen-basis.o: parallel.o precision.o sys.o xcmod.o
+get_target_stress.o: m_mpi_utils.o parallel.o precision.o units.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: globalise.o onmod.o precision.o
@@ -422,7 +429,7 @@ local_DOS.o: atomlist.o files.o kpoint_grid.o m_energies.o m_eo.o m_forces.o
 local_DOS.o: m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o parallel.o siesta_geom.o
 local_DOS.o: siesta_options.o sparse_matrices.o sys.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
-m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
+m_broyddj_nocomm.o: alloc.o m_fdf_global.o parallel.o precision.o sys.o
 m_broyden_mixing.o: alloc.o m_broyddj.o m_mpi_utils.o parallel.o precision.o
 m_cell.o: precision.o siesta_geom.o units.o
 m_check_supercell.o: minvec.o parallel.o precision.o
@@ -436,6 +443,10 @@ m_dipol.o: precision.o
 m_energies.o: precision.o
 m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
+m_fire.o: parallel.o precision.o
+m_fire_mixing.o: alloc.o m_fdf_global.o m_fire_para.o m_mpi_utils.o parallel.o
+m_fire_mixing.o: precision.o
+m_fire_para.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
@@ -465,8 +476,8 @@ meshsubs.o: atm_types.o atmfuncs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: radial.o siesta_cml.o
 metaforce.o: parallel.o parsing.o precision.o
 minvec.o: precision.o sorting.o sys.o
-mixer.o: atomlist.o m_broyden_mixing.o m_mpi_utils.o m_pulay.o m_spin.o
-mixer.o: m_steps.o siesta_geom.o siesta_options.o sparse_matrices.o
+mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_mpi_utils.o m_pulay.o
+mixer.o: m_spin.o m_steps.o siesta_geom.o siesta_options.o sparse_matrices.o
 mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
@@ -567,10 +578,11 @@ siesta_init.o: molecularmechanics.o parallel.o parallelsubs.o phonon.o
 siesta_init.o: siesta_cmlsubs.o siesta_geom.o siesta_options.o
 siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
 siesta_init.o: xcmod.o zmatrix.o
-siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o dynamics.o
-siesta_move.o: iopipes.o ioxv.o m_energies.o m_forces.o m_kinetic.o m_steps.o
-siesta_move.o: m_stress.o parallel.o phonon.o siesta_cml.o siesta_geom.o
-siesta_move.o: siesta_options.o write_subs.o zm_broyden_optim.o zmatrix.o
+siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
+siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
+siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
+siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
+siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o m_fdf_global.o m_mpi_utils.o memoryinfo.o parallel.o
 siesta_options.o: precision.o siesta_cml.o sys.o units.o
 sparse_matrices.o: precision.o
@@ -601,6 +613,7 @@ vmatsp.o: meshsubs.o meshsubs.o precision.o
 vmb.o: parallel.o precision.o sys.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
+write_raw_efs.o: atmfuncs.o atomlist.o precision.o siesta_geom.o
 write_subs.o: atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
 write_subs.o: siesta_geom.o siesta_options.o units.o zmatrix.o
@@ -612,6 +625,8 @@ xcmod.o: parallel.o parsing.o precision.o sys.o
 xml.o: precision.o
 zm_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_mpi_utils.o parallel.o
 zm_broyden_optim.o: precision.o units.o zmatrix.o
+zm_fire_optim.o: m_fdf_global.o m_fire.o parallel.o precision.o
+zm_fire_optim.o: siesta_options.o units.o zmatrix.o
 zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
 band.o: bands.o
@@ -620,6 +635,7 @@ listsc_module.o: listsc.o
 m_born_charge.o: born_charge.o
 m_broyden_optim.o: broyden_optim.o
 m_cell_broyden_optim.o: cell_broyden_optim.o
+m_cell_fire_optim.o: cell_fire_optim.o
 m_chempot.o: chempot.o
 m_compute_dm.o: compute_dm.o
 m_conjgr.o: conjgr.o
@@ -628,6 +644,7 @@ m_dynamics.o: dynamics.o
 m_extrapol.o: extrapol.o
 m_fermid.o: fermid.o
 m_find_kgrid.o: find_kgrid.o
+m_fire_optim.o: fire_optim.o
 m_forhar.o: forhar.o
 m_hsparse.o: hsparse.o
 m_intramol_pressure.o: remove_intramol_pressure.o
@@ -662,6 +679,7 @@ m_struct_init.o: struct_init.o
 m_timestamp.o: timestamp.o
 m_xyz_phiatm.o: matel.o
 m_zm_broyden_optim.o: zm_broyden_optim.o
+m_zm_fire_optim.o: zm_fire_optim.o
 mesh.o: meshsubs.o
 meshdscf.o: meshmatrix.o
 meshphi.o: meshsubs.o

@@ -17,13 +17,13 @@
       use m_fdf_global, only: fdf_global_get
       use m_mpi_utils, only:  broadcast
       use units, only: kBar
-      use alloc, only: re_alloc, de_alloc
 !
       use m_broyddj_nocomm, only: broyden_t
       use m_broyddj_nocomm, only: broyden_reset, broyden_step,
      $                     broyden_destroy, broyden_init,
      $                     broyden_is_setup
 
+      use m_memory, only: memory, mem_stat
       use parallel, only : ionode
 
       implicit none
@@ -72,6 +72,10 @@ c ******************************** OUTPUT ***********************************
 c logical relaxd        : True when converged
 c ***************************************************************************
 
+C
+C  Modules
+C
+
 ! Subroutine arguments:
 
       integer, intent(in) :: na
@@ -83,7 +87,8 @@ c ***************************************************************************
 
 c Internal variables and arrays
 
-      real(dp)            :: new_volume, trace, volume
+      real(dp)            :: volume, new_volume, trace
+      real(dp)            :: Max_step_strain, Max_step_coordinates
 
       logical           found
       integer           iu, ia, i, j, n, indi
@@ -91,8 +96,8 @@ c Internal variables and arrays
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
 
-      real(dp), dimension(:), pointer       :: gxa, gfa
-      real(dp), dimension(:), pointer       :: rold, rnew, rdiff
+      real(dp), dimension(:), allocatable       :: gxa, gfa, max_step
+      real(dp), dimension(:), allocatable       :: rold, rnew, rdiff
 
 ! Saved internal variables:
 
@@ -209,11 +214,15 @@ C Look for target stress and read it if found, otherwise generate it --------
 C Write target stress down --------------------------------------------------
 
             write(6,"(/a)") 'Broyden_optim: Target stress (kBar)'
-            do i = 1, 3
-               write(6,"(a,2x,3f12.3)") 
-     .           'Broyden_optim:', tstres(i,1)/kBar, tstres(i,2)/kBar, 
-     .            tstres(i,3)/kBar
-            enddo
+            write(6,"(a,2x,3f12.3)") 
+     .       'Broyden_optim:', tstres(1,1)/kBar, tstres(1,2)/kBar, 
+     .       tstres(1,3)/kBar
+            write(6,"(a,2x,3f12.3)") 
+     .       'Broyden_optim:', tstres(2,1)/kBar, tstres(2,2)/kBar, 
+     .       tstres(2,3)/kBar
+            write(6,"(a,2x,3f12.3)") 
+     .       'Broyden_optim:', tstres(3,1)/kBar, tstres(3,2)/kBar, 
+     .       tstres(3,3)/kBar
           endif  ! node0
 
           call broadcast(tstres(1:3,1:3))
@@ -255,20 +264,25 @@ C Initialization to 1. for numerical reasons, later substracted --------
 !     Broyden section
 !
 
+      Max_step_strain = dxmax
+      Max_step_coordinates = dxmax
 
 C Variable cell -------------------------------------------------------------
 
       if ( varcel ) then
 
-        nullify( gfa )
-        call re_alloc( gfa, 1, numel, name='gfa',
-     &                 routine='broyden_optimizer' )
-        nullify( gxa )
-        call re_alloc( gxa, 1, numel, name='gxa',
-     &                 routine='broyden_optimizer' )
-        nullify( rnew )
-        call re_alloc( rnew, 1, numel, name='rnew',
-     &                 routine='broyden_optimizer' )
+         allocate(gfa(numel), stat=mem_stat)
+         call memory('A','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="gfa")
+         allocate(gxa(numel), stat=mem_stat)
+         call memory('A','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="gxa")
+         allocate(max_step(numel), stat=mem_stat)
+         call memory('A','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="max_step")
+         allocate (rnew(numel), stat=mem_stat)
+         call memory('A','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rnew")
 
 C Inverse of matrix of cell vectors  (transpose of) ------------------------
 
@@ -289,6 +303,7 @@ C convergence is checked here for input forces as compared with ftol
             do i = 1, 3
               gxa(indi) = gxa(indi) + celli(i,n) * xa(i,ia) * modcel(n)
               gfa(indi) = gfa(indi) + cell(i,n) * fa(i,ia) / modcel(n)
+              max_step(indi) = Max_step_coordinates
             enddo
           enddo
         enddo
@@ -324,6 +339,7 @@ C preconditioning: scale stress and strain so as to behave similarly to x,f -
               indi = indi + 1
               gfa(indi) = -stress_dif(i,j)*volume/precon
               gxa(indi) = strain(i,j) * precon
+              max_step(indi) = Max_step_strain
            enddo
         enddo
 
@@ -342,7 +358,7 @@ C Call Broyden step
 
         if (.not. broyden_is_setup(br)) 
      $    call broyden_reset(br,numel,maxit,cycle_on_maxit,
-     $                       jinv0,0.01_dp)
+     $                       jinv0,0.01_dp,max_step)
 
            weight = 1.0_dp
            call broyden_step(br,gxa,gfa,w=weight,newx=rnew)
@@ -359,30 +375,35 @@ C Fixed cell ----------------------------------------------------------------
         enddo
         if (relaxd) RETURN
 
-           if (.not. broyden_is_setup(br)) then
 
-              call broyden_reset(br,numel,maxit,cycle_on_maxit,
-     $             jinv0,0.01_dp)
-
-           endif
-
-          nullify( rold )
-          call re_alloc( rold, 1, numel, name='rold',
-     &                   routine='broyden_optimizer' )
-          nullify( rnew )
-          call re_alloc( rnew, 1, numel, name='rnew',
-     &                   routine='broyden_optimizer' )
-          nullify( rdiff )
-          call re_alloc( rdiff, 1, numel, name='rdiff',
-     &                   routine='broyden_optimizer' )
+           allocate (rold(numel), stat=mem_stat)
+           call memory('A','D',numel,'Broyden_optim',
+     $          stat=mem_stat,id="rold")
+           allocate (rnew(numel), stat=mem_stat)
+           call memory('A','D',numel,'Broyden_optim',
+     $          stat=mem_stat,id="rnew")
+           allocate (rdiff(numel),stat=mem_stat)
+           call memory('A','D',numel,'Broyden_optim',
+     $          stat=mem_stat,id="rdiff")
+           allocate (max_step(numel),stat=mem_stat)
+           call memory('A','D',numel,'Broyden_optim',
+     $          stat=mem_stat,id="max_step")
 
            weight = 1.0_dp
            indi = 0
            do i = 1, na
               rold(indi+1:indi+3) = xa(1:3,i)
               rdiff(indi+1:indi+3) = fa(1:3,i)
+              max_step(indi+1:indi+3) = Max_step_coordinates
               indi = indi + 3
            enddo
+
+           if (.not. broyden_is_setup(br)) then
+
+              call broyden_reset(br,numel,maxit,cycle_on_maxit,
+     $             jinv0,0.01_dp,max_step)
+
+           endif
 
 !!!!!!!           rold = reshape(xa, (/1, 3*na /))
 !!!!!!!           rdiff = reshape(fa, (/1, 3*na /))
@@ -427,15 +448,30 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
 
       ! Deallocate local memory
 
-        call de_alloc( rnew, name='rnew' )
-        call de_alloc( gxa, name='gxa' )
-        call de_alloc( gfa, name='gfa' )
+        deallocate (rnew, stat=mem_stat)
+        call memory('D','D',numel,'Broyden_optim',
+     $       stat=mem_stat,id="rnew")
+        deallocate (gxa, stat=mem_stat)
+        call memory('D','D',numel,'Broyden_optim',
+     $       stat=mem_stat,id="gxa")
+        deallocate (gfa, stat=mem_stat)
+        call memory('D','D',numel,'Broyden_optim',
+     $       stat=mem_stat,id="gfa")
+        deallocate (max_step, stat=mem_stat)
+        call memory('D','D',numel,'Broyden_optim',
+     $       stat=mem_stat,id="max_step")
 
       else
 
-        call de_alloc( rold, name='rold' )
-        call de_alloc( rnew, name='rnew' )
-        call de_alloc( rdiff, name='rdiff' )
+         deallocate (rold, stat=mem_stat)
+         call memory('D','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rold")
+         deallocate (rnew, stat=mem_stat)
+         call memory('D','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rnew")
+         deallocate (rdiff, stat=mem_stat)
+         call memory('D','D',numel,'Broyden_optim',
+     $        stat=mem_stat,id="rdiff")
 
       endif ! variable cell
 

@@ -24,7 +24,7 @@ os.chdir(dir) # move to dir
 urllib.urlretrieve(URLbase + "H.psf", "H.psf") 
 urllib.urlretrieve(URLbase + "O.psf", "O.psf") 
 
-b = SiestaCalculator(executable="/Users/ag/bin/siesta-xlf")
+b = SiestaCalculator(executable="$HOME/bin/siesta-2.4-optim")
 
 b.SetOption("DM.Tolerance","0.005")
 atoms.SetCalculator(b)

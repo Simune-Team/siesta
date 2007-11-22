@@ -54,13 +54,6 @@
 
       real(dp) :: g2max
 
-      external ::
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kinefsm, mulliken, naefs,
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
 
 !------------------------------------------------------------------------- BEGIN
       if (cml_p) then

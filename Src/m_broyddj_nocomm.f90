@@ -28,6 +28,7 @@ use precision, only: wp=>broyden_p       ! Precision of work arrays
 !use m_mpi_utils, only: Globalize_sum
 use parallel, only: ionode
 use alloc, only: re_alloc, de_alloc
+use m_fdf_global, only: fdf_global_get
 
 use sys, only: message, die
 
@@ -41,6 +42,7 @@ private
    real(dp) :: wprime
    real(dp) :: jinv0
    real(dp), dimension(:), pointer                 :: w
+   real(dp), dimension(:), pointer                 :: max_step
    real(dp), dimension(:,:), pointer               :: dFdF
    real(wp), dimension(:,:), pointer               :: u
    real(wp), dimension(:,:), pointer               :: dF
@@ -48,6 +50,8 @@ private
    logical  :: cycle_on_maxit
    logical  :: debug
 end type broyden_t
+
+logical, public, save :: do_step_checks = .false.
 
 public :: broyden_reset, broyden_step , broyden_destroy, broyden_init
 public :: broyden_is_setup
@@ -66,7 +70,7 @@ end function broyden_is_setup
 
 !--------------------------------------------------------------
 subroutine broyden_reset(br,n,maxit,cycle_on_maxit, &
-                         jinv0,wprime)
+                         jinv0,wprime,max_step)
 !     Jinit is the starting INVERSE "spring constant".
 !     wprime is the (small) initial weight
 !     Typical value: 0.01
@@ -76,6 +80,7 @@ integer, intent(in)  ::  n
 integer, intent(in)  ::  maxit
 logical, intent(in), optional       :: cycle_on_maxit
 real(dp), intent(in) ::  jinv0, wprime
+real(dp), intent(in), optional :: max_step(:)
 
 br%cycle_on_maxit = .false.
 if (present(cycle_on_maxit)) then
@@ -103,6 +108,10 @@ call re_alloc(br%dF,i1min=1,i1max=n, &
 call re_alloc(br%u ,i1min=1,i1max=n, &
               i2min=0, i2max=maxit, copy=.false., shrink=.false.)
 call re_alloc(br%w ,i1min=0, i1max=maxit, copy=.false., shrink=.false.)
+if (present(max_step)) then
+   call re_alloc(br%max_step ,i1min=1, i1max=n, copy=.false., shrink=.false.)
+   br%max_step(1:n) = max_step(1:n)
+endif
 call re_alloc(br%dFdF ,i1min=0,i1max=maxit, &
               i2min=0, i2max=maxit, copy=.false., shrink=.false.)
 
@@ -142,6 +151,7 @@ if (br%it == -1 .or. br%it > br%maxit) then
     br%it = 0
     br%dF(1:n,0) = F(1:n)
     newx(1:n) = x(1:n) + br%jinv0*F(1:n)
+    call check_step(x(1:n),newx(1:n),br%max_step(1:n))
     br%u(1:n,0) = newx(1:n) - x(1:n)
     if (br%debug .and. ionode) then
        print *, "------- Broyden step end --- "
@@ -278,6 +288,8 @@ do l = 0, m
    newx(1:n) = newx(1:n) - gamma * br%u(1:n,l)
 enddo
 
+call check_step(x,newx,br%max_step)
+
 !
 deallocate (local_dFF)
 deallocate(dFF)
@@ -338,6 +350,7 @@ logical, intent(in), optional :: debug
 
    nullify(br%dF, br%u)
    nullify(br%w, br%dFdF)
+   nullify(br%max_step)
 
    br%debug = .false.
    if (present(debug)) then
@@ -345,7 +358,32 @@ logical, intent(in), optional :: debug
    endif
    br%setup = .false.
 
+   call fdf_global_get(do_step_checks, "MD.Broyden.Do.Step.Checks",.false.)
+
 end subroutine broyden_init
+
+
+subroutine check_step(x,newx,max_step)
+!
+! Cuts off big steps.
+! It is not yet clear what this would do
+! to the stability of the algorithm
+!
+real(dp), intent(in)     :: x(:)
+real(dp), intent(inout)  :: newx(:)
+real(dp), intent(in)     :: max_step(:)
+
+integer  :: i, n
+
+if (.not. do_step_checks) RETURN
+
+n = size(x)
+do i=1, n
+   if (abs(newx(i)-x(i)) > max_step(i)) then
+      newx(i) = x(i) + max_step(i) * sign(1.0_dp,(newx(i)-x(i)))
+   endif
+enddo
+end subroutine check_step
 
 !------------------------------------------------------------
 subroutine dlinds(n,a,np1,ainv,np)

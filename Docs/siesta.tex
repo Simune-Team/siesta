@@ -3607,6 +3607,12 @@ available dynamics option.
   scheme). Optionally, (see variable MD.VariableCell below), the
   optimization can include the cell vectors.
 
+\item {\tt FIRE} (Coordinate optimization by Fast Inertial Relaxation
+  Engine (FIRE) (E. Bitzek et al, PRL 97, 170201, (2006)).
+  Optionally, (see variable MD.VariableCell below), the
+  optimization can include the cell vectors. The main user-variable
+  is {\tt MD.FIRE.TimeStep}.
+
 \item {\tt Verlet} (Standard Verlet algorithm MD)
 
 \item {\tt Nose}  (MD with temperature controlled  by means of a Nos\'e 
@@ -3887,8 +3893,21 @@ or atomic coordinates AND cell shape
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf MD.FIRE.TimeStep}] ({\it real time}): 
+\index{MD.FIRE.TimeStep@{\bf MD.FIRE.TimeStep}} 
+
+The (fictitious) time-step for FIRE relaxation. 
+
+SEE the new option {\tt FIRE} for {\tt MD.TypeOfRun}
+
+{\it Default value:} The molecular-dynamics time-step, as
+specified by {\tt MD.LengthTimeStep}.
+
 \item[{\bf MD.FireQuench}] ({\it logical}): 
 \index{MD.FireQuench@{\bf MD.FireQuench}} 
+
+ SEE the new option {\tt FIRE} for {\tt MD.TypeOfRun}
+
 Logical option to perform a FIRE quench during a Verlet molecular dynamics
 run, as described by Bitzek {\it et al.} in Phys. Rev. Lett. {\bf 97},
 170201 (2006). It is a relaxation algorithm, and thus the dynamics
@@ -3907,7 +3926,8 @@ including $\Delta t_{max} = 10$ fs.
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Verlet}. 
 It is incompatible with Nose thermostat options. No variable
 cell option implemented for this at this stage.
-{\bf MD.FireQuench} supersedes {\bf MD.Quench}.
+{\bf MD.FireQuench} supersedes {\bf MD.Quench}.  SEE the new
+option {\tt FIRE} for {\tt MD.TypeOfRun}
 
 {\it Default value:} {\tt .false.}
 

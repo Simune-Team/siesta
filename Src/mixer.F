@@ -10,6 +10,7 @@
       use siesta_geom
       use atomlist, only: iaorb, iphorb, lasto, no_u, no_l
       use m_broyden_mixing
+      use m_fire_mixing
       use m_steps
       use m_spin,   only: nspin
       use m_pulay
@@ -42,7 +43,11 @@
               iiscf = 1
               if (iscf .ne. 1) mmix = .true.
             endif
-            if (broyden_maxit == 0) then
+            if (fire_mix) then
+               call fire_mixing(iscf, mix, no_l, maxnh,
+     .                 numh(1:no_l), listhptr(1:no_l), nspin,
+     $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
+            else if (broyden_maxit == 0) then
                call pulayx( pulfile, iiscf, mmix, no_l, maxnh,
      .                   numh, listhptr, nspin, maxsav, wmix, nkick, 
      .                   wmixkick, Dscf, Dold, dDmax)

@@ -8,13 +8,13 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      module m_zm_broyden_optim
-      public :: zm_broyden_optimizer
+      module m_zm_fire_optim
+      public :: zm_fire_optimizer
       private
 
       CONTAINS
 !
-      subroutine zm_broyden_optimizer( na, xa, fa, cell,
+      subroutine zm_fire_optimizer( na, xa, fa, cell,
      .                 stress, dxmax, 
      .                 tp, ftol, strtol, varcel, relaxd)
 
@@ -44,14 +44,12 @@ C  Modules
 C
       use precision,   only : dp
       use parallel,    only : Node, IONode
-      use fdf,         only : fdf_block, fdf_physical
+      use fdf,         only : fdf_physical
       use m_fdf_global, only: fdf_global_get
-      use m_mpi_utils, only:  broadcast
-      use units, only: kBar, Ang
-      use m_broyddj_nocomm, only: broyden_t
-      use m_broyddj_nocomm, only: broyden_reset, broyden_step,
-     $                     broyden_destroy, broyden_init,
-     $                     broyden_is_setup
+      use units, only: Ang
+
+      use m_fire
+      use siesta_options, only: dt
 
       use zmatrix,     only : VaryZmat, Zmat
       use zmatrix,     only : CartesianForce_to_ZmatForce
@@ -75,7 +73,6 @@ C Internal variables and arrays
       integer             :: iu, ia, i, j, n, indi,indi1,vi,k
       logical             :: found
       real(dp)            :: volume, new_volume, trace
-      real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
       real(dp)            ::  stress_dif(3,3)
       real(dp), dimension(:), allocatable :: gxa, gfa
@@ -95,18 +92,18 @@ C Saved internal variables:
       real(dp),      save :: strain(3,3)  ! Special treatment !!
 
       real(dp), dimension(:), allocatable    :: ftoln, dxmaxn
-      real(dp), dimension(:), allocatable    :: rold, rnew, rdiff
 
-      type(broyden_t), save  :: br
+      type(fire_t), save  :: b
       logical, save           :: initialization_done = .false.
 
-      real(dp), save :: jinv0
-      integer, save  :: maxit
-      logical, save  :: cycle_on_maxit, variable_weight
-      logical, save  :: broyden_debug
-      real(dp)       :: weight
-
       integer        :: ndegi, ndi
+
+      logical, save  :: fire_debug
+      real(dp), save :: fire_mass
+      real(dp)       :: fire_dt, fire_dt_inc,
+     $                  fire_dt_dec, fire_alphamax,
+     $                  fire_alpha_factor, fire_dtmax
+      integer        :: fire_nmin
 
       external          memory
       real(dp), external :: volcel
@@ -115,38 +112,24 @@ c ---------------------------------------------------------------------------
 
       volume = volcel(cell)
 
-      if (.not. initialization_done) then
-
-          call fdf_global_get(maxit,"MD.Broyden.History.Steps",5)
-          call fdf_global_get(cycle_on_maxit,
-     $              "MD.Broyden.Cycle.On.Maxit",.true.)
-          call fdf_global_get(variable_weight,
-     $         "MD.Broyden.Variable.Weight",.false.)
-          call fdf_global_get(broyden_debug,
-     $         "MD.Broyden.Debug",.false.)
-          call fdf_global_get(jinv0,
-     $         "MD.Broyden.Initial.Inverse.Jacobian",1.0_dp)
-
-         if (ionode) then
-          write(6,*) 
-          write(6,'(a,i3)')
-     $         "Broyden_optim: max_history for broyden: ", maxit
-          write(6,'(a,l1)')
-     $         "Broyden_optim: cycle on maxit: ", cycle_on_maxit
-          if (variable_weight) write(6,'(a)')
-     $         "Broyden_optim: Variable weight not implemented yet"
-          write(6,'(a,f8.4)')
-     $         "Broyden_optim: initial inverse jacobian: ", jinv0
-          write(6,*) 
-        endif
-
-         call broyden_init(br,debug=broyden_debug)
-         initialization_done = .true.
-
-      endif
-
       if ( frstme ) then
   
+             call fdf_global_get(fire_mass,"MD.FIRE.Mass",1.0_dp)
+             call fdf_global_get(fire_dt,"MD.FIRE.TimeStep",dt)
+             call fdf_global_get(fire_dt_inc,"MD.FIRE.TimeInc",
+     $            FIRE_DEF_dt_inc)
+             call fdf_global_get(fire_dt_dec,"MD.FIRE.TimeDec",
+     $            FIRE_DEF_dt_dec)
+             call fdf_global_get(fire_nmin,"MD.FIRE.Nmin",FIRE_DEF_nmin)
+             call fdf_global_get(fire_alphamax,"MD.FIRE.AlphaMax",
+     $            FIRE_DEF_alphamax)
+             call fdf_global_get(fire_alpha_factor,
+     $            "MD.FIRE.AlphaFactor", FIRE_DEF_alpha_factor)
+             call fdf_global_get(fire_dtmax,"MD.FIRE.MaxTimeStep",
+     $            FIRE_DEF_dtmax)
+             call fdf_global_get(fire_dt,"MD.FIRE.TimeStep",dt)
+             call fdf_global_get(fire_debug,"MD.FIRE.Debug",.false.)
+
         ! Find number of variables
         ndeg = 0
         do ia = 1,na
@@ -160,60 +143,30 @@ c ---------------------------------------------------------------------------
         if ( varcel ) then
            ndeg = ndeg + 6      ! Including stress
         endif
+
         if (Ionode) then
-           write(6,'(a,i6)') "Broyden_optim: No of elements: ", ndeg
+           write(6,'(a,i6)') "Fire_optim: No of elements: ", ndeg
         endif
+         call fire_setup(b, n=ndeg, dt=fire_dt,
+     $                   debug=fire_debug,
+     $                   dt_inc=fire_dt_inc, dt_dec=fire_dt_dec,
+     $                   alphamax=fire_alphamax,
+     $                   alpha_factor=fire_alpha_factor,
+     $                   nmin=fire_nmin)
+
 
         if ( varcel ) then
 
           call fdf_global_get(constant_volume,
      .                        "MD.ConstantVolume", .false.)
 
-          if (Node.eq.0) then
-            tarstr = fdf_block('MD.TargetStress',iu)
-
-            ! Look for target stress and read it if found, 
-            ! otherwise generate it
-            if (tarstr) then
-              write(6,'(/a,a)')
-     $              'cgvc_zmatrix: Reading %block MD.TargetStress',
-     .                       ' (units of MD.TargetPressure).'
-              read(iu,*, end=50) sxx, syy, szz, sxy, sxz, syz
-              tstres(1,1) = - sxx * tp
-              tstres(2,2) = - syy * tp
-              tstres(3,3) = - szz * tp
-              tstres(1,2) = - sxy * tp
-              tstres(2,1) = - sxy * tp
-              tstres(1,3) = - sxz * tp
-              tstres(3,1) = - sxz * tp
-              tstres(2,3) = - syz * tp
-              tstres(3,2) = - syz * tp
-   50         continue
-            else
-              write(6,'(/a,a)')
-     $              'cgvc_zmatrix: No target stress found, ',
-     .              'assuming hydrostatic MD.TargetPressure.'
-              do i = 1, 3
-                do j = 1, 3
-                  tstres(i,j) = 0.0_dp
-                enddo
-                tstres(i,i) = - tp
-              enddo
-            endif
+          call get_target_stress(tp,tstres)
 
             if (constant_volume) then
                tstres(:,:) = 0.0_dp
                write(6,"(a)") "***Target stress set to zero " //
      $              "for constant-volume calculation"
             endif
-            write(6,"(/a)") 'cgvc_zmatrix: Target stress (kBar)'
-            do i=1, 3
-               write(6,"(a,2x,3f12.3)") 
-     .              'cgvc_zmatrix:', (tstres(i,j)/kBar,j=1,3)
-            enddo
-          endif
-
-          call broadcast(tstres(1:3,1:3))
 
 C Moduli of original cell vectors for fractional coor scaling back to au ---
           do n = 1, 3
@@ -254,9 +207,6 @@ C Allocate local memory
       call memory('A','D',ndeg,'cgvc_zmatrix')
       allocate(dxmaxn(ndeg))
       call memory('A','D',ndeg,'cgvc_zmatrix')
-
-!      print *, "zm_broyden: cell in : ", cell
-!      print *, "zm_broyden: strain in : ", strain
 
       if ( varcel ) then
 
@@ -390,14 +340,7 @@ C Set number of degrees of freedom & variables
 
       if (relaxd) RETURN   ! Will leave work arrays allocated
 
-      if (.not. broyden_is_setup(br)) then
-         call broyden_reset(br,ndeg,maxit,cycle_on_maxit,
-     $        jinv0,0.01_dp,dxmaxn)
-      endif
-      allocate (rnew(ndeg))
-      call memory('A','D',ndeg,'zm_broyden_optimizer')
-      weight = 1.0_dp
-      call broyden_step(br,gxa,gfa,w=weight,newx=rnew)
+      call fire_step(b,gfa,gxa,dxmaxn)
 
 
       ! Transform back
@@ -408,7 +351,7 @@ C Set number of degrees of freedom & variables
         do i = 1,3
           do j = i,3
             indi = indi + 1
-            strain(i,j) = rnew(indi) / precon
+            strain(i,j) = gxa(indi) / precon
             strain(j,i) = strain(i,j)
           enddo
         enddo
@@ -437,10 +380,10 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
                       ! Assume all three coords of this atom
                       ! are variables
                       ndi = ndegi + n - k
-                      Zmat(j)=Zmat(j)+cell(k,n)*rnew(ndi)/modcel(n)
+                      Zmat(j)=Zmat(j)+cell(k,n)*gxa(ndi)/modcel(n)
                     enddo
                   else
-                    Zmat(j) = rnew(ndegi)
+                    Zmat(j) = gxa(ndegi)
                   endif
                   Zmat(j) = Zmat(j)*coeffA(j) + coeffB(j)
                   j = iNextDept(j)
@@ -461,7 +404,7 @@ C Return coordinates to correct arrays
                 ndegi = ndegi + 1
                 j = indi
                 do while (j.ne.0)
-                  Zmat(j) = rnew(ndegi)*coeffA(j)+coeffB(j)
+                  Zmat(j) = gxa(ndegi)*coeffA(j)+coeffB(j)
                   j = iNextDept(j)
                 enddo
               endif
@@ -470,8 +413,6 @@ C Return coordinates to correct arrays
           call Zmat_to_Cartesian(xa)
       endif
 
-!      print *, "zm_broyden: cell out : ", cell
-!      print *, "zm_broyden: strain out : ", strain
 
 C Deallocate local memory
 
@@ -483,9 +424,7 @@ C Deallocate local memory
       deallocate(gxa)
       call memory('D','D',size(gfa),'cgvc_zmatrix')
       deallocate(gfa)
-      call memory('D','D',size(rnew),'cgvc_zmatrix')
-      deallocate(rnew)
 
-      end subroutine zm_broyden_optimizer
+      end subroutine zm_fire_optimizer
 
-      end module m_zm_broyden_optim
+      end module m_zm_fire_optim

@@ -1546,7 +1546,11 @@ C
                                                     ! this atom binds to,
                                                     ! and the previous one
                 r2_mod = sqrt(dot_product(r2,r2))
-                theta_1 = acos(r2(3)/r2_mod)
+                theta_1 = acos(r2(3)/r2_mod)        ! Could this be not general enough?
+                ! Theta should be always between 0 and pi.
+                ! If it is not, it should be forced to be, changing its sign and
+                ! changing phi to phi+/- pi
+                ! This is not currently enforced!
 
                 if (
      $               (abs(r2(2)) .gt. 1.0e-8_dp)

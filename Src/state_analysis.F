@@ -20,7 +20,7 @@
       use siesta_geom
       USE siesta_options
       use m_stress
-      use m_energies, only: Etot
+      use m_energies, only: Etot, FreeE, Entropy
       use m_ntm
       use m_spin,     only: nspin
       use m_forces
@@ -37,6 +37,18 @@
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
+
+!     Save structural information in crystallographic format,
+!     and canonical Zmatrix (if applicable) before moving the atoms
+!
+      if (IOnode) then
+         call write_struct( ucell, na_u, isa, iza, xa )
+         if (lUseZmatrix) then
+            call write_canonical_ucell_and_Zmatrix()
+         endif
+      endif
+!
+
 ! Write final Kohn-Sham Energy 
       if (cml_p) call cmlStartPropertyList(mainXML,
      .                                   title='Final KS Energy')
@@ -60,10 +72,14 @@
       endif
       if (cml_p) call cmlEndPropertyList(mainXML)
 
+      FreeE = Etot - Temp * Entropy
+
 ! Substract egg box effect from the forces 
       if (eggbox_block) then
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)
       endif
+
+      call write_raw_efs(stress,na_u,fa,FreeE)
 
       !  Compute stress without internal molecular pressure
       call remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
@@ -111,16 +127,6 @@ C ...................
       call mulliken( mullipop, nspin, na_u, no_u, maxnh,
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
-!
-!     Save structural information in crystallographic format,
-!     and canonical Zmatrix (if applicable) before moving the atoms
-!
-      if (IOnode) then
-         call write_struct( ucell, na_u, isa, iza, xa )
-         if (lUseZmatrix) then
-            call write_canonical_ucell_and_Zmatrix()
-         endif
-      endif
 !
 !     Call the born effective charge routine only in those steps (even) 
 !     in which the dx  is positive.

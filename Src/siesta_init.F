@@ -59,16 +59,6 @@
       integer :: neigmin     ! Min. number of eigenstates (per k point)
       integer :: ns          ! Number of species
 
-      external :: automatic_cell,
-     .  bonds,  fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kinefsm, mulliken, naefs, pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
-
 !------------------------------------------------------------------------- BEGIN
 ! Initialise MPI and set processor number
 #ifdef MPI

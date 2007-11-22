@@ -15,9 +15,15 @@
       USE siesta_options
       use parallel,        only: IOnode
       use siesta_cml
+      use sys,             only: die
+
       use m_broyden_optim, only: broyden_optimizer
+      use m_fire_optim, only: fire_optimizer
       use m_zm_broyden_optim,      only: zm_broyden_optimizer
+      use m_zm_fire_optim,      only: zm_fire_optimizer
       use m_cell_broyden_optim,      only: cell_broyden_optimizer
+      use m_cell_fire_optim,      only: cell_fire_optimizer
+
       use m_dynamics,      only: nose, verlet2, npr, anneal, pr
       use phonon,          only: phonon_setup, phonon_restore_coords,
      .                           phonon_set_coords
@@ -62,13 +68,27 @@
       case(0)
         if (nmove .ne. 0) then
           if (RelaxCellOnly) then
-             call cell_broyden_optimizer( na_u, xa, ucell,
+             if (broyden_optim) then
+                call cell_broyden_optimizer( na_u, xa, ucell,
      $            cstress, tp, strtol,
      $            varcel, relaxd)
-          else
+             elseif (fire_optim) then
+                call cell_fire_optimizer( na_u, xa, ucell,
+     $            cstress, tp, strtol,
+     $            varcel, relaxd)
+             else
+                call die("Cell-only optim needs Broyden or FIRE")
+             endif
+
+          else   ! Coordinate relaxation (and maybe cell)
+
            if (lUseZmatrix) then
              if (broyden_optim) then
                 call zm_broyden_optimizer( na_u, xa, cfa, ucell,
+     $               cstress, dxmax, tp, ftol, strtol,
+     $               varcel, relaxd)
+             elseif (fire_optim) then
+                call zm_fire_optimizer( na_u, xa, cfa, ucell,
      $               cstress, dxmax, tp, ftol, strtol,
      $               varcel, relaxd)
              else
@@ -79,6 +99,10 @@
            else
              if (broyden_optim) then
                 call broyden_optimizer( na_u, xa, cfa, ucell,
+     $               cstress, dxmax, tp, ftol, strtol,
+     $               varcel, relaxd )
+             elseif (fire_optim) then
+                call fire_optimizer( na_u, xa, cfa, ucell,
      $               cstress, dxmax, tp, ftol, strtol,
      $               varcel, relaxd )
              else

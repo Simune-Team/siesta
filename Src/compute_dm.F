@@ -37,17 +37,6 @@
       real(dp):: buffer1   ! Temporary for the result of a globalize operation
 #endif
 
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
-     .  pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
-
 !------------------------------------------------------------------------- BEGIN
 
 ! Solve eigenvalue problem 

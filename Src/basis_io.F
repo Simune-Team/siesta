@@ -45,9 +45,10 @@
       CONTAINS
 
       subroutine read_basis_netcdf(ns)
-      integer, intent(out) :: ns
 
 #ifndef CDF
+      integer, intent(out) :: ns
+
       call die(
      $ '*** You need netCDF to read the new user-defined basis files...'
      $ )
@@ -56,6 +57,8 @@
 #else 
 
       use netcdf
+
+      integer, intent(out) :: ns
 
       type(rad_func), pointer            :: op
       type(rad_func), pointer            :: pp

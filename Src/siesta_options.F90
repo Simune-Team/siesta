@@ -8,6 +8,7 @@ MODULE siesta_options
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
   logical :: dumpcharge    ! Write electron density?
+  logical :: fire_mix      ! SCF mixing with FIRE method
   logical :: fixauxcell    ! Keep the auxiliary supercell fixed?
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: inspn         ! Antiferro spin ordering in initdm?
@@ -52,6 +53,7 @@ MODULE siesta_options
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
   logical :: require_energy_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
+  logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?
   logical :: use_struct_file ! Read structural information from a special file?
   logical :: bornz          ! Calculate Born polarization charges?
@@ -410,9 +412,14 @@ MODULE siesta_options
 
     ! Broyden SCF mixing, number of iterations 
     call fdf_global_get(broyden_maxit,'DM.NumberBroyden',0)
+    ! FIRE SCF mixing, no parameters
+    call fdf_global_get(fire_mix,'DM.FIRE.Mixing',.false.)
     if (ionode) then
-      if (broyden_maxit .gt. 0) then
-        write(6,5) 'redata: Broyden mixing with ', broyden_maxit, &
+       if (fire_mix) then
+          write(6,*) "Fire Mixing"
+       else if (broyden_maxit .gt. 0) then
+          write(6,5) 'redata: Broyden mixing with ', &
+                    broyden_maxit, &
                    ' saved histories.'
         if (maxsav > 1) then
           write(6,2) 'redata: Broyden supersedes Pulay!'
@@ -864,6 +871,9 @@ MODULE siesta_options
     else if (leqi(dyntyp,'broyden')) then
       idyn = 0
       broyden_optim = .true.
+    else if (leqi(dyntyp,'fire')) then
+      idyn = 0
+      fire_optim = .true.
     else if (leqi(dyntyp,'verlet')) then
       idyn = 1
     else if (leqi(dyntyp,'nose')) then
@@ -903,6 +913,9 @@ MODULE siesta_options
         if (broyden_optim) then
           write(6,2) 'redata: Dynamics option                  =     '//&
                      'Broyden coord. optimization'
+        elseif (fire_optim) then
+          write(6,2) 'redata: Dynamics option                  =     '//&
+                     'FIRE coord. optimization'
         else
           write(6,2) 'redata: Dynamics option                  =     '//&
                      'CG coord. optimization'
@@ -925,6 +938,10 @@ MODULE siesta_options
             call cmlAddParameter( xf   = mainXML,        &
                                   name = 'MD.TypeOfRun', &
                                   value= 'Broyden' )
+          else if (fire_optim) then
+            call cmlAddParameter( xf   = mainXML,        &
+                                  name = 'MD.TypeOfRun', &
+                                  value= 'FIRE' )
           else
             call cmlAddParameter( xf    =mainXML,        &
                                   name  ='MD.TypeOfRun', &

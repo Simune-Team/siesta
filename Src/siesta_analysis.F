@@ -72,17 +72,6 @@
       real(dp):: qtmp(4)   ! Temporary for globalized spin charge
 #endif
 
-      external :: 
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
-     .  pulayx, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
-
 !------------------------------------------------------------------------- BEGIN
       final = .true.
 
