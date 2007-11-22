@@ -7,6 +7,18 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2007-11-22  17:55:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+Summary: Fixes for denchar compilation and wavefunction output
+
+* The makefile section for denchar had several errors.
+
+* siesta_analysis used maxwk as a local variable, instead of importing
+  it from writewave, thus preventing the call to wwave from working.
+
+* (NOTE: the need for a lattice constant or cell vectors in the fdf file
+   if the wavefunctions need to be output should be removed)
+
 2007-11-22  17:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
 
 Summary: Fixed computation of chemical potential in O(N) (P.Ordejon)
