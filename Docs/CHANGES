@@ -7,6 +7,36 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2007-11-22  18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
+
+Summary: New 'fdf' target in Makefile for tests
+
+(E. Anglada)
+
+New target for the test option: fdf calls. 
+Requested by BSC so they can test the new fdf.
+
+New files (new tests and missing xml output files for reference)
+A/ Tests/var_cell_stress
+A  Tests/Reference-xml/fire_benzene.xml
+A  Tests/Reference-xml/si_coop.xml
+A  Tests/var_cell_stress/.arch-ids/=id
+A  Tests/var_cell_stress/.arch-ids/makefile.id
+A  Tests/var_cell_stress/.arch-ids/var_cell_stress.fdf.id
+A  Tests/var_cell_stress/.arch-ids/var_cell_stress.pseudos.id
+A  Tests/var_cell_stress/makefile
+A  Tests/var_cell_stress/var_cell_stress.fdf
+A  Tests/var_cell_stress/var_cell_stress.pseudos
+
+
+Modified files
+M  Src/siesta_move.F : remove debug info
+M  Src/remove_intramol_pressure.f90 : remove debug info
+M  Tests/std-Makefile Xmlcheck enabled by default. New targets: fdf, all
+M  Tests/std-test.mk 
+M  Tests/si2x1h/si2x1h.fdf New option
+M  Src/atom.f  Remove debug info.
+
 2007-11-22  18:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
 
 Summary: xml tester update (Eduardo Anglada)

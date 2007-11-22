@@ -71,6 +71,6 @@ MD.UseSaveXV            .true.
 MD.UseSaveCG            .true.
 SaveRho                 .true.
 SaveDeltaRho            .true.
-
+SaveIonicCharge         .ture.
 SaveElectrostaticPotential      .true.
 SaveTotalPotential      .true.

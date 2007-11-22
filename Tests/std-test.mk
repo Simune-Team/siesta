@@ -20,10 +20,8 @@ completed_$(label):
 	@echo "    ==> Running SIESTA as ${SIESTA}"
 	@(cd $(label) ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf) \
           && touch completed_$(label)
-	@if [ -f completed_$(label) ] ;\
-          then\ 
-	 #cp $(label)/$(name).out $(label)/$(name).xml .;\
-           echo "    ===> SIESTA finished successfully";\
+	@if [ -f completed_$(label) ] ; then \
+	 echo "    ===> SIESTA finished";\
          else \
            echo " **** Test $(name) did not complete successfully";\
          fi
@@ -32,7 +30,7 @@ xmlcheck: completed
 	@echo "    ==> Running xmlcheck for system $(name)"
 	@ln -sf ../tolerances.dat ./tolerances.dat
 	$(XML-TESTER) $(XML-REFERENCE)/$(name).xml $(label)/$(name).xml | tee $(label).diff-xml
-        # The following line erases the file if it is empty
+# The following line erases the file if it is empty
 	@if [ ! -s $(label).diff-xml ] ; then rm -f $(label).diff-xml ; fi
 #
 clean:

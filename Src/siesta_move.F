@@ -265,9 +265,7 @@
    60 continue
 ! Output memory use at the end of this geometry step
       if (cml_p) then
-         print *, "Before end in siesta_move"
          call cmlEndStep(mainXML)
-         print *, "After end in siesta_move"
       endif
       call printmemory( 6, 0 )
       call timer( 'IterMD', 2 )

@@ -3216,7 +3216,6 @@ C
                       dnrm=dnrm+drdi(ir)*phi*phi
                       rnrm(ir)=dnrm 
                       g(ir)=rphi(ir,l,nsm)/(rofi(ir)**(l+1))
-                      write(99,*) ir, rofi(ir), phi, rnrm(ir)
                    enddo 
                    g(1)=g(2)         
 
