@@ -2,9 +2,29 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-NOTE: The arch patches appear to be all committed by A. Garcia. That is because
-he is the person in charge of the merges. To identify the developer responsible
-for a given patch, see the "new patches" section of each log.
+____________________________________________________________________
+** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
+--------------------------------------------------------------------
+
+2007-11-22  17:35:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
+
+Summary: Merged COOP/COHP functionality
+
+Merged the COOP/COHP/PDOS code from the 2.1 branch complex.
+
+¡-- Functionality changes:
+
+* The wavefunction file is now in WFSX format (well-packed, single-precision, and thus
+significantly smaller). The Util/wfsx2wfs program can be used to re-generate the old format.
+
+* The xijo array (for relative positions between interacting orbitals) is always produced.
+
+-- New features:
+
+Option COOP.Write triggers the creation of a wavefunction file (for the SCF-k-point set)
+and an HSX file (enhanced HS format) that can later be processed by Util/COOP/mprop
+for the off-line generation of COOP/COHP/(P)DOS.
+
 
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.3

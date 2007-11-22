@@ -17,15 +17,15 @@
   \item {\bf BandLines}, 33
   \item {\bf BandLinesScale}, 33
   \item {\bf BandPoints}, 34
-  \item basis, 69
+  \item basis, 70
     \subitem basis set superposition error (BSSE), 21
     \subitem Bessel functions, 21
     \subitem default   soft confinement potential, 18
     \subitem default soft   confinement, 17
     \subitem default soft confinement radius, 18
-    \subitem effective pressure, 74
+    \subitem effective pressure, 75
     \subitem fix   split-valence table, 17
-    \subitem Gen-basis standalone program, 15, 69
+    \subitem Gen-basis standalone program, 15, 70
     \subitem ghost atoms, 21
     \subitem minimal, 16
     \subitem new   split-valence code, 17
@@ -38,17 +38,17 @@
     \subitem split valence   for H, 17
     \subitem User basis, 15
     \subitem User basis (NetCDF format), 15
-  \item basis     \subitem PAO, 91
-  \item {\bf     BasisPressure}, 74
+  \item basis     \subitem PAO, 92
+  \item {\bf     BasisPressure}, 75
   \item Berry phase, 40
   \item Bessel functions, 21
   \item \%block, 11
   \item {\bf BlockSize}, 59
-  \item {\bf Blocksize}, 82
+  \item {\bf Blocksize}, 83
   \item BLYP, 36
   \item Born effective charges, 42
   \item {\bf BornCharge}, 42, 51
-  \item Broyden mixing, 38, 87
+  \item Broyden mixing, 38, 88
   \item Broyden optimization, 54
   \item bug reports, 76
   \item bulk polarization, 40
@@ -63,9 +63,10 @@
   \item Chebishev Polynomials, 50
   \item Chemical Potential, 50, 51
   \item {\bf ChemicalSpeciesLabel}, 7, 12, 13
-  \item CML, 85
+  \item CML, 86
   \item constant-volume cell relaxation, 52
   \item constraints in relaxations, 26
+  \item {\bf COOP.Write}, 66
   \item cutoff radius, 19
 
   \indexspace
@@ -166,7 +167,7 @@
   \item {\bf LatticeVectors}, 23
   \item LDA, 35
   \item Linear mixing kick, 38
-  \item {\bf LocalDensityOfStates}, 66
+  \item {\bf LocalDensityOfStates}, 67
   \item Localized Wave Functions, 50
   \item {\bf LongOutput}, 60
   \item Lower order N memory, 51
@@ -208,7 +209,7 @@
   \item {\bf MD.UseSaveCG}, 65
   \item {\bf MD.UseSaveXV}, 25, 65
   \item {\bf MD.UseSaveZM}, 65
-  \item {\bf MD.UseStructFile}, 71
+  \item {\bf MD.UseStructFile}, 72
   \item {\bf MD.VariableCell}, 52
   \item memory required, 69
   \item mesh, 37
@@ -229,8 +230,8 @@
 
   \item {\bf NaiveAuxiliaryCell}, 26
   \item {\bf NeglNonOverlapInt}, 40
-  \item NetCDF format, 15, 69, 80
-  \item NetCDF library, 80
+  \item NetCDF format, 15, 70, 81
+  \item NetCDF library, 81
   \item {\bf NetCharge}, 14
   \item {\bf     New.A.Parameter}, 74
   \item {\bf     New.B.Parameter}, 74
@@ -277,26 +278,27 @@
     \subitem $\delta \rho(\vec r)$, 66
     \subitem atomic coordinates
       \subsubitem history, 61
-      \subsubitem in a dynamics step, 60, 61, 68
-      \subsubitem initial, 61, 68
+      \subsubitem in a dynamics step, 60, 61, 69
+      \subsubitem initial, 61, 69
     \subitem band $\vec k$ points, 61, 62, 69
     \subitem band structure, 61, 62, 69
-    \subitem basis, 69
+    \subitem basis, 70
     \subitem charge density, 65
     \subitem charge density for DENCHAR code, 68
-    \subitem customization, 68
+    \subitem customization, 69
     \subitem density matrix, 62
     \subitem eigenvalues, 61, 69, 71
     \subitem electrostatic potential, 66
     \subitem forces, 61, 69, 70
     \subitem grid $\vec k$ points, 61, 69, 70
     \subitem Hamiltonian \& overlap, 65
+    \subitem Information for COOP/COHP curves, 66
     \subitem ionic charge, 66
-    \subitem local density of states, 66
+    \subitem local density of states, 67
     \subitem long, 60
     \subitem main output file, 68
     \subitem molecular dynamics
-      \subsubitem Force Constants Matrix, 72
+      \subsubitem Force Constants Matrix, 73
       \subsubitem history, 63, 72
       \subsubitem PHONON forces file, 73
     \subitem Mulliken analysis, 61, 62, 69
@@ -313,7 +315,7 @@
   \item {\bf PAO.BasisSizes}, 16
   \item {\bf PAO.BasisType}, 15
   \item {\bf PAO.FixSplitTable}, 17
-  \item {\bf PAO.Keep.Findp.Bug}, 74
+  \item {\bf PAO.Keep.Findp.Bug}, 75
   \item {\bf PAO.NewSplitCode}, 17
   \item {\bf PAO.SoftDefault}, 17
   \item {\bf     PAO.SoftInnerRadius}, 18
@@ -321,8 +323,8 @@
   \item {\bf PAO.SplitNorm}, 16
   \item {\bf PAO.SplitNormH}, 17
   \item {\bf PAO.SplitTailNorm}, 17
-  \item Parallel {\sc Siesta}, 82
-  \item {\bf ParallelOverK}, 82
+  \item Parallel {\sc Siesta}, 83
+  \item {\bf ParallelOverK}, 83
   \item PBE, 35
   \item perturbative polarization, 16, 21
   \item Phonon program, 51
@@ -332,8 +334,8 @@
   \item {\sc Plrho}, 70
   \item polarization orbitals, 15
   \item {\bf PolarizationGrids}, 40
-  \item Precision selection, 87
-  \item {\bf ProcessorY}, 59, 82
+  \item Precision selection, 88
+  \item {\bf ProcessorY}, 59, 83
   \item {\bf ProjectedDensityOfStates}, 67
   \item {\bf PS.KBprojectors} , 18
   \item {\bf PS.lmax}, 18
@@ -346,7 +348,7 @@
   \item Pseudopotentials, 70
   \item Pulay mixing, 37
   \item PW92, 35
-  \item Python language, 72, 81
+  \item Python language, 72, 82
   \item PZ, 35
 
   \indexspace
@@ -412,7 +414,7 @@
   \item {\it Systemlabel.}.FA, 6
   \item {\it Systemlabel.}out, 7
   \item {{\it Systemlabel}.STRUCT\_IN}, 25
-  \item {{\it Systemlabel}.STRUCT\_NEXT\_ITER}, 71
+  \item {{\it Systemlabel}.STRUCT\_NEXT\_ITER}, 72
   \item {{\it Systemlabel}.STRUCT\_OUT}, 6, 71
   \item {\it Systemlabel.}xml, 7
   \item {\it Systemlabel.}XV, 6
@@ -446,8 +448,8 @@
   \item WC, 35
   \item {\bf WriteBands}, 61, 62, 69
   \item {\bf WriteCoorCerius}, 63
-  \item {\bf WriteCoorInitial}, 61, 68
-  \item {\bf WriteCoorStep}, 60, 61, 68
+  \item {\bf WriteCoorInitial}, 61, 69
+  \item {\bf WriteCoorStep}, 60, 61, 69
   \item {\bf WriteCoorXmol}, 63
   \item {\bf WriteDenchar}, 68
   \item {\bf WriteDM}, 62
@@ -465,7 +467,7 @@
   \item {\bf XC.authors}, 35
   \item {\bf XC.functional}, 35
   \item {\bf XC.hybrid}, 36
-  \item XML, 85
+  \item XML, 86
   \item {\sc XMol}, 63, 71
 
   \indexspace

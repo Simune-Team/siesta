@@ -204,7 +204,7 @@ MODULE Kpoint_grid
             call cmlAddProperty(xf=mainXML, property=kweight,         &
                  dictref='siesta:kweight')
          endif
-      else
+         ! Always write KP file
          call iokp( nkpnt, kpoint, kweight )
       endif
       write(6,'(/a,i6)')  'siesta: k-grid: Number of k-points =', nkpnt

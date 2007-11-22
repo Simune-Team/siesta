@@ -1,3 +1,5 @@
+module m_intramol_pressure
+CONTAINS
 subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
  use precision, only: dp
  use zmatrix, only: nZmol, nZmolStartAtom
@@ -8,7 +10,7 @@ subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
  real(dp), external :: volcel
 
  integer, intent(in)   :: na_u
- real(dp), intent(in)  :: ucell(3,3), xa(3,*), fa(3,*)
+ real(dp), intent(in)  :: ucell(3,3), xa(3,na_u), fa(3,na_u)
  real(dp), intent(in)  :: stress(3,3)
  real(dp), intent(out) :: mstress(3,3)
 
@@ -16,7 +18,8 @@ subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
  integer  :: ifirst, ilast, natoms_mol, imol, ix, ia
 
 ! Find intramolecular contributions to the pressure 
-
+        print *, "na_u: ", na_u
+        print *, "size of fa: ", size(fa, dim=1), size(fa, dim=2)
         volume = volcel(ucell)
         virial = 0.0_dp
         if (lUseZmatrix) then
@@ -49,4 +52,4 @@ subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
         enddo
 
 end subroutine remove_intramol_pressure
-
+end module m_intramol_pressure

@@ -40,6 +40,7 @@ MODULE siesta_options
   logical :: writpx        ! Write atomic coordinates at every geometry step?
   logical :: writb         ! Write band eigenvalues?
   logical :: writec        ! Write atomic coordinates at every geometry step?
+  logical :: write_coop    ! Write information for COOP/COHP analysis ?
   logical :: writef        ! Write atomic forces at every geometry step?
   logical :: writek        ! Write the k vectors of the BZ integration mesh?
   logical :: writic        ! Write the initial atomic ccordinates?
@@ -1337,7 +1338,11 @@ MODULE siesta_options
     call fdf_global_get(RelaxCellOnly, 'MD.RelaxCellOnly', .false.)
     call fdf_global_get(RemoveIntraMolecularPressure,   &
              'MD.RemoveIntraMolecularPressure', .false.)
-
+!
+!     COOP-related flags
+!
+    call fdf_global_get(write_coop, 'COOP.Write', .false.)
+!
     call fdf_global_get(savrho,'SaveRho', dumpcharge)
     call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)
     call fdf_global_get(savevh,'SaveElectrostaticPotential', .false.)

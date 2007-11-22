@@ -194,10 +194,11 @@
 
       ! Listh (and xijo if .not. gamma) are allocated inside hsparse
       ! nh is set by the routine also
+      ! Note: We always generate xijo
       nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh,
-     $                 gamma, xijo )
+     $                 set_xijo=.true., xijo=xijo )
 
       maxnh = nh
       !OBSOLETE: 

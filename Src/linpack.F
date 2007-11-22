@@ -1,6 +1,6 @@
       subroutine zgedi(a,lda,n,ipvt,det,work,job)
-      integer lda,n,ipvt(1),job
-      complex*16 a(lda,1),det(2),work(1)
+      integer lda,n,ipvt(*),job
+      complex*16 a(lda,*),det(2),work(*)
 c
 c     zgedi computes the determinant and inverse of a matrix
 c     using the factors computed by zgeco or zgefa.
@@ -151,8 +151,8 @@ c
       end
 
       subroutine zgefa(a,lda,n,ipvt,info)
-      integer lda,n,ipvt(1),info
-      complex*16 a(lda,1)
+      integer lda,n,ipvt(*),info
+      complex*16 a(lda,*)
 c
 c     zgefa factors a complex*16 matrix by gaussian elimination.
 c
@@ -276,7 +276,7 @@ c     jack dongarra, 3/11/78.
 c
       integer n,incx
       integer :: ix, i
-      complex*16 zx(1)
+      complex*16 zx(*)
       double precision smax
       double precision sdcabs1
 c

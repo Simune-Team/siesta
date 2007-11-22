@@ -277,9 +277,10 @@ C Repeat diagonalisation with increased memory to handle clustering
      .        neigneeded,iscf,ierror)
           endif
 
-          if (getPSI) 
-     .     call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
+          if (getPSI) then
+             call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
      .                 aux,psi,.false.)
+          endif
  
           if (getD) then
 

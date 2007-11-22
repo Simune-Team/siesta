@@ -113,7 +113,7 @@ OBJS =  automatic_cell.o \
         molecularmechanics.o filter.o filter_subs.o zm_broyden_optim.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
-        m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o
+        m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -399,7 +399,8 @@ iocg.o: files.o precision.o sys.o
 iodm.o: files.o parallel.o parallelsubs.o precision.o sys.o
 ioeig.o: files.o precision.o siesta_cml.o units.o
 iofa.o: files.o precision.o
-iohs.o: files.o parallel.o parallelsubs.o precision.o sys.o
+iohs.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
+iohs.o: precision.o siesta_geom.o sys.o
 iokp.o: files.o precision.o
 iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
@@ -437,6 +438,8 @@ m_eo.o: precision.o
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_forces.o: precision.o
 m_getopts.o: f2kcli.o
+m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
+m_hsx.o: precision.o siesta_geom.o sys.o
 m_iorho.o: parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
@@ -533,10 +536,11 @@ scfconvergence_test.o: siesta_options.o write_subs.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o m_dipol.o m_energies.o
-setup_hamiltonian.o: m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o
-setup_hamiltonian.o: m_steps.o m_stress.o metaforce.o molecularmechanics.o
-setup_hamiltonian.o: nlefsm.o normalize_dm.o overfsm.o siesta_cml.o
-setup_hamiltonian.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
+setup_hamiltonian.o: m_forces.o m_gamma.o m_hsx.o m_mpi_utils.o m_ntm.o
+setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o metaforce.o
+setup_hamiltonian.o: molecularmechanics.o nlefsm.o normalize_dm.o overfsm.o
+setup_hamiltonian.o: siesta_cml.o siesta_geom.o siesta_options.o
+setup_hamiltonian.o: sparse_matrices.o sys.o
 setup_kscell.o: minvec.o parallel.o precision.o units.o
 shaper.o: alloc.o atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
@@ -574,8 +578,8 @@ spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 state_analysis.o: atomlist.o born_charge.o m_energies.o m_forces.o m_iostruct.o
 state_analysis.o: m_ntm.o m_spin.o m_stress.o m_wallclock.o parallel.o
-state_analysis.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
-state_analysis.o: write_subs.o zmatrix.o
+state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
+state_analysis.o: siesta_options.o sparse_matrices.o write_subs.o zmatrix.o
 state_init.o: alloc.o atomlist.o hsparse.o kpoint_grid.o m_check_supercell.o
 state_init.o: m_energies.o m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o
 state_init.o: m_spin.o m_steps.o new_dm.o overlap.o parallel.o
@@ -600,8 +604,9 @@ write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
 write_subs.o: atomlist.o m_energies.o m_forces.o m_iostruct.o m_spin.o
 write_subs.o: m_steps.o m_stress.o parallel.o precision.o siesta_cml.o
 write_subs.o: siesta_geom.o siesta_options.o units.o zmatrix.o
-writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o parallel.o
-writewave.o: parallelsubs.o parsing.o precision.o siesta_geom.o sys.o
+writewave.o: alloc.o atmfuncs.o atomlist.o densematrix.o files.o kpoint_grid.o
+writewave.o: m_fdf_global.o parallel.o parallelsubs.o parsing.o precision.o
+writewave.o: siesta_geom.o sys.o units.o
 xc.o: alloc.o precision.o sys.o xcmod.o
 xcmod.o: parallel.o parsing.o precision.o sys.o
 xml.o: precision.o
@@ -625,6 +630,7 @@ m_fermid.o: fermid.o
 m_find_kgrid.o: find_kgrid.o
 m_forhar.o: forhar.o
 m_hsparse.o: hsparse.o
+m_intramol_pressure.o: remove_intramol_pressure.o
 m_ioxv.o: ioxv.o
 m_ksv.o: ksv.o
 m_ksvinit.o: ksvinit.o

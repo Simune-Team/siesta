@@ -1,0 +1,580 @@
+!==================================================================
+program mprop
+
+  use main_vars
+  use orbital_set, only: get_orbital_set
+  use io_hs, only: read_hs_file
+  use read_curves, only: read_curve_information, mask_to_arrays
+
+  implicit none
+
+  logical :: gamma_wfsx
+
+  !
+  !     Process options
+  !
+  n_opts = 0
+  do
+     call getopts('dhls:n:m:M:R:',opt_name,opt_arg,n_opts,iostat)
+     if (iostat /= 0) exit
+     select case(opt_name)
+     case ('d')
+        debug = .true.
+     case ('+d')
+        debug = .false.
+     case ('l')
+        energies_only = .true.
+     case ('s')
+        read(opt_arg,*) smear
+     case ('n')
+        read(opt_arg,*) npts_energy
+     case ('m')
+        read(opt_arg,*) minimum_spec_energy
+     case ('M')
+        read(opt_arg,*) maximum_spec_energy
+     case ('R')
+        ref_line_given = .true.
+        ref_line = opt_arg
+     case ('h')
+        call manual()
+     case ('?',':')
+        write(0,*) "Invalid option: ", opt_arg(1:1)
+        write(0,*) "Usage: mprop [ -d ] [ -h ] MPROP_FILE_ROOT"
+        write(0,*) "Use -h option for manual"
+        STOP
+     end select
+  enddo
+
+  nargs = command_argument_count()
+  nlabels = nargs - n_opts + 1
+  if (nlabels /= 1)  then
+     write(0,*) "Usage: mprop [ -d ] [ -h ] MPROP_FILE_ROOT"
+     write(0,*) "Use -h option for manual"
+     STOP
+  endif
+
+  call get_command_argument(n_opts,value=mflnm,status=iostat)
+  if (iostat /= 0) then
+     STOP "Cannot get .mprop file root"
+  endif
+
+  print "(a,f7.3)", "Using smearing parameter: ", smear
+  print "(a,i6,a)", "Using ", npts_energy, " points in energy range"
+
+  !==================================================
+
+  ierr=0
+
+  ! * LECTURA TIPUS CALCUL
+
+  open(mpr_u,file=trim(mflnm) // ".mpr", status='old')
+  read(mpr_u,*) sflnm
+  read(mpr_u,*) what
+
+  dos=(trim(what).eq.'DOS')
+  coop=(trim(what).eq.'COOP')
+  
+  !==================================================
+  ! * LECTURA sflnm.WFSX
+
+  write(6,"(1x,a,'.WFSX ...')") trim(sflnm)
+
+  open(wfs_u,file=trim(sflnm)//'.WFSX',status='old',form='unformatted')
+  read(wfs_u) nkp, gamma_wfsx
+  allocate (wk(nkp), pk(3,nkp))
+
+  read(wfs_u) nsp
+  read(wfs_u) nao
+  read(wfs_u)        !! Symbols, etc
+  if (debug) print *, "WFSX read: nkp, nsp, nnao: ", nkp, nsp, nao
+
+  allocate (ados(npts_energy,nsp))
+
+  nwfmx = 0
+  min_energy = huge(1.0_dp)
+  max_energy = -huge(1.0_dp)
+
+  do ik=1,nkp
+     do is=1,nsp
+
+        read(wfs_u) idummy, pk(1:3,ik), wk(ik)
+        if (idummy /= ik) stop "ik index mismatch in WFS file"
+
+        read(wfs_u) is0
+        read(wfs_u) number_of_wfns
+        nwfmx = max(nwfmx,number_of_wfns)
+
+        do iw=1,number_of_wfns
+           read(wfs_u) iw0
+           read(wfs_u) eigval
+           min_energy = min(min_energy,eigval)
+           max_energy = max(max_energy,eigval)
+           read(wfs_u)
+        enddo
+     enddo
+  enddo
+
+  print *, " Maximum number of wfs per k-point: ", nwfmx
+  print "(a,2f12.4)", "Min_energy, max_energy on WFS file: ",  &
+       min_energy, max_energy
+
+
+
+  low_e = min_energy - 2*smear
+  high_e = max_energy + 2*smear
+  e_step = (high_e-low_e)/(npts_energy-1)
+  ados(:,1:nsp) = 0.0_dp
+
+  ! skip four records
+
+  rewind(wfs_u)
+
+  read(wfs_u) 
+  read(wfs_u) 
+  read(wfs_u) 
+  read(wfs_u) 
+
+  do ik=1,nkp
+     do is=1,nsp
+        read(wfs_u)
+        read(wfs_u)
+        read(wfs_u)  number_of_wfns
+        do iw=1,number_of_wfns
+           read(wfs_u) 
+           read(wfs_u) eigval
+           do i = 1, npts_energy
+              energy = low_e + e_step*(i-1)
+              weight = delta(energy-eigval)
+              if (weight < 1.0e-6) CYCLE           ! Will not contribute
+              ados(i,is) = ados(i,is) + wk(ik) * weight
+           enddo
+           read(wfs_u)       ! Skip wfn info
+        enddo
+     enddo
+  enddo
+
+  call io_assign(idos)
+  open(idos,file=trim(sflnm)//".alldos",form="formatted", &
+       status="unknown",action="write",position="rewind")
+  write(idos,*) "#  Energy   LARGE-SCALE DOS"
+  do i = 1, npts_energy
+     energy = low_e + e_step*(i-1)
+     write(idos,*) energy, (ados(i,is), is=1,nsp)
+  enddo
+
+  call io_close(idos)
+
+
+  ! * LECTURA sflnm.HS
+  ! Will pick up atoms, zval, and thus N_electrons
+
+  call read_hs_file()
+  if (gamma_wfsx .neqv. gamma) STOP "Gamma mismatch"
+
+  ztot = 0.0_dp
+  do ia = 1, na_u
+     ztot = ztot + zval(isa(ia))
+  enddo
+
+
+  !
+  !       Compute integrated total DOS
+
+  allocate(intdos(npts_energy))
+  call io_assign(intdos_u)
+  open(intdos_u,file=trim(sflnm)//".intdos",form="formatted", &
+       status="unknown",action="write",position="rewind")
+  intdos(1) = 0.0_dp
+  write(intdos_u,*) low_e, intdos(1)
+  do i = 2, npts_energy
+     energy = low_e + e_step*(i-1)
+     intdos(i) = intdos(i-1) + sum(ados(i,:)) * e_step * 2.0_dp /nsp
+     write(intdos_u,*) energy, intdos(i)
+  enddo
+  call io_close(intdos_u)
+
+  ! Look for Fermi Energy
+  do i = 2, npts_energy
+     if (intdos(i) > ztot) then
+        ! Found fermi energy
+        energy = low_e + e_step*(i-1)
+        efermi = energy - (intdos(i)-ztot)*e_step/(intdos(i)-intdos(i-1))
+        exit
+     endif
+  enddo
+
+  print *, "Fermi energy: ", efermi
+
+  if (energies_only) STOP
+  !-------------------------------------------------------------------
+
+  if (minimum_spec_energy > min_energy) then
+     min_energy = minimum_spec_energy
+  else
+     min_energy = min_energy - 2*smear
+  endif
+  if (maximum_spec_energy < max_energy) then
+     max_energy = maximum_spec_energy
+  else
+     max_energy = max_energy + 2*smear
+  endif
+
+  print "(a,2f12.4)", "Min_energy, max_energy used: ",  &
+       min_energy, max_energy
+
+  !====================
+
+  ! * Orbital list
+
+  allocate(za(no_u), zc(no_u), zn(no_u), zl(no_u), zx(no_u), zz(no_u))
+  nao = 0
+  do ia=1,na_u
+     it = isa(ia)
+     io = 0
+     do 
+        io = io + 1
+        if (io > no(it)) exit
+        lorb = lquant(it,io)
+        do ko = 1, 2*lorb + 1
+           nao = nao + 1
+           za(nao)=ia
+           zc(nao)=it
+           zn(nao)=nquant(it,io)
+           zl(nao)=lorb
+           zx(nao)=ko
+           zz(nao)=zeta(it,io)
+        enddo
+        io = io + 2*lorb
+     enddo
+  enddo
+  if (nao /= no_u) STOP "nao /= no_u"
+
+  ! ==================================
+
+  write(6,"('Writing files: ',a,'.stt ...')",advance='no') trim(mflnm)
+  open(stt_u,file=trim(mflnm)//'.stt')
+  write(stt_u,"(/'UNIT CELL ATOMS:')")
+  write(stt_u,"(3x,i4,2x,i3,2x,a2)") (i, isa(i), label(isa(i)), i=1,na_u)
+  write(stt_u,"(/'BASIS SET:')")
+  write(stt_u,"(5x,a20,3(3x,a1))") 'spec', 'n', 'l', 'z'
+  do it=1,nspecies
+     write(stt_u,"(5x,a20)") trim(label(it))
+     io = 0
+     do 
+        io = io + 1
+        if (io > no(it)) exit
+        write(stt_u,"(3(2x,i2))") nquant(it,io), lquant(it,io), zeta(it,io)
+        io = io + 2*lquant(it,io)
+     enddo
+  enddo
+
+  write(stt_u,"(/'SPIN: ',i2)") nsp
+  write(stt_u,"(/'FERMI ENERGY: ',f18.6)") efermi
+
+  write(stt_u,"(/'AO LIST:')")
+  taux=repeat(' ',len(taux))
+  do io=1,no_u
+     taux(1:30)=repeat(' ',30)
+     ik=1
+     if (zl(io).eq.0) then
+        taux(ik:ik)='s'
+        ik=0
+     elseif (zl(io).eq.1) then
+        if (zx(io).eq.1) taux(ik:ik+1)='py'
+        if (zx(io).eq.2) taux(ik:ik+1)='pz'
+        if (zx(io).eq.3) taux(ik:ik+1)='px'
+        ik=0
+     elseif (zl(io).eq.2) then
+        if (zx(io).eq.1) taux(ik:ik+2)='dxy'
+        if (zx(io).eq.2) taux(ik:ik+2)='dyz'
+        if (zx(io).eq.3) taux(ik:ik+2)='dz2'
+        if (zx(io).eq.4) taux(ik:ik+2)='dxz'
+        if (zx(io).eq.5) taux(ik:ik+5)='dx2-y2'
+        ik=0
+     elseif (zl(io).eq.3) then
+        taux(ik:ik)='f'
+     elseif (zl(io).eq.4) then
+        taux(ik:ik)='g'
+     elseif (zl(io).eq.5) then
+        taux(ik:ik)='h'
+     endif
+     write(stt_u,"(3x,i5,2x,i3,2x,a2)",advance='no')  &
+                          io, za(io), trim(label(zc(io)))
+     if (ik.eq.0) then
+        write(stt_u,"(3x,i2,a)") zn(io), trim(taux)
+     else
+        write(stt_u,"(3x,i2,a,i2.2)") zn(io), trim(taux), zx(io)
+     endif
+  enddo
+
+  !==================================
+
+  if (ref_line_given) then
+     allocate(ref_mask(no_u))
+     print *, "Orbital set spec: ", trim(ref_line)
+     call get_orbital_set(ref_line,ref_mask)
+     do io=1, no_u
+        if (ref_mask(io)) write(6,fmt="(i5)",advance="no") io
+     enddo
+     deallocate(ref_mask)
+     write(6,*)
+     STOP "bye from ref_line processing"
+  endif
+
+!
+! Process orbital sets
+!
+  allocate(orb_mask(no_u,2,ncbmx))
+  allocate (koc(ncbmx,2,no_u))
+  call read_curve_information(dos,coop,  &
+                                    mpr_u,no_u,ncbmx,ncb,tit,orb_mask,dtc)
+  if (dos) then
+     orb_mask(:,2,1:ncb) = .true.       ! All orbitals considered
+  endif
+  call mask_to_arrays(ncb,orb_mask(:,1,:),noc(:,1),koc(:,1,:))
+  call mask_to_arrays(ncb,orb_mask(:,2,:),noc(:,2),koc(:,2,:))
+
+
+  !=====================
+ 
+ if (coop) then
+    allocate (coop_vals(npts_energy,nsp,ncb))
+    allocate (cohp_vals(npts_energy,nsp,ncb))
+    coop_vals(:,:nsp,:ncb)=0.d0
+    cohp_vals(:,:nsp,:ncb)=0.d0
+ endif
+ if (dos) then
+    allocate (pdos_vals(npts_energy,nsp,ncb))
+    pdos_vals(:,:nsp,:ncb) = 0.0_dp
+ endif
+
+  ados(:,:nsp) = 0.0_dp
+
+  !================================================================
+
+  ! * Curves
+
+     if (gamma) then
+        allocate(wf(1,1:no_u))
+     else
+        allocate(wf(2,1:no_u))
+     endif
+
+     !Stream over file, without using too much memory
+
+     rewind(wfs_u)
+
+     read(wfs_u) 
+     read(wfs_u) 
+     read(wfs_u) 
+     read(wfs_u) 
+     
+     e_step = (max_energy-min_energy)/(npts_energy-1)
+
+     do ik=1,nkp
+        do is=1,nsp
+           read(wfs_u)
+           read(wfs_u)
+           read(wfs_u)  number_of_wfns
+           do iw=1,number_of_wfns
+              read(wfs_u) 
+              read(wfs_u) eigval
+              ! Early termination of iteration
+              if (eigval < min_energy .or. eigval > max_energy) then
+                 read(wfs_u)   ! Still need to read this
+                 CYCLE
+              endif
+
+              read(wfs_u) (wf(:,io), io=1,nao)
+
+              do i = 1, npts_energy
+                 energy = min_energy + e_step*(i-1)
+                 weight = delta(energy-eigval)
+                 if (weight < 1.0e-6) CYCLE           ! Will not contribute
+
+                 ados(i,is) = ados(i,is) + wk(ik) * weight
+
+                 do ic=1,ncb
+
+                    do i1=1,noc(ic,1)
+                      io1=koc(ic,1,i1)              ! AO Set I
+
+                      ! On site contribution to DOS  
+                      if (dos) then
+                        if (gamma) then
+                          qcos = wf(1,io1)**2
+                        else
+                          qcos=(wf(1,io1)**2+wf(2,io1)**2)
+                        endif
+
+                        pdos_vals(i,is,ic)= pdos_vals(i,is,ic)  +   &
+                                               qcos * wk(ik) * weight
+                      endif
+
+                       do i2=1,noc(ic,2)             
+                          io2=koc(ic,2,i2)              ! AO Set II
+
+                          ! (qcos, qsin) = C_1*conjg(C_2)
+
+                          if (gamma) then
+                             qcos = wf(1,io1)*wf(1,io2) 
+                             qsin = 0.0_dp
+                          else
+                             qcos= (wf(1,io1)*wf(1,io2) + &
+                                  wf(2,io1)*wf(2,io2))
+                             qsin= (wf(2,io1)*wf(1,io2) - &
+                                  wf(1,io1)*wf(2,io2))
+                          endif
+
+                          do isr=1,nsr(io1,io2)
+                             !
+                             ! Note that we  want orbitals in
+                             ! *different* atoms (See Dronskowski)
+                             !
+                             if ( dt(io1,io2,isr) < 1.0e-2_dp) CYCLE
+
+                             ! Discard if overlap is very small
+                             ! (It happens if not neglecting KB overlap)
+                             if ( abs(sr(io1,io2,isr)) < 1.0e-10_dp) CYCLE
+
+
+                             ! No distance restrictions for PDOS
+                             ! Note also that there is no factor of 2
+
+                             ! k*R_12    (r_2-r_1)
+                             alfa=dot_product(pk(1:3,ik),rn(1:3,io1,io2,isr))
+
+                            if (dos) then
+                              pdos_vals(i,is,ic)=pdos_vals(i,is,ic)  +   & 
+                                  (qcos*cos(alfa)+qsin*sin(alfa))    *   &
+                                  sr(io1,io2,isr)*wk(ik) * weight
+                            endif
+
+                            if (coop) then
+                             if (dt(io1,io2,isr).ge.dtc(ic,1) .and.  &
+                                  dt(io1,io2,isr).le.dtc(ic,2)) then
+                                !
+                                ! Crb = Real(C_1*conjg(C_2)*exp(-i*alfa)) * S_12
+                                ! or Real(conjg(C_1)*C_2)*exp(+i*alfa)) * S_12
+                                !
+                                coop_vals(i,is,ic)=coop_vals(i,is,ic)  +   & 
+                                     2.0_dp * (qcos*cos(alfa)+qsin*sin(alfa)) * &
+                                     sr(io1,io2,isr)*wk(ik) * weight
+                                cohp_vals(i,is,ic)=cohp_vals(i,is,ic)  +   & 
+                                     2.0_dp * (qcos*cos(alfa)+qsin*sin(alfa)) * &
+                                     hr(io1,io2,isr,is)*wk(ik) * weight
+                             endif
+                            endif  ! coop
+
+                          enddo ! isr
+                       enddo  ! i2
+                    enddo  ! i1
+                 enddo    ! ic
+              enddo  ! energy
+           enddo   ! iwf
+        enddo      ! is
+     enddo         ! ik
+
+!--------------------------------------------------------
+
+     write(stt_u,"(/'KPOINTS:',i7)") nkp
+     do ik=1,nkp
+        write(stt_u,"(3x,3f9.6)") pk(:,ik)
+     enddo
+
+  if (dos) then
+     write(stt_u,"(/'PDOS CURVES:')")
+     do ic=1,ncb
+        write(stt_u,"(3x,a)") trim(tit(ic))
+        write(stt_u,"(3x,'AO set I: ',1000i5)") (koc(ic,1,j),j=1,noc(ic,1))
+     enddo
+  endif  ! dos
+
+  if (coop) then
+     write(stt_u,"(/'COOP CURVES:')")
+     do ic=1,ncb
+        write(stt_u,"(3x,a)") trim(tit(ic))
+        write(stt_u,"(3x,'Distance range:',2f9.4)") dtc(ic,:)
+        write(stt_u,"(3x,'AO set I: ',1000i5)") (koc(ic,1,j),j=1,noc(ic,1))
+        write(stt_u,"(3x,'AO set II:',1000i5)") (koc(ic,2,j),j=1,noc(ic,2))
+     enddo
+  endif
+
+  close(stt_u)
+
+     !
+     !      Simple DOS output
+     !
+     call io_assign(idos)
+     open(idos,file=trim(sflnm)//".ados",form="formatted", &
+          status="unknown",action="write",position="rewind")
+     write(idos,*) "#  Energy   SIMPLE DOS"
+     e_step = (max_energy-min_energy)/(npts_energy-1)
+     do i = 1, npts_energy
+        energy = min_energy + e_step*(i-1)
+        write(idos,*) energy, (ados(i,is), is=1,nsp)
+     enddo
+     call io_close(idos)
+
+   if (coop) then
+     !
+     !      COOP output
+     !
+     do ic = 1, ncb
+        open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.coop')
+        write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
+        do i=1, npts_energy
+           energy = min_energy + e_step*(i-1)
+           write(tab_u,"(f20.8,10(2f13.8,5x)))")  &           ! Spin in loop
+                energy, (coop_vals(i,is,ic),is=1,nspin)
+        enddo
+        close(tab_u)
+     enddo
+     !
+     !      COHP output
+     !
+     do ic = 1, ncb
+        open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.cohp')
+        write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
+        do i=1, npts_energy
+           energy = min_energy + e_step*(i-1)
+           write(tab_u,"(f20.8,10(2f13.8,5x)))")  &           ! Spin in loop
+                energy, (cohp_vals(i,is,ic),is=1,nspin)
+        enddo
+        close(tab_u)
+     enddo
+
+  endif  ! coop
+
+     !      PDOS output
+     !
+  if (dos) then
+     do ic = 1, ncb
+        open(tab_u,file=trim(mflnm)// "." // trim(tit(ic)) // '.pdos')
+        write(tab_u,"(a1,14x,'ENERGY',4(16x,a1,i1))") '#', ("s",m, m=1,nsp)
+        do i=1, npts_energy
+           energy = min_energy + e_step*(i-1)
+           write(tab_u,"(f20.8,10(2f13.8,5x)))")  &           ! Spin in loop
+                energy, (pdos_vals(i,is,ic),is=1,nspin)
+        enddo
+        close(tab_u)
+     enddo
+  endif
+
+CONTAINS
+
+  function delta(x) result(res)
+    real(dp), intent(in) :: x
+    real(dp)             :: res
+
+    if ((abs(x) > 8*smear)) then
+       res = 0.0_dp
+       RETURN
+    endif
+
+    res = exp(-(x/smear)**2) / (smear*sqrt(pi))
+
+  end function delta
+end program mprop
+
+

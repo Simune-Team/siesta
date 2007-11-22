@@ -24,6 +24,7 @@
       use m_ntm
       use m_spin,     only: nspin
       use m_forces
+      use m_intramol_pressure, only: remove_intramol_pressure
 
       implicit none
 

@@ -52,7 +52,7 @@ C                         any locally stored orbitals. In the case
 C                         where parallelisation is over K points then
 C                         the full listh matrix is needed on every
 C                         Node.
-C gamma                 : logical
+C set_xijo              : logical
 C xijo                  : vectors between orbital centers
 C **************************** BEHAVIOR *******************************
 C Equivalent pairs of atoms are assigned the same sparse index, i.e.
@@ -66,7 +66,9 @@ C  Modules
 C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
-     .                    nlhmax, numh, listhptr, listh, gamma, xijo)
+     .                    nlhmax, numh, listhptr, listh,
+     $                    set_xijo, xijo)
+
       use precision
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : GetNodeOrbs, GlobalToLocalOrb
@@ -94,7 +96,7 @@ C
       integer,  intent(out)   :: numh(:)
 
       integer,  pointer       :: listh(:)
-      logical, intent(in)     :: gamma
+      logical, intent(in)     :: set_xijo
       real(dp),  pointer      :: xijo(:,:)
 
       external               timer
@@ -299,7 +301,7 @@ C Find optimum value for nlhmax
       ! using information from different geometries.
       call re_alloc(listh,1,nlhmax,name='listh',
      $     routine='hsparse',SHRINK=.false.)
-      if (.not. gamma) then
+      if (set_xijo) then
          call re_alloc(xijo,1,3,1,nlhmax,name='xijo',routine='hsparse')
       else
          call re_alloc(xijo,1,3,1,1,name='xijo',routine='hsparse')
@@ -371,7 +373,7 @@ C through a KB projector
 
                    if (conect(jo)) then
 
-                      if (.not. gamma) then
+                      if (set_xijo) then
                          ! If already connected and using supercell, 
                          ! the latter might not be big enough...
                          ! We warn the user and keep the first instance
@@ -414,7 +416,7 @@ C Find if jo overlaps with a KB projector
                       numh(iio) = numh(iio) + 1
                       ind = listhptr(iio)+numh(iio)
                       listh(ind) = jo
-                      if (.not. gamma) then
+                      if (set_xijo) then
                          xijo(1:3,ind) = xij(1:3,jnat)
                       endif
                     endif
