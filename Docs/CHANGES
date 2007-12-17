@@ -7,6 +7,15 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2007-12-17  14:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-7
+
+Summary: Fix memory leak in dhscf
+
+The array dvxcdn was allocated but never deallocated in dhscf. Actually,
+it was never used in cellxc, so it has now been dimensioned trivially
+to (1,1,1). The bug was introduced in the bsc-master-2.1 branch, at 
+patch 27.
+
 2007-11-22  18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
 
 Summary: New 'fdf' target in Makefile for tests
