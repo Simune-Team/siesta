@@ -20,8 +20,8 @@ completed_$(label):
 	@echo "    ==> Running SIESTA as ${SIESTA}"
 	@(cd $(label) ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf) \
           && touch completed_$(label)
-	@if [ -f completed_$(label) ] ; then \
-	 echo "    ===> SIESTA finished";\
+	@if [ -f completed_$(label) ] ; then cp $(label)/$(name).out $(label)/$(name).xml .;\\
+           echo "    ===> SIESTA finished successfully";\
          else \
            echo " **** Test $(name) did not complete successfully";\
          fi

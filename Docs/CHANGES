@@ -7,6 +7,15 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-01-11  14:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-9
+
+Summary: Fix test.mk scripts
+
+The std-test.mk script did not copy the output file to the main test directory.
+The bsc-test.mk did not remove all the scratch files.
+
+Fixed a typo in the input to the si2x1h test.
+
 2008-01-11  13:55:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-8
 
 Summary: Fix for structural supercell construction
