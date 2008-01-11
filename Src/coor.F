@@ -169,6 +169,7 @@ C Attempt to read a Z matrix
 
       if (lUseZmatrix) then
         
+        cell = unit_cell
         if (ncells > 1 ) call die("Cannot use SuperCell with Zmatrix")
 
 C       Generate Cartesian coordinates from Z-matrix

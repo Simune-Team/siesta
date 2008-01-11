@@ -7,6 +7,19 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-01-11  16:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-11
+
+Summary: Proper fix of cell management for zmatrix case. Enthalpy cosmetics
+
+A recent previous patch (8) broke the unit cell handling in the zmatrix case.
+It has been fixed.
+
+The assorted "enthalpy" output has been rationalized,
+reserving the use of the word "enthalpy" for the original case
+of "target enthalpy".
+
+(Fixed syntax error in std-test.mk)
+
 2008-01-11  14:05:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-10
 
 Summary: Make diagonalization the default solution method regardless of size
