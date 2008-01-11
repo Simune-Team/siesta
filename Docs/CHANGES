@@ -7,6 +7,12 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-01-11  14:05:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-10
+
+Summary: Make diagonalization the default solution method regardless of size
+
+Make diagonalization the default solution method regardless of system size.
+
 2008-01-11  14:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-9
 
 Summary: Fix test.mk scripts
