@@ -6,6 +6,22 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta--fixes--2.0
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
+
+2007-05-30 16:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-7
+
+Summary: Origin shift was applied after possible coordinate scaling
+
+In routine coor, the origin shift was applied after the section in
+which the coordinates are re-scaled (from Ang to Bohr, or from fractional
+to cartesian, etc). However, it is clear in the manual that the shift
+vector is in the same units and format as the input coordinates.
+
+The shift is now applied right after reading the coordinate block.
+
+NOTE: This does not apply to the Zmatrix routine, which has *its own*
+conventions for origin shift, neither to coordinates read from an XV
+file or a Struct file.
+
 2007-05-23 12:50  GMT Eduardo Anglada <eduardo.anglada@uam.es> patch-6
 Summary:
         Initialize logical variable "genlogic" to .false. before it's used.
