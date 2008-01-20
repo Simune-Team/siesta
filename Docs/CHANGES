@@ -7,6 +7,15 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
 
+2007-05-17 22:00:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+Summary: Fix tag in MPI send/receive in mulliken
+
+* The undefined variable 'io' was used as tag... changed to itot, the
+orbital index.
+
+* Trimmed mpibuff before writing.
+
 2007-05-17 21:55:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
 
 Summary: Wrap several I/O operations for MPI. Other parallel fixes

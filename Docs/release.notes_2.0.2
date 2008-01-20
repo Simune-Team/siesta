@@ -4,15 +4,17 @@ RELEASE NOTES FOR SIESTA-2.0.2
 This is the second bug-fix package after the release of Siesta-2.0
 
 
-Summary of changed items:
+SUMMARY OF CHANGES
 
 * Fix for k-point update when kgrid_cutoff is used
 * Initialize vol2 correctly in m_check_supercell.f
 * Parallel bug fix and cleanup in writewave.F
 * Fix units conversion in Util/Optical/optical
 * Wrap several I/O operations for MPI. Other parallel fixes
+* Fix tag in MPI send/receive in mulliken
 
-Changes in detail:
+
+CHANGES IN DETAIL
 
 * Fix for k-point update when kgrid_cutoff is used
 
@@ -80,12 +82,17 @@ of to Ha.
  - Add 'show_distribution' routine to warn (for now) the user
    when there are nodes which do not handle any orbitals.
 
-* New tests:
+* Fix tag in MPI send/receive in mulliken
+
+  Output was incorrect in parallel.
+
+
+NEW TESTS
 
  Added 'born' and  'born_spin' tests (just for the mechanics: they
  do not have a lot of physical sense).
 
-* Other:
+OTHER
 
  - Add experimental 'compare' target to Makefile.
 

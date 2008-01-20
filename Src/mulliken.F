@@ -188,15 +188,15 @@ C Compute and print Overlap Populations for Orbitals ....................
               else
                 write(mpibuff,15) itot,config(1), sym_label(1),
      .                (p(ii),ii=1,imax)
-                call mpi_send(mpibuff, 200, MPI_Character, 0, io, 
+                call mpi_send(mpibuff, 200, MPI_Character, 0, itot, 
      .             MPI_Comm_world, mpierror)
               endif
             else
               if (ionode) then
                 call mpi_recv(mpibuff, 200, MPI_Character, 
-     .                MPI_ANY_SOURCE, io,
+     .                MPI_ANY_SOURCE, itot,
      .                MPI_Comm_world, mpistatus, mpierror)
-                write(6,'(a)') mpibuff
+                write(6,'(a)') trim(mpibuff)
 #endif
               endif
             endif
@@ -455,7 +455,7 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                           call mpi_recv(mpibuff, 200, MPI_Character, 
      .                          MPI_ANY_SOURCE, io,
      .                          MPI_Comm_world, mpistatus, mpierror)
-                          write(6,'(a)') mpibuff
+                          write(6,'(a)')  trim(mpibuff)
 #endif
                         endif
                       endif
