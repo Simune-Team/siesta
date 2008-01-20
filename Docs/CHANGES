@@ -6,6 +6,11 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta--fixes--2.0
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
+2007-05-23 12:50  GMT Eduardo Anglada <eduardo.anglada@uam.es> patch-6
+Summary:
+        Initialize logical variable "genlogic" to .false. before it's used.
+Modified files:
+        Src/kgridinit.F
 
 2007-05-21 5:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
 
