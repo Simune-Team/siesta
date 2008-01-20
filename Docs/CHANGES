@@ -7,6 +7,14 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
 
+2007-05-21 5:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+Summary: New .make files and scripts. Update reference outputs
+
+* Updated intel .make files.
+* New sge script.
+* Updated reference outputs
+
 2007-05-17 22:00:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
 
 Summary: Fix tag in MPI send/receive in mulliken

@@ -1,10 +1,10 @@
-Siesta Version: siesta-2.0.1
+Siesta Version: siesta-2.0.2
 Architecture  : intel9-mkl8
 Compiler flags: ifort -w -O2 -mp
 SERIAL version
 
 * Running in serial mode
->> Start of run:  19-DEC-2006  16:45:01
+>> Start of run:  18-MAY-2007  15:53:59
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -468,12 +468,13 @@ siesta:     -5.26794  -3.68605  -3.86493  3       10
 initatomlists: Number of atoms, orbitals, and projectors:     10    34    80
 
 siesta: System type = bulk      
+Kgrid cutoff input:    3.77945
 
 siesta: k-grid: Number of k-points =     1
 siesta: k-grid: Cutoff (effective) =     2.317 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:   -1   0   1      0.000
-siesta: k-grid:    0  -1   1      0.000
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
 
 * Maximum dynamic memory allocated =     1 MB
@@ -536,8 +537,8 @@ siesta: Eharris(eV) =   -2966.596224
 
 siesta: Eharris(eV) =   -2966.596224
 
-timer: Routine,Calls,Time,% = IterSCF        1       1.050  53.03
-elaps: Routine,Calls,Wall,% = IterSCF        1       1.051  51.17
+timer: Routine,Calls,Time,% = IterSCF        1       1.076  53.80
+elaps: Routine,Calls,Wall,% = IterSCF        1       1.078  51.84
 
 siesta: E_KS - E_eggbox =     -2945.6640
 
@@ -568,14 +569,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.089162    0.290438    0.026096
          0.058367    0.026096    0.267656
 
-siesta: Pressure (static):       -538.38520328  kBar
+siesta: Pressure (static):       -538.38520316  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.449851    0.089046    0.058270
          0.089046    0.290345    0.026018
          0.058270    0.026018    0.267592
 
-siesta: Pressure (total):       -538.22390163  kBar
+siesta: Pressure (total):       -538.22390151  kBar
 
 siesta: Temp_ion =     300.018 K
 
@@ -649,7 +650,7 @@ siesta: Stress tensor (total) (eV/Ang**3):
          0.090421    0.284934    0.028372
          0.058382    0.028372    0.263073
 
-siesta: Pressure (total):       -532.37800846  kBar
+siesta: Pressure (total):       -532.37800845  kBar
 
 siesta: Temp_ion =     277.715 K
 
@@ -716,14 +717,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.090645    0.282838    0.030561
          0.057434    0.030560    0.263810
 
-siesta: Pressure (static):       -531.97289451  kBar
+siesta: Pressure (static):       -531.97289405  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.449231    0.090537    0.057383
          0.090536    0.282779    0.030535
          0.057386    0.030534    0.263799
 
-siesta: Pressure (total):       -531.82664204  kBar
+siesta: Pressure (total):       -531.82664158  kBar
 
 siesta: Temp_ion =     269.181 K
 
@@ -768,19 +769,19 @@ siesta: Atomic forces (eV/Ang):
      2    0.011002   -0.008185    0.003258
      3   -0.288147    0.232307    0.658550
      4    0.210073   -0.233473   -0.413023
-     5    3.078974   -6.986597    0.207048
-     6    0.134010    4.061104   -6.598349
+     5    3.078974   -6.986596    0.207048
+     6    0.134011    4.061104   -6.598349
      7   -2.854021    2.428383    5.939162
      8   -3.095957    6.908543    0.165812
      9   -0.093760   -3.975758    6.395775
     10    2.892180   -2.611178   -5.927235
 ----------------------------------------
-   Tot   -0.023897   -0.155469    0.416475
+   Tot   -0.023896   -0.155468    0.416475
 ----------------------------------------
-   Max    6.986597
+   Max    6.986596
    Res    3.331260    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    6.986597    constrained
+   Max    6.986596    constrained
 
 Stress-tensor-Voigt (kbar):      720.12      451.53      425.11      144.73       52.16       90.02
 Target enthalpy (eV/cell)    -2939.8162
@@ -790,14 +791,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.090427    0.281849    0.032547
          0.056167    0.032546    0.265333
 
-siesta: Pressure (static):       -532.41840051  kBar
+siesta: Pressure (static):       -532.41838997  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.449462    0.090334    0.056183
          0.090334    0.281817    0.032554
          0.056187    0.032553    0.265332
 
-siesta: Pressure (total):       -532.25477082  kBar
+siesta: Pressure (total):       -532.25476028  kBar
 
 siesta: Temp_ion =     274.790 K
 
@@ -842,19 +843,19 @@ siesta: Atomic forces (eV/Ang):
      2    0.014880   -0.011390    0.004860
      3   -0.377291    0.301723    0.857002
      4    0.274029   -0.305019   -0.534858
-     5    3.086746   -7.026744    0.266574
+     5    3.086746   -7.026745    0.266574
      6    0.176070    4.041153   -6.675611
      7   -2.792593    2.332306    5.838805
      8   -3.095076    6.915252    0.214417
      9   -0.119156   -3.939586    6.420094
     10    2.842286   -2.576976   -5.828094
 ----------------------------------------
-   Tot   -0.016817   -0.223443    0.545188
+   Tot   -0.016817   -0.223445    0.545189
 ----------------------------------------
-   Max    7.026744
+   Max    7.026745
    Res    3.324353    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    7.026744    constrained
+   Max    7.026745    constrained
 
 Stress-tensor-Voigt (kbar):      721.05      450.69      429.46      143.96       55.07       87.94
 Target enthalpy (eV/cell)    -2939.8201
@@ -862,16 +863,16 @@ Target enthalpy (eV/cell)    -2939.8201
 siesta: Stress tensor (static) (eV/Ang**3):
          0.450388    0.089922    0.054775
          0.089921    0.281310    0.034354
-         0.054780    0.034353    0.268079
+         0.054780    0.034353    0.268078
 
-siesta: Pressure (static):       -533.94536418  kBar
+siesta: Pressure (static):       -533.94535015  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.450037    0.089853    0.054883
          0.089853    0.281297    0.034375
          0.054888    0.034374    0.268046
 
-siesta: Pressure (total):       -533.73303462  kBar
+siesta: Pressure (total):       -533.73302060  kBar
 
 siesta: Temp_ion =     294.596 K
 
@@ -914,21 +915,21 @@ siesta: Eharris(eV) =   -2966.622112
 siesta: Atomic forces (eV/Ang):
      1   -0.026352    0.055961   -0.020649
      2    0.006547   -0.002119    0.004703
-     3   -0.460322    0.370639    1.044519
+     3   -0.460322    0.370639    1.044520
      4    0.335409   -0.372724   -0.654877
-     5    3.082292   -7.036400    0.330104
+     5    3.082292   -7.036401    0.330103
      6    0.212617    4.016827   -6.734587
-     7   -2.691175    2.187172    5.692284
-     8   -3.086153    6.908889    0.256673
-     9   -0.144151   -3.887312    6.422918
+     7   -2.691174    2.187173    5.692282
+     8   -3.086153    6.908889    0.256678
+     9   -0.144152   -3.887310    6.422917
     10    2.786188   -2.536226   -5.719167
 ----------------------------------------
-   Tot    0.014900   -0.295293    0.621922
+   Tot    0.014899   -0.295291    0.621923
 ----------------------------------------
-   Max    7.036400
+   Max    7.036401
    Res    3.305658    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    7.036400    constrained
+   Max    7.036401    constrained
 
 Stress-tensor-Voigt (kbar):      723.69      452.89      435.45      141.83       58.60       85.09
 Target enthalpy (eV/cell)    -2939.8314
@@ -938,14 +939,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.088557    0.282670    0.036559
          0.052897    0.036557    0.271889
 
-siesta: Pressure (static):       -537.63542808  kBar
+siesta: Pressure (static):       -537.63546016  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.451689    0.088523    0.053104
          0.088522    0.282667    0.036576
          0.053110    0.036574    0.271785
 
-siesta: Pressure (total):       -537.34443054  kBar
+siesta: Pressure (total):       -537.34446262  kBar
 
 siesta: Temp_ion =     328.474 K
 
@@ -979,30 +980,30 @@ outcell: Cell volume (Ang**3)        :     92.9485
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    50.000    63.517 Ry
 
-siesta: Eharris(eV) =   -2966.676434
+siesta: Eharris(eV) =   -2966.676433
 
 
-siesta: Eharris(eV) =   -2966.676434
+siesta: Eharris(eV) =   -2966.676433
 
 
 siesta: Atomic forces (eV/Ang):
      1   -0.034040    0.075914   -0.020879
      2    0.007927   -0.004811    0.005215
      3   -0.532911    0.435023    1.215670
-     4    0.391093   -0.437776   -0.763027
-     5    3.069862   -7.029531    0.383533
-     6    0.244346    3.980960   -6.765672
-     7   -2.622266    2.082934    5.574898
-     8   -3.062882    6.879286    0.303968
-     9   -0.169533   -3.825800    6.412170
-    10    2.715946   -2.489489   -5.583171
+     4    0.391092   -0.437775   -0.763027
+     5    3.069864   -7.029532    0.383533
+     6    0.244347    3.980963   -6.765672
+     7   -2.622265    2.082935    5.574897
+     8   -3.062881    6.879283    0.303969
+     9   -0.169535   -3.825800    6.412170
+    10    2.715946   -2.489488   -5.583173
 ----------------------------------------
-   Tot    0.007543   -0.333290    0.762705
+   Tot    0.007546   -0.333289    0.762703
 ----------------------------------------
-   Max    7.029531
+   Max    7.029532
    Res    3.282137    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    7.029531    constrained
+   Max    7.029532    constrained
 
 Stress-tensor-Voigt (kbar):      725.32      454.38      441.79      140.41       60.85       82.63
 Target enthalpy (eV/cell)    -2939.8496
@@ -1012,14 +1013,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.087632    0.283600    0.037988
          0.051239    0.037986    0.275954
 
-siesta: Pressure (static):       -540.89675006  kBar
+siesta: Pressure (static):       -540.89672654  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.452706    0.087639    0.051568
          0.087638    0.283600    0.037984
          0.051576    0.037982    0.275741
 
-siesta: Pressure (total):       -540.49865107  kBar
+siesta: Pressure (total):       -540.49862755  kBar
 
 siesta: Temp_ion =     376.176 K
 
@@ -1053,30 +1054,30 @@ outcell: Cell volume (Ang**3)        :     92.8759
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    50.000    63.529 Ry
 
-siesta: Eharris(eV) =   -2966.746545
+siesta: Eharris(eV) =   -2966.746546
 
 
-siesta: Eharris(eV) =   -2966.746545
+siesta: Eharris(eV) =   -2966.746546
 
 
 siesta: Atomic forces (eV/Ang):
      1   -0.045953    0.089376   -0.015732
      2    0.013524   -0.010768    0.001201
-     3   -0.601520    0.493788    1.369726
+     3   -0.601520    0.493788    1.369725
      4    0.438739   -0.494968   -0.860209
-     5    3.047287   -6.999904    0.438460
-     6    0.277333    3.929645   -6.775009
-     7   -2.536991    1.970398    5.384399
-     8   -3.029352    6.823726    0.349548
-     9   -0.204124   -3.688831    6.335280
-    10    2.643094   -2.438509   -5.439596
+     5    3.047287   -6.999906    0.438460
+     6    0.277330    3.929646   -6.775009
+     7   -2.536985    1.970389    5.384400
+     8   -3.029350    6.823726    0.349547
+     9   -0.204122   -3.688835    6.335279
+    10    2.643094   -2.438509   -5.439597
 ----------------------------------------
-   Tot    0.002037   -0.326048    0.788068
+   Tot    0.002044   -0.326062    0.788065
 ----------------------------------------
-   Max    6.999904
+   Max    6.999906
    Res    3.240606    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    6.999904    constrained
+   Max    6.999906    constrained
 
 Stress-tensor-Voigt (kbar):      727.99      459.40      452.38      138.46       61.30       79.47
 Target enthalpy (eV/cell)    -2939.8743
@@ -1086,14 +1087,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.086364    0.286734    0.038306
          0.049127    0.038303    0.282706
 
-siesta: Pressure (static):       -547.11924964  kBar
+siesta: Pressure (static):       -547.11926735  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.454370    0.086420    0.049594
          0.086418    0.286729    0.038264
          0.049603    0.038262    0.282349
 
-siesta: Pressure (total):       -546.58752000  kBar
+siesta: Pressure (total):       -546.58753769  kBar
 
 siesta: Temp_ion =     437.228 K
 
@@ -1136,21 +1137,21 @@ siesta: Eharris(eV) =   -2966.831731
 siesta: Atomic forces (eV/Ang):
      1   -0.052815    0.103870   -0.027252
      2    0.018446   -0.023527    0.008108
-     3   -0.659450    0.545326    1.502898
-     4    0.481263   -0.545750   -0.945616
-     5    3.013085   -6.940152    0.491688
-     6    0.306857    3.860525   -6.756815
-     7   -2.393373    1.774036    5.195386
-     8   -2.977760    6.735361    0.393954
-     9   -0.232269   -3.578624    6.275689
-    10    2.570536   -2.387225   -5.298719
+     3   -0.659451    0.545326    1.502897
+     4    0.481263   -0.545751   -0.945616
+     5    3.013086   -6.940153    0.491686
+     6    0.306855    3.860523   -6.756816
+     7   -2.393373    1.774038    5.195385
+     8   -2.977751    6.735361    0.393953
+     9   -0.232271   -3.578623    6.275692
+    10    2.570537   -2.387230   -5.298718
 ----------------------------------------
-   Tot    0.074520   -0.456161    0.839321
+   Tot    0.074527   -0.456166    0.839322
 ----------------------------------------
-   Max    6.940152
+   Max    6.940153
    Res    3.190877    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    6.940152    constrained
+   Max    6.940153    constrained
 
 Stress-tensor-Voigt (kbar):      731.67      467.14      461.84      134.30       63.84       76.21
 Target enthalpy (eV/cell)    -2939.9046
@@ -1160,14 +1161,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.083715    0.291579    0.039941
          0.046935    0.039938    0.288790
 
-siesta: Pressure (static):       -554.24209684  kBar
+siesta: Pressure (static):       -554.24212820  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.456671    0.083827    0.047554
          0.083826    0.291562    0.039847
          0.047564    0.039845    0.288257
 
-siesta: Pressure (total):       -553.55235675  kBar
+siesta: Pressure (total):       -553.55238809  kBar
 
 siesta: Temp_ion =     510.847 K
 
@@ -1201,30 +1202,30 @@ outcell: Cell volume (Ang**3)        :     92.6988
 InitMesh: MESH =    24 x    24 x    24 =       13824
 InitMesh: Mesh cutoff (required, used) =    50.000    63.557 Ry
 
-siesta: Eharris(eV) =   -2966.930936
+siesta: Eharris(eV) =   -2966.930935
 
 
-siesta: Eharris(eV) =   -2966.930936
+siesta: Eharris(eV) =   -2966.930935
 
 
 siesta: Atomic forces (eV/Ang):
      1   -0.054558    0.115566   -0.029945
      2    0.020149   -0.026814    0.010373
-     3   -0.707124    0.591678    1.610221
-     4    0.517171   -0.588464   -1.013162
-     5    2.968362   -6.853657    0.542909
-     6    0.332990    3.780153   -6.715760
-     7   -2.308481    1.656569    5.035355
-     8   -2.862914    6.525914    0.427939
-     9   -0.274909   -3.378388    6.153566
-    10    2.443750   -2.276291   -5.109863
+     3   -0.707124    0.591677    1.610220
+     4    0.517172   -0.588465   -1.013162
+     5    2.968365   -6.853653    0.542907
+     6    0.332992    3.780150   -6.715756
+     7   -2.308484    1.656568    5.035355
+     8   -2.862916    6.525916    0.427939
+     9   -0.274908   -3.378386    6.153566
+    10    2.443750   -2.276288   -5.109863
 ----------------------------------------
-   Tot    0.074436   -0.453735    0.911633
+   Tot    0.074437   -0.453730    0.911634
 ----------------------------------------
-   Max    6.853657
+   Max    6.853653
    Res    3.118208    sqrt( Sum f_i^2 / 3N )
 ----------------------------------------
-   Max    6.853657    constrained
+   Max    6.853653    constrained
 
 Stress-tensor-Voigt (kbar):      736.43      480.05      473.34      128.69       64.14       72.69
 Target enthalpy (eV/cell)    -2939.9391
@@ -1234,14 +1235,14 @@ siesta: Stress tensor (static) (eV/Ang**3):
          0.080147    0.299655    0.040194
          0.044573    0.040191    0.296172
 
-siesta: Pressure (static):       -564.14405189  kBar
+siesta: Pressure (static):       -564.14399392  kBar
 
 siesta: Stress tensor (total) (eV/Ang**3):
          0.459640    0.080320    0.045356
          0.080319    0.299620    0.040034
          0.045369    0.040031    0.295432
 
-siesta: Pressure (total):       -563.27382324  kBar
+siesta: Pressure (total):       -563.27376524  kBar
 
 siesta: Temp_ion =     596.017 K
 
@@ -1259,42 +1260,42 @@ outcell: Cell volume (Ang**3)        :     92.5940
 siesta: Program's energy decomposition (eV):
 siesta: Eions   =      5228.674091
 siesta: Ena     =      1092.639696
-siesta: Ekin    =      2397.883865
-siesta: Enl     =      -404.392942
-siesta: DEna    =      -103.574349
+siesta: Ekin    =      2397.883867
+siesta: Enl     =      -404.392943
+siesta: DEna    =      -103.574355
 siesta: DUscf   =        24.442351
 siesta: DUext   =         0.000000
-siesta: Exc     =      -724.049352
+siesta: Exc     =      -724.049354
 siesta: eta*DQ  =         0.000000
 siesta: Emadel  =         0.000000
 siesta: Ekinion =         0.693344
-siesta: Eharris =     -2966.237592
-siesta: Etot    =     -2945.031479
-siesta: FreeEng =     -2945.031479
+siesta: Eharris =     -2966.237591
+siesta: Etot    =     -2945.031485
+siesta: FreeEng =     -2945.031485
 
 siesta: Final energy (eV):
-siesta:       Kinetic =    2397.883865
-siesta:       Hartree =    1097.127461
+siesta:       Kinetic =    2397.883867
+siesta:       Hartree =    1097.127470
 siesta:    Ext. field =       0.000000
-siesta:   Exch.-corr. =    -724.049352
-siesta:  Ion-electron =   -4178.349082
-siesta:       Ion-ion =   -1538.337714
+siesta:   Exch.-corr. =    -724.049354
+siesta:  Ion-electron =   -4178.349098
+siesta:       Ion-ion =   -1538.337713
 siesta:       Ekinion =       0.693344
-siesta:         Total =   -2945.031479
+siesta:         Total =   -2945.031485
 
 siesta: Atomic forces (eV/Ang):
 siesta:      1   -0.054558    0.115566   -0.029945
 siesta:      2    0.020149   -0.026814    0.010373
-siesta:      3   -0.707124    0.591678    1.610221
-siesta:      4    0.517171   -0.588464   -1.013162
-siesta:      5    2.968362   -6.853657    0.542909
-siesta:      6    0.332990    3.780153   -6.715760
-siesta:      7   -2.308481    1.656569    5.035355
-siesta:      8   -2.862914    6.525914    0.427939
-siesta:      9   -0.274909   -3.378388    6.153566
-siesta:     10    2.443750   -2.276291   -5.109863
+siesta:      3   -0.707124    0.591677    1.610220
+siesta:      4    0.517172   -0.588465   -1.013162
+siesta:      5    2.968365   -6.853653    0.542907
+siesta:      6    0.332992    3.780150   -6.715756
+siesta:      7   -2.308484    1.656568    5.035355
+siesta:      8   -2.862916    6.525916    0.427939
+siesta:      9   -0.274908   -3.378386    6.153566
+siesta:     10    2.443750   -2.276288   -5.109863
 siesta: ----------------------------------------
-siesta:    Tot    0.074436   -0.453735    0.911633
+siesta:    Tot    0.074437   -0.453730    0.911634
 
 siesta: Stress tensor (static) (eV/Ang**3):
 siesta:     0.460495    0.080148    0.044561
@@ -1306,8 +1307,8 @@ siesta: Cell volume =         92.698798 Ang**3
 siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:          -0.00383490         -0.00590852  Ry/Bohr**3
-siesta:          -0.35210722         -0.54250019  eV/Ang**3
-siesta:        -564.14405189       -869.19051533  kBar
+siesta:          -0.35210718         -0.54250012  eV/Ang**3
+siesta:        -564.14399392       -869.19041705  kBar
 
 * Maximum dynamic memory allocated : Node    0 =     4 MB
 
@@ -1315,67 +1316,67 @@ siesta:        -564.14405189       -869.19051533  kBar
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      11.792      11.792   100.00
-timer:  Setup             1       0.740       0.740     6.27
-timer:  bands             1       0.000       0.000     0.00
-timer:  writewave         1       0.001       0.001     0.01
-timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD           10       1.105      11.047    93.68
-timer:  hsparse          11       0.052       0.573     4.86
-timer:  overfsm          20       0.012       0.233     1.98
-timer:  IterSCF          20       0.512      10.238    86.82
-timer:  kinefsm          20       0.011       0.218     1.85
-timer:  nlefsm           20       0.052       1.049     8.89
-timer:  DHSCF            20       0.440       8.794    74.57
-timer:  DHSCF1           10       0.168       1.684    14.28
-timer:  DHSCF2           10       0.260       2.605    22.09
+timer:  siesta            1      12.056      12.056   100.00
+timer:  Setup             1       0.731       0.731     6.06
+timer:  bands             1       0.001       0.001     0.01
+timer:  writewave         1       0.000       0.000     0.00
+timer:  KSV_init          1       0.001       0.001     0.01
+timer:  IterMD           10       1.132      11.318    93.88
+timer:  hsparse          11       0.052       0.573     4.75
+timer:  overfsm          20       0.012       0.237     1.97
+timer:  IterSCF          20       0.526      10.517    87.24
+timer:  kinefsm          20       0.011       0.217     1.80
+timer:  nlefsm           20       0.053       1.059     8.78
+timer:  DHSCF            20       0.453       9.069    75.22
+timer:  DHSCF1           10       0.174       1.743    14.46
+timer:  DHSCF2           10       0.266       2.657    22.04
 timer:  REORD           180       0.000       0.012     0.10
-timer:  POISON           30       0.005       0.137     1.16
-timer:  DHSCF3           20       0.085       1.699    14.41
-timer:  rhoofd           20       0.030       0.605     5.13
-timer:  cellXC           30       0.011       0.325     2.76
-timer:  vmat             20       0.038       0.759     6.44
-timer:  diagon           10       0.002       0.023     0.20
-timer:  rdiag            10       0.002       0.019     0.16
-timer:  rdiag1           10       0.000       0.000     0.00
-timer:  rdiag2           10       0.000       0.003     0.03
-timer:  rdiag3           10       0.001       0.015     0.13
-timer:  rdiag4           10       0.000       0.000     0.00
-timer:  DHSCF4           10       0.280       2.804    23.77
-timer:  dfscf            10       0.198       1.976    16.75
-timer:  optical           1       0.001       0.001     0.01
+timer:  POISON           30       0.005       0.142     1.18
+timer:  DHSCF3           20       0.088       1.766    14.65
+timer:  rhoofd           20       0.034       0.687     5.70
+timer:  cellXC           30       0.011       0.329     2.73
+timer:  vmat             20       0.037       0.745     6.18
+timer:  diagon           10       0.002       0.023     0.19
+timer:  rdiag            10       0.002       0.022     0.18
+timer:  rdiag1           10       0.000       0.001     0.01
+timer:  rdiag2           10       0.000       0.000     0.00
+timer:  rdiag3           10       0.002       0.017     0.14
+timer:  rdiag4           10       0.000       0.003     0.02
+timer:  DHSCF4           10       0.290       2.899    24.04
+timer:  dfscf            10       0.208       2.085    17.29
+timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      11.966      11.966   100.00
-elaps:  Setup             1       0.813       0.813     6.79
+elaps:  siesta            1      12.246      12.246   100.00
+elaps:  Setup             1       0.808       0.808     6.60
 elaps:  bands             1       0.000       0.000     0.00
 elaps:  writewave         1       0.001       0.001     0.01
 elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD           10       1.115      11.145    93.14
-elaps:  hsparse          11       0.052       0.574     4.80
-elaps:  overfsm          20       0.012       0.232     1.94
-elaps:  IterSCF          20       0.513      10.262    85.76
-elaps:  kinefsm          20       0.011       0.217     1.81
-elaps:  nlefsm           20       0.052       1.048     8.76
-elaps:  DHSCF            20       0.440       8.797    73.52
-elaps:  DHSCF1           10       0.169       1.685    14.08
-elaps:  DHSCF2           10       0.260       2.604    21.76
+elaps:  IterMD           10       1.143      11.430    93.33
+elaps:  hsparse          11       0.052       0.575     4.69
+elaps:  overfsm          20       0.012       0.238     1.94
+elaps:  IterSCF          20       0.527      10.547    86.12
+elaps:  kinefsm          20       0.011       0.220     1.79
+elaps:  nlefsm           20       0.053       1.058     8.64
+elaps:  DHSCF            20       0.453       9.065    74.02
+elaps:  DHSCF1           10       0.174       1.743    14.23
+elaps:  DHSCF2           10       0.265       2.655    21.68
 elaps:  REORD           180       0.000       0.010     0.08
-elaps:  POISON           30       0.005       0.138     1.16
-elaps:  DHSCF3           20       0.085       1.701    14.21
-elaps:  rhoofd           20       0.030       0.607     5.07
-elaps:  cellXC           30       0.011       0.326     2.73
-elaps:  vmat             20       0.038       0.759     6.34
-elaps:  diagon           10       0.002       0.024     0.20
-elaps:  rdiag            10       0.002       0.020     0.17
+elaps:  POISON           30       0.005       0.139     1.14
+elaps:  DHSCF3           20       0.088       1.763    14.40
+elaps:  rhoofd           20       0.034       0.686     5.60
+elaps:  cellXC           30       0.011       0.328     2.68
+elaps:  vmat             20       0.037       0.742     6.06
+elaps:  diagon           10       0.002       0.024     0.19
+elaps:  rdiag            10       0.002       0.020     0.16
 elaps:  rdiag1           10       0.000       0.001     0.01
 elaps:  rdiag2           10       0.000       0.001     0.01
 elaps:  rdiag3           10       0.002       0.016     0.13
 elaps:  rdiag4           10       0.000       0.001     0.01
-elaps:  DHSCF4           10       0.280       2.803    23.43
-elaps:  dfscf            10       0.198       1.977    16.52
+elaps:  DHSCF4           10       0.290       2.899    23.67
+elaps:  dfscf            10       0.209       2.085    17.03
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:  19-DEC-2006  16:45:13
+>> End of run:  18-MAY-2007  15:54:11

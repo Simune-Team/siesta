@@ -1,10 +1,10 @@
-Siesta Version: siesta-2.0.1
+Siesta Version: siesta-2.0.2
 Architecture  : intel9-mkl8
 Compiler flags: ifort -w -O2 -mp
 SERIAL version
 
 * Running in serial mode
->> Start of run:  19-DEC-2006  16:19:42
+>> Start of run:  18-MAY-2007  15:51:59
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -446,9 +446,9 @@ siesta: System type = molecule
 siesta: k-grid: Number of k-points =     1
 siesta: k-grid: Cutoff (effective) =     2.811 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    0   0   1      0.000
-siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
 
 * Maximum dynamic memory allocated =     1 MB
 
@@ -493,8 +493,8 @@ siesta: FreeEng =      -461.666691
 
 siesta: iscf   Eharris(eV)      E_KS(eV)   FreeEng(eV)   dDmax  Ef(eV)
 siesta:    1     -466.9485     -461.6667     -461.6667  1.6287 -3.2024
-timer: Routine,Calls,Time,% = IterSCF        1       3.840  70.50
-elaps: Routine,Calls,Wall,% = IterSCF        1       3.844  69.46
+timer: Routine,Calls,Time,% = IterSCF        1       3.841  70.66
+elaps: Routine,Calls,Wall,% = IterSCF        1       3.854  66.66
 siesta:    2     -467.5484     -465.5975     -465.5975  0.1805  1.3985
 siesta:    3     -466.3892     -465.8564     -465.8564  0.0426 -0.3329
 siesta:    4     -466.3030     -465.9729     -465.9729  0.0193 -0.7961
@@ -609,67 +609,67 @@ siesta: Electric dipole (Debye) =    0.000000    1.594981    0.000000
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1       9.596       9.596   100.00
-timer:  Setup             1       0.593       0.593     6.18
-timer:  bands             1       0.000       0.000     0.00
+timer:  siesta            1       9.658       9.658   100.00
+timer:  Setup             1       0.597       0.597     6.18
+timer:  bands             1       0.001       0.001     0.01
 timer:  writewave         1       0.000       0.000     0.00
 timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD            1       8.999       8.999    93.78
+timer:  IterMD            1       9.056       9.056    93.77
 timer:  hsparse           2       0.004       0.008     0.08
-timer:  overfsm           2       0.503       1.007    10.49
-timer:  IterSCF          24       0.332       7.980    83.16
-timer:  kinefsm           2       0.477       0.955     9.95
-timer:  nlefsm            2       1.171       2.343    24.41
-timer:  DHSCF            24       0.192       4.612    48.07
-timer:  DHSCF1            1       0.080       0.080     0.83
-timer:  DHSCF2            1       0.301       0.301     3.14
-timer:  REORD           194       0.000       0.065     0.68
-timer:  POISON           25       0.026       0.642     6.69
-timer:  DHSCF3           24       0.163       3.904    40.69
-timer:  rhoofd           24       0.046       1.096    11.42
-timer:  cellXC           24       0.023       0.548     5.71
-timer:  vmat             24       0.056       1.345    14.01
-timer:  diagon           23       0.001       0.026     0.27
-timer:  rdiag            23       0.001       0.025     0.26
+timer:  overfsm           2       0.495       0.990    10.25
+timer:  IterSCF          24       0.336       8.056    83.41
+timer:  kinefsm           2       0.477       0.954     9.88
+timer:  nlefsm            2       1.171       2.342    24.25
+timer:  DHSCF            24       0.195       4.683    48.49
+timer:  DHSCF1            1       0.084       0.084     0.87
+timer:  DHSCF2            1       0.300       0.300     3.11
+timer:  REORD           194       0.000       0.055     0.57
+timer:  POISON           25       0.026       0.651     6.74
+timer:  DHSCF3           24       0.166       3.978    41.19
+timer:  rhoofd           24       0.051       1.235    12.79
+timer:  cellXC           24       0.022       0.538     5.57
+timer:  vmat             24       0.054       1.289    13.35
+timer:  diagon           23       0.002       0.035     0.36
+timer:  rdiag            23       0.001       0.029     0.30
 timer:  rdiag1           23       0.000       0.001     0.01
 timer:  rdiag2           23       0.000       0.003     0.03
-timer:  rdiag3           23       0.001       0.017     0.18
-timer:  rdiag4           23       0.000       0.001     0.01
-timer:  DHSCF4            1       0.311       0.311     3.24
-timer:  dfscf             1       0.281       0.281     2.93
+timer:  rdiag3           23       0.001       0.021     0.22
+timer:  rdiag4           23       0.000       0.003     0.03
+timer:  DHSCF4            1       0.309       0.309     3.20
+timer:  dfscf             1       0.282       0.282     2.92
 timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1       9.730       9.730   100.00
-elaps:  Setup             1       0.676       0.676     6.94
+elaps:  siesta            1      10.052      10.052   100.00
+elaps:  Setup             1       0.930       0.930     9.26
 elaps:  bands             1       0.000       0.000     0.00
 elaps:  writewave         1       0.000       0.000     0.00
 elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD            1       9.049       9.049    93.00
-elaps:  hsparse           2       0.004       0.008     0.08
-elaps:  overfsm           2       0.504       1.007    10.35
-elaps:  IterSCF          24       0.334       8.025    82.47
-elaps:  kinefsm           2       0.478       0.955     9.82
-elaps:  nlefsm            2       1.171       2.342    24.07
-elaps:  DHSCF            24       0.192       4.612    47.39
-elaps:  DHSCF1            1       0.080       0.080     0.83
-elaps:  DHSCF2            1       0.301       0.301     3.09
-elaps:  REORD           194       0.000       0.063     0.65
-elaps:  POISON           25       0.026       0.643     6.60
-elaps:  DHSCF3           24       0.163       3.904    40.12
-elaps:  rhoofd           24       0.046       1.098    11.28
-elaps:  cellXC           24       0.023       0.549     5.64
-elaps:  vmat             24       0.056       1.343    13.80
-elaps:  diagon           23       0.001       0.027     0.28
-elaps:  rdiag            23       0.001       0.024     0.24
+elaps:  IterMD            1       9.117       9.117    90.69
+elaps:  hsparse           2       0.004       0.008     0.07
+elaps:  overfsm           2       0.495       0.990     9.85
+elaps:  IterSCF          24       0.338       8.111    80.68
+elaps:  kinefsm           2       0.477       0.954     9.49
+elaps:  nlefsm            2       1.171       2.341    23.29
+elaps:  DHSCF            24       0.195       4.686    46.62
+elaps:  DHSCF1            1       0.084       0.084     0.83
+elaps:  DHSCF2            1       0.300       0.300     2.98
+elaps:  REORD           194       0.000       0.063     0.63
+elaps:  POISON           25       0.026       0.649     6.46
+elaps:  DHSCF3           24       0.166       3.978    39.58
+elaps:  rhoofd           24       0.051       1.235    12.29
+elaps:  cellXC           24       0.022       0.537     5.34
+elaps:  vmat             24       0.054       1.289    12.82
+elaps:  diagon           23       0.002       0.041     0.41
+elaps:  rdiag            23       0.002       0.037     0.37
 elaps:  rdiag1           23       0.000       0.001     0.01
 elaps:  rdiag2           23       0.000       0.002     0.02
-elaps:  rdiag3           23       0.001       0.017     0.17
-elaps:  rdiag4           23       0.000       0.001     0.01
-elaps:  DHSCF4            1       0.311       0.311     3.20
-elaps:  dfscf             1       0.281       0.281     2.89
+elaps:  rdiag3           23       0.001       0.028     0.28
+elaps:  rdiag4           23       0.000       0.005     0.05
+elaps:  DHSCF4            1       0.309       0.309     3.07
+elaps:  dfscf             1       0.281       0.281     2.80
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:  19-DEC-2006  16:19:51
+>> End of run:  18-MAY-2007  15:52:09

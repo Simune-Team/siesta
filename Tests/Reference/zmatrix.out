@@ -1,10 +1,10 @@
-Siesta Version: siesta-2.0.1
+Siesta Version: siesta-2.0.2
 Architecture  : intel9-mkl8
 Compiler flags: ifort -w -O2 -mp
 SERIAL version
 
 * Running in serial mode
->> Start of run:  19-DEC-2006  16:43:36
+>> Start of run:  18-MAY-2007  15:53:29
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -608,8 +608,8 @@ siesta: System type = bulk
 siesta: k-grid: Number of k-points =     1
 siesta: k-grid: Cutoff (effective) =     4.033 Ang
 siesta: k-grid: Supercell and displacements
-siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
 siesta: k-grid:    0   0   1      0.000
 
 * Maximum dynamic memory allocated =     1 MB
@@ -690,8 +690,8 @@ siesta: Eharris(eV) =   -1122.280180
 
 siesta: Eharris(eV) =   -1122.280180
 
-timer: Routine,Calls,Time,% = IterSCF        1       7.958  70.70
-elaps: Routine,Calls,Wall,% = IterSCF        1       7.965  69.48
+timer: Routine,Calls,Time,% = IterSCF        1       7.941  70.58
+elaps: Routine,Calls,Wall,% = IterSCF        1       7.941  69.89
 
 siesta: E_KS - E_eggbox =     -1115.2952
 
@@ -711,16 +711,16 @@ cartesian    1 (     2 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- x          -0.445584225732197     
- y          -0.345303148136733     
- z           0.725291629140223     
- theta      -2.250732163745101E-004
- phi        -2.274194723412195E-004
- tau        -3.677047683736867E-004
- x2         -4.718355216983228E-002
- y2          0.219656263596053     
- z2         -4.100721158271641E-002
- six          66.8049693228972     
+ x          -0.445584225732208     
+ y          -0.345303148136709     
+ z           0.725291629140407     
+ theta      -2.250732163747028E-004
+ phi        -2.274194723424635E-004
+ tau        -3.677047683734431E-004
+ x2         -4.718355216980252E-002
+ y2          0.219656263596073     
+ z2         -4.100721158268534E-002
+ six          66.8049693229615     
 
 siesta: Atomic forces (eV/Ang):
      1   -0.437007    0.585047    0.700233
@@ -765,11 +765,11 @@ cartesian block    1 (     2 atoms)
 
 Z-matrix Symbol Section -------
 Variables
- x           9.929408567593048E-002
+ x           9.929408567593116E-002
  y           0.109452955413726     
- z           0.121149039217662     
+ z           0.121149039217661     
  theta        89.9958198742296     
- phi          36.9957762988758     
+ phi          36.9957762988757     
  tau          89.9931708792234     
  x2          0.499989073735498     
  y2          0.500050102540386     
@@ -814,15 +814,15 @@ cartesian    1 (     2 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- x          -0.473079824642362     
- y          -0.346286036100352     
- z           0.712400021443917     
- theta      -1.531283448180865E-004
- phi        -3.062683202106679E-004
- tau        -4.346123077076347E-004
- x2         -3.817545264630243E-002
- y2          0.192828618983893     
- z2         -4.071351018359579E-002
+ x          -0.473079824642767     
+ y          -0.346286035876332     
+ z           0.712400021421681     
+ theta      -1.531283450582014E-004
+ phi        -3.062683208107576E-004
+ tau        -4.346123074665233E-004
+ x2         -3.817545264631715E-002
+ y2          0.192828618984128     
+ z2         -4.071351018343876E-002
  six          52.6888560867808     
 
 siesta: Atomic forces (eV/Ang):
@@ -868,11 +868,11 @@ cartesian block    1 (     2 atoms)
 
 Z-matrix Symbol Section -------
 Variables
- x           9.858817135186097E-002
- y           0.108905910827451     
- z           0.122298078435324     
+ x           9.858817135186232E-002
+ y           0.108905910827453     
+ z           0.122298078435322     
  theta        89.9916397484591     
- phi          36.9915525977515     
+ phi          36.9915525977514     
  tau          89.9863417584468     
  x2          0.499978147470997     
  y2          0.500100205080773     
@@ -917,16 +917,16 @@ cartesian    1 (     2 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- x          -0.502429354428797     
- y          -0.342054225017513     
- z           0.717524545760660     
- theta      -6.463971689008757E-005
- phi        -2.786637314864929E-004
- tau        -5.026464562233110E-004
- x2         -3.192259944428317E-002
- y2          0.166056349308186     
- z2         -4.150472060850874E-002
- six          39.9199688644729     
+ x          -0.502429354429647     
+ y          -0.342054225018456     
+ z           0.717524545563212     
+ theta      -6.463971710901339E-005
+ phi        -2.786637230571131E-004
+ tau        -5.026464561973561E-004
+ x2         -3.192259944417420E-002
+ y2          0.166056349308531     
+ z2         -4.150472060848359E-002
+ six          39.9199688644730     
 
 siesta: Atomic forces (eV/Ang):
      1   -0.497956    0.564555    0.692841
@@ -971,11 +971,11 @@ cartesian block    1 (     2 atoms)
 
 Z-matrix Symbol Section -------
 Variables
- x           9.788225702779145E-002
- y           0.108358866241177     
- z           0.123447117652986     
+ x           9.788225702779348E-002
+ y           0.108358866241179     
+ z           0.123447117652983     
  theta        89.9874596226886     
- phi          36.9873288966272     
+ phi          36.9873288966271     
  tau          89.9795126376701     
  x2          0.499967221206495     
  y2          0.500150307621159     
@@ -1020,16 +1020,16 @@ cartesian    1 (     2 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- x          -0.527895318339893     
- y          -0.335404248584003     
- z           0.709525460897116     
- theta       2.632787589484044E-005
- phi        -2.837450992406006E-004
- tau        -5.534684883688976E-004
- x2         -2.562169266477579E-002
- y2          0.140727873817095     
- z2         -4.188798961134016E-002
- six          28.8982757159112     
+ x          -0.527895318341088     
+ y          -0.335404248584671     
+ z           0.709525460704766     
+ theta       2.632787552058320E-005
+ phi        -2.837450993026088E-004
+ tau        -5.534684857695825E-004
+ x2         -2.562169266488957E-002
+ y2          0.140727873817085     
+ z2         -4.188798961143420E-002
+ six          28.8982757159113     
 
 siesta: Atomic forces (eV/Ang):
      1   -0.525775    0.559195    0.686457
@@ -1074,11 +1074,11 @@ cartesian block    1 (     2 atoms)
 
 Z-matrix Symbol Section -------
 Variables
- x           9.717634270372193E-002
- y           0.107811821654903     
- z           0.124596156870647     
+ x           9.717634270372463E-002
+ y           0.107811821654905     
+ z           0.124596156870644     
  theta        89.9832794969181     
- phi          36.9831051955029     
+ phi          36.9831051955028     
  tau          89.9726835168934     
  x2          0.499956294941993     
  y2          0.500200410161545     
@@ -1123,16 +1123,16 @@ cartesian    1 (     2 atoms)
 
 
 Variable forces (eV/Ang ; eV/deg )
- x          -0.552055901641062     
- y          -0.324729176491899     
- z           0.704932304010680     
- theta       1.491771615831734E-004
- phi        -3.302157870934435E-004
- tau        -6.338035685020209E-004
- x2         -2.043533352089110E-002
- y2          0.115546695135671     
- z2         -4.335377970367846E-002
- six          19.8519467962123     
+ x          -0.552055901641858     
+ y          -0.324729176492603     
+ z           0.704932303999313     
+ theta       1.491771621328747E-004
+ phi        -3.302157882515813E-004
+ tau        -6.338035685046848E-004
+ x2         -2.043533352102976E-002
+ y2          0.115546695135786     
+ z2         -4.335377970372774E-002
+ six          19.8519467962121     
 
 siesta: Atomic forces (eV/Ang):
      1   -0.552290    0.554449    0.682522
@@ -1183,11 +1183,11 @@ cartesian block    1 (     2 atoms)
 
 Z-matrix Symbol Section -------
 Variables
- x           9.647042837965242E-002
- y           0.107264777068629     
- z           0.125745196088309     
+ x           9.647042837965579E-002
+ y           0.107264777068631     
+ z           0.125745196088305     
  theta        89.9790993711476     
- phi          36.9788814943786     
+ phi          36.9788814943785     
  tau          89.9658543961167     
  x2          0.499945368677491     
  y2          0.500250512701931     
@@ -1258,67 +1258,67 @@ siesta:          -5.03365509        -48.12403245  kBar
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      19.605      19.605   100.00
-timer:  Setup             1       0.867       0.867     4.42
-timer:  bands             1       0.001       0.001     0.01
-timer:  writewave         1       0.000       0.000     0.00
+timer:  siesta            1      19.769      19.769   100.00
+timer:  Setup             1       0.869       0.869     4.40
+timer:  bands             1       0.000       0.000     0.00
+timer:  writewave         1       0.001       0.001     0.01
 timer:  KSV_init          1       0.000       0.000     0.00
-timer:  IterMD            5       3.746      18.731    95.54
-timer:  hsparse           6       0.036       0.215     1.10
-timer:  overfsm          10       0.255       2.553    13.02
-timer:  IterSCF          10       1.603      16.035    81.79
-timer:  kinefsm          10       0.248       2.478    12.64
-timer:  nlefsm           10       0.523       5.231    26.68
-timer:  DHSCF            10       0.816       8.162    41.63
-timer:  DHSCF1            1       0.105       0.105     0.54
-timer:  DHSCF2            5       0.568       2.842    14.49
-timer:  REORD            90       0.000       0.018     0.09
-timer:  POISON           15       0.020       0.301     1.54
-timer:  DHSCF3           10       0.244       2.437    12.43
-timer:  rhoofd           10       0.083       0.833     4.25
-timer:  cellXC           15       0.035       0.519     2.65
-timer:  vmat             10       0.100       1.000     5.10
-timer:  diagon            5       0.006       0.030     0.15
-timer:  rdiag             5       0.005       0.025     0.13
-timer:  rdiag1            5       0.000       0.001     0.01
+timer:  IterMD            5       3.779      18.895    95.58
+timer:  hsparse           6       0.036       0.214     1.08
+timer:  overfsm          10       0.257       2.567    12.98
+timer:  IterSCF          10       1.619      16.194    81.91
+timer:  kinefsm          10       0.247       2.469    12.49
+timer:  nlefsm           10       0.520       5.202    26.31
+timer:  DHSCF            10       0.835       8.353    42.25
+timer:  DHSCF1            1       0.111       0.111     0.56
+timer:  DHSCF2            5       0.568       2.840    14.36
+timer:  REORD            90       0.000       0.025     0.13
+timer:  POISON           15       0.020       0.306     1.55
+timer:  DHSCF3           10       0.256       2.558    12.94
+timer:  rhoofd           10       0.093       0.935     4.73
+timer:  cellXC           15       0.035       0.521     2.64
+timer:  vmat             10       0.101       1.014     5.13
+timer:  diagon            5       0.006       0.032     0.16
+timer:  rdiag             5       0.005       0.027     0.14
+timer:  rdiag1            5       0.001       0.004     0.02
 timer:  rdiag2            5       0.000       0.002     0.01
 timer:  rdiag3            5       0.004       0.020     0.10
 timer:  rdiag4            5       0.000       0.000     0.00
-timer:  DHSCF4            5       0.555       2.773    14.14
-timer:  dfscf             5       0.457       2.287    11.66
+timer:  DHSCF4            5       0.568       2.840    14.36
+timer:  dfscf             5       0.471       2.354    11.91
 timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      20.052      20.052   100.00
-elaps:  Setup             1       1.065       1.065     5.31
+elaps:  siesta            1      19.931      19.931   100.00
+elaps:  Setup             1       0.978       0.978     4.91
 elaps:  bands             1       0.000       0.000     0.00
 elaps:  writewave         1       0.000       0.000     0.00
 elaps:  KSV_init          1       0.000       0.000     0.00
-elaps:  IterMD            5       3.795      18.977    94.63
-elaps:  hsparse           6       0.036       0.215     1.07
-elaps:  overfsm          10       0.255       2.554    12.74
-elaps:  IterSCF          10       1.623      16.225    80.91
-elaps:  kinefsm          10       0.248       2.478    12.35
-elaps:  nlefsm           10       0.523       5.232    26.09
-elaps:  DHSCF            10       0.816       8.163    40.71
-elaps:  DHSCF1            1       0.106       0.106     0.53
-elaps:  DHSCF2            5       0.568       2.842    14.17
-elaps:  REORD            90       0.000       0.024     0.12
-elaps:  POISON           15       0.020       0.299     1.49
-elaps:  DHSCF3           10       0.243       2.434    12.14
-elaps:  rhoofd           10       0.083       0.833     4.15
-elaps:  cellXC           15       0.035       0.518     2.58
-elaps:  vmat             10       0.100       0.999     4.98
-elaps:  diagon            5       0.006       0.029     0.14
-elaps:  rdiag             5       0.005       0.025     0.13
+elaps:  IterMD            5       3.789      18.945    95.05
+elaps:  hsparse           6       0.036       0.214     1.08
+elaps:  overfsm          10       0.257       2.566    12.87
+elaps:  IterSCF          10       1.620      16.204    81.30
+elaps:  kinefsm          10       0.247       2.470    12.39
+elaps:  nlefsm           10       0.520       5.200    26.09
+elaps:  DHSCF            10       0.835       8.353    41.91
+elaps:  DHSCF1            1       0.110       0.110     0.55
+elaps:  DHSCF2            5       0.568       2.839    14.25
+elaps:  REORD            90       0.000       0.026     0.13
+elaps:  POISON           15       0.020       0.303     1.52
+elaps:  DHSCF3           10       0.256       2.556    12.83
+elaps:  rhoofd           10       0.093       0.934     4.68
+elaps:  cellXC           15       0.035       0.521     2.62
+elaps:  vmat             10       0.101       1.013     5.08
+elaps:  diagon            5       0.006       0.031     0.16
+elaps:  rdiag             5       0.006       0.028     0.14
 elaps:  rdiag1            5       0.000       0.002     0.01
-elaps:  rdiag2            5       0.001       0.003     0.01
-elaps:  rdiag3            5       0.004       0.018     0.09
+elaps:  rdiag2            5       0.001       0.003     0.02
+elaps:  rdiag3            5       0.004       0.020     0.10
 elaps:  rdiag4            5       0.000       0.001     0.01
-elaps:  DHSCF4            5       0.555       2.774    13.84
-elaps:  dfscf             5       0.458       2.288    11.41
+elaps:  DHSCF4            5       0.568       2.840    14.25
+elaps:  dfscf             5       0.471       2.354    11.81
 elaps:  optical           1       0.000       0.000     0.00
   
->> End of run:  19-DEC-2006  16:43:56
+>> End of run:  18-MAY-2007  15:53:49

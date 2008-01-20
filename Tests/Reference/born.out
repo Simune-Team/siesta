@@ -1,10 +1,10 @@
-Siesta Version: siesta-2.0.2-candidate-38
-Architecture  : intel-checks
-Compiler flags: ifort -O1 -ftrapuv -CB -u
+Siesta Version: siesta-2.0.2
+Architecture  : intel9-mkl8
+Compiler flags: ifort -w -O2 -mp
 SERIAL version
 
 * Running in serial mode
->> Start of run:  20-FEB-2007  17:41:16
+>> Start of run:  18-MAY-2007  15:51:59
 
                            ***********************       
                            *  WELCOME TO SIESTA  *       
@@ -286,8 +286,8 @@ siesta: Eharris(eV) =    -195.484966
 
 siesta: Eharris(eV) =    -195.484966
 
-timer: Routine,Calls,Time,% = IterSCF        1       1.586  77.78
-elaps: Routine,Calls,Wall,% = IterSCF        1       1.586  77.41
+timer: Routine,Calls,Time,% = IterSCF        1       1.065  75.91
+elaps: Routine,Calls,Wall,% = IterSCF        1       1.097  59.76
 
 siesta: E_KS - E_eggbox =      -194.6964
 
@@ -318,15 +318,15 @@ mulliken: Qtot =        8.000
 siesta: Calculating polarization. 
 
 siesta: Macroscopic polarization per unit cell (a.u.):
-siesta: Along the lattice vectors     21.767328    7.255776   21.767328
-siesta: Along cartesian directions    20.522434   30.783651   20.522434
+siesta: Along the lattice vectors     21.767328   21.767328   21.767328
+siesta: Along cartesian directions    30.783651   30.783651   30.783651
 
 siesta: Macroscopic polarization per unit cell (Debye):
-siesta: Along the lattice vectors     55.327068   18.442356   55.327068
-siesta: Along cartesian directions    52.162860   78.244290   52.162860
+siesta: Along the lattice vectors     55.327068   55.327068   55.327068
+siesta: Along cartesian directions    78.244289   78.244290   78.244290
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
-obc:   21.767328    7.255776   21.767328
+obc:   21.767328   21.767328   21.767328
 
 * Maximum dynamic memory allocated =     7 MB
 
@@ -1061,7 +1061,7 @@ siesta: Along cartesian directions    20.522439   20.522439   30.783596
 
 siesta: Macroscopic polarization per unit cell (Debye):
 siesta: Along the lattice vectors     55.326970   55.326970   18.442472
-siesta: Along cartesian directions    52.162872   52.162872   78.244151
+siesta: Along cartesian directions    52.162873   52.162873   78.244151
 
 obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
 obc:   21.767290   21.767290    7.255822
@@ -1116,7 +1116,7 @@ siesta: Pressure (static):
 siesta:                Solid            Molecule  Units
 siesta:           0.00242288          0.00251784  Ry/Bohr**3
 siesta:           0.22246018          0.23117985  eV/Ang**3
-siesta:         356.42434960        370.39495452  kBar
+siesta:         356.42434960        370.39495453  kBar
 
 * Maximum dynamic memory allocated : Node    0 =     7 MB
 
@@ -1124,69 +1124,69 @@ siesta:         356.42434960        370.39495452  kBar
 
 timer: CPU execution times:
 timer:  Routine       Calls   Time/call    Tot.time        %
-timer:  siesta            1      38.180      38.180   100.00
-timer:  Setup             1       0.278       0.278     0.73
+timer:  siesta            1      19.763      19.763   100.00
+timer:  Setup             1       0.259       0.259     1.31
 timer:  bands             1       0.000       0.000     0.00
-timer:  writewave         1       0.001       0.001     0.00
-timer:  KSV_init          1       0.001       0.001     0.00
-timer:  IterMD           13       2.915      37.894    99.25
-timer:  hsparse          14       0.049       0.692     1.81
-timer:  overfsm          26       0.006       0.164     0.43
-timer:  IterSCF          26       1.326      34.475    90.29
-timer:  kinefsm          26       0.005       0.139     0.36
-timer:  nlefsm           26       0.265       6.881    18.02
-timer:  DHSCF            26       1.051      27.314    71.54
-timer:  DHSCF1            1       0.184       0.184     0.48
-timer:  DHSCF2           13       0.610       7.934    20.78
-timer:  REORD           234       0.000       0.048     0.13
-timer:  POISON           39       0.006       0.226     0.59
-timer:  DHSCF3           26       0.343       8.930    23.39
-timer:  rhoofd           26       0.198       5.144    13.47
-timer:  cellXC           39       0.012       0.456     1.19
-timer:  vmat             26       0.125       3.247     8.50
-timer:  diagon           13       0.002       0.024     0.06
-timer:  cdiag           908       0.000       0.116     0.30
-timer:  cdiag1          908       0.000       0.008     0.02
-timer:  cdiag2          908       0.000       0.011     0.03
-timer:  cdiag3          908       0.000       0.068     0.18
-timer:  cdiag4          908       0.000       0.007     0.02
-timer:  DHSCF4           13       0.789      10.257    26.87
-timer:  dfscf            13       0.673       8.745    22.90
-timer:  KSV_pol           7       0.270       1.891     4.95
+timer:  writewave         1       0.000       0.000     0.00
+timer:  KSV_init          1       0.003       0.003     0.02
+timer:  IterMD           13       1.500      19.494    98.64
+timer:  hsparse          14       0.017       0.238     1.20
+timer:  overfsm          26       0.003       0.081     0.41
+timer:  IterSCF          26       0.671      17.447    88.28
+timer:  kinefsm          26       0.003       0.066     0.33
+timer:  nlefsm           26       0.163       4.238    21.45
+timer:  DHSCF            26       0.502      13.062    66.09
+timer:  DHSCF1            1       0.288       0.288     1.46
+timer:  DHSCF2           13       0.357       4.636    23.46
+timer:  REORD           234       0.000       0.014     0.07
+timer:  POISON           39       0.005       0.186     0.94
+timer:  DHSCF3           26       0.136       3.539    17.91
+timer:  rhoofd           26       0.057       1.489     7.53
+timer:  cellXC           39       0.011       0.431     2.18
+timer:  vmat             26       0.062       1.612     8.16
+timer:  diagon           13       0.001       0.015     0.08
+timer:  cdiag           908       0.000       0.139     0.70
+timer:  cdiag1          908       0.000       0.010     0.05
+timer:  cdiag2          908       0.000       0.014     0.07
+timer:  cdiag3          908       0.000       0.087     0.44
+timer:  cdiag4          908       0.000       0.009     0.05
+timer:  DHSCF4           13       0.353       4.592    23.24
+timer:  dfscf            13       0.271       3.529    17.86
+timer:  KSV_pol           7       0.203       1.423     7.20
 timer:  optical           1       0.000       0.000     0.00
   
 
 elaps: ELAPSED times:
 elaps:  Routine       Calls   Time/call    Tot.time        %
-elaps:  siesta            1      39.110      39.110   100.00
-elaps:  Setup             1       0.288       0.288     0.74
-elaps:  bands             1       0.000       0.000     0.00
-elaps:  writewave         1       0.001       0.001     0.00
-elaps:  KSV_init          1       0.002       0.002     0.00
-elaps:  IterMD           13       2.986      38.814    99.24
-elaps:  hsparse          14       0.049       0.692     1.77
-elaps:  overfsm          26       0.006       0.164     0.42
-elaps:  IterSCF          26       1.361      35.394    90.50
-elaps:  kinefsm          26       0.005       0.139     0.35
-elaps:  nlefsm           26       0.265       6.878    17.59
-elaps:  DHSCF            26       1.086      28.236    72.20
-elaps:  DHSCF1            1       0.184       0.184     0.47
-elaps:  DHSCF2           13       0.681       8.854    22.64
-elaps:  REORD           234       0.000       0.044     0.11
-elaps:  POISON           39       0.006       0.225     0.58
-elaps:  DHSCF3           26       0.343       8.929    22.83
-elaps:  rhoofd           26       0.198       5.146    13.16
-elaps:  cellXC           39       0.012       0.458     1.17
-elaps:  vmat             26       0.125       3.243     8.29
-elaps:  diagon           13       0.002       0.022     0.06
-elaps:  cdiag           908       0.000       0.120     0.31
-elaps:  cdiag1          908       0.000       0.007     0.02
-elaps:  cdiag2          908       0.000       0.016     0.04
-elaps:  cdiag3          908       0.000       0.064     0.16
-elaps:  cdiag4          908       0.000       0.008     0.02
-elaps:  DHSCF4           13       0.789      10.259    26.23
-elaps:  dfscf            13       0.673       8.746    22.36
-elaps:  KSV_pol           7       0.270       1.892     4.84
-elaps:  optical           1       0.000       0.000     0.00
+elaps:  siesta            1      20.291      20.291   100.00
+elaps:  Setup             1       0.658       0.658     3.24
+elaps:  bands             1       0.001       0.001     0.00
+elaps:  writewave         1       0.002       0.002     0.01
+elaps:  KSV_init          1       0.004       0.004     0.02
+elaps:  IterMD           13       1.509      19.621    96.69
+elaps:  hsparse          14       0.017       0.238     1.17
+elaps:  overfsm          26       0.003       0.083     0.41
+elaps:  IterSCF          26       0.672      17.484    86.16
+elaps:  kinefsm          26       0.003       0.067     0.33
+elaps:  nlefsm           26       0.163       4.235    20.87
+elaps:  DHSCF            26       0.503      13.073    64.43
+elaps:  DHSCF1            1       0.288       0.288     1.42
+elaps:  DHSCF2           13       0.357       4.638    22.86
+elaps:  REORD           234       0.000       0.015     0.07
+elaps:  POISON           39       0.005       0.187     0.92
+elaps:  DHSCF3           26       0.136       3.542    17.45
+elaps:  rhoofd           26       0.057       1.491     7.35
+elaps:  cellXC           39       0.011       0.430     2.12
+elaps:  vmat             26       0.062       1.610     7.93
+elaps:  diagon           13       0.002       0.030     0.15
+elaps:  cdiag           908       0.000       0.169     0.83
+elaps:  cdiag1          908       0.000       0.014     0.07
+elaps:  cdiag2          908       0.000       0.015     0.07
+elaps:  cdiag3          908       0.000       0.105     0.52
+elaps:  cdiag4          908       0.000       0.007     0.04
+elaps:  DHSCF4           13       0.353       4.593    22.63
+elaps:  dfscf            13       0.272       3.530    17.39
+elaps:  KSV_pol           7       0.207       1.447     7.13
+elaps:  optical           1       0.001       0.001     0.00
   
->> End of run:  20-FEB-2007  17:41:55
+>> End of run:  18-MAY-2007  15:52:19

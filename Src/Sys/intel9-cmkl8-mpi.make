@@ -4,11 +4,15 @@ SIESTA_ARCH=intel9-cmkl8-mpi
 # You may need to change the name of the compiler, location of libraries...
 # Modified by Alberto Garcia to suit cryst at the UPV.
 #
+# Note: The -mp1 option is necessary to recover IEEE floating point precision,
+#       but it sometimes leads to bad code. Use -mp instead.
+#       In this released .make file, we not use the highest optimization.
+#
 LANG=
 FC=mpiifort
 FC_ASIS=$(FC)
 #
-FFLAGS=-O3 -xP -mp
+FFLAGS=-O2 -mp
 FFLAGS_DEBUG= -g -O0
 RANLIB=echo 
 MPI_INCLUDE=/opt/intel/mpi/2.0/include
@@ -22,11 +26,11 @@ SYS=nag
 DEFS= $(DEFS_MPI) $(DEFS_CDF)
 #
 .F.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 .F90.o:
-	$(FC) -c $(FFLAGS)  $(DEFS) $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
 .f90.o:
-	$(FC) -c $(FFLAGS)   $<
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
 #

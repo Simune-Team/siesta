@@ -15,13 +15,15 @@ SIESTA_ARCH=intel9-mkl8
 # Be sure to experiment with different optimization options.
 # You have quite a number of combinations to try...
 #
-# Note: The -mp1 option is necessary to recover IEEE floating point precision.
+# Note: The -mp1 option is necessary to recover IEEE floating point precision,
+#       but it sometimes leads to bad code. Use -mp instead.
+#       In this released .make file, we not use the highest optimization.
 #
 FC=ifort
 #
-FFLAGS= -w -xP -O3 -mp1
+FFLAGS= -w -O2 -mp
 FFLAGS_DEBUG= -g 
-LDFLAGS= -static
+LDFLAGS= 
 COMP_LIBS=
 RANLIB=echo
 #
