@@ -7,6 +7,13 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
 
+2007-05-30 16:25:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-8
+
+Summary: Fix index in write statement in iohs in parallel
+
+(This is similar to the bug fix for 2.0.1, but applying to
+other array).
+
 2007-05-30 16:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-7
 
 Summary: Origin shift was applied after possible coordinate scaling

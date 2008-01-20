@@ -482,7 +482,7 @@ C Write listh
             call MPI_Barrier(MPI_Comm_World,MPIerror)
             if (Node.eq.0) then
               do im = 1,numhg(ih)
-                write(iu) ibuffer(ih)
+                write(iu) ibuffer(im)
               enddo
             endif
           endif

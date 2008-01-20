@@ -13,6 +13,7 @@ SUMMARY OF CHANGES
 * Wrap several I/O operations for MPI. Other parallel fixes
 * Fix tag in MPI send/receive in mulliken
 * Origin shift was applied after possible coordinate scaling
+* Fix index in write statement in iohs in parallel
 
 CHANGES IN DETAIL
 
@@ -98,6 +99,12 @@ The shift is now applied right after reading the coordinate block.
 NOTE: This does not apply to the Zmatrix routine, which has *its own*
 conventions for origin shift, neither to coordinates read from an XV
 file or a Struct file.
+
+* Fix index in write statement in iohs in parallel
+
+This is similar to the bug fix for 2.0.1, but applying to
+other array.
+
 
 NEW TESTS
 
