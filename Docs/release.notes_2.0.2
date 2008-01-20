@@ -1,0 +1,63 @@
+RELEASE NOTES FOR SIESTA-2.0.2
+
+
+This is the second bug-fix package after the release of Siesta-2.0
+
+
+Summary of changed items:
+
+* Initialize vol2 correctly in m_check_supercell.f
+
+* Fix for k-point update when kgrid_cutoff is used
+
+Changes in detail:
+
+* Initialize vol2 correctly in m_check_supercell.f
+
+The bug could lead to different paths for supercell creation,
+causing small numerical differences.
+
+* Fix for k-point update when kgrid_cutoff is used
+
+
+The user can specify a kgrid_cutoff or a Monkhorst-Pack grid
+to determine the k-point sampling. 
+
+If a MP grid is specified and there are unit-cell changes during the
+calculation, the k-point set does not change (in fractional
+reciprocal-lattice coordinates). The sampling accuracy changes
+implicitly.
+
+On the other hand, the k-point set should change in principle if a
+kgrid_cutoff has been given and the cell volume changes, but due to a
+programming error the k-point grid was fixed after the first
+iteration.
+
+The error affects variable-cell calculations specifying a
+kgrid_cutoff.
+
+The k-point grid used for achieving self-consistency is now
+re-computed inside the geometry loop if:
+
+The calculation is a cell-optimization one (i.e., if MD.VariableCell
+is .true.), or if it is a "siesta-server" run. This is the old default.
+
+Additionally, if the user sets the fdf flag "ChangeKgridInMD" to
+.true., the grid will be recomputed also during MD runs that potentially
+change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
+Anneal.
+
+A user might want to avoid sudden changes in the k-point set
+while performing molecular dynamics runs or cell optimizations,
+notably if the calculations are not very well converged. In that
+case a MP grid, and not a kgrid_cutoff, should be specified.
+
+A related problem that has been fixed in this patch is the 
+possible overriding of the user's MP displacement specification after
+the first iteration.
+
+There is no backwards compatibility after this bugfix. To recover the
+old behavior when a kgrid_cutoff was specified, the user should check
+the old output, extract the information about the MP grid generated
+automatically by the program, and put it in an MP block.
+

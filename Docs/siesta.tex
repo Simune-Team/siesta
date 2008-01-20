@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.0.1}}
+{\Huge {\bf S I E S T A \, \, 2.0.2}}
 
 \vspace{1cm}
 \hrulefill
@@ -2010,13 +2010,23 @@ It is half the length of the smallest lattice vector of the supercell
 required to obtain the same sampling precision with a single k point.
 Ref: Moreno and Soler, PRB 45, 13891 (1992).
 
-{\it Use:} If it is zero, only the gamma point is used.
-The resulting k-grid is chosen in an optimal way, according to the
-method of Moreno and Soler (using an effective supercell which is
-as spherical as possible, thus minimizing the number of k-points for
-a given precision). The grid is displaced for even numbers of
-effective mesh divisions.
-This parameter is not used if {\bf kgrid\_Monkhorst\_Pack} is specified.
+{\it Use:} If it is zero, only the gamma point is used.  The resulting
+k-grid is chosen in an optimal way, according to the method of Moreno
+and Soler (using an effective supercell which is as spherical as
+possible, thus minimizing the number of k-points for a given
+precision). The grid is displaced for even numbers of effective mesh
+divisions.  This parameter is not used if {\bf kgrid\_Monkhorst\_Pack}
+is specified. If the unit cell changes during the calculation (for
+example, in a cell-optimization run), (for Parrinello-Rahman and other
+cell-changing molecular-dynamics runs see {\bf ChangeKgridInMD}), the
+k-point grid will change accordingly. This is analogous to the changes
+in the real-space grid, whose fineness is specified by an energy
+cutoff. If sudden changes in the number of k-points are not desired,
+then the Monkhorst-Pack data block should be used instead. In this
+case there will be an implicit change in the quality of the sampling
+as the cell changes. Both methods should be equivalent for a
+well-converged sampling.
+
 
 {\it Default value:} {\tt 0.0 Bohr}
         
@@ -2058,6 +2068,21 @@ Overrides {\bf kgrid\_cutoff}
 {\it Default value:} $\Gamma$ point of the (super)cell.
 (Default used only when {\bf kgrid\_cutoff} is not defined).
         
+\item[{\bf ChangeKgridInMD}] ({\it boolean}): 
+\index{ChangeKgridInMD@{\bf ChangeKgridInMD}} 
+
+If {\tt .true.}, the k-point grid is
+recomputed at every iteration during MD runs that potentially
+change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
+Anneal. Regardless of the setting of this flag, the k-point grid
+is always updated at every iteration of a variable-cell optimization
+and after each step in a ``siesta-as-server'' run.
+
+{\it Default value:} {\tt .false.} for historical reasons. The
+rationale was to avoid sudden jumps in some properties when the
+sampling changes, but if the calculation is well-converged there
+should be no problems if the update is enabled.
+
 
 \item[{\bf BandLinesScale}] ({\it string}): 
 \index{BandLinesScale@{\bf BandLinesScale}} 

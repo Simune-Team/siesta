@@ -29,8 +29,10 @@ M4_FILES = m4/ac_config_aux_dirs.m4  m4/TW_CHECK_FC_FPP.m4      m4/TW_FC_ID_FLAG
 #
 aclocal.m4: $(M4_FILES)
 	cat $(M4_FILES)  > aclocal.m4
-dep: 
+dep:
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90
+	@sed '/^siesta_cmlsubs.o:/s/version.o//'  Makefile > tmp.Makefile
+	@mv tmp.Makefile Makefile
 #
 include arch.make
 #
@@ -61,7 +63,8 @@ OBJS = automatic_cell.o \
 	fixed.o fsiesta.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
-	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o \
+	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o \
+        kpoint_grid.o find_kgrid.o linpack.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o \
         m_check_supercell.o mulliken.o minvec.o naefs.o neighb.o \
 	ordern.o outcell.o outcoor.o \
@@ -305,6 +308,7 @@ extrapol.o: parallel.o precision.o sys.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: parallel.o precision.o recipes.o sys.o
 fft3d.o: parallel.o parallelsubs.o precision.o sys.o
+find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fixed.o: parallel.o parsing.o precision.o
 forhar.o: meshsubs.o precision.o
 gen-basis.o: atom.o basis_io.o basis_specs.o basis_types.o old_atmfuncs.o
@@ -332,9 +336,11 @@ iopipes.o: parallel.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: atomlist.o files.o parallel.o precision.o zmatrix.o
 ipack.o: sys.o
-kgrid.o: parallel.o precision.o units.o
+kgrid.o: parallel.o precision.o sys.o units.o
 kgridinit.o: minvec.o parallel.o precision.o units.o
 kinefsm.o: atmfuncs.o parallel.o parallelsubs.o precision.o
+kpoint_grid.o: find_kgrid.o minvec.o parallel.o precision.o siesta_cml.o
+kpoint_grid.o: units.o
 ksv.o: alloc.o atmfuncs.o densematrix.o parallel.o parsing.o precision.o sys.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
 m_broyddj_nocomm.o: alloc.o parallel.o precision.o sys.o
@@ -351,6 +357,7 @@ m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
 m_iorho.o: parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o atomlist.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: sys.o units.o
+m_kpoint_grid.o: minvec.o parallel.o precision.o sys.o units.o
 m_memory.o: memoryinfo.o parallel.o sys.o
 m_mpi_utils.o: precision.o sys.o
 m_options.o: precision.o
@@ -423,12 +430,12 @@ setatomnodes.o: alloc.o parallel.o precision.o spatial.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 shaper.o: atmfuncs.o precision.o
 siesta.o: alloc.o atmfuncs.o atomlist.o bands.o broyden_optim.o densematrix.o
-siesta.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o m_broyden_mixing.o
-siesta.o: m_cell.o m_check_supercell.o m_fdf_global.o m_iostruct.o
-siesta.o: m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o nlefsm.o ordern.o
-siesta.o: overfsm.o parallel.o parallelsubs.o periodic_table.o phonon.o
-siesta.o: precision.o redata.o siesta_cml.o sys.o timestamp.o units.o
-siesta.o: writewave.o xcmod.o zmatrix.o
+siesta.o: dynamics.o files.o hsparse.o iopipes.o ioxv.o kpoint_grid.o
+siesta.o: m_broyden_mixing.o m_cell.o m_check_supercell.o m_fdf_global.o
+siesta.o: m_iostruct.o m_mpi_utils.o m_smearing.o m_wallclock.o md_out.o
+siesta.o: nlefsm.o ordern.o overfsm.o parallel.o parallelsubs.o
+siesta.o: periodic_table.o phonon.o precision.o redata.o siesta_cml.o sys.o
+siesta.o: timestamp.o units.o writewave.o xcmod.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 spatial.o: precision.o
@@ -460,6 +467,7 @@ m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_dynamics.o: dynamics.o
 m_fermid.o: fermid.o
+m_find_kgrid.o: find_kgrid.o
 m_forhar.o: forhar.o
 m_hsparse.o: hsparse.o
 m_ioxv.o: ioxv.o
@@ -479,3 +487,4 @@ meshphi.o: meshsubs.o
 neighbour.o: mneighb.o
 on_core.o: onmod.o
 on_main.o: onmod.o
+version_info.o: version.o
