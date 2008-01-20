@@ -7,6 +7,14 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
 
+2007-05-30 16:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-9
+
+Summary: Fix dimension of dpr in pdosg. Clarify names of variables in pdos.
+
+In pdosg, dpr was wrongly dimensioned to no_l (modern notation) instead of no_u.
+
+More work is needed in the naming of variables.
+
 2007-05-30 16:25:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-8
 
 Summary: Fix index in write statement in iohs in parallel

@@ -14,6 +14,7 @@ SUMMARY OF CHANGES
 * Fix tag in MPI send/receive in mulliken
 * Origin shift was applied after possible coordinate scaling
 * Fix index in write statement in iohs in parallel
+* Fix dimension of dpr in pdosg.
 
 CHANGES IN DETAIL
 
@@ -105,6 +106,9 @@ file or a Struct file.
 This is similar to the bug fix for 2.0.1, but applying to
 other array.
 
+* Fix dimension of dpr in pdosg.
+
+In pdosg, dpr was wrongly dimensioned to no_l (modern notation) instead of no_u.
 
 NEW TESTS
 

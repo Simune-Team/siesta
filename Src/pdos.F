@@ -8,10 +8,10 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine pdos( NO, NSPIN, MAXSPN, MAXUO, MAXNH, 
+      subroutine pdos( NO, NSPIN, MAXSPN, NO_L, MAXNH, 
      .                 MAXO, NUMH, LISTHPTR, LISTH, H, S, 
      .                 E1, E2, SIGMA, NHIST,
-     .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO, NUOTOT )
+     .                 GAMMA, XIJ, INDXUO, NK, KPOINT, WK, EO, NO_U )
 C **********************************************************************
 C Subroutine to calculate the proyected density of states on the
 C atomic orbitals for a given eigenvalue spectra
@@ -21,9 +21,10 @@ C INTEGER NO                  : Number of basis orbitals in the supercell
 C INTEGER NSPIN               : Spin polarizations (1 or 2)
 C INTEGER MAXSPN              : Second dimension of eo and qo
 C                               (Max number of different spin polarizations)
-C INTEGER MAXUO               : Maximum number of atomic orbitals in the unit 
+C INTEGER NO_L               : Maximum number of atomic orbitals in the unit 
 C                               cell. First dimension of eo, qo, last of xij
 C                               Must be at least max(indxuo)
+!                               IN THIS PROCESSOR
 C INTEGER MAXNH               : Maximum number of orbitals interacting 
 C                               with any orbital
 C INTEGER MAXO                : First dimension of eo 
@@ -50,8 +51,8 @@ C                               nuo the nuber of orbitals in the unit cell
 C INTEGER NK                  : Number of k points
 C REAL*8  KPOINT(3,NK)        : k point vectors
 C REAL*8  WK(NK)              : k point weights (must sum one)
-C REAL*8  EO(MAXUO,MAXSPN,NK) : Eigenvalues
-C INTEGER NUOTOT              : Total number of orbitals in unit cell
+C REAL*8  EO(NO_L,MAXSPN,NK) : Eigenvalues
+C INTEGER NO_U              : Total number of orbitals in unit cell
 C **********************************************************************
 
       use precision,    only : dp
@@ -73,7 +74,7 @@ C **********************************************************************
       implicit none
 
       integer
-     .  NO, NSPIN, MAXSPN, MAXUO, MAXNH, NK, NHIST, MAXO, NUOTOT
+     .  NO, NSPIN, MAXSPN, NO_L, MAXNH, NK, NHIST, MAXO, NO_U
 
       integer 
      .  NUMH(*), LISTH(MAXNH), LISTHPTR(*), INDXUO(NO)
@@ -133,22 +134,22 @@ C Find the intervals between the subdivisions in the energy scale ------
 
 C Find number of orbitals per unit cell 
 #ifdef MPI
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
+      call GetNodeOrbs(no_u,Node,Nodes,nuo)
 #else
-      nuo = nuotot
+      nuo = no_u
 #endif
 
 C Check internal dimensions --------------------------------------------
        if ( nspin.le.2 .and. gamma) then
-         nhs  = nuotot * nuo
-         npsi = nuotot * maxuo * nspin
+         nhs  = no_u * nuo
+         npsi = no_u * no_l * nspin
        elseif ( nspin.le.2 .and. .not.gamma) then
          if (ParallelOverK) then
-           nhs  = 2 * nuotot * nuotot
-           npsi = 2 * nuotot * nuotot
+           nhs  = 2 * no_u * no_u
+           npsi = 2 * no_u * no_u
          else
-           nhs  = 2 * nuotot * nuo
-           npsi = 2 * nuotot * nuo
+           nhs  = 2 * no_u * nuo
+           npsi = 2 * no_u * nuo
          endif
        endif
 
@@ -158,14 +159,14 @@ C Allocate local arrays ------------------------------------------------
       call re_alloc(psi,1,npsi,name='psi',routine='pdos')
       allocate(dtot(nhist,2))
       call memory('A','D',2*nhist,'pdos')
-      allocate(dpr(nhist,nuotot,2))
-      call memory('A','D',2*nhist*nuotot,'pdos')
+      allocate(dpr(nhist,no_u,2))
+      call memory('A','D',2*nhist*no_u,'pdos')
 
 C Initialize the projected density of states ---------------------------
       do ispin = 1, 2
         do ihist = 1,nhist
           dtot(ihist,ispin) = 0.d0
-          do iuo = 1,nuotot
+          do iuo = 1,no_u
             dpr(ihist,iuo,ispin) = 0.d0
           enddo
         enddo
@@ -173,23 +174,23 @@ C Initialize the projected density of states ---------------------------
 
 C  Call appropiate routine ----------------------------------------------
       if (nspin.le.2 .and. gamma) then
-        call pdosg( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
+        call pdosg( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, INDXUO, EO,
-     .              HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
+     .              HAUX, SAUX, PSI, DTOT, DPR, NO_U )
       elseif ( nspin.le.2 .and. .not.gamma) then
         if (ParallelOverK) then
-          call pdoskp( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
+          call pdoskp( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,
-     .                HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
+     .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
         else
-          call pdosk( NSPIN, NUO, NO, MAXSPN, MAXUO, MAXNH,
+          call pdosk( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,
-     .                HAUX, SAUX, PSI, DTOT, DPR, NUOTOT )
+     .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
         endif
       endif
 
@@ -226,7 +227,7 @@ C New writing
 
         write(iunit2,'(a)') '<pdos>'
         write(iunit2,'(a,i1,a)') '<nspin>', nspin, '</nspin>'
-        write(iunit2,'(a,i4,a)') '<norbitals>', nuotot, '</norbitals>'
+        write(iunit2,'(a,i4,a)') '<norbitals>', no_u, '</norbitals>'
         call xml_NewElement(xf,"energy_values")
         call xml_AddAttribute(xf,"units","eV")
         write(iunit2,'(a)') '<energy_values units="eV">'
@@ -242,7 +243,7 @@ C New writing
         call xml_AddArray(xf,tmp(1:nhist))
         call xml_EndElement(xf,"energy_values")
 
-        do i = 1, nuotot
+        do i = 1, no_u
           iat = iaorb(i)
           iorb = iphorb(i)
           spec = isa(iat)
