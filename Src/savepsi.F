@@ -16,8 +16,8 @@ C Written by J.D. Gale, March 2000
 C **************************** INPUT ********************************** 
 C real*8  psi(maxpsi)         : Wavefunctions in current k point
 C real*8  maxpsi              : Array dimensions for psi and psiprev
-C integer nuo                 : Number of basis orbitals in the unit cell
-C integer nuotot              : Third dimension of xij
+C integer nuo                 : Number of (local) orbitals in the unit cell
+C integer nuotot              : Number of orbitals in the unit cell
 C integer nocc                : number of occupied states
 C *************************** OUTPUT **********************************
 C real*8  psiprev(maxpsi)     : Wavefunctions in previous k point
@@ -52,19 +52,21 @@ C**** Internal variables ***********************************************
 #endif
 
 #ifdef MPI
+! AG
+! Allocate as in detover, using the number of orbitals on the first node,
+! as some of the nodes might have zero orbitals!
+
+      call GetNodeOrbs(nocc,0,Nodes,noccloc)
+      allocate(psitmp(2,nuotot,noccloc))
+      call memory('A','D',2*nuotot*noccloc,'savepsi')
+
       do n = 0,Nodes-1
 
 C Broadcast copy of psi on node n to all other nodes
         call GetNodeOrbs(nocc,n,Nodes,noccloc)
-        allocate(psitmp(2,nuotot,noccloc))
-        call memory('A','D',2*nuotot*noccloc,'detover')
+
         if (Node .eq. n) then
-          do iuo = 1,noccloc
-            do juo = 1,nuotot
-              psitmp(1,juo,iuo) = psi(1,juo,iuo)
-              psitmp(2,juo,iuo) = psi(2,juo,iuo)
-            enddo
-          enddo
+           psitmp(1:2,1:nuotot,1:noccloc) = psi(1:2,1:nuotot,1:noccloc)
         endif
         call MPI_Bcast(psitmp(1,1,1),2*nuotot*noccloc,
      .    MPI_double_precision,n,MPI_Comm_World,MPIerror)
@@ -79,18 +81,16 @@ C Save local part of psiprev
           enddo
         enddo
 
-        call memory('D','D',size(psitmp),'detover')
-        deallocate(psitmp)
 
       enddo
+      call memory('D','D',size(psitmp),'savepsi')
+      deallocate(psitmp)
+
 #else
 C Straight serial copy
-      do iuo = 1,nocc
-        do juo = 1,nuotot
-          psiprev(1,juo,iuo) = psi(1,juo,iuo)
-          psiprev(2,juo,iuo) = psi(2,juo,iuo)
-        enddo
-      enddo
+
+      psiprev(1:2,1:nuotot,1:nocc) = psi(1:2,1:nuotot,1:nocc)
+
 #endif
 
       end

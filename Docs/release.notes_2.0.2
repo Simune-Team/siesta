@@ -10,6 +10,7 @@ Summary of changed items:
 * Initialize vol2 correctly in m_check_supercell.f
 * Parallel bug fix and cleanup in writewave.F
 * Fix units conversion in Util/Optical/optical
+* Wrap several I/O operations for MPI. Other parallel fixes
 
 Changes in detail:
 
@@ -65,12 +66,26 @@ This bug could potentially change the flow of the program.
 The code in writewave.F has been cleaned up a bit and a fix for a bug
 appearing in parallel execution has been fixed.
 
-
 * Fix units conversion in Util/Optical/optical
-
-(Daniel Sanchez)
 
 Optical.f is a program to analyze the file .EPSIMG and obtain the
 optical properties. A unit conversion was done from eV to Ry instead
 of to Ha.
+
+* Wrap several I/O operations for MPI. Other parallel fixes
+
+ - The calls to io_close in iohs.F were not restricted to the master node.
+ - Wrap output in broyden_optim.F
+ - Fix allocation of temporary array in savepsi in parallel
+ - Add 'show_distribution' routine to warn (for now) the user
+   when there are nodes which do not handle any orbitals.
+
+* New tests:
+
+ Added 'born' and  'born_spin' tests (just for the mechanics: they
+ do not have a lot of physical sense).
+
+* Other:
+
+ - Add experimental 'compare' target to Makefile.
 

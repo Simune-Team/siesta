@@ -18,11 +18,12 @@
 # See also test.mk for details, and the scripts in Scripts for 
 # examples of other options for batch processing.
 #
+REFERENCE=../../ref-version/Tests     # Settable in command line
 #
 tests= h2o born h2o_dos h2o_orderN floating bessel mgco3 si2x1h \
        var_cell constant_volume batio3 fe fe_broyden sih si64 \
        h2oZ sih_op_broyden h2o_op_broyden zmatrix md_pr md_npr \
-       md_anneal md_verlet md_nose h2o_findp_bug
+       md_anneal md_verlet md_nose h2o_findp_bug born_spin
 #
 all: 
 	@for i in ${tests} ; do \
@@ -43,6 +44,12 @@ clean:
 		(cd $$i ; make clean) ; \
 	done
 
+compare:
+	for i in ${tests} ;do \
+             echo "---------$$i start" ;  \
+             diff $$i/$$i.out ${REFERENCE}/$$i/$$i.out ; \
+             echo "****---------$$i done" ; \
+     done | grep -v " timer: " | grep -v " elaps: " | grep -v " of run"
 
 
 

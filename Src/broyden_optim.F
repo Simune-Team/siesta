@@ -167,7 +167,9 @@ C If first call to optim, check dim and get target stress --------------------
          else
             numel = 3*na
          endif
-         write(6,'(a,i6)') "Broyden_optim: No of elements: ", numel
+         if (Ionode) then
+           write(6,'(a,i6)') "Broyden_optim: No of elements: ", numel
+         endif
 
         if ( varcel ) then
 
