@@ -25,6 +25,7 @@
       integer, save, dimension(:,:), allocatable :: iwf
 
       logical,    save :: wwf = .false.
+      logical,    save :: debug = .false.
 
       contains
 
@@ -139,9 +140,12 @@ C Find if there are k-points data
 C Find if there are k-points data
         if (Node.eq.0) then
           WaveFuncPresent = fdf_defined('WaveFuncKPoints')
+          debug = fdf_boolean('WriteWaveDebug',.false.)
         endif
 #ifdef MPI
         call MPI_Bcast(WaveFuncPresent,1,MPI_logical,0,MPI_Comm_World,
+     .    MPIerror)
+        call MPI_Bcast(debug,1,MPI_logical,0,MPI_Comm_World,
      .    MPIerror)
 #endif
         if ( WaveFuncPresent ) then
@@ -722,8 +726,7 @@ C This is the only exit point
       implicit          none
 
 #ifdef MPI
-      integer
-     .  MPIerror
+      integer  MPIerror, mpistatus(MPI_STATUS_SIZE), tag
 #endif
 
       integer nuotot, nuo, ispin, ik
@@ -817,22 +820,29 @@ C First print the index and value of k-point
 
 C Loop over wavefunctions that should be printed
 
+      if (Node .eq. 0 .and. debug) then
+         print *, " -*- Will print ", nwflist(ik), " wfns."
+         print *, " -*- ", iwf(ik,1:nwflist(ik))
+      endif
       do iw = 1,nwflist(ik)
         indwf = iwf(ik,iw)
 
-C Determine which node handles this wavefunction
+        ! Determine which node handles this wavefunction
         call WhichNodeOrb(indwf,Nodes,BNode)
+
+        if (Node .eq. 0 .and. debug) then
+           print *, " -*- About to print wfn ", indwf,
+     $                    "from node ", Bnode
+        endif
 
         if (Node.eq.BNode) then
 
-C Determine the index of the orbital in the local node
-
+          !Determine the index of the orbital in the local node
           call GlobalToLocalOrb( indwf, BNode, Nodes, iie)
 
-C Save wavefunction in aux array
-
-C psi has different structure in diagk and diagg, so the indexing
-C must be handled differently
+          ! Save wavefunction in aux array
+          ! psi has different structure in diagk and diagg, so the indexing
+          ! must be handled differently
 
           if (gamma) then
             do j = 1,ntot
@@ -844,21 +854,29 @@ C must be handled differently
             do j = 1,ntot
               ind = 1+(j-1)*2+(iie-1)*2*nuotot
               aux(1,j) = psi(ind)
-              ind = 2+(j-1)*2+(iie-1)*2*nuotot
-              aux(2,j) = psi(ind)
+              aux(2,j) = psi(ind+1)
             enddo
           endif
 
-        endif
+        endif      ! Node .eq. BNode
 
-C Pass the wf to the other processors
 #ifdef MPI
+C Pass the wf to the master node
         if (BNode.ne.0) then
-          call MPI_Bcast(aux(1,1),2*nuotot,MPI_double_precision,
-     .          BNode,MPI_Comm_World,MPIerror)
+           tag = indwf
+           if (Node .eq. BNode) then
+              call MPI_Send(aux(1,1),2*nuotot,MPI_double_precision,
+     .             0,tag,MPI_Comm_World,MPIerror)
+              if (debug) print *, Node, " sent msg to 0 with tag ",tag
+           elseif (Node .eq. 0) then
+              call MPI_Recv(aux(1,1),2*nuotot,MPI_double_precision,
+     .             BNode,tag,MPI_Comm_World,MPIStatus,MPIerror)
+              if (debug) print *, "Got msg with tag ",tag,
+     $             " from node ", BNode, ". status: ", mpistatus
+           endif
+           call MPI_Barrier(MPI_Comm_World, MPIError) ! Just to be safe 
         endif
 #endif
-
 
 C eigenvector is now stored in aux in all processors, and can be printed
 

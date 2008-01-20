@@ -205,7 +205,9 @@ OTHER_DENCHAR_OBJS=  precision.o recipes.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
         pseudopotential.o chemical.o xml.o files.o $(SYSOBJ)
 
-denchar: $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
+denchar: $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
+	@if [ ! -z "$(MPI_INTERFACE)" ] ;  then \
+              echo " *** Denchar will not run in parallel ! *** " ; fi
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
            $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 

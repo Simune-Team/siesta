@@ -7,6 +7,14 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
 
+2007-06-11 14:55:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
+
+Summary: Better MPI communication in writewave. Denchar warning
+
+Point-to-point instead of collective operations used.
+
+Added warning about non-parallelization of denchar.
+
 2007-05-30 16:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-9
 
 Summary: Fix dimension of dpr in pdosg. Clarify names of variables in pdos.
