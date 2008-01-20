@@ -7,6 +7,22 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
 
+2007-05-17 21:30:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
+
+Summary: Fix units conversion in Util/Optical/optical
+          Parallel bug fix and cleanup in writewave.F
+
+(Daniel Sanchez)
+ 
+Optical.f is a program to analyze the file .EPSIMG and obtain the
+optical properties. A unit conversion was done from eV to Ry instead
+of to Ha.
+ 
+(Julian Gale)
+ 
+The code in writewave.F has been cleaned up a bit and a fix for a bug
+appearing in parallel execution has been fixed.
+
 2007-05-17 20:50:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
 
 Summary: Fix for k-point update when kgrid_cutoff is used. Vol2 fix.

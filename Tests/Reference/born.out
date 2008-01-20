@@ -1,0 +1,1192 @@
+Siesta Version: siesta-2.0.2-candidate-38
+Architecture  : intel-checks
+Compiler flags: ifort -O1 -ftrapuv -CB -u
+SERIAL version
+
+* Running in serial mode
+>> Start of run:  20-FEB-2007  17:41:16
+
+                           ***********************       
+                           *  WELCOME TO SIESTA  *       
+                           ***********************       
+
+reinit: Reading from standard input
+************************** Dump of input data file ****************************
+Systemlabel  born
+Systemname   si2 Force constants
+LongOutput T
+%include FC.fdf
+BornCharge T
+%block PolarizationGrids
+7  3  3
+3  7  3
+3  3  7
+%endblock PolarizationGrids
+NumberOfSpecies 1
+%block chemicalspecieslabel
+1 14 Si
+%endblock chemicalspecieslabel
+PAO.BasisSize SZ
+MeshCutoff 130.0 Ry
+# In a real calculation, a high degree of self-consistency should be achieved
+#DM.MixingWeight  0.3
+#DM.NumberPulay    3
+#DM.Tolerance     1.0d-5
+# Here we use Harris since we are just interested in testing the displacement
+# logic
+HarrisFunctional T
+************************** End of input data file *****************************
+
+reinit: -----------------------------------------------------------------------
+reinit: System Name: si2 Force constants                                        
+reinit: -----------------------------------------------------------------------
+reinit: System Label: born                                                        
+reinit: -----------------------------------------------------------------------
+
+initatom: Reading input for the pseudopotentials and atomic orbitals ----------
+ Species number:            1  Label: Si Atomic number:          14
+Ground state valence configuration:   3s02  3p02
+Reading pseudopotential information in formatted form from Si.psf
+For Si, standard SIESTA heuristics set lmxkb to 2
+ (one more than the basis l, including polarization orbitals).
+Use PS.lmax or PS.KBprojectors blocks to override.
+
+<basis_specs>
+===============================================================================
+Si                   Z=  14    Mass=  28.090        Charge=  0.0000    
+Lmxo=1 Lmxkb=2     BasisType=split      Semic=F
+L=0  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+L=1  Nsemic=0  Cnfigmx=3
+          n=1  nzeta=1  polorb=0
+               vcte:    0.0000    
+               rinn:    0.0000    
+                rcs:    0.0000    
+            lambdas:    1.0000    
+-------------------------------------------------------------------------------
+L=0  Nkbl=1  erefs: 0.17977+309
+L=1  Nkbl=1  erefs: 0.17977+309
+L=2  Nkbl=1  erefs: 0.17977+309
+===============================================================================
+</basis_specs>
+
+atom: Called for Si  (Z =  14)
+
+read_vps: Pseudopotential generation method:
+read_vps: ATM3      Troullier-Martins                       
+
+read_vps: Valence configuration (pseudopotential and basis set generation):
+3s( 2.00) rc: 1.89
+3p( 2.00) rc: 1.89
+3d( 0.00) rc: 1.89
+Total valence charge:    4.00000
+
+xc_check: Exchange-correlation functional:
+xc_check: Ceperley-Alder
+V l=0 = -2*Zval/r beyond r=  2.5494
+V l=1 = -2*Zval/r beyond r=  2.5494
+V l=2 = -2*Zval/r beyond r=  2.5494
+All V_l potentials equal beyond r=  1.8652
+This should be close to max(r_c) in ps generation
+All pots = -2*Zval/r beyond r=  2.5494
+Using large-core scheme for Vlocal
+
+atom: Estimated core radius    2.54944
+
+atom: Including non-local core corrections could be a good idea
+atom: Maximum radius for 4*pi*r*r*local-pseudopot. charge    2.85303
+atom: Maximum radius for r*vlocal+2*Zval:    2.58151
+GHOST: No ghost state for L =  0
+GHOST: No ghost state for L =  1
+GHOST: No ghost state for L =  2
+
+KBgen: Kleinman-Bylander projectors: 
+   l= 0   rc=  1.936440   el= -0.796617   Ekb=  4.661340   kbcos=  0.299756
+   l= 1   rc=  1.936440   el= -0.307040   Ekb=  1.494238   kbcos=  0.301471
+   l= 2   rc=  1.936440   el=  0.002313   Ekb= -2.808672   kbcos= -0.054903
+
+KBgen: Total number of  Kleinman-Bylander projectors:    9
+atom: -------------------------------------------------------------------------
+
+atom: SANKEY-TYPE ORBITALS:
+
+SPLIT: Orbitals with angular momentum L= 0
+
+SPLIT: Basis orbitals for state 3s
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    5.007352
+                 energy =   -0.777669
+                kinetic =    0.573829
+    potential(screened) =   -1.351499
+       potential(ionic) =   -3.827441
+
+SPLIT: Orbitals with angular momentum L= 1
+
+SPLIT: Basis orbitals for state 3p
+
+SPLIT: PAO cut-off radius determined from an
+SPLIT: energy shift=  0.020000 Ry
+
+   izeta = 1
+                 lambda =    1.000000
+                     rc =    6.270866
+                 energy =   -0.288955
+                kinetic =    0.877930
+    potential(screened) =   -1.166885
+       potential(ionic) =   -3.426998
+atom: Total number of Sankey-type orbitals:  4
+
+atm_pop: Valence configuration(local Pseudopot. screening):
+ 3s( 2.00)                                                            
+ 3p( 2.00)                                                            
+Vna: chval, zval:    4.00000   4.00000
+
+Vna:  Cut-off radius for the neutral-atom potential:   6.270866
+
+atom: _________________________________________________________________________
+
+prinput: Basis input ----------------------------------------------------------
+
+PAO.BasisType split     
+
+%block ChemicalSpeciesLabel
+    1   14 Si                      # Species index, atomic number, species label
+%endblock ChemicalSpeciesLabel
+
+%block PAO.Basis                 # Define Basis set
+Si          2                    # Species label, number of l-shells
+ n=3   0   1                         # n, l, Nzeta 
+   5.007   
+   1.000   
+ n=3   1   1                         # n, l, Nzeta 
+   6.271   
+   1.000   
+%endblock PAO.Basis
+
+prinput: ----------------------------------------------------------------------
+
+
+siesta: ******************** Simulation parameters ****************************
+siesta:
+siesta: The following are some of the parameters of the simulation.
+siesta: A complete list of the parameters used, including default values,
+siesta: can be found in file out.fdf
+siesta:
+coor:   Atomic-coordinates input format  =     Fractional
+redata: Number of spin components        =     1
+redata: Long output                      =     T
+redata: Number of Atomic Species         =     1
+redata: Charge density info will appear in .RHO file
+redata: Write Mulliken Pop.              =     Atomic and Orbital charges
+redata: Mesh Cutoff                      =   130.0000  Ry
+redata: Net charge of the system         =     0.0000 |e|
+redata: Max. number of SCF Iter          =    50
+redata: Mixing is linear
+redata: Mix DM in first SCF step ?       =     F
+redata: Write Pulay info on disk?        =     F
+redata: New DM Mixing Weight             =     0.2500
+redata: New DM Occupancy tolerance       = 0.000000000001
+redata: No kicks to SCF
+redata: DM Mixing Weight for Kicks       =     0.5000
+redata: DM Tolerance for SCF             =     0.000100
+redata: Require Energy convergence for SCF =     F
+redata: DM Energy tolerance for SCF      =     0.000100 eV
+redata: Using Saved Data (generic)   =     F
+redata: Use continuation files for DM    =     F
+redata: Neglect nonoverlap interactions  =     F
+redata: Method of Calculation            =     Diagonalization
+redata: Divide and Conquer               =     T
+redata: Electronic Temperature           =     0.0019  Ry
+redata: Fix the spin of the system       =     F
+redata: Dynamics option                  =     Force Constants Matrix Calculation
+redata: Atomic displ for force constants  =     0.0400  Bohr
+redata: First atom to move               =        1
+redata: Last atom to move                =        2
+redata: ***********************************************************************
+
+siesta: Atomic coordinates (Bohr) and species
+siesta:      0.00000   0.00000   0.00000  1        1
+siesta:      2.56530   2.56530   2.56530  1        2
+
+initatomlists: Number of atoms, orbitals, and projectors:      2     8    18
+
+siesta: System type = bulk      
+
+siesta: k-point coordinates (Bohr**-1) and weights:
+siesta:    1    0.000000    0.000000    0.000000       1.000000
+
+siesta: k-grid: Number of k-points =     1
+siesta: k-grid: Cutoff (effective) =     1.920 Ang
+siesta: k-grid: Supercell and displacements
+siesta: k-grid:    1   0   0      0.000
+siesta: k-grid:    0   1   0      0.000
+siesta: k-grid:    0   0   1      0.000
+Naive supercell factors:     5    5    5
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+* Maximum dynamic memory allocated =     1 MB
+
+siesta:                 ==============================
+                            Begin FC step =      0
+                            Undisplaced coordinates
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Si         1
+    0.25000000    0.25000000    0.25000000   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+InitMesh: MESH =    24 x    24 x    24 =       13824
+InitMesh: Mesh cutoff (required, used) =   130.000   161.974 Ry
+
+* Maximum dynamic memory allocated =     7 MB
+
+stepf: Fermi-Dirac step function
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =       380.802124
+siesta: Ena     =       115.502328
+siesta: Ekin    =        78.997046
+siesta: Enl     =        35.834927
+siesta: DEna    =         0.000000
+siesta: DUscf   =         0.000000
+siesta: DUext   =         0.000000
+siesta: Exc     =       -64.548605
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =      -195.484966
+siesta: Etot    =      -215.016428
+siesta: FreeEng =      -215.016428
+
+siesta: Eharris(eV) =    -195.484966
+
+
+siesta: Eharris(eV) =    -195.484966
+
+timer: Routine,Calls,Time,% = IterSCF        1       1.586  77.78
+elaps: Routine,Calls,Wall,% = IterSCF        1       1.586  77.41
+
+siesta: E_KS - E_eggbox =      -194.6964
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.000000   -0.000001
+     2    0.000000    0.000000    0.000000
+----------------------------------------
+   Tot    0.000000    0.000000   -0.000001
+----------------------------------------
+   Max    0.000001
+   Res    0.000000    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.000001    constrained
+
+Stress-tensor-Voigt (kbar):     -353.28     -353.28     -353.28        0.00        0.00        0.00
+Target enthalpy (eV/cell)     -194.6964
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  4.000   1.000   1.000   1.000   1.000
+   2  4.000   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     21.767328    7.255776   21.767328
+siesta: Along cartesian directions    20.522434   30.783651   20.522434
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     55.327068   18.442356   55.327068
+siesta: Along cartesian directions    52.162860   78.244290   52.162860
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   21.767328    7.255776   21.767328
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      1
+                            displace atom        1
+                            in direction         1
+                            by        -0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00389817   -0.00389817   -0.00389817   1  Si         1
+    0.25000000    0.25000000    0.25000000   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.754384    0.000000    0.000000
+     2   -0.764524    0.000000   -0.000001
+----------------------------------------
+   Tot   -0.010140    0.000000    0.000000
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00       20.61        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  4.001   1.000   1.000   1.000   1.000
+   2  3.999   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      2
+                            displace atom        1
+                            in direction         1
+                            by         0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00389817    0.00389817    0.00389817   1  Si         1
+    0.25000000    0.25000000    0.25000000   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.754384    0.000000    0.000000
+     2    0.764524    0.000000   -0.000001
+----------------------------------------
+   Tot    0.010140    0.000000   -0.000001
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00      -20.61        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  4.001   1.000   1.000   1.000   1.000
+   2  3.999   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors      7.255815   21.767283   21.767283
+siesta: Along cartesian directions    30.783586   20.522429   20.522429
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     18.442454   55.326952   55.326952
+siesta: Along cartesian directions    78.244126   52.162847   52.162847
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:    7.255815   21.767283   21.767283
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      3
+                            displace atom        1
+                            in direction         2
+                            by        -0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00389817    0.00389817   -0.00389817   1  Si         1
+    0.25000000    0.25000000    0.25000000   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.754384    0.000000
+     2    0.000000   -0.764524    0.000000
+----------------------------------------
+   Tot    0.000000   -0.010139    0.000000
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00       20.61
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  4.001   1.000   1.000   1.000   1.000
+   2  3.999   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      4
+                            displace atom        1
+                            in direction         2
+                            by         0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00389817   -0.00389817    0.00389817   1  Si         1
+    0.25000000    0.25000000    0.25000000   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000   -0.754385   -0.000001
+     2    0.000000    0.764524   -0.000001
+----------------------------------------
+   Tot    0.000000    0.010139   -0.000001
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00      -20.61
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  4.001   1.000   1.000   1.000   1.000
+   2  3.999   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     21.767283    7.255815   21.767283
+siesta: Along cartesian directions    20.522429   30.783586   20.522429
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     55.326952   18.442454   55.326952
+siesta: Along cartesian directions    52.162847   78.244126   52.162847
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   21.767283    7.255815   21.767283
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      5
+                            displace atom        1
+                            in direction         3
+                            by        -0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+   -0.00389817   -0.00389817    0.00389817   1  Si         1
+    0.25000000    0.25000000    0.25000000   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.000000    0.754384
+     2    0.000000    0.000001   -0.764523
+----------------------------------------
+   Tot    0.000000    0.000001   -0.010139
+----------------------------------------
+   Max    0.764523
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764523    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61        0.00        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  4.001   1.000   1.000   1.000   1.000
+   2  3.999   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      6
+                            displace atom        1
+                            in direction         3
+                            by         0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00389817    0.00389817   -0.00389817   1  Si         1
+    0.25000000    0.25000000    0.25000000   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Eharris(eV) =    -195.478391
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000   -0.000001   -0.754384
+     2    0.000000   -0.000001    0.764524
+----------------------------------------
+   Tot    0.000000   -0.000001    0.010140
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61        0.00        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  4.001   1.000   1.000   1.000   1.000
+   2  3.999   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     21.767283   21.767283    7.255815
+siesta: Along cartesian directions    20.522429   20.522429   30.783586
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     55.326952   55.326952   18.442454
+siesta: Along cartesian directions    52.162847   52.162847   78.244126
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   21.767283   21.767283    7.255815
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      7
+                            displace atom        2
+                            in direction         1
+                            by        -0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Si         1
+    0.25389817    0.24610183    0.24610183   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Atomic forces (eV/Ang):
+     1   -0.764525    0.000000    0.000000
+     2    0.754385    0.000001    0.000000
+----------------------------------------
+   Tot   -0.010140    0.000001    0.000000
+----------------------------------------
+   Max    0.764525
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764525    constrained
+
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00      -20.61        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  3.999   1.000   1.000   1.000   1.000
+   2  4.001   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      8
+                            displace atom        2
+                            in direction         1
+                            by         0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Si         1
+    0.24610183    0.25389817    0.25389817   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.764525    0.000000    0.000000
+     2   -0.754385    0.000000    0.000000
+----------------------------------------
+   Tot    0.010140    0.000000    0.000000
+----------------------------------------
+   Max    0.764525
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764525    constrained
+
+Stress-tensor-Voigt (kbar):     -356.37     -356.45     -356.45        0.00       20.61        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  3.999   1.000   1.000   1.000   1.000
+   2  4.001   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors      7.255822   21.767290   21.767290
+siesta: Along cartesian directions    30.783596   20.522439   20.522439
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     18.442472   55.326970   55.326970
+siesta: Along cartesian directions    78.244151   52.162872   52.162872
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:    7.255822   21.767290   21.767290
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =      9
+                            displace atom        2
+                            in direction         2
+                            by        -0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Si         1
+    0.24610183    0.25389817    0.24610183   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000   -0.764524    0.000000
+     2    0.000001    0.754385    0.000000
+----------------------------------------
+   Tot    0.000000   -0.010139    0.000000
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00      -20.61
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  3.999   1.000   1.000   1.000   1.000
+   2  4.001   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =     10
+                            displace atom        2
+                            in direction         2
+                            by         0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Si         1
+    0.25389817    0.24610183    0.25389817   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.764524    0.000000
+     2    0.000000   -0.754385    0.000000
+----------------------------------------
+   Tot    0.000000    0.010139    0.000000
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.37     -356.45        0.00        0.00       20.61
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  3.999   1.000   1.000   1.000   1.000
+   2  4.001   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     21.767290    7.255822   21.767290
+siesta: Along cartesian directions    20.522439   30.783596   20.522439
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     55.326970   18.442472   55.326970
+siesta: Along cartesian directions    52.162872   78.244151   52.162872
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   21.767290    7.255822   21.767290
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =     11
+                            displace atom        2
+                            in direction         3
+                            by        -0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Si         1
+    0.24610183    0.24610183    0.25389817   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.000000   -0.764524
+     2    0.000000    0.000000    0.754385
+----------------------------------------
+   Tot    0.000001    0.000001   -0.010139
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37      -20.61        0.00        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  3.999   1.000   1.000   1.000   1.000
+   2  4.001   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta:                 ==============================
+                            Begin FC step =     12
+                            displace atom        2
+                            in direction         3
+                            by         0.0400 Bohr
+                        ==============================
+
+outcoor: Atomic coordinates (fractional):                   
+    0.00000000    0.00000000    0.00000000   1  Si         1
+    0.25389817    0.25389817    0.24610183   1  Si         2
+
+superc: Internal auxiliary supercell:     5 x     5 x     5  =     125
+superc: Number of atoms, orbitals, and projectors:    250  1000  2250
+
+outcell: Unit cell vectors (Ang):
+        0.000000    2.715000    2.715000
+        2.715000    0.000000    2.715000
+        2.715000    2.715000    0.000000
+
+outcell: Cell vector modules (Ang)   :    3.839590    3.839590    3.839590
+outcell: Cell angles (23,13,12) (deg):     60.0000     60.0000     60.0000
+outcell: Cell volume (Ang**3)        :     40.0258
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Eharris(eV) =    -195.478390
+
+
+siesta: Atomic forces (eV/Ang):
+     1    0.000000    0.000000    0.764524
+     2    0.000000    0.000001   -0.754385
+----------------------------------------
+   Tot    0.000000    0.000001    0.010139
+----------------------------------------
+   Max    0.764524
+   Res    0.438481    sqrt( Sum f_i^2 / 3N )
+----------------------------------------
+   Max    0.764524    constrained
+
+Stress-tensor-Voigt (kbar):     -356.45     -356.45     -356.37       20.61        0.00        0.00
+Target enthalpy (eV/cell)     -194.6894
+ 
+mulliken: Atomic and Orbital Populations:
+
+Species: Si                  
+Atom  Qatom  Qorb
+               3s      3py     3pz     3px     
+   1  3.999   1.000   1.000   1.000   1.000
+   2  4.001   1.000   1.000   1.000   1.000
+
+mulliken: Qtot =        8.000
+
+siesta: Calculating polarization. 
+
+siesta: Macroscopic polarization per unit cell (a.u.):
+siesta: Along the lattice vectors     21.767290   21.767290    7.255822
+siesta: Along cartesian directions    20.522439   20.522439   30.783596
+
+siesta: Macroscopic polarization per unit cell (Debye):
+siesta: Along the lattice vectors     55.326970   55.326970   18.442472
+siesta: Along cartesian directions    52.162872   52.162872   78.244151
+
+obc: Macroscopic polarization per unit cell along the lattice vectors (Bohr): 
+obc:   21.767290   21.767290    7.255822
+
+* Maximum dynamic memory allocated =     7 MB
+
+siesta: Eigenvalues (eV):
+  ik is    eps
+   1  1 -16.30  -4.09  -3.97  -3.85  -1.18  -1.09  -0.99  -0.87
+siesta: Fermi energy =      -2.698930 eV
+
+siesta: Program's energy decomposition (eV):
+siesta: Eions   =       380.802124
+siesta: Ena     =       115.501483
+siesta: Ekin    =       115.577902
+siesta: Enl     =        29.935837
+siesta: DEna    =        -8.120548
+siesta: DUscf   =         1.765897
+siesta: DUext   =         0.000000
+siesta: Exc     =       -68.547879
+siesta: eta*DQ  =         0.000000
+siesta: Emadel  =         0.000000
+siesta: Ekinion =         0.000000
+siesta: Eharris =      -195.478390
+siesta: Etot    =      -194.689433
+siesta: FreeEng =      -194.689433
+
+siesta: Final energy (eV):
+siesta:       Kinetic =     115.577902
+siesta:       Hartree =      23.678154
+siesta:    Ext. field =       0.000000
+siesta:   Exch.-corr. =     -68.547879
+siesta:  Ion-electron =    -120.258611
+siesta:       Ion-ion =    -145.138999
+siesta:       Ekinion =       0.000000
+siesta:         Total =    -194.689433
+
+siesta: Atomic forces (eV/Ang):
+siesta:      1    0.000000    0.000000    0.764524
+siesta:      2    0.000000    0.000001   -0.754385
+siesta: ----------------------------------------
+siesta:    Tot    0.000000    0.000001    0.010139
+
+siesta: Stress tensor (static) (eV/Ang**3):
+siesta:    -0.222476    0.012861    0.000000
+siesta:     0.012861   -0.222476    0.000000
+siesta:     0.000000    0.000000   -0.222428
+
+siesta: Cell volume =         40.025752 Ang**3
+
+siesta: Pressure (static):
+siesta:                Solid            Molecule  Units
+siesta:           0.00242288          0.00251784  Ry/Bohr**3
+siesta:           0.22246018          0.23117985  eV/Ang**3
+siesta:         356.42434960        370.39495452  kBar
+
+* Maximum dynamic memory allocated : Node    0 =     7 MB
+
+* Maximum memory occured during ranger                        
+
+timer: CPU execution times:
+timer:  Routine       Calls   Time/call    Tot.time        %
+timer:  siesta            1      38.180      38.180   100.00
+timer:  Setup             1       0.278       0.278     0.73
+timer:  bands             1       0.000       0.000     0.00
+timer:  writewave         1       0.001       0.001     0.00
+timer:  KSV_init          1       0.001       0.001     0.00
+timer:  IterMD           13       2.915      37.894    99.25
+timer:  hsparse          14       0.049       0.692     1.81
+timer:  overfsm          26       0.006       0.164     0.43
+timer:  IterSCF          26       1.326      34.475    90.29
+timer:  kinefsm          26       0.005       0.139     0.36
+timer:  nlefsm           26       0.265       6.881    18.02
+timer:  DHSCF            26       1.051      27.314    71.54
+timer:  DHSCF1            1       0.184       0.184     0.48
+timer:  DHSCF2           13       0.610       7.934    20.78
+timer:  REORD           234       0.000       0.048     0.13
+timer:  POISON           39       0.006       0.226     0.59
+timer:  DHSCF3           26       0.343       8.930    23.39
+timer:  rhoofd           26       0.198       5.144    13.47
+timer:  cellXC           39       0.012       0.456     1.19
+timer:  vmat             26       0.125       3.247     8.50
+timer:  diagon           13       0.002       0.024     0.06
+timer:  cdiag           908       0.000       0.116     0.30
+timer:  cdiag1          908       0.000       0.008     0.02
+timer:  cdiag2          908       0.000       0.011     0.03
+timer:  cdiag3          908       0.000       0.068     0.18
+timer:  cdiag4          908       0.000       0.007     0.02
+timer:  DHSCF4           13       0.789      10.257    26.87
+timer:  dfscf            13       0.673       8.745    22.90
+timer:  KSV_pol           7       0.270       1.891     4.95
+timer:  optical           1       0.000       0.000     0.00
+  
+
+elaps: ELAPSED times:
+elaps:  Routine       Calls   Time/call    Tot.time        %
+elaps:  siesta            1      39.110      39.110   100.00
+elaps:  Setup             1       0.288       0.288     0.74
+elaps:  bands             1       0.000       0.000     0.00
+elaps:  writewave         1       0.001       0.001     0.00
+elaps:  KSV_init          1       0.002       0.002     0.00
+elaps:  IterMD           13       2.986      38.814    99.24
+elaps:  hsparse          14       0.049       0.692     1.77
+elaps:  overfsm          26       0.006       0.164     0.42
+elaps:  IterSCF          26       1.361      35.394    90.50
+elaps:  kinefsm          26       0.005       0.139     0.35
+elaps:  nlefsm           26       0.265       6.878    17.59
+elaps:  DHSCF            26       1.086      28.236    72.20
+elaps:  DHSCF1            1       0.184       0.184     0.47
+elaps:  DHSCF2           13       0.681       8.854    22.64
+elaps:  REORD           234       0.000       0.044     0.11
+elaps:  POISON           39       0.006       0.225     0.58
+elaps:  DHSCF3           26       0.343       8.929    22.83
+elaps:  rhoofd           26       0.198       5.146    13.16
+elaps:  cellXC           39       0.012       0.458     1.17
+elaps:  vmat             26       0.125       3.243     8.29
+elaps:  diagon           13       0.002       0.022     0.06
+elaps:  cdiag           908       0.000       0.120     0.31
+elaps:  cdiag1          908       0.000       0.007     0.02
+elaps:  cdiag2          908       0.000       0.016     0.04
+elaps:  cdiag3          908       0.000       0.064     0.16
+elaps:  cdiag4          908       0.000       0.008     0.02
+elaps:  DHSCF4           13       0.789      10.259    26.23
+elaps:  dfscf            13       0.673       8.746    22.36
+elaps:  KSV_pol           7       0.270       1.892     4.84
+elaps:  optical           1       0.000       0.000     0.00
+  
+>> End of run:  20-FEB-2007  17:41:55

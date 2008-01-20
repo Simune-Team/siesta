@@ -6,19 +6,14 @@ This is the second bug-fix package after the release of Siesta-2.0
 
 Summary of changed items:
 
-* Initialize vol2 correctly in m_check_supercell.f
-
 * Fix for k-point update when kgrid_cutoff is used
+* Initialize vol2 correctly in m_check_supercell.f
+* Parallel bug fix and cleanup in writewave.F
+* Fix units conversion in Util/Optical/optical
 
 Changes in detail:
 
-* Initialize vol2 correctly in m_check_supercell.f
-
-The bug could lead to different paths for supercell creation,
-causing small numerical differences.
-
 * Fix for k-point update when kgrid_cutoff is used
-
 
 The user can specify a kgrid_cutoff or a Monkhorst-Pack grid
 to determine the k-point sampling. 
@@ -60,4 +55,22 @@ There is no backwards compatibility after this bugfix. To recover the
 old behavior when a kgrid_cutoff was specified, the user should check
 the old output, extract the information about the MP grid generated
 automatically by the program, and put it in an MP block.
+
+* Initialize vol2 correctly in m_check_supercell.f
+
+This bug could potentially change the flow of the program.
+
+* Parallel bug fix and cleanup in writewave.F
+
+The code in writewave.F has been cleaned up a bit and a fix for a bug
+appearing in parallel execution has been fixed.
+
+
+* Fix units conversion in Util/Optical/optical
+
+(Daniel Sanchez)
+
+Optical.f is a program to analyze the file .EPSIMG and obtain the
+optical properties. A unit conversion was done from eV to Ry instead
+of to Ha.
 
