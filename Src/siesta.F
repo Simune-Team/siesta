@@ -1368,13 +1368,23 @@ C Solve eigenvalue problem .........................................
      .                  gamma, xijo, indxuo, nkpnt, kpoint, kweight,
      .                  eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
      .                  occtol, iscf, neigwanted)
+c$$$            write(6,'(/,a,/,a4,a3,a7)')
+c$$$     .       'siesta: Eigenvalues (eV):', 'ik', 'is', 'eps'
+c$$$            do ik = 1,nkpnt
+c$$$              do ispin = 1,nspin
+c$$$                write(6,'(i4,i3,10f7.2)')
+c$$$     .            ik,ispin,(eo(io,ispin,ik)/eV,io=1,min(10,neigwanted))
+c$$$                if (no_u.gt.10) write(6,'(7x,10f7.2)')
+c$$$     .            (eo(io,ispin,ik)/eV,io=11,neigwanted)
+c$$$              enddo
+c$$$            enddo
             Ecorrec = 0.0_dp
 !
           elseif (isolve .eq. 1) then
             if (.not. gamma) call die("Cannot do O(N) with k-points.")
-            call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,isa,qa,
-     .                  rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,etol,eta,
-     .                  qtot,maxnh,numh,listhptr,listh,H,S,
+            call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,iaorb,
+     .                  isa,qa,rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,
+     .                  etol,eta,qtot,maxnh,numh,listhptr,listh,H,S,
      .                  chebef,noeta,rcoorcp,beta,pmax,Dscf,Escf,
      .                  Ecorrec,nspin,qs)
             Entrop = 0.0_dp

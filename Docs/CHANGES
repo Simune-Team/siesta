@@ -7,6 +7,13 @@ ____________________________________________________________________
 --------------------------------------------------------------------
 (Patches leading up to the 2.0.2 bugfix release)
 
+2007-11-06 20:38:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-11
+
+Summary: Changes to the Order-N section by Pablo Ordejon
+
+The calculation of the chemical potential to start the O(N) process
+has been updated.
+
 2007-06-11 14:55:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
 
 Summary: Better MPI communication in writewave. Denchar warning
