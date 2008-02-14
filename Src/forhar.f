@@ -9,10 +9,10 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       module m_forhar
-      use precision, only : dp, grid_p
-      use alloc,     only : re_alloc, de_alloc
+      use precision,    only : dp, grid_p
+      use alloc,        only : re_alloc, de_alloc
       use mesh
-
+      use moreMeshSubs, only : setMeshDistr, distMeshData
       implicit none
 
       public :: forhar
@@ -39,9 +39,8 @@ C contributions of both spins.
 C Coded by J. Junquera 09/00
 C **********************************************************************
 
-
-      INTEGER, INTENT(IN) :: NTPL, NSPIN, NPCC
-      INTEGER, DIMENSION(3), INTENT(IN) :: NML, NTML, NTM
+      INTEGER             :: NTPL, NML(3), NTML(3), NTM(3)
+      INTEGER, INTENT(IN) :: NSPIN, NPCC
  
       REAL(dp), DIMENSION(3,3), INTENT(IN) :: CELL(3,3)
       REAL(grid_p), DIMENSION(NTPL), INTENT(IN) :: VNA, RHOATM, RHOPCC
@@ -82,12 +81,14 @@ C **********************************************************************
 C ----------------------------------------------------------------------
 C Internal variables and arrays
 C ----------------------------------------------------------------------
-      INTEGER IP, ISPIN, ISPIN2
-      REAL(dp) EX, EC, DEX, DEC, STRESSL(3,3)
-      real(grid_p) aux3(3,1)   !! dummy arrays for cellxc
+      INTEGER                :: IP, ISPIN, ISPIN2, NMPL
+      REAL(dp)               :: EX, EC, DEX, DEC, STRESSL(3,3)
+      real(grid_p)           :: aux3(3,1)   !! dummy arrays for cellxc
 
-      real(grid_p), dimension(:,:),   pointer :: drhoin
-      real(grid_p), dimension(:,:,:), pointer :: dvxcdn
+      real(grid_p),  pointer :: drhoin(:,:), drhoin_par(:,:),
+     &                          dvxcdn(:,:,:), dvxcdn_par(:,:,:),
+     &                          vharris1_par(:,:)
+      INTEGER                :: idistr, odistr, ntpl_2, ntpl_3
 
       nullify( drhoin )
       call re_alloc( drhoin, 1, ntpl, 1, nspin, name='drhoin',
@@ -117,26 +118,49 @@ C ----------------------------------------------------------------------
      .                           RHOPCC(1:NTPL)/NSPIN
       ENDDO
 
+      idistr = 2
+      odistr = 3
+
+      ntpl_2 = ntpl
+      call setMeshDistr( odistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+      ntpl_3 = ntpl
+
+      nullify( drhoin_par, vharris1_par, dvxcdn_par )
+      call re_alloc( drhoin_par, 1, ntpl_3, 1, nspin,
+     &               name='drhoin_par', routine='forhar' )
+      call re_alloc( vharris1_par, 1, ntpl_3, 1, nspin,
+     &               name='vharris1_par', routine='forhar' )
+      call re_alloc( dvxcdn_par, 1, ntpl_3, 1, nspin, 1, nspin,
+     &              name='dvxcdn_par', routine='forhar' )
+
       DO ISPIN = 1, NSPIN
-        CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,+1)
+        call distMeshData( idistr, drhoin(1:ntpl_2,ispin),
+     &                     odistr, drhoin_par(1:ntpl_3,ispin), +1 )
       ENDDO
 
-      CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN, DRHOIN,
-     .             EX, EC, DEX, DEC, VHARRIS1, DVXCDN, STRESSL )
+      CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN,
+     &             DRHOIN_PAR, EX, EC, DEX, DEC, VHARRIS1_PAR,
+     &             DVXCDN_PAR, STRESSL )
 
       DO ISPIN = 1, NSPIN
-        CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,-1)
-        CALL REORD(VHARRIS1(1,ISPIN),VHARRIS1(1,ISPIN),NML,NSM,-1)
+        call distMeshData( odistr, VHARRIS1_PAR(1:ntpl_3,ISPIN),
+     &                     idistr, VHARRIS1(1:ntpl_2,ispin), -1 )
         DO ISPIN2 = 1, NSPIN
-          CALL REORD(DVXCDN(1,ISPIN,ISPIN2),DVXCDN(1,ISPIN,ISPIN2),
-     .               NML,NSM,-1)
+          call distMeshData( odistr, DVXCDN_PAR(1:ntpl_3,ISPIN,ISPIN2),
+     &                       idistr, DVXCDN(1:ntpl_2,ISPIN,ISPIN2), -1 )
         ENDDO
       ENDDO
 
+      call de_alloc( dvxcdn_par, name='dvxcdn_par' )
+      call de_alloc( vharris1_par, name='vharris1_par' )
+      call de_alloc( drhoin_par, name='drhoin_par' )
+
+      call setMeshDistr( idistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+
       DO ISPIN = 1, NSPIN
         IF( NPCC .EQ. 1) 
-     .    DRHOIN(1:NTPL,ISPIN) = DRHOIN(1:NTPL,ISPIN) - 
-     .                           RHOPCC(1:NTPL)/NSPIN
+     &    DRHOIN(1:NTPL,ISPIN) = DRHOIN(1:NTPL,ISPIN) - 
+     &                           RHOPCC(1:NTPL)/NSPIN
         DO IP = 1, NTPL
           VHARRIS1(IP,ISPIN) = VHARRIS1(IP,ISPIN) + VNA(IP)
         ENDDO
@@ -152,7 +176,7 @@ C ----------------------------------------------------------------------
         DO ISPIN2 = 1, NSPIN
           DO IP = 1, NTPL
             VHARRIS2(IP) = VHARRIS2(IP) + 
-     .                     DVXCDN(IP,ISPIN2,ISPIN) * DRHOOUT(IP,ISPIN2)
+     &                     DVXCDN(IP,ISPIN2,ISPIN) * DRHOOUT(IP,ISPIN2)
           ENDDO
         ENDDO
       ENDDO

@@ -69,7 +69,7 @@ C Internal variables and arrays
       integer,  dimension(:), allocatable, save :: idens
 #endif
 
-*     call timer( 'iolwf', 1 )
+      call timer( 'iolwf', 1 )
 
 #ifdef MPI
 C Allocate local buffer array
@@ -390,5 +390,5 @@ C Free local buffer memory
       deallocate(idens)
 #endif
 
-*     call timer( 'iolwf', 2 )
+      call timer( 'iolwf', 2 )
       end

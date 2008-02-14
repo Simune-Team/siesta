@@ -49,6 +49,8 @@ C ----------------------------------------------------------------------
      .                                    listdptr, listd )
 C
 C Calculates the values of the orbitals at the mesh points
+C Computes the communications needed to move data ordered
+C by orbitals to data ordered by mesh.
 C
 C ----------------------------------------------------------------------
 C Input :
@@ -77,6 +79,7 @@ C
       use parallelsubs, only : GlobalToLocalOrb, WhichNodeOrb
       use precision
       use alloc
+      use m_dscfComm
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -97,10 +100,10 @@ C Local variables
 C
       integer
      .  BNode, i, ii, io, iio, ip, imp, iu, numdele, maxndmax,
-     .  nsize
+     .  nsize, nn, mm 
 #ifdef MPI
       integer
-     .  MPIerror
+     .  MPIerror, Status(MPI_Status_Size)
 #endif
 
       integer, dimension(:), pointer :: ibuffer
@@ -135,8 +138,11 @@ C This pointer is never deallocated...
         endif
       enddo
 
-C Allocate/reallocate memory for numdl and listdlptr
+C     Computes the communications needed to move data ordered
+C     by orbitals to data ordered by mesh.
+      call dscfComm( nuotot, nrowsDscfL, NeedDscfL )
 
+C     Allocate/reallocate memory for numdl and listdlptr
       call re_alloc( numdl, 1, max(1,nrowsDscfL), name='numdl',
      &                 routine='CreateLocalDscfPointers' )
       call re_alloc( listdlptr, 1, max(1,nrowsDscfL), 
@@ -144,20 +150,46 @@ C Allocate/reallocate memory for numdl and listdlptr
      &                 routine='CreateLocalDscfPointers' )
 
 C Distribute information about numd globally
+      nullify( ibuffer )
+      call re_alloc( ibuffer, 1, DCmax, name='ibuffer',
+     &               routine='CreateLocalDscfPointers' )
+
+      do ii= 1, DCself
+        io = DCinvp(ii)
+        call GlobalToLocalOrb(io,Node,Nodes,iio)
+        numdele              = numd(iio)
+        numdl(NeedDscfL(io)) = numdele
+      enddo
+
+      nn       = DCself + 1
       maxndmax = 0
-      do io = 1,nuotot
-        call WhichNodeOrb(io,Nodes,BNode)
-        if (Node.eq.BNode) then
-          call GlobalToLocalOrb(io,Node,Nodes,iio)
-          numdele = numd(iio)
+      do i= 1, DCsize
+        numdele = 0
+        if (DCsrc(i).eq.Node) then
+          do ii= 1, DCsic(i)
+            io = DCinvp(nn)
+            call GlobalToLocalOrb(io,Node,Nodes,iio)
+            ibuffer(ii) = numd(iio)
+            numdele = numdele + ibuffer(ii)
+            nn = nn + 1
+          enddo
+          call MPI_Send( ibuffer, DCsic(i), MPI_integer,
+     &                   DCdst(i), 1, MPI_Comm_World, MPIerror )
+        else
+          call mpi_recv( ibuffer, DCsic(i), MPI_integer,
+     &                   DCsrc(i),  1, MPI_Comm_world, Status,
+     &                   MPIerror )
+          do ii= 1, DCsic(i)
+            io                   = DCinvp(nn)
+            numdl(NeedDscfL(io)) = ibuffer(ii)
+            numdele              = numdele + ibuffer(ii)
+            nn                   = nn + 1
+          enddo
         endif
-#ifdef MPI
-        call MPI_Bcast(numdele,1,MPI_integer,BNode,
-     .    MPI_Comm_World,MPIerror)
-#endif
-        if (NeedDscfL(io).gt.0) numdl(NeedDscfL(io)) = numdele
         if (numdele.gt.maxndmax) maxndmax = numdele
       enddo
+      call de_alloc( ibuffer, name='ibuffer' )
+      DCmaxnd = maxndmax
 
 C Create listdlptr using numdl
       listdlptr(1) = 0
@@ -176,30 +208,51 @@ C Allocate/reallocate listdl
 
 C Distribute information about listd globally
       nullify( ibuffer )
-      call re_alloc( ibuffer, 1, maxndmax, name='ibuffer',
+      call re_alloc( ibuffer, 1, DCmaxnd, name='ibuffer',
      &               routine='CreateLocalDscfPointers' )
-      ibuffer(1:maxndmax) = 0      ! AG: superfluous
-      do io = 1,nuotot
-        call WhichNodeOrb(io,Nodes,BNode)
-        if (Node.eq.BNode) then
-          call GlobalToLocalOrb(io,Node,Nodes,iio)
-          do ii = 1,numd(iio)
-            ibuffer(ii) = listd(listdptr(iio)+ii)
+
+      do ii= 1, DCself
+        io = DCinvp(ii)
+        call GlobalToLocalOrb(io,Node,Nodes,iio)
+        iu = NeedDscfL(io)
+        do i = 1,numd(iio)
+          listdl(listdlptr(iu)+i) = listd(listdptr(iio)+i)
+        enddo
+      enddo
+      nn = DCself + 1
+      do i= 1, DCsize
+        if (DCsrc(i).eq.Node) then
+          mm = 0
+          do ii= 1, DCsic(i)
+            io = DCinvp(nn)
+            call GlobalToLocalOrb(io,Node,Nodes,iio)
+            ibuffer(mm+1:mm+numd(iio)) = listd(listdptr(iio)+1:
+     &                                         listdptr(iio)+numd(iio))
+            mm = mm + numd(iio)
+            nn = nn + 1
           enddo
-        endif
-#ifdef MPI
-        call MPI_Bcast(ibuffer,maxndmax,MPI_integer,BNode,
-     .    MPI_Comm_World,MPIerror)
-#endif
-        iio = NeedDscfL(io)
-        if (iio.gt.0) then
-          do ii = 1,numdl(iio)
-            listdl(listdlptr(iio)+ii) = ibuffer(ii)
+          call MPI_Send( ibuffer, mm, MPI_integer, DCdst(i), 1, 
+     &                   MPI_Comm_World, MPIerror )
+        else
+          mm = 0
+          do ii= 0, DCsic(i)-1
+            io = DCinvp(nn+ii)
+            mm = mm + numdl(NeedDscfL(io))
+          enddo
+          call mpi_recv( ibuffer, mm, MPI_integer, DCsrc(i), 1,
+     &                   MPI_Comm_world, Status, MPIerror )
+          mm = 0
+          do ii= 1, DCsic(i)
+            io = DCinvp(nn)
+            iu = NeedDscfL(io)
+            listdl(listdlptr(iu)+1:listdlptr(iu)+numdl(iu)) =
+     &              ibuffer(mm+1:mm+numdl(iu))
+            mm = mm + numdl(iu)
+            nn = nn + 1
           enddo
         endif
       enddo
       call de_alloc( ibuffer, name='ibuffer' )
-
       end subroutine CreateLocalDscfPointers
 
       subroutine matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, 
@@ -231,28 +284,30 @@ C  Modules
       use mpi_siesta
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
+      use m_dscfComm
 #endif
 
       implicit none
 
 C Argument types and dimensions
       integer
-     .   maxnd, maxndl, nspin, nuo, nuotot, numd(nuo), 
-     .   listdptr(nuo)
+     &   maxnd, maxndl, nspin, nuo, nuotot, numd(nuo), 
+     &   listdptr(nuo)
 
       real(dp)
-     .   Dscf(maxnd,nspin), DscfL(maxndl,nspin)
+     &   Dscf(maxnd,nspin), DscfL(maxndl,nspin)
 
       external
-     .   memory
+     &   memory
 
 C Internal variables and arrays
       integer
-     .  io, il, ispin
+     &  io, il, ispin
 
 #ifdef MPI
       integer 
-     .  BNode, ii, iio, maxno, maxnog, MPIerror
+     &  BNode, i, ii, iu, mm, nn, iio, maxno, maxnog, MPIerror,
+     &  Status(MPI_Status_Size)
       real(dp), dimension(:), pointer ::  buffer
 #endif
 
@@ -260,55 +315,62 @@ C***********************
 C  Parallel execution  *
 C***********************
 #ifdef MPI
-C Find local and global size of maxno
-      maxno = 0
-      do io = 1,nrowsDscfL
-        maxno = max(maxno,numdl(io))
-      enddo
-      call MPI_AllReduce(maxno,maxnog,1,MPI_integer,MPI_max,
-     .  MPI_Comm_World,MPIerror)
-
 C Allocate local Dscf storage array
       nullify(buffer)
-      call re_alloc( buffer, 1, maxnog*nspin, name='buffer',
+      call re_alloc( buffer, 1, DCmaxnd*nspin, name='buffer',
      &               routine='matrixOtoM' )
 
-C Zero buffer as we will be passing the complete array
-C as the number of explicitly non-zero elements will
-C not be known on all nodes
-      buffer(1:maxnog*nspin) = 0.0d0  ! AG: superfluous
-
-C Loop over rows of Dscf broadcasting to all other nodes
-      do io = 1,nuotot
-        call WhichNodeOrb(io,Nodes,BNode)
-
-C If this row is local to this node then copy into buffer
-        if (Node.eq.BNode) then
-          call GlobalToLocalOrb(io,Node,Nodes,iio)
-          do ispin = 1,nspin
-            ii = (ispin-1)*maxnog
-            buffer(ii+1:ii+numd(iio)) = 
-     .        Dscf(listdptr(iio)+1:listdptr(iio)+numd(iio),ispin)
-          enddo
-        endif
-
-C Broadcast buffer array
-        call MPI_Bcast(buffer,maxnog*nspin,MPI_double_precision,BNode,
-     .                 MPI_Comm_World,MPIerror)
-
-C Get pointer for this row of Dscf and see if it is needed for DscfL
-        il = NeedDscfL(io)
-        if (il.gt.0) then
-          do ispin = 1,nspin
-            ii = (ispin-1)*maxnog
-            DscfL(listdlptr(il)+1:listdlptr(il)+numdl(il),ispin) = 
-     .        buffer(ii+1:ii+numdl(il))
-          enddo
-        endif
+C     Copy the data that is in the current process
+      do ii= 1, DCself
+        io = DCinvp(ii)
+        call GlobalToLocalOrb(io,Node,Nodes,iio)
+        iu = NeedDscfL(io)
+        do ispin = 1,nspin
+          DscfL(listdlptr(iu)+1:listdlptr(iu)+numdl(iu),ispin) =
+     &    Dscf(listdptr(iio)+1:listdptr(iio)+numd(iio),ispin)
+        enddo
       enddo
+      nn = DCself
 
-C Deallocate buffer memory
-      call de_alloc(buffer, name="buffer")
+C     Send or receive the data from/to other processes
+      do i= 1, DCsize
+        if (DCsrc(i).eq.Node) then
+          mm = 0
+          do ispin = 1,nspin
+            do ii= 1, DCsic(i)
+              io = DCinvp(nn+ii)
+              call GlobalToLocalOrb(io,Node,Nodes,iio)
+              buffer(mm+1:mm+numd(iio)) = Dscf(listdptr(iio)+1:
+     &                           listdptr(iio)+numd(iio),ispin)
+              mm = mm + numd(iio)
+            enddo
+          enddo
+          call MPI_Send( buffer, mm, MPI_double_precision, DCdst(i), 1,
+     &                   MPI_Comm_World, MPIerror )
+        else
+          mm = 0
+          do ii= 1, DCsic(i)
+            io = DCinvp(nn+ii)
+            iu = NeedDscfL(io)
+            mm = mm + numdl(iu)
+          enddo
+          mm = mm*nspin
+          call mpi_recv( buffer, mm, MPI_double_precision, DCsrc(i), 1,
+     &                   MPI_Comm_world, Status, MPIerror )
+          mm = 0
+          do ispin = 1,nspin
+            do ii= 1, DCsic(i)
+              io = DCinvp(nn+ii)
+              iu = NeedDscfL(io)
+              DscfL(listdlptr(iu)+1:listdlptr(iu)+numdl(iu),ispin) =
+     &              buffer(mm+1:mm+numdl(iu))
+              mm = mm + numdl(iu)
+            enddo
+          enddo
+        endif
+        nn = nn + DCsic(i)
+      enddo
+      call de_alloc( buffer, name='buffer' )
 #else
 C*********************
 C  Serial execution  *
@@ -321,13 +383,12 @@ C Get pointer for this row of Dscf and see if it is needed for DscfL
           il = NeedDscfL(io)
           if (il.gt.0) then
             DscfL(listdlptr(il)+1:listdlptr(il)+numdl(il),ispin) = 
-     .        Dscf(listdptr(io)+1:listdptr(io)+numdl(il),ispin)
+     &        Dscf(listdptr(io)+1:listdptr(io)+numdl(il),ispin)
           endif
 
         enddo
       enddo
 #endif
-
       end subroutine matrixOtoM
 
       subroutine matrixMtoO( maxnvl, maxnv, numVs, listVsptr, nuo, 
@@ -364,6 +425,7 @@ C  Modules
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb,
      .                         LocalToGlobalOrb
+      use m_dscfComm
 #endif
 
       implicit none
@@ -380,94 +442,75 @@ C Internal variables and arrays
      .  i, iu, ispin
 
 #ifdef MPI
-      integer :: ii, in, iul, maxnvg, MPIerror, nVsL, nVsLmax
-      real(dp), dimension(:), pointer ::  Vi
-      integer, dimension(:), pointer  ::  nVsLPtr, listViptr
+      integer           :: ii, MPIerror, Status(MPI_Status_Size), nn,
+     &                     mm, io, iio
+      real(dp), pointer :: buffer(:)
 #endif
-      
+
 C***********************
 C  Parallel execution  *
 C***********************
 #ifdef MPI
-C Find the maximum number of rows on anyone Node
-      call MPI_AllReduce(nrowsDscfL,nVsLmax,1,MPI_integer,
-     .  MPI_max,MPI_Comm_World,MPIerror)
-
-C Find the maximum value of maxno on any Node and globally
-      call MPI_AllReduce(maxnvl,maxnvg,1,MPI_integer,
-     .  MPI_max,MPI_Comm_World,MPIerror)
-
-C Allocate buffer memory for transfer of matrix and pointer
-      nullify(Vi)
-      call re_alloc( Vi, 1, maxnvg*nspin, name='Vi',
-     &               routine='matrixMtoO' )
-      nullify(nVsLPtr)
-      call re_alloc( nVsLPtr, 1, nuotot, name='nVsLPtr',
-     &               routine='matrixMtoO' )
-      nullify(listViptr)
-      call re_alloc( listViptr, 1, nuotot, name='listViptr',
+C     Allocate a buffer to Send/Receive data
+      nullify(buffer)
+      call re_alloc( buffer, 1, DCmaxnd*nspin, name='buffer',
      &               routine='matrixMtoO' )
 
-C Initialise buffers to avoid number trapping errors during transfer
-      Vi(1:maxnvg) = 0.0d0  ! AG : superfluous
-      listViptr(1:nuotot) = 0
-
-C Loop over Nodes for broadcasting of local data
-      do in = 0,Nodes-1
-
-C Broadcast the number of rows stored locally
-        if (in.eq.Node) nVsL = nrowsDscfL
-        call MPI_Bcast(nVsL,1,MPI_integer,in,MPI_Comm_World,MPIerror)
-
-C If this is the broadcasting Node then copy the pointer to the buffer
-        if (in.eq.Node) then
-          nVsLPtr(1:nuotot) = NeedDscfL(1:nuotot)
-        endif
-
-C Broadcast the pointer information
-        call MPI_Bcast(nVsLPtr,nuotot,MPI_integer,in,MPI_Comm_World,
-     .                 MPIerror)
-
-C Need to broadcast the row pointer info for Vi (listdlptr)
-        if (in.eq.Node.and.nrowsDscfL.gt.0) then
-          listViptr(1:nrowsDscfL) = listdlptr(1:nrowsDscfL)
-        endif
-        call MPI_Bcast(listViptr,nuotot,MPI_integer,in,MPI_Comm_World,
-     .                 MPIerror)
-
-C If this is the broadcasting Node then copy the data to the buffer
-        if (in.eq.Node) then
-          do ispin = 1,nspin
-            ii = (ispin-1)*maxnvg
-            Vi(ii+1:ii+maxnvl) = VsL(1:maxnvl,ispin)
-          enddo
-        endif
-
-C Broadcast the buffer information
-        call MPI_Bcast(Vi,maxnvg*nspin,MPI_double_precision,in,
-     .                 MPI_Comm_World,MPIerror)
-
-C Add those elements that are needed locally to the values already
-C stored in the orbital oriented array
+C     Copy the data that is in the current process from VsL to Vs
+      do ii= 1, DCself
+        io = DCinvp(ii)
+        call GlobalToLocalOrb(io,Node,Nodes,iio)
+        iu = NeedDscfL(io)
         do ispin = 1,nspin
-          ii = (ispin-1)*maxnvg
-          do i = 1,nuo
-            call LocalToGlobalOrb(i,Node,Nodes,iu)
-            iul = nVsLPtr(iu)
-            if (iul.gt.0) then
-              Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) = 
-     .          Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) + 
-     .          Vi(ii+listViptr(iul)+1:ii+listViptr(iul)+numVs(i))
-            endif
-          enddo
+          Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio),ispin) = 
+     &    Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio),ispin) + 
+     &    VsL(listdlptr(iu)+1:listdlptr(iu)+numdl(iu),ispin)
         enddo
-
       enddo
+      nn = DCself
 
-C Deallocate buffer and pointer memory
-      call de_alloc(listViptr, name="listViptr")
-      call de_alloc(nVsLPtr, name="nVsLPtr")
-      call de_alloc(Vi, name="Vi")
+C     Send or receive the data from/to other processes
+      do i= 1, DCsize
+C       The communication is from dst to src
+        if (DCsrc(i).eq.Node) then
+          mm = 0
+          do ii= 1, DCsic(i)
+            io = DCinvp(nn+ii)
+            call GlobalToLocalOrb(io,Node,Nodes,iio)
+            mm = mm + numVs(iio)
+          enddo
+          mm = mm*nspin
+
+          call mpi_recv( buffer, mm, MPI_double_precision, DCdst(i), 1,
+     &                   MPI_Comm_world, Status, MPIerror )
+          mm = 0
+          do ispin = 1,nspin
+            do ii= 1, DCsic(i)
+              io = DCinvp(nn+ii)
+              call GlobalToLocalOrb(io,Node,Nodes,iio)
+              Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio),ispin) = 
+     &        Vs(listVsptr(iio)+1:listVsptr(iio)+numVs(iio),ispin) + 
+     &        buffer(mm+1:mm+numVs(iio))
+              mm = mm + numVs(iio)
+            enddo
+          enddo
+        else
+          mm = 0
+          do ispin = 1,nspin
+            do ii= 1, DCsic(i)
+              io = DCinvp(nn+ii)
+              iio = NeedDscfL(io)
+              buffer(mm+1:mm+numdl(iio)) =
+     &        VsL(listdlptr(iio)+1:listdlptr(iio)+numdl(iio),ispin)
+              mm = mm + numdl(iio)
+            enddo
+          enddo
+          call MPI_Send( buffer, mm, MPI_double_precision, DCsrc(i), 1,
+     &                   MPI_Comm_World, MPIerror )
+        endif
+        nn = nn + DCsic(i)
+      enddo
+      call de_alloc( buffer, name='buffer' )
 #else
 C*********************
 C  Serial execution  *
@@ -485,5 +528,4 @@ C stored in the orbital oriented array
         enddo
       enddo
 #endif
-
-      end
+      end subroutine matrixMtoO

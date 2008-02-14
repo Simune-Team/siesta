@@ -9,8 +9,8 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine cellxc( irel, ider, cell, NMesh, NSpan, maxp, mtype, 
-     .                   XMesh, nspin, Dens, EX, EC, DX, DC, VXC, 
-     .                   DVXCDN, stressl )
+     &                   XMesh, nspin, Dens, EX, EC, DX, DC, VXC, 
+     &                   DVXCDN, stressl )
 
 C *******************************************************************
 C Finds total exchange-correlation energy and potential in a
@@ -119,14 +119,16 @@ C *******************************************************************
       use precision,    only : dp, grid_p
       use xcmod,        only : nXCfunc, XCfunc, XCauth
       use xcmod,        only : XCweightX, XCweightC
-      use sys,          only :die
+      use sys,          only : die
       use alloc,        only : re_alloc, de_alloc
+      use cellxc_mod,   only : GGA
 #ifdef MPI
 C  Modules
       use parallel,     only : Node, Nodes, ProcessorY
       use parallelsubs, only : HowManyMeshPerNode
       use mpi_siesta
-      use mesh,         only : nsm, nmeshg
+      use mesh,         only : nsm, nmeshg, meshLim
+      use moreMeshSubs, only : distExtMeshData, gathExtMeshData
 #endif
 
       implicit none
@@ -175,55 +177,38 @@ C Parameter mspin must be equal or larger than nspin
 #ifdef MPI
 C MPI related variables
       integer 
-     .  MPIerror, ProcessorZ, BlockSizeY, BlockSizeZ, MeshNsm(3),
-     .  BlockSizeYMax, BlockSizeZMax, NRemY, NRemZ,
-     .  Py, Pz
+     &  MPIerror
       integer 
-     .  NSwap, NDummy, IDen1, IDen2, IOut, INN, MeshDum(3), 
-     .  Requests(4), Statuss(MPI_Status_Size,4), Tag, Pleft2, Pright2,
-     .  Pleft3, Pright3, PzMod, PyMod, NMeshPN, JPNN(3,-NN:NN),
-     .  nmax, nrleft, nrright, nsleft, nsright
+     &  NDummy, IOut, INN, MeshDum(3), 
+     &  NMeshPN, JPNN(3,-NN:NN)
       real(dp)
-     .  Buffer(4),Buffer2(4)
-      logical 
-     .  NoLocalPoints
-
-      real(grid_p), dimension(:,:,:), pointer :: bdens, bvxc
-      real(grid_p), dimension(:,:),   pointer :: bbuffer, dbuffer
-      integer,      dimension(:,:),   pointer :: PMesh
-
+     &  Buffer(4),Buffer2(4)
 #endif
 
 C Local variables and arrays
-      logical           GGA, GGAfunctl
+      logical           GGAfunctl
       integer           I1, I2, I3, IC, IN, IP, IS, IX,
-     .                  J1, J2, J3, JN, JP(3,-NN:NN), JS, JX,
-     .                  KS, NPG, nf
+     &                  J1, J2, J3, JN, JP(3,-NN:NN), JS, JX,
+     &                  KS, NPG, nf
       real(dp)          D(mspin), DECDD(mspin), DECDGD(3,mspin),
-     .                  dentot, DEXDD(mspin), DEXDGD(3,mspin),
-     .                  DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
-     .                  DMDX(3,3), DVol, DXDM(3,3),
-     .                  DVCDN(mspin*mspin), DVXDN(mspin*mspin),
-     .                  EPSC, EPSX, F1, F2, GD(3,mspin),
-     .                  VOLCEL, volume, stress(3,3)
+     &                  dentot, DEXDD(mspin), DEXDGD(3,mspin),
+     &                  DGDM(-NN:NN), DGIDFJ(3,3,-NN:NN),
+     &                  DMDX(3,3), DVol, DXDM(3,3),
+     &                  DVCDN(mspin*mspin), DVXDN(mspin*mspin),
+     &                  EPSC, EPSX, F1, F2, GD(3,mspin),
+     &                  VOLCEL, volume, stress(3,3)
       external          GGAXC, LDAXC, RECLAT, VOLCEL
+      integer           iaxis, BS(3), maxBS, iDistr
+      real(grid_p), pointer :: bdensX(:,:,:), bdensY(:,:,:),
+     &                         bdensZ(:,:,:), bvxcX(:,:,:),
+     &                         bvxcY(:,:,:), bvxcZ(:,:,:)
+
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 3 )
+#endif
 
 C Start time counter (intended only for debugging and development)
       call timer( 'cellXC', 1 )
-
-C Set GGA switch
-      GGA = .false.
-      do nf = 1,nXCfunc
-        if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
-          GGA = .true.
-        else
-          if ( XCfunc(nf).ne.'LDA' .and. XCfunc(nf).ne.'lda' .and.
-     .         XCfunc(nf).ne.'LSD' .and. XCfunc(nf).ne.'lsd' ) then
-            write(6,*) 'cellXC: Unknown functional ', XCfunc(nf)
-            call die()
-          endif
-        endif
-      enddo
 
 C Check ider
       if (ider.ne.0 .and. GGA)
@@ -239,309 +224,53 @@ C Check value of mspin
 C If GGA and the number of processors is greater than 1 then we need
 C to exchange border densities so that the density derivatives can
 C be calculated.
+      BS(1) = (meshLim(2,1)-meshLim(1,1)+1)*NSM
+      BS(2) = (meshLim(2,2)-meshLim(1,2)+1)*NSM
+      BS(3) = (meshLim(2,3)-meshLim(1,3)+1)*NSM
+
       if (GGA.and.Nodes.gt.1) then
-
-C Work out processor grid dimensions
-      if (mod(Nodes,ProcessorY).gt.0)
-     $     call die('ERROR: ProcessorY must be a factor of the' //
-     $     ' number of processors!')
-        ProcessorZ = Nodes/ProcessorY
-
-C Work out grid coordinates of local node in processor grid
-        Py = (Node/ProcessorZ) + 1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
-
-C Work out maximum blocksizes
-        MeshNSM(1) = NMeshG(1)/NSM
-        MeshNSM(2) = NMeshG(2)/NSM
-        MeshNSM(3) = NMeshG(3)/NSM
-        BlockSizeY = (MeshNsm(2)/ProcessorY)
-        BlockSizeZ = (MeshNsm(3)/ProcessorZ)
-        NRemY = MeshNsm(2) - BlockSizeY*ProcessorY
-        NRemZ = MeshNsm(3) - BlockSizeZ*ProcessorZ
-        if (NRemY.gt.0) then
-          BlockSizeYMax = BlockSizeY + 1
-        else
-          BlockSizeYMax = BlockSizeY
-        endif
-        if (NRemZ.gt.0) then
-          BlockSizeZMax = BlockSizeZ + 1
-        else
-          BlockSizeZMax = BlockSizeZ
-        endif
-        BlockSizeY = BlockSizeY*NSM
-        BlockSizeZ = BlockSizeZ*NSM
-        BlockSizeYMax = BlockSizeYMax*NSM
-        BlockSizeZMax = BlockSizeZMax*NSM
-
-C Check that there are enough points on each Node to cover the finite
-C difference interval - if not then exit!
-        if (NN.gt.BlockSizeY.or.NN.gt.BlockSizeZ) then
+        if (NN.gt.BS(1).or.NN.gt.BS(2).or.NN.gt.BS(3)) then
           if (Node.eq.0) then
             write(6,'(''  ERROR - number of fine mesh points per '',
-     .        ''Node must be greater than finite difference order '')')
+     &      ''Node must be greater than finite difference order '')')
           endif
           call die()
         endif
 
-C Check that this Node was some points 
-        call HowManyMeshPerNode(MeshNSM, Node, Nodes, NDummy, MeshDum)
-        NoLocalPoints = (NDummy.eq.0)
-        if (NoLocalPoints) then
-          EX = 0.0_dp
-          EC = 0.0_dp
-          DX = 0.0_dp
-          DC = 0.0_dp
-          if (GGA) then
-            do IS = 1,nspin
-              do I3 = 0,NMesh(3)-1
-                do I2 = 0,NMesh(2)-1
-                  do I1 = 0,NMesh(1)-1
-                    IP = 1+I1+NSpan(1)*I2+NSpan(1)*NSpan(2)*I3
-                    VXC(IP,IS) = 0.0_grid_p
-                  enddo
-                enddo
-              enddo
-            enddo
-          endif
-          goto 991
+        iDistr = 3
+        if (BS(1).ne.NMeshG(1)) then
+          nullify(bdensX)
+          call re_alloc( bdensX, 1, BS(2)*BS(3), 1, 2*NN,
+     &                   1, nspin, name='bdensX', routine='cellxc' )
+          nullify(bvxcX)
+          call re_alloc( bvxcX, 1, BS(2)*BS(3), 1, 2*NN,
+     &                   1, nspin, name='bvxcX', routine='cellxc' )
+          call distExtMeshData( iDistr, 1, BS(2)*BS(3), NSM, NN, NSPIN,
+     &                          maxp, NMeshG, dens, bdensX )
         endif
 
-C Allocate memory for border densities and potential
-
-        nullify( bdens )
-        call re_alloc( bdens,
-     &                 1, NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
-     &                 1, 4*NN, 1, nspin, name='bdens',
-     &                 routine='cellxc' )
-        nullify( bvxc )
-        call re_alloc( bvxc,
-     &                 1,NSpan(1)*max(BlockSizeYMax,BlockSizeZMax),
-     &                 1, 4*NN, 1, nspin, name='bvxc',
-     &                 routine='cellxc' )
-        nullify( PMesh )
-        call re_alloc( PMesh, 1, 3, 1, 4, name='PMesh',
-     &                 routine='cellxc' )
-
-C Exchange density information in the Z-direction
-        if (NMesh(3).ne.NMeshG(3)) then
-
-C Find Nodes to exchange with
-          PzMod = Pz - 1
-          if (PzMod.lt.1) PzMod = PzMod + ProcessorZ
-          Pleft3 = (Py - 1)*ProcessorZ + PzMod - 1
-          PzMod = Pz + 1
-          if (PzMod.gt.ProcessorZ) PzMod = PzMod - ProcessorZ
-          Pright3 = (Py - 1)*ProcessorZ + PzMod - 1
-
-C Find size of mesh at nodes to be exchanged with
-          call HowManyMeshPerNode(MeshNsm,Pleft3,Nodes,NMeshPN,
-     .      PMesh(1:,3))
-          call HowManyMeshPerNode(MeshNsm,Pright3,Nodes,NMeshPN,
-     .      PMesh(1:,4))
-          do ix = 1,3
-            PMesh(ix,3) = PMesh(ix,3)*NSM
-            PMesh(ix,4) = PMesh(ix,4)*NSM
-          enddo
-
-C Find sizes of transfer arrays
-          nrleft = PMesh(1,3)*PMesh(2,3)*nn*nspin
-          nrright = PMesh(1,4)*PMesh(2,4)*nn*nspin
-          nsleft = NSpan(1)*NSpan(2)*nn*nspin
-          nsright = NSpan(1)*NSpan(2)*nn*nspin
-
-C Allocate arrays for data storage
-          nmax = max(nrleft,nrright)
-          nullify( bbuffer )
-          call re_alloc( bbuffer, 1, nmax, 1, 2, name='bbuffer',
-     &                   routine='cellxc' )
-          nmax = max(nsleft,nsright)
-          nullify( dbuffer )
-          call re_alloc( dbuffer, 1, nmax, 1, 2, name='dbuffer',
-     &                   routine='cellxc' )
-
-C Build buffer transfer data array
-          nsleft = 0
-          nsright = 0
-          do in = 1,nn
-            do is = 1,nspin
-
-C Collect data to be sent
-              NSwap = NSpan(1)*NSpan(2)
-              IDen1 = NSwap*(NMesh(3)-in)
-              dbuffer(nsright+1:nsright+NSwap,2) = 
-     .          dens(IDen1+1:IDen1+NSwap,is)
-              nsright = nsright + NSwap
-
-              IDen1 = NSwap*(in-1)
-              dbuffer(nsleft+1:nsleft+NSwap,1) = 
-     .          dens(IDen1+1:IDen1+NSwap,is)
-              nsleft = nsleft + NSwap
-
-            enddo
-          enddo
-
-C Transfers
-          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_grid_real,
-     .      Pleft3,1,MPI_Comm_World,Requests(1),MPIerror)
-          call MPI_IRecv(bbuffer(1,2),nrright,MPI_grid_real,
-     .      Pright3,2,MPI_Comm_World,Requests(2),MPIerror)
-          call MPI_ISend(dbuffer(1,1),nsleft,MPI_grid_real,
-     .      Pleft3,2,MPI_Comm_World,Requests(3),MPIerror)
-          call MPI_ISend(dbuffer(1,2),nsright,MPI_grid_real,
-     .      Pright3,1,MPI_Comm_World,Requests(4),MPIerror)
-
-C Wait for transfers to complete
-          call MPI_WaitAll(4,Requests,Statuss,MPIerror)
-
-C Barrier - just in case
-          call MPI_Barrier(MPI_Comm_World,MPIerror)
-
-C Place transferred data in correct arrays
-          nrleft = 0
-          nrright = 0
-          do in = 1,nn
-            do is = 1,nspin
-
-C Sort received data
-              NSwap = PMesh(1,3)*PMesh(2,3)
-              bdens(1:NSwap,2*nn+in,is) = 
-     .          bbuffer(nrleft+1:nrleft+NSwap,1)
-              nrleft = nrleft + NSwap
-
-              NSwap = PMesh(1,4)*PMesh(2,4)
-              bdens(1:NSwap,3*nn+in,is) = 
-     .          bbuffer(nrright+1:nrright+NSwap,2)
-              nrright = nrright + NSwap
-
-            enddo
-          enddo
-
-C Free arrays for data storage
-          call de_alloc( dbuffer, name='dbuffer' )
-          call de_alloc( bbuffer, name='bbuffer' )
-
+        if (BS(2).ne.NMeshG(2)) then
+          nullify(bdensY)
+          call re_alloc( bdensY, 1, BS(1)*BS(3), 1, 2*NN,
+     &                   1, nspin, name='bdensY', routine='cellxc' )
+          nullify(bvxcY)
+          call re_alloc( bvxcY, 1, BS(1)*BS(3), 1, 2*NN,
+     &                   1, nspin, name='bvxcY', routine='cellxc' )
+          call distExtMeshData( iDistr, 2, BS(1)*BS(3), NSM, NN, NSPIN,
+     &                          maxp, NMeshG, dens, bdensY )
         endif
 
-C Exchange density information in the Y-direction
-        if (NMesh(2).ne.NMeshG(2)) then
-
-C Find Nodes to exchange with
-          PyMod = Py - 1
-          if (PyMod.lt.1) PyMod = PyMod + ProcessorY
-          Pleft2 = (PyMod - 1)*ProcessorZ + Pz - 1
-          PyMod = Py + 1
-          if (PyMod.gt.ProcessorY) PyMod = PyMod - ProcessorY
-          Pright2 = (PyMod - 1)*ProcessorZ + Pz - 1
-
-C Find size of mesh at nodes to be exchanged with
-          call HowManyMeshPerNode(MeshNsm,Pleft2,Nodes,NMeshPN,
-     .      PMesh(1:,1))
-          call HowManyMeshPerNode(MeshNsm,Pright2,Nodes,NMeshPN,
-     .      PMesh(1:,2))
-          do ix = 1,3
-            PMesh(ix,1) = PMesh(ix,1)*NSM
-            PMesh(ix,2) = PMesh(ix,2)*NSM
-          enddo
-
-C Find size of transfer arrays
-          nrleft = PMesh(1,1)*PMesh(3,1)*nn*nspin
-          nrright = PMesh(1,2)*PMesh(3,2)*nn*nspin
-          nsleft = NSpan(1)*NMesh(3)*nn*nspin
-          nsright = NSpan(1)*NMesh(3)*nn*nspin
-
-C Allocate transfer arrays
-          nmax = max(nrleft,nrright)
-          nullify( bbuffer )
-          call re_alloc( bbuffer, 1, nmax, 1, 2, name='bbuffer',
-     &                   routine='cellxc' )
-          nmax = max(nsleft,nsright)
-          nullify( dbuffer )
-          call re_alloc( dbuffer, 1, nmax, 1, 2, name='dbuffer',
-     &                   routine='cellxc' )
-
-C Fill data array for sending
-          nsleft = 0
-          nsright = 0
-          do in = 1,nn
-            do is = 1,nspin
-
-C Post density sends
-              NSwap = NSpan(1)
-              IDen1 = (NSpan(2)-in)*NSpan(1)
-              do ix = 1,NMesh(3)
-                dbuffer(nsright+1:nsright+NSwap,2) =
-     .            dens(IDen1+1:IDen1+NSwap,is)
-                nsright = nsright + NSwap
-                IDen1 = IDen1 + NSpan(1)*NSpan(2)
-              enddo
-              IDen1 = (in-1)*NSpan(1)
-              do ix = 1,NMesh(3)
-                dbuffer(nsleft+1:nsleft+NSwap,1) =
-     .            dens(IDen1+1:IDen1+NSwap,is)
-                nsleft = nsleft + NSwap
-                IDen1 = IDen1 + NSpan(1)*NSpan(2)
-              enddo
-
-            enddo
-          enddo
-
-C Transfers
-          call MPI_IRecv(bbuffer(1,1),nrleft,MPI_grid_real,
-     .      Pleft2,1,MPI_Comm_World,Requests(1),MPIerror)
-          call MPI_IRecv(bbuffer(1,2),nrright,MPI_grid_real,
-     .      Pright2,2,MPI_Comm_World,Requests(2),MPIerror)
-          call MPI_ISend(dbuffer(1,1),nsleft,MPI_grid_real,
-     .      Pleft2,2,MPI_Comm_World,Requests(3),MPIerror)
-          call MPI_ISend(dbuffer(1,2),nsright,MPI_grid_real,
-     .      Pright2,1,MPI_Comm_World,Requests(4),MPIerror)
-
-C Wait for transfers to complete
-          call MPI_WaitAll(4,Requests,Statuss,MPIerror)
-
-C Barrier - just in case
-          call MPI_Barrier(MPI_Comm_World,MPIerror)
-
-C Place data in required array location
-          nrleft = 0
-          nrright = 0
-          do in = 1,nn
-            do is = 1,nspin
-
-C Post density receives
-              do ix = 1,PMesh(3,1)
-                NSwap = PMesh(1,1)
-                IDen1 = (ix-1)*PMesh(1,1)
-                bdens(IDen1+1:IDen1+NSwap,in,is) =
-     .            bbuffer(nrleft+1:nrleft+NSwap,1)
-                nrleft = nrleft + NSwap
-              enddo
-              do ix = 1,PMesh(3,2)
-                NSwap = PMesh(1,2)
-                IDen1 = (ix-1)*PMesh(1,2)
-                bdens(IDen1+1:IDen1+NSwap,nn+in,is) =
-     .            bbuffer(nrright+1:nrright+NSwap,2)
-                nrright = nrright + NSwap
-              enddo
-
-            enddo
-          enddo
-
-C Free arrays for data storage
-          call de_alloc( dbuffer, name='dbuffer' )
-          call de_alloc( bbuffer, name='bbuffer' )
-
+        if (BS(3).ne.NMeshG(3)) then
+          nullify(bdensZ)
+          call re_alloc( bdensZ, 1, BS(1)*BS(2), 1, 2*NN,
+     &                   1, nspin, name='bdensZ', routine='cellxc' )
+          nullify(bvxcZ)
+          call re_alloc( bvxcZ, 1, BS(1)*BS(2), 1, 2*NN,
+     &                   1, nspin, name='bvxcZ', routine='cellxc' )
+          call distExtMeshData( iDistr, 3, BS(1)*BS(2), NSM, NN, NSPIN,
+     &                          maxp, NMeshG, dens, bdensZ )
         endif
-
-      else
-
-        NoLocalPoints = .false.
-
       endif
-
-C Barrier to ensure that all densities are in place
-  991 call MPI_Barrier(MPI_Comm_World,MPIerror)
-      if (NoLocalPoints) goto 992
 #endif
 
 C Find weights of numerical derivation from Lagrange interp. formula
@@ -581,7 +310,7 @@ C Find mesh unit vectors and reciprocal mesh vectors
 #endif
             enddo
           enddo
-          call reclat( DXDM, DMDX, 0 )
+          call RECLAT( DXDM, DMDX, 0 )
 
 C Find the weights for the derivative d(gradF(i))/d(F(j)) of
 C the gradient at point i with respect to the value at point j
@@ -607,31 +336,14 @@ C Initialize output
         DVXCDN(1:maxp,1:nspin,1:nspin) = 0.0_grid_p
       endif
 
-      if (GGA) then
 #ifdef MPI
 C Initialise buffer regions of Vxc
-        if (Nodes.gt.1) then
-          do is = 1,nspin
-            if (NMesh(2).ne.NMeshG(2)) then
-              NSwap = NSpan(1)*BlockSizeZMax
-              do in = 1,2*nn
-                do ix = 1,NSwap
-                  bvxc(ix,in,is) = 0.0_grid_p
-                enddo
-              enddo
-            endif
-            if (NMesh(3).ne.NMeshG(3)) then
-              NSwap = NSpan(1)*BlockSizeYMax
-              do in = 1,2*nn
-                do ix = 1,NSwap
-                  bvxc(ix,2*nn+in,is) = 0.0_grid_p
-                enddo
-              enddo
-            endif
-          enddo
-        endif
-#endif
+      if (GGA.and.Nodes.gt.1) then
+        if (BS(1).ne.NMeshG(1)) bvxcX = 0.0_grid_p
+        if (BS(2).ne.NMeshG(2)) bvxcY = 0.0_grid_p
+        if (BS(3).ne.NMeshG(3)) bvxcZ = 0.0_grid_p
       endif
+#endif
       stress(1:3,1:3) = 0.0_dp
 
 C Loop on mesh points
@@ -661,18 +373,43 @@ C Note : a negative index indicates a point from the buffer region
         if (GGA .or. mtype.ne.0) then
 
 C X-direction
-          do IN = -NN,NN
-            J1 = MOD( I1+IN+100*NMesh(1), NMesh(1) )
-            JP(1,IN) = 1+J1+NSpan(1)*I2+NSpan(1)*NSpan(2)*I3
-          enddo
+#ifdef MPI
+          if (NMesh(1).eq.NMeshG(1)) then
+#endif
+            do IN = -NN,NN
+              J1 = MOD( I1+IN+100*BS(1), BS(1) )
+              JP(1,IN) = 1+J1+BS(1)*I2+BS(1)*BS(2)*I3
+            enddo
+#ifdef MPI
+          else
+            do IN = -NN,NN
+              J1 = I1+IN
+              if (J1.lt.0) then
+C Out of block to the left - negative index
+                IOut = -J1
+                JP(1,IN) = -(1+I2+BS(2)*I3)
+                JPNN(1,IN) = J1
+              elseif (J1.gt.(BS(1)-1)) then
+C Out of block to the right - negative index
+                IOut = J1 - BS(1) + 1
+                JP(1,IN) = -(1+I2+BS(2)*I3)
+                JPNN(1,IN) = IOut
+              else
+C In block - positive index
+                JP(1,IN) = 1+J1+BS(1)*I2+BS(1)*BS(2)*I3
+              endif
+            enddo
+          endif
+#endif
+
 
 C Y-direction
 #ifdef MPI
           if (NMesh(2).eq.NMeshG(2)) then
 #endif
             do IN = -NN,NN
-              J2 = MOD( I2+IN+100*NMesh(2), NMesh(2) )
-              JP(2,IN) = 1+I1+NSpan(1)*J2+NSpan(1)*NSpan(2)*I3
+              J2 = MOD( I2+IN+100*BS(2), BS(2) )
+              JP(2,IN) = 1+I1+BS(1)*J2+BS(1)*BS(2)*I3
             enddo
 #ifdef MPI
           else
@@ -681,16 +418,16 @@ C Y-direction
               if (J2.lt.0) then
 C Out of block to the left - negative index
                 IOut = -J2
-                JP(2,IN) = -(1+I1+PMesh(1,1)*I3)
+                JP(2,IN) = -(1+I1+BS(1)*I3)
                 JPNN(2,IN) = J2
-              elseif (J2.gt.(NMesh(2)-1)) then
+              elseif (J2.gt.(BS(2)-1)) then
 C Out of block to the right - negative index
-                IOut = J2 - NMesh(2) + 1
-                JP(2,IN) = -(1+I1+PMesh(1,2)*I3)
+                IOut = J2 - BS(2) + 1
+                JP(2,IN) = -(1+I1+BS(1)*I3)
                 JPNN(2,IN) = IOut
               else
 C In block - positive index
-                JP(2,IN) = 1+I1+NSpan(1)*J2+NSpan(1)*NSpan(2)*I3
+                JP(2,IN) = 1+I1+BS(1)*J2+BS(1)*BS(2)*I3
               endif
             enddo
           endif
@@ -701,8 +438,8 @@ C Z-direction
           if (NMesh(3).eq.NMeshG(3)) then
 #endif
             do IN = -NN,NN
-              J3 = MOD( I3+IN+100*NMesh(3), NMesh(3) )
-              JP(3,IN) = 1+I1+NSpan(1)*I2+NSpan(1)*NSpan(2)*J3
+              J3 = MOD( I3+IN+100*BS(3), BS(3) )
+              JP(3,IN) = 1+I1+BS(1)*I2+BS(1)*BS(2)*J3
             enddo
 #ifdef MPI
           else
@@ -711,21 +448,20 @@ C Z-direction
               if (J3.lt.0) then
 C Out of block to the left - negative index
                 IOut = -J3
-                JP(3,IN) = -(1+I1+PMesh(1,3)*I2)
+                JP(3,IN) = -(1+I1+BS(1)*I2)
                 JPNN(3,IN) = J3
-              elseif (J3.gt.(NMesh(3)-1)) then
+              elseif (J3.gt.(BS(3)-1)) then
 C Out of block to the right - negative index
-                IOut = J3 - NMesh(3) + 1
-                JP(3,IN) = -(1+I1+PMesh(1,4)*I2)
+                IOut = J3 - BS(3) + 1
+                JP(3,IN) = -(1+I1+BS(1)*I2)
                 JPNN(3,IN) = IOut
               else
 C In block - positive index
-                JP(3,IN) = 1+I1+NSpan(1)*I2+NSpan(1)*NSpan(2)*J3
+                JP(3,IN) = 1+I1+BS(1)*I2+BS(1)*BS(2)*J3
               endif
             enddo
           endif
 #endif
-
         endif
 
 C Find Jacobian matrix dx/dmesh for adaptative mesh
@@ -738,12 +474,12 @@ C Find dx/dmesh
               do IN = -NN,NN
                 if (mtype .eq. 1) then
                   DXDM(IX,IC) = DXDM(IX,IC) +
-     .                          XMesh(IX,JP(IC,IN)) * DGDM(IN)
+     &                          XMesh(IX,JP(IC,IN)) * DGDM(IN)
                 else
                   DXDM(IX,IC) = DXDM(IX,IC) +
-     .                   ( cell(IX,1) * XMesh(1,JP(IC,IN)) +
-     .                     cell(IX,2) * XMesh(2,JP(IC,IN)) +
-     .                     cell(IX,3) * XMesh(3,JP(IC,IN)) ) * DGDM(IN)
+     &                   ( cell(IX,1) * XMesh(1,JP(IC,IN)) +
+     &                     cell(IX,2) * XMesh(2,JP(IC,IN)) +
+     &                     cell(IX,3) * XMesh(3,JP(IC,IN)) ) * DGDM(IN)
                 endif
               enddo
             enddo
@@ -788,9 +524,9 @@ C avoid floating point errors in ggaxc. JDG & JMS
                 GD(IX,IS) = 0.0_dp
                 do IN = -NN,NN
                   GD(IX,IS) = GD(IX,IS) +
-     .                      DGIDFJ(IX,1,IN) * Dens(JP(1,IN),IS) +
-     .                      DGIDFJ(IX,2,IN) * Dens(JP(2,IN),IS) +
-     .                      DGIDFJ(IX,3,IN) * Dens(JP(3,IN),IS)
+     &                      DGIDFJ(IX,1,IN) * Dens(JP(1,IN),IS) +
+     &                      DGIDFJ(IX,2,IN) * Dens(JP(2,IN),IS) +
+     &                      DGIDFJ(IX,3,IN) * Dens(JP(3,IN),IS)
                 enddo
               enddo
             enddo
@@ -800,36 +536,49 @@ C avoid floating point errors in ggaxc. JDG & JMS
               do IX = 1,3
                 GD(IX,IS) = 0.0_dp
                 do IN = -NN,NN
-                  GD(IX,IS) = GD(IX,IS) +
-     .              DGIDFJ(IX,1,IN) * Dens(JP(1,IN),IS)
+
+                  if (JP(1,IN).gt.0) then
+                    GD(IX,IS) = GD(IX,IS) +
+     &                DGIDFJ(IX,1,IN) * Dens(JP(1,IN),IS)
+                  else
+                    INN = JPNN(1,IN)
+                    if (INN.lt.0) then
+                      GD(IX,IS) = GD(IX,IS) +
+     &                  DGIDFJ(IX,1,IN) * bdensX(-JP(1,IN),-INN,IS)
+                    else
+                      GD(IX,IS) = GD(IX,IS) +
+     &                  DGIDFJ(IX,1,IN) * bdensX(-JP(1,IN),NN+INN,IS)
+                    endif
+                  endif
+
                 enddo
                 do IN = -NN,NN
                   if (JP(2,IN).gt.0) then
                     GD(IX,IS) = GD(IX,IS) +
-     .                DGIDFJ(IX,2,IN) * Dens(JP(2,IN),IS)
+     &                DGIDFJ(IX,2,IN) * Dens(JP(2,IN),IS)
                   else
                     INN = JPNN(2,IN)
                     if (INN.lt.0) then
                       GD(IX,IS) = GD(IX,IS) +
-     .                  DGIDFJ(IX,2,IN) * bdens(-JP(2,IN),-INN,IS)
+     &                  DGIDFJ(IX,2,IN) * bdensY(-JP(2,IN),-INN,IS)
                     else
                       GD(IX,IS) = GD(IX,IS) +
-     .                  DGIDFJ(IX,2,IN) * bdens(-JP(2,IN),NN+INN,IS)
+     &                  DGIDFJ(IX,2,IN) * bdensY(-JP(2,IN),NN+INN,IS)
                     endif
                   endif
                 enddo
                 do IN = -NN,NN
                   if (JP(3,IN).gt.0) then
                     GD(IX,IS) = GD(IX,IS) +
-     .                DGIDFJ(IX,3,IN) * Dens(JP(3,IN),IS)
+     &                DGIDFJ(IX,3,IN) * Dens(JP(3,IN),IS)
                   else
                     INN = JPNN(3,IN)
                     if (INN.lt.0) then
                       GD(IX,IS) = GD(IX,IS) +
-     .                  DGIDFJ(IX,3,IN) * bdens(-JP(3,IN),2*NN-INN,IS)
+     &                  DGIDFJ(IX,3,IN) * bdensZ(-JP(3,IN),-INN,IS)
                     else
                       GD(IX,IS) = GD(IX,IS) +
-     .                  DGIDFJ(IX,3,IN) * bdens(-JP(3,IN),3*NN+INN,IS)
+     &                  DGIDFJ(IX,3,IN) * bdensZ(-JP(3,IN),NN+INN,IS)
                     endif
                   endif
                 enddo
@@ -853,10 +602,10 @@ C Find exchange and correlation energy densities and their
 C derivatives with respect to density and density gradient
           if (GGAfunctl) then
             call ggaxc( XCauth(nf), irel, nspin, D, GD,
-     .                  EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
+     &                  EPSX, EPSC, DEXDD, DECDD, DEXDGD, DECDGD )
           else
             call ldaxc( XCauth(nf), irel, nspin, D, EPSX, EPSC, DEXDD, 
-     .                  DECDD, DVXDN, DVCDN )
+     &                  DECDD, DVXDN, DVCDN )
           endif
 
 C Scale return values by weight for this functional
@@ -896,11 +645,11 @@ C derivatives with respect to density at all points
                   do IC = 1,3
                     do IX = 1,3
                       DX = DX - DVol * Dens(JP(IC,IN),IS) *
-     .                        DEXDGD(IX,IS) * DGIDFJ(IX,IC,IN)
+     &                        DEXDGD(IX,IS) * DGIDFJ(IX,IC,IN)
                       DC = DC - DVol * Dens(JP(IC,IN),IS) *
-     .                        DECDGD(IX,IS) * DGIDFJ(IX,IC,IN)
+     &                        DECDGD(IX,IS) * DGIDFJ(IX,IC,IN)
                       VXC(JP(IC,IN),IS) = VXC(JP(IC,IN),IS) + 
-     .                  (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,IC,IN)
+     &                  (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,IC,IN)
                     enddo
                   enddo
                 enddo
@@ -909,46 +658,70 @@ C derivatives with respect to density at all points
                 do IN = -NN,NN
 
 C X-direction
-                  do IX = 1,3
-                    DX = DX - DVol * Dens(JP(1,IN),IS) *
-     .                      DEXDGD(IX,IS) * DGIDFJ(IX,1,IN)
-                    DC = DC - DVol * Dens(JP(1,IN),IS) *
-     .                      DECDGD(IX,IS) * DGIDFJ(IX,1,IN)
-                    VXC(JP(1,IN),IS) = VXC(JP(1,IN),IS) + 
-     .                (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,1,IN)
-                  enddo
-
+                  if (JP(1,IN).gt.0) then
+                    do IX = 1,3
+                      DX = DX - DVol * Dens(JP(1,IN),IS) *
+     &                      DEXDGD(IX,IS) * DGIDFJ(IX,1,IN)
+                      DC = DC - DVol * Dens(JP(1,IN),IS) *
+     &                      DECDGD(IX,IS) * DGIDFJ(IX,1,IN)
+                      VXC(JP(1,IN),IS) = VXC(JP(1,IN),IS) + 
+     &                  (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,1,IN)
+                    enddo
+                  else
+                    INN = JPNN(1,IN)
+                    if (INN.lt.0) then
+                      do IX = 1,3
+                        DX = DX - DVol * bdensX(-JP(1,IN),-INN,IS) *
+     &                       DEXDGD(IX,IS) * DGIDFJ(IX,1,IN)
+                        DC = DC - DVol * bdensX(-JP(1,IN),-INN,IS) *
+     &                       DECDGD(IX,IS) * DGIDFJ(IX,1,IN)
+                        bvxcX(-JP(1,IN),-INN,IS) = (DEXDGD(IX,IS) + 
+     &                       DECDGD(IX,IS))*DGIDFJ(IX,1,IN) +
+     &                       bvxcX(-JP(1,IN),-INN,IS)
+                      enddo
+                    else
+                      do IX = 1,3
+                        DX = DX - DVol * bdensX(-JP(1,IN),NN+INN,IS) *
+     &                       DEXDGD(IX,IS) * DGIDFJ(IX,1,IN)
+                        DC = DC - DVol * bdensX(-JP(1,IN),NN+INN,IS) *
+     &                       DECDGD(IX,IS) * DGIDFJ(IX,1,IN)
+                        bvxcX(-JP(1,IN),NN+INN,IS) = (DEXDGD(IX,IS) +
+     &                       DECDGD(IX,IS))*DGIDFJ(IX,1,IN) +
+     &                       bvxcX(-JP(1,IN),NN+INN,IS)
+                      enddo
+                    endif
+                  endif
 C Y-direction
                   if (JP(2,IN).gt.0) then
                     do IX = 1,3
                       DX = DX - DVol * Dens(JP(2,IN),IS) *
-     .                      DEXDGD(IX,IS) * DGIDFJ(IX,2,IN)
+     &                      DEXDGD(IX,IS) * DGIDFJ(IX,2,IN)
                       DC = DC - DVol * Dens(JP(2,IN),IS) *
-     .                      DECDGD(IX,IS) * DGIDFJ(IX,2,IN)
+     &                      DECDGD(IX,IS) * DGIDFJ(IX,2,IN)
                       VXC(JP(2,IN),IS) = VXC(JP(2,IN),IS) + 
-     .                  (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,2,IN)
+     &                  (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,2,IN)
                     enddo
                   else
                     INN = JPNN(2,IN)
                     if (INN.lt.0) then
                       do IX = 1,3
-                        DX = DX - DVol * bdens(-JP(2,IN),-INN,IS) *
-     .                        DEXDGD(IX,IS) * DGIDFJ(IX,2,IN)
-                        DC = DC - DVol * bdens(-JP(2,IN),-INN,IS) *
-     .                        DECDGD(IX,IS) * DGIDFJ(IX,2,IN)
-                        bvxc(-JP(2,IN),-INN,IS) = (DEXDGD(IX,IS) + 
-     .                        DECDGD(IX,IS))*DGIDFJ(IX,2,IN) +
-     .                        bvxc(-JP(2,IN),-INN,IS)
+                        DX = DX - DVol * bdensY(-JP(2,IN),-INN,IS) *
+     &                       DEXDGD(IX,IS) * DGIDFJ(IX,2,IN)
+                        DC = DC - DVol * bdensY(-JP(2,IN),-INN,IS) *
+     &                       DECDGD(IX,IS) * DGIDFJ(IX,2,IN)
+                        bvxcY(-JP(2,IN),-INN,IS) = (DEXDGD(IX,IS) + 
+     &                       DECDGD(IX,IS))*DGIDFJ(IX,2,IN) +
+     &                       bvxcY(-JP(2,IN),-INN,IS)
                       enddo
                     else
                       do IX = 1,3
-                        DX = DX - DVol * bdens(-JP(2,IN),NN+INN,IS) *
-     .                        DEXDGD(IX,IS) * DGIDFJ(IX,2,IN)
-                        DC = DC - DVol * bdens(-JP(2,IN),NN+INN,IS) *
-     .                        DECDGD(IX,IS) * DGIDFJ(IX,2,IN)
-                        bvxc(-JP(2,IN),NN+INN,IS) = (DEXDGD(IX,IS) +
-     .                      DECDGD(IX,IS))*DGIDFJ(IX,2,IN) +
-     .                  bvxc(-JP(2,IN),NN+INN,IS)
+                        DX = DX - DVol * bdensY(-JP(2,IN),NN+INN,IS) *
+     &                       DEXDGD(IX,IS) * DGIDFJ(IX,2,IN)
+                        DC = DC - DVol * bdensY(-JP(2,IN),NN+INN,IS) *
+     &                       DECDGD(IX,IS) * DGIDFJ(IX,2,IN)
+                        bvxcY(-JP(2,IN),NN+INN,IS) = (DEXDGD(IX,IS) +
+     &                       DECDGD(IX,IS))*DGIDFJ(IX,2,IN) +
+     &                       bvxcY(-JP(2,IN),NN+INN,IS)
                       enddo
                     endif
                   endif
@@ -957,33 +730,33 @@ C Z-direction
                   if (JP(3,IN).gt.0) then
                     do IX = 1,3
                       DX = DX - DVol * Dens(JP(3,IN),IS) *
-     .                  DEXDGD(IX,IS) * DGIDFJ(IX,3,IN)
+     &                  DEXDGD(IX,IS) * DGIDFJ(IX,3,IN)
                       DC = DC - DVol * Dens(JP(3,IN),IS) *
-     .                  DECDGD(IX,IS) * DGIDFJ(IX,3,IN)
+     &                  DECDGD(IX,IS) * DGIDFJ(IX,3,IN)
                       VXC(JP(3,IN),IS) = VXC(JP(3,IN),IS) + 
-     .                  (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,3,IN)
+     &                  (DEXDGD(IX,IS)+DECDGD(IX,IS))*DGIDFJ(IX,3,IN)
                     enddo
                   else
                     INN = JPNN(3,IN)
                     if (INN.lt.0) then
                       do IX = 1,3
-                        DX = DX - DVol * bdens(-JP(3,IN),2*NN-INN,IS) *
-     .                    DEXDGD(IX,IS) * DGIDFJ(IX,3,IN)
-                        DC = DC - DVol * bdens(-JP(3,IN),2*NN-INN,IS) *
-     .                    DECDGD(IX,IS) * DGIDFJ(IX,3,IN)
-                        bvxc(-JP(3,IN),2*NN-INN,IS) = (DEXDGD(IX,IS) + 
-     .                    DECDGD(IX,IS)) * DGIDFJ(IX,3,IN) + 
-     .                    bvxc(-JP(3,IN),2*NN-INN,IS)
+                        DX = DX - DVol * bdensZ(-JP(3,IN),-INN,IS) *
+     &                       DEXDGD(IX,IS) * DGIDFJ(IX,3,IN)
+                        DC = DC - DVol * bdensZ(-JP(3,IN),-INN,IS) *
+     &                       DECDGD(IX,IS) * DGIDFJ(IX,3,IN)
+                        bvxcZ(-JP(3,IN),-INN,IS) = (DEXDGD(IX,IS) + 
+     &                       DECDGD(IX,IS)) * DGIDFJ(IX,3,IN) + 
+     &                       bvxcZ(-JP(3,IN),-INN,IS)
                       enddo
                     else
                       do IX = 1,3
-                        DX = DX - DVol * bdens(-JP(3,IN),3*NN+INN,IS) *
-     .                    DEXDGD(IX,IS) * DGIDFJ(IX,3,IN)
-                        DC = DC - DVol * bdens(-JP(3,IN),3*NN+INN,IS) *
-     .                    DECDGD(IX,IS) * DGIDFJ(IX,3,IN)
-                        bvxc(-JP(3,IN),3*NN+INN,IS) = (DEXDGD(IX,IS) + 
-     .                    DECDGD(IX,IS))*DGIDFJ(IX,3,IN) +
-     .                    bvxc(-JP(3,IN),3*NN+INN,IS)
+                        DX = DX - DVol * bdensZ(-JP(3,IN),NN+INN,IS) *
+     &                       DEXDGD(IX,IS) * DGIDFJ(IX,3,IN)
+                        DC = DC - DVol * bdensZ(-JP(3,IN),NN+INN,IS) *
+     &                       DECDGD(IX,IS) * DGIDFJ(IX,3,IN)
+                        bvxcZ(-JP(3,IN),NN+INN,IS) = (DEXDGD(IX,IS) + 
+     &                       DECDGD(IX,IS))*DGIDFJ(IX,3,IN) +
+     &                       bvxcZ(-JP(3,IN),NN+INN,IS)
                       enddo
                     endif
                   endif
@@ -998,7 +771,7 @@ C Z-direction
                 do JS = 1, nspin
                   KS = JS + (IS-1)*nspin
                   DVXCDN(IP,JS,IS) = DVXCDN(IP,JS,IS) + 
-     .              DVXDN(KS) + DVCDN(KS)
+     &              DVXDN(KS) + DVCDN(KS)
                 enddo
               endif
             endif
@@ -1011,7 +784,7 @@ C originated by the deformation of the mesh with strain
               do IX = 1,3
                 do IS = 1,nspin
                   stress(IX,JX) = stress(IX,JX) - DVol * GD(IX,IS) *
-     .                             ( DEXDGD(JX,IS) + DECDGD(JX,IS) )
+     &                             ( DEXDGD(JX,IS) + DECDGD(JX,IS) )
                 enddo
               enddo
             enddo
@@ -1026,121 +799,21 @@ C End of loop over functionals
       enddo
       enddo
 
-
 #ifdef MPI
 C Return buffer region contributions to VXC to their correct nodes
-  992 if (GGA.and.Nodes.gt.1) then
-        if (NoLocalPoints) goto 993
-
-C Exchange density information in the Z-direction
-        if (NMesh(3).ne.NMeshG(3)) then
-
-C Loop over points of buffer region
-          do in = 1,nn
-
-C Loop over spins
-            do is = 1,nspin
-
-C Post VXC receive
-              NSwap = NSpan(1)*NSpan(2)
-              Tag = 8*in + 2*is
-              call MPI_IRecv(bdens(1,2*nn+in,is),NSwap,MPI_grid_real,
-     .             Pleft3,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
-              call MPI_IRecv(bdens(1,3*nn+in,is),NSwap,MPI_grid_real,
-     .             Pright3,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
-
-C Post VXC send
-              NSwap = PMesh(1,4)*PMesh(2,4)
-              call MPI_ISend(bvxc(1,3*nn+in,is),NSwap,MPI_grid_real,
-     .          Pright3,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
-              NSwap = PMesh(1,3)*PMesh(2,3)
-              call MPI_ISend(bvxc(1,2*nn+in,is),NSwap,MPI_grid_real,
-     .          Pleft3,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
-
-C Wait for transfers to complete
-              call MPI_WaitAll(4,Requests,Statuss,MPIerror)
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-
-            enddo
-
-          enddo
-
+      if (GGA.and.Nodes.gt.1) then
+        if (BS(1).ne.NMeshG(1)) then
+          call gathExtMeshData( iDistr, 1, BS(2)*BS(3), NSM, NN, NSPIN,
+     &                          maxp, NMeshG, bvxcX, VXC )
         endif
-
-C Exchange density information in the Y-direction
-        if (NMesh(2).ne.NMeshG(2)) then
-
-C Loop over points of buffer region
-          do in = 1,nn
-
-C Loop over spins
-            do is = 1,nspin
-
-C Post VXC receives
-              NSwap = NSpan(1)*NSpan(3)
-              Tag = 8*in + 2*is
-              call MPI_IRecv(bdens(1,in,is),NSwap,MPI_grid_real,
-     .          Pleft2,Tag+1,MPI_Comm_World,Requests(1),MPIerror)
-              call MPI_IRecv(bdens(1,nn+in,is),NSwap,MPI_grid_real,
-     .          Pright2,Tag+2,MPI_Comm_World,Requests(2),MPIerror)
-
-C Post VXC sends
-              NSwap = PMesh(1,2)*PMesh(3,2)
-              call MPI_ISend(bvxc(1,nn+in,is),NSwap,MPI_grid_real,
-     .          Pright2,Tag+1,MPI_Comm_World,Requests(3),MPIerror)
-              NSwap = PMesh(1,1)*PMesh(3,1)
-              call MPI_ISend(bvxc(1,in,is),NSwap,MPI_grid_real,
-     .          Pleft2,Tag+2,MPI_Comm_World,Requests(4),MPIerror)
-
-C Wait for transfers to complete
-              call MPI_WaitAll(4,Requests,Statuss,MPIerror)
-              call MPI_Barrier(MPI_Comm_World,MPIerror)
-
-            enddo
-
-          enddo
-
+        if (BS(2).ne.NMeshG(2)) then
+          call gathExtMeshData( iDistr, 2, BS(1)*BS(3), NSM, NN, NSPIN,
+     &                          maxp, NMeshG, bvxcY, VXC )
         endif
-
-C Wait for end of transfers
-  993   call MPI_Barrier(MPI_Comm_World,MPIerror)
-        if (NoLocalPoints) goto 999
-
-C Return buffer VXC values to main array
-        if (NMesh(2).ne.NMeshG(2)) then
-          do is = 1,nspin
-            do in = 1,nn
-              IDen1 = (in-1)*NSpan(1) 
-              IDen2 = (NMesh(2)-in)*NSpan(1) 
-              do ix = 1,NMesh(3)
-                do ic = 1,NMesh(1)
-                  VXC(IDen1+ic,is) = VXC(IDen1+ic,is) +
-     .              bdens((ix-1)*NSpan(1)+ic,in,is)
-                  VXC(IDen2+ic,is) = VXC(IDen2+ic,is) +
-     .              bdens((ix-1)*NSpan(1)+ic,nn+in,is)
-                enddo
-                IDen1 = IDen1 + NSpan(1)*NSpan(2)
-                IDen2 = IDen2 + NSpan(1)*NSpan(2)
-              enddo
-            enddo
-          enddo
+        if (BS(3).ne.NMeshG(3)) then
+          call gathExtMeshData( iDistr, 3, BS(1)*BS(2), NSM, NN, NSPIN,
+     &                          maxp, NMeshG, bvxcZ, VXC )
         endif
-
-        if (NMesh(3).ne.NMeshG(3)) then
-          do is = 1,nspin
-            do in = 1,nn
-              IDen1 = NSpan(1)*NSpan(2)*(in-1)
-              IDen2 = NSpan(1)*NSpan(2)*(NMesh(3)-in)
-              do ix = 1,NSpan(1)*NMesh(2)
-                VXC(IDen1+ix,is) = VXC(IDen1+ix,is) +
-     .            bdens(ix,2*nn+in,is)
-                VXC(IDen2+ix,is) = VXC(IDen2+ix,is) +
-     .            bdens(ix,3*nn+in,is)
-              enddo
-            enddo
-          enddo
-        endif
-
       endif
 #endif
 
@@ -1163,7 +836,7 @@ C Divide by energy unit
         do I3 = 0,NMesh(3)-1
         do I2 = 0,NMesh(2)-1
         do I1 = 0,NMesh(1)-1
-          IP = 1 + I1 + NSpan(1) * I2 + NSpan(1) * NSpan(2) * I3
+          IP = 1 + I1 + BS(1) * I2 + BS(1) * BS(2) * I3
           VXC(IP,IS) = VXC(IP,IS) / EUnit
         enddo
         enddo
@@ -1181,7 +854,7 @@ C Divide by energy unit
           do I3 = 0,NMesh(3)-1
           do I2 = 0,NMesh(2)-1
           do I1 = 0,NMesh(1)-1
-            IP = 1 + I1 + NSpan(1) * I2 + NSpan(1) * NSpan(2) * I3
+            IP = 1 + I1 + BS(1) * I2 + BS(1) * BS(2) * I3
             DVXCDN(IP,JS,IS) = DVXCDN(IP,JS,IS) / EUnit
           enddo
           enddo
@@ -1194,27 +867,27 @@ C Re-entry point for nodes with no mesh points stored locally
   999 continue
 
 #ifdef MPI
-C Collect together quantities
-      Buffer(1) = EX
-      Buffer(2) = EC
-      Buffer(3) = DX
-      Buffer(4) = DC
-      call MPI_AllReduce(Buffer,Buffer2,4,MPI_double_precision,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
-      EX = Buffer2(1)
-      EC = Buffer2(2)
-      DX = Buffer2(3)
-      DC = Buffer2(4)
-
 C Free memory
-      if (GGA.and.Nodes.gt.1.and..not.NoLocalPoints) then
-        call de_alloc( bdens, name='bdens' )
-        call de_alloc( bvxc, name='bvxc' )
-        call de_alloc( PMesh, name='PMesh' )
+      if (GGA.and.Nodes.gt.1) then
+        if (BS(1).ne.NMeshG(1)) then
+          call de_alloc( bdensX, name='bdensX' )
+          call de_alloc( bvxcX, name='bvxcX' )
+        endif
+        if (BS(2).ne.NMeshG(2)) then
+          call de_alloc( bdensY, name='bdensY' )
+          call de_alloc( bvxcY, name='bvxcY' )
+        endif
+        if (BS(3).ne.NMeshG(3)) then
+          call de_alloc( bvxcZ, name='bvxcZ' )
+          call de_alloc( bdensZ, name='bdensZ' )
+        endif
       endif
 #endif
 
 C Stop time counter
       call timer( 'cellXC', 2 )
 
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
       end

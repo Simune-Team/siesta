@@ -36,9 +36,10 @@ C ********************************************************************
 C
 C  Modules
 C
-      use precision, only: dp, grid_p
+      use precision,  only : dp, grid_p
       use parallel,   only : Node, Nodes, ProcessorY
-      use sys, only: die
+      use sys,        only : die
+      use mesh,       only : meshLim
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -54,11 +55,8 @@ C
       external          reclat, volcel
 
 C Internal variables and arrays
-      integer           I, I1, I2, I3, IX, 
-     .                  ProcessorZ, Py, Pz, I20, I30,
-     .                  MG1, MG2, MG3, Yoffset, Zoffset,
-     .                  BlockSizeY, BlockSizeZ, NRemY, NRemZ,
-     .                  MeshNsm(3)
+      integer           I, I1, I2, I3, IX, I20, I30,
+     &                  MG1, MG2, MG3, Yoffset, Zoffset
       real(dp)          D(3), dvol, DX, Rcell(3,3), X0L(3)
 #ifdef MPI
       integer           MPIerror
@@ -83,30 +81,9 @@ C Find origin in lattice coordinates
 C Initialize dipole
       dipol(1:3) = 0.0_dp
 
-C Check that ProcessorY is a factor of the number of processors
-      if (mod(Nodes,ProcessorY).gt.0)
-     $     call die('ERROR: ProcessorY must be a factor of the' //
-     $     ' number of processors!')
-      ProcessorZ = Nodes/ProcessorY
-
-C Calculate coarse mesh sizes
-      MeshNsm(1) = MG1/nsm
-      MeshNsm(2) = MG2/nsm
-      MeshNsm(3) = MG3/nsm
-
-C Calculate blocking sizes
-      BlockSizeY = (MeshNsm(2)/ProcessorY)*nsm
-      NRemY = (MG2 - ProcessorY*BlockSizeY)/nsm
-      BlockSizeZ = (MeshNsm(3)/ProcessorZ)*nsm
-      NRemZ = (MG3 - ProcessorZ*BlockSizeZ)/nsm
-
-C Calculate coordinates of current node in processor grid
-      Py = (Node/ProcessorZ)+1
-      Pz = Node - (Py - 1)*ProcessorZ + 1
-
 C Calculate starting point for grid
-      Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-      Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
+      Yoffset = (meshLim(1,2)-1)*nsm
+      Zoffset = (meshLim(1,3)-1)*nsm
 
 C Find dipole by direct integration allowing for block distributed
 C structure of rho
@@ -135,10 +112,9 @@ C structure of rho
       enddo
 
 #ifdef MPI
-      call MPI_AllReduce(dipol,d,3,MPI_double_precision,MPI_sum,
-     .  MPI_Comm_World,MPIerror)
+      call MPI_AllReduce( dipol, d, 3, MPI_double_precision, MPI_sum,
+     &                    MPI_Comm_World, MPIerror )
       dipol(1:3) = d(1:3)
 #endif
-
       end
 

@@ -85,6 +85,12 @@ C Internal variables and arrays
       real(sp), dimension(:), allocatable :: temp
 
 #ifdef MPI
+#ifdef DEBUG
+        call write_debug( 'ERROR: write_rho not ready yet' )
+#endif
+      return
+      call die('ERROR: Not ready for multiple data distributions')
+
 C Work out density block dimensions
       if (mod(Nodes,ProcessorY).gt.0)
      $     call die('ERROR: ProcessorY must be a factor of the' //

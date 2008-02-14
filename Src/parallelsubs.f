@@ -16,7 +16,6 @@ C
       use spatial,  only : lspatial, nNode, nL2G, nG2L,
      .                     nOrbPerNode
       use sys,      only : die
-
       implicit none
 
       contains
@@ -213,9 +212,7 @@ C  Substract local base line to find element number within the block
 
 C  Calculate global index
         GOrb = (LBlock*Nodes + Node)*BlockSize + LEle
-
       endif
-  
       return
       end  subroutine LocalToGlobalOrb
 
@@ -309,7 +306,7 @@ C  Find grid indices along each axis
 C  Call subroutine to find node number from global XYZ index
       call WhichMeshXYZNode( Mesh, Nxyz, Nodes, Node)
 
-      end   subroutine WhichMeshNode
+      end subroutine WhichMeshNode
 
       subroutine HowManyMeshPerNode(Nxyz, Node, Nodes, NMeshPN, NxyzL)
 C

@@ -18,7 +18,7 @@
       use siesta_geom
       use m_dhscf, only: dhscf
       use atomlist, only: indxuo, iaorb, lastkb, lasto, datm, no_l,
-     .                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
+     &                    iphkb, no_u, no_s, iza, iphorb, rmaxo, indxua
       use fdf, only : fdf_boolean
       use writewave,    only: wwave
       use siesta_cml
@@ -38,6 +38,7 @@
       use m_gamma 
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
+      use moreMeshSubs,      only: resetMeshDistr
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -319,8 +320,11 @@
                     ! todo: make all these optional
       endif
 
-! Find local density of states
+C     Find local density of states
       call local_DOS()
+
+C     Reset mesh distributions
+      call resetMeshDistr( )
 
       call de_alloc( ebk, name="ebk")
 

@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      SUBROUTINE TIMER (PROG,IOPT)
+      subroutine timer( prog, iopt )
       use parallel, only: IOnode
 
       character(len=*) prog
@@ -19,12 +19,11 @@ c
       call timer1(prog,iopt)
       if (IOnode) call elap1(prog,iopt)
 
-      end
-!----------------------------------------------------------------
+      end subroutine timer
 
-      SUBROUTINE TIMER1 (PROG,IOPT)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+      subroutine timer1( prog,iopt )
 C  FINDS AND PRINTS THE CPU TIME SPENT IN DIFFERENT ROUTINES AND/OR
 C   PROGRAM SECTIONS. IT MUST BE CALLED WITH IOPT=0 AT THE BEGINNING
 C   OF EACH ROUTINE AND WITH IOPT=1 AT THE END OF IT.
@@ -170,13 +169,12 @@ C Sum values across Nodes
            WRITE(6,*) 'timer: INVALID OPTION IOPT =',IOPT
          endif
       ENDIF
-      END
+      END subroutine timer1
 C
 c-----------------------------------------------------------------
 C
-      SUBROUTINE elap1 (PROG,IOPT)
 
-
+      subroutine elap1( prog,iopt )
 C  FINDS AND PRINTS THE WALL CLOCK SPENT IN DIFFERENT ROUTINES AND/OR
 C   PROGRAM SECTIONS. IT MUST BE CALLED WITH IOPT=0 AT THE BEGINNING
 C   OF EACH ROUTINE AND WITH IOPT=1 AT THE END OF IT.
@@ -275,6 +273,6 @@ C  J.SOLER (JSOLER AT EMDUAM11) DEC/90
       ELSE
            WRITE(wt,*) 'elap: INVALID OPTION IOPT =',IOPT
       ENDIF
-      END
+      end subroutine elap1
 
 

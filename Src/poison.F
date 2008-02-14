@@ -72,6 +72,9 @@ C
 
       data K0   /3*0.0_dp/
       data TINY /1.0e-15_dp/
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 2 )
+#endif
 
 #ifdef MPI
 C Place MPI barrier here so that any waiting time for all
@@ -97,7 +100,7 @@ C Find reciprocal lattice vectors
 C Find maximun planewave cutoff
       NP = N1 * N2 * N3
       G2MAX = 1.0e30_dp
-      call chkgmx( K0, B, Mesh, G2MAX )
+      call CHKGMX( K0, B, Mesh, G2MAX )
 
 C Copy density to complex array
       do I = 1, NP
@@ -211,6 +214,9 @@ C Stop time counter
 C Free local memory
       call de_alloc( CG, name='CG' )
 
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
       return
       end
 

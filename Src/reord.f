@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      SUBROUTINE REORD( FCLUST, FSEQ, NM, NSM, ITR )
+      subroutine reord( fclust, fseq, nm, nsm, itr )
 
 C ********************************************************************
 C Re-orders a clustered data array into a sequential one and viceversa

@@ -56,8 +56,11 @@
       real(dp) :: g2max
 
 !------------------------------------------------------------------------- BEGIN
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 13 )
+#endif
       if (cml_p) then
-         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
+        call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
       endif
 
       ! Normalize density matrix to exact charge
@@ -103,24 +106,25 @@
 
 ! Non-local-pseudop: energy, forces, stress and matrix elements .......
 ! Add SCF contribution to energy and matrix elements ..................
-        g2max = g2cut
+      g2max = g2cut
 
-          nullify(fal)
-          allocate( fal(3,na_u) )
+      nullify(fal)
+      allocate( fal(3,na_u) )
 
-          ifa  = 0
-          istr = 0
-          ihmat = 1
-          call dhscf( nspin, no_s, iaorb, iphorb, no_l,
-     .                no_u, na_u, na_s, isa, xa, indxua, 
-     .                ucell, mscell, g2max, ntm,
-     .                ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
-     .                maxnh, numh, listhptr, listh, Dscf, Datm,
-     .                maxnh, numh, listhptr, listh, H,
-     .                Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .                Exc, Dxc, dipol, fa, stress, fal, stressl)
+      ifa  = 0
+      istr = 0
+      ihmat = 1
 
-          deallocate( fal )
+      call dhscf( nspin, no_s, iaorb, iphorb, no_l,
+     .            no_u, na_u, na_s, isa, xa, indxua, 
+     .            ucell, mscell, g2max, ntm,
+     .            ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
+     .            maxnh, numh, listhptr, listh, Dscf, Datm,
+     .            maxnh, numh, listhptr, listh, H,
+     .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     .            Exc, Dxc, dipol, fa, stress, fal, stressl)
+
+      deallocate( fal )
 ! ..................
 !         print *, "hi despues de dhscf", Node
 !         call pxfflush(6)
@@ -131,29 +135,32 @@
 ! of the former SCF step
 
 !** Can we trust the Entropy if iscf == 1 ??
-        Entropy = 0.0_dp
-        if (isolve .eq. 0) then
-          if (istp.gt.1 .or. iscf.gt.1) then
-            Entropy = Entrop
-          endif
+      Entropy = 0.0_dp
+      if (isolve .eq. 0) then
+        if (istp.gt.1 .or. iscf.gt.1) then
+          Entropy = Entrop
         endif
+      endif
 
 ! Save present density matrix ........................................
-        do is = 1,nspin
-          do io = 1,nh
-            Dold(io,is) = Dscf(io,is)
-            Eold(io,is) = Escf(io,is)
-          enddo
+      do is = 1,nspin
+        do io = 1,nh
+          Dold(io,is) = Dscf(io,is)
+          Eold(io,is) = Escf(io,is)
         enddo
+      enddo
 
 !  It is wasteful to write over and over H and S, as there are
 !  no different files.
 ! Save Hamiltonian and overlap matrices ............................
-        if (savehs) then
-          call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
-     $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
-     $               xijo )
-        endif
+      if (savehs) then
+        call iohs( 'write', gamma, no_u, no_s, nspin, indxuo,
+     $             maxnh, numh, listhptr, listh, H, S, qtot, temp,
+     $             xijo )
+      endif
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine setup_hamiltonian
       END module m_setup_hamiltonian

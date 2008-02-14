@@ -72,6 +72,7 @@
 ! ..................
 
 ! Save density matrix on disk, after mixing ...........................
+#ifdef RGT
           if (writedm) then
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
               if (istp.eq.1)
@@ -82,6 +83,7 @@
      .                   numh, listhptr, listh, Dscf, found )
             endif
           endif
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine mixer
 

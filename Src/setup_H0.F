@@ -1,5 +1,3 @@
-
-
       module m_setup_H0
       private
       public :: setup_H0
@@ -7,8 +5,8 @@
 
       subroutine setup_H0()
       
-      ! Computes non-self-consistent part of the Hamiltonian
-      ! and initializes data structures on the grid.
+C     Computes non-self-consistent part of the Hamiltonian
+C     and initializes data structures on the grid.
       
       USE m_normalize_dm, only: normalize_dm
       USE siesta_options
@@ -56,112 +54,94 @@
       real(dp) :: g2max
 
 !------------------------------------------------------------------------- BEGIN
-
-      ! Normalize density matrix to exact charge
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 12 )
+#endif
+C     Normalize density matrix to exact charge
       call normalize_dm(first=.true.)
 
-      ! Initialize Hamiltonian ........................................
+C     Initialize Hamiltonian
       H = 0.0_dp
 
-! Self-energy of isolated ions ........................................
- 
-          Eions = 0.0_dp
-          do ia = 1,na_u
-            is = isa(ia)
-            Eions = Eions + uion(is)
-          enddo
-        
-! ..................
-!
-! In these routines, add a flag to tell them NOT to compute
-! forces and stresses in this first pass.   ********
+C     Self-energy of isolated ions
+      Eions = 0.0_dp
+      do ia = 1,na_u
+        is = isa(ia)
+        Eions = Eions + uion(is)
+      enddo
 
-! Neutral-atom: energy, forces and stress ............................
-! First time for energy, last time for forces
-          call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
-     .               isa, Ena, fa, stress, forces_and_stress=.false.)
-          call dnaefs(na_u, na_s, scell, xa, indxua, rmaxv,
-     .                isa, DEna, fa, stress, forces_and_stress=.false.) 
-          Ena = Ena + DEna
-        
-! ..................
+C     In these routines, add a flag to tell them NOT to compute
+C     forces and stresses in this first pass.   ********
 
-! Kinetic: energy, forces, stress and matrix elements .................
-          call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo, no_l,
-     .                 maxnh, maxnh, lasto, iphorb, isa, 
-     .                 numh, listhptr, listh, numh, listhptr, listh, 
-     .                 min(nspin,2), Dscf, Ekin, dummy, stressl, H,
-     .                 forces_and_stress=.false.) 
+C     Neutral-atom: energy, forces and stress ............................
+C     First time for energy, last time for forces
+      call naefs(na_u, na_s, scell, xa, indxua, rmaxv,
+     &           isa, Ena, fa, stress, forces_and_stress=.false.)
+      call dnaefs(na_u, na_s, scell, xa, indxua, rmaxv,
+     &            isa, DEna, fa, stress, forces_and_stress=.false.) 
+      Ena = Ena + DEna
+      
+C     Kinetic: energy, forces, stress and matrix elements .................
+      call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo, no_l,
+     &             maxnh, maxnh, lasto, iphorb, isa, 
+     &             numh, listhptr, listh, numh, listhptr, listh, 
+     &             min(nspin,2), Dscf, Ekin, dummy, stressl, H,
+     &             forces_and_stress=.false.) 
 #ifdef MPI
-! Global reduction of energy terms
-          call globalize_sum(Ekin,buffer1)
-          Ekin = buffer1
+C     Global reduction of energy terms
+      call globalize_sum(Ekin,buffer1)
+      Ekin = buffer1
 #endif
-! ..................
 
-! Non-local-pseudop: energy, forces, stress and matrix elements .......
-          call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
-     .                maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
-     .                numh, listhptr, listh, numh, listhptr, listh, 
-     .                min(nspin,2), Dscf, Enl, dummy, stressl, H,
-     .                forces_and_stress=.false.)
-        
+C     Non-local-pseudop: energy, forces, stress and matrix elements .......
+      call nlefsm(scell, na_u, na_s, isa, xa, indxua, 
+     &            maxnh, maxnh, lasto, lastkb, iphorb, iphKB, 
+     &            numh, listhptr, listh, numh, listhptr, listh, 
+     &            min(nspin,2), Dscf, Enl, dummy, stressl, H,
+     &            forces_and_stress=.false.)
+
 #ifdef MPI
-! Global reduction of energy terms
-          call globalize_sum(Enl,buffer1)
-          Enl = buffer1
+C     Global reduction of energy terms
+      call globalize_sum(Enl,buffer1)
+      Enl = buffer1
 #endif
         
-! ..................
+C     Save partial Hamiltonian (non-SCF part) ......................
+      do io = 1,nh
+        H0(io) = H(io,1)
+      enddo
 
-! Save partial Hamiltonian (non-SCF part) ......................
-          do io = 1,nh
-            H0(io) = H(io,1)
-          enddo
+C     Non-SCF part of total energy .......................................
+      E0 = -Eions + Ena + Ekin + Enl
 
-! ..................
+C     Allocate all the structures needed for grid work (formerly
+C     in the first section of dhscf  *******
 
-! Non-SCF part of total energy .......................................
-          E0 = -Eions + Ena + Ekin + Enl
+C     Output memory use after setting up the structures
+      if (istp.eq.1) call printmemory( 6, 0 )
 
-! Allocate all the structures needed for grid work (formerly
-! in the first section of dhscf  *******
+C     Metadynamics energy
+      if (lMetaForce) then
+        call meta(xa,na_u,ucell,Emeta,fa,stress,.false.,.false.)
+      endif
 
-! Output memory use after setting up the structures
-        if (istp.eq.1) call printmemory( 6, 0 )
+C     Add on force field contribution to energy
+      call twobody( na_u,xa,isa,ucell,Emm,
+     &              ifa=0,fa=fa,istr=0,stress=stress)
 
-         
-!         print *, "hi", Node
-!         call pxfflush(6)
-! #ifdef MPI
-!         call MPI_Barrier(MPI_Comm_World, mpierr)
-! #endif
+C     This will take care of possible changes to the mesh and atomic-related
+C     mesh structures for geometry changes
+      g2max = g2cut
+      call dhscf_init( nspin, no_s, iaorb, iphorb,
+     &                 no_l, no_u, na_u, na_s,
+     &                 isa, xa, indxua, ucell,
+     &                 mscell, G2max, ntm,
+     &                 maxnh, numh, listhptr, listh, datm,
+     &                 dummy, stressl)
 
-        ! Metadynamics energy
-        if (lMetaForce) then
-          call meta(xa,na_u,ucell,Emeta,fa,stress,.false.,.false.)
-        endif
-
-        ! Add on force field contribution to energy
-        call twobody(na_u,xa,isa,ucell,Emm,
-     $       ifa=0,fa=fa,istr=0,stress=stress)
-
-!         print *, "hi post twobody", Node
-!         call pxfflush(6)
-
-!
-!       This will take care of possible changes to the mesh and atomic-related
-!       mesh structures for geometry changes
-!
-        g2max = g2cut
-        call dhscf_init(nspin, no_s, iaorb, iphorb,
-     $                      no_l, no_u, na_u, na_s,
-     $                      isa, xa, indxua, ucell,
-     $                      mscell, G2max, ntm,
-     $                      maxnh, numh, listhptr, listh, datm,
-     $                      dummy, stressl)
-
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
 !--------------------------------------------------------------------------- END
       END subroutine setup_H0
       END module m_setup_H0
-      

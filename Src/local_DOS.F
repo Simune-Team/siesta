@@ -20,7 +20,6 @@
       use sys,            only: die                      
       use m_mpi_utils,    only : broadcast               
       use files,          only : slabel     
-      use m_dhscf,        only : dhscf             
       use Kpoint_grid
       use parallel,       only: IOnode                   
       use files,          only : label_length            
@@ -30,6 +29,7 @@
       use m_eo
       use m_spin,         only: nspin, qs, efs
       use m_gamma
+      use m_dhscf,        only: dhscf
       implicit none
 
       character(len=label_length+5), external :: paste

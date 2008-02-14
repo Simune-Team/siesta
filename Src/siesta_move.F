@@ -45,6 +45,7 @@
 
 
 !------------------------------------------------------------------------- BEGIN
+      call timer( 'SIMOVE', 1 )
       ! Save the last coordinates for which the density matrix 
       ! has been calculated
  
@@ -244,8 +245,8 @@
 ! Output memory use at the end of this geometry step
       if (cml_p) call cmlEndStep(mainXML)
       call printmemory( 6, 0 )
+      call timer( 'SIMOVE', 2 )
       call timer( 'IterMD', 2 )
-
 ! End of one MD step - flush stdout
       if (ionode) call pxfflush(6)
 

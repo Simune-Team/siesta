@@ -14,9 +14,15 @@
       use m_post_scf_work
       use m_mixer
       USE siesta_options
-      use parallel, only: IOnode
+      use parallel,     only : IOnode
       use m_state_analysis
       use m_steps
+#ifndef RGT
+      use sparse_matrices
+      use m_spin,   only: nspin
+      use atomlist, only: no_l, no_s
+      use m_ordern
+#endif
 
       implicit none
 
@@ -25,72 +31,119 @@
       integer  :: iscf
       logical  :: first, last
       real(dp) :: dDmax     ! Max. change in density matrix elements
-
+#ifndef RGT
+      logical  :: found
+#endif
 !------------------------------------------------------------------------- BEGIN
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 10 )
+#endif
+C     Initialization tasks for a given geometry
+#ifdef DEBUG
+      call write_debug( '  PRE state_init' )
+#endif
+      call state_init( istep )
 
-        ! Initialization tasks for a given geometry
-        call state_init( istep )
+C     The current structure of the loop tries to reproduce the
+C     historical Siesta usage. It should be made more clear.
 
-        ! The current structure of the loop tries to reproduce the
-        ! historical Siesta usage. It should be made more clear.
+C     Start of SCF loop
+      iscf  = 1
+      first = .true.
+      last  = .false.
 
-        ! Start of SCF loop
+C     The SCF loop is executed at least once, 
+C     except if nscf <= 0.
+      if (nscf <= 0) then
+         last = .true.
+      endif
 
-        iscf  = 1
-        first = .true.
-        last  = .false.
+#ifdef DEBUG
+        call write_debug( '  PRE setup_H0' )
+#endif
+      call setup_H0()
 
-        ! The SCF loop is executed at least once, 
-        ! except if nscf <= 0.
-        if (nscf <= 0) then
-           last = .true.
+      DO WHILE (.not. last)
+        call timer( 'IterSCF', 1 )
+#ifdef DEBUG
+        call write_debug( '  PRE setup_hamiltonian' )
+#endif
+
+C       Will use H0 computed above
+        call setup_hamiltonian( iscf )
+
+#ifdef DEBUG
+        call write_debug( '  PRE compute_dm' )
+#endif
+        call timer( 'compute_dm', 1 )
+        call compute_dm( iscf )
+        call timer( 'compute_dm', 2 )
+
+#ifdef DEBUG
+        call write_debug( '  PRE mixer' )
+#endif
+
+        call mixer( iscf, dDmax )
+
+#ifdef DEBUG
+        call write_debug( '  PRE scfconvergence_test' )
+#endif
+        call timer( 'SCFconv', 1 )
+        call scfconvergence_test( first, iscf, last, dDmax )
+        call timer( 'SCFconv', 2 )
+
+        call timer( 'IterSCF', 2 )
+        if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
+
+        iscf = iscf + 1
+        first = .false.
+
+C       The last scheduled iteration is used to compute forces
+C       and stresses, hence the exit if iscf==nscf.
+C       The ">" clause catches the nscf==1 case. For this,
+        if (iscf >= nscf) then
+          last = .true.
         endif
-        
-        call setup_H0()
+      ENDDO
 
-        DO WHILE (.not. last)
-          call timer( 'IterSCF', 1 )
+#ifndef RGT
+C
+C     RGT: Write DM and LWF files
+C
+#ifdef DEBUG
+        call write_debug( '  PRE Write DM' )
+#endif
+      call iodm( 'write', maxnh, no_l, nspin,
+     &                   numh, listhptr, listh, Dscf, found )
 
-          ! Will use H0 computed above
-          call setup_hamiltonian( iscf )
+#ifdef DEBUG
+        call write_debug( '  PRE Write LWF' )
+#endif
+      if (isolve .eq. 1) then
+        call iolwf( 'write', no_s, nbasisCloc, no_l, maxnc, 
+     &              found, nspin)
+      endif
+#endif
 
-          call timer( 'compute_dm', 1 )
-          call compute_dm( iscf )
-          call timer( 'compute_dm', 2 )
+C       End of standard SCF loop.
+C       Do one more pass to compute forces and stresses
+      if (last) then
+#ifdef DEBUG
+        call write_debug( '  PRE post_scf_work' )
+#endif
+        call post_scf_work( iscf )
+      else
+        STOP 'Bad logic in SCF loop'
+      endif
 
-          call mixer( iscf, dDmax )
+#ifdef DEBUG
+        call write_debug( '  PRE state_analysis' )
+#endif
+      call state_analysis( istep )
 
-          call timer( 'SCFconv', 1 )
-          call scfconvergence_test( first, iscf, last, dDmax )
-          call timer( 'SCFconv', 2 )
-
-          call timer( 'IterSCF', 2 )
-          if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
-
-          iscf = iscf + 1
-          first = .false.
-
-          ! The last scheduled iteration is used to compute forces
-          ! and stresses, hence the exit if iscf==nscf.
-          ! The ">" clause catches the nscf==1 case. For this,
-
-          if (iscf >= nscf) then
-            last = .true.
-          endif
-
-        ENDDO
-
-        ! End of standard SCF loop.
-        ! Do one more pass to compute forces and stresses
-
-        if (last) then
-          call post_scf_work( iscf )
-        else
-          STOP 'Bad logic in SCF loop'
-        endif
-
-        call state_analysis( istep )
-
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
 !--------------------------------------------------------------------------- END
         END subroutine siesta_forces
       END module m_siesta_forces

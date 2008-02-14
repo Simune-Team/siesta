@@ -66,7 +66,8 @@ OBJS =  automatic_cell.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cgwf.o chkdim.o chkgmx.o \
 	chempot.o coceri.o constr.o coxmol.o cross.o \
-	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
+	denmat.o denmatlomem.o detover.o dfscf.o diagon.o digcel.o fft3d.o \
+  dhscf.o m_dhscf.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o  extrapolon.o \
@@ -114,7 +115,10 @@ OBJS =  automatic_cell.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o setup_H0.o \
-        final_H_f_stress.o
+        final_H_f_stress.o phionmesh.o initmesh.o \
+        debugmpi.o qsort.o distriphionmesh.o \
+        dscfcomm.o schecomm.o setproc3d.o moremeshsubs.o \
+        cellxc_mod.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -322,7 +326,7 @@ cell_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o
 cell_broyden_optim.o: m_mpi_utils.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
 cellxc.o: alloc.o meshsubs.o parallel.o parallelsubs.o precision.o sys.o
-cellxc.o: xcmod.o
+cellxc.o: xcmod.o cellxc_mod.o
 cgvc.o: conjgr_old.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
 cgvc.o: units.o
 cgvc_zmatrix.o: conjgr.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
@@ -348,9 +352,10 @@ denmatlomem.o: alloc.o globalise.o onmod.o precision.o
 densematrix.o: precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
-dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
+dfscf.o: meshsubs.o parallel.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o forhar.o m_iorho.o meshsubs.o parallel.o parsing.o
-dhscf.o: precision.o siesta_options.o sys.o xcmod.o
+dhscf.o: precision.o siesta_options.o sys.o xcmod.o m_dhscf.o
+dhscf.o: moremeshsubs.o cellxc_mod.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
@@ -361,12 +366,12 @@ diagon.o: precision.o sys.o
 diagpol.o: precision.o sys.o
 diagsprl.o: atomlist.o fermid.o parallel.o parallelsubs.o precision.o
 diagsprl.o: siesta_geom.o sys.o
-dipole.o: parallel.o precision.o sys.o
+dipole.o: parallel.o precision.o sys.o meshsubs.o
 dnaefs.o: atmfuncs.o mneighb.o precision.o
 dynamics.o: atomlist.o files.o ioxv.o m_mpi_utils.o parallel.o precision.o
 dynamics.o: sys.o units.o
 efield.o: atmfuncs.o parallel.o parallelsubs.o parsing.o precision.o
-efield.o: siesta_cml.o sys.o
+efield.o: siesta_cml.o sys.o meshsubs.o
 egandd.o: alloc.o globalise.o m_mpi_utils.o onmod.o onmod.o precision.o sys.o
 eggbox.o: parallel.o parsing.o precision.o
 electrostatic.o: atm_types.o atmfuncs.o atmparams.o precision.o radfft.o
@@ -386,14 +391,14 @@ final_H_f_stress.o: sparse_matrices.o sys.o
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 fixed.o: alloc.o parallel.o parsing.o precision.o
 flib_spline.o: precision.o
-forhar.o: alloc.o meshsubs.o precision.o
+forhar.o: alloc.o meshsubs.o precision.o moremeshsubs.o
 fractional.o: f2kcli.o periodic_table.o precision.o pseudopotential.o sys.o
 gen-basis.o: atom.o basis_io.o basis_specs.o basis_types.o old_atmfuncs.o
 gen-basis.o: parallel.o precision.o sys.o xcmod.o
 globalise.o: alloc.o onmod.o onmod.o precision.o spatial.o
 gradient.o: globalise.o m_mpi_utils.o onmod.o precision.o
 gradientlomem.o: globalise.o onmod.o precision.o
-grdsam.o: dhscf.o parallel.o parsing.o precision.o sys.o
+grdsam.o: parallel.o parsing.o precision.o sys.o m_dhscf.o
 hsparse.o: alloc.o atmfuncs.o listsc.o mneighb.o parallel.o parallelsubs.o
 hsparse.o: precision.o sorting.o sys.o
 idiag.o: parallel.o sys.o
@@ -424,7 +429,7 @@ ksv.o: alloc.o atmfuncs.o densematrix.o ksvinit.o parallel.o parsing.o
 ksv.o: precision.o sys.o
 ksvinit.o: alloc.o parallel.o parsing.o precision.o
 listsc.o: alloc.o
-local_DOS.o: atomlist.o dhscf.o files.o kpoint_grid.o m_energies.o m_eo.o
+local_DOS.o: atomlist.o files.o kpoint_grid.o m_energies.o m_eo.o m_dhscf.o
 local_DOS.o: m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o parallel.o
 local_DOS.o: siesta_geom.o siesta_options.o sparse_matrices.o sys.o
 m_broyddj.o: alloc.o m_mpi_utils.o parallel.o precision.o sys.o
@@ -464,7 +469,7 @@ md_utils.o: precision.o
 memory.o: memoryinfo.o parallel.o precision.o
 memoryinfo.o: precision.o
 meshmatrix.o: alloc.o atomlist.o meshsubs.o parallel.o parallelsubs.o
-meshmatrix.o: precision.o
+meshmatrix.o: precision.o dscfcomm.o
 meshsubs.o: atm_types.o atmfuncs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: radial.o siesta_cml.o
 metaforce.o: parallel.o parsing.o precision.o
@@ -512,6 +517,7 @@ plcharge.o: files.o old_atmfuncs.o parallel.o precision.o
 poison.o: alloc.o parallel.o precision.o sys.o
 post_scf_work.o: atomlist.o final_H_f_stress.o m_energies.o m_spin.o mneighb.o
 post_scf_work.o: siesta_cml.o siesta_geom.o siesta_options.o sparse_matrices.o
+post_scf_work.o: moremeshsubs.o
 projected_DOS.o: atomlist.o kpoint_grid.o m_eo.o m_gamma.o m_mpi_utils.o
 projected_DOS.o: m_spin.o parallel.o precision.o siesta_options.o
 projected_DOS.o: sparse_matrices.o sys.o
@@ -529,22 +535,22 @@ reinit.o: files.o parallel.o precision.o
 remove_intramol_pressure.o: precision.o zmatrix.o
 reoptical.o: parallel.o parsing.o precision.o sys.o
 reord.o: alloc.o precision.o
-rhooda.o: atmfuncs.o atomlist.o meshsubs.o meshsubs.o precision.o
+rhooda.o: atmfuncs.o atomlist.o meshsubs.o precision.o
 rhoofd.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
-rhoofd.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
+rhoofd.o: meshsubs.o parallel.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
-rhoofdsp.o: meshsubs.o meshsubs.o precision.o sys.o
+rhoofdsp.o: meshsubs.o precision.o sys.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
 scfconvergence_test.o: m_energies.o m_wallclock.o parallel.o siesta_cml.o
 scfconvergence_test.o: siesta_options.o write_subs.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
-setup_H0.o: alloc.o atmfuncs.o atomlist.o dhscf.o dnaefs.o kinefsm.o m_dipol.o
+setup_H0.o: alloc.o atmfuncs.o atomlist.o dnaefs.o kinefsm.o m_dipol.o
 setup_H0.o: m_energies.o m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o m_spin.o
 setup_H0.o: m_steps.o m_stress.o metaforce.o molecularmechanics.o naefs.o
 setup_H0.o: nlefsm.o normalize_dm.o parallel.o siesta_geom.o siesta_options.o
-setup_H0.o: sparse_matrices.o sys.o
-setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o dhscf.o m_dipol.o
+setup_H0.o: sparse_matrices.o sys.o m_dhscf.o
+setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o m_dipol.o
 setup_hamiltonian.o: m_energies.o m_forces.o m_gamma.o m_mpi_utils.o m_ntm.o
 setup_hamiltonian.o: m_spin.o m_steps.o m_stress.o metaforce.o
 setup_hamiltonian.o: molecularmechanics.o nlefsm.o normalize_dm.o overfsm.o
@@ -555,7 +561,7 @@ shaper.o: alloc.o atmfuncs.o mneighb.o precision.o
 show_distribution.o: atomlist.o parallel.o parallelsubs.o siesta_geom.o sys.o
 siesta.o: m_steps.o siesta_analysis.o siesta_end.o siesta_forces.o
 siesta.o: siesta_init.o siesta_move.o
-siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o dhscf.o files.o
+siesta_analysis.o: alloc.o atomlist.o bands.o basis_enthalpy.o m_dhscf.o files.o
 siesta_analysis.o: kpoint_grid.o ksv.o ksvinit.o local_DOS.o m_dipol.o
 siesta_analysis.o: m_energies.o m_eo.o m_forces.o m_gamma.o m_mpi_utils.o
 siesta_analysis.o: m_ntm.o m_spin.o m_steps.o parallel.o projected_DOS.o
@@ -604,9 +610,9 @@ typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o
 vmat.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
-vmat.o: meshsubs.o meshsubs.o parallel.o precision.o
+vmat.o: meshsubs.o parallel.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
-vmatsp.o: meshsubs.o meshsubs.o precision.o
+vmatsp.o: meshsubs.o precision.o
 vmb.o: parallel.o precision.o sys.o
 write_md_record.o: atomlist.o m_energies.o m_kinetic.o m_steps.o m_stress.o
 write_md_record.o: md_out.o parallel.o siesta_geom.o siesta_options.o
@@ -632,7 +638,7 @@ m_chempot.o: chempot.o
 m_compute_dm.o: compute_dm.o
 m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
-m_dhscf.o: dhscf.o
+m_dhscf.o: precision.o 
 m_dnaefs.o: dnaefs.o
 m_dynamics.o: dynamics.o
 m_extrapol.o: extrapol.o
@@ -675,10 +681,18 @@ m_struct_init.o: struct_init.o
 m_timestamp.o: timestamp.o
 m_xyz_phiatm.o: matel.o
 m_zm_broyden_optim.o: zm_broyden_optim.o
-mesh.o: meshsubs.o
 meshdscf.o: meshmatrix.o
-meshphi.o: meshsubs.o
 neighbour.o: mneighb.o
 on_core.o: onmod.o
 on_main.o: onmod.o
 version_info.o: version.o
+phionmesh.o: atm_types.o atmfuncs.o meshsubs.o parallel.o
+initmesh.o: atm_types.o atmfuncs.o meshsubs.o parallel.o moremeshsubs.o
+initmesh.o: parallelsubs.o siesta_cml.o moremeshsubs.o
+debugmpi.o: parallel.o
+distriphionmesh.o: meshsubs.o precision.o atmfuncs.o cellxc_mod.o
+dscfcomm.o: precision.o parallel.o alloc.o schecomm.o
+schecomm.o:
+setproc3d.o:
+moremeshsubs.o: precision.o parallel.o sys.o
+cellxc_mod.o: sys.o xcmod.o

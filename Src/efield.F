@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine efield( cell, na, isa, xa, mesh, nsm, v, field )
+      subroutine efield( cell, na, isa, xa, meshG, nsm, v, field )
 c **********************************************************************
 c Adds the potential created by an external electric field, whose value
 c is readed from the FDF block ExternalElectricField.
@@ -20,7 +20,7 @@ c real*8  cell(3,3) : Unit cell vectors
 c integer na        : Number of atoms
 c integer isa(na)   : Atomic species indexes
 c real*8  xa(3,na)  : Atomic positions (cartesian coordinates)
-c integer mesh(3)   : Number of mesh divisions in each cell direction
+c integer meshG(3)  : Number of mesh divisions in each cell direction
 c integer nsm       : Number of sub-mesh points along each axis
 c ********* Input and output *******************************************
 c real    v(*)      : Electron potential, to which that created by the
@@ -61,14 +61,15 @@ C
       use fdf
       use parsing
       use siesta_cml
-      use sys,          only: die
+      use sys,          only : die
+      use mesh,         only : meshLim
 #ifdef MPI
       use mpi_siesta
 #endif
 
       implicit          none
 
-      integer           na, isa(na), mesh(3), nsm
+      integer           na, isa(na), meshG(3), nsm
       real(grid_p), intent(inout)  ::  v(*)
       real(dp)          cell(3,3), ddot, field(3), xa(3,na)
       external          cross, ddot, reclat, shaper
@@ -85,9 +86,7 @@ C Internal variables
      $                  is, iu, ix,
      .                  j1, j2, j3, last, lc(0:1), 
      .                  nbcell, ni, nn, nr, nv, meshl(3),
-     .                  ProcessorZ, BlockSizeY, BlockSizeZ, Yoffset,
-     .                  Zoffset, Py, Pz, i30, i20, meshnsm(3),
-     .                  NRemY, NRemZ
+     .                  Yoffset, Zoffset, i30, i20
 #ifdef MPI
       integer           MPIerror, npl
 #endif
@@ -111,7 +110,7 @@ C Read the electric field block from the fdf input file
             last = index(line,'#') - 1
             if (last .le. 0) last = len(line)
             call parse( line(1:last), nn, lc, names, nv, e,
-     .                ni, int, nr, e0 )
+     &                ni, int, nr, e0 )
             eunits = names(lc(0)+1:lc(1))
             cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
             do ix = 1,3
@@ -123,7 +122,7 @@ C Read the electric field block from the fdf input file
         endif
 #ifdef MPI
         call MPI_Bcast(e,3,MPI_double_precision,0,MPI_Comm_World,
-     .    MPIerror)
+     &    MPIerror)
         call MPI_Bcast(isfield,1,MPI_logical,0,MPI_Comm_World,MPIerror)
 #endif
 
@@ -141,9 +140,9 @@ C Check that the field is orthogonal to the bulk directions
             endif
           elseif (nbcell .eq. 2) then
             eb1 = ddot(3,e,1,bcell(1,1),1)/
-     .            ddot(3,bcell(1,1),1,bcell(1,1),1)
+     &            ddot(3,bcell(1,1),1,bcell(1,1),1)
             eb2 = ddot(3,e,1,bcell(1,2),1)/
-     .            ddot(3,bcell(1,2),1,bcell(1,2),1)
+     &            ddot(3,bcell(1,2),1,bcell(1,2),1)
             if (abs(eb1).gt.tol .or. abs(eb2).gt.tol) then
               orthog = .false.
               call cross( bcell(1,1), bcell(1,2), b1xb2 )
@@ -161,15 +160,15 @@ C Check that the field is orthogonal to the bulk directions
           if (ionode) then
             if (orthog) then
               write(6,'(/,a,3f12.6,a)')
-     .          'efield: Electric field =', e, ' Ry/Bohr/e'
+     &          'efield: Electric field =', e, ' Ry/Bohr/e'
               if (cml_p) call cmlAddProperty(xf=mainXML, property=e, 
-     .             dictref='siesta:elfield', 
-     .             units='siestaUnits:Ry_Bohr_e')
+     &             dictref='siesta:elfield', 
+     &             units='siestaUnits:Ry_Bohr_e')
             else
               write(6,'(a,(/,a,3f12.6))')
-     .          'efield: ERROR: Non zero bulk electric field.',
-     .          'efield: Input field (Ry/Bohr/e) =', e0,
-     .          'efield: Orthogonalized field    =', e
+     &          'efield: ERROR: Non zero bulk electric field.',
+     &          'efield: Input field (Ry/Bohr/e) =', e0,
+     &          'efield: Orthogonalized field    =', e
             endif
           endif
         endif
@@ -203,56 +202,38 @@ C Find the geometric center of the system
 C Find the mesh index of the origin of the shifted cell
         do ix = 1,3
           xmean = (xmin(ix) + xmax(ix)) / 2
-          i0(ix) = nint( (xmean-0.5_dp) * mesh(ix) )
+          i0(ix) = nint( (xmean-0.5_dp) * meshG(ix) )
         enddo
 
 C Find the electric field in mesh coordinates, so that
 C v = e*x = f*index
         do ix = 1,3
-          f(ix) = ddot(3,e,1,cell(1,ix),1) / max( mesh(ix), 1 )
+          f(ix) = ddot(3,e,1,cell(1,ix),1) / max( meshG(ix), 1 )
         enddo
 
 C Find the potential at the origin of the shifted cell, so that
 C the potential is zero at the center of the cell
-        v0 = (- 0.5_dp) * (f(1)*mesh(1) + f(2)*mesh(2) + f(3)*mesh(3))
+        v0 = (-0.5_dp)*(f(1)*meshG(1) + f(2)*meshG(2) + f(3)*meshG(3))
       endif        
 
       if (isfield) then
-
-C Find local number of mesh points
-        meshnsm(1) = mesh(1)/nsm
-        meshnsm(2) = mesh(2)/nsm
-        meshnsm(3) = mesh(3)/nsm
 #ifdef MPI
-        call HowManyMeshPerNode(meshnsm,Node,Nodes,npl,meshl)
-        meshl(1) = meshl(1)*nsm
-        meshl(2) = meshl(2)*nsm
-        meshl(3) = meshl(3)*nsm
-#else
-        meshl(1) = mesh(1)
-        meshl(2) = mesh(2)
-        meshl(3) = mesh(3)
-#endif
-
-C Check that ProcessorY is a factor of the number of processors
-      if (mod(Nodes,ProcessorY).gt.0)
-     $     call die('ERROR: ProcessorY must be a factor of the' //
-     $     ' number of processors!')
-        ProcessorZ = Nodes/ProcessorY
-
-C Calculate blocking sizes
-        BlockSizeY = (meshnsm(2)/ProcessorY)*nsm
-        NRemY = (mesh(2) - ProcessorY*BlockSizeY)/nsm
-        BlockSizeZ = (meshnsm(3)/ProcessorZ)*nsm
-        NRemZ = (mesh(3) - ProcessorZ*BlockSizeZ)/nsm
-
-C Calculate coordinates of current node in processor grid
-        Py = (Node/ProcessorZ)+1
-        Pz = Node - (Py - 1)*ProcessorZ + 1
+        meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
+        meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
+        meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
 C Calculate starting point for grid
-        Yoffset = (Py-1)*BlockSizeY + nsm*min(Py-1,NRemY)
-        Zoffset = (Pz-1)*BlockSizeZ + nsm*min(Pz-1,NRemZ)
+      Yoffset = (meshLim(1,2)-1)*nsm
+      Zoffset = (meshLim(1,3)-1)*nsm
+#else
+        meshl(1) = meshG(1)
+        meshl(2) = meshG(2)
+        meshl(3) = meshG(3)
+
+C Calculate starting point for grid
+      Yoffset = 0
+      Zoffset = 0
+#endif
 
 C Add the electric field potential to the input potential
         imesh = 0
@@ -264,9 +245,9 @@ C Add the electric field potential to the input potential
             i20 = i20 + 1
             do i1 = 0,meshl(1)-1
               imesh = imesh + 1
-              j1 = mod( i1-i0(1)+10*mesh(1), mesh(1) )
-              j2 = mod( i20-i0(2)+10*mesh(2), mesh(2) )
-              j3 = mod( i30-i0(3)+10*mesh(3), mesh(3) )
+              j1 = mod( i1-i0(1)+10*meshG(1), meshG(1) )
+              j2 = mod( i20-i0(2)+10*meshG(2), meshG(2) )
+              j3 = mod( i30-i0(3)+10*meshG(3), meshG(3) )
               v(imesh) = v(imesh) + v0 + f(1)*j1 + f(2)*j2 + f(3)*j3
             enddo
           enddo

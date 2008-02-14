@@ -110,6 +110,7 @@ C External procedures
 ! Therefore, on all steps after the first, the 
 
 C Find file name
+      call timer( 'iodm', 1 )
       if (ionode) then
         if (frstme) then
           fmto = fdf_boolean('DM.FormattedFiles', .false.)
@@ -459,6 +460,7 @@ C Free buffer array
 
         if (Node.eq.0) then
           call io_assign(unit1)
+
           open( unit1, file=fnameo, form=formout, status='unknown' )
           rewind(unit1)
           if (fmto) then
@@ -620,4 +622,5 @@ C Deallocate local buffer array for globalised numd
       call memory('D','I',size(numdg),'iodm')
       deallocate(numdg)
 
+      call timer( 'iodm', 2 )
       end subroutine iodm

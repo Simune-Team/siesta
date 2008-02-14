@@ -1,0 +1,138 @@
+! 
+! This file is part of the SIESTA package.
+!
+! Copyright (c) Fundacion General Universidad Autonoma de Madrid:
+! E.Artacho, J.Gale, A.Garcia, J.Junquera, P.Ordejon, D.Sanchez-Portal
+! and J.M.Soler, 1996-2006.
+! 
+! Use of this software constitutes agreement with the full conditions
+! given in the SIESTA license, as signed by all legitimate users.
+!
+
+
+C ==================================================================
+C Computes the number of orbitals that intersects every mesh point
+C and calls recomputeLMesh in order to compute a new data distribution
+C based in the number of orbital intersections.
+C ==================================================================
+C SUBROUTINE distriPhiOnMesh( nm, nmpl, norb,
+C     &                       iaorb, iphorb, isa )
+C
+C INPUT:
+C integer nm(3)         : Number of Mesh divisions of each cell vector
+C integer nmpl          : Local number of mesh points
+C integer norb          : Total number of basis orbitals in supercell
+C integer iaorb(norb)   : Atom to which each orbital belongs
+C integer iphorb(norb)  : Orbital index (within atom) of each orbital
+C integer isa(na)       : Species index of all atoms in supercell
+C
+C OUTPUT:
+C The output values are in the module moreMeshSubs (New limits of the mesh
+C and the information needed to transfer data between data
+C distributions)
+C
+C BEHAVIOR:
+C The amount of computation in every point of the mesh depends on the
+C number of orbitals that intersecs in that mesh point. This can lead
+C to unbalanced distributions in parallel executions. We want to
+C compute a new data distribution, where the load is balanced among
+C the several processes.
+C
+C In order to compute the number of orbitals that intersects in every
+C mesh point, we loop in all orbitals of every atom and we increase the
+C value of numphi in every point of the mesh that is inside of the
+C radius of the current orbital.
+C
+C Finally, we call initMeshDistr that computes the new data distributions
+C that will be used inside setup_hamiltonian. We are going to have 3
+C different data distributions:
+C  - Uniform:   Same amount of mesh in every process. Used in Poison
+C  - Quadratic: The load in every point of the mesh is proporcional
+C               to the square of the number of orbitals that intersects
+C               in that point. Used in rhoofd and vmat.
+C  - Lineal:    We try to distribute those points of the mesh that have
+C               at least one orbital intersection. Used in cellxc.
+C
+C ==================================================================
+      subroutine distriPhiOnMesh( nm, nmpl, norb,
+     &                            iaorb, iphorb, isa )
+#ifdef MPI
+      use mesh,         only: mop, ipa, idop, nsp, xdop, xdsp, dxa,
+     &                        indexp
+      use precision,    only: dp, grid_p
+      use atmfuncs,     only: rcut
+      use parallel,     only: Nodes
+      use moreMeshSubs, only: initMeshDistr, initMeshExtencil
+      use cellxc_mod, only: GGA, setGGA
+      implicit none
+C     Passed arguments
+      integer, intent(out) :: nmpl
+      integer, intent(in)  :: nm(3), norb, iaorb(norb),
+     &                        iphorb(norb), isa(*)
+C     Local variables
+      integer              :: io, ia, iphi, is, iop, ip0, isp,
+     &                        ProcX, ProcY, ProcZ, iDistr, oDistr
+      real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
+      logical              :: within
+      integer, allocatable :: numphi(:)
+
+!------------------------------------------------------------------------- BEGIN
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 14 )
+#endif
+      if (nodes.gt.1) then
+        call timer( 'REMESH', 1 )
+C       Allocate local scratch array
+        allocate( numphi(nmpl) )
+        call memory( 'A', 'I', nmpl, 'PhiOnMesh' )
+        numphi(1:nmpl) = 0
+
+C       Find number of atomic orbitals at mesh points
+        do io = 1,norb
+          ia   = iaorb(io)
+          iphi = iphorb(io)
+          is   = isa(ia)
+          r2o  = rcut(is,iphi)**2
+C         Loop over mesh points inside rmax
+          do iop = 1, mop
+            ip0 = indexp( ipa(ia) + idop(iop) )
+            if (ip0 .gt. 0) then
+C             Loop over sub-points to find if point is within range
+              within = .false.
+              do isp = 1,nsp
+                dxsp(1:3,isp) = xdop(1:3,iop)+xdsp(1:3,isp)-dxa(1:3,ia)
+                r2sp(isp)     = sum( dxsp(1:3,isp)**2 )
+                if (r2sp(isp) .lt. r2o) within = .true.
+              enddo
+C             If within range, add one to number of point orbitals
+              if (within) numphi(ip0) = numphi(ip0) + 1
+            endif
+          enddo
+        enddo
+
+        iDistr = 1
+        do ip0= 1, nmpl
+          numphi(ip0) = numphi(ip0)*numphi(ip0)
+        enddo
+        call initMeshDistr( iDistr=iDistr, nm=nm, wload=numphi,
+     &                      oDistr=oDistr )
+
+        do ip0= 1, nmpl
+          if (numphi(ip0).ne.0) numphi(ip0) = 1
+        enddo
+        call initMeshDistr( iDistr=iDistr, nm=nm, wload=numphi,
+     &                      oDistr=oDistr )
+        if (GGA) call initMeshExtencil( iDistr=oDistr, nm=nm )
+
+C       Free local memory
+        call memory('D','I',size(numphi),'PhiOnMesh')
+        deallocate( numphi )
+
+        call timer( 'REMESH', 2 )
+      endif
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
+#endif
+!--------------------------------------------------------------------------- END
+      end subroutine distriPhiOnMesh

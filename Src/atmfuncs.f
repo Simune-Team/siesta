@@ -163,7 +163,7 @@ C  Distances in Bohr
 
       end function rcore
 
-!----------AMENOFIS
+!         AMENOFIS
 !
       FUNCTION ATMPOPFIO (IS,IO)
       real(dp) atmpopfio

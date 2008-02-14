@@ -11,23 +11,23 @@
       module neighbour
 
         use precision, only: dp
-        use sys, only: die
-        use alloc, only : re_alloc, de_alloc
+        use sys,       only: die
+        use alloc,     only: re_alloc, de_alloc
 
         private
 
-        integer,  save, public           :: maxnna = 200
-        integer,  pointer, save, public  :: jan(:)
-        real(dp), pointer, save, public  :: r2ij(:)
-        real(dp), pointer, save, public  :: xij(:,:)
-        logical,  save       :: pointers_allocated = .false.
+        integer,  save,          public :: maxnna = 200
+        integer,  pointer, save, public :: jan(:)
+        real(dp), pointer, save, public :: r2ij(:)
+        real(dp), pointer, save, public :: xij(:,:)
+        logical,  save                  :: pointers_allocated = .false.
 
         public :: mneighb, sizeup_neighbour_arrays
 
       contains
 
-      subroutine mneighb( CELL, range, NA, XA, IA, ISC,
-     .                    NNA )
+      subroutine mneighb( cell, range, na, xa, ia, isc,
+     &                    nna )
 
 C ********************************************************************
 C Finds the neighbours of an atom in a cell with periodic boundary 
@@ -106,45 +106,37 @@ C      ENDDO
 C      Move atomic positions XA       (Molecular dynamics step)
 C    ENDDO
 C ********************************************************************
-
-C Next line is non-standard but may be supressed
       implicit none
-
-C Define space dimension
-      integer, parameter :: nx = 3
-
-C Argument types and dimensions
-      integer, intent(in) :: ia, isc, na
+      integer, parameter :: nx = 3    ! Define space dimension
+C     Argument types and dimensions
+      integer, intent(in)  :: ia, isc, na
       integer, intent(out) :: nna
-      real(dp) :: cell(nx,nx), range, xa(nx,na)
+      real(dp)             :: cell(nx,nx), range, xa(nx,na)
 
-C Internal variables
+C    Internal variables
+      integer, save      :: iamove(1)     = 0
+      real(dp), save     :: celast(nx,nx) = 0.0_dp,
+     &                      rglast        = 0.0_dp,
+     &                      x0(nx)        = 0.0_dp
+      logical            :: samcel
+      integer            :: IX, JX
+      logical,  save     :: first_time = .true.
 
-      integer, save  :: iamove(1)     = 0
-      real(dp), save :: celast(nx,nx) = 0.0_dp,
-     .                  rglast        = 0.0_dp,
-     .                  x0(nx)        = 0.0_dp
-
-      logical :: samcel
-      integer :: IX, JX
-      logical,  save          :: first_time = .true.
-
-C Nullify pointers
+C     Nullify pointers
       if (.not. pointers_allocated) then
         nullify(jan)
         nullify(r2ij)
         nullify(xij)
-      !  Dimension arrays to initial size MAXNNA
+C       Dimension arrays to initial size MAXNNA
         call re_alloc(jan,1,maxnna,name='jan')
         call re_alloc(r2ij,1,maxnna,name='r2ij')
         call re_alloc(xij,1,3,1,maxnna,name='xij')
         pointers_allocated = .true.
       endif
 
-C Initialization section
+C     Initialization section
       IF (FIRST_TIME .OR. IA.LE.0 .OR. range.GT.RGLAST) THEN
-
-C Find if cell or range have changed
+C       Find if cell or range have changed
         samcel = .true.
         if (first_time) then
           samcel = .false.
@@ -157,42 +149,37 @@ C Find if cell or range have changed
           if (range .NE. RGLAST) samcel = .false.
         endif
 
-C Cell initializations
+C       Cell initializations
         if (.not.samcel) then
-
-C Store cell and range for comparison in subsequent calls
+C         Store cell and range for comparison in subsequent calls
           do IX = 1,NX
             do JX = 1,NX
               CELAST(JX,IX) = CELL(JX,IX)
             enddo
           enddo
-          RGLAST = range
+          RGLAST     = range
           FIRST_TIME = .false.
 
-C Notify to rangeR that CELL has changed
-          call mranger( 'CELL', NX, CELL, range, NA, XA,
-     .                 NA, IAMOVE, IA, ISC, X0,
-     .                 NNA, MAXNNA )
+C         Notify to rangeR that CELL has changed
+          call mranger( 'CELL', NX, CELL, range, NA, XA, NA, IAMOVE,
+     &                  IA, ISC, X0, NNA, MAXNNA )
         endif
 
-C Notify to rangeR that atoms have moved
-        call mranger( 'MOVE', NX, CELL, range, NA, XA,
-     .               NA, IAMOVE, IA, ISC, X0,
-     .               NNA, MAXNNA )
+C       Notify to rangeR that atoms have moved
+        call mranger( 'MOVE', NX, CELL, range, NA, XA, NA, IAMOVE,
+     &                IA, ISC, X0, NNA, MAXNNA )
 
       endif
 
-C Find neighbours of atom IA
+C     Find neighbours of atom IA
       if (IA .GT. 0) 
-     .  call mranger( 'FIND', NX, CELL, range, NA, XA,
-     .               NA, IAMOVE, IA, ISC, X0,
-     .               NNA, MAXNNA )
-
+     &  call mranger( 'FIND', NX, CELL, range, NA, XA, NA, IAMOVE,
+     &                IA, ISC, X0, NNA, MAXNNA )
       end subroutine mneighb
 
-      SUBROUTINE MrangeR( MODE, NX, CELL, range, NA, XA,
-     .                    NAMOVE, IAMOVE, IA0, ISC, X0,
-     .                    NNA, MAXNNA )
+      subroutine mranger( mode, nx, cell, range, na, xa,
+     &                    namove, iamove, ia0, isc, x0,
+     &                    nna, maxnna )
 
 C ********************************************************************
 C Finds the neighbours of an atom in a cell with periodic boundary 
@@ -402,7 +389,7 @@ C Argument types and dimensions
       INTEGER           NA, NAMOVE, NNA, NX, MAXNNA
       INTEGER           IA0, IAMOVE(*), ISC
       real(dp) ::
-     .  CELL(*), range, X0(NX), XA(NX,NA)
+     &  CELL(*), range, X0(NX), XA(NX,NA)
 
 C NCR is the ratio between range radius and mesh-planes distance.
 C It fixes the size (and number) of mesh cells.
@@ -499,9 +486,9 @@ C REAL*8  XMAX          Maximum atom coordinate
 C REAL*8  XMIN          Minimum atom coordinate
 
       INTEGER
-     .  IA, IAM, IEM, IM, 
-     .  IN, IX, IXX, JA, JEM, JM, JX,
-     .  NAM, NM, NEM, NNM, NNMMAX
+     &  IA, IAM, IEM, IM, 
+     &  IN, IX, IXX, JA, JEM, JM, JX,
+     &  NAM, NM, NEM, NNM, NNMMAX
       integer, save :: maxna = 0
 c
 c     Auxiliary variable to avoid compiler warnings
@@ -509,36 +496,36 @@ c
       integer j_aux   
 
       integer, dimension(:), allocatable, save ::
-     .  INX, I1NX, I2NX, J1NX, J2NX
+     &  INX, I1NX, I2NX, J1NX, J2NX
 
       integer, dimension(:), allocatable, save ::
-     .  IANEXT, IAPREV, IEMA, I1EMX, I2EMX, IMX, I1MX, I2MX,
-     .  NEMX, NMX, NNX, IA1M, IMESH, IDNM
+     &  IANEXT, IAPREV, IEMA, I1EMX, I2EMX, IMX, I1MX, I2MX,
+     &  NEMX, NMX, NNX, IA1M, IMESH, IDNM
 
       real(dp)
-     .  DISMIN, DDOT, DPLANE, 
-     .  R2, range2, RNGMAX, Rrange,
-     .  XDIFF, XMARG, XMAX, XMIN
+     &  DISMIN, DDOT, DPLANE, 
+     &  R2, range2, RNGMAX, Rrange,
+     &  XDIFF, XMARG, XMAX, XMIN
 
       real(dp), dimension(:), allocatable, save ::
-     .  DMX, DX, DX0M
+     &  DMX, DX, DX0M
 
       real(dp), dimension(:), allocatable, save ::
-     .  CELMSH, RCELL, RMCELL
+     &  CELMSH, RCELL, RMCELL
 
       real(dp), dimension(:,:), allocatable, save ::
-     .  DXAM, DXNM
+     &  DXAM, DXNM
 
       logical
-     .  INSIDE, MOVALL, NULCEL
+     &  INSIDE, MOVALL, NULCEL
 
       logical, save :: frstme = .true.
 
       external  DISMIN, DDOT
 
       save
-     .  IAM, IEM, IM, 
-     .  NEM, NM, NNM, range2, RNGMAX, Rrange
+     &  IAM, IEM, IM, 
+     &  NEM, NM, NNM, range2, RNGMAX, Rrange
 
 C Allocate local memory - check for change in number of atoms
 C and if there has been one then re-initialise
@@ -633,7 +620,7 @@ C and if there has been one then re-initialise
 
 C Cell-mesh initialization section
       IF (MODE.EQ.'CELL' .OR. MODE.EQ.'cell' .OR.
-     .    frstme .OR. range.GT.RNGMAX) THEN
+     &    frstme .OR. range.GT.RNGMAX) THEN
 
 C       Start time counter (this is for debugging)
 *       CALL TIMER( 'rangeR1', 1 )
@@ -932,11 +919,11 @@ C               Check that array arguments are not overflooded
                 IF (NNA .GT. MAXNNA) THEN
                   MAXNNA = MAXNNA + NA
                   call re_alloc(jan,1,maxnna,name='jan',
-     .              routine='mranger')
+     &              routine='mranger')
                   call re_alloc(r2ij,1,maxnna,name='jan',
-     .              routine='mranger')
+     &              routine='mranger')
                   call re_alloc(xij,1,nx,1,maxnna,name='jan',
-     .              routine='mranger')
+     &              routine='mranger')
                 ENDIF
                 JAN(NNA) = JA
                 do IX = 1,NX

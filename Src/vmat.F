@@ -45,7 +45,7 @@ C  Modules
       use atmfuncs,      only: rcut, all_phi
       use atm_types,     only: nsmax=>nspecies
       use atomlist,      only: indxuo
-      use listsc_module, only: listsc
+      use listsc_module, only: LISTSC
       use mesh, only: dxa, nsp, xdop, xdsp
       use meshdscf
       use meshphi
@@ -81,7 +81,9 @@ C Internal variables and arrays
 
       real(dp), pointer :: VClocal(:)
       real(dp), pointer :: Clocal(:,:), Vlocal(:,:)
-
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 4 )
+#endif
 C  Start time counter
       call timer('vmat',1)
 
@@ -145,7 +147,6 @@ C  Find atomic cutoff radii
 
 C  Loop over grid points
       do ip = 1,np
-
 C  Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
 
@@ -182,7 +183,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
               else
                 do ii = 1, numdl(iul)
                   ind = listdlptr(iul)+ii
-                  j = listsc( i, iu, listdl(ind) )
+                  j = LISTSC( i, iu, listdl(ind) )
                   jl = ilocal(j)
                   if (il.gt.jl) then
                     ijl = il*(il+1)/2 + jl + 1
@@ -214,7 +215,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
               else
                 do ii = 1, numVs(iu)
                   ind = listVsptr(iu)+ii
-                  j = listsc( i, iu, listVs(ind) )
+                  j = LISTSC( i, iu, listVs(ind) )
                   jl = ilocal(j)
                   if (il.gt.jl) then
                     ijl = il*(il+1)/2 + jl + 1
@@ -345,7 +346,7 @@ C  Add final Vlocal to Vs
           else
             do ii = 1, numdl(iul)
               ind = listdlptr(iul)+ii
-              j = listsc( i, iu, listdl(ind) )
+              j = LISTSC( i, iu, listdl(ind) )
               jl = ilocal(j)
               if (il.gt.jl) then
                 ijl = il*(il+1)/2 + jl + 1
@@ -377,7 +378,7 @@ C  Add final Vlocal to Vs
           else
             do ii = 1, numVs(iu)
               ind = listVsptr(iu)+ii
-              j = listsc( i, iu, listVs(ind) )
+              j = LISTSC( i, iu, listVs(ind) )
               jl = ilocal(j)
               if (il.gt.jl) then
                 ijl = il*(il+1)/2 + jl + 1
@@ -413,5 +414,8 @@ C Free memory
       call de_alloc( ilocal,  name='ilocal' )
 
       call timer('vmat',2)
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
       return
       end

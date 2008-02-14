@@ -12,6 +12,11 @@
 !
 !     We need an explicit interface since assumed-shape arrays are used
 !
+
+      integer, save :: iterm = 0
+      integer, save :: maxnc = 1
+      integer, save :: nbasisCloc
+
       CONTAINS
 
       subroutine ordern(usesavelwf,ioptlwf,natoms,nbasis,nbasisloc,
@@ -116,10 +121,6 @@ C Internal variables ..........................................................
       integer
      .  in, io, iopt, iord, is, iter, ncmax, nctmax, 
      .  nfmax, nftmax, nhijmax, nbands, nh
-
-      integer, save :: iterm = 0
-      integer, save :: maxnc = 1
-      integer, save :: nbasisCloc
 
 #ifdef MPI
       integer :: ntmp
@@ -375,9 +376,10 @@ C Global reduction of qtot
       endif
 
 C Save LWF's to disk .................................................
+#ifdef RGT
       call iolwf( 'write', nbasis, nbasisCloc, nbasisloc, maxnc, 
      .            found, nspin)
-
+#endif
       frstme = .false.
 
       end subroutine ordern

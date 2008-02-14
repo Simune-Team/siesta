@@ -78,7 +78,6 @@
       !  If DM have just been read, restore istp
       if (itest) istp = istpsave
       itest = .false.
-
       END subroutine new_dm
 
       END MODULE m_new_dm

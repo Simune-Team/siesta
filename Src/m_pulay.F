@@ -58,7 +58,6 @@
         call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",
      $                routine="init_pulay_arrrays")
       endif
-
       end subroutine init_pulay_arrays
 !
       subroutine pulayx(pulfile,iscf,mix,nbasis,maxnd,numd,

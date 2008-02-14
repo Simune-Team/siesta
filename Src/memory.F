@@ -25,6 +25,7 @@ C                   :                    'L' = logical
 C                   :                    'C' = single precision complex
 C                   :                    'Z' = double precision complex
 C                   :                    'S' = character data (we assume takes one word)
+C                   :                    'E' = double precision integer
 C integer NElements : number of array elements being 
 C                   : allocated/deallocated
 C character         :
@@ -42,7 +43,7 @@ C
       character(len=*), intent(in)        :: CallingRoutine
 
 C Local variables
-      integer    Sign
+      integer    Sign, RGT
 CAG
 !      if (Node.eq.0) then
 !        write(66,'(a,a,a,a,i10)') "---memory: ", CallingRoutine // " ",
@@ -92,6 +93,9 @@ C Add number of elements to appropriate pointer
       elseif (Type .eq. 'S' .or. Type .eq. 's') then
         WordsString = WordsString + Sign*NElements
         CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(7)
+      elseif (Type .eq. 'E' .or. Type .eq. 'e') then
+        WordsLongInt = WordsLongInt + Sign*NElements
+        CurrentMemory = CurrentMemory + Sign*NElements*ByteSize(8)
       endif
 
 C Check whether memory is greater than peak memory so far

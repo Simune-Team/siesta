@@ -85,6 +85,10 @@ C Internal variables and arrays
 
       real(dp), dimension(:,:), pointer :: Clocal, Dlocal
 
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 1 )
+#endif
+
 C  Start time counter
       call timer('rhoofd',1)
 
@@ -127,7 +131,7 @@ C  Allocate local memory
      &                 name='DscfL',  routine='rhoofd' )
 C Redistribute Dscf to DscfL form
         call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
-     .    nspin, Dscf, DscfL )
+     &                   nspin, Dscf, DscfL )
       endif
 
 C  Find atomic cutoff radii
@@ -310,7 +314,7 @@ C  Loop on second orbital of mesh point
 C  Loop over sub-points
               do isp = 1,nsp
                 rhoscf(isp,ip,ispin) = rhoscf(isp,ip,ispin) + 
-     .            Dij*Cij(isp)
+     &            Dij*Cij(isp)
               enddo
 
             enddo
@@ -341,4 +345,7 @@ C  Free local memory
       call de_alloc( ilocal,  name='ilocal' )
 
       call timer('rhoofd',2)
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
       end

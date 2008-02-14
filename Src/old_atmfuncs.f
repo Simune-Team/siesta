@@ -108,9 +108,13 @@ C     chemical species present in the calculation.
      &                 routine = 'allocate_old_arrays' )
         !allocate(rctb(nkbmx,0:lmaxd,nsmax))
         nullify( rctb )
-        call re_alloc( rctb, 1, nzetmx, 0, lmaxd, 1, nsmax,
+!        call re_alloc( rctb, 1, nzetmx, 0, lmaxd, 1, nsemx,
+!     &                 name    = 'rctb', 
+!     &                 routine = 'allocate_old_arrays' )
+        call re_alloc( rctb, 1, nkbmx, 0, lmaxd, 1, nsmax,
      &                 name    = 'rctb', 
      &                 routine = 'allocate_old_arrays' )
+
         !allocate(smasstb(nsmax))
         nullify( smasstb )
         call re_alloc( smasstb, 1, nsmax,

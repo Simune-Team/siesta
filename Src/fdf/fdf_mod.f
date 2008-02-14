@@ -71,7 +71,7 @@
 !     Function fdf_parsed_string(label,default) returns a pointer to
 !     a 'parsed_line' derived type (see module parse).
 !
-!------------------------------------------------------------------------
+!========================================================================
 !     Future enhancements:
 !
 !     * Stand-alone f90/95 version.

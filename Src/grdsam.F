@@ -229,7 +229,6 @@ c first (normal) call to DHSCF, ihmat=1 --------------------------------------
      .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, fa, stress, fal, stressl)
 
-
 c Sampling ------------------------------------------------------------------
 
       if (samgrd) then
