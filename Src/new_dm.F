@@ -12,6 +12,7 @@
       use m_steps,  only: istp
       use m_spin,   only: nspin
       use m_extrapol, only: extrapol
+      use parallel,  only: IOnode
 
       implicit none
 
@@ -24,35 +25,43 @@
       logical :: found
 
       ! Initialize density matrix
-      ! Set density matrix for first step
-      found = .false.
+
       dminit = .false.
       if (istp .eq. 1) dminit = .true.
       if (istp .ne. 1 .and. harrisfun) dminit = .true.
-      if (istp .ne. 1 .and. (idyn .eq. 6)
+      if (istp .ne. 1 .and. (idyn .eq. 6)   ! Force Constants
      $         .and. usesavedm .and. writedm)  dminit = .true.
-      if (istp .ne. 1 .and. (idyn .eq. 7)
+      if (istp .ne. 1 .and. (idyn .eq. 7)   ! Phonon series
      $         .and. usesavedm)  dminit = .true.
 
       ! If auxiliary cell has changed, optionally reset density matrix
       ! and set usesavedata to false to avoid reading back saved copy
-      if (initdmaux.and.auxchanged) then
+!!      if (initdmaux.and.auxchanged) then
+!!    Reset unconditionally if auxiliary cell changes
+      if (auxchanged) then
         dminit = .true.
         usesavedmloc = .false.
       else
         usesavedmloc = usesavedm
       endif
 
-      if (dminit)
-     .   call initdm(Datm, Dscf, Dold, lasto, na_s,
+      found = .false.
+      if (dminit) then
+         if (IOnode) then
+            write(6,"(a)") "Initializing Density Matrix..."
+         endif
+            
+         call initdm(Datm, Dscf, lasto, na_s,
      .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
-     .               numh, numhold, listhptr, listhptrold,
-     .               listh, listhold, iaorb, found, inspn, 
-     .               usesavedmloc, no_u)
-
-
-      ! Initialize energy-density matrix to zero for first call to overfsm
-      Escf(1:maxnh,1:nspin) = 0.0_dp
+     .               numh, listhptr, listh, iaorb, found, inspn, 
+     .               usesavedmloc)
+         Dold(:,:) = Dscf(:,:)
+         ! Do we need to do this now, or wait until extrapol is done?
+         ! If we have just reset the DM, extrapolating is meaningless...
+         listhold(:) = listh(:)
+         numhold(:) = numh(:)
+         listhptrold(:) = listhptr(:)
+      endif
 
       ! Extrapolate density matrix between steps
       itest = .false.
@@ -64,6 +73,7 @@
       !  If DM has just been read from disk, 
       !  call extrapol with istep = 2 and iord = 0
       !  to make it update the structure of DM, if needed
+
       if (found .and. ((istp .eq. 1) .or. (idyn .eq. 6)
      .                               .or. (idyn .eq. 7))) then
         istpsave = istp
@@ -71,13 +81,21 @@
         iord = 0
         itest = .true.
       endif
-      if (.not.harrisfun)
-     . call extrapol(istp, iord, nspin, no_s, no_l, maxnh, 
+      if (.not.harrisfun) then
+         if (IOnode) then
+            write(6,"(a)") "Extrapolating Density Matrix..."
+         endif
+         call extrapol(istp, iord, nspin, no_s, no_l, maxnh, 
      .              numh, listhptr, listh, numhold, listhptrold,
      .              listhold, Dscfsave, Dscf)
+      endif
       !  If DM have just been read, restore istp
       if (itest) istp = istpsave
       itest = .false.
+
+
+      ! Initialize energy-density matrix to zero for first call to overfsm
+      Escf(1:maxnh,1:nspin) = 0.0_dp
 
       END subroutine new_dm
 

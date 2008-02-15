@@ -14,6 +14,7 @@
       use m_steps
       use m_spin,   only: nspin
       use m_pulay
+      use m_iodm,   only: write_dm
 #ifdef MPI
       use m_mpi_utils, only: globalize_max
 #endif
@@ -25,7 +26,6 @@
 
       integer :: iiscf
       logical :: mmix       ! Same as mix. Used in pulayx
-      logical :: found      ! dummy for call to iodm
 
 #ifdef MPI
       real(dp):: buffer1   ! Temporary for the result of a globalize operation
@@ -80,11 +80,13 @@
           if (writedm) then
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
               if (istp.eq.1)
-     .        call iodm( 'write', maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, found )
+!!     .        call iodm( 'write', maxnh, no_l, nspin,
+!!     .                   numh, listhptr, listh, Dscf, found )
+     .        call write_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf)
             else
-              call iodm( 'write', maxnh, no_l, nspin,
-     .                   numh, listhptr, listh, Dscf, found )
+               call write_dm (maxnh, no_l, nspin,
+     .                   numh, listhptr, listh, Dscf)
             endif
           endif
 !--------------------------------------------------------------------------- END

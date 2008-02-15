@@ -201,13 +201,24 @@
      $                 set_xijo=.true., xijo=xijo )
 
       maxnh = nh
-      !OBSOLETE: 
+      !OBSOLETE, but maybe not a bad idea after all, to
+      !allow reading of previous steps' DM even if the sparsity
+      !pattern has changed (see below)
+
       !  safety margin for when atoms move 
       !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
 
       ! Use re_alloc regardless of whether nh is greater than 
       ! the old maxnh or not, BUT DO NOT SHRINK, as some of
       ! these arrays are later used in extrapol.
+      ! The problem here might be if we are in the first
+      ! iteration, we have just determined the sparsity pattern
+      ! based on the current geometry, and we attempt to read
+      ! a DM with less sparsity. This could happen in continuation
+      ! runs, if one naively uses the geometry in the XV file
+      ! and the last DM produced. This DM might not correspond to
+      ! the geometry in the XV file, as this holds the "predicted"
+      ! geometry after a relaxation or MD step.
 
       call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
      .     routine='siesta',copy=.true.,SHRINK=.false.)

@@ -115,7 +115,8 @@ OBJS =  automatic_cell.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o \
        get_target_stress.o fire_optim.o zm_fire_optim.o \
-       cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o
+       cell_fire_optim.o m_fire_para.o m_fire_mixing.o write_raw_efs.o \
+       m_iodm.o m_sparse.o
 #--------------------------------------------------------------
 #
 WXML=libwxml.a
@@ -399,7 +400,8 @@ hsparse.o: precision.o sorting.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atom.o basis_io.o basis_specs.o basis_types.o electrostatic.o
 initatom.o: old_atmfuncs.o precision.o
-initdm.o: parallel.o parallelsubs.o parsing.o precision.o sys.o units.o
+initdm.o: alloc.o m_iodm.o m_sparse.o parallel.o parallelsubs.o parsing.o
+initdm.o: precision.o sys.o units.o
 initparallel.o: alloc.o parallel.o parallelsubs.o precision.o spatial.o sys.o
 io.o: sys.o
 iocg.o: files.o precision.o sys.o
@@ -451,6 +453,8 @@ m_forces.o: precision.o
 m_getopts.o: f2kcli.o
 m_hsx.o: atm_types.o atmfuncs.o atomlist.o files.o parallel.o parallelsubs.o
 m_hsx.o: precision.o siesta_geom.o sys.o
+m_iodm.o: alloc.o files.o m_mpi_utils.o parallel.o parallelsubs.o precision.o
+m_iodm.o: sys.o
 m_iorho.o: parallel.o parallelsubs.o precision.o sys.o
 m_iostruct.o: alloc.o files.o m_mpi_utils.o parallel.o precision.o
 m_iostruct.o: siesta_geom.o sys.o units.o
@@ -461,6 +465,7 @@ m_options.o: precision.o
 m_pulay.o: alloc.o atomlist.o files.o m_mpi_utils.o m_spin.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_rmaxh.o: precision.o
+m_sparse.o: alloc.o precision.o
 m_spin.o: alloc.o m_fdf_global.o parallel.o precision.o
 m_stress.o: precision.o
 m_wallclock.o: m_walltime.o
@@ -476,8 +481,9 @@ meshsubs.o: atm_types.o atmfuncs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: radial.o siesta_cml.o
 metaforce.o: parallel.o parsing.o precision.o
 minvec.o: precision.o sorting.o sys.o
-mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_mpi_utils.o m_pulay.o
-mixer.o: m_spin.o m_steps.o siesta_geom.o siesta_options.o sparse_matrices.o
+mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_iodm.o m_mpi_utils.o
+mixer.o: m_pulay.o m_spin.o m_steps.o siesta_geom.o siesta_options.o
+mixer.o: sparse_matrices.o
 mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o

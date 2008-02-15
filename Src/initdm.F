@@ -8,11 +8,10 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine initdm(Datm, Dscf, Dold, lasto, maxa,
-     .                  maxnh, maxo, maxuo, maxspn, nua, nuo, nspin, 
-     .                  numh, numhold, listhptr, listhptrold,
-     .                  listh, listhold, iaorb, found, inspn, 
-     .                  usesavedm, nuotot)
+      subroutine initdm(Datm, Dscf, lasto, maxa,
+     .                  maxnh, maxo, maxuo, maxspn, nua, no_l, nspin, 
+     .                  numh, listhptr, listh, iaorb, found, inspn, 
+     .                  usesavedm)
 
 c *******************************************************************
 c Density matrix initialization
@@ -41,7 +40,7 @@ c logical inspn         : true : AF ordering according to atom ordering
 c                                if no DM files, no DM.InitSpin, ispin=2
 c                         false: Ferro ordering  (fdf DM.InitSpinAF)
 c integer nua           : Number of atoms in the unit cell
-c integer nuo           : Number of orbitals in the unit cell
+c integer no_l           : Number of orbitals in the unit cell
 c integer nspin         : Number of spin components
 c integer maxa          : Max num. atoms for dimension
 c integer maxo          : Max. number of orbitals (globally)
@@ -52,25 +51,24 @@ c integer lasto(0:maxa) : List with last orbital of each atom
 c integer numh(*)       : Dscf matrix sparse information
 c integer listhptr(*)   :  "
 c integer listh(maxnh)  :  "
-c integer numhold(*)    : Same for Dold
-c integer listhptrold(*):  "
-c integer listhold(maxnh) :  "
 c integer iaorb(maxo)   : List saying to what atom an orbital belongs 
 c double Datm(no)       : Occupations of basis orbitals in free atom
 c ********* OUTPUT **************************************************
 c double Dscf(maxnh,maxspn) : Density matrix in sparse form
-c double Dold(maxnh,maxspn) : same Dscf (for previous cycle)
 c *******************************************************************
 
 C
 C  Modules
 C
       use precision
-      use parallel,     only : Node, Nodes
+      use parallel,     only : Node, Nodes, IOnode
       use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
       use fdf
       use parsing
       use sys,          only : die
+      use m_iodm,       only : read_dynamic_dm
+      use m_sparse,     only : same_sparsity, change_sparsity
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -79,14 +77,13 @@ C
       implicit          none
 
       logical           found, inspn, usesavedm
-      integer           nuo, nua, maxo, maxuo, maxnh, nspin, maxa, 
+      integer           no_l, nua, maxo, maxuo, maxnh, nspin, maxa, 
      .                  maxspn
-      integer           lasto(0:maxa), numh(maxuo), numhold(maxuo),
-     .                  listhptr(maxuo), listhptrold(maxuo),
-     .                  listh(maxnh), listhold(maxnh),
-     .                  iaorb(maxo), nuotot
+      integer           lasto(0:maxa), numh(maxuo),
+     .                  listhptr(maxuo), 
+     .                  listh(maxnh), 
+     .                  iaorb(maxo)
       real(dp)          Dscf(maxnh,maxspn), 
-     .                  Dold(maxnh,maxspn), 
      .                  Datm(maxo)
       external          memory
 
@@ -107,8 +104,8 @@ C Internal variables and arrays
       integer, dimension(:), allocatable, save ::
      .                  atom, ibuffer
 #ifdef MPI
-      integer
-     .  MPIerror
+      integer  MPIerror
+      logical  lbuffer
 #endif
       real(dp)          aspin, cosph, costh, epsilon, 
      .                  qio, rate, reals(4),
@@ -117,25 +114,62 @@ C Internal variables and arrays
       real(dp), dimension(:), allocatable, save ::
      .                  phi, spin, theta, dpbuffer1
 
+      integer, pointer :: list_tmp(:), num_tmp(:), listptr_tmp(:)
+      real(dp), pointer :: D_tmp(:,:), work(:)
+
+      integer :: nh_tmp, nspin_read, is
+      logical :: same_sp
+
       data maxat / 1000 /
       data epsilon / 1.d-8 /
 
 C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
       if (usesavedm) then
-        call iodm( 'read', maxnh, nuo, nspin, numhold, 
-     .             listhptrold, listhold, Dscf, found )
+
+         nullify(list_tmp,D_tmp,num_tmp,listptr_tmp)
+         call re_alloc(num_tmp,1,no_l)
+         call re_alloc(listptr_tmp,1,no_l)
+
+         call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
+     .             listptr_tmp, list_tmp, D_tmp, found )
       else
         found = .false.
       endif
 
-C If found update Dold, otherwise initialize with neutral atoms
+C If found, check and update, otherwise initialize with neutral atoms
 
       if (found) then
+        ! Various degrees of sanity checks
+        if (nspin_read /= nspin) then
+           call die("Different number of DM spin components")
+        endif
 
-        if (nuo.gt.0) then
-          nh = listhptrold(nuo) + numhold(nuo)
-          Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
+          same_sp = same_sparsity(no_l,num_tmp,list_tmp,
+     $                                 numh,listh)
+#ifdef MPI
+        call MPI_AllReduce(same_sp,lbuffer,1,MPI_logical,MPI_land,
+     .    MPI_Comm_World,MPIerror)
+        same_sp = lbuffer
+#endif
+        if (same_sp) then
+           Dscf(:,:) = D_tmp(:,:)
+        else
+           if (IOnode) then
+              write(6,*) "DM read has different structure. Fixing..."
+           endif
+           nullify(work)
+           do is= 1, nspin
+              call change_sparsity (no_l,num_tmp,listptr_tmp,list_tmp,
+     $                                  numh,listhptr,listh,
+     $                                  D_tmp(:,is), Dscf(:,is),
+     $                            work)          
+           enddo
+           call de_alloc(num_tmp)
+           call de_alloc(listptr_tmp)
+           call de_alloc(list_tmp)
+           call de_alloc(D_tmp)
+           call de_alloc(work)  ! Will be allocated by change_sparsity
         endif
 
       else
@@ -322,8 +356,6 @@ C Initialize all paramagnetic
                   if (io .eq. jo) then
                     Dscf(ind,1) = 0.5d0 * Datm(io)
                     Dscf(ind,2) = Dscf(ind,1)
-                    Dold(ind,1) = Dscf(ind,1)
-                    Dold(ind,2) = Dscf(ind,2)
                   endif
                 enddo
               endif
@@ -379,9 +411,6 @@ C   ispin=3 => Real(D12); ispin=4 => Imag(D12)
                       Dscf(ind,1) = (qio + spio) / 2
                       Dscf(ind,2) = (qio - spio) / 2
                     endif
-                    do ispin = 1,nspin
-                      Dold(ind,ispin) = Dscf(ind,ispin)
-                    enddo
                   endif
                 enddo
               endif
@@ -409,7 +438,7 @@ C Initialize to 0
 
 C Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
 
-          do io = 1, nuo
+          do io = 1, no_l
             call LocalToGlobalOrb(io,Node,Nodes,iio)
             do in = 1,numh(io)
               ind = listhptr(io)+in
@@ -420,7 +449,6 @@ C Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
 C No spin polarization
 
                   Dscf(ind,1) = Datm(iio)
-                  Dold(ind,1) = Datm(iio)
                 else
 
 C Spin polarization
@@ -438,8 +466,6 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
                   endif
                   Dscf(ind,i1) = min( Datm(iio), 1.d0 )
                   Dscf(ind,i2) = Datm(iio) - Dscf(ind,i1)
-                  Dold(ind,i1) = Dscf(ind,i1)
-                  Dold(ind,i2) = Dscf(ind,i2)
                 endif
               endif
             enddo
