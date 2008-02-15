@@ -18,8 +18,6 @@ subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
  integer  :: ifirst, ilast, natoms_mol, imol, ix, ia
 
 ! Find intramolecular contributions to the pressure 
-        print *, "na_u: ", na_u
-        print *, "size of fa: ", size(fa, dim=1), size(fa, dim=2)
         volume = volcel(ucell)
         virial = 0.0_dp
         if (lUseZmatrix) then

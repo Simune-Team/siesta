@@ -110,11 +110,9 @@ MODULE siesta_options
   character(len=150) :: sname   ! System name, used to initialise read
 
 
-  ! na_diag      : maximum number of atoms with diagon as default method
   ! g2max_default : Mesh cutoff default, in Ry
   ! temp_default  : Electronic temperature default, in Ry
 
-  integer,  parameter :: na_diag = 100
   real(dp), parameter :: g2cut_default = 100.e0_dp
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
 
@@ -275,8 +273,7 @@ MODULE siesta_options
     !----------------------------------------------------------- Local Variables
     real(dp) :: tcp
 
-    character annop*22,  dyntyp*22, &
-              method*6,  lwfopt*13, method_default*6
+    character annop*22,  dyntyp*22,  method*6,  lwfopt*13
 
     logical  ::  DaC, leqi, qnch, qnch2, usesaveddata
     external ::  leqi
@@ -594,13 +591,7 @@ MODULE siesta_options
     endif
 
     ! Method to Solve LDA Hamiltonian ...
-    if (na .le. na_diag) then
-      method_default = 'diagon'
-    else
-      method_default = 'ordern'
-    endif
-
-    call fdf_global_get(method,'SolutionMethod',method_default)
+    call fdf_global_get(method,'SolutionMethod','diagon')
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='SolutionMethod',        &
                             value=method, dictRef='siesta:SCFmethod' )

@@ -56,10 +56,7 @@
 
 
 !------------------------------------------------------------------------- BEGIN
-      if (cml_p) then
-         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-      endif
-
+      
       ! Normalize density matrix to exact charge
       call normalize_dm(first)
 

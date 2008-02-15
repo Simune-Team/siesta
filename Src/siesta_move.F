@@ -264,7 +264,9 @@
 
    60 continue
 ! Output memory use at the end of this geometry step
-      if (cml_p) call cmlEndStep(mainXML)
+      if (cml_p) then
+         call cmlEndStep(mainXML)
+      endif
       call printmemory( 6, 0 )
       call timer( 'IterMD', 2 )
 

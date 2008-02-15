@@ -8,7 +8,7 @@
 
       subroutine siesta_analysis( relaxd )
       USE band, only: nbk, bk, maxbk, bands
-      USE writewave, only: nwk, wfk, wwave, allocwave
+      USE writewave, only: nwk, wfk, wwave, allocwave, maxwk
       USE m_ksvinit, only: nkpol, kpol, wgthpol
       use m_ksv
       USE m_projected_DOS, only: projected_DOS
@@ -65,7 +65,6 @@
       real(dp), pointer             :: ebk(:,:,:)       ! Band energies
 
       integer                       :: j, ix, ind, ik, io, ispin
-      integer                       :: maxwk   ! Number of k-points for wavefunction printout
 
       real(dp) :: g2max
 #ifdef MPI

@@ -2,10 +2,198 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+____________________________________________________________________
+** CHANGES ALONG agarcia@siesta.arch--2006/siesta--dm-checks--2.5
+--------------------------------------------------------------------
+
+2008-02-15 16:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
+
+    (Sync to 2.5.11)
+
+2008-02-15 16:37:57 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
+
+    Summary:
+      Re-design of new_dm and extrapol
+    Revision:
+      siesta--dm-checks--2.5--patch-2
+
+    * Use new functionality in module m_sparse to simplify the logic and
+    hide the ---old index arrays.
+    
+    * Initdm is now part of the new_dm module.
+    
+    (* While debugging a hard-to-track zeroth allocation of DMsaved made a
+    note in alloc.F90)
+
+    new files:
+     Src/.arch-ids/m_sparse_types.f90.id Src/m_sparse_types.f90
+
+    removed files:
+     Src/.arch-ids/extrapol.F.id Src/.arch-ids/initdm.F.id
+     Src/extrapol.F Src/initdm.F
+
+    modified files:
+     Src/Makefile Src/alloc.F90 Src/m_iodm.F Src/m_sparse.F
+     Src/new_dm.F Src/siesta_init.F Src/sparse_matrices.F90
+     Src/state_init.F
+
+
+2008-02-15 16:34:56 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
+
+    Summary:
+      Split of read/write functionality in iodm. Sparsity module. Input check
+    Revision:
+      siesta--dm-checks--2.5--patch-1
+
+    * A new module m_iodm based in iodm has been added (the old code remains).
+      Reading and writing are now done by separate routines, read_dm and write_dm,   
+      respectively. 
+    
+    * New module m_sparse, containing code to check for sparsity changes and
+      to re-structure a sparse matrix to conform to a new pattern (inspired by
+      code in extrapol).
+    
+    * Initdm now calls read_dynamic_dm, which generates a completely fresh
+      DM.  Then the input sparsity pattern is compared to the current one,
+      and updated if needed.
+    
+    To Do:  Clarify the DM data flow in the program, and insert sanity
+            checks at various points.
+    
+
+    new files:
+     Src/.arch-ids/m_iodm.F.id Src/.arch-ids/m_sparse.F.id
+     Src/m_iodm.F Src/m_sparse.F
+
+    modified files:
+     Src/Makefile Src/initdm.F Src/mixer.F Src/new_dm.F
+     Src/state_init.F
+
 
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
+
+2008-01-11  16:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-11
+
+Summary: Proper fix of cell management for zmatrix case. Enthalpy cosmetics
+
+A recent previous patch (8) broke the unit cell handling in the zmatrix case.
+It has been fixed.
+
+The assorted "enthalpy" output has been rationalized,
+reserving the use of the word "enthalpy" for the original case
+of "target enthalpy".
+
+(Fixed syntax error in std-test.mk)
+
+2008-01-11  14:05:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-10
+
+Summary: Make diagonalization the default solution method regardless of size
+
+Make diagonalization the default solution method regardless of system size.
+
+2008-01-11  14:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-9
+
+Summary: Fix test.mk scripts
+
+The std-test.mk script did not copy the output file to the main test directory.
+The bsc-test.mk did not remove all the scratch files.
+
+Fixed a typo in the input to the si2x1h test.
+
+2008-01-11  13:55:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-8
+
+Summary: Fix for structural supercell construction
+
+Due to the accidental mis-use of a module variable, the routine coor
+did not generate the supercell correctly when a %supercell block was used.
+
+Added and additional warning if such a block is used when the structure is
+input in Zmatrix form.
+
+2007-12-17  14:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-7
+
+Summary: Fix memory leak in dhscf
+
+The array dvxcdn was allocated but never deallocated in dhscf. Actually,
+it was never used in cellxc, so it has now been dimensioned trivially
+to (1,1,1). The bug was introduced in the bsc-master-2.1 branch, at 
+patch 27.
+
+2007-11-22  18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
+
+Summary: New 'fdf' target in Makefile for tests
+
+(E. Anglada)
+
+New target for the test option: fdf calls. 
+Requested by BSC so they can test the new fdf.
+
+New files (new tests and missing xml output files for reference)
+A/ Tests/var_cell_stress
+A  Tests/Reference-xml/fire_benzene.xml
+A  Tests/Reference-xml/si_coop.xml
+A  Tests/var_cell_stress/.arch-ids/=id
+A  Tests/var_cell_stress/.arch-ids/makefile.id
+A  Tests/var_cell_stress/.arch-ids/var_cell_stress.fdf.id
+A  Tests/var_cell_stress/.arch-ids/var_cell_stress.pseudos.id
+A  Tests/var_cell_stress/makefile
+A  Tests/var_cell_stress/var_cell_stress.fdf
+A  Tests/var_cell_stress/var_cell_stress.pseudos
+
+
+Modified files
+M  Src/siesta_move.F : remove debug info
+M  Src/remove_intramol_pressure.f90 : remove debug info
+M  Tests/std-Makefile Xmlcheck enabled by default. New targets: fdf, all
+M  Tests/std-test.mk 
+M  Tests/si2x1h/si2x1h.fdf New option
+M  Src/atom.f  Remove debug info.
+
+2007-11-22  18:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+Summary: xml tester update (Eduardo Anglada)
+
+New files:
+A  Src/xmlparser/corresponding_node.f90
+A  Src/xmlparser/string_utilities.f90
+
+Changes in the xml output:
+M  Src/state_analysis.F
+M  Src/siesta_move.F
+M  Src/setup_hamiltonian.F
+M  Src/siesta_forces.F
+M  Src/scfconvergence_test.F
+M  Src/post_scf_work.F
+
+Changes in the xml tester:
+M  Src/wxml/m_wxml_core.f90
+M  Src/wxml/flib_wstml.f90
+M  Src/xmlparser/makefile               
+M  Src/xmlparser/m_dom_element.f90
+M  Src/xmlparser/m_strings.f90
+M  Src/xmlparser/compare_m.f90
+M  Src/xmlparser/test.f90
+
+Changes in the tests makefiles
+M  Tests/std-Makefile
+M  Tests/std-test.mk
+
+Upgraded xml reference outputs:
+...
+
+2007-11-22  17:55:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+Summary: Fixes for denchar compilation and wavefunction output
+
+* The makefile section for denchar had several errors.
+
+* siesta_analysis used maxwk as a local variable, instead of importing
+  it from writewave, thus preventing the call to wwave from working.
+
+* (NOTE: the need for a lattice constant or cell vectors in the fdf file
+   if the wavefunctions need to be output should be removed)
 
 2007-11-22  17:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
 

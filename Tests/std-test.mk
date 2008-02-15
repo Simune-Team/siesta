@@ -30,7 +30,7 @@ xmlcheck: completed
 	@echo "    ==> Running xmlcheck for system $(name)"
 	@ln -sf ../tolerances.dat ./tolerances.dat
 	$(XML-TESTER) $(XML-REFERENCE)/$(name).xml $(label)/$(name).xml | tee $(label).diff-xml
-        # The following line erases the file if it is empty
+# The following line erases the file if it is empty
 	@if [ ! -s $(label).diff-xml ] ; then rm -f $(label).diff-xml ; fi
 #
 clean:

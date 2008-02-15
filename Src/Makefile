@@ -231,11 +231,11 @@ ioncat: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
 #
 DENCHAR_OBJS = m_denchar_init.o m_denchar_geom.o m_denchar_io.o \
                m_denchar_neighb.o m_denchar_work.o \
-               denchar.o flib_spline.o
+               denchar.o 
 #
 m_denchar_io.o m_denchar_init.o denchar.o : $(FDF)
 #
-OTHER_DENCHAR_OBJS=  precision.o recipes.o \
+OTHER_DENCHAR_OBJS=  precision.o recipes.o alloc.o \
         f2kcli.o bessph.o chkdim.o dismin.o  dot.o iodm.o memory.o \
         paste.o  radfft.o io.o  spatial.o flib_spline.o\
         volcel.o parallel.o parallelsubs.o memoryinfo.o sys.o listsc.o  \
@@ -573,8 +573,8 @@ siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o timestamp.o
 siesta_forces.o: compute_dm.o m_steps.o mixer.o parallel.o post_scf_work.o
-siesta_forces.o: scfconvergence_test.o setup_hamiltonian.o siesta_options.o
-siesta_forces.o: state_analysis.o state_init.o
+siesta_forces.o: scfconvergence_test.o setup_hamiltonian.o siesta_cml.o
+siesta_forces.o: siesta_options.o state_analysis.o state_init.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
 siesta_init.o: kpoint_grid.o ksvinit.o m_check_supercell.o m_energies.o m_eo.o

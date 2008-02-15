@@ -33,8 +33,7 @@
       logical           :: Server_calculation, foundxv, foundzm
       real(dp)          :: local_charnet
 
-      ! Reciprocal unit vectors
-      real(dp):: bcell(3,3)
+      real(dp):: bcell(3,3), tmp_cell(3,3)
       integer :: i, ia, ix
       integer:: nbcell  ! Auxiliary to call shaper routine
 
@@ -43,10 +42,11 @@
       !! Read number of atoms and coordinates, and unit cell
       call fdf_global_get(use_struct_file,"MD.UseStructFile",.false.)
       if (use_struct_file) then
-         call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
+         call read_struct( na_u, tmp_cell) ! Sets na_u, xa, and isa
       else
-         call coor(na_u,ucell)  ! Sets na_u, xa, and isa
+         call coor(na_u,tmp_cell)  ! Sets na_u, xa, and isa
       endif
+      ucell = tmp_cell  ! initialize module variable
 
 !     Prepare iza here: it might be needed by ioxv      
       nullify(iza)

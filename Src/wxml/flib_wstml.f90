@@ -4,6 +4,7 @@ MODULE flib_wstml
   use flib_wxml, only: str
   use flib_wxml, only: xml_NewElement, xml_AddPcData, xml_AddAttribute
   use flib_wxml, only: xml_EndElement
+  use m_wxml_overloads
 
   implicit none
 

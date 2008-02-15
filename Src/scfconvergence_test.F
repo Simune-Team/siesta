@@ -56,7 +56,7 @@
                 call cmlEndPropertyList(mainXML)
               endif
             endif
-            if (cml_p) call cmlEndStep(mainXML)
+           
             ! flush stdout
             call pxfflush(6)
             call wallclock("-------------- end of scf step")

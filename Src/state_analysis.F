@@ -41,6 +41,11 @@
 !     Save structural information in crystallographic format,
 !     and canonical Zmatrix (if applicable) before moving the atoms
 !
+
+      if (cml_p) then
+         call cmlStartModule(xf=mainXML, title='SCF Finalization')   
+      endif
+
       if (IOnode) then
          call write_struct( ucell, na_u, isa, iza, xa )
          if (lUseZmatrix) then
@@ -133,6 +138,11 @@ C ...................
       if (bornz .and. (mod(istep,2) .eq. 0)) then
          call born_charge()
       endif
+
+      !End the xml module corresponding to the analysis
+      if (cml_p) then
+         call cmlEndModule(mainXML)         
+      endif 
 !--------------------------------------------------------------------------- END
       END subroutine state_analysis
 

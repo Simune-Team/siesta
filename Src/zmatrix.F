@@ -118,7 +118,8 @@ C       v2 = a*v1 + B
 
 C  Subroutines
 
-        subroutine read_Zmatrix(na,nSpecies,alat,ucell,lOrigin,origin)
+        subroutine read_Zmatrix(na,nSpecies,alat,unit_cell,
+     $                          lOrigin,origin)
 
         use fdf
         use parsing,     only : parse
@@ -133,7 +134,7 @@ C Passed variables
         integer,  intent(in)                :: na
         integer,  intent(out)               :: nSpecies(na)
         real(dp), intent(in)                :: alat
-        real(dp), intent(in)                :: ucell(3,3)
+        real(dp), intent(in)                :: unit_cell(3,3)
         logical,  intent(in)                :: lOrigin
         real(dp), intent(in)                :: origin(3)
 
@@ -193,7 +194,7 @@ C Local variables
 
        zmatrix_alat = alat     ! AG: For future processing
 
-       dummy_volume = volcel(ucell)
+       dummy_volume = volcel(unit_cell)
        unknown_cell = (abs(dummy_volume) < 1.0e-6_dp)
 
 C Nullify pointers
@@ -779,12 +780,12 @@ C Fractional cartesian
               coeffBVal(k) = coeffB(3*(i-1)+k)
             enddo
             do k=1,3
-              Zmat(3*(i-1)+k) = ucell(k,1)*ZmatVal(1) +
-     .                          ucell(k,2)*ZmatVal(2) +
-     .                          ucell(k,3)*ZmatVal(3)
-              coeffB(3*(i-1)+k) = ucell(k,1)*coeffBVal(1) +
-     .                          ucell(k,2)*coeffBVal(2) +
-     .                          ucell(k,3)*coeffBVal(3)
+              Zmat(3*(i-1)+k) = unit_cell(k,1)*ZmatVal(1) +
+     .                          unit_cell(k,2)*ZmatVal(2) +
+     .                          unit_cell(k,3)*ZmatVal(3)
+              coeffB(3*(i-1)+k) = unit_cell(k,1)*coeffBVal(1) +
+     .                          unit_cell(k,2)*coeffBVal(2) +
+     .                          unit_cell(k,3)*coeffBVal(3)
             enddo
           endif
         enddo

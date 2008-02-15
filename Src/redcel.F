@@ -12,7 +12,7 @@
 
 c *********************************************************************
 c Reads the unit cell (and supercell, if present) vectors from the
-c data file, or generates them automatically if absent there.
+c data file.
 c Written by J.M.Soler
 c ********* Output ****************************************************
 c real*8 alat       : Lattice constant
@@ -27,22 +27,16 @@ C
       use precision, only : dp
       use sys,       only : die
       use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit          none
 
-      integer           mscell(3,3)
-      real(dp)          alat, scell(3,3), ucell(3,3)
+      integer, intent(out)  ::      mscell(3,3)
+      real(dp), intent(out) ::      alat, scell(3,3), ucell(3,3)
 
 C Internal variables
       integer           i, iunit, ix, j
       real(dp)          alp, alplp, betlp, blp, cell(3,3), clp,
      .                  gamlp, pi, xxx
-#ifdef MPI
-      integer           MPIerror
-#endif
 
 C Lattice constant
       alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
@@ -51,15 +45,8 @@ C Lattice vectors
 
       if ( fdf_block('LatticeParameters',iunit) .and.
      .     fdf_block('LatticeVectors',iunit) ) then
-         write(6,'(2a)')'redcel: ERROR: Lattice vectors doubly ',
-     .     'specified: by LatticeVectors and by LatticeParameters.' 
-#ifdef MPI
-         write(6,'(a)')
-     .     'redcel: ERROR: Double input for lattice vectors'
-         call MPI_Abort(MPI_Comm_World,1,MPIerror)
-#else
-         call die('redcel: ERROR: Double input for lattice vectors')
-#endif
+         call die('redcel: ERROR: Lattice vectors doubly ' //
+     $       'specified: by LatticeVectors and by LatticeParameters.')
       endif
 
       if ( fdf_block('LatticeParameters',iunit) ) then
@@ -94,28 +81,15 @@ C Lattice vectors
           cell(i,i) = 1.d0
         enddo
       endif
-C ...
 
-C Multiply cell vectors by by lattice constant ........................
-      do i = 1,3
-        do ix = 1,3
-          cell(ix,i) = alat * cell(ix,i)
-        enddo
-      enddo
-C ..................
+      cell = alat * cell
 
-C Super cell ..........................................
+C     Super cell 
+
       if ( fdf_block('SuperCell',iunit) ) then
         if ( alat .eq. 0.d0 ) then
-          write(6,*) 'redcel: ERROR: LatticeConstant required',
-     .                      ' to define SuperCell'
-#ifdef MPI
-          write(6,'(a)')
-     .      'redcel: ERROR: LatticeConstant required'
-          call MPI_Abort(MPI_Comm_World,1,MPIerror)
-#else
-          call die('redcel: ERROR: LatticeConstant required')
-#endif
+          call die('redcel: ERROR: LatticeConstant required'
+     $             // ' to define SuperCell')
         endif
         do i = 1,3
           read(iunit,*) (mscell(j,i),j=1,3)
@@ -128,11 +102,9 @@ C Super cell ..........................................
           mscell(i,i) = 1
         enddo
       endif
-      do i = 1,3
-        do ix = 1,3
-          ucell(ix,i) = cell(ix,i)
-        enddo
-      enddo
+
+      ucell = cell
+
       do i = 1,3
         do ix = 1,3
           scell(ix,i) = ucell(ix,1) * mscell(1,i) +

@@ -1772,6 +1772,50 @@
 !     EXTRACT
 !*******************************************************************************
 
+  elemental function len_extract_s(s,start,finish)
+
+      implicit none
+      type(string), intent(in)  :: s
+      integer, intent(in)       :: start,finish
+      integer                   :: len_extract_s
+      integer                   :: is,if
+
+
+      is = max(1,start)
+      if = min(len(s),finish)
+      if (if < is) then
+          len_extract_s = 0
+      else
+          len_extract_s = max(0,if-is) + 1
+      endif
+
+      end function len_extract_s
+
+      !*******************************************************************************
+
+
+      elemental function len_extract_c(c,start,finish)
+
+      implicit none
+      character(*), intent(in)  :: c
+      integer, intent(in)       :: start,finish
+      integer                   :: len_extract_c
+      integer                   :: is,if
+
+
+      is = max(1,start)
+      if = min(len(c),finish)
+      if (if < is) then
+          len_extract_c = 0
+      else
+          len_extract_c = max(0,if-is) + 1
+      endif
+
+      end function len_extract_c
+
+
+!*******************************************************************************
+
       pure function extract_s(s,start,finish)
 
       implicit none
@@ -1795,27 +1839,6 @@
 
 !*******************************************************************************
 
-      elemental function len_extract_s(s,start,finish)
-
-      implicit none
-      type(string), intent(in)  :: s
-      integer, intent(in)       :: start,finish
-      integer                   :: len_extract_s
-      integer                   :: is,if
-
-
-      is = max(1,start)
-      if = min(len(s),finish)
-      if (if < is) then
-          len_extract_s = 0
-      else
-          len_extract_s = max(0,if-is) + 1
-      endif
-
-      end function len_extract_s
-
-!*******************************************************************************
-
       pure function extract_c(c,start,finish)
 
       implicit none
@@ -1835,27 +1858,8 @@
 
       end function extract_c
 
-!*******************************************************************************
 
-      elemental function len_extract_c(c,start,finish)
-
-      implicit none
-      character(*), intent(in)  :: c
-      integer, intent(in)       :: start,finish
-      integer                   :: len_extract_c
-      integer                   :: is,if
-
-
-      is = max(1,start)
-      if = min(len(c),finish)
-      if (if < is) then
-          len_extract_c = 0
-      else
-          len_extract_c = max(0,if-is) + 1
-      endif
-
-      end function len_extract_c
-
+ 
 !*******************************************************************************
 !     INSERT
 !*******************************************************************************
