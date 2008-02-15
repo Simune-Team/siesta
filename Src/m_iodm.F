@@ -62,8 +62,8 @@ C     Saved internal variables:
       integer, intent(out) :: maxnd
       integer, intent(out) :: nspin
 
-      integer, intent(out) :: numd(no_l)
-      integer, intent(out) :: listdptr(no_l)
+      integer, pointer     :: numd(:)
+      integer, pointer     :: listdptr(:)
       integer, pointer     :: listd(:)
       real(dp), pointer    :: dm(:,:)
 

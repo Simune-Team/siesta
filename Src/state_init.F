@@ -182,23 +182,21 @@
       ! Check if any two atoms are unreasonably close
       call proximity_check(rmax)
 
-      if (istp==1) then 
-        nullify(Dscf,Dscfsave,Dold,Eold,Escf)
-        nullify(listhold,listh)
-        nullify(H,H0,S)
-        nullify(xijo)
-      endif
-
       ! List of nonzero Hamiltonian matrix elements
       ! and, if applicable,  vectors between orbital centers
 
       ! Listh (and xijo if .not. gamma) are allocated inside hsparse
       ! nh is set by the routine also
       ! Note: We always generate xijo
+
+!!      call copy_sparsity(sparsity,old_sparsity)  ! memory leak
+
       nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh,
      $                 set_xijo=.true., xijo=xijo )
+
+!!      call build_sparsity(no_l,numh,listhptr,listh,sparsity)
 
       maxnh = nh
       !OBSOLETE, but maybe not a bad idea after all, to
@@ -208,6 +206,8 @@
       !  safety margin for when atoms move 
       !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
 
+      ! The following has been fixed in the new new_dm, but it
+      ! is kept here as a warning.
       ! Use re_alloc regardless of whether nh is greater than 
       ! the old maxnh or not, BUT DO NOT SHRINK, as some of
       ! these arrays are later used in extrapol.
@@ -222,19 +222,6 @@
 
       call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
      .     routine='siesta',copy=.true.,SHRINK=.false.)
-      call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     .     routine='siesta',copy=.true.,SHRINK=.false.)
-      call re_alloc(listhold,1,maxnh,name='listhold',
-     .     routine='siesta',copy=.true.,SHRINK=.false.)
-!==============================================================
-
-      if (istp==1) then
-         ! Initialise Dscfsave to avoid problems in extrapol
-         ! This might be superfluous, as alloc fills array with zeroes
-         Dscfsave(1:maxnh,1:nspin) = 0.0_dp
-         listhold(1:maxnh) = 0
-      endif
-
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='siesta',copy=.false.)
       call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',

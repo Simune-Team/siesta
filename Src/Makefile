@@ -69,9 +69,9 @@ OBJS =  automatic_cell.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
-	efield.o egandd.o ener3.o ener3lomem.o extrapol.o  extrapolon.o \
+	efield.o egandd.o ener3.o ener3lomem.o extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
-	hsparse.o idiag.o  initatom.o initdm.o inver.o \
+	hsparse.o idiag.o  initatom.o inver.o \
 	iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
@@ -141,7 +141,7 @@ $(FDF):
 #
 # Routines using fdf calls.
 #
-dhscf.o initdm.o iodm.o iohs.o iolwf.o  grdsam.o : $(FDF)
+dhscf.o iodm.o iohs.o iolwf.o  grdsam.o : $(FDF)
 recoor.o outcoor.o ioxv.o m_iostruct.o kgrid.o kgridinit.o ksv.o : $(FDF)
 redata.o siesta.o diagon.o pdos.o plcharge.o: $(FDF)
 coor.o cgvc.o iocg.o ioeig.o iofa.o iokp.o iomd.o  ofc.o : $(FDF)
@@ -377,7 +377,6 @@ electrostatic.o: atm_types.o atmfuncs.o atmparams.o precision.o radfft.o
 electrostatic.o: radial.o recipes.o sys.o
 ener3.o: globalise.o m_mpi_utils.o onmod.o precision.o
 ener3lomem.o: globalise.o m_mpi_utils.o onmod.o precision.o
-extrapol.o: parallel.o precision.o sys.o
 extrapolon.o: parallel.o precision.o sys.o
 fermid.o: parallel.o precision.o recipes.o sys.o
 fft3d.o: alloc.o parallel.o parallelsubs.o precision.o sys.o
@@ -400,8 +399,6 @@ hsparse.o: precision.o sorting.o sys.o
 idiag.o: parallel.o sys.o
 initatom.o: atom.o basis_io.o basis_specs.o basis_types.o electrostatic.o
 initatom.o: old_atmfuncs.o precision.o
-initdm.o: alloc.o m_iodm.o m_sparse.o parallel.o parallelsubs.o parsing.o
-initdm.o: precision.o sys.o units.o
 initparallel.o: alloc.o parallel.o parallelsubs.o precision.o spatial.o sys.o
 io.o: sys.o
 iocg.o: files.o precision.o sys.o
@@ -466,6 +463,7 @@ m_pulay.o: alloc.o atomlist.o files.o m_mpi_utils.o m_spin.o parallel.o
 m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_rmaxh.o: precision.o
 m_sparse.o: alloc.o precision.o
+m_sparse_types.o: alloc.o precision.o sys.o
 m_spin.o: alloc.o m_fdf_global.o parallel.o precision.o
 m_stress.o: precision.o
 m_wallclock.o: m_walltime.o
@@ -491,8 +489,10 @@ molecularmechanics.o: alloc.o parallel.o parsing.o precision.o sys.o units.o
 mpi_test.o: m_mpi_utils.o parallel.o precision.o
 mulliken.o: atmfuncs.o parallel.o parallelsubs.o precision.o siesta_cml.o
 naefs.o: atmfuncs.o mneighb.o precision.o
-new_dm.o: atomlist.o extrapol.o m_spin.o m_steps.o siesta_geom.o
-new_dm.o: siesta_options.o sparse_matrices.o
+new_dm.o: alloc.o atomlist.o m_iodm.o m_sparse.o m_spin.o m_steps.o parallel.o
+new_dm.o: parallelsubs.o parsing.o precision.o siesta_geom.o siesta_options.o
+new_dm.o: sparse_matrices.o sys.o units.o
+new_extrapol.o: m_sparse_types.o parallel.o precision.o sys.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
@@ -591,7 +591,7 @@ siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
 siesta_options.o: files.o m_fdf_global.o m_mpi_utils.o memoryinfo.o parallel.o
 siesta_options.o: precision.o siesta_cml.o sys.o units.o
-sparse_matrices.o: precision.o
+sparse_matrices.o: m_sparse_types.o precision.o
 spatial.o: precision.o
 spher_harm.o: alloc.o precision.o sys.o
 state_analysis.o: atomlist.o born_charge.o m_energies.o m_forces.o m_iostruct.o
@@ -647,7 +647,6 @@ m_compute_dm.o: compute_dm.o
 m_conjgr.o: conjgr.o
 m_conjgr_old.o: conjgr_old.o
 m_dynamics.o: dynamics.o
-m_extrapol.o: extrapol.o
 m_fermid.o: fermid.o
 m_find_kgrid.o: find_kgrid.o
 m_fire_optim.o: fire_optim.o
@@ -661,6 +660,7 @@ m_local_dos.o: local_DOS.o
 m_minvec.o: minvec.o
 m_mixer.o: mixer.o
 m_new_dm.o: new_dm.o
+m_new_extrapol.o: new_extrapol.o
 m_nlefsm.o: nlefsm.o
 m_normalize_dm.o: normalize_dm.o
 m_ordern.o: ordern.o
