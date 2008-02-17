@@ -68,7 +68,7 @@
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
 
       logical:: dminit     ! Initialize density matrix?
-      logical :: found
+      logical :: found, try_to_read_from_file
 
 
       if (IOnode) then
@@ -81,9 +81,31 @@
          nullify(numold,listold,listptrold)
          nullify(DMsaved)
       endif
-
-      dminit = .false.
-      if (harrisfun) dminit = .true.
+!
+!     In principle we allow the re-use of the DM (i.e, we do not initialize it)
+!
+      dminit = .false. 
+      try_to_read_from_file = usesavedm     ! As per defaults
+!
+!     Except if there are explicit instructions
+!
+      if (.not. allow_dm_reuse) then
+         dminit = .true.
+         try_to_read_from_file = .false.  ! Just in case the user has a fossil DM.UseSaveDM
+         if (IOnode) then
+            write(6,"(a)") "DM re-use not allowed. Resetting always"
+            if (usesavedm) then
+               write(6,"(a)") "DM.UseSaveDM  overriden !!"
+            endif
+         endif
+      endif
+!
+!     or using Harris...
+!
+      if (harrisfun) dminit = .true.  
+!
+!     or we are in the first step, or performing force-constant calculations
+!
       if (istp .eq. 1) then
          dminit = .true.
       else
@@ -93,15 +115,16 @@
      $         .and. usesavedm)  dminit = .true.
       endif
 
-      ! If auxiliary cell has changed, optionally reset density matrix
-      ! and set usesavedata to false to avoid reading back saved copy
-      ! (The new default is to reset)
-
+!
+!     ... or if the auxiliary cell has changed
+!     (in this case we have to  avoid reading back saved copy from file)
+!
       if (initdmaux.and.auxchanged) then
         dminit = .true.
-        usesavedmloc = .false.
-      else
-        usesavedmloc = usesavedm
+        try_to_read_from_file = .false.
+        if (IOnode) then
+           write(6,"(a)") "DM reset as supercell changed."
+        endif
       endif
 
       if (dminit) then
@@ -116,7 +139,7 @@
          call initdm(Datm, Dscf, lasto, na_s,
      .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
      .               numh, listhptr, listh, iaorb, found, inspn, 
-     .               usesavedmloc)
+     .               try_to_read_from_file)
          !
          ! Store sparsity
          call re_alloc(numold,1,no_l)
@@ -131,7 +154,7 @@
       else
 
          if (IOnode) then
-            write(6,"(a)") "Re-using Density Matrix..."
+            write(6,"(a)") "Re-using DM from previous geometry..."
          endif
 
         ! Extrapolate density matrix between steps
@@ -148,6 +171,8 @@
 !---------------------------------------------------
 
       subroutine new_extrapol(nrows,num, listptr,list, DM)
+
+      USE siesta_options
 
       ! This routine extrapolates DM
       ! If it is called for the first time after initialization
@@ -230,7 +255,7 @@
       else
 
          if (IOnode) then
-            write(6,"(a)") "Re-using last step's Density Matrix..."
+            write(6,"(a)") "Re-using DM without extrapolation..."
          endif
 
          ! Copy DM to DMsaved
@@ -238,8 +263,14 @@
          ! If we do not request a shrink, DMsaved might end up
          ! being larger than DM 
 
-         call re_alloc(DMsaved,1,nnz,1,nspin)
-         DMsaved(1:nnz,1:nspin) = DM(1:nnz,1:nspin)
+         if (allow_dm_extrapolation) then
+            call re_alloc(DMsaved,1,nnz,1,nspin)
+            DMsaved(1:nnz,1:nspin) = DM(1:nnz,1:nspin)
+         else
+            if (IOnode) then
+               write(6,"(a)") "(DM extrapolation not allowed)"
+            endif
+         endif
       endif
 
       if (sparsity_has_changed) then
@@ -264,12 +295,12 @@
       subroutine initdm(Datm, Dscf, lasto, maxa,
      .                  maxnh, maxo, maxuo, maxspn, nua, no_l, nspin, 
      .                  numh, listhptr, listh, iaorb, found, inspn, 
-     .                  usesavedm)
+     .                  try_dm_from_file)
 
 c *******************************************************************
 c Density matrix initialization
 c
-c    If UseSaveDM is true, it is read from file if present.
+c    If Try_Dm_From_File is true, it is read from file if present.
 c    Otherwise it is generated assuming atomic charging 
 c      (filling up atomic orbitals). The DM originated that way is
 c      not a good DM due to overlaps, but the SCF cycling corrects
@@ -287,7 +318,7 @@ c Written by E. Artacho. December 1997. Taken from the original piece
 c of siesta.f written by P. Ordejon.
 c Non-collinear spin added by J.M.Soler, May 1998.
 c ********* INPUT ***************************************************
-c logical usesavedm     : whether DM has to be read from files or not
+c logical try_dm_from_file     : whether DM has to be read from files or not
 c logical found         : whether DM was found in files
 c logical inspn         : true : AF ordering according to atom ordering
 c                                if no DM files, no DM.InitSpin, ispin=2
@@ -329,7 +360,7 @@ C
 
       implicit          none
 
-      logical           found, inspn, usesavedm
+      logical           found, inspn, try_dm_from_file
       integer           no_l, nua, maxo, maxuo, maxnh, nspin, maxa, 
      .                  maxspn
       integer           lasto(0:maxa), numh(maxuo), iaorb(maxo)
@@ -376,7 +407,7 @@ C Internal variables and arrays
 
 C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
-      if (usesavedm) then
+      if (try_dm_from_file) then
 
          nullify(list_tmp,D_tmp,num_tmp,listptr_tmp)
          call re_alloc(num_tmp,1,no_l)

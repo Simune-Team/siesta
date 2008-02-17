@@ -6,6 +6,24 @@ ____________________________________________________________________
 ** CHANGES ALONG agarcia@siesta.arch--2006/siesta--dm-checks--2.5
 --------------------------------------------------------------------
 
+2008-02-17 18:50 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+Summary: New symbols for control of DM reuse and extrapolation
+
+The FDF symbols:
+
+DM.AllowReuse          (default .TRUE.)
+DM.AllowExtrapolation  (default .TRUE.)
+
+control whether the DM can be re-used from one geometry step to another, and
+whether it can be extrapolated using information from the two previous steps.
+
+If DM.AllowReuse is .false., the DM is not read from file even if DM.UseSaveDM is .true.
+
+The default for ReinitialiseDM has been changed to ".true.". Hence the DM is
+reset (and not read from file) when the auxiliary supercell shape changes, as sanity
+dictates.
+
 2008-02-15 16:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
 
     (Sync to 2.5.11)
