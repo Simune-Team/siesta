@@ -7,6 +7,56 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-02-21  17:15:00 GMT	Jose M Soler <jose.soler@uam.es>	patch-1
+
+Summary: VdW XC added
+Keywords: VdW mesh3d
+
+- The Van der Waals functional of Dion et al (PRL 92, 246401 (2004)) has
+  been implemented.
+- A new module mesh3d has been implemented to handle different distributions
+  of mesh points over parallel processors, as well as routines to handle the
+  translation between them.
+- New routines fft3d and fftr have been implemented for parallel 3D FFTs of
+  complex and real functions
+- A scheme has been implemented to open files (one per processor) for
+  debugging output
+- Routines in xc.f have been spread over different files, plus a few other
+  small file rearrangements and cosmethic changes
+
+New files:
+atomxc.f   : Splitted from xc.f
+cellxc.f90 : Van der Waals functional implemented. Suffix changed from F90.
+             Interface changed. Wrapped as a module
+fft1d.F    : Splitted from fft3d.F  
+             Routine nfft moved here from poison.F
+fftr.f90   : New parallel 3D FFT routine for real functions
+ggxc.f     : Splitted from xc.f
+ldaxc.f    : Splitted from xc.f
+m_debug.f90 : Opens one file per processor, for debugging output
+mesh3d.F90 : New module for handling different parallel mesh distributions
+moreParallelSubs.F90 : Implements a routine for miscellaneous AllReduce
+vdwxc.f90  : Implements the Van der Waals XC functional
+
+Modified Files:
+alloc.F90  : Cosmethic changes
+atom.f     : Added VdW functional to xc check
+chkgmx.f   : Implemented routine meshKcut that finds mesh cutoff
+dhscf.F    : Modified call to cellxc
+fft3d.F    : New parallel 3D FFT routine for complex functions (fft3d)
+             Argument nsm of old routine fft now accessed from USE parallel
+             Wrapped as a module
+forhar.f   : Modified call to cellxc
+poison.F   : Modified call to fft
+             Routine nfft moved to fft1d.F
+siesta_init.F : Added a call to setDebugOutputUnit()
+
+Removed files:
+cellxc.F   : Changed to cellxc.f90
+xc.f       : Splitted into atomxc.f ldaxc.f and ggaxc.f
+
+-------------------------------------------------------------------------------
+
 2007-11-22  18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
 
 Summary: New 'fdf' target in Makefile for tests

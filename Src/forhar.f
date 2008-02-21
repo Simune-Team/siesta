@@ -11,7 +11,12 @@
       module m_forhar
       use precision, only : dp, grid_p
       use alloc,     only : re_alloc, de_alloc
-      use mesh
+      use parallel,  only : ProcessorY
+      use mesh,      only : NSM
+      use mesh3D,    only : myMeshBox    ! Returns my processor mesh box
+      use mesh3D,    only : setMeshDistr ! Sets a distribution of mesh
+                                         ! points over parallel processors
+      use m_cellxc,  only : cellxc       ! Finds xc energy and potential
 
       implicit none
 
@@ -19,6 +24,7 @@
       private
 
       CONTAINS
+
       subroutine forhar( NTPL, NSPIN, NML, NTML, NTM, NPCC, CELL, 
      .                   RHOATM, RHOPCC, VNA, DRHOOUT, VHARRIS1, 
      .                   VHARRIS2 )
@@ -49,7 +55,8 @@ C **********************************************************************
       REAL(grid_p), DIMENSION(NTPL,NSPIN), INTENT(INOUT) :: VHARRIS1
       REAL(grid_p), DIMENSION(NTPL), INTENT(INOUT) :: VHARRIS2
       
-      EXTERNAL REORD, CELLXC
+!      EXTERNAL REORD, CELLXC
+      EXTERNAL REORD
 
 ! AG: Note:  REAL*4 variables are really REAL(kind=grid_p)
 !
@@ -82,9 +89,9 @@ C **********************************************************************
 C ----------------------------------------------------------------------
 C Internal variables and arrays
 C ----------------------------------------------------------------------
-      INTEGER IP, ISPIN, ISPIN2
-      REAL(dp) EX, EC, DEX, DEC, STRESSL(3,3)
-      real(grid_p) aux3(3,1)   !! dummy arrays for cellxc
+      INTEGER IP, ISPIN, ISPIN2, myBox(2,3)
+      REAL(dp) EX, EC, DEX, DEC, STRESS(3,3)
+      INTEGER, SAVE:: JDGdistr=-1
 
       real(grid_p), dimension(:,:),   pointer :: drhoin
       real(grid_p), dimension(:,:,:), pointer :: dvxcdn
@@ -105,6 +112,15 @@ C ----------------------------------------------------------------------
       DVXCDN(:,:,:) = 0.0_grid_p
 
 C ----------------------------------------------------------------------
+C Set uniform distribution of mesh points and find my processor mesh box
+C ----------------------------------------------------------------------
+
+      if (JDGdistr<0)
+     .  call setMeshDistr( distrID=JDGdistr, nMesh=NTM, 
+     .                     nNodesX=1, nNodesY=ProcessorY, nBlock=NSM )
+      call myMeshBox( NTM, JDGdistr, myBox )
+
+C ----------------------------------------------------------------------
 C Compute exchange-correlation energy and potential and
 C their derivatives respect the input charge, that is, Harris charge
 C or the sum of atomic charges.
@@ -121,8 +137,10 @@ C ----------------------------------------------------------------------
         CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,+1)
       ENDDO
 
-      CALL CELLXC( 0, 1, CELL, NTML, NTML, NTPL, 0, AUX3, NSPIN, DRHOIN,
-     .             EX, EC, DEX, DEC, VHARRIS1, DVXCDN, STRESSL )
+      CALL CELLXC( 0, CELL, NTM, myBox(1,1), myBox(2,1),
+     .                           myBox(1,2), myBox(2,2),
+     .                           myBox(1,3), myBox(2,3), NSPIN, DRHOIN,
+     .             EX, EC, DEX, DEC, STRESS, VHARRIS1, DVXCDN )
 
       DO ISPIN = 1, NSPIN
         CALL REORD(DRHOIN(1,ISPIN),DRHOIN(1,ISPIN),NML,NSM,-1)

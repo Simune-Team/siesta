@@ -8,15 +8,6 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-MODULE alloc
-
-      use precision, only: sp, dp
-      use parallel,   only : Node, Nodes, ionode
-      use sys, only: die
-#ifdef MPI
-      use mpi_siesta
-#endif
-
 ! ==================================================================
 ! Allocation, reallocation, and deallocation utility routines
 ! Written by J.M.Soler. May 2000.
@@ -106,10 +97,11 @@ MODULE alloc
 ! INPUT/OUTPUT:
 !   TYPE, pointer :: array : Array to be allocated or reallocated.
 !                            Implemented types and ranks are:
-!                              integer, rank 1, 2, or 3
-!                              real*4,  rank 1, 2, or 3
-!                              real*8,  rank 1, 2, or 3
-!                              logical, rank 1, 2, or 3
+!                              integer,    rank 1, 2, 3
+!                              real*4,     rank 1, 2, 3, 4
+!                              real*8,     rank 1, 2, 3, 4
+!                              complex*16, rank 1, 2
+!                              logical,    rank 1, 2, 3
 !                              character(len=*), rank 1
 ! BEHAVIOR:
 !   Pointers MUST NOT enter in an undefined state. Before using them
@@ -163,7 +155,19 @@ MODULE alloc
 ! deallocated by dealloc.
 ! ==================================================================---
 
-implicit none
+MODULE alloc
+
+  use precision, only: sp     ! Single precision real type
+  use precision, only: dp     ! Double precision real type
+  use parallel,  only: Node   ! My processor node index
+  use parallel,  only: Nodes  ! Number of parallel processors
+  use parallel,  only: ionode ! Am I the I/O processor?
+  use sys,       only: die    ! Termination routine
+#ifdef MPI
+  use mpi_siesta
+#endif
+
+  implicit none
 
 PUBLIC ::             &
   alloc_default,      &! Sets allocation defaults
@@ -174,82 +178,85 @@ PUBLIC ::             &
 
 PRIVATE      ! Nothing is declared public beyond this point
 
+  interface de_alloc
+    module procedure &
+      dealloc_i1, dealloc_i2, dealloc_i3,             &
+      dealloc_r1, dealloc_r2, dealloc_r3, dealloc_r4, &
+      dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
+      dealloc_z1, dealloc_z2,                         &
+      dealloc_l1, dealloc_l2, dealloc_l3,             &
+      dealloc_s1
+  end interface
 
-interface de_alloc
-  module procedure dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
-                   dealloc_i1, dealloc_i2, dealloc_i3,             &
-                   dealloc_l1, dealloc_l2, dealloc_l3,             &
-                   dealloc_s1,                         &
-                   dealloc_r1, dealloc_r2, dealloc_r3, dealloc_r4, &
-                   dealloc_z1, dealloc_z2
-end interface
+  interface re_alloc
+    module procedure &
+      realloc_i1, realloc_i2, realloc_i3,             &
+      realloc_r1, realloc_r2, realloc_r3, realloc_r4, &
+      realloc_d1, realloc_d2, realloc_d3, realloc_d4, &
+      realloc_z1, realloc_z2,                         &
+      realloc_l1, realloc_l2, realloc_l3,             &
+      realloc_s1
+!    module procedure & ! AG: Dangerous!!!
+!      realloc_i1s, realloc_i2s, realloc_i3s,              &
+!      realloc_r1s, realloc_r2s, realloc_r3s, realloc_r4s, &
+!      realloc_d1s, realloc_d2s, realloc_d3s, realloc_d4s, &
+!      realloc_l1s, realloc_l2s, realloc_l3s
+  end interface
 
-interface re_alloc
-  module procedure &
-    realloc_d1,  realloc_i1,  realloc_l1,  realloc_r1,  realloc_z1, &
-    realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  realloc_z2, &
-    realloc_d3,  realloc_i3,  realloc_l3,  realloc_r3,  realloc_r4, &
-    realloc_d4,                                         &
-    realloc_s1                                         
-!AG: Dangerous!!!    realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
-!   realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
-!    realloc_d4s, &
+  ! Derived type to hold allocation default options
+  type allocDefaults
+    private
+    logical           copy
+    logical           shrink
+    integer           imin
+    character(len=32) routine
+  end type allocDefaults
 
-end interface
-
-! Derived type to hold allocation default options
-type allocDefaults
-  private
-  logical           copy
-  logical           shrink
-  integer           imin
-  character(len=32) routine
-end type allocDefaults
-
-! Initial default values
-type(allocDefaults), save ::   &
-  DEFAULT = allocDefaults(     &
-    .true.,                    &! Copy default
-    .true.,                    &! Shrink default
-     1,                        &! Imin default
-    'unknown' )                 ! Routine name default
-character(len=*), parameter :: &
-  DEFAULT_NAME = 'unknown'      ! Array name default
-integer, save ::               &
-  REPORT_LEVEL = 0,            &! Level (detail) of allocation report
-  REPORT_UNIT  = 0              ! Output file unit for report
-character(len=50), save ::     &
-  REPORT_FILE = 'alloc_report'  ! Output file name for report
+  ! Initial default values
+  type(allocDefaults), save ::   &
+    DEFAULT = allocDefaults(     &
+      .true.,                    &! Copy default
+      .true.,                    &! Shrink default
+       1,                        &! Imin default
+      'unknown' )                 ! Routine name default
+  character(len=*), parameter :: &
+    DEFAULT_NAME = 'unknown'      ! Array name default
+  integer, save ::               &
+    REPORT_LEVEL = 0,            &! Level (detail) of allocation report
+    REPORT_UNIT  = 0              ! Output file unit for report
+  character(len=50), save ::     &
+    REPORT_FILE = 'alloc_report'  ! Output file name for report
   
-! Internal auxiliary type for a binary tree
-type TREE
-  character(len=80)   :: name  ! Name of an allocated array
-  real(DP)            :: mem   ! Present memory use of the array
-  real(DP)            :: max   ! Maximum memory use of the array
-  real(DP)            :: peak  ! Memory use of the array during
-                               !   peak of total memory
-  type(TREE), pointer :: left  ! Pointer to data of allocated arrays 
-                               !   preceeding in alphabetical order
-  type(TREE), pointer :: right ! Pointer to data of allocated arrays 
-                               !   trailing in alphabetical order
-end type TREE
+  ! Internal auxiliary type for a binary tree
+  type TREE
+    character(len=80)   :: name  ! Name of an allocated array
+    real(DP)            :: mem   ! Present memory use of the array
+    real(DP)            :: max   ! Maximum memory use of the array
+    real(DP)            :: peak  ! Memory use of the array during
+                                 !   peak of total memory
+    type(TREE), pointer :: left  ! Pointer to data of allocated arrays 
+                                 !   preceeding in alphabetical order
+    type(TREE), pointer :: right ! Pointer to data of allocated arrays 
+                                 !   trailing in alphabetical order
+  end type TREE
 
-! Global variables used to store allocation data
-real(DP),   parameter     :: MBYTE = 1.e6_dp
-type(TREE), pointer, save :: REPORT_TREE
-real(DP),            save :: TOT_MEM  = 0._dp
-real(DP),            save :: PEAK_MEM = 0._dp
-character(len=80),   save :: PEAK_ARRAY = ' '
-character(len=32),   save :: PEAK_ROUTINE = ' '
-integer,             save :: MAX_LEN  = 0
+  ! Global variables used to store allocation data
+  real(DP),   parameter     :: MBYTE = 1.e6_dp
+  type(TREE), pointer, save :: REPORT_TREE
+  real(DP),            save :: TOT_MEM  = 0._dp
+  real(DP),            save :: PEAK_MEM = 0._dp
+  character(len=80),   save :: PEAK_ARRAY = ' '
+  character(len=32),   save :: PEAK_ROUTINE = ' '
+  integer,             save :: MAX_LEN  = 0
   
-! Other common variables
-integer :: IERR
-logical :: ASSOCIATED_ARRAY, NEEDS_ALLOC, NEEDS_COPY, NEEDS_DEALLOC
+  ! Other common variables
+  integer :: IERR
+  logical :: ASSOCIATED_ARRAY, NEEDS_ALLOC, NEEDS_COPY, NEEDS_DEALLOC
 
 CONTAINS
 
 ! ==================================================================
+
 SUBROUTINE alloc_default( old, new, restore,          &
                           routine, copy, shrink, imin )
 implicit none
@@ -267,6 +274,7 @@ if (present(imin))    DEFAULT%imin   = imin
 if (present(routine)) DEFAULT%routine = routine
 if (present(new))     new = DEFAULT
 END SUBROUTINE alloc_default
+
 ! ==================================================================
 
 SUBROUTINE alloc_report( level, unit, file, printNow )
@@ -330,6 +338,8 @@ end if
 
 END SUBROUTINE alloc_report
 
+! ==================================================================
+! Integer array reallocs
 ! ==================================================================
 
 SUBROUTINE realloc_i1( array, i1min, i1max, &
@@ -467,6 +477,8 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_i3
+! ==================================================================
+! Single precision array reallocs
 ! ==================================================================
 SUBROUTINE realloc_r1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
@@ -619,6 +631,8 @@ if (NEEDS_COPY) then
 end if
 END SUBROUTINE realloc_r4
 ! ==================================================================
+! Double precision array reallocs
+! ==================================================================
 SUBROUTINE realloc_d1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
 implicit none
@@ -744,7 +758,6 @@ if (NEEDS_COPY) then
 end if
 END SUBROUTINE realloc_d3
 ! ==================================================================
-! ==================================================================
 SUBROUTINE realloc_d4( array, i1min,i1max, i2min,i2max, &
                               i3min,i3max, i4min,i4max, &
                        name, routine, copy, shrink )
@@ -785,8 +798,8 @@ if (NEEDS_COPY) then
 end if
 END SUBROUTINE realloc_d4
 ! ==================================================================
-! COMPLEX versions
-!
+! Complex array reallocs
+! ==================================================================
 SUBROUTINE realloc_z1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
 implicit none
@@ -865,6 +878,8 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_z2
+! ==================================================================
+! Logical array reallocs
 ! ==================================================================
 SUBROUTINE realloc_l1( array, i1min,i1max,  &
                        name, routine, copy, shrink )
@@ -977,8 +992,8 @@ if (NEEDS_COPY) then
 end if
 END SUBROUTINE realloc_l3
 ! ==================================================================
+! Realloc routines with assumed lower bound = 1
 ! ==================================================================
-
 SUBROUTINE realloc_i1s( array, i1max, &
                         name, routine, copy, shrink )
 ! Arguments
@@ -994,7 +1009,6 @@ call realloc_i1( array, DEFAULT%imin, i1max, &
                  name, routine, copy, shrink )
 
 END SUBROUTINE realloc_i1s
-
 ! ==================================================================
 SUBROUTINE realloc_i2s( array, i1max, i2max,  &
                         name, routine, copy, shrink )
@@ -1052,6 +1066,18 @@ call realloc_r3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  DEFAULT%imin, i3max,                             &
                  name, routine, copy, shrink )
 END SUBROUTINE realloc_r3s
+! ==================================================================
+SUBROUTINE realloc_r4s( array, i1max, i2max, i3max, i4max, &
+                        name, routine, copy, shrink )
+implicit none
+real(SP), dimension(:,:,:,:), pointer  :: array
+integer,                    intent(in) :: i1max, i2max, i3max, i4max
+character(len=*), optional, intent(in) :: name, routine
+logical,          optional, intent(in) :: copy, shrink
+call realloc_r4( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
+                        DEFAULT%imin, i3max, DEFAULT%imin, i4max, &
+                 name, routine, copy, shrink )
+END SUBROUTINE realloc_r4s
 ! ==================================================================
 SUBROUTINE realloc_d1s( array, i1max, &
                         name, routine, copy, shrink )
@@ -1137,7 +1163,9 @@ logical,          optional, intent(in) :: shrink
 call realloc_l3( array, DEFAULT%imin, i1max, DEFAULT%imin, i2max, &
                  DEFAULT%imin, i3max, name, routine, copy, shrink )
 END SUBROUTINE realloc_l3s
-
+! ==================================================================
+! Character vector realloc
+! ==================================================================
 SUBROUTINE realloc_s1( array, i1min, i1max, &
                        name, routine, copy, shrink )
 ! Arguments
@@ -1197,8 +1225,8 @@ if (NEEDS_COPY) then
 end if
 
 END SUBROUTINE realloc_s1
-
 ! ==================================================================
+! Dealloc routines
 ! ==================================================================
 SUBROUTINE dealloc_i1( array, name, routine )
 
@@ -1377,6 +1405,9 @@ if (associated(array)) then
   deallocate(array)
 end if
 END SUBROUTINE dealloc_s1
+
+! ==================================================================
+! Internal subroutines
 ! ==================================================================
 
 SUBROUTINE options( final_bounds, common_bounds, &

@@ -67,3 +67,34 @@ C
         G2MAX=G2MSH
       ENDIF
       END
+
+!----------------------------------------------------------------------
+
+      FUNCTION meshKcut( cell, nMesh )
+
+      ! Finds mesh planewave cutoff
+
+      use precision, only: dp
+
+      implicit none
+      real(dp),intent(in):: cell(3,3) ! Unit cell vectors cell(iXYZ,iVector)
+      integer, intent(in):: nMesh(3)  ! Mesh divisions of each vector
+      real(dp)           :: meshKcut  ! Mesh wavevector cutoff
+
+      real(dp):: g2max, k0(3), kcell(3,3)
+      external:: chkgmx, reclat
+
+      ! Find reciprocal cell vectors
+      call reclat( cell, kcell, 1 )
+
+      ! Initialize arguments to call chkgmx
+      k0(1:3) = 0._dp
+      g2max = huge(g2max)
+
+      ! chkgmx will reduce g2max to square of mesh cutoff
+      call chkgmx( k0, kcell, nMesh, g2max )
+
+      ! Return wavevector cutoff
+      meshKcut = sqrt(g2max)
+
+      END FUNCTION meshKcut

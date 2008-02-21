@@ -2037,6 +2037,16 @@ C Loop over functionals
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"
 
+          elseif ((XCauth(nf).eq.'DRSLL')
+     $                  .and.(XCfunc(nf).eq.'VDW')) then
+
+            write(6,'(a)')  
+     $        'xc_check: VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist'
+            if (icorr.ne.'vw'.and.nXCfunc.eq.1) 
+     $          write(6,'(a,1x,2a)')
+     .          'xc_check: WARNING: Pseudopotential generated with',
+     $           trim(ps_string), " functional"
+
          else
 
            write(6,'(a)')

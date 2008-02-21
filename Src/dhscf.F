@@ -132,16 +132,21 @@ C
 C  Modules
 C
       use precision
-      use parallel,      only : Node, Nodes
-      use atmfuncs,      only : rcut, rcore
+      use parallel, only : Node, Nodes
+      use parallel, only : ProcessorY
+      use atmfuncs, only : rcut, rcore
       use fdf
-      use sys,           only : die
-      use mesh,          only : xdsp, nsm, nsp
+      use sys,      only : die
+      use mesh,     only : xdsp, nsm, nsp
       use parsing
-      use m_iorho,       only : write_rho
-      use m_forhar,      only : forhar
-      use xcmod,         only : nXCfunc, XCauth
-      use alloc,         only : re_alloc, de_alloc
+      use m_iorho,  only : write_rho
+      use m_forhar, only : forhar
+      use xcmod,    only : nXCfunc, XCauth
+      use alloc,    only : re_alloc, de_alloc
+      use mesh3D,   only : myMeshBox    ! Returns my processor mesh box
+      use mesh3D,   only : setMeshDistr ! Sets a distribution of mesh
+                                        ! points over parallel processors
+      use m_cellxc, only : cellxc       ! Finds xc energy and potential
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -206,6 +211,8 @@ C logical IsDiag        : Is supercell diagonal?
 C logical IsEfld        : Is there an external electric field?
 C integer ispin         : Spin index
 C integer j             : General-purpose index
+C integer JDGdistr      : J.D.Gale's parallel distribution of mesh points
+C integer myBox(2,3)    : My processor's mesh box
 C integer nbcell        : Number of independent bulk lattice vectors
 C integer nm(3)         : Number of Mesh divisions of each cell vector
 C integer npcc          : Partial core corrections? (0=no, 1=yes)
@@ -243,6 +250,10 @@ C
      .  i, ia, io, ip, iphi, is, ispin, j, ifor,
      .  n, nbcell, nm(3), npcc, nsd, nv, nzero(3), 
      .  ntopl, nmpl, nsc(3), ntpl, nml(3), ntml(3)
+      integer
+     .  iNode, myBox(2,3)
+      integer, save::
+     .  JDGdistr=-1
 
 #ifdef MPI
       integer
@@ -254,15 +265,11 @@ C
       real(grid_p), dimension(:,:),   pointer   :: DRho, Vscf
       real(grid_p), dimension(:,:,:), pointer   :: DVxcdn
       real(grid_p), dimension(:),     pointer   :: Chlocal, Totchar
-!
-!     Dummy arrays for cellxc call
-!
-      real(grid_p) ::  aux3(3,1)
 
       real(dp)
      .  bcell(3,3), b1Xb2(3), cell(3,3), const,
      .  DEc, DEx, ddot, DStres(3,3), dvol, Ec, Ex, field(3),
-     .  rhotot, rmax, scell(3,3), tiny, 
+     .  rhotot, rmax, scell(3,3), stressXC(3,3), tiny, 
      .  Uharrs, volume, volcel, x0(3)
 
       real(dp), save ::  qspiral(3)
@@ -280,8 +287,8 @@ C
      .  shape
 
       external
-     .  cellxc, cross,
-     .  dfscf,  dipole, ddot,  
+!     .  cellxc,
+     .  cross, dfscf,  dipole, ddot,  
      .  efield, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
      .  timer, vmat, vmatsp, volcel,
@@ -737,6 +744,17 @@ C Get back spin density from sum and difference
         enddo
       endif
 
+
+C ----------------------------------------------------------------------
+C Set uniform distribution of mesh points and find my processor mesh box
+C ----------------------------------------------------------------------
+
+      if (JDGdistr<0) then
+        call setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
+     .                     nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
+      end if
+      call myMeshBox( ntm, JDGdistr, myBox )
+
 C ----------------------------------------------------------------------
 C Exchange-correlation energy
 C ----------------------------------------------------------------------
@@ -752,8 +770,10 @@ C ----------------------------------------------------------------------
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,+1)
       enddo
 
-      call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin, DRho, 
-     .             Ex, Ec, DEx, DEc, Vscf, DVxcdn, stressl )
+      call cellxc( 0, cell, ntm, myBox(1,1), myBox(2,1),
+     .                           myBox(1,2), myBox(2,2),
+     .                           myBox(1,3), myBox(2,3), nspin,
+     .             DRho, Ex, Ec, DEx, DEc, stressXC, Vscf )
 
       do ispin = 1,nspin
         call reord(DRho(1,ispin),DRho(1,ispin),nml,nsm,-1)
@@ -770,6 +790,7 @@ C ----------------------------------------------------------------------
           Vscf(ip,ispin) = Vscf(ip,ispin) + Vaux(ip)
         enddo
       enddo
+      stress = stress + stressXC
 
 C ----------------------------------------------------------------------
 C Save total potential

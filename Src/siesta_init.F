@@ -42,6 +42,7 @@
       use m_gamma
       use m_ioxv, only: xv_file_read
       USE writewave, only: gamma_wavefunctions, setup_wf_kpoints
+      USE m_debug, only: setDebugOutputUnit, udebug
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
 #endif
@@ -112,6 +113,9 @@
       Entrop = 0.0_dp
       Entropy = 0.0_dp
       FreeE = 0.0_dp
+
+! Set output file unit for debug info
+      call setDebugOutputUnit()
 
 ! Initialise read .....................................................
       call reinit(sname)
