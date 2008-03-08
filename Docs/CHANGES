@@ -7,6 +7,15 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-03-08  23:55:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-12
+
+Summary: Fix the constraint of static C.M. in initial velocities
+
+Routine vmb sets the initial velocities according to an approximate
+Maxwell-Boltzmann distribution, with the extra constraint of static
+center of mass. Due to an oversight, the routine only enforced this
+constraint for the case of a single species. It has been fixed.
+
 2008-01-11  16:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-11
 
 Summary: Proper fix of cell management for zmatrix case. Enthalpy cosmetics
