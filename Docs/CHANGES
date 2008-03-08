@@ -7,6 +7,19 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-03-08  23:56:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-13
+
+Summary: Remove 'multiple images' warning in gamma-point-only calculations
+
+The calculation of the xij array (vector distances to interacting
+neighbors) was enabled in 2.5.1 also for the case of gamma-point-only
+calculations. This is needed for the post-processing of COOP curves.
+In a gamma-point-only calculation several atoms might still
+see images of themselves as interacting if the cell is not that
+big. The xijorb code warned about that, even though the calculation of
+the matrix elements is of course correct, as k=0 and there are no
+phase factors to worry about. The warning has been now turned off.
+
 2008-03-08  23:55:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-12
 
 Summary: Fix the constraint of static C.M. in initial velocities
