@@ -67,7 +67,7 @@ C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      .                    lasto, lastkb, iphorb, iphkb,
      .                    nlhmax, numh, listhptr, listh,
-     $                    set_xijo, xijo)
+     $                    set_xijo, xijo, gamma)
 
       use precision
       use parallel,      only : Node, Nodes
@@ -98,6 +98,7 @@ C
       integer,  pointer       :: listh(:)
       logical, intent(in)     :: set_xijo
       real(dp),  pointer      :: xijo(:,:)
+      logical, intent(in)     :: gamma
 
       external               timer
 
@@ -373,12 +374,14 @@ C through a KB projector
 
                    if (conect(jo)) then
 
-                      if (set_xijo) then
+                      if (set_xijo .and. .not. gamma) then
                          ! If already connected and using supercell, 
                          ! the latter might not be big enough...
                          ! We warn the user and keep the first instance
                          ! of xij (same behavior as the old xijorb, as
                          ! earlier jnats are closer)
+                         ! Do not warn if Gamma-point calculation, as
+                         ! this is harmless
                          if (.not.warn1) then
                             if (Node.eq.0) then
                                write(6,'(/,a,2i6,a,/)')

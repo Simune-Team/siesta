@@ -6,6 +6,10 @@ ____________________________________________________________________
 ** CHANGES ALONG agarcia@siesta.arch--2006/siesta--dm-checks--2.5
 --------------------------------------------------------------------
 
+2008-03-08 23.50 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+Summary: Sync to 2.5: CM fix + multiple images warning
+
 2008-02-17 18:50 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
 
 Summary: New symbols for control of DM reuse and extrapolation
@@ -91,6 +95,28 @@ dictates.
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
+
+2008-03-08  23:56:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-13
+
+Summary: Remove 'multiple images' warning in gamma-point-only calculations
+
+The calculation of the xij array (vector distances to interacting
+neighbors) was enabled in 2.5.1 also for the case of gamma-point-only
+calculations. This is needed for the post-processing of COOP curves.
+In a gamma-point-only calculation several atoms might still
+see images of themselves as interacting if the cell is not that
+big. The xijorb code warned about that, even though the calculation of
+the matrix elements is of course correct, as k=0 and there are no
+phase factors to worry about. The warning has been now turned off.
+
+2008-03-08  23:55:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-12
+
+Summary: Fix the constraint of static C.M. in initial velocities
+
+Routine vmb sets the initial velocities according to an approximate
+Maxwell-Boltzmann distribution, with the extra constraint of static
+center of mass. Due to an oversight, the routine only enforced this
+constraint for the case of a single species. It has been fixed.
 
 2008-01-11  16:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-11
 

@@ -185,16 +185,17 @@
       ! List of nonzero Hamiltonian matrix elements
       ! and, if applicable,  vectors between orbital centers
 
-      ! Listh (and xijo if .not. gamma) are allocated inside hsparse
+      ! Listh and xijo are allocated inside hsparse
       ! nh is set by the routine also
-      ! Note: We always generate xijo
+      ! Note: We always generate xijo now, for COOP and other
+      !       analyses.
 
 !!      call copy_sparsity(sparsity,old_sparsity)  ! memory leak
 
       nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh,
-     $                 set_xijo=.true., xijo=xijo )
+     $                 set_xijo=.true., xijo=xijo, gamma=gamma )
 
 !!      call build_sparsity(no_l,numh,listhptr,listh,sparsity)
 
