@@ -250,7 +250,8 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Module types and variables
   use alloc,     only: allocDefaults ! Derived type for allocation defaults
 ! BEGIN DEBUG
-  use m_debug,   only: udebug     ! Output file unit for debug info
+  use m_debug,   only: myNodeString  ! Returns a string with my node number
+  use m_debug,   only: udebug        ! Output file unit for debug info
 ! END DEBUG
   use precision, only: dp            ! Double precision real type
   use precision, only: gp=>grid_p    ! Real precision type of mesh arrays
@@ -373,8 +374,10 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   type(allocDefaults):: &
      prevAllocDefaults
 
+! DEBUG
   ! Variables for debugging
   real(dp):: GDtot(3), q, dqdD, dqdGD(3)
+! END DEBUG
 
   ! Start time counter
   call timer( 'cellXC', 1 )
@@ -594,9 +597,9 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     call re_alloc( nonempty, 0,myMesh(1)-1, 0,myMesh(2)-1, 0,myMesh(3)-1, &
                    myName//'nonempty' )
     if (associated(myDens)) then
-      nonempty = (sum(myDens(:,:,:,1:ndSpin),dim=4) /= 0._gp)
+      nonempty = (sum(myDens(:,:,:,1:ndSpin),dim=4) >= Dmin)
     else
-      nonempty = (sum(dens(:,:,:,1:ndSpin),dim=4) /= 0._gp)
+      nonempty = (sum(dens(:,:,:,1:ndSpin),dim=4) >= Dmin)
     end if
     nonemptyPoints = count( nonempty )
 
@@ -716,7 +719,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       do i2 = 0,myMesh(2)-1
       do i1 = 0,myMesh(1)-1
         if (nonempty(i1,i2,i3)) then
-          ip = ip +1
+          ip = ip+1
           tq(i1,i2,i3,1) = tvdw(ip,iq)
         else
           tq(i1,i2,i3,1) = tvac(iq)
@@ -733,7 +736,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       do i3 = 0,kMesh(3)-1
       do i2 = 0,kMesh(2)-1
       do i1 = 0,kMesh(1)-1
-        ik = ik +1
+        ik = ik+1
         tvdw(ik,iq) = tq(i1,i2,i3,1)
       end do
       end do
@@ -782,7 +785,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
         uvdw(ik,1:nq) = uk(1:nq)
 
 ! BEGIN DEBUG
-        ! Find contribution to Int_dr*Int_dr'*rho(r)*phi(r,r')*rho(r')
+!        ! Find contribution to Int_dr*Int_dr'*rho(r)*phi(r,r')*rho(r')
 !        Enl = Enl + 0.5_dp * volume * sum(uk*tk)
 ! END DEBUG
 
@@ -801,6 +804,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !    print'(a,3f12.6)','cellxc: Ex,Ec,Enl (eV) =', &
 !      Ex/0.03674903_dp, Ec/0.03674903_dp, Enl/0.03674903_dp
 ! END DEBUG
+
 
     ! Fourier-tranform u_q(k) back to real space
     do iq = 1,nq
@@ -830,6 +834,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       end do
       end do
     end do
+
 
 ! BEGIN DEBUG
     call timer( 'cellXC2.3', 2 )
@@ -874,7 +879,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
     ! Skip point if density=0
     Dtot = sum(D(1:ndSpin))
-    if (Dtot .lt. Dmin) cycle ! i1 loop on mesh points
+    if (Dtot < Dmin) cycle ! i1 loop on mesh points
     ip = ip + 1
 
     ! Avoid negative densities
@@ -1133,10 +1138,10 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 ! BEGIN DEBUG
 !  ! Some printout for debugging
 !  if (VDW) then
-!    print'(a,f12.6)', 
-!     .    'cellxc: EcuspVDW (eV) =', EcuspVDW/0.03674903_dp
-!    print'(a,3f12.6)','cellxc: Ex,Ec,Enl (eV) =', 
-!     .    Ex/0.03674903_dp, Ec/0.03674903_dp, Enl/0.03674903_dp
+!    print'(a,f12.6)', &
+!         'cellxc: EcuspVDW (eV) =', EcuspVDW/0.03674903_dp
+!    print'(a,3f12.6)','cellxc: Ex,Ecl,Ecnl (eV) =', &
+!         Ex/0.03674903_dp, (Ec-Enl)/0.03674903_dp, Enl/0.03674903_dp
 !  end if
 ! END DEBUG
 

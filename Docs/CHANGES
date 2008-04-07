@@ -6,6 +6,35 @@
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
+2008-04-07  16:15:00 GMT	Jose M Soler <jose.soler@uam.es>	patch-2
+
+Summary: VdW XC bug corrections
+Keywords: VdW patch 2
+
+- Several bugs corrected in the implementation of the parallel VdW
+
+Modified Files:
+alloc.F90          : Added threshold argument in alloc_report
+                     Improved parallel behaviour:
+                       More complete summary of all nodes
+                       Detailed report writen by peak node rather than node 0
+                       Report file open by a single node at once
+                       Warnings printed only once
+                     Improved in-line documentation
+cellxc.f90         : Corrected definition of nonempty array
+fft3d.F            : Added a condition to call copyMeshData
+fftr.f90           : Comented out declaration of udebug
+m_debug.f90        : New function myNodeString
+mesh3d.F90         : Scheduling optimizer implemented
+                     Several bugs corrected
+                     Improved inline documentation
+siesta_init.F      : Added threshold argument in call to alloc_report
+siesta_options.F90 : Added alloc_report threshold to the option list
+sorting.f          : Argument X in ordix made explicit shape
+vdwxc.f90          : Minor cosmethic changes
+siesta.tex         : Added AllocReportThreshold
+
+-------------------------------------------------------------------------------
 
 2008-02-21  17:15:00 GMT	Jose M Soler <jose.soler@uam.es>	patch-1
 

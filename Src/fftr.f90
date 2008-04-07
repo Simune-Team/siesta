@@ -156,7 +156,9 @@ MODULE fftr
   use mesh3D,    only: freeMeshDistr ! Frees a mesh distribution ID
   use mesh3D,    only: copyMeshData  ! Copies data in a box of mesh points
   use sys,       only: die           ! Terminates execution
-  use m_debug,   only: udebug     ! File unit for debug output
+! DEBUG
+!  use m_debug,   only: udebug        ! File unit for debug output
+! END DEBUG
 
 PUBLIC::    &
   fftk2r,   &! k->r (inverse) Fourier transform

@@ -123,8 +123,11 @@
       call siesta_cml_init() ! Initialize CML (relies on reinit)
 
 ! Set allocation report level .........................................
-      call fdf_global_get(level, 'alloc_report_level', 0 )
-      call alloc_report( level=level, file=trim(slabel)//'.alloc' )
+! variables level and threshold imported from module siesta_options
+      call fdf_global_get(level, 'alloc_report_level', 0)
+      call fdf_global_get(threshold, 'alloc_report_threshold', 0._dp)
+      call alloc_report( level=level, file=trim(slabel)//'.alloc',
+     .                   threshold=threshold )
 ! ..................
 
 ! Initialise exchange-correlation functional information

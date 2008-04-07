@@ -36,6 +36,7 @@
 ! use alloc,      only: de_alloc        ! De-allocation routine
 ! use alloc,      only: re_alloc        ! Re-allocation routine
 ! use sys,        only: die             ! Termination routine
+! use sorting,    only: ordix           ! Finds the sorting index of a vector
 !
 !   USED module parameters:
 ! use precision,  only: dp              ! Real double precision type
@@ -246,7 +247,7 @@
 !                       unit cell (FUC). It is folded to the FUC in order to
 !                       assign the values of srcData to those of dstData.
 !----------------------------- OUTPUT -----------------------------------------
-! real(gp) dstData(0:,0:,0:,:) : Destination data array. 
+! real(gp) dstData(0:,0:,0:,:) : Destination data array (different from srcData)
 !                       The first three upper array bounds must be equal or 
 !                       larger than dstBox(2,iAxis)-dst(1,iAxis). 
 !-------------------- OPTIONAL INPUT and OUTPUT -------------------------------
@@ -640,6 +641,7 @@ MODULE mesh3D
   use alloc,     only: de_alloc        ! De-allocation routine
   use alloc,     only: re_alloc        ! Re-allocation routine
   use sys,       only: die             ! Termination routine
+  use sorting,   only: ordix           ! Sorting routine
 
 ! Used module parameters
   use precision, only: dp              ! Real double precision type
@@ -653,10 +655,12 @@ MODULE mesh3D
 ! Used MPI procedures and and types
 #ifdef MPI
   use mpi_siesta, only: MPI_AllGather
+  use mpi_siesta, only: MPI_AllReduce
   use mpi_siesta, only: MPI_Send
   use mpi_siesta, only: MPI_Recv
   use mpi_siesta, only: MPI_STATUS_SIZE
   use mpi_siesta, only: MPI_Integer
+  use mpi_siesta, only: MPI_Max
   use mpi_siesta, only: MPI_COMM_WORLD
   use mpi_siesta, only: MPI_grid_real
 #endif
@@ -784,7 +788,7 @@ subroutine all2allTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
 ! At any given 'time' (index of the ordered sequence), half of the nodes send
 ! right-wards (to higher nodes) and the other half receives from leftwards,
 ! with a fixed internode span, modulo nNodes2 (defined below). The sending/
-! receiving nodes belong to odd/even blocks (or viceversa) of consequtive nodes,
+! receiving nodes belong to odd/even blocks (or viceversa) of consecutive nodes,
 ! whose blockSize is the power-of-two factor of the span (i.e. span is the
 ! product of the blocSize times an odd number). nNodes2 is the smallest 
 ! multiple of 2*blockSize equal to, or larger than nNodes. This ensures opposite
@@ -1047,6 +1051,8 @@ subroutine copyMeshData( nMesh, srcDistr, srcData, dstBox, dstData, task )
   real(gp),intent(out):: dstData(0:,0:,0:,:) ! Destination data values.
                                            ! The upper array bounds must be 
                                            ! dstBox(2,iAxis)-dst(1,iAxis)
+                                           ! srcData and dstData must be 
+                                           ! different arrays
   integer,intent(inout),optional:: task    ! ID of communication task
 
   integer :: srcBox(2,3)
@@ -1057,10 +1063,11 @@ subroutine copyMeshData( nMesh, srcDistr, srcData, dstBox, dstData, task )
 ! Find box limits of source data in this node
   call myMeshBox( nMesh, srcDistr, srcBox )
 
-! Cheack that srcData and dstData are not identical already
-  if (all(srcBox==dstBox) .and. all(shape(srcData)==shape(dstData))) then
-    if (all(srcData==dstData)) return
-  end if
+! Check that srcData and dstData are not identical already
+!  Avoid this in parallel, since different nodes might do different things
+!  if (all(srcBox==dstBox) .and. all(shape(srcData)==shape(dstData))) then
+!    if (all(srcData==dstData)) return
+!  end if
 
 ! Copy data
   dstData = 0
@@ -1155,6 +1162,7 @@ subroutine divideBox1D( box, nParts, partBox, blockSize, workload )
     nLargerParts = nBlocks - partSize*nParts  ! Number of larger parts
     partSize = partSize * blckSize            ! Points per part
     largerSize = partSize + blckSize ! One more block for larger parts
+    partBox(1,1) = box(1)
     do iPart = 1,nLargerParts        ! largerParts of size partSize+blockSize
       if (iPart>1) partBox(1,iPart) = partBox(2,iPart-1) + 1
       partBox(2,iPart) = partBox(1,iPart) + largerSize - 1
@@ -1345,12 +1353,21 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
   end do
 
 ! Find span between nodes along each axis
-  nodeSpan(1) = 1
-  nodeSpan(2) = axisNodes(1)
-  nodeSpan(3) = axisNodes(1) * axisNodes(2)
+!  nodeSpan(1) = 1
+!  nodeSpan(2) = axisNodes(1)
+!  nodeSpan(3) = axisNodes(1) * axisNodes(2)
+! Third axis is innermost for node distribution (see setMeshDistr)
+  nodeSpan(3) = 1
+  nodeSpan(2) = axisNodes(3)
+  nodeSpan(1) = axisNodes(3) * axisNodes(2)
+
+! DEBUG
+!    write(udebug,'(a,3i4)') myName//'axisNodes=', axisNodes
+!    write(udebug,'(a,3i4)') myName//'nodeSpan=', nodeSpan
+! END DEBUG
 
 ! Allocate a small temporary array
-  allocate( subBox(2,maxval(axisNodes),3) )
+  allocate( subBox(2,0:maxval(axisNodes)-1,3) )
 
 ! Loop on the three cell axes
   do axis1 = 1,3
@@ -1380,9 +1397,12 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
       rowMesh(3) = box0(2,axis3) - box0(1,axis3) + 1
 
       ! Find an optimal (re)distribution of rowNodes along axis2 and/or axis3
+      boxNodes(1) = 1
       call optimizeNodeDistr( rowMesh(2:3), rowNodes, boxNodes(2:3) )
 
       ! Divide the row box along axis2 and/or axis3
+      subBox(1,0,1) = 0
+      subBox(2,0,1) = nMesh(axis1) - 1
       call divideBox1D( box0(:,axis2), boxNodes(2), subBox(:,0:boxNodes(2)-1,2))
       call divideBox1D( box0(:,axis3), boxNodes(3), subBox(:,0:boxNodes(3)-1,3))
 
@@ -1398,11 +1418,33 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
       end do ! jNode2
       end do ! jNode3
 
+! DEBUG
+!      write(udebug,'(a,2i4,3(2x,2i4))') &
+!        myName//'axis1,node0,box0=', axis1, node0, box0
+!      write(udebug,'(a,3i4)') myName//'boxNodes=', boxNodes
+!      do jNode2 = 0,boxNodes(2)-1
+!        write(udebug,'(a,i4,2x,3i4)') &
+!          myName//'axis2,subBox=', axis2, subBox(:,jNode2,2)
+!      end do
+!      do jNode3 = 0,boxNodes(3)-1
+!        write(udebug,'(a,i4,2x,3i4)') &
+!          myName//'axis3,subBox=', axis3, subBox(:,jNode3,3)
+!      end do
+! END DEBUG
+
     end do ! iNode2
     end do ! iNode3
 
     ! Check if this distribution was already defined
     call reduceDistr( axisDistr(axis1) )
+
+! DEBUG
+    iDistr = indexDistr( axisDistr(axis1) )
+    distr => storedMeshDistr(iDistr)
+!    write(udebug,'(a,3i4)') myName//'axis1,axis2,axis3=', axis1, axis2, axis3
+    write(udebug,'(a,2i6,3(2x,2i4))') myName//'distrID,iDistr,myBox=', &
+      axisDistr(axis1), iDistr, distr%box(:,:,myNode)
+! END DEBUG
 
   end do ! axis1
 
@@ -1423,7 +1465,7 @@ subroutine freeMeshDistr( distrID )
 
   character(len=*),parameter:: myName = 'freeMeshDistr '
   character(len=*),parameter:: errHead = myName//'ERROR: '
-  integer:: iDistr, iID, it, iTask, taskID
+  integer:: iDistr, iID, iNode, it, iTask, taskID
   type(distrType),pointer :: distr
   type(taskType),pointer :: task
 
@@ -1434,12 +1476,6 @@ subroutine freeMeshDistr( distrID )
   if (iDistr<1 .or. iDistr>maxDistr) return
   distr => storedMeshDistr(iDistr) ! Just a shorter name
   if (.not.distr%defined) return
-
-! DEBUG
-!  iDistr = indexDistr( distrID )
-!  distr => storedMeshDistr(iDistr)
-!  write(udebug,'(a,2i6)') myName//'distrID,iDistr=', distrID, iDistr
-! END DEBUG
 
 ! Erase ID from the distribution
   do iID = 1,maxDistrID
@@ -1932,7 +1968,135 @@ subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
                                  ! trsfDir=+1 => from node to trsfNode
                                  ! trsfDir=-1 => from trsfNode to node
 
-! Place here the graph-theory optimizer
+  character(len=*),parameter:: myName = moduleName//'optimizeTransferOrder '
+  character(len=*),parameter:: errHead = myName//'ERROR: '
+  real(dp),        parameter:: incrFact = 2.0_dp ! Memory increase factor >1
+  integer:: dir12, i1, i2, iter, iTrsf, maxTime, maxTrsf, MPIerror, &
+            myNode, node1, node2, nTrsfNode1, time, trsf12
+  integer:: orderNode1(nNodes), orderNode2(2*nNodes)
+  logical:: found
+  real(dp):: nTrsfNode(2*nNodes)
+  integer,pointer:: buffer(:)=>null(), inTrsf(:,:)=>null(), &
+                    myTrsf(:)=>null(), outTrsf(:,:)=>null()
+
+! In serial execution, do nothing
+#ifdef MPI
+
+! DEBUG
+! Do nothing for the time being
+!  return
+! END DEBUG
+
+! Find the maximun number of transfers of any node
+  call MPI_AllReduce( nTrsf, maxTrsf, 1, MPI_Integer, &
+                      MPI_Max, MPI_Comm_World, MPIerror )
+
+! Trap a trivial case, in which there is nothing to optimize
+  if (maxTrsf < 2) return
+
+! DEBUG
+  write(udebug,'(a,2i6)') myName//'nTrsf,maxTrsf=', nTrsf, maxTrsf
+  if (maxTrsf > 2*nNodes) call die(errHead//'too many transfers per node')
+! END DEBUG
+
+! Allocate arrays for the input transfer sequences of all nodes
+  call re_alloc( myTrsf, 1,maxTrsf, name=myName//'myTrsf' )
+  call re_alloc( inTrsf, 1,maxTrsf, 1,nNodes, name=myName//'inTrsf' )
+
+! Copy transfer sequence of my node to a different format
+! Absolute value stores transfer node. Sign stores transfer direction.
+! Internally, we use range (1:nNodes) rather than (0:nNodes-1)
+  myNode = node + 1
+  myTrsf(1:nTrsf) = trsfDir(:)*(trsfNode(:)+1)
+
+! Gather initial transfer sequence of all nodes
+  call re_alloc( buffer, 1,maxTrsf*nNodes, name=myName//'buffer' )
+  call MPI_AllGather( myTrsf, maxTrsf, MPI_Integer, &
+                      buffer, maxTrsf, MPI_Integer, MPI_COMM_WORLD, MPIerror )
+  inTrsf = reshape( buffer, (/maxTrsf,nNodes/) )
+  call de_alloc( buffer, name=myName//'buffer' )
+
+! Find the number of transfers of each node
+  nTrsfNode(1:nNodes) = count( inTrsf(:,1:nNodes)/=0, dim=1 )
+
+! Find the order of nodes by increasing number of transfers
+  call ordix( nTrsfNode, 1, nNodes, orderNode1 )
+
+! Allocate array for the optimized transfer times of all nodes
+  maxTime = maxTrsf * incrFact
+  call re_alloc( outTrsf, 1,maxTime, 1,nNodes, name=myName//'outTrsf' )
+
+! Schedule the transfers of each node
+  do i1 = nNodes,1,-1  ! Give priority to busiest nodes
+    node1 = orderNode1(i1)
+
+    ! Find the number of transfers of node 1
+    nTrsfNode1 = count( inTrsf(:,node1)/=0 )
+
+    ! Find the number of transfers of each node2, that transfers to/from node1
+    do i2 = 1,nTrsfNode1
+      node2 = abs( inTrsf(i2,node1) )
+      nTrsfNode(i2) = count( inTrsf(:,node2)/=0 )
+    end do
+
+    ! Order node2 by increasing number of transfers
+    call ordix( nTrsfNode, 1, nTrsfNode1, orderNode2 )
+
+    ! Assign a time to each unassigned transfer of node1
+    do iTrsf = nTrsfNode1,1,-1  ! Give priority to busiest node2
+      i2 = orderNode2(iTrsf)
+
+      trsf12 = inTrsf(i2,node1)
+      node2 = abs( trsf12 )
+      dir12 = sign( 1, trsf12 )
+
+      ! Check that this transfer is not already assigned
+      if (any(outTrsf(:,node1)==trsf12)) cycle ! iTrsf loop
+
+      ! Look for the first available transfer time and assign it
+      found = .false.
+      realloc_loop: do iter = 1,2  ! Loop for case that maxTime is too small
+        do time = 1,maxTime
+          if (outTrsf(time,node1)==0 .and. outTrsf(time,node2)==0) then
+            outTrsf(time,node1) =  dir12*node2
+            outTrsf(time,node2) = -dir12*node1
+            found = .true.
+            exit realloc_loop
+          end if
+        end do ! iTime
+        ! If no available time found, increase maxTime
+        maxTime = maxTime*incrFact + 1
+        call re_alloc( outTrsf, 1,maxTime, 1,nNodes, &
+                       name=myName//'outTrsf', copy=.true. )
+      end do realloc_loop
+
+! DEBUG
+      if (.not.found) call die(errHead//'parameter incrFact too small')
+! END DEBUG
+    end do ! iTrsf
+
+    ! Copy transfer sequence to output arrays
+    if (node1==myNode) then
+      ! Pack transfer sequence, removing idle times for myNode
+      myTrsf(1:nTrsf) = pack( outTrsf(:,myNode), outTrsf(:,myNode)/=0 )
+      ! The -1 is to change back from node range (1:nNodes) to (0:nNodes-1)
+      trsfNode = abs( myTrsf(1:nTrsf) ) - 1
+      trsfDir = sign( 1, myTrsf(1:nTrsf) )
+! DEBUG
+      write(udebug,'(a,20i4)') myName//' inTrsf=', inTrsf(1:nTrsf,myNode)
+      write(udebug,'(a,20i4)') myName//'outTrsf=', myTrsf(1:nTrsf)
+! END DEBUG
+      exit ! i1 loop
+    end if
+
+  end do ! i1
+
+! Deallocate arrays
+  call de_alloc( outTrsf, name=myName//'outTrsf' )
+  call de_alloc( inTrsf, name=myName//'inTrsf' )
+  call de_alloc( myTrsf, name=myName//'myTrsf' )
+
+#endif
 
 end subroutine optimizeTransferOrder
 
@@ -2185,6 +2349,11 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
   real(gp),pointer:: trsfBuff(:)=>null()
   type(taskType),pointer:: task
 
+! DEBUG
+!  write(udebug,'(a,i4,3(2x,2i4),2x,3(2x,2i4))') &
+!    myName//'myNode+1,srcBox,dstBox=', myNode+1, srcBox, dstBox
+! END DEBUG
+
 ! Check that one of dstData or prjData is present
   if (.not.present(dstData) .and. .not.present(prjData)) return
 
@@ -2312,6 +2481,11 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
     call all2allTransferOrder( totNodes, myNode, nTrsf, trsfNode, trsfDir )
   end if ! (taskOptimized)
 
+! DEBUG
+!  write(udebug,'(a,i4,2x,20i4)') myName//'myNode+1,Trsfs=', &
+!    myNode+1, trsfDir(1:nTrsf)*(trsfNode(1:nTrsf)+1)
+! END DEBUG
+
 ! Find required size of buffer to transfer data
   trsfSize = 0
   if (present(dstData)) then
@@ -2412,6 +2586,12 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
         end do ! iPart
       end if ! (present(prjData))
 
+! DEBUG
+!      write(udebug,'(a,2i4,3(2x,2i4),2x,3(2x,2i4),i8)') &
+!        myName//' myNode,dstNode, myBox,dstBox,trsfSize=', &
+!        myNode+1, dstNode+1, srcBox, dstBoxes(:,:,dstNode), trsfSize
+! END DEBUG
+
       ! Send data buffer
       if (trsfSize>0) &
         call MPI_Send( trsfBuff(1:trsfSize), trsfSize, MPI_grid_real, &
@@ -2468,6 +2648,12 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
         call MPI_Recv( trsfBuff(1:trsfSize), trsfSize, MPI_grid_real, &
                        srcNode, MPItag, MPI_COMM_WORLD, MPIstatus, MPIerror )
 
+! DEBUG
+!      write(udebug,'(a,2i4,3(2x,2i4),2x,3(2x,2i4),i8)') &
+!        myName//'srcNode, myNode,srcBox, myBox,trsfSize=', &
+!        srcNode+1, myNode+1, srcBoxes(:,:,srcNode), dstBox, trsfSize
+! END DEBUG
+
       ! Copy buffer data for each part of common box to destination array
       if (present(dstData)) then
         do iPart = 1,nParts
@@ -2519,9 +2705,9 @@ subroutine reduceData( nMesh, srcBox, srcData, dstBox, dstData, prjData, &
     task%trsfDir = trsfDir
     task%optimized = .true.
 ! DEBUG
-    write(udebug,'(a,4i4,/,(20i4))') &
-      myName//'taskID,iTask,distr1,distr2,Trsfs=', &
-      taskID, iTask, task%distr, trsfDir(1:nTrsf)*trsfNode(1:nTrsf)
+!    write(udebug,'(a,4i4,/,(20i4))') &
+!      myName//'taskID,iTask,distr1,distr2,Trsfs=', &
+!      taskID, iTask, task%distr, trsfDir(1:nTrsf)*trsfNode(1:nTrsf)
 ! END DEBUG
   end if
 
@@ -2755,10 +2941,16 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
           myPart = (myNode-node0-myGroup*groupSize) / partSize ! My part within 
                                                                ! my group
           axis = 0  ! So that it will be chosen by divideBox3D
+! DEBUG
+!          write(udebug,'(a,3(2x,2i4))') myName//'dividing box=', myBox
+! END DEBUG
           call divideBox3D( nMesh, wlDistr, workload, myBox, &
                               nParts, blockSize, axis, partBox )
           myBox(:,:) = partBox(:,:,myPart)  ! Select my part of the box
           groupSize = partSize              ! Reduce group size
+! DEBUG
+!          write(udebug,'(a,3(2x,2i4))') myName//' my part box=', myBox
+! END DEBUG
         end do ! iPow
       end do ! iFac
 
@@ -2790,7 +2982,7 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
         call optimizeNodeDistr( nMesh(2:3), meshNodes/nNodesX, axisNodes(2:3) )
       end if ! (present(nNodesY))
     else if (present(nNodesY).or.present(nNodesZ)) then
-        call die(errHead//'nNodesY or nNodesZ present without nNodesX')
+      call die(errHead//'nNodesY or nNodesZ present without nNodesX')
     else ! (.not.present(nNodesXYZ)) => optimize distribution in all three axes
       call optimizeNodeDistr( nMesh(1:3), meshNodes, axisNodes(1:3) )
     end if ! (present(nNodesX))
@@ -2810,14 +3002,14 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
       nBlocks = nMesh(iAxis) / blockSize         ! Blocks along axis
       boxSize = nBlocks / axisNodes(iAxis)       ! Blocks per node
       nRem = nBlocks - boxSize*axisNodes(iAxis)  ! Remaining blocks
-      boxSize = boxSize*blockSize                ! Mesh points per node
       largerBoxSize = (boxSize+1)*blockSize      ! Mesh points per node
+      boxSize = boxSize*blockSize                ! Mesh points per node
       axisBox(2,iAxis,-1) = -1             ! So that axisBox(1,ix,0)=0
       do iBox = 0,axisNodes(iAxis)-1
         axisBox(1,iAxis,iBox) = axisBox(2,iAxis,iBox-1) + 1
-        if (iBox < nRem) then ! nRem boxes of larger size
+        if (iBox < nRem) then ! First nRem boxes of larger size
           axisBox(2,iAxis,iBox) = axisBox(2,iAxis,iBox-1) + largerBoxSize
-        else                  ! Rest of boxes of normal size
+        else                    ! Rest of boxes of normal size
           axisBox(2,iAxis,iBox) = axisBox(2,iAxis,iBox-1) + boxSize
         end if
       end do ! iBox

@@ -4603,7 +4603,15 @@ Sets the level of the allocation report, printed in file
   level 4 : print every individual (re)allocation or deallocation
 \end{itemize}
 
-{\it Default value:} {\tt 0}
+
+\item[{\bf AllocReportThreshold}] ({\it real}): 
+\index{AllocReportThreshold@{\bf AllocReportThreshold}}
+Sets the minimum size (in bytes) of the arrays whose memory use
+is individually printed in the detailed allocation reports 
+(levels 2 and 3). It does not affect the reported memory sums
+and peaks, which always include all arrays.
+
+{\it Default value:} {\tt 0.0}
 
 \end{description}
 

@@ -7,12 +7,19 @@
 ! 
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
-
-MODULE m_vdwxc
-
+!
+!******************************************************************************
+! MODULE m_vdwxc
 ! Implements the van der Waals functional kernel of
 ! M.Dion et al, PRL 92, 246401 (2004)
 ! Written by J.M.Soler. July 2007.
+!******************************************************************************
+!
+!   PUBLIC procedures available from this module:
+!
+!******************************************************************************
+
+MODULE m_vdwxc
 
   use precision,   only: dp
   use mesh1D,      only: get_mesh, get_n, set_mesh, set_interpolation, &
@@ -29,10 +36,23 @@ MODULE m_vdwxc
   implicit none
 
 ! Called by xc routines
-PUBLIC :: vdw_decusp, vdw_theta, vdw_get_qmesh, vdw_phi, vdw_set_kcut
+PUBLIC ::        &
+  vdw_decusp,    &! Energy due to the softening of the VdW kernel cusp
+  vdw_theta,     &! Finds function theta_q(rho,grad_rho)
+  vdw_get_qmesh, &! Returns size and values of q-mesh
+  vdw_phi,       &! Finds and interpolates phi(q1,q2,k)
+  vdw_set_kcut    ! Sets the planewave cutoff kc of the integration grid
 
-! Called by debugging programs
- PUBLIC :: phiofr, phi_interp, phi_soft, phi_val, pofq, qofrho
+! DEBUG
+! Called by debugging test programs
+PUBLIC ::     &
+  phiofr,     &! Finds the kernel phi(q1,q2,r) at tabulated q-mesh values
+  phi_interp, &! Finds soft phi(d1,d2) kernel by interpolation of phi_table
+  phi_soft,   &! Finds phi(d1,d2) softened near d1=d2=0
+  phi_val,    &! Finds kernel phi(d1,d2) by direct integration
+  pofq,       &! Finds polynomials p(q) from cubic spline interpolation
+  qofrho       ! Finds the local wavevector parameter q(rho,grad_rho)
+! END DEBUG
 
 PRIVATE  ! Nothing is declared public beyond this point
 
@@ -1043,6 +1063,8 @@ end subroutine set_qmesh
 
 subroutine vdw_decusp( nspin, rhos, grhos, eps, dedrho, dedgrho )
 
+! Finds the energy due to the softening of the VdW kernel cusp
+
   implicit none
   integer, intent(in) :: nspin            ! Number of spin components
   real(dp),intent(in) :: rhos(nspin)      ! Electron spin density
@@ -1295,6 +1317,8 @@ end subroutine vdw_set_kcut
 !-----------------------------------------------------------------------------
 
 subroutine vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
+
+! Finds function theta_q(rho,grad_rho)
 
   implicit none
   integer, intent(in) :: nspin               ! Number of spin components

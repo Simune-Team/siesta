@@ -356,8 +356,8 @@ cell_fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_memory.o parallel.o
 cell_fire_optim.o: precision.o siesta_options.o sys.o zmatrix.o
 
 cellxc.o: alloc.o chkgmx.o fftr.o m_debug.o meshsubs.o moreParallelSubs.o
-cellxc.o: parallel.o parallelsubs.o precision.o reclat.o
-cellxc.o: mesh3d.o sys.o ldaxc.o ggaxc.o vdwxc.o xcmod.o
+cellxc.o: parallel.o parallelsubs.o precision.o reclat.o mesh3d.o sys.o 
+cellxc.o: ldaxc.o ggaxc.o vdwxc.o xcmod.o
 
 cgvc.o: conjgr_old.o m_fdf_global.o m_mpi_utils.o parallel.o precision.o
 cgvc.o: units.o
@@ -654,7 +654,7 @@ memoryinfo.o: precision.o
 
 mesh1d.o: precision.o
 
-mesh3d.o: alloc.o m_debug.o parallel.o sys.o 
+mesh3d.o: alloc.o m_debug.o parallel.o sys.o sorting.o
 
 meshmatrix.o: alloc.o atomlist.o meshsubs.o parallel.o parallelsubs.o
 meshmatrix.o: precision.o

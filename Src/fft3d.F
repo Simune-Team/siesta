@@ -255,8 +255,9 @@
       call redistributeMeshData( aDistr(3), aDat, myDistr, myDat,
      .                           a2my(3) )
       
-      ! Copy data to output distribution
-      call copyMeshData( nMesh, myDistr, myDat, meshBox, dat, my2io )
+      ! Copy data to output distr. (unless myDat and dat are the same array)
+      if (.not.associated(myDat,dat))
+     .  call copyMeshData( nMesh, myDistr, myDat, meshBox, dat, my2io )
 
       ! Divide by number of points
       if (r2k>0) dat = dat / product(nMesh)

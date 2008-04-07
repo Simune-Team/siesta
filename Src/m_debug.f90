@@ -14,26 +14,28 @@ MODULE m_debug
 
   USE parallel, only: node, Nodes  ! This node number, Number of nodes
 
-PUBLIC
+PUBLIC &
+  myNodeString,       &! Returns a string with my node number
+  setDebugOutputUnit, &! Sets debug output unit and opens file for debug output
+  udebug               ! Output file unit for debug info
+
+PRIVATE ! Nothing is declared public beyond this point
 
   integer,save:: udebug=0  ! Output file unit for debug info
 
 CONTAINS
 
-subroutine setDebugOutputUnit()
+character(len=6) function myNodeString()
 
-  ! Sets debug output unit and opens file for debug output
+! Returns a string with my node number, or blank if Nodes<2
 
   implicit none
-  character(len=20):: fileName, numName
+  character(len=20):: numName
   integer:: fileLen, maxLen, numLen
 
-  ! Set output file name, except node number, and find its name length
-  fileName = 'debug.out'
-  fileLen = len_trim(fileName)
-
-  ! Append node number to file name
-  if (Nodes>1) then
+  if (Nodes<2) then
+    myNodeString = ' '
+  else
 
     ! Find maximum name length of node numbers
     write(numName,*) Nodes-1   ! 0 <= node <= Nodes-1
@@ -45,13 +47,28 @@ subroutine setDebugOutputUnit()
     numName = adjustl(numName)
     numLen = len_trim(numName)
 
-    ! Set full file name, including node number
-    ! e.g. debug.out00, debug.out01, ... debug.out63
-    fileName = trim(fileName)//'000000000'
-    fileName(fileLen+maxLen-numLen+1:fileLen+maxLen) = trim(numName)
-    fileName(fileLen+maxLen+1:) = ' '
+    ! Set node number string, e.g. 00, 01, ... 63
+    myNodeString = '000000000'
+    myNodeString(maxLen-numLen+1:maxLen) = trim(numName)
+    myNodeString(maxLen+1:) = ' '
 
-  end if ! (Nodes>1)
+  end if ! (Nodes<2)
+  
+end function myNodeString
+
+
+subroutine setDebugOutputUnit()
+
+  ! Sets debug output unit and opens file for debug output
+
+  implicit none
+  character(len=20):: fileName
+
+  ! Set output file name, except node number, and find its name length
+  fileName = 'debug.out'
+
+  ! Append node number to file name
+  if (Nodes>1) fileName = trim(fileName)//myNodeString()
 
   ! Find an available output unit
   call io_assign( udebug )
@@ -59,7 +76,7 @@ subroutine setDebugOutputUnit()
   ! Open file and write header on it
   open( udebug, file=fileName )
   if (Nodes>1) &
-    write(udebug,'(/,a)') 'Debug output for processor '//trim(numName)
+    write(udebug,'(/,a)') 'Debug output for processor '//myNodeString()
 
 end subroutine setDebugOutputUnit
 
