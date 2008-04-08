@@ -257,7 +257,7 @@ mpi_test: $(MPI_INTERFACE) $(MT_OBJS) mpi_test.o
 	       $(LDFLAGS) mpi_test.o $(MT_OBJS) $(MPI_INTERFACE) $(LIBS) 
 #----------------------------------------------------------------------------
 MIXPS_OBJS= f2kcli.o flib_spline.o mixps.o  pseudopotential.o sys.o \
-            io.o pxf.o parallel.o periodic_table.o
+            io.o pxf.o parallel.o periodic_table.o alloc.o memory.o memoryinfo.o
 
 mixps: $(MPI_INTERFACE)  $(MIXPS_OBJS)
 	$(FC) -o mixps \
@@ -413,6 +413,7 @@ iolwf.o: alloc.o files.o onmod.o parallel.o parallelsubs.o precision.o sys.o
 iomd.o: files.o precision.o
 ioncat.o: atm_types.o atmfuncs.o basis_io.o m_getopts.o precision.o
 iopipes.o: parallel.o precision.o sys.o
+iopipes_mn.o: parallel.o precision.o sys.o
 ioxv.o: files.o parallel.o precision.o
 iozm.o: files.o parallel.o precision.o siesta_geom.o zmatrix.o
 ipack.o: sys.o
@@ -579,7 +580,7 @@ siesta_init.o: siesta_cmlsubs.o siesta_geom.o siesta_options.o
 siesta_init.o: sparse_matrices.o struct_init.o sys.o timestamp.o writewave.o
 siesta_init.o: xcmod.o zmatrix.o
 siesta_move.o: atomlist.o broyden_optim.o cell_broyden_optim.o
-siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes.o ioxv.o
+siesta_move.o: cell_fire_optim.o dynamics.o fire_optim.o iopipes_mn.o ioxv.o
 siesta_move.o: m_energies.o m_forces.o m_kinetic.o m_steps.o m_stress.o
 siesta_move.o: parallel.o phonon.o siesta_cml.o siesta_geom.o siesta_options.o
 siesta_move.o: sys.o write_subs.o zm_broyden_optim.o zm_fire_optim.o zmatrix.o
@@ -597,7 +598,7 @@ state_init.o: m_energies.o m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o
 state_init.o: m_spin.o m_steps.o new_dm.o overlap.o parallel.o
 state_init.o: proximity_check.o siesta_cml.o siesta_cmlsubs.o siesta_geom.o
 state_init.o: siesta_options.o sparse_matrices.o write_subs.o zmatrix.o
-struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
+struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes_mn.o ioxv.o
 struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
@@ -631,6 +632,7 @@ zmatrix.o: alloc.o m_cell.o parallel.o parsing.o precision.o siesta_geom.o
 zmatrix.o: sys.o units.o
 band.o: bands.o
 diagmemory.o: memoryinfo.o
+iopipes.o: iopipes_mn.o
 listsc_module.o: listsc.o
 m_born_charge.o: born_charge.o
 m_broyden_optim.o: broyden_optim.o

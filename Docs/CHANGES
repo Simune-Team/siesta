@@ -7,6 +7,29 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-04-08  15:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-14
+
+Summary: Changes for portability and cosmetics 
+
+Portability:
+
+  *  Use character(*) in MPI character modules.
+
+       Previously character(1) was used, leading to complaints by some compilers.
+
+Usability:
+
+  *  Extra fdf symbol for struct_file input specification
+
+       The manual mentions "Use.Struct.File" as the relevant alias, but
+       the code used "MD.Use.Struct.File". Both are now accepted.
+
+Makefile and makefile templates:
+
+  *  Fix mixps section in Makefile
+  *  Add .make file for snake at ICMAB
+  *  Fix tabs in eth-hreidar-mpi.make
+
 2008-03-08  23:56:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-13
 
 Summary: Remove 'multiple images' warning in gamma-point-only calculations
