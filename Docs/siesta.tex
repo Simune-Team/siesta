@@ -4106,6 +4106,45 @@ atomatically sets MD.TypeOfRun to {\tt Phonon}.
 \itemsep 10pt
 \parsep 0pt
 
+\item[{\bf MM.Potentials}] ({\it data block}):
+\index{MM.Potentials@{\bf MM.Potentials}} This block allows the input
+of molecular mechanics potentials between species. The following
+potentials are currently implemented:
+\begin{itemize}
+\item C6, C8, C10 powers of the Tang-Toennes damped dispersion
+  potential.
+\item A harmonic interaction.
+\item A dispersion potential of the Grimme type (similar to the C6
+  type but with a different damping function). (See S. Grimme,
+  J. Comput. Chem. Vol 27, 1787-1799 (2006)). See also {\tt
+  MM.Grimme.D} and {\tt MM.Grimme.S6} below.
+\end{itemize}
+
+The format of the input is the two species
+numbers that are to interact, the potential name (C6, C8, C10, harm,
+or Grimme), followed by the potential parameters. For the damped dispersion
+potentials the first number is the coefficient and the second is the
+exponent of the damping term (i.e., a reciprocal length). A value of
+zero for the latter term implies no damping. For the harmonic
+potential the force constant is given first, followed by r0. For the
+Grimme potential C6 is given first, followed by the (corrected) sum of
+the van der Waals radii for the interacting species (a real length). Positive
+values of the C6, C8, and C10 coefficients imply attractive potentials.
+
+{\it Use:} Gives the input for the molecular mechanics potentials.
+
+\begin{verbatim}
+
+    %block MM.Potentials
+       1 1 C6 32.0 2.0
+       1 2 harm 3.0 1.4
+       2 3 Grimme 6.0 3.2
+    %endblock MM.Potentials
+
+\end{verbatim}
+
+{\it Default value:}  None.
+
 \item[{\bf MM.Cutoff}] ({\it physical}): \index{MM.Cutoff@{\bf
 MM.Cutoff}} Specifies the distance out to which molecular mechanics
 potential will act before being treated as going to zero.
@@ -4131,32 +4170,19 @@ molecular mechanics potentials.
 
 {\it Default value:}  {\tt Ang} (Note: Currently this the {\em only} option)
 
-\item[{\bf MM.Potentials}] ({\it data block}):
-\index{MM.Potentials@{\bf MM.Potentials}} This block allows the input
-of molecular mechanics potentials between species. At present only C6,
-C8, C10 powers of the Tang-Toennes damped dispersion potential, or a
-harmonic interaction. The format of the input is the two species
-numbers that are to interact, the potential name (C6, C8, C10 or
-harm), followed by the potential parameters. For the damped dispersion
-potentials the first number is the coefficient and the second is the
-exponent of the damping term (i.e., a reciprocal length). A value of
-zero for the latter term implies no damping. For the harmonic
-potential the force constant is given first, followed by r0. Positive
-values of the C6, C8, and C10 coefficients imply attractive
-potentials.
+\item[{\bf MM.Grimme.D}] : \index{MM.Grimme.D@{\bf
+MM.Grimme.D}} Specifies the scale factor $d$ for the scaling function
+in the Grimme dispersion potential (see above).
 
-{\it Use:} Gives the input for the molecular mechanics potentials.
+{\it Default value:}  { 20.0 } 
 
-\begin{verbatim}
+\item[{\bf MM.Grimme.S6}] : \index{MM.Grimme.S6@{\bf
+MM.Grimme.S6}} Specifies the overall fitting factor $s_6$ for the
+Grimme dispersion potential (see above). This number depends on the
+quality of the basis set, the exchange-correlation functional, and the
+fitting set. 
 
-    %block MM.Potentials
-       1 1 C6 32.0 2.0
-       1 2 harm 3.0 1.4
-    %endblock MM.Potentials
-
-\end{verbatim}
-
-{\it Default value:}  None.
+{\it Default value:}  { 1.66 } (for DZP basis sets).
 
 \end{description}
 

@@ -7,6 +7,24 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-04-08  16:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-15
+
+Summary: Implemented a Grimme-type  molecular-mechanics potential for dispersion effects
+
+A dispersion potential of the Grimme type (similar to the C6 type but
+with a different damping function) has been implemented. See
+S. Grimme, J. Comput. Chem. Vol 27, 1787-1799 (2006)).
+
+The parameters are specified in the MM.Potentials block, using the
+"Grimme" keyword.
+
+Hooks for changing the "d" and "s6" parameters are provided
+(MM.Grimme.D and MM.Grimme.S6).
+
+A minor cosmetic addition: the kind of molecular mechanics potential
+between species is now printed upon encoutering the relevant line in
+the block.
+
 2008-04-08  15:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-14
 
 Summary: Changes for portability and cosmetics 
