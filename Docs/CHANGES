@@ -3,169 +3,235 @@
 =======================================================================
 
 ____________________________________________________________________
-** CHANGES ALONG siesta@uam.es--2006/siesta--fixes--2.0
---------------------------------------------------------------------
-(Patches leading up to the 2.0.2 bugfix release)
-
-2007-11-06 20:38:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-11
-
-Summary: Changes to the Order-N section by Pablo Ordejon
-
-The calculation of the chemical potential to start the O(N) process
-has been updated.
-
-2007-06-11 14:55:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-10
-
-Summary: Better MPI communication in writewave. Denchar warning
-
-Point-to-point instead of collective operations used.
-
-Added warning about non-parallelization of denchar.
-
-2007-05-30 16:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-9
-
-Summary: Fix dimension of dpr in pdosg. Clarify names of variables in pdos.
-
-In pdosg, dpr was wrongly dimensioned to no_l (modern notation) instead of no_u.
-
-More work is needed in the naming of variables.
-
-2007-05-30 16:25:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-8
-
-Summary: Fix index in write statement in iohs in parallel
-
-(This is similar to the bug fix for 2.0.1, but applying to
-other array).
-
-2007-05-30 16:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-7
-
-Summary: Origin shift was applied after possible coordinate scaling
-
-In routine coor, the origin shift was applied after the section in
-which the coordinates are re-scaled (from Ang to Bohr, or from fractional
-to cartesian, etc). However, it is clear in the manual that the shift
-vector is in the same units and format as the input coordinates.
-
-The shift is now applied right after reading the coordinate block.
-
-NOTE: This does not apply to the Zmatrix routine, which has *its own*
-conventions for origin shift, neither to coordinates read from an XV
-file or a Struct file.
-
-2007-05-23 12:50  GMT Eduardo Anglada <eduardo.anglada@uam.es> patch-6
-Summary:
-        Initialize logical variable "genlogic" to .false. before it's used.
-Modified files:
-        Src/kgridinit.F
-
-2007-05-21 5:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
-
-Summary: New .make files and scripts. Update reference outputs
-
-* Updated intel .make files.
-* New sge script.
-* Updated reference outputs
-
-2007-05-17 22:00:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
-
-Summary: Fix tag in MPI send/receive in mulliken
-
-* The undefined variable 'io' was used as tag... changed to itot, the
-orbital index.
-
-* Trimmed mpibuff before writing.
-
-2007-05-17 21:55:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
-
-Summary: Wrap several I/O operations for MPI. Other parallel fixes
-
-* The calls to io_close in iohs.F were not restricted to the master node.
-
-* Wrap output in broyden_optim.F
-
-* Fix allocation of temporary array in savepsi in parallel
-
-Some nodes might not have any occupied orbitals assigned to them, so
-one has to be careful in the allocation of a buffer array in MPI.
-Allocate using the dimensions on the master node.
-
-* Add 'show_distribution' routine to warn (for now) the user
-  when there are nodes which do not handle any orbitals.
-
-* Add experimental 'compare' target to Makefile.
-
-* Add 'born_spin' test.
-
-2007-05-17 21:30:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
-
-Summary: Fix units conversion in Util/Optical/optical
-          Parallel bug fix and cleanup in writewave.F
-
-(Daniel Sanchez)
- 
-Optical.f is a program to analyze the file .EPSIMG and obtain the
-optical properties. A unit conversion was done from eV to Ry instead
-of to Ha.
- 
-(Julian Gale)
- 
-The code in writewave.F has been cleaned up a bit and a fix for a bug
-appearing in parallel execution has been fixed.
-
-2007-05-17 20:50:36 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
-
-Summary: Fix for k-point update when kgrid_cutoff is used. Vol2 fix.
-
-The user can specify a kgrid_cutoff or a Monkhorst-Pack grid
-to determine the k-point sampling. 
-
-If a MP grid is specified and there are unit-cell changes during the
-calculation, the k-point set does not change (in fractional
-reciprocal-lattice coordinates). The sampling accuracy changes
-implicitly.
-
-On the other hand, the k-point set should change in principle if a
-kgrid_cutoff has been given and the cell volume changes, but due to a
-programming error the k-point grid was fixed after the first
-iteration.
-
-The error affects variable-cell calculations specifying a
-kgrid_cutoff.
-
-The k-point grid used for achieving self-consistency is now
-re-computed inside the geometry loop if:
-
-The calculation is a cell-optimization one (i.e., if MD.VariableCell
-is .true.), or if it is a "siesta-server" run. This is the old default.
-
-Additionally, if the user sets the fdf flag "ChangeKgridInMD" to
-.true., the grid will be recomputed also during MD runs that potentially
-change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
-Anneal.
-
-A user might want to avoid sudden changes in the k-point set
-while performing molecular dynamics runs or cell optimizations,
-notably if the calculations are not very well converged. In that
-case a MP grid, and not a kgrid_cutoff, should be specified.
-
-A related problem that has been fixed in this patch is the 
-possible overriding of the user's MP displacement specification after
-the first iteration.
-
-There is no backwards compatibility after this bugfix. To recover the
-old behavior when a kgrid_cutoff was specified, the user should check
-the old output, extract the information about the MP grid generated
-automatically by the program, and put it in an MP block.
-
-* Initialize vol2 correctly in m_check_supercell.f
-The bug could lead to different paths for supercell creation,
-causing small numerical differences.
-
-* New test: born
-____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta--release--2.0
 --------------------------------------------------------------------
 
+2008-04-11 13:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-42
+
+Summary: Fixed bug affecting MP occupation smearing
+
+Fixed a bug (reported by Francois Willaime of CEA/Saclay)
+which affected calculations in metals using the Hermite-Gauss
+broadening scheme proposed by Methfessel and Paxton
+(OccupationFunction MP).
+
+The following test on state occupancy was performed:
+
+if (qe.gt.occtol)
+
+where qe is the state occupancy, and occtol, the tolerance (set to
+10**-12 by default).  If one uses the Methfessel-Paxton smearing, qe
+may take negative values and this test therefore yields wrong results.
+
+The bug has be fixed by replacing the test by 
+
+if (abs(qe).gt.occtol)
+
+in all diag*.F routines.
+
+2008-01-20 19:34:33 GMT	Alberto Garcia <albertog@icmab.es>	patch-41
+
+    Summary:
+      Changes to the Order-N section by Pablo Ordejon
+    Revision:
+      siesta--release--2.0--patch-41
+
+    The calculation of the chemical potential to start the O(N) process
+    has been updated.
+    
+
+2008-01-20 19:33:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-40
+
+    Summary:
+      Better MPI communication in writewave. Denchar warning
+    Revision:
+      siesta--release--2.0--patch-40
+
+    Point-to-point instead of collective operations used.
+    
+    Added warning about non-parallelization of denchar.
+    
+
+2008-01-20 19:33:24 GMT	Alberto Garcia <albertog@icmab.es>	patch-39
+
+    Summary:
+      Fix dimension of dpr in pdosg. Clarify names of variables in pdos.
+    Revision:
+      siesta--release--2.0--patch-39
+
+    In pdosg, dpr was wrongly dimensioned to no_l (modern notation) 
+    instead of no_u.
+    
+    More work is needed in the naming of variables.
+    
+
+2008-01-20 19:20:41 GMT	Alberto Garcia <albertog@icmab.es>	patch-38
+
+    Summary:
+      Fix index in write statement in iohs in parallel
+    Revision:
+      siesta--release--2.0--patch-38
+
+    (This is similar to the bug fix for 2.0.1, but applying to
+    other array).
+
+2008-01-20 19:20:09 GMT	Alberto Garcia <albertog@icmab.es>	patch-37
+
+    Summary:
+      Origin shift was applied after possible coordinate scaling
+    Revision:
+      siesta--release--2.0--patch-37
+
+    In routine coor, the origin shift was applied after the section in
+    which the coordinates are re-scaled (from Ang to Bohr, or from fractional
+    to cartesian, etc). However, it is clear in the manual that the shift
+    vector is in the same units and format as the input coordinates.
+    
+    The shift is now applied right after reading the coordinate block.
+    
+    NOTE: This does not apply to the Zmatrix routine, which has *its own*
+    conventions for origin shift, neither to coordinates read from an XV
+    file or a Struct file.
+    
+
+2008-01-20 19:19:34 GMT	Alberto Garcia <albertog@icmab.es>	patch-36
+
+    Summary:
+      Initialize a variable before using it in Src/kgridinit.F
+    Revision:
+      siesta--release--2.0--patch-36
+
+    Changes:
+         Initialize "genlogic" to .false. before it's used.
+    
+    Modified files:
+    
+         Src/kgridinit.F
+    
+
+2008-01-20 19:18:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-35
+
+    Summary:
+      New .make files and scripts. Update reference outputs
+    Revision:
+      siesta--release--2.0--patch-35
+
+    * Updated intel .make files.
+    * New sge script.
+    * Updated reference outputs
+    
+
+2008-01-20 19:18:14 GMT	Alberto Garcia <albertog@icmab.es>	patch-34
+
+    Summary:
+      Fix tag in MPI send/receive in mulliken
+    Revision:
+      siesta--release--2.0--patch-34
+
+    * The undefined variable 'io' was used as tag... changed to itot, the
+    orbital index.
+    
+    * Trimmed mpibuff before writing.
+    
+
+2008-01-20 19:15:56 GMT	Alberto Garcia <albertog@icmab.es>	patch-33
+
+    Summary:
+      Wrap several I/O operations for MPI. Other parallel fixes
+    Revision:
+      siesta--release--2.0--patch-33
+
+    * The calls to io_close in iohs.F were not restricted to the master node.
+    
+    * Wrap output in broyden_optim.F
+    
+    * Fix allocation of temporary array in savepsi in parallel
+    
+    Some nodes might not have any occupied orbitals assigned to them, so
+    one has to be careful in the allocation of a buffer array in MPI.
+    Allocate using the dimensions on the master node.
+    
+    * Add 'show_distribution' routine to warn (for now) the user
+      when there are nodes which do not handle any orbitals.
+    
+    * Add experimental 'compare' target to Makefile.
+    
+    * Add 'born_spin' test.
+    
+    
+2008-01-20 19:14:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-32
+
+    Summary:
+      Fix units in Util/Optical/optical. Bug fix in writewave.F
+    Revision:
+      siesta--release--2.0--patch-32
+
+    (Daniel Sanchez)
+    
+    Optical.f is a program to analyze the file .EPSIMG and obtain the
+    optical properties. A unit conversion was done from eV to Ry instead
+    of to Ha.
+    
+    (Julian Gale)
+    
+    The code in writewave.F has been cleaned up a bit and a fix for a bug
+    appearing in parallel execution has been fixed.
+    
+    
+2008-01-20 19:13:18 GMT	Alberto Garcia <albertog@icmab.es>	patch-31
+
+    Summary:
+      Fix for k-point update when kgrid_cutoff is used. Vol2 fix.
+    Revision:
+      siesta--release--2.0--patch-31
+
+    The user can specify a kgrid_cutoff or a Monkhorst-Pack grid
+    to determine the k-point sampling. 
+    
+    If a MP grid is specified and there are unit-cell changes during the
+    calculation, the k-point set does not change (in fractional
+    reciprocal-lattice coordinates). The sampling accuracy changes
+    implicitly.
+    
+    On the other hand, the k-point set should change in principle if a
+    kgrid_cutoff has been given and the cell volume changes, but due to a
+    programming error the k-point grid was fixed after the first
+    iteration.
+    
+    The error affects variable-cell calculations specifying a
+    kgrid_cutoff.
+    
+    The k-point grid used for achieving self-consistency is now
+    re-computed inside the geometry loop if:
+    
+    The calculation is a cell-optimization one (i.e., if MD.VariableCell
+    is .true.), or if it is a "siesta-server" run. This is the old default.
+    
+    Additionally, if the user sets the fdf flag "ChangeKgridInMD" to
+    .true., the grid will be recomputed also during MD runs that potentially
+    change the unit cell: Parrinello-Rahman, Nose-Parrinello-Rahman, and
+    Anneal.
+    
+    A user might want to avoid sudden changes in the k-point set
+    while performing molecular dynamics runs or cell optimizations,
+    notably if the calculations are not very well converged. In that
+    case a MP grid, and not a kgrid_cutoff, should be specified.
+    
+    A related problem that has been fixed in this patch is the 
+    possible overriding of the user's MP displacement specification after
+    the first iteration.
+    
+    There is no backwards compatibility after this bugfix. To recover the
+    old behavior when a kgrid_cutoff was specified, the user should check
+    the old output, extract the information about the MP grid generated
+    automatically by the program, and put it in an MP block.
+    
+    * Initialize vol2 correctly in m_check_supercell.f
+    The bug could lead to different paths for supercell creation,
+    causing small numerical differences.
+    
+    * New test: born
+    
 2006-12-19 16:30 GMT , leading to patch-30
 
     (Siesta 2.0.1 release)
