@@ -4,10 +4,10 @@
 #
 # Usage: pg.sh <name.inp>
 #
-DEFAULT_DIR=../..
+DEFAULT_DIR=../../../Utils
 ATOM_UTILS_DIR=${ATOM_UTILS_DIR:-${DEFAULT_DIR}}
 #
-default="../../../atm"
+default="../../../../atm"
 prog=${ATOM_PROGRAM:-$default}
 #
 if [ "$#" != 1 ] 
@@ -33,9 +33,10 @@ $prog
 #
 cp VPSOUT ../$name.vps
 cp VPSFMT ../$name.psf
+[ -r VPSXML ] && cp VPSXML ../$name.xml
 #
 echo "==> Output data in directory $name"
-echo "==> Pseudopotential in $name.vps and $name.psf"
+echo "==> Pseudopotential in $name.vps and $name.psf (and maybe in $name.xml)"
 #
 #  Copy plotting scripts
 #

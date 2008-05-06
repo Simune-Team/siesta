@@ -8,6 +8,7 @@ c
       include 'param.h'
       include 'compat.h'
       include 'input.h'
+      include 'version.h'
 c
 c  subroutine to read input parameters
 c
@@ -21,7 +22,7 @@ C     .. Local Scalars ..
       character type*2, flavor*3, compat_str*20
 C     ..
 C     .. Local Arrays ..
-      integer lc(15), nc(15), nomin(0:4)
+      integer lc(19), nc(19), nomin(0:4)
 C     ..
 C     .. External Functions ..
       double precision nucl_z
@@ -37,10 +38,13 @@ C     ..
 c
 c  data for orbitals:
 c 
-c              1s,2s,2p,3s,3p,3d,4s,4p,4d,5s,5p,4f,5d,6s,6p
+c              1s,2s,2p,3s,3p,3d,4s,4p,4d,5s,5p,4f,5d,6s,6p, 
+c                     7s, 5f, 6d, 7p
 c
-      data nc /1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 4, 5, 6, 6/
-      data lc /0, 0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1/
+      data nc /1, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 4, 5, 6, 6,
+     $         7, 5, 6, 7/
+      data lc /0, 0, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 2, 0, 1,
+     $         0, 3, 2, 1/
 c
 c     This statement now goes in a block data subprogram  
 cccc      data il /'s', 'p', 'd', 'f', 'g'/
@@ -198,11 +202,11 @@ c
 c
       read(5,9060) ncore, nval
  9060 format(2i5,2f10.3)
-      if (ncore .gt. 15) then
+      if (ncore .gt. 19) then
          write(6,9070)
          call ext(101)
       end if
- 9070 format(//'error in input - max number of core orbitals','is 15')
+ 9070 format(//'error in input - max number of core orbitals','is 19')
 c
 c   compute occupation numbers and orbital energies for the core
 c
@@ -222,12 +226,22 @@ c
             if (ispp .eq. ' ') zo(norb) = 2*zo(norb)
             if (ispp .eq. 'r') zo(norb) = 2*(lo(norb)+sc) + 1
             zcore = zcore + zo(norb)
+c
+c           If lo==0 and sc=-0.5, zo=0. This means that
+c           s orbitals are "up" in a relativistic calculation.
+c
             if (abs(zo(norb)) .lt. 0.1D0) norb = norb - 1
             if (ispp .ne. ' ') sc = -sc
    50    continue
    60 continue
       ncore = norb
-c
+cc
+cc     Example of manual fiddling
+cc     Ionize an electron from 1s...
+cc
+cc      zo(1) = 1.d0
+cc      zcore = zcore - 1.d0
+cc
 c   for the valence orbitals
 c
    70 continue
@@ -299,7 +313,7 @@ c
 c
 c   find jobname and date and printout.
 c
-      ray(1) = 'ATM 3.2.2'
+      ray(1) = atom_id
       call cal_date(ray(2))
 cag
       ncp = ncore + 1

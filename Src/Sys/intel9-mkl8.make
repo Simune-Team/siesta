@@ -20,6 +20,7 @@ SIESTA_ARCH=intel9-mkl8
 FC=ifort
 #
 FFLAGS= -w -xP -O3 -mp1
+EXTRA_LIBS=-lpthread -lsvml
 FFLAGS_DEBUG= -g 
 LDFLAGS= -static
 COMP_LIBS=
@@ -36,7 +37,7 @@ DEFS_MPI=
 GUIDE=/opt/intel/mkl/8.0.1/lib/32/libguide.a
 LAPACK=/opt/intel/mkl/8.0.1/lib/32/libmkl_lapack.a
 BLAS=/opt/intel/mkl/8.0.1/lib/32/libmkl_ia32.a
-LIBS=$(LAPACK) $(BLAS)  $(GUIDE)  -lpthread -lsvml
+LIBS=$(LAPACK) $(BLAS)  $(GUIDE) $(EXTRA_LIBS)
 SYS=nag
 DEFS= $(DEFS_CDF) $(DEFS_MPI)
 #

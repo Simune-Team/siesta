@@ -236,6 +236,8 @@ C     ..
          charge = 102*one
       else if (name .eq. 'Lr') then
          charge = 103*one
+      else if (name .eq. 'Et') then
+         charge = 122*one
       else
          write(6,9000) name
  9000    format(//'element ',a2,' unknown')

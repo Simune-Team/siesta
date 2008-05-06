@@ -4,7 +4,7 @@
 #
 # Usage: ae.sh <name.inp>
 #
-DEFAULT_DIR=../..
+DEFAULT_DIR=../../Utils
 ATOM_UTILS_DIR=${ATOM_UTILS_DIR:-${DEFAULT_DIR}}
 #
 default="../../../atm"
