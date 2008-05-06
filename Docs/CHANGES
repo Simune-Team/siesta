@@ -7,6 +7,28 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-05-06  10:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-16
+
+Summary: Make the production of small ionic files optional -- fdf.log
+
+* Files with prefix ORB, KB, CHCORE, SPLIT_SCAN, etc, and
+pseudopotential dump files, which are useful for plotting basis
+orbitals and other ion-related information, are now optional. To
+create them, the user should set
+
+ WriteIonPlotFiles T
+
+in the fdf file.
+
+Note that the same functionality is available in gen-basis.
+
+The corresponding option variable "write_ion_plot_files" is now kept
+in an "atom-specific" options module, to avoid a dependency cascade.
+
+* Fixed the makefile sections for some auxiliary programs.
+
+* The file "out.fdf" has been renamed to "fdf.log"
+
 2008-04-08  16:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-15
 
 Summary: Implemented a Grimme-type  molecular-mechanics potential for dispersion effects

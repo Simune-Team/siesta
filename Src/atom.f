@@ -16,6 +16,7 @@
       use m_recipes, only: spline, polint
       use basis_types, only: basis_parameters
       use basis_types, only: ground_state_t
+      use atom_options, only: write_ion_plot_files
 
 !----------------------------------------------------------------
 !     old_atmfuncs arrays
@@ -2888,7 +2889,11 @@ C***
      .            'Some parameter should be changed in the '
             write(6,"(2a)")'KBgen: WARNING: ',
      .            'pseudopotential generation procedure.'
-          call die
+            if (fdf_boolean('Atom.Ignore.Ghosts',.false.)) then
+               write(6,"(a)") " KBgen: *** Warning Ignored by User"
+            else
+               call die
+            endif
          endif
 
 
@@ -3156,7 +3161,7 @@ C and angular momentum
 
               call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
      $                       a, b, rco(1,l,nsm),rofi,nrval,
-     $                       vsoft,plot=.true.)
+     $                       vsoft,plot=write_ion_plot_files)
 
               do ir = 1, nrval
                 vePAOsoft(ir) = vePAO(ir) + vsoft(ir)
@@ -6019,17 +6024,19 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
           split_table(1:nrc) = split_table_raw(1:nrc)
        endif
 
-       write(fname,"(3a,i1)") "SPLIT_SCAN.", trim(label), ".", l
-       call io_assign(iu)
-       open(iu,file=trim(fname),form="formatted",
-     $      status="unknown",action="write",
-     $      position="rewind")
-       do ir = 1, nrc
-          write(iu,"(i4,5f14.8)") ir, rofi(ir), rphi(ir),
-     $         (1.0_dp - rnrm(ir)), split_table_raw(ir),
-     $         split_table(ir)
-       enddo
-       call io_close(iu)
+       if (write_ion_plot_files) then
+          write(fname,"(3a,i1)") "SPLIT_SCAN.", trim(label), ".", l
+          call io_assign(iu)
+          open(iu,file=trim(fname),form="formatted",
+     $         status="unknown",action="write",
+     $         position="rewind")
+          do ir = 1, nrc
+             write(iu,"(i4,5f14.8)") ir, rofi(ir), rphi(ir),
+     $            (1.0_dp - rnrm(ir)), split_table_raw(ir),
+     $            split_table(ir)
+          enddo
+          call io_close(iu)
+       endif
 
        end subroutine split_scan
 

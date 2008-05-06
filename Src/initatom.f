@@ -50,6 +50,7 @@
       use old_atmfuncs, only: clear_tables, deallocate_old_arrays
       use atom, only: atom_main, prinput
       use electrostatic, only: elec_corr_setup
+      use atom_options, only: get_atom_options
 
       implicit none
 
@@ -64,6 +65,8 @@ C Internal variables ...................................................
       
       external atm_transfer
 
+      call get_atom_options()
+c
 c Reading input for the pseudopotentials and atomic orbitals 
 
       write(6,'(/2a)') 

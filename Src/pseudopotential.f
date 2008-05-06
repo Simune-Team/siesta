@@ -13,6 +13,7 @@
       use sys, only: die
       use precision, only: dp
       use flib_spline, only: generate_spline, evaluate_spline
+      use atom_options, only: write_ion_plot_files
       
       implicit none
 
@@ -79,7 +80,8 @@
               call die
            endif
         endif
-        call pseudo_dump(trim(p%name) // ".psdump",p)
+        if (write_ion_plot_files)
+     $       call pseudo_dump(trim(p%name) // ".psdump",p)
         end subroutine pseudo_read
 !
         subroutine pseudo_read_unformatted(fname,p)
@@ -526,7 +528,8 @@ c$$$        end subroutine pseudo_header_string
         call de_alloc( y2, name='y2' )
 
         call pseudo_write_formatted(trim(p%name)// ".Reparam.psf",p)
-        call pseudo_dump(trim(p%name) // ".Reparam.psdump",p)
+        if (write_ion_plot_files)
+     $      call pseudo_dump(trim(p%name) // ".Reparam.psdump",p)
 
       end subroutine pseudo_reparametrize
 
