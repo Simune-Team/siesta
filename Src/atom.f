@@ -3307,7 +3307,7 @@ C**
      $            "WARNING: Minimum split_norm parameter: ",
      $            spln_min, ". Will not be able to generate "
      $            // "orbital with split_norm = ", spln
-                  call die("See manual for new split options")
+                  !call die("See manual for new split options")
                endif
                call parabola(a,b,nrc,rphi(1,l,nsm),rnrm,
      .              l,spln,cons1,cons2,nsp)

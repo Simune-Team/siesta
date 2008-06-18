@@ -224,9 +224,6 @@ C integer nzero(3)      : Auxiliary array with zeros, to call efield
 C real*4  rhoatm(ntpl)  : Harris electron density
 C real*4  rhopcc(ntpl)  : Partial-core-correction density for xc
 C real*4  DRho(ntpl)    : Selfconsistent electron density difference
-C real*4  DVxcdn(ntpl,nspin,nspin): Derivatice of exchange-correlation
-C                         potential respect charge density (see forhar.f)
-C                         DVxcdn(ip,spin1,spin2) = D Vxc(spin2) / D n(spin1)
 C real*8  rhotot        : Total density at one point
 C real*8  rmax          : Maximum orbital radius
 C logical samesh        : Same mesh of last call?
@@ -263,7 +260,6 @@ C
       real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
       real(grid_p), dimension(:),     pointer   :: Vaux
       real(grid_p), dimension(:,:),   pointer   :: DRho, Vscf
-      real(grid_p), dimension(:,:,:), pointer   :: DVxcdn
       real(grid_p), dimension(:),     pointer   :: Chlocal, Totchar
 
       real(dp)
@@ -314,7 +310,7 @@ C Start time counter
 
       if (frstme) then
         nullify(Vna,rhoatm,rhopcc)
-        nullify(vaux,vscf,DRho,DVxcdn)
+        nullify(Vaux,Vscf,DRho)
         nullify(chlocal,totchar)
         if (Node.eq.0) then
           harrisfun = fdf_boolean('Harris_functional',.false.)
@@ -447,11 +443,6 @@ C Allocate local memory
       call re_alloc( Vscf, 1, ntpl, 1, nspin, name='Vscf',
      &               routine='dhscf' )
       call re_alloc( Vaux, 1, ntpl, name='Vaux', routine='dhscf' )
-      call re_alloc( DVxcdn, 1, ntpl, 1, nspin, 1, nspin, name='Vaux',
-     &               routine='dhscf' )
-
-C Initialization of DVxcdn
-      DVxcdn(1:ntpl,1:nspin,1:nspin) = 0.0_grid_p 
 
       if (.not.samexa) then
 C ----------------------------------------------------------------------

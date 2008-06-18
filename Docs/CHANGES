@@ -6,6 +6,21 @@
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
+
+2008-06-18  16:45:00 GMT	Jose M Soler <jose.soler@uam.es>
+
+Summary: VdW XC minor corrections
+Keywords: VdW patch 3
+
+- Minor changes in the implementation of the parallel VdW
+
+Modified Files:
+atom.f     : Removed call die("See manual for new split options")
+dhscf.F    : Removed all references to array DVxcdn
+mesh3d.F90 : Parmeter maxDistrTasks increased to 50
+
+--------------------------------------------------------------------
+
 2008-04-07  16:15:00 GMT	Jose M Soler <jose.soler@uam.es>	patch-2
 
 Summary: VdW XC bug corrections

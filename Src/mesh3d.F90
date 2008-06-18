@@ -690,7 +690,7 @@ PRIVATE ! Nothing is declared public beyond this point
   integer,parameter:: maxDistrID = 20 ! Max. IDs assigned to the same distrib.
   integer,parameter:: maxTaskID  = 10 ! Max. IDs assigned to the same task
   integer,parameter:: maxParts  = 125 ! Max. parts of a mesh box
-  integer,parameter:: maxDistrTasks = 20 ! Max. communication tasks associated
+  integer,parameter:: maxDistrTasks = 50 ! Max. communication tasks associated
                                          !   to a parallel mesh distribution
 
   ! Private type to hold mesh distribution data
