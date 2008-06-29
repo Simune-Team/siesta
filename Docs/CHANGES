@@ -7,6 +7,27 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  13:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-19
+
+Summary: Bug fix in grid2val. Added permute program to Macroave suite.
+
+* Fix bug in grid2val (utility to compute values of grid functions
+  at arbitrary points).
+
+The cell vectors were declared as single precision, while in fact they
+are stored as double precision by Siesta.
+
+Added also tips on compilation.
+
+* Added permute.F program to Macroave suite
+
+Sometimes it is useful to have "x" as the direction perpendicular to 
+the slab. Macroave is hard-wired to work with "z", so the program 
+"permute.F" has been written to carry out a preliminary rotation of
+the axes in the grid file. 
+
+Streamlined the compilation steps in Util/Macroave/Src.
+
 2008-06-29  12:50:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-18
 
 Summary: NetCDF I/O for DM, H, and S

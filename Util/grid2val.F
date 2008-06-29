@@ -10,12 +10,29 @@
 !
 
       program grid2val
+      use f2kcli
 
 c****************************************************************************
 c GRID2VAL
 c
 c This program reads files with info on the grid from SIESTA
 c and evaluates the corresponding function on given points
+c
+c Compilation:
+c    
+c        You need to use the f2kcli.F90 file located in the main Src
+c        directory:
+c
+c        $(FC) $(FFLAGS) -o grid2val ../Src/f2kcli.F90 grid2val.F
+c
+c      If you use GFORTRAN, use instead:
+c
+c
+c        $(FC) $(FFLAGS) -DGFORTRAN -o grid2val ../Src/f2kcli.F90 grid2val.F
+c
+c      FC and FFLAGS should be compatible with those you used to
+c      compile Siesta, as grid2val reads a binary file whose data
+c      layout can change. This includes 32bit vs 64 bit flags, if any.
 c
 c Usage:
 c     
@@ -50,8 +67,11 @@ c****************************************************************************
 
       character         fnamein*75
 
+      integer, parameter :: dp = selected_real_kind(14,100)
+
       real, dimension(:,:,:), allocatable  :: rho
-      real  :: xfrac(3), val, fmin, fmax, cell(3,3)
+      real(dp)  :: cell(3,3)
+      real  :: xfrac(3), val, fmin, fmax
 
 c ---------------------------------------------------------------------------
 

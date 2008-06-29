@@ -190,19 +190,14 @@ Campus de la U.A.B.,
  {\tt \$ cd Macroave/Src}
 
  The compilation of the program is done using a Makefile that is
- provided with the code. This Makefile will generate the
- executable file in several architectures, with a minimum of tuning
- required from the user. The only variables you must set up 
- (included in a file called arch.make) are:
+ provided with the code. This Makefile is able to generate the
+ executable file in several architectures by including
+ information from the file {\tt arch.make} in the
+ main Siesta {\tt Src} directory, which you should have generated in
+ advance. It is extremely important that you use the same {\tt
+ arch.make} file that you used for Siesta.
 
-  \begin{itemize}
-    \item FC : location of the fortran-90 compiler.
-    \item FFLAGS : flags to optimize the compilation in your platform.
-  \end{itemize}
-
- Edit the arch.make file and set up the options that suit your platform. 
-
- Then, you just need to run the `make' utility
+ You just need to run the `make' utility
  as usual, typing make in the source directory:
  
  {\tt \$ make}
@@ -267,9 +262,13 @@ Campus de la U.A.B.,
  and set up the right values for the different variables. This
  file will be fully explained in section ~\ref{section:input}.
 
- Execute macroave.x
+ {\bf NOTE}: If you have chosen {\tt x} as the direction perpendicular to
+ the slab, instead of {\tt z}, you need to run the {\tt Src/permute}
+ program to permute the axes.
 
- {\tt \$ $\sim$/Macroave/Src/macroave.x } 
+ Execute macroave
+
+ {\tt \$ $\sim$/Macroave/Src/macroave } 
 
  The output is dumped in files which will be described
  in Section ~\ref{section:output}.
