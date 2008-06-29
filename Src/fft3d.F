@@ -117,7 +117,7 @@ C
       maxmaxtrigs = maxtrigs
       do i=1,3
         if (OldMesh(i).ne.Mesh(i)) then
-          call setgpfa(trigs(1,i), maxtrigs, ntrigs, Mesh(i))
+          call setgpfa(trigs(:,i), maxtrigs, ntrigs, Mesh(i))
           if (ntrigs.gt.maxmaxtrigs) then
             lredimension = .true.
             maxmaxtrigs = ntrigs
@@ -141,7 +141,7 @@ C
 C  FFT in X direction
 C
       if (LocalPoints) then
-        call gpfa(f,f(2),trigs(1,1),2,2*n1,n1,n2l*n3l,-isn)
+        call gpfa(f,f(2),trigs(:,1),2,2*n1,n1,n2l*n3l,-isn)
       endif
 #ifdef MPI
 C***********************
@@ -167,7 +167,7 @@ C
       if (LocalPoints) then
         do i=0,n3l-1
           IOffSet=2*n1lf*n2*i
-          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(1,2),
+          call gpfa(ft(IOffSet+1),ft(IOffSet+2),trigs(:,2),
      .            2*n1lf,2,n2,n1lf,-isn)
         enddo
       endif
@@ -198,7 +198,7 @@ C
 C  FFT in Z direction
 C
       if (LocalPoints) then
-        call gpfa(ft,ft(2),trigs(1,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
+        call gpfa(ft,ft(2),trigs(:,3),2*n1lf*n2l,2,n3,n1lf*n2l,-isn)
       endif
 C
 C  Redistribute data to be distributed by Z again
@@ -214,13 +214,13 @@ C  FFT in Y direction
 C
       do i=0,n3-1
          IOffSet=2*n1*n2*i
-         call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(1,2),
+         call gpfa(f(IOffSet+1),f(IOffSet+2),trigs(:,2),
      .             2*n1,2,n2,n1,-isn)
       enddo
 C
 C  FFT in Z direction
 C
-      call gpfa(f,f(2),trigs(1,3),2*n1*n2,2,n3,n1*n2,-isn)
+      call gpfa(f,f(2),trigs(:,3),2*n1*n2,2,n3,n1*n2,-isn)
 #endif
 
 C

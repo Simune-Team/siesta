@@ -7,6 +7,25 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  22:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-28
+
+Summary: Minor cosmetic fixes to avoid compilation warnings
+
+*   Fix cycle statement in m_denchar_work.f
+
+*   Fix cycle statements in pdos routines -- warning in atomlwf.F
+
+*   Some debugging support for KB generation
+
+If Atom.Debug.KB.Generation is "true", 'AtomLabel-KBproj'.index
+files are produced showing the non-interpolated projectors.
+
+*   Fixes for NAG compiler contributed by Toby White:
+
+chempot: intent of mu in numb routine.
+writewave: remove references to paste routine
+fft3d.F: explicit array-ness of trigs in calls to setup routines.
+
 2008-06-29  22:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-27
 
 Summary: Fixed bug affecting MP occupation smearing.

@@ -183,9 +183,8 @@ C
 
       integer           maxk, norb, nk
       real(dp)          kpoint(3,maxk)
-      character         paste*30
       logical           overflow
-      external          paste, redcel, memory
+      external          redcel, memory
 C *********************************************************************
 
       character 
@@ -624,7 +623,7 @@ C
       real(dp)          ef, H(maxnh,nspin), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
 
-      external          io_assign, io_close, paste, memory
+      external          io_assign, io_close, memory
 C *********************************************************************
 
       logical
@@ -826,7 +825,7 @@ C  Internal variables .............................................
       real(dp)  :: kpoint_weight
       real(SP), dimension(:,:), allocatable :: aux   !! NOTE SP
 
-      external paste, io_assign, io_close
+      external io_assign, io_close
 
 C ...................
 
