@@ -52,6 +52,8 @@ MODULE siesta_options
   logical :: writedm_cdf_history   ! Write file with SCF history of DM in netCDF form?
   logical :: writedmhs_cdf ! Write file with DM_in, H, DM_out, and S in netCDF form?
   logical :: writedmhs_cdf_history   ! Write file with SCF history in netCDF form?
+  logical :: read_charge_cdf   ! Read charge density from file in netCDF form?
+  logical :: read_deformation_charge_cdf   ! Read deformation charge density from file in netCDF form?
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
@@ -444,6 +446,7 @@ MODULE siesta_options
     ! Mix density matrix on first SCF step
     ! (mix)
     call fdf_global_get(mix,'DM.MixSCF1',.false.)
+    !
     if (ionode) then
       write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix
     endif
@@ -1332,6 +1335,13 @@ MODULE siesta_options
     call fdf_global_get(writedm_cdf_history,'WriteDM.History.NetCDF' , .false.)
     call fdf_global_get(writedmhs_cdf,'WriteDMHS.NetCDF' , .true.)
     call fdf_global_get(writedmhs_cdf_history,'WriteDMHS.History.NetCDF' , .false.)
+    call fdf_global_get(read_charge_cdf,'SCF.Read.Charge.NetCDF' , .false.)
+    call fdf_global_get(read_deformation_charge_cdf,'SCF.Read.Deformation.Charge.NetCDF' , .false.)
+
+    if (read_charge_cdf .or. read_deformation_charge_cdf) then
+       mix = .false.
+    endif
+
     call fdf_global_get(writb, 'WriteBands'      , outlng )
     call fdf_global_get(writbk, 'WriteKbands'     , outlng )
     call fdf_global_get(writeig,'WriteEigenvalues', outlng )

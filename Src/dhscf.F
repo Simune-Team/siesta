@@ -145,6 +145,11 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
+      use iogrid_netcdf, only: write_grid_netcdf
+      use iogrid_netcdf, only: read_grid_netcdf
+      use iogrid_netcdf, only: set_box_limits
+      use siesta_options, only: read_charge_cdf
+      use siesta_options, only: read_deformation_charge_cdf
 
       implicit none
 
@@ -405,6 +410,10 @@ C ----------------------------------------------------------------------
      .                 G2max, G2mesh, nsc, nmpl, nm,
      .                 nml, ntm, ntml, ntpl, ntopl, dvol)
 
+        ! Setup box descriptors for each processor,
+        ! held in module iogrid_netcdf
+        call set_box_limits(ntm,nsm)
+
 C ----------------------------------------------------------------------
 C Allocate memory that depends on the mesh
 C ----------------------------------------------------------------------
@@ -505,13 +514,28 @@ C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
 
-      if (spiral) then
-        call rhoofdsp(norb, nmpl, maxnd, numd, listdptr, listd,
+      if (read_charge_cdf) then
+         call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"Rho")
+         do ispin = 1,nspin
+            call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
+         enddo
+         read_charge_cdf = .false.
+      else if (read_deformation_charge_cdf) then
+         call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
+         do ispin = 1,nspin
+            call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
+            DRho(:,ispin) = DRho(:,ispin) + rhoatm(:)
+         enddo
+         read_deformation_charge_cdf = .false.
+      else
+         if (spiral) then
+            call rhoofdsp(norb, nmpl, maxnd, numd, listdptr, listd,
      .                nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb,
      .                isa, qspiral)
-      else
-        call rhoofd(norb, nmpl, maxnd, numd, listdptr, listd,
+         else
+            call rhoofd(norb, nmpl, maxnd, numd, listdptr, listd,
      .              nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa)
+         endif
       endif
 
 C ----------------------------------------------------------------------
@@ -522,6 +546,7 @@ C ----------------------------------------------------------------------
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, +1)
         enddo
         call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho)
+        call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
         enddo
@@ -543,6 +568,8 @@ C Save diffuse ionic charge
         if (filepsch .ne. ' ') then
           call reord( Chlocal, Chlocal, nml, nsm, +1)
           call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
+          call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                            Chlocal, "Chlocal")
           call reord( Chlocal, Chlocal, nml, nsm, -1)
         endif
 
@@ -558,6 +585,8 @@ C Save total (ionic+electronic) charge
           enddo
           call reord( Totchar, Totchar, nml, nsm, +1)
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
+          call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                            Totchar, "TotalCharge")
           call reord( Totchar, Totchar, nml, nsm, -1)
 
           call de_alloc( Totchar, name='Totchar' )
@@ -579,6 +608,8 @@ C ----------------------------------------------------------------------
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, +1)
         enddo
         call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl,
+     $                          DRho, "DeltaRho")
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
         enddo
@@ -709,6 +740,8 @@ C ----------------------------------------------------------------------
       if (filevh .ne. ' ') then
         call reord( Vscf, Vscf, nml, nsm, +1)
         call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf)
+        call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                          Vscf, "ElectrostaticPotential")
         call reord( Vscf, Vscf, nml, nsm, -1)
       endif
 
@@ -772,6 +805,8 @@ C ----------------------------------------------------------------------
           call reord( Vscf(1,ispin), Vscf(1,ispin), nml, nsm, +1)
         enddo
         call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl,
+     $                          Vscf, "TotalPotential")
         do ispin = 1,nspin
           call reord( Vscf(1,ispin), Vscf(1,ispin), nml, nsm, -1)
         enddo

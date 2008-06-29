@@ -7,6 +7,64 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  13:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-20
+
+Summary: NetCDF I/O of Grid magnitudes. Density re-starts
+
+New module iogrid_netcdf implements a general-purpose dumper
+of grid magnitudes in netCDF format. If netCDF support is
+enabled, files with extension .grid.nc are produced for
+whatever grid magnitude is requested to be saved (charge density 
+(Rho), deformation density (DeltaRho), potential, etc).
+
+The use of grid descriptors for each node and the addressable netCDF
+file format greatly simplify the communication needs for the
+output of grid variables.
+
+Module iogrid_netcdf implements a "grid descriptor calculator" for
+the standard uniform distribution, but the routine which outputs
+grid functions is in principle able to work with any distribution.
+
+Util/Grid contains new utilities for conversion and analysis
+of the .grid.nc files.
+
+If the keywords SCF.Read.Charge.NetCDF or
+SCF.Read.Deformation.Charge.NetCDF are true, the charge density
+(respectively the deformation charge density) is read from file
+Rho.IN.grid.nc (respectively DeltaRho.IN.grid.nc).
+
+This feature allows the easier re-use of electronic-structure
+information from a previous run. It is not necessary that the basis
+sets are "similar" (a requirement if density-matrices are to be read
+in). The deformation charge is particularly useful to give a good
+starting point for slightly different geometries.
+
+To Do:
+
+- Improve the handling of possibly conflicting features, such as the
+use of the Harris functional or the mixing of the DM after the first
+iteration.
+
+- Extend the flexibility of the reading options (to use them, for
+example, in molecular dynamics or phonon calculations). Currently the
+density is only read once, at the beginning of the run.
+
+- Support reading of charge densities in FFT boxes of different sizes
+  (via resampling). Auxiliary code for this is in Util/Grid/cdf_fft.f90.
+
+
+-  References to the NetCDF directory under Src and to NETCDF_INTERFACE
+   in the Makefile have been removed.
+
+
+IMPLEMENTATION NOTES:
+
+The grid magnitudes are stored in single precision in the .grid.nc files.
+
+
+*  Added .make and script file for Finisterrae at CESGA
+
+
 2008-06-29  13:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-19
 
 Summary: Bug fix in grid2val. Added permute program to Macroave suite.

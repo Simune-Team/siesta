@@ -182,9 +182,9 @@ subroutine setup_dm_netcdf_file( maxnd, nbasis, nspin,    &
             else
                call MPI_Recv(listd_buf,nnzs_node(BNode),MPI_integer,BNode,BNode,    &
                                                         MPI_Comm_World,stat,mpierror)
-               call MPI_GET_COUNT(stat, MPI_CHARACTER, count, mpierror) 
-               print *, 'Task ', Node ,': Received', count, 'char(s) from task',    &
-                        stat(MPI_SOURCE), 'with tag',stat(MPI_TAG)
+               !!call MPI_GET_COUNT(stat, MPI_CHARACTER, count, mpierror) 
+               !!print *, 'Task ', Node ,': Received', count, 'char(s) from task',    &
+               !!         stat(MPI_SOURCE), 'with tag',stat(MPI_TAG)
             endif
             !
             ! Fill in the column information using the proper offsets

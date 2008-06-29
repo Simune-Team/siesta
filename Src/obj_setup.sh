@@ -20,7 +20,7 @@ destdir=$(pwd)
 #
 # Replicate the hierarchy of makefiles
 #
-for i in wxml xmlparser NetCDF MPI Libs fdf ; do
+for i in wxml xmlparser MPI Libs fdf ; do
     mkdir $i
     cp ${srcdir}/$i/*akefile ${destdir}/$i
 done

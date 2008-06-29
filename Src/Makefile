@@ -72,7 +72,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	efield.o egandd.o ener3.o ener3lomem.o extrapol.o  extrapolon.o \
 	fixed.o flib_spline.o gradient.o gradientlomem.o grdsam.o \
 	hsparse.o idiag.o  initatom.o initdm.o inver.o iodm_netcdf.o \
-	iodmhs_netcdf.o iodm.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
+	iodmhs_netcdf.o iodm.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
         m_check_supercell.o mulliken.o minvec.o m_pulay.o naefs.o \
@@ -152,14 +152,10 @@ gen-basis.o: $(FDF)
 #
 ALL_OBJS=$(OBJS) $(SYSOBJ)
 #
-basis_io.o md_out.o: $(NETCDF_INTERFACE)
-#
 # Interfaces to libraries
 #
 libmpi_f90.a: 
 	@(cd MPI ; $(MAKE) "VPATH=$(VPATH)/MPI")
-libnetcdf_f90.a: 
-	@(cd NetCDF ; $(MAKE) "VPATH=$(VPATH)/NetCDF" )
 #
 # Libraries that might need to be compiled
 #
@@ -187,11 +183,11 @@ version: version.F90
 	#@rm -f compinfo.F90
 	@echo
 
-siesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
                 $(COMP_LIBS) $(ALL_OBJS) 
 	$(FC) -o siesta \
 	       $(LDFLAGS) $(ALL_OBJS) $(FDF) $(WXML) $(XMLPARSER) $(MPI_INTERFACE)\
-               $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
 GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
@@ -203,11 +199,11 @@ GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
 # precision must be the first one here...
 gen-basis.o: $(FDF)
-gen-basis: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
+gen-basis: version $(MPI_INTERFACE) $(FDF) $(WXML) \
                  $(GEN-BASIS_OBJS) 
 	$(FC) -o gen-basis \
 	       $(LDFLAGS) $(GEN-BASIS_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(NETCDF_INTERFACE) $(LIBS) 
+               $(LIBS) 
 #
 #------------------------------------------------------------------------
 IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
@@ -219,11 +215,11 @@ IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o 
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
 # precision must be the first one here...
 ioncat.o: $(FDF)
-ioncat: version $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) $(WXML) \
+ioncat: version $(MPI_INTERFACE) $(FDF) $(WXML) \
                  $(IONCAT_OBJS) $(COMP_LIBS)
 	$(FC) -o ioncat \
 	       $(LDFLAGS) $(IONCAT_OBJS) $(MPI_INTERFACE) $(FDF) $(WXML) \
-               $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+               $(COMP_LIBS) $(LIBS) 
 #
 #------------------------------------------------------------------------
 # Denchar is now at the main source level...
@@ -242,11 +238,11 @@ OTHER_DENCHAR_OBJS=  precision.o recipes.o alloc.o atom_options.o \
         radial.o spher_harm.o  basis_io.o basis_types.o \
         pseudopotential.o chemical.o xml.o files.o $(SYSOBJ)
 
-denchar: $(NETCDF_INTERFACE) $(MPI_INTERFACE) $(FDF) \
+denchar: $(MPI_INTERFACE) $(FDF) \
          $(OTHER_DENCHAR_OBJS) $(DENCHAR_OBJS) $(COMP_LIBS)
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
-           $(MPI_INTERFACE) $(FDF) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS) 
+           $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(LIBS) 
 #
 # ---------------------------------------------------------------------------
 # Other auxiliary programs
@@ -285,7 +281,6 @@ clean:
 	(cd wxml ; $(MAKE) clean)
 	(cd xmlparser ; $(MAKE) clean)
 	@if [ -d MPI ] ; then (cd MPI && $(MAKE) clean ) ; fi
-	(cd NetCDF ; $(MAKE) clean )
 	(cd Libs ; $(MAKE) clean )
 #
 ##pristine:  clean
@@ -355,8 +350,8 @@ densematrix.o: precision.o
 detover.o: alloc.o parallel.o parallelsubs.o precision.o
 dfscf.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
-dhscf.o: alloc.o atmfuncs.o forhar.o m_iorho.o meshsubs.o parallel.o parsing.o
-dhscf.o: precision.o sys.o xcmod.o
+dhscf.o: alloc.o atmfuncs.o forhar.o iogrid_netcdf.o m_iorho.o meshsubs.o
+dhscf.o: parallel.o parsing.o precision.o sys.o xcmod.o
 diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o

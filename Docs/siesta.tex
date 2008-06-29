@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.5.18}}
+{\Huge {\bf S I E S T A \, \, 2.5.20}}
 
 \vspace{1cm}
 \hrulefill
@@ -4746,6 +4746,40 @@ matrix.
 {\it Default value:} {\tt .false.}
 
 
+\item[{\bf SCF.Read.Charge.NetCDF}] ({\it logical}): 
+\index{SCF.Read.Charge.NetCDF@{\bf SCF.Read.Charge.NetCDF}} 
+\index{reading saved data!charge density}
+Instructs Siesta to read the charge density stored in the
+netCDF file
+{\tt Rho.IN.grid.nc}. This feature allows the easier re-use of electronic-structure
+information from a previous run. It is not necessary that the basis
+sets are ``similar'' (a requirement if density-matrices are to be read
+in). 
+
+{\it Use:} This is an experimental feature.  Until robust checks are
+implemented, care must be taken to make sure that the FFT grids in the
+.grid.nc file and in Siesta are the same.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.Read.Deformation.Charge.NetCDF}] ({\it logical}): 
+\index{SCF.Read.Deformation.Charge.NetCDF@{\bf SCF.Read.Deformation.Charge.NetCDF}} 
+\index{reading saved data!deformation charge density}
+Instructs Siesta to read the deformation charge density stored in the
+netCDF file
+{\tt DeltaRho.IN.grid.nc}. This feature allows the easier re-use of electronic-structure
+information from a previous run. It is not necessary that the basis
+sets are ``similar'' (a requirement if density-matrices are to be read
+in). The deformation charge is particularly useful to give a good
+starting point for slightly different geometries.
+
+{\it Use:} This is an experimental feature.  Until robust checks are
+implemented, care must be taken to make sure that the FFT grids in the
+.grid.nc file and in Siesta are the same.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf ON.UseSaveLWF}] ({\it logical}): 
 \index{ON.UseSaveLWF@{\bf ON.UseSaveLWF}} 
 \index{reading saved data!localized wave functions (order-$N$)}
@@ -4823,6 +4857,8 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.RHO is only written, not read, by siesta.
 
+If netCDF support is compiled in, the file {\tt Rho.grid.nc} is produced.
+
 {\it Default value:} {\tt .false.}
         
 
@@ -4835,6 +4871,8 @@ comes in file {\tt SystemLabel}.DRHO. This file can be read by routine IORHO,
 which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.DRHO is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt DeltaRho.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
         
@@ -4850,6 +4888,9 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.VH is only written, not read, by siesta.
 
+If netCDF support is compiled in, the file {\tt
+ElectrostaticPotential.grid.nc} is produced.
+
 {\it Default value:} {\tt .false.}
         
 
@@ -4863,6 +4904,8 @@ in file {\tt SystemLabel}.VT. This file can be read by routine IORHO,
 which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.VT is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt TotalPotential.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
         
@@ -4879,6 +4922,8 @@ density is positive and the ionic charge density is negative.
 
 
 {\it Use:} File {\tt SystemLabel}.IOCH is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt Chlocal.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
         
