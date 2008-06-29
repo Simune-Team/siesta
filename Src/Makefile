@@ -573,7 +573,7 @@ siesta_cmlsubs.o: files.o parallel.o timestamp.o
 siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o timestamp.o
 siesta_forces.o: compute_dm.o m_steps.o mixer.o parallel.o post_scf_work.o
 siesta_forces.o: scfconvergence_test.o setup_hamiltonian.o siesta_cml.o
-siesta_forces.o: siesta_options.o state_analysis.o state_init.o
+siesta_forces.o: siesta_options.o state_analysis.o state_init.o sys.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
 siesta_init.o: kpoint_grid.o ksvinit.o m_check_supercell.o m_energies.o m_eo.o
@@ -607,7 +607,7 @@ struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o
 sys.o: parallel.o
-timer.o: m_walltime.o parallel.o precision.o
+timer.o: m_walltime.o parallel.o precision.o siesta_options.o sys.o
 transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o

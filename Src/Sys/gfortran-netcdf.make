@@ -27,7 +27,7 @@ SYS=nag
 NETCDF_ROOT=$(HOME)/lib/netcdf-3.6.2-gfortran
 INCFLAGS=-I$(NETCDF_ROOT)/include
 #
-DEFS=-DGFORTRAN -DCDF         # Note this !!
+DEFS=-DGFORTRAN -DCDF -DFC_HAVE_FLUSH -DFC_HAVE_ABORT     # Note this !!
 COMP_LIBS=linalg.a
 #
 NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf

@@ -984,6 +984,17 @@ Fractional charges can also be used.
 {\it Default value:} {\tt 0.0} 
 
 
+\item[{\bf MaximumWallClockTime}] ({\it physical}):
+\index{MaximumWallClockTime@{\bf MaximumWallClockTime}}
+Defines the maximum duration of the SIESTA run. The system
+clock is checked on a regular basis in order to profile the 
+time taken by various procedures. If more than MaximumWallClockTime
+has elapsed then the job is aborted. If the maximum time is 0, or is
+negative, the time is unlimited.
+
+{\it Default value:} {\tt 0 s}
+
+
 \end{description}
 
 
@@ -5820,6 +5831,9 @@ time     & s          & 1.E0 \\
 time     & fs         & 1.E-15 \\
 time     & ps         & 1.E-12 \\
 time     & ns         & 1.E-9 \\
+time     & mins       & 60.E0 \\
+time     & hours      & 3.6E3 \\
+time     & days       & 8.64E4 \\
 energy   & J          & 1.E0 \\
 energy   & erg        & 1.E-7 \\
 energy   & eV         & 1.60219E-19 \\

@@ -113,6 +113,9 @@ MODULE siesta_options
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
   real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
+  real(dp) :: maximum_runtime = 0.0_dp ! Maximum wall clock time of the run.
+                                      ! Set a default here for any checks before
+                                      ! fdf file is read.
 
   character(len=150) :: sname   ! System name, used to initialise read
 
@@ -314,6 +317,16 @@ MODULE siesta_options
     call fdf_global_get(outlng,'LongOutput', .false.)
     if (ionode) then
       write(6,1) 'redata: Long output                      = ', outlng
+    endif
+
+    ! Does the user want us to bomb out after some time? 
+    call fdf_global_get(maximum_runtime, 'MaximumWallClockTime', 0.0_dp, 's')
+    if (ionode) then
+      if (maximum_runtime.le.0.0_dp) then
+        write(6,'(A)') 'redata: Maximum wall-clock time          = unlimited'
+      else
+        write(6,'(A,F10.0)') 'redata: Maximum wall-clock time (s)      = ', maximum_runtime
+      endif
     endif
 
     if (cml_p) then

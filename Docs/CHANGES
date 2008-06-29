@@ -7,6 +7,27 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  17:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-23
+
+Summary:  Patch by Andrew Walker for maximum wall-clock time
+
+If MaximumWallClockTime is set (to a time specification of
+the form 
+
+     15 s
+     7  mins
+     2  hours
+     3  days 
+     ...      )
+
+the program will abort if the specific wall-time is exceeded.
+The checks are done with the granularity of the calls to 'timer' (i.e.,
+there might be some slack). If the maximum time is 0 (the default), or is
+negative, the time is unlimited.
+
+
+* Added -DFC_HAVE_FLUSH -DFC_HAVE_ABORT to the gfortran*.make files
+
 2008-06-29  16:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-22
 
 Summary: Integration of new STM-images code. Better makefiles.
