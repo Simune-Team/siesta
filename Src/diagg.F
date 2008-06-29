@@ -133,6 +133,8 @@ C  Internal variables .............................................
       real(dp)          ee, eei, qe, qei, rt, t, k(3)
 
 C Solve eigenvalue problem
+      call timer( 'r-eigvec', 1 )
+      call timer( 'r-buildHS', 1 )
       do ispin = 1,nspin
         do io = 1,nuo
           do jo = 1,nuotot
@@ -148,8 +150,10 @@ C Solve eigenvalue problem
             Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
         enddo
+        call timer( 'r-buildHS', 2 )
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
      .              psi(1,1,ispin), neigwanted, iscf, ierror )
+        call timer( 'r-eigvec', 2 )
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -216,6 +220,8 @@ C New density and energy-density matrices of unit-cell orbitals .......
       Dnew(1:nd,1:nspin) = 0.0d0
       Enew(1:nd,1:nspin) = 0.0d0
 
+      call timer( 'r-buildD', 1 )
+
 C Global operation to form new density matrix
       do ispin = 1,nspin
         BNode = 0
@@ -253,5 +259,7 @@ C Global operation to form new density matrix
           endif
         enddo
       enddo
+
+      call timer( 'r-buildD', 2 )
 
       end

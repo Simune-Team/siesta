@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.5.20}}
+{\Huge {\bf S I E S T A \, \, 2.5.21}}
 
 \vspace{1cm}
 \hrulefill
@@ -3257,8 +3257,7 @@ Character string to chose between
 diagonalization ({\tt diagon}) or Order-N ({\tt OrderN}) solution
 of the LDA Hamiltonian.
 
-{\it Default value:} {\tt diagon} for 100 atoms or less in the 
-{\bf unit} cell, {\tt OrderN} for more than 100 atoms.
+{\it Default value:} {\tt diagon}
 
 %Diagonalisation options
 
@@ -3276,6 +3275,31 @@ The value specified must greater than the number of occupied states
 and less than the number of basis functions.
 
 {\it Default value:} {\tt all orbitals}
+
+\item[{\bf Use.New.Diagk}] ({\it logical}): 
+\index{Use.New.Diagk@{\bf Use.New.Diagk}} 
+Selects whether a more efficient diagonalization routine (with
+intermediate storage of eigenvectors in netCDF format) is
+used for the case of k-point sampling.
+
+In order to use the new routine, netCDF support should be compiled in.
+Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates (see above). Note that for now, for safety, all
+eigenvectors for a given k-point and spin are computed by the
+diagonalization routine, but only that number specified by the user
+are stored. If they are insufficient, the program stops.  A rule of
+thumb to select the number of eigenvectors to store is to count the
+number of electrons and divide by two, and then apply a "safety
+factor" of around 1.1-1.2 to take into account fractional occupations
+and band overlaps.
+
+A new file {\tt OCCS} is produced with information about the number of
+states occupied.
+
+This is an experimental feature.
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf Diag.DivideAndConquer}] ({\it logical}): 
 \index{Diag.DivideAndConquer@{\bf Diag.DivideAndConquer}} 

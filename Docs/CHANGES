@@ -7,6 +7,62 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  15:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-21
+
+Summary: A faster diagk with eigenvector storage
+
+The  new k-point-mode diagonalization routine diagk_file stores
+the eigenvectors on file to avoid re-computation after fermi-level
+determination. The file is in netCDF form, allowing a more
+flexible dispatching of eigenvectors to and from the master node.
+(At the time of building the new density matrix, the eigenvectors
+are read by and transferred from the root node in blocks.)
+
+This routine should be very useful for relatively large systems, but
+the speedup is noticeable for all but the very small.
+
+In order to use the new routine, netCDF support should be compiled in,
+and the symbol UseNewDiagk must be set to "true" in the fdf
+file. Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates. Note that for now, for safety, all
+eigenvectors for a given k-point and spin are computed by the
+diagonalization routine, but only that number specified by the user
+are stored. If they are insufficient, the program stops.  A rule of
+thumb to select the number of eigenvectors to store is to count the
+number of electrons and divide by two, and then apply a "safety
+factor" of around 1.1-1.2 to take into account fractional occupations
+and band overlaps.
+
+A new file "OCCS" is produced with information about the number of
+states occupied.
+
+Note that this routine is NOT yet set up to be used for band-structure
+computations, or to "write out" wavefunctions. It should only be used
+in the SCF loop, i.e., from routine "diagon". 
+
+The old diagk routine is kept, for use in smaller systems and to be
+called from driver routines which provide other functionality.
+
+The size of the transfer block is set to n_eigenvectors/Nodes (note
+that the user is responsible for setting n_eigenvectors). The loops in
+the density-matrix building section have been rearranged. Now each DM
+scan loop (with potential inefficiencies for indirection) has more
+work to do, and it is no longer cost-effective to fill the dense
+matrices Dk and Ek first.
+
+The size of the block could in principle be increased for free to
+Min(no_l), and psi_block made into a pointer to Haux. Preliminary
+tests seem to indicate a lower performance, however (?).
+
+To Do:
+
+Clarify the use of work arrays. Haux and Saux should probably be allocated
+inside the diagonalization routines, and not in diagon.
+
+
+* The timing sections have been split into "build HS", "eigenvalues/eigenvectors"
+and "buildD" components.
+
 2008-06-29  13:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-20
 
 Summary: NetCDF I/O of Grid magnitudes. Density re-starts

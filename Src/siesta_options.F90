@@ -18,6 +18,7 @@ MODULE siesta_options
   logical :: mix           ! Mix first SCF step? Used in broyden_mixing
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
+  logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
   logical :: outlng        ! Long output?
   logical :: pulfile       ! Use file to store Pulay info in pulayx?
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
@@ -1341,6 +1342,8 @@ MODULE siesta_options
     if (read_charge_cdf .or. read_deformation_charge_cdf) then
        mix = .false.
     endif
+
+    call fdf_global_get(new_diagk, 'UseNewDiagk'      , .false. )
 
     call fdf_global_get(writb, 'WriteBands'      , outlng )
     call fdf_global_get(writbk, 'WriteKbands'     , outlng )
