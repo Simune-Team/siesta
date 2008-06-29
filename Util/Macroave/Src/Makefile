@@ -6,6 +6,10 @@ default: macroave
 #
 include ../../../Src/arch.make
 #
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
+#
 # Note that machine-specific files are now in top Src directory.
 #
 OBJS = io.o iorho.o paste.o macroave.o thetaft.o \

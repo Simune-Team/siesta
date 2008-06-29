@@ -1,0 +1,28 @@
+SIESTA_ARCH=gfortran
+#
+FC=gfortran
+FC_ASIS=$(FC)
+#
+FFLAGS=-O0 -Wall
+FFLAGS_DEBUG= 
+LDFLAGS= 
+RANLIB=echo
+#
+#
+INCFLAGS= -I$(HOME)/lib/fftw-gfortran/include
+FFTWLIBS = -L$(HOME)/lib/fftw-gfortran/lib -lfftw3
+
+SYS=bsd
+DEFS= 
+#
+.F.o:
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+.f.o:
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
+.F90.o:
+	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
+.f90.o:
+	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
+#
+
+

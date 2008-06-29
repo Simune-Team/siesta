@@ -14,11 +14,18 @@
 .SUFFIXES: 
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-default: grid2cdf 
-all: grid2cdf grid2val grdi2cube
+all: grid2cdf cdf2xsf cdf2grid grid2val grid2cube
 #
 include ../../Src/arch.make
-FFLAGS=$(FFLAGS_DEBUG)
+#
+# This is needed on some systems to avoid loading the parallel libraries, which
+# sometimes force running on queuing systems
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
+#
+##FFLAGS=$(FFLAGS_DEBUG)
 #
 # We assume that the top arch.make defines the relevant NetCDF symbols,
 # including the INCFLAGS line. If not, uncomment the following lines, 
@@ -50,6 +57,7 @@ cdf_fft: cdf_fft.o libfft.o
 #
 #------------------
 get_f2kcli:
+	@echo " *** If this compilation fails, type 'make' again ***"
 	ln -sf ../../Src/f2kcli.F90 ./f2kcli.F90
 #
 grid2val.o: f2kcli.o
@@ -62,7 +70,8 @@ grid2cube: grid2cube.o
 #
 #------------------
 clean: 
-	rm -f *.o grid2cdf grid2val grid2cube *.o *.*d
+	rm -f *.o grid2cdf grid2val grid2cube cdf2grid cdf2xsf *.o *.*d
+	rm -f f2kcli.F90
 #
 
 

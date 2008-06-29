@@ -36,7 +36,6 @@ SYS=nag
 NETCDF_ROOT=/opt/cesga/netcdf-3.6.2
 INCFLAGS=-I$(NETCDF_ROOT)/include
 NETCDF_LIBS=-L$(NETCDF_ROOT)/lib -lnetcdf
-NETCDF_INTERFACE=
 DEFS_CDF=-DCDF
 
 FPPFLAGS= -DMPI -DFC_HAVE_FLUSH -DFC_HAVE_ABORT $(DEFS_CDF)
@@ -51,9 +50,7 @@ MPI_INTERFACE=libmpi_f90.a
 .F.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_fixed_F)  $<
 .F90.o:
-	$(FPP) $*.F90 $*.f90
-	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90) $*.f90
-	@rm -f $*.f90
+	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FPPFLAGS) $(FPPFLAGS_free_F90)  $<
 .f.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS) $(FCFLAGS_fixed_f)  $<
 .f90.o:

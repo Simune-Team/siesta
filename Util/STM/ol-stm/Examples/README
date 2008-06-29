@@ -1,0 +1,8 @@
+Use the siesta.fdf file to run Siesta (you can find the pseudopotentials needed in Tests/Pseudos).
+
+Then, use the Util/wfsx2wfs.f  program to convert the si2x1h.WFSX file to si2x1h.WFS.
+
+Finally, run the STM program:
+
+stm < stm.fdf
+

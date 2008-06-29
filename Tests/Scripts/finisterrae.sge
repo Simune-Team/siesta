@@ -16,7 +16,7 @@
 #
 # qsub -l num_proc=1,s_rt=04:00:00,s_vmem=2G,h_fsize=2G -pe mpi 8 script.sge
 #
-timestamp=`date +"%F--%k.%M.%S"`
+timestamp=`date +"%F--%H.%M.%S"`
 echo $timestamp
 #
 jobname=some_job_name

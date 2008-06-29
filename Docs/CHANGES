@@ -7,6 +7,49 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  16:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-22
+
+Summary: Integration of new STM-images code. Better makefiles.
+
+Util/STM/ol-stm contains the code by Pablo Ordejon and Nicolas Lorente
+that implements the Tersoff-Hamann approximation to STM images, with a
+previous step of extrapolation of wave functions from a reference
+plane. It is thus more accurate than the simple code to be found now
+in Util/STM/simple-stm.
+
+Note that for now the fftw3 library needs to be available for this
+code to work.
+
+Bug fixes found upon integration:
+
+- Bug fix in Util/STM/ol-stm/Src/extrapol.f: the interpretation of the
+layout of the lattice vectors in the "cell" array was wrong.
+
+- fftw3 "estimation" call moved outside a loop in extrapol.f (there is
+more scope for optimization here).
+
+* The makefiles for several utilities have been streamlined,
+and the compilation of the ol-stm program uses a VPATH
+functionality to avoid duplicating code in the top-level
+Src directory. The old neighb/ranger routines are retained for now.
+
+Some changes were needed to implement this correctly:
+
+iodm.F: 
+
+- Removed support for old-style control files.
+- Wrapping of LocalToGlobalOrbital call in iodm.F in a MPI preprocessor block.
+
+spher_harm.f: Used dot_product instead of ddot.
+
+* Other changes:
+
+Src/Sys/cscs-ibm-blanc.make: netcdf compilation.
+Util/Grid/makefile: more targets, FC_SERIAL support.
+Util/Macroave/Src/Makefile: FC_SERIAL support.
+
+Fix for Finisterrae .make file and .sge script in Tests/Scripts.
+
 2008-06-29  15:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-21
 
 Summary: A faster diagk with eigenvector storage
