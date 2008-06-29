@@ -598,12 +598,12 @@ state_analysis.o: atomlist.o born_charge.o m_energies.o m_forces.o m_iostruct.o
 state_analysis.o: m_ntm.o m_spin.o m_stress.o m_wallclock.o parallel.o
 state_analysis.o: remove_intramol_pressure.o siesta_cml.o siesta_geom.o
 state_analysis.o: siesta_options.o sparse_matrices.o write_subs.o zmatrix.o
-state_init.o: alloc.o atomlist.o hsparse.o iodm_netcdf.o iodmhs_netcdf.o
-state_init.o: kpoint_grid.o m_check_supercell.o m_energies.o m_eo.o m_gamma.o
-state_init.o: m_mpi_utils.o m_pulay.o m_rmaxh.o m_spin.o m_steps.o new_dm.o
-state_init.o: overlap.o parallel.o proximity_check.o siesta_cml.o
-state_init.o: siesta_cmlsubs.o siesta_geom.o siesta_options.o sparse_matrices.o
-state_init.o: write_subs.o zmatrix.o
+state_init.o: alloc.o atomlist.o files.o hsparse.o iodm_netcdf.o
+state_init.o: iodmhs_netcdf.o kpoint_grid.o m_check_supercell.o m_energies.o
+state_init.o: m_eo.o m_gamma.o m_mpi_utils.o m_pulay.o m_rmaxh.o m_spin.o
+state_init.o: m_steps.o new_dm.o overlap.o parallel.o proximity_check.o
+state_init.o: siesta_cml.o siesta_cmlsubs.o siesta_geom.o siesta_options.o
+state_init.o: sparse_matrices.o write_subs.o zmatrix.o
 struct_init.o: alloc.o atmfuncs.o atomlist.o files.o iopipes.o ioxv.o
 struct_init.o: m_fdf_global.o m_iostruct.o parallel.o periodic_table.o
 struct_init.o: siesta_cml.o siesta_geom.o siesta_options.o zmatrix.o

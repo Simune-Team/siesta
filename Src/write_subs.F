@@ -516,6 +516,7 @@
       use units, only: Ang
       use zmatrix, only: lUseZmatrix, write_canonical_ucell_and_Zmatrix
       use m_iostruct, only: write_struct
+      use siesta_options, only: idyn
 
       implicit none
 
@@ -526,7 +527,7 @@
 !      and stresses.
 
         call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
-        if (lUseZmatrix) then
+        if (lUseZmatrix .and. (idyn .eq. 0)) then
            call write_canonical_ucell_and_Zmatrix
      $                         (filename="NEXT_ITER.UCELL.ZMATRIX")
         endif

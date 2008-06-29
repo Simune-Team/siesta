@@ -48,7 +48,7 @@
 
       if (IOnode) then
          call write_struct( ucell, na_u, isa, iza, xa )
-         if (lUseZmatrix) then
+         if (lUseZmatrix .and. (idyn.eq.0)) then
             call write_canonical_ucell_and_Zmatrix()
          endif
       endif
@@ -103,7 +103,7 @@ C Impose constraints to atomic movements by changing forces ...........
 C ...................
 
 ! Calculate and output Zmatrix forces
-      if (lUseZmatrix) then
+      if (lUseZmatrix .and. (idyn.eq.0)) then
         call CartesianForce_to_ZmatForce(na_u,xa,fa)
         if (IOnode) call iofaZmat()
       endif

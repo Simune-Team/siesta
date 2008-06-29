@@ -7,6 +7,45 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  18:15:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-25
+
+Summary: Assorted geometry-related cosmetic fixes
+
+* Do not pretend to update zmatrix info during MD runs
+
+The zmatrix form of structural information is only kept up
+to date when performing geometry relaxations. In molecular
+dynamics runs, only the cartesian coordinates are updated, and
+the zmatrix variables are kept frozen at their initial values.
+
+This is potentially confusing, so a warning is now issued and
+the zmatrix "updates" are no longer printed.
+
+* Fix shape script in Utils/MD
+
+* Compute bond information for all server steps
+
+  If the server option is used, the program will compute the bond-length
+  information at every step. 
+
+  The first file has now extension ".BONDS_INITIAL", and every successive 
+  one, simply ".BONDS". The final one is still "SystemLabel.BONDS_FINAL".
+
+* More flexibility and error detection in reading of atomic coordinates
+
+(Patch by Andrew Walker)
+
+In coor.F, new logic has been implemented to detect malformed input lines
+in the AtomicCoordinatesAndAtomicSpecies block. As a by-product, comments
+and blank lines can now be present in the block.
+
+
+(Unrelated)
+
+* Temporarily move xml-pseudopotential to xmlparser directory
+  The file is not ready for production, but could interfere with the
+  automatic dependency analysis.
+
 2008-06-29  17:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-24
 
 Summary: Generalized SCF convergence criteria. Optional enforcement

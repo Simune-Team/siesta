@@ -33,6 +33,7 @@
       use m_pulay, only: init_pulay_arrays
       use m_eo
       use m_gamma
+      use files,          only : slabel
 #ifdef MPI
       use m_mpi_utils, only : globalize_max
 #endif
@@ -69,6 +70,10 @@
         case (0)
           write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='CG', index=istp)
+          ! Print Z-matrix coordinates
+          if (lUseZmatrix) then
+             call write_Zmatrix()
+          endif
         case (1:5)
           write(6,'(28(" "),a,i6)') 'Begin MD step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
@@ -90,15 +95,14 @@
         case (8)
           write(6,'(28(" "),a,i6)') 'Begin Server step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
+          ! Find interatomic distances (output in file BONDS)
+          call bonds( ucell, na_u, isa, xa,
+     $                rmax_bonds, trim(slabel)// ".BONDS" )
 
         end select
         write(6,'(2a)') '                        ',
      .                    '=============================='
 
-        ! Print Z-matrix coordinates
-        if (lUseZmatrix) then
-          call write_Zmatrix()
-        endif
 
         ! Print atomic coordinates
         call outcoor( ucell, xa, na_u, ' ', writec )

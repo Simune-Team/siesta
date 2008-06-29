@@ -40,11 +40,13 @@ C integer na  : Number of atoms in unit cell
       real(dp), intent(out) :: cell(3,3)
 
 C Internal variables and arrays
+      type(block), pointer  :: fdf_bp
       character             :: acf*22, acf_default*22
-      logical               :: isdiag, leqi
+      character(len=150)    :: line
+      logical               :: isdiag, leqi, readerr
       integer               :: i, ia, ic, iscale, iua, iunit, ix,
      .                         coor_mscell(3,3), ncells, 
-     &                         coor_nsc(3), nua
+     &                         coor_nsc(3), nua, ierr
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
      .                         origin(3), unit_cell(3,3),
      .                         volcel, xac(3), super_cell(3,3)
@@ -139,7 +141,9 @@ C Read atomic coordinates and species
 C Find origin with which to translate all coordinates
         lOrigin = fdf_block('AtomicCoordinatesOrigin',iunit)
         if (lOrigin) then 
-          read(iunit,*) (origin(i),i=1,3)
+          read(iunit,*, iostat=ierr) (origin(i),i=1,3)
+          if (ierr.ne.0) call die("coor: Error reading " //
+     .         "AtomicCoordinatesOrigin block")
         endif
 
       endif
@@ -179,17 +183,48 @@ C       Generate Cartesian coordinates from Z-matrix
 
         if (Node.eq.0) then
 C If Z matrix hasn't been found, read regular atomic coordinates
-          if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',iunit) )
+          nullify(fdf_bp)
+          if ( fdf_block('AtomicCoordinatesAndAtomicSpecies', fdf_bp) )
      .        then
-            do ia = 1,nua
-              read(iunit,*) (xa(i,ia), i=1,3), isa(ia)
-              if (lOrigin) then
-                 xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
+
+            ia = 1
+            readerr = .false.
+
+            do 
+              if (.not. fdf_bline(fdf_bp, line)) exit
+
+              read(line, *, iostat=ierr)
+     .                          (xa(i,ia), i=1,3), isa(ia)
+              if (ierr.eq.0) then ! Got the data OK
+                if (lOrigin) then
+                   xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
+                endif
+                ia = ia + 1
+
+              else ! Error with the internal read, but don't die 
+                   ! until all such errors have been reported
+
+                write(6,'(a)') "coor:   Malformed input line:" 
+                write(6,'(a)') "coor:   " // trim(line)
+                readerr = .true. 
+
               endif
             enddo
 
+            call destroy(fdf_bp)
+
+            if (readerr) then ! We had some errors 
+               call die("coor:   Error reading some lines of" //
+     .                  " AtomicCoordinatesAndAtomicSpecies block")
+            elseif ((ia-1).ne.nua) then ! ia will have incremented after the
+                                        ! last atom.
+               call die("coor:   Wrong number of atoms found in" //
+     .                  " AtomicCoordinatesAndAtomicSpecies block")
+            endif 
+
+
           else
-            call die("coor: You must specify the atomic coordinates")
+            call die("coor:   You must specify the atomic coordinates")
           endif
 
 C Scale atomic coordinates
