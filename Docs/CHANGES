@@ -7,6 +7,55 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  17:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-24
+
+Summary: Generalized SCF convergence criteria. Optional enforcement
+
+New criterion for SCF convergence based on the Harris energy. This
+is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+
+This new criterion joins the two already implemented:
+
+- The standard criterion is based on the convergence of the density
+matrix, with the relevant parameter being DM.Tolerance.
+
+- Optionally, one can require that the total energy changes are
+also below a prescribed tolerance:
+
+DM.RequireEnergyConvergence T
+
+In this case, DM.EnergyTolerance is the total-energy tolerance
+
+The new criterion is requested by
+
+DM.RequireHarrisConvergence  T
+
+DM.HarrisTolerance is the harris-energy tolerance (default 1e-4 eV)
+
+(Note that DM convergence is not needed in this case).
+
+The user is responsible for using the correct energies in further
+processing, e.g., the Harris energy if the Harris criterion is used.
+
+To help in basis-optimization tasks, a new file BASIS_HARRIS_ENTHALPY
+is provided, holding the same information as BASIS_ENTHALPY but using
+the Harris energy instead of the Kohn-Sham energy. 
+
+
+The energy criteria are implemented using "convergers", new objects
+defined and implemented in m_convergence.f90. It is probably overkill
+as of now, but it can be enhanced to provide new functionality.
+
+
+*  Added Andrew Walker's patch for convergence enforcement
+
+If the fdf symbol SCFMustConverge is set to 'true', the program will abort
+if convergence is not achieved after the specified number of iterations
+(set with MaxSCFIterations, or currently 50 by default).
+
+* Added explicit support for flush and abort for gfortran in pxf.F
+
 2008-06-29  17:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-23
 
 Summary:  Patch by Andrew Walker for maximum wall-clock time

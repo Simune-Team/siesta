@@ -84,7 +84,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	savepsi.o shaper.o timer.o \
 	vmb.o vmat.o vmatsp.o volcel.o xc.o \
 	cellxc.o cdiag.o rdiag.o \
-        cgvc.o cgvc_zmatrix.o  \
+        cgvc.o cgvc_zmatrix.o m_convergence.o \
         iocg.o ioeig.o iofa.o iokp.o iomd.o typecell.o \
         ofc.o poison.o readsp.o radfft.o \
 	write_md_record.o kpoint_grid.o find_kgrid.o proximity_check.o\
@@ -547,8 +547,8 @@ rhoofd.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 rhoofdsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 rhoofdsp.o: meshsubs.o meshsubs.o precision.o sys.o
 savepsi.o: alloc.o parallel.o parallelsubs.o precision.o
-scfconvergence_test.o: m_energies.o m_wallclock.o parallel.o siesta_cml.o
-scfconvergence_test.o: siesta_options.o write_subs.o
+scfconvergence_test.o: m_convergence.o m_energies.o m_wallclock.o parallel.o
+scfconvergence_test.o: siesta_cml.o siesta_options.o write_subs.o
 setatomnodes.o: alloc.o parallel.o precision.o spatial.o sys.o
 setspatial.o: alloc.o parallel.o precision.o spatial.o
 setup_hamiltonian.o: alloc.o atmfuncs.o atomlist.o m_dipol.o m_energies.o
@@ -571,9 +571,10 @@ siesta_analysis.o: sparse_matrices.o write_subs.o writewave.o zmatrix.o
 siesta_cml.o: siesta_cmlsubs.o
 siesta_cmlsubs.o: files.o parallel.o timestamp.o 
 siesta_end.o: alloc.o m_wallclock.o parallel.o siesta_cml.o timestamp.o
-siesta_forces.o: compute_dm.o m_steps.o mixer.o parallel.o post_scf_work.o
-siesta_forces.o: scfconvergence_test.o setup_hamiltonian.o siesta_cml.o
-siesta_forces.o: siesta_options.o state_analysis.o state_init.o sys.o
+siesta_forces.o: compute_dm.o m_convergence.o m_steps.o mixer.o parallel.o
+siesta_forces.o: post_scf_work.o scfconvergence_test.o setup_hamiltonian.o
+siesta_forces.o: siesta_cml.o siesta_options.o state_analysis.o state_init.o
+siesta_forces.o: sys.o
 siesta_geom.o: precision.o
 siesta_init.o: alloc.o atomlist.o bands.o densematrix.o files.o ioxv.o
 siesta_init.o: kpoint_grid.o ksvinit.o m_check_supercell.o m_energies.o m_eo.o

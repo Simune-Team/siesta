@@ -32,6 +32,7 @@ module m_energies
   real(dp):: E0         ! Non-SCF part of total energy
   real(dp):: Emm        ! Classical two-body term, calculated in  twobody
   real(dp):: FreeE      ! Free energy
+  real(dp):: FreeEharris! Free energy computed with Harris total energy
   real(dp):: Uatm       ! Harris hartree electron energy,  calculated in dhscf
   real(dp):: Uscf       ! SCF hartree electron energy,  calculated in dhscf
 

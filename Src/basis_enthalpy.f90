@@ -5,26 +5,38 @@ module basis_enthalpy
 
 CONTAINS
 
-  subroutine write_basis_enthalpy(E)
+  subroutine write_basis_enthalpy(FE,FEharris)
     use precision, only: dp
     use fdf,       only: fdf_physical
     use units,     only: GPa, eV
 
-    real(dp), intent(in) :: E  ! Electronic (Free)Energy
+    real(dp), intent(in) :: FE  ! Electronic (Free)Energy
+    real(dp), intent(in) :: FEharris  ! Electronic (Free)HarrisEnergy
 
-    real(dp)  orb_vol, basis_enthalpy, basis_pressure
+    real(dp)  orb_vol, basis_enthalpy, basis_harris_enthalpy, basis_pressure
     integer   iu
 
     call orb_volumes(orb_vol)
     basis_pressure = GPa * fdf_physical("BasisPressure",0.2_dp,"GPa")
-    basis_enthalpy = E + basis_pressure * orb_vol
+    basis_enthalpy = FE + basis_pressure * orb_vol
+    basis_harris_enthalpy = FEHarris + basis_pressure * orb_vol
 
     write(6,"(a,f18.6)") "(Free)E+ p_basis*V_orbitals  = ", basis_enthalpy/eV
+    write(6,"(a,f18.6)") "(Free)Eharris+ p_basis*V_orbitals  = ", basis_harris_enthalpy/eV
 
     call io_assign(iu)
     open(iu,file="BASIS_ENTHALPY",form="formatted",status="replace")
     write(iu,*) basis_enthalpy/eV
-    write(iu,*) "The above number is the electronic (free)energy:", E/eV
+    write(iu,*) "The above number is the electronic (free)energy:", FE/eV
+    write(iu,*) "Plus the pressure : ", basis_pressure,  &
+                                    " ( ", basis_pressure/GPa, " GPa)"
+    write(iu,*) "     times the orbital volume (in Bohr**3): ", orb_vol
+    call io_close(iu)
+
+    call io_assign(iu)
+    open(iu,file="BASIS_HARRIS_ENTHALPY",form="formatted",status="replace")
+    write(iu,*) basis_harris_enthalpy/eV
+    write(iu,*) "The above number is the electronic (free) harris energy:", FEHarris/eV
     write(iu,*) "Plus the pressure : ", basis_pressure,  &
                                     " ( ", basis_pressure/GPa, " GPa)"
     write(iu,*) "     times the orbital volume (in Bohr**3): ", orb_vol

@@ -20,7 +20,7 @@
       use siesta_geom
       USE siesta_options
       use m_stress
-      use m_energies, only: Etot, FreeE, Entropy
+      use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
       use m_ntm
       use m_spin,     only: nspin
       use m_forces
@@ -78,6 +78,7 @@
       if (cml_p) call cmlEndPropertyList(mainXML)
 
       FreeE = Etot - Temp * Entropy
+      FreeEHarris = Eharrs - Temp * Entropy
 
 ! Substract egg box effect from the forces 
       if (eggbox_block) then

@@ -39,7 +39,7 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.5.21}}
+{\Huge {\bf S I E S T A \, \, 2.5.24}}
 
 \vspace{1cm}
 \hrulefill
@@ -2405,7 +2405,7 @@ Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
 
 When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, and DM.MixSCF1 are automatically set up to False, 1
+MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set up to False, 1, False
 and False respectively, no matter whatever other specification are in
 the INPUT file.
 \end{itemize}
@@ -2559,6 +2559,15 @@ to save index storage on the mesh.
 Maximum number of SCF\index{SCF} iterations per time step.
 
 {\it Default value:} {\tt 50}
+
+\item[{\bf SCFMustConverge}] ({\it logical}):
+\index{SCFMustConverge@{\bf SCFMustConverge}}
+Defines the behaviour if convergence is not reached in the maximum
+number of SCF iterations. The default is to update the forces, perform
+an MD or geometry optimisation step and carry on. When set to true
+the calculation will stop on the first SCF convergence failure.
+
+{\it Default value:} {\tt .false.}
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
 \index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear} 
@@ -2715,14 +2724,54 @@ the selfconsistency has been achieved.
 {\it Default value:} {${\tt 10^{-4}}$}
 
 
-\item[{\bf DM.EnergyTolerance}] ({\it real}): 
+\item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
+\index{SCF!mixing!energy convergence}
+\index{DM.Require.Energy.Convergence@{\bf DM.Require.Energy.Convergence}}
+Logical variable to request an additional requirement for
+self-consistency: it is considered achieved when the change in the total energy between cycles
+of the SCF procedure is below {\bf DM.EnergyTolerance} and the
+density matrix change criterion is also satisfied.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf DM.Energy.Tolerance}] ({\it real}): 
 \index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}} 
-When the change in the total energy between cycles
+If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the change in the total energy between cycles
 of the SCF procedure is below this value and the
-density matrix change criterion is also satisfied
-then self-consistency has been achieved.
+density matrix change criterion is also satisfied.
 
 {\it Default value:} {${\tt 10^{-4}}$}
+
+\item[{\bf DM.Require.Harris.Convergence}] ({\it logical}):
+\index{SCF!mixing!harris energy convergence}
+\index{DM.Require.Harris.Convergence@{\bf DM.Require.Harris.Convergence}}
+Logical variable to use the Harris energy as monitor of
+self-consistency: this is considered achieved when the change in the Harris energy between cycles
+of the SCF procedure is below {\bf DM.Harris.Tolerance}. No density
+matrix change criterion is used.
+This is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+The user is responsible for using the correct energies in further
+processing, e.g., the Harris energy if the Harris criterion is used.
+
+To help in basis-optimization tasks, a new file BASIS\_HARRIS\_ENTHALPY
+is provided, holding the same information as BASIS\_ENTHALPY but using
+the Harris energy instead of the Kohn-Sham energy. 
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.Harris.Tolerance}] ({\it real}): 
+\index{DM.Harris.Tolerance@{\bf DM.Harris.Tolerance}} 
+If {\bf DM.Require.Harris.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the change in the Harris energy between cycles
+of the SCF procedure is below this value.
+This is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+
+{\it Default value:} {${\tt 10^{-4}}$}
+
 
 \item[{\bf DM.InitSpinAF}] ({\it logical}):\index{spin}
 \index{spin!initialization}\index{ferromagnetic initial DM}
