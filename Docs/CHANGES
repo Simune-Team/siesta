@@ -7,6 +7,105 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  12:50:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-18
+
+Summary: NetCDF I/O for DM, H, and S
+
+Experimental support for DM output in netCDF form, optionally with
+complete history of a SCF cycle.
+
+The netCDF format allows for flexible and portable I/O, and supports
+the extension of arrays into a "time-record" dimension. 
+
+A DM-only netCDF file (DM.nc) with the same information as the
+traditional DM file is created if Write.DM.NetCDF is 'true' (default
+with netCDF support). In this case, the DM values are written in
+routine mixer (as is common practice in Siesta, despite the fact that
+the resulting DM does not correspond to the last electronic structure
+computed).
+
+If WriteDMHS.NetCDF is true (default with netCDF support), a DMHS.nc
+file containing the overlap matrix S, DM_in, H, and DM_out is written
+to in compute_dm, right after the computation of DM_out.
+
+The default in both cases is not to use the optional time dimension
+and overwrite the previous SCF step's information.
+To keep the whole history of (the last) SCF cycle, use
+WriteDM.History.NetCDF  or WriteDMHS.History.NetCDF, respectively.
+The DMHS history might be useful to diagnose SCF convergence issues.
+(See new test Test/h2o_netcdf)
+
+With the new DM to netCDF (dm2cdf) and netCDF to DM (cdf2dm) converters in
+the Util/DensityMatrix directory, the information in the .nc files can be easily converted
+to and from the legacy DM format, allowing the re-use of DM information
+in computers with incompatible floating point formats.
+
+Util/SCF/dm.py is a simple example of processing of netCDF with a Python script.
+
+To use the netCDF functionality, Siesta must have been compiled with
+the appropriate netCDF libraries.  Example .make files can be found in
+the Src/Sys directory (notably gfortran-netcdf.make and
+marenostrum-mpi-netcdf-XX.make files).
+
+The .nc files can also be displayed with the shell utility "ncdump",
+installed by default when the netCDF library is compiled.
+
+
+IMPLEMENTATION NOTES:
+
+- The DM, H, and S information is stored in the .nc files in *single precision*.
+To change this in the future, an fdf symbol might be used to trigger the replacement
+of "float" by "double" in the definition of the variables in the netCDF files. Care
+should be taken to adapt all the other utilities. Single precision seems to be
+perfectly adequate, however.
+
+- No attempt has been made to optimize the memory use or allocation/deallocation
+ overhead, giving priority to clarity. The netCDF format allows a huge simplification
+of the MPI communications involved in the I/O, so this is a minor issue.
+
+- The functionality is included in the iodm_netcdf.F90 and iodmhs_netcdf.F90 files.
+  The new flags are stored and processed in the siesta_options.F90 module.
+
+2008-05-06  12:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-17
+
+Summary: Update of atom to 3.2.8: xml, optimization hooks, tutorial update.
+
+* Integrated Javier Junquera's XML-generating routines
+  Added pseudoXML.f and supporting files.
+  (Note that the XML support in Siesta itself is not yet implemented, 
+  pending retroffiting of the VCA and other enhancements. The relevant
+  files have been put in a new directory 'Src/pseudo-xml'.
+
+* Write pseudo wavefunctions in PSWFFMT
+
+* Updated version.h to include the variable "atom_id", now used
+  in various places to set the creator string.
+
+* A simpler makefile has been written when XML support is not needed
+so that no symbols from the main Siesta directory need to be
+included. The full makefile is called makefile-xml. To use it it is
+only necessary to have built libwxml.a in the Src hierarchy of Siesta
+(after creating the necessary arch.make)
+
+* ATOM now recognizes the FREE_FORMAT_RC_INPUT directive, useful
+for optimization runs.
+
+* A new estimation of ps hardness (qmax) is written to FOURIER_QMAX file.
+
+* The fourier area calculation has been moved to the "down" section,
+since the "up" potentials are not always generated.
+
+* Avoid very small numbers that might need a three-character
+exponent field in formatted output.
+
+* The Tutorial has been brought up to date, using the version employed
+in the latest Siesta schools. Note that the location of the
+scripts used to run the examples has changed. They are now in the
+Pseudo/atom/Tutorial/Utils directory.
+
+* Extended the periodic-table structures in input.f and nucl_z.f
+
+
 2008-05-06  10:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-16
 
 Summary: Make the production of small ionic files optional -- fdf.log

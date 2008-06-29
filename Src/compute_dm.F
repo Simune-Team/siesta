@@ -20,8 +20,12 @@
       use m_eo
       use m_spin,  only: nspin, qs, efs
       use m_gamma
+      use parallel, only: IONode
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
+#endif
+#ifdef CDF
+      use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
 
       implicit none
@@ -81,6 +85,15 @@
           DEharr = buffer1
 #endif
 ! ..................
+#ifdef CDF
+          if ( writedmhs_cdf_history) then
+             call write_dmh_netcdf( no_l, nh, nspin,
+     $                              Dold, H, Dscf)
+          else if ( writedmhs_cdf) then
+             call write_dmh_netcdf( no_l, nh, nspin,
+     $                              Dold, H, Dscf, overwrite=.true.)
+          endif
+#endif
 
 ! Print populations at each SCF step if requested before mixing ......
 

@@ -47,7 +47,11 @@ MODULE siesta_options
   logical :: writic        ! Write the initial atomic ccordinates?
   logical :: varcel        ! Change unit cell during relaxation or dynamics?
   logical :: do_pdos       ! Compute the projected density of states?
-  logical :: writedm       ! Write file with density of states?
+  logical :: writedm       ! Write file with density matrix?
+  logical :: writedm_cdf   ! Write file with density matrix in netCDF form?
+  logical :: writedm_cdf_history   ! Write file with SCF history of DM in netCDF form?
+  logical :: writedmhs_cdf ! Write file with DM_in, H, DM_out, and S in netCDF form?
+  logical :: writedmhs_cdf_history   ! Write file with SCF history in netCDF form?
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
@@ -1324,6 +1328,10 @@ MODULE siesta_options
     call fdf_global_get(writek,'WriteKpoints'    , outlng )
     call fdf_global_get(writef,'WriteForces'     , outlng )
     call fdf_global_get(writedm,'WriteDM'     , .true.)
+    call fdf_global_get(writedm_cdf,'WriteDM.NetCDF' , .true.)
+    call fdf_global_get(writedm_cdf_history,'WriteDM.History.NetCDF' , .false.)
+    call fdf_global_get(writedmhs_cdf,'WriteDMHS.NetCDF' , .true.)
+    call fdf_global_get(writedmhs_cdf_history,'WriteDMHS.History.NetCDF' , .false.)
     call fdf_global_get(writb, 'WriteBands'      , outlng )
     call fdf_global_get(writbk, 'WriteKbands'     , outlng )
     call fdf_global_get(writeig,'WriteEigenvalues', outlng )

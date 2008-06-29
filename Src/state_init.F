@@ -14,6 +14,7 @@
       use siesta_geom
       use atomlist, only: iphorb, iphkb, rco, rckb, indxua,no_s, rmaxkb,
      .                    rmaxo, no_u, lastkb, lasto, superc, rmaxv
+      use atomlist, only: no_s, indxuo
       use atomlist, only: no_l
       use alloc, only: re_alloc, alloc_report
       use m_hsparse,    only: hsparse
@@ -34,6 +35,10 @@
       use m_gamma
 #ifdef MPI
       use m_mpi_utils, only : globalize_max
+#endif
+#ifdef CDF
+      use iodm_netcdf, only: setup_dm_netcdf_file
+      use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
 
       implicit none
@@ -202,6 +207,7 @@
      $                 set_xijo=.true., xijo=xijo, gamma=gamma )
 
       maxnh = nh
+
       !OBSOLETE: 
       !  safety margin for when atoms move 
       !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
@@ -268,6 +274,20 @@
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      .             maxnh, lasto, iphorb, isa, 
      .             numh, listhptr, listh, S)
+
+#ifdef CDF
+      if (writedm_cdf .or. writedm_cdf_history) then
+         call setup_dm_netcdf_file( maxnh, no_l, nspin,
+     $                              no_s, indxuo,
+     $                              numh, listhptr, listh)
+      endif
+      if (writedmhs_cdf .or. writedmhs_cdf_history) then
+         call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
+     $                              no_s, indxuo,
+     $                              numh, listhptr, listh,
+     $                              s )
+      endif
+#endif
 
 !--------------------------------------------------------------------------- END
       END subroutine state_init

@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, BSC--2.3.26}}
+{\Huge {\bf S I E S T A \, \, 2.5.18}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 12, 2007 }
+{\Large June 29, 2008 }
 
 \vspace{1.5cm}
 
@@ -4441,11 +4441,51 @@ states.\index{density of states}
 
 \item[{\bf WriteDM}] ({\it logical}): \index{WriteDM@{\bf WriteDM}}
 \index{output!density matrix} It determines whether the density matrix
-is output as a {\it Systemlabel}.DM file or not. For large systems
-this file can be quite big and therefore it may be necessary to turn
-this option off to conserve disk space.
+is output as a {\it Systemlabel}.DM file or not.
 
 {\it Default value:} {\tt .true.}
+
+\item[{\bf WriteDM.NetCDF}] ({\it logical}): \index{WriteDM.NetCDF@{\bf WriteDM.NetCDF}}
+\index{output!density matrix} It determines whether the density matrix
+is output as a {\it Systemlabel}.DM.nc netCDF file or not.
+
+The file is overwritten at every SCF step, unless the {\bf
+WriteDM.History.NetCDF} option is enabled.
+
+The DM.nc and standard DM file formats can be converted at will with
+the programs in {\tt Util/DensityMatrix} directory. Note that the
+DM values in the DM.nc file are in single precision.
+
+{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
+
+\item[{\bf WriteDMHS.NetCDF}] ({\it logical}): \index{WriteDMHS.NetCDF@{\bf WriteDMHS.NetCDF}}
+\index{output!density
+  matrix}\index{output!hamiltonian}\index{output!overlap matrix} 
+It determines whether, at every SCF step, the input density matrix,
+hamiltonian, and output density matrix, are output as a {\it
+  Systemlabel}.DMHS.nc netCDF file or not.
+The file also contains the overlap matrix S. 
+
+The file is overwritten at every SCF step, unless the {\bf
+WriteDMHS.History.NetCDF} option is enabled.
+
+{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
+
+\item[{\bf WriteDM.History.NetCDF}] ({\it logical}): \index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
+\index{output!density matrix}\index{output!density matrix history} It determines whether the 
+DM.nc file (see {\bf WriteDM.NetCDF}) contains information about all
+the steps of the (last) SCF cycle or not.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}): \index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
+\index{output!density
+  matrix history}\index{output!hamiltonian history}\index{output!overlap matrix} 
+It determines whether the 
+DMHS.nc file (see {\bf WriteDMHS.NetCDF}) contains information about all
+the steps of the (last) SCF cycle or not.
+
+{\it Default value:} {\tt .false.}
 
 \item[{\bf WriteKbands}] ({\it logical}):
 \index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
@@ -5827,31 +5867,36 @@ accessibility is of great interest also.
 
 \index{NetCDF library}
 To be able to generate NetCDF files in {\sc Siesta}, the public domain
-NetCDF library (V. 3.5 or higher) must be instaled. It can be
+NetCDF library (V. 3.6.12 or higher recommended) must be installed. It can be
 downloaded from 
 
-{\tt http://www.unidata.ucar.edu/packages/netcdf/index.html}. 
+{\tt http://www.unidata.ucar.edu/software/netcdf/}.
 
-In the {\tt arch.make} file, the following lines must exist:
+In the {\tt arch.make} file, the following information must exist:
 \begin{verbatim}
-NETCDF_LIBS=-L/path/to/netcdf-3.5/library/directory -lnetcdf
-NETCDF_INTERFACE=libnetcdf_f90.a
+NETCDF_LIBS=-L/path/to/netcdf/library/directory -lnetcdf
+NETCDF_INCLUDE=-I/path/to/netcdf/include/directory
 DEFS_CDF=-DCDF
 \end{verbatim}
+{\tt \$(NETCDF\_LIBS)} must be added to the {\tt LIBS} list and
+{\tt \$(NETCDF\_INCLUDE)} must be added to the {\tt INCFLAGS} list (or
+{\tt INCFLAGS} may be set directly). See examples in the Src/Sys
+directory, particularly {\tt gfortran-netcdf.make}.
 
-({\sc Siesta} currently includes an old f90 interface to NetCDF in the
+
+({\sc Siesta} used to include an old f90 interface to NetCDF in the
 Src/NetCDF directory. Current versions of NetCDF now come with their
-own, so that directory will disappear in the near future.)
+own, so that directory has dissappeared.
 
-While it might seem a hassle to have to install the library, the added
+While it might seem a hassle to install the library, the added
 functionality is quite large, and it is set to grow in future releases
 of {\sc Siesta}. The area in which this is already beginning to be
 felt is in the visualization of atomic and molecular dynamics
 information. When a NetCDF file is accessed by means of a scripting
 language with the proper interface (Python, {\tt
 http://www.python.org} is highly recommended in this regard), one can
-explore and plot its contents very easily.  See the Utils/PyAtom and Utils/MD
-directories for some example scripts.  \index{Python language}
+explore and plot its contents very easily.  See the Utils/PyAtom, Utils/MD
+Utils/SCF, and Util/DensityMatrix directories for some example scripts.  \index{Python language}
 
 
 \newpage

@@ -14,8 +14,12 @@
       use m_steps
       use m_spin,   only: nspin
       use m_pulay
+      use parallel, only: IONode
 #ifdef MPI
       use m_mpi_utils, only: globalize_max
+#endif
+#ifdef CDF
+      use iodm_netcdf, only: write_dm_netcdf
 #endif
 
       implicit none
@@ -77,6 +81,16 @@
 ! ..................
 
 ! Save density matrix on disk, after mixing ...........................
+#ifdef CDF
+          if (writedm_cdf_history) then
+             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     $                             overwrite=.false.)
+          else if (writedm_cdf) then
+             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     $                             overwrite=.true. )
+          endif
+#endif
+    
           if (writedm) then
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
               if (istp.eq.1)
