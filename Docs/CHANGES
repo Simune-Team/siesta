@@ -7,6 +7,24 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  18:20:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-26
+
+Summary: Remove residual (k,-k) pairs of k-points
+
+The original algorithm sometimes left pairs of k-points related
+by inversion. A new routine "trim_kpoint_list" in find_kgrid.F
+now takes care of them.
+
+A file NON_TRIMMED_KP_LIST is created with the "raw" list produced
+by the first part of the process, for debugging purposes.
+
+NOTE: Some pairs are *still* not removed properly. A fix is in the works.
+
+Credits: Eduardo Machado (CEA) implemented a preliminary version
+         modifying the original algorithm.
+
+* Write KP file unconditionally (regardless of WriteKpoints setting)
+
 2008-06-29  18:15:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-25
 
 Summary: Assorted geometry-related cosmetic fixes
