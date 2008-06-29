@@ -231,7 +231,7 @@ C Global operation to form new density matrix
           if (Node.eq.BNode) then
             iie = iie + 1
           endif
-          if (qe.gt.occtol) then
+          if (abs(qe).gt.occtol) then
             if (Node.eq.BNode) then
               call dcopy(nuotot,psi(1,iie,ispin),1,aux,1)
             endif

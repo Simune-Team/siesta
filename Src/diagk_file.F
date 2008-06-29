@@ -241,7 +241,7 @@ C Loop over k points
             ie = nuotot
             do while (ie.gt.0.and.neigneeded.eq.0)
               qe = qo(ie,ispin,ik)
-              if (qe.gt.occtol) neigneeded = ie
+              if (abs(qe).gt.occtol) neigneeded = ie
               ie = ie - 1
             enddo
             if (Node .eq. 0) then

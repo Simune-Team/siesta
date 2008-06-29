@@ -228,7 +228,7 @@ C Compute all eigenvectors if getPSI = .true.
             ie = nuotot
             do while (ie.gt.0.and.neigneeded.eq.0)
               qe = qo(ie,ispin,ik)
-              if (qe.gt.occtol) neigneeded = ie
+              if (abs(qe).gt.occtol) neigneeded = ie
               ie = ie - 1
             enddo
           endif
@@ -321,7 +321,7 @@ C Global operation to form new density matrix
                 iie = iie + 1
               endif
               qe = qo(ie,ispin,ik)
-              if (qe.gt.occtol) then
+              if (abs(qe).gt.occtol) then
                 if (Node.eq.BNode) then
                   do j = 1,nuotot
                     aux(1,j) = psi(1,j,iie)

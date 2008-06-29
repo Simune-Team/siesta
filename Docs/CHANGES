@@ -7,6 +7,30 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-06-29  22:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-27
+
+Summary: Fixed bug affecting MP occupation smearing.
+
+Fixed a bug (reported by Francois Willaime of CEA/Saclay)
+which affected calculations in metals using the Hermite-Gauss
+broadening scheme proposed by Methfessel and Paxton
+(OccupationFunction MP).
+
+The following test on state occupancy was performed:
+
+if (qe.gt.occtol)
+
+where qe is the state occupancy, and occtol, the tolerance (set to
+10**-12 by default).  If one uses the Methfessel-Paxton smearing, qe
+may take negative values and this test therefore yields wrong results.
+
+The bug has be fixed by replacing the test by 
+
+if (abs(qe).gt.occtol)
+
+in all diag*.F routines.
+
+
 2008-06-29  18:20:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-26
 
 Summary: Remove residual (k,-k) pairs of k-points
