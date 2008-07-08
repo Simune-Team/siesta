@@ -205,6 +205,7 @@ C Nullify pointers
           nullify(ZmatType,iZmattoVars,iVarstoZmat)
           nullify(lZmatVarsDef,iNextDept)
           nullify(coeffA,coeffB)
+          nullify(species)
 
 C Allocate Zmatrix arrays
           call re_alloc(Zmat,1,3*na)

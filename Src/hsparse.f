@@ -121,9 +121,11 @@ C
 
       logical, save :: warn1 = .false.
 
-      real(dp), dimension(:), pointer :: rckb
+      real(dp), dimension(:), pointer :: rckb => null()
       logical, dimension(:),  pointer :: conect
-      integer, dimension(:),  pointer :: index, knakb, listhtmp
+      integer, dimension(:),  pointer :: index => null()
+      integer, dimension(:),  pointer :: knakb => null()
+      integer, dimension(:),  pointer :: listhtmp
 
 
 C -------------------------------------

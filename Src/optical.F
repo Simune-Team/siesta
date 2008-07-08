@@ -124,12 +124,14 @@ C Internal variables
       real(dp)                    :: efermiloc
       real(dp),        parameter  :: tiny = 1.0d-9
       real(dp),        parameter  :: ediffmin = 1.0d-3
-      real(dp), pointer           :: ekloc(:)
-      real(dp), pointer           :: epsimg(:,:)
-      real(dp), pointer           :: kopt(:,:)
-      real(dp), pointer           :: wgthopt(:)
-      real(dp), pointer           :: epsbuff(:,:)
-      real(dp), pointer           :: intraband(:,:)
+      real(dp), pointer, save     :: ekloc(:) => null()
+      real(dp), pointer, save     :: epsimg(:,:) => null()
+      real(dp), pointer, save     :: kopt(:,:) => null()
+      real(dp), pointer, save     :: wgthopt(:) => null()
+#ifdef MPI
+      real(dp), pointer, save     :: epsbuff(:,:) => null()
+#endif
+      real(dp), pointer, save     :: intraband(:,:) => null()
       real(dp)
      .  cutoff, displ(3), dmod, dsp, dw, ediff, efield(3),
      .  fsum(2), f1, f2, inplane(3,2), kint(3),
@@ -193,7 +195,6 @@ C If nk.ne.0
         call kgridinit( ucell, kscell,  displ, cutoff, nkopt )
 
 C Resize arrays to fit nkopt
-        nullify(kopt, wgthopt)
         call re_alloc(kopt,1,3,1,nkopt,name='kopt',routine='optical')
         call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
 
@@ -280,7 +281,6 @@ C Total number of valence electrons in the unit cell
 C Find the size of the array to hold the imaginary dielectric constant
       dw = smooth/10
       nw = nint((wmax-wmin)/dw) + 1
-      nullify(epsimg)
       call re_alloc(epsimg,1,nw,1,2,name='epsimg',routine='optical')
       
 C Check sizes of K point arrays
@@ -288,7 +288,6 @@ C Check sizes of K point arrays
       call re_alloc(wgthopt,1,nkopt,name='wgthopt',routine='optical')
 
 C Check size of remaining arrays
-      nullify(ekloc)
       call re_alloc(ekloc,1,nuotot,name='ekloc',routine='optical')
       
 C The calculation  of the imaginary part of the dielectric 
@@ -453,7 +452,6 @@ C parameter npol
           endif
 C Allocate intraband array to calculate the Drude contribution
 C for metals
-          nullify( intraband )
           call re_alloc( intraband, 1, ngamma, 1, nuo,
      $                name='intraband', routine='optical')
 
@@ -640,7 +638,6 @@ C Closing loop on k_points
       enddo 
 
 #ifdef MPI
-      nullify( epsbuff )
       call re_alloc( epsbuff, 1, nw, 1, 2, name='epsbuff',
      &               routine='optical' )
       call MPI_Reduce(epsimg(1,1),epsbuff(1,1),2*nw,

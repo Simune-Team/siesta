@@ -61,6 +61,7 @@
 
       nwk = 0
       maxwk = 1
+      nullify(wfk)
       call re_alloc(wfk,1,3,1,maxwk,name='wfk',
      $              routine='setup_wf_kpoints')
 
