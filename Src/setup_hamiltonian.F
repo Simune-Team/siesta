@@ -31,6 +31,18 @@
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
+#ifdef TRANSIESTA
+! TSS Begin
+! SIESTA modules
+      use files, only: slabel, label_length
+! TRANSIESTA modules
+      use m_ts_options, only: TSrun, savetshs, initH
+      use m_ts_kpoints, only: ts_gamma_scf, ts_kscell, ts_kdispl
+      use m_ts_io, only: ts_iohs
+! TSS End
+
+#endif /* TRANSIESTA */
+
 
       implicit none
 
@@ -53,12 +65,29 @@
       integer:: ihmat   ! Calculate hamiltonian? 0=>no, 1=>yes
 
       real(dp) :: g2max
+#ifdef TRANSIESTA
+! TSS Begin
+      character(len=label_length+5) :: fname
+      character(8) :: iotask
+! TSS End
+#endif /* TRANSIESTA */
+#ifdef TRANSIESTA
+! TSS Begin
+! SIESTA External
+      character(len=label_length+5) PASTE
+! TSS End
+#endif /* TRANSIESTA */
+
 
 
 !------------------------------------------------------------------------- BEGIN
-      
+
+#ifndef TRANSIESTA      
       ! Normalize density matrix to exact charge
       call normalize_dm(first)
+#else
+      if (.not.TSrun ) call normalize_dm(first)
+#endif /* TRANSIESTA */
 
       ! Initialize Hamiltonian ........................................
       H = 0.0_dp
@@ -270,6 +299,20 @@
      $               maxnh, numh, listhptr, listh, H, S, qtot, temp,
      $               xijo)
         endif
+
+#ifdef TRANSIESTA
+! TSS Begin
+        if (last.and.savetshs) then
+           fname = paste( slabel, '.TSHS' )
+           iotask='write'
+           call ts_iohs(iotask, gamma, no_u, no_s, nspin,
+     . indxuo, maxnh, numh, listhptr, listh, H, S, qtot, temp, xijo,
+     . label_length+5, fname, na_u, lasto, isa, ef, ucell,
+     . ts_kscell, ts_kdispl, ts_gamma_scf, xa)
+
+         endif
+! TSS End
+#endif /* TRANSIESTA */
 
 
 !--------------------------------------------------------------------------- END

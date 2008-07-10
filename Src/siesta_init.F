@@ -45,6 +45,12 @@
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world
 #endif
+#ifdef TRANSIESTA
+! TSS Begin
+      use m_ts_options, only: read_ts_options
+      use m_ts_in_siesta, only: setup_ts_kpoint_grid
+! TSS End
+#endif /* TRANSIESTA */
 
       implicit none
 
@@ -185,6 +191,12 @@
 ! Read simulation data ................................................
       call read_options( na_u, ns, nspin )
 
+#ifdef TRANSIESTA
+! Read TS Input options
+      call read_ts_options()
+! TSS End
+#endif /* TRANSIESTA */
+
 
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
@@ -279,6 +291,12 @@
 
       call setup_Kpoint_grid( ucell )
       gamma = gamma_scf
+
+#ifdef TRANSIESTA
+! TSS Begin
+      call setup_ts_kpoint_grid( ucell )
+! TSS End
+#endif /* TRANSIESTA */
 
       nullify(eo,qo)
       call re_alloc(eo,1,no_u,1,nspin,1,maxk,name="eo",

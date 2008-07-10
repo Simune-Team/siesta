@@ -27,6 +27,14 @@
 #ifdef CDF
       use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
+#ifdef TRANSIESTA
+! TSS Begin
+! Transiesta Modules
+      use m_ts_options, only : TSiscf, TSinit, TSrun, dDmaxRho
+      use m_ts_in_siesta, only : transiesta
+! TSS End
+#endif /* TRANSIESTA */
+
 
       implicit none
 
@@ -40,6 +48,12 @@
 #ifdef MPI
       real(dp):: buffer1   ! Temporary for the result of a globalize operation
 #endif
+#ifdef TRANSIESTA
+! TSS Begin
+! Auxiliary Variables
+      integer :: i,j
+! TSS End
+#endif /* TRANSIESTA */
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -61,9 +75,52 @@
      .                  chebef,noeta,rcoorcp,beta,pmax,Dscf,Escf,
      .                  Ecorrec,nspin,qs)
             Entrop = 0.0_dp
+#ifdef TRANSIESTA
+! TSS Begin
+          elseif (isolve .eq. 2 .and. TSinit) then
+            call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
+     .                  numh, listhptr, listh, numh, listhptr, listh,
+     .                  H, S, qtot, fixspin, qs, temp, e1, e2,
+     .                  gamma, xijo, indxuo, nkpnt, kpoint, kweight,
+     .                  eo, qo, Dscf, Escf, ef, efs, Entrop, no_u,
+     .                  occtol, iscf, neigwanted)
+
+            Ecorrec = 0._dp
+
+         elseif (TSrun) then
+            call timer('TS',1)
+            TSiscf=TSiscf+1
+
+            call transiesta(gamma,nsc,nkpnt,kpoint,kweight,lasto,
+     .        no_l, no_s, nspin, na_u, xa, maxnh, numh, listhptr,
+     .        listh, xijo, indxuo, H, S, Dscf, Escf, ef, no_u,
+     .        TSiscf,qtot)
+            call timer('TS',2)
+
+            Ecorrec = 0._dp
+! TSS End
+#endif /* TRANSIESTA */
           else
             call die('siesta: ERROR: wrong solution method')
           endif
+#ifdef TRANSIESTA
+! TSS Begin
+! ----------------------------------------------------
+! TSS
+! ----------------------------------------------------
+! CHECK CONVERGENCE OF DENSITY MATRIX
+! ----------------------------------------------------
+         dDmaxRho = -1.
+         do j = 1,nspin
+            do i = 1,nh
+              dDmaxRho = max(dDmaxRho,
+     .     abs(Dscf(i,j)-Dold(i,j)))
+            enddo
+         enddo
+! TSS End
+
+
+#endif /* TRANSIESTA */
 
 ! Harris-functional energy 
           DEharr = 0.0_dp

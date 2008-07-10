@@ -150,6 +150,15 @@ C
       use iogrid_netcdf, only: set_box_limits
       use siesta_options, only: read_charge_cdf
       use siesta_options, only: read_deformation_charge_cdf
+#ifdef TRANSIESTA
+! TSS Begin
+! SIESTA Modules
+      use siesta_options, only: isolve
+! Transiesta Modules
+      use m_ts_options, only: TSrun, UseVFix
+      use m_ts_in_siesta, only: TSVHFix, TSVoltage2
+! TSS End
+#endif /* TRANSIESTA */
 
       implicit none
 
@@ -299,6 +308,13 @@ C
      .  nzero / 3*0 /,
      .  tiny  / 1.e-12_dp /,
      .  frstme /.true./
+#ifdef TRANSIESTA
+! TSS Begin
+      character(6) :: method
+      logical, save :: transmode=.false., isvolt
+! TSS End
+
+#endif /* TRANSIESTA */
 
 C ----------------------------------------------------------------------
 C General initialisation
@@ -308,6 +324,11 @@ C Start time counter
       call timer( 'DHSCF', 1 )
 
       if (frstme) then
+#ifdef TRANSIESTA
+! TSS Begin
+        if(isolve==2) transmode=.true.
+! TSS End
+#endif /* TRANSIESTA */
         nullify(Vna,rhoatm,rhopcc)
         nullify(vaux,vscf,DRho)
         nullify(chlocal,totchar)
@@ -322,6 +343,12 @@ C Start time counter
      .    MPIerror)
         call MPI_Bcast(nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
+#ifdef TRANSIESTA
+! TSS Begin
+        call MPI_Bcast(transmode,1,MPI_logical,0,MPI_Comm_World,
+     .       MPIerror)
+! TSS End
+#endif /* TRANSIESTA */
 
 C Set mesh sub-division variables & perform one off allocation
         nsp = nsm*nsm*nsm
@@ -665,6 +692,13 @@ C Solve Poisson's equation
       call reord( DRho, DRho, nml, nsm, +1)
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho,
      .             DUscf, Vscf, DStres, nsm )
+#ifdef TRANSIESTA
+
+! TSS BEgin
+      if(transmode .and. UseVFix)
+     .     call TSVHFix( ntm, nsm, vscf )
+! TSS End
+#endif /* TRANSIESTA */
       call reord( DRho, DRho, nml, nsm, -1)
       call reord( Vscf, Vscf, nml, nsm, -1)
 
@@ -732,6 +766,42 @@ C ----------------------------------------------------------------------
         call reord( Vscf, Vscf, nml, nsm, -1)
         DUext = - ddot(3,field,1,dipol,1)
       endif
+
+#ifdef TRANSIESTA
+c TSS Begin
+c ---------------------------------------------------------------------
+c transiesta:
+c add the potential corresponding to the (possible) voltage-drop.
+c note that tsvoltage is not sharing the reord wih efield since
+c we should not encounter both at the same time.
+c ---------------------------------------------------------------------
+      if (transmode) then
+
+      if (frstme) then
+
+         call tsvoltage2(cell, nzero, nsm, Vscf, isvolt )
+
+         if(isvolt .and. isefld) then
+           if(Node.eq.0) then
+             write(6,*) 'WARNING: both ext. voltage and field !!'
+             write(6,*) 'WARNING: will neglect voltage !!       '
+           end if
+           isvolt = .false.
+         end if
+      endif
+
+      if(isvolt ) then
+        if(TSrun) then
+         call reord( Vscf, Vscf, nml, nsm, +1)
+         call tsvoltage2(cell, ntm, nsm, Vscf, isvolt )
+         call reord( Vscf, Vscf, nml, nsm, -1)
+        endif
+      endif
+      endif !TSS
+c TSS End
+
+
+#endif /* TRANSIESTA */
 
 C ----------------------------------------------------------------------
 C Save electrostatic potential

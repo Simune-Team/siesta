@@ -13,6 +13,11 @@
       use m_energies
       use m_convergence, only: converger_t
       use m_convergence, only: add_value, is_converged
+#ifdef TRANSIESTA
+! TSS Begin
+      use m_ts_options, only: TSinit, TSrun, TSiscf, initH
+! TSS End
+#endif /* TRANSIESTA */
 
       implicit none
 
@@ -78,6 +83,28 @@
             call pxfflush(6)
             call wallclock("-------------- end of scf step")
           endif
+#ifdef TRANSIESTA
+! TSS Begin
+        if ((isolve. eq. 2) .and. last .and. TSinit) then
+           last = .false.       ! we're only done with the initial diagon run
+           TSinit = .false.      ! now we start the TRANSIESTA run
+           TSrun = .true.
+           if(IONode) then
+              write(6,'(/a)')
+     .  '                          ************************       '
+              write(6,'(a)')
+     .  '                          *   TRANSIESTA BEGIN   *       '
+          write(6,'(a)')
+     .  '                          ************************       '
+
+          end if
+        end if
+        if (TSiscf .eq. 1) call timer( 'IterSCF', 3 ) !TSS
+        if (TSiscf .eq. 1) call timer( 'TS', 3 ) !TSS
+        if (last) TSiscf = 0
+
+! TSS End
+#endif /* TRANSIESTA */
 
 !--------------------------------------------------------------------------- END
       END subroutine scfconvergence_test

@@ -2,6 +2,49 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+____________________________________________________________________
+** CHANGES ALONG fdnovaes@siesta.arch--2007/transiesta--merge--2.5
+--------------------------------------------------------------------
+
+2008-07-10  14:00:00 GMT  Frederico D. Novaes <fdnovaes@icmab.es> patch-1
+
+Summary: Merge of Transiesta code -- F. D. Novaes version
+
+Brief Description: 
+
+The TranSIESTA code consists in a a set of additional routines for the
+SIESTA package for the computation of electronic transport
+properties. It was originally developed by Mads Brandbyge, Jose-Luiz
+Mozos, Pablo Ordejon, Jeremy Taylor and Kurt Stokbro (Phys. Rev. B 65,
+165401 (02)), and first implemented in the SIESTA 1.3p version.
+
+The present distribution was adapted to the SIESTA 2.5 structure. With
+respect to the first implementation, it has the additional feature of
+allowing for the use of a k-point sampling other than the gamma point
+(for the 2D Brillouin zone perpendicular to the transport
+direction). These modifications were done by F. D. Novaes
+(fdnovaes@icmab.es)
+
+Source code Structure: 
+
+In this implementation, the original TranSIESTA routines were grouped
+in a set of modules, that all begin with m_ts (m_ts_electrode.F90,
+e.g.), together with the addition of some new subroutines. These
+modules are located in the Src directory.  The interface for
+TranSIESTA also requires the modification of some of the SIESTA
+routines. Presently, this is controlled by compilation directives
+(#ifdef TRANSIESTA), so that only when compiling with the -DTRANSIESTA
+FPPFLAGS option that the objects will contain the modifications.
+
+Compiling:
+
+Add -DTRANSIESTA to the FPPFLAGS variable in the arch.make file, and
+type 
+
+make transiesta
+
+The Makefile was modified in such a way to link the m_ts modules and
+create a binary called transiesta.
 
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
