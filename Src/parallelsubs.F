@@ -332,7 +332,10 @@ C
 C  integer NMeshPN  = total number of local mesh points
 C  integer NxyzL(3) = local dimensions of mesh points on this node
 C
-
+#ifdef MPI
+      use mpi_siesta
+#endif
+      implicit none
 C  Passed variables
       integer Nxyz(3), Node, Nodes, NMeshPN, NxyzL(3)
 
@@ -340,7 +343,9 @@ C  Local variables
       integer 
      .  BlockSizeY, BlockSizeZ, NRemY, NRemZ, Py, Pz,
      .  ProcessorZ
-
+#ifdef MPI
+      integer MPI_err
+#endif
 C  Check that ProcessorY is a factor of the number of processors
       if (mod(Nodes,ProcessorY).gt.0)
      $     call die('ERROR: ProcessorY must be a factor of the' //
@@ -352,8 +357,19 @@ C  Find processor grid location
       Pz = Node - (Py - 1)*ProcessorZ + 1
 
 C  Set blocking sizes
-      BlockSizeY = (Nxyz(2)/ProcessorY) 
-      BlockSizeZ = (Nxyz(3)/ProcessorZ) 
+      BlockSizeY = (Nxyz(2)/ProcessorY)
+      BlockSizeZ = (Nxyz(3)/ProcessorZ)
+      if (BlockSizeY.eq.0.or.BlockSizeZ.eq.0) then
+        if (Node.eq.0) then
+          write(*,*) 'ERROR: Not enought mesh per node'
+          write(*,*) 'Nxyz=', Nxyz, 'PY=', ProcessorY,
+     &               'PZ=', ProcessorZ
+        endif
+#ifdef MPI
+        call MPI_Finalize( MPI_err )
+#endif
+        STOP
+      endif
       NRemY = Nxyz(2) - BlockSizeY*ProcessorY
       NRemZ = Nxyz(3) - BlockSizeZ*ProcessorZ
       if (Py-1.lt.NRemY) BlockSizeY = BlockSizeY + 1

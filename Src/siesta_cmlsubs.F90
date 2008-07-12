@@ -10,8 +10,8 @@
 !
 Module siesta_cmlsubs
 
-  Use flib_wxml, only: xmlf_t      ! help pgf95...
   Use flib_wxml
+!  Use flib_wxml
   Use flib_wcml
 
   Implicit None

@@ -73,8 +73,8 @@ C  Modules
       use parallel,      only : Node, Nodes
       use parallelsubs,  only : HowManyMeshPerNode, GlobalToLocalMesh
       use atmfuncs,      only : rcut
-      use moreMeshSubs,  only : initMeshDistr, setMeshDistr,
-     &                          resetMeshDistr
+      use moreMeshSubs,  only : initMeshDistr, setMeshDistr
+      use alloc,         only : re_alloc, de_alloc
       use mesh
       use siesta_cml
 #ifdef MPI
@@ -82,40 +82,42 @@ C  Modules
 #endif
       implicit none
 C     Passed arguments
-      integer     :: na, ntpl, ntopl, nm(3), nml(3), nmpl,
-     &               norb, nsc(3), ntm(3), ntml(3), iaorb(norb),
-     &               iphorb(norb), isa(na)
-      real(dp)    :: cell(3,3), dvol, G2max, G2mesh, rmax
+      integer                 :: na, ntpl, ntopl, nm(3), nml(3), nmpl,
+     &                           norb, nsc(3), ntm(3), ntml(3),
+     &                           iaorb(norb), iphorb(norb), isa(na)
+      real(dp)                :: cell(3,3), dvol, G2max, G2mesh, rmax
 C     Local variables
-      integer                    :: i, ia, i1, i2, i3, indi, io, iphi,
-     &                              is, isp, ity, j, j1, j2, j3,
-     &                              ncells, nep, ntop, ntp, nty, odistr
-      integer,  allocatable, save :: iphty(:), isty(:), noty(:)
-      real(dp)                    :: dx(3), dxp(3), pldist, r,
-     &                               rcell(3,3), vecmod, volume
-      real(dp),              save :: k0(3)
-      real(dp), allocatable, save :: rcty(:)
+      integer                 :: i, ia, i1, i2, i3, indi, io, iphi,
+     &                           is, isp, ity, j, j1, j2, j3,
+     &                           ncells, nep, ntop, ntp, nty, odistr
+      integer,  pointer, save :: iphty(:), isty(:), noty(:)
+      real(dp)                :: dx(3), dxp(3), pldist, r,
+     &                           rcell(3,3), vecmod, volume
+      real(dp),          save :: k0(3)
+      real(dp), pointer, save :: rcty(:)
 
-      logical                    :: same, within
+      logical                 :: same, within
 C     Functions
-      real(dp)                   :: dismin, volcel
+      real(dp)                :: dismin, volcel
 
-      external                      chkgmx, dismin, nfft, reclat,
-     &                              timer, volcel, memory
-      data                          k0 / 3*0.0_dp /
+      external                   chkgmx, dismin, nfft, reclat,
+     &                           timer, volcel, memory
+      data                       k0 / 3*0.0_dp /
 #ifdef MPI
-      integer             :: MPIerror
+      integer                 :: MPIerror
 #endif
 
 !------------------------------------------------------------------------- BEGIN
+        call write_debug( '      Pre InitMesh' )
 C ----------------------------------------------------------------------
 C     Orbital type initialization 
 C ----------------------------------------------------------------------
 C     Find number of orbital types
-      allocate(isty(norb))
-      call memory('A','I',norb,'InitMesh')
-      allocate(iphty(norb))
-      call memory('A','I',norb,'InitMesh')
+      nullify( isty, iphty )
+      call re_alloc( isty, 1, norb, name='isty', routine='InitMesh' )
+      call re_alloc( iphty, 1, norb, name='iphty', routine='InitMesh' )
+
+
       nty = 0
       do io = 1,norb
         ia = iaorb(io)
@@ -133,20 +135,16 @@ C     Find number of orbital types
           iphty(nty) = iphi
         endif
       enddo
-      call memory('D','I',size(isty),'InitMesh')
-      deallocate(isty)
-      call memory('D','I',size(iphty),'InitMesh')
-      deallocate(iphty)
+
+      call de_alloc( iphty, name='iphty', routine='InitMesh' )
+      call de_alloc( isty, name='isty', routine='InitMesh' )
 
 C     Allocate local arrays dependent on nty
-      allocate(iphty(nty))
-      call memory('A','I',nty,'InitMesh')
-      allocate(isty(nty))
-      call memory('A','I',nty,'InitMesh')
-      allocate(noty(nty))
-      call memory('A','I',nty,'InitMesh')
-      allocate(rcty(nty))
-      call memory('A','D',nty,'InitMesh')
+      nullify( isty, iphty )
+      call re_alloc(  isty, 1, nty, name= 'isty', routine='InitMesh' )
+      call re_alloc( iphty, 1, nty, name='iphty', routine='InitMesh' )
+      call re_alloc(  noty, 1, nty, name= 'noty', routine='InitMesh' )
+      call re_alloc(  rcty, 1, nty, name= 'rcty', routine='InitMesh' )
 
 C     Find number of orbital types, number of orbitals of each type,
 C     and cutoff radius of each type.
@@ -170,14 +168,8 @@ C     and cutoff radius of each type.
   160   continue
       enddo
 
-      if (allocated(iphty)) then
-        call memory('D','I',size(iphty),'InitMesh')
-        deallocate(iphty)
-      endif
-      if (allocated(isty)) then
-        call memory('D','I',size(isty),'InitMesh')
-        deallocate(isty)
-      endif
+      call de_alloc( iphty, name='iphty', routine='InitMesh' )
+      call de_alloc( isty, name='isty', routine='InitMesh' )
 
 C ----------------------------------------------------------------------
 C     Mesh initialization 
@@ -224,11 +216,9 @@ C     Store number of mesh points in module array
 C     Find number of mesh points in unit cell.
       ntp = ntm(1) * ntm(2) * ntm(3)
 
-C     Reset previous mesh distributions
-      call resetMeshDistr( )
-
+      oDistr = 1
 C     Create the first mesh distribution
-      call initMeshDistr( nm=nm, oDistr=oDistr )
+      call initMeshDistr( oDistr=oDistr, nm=nm )
 
 C     Find and sets local number of Mesh points of each kind
       call setMeshDistr( oDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
@@ -344,18 +334,9 @@ C     Calculate ntopl
       ntopl = ((ntop/Nodes) + 1)
 
 C     Allocate local memory that depends on mop
-      if (allocated(idop)) then
-        call memory('D','I',size(idop),'InitMesh')
-        deallocate(idop)
-      endif
-      if (allocated(xdop)) then
-        call memory('D','D',size(xdop),'InitMesh')
-        deallocate(xdop)
-      endif
-      allocate(idop(mop))
-      call memory('A','I',mop,'InitMesh')
-      allocate(xdop(3,mop))
-      call memory('A','D',3*mop,'InitMesh')
+      call re_alloc( idop, 1, mop, name= 'idop', routine='InitMesh' )
+      call re_alloc( xdop, 1, 3, 1, mop, name= 'idop',
+     &               routine='InitMesh' )
 
 C     Find points within rmax (orbital points)
       mop = 0
@@ -388,15 +369,8 @@ C             Store index-distance and vector-distance to point.
         enddo
       enddo
 
-C     Deallocate orbital related memory 
-      if (allocated(noty)) then
-        call memory('D','I',size(noty),'InitMesh')
-        deallocate(noty)
-      endif
-      if (allocated(rcty)) then
-        call memory('D','D',size(rcty),'InitMesh')
-        deallocate(rcty)
-      endif
-
+C     Deallocate orbital related memory
+      call de_alloc( noty, name='noty', routine='InitMesh' )
+      call de_alloc( rcty, name='rcty', routine='InitMesh' )
 !--------------------------------------------------------------------------- END
       end subroutine InitMesh

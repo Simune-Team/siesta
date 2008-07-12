@@ -42,7 +42,6 @@
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
-     .  pulayx, 
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
@@ -54,6 +53,7 @@
 #endif
 ! Solve eigenvalue problem 
       if (isolve .eq. 0) then
+        call write_debug( '  PRE diagon' )
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr, listh, 
      .              H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -64,6 +64,7 @@
 !
       elseif (isolve .eq. 1) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
+        call write_debug( '  PRE ordern' )
         call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,isa,qa,
      .              rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,etol,eta,
      .              qtot,maxnh,numh,listhptr,listh,H,S,

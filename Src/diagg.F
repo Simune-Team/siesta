@@ -225,8 +225,12 @@ C Global operation to form new density matrix
       nullify( nuo_LOC )
       call re_alloc( nuo_LOC, 0, Nodes-1, name='nuo_LOC',
      &               routine='diagg' )
+#ifdef MPI
       call MPI_Allgather( nuo, 1, MPI_INTEGER, nuo_LOC, 1,
      &                    MPI_INTEGER, MPI_Comm_World, MPIerror )
+#else
+      nuo_LOC(0) = nuo
+#endif
       maxnuo = 0
       do BNode=0, Nodes-1
         maxnuo = max(nuo_LOC(BNode),maxnuo)

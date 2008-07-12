@@ -8,8 +8,8 @@
       use debugMpi
       implicit none
       character*128         :: fname, cnode
+      integer               :: istat
 !------------------------------------------------------------------------- BEGIN
-      write(*,*) 'Que esta pasando RGT'
       if (.not.debugON) then
         debugON = .true.
         if (Node.lt.10) then
@@ -24,7 +24,12 @@
           write(cnode,'(I5)') Node
         endif
         fname = TRIM('debug.'//cnode)
-        open( mpiUnit, file=fname, status='unknown' )
+        open( mpiUnit, file=fname, status='unknown', iostat=istat )
+        IF (ISTAT.NE.0) THEN
+          write(*,*) 'cannot open file'
+          STOP
+        ENDIF
+        call write_debug( "STARTING DEBUG FILE" )
       endif
 !--------------------------------------------------------------------------- END
       end subroutine debugMpiOn

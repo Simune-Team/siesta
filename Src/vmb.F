@@ -35,6 +35,7 @@ C  Modules
 C
       use precision,   only : dp
       use parallel,    only : Node
+      use m_fixed,     only : fixed
 #ifdef MPI
       use mpi_siesta
 #endif

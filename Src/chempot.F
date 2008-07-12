@@ -109,10 +109,6 @@ C    .  homo, lumo, gap
 C Internal variables...
 
       integer ::  ind, ipmax, nhmax, nvmaxnew
-#ifdef MPI
-      integer
-     . MPIerror
-#endif
 
 C nvmax = maximum number of non-zero elements within a sparse vector v
       integer, save ::   nvmax = 1000
@@ -127,7 +123,7 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
      .  k, m, mu, nna, norb, nu, num, numloc, numv
 
       integer, dimension(:), pointer :: listvt, numhp, indexloc,
-     &                                  ibuffer, listv
+     &                                  listv
 
       real(dp)  chpotsh, deltae, emean,
      .  rmax, rrmod, ri(3), tol
@@ -135,8 +131,12 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
       integer,  dimension(:,:), pointer :: listhp, listhpp
       real(dp), dimension(:),   pointer :: paux, vec
       real(dp), dimension(:,:), pointer :: hbar, Hdense, Sdense
+      real(dp), dimension(:,:), pointer :: v
+#ifdef MPI
+      integer :: MPIerror
       real(dp), dimension(:),   pointer :: dpbuffer1
-      real(dp), dimension(:,:), pointer :: v, dpbuffer2
+      real(dp), dimension(:,:), pointer :: dpbuffer2
+#endif
 C ...
 
 C Start timer
@@ -279,12 +279,12 @@ C  Globalise Hdense and Sdense for now
         call re_alloc( dpbuffer1, 1, nu, name='dpbuffer1',
      &                 routine='chempot' )
         do i = 1,nu
-          call MPI_AllReduce(Sdense(1:,i),dpbuffer1,nu,
+          call MPI_AllReduce(Sdense(1,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
           do j = 1,nu
             Sdense(j,i) = dpbuffer1(j)
           enddo
-          call MPI_AllReduce(Hdense(1:,i),dpbuffer1,nu,
+          call MPI_AllReduce(Hdense(1,i),dpbuffer1,nu,
      .      MPI_double_precision,MPI_sum,MPI_Comm_World,MPIerror)
           do j = 1,nu
             Hdense(j,i) = dpbuffer1(j)

@@ -8,6 +8,39 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
+      MODULE m_fixed
+      use precision
+      implicit none
+
+      PUBLIC                     :: fixed, resetFixedPointers
+      PRIVATE
+      ! maxc  : maximum number of constraints
+      integer                    :: maxc = 1000
+      integer                    :: nc
+      real(dp)                   :: xs(6)
+      logical                    :: frstme =.true.
+      character(len=10), pointer :: ctype(:)
+      integer,           pointer :: iac(:)
+      real(dp),          pointer :: xc(:,:)
+
+      CONTAINS
+
+      subroutine resetFixedPointers( )
+      use alloc, only : de_alloc
+      implicit none
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'resetFixedPointers'
+
+      if (associated(ctype))
+     &  call de_alloc( ctype, name='ctype', routine=MYNAME )
+
+      if (associated(iac))
+     &  call de_alloc( iac, name='iac', routine=MYNAME )
+
+      if (associated(xc))
+     &  call de_alloc( xc, name='xc', routine=MYNAME )
+
+      end subroutine resetFixedPointers
+
 c **********************************************************************
 c Reads and imposes required constraints to atomic displacements by
 c making zero the forces in those directions. Constraints are specified
@@ -107,9 +140,6 @@ c **********************************************************************
       integer i, ia, ia1, ia2, ia3, ic, il, iu, ix,
      &        jx, lastch, lch(0:maxw), ni, nn, nr, nv, maxcnew
 
-      character(len=10), pointer, save :: ctype(:)
-      integer,           pointer, save :: iac(:)
-      real(dp),          pointer, save :: xc(:,:)
 
 
       integer   integs(maxw)
@@ -117,16 +147,6 @@ c **********************************************************************
 
 
       external ddot, constr, memory
-
-      logical,  save :: frstme
-      data              frstme /.true./
-
-      ! maxc  : maximum number of constraints
-      integer, save :: maxc = 1000
-
-      integer,  save :: nc
-      real(dp), save :: xs(6)
-
 
 #ifdef MPI
       integer MPIerror
@@ -351,3 +371,5 @@ c **********************************************************************
       cstress(2,1) = cstress(2,1) - xs(6)*cstress(2,1)
 
       end subroutine fixed
+      
+      END MODULE m_fixed

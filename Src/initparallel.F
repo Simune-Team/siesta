@@ -172,7 +172,7 @@ C Check that cut-off is less than cell parameter
         endif
       endif
 
-      if (.not.lspatial) then
+      if (isolve.eq.0) then
 C Set BlockSize
 #ifdef MPI
         if (Node.eq.0) then
@@ -182,7 +182,6 @@ C Set BlockSize
         call MPI_Bcast(BlockSize,1,MPI_integer,0,MPI_Comm_World,
      .    MPIerror)
 #else
-        call set_processorY(1)
         BlockSize = 8
 #endif
       endif
@@ -190,12 +189,15 @@ C Set BlockSize
 #ifdef MPI
 C Output indication of parallel parameters
       if (Node.eq.0) then
-        if (lspatial) then
+        if (isolve.eq.0) then
+          write(6,'(/,a,2i4,/)')
+     .        '* ProcessorY, Blocksize: ', procYval, Blocksize
+        else if (isolve.eq.1) then
           write(6,'(/,a,f8.4,/)')
      .        '* Spatial decomposition: Cutoff = ',rcmax
         else
-          write(6,'(/,a,2i4,/)')
-     .        '* ProcessorY, Blocksize: ', procYval, Blocksize
+          write(6,'(/,a,i4,/)')
+     .        '* ProcessorY: ', procYval
         endif
       endif
 #endif

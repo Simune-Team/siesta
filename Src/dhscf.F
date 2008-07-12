@@ -22,7 +22,6 @@ C     Modules
       use sys,            only : die
       use mesh,           only : xdsp, nsm, nsp
       use parsing
-      use m_iorho,        only : write_rho
       use m_forhar,       only : forhar
       use xcmod,          only : nXCfunc, XCauth
       use alloc,          only : re_alloc, de_alloc
@@ -56,12 +55,16 @@ C     Modules
 #ifdef MPI
       integer                 :: MPIerror
 #endif
+      integer, parameter      :: vzero(3) = (/ 0, 0, 0 /)
       real(grid_p)            :: dummy_Drho(1,1), dummy_Vaux(1),
      &                           dummy_Vscf(1)
       logical, save           :: frstme = .true.   ! Keeps state
       real(grid_p), pointer   ::  Vscf(:,:), rhoatm_seq(:)
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+      call write_debug( '     PRE dhscf_init' )
+#endif
 C ----------------------------------------------------------------------
 C     General initialisation
 C ----------------------------------------------------------------------
@@ -190,8 +193,8 @@ C       Compute the number of orbitals on the mesh and recompute the
 C       partions for every processor in order to have a similar load
 C       in each of them.
 #ifdef MPI
+        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
         call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb, isa )
-
         call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
 #endif
 C       Find if there are partial-core-corrections for any atom
@@ -258,9 +261,9 @@ C       DStres is computed but not used later
 
         call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm_seq,
      &               Uharrs, Vscf, DStres, nsm )
-        call de_alloc( Vscf, name="Vscf", routine="dhscf_init" )
-        call de_alloc( rhoatm_seq, name="rhoatm_seq",
-     &                 routine="dhscf_init" )
+        call de_alloc( Vscf, name='Vscf', routine='dhscf_init' )
+        call de_alloc( rhoatm_seq, name='rhoatm_seq',
+     &                 routine='dhscf_init' )
 
 #ifdef MPI
         call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
@@ -276,7 +279,7 @@ C ----------------------------------------------------------------------
 
       if (frstme) then
 C       Vscf is not used here because we pass "0,0,0" as mesh
-        call efield( cell, nua, isa, xa, (/ 0,0,0 /), nsm,
+        call efield( cell, nua, isa, xa, vzero, nsm,
      &               dummy_Vscf, field )
         IsEfld = .false.
         if (sqrt(ddot(3,field,1,field,1)) .gt. tiny) IsEfld = .true.
@@ -284,6 +287,9 @@ C       Vscf is not used here because we pass "0,0,0" as mesh
       frstme = .false.
 
       call timer( 'DHSCF', 2 )
+#ifdef DEBUG
+      call write_debug( '      Pos dhscf_init' )
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine dhscf_init
 
@@ -551,7 +557,8 @@ C
       ! Work arrays
       real(grid_p), pointer :: Vscf(:,:), Vscf_seq(:), Vscf_gga(:,:),
      &                         DRho(:,:), DRho_seq(:), DRho_gga(:,:),
-     &                         Vaux(:), Chlocal(:), Totchar(:)
+     &                         Vaux(:), Chlocal(:), Totchar(:),
+     &                         IOBuff(:,:)
       real(dp)              :: sbuffer(7), rbuffer(7)
 !------------------------------------------------------------------------- BEGIN
 C ----------------------------------------------------------------------
@@ -561,6 +568,7 @@ C ----------------------------------------------------------------------
       call timer( 'DHSCF3', 1 )
 
       volume = volcel(cell)
+      ntpl_2 = ntpl
 C Allocate local memory -------------------------------------------------
       nullify(DRho)
       call re_alloc( DRho, 1, ntpl, 1, nspin, name='DRho',
@@ -590,9 +598,24 @@ C ----------------------------------------------------------------------
 C Save electron density
 C ----------------------------------------------------------------------
       if (filrho .ne. ' ') then
-        call reord( DRho, DRho, nml, nsm, +1)
-        call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho )
-        call reord( DRho, DRho, nml, nsm, -1)
+#ifdef MPI
+        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
+        ntpl_1 = ntpl
+
+        nullify( IOBuff )
+        call re_alloc( IOBuff, 1, ntpl, 1, nspin, name='IOBuff',
+     &               routine='dhscf' )
+        do ispin = 1,nspin
+          call distMeshData( 2, DRho(1:ntpl_2,ispin),
+     &                       1, IOBuff(1:ntpl_1,ispin), +1 )
+        enddo
+
+        call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, IOBuff )
+        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
+#ifdef MPI
+        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
       endif
 
 C ----------------------------------------------------------------------
@@ -624,10 +647,10 @@ C Save total (ionic+electronic) charge
      &                        DRho(1:ntpl,ispin)
           enddo
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
-          call de_alloc( Totchar, name='Totchar' )
+          call de_alloc( Totchar, name='Totchar', routine='dhscf' )
         endif 
 
-        call de_alloc( Chlocal, name='Chlocal' )
+        call de_alloc( Chlocal, name='Chlocal', routine='dhscf' )
       endif
 
 C Find difference between selfconsistent and atomic densities
@@ -653,7 +676,6 @@ C Transform spin density into sum and difference
           DRho(ip,1) = rhotot
         enddo
       endif
-
 C ----------------------------------------------------------------------
 C Calculate the dipole moment
 C ----------------------------------------------------------------------
@@ -669,7 +691,7 @@ C Find center of system
 C Find dipole
         call reord( DRho, DRho, nml, nsm, +1)
         call dipole( cell, ntm, ntml(1), ntml(2), ntml(3), nsm,
-     .    DRho, x0, dipol )
+     &    DRho, x0, dipol )
         call reord( DRho, DRho, nml, nsm, -1)
 
 C Orthogonalize dipole to bulk directions
@@ -682,11 +704,9 @@ C Orthogonalize dipole to bulk directions
           dipol(1:3) = const * b1Xb2(1:3)
         endif
       endif
-
 C ----------------------------------------------------------------------
 C     Set the uniform data distribution
 C ----------------------------------------------------------------------
-      ntpl_2 = ntpl
 #ifdef MPI
       call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
 #endif
@@ -710,7 +730,7 @@ C     Solve Poisson's equation
 #endif
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho_seq,
      &             DUscf, Vscf_seq, DStres, nsm )
-      call de_alloc( DRho_seq,   name='DRho_seq' )
+      call de_alloc( DRho_seq,   name='DRho_seq', routine='dhscf' )
 
 C Add contribution to stress from electrostatic energy of rhoscf-rhoatm
       if (istr .eq. 1) then
@@ -728,6 +748,7 @@ C ----------------------------------------------------------------------
 
       call distMeshData( 1, Vscf_seq(1:ntpl_1),
      &                   2, Vaux(1:ntpl_2), -1 )
+      call de_alloc( Vscf_seq, name='Vscf_seq', routine='dhscf' )
 
 C ----------------------------------------------------------------------
 C     Find electrostatic (Hartree) energy of full SCF electron density
@@ -804,7 +825,7 @@ C ----------------------------------------------------------------------
 
       do ispin = 1,nsd
         call distMeshData( 2, DRho(1:ntpl_2,ispin),
-     &                     3, DRho_gga(1:ntpl_3,ispin), 0 )
+     &                     3, DRho_gga(1:ntpl_3,ispin), +1 )
       enddo
 #else
       DRho_gga => DRho
@@ -819,7 +840,6 @@ C ----------------------------------------------------------------------
       call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
      &             dummy_DVxcdn, stressl )
-
 #ifdef MPI
       call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
 
@@ -829,10 +849,10 @@ C ----------------------------------------------------------------------
 
       do ispin = 1,nsd
         call distMeshData( 3, Vscf_gga(1:ntpl_3,ispin),
-     &                     2, Vscf(1:ntpl_2,ispin), 0 )
+     &                     2, Vscf(1:ntpl_2,ispin), -1 )
       enddo
-      call de_alloc( DRho_gga,   name='DRho_gga' )
-      call de_alloc( Vscf_gga,   name='Vscf_gga' )
+      call de_alloc( DRho_gga,   name='DRho_gga', routine='dhscf' )
+      call de_alloc( Vscf_gga,   name='Vscf_gga', routine='dhscf' )
 #else
       Vscf => Vscf_gga
 #endif
@@ -884,6 +904,9 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(6) = Exc
       sbuffer(7) = Dxc
 
+#ifdef DEBUG
+        call write_debug( '    Pre reduce Energies' )
+#endif
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )
 
@@ -965,8 +988,8 @@ C Stop time counter
 C ----------------------------------------------------------------------
 C Free locally allocated memory
 C ----------------------------------------------------------------------
-      call de_alloc( Vaux, name='Vaux' )
-      call de_alloc( Vscf, name='Vscf' )
-      call de_alloc( DRho, name='DRho' )
+      call de_alloc( Vaux, name='Vaux', routine='dhscf' )
+      call de_alloc( Vscf, name='Vscf', routine='dhscf' )
+      call de_alloc( DRho, name='DRho', routine='dhscf' )
 !--------------------------------------------------------------------------- END
       end subroutine dhscf

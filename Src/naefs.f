@@ -43,8 +43,9 @@ C
 C *********************************************************************
 
       use precision 
-      use atmfuncs,  only: izofis
-      use neighbour, only: jna=>jan, xij, mneighb
+      use atmfuncs,  only : izofis
+      use neighbour, only : jna=>jan, xij, mneighb
+      use m_matel,   only : matel
 
       implicit none
 
@@ -82,7 +83,7 @@ C Find neighbour atoms
           is = isa(ia)
           js = isa(ja)
           if (izofis(is).gt.0 .and. izofis(js).gt.0) then
-            call matel( 'T', is, js, 0, 0, xij(1,jn), vij, fij )
+            call matel( 'T', is, js, 0, 0, xij(1:3,jn), vij, fij )
             Ena = Ena + vij / (16.0d0*pi)
             if (forces_and_stress) then
                do ix = 1,3

@@ -52,6 +52,7 @@ C
 C ==================================================================
       subroutine recomputeLMesh( nm, nmpl, nml, numphi )
 C     Modules
+      use precision, only: i8b
       use MeshComm
       use parallel
       use debugMpi
@@ -60,9 +61,9 @@ C     Input variables
       integer, intent(in)     :: nm(3), nmpl, nml(3)
       integer, intent(inout)  :: numphi(nmpl)
 C     Local variables
-      integer*8               :: tt
+      integer(i8b)               :: tt
       integer                 :: ii, i1, i2, i3, ProcessorZ, PY, PZ
-      integer*8,  allocatable :: numphiYZ(:,:)
+      integer(i8b),  allocatable :: numphiYZ(:,:)
       integer,    allocatable :: newLimz(:), oriLimz(:)
       integer,    allocatable :: newLimy(:), oriLimy(:)
 
@@ -221,19 +222,20 @@ C ==================================================================
       subroutine recomputeLimZ( nmlY, nmlZ, numphiYZ, nmZ, PY, PZ,
      &                          ProcessorZ, oriLimZ, newLimZ )
 #ifdef MPI
+      use precision, only: i8b
       use parallel
-      use mpi
+      use mpi_siesta
       implicit none
 C     Input variables
       integer                :: nmlY, nmlZ, nmZ, PY, PZ, ProcessorZ,
      &                          oriLimZ(ProcessorZ+1),
      &                          newLimZ(ProcessorZ+1)
-      integer*8              :: numphiYZ(nmlY,nmlZ)
+      integer(i8b)              :: numphiYZ(nmlY,nmlZ)
 
 C     Local variables
-      integer*8              :: tt, nlist
+      integer(i8b)              :: tt, nlist
       integer                :: ii, jj, P1, P2, PP, blkZ
-      integer*8, allocatable :: numphiZ(:), sereBUF(:), GnumphiZ(:)
+      integer(i8b), allocatable :: numphiZ(:), sereBUF(:), GnumphiZ(:)
       integer                :: MPIerror, Status(MPI_Status_Size)
 !------------------------------------------------------------------------- BEGIN
 C     Compute the acumulation of numphiYZ in dimension Z
@@ -355,20 +357,21 @@ C ==================================================================
      &                          ProcessorZ, oriLimZ, oriLimY,
      &                          newLimY )
 #ifdef MPI
+      use precision, only: i8b
       use parallel
       use MeshComm
-      use mpi
+      use mpi_siesta
       implicit none
 C     Input variables
       integer                :: nmlY, nmlZ, nmY, PY, PZ, ProcessorZ,
      &                          oriLimZ(ProcessorZ+1),
      &                          oriLimY(ProcessorY+1),
      &                          newLimY(ProcessorY+1)
-      integer*8              :: numphiYZ(nmlY,nmlZ)
+      integer(i8b)              :: numphiYZ(nmlY,nmlZ)
 C     Local variables
       integer                :: ii, i1, i2, P1, P2, PP, blkY, com
-      integer*8              :: nlist
-      integer*8, allocatable :: numphiY(:), sereBUF(:), GnumphiY(:)
+      integer(i8b)              :: nlist
+      integer(i8b), allocatable :: numphiY(:), sereBUF(:), GnumphiY(:)
       integer                :: MPIerror, Status(MPI_Status_Size)
 !------------------------------------------------------------------------- BEGIN
 
@@ -666,7 +669,7 @@ C ==================================================================
       use parallel, only: Node, Nodes
       use MeshComm
       use scheComm
-      use mpi
+      use mpi_siesta
       implicit none
 C     Input variables
       integer              :: PZ, ProcessorZ, PY, ProcessorY,
@@ -968,14 +971,15 @@ C
 C ==================================================================
       recursive subroutine vecBisection( nval, values,
      &                                   nparts, parts, total )
+      use precision, only: i8b
       implicit none
 C     Input variables
       integer               :: nval,  nparts, parts(nparts+1)
-      integer*8             :: values(nval), total
+      integer(i8b)             :: values(nval), total
 
 C     Local variables
       integer               :: half1, half2, ii
-      integer*8             :: LoadL, LoadT
+      integer(i8b)             :: LoadL, LoadT
 !------------------------------------------------------------------------- BEGIN
       if (nparts.gt.1) then
         half1 = nparts/2

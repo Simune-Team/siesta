@@ -217,7 +217,6 @@ C Free local memory
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
-      return
       end
 
       subroutine nfft( N )

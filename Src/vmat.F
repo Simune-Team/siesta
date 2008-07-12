@@ -9,8 +9,8 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine vmat( no, np, dvol, nspin, V, nvmax, 
-     .                 numVs, listVsptr, listVs, Vs, 
-     .                 nuo, nuotot, iaorb, iphorb, isa )
+     &                 numVs, listVsptr, listVs, Vs, 
+     &                 nuo, nuotot, iaorb, iphorb, isa )
 
 C ********************************************************************
 C Finds the matrix elements of the potential.
@@ -55,32 +55,25 @@ C  Modules
       implicit none
 
 C Argument types and dimensions
-      integer
-     .   no, np, nvmax, nuo, nuotot, iaorb(*), nspin,
-     .   iphorb(*), isa(*), numVs(nuo), listVsptr(nuo), listVs(nvmax)
-      real(grid_p), intent(in)  ::  V(nsp,np,nspin)
-      real(dp)
-     .   dvol, Vs(nvmax,nspin)
-
+      integer                  :: no, np, nvmax, nuo, nuotot, iaorb(*),
+     &                            nspin, iphorb(*), isa(*), numVs(nuo),
+     &                            listVsptr(nuo), listVs(nvmax)
+      real(grid_p), intent(in) :: V(nsp,np,nspin)
+      real(dp)                 :: dvol, Vs(nvmax,nspin)
 C Internal variables and arrays
+      integer,       parameter :: minloc = 100,  ! Min buffer size for local copy of Dscf
+     &                            maxoa  = 100   ! Max # of orbitals per atom
+      integer                  :: i, ia, ic, ii, ijl, il, imp, ind, iop,
+     &                            ip, iphi, io, is, isp, ispin, iu, iul,
+     &                            ix, j, jc, jl, last, lasta, lastop,
+     &                            maxloc, maxloc2, nc, nlocal, nphiloc,
+     &                            nvmaxl
+      integer,         pointer :: ilc(:), ilocal(:), iorb(:)
+      logical                  :: ParallelLocal
+      real(dp)                 :: Vij, dxsp(3), phia(maxoa,nsp),
+     &                            r2cut(nsmax), r2sp
+      real(dp),        pointer :: VClocal(:), Clocal(:,:), Vlocal(:,:)
 
-      integer, parameter ::
-     .  minloc = 100,  ! Min buffer size for local copy of Dscf
-     .  maxoa  = 100   ! Max # of orbitals per atom
-      integer
-     .  i, ia, ic, ii, ijl, il, imp, ind, iop, ip, iphi, io,
-     .  is, isp, ispin, iu, iul, ix, j, jc, jl, 
-     .  last, lasta, lastop, maxloc, maxloc2, nc, nlocal, 
-     .  nphiloc, nvmaxl
-
-      integer,  pointer :: ilc(:), ilocal(:), iorb(:)
-
-      logical  ParallelLocal
-      real(dp)
-     .  Vij, dxsp(3), phia(maxoa,nsp), r2cut(nsmax), r2sp
-
-      real(dp), pointer :: VClocal(:)
-      real(dp), pointer :: Clocal(:,:), Vlocal(:,:)
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 4 )
 #endif
@@ -149,7 +142,6 @@ C  Loop over grid points
       do ip = 1,np
 C  Find number of nonzero orbitals at this point
         nc = endpht(ip) - endpht(ip-1)
-
 C  Find new required size of Vlocal
         nlocal = last
         do ic = 1,nc
@@ -177,7 +169,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
                   endif
                   do ispin = 1,nspin
                     DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
-     .                Vlocal(ijl,ispin) 
+     &                Vlocal(ijl,ispin) 
                   enddo
                 enddo
               else
@@ -192,7 +184,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
                   endif
                   do ispin = 1,nspin
                     DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
-     .                Vlocal(ijl,ispin) 
+     &                Vlocal(ijl,ispin) 
                   enddo
                 enddo
               endif
@@ -209,7 +201,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
                   endif
                   do ispin = 1,nspin
                     Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
-     .                Vlocal(ijl,ispin) 
+     &                Vlocal(ijl,ispin) 
                   enddo
                 enddo
               else
@@ -224,7 +216,7 @@ C  If overflooded, add Vlocal to Vs and reinitialize it
                   endif
                   do ispin = 1,nspin
                     Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
-     .                Vlocal(ijl,ispin) 
+     &                Vlocal(ijl,ispin) 
                   enddo
                 enddo
               endif
@@ -340,7 +332,7 @@ C  Add final Vlocal to Vs
               endif
               do ispin = 1,nspin
                 DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
-     .            Vlocal(ijl,ispin) 
+     &            Vlocal(ijl,ispin) 
               enddo
             enddo
           else
@@ -355,7 +347,7 @@ C  Add final Vlocal to Vs
               endif
               do ispin = 1,nspin
                 DscfL(ind,ispin) = DscfL(ind,ispin) + dVol * 
-     .            Vlocal(ijl,ispin) 
+     &            Vlocal(ijl,ispin) 
               enddo
             enddo
           endif
@@ -372,7 +364,7 @@ C  Add final Vlocal to Vs
               endif
               do ispin = 1,nspin
                 Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
-     .            Vlocal(ijl,ispin) 
+     &            Vlocal(ijl,ispin) 
               enddo
             enddo
           else
@@ -387,19 +379,18 @@ C  Add final Vlocal to Vs
               endif
               do ispin = 1,nspin
                 Vs(ind,ispin) = Vs(ind,ispin) + dVol * 
-     .            Vlocal(ijl,ispin) 
+     &            Vlocal(ijl,ispin) 
               enddo
             enddo
           endif
         endif
       enddo
-
   999 continue
 
       if (ParallelLocal) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
-     .      nuotot, nspin, DscfL, Vs )
+     &      nuotot, nspin, DscfL, Vs )
 C Free memory 
         call de_alloc( DscfL,  name='DscfL' )
       endif

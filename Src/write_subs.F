@@ -510,20 +510,22 @@
 
       subroutine siesta_write_positions()
       use siesta_geom
-      use atomlist, only: elem, iza
+      use atomlist,   only : elem, iza
       use siesta_cml
-      use units, only: Ang
-      use zmatrix, only: lUseZmatrix, write_canonical_ucell_and_Zmatrix
-      use m_iostruct, only: write_struct
+      use units,      only : Ang
+      use zmatrix,    only : lUseZmatrix,
+     &                       write_canonical_ucell_and_Zmatrix
+      use m_iostruct, only : write_struct
+      use alloc,      only : re_alloc, de_alloc
 
       implicit none
-
+      real(dp), pointer   :: xang(:,:)    ! Auxiliary array
+      real(dp)            :: cang(3,3)    ! Auxiliary array
 !
 !      Write out structural information in "crystallography" format,
 !      and in "canonical" (see Zmatrix module) zmatrix format.
 !      By now the structure might have changed in response to forces
 !      and stresses.
-
         call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
         if (lUseZmatrix) then
            call write_canonical_ucell_and_Zmatrix
@@ -531,9 +533,16 @@
         endif
 
         if (cml_p) then
+          nullify( xang )
+          call re_alloc( xang, 1, 3, 1, na_u, name='xang',
+     &                   routine='siesta_write_positions' )
+          xang = xa(1:3,1:na_u)/Ang
           call cmlAddMolecule(xf=mainXML, natoms=na_u, elements=elem,
-     .           refs=cisa, coords=xa/Ang, style='x3', fmt='(f12.6)')
-          call cmlAddLattice(xf=mainXML, cell=ucell/Ang, 
+     .           refs=cisa, coords=xang, style='x3', fmt='(f12.6)')
+          call de_alloc( xang, name='xang',
+     &                   routine='siesta_write_positions' )
+          cang = ucell/Ang
+          call cmlAddLattice(xf=mainXML, cell=cang, 
      .           units='siestaUnits:Ang', dictref='siesta:ucell')
         endif
       end subroutine siesta_write_positions

@@ -55,8 +55,8 @@ C
       external          reclat, volcel
 
 C Internal variables and arrays
-      integer           I, I1, I2, I3, IX, I20, I30,
-     &                  MG1, MG2, MG3, Yoffset, Zoffset
+      integer           I, I1, I2, I3, IX, I10, I20, I30,
+     &                  MG1, MG2, MG3, Xoffset, Yoffset, Zoffset
       real(dp)          D(3), dvol, DX, Rcell(3,3), X0L(3)
 #ifdef MPI
       integer           MPIerror
@@ -82,6 +82,7 @@ C Initialize dipole
       dipol(1:3) = 0.0_dp
 
 C Calculate starting point for grid
+      Xoffset = (meshLim(1,1)-1)*nsm
       Yoffset = (meshLim(1,2)-1)*nsm
       Zoffset = (meshLim(1,3)-1)*nsm
 
@@ -99,8 +100,10 @@ C structure of rho
           D(2) = dble(I20-1) / dble(MG2) - X0L(2)
           IF (D(2) .LT. - 0.5_dp) D(2) = D(2) + 1.0_dp
           IF (D(2) .GT. + 0.5_dp) D(2) = D(2) - 1.0_dp
+          I10 = Xoffset
           do I1 = 1,M1
-            D(1) = dble(I1-1) / dble(MG1) - X0L(1)
+            I10 = I10 + 1
+            D(1) = dble(I10-1) / dble(MG1) - X0L(1)
             IF (D(1) .LT. - 0.5_dp) D(1) = D(1) + 1.0_dp
             IF (D(1) .GT. + 0.5_dp) D(1) = D(1) - 1.0_dp
             do IX = 1,3
@@ -110,7 +113,6 @@ C structure of rho
           enddo
         enddo
       enddo
-
 #ifdef MPI
       call MPI_AllReduce( dipol, d, 3, MPI_double_precision, MPI_sum,
      &                    MPI_Comm_World, MPIerror )

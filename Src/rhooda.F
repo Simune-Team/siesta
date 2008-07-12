@@ -46,6 +46,9 @@ C
       integer      ::  i, ip, isp, iu, kn, iop, is, iphi, ia, ix
       real(dp)     ::  Ci, gradCi(3), r2o, r2sp, dxsp(3) 
 
+#ifdef DEBUG
+      call write_debug( '      Pre rhooda' )
+#endif
 C  Loop on mesh points
       do ip = 1,np
 

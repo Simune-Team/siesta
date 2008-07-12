@@ -46,13 +46,13 @@ C                       : (WITHOUT 2*pi factor)
 C real*8  xdop(3,mop)   : Vector to mesh points within rmax
 C real*8  xdsp(3,nsp)   : Vector to mesh sub-points
 C ----------------------------------------------------------------------
-      integer,  allocatable, save :: idop(:)
+      integer,  pointer,     save :: idop(:)
 #ifdef RGT
       integer,  allocatable, save :: indexp2(:)
 #endif
       integer,  allocatable, save :: ipa(:)
       real(dp), allocatable, save :: dxa(:,:)
-      real(dp), allocatable, save :: xdop(:,:)
+      real(dp), pointer,     save :: xdop(:,:)
       real(dp), pointer,     save :: xdsp(:,:) ! Allocated in dhscf
       integer,               save :: mop
       integer,               save :: ne(3)

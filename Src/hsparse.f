@@ -417,7 +417,7 @@ C           Restore conect array for next orbital io
             do j = 1,numh(iio)
                jo = listh(listhptr(iio)+j)
                conect(jo) = .false.
-            enddo   
+            enddo
           endif     ! iio > 0
         enddo       ! io
       enddo         ! ia

@@ -77,12 +77,10 @@ C     Initialise MPI and set processor number
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 9 )
 #endif
+#endif
 #ifdef DEBUG
       call debugMpiOn( )
 #endif
-#endif
-      call MPI_Barrier( MPI_Comm_World, MPIerror )
-
       IOnode = (Node .eq. 0)
 
 C     Print version information

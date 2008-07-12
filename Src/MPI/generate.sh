@@ -30,6 +30,9 @@ for tag in v s sv vs ; do
 sed -e "/_type/s//_integer/" -e "/type/s//integer/" \
     ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90
 
+sed -e "/_type/s//_integer8/" -e "/type/s//integer\*8/" \
+    ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90
+
 for kind in ${KINDS} ; do
 sed -e "/_type/s//_r${kind}/" -e "/type/s//real(${kind})/" \
     ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90

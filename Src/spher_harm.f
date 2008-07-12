@@ -427,7 +427,6 @@ C       Expand F(R) in spherical harmonics
         DO 70 JLM = 1,NLM
           FY = DDOT(NSP,F,1,YSP(1,JLM),1)
           IF ( ABS(FY) .GT. FTOL ) THEN
-
 C           Find JY corresponding to JLM
             DO 50 JY = 1,NY
               IF ( ILM(JY) .EQ. JLM ) THEN

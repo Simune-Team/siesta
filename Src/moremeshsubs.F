@@ -1,9 +1,11 @@
       MODULE moreMeshSubs
 !     Defines and handles different parallel mesh distributions
 !     R.Grima. Dec.2007
+      use precision, only : i8b
       use precision, only : grid_p                   ! Grid-data precision
       use parallel,  only : node, Nodes, ProcessorY
       use sys,       only : die
+      use alloc,     only : re_alloc, de_alloc
 
       PUBLIC :: initMeshDistr, setMeshDistr
       PUBLIC :: distMeshData, resetMeshDistr
@@ -30,7 +32,6 @@
       character(len=*),      parameter :: moduName = 'moreMeshSubs '
       integer,               parameter :: maxDistr = 5        ! Max. number of mesh distributions
       integer,               parameter :: gp = grid_p         ! A shorter name for grid-data precision
-      integer                          :: numDistr = 0        ! Number of different distributions
       type(meshDisType),  target, save :: meshDistr(maxDistr) ! The different data distributions
       type(meshCommType), target, save ::
      &                   meshCommu((maxDistr*(maxDistr-1))/2) ! Communications between data distributions
@@ -41,20 +42,20 @@
 C ==================================================================
 C Computes a new data distribution and the communications needed to
 C move data from/to the current distribution to the existing ones.
-C The limits of the new distributions are stored in meshDistr(numDistr).
+C The limits of the new distributions are stored in meshDistr(oDistr).
 C ==================================================================
-C SUBROUTINE initMeshDistr( iDistr, nm, wload, oDistr )
+C SUBROUTINE initMeshDistr( iDistr, oDistr, nm, wload )
 C
 C INPUT:
 C integer iDistr  : Distribution index of the input vector
+C integer oDistr  : The new data distribution index.
 C integer nm(3)   : Number of Mesh divisions of each cell vector
 C integer wload   : Weights of every point of the mesh.
 C
 C OUTPUT:
-C integer oDistr  : The new data distribution index.
 C The output values are stored in the current module:
-C        meshDistr(numDistr)
-C        meshCommu(((numDistr-2)*(numDistr-1))/2+1:(numDistr-1)*numDistr/2)
+C        meshDistr(oDistr)
+C        meshCommu(((oDistr-2)*(oDistr-1))/2+1:(oDistr-1)*oDistr/2)
 C
 C BEHAVIOR:
 C If this is the first distribution, we split the mesh uniformly among
@@ -67,13 +68,13 @@ C needed to move data from/to the current distribution to/from the
 C previous ones.
 C
 C ==================================================================
-      subroutine initMeshDistr( iDistr, nm, wload, oDistr )
+      subroutine initMeshDistr( iDistr, oDistr, nm, wload )
       implicit none
 C     Passed arguments
       integer, optional,  intent(in) :: iDistr
+      integer,            intent(in) :: oDistr
       integer,            intent(in) :: nm(3)
       integer, optional,  intent(in) :: wload(:) ! Approx. relative workload 
-      integer,           intent(out) :: oDistr
 C     Local variables
       character(len=*), parameter :: myName = moduName//'initMeshDistr '
       character(len=*), parameter :: errMsg = myName//'ERROR: '
@@ -85,19 +86,22 @@ C     Local variables
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 7 )
 #endif
-C     Update the number of mesh distributions
-      numDistr = numDistr + 1
-      if (numDistr.gt.maxDistr)
-     &  call die( errMsg // 'numDistr.gt.maxDistr' )
+C     Check the number of mesh distribution
+      if (oDistr.gt.maxDistr)
+     &  call die( errMsg // 'oDistr.gt.maxDistr' )
 
-      distr => meshDistr(numDistr)
+C     Reset data if necessay
+      call resetMeshDistr( oDistr )
+
+      distr => meshDistr(oDistr)
 
 C     Allocate memory for the current distribution
-      allocate( distr%box(2,3,Nodes) )
-      call memory( 'A', 'I', 2*3*Nodes, 'initMeshDistr' )
+      nullify( distr%box )
+      call re_alloc( distr%box, 1, 2, 1, 3, 1, Nodes, name='distr%box',
+     &               routine='initMeshDistr' )
 
 C     The first distribution should be the uniform distribution
-      if (numDistr.eq.1) then
+      if (oDistr.eq.1) then
         ProcessorZ = Nodes/ProcessorY
         blocY = (nm(2)/ProcessorY) 
         blocZ = (nm(3)/ProcessorZ) 
@@ -140,15 +144,14 @@ C       the vector "wload" among the several processes
 
 C       Precompute the communications needed to move data between the new data
 C       distribution and the previous ones.
-        jj = ((numDistr-2)*(numDistr-1))/2 + 1
-        do ii=1, numDistr-1
+        jj = ((oDistr-2)*(oDistr-1))/2 + 1
+        do ii=1, oDistr-1
           call compMeshComm( meshDistr(ii), distr, meshCommu(jj) )
           jj = jj + 1
         enddo
 #endif
       endif
 
-      oDistr = numDistr
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
@@ -196,61 +199,72 @@ C     Passed arguments
       end subroutine setMeshDistr
 
 C ==================================================================
-C Restart the data structures.
+C Reset the data of the distribution iDistr
 C ==================================================================
-C SUBROUTINE resetMeshDistr( )
+C SUBROUTINE resetMeshDistr( iDistr )
 C
 C INPUT:
+C integer iDistr   : Distribution index to be reset.
 C
 C OUTPUT:
 C Modify data of the current module.
 C
 C BEHAVIOR:
-C Deallocate associated arrays of the current module
+C Deallocate associated arrays of the current distribution
 C
 C ==================================================================
-      subroutine resetMeshDistr( )
+      subroutine resetMeshDistr( iDistr )
       implicit none
+C     Passed arguments
+      integer, optional,  intent(in) :: iDistr
 C     Local variables
-      integer                     :: iDistr, icom
-      type(meshDisType),  pointer :: distr
-      type(meshCommType), pointer :: mcomm
+      integer                        :: idis, ini, fin, icom
+      type(meshDisType),  pointer    :: distr
+      type(meshCommType), pointer    :: mcomm
 !------------------------------------------------------------------------- BEGIN
-      do iDistr= 1, numDistr
-        distr => meshDistr(iDistr)
-        deallocate( distr%box )
-        call memory( 'D', 'I', 2*3*Nodes, 'resetMeshDistr' )
+      if (present(iDistr)) then
+        ini = iDistr
+        fin = iDistr
+      else
+        ini = 1
+        fin = maxDistr
+      endif
+
+      do idis= ini, fin
+        distr => meshDistr(idis)
+
+        if (associated(distr%box)) then
+          call de_alloc( distr%box, name='distr%box',
+     &                   routine='resetMeshDistr' )
+        endif
         distr%nMesh = 0
+
         do icom=1, 3
-          mcomm => exteCommu(iDistr,icom)
+          mcomm => exteCommu(idis,icom)
           if (associated(mcomm%src)) then
-            call memory( 'D', 'I', size(mcomm%src), 'resetMeshDistr' )
-            deallocate( mcomm%src )
+            call de_alloc( mcomm%src, name='mcomm%src',
+     &                     routine='resetMeshDistr' )
           endif
           if (associated(mcomm%dst)) then
-            call memory( 'D', 'I', size(mcomm%dst), 'resetMeshDistr' )
-            deallocate( mcomm%dst )
+            call de_alloc( mcomm%dst, name='mcomm%dst',
+     &                    routine='resetMeshDistr' )
+          endif
+          mcomm%ncom = 0
+        enddo
+
+        do icom= ((idis-2)*(idis-1))/2 + 1, ((idis-1)*idis)/2
+          mcomm => meshCommu(icom)
+          if (associated(mcomm%src)) then
+            call de_alloc( mcomm%src, name='mcomm%src',
+     &                     routine='resetMeshDistr' )
+          endif
+          if (associated(mcomm%dst)) then
+            call de_alloc( mcomm%dst, name='mcomm%dst',
+     &                    routine='resetMeshDistr' )
           endif
           mcomm%ncom = 0
         enddo
       enddo
-
-      if (numDistr.gt.1) then
-        do icom= 1, ((numDistr-2)*(numDistr-1))/2 + 1
-          mcomm => meshCommu(icom)
-          if (associated(mcomm%src)) then
-            call memory( 'D', 'I', size(mcomm%src), 'resetMeshDistr' )
-            deallocate( mcomm%src )
-          endif
-          if (associated(mcomm%dst)) then
-            call memory( 'D', 'I', size(mcomm%dst), 'resetMeshDistr' )
-            deallocate( mcomm%dst )
-          endif
-          mcomm%ncom = 0
-        enddo
-      endif
-
-      numDistr = 0
 !--------------------------------------------------------------------------- END
       end subroutine resetMeshDistr
 
@@ -306,9 +320,9 @@ C     Local variables
      &                               Lbox(2,3)
       integer, pointer            :: src(:), dst(:), JS(:), Sbox(:,:),
      &                               Dbox(:,:)
-      type(meshDisType), pointer  :: idis, odis
+      type(meshDisType),  pointer :: idis, odis
       logical                     :: inters
-      real(grid_p), allocatable   :: TBUF(:)
+      real(grid_p),       pointer :: TBUF(:)
 #ifdef MPI
       integer                     :: MPIerror, Status(MPI_Status_Size)
 #endif
@@ -336,8 +350,8 @@ C     The communications are stored in a triangular structure.
       NSP = NSM*NSM*NSM
       ME  = Node + 1
 
-      allocate(JS(NSP))
-      call memory('A','I',NSP,'distMeshData')
+      nullify( JS )
+      call re_alloc( JS, 1, NSP, name='JS', routine='distMeshData' )
 
 C     Compute the maximum size of the buffer needed to transfer data
 C     among the several processes
@@ -356,8 +370,9 @@ C     among the several processes
 
       MaxSize = MaxSize*nsp
       if (MaxSize.gt.0) then
-        allocate(TBUF(MaxSize))
-        call memory('A','X',MaxSize,'reordMesh')
+        nullify( TBUF )
+        call re_alloc( TBUF, 1, MaxSize, name='TBUF',
+     &                 routine='distMeshData' )
       endif
 
       Sbox => idis%box(1:2,1:3,ME)
@@ -399,7 +414,7 @@ C             SRC and DST are the current process
                 J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
                 K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM
                 do I2 = Lbox(1,2), Lbox(2,2)
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                  J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
                   K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
                   do I1 = Lbox(1,1), Lbox(2,1)
                     DO NN= 1, NSP
@@ -421,7 +436,7 @@ C             We should send data to process dst(icom)-1
               do I3 = Lbox(1,3), Lbox(2,3)
                 J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)*NSM*NSM
                 do I2 = Lbox(1,2), Lbox(2,2)
-                  J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
+                  J1 = (Lbox(1,1) - Sbox(1,1))*NSP + 1 + J2 + J3
                   do I1 = Lbox(1,1), Lbox(2,1)
                     DO NN= 1, NSP
                       TBUF(K1) = fsrc(J1)
@@ -501,7 +516,7 @@ C             SRC and DST are the current process
                 K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM*NSM
                 do I2 = Lbox(1,2), Lbox(2,2)
                   J1 = (Lbox(1,1) - Sbox(1,1))*NSM + 1 + J2 + J3
-                  K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                  K1 = (Lbox(1,1) - Dbox(1,1))*NSP + 1 + K2 + K3
                   do I1 = Lbox(1,1), Lbox(2,1)
                     DO NN= 1, NSP
                       fdst(K1) = fsrc(J1+JS(NN))
@@ -557,7 +572,7 @@ C           We should receive data from process src(icom)-1
             do I3 = Lbox(1,3), Lbox(2,3)
               K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)*NSM*NSM
               do I2 = Lbox(1,2), Lbox(2,2)
-                K1 = (Lbox(1,1) - Dbox(1,1))*NSM + 1 + K2 + K3
+                K1 = (Lbox(1,1) - Dbox(1,1))*NSP + 1 + K2 + K3
                 do I1 = Lbox(1,1), Lbox(2,1)
                   DO NN= 1, NSP
                     fdst(K1) = TBUF(J1)
@@ -653,13 +668,16 @@ C           We should receive data from process src(icom)-1
       endif
 
       if (MaxSize.gt.0) then
-        deallocate(TBUF)
-        call memory('D','X',MaxSize,'reordMesh')
+        call de_alloc( TBUF, name='TBUF', routine='distMeshData' )
       endif
 
-      deallocate(JS)
-      call memory('D','I',NSP,'distMeshData')
+      call de_alloc( JS, name='JS', routine='distMeshData' )
 #else
+      if (itr.gt.0) then
+         call reord( fsrc, fdst, nm, nsm, itr )
+      else
+        call reord( fdst, fsrc, nm, nsm, itr )
+      endif
       call reord( fsrc, fdst, nm, nsm, itr )
 #endif
 #if defined(MPI_TRACE) && defined(MPI)
@@ -744,11 +762,11 @@ C         partition
 C       Create a list of communications needed to send/receive
 C       the extencil
         if (Gcom.gt.0) then
-          allocate( src(Gcom) )
-          call memory( 'A', 'I', Gcom, 'initMeshExtencil' )
-
-          allocate( dst(Gcom ) )
-          call memory( 'A', 'I', Gcom, 'initMeshExtencil' )
+          nullify( src, dst )
+          call re_alloc( src, 1, Gcom, name='src',
+     &                   routine='initMeshExtencil' )
+          call re_alloc( dst, 1, Gcom, name='dst',
+     &                   routine='initMeshExtencil' )
 
           ncom = 0
           do P1= 1, Nodes
@@ -795,8 +813,11 @@ C         Count the number of communications needed by the current process
 C         Store the ordered list of communications needed by the current
 C         process to send/receive the extencil.
           if (Lcom.gt.0) then
-            allocate( mcomm%src(Lcom), mcomm%dst(Lcom) )
-            call memory( 'A', 'I', 2*Lcom, 'compMeshComm' )
+            nullify( mcomm%src, mcomm%dst )
+            call re_alloc( mcomm%src, 1, Lcom, name='mcomm%src',
+     &                     routine='initMeshExtencil' )
+            call re_alloc( mcomm%dst, 1, Lcom, name='mcomm%dst',
+     &                     routine='initMeshExtencil' )
 
             ncom = 0
             do P1= 1, comm%ncol
@@ -809,15 +830,12 @@ C         process to send/receive the extencil.
             enddo
             mcomm%ncom = Lcom
 
-            call memory( 'D', 'I', size(comm%ind), 'compMeshComm' )
-            deallocate( comm%ind )
+            call de_alloc( comm%ind, name='comm%ind',
+     &                     routine='initMeshExtencil' )
           endif
 
-          deallocate( src )
-          call memory( 'D', 'I', Gcom, 'initMeshExtencil' )
-
-          deallocate( dst )
-          call memory( 'D', 'I', Gcom, 'initMeshExtencil' )
+          call de_alloc( dst, name='dst', routine='initMeshExtencil' )
+          call de_alloc( src, name='src', routine='initMeshExtencil' )
         endif
       enddo
 !--------------------------------------------------------------------------- END
@@ -873,9 +891,7 @@ C     Local variables
       real(gp),           pointer :: SBUF(:), RBUF(:)
       type(meshDisType),  pointer :: idis
       type(meshCommType), pointer :: mcomm
-#ifdef MPI
       integer                     :: MPIerror, Status(MPI_Status_Size)
-#endif
 !------------------------------------------------------------------------- BEGIN
       idis    => meshDistr(iDistr)
       mcomm   => exteCommu(iDistr,iaxis)
@@ -896,10 +912,10 @@ C     Local variables
         call die()
       endif
 
-      allocate( SBUF(BS*NN*nspin) )
-      call memory( 'A', 'D', BS*NN*nspin, 'distExtMeshData' )
-      allocate( RBUF(BS*NN*nspin) )
-      call memory( 'A', 'D', BS*NN*nspin, 'distExtMeshData' )
+      call re_alloc( SBUF, 1, BS*NN*nspin, name='SBUF',
+     &               routine='distExtMeshData' )
+      call re_alloc( RBUF, 1, BS*NN*nspin, name='RBUF',
+     &               routine='distExtMeshData' )
 
       Ubox(1:2,1:3) = idis%box(1:2,1:3,Cnode)
       Ubox(1,iaxis) = Ubox(1,iaxis) - 1
@@ -1236,10 +1252,8 @@ C     Local variables
         endif
       enddo
 
-      call memory( 'D', 'D', BS*NN*nspin, 'distExtMeshData' )
-      deallocate( SBUF )
-      call memory( 'D', 'D', BS*NN*nspin, 'distExtMeshData' )
-      deallocate( RBUF )
+      call de_alloc( RBUF, name='RBUF', routine='distExtMeshData' )
+      call de_alloc( SBUF, name='SBUF', routine='distExtMeshData' )
 !--------------------------------------------------------------------------- END
       end subroutine distExtMeshData
 
@@ -1293,9 +1307,7 @@ C     Local variables
       real(gp),           pointer :: SBUF(:), RBUF(:)
       type(meshDisType),  pointer :: idis
       type(meshCommType), pointer :: mcomm
-#ifdef MPI
       integer                     :: MPIerror, Status(MPI_Status_Size)
-#endif
 !------------------------------------------------------------------------- BEGIN
       idis    => meshDistr(iDistr)
       mcomm   => exteCommu(iDistr,iaxis)
@@ -1305,10 +1317,10 @@ C     Local variables
       dimB(2) = (idis%box(2,2,Cnode)-idis%box(1,2,Cnode)+1)*NSM
       dimB(3) = (idis%box(2,3,Cnode)-idis%box(1,3,Cnode)+1)*NSM
 
-      allocate( SBUF(BS*NN*nspin) )
-      call memory( 'A', 'D', BS*NN*nspin, 'gathExtMeshData' )
-      allocate( RBUF(BS*NN*nspin) )
-      call memory( 'A', 'D', BS*NN*nspin, 'gathExtMeshData' )
+      call re_alloc( SBUF, 1, BS*NN*nspin, name='SBUF',
+     &               routine='gathExtMeshData' )
+      call re_alloc( RBUF, 1, BS*NN*nspin, name='RBUF',
+     &               routine='gathExtMeshData' )
 
       Ubox(1:2,1:3) = idis%box(1:2,1:3,Cnode)
       Ubox(1,iaxis) = Ubox(1,iaxis) - 1
@@ -1643,10 +1655,8 @@ C     Local variables
         endif
       enddo
 
-      call memory( 'D', 'D', BS*NN*nspin, 'gathExtMeshData' )
-      deallocate( SBUF )
-      call memory( 'D', 'D', BS*NN*nspin, 'gathExtMeshData' )
-      deallocate( RBUF )
+      call de_alloc( RBUF, name='RBUF', routine='gathExtMeshData' )
+      call de_alloc( SBUF, name='SBUF', routine='gathExtMeshData' )
 !--------------------------------------------------------------------------- END
       end subroutine gathExtMeshData
 
@@ -1679,7 +1689,7 @@ C this 3-D array to a 1-D array (according to the selected direction).
 C
 C ==================================================================
       subroutine splitwload( Nodes, Node, nm, wload, iDistr, oDistr )
-      use mpi
+      use mpi_siesta
       implicit none
 C     Passed arguments
       integer,      intent(in)      :: Nodes, Node, nm(3), wload(:)
@@ -1691,17 +1701,13 @@ C     Local variables
       integer                     :: PP, iaxis, Lbox(2,3), Ldim, Gdim,
      &                               QQ, P1, P2, POS, ini,
      &                               ProcX, ProcY, ProcZ
-      integer,        allocatable :: PRC(:,:)
-      integer*8,      allocatable :: lwload(:), gwload(:), recvB(:)
+      integer(i8b),          pointer :: lwload(:), gwload(:), recvB(:)
       logical                     :: found, inters, frstime
-      integer                     :: MPIerror, Status(MPI_Status_Size)
       integer                     :: Gdime(3), Ldime(3), mGdim,
-     &                               mLdim, posi(3), sere(2), nAxis,
-     &                               nms(3)
-      integer*8                   :: h1, h2
-      integer,        allocatable :: PROCS(:)
-      integer*8,      allocatable :: lwld(:,:), gwld(:,:)
-      real*8                      :: hhL, hhC, hdiff(3)
+     &                               mLdim, nAxis, nms(3)
+      integer(i8b)                   :: h1, h2
+      integer,            pointer :: PROCS(:)
+      integer                     :: MPIerror, Status(MPI_Status_Size)
 !------------------------------------------------------------------------- BEGIN
 C     At the begining of the algorithm all the mesh is assigned to the
 C     first node:  oDistr%box(*,*,1) = nm
@@ -1718,8 +1724,9 @@ C     first node:  oDistr%box(*,*,1) = nm
 C     Array PROCS will contain the number of processes that are associated to
 C     every box. At the begining all the mesh is assigned to process 1, then
 C     PROCS(1)=Nodes, while the rest are equal to zero
-      allocate( PROCS(Nodes) )
-      call memory( 'A', 'I', Nodes, 'splitwload' )
+      nullify( PROCS, lwload, gwload, recvB )
+      call re_alloc( PROCS, 1, Nodes, name='PROCS',
+     &               routine='splitwload' )
       PROCS(1)       = Nodes
       PROCS(2:Nodes) = 0
 
@@ -1748,16 +1755,19 @@ C           mesh that we want to cut.
      &                            Lbox, inters )
             if (Node.eq.PP) then
               mGdim = oDistr%box(2,nAxis,PP)-oDistr%box(1,nAxis,PP)+1
-              allocate( gwload(mGdim), recvB(mGdim) )
-              call memory( 'A', 'E', mGdim*2, 'splitwload' )
+
+              call re_alloc( gwload, 1, mGdim, name='gwload',
+     &                       routine='splitwload' )
+              call re_alloc( recvB, 1, mGdim, name='recvB',
+     &                       routine='splitwload' )
             endif
 
             if (inters) then
 C             If there is an intersection I should reduce the intersected part
 C             from a 3-D array to a 1-D array.
               mLdim = Lbox(2,nAxis) - Lbox(1,nAxis) + 1
-              allocate( lwload(mLdim) )
-              call memory( 'A', 'E', mLdim, 'splitwload' )
+              call re_alloc( lwload, 1, mLdim, name='lwload',
+     &                       routine='splitwload' )
               call reduce3Dto1D( nAxis, iDistr%box(1:2,1:3,Node), Lbox,
      &                           wload, lwload )
             endif
@@ -1783,14 +1793,13 @@ C             processes
                   endif
                 endif
               enddo
-              deallocate( recvB )
-              call memory( 'D', 'E', mGdim, 'splitwload' )
+              call de_alloc( recvB, name='recvB', routine='splitwload' )
 
 C             Process PP computes where to cut the mesh
               call vecBisec( mGdim, gwload(1:mGdim),
      &                        PROCS(PP), POS, h1, h2 )
-              deallocate( gwload )
-              call memory( 'D', 'E', mGdim, 'splitwload' )
+              call de_alloc(gwload, name='gwload', routine='splitwload')
+
             else if (inters) then
 C             If, I'm not the process PP I should send the information to
 C             the process PP
@@ -1799,10 +1808,8 @@ C             the process PP
      &                       MPIerror )
             endif
 
-            if (allocated(lwload)) then
-              deallocate( lwload )
-              call memory( 'D', 'E', mLdim, 'splitwload' )
-            endif
+            if (associated(lwload))
+     &        call de_alloc(lwload, name='lwload', routine='splitwload')
 
 C           Process PP send the position of the cut to the rest of processes
             call MPI_Bcast( pos, 1, MPI_integer, PP-1,
@@ -1823,8 +1830,7 @@ C           We should actualize the numbers of processes associated to PP and QQ
         enddo
       enddo
 
-      deallocate( PROCS )
-      call memory( 'D', 'I', Nodes, 'splitwload' )
+      call de_alloc( PROCS, name='PROCS', routine='splitwload')
 !--------------------------------------------------------------------------- END
       end subroutine splitwload
 
@@ -1878,11 +1884,11 @@ C INPUT:
 C integer   iaxis         : Axe to be reduced
 C integer   Ibox(2,3)     : Limits of the input array
 C integer   Lbox(2,3)     : Limits of the intersection that we want to reduce
-C integer*8 wload         : 3-D array that we want to reduce to one of its
+C integer(i8b) wload         : 3-D array that we want to reduce to one of its
 C                           dimensions
 C
 C OUTPUT:
-C integer*8 lwload        : 1-D array. Reduction of the intersected part
+C integer(i8b) lwload        : 1-D array. Reduction of the intersected part
 C                           of wload.
 C
 C BEHAVIOR:
@@ -1899,7 +1905,7 @@ C ==================================================================
       implicit none
 C     Passed arguments
       integer,    intent(in) :: iaxis, Ibox(2,3), Lbox(2,3), wload(:)
-      integer*8, intent(out) :: lwload(:)
+      integer(i8b), intent(out) :: lwload(:)
 C     Local variables
       integer              :: Idim(3), Ldim(3), ind, ind1, ind2, ind3,
      &                        I1, I2, I3
@@ -1979,14 +1985,14 @@ C SUBROUTINE vecBisec( nval, values, nparts, pos, h1, h2 )
 C
 C INPUT:
 C integer   nval         : Dimension of the input array
-C integer*8 values       : Input array
+C integer(i8b) values       : Input array
 C integer   nparts       : Numbers of partitions that we want to make from
 C                          the input array (in this call we only make one cut).
 C
 C OUTPUT:
 C integer   pos          : Position of the cut
-C integer*8 h1           : Load of the first part
-C integer*8 h2           : Load of the second part
+C integer(i8b) h1           : Load of the first part
+C integer(i8b) h2           : Load of the second part
 C
 C BEHAVIOR:
 C We want to split array "values" in "nparts", but in this call to
@@ -2003,13 +2009,13 @@ C ==================================================================
       implicit none
 C     Input variables
       integer,    intent(in) :: nval, nparts
-      integer*8,  intent(in) :: values(nval)
+      integer(i8b),  intent(in) :: values(nval)
       integer,   intent(out) :: pos
-      integer*8, intent(out) :: h1, h2
+      integer(i8b), intent(out) :: h1, h2
 
 C     Local variables
       integer               :: p1, p2, ii
-      integer*8             :: total, halfG, halfL
+      integer(i8b)             :: total, halfG, halfL
 !------------------------------------------------------------------------- BEGIN
       if (nparts.gt.1) then
 C       Split the number of parts in 2
@@ -2075,7 +2081,7 @@ C     Passed arguments
 C     Local variables
       integer                         :: P1, P2, ncom, Gcom, Lcom,
      &                                   Lind, Lbox(2,3)
-      integer,            allocatable :: src(:), dst(:)
+      integer,                pointer :: src(:), dst(:)
       logical                         :: inters
       type(COMM_T)                    :: comm
 !------------------------------------------------------------------------- BEGIN
@@ -2092,8 +2098,9 @@ C     destiny distribution. Every intersection represents a communication.
       Gcom = ncom
 
 C     Allocate local arrays
-      allocate( src(Gcom), dst(Gcom) )
-      call memory( 'A', 'I', 2*Gcom, 'compMeshComm' )
+      nullify( src, dst )
+      call re_alloc( src, 1, Gcom, name='src', routine='compMeshComm' )
+      call re_alloc( dst, 1, Gcom, name='dst', routine='compMeshComm' )
 
 C     Make a list of communications
       ncom = 0
@@ -2122,8 +2129,11 @@ C     Count the number of communications of the current process
 
 C     Allocate memory to store data of the communications of the
 C     current process.
-      allocate( mcomm%src(Lcom), mcomm%dst(Lcom) )
-      call memory( 'A', 'I', 2*Lcom, 'compMeshComm' )
+      nullify( mcomm%src, mcomm%dst )
+      call re_alloc( mcomm%src, 1, Lcom, name='mcomm%src',
+     &               routine='compMeshComm' )
+      call re_alloc( mcomm%dst, 1, Lcom, name='mcomm%dst',
+     &               routine='compMeshComm' )
 
 C     Save the list of communications for the current process
       ncom = 0
@@ -2137,11 +2147,9 @@ C     Save the list of communications for the current process
       enddo
       mcomm%ncom = ncom
 
-      call memory( 'D', 'I', size(comm%ind), 'compMeshComm' )
-      deallocate( comm%ind )
-
-      call memory( 'D', 'I', 2*Gcom, 'compMeshComm' )
-      deallocate( src, dst )
+      call de_alloc( comm%ind, name='comm%ind', routine='compMeshComm' )
+      call de_alloc( dst, name='dst', routine='compMeshComm' )
+      call de_alloc( src, name='src', routine='compMeshComm' )
 !--------------------------------------------------------------------------- END
       end subroutine compMeshComm
 #endif

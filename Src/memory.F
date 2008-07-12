@@ -43,7 +43,7 @@ C
       character(len=*), intent(in)        :: CallingRoutine
 
 C Local variables
-      integer    Sign, RGT
+      integer    Sign
 CAG
 !      if (Node.eq.0) then
 !        write(66,'(a,a,a,a,i10)') "---memory: ", CallingRoutine // " ",

@@ -87,9 +87,9 @@ C Internal variables and arrays
 #ifdef MPI
 #ifdef DEBUG
         call write_debug( 'ERROR: write_rho not ready yet' )
+        call write_debug( fname )
 #endif
-      return
-      call die('ERROR: Not ready for multiple data distributions')
+        return
 
 C Work out density block dimensions
       if (mod(Nodes,ProcessorY).gt.0)
@@ -127,9 +127,11 @@ C Write data
             write(iu,*) mesh, nspin
           else
             write(iu) cell
-            write(iu) mesh, nspin
+            call io_close( iu )
+C            write(iu) mesh, nspin
           endif
         endif
+        return
 
 C Outer loop over spins
         do is = 1,nspin

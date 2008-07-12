@@ -5,21 +5,41 @@
       CONTAINS
 
       subroutine siesta_end()
-      use alloc, only: alloc_report
+      use alloc,           only : alloc_report, de_alloc
       use siesta_cml
-      use m_timestamp, only : timestamp
-      use m_wallclock, only : wallclock
-      use parallel, only: IOnode
+      use m_timestamp,     only : timestamp
+      use m_wallclock,     only : wallclock
+      use parallel,        only : IOnode
 #ifdef MPI
-      use mpi_siesta, only: MPI_Finalize
+      use mpi_siesta,      only : MPI_Finalize
 #endif
+      use alloc,           only : re_alloc
+      use m_pulay,         only : resetPulayArrays
+      use moreMeshSubs,    only : resetMeshDistr
+      use densematrix,     only : resetDenseMatrix
+      use sparse_matrices, only : resetSparseMatrices
+      use m_matel,         only : resetMatelArrays
+      use meshdscf,        only : resetDscfPointers
+      use m_diagon,        only : resetDiagonPointers
+      use m_fixed,         only : resetFixedPointers
+
       implicit none
 
 #ifdef MPI
       integer MPIerror
 #endif
-
 !------------------------------------------------------------------------- BEGIN
+!     Free allocated memory
+      call resetSparseMatrices( )
+      call resetPulayArrays( )
+      call resetMeshDistr( )
+      call resetdscfComm( )
+      call resetMatelArrays( )
+      call resetDscfPointers( )
+      call resetDenseMatrix( )
+      call resetDiagonPointers( )
+      call resetFixedPointers( )
+
 ! Output memory use up to the end of the program
       call printmemory( 6, 1 )
 

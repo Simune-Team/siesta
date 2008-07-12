@@ -8,21 +8,23 @@
 
       subroutine state_analysis( istep  )
       use siesta_cml
-      use m_born_charge, only: born_charge
-      use parallel, only: IOnode
-      use m_wallclock, only : wallclock
-      use zmatrix,      only: lUseZmatrix, iofaZmat, write_Zmatrix,
-     .                        CartesianForce_to_ZmatForce,
-     .                        write_canonical_ucell_and_Zmatrix
-      use m_iostruct,   only: write_struct
+      use m_born_charge, only : born_charge
+      use parallel,      only : IOnode
+      use m_wallclock,   only : wallclock
+      use zmatrix,       only : lUseZmatrix, iofaZmat, write_Zmatrix,
+     .                          CartesianForce_to_ZmatForce,
+     .                          write_canonical_ucell_and_Zmatrix
+      use m_iostruct,    only : write_struct
+      use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto,
+     &                          superx
+      use m_energies,    only : Etot
+      use m_spin,        only : nspin
+      use m_fixed,       only : fixed
       use sparse_matrices
-      use atomlist, only: iaorb, iphorb, iza, amass, no_u, lasto, superx
       use siesta_geom
       USE siesta_options
       use m_stress
-      use m_energies, only: Etot
       use m_ntm
-      use m_spin,     only: nspin
       use m_forces
 
       implicit none
@@ -32,7 +34,7 @@
       real(dp) :: volume
       logical  :: eggbox_block=.true. ! Read eggbox info from data file?
 
-      external :: eggbox, mulliken, fixed
+      external :: eggbox, mulliken
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN

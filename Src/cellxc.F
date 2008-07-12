@@ -122,12 +122,13 @@ C *******************************************************************
       use sys,          only : die
       use alloc,        only : re_alloc, de_alloc
       use cellxc_mod,   only : GGA
+      use mesh,         only : nsm, meshLim
 #ifdef MPI
 C  Modules
+      use mesh,         only : nmeshg
       use parallel,     only : Node, Nodes, ProcessorY
       use parallelsubs, only : HowManyMeshPerNode
       use mpi_siesta
-      use mesh,         only : nsm, nmeshg, meshLim
       use moreMeshSubs, only : distExtMeshData, gathExtMeshData
 #endif
 
@@ -220,14 +221,13 @@ C Check value of mspin
         call die()
       endif
 
+      BS(1) = (meshLim(2,1)-meshLim(1,1)+1)*NSM
+      BS(2) = (meshLim(2,2)-meshLim(1,2)+1)*NSM
+      BS(3) = (meshLim(2,3)-meshLim(1,3)+1)*NSM
 #ifdef MPI
 C If GGA and the number of processors is greater than 1 then we need
 C to exchange border densities so that the density derivatives can
 C be calculated.
-      BS(1) = (meshLim(2,1)-meshLim(1,1)+1)*NSM
-      BS(2) = (meshLim(2,2)-meshLim(1,2)+1)*NSM
-      BS(3) = (meshLim(2,3)-meshLim(1,3)+1)*NSM
-
       if (GGA.and.Nodes.gt.1) then
         if (NN.gt.BS(1).or.NN.gt.BS(2).or.NN.gt.BS(3)) then
           if (Node.eq.0) then
@@ -826,7 +826,6 @@ C divide by volume to get correct stress definition (dE/dStrain)/Vol
           stress(IX,JX) = stress(IX,JX) / volume
         enddo
       enddo
-      
 C Divide by energy unit
       EX = EX / EUnit
       EC = EC / EUnit

@@ -55,7 +55,10 @@ C
 #endif
       use alloc
       use sys,        only : die
-
+      use m_diagon,   only : saveeigenvectors, maxclustersize, i2d_ctxt,
+     &                       serial, noexpert, divideconquer, use2d,
+     &                       prerotate, ictxt, allinone, doread,
+     &                       firstcall, Zsave, h2d, s2d, z2d
       implicit          none
 
 C Passed variables
@@ -80,10 +83,8 @@ C Local variables
       integer                 :: iacol
       integer                 :: iarow
       integer                 :: iceil
-      integer,           save :: ictxt
       integer                 :: indxg2p
       integer                 :: lwork2
-      integer,           save :: maxclustersize = 12
       integer                 :: mq0
       integer                 :: mycol
       integer                 :: myrow
@@ -103,19 +104,15 @@ C Local variables
       integer                 :: oldmaxclustersize
       integer                 :: pjlaenv
       integer                 :: sqnpc
-      integer,  pointer, save :: iclustr(:)
-      real(dp), pointer, save :: gap(:)
       real(dp)                :: dscale
       logical                 :: BlacsOK
       logical                 :: lBtmp(6)
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
-      integer,           save :: i2d_ctxt
       integer, dimension(9)   :: desc_h2d
       
 C Matrices for 2D
-      real(dp), pointer, save, dimension(:,:) ::  h2d, s2d, z2d
       integer ::  mat_2d_row, mat_2d_col
 #endif
       character               :: jobz
@@ -126,27 +123,17 @@ C Matrices for 2D
       integer                 :: lwork
       integer                 :: nb
       integer                 :: neigok
-      integer,  pointer, save :: ifail(:)
-      integer,  pointer, save :: iwork(:)
-      logical,           save :: AllInOne = .false.
-      logical,           save :: DivideConquer = .true.
-      logical,           save :: DoRead = .true.
-      logical,           save :: FirstCall = .true.
-      logical,           save :: NoExpert = .false.
-      logical,           save :: PreRotate = .false.
-      logical,           save :: SaveEigenvectors = .false.
-      logical,           save :: Use2D = .true.
-      logical,           save :: Serial = .true.
       logical                 :: ChangeAlgorithm
       real(dp)                :: vl
       real(dp)                :: vu
-      real(dp), pointer, save :: work(:)
-      real(dp), pointer, save :: Zsave(:,:)
 
       real(dp), parameter     :: abstol = 1.0e-8_dp
       real(dp), parameter     :: orfac = 1.0e-3_dp
       real(dp), parameter     :: zero = 0.0_dp
       real(dp), parameter     :: one = 1.0_dp
+
+      integer,        pointer :: iclustr(:), ifail(:), iwork(:)
+      real(dp),       pointer :: gap(:), work(:)
 
 C Start time count
       call timer('rdiag',1)

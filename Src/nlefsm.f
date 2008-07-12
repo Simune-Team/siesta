@@ -74,9 +74,10 @@ C
       use parallelsubs,  only : GetNodeOrbs, LocalToGlobalOrb
       use parallelsubs,  only : GlobalToLocalOrb
       use atmfuncs,      only : rcut, epskb
-      use neighbour    , only : iana=>jan, r2ki=>r2ij, xki=>xij
-      use neighbour    , only : mneighb
+      use neighbour,     only : iana=>jan, r2ki=>r2ij, xki=>xij
+      use neighbour,     only : mneighb
       use alloc,         only : re_alloc, de_alloc
+      use m_matel,       only : matel
 
       integer, intent(in) ::
      .   maxnh, na, maxnd, nspin, nua
@@ -259,8 +260,8 @@ C Check maxno - if too small then increase array sizes
                     ikb = ikb + 1
                     ioa = iphorb(io)
                     koa = iphKB(ko)
-                    call matel( 'S', ks, is, koa, ioa, xki(1,ina),
-     .                    Ski(ikb,nno), grSki(1,ikb,nno) )
+                    call matel( 'S', ks, is, koa, ioa, xki(1:3,ina),
+     .                    Ski(ikb,nno), grSki(1:3,ikb,nno) )
                   enddo
 
                 endif

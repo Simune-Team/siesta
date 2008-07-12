@@ -110,6 +110,7 @@ C
       use parallelsubs, only : WhichNodeOrb, GlobalToLocalOrb
       use mpi_siesta
       use m_fermid,     only : fermid, fermispin, stepf
+      use alloc,        only : re_alloc, de_alloc
 
       implicit          none
 
@@ -134,34 +135,30 @@ C
       external          cdiag, memory
 
 C  Internal variables .............................................
-      integer
-     .  BNode, ie, ierror, ik, io, iio, ind, is, ispin, iuo,
-     .  j, jo, juo, maxnhg, nuog, maxnumh, neigneeded
-      integer, dimension(:), allocatable, save ::
-     .  numhg, listhptrg, listhg
-      real(dp)
-     .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
-      real(dp), dimension(:), allocatable, save ::
-     .  Snew, Dloc
-      real(dp), dimension(:,:), allocatable, save ::
-     .  Hnew, Dnewloc, Enewloc, xijloc
+      integer           :: BNode, ie, ierror, ik, io, iio, ind, is,
+     &                     ispin, iuo, j, jo, juo, maxnhg, nuog,
+     &                     maxnumh, neigneeded
+      integer,  pointer :: numhg(:), listhptrg(:), listhg(:)
+      real(dp)          :: ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
+      real(dp), pointer :: Snew(:), Dloc(:), Hnew(:,:), Dnewloc(:,:),
+     &                     Enewloc(:,:), xijloc(:,:)
 C  ....................
 
 C Globalise list arrays - assumes listh and listd are the same
 
 C Allocate local memory for global list arrays
-      allocate(numhg(nuotot))
-      call memory('A','I',nuotot,'diagkp')
-      allocate(listhptrg(nuotot))
-      call memory('A','I',nuotot,'diagkp')
+      call re_alloc( numhg, 1, nuotot, name='diagkp',
+     &               routine= 'diagkp' )
+      call re_alloc( listhptrg, 1, nuotot, name='listhptrg',
+     &               routine= 'diagkp' )
 
 C Find maximum value in numh and create local storage
       maxnumh = 0
       do io = 1,nuo
         maxnumh = max(maxnumh,numh(io))
       enddo
-      allocate(Dloc(maxnumh))
-      call memory('A','D',maxnumh,'diagkp')
+      call re_alloc( Dloc, 1, maxnumh, name='Dloc',
+     &               routine= 'diagkp' )
 
 C Globalise numh
       do io = 1,nuotot
@@ -182,8 +179,9 @@ C Build global listhptr
 
 C Globalse listh
       maxnhg = listhptrg(nuotot) + numhg(nuotot)
-      allocate(listhg(maxnhg))
-      call memory('A','I',maxnhg,'diagkp')
+
+      call re_alloc( listhg, 1, maxnhg, name='listhg',
+     &               routine= 'diagkp' )
       do io = 1,nuotot
         call WhichNodeOrb(io,Nodes,BNode)
         if (Node.eq.BNode) then
@@ -199,12 +197,13 @@ C Globalse listh
 
 C Create new distribution of H and S
       nuog = nuotot
-      allocate(Snew(maxnhg))
-      call memory('A','D',maxnhg,'diagkp')
-      allocate(Hnew(maxnhg,nspin))
-      call memory('A','D',maxnhg*nspin,'diagkp')
-      allocate(xijloc(3,maxnhg))
-      call memory('A','D',3*maxnhg,'diagkp')
+
+      call re_alloc( Snew, 1, maxnhg, name='listhg',
+     &               routine= 'diagkp' )
+      call re_alloc( Hnew, 1, maxnhg, 1, nspin, name='Hnew',
+     &               routine= 'diagkp' )
+      call re_alloc( xijloc, 1, 3, 1, maxnhg, name='xijloc',
+     &               routine= 'diagkp' )
 
       do io = 1,nuotot
         call WhichNodeOrb(io,Nodes,BNode)
@@ -282,10 +281,10 @@ C Check if we are done ................................................
       if (.not.getD) goto 999
 
 C Allocate local copies of Dk and Ek for building matrices
-      allocate(Dnewloc(maxnhg,2))
-      call memory('A','D',2*maxnhg,'diagkp')
-      allocate(Enewloc(maxnhg,2))
-      call memory('A','D',2*maxnhg,'diagkp')
+      call re_alloc( Dnewloc, 1, maxnhg, 1, 2, name='Dnewloc',
+     &               routine= 'diagkp' )
+      call re_alloc( Enewloc, 1, maxnhg, 1, 2, name='Enewloc',
+     &               routine= 'diagkp' )
 
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
@@ -453,29 +452,20 @@ C Globalise Dnew/Enew (reference to numhg should be numd)
       enddo
 
 C Deallocate local memory needed only if getD is true
-      call memory('D','D',size(Enewloc),'diagkp')
-      deallocate(Enewloc)
-      call memory('D','D',size(Dnewloc),'diagkp')
-      deallocate(Dnewloc)
+      call de_alloc( Enewloc, name='Enewloc', routine= 'diagkp' )
+      call de_alloc( Dnewloc, name='Dnewloc', routine= 'diagkp' )
 
 C Exit point 
   999 continue
 
 C Free local memory
-      call memory('D','D',size(xijloc),'diagkp')
-      deallocate(xijloc)
-      call memory('D','D',size(Hnew),'diagkp')
-      deallocate(Hnew)
-      call memory('D','D',size(Snew),'diagkp')
-      deallocate(Snew)
-      call memory('D','D',size(Dloc),'diagkp')
-      deallocate(Dloc)
-      call memory('D','I',size(listhg),'diagkp')
-      deallocate(listhg)
-      call memory('D','I',size(listhptrg),'diagkp')
-      deallocate(listhptrg)
-      call memory('D','I',size(numhg),'diagkp')
-      deallocate(numhg)
+      call de_alloc( xijloc, name='xijloc', routine= 'diagkp' )
+      call de_alloc( Hnew, name='Hnew', routine= 'diagkp' )
+      call de_alloc( Snew, name='Snew', routine= 'diagkp' )
+      call de_alloc( Dloc, name='Dloc', routine= 'diagkp' )
+      call de_alloc( listhg, name='listhg', routine= 'diagkp' )
+      call de_alloc( listhptrg, name='listhptrg', routine= 'diagkp' )
+      call de_alloc( numhg, name='numhg', routine= 'diagkp' )
 
-      end
+      end subroutine diagkp
 #endif

@@ -590,6 +590,7 @@ MODULE siesta_options
       method_default = 'diagon'
     else
       method_default = 'ordern'
+! RGT      method_default = 'jacobi'
     endif
 
     call fdf_global_get(method,'SolutionMethod',method_default)
@@ -620,11 +621,22 @@ MODULE siesta_options
                   'together with nspin>2.  This is not allowed in '//&
                   'this version of siesta' )
       endif
+    else if (leqi(method,'jacobi')) then
+      isolve = 2
+      DaC    = .false.
+      if (ionode) then
+        write(6,'(a,4x,a)') 'redata: Method of Calculation            = ', &
+                            'Jacobi-Davidson'
+      endif
 
     else
       call die( 'redata: The method of solution must be either '//&
                 'OrderN or Diagon' )
     endif
+#ifdef DEBUG
+    call write_debug('Method used for diagonalization: '//method )
+#endif
+
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='Diag.DivideAndConquer', &
                             value=DaC, dictRef='siesta:DaC' )

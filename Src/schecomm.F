@@ -54,18 +54,20 @@ C comm struct.
 C
 C ==================================================================
       subroutine scheduleComm( Ncom, src, dst, comm )
+      use alloc,     only : re_alloc, de_alloc
       implicit none
 C     Input variables
       integer              :: Ncom, src(Ncom), dst(Ncom)
       type(COMM_T)         :: comm
 C     Local variables
       integer              :: i, j, com1, com2, P1, P2, nadj, Ncol, col
-      integer, allocatable :: neights(:), xadj(:), adj(:),
+      integer,     pointer :: neights(:), xadj(:), adj(:),
      &                        perm(:), color(:)
       logical              :: found
 !------------------------------------------------------------------------- BEGIN
-      allocate(neights(NCom))
-      call memory('A','I',NCom,'scheduleComm')
+      nullify( neights, xadj, adj, perm, color )
+      call re_alloc( neights, 1, NCom, name='neights',
+     &               routine='scheduleComm' )
       neights = 0
 
 C     Build the adjacency graph. In this new graph every node
@@ -85,10 +87,9 @@ C     neights(com) = number of neightbours of communication 'com'
         enddo
       enddo
 
-      allocate(xadj(NCom+1))
-      call memory('A','I',NCom+1,'scheduleComm')
-
 C     nadj= size of the adjacency graph
+      call re_alloc( xadj, 1, NCom+1, name='xadj',
+     &               routine='scheduleComm' )
       nadj = 1
       do com1= 1, Ncom
         xadj(com1) = nadj
@@ -97,10 +98,9 @@ C     nadj= size of the adjacency graph
       xadj(Ncom+1) = nadj
       nadj         = nadj - 1
 
-      allocate(adj(nadj))
-      call memory('A','I',nadj,'scheduleComm')
-
 C     Fill the adjacency graph
+      call re_alloc( adj, 1, nadj, name='adj',
+     &               routine='scheduleComm' )
       do com1= 1, Ncom
         P1 = src(com1)
         P2 = dst(com1)
@@ -123,8 +123,8 @@ C     GRAPH COLORING: in order to optimize the communications
 C     we assign a color to every node. We want to minimize the
 C     number of colors. Two neightbours can't share the same
 C     color.
-      allocate(perm(NCom))
-      call memory('A','I',NCom,'scheduleComm')
+      call re_alloc( perm, 1, NCom, name='perm',
+     &               routine='scheduleComm' )
       do com1= 1, Ncom
         perm(com1) = com1
       enddo
@@ -132,8 +132,9 @@ C     color.
 C     We order the nodes by its number of neightbours.
       call Qsort( Ncom, neights, perm )
 
-      allocate(color(NCom))
-      call memory('A','I',NCom,'scheduleComm')
+
+      call re_alloc( color, 1, NCom, name='color',
+     &               routine='scheduleComm' )
       do com1= 1, Ncom
         color(com1) = 0
       enddo
@@ -174,8 +175,9 @@ C         Create a new color
 
 C     Fill the communication structure with the new scheduling
       comm%ncol = Ncol
-      allocate(comm%ind(NCol,comm%np))
-      call memory('A','I',NCol*comm%np,'scheduleComm')
+      nullify( comm%ind )
+      call re_alloc( comm%ind, 1, NCol, 1, comm%np, name='comm%ind',
+     &               routine='scheduleComm' )
 
       comm%ind = 0
       do com1= 1, Ncom
@@ -186,16 +188,11 @@ C     Fill the communication structure with the new scheduling
         comm%ind(col,P2) = com1
       enddo
 
-      deallocate(color)
-      call memory('D','I',NCom,'scheduleComm') 
-      deallocate(perm)
-      call memory('D','I',NCom,'scheduleComm') 
-      deallocate(adj)
-      call memory('D','I',nadj,'scheduleComm') 
-      deallocate(xadj)
-      call memory('D','I',NCom+1,'scheduleComm') 
-      deallocate(neights)
-      call memory('D','I',NCom,'scheduleComm') 
+      call de_alloc(   color, name=  'color', routine='scheduleComm' )
+      call de_alloc(    perm, name=   'perm', routine='scheduleComm' )
+      call de_alloc(     adj, name=    'adj', routine='scheduleComm' )
+      call de_alloc(    xadj, name=   'xadj', routine='scheduleComm' )
+      call de_alloc( neights, name='neights', routine='scheduleComm' )
 !--------------------------------------------------------------------------- END
       end subroutine scheduleComm
       end module scheComm

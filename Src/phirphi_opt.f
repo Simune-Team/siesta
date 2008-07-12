@@ -87,6 +87,7 @@ C *********************************************************************
       use sys,          only : die
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb
+      use m_matel,      only : matel
 
       implicit none
 
@@ -144,8 +145,6 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp),          save :: tiny = 1.0d-9
       real(dp), pointer, save :: Vi(:)
 
-      external  matel
-      
 C Start timer
       call timer('phirphiopt',1)
 
@@ -403,7 +402,7 @@ C Initialize neighb subroutine
      .                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(3) 
            
-                    call matel('S', is, js, ioa, joa, xij(1,jn),
+                    call matel('S', is, js, ioa, joa, xij(1:3,jn),
      .                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*(
      .                   xa(1,ia)*dk(1)
@@ -456,7 +455,7 @@ C The factor of two because we use Ry for the Hamiltonian
                     else
 C Matrix elements between different atoms are taken from the 
 C gradient of the overlap 
-                      call matel('S', is, js, ioa, joa, xij(1,jn),
+                      call matel('S', is, js, ioa, joa, xij(1:3,jn),
      .                           Sij, grSij )
 C The factor of two because we use Ry for the Hamiltonian
                       Si(jo) =

@@ -59,6 +59,9 @@
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 13 )
 #endif
+#ifdef DEBUG
+      call write_debug( '    PRE setup_hamiltonian' )
+#endif
       if (cml_p) then
         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
       endif

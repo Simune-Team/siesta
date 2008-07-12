@@ -16,6 +16,7 @@
       use atmfuncs,      only : rcut
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb
       use alloc,         only : re_alloc, de_alloc
+      use m_matel,       only : matel
 
       implicit none
 
@@ -77,6 +78,7 @@ C     Initialize neighb subroutine
 C     Allocate local memory
       nullify(Si)
       call re_alloc(Si,1,no,name="Si",routine="overlap")
+      Si = 0
 
       do ia = 1,nua
         call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
@@ -97,7 +99,7 @@ C           Valid orbital
                 is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'S', is, js, ioa, joa, xij(1,jn),
+                  call MATEL( 'S', is, js, ioa, joa, xij(1:3,jn),
      &                      Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                 endif

@@ -20,7 +20,7 @@
       real(dp), pointer  :: auxpul(:,:)  ! Auxilialy matrices 
                                          ! for Pulay mixing
 
-      public :: pulayx, init_pulay_arrays
+      public :: pulayx, init_pulay_arrays, resetPulayArrays
 
       CONTAINS
 
@@ -55,8 +55,8 @@
 #endif
 ! Increase nauxpul with safety margin when atoms move  ! ???
         nauxpul = 1.1 * nauxpul + 10
-        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",
-     $                routine="init_pulay_arrrays")
+        call re_alloc(auxpul,1,nauxpul,1,2,name='auxpul',
+     $                routine='init_pulay_arrrays')
       endif
       end subroutine init_pulay_arrays
 !
@@ -423,7 +423,7 @@ C  calculate mixing coefficients, only if mixing the Density Matrix ........
 #ifdef MPI
 C Global operations
        do i=1,maxmix
-         call MPI_AllReduce(b(1:,i),buffer,maxmix,MPI_double_precision,
+         call MPI_AllReduce(b(1,i),buffer,maxmix,MPI_double_precision,
      .     MPI_sum,MPI_Comm_World,MPIerror)
          do j=1,maxmix
            b(j,i)=buffer(j)
@@ -533,5 +533,13 @@ C Deallocate local arrays
 
        end subroutine pulayx
 
+      subroutine resetPulayArrays( )
+      use alloc
+      implicit none
+      if (associated(auxpul))
+     &  call de_alloc( auxpul, name='auxpul',
+     &                 routine='resetPulayArrays' )
+      end subroutine resetPulayArrays
+      
       end module m_pulay
 

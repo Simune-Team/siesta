@@ -7,7 +7,7 @@
       subroutine struct_init()
       USE siesta_options
       use m_ioxv
-      USE alloc,          only: re_alloc
+      USE alloc,          only: re_alloc, de_alloc
 
       use siesta_geom
       use atmfuncs,       only: izofis
@@ -37,6 +37,7 @@
       real(dp):: bcell(3,3)
       integer :: i, ia, ix
       integer:: nbcell  ! Auxiliary to call shaper routine
+      real(dp), pointer :: xang(:,:)
 
 !------------------------------------------------------------------------- BEGIN
 
@@ -148,9 +149,14 @@
         enddo
 
         call cmlStartModule(xf=mainXML, title='Initial System')
+        call re_alloc( xang, 1, 3, 1, na_u, name='xang',
+     &                 routine='struct_init' )
+        xang = xa(1:3,1:na_u)/Ang
         call cmlAddMolecule(xf=mainXML, natoms=na_u, 
-     .       coords=xa/Ang, elements=elem, refs=cisa,
+     .       coords=xang, elements=elem, refs=cisa,
      .       style='x3', fmt='(f12.6)')
+        call de_alloc( xang, name='xang', routine='struct_init' )
+
         call cmlAddLattice(xf=mainXML, cell=ucell, 
      .       units='siestaUnits:angstrom', dictref='siesta:ucell')
         call cmlAddProperty(xf=mainXML, property=trim(shape), 

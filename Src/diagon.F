@@ -95,14 +95,16 @@ C
       use precision
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
-      use fdf
       use densematrix,  only : Haux, Saux, psi
+      use sys,          only : die
+      use m_diagon,     only : qspiral, spiral, frstme
+      use fdf
       use alloc
       use m_memory
-      use sys, only: die
 #ifdef MPI
+      use m_diagon,     only : paralleloverk
       use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
-     $                         mpi_logical
+     &                         mpi_logical
 #endif
 
       implicit none
@@ -121,35 +123,21 @@ C
      .  qo(maxo,maxspn,nk), qtot, S(maxnh), temp, wk(nk), occtol,
      .  xij(3,maxnh), qs(nspin), efs(nspin)
      
-      real(dp), save :: qspiral(3)
-
       logical
      .  fixspin, gamma, getD, getPSI
-
-      logical, save :: spiral 
-      logical, save :: frstme = .true.
 
       external
      .  diagg, diagk, diag2g, diag2k, io_assign, io_close,
      .  readsp, diagsprl
 
 #ifdef MPI
-      integer
-     .  MPIerror
-      external
-     .  diagkp
+      integer            :: MPIerror
+      external           :: diagkp
 #endif
+      integer            :: io, iuo, naux, nhs, npsi, nuo
+      real(dp),  pointer :: aux(:)
+      integer,   pointer :: muo(:)
 
-      integer
-     .  io, iuo, naux, nhs, npsi, nuo
-
-C Dynamic arrays
-      real(dp), dimension(:), allocatable, save :: aux
-      integer,  dimension(:), allocatable, save :: muo
-
-#ifdef MPI
-      logical, save :: ParallelOverK
-#endif
 C  ....................
 
 C First call initialisation
@@ -208,13 +196,11 @@ C Check internal dimensions ..........................................
       endif
 
 C Allocate local arrays
-      call re_alloc(Haux,1,nhs,name='Haux',routine='diagon')
-      call re_alloc(Saux,1,nhs,name='Saux',routine='diagon')
-      call re_alloc(psi,1,npsi,name='psi',routine='diagon')
-      allocate(aux(naux),stat=mem_stat)
-      call memory('A','D',naux,'diagon',stat=mem_stat)
-      allocate(muo(nuo),stat=mem_stat)
-      call memory('A','I',nuo,'diagon',stat=mem_stat)
+      call re_alloc( Haux, 1, nhs,  name='Haux', routine='diagon' )
+      call re_alloc( Saux, 1, nhs,  name='Saux', routine='diagon' )
+      call re_alloc( psi,  1, npsi, name='psi',  routine='diagon' )
+      call re_alloc( aux,  1, naux, name='aux',  routine='diagon' )
+      call re_alloc( muo,  1, nuo,  name='muo',  routine='diagon' )
 
 C Check indxuo
       do iuo = 1,nuo
@@ -299,10 +285,8 @@ C Call apropriate routine
       endif
 
 C Free local arrays
-      call memory('D','I',size(muo),'diagon',stat=mem_stat)
-      deallocate(muo,stat=mem_stat)
-      call memory('D','I',nuo,'diagon',stat=mem_stat)
-      deallocate(aux,stat=mem_stat)
+      call de_alloc( aux, name='aux', routine='diagon' )
+      call de_alloc( muo, name='muo', routine='diagon' )
 
 C Stop time counter
       call timer( 'diagon', 2 )

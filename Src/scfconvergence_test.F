@@ -22,6 +22,7 @@
       real(dp):: dEmax
 
 !------------------------------------------------------------------------- BEGIN
+          call timer( 'SCFconv', 1 )
           ! convergence test
           DEna = Enascf - Enaatm
           Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec+Emad+Emm+
@@ -40,7 +41,6 @@
           else
             if (dDmax.lt.dDtol) last = .true.
           endif
-
 
           ! Print energies
           if (IOnode) then
@@ -61,7 +61,7 @@
             call pxfflush(6)
             call wallclock("-------------- end of scf step")
           endif
-
+          call timer( 'SCFconv', 2 )
 !--------------------------------------------------------------------------- END
       END subroutine scfconvergence_test
       end module m_scfconvergence_test

@@ -20,4 +20,21 @@ C
       real(dp), pointer, save :: Saux(:)
       real(dp), pointer, save :: psi(:)
 
+      CONTAINS
+
+      subroutine resetDenseMatrix( )
+      use alloc, only : de_alloc
+      implicit none
+      CHARACTER(LEN=*), PARAMETER :: MYNAME = 'resetDenseMatrix'
+
+      if (associated(Haux))
+     &  call de_alloc( Haux, name='Haux', routine=MYNAME )
+
+      if (associated(Saux))
+     &  call de_alloc( Saux, name='Saux', routine=MYNAME )
+
+      if (associated(psi))
+     &  call de_alloc( psi, name='psi', routine=MYNAME )
+
+      end subroutine resetDenseMatrix
       end module densematrix

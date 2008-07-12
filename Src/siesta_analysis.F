@@ -38,7 +38,6 @@
       use m_gamma 
       use alloc,             only: re_alloc, de_alloc
       use basis_enthalpy,    only: write_basis_enthalpy
-      use moreMeshSubs,      only: resetMeshDistr
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -321,11 +320,15 @@
       endif
 
 C     Find local density of states
+#ifdef DEBUG
+        call write_debug( '    Pre local_DOS' )
+#endif
       call local_DOS()
 
 C     Reset mesh distributions
-      call resetMeshDistr( )
-
+#ifdef DEBUG
+        call write_debug( '    Pre resetMeshDistr' )
+#endif
       call de_alloc( ebk, name="ebk")
 
 !--------------------------------------------------------------------------- END

@@ -10,6 +10,198 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-12 13:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-31
+
+Summary: Integration of grid-work by Rogeli Grima up to May 20, 2008
+
+Commit log for ref@bsc--2007/siesta-bsc--grid-work--2.3--patch-4
+Integration of work by Rogeli Grima up to April 10, 2008
+
+
+* More "reset" routines to liberate arrays from several
+  modules in a new routine "siesta_end":
+
+      use m_pulay,         only : resetPulayArrays
+      use moreMeshSubs,    only : resetMeshDistr
+      use densematrix,     only : resetDenseMatrix
+      use sparse_matrices, only : resetSparseMatrices
+      use m_matel,         only : resetMatelArrays
+      use meshdscf,        only : resetDscfPointers
+      use m_diagon,        only : resetDiagonPointers
+      use m_fixed,         only : resetFixedPointers
+
+* Use explicit upper bounds in arrays when they are arguments of a routine,
+  instead of the a(lb:) syntax (atom.f, initatom.f...)
+
+* Turn matel into a module and make {x,y,z}phiatom private routines.
+
+* Use pointers instead of allocatable arrays in more places (this task is not yet completed).
+
+* Cosmetic changes (whitespace) in several places.
+
+Assorted Bug fixes:
+
+* It is now possible to compile the code in serial form.
+
+* Bug fix in dipole and efield: The new option to partition the mesh
+along X was not taken into account.
+
+* Bug fix in dhscf: Upon entry to cellxc, the data should be in "non-clustered" form.
+
+* Extra auxiliary array in the call to integrator in arwf.
+
+* parallelsubs and rhooda now have extension .F since they contain (temporarily?) preprocessor 
+  directives.
+
+* distriphionmesh.F : some re-ordering of preprocessor ifdefs to avoid undeclared (or not set intent(out))
+  variables in serial compilation.
+
+   [ Some problems remain:
+                                Array BOX is wrongly dimensioned when using 1 processor.
+                                Efield code does not work well yet
+   ]
+
+Commit log for ref@bsc--2007/siesta-bsc--grid-work--2.3--patch-5
+Some changes by Rogeli, up to May 20, 2008
+
+arw:    Conversion to dp
+distriphionmesh:  mpi defs
+efield:  Cosmetics 
+normalize_dm: cosmetics 
+overlap:  Initialize Si (not really needed) + cosmetics
+scfconvergence_test: timing cosmetics
+siesta_forces: remove timing of scf_convergence_test
+
+
+Commit log for ref@bsc--2007/siesta-bsc--grid-work--2.3--patch-6
+Added MPI interfaces for eight-byte integers
+
+recomputelmesh.F and moremeshsubs.F need to use eight-byte integers. Added
+the proper MPI interfaces. 
+
+Precision.F now defines the parameter "i8b" to represent eight-byte integers.
+
+NOTE: For maximum portability, we need to replace "integer*8" by the
+appropriate kind in "MPI/generate.sh".
+
+(+ updated CHANGES file with documentation of latest commits)
+
+2008-02-14 10:44:41 GMT	Alberto Garcia <albertog@icmab.es>	patch-30
+
+Summary: Merge of grid-load-balancing work by R. Grima
+
+The grid is now split across all three dimensions.
+New distribution "yes/or/no" optimal for cellxc, plus stencil
+capabilities.
+
+* Initmesh:
+C     Reset previous mesh distributions
+      call resetMeshDistr( )
+C     Create the first mesh distribution
+      call initMeshDistr( nm=nm, oDistr=oDistr )
+C     Find and sets local number of Mesh points of each kind
+      call setMeshDistr( oDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+
+
+* distriPhiOnMesh:
+   We compute numphi: "number of orbitals with weight on each grid point"
+
+   Routine initMeshDistr creates two new partitions:
+
+     -> distribution 2: For rhoofd and vmat. load=numphi^2
+     -> distribution 3: For cellxc. load : if (numphi>0) load=1 else load=0
+
+   If we need a stencil in cellxc, we will also set up a communications list 
+   with initMeshExtencil.
+
+* dhscf_init
+    call setMeshDistr( 2,...) => We fix the 2nd distribution to generate  "Phi"
+
+    call setMeshDistr( 1,...) => We select the 1st (uniform) distribution to call 
+                                 Poison
+    call distMeshData( 2, rhoatm, 1, rhoatm_seq, +1 ) => We switch rhoatm,
+    which is in "clustered mode" and with the 2nd distribution, to sequential
+    mode and the 1st distribution.
+
+    Finally we move back to the 2nd distribution
+
+* dhscf:
+    call rhoofd
+
+    call setMeshDistr( 1 )
+    call distMeshData( 2, DRho, 1, DRho_seq, +1 )
+
+    call poison
+
+    call distMeshData( 1,Vscf_seq,2, Vaux, -1 )
+    call setMeshDistr( 3 )
+    call distMeshData( 2, DRho,3, DRho_gga, 0 )
+
+    call cellxc
+
+    call setMeshDistr( 2 )
+    call distMeshData( 3, Vscf_gga, 2, Vscf, 0 )
+
+    call vmat
+
+* cellxc
+    Now it is possible to acquire the stencils of neighboring domains
+    using different partitions
+
+    call distExtMeshData -> move data from "Dens" to "bdens"
+    call gathExtMeshData -> move data from "Bvxc" to "VXC"
+
+ALSO
+
+* Experimental fix to cgwf.F by P. Ordejon, to increase stability
+  of the O(N) algorithm.
+
+2007-11-07 16:08:40 GMT	Alberto Garcia <albertog@icmab.es>	patch-29
+
+Summary:  Merge changes in Rogeli's archive
+
+Patches applied:
+
+ * ag@bsc--2007/setupH--agarcia--2.3--base-0
+   tag of rgrima@bsc--2007/siesta-bsc--rgrima--2.3--patch-3
+
+ * ag@bsc--2007/setupH--agarcia--2.3--patch-1
+   Create xalast unconditionally in siesta_move
+
+ * ag@bsc--2007/setupH--agarcia--2.3--patch-2
+   Split of dhscf
+
+ * ag@bsc--2007/setupH--agarcia--2.3--patch-3
+   Fix bug in harrisfun ifor flag
+
+ * ag@bsc--2007/setupH--agarcia--2.3--patch-4
+   Cosmetic changes to dhscf.F
+
+ * rgrima@bsc--2007/siesta-bsc--rgrima--2.3--base-0
+   tag of ref@bsc--2007/siesta-bsc--master--2.3--patch-26
+
+ * rgrima@bsc--2007/siesta-bsc--rgrima--2.3--patch-1
+   Split of setup_hamiltonian
+
+ * rgrima@bsc--2007/siesta-bsc--rgrima--2.3--patch-2
+   Fix bug in setup_hamiltonian
+
+ * rgrima@bsc--2007/siesta-bsc--rgrima--2.3--patch-3
+   Go back on marenostrum.make changes
+
+ * rgrima@bsc--2007/siesta-bsc--rgrima--2.3--patch-4
+   Merge of changes to dhscf.F during ICMAB session 26 July
+
+2007-08-21 08:26:17 GMT	Alberto Garcia <albertog@icmab.es>	patch-28
+
+Summary: Fix array bound error in old_atmfuncs.f
+
+Patches applied:
+
+ * agarcia@siesta.arch--2006/siesta--optim-md--2.4--patch-14
+   Fix array bound error in old_atmfuncs.f
+
+
 2007-06-12 12:50:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-27
 
 Summary: Added some load-balancing tests

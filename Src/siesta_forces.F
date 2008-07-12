@@ -88,9 +88,7 @@ C       Will use H0 computed above
 #ifdef DEBUG
         call write_debug( '  PRE scfconvergence_test' )
 #endif
-        call timer( 'SCFconv', 1 )
         call scfconvergence_test( first, iscf, last, dDmax )
-        call timer( 'SCFconv', 2 )
 
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )

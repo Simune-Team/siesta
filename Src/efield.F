@@ -83,17 +83,17 @@ C Internal variables
       logical,  save :: frstme = .true.
       character         eunits*10, shape*8, line*130, names*20
       integer           i0(3), i1, i2, i3, ia, imesh, int(1),
-     $                  is, iu, ix,
-     .                  j1, j2, j3, last, lc(0:1), 
-     .                  nbcell, ni, nn, nr, nv, meshl(3),
-     .                  Yoffset, Zoffset, i30, i20
+     &                  is, iu, ix,
+     &                  j1, j2, j3, last, lc(0:1), 
+     &                  nbcell, ni, nn, nr, nv, meshl(3),
+     &                  Xoffset, Yoffset, Zoffset, i30, i20, i10
 #ifdef MPI
       integer           MPIerror, npl
 #endif
       real(dp)          b1xb2(3), bcell(3,3), cfactor, dplane(3),
-     .                  e(3), e0(3), eb1, eb2, eb3,
-     .                  f(3), rc, rcell(3,3), v0,
-     .                  xfrac, xmax(3), xmean, xmin(3)
+     &                  e(3), e0(3), eb1, eb2, eb3,
+     &                  f(3), rc, rcell(3,3), v0,
+     &                  xfrac, xmax(3), xmean, xmin(3)
       save              e, f, isfield, i0, v0
 
 C Find and store the electric field only the first time
@@ -217,23 +217,14 @@ C the potential is zero at the center of the cell
       endif        
 
       if (isfield) then
-#ifdef MPI
         meshl(1) = (meshLim(2,1) - meshLim(1,1)+1)*nsm
         meshl(2) = (meshLim(2,2) - meshLim(1,2)+1)*nsm
         meshl(3) = (meshLim(2,3) - meshLim(1,3)+1)*nsm
 
 C Calculate starting point for grid
-      Yoffset = (meshLim(1,2)-1)*nsm
-      Zoffset = (meshLim(1,3)-1)*nsm
-#else
-        meshl(1) = meshG(1)
-        meshl(2) = meshG(2)
-        meshl(3) = meshG(3)
-
-C Calculate starting point for grid
-      Yoffset = 0
-      Zoffset = 0
-#endif
+        Xoffset = (meshLim(1,1)-1)*nsm
+        Yoffset = (meshLim(1,2)-1)*nsm
+        Zoffset = (meshLim(1,3)-1)*nsm
 
 C Add the electric field potential to the input potential
         imesh = 0
@@ -243,9 +234,11 @@ C Add the electric field potential to the input potential
           i20 = Yoffset - 1
           do i2 = 0,meshl(2)-1
             i20 = i20 + 1
+            i10 = Yoffset - 1
             do i1 = 0,meshl(1)-1
+              i10 = i10 + 1
               imesh = imesh + 1
-              j1 = mod( i1-i0(1)+10*meshG(1), meshG(1) )
+              j1 = mod( i10-i0(1)+10*meshG(1), meshG(1) )
               j2 = mod( i20-i0(2)+10*meshG(2), meshG(2) )
               j3 = mod( i30-i0(3)+10*meshG(3), meshG(3) )
               v(imesh) = v(imesh) + v0 + f(1)*j1 + f(2)*j2 + f(3)*j3

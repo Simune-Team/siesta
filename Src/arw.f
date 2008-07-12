@@ -21,8 +21,6 @@
 !     SUBROUTINE CNFIG   ---> moved to periodic_table.f
 !***********************************************************************
 
-
-
       SUBROUTINE EGOFV(H,S,NR,E,G,Y,L,Z,A,B,RMAX,NPRIN,NNODE,DGDR)
 !***********************************************************************
 ! Finds the radial atomic wavefunction and energy for a given potential, 
@@ -52,18 +50,19 @@
 ! Auxiliary:
 !   real*8  Y(NR) : Intermediate array used in the Numerov method
 !***********************************************************************
-      USE PARALLEL, ONLY: IONODE
-      use sys, only: die
+      use parallel,  only: ionode
+      use sys,       only: die
+      use precision, only: dp
 
       IMPLICIT NONE
       INTEGER          :: NR, L, NPRIN, NNODE
-      DOUBLE PRECISION :: H(NR), S(NR), E, G(NR), Y(NR),
-     .                    Z, A, B, RMAX, DGDR
+      real(dp)         :: H(NR), S(NR), E, G(NR), Y(NR),
+     &                    Z, A, B, RMAX, DGDR
 
       INTEGER,         PARAMETER :: MAXITER = 40    ! Max. iterations
-      DOUBLE PRECISION,PARAMETER :: TOL     = 1.D-5 ! Convergence tol.
+      real(dp)        ,PARAMETER :: TOL     = 1.D-5 ! Convergence tol.
       INTEGER          :: I, NCOR, NITER, NN, NN1, NN2
-      DOUBLE PRECISION :: DE, DE12, E1, E2, T
+      real(dp)         :: DE, DE12, E1, E2, T
 
       NCOR=NPRIN-L-1
       NN=NNODE
@@ -71,61 +70,63 @@
       NN2=NNODE-1
       E1=E
       E2=E
-      DE12=0.5D0 ! Initial bracketing energy range
+!     Initial bracketing energy range
+      DE12=0.5D0
       DE=0.D0
       DO NITER = 1,MAXITER+1
-        E=E+DE  ! New energy estimate from YOFE
+!       New energy estimate from YOFE
+        E=E+DE
         IF (E.GT.E1 .AND. E.LT.E2 .AND.
-     .      NN.GE.NNODE-1 .AND. NN.LE.NNODE) THEN
-          ! New energy and number of nodes are within desired ranges
+     &      NN.GE.NNODE-1 .AND. NN.LE.NNODE) THEN
+!         New energy and number of nodes are within desired ranges
           IF (ABS(DE).LT.TOL) EXIT ! NITER loop converged
-        ELSE  ! Use bisection to force energy within range
+        ELSE
+!         Use bisection to force energy within range
           E=0.5D0*(E1+E2)
         END IF
-        ! Find wavefunction Y for energy E, and new energy estimate E+DE
-        CALL YOFE(E,DE,DGDR,RMAX,H,S,Y,NR,L,NCOR,NN,Z,A,B)
+!       Find wavefunction Y for energy E, and new energy estimate E+DE
+        CALL YOFE(E, DE, DGDR, RMAX, H, S, Y, NR, L, NCOR, NN, Z, A, B)
         IF (NN.LT.NNODE) THEN
-          ! Too few nodes. Increase lower energy bound
+!         Too few nodes. Increase lower energy bound
           E1=E
           NN1=NN
           IF (NN2.LT.NNODE) THEN
-            ! Energy not yet bracketed. Increase higher energy bound
+!           Energy not yet bracketed. Increase higher energy bound
             DE12=DE12*2.D0
             E2=E1+DE12
           END IF
         ELSE
-          ! Too many nodes. Decrease higher energy bound
+!         Too many nodes. Decrease higher energy bound
           E2=E
           NN2=NN
           IF (NN1.GE.NNODE) THEN
-            ! Energy not yet bracketed. Decrease lower energy bound
+!           Energy not yet bracketed. Decrease lower energy bound
             DE12=DE12*2.D0
             E1=E2-DE12
           END IF
         END IF
       END DO ! NITER
 
-      ! No-convergence error exception
+!     No-convergence error exception
       IF (NITER.GT.MAXITER) THEN
         IF (IOnode) WRITE(6,'(A,/,A,F3.0,2(A,I2),2(A,F12.5))')
-     .   ' EGOFV: ERROR: Too many iterations. Stopping.',
-     .   ' Z=',Z,'  L=',L,'  NNODE=',NNODE,'  E=',E,'  DE=',DE
+     &   ' EGOFV: ERROR: Too many iterations. Stopping.',
+     &   ' Z=',Z,'  L=',L,'  NNODE=',NNODE,'  E=',E,'  DE=',DE
         call die()
       END IF
 
-      ! Find true waveftn G from auxiliary function Y and normalize
+!     Find true waveftn G from auxiliary function Y and normalize
       G(1) = 0.D0
       DO I=2,NR
         T=H(I)-E*S(I)
         G(I)=Y(I)/(1.D0-T/12.D0)
       END DO
       CALL NRMLZG(G,S,NR)
-
       END SUBROUTINE EGOFV
 
 
-
-      SUBROUTINE YOFE(E,DE,DGDR,RMAX,H,S,Y,NR,L,NCOR,NNODE,Z,A,B)
+      SUBROUTINE YOFE( E, DE, DGDR, RMAX, H, S, Y, NR, L,
+     &                 NCOR, NNODE, Z, A, B )
 !***********************************************************************
 ! Integrates the radial Scroedinger equation for a given energy
 ! Input:
@@ -154,16 +155,19 @@
 !                     Y(j)=G(j)*(12-H(j)+E*S(j))/12
 !   integer NNODE : Actual number of nodes of wavefunction
 !***********************************************************************
+      use precision, only: dp
       IMPLICIT NONE
-      INTEGER          :: NR, L, NCOR, NNDIN, NNODE
-      DOUBLE PRECISION :: E, DE, DGDR, RMAX, H(NR), S(NR), Y(NR),
-     .                    Z, A, B
+      INTEGER,           intent(in) :: NR, L, NCOR
+      INTEGER,          intent(out) :: NNODE
+      real(dp)        ,  intent(in) :: E, DGDR, RMAX, H(NR), S(NR),
+     &                                 Z, A, B
+      real(dp)        , intent(out) :: DE, Y(NR)
 
-      DOUBLE PRECISION,PARAMETER:: TMAX  =1.D0 ! Max negative kin engy
-      DOUBLE PRECISION,PARAMETER:: DLGMAX=1.D3 ! Max log deriv at Rmax
-      INTEGER          :: KNK, NR0
-      DOUBLE PRECISION :: GIN, GOUT, GSG, GSGIN, GSGOUT, RATIO, 
-     .                    T, XIN, XOUT, Y2, YN, ZDR
+      real(dp)        ,PARAMETER:: TMAX  =1.D0 ! Max negative kin engy
+      real(dp)        ,PARAMETER:: DLGMAX=1.D3 ! Max log deriv at Rmax
+      INTEGER          :: KNK, NR0, NNDIN
+      real(dp)         :: GIN, GOUT, GSG, GSGIN, GSGOUT, RATIO, 
+     &                    T, XIN, XOUT, Y2, YN, ZDR
 
       ! Find where the negative kinetic energy H-ES becomes too large
       ! and make Y=0 beyond that point
@@ -178,7 +182,7 @@
 
       ! Integrate Schroedinger equation outwards
       KNK=NR0  ! A new value for the kink position KNK will be returned
-      CALL NUMOUT(E,H,S,Y,NCOR,KNK,NNODE,Y2,GOUT,GSGOUT,XOUT)
+      CALL NUMOUT(E, H, S, Y, NCOR, KNK, NNODE, Y2, GOUT, GSGOUT, XOUT)
 
       ! Find if kinetic energy is sufficiently non negative to use
       ! Numerov at Rmax. Otherwise use zero-value boundary condition
@@ -205,7 +209,6 @@
       ! Find the number of nodes
       NNODE=NNODE+NNDIN
       IF (DE.LT.0.D0) NNODE=NNODE+1
-
       END SUBROUTINE YOFE
 
 
@@ -224,15 +227,22 @@
 ! Output:
 !   real*8  G(N) : Normalized wavefunction
 !***********************************************************************
-
+      use alloc,     only: re_alloc, de_alloc
+      use precision, only: dp
       IMPLICIT NONE
-      INTEGER          :: N
-      DOUBLE PRECISION :: G(N), S(N)
+      INTEGER                   :: N
+      real(dp)                  :: G(N), S(N)
 
-      INTEGER          :: I
-      DOUBLE PRECISION :: NORM, SRNRM
+      INTEGER                   :: I
+      real(dp)                  :: NORM, SRNRM
+      real(dp)        , POINTER :: gaux(:)
 
-      call integrator(g(1:n)*g(1:n),s,n,norm)
+      call re_alloc( gaux, 1, N, name='gaux', routine='NRMLZG' )
+      gaux = g*g
+
+      call integrator(gaux,s,n,norm)
+
+      call de_alloc( gaux, name='gaux', routine='NRMLZG' )
 
       ! Normalize wavefunction
       SRNRM = SQRT(NORM)
@@ -271,12 +281,12 @@
 ! - For L=1, G and G' vanish at the origin, but G'' and Y are finite
 ! - For L>1, G, G', G'', and Y all vanish at the origin
 !************************************************************************
-
+      use precision, only: dp
       IMPLICIT NONE
       INTEGER          :: L
-      DOUBLE PRECISION :: E, H(3), S(3), ZDR, Y2
+      real(dp)         :: E, H(3), S(3), ZDR, Y2
 
-      DOUBLE PRECISION :: C0, C1, C2, D2, T2, T3
+      real(dp)         :: C0, C1, C2, D2, T2, T3
 
       T2=H(2)-E*S(2)
       D2=-((24.D0+10.D0*T2)/(12.D0-T2))
@@ -323,12 +333,12 @@
 !   real*8  YN   : Value at j=N of the Numerov function, related to G
 !                  above by   Y(j)=G(j)*(12-H(j)+E*S(j))/12
 !************************************************************************
-
+      use precision, only: dp
       IMPLICIT NONE
       INTEGER          :: N
-      DOUBLE PRECISION :: E, DGDR, RMAX, H(N+1), S(N+1), YN, A, B
+      real(dp)         :: E, DGDR, RMAX, H(N+1), S(N+1), YN, A, B
 
-      DOUBLE PRECISION :: BETA, C1, C2, C3, DG, DN, TN, TNM1, TNP1
+      real(dp)         :: BETA, C1, C2, C3, DG, DN, TN, TNM1, TNP1
 
       TNM1=H(N-1)-E*S(N-1)
       TN  =H(N  )-E*S(N  )
@@ -375,13 +385,13 @@
 !   integer KNK   : Made equal to NR-2 if the input value is larger
 ! Algorithm: see routine NUMOUT
 !***********************************************************************
-
+      use precision, only: dp
       IMPLICIT NONE
       INTEGER          :: NR, NNODE, KNK
-      DOUBLE PRECISION :: E, H(NR), S(NR), Y(NR), YN, G, GSG, DY
+      real(dp)         :: E, H(NR), S(NR), Y(NR), YN, G, GSG, DY
 
       INTEGER          :: I
-      DOUBLE PRECISION :: T
+      real(dp)         :: T
 
       Y(NR)=YN
       T=H(NR)-E*S(NR)
@@ -407,9 +417,7 @@
       END SUBROUTINE NUMIN
 
 
-
-
-      SUBROUTINE NUMOUT(E,H,S,Y,NCOR,KNK,NNODE,Y2,G,GSG,DY)
+      SUBROUTINE NUMOUT( E, H, S, Y, NCOR, KNK, NNODE, Y2, G, GSG, DY )
 !***********************************************************************
 ! Integrates Schroedinger's equation outwards, using Numerov's method,
 ! up to the first maximum of psi after NCOR nodes
@@ -445,36 +453,41 @@
 ! Then, defining y(j)=(1-t(j)/12)*g(j) and after some simple algebra
 !   dy(j) = y(j+1)-y(j) = t(j)*g(j) + y(j)-y(j-1) = t(j)*g(j) + dy(j-1)
 !***********************************************************************
+      use precision, only: dp
       IMPLICIT NONE
-      INTEGER          :: NCOR, KNK, NNODE
-      DOUBLE PRECISION :: E, H(KNK), S(KNK), Y(KNK), Y2, G, GSG, DY
+!     Input/Output variables
+      INTEGER,           intent(in) :: NCOR
+      INTEGER,        intent(inout) :: KNK
+      INTEGER,          intent(out) :: NNODE
+      real(dp)        ,  intent(in) :: E, H(KNK), S(KNK), Y2
+      real(dp)        , intent(out) :: Y(KNK), G, GSG, DY
+!     Local variables
+      INTEGER                       :: I
+      real(dp)                      :: DYL, T
 
-      INTEGER          :: I
-      DOUBLE PRECISION :: DYL, T
-
-      Y(1)=0.D0
-      Y(2)=Y2
-      T=H(2)-E*S(2)
-      G=Y(2)/(1.D0-T/12.D0)
-      GSG=G*S(2)*G
-      Y(3)=1.D0
-      T=H(3)-E*S(3)
-      G=Y(3)/(1.D0-T/12.D0)
-      GSG=GSG+G*S(3)*G
-      DY=Y(3)-Y(2)
-      NNODE=0
-      DO I = 4,KNK-4
-        DYL=DY
-        DY=DY+T*G
-        Y(I)=Y(I-1)+DY
-        IF( Y(I)*Y(I-1) .LT. 0.D0) NNODE=NNODE+1
-        T=H(I)-E*S(I)
-        G=Y(I)/(1.D0-T/12.D0)
-        GSG=GSG+G*S(I)*G
+      Y(1)  = 0.D0
+      Y(2)  = Y2
+      T     = H(2)-E*S(2)
+      G     = Y(2)/(1.D0-T/12.D0)
+      GSG   = G*S(2)*G
+      Y(3)  = 1.D0
+      T     = H(3)-E*S(3)
+      G     = Y(3)/(1.D0-T/12.D0)
+      GSG   = GSG+G*S(3)*G
+      DY    = Y(3)-Y(2)
+      NNODE = 0
+      DO I= 4, KNK-4
+        DYL  = DY
+        DY   = DY+T*G
+        Y(I) = Y(I-1)+DY
+        IF( Y(I)*Y(I-1) .LT. 0.D0) NNODE = NNODE + 1
+        T   = H(I)-E*S(I)
+        G   = Y(I)/(1.D0-T/12.D0)
+        GSG = GSG+G*S(I)*G
         ! End loop if |Y(j)| has a maximum after NCOR nodes
         IF (NNODE.GE.NCOR .AND. DYL*DY.LE.0.D0) EXIT
       END DO
-      KNK=MIN(I,KNK-4)
+      KNK = MIN(I,KNK-4)
 
       END SUBROUTINE NUMOUT
 
@@ -499,13 +512,17 @@
 !                       where Q is the integral of rho up to R(NR)
 ! Algorithm: see routine NUMOUT
 !***********************************************************************
+      use precision, only: dp
+      use alloc,     only: re_alloc, de_alloc
       IMPLICIT NONE
       INTEGER          :: NR
-      DOUBLE PRECISION :: R2RHO(NR),V(NR),R(NR),DRDI(NR),SRDRDI(NR),A
+      real(dp)         :: R2RHO(NR),V(NR),R(NR),DRDI(NR),SRDRDI(NR),A
 
       INTEGER          :: IR
-      DOUBLE PRECISION :: A2BY4, BETA, DV, DY, DZ, Q, QBYY, QPARTC, QT, 
+      real(dp)         :: A2BY4, BETA, DV, DY, DZ, Q, QBYY, QPARTC, QT, 
      .                    T, V0, Y, YBYQ
+      real(dp)        , POINTER :: gaux(:)
+
 
       ! Find some constants
       A2BY4=A*A/4.D0
@@ -517,8 +534,12 @@
       ! QT = Int(4*pi*r**2*rho*dr) = Int((4*pi*r**2*rho)*(dr/di)*di)
       ! V0 = Int(4*pi*r*rho*dr) =  Int((4*pi*r**2*rho)/r*(dr/di)*di)
 
-      call integrator(r2rho(2:nr),drdi(2:nr),nr-1,QT)
-      call integrator(r2rho(2:nr)/r(2:nr),drdi(2:nr),nr-1,V0)
+      call integrator(r2rho(2),drdi(2),nr-1,QT)
+
+      call re_alloc( gaux, 2, NR, name='gaux', routine='VHRTRE' )
+      gaux = r2rho(2:nr)/r(2:nr)
+      call integrator( gaux, drdi(2), nr-1, V0 )
+      call de_alloc( gaux, name='gaux', routine='VHRTRE' )
 
       ! Fix V(1) and V(2) to start Numerov integration. To find a 
       ! particular solution of the inhomog. eqn, V(2) is fixed by 
@@ -571,13 +592,13 @@
 ! Output:
 !   real*8  VAL   : Value of the integral
 !***********************************************************************
-
+      use precision, only: dp
       IMPLICIT NONE
       INTEGER          :: NP
-      DOUBLE PRECISION :: F(NP), S(NP)
+      real(dp)         :: F(NP), S(NP)
 
       INTEGER          :: I, N
-      DOUBLE PRECISION :: VAL
+      real(dp)         :: VAL
 
       IF (MOD(NP,2).EQ.1) THEN        
          N = NP               ! ODD
@@ -616,5 +637,4 @@
      $      (3.D0/8.D0) * ( (F(I)*S(I) + F(I+3)*S(I+3)) +
      $         3.D0 * (F(I+1)*S(I+1) + F(I+2)*S(I+2)) )
       ENDIF
-
       END SUBROUTINE INTEGRATOR

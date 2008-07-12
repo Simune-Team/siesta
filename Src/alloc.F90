@@ -10,13 +10,12 @@
 !
 MODULE alloc
 
-      use precision, only: sp, dp
-      use parallel,   only : Node, Nodes, ionode
-      use sys, only: die
+      use precision, only : sp, dp
+      use parallel,  only : Node, Nodes, ionode
+      use sys,       only : die
 #ifdef MPI
       use mpi_siesta
 #endif
-
 ! ==================================================================
 ! Allocation, reallocation, and deallocation utility routines
 ! Written by J.M.Soler. May 2000.
@@ -179,7 +178,7 @@ interface de_alloc
   module procedure dealloc_d1, dealloc_d2, dealloc_d3, dealloc_d4, &
                    dealloc_i1, dealloc_i2, dealloc_i3,             &
                    dealloc_l1, dealloc_l2, dealloc_l3,             &
-                   dealloc_s1,                         &
+                   dealloc_s1, dealloc_E1,                         &
                    dealloc_r1, dealloc_r2, dealloc_r3, dealloc_r4, &
                    dealloc_z1, dealloc_z2
 end interface
@@ -189,7 +188,7 @@ interface re_alloc
     realloc_d1,  realloc_i1,  realloc_l1,  realloc_r1,  realloc_z1, &
     realloc_d2,  realloc_i2,  realloc_l2,  realloc_r2,  realloc_z2, &
     realloc_d3,  realloc_i3,  realloc_l3,  realloc_r3,  realloc_r4, &
-    realloc_d4,                                         &
+    realloc_d4,  realloc_E1,                                        &
     realloc_s1                                         
 !AG: Dangerous!!!    realloc_d2s, realloc_i2s, realloc_l2s, realloc_r2s, &
 !   realloc_d3s, realloc_i3s, realloc_l3s, realloc_r3s, &
@@ -467,6 +466,67 @@ if (NEEDS_COPY) then
   deallocate(old_array)
 end if
 END SUBROUTINE realloc_i3
+! ==================================================================
+SUBROUTINE realloc_E1( array, i1min, i1max, &
+                       name, routine, copy, shrink )
+! Arguments
+implicit none
+integer*8, dimension(:),    pointer    :: array
+integer,                    intent(in) :: i1min
+integer,                    intent(in) :: i1max
+character(len=*), optional, intent(in) :: name
+character(len=*), optional, intent(in) :: routine
+logical,          optional, intent(in) :: copy
+logical,          optional, intent(in) :: shrink
+
+! Internal variables and arrays
+character, parameter                   :: type='I'
+integer, parameter                     :: rank=1
+integer*8, dimension(:), pointer       :: old_array
+integer, dimension(2,rank)             :: b, c, new_bounds, old_bounds
+
+! Get old array bounds
+ASSOCIATED_ARRAY = associated(array)
+if (ASSOCIATED_ARRAY) then
+  old_array => array          ! Keep pointer to old array
+  old_bounds(1,:) = lbound(old_array)
+  old_bounds(2,:) = ubound(old_array)
+end if
+
+! Copy new requested array bounds
+new_bounds(1,:) = (/ i1min /)
+new_bounds(2,:) = (/ i1max /)
+
+! Find if it is a new allocation or a true reallocation,
+! and if the contents need to be copied (saved)
+! Argument b returns common bounds
+! Options routine also reads common variable ASSOCIATED_ARRAY,
+! and it sets NEEDS_ALLOC, NEEDS_DEALLOC, and NEEDS_COPY
+call options( b, c, old_bounds, new_bounds, copy, shrink )
+
+! Deallocate old space
+if (NEEDS_DEALLOC .and. .not.NEEDS_COPY) then
+  call alloc_count( -size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+
+! Allocate new space
+if (NEEDS_ALLOC) then
+  allocate( array(b(1,1):b(2,1)), stat=IERR )
+  call alloc_err( IERR, name, routine, new_bounds )
+  call alloc_count( size(array), type, name, routine )
+  array = 0
+end if
+
+! Copy contents and deallocate old space
+if (NEEDS_COPY) then
+  array(c(1,1):c(2,1)) = old_array(c(1,1):c(2,1))
+  call alloc_count( -size(old_array), type, name, routine ) 
+  deallocate(old_array)
+end if
+
+END SUBROUTINE realloc_E1
+
 ! ==================================================================
 SUBROUTINE realloc_r1( array, i1min, i1max,        &
                        name, routine, copy, shrink )
@@ -1236,6 +1296,22 @@ if (associated(array)) then
 end if
 END SUBROUTINE dealloc_i3
 ! ==================================================================
+SUBROUTINE dealloc_E1( array, name, routine )
+
+! Arguments
+implicit none
+integer*8, dimension(:),      pointer    :: array
+character(len=*), optional, intent(in) :: name
+character(len=*), optional, intent(in) :: routine
+
+if (associated(array)) then
+  call alloc_count( -size(array), 'I', name, routine ) 
+  deallocate(array)
+end if
+
+END SUBROUTINE dealloc_E1
+
+! ==================================================================
 SUBROUTINE dealloc_r1( array, name, routine )
 implicit none
 real(SP), dimension(:),     pointer    :: array
@@ -1463,6 +1539,7 @@ implicit none
 
 integer, intent(in)          :: delta_size  ! +/-size(array)
 character, intent(in)        :: type        ! 'I' => integer
+                                            ! 'E' => integer*8
                                             ! 'R' => real*4
                                             ! 'D' => real*8
                                             ! 'L' => logical
@@ -1512,12 +1589,12 @@ if (present(name)) then
 else
   aname = DEFAULT_NAME
 end if
+
 MAX_LEN = max( MAX_LEN, len(trim(aname)) )
 
 ! Find memory increment and total allocated memory
 delta_mem = delta_size * type_mem(type)
 TOT_MEM = TOT_MEM + delta_mem
-
 if (TOT_MEM > PEAK_MEM+0.5_dp) then
   newPeak = .true.
   PEAK_MEM = TOT_MEM
@@ -1541,10 +1618,13 @@ end if
 
 ! Print report - only do this if number of nodes is 1 as
 ! not all processors made follow the same route here
-if (newPeak .and. (REPORT_LEVEL==1 .or. REPORT_LEVEL==3) .and. &
-    node == 0) then
-  call print_report
-end if
+
+
+! if (newPeak .and. (REPORT_LEVEL==1 .or. REPORT_LEVEL==3) .and. &
+!     node == 0) then
+!   call print_report
+! end if
+
 if (REPORT_LEVEL == 4 .and. node == 0) then
   if (.not.header_written) then
     write(REPORT_UNIT,'(/,a7,9x,1x,a4,28x,1x,2a15)') &
@@ -1554,7 +1634,6 @@ if (REPORT_LEVEL == 4 .and. node == 0) then
   write(REPORT_UNIT,'(a16,1x,a32,1x,2f15.6)') &
      rname, aname, delta_mem/MBYTE, TOT_MEM/MBYTE
 end if
-
 END SUBROUTINE alloc_count
 
 ! ==================================================================
@@ -1584,6 +1663,8 @@ select case( var_type )
   case('L')
     type_mem = 4
 #endif
+case('E')
+  type_mem = 8
 case('D')
   type_mem = 8
 case('S')
@@ -1765,7 +1846,9 @@ END SUBROUTINE print_report
 ! ==================================================================
 
 SUBROUTINE alloc_err( ierr, name, routine, bounds )
-
+#ifdef DEBUG
+      use debugMpi, only : mpiUnit
+#endif
 implicit none
 
 integer,                    intent(in) :: ierr
@@ -1793,6 +1876,20 @@ if (ierr/=0) then
   if (ionode) print '(a,i3,2i8)', ('alloc_err: dim, lbound, ubound:', &
                       i,bounds(1,i),bounds(2,i),         &
                       i=1,size(bounds,dim=2))
+#ifdef DEBUG
+  write(mpiUnit,*) 'alloc_err: allocate status error', ierr
+  if (present(name).and.present(routine)) then
+    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by ', routine
+  elseif (present(name)) then
+    write(mpiUnit,*) 'alloc_err: array ', name, ' requested by unknown'
+  elseif (present(routine)) then
+    write(mpiUnit,*) 'alloc_err: array unknown requested by ', routine
+  endif
+  write(mpiUnit,'(a,i3,2i8)') ('alloc_err: dim, lbound, ubound:', &
+                      i,bounds(1,i),bounds(2,i),         &
+                      i=1,size(bounds,dim=2))
+  call pxfflush(mpiUnit)
+#endif
 
   call die('alloc_err: allocate error')
 end if

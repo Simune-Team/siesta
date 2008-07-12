@@ -63,7 +63,8 @@ C ==================================================================
       use atmfuncs,     only: rcut
       use parallel,     only: Nodes
       use moreMeshSubs, only: initMeshDistr, initMeshExtencil
-      use cellxc_mod, only: GGA, setGGA
+      use cellxc_mod,   only: GGA, setGGA
+      use alloc,        only: re_alloc, de_alloc
       implicit none
 C     Passed arguments
       integer, intent(out) :: nmpl
@@ -74,17 +75,21 @@ C     Local variables
      &                        ProcX, ProcY, ProcZ, iDistr, oDistr
       real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
       logical              :: within
-      integer, allocatable :: numphi(:)
+      integer,     pointer :: numphi(:)
 
 !------------------------------------------------------------------------- BEGIN
+#ifdef DEBUG
+        call write_debug( '      Pre distriPhiOnMesh' )
+#endif
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 14 )
 #endif
       if (nodes.gt.1) then
         call timer( 'REMESH', 1 )
 C       Allocate local scratch array
-        allocate( numphi(nmpl) )
-        call memory( 'A', 'I', nmpl, 'PhiOnMesh' )
+        nullify( numphi )
+        call re_alloc( numphi, 1, nmpl, name='numphi',
+     &                 routine='distriPhiOnMesh' )
         numphi(1:nmpl) = 0
 
 C       Find number of atomic orbitals at mesh points
@@ -110,29 +115,28 @@ C             If within range, add one to number of point orbitals
           enddo
         enddo
 
-        iDistr = 1
         do ip0= 1, nmpl
           numphi(ip0) = numphi(ip0)*numphi(ip0)
         enddo
-        call initMeshDistr( iDistr=iDistr, nm=nm, wload=numphi,
-     &                      oDistr=oDistr )
+        call initMeshDistr( 1, 2, nm, numphi )
 
         do ip0= 1, nmpl
           if (numphi(ip0).ne.0) numphi(ip0) = 1
         enddo
-        call initMeshDistr( iDistr=iDistr, nm=nm, wload=numphi,
-     &                      oDistr=oDistr )
-        if (GGA) call initMeshExtencil( iDistr=oDistr, nm=nm )
+        call initMeshDistr( 1, 3, nm, numphi )
+        if (GGA) call initMeshExtencil( 3, nm )
 
 C       Free local memory
-        call memory('D','I',size(numphi),'PhiOnMesh')
-        deallocate( numphi )
+        call de_alloc(numphi, name='numphi', routine='distriPhiOnMesh')
 
         call timer( 'REMESH', 2 )
       endif
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
+#endif
+#ifdef DEBUG
+        call write_debug( '      Pos distriPhiOnMesh' )
 #endif
 !--------------------------------------------------------------------------- END
       end subroutine distriPhiOnMesh

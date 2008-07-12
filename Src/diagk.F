@@ -207,7 +207,6 @@ C Loop over k points
       do ik = 1,nk
 
         do ispin = 1,nspin
-
 C Find maximum eigenvector that is required for this k point and spin
 C Compute all eigenvectors if getPSI = .true.
 
@@ -280,7 +279,7 @@ C Repeat diagonalisation with increased memory to handle clustering
           if (getPSI) 
      .     call writew(nuotot,nuo,ik,kpoint(1,ik),ispin,
      .                 aux,psi,.false.)
- 
+
           if (getD) then
 
 C Add contribution to density matrices of unit-cell orbitals

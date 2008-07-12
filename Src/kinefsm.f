@@ -65,6 +65,7 @@ C
       use atmfuncs,      only : rcut
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb
       use alloc,         only : re_alloc, de_alloc
+      use m_matel,       only : matel
 
       implicit none
 
@@ -138,7 +139,7 @@ C Valid orbital
                 joa = iphorb(jo)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'T', is, js, ioa, joa, xij(1,jn),
+                  call matel( 'T', is, js, ioa, joa, xij(1:3,jn),
      .                      Tij, grTij )
                   Ti(jo) = Ti(jo) + Tij
                   Ekin = Ekin + Di(jo) * Tij

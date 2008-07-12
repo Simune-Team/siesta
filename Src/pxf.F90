@@ -8,7 +8,7 @@
 ! in fact I don't think that either flush or abort were
 ! covered by said standard.
 
-! Of the preprocessor defines used here, only xlC is
+! Of the preprocessor defines used here, only xlF is
 ! automatically defined by the appropriate compiler. All
 ! others must be defined by some other mechanism - I
 ! recommend autoconf.
@@ -28,23 +28,29 @@
 ! 
 ! If no FLUSH is available, the subroutine is a no-op.
 
-subroutine pxfflush(unit)
+      subroutine pxfflush(unit)
 #ifdef __NAG__
-  use f90_unix_io, only : flush
+      use f90_unix_io, only : flush
 #endif
-  integer, intent(in) :: unit
-
+      implicit none
+      integer, intent(in) :: unit
 #if defined(F2003)
-  flush(unit)
-#elif defined(xlC)
-  call flush_(unit)
+      flush(unit)
+#elif defined(XLF)
+      if (unit.eq.6 .or. unit.eq.0) then
+        call flush_(unit)
+      else
+        flush(unit)
+      endif
 #elif defined (FC_HAVE_FLUSH)
-  call flush(unit)
+      call flush(unit)
+#elif defined (ALTIX)
+      flush(unit)
+      call flush(unit)
 #else
-  continue
+      continue
 #endif
-
-end subroutine pxfflush
+      end subroutine pxfflush
 
 ! ABORT: terminates program execution in such a way that a backtrace
 ! is produced. (see abort() in the C Standard Library). No arguments.
@@ -59,27 +65,29 @@ end subroutine pxfflush
 ! on every platform I've tried it with. Just in case it doesn't (it need
 ! not even stop execution) a stop is given to force termination.
 
-subroutine pxfabort()
+      subroutine pxfabort()
 #ifdef __NAG__
-  use f90_unix_proc, only : abort
+      use f90_unix_proc, only : abort
 #endif
 
 #ifdef F2003
-  interface
-    subroutine abort(), bind(c)
-    end subroutine abort
-  end interface
-  call abort()
-#elif defined(xlC)
-  call abort_()
+      interface
+        subroutine abort(), bind(c)
+        end subroutine abort
+      end interface
+      call abort()
+#elif defined(XLF)
+      call abort_()
 #elif defined(FC_HAVE_ABORT)
-  call abort()
+      call abort()
+#elif defined(ALTIX)
+      call abort()
 #else
-  Integer, Pointer :: i
-  i=>null()
-  Print*,i
+      Integer, Pointer :: i
+      i=>null()
+      Print*,i
 #endif
 
-  stop
+      stop
 
-end subroutine pxfabort
+      end subroutine pxfabort

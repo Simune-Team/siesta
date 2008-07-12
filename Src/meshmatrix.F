@@ -14,7 +14,6 @@ C Stores quantities that are connected with Dscf in mesh local
 C form when data is distributed for parallel execution
 C
       use precision, only: dp
-      use alloc
       implicit none
 
 C ----------------------------------------------------------------------
@@ -31,17 +30,35 @@ C                                      : a row of DscfL
 C real(dp)  DscfL(maxndl,nrowsDscfL)     : Local copy of Dscf elements
 C                                      : needed for the local mesh
 C ----------------------------------------------------------------------
+      integer           :: nrowsDscfL
+      integer,  pointer :: listdl(:), listdlptr(:), NeedDscfL(:),
+     &                     numdl(:)
+      real(dp), pointer :: DscfL(:,:)
+      logical           :: nullified_pointers = .false.
 
-      integer, save :: nrowsDscfL
+      CONTAINS
 
-      integer, dimension(:), pointer, save :: listdl
-      integer, dimension(:), pointer, save :: listdlptr
-      integer, dimension(:), pointer, save :: NeedDscfL
-      integer, dimension(:), pointer, save :: numdl
 
-      real(dp), dimension(:,:), pointer, save :: DscfL
+      subroutine resetDscfPointers( )
+      use alloc, only : de_alloc
+      implicit none
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'resetDscfPointers'
 
-      logical, public, save :: nullified_pointers = .false.
+      if (associated(listdl))
+     &  call de_alloc( listdl, name='listdl', routine=MYNAME )
+
+      if (associated(listdlptr))
+     &  call de_alloc( listdlptr, name='listdlptr', routine=MYNAME )
+
+      if (associated(NeedDscfL))
+     &  call de_alloc( NeedDscfL, name='NeedDscfL', routine=MYNAME )
+
+      if (associated(numdl))
+     &  call de_alloc( numdl, name='numdl', routine=MYNAME )
+
+      if (associated(DscfL))
+     &  call de_alloc( DscfL, name='DscfL', routine=MYNAME )
+      end subroutine resetDscfPointers
 
       end module meshdscf
 
@@ -83,9 +100,7 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
-
       implicit none
-
 C
 C Passed arguments
 C
@@ -94,19 +109,23 @@ C
       integer, intent(in) :: numd(*)
       integer, intent(in) :: listdptr(*)
       integer, intent(in) :: listd(*)
-
 C
 C Local variables
 C
-      integer
-     .  BNode, i, ii, io, iio, ip, imp, iu, numdele, maxndmax,
-     .  nsize, nn, mm 
+      integer          :: BNode, i, ii, io, iio, ip, imp, iu, numdele,
+     &                    maxndmax, nsize, nn, mm 
+      integer, pointer :: ibuffer(:)
 #ifdef MPI
-      integer
-     .  MPIerror, Status(MPI_Status_Size)
+      integer          :: MPIerror, Status(MPI_Status_Size)
 #endif
 
-      integer, dimension(:), pointer :: ibuffer
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 16 )
+#endif
+
+#ifdef DEBUG
+      call write_debug( '      Pre CreateLocalDscfPointers' )
+#endif
 
       if (.not. nullified_pointers) then
         nullify( NeedDscfL )
@@ -163,6 +182,7 @@ C Distribute information about numd globally
 
       nn       = DCself + 1
       maxndmax = 0
+#ifdef MPI
       do i= 1, DCsize
         numdele = 0
         if (DCsrc(i).eq.Node) then
@@ -188,6 +208,7 @@ C Distribute information about numd globally
         endif
         if (numdele.gt.maxndmax) maxndmax = numdele
       enddo
+#endif
       call de_alloc( ibuffer, name='ibuffer' )
       DCmaxnd = maxndmax
 
@@ -220,6 +241,7 @@ C Distribute information about listd globally
         enddo
       enddo
       nn = DCself + 1
+#ifdef MPI
       do i= 1, DCsize
         if (DCsrc(i).eq.Node) then
           mm = 0
@@ -252,7 +274,11 @@ C Distribute information about listd globally
           enddo
         endif
       enddo
+#endif
       call de_alloc( ibuffer, name='ibuffer' )
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
       end subroutine CreateLocalDscfPointers
 
       subroutine matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, 

@@ -17,12 +17,13 @@ C All output quantities are in the module meshphi
 C ----------------------------------------------------------------------
 
 C Modules
-      use precision, only: dp, grid_p
-      use atmfuncs,  only: rcut, phiatm
-      use mesh,      only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
-      use meshphi,   only: directphi, nphi, phi, lstpht, listp2, endpht
-      use parallel,  only: Node
-      use fdf,       only: fdf_boolean
+      use precision, only : dp, grid_p
+      use atmfuncs,  only : rcut, phiatm
+      use mesh,      only : dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
+      use meshphi,   only : directphi, nphi, phi, lstpht, listp2, endpht
+      use parallel,  only : Node
+      use fdf,       only : fdf_boolean
+      use alloc,     only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -41,9 +42,15 @@ C     Local variables
       logical,       save  :: firsttime = .true.
       real(dp)             :: dxsp(3,nsp), grphi(3), phip, r2o,
      &                        r2sp(nsp)
-      integer, allocatable, save :: numphi(:)
+      integer,     pointer :: numphi(:)
 
 !------------------------------------------------------------------------- BEGIN
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 15 )
+#endif
+#ifdef DEBUG
+      call write_debug( '      Pre PhiOnMesh' )
+#endif
 C     On first call set the logical DirectPhi
       if (firsttime) then
         if (Node.eq.0) then
@@ -57,8 +64,10 @@ C     On first call set the logical DirectPhi
       endif
 
 C     Allocate local scratch array
-      allocate( numphi(nmpl) )
-      call memory( 'A', 'I', nmpl, 'PhiOnMesh' )
+      nullify( numphi )
+      call re_alloc( numphi, 1, nmpl, name='numphi',
+     &               routine='PhiOnMesh' )
+
       numphi(1:nmpl) = 0
 
 C     Find number of atomic orbitals at mesh points
@@ -194,7 +203,9 @@ C     Find indexes and values of atomic orbitals at mesh points
       enddo
 
 C     Free local memory
-      call memory('D','I',size(numphi),'PhiOnMesh')
-      deallocate( numphi )
+      call de_alloc( numphi, name='numphi', routine='PhiOnMesh' )
+#if defined(MPI_TRACE) && defined(MPI)
+      call mpitrace_eventandcounters( 1000, 0 )
+#endif
 !--------------------------------------------------------------------------- END
       end subroutine PhiOnMesh
