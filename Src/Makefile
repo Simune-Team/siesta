@@ -243,7 +243,24 @@ denchar: $(MPI_INTERFACE) $(FDF) \
 	$(FC) -o denchar \
 	   $(LDFLAGS) $(DENCHAR_OBJS) $(OTHER_DENCHAR_OBJS) \
            $(MPI_INTERFACE) $(FDF) $(COMP_LIBS) $(LIBS) 
+#----------------------------------------------------------------------------
+# C FDN Begin: Makefile modifications for TranSIESTA
+#----------------------------------------------------------------------------
+# TranSIESTA...
 #
+TS_OBJS= m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o \
+         m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o \
+         m_ts_in_siesta.o
+#
+transiesta: version $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
+                    $(COMP_LIBS) $(ALL_OBJS) $(TS_OBJS)
+	$(FC) -o transiesta \
+               $(LDFLAGS) $(ALL_OBJS) $(TS_OBJS) $(FDF) $(WXML) $(XMLPARSER)\
+               $(MPI_INTERFACE) $(NETCDF_INTERFACE) $(COMP_LIBS) $(LIBS)
+#
+# C FDN End: Makefile modifications for TranSIESTA
+#
+
 # ---------------------------------------------------------------------------
 # Other auxiliary programs
 #----------------------------------------------------------------------------
@@ -695,3 +712,18 @@ neighbour.o: mneighb.o
 on_core.o: onmod.o
 on_main.o: onmod.o
 version_info.o: version.o
+# TRANSIESTA
+compute_dm.o: m_ts_options.o m_ts_in_siesta.o
+dhscf.o: siesta_options.o m_ts_options.o m_ts_in_siesta.o
+mixer.o: m_energies.o m_ts_io.o m_ts_options.o
+new_dm.o: parallel.o m_energies.o sys.o m_ts_options.o m_ts_io.o
+scfconvergence_test.o: m_ts_options.o
+setup_hamiltonian.o: files.o m_ts_options.o m_ts_kpoints.o m_ts_io.o
+siesta_forces.o: sparse_matrices.o m_spin.o sys.o m_ts_options.o
+siesta_init.o: m_ts_options.o m_ts_in_siesta.o
+write_subs.o: m_ts_options.o 
+m_ts_io.o: m_ts_kpoints.o
+m_ts_scattering.o: m_ts_aux_rout.o
+m_ts_contour.o: m_ts_options.o m_ts_aux_rout.o
+m_ts_electrode.o: m_ts_options.o m_ts_aux_rout.o m_ts_kpoints.o m_ts_io.o
+m_ts_in_siesta.o: m_ts_options.o m_ts_io.o m_ts_scattering.o m_ts_contour.o m_ts_electrode.o find_kgrid.o

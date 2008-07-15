@@ -188,6 +188,9 @@ MODULE siesta_options
 ! real*8 wmix              : Amount of output DM for new DM
 ! integer isolve           : Method of solution.  0 = Diagonalization
 !                                                 1 = Order-N
+#ifdef TRANSIESTA
+!                                                 2 = Transiesta
+#endif /* TRANSIESTA */
 ! real*8 temp              : Temperature for Fermi smearing (Ry)
 ! logical fixspin          : Fix the spin of the system?
 ! real*8  ts               : Total spin of the system
@@ -679,10 +682,25 @@ MODULE siesta_options
                   'together with nspin>2.  This is not allowed in '//&
                   'this version of siesta' )
       endif
+#ifdef TRANSIESTA
+! TSS Begin
+    else if (leqi(method,'transi')) then
+      isolve = 2
+      if (ionode) then
+            write(*,'(a,4x,a)') &
+                'redata: Method of Calculation            = ',&
+                '    Transiesta'
+      endif
+#endif /* TRANSIESTA */
 
     else
       call die( 'redata: The method of solution must be either '//&
+#ifndef TRANSIESTA
                 'OrderN or Diagon' )
+#else /* TRANSIESTA */
+                'OrderN, Diagon or Transiesta' )
+! TSS End
+#endif /* TRANSIESTA */
     endif
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='Diag.DivideAndConquer', &

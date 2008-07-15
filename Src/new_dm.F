@@ -13,6 +13,20 @@
       use m_spin,   only: nspin
       use m_extrapol, only: extrapol
 
+#ifdef TRANSIESTA
+      !TSS Begin
+      ! SIESTA Modules
+      use parallel, only: IOnode 
+      use m_energies, only: ef
+      use sys, only : die
+
+      ! TS Modules
+      use m_ts_options, only : VIn, VOut, TSinit, TSrun, foundts
+      use m_ts_io, only : TSiodm 
+
+      ! TSS End 
+
+#endif /* TRANSIESTA */
       implicit none
 
       logical:: auxchanged ! Has auxiliary supercell changed?
@@ -22,6 +36,12 @@
       integer:: istpsave   ! Temporary to save and restore istp when reading DM from file
       logical:: itest      ! Temporary used to check if DM have just been read
       logical :: found
+#ifdef TRANSIESTA
+      ! TSS Begin
+      ! Internal Variables
+      integer :: ts_alloc_stat
+      ! TSS End
+#endif /* TRANSIESTA */
 
       ! Initialize density matrix
       ! Set density matrix for first step
@@ -43,6 +63,19 @@
         usesavedmloc = usesavedm
       endif
 
+#ifdef TRANSIESTA
+      ! TSS Begin: Mixing arrays
+      if(.not.allocated(VIn)) then
+       allocate(VIn(maxnh,nspin), STAT=ts_alloc_stat)
+       if(ts_alloc_stat /= 0) 
+     .   call die('Failled to Allocate VIn in new_dm !!')
+       allocate(VOut(maxnh,nspin))
+       if(ts_alloc_stat /= 0) 
+     .   call die('Failled to Allocate VOut in new_dm !!')
+      endif 
+      ! TSS End
+
+#endif /* TRANSIESTA */
       if (dminit)
      .   call initdm(Datm, Dscf, Dold, lasto, na_s,
      .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
@@ -50,6 +83,50 @@
      .               listh, listhold, iaorb, found, inspn, 
      .               usesavedmloc, no_u)
 
+#ifdef TRANSIESTA
+      ! TSS Begin
+      ! TSS check of TSDM stuff
+
+      if (istp .eq. 1 .and. isolve .eq. 2) then ! try to read TSDM
+         call TSiodm('read', maxnh, no_l, nspin,
+     .        numh, listhptr, listh, Dscf, Escf, ef, foundts)
+
+         if(.not. foundts )  then ! not a TS continuation run
+            TSinit = .true.     ! start to converge a diagon run
+            TSrun = .false.
+
+            if(IONode) then
+               write(6,'(a)')
+     .              'TRANSIESTA: No TS-DensityMatrix file found'
+               write(6,'(a)')
+     .              'TRANSIESTA: Initialization runs using diagon'
+            endif
+         else
+            TSinit = .false.
+            TSrun = .true.
+
+            if(IONode) then
+               write(6,'(a)') 'TRANSIESTA: Continuation run'
+               write(6,'(/a)')
+     .              '                     ************************  '
+               write(6,'(a)')
+     .              '                     *   TRANSIESTA BEGIN   *  '
+               write(6,'(a)')
+     .              '                     ************************  '
+            endif
+
+
+      !     copy Dsfc -> Dold
+
+            Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
+            Eold(1:nh,1:nspin) = Escf(1:nh,1:nspin)
+
+         end if                 !found TSDM-file
+      end if                    !istp == 1  and isolve == 2
+
+      ! TSS End
+
+#endif /* TRANSIESTA */
 
       ! Initialize energy-density matrix to zero for first call to overfsm
       Escf(1:maxnh,1:nspin) = 0.0_dp
