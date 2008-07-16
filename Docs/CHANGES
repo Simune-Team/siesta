@@ -3,10 +3,17 @@
 =======================================================================
 
 ____________________________________________________________________
-** CHANGES ALONG fdnovaes@siesta.arch--2007/transiesta--merge--2.5
+** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
-2008-07-10  14:00:00 GMT  Frederico D. Novaes <fdnovaes@icmab.es> patch-1
+2008-07-16  07:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-31
+
+Summary: Added support for Lapack routine zgesv for transiesta
+
+For systems without pre-compiled libraries, zgesv_lapack.f has
+been added to Src/Libs. It is added by default to linalg.a
+
+2008-07-15  08:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-30
 
 Summary: Merge of Transiesta code -- F. D. Novaes version
 
@@ -46,9 +53,51 @@ make transiesta
 The Makefile was modified in such a way to link the m_ts modules and
 create a binary called transiesta.
 
-____________________________________________________________________
-** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
---------------------------------------------------------------------
+
+2008-07-08  13:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-29
+
+Summary: Patches by A. Walker: undefined variables and pointers, intents
+
+The original names of the patch files are retained for reference.
+
+* NAG-01-null.patch -- makes various undefined pointers disassociated
+(in fft3d.F, dfscf.f, pseudopotential.f, hsparse.f, optical.F,
+writewave.F and zmatrix) and wraps a pointer declaration that is only
+used under -DMPI with the ifdef in optical.F.
+
+* NAG-02-intent.patch -- attempts to deal with a couple of issues with
+the intent of variables. Intent(out) results in the variable being
+undefined at the start of the called subroutine (and in the caller, if
+it is not changed). In vmb.F there is a call to fixed with a couple of
+variables being used in two places (on intent(in) and another
+intent(out)) - I don't know what the strictly correct behavior is in
+this case, but under NAG this results in the intent(in) variable being
+undefined in fixed. I've worked around this with a pair temporary
+variables. The alternative is to rework the interface to fixed using
+intent(inout). The second issue is similar and in meshsubs.f: Vna
+ended up undefined if gradient was true. I've dealt with this by
+setting Vna to 0.0, but a reworking using intent(inout) may also be a
+better solution.
+
+* NAG-03-dhfcs.patch -- deals with a couple of pointers in
+dhscf.F. These need to have the save attribute or they will be
+undefined rather than disassociated on the second and subsequent
+calls. I've also added a comma to a data block.
+
+* NAG-04-filter.patch Changes the dimensions of f0 from nr to n so to
+avoid a mismatch in array dimensions of x in the call to the
+interpolation function at line 169. As far as I can tell this is the
+correct fix: yold is known at the xold positions and ynew will be
+calculated at the xnew positions, so ynew (which is f0) should be of
+the same dimensions as xnew (which is x), and yold (f) should be of
+the same dimensions as xold (r).
+
+* NAG-05-init -- In dynamics.f initialize magv and magf in the uphill
+case. In forhar.f initialize stressl array. In m_cell.f initialize
+celli as it is used in the case of a zmatrix molecule without a cell
+before the box size is calculated. In m_kinetic.F90 initialize
+thermostat parameters.
+
 
 2008-06-29  22:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-28
 

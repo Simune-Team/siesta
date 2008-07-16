@@ -261,9 +261,9 @@ C
 #endif
 
       real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
-      real(grid_p), dimension(:),     pointer   :: Vaux
-      real(grid_p), dimension(:,:),   pointer   :: DRho, Vscf
-      real(grid_p), dimension(:),     pointer   :: Chlocal, Totchar
+      real(grid_p), dimension(:),     pointer, save   :: Vaux
+      real(grid_p), dimension(:,:),   pointer, save   :: DRho, Vscf
+      real(grid_p), dimension(:), pointer, save   :: Chlocal, Totchar
 !
 !     Dummy arrays for cellxc call
 !
@@ -304,7 +304,7 @@ C
      .  rmax, scell, tiny, Uharrs, volume
 
       data
-     .  G2mesh / 0.0_dp /
+     .  G2mesh / 0.0_dp /,
      .  nzero / 3*0 /,
      .  tiny  / 1.e-12_dp /,
      .  frstme /.true./

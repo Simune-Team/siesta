@@ -171,6 +171,9 @@ linalg.a: Libs/blas.f Libs/lapack.f
 dc_lapack.a:  Libs/dc_lapack.f
 	@echo "==> Compiling dc_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" dc_lapack.a)
+zgesv_lapack.a:  Libs/zgesv_lapack.f
+	@echo "==> Compiling zgesv_lapack.a in Libs..."
+	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
 
 version: version.F90

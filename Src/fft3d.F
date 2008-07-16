@@ -62,7 +62,7 @@ C
      .  LocalPoints, lredimension
       real(dp)
      .  scale
-      real(dp), dimension(:,:), pointer, save ::   trigs
+      real(dp), dimension(:,:), pointer, save ::   trigs => null()
 #ifdef MPI
       integer
      .  n1lf, nrem, Py, Pz

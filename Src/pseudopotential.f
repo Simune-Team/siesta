@@ -426,7 +426,7 @@ c$$$        end subroutine pseudo_header_string
          real(dp), dimension(:), pointer   :: func, tmp, new_r
          real(dp), dimension(:,:), pointer :: tmp2
 
-         real(dp), dimension(:), pointer   :: y2
+         real(dp), dimension(:), pointer   :: y2 => null()
 
          rmax = p%r(p%nrval)
          print *, "Reparametrization. rmax: ", rmax

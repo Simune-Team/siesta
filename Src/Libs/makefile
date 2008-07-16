@@ -11,14 +11,16 @@
 #
 #  Makefile for Libraries
 #  Some systems only need the stuff in dc_lapack.f (Divide and Conquer)
+#  TranSiesta needs zgesv_lapack.f
 #
 default: linalg.a
 #
 include ../arch.make
 #
-ALL_OBJS= lapack.o dc_lapack.o blas.o machine.o
+ALL_OBJS= lapack.o dc_lapack.o zgesv_lapack.o blas.o machine.o
 # Add machine.o here only if needed...
 DC_OBJS=  dc_lapack.o   # machine.o
+ZGESV_OBJS=  zgesv_lapack.o   # machine.o
 #
 default: linalg.a
 #
@@ -38,6 +40,11 @@ dc_lapack.a: $(DC_OBJS)
 	ar $(ARFLAGS_EXTRA) cru dc_lapack.a $(DC_OBJS)
 	$(RANLIB) dc_lapack.a
 	mv dc_lapack.a ..
+#
+zgesv_lapack.a: $(ZGESV_OBJS)
+	ar $(ARFLAGS_EXTRA) cru zgesv_lapack.a $(ZGESV_OBJS)
+	$(RANLIB) zgesv_lapack.a
+	mv zgesv_lapack.a ..
 #
 clean:
 	rm -f $(ALL_OBJS) *.a
