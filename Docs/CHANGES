@@ -6,6 +6,13 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-07-16  07:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-31
+
+Summary: Added support for Lapack routine zgesv for transiesta
+
+For systems without pre-compiled libraries, zgesv_lapack.f has
+been added to Src/Libs. It is added by default to linalg.a
+
 2008-07-15  08:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-30
 
 Summary: Merge of Transiesta code -- F. D. Novaes version
