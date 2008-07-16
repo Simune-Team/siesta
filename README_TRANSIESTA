@@ -1,0 +1,76 @@
+Brief Description:
+
+The TranSIESTA code consists in a a set of additional routines for the SIESTA package for the  
+computation of electronic transport properties. It was originally developed by 
+Mads Brandbyge, Jose-Luiz Mozos, Pablo Ordejon, Jeremy Taylor and Kurt Stokbro (Phys. Rev. B 65, 165401 (02)), 
+and first implemented in the SIESTA 1.3p version.
+The present distribution was adapted to the SIESTA 2.5 structure. With respect to the first 
+implementation, it has the additional feature of allowing for the use of a k-point sampling 
+other than the gamma point (for the 2D Brillouin zone perpendicular to the transport direction). 
+These modifications were done by F. D. Novaes (fdnovaes@icmab.es)
+
+
+
+
+
+
+
+Source code Structure:
+
+In this implementation, the original TranSIESTA routines were grouped in a set of modules, 
+that all begin with m_ts (m_ts_electrode.F90, e.g.), together with the addition of some 
+new subroutines. These modules are located in the Src directory.
+The interface for  TranSIESTA also requires the modification of some of the SIESTA routines. 
+Presently, this is controlled by compilation directives (#ifdef TRANSIESTA), so that only when compiling 
+with the -DTRANSIESTA FPPFLAGS option that the objects will contain the modifications.
+
+
+
+
+
+
+Compiling:
+
+Add  -DTRANSIESTA  to the FPPFLAGS variable in the arch.make file, and type “make transiesta”. 
+The Makefile was modified in such a way to link the m_ts modules and create a binary called transiesta.
+
+
+
+
+
+
+Brief Explanation:
+
+1) Transport calculations involve Electrodes (EL) calculations and then the Scattering Region (SR) calculation. 
+The Electrodes calculations are usual SIESTA calculations, but where a file "SystemName".TSHS is generated. 
+This file contains the necessary information for the SR calculation. In case of two different Electrodes, 
+two files must be generated. The location of the these Electrode files must be specified in the .fdf of the 
+SR calculation (usually copied to the same directory where the SR calculation is performed). 
+
+2) For the SR, TranSIESTA starts with the usual SIESTA procedure, converging a Density Matrix (DM) with the 
+usual Kohn-Sham scheme for periodic systems. It uses this solution as an input for the Green's Functions 
+procedure. As it is known, SIESTA stores the DM in a file .DM . In the case of TranSIESTA, this is done in a 
+file named "SystemName".TSDE . In a rerun of the same system, if the code finds a .TSDE file in the directory, 
+it will take this DM as initial input and this is then considered a continuation run.
+
+3) As in the case of SIESTA calculations, what TranSIESTA does is to obtain a converged DM, but for open boundary 
+conditions and maybe finite bias applied between the Electrodes. The corresponding Hamiltonian matrix 
+(once self consistency is achieved) of the SR is also stored in a "SystemName".TSHS file. The transport properties 
+are obtained in a post-processing procedure using the tbtrans code (located in the Util directory). What tbtrans 
+does is, using the .TSHS file of the SR obtained with TranSIESTA (AND the electrode's .TSHS !!), calculate the 
+Transmission function and the current. The tbtrans input file is may be the same as the one that was used for 
+TranSIESTA, with the additional tbtrans options.
+
+4) TranSIESTA  defines the Left Electrode as the first atoms specified in the SR fdf, and the Right Electrode 
+for the last ones. It is possible however, to use buffer atoms. This is mostly useful for simulations with 
+different Electrodes. In this case, TranSIESTA will not consider these atoms, and the buffer atoms are considered 
+only for the initial SIESTA calculation, to get a better “bulk like” environment at the electrodes.
+
+5) An important parameter is: 
+
+TS.ComplexContour.Emin
+
+It specifies the starting energy for the contour integration. It is a good practice, to start with a SIESTA 
+calculation for the SR and look at the eigenvalues of the system. The value of "TS.ComplexContour.Emin" must 
+be (considerably) lower than the smallest eigenvalue obtained with SIESTA. This ensures that all the states are 
+considered in the contour integration. 
