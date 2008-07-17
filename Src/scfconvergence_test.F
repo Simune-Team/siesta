@@ -17,7 +17,7 @@
       logical :: first
       logical :: last
 
-      real(dp), intent(in) :: dDmax     ! Max. change in density matrix elements
+      real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
 
       real(dp):: dEmax
 
@@ -30,8 +30,8 @@
           Eharrs = Etot + DEharr
           FreeE  = Etot - Temp * Entropy
 
-          ! Recalculating the energy in the last iter (for gridcellsampling)
-          ! but preserving the value of Eharrs1
+          ! Recalculating the energy in the last iter (for
+          ! gridcellsampling) but preserving the value of Eharrs1
           Eharrs1 = Eharrs
 
           dEmax = abs(Etot - Elast)

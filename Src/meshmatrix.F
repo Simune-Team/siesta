@@ -45,19 +45,19 @@ C ----------------------------------------------------------------------
       CHARACTER(LEN=*), PARAMETER :: MYNAME =  'resetDscfPointers'
 
       if (associated(listdl))
-     &  call de_alloc( listdl, name='listdl', routine=MYNAME )
+     &  call de_alloc( listdl, 'listdl', MYNAME )
 
       if (associated(listdlptr))
-     &  call de_alloc( listdlptr, name='listdlptr', routine=MYNAME )
+     &  call de_alloc( listdlptr, 'listdlptr', MYNAME )
 
       if (associated(NeedDscfL))
-     &  call de_alloc( NeedDscfL, name='NeedDscfL', routine=MYNAME )
+     &  call de_alloc( NeedDscfL, 'NeedDscfL', MYNAME )
 
       if (associated(numdl))
-     &  call de_alloc( numdl, name='numdl', routine=MYNAME )
+     &  call de_alloc( numdl, 'numdl', MYNAME )
 
       if (associated(DscfL))
-     &  call de_alloc( DscfL, name='DscfL', routine=MYNAME )
+     &  call de_alloc( DscfL, 'DscfL', MYNAME )
       end subroutine resetDscfPointers
 
       end module meshdscf
@@ -112,7 +112,8 @@ C
 C
 C Local variables
 C
-      integer          :: BNode, i, ii, io, iio, ip, imp, iu, numdele,
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'CreateLocalDscfPointers'
+      integer          :: i, ii, io, iio, ip, imp, iu, numdele,
      &                    maxndmax, nsize, nn, mm 
       integer, pointer :: ibuffer(:)
 #ifdef MPI
@@ -138,8 +139,7 @@ C
 C Create pointer as to whether a given row of DscfL is needed in NeedDscfL
 C This pointer is never deallocated...
 
-      call re_alloc( NeedDscfL, 1, nuotot, name='NeedDscfL',
-     &                 routine='CreateLocalDscfPointers' )
+      call re_alloc( NeedDscfL, 1, nuotot, 'NeedDscfL', MYNAME )
 
       NeedDscfL(1:nuotot) = 0
       do ip = 1,nmpl
@@ -162,16 +162,13 @@ C     by orbitals to data ordered by mesh.
       call dscfComm( nuotot, nrowsDscfL, NeedDscfL )
 
 C     Allocate/reallocate memory for numdl and listdlptr
-      call re_alloc( numdl, 1, max(1,nrowsDscfL), name='numdl',
-     &                 routine='CreateLocalDscfPointers' )
+      call re_alloc( numdl, 1, max(1,nrowsDscfL), 'numdl', MYNAME )
       call re_alloc( listdlptr, 1, max(1,nrowsDscfL), 
-     &                 name='listdlptr',
-     &                 routine='CreateLocalDscfPointers' )
+     &                 'listdlptr', MYNAME )
 
 C Distribute information about numd globally
       nullify( ibuffer )
-      call re_alloc( ibuffer, 1, DCmax, name='ibuffer',
-     &               routine='CreateLocalDscfPointers' )
+      call re_alloc( ibuffer, 1, DCmax, 'ibuffer', MYNAME )
 
       do ii= 1, DCself
         io = DCinvp(ii)
@@ -209,7 +206,7 @@ C Distribute information about numd globally
         if (numdele.gt.maxndmax) maxndmax = numdele
       enddo
 #endif
-      call de_alloc( ibuffer, name='ibuffer' )
+      call de_alloc( ibuffer, 'ibuffer', MYNAME )
       DCmaxnd = maxndmax
 
 C Create listdlptr using numdl
@@ -224,13 +221,11 @@ C Allocate/reallocate listdl
       else
         nsize = 1
       endif
-      call re_alloc( listdl, 1, nsize, name='listdl',
-     &               routine='CreateLocalDscfPointers' )
+      call re_alloc( listdl, 1, nsize, 'listdl', MYNAME )
 
 C Distribute information about listd globally
       nullify( ibuffer )
-      call re_alloc( ibuffer, 1, DCmaxnd, name='ibuffer',
-     &               routine='CreateLocalDscfPointers' )
+      call re_alloc( ibuffer, 1, DCmaxnd, 'ibuffer', MYNAME )
 
       do ii= 1, DCself
         io = DCinvp(ii)
@@ -275,14 +270,14 @@ C Distribute information about listd globally
         endif
       enddo
 #endif
-      call de_alloc( ibuffer, name='ibuffer' )
+      call de_alloc( ibuffer, 'ibuffer', MYNAME )
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
       end subroutine CreateLocalDscfPointers
 
       subroutine matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, 
-     .                       nuotot, nspin, Dscf, DscfL )
+     .                       nspin, Dscf, DscfL )
 C ********************************************************************
 C Transforms a matrix which is distributed by block cyclic 
 C distribution of orbitals to a matrix that contains all
@@ -295,7 +290,6 @@ C integer numd(nuo)     : Number of non-zero elements in row of Dscf
 C integer listdptr(nuo) : Pointer to start of rows in Dscf
 C integer maxndl        : First dimension of DscfL
 C integer nuo           : Local no. of orbitals in unit cell
-C integer nuotot        : Total no. of orbitals in unit cell
 C integer nspin         : Number of spin components
 C real*8  Dscf(maxnd,nspin) : Matrix in orbital distributed form
 C *********************** OUTPUT *************************************
@@ -317,7 +311,7 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     &   maxnd, maxndl, nspin, nuo, nuotot, numd(nuo), 
+     &   maxnd, maxndl, nspin, nuo, numd(nuo), 
      &   listdptr(nuo)
 
       real(dp)
@@ -327,12 +321,13 @@ C Argument types and dimensions
      &   memory
 
 C Internal variables and arrays
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'matrixOtoM'
       integer
-     &  io, il, ispin
+     &  io, ispin, il
 
 #ifdef MPI
       integer 
-     &  BNode, i, ii, iu, mm, nn, iio, maxno, maxnog, MPIerror,
+     &  i, ii, iu, mm, nn, iio, MPIerror,
      &  Status(MPI_Status_Size)
       real(dp), dimension(:), pointer ::  buffer
 #endif
@@ -343,8 +338,7 @@ C***********************
 #ifdef MPI
 C Allocate local Dscf storage array
       nullify(buffer)
-      call re_alloc( buffer, 1, DCmaxnd*nspin, name='buffer',
-     &               routine='matrixOtoM' )
+      call re_alloc( buffer, 1, DCmaxnd*nspin, 'buffer', MYNAME )
 
 C     Copy the data that is in the current process
       do ii= 1, DCself
@@ -396,14 +390,14 @@ C     Send or receive the data from/to other processes
         endif
         nn = nn + DCsic(i)
       enddo
-      call de_alloc( buffer, name='buffer' )
+      call de_alloc( buffer, 'buffer', MYNAME )
 #else
 C*********************
 C  Serial execution  *
 C*********************
 C Loop over rows of Dscf checking to see if they are in DscfL
       do ispin = 1,nspin
-        do io = 1,nuotot
+        do io = 1,nuo
 
 C Get pointer for this row of Dscf and see if it is needed for DscfL
           il = NeedDscfL(io)
@@ -418,7 +412,7 @@ C Get pointer for this row of Dscf and see if it is needed for DscfL
       end subroutine matrixOtoM
 
       subroutine matrixMtoO( maxnvl, maxnv, numVs, listVsptr, nuo, 
-     .                       nuotot, nspin, VsL, Vs )
+     .                       nspin, VsL, Vs )
 
 C ********************************************************************
 C Transforms a matrix which is distributed by mesh points to a matrix
@@ -433,7 +427,6 @@ C                           of nonzero elements in Vs
 C integer numVs(nuo)      : Number of non-zero elements in row of Vs
 C integer listVsptr(nuo)  : Pointer to start of rows in Vs
 C integer nuo             : Local no. of orbitals in unit cell
-C integer nuotot          : Total no. of orbitals in unit cell
 C integer nspin           : Number of spin components
 C real*8  VsL(maxnvl,nspin) : Mesh contribution to be added to Vs
 C ******************** INPUT AND OUTPUT *******************************
@@ -458,12 +451,13 @@ C  Modules
 
 C Argument types and dimensions
       integer
-     .   maxnv, maxnvl, nspin, nuo, nuotot, numVs(nuo), 
+     .   maxnv, maxnvl, nspin, nuo, numVs(nuo), 
      .   listVsptr(nuo)
       real(dp)
      .   Vs(maxnv,nspin), VsL(maxnvl,nspin)
 
 C Internal variables and arrays
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'matrixMtoO'
       integer
      .  i, iu, ispin
 
@@ -479,8 +473,7 @@ C***********************
 #ifdef MPI
 C     Allocate a buffer to Send/Receive data
       nullify(buffer)
-      call re_alloc( buffer, 1, DCmaxnd*nspin, name='buffer',
-     &               routine='matrixMtoO' )
+      call re_alloc( buffer, 1, DCmaxnd*nspin, 'buffer', MYNAME )
 
 C     Copy the data that is in the current process from VsL to Vs
       do ii= 1, DCself
@@ -536,7 +529,7 @@ C       The communication is from dst to src
         endif
         nn = nn + DCsic(i)
       enddo
-      call de_alloc( buffer, name='buffer' )
+      call de_alloc( buffer, 'buffer', MYNAME )
 #else
 C*********************
 C  Serial execution  *
@@ -544,7 +537,7 @@ C*********************
 C Add those elements that are needed locally to the values already
 C stored in the orbital oriented array
       do ispin = 1,nspin
-        do i = 1,nuotot
+        do i = 1,nuo
           iu = NeedDscfL(i)
           if (iu.gt.0) then
             Vs(listVsptr(i)+1:listVsptr(i)+numVs(i),ispin) = 

@@ -244,9 +244,6 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   integer                 :: idir
   integer                 :: ii
   integer                 :: imid
-  integer                 :: ix
-  integer                 :: iy
-  integer                 :: iz
   integer                 :: j
   integer                 :: jdir
   integer                 :: jj
@@ -333,7 +330,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 ! Allocate workspace arrays
 !
   nullify(lvalidpot)
-  call re_alloc(lvalidpot,1,nMMpot,name="lvalidpot",routine="twobody")
+  call re_alloc( lvalidpot, 1, nMMpot, 'lvalidpot', 'twobody' )
 !
 ! Initialise energy and mm_stress
 !
@@ -691,7 +688,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   if (istr.ne.0) then
 
      if (Node .eq. 0 .and. PotentialsPresent)  then
-        write(6,'(/,a,6f12.2))')  'MM-Stress (kbar):',   &
+        write(6,'(/,a,6f12.2)')  'MM-Stress (kbar):',   &
                 (mm_stress(jx,jx)/kbar,jx=1,3),       &
                  mm_stress(1,2)/kbar,                 &
                  mm_stress(2,3)/kbar,                 &
@@ -704,7 +701,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
 !
 ! Free workspace arrays
 !
-  call de_alloc(lvalidpot,name="lvalidpot")
+  call de_alloc( lvalidpot,' lvalidpot', 'twobody' )
 !
 ! Stop timer
 !

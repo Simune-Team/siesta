@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
+      subroutine diagk( nspin, nuo, no, maxspn, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, listdptr, 
      .                  listd, H, S, getD, getPSI, fixspin, qtot, qs, 
      .                  temp, e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -27,8 +27,6 @@ C integer nuo                 : Number of basis orbitals in unit cell
 C                               local to this processor
 C integer no                  : Number of basis orbitals in supercell
 C integer maxspn              : Second dimension of eo and qo
-C integer maxuo               : Last dimension of xij
-C                               Must be at least max(indxuo)
 C integer maxo                : First dimension of eo and qo
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd and DM
@@ -108,7 +106,7 @@ C
      .  MPIerror
 #endif
 
-      integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
+      integer           maxnd, maxnh, maxspn, maxo, nk, no,
      .                  nspin, nuo, nuotot, iscf
       integer           indxuo(no), listh(maxnh), numh(nuo),
      .                  listd(maxnd), numd(nuo), listhptr(nuo),
@@ -133,7 +131,6 @@ C  Internal variables .............................................
       real(dp)
      .  ckxij, ee, kxij, pipj1, pipj2, qe, skxij, t
 C  ....................
-
 
 C Skip eigenvalues if DM is not required and WF's are required ....
       if (getPSI .and. .not. getD) goto 10
@@ -160,8 +157,8 @@ C Note : sign of complex part changed to match change in order of iuo/juo
               Haux(2,juo,iuo) = Haux(2,juo,iuo) - H(ind,ispin)*skxij
             enddo
           enddo
-          call cdiag(Haux,Saux,nuotot,nuo,nuotot,eo(1,ispin,ik),psi,
-     .      0,iscf,ierror)
+          call cdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin,ik),
+     &                psi, 0, iscf, ierror )
           if (ierror.ne.0) then
             call die('Terminating due to failed diagonalisation')
           endif
@@ -354,5 +351,4 @@ C Global operation to form new density matrix
 
         enddo
       enddo
-
       end

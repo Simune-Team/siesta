@@ -10,6 +10,67 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-17 17:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-32
+
+Summary: Fixes to grid-work. Jacobi-Davidson. Alloc changes
+
+Omnibus patch:
+
+--- Some fine-tunning of the grid-load-balancing work.
+
+--- Implementation of the Jacobi-Davidson algorithm
+    More work is needed to improve the convergence
+    and to generalize it to non-gamma-point calculations
+    and to mixed-spin calculations.
+
+--- More conversions of allocatables to pointers.
+
+
+NOTE: Some issues (matel, spher_harm intefaces) remain. 
+      They will hopefully be fixed in the following patches.
+
+Patches applied:
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-1
+   Removed obsolete grid-work routines
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-2
+   Added Jacobi-Davidson-related routines
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-3
+   Mostly memory allocation changes, except atomic routines
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-4
+   Update of gmres in jacobi-davidson
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-5
+   Avoid excessive number of allocs/deallocs in spher_harm
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-6
+   Change in array calling format for ylmexp in matel
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-7
+   Temporary scaffolding for continuation after Jacobi-Davidson diag.
+   (Not really used. Rogeli Grima implemented it in his own way)
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-8
+   Fixes for serial compilation. Continue in diagg
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-9
+   Matel: ylmexp calling sequence changed again
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-10
+   Avoid allocating zero-size array in matel.
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-11
+   Add lapack routines to Libs/ . Cosmetic fixes
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-12
+   Fixes for serial compilation
+
+ * ref@bsc--2007/siesta-bsc--jacobi-davidson--2.3--patch-13
+   Implementation of density-matrix construction in jacobi-davidson
+
 2007-07-12 13:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-31
 
 Summary: Integration of grid-work by Rogeli Grima up to May 20, 2008

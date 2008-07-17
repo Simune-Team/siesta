@@ -14,17 +14,12 @@
 
       CONTAINS
 !
-      subroutine zm_broyden_optimizer( na, xa, fa, cell,
-     .                 stress, dxmax, 
-     .                 tp, ftol, strtol, varcel, relaxd)
-
+      subroutine zm_broyden_optimizer( na, xa, cell, stress, tp, strtol,
+     &                                 varcel, relaxd )
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
-c real*8 fa(3,na)       : Atomic forces
 c real*8 stress(3,3)    : Stress tensor components
-c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
-c real*8 ftol           : Maximum force tolerance
 c real*8 strtol         : Maximum stress tolerance
 c logical varcel        : true if variable cell optimization
 c *************************** INPUT AND OUTPUT ******************************
@@ -61,6 +56,7 @@ C
       use zmatrix,     only : coeffA, coeffB, iNextDept
       use Zmatrix,     only : ZmatForceTolLen, ZmatForceTolAng
       use Zmatrix,     only : ZmatMaxDisplLen, ZmatMaxDisplAng
+      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
@@ -68,17 +64,16 @@ C Subroutine arguments:
       integer,  intent(in)   :: na
       logical,  intent(in)   :: varcel
       logical,  intent(out)  :: relaxd
-      real(dp), intent(in)   :: fa(3,na), dxmax, tp, ftol
+      real(dp), intent(in)   :: tp
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
       integer             :: iu, ia, i, j, n, indi,indi1,vi,k
-      logical             :: found
       real(dp)            :: volume, new_volume, trace
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
       real(dp)            ::  stress_dif(3,3)
-      real(dp), dimension(:), allocatable :: gxa, gfa
+      real(dp),   pointer :: gxa(:), gfa(:)
       real(dp)            :: force, force1
 
 C Saved internal variables:
@@ -94,8 +89,7 @@ C Saved internal variables:
       real(dp),      save :: precon 
       real(dp),      save :: strain(3,3)  ! Special treatment !!
 
-      real(dp), dimension(:), allocatable    :: ftoln, dxmaxn
-      real(dp), dimension(:), allocatable    :: rold, rnew, rdiff
+      real(dp),   pointer :: ftoln(:), dxmaxn(:), rnew(:)
 
       type(broyden_t), save  :: br
       logical, save           :: initialization_done = .false.
@@ -108,7 +102,6 @@ C Saved internal variables:
 
       integer        :: ndegi, ndi
 
-      external          memory
       real(dp), external :: volcel
 
 c ---------------------------------------------------------------------------
@@ -245,15 +238,10 @@ C Initialization to 1 for numerical reasons, later substracted
       endif                 ! First time
 
 C Allocate local memory
-
-      allocate(gfa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
-      allocate(gxa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
-      allocate(ftoln(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
-      allocate(dxmaxn(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
+      call re_alloc( gfa, 1, ndeg, 'gfa', 'zm_broyden_optimizer' )
+      call re_alloc( gxa, 1, ndeg, 'gxa', 'zm_broyden_optimizer' )
+      call re_alloc( ftoln, 1, ndeg, 'ftoln', 'zm_broyden_optimizer' )
+      call re_alloc( dxmaxn, 1, ndeg, 'dxmaxn', 'zm_broyden_optimizer' )
 
 !      print *, "zm_broyden: cell in : ", cell
 !      print *, "zm_broyden: strain in : ", strain
@@ -266,7 +254,7 @@ C Allocate local memory
 C Transform coordinates and forces to fractional ---------------------------- 
 C but scale them again to Bohr by using the (fix) moduli of the original ----
 C lattice vectors (allows using maximum displacement as before) -------------
-C convergence is checked here for input forces as compared with ftol --------
+C convergence is checked here for input forces and compared with ftoln ------
 
         relaxd = .true.
         ndegi = 0
@@ -394,8 +382,9 @@ C Set number of degrees of freedom & variables
          call broyden_reset(br,ndeg,maxit,cycle_on_maxit,
      $        jinv0,0.01_dp)
       endif
-      allocate (rnew(ndeg))
-      call memory('A','D',ndeg,'zm_broyden_optimizer')
+
+      call re_alloc( rnew, 1, ndeg, 'rnew', 'zm_broyden_optimizer' )
+
       weight = 1.0_dp
       call broyden_step(br,gxa,gfa,w=weight,newx=rnew)
 
@@ -474,17 +463,11 @@ C Return coordinates to correct arrays
 !      print *, "zm_broyden: strain out : ", strain
 
 C Deallocate local memory
-
-      call memory('D','D',size(dxmaxn),'cgvc_zmatrix')
-      deallocate(dxmaxn)
-      call memory('D','D',size(ftoln),'cgvc_zmatrix')
-      deallocate(ftoln)
-      call memory('D','D',size(gxa),'cgvc_zmatrix')
-      deallocate(gxa)
-      call memory('D','D',size(gfa),'cgvc_zmatrix')
-      deallocate(gfa)
-      call memory('D','D',size(rnew),'cgvc_zmatrix')
-      deallocate(rnew)
+      call de_alloc( rnew, 'rnew', 'zm_broyden_optimizer' )
+      call de_alloc( dxmaxn, 'dxmaxn', 'zm_broyden_optimizer' )
+      call de_alloc( ftoln, 'ftoln', 'zm_broyden_optimizer' )
+      call de_alloc( gxa, 'gxa', 'zm_broyden_optimizer' )
+      call de_alloc( gfa, 'gfa', 'zm_broyden_optimizer' )
 
       end subroutine zm_broyden_optimizer
 

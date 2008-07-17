@@ -61,8 +61,8 @@ C Argument types and dimensions
       real(grid_p), intent(in) :: V(nsp,np,nspin)
       real(dp)                 :: dvol, Vs(nvmax,nspin)
 C Internal variables and arrays
-      integer,       parameter :: minloc = 100,  ! Min buffer size for local copy of Dscf
-     &                            maxoa  = 100   ! Max # of orbitals per atom
+      integer,       parameter :: minloc = 100,  ! Min buffer size
+     &                            maxoa  = 100   ! Max # of orb/atom
       integer                  :: i, ia, ic, ii, ijl, il, imp, ind, iop,
      &                            ip, iphi, io, is, isp, ispin, iu, iul,
      &                            ix, j, jc, jl, last, lasta, lastop,
@@ -91,26 +91,24 @@ C  Find value of maxloc
 
       !  Allocate local memory
       nullify ( ilocal )
-      call re_alloc( ilocal, 1, no, name='ilocal', routine='vmat' )
+      call re_alloc( ilocal, 1, no, 'ilocal', 'vmat' )
 
       nullify ( ilc )
-      call re_alloc( ilc, 1, maxloc2, name='ilc', routine='vmat' )
+      call re_alloc( ilc, 1, maxloc2, 'ilc', 'vmat' )
 
       nullify (iorb )
-      call re_alloc( iorb, 0, maxloc, name='iorb', routine='vmat' )
+      call re_alloc( iorb, 0, maxloc, 'iorb', 'vmat' )
 
       ijl = (maxloc+1)*(maxloc+2)/2
 
       nullify( Vlocal )
-      call re_alloc( Vlocal, 1, ijl, 1, nspin, name='Vlocal',
-     &               routine='vmat' )
+      call re_alloc( Vlocal, 1, ijl, 1, nspin, 'Vlocal', 'vmat' )
 
       nullify( Clocal )
-      call re_alloc( Clocal, 1, nsp, 1, maxloc2, name='Clocal',
-     &               routine='vmat' )
+      call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'vmat' )
 
       nullify( VClocal )
-      call re_alloc( VClocal, 1, nsp, name='VClocal', routine='vmat' )
+      call re_alloc( VClocal, 1, nsp, 'VClocal', 'vmat' )
 
       if (ParallelLocal) then
         if (nrowsDscfL.gt.0) then
@@ -118,8 +116,7 @@ C  Find value of maxloc
         else
           nvmaxl = 1
         endif
-        call re_alloc( DscfL, 1, nvmaxl, 1, nspin,
-     &                 name='DscfL',  routine='vmat' )
+        call re_alloc( DscfL, 1, nvmaxl, 1, nspin, 'DscfL',  'vmat' )
         DscfL(1:nvmaxl,1:nspin) = 0.0_dp
       endif
 
@@ -385,24 +382,23 @@ C  Add final Vlocal to Vs
           endif
         endif
       enddo
-  999 continue
 
       if (ParallelLocal) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
-     &      nuotot, nspin, DscfL, Vs )
+     &                   nspin, DscfL, Vs )
 C Free memory 
-        call de_alloc( DscfL,  name='DscfL' )
+        call de_alloc( DscfL, 'DscfL', 'vmat' )
       endif
 
       !  Free local memory
 
-      call de_alloc( VClocal,  name='VClocal' )
-      call de_alloc( Clocal,  name='Clocal' )
-      call de_alloc( Vlocal,  name='Vlocal' )
-      call de_alloc( iorb,  name='iorb' )
-      call de_alloc( ilc,  name='ilc' )
-      call de_alloc( ilocal,  name='ilocal' )
+      call de_alloc( VClocal, 'VClocal', 'vmat' )
+      call de_alloc( Clocal, 'Clocal', 'vmat' )
+      call de_alloc( Vlocal, 'Vlocal', 'vmat' )
+      call de_alloc( iorb, 'iorb', 'vmat' )
+      call de_alloc( ilc, 'ilc', 'vmat' )
+      call de_alloc( ilocal, 'ilocal', 'vmat' )
 
       call timer('vmat',2)
 #if defined(MPI_TRACE) && defined(MPI)

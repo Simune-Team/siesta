@@ -51,6 +51,7 @@ C
       use parallel,     only : IOnode, Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb, GetNodeOrbs
       use atmfuncs,     only : symfio, cnfigfio, labelfis, nofis
+      use alloc,        only : re_alloc, de_alloc
       use siesta_cml
 #ifdef MPI
       use mpi_siesta
@@ -68,8 +69,6 @@ C
       real(dp)
      .  dm(maxnh,nspin),s(maxnh)
 
-      external
-     .  memory
 C Internal parameters ..................................................
 C Number of columns in printout.  Must be smaller than 20
       integer ncol, nbasis
@@ -79,8 +78,8 @@ C Number of columns in printout.  Must be smaller than 20
       integer  :: MPIerror, mpistatus(MPI_STATUS_SIZE)
       real(dp) :: pb(ncol)
       real(dp) :: temp1(5), temp2(5) 
-      real(dp), dimension(:), allocatable :: qb
-      character(len=200) ::  mpibuff ! 200 is sufficiently long for all buffered writes
+      real(dp),  pointer :: qb(:)
+      character(len=200) ::  mpibuff ! 200 is sufficiently long
 #endif
 
       integer i,ia,ib,ii,imax,in,io,ior,ip,is,j,ja,jja,jo,jor,
@@ -90,12 +89,11 @@ C Number of columns in printout.  Must be smaller than 20
       real(dp)
      .  p(ncol),qa,qas(4),qts(4),qtot,qtot_temp,stot,svec(3)
 
-      real(dp), dimension(:),   allocatable :: qo
-      real(dp), dimension(:,:), allocatable :: qos
+      real(dp), pointer :: qo(:), qos(:,:)
 
       character sym_label(ncol)*7, atm_label*20
 
-      character(len=8), allocatable :: orb_label(:)
+      character(len=8), pointer :: orb_label(:)
       character(len=13) :: atomtitle
 
 C ......................
@@ -119,8 +117,7 @@ C iopt = 0 implies no analysis
       endif 
 
 C Allocate local memory
-      allocate(qos(nspin,nbasis))
-      call memory('A','D',nspin*nbasis,'mulliken')
+      call re_alloc( qos, 1, nspin, 1, nbasis, 'qos', 'mulliken' )
 
       ns=0
       do i = 1,natoms
@@ -302,7 +299,7 @@ C Compute and print Mulliken Orbital and Atomic Populations ..........
 C DSP, Writing symmetries for each orbital. 
 C DSP, Orbitals with a 'P' belong to the polarization shell
              nao = nofis(ispec)
-             allocate(orb_label(nao))
+             call re_alloc( orb_label, 1, nao, 'orb_label', 'mulliken' )
              do io=1,nao
                write(orb_label(io),'(i1,a7)')
      .              cnfigfio(ispec,io), symfio(ispec,io)
@@ -324,13 +321,13 @@ C DSP, Orbitals with a 'P' belong to the polarization shell
                call cmlAddProperty(xf=mainXML,
      .              title='Orbital list', property=orb_label)
              endif
-             deallocate(orb_label)
-             
+             call de_alloc( orb_label, 'orb_label', 'mulliken' )
+
              do ia = 1,natoms
                if (isa(ia).eq.ispec) then
 C             Compute charge in each orbital of atom ia
                  nao = lasto(ia) - lasto(ia-1)
-                 allocate(qo(nao))
+                 call re_alloc( qo, 1, nao, 'qo', 'mulliken' )
                  qa = 0.0_dp
                  do io = lasto(ia-1)+1,lasto(ia)
                    nao = io - lasto(ia-1)
@@ -347,14 +344,14 @@ C             Compute charge in each orbital of atom ia
                  qtot = qtot + qa
 #ifdef MPI
 C Global sum of values stored in qo
-                 allocate(qb(nao))
+                 call re_alloc( qb, 1, nao, 'qb', 'mulliken' )
                  qb = qo
                  call MPI_Reduce(qb,qo,nao,MPI_double_precision,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
                  qb(1)=qa
                  call MPI_Reduce(qb(1),qa,1,MPI_double_precision,
      .             MPI_sum,0,MPI_Comm_World,MPIerror)
-                 deallocate(qb)
+                 call de_alloc( qb, 'qb', 'mulliken' )
 #endif
                  if (ionode) then
                    write(6,'(i4,f7.3,8f8.3,(/11x,8f8.3))')
@@ -370,7 +367,7 @@ C Global sum of values stored in qo
      .                  title="Orbital Charges", property=qo)
                    call cmlEndPropertyList(xf=mainXML) !atomtitle
                  endif 
-                 deallocate(qo)
+                 call de_alloc( qo, 'qo', 'mulliken' )
                endif
              enddo
              if (cml_p) call cmlEndPropertyList(xf=mainXML) !atm_label
@@ -501,8 +498,7 @@ C Global reduction of terms
       endif
 
 C Deallocate local memory
-      call memory('D','D',size(qos),'mulliken')
-      deallocate(qos)
+      call de_alloc( qos, 'qos', 'mulliken' )
 C ...................
 
 10    format(12x,20(2x,i4,2x))

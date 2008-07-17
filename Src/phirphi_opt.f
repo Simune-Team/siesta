@@ -8,11 +8,9 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine phirphi_opt( nua, na, nuo, no, scell, xa,
-     .                        maxnh, lasto, 
-     .                        lastkb, iphorb, iphKB, isa, 
-     .                        numh, listhptr, listh, indxuo, 
-     .                        indxua, iaorb, dk, matrix, Sp)
+      subroutine phirphi_opt( nua, na, nuo, no, scell, xa, maxnh, lasto,
+     &                        lastkb, iphorb, iphKB, isa, numh,
+     &                        listhptr, listh, dk, matrix, Sp )
 C *********************************************************************
 C If matrix='R'
 C Finds the matrix elements of the dk*r between basis
@@ -64,9 +62,6 @@ C integer numh(nuo)        : Number of nonzero elements of each row
 C                            of the overlap matrix
 C integer listh(maxnh)     : Column indexes of the nonzero elements  
 C                            of each row of the overlap matrix
-C integer indxuo(no)       : Index of equivalent orbital in unit cell
-C integer indxua(na)   : Index of equivalent atom in unit cell
-C integer iaorb(no)        : Atom to which orbitals belong
 C real*8  dk(3)            : Vector in k-space
 C character*1 matrix       : 'R' for molecules or atoms, the matrix
 C                             elements of the position operator are 
@@ -87,47 +82,39 @@ C *********************************************************************
       use sys,          only : die
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb
-      use m_matel,      only : matel
 
       implicit none
 
 C Passed variables
-      integer  maxnh, na, no, nua, nuo
-
-      integer
-     .  iphorb(no), isa(na), lasto(0:na), lastkb(0:na),
-     .  listh(maxnh), listhptr(nuo), numh(nuo), iaorb(no), indxuo(no),
-     .  iphKB(*), indxua(na)
-      
-      real(dp)
-     .  scell(3,3), dk(3), Sp(maxnh), xa(3,na)
-
-      character 
-     .  matrix*1
+      integer   ::  maxnh, na, no, nua, nuo
+      integer   :: iphorb(no), isa(na), lasto(0:na), lastkb(0:na),
+     &             listh(maxnh), listhptr(nuo), numh(nuo), iphKB(*)
+      real(dp)  :: scell(3,3), dk(3), Sp(maxnh), xa(3,na)
+      character :: matrix*1
 
 C Internal variables
 C maxkba = maximum number of KB projectors of one atom
 C maxno  = maximum number of basis orbitals overlapping a KB projector
         
       integer
-     .  ia, iio, ind, io, ioa, is, ix, 
-     .  j, ja, jn, jo, joa, js, nnia, norb, ka
+     &  ia, iio, ind, io, ioa, is, ix, 
+     &  j, ja, jn, jo, joa, js, nnia, norb, ka
 
       real(dp)
-     .  grSij(3), rij, Sij, xinv(3), sum
+     &  grSij(3), rij, Sij, xinv(3), sum
 
       integer
-     .  ikb, ina, ino, jno, ko, koa, ks,
-     .  nkb, nna, nno, ilm1, ilm2, npoints, 
-     .  ir
+     &  ikb, ina, ino, jno, ko, koa, ks,
+     &  nkb, nna, nno, ilm1, ilm2, npoints, 
+     &  ir
 
       real(dp)
-     .  epsk, grSki(3), 
-     .  rki, rmax, rmaxkb, rmaxo,
-     .  Sik, Sjk, Sikr, Sjkr, 
-     .  dintg2(3), dint1, dint2, dintgmod2, 
-     .  dintg1(3), dintgmod1,
-     .  phi1, phi2, dphi1dr, dphi2dr, Sir0, r
+     &  epsk, grSki(3), 
+     &  rki, rmax, rmaxkb, rmaxo,
+     &  Sik, Sjk, Sikr, Sjkr, 
+     &  dintg2(3), dint1, dint2, dintgmod2, 
+     &  dintg1(3), dintgmod1,
+     &  phi1, phi2, dphi1dr, dphi2dr, Sir0, r
       
       integer,  pointer, save :: iano(:)
       integer,  pointer, save :: iono(:)
@@ -145,12 +132,14 @@ C maxno  = maximum number of basis orbitals overlapping a KB projector
       real(dp),          save :: tiny = 1.0d-9
       real(dp), pointer, save :: Vi(:)
 
+      external  matel
+      
 C Start timer
       call timer('phirphiopt',1)
 
 C Check input matrix
       if(matrix.ne.'P'.and.matrix.ne.'R')
-     $   call die('phirphi_opt: matrix only can take values R or P')
+     &   call die('phirphi_opt: matrix only can take values R or P')
  
 C Nullify pointers
       if (frstme) then
@@ -168,12 +157,12 @@ C Allocate arrays
       call re_alloc(iano,1,maxno,name='iano',routine='phirphi_opt')
       call re_alloc(iono,1,maxno,name='iono',routine='phirphi_opt')
       call re_alloc(Ski,1,2,1,maxkba,1,maxno,name='Ski',
-     .              routine='phirphi_opt')
+     &              routine='phirphi_opt')
       norb = lmx2*nzetmx*nsemx
       call re_alloc(Pij,1,norb,1,norb,1,nspecies,name='Pij',
-     .              routine='phirphi_opt')
+     &              routine='phirphi_opt')
       call re_alloc(calculated,1,norb,1,norb,1,nspecies,
-     .              name='calculated',routine='phirphi_opt')
+     &              name='calculated',routine='phirphi_opt')
 
 C Initialise quantities
       do io = 1,maxnh
@@ -234,7 +223,7 @@ C Loop on atoms with KB projectors
           if (nkb.gt.maxkba) then
             maxkba = nkb + 10
             call re_alloc(Ski,1,2,1,maxkba,1,maxno,copy=.true.,
-     .        name='Ski',routine='phirphi_opt')
+     &        name='Ski',routine='phirphi_opt')
           endif
 
 C Find neighbour atoms
@@ -257,7 +246,7 @@ C Find if orbital is within range
                 do ko = lastkb(ka-1)+1,lastkb(ka)
                   koa = iphKB(ko)
                   if ( rki .lt. rcut(is,ioa)+rcut(ks,koa) ) 
-     .              within = .true.
+     &              within = .true.
                 enddo
 
 C Find overlap between neighbour orbitals and KB projectors
@@ -266,11 +255,11 @@ C Find overlap between neighbour orbitals and KB projectors
                   if (nno.gt.maxno) then
                     maxno = nno + 500
                     call re_alloc(iano,1,maxno,copy=.true.,
-     .                name='iano',routine='phirphi_opt')
+     &                name='iano',routine='phirphi_opt')
                     call re_alloc(iono,1,maxno,copy=.true.,
-     .                name='iono',routine='phirphi_opt')
+     &                name='iono',routine='phirphi_opt')
                     call re_alloc(Ski,1,2,1,maxkba,1,maxno,
-     .                copy=.true.,name='Ski',routine='phirphi_opt')
+     &                copy=.true.,name='Ski',routine='phirphi_opt')
                   endif
                   iono(nno) = io
                   iano(nno) = ia
@@ -282,22 +271,22 @@ C Find overlap between neighbour orbitals and KB projectors
                      xinv(ix) = - xij(ix,ina)
                     enddo 
                     call matel('S', is, ks, ioa, koa, xinv,
-     .                         Ski(1,ikb,nno), grSki)
+     &                         Ski(1,ikb,nno), grSki)
               
                     sum = 0.0d0
                     if (abs(dk(1)).gt.tiny) then
                       call matel('X', is, ks, ioa, koa, xinv,
-     .                           Sik, grSki)
+     &                           Sik, grSki)
                       sum = sum + Sik*dk(1) 
                     endif
                     if (abs(dk(2)).gt.tiny) then
                       call matel('Y', is, ks, ioa, koa, xinv,
-     .                           Sik, grSki)
+     &                           Sik, grSki)
                       sum = sum + Sik*dk(2)
                     endif
                     if (abs(dk(3)).gt.tiny) then
                       call matel('Z', is, ks, ioa, koa, xinv,
-     .                           Sik, grSki)
+     &                           Sik, grSki)
                       sum = sum + Sik*dk(3)
                     endif
                     Ski(2,ikb,nno) = sum
@@ -391,23 +380,23 @@ C Initialize neighb subroutine
                   if (matrix.eq.'R') then 
  
                     call matel('X', js, is, joa, ioa, xinv,
-     .                         Sij, grSij )
+     &                         Sij, grSij )
                     Si(jo) = Sij*dk(1)  
                      
                     call matel('Y', js, is, joa, ioa, xinv,
-     .                         Sij, grSij )
+     &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(2)  
  
                     call matel('Z', js, is, joa, ioa, xinv,
-     .                         Sij, grSij )
+     &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*dk(3) 
            
-                    call matel('S', is, js, ioa, joa, xij(1:3,jn),
-     .                         Sij, grSij )
+                    call matel('S', is, js, ioa, joa, xij(1,jn),
+     &                         Sij, grSij )
                     Si(jo) = Si(jo) + Sij*(
-     .                   xa(1,ia)*dk(1)
-     .                 + xa(2,ia)*dk(2)
-     .                 + xa(3,ia)*dk(3))  
+     &                   xa(1,ia)*dk(1)
+     &                 + xa(2,ia)*dk(2)
+     &                 + xa(3,ia)*dk(3))  
    
                   else
                             
@@ -416,22 +405,22 @@ C Perform the direct computation of the matrix element of the momentum
 C within the same atom
                       if (.not.calculated(joa,ioa,is)) then 
                         ilm1 = lofio(is,ioa)**2 + lofio(is,ioa) + 
-     .                    mofio(is,ioa) + 1
+     &                    mofio(is,ioa) + 1
                         ilm2 = lofio(is,joa)**2 + lofio(is,joa) + 
-     .                    mofio(is,joa) + 1
+     &                    mofio(is,joa) + 1
                         call intgry(ilm1,ilm2,dintg2)
                         call intyyr(ilm1,ilm2,dintg1)
                         dintgmod1 = dintg1(1)**2 + dintg1(2)**2 + 
-     .                    dintg1(3)**2
+     &                    dintg1(3)**2
                         dintgmod2 = dintg2(1)**2 + dintg2(2)**2 + 
-     .                    dintg2(3)**2
+     &                    dintg2(3)**2
                         Sir0 = 0.0d0
                         if ((dintgmod2.gt.tiny).or.(dintgmod1.gt.tiny)) 
-     .                      then 
+     &                      then 
                           dint1 = 0.0d0
                           dint2 = 0.0d0
                           npoints = int(max(rcut(is,ioa),rcut(is,joa))
-     .                      /dx) + 2
+     &                      /dx) + 2
                           do ir = 1,npoints
                             r = dx*(ir-1)
                             call rphiatm(is,ioa,r,phi1,dphi1dr)
@@ -441,9 +430,9 @@ C within the same atom
                           enddo 
 C The factor of two because we use Ry for the Hamiltonian
                           Sir0 =
-     .                 -2.0d0*(dk(1)*(dint1*dintg1(1)+dint2*dintg2(1))+
-     .                         dk(2)*(dint1*dintg1(2)+dint2*dintg2(2))+
-     .                         dk(3)*(dint1*dintg1(3)+dint2*dintg2(3))) 
+     &                 -2.0d0*(dk(1)*(dint1*dintg1(1)+dint2*dintg2(1))+
+     &                         dk(2)*(dint1*dintg1(2)+dint2*dintg2(2))+
+     &                         dk(3)*(dint1*dintg1(3)+dint2*dintg2(3))) 
                         endif 
                         Pij(ioa,joa,is) = - Sir0
                         Pij(joa,ioa,is) =   Sir0
@@ -455,13 +444,13 @@ C The factor of two because we use Ry for the Hamiltonian
                     else
 C Matrix elements between different atoms are taken from the 
 C gradient of the overlap 
-                      call matel('S', is, js, ioa, joa, xij(1:3,jn),
-     .                           Sij, grSij )
+                      call matel('S', is, js, ioa, joa, xij(1,jn),
+     &                           Sij, grSij )
 C The factor of two because we use Ry for the Hamiltonian
                       Si(jo) =
-     .                  2.0d0*(grSij(1)*dk(1)
-     .             +           grSij(2)*dk(2)
-     .             +           grSij(3)*dk(3))
+     &                  2.0d0*(grSij(1)*dk(1)
+     &             +           grSij(2)*dk(2)
+     &             +           grSij(3)*dk(3))
 
                     endif 
   
@@ -481,9 +470,9 @@ C The factor of two because we use Ry for the Hamiltonian
 
 C Reduce size of arrays
       call re_alloc(calculated,1,1,1,1,1,1,name='calculated',
-     .              routine='phirphi_opt')
+     &              routine='phirphi_opt')
       call re_alloc(Pij,1,1,1,1,1,1,name='Pij',
-     .              routine='phirphi_opt')
+     &              routine='phirphi_opt')
       call re_alloc(Ski,1,2,1,1,1,1,name='Ski',routine='phirphi_opt')
       call re_alloc(iono,1,1,name='iono',routine='phirphi_opt')
       call re_alloc(iano,1,1,name='iano',routine='phirphi_opt')
@@ -529,10 +518,10 @@ C Passed variables
 
 C Internal variables
       integer
-     .  lmax, l2, ix, isp, iz, nsp, im,
-     .  maxlm, maxsp
+     &  lmax, l2, ix, isp, iz, nsp, im,
+     &  maxlm, maxsp
       real(dp)
-     .  phi, pi, theta, dl, r(3)
+     &  phi, pi, theta, dl, r(3)
 
       integer,           save :: maxl = 8
       logical,           save :: frstme = .true.
@@ -544,7 +533,7 @@ C Internal variables
       real(dp), pointer, save :: z(:)
 
       external
-     .  dot
+     &  dot
 
 C Nullify pointers and initialise arrays on first call
       if (frstme) then
@@ -614,7 +603,7 @@ C Find the integrals
         call rlylm( lmax, r, y, gry )
         do ix = 1,3
           dintg(ix) = dintg(ix) + wsp(isp)*y(ilm1-1)*
-     .      (gry(ix,ilm2-1) - l2*y(ilm2-1)*x(ix,isp))
+     &      (gry(ix,ilm2-1) - l2*y(ilm2-1)*x(ix,isp))
         enddo
       enddo
       
@@ -650,9 +639,9 @@ C Passed variables
 
 C Internal variables 
       integer
-     .  lmax,ix, isp, iz, nsp, im, maxlm, maxsp
+     &  lmax,ix, isp, iz, nsp, im, maxlm, maxsp
       real(dp)
-     .  phi, pi, theta, dl, r(3)
+     &  phi, pi, theta, dl, r(3)
 
       integer,           save :: maxl = 8
       logical,           save :: frstme = .true.
@@ -664,7 +653,7 @@ C Internal variables
       real(dp), pointer, save :: z(:)
 
       external
-     .  dot
+     &  dot
 
 C Nullify pointers and initialise arrays on first call
       if (frstme) then
@@ -727,7 +716,7 @@ C Find the integrals
         call rlylm( lmax, r, y, gry )
         do ix = 1,3
           dintg(ix) = dintg(ix) +
-     .      wsp(isp)*y(ilm1-1)*y(ilm2-1)*x(ix,isp) 
+     &      wsp(isp)*y(ilm1-1)*y(ilm2-1)*x(ix,isp) 
         enddo
       enddo
  

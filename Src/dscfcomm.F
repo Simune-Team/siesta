@@ -76,7 +76,7 @@ C     Input variables
 
 C     Local variables
       integer               :: ii, io, ANode, BNode, PP, ncom, com, pos,
-     &                         tmp, nn
+     &                         nn
       integer, pointer      :: neights(:), Gneights(:,:), src(:),
      &                         dst(:), sereBUF(:), procSrc(:),
      &                         invpTmp(:), invp(:), xneights(:)

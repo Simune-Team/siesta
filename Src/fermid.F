@@ -182,9 +182,7 @@ C if nspin =2 populations of homo and lumo become equal.
           endif
 
 C Obtain the electronic entropy
-
-100       entropy = 0.0d0
-
+          entropy = 0.0d0
           do ik = 1,nk
             do ie = 1,ne
               do ispin = 1,nspin

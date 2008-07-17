@@ -11,13 +11,14 @@
       module m_dynamics
 
       use precision
-      use parallel,   only : Node, IONode
-      use m_ioxv,     only : xv_file_read
-      use sys,        only : die
-      use atomlist,   only : iza
-      use units,      only : Ang, eV
+      use parallel,    only : Node, IONode
+      use m_ioxv,      only : xv_file_read
+      use sys,         only : die
+      use atomlist,    only : iza
+      use units,       only : Ang, eV
       use m_mpi_utils, only : broadcast
-      use files,      only : slabel
+      use files,       only : slabel
+      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
@@ -112,22 +113,18 @@ C
 
 C Internal variables .............................................................
 
-      integer ::  ct,i,ia,info,j,k
+      integer  ::  ct, i, ia, info, j
 
-      real(dp)
-     .  aux1(3,3),aux2(3,3),diff,dt2,dtby2,
-     .  f(3,3),fi(3,3),fovermp,
-     .  g(3,3),gdot(3,3),gi(3,3),
-     .  hi(3,3),hnew(3,3),hlast(3,3),hs(3),
-     .  pgas,press(3,3),
-     .  tdiff,tekin,twodt,
-     .  vol, xdot,xlast,xnew
+      real(dp) :: aux1(3,3), aux2(3,3), diff, dt2, dtby2, gi(3,3),
+     &            f(3,3), fi(3,3), fovermp, g(3,3), gdot(3,3),
+     &            hi(3,3), hnew(3,3), hlast(3,3), hs(3), pgas,
+     &            press(3,3), tdiff, tekin, twodt, vol, xdot, xlast,
+     &            xnew
       real(dp) :: xdum(3), xaold(3), suncdot(3)
 
-      real(dp), dimension(:,:), allocatable ::
-     .  s,sdot,snew,sunc
+      real(dp), pointer :: s(:,:), sdot(:,:), snew(:,:), sunc(:,:)
 
-      real(dp), dimension(:,:), allocatable, save :: sold
+      real(dp), pointer, save :: sold(:,:)
       real(dp), save ::  hold(3,3), x, xold
 
       integer :: old_natoms, dummy_iza, iacc
@@ -142,15 +139,11 @@ C ......................................................................
      $   call die('pr: Wrong iunit option;  must be 1 or 2')
 
 C Allocate local memory
-      allocate(s(3,natoms))
-      allocate(sdot(3,natoms))
-      allocate(snew(3,natoms))
-      allocate(sunc(3,natoms))
-      call memory('A','D',12*natoms,'npr')
-      if (.not.allocated(sold)) then
-        allocate(sold(3,natoms))
-        call memory('A','D',3*natoms,'npr')
-      endif
+      call re_alloc( sold, 1, 3, 1, natoms, 'sold', 'npr' )
+      call re_alloc( s, 1, 3, 1, natoms, 's', 'npr' )
+      call re_alloc( sdot, 1, 3, 1, natoms, 'sdot', 'npr' )
+      call re_alloc( snew, 1, 3, 1, natoms, 'snew', 'npr' )
+      call re_alloc( sunc, 1, 3, 1, natoms, 'sunc', 'npr' )
 
       ct = 3 + ntcon            ! center of mass constraints
       if (natoms .eq. 1) ct = 0
@@ -451,14 +444,10 @@ C Instantaneous temperature (Kelvin)
 C .....................
 
 C Deallocate local memory
-      call memory('D','D',size(s),'npr')
-      deallocate(s)
-      call memory('D','D',size(sdot),'npr')
-      deallocate(sdot)
-      call memory('D','D',size(snew),'npr')
-      deallocate(snew)
-      call memory('D','D',size(sunc),'npr')
-      deallocate(sunc)
+      call de_alloc( sunc, 'sunc', 'npr' )
+      call de_alloc( snew, 'snew', 'npr' )
+      call de_alloc( sdot, 'sdot', 'npr' )
+      call de_alloc( s, 's', 'npr' )
 
       end subroutine npr
     
@@ -541,21 +530,16 @@ C *****************************************************************************
 
 C Internal variables 
 
-      integer :: ct,i,info,ia,j,k
+      integer  :: ct, i, info, ia, j
 
-      real(dp)
-     .  a1,a2,aux1(3,3),aux2(3,3),diff,dot,dt2,dtby2,
-     .  f(3,3),fi(3,3),fovermp,
-     .  g(3,3),gdot(3,3),gi(3,3),
-     .  hi(3,3),hnew(3,3),hlast(3,3),hs(3),
-     .  pgas,press(3,3),
-     .  tdiff, twodt, vol
+      real(dp) :: a1, a2, aux1(3,3), aux2(3,3), diff, dot, dt2, dtby2,
+     &            f(3,3), fi(3,3), fovermp, g(3,3), gdot(3,3), gi(3,3),
+     &            hi(3,3), hnew(3,3), hlast(3,3), hs(3), pgas,
+     &            press(3,3), tdiff, twodt, vol
       real(dp) :: xdum(3), xaold(3), suncdot(3)
 
-      real(dp), dimension(:,:), allocatable ::
-     .  s,sdot,snew,sunc
-
-      real(dp), dimension(:,:), allocatable, save :: sold
+      real(dp), pointer :: s(:,:), sdot(:,:), snew(:,:), sunc(:,:)
+      real(dp), pointer, save :: sold(:,:)
       real(dp), save ::  hold(3,3)
 
       integer :: old_natoms, dummy_iza, iacc
@@ -572,16 +556,12 @@ C ..............................................................................
       if (natoms .eq. 1) ct = 0 
 
 C Allocate local memory
-      allocate(s(3,natoms))
-      allocate(sdot(3,natoms))
-      allocate(snew(3,natoms))
-      allocate(sunc(3,natoms))
-      call memory('A','D',12*natoms,'pr')
-      if (.not. allocated(sold)) then
-         allocate(sold(3,natoms))
-         call memory('A','D',3*natoms,'pr')
-      endif
-         
+      call re_alloc( sold, 1, 3, 1, natoms, 'sold', 'pr' )
+      call re_alloc( s, 1, 3, 1, natoms, 's', 'pr' )
+      call re_alloc( sdot, 1, 3, 1, natoms, 'sdot', 'pr' )
+      call re_alloc( snew, 1, 3, 1, natoms, 'snew', 'pr' )
+      call re_alloc( sunc, 1, 3, 1, natoms, 'sunc', 'pr' )
+
 C Define constants and conversion factors .......................................
       dt2   = dt**2
       dtby2 = dt/2.0d0
@@ -890,20 +870,15 @@ C Instantaneous temperature (Kelvin)
 C .....................
 
 C Deallocate local memory
-      call memory('D','D',size(s),'pr')
-      deallocate(s)
-      call memory('D','D',size(sdot),'pr')
-      deallocate(sdot)
-      call memory('D','D',size(snew),'pr')
-      deallocate(snew)
-      call memory('D','D',size(sunc),'pr')
-      deallocate(sunc)
+      call de_alloc( sunc, 'sunc', 'pr' )
+      call de_alloc( snew, 'snew', 'pr' )
+      call de_alloc( sdot, 'sdot', 'pr' )
+      call de_alloc( s, 's', 'pr' )
 
       end subroutine pr
     
-      subroutine nose(istep,iunit,natoms,fa,tt,dt,
-     .                ma,mn,ntcon,va,xa,kin,kn,vn,
-     .                temp)
+      subroutine nose( istep, iunit, natoms, fa, tt, dt, ma, mn, ntcon,
+     .                 va, xa, kin, kn, vn, temp )
 C *************************************************************************
 C Subroutine for MD simulations with CONTROLLED TEMPERATURE.
 C The temperature is controlled with a NOSE thermostat.
@@ -977,8 +952,7 @@ C Internal variables .........................................................
      .  tekin,temp,twodt,
      .  x,xdot,xlast,xnew,xold
 
-      real(dp), dimension(:,:), allocatable, save ::
-     .  xanew,xaold
+      real(dp), pointer, save :: xanew(:,:), xaold(:,:)
 C .............................................................................
 
       restart_file = trim(slabel) // ".NOSE_RESTART"
@@ -989,13 +963,11 @@ C .............................................................................
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory and initialise
-      if (.not.allocated(xanew)) then
-        allocate(xanew(3,natoms))
-        call memory('A','D',3*natoms,'nose')
-      endif
-      if (.not.allocated(xaold)) then
-        allocate(xaold(3,natoms))
-        call memory('A','D',3*natoms,'nose')
+      nullify(xanew)
+      call re_alloc( xanew, 1, 3, 1, natoms, 'xanew', 'nose' )
+      if (.not.associated(xaold)) then
+        nullify(xaold)
+        call re_alloc( xaold, 1, 3, 1, natoms, 'xaold', 'nose' )
         do ia = 1,natoms
           do i = 1,3
             xaold(i,ia)=0.0d0
@@ -1058,7 +1030,7 @@ C     if the time step is the first of the simulation
             if (old_natoms .ne. natoms)
      $           call die("Wrong number of atoms in NOSE_RESTART")
             do ia = 1, natoms
-               read(iacc,*) dummy_iza, (xaold(i,ia),i=1,3) ! old positions
+               read(iacc,*) dummy_iza, (xaold(i,ia),i=1,3)
                if (dummy_iza .ne. iza(ia))
      $              call die("Wrong species number in NOSE_RESTART")
             enddo
@@ -1185,7 +1157,6 @@ C Instantaneous temperature (Kelvin)
       endif
 
 C .....................
-
       end subroutine nose
 
       subroutine anneal(istep,iunit,ianneal,taurelax,bulkm,
@@ -1264,21 +1235,17 @@ C *****************************************************************************
 
 C Internal variables .............................................................
 
-      integer
-     .  ct,i,ia,info,j,k
+      integer  :: ct, i, ia, info, j
+      real(dp) :: dt2, fovermp, hi(3,3), hs(3), pgas, press(3,3),
+     &            pressin, rfac, rfac2, tekin, temp, twodt, vol, volcel
 
-      real(dp)
-     .  dt2,fovermp,hi(3,3),hs(3),
-     .  pgas,press(3,3),pressin,rfac,rfac2,
-     .  tekin,temp,twodt,vol,volcel
-
-      real(dp), dimension(:,:), allocatable, save ::
-     .  s,sdot,snew,sold,sunc
+      real(dp), pointer :: s(:,:), sdot(:,:), snew(:,:), sunc(:,:)
+      real(dp), pointer, save :: sold(:,:)
 
       real(dp), dimension(3) :: xdum, xaold
       logical :: have_t_target, have_p_target
        external
-     .  volcel, memory
+     &  volcel, memory
 C ....................................................................
 
       if (iunit .ne. 1 .and. iunit .ne. 2)
@@ -1290,18 +1257,11 @@ C ....................................................................
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory
-      allocate(s(3,natoms))
-      call memory('A','D',3*natoms,'anneal')
-      allocate(sdot(3,natoms))
-      call memory('A','D',3*natoms,'anneal')
-      allocate(snew(3,natoms))
-      call memory('A','D',3*natoms,'anneal')
-      allocate(sunc(3,natoms))
-      call memory('A','D',3*natoms,'anneal')
-      if (.not.allocated(sold)) then
-        allocate(sold(3,natoms))
-        call memory('A','D',3*natoms,'anneal')
-      endif
+      call re_alloc( sold, 1, 3, 1, natoms, 'sold', 'anneal' )
+      call re_alloc( s, 1, 3, 1, natoms, 's', 'anneal' )
+      call re_alloc( sdot, 1, 3, 1, natoms, 'sdot', 'anneal' )
+      call re_alloc( snew, 1, 3, 1, natoms, 'snew', 'anneal' )
+      call re_alloc( sunc, 1, 3, 1, natoms, 'sunc', 'anneal' )
 
 C Define constants and conversion factors .......................................
       dt2   = dt**2
@@ -1490,14 +1450,10 @@ C Instantaneous temperature (Kelvin)
 C .....................
 
 C Deallocate local memory
-      call memory('D','D',size(s),'anneal')
-      deallocate(s)
-      call memory('D','D',size(sdot),'anneal')
-      deallocate(sdot)
-      call memory('D','D',size(snew),'anneal')
-      deallocate(snew)
-      call memory('D','D',size(sunc),'anneal')
-      deallocate(sunc)
+      call de_alloc( sunc, 'sunc', 'anneal' )
+      call de_alloc( snew, 'snew', 'anneal' )
+      call de_alloc( sdot, 'sdot', 'anneal' )
+      call de_alloc( s, 's', 'anneal' )
 
 !!!      taurelax = taurelax - dt
       end subroutine anneal
@@ -1563,10 +1519,7 @@ C Internal variables ..........................................................
       real(dp)
      .  dot,dt2,fovermp,temp,twodt
 
-      real(dp), dimension(:,:), allocatable, save ::
-     .  xanew
-      real(dp), dimension(:,:), allocatable, save ::
-     .  xaold
+      real(dp), pointer, save :: xanew(:,:), xaold(:,:)
 
 C ........................
 
@@ -1577,11 +1530,9 @@ C ........................
       if (natoms .eq. 1) ct = 0
 
 C Allocate local memory
-      allocate(xanew(3,natoms))
-      call memory('A','D',3*natoms,'verlet1')
-      if (.not.allocated(xaold)) then
-        allocate(xaold(3,natoms))
-        call memory('A','D',3*natoms,'verlet1')
+      call re_alloc( xanew, 1, 3, 1, natoms, 'xanew', 'verlet1' )
+      if (.not.associated(xaold)) then
+        call re_alloc( xaold, 1, 3, 1, natoms, 'xaold', 'verlet1' )
       endif
 
 C Define constants and conversion factors .....................................
@@ -1672,8 +1623,7 @@ C Instantaneous temperature (Kelvin)
 C .....................
 
 C Deallocate local memory
-      call memory('D','D',size(xanew),'verlet1')
-      deallocate(xanew)
+      call de_alloc( xanew, 'xanew', 'verlet1' )
 
       end subroutine verlet1
     
@@ -1742,8 +1692,7 @@ C Internal variables ..........................................................
       real(dp)
      .  dot,dt2,dtby2,fovermp,temp
 
-      real(dp), dimension(:,:), allocatable, save ::
-     .  accold,vold
+      real(dp), pointer, save :: accold(:,:), vold(:,:)
 
 C Related to FIRE quenching
       integer, parameter  :: firenmin = 5
@@ -1764,13 +1713,11 @@ C ........................
 
 C Allocate local memory - only done once as data must be saved. As a
 C result the memory is not deallocated at the end of the routine.
-      if (.not.allocated(accold)) then
-        allocate(accold(3,natoms))
-        call memory('A','D',3*natoms,'verlet2')
+      if (.not.associated(accold)) then
+        call re_alloc( accold, 1, 3, 1, natoms, 'accold', 'verlet2' )
       endif
-      if (.not.allocated(vold)) then
-        allocate(vold(3,natoms))
-        call memory('A','D',3*natoms,'verlet2')
+      if (.not.associated(vold)) then
+        call re_alloc( vold, 1, 3, 1, natoms, 'vold', 'verlet2' )
       endif
 
 C Define constants and conversion factors .....................................

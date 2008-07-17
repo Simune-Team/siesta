@@ -49,7 +49,7 @@
      .       fmt='(f14.6)')
       endif
 
-! Substract egg box effect form energy 
+! Substract egg box effect form energy
       if (eggbox_block) then
         call eggbox('energy',ucell,na_u,isa,ntm,xa,fa,Etot,
      .               eggbox_block)

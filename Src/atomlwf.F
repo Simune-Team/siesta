@@ -393,7 +393,8 @@ C Assign ramdom guess for orbitals in atom ia if iopt = 0
                 endif
               endif
             enddo
-30        enddo
+30					continue
+	        enddo
 
 C Normalize LWF's if iopt = 0  .............................................
 C  (normalize to one if functions are expected to be occupied, 0.5 if half

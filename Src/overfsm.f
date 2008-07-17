@@ -16,7 +16,6 @@
       use atmfuncs,      only : rcut
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb
       use alloc,         only : re_alloc, de_alloc
-      use m_matel,       only : matel
 
       implicit none
 
@@ -25,7 +24,7 @@
 
       CONTAINS
 
-      subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
+      subroutine overfsm(nua, na, no, scell, xa, indxua, rmaxo,
      .                   maxnh, maxnd, lasto, iphorb, isa, 
      .                   numd, listdptr, listd, numh, listhptr, listh, 
      .                   nspin, Emat, fa, stress, S)
@@ -41,7 +40,6 @@ C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
-C integer maxo             : Second dimension of Emat
 C integer maxnh            : First dimension of S and listh
 C integer maxnd            : First dimension of Escf and listd
 C integer lasto(0:na)      : Last orbital index of each atom
@@ -68,7 +66,7 @@ C real*8  stress(3,3)      : Stress tensor (Orthog. part added to input)
 C *********************************************************************
 
       integer, intent(in) ::
-     . maxnd, maxnh, maxo, na, no, nspin, nua
+     . maxnd, maxnh, na, no, nspin, nua
 
       integer, intent(in) ::
      . indxua(na), iphorb(no), isa(na), lasto(0:na), 
@@ -104,9 +102,9 @@ C Initialize neighb subroutine
 
 C Allocate local memory
       nullify( Di )
-      call re_alloc( Di, 1, no, name='Di', routine='overfsm' )
+      call re_alloc( Di, 1, no, 'Di', 'overfsm' )
       nullify( Si )
-      call re_alloc( Si, 1, no, name='Si', routine='overfsm' )
+      call re_alloc( Si, 1, no, 'Si', 'overfsm' )
 
       Si(1:no) = 0.0d0  ! AG: Superfluous
       Di(1:no) = 0.0d0
@@ -137,7 +135,7 @@ C Valid orbital
                 is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'S', is, js, ioa, joa, xij(1:3,jn),
+                  call matel( 'S', is, js, ioa, joa, xij(1,jn),
      .                      Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                   do ix = 1,3
@@ -168,8 +166,8 @@ C Valid orbital
 
 C Deallocate local memory
 
-      call de_alloc( Si, name='Si' )
-      call de_alloc( Di, name='Di' )
+      call de_alloc( Si, 'Si', 'overfsm' )
+      call de_alloc( Di, 'Di', 'overfsm' )
 
 C Finish timer
       call timer( 'overfsm', 2 )

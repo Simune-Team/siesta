@@ -24,6 +24,9 @@ C     Begin of coordinate relaxation iteration
 #endif
         call siesta_forces( istep )
 
+#ifdef DEBUG
+        call write_debug( 'PRE siesta_move' )
+#endif
         call siesta_move( istep, relaxd )
         if (.not. relaxd) then
           istep = istep + 1

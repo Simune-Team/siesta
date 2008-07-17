@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diag2g( nuo, no, maxuo, maxnh, maxnd, maxo,
+      subroutine diag2g( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr,
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   eo, qo, Dnew, Enew, ef, Entropy,
@@ -23,7 +23,6 @@ C Writen by J.Soler, May and August 1998.
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals on local node
 C integer no                  : Number of basis orbitals
-C integer maxuo               : Maximum number of basis  orbitals
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of Dnew and Enew
 C integer maxo                : First dimension of eo and qo
@@ -92,7 +91,7 @@ C
 #endif
 
       integer
-     .  maxo, maxuo, maxnd, maxnh, no, nuo, nuotot, iscf, neigwanted
+     .  maxo, maxnd, maxnh, no, nuo, nuotot, iscf, neigwanted
 
       integer 
      .  listh(maxnh), numh(nuo), listhptr(nuo),

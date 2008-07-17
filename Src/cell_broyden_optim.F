@@ -24,7 +24,7 @@
      $                     broyden_destroy, broyden_init,
      $                     broyden_is_setup
 
-      use m_memory, only: memory, mem_stat
+      use alloc,    only : re_alloc, de_alloc
       use parallel, only : ionode
 
       implicit none
@@ -78,21 +78,13 @@ C
       logical, intent(out) :: relaxd
 
 c Internal variables and arrays
-
-      real(dp)       :: volume, new_volume, trace
-
-      logical           found
-      integer           iu, ia, i, j, n, indi
-
+      real(dp) :: volume, new_volume, trace
+      integer  :: iu, i, j, indi
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
-
-      real(dp), dimension(:), allocatable       :: gxa, gfa
-      real(dp), dimension(:), allocatable       :: rold, rnew, rdiff
-
+      real(dp), pointer :: gxa(:), gfa(:), rnew(:)
 
 ! Saved internal variables:
-
       logical, save :: frstme = .true.
       logical, save :: constant_volume
       real(dp), save :: initial_volume
@@ -233,17 +225,9 @@ C Initialization to 1. for numerical reasons, later substracted --------
 C Variable cell -------------------------------------------------------------
 
       if ( varcel ) then
-
-         allocate(gfa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gfa")
-         allocate(gxa(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="gxa")
-         allocate (rnew(numel), stat=mem_stat)
-         call memory('A','D',numel,'Broyden_optim',
-     $        stat=mem_stat,id="rnew")
-
+        call re_alloc( gfa, 1, numel, 'gfa', 'Broyden_optim' )
+        call re_alloc( gxa, 1, numel, 'gxa', 'Broyden_optim' )
+        call re_alloc( rnew, 1, numel, 'rnew', 'Broyden_optim' )
 
         relaxd = .true.
 
@@ -335,16 +319,9 @@ C Transform back if variable cell
 
 
       ! Deallocate local memory
-
-        deallocate (rnew, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="rnew")
-        deallocate (gxa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gxa")
-        deallocate (gfa, stat=mem_stat)
-        call memory('D','D',numel,'Broyden_optim',
-     $       stat=mem_stat,id="gfa")
+        call de_alloc( rnew,'rnew', 'Broyden_optim' )
+        call de_alloc( gxa,'gxa', 'Broyden_optim' )
+        call de_alloc( gfa,'gfa', 'Broyden_optim' )
 
       endif ! variable cell
 

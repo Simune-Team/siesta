@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diagsprl( nuo, no, maxuo, maxnh, maxnd, maxo,
+      subroutine diagsprl( nuo, no, maxnh, maxnd, maxo,
      .                   numh, listhptr, listh, numd, listdptr, 
      .                   listd, H, S, getD, qtot, temp, e1, e2,
      .                   xij, indxuo, nk, kpoint, wk,
@@ -26,7 +26,6 @@ C Modified to reduce eigenvector computation by J.D. Gale Nov. 2004
 C **************************** INPUT **********************************
 C integer nuo                 : Number of basis orbitals in unit cell
 C integer no                  : Number of basis orbitals in supercell
-C integer maxuo               : Maximum number of basis orbitals
 C integer maxnh               : Maximum number of orbitals interacting  
 C integer maxnd               : First dimension of listd / DM
 C integer maxo                : First dimension of eo and qo
@@ -108,7 +107,7 @@ C
 #endif
 
       integer
-     .  maxuo, maxnd, maxnh, maxo, nk, no, nuo, nuotot, iscf
+     .  maxnd, maxnh, maxo, nk, no, nuo, nuotot, iscf
 
       integer 
      .  indxuo(no), listh(maxnh), numh(nuo), listd(maxnd), numd(nuo),

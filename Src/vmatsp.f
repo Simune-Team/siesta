@@ -105,47 +105,40 @@ C  If spiral, the diagonal elements of Vlocal do not change
 
       !  Allocate local memory
       nullify ( ilocal )
-      call re_alloc( ilocal, 1, no, name='ilocal', routine='vmatsp' )
+      call re_alloc( ilocal, 1, no, 'ilocal', 'vmatsp' )
 
       nullify ( ilc )
-      call re_alloc( ilc, 1, maxloc2, name='ilc', routine='vmatsp' )
+      call re_alloc( ilc, 1, maxloc2, 'ilc', 'vmatsp' )
 
       nullify (iorb )
-      call re_alloc( iorb, 0, maxloc, name='iorb', routine='vmatsp' )
+      call re_alloc( iorb, 0, maxloc, 'iorb', 'vmatsp' )
 
       ijl = (maxloc+1)*(maxloc+2)/2
 
       nullify( Vlocal )
-      call re_alloc( Vlocal, 1, ijl, 1, nsd, name='Vlocal',
-     &               routine='vmatsp' )
+      call re_alloc( Vlocal, 1, ijl, 1, nsd, 'Vlocal', 'vmatsp' )
 
       nullify( VlocalSp )
       call re_alloc( VlocalSp, 0, maxloc, 0, maxloc, 1, nsd,
-     &               name    = 'VlocalSp',
-     &               routine = 'vmatsp' )
+     &               'VlocalSp', 'vmatsp' )
 
       nullify( Clocal )
-      call re_alloc( Clocal, 1, nsp, 1, maxloc2, name='Clocal',
-     &               routine='vmatsp' )
+      call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'vmatsp' )
 
       nullify( VClocal )
-      call re_alloc( VClocal, 1, nsp, name='VClocal', routine='vmatsp' )
+      call re_alloc( VClocal, 1, nsp, 'VClocal', 'vmatsp' )
 
       nullify( VClocal1 )
-      call re_alloc( VClocal1, 1, nsp, name='VClocal1',
-     &               routine = 'vmatsp' )
+      call re_alloc( VClocal1, 1, nsp, 'VClocal1', 'vmatsp' )
 
       nullify( VClocal2 )
-      call re_alloc( VClocal2, 1, nsp, name='VClocal2',
-     &               routine = 'vmatsp' )
+      call re_alloc( VClocal2, 1, nsp, 'VClocal2', 'vmatsp' )
 
       nullify( VClocal3 )
-      call re_alloc( VClocal3, 1, nsp, name='VClocal3',
-     &               routine = 'vmatsp' )
+      call re_alloc( VClocal3, 1, nsp, 'VClocal3', 'vmatsp' )
 
       nullify( VClocal4 )
-      call re_alloc( VClocal4, 1, nsp, name='VClocal4',
-     &               routine = 'vmatsp' )
+      call re_alloc( VClocal4, 1, nsp, 'VClocal4', 'vmatsp' )
 
       if (Parallel_Flag) then
         if (nrowsDscfL.gt.0) then
@@ -153,8 +146,7 @@ C  If spiral, the diagonal elements of Vlocal do not change
         else
           nvmaxl = 1
         endif
-        call re_alloc( DscfL, 1, nvmaxl, 1, nsd+2,
-     &                 name='DscfL',  routine='vmatsp' )
+        call re_alloc( DscfL, 1, nvmaxl, 1, nsd+2, 'DscfL', 'vmatsp' )
         DscfL(1:nvmaxl,1:nsd+2) = 0.0_dp
       endif
 
@@ -485,24 +477,24 @@ C  Add final Vlocal to Vs
 
       !  Free local memory
 
-      call de_alloc( Vlocal,  name='Vlocal' )
-      call de_alloc( VlocalSp,  name='VlocalSp' )
-      call de_alloc( iorb,  name='iorb' )
-      call de_alloc( ilocal,  name='ilocal' )
-      call de_alloc( ilc,  name='ilc' )
-      call de_alloc( Clocal,  name='Clocal' )
-      call de_alloc( VClocal,  name='VClocal' )
-      call de_alloc( VClocal1,  name='VClocal1' )
-      call de_alloc( VClocal2,  name='VClocal2' )
-      call de_alloc( VClocal3,  name='VClocal3' )
-      call de_alloc( VClocal4,  name='VClocal4' )
+      call de_alloc( Vlocal, 'Vlocal', 'vmatsp' )
+      call de_alloc( VlocalSp, 'VlocalSp', 'vmatsp' )
+      call de_alloc( iorb, 'iorb', 'vmatsp' )
+      call de_alloc( ilocal, 'ilocal', 'vmatsp' )
+      call de_alloc( ilc, 'ilc', 'vmatsp' )
+      call de_alloc( Clocal, 'Clocal', 'vmatsp' )
+      call de_alloc( VClocal, 'VClocal', 'vmatsp' )
+      call de_alloc( VClocal1,'VClocal1', 'vmatsp' )
+      call de_alloc( VClocal2,'VClocal2', 'vmatsp' )
+      call de_alloc( VClocal3,'VClocal3', 'vmatsp' )
+      call de_alloc( VClocal4,'VClocal4', 'vmatsp' )
 
       if (Parallel_Flag) then
 C Redistribute Hamiltonian from mesh to orbital based distribution
         call matrixMtoO( nvmaxl, nvmax, numVs, listVsptr, nuo, 
-     .      nuotot, nspin, DscfL, Vs )
+     .                   nspin, DscfL, Vs )
 C Free memory 
-        call de_alloc( DscfL,  name='DscfL' )
+        call de_alloc( DscfL, 'DscfL', 'vmatsp' )
       endif
 
       call timer('vmatsp',2)

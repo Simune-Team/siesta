@@ -41,8 +41,8 @@
         call initbands( maxbk, nbk, bk )
 
         if (nbk .gt. maxbk) then
-          ! If there wasn't enough space to store bands on first call correct
-          ! the dimensions and repeat the initialisation
+          ! If there wasn't enough space to store bands on first call 
+          ! correct the dimensions and repeat the initialisation
           maxbk = max(nbk,1)
           call re_alloc(bk,1,3,1,maxbk,name='bk',routine='siesta',
      .                  copy=.false.)
@@ -371,7 +371,7 @@ C This is the only exit point
       end subroutine initbands
 
 
-      subroutine bands( no, nspin, maxspn, maxo, maxuo, maxnh, maxk,
+      subroutine bands( no, nspin, maxspn, maxo, maxnh, maxk,
      .                  numh, listhptr, listh, H, S, ef, xij, indxuo,
      .                  writeb, nk, kpoint, ek, nuotot, occtol )
 C *********************************************************************
@@ -398,7 +398,6 @@ C real*8  ef                  : Fermi energy
 C real*8  xij(3,maxnh)        : Vectors between orbital centers (sparse)
 C                               (not used if only gamma point)
 C integer maxo                : First dimension of ek
-C integer maxuo               : Second dimension of H and S
 C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
@@ -437,7 +436,7 @@ C
 
       implicit          none
 
-      integer           maxk, maxnh, maxspn, maxo, maxuo, nk, no, nspin,
+      integer           maxk, maxnh, maxspn, maxo, nk, no, nspin,
      .                  nuotot, indxuo(no), listh(maxnh), numh(*), 
      .                  listhptr(*)
       logical           writeb
@@ -543,7 +542,7 @@ C Handle parallel over K points option which is not allowed for here
         ParallelOverK = .false.
         ResetFirstCall = .true.
 
-        call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
+        call diagk( nspin, nuo, no, maxspn, maxnh, maxnh, 
      .              maxo, numh, listhptr, listh, numh, listhptr, 
      .              listh, H, S, getD, getPSI, fixspin, qtot, qs, temp,
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -555,7 +554,7 @@ C Handle parallel over K points option which is not allowed for here
         ResetFirstCall = .false.
 
       elseif (nspin.eq.4) then
-        call diag2k(nuo, no, maxuo, maxnh, maxnh, maxo,
+        call diag2k(nuo, no, maxnh, maxnh, maxo,
      .              numh, listhptr, listh, numh, listhptr, 
      .              listh, H, S, getD, qtot, temp, e1, e2,
      .              xij, indxuo, nk, kpoint, wk,

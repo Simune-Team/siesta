@@ -21,8 +21,9 @@ C
       use parallelsubs, only : set_processorY, set_BlockSizeDefault
       use parallelsubs, only : set_processorYdefault
       use spatial
+      use domain_decom, only : use_dd, use_dd_perm, preSetOrbitLimits
       use sys
-      use alloc
+      use alloc,        only : re_alloc
 #ifdef MPI
       use mpi_siesta, only: mpi_comm_world, mpi_integer
       use mpi_siesta, only: mpi_double_precision
@@ -86,6 +87,15 @@ C Set spatial decomposition flag according to SCF method
         lspatial = .true.
       else
         lspatial = .false.
+      endif
+
+C Set Domain decomposition flag according to SCF method
+      if (isolve.eq.2) then
+        use_dd      = .true.
+        use_dd_perm = .false.
+      else
+        use_dd      = .false.
+        use_dd_perm = .false.
       endif
 
 C Spatial decomposition flag
@@ -219,10 +229,12 @@ C
 C  Build dummy lists linking orbitals with parallel structure
 C
         maxorb = lasto(na_u)
-        call re_alloc(nL2G,1,maxorb,1,Nodes,name='nL2G')
-        call re_alloc(nG2L,1,maxorb,name='nG2L')
-        call re_alloc(nNode,1,maxorb,name='nNode')
-        call re_alloc(nOrbPerNode,1,Nodes,name='nOrbPerNode')
+        call re_alloc( nL2G, 1, maxorb, 1, Nodes, 'nL2G',
+     &                 'initparallel' )
+        call re_alloc( nG2L, 1, maxorb, 'nG2L', 'initparallel' )
+        call re_alloc( nNode, 1, maxorb, 'nNode', 'initparallel' )
+        call re_alloc( nOrbPerNode, 1, Nodes, 'nOrbPerNode',
+     &                 'initparallel' )
 C
         nOrbPerNode(1) = maxorb
         do ii = 1,maxorb
@@ -232,5 +244,8 @@ C
         enddo
       endif
 
+      if (use_dd) then
+        call preSetOrbitLimits( no_u )
+      endif
       return
       end

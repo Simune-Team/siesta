@@ -16,7 +16,6 @@
       use atmfuncs,      only : rcut
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb
       use alloc,         only : re_alloc, de_alloc
-      use m_matel,       only : matel
 
       implicit none
 
@@ -62,9 +61,9 @@ C real*8  S(maxnh)         : Sparse overlap matrix
       real(dp), intent(out) :: S(maxnh)
 C Internal variables ......................................................
       integer               :: ia, ind, io, ioa, is,  iio, j, ja, jn,
-     &                         jo, joa, js, jua, jx, nnia
+     &                         jo, joa, js, jua, nnia
       real(dp)              :: grSij(3) , rij, Sij, volcel, volume
-      real(dp), dimension(:), pointer  :: Si
+      real(dp),     pointer :: Si(:)
       external  timer
 
 C     Start timer
@@ -77,8 +76,7 @@ C     Initialize neighb subroutine
 
 C     Allocate local memory
       nullify(Si)
-      call re_alloc(Si,1,no,name="Si",routine="overlap")
-      Si = 0
+      call re_alloc( Si, 1, no, 'Si', 'overlap' )
 
       do ia = 1,nua
         call mneighb( scell, 2.d0*rmaxo, na, xa, ia, 0, nnia )
@@ -99,8 +97,8 @@ C           Valid orbital
                 is = isa(ia)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call MATEL( 'S', is, js, ioa, joa, xij(1:3,jn),
-     &                      Sij, grSij )
+                  call MATEL( 'S', is, js, ioa, joa, xij(1,jn),
+     &                        Sij, grSij )
                   Si(jo) = Si(jo) + Sij
                 endif
               enddo
@@ -116,7 +114,7 @@ C           Valid orbital
       enddo
 
 C     Deallocate local memory
-      call de_alloc(Si,name="Si",routine="overlap")
+      call de_alloc( Si, 'Si', 'overlap' )
 
 C     Finish timer
       call timer( 'overlap', 2 )

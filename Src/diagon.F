@@ -231,27 +231,29 @@ C Check indxuo
 C Call apropriate routine
       getD = .true.
       getPSI = .false.
+      write(23,*) 'nspin', nspin
+      write(23,*) 'gamma', gamma
+      call pxfflush(23)
 
       if (nspin.le.2 .and. gamma) then
-        call diagg( nspin, nuo, no, maxuo, maxnh, maxnd, maxo,
+        call diagg( nspin, nuo, maxuo, maxnh, maxnd, maxo,
      .              numh, listhptr, listh, numd, listdptr, listd, 
      .              H, S, getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .              Haux, Saux, psi, aux, nuotot, occtol, iscf,
+     .              Haux, Saux, psi, nuotot, occtol, iscf,
      .              neigwanted )
       elseif (nspin.le.2 .and. .not.gamma) then
 #ifdef MPI
         if (ParallelOverK) then
-          call diagkp( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
-     .              maxo, numh, listhptr, listh, numd, listdptr, 
-     .              listd, H, S, getD, fixspin, qtot, qs, temp, 
-     .              e1, e2, xij, indxuo, nk, kpoint, wk,
+          call diagkp( nspin, nuo, no, maxspn, maxnh, maxnd, maxo, numh,
+     .              listhptr, listh, H, S, getD, fixspin, qtot, qs,
+     .              temp, e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, occtol, iscf )
         else
 #endif
-          call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
+          call diagk( nspin, nuo, no, maxspn, maxnh, maxnd, 
      .              maxo, numh, listhptr, listh, numd, listdptr,
      .              listd, H, S, getD, getPSI, fixspin, qtot, qs, temp, 
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
@@ -262,13 +264,13 @@ C Call apropriate routine
         endif
 #endif
       elseif (nspin.eq.4 .and. gamma) then
-        call diag2g( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
+        call diag2g( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, eo, qo, 
      .               Dnew, Enew, ef, Entropy, Haux, Saux, psi,
      .               aux, nuotot, occtol, iscf, neigwanted )
       elseif (nspin.eq.4 .and. spiral) then
-        call diagsprl( nuo, no, maxuo, maxnh, maxnd, maxo,
+        call diagsprl( nuo, no, maxnh, maxnd, maxo,
      .               numh, listhptr, listh, numd, listdptr,
      .               listd, H, S, getD, qtot, temp, e1, e2,
      .               xij, indxuo, nk, kpoint, wk, eo, qo,
@@ -276,7 +278,7 @@ C Call apropriate routine
      .               Saux, psi, Haux, Saux, aux, nuotot, occtol,
      .               iscf )
       elseif (nspin.eq.4 .and. .not.gamma) then
-        call diag2k( nuo, no, maxuo, maxnh, maxnd, maxo, numh,
+        call diag2k( nuo, no, maxnh, maxnd, maxo, numh,
      .               listhptr, listh, numd, listdptr, listd,
      .               H, S, getD, qtot, temp, e1, e2, xij,
      .               indxuo, nk, kpoint, wk, eo, qo, Dnew,

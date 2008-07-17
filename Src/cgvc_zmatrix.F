@@ -69,6 +69,7 @@ C
       use Zmatrix,     only : ZmatForceTolLen, ZmatForceTolAng
       use Zmatrix,     only : ZmatMaxDisplLen, ZmatMaxDisplAng
       use m_conjgr,    only : conjgr
+      use alloc,       only : re_alloc, de_alloc
 
       implicit none
 
@@ -82,11 +83,11 @@ C Subroutine arguments:
 C Internal variables and arrays
       integer             :: iu, ia, i, j, n, indi,indi1,vi,k,ndegi,ndi
       logical             :: found
-      real(dp)            :: volume, new_volume, trace, ftol_tmp
+      real(dp)            :: volume, new_volume, trace
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
       real(dp)            :: stress_dif(3,3)
-      real(dp), dimension(:), allocatable :: gxa, gfa
+      real(dp), pointer   :: gxa(:), gfa(:)
       real(dp)            :: force, force1
 
 C Saved internal variables:
@@ -103,12 +104,9 @@ C Saved internal variables:
       real(dp),      save :: strain(3,3)
       real(dp),      save :: cellin(3,3)
 
-      real(dp), dimension(:), allocatable, save :: cgaux
-      real(dp), dimension(:), allocatable, save :: ftoln, dxmaxn
-      real(dp), dimension(:), allocatable, save :: ftoln_tmp
+      real(dp), pointer, save :: cgaux(:), ftoln(:), dxmaxn(:),
+     &                           ftoln_tmp(:)
 
-
-      external          memory
       real(dp), external :: volcel
 
 c ---------------------------------------------------------------------------
@@ -217,10 +215,9 @@ C Initialization to 1. for numerical reasons, later substracted ------------
 
 C Initialize and read cgaux and cgcntr if present and wanted ---------------
 
-        if (.not.allocated(cgaux)) then
-           allocate(cgaux(2*(ndeg)))
-           call memory('A','D',2*ndeg,'cgvc_zmatrix')
-        endif
+        if (.not.associated(cgaux))
+     &     call re_alloc( cgaux, 1, 2*ndeg, 'cgaux', 'cgvc_zmatrix' )
+
         if (usesavecg) then
           if (Node.eq.0) then
             call iocg( 'read', ndeg*2, cgaux, cgcntr, relaxd, found )
@@ -252,16 +249,11 @@ C Initialize and read cgaux and cgcntr if present and wanted ---------------
       endif      ! First time
 
 C Allocate local memory
-      allocate(gfa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
-      allocate(gxa(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
-      allocate(ftoln(ndeg))
-      allocate(ftoln_tmp(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
-      allocate(dxmaxn(ndeg))
-      call memory('A','D',ndeg,'cgvc_zmatrix')
-
+      call re_alloc( gfa, 1, ndeg, 'gfa', 'cgvc_zmatrix' )
+      call re_alloc( gxa, 1, ndeg, 'gxa', 'cgvc_zmatrix' )
+      call re_alloc( ftoln, 1, ndeg, 'ftoln', 'cgvc_zmatrix' )
+      call re_alloc( ftoln_tmp, 1, ndeg, 'ftoln_tmp', 'cgvc_zmatrix' )
+      call re_alloc( dxmaxn, 1, ndeg, 'dxmaxn', 'cgvc_zmatrix' )
 
 C Variable cell -------------------------------------------------------------
 
@@ -519,7 +511,7 @@ C Output fractional coordinates to cartesian Bohr, and copy to xa -----------
               xa(k,ia) = 0.0_dp
               do n = 1,3
                 indi1 = 3*(ia-1) + n
-                ndi = ndegi + n - k ! correct index == indi1 in this case
+                ndi = ndegi + n - k ! correct index == indi1
                 xa(k,ia) = xa(k,ia) + cell(k,n) * gxa(ndi) / modcel(n)
               enddo
             enddo
@@ -562,17 +554,11 @@ C Save cgaux ----------------------------------------------------------------
      .  call iocg( 'write', ndeg*2, cgaux, cgcntr, relaxd, found )
 
 C Deallocate local memory
-
-      call memory('D','D',size(dxmaxn),'cgvc_zmatrix')
-      deallocate(dxmaxn)
-      call memory('D','D',size(ftoln_tmp),'cgvc_zmatrix')
-      deallocate(ftoln_tmp)
-      call memory('D','D',size(ftoln),'cgvc_zmatrix')
-      deallocate(ftoln)
-      call memory('D','D',size(gxa),'cgvc_zmatrix')
-      deallocate(gxa)
-      call memory('D','D',size(gfa),'cgvc_zmatrix')
-      deallocate(gfa)
+      call de_alloc( dxmaxn, 'dxmaxn', 'cgvc_zmatrix' )
+      call de_alloc( ftoln_tmp, 'ftoln_tmp', 'cgvc_zmatrix' )
+      call de_alloc( ftoln, 'ftoln', 'cgvc_zmatrix' )
+      call de_alloc( gxa, 'gxa', 'cgvc_zmatrix' )
+      call de_alloc( gfa, 'gfa', 'cgvc_zmatrix' )
 
       return
       end

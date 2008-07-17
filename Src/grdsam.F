@@ -10,7 +10,7 @@
 !
       subroutine grdsam(nspin, norb, iaorb, iphorb, 
      .                  nuo, nuotot, nua, na, isa, xa, indxua,
-     .                  cell, mscell, g2max, ntm, ifa, istr, maxnd,
+     .                  cell, ntm, ifa, istr, maxnd,
      .                  maxnh, numh, listhptr, listh, Dscf, Datm, Hmat,
      .                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .                  Exc, Dxc, dipol, fa, stress, fal, stressl )
@@ -50,7 +50,6 @@ c integer na            : number of atoms in supercell
 c integer isa(na)       : species indexes
 c real*8  xa(3,na)      : atomic positions
 c real*8  cell(3,3)     : unit cell vectors
-c integer mscell(3,3)   : supercell vectors in units of ucell
 c integer ifa           : scf contrib to forces calculated or not
 c integer istr          : scf contrib to stress calculated or not
 c integer maxnd         : first dimension of dscf
@@ -75,7 +74,6 @@ c real*8  exc    : scf XC energy
 c real*8  dxc    : scf double-counting correction to exc
 c real*8  dipol(3): electric dipole (in a.u.)
 c *********************** DHSCF INPUT AND OUTPUT ****************************
-c real*8  g2max       : effective planewave cutoff in Ry 
 c real*8  fa(3,na)    : atomic forces
 c real*8  stress(3,3) : stress tensor
 c real*8  fal(3,na)   : atomic forces (local to Node)
@@ -91,6 +89,7 @@ C
       use parallel,  only : Node
       use sys,       only : die
       use m_dhscf,   only : dhscf
+      use alloc, only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -100,16 +99,13 @@ C
       integer           maxnh, maxnd, na, norb, nspin, nuo, nuotot, 
      .                  nua, iaorb(norb), ifa, indxua(na), 
      .                  iphorb(norb), isa(na), istr, listh(maxnh),
-     .                  listhptr(nuo), mscell(3,3), 
-     .                  numh(nuo), ntm(3)
+     .                  listhptr(nuo), numh(nuo), ntm(3)
 
       real(dp)          cell(3,3), datm(norb), dipol(3), 
      .                  dscf(maxnd,nspin), DUscf, DUext, Dxc, 
-     .                  enaatm, enascf, exc, fa(3,nua), g2max,
+     .                  enaatm, enascf, exc, fa(3,nua),
      .                  Hmat(maxnh,nspin), stress(3,3),
      .                  uatm, uscf, xa(3,na), fal(3,nua), stressl(3,3)
-
-      external          memory
 
 C Internal variables and arrays
  
@@ -127,11 +123,9 @@ C Internal variables and arrays
 
       parameter         (maxpt = 100)
 
-      real(dp), dimension(:,:), allocatable, save ::
-     .                  pt, avfa, faold, xanew, avfa2, faold2
-      real(dp), dimension(:,:), allocatable, save ::
-     .                  dpt
-
+      real(dp), pointer, save :: pt(:,:), avfa(:,:), faold(:,:),
+     &                           xanew(:,:), avfa2(:,:), faold2(:,:),
+     &                           dpt(:,:)
 
       !Saved variables:
       logical, save :: blread = .false.
@@ -144,22 +138,14 @@ C Internal variables and arrays
 c ----------------------------------------------------------------------------
 
 C Allocate local memory
-      if (.not.allocated(dpt)) then
-        allocate(pt(3,maxpt+1))
-        call memory('A','D',3*(maxpt+1),'grdsam')
-        allocate(dpt(3,maxpt+1))
-        call memory('A','D',3*(maxpt+1),'grdsam')
-      endif
-      allocate(avfa(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(avfa2(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(faold(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(faold2(3,na))
-      call memory('A','D',3*na,'grdsam')
-      allocate(xanew(3,na))
-      call memory('A','D',3*na,'grdsam')
+      call re_alloc( pt, 1, 3, 1, maxpt+1, 'pt', 'grdsam' )
+      call re_alloc( dpt, 1, 3, 1, maxpt+1, 'dpt', 'grdsam' )
+
+      call re_alloc( avfa, 1, 3, 1, na, 'avfa', 'grdsam' )
+      call re_alloc( avfa2, 1, 3, 1, na, 'avfa2', 'grdsam' )
+      call re_alloc( faold, 1, 3, 1, na, 'faold', 'grdsam' )
+      call re_alloc( faold2, 1, 3, 1, na, 'faold2', 'grdsam' )
+      call re_alloc( xanew, 1, 3, 1, na, 'xanew', 'grdsam' )
 
 C Check whether GridCellSampling block has been looked for ------------------
 
@@ -222,12 +208,11 @@ c if sampling, store the forces and stresses prior to dhscf -----------------
 c first (normal) call to DHSCF, ihmat=1 --------------------------------------
 
       call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
-     .            na, isa, xa, indxua, cell, mscell, g2max, ntm,
+     .            na, isa, xa, indxua, ntm,
      .            ifa, istr, 1, ' ', ' ', ' ', ' ', ' ', ' ',
      .            maxnd, numh, listhptr, listh, Dscf, Datm,
-     .            maxnh, numh, listhptr, listh, Hmat,  
-     .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .            Exc, Dxc, dipol, fa, stress, fal, stressl)
+     .            maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     .            Exc, Dxc, dipol, stress, fal, stressl)
 
 c Sampling ------------------------------------------------------------------
 
@@ -297,12 +282,11 @@ c loop sampling on displacements making averages ----------------------------
           endif
 
           call dhscf( nspin, norb, iaorb, iphorb, nuo, nuotot, nua,
-     .                na, isa, xanew, indxua, cell, mscell, g2max, ntm,
+     .                na, isa, xanew, indxua, ntm,
      .                ifa, istr, 0, ' ', ' ', ' ', ' ', ' ', ' ',
      .                maxnd, numh, listhptr, listh, Dscf, Datm,
-     .                maxnh, numh, listhptr, listh, Hmat, 
-     .                Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .                Exc, Dxc, dipol, fa, stress, fal, stressl)
+     .                maxnh, Hmat, Enaatm, Enascf, Uatm, Uscf, DUscf,
+     .                DUext, Exc, Dxc, dipol, stress, fal, stressl)
 
           avfa(1:3,1:nua) = avfa(1:3,1:nua) + fa(1:3,1:nua)
           avfa2(1:3,1:nua) = avfa2(1:3,1:nua) + fal(1:3,1:nua)
@@ -338,16 +322,11 @@ c final averages ------------------------------------------------------------
       endif
 
 C Deallocate local memory
-      call memory('D','D',size(xanew),'grdsam')
-      deallocate(xanew)
-      call memory('D','D',size(faold2),'grdsam')
-      deallocate(faold2)
-      call memory('D','D',size(faold),'grdsam')
-      deallocate(faold)
-      call memory('D','D',size(avfa2),'grdsam')
-      deallocate(avfa2)
-      call memory('D','D',size(avfa),'grdsam')
-      deallocate(avfa)
+      call de_alloc( xanew, 'xanew', 'grdsam' )
+      call de_alloc( faold2, 'faold2', 'grdsam' )
+      call de_alloc( faold, 'faold', 'grdsam' )
+      call de_alloc( avfa2, 'avfa2', 'grdsam' )
+      call de_alloc( avfa, 'avfa', 'grdsam' )
 
       return
       end

@@ -75,7 +75,7 @@
      .        nkpol,kpol,wgthpol, polR, polxyz)
       endif
       if (nkpol.gt.0.and.IOnode) then
-         call obc( polxyz, polR, ucell, dx, nspin)
+         call obc( polR, ucell, dx, nspin)
       endif
 
       end subroutine born_charge

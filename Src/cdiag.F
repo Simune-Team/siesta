@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine cdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
+      subroutine cdiag( H, S, n, nm, nml, w, Z, neigvec, iscf, ierror )
 C ***************************************************************************
 C Subroutine  to solve all eigenvalues and eigenvectors of the
 C real general eigenvalue problem  H z = w S z,  with H and S

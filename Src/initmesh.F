@@ -87,9 +87,9 @@ C     Passed arguments
      &                           iaorb(norb), iphorb(norb), isa(na)
       real(dp)                :: cell(3,3), dvol, G2max, G2mesh, rmax
 C     Local variables
-      integer                 :: i, ia, i1, i2, i3, indi, io, iphi,
-     &                           is, isp, ity, j, j1, j2, j3,
-     &                           ncells, nep, ntop, ntp, nty, odistr
+      integer                 :: i, ia, i1, i2, i3, io, iphi, is, isp,
+     &                           ity, j, ncells, nep, ntop, ntp, nty,
+     &                           odistr
       integer,  pointer, save :: iphty(:), isty(:), noty(:)
       real(dp)                :: dx(3), dxp(3), pldist, r,
      &                           rcell(3,3), vecmod, volume
@@ -101,14 +101,10 @@ C     Functions
       real(dp)                :: dismin, volcel
 
       external                   chkgmx, dismin, nfft, reclat,
-     &                           timer, volcel, memory
+     &                           timer, volcel
       data                       k0 / 3*0.0_dp /
-#ifdef MPI
-      integer                 :: MPIerror
-#endif
 
 !------------------------------------------------------------------------- BEGIN
-        call write_debug( '      Pre InitMesh' )
 C ----------------------------------------------------------------------
 C     Orbital type initialization 
 C ----------------------------------------------------------------------

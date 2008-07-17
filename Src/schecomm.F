@@ -11,10 +11,9 @@
       module scheComm
 
       TYPE COMM_T
-      integer              :: np        ! Number of processors
-      integer              :: ncol      ! Number of colours;
-                                        ! max number of communication steps
-      integer, pointer     :: ind(:,:)  ! Communications of every process
+      integer            :: np        ! Number of processors
+      integer            :: ncol      ! Number of colours
+      integer, pointer   :: ind(:,:)  ! Communications of every process
       END TYPE COMM_T
 
       contains

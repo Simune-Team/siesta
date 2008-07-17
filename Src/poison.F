@@ -88,8 +88,7 @@ C Start timer
 
 C Allocate local memory
       nullify( CG )
-      call re_alloc( CG, 1, 2, 1, n1*n2*n3, name='CG', 
-     &                 routine='poison' )
+      call re_alloc( CG, 1, 2, 1, n1*n2*n3, 'CG', 'poison' )
 
 C Find unit cell volume
       VOLUME = VOLCEL( CELL )
@@ -208,11 +207,10 @@ C Copy potential to array V
       enddo
  
 C Stop time counter
-  999 continue
       call timer('POISON',2)
 
 C Free local memory
-      call de_alloc( CG, name='CG' )
+      call de_alloc( CG, 'CG', 'poison' )
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )

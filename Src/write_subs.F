@@ -114,12 +114,12 @@
 
       implicit none
 
-      integer :: ia, jx, ix
+      integer :: jx, ix
 
-      real(dp):: Pmol       ! "Molecular pressure" (discounting Virial term)
-      real(dp):: Psol       ! Pressure of "solid"
-      real(dp):: Press      ! Pressure
-      real(dp):: ps(3,3)    ! Auxiliary array
+      real(dp):: Pmol     ! Molecular pressure (discounting Virial term)
+      real(dp):: Psol     ! Pressure of "solid"
+      real(dp):: Press    ! Pressure
+      real(dp):: ps(3,3)  ! Auxiliary array
 
 ! Stress tensor and pressure:
       
@@ -128,7 +128,7 @@
 !           Write Voigt components of total stress tensor 
 !
             ps = stress + kin_stress
-            write(6,'(/,a,6f12.2))')
+            write(6,'(/,a,6f12.2)')
      .           'Stress-tensor-Voigt (kbar):',
      .           (ps(jx,jx)/kbar,jx=1,3),
      $            ps(1,2)/kbar,
@@ -140,7 +140,7 @@
 
             if (RemoveIntraMolecularPressure) then
                ps = mstress + kin_stress
-               write(6,'(/,a,6f12.2))')
+               write(6,'(/,a,6f12.2)')
      .           'Non-Molecular-Stress-Voigt (kbar):',
      .           (ps(jx,jx)/kbar,jx=1,3),
      $            ps(1,2)/kbar,
@@ -300,11 +300,13 @@
 
       logical :: first
       integer :: iscf
-      real(dp), intent(in) :: dDmax     ! Max. change in density matrix elements
+      real(dp), intent(in) :: dDmax ! Max. change in dens. matrix elem.
 
 
       integer :: i 
+      logical :: printEigVal
 
+      printEigVal = (isolve==0) .or. (isolve==2)
 
       ! Only print out full decomposition at very beginning and end.
       if ((istp==1.and.first).or.final) then
@@ -380,36 +382,36 @@
           call cmlEndPropertyList(mainXML)
         endif
       endif
-      ! On all SCF steps, print out the current energy (format depending on type of run)
+      ! On all SCF steps, print out the current energy
       if (.not.final) then
-        ! Print total energy and density matrix error .........................
+        ! Print total energy and density matrix error 
         if (cml_p) then
           call cmlStartPropertyList(mainXML, title='SCF Cycle')
           ! Eharrs is always output
           call cmlAddProperty(xf=mainXML, property=Eharrs/eV, 
      .         units="siestaUnits:eV", 
-     .         dictRef="siesta:Eharrs", fmt="(f14.7)")
+     .         dictRef="siesta:Eharrs", fmt="(f17.6)")
         endif
-        ! This chain of if statements determines which properties are output.
+        ! Determines which properties are output.
         if (harrisfun) then 
           write(6,"(/a,f14.6,/)") 'siesta: Eharris(eV) = ', Eharrs/eV
             ! No need for further cml output
-        elseif (isolve==0) then
+        elseif (printEigVal) then
           if (cml_p) 
      .         call cmlAddProperty(xf=mainXML, property=FreeE/eV, 
      .         units="siestaUnits:eV", 
-     .         dictRef="siesta:FreeE",  fmt="(f14.7)")
+     .         dictRef="siesta:FreeE",  fmt="(f17.6)")
           if (fixspin) then
             if (cml_p) then
               call cmlAddProperty(xf=mainXML, property=Etot/eV, 
      .             units="siestaUnits:eV", 
-     .             dictRef="siesta:Etot",   fmt="(f14.7)")
+     .             dictRef="siesta:Etot",   fmt="(f17.6)")
               call cmlAddProperty(xf=mainXML, property=FreeE/eV, 
      .             units="siestaUnits:eV", 
-     .             dictRef="siesta:FreeE", fmt="(f14.7)")
+     .             dictRef="siesta:FreeE", fmt="(f17.6)")
               call cmlAddProperty(xf=mainXML, property=dDmax/eV, 
      .             units="siestaUnits:eV", 
-     .             dictRef="siesta:dDmax",  fmt="(f14.7)")
+     .             dictRef="siesta:dDmax",  fmt="(f17.6)")
             endif
             if ((iscf .eq. 1).or.muldeb)
      .           write(6,'(/,a12,3a14,a8,a7,a11)')
@@ -422,10 +424,10 @@
             if (cml_p) then
               call cmlAddProperty(xf=mainXML, property=Efs(1)/eV, 
      .             units="siestaUnits:eV", 
-     .             dictRef="siesta:Efs",    fmt="(f14.7)")
+     .             dictRef="siesta:Efs",    fmt="(f17.6)")
               call cmlAddProperty(xf=mainXML, property=Efs(2)/eV, 
      .             units="siestaUnits:eV", 
-     .             dictRef="siesta:Efs",    fmt="(f14.7)")
+     .             dictRef="siesta:Efs",    fmt="(f17.6)")
             endif
           else !fixspin
             if ((iscf .eq. 1).or.muldeb)
@@ -439,7 +441,7 @@
             if (cml_p) then
               call cmlAddProperty(xf=mainXML,property=Ef/eV, 
      .             units="siestaUnits:eV", 
-     .             dictRef="siesta:Ef", fmt="(f14.7)")
+     .             dictRef="siesta:Ef", fmt="(f17.6)")
             endif !cml_p
           endif !fixspin
         elseif (isolve==1) then
@@ -450,10 +452,10 @@
           if (cml_p) then
             call cmlAddProperty(xf=mainXML, property=Etot/eV, 
      .           units="siestaUnits:eV", 
-     .           dictRef="siesta:Etot",   fmt="(f14.7)")
+     .           dictRef="siesta:Etot",   fmt="(f17.6)")
             call cmlAddProperty(xf=mainXML, property=dDmax/eV, 
      .           units="siestaUnits:eV", 
-     .           dictRef="siesta:dDmax",  fmt="(f14.7)")
+     .           dictRef="siesta:dDmax",  fmt="(f17.6)")
           endif
         endif !harrisfun/isolve
         

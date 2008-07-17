@@ -23,7 +23,7 @@
       use atomlist, only: no_l, no_s
       use m_ordern
 #endif
-
+      use alloc
       implicit none
 
       integer, intent(in)  :: istep

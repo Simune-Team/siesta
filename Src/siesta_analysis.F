@@ -55,29 +55,28 @@
       character(len=label_length+5) :: filevt
       character(len=label_length+5) :: filrho
 
-      real(dp), dimension(3,3)      :: dummy_str, dummy_strl
-      real(dp)                      :: qspin(4)         ! Local
+      real(dp)          :: dummy_str(3,3), dummy_strl(3,3)
+      real(dp)          :: qspin(4)         ! Local
 
-      real(dp)                      :: polxyz(3,nspin)  ! Automatic, small
-      real(dp)                      :: polR(3,nspin)    ! Automatic, small
-      real(dp)                      :: qaux             ! Auxiliary to call spnvec (not used later)
-      real(dp)                      :: stot             ! Total spin polarization
-      real(dp)                      :: svec(3)          ! Total spin vector in non-collinear-spin calculations
-      real(dp), pointer             :: ebk(:,:,:)       ! Band energies
+      real(dp)          :: polxyz(3,nspin)  ! Autom., small
+      real(dp)          :: polR(3,nspin)    ! Autom., small
+      real(dp)          :: qaux
+      real(dp)          :: stot             ! Total spin polar.
+      real(dp)          :: svec(3)          ! Total spin vector
+      real(dp), pointer :: ebk(:,:,:)       ! Band energies
 
-      integer                       :: j, ix, ind, ik, io, ispin
-      integer                       :: maxwk   ! Number of k-points for wavefunction printout
-
-      real(dp) :: g2max
+      integer           :: j, ix, ind, ik, io, ispin
+      integer           :: maxwk   ! Number of k-points/wavefunction
+      real(dp)          :: g2max
 #ifdef MPI
-      real(dp):: qtmp(4)   ! Temporary for globalized spin charge
+      real(dp)          :: qtmp(4)
 #endif
 
       external :: 
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
+     .  kgrid, kgridinit, mulliken, naefs, 
      .  pulayx, 
      .  reinit, shaper, spnvec, 
      .  timer, xijorb, memory,
@@ -137,11 +136,10 @@
 
       nullify( ebk )
       call re_alloc( ebk, 1, no_u, 1, nspin, 1, maxbk,
-     &               name    = 'ebk',
-     &               routine = 'siesta_analysis' )
+     &               'ebk', 'siesta_analysis' )
 
       if (nbk.gt.0) then
-        call bands( no_s, nspin, nspin, no_u, no_l, maxnh, maxbk,
+        call bands( no_s, nspin, nspin, no_u, maxnh, maxbk,
      .              numh, listhptr, listh, H, S, Ef, xijo, indxuo,
      .              .true., nbk, bk, ebk, no_u, occtol )
         if (IOnode) then
@@ -282,10 +280,8 @@
       call optical(na_u, na_s, xalast, scell_last, ucell_last,
      .             no_u, no_l, no_s, nspin, qspin,
      .             maxnh, numh, listhptr, listh, H, S, H0,
-     .             Eold(1,1), Dold(1,1),
-     .             xijo, indxuo, indxua, ebk, ef, temp,
-     .             isa, iphorb, iphKB, iaorb, lasto, lastkb,
-     .             shape )
+     .             Eold(1,1), Dold(1,1), xijo, indxuo, ebk, ef, temp,
+     .             isa, iphorb, iphKB, lasto, lastkb, shape )
 
 !...................................
 
@@ -307,13 +303,11 @@
         g2max = g2cut
         call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xalast, indxua, 
-     .              ucell_last, mscell, g2max, ntm,
-     .              0, 0, 0, filrho, fildrh, filevh, filevt,
+     .              ntm, 0, 0, 0, filrho, fildrh, filevh, filevt,
      .              filepsch, filetoch, 
      .              maxnh, numh, listhptr, listh, Dscf, Datm,
-     .              maxnh, numh, listhptr, listh, H,
-     .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dipol, fa, dummy_str, fa, dummy_strl )
+     .              maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     .              Exc, Dxc, dipol, dummy_str, fa, dummy_strl )
                     ! next to last argument is dummy here,
                     ! as no forces are calculated
                     ! todo: make all these optional
@@ -329,7 +323,7 @@ C     Reset mesh distributions
 #ifdef DEBUG
         call write_debug( '    Pre resetMeshDistr' )
 #endif
-      call de_alloc( ebk, name="ebk")
+      call de_alloc( ebk, 'ebk', 'siesta_analysis' )
 
 !--------------------------------------------------------------------------- END
       END subroutine siesta_analysis

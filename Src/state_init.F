@@ -6,8 +6,8 @@
       CONTAINS
 
       subroutine state_init( istep )
-      use Kpoint_grid,       only: setup_Kpoint_grid
       use m_new_dm,          only: new_dm
+      use Kpoint_grid,       only: setup_Kpoint_grid, maxk
       use m_proximity_check, only: proximity_check
       use siesta_options
       use sparse_matrices
@@ -23,7 +23,6 @@
       use siesta_cml
       use siesta_cmlsubs,    only: siesta_cml_init
       use zmatrix,           only: lUseZmatrix, write_zmatrix
-      use Kpoint_grid
       use m_energies,        only: Emad
       use write_subs
       use m_steps
@@ -36,20 +35,16 @@
 #ifdef MPI
       use m_mpi_utils,       only: globalize_max
 #endif
-
       implicit none
 
       integer            :: istep
-      real(dp)           :: veclen           ! Length of a unit-cell vector
+      real(dp)           :: veclen      ! Length of a unit-cell vector
       real(dp)           :: rmax
       logical            :: cell_can_change
       integer            :: i, ix, iadispl, ixdispl
-      logical            :: auxchanged       ! Has auxiliary supercell changed?
+      logical            :: auxchanged   ! Auxiliary supercell changed?
       external           ::  madelung, timer
       real(dp), external :: volcel
-#ifdef MPI
-      integer            :: ntmp             ! Temporary to call an MPI routine
-#endif
 !------------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 11 )
@@ -108,9 +103,9 @@ C     Actualize things if variable cell
      &                  )
       if (change_kgrid_in_md) then
          cell_can_change = cell_can_change .or.
-     &                     (idyn .eq. 3)   .or.  ! Parrinello-Rahman
-     &                     (idyn .eq. 4)   .or.  ! Nose-Parrinello-Rahman
-     &                     (idyn .eq. 5)         ! Anneal
+     &                     (idyn .eq. 3)   .or. ! Parrinello-Rahman
+     &                     (idyn .eq. 4)   .or. ! Nose-Parrinello-Rahman
+     &                     (idyn .eq. 5)        ! Anneal
       endif
 
       if ( cell_can_change .and.
@@ -192,9 +187,11 @@ C     and, if applicable,  vectors between orbital centers
 C     Listh (and xijo if .not. gamma) are allocated inside hsparse
 C     nh is set by the routine also
       nh = maxnh
+#ifdef DEBUG
+      call write_debug( '  PRE hsparse' )
+#endif
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb,
-     &              iphorb, iphKB, nh, numh, listhptr, listh,
-     &              gamma, xijo )
+     &              iphorb, iphKB, nh, gamma, xijo )
       maxnh = nh
 
 C     OBSOLETE: 
@@ -256,9 +253,12 @@ C     Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
 C     Find overlap matrix 
+#ifdef DEBUG
+      call write_debug( '  PRE overlap' )
+#endif
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, lasto, iphorb, isa, 
-     &             numh, listhptr, listh, S)
+     &             numh, listhptr, listh, S )
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif

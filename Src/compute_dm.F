@@ -12,38 +12,37 @@
       use atomlist, only: qa, lasto, iphorb, iaorb, no_u, no_s, indxuo, 
      .                    qtot, no_l
       use sys, only: die
-      use m_ordern,     only: ordern
       use Kpoint_grid
       use m_energies
-      use m_steps, only: istp
       use m_rmaxh
       use m_eo
-      use m_spin,  only: nspin, qs, efs
       use m_gamma
 #ifdef MPI
-      use m_mpi_utils, only: globalize_sum
+      use m_mpi_utils,     only:  globalize_sum
 #endif
-
+      use m_ordern,        only : ordern
+      use m_steps,         only : istp
+      use m_spin,          only : nspin, qs, efs
+      use domain_decom,    only : gatherGlobalMatrix
+      use jacobi_davidson, only : jd_diag
       implicit none
 
       integer, intent(in) :: iscf
 
       integer :: io, ispin
-      real(dp):: const  ! Temporary factor used in calculation of Harris forces
-      ! e1>e2 To signal that we do not want DOS weights  
+      real(dp):: const  ! Temporary factor used in calculation of
+      ! Harris forces e1>e2 To signal that we do not want DOS weights
       real(dp), parameter  :: e1 = 1.0_dp, e2 = -1.0_dp
-
 #ifdef MPI
-      real(dp):: buffer1   ! Temporary for the result of a globalize operation
+      real(dp):: buffer1
 #endif
-
       external :: automatic_cell,
      .  bonds, cgvc, cgvc_zmatrix, fixed,
      .  dhscf, diagon, dnaefs, extrapol, initatom,
      .  iodm, iozm,
      .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
      .  reinit, shaper, spnvec, 
-     .  timer, xijorb, memory,
+     .  timer, xijorb,
      .  ioeig, iofa, iokp, iomd, prversion, eggbox
 
 
@@ -53,7 +52,7 @@
 #endif
 ! Solve eigenvalue problem 
       if (isolve .eq. 0) then
-        call write_debug( '  PRE diagon' )
+        call write_debug( '    PRE diagon' )
         call diagon(no_s, nspin, nspin, no_l, maxnh, maxnh, no_u,
      .              numh, listhptr, listh, numh, listhptr, listh, 
      .              H, S, qtot, fixspin, qs, temp, e1, e2,
@@ -64,13 +63,23 @@
 !
       elseif (isolve .eq. 1) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
-        call write_debug( '  PRE ordern' )
+        call write_debug( '    PRE ordern' )
         call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,isa,qa,
      .              rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,etol,eta,
      .              qtot,maxnh,numh,listhptr,listh,H,S,
      .              chebef,noeta,rcoorcp,beta,pmax,Dscf,Escf,
      .              Ecorrec,nspin,qs)
         Entrop = 0.0_dp
+      elseif (isolve .eq. 2) then
+        call write_debug( '    PRE Jacobi' )
+        call gatherGlobalMatrix( no_s, no_l, maxnh, S, 'S.matrix' )
+        call gatherGlobalMatrix( no_s, no_l, maxnh, H(1:maxnh,1),
+     &                           'H.matrix' )
+
+        call jd_diag( no_s, no_l, nspin, neigwanted, fixspin, temp,
+     &                qtot, qs, occtol, numh, listh, H, S,
+     &                ef, efs, Entrop, Dscf, Escf )
+
       else
         call die('siesta: ERROR: wrong solution method')
       endif

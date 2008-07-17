@@ -15,7 +15,6 @@
       use metaforce, only: lMetaForce, meta
       use molecularmechanics, only : twobody
       use m_nlefsm,     only: nlefsm
-      use m_overfsm,    only: overfsm
       use m_dhscf,      only: dhscf
       use siesta_cml
       use m_stress
@@ -31,36 +30,24 @@
       use sys, only: die
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
-      use mpi_siesta
 #endif
 
       implicit none
       integer, intent(in) :: iscf
-
-      real(dp)              :: stressl(3,3)
-      real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic forces
-
+      real(dp)            :: stressl(3,3)
+      real(dp), pointer   :: fal(:,:)   ! Local-node part of atomic F
 #ifdef MPI
-      integer mpierr
-      real(dp)              :: stresstmp(3,3)
-      real(dp), pointer     :: fatmp(:,:)
-      real(dp):: buffer1   ! Temporary for the result of a globalize operation
+      real(dp)            :: buffer1
 #endif
-
-      integer :: ia, io, is, ispin
-
-      integer:: ifa     ! Calculate forces? 0=>no, 1=>yes
-      integer:: istr    ! Calculate stress? 0=>no, 1=>yes
-      integer:: ihmat   ! Calculate hamiltonian? 0=>no, 1=>yes
-
-      real(dp) :: g2max
+      integer             :: io, is, ispin
+      integer             :: ifa     ! Calc. forces?      0=>no, 1=>yes
+      integer             :: istr    ! Calc. stress?      0=>no, 1=>yes
+      integer             :: ihmat   ! Calc. hamiltonian? 0=>no, 1=>yes
+      real(dp)            :: g2max
 
 !------------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 13 )
-#endif
-#ifdef DEBUG
-      call write_debug( '    PRE setup_hamiltonian' )
 #endif
       if (cml_p) then
         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
@@ -103,16 +90,13 @@
 ! ..................
 !         print *, "hi antes de dhscf", Node
 !         call pxfflush(6)
-! #ifdef MPI
-!         call MPI_Barrier(MPI_Comm_World, mpierr)
-! #endif
 
 ! Non-local-pseudop: energy, forces, stress and matrix elements .......
 ! Add SCF contribution to energy and matrix elements ..................
       g2max = g2cut
 
       nullify(fal)
-      allocate( fal(3,na_u) )
+      call re_alloc( fal, 1, 3, 1, na_u, 'fal', 'setup_hamiltonian' )
 
       ifa  = 0
       istr = 0
@@ -120,14 +104,12 @@
 
       call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .            no_u, na_u, na_s, isa, xa, indxua, 
-     .            ucell, mscell, g2max, ntm,
-     .            ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
+     .            ntm, ifa, istr, ihmat, ' ', ' ', ' ', ' ', ' ', ' ',
      .            maxnh, numh, listhptr, listh, Dscf, Datm,
-     .            maxnh, numh, listhptr, listh, H,
-     .            Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
-     .            Exc, Dxc, dipol, fa, stress, fal, stressl)
+     .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     .            Exc, Dxc, dipol, stress, fal, stressl)
 
-      deallocate( fal )
+      call de_alloc( fal, 'fal', 'setup_hamiltonian' )
 ! ..................
 !         print *, "hi despues de dhscf", Node
 !         call pxfflush(6)

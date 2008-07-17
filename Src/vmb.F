@@ -132,7 +132,7 @@ C call to constrains routine)
         enddo
       enddo
       call fixed( cell, stress, nat, isa, mass, xa, fa,
-     .                  stress, fa, ntcon )
+     &            stress, fa, ntcon )
       do i = 1,nat
         do ix = 1,3
           va(ix,i) = fa(ix,i)/mass(i)

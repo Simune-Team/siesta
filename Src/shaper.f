@@ -44,7 +44,6 @@ C **********************************************************************
       use atmfuncs,  only : rcut
       use precision, only : dp
       use neighbour, only : jna=>jan, r2ij, xij, mneighb
-      use alloc,       only : re_alloc, de_alloc
 
       implicit          none
 
@@ -66,7 +65,7 @@ C Find maximum interaction range
       enddo
 
 C Initialize neighbour-locater routine
-      CALL MNEIGHB( CELL, 2*RMAX, NA, XA, 0, 0, NNA )
+      CALL mneighb( CELL, 2*RMAX, NA, XA, 0, 0, NNA )
 
 C Main loop
       NV = 0

@@ -15,7 +15,7 @@
 
       private
 
-      integer            :: nauxpul = 1  ! Max. required size of auxiliary 
+      integer            :: nauxpul = 1  ! Max. size of auxiliary 
                                          ! sparse Pulay matrices
       real(dp), pointer  :: auxpul(:,:)  ! Auxilialy matrices 
                                          ! for Pulay mixing
@@ -45,8 +45,7 @@
       if (pulfile .or. maxsav .le. 0) then
         ! No need for auxiliary arrays
         nauxpul = 1
-        call re_alloc(auxpul,1,nauxpul,1,2,name="auxpul",
-     $                routine="init_pulay_arrrays")
+        call re_alloc( auxpul, 1, nauxpul, 1, 2, 'auxpul', 'pulay' )
       else
         nauxpul = sum(numh(1:no_l)) * nspin * maxsav
 #ifdef MPI
@@ -55,8 +54,7 @@
 #endif
 ! Increase nauxpul with safety margin when atoms move  ! ???
         nauxpul = 1.1 * nauxpul + 10
-        call re_alloc(auxpul,1,nauxpul,1,2,name='auxpul',
-     $                routine='init_pulay_arrrays')
+        call re_alloc( auxpul, 1, nauxpul, 1, 2, 'auxpul', 'pulay' )
       endif
       end subroutine init_pulay_arrays
 !
@@ -324,17 +322,13 @@ C Perform Pulay mixing if iscf .gt. 2
 C Allocate local arrays
 
         nullify( b )
-        call re_alloc( b, 1, maxsav+1, 1, maxsav+1, name='b', 
-     &                 routine='pulayx' )
+        call re_alloc( b, 1, maxsav+1, 1, maxsav+1, 'b', 'pulay' )
         nullify( bi )
-        call re_alloc( bi, 1, maxsav+1, 1, maxsav+1, name='bi', 
-     &                 routine='pulayx' )
+        call re_alloc( bi, 1, maxsav+1, 1, maxsav+1, 'bi', 'pulay' )
         nullify( coeff )
-        call re_alloc( coeff, 1, maxsav+1, name='coeff', 
-     &                 routine='pulayx' )
+        call re_alloc( coeff, 1, maxsav+1, 'coeff', 'pulay' )
         nullify( buffer )
-        call re_alloc( buffer, 1, maxsav, name='buffer', 
-     &                 routine='pulayx' )
+        call re_alloc( buffer, 1, maxsav, 'buffer', 'pulay' )
 
 C  Compute current maximum deviation ...........
        dmax = 0.0d0
@@ -526,10 +520,10 @@ C ........
 
 C Deallocate local arrays
 
-       call de_alloc( b, name='b' )
-       call de_alloc( bi, name="bi" )
-       call de_alloc( coeff, name="coeff" )
-       call de_alloc( buffer, name="buffer" )
+       call de_alloc( b, 'b', 'pulay' )
+       call de_alloc( bi, 'bi', 'pulay' )
+       call de_alloc( coeff, 'coeff', 'pulay' )
+       call de_alloc( buffer, 'buffer', 'pulay' )
 
        end subroutine pulayx
 
@@ -537,8 +531,7 @@ C Deallocate local arrays
       use alloc
       implicit none
       if (associated(auxpul))
-     &  call de_alloc( auxpul, name='auxpul',
-     &                 routine='resetPulayArrays' )
+     &  call de_alloc( auxpul, 'auxpul', 'pulay' )
       end subroutine resetPulayArrays
       
       end module m_pulay

@@ -16,7 +16,7 @@ C     Modules
 C     MODULE variables
 C     Arrays that hold data which do not change during the SCF loop
       real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
-      real(dp), save          :: Uharrs     ! (Harris) atomic electrostatic energy
+      real(dp), save          :: Uharrs     ! Harris energy
       logical, save           :: IsDiag, IsEfld, spiral
       character(len=10), save :: shape
       integer, save           :: nm(3), nml(3), ntml(3), npcc,
@@ -46,13 +46,12 @@ C     Arrays that hold data which do not change during the SCF loop
 
       interface
       subroutine dhscf( nspin, norb, iaorb, iphorb, nuo,
-     &                  nuotot, nua, na, isa, xa, indxua, ucell, mscell,
-     &                  G2max, ntm, ifa, istr, iHmat, filrho, fildrh, 
+     &                  nuotot, nua, na, isa, xa, indxua,
+     &                  ntm, ifa, istr, iHmat, filrho, fildrh,
      &                  filevh, filevt, filepsch, filetoch, maxnd, numd,
-     &                  listdptr, listd, 
-     &                  Dscf, datm, maxnh, numh, listhptr, listh, Hmat,
-     &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, 
-     &                  Exc, Dxc, dipol, Fa, stress, Fal, stressl )
+     &                  listdptr, listd, Dscf, datm, maxnh, Hmat,
+     &                  Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
+     &                  Exc, Dxc, dipol, stress, Fal, stressl )
       use precision
       implicit none
       integer
@@ -63,9 +62,9 @@ C     Arrays that hold data which do not change during the SCF loop
 
       real(dp)
      &  datm(norb), dipol(3), Dscf(maxnd,nspin),
-     &  DUext, DUscf, Dxc, Enaatm, Enascf, Exc, G2max,
+     &  DUext, DUscf, Dxc, Enaatm, Enascf, Exc,
      &  Hmat(maxnh,nspin), Uatm, ucell(3,3), Uscf, xa(3,na),
-     &  Fa(3,nua), stress(3,3), Fal(3,nua), stressl(3,3)
+     &  stress(3,3), Fal(3,nua), stressl(3,3)
 
       character
      &  filevh*(*), filevt*(*), fildrh*(*), filrho*(*), 

@@ -11,7 +11,7 @@
       module m_kinefsm
       public :: kinefsm
       CONTAINS
-      subroutine kinefsm(nua, na, no, scell, xa, indxua, rmaxo, maxo,
+      subroutine kinefsm(nua, na, no, scell, xa, indxua, rmaxo,
      .                  maxnh, maxnd, lasto, iphorb, isa, 
      .                  numd, listdptr, listd, numh, listhptr, listh, 
      .                  nspin, Dscf, Ekin, fa, stress, H,
@@ -28,7 +28,6 @@ C real*8  scell(3,3)       : Supercell vectors SCELL(IXYZ,IVECT)
 C real*8  xa(3,na)         : Atomic positions in cartesian coordinates
 c integer indxua(na)       : Index of equivalent atom in unit cell
 C real*8  rmaxo            : Maximum cutoff for atomic orbitals
-C integer maxo             : Second dimension of Dscf and H
 C integer maxnh            : First dimension of H and listh
 C integer maxnd            : First dimension of Dscf and listd
 C integer lasto(0:na)      : Last orbital index of each atom
@@ -65,11 +64,10 @@ C
       use atmfuncs,      only : rcut
       use neighbour,     only : jna=>jan, r2ij, xij, mneighb
       use alloc,         only : re_alloc, de_alloc
-      use m_matel,       only : matel
 
       implicit none
 
-      integer ::  maxnd, maxnh, maxo, na, no, nspin, nua
+      integer ::  maxnd, maxnh, na, no, nspin, nua
 
       integer
      .  indxua(na), iphorb(no), isa(na), lasto(0:na), 
@@ -101,9 +99,9 @@ C Start timer
 
 C Allocate local memory
       nullify( Di )
-      call re_alloc( Di, 1, no, name='Di', routine='kinefsm' )
+      call re_alloc( Di, 1, no, 'Di', 'kinefsm' )
       nullify( Ti )
-      call re_alloc( Ti, 1, no, name='Ti', routine='kinefsm' )
+      call re_alloc( Ti, 1, no, 'Ti', 'kinefsm' )
 
       volume = nua * volcel(scell) / na
 
@@ -139,7 +137,7 @@ C Valid orbital
                 joa = iphorb(jo)
                 js = isa(ja)
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then
-                  call matel( 'T', is, js, ioa, joa, xij(1:3,jn),
+                  call matel( 'T', is, js, ioa, joa, xij(1,jn),
      .                      Tij, grTij )
                   Ti(jo) = Ti(jo) + Tij
                   Ekin = Ekin + Di(jo) * Tij
@@ -176,8 +174,8 @@ C Valid orbital
       enddo
 
 C Deallocate local memory
-      call de_alloc( Ti, name='Ti' )
-      call de_alloc( Di, name='Di' )
+      call de_alloc( Ti, 'Ti', 'kinefsm' )
+      call de_alloc( Di, 'Di', 'kinefsm' )
 
 C Finish timer
       call timer( 'kinefsm', 2 )

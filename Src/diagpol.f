@@ -64,10 +64,6 @@ C *********************************************************************
      .  eo(nuotot), H(maxnh,nspin), kpoint(3), S(maxnh), 
      .  xij(3,*), psi(ng,nuotot,nuo), Haux(ng,nuotot,nuo),
      .  Saux(ng,nuotot,nuo)
-
-      logical 
-     .  gamma
-
       external          cdiag
 
 C  Internal variables .............................................

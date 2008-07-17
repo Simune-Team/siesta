@@ -15,13 +15,11 @@ C                                                                         *
 C  Written by Rainer Hoft (UTS) & Julian Gale (Curtin), March - May 2005  *
 C**************************************************************************
       module zmatrix
-
+        use alloc,     only : re_alloc, de_alloc
         use precision, only : dp
-        use units, only : Ang, eV, deg, pi
-        use sys, only: die
-
+        use units,     only : Ang, eV, deg, pi
+        use sys,       only : die
         implicit none
-
 C  Variables
 
 C  iZmat holds the pointers to the atoms to which the components
@@ -72,7 +70,7 @@ C    8 - fractional cartesian (scaled by lattice vectors)
 C  nVars specifies the number of constrained variables
         integer,           save :: nVars
 C  ZmatVarNames(nVars) gives the names of the constrained variables
-        character(len=10), allocatable, save :: ZmatVarNames(:)
+        character(len=10), pointer, save :: ZmatVarNames(:)
 C  iZmattoVars(3*na) is the index in the variable array of a 
 C     symbolic coordinate
         integer, pointer,  save :: iZmattoVars(:) 
@@ -96,9 +94,9 @@ C       v2 = a*v1 + B
 
       ! AG: convenience variables
         integer, pointer,  save :: species(:) 
-        real(dp), save  :: scale_length, scale_angle 
-        real(dp), save  :: zmatrix_alat
-        logical, save   :: unknown_cell
+        real(dp),  save :: scale_length, scale_angle 
+        real(dp),  save :: zmatrix_alat
+        logical,   save :: unknown_cell
 
       public :: read_Zmatrix, lUseZmatrix, iofaZmat
       public :: CartesianForce_to_ZmatForce, write_Zmatrix
@@ -122,7 +120,6 @@ C  Subroutines
 
         use fdf
         use parsing,     only : parse
-        use alloc,       only : re_alloc
         use sys,         only : die
         use parallel,    only : Node
 #ifdef MPI
@@ -161,7 +158,6 @@ C Local variables
         logical,                 save :: firsttime = .true.
         real(dp)                      :: reals(10)
         real(dp)                      :: values(10)
-        character(len=100)            :: errormsg
         integer                       :: input_type
         integer                       :: units_type
         character(len=10), parameter  :: unitslen_default = 'Bohr'
@@ -206,25 +202,36 @@ C Nullify pointers
           nullify(coeffA,coeffB)
 
 C Allocate Zmatrix arrays
-          call re_alloc(Zmat,1,3*na)
-          call re_alloc(species,1,3*na)
-          call re_alloc(ZmatForce,1,3*na)
-          call re_alloc(iZmat,1,3*na)
-          call re_alloc(VaryZmat,1,3*na)
-          call re_alloc(nZmolAtoms,1,na)
-          call re_alloc(nZmolStartAtom,1,na)
-          call re_alloc(nZcartAtoms,1,na)
-          call re_alloc(nZcartStartAtom,1,na)
-          call re_alloc(ZmatType,1,3*na)
-          call re_alloc(iZmattoVars,1,3*na)
-          call re_alloc(iNextDept,1,3*na)
-          call re_alloc(coeffA,1,3*na)
-
-          call re_alloc(coeffB,1,3*na)
-          call re_alloc(ZmatForceVar,1,3*na)
-          call re_alloc(iVarstoZmat,1,3*na)
-          call re_alloc(lZmatVarsDef,1,3*na)
-          allocate(ZmatVarNames(3*na))
+          call re_alloc( Zmat, 1, 3*na, 'Zmat', 'read_Zmatrix' )
+          call re_alloc( species, 1, 3*na, 'species', 'read_Zmatrix' )
+          call re_alloc( ZmatForce, 1, 3*na, 'ZmatForce',
+     &                   'read_Zmatrix' )
+          call re_alloc( iZmat, 1, 3*na, 'iZmat', 'read_Zmatrix' )
+          call re_alloc( VaryZmat, 1, 3*na, 'VaryZmat', 'read_Zmatrix' )
+          call re_alloc( nZmolAtoms, 1, na, 'nZmolAtoms',
+     &                   'read_Zmatrix' )
+          call re_alloc( nZmolStartAtom, 1, na, 'nZmolStartAtom',
+     &                   'read_Zmatrix' )
+          call re_alloc( nZcartAtoms, 1, na, 'nZcartAtoms',
+     &                   'read_Zmatrix' )
+          call re_alloc( nZcartStartAtom, 1, na, 'nZcartStartAtom',
+     &                   'read_Zmatrix' )
+          call re_alloc( ZmatType, 1, 3*na, 'ZmatType',
+     &                   'read_Zmatrix' )
+          call re_alloc( iZmattoVars, 1, 3*na, 'iZmattoVars',
+     &                   'read_Zmatrix' )
+          call re_alloc( iNextDept, 1, 3*na, 'iNextDept',
+     &                   'read_Zmatrix' )
+          call re_alloc( coeffA, 1, 3*na, 'coeffA', 'read_Zmatrix' )
+          call re_alloc( coeffB, 1, 3*na, 'coeffB', 'read_Zmatrix' )
+          call re_alloc( ZmatForceVar, 1, 3*na, 'ZmatForceVar',
+     &                   'read_Zmatrix' )
+          call re_alloc( iVarstoZmat, 1, 3*na, 'iVarstoZmat',
+     &                   'read_Zmatrix' )
+          call re_alloc( lZmatVarsDef, 1, 3*na, 'lZmatVarsDef',
+     &                   'read_Zmatrix' )
+          call re_alloc( ZmatVarNames, 1, 3*na, 'ZmatVarNames',
+     &                   'read_Zmatrix' )
 
 C Read units for lengths and angles
           if (Node.eq.0) then
@@ -1069,25 +1076,25 @@ C
         integer                     :: j
         integer                     :: k
         integer                     :: ia
-        integer                     :: m
         integer                     :: vi
         real(dp), parameter         :: hfrac = 1e-6
-        real(dp), allocatable       :: CartesianB(:,:)
-        real(dp), allocatable       :: CartesianF(:,:)
-        real(dp), allocatable       :: ZmatF(:)
-        real(dp), allocatable       :: ZmatB(:)
+        real(dp), pointer           :: CartesianB(:,:), CartesianF(:,:)
+        real(dp), pointer           :: ZmatF(:), ZmatB(:)
         real(dp)                    :: h
-        logical,               save :: firsttime = .true.
 #ifdef MPI
         integer                     :: MPIerror
 #endif        
 
       if (IOnode) then
-C  Allocate local workspace arrays
-        allocate(CartesianF(3,na))
-        allocate(CartesianB(3,na))
-        allocate(ZmatF(3*na))
-        allocate(ZmatB(3*na))
+C       Allocate local workspace arrays
+        call re_alloc( CartesianF, 1, 3, 1, na, 'CartesianF',
+     &                 'CartesianForce_to_ZmatForce' )
+        call re_alloc( CartesianB, 1, 3, 1, na, 'CartesianB',
+     &                 'CartesianForce_to_ZmatForce' )
+        call re_alloc( ZmatF, 1, 3*na, 'ZmatF',
+     &                 'CartesianForce_to_ZmatForce' )
+        call re_alloc( ZmatB, 1, 3*na, 'ZmatB',
+     &                 'CartesianForce_to_ZmatForce' )
 
 C  Initialise forces & cartesian transformation matrices
         ZmatForce(1:3*na) = 0.0_dp
@@ -1165,15 +1172,12 @@ C  From now on the previous atoms will always be unchanged
 C  Done looping over all atoms
 
 C  Deallocate workspace arrays
-        call memory('D','D',size(ZmatB),'read_Zmatrix')
-        deallocate(ZmatB)
-        call memory('D','D',size(ZmatF),'read_Zmatrix')
-        deallocate(ZmatF)
-        call memory('D','D',size(CartesianB),'read_Zmatrix')
-        deallocate(CartesianB)
-        call memory('D','D',size(CartesianF),'read_Zmatrix')
-        deallocate(CartesianF)
-
+        call de_alloc( ZmatB, 'ZmatB', 'CartesianForce_to_ZmatForce' )
+        call de_alloc( ZmatF, 'ZmatF', 'CartesianForce_to_ZmatForce' )
+        call de_alloc( CartesianB, 'CartesianB',
+     &                 'CartesianForce_to_ZmatForce' )
+        call de_alloc( CartesianF, 'CartesianF',
+     &                 'CartesianForce_to_ZmatForce' )
       endif !IOnode
 
 #ifdef MPI
@@ -1541,10 +1545,9 @@ C
                 x_0 = RelatedC(1,2)
                 y_0 = RelatedC(2,2)
                 z_0 = RelatedC(3,2)
-                
-                r2 = RelatedC(:,1) - RelatedC(:,2)  ! Note, the atom
-                                                    ! this atom binds to,
-                                                    ! and the previous one
+!               Note, the atom this atom binds to and the previous one
+                r2 = RelatedC(:,1) - RelatedC(:,2)
+
                 r2_mod = sqrt(dot_product(r2,r2))
                 theta_1 = acos(r2(3)/r2_mod)
 
@@ -1592,8 +1595,8 @@ C
             third_atom_coords(1:3) =
      $           rotate(third_atom_coords,ez,phi_1)
 
-            ! New rotation axis defined by a vector lying on the xy plane,
-            ! forming a phi_1-90 degree angle with the x axis:
+            ! New rotation axis defined by a vector lying on the xy
+            ! plane, forming a phi_1-90 degree angle with the x axis:
 
             unit_vector = rotate(ex,ez, phi_1-pi/2.0_dp)
 
@@ -1638,9 +1641,6 @@ C
 C
 C  Local variables
 C
-        integer           :: i
-        integer           :: j
-        integer           :: k
         real(dp)          :: rji
         real(dp)          :: rn
         real(dp)          :: rp
@@ -1665,9 +1665,6 @@ C
         real(dp)          :: xp
         real(dp)          :: yp
         real(dp)          :: zp
-
-        real(dp), dimension(3)  :: vec_pos, vec_i, vec_j, vec_k,
-     $                             vec_ji, vec_kj, vec_n, vec_p
 C
 C  Find coordinates for related atoms
 C

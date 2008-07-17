@@ -83,7 +83,7 @@ C  Internal variables .................................................
      .  dgg,e,e3(3),elamb,eps,fp,gam,gg,lam,lambda,lm,partial
 
       logical 
-     .  iout,itest,ilam
+     .  iout,itest
 
 #ifdef MPI
       integer ::
@@ -179,7 +179,7 @@ C Get the energy at three points separated by lam ...........................
      .             dm,edm,nbasisCloc,nspin,Node,Nodes)
 
 C Solve exactly the line minimzation with a fourth order polinomial .........
-        call linmin4(partial,elamb,e3,lam,lambda,Node)
+        call linmin4(partial,elamb,e3,lam,lambda)
 
 C Check if the solution of the line minimization is reasonable 
 C (ie, lambda is small)
@@ -307,7 +307,6 @@ C Global reduction of Gnorm
           numit = 0
         endif
 
-10      continue
       enddo
 C end CG loop ________________________
 
@@ -335,7 +334,7 @@ C *******************************************************************
 
 
 
-      subroutine linmin4(partial,elamb,ener,lam,lambda, Node)
+      subroutine linmin4(partial,elamb,ener,lam,lambda)
 C *******************************************************************
 C  Subroutine for the exact minimization of a 4th order polinomial.
 C  Uses the values of the polinomial at four points, and the value of
@@ -366,9 +365,6 @@ C *******************************************************************
 
       real(dp) ::
      .  elamb,partial,lam,lambda,ener(3)
-
-      integer ::
-     .  Node
 
 C Internal variables ......................................................
       integer 

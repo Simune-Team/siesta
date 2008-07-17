@@ -176,19 +176,19 @@ C Initialize the projected density of states ---------------------------
 
 C  Call appropiate routine ----------------------------------------------
       if (nspin.le.2 .and. gamma) then
-        call pdosg( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
+        call pdosg( NSPIN, NUO, NO, MAXSPN, MAXNH,
      .              MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .              E1, E2, NHIST, SIGMA, INDXUO, EO,
      .              HAUX, SAUX, PSI, DTOT, DPR, NO_U )
       elseif ( nspin.le.2 .and. .not.gamma) then
         if (ParallelOverK) then
-          call pdoskp( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
+          call pdoskp( NSPIN, NUO, NO, MAXSPN, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,
      .                HAUX, SAUX, PSI, DTOT, DPR, NO_U )
         else
-          call pdosk( NSPIN, NUO, NO, MAXSPN, NO_L, MAXNH,
+          call pdosk( NSPIN, NUO, NO, MAXSPN, MAXNH,
      .                MAXO, NUMH, LISTHPTR, LISTH, H, S,
      .                E1, E2, NHIST, SIGMA, 
      .                XIJ, INDXUO, NK, KPOINT, WK, EO,

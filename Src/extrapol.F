@@ -78,6 +78,7 @@ C
       use precision,    only : dp
       use parallel,     only : node
       use sys,          only : die
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -101,13 +102,10 @@ C
       real(dp), intent(inout) :: mnew(:,:)     !  "
 
 C  Internal variables .......................................................
-
-      integer   ::  i,in,ind,ispin,j,nh,nrmax, nh_old
-      logical   ::  changed
-      real(dp)  ::  msave
-      real(dp), dimension(:), allocatable :: aux, mtmp
-
-      external  memory
+      integer           ::  i,in,ind,ispin,j,nh,nrmax, nh_old
+      logical           ::  changed
+      real(dp)          ::  msave
+      real(dp), pointer :: aux(:), mtmp(:)
 
 #ifdef MPI
       integer
@@ -190,10 +188,8 @@ C Determine size of auxiliary matrix
             enddo
           enddo
 
-          allocate(aux(nrmax))
-          call memory('A','D',nrmax,'extrapol')
-          allocate(mtmp(nh))
-          call memory('A','D',nh,'extrapol')
+          call re_alloc( aux, 1, nrmax, 'aux', 'extrapol' )
+          call re_alloc( mtmp, 1, nh, 'mtmp', 'extrapol' )
 
           aux(1:nrow) = 0.0_dp
   
@@ -245,10 +241,8 @@ C Determine size of auxiliary matrix
           listold(1:nh) = list(1:nh)
 
 C Deallocate local scratch arrays
-          call memory('D','D',size(mtmp),'extrapol')
-          deallocate(mtmp)
-          call memory('D','D',size(aux),'extrapol')
-          deallocate(aux)
+          call de_alloc( aux, 'aux', 'extrapol' )
+          call de_alloc( mtmp, 'mtmp', 'extrapol' )
 
         endif !changed
 C ..................

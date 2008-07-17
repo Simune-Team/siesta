@@ -40,18 +40,12 @@ C     and initializes data structures on the grid.
 #endif
 
       implicit none
-
-
-      real(dp)              :: stressl(3,3), dummy(1,1)
-      real(dp), pointer     :: fal(:,:)   ! Local-node part of atomic forces
-
-#ifdef MPI
-      real(dp):: buffer1   ! Temporary for the result of a globalize operation
-      integer  :: mpierr
-#endif
-
-      integer :: ia, io, is, ispin
+      real(dp) :: stressl(3,3), dummy(1,1)
+      integer  :: ia, io, is
       real(dp) :: g2max
+#ifdef MPI
+      real(dp) :: buffer1
+#endif
 
 !------------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
@@ -82,7 +76,7 @@ C     First time for energy, last time for forces
       Ena = Ena + DEna
       
 C     Kinetic: energy, forces, stress and matrix elements .................
-      call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo, no_l,
+      call kinefsm(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      &             maxnh, maxnh, lasto, iphorb, isa, 
      &             numh, listhptr, listh, numh, listhptr, listh, 
      &             min(nspin,2), Dscf, Ekin, dummy, stressl, H,

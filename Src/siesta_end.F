@@ -18,7 +18,6 @@
       use moreMeshSubs,    only : resetMeshDistr
       use densematrix,     only : resetDenseMatrix
       use sparse_matrices, only : resetSparseMatrices
-      use m_matel,         only : resetMatelArrays
       use meshdscf,        only : resetDscfPointers
       use m_diagon,        only : resetDiagonPointers
       use m_fixed,         only : resetFixedPointers
@@ -34,7 +33,6 @@
       call resetPulayArrays( )
       call resetMeshDistr( )
       call resetdscfComm( )
-      call resetMatelArrays( )
       call resetDscfPointers( )
       call resetDenseMatrix( )
       call resetDiagonPointers( )

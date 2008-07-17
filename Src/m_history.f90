@@ -21,10 +21,10 @@ integer, private, parameter :: dp=selected_real_kind(14,100)
 
 type, public :: history_t
 private
-    integer :: size
-    logical :: full
-    integer :: n
-    real(dp), dimension(:), pointer :: val
+    integer           :: size
+    logical           :: full
+    integer           :: n
+    real(dp), pointer :: val(:)
 end type history_t
 
 public :: initialize_history, add_to_history, reset_history
@@ -34,13 +34,15 @@ CONTAINS
 
 !---------------------------------------------------
 subroutine initialize_history(h,max_size)
-type(history_t), intent(inout)  :: h
-integer, intent(in)             :: max_size
+use alloc, only : re_alloc
+implicit none
+  type(history_t), intent(inout)  :: h
+  integer, intent(in)             :: max_size
 
-h%size = max_size
-allocate(h%val(max_size))
-h%full = .false.
-h%n = 0
+  h%size = max_size
+  call re_alloc( h%val, 1, max_size, 'h%val', 'm_history' )
+  h%full = .false.
+  h%n = 0
 
 end subroutine initialize_history
 
@@ -97,9 +99,12 @@ end function history_values
 !
 !---------------------------------------------------
 subroutine destroy_history(h)
+use alloc, only : de_alloc
+implicit none
+
 type(history_t), intent(inout)  :: h
 
-if (associated(h%val)) deallocate(h%val)
+  call de_alloc( h%val, 'h%val', 'm_history' )
 
 end subroutine destroy_history
 

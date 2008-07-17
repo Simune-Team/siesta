@@ -52,6 +52,7 @@ C
       use fdf
       use files,        only : slabel, label_length
       use sys,          only : die
+      use alloc,        only : re_alloc, de_alloc
 #ifdef MPI
       use mpi_siesta
 #endif
@@ -71,23 +72,24 @@ C Internal variables and arrays
       character(len=label_length+3) :: fname
       integer    im, is, iu, ju, k, mnh, ns
       integer    ih,hl,nuo,maxnhtot,maxhg
-      integer, dimension(:), allocatable :: numhg
+      integer, pointer :: numhg(:)
 #ifdef MPI
       integer    MPIerror, Request, Status(MPI_Status_Size), BNode
-      integer,  dimension(:),   allocatable :: ibuffer
-      real(dp), dimension(:),   allocatable :: buffer
-      real(dp), dimension(:,:), allocatable :: buffer2
+      integer,  pointer :: ibuffer(:)
+      real(dp), pointer :: buffer(:), buffer2(:,:)
 #endif
       logical    baddim, found, frstme, gammaonfile
       save       frstme, fname
       data frstme /.true./
-
 C Find name of file
       if (frstme) then
         fname = paste( slabel, '.HS' )
         frstme = .false.
       endif
 
+#ifdef MPI
+      nullify( numhg, ibuffer, buffer, buffer2 )
+#endif
 C Find total numbers over all Nodes
 #ifdef MPI
       call MPI_AllReduce(maxnh,maxnhtot,1,MPI_integer,MPI_sum,
@@ -166,8 +168,7 @@ C Read indxuo
           endif
 
 C Allocate local array for global numh
-          allocate(numhg(no_u))
-          call memory('A','I',no_u,'iohs')
+          call re_alloc( numhg, 1, no_u, 'numhg', 'iohs' )
 
 C Read numh and send to appropriate Node
           if (Node.eq.0) then
@@ -197,10 +198,8 @@ C Create listhptr
 
 #ifdef MPI
 C Create buffer arrays for transfering density matrix between nodes and lists
-          allocate(buffer(maxhg))
-          call memory('A','D',maxhg,'iohs')
-          allocate(ibuffer(maxhg))
-          call memory('A','I',maxhg,'iohs')
+          call re_alloc( buffer, 1, maxhg, 'buffer', 'iohs' )
+          call re_alloc( ibuffer, 1, maxhg, 'ibuffer', 'iohs' )
 #endif
 
           do ih = 1,no_u
@@ -235,8 +234,7 @@ C Create buffer arrays for transfering density matrix between nodes and lists
           enddo
 
 #ifdef MPI
-          call memory('D','I',size(ibuffer),'iohs')
-          deallocate(ibuffer)
+          call de_alloc( ibuffer, 'ibuffer', 'iohs' )
 #endif
 
 C Read Hamiltonian
@@ -309,8 +307,7 @@ C Read Overlap matrix
 
 #ifdef MPI
 C Free buffer array
-          call memory('D','D',size(buffer),'iohs')
-          deallocate(buffer)
+          call de_alloc( buffer, 'buffer', 'iohs' )
 #endif
           
           if (Node.eq.0) then
@@ -326,8 +323,7 @@ C Free buffer array
           if (.not.gamma) then
 #ifdef MPI
 C Allocate buffer array
-            allocate(buffer2(3,maxhg))
-            call memory('A','D',3*maxhg,'iohs')
+            call re_alloc( buffer2, 1, 3, 1, maxhg, 'buffer2', 'iohs' )
 #endif
 C Read interorbital vectors for K point phasing
             do ih = 1,no_u
@@ -364,14 +360,12 @@ C Read interorbital vectors for K point phasing
             enddo
 #ifdef MPI
 C Free buffer array
-            call memory('D','D',size(buffer2),'iohs')
-            deallocate(buffer2)
+            call de_alloc( buffer2, 'buffer2', 'iohs' )
 #endif
           endif
 
 C Deallocate local array for global numh
-          call memory('D','I',size(numhg),'iohs')
-          deallocate(numhg)
+          call de_alloc( numhg, 'numhg', 'iohs' )
 
 C Close file
           if (Node .eq. 0) then
@@ -392,7 +386,7 @@ C Close file
         if (Node.eq.0) then
 C Open file
           call io_assign( iu )
-          open( iu, file=fname, form='unformatted', status='unknown' )      
+          open( iu, file=fname, form='unformatted', status='unknown' )
 
 C Write overall data
           write(iu) no_u, no_s, nspin, maxnhtot
@@ -401,8 +395,7 @@ C Read logical
           write(iu) gamma
 
 C Allocate local array for global numh
-          allocate(numhg(no_u))
-          call memory('A','I',no_u,'iohs')
+          call re_alloc( numhg, 1, no_u, 'numhg', 'iohs' )
 
 C Write out indxuo
           if (.not.gamma) then
@@ -448,10 +441,8 @@ C Write numh
             write(iu) numhg(ih)
           enddo
 #ifdef MPI
-          allocate(buffer(maxhg))
-          call memory('A','D',maxhg,'iohs')
-          allocate(ibuffer(maxhg))
-          call memory('A','I',maxhg,'iohs')
+          call re_alloc( buffer, 1, maxhg, 'buffer', 'iohs' )
+          call re_alloc( ibuffer, 1, maxhg, 'ibuffer', 'iohs' )
 #endif
         endif
 
@@ -491,8 +482,7 @@ C Write listh
 
 #ifdef MPI
         if (Node.eq.0) then
-          call memory('D','I',size(ibuffer),'iohs')
-          deallocate(ibuffer)
+          call de_alloc( ibuffer, 'ibuffer', 'iohs' )
         endif
 #endif
 
@@ -572,8 +562,7 @@ C Write Overlap matrix
 #ifdef MPI
           if (Node .eq. 0) then
 C Free buffer array
-             call memory('D','D',size(buffer),'iohs')
-             deallocate(buffer)
+            call de_alloc( buffer, 'buffer', 'iohs' )
           endif
 #endif
 
@@ -585,8 +574,7 @@ C Free buffer array
 #ifdef MPI
 C Allocate buffer array
           if (Node .eq. 0) then
-             allocate(buffer2(3,maxhg))
-             call memory('A','D',3*maxhg,'iohs')
+            call re_alloc( buffer2, 1, 3, 1, maxhg, 'buffer2', 'iohs' )
           endif
 #endif
           do ih = 1,no_u
@@ -626,16 +614,14 @@ C Allocate buffer array
 #ifdef MPI
           if (Node .eq. 0) then
 C Free buffer array
-             call memory('D','D',size(buffer2),'iohs')
-             deallocate(buffer2)
+            call de_alloc( buffer2, 'buffer2', 'iohs' )
           endif
 #endif
         endif   ! not gamma
 
         if (Node.eq.0) then
 C Deallocate local array for global numh
-          call memory('D','I',size(numhg),'iohs')
-          deallocate(numhg)
+          call de_alloc( numhg, 'numhg', 'iohs' )
 C Close file
           call io_close( iu )
         endif

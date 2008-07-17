@@ -88,7 +88,7 @@ C Internal variables
      &                  nbcell, ni, nn, nr, nv, meshl(3),
      &                  Xoffset, Yoffset, Zoffset, i30, i20, i10
 #ifdef MPI
-      integer           MPIerror, npl
+      integer           MPIerror
 #endif
       real(dp)          b1xb2(3), bcell(3,3), cfactor, dplane(3),
      &                  e(3), e0(3), eb1, eb2, eb3,

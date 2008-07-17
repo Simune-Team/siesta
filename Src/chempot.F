@@ -135,7 +135,6 @@ C ipmax = maximum order the Chebyshev polynomial exp. of the Fermi operator
 #ifdef MPI
       integer :: MPIerror
       real(dp), dimension(:),   pointer :: dpbuffer1
-      real(dp), dimension(:,:), pointer :: dpbuffer2
 #endif
 C ...
 

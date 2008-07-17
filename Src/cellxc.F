@@ -177,13 +177,7 @@ C Parameter mspin must be equal or larger than nspin
 
 #ifdef MPI
 C MPI related variables
-      integer 
-     &  MPIerror
-      integer 
-     &  NDummy, IOut, INN, MeshDum(3), 
-     &  NMeshPN, JPNN(3,-NN:NN)
-      real(dp)
-     &  Buffer(4),Buffer2(4)
+      integer  :: IOut, INN, JPNN(3,-NN:NN)
 #endif
 
 C Local variables and arrays
@@ -199,7 +193,7 @@ C Local variables and arrays
      &                  EPSC, EPSX, F1, F2, GD(3,mspin),
      &                  VOLCEL, volume, stress(3,3)
       external          GGAXC, LDAXC, RECLAT, VOLCEL
-      integer           iaxis, BS(3), maxBS, iDistr
+      integer           BS(3), iDistr
       real(grid_p), pointer :: bdensX(:,:,:), bdensY(:,:,:),
      &                         bdensZ(:,:,:), bvxcX(:,:,:),
      &                         bvxcY(:,:,:), bvxcZ(:,:,:)
@@ -241,10 +235,10 @@ C be calculated.
         if (BS(1).ne.NMeshG(1)) then
           nullify(bdensX)
           call re_alloc( bdensX, 1, BS(2)*BS(3), 1, 2*NN,
-     &                   1, nspin, name='bdensX', routine='cellxc' )
+     &                   1, nspin, 'bdensX', 'cellxc' )
           nullify(bvxcX)
           call re_alloc( bvxcX, 1, BS(2)*BS(3), 1, 2*NN,
-     &                   1, nspin, name='bvxcX', routine='cellxc' )
+     &                   1, nspin, 'bvxcX', 'cellxc' )
           call distExtMeshData( iDistr, 1, BS(2)*BS(3), NSM, NN, NSPIN,
      &                          maxp, NMeshG, dens, bdensX )
         endif
@@ -252,10 +246,10 @@ C be calculated.
         if (BS(2).ne.NMeshG(2)) then
           nullify(bdensY)
           call re_alloc( bdensY, 1, BS(1)*BS(3), 1, 2*NN,
-     &                   1, nspin, name='bdensY', routine='cellxc' )
+     &                   1, nspin, 'bdensY', 'cellxc' )
           nullify(bvxcY)
           call re_alloc( bvxcY, 1, BS(1)*BS(3), 1, 2*NN,
-     &                   1, nspin, name='bvxcY', routine='cellxc' )
+     &                   1, nspin, 'bvxcY', 'cellxc' )
           call distExtMeshData( iDistr, 2, BS(1)*BS(3), NSM, NN, NSPIN,
      &                          maxp, NMeshG, dens, bdensY )
         endif
@@ -263,10 +257,10 @@ C be calculated.
         if (BS(3).ne.NMeshG(3)) then
           nullify(bdensZ)
           call re_alloc( bdensZ, 1, BS(1)*BS(2), 1, 2*NN,
-     &                   1, nspin, name='bdensZ', routine='cellxc' )
+     &                   1, nspin, 'bdensZ', 'cellxc' )
           nullify(bvxcZ)
           call re_alloc( bvxcZ, 1, BS(1)*BS(2), 1, 2*NN,
-     &                   1, nspin, name='bvxcZ', routine='cellxc' )
+     &                   1, nspin, 'bvxcZ', 'cellxc' )
           call distExtMeshData( iDistr, 3, BS(1)*BS(2), NSM, NN, NSPIN,
      &                          maxp, NMeshG, dens, bdensZ )
         endif
@@ -862,23 +856,20 @@ C Divide by energy unit
         enddo
       endif
 
-C Re-entry point for nodes with no mesh points stored locally
-  999 continue
-
 #ifdef MPI
 C Free memory
       if (GGA.and.Nodes.gt.1) then
         if (BS(1).ne.NMeshG(1)) then
-          call de_alloc( bdensX, name='bdensX' )
-          call de_alloc( bvxcX, name='bvxcX' )
+          call de_alloc( bdensX, 'bdensX', 'cellxc' )
+          call de_alloc( bvxcX, 'bvxcX', 'cellxc' )
         endif
         if (BS(2).ne.NMeshG(2)) then
-          call de_alloc( bdensY, name='bdensY' )
-          call de_alloc( bvxcY, name='bvxcY' )
+          call de_alloc( bdensY, 'bdensY', 'cellxc' )
+          call de_alloc( bvxcY, 'bvxcY', 'cellxc' )
         endif
         if (BS(3).ne.NMeshG(3)) then
-          call de_alloc( bvxcZ, name='bvxcZ' )
-          call de_alloc( bdensZ, name='bdensZ' )
+          call de_alloc( bvxcZ, 'bvxcZ', 'cellxc' )
+          call de_alloc( bdensZ, 'bdensZ', 'cellxc' )
         endif
       endif
 #endif

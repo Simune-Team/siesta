@@ -10,17 +10,17 @@
       USE alloc,          only: re_alloc, de_alloc
 
       use siesta_geom
-      use atmfuncs,       only: izofis
-      use atomlist,       only: elem, iza
+      use atmfuncs,       only : izofis
+      use atomlist,       only : elem, iza
       use fdf,            only : fdf_physical
-      use m_fdf_global,   only: fdf_global_get
+      use m_fdf_global,   only : fdf_global_get
       use periodic_table, only : symbol
-      use iopipes,        only: coordsfrompipe
-      use m_iostruct,     only: read_struct
+      use iopipes,        only : coordsfrompipe
+      use m_iostruct,     only : read_struct
       use siesta_cml
       use files,          only : slabel
-      use zmatrix,        only: lUseZmatrix
-      use parallel,       only: IOnode
+      use zmatrix,        only : lUseZmatrix
+      use parallel,       only : IOnode
 
       implicit none
 
@@ -50,11 +50,9 @@
       endif
 
 !     Prepare iza here: it might be needed by ioxv      
-      nullify(iza)
-      call re_alloc(iza,1,na_u,name='iza',routine='struct_init')
-
-      nullify(va)
-      call re_alloc(va,1,3,1,na_u,name='va',routine='struct_init')
+      nullify( iza, va )
+      call re_alloc( iza, 1, na_u, 'iza', 'struct_init' )
+      call re_alloc( va, 1, 3, 1, na_u, 'va', 'struct_init' )
 
       ! Options readed here instead of siesta_options
       call fdf_global_get(default, 'UseSaveData'     , .false.)
@@ -143,19 +141,19 @@
       if (cml_p) then
 ! We need the names of the elements on node 0
         nullify(elem)
-        call re_alloc(elem,1,na_u,name='elem',routine='struct_init')
+        call re_alloc( elem, 1, na_u, 'elem', 'struct_init' )
         do i = 1, na_u
            elem(i) = symbol(izofis(isa(i)))
         enddo
 
         call cmlStartModule(xf=mainXML, title='Initial System')
-        call re_alloc( xang, 1, 3, 1, na_u, name='xang',
-     &                 routine='struct_init' )
+        nullify(xang)
+        call re_alloc( xang, 1, 3, 1, na_u, 'xang', 'struct_init' )
         xang = xa(1:3,1:na_u)/Ang
         call cmlAddMolecule(xf=mainXML, natoms=na_u, 
      .       coords=xang, elements=elem, refs=cisa,
      .       style='x3', fmt='(f12.6)')
-        call de_alloc( xang, name='xang', routine='struct_init' )
+        call de_alloc( xang, 'xang', 'struct_init' )
 
         call cmlAddLattice(xf=mainXML, cell=ucell, 
      .       units='siestaUnits:angstrom', dictref='siesta:ucell')

@@ -48,10 +48,10 @@ C real*8  xdsp(3,nsp)   : Vector to mesh sub-points
 C ----------------------------------------------------------------------
       integer,  pointer,     save :: idop(:)
 #ifdef RGT
-      integer,  allocatable, save :: indexp2(:)
+      integer,  pointer,     save :: indexp2(:)
 #endif
-      integer,  allocatable, save :: ipa(:)
-      real(dp), allocatable, save :: dxa(:,:)
+      integer,  pointer,     save :: ipa(:)
+      real(dp), pointer,     save :: dxa(:,:)
       real(dp), pointer,     save :: xdop(:,:)
       real(dp), pointer,     save :: xdsp(:,:) ! Allocated in dhscf
       integer,               save :: mop
@@ -123,10 +123,10 @@ C real    phi(nsp,ntopl): Basis orbitals at mesh points (sparse)
 C ----------------------------------------------------------------------
       logical,                   save :: DirectPhi
       integer,                   save :: nphi
-      integer,      allocatable, save :: endpht(:)
-      integer,      allocatable, save :: lstpht(:)
-      integer,      allocatable, save :: listp2(:)
-      real(grid_p), allocatable, save :: phi(:,:)
+      integer,          pointer, save :: endpht(:)
+      integer,          pointer, save :: lstpht(:)
+      integer,          pointer, save :: listp2(:)
+      real(grid_p),     pointer, save :: phi(:,:)
       end module meshphi
 
       subroutine SameMeshAndAtoms(na, xa, ucell, rmax, G2max, G2mesh,
@@ -160,37 +160,29 @@ C real*8  lastra       : Rmax from last call
 C real*8  lastc(3,3)   : Unit cell from last call
 C ----------------------------------------------------------------------
       use precision,     only : dp
+      use alloc,         only : re_alloc, de_alloc
       implicit none
 C     Passed arguments
-      integer,   intent(in)  :: na
-      real(dp),  intent(in)  :: G2max, G2mesh
-      real(dp),  intent(in)  :: rmax
-      real(dp),  intent(in)  :: ucell(3,3)
-      real(dp),  intent(in)  :: xa(3,na)
-      logical,   intent(out) :: samesh, samexa
+      integer,    intent(in)  :: na
+      real(dp),   intent(in)  :: G2max, G2mesh
+      real(dp),   intent(in)  :: rmax
+      real(dp),   intent(in)  :: ucell(3,3)
+      real(dp),   intent(in)  :: xa(3,na)
+      logical,    intent(out) :: samesh, samexa
 C     Local variables
 C     Saved
-      integer,          save :: lastna     = 0
-      real(dp),         save :: tiny       = 1.0e-12_dp,
-     &                          lastc(3,3) = 0.743978657912656e50_dp,
-     &                          lastra     = 0.0_dp
+      integer,           save :: lastna     = 0
+      real(dp),          save :: tiny       = 1.0e-12_dp,
+     &                           lastc(3,3) = 0.743978657912656e50_dp,
+     &                           lastra     = 0.0_dp
 C     non-saved
-      integer                     :: i, ia, j
-      real(dp), allocatable, save :: lastxa(:,:)
+      integer                 :: i, ia, j
+      real(dp), pointer, save :: lastxa(:,:)
 
 !------------------------------------------------------------------------- BEGIN
 C     If number of atoms has changed then deallocate lastxa
       if (na.ne.lastna) then
-        if (allocated(lastxa)) then
-          call memory('D','D',size(lastxa),'SameMeshAndAtoms')
-          deallocate(lastxa)
-        endif
-      endif
-
-C     Allocate lastxa and initialise it to an unlikely number
-      if (.not.allocated(lastxa)) then
-        allocate(lastxa(3,na))
-        call memory('A','D',3*na,'SameMeshAndAtoms')
+        call re_alloc(lastxa, 1, 3, 1, na, 'lastxa', 'SameMeshAndAtoms')
         lastxa(1:3,1:na) = 0.0_dp
         lastxa(1,1) = 0.987654321273567e50_dp
       endif
@@ -250,6 +242,7 @@ C ----------------------------------------------------------------------
 C integer lastna        : Number of atoms on last call
 C ----------------------------------------------------------------------
       use precision,     only : dp
+      use alloc,         only : re_alloc, de_alloc
       use mesh
       implicit none
 C     Passed arguments
@@ -262,24 +255,8 @@ C     Internal variables
 
 !------------------------------------------------------------------------- BEGIN
 C     Check size of atom-mesh arrays nad reallocate if necessary
-      if (na.ne.lastna) then
-        if (allocated(ipa)) then
-          call memory('D','I',size(ipa),'mesh')
-          deallocate(ipa)
-        endif
-        if (allocated(dxa)) then
-          call memory('D','D',size(dxa),'mesh')
-          deallocate(dxa)
-        endif
-      endif
-      if (.not.allocated(ipa)) then
-        allocate(ipa(na))
-        call memory('A','I',na,'mesh')
-      endif
-      if (.not.allocated(dxa)) then
-        allocate(dxa(3,na))
-        call memory('A','D',3*na,'mesh')
-      endif
+      call re_alloc( ipa, 1, na, 'ipa', 'mesh' )
+      call re_alloc( dxa, 1, 3, 1, na, 'dxa', 'mesh' )
       lastna = na
 
 C     Find atomic positions relative to mesh

@@ -16,13 +16,12 @@
       use m_spin,         only: nspin
       implicit none
 
-      logical :: first, last
-      integer :: iscf
-
+      integer  :: iscf
       external :: plcharge
 
 !------------------------------------------------------------------------- BEGIN
-          ! If converged, make one last iteration to find forces and stress
+          ! If converged, make one last iteration to find forces and
+          ! stress
 
           ! Note that here we are using the Dscf guessed by mixer,
           ! not the last Dscf really computed from Wavefunctions

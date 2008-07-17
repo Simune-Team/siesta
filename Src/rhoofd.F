@@ -103,23 +103,21 @@ C  Find size of buffers to store partial copies of Dscf and C
 C  Allocate local memory
 
       nullify ( ilocal )
-      call re_alloc( ilocal, 1, no, name='ilocal', routine='rhoofd' )
+      call re_alloc( ilocal, 1, no, 'ilocal', 'rhoofd' )
 
       nullify ( ilc )
-      call re_alloc( ilc, 1, maxloc2, name='ilc', routine='rhoofd' )
+      call re_alloc( ilc, 1, maxloc2, 'ilc', 'rhoofd' )
 
       nullify (iorb )
-      call re_alloc( iorb, 0, maxloc, name='iorb', routine='rhoofd' )
+      call re_alloc( iorb, 0, maxloc, 'iorb', 'rhoofd' )
 
       ijl = (maxloc+1)*(maxloc+2)/2
 
       nullify( Dlocal )
-      call re_alloc( Dlocal, 1, ijl, 1, nspin, name='Dlocal',
-     &               routine='rhoofd' )
+      call re_alloc( Dlocal, 1, ijl, 1, nspin, 'Dlocal', 'rhoofd' )
 
       nullify( Clocal )
-      call re_alloc( Clocal, 1, nsp, 1, maxloc2, name='Clocal',
-     &               routine='rhoofd' )
+      call re_alloc( Clocal, 1, nsp, 1, maxloc2, 'Clocal', 'rhoofd' )
 
       if (ParallelLocal) then
         if (nrowsDscfL.gt.0) then
@@ -127,10 +125,9 @@ C  Allocate local memory
         else
           maxndl = 1
         endif
-        call re_alloc( DscfL, 1, maxndl, 1, nspin,
-     &                 name='DscfL',  routine='rhoofd' )
+        call re_alloc( DscfL, 1, maxndl, 1, nspin, 'DscfL', 'rhoofd' )
 C Redistribute Dscf to DscfL form
-        call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo, nuotot,
+        call matrixOtoM( maxnd, numd, listdptr, maxndl, nuo,
      &                   nspin, Dscf, DscfL )
       endif
 
@@ -332,17 +329,15 @@ C  Restore iorb for next point
 
       enddo
 
-  999 continue
-
 C  Free local memory
       if (ParallelLocal) then
-        call de_alloc( DscfL,  name='DscfL' )
+        call de_alloc( DscfL, 'DscfL', 'rhoofd' )
       endif
-      call de_alloc( Clocal,  name='Clocal' )
-      call de_alloc( Dlocal,  name='Dlocal' )
-      call de_alloc( iorb,  name='iorb' )
-      call de_alloc( ilc,  name='ilc' )
-      call de_alloc( ilocal,  name='ilocal' )
+      call de_alloc( Clocal, 'Clocal', 'rhoofd' )
+      call de_alloc( Dlocal, 'Dlocal', 'rhoofd' )
+      call de_alloc( iorb, 'iorb', 'rhoofd' )
+      call de_alloc( ilc, 'ilc', 'rhoofd' )
+      call de_alloc( ilocal, 'ilocal', 'rhoofd' )
 
       call timer('rhoofd',2)
 #if defined(MPI_TRACE) && defined(MPI)

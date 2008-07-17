@@ -11,9 +11,8 @@
       subroutine optical( nua, na, xa, scell, ucell, nuotot, nuo, no, 
      .                    nspin, qspin, maxnh, numh, 
      .                    listhptr, listh, H, S, AuxSr, AuxSr2, AuxSr3,
-     .                    xijo, indxuo, indxua, ek, efermi, temp,
-     .                    isa, iphorb, iphkb, iaorb, lasto, lastkb, 
-     .                    shape )
+     .                    xijo, indxuo, ek, efermi, temp,
+     .                    isa, iphorb, iphkb, lasto, lastkb, shape )
 C *********************************************************************
 C Calculates the imaginary part of the dielectric function using
 C first order perturbation theory.
@@ -47,7 +46,6 @@ C integer indxuo(no)          : Index of equivalent orbital in unit cell
 C                               Unit cell orbitals must be the first in
 C                               orbital lists, i.e. indxuo.le.nuo, with
 C                               nuo the number of orbitals in unit cell
-C integer indxua(na)          : Index of equivalent atom in unit cell
 C real*8  ek(nuo)             : Array to store the eigenvalues
 C real*8  efermi              : Fermi energy
 c real*8  temp                : Electronic temperature 
@@ -56,7 +54,6 @@ C integer iphorb(no)          : Orbital index within the atom for each
 C                               orbital
 C integer iphKB(nokb)         : KB projector index within the atom for 
 C                               each KB projector
-C integer iaorb(no)           : Atom to which orbitals belong
 C integer lasto(0:na)         : Last orbital index of each atom 
 C integer lastkb(0:na)        : Last KB projector of each atom
 C *************************** INTERNAL ********************************
@@ -96,9 +93,9 @@ C Passed variables
       integer           maxnh, nuotot, nuo, no, nspin
       integer           indxuo(no), listh(maxnh), numh(nuo)
       integer           listhptr(nuo)
-      integer           na, isa(na), iphorb(no), iaorb(no) 
+      integer           na, isa(na), iphorb(no)
       integer           nua, lasto(0:na),lastkb(0:na)
-      integer           iphKB(*), indxua(na)
+      integer           iphKB(*)
       real(dp)          ek(nuotot), qspin(2), H(maxnh,nspin), 
      .                  S(maxnh), xijo(3,*),
      .                  ucell(3,3), efermi, temp, AuxSr(maxnh), 
@@ -106,7 +103,7 @@ C Passed variables
      .                  scell(3,3), xa(3,na)
 
 C Internal variables 
-      real(dp) ntote_real      !!*** Note: needed to deal with synthetics
+      real(dp) ntote_real      !!** Note: needed to deal with synthetics
       integer
      .  iie, ik, io, ispin, iuo, ix, iy,  is, ia, ntote,
      .  nbands, ixmin, ije, j, maxhs, maxpsi,
@@ -461,8 +458,7 @@ C Construction of the matrix elements of the scalar product n*r
        if ( option.eq.'polarized') then 
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh,
-     .                    listhptr, listh, indxuo, indxua, iaorb,
-     .                    efield, matrix, AuxSr) 
+     .                    listhptr, listh, efield, matrix, AuxSr) 
          do io = 1,maxnh
            AuxSr2(io) = 0.0d0
            AuxSr3(io) = 0.0d0
@@ -470,12 +466,10 @@ C Construction of the matrix elements of the scalar product n*r
        elseif( option.eq.'unpolarized') then
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh, 
-     .                    listhptr, listh, indxuo, indxua, iaorb,
-     .                    inplane(1,1), matrix,  AuxSr)
+     .                    listhptr, listh, inplane(1,1), matrix,  AuxSr)
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh,
-     .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    inplane(1,2), matrix, AuxSr2)
+     .                    listhptr, listh, inplane(1,2), matrix, AuxSr2)
          do io = 1,maxnh
            AuxSr3(io) = 0.0d0
          enddo
@@ -486,24 +480,21 @@ C Construction of the matrix elements of the scalar product n*r
          xv(1) = 1.0d0
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh, 
-     .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    xv, matrix, AuxSr)
+     .                    listhptr, listh, xv, matrix, AuxSr)
          do ix = 1,3
            xv(ix) = 0.0d0
          enddo
          xv(2) = 1.0d0
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh, 
-     .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    xv, matrix, AuxSr2)
+     .                    listhptr, listh, xv, matrix, AuxSr2)
          do ix = 1,3
            xv(ix) = 0.0d0
          enddo
          xv(3) = 1.0d0
          call phirphi_opt(nua, na, nuo, no, scell, xa, maxnh, 
      .                    lasto, lastkb, iphorb, iphKB, isa, numh,
-     .                    listhptr, listh, indxuo, indxua, iaorb, 
-     .                    xv, matrix, AuxSr3)
+     .                    listhptr, listh, xv, matrix, AuxSr3)
 
        endif
 

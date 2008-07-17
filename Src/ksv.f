@@ -90,7 +90,7 @@ C
       integer           maxkpol, maxnh, nuo, nuotot, no, nspin, na
       integer           indxuo(no), listh(maxnh), numh(nuo), nkpol
       integer           listhptr(nuo), isa(na), iphorb(no), iaorb(no) 
-      integer           nua, maxna, lasto(0:na)
+      integer           nua, lasto(0:na)
       real(dp)          ddot, 
      .                  H(maxnh,nspin), kpol(3,maxkpol), 
      .                  S(maxnh), xijo(3,maxnh),
@@ -125,7 +125,7 @@ C Internal variables
       character         paste*30, shape*10
 
       external          ddot, io_assign, io_close,
-     .                  paste, volcel, reclat, memory
+     .                  paste, volcel, reclat
 
       real(dp), dimension(:), pointer :: psi1, psiprev
 
@@ -388,7 +388,7 @@ C In the first point we just store the wavefunctions
                   deti = 0.0d0 
 
 C Store wavefunction for the next point
-                  call savepsi(psiprev,psi,npsi,nuo,nuotot,nocc(ispin))
+                  call savepsi(psiprev,psi,nuo,nuotot,nocc(ispin))
 
                 elseif (il.ne.npl) then 
 C Calculate the determinant of the overlap matrix between the 
@@ -399,7 +399,7 @@ C periodic Bloch functions in this k point and in the previous one.
      .              detr, deti )
  
 C Store wavefunction for the next point
-                  call savepsi(psiprev,psi,npsi,nuo,nuotot,nocc(ispin))
+                  call savepsi(psiprev,psi,nuo,nuotot,nocc(ispin))
 
                 else 
 C Calculate the determinant of the overlap matrix between the

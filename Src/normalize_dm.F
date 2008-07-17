@@ -16,10 +16,9 @@
       implicit none
       logical :: first
       integer :: io, ispin
-      real(dp):: qsol       ! Total unnormalized electron charge
-
+      real(dp):: qsol  ! Total unnormalized electron charge
 #ifdef MPI
-      real(dp):: buffer1   ! Temporary for the result of a globalize operation
+      real(dp):: buffer1
 #endif
 
 !     Normalize density matrix to exact charge

@@ -1057,8 +1057,8 @@ C Internal variables
      .  IS, IX
       real(dp)
      .  A, BETA, D(2), DADD, DECUDD, DENMIN, 
-     .  DF1DD, DF2DD, DF3DD, DF4DD, DF1DGD, DF3DGD, DF4DGD,
-     .  DFCDD(2), DFCDGD(3,2), DFDD, DFDGD, DFXDD(2), DFXDGD(3,2),
+     .  DF1DD, DF2DD, DF3DD, DF4DD, DF3DGD, DF4DGD,
+     .  DFCDD(2), DFCDGD(3,2), DFDGD, DFXDD(2), DFXDGD(3,2),
      .  DHDD, DHDGD, DKFDD, DKSDD, DPDD, DPDZ, DRSDD, 
      .  DS(2), DSDD, DSDGD, DT, DTDD, DTDGD, DZDD(2), 
      .  EC, ECUNIF, EX, EXUNIF,
@@ -1701,7 +1701,7 @@ c Internal variables
      .           LYPb2,dLYP11,dLYP12,dLYP22,LYP,
      .           dd1g11,dd1g12,dd1g22,dd2g12,dd2g11,dd2g22,
      .           dLYPdd(2),dg11dd(3,2),dg22dd(3,2),
-     .           dg12dd(3,2),dLYPgd(3,2)
+     .           dLYPgd(3,2)
   
 c Lower bounds of density and its gradient to avoid divisions by zero
       parameter ( denmin=1.d-8 )

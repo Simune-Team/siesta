@@ -87,12 +87,10 @@
           g2max = g2cut
           call dhscf( nspin, no_s, iaorb, iphorb, no_l,
      .              no_u, na_u, na_s, isa, xalast, indxua, 
-     .              ucell_last, mscell, g2max, ntm,
-     .              0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
-     .              maxnh, numh, listhptr, listh, Dscf, Datm,
-     .              maxnh, numh, listhptr, listh, H,
+     .              ntm, 0, 0, 0, fildos, ' ', ' ', ' ', ' ', ' ',
+     .              maxnh, numh, listhptr, listh, Dscf, Datm, maxnh, H,
      .              Enaatm, Enascf, Uatm, Uscf, DUscf, DUext, Exc, Dxc,
-     .              dummy_dipol, fa, dummy_str, fa, dummy_strl )
+     .              dummy_dipol, dummy_str, fa, dummy_strl )
                     ! next to last argument is dummy here,
                     ! as no forces are calculated
                     ! todo: make all these optional

@@ -107,8 +107,7 @@ C
       if (.not.associated(trigs)) then
         maxtrigs = 256
         nullify( trigs )
-        call re_alloc( trigs, 1, maxtrigs, 1, 3, name='trigs',
-     &                 routine='fft' )
+        call re_alloc( trigs, 1, maxtrigs, 1, 3, 'trigs', 'fft' )
       endif
 C
 C  Initialise the tables for the FFT if the mesh has changed
@@ -131,8 +130,7 @@ C
 C  Resize FFT array for trig factors and set OldMesh to 0 to force recalculation
 C
         maxtrigs = maxmaxtrigs
-        call re_alloc( trigs, 1, maxtrigs, 1, 3, name='trigs',
-     &                 routine='fft' )
+        call re_alloc( trigs, 1, maxtrigs, 1, 3, 'trigs', 'fft' )
         OldMesh(1:3) = 0
         goto 10
       endif
@@ -156,7 +154,7 @@ C
 C  Allocate local memory
 C
       nullify( ft )
-      call re_alloc( ft, 1, 2*n1lf*n2*n3l, name='ft', routine='fft' )
+      call re_alloc( ft, 1, 2*n1lf*n2*n3l, 'ft', 'fft' )
 C
 C  Redistribute data to be distributed by X and Z
 C
@@ -178,7 +176,7 @@ C
 C
 C  Free local memory ready for re-use
 C
-      call de_alloc( ft, name='ft' )
+      call de_alloc( ft, 'ft', 'fft' )
 C
 C  Find new distributed x dimension
 C
@@ -189,7 +187,7 @@ C
 C  Allocate local memory
 C
       nullify( ft )   ! AG
-      call re_alloc( ft, 1, 2*n1lf*n2l*n3, name='ft', routine='fft' )
+      call re_alloc( ft, 1, 2*n1lf*n2l*n3, 'ft', 'fft' )
 C
 C  Redistribute data to be distributed by X and Y
 C
@@ -207,7 +205,7 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ft, name='ft' )
+      call de_alloc( ft, 'ft', 'fft' )
 #else
 C
 C  FFT in Y direction
@@ -326,10 +324,10 @@ C  Allocate local memory and initialise
 C
       nullify( ftmp )
       call re_alloc( ftmp, 1, 2, 1, n1lmax, 1, BlockSizeYMax, 1, n3l,
-     &               name='ftmp', routine='redistribXZ' )
+     &               'ftmp', 'redistribXZ' )
       nullify( ftmp2 )
       call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, BlockSizeYMax, 1, n3l,
-     &               name='ftmp2', routine='redistribXZ' )
+     &               'ftmp2', 'redistribXZ' )
 
       do i = 1,n3l
         do j = 1,BlockSizeYMax
@@ -492,8 +490,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ftmp2, name='ftmp2' )
-      call de_alloc( ftmp, name='ftmp' )
+      call de_alloc( ftmp2, 'ftmp2', 'redistribXZ' )
+      call de_alloc( ftmp, 'ftmp', 'redistribXZ' )
 
       end
 
@@ -581,10 +579,10 @@ C  Allocate local memory and initialise
 C
       nullify( ftmp )
       call re_alloc( ftmp, 1, 2, 1, n1lmax, 1, n2l, 1, BlockSizeZMax,
-     &               name='ftmp', routine='redistribXY' )
+     &               'ftmp', 'redistribXY' )
       nullify( ftmp2 )
       call re_alloc( ftmp2, 1, 2, 1, n1lmax, 1, n2l, 1, BlockSizeZMax,
-     &               name='ftmp2', routine='redistribXY' )
+     &               'ftmp2', 'redistribXY' )
 
       do i = 1,BlockSizeZMax
         do j = 1,n2l
@@ -755,8 +753,8 @@ C
 C
 C  Free local memory
 C
-      call de_alloc( ftmp2, name='ftmp2' )
-      call de_alloc( ftmp, name='ftmp' )
+      call de_alloc( ftmp2, 'ftmp2', 'redistribXY' )
+      call de_alloc( ftmp, 'ftmp', 'redistribXY' )
 
       return
       end
@@ -2067,8 +2065,6 @@ cdir$ ivdep, shortloop
 *
 *  loop on type II radix-3 passes
 *  ------------------------------
-  400 continue
-*
       do 480 ipass = mh+1 , m
       jstep = (n*inc) / (3*la)
       jstepl = jstep - ninc
@@ -2569,8 +2565,6 @@ cdir$ ivdep, shortloop
 *
 *  loop on type II radix-5 passes
 *  ------------------------------
-  400 continue
-*
       do 480 ipass = mh+1 , m
       jstep = (n*inc) / (5*la)
       jstepl = jstep - ninc

@@ -8,27 +8,28 @@ MODULE Kpoint_grid
 
   implicit none
 
+  public :: setup_kpoint_grid, scf_kgrid_first_time, gamma_scf, maxk,   &
+            nkpnt, kweight, kpoint
+
+
   private
   
-  logical, public, save   :: scf_kgrid_first_time = .true.
-  logical, public, save   :: gamma_scf
-  integer, public, save   :: maxk              ! 
-  integer, public, save   :: nkpnt             ! Total number of k-points
-  real(dp)                :: eff_kgrid_cutoff  ! Effective kgrid_cutoff
+  logical                  :: scf_kgrid_first_time = .true.
+  logical                  :: gamma_scf
+  integer                  :: maxk              ! 
+  integer                  :: nkpnt             ! Total number of k-points
+  real(dp)                 :: eff_kgrid_cutoff  ! Effective kgrid_cutoff
 
-  real(dp), pointer, public, save :: kweight(:) 
-  real(dp), pointer, public, save :: kpoint(:,:)
+  real(dp),        pointer :: kweight(:) 
+  real(dp),        pointer :: kpoint(:,:)
 
-  integer,  dimension(3,3), save  :: kscell = 0
-  real(dp), dimension(3), save    :: kdispl = 0.0_dp
+  integer,  dimension(3,3) :: kscell = 0
+  real(dp), dimension(3)   :: kdispl = 0.0_dp
+  logical                  :: user_requested_mp = .false.
+  logical                  :: user_requested_cutoff = .false.
 
-  logical, save     :: user_requested_mp = .false.
-  logical, save     :: user_requested_cutoff = .false.
-
-  logical, save     :: spiral = .false.
-  logical, save     :: firm_displ = .false.
-
-  public :: setup_kpoint_grid
+  logical                  :: spiral = .false.
+  logical                  :: firm_displ = .false.
 
   CONTAINS
 

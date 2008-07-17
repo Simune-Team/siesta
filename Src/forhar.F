@@ -19,9 +19,8 @@
       private
 
       CONTAINS
-      subroutine forhar( NTPL, NSPIN, NML, NTML, NTM, NPCC, CELL, 
-     .                   RHOATM, RHOPCC, VNA, DRHOOUT, VHARRIS1, 
-     .                   VHARRIS2 )
+      subroutine forhar( NTPL, NSPIN, NML, NTML, NPCC, CELL, RHOATM,
+     .                   RHOPCC, VNA, DRHOOUT, VHARRIS1, VHARRIS2 )
 
 C **********************************************************************
 C Build the potentials needed for computing Harris forces:
@@ -39,7 +38,7 @@ C contributions of both spins.
 C Coded by J. Junquera 09/00
 C **********************************************************************
 
-      INTEGER             :: NTPL, NML(3), NTML(3), NTM(3)
+      INTEGER             :: NTPL, NML(3), NTML(3)
       INTEGER, INTENT(IN) :: NSPIN, NPCC
  
       REAL(dp), DIMENSION(3,3), INTENT(IN) :: CELL(3,3)
@@ -118,11 +117,13 @@ C ----------------------------------------------------------------------
      .                           RHOPCC(1:NTPL)/NSPIN
       ENDDO
 
-      idistr = 2
-      odistr = 3
 
       ntpl_2 = ntpl
+#ifdef MPI
+      idistr = 2
+      odistr = 3
       call setMeshDistr( odistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
       ntpl_3 = ntpl
 
       nullify( drhoin_par, vharris1_par, dvxcdn_par )
@@ -155,8 +156,9 @@ C ----------------------------------------------------------------------
       call de_alloc( vharris1_par, name='vharris1_par' )
       call de_alloc( drhoin_par, name='drhoin_par' )
 
+#ifdef MPI
       call setMeshDistr( idistr, nsm, nsp, nml, nmpl, ntml, ntpl )
-
+#endif
       DO ISPIN = 1, NSPIN
         IF( NPCC .EQ. 1) 
      &    DRHOIN(1:NTPL,ISPIN) = DRHOIN(1:NTPL,ISPIN) - 

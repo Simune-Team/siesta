@@ -18,9 +18,9 @@
       logical:: auxchanged ! Has auxiliary supercell changed?
 
       logical:: dminit     ! Initialize density matrix?
-      integer:: iord       ! Order of DM extrapolation between geom. steps
-      integer:: istpsave   ! Temporary to save and restore istp when reading DM from file
-      logical:: itest      ! Temporary used to check if DM have just been read
+      integer:: iord       ! Order of DM extrapol. between geom. steps
+      integer:: istpsave   ! Temporary to save and restore istp
+      logical:: itest      ! Check if DM have just been read
       logical :: found
 
       ! Initialize density matrix
@@ -48,10 +48,10 @@
      .               maxnh, no_s, no_l, nspin, na_u, no_l, nspin,
      .               numh, numhold, listhptr, listhptrold,
      .               listh, listhold, iaorb, found, inspn, 
-     .               usesavedmloc, no_u)
+     .               usesavedmloc )
 
 
-      ! Initialize energy-density matrix to zero for first call to overfsm
+      ! Initialize energy-density matrix to zero
       Escf(1:maxnh,1:nspin) = 0.0_dp
 
       ! Extrapolate density matrix between steps

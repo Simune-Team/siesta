@@ -12,12 +12,15 @@
       use precision
       use sys
       use alloc, only: re_alloc, de_alloc
-
       implicit none
+      
+      real(dp), pointer, private :: Y_tmp(:)
+      real(dp), pointer, private :: DYDR_tmp(:,:)
+      integer,           private :: PREMAXLM = -1, LMXMX = -1
 
       CONTAINS
 
-      subroutine rlylm( LMAX, R, RLY, GRLY )
+      SUBROUTINE RLYLM( LMAX, R, RLY, GRLY )
       integer, intent(in)   :: lmax
       real(dp), intent(in)  :: r(3)
       real(dp), intent(out) :: rly(0:)
@@ -60,15 +63,14 @@ C Other internal parameters
 
 C Internal variables
       INTEGER
-     .  I, ILM, ILM0, L, LMXMX, M, MS
+     .  I, ILM, ILM0, L, M, MS
       REAL(DP)
      .  C(0:MAXLP1*MAXLP1), COSM, COSMM1, COSPHI,
      .  ZP(0:MAXLP1,0:MAXLP1), FAC, FOURPI, GY(3),
      .  P(0:MAXLP1,0:MAXLP1),
      .  RL(-1:MAXL), RSIZE, RX, RY, RZ, RXY,
      .  SINM, SINMM1, SINPHI, Y
-      SAVE LMXMX, C
-      DATA LMXMX /-1/
+      SAVE C
 
 C Evaluate normalization constants once and for all
       IF (LMAX.GT.LMXMX) THEN
@@ -225,9 +227,9 @@ C     Find spherical harmonics and their gradient
       END SUBROUTINE RLYLM
 
       SUBROUTINE YLMYLM( ILM1, ILM2, R, YY, DYYDR )
-      INTEGER, intent(in)       ::       ILM1, ILM2
-      REAL(DP), intent(in)      ::       R(3)
-      REAL(DP), intent(out)     ::       YY, DYYDR(3)
+      INTEGER, intent(in)       :: ILM1, ILM2
+      REAL(DP), intent(in)      :: R(3)
+      REAL(DP), intent(out)     :: YY, DYYDR(3)
 
 C Returns the product of two real spherical harmonics (SH),
 C  times r**l each, and its gradient.
@@ -242,32 +244,29 @@ C Written by J.M.Soler. Feb' 96.
 C *********************************************************************
 
 
-      INTEGER MAXLM
-      INTEGER           I, L
-
-      real(dp), pointer  ::   Y(:)
-      real(dp), pointer  ::   DYDR(:,:)
+      INTEGER       :: MAXLM
+      INTEGER       :: I, L
 
       L = MAX( LOFILM(ILM1), LOFILM(ILM2) )
       MAXLM = (L+1)*(L+1)
 
-      nullify( y )
-      call re_alloc( y, 0, maxlm, name='y', routine='ylmylm' )
-      nullify( dydr )
-      call re_alloc( dydr, 1, 3, 0, maxlm, name='dydr',
-     &               routine='ylmylm' )
+      if (PREMAXLM.eq.0) nullify( Y_tmp, DYDR_tmp )
+      if (MAXLM.gt.PREMAXLM) then
+        call re_alloc( Y_tmp, 0, maxlm, name='Y_tmp', routine='ylmylm' )
+        call re_alloc( DYDR_tmp, 1, 3, 0, maxlm, name='DYDR_tmp',
+     &                 routine='ylmylm' )
+        PREMAXLM = MAXLM
+      endif
 
-      CALL RLYLM( L, R, Y, DYDR )
+      CALL RLYLM( L, R, Y_tmp, DYDR_tmp )
 
-      YY = Y(ILM1-1) * Y(ILM2-1)
+      YY = Y_tmp(ILM1-1) * Y_tmp(ILM2-1)
       do I = 1,3
-        DYYDR(I) = DYDR(I,ILM1-1)*Y(ILM2-1) + Y(ILM1-1)*DYDR(I,ILM2-1)
+        DYYDR(I) = DYDR_tmp(I,ILM1-1)*Y_tmp(ILM2-1) +
+     &             DYDR_tmp(I,ILM2-1)*Y_tmp(ILM1-1)
       enddo
 
-      call de_alloc( dydr,  name='dydr' )
-      call de_alloc( y,  name='y' )
-
-      END subroutine ylmylm
+      END SUBROUTINE YLMYLM
 
       INTEGER FUNCTION LOFILM( ILM )
       integer, intent(in) :: ilm
@@ -294,10 +293,13 @@ C Written by J.M.Soler. April 1996.
       END function lofilm
 
 
+
       SUBROUTINE YLMEXP( LMAX, RLYLM_F, FUNC, IS, IO, IR1, NR, RMAX,
      .                   NY, ILM, FLM )
 C Makes a radial times spherical-harmonic expansion of a function.
 
+      use precision
+      implicit none
       integer, intent(in)          :: lmax
       interface
          subroutine rlylm_f(lmax,rvec,y,grady)
@@ -316,13 +318,13 @@ C Makes a radial times spherical-harmonic expansion of a function.
          end subroutine func
        end interface
 
-       integer, intent(in)        :: is, io
-       integer, intent(in)        :: ir1, nr
-       real(dp), intent(in)       :: rmax
+       integer,   intent(in) :: is, io
+       integer,   intent(in) :: ir1, nr
+       real(dp),  intent(in) :: rmax
 
-       integer, intent(out)       :: ny
-       integer, intent(out)       :: ilm(:)
-       real(dp), dimension(ir1:nr,*), intent(out)  :: flm
+       integer,  intent(out) :: ny
+       integer,  intent(out) :: ilm(:) 
+       real(dp), intent(out) :: flm(ir1:nr,*)
 
 C Written by J.M.Soler. September 1995.
 C ************************* INPUT ***********************************
@@ -406,11 +408,15 @@ C Find weighted spherical harmonics at special points ---------------
    20   CONTINUE
    30 CONTINUE
 C -------------------------------------------------------------------
+
+!AG This statement is here probably to satisfy some compiler's
+!   need for an explicit output value for ILM, or maybe to be
+!   sure, but the code below seems clear enough. Feel free to
+!   remove it, but the performance penalty should be small.
       ILM = 0
 
 C Expand FUNC in spherical harmonics at each radius -----------------
       NY = 0
-
 C     Loop on radial points
       DO 80 IR = IR1,NR
         R = IR * RMAX / NR

@@ -46,7 +46,7 @@
       use writewave,          only: gamma_wavefunctions,
      &                              setup_wf_kpoints
 #ifdef MPI
-      use mpi_siesta, only: mpi_comm_world
+      use mpi_siesta
 #endif
 
       implicit none
@@ -63,7 +63,7 @@
       integer :: ns           ! Number of species
 
       external :: automatic_cell, bonds,  fixed, dhscf, diagon,
-     &            dnaefs, extrapol, initatom, iodm, iozm, kinefsm,
+     &            dnaefs, extrapol, initatom, iodm, iozm,
      &            mulliken, naefs, pulayx, reinit, shaper, spnvec,
      &            timer, xijorb, memory, ioeig, iofa, iokp, iomd,
      &            prversion, eggbox
@@ -109,8 +109,6 @@ C     Start time counter
 
 C     Nullify arrays
       nullify(Haux,Saux,psi)
-      nullify(listhptr,listhptrold)
-      nullify(numh,numhold)
 
 C     Initialize some variables
       DUext   = 0.0_dp
@@ -145,6 +143,7 @@ C     Initialise force field component
 C     Initialize pseudopotentials and atomic orbitals
       if (IOnode) call initatom(ns)
       call broadcast(ns)
+
       call broadcast_basis()
 
       call fdf_global_get(atmonly,'Atom-Setup-Only',.false.)
@@ -183,12 +182,10 @@ C     End of Initial Structure Processing
 
 C     Allocate other arrays based on read sizes
       nullify(fa,cfa)
-      call re_alloc( fa, 1, 3, 1, na_u, name="fa",
-     &               routine="siesta_init" )
-      call re_alloc( cfa, 1, 3, 1, na_u, name="cfa",
-     &               routine="siesta_init" )
+      call re_alloc( fa, 1, 3, 1, na_u, 'fa', 'siesta_init' )
+      call re_alloc( cfa, 1, 3, 1, na_u, 'cfa', 'siesta_init' )
 
-      call init_spin()
+      call init_spin( )
 
 C     Read simulation data
       call read_options( na_u, ns, nspin )
@@ -196,8 +193,8 @@ C     Read simulation data
       qtot = qtot - charnet     ! qtot set in initatomlists
                                 ! charnet set in redata
       if (IOnode) then
-        write(6,fmt="(a,f12.6)") "Total number of electrons: ", qtot
-        write(6,fmt="(a,f12.6)") "Total ionic charge: ", zvaltot
+        write(6,fmt="(a,f12.6)") 'Total number of electrons: ', qtot
+        write(6,fmt="(a,f12.6)") 'Total ionic charge: ', zvaltot
       endif
 
 C     Calculate spin populations for fixed spin case...
@@ -238,17 +235,14 @@ C     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
 
 C     Initialise arrays
-      call re_alloc(listhptr,1,no_l,name='listhptr',routine='siesta',
-     &              copy=.false.)
-      call re_alloc(listhptrold,1,no_l,name='listhptrold',
-     &              routine='siesta',copy=.false.)
-      call re_alloc(numh,1,no_l,name='numh',routine='siesta',
-     &              copy=.false.)
-      call re_alloc(numhold,1,no_l,name='numhold',routine='siesta',
-     &              copy=.false.)
+      nullify( listhptr, numh, listhptrold, numhold )
+      call re_alloc( listhptr, 1, no_l, 'listhptr', 'siesta_init' )
+      call re_alloc( numh, 1, no_l, 'numh', 'siesta' )
+      call re_alloc( listhptrold, 1, no_l, 'listhptrold', 'siesta_init')
+      call re_alloc( numhold, 1, no_l, 'numhold', 'siesta_init' )
       listhptr(1:no_l) = 0
-      listhptrold(:)   = 0
       numh(:)          = 0
+      listhptrold(:)   = 0
       numhold(:)       = 0
 
 C     Get number of eigenstates that need to be calculated
@@ -271,10 +265,8 @@ C     auxiliary supercell for the calculation of matrix elements.
       gamma = gamma_scf
 
       nullify(eo,qo)
-      call re_alloc(eo,1,no_u,1,nspin,1,maxk,name="eo",
-     &              routine="state_init")
-      call re_alloc(qo,1,no_u,1,nspin,1,maxk,name="qo",
-     &              routine="state_init")
+      call re_alloc(eo, 1, no_u, 1, nspin, 1, maxk, 'eo', 'siesta_init')
+      call re_alloc(qo, 1, no_u, 1, nspin, 1, maxk, 'qo', 'siesta_init')
 
       call setup_bands( )
       gamma = gamma .and. gamma_bands
@@ -303,9 +295,8 @@ C     supercell can only overlap once
       mscell = 0.0_dp
       do i = 1, 3
         mscell(i,i) = nsc(i)
-        nscold(i) = nsc(i)
+        nscold(i)   = nsc(i)
       enddo
-
 
 C     Find auxiliary supercell (required only for k sampling)
       call superc( ucell, scell, nsc)
@@ -330,7 +321,7 @@ C     Initialise metadynamic forces if required
         inicoor = 0
         fincoor = huge(1)
       else
-        call die('siesta: wrong idyn')
+        call die( 'siesta: wrong idyn' )
       endif
 
 C     Build initial velocities according to Maxwell-Bolzmann distribution....

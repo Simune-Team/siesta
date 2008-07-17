@@ -12,7 +12,7 @@
 
 C ==================================================================
 C Computes the number of orbitals that intersects every mesh point
-C and calls recomputeLMesh in order to compute a new data distribution
+C and calls initMeshDistr in order to compute a new data distribution
 C based in the number of orbital intersections.
 C ==================================================================
 C SUBROUTINE distriPhiOnMesh( nm, nmpl, norb,
@@ -54,89 +54,85 @@ C  - Lineal:    We try to distribute those points of the mesh that have
 C               at least one orbital intersection. Used in cellxc.
 C
 C ==================================================================
-      subroutine distriPhiOnMesh( nm, nmpl, norb,
-     &                            iaorb, iphorb, isa )
-#ifdef MPI
+      subroutine distriPhiOnMesh( nm, nmpl, norb, iaorb,
+     &                            iphorb, isa, numphi )
+
       use mesh,         only: mop, ipa, idop, nsp, xdop, xdsp, dxa,
      &                        indexp
       use precision,    only: dp, grid_p
       use atmfuncs,     only: rcut
       use parallel,     only: Nodes
-      use moreMeshSubs, only: initMeshDistr, initMeshExtencil
+#ifdef MPI
+      use moreMeshSubs, only: initMeshExtencil
+#endif
+      use moreMeshSubs, only: initMeshDistr
       use cellxc_mod,   only: GGA, setGGA
       use alloc,        only: re_alloc, de_alloc
       implicit none
 C     Passed arguments
-      integer, intent(out) :: nmpl
-      integer, intent(in)  :: nm(3), norb, iaorb(norb),
+      integer, intent(in)  :: nm(3), nmpl, norb, iaorb(norb),
      &                        iphorb(norb), isa(*)
+      integer, intent(out) :: numphi(nmpl)
 C     Local variables
-      integer              :: io, ia, iphi, is, iop, ip0, isp,
-     &                        ProcX, ProcY, ProcZ, iDistr, oDistr
+      integer              :: io, ia, iphi, is, iop, ip0, isp
       real(dp)             :: r2o, dxsp(3,nsp), r2sp(nsp)
       logical              :: within
-      integer,     pointer :: numphi(:)
+      integer,     pointer :: wload(:)
 
 !------------------------------------------------------------------------- BEGIN
-#ifdef DEBUG
-        call write_debug( '      Pre distriPhiOnMesh' )
-#endif
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 14 )
 #endif
+      call timer( 'REMESH', 1 )
+C     Allocate local scratch array
+      numphi(1:nmpl) = 0
+
+C     Find number of atomic orbitals at mesh points
+      do io = 1,norb
+        ia   = iaorb(io)
+        iphi = iphorb(io)
+        is   = isa(ia)
+        r2o  = rcut(is,iphi)**2
+C       Loop over mesh points inside rmax
+        do iop = 1, mop
+          ip0 = indexp( ipa(ia) + idop(iop) )
+          if (ip0 .gt. 0) then
+C           Loop over sub-points to find if point is within range
+            within = .false.
+            do isp = 1,nsp
+              dxsp(1:3,isp) = xdop(1:3,iop)+xdsp(1:3,isp)-dxa(1:3,ia)
+              r2sp(isp)     = sum( dxsp(1:3,isp)**2 )
+              if (r2sp(isp) .lt. r2o) within = .true.
+            enddo
+C           If within range, add one to number of point orbitals
+            if (within) numphi(ip0) = numphi(ip0) + 1
+          endif
+        enddo
+      enddo
+
+#ifdef MPI
       if (nodes.gt.1) then
-        call timer( 'REMESH', 1 )
-C       Allocate local scratch array
-        nullify( numphi )
-        call re_alloc( numphi, 1, nmpl, name='numphi',
-     &                 routine='distriPhiOnMesh' )
-        numphi(1:nmpl) = 0
-
-C       Find number of atomic orbitals at mesh points
-        do io = 1,norb
-          ia   = iaorb(io)
-          iphi = iphorb(io)
-          is   = isa(ia)
-          r2o  = rcut(is,iphi)**2
-C         Loop over mesh points inside rmax
-          do iop = 1, mop
-            ip0 = indexp( ipa(ia) + idop(iop) )
-            if (ip0 .gt. 0) then
-C             Loop over sub-points to find if point is within range
-              within = .false.
-              do isp = 1,nsp
-                dxsp(1:3,isp) = xdop(1:3,iop)+xdsp(1:3,isp)-dxa(1:3,ia)
-                r2sp(isp)     = sum( dxsp(1:3,isp)**2 )
-                if (r2sp(isp) .lt. r2o) within = .true.
-              enddo
-C             If within range, add one to number of point orbitals
-              if (within) numphi(ip0) = numphi(ip0) + 1
-            endif
-          enddo
+        nullify( wload )
+        call re_alloc( wload, 1, nmpl, 'wload', 'distriPhiOnMesh' )
+        do ip0= 1, nmpl
+          wload(ip0) = numphi(ip0)*numphi(ip0)
         enddo
+        call initMeshDistr( 1, 2, nm, wload )
 
         do ip0= 1, nmpl
-          numphi(ip0) = numphi(ip0)*numphi(ip0)
+          if (numphi(ip0).ne.0) wload(ip0) = 1
         enddo
-        call initMeshDistr( 1, 2, nm, numphi )
-
-        do ip0= 1, nmpl
-          if (numphi(ip0).ne.0) numphi(ip0) = 1
-        enddo
-        call initMeshDistr( 1, 3, nm, numphi )
+        call initMeshDistr( 1, 3, nm, wload )
         if (GGA) call initMeshExtencil( 3, nm )
 
 C       Free local memory
-        call de_alloc(numphi, name='numphi', routine='distriPhiOnMesh')
+        call de_alloc( wload, 'wload', 'distriPhiOnMesh' )
 
-        call timer( 'REMESH', 2 )
       endif
+      call timer( 'REMESH', 2 )
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
 #endif
-#endif
-#ifdef DEBUG
-        call write_debug( '      Pos distriPhiOnMesh' )
 #endif
 !--------------------------------------------------------------------------- END
       end subroutine distriPhiOnMesh

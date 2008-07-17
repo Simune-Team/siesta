@@ -10,8 +10,8 @@
 !
       module writewave
 
-      USE precision, only: dp
-
+      USE precision, only : dp
+      use alloc,     only : re_alloc, de_alloc
       implicit none
 
       private
@@ -23,8 +23,8 @@
       integer,    save :: lastk(maxlin)
 
       integer,    save :: nwf = 1
-      integer, save, dimension(:), allocatable :: nwflist
-      integer, save, dimension(:,:), allocatable :: iwf
+      integer, save, pointer :: nwflist(:)
+      integer, save, pointer :: iwf(:,:)
 
       integer, public, save               :: nwk
       integer, public, save               :: maxwk
@@ -44,7 +44,7 @@
 
       implicit none
 
-      ! Find number of k-points for wavefunction printout ....................
+      ! Find number of k-points for wavefunction printout
 
       logical  :: overflow
 
@@ -167,11 +167,10 @@ C *********************************************************************
      .  alat, caux(3,3), pi,
      .  rcell(3,3), reals(4), ucell(3,3)
 
-      real(dp), dimension(:), allocatable :: values(:)
-      integer :: maxnv 
-   
-      integer, dimension(:), allocatable :: integs(:)
-      integer :: maxni 
+      real(dp), pointer :: values(:)
+      integer           :: maxnv 
+      integer, pointer :: integs(:)
+      integer          :: maxni 
  
 C Start time counter 
       call timer( 'writewave', 1 )
@@ -179,10 +178,8 @@ C Start time counter
       overflow = .false.
 
       if (Frstime) then
-         allocate(nwflist(maxk))
-         call memory('A','I',maxk,'writewave')
-         allocate(iwf(maxk,1))
-         call memory('A','I',maxk,'writewave')
+        call re_alloc( nwflist, 1, maxk, 'nwflist', 'initwave' )
+        call re_alloc( iwf, 1, maxk, 1, 1, 'iwf', 'initwave' )
       endif
 
 
@@ -264,18 +261,18 @@ C Read and parse data line
 C The maximum number of integers that could be introduced 
 C in the input file is the 
 C number of bands per k-point = number of atomic orbitals per cell
-              if( .not. allocated(integs)) then
+              if( .not. associated(integs)) then
                 maxni = norb
-                allocate(integs(maxni))
-                integs(:) = 0
+                call re_alloc( integs, 1, maxni, 'integs', 'initwave' )
+                integs = 0
               endif
 C The maximum number of values that could be introduced 
 C in the input file is the number of bands plus
 C the coordinates of the k-point (three real numbers).
-              if( .not. allocated(values)) then
+              if( .not. associated(values)) then
                 maxnv = norb + 3
-                allocate(values(maxnv))
-                values(:) = 0.d0
+                call re_alloc( values, 1, maxnv, 'values', 'initwave' )
+                values = 0.d0
               endif
 
               call parse( line(1:lastc), nn, lc, names, nv, values,
@@ -291,13 +288,13 @@ C the coordinates of the k-point (three real numbers).
                 overread = .true.
               endif
               if( overread ) then
-                if( allocated(values) ) then
-                  deallocate(values)
-                  allocate(values(maxnv))
+                if( associated(values) ) then
+                  call re_alloc( values, 1, maxnv, 'values', 
+     &                           'initwave' )
                 endif
-                if( allocated(integs) ) then
-                  deallocate(integs)
-                  allocate(integs(maxni))
+                if( associated(integs) ) then
+                  call re_alloc( integs, 1, maxni, 'integs',
+     &                           'initwave' )
                 endif
                 goto 45
               endif
@@ -410,22 +407,13 @@ C Store indexes of wave functions to printout
                       if (iw .lt. 0) iw = norb +iw +1
                       iwf(nk,i) = iw
                     enddo
-
                   else 
-
                     overflow = .true.
-
-                    call memory('D','I',size(nwflist),'writewave')
-                    deallocate(nwflist)
-                    call memory('D','I',size(iwf),'writewave')
-                    deallocate(iwf)
-
                     nmk=nk
-                    allocate(nwflist(nmk))
-                    call memory('A','I',nmk,'writewave')
-                    allocate(iwf(nmk,nwf))
-                    call memory('A','I',nwf*nmk,'writewave')
-
+                    call re_alloc( nwflist, 1, nmk, 'nwflist',
+     &                             'initwave' )
+                    call re_alloc( iwf, 1, nmk, 1, nwf, 'iwf',
+     &                             'initwave' )
                   endif
 
                 else 
@@ -434,18 +422,12 @@ C Store indexes of wave functions to printout
                   if (.not. Frstime)
      $                 call die('writewave: invalid initialization')
 
-                  call memory('D','I',size(nwflist),'writewave')
-                  deallocate(nwflist)
-                  call memory('D','I',size(iwf),'writewave')
-                  deallocate(iwf)
-
                   nwf = ni
                   nmk = max(nk,maxk)
-                  allocate(nwflist(nmk))
-                  call memory('A','I',nmk,'writewave')
-                  allocate(iwf(nmk,nwf))
-                  call memory('A','I',nwf*nmk,'writewave')
-
+                  call re_alloc( nwflist, 1, nmk, 'nwflist',
+     &                           'initwave' )
+                  call re_alloc( iwf, 1, nmk, 1, nwf, 'iwf',
+     &                           'initwave' )
                 endif
               else
 C No more lines to read => Exit do loop
@@ -475,18 +457,11 @@ C Global broadcast of values
       endif
 
       if (overflow) then
-         if (Node .ne. 0) then
-           call memory('D','I',size(nwflist),'writewave')
-           deallocate(nwflist)
-           call memory('D','I',size(iwf),'writewave')
-           deallocate(iwf)
-
-           allocate(nwflist(nmk))
-           call memory('A','I',nmk,'writewave')
-           allocate(iwf(nmk,nwf))
-           call memory('A','I',nwf*nmk,'writewave')
-         endif
-       endif
+        if (Node .ne. 0) then
+          call re_alloc( nwflist, 1, nmk, 'nwflist','initwave' )
+          call re_alloc( iwf, 1, nmk, 1, nwf, 'iwf', 'initwave' )
+        endif
+      endif
 
       if (.not. overflow) then
         call MPI_Bcast(nwflist(1),maxk,MPI_integer,0,
@@ -501,13 +476,8 @@ C Global broadcast of values
 C This is the only exit point 
   999 continue
 
-      if( allocated(values) ) then
-         deallocate(values)
-      endif
-                                                                                
-      if( allocated(integs) ) then
-         deallocate(integs)
-      endif
+      call de_alloc( values, 'values', 'initwave' )
+      call de_alloc( integs, 'integs', 'initwave' )
 
 
       Frstime = .false.
@@ -595,11 +565,11 @@ C *********************************************************************
      .  temp, wk, Entropy
 
 C Dynamic arrays
-      integer,  allocatable,   save :: muo(:)
-      logical,                 save :: getD = .false.
-      logical,                 save :: getPSI = .true.
-      real(dp), allocatable,   save :: aux(:)
-      real(dp), allocatable,   save :: ek(:,:,:)
+      integer,  pointer, save :: muo(:)
+      logical,           save :: getD = .false.
+      logical,           save :: getPSI = .true.
+      real(dp), pointer, save :: aux(:)
+      real(dp), pointer, save :: ek(:,:,:)
 
       character(len=label_length+4) :: fname
       character(len=11)             :: fform
@@ -640,16 +610,13 @@ C Check spin
       endif
 
 C Allocate local arrays - only aux is relevant here
+      naux = 10*nuotot
       call re_alloc(Haux,1,2*nuotot*nuo,name='Haux',routine='writewave')
       call re_alloc(Saux,1,2*nuotot*nuo,name='Saux',routine='writewave')
       call re_alloc(psi,1,2*nuotot*nuo,name='psi',routine='writewave')
-      allocate(ek(nspin,nuo,nuotot))
-      call memory('A','D',nspin*nuo*nuotot,'writewave')
-      naux = 2*nuotot*5
-      allocate(aux(naux))
-      call memory('A','D',naux,'writewave')
-      allocate(muo(nuotot))
-      call memory('A','I',nuotot,'writewave')
+      call re_alloc(ek,1,nspin,1,nuo,1,nuotot,'ek','writewave')
+      call re_alloc(aux,1,naux,'aux','writewave')
+      call re_alloc(muo,1,nuotot,'muo','writewave')
 
 C Check indxuo 
       do iuo = 1,nuotot
@@ -732,14 +699,14 @@ c fixspin and qs are not used in diagk, since getD=.false. ...
 C Call appropriate diagonalization routine
 
       if (gamma) then
-         call diagg( nspin, nuo, no, maxuo, maxnh, maxnh, 
+         call diagg( nspin, nuo, maxuo, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
      .               e1, e2, ek, qk, Dnew, Enew, ef, efs, Entropy,
-     .               Haux, Saux, psi, aux, nuotot, occtol, 1, nuotot )
+     .               Haux, Saux, psi, nuotot, occtol, 1, nuotot )
       else
-         call diagk( nspin, nuo, no, maxspn, maxuo, maxnh, maxnh, 
+         call diagk( nspin, nuo, no, maxspn, maxnh, maxnh, 
      .               maxo, numh, listhptr, listh, numh, listhptr, 
      .               listh, H, S, getD, getPSI,
      .               fixspin, qtot, qs, temp,
@@ -749,13 +716,10 @@ C Call appropriate diagonalization routine
      .               occtol, 1 )
       endif
 
-C Free local arrays 
-      call memory('D','I',size(muo),'writewave')
-      deallocate(muo)
-      call memory('D','D',size(aux),'writewave')
-      deallocate(aux)
-      call memory('D','I',size(ek),'writewave')
-      deallocate(ek)
+C Free local arrays
+      call de_alloc( muo, 'muo', 'writewave' )
+      call de_alloc( aux, 'aux', 'writewave' )
+      call de_alloc( ek, 'ek', 'writewave' )
 
 C This is the only exit point 
   999 continue
@@ -802,8 +766,7 @@ C  Internal variables .............................................
       character(len=label_length+4), save :: fname
       character(len=label_length+4)       :: paste
       character(len=11),             save :: fform
-
-      real(dp), dimension(:,:), allocatable :: aux
+      real(dp),                   pointer :: aux(:,:)
 
       external paste, io_assign, io_close
 
@@ -813,9 +776,7 @@ C Fix whether formatted or unformatted files wil be used
       fform = 'unformatted'
 
 C Allocate auxiliary arrays
-
-      allocate(aux(2,nuotot))
-      call memory('A','D',2*nuotot,'writewave')
+      call re_alloc( aux, 1, 2, 1, nuotot, 'aux', 'writewave' )
 
 C Find file name, and open for Node 0
       if (frstime) then
@@ -985,9 +946,7 @@ C Close output file
       endif
 
 C Deallocate auxiliary arrays
-
-      call memory('D','D',size(aux),'writewave')
-      deallocate(aux)
+      call de_alloc( aux, 'aux', 'writewave' )
         
       end subroutine writew
 

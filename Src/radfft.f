@@ -9,9 +9,15 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       module m_radfft
-
-      private
+      use precision, only : dp
+      use alloc,     only : re_alloc
+      implicit none
+      
       public :: radfft
+      private
+      real(dp), pointer ::  GG(:)
+      real(dp), pointer ::  FN(:,:)
+      real(dp), pointer ::  P(:,:,:)
 !
 !     Wrap the subroutine in a module to offer an explicit interface
 !     which simplifies the issue of the shape of F and G. Callers
@@ -76,10 +82,7 @@ C    is commented out in this version!
 C *********************************************************************
 C Written by J.M.Soler. August 1996.
 C *********************************************************************
-
-      use precision, only : dp
       use m_recipes, only : four1
-      use alloc,     only : re_alloc, de_alloc
 
 C Next line is non-standard and may be suppressed -------------------
       IMPLICIT NONE
@@ -91,15 +94,14 @@ C Declare argument types and dimensions -----------------------------
 C -------------------------------------------------------------------
 
 C ERRFFT is the typical truncation error in the FFT routine ---------
-      real(dp),   PARAMETER ::    ERRFFT = 1.0E-8_dp
 C -------------------------------------------------------------------
+      real(dp),   PARAMETER ::    ERRFFT = 1.0E-8_dp
 
 C Internal variable types and dimensions ----------------------------
-
-      INTEGER  ::  I, IQ, IR, JR, M, MQ, N, NQ
-      real(dp) ::  BESSPH, C, DQ, DR, FR, PI, R, RN, Q, QMAX
-
-      real(dp), pointer      ::  GG(:), FN(:,:), P(:,:,:)
+      INTEGER       ::  I, IQ, IR, JR, M, MQ, N, NQ
+      real(dp)      ::  BESSPH, C, DQ, DR, FR, PI, R, RN, Q, QMAX
+      INTEGER       ::  MAX
+      integer, save :: MAXL = -1, MAXNR = -1
 
       external bessph
 *     external timer
@@ -110,13 +112,17 @@ C Start time counter ------------------------------------------------
 C -------------------------------------------------------------------
 
 C Allocate local memory ---------------------------------------------
-
-      nullify( P )
-      call re_alloc( P, 1,2, 0,L, 0,L, name='P', routine='RADFFT' )
-      nullify( FN )
-      call re_alloc( FN, 1, 2, 0, 2*NR, name='FN', routine='RADFFT' )
-      nullify( GG )
-      call re_alloc( GG, 0, 2*NR, name='GG', routine='RADFFT' )
+      if (MAXL.eq.-1) nullify(P)
+      if (L.GT.MAXL) then
+        call re_alloc( P, 1, 2, 0, L, 0, L, 'P', 'RADFFT' )
+        MAXL=L
+      endif
+      if (MAXNR.eq.-1) nullify(FN,GG)
+      if (NR.GT.MAXNR) then
+        call re_alloc( FN, 1, 2, 0, 2*NR, 'FN', 'RADFFT' )
+        call re_alloc( GG, 0, 2*NR, 'GG', 'RADFFT' )
+        MAXNR=NR
+      endif
 
 C Find some constants -----------------------------------------------
       PI = 4.D0 * ATAN( 1.D0 )
@@ -249,12 +255,6 @@ C Copy from local to output array -----------------------------------
         G(IQ) = GG(IQ)
       ENDDO
 C -------------------------------------------------------------------
-
-C Deallocate local memory -------------------------------------------
-      call de_alloc( P,  name  = 'P' )
-      call de_alloc( GG,  name = 'GG')
-      call de_alloc( FN,  name = 'FN')
-
 C Stop time counter ------------------------------------------------
 *     CALL TIMER( 'RADFFT', 2 )
 C -------------------------------------------------------------------

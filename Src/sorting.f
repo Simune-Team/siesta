@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      module sorting
+      MODULE SORTING
 
       CONTAINS
 
@@ -51,7 +51,7 @@ C **********************************************************************
           IV1 = NV
   60      CONTINUE
           IF (IV1 .GT. IV0+1) THEN
-            CALL ORDIX(  V(IX:IX,IV0+1:), NX, IV1-IV0, IAUX )
+            CALL ORDIX(  V(IX,IV0+1), NX, IV1-IV0, IAUX )
             CALL ORDER(  V(1,IV0+1),  NX, IV1-IV0, IAUX )
             CALL IORDER( INDEX(IV0+1), 1, IV1-IV0, IAUX )
           ENDIF
@@ -59,7 +59,7 @@ C **********************************************************************
         IF (IV0 .LT. NV-1) GO TO 30
       ENDDO
 
-      END subroutine ordvec
+      END SUBROUTINE ORDVEC
 
       SUBROUTINE ORDIX( X, M, N, INDX )
 C *******************************************************************
@@ -79,8 +79,8 @@ C    CALL ORDIX( X(3,1), 3, NA, INDEX )
 C    CALL ORDER( X(1,1), 3, NA, INDEX )
 C *******************************************************************
       IMPLICIT          NONE
-      INTEGER           I, N, INDX(:), INDXT, IR, J, L, M
-      DOUBLE PRECISION  X(:,:), Q
+      INTEGER           I, N, INDX(N), INDXT, IR, J, L, M
+      DOUBLE PRECISION  X(M,N), Q
 
 !
 !     Important: avoid instabilities leading to compiler-dependent
@@ -127,7 +127,7 @@ C *******************************************************************
          INDX(I)=INDXT
       GO TO 2
 
-      END subroutine ordix
+      END SUBROUTINE ORDIX
 
 
       SUBROUTINE ORDER( X, M, N, INDEX )
@@ -166,7 +166,7 @@ C *******************************************************************
           INDEX(I) = -INDEX(I)
    30   CONTINUE
    40 CONTINUE
-      END subroutine order
+      END SUBROUTINE ORDER
 
 
       SUBROUTINE IORDER( IA, M, N, INDEX )
@@ -207,6 +207,6 @@ C *******************************************************************
           INDEX(I) = -INDEX(I)
    30   CONTINUE
    40 CONTINUE
-      END subroutine iorder
+      END SUBROUTINE IORDER
 
-      end module sorting
+      END MODULE SORTING

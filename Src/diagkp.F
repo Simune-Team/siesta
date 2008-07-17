@@ -17,12 +17,11 @@ c
 c
 #ifdef MPI
       subroutine diagkp( nspin, nuo, no, maxspn, maxuo, maxnh, maxnd, 
-     .                  maxo, numh, listhptr, listh, numd, listdptr, 
-     .                  listd, H, S, getD, fixspin, qtot, qs, temp, 
-     .                  e1, e2, xij, indxuo, nk, kpoint, wk,
-     .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, Dk, Ek, aux, nuotot, occtol,
-     .                  iscf )
+     &                   maxo, numh, listhptr, listh, H, S, getD,
+     &                   fixspin, qtot, qs, temp, e1, e2, xij, indxuo,
+     &                   nk, kpoint, wk, eo, qo, Dnew, Enew, ef, efs,
+     &                   Entropy, Haux, Saux, psi, Dk, Ek, aux, nuotot,
+     &                   occtol, iscf )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -49,12 +48,6 @@ C integer listhptr(nuo)       : Pointer to each row (-1) of the
 C                               hamiltonian matrix locally
 C integer listh(maxnh)        : Nonzero hamiltonian-matrix element  
 C                               column indexes for each matrix row
-C integer numd(nuo)           : Number of nonzero elements of each row 
-C                               of density matrix locally
-C integer listdptr(nuo)       : Pointer to each row (-1) of the
-C                               density matrix locally
-C integer listd(maxnd)        : Nonzero density-matrix element column 
-C                               indexes for each matrix row
 C real*8  H(maxnh,nspin)      : Hamiltonian in sparse form
 C real*8  S(maxnh)            : Overlap in sparse form
 C logical getD                : Find occupations and density matrices?
@@ -120,8 +113,7 @@ C
       integer           maxnd, maxnh, maxspn, maxuo, maxo, nk, no,
      .                  nspin, nuo, nuotot, iscf
       integer           indxuo(no), listh(maxnh), numh(maxuo),
-     .                  listd(maxnd), numd(maxuo), listhptr(maxuo),
-     .                  listdptr(maxuo)
+     .                  listhptr(maxuo)
       real(dp)          Dnew(maxnd,nspin), 
      .                  e1, e2, ef, efs(nspin), Enew(maxnd,nspin),
      .                  Entropy, eo(maxo,maxspn,nk), H(maxnh,nspin),
@@ -407,7 +399,6 @@ C Global operation to form new density matrix
           enddo
           do io = 1,nuog
             iuo = indxuo(io)
-C Should be numd/listd/listdptr but H equivalents used to save globalisation
             do j = 1,numhg(io)
               ind = listhptrg(io) + j
               jo = listhg(ind)
@@ -427,7 +418,6 @@ C Should be numd/listd/listdptr but H equivalents used to save globalisation
         enddo
       enddo
 
-C Globalise Dnew/Enew (reference to numhg should be numd)
       do io = 1,nuog
         call WhichNodeOrb(io,Nodes,BNode)
         call GlobalToLocalOrb(io,BNode,Nodes,iio)

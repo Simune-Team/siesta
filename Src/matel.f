@@ -8,47 +8,71 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      module m_matel
+      module m_xyz_phiatm
+
       use precision, only: dp
       use atmfuncs, only: phiatm
+
       implicit none
 
-      public :: matel, resetMatelArrays
-
+      public :: xphiatm, yphiatm, zphiatm
       private
-C Internal precision parameters  ------------------------------------
-C  NRTAB is the number of radial points for matrix-element tables.
-C  NQ is the number of radial points in reciprocal space.
-C  EXPAND is a factor to expand some array sizes
-C  Q2CUT is the required planewave cutoff for orbital expansion
-C    (in Ry if lengths are in Bohr).
-C  GWBYDR is the width of a gaussian used to neutralize the charge
-C    distributions for operat='U', in units of the radial interval
-C  FFTOL is the tolerance for considering equal the radial part of
-C    two orbitals.
-C  TINY is a small number to avoid a zero denominator
-      INTEGER,  PARAMETER :: NRTAB  =  128
-      INTEGER,  PARAMETER :: NQ     =  1024
-      real(dp), PARAMETER :: EXPAND =  1.20_dp
-      real(dp), PARAMETER :: Q2CUT  =  2.50e3_dp
-      real(dp), PARAMETER :: GWBYDR =  1.5_dp
-      real(dp), PARAMETER :: FFTOL  =  1.e-8_dp
-      real(dp), PARAMETER :: TINY   =  1.e-12_dp
-      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'MATEL '
-
-      INTEGER             :: MF=0, MFF=0, MFFR=0, MFFY=0, 
-     &                       NF=0, NFF=0, NFFR=0, NFFY=0, NR=NQ
-
-      INTEGER,    POINTER :: IFFR(:), ILM(:), ILMFF(:), INDF(:,:,:),
-     &                       INDFF(:,:,:), INDFFR(:), INDFFY(:),
-     &                       NLM(:,:,:)
-      real(dp)            :: DQ, DR, DRTAB, GWIDTH, PI, QMAX, RMAX
-      real(dp),   POINTER :: CFFR(:), DYDR(:,:), F(:,:), FFR(:,:,:),
-     &                       FFY(:), Y(:)
-      LOGICAL             :: NULLIFIED=.FALSE.
 
 
       CONTAINS 
+
+      SUBROUTINE xphiatm(is,io,r,xphi,grxphi)
+C     Calculates x*phiatm and its gradient
+
+      integer, intent(in)   :: is, io
+      real(dp), intent(in)  :: r(3)
+      real(dp), intent(out) :: xphi, grxphi(3)
+
+      real(dp) phi, grphi(3), x
+
+      call phiatm(is,io,r,phi,grphi)
+      x = r(1)
+      xphi = x * phi
+      grxphi(1) = x * grphi(1) + phi
+      grxphi(2) = x * grphi(2)
+      grxphi(3) = x * grphi(3)
+      END SUBROUTINE xphiatm
+
+      SUBROUTINE yphiatm(is,io,r,yphi,gryphi)
+C     Calculates y*phiatm and its gradient
+
+      integer, intent(in)   :: is, io
+      real(dp), intent(in)  :: r(3)
+      real(dp), intent(out) :: yphi, gryphi(3)
+
+      real(dp) phi, grphi(3), y
+
+      call phiatm(is,io,r,phi,grphi)
+      y = r(2)
+      yphi = y * phi
+      gryphi(1) = y * grphi(1)
+      gryphi(2) = y * grphi(2) + phi
+      gryphi(3) = y * grphi(3)
+      END SUBROUTINE yphiatm
+
+      SUBROUTINE zphiatm(is,io,r,zphi,grzphi)
+C     Calculates z*phiatm and its gradient
+
+      integer, intent(in)   :: is, io
+      real(dp), intent(in)  :: r(3)
+      real(dp), intent(out) :: zphi, grzphi(3)
+
+      real(dp) phi, grphi(3), z
+      call phiatm(is,io,r,phi,grphi)
+      z = r(3)
+      zphi = z * phi
+      grzphi(1) = z * grphi(1)
+      grzphi(2) = z * grphi(2)
+      grzphi(3) = z * grphi(3) + phi
+      END SUBROUTINE zphiatm
+
+      end module m_xyz_phiatm
+!
 
       SUBROUTINE MATEL( OPERAT, IS1, IS2, IO1, IO2, R12, S12, DSDR )
 C *******************************************************************
@@ -113,8 +137,10 @@ C    6  10        20        30        40        50        60        7072
 
 C Modules -----------------------------------------------------------
       use precision, only : dp
+      use parallel, only: node
       USE ALLOC
       USE ATMFUNCS, ONLY: LOFIO, PHIATM, RCUT
+      use m_xyz_phiatm
       use m_recipes, only: spline, splint, derf
       use spher_harm
       use m_radfft
@@ -126,6 +152,26 @@ C Argument types and dimensions -------------------------------------
       INTEGER           IO1, IO2, IS1, IS2
       real(dp)          DSDR(3), R12(3), S12
 C -------------------------------------------------------------------
+
+C Internal precision parameters  ------------------------------------
+C  NRTAB is the number of radial points for matrix-element tables.
+C  NQ is the number of radial points in reciprocal space.
+C  EXPAND is a factor to expand some array sizes
+C  Q2CUT is the required planewave cutoff for orbital expansion
+C    (in Ry if lengths are in Bohr).
+C  GWBYDR is the width of a gaussian used to neutralize the charge
+C    distributions for operat='U', in units of the radial interval
+C  FFTOL is the tolerance for considering equal the radial part of
+C    two orbitals.
+C  TINY is a small number to avoid a zero denominator
+      INTEGER,          PARAMETER :: NRTAB  =  128
+      INTEGER,          PARAMETER :: NQ     =  1024
+      real(dp),         PARAMETER :: EXPAND =  1.20_dp
+      real(dp),         PARAMETER :: Q2CUT  =  2.50e3_dp
+      real(dp),         PARAMETER :: GWBYDR =  1.5_dp
+      real(dp),         PARAMETER :: FFTOL  =  1.e-8_dp
+      real(dp),         PARAMETER :: TINY   =  1.e-12_dp
+      CHARACTER(LEN=*), PARAMETER :: MYNAME =  'MATEL'
 C -------------------------------------------------------------------
 
 C Internal variable types and dimensions ----------------------------
@@ -136,14 +182,30 @@ C Internal variable types and dimensions ----------------------------
      .  JO1, JO2, JR,
      .  L, L1, L2, L3, LMAX,
      .  NILM, NILM1, NILM2, NJLM1, NJLM2
+      INTEGER, SAVE ::
+     .  MF=0, MFF=0, MFFR=0, MFFY=0, 
+     .  NF=0, NFF=0, NFFR=0, NFFY=0, NR=NQ
+
+      INTEGER, POINTER, SAVE ::
+     .  IFFR(:), ILM(:), ILMFF(:), INDF(:,:,:), INDFF(:,:,:),
+     .  INDFFR(:), INDFFY(:), NLM(:,:,:)
 
       real(dp) ::
      .  C, CH(2), CPROP, DFFR0, DFFRMX, DSRDR, ERRF,
      .  FFL(0:NQ), FFQ(0:NQ), FR(0:NQ,2), FQ(0:NQ,2), GAUSS, 
      .  Q, R, SR, VR(0:NQ,2), VQ(0:NQ,2), X12(3)
 
+      real(dp), SAVE ::
+     .  DQ, DR, DRTAB, GWIDTH, PI, QMAX, RMAX
+
+      real(dp), POINTER, SAVE ::
+     .  CFFR(:), DYDR(:,:), F(:,:), FFR(:,:,:), FFY(:), Y(:)
+
       LOGICAL ::
      .  FAR, FOUND, PROPOR
+
+      LOGICAL, SAVE ::
+     .  NULLIFIED=.FALSE.
 
       TYPE(allocDefaults) ::
      .  OLDEFS
@@ -158,8 +220,8 @@ C Nullify pointers
       IF (.NOT.NULLIFIED) THEN
         NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
      .           CFFR, DYDR, F, FFR, FFY, Y )
-        ALLOCATE( INDF(0,0,0) )
-        CALL RE_ALLOC( INDFFY, 0,MFF, MYNAME//'INDFFY' )
+        CALL RE_ALLOC( INDF, 1, 1, 1, 1, 1, 1, 'INDF', MYNAME )
+        CALL RE_ALLOC( INDFFY, 0,MFF, 'INDFFY', MYNAME )
         INDFFY(0) = 0
         NULLIFIED = .TRUE.
       ENDIF
@@ -167,12 +229,26 @@ C Nullify pointers
 C Set allocation defaults 
       CALL ALLOC_DEFAULT( OLD=OLDEFS, ROUTINE=MYNAME, 
      .                    COPY=.TRUE., SHRINK=.FALSE. )
- 
+
 C Check if tables must be re-initialized 
       IF ( IS1.LE.0 .OR. IS2.LE.0 ) THEN
-        call resetMatelArrays( )
-
-        ALLOCATE( INDF(0,0,0) )
+        CALL DE_ALLOC( IFFR, 'IFFR', MYNAME )
+        CALL DE_ALLOC( ILM, 'ILM', MYNAME )
+        CALL DE_ALLOC( ILMFF, 'ILMFF', MYNAME )
+        CALL DE_ALLOC( INDF, 'INDF', MYNAME )
+        CALL DE_ALLOC( INDFF, 'INDFF', MYNAME )
+        CALL DE_ALLOC( INDFFR, 'INDFFR', MYNAME )
+        CALL DE_ALLOC( INDFFY, 'INDFFY', MYNAME )
+        CALL DE_ALLOC( NLM, 'NLM', MYNAME )
+        CALL DE_ALLOC( CFFR, 'CFFR', MYNAME )
+        CALL DE_ALLOC( DYDR, 'DYDR', MYNAME )
+        CALL DE_ALLOC( F, 'F', MYNAME )
+        CALL DE_ALLOC( FFR, 'FFR', MYNAME )
+        CALL DE_ALLOC( FFY, 'FFY', MYNAME )
+        CALL DE_ALLOC( Y, 'Y', MYNAME )
+        NULLIFY( IFFR, ILM, ILMFF, INDF, INDFF, INDFFR, INDFFY, NLM,
+     .           CFFR, DYDR, F, FFR, FFY, Y )
+        CALL RE_ALLOC( INDF, 1, 1, 1, 1, 1, 1, 'INDF', MYNAME )
         MF   = 0
         MFF  = 0
         MFFR = 0
@@ -181,7 +257,7 @@ C Check if tables must be re-initialized
         NFF  = 0
         NFFR = 0
         NFFY = 0
-        CALL RE_ALLOC( INDFFY, 0,MFF, MYNAME//'INDFFY' )
+        CALL RE_ALLOC( INDFFY, 0, MFF, 'INDFFY', MYNAME )
         INDFFY(0) = 0
         GOTO 900
       ENDIF
@@ -204,18 +280,18 @@ C Check argument OPERAT
       ENDIF
 
 C Check size of orbital index table
-      IF ( MAX(IS1,IS2).GT.SIZE(INDF,1)   .OR.
+      IF ( MAX(IS1,IS2).GT.UBOUND(INDF,1)   .OR.
      .     MIN(IO1,IO2).LT.LBOUND(INDF,2) .OR.
      .     MAX(IO1,IO2).GT.UBOUND(INDF,2) .OR.
-     .     MAX(IOPER,3).GT.SIZE(INDF,3) ) THEN
-        CALL RE_ALLOC( INDF, 1,MAX(SIZE(INDF,1),IS1,IS2),
+     .     MAX(IOPER,3).GT.UBOUND(INDF,3) ) THEN
+        CALL RE_ALLOC( INDF, 1, MAX(UBOUND(INDF,1),IS1,IS2),
      .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
-     .                IO1,IO2),1,MAX(SIZE(INDF,3),IOPER,3),
-     .                MYNAME//'INDF' )
-        CALL RE_ALLOC( NLM,  1,MAX(SIZE(INDF,1),IS1,IS2),
+     .                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
+     .                'INDF', MYNAME )
+        CALL RE_ALLOC( NLM,  1,MAX(UBOUND(INDF,1),IS1,IS2),
      .                MIN(LBOUND(INDF,2),IO1,IO2),MAX(UBOUND(INDF,2),
-     .                IO1,IO2),1,MAX(SIZE(INDF,3),IOPER,3),
-     .                MYNAME//'NLM'  )
+     .                IO1,IO2),1,MAX(UBOUND(INDF,3),IOPER,3),
+     .                'NLM', MYNAME )
       ENDIF
 
 C Find radial expansion of each orbital -----------------------------
@@ -248,15 +324,15 @@ C         Reallocate arrays
           L = LOFIO( IS, IO )
           NILM = (L+2)**2
           IF (NF+NILM .GT. MF) MF = EXPAND * (NF+NILM)
-          CALL RE_ALLOC( F, 0,NQ, 1,MF, MYNAME//'F'   )
-          CALL RE_ALLOC( ILM,     1,MF, MYNAME//'ILM' )
+          CALL RE_ALLOC( F, 0,NQ, 1,MF, 'F', MYNAME )
+          CALL RE_ALLOC( ILM,     1,MF, 'ILM', MYNAME )
           CALL RE_ALLOC( INDFF,   1,MF, 1,MF, 1,MAX(IOPER,3),
-     .                   MYNAME//'INDFF' )
+     .                   'INDFF', MYNAME )
 
 C         Expand orbital in spherical harmonics
           IF ((I.EQ.1) .OR. (IOPER.LE.3)) THEN
             CALL YLMEXP( L, RLYLM, PHIATM, IS, IO, 0, NQ, RMAX,
-     .                   NILM, ILM(NF+1:), F(0:NQ,NF+1:) )
+     .                   NILM, ILM(NF+1:), F(0,NF+1) )
             INDF(IS,IO,1) = NF+1
             INDF(IS,IO,2) = NF+1
             INDF(IS,IO,3) = NF+1
@@ -266,13 +342,13 @@ C         Expand orbital in spherical harmonics
           ELSE
             IF(IOPER.EQ.4) THEN
               CALL YLMEXP( L+1, RLYLM, XPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(0:NQ,NF+1:) )
+     .                     NILM, ILM(NF+1:), F(0,NF+1) )
             ELSEIF(IOPER.EQ.5) THEN
               CALL YLMEXP( L+1, RLYLM, YPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(0:NQ,NF+1:) )
+     .                     NILM, ILM(NF+1:), F(0,NF+1) )
             ELSE
               CALL YLMEXP( L+1, RLYLM, ZPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(0:NQ,NF+1:) )
+     .                     NILM, ILM(NF+1:), F(0,NF+1) )
             ENDIF
             INDF(IS,IO,IOPER) = NF+1
             NLM(IS,IO,IOPER) = NILM
@@ -390,8 +466,8 @@ C         Find orbitals convolution by multiplication in k-space
 C         Loop on possible values of l quantum number of product
           L1 = LOFILM( ILM(IFLM1) )
           L2 = LOFILM( ILM(IFLM2) )
-          CALL RE_ALLOC( IFFR, 0,L1+L2, MYNAME//'IFFR' )
-          CALL RE_ALLOC( CFFR, 0,L1+L2, MYNAME//'CFFR' )
+          CALL RE_ALLOC( IFFR, 0,L1+L2, 'IFFR', MYNAME )
+          CALL RE_ALLOC( CFFR, 0,L1+L2, 'CFFR', MYNAME )
           DO L3 = ABS(L1-L2), L1+L2, 2
 
 C           Return to real space
@@ -456,7 +532,8 @@ C           Store new radial function
               NFFR = NFFR + 1
               IF (NFFR .GT. MFFR) THEN
                 MFFR = EXPAND * NFFR
-                CALL RE_ALLOC( FFR, 0,NRTAB, 1,2, 1,MFFR, MYNAME//'FFR')
+                CALL RE_ALLOC( FFR, 0,NRTAB, 1, 2, 1, MFFR, 'FFR',
+     &                         MYNAME )
               ENDIF
               IFFR(L3) = NFFR
               CFFR(L3) = 1._dp
@@ -487,7 +564,7 @@ C             Setup spline interpolation
 !!              DFFR0 = HUGE(1.0_dp)
               DFFR0 = 0.0_dp
               DFFRMX = 0.0_dp
-              CALL SPLINE( RMAX/NRTAB, FFR(0:NRTAB,1,NFFR), NRTAB+1,
+              CALL SPLINE( RMAX/NRTAB, FFR(0:NRTAB,1,NFFR), NRTAB+1, 
      .                     DFFR0, DFFRMX, FFR(0:NRTAB,2,NFFR) )
             ENDIF
           ENDDO
@@ -496,17 +573,17 @@ C         Reallocate some arrays
           NILM = (L1+L2+1)**2
           IF (NFFY+NILM .GT. MFFY) THEN
             MFFY = EXPAND * (NFFY+NILM)
-            CALL RE_ALLOC( FFY,    1,MFFY, MYNAME//'FFY' )
-            CALL RE_ALLOC( ILMFF,  1,MFFY, MYNAME//'ILMFF'  )
-            CALL RE_ALLOC( INDFFR, 1,MFFY, MYNAME//'INDFFR' )
+            CALL RE_ALLOC( FFY, 1,MFFY, 'FFY', MYNAME )
+            CALL RE_ALLOC( ILMFF, 1,MFFY, 'ILMFF', MYNAME )
+            CALL RE_ALLOC( INDFFR, 1,MFFY, 'INDFFR', MYNAME )
           ENDIF
-          CALL RE_ALLOC( Y,         1,NILM, MYNAME//'Y',COPY=.FALSE.)
-          CALL RE_ALLOC( DYDR, 1,3, 1,NILM, MYNAME//'DYDR',COPY=.FALSE.)
+          CALL RE_ALLOC( Y, 1, NILM, 'Y', MYNAME, .FALSE. )
+          CALL RE_ALLOC( DYDR, 1, 3, 1, NILM, 'DYDR', MYNAME, .FALSE. )
 
 C         Expand the product of two spherical harmonics (SH) also in SH
           CALL YLMEXP( L1+L2, RLYLM, YLMYLM, ILM(IFLM1), ILM(IFLM2),
      .                 1, 1, 1.0_dp, NILM, ILMFF(NFFY+1:),
-     .                 FFY(NFFY+1:NFFY+NILM))
+     .                 FFY(NFFY+1:))
 
 C         Loop on possible lm values of orbital product
           DO I = 1,NILM
@@ -520,7 +597,7 @@ C         Loop on possible lm values of orbital product
           NFF = NFF + 1
           IF (NFF .GT. MFF) THEN
             MFF = EXPAND * NFF
-            CALL RE_ALLOC( INDFFY, 0,MFF, MYNAME//'INDFFY' )
+            CALL RE_ALLOC( INDFFY, 0,MFF, 'INDFFY', MYNAME )
           ENDIF
           INDFFY(NFF) = NFFY
           INDFF(IFLM1,IFLM2,IOPER) = NFF
@@ -614,121 +691,3 @@ C Stop time counter
 !------------------------ Internal procedures
 
       END SUBROUTINE MATEL
-
-      SUBROUTINE xphiatm(is,io,r,xphi,grxphi)
-      implicit none
-C     Calculates x*phiatm and its gradient
-      integer, intent(in)   :: is, io
-      real(dp), intent(in)  :: r(3)
-      real(dp), intent(out) :: xphi, grxphi(3)
-
-      real(dp) phi, grphi(3), x
-
-      call phiatm(is,io,r,phi,grphi)
-      x = r(1)
-      xphi = x * phi
-      grxphi(1) = x * grphi(1) + phi
-      grxphi(2) = x * grphi(2)
-      grxphi(3) = x * grphi(3)
-      END SUBROUTINE xphiatm
-
-      SUBROUTINE yphiatm(is,io,r,yphi,gryphi)
-      implicit none
-C     Calculates y*phiatm and its gradient
-
-      integer, intent(in)   :: is, io
-      real(dp), intent(in)  :: r(3)
-      real(dp), intent(out) :: yphi, gryphi(3)
-
-      real(dp) phi, grphi(3), y
-
-      call phiatm(is,io,r,phi,grphi)
-      y = r(2)
-      yphi = y * phi
-      gryphi(1) = y * grphi(1)
-      gryphi(2) = y * grphi(2) + phi
-      gryphi(3) = y * grphi(3)
-      END SUBROUTINE yphiatm
-
-      SUBROUTINE zphiatm(is,io,r,zphi,grzphi)
-      implicit none
-C     Calculates z*phiatm and its gradient
-
-      integer, intent(in)   :: is, io
-      real(dp), intent(in)  :: r(3)
-      real(dp), intent(out) :: zphi, grzphi(3)
-
-      real(dp) phi, grphi(3), z
-      call phiatm(is,io,r,phi,grphi)
-      z = r(3)
-      zphi = z * phi
-      grzphi(1) = z * grphi(1)
-      grzphi(2) = z * grphi(2)
-      grzphi(3) = z * grphi(3) + phi
-      END SUBROUTINE zphiatm
-
-      subroutine resetMatelArrays( )
-      use alloc, only : de_alloc
-      implicit none
-      CHARACTER(LEN=*), PARAMETER :: RNAME =  'resetMatelArrays'
-
-      if (associated(IFFR))
-     &  call de_alloc( IFFR, name=MYNAME//'IFFR',
-     &                 routine=RNAME )
-
-      if (associated(ILM))
-     &  call de_alloc( ILM, name=MYNAME//'ILM',
-     &                 routine=RNAME )
-
-      if (associated(ILMFF))
-     &  call de_alloc( ILMFF, name=MYNAME//'ILMFF',
-     &                 routine=RNAME )
-
-      if (associated(INDF))
-     &  call de_alloc( INDF, name=MYNAME//'INDF',
-     &                 routine=RNAME )
-
-      if (associated(INDFF))
-     &  call de_alloc( INDFF, name=MYNAME//'INDFF',
-     &                 routine=RNAME )
-
-      if (associated(INDFFR))
-     &  call de_alloc( INDFFR, name=MYNAME//'INDFFR',
-     &                 routine=RNAME )
-
-      if (associated(INDFFY))
-     &  call de_alloc( INDFFY, name=MYNAME//'INDFFY',
-     &                 routine=RNAME )
-
-      if (associated(NLM))
-     &  call de_alloc( NLM, name=MYNAME//'NLM',
-     &                 routine=RNAME )
-
-      if (associated(CFFR))
-     &  call de_alloc( CFFR, name=MYNAME//'CFFR',
-     &                 routine=RNAME )
-
-      if (associated(DYDR))
-     &  call de_alloc( DYDR, name=MYNAME//'DYDR',
-     &                 routine=RNAME )
-
-      if (associated(F))
-     &  call de_alloc( F, name=MYNAME//'F',
-     &                 routine=RNAME )
-
-      if (associated(FFR))
-     &  call de_alloc( FFR, name=MYNAME//'FFR',
-     &                 routine=RNAME )
-
-      if (associated(FFY))
-     &  call de_alloc( FFY, name=MYNAME//'FFY',
-     &                 routine=RNAME )
-
-      if (associated(Y))
-     &  call de_alloc( Y, name=MYNAME//'Y',
-     &                 routine=RNAME )
-
-      end subroutine resetMatelArrays
-
-
-      end module m_matel

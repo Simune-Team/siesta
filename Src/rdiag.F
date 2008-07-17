@@ -134,6 +134,8 @@ C Matrices for 2D
 
       integer,        pointer :: iclustr(:), ifail(:), iwork(:)
       real(dp),       pointer :: gap(:), work(:)
+      write(23,*) 'INSIDE rdiag'
+      call pxfflush(23)
 
 C Start time count
       call timer('rdiag',1)
@@ -195,8 +197,7 @@ C Set algorithm logicals
           if (Use2D) then
             call die('Zsave not dimensioned in rdiag')
           else
-            call re_alloc( Zsave, 1, nml, 1, nm, name='Zsave', 
-     .                     routine='rdiag' )
+            call re_alloc( Zsave, 1, nml, 1, nm, 'Zsave', 'rdiag' )
           endif
         endif
       endif
@@ -333,18 +334,21 @@ C Scale memory by memory factor
       lwork = nint(MemoryFactor*dble(lwork))
 
 C Allocate workspace arrays
-      call re_alloc( work,    1,lwork,   name='work'  )
-      call re_alloc( iwork,   1,liwork,  name='iwork' )
-      call re_alloc( ifail,   1,n,       name='ifail'   )
+      call re_alloc( work, 1, lwork, 'work', 'rdiag' )
+      call re_alloc( iwork, 1, liwork, 'iwork', 'rdiag' )
+      call re_alloc( ifail, 1, n, 'ifail', 'rdiag' )
 #ifdef MPI
-      call re_alloc( gap,     1,Nodes,   name='gap'     )
-      call re_alloc( iclustr, 1,2*Nodes, name='iclustr' )
+      call re_alloc( gap, 1, Nodes, 'gap', 'rdiag' )
+      call re_alloc( iclustr, 1, 2*Nodes, 'iclustr', 'rdiag' )
 
       if (Use2D) then
 C Set up workspace arrays for 2D versions of 1D arrays
-        call re_alloc( h2d, 1, mat_2d_row, 1, mat_2d_col, name='h2d')
-        call re_alloc( s2d, 1, mat_2d_row, 1, mat_2d_col, name='s2d')
-        call re_alloc( z2d, 1, mat_2d_row, 1, mat_2d_col, name='z2d')
+        call re_alloc( h2d, 1, mat_2d_row, 1, mat_2d_col, 'h2d',
+     &                 'rdiag' )
+        call re_alloc( s2d, 1, mat_2d_row, 1, mat_2d_col, 's2d',
+     &                 'rdiag' )
+        call re_alloc( z2d, 1, mat_2d_row, 1, mat_2d_col, 'z2d',
+     &                 'rdiag' )
 
 C For 2D case, copy arrays to new distribution
         call pdgemr2d(n, n, H, 1, 1, desch, h2d, 1, 1, desc_h2d, ictxt)
@@ -368,7 +372,6 @@ C*******************************************************************************
           endif
 #ifdef MPI
         else 
-   10     continue
           if (Use2D) then
             call pdsygvx(1,jobz,range,'U',n,h2d,1,1,desc_h2d,s2d,1,1,
      .                   desc_h2d,vl,vu,1,neigvec,abstol,neigok,nz,w,
@@ -501,6 +504,8 @@ C*******************************************************************************
           endif
 #ifdef MPI
         else
+        write(23,*) 'DivideConquer', DivideConquer
+        write(23,*) 'Use2D', Use2D
           if (DivideConquer) then
             if (Use2D) then
               call pdsyevd(jobz,'U',n,h2d,1,1,desc_h2d,w,z2d,1,1,
@@ -639,12 +644,12 @@ C Set first call flag to false
 
 C Deallocate workspace arrays
 #ifdef MPI
-      call de_alloc( iclustr, name='iclustr')
-      call de_alloc( gap,     name='gap'    )
+      call de_alloc( iclustr, 'iclustr', 'rdiag' )
+      call de_alloc( gap, 'gap', 'rdiag' )
 #endif
-      call de_alloc( ifail,   name='ifail'  )
-      call de_alloc( iwork,   name='iwork'  )
-      call de_alloc( work,    name='work'   )
+      call de_alloc( ifail, 'ifail', 'rdiag' )
+      call de_alloc( iwork, 'iwork', 'rdiag' )
+      call de_alloc( work, 'work', 'rdiag' )
 
 C  Restore old allocation defaults
       call alloc_default( restore=oldDefaults )

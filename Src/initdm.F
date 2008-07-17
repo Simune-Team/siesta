@@ -12,7 +12,7 @@
      .                  maxnh, maxo, maxuo, maxspn, nua, nuo, nspin, 
      .                  numh, numhold, listhptr, listhptrold,
      .                  listh, listhold, iaorb, found, inspn, 
-     .                  usesavedm, nuotot)
+     .                  usesavedm )
 
 c *******************************************************************
 c Density matrix initialization
@@ -75,7 +75,7 @@ C
       use mpi_siesta
 #endif
       use units, only : pi
-
+      use alloc, only : re_alloc, de_alloc
       implicit          none
 
       logical           found, inspn, usesavedm
@@ -84,11 +84,10 @@ C
       integer           lasto(0:maxa), numh(maxuo), numhold(maxuo),
      .                  listhptr(maxuo), listhptrold(maxuo),
      .                  listh(maxnh), listhold(maxnh),
-     .                  iaorb(maxo), nuotot
+     .                  iaorb(maxo)
       real(dp)          Dscf(maxnh,maxspn), 
      .                  Dold(maxnh,maxspn), 
      .                  Datm(maxo)
-      external          memory
 
 c ---------------------------------------------------------------------
 
@@ -104,8 +103,7 @@ C Internal variables and arrays
 
       integer           integs(4), lastc, lc(0:3)
 
-      integer, dimension(:), allocatable, save ::
-     .                  atom, ibuffer
+      integer, pointer, save :: atom(:)
 #ifdef MPI
       integer
      .  MPIerror
@@ -114,14 +112,12 @@ C Internal variables and arrays
      .                  qio, rate, reals(4),
      .                  sinph, sinth, spinat, spio, values(4)
 
-      real(dp), dimension(:), allocatable, save ::
-     .                  phi, spin, theta, dpbuffer1
+      real(dp), pointer, save :: phi(:), spin(:), theta(:)
 
       data maxat / 1000 /
       data epsilon / 1.d-8 /
 
 C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
-
       if (usesavedm) then
         call iodm( 'read', maxnh, nuo, nspin, numhold, 
      .             listhptrold, listhold, Dscf, found )
@@ -130,7 +126,6 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
       endif
 
 C If found update Dold, otherwise initialize with neutral atoms
-
       if (found) then
 
         if (nuo.gt.0) then
@@ -159,14 +154,11 @@ C   double  spin(nat) : what polarization -----------------------------
         if (peratm .and. nspin.ge.2) then
 
 C Allocate local memory
-          allocate(atom(maxat))
-          call memory('A','I',maxat,'initdm')
-          allocate(phi(maxat))
-          call memory('A','D',maxat,'initdm')
-          allocate(spin(maxat))
-          call memory('A','D',maxat,'initdm')
-          allocate(theta(maxat))
-          call memory('A','D',maxat,'initdm')
+          nullify(atom,phi,spin,theta)
+          call re_alloc( atom, 1, maxat, 'atom', 'initdm' )
+          call re_alloc( phi, 1, maxat, 'phi', 'initdm' )
+          call re_alloc( spin, 1, maxat, 'spin', 'initdm' )
+          call re_alloc( theta, 1, maxat, 'theta', 'initdm' )
 
           nat = 0
           do iat = 1, nua+1
@@ -189,39 +181,15 @@ C End data reading
               if (nat.eq.maxat) then
                 maxatnew = nat + nint(0.1*nat)
 C
-                allocate(ibuffer(maxat))
-                call memory('A','I',maxat,'initdm')
-                ibuffer(1:maxat) = atom(1:maxat)
-                call memory('D','I',size(atom),'initdm')
-                deallocate(atom)
-                allocate(atom(maxatnew))
-                call memory('A','I',maxatnew,'initdm')
-                atom(1:maxat) = ibuffer(1:maxat)
-                call memory('D','I',size(ibuffer),'initdm')
-                deallocate(ibuffer)
+                call re_alloc( atom, 1, maxatnew, 'atom', 'initdm',
+     &                         copy=.true. )
 C
-                allocate(dpbuffer1(maxat))
-                call memory('A','D',maxat,'initdm')
-                dpbuffer1(1:maxat) = phi(1:maxat)
-                call memory('D','D',size(phi),'initdm')
-                deallocate(phi)
-                allocate(phi(maxatnew))
-                call memory('A','D',maxatnew,'initdm')
-                phi(1:maxat) = dpbuffer1(1:maxat)
-                dpbuffer1(1:maxat) = spin(1:maxat)
-                call memory('D','D',size(spin),'initdm')
-                deallocate(spin)
-                allocate(spin(maxatnew))
-                call memory('A','D',maxatnew,'initdm')
-                spin(1:maxat) = dpbuffer1(1:maxat)
-                dpbuffer1(1:maxat) = theta(1:maxat)
-                call memory('D','D',size(theta),'initdm')
-                deallocate(theta)
-                allocate(theta(maxatnew))
-                call memory('A','D',maxatnew,'initdm')
-                theta(1:maxat) = dpbuffer1(1:maxat)
-                call memory('D','D',size(dpbuffer1),'initdm')
-                deallocate(dpbuffer1)
+                call re_alloc( phi, 1, maxatnew, 'phi', 'initdm',
+     &                         copy=.true. )
+                call re_alloc( spin, 1, maxatnew, 'spin', 'initdm',
+     &                         copy=.true. )
+                call re_alloc( theta, 1, maxatnew, 'theta', 'initdm',
+     &                         copy=.true. )
 C
                 maxat = maxatnew
               endif
@@ -390,25 +358,18 @@ C   ispin=3 => Real(D12); ispin=4 => Imag(D12)
           enddo
 
 C Deallocate local memory
-          call memory('D','I',size(atom),'initdm')
-          deallocate(atom)
-          call memory('D','D',size(phi),'initdm')
-          deallocate(phi)
-          call memory('D','D',size(spin),'initdm')
-          deallocate(spin)
-          call memory('D','D',size(theta),'initdm')
-          deallocate(theta)
-
+          call de_alloc( atom, 'atom', 'initdm' )
+          call de_alloc( phi, 'phi', 'initdm' )
+          call de_alloc( spin, 'spin', 'initdm' )
+          call de_alloc( theta, 'theta', 'initdm' )
 c ---------------------------------------------------------------------
 
         else
 
 C Initialize to 0
-
           Dscf(1:maxnh,1:nspin) = 0.0d0
 
 C Automatic, for non magnetic (nspin=1) or for Ferro or Antiferro -----
-
           do io = 1, nuo
             call LocalToGlobalOrb(io,Node,Nodes,iio)
             do in = 1,numh(io)

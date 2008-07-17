@@ -71,9 +71,8 @@
           else
            if (lUseZmatrix) then
              if (broyden_optim) then
-                call zm_broyden_optimizer( na_u, xa, cfa, ucell,
-     $               cstress, dxmax, tp, ftol, strtol,
-     $               varcel, relaxd)
+                call zm_broyden_optimizer( na_u, xa, ucell, cstress, tp,
+     &                                     strtol, varcel, relaxd )
              else
                 call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
      $               dxmax, tp, ftol, strtol, varcel,
@@ -82,8 +81,7 @@
            else
              if (broyden_optim) then
                 call broyden_optimizer( na_u, xa, cfa, ucell,
-     $               cstress, dxmax, tp, ftol, strtol,
-     $               varcel, relaxd )
+     $               cstress, tp, ftol, strtol, varcel, relaxd )
              else
                 call cgvc( na_u, xa, cfa, ucell, cstress,
      $               dxmax, tp, ftol, strtol, varcel,
@@ -115,11 +113,10 @@
          endif
 
       case (2)
-         call nose(istp, iunit, na_u, cfa, tt, dt, amass, mn,
-     .       ntcon, va, xa, Ekinion, kn, vn, tempion)
+         call nose( istp, iunit, na_u, cfa, tt, dt, amass, mn,
+     .              ntcon, va, xa, Ekinion, kn, vn, tempion )
         ! Propagate the new structure to the virtual supercell
         call superx( ucell, nsc, na_u, na_s, xa, scell )
-
       case (3)
          call pr(istp, iunit, iquench, na_u, cfa, cstress, tp, dt,
      .           amass, mpr, ntcon, va, xa, vcell, ucell, Ekinion, 

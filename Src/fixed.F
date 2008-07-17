@@ -119,7 +119,7 @@ c **********************************************************************
 
       implicit none
 
-      integer, intent(in)   :: na, isa(na)
+      integer,  intent(in)  :: na, isa(na)
       real(dp), intent(in)  :: amass(na), cell(3,3), 
      .                         fa(3,na), stress(3,3), xa(3,na)
       integer, intent(out)  :: ntcon
@@ -146,14 +146,14 @@ c **********************************************************************
       real(dp)  ddot, fxc, reals(maxw), values(maxw), xnorm
 
 
-      external ddot, constr, memory
+      external ddot, constr
 
 #ifdef MPI
       integer MPIerror
 #endif
       ! Read constraint data only the first time
       if (frstme) then
-        ! Allocate memory for constraints - do only once and preserve contents
+!        Allocate memory for constraints - Preserve contents
          nullify( ctype )
          call re_alloc( ctype, 1, maxc, name='ctype', routine='fixed' )
 

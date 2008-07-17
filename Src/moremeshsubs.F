@@ -1,23 +1,28 @@
       MODULE moreMeshSubs
 !     Defines and handles different parallel mesh distributions
 !     R.Grima. Dec.2007
-      use precision, only : i8b
-      use precision, only : grid_p                   ! Grid-data precision
+      use precision, only : grid_p
       use parallel,  only : node, Nodes, ProcessorY
       use sys,       only : die
       use alloc,     only : re_alloc, de_alloc
 
+      implicit none
+
       PUBLIC :: initMeshDistr, setMeshDistr
       PUBLIC :: distMeshData, resetMeshDistr
+
 #ifdef MPI
       PUBLIC :: initMeshExtencil, distExtMeshData, gathExtMeshData
 #endif
       PRIVATE
+      interface distMeshData
+        module procedure distMeshData_rea, distMeshData_int
+      end interface distMeshData
 
 !     Private type to hold mesh distribution data
       TYPE meshDisType
       PRIVATE
-      integer          :: nMesh(3)   ! Number of total mesh div. in each axis
+      integer          :: nMesh(3)   ! Number of mesh div. in each axis
       integer, pointer :: box(:,:,:) ! Mesh box bounds of each node:
                                      ! box(1,iAxis,iNode)=lower bounds
                                      ! box(2,iAxis,iNode)=upper bounds
@@ -30,11 +35,11 @@
       END TYPE meshCommType
 
       character(len=*),      parameter :: moduName = 'moreMeshSubs '
-      integer,               parameter :: maxDistr = 5        ! Max. number of mesh distributions
-      integer,               parameter :: gp = grid_p         ! A shorter name for grid-data precision
-      type(meshDisType),  target, save :: meshDistr(maxDistr) ! The different data distributions
+      integer,               parameter :: maxDistr = 5
+      integer,               parameter :: gp = grid_p
+      type(meshDisType),  target, save :: meshDistr(maxDistr)
       type(meshCommType), target, save ::
-     &                   meshCommu((maxDistr*(maxDistr-1))/2) ! Communications between data distributions
+     &                   meshCommu((maxDistr*(maxDistr-1))/2)
       type(meshCommType), target, save :: exteCommu(maxDistr,3)
 
       CONTAINS
@@ -74,7 +79,7 @@ C     Passed arguments
       integer, optional,  intent(in) :: iDistr
       integer,            intent(in) :: oDistr
       integer,            intent(in) :: nm(3)
-      integer, optional,  intent(in) :: wload(:) ! Approx. relative workload 
+      integer, optional,  intent(in) :: wload(*)
 C     Local variables
       character(len=*), parameter :: myName = moduName//'initMeshDistr '
       character(len=*), parameter :: errMsg = myName//'ERROR: '
@@ -297,7 +302,7 @@ C
 C For the sequencial code we call subroutine reord
 C
 C ==================================================================
-      subroutine distMeshData( iDistr, fsrc, oDistr, fdst, itr )
+      subroutine distMeshData_rea( iDistr, fsrc, oDistr, fdst, itr )
       use mesh,    only : nsm
 #ifdef MPI
       use mpi_siesta
@@ -314,7 +319,7 @@ C     Local variables
       character(len=*), parameter :: myName = moduName//'distMeshData '
       character(len=*), parameter :: errMsg = myName//'ERROR: '
       integer                     :: I1, I2, I3, J1, J2, J3, K1, K2, K3,
-     &                               N1, N2, N3, NN, JJ, KK, ind, ncom,
+     &                               N1, N2, N3, NN, ind, ncom,
      &                               icom, NSP, NSRC(3), NDST(3), ME,
      &                               MaxSize, Xsize, Ysize, Zsize,
      &                               Lbox(2,3)
@@ -327,9 +332,6 @@ C     Local variables
       integer                     :: MPIerror, Status(MPI_Status_Size)
 #endif
 !------------------------------------------------------------------------- BEGIN
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 8 )
-#endif
 #ifdef MPI
 C     The communications are stored in a triangular structure.
       if (iDistr.gt.oDistr) then
@@ -358,8 +360,8 @@ C     among the several processes
       maxSize = 0
       do icom= 1, ncom
         if (src(icom).ne.dst(icom)) then
-          call boxIntersection( idis%box(1:2,1:3,src(icom)),
-     &                          odis%box(1:2,1:3,dst(icom)),
+          call boxIntersection( idis%box(1,1,src(icom)),
+     &                          odis%box(1,1,dst(icom)),
      &                          Lbox, inters )
           Xsize = Lbox(2,1) - Lbox(1,1) + 1
           Ysize = Lbox(2,2) - Lbox(1,2) + 1
@@ -461,7 +463,6 @@ C           We should receive data from process src(icom)-1
             Xsize = Lbox(2,1) - Lbox(1,1) + 1
             Ysize = Lbox(2,2) - Lbox(1,2) + 1
             Zsize = Lbox(2,3) - Lbox(1,3) + 1
-
             call mpi_recv( TBUF, Xsize*Ysize*Zsize*nsp,
      &                     MPI_grid_real, src(icom)-1, 1,
      &                     MPI_Comm_world, Status, MPIerror )
@@ -503,8 +504,8 @@ C       From sequencial to clustered
           I3 = I3 + NSRC(1)*NSRC(2)
         ENDDO
         do icom= 1, ncom
-          Sbox => idis%box(1:2,1:3,src(icom))
-          Dbox => odis%box(1:2,1:3,dst(icom))
+          Sbox => idis%box(:,:,src(icom))
+          Dbox => odis%box(:,:,dst(icom))
           call boxIntersection( Sbox, Dbox, Lbox, inters )
           if (src(icom).eq.ME) then
             if (dst(icom).eq.ME) then
@@ -589,8 +590,8 @@ C           We should receive data from process src(icom)-1
       else if (itr.eq.0) then
 C       From sequencial to sequencial or from clustered to clustered
         do icom= 1, ncom
-          Sbox => idis%box(1:2,1:3,src(icom))
-          Dbox => odis%box(1:2,1:3,dst(icom))
+          Sbox => idis%box(:,:,src(icom))
+          Dbox => odis%box(:,:,dst(icom))
           call boxIntersection( Sbox, Dbox, Lbox, inters )
           Xsize = (Lbox(2,1) - Lbox(1,1) + 1)*NSM
           Ysize = (Lbox(2,2) - Lbox(1,2) + 1)*NSM
@@ -678,13 +679,177 @@ C           We should receive data from process src(icom)-1
       else
         call reord( fdst, fsrc, nm, nsm, itr )
       endif
-      call reord( fsrc, fdst, nm, nsm, itr )
-#endif
-#if defined(MPI_TRACE) && defined(MPI)
-      call mpitrace_eventandcounters( 1000, 0 )
 #endif
 !--------------------------------------------------------------------------- END
-      end subroutine distMeshData
+      end subroutine distMeshData_rea
+
+
+      subroutine distMeshData_int( iDistr, fsrc, oDistr, fdst, itr )
+#ifdef MPI
+      use mpi_siesta
+#else
+      use m_dhscf, only : nm
+#endif
+      implicit none
+C     Passed arguments
+      integer,  intent(in) :: iDistr, oDistr, itr
+      integer,  intent(in) :: fsrc(*)
+      integer, intent(out) :: fdst(*)
+
+C     Local variables
+      character(len=*), parameter :: myName = moduName//'distMeshData '
+      character(len=*), parameter :: errMsg = myName//'ERROR: '
+      integer                     :: I1, I2, I3, J1, J2, J3, K1, K2, K3,
+     &                               N1, N2, N3, NN, ind, ncom,
+     &                               icom, NSRC(3), NDST(3), ME,
+     &                               MaxSize, Xsize, Ysize, Zsize,
+     &                               Lbox(2,3)
+      integer, pointer            :: src(:), dst(:), Sbox(:,:),
+     &                               Dbox(:,:)
+      type(meshDisType),  pointer :: idis, odis
+      logical                     :: inters
+      integer,            pointer :: TBUF(:)
+#ifdef MPI
+      integer                     :: MPIerror, Status(MPI_Status_Size)
+#endif
+!------------------------------------------------------------------------- BEGIN
+#ifdef MPI
+C     The communications are stored in a triangular structure.
+      if (iDistr.gt.oDistr) then
+        ind  = ((iDistr-1)*(iDistr-2))/2 + oDistr
+        ncom = meshCommu(ind)%ncom
+        src => meshCommu(ind)%dst
+        dst => meshCommu(ind)%src
+      else
+        ind = ((oDistr-1)*(oDistr-2))/2 + iDistr
+        ncom = meshCommu(ind)%ncom
+        src => meshCommu(ind)%src
+        dst => meshCommu(ind)%dst
+      endif
+
+      idis => meshDistr(iDistr)
+      odis => meshDistr(oDistr)
+
+      ME  = Node + 1
+
+C     Compute the maximum size of the buffer needed to transfer data
+C     among the several processes
+      maxSize = 0
+      do icom= 1, ncom
+        if (src(icom).ne.dst(icom)) then
+          call boxIntersection( idis%box(1,1,src(icom)),
+     &                          odis%box(1,1,dst(icom)),
+     &                          Lbox, inters )
+          Xsize = Lbox(2,1) - Lbox(1,1) + 1
+          Ysize = Lbox(2,2) - Lbox(1,2) + 1
+          Zsize = Lbox(2,3) - Lbox(1,3) + 1
+          MaxSize = max(MaxSize,Xsize*Ysize*Zsize)
+        endif
+      enddo
+
+      if (MaxSize.gt.0) then
+        nullify( TBUF )
+        call re_alloc( TBUF, 1, MaxSize, name='TBUF',
+     &                 routine='distMeshData' )
+      endif
+
+      Sbox => idis%box(1:2,1:3,ME)
+      NSRC(1) = Sbox(2,1) - Sbox(1,1) + 1
+      NSRC(2) = Sbox(2,2) - Sbox(1,2) + 1
+      NSRC(3) = Sbox(2,3) - Sbox(1,3) + 1
+      Dbox => odis%box(1:2,1:3,ME)
+      NDST(1) = Dbox(2,1) - Dbox(1,1) + 1
+      NDST(2) = Dbox(2,2) - Dbox(1,2) + 1
+      NDST(3) = Dbox(2,3) - Dbox(1,3) + 1
+
+      if (itr.eq.0) then
+C       From sequencial to sequencial
+        do icom= 1, ncom
+          Sbox => idis%box(:,:,src(icom))
+          Dbox => odis%box(:,:,dst(icom))
+          call boxIntersection( Sbox, Dbox, Lbox, inters )
+          Xsize = Lbox(2,1) - Lbox(1,1) + 1
+          Ysize = Lbox(2,2) - Lbox(1,2) + 1
+          Zsize = Lbox(2,3) - Lbox(1,3) + 1
+          if (src(icom).eq.ME) then
+            if (dst(icom).eq.ME) then
+C             SRC and DST are the current process
+              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)
+              K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)
+              do I3 = 1, Zsize
+                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)
+                K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)
+                do I2 = 1, Ysize
+                  J1 = Lbox(1,1) - Sbox(1,1) + 1 + J2 + J3
+                  K1 = Lbox(1,1) - Dbox(1,1) + 1 + K2 + K3
+                  do I1 = 1, Xsize
+                    fdst(K1) = fsrc(J1)
+                    K1 = K1 + 1
+                    J1 = J1 + 1
+                  enddo
+                  J2 = J2 + NSRC(1)
+                  K2 = K2 + NDST(1)
+                enddo
+                J3 = J3 + NSRC(1)*NSRC(2)
+                K3 = K3 + NDST(1)*NDST(2)
+              enddo
+            else
+C             We should send data to process dst(icom)-1
+              J3 = (Lbox(1,3) - Sbox(1,3))*NSRC(1)*NSRC(2)
+              K1 = 1
+              do I3 = 1, Zsize
+                J2 = (Lbox(1,2) - Sbox(1,2))*NSRC(1)
+                do I2 = 1, Ysize
+                  J1 = Lbox(1,1) - Sbox(1,1) + 1 + J2 + J3
+                  do I1 = 1, Xsize
+                    TBUF(K1) = fsrc(J1)
+                    K1 = K1 + 1
+                    J1 = J1 + 1
+                  enddo
+                  J2 = J2 + NSRC(1)
+                enddo
+                J3 = J3 + NSRC(1)*NSRC(2)
+              enddo
+              call MPI_Send( TBUF, Xsize*Ysize*Zsize,
+     &                       MPI_Integer, dst(icom)-1, 1,
+     &                       MPI_Comm_world, MPIerror )
+            endif
+          else
+C           We should receive data from process src(icom)-1
+            call mpi_recv( TBUF, Xsize*Ysize*Zsize,
+     &                     MPI_Integer, src(icom)-1, 1,
+     &                     MPI_Comm_world, Status, MPIerror )
+            J1 = 1
+            K3 = (Lbox(1,3) - Dbox(1,3))*NDST(1)*NDST(2)
+            do I3 = 1, Zsize
+              K2 = (Lbox(1,2) - Dbox(1,2))*NDST(1)
+              do I2 = 1, Ysize
+                K1 = Lbox(1,1) - Dbox(1,1) + 1 + K2 + K3
+                do I1 = 1, Xsize
+                  fdst(K1) = TBUF(J1)
+                  K1 = K1 + 1
+                  J1 = J1 + 1
+                enddo
+                K2 = K2 + NDST(1)
+              enddo
+              K3 = K3 + NDST(1)*NDST(2)
+            enddo
+          endif
+        enddo
+      else
+        if (Node.eq.0) then
+          write(*,*)'ERROR: Wrong parameter for function distMeshData'
+        endif
+        call die()
+      endif
+
+      if (MaxSize.gt.0) then
+        call de_alloc( TBUF, 'TBUF', 'distMeshData' )
+      endif
+#endif
+!--------------------------------------------------------------------------- END
+      end subroutine distMeshData_int
+
 
 #ifdef MPI
 C ==================================================================
@@ -746,12 +911,12 @@ C         partition
           Lbox(1,iaxis) = Lbox(2,iaxis)
 
           do P2= P1+1, Nodes
-            call boxIntersection( idis%box(1:2,1:3,P2), Ubox, Ibox,
+            call boxIntersection( idis%box(1,1,P2), Ubox, Ibox,
      &                            inters )
             if (inters) then
               ncom = ncom + 1
             else
-              call boxIntersection( idis%box(1:2,1:3,P2), Lbox, Ibox,
+              call boxIntersection( idis%box(1,1,P2), Lbox, Ibox,
      &                              inters )
               if (inters) ncom = ncom + 1
             endif
@@ -781,14 +946,14 @@ C       the extencil
             Lbox(1,iaxis) = Lbox(2,iaxis)
 
             do P2= P1+1, Nodes
-              call boxIntersection( idis%box(1:2,1:3,P2), Ubox, Ibox,
+              call boxIntersection( idis%box(1,1,P2), Ubox, Ibox,
      &                              inters )
               if (inters) then
                 ncom = ncom + 1
                 src(ncom) = P1
                 dst(ncom) = P2
               else
-                call boxIntersection( idis%box(1:2,1:3,P2), Lbox, Ibox,
+                call boxIntersection( idis%box(1,1,P2), Lbox, Ibox,
      &                                inters )
                 if (inters) then
                   ncom = ncom + 1
@@ -933,8 +1098,8 @@ C     Local variables
         else
           PP = mcomm%src(ii)
         endif
-        call boxIntersection(idis%box(1:2,1:3,PP), Ubox, IUbox, inter1)
-        call boxIntersection(idis%box(1:2,1:3,PP), Lbox, ILbox, inter2)
+        call boxIntersection(idis%box(1,1,PP), Ubox, IUbox, inter1)
+        call boxIntersection(idis%box(1,1,PP), Lbox, ILbox, inter2)
         if (inter1) then
           if (iaxis.eq.1) then
             iniX = 1
@@ -1338,8 +1503,8 @@ C     Local variables
         else
           PP = mcomm%src(ii)
         endif
-        call boxIntersection(idis%box(1:2,1:3,PP), Ubox, IUbox, inter1)
-        call boxIntersection(idis%box(1:2,1:3,PP), Lbox, ILbox, inter2)
+        call boxIntersection(idis%box(1,1,PP), Ubox, IUbox, inter1)
+        call boxIntersection(idis%box(1,1,PP), Lbox, ILbox, inter2)
         if (inter1) then
           if (iaxis.eq.1) then
             iniX = 1
@@ -1689,23 +1854,23 @@ C this 3-D array to a 1-D array (according to the selected direction).
 C
 C ==================================================================
       subroutine splitwload( Nodes, Node, nm, wload, iDistr, oDistr )
+#ifdef MPI
       use mpi_siesta
+#endif
       implicit none
 C     Passed arguments
-      integer,      intent(in)      :: Nodes, Node, nm(3), wload(:)
+      integer,      intent(in)      :: Nodes, Node, nm(3), wload(*)
       type(meshDisType),intent(in)  :: iDistr
       type(meshDisType),intent(out) :: oDistr
 C     Local variables
       character(len=*), parameter :: myName = moduName//'splitwload '
       character(len=*), parameter :: errMsg = myName//'ERROR: '
-      integer                     :: PP, iaxis, Lbox(2,3), Ldim, Gdim,
-     &                               QQ, P1, P2, POS, ini,
-     &                               ProcX, ProcY, ProcZ
-      integer(i8b),          pointer :: lwload(:), gwload(:), recvB(:)
-      logical                     :: found, inters, frstime
-      integer                     :: Gdime(3), Ldime(3), mGdim,
-     &                               mLdim, nAxis, nms(3)
-      integer(i8b)                   :: h1, h2
+      integer                     :: PP, Lbox(2,3), Ldim,
+     &                               QQ, P1, P2, POS, ini
+      integer*8,          pointer :: lwload(:), gwload(:), recvB(:)
+      logical                     :: found, inters
+      integer                     :: mGdim, mLdim, nAxis, nms(3)
+      integer*8                   :: h1, h2
       integer,            pointer :: PROCS(:)
       integer                     :: MPIerror, Status(MPI_Status_Size)
 !------------------------------------------------------------------------- BEGIN
@@ -1750,8 +1915,8 @@ C           of p1 and p2 processors.
             found = .true.
 C           Check if the current partition has intersection with the piece of
 C           mesh that we want to cut.
-            call boxIntersection( oDistr%box(1:2,1:3,PP),
-     &                            iDistr%box(1:2,1:3,Node),
+            call boxIntersection( oDistr%box(:,:,PP),
+     &                            iDistr%box(:,:,Node),
      &                            Lbox, inters )
             if (Node.eq.PP) then
               mGdim = oDistr%box(2,nAxis,PP)-oDistr%box(1,nAxis,PP)+1
@@ -1776,8 +1941,8 @@ C             If, I'm the process PP I should receive the information from other
 C             processes
               gwload = 0
               do QQ= 1, Nodes
-                call boxIntersection( oDistr%box(1:2,1:3,PP),
-     &                                iDistr%box(1:2,1:3,QQ),
+                call boxIntersection( oDistr%box(:,:,PP),
+     &                                iDistr%box(:,:,QQ),
      &                                Lbox, inters )
                 if (inters) then
                   Ldim = Lbox(2,nAxis) - Lbox(1,nAxis) + 1
@@ -1884,11 +2049,11 @@ C INPUT:
 C integer   iaxis         : Axe to be reduced
 C integer   Ibox(2,3)     : Limits of the input array
 C integer   Lbox(2,3)     : Limits of the intersection that we want to reduce
-C integer(i8b) wload         : 3-D array that we want to reduce to one of its
+C integer*8 wload         : 3-D array that we want to reduce to one of its
 C                           dimensions
 C
 C OUTPUT:
-C integer(i8b) lwload        : 1-D array. Reduction of the intersected part
+C integer*8 lwload        : 1-D array. Reduction of the intersected part
 C                           of wload.
 C
 C BEHAVIOR:
@@ -1904,8 +2069,8 @@ C ==================================================================
       subroutine reduce3Dto1D( iaxis, Ibox, Lbox, wload, lwload )
       implicit none
 C     Passed arguments
-      integer,    intent(in) :: iaxis, Ibox(2,3), Lbox(2,3), wload(:)
-      integer(i8b), intent(out) :: lwload(:)
+      integer,    intent(in) :: iaxis, Ibox(2,3), Lbox(2,3), wload(*)
+      integer*8, intent(out) :: lwload(*)
 C     Local variables
       integer              :: Idim(3), Ldim(3), ind, ind1, ind2, ind3,
      &                        I1, I2, I3
@@ -1985,14 +2150,14 @@ C SUBROUTINE vecBisec( nval, values, nparts, pos, h1, h2 )
 C
 C INPUT:
 C integer   nval         : Dimension of the input array
-C integer(i8b) values       : Input array
+C integer*8 values       : Input array
 C integer   nparts       : Numbers of partitions that we want to make from
 C                          the input array (in this call we only make one cut).
 C
 C OUTPUT:
 C integer   pos          : Position of the cut
-C integer(i8b) h1           : Load of the first part
-C integer(i8b) h2           : Load of the second part
+C integer*8 h1           : Load of the first part
+C integer*8 h2           : Load of the second part
 C
 C BEHAVIOR:
 C We want to split array "values" in "nparts", but in this call to
@@ -2009,13 +2174,13 @@ C ==================================================================
       implicit none
 C     Input variables
       integer,    intent(in) :: nval, nparts
-      integer(i8b),  intent(in) :: values(nval)
+      integer*8,  intent(in) :: values(nval)
       integer,   intent(out) :: pos
-      integer(i8b), intent(out) :: h1, h2
+      integer*8, intent(out) :: h1, h2
 
 C     Local variables
       integer               :: p1, p2, ii
-      integer(i8b)             :: total, halfG, halfL
+      integer*8             :: total, halfG, halfL
 !------------------------------------------------------------------------- BEGIN
       if (nparts.gt.1) then
 C       Split the number of parts in 2
@@ -2090,8 +2255,8 @@ C     destiny distribution. Every intersection represents a communication.
       ncom = 0
       do P1= 1, Nodes
         do P2= 1, Nodes
-          call boxIntersection( distr1%box(1:2,1:3,P1),
-     &                          distr2%box(1:2,1:3,P2), Lbox, inters )
+          call boxIntersection( distr1%box(:,:,P1),
+     &                          distr2%box(:,:,P2), Lbox, inters )
           if (inters) ncom = ncom + 1
         enddo
       enddo
@@ -2106,8 +2271,8 @@ C     Make a list of communications
       ncom = 0
       do P1= 1, Nodes
         do P2= 1, Nodes
-          call boxIntersection( distr1%box(1:2,1:3,P1),
-     &                          distr2%box(1:2,1:3,P2), Lbox, inters )
+          call boxIntersection( distr1%box(:,:,P1),
+     &                          distr2%box(:,:,P2), Lbox, inters )
           if (inters) then
             ncom      = ncom + 1
             src(ncom) = P1

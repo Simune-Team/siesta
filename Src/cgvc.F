@@ -63,6 +63,7 @@ C
 !     Use the new one only for the Zmatrix case
 !
       use m_conjgr_old, only: conjgr
+      use alloc,        only: re_alloc, de_alloc
 
       implicit none
 
@@ -85,8 +86,8 @@ c Internal variables and arrays
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
 
-      real(dp), dimension(:), allocatable       :: gxa, gfa
-      real(dp), dimension(:), allocatable, save :: cgaux
+      real(dp), pointer :: gxa(:), gfa(:)
+      real(dp), pointer, save :: cgaux(:)
 
 ! Saved internal variables:
 
@@ -113,14 +114,10 @@ c ---------------------------------------------------------------------------
       volume = volcel(cell)
 
 C Allocate local memory
-      allocate(gfa(na*3 + 6))
-      call memory('A','D',3*na+6,'cgvc')
-      allocate(gxa(na*3 + 6))
-      call memory('A','D',3*na+6,'cgvc')
-      if (.not.allocated(cgaux)) then
-        allocate(cgaux(2*(na*3 + 6)))
-        call memory('A','D',6*na+12,'cgvc')
-      endif
+      call re_alloc( gfa, 1, na*3+6, 'gfa', 'cgvc' )
+      call re_alloc( gxa, 1, na*3+6, 'gxa', 'cgvc' )
+      if (.not.associated(cgaux))
+     &  call re_alloc( cgaux, 1, na*6+12, 'cgaux', 'cgvc' )
 
 C If first call to cgvc, check dim and get target stress --------------------
 
@@ -396,10 +393,8 @@ C Save cgaux ----------------------------------------------------------------
      .  call iocg( 'write', ndeg*2, cgaux, cgcntr, relaxd, found )
 
 C Deallocate local memory
-      call memory('D','D',size(gxa),'cgvc')
-      deallocate(gxa)
-      call memory('D','D',size(gfa),'cgvc')
-      deallocate(gfa)
+      call de_alloc( gxa, 'gxa', 'cgvc' )
+      call de_alloc( gfa, 'gfa', 'cgvc' )
 
       return
       end

@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine pixmol(iza, xa, na, last)
+      subroutine pixmol(iza, xa, na )
 c *******************************************************************
 c Writes and accumulates coordinates to be animated by Xmol
 c Written by E. Artacho. February 1999. Modified to open/close 2003
@@ -17,7 +17,6 @@ c integer   iza(na)   : Atomic numbers of different atoms
 c double    xa(3,na)  : Atom coordinates
 c integer   na        : Number of atoms
 c character slabel*20 : Label for file naming
-c logical   last      : true if last time step
 c *******************************************************************
 
       use precision,      only: dp
@@ -30,7 +29,6 @@ c *******************************************************************
       integer                             :: na
       integer                             :: iza(na)
       real(dp)                            :: xa(3,na)
-      logical                             :: last
       external          io_assign, io_close, paste
 
 c Internal variables and arrays

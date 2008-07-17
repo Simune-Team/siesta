@@ -19,6 +19,7 @@
 #endif
       use parallel,     only : Node
       use precision,    only : dp
+      use alloc,        only : re_alloc, de_alloc
       use sys
 
       implicit none
@@ -162,9 +163,9 @@ C real*8 disp(3)              : fractional displacement
       real(dp)          disp(3)
 
 
-      real(dp), allocatable, save ::   xa(:,:)
-      integer,  allocatable, save ::   isa(:)
-      character(len=1), allocatable, save ::   phonon_label(:)
+      real(dp),         pointer, save ::   xa(:,:)
+      integer,          pointer, save ::   isa(:)
+      character(len=1), pointer, save ::   phonon_label(:)
 
       logical           leqi
       external          io_assign, io_close, paste, timer,
@@ -191,9 +192,11 @@ C Define conversion factors
 
 C Find file name
       if (frstme) then
-         allocate(xa(3,na))
-         allocate(isa(na))
-         allocate(phonon_label(ns))
+         nullify(xa,isa,phonon_label)
+         call re_alloc( xa, 1, 3, 1, na, 'xa', 'phonon_write_forces' )
+         call re_alloc( isa, 1, na, 'isa', 'phonon_write_forces' )
+         call re_alloc( phonon_label, 1, ns, 'phonon_label',
+     &                  'phonon_write_forces' )
 
          acf = fdf_string('AtomicCoordinatesFormat',' ')
          if (.not. (leqi(acf,'Fractional') .or.

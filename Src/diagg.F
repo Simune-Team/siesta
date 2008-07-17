@@ -8,12 +8,12 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine diagg( nspin, nuo, no, maxuo, maxnh, maxnd, 
+      subroutine diagg( nspin, nuo, maxuo, maxnh, maxnd, 
      .                  maxo, numh, listhptr, listh, numd, 
      .                  listdptr, listd, H, S,
      .                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
      .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, aux, nuotot, occtol,
+     .                  Haux, Saux, psi, nuotot, occtol,
      .                  iscf, neigwanted )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
@@ -24,7 +24,6 @@ C Writen by J.Soler, August 1998.
 C **************************** INPUT **********************************
 C integer nspin               : Number of spin components (1 or 2)
 C integer nuo                 : Number of basis orbitals local to node
-C integer no                  : Number of basis orbitals
 C integer maxuo               : Last dimension of xij
 C                               Must be at least max(indxuo)
 C integer maxnh               : Maximum number of orbitals interacting  
@@ -104,7 +103,7 @@ C
 #endif
 
       integer
-     .  iscf, maxnd, maxnh, maxuo, maxo, nuo, no, nspin, nuotot,
+     .  iscf, maxnd, maxnh, maxuo, maxo, nuo, nspin, nuotot,
      .  neigwanted
 
       integer 
@@ -117,8 +116,7 @@ C
      .  qtot, qs(nspin), S(maxnh), temp, efs(nspin), occtol
      
       real(dp)
-     .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin), 
-     .  aux(nuotot)
+     .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin) 
 
       real(dp), dimension(1), parameter :: wk = (/ 1.0_dp /)
       integer, parameter                :: nk = 1
@@ -130,14 +128,17 @@ C
 
 C  Internal variables .............................................
       integer           ie, io, iio, ispin, ix, j, jo, BNode, iie, ind,
-     .                  BTest, ierror, nd
+     .                  ierror, nd
       real(dp)          ee, eei, qe, qei, rt, t, k(3)
 
-      integer           :: maxnuo, maxnumd, mm
+      integer           :: maxnuo, mm
       integer, pointer  :: nuo_LOC(:)
       real(dp), pointer :: psi_tmp(:), paux(:)
 
 C Solve eigenvalue problem
+      write(23,*) 'Solve eigenvalue problem'
+      write(23,*) 'nspin', nspin
+      call pxfflush(23)
       do ispin = 1,nspin
         do io = 1,nuo
           do jo = 1,nuotot
@@ -155,6 +156,8 @@ C Solve eigenvalue problem
         enddo
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
      .              psi(1,1,ispin), neigwanted, iscf, ierror )
+      write(23,*) 'AUTOVALORES de salida', eo(:,ispin)
+      call pxfflush(23)
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -188,7 +191,6 @@ C Repeat diagonalisation with increased memory to handle clustering
         endif
 
       enddo
-
 C Check if we are done ................................................
       if (.not.getD) return
 
@@ -200,6 +202,8 @@ C Find new Fermi energy and occupation weights ........................
         call fermid( nspin, nspin, nk, wk, maxo, neigwanted, eo, 
      .               temp, qtot, qo, ef, Entropy )
       endif
+      write(23,*) 'Fermi energy', ef, Entropy
+      write(23,*) 'Occupations', qo
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -223,8 +227,7 @@ C New density and energy-density matrices of unit-cell orbitals .......
 
 C Global operation to form new density matrix
       nullify( nuo_LOC )
-      call re_alloc( nuo_LOC, 0, Nodes-1, name='nuo_LOC',
-     &               routine='diagg' )
+      call re_alloc( nuo_LOC, 0, Nodes-1, 'nuo_LOC', 'diagg' )
 #ifdef MPI
       call MPI_Allgather( nuo, 1, MPI_INTEGER, nuo_LOC, 1,
      &                    MPI_INTEGER, MPI_Comm_World, MPIerror )
@@ -236,8 +239,8 @@ C Global operation to form new density matrix
         maxnuo = max(nuo_LOC(BNode),maxnuo)
       enddo
       nullify( PSI_TMP )
-      call re_alloc( PSI_TMP, 1, nuotot*maxnuo*nspin, name='PSI_TMP',
-     &               routine='diagg' )
+      call re_alloc( PSI_TMP, 1, nuotot*maxnuo*nspin, 'PSI_TMP',
+     &               'diagg' )
 
       do Bnode=0, Nodes-1
         if (BNode.eq.Node) then
@@ -278,6 +281,10 @@ C Global operation to form new density matrix
           enddo
         enddo
       enddo
-      call de_alloc( nuo_LOC, name='nuo_LOC' )
-      call de_alloc( PSI_TMP, name='PSI_TMP' )
+      write(23,*) 'Dnew', Dnew
+      write(23,*) 'Enew', Enew
+      call pxfflush(23)
+      call de_alloc( nuo_LOC, 'nuo_LOC', 'diagg' )
+      call de_alloc( PSI_TMP, 'PSI_TMP', 'diagg' )
+
       end

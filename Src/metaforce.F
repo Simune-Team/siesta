@@ -4,13 +4,13 @@
 
       implicit none
 
-      integer,               save :: maxGauss = 100
-      integer,               save :: nGauss = 0
-      integer,  allocatable, save :: nGaussPtr(:,:)
-      logical,               save :: lMetaForce
-      real(dp), allocatable, save :: GaussK(:)
-      real(dp), allocatable, save :: GaussR0(:)
-      real(dp), allocatable, save :: GaussZeta(:)
+      integer,           save :: maxGauss = 100
+      integer,           save :: nGauss = 0
+      logical,           save :: lMetaForce
+      integer,  pointer, save :: nGaussPtr(:,:)
+      real(dp), pointer, save :: GaussK(:)
+      real(dp), pointer, save :: GaussR0(:)
+      real(dp), pointer, save :: GaussZeta(:)
 
       CONTAINS
 
@@ -21,6 +21,7 @@ C
 C  Julian Gale, NRI, Curtin University, Feb. 2006
 C
       use parallel,     only : Node
+      use alloc,        only : re_alloc
       use fdf
       use parsing
 #ifdef MPI
@@ -57,10 +58,11 @@ C Find if there are any Gaussians specified
       if (lMetaForce) then
 
 C Allocate arrays for Gaussian data
-        allocate(nGaussPtr(2,maxGauss))
-        allocate(GaussK(maxGauss))
-        allocate(GaussR0(maxGauss))
-        allocate(GaussZeta(maxGauss))
+        call re_alloc( nGaussPtr, 1, 2, 1, maxGauss, 'nGaussPtr',
+     &                 'initmeta' )
+        call re_alloc( GaussK, 1, maxGauss, 'GaussK', 'initmeta' )
+        call re_alloc( GaussR0, 1, maxGauss, 'GaussR0', 'initmeta' )
+        call re_alloc( GaussZeta, 1, maxGauss, 'GaussZeta', 'initmeta' )
 
         if (Node.eq.0) then
 C Read Gaussians from block

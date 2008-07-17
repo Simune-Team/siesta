@@ -50,7 +50,6 @@ C *********************************************************************
       use alloc,        only : re_alloc, de_alloc
       use neighbour,    only : jna=>jan, xij, r2ij
       use neighbour,    only : mneighb
-      use m_matel,      only : matel
 
       implicit none
 
@@ -109,7 +108,7 @@ C Allocate local memory
                 if (rcut(is,ioa)+rcut(js,joa) .gt. rij) then  
 
                   if (abs(dk(1)).gt.tiny) then
-                    call matel('X', is, js, ioa, joa, xij(1:3,jn),
+                    call matel('X', is, js, ioa, joa, xij(1,jn),
      .                          Sij, grSij ) 
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(1)  
  
@@ -119,7 +118,7 @@ C Allocate local memory
                   endif
                      
                   if (abs(dk(2)).gt.tiny) then
-                    call matel('Y', is, js, ioa, joa, xij(1:3,jn),
+                    call matel('Y', is, js, ioa, joa, xij(1,jn),
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(2) 
                 
@@ -129,7 +128,7 @@ C Allocate local memory
                   endif
  
                   if (abs(dk(3)).gt.tiny) then
-                    call matel('Z', is, js, ioa, joa, xij(1:3,jn),
+                    call matel('Z', is, js, ioa, joa, xij(1,jn),
      .                          Sij, grSij )
                     Si(jo) = Si(jo) + 0.5d0*Sij*dk(3) 
  

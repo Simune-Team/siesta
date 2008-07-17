@@ -37,21 +37,6 @@ C                 Output: Actual value needed for nlhmax (Maximum number
 C                         of basis orbitals interacting, either directly
 C                         or through a KB projector, with any orbital)
 C **************************** OUTPUT *********************************
-C integer numh(*)       : Number of nonzero elements of each row of the
-C                         Hamiltonian matrix between atomic orbitals
-C integer listhptr(*)   : Pointer to where each row of listh starts - 1
-C                         The reason for pointing to the element before
-C                         the first one is so that when looping over the
-C                         elements of a row there is no need to shift by
-C                         minus one.
-C integer listh(nlhmax) : Nonzero Hamiltonian-matrix element 
-C                         column indexes for each matrix row
-C                         For parallel execution, listh contains the
-C                         elements for rows that involve
-C                         any locally stored orbitals. In the case
-C                         where parallelisation is over K points then
-C                         the full listh matrix is needed on every
-C                         Node.
 C gamma                 : logical
 C xijo                  : vectors between orbital centers
 C **************************** BEHAVIOR *******************************
@@ -66,44 +51,38 @@ C  Modules
 C
       subroutine hsparse( negl, cell, nsc, na, isa, xa,
      &                    lasto, lastkb, iphorb, iphkb,
-     &                    nlhmax, numh, listhptr, listh, gamma, xijo)
+     &                    nlhmax, gamma, xijo)
       use precision
-      use parallel,      only : Node, Nodes
-      use parallelsubs,  only : GetNodeOrbs, GlobalToLocalOrb
-      use atmfuncs,      only : rcut
-      use listsc_module, only : listsc_init
+      use parallel,        only : Node, Nodes
+      use parallelsubs,    only : GetNodeOrbs, GlobalToLocalOrb
+      use atmfuncs,        only : rcut
+      use listsc_module,   only : listsc_init
       use sorting
-      use neighbour,   only: jna=>jan, xij, r2ij, maxna=>maxnna
-      use neighbour,   only: mneighb
-      
-      use sys,           only : die
-      use alloc,         only : re_alloc, de_alloc
-
+      use neighbour,       only : jna=>jan, xij, r2ij, maxna=>maxnna
+      use neighbour,       only : mneighb
+      use domain_decom,    only : use_dd, domainDecom
+      use sys,             only : die
+      use alloc,           only : re_alloc, de_alloc
+      use atomlist,        only : no_l
+      use sparse_matrices, only : listhptr, numh, listh
       implicit none
 
-      integer,  intent(in)    :: na
-      integer,  intent(in)    :: iphkb(:), iphorb(:)
-      integer,  intent(in)    :: isa(na), lastkb(0:na),
-     $                           lasto(0:na)
-      integer,  intent(in)    :: nsc(3)
-      real(dp), intent(in)    :: cell(3,3), xa(3,na)
-      logical,  intent(in)    :: negl
-
-      integer,  intent(inout) :: nlhmax
-      integer,  intent(out)   :: listhptr(:)
-      integer,  intent(out)   :: numh(:)
-
-      integer,  pointer       :: listh(:)
-      logical, intent(in)     :: gamma
-      real(dp),  pointer      :: xijo(:,:)
+      integer,           intent(in) :: na
+      integer,           intent(in) :: iphkb(:), iphorb(:)
+      integer,           intent(in) :: isa(na), lastkb(0:na),
+     $                                 lasto(0:na)
+      integer,           intent(in) :: nsc(3)
+      real(dp),          intent(in) :: cell(3,3), xa(3,na)
+      logical,           intent(in) :: negl
+      integer,        intent(inout) :: nlhmax
+      logical, intent(in)           :: gamma
+      real(dp),  pointer            :: xijo(:,:)
 
       external               timer
 
 
-      real(dp), parameter        :: tol = 1.0d-8   ! tolerance for comparing vector-coordinates
-
-
-      integer      :: maxnkb  = 1000         ! max no. of neighboring KB projectors
+      real(dp), parameter  :: tol = 1.0d-8   ! tolerance
+      integer              :: maxnkb  = 1000 ! max no. of neighboring
 
       integer
      &  ia, iio, ikb, ind, inkb, io, ioa, is, isel, 
@@ -131,12 +110,14 @@ C     Check size of internal arrays
       nua = na / ncells
       nuotot = lasto(nua)
       no = nuotot * ncells
-      call GetNodeOrbs(nuotot,Node,Nodes,nuo)  !Numero de orbitales del proceso MPI
+
+!     Numero de orbitales del proceso MPIs
+      call GetNodeOrbs(nuotot,Node,Nodes,nuo)
 
 C     Allocate local arrays
       nullify(conect,listhtmp)
-      call re_alloc(conect,1,no,name="conect",routine="hsparse")
-      call re_alloc(listhtmp,1,no,name="listhtmp",routine="hsparse")
+      call re_alloc( conect, 1, no, 'conect', 'hsparse' )
+      call re_alloc( listhtmp, 1, no, 'listhtmp', 'hsparse' )
 
 C     Find maximum range of basis orbitals and KB projectors
       rmaxo = 0.0d0
@@ -163,9 +144,9 @@ C     Find maximum range of basis orbitals and KB projectors
       endif
 
 C     Allocate local arrays that depend on parameters
-      call re_alloc(knakb,1,maxnkb, name="knakb")
-      call re_alloc(rckb,1,maxnkb, name="rckb")
-      call re_alloc(index,1,maxna, name="index")
+      call re_alloc( knakb, 1, maxnkb, 'knakb', 'hsparse' )
+      call re_alloc( rckb, 1, maxnkb, 'rckb', 'hsparse' )
+      call re_alloc( index, 1, maxna, 'index', 'hsparse' )
 
 
       isel = 0
@@ -192,7 +173,7 @@ C     Loop on atoms in unit cell
 C       Find neighbour atoms within maximum range
         call mneighb( cell, rmax, na, xa, ia, isel, nna )
 C       In case neighbor arrays have expanded
-        call re_alloc(index,1, maxna, name="index",routine="hsparse")
+        call re_alloc( index, 1, maxna, 'index', 'hsparse' )
 
 C       Order neighbours in a well defined way
         call ordvec( tol, 3, nna, xij, index )
@@ -222,14 +203,14 @@ C                   Check maxnkb - if too small then
 C                   increase array sizes
                     if (nnkb.eq.maxnkb) then
                        maxnkb = maxnkb + 100
-                       call re_alloc(knakb,1,maxnkb,
-     &                      name="knakb",copy=.true.)
-                       call re_alloc(rckb,1,maxnkb,
-     &                      name="rckb",copy=.true.)
+                       call re_alloc( knakb, 1, maxnkb, 'knakb',
+     &                                'hsparse', .true. )
+                       call re_alloc( rckb, 1, maxnkb, 'rckb',
+     &                                'hsparse', .true. )
                     endif
-                    nnkb = nnkb + 1
+                    nnkb        = nnkb + 1
                     knakb(nnkb) = kna
-                    rckb(nnkb) = rck
+                    rckb(nnkb)  = rck
                   endif
                 enddo
               enddo
@@ -295,22 +276,19 @@ C     Find optimum value for nlhmax
 C     (re)allocate listh, but do not shrink, as it might
 C     be used for DM extrapolation
 C     using information from different geometries.
-      call re_alloc( listh, 1, nlhmax, name='listh',
-     &               routine='hsparse', SHRINK=.false. )
+      call re_alloc( listh, 1, nlhmax, 'listh', 'hsparse',
+     &               SHRINK=.false. )
       if (.not. gamma) then
-         call re_alloc(xijo,1,3,1,nlhmax,name='xijo',routine='hsparse')
+         call re_alloc( xijo, 1, 3, 1, nlhmax, 'xijo', 'hsparse' )
       else
-         call re_alloc(xijo,1,3,1,1,name='xijo',routine='hsparse')
+         call re_alloc( xijo, 1, 3, 1, 1, 'xijo', 'hsparse' )
       endif
 
 C     Now fill in the arrays, including xijo if using k-points
 C     Set up listhptr
-      do io = 1,nuo
-        if (io.gt.1) then
-          listhptr(io) = listhptr(io-1) + numh(io-1)
-        else
-          listhptr(io) = 0
-        endif
+      listhptr(1) = 0
+      do io = 2,nuo
+        listhptr(io) = listhptr(io-1) + numh(io-1)
       enddo
 
 C------------------------------------C
@@ -321,7 +299,7 @@ C     Loop on atoms in unit cell
 C       Find neighbour atoms within maximum range
         call mneighb( cell, rmax, na, xa, ia, isel, nna )
 C       In case neighbor arrays have expanded
-        call re_alloc(index,1, maxna, name="index",routine="hsparse")
+        call re_alloc( index, 1, maxna, 'index', 'hsparse' )
 
 C       Order neighbours in a well defined way
         call ordvec( tol, 3, nna, xij, index )
@@ -401,6 +379,7 @@ C                   Find if jo overlaps with a KB projector
                     enddo
    55               continue
                   endif
+
                   if (conect(jo)) then
                     numh(iio) = numh(iio) + 1
                     ind = listhptr(iio)+numh(iio)
@@ -422,23 +401,26 @@ C           Restore conect array for next orbital io
         enddo       ! io
       enddo         ! ia
 
+      if (use_dd) then
+#ifdef DEBUG
+        call write_debug( '    PRE domainDecom' )
+#endif
+        call domainDecom( nuotot, nuo, nlhmax )
+        no_l = nuo
+      endif
+
 C     Initialize listsc
-      call listsc_init( nsc, nuotot )
+      call LISTSC_INIT( nsc, nuotot )
 
 C     Deallocate local arrays
-      call de_alloc(listhtmp,name="listhtmp")
-      call de_alloc(conect,name="conect")
-      call de_alloc(index,name="index")
-      call de_alloc(knakb,name="knakb")
-      call de_alloc(rckb,name="rckb")
+      call de_alloc( listhtmp, 'listhtmp', 'hsparse' )
+      call de_alloc( conect, 'conect', 'hsparse' )
+      call de_alloc( index, 'index', 'hsparse' )
+      call de_alloc( knakb, 'knakb', 'hsparse' )
+      call de_alloc( rckb, 'rckb', 'hsparse' )
 
       call timer( 'hsparse', 2 )
       call timer( 'hsparse', 3 )
       end subroutine hsparse
 
       end module m_hsparse
-
-
-
-
-

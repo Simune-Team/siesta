@@ -32,8 +32,8 @@
       private
 
       CONTAINS
-      subroutine broyden_optimizer( na, xa, fa, cell, stress,
-     $     dxmax, tp, ftol, strtol, varcel, relaxd)
+      subroutine broyden_optimizer( na, xa, fa, cell, stress, tp,
+     &                              ftol, strtol, varcel, relaxd )
 c ***************************************************************************
 c Broyden geometry optimization
 c
@@ -49,14 +49,13 @@ c
 c   Based on E({xa},stress), with {xa} in fractional coor
 c   The gradient of the energy given by {cfa} forces (fractional!)
 c   The fractional coordinates are multiplied by the initial cell vectors
-c   to get them in Bohr for dxmax and preconditioning.
+c   to get them in Bohr for preconditioning.
 c      
 c Written by Alberto Garcia, December 2005
 
 c ******************************** INPUT ************************************
 c integer na            : Number of atoms in the simulation cell
 c real*8 fa(3,na)       : Atomic forces
-c real*8 dxmax          : Maximum atomic (or lattice vector) displacement
 c real*8 tp             : Target pressure
 c real*8 ftol           : Maximum force tolerance
 c logical varcel        : true if variable cell optimization
@@ -75,19 +74,14 @@ c ***************************************************************************
 ! Subroutine arguments:
 
       integer, intent(in) :: na
-      real(dp), intent(in) :: fa(3,na), dxmax,
-     .                        tp, ftol, strtol
+      real(dp), intent(in) :: fa(3,na), tp, ftol, strtol
       logical, intent(in) :: varcel
       real(dp), intent(inout) :: xa(3,na), stress(3,3), cell(3,3)
       logical, intent(out) :: relaxd
 
 c Internal variables and arrays
-
-      real(dp)            :: new_volume, trace, volume
-
-      logical           found
-      integer           iu, ia, i, j, n, indi
-
+      real(dp) :: new_volume, trace, volume
+      integer  :: iu, ia, i, j, n, indi
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
 
