@@ -25,7 +25,7 @@ XML-TESTER=test-xml
 
 label=work
 #
-tests= h2o mgco3 md_npr si2x1h zmatrix born var_cell
+tests= h2o h2o_jacobi mgco3 md_npr si2x1h zmatrix born var_cell
 
 #
 all: 

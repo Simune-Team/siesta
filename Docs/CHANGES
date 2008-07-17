@@ -10,6 +10,18 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-17 18:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-33
+
+Summary: Fix spher_harm interface. Tests and .make for Jacobi-Davidson
+
+* spher_harm has gone back to the version before allocation optimization.
+  Some very strange interaction with matel resulted in crashes and
+  bad results. The issue is still under investigation.
+
+* New test h2o_jacobi.
+
+* Src/Sys/marenostrum-mpi-metis-64.make
+
 2007-07-17 17:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-32
 
 Summary: Fixes to grid-work. Jacobi-Davidson. Alloc changes
