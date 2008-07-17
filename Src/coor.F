@@ -32,7 +32,6 @@ C integer na  : Number of atoms in unit cell
       use alloc
       use parallel,  only : Node
       use zmatrix
-      use m_mpi_utils, only : broadcast
       use siesta_geom
       implicit none
 
@@ -41,8 +40,8 @@ C integer na  : Number of atoms in unit cell
 
 C Internal variables and arrays
       character             :: acf*22, acf_default*22
-      logical               :: isdiag, leqi
-      integer               :: i, ia, ic, iscale, iua, iunit, ix,
+      logical               :: isdiag
+      integer               :: i, ia, ic, iscale, iua, ix,
      .                         coor_mscell(3,3), ncells, 
      &                         coor_nsc(3), nua
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
@@ -53,60 +52,75 @@ C Internal variables and arrays
       logical               :: lOrigin
       data origin /3*0.0_dp/
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
-      if (Node.eq.0) then
+
 C Read unit cell and supercell
-        call redcel( alat, ucell, scell, coor_mscell )
+      call redcel( alat, ucell, scell, coor_mscell )
 
 C Set cell argument to "supercell" for use by the program
-        cell = scell
+      cell = scell
 
 C Format of atomic coordinates
-        acf_default = 'NotScaledCartesianBohr'
-        acf = fdf_string('AtomicCoordinatesFormat',acf_default)
-        if (leqi(acf,'NotScaledCartesianBohr') .or.
-     .      leqi(acf,'Bohr') ) then
-          iscale = 0
+      acf_default = 'NotScaledCartesianBohr'
+      acf = fdf_string('AtomicCoordinatesFormat',acf_default)
+      if (leqi(acf,'NotScaledCartesianBohr') .or.
+     .    leqi(acf,'Bohr') ) then
+        iscale = 0
+        if (Node.eq.0) then
           write(6,'(a,a)')
      .     'coor:   Atomic-coordinates input format  = ',
      .     '    Cartesian coordinates'
           write(6,'(a,a)')
      .     'coor:                                      ',
      .     '      (in Bohr units)'
-        else if (leqi(acf,'NotScaledCartesianAng') .or.
-     .           leqi(acf,'Ang') ) then
-          iscale = 1
+        endif
+      else if (leqi(acf,'NotScaledCartesianAng') .or.
+     .         leqi(acf,'Ang') ) then
+        iscale = 1
+        if (Node.eq.0) then
           write(6,'(a,a)')
      .     'coor:   Atomic-coordinates input format  = ',
      .     '    Cartesian coordinates'
           write(6,'(a,a)')
      .     'coor:                                    ',
      .     '      (in Angstroms)'
-        else if (leqi(acf,'ScaledCartesian')) then
-          if (alat.eq.0.0_dp) then
-             write(6,"(/,2a)") 'coor: ERROR: Explicit lattice ',
-     .         'constant is needed for ScaledCartesian format'
-             call die
+        endif
+      else if (leqi(acf,'ScaledCartesian')) then
+        if (alat.eq.0.0_dp) then
+          if (Node.eq.0) then
+            write(6,"(/,2a)") 'coor: ERROR: Explicit lattice ',
+     .        'constant is needed for ScaledCartesian format'
           endif
-          iscale = 2
+          call die()
+        endif
+        iscale = 2
+        if (Node.eq.0) then
           write(6,'(a,a)')
      .     'coor:   Atomic-coordinates input format  = ',
      .     '    Cartesian coordinates'
           write(6,'(a,a)')
      .     'coor:                                    ',
      .     '      (in units of alat)'
-        else if (leqi(acf,'ScaledByLatticeVectors') .or. 
-     .           leqi(acf,'Fractional') ) then
-          if (alat.eq.0.0_dp) then
-             write(6,"(/,2a)") 'coor: ERROR: Explicit lattice ',
-     .         'constant is needed for Fractional format'
-             call die
+        endif
+      else if (leqi(acf,'ScaledByLatticeVectors') .or. 
+     .         leqi(acf,'Fractional') ) then
+        if (alat.eq.0.0_dp) then
+          if (Node.eq.0) then
+            write(6,"(/,2a)") 'coor: ERROR: Explicit lattice ',
+     .        'constant is needed for Fractional format'
           endif
-          iscale = 3
+          call die()
+        endif
+        iscale = 3
+        if (Node.eq.0) then
           write(6,'(a,a)')
      .     'coor:   Atomic-coordinates input format  = ',
      .     '    Fractional'
-        else
+        endif
+      else
+        if (Node.eq.0) then
           write(6,"(/,'coor: ',72(1h*))")
           write(6,"('coor:                  INPUT ERROR')")
           write(6,'(a)') 'coor: '
@@ -118,49 +132,37 @@ C Format of atomic coordinates
           write(6,'(2a)') 'coor:     - ScaledByLatticeVectors ',
      .                                                 '(or Fractional)'
           write(6,"('coor: ',72(1h*))")
-
-          call die()
-
         endif
 
+        call die()
+
+      endif
+
 C Read atomic coordinates and species
-        na = fdf_integer('NumberOfAtoms',0)
-        if (na.eq.0) call die("Must specify number of atoms!")
+      na = fdf_integer('NumberOfAtoms',0)
+      if (na.eq.0) call die("Must specify number of atoms!")
 !
 !     Check if we need more space to accommodate supercell
 !     (still a "real" supercell, specified for convenience!)
 !
-        if (volcel(ucell) .lt. 1.d-8) then
-          ncells = 1
-        else
-          ncells = nint( volcel(scell) / volcel(ucell) )
-        endif
+      if (volcel(ucell) .lt. 1.d-8) then
+        ncells = 1
+      else
+        ncells = nint( volcel(scell) / volcel(ucell) )
+      endif
 
-        nua = na
-        na  = na * ncells
+      nua = na
+      na  = na * ncells
 
 C Find origin with which to translate all coordinates
-        lOrigin = fdf_block('AtomicCoordinatesOrigin',iunit)
-        if (lOrigin) then 
-          read(iunit,*) (origin(i),i=1,3)
-        endif
-
+      lOrigin = fdf_block('AtomicCoordinatesOrigin',bfdf)
+      if (lOrigin) then 
+        if (.not. fdf_bline(bfdf,pline))
+     .    call die('coor: ERROR in AtomicCoordinatesOrigin block')
+        origin(1) = fdf_bvalues(pline,1)
+        origin(2) = fdf_bvalues(pline,2)
+        origin(3) = fdf_bvalues(pline,3)
       endif
-C  end of Node.eq.0
-
-C Distribute data (some of them just for the zmatrix routine, which
-C is called by all processes)
-
-      call broadcast(iscale)
-      call broadcast(coor_mscell(1:3,1:3))
-      call broadcast(na)
-      call broadcast(nua)
-      call broadcast(ncells)
-      call broadcast(lOrigin)
-      call broadcast(ucell(1:3,1:3))
-      call broadcast(cell(1:3,1:3))
-      call broadcast(origin(1:3))
-      call broadcast(alat)
 
 C Set array dimensions
       nullify(isa,xa)
@@ -175,20 +177,25 @@ C Generate Cartesian coordinates from Z-matrix
         call Zmat_to_Cartesian(xa)
 
       else
-        if (Node.eq.0) then
+!        if (Node.eq.0) then
 C If Z matrix hasn't been found, read regular atomic coordinates
-          if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',iunit) )
-     .        then
-            do ia = 1,nua
-              read(iunit,*) (xa(i,ia), i=1,3), isa(ia)
-              if (lOrigin) then
-                 xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
-              endif
-            enddo
+        if (fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf)) then
+          do ia= 1, nua
+            if (.not. fdf_bline(bfdf,pline))
+     .        call die('coor: ERROR in ' //
+     .                 'AtomicCoordinatesAndAtomicSpecies block')
+            xa(1,ia) = fdf_bvalues(pline,1)
+            xa(2,ia) = fdf_bvalues(pline,2)
+            xa(3,ia) = fdf_bvalues(pline,3)
+            isa(ia)  = fdf_bintegers(pline,1)
+            if (lOrigin) then
+              xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
+            endif
+          enddo
 
-          else
-            call die("coor: You must specify the atomic coordinates")
-          endif
+        else
+          call die("coor: You must specify the atomic coordinates")
+        endif
 
 C Scale atomic coordinates
 C   Coord. option = 0 => Do nothing
@@ -196,30 +203,23 @@ C   Coord. option = 1 => Multiply by 1./0.529177 (Ang --> Bohr)
 C   Coord. option = 2 => Multiply by lattice constant
 C   Coord. option = 3 => Multiply by lattice vectors
 
-          if (iscale .eq. 1) then
-            xa = xa / 0.529177_dp 
-          elseif (iscale .eq. 2) then
-            xa = xa * alat
-          elseif (iscale .eq. 3) then
-            do ia = 1,nua
-              do ix = 1,3
-                xac(ix) = xa(ix,ia)
-              enddo
-              do ix = 1,3
-                xa(ix,ia) = ucell(ix,1) * xac(1) +
-     .                      ucell(ix,2) * xac(2) +
-     .                      ucell(ix,3) * xac(3)
-              enddo
+        if (iscale .eq. 1) then
+          xa = xa / 0.529177_dp 
+        elseif (iscale .eq. 2) then
+          xa = xa * alat
+        elseif (iscale .eq. 3) then
+          do ia = 1,nua
+            do ix = 1,3
+              xac(ix) = xa(ix,ia)
             enddo
-          endif
-
+            do ix = 1,3
+              xa(ix,ia) = ucell(ix,1) * xac(1) +
+     .                    ucell(ix,2) * xac(2) +
+     .                    ucell(ix,3) * xac(3)
+            enddo
+          enddo
         endif
-C end of Node.eq.0
-        
-C distribute data
-        call broadcast(isa(1:na))
-        call broadcast(xa(1:3,1:na))
-
+   
 
 C Expand the coordinates to whole supercell
 
@@ -243,17 +243,16 @@ C Expand index isa
 
         endif
 
-
       endif
 C  end of not lUseZmatrix
 
-        ! Construct references: cannot use isa alone, since 
-        ! refs may not start with a number.
-        nullify(cisa)
-        call re_alloc(cisa,1,na,name="cisa",routine="read_struct")
-        do ia=1, nua
-           write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
-        enddo
+      ! Construct references: cannot use isa alone, since 
+      ! refs may not start with a number.
+      nullify(cisa)
+      call re_alloc(cisa,1,na,name="cisa",routine="read_struct")
+      do ia=1, nua
+        write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
+      enddo
       end subroutine coor
 
       subroutine superx_coor( ucell, NSC, na, maxa, XA, scell )

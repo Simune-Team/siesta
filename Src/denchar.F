@@ -167,6 +167,11 @@ C Initialise MPI and set processor number
       call MPI_Init( MPIerror )
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+
+      if (.not. fdf_parallel()) then
+        call die('denchar: ERROR: FDF module doesn''t have ' //
+                 'parallel support')
+      endif
 #else
       Node =  0
       Nodes = 1
@@ -219,7 +224,7 @@ C Read some variables from SIESTA --------------------------------------
      .             CELL, NSC, XA, RMAXO, DATM )
 
 C Read the information about the basis set -----------------------------
-      CALL READ_BASIS_ASCII
+      CALL READ_BASIS_ASCII()
 
 C Initialize listsc ----------------------------------------------------
       CALL LISTSC_INIT( NSC, NO_U )

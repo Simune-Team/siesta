@@ -15,7 +15,6 @@ c *******************************************************************
 c Writes eigenvalues of Hamiltonian in k-points of sampling
 c Emilio Artacho, Feb. 1999
 
-      use fdf
       use precision, only : dp
       use siesta_cml
       use units, only : eV

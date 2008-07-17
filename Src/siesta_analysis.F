@@ -27,7 +27,6 @@
       use Kpoint_grid
       use parallel, only: IOnode
       use files,       only : label_length
-      use parse
       use m_energies
       use m_steps
       use m_ntm

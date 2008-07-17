@@ -50,9 +50,6 @@ C
       use fdf
       use parallel,   only : Node, Nodes, BlockSize, ProcessorY
       use diagmemory, only : MemoryFactor
-#ifdef MPI
-      use mpi_siesta, only : mpi_bcast, mpi_logical, mpi_comm_world
-#endif
       use alloc
       use sys,        only : die
       use m_diagon,   only : saveeigenvectors, maxclustersize, i2d_ctxt,
@@ -79,7 +76,6 @@ C Local variables
       integer                 :: anb
       integer                 :: clustersize
       integer                 :: desch(9)
-      integer                 :: MPIerror
       integer                 :: iacol
       integer                 :: iarow
       integer                 :: iceil
@@ -106,7 +102,6 @@ C Local variables
       integer                 :: sqnpc
       real(dp)                :: dscale
       logical                 :: BlacsOK
-      logical                 :: lBtmp(6)
 C Additional variables for a 2D proc grid
       integer                 :: np2d_row, np2d_col
       integer                 :: my2d_row, my2d_col
@@ -167,26 +162,12 @@ C Initialise error flag
 C Set algorithm logicals
       if (DoRead) then
         DoRead = .false.
-        if (Node.eq.0) then
-          AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
-          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
-          NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
-          PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
-          Use2D         = fdf_boolean('Diag.Use2D',.true.)
-        endif
-#ifdef MPI
-        lBtmp(1) = AllInOne
-        lBtmp(2) = DivideConquer
-        lBtmp(3) = NoExpert
-        lBtmp(4) = PreRotate
-        lBtmp(5) = Use2D
-        call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
-        AllInOne = lBtmp(1)
-        DivideConquer = lBtmp(2)
-        NoExpert = lBtmp(3)
-        PreRotate = lBtmp(4)
-        Use2D = lBtmp(5)
-#endif
+        AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
+        DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
+        NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
+        PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
+        Use2D         = fdf_boolean('Diag.Use2D',.true.)
+
         Serial = (Nodes.eq.1)
         if (Serial) Use2D = .false.
         if (AllInOne.and.Serial) DivideConquer = .false.

@@ -137,7 +137,6 @@ C  Modules
 C
       use precision
       use parallel,   only : Node, Nodes
-      use fdf
       use files,      only : slabel, label_length
       use sys,        only : die
       use alloc

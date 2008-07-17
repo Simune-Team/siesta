@@ -111,11 +111,7 @@ c **********************************************************************
       use precision
       use parallel,   only : Node
       use fdf
-      use parsing
       use alloc
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit none
 
@@ -133,24 +129,22 @@ c **********************************************************************
 
       ! Internal variables
       logical found
-      character line*130, name1*10, name2*10, name3*10, 
-     &          name4*10, names*130
+      character name1*10, name2*10, name3*10, name4*10
 
 
-      integer i, ia, ia1, ia2, ia3, ic, il, iu, ix,
-     &        jx, lastch, lch(0:maxw), ni, nn, nr, nv, maxcnew
+      integer i, ia, ia1, ia2, ia3, ic, il, ix,
+     &        jx, ni, nn, nr, nv, maxcnew
 
 
 
       integer   integs(maxw)
-      real(dp)  ddot, fxc, reals(maxw), values(maxw), xnorm
+      real(dp)  ddot, fxc, xnorm
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       external ddot, constr
 
-#ifdef MPI
-      integer MPIerror
-#endif
       ! Read constraint data only the first time
       if (frstme) then
 !        Allocate memory for constraints - Preserve contents
@@ -169,39 +163,23 @@ c **********************************************************************
         nc = 0
 
         ! Look for constraints data block
-        if (Node.eq.0) then
-          found = fdf_block('GeometryConstraints',iu)
-        endif
-#ifdef MPI
-        call MPI_Bcast(found,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
-        if (.not.found) goto 30
+        found = fdf_block('GeometryConstraints',bfdf)
+        if (.not. found) goto 30
 
         ! Loop on data lines
-        do 20 il = 1,maxl
-
-          ! Read and parse data line
-          if(Node.eq.0) then
-            read(iu,'(a)',end=30) line
-            lastch = index(line,'#') - 1
-          endif
-#ifdef MPI
-       call MPI_Bcast(line,130,MPI_character,0,MPI_Comm_World,MPIerror)
-       call MPI_Bcast(lastch,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
-          if (lastch .le. 0) lastch = len(line)
-          call parse( line(1:lastch), nn, lch, names, nv, values,
-     &                ni, integs, nr, reals )
+        il = 1
+        do while(fdf_bline(bfdf,pline) .and. (il .le. maxl))
 
           ! Check if constraints are finished
-          name1 = names(lch(0)+1:lch(1))
-          if (name1 .eq. '%end' .or.
-     &        name1 .eq. '%endblock') then
-            goto 30
+          nn = fdf_bnnames(pline)
+          nv = fdf_bnvalues(pline)
+          ni = fdf_bnintegers(pline)
+          nr = fdf_bnreals(pline)
+          name1 = fdf_bnames(pline,1)
 
           ! Select type of constraint
-          elseif (name1 .eq. 'routine') then
-            if (nn.eq.1 .or. names(lch(1)+1:lch(2)) .eq. 'constr') then
+          if (name1 .eq. 'routine') then
+            if ((nn.eq.1) .or. (fdf_bnames(pline,2).eq.'constr')) then
               nc = nc + 1
               if (nc.eq.maxc) then
                 maxcnew = nc + nint(0.1*nc)
@@ -225,55 +203,55 @@ c **********************************************************************
           elseif (name1 .eq. 'position') then
 
             ! Check syntax
-            if (nr.ne.0 .and. nr.ne.3) then
+            if ((nr .ne. 0) .and. (nr .ne. 3)) then
               if (Node.eq.0) then
                 write(6,'(a,/,a)')
      &            'fixed: syntax ERROR in %block GeometryConstraints:',
-     &            line(1:lastch)
+     &            trim(fdf_getline(bfdf%mark))
               endif
-              goto 20
+              cycle
             endif
 
             ! Find constrained atoms
             if (nn .gt. 1) then
               ! Atoms specified by range. Make list of them.
-              name2 = names(lch(1)+1:lch(2))
-              name3 = names(lch(2)+1:lch(3))
-              if (nn.eq.4) name4 = names(lch(3)+1:lch(4))
-              if (name2.eq.'from' .and. name3.eq.'to') then
-                ia1 = integs(1)
-                ia2 = integs(2)
+              name2 = fdf_bnames(pline,2)
+              name3 = fdf_bnames(pline,3)
+              if (nn .eq. 4) name4 = fdf_bnames(pline,4)
+              if ((name2 .eq. 'from') .and. (name3 .eq. 'to')) then
+                ia1 = fdf_bintegers(pline,1)
+                ia2 = fdf_bintegers(pline,2)
                 if (ia1 .lt. 0) ia1 = na + ia1 + 1
                 if (ia2 .lt. 0) ia2 = na + ia2 + 1
-                if (nn.eq.4 .and. name4.eq.'step') then
-                  ia3 = abs(integs(3))
+                if ((nn .eq. 4) .and. (name4 .eq. 'step')) then
+                  ia3 = abs(fdf_bintegers(pline,3))
                 else
                   ia3 = 1
                 endif
                 ni = 0
-                do ia = min(ia1,ia2),max(ia1,ia2),ia3
+                do ia= min(ia1,ia2), max(ia1,ia2), ia3
                   ni = ni + 1
                   integs(ni) = ia
                 enddo
               else
                 if (Node.eq.0) then
                   write(6,'(a,/,a)')
-     &            'fixed: syntax ERROR in %block GeometryConstraints:',
-     &            line(1:lastch)
+     &             'fixed: syntax ERROR in %block GeometryConstraints:',
+     &             trim(fdf_getline(bfdf%mark))
                 endif
-                goto 20
+                cycle
               endif
             endif
 
             ! Store position constraints
-            do i = 1,ni
+            do i= 1, ni
               ia = integs(i)
               if (ia .lt. 0) ia = na + ia + 1
               if (nr .eq. 0) then
                 ! Make one constraint for each cartesian coordinate
-                do ix = 1,3
+                do ix= 1, 3
                   nc = nc + 1
-                  if (nc.eq.maxc) then
+                  if (nc .eq. maxc) then
                     maxcnew = nc + nint(0.1*nc)
                     call re_alloc( ctype, 1, maxcnew, name='ctype',            
      &                             routine='fixed', copy=.true. )
@@ -285,7 +263,7 @@ c **********************************************************************
                   endif
                   ctype(nc) = 'position'
                   iac(nc) = ia
-                  do jx = 1,3
+                  do jx= 1, 3
                     xc(jx,nc) = 0.0d0
                   enddo
                   xc(ix,nc) = 1.0d0
@@ -293,7 +271,7 @@ c **********************************************************************
               elseif (nr .eq. 3) then
                 ! Make only one constraint in the specified direction
                 nc = nc + 1
-                if (nc.eq.maxc) then
+                if (nc .eq. maxc) then
                   maxcnew = nc + nint(0.1*nc)
                   call re_alloc( ctype, 1, maxcnew, name='ctype',            
      &                           routine='fixed', copy=.true. )
@@ -305,20 +283,22 @@ c **********************************************************************
                 endif
                 ctype(nc) = 'position'
                 iac(nc) = ia
-                xnorm = sqrt(reals(1)**2 + reals(2)**2 + reals(3)**2)
+                xnorm = sqrt(fdf_breals(pline,1)**2 +
+     &                       fdf_breals(pline,2)**2 +
+     &                       fdf_breals(pline,3)**2)
                 do ix = 1,3
-                  xc(ix,nc) = reals(ix) / xnorm
+                  xc(ix,nc) = fdf_breals(pline,ix) / xnorm
                 enddo
               endif
             enddo
 
           elseif (name1 .eq. 'stress') then
 
-            do ic = 1,nv
+            do ic= 1, nv
               nc = nc + 1
               ctype(nc) = 'stress'
-              ix = nint(values(ic))
-              if (ix.ge.1.and.ix.le.6) xs(ix) = 1.0d0
+              ix = nint(fdf_bvalues(pline,ic))
+              if ((ix .ge. 1) .and. (ix .le. 6)) xs(ix) = 1.0d0
             enddo
 
           else
@@ -327,7 +307,8 @@ c **********************************************************************
      &                  name1, ' not implemented yet'
             endif
           endif
-   20   continue
+          il = il + 1
+        enddo
    30   continue
         frstme = .false.
       endif

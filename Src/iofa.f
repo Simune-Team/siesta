@@ -17,7 +17,6 @@ c integer na           : Number atoms
 c real*8  fa(3,na)     : Forces on the atoms
 c *******************************************************************
 
-      use fdf
       use files,     only : slabel, label_length
       use precision, only : dp
 

@@ -10,6 +10,72 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-17 22:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-34
+
+Summary: Merged new fdf library and appropriate calls
+
+The new fdf library by Raul de la Cruz has been merged. 
+It has been necessary to change lots of fdf calls, notably
+those dealing with old-style block reading.
+
+Some issues remain:
+
+* The name of the file to read from is HARDWIRED to "INPUT.fdf" for
+now. Both bsc-test.mk and std-test.mk have been changed to reflect
+this. The INPUT_DEBUG trick also works.
+
+* Compilation in parallel must use the -DCLUSTER preprocessor
+directive.
+
+* There is still a bug in the reading of a Zmatrix.
+
+* There are probably more bugs in sections of the code not
+  exercised yet. Marenostrum compilation of this merged
+  version has not been fully tested yet.
+
+* The compiler makes temporary copies of arrays in some
+  calls.
+
+* The tla ids of the fdf files are new. Care should be taken
+  when merging to the main trunk if the history is to be
+  kept without breaks (even though the changes are so substantial
+  that a clear break might be advisable...).
+
+* The merge was done using a direct "tla apply-delta" with 
+  (siesta-bsc) jacobi-davidson and fdf-work as FROM and TO,
+  respectively, after having synched the fdf-work branch
+  with previous work on master-2.3 and with jacobi-davidson.  
+  A direct star-merge was precluded by this cherry-picking.
+
+Patches applied:
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--base-0
+   tag of ref@bsc--2007/siesta-bsc--master--2.3--patch-29
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-1
+   Merge of fdf changes by Raul
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-2
+   Second patch by Raul
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-3
+   Re-used MPI pre-processor macro in fdf
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-4
+   Fixes for is_integer, fdf_physical, INPUT.fdf
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-5
+   Synch to master-2.3-31
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-6
+   Synch to jacobi-davidson-patch-2
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-7
+   Synch to jacobi-davidson-patch-3 (allocs)
+
+ * ref@bsc--2007/siesta-bsc--fdf-work--2.3--patch-8
+   Synch to jacobi-davidson-11. Compilation and test fixes
+
 2007-07-17 18:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-33
 
 Summary: Fix spher_harm interface. Tests and .make for Jacobi-Davidson

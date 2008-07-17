@@ -14,7 +14,7 @@
 
       CONTAINS
 
-      subroutine initmeta
+      subroutine initmeta()
 C
 C  Reads data for metadynamics Gaussians
 C
@@ -22,39 +22,20 @@ C  Julian Gale, NRI, Curtin University, Feb. 2006
 C
       use parallel,     only : Node
       use alloc,        only : re_alloc
+      use sys,          only : die
       use fdf
-      use parsing
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit none
 
-      character(len=130) :: line
-      character(len=80)  :: names
-      integer            :: integs(6)
-      integer            :: iu
       integer            :: k
-      integer            :: lastc
-      integer            :: lc(0:5)
       integer            :: ni
-      integer            :: nn
       integer            :: nr
-      integer            :: nv
-#ifdef MPI
-      integer            :: MPIerror
-#endif
-      real(dp)           :: reals(6)
-      real(dp)           :: values(6)
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 C Find if there are any Gaussians specified
-      if (Node.eq.0) then
-        lMetaForce = fdf_defined('MetaForce')
-      endif
-#ifdef MPI
-      call MPI_Bcast(lMetaForce,1,MPI_logical,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
+      lMetaForce = fdf_defined('MetaForce')
       if (lMetaForce) then
 
 C Allocate arrays for Gaussian data
@@ -64,48 +45,26 @@ C Allocate arrays for Gaussian data
         call re_alloc( GaussR0, 1, maxGauss, 'GaussR0', 'initmeta' )
         call re_alloc( GaussZeta, 1, maxGauss, 'GaussZeta', 'initmeta' )
 
-        if (Node.eq.0) then
 C Read Gaussians from block
-          lMetaForce = fdf_block('MetaForce',iu)
+        lMetaForce = fdf_block('MetaForce',bfdf)
 
-          do k = 1,maxGauss
+        do k= 1, maxGauss
 C Read and parse data line
-            read(iu,'(a)',end=50) line
-            if (index(line,'%endblock').ne.0) exit
-            lastc = index(line,'#') - 1
-            if (lastc .le. 0) lastc = len(line)
-            call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
+          if (.not. fdf_bline(bfdf,pline))
+     .      call die('initmeta: ERROR in MetaForce block')
+          ni = fdf_bnintegers(pline)
+          nr = fdf_bnreals(pline)
 
 C Check that correct info is given
-            if (ni.ge.2.and.nr.ge.3) then
-              nGauss = nGauss + 1
-              nGaussPtr(1,nGauss) = abs(integs(1))
-              nGaussPtr(2,nGauss) = abs(integs(2))
-              GaussK(nGauss) = reals(1)
-              GaussR0(nGauss) = reals(2)/0.529177_dp
-              GaussZeta(nGauss) = reals(3)
-            endif
-          enddo
-
-C Exit point from read
-   50     continue
-
-        endif
-
-C Broadcast data
-#ifdef MPI
-      call MPI_Bcast(nGauss,1,MPI_integer,0,MPI_Comm_World,
-     .  MPIerror)
-      call MPI_Bcast(nGaussPtr(1,1),2*nGauss,MPI_integer,0,
-     .  MPI_Comm_World,MPIerror)
-      call MPI_Bcast(GaussK,nGauss,MPI_double_precision,0,
-     .  MPI_Comm_World,MPIerror)
-      call MPI_Bcast(GaussR0,nGauss,MPI_double_precision,0,
-     .  MPI_Comm_World,MPIerror)
-      call MPI_Bcast(GaussZeta,nGauss,MPI_double_precision,0,
-     .  MPI_Comm_World,MPIerror)
-#endif
+          if ((ni .ge. 2) .and. (nr .ge. 3)) then
+            nGauss = nGauss + 1
+            nGaussPtr(1,nGauss) = abs(fdf_bintegers(pline,1))
+            nGaussPtr(2,nGauss) = abs(fdf_bintegers(pline,2))
+            GaussK(nGauss) = fdf_breals(pline,1)
+            GaussR0(nGauss) = fdf_breals(pline,2)/0.529177_dp
+            GaussZeta(nGauss) = fdf_breals(pline,3)
+          endif
+        enddo
 
       endif
 

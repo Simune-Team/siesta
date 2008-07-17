@@ -143,11 +143,7 @@ C  ....................
 C First call initialisation
       if (frstme) then
 #ifdef MPI
-        if (Node.eq.0) then
-          ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
-        endif
-        call MPI_Bcast(ParallelOverK,1,MPI_logical,0,MPI_Comm_World,
-     .    MPIerror)
+        ParallelOverK = fdf_boolean( 'Diag.ParallelOverK', .false. )
 #endif
 
 C Read spin-spiral wavevector (if defined)

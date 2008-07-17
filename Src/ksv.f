@@ -78,8 +78,6 @@ C
       use precision,     only : dp
       use parallel,      only : IOnode
       use sys,           only : die
-      use fdf
-      use parsing
       use atmfuncs,      only : zvalfis
       use densematrix
       use alloc,         only : re_alloc, de_alloc

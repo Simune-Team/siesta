@@ -16,7 +16,7 @@
       use atomlist,           only: no_u, rmaxkb, amass, lasto, qtot,
      &                              iza, rmaxo, zvaltot, superc,
      &                              initatomlists, no_l
-      use m_fdf_global,       only: fdf_global_get
+      use fdf
       use sys,                only: die, bye
       use xcmod,              only: setXC
       use molecularmechanics, only: inittwobody
@@ -74,6 +74,12 @@ C     Initialise MPI and set processor number
       call MPI_Init( MPIerror )
       call MPI_Comm_Rank( MPI_Comm_World, Node, MPIerror )
       call MPI_Comm_Size( MPI_Comm_World, Nodes, MPIerror )
+
+      if (.not. fdf_parallel()) then
+        call die('siesta_init: ERROR: FDF module ' //
+     .           'doesn''t have parallel support')
+      endif
+
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 9 )
 #endif
@@ -131,7 +137,7 @@ C     Initialize CML (relies on reinit)
       call siesta_cml_init()
 
 C     Set allocation report level
-      call fdf_global_get( level, 'alloc_report_level', 0 )
+      level = fdf_get( 'alloc_report_level', 0 )
       call alloc_report( level=level, file=trim(slabel)//'.alloc' )
 
 C     Initialise exchange-correlation functional information
@@ -146,7 +152,7 @@ C     Initialize pseudopotentials and atomic orbitals
 
       call broadcast_basis()
 
-      call fdf_global_get(atmonly,'Atom-Setup-Only',.false.)
+      atmonly = fdf_get('Atom-Setup-Only',.false.)
       if (atmonly) call bye("End of atom setup")
 
 C     Read geometry
@@ -156,7 +162,7 @@ C     Initialize atom lists
       call initatomlists( )    ! Sets iza
 
 C     early exit if only checking the structure
-      call fdf_global_get(struct_only,'Output-Structure-Only',.false.)
+      struct_only = fdf_get('Output-Structure-Only',.false.)
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
          if (lUseZmatrix) then
@@ -246,7 +252,7 @@ C     Initialise arrays
       numhold(:)       = 0
 
 C     Get number of eigenstates that need to be calculated
-      call fdf_global_get(neigwanted,'NumberOfEigenStates',no_u)
+      neigwanted = fdf_get('NumberOfEigenStates',no_u)
 
 C     Check number of eigenstates - cannot be larger than number of
 C     basis functions or smaller than number of occupied states + 1

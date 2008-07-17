@@ -36,9 +36,6 @@ C
       use parallel,   only : Node
       use m_minvec,   only : minvec
       use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit          none
 
@@ -49,10 +46,7 @@ C Passed variables
       logical, intent(out)   :: firm_displ
 
 C Internal variables
-      integer           i, iu, j,  factor(3,3), expansion_factor
-#ifdef MPI
-      integer           MPIerror
-#endif
+      integer           i, j,  factor(3,3), expansion_factor
       real(dp)          scmin(3,3),  vmod
       real(dp)          ctransf(3,3)
       logical           genlogic
@@ -61,53 +55,50 @@ C Internal variables
       integer, dimension(3,3), parameter :: unit_matrix = 
      .                    reshape ((/1,0,0,0,1,0,0,0,1/), (/3,3/))
 
-      if (Node.eq.0) then
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
-         genlogic = fdf_block('kgrid_Monkhorst_Pack',iu)
-         if ( genlogic ) then
-            do i = 1,3
-               read(iu,*) (kscell(j,i),j=1,3), displ(i)
-            enddo
-            firm_displ = .true.
+      genlogic = fdf_block('kgrid_Monkhorst_Pack',bfdf)
+      if ( genlogic ) then
+        do i = 1,3
+          fdf_bline(bfdf,pline)
+          kscell(1,i) = fdf_bintegers(pline,1)
+          kscell(2,i) = fdf_bintegers(pline,2)
+          kscell(3,i) = fdf_bintegers(pline,3)
+          displ(i) = fdf_breals(pline,1)
+        enddo
+        firm_displ = .true.
 
-         else
+      else
 
-            cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
-            write(6,"(a,f10.5)") "Kgrid cutoff input: ", cutoff
-            firm_displ = .false.
-            
-            ! Find equivalent rounded unit-cell
-            call minvec( cell, scmin, ctransf )
+        cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
+        if (Node .eq. 0) then
+          write(6,"(a,f10.5)") "Kgrid cutoff input: ", cutoff
+        endif
+        firm_displ = .false.
+        
+        ! Find equivalent rounded unit-cell
+        call minvec( cell, scmin, ctransf )
 
-            expansion_factor = 1
-            do j = 1,3
-               factor(j,1:3) = 0
-               vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
-               factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
-               if (mod(factor(j,j),2) == 0) then
-                  displ(j) = 0.5_dp
-               else
-                  displ(j) = 0.0_dp
-               endif
-               expansion_factor = expansion_factor * factor(j,j)
-            enddo
-            ! Generate actual supercell skeleton
-            kscell = matmul(ctransf, factor)
-            ! Avoid confusing permutations
-            if (expansion_factor == 1) then
-               kscell = unit_matrix
-            endif
-         endif
+        expansion_factor = 1
+        do j = 1,3
+           factor(j,1:3) = 0
+           vmod = sqrt(dot_product(scmin(1:3,j),scmin(1:3,j)))
+           factor(j,j) = int(2.0_dp*cutoff/vmod) + 1
+           if (mod(factor(j,j),2) == 0) then
+              displ(j) = 0.5_dp
+           else
+              displ(j) = 0.0_dp
+           endif
+           expansion_factor = expansion_factor * factor(j,j)
+        enddo
+        ! Generate actual supercell skeleton
+        kscell = matmul(ctransf, factor)
+        ! Avoid confusing permutations
+        if (expansion_factor == 1) then
+           kscell = unit_matrix
+        endif
       endif
-C
-#ifdef MPI
-      call MPI_Bcast(kscell(1,1),9,MPI_integer,0,MPI_Comm_World,
-     .     MPIerror)
-      call MPI_Bcast(displ,3,MPI_double_precision,0,MPI_Comm_World,
-     .     MPIerror)
-      call MPI_Bcast(firm_displ,1,MPI_logical,0,MPI_Comm_World,
-     .     MPIerror)
-#endif
 
       end subroutine setup_kscell
 

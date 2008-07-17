@@ -85,14 +85,10 @@ C  Modules
 C
       use precision
       use fdf
-      use parsing
       use parallel,  only : Node
       use sys,       only : die
       use m_dhscf,   only : dhscf
-      use alloc, only : re_alloc, de_alloc
-#ifdef MPI
-      use mpi_siesta
-#endif
+      use alloc,     only : re_alloc, de_alloc
 
       implicit          none
 
@@ -109,14 +105,10 @@ C
 
 C Internal variables and arrays
  
-      character         line*130, names*80
       logical           samesh
-      integer           ni, nn, nr, nv, ipt, maxpt, iu, ia,
-     .                  ix, iv, integs(4), lastc, lc(0:3)
-#ifdef MPI
-      integer           MPIerror
-#endif
-      real(dp)          reals(4), values(4), avexc,
+      integer           nr, ipt, maxpt, ia,
+     .                  ix, iv
+      real(dp)          reals(4), avexc,
      .                  strold(3,3), avdipo(3), avstre(3,3), avdxc,
      .                  avenaa, avenas, avuatm, avuscf, avdusc, anpt,
      .                  strold2(3,3), avstre2(3,3)
@@ -126,6 +118,10 @@ C Internal variables and arrays
       real(dp), pointer, save :: pt(:,:), avfa(:,:), faold(:,:),
      &                           xanew(:,:), avfa2(:,:), faold2(:,:),
      &                           dpt(:,:)
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
 
       !Saved variables:
       logical, save :: blread = .false.
@@ -153,41 +149,31 @@ C Check whether GridCellSampling block has been looked for ------------------
 
 C Look for block and read it if found ---------------------------------------
  
-        if (Node.eq.0) then
-          samgrd = fdf_block('GridCellSampling',iu)
-        endif
-#ifdef MPI
-        call MPI_Bcast(samgrd,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+        samgrd = fdf_block('GridCellSampling',bfdf)
 
         if (samgrd) then
           if (Node.eq.0) then
             write(6,'(a)') 'grdsam: Reading %block GridCellSampling'
           endif
-          do ipt = 1, maxpt + 1
-            if (Node.eq.0) then
-              read(iu,'(a)', end=50) line
-            endif
-#ifdef MPI
-            call MPI_Bcast(line,130,MPI_character,0,MPI_Comm_World,
-     .        MPIerror)
-#endif
-            lastc = index(line,'#') - 1
-            if (lastc .le. 0) lastc = len(line)
-            call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
+          ipt = 1
+          do while(fdf_bline(bfdf,pline) .and. (ipt .le. maxpt+1))
+            nr = fdf_bnreals(pline)
             if (nr .ge. 3) then
-              pt(1,ipt) = reals(1)
-              pt(2,ipt) = reals(2)
-              pt(3,ipt) = reals(3)
+              pt(1,ipt) = fdf_breals(pline,1)
+              pt(2,ipt) = fdf_breals(pline,2)
+              pt(3,ipt) = fdf_breals(pline,3)
+              ipt = ipt + 1
             else
-              npt = ipt - 1
-              goto 50
+              write(6,'(a,/,a)')
+     &          'grdsam: syntax ERROR in %block GridCellSampling:',
+     &          trim(fdf_getline(bfdf%mark))
             endif
           enddo
-          call die('grdsam: ERROR: Number of points' //
-     $             ' in block larger than MAXPT')
-   50     continue
+          if (ipt .gt. maxpt+1) then
+            call die('grdsam: ERROR: Number of points' //
+     $               ' in block larger than MAXPT')
+          endif
+          npt = ipt - 1
         endif
         blread = .true.
       endif

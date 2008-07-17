@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine atm_transfer
+      subroutine atm_transfer()
 
       use atm_types, only: maxnorbs, nspecies
       use atm_types, only: species, species_info

@@ -353,7 +353,7 @@
       end subroutine print_basis_def
 
 !-----------------------------------------------------------------------
-      subroutine basis_specs_transfer
+      subroutine basis_specs_transfer()
       use alloc, only: re_alloc
 
       integer lmax, lmaxkb, nzeta_max, nsemi_max, nkb_max

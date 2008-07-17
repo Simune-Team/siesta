@@ -49,7 +49,6 @@ C
       use parallel,     only : Node, Nodes
       use parallelsubs, only : WhichNodeOrb, LocalToGlobalOrb,
      .                         GlobalToLocalOrb, GetNodeOrbs
-      use fdf
       use files,        only : slabel, label_length
       use sys,          only : die
       use alloc,        only : re_alloc, de_alloc

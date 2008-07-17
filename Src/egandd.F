@@ -69,7 +69,6 @@ C **************************************************************************
       use on_core
       use on_main,   only : nbL2G, nbG2L, nbandsloc, ncP2T
       use sys,       only : die
-      use m_mpi_utils, only: broadcast
 #ifdef MPI
       use globalise, only : setglobaliseB, setglobalise, setglobaliseF 
       use globalise, only : globalinitB
@@ -131,11 +130,7 @@ C Nullify pointers
         nullify(fs)
 
 C Set flag for memory algorithm choice
-        if (Node.eq.0) then
-          LoMem = fdf_boolean('ON.LowerMemory',.false.)
-        endif
-
-        call Broadcast(LoMem)
+        LoMem = fdf_boolean('ON.LowerMemory',.false.)
 
         frstme = .false.
 

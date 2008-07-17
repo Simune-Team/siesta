@@ -24,7 +24,6 @@ c***************** OUTPUT *************************************************
 c logical found : Has DM been found in disk? (Only when task='read')
 c**************************************************************************
 
-      use fdf
       use files,     only : slabel, label_length
       use precision, only : dp
       use sys,  only      : die

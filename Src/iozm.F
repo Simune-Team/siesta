@@ -33,7 +33,6 @@ C  Modules
 C
       use precision
       use parallel,  only : Node
-      use fdf
       use files,     only : slabel, label_length
       use zmatrix,   only : Zmat, ZmatForce, ZmatForceVar
       use zmatrix,   only : Zmat_to_Cartesian

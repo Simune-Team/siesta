@@ -8,7 +8,7 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      subroutine broadcast_basis
+      subroutine broadcast_basis()
 !
 !     Globalizes the basis and potentials data structures
 !

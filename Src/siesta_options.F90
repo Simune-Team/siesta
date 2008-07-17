@@ -260,8 +260,6 @@ MODULE siesta_options
     use fdf
     use files,     only : slabel
     use sys
-    use m_fdf_global, only: fdf_global_get
-    use m_mpi_utils, only: broadcast
     use units,     only : eV
     use diagmemory, only: memoryfactor
     use siesta_cml
@@ -275,13 +273,12 @@ MODULE siesta_options
     character annop*22,  dyntyp*22, &
               method*6,  lwfopt*13, method_default*6
 
-    logical  ::  DaC, leqi, qnch, qnch2, usesaveddata
-    external ::  leqi
+    logical  ::  DaC, qnch, qnch2, usesaveddata
 
     !--------------------------------------------------------------------- BEGIN
-    ! New template, using fdf and broadcast wrappers
+    ! New template, using fdf
     !
-    !      call fdf_global_get(param,'ParamName', param_default)
+    !      param = fdf_get('ParamName', param_default)
     !      if (ionode)  write(6,'(a,i)'),
     !     .    'redata: ParamName           = ',param
     !      if (cml_p) call cmlAddParameter(xf=mainXML, name='ParamName',
@@ -304,7 +301,7 @@ MODULE siesta_options
     endif
 
     ! Type of output
-    call fdf_global_get(outlng,'LongOutput', .false.)
+    outlng = fdf_get('LongOutput', .false.)
     if (ionode) then
       write(6,1) 'redata: Long output                      = ', outlng
     endif
@@ -330,7 +327,7 @@ MODULE siesta_options
 
     ! Dump information to plot charge contours
     ! by the external DENCHAR application program.
-    call fdf_global_get(dumpcharge,'WriteDenchar',.false.)
+    dumpcharge = fdf_get('WriteDenchar',.false.)
     if (ionode) then
       write(6,2) 'redata: Charge density info will appear in .RHO file'
     endif
@@ -340,7 +337,7 @@ MODULE siesta_options
     endif
 
     ! Perform Mulliken Population Analysis
-    call fdf_global_get(mullipop,'WriteMullikenPop', 0)
+    mullipop = fdf_get('WriteMullikenPop', 0)
     if (mullipop == 0 .and. outlng) then
       mullipop = 1
     endif
@@ -371,7 +368,7 @@ MODULE siesta_options
     endif
 
     ! Planewave cutoff of the real space mesh ...
-    call fdf_global_get(g2cut,'MeshCutoff',g2cut_default,'Ry')
+    g2cut = fdf_get('MeshCutoff',g2cut_default,'Ry')
     if (ionode) then
       write(6,6) 'redata: Mesh Cutoff                      = ', g2cut,'  Ry'
     endif
@@ -382,7 +379,7 @@ MODULE siesta_options
     endif
 
     ! Net charge in the cell ...
-    call fdf_global_get(charnet,'NetCharge',0.0_dp)
+    charnet = fdf_get('NetCharge',0.0_dp)
     if (ionode) then
       write(6,6) 'redata: Net charge of the system         = ',charnet,' |e|'
     endif
@@ -394,7 +391,7 @@ MODULE siesta_options
 
     ! SCF Loop parameters ...
     !     Maximum number of SCF iterations
-    call fdf_global_get(nscf,'MaxSCFIterations',nscf_default)
+    nscf = fdf_get('MaxSCFIterations',nscf_default)
     if (ionode) then
       write(6,4) 'redata: Max. number of SCF Iter          = ',nscf
     endif
@@ -405,10 +402,10 @@ MODULE siesta_options
     endif
 
     ! Pulay mixing, number of iterations for one Pulay mixing (maxsav)
-    call fdf_global_get(maxsav,'DM.NumberPulay', maxsav_default)
+    maxsav = fdf_get('DM.NumberPulay', maxsav_default)
 
     ! Broyden SCF mixing, number of iterations 
-    call fdf_global_get(broyden_maxit,'DM.NumberBroyden',0)
+    broyden_maxit = fdf_get('DM.NumberBroyden',0)
     if (ionode) then
       if (broyden_maxit .gt. 0) then
         write(6,5) 'redata: Broyden mixing with ', broyden_maxit, &
@@ -434,7 +431,7 @@ MODULE siesta_options
 
     ! Mix density matrix on first SCF step
     ! (mix)
-    call fdf_global_get(mix,'DM.MixSCF1',.false.)
+    mix = fdf_get('DM.MixSCF1',.false.)
     if (ionode) then
       write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix
     endif
@@ -446,7 +443,7 @@ MODULE siesta_options
 
     ! Use disk or memory to store intermediate Pulay mixing vectors
     ! (pulfile)
-    call fdf_global_get(pulfile,'DM.PulayOnFile',.false.)
+    pulfile = fdf_get('DM.PulayOnFile',.false.)
     if (ionode) then
       if (pulfile.and.Nodes>1) then
         call die( 'redata: Cannot use DM.PulayOnFile=.true.'//&
@@ -460,7 +457,7 @@ MODULE siesta_options
     endif
 
     ! Density Matrix Mixing  (proportion of output DM in new input DM)
-    call fdf_global_get(wmix,'DM.MixingWeight',wmix_default)
+    wmix = fdf_get('DM.MixingWeight',wmix_default)
     if (ionode) then
       write(6,6) 'redata: New DM Mixing Weight             = ',wmix
     endif
@@ -471,7 +468,7 @@ MODULE siesta_options
     endif
 
     ! Density Matrix occupancy tolerance
-    call fdf_global_get(occtol,'DM.OccupancyTolerance',occtol_default)
+    occtol = fdf_get('DM.OccupancyTolerance',occtol_default)
     if (ionode) then
       write(6,8) 'redata: New DM Occupancy tolerance       = ',occtol
     endif
@@ -483,7 +480,7 @@ MODULE siesta_options
 
     ! Perform linear mixing each nkick SCF iterations (to kick system
     ! when it is pinned in a poorly convergent SCF loop)
-    call fdf_global_get(nkick,'DM.NumberKick',0)
+    nkick = fdf_get('DM.NumberKick',0)
     if (ionode) then
       if (nkick .ge. 1) then
         write(6,5) 'redata: Kick with linear mixing every    = ',nkick,&
@@ -499,7 +496,7 @@ MODULE siesta_options
     endif
 
     ! Density Matrix Mixing each nkick SCF iterations
-    call fdf_global_get( wmixkick,'DM.KickMixingWeight',wmixkick_default)
+    wmixkick = fdf_get('DM.KickMixingWeight',wmixkick_default)
     if (ionode) then
       write(6,6) 'redata: DM Mixing Weight for Kicks       = ',wmixkick
     endif
@@ -510,7 +507,7 @@ MODULE siesta_options
     endif
 
     ! Density Matrix Tolerance for achieving Self-Consistency
-    call fdf_global_get(dDtol,'DM.Tolerance',dDtol_default)
+    dDtol = fdf_get('DM.Tolerance',dDtol_default)
     if (ionode) then
       write(6,7) 'redata: DM Tolerance for SCF             = ',dDtol
     endif
@@ -521,8 +518,8 @@ MODULE siesta_options
     endif
 
     ! Require Energy convergence for achieving Self-Consistency?
-    call fdf_global_get( require_energy_convergence,            &
-                         'DM.RequireEnergyConvergence', .false.)
+    require_energy_convergence = fdf_get('DM.RequireEnergyConvergence', &
+                                         .false.)
     if (ionode) then
       write(6,1) 'redata: Require Energy convergence for SCF = ', &
                   require_energy_convergence
@@ -535,7 +532,7 @@ MODULE siesta_options
     endif
 
     ! Energy tolerance for achieving Self-Consistency
-    call fdf_global_get( dEtol, 'DM.EnergyTolerance', dEtol_default, 'Ry' )
+    dEtol = fdf_get('DM.EnergyTolerance', dEtol_default, 'Ry' )
     if (ionode) then
       write(6,7) 'redata: DM Energy tolerance for SCF      = ', dEtol/eV, ' eV'
     endif
@@ -547,7 +544,7 @@ MODULE siesta_options
 
     ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
     if (nspin.eq.2) then
-      call fdf_global_get(inspn,'DM.InitSpinAF',.false.)
+      inspn = fdf_get('DM.InitSpinAF',.false.)
       if (ionode) then
         write(6,1) 'redata: Antiferro initial spin density   = ',inspn
       endif
@@ -558,13 +555,13 @@ MODULE siesta_options
     endif
 
     ! Use Saved Data
-    call fdf_global_get(usesaveddata,'UseSaveData',.false.)
+    usesaveddata = fdf_get('UseSaveData',.false.)
     if (ionode) then
       write(6,1) 'redata: Using Saved Data (generic)   = ', usesaveddata
     endif
 
     ! Use continuation DM files
-    call fdf_global_get(usesavedm,'DM.UseSaveDM',usesaveddata)
+    usesavedm = fdf_get('DM.UseSaveDM',usesaveddata)
     if (ionode) then
       write(6,1) 'redata: Use continuation files for DM    = ',  usesavedm
     endif
@@ -575,7 +572,7 @@ MODULE siesta_options
     endif
 
     ! Neglect Interactions between non-overlapping orbitals ...
-    call fdf_global_get(negl,'NeglNonOverlapInt',.false.)
+    negl = fdf_get('NeglNonOverlapInt',.false.)
     if (ionode) then
       write(6,1) 'redata: Neglect nonoverlap interactions  = ',negl
     endif
@@ -593,7 +590,7 @@ MODULE siesta_options
 ! RGT      method_default = 'jacobi'
     endif
 
-    call fdf_global_get(method,'SolutionMethod',method_default)
+    method = fdf_get('SolutionMethod',method_default)
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='SolutionMethod',        &
                             value=method, dictRef='siesta:SCFmethod' )
@@ -602,7 +599,7 @@ MODULE siesta_options
     if (leqi(method,'diagon')) then
       isolve = 0
       ! DivideAndConquer is now the default
-      call fdf_global_get(DaC,'Diag.DivideAndConquer',.true.)
+      DaC = fdf_get('Diag.DivideAndConquer',.true.)
       if (ionode)  then
         write(6,'(a,4x,a)') 'redata: Method of Calculation            = ',&
                             'Diagonalization'
@@ -643,7 +640,7 @@ MODULE siesta_options
     endif
 
     ! Memory scaling factor for rdiag/cdiag - cannot be less than 1.0
-    call fdf_global_get(MemoryFactor,'Diag.Memory', 1.0_dp )
+    MemoryFactor = fdf_get('Diag.Memory', 1.0_dp )
     MemoryFactor = max(MemoryFactor,1.0_dp)
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='Diag.Memory',                    &
@@ -651,7 +648,7 @@ MODULE siesta_options
     endif
 
     ! Electronic temperature for Fermi Smearing ...
-    call fdf_global_get(temp, 'ElectronicTemperature',temp_default,'Ry')
+    temp = fdf_get('ElectronicTemperature',temp_default,'Ry')
     if (ionode .and. isolve == 0) then
       write(6,6) 'redata: Electronic Temperature           = ',temp,'  Ry'
     endif
@@ -664,7 +661,7 @@ MODULE siesta_options
 
     ! Fix the spin of the system to a given value ; and
     ! value of the Spin of the system (only used if fixspin = TRUE)
-    call fdf_global_get(fixspin,'FixSpin',.false.)
+    fixspin = fdf_get('FixSpin',.false.)
     if (ionode) then
       write(6,1) 'redata: Fix the spin of the system       = ',fixspin 
     endif
@@ -674,7 +671,7 @@ MODULE siesta_options
         call die( 'redata: ERROR: You can only fix the spin of '//&
                   'the system for collinear spin polarized calculations.' )
       endif
-      call fdf_global_get(ts,'TotalSpin',0.0_dp)
+      ts = fdf_get('TotalSpin',0.0_dp)
       if (ionode) then
         write(6,9) 'redata: Value of the Spin of the System  = ',ts
       endif
@@ -691,7 +688,7 @@ MODULE siesta_options
 
     ! Order-N solution parameters ...
     !     Maximum number of CG minimization iterations
-    call fdf_global_get(ncgmax,'ON.MaxNumIter',ncgmax_default)
+    ncgmax = fdf_get('ON.MaxNumIter',ncgmax_default)
     if (ncgmax<1) then
       if (ionode) then
         write(6,2) 'ON.MaxNumIter cannot be less than 1.  Resetting to 1'
@@ -700,26 +697,23 @@ MODULE siesta_options
     endif
 
     ! Relative tolerance in total band structure energy
-    call fdf_global_get(etol,'ON.etol',etol_default)
+    etol = fdf_get('ON.etol',etol_default)
 
     ! Fermi level parameter
     eta(1:2) = 0.0_dp
-    if (ionode) then
-      eta(1) = fdf_physical('ON.eta',eta(1),'Ry')
-      eta(2) = eta(1)
-      eta(1) = fdf_physical('ON.eta_alpha',eta(1),'Ry')
-      eta(2) = fdf_physical('ON.eta_beta',eta(2),'Ry')
-    endif
-    call broadcast(eta(1:2))
+    eta(1) = fdf_physical('ON.eta',eta(1),'Ry')
+    eta(2) = eta(1)
+    eta(1) = fdf_physical('ON.eta_alpha',eta(1),'Ry')
+    eta(2) = fdf_physical('ON.eta_beta',eta(2),'Ry')
 
     ! Cutoff radius for Localized Wave Functions
-    call fdf_global_get(rcoor,'On.RcLWF',rcoor_default,'Bohr')
+    rcoor = fdf_get('On.RcLWF',rcoor_default,'Bohr')
 
     ! Use continumation LWF files
-    call fdf_global_get(usesavelwf,'ON.UseSaveLWF',usesaveddata)
+    usesavelwf = fdf_get('ON.UseSaveLWF',usesaveddata)
 
     ! Option on how to build LWF's (disk or functionals)
-    call fdf_global_get(lwfopt,'ON.functional','kim')
+    lwfopt = fdf_get('ON.functional','kim')
     if (leqi(lwfopt,'files')) then
       ioptlwf = 0
     else if (leqi(lwfopt,'kim')) then
@@ -733,28 +727,28 @@ MODULE siesta_options
     ! Option to calculate the Chemical potential in O(N)
     ! Option to use the Chemical Potential calculated instead
     ! of the eta variable of the input
-    call fdf_global_get(noeta,'ON.ChemicalPotentialUse',.false.)
+    noeta = fdf_get('ON.ChemicalPotentialUse',.false.)
     if (noeta) then
       ! if so, we must (obviously) calculate the chemical potential
       chebef=.true.
     else
       ! otherwise, we may still want to calculate it but not use it.
-      call fdf_global_get(chebef,'ON.ChemicalPotential',.false.)
+      chebef = fdf_get('ON.ChemicalPotential',.false.)
     endif
 
 
     ! Cutoff radius to calculate the Chemical Potential by projection
-    call fdf_global_get( rcoorcp, 'ON.ChemicalPotentialRc', &
-                         rcoorcp_default, 'Bohr' )
+    rcoorcp = fdf_get( 'ON.ChemicalPotentialRc', &
+                       rcoorcp_default, 'Bohr' )
 
     ! Temperature of the Fermi distribution to calculate the
     ! Chemical potential by projection
-    call fdf_global_get(  tcp,'ON.ChemicalPotentialTemperature', &
-                          tcp_default,'Ry' )
+    tcp = fdf_get( 'ON.ChemicalPotentialTemperature', &
+                   tcp_default,'Ry' )
     beta = 1.0_dp/tcp
 
     ! Order of the Chebishev expansion to calculate the Chemical potential
-    call fdf_global_get(pmax, 'ON.ChemicalPotentialOrder',pmax_default)
+    pmax = fdf_get('ON.ChemicalPotentialOrder',pmax_default)
 
 
     if (isolve==1) then
@@ -855,17 +849,17 @@ MODULE siesta_options
     endif
 
     ! Dynamics parameters ...
-    call fdf_global_get(varcel,'MD.VariableCell', .false. )
+    varcel = fdf_get('MD.VariableCell', .false. )
 
     ! NB reset below ...
     ! Type of dynamics 
-    call fdf_global_get(dyntyp,'MD.TypeOfRun','verlet')
+    dyntyp = fdf_get('MD.TypeOfRun','verlet')
 
     if (leqi(dyntyp,'cg')) then
       idyn = 0
-      call fdf_global_get(usesavecg,'MD.UseSaveCG', usesaveddata)
+      usesavecg = fdf_get('MD.UseSaveCG', usesaveddata)
       ! Support the old Broyden switch  for now
-      call fdf_global_get(broyden_optim,'Optim.Broyden',.false.)
+      broyden_optim = fdf_get('Optim.Broyden',.false.)
 
       if (broyden_optim) then
         write(6,2) '**Note: FDF symbol Optim.Broyden is '//&
@@ -896,16 +890,16 @@ MODULE siesta_options
     endif
 
     ! Maximum number of steps in CG/Broyden coordinate optimization
-    call fdf_global_get(nmove,'MD.NumCGsteps',0)
+    nmove = fdf_get('MD.NumCGsteps',0)
 
     ! Maximum atomic displacement in one CG step
-    call fdf_global_get(dxmax,'MD.MaxCGDispl',dxmax_default,'Bohr')
+    dxmax = fdf_get('MD.MaxCGDispl',dxmax_default,'Bohr')
 
     ! Tolerance in the maximum atomic force 
-    call fdf_global_get(ftol,'MD.MaxForceTol', ftol_default, 'Ry/Bohr')
+    ftol = fdf_get('MD.MaxForceTol', ftol_default, 'Ry/Bohr')
 
     ! Tolerance in the maximum residual stress (var cell) def = 1 GPa 
-    call fdf_global_get(strtol,'MD.MaxStressTol', strtol_default, 'Ry/Bohr**3')
+    strtol = fdf_get('MD.MaxStressTol', strtol_default, 'Ry/Bohr**3')
     strtol = abs(strtol)
 
     if (ionode) then
@@ -1039,15 +1033,15 @@ MODULE siesta_options
     endif
 
     ! Initial and final time steps for MD
-    call fdf_global_get(istart,'MD.InitialTimeStep',1)
-    call fdf_global_get(ifinal,'MD.FinalTimeStep',1)
+    istart = fdf_get('MD.InitialTimeStep',1)
+    ifinal = fdf_get('MD.FinalTimeStep',1)
 
     ! Length of time step for MD
-    call fdf_global_get(dt,'MD.LengthTimeStep',dt_default,'fs')
+    dt = fdf_get('MD.LengthTimeStep',dt_default,'fs')
 
     ! Quench Option
-    call fdf_global_get(qnch,'MD.Quench',.false.)
-    call fdf_global_get(qnch2,'MD.FireQuench',.false.)
+    qnch  = fdf_get('MD.Quench',.false.)
+    qnch2 = fdf_get('MD.FireQuench',.false.)
     if ((qnch .or. qnch2) .and. (idyn==2 .or. idyn==4)) then 
       call die( 'redata: ERROR: You cannot quench and '//&
                 'use a Nose thermostat simultaneously')
@@ -1064,7 +1058,7 @@ MODULE siesta_options
     ! Initial Temperature of MD simulation
     ! (draws random velocities from the Maxwell-Boltzmann distribition
     !  at the given temperature)
-    call fdf_global_get(tempinit, 'MD.InitialTemperature',0.0_dp,'K')
+    tempinit = fdf_get('MD.InitialTemperature',0.0_dp,'K')
 
     if (idyn .ge. 1 .and. idyn .le. 5) then
       if (ionode) then
@@ -1114,15 +1108,15 @@ MODULE siesta_options
     endif
 
     ! Target Temperature and Pressure
-    call fdf_global_get(tt,'MD.TargetTemperature',0.0_dp,'K')
-    call fdf_global_get(tp,'MD.TargetPressure',0.0_dp,'Ry/Bohr**3')
+    tt = fdf_get('MD.TargetTemperature',0.0_dp,'K')
+    tp = fdf_get('MD.TargetPressure',0.0_dp,'Ry/Bohr**3')
 
 
     ! Mass of Nose variable
-    call fdf_global_get(mn,'MD.NoseMass',mn_default,'Ry*fs**2')
+    mn = fdf_get('MD.NoseMass',mn_default,'Ry*fs**2')
 
     ! Mass of Parrinello-Rahman variables
-    call fdf_global_get(mpr, 'MD.ParrinelloRahmanMass',mpr_default,'Ry*fs**2')
+    mpr = fdf_get('MD.ParrinelloRahmanMass',mpr_default,'Ry*fs**2')
 
     if (idyn==2 .or. idyn==4) then
       if (ionode) then
@@ -1150,7 +1144,7 @@ MODULE siesta_options
 
     ! Annealing option
     ianneal = 0
-    call fdf_global_get( annop, 'MD.AnnealOption','TemperatureAndPressure' )
+    annop = fdf_get( 'MD.AnnealOption','TemperatureAndPressure' )
 
     if (idyn .eq. 5) then
       if (leqi(annop,'Temperature')) then
@@ -1222,7 +1216,7 @@ MODULE siesta_options
     endif
 
     ! Relaxation Time for Annealing
-    call fdf_global_get( taurelax, 'MD.TauRelax',taurelax_default,'fs' )
+    taurelax = fdf_get( 'MD.TauRelax',taurelax_default,'fs' )
     if (idyn==5) then
       if (ionode) then
         write(6,6) 'redata: Annealing Relaxation Time        = ', taurelax,'  fs'
@@ -1236,7 +1230,7 @@ MODULE siesta_options
     endif
 
     ! Estimated Bulk modulus (for Pressure annealing)
-    call fdf_global_get( bulkm, 'MD.BulkModulus',bulkm_default,'Ry/Bohr**3' )
+    bulkm = fdf_get( 'MD.BulkModulus',bulkm_default,'Ry/Bohr**3' )
     if (ionode) then
       if (idyn==5 .and. (ianneal==2 .or. ianneal==3)) then
         write(6,6) 'redata: Approx. Bulk Modulus             = ', bulkm,&
@@ -1252,11 +1246,11 @@ MODULE siesta_options
     endif
 
     ! Atomic displacement for force constant calculation
-    call fdf_global_get(dx,'MD.FCDispl',dx_default,'Bohr')
+    dx = fdf_get('MD.FCDispl',dx_default,'Bohr')
 
     ! First and last atoms to displace for calculation of force constants
-    call fdf_global_get(ia1,'MD.FCfirst',1)
-    call fdf_global_get(ia2,'MD.FClast',na)
+    ia1 = fdf_get('MD.FCfirst',1)
+    ia2 = fdf_get('MD.FClast',na)
 
     ! Check that last atom doesn't exceed total number
     if (idyn.eq.6.and.ia2.gt.na) then
@@ -1299,7 +1293,7 @@ MODULE siesta_options
     ! Harris density in the first SCF step of each MD step), and
     ! MaxSCFIter should be  2, in the second one the SCF 
     ! Iteration are computed.
-    call fdf_global_get(harrisfun,'Harris_functional',.false.)
+    harrisfun = fdf_get('Harris_functional',.false.)
 
     if (harrisfun) then
       usesavedm = .false.
@@ -1324,38 +1318,39 @@ MODULE siesta_options
 
 
     ! Find some switches 
-    call fdf_global_get(writek,'WriteKpoints'    , outlng )
-    call fdf_global_get(writef,'WriteForces'     , outlng )
-    call fdf_global_get(writedm,'WriteDM'     , .true.)
-    call fdf_global_get(writb, 'WriteBands'      , outlng )
-    call fdf_global_get(writbk, 'WriteKbands'     , outlng )
-    call fdf_global_get(writeig,'WriteEigenvalues', outlng )
-    call fdf_global_get(writec, 'WriteCoorStep'   , outlng )
-    call fdf_global_get(writmd, 'WriteMDhistory'  , .false.)
-    call fdf_global_get(writpx, 'WriteMDXmol'     , .not. writec)
-    call fdf_global_get(default, 'UseSaveData'     , .false.)
-    call fdf_global_get(savehs, 'SaveHS'          , .false.)
-    call fdf_global_get(fixauxcell, 'FixAuxiliaryCell', .false.)
-    call fdf_global_get(naiveauxcell, 'NaiveAuxiliaryCell', .false.)
-    call fdf_global_get(initdmaux, 'ReInitialiseDM'  , .false.)
-    call fdf_global_get(muldeb, 'MullikenInSCF'   , .false.)
-    call fdf_global_get(rijmin, 'WarningMinimumAtomicDistance', 1.0_dp, 'Bohr' )
-    call fdf_global_get(bornz,  'BornCharge'   , .false.)
+    writek =       fdf_get( 'WriteKpoints'    , outlng )
+    writef =       fdf_get( 'WriteForces'     , outlng )
+    writedm =      fdf_get( 'WriteDM'     , .true.)
+    writb =        fdf_get( 'WriteBands'      , outlng )
+    writbk =       fdf_get( 'WriteKbands'     , outlng )
+    writeig =      fdf_get('WriteEigenvalues', outlng )
+    writec =       fdf_get( 'WriteCoorStep'   , outlng )
+    writmd =       fdf_get( 'WriteMDhistory'  , .false.)
+    writpx =       fdf_get( 'WriteMDXmol'     , .not. writec)
+    default =      fdf_get( 'UseSaveData'     , .false.)
+    savehs =       fdf_get( 'SaveHS'          , .false.)
+    fixauxcell =   fdf_get( 'FixAuxiliaryCell', .false.)
+    naiveauxcell = fdf_get( 'NaiveAuxiliaryCell', .false.)
+    initdmaux =    fdf_get( 'ReInitialiseDM'  , .false.)
+    muldeb =       fdf_get( 'MullikenInSCF'   , .false.)
+    rijmin =       fdf_get( 'WarningMinimumAtomicDistance', &
+                            1.0_dp, 'Bohr' )
+    bornz =        fdf_get( 'BornCharge'   , .false.)
     if (idyn.ne.6) then
       bornz = .false.
     endif
-    call fdf_global_get(change_kgrid_in_md,"ChangeKgridInMD", .false.)
-    call fdf_global_get(ParallelOverK, 'Diag.ParallelOverK', .false.)
-    call fdf_global_get(RelaxCellOnly, 'MD.RelaxCellOnly', .false.)
-    call fdf_global_get(RemoveIntraMolecularPressure,   &
-             'MD.RemoveIntraMolecularPressure', .false.)
+    change_kgrid_in_md           = fdf_get('ChangeKgridInMD', .false.)
+    ParallelOverK                = fdf_get('Diag.ParallelOverK', .false.)
+    RelaxCellOnly                = fdf_get('MD.RelaxCellOnly', .false.)
+    RemoveIntraMolecularPressure = fdf_get( &
+                            'MD.RemoveIntraMolecularPressure', .false.)
 
-    call fdf_global_get(savrho,'SaveRho', dumpcharge)
-    call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)
-    call fdf_global_get(savevh,'SaveElectrostaticPotential', .false.)
-    call fdf_global_get(savevt,'SaveTotalPotential', .false.)
-    call fdf_global_get(savepsch,'SaveIonicCharge',  .false.)
-    call fdf_global_get(savetoch,'SaveTotalCharge',  .false.)
+    savrho   = fdf_get('SaveRho', dumpcharge)
+    savdrh   = fdf_get('SaveDeltaRho',       .false.)
+    savevh   = fdf_get('SaveElectrostaticPotential', .false.)
+    savevt   = fdf_get('SaveTotalPotential', .false.)
+    savepsch = fdf_get('SaveIonicCharge',  .false.)
+    savetoch = fdf_get('SaveTotalCharge',  .false.)
     RETURN
     !----------------------------------------------------------------------- END
 1   format(a,4x,l1)

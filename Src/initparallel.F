@@ -24,10 +24,7 @@ C
       use domain_decom, only : use_dd, use_dd_perm, preSetOrbitLimits
       use sys
       use alloc,        only : re_alloc
-#ifdef MPI
-      use mpi_siesta, only: mpi_comm_world, mpi_integer
-      use mpi_siesta, only: mpi_double_precision
-#endif
+
       implicit none
 C
 C  Passed variables
@@ -47,7 +44,6 @@ C
       integer       :: blocksizedefault
       integer       :: procYdefault
       integer       :: procYval
-      integer       :: MPIerror
 #endif
       integer       :: ii
       integer       :: maxorb
@@ -99,31 +95,17 @@ C Set Domain decomposition flag according to SCF method
       endif
 
 C Spatial decomposition flag
-      if (Node.eq.0) then
-        rspatial = fdf_physical('RcSpatial',0.0d0,'Bohr')
-      endif
-#ifdef MPI
-      call MPI_Bcast(rspatial,1,MPI_double_precision,0,MPI_Comm_World,
-     .  MPIerror)
-#endif
+      rspatial = fdf_physical('RcSpatial',0.0d0,'Bohr')
 
 C Processor grid
-      if (Node.eq.0) then
-        npgrid(1) = fdf_integer('ProcessorGridX',1)
-        npgrid(2) = fdf_integer('ProcessorGridY',1)
-        npgrid(3) = fdf_integer('ProcessorGridZ',1)
-      endif
-#ifdef MPI
-      call MPI_Bcast(npgrid,3,MPI_integer,0,MPI_Comm_World,MPIerror)
-#endif
+      npgrid(1) = fdf_integer('ProcessorGridX',1)
+      npgrid(2) = fdf_integer('ProcessorGridY',1)
+      npgrid(3) = fdf_integer('ProcessorGridZ',1)
 
 C Set ProcessorY  
 #ifdef MPI
-      if (Node.eq.0) then
-        call set_processorYdefault(Nodes,procYdefault)
-        procYval = fdf_integer('processorY',procYdefault)
-      endif
-      call MPI_Bcast(procYval,1,MPI_integer,0,MPI_Comm_World,MPIerror)
+      call set_processorYdefault(Nodes,procYdefault)
+      procYval = fdf_integer('processorY',procYdefault)
       call set_processorY(procYval)
 #else
       call set_processorY(1)
@@ -185,12 +167,8 @@ C Check that cut-off is less than cell parameter
       if (isolve.eq.0) then
 C Set BlockSize
 #ifdef MPI
-        if (Node.eq.0) then
-          call set_blocksizedefault(Nodes,no_u,blocksizedefault)
-          BlockSize = fdf_integer('blocksize',blocksizedefault)
-        endif
-        call MPI_Bcast(BlockSize,1,MPI_integer,0,MPI_Comm_World,
-     .    MPIerror)
+        call set_blocksizedefault(Nodes,no_u,blocksizedefault)
+        BlockSize = fdf_integer('blocksize',blocksizedefault)
 #else
         BlockSize = 8
 #endif

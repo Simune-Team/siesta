@@ -1,43 +1,40 @@
 #
-#  Makefile for fdf example and fdf module.
+#  Makefile for FDF library and FDF example.
 #
-INCFLAGS=-I${<D}        # For VPATH operation
+.SUFFIXES:
+.SUFFIXES: .f .F .o .a  .f90 .F90
 #
+INCFLAGS=-I${<D} -I../       # For VPATH operation
+
 include ../arch.make
 #
-module:  libfdf.a
-libfdf.a:	fdf.o fdf_mod.o parse.o
-	ar $(ARFLAGS_EXTRA) cru libfdf.a fdf.o fdf_mod.o parse.o
-	-$(RANLIB) libfdf.a
+# Library module libfdf.a
+#
+module: libfdf.a
+libfdf.a: iso_fortran_env.o fdf.o io_fdf.o parse.o utils.o prec.o 
+	$(AR) $(ARFLAGS_EXTRA) cru $@ $^
+	-$(RANLIB) $@
 	cp libfdf.a ..
-	@cp -p *.*d ..
-	@echo "fdf/work.pc" >> ../work.pcl
+	@cp -p *.*d ..     
+
+fdf.o: io_fdf.o parse.o prec.o utils.o
+io_fdf.o: utils.o prec.o
+parse.o: utils.o prec.o
+utils.o: prec.o
+
+##%.o: %.F90
+##	$(FC) $(FFLAGS) -c $< $(DEFS)
+
 #
-# Note trick for Intel Fortran Compiler
+# Tests for FDF library (Sequential, MPI, IO)
 #
-fdf_mod.o: fdf_mod.f parse.o
-fdf.o:		fdf.h
+sample: sample.F90 libfdf.a
+	$(FC) $(LDFLAGS) -o $@ $^ $(MPIFLAGS)
+
 #
-#---------------------------------------------------
-OBJS=	sample.o fdf.o io.o
+# Cleaning
 #
-sample: $(OBJS)
-	$(FC) $(LDFLAGS) -o sample $(OBJS)
-#
-check:	sample sample.fdf
-	sample < sample.fdf
-#
-io_sample: io_sample.o io.o
-	$(FC) $(LDFLAGS) -o io_sample io_sample.o io.o
-#
-io_check: io_sample
-	io_sample
 clean:
-	rm -f *.o libfdf.a *.mod fdf_mod.o io_sample.o sample io_sample
-	rm -f OUTPUT FDF.debug file2 file3 sample.out
-	rm -f *.pc *.pcl
-#
-sample.o:	fdfdefs.h
-
-
-
+	rm -f *.o *.mod libfdf.a
+	rm -f sample sample_mpi sample_cluster sample_blocking
+	rm -f fdf.debug* sample.out* sample.fdf.*

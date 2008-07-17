@@ -38,9 +38,6 @@ C
       use precision
       use parallel,     only : Node
       use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit          none
 
@@ -51,27 +48,22 @@ C
 c ----------------------------------------------------------------------
 
 c Internal variables
-      integer           i, i1, i2, i3, igmax(3), igmin(3), iu,
+      integer           i, i1, i2, i3, igmax(3), igmin(3),
      .                  ir, ik, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
      .                  ng(3), ni, nkr(3), nktot, proj(3,3)
-#ifdef MPI
-      integer           MPIerror
-#endif
       real(dp)          d(3), dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), pi,
      .                  scell(3,3), tiny, w1, wtot
+
+      type(block_fdf) :: bfdf
+
       external          idiag, reclat
       logical           spiral
       parameter (tiny   = 1.d-12)
 
 C Find out if there is spiral arrangement of spins
-      if (Node.eq.0) then
-        spiral = fdf_block('SpinSpiral',iu)
-      endif
-#ifdef MPI
-      call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+      spiral = fdf_block('SpinSpiral',bfdf)
 
 C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +

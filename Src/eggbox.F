@@ -37,10 +37,6 @@ C  Modules
       use precision
       use parallel,    only : Node
       use fdf
-      use parsing
-#ifdef MPI
-      use mpi_siesta
-#endif
 
 C External
 
@@ -67,17 +63,14 @@ C Internal variables
 
       logical, save :: frstme = .true.
 
-      integer  ni, nn, nr, nv, integers(maxw), lc(0:maxw),
-     .     ia, ix, i, iu, a, b, c
-      real(dp) reals(maxw), values(maxw),
-     .     pi, xac(3), k(3), xa_frac(3,na), 
+      integer  ia, ix, i, iu, a, b, c
+      real(dp) pi, xac(3), k(3), xa_frac(3,na), 
      .     celli(3,3), f(3,na), E, x, y, z, 
      .     fxyz(3,na), eV, escale,
      .     vreal(0:maxshell,0:maxshell,0:maxshell,maxispe)
-      character         line*200, names*80, name1*10
-#ifdef MPI
-      integer  MPIerror, nvreal
-#endif
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       save vreal, escale, pi
 
@@ -100,42 +93,25 @@ C Initalise vreal
          enddo
          
 C Read cooeficents from fdf
-         if (Node.eq.0) then
-           eggbox_block = fdf_block('EggBoxRemove',iu)
-         endif
-#ifdef MPI
-         call MPI_Bcast(eggbox_block,1,MPI_logical,0,MPI_Comm_World,
-     .                  MPIerror)
-#endif
+         eggbox_block = fdf_block('EggBoxRemove',bfdf)
          if (eggbox_block) then
            if (Node.eq.0) then
              write(6,'(/a)') 'eggbox: Reading %block EggBoxRemove'
-             do i=1,maxl
-               read(iu,'(a)') line
-               call parse(line, nn, lc, names, nv, values, ni, integers,
-     .                    nr, reals)
-C Check if block has finished
-               name1 = names(lc(0)+1:lc(1))
-               if (name1 .eq. '%end' .or.name1 .eq. '%endblock') goto 30
+           endif
+           i = 1
+           do while (fdf_bline(bfdf,pline) .and. (i .le. maxl))
 C vreal is set out as vreal(kx,ky,kz,species)
-               vreal(integers(2),integers(3),integers(4),
-     .              integers(1))=reals(1)
-             enddo
- 30          continue
+             vreal(fdf_bintegers(pline,2),fdf_bintegers(pline,3),
+     .             fdf_bintegers(pline,4),fdf_bintegers(pline,1)) =
+     .             fdf_breals(pline,1)
+             i = i + 1
+           enddo
+ 30        continue
 
 C Get the scale (default 1 eV)
-             escale = fdf_physical('EggBoxScale', 1.d0, 'eV')
-             escale = escale/eV
-           endif
+           escale = fdf_physical('EggBoxScale', 1.d0, 'eV')
+           escale = escale/eV
 
-C Pass data to other nodes
-#ifdef MPI
-           nvreal = maxispe*(maxshell+1)**3
-           call MPI_Bcast(vreal(0,0,0,1),nvreal,MPI_double_precision,
-     .                    0,MPI_Comm_World,MPIerror)
-           call MPI_Bcast(escale,1,MPI_double_precision,0,
-     .                    MPI_Comm_World,MPIerror)
-#endif
          else
 c          write(6,'a') "eggbox: The eggbox effect will not be removed"
            return

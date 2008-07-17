@@ -70,12 +70,10 @@ C Energies in Rydbergs.
 C *********************************************************************
 
       use precision,    only : dp
-      use fdf
       use atmfuncs,     only : zvalfis
       use densematrix,  only : Haux, Saux, psi
       use parallel,     only : Node, Nodes
       use parallelsubs, only : GlobalToLocalOrb
-      use parsing,      only : parse
       use alloc
       use sys,          only : die
       use m_fermid,     only : stepf

@@ -1,0 +1,1392 @@
+!=====================================================================
+! 
+! This file is part of the FDF package.
+! 
+! This module provides a simple yet powerful way to analyze the information
+! in a string (such as an input line). 
+! 
+! Routine, 'digest' takes as input a string 'line' and returns a pointer
+! to a derived type 'parsed_line':
+! 
+!       Derived type used to build an array of pointers
+!       type ptoken
+!         integer(ip)           :: nchars
+!         character, pointer    :: token(:)
+!       end type ptoken
+! 
+!       Parsed line info (ntokens, token array and idenfitication)
+!       type parsed_line
+!         integer(ip)           :: ntokens
+!         type(ptoken), pointer :: array(:) 
+!         character, pointer    :: id(:)
+!       end type parsed_line
+! 
+! which holds a list of tokens (array) and token tags (id). The
+! parsing (split string into tokens) is done by a helper routine
+! 'parses' which currently behaves according to the FDF standard.
+! Each token is classified by helper routine 'morphol' and a token
+! id is assigned in the following way:
+! 
+! * Tokens that can be read as real numbers are assigned to class
+! 'values' and given a token id 'v'. These are further classified as
+! 'integers' (id 'i') or 'reals' (id 'r').
+! * All other tokens are tagged as 'names' (id 'n').
+! 
+! The recommended usage follows the outline:
+! 
+!     use parse
+!     character(len=?) line
+!     type(parsed_line), pointer :: p
+!     ...
+!     p=>digest(line)
+!     (extract information from p)
+!     call destroy(p)
+! 
+! Note the pointer assignment and the explicit call to a destroyer
+! routine that frees the storage associated to p.
+! 
+! The information is extracted by module procedures that fall into three
+! classes: 
+! 
+! a) Enquiry functions: 'search' and 'match'
+! 
+! *  'search' determines whether a token in 'line' matches the given
+!    string, optionally returning an index. The search is
+!    case-insensitive by default, but this can be changed by supplying
+!    an extra procedure argument 'eq_func' with interface:
+! 
+!       interface
+!         function eq_func(s1,s2)
+!           logical eq_func
+!           character(len=*), intent(in) :: s1,s2
+!         end function eq_func
+!       end interface
+! 
+!    We have two different implementations of 'search' function,
+!    through a wrapper (function overload):
+!
+!       interface search
+!         module procedure search_fun
+!         module procedure search_sub
+!       end interface
+!
+!     1. %FUNCTION search_fun(string, pline_fun, after, eq_func)
+!       New search implementation. 'search' function returns
+!       the index of the token that matches with the string or
+!       -1 if not found. Leaves 'pline_fun' structure pointing
+!       to the token in the FDF structure.
+!
+!     2. %FUNCTION search_sub(pline_sub, string, ind, after, eq_func)
+!       This is the old prototype for backward compatibility.
+!       Returns .TRUE. if the string is found in the parsed line
+!       else .FALSE. Moreover can return the index of the token
+!       in the line if 'ind' is specified.
+!
+!    Example:  if (search('Mary', p) .ne. -1) ...
+!    will return the index of the first token that matches
+!    "Mary", or -1 if not found.
+! 
+!    This function can take an optional keyword 'after=' (see below).
+! 
+! *  'match' is probably the most powerful routine in the module. It
+!    checks whether the token morphology of 'line' conforms to the
+!    sequence of characters specified. For example,
+! 
+!    if (match(p,'nii')) ...
+! 
+!    returns .TRUE. if 'line' contains at least three tokens and they are
+!    a 'name' and two 'integers'. A 'v' is matched by both an 'integer'
+!    and a 'real'.
+!    This function can take an optional keyword 'after=' (see below).
+! 
+! b) Number functions: ntokens ('n|i|r|b|e|l'), nnames ('n'), nreals ('r'),
+!                      nintegers ('i'), nvalues ('i|r'), nblocks ('b'),
+!                      nendblocks ('e'), nlabels ('l')
+! 
+!    These functions return the number of tokens of each kind in 'line':
+! 
+!    number_of_energies = nreals(p)
+! 
+!    These functions can take an optional keyword 'after=' (see below).
+! 
+! c) Extraction functions: tokens ('n|i|r|b|e|l'), names ('n'), reals ('r'),
+!                          integers ('i'), values ('i|r'), blocks ('b'),
+!                          endblocks ('e'), labels ('l')
+! 
+!    These functions return a piece of data which corresponds to a token
+!    of the specified kind with sequence number matching the index
+!    provided. For example,
+! 
+!    nlevels = integers(p,2)
+! 
+!    assigns to variable 'nlevels' the second integer in 'line'.
+!    Execution stops in the assignment cannot be made. The user should
+!    call the corresponding 'number' routine to make sure there are
+!    enough tokens of the given kind.
+! 
+!    These functions can take an optional keyword 'after=' (see below).
+! 
+! 
+! By default, the routines in the module perform any indexing from the
+! beginning of 'line', in such a way that the first token is assigned the
+! index 1. It is possible to specify a given token as 'origin' by using
+! the 'after=' optional keyword. For example:
+! 
+!     if (search(p, 'P', ind=jp)) then            # Old implementation
+!       if (match(p, 'i', after=jp) npol = integers(p, 1, after=jp)
+!     endif			 
+! 
+! first checks whether 'P' is found in 'line'. If so, 'match' is used to
+! check whether it is followed by at least an 'integer'. If so, its
+! valued is assigned to variable 'npol'.
+! 
+! If the 'after=' optional keyword is used in routine 'search', the
+! returned index is absolute, not relative. For example, to get the
+! real number coming right after the first 'Q' which appears to the
+! right of the 'P' found above:
+! 
+!     if (search(p, 'Q', ind=jq, after=jp)) then  # Old implementation
+!       if (match(p, 'r', after=jq) energy = reals(p, 1, after=jq)
+!     endif
+! 
+!
+! September 2007
+!
+!
+!========================================================================
+
+#define ERROR_UNIT  0
+
+MODULE parse
+  USE utils
+  USE prec
+  implicit none
+
+! Internal functions: build parsed line and morphology
+  private :: create
+  private :: parses, morphol
+
+! Digest, match and search
+  public :: digest, destroy
+  public :: match, search
+
+! Rutines to get number and items
+  public :: nintegers, nreals, nvalues, nnames
+  public :: nblocks, nendblocks, nlabels, ntokens
+  public :: integers, reals, values, names
+  public :: blocks, endblocks, labels, tokens
+
+! Change morphology
+  public :: setmorphol
+
+! Integer|Real check routines
+  private :: is_integer, is_value
+
+! Debugging config routines
+  public :: setdebug, setlog
+
+! Internal constants
+  logical, private                :: parse_debug = .FALSE.
+  integer(ip), private            :: parse_log   = ERROR_UNIT
+  integer(ip), parameter, private :: max_length = 132
+  integer(ip), parameter, private :: maxntokens = 50
+
+! Derived type used to build an array of pointers
+  type, public :: ptoken
+    integer(ip)           :: nchars
+    character, pointer    :: token(:)
+  end type ptoken
+
+! Parsed line info (ntokens, token array and idenfitication)
+  type, public :: parsed_line
+    integer(ip)           :: ntokens
+    type(ptoken), pointer :: array(:) 
+    character, pointer    :: id(:)
+  end type parsed_line
+
+! Search wrapper (return index as function or subroutine)
+  interface search
+    module procedure search_fun
+    module procedure search_sub
+  end interface
+
+  CONTAINS
+
+!
+!   Creates parsed_line structure
+!
+    SUBROUTINE create(pline)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      type(parsed_line), pointer :: pline
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                :: ierr
+
+!------------------------------------------------------------------------- BEGIN
+      if (ASSOCIATED(pline)) call destroy(pline)
+      ALLOCATE(pline, stat=ierr)
+      if (ierr .ne. 0) then
+        call die('PARSE module: create', 'Error allocating pline',      &
+                 __FILE__, __LINE__, rc=ierr)
+      endif
+
+      NULLIFY(pline%array, pline%id)
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE create
+
+!
+!   Frees parsed_line structure
+!
+    SUBROUTINE destroy(pline)
+      implicit none
+!-------------------------------------------------------------- Output Variables
+      type(parsed_line), pointer :: pline
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                :: i
+
+!------------------------------------------------------------------------- BEGIN
+      if (ASSOCIATED(pline)) then
+        if (ASSOCIATED(pline%array)) then
+
+          do i= 1, pline%ntokens
+            if (ASSOCIATED(pline%array(i)%token)) then
+              DEALLOCATE(pline%array(i)%token)
+            endif
+          enddo
+
+          DEALLOCATE(pline%array)
+        endif
+
+        if (ASSOCIATED(pline%id)) DEALLOCATE(pline%id)
+        DEALLOCATE(pline)
+        NULLIFY(pline)
+      endif
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE destroy
+
+!     
+!   Return the number of a item class in the tokens.
+!
+    FUNCTION nitems(class, pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character                         :: class
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nitems
+
+!--------------------------------------------------------------- Local Variables
+      character(80)                     :: msg
+      integer(ip)                       :: i, starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          write(msg,*) 'Wrong starting position when processing class: ', &
+                       class
+          call die('PARSE module: nitems', msg, __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      nitems = 0
+      do i= starting_pos+1, pline%ntokens
+        if (leqi(pline%id(i), class)) nitems = nitems + 1
+      enddo
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nitems
+
+!     
+!   Return the number of integers in the tokens.
+!
+    FUNCTION nintegers(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nintegers
+
+!------------------------------------------------------------------------- BEGIN
+      nintegers = nitems('i', pline, after)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nintegers
+
+!
+!   Return the number of reals in the tokens.
+!
+    FUNCTION nreals(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nreals
+
+!------------------------------------------------------------------------- BEGIN
+      nreals = nitems('r', pline, after)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nreals
+
+!
+!   Return the number of values in the tokens.
+!
+    FUNCTION nvalues(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nvalues
+
+!------------------------------------------------------------------------- BEGIN
+      nvalues = nitems('i', pline, after) + nitems('r', pline, after)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nvalues
+
+!
+!   Return the number of names in the tokens.
+!
+    FUNCTION nnames(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nnames
+
+!------------------------------------------------------------------------- BEGIN
+      nnames = nitems('n', pline, after)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nnames
+
+!
+!   Return the number of blocks in the tokens.
+!
+    FUNCTION nblocks(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nblocks
+
+!------------------------------------------------------------------------- BEGIN
+      nblocks = nitems('b', pline, after)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nblocks
+
+!
+!   Return the number of endblocks in the tokens.
+!
+    FUNCTION nendblocks(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nendblocks
+
+!------------------------------------------------------------------------- BEGIN
+      nendblocks = nitems('e', pline, after)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nendblocks
+
+!
+!   Return the number of labels in the tokens.
+!
+    FUNCTION nlabels(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: nlabels
+
+!------------------------------------------------------------------------- BEGIN
+      nlabels = nitems('l', pline, after)
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION nlabels
+
+!
+!   Return the number of tokens.
+!
+    FUNCTION ntokens(pline, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: ntokens
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                       :: starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: ntokens', 'Wrong starting position',  &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      ntokens = pline%ntokens - starting_pos
+      if (ntokens .lt. 0) then
+        call die('PARSE module: ntokens', 'Wrong starting position',    &
+                 __FILE__, __LINE__)
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION ntokens
+
+!
+!   Return a given integer token, specifying it by its sequence
+!   number. It is also possible to make the sequence start after
+!   a given token number in the line.
+!
+    FUNCTION integers(pline, ind, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: integers
+
+!--------------------------------------------------------------- Local Variables
+      logical                           :: found
+      integer(ip)                       :: i, j, starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: integers', 'Wrong starting position', &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      i = starting_pos+1
+      j = 0
+      found = .FALSE.
+      do while((.not. found) .and. (i .le. pline%ntokens))
+        if (leqi(pline%id(i), 'i')) j = j + 1
+        if (j .eq. ind) then
+          integers = s2i(arr2s(pline%array(i)%token,                    &
+                               pline%array(i)%nchars))
+          found = .TRUE.
+        endif
+        i = i + 1
+      enddo
+
+      if (.not. found) then
+        call die('PARSE module: integers', 'Not enough integers in line', &
+                 __FILE__, __LINE__)
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION integers
+
+!
+!   Return a given real token, specifying it by its sequence
+!   number. It is also possible to make the sequence start after
+!   a given token number in the line.
+!
+    FUNCTION reals(pline, ind, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      real(dp)                          :: reals
+
+!--------------------------------------------------------------- Local Variables
+      logical                           :: found
+      integer(ip)                       :: i, j, starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: reals', 'Wrong starting position',    &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      i = starting_pos+1
+      j = 0
+      found = .FALSE.
+      do while((.not. found) .and. (i .le. pline%ntokens))
+        if (leqi(pline%id(i), 'r')) j = j + 1
+        if (j .eq. ind) then
+          reals = s2r(arr2s(pline%array(i)%token, pline%array(i)%nchars))
+          found = .TRUE.
+        endif
+        i = i + 1
+      enddo
+
+      if (.not. found) then
+        call die('PARSE module: reals', 'Not enough reals in line',     &
+                 __FILE__, __LINE__)
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION reals
+
+!
+!   Return a given [integer|real] token, specifying it by its sequence
+!   number. It is also possible to make the sequence start after
+!   a given token number in the line.
+!
+    FUNCTION values(pline, ind, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      real(dp)                          :: values
+
+!--------------------------------------------------------------- Local Variables
+      logical                           :: found
+      integer(ip)                       :: i, j, starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: values', 'Wrong starting position',   &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      i = starting_pos+1
+      j = 0
+      found = .FALSE.
+      do while((.not. found) .and. (i .le. pline%ntokens))
+        if ((leqi(pline%id(i), 'i')) .or. (leqi(pline%id(i), 'r')))     &
+          j = j + 1
+        if (j .eq. ind) then
+          values = s2r(arr2s(pline%array(i)%token, pline%array(i)%nchars))
+          found = .TRUE.
+        endif
+        i = i + 1
+      enddo
+
+      if (.not. found) then
+        call die('PARSE module: values', 'Not enough values in line',   &
+                 __FILE__, __LINE__)
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION values
+
+!
+!   Return a given name token, specifying it by its sequence
+!   number. It is also possible to make the sequence start after
+!   a given token number in the line.
+!
+    FUNCTION names(pline, ind, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      character(len=max_length)         :: names
+
+!--------------------------------------------------------------- Local Variables
+      logical                           :: found
+      integer(ip)                       :: i, j, starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: names', 'Wrong starting position',    &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      i = starting_pos+1
+      j = 0
+      found = .FALSE.
+      do while((.not. found) .and. (i .le. pline%ntokens))
+        if (leqi(pline%id(i), 'n')) j = j + 1
+        if (j .eq. ind) then
+          names = arr2s(pline%array(i)%token, pline%array(i)%nchars)
+          found = .TRUE.
+        endif
+        i = i + 1
+      enddo
+
+      if (.not. found) then
+        call die('PARSE module: names', 'Not enough names in line',     &
+                 __FILE__, __LINE__)
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION names
+
+!
+!   Return a given block label if it is found, else returns ''
+!   Syntax must be: '%block Label' (bl) as stored in fdf structure
+!
+    FUNCTION blocks(pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(parsed_line), pointer    :: pline
+
+!-------------------------------------------------------------- Output Variables
+      character(len=max_length)     :: blocks
+
+!------------------------------------------------------------------------- BEGIN
+      if (match(pline, 'bl')) then
+        blocks = tokens(pline, 2)
+      else
+        blocks = ''
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION blocks
+
+!
+!   Return a given endblock label if it is found, else returns ''
+!   Syntax must be: '%endblock Label' (el) as stored in fdf structure
+!
+    FUNCTION endblocks(pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(parsed_line), pointer    :: pline
+
+!-------------------------------------------------------------- Output Variables
+      character(len=max_length)     :: endblocks
+
+!------------------------------------------------------------------------- BEGIN
+      if (match(pline, 'el')) then
+        endblocks = tokens(pline, 2)
+      else
+        endblocks = ''
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION endblocks
+
+!
+!   Return a given label name if it is found, else returns ''
+!   Syntax must be: 'Label Value' (li|lr|ln|l) as stored in fdf structure
+!
+    FUNCTION labels(pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      type(parsed_line), pointer :: pline
+
+!-------------------------------------------------------------- Output Variables
+      character(len=max_length)  :: labels
+
+!------------------------------------------------------------------------- BEGIN
+      if (match(pline, 'l')) then
+        labels = tokens(pline, 1)
+      else
+        labels = ''
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION labels
+
+!
+!   Return a given token as character, specifying it by its sequence
+!   number. It is also possible to make the sequence start after
+!   a given token number in the line.
+!
+    FUNCTION tokens(pline, ind, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      character(len=max_length)         :: tokens
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                       :: starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
+          call die('PARSE module: tokens', 'Wrong starting position',   &
+                   __FILE__, __LINE__)
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      if (starting_pos+ind .gt. pline%ntokens)                          &
+        call die('PARSE module: tokens', 'Wrong starting position',     &
+                 __FILE__, __LINE__)
+
+      tokens = arr2s(pline%array(starting_pos+ind)%token,               &
+                     pline%array(starting_pos+ind)%nchars)
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION tokens
+
+!
+!   Main processing function. Digest a character line array
+!   building a digested parsed_line structure.
+!
+    FUNCTION digest(line) result(pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=*), intent(in) :: line
+
+!-------------------------------------------------------------- Output Variables
+      type(parsed_line), pointer   :: pline
+
+!--------------------------------------------------------------- Local Variables
+      character                    :: token_id(maxntokens)
+      integer(ip)                  :: i, ierr, ntokens
+      integer(ip)                  :: first(maxntokens), last(maxntokens)
+
+!------------------------------------------------------------------------- BEGIN
+!     Parse line, and get morphology
+      call parses(ntokens, line, first, last)
+      call morphol(ntokens, line, first, last, token_id)
+
+!     Build parsed_line structure
+      NULLIFY(pline)
+      call create(pline)
+      pline%ntokens = ntokens
+
+      if (ntokens .ne. 0) then
+        ALLOCATE(pline%id(ntokens), pline%array(ntokens), stat=ierr)
+        if (ierr .ne. 0) then
+          call die('PARSE module: digest', 'Error allocating id & array', &
+                   __FILE__, __LINE__, rc=ierr)
+        endif
+
+        do i= 1, ntokens
+          pline%array(i)%nchars = last(i)-first(i)+1
+          ALLOCATE(pline%array(i)%token(pline%array(i)%nchars), stat=ierr)
+          if (ierr .ne. 0) then
+            call die('PARSE module: digest', 'Error allocating token',  &
+                     __FILE__, __LINE__, rc=ierr)
+          endif
+
+          pline%array(i)%token = s2arr(line(first(i):last(i)))
+          pline%id(i)          = token_id(i)
+        enddo
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION digest
+
+!
+!   Parses a character line, filling ntokens (# of tokens)
+!   first and last (beginning and ending of each one token)
+!
+    SUBROUTINE parses(ntokens, line, first, last)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=max_length)    :: line
+      
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                  :: ntokens
+      integer(ip)                  :: first(maxntokens), last(maxntokens)
+
+!--------------------------------------------------------------- Local Variables
+      logical                      :: intoken, instring, completed
+      integer(ip)                  :: i, c, stringdel
+
+!     Character statement functions
+      logical :: is_digit, is_upper, is_lower, is_alpha,                &
+                 is_alnum, is_extra, is_tokch
+      logical :: is_comment, is_delstr, is_special
+
+      is_digit(i) = (i .ge. 48) .and. (i .le. 57)
+      is_upper(i) = (i .ge. 65) .and. (i .le. 90)
+      is_lower(i) = (i .ge. 97) .and. (i .le. 122)
+      is_alpha(i) = is_upper(i) .or. is_lower(i)
+      is_alnum(i) = is_digit(i) .or. is_alpha(i)
+
+!     Extra characters allowed in tokens:  $ % * + & - . / @ ^ _ ~
+      is_extra(i) = ((i .ge. 36) .and. (i .le. 38))                     &
+                     .or. (i .eq. 42) .or. (i .eq. 43) .or. (i .eq. 45) &
+                     .or. (i .eq. 46) .or. (i .eq. 47) .or. (i .eq. 64) &
+                     .or. (i .eq. 94) .or. (i .eq. 95) .or. (i .eq. 126)
+
+      is_tokch(i) = is_alnum(i) .or. is_extra(i)
+
+!     Comments are signaled by:  !  #  ; 
+      is_comment(i) = (i .eq. 33) .or. (i .eq. 35) .or. (i .eq. 59)
+
+!     String delimiters: "  '  `
+      is_delstr(i)  = (i .eq. 34) .or. (i .eq. 39) .or. (i .eq. 96)
+
+!     Special characters which are tokens by themselves: <
+      is_special(i) = (i .eq. 60)
+
+!------------------------------------------------------------------------- BEGIN
+      ntokens = 0
+
+      intoken  = .FALSE.
+      instring = .FALSE.
+      stringdel = 0
+
+      i = 1
+      completed = .FALSE.
+      do while((i .le. len(line)) .and. (.not. completed))
+        c = ichar(line(i:i))
+
+!       Possible comment...
+        if (is_comment(c)) then
+          if (instring) then
+            last(ntokens) = i
+          else
+            completed = .TRUE.
+          endif
+
+!       Character allowed in a token...
+        elseif (is_tokch(c)) then
+          if (.not. intoken) then
+            intoken = .TRUE.
+            ntokens = ntokens + 1
+            first(ntokens) = i
+          endif
+          last(ntokens) = i
+
+!       Character that forms a token by itself...
+        elseif (is_special(c)) then
+          if (.not. instring) then
+            ntokens = ntokens + 1
+            first(ntokens) = i
+            intoken = .FALSE.
+          endif
+          last(ntokens) = i
+
+!       String delimiter... make sure it is the right one before closing.
+!       If we are currently in a token, the delimiter is appended to it.
+        elseif (is_delstr(c)) then
+          if (instring) then
+            if (c .eq. stringdel) then
+              instring = .FALSE.
+              intoken  = .FALSE.
+              stringdel = 0
+            else
+              last(ntokens) = i
+            endif
+          else
+            if (intoken) then
+              last(ntokens) = i
+            else
+              instring = .TRUE.
+              intoken  = .TRUE.
+              stringdel = c
+              ntokens = ntokens + 1
+              first(ntokens) = i + 1
+              last(ntokens)  = i + 1
+            endif
+          endif
+
+!       Token delimiter...
+        else
+          if (instring) then
+            last(ntokens) = i
+          else
+            if (intoken) intoken = .FALSE.
+          endif
+        endif
+
+        i = i + 1
+      enddo
+
+      if (parse_debug) then
+        write(parse_log,*) 'PARSER:', ntokens, 'token(s)'
+        do i= 1, ntokens
+          write(parse_log,*) '   Token:', '|',line(first(i):last(i)),'|'
+        enddo
+        write(parse_log,*) ''
+      endif
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE parses
+
+!
+!   Classifies the tokens according to their morphology
+!
+    SUBROUTINE morphol(ntokens, line, first, last, token_id)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=max_length) :: line
+      integer(ip)               :: ntokens
+      integer(ip)               :: first(maxntokens), last(maxntokens)
+
+!-------------------------------------------------------------- Output Variables
+      character                 :: token_id(maxntokens)
+
+!--------------------------------------------------------------- Local Variables
+      character(len=max_length) :: token, msg
+      integer(ip)               :: i, ierr
+      real(dp)                  :: real_value
+
+!------------------------------------------------------------------------- BEGIN
+      do i= 1, ntokens
+        token = line(first(i):last(i))
+        if (is_value(token)) then
+
+!         This read also serves to double check the token for
+!         real meaning (for example, ".d0" should give an error)
+          read(token, fmt=*, iostat=ierr) real_value
+          if (ierr .ne. 0) then
+            write(msg,'(a,i3,1x,a,/,a)') 'Error in numeric conversion ', &
+                 'at token number', i, ' in line ''', TRIM(line), ''''
+            call die('PARSE module: morphol', msg, __FILE__, __LINE__)
+          endif
+
+          if (is_integer(token)) then
+            token_id(i) = 'i'
+          else
+            token_id(i) = 'r'
+          endif
+        else
+          token_id(i) = 'n'
+        endif
+      enddo
+
+      if (parse_debug) then
+        write(parse_log,*) 'MORPHOL:', ntokens, 'token(s)'
+        do i= 1, ntokens
+          write(parse_log,*) '   Token:', '|', token_id(i), '|'
+        enddo
+        write(parse_log,*) ''
+      endif
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE morphol
+
+!
+!   Set the morphology of a specific token in a parsed line
+!
+    SUBROUTINE setmorphol(ntoken, token_id, pline)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character                  :: token_id
+      integer(ip)                :: ntoken
+
+!-------------------------------------------------------------- Output Variables
+      type(parsed_line), pointer :: pline
+
+!--------------------------------------------------------------- Local Variables
+      character(len=max_length)  :: msg
+
+!------------------------------------------------------------------------- BEGIN
+
+!     Check if token_id is a valid morphology id
+!     'l' -> Label
+!     'b' -> BeginBlock
+!     'e' -> EndBlock
+!     'i' -> Integer
+!     'r' -> Real
+!     'n' -> Name
+      if ((token_id .ne. 'l') .and. (token_id .ne. 'b') .and.           &
+          (token_id .ne. 'e') .and. (token_id .ne. 'i') .and.           &
+          (token_id .ne. 'r') .and. (token_id .ne. 'n')) then        
+        write(msg,*) 'Morphology id = ''', token_id,                    &
+                     ''' not valid for token = ''', tokens(pline, ntoken), ''''
+        call die('PARSE module: setmorphol', msg, __FILE__, __LINE__)
+      endif
+
+      pline%id(ntoken) = token_id
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE setmorphol
+
+!
+!   Search a string along a parsed line tokens. If found, it returns
+!   the index in the list of the token that matches with the string.
+!   Otherwise it returns -1.
+!
+    FUNCTION search_fun(string, pline_fun, after, eq_func)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=*)                  :: string
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline_fun
+      optional                          :: eq_func
+
+      interface
+        function eq_func(s1, s2)
+          logical                       :: eq_func
+          character(len=*), intent(in)  :: s1, s2
+        end function eq_func
+      end interface
+
+!-------------------------------------------------------------- Output Variables
+      integer(ip)                       :: search_fun
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                       :: i, starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: search_fun', 'Wrong starting position', &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      search_fun = -1
+      if (.not. ASSOCIATED(pline_fun)) then
+        call die('PARSE module: search_fun', 'parsed_line not associated', &
+                 __FILE__, __LINE__)
+      endif
+
+!     The default comparison routine is 'leqi' (case-insensitive)
+      if (PRESENT(eq_func)) then
+        i = starting_pos+1
+        do while((search_fun .eq. -1) .and. (i .le. pline_fun%ntokens))
+          if (eq_func(string, tokens(pline_fun, i))) search_fun = i
+          i = i + 1
+        enddo
+      else
+        i = starting_pos+1
+        do while((search_fun .eq. -1) .and. (i .le. pline_fun%ntokens))
+          if (leqi(string, tokens(pline_fun, i))) search_fun = i
+          i = i + 1
+        enddo
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION search_fun
+
+!
+!   Search a string along a parsed line tokens. If found, leaves
+!   in 'ind' the index token in the list that matches with the string
+!   and it returns .TRUE. Otherwise it returns .FALSE. and -1 in 'ind'
+!
+    FUNCTION search_sub(pline_sub, string, ind, after, eq_func)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=*)                   :: string
+      integer(ip), intent(in), optional  :: after
+      type(parsed_line), pointer         :: pline_sub
+      optional                           :: eq_func
+
+      interface
+        function eq_func(s1, s2)
+          logical                        :: eq_func
+          character(len=*), intent(in)   :: s1, s2
+        end function eq_func
+      end interface
+
+!-------------------------------------------------------------- Output Variables
+      logical                            :: search_sub
+      integer(ip), intent(out), optional :: ind
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                        :: i, starting_pos
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: search_sub', 'Wrong starting position', &
+                   __FILE__, __LINE__)
+        endif
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      if (PRESENT(ind)) ind = -1
+      search_sub = .FALSE.
+      if (.not. ASSOCIATED(pline_sub)) then
+        call die('PARSE module: search_sub', 'parsed_line not associated', &
+                 __FILE__, __LINE__)
+      endif
+
+!     The default comparison routine is 'leqi' (case-insensitive)
+      if (PRESENT(eq_func)) then
+        i = starting_pos+1
+        do while((.not. search_sub) .and. (i .le. pline_sub%ntokens))
+          if (eq_func(string, tokens(pline_sub, i))) then
+            if (PRESENT(ind)) ind = i
+            search_sub = .TRUE.
+          endif
+          i = i + 1
+        enddo
+      else
+        i = starting_pos+1
+        do while((.not. search_sub) .and. (i .le. pline_sub%ntokens))
+          if (leqi(string, tokens(pline_sub, i))) then
+            if (PRESENT(ind)) ind = i
+            search_sub = .TRUE.
+          endif
+          i = i + 1
+        enddo
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION search_sub
+
+!
+!   Checks whether the morphology of the line or part of it
+!   matches the 'signature' string str.
+!   If 'after' is present, try to match the 'signature' after
+!   that number of tokens.
+!
+    FUNCTION match(pline, str, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(*), intent(in)          :: str
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      logical                           :: match
+
+!--------------------------------------------------------------- Local Variables
+      character                         :: c, id
+      integer(ip)                       :: i, nids, shift
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if (after .lt. 0) then
+          call die('PARSE module: match', 'Wrong starting position',    &
+                   __FILE__, __LINE__)
+        endif
+        shift = after
+      else
+        shift = 0
+      endif
+
+      nids = LEN_TRIM(str)
+      if (pline%ntokens - shift .lt. nids) then
+        match = .FALSE.
+      else
+        i = 1
+        match = .TRUE.
+        do while (match .and. (i .le. nids))
+          c  = str(i:i)
+          id = pline%id(shift+i)
+
+          if (.not. leqi(c,id)) then
+            if (.not. (leqi(c,'v') .and.                                &
+               (leqi(id,'i') .or. leqi(id,'r'))))                       &
+              match = .FALSE.
+          endif
+
+          i = i + 1
+        enddo
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION match
+
+!
+!   Checks if the string has a valid integer format
+!
+    FUNCTION is_integer(string)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=*) :: string
+
+!-------------------------------------------------------------- Output Variables
+      logical          :: is_integer
+
+!--------------------------------------------------------------- Local Variables
+      character        :: c
+      integer(ip)      :: i, length
+
+      logical          :: is_digit, is_sign
+
+      is_digit(c) = ((ichar(c) .ge. 48) .and. (ichar(c) .le. 57))
+      is_sign(c)  = ((c .eq. '+') .or. (c .eq. '-'))
+
+!------------------------------------------------------------------------- BEGIN
+      length = LEN_TRIM(string)
+      if (length .gt. 0) then
+        c = string(1:1)
+        if ((is_digit(c)) .or. (is_sign(c))) then
+          i = 2
+          is_integer = .TRUE.
+          do while (is_integer .and. (i .le. length))
+            c = string(i:i)
+            if (.not. (is_digit(c))) then
+              is_integer = .FALSE.
+            endif
+            i = i + 1
+          enddo
+        else
+          is_integer = .FALSE.
+        endif
+      else
+        is_integer = .FALSE.
+      endif
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION is_integer
+
+!
+!   Checks if the string has a valid value format [real|integer]
+!
+    FUNCTION is_value(string)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      character(len=*) :: string
+
+!-------------------------------------------------------------- Output Variables
+      logical          :: is_value
+
+!--------------------------------------------------------------- Local Variables
+      character        :: c
+      logical          :: dotsok
+      integer(ip)      :: i, length, exp_mark
+
+      logical          :: is_digit, is_sign, is_dot, is_expmark
+
+      is_digit(c)   = ((ichar(c) .ge. 48) .and. (ichar(c) .le. 57))
+      is_sign(c)    = ((c .eq. '+') .or. (c .eq. '-'))
+      is_dot(c)     = ((c .eq. '.') .and. dotsok)
+      is_expmark(c) = ((c .eq. 'e') .or. (c .eq. 'E') .or.              &
+                       (c .eq. 'd') .or. (c .eq. 'D'))
+
+!------------------------------------------------------------------------- BEGIN
+      length = LEN_TRIM(string)
+
+      is_value = .FALSE.
+      dotsok   = .TRUE.
+
+!     Find the starting point of a possible exponent
+      exp_mark = length+1
+      do i= 1, length
+        c = string(i:i)
+        if (is_expmark(c)) exp_mark = i
+      enddo
+      if (exp_mark .eq. length) return
+
+      c = string(1:1)
+      if (.not. (is_digit(c) .or. is_sign(c))) then
+        if (is_dot(c)) then
+          dotsok = .FALSE.
+        else
+          return
+        endif
+      endif
+
+      do i= 2, exp_mark-1
+        c = string(i:i)
+        if (.not. (is_digit(c))) then
+          if (is_dot(c)) then
+            dotsok = .FALSE.
+          else
+            return
+          endif
+        endif
+      enddo
+
+!     Is the exponent an integer?
+      if (exp_mark .lt. length) then
+        if (.not. is_integer(string(exp_mark+1:length))) return
+      endif
+
+!     Here we could do some extra checks to see if the string still makes
+!     sense... For example, "." and ".d0" pass the above tests but are not
+!     readable as numbers. I believe this should be reported by the
+!     conversion routine, to warn the user of a mis-typed number, instead
+!     of reporting it as a string and break havoc somewhere else.
+
+      is_value = .TRUE.
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION is_value
+
+!
+!   Set debugging level for parses/morphol routines
+!
+    SUBROUTINE setdebug(level)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip) :: level
+
+!------------------------------------------------------------------------- BEGIN
+      parse_debug = (level .eq. 1)
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE setdebug
+
+!
+!   Set log unit for parses/morphol routines
+!
+    SUBROUTINE setlog(unit)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip) :: unit
+
+!------------------------------------------------------------------------- BEGIN
+      parse_log = unit
+      RETURN
+!--------------------------------------------------------------------------- END
+    END SUBROUTINE setlog
+
+END MODULE parse

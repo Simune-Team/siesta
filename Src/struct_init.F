@@ -12,8 +12,7 @@
       use siesta_geom
       use atmfuncs,       only : izofis
       use atomlist,       only : elem, iza
-      use fdf,            only : fdf_physical
-      use m_fdf_global,   only : fdf_global_get
+      use fdf
       use periodic_table, only : symbol
       use iopipes,        only : coordsfrompipe
       use m_iostruct,     only : read_struct
@@ -27,8 +26,6 @@
       real(dp), external :: volcel
       external :: automatic_cell, bonds, iozm, shaper
       
-      logical, external :: leqi  ! It lives in fdf.f
-
       character(len=80) :: dummy_str
       logical           :: Server_calculation, foundxv, foundzm
       real(dp)          :: local_charnet
@@ -42,7 +39,7 @@
 !------------------------------------------------------------------------- BEGIN
 
       !! Read number of atoms and coordinates, and unit cell
-      call fdf_global_get(use_struct_file,"MD.UseStructFile",.false.)
+      use_struct_file = fdf_get("MD.UseStructFile",.false.)
       if (use_struct_file) then
          call read_struct( na_u, ucell) ! Sets na_u, xa, and isa
       else
@@ -55,10 +52,10 @@
       call re_alloc( va, 1, 3, 1, na_u, 'va', 'struct_init' )
 
       ! Options readed here instead of siesta_options
-      call fdf_global_get(default, 'UseSaveData'     , .false.)
-      call fdf_global_get(usesavexv, 'MD.UseSaveXV'    , default)
-      call fdf_global_get(usesavezm, 'MD.UseSaveZM'    , default)
-      call fdf_global_get(writic, 'WriteCoorInitial', .true. )
+      default   = fdf_get('UseSaveData', .false.)
+      usesavexv = fdf_get('MD.UseSaveXV', default)
+      usesavezm = fdf_get('MD.UseSaveZM', default)
+      writic    = fdf_get('WriteCoorInitial', .true.)
 
       ! Read Z-matrix coordinates and forces from file
       if (lUseZmatrix) then
@@ -92,7 +89,7 @@
 ! ..................
 
 ! Read cell shape and atomic positions from driver program through pipe
-      call fdf_global_get(dummy_str,'MD.TypeOfRun',"none")
+      dummy_str = fdf_get('MD.TypeOfRun',"none")
       Server_calculation = (leqi(dummy_str,'forces'))
 
       if (Server_calculation) then
@@ -110,7 +107,7 @@
 
 ! Automatic cell generation ...........................................
       if (volcel(ucell) .lt. 1.0d-8) then
-         call fdf_global_get(local_charnet,'NetCharge',0.0_dp)
+         local_charnet = fdf_get('NetCharge',0.0_dp)
          call automatic_cell(ucell,scell,na_u,xa,isa,local_charnet)
       endif
 

@@ -25,12 +25,9 @@ C
 C  Modules
 C
       use precision, only : dp
+      use parallel,  only : Node
       use sys,       only : die
       use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
-
       implicit          none
 
       integer           mscell(3,3)
@@ -40,51 +37,58 @@ C Internal variables
       integer           i, iunit, ix, j
       real(dp)          alp, alplp, betlp, blp, cell(3,3), clp,
      .                  gamlp, pi, xxx
-#ifdef MPI
-      integer           MPIerror
-#endif
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 C Lattice constant
       alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
 
 C Lattice vectors
 
-      if ( fdf_block('LatticeParameters',iunit) .and.
-     .     fdf_block('LatticeVectors',iunit) ) then
-         write(6,'(2a)')'redcel: ERROR: Lattice vectors doubly ',
-     .     'specified: by LatticeVectors and by LatticeParameters.' 
-#ifdef MPI
-         write(6,'(a)')
-     .     'redcel: ERROR: Double input for lattice vectors'
-         call MPI_Abort(MPI_Comm_World,1,MPIerror)
-#else
-         call die('redcel: ERROR: Double input for lattice vectors')
-#endif
+      if ( fdf_block('LatticeParameters',bfdf) .and.
+     .     fdf_block('LatticeVectors',bfdf) ) then
+        if (Node .eq. 0) then
+          write(6,'(2a)')'redcel: ERROR: Lattice vectors doubly ',
+     .      'specified: by LatticeVectors and by LatticeParameters.' 
+        endif
+        call die('redcel: ERROR: Double input for lattice vectors')
       endif
 
-      if ( fdf_block('LatticeParameters',iunit) ) then
-         read(iunit,*) alp, blp, clp, alplp, betlp, gamlp
-*        write(6,'(a)')
-*    .    'redcel: Lattice Parameters (units of Lattice Constant) ='
-*        write(6,'(a,3f10.5,3f9.3)')
-*    .    'redcel: ',alp,blp,clp,alplp,betlp,gamlp
-         pi = acos(-1.d0)
-         alplp = alplp * pi/180.d0
-         betlp = betlp * pi/180.d0
-         gamlp = gamlp * pi/180.d0
-         cell(1,1) = alp
-         cell(2,1) = 0.d0
-         cell(3,1) = 0.d0
-         cell(1,2) = blp * cos(gamlp)
-         cell(2,2) = blp * sin(gamlp)
-         cell(3,2) = 0.d0
-         cell(1,3) = clp * cos(betlp)
-         xxx = (cos(alplp) - cos(betlp)*cos(gamlp))/sin(gamlp)
-         cell(2,3) = clp * xxx
-         cell(3,3) = clp * sqrt(sin(betlp)*sin(betlp) - xxx*xxx)
-      elseif ( fdf_block('LatticeVectors',iunit) ) then
+      if ( fdf_block('LatticeParameters',bfdf) ) then
+        if (.not. fdf_bline(bfdf, pline))
+     .    call die('redcel: ERROR in LatticeParameters block')
+        alp = fdf_breals(pline,1)
+        blp = fdf_breals(pline,2)
+        clp = fdf_breals(pline,3)
+        alplp = fdf_breals(pline,4)
+        betlp = fdf_breals(pline,5)
+        gamlp = fdf_breals(pline,6)
+*       write(6,'(a)')
+*    .   'redcel: Lattice Parameters (units of Lattice Constant) ='
+*       write(6,'(a,3f10.5,3f9.3)')
+*    .   'redcel: ',alp,blp,clp,alplp,betlp,gamlp
+        pi = acos(-1.d0)
+        alplp = alplp * pi/180.d0
+        betlp = betlp * pi/180.d0
+        gamlp = gamlp * pi/180.d0
+        cell(1,1) = alp
+        cell(2,1) = 0.d0
+        cell(3,1) = 0.d0
+        cell(1,2) = blp * cos(gamlp)
+        cell(2,2) = blp * sin(gamlp)
+        cell(3,2) = 0.d0
+        cell(1,3) = clp * cos(betlp)
+        xxx = (cos(alplp) - cos(betlp)*cos(gamlp))/sin(gamlp)
+        cell(2,3) = clp * xxx
+        cell(3,3) = clp * sqrt(sin(betlp)*sin(betlp) - xxx*xxx)
+      elseif ( fdf_block('LatticeVectors',bfdf) ) then
         do i = 1,3
-          read(iunit,*) (cell(j,i), j=1,3)
+          if (.not. fdf_bline(bfdf, pline))
+     .      call die('redcel: ERROR in LatticeVectors block')
+          cell(1,i) = fdf_breals(pline,1)
+          cell(2,i) = fdf_breals(pline,2)
+          cell(3,i) = fdf_breals(pline,3)
         enddo
       else
         do i = 1,3
@@ -105,20 +109,17 @@ C Multiply cell vectors by by lattice constant ........................
 C ..................
 
 C Super cell ..........................................
-      if ( fdf_block('SuperCell',iunit) ) then
+      if ( fdf_block('SuperCell',bfdf) ) then
         if ( alat .eq. 0.d0 ) then
-          write(6,*) 'redcel: ERROR: LatticeConstant required',
-     .                      ' to define SuperCell'
-#ifdef MPI
-          write(6,'(a)')
-     .      'redcel: ERROR: LatticeConstant required'
-          call MPI_Abort(MPI_Comm_World,1,MPIerror)
-#else
-          call die('redcel: ERROR: LatticeConstant required')
-#endif
+          call die('redcel: ERROR: LatticeConstant required' //
+     .             ' to define SuperCell')
         endif
         do i = 1,3
-          read(iunit,*) (mscell(j,i),j=1,3)
+          if (.not. fdf_bline(bfdf, pline))
+     .      call die('redcel: ERROR in SuperCell block')
+          mscell(1,i) = fdf_breals(pline,1)
+          mscell(2,i) = fdf_breals(pline,2)
+          mscell(3,i) = fdf_breals(pline,3)
         enddo
       else
         do i = 1,3
@@ -142,4 +143,3 @@ C Super cell ..........................................
       enddo
 
       end
-

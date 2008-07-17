@@ -69,13 +69,10 @@ C
       use parallel,     only : Node, Nodes
       use parallelsubs, only : LocalToGlobalOrb, GlobalToLocalOrb
       use fdf
-      use parsing
       use sys,          only : die
-#ifdef MPI
-      use mpi_siesta
-#endif
-      use units, only : pi
+      use units, only        : pi
       use alloc, only : re_alloc, de_alloc
+
       implicit          none
 
       logical           found, inspn, usesavedm
@@ -93,24 +90,20 @@ c ---------------------------------------------------------------------
 
 C Internal variables and arrays
  
-      character         updo*1, line*130, names*80
-      logical           noncol, peratm
-      integer           nh, ni, nn, nr, nv, iat, nat, ia, iu,
+      character         updo*1, msg*80
+      logical           noncol, peratm, badsyntax
+      integer           nh, ni, nn, nr, iat, nat, ia,
      .                  i1, i2, in, ind, ispin, jo, io, 
      .                  iio, maxatnew
 
       integer, save ::  maxat
 
-      integer           integs(4), lastc, lc(0:3)
-
       integer, pointer, save :: atom(:)
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
       real(dp)          aspin, cosph, costh, epsilon, 
-     .                  qio, rate, reals(4),
-     .                  sinph, sinth, spinat, spio, values(4)
+     .                  qio, rate, sinph, sinth, spinat, spio
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       real(dp), pointer, save :: phi(:), spin(:), theta(:)
 
@@ -118,6 +111,7 @@ C Internal variables and arrays
       data epsilon / 1.d-8 /
 
 C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
+
       if (usesavedm) then
         call iodm( 'read', maxnh, nuo, nspin, numhold, 
      .             listhptrold, listhold, Dscf, found )
@@ -142,14 +136,11 @@ C   integer atom(nat) : which atoms
 C   double  spin(nat) : what polarization -----------------------------
 
         noncol = .false.
-        if (Node.eq.0) then
-          peratm = fdf_block('DM.InitSpin',iu)
-          if (peratm .and. nspin.lt.2) write(6,'(/,a)')
-     .    'initdm: WARNING: DM.InitSpin not used because nspin < 2'
+        peratm = fdf_block('DM.InitSpin',bfdf)
+        if ((Node .eq. 0) .and. peratm .and. (nspin .lt. 2)) then
+          write(6,'(/,a)')
+     .      'initdm: WARNING: DM.InitSpin not used because nspin < 2'
         endif
-#ifdef MPI
-        call MPI_Bcast(peratm,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
 
         if (peratm .and. nspin.ge.2) then
 
@@ -161,24 +152,16 @@ C Allocate local memory
           call re_alloc( theta, 1, maxat, 'theta', 'initdm' )
 
           nat = 0
-          do iat = 1, nua+1
-C Read and parse a line of the data block
-            if (Node.eq.0) then
-              read(iu,'(a)', end=50) line
-            endif
-#ifdef MPI
-            call MPI_Bcast(line,130,MPI_character,0,MPI_Comm_World,
-     .        MPIerror)
-#endif
-            lastc = index(line,'#') - 1
-            if (lastc .le. 0) lastc = len(line)
-            call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
-            if (nn.ge.1 .and. names(lc(0)+1:lc(1)).eq.'%endblock') then
-C End data reading
-              goto 50
-            elseif (ni .eq. 1) then
-              if (nat.eq.maxat) then
+          badsyntax = .FALSE.
+          do while(fdf_bline(bfdf,pline) .and. (nat .lt. nua) .and.
+     .            (.not. badsyntax))
+
+            nn = fdf_bnnames(pline)
+            ni = fdf_bnintegers(pline)
+            nr = fdf_bnreals(pline)
+
+            if (ni .eq. 1) then
+              if (nat .eq. maxat) then
                 maxatnew = nat + nint(0.1*nat)
 C
                 call re_alloc( atom, 1, maxatnew, 'atom', 'initdm',
@@ -194,81 +177,76 @@ C
                 maxat = maxatnew
               endif
               nat = nat + 1
-              atom(nat) = integs(1)
+              atom(nat) = fdf_bintegers(pline,1)
+
+              if (nn .eq. 0) then
+C Read value of spin
+                if (nr .eq. 3) then
+C Read spin value and direction
+                  spin(nat)  = fdf_breals(pline,1)
+                  theta(nat) = fdf_breals(pline,2) * pi/180.0d0
+                  phi(nat)   = fdf_breals(pline,3) * pi/180.0d0
+                elseif (nr .eq. 1) then
+C Read spin value. Default direction.
+                  spin(nat)  = fdf_breals(pline,1)
+                  theta(nat) = 0.d0
+                  phi(nat)   = 0.d0
+                else
+C Print bad-syntax error and stop
+                  badsyntax = .TRUE.
+                endif
+              elseif (nn .eq. 1) then
+C Read spin as + or - (maximun value)
+                updo = fdf_bnames(pline,1)
+                if (updo .eq. '+') then
+                  spin(nat) =  100.d0
+                elseif (updo .eq. '-') then
+                  spin(nat) = -100.d0
+                else
+C Print bad-syntax error and stop
+                  badsyntax = .TRUE.
+                endif
+                if (nr .eq. 2) then
+                  theta(nat) = fdf_breals(pline,1) * pi/180.0d0
+                  phi(nat)   = fdf_breals(pline,2) * pi/180.0d0
+                elseif (nr .eq. 0) then
+                  theta(nat) = 0.d0
+                  phi(nat)   = 0.d0
+                else
+C Print bad-syntax error and stop
+                  badsyntax = .TRUE.
+                endif
+              else
+C Print bad-syntax error and stop
+                badsyntax = .TRUE.
+              endif
+
+              if ((atom(nat) .lt. 1) .or. (atom(nat) .gt. nua)) then
+                write(msg,'(a,a,i4)') 'intdm: ERROR: Bad atom ' //
+     .            'index in DM.InitSpin, line', nat+1
+                call die(TRIM(msg))
+              endif
+              if (abs(theta(nat)) .gt. 1.d-12) noncol = .true.
             else
 C Print bad-syntax error and stop
-              goto 40
+              badsyntax = .TRUE.
             endif
-            if (nn .eq. 0) then
-C Read value of spin
-              if (nr .eq. 3) then
-C Read spin value and direction
-                spin(nat)  = reals(1)
-                theta(nat) = reals(2) * pi/180.0d0
-                phi(nat)   = reals(3) * pi/180.0d0
-              elseif (nr .eq. 1) then
-C Read spin value. Default direction.
-                spin(nat)  = reals(1)
-                theta(nat) = 0.d0
-                phi(nat)   = 0.d0
-              else
-                goto 40
-              endif
-            else if (nn .eq. 1) then
-C Read spin as + or - (maximun value)
-              updo = names(lc(0)+1:lc(1))
-              if (updo .eq. '+') then
-                spin(nat) =  100.d0
-              elseif (updo .eq. '-') then
-                spin(nat) = -100.d0
-              else
-                goto 40
-              endif
-              if (nr .eq. 2) then
-                theta(nat) = reals(1) * pi/180.0d0
-                phi(nat)   = reals(2) * pi/180.0d0
-              elseif (nr .eq. 0) then
-                theta(nat) = 0.d0
-                phi(nat)   = 0.d0
-              else
-                goto 40
-              endif
-            else
-              goto 40
-            endif
-            if (atom(nat).lt.1 .or. atom(nat).gt.nua) then
-              if (Node.eq.0) then
-                write(6,'(/,a)')
-     .          'intdm: ERROR: Bad atom index in DM.InitSpin, line', iat
-              endif
-              call die('intdm: ERROR: Bad atom index in DM.InitSpin')
-            endif
-            if (abs(theta(nat)).gt.1.d-12) noncol = .true.
           enddo
 
-          if (Node.eq.0) then
-            write(6,'(a)') 
-     .         'initdm: ERROR: Too many atom entries in DM.InitSpin'
-           call die('initdm: ERROR: Too many' //
-     $              ' atom entries in DM.InitSpin')
-          else
-            call die()
+          if (badsyntax) then
+            write(msg,'(a,i4)')
+     .        'initdm: ERROR: bad syntax in DM.InitSpin, line', nat+1
+            call die(msg)
           endif
 
-   40     continue
-          if (Node.eq.0) then
-            write(6,*)
-     .       'initdm: ERROR: bad syntax in DM.InitSpin, line', iat
-            call die('initdm: ERROR: bad syntax in DM.InitSpin')
-          else
-            call die()
+          if (nat .eq. nua) then
+            call die('initdm: ERROR: Too many' //
+     $               ' atom entries in DM.InitSpin')
           endif
-
-   50     continue
 
           if (noncol .and. nspin.lt.4) then
             if (Node.eq.0) then
-            write(6,'(/,2a)') 'initdm: WARNING: noncolinear spins ',
+              write(6,'(/,2a)') 'initdm: WARNING: noncolinear spins ',
      .                 'in DM.InitSpin not used because nspin < 4'
             endif
             noncol = .false.

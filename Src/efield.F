@@ -96,35 +96,30 @@ C Internal variables
      &                  xfrac, xmax(3), xmean, xmin(3)
       save              e, f, isfield, i0, v0
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
 C Find and store the electric field only the first time
       if (frstme) then
         frstme = .false.
         isfield = .false.
         e = 0.0_dp
 
-        if (ionode) then
 C Read the electric field block from the fdf input file
-          found = fdf_block('ExternalElectricField',iu)
-          if (found) then
-            read(iu,'(a)') line
-            last = index(line,'#') - 1
-            if (last .le. 0) last = len(line)
-            call parse( line(1:last), nn, lc, names, nv, e,
-     &                ni, int, nr, e0 )
-            eunits = names(lc(0)+1:lc(1))
-            cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
-            do ix = 1,3
-              if (e(ix) .ne. 0.0_dp) isfield = .true.
-              e(ix) = e(ix) * cfactor
-              e0(ix) = e(ix)
-            enddo
+        found = fdf_block('ExternalElectricField',bfdf)
+        if (found) then
+          if (.not. fdf_bline(bfdf,pline)) then
+            call die('efield: ExternalElectricField block is empty')
           endif
+          eunits = fdf_bnames(pline,1)
+          cfactor = fdf_convfac(eunits,'Ry/Bohr/e')
+          do ix = 1,3
+            e(ix) = fdf_bvalues(pline,ix)
+            if (e(ix) .ne. 0.0_dp) isfield = .true.
+            e(ix) = e(ix) * cfactor
+            e0(ix) = e(ix)
+          enddo
         endif
-#ifdef MPI
-        call MPI_Bcast(e,3,MPI_double_precision,0,MPI_Comm_World,
-     &    MPIerror)
-        call MPI_Bcast(isfield,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
 
 C Check that the field is orthogonal to the bulk directions
         if (isfield) then

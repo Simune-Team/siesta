@@ -31,7 +31,6 @@ C Modified by P. Ordejon to include 3D capability; June 2003
 C **********************************************************************
 
       USE FDF
-      USE PARSE
       USE SYS
 
       IMPLICIT NONE
@@ -60,14 +59,14 @@ C **********************************************************************
 
       CHARACTER  LINE*150
 
-      INTEGER  NATINPL_DEFAULT, IDIMEN, IAT, IX !IUNIT,
+      INTEGER  NATINPL_DEFAULT, IDIMEN, IAT, IX
  
       DOUBLE PRECISION  VAUX1(3), VAUX2(3)
 
       LOGICAL  ATINPLA
 
-      TYPE(PARSED_LINE), POINTER :: P
-      TYPE(BLOCK), POINTER       :: BP
+      TYPE(BLOCK_FDF)            :: BFDF
+      TYPE(PARSED_LINE), POINTER :: PLINE
 
 
 C **********************************************************************
@@ -85,20 +84,15 @@ C Read fdf data block 'Denchar.AtomsInPlane' ---------------------------
         NATINPL_DEFAULT = 0
         NATINPLA = 0
   
-        NULLIFY(BP)
-        IF ( .NOT. FDF_BLOCK('Denchar.AtomsInPlane',BP) )  GOTO 2000
+        IF (FDF_BLOCK('Denchar.AtomsInPlane',BFDF)) THEN
 
-        LOOP: DO
-          IF (.NOT. FDF_BLINE(BP,LINE)) EXIT LOOP
-          P=>DIGEST(LINE)
-          IF (.NOT. MATCH(P,"I") ) 
-     .         CALL DIE("Wrong format in Denchar.AtomsInPlane")
-          NATINPLA = NATINPLA + 1
-          INDICES(NATINPLA) = INTEGERS(P,1) 
-          CALL DESTROY(P)
-        ENDDO LOOP
-        CALL DESTROY(BP) 
- 2000   CONTINUE
+          DO WHILE(FDF_BLINE(BFDF,PLINE))
+            IF (.NOT. FDF_BMATCH(PLINE,'I') ) 
+     .        CALL DIE("Wrong format in Denchar.AtomsInPlane")
+            NATINPLA = NATINPLA + 1
+            INDICES(NATINPLA) = INTEGERS(PLINE,1) 
+          ENDDO
+        ENDIF
 
       ELSE IF (IDIMEN .EQ. 3) THEN
         NATINPLA = NA

@@ -130,10 +130,6 @@ C
       use precision
       use parallel,     only : Node
       use fdf
-      use parsing
-#ifdef MPI
-      use mpi_siesta
-#endif
       implicit          none
 
       integer           maxk, nk
@@ -143,25 +139,23 @@ C
 C *********************************************************************
 
       character 
-     .  line*130, names*80,
      .  scale*30
 
       logical
-     .  BandLinesPresent, BandPointsPresent
+     .  BandLinesPresent, BandPointsPresent,
+     .  BandLimit, KpntLimit
 
       integer
-     .  ik, il, integs(4), iu, ix, 
-     .  lastc, lc(0:3), mscell(3,3),
+     .  ik, il, ix, 
+     .  mscell(3,3),
      .  ni, nkl, nn, nr, nv
-
-#ifdef MPI
-      integer
-     .  MPIerror
-#endif
 
       real(dp)
      .  alat, caux(3,3), pi,
-     .  rcell(3,3), reals(4), ucell(3,3), values(4)
+     .  rcell(3,3), ucell(3,3)
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 C Start time counter 
       call timer( 'bands', 1 )
@@ -173,58 +167,29 @@ C Find k points if they are not given in argument
       if (nk .le. 0) then
 
 C Find if there are band-lines data
-        if (Node.eq.0) then
-          BandLinesPresent = fdf_defined('BandLines')
+        BandLinesPresent = fdf_defined('BandLines')
 CEA
-          BandPointsPresent = fdf_defined('BandPoints')
-        endif
-#ifdef MPI
-        call MPI_Bcast(BandLinesPresent,1,MPI_logical,0,MPI_Comm_World,
-     .    MPIerror)
-CEA
-        call MPI_Bcast(BandPointsPresent,1,MPI_logical,0,MPI_Comm_World,
-     .    MPIerror)
-#endif
+        BandPointsPresent = fdf_defined('BandPoints')
 
         if ( BandLinesPresent .or. BandPointsPresent ) then
 
 C Find lattice constant
-          if (Node.eq.0) then
-            alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
-          endif
-#ifdef MPI
-          call MPI_Bcast(alat,1,MPI_double_precision,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
+          alat = fdf_physical( 'LatticeConstant', 0.d0, 'Bohr' )
           if (alat .eq. 0.d0) then
-            if (Node.eq.0) then
+            if (Node .eq.0 ) then
               write(6,'(a)') 'bands: ERROR: Lattice constant required'
             endif
             goto 999
           endif
 
 C Find scale used in k point data
-          if (Node.eq.0) then
-            scale = fdf_string( 'BandLinesScale', 'pi/a' )
-          endif
-#ifdef MPI
-          call MPI_Bcast(scale,30,MPI_double_precision,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
+          scale = fdf_string( 'BandLinesScale', 'pi/a' )
           if (scale .eq. 'pi/a') then
             pi = 4.d0 * atan(1.d0)
           elseif (scale .eq. 'ReciprocalLatticeVectors') then
-            if (Node.eq.0) then
-              call redcel( alat, caux, ucell, mscell )
-            endif
-#ifdef MPI
-            call MPI_Bcast(alat,1,MPI_double_precision,0,
-     .        MPI_Comm_World,MPIerror)
-            call MPI_Bcast(ucell(1,1),9,MPI_double_precision,0,
-     .        MPI_Comm_World,MPIerror)
-#endif
+            call redcel( alat, caux, ucell, mscell )
             call reclat( ucell, rcell, 1 )
-          elseif (Node.eq.0) then
+          elseif (Node .eq. 0) then
             write(6,'(a,/,2a,/,a)')
      .        'bands: WARNING: Invalid value for BandLinesScale',
      .        'bands: Allowed values are pi/a and',
@@ -240,129 +205,130 @@ C No k-point data available => go to exit point
 C For BandLines: Loop on data lines
 CEA
         if ( BandLinesPresent .and. (.not. BandPointsPresent) ) then
-        
-          if (Node.eq.0) then
-            nk = 0
-            BandLinesPresent = fdf_block('BandLines',iu)
-            do il = 1,maxlin
+
+          il = 1
+          nk = 0
+          BandLimit = .FALSE.
+          KpntLimit = .FALSE.
+          BandLinesPresent = fdf_block('BandLines',bfdf)
+          do while(fdf_bline(bfdf, pline) .and. (.not. BandLimit) .and.
+     .             (.not. KpntLimit))
 
 C Read and parse data line
-              read(iu,'(a)',end=50) line
-              lastc = index(line,'#') - 1
-              if (lastc .le. 0) lastc = len(line)
-              call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
-
-C Check if data are already finished
-              if (nv .ge. 3) then
+            nn = fdf_bnnames(pline)
+            nv = fdf_bnvalues(pline)
+            ni = fdf_bnintegers(pline)
+            nr = fdf_bnreals(pline)
 
 C Add to total number of k points
-                nkl = integs(1)
-                nk = nk + nkl
+            nkl = fdf_bintegers(pline,1)
+            nk = nk + nkl
 
 C If there is room to store k points
-                if (nk .le. maxk) then
+            if (nk .le. maxk) then
 
 C Find last point in line
-                  if (scale .eq. 'pi/a') then
-                    kpoint(1,nk) = values(2) * pi / alat
-                    kpoint(2,nk) = values(3) * pi / alat
-                    kpoint(3,nk) = values(4) * pi / alat
-                  elseif (scale .eq. 'ReciprocalLatticeVectors') then
-                    do ix = 1,3
-                      kpoint(ix,nk) = rcell(ix,1) * values(2) +
-     .                                rcell(ix,2) * values(3) +
-     .                                rcell(ix,3) * values(4)
-                    enddo
-                  endif
+              if (scale .eq. 'pi/a') then
+                kpoint(1,nk) = fdf_bvalues(pline,2) * pi / alat
+                kpoint(2,nk) = fdf_bvalues(pline,3) * pi / alat
+                kpoint(3,nk) = fdf_bvalues(pline,4) * pi / alat
+              elseif (scale .eq. 'ReciprocalLatticeVectors') then
+                do ix = 1,3
+                  kpoint(ix,nk) = rcell(ix,1) * fdf_bvalues(pline,2) +
+     .                            rcell(ix,2) * fdf_bvalues(pline,3) +
+     .                            rcell(ix,3) * fdf_bvalues(pline,4)
+                enddo
+              endif
 
 C Find points along the line
-                  do ik = 1,nkl-1
-                    do ix = 1,3
-                      kpoint(ix,nk-nkl+ik) =
-     .                  kpoint(ix,nk-nkl) * dble(nkl-ik) / dble(nkl) + 
-     .                  kpoint(ix,nk)     * dble(ik)     / dble(nkl)
-                    enddo
-                  enddo
+              do ik = 1,nkl-1
+                do ix = 1,3
+                  kpoint(ix,nk-nkl+ik) =
+     .              kpoint(ix,nk-nkl) * dble(nkl-ik) / dble(nkl) + 
+     .              kpoint(ix,nk)     * dble(ik)     / dble(nkl)
+                enddo
+              enddo
 
 C Find point label
-                  if (nn .gt. 0) then
-                    label(il) = names(1:lc(1))
-                  else
-                    label(il) = ' '
-                  endif
-                  lastk(il) = nk
-
-                endif
+              if (nn .gt. 0) then
+                label(il) = fdf_bnames(pline,1)
               else
-C No more lines to read => Exit do loop
-                goto 50
+                label(il) = ' '
               endif
-            enddo
+              lastk(il) = nk
+
+            else
+C No room to store k points
+              KpntLimit = .TRUE.
+            endif
+
+            il = il + 1
+            if (il .gt. maxlin) then
+C No room to store bands
+              BandLimit = .TRUE.
+            endif
+          enddo
+
+          if ((BandLimit) .and. (Node .eq. 0)) then
             write(6,'(a)') 'bands: ERROR. Parameter maxlin too small'
-   50       continue
-            nlines = il - 1
           endif
+          nlines = il - 1
         endif
 
 C For BandPoints: Loop on data points
 CEA
         if ( BandPointsPresent ) then
-        
-          if (Node.eq.0) then
-            nk = 0
-            BandPointsPresent = fdf_block('BandPoints',iu)
-            do il = 1,maxlin
+
+          il = 0
+          nk = 0
+          BandLimit = .FALSE.
+          KpntLimit = .FALSE.
+          BandPointsPresent = fdf_block('BandPoints',bfdf)
+          do while(fdf_bline(bfdf, pline) .and. (.not. BandLimit) .and.
+     .             (.not. KpntLimit))
 
 C Read and parse data line
-              read(iu,'(a)',end=51) line
-              lastc = index(line,'#') - 1
-              if (lastc .le. 0) lastc = len(line)
-              call parse( line(1:lastc), nn, lc, names, nv, values,
-     .                  ni, integs, nr, reals )
-
-C Check if data are already finished
-              if (nv .ge. 3) then
+            nn = fdf_bnnames(pline)
+            nv = fdf_bnvalues(pline)
+            ni = fdf_bnintegers(pline)
+            nr = fdf_bnreals(pline)
 
 C Add to total number of k points
-                nk = nk + 1
+            nk = nk + 1
 
 C If there is room to store k points
-                if (nk .le. maxk) then
+            if (nk .le. maxk) then
 
 C Accumulate new point
-                  if (scale .eq. 'pi/a') then
-                    kpoint(1,nk) = values(1) * pi / alat
-                    kpoint(2,nk) = values(2) * pi / alat
-                    kpoint(3,nk) = values(3) * pi / alat
-                  elseif (scale .eq. 'ReciprocalLatticeVectors') then
-                    do ix = 1,3
-                      kpoint(ix,nk) = rcell(ix,1) * values(1) +
-     .                                rcell(ix,2) * values(2) +
-     .                                rcell(ix,3) * values(3)
-                    enddo
-                  endif
-                endif
-              else
-C No more lines to read => Exit do loop
-                goto 51
+              if (scale .eq. 'pi/a') then
+                kpoint(1,nk) = fdf_bvalues(pline,1) * pi / alat
+                kpoint(2,nk) = fdf_bvalues(pline,2) * pi / alat
+                kpoint(3,nk) = fdf_bvalues(pline,3) * pi / alat
+              elseif (scale .eq. 'ReciprocalLatticeVectors') then
+                do ix = 1,3
+                  kpoint(ix,nk) = rcell(ix,1) * fdf_bvalues(pline,1) +
+     .                            rcell(ix,2) * fdf_bvalues(pline,2) +
+     .                            rcell(ix,3) * fdf_bvalues(pline,3)
+                enddo
               endif
-            enddo
+            else
+C No room to store k points
+              KpntLimit = .TRUE.
+            endif
+
+            il = il + 1
+            if (il .gt. maxlin) then
+C No room to store bands
+              BandLimit = .TRUE.
+            endif
+          enddo
+
+          if ((BandLimit) .and. (Node .eq. 0)) then
             write(6,'(a)') 'bands: ERROR. Parameter maxlin too small'
-   51       continue
-            nlines = - 3
           endif
+          nlines = - 3
         endif
       endif
-
-C Global broadcast of values
-#ifdef MPI
-      call MPI_Bcast(nk,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-      if (nk.le.maxk) then
-         call MPI_Bcast(kpoint(1,1),3*nk,MPI_double_precision,0,
-     .     MPI_Comm_World,MPIerror)
-      endif
-#endif
 
 C This is the only exit point 
   999 continue
@@ -516,7 +482,7 @@ C Check indxuo
             write(6,*) 'bands: invalid index: io, indxuo =',
      .        io, indxuo(io)
           endif
-          call die( 'bands: invalid indxuo')
+          call die('bands: invalid indxuo')
         endif
         muo(iuo) = muo(iuo) + 1
       enddo

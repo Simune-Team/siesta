@@ -41,52 +41,45 @@
 
 !     Read atomic displacements
 !
-      subroutine phonon_setup
+      subroutine phonon_setup()
 
       use fdf
-
-#ifdef MPI
-      integer MPIerror
-#endif
 
 
       integer ip, idum
       real(dp) xdum(3)
       character(len=1) lab
-      integer lun, j
+      integer j
 
-      if (Node.eq.0) then
-         if (fdf_block('MD.ATforPhonon',lun)) then
-           ip = 0
-           write(6,'(/,a)') 'Displacements for PHONON calculation:'
- 222       continue
-           read(lun,*,end=666,err=666) (xdum(j),j=1,3), lab, idum
-           ip = ip + 1
-           phonon_disp(ip,1:3) = xdum(1:3)
-           phonon_label(ip)    = lab
-           phonon_atnum(ip)    = idum
-           write(6,'(i3,1x,a1,1x,3f10.6)') idum, lab, xdum(1:3)
-           goto 222
- 666       continue
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
-           phonon_num_disps = ip
-         else
-            write(6,'(a)')
-     $           'Need block MD.ATforPhonon for Phonon MD option'
-            call die
-         endif
-      endif                     ! node 0
+      if (fdf_block('MD.ATforPhonon',bfdf)) then
+        if (Node.eq.0) then
+          write(6,'(/,a)') 'Displacements for PHONON calculation:'
+        endif
 
-#ifdef MPI
-           call MPI_Bcast(phonon_num_disps,1,MPI_Integer,
-     $          0,MPI_Comm_World,MPIerror)
-           call MPI_Bcast(phonon_atnum,phonon_num_disps,MPI_Integer,
-     $          0,MPI_Comm_World,MPIerror)
-           call MPI_Bcast(phonon_label,phonon_num_disps,MPI_Character,
-     $          0,MPI_Comm_World,MPIerror)
-           call MPI_Bcast(phonon_disp(1,1),3*phonon_num_disps,
-     $          MPI_double_precision,0,MPI_Comm_World,MPIerror)
-#endif
+        ip = 0
+        do while (fdf_bline(bfdf,pline))
+          xdum(1) = fdf_breals(pline,1)
+          xdum(2) = fdf_breals(pline,2)
+          xdum(3) = fdf_breals(pline,3)
+          lab = fdf_bnames(pline,1)
+          idum = fdf_bintegers(pline,1)
+
+          ip = ip + 1
+          phonon_disp(ip,1:3) = xdum(1:3)
+          phonon_label(ip)    = lab
+          phonon_atnum(ip)    = idum
+          if (Node.eq.0) then
+            write(6,'(i3,1x,a1,1x,3f10.6)') idum, lab, xdum(1:3)
+          endif
+        enddo
+
+        phonon_num_disps = ip
+      else
+        call die('Need block MD.ATforPhonon for Phonon MD option')
+      endif
 
       end subroutine phonon_setup
 
@@ -167,9 +160,8 @@ C real*8 disp(3)              : fractional displacement
       integer,          pointer, save ::   isa(:)
       character(len=1), pointer, save ::   phonon_label(:)
 
-      logical           leqi
       external          io_assign, io_close, paste, timer,
-     .                  memory, leqi
+     .                  memory
 
 C Internal variables and arrays
       character(len=label_length+7)       :: paste
@@ -178,9 +170,12 @@ C Internal variables and arrays
       character(len=2)                    :: atname
       logical,                       save :: frstme = .true.
       integer                             :: i, j, ix
-      integer                             :: unit1, ia, isp, iunit
+      integer                             :: unit1, ia, isp
       real(dp)                            :: Ang, eV
       character(len=50)                   :: acf
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 C Define conversion factors
       Ang = 1.d0 / 0.529177d0
@@ -198,30 +193,39 @@ C Find file name
          call re_alloc( phonon_label, 1, ns, 'phonon_label',
      &                  'phonon_write_forces' )
 
-         acf = fdf_string('AtomicCoordinatesFormat',' ')
-         if (.not. (leqi(acf,'Fractional') .or.
-     .              leqi(acf,'ScaledByLatticeVectors'))) then
-            call die
-     .          ("phonon_write_forces:" //
-     .           "Cannot deal with non-fractional coords")
-         endif
+        acf = fdf_string('AtomicCoordinatesFormat',' ')
+        if (.not. (leqi(acf,'Fractional') .or.
+     .             leqi(acf,'ScaledByLatticeVectors'))) then
+          call die("phonon_write_forces:" //
+     .             "Cannot deal with non-fractional coords")
+        endif
 
-         if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',iunit) )
-     .        then
-            do ia = 1, na
-               read(iunit,*) (xa(i,ia), i=1,3), isa(ia)
-            enddo
-         else
-            call die("phonon_write_forces:" //
-     .               "Cannot read fractional atomic coords")
-         endif
-         if ( fdf_block('PhononLabels',iunit) )  then
-            do ia = 1, ns
-               read(iunit,*) isp, phonon_label(isp), atname
-            enddo
-         else
-            call die("phonon_write_forces: Cannot read PhononLabels")
-         endif
+        if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',bfdf) ) then
+          do ia = 1, na
+            if (.not. fdf_bline(bfdf,pline))
+     .        call die('phonon_write_forces: ERROR in ' //
+     .                 'AtomicCoordinatesAndAtomicSpecies block')
+            xa(1,ia) = fdf_breals(pline,1)
+            xa(2,ia) = fdf_breals(pline,2)
+            xa(3,ia) = fdf_breals(pline,3)
+            isa(ia) = fdf_bintegers(pline,1)
+          enddo
+        else
+          call die("phonon_write_forces:" //
+     .             "Cannot read fractional atomic coords")
+        endif
+        if ( fdf_block('PhononLabels',bfdf) )  then
+          do ia = 1, ns
+            if (.not. fdf_bline(bfdf,pline))
+     .        call die('phonon_write_forces: ERROR in ' //
+     .                 'PhononLabels block')
+            isp = fdf_bintegers(pline,1)
+            phonon_label(isp) = fdf_bnames(pline,1)
+            atname = fdf_bnames(pline,2)
+          enddo
+        else
+          call die("phonon_write_forces: Cannot read PhononLabels")
+        endif
         fname = paste(slabel,'.PHONON')
         sname = fdf_string('SystemName','siesta')
         frstme = .false.

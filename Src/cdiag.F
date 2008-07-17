@@ -187,26 +187,11 @@ C Initialise error flag
 C Set algorithm logicals
       if (DoRead) then
         DoRead = .false.
-        if (Node.eq.0) then
-          AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
-          DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
-          NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
-          PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
-          Use2D         = fdf_boolean('Diag.Use2D',.true.)
-        endif
-#ifdef MPI
-        lBtmp(1) = AllInOne
-        lBtmp(2) = DivideConquer
-        lBtmp(3) = NoExpert
-        lBtmp(4) = PreRotate
-        lBtmp(5) = Use2D
-        call MPI_Bcast(lBtmp,5,MPI_logical,0,MPI_Comm_World,MPIerror)
-        AllInOne = lBtmp(1)
-        DivideConquer = lBtmp(2) 
-        NoExpert = lBtmp(3) 
-        PreRotate = lBtmp(4) 
-        Use2D = lBtmp(5)
-#endif
+        AllInOne      = fdf_boolean('Diag.AllInOne',.false.)
+        DivideConquer = fdf_boolean('Diag.DivideAndConquer',.true.)
+        NoExpert      = fdf_boolean('Diag.NoExpert',.false.)
+        PreRotate     = fdf_boolean('Diag.PreRotate',.false.)
+        Use2D         = fdf_boolean('Diag.Use2D',.true.)
       endif
       Serial = (Nodes.eq.1.or.ParallelOverK)
       if (Serial) Use2D = .false.

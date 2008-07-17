@@ -39,9 +39,8 @@ C  Modules
 C
       use precision,   only : dp
       use parallel,    only : Node, IONode
-      use fdf,         only : fdf_block, fdf_physical
-      use m_fdf_global, only: fdf_global_get
-      use m_mpi_utils, only:  broadcast
+      use sys,         only : die
+      use fdf
       use units, only: kBar, Ang
       use m_broyddj_nocomm, only: broyden_t
       use m_broyddj_nocomm, only: broyden_reset, broyden_step,
@@ -68,11 +67,11 @@ C Subroutine arguments:
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
-      integer             :: iu, ia, i, j, n, indi,indi1,vi,k
+      integer             :: ia, i, j, n, indi,indi1,vi,k
       real(dp)            :: volume, new_volume, trace
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
       real(dp)            :: celli(3,3)
-      real(dp)            ::  stress_dif(3,3)
+      real(dp)            :: stress_dif(3,3)
       real(dp),   pointer :: gxa(:), gfa(:)
       real(dp)            :: force, force1
 
@@ -94,6 +93,9 @@ C Saved internal variables:
       type(broyden_t), save  :: br
       logical, save           :: initialization_done = .false.
 
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       real(dp), save :: jinv0
       integer, save  :: maxit
       logical, save  :: cycle_on_maxit, variable_weight
@@ -110,17 +112,14 @@ c ---------------------------------------------------------------------------
 
       if (.not. initialization_done) then
 
-          call fdf_global_get(maxit,"MD.Broyden.History.Steps",5)
-          call fdf_global_get(cycle_on_maxit,
-     $              "MD.Broyden.Cycle.On.Maxit",.true.)
-          call fdf_global_get(variable_weight,
-     $         "MD.Broyden.Variable.Weight",.false.)
-          call fdf_global_get(broyden_debug,
-     $         "MD.Broyden.Debug",.false.)
-          call fdf_global_get(jinv0,
-     $         "MD.Broyden.Initial.Inverse.Jacobian",1.0_dp)
+        maxit           = fdf_get("MD.Broyden.History.Steps",5)
+        cycle_on_maxit  = fdf_get("MD.Broyden.Cycle.On.Maxit",.true.)
+        variable_weight = fdf_get("MD.Broyden.Variable.Weight",.false.)
+        broyden_debug   = fdf_get("MD.Broyden.Debug",.false.)
+        jinv0           = fdf_get("MD.Broyden.Initial.Inverse.Jacobian",
+     $                            1.0_dp)
 
-         if (ionode) then
+        if (ionode) then
           write(6,*) 
           write(6,'(a,i3)')
      $         "Broyden_optim: max_history for broyden: ", maxit
@@ -133,8 +132,8 @@ c ---------------------------------------------------------------------------
           write(6,*) 
         endif
 
-         call broyden_init(br,debug=broyden_debug)
-         initialization_done = .true.
+        call broyden_init(br,debug=broyden_debug)
+        initialization_done = .true.
 
       endif
 
@@ -159,54 +158,63 @@ c ---------------------------------------------------------------------------
 
         if ( varcel ) then
 
-          call fdf_global_get(constant_volume,
-     .                        "MD.ConstantVolume", .false.)
+          constant_volume = fdf_get("MD.ConstantVolume", .false.)
 
-          if (Node.eq.0) then
-            tarstr = fdf_block('MD.TargetStress',iu)
+          tarstr = fdf_block('MD.TargetStress',bfdf)
 
-            ! Look for target stress and read it if found, 
-            ! otherwise generate it
-            if (tarstr) then
+          ! Look for target stress and read it if found, 
+          ! otherwise generate it
+          if (tarstr) then
+            if (IOnode) then
               write(6,'(/a,a)')
-     $              'cgvc_zmatrix: Reading %block MD.TargetStress',
-     .                       ' (units of MD.TargetPressure).'
-              read(iu,*, end=50) sxx, syy, szz, sxy, sxz, syz
-              tstres(1,1) = - sxx * tp
-              tstres(2,2) = - syy * tp
-              tstres(3,3) = - szz * tp
-              tstres(1,2) = - sxy * tp
-              tstres(2,1) = - sxy * tp
-              tstres(1,3) = - sxz * tp
-              tstres(3,1) = - sxz * tp
-              tstres(2,3) = - syz * tp
-              tstres(3,2) = - syz * tp
-   50         continue
-            else
-              write(6,'(/a,a)')
-     $              'cgvc_zmatrix: No target stress found, ',
-     .              'assuming hydrostatic MD.TargetPressure.'
-              do i = 1, 3
-                do j = 1, 3
-                  tstres(i,j) = 0.0_dp
-                enddo
-                tstres(i,i) = - tp
+     $          'zm_broyden_optimizer: Reading %block MD.TargetStress',
+     .          ' (units of MD.TargetPressure).'
+            endif
+            if (.not. fdf_bline(bfdf,pline))
+     $        call die('zm_broyden_optimizer: ERROR in ' //
+     .                 'MD.TargetStress block')
+            sxx = fdf_bvalues(pline,1)
+            syy = fdf_bvalues(pline,2)
+            szz = fdf_bvalues(pline,3)
+            sxy = fdf_bvalues(pline,4)
+            sxz = fdf_bvalues(pline,5)
+            syz = fdf_bvalues(pline,6)
+
+            tstres(1,1) = - sxx * tp
+            tstres(2,2) = - syy * tp
+            tstres(3,3) = - szz * tp
+            tstres(1,2) = - sxy * tp
+            tstres(2,1) = - sxy * tp
+            tstres(1,3) = - sxz * tp
+            tstres(3,1) = - sxz * tp
+            tstres(2,3) = - syz * tp
+            tstres(3,2) = - syz * tp
+          else
+            write(6,'(/a,a)')
+     $        'zm_broyden_optimizer: No target stress found, ',
+     .        'assuming hydrostatic MD.TargetPressure.'
+            do i = 1, 3
+              do j = 1, 3
+                tstres(i,j) = 0.0_dp
               enddo
-            endif
-
-            if (constant_volume) then
-               tstres(:,:) = 0.0_dp
-               write(6,"(a)") "***Target stress set to zero " //
-     $              "for constant-volume calculation"
-            endif
-            write(6,"(/a)") 'cgvc_zmatrix: Target stress (kBar)'
-            do i=1, 3
-               write(6,"(a,2x,3f12.3)") 
-     .              'cgvc_zmatrix:', (tstres(i,j)/kBar,j=1,3)
+              tstres(i,i) = - tp
             enddo
           endif
 
-          call broadcast(tstres(1:3,1:3))
+          if (constant_volume) then
+            tstres(:,:) = 0.0_dp
+            if (IOnode) then
+              write(6,"(a)") "***Target stress set to zero " //
+     $                       "for constant-volume calculation"
+            endif
+          endif
+          if (IOnode) then
+            write(6,"(/a)") 'cgvc_zmatrix: Target stress (kBar)'
+            do i=1, 3
+              write(6,"(a,2x,3f12.3)") 
+     .          'cgvc_zmatrix:', (tstres(i,j)/kBar,j=1,3)
+            enddo
+          endif
 
 C Moduli of original cell vectors for fractional coor scaling back to au ---
           do n = 1, 3
@@ -221,8 +229,8 @@ C Scale factor for strain variables to share magnitude with coordinates
 C ---- (a length in Bohrs typical of bond lengths ..) 
 
           ! AG: This could better be volume^(1/3) by default
-          call fdf_global_get(precon,'MD.PreconditionVariableCell',
-     .                           9.4486344d0,'Bohr')
+          precon = fdf_get('MD.PreconditionVariableCell',
+     .                     9.4486344d0,'Bohr')
 
 C Initialize absolute strain and save initial cell vectors
 C Initialization to 1 for numerical reasons, later substracted

@@ -106,6 +106,9 @@ C Internal variables ---------------------------------------------------
       LOGICAL 
      .  LEQI, COLIN
 
+      TYPE(BLOCK_FDF)            :: BFDF
+      TYPE(PARSED_LINE), POINTER :: PLINE
+
       EXTERNAL  LEQI
 
       DATA ORIGIN /0.D0,0.D0,0.D0/
@@ -192,23 +195,38 @@ C Internal variables ---------------------------------------------------
        STOP
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.CompNormalVector',IUNIT) ) THEN
-        READ(IUNIT,*)(NORMAL(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.CompNormalVector',BFDF) ) THEN
+        FDF_BLINE(BFDF,PLINE)
+        NORMAL(1) = FDF_BREALS(PLINE,1)
+        NORMAL(2) = FDF_BREALS(PLINE,2)
+        NORMAL(3) = FDF_BREALS(PLINE,3)
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.Comp2Vectors',IUNIT) ) THEN
-        READ(IUNIT,*)(DIRVER1(IX),IX=1,3)
-        READ(IUNIT,*)(DIRVER2(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.Comp2Vectors',BFDF) ) THEN
+        FDF_BLINE(BFDF,PLINE)
+        DIRVER1(1) = FDF_BREALS(PLINE,1)
+        DIRVER1(2) = FDF_BREALS(PLINE,2)
+        DIRVER1(3) = FDF_BREALS(PLINE,3)
+        FDF_BLINE(BFDF,PLINE)
+        DIRVER2(1) = FDF_BREALS(PLINE,1)
+        DIRVER2(2) = FDF_BREALS(PLINE,2)
+        DIRVER2(3) = FDF_BREALS(PLINE,3)
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.Coor3Points',IUNIT) ) THEN
-        READ(IUNIT,*)(COORPO(1,IX),IX=1,3)
-        READ(IUNIT,*)(COORPO(2,IX),IX=1,3)
-        READ(IUNIT,*)(COORPO(3,IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.Coor3Points',BFDF) ) THEN
+        DO IX= 1, 3
+          FDF_BLINE(BFDF,PLINE)
+          COORPO(IX,1) = FDF_BREALS(PLINE,1)
+          COORPO(IX,2) = FDF_BREALS(PLINE,2)
+          COORPO(IX,3) = FDF_BREALS(PLINE,3)
+        ENDDO
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.Indices3Atoms',IUNIT) ) THEN
-        READ(IUNIT,*)IND1, IND2, IND3
+      IF ( FDF_BLOCK('Denchar.Indices3Atoms',BFDF) ) THEN
+        FDF_BLINE(BFDF,PLINE)
+        IND1 = FDF_BINTEGERS(PLINE,1)
+        IND2 = FDF_BINTEGERS(PLINE,2)
+        IND3 = FDF_BINTEGERS(PLINE,3)
       ENDIF
 
 
@@ -237,12 +255,18 @@ C Check if the three points are colinear -------------------------------
       ENDIF
  
 
-      IF ( FDF_BLOCK('Denchar.PlaneOrigin',IUNIT) ) THEN
-        READ(IUNIT,*)(ORIGIN(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.PlaneOrigin',BFDF) ) THEN
+        FDF_BLINE(BFDF,PLINE)
+        ORIGIN(1) = FDF_BREALS(PLINE,1)
+        ORIGIN(2) = FDF_BREALS(PLINE,2)
+        ORIGIN(3) = FDF_BREALS(PLINE,3)
       ENDIF
 
-      IF ( FDF_BLOCK('Denchar.X_Axis',IUNIT) ) THEN
-        READ(IUNIT,*)(XDIR(IX),IX=1,3)
+      IF ( FDF_BLOCK('Denchar.X_Axis',BFDF) ) THEN
+        FDF_BLINE(BFDF,PLINE)
+        XDIR(1) = FDF_BREALS(PLINE,1)
+        XDIR(2) = FDF_BREALS(PLINE,2)
+        XDIR(3) = FDF_BREALS(PLINE,3)
       ENDIF
 
       IF (IOPTION .LT. 3) THEN

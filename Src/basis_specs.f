@@ -13,8 +13,7 @@
 ! Alberto Garcia, August 2000, based on 'classic' redbasis.
 ! 
 ! Processes the basis information in an fdf file and populates
-! the "basis specifications" data structures. This new version
-! makes use of a new "parse" module for increased clarity. 
+! the "basis specifications" data structures.
 ! 
 ! Here is a guide to the behavior of the main routine "read_basis_specs":
 ! 
@@ -128,27 +127,17 @@
       use periodic_table, only: qvlofz, lmxofz, cnfig, atmass
       use chemical
       use sys
-
-      Use fdf
-      use parse
+      use fdf
 
       Implicit None
-
-      interface
-         function leqi(s1,s2)
-         logical leqi
-         character(len=*), intent(in)   :: s1, s2
-         end function leqi
-      end interface
 
       type(basis_def_t), pointer::   basp
       type(shell_t), pointer::  s
       type(lshell_t), pointer::  ls
       type(kbshell_t), pointer:: k
 
-      type(block), pointer  :: bp
-      type(parsed_line), pointer  :: p
-      character(len=132) line
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       character(len=*), parameter   :: defunit='Ry'
       character(len=1), parameter   ::
@@ -221,9 +210,9 @@
       endif
 
 !
-      basis_size=fdf_string('PAO.BasisSize',basis_size_default)
+      basis_size = fdf_string('PAO.BasisSize',basis_size_default)
       call size_name(basis_size)
-      basistype_generic=fdf_string('PAO.BasisType',basistype_default)
+      basistype_generic = fdf_string('PAO.BasisType',basistype_default)
       call type_name(basistype_generic)
 
 C Read information about defaults for soft confinement
@@ -295,42 +284,36 @@ C Sanity checks on values
 
       if (synthetic_atoms) then
 
-         nullify(bp)
-         found = fdf_block('SyntheticAtoms',bp)
+         found = fdf_block('SyntheticAtoms',bfdf)
          if (.not. found )
-     $        call die("Block SyntheticAtoms does not exist.")
+     $     call die("Block SyntheticAtoms does not exist.")
          ns_read = 0
-         loop: DO
-           if (.not. fdf_bline(bp,line)) exit loop
+         do while(fdf_bline(bfdf, pline))
+
            ns_read = ns_read + 1
-           p => digest(line)
-           if (.not. match(p,"i"))
+           if (.not. fdf_bmatch(pline,'i'))
      $       call die("Wrong format in SyntheticAtoms")
-           isp = integers(p,1)
+           isp = fdf_bintegers(pline,1)
            if (isp .gt. nsp .or. isp .lt. 1)
      $       call die("Wrong specnum in SyntheticAtoms")
-           basp=>basis_parameters(isp)
-           gs => basp%ground_state
-           call destroy(p)
-           if (.not. fdf_bline(bp,line)) call die("No n info")
-           p => digest(line)
-           nns = nintegers(p)
+           basp => basis_parameters(isp)
+           gs   => basp%ground_state
+           if (.not. fdf_bline(bfdf, pline)) call die("No n info")
+           nns = fdf_bnintegers(pline)
            if (nns .lt. 4)
      $       call die("Please give all valence n's " //
      $                 "in SyntheticAtoms block")
            gs%n = 0
            do i = 1, nns
-              gs%n(i-1) = integers(p,i)
+             gs%n(i-1) = fdf_bintegers(pline,i)
            enddo
-           call destroy(p)
-           if (.not. fdf_bline(bp,line))
-     $          call die("No occupation info")
-           p => digest(line)
-           noccs = nvalues(p)
+           if (.not. fdf_bline(bfdf, pline))
+     $      call die("No occupation info")
+           noccs = fdf_bnvalues(pline)
            if (noccs .lt. nns) call die("Need more occupations")
            gs%occupation(:) = 0.0_dp
            do i = 1, noccs
-              gs%occupation(i-1) = values(p,i)
+             gs%occupation(i-1) = fdf_bvalues(pline,i)
            enddo
            ! Determine the last occupied state in the atom
            do i = nns, 1, -1
@@ -351,9 +334,8 @@ C Sanity checks on values
            enddo
            write(6,'(a)') ''
 
-           call destroy(p)
-        enddo loop
-        write(6,"(a,i2)") "Number of synthetic species: ", ns_read
+         enddo
+         write(6,"(a,i2)") "Number of synthetic species: ", ns_read
 
       endif
 !
@@ -368,12 +350,12 @@ C Sanity checks on values
          call semicore_check(isp)
       enddo
 
-      call remass
-      call resizes
-      call repaobasis
-      call autobasis
-      call relmxkb
-      call readkb
+      call remass()
+      call resizes()
+      call repaobasis()
+      call autobasis()
+      call relmxkb()
+      call readkb()
 
 !      do isp=1,nsp
 !         call print_basis_def(basis_parameters(isp))
@@ -429,62 +411,51 @@ C Sanity checks on values
       end subroutine ground_state
 
 !---------------------------------------------------------------
-      subroutine readkb
+      subroutine readkb()
       integer lpol, isp, ish, i, l
       character(len=20) unitstr
 
       lpol = 0
 
-      nullify(bp)
-      if (.not. fdf_block('PS.KBprojectors',bp) ) goto 2000
+      if (fdf_block('PS.KBprojectors',bfdf) ) then
  
 ! First pass to find out about lmxkb and set any defaults.
 
-      loop: DO     !! over species
-         if (.not. fdf_bline(bp,line)) exit loop
-         p => digest(line)
-         if (.not. match(p,"ni"))
-     $        call die("Wrong format in PS.KBprojectors")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
+        do while(fdf_bline(bfdf, pline))    !! over species
+          if (.not. fdf_bmatch(pline,'ni'))
+     $      call die("Wrong format in PS.KBprojectors")
+          isp = label2species(fdf_bnames(pline,1))
+          if (isp .eq. 0) then
             write(6,'(a,1x,a)')
      $        "WRONG species symbol in PS.KBprojectors:",
-     $                          trim(names(p,1))
-            call die
-         endif
-         basp=>basis_parameters(isp)
-         basp%nkbshells = integers(p,1)
-         call destroy(p)
-         do ish=1,basp%nkbshells
-            if (.not. fdf_bline(bp,line)) call die("No l nkbl")
-            p => digest(line)
-            if (.not. match(p,"ii")) call die("Wrong format l nkbl")
-            l = integers(p,1)
+     $        trim(fdf_bnames(pline,1))
+            call die()
+          endif
+          basp => basis_parameters(isp)
+          basp%nkbshells = fdf_bintegers(pline,1)
+          do ish= 1, basp%nkbshells
+            if (.not. fdf_bline(bfdf, pline)) call die("No l nkbl")
+            if (.not. fdf_bmatch(pline,'ii'))
+     $        call die("Wrong format l nkbl")
+            l = fdf_bintegers(pline,1)
             if (l .gt. basp%lmxkb) basp%lmxkb = l
-            call destroy(p)
-            if (.not. fdf_bline(bp,line)) then
-                   if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                   ! There is no line with ref energies
+            if (.not. fdf_bline(bfdf, pline)) then
+              if (ish .ne. basp%nkbshells)
+     $          call die("Not enough shells for this species...")
+              ! There is no line with ref energies
             else 
-               p => digest(line)
-               if (match(p,"ni")) then
-                  ! We are seeing the next species' section
-                  if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                  call backspace(bp)
-                  call destroy(p)
-               else
-                  ! would set erefs
-                  call destroy(p)
-               endif
+              if (fdf_bmatch(pline,'ni')) then
+                ! We are seeing the next species' section
+                if (ish .ne. basp%nkbshells)
+     $            call die("Not enough shells for this species...")
+                if (.not. fdf_bbackspace(bfdf, pline))
+     $            call die('readkb: ERROR in PS.KBprojectors block')
+              endif
             endif
-         enddo       ! end of loop over shells for species isp
+          enddo       ! end of loop over shells for species isp
 
-      enddo loop
-      call destroy(bp)
-
- 2000 CONTINUE
+        enddo
+      endif
 
       do isp=1, nsp
 !
@@ -536,273 +507,262 @@ C Sanity checks on values
 !
 !     Now re-scan the block (if it exists) and fill in as instructed
 !            
-      if (.not. fdf_block('PS.KBprojectors',bp) ) return
+      if (fdf_block('PS.KBprojectors',bfdf) ) then
 
-      loopkb: DO     !! over species
-         if (.not. fdf_bline(bp,line)) exit loopkb
-         p => digest(line)
-         if (.not. match(p,"ni"))
-     $        call die("Wrong format in PS.KBprojectors")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
+        do while(fdf_bline(bfdf, pline))     !! over species
+          if (.not. fdf_bmatch(pline,'ni'))
+     $      call die("Wrong format in PS.KBprojectors")
+          isp = label2species(fdf_bnames(pline,1))
+          if (isp .eq. 0) then
             write(6,'(a,1x,a)')
      $        "WRONG species symbol in PS.KBprojectors:",
-     $                          trim(names(p,1))
-            call die
-         endif
-         basp=>basis_parameters(isp)
-         basp%nkbshells = integers(p,1)
-         call destroy(p)
-         do ish=1,basp%nkbshells
-            if (.not. fdf_bline(bp,line)) call die("No l nkbl")
-            p => digest(line)
-            if (.not. match(p,"ii")) call die("Wrong format l nkbl")
-            l = integers(p,1)
-            k=>basp%kbshell(l)
+     $        trim(fdf_bnames(pline,1))
+            call die()
+          endif
+          basp => basis_parameters(isp)
+          basp%nkbshells = fdf_bintegers(pline,1)
+          do ish=1, basp%nkbshells
+            if (.not. fdf_bline(bfdf,pline)) call die("No l nkbl")
+            if (.not. fdf_bmatch(pline,'ii'))
+     $        call die("Wrong format l nkbl")
+            l = fdf_bintegers(pline,1)
+            k => basp%kbshell(l)
             k%l = l
-            k%nkbl = integers(p,2)
-            call destroy(p)
+            k%nkbl = fdf_bintegers(pline,2)
             allocate(k%erefkb(k%nkbl))
-            if (.not. fdf_bline(bp,line)) then
-                   if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                   ! There is no line with ref energies
-                   ! Use default values
-                   k%erefKB(1:k%nkbl)=huge(1.d0)
+            if (.not. fdf_bline(bfdf,pline)) then
+              if (ish .ne. basp%nkbshells)
+     $          call die("Not enough shells for this species...")
+              ! There is no line with ref energies
+              ! Use default values
+              k%erefKB(1:k%nkbl) = huge(1.d0)
             else 
-               p => digest(line)
-               if (match(p,"ni")) then
-                  ! We are seeing the next species' section
-                  if (ish .ne. basp%nkbshells)
-     $              call die("Not enough shells for this species...")
-                   ! Use default values for ref energies
-                  k%erefKB(1:k%nkbl)=huge(1.d0)
-                  call backspace(bp)
-                  call destroy(p)
-               else
-                  if (nvalues(p) .ne. k%nkbl)
-     $                 call die("Wrong number of energies")
-                  unitstr = defunit
-                  if (nnames(p) .eq. 1) unitstr = names(p,1)
-                  ! Insert ref energies in erefkb
-                  do i=1,k%nkbl
-                     k%erefKB(i) =
-     $                    values(p,i)*fdf_convfac(unitstr,defunit)
-                  enddo
-                  call destroy(p)
-               endif
+              if (fdf_bmatch(pline,'ni')) then
+                ! We are seeing the next species' section
+                if (ish .ne. basp%nkbshells)
+     $            call die("Not enough shells for this species...")
+                ! Use default values for ref energies
+                k%erefKB(1:k%nkbl) = huge(1.d0)
+                if (.not. fdf_bbackspace(bfdf, pline))
+     $            call die('readkb: ERROR in PS.KBprojectors block')
+              else
+                if (fdf_bnvalues(pline) .ne. k%nkbl)
+     $            call die("Wrong number of energies")
+                unitstr = defunit
+                if (fdf_bnnames(pline) .eq. 1)
+     $            unitstr = fdf_bnames(pline,1)
+                ! Insert ref energies in erefkb
+                do i= 1, k%nkbl
+                  k%erefKB(i) =
+     $                 fdf_bvalues(pline,i)*fdf_convfac(unitstr,defunit)
+                enddo
+              endif
             endif
-         enddo            ! end of loop over shells for species isp
+          enddo            ! end of loop over shells for species isp
 
-         ! For those l's not specified in block, use default values
-         do l=0, basp%lmxkb
-            k=>basp%kbshell(l)
+          ! For those l's not specified in block, use default values
+          do l=0, basp%lmxkb
+            k => basp%kbshell(l)
             if (k%l.eq.-1) then
-               k%l = l
-               k%nkbl = 1
-               allocate(k%erefkb(1))
-               k%erefkb(1) = huge(1.d0)
+              k%l = l
+              k%nkbl = 1
+              allocate(k%erefkb(1))
+              k%erefkb(1) = huge(1.d0)
             endif
-         enddo
-      enddo loopkb   !! Over species
+          enddo
+        enddo   !! Over species
+      endif
 
       end subroutine readkb
 !---------------------------------------------------------------
 
-      subroutine repaobasis
+      subroutine repaobasis()
 
       integer isp, ish, nn, i, ind, l, indexp, index_splnorm
 
-      nullify(bp)
-      If (.not.fdf_block('PAO.Basis',bp)) RETURN
+      if (.not. fdf_block('PAO.Basis',bfdf)) RETURN
 
-      loop: DO     !! over species
-         if (.not. fdf_bline(bp,line)) exit loop
-         p => digest(line)
-         if (.not. match(p,"ni"))
-     $        call die("Wrong format in PAO.Basis")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
-            write(6,'(a,1x,a)')
-     $        "WRONG species symbol in PAO.Basis:",
-     $                          trim(names(p,1))
-            call die
-         endif
+      do while(fdf_bline(bfdf, pline))     !! over species
+        if (.not. fdf_bmatch(pline,'ni'))
+     $    call die("Wrong format in PAO.Basis")
+        isp = label2species(fdf_bnames(pline,1))
+        if (isp .eq. 0) then
+          write(6,'(a,1x,a)')
+     $      "WRONG species symbol in PAO.Basis:",
+     $      trim(fdf_bnames(pline,1))
+          call die()
+        endif
 
-         basp=>basis_parameters(isp)
-         basp%label=names(p,1)
-         basp%nshells_tmp = integers(p,1)
-         basp%lmxo = 0
-         !! Check whether there are optional type and ionic charge
-         if (nnames(p).eq.2) basp%basis_type=names(p,2)
-         if (nvalues(p).eq.2) basp%ionic_charge=values(p,2)
-         call destroy(p)
-         allocate(basp%tmp_shell(basp%nshells_tmp))
+        basp => basis_parameters(isp)
+        basp%label = fdf_bnames(pline,1)
+        basp%nshells_tmp = fdf_bintegers(pline,1)
+        basp%lmxo = 0
+        !! Check whether there are optional type and ionic charge
+        if (fdf_bnnames(pline) .eq. 2)
+     $    basp%basis_type = fdf_bnames(pline,2)
+        if (fdf_bnvalues(pline) .eq. 2)
+     $    basp%ionic_charge = fdf_bvalues(pline,2)
+        allocate(basp%tmp_shell(basp%nshells_tmp))
 
-         shells: do ish=1,basp%nshells_tmp
-            s=>basp%tmp_shell(ish)
-            call initialize(s)
-            if (.not. fdf_bline(bp,line)) call die("No l nzeta, etc")
+        shells: do ish= 1, basp%nshells_tmp
+          s => basp%tmp_shell(ish)
+          call initialize(s)
+          if (.not. fdf_bline(bfdf,pline)) call die("No l nzeta, etc")
 
-            p => digest(line)
-            if (match(p,"niii")) then
-              s%n = integers(p,1)
-              s%l = integers(p,2)
-              basp%lmxo = max(basp%lmxo,s%l)
-              s%nzeta = integers(p,3)
-            else if (match(p,"ii")) then
-              !    l, nzeta
+          if (fdf_bmatch(pline,'niii')) then
+            s%n = fdf_bintegers(pline,1)
+            s%l = fdf_bintegers(pline,2)
+            basp%lmxo = max(basp%lmxo,s%l)
+            s%nzeta = fdf_bintegers(pline,3)
+          elseif (fdf_bmatch(pline,'ii')) then
+            !    l, nzeta
 
-              if (basp%semic)
+            if (basp%semic)
      $        call die("Please specify n if there are semicore states")
 
-              s%l = integers(p,1)
-              s%n = basp%ground_state%n(s%l)
-              s%nzeta = integers(p,2)
-              basp%lmxo = max(basp%lmxo,s%l)
+            s%l = fdf_bintegers(pline,1)
+            s%n = basp%ground_state%n(s%l)
+            s%nzeta = fdf_bintegers(pline,2)
+            basp%lmxo = max(basp%lmxo,s%l)
+          else
+            call die("Bad format of (n), l, nzeta line in PAO.Basis")
+          endif
+          ! Optional stuff: Polarization and Soft-confinement Potential
+
+          if (fdf_bsearch(pline,'S',index_splnorm)) then
+            if (fdf_bmatch(pline,'v',after=index_splnorm)) then
+              s%split_norm = fdf_bvalues(pline, ind=1,
+     $                                   after=index_splnorm)
+              if (s%split_norm .eq. 0.0_dp)
+     $          write(6,"(a)")
+     $            "WARNING: zero split_norm after S in PAO.Basis"
+              s%split_norm_specified = .TRUE.
             else
-               call die("Bad format of (n), l, nzeta line in PAO.Basis")
+              call die("Specify split_norm after S in PAO.Basis")
             endif
-            ! Optional stuff: Polarization and Soft-confinement Potential
-
-            if (search(p,"S",index_splnorm)) then
-               if (match(p,"v",after=index_splnorm)) then
-                  s%split_norm = values(p,ind=1,after=index_splnorm)
-                  if (s%split_norm == 0.0_dp)
-     $               write(6,"(a)")
-     $               "WARNING: zero split_norm after S in PAO.Basis"
-                  s%split_norm_specified = .true.
-               else
-                  call die("Specify split_norm after S in PAO.Basis")
-               endif
+          else
+            if (abs(basp%z) .eq. 1) then
+              s%split_norm = global_splnorm_H
             else
-               if (abs(basp%z).eq.1) then
-                  s%split_norm = global_splnorm_H
-               else
-                  s%split_norm = global_splnorm
-               endif
+              s%split_norm = global_splnorm
             endif
+          endif
 
-            if (search(p,"P",indexp)) then
-               s%polarized = .true.
-               if (match(p,"i",after=indexp)) then
-                  s%nzeta_pol=integers(p,ind=1,after=indexp)
-               else
-                  s%nzeta_pol = 1
-               endif
-            endif
-
-            if (search(p,"E",indexp)) then
-               if (match(p,"vv",after=indexp)) then
-                  s%vcte = values(p,ind=1,after=indexp)
-                  s%rinn = values(p,ind=2,after=indexp)
-               else
-                  call die("Need vcte and rinn after E in PAO.Basis")
-               endif
-            elseif (lsoft) then
-               s%vcte = softPt 
-               s%rinn = -softRc
+          if (fdf_bsearch(pline,'P',indexp)) then
+            s%polarized = .TRUE.
+            if (fdf_bmatch(pline,'i',after=indexp)) then
+              s%nzeta_pol = fdf_bintegers(pline,ind=1,after=indexp)
             else
-               s%vcte = 0.0_dp
-               s%rinn = 0.0_dp
+              s%nzeta_pol = 1
             endif
+          endif
 
-            call destroy(p)
+          if (fdf_bsearch(pline,'E',indexp)) then
+            if (fdf_bmatch(pline,'vv',after=indexp)) then
+              s%vcte = fdf_bvalues(pline,ind=1,after=indexp)
+              s%rinn = fdf_bvalues(pline,ind=2,after=indexp)
+            else
+              call die("Need vcte and rinn after E in PAO.Basis")
+            endif
+          elseif (lsoft) then
+            s%vcte = softPt 
+            s%rinn = -softRc
+          else
+            s%vcte = 0.0_dp
+            s%rinn = 0.0_dp
+          endif
 
-            allocate(s%rc(s%nzeta),s%lambda(s%nzeta))
-            s%rc(:) = 0.d0
-            s%lambda(:) = 1.d0
-            if (.not. fdf_bline(bp,line)) call die("No rc's")
-            p => digest(line)
-            if (nvalues(p).ne.s%nzeta) call die("Wrong number of rc's")
-            do i=1,s%nzeta
-               s%rc(i) = values(p,i)
+          allocate(s%rc(s%nzeta),s%lambda(s%nzeta))
+          s%rc(:) = 0.d0
+          s%lambda(:) = 1.d0
+          if (.not. fdf_bline(bfdf,pline)) call die("No rc's")
+          if (fdf_bnvalues(pline) .ne. s%nzeta)
+     $      call die("Wrong number of rc's")
+          do i= 1, s%nzeta
+            s%rc(i) = fdf_bvalues(pline,i)
+          enddo
+          if (s%split_norm_specified) then
+            do i = 2, s%nzeta
+              if (s%rc(i) /= 0.0_dp) then
+                write(6,"(/,a,i1,a,f8.4,/)")
+     $            "*Warning: Per-shell split_norm parameter " //
+     $            "will not apply to zeta-", i, ". rc=", s%rc(i)
+              endif
             enddo
-            if (s%split_norm_specified) then
-               do i = 2, s%nzeta
-                  if (s%rc(i) /= 0.0_dp) then
-                     write(6,"(/,a,i1,a,f8.4,/)")
-     $                "*Warning: Per-shell split_norm parameter " //
-     $                "will not apply to zeta-", i, ". rc=", s%rc(i)
-                  endif
-               enddo
-            endif
-            call destroy(p)
+          endif
 
-            ! Optional scale factors. They MUST be reals, or else...
-            if (.not. fdf_bline(bp,line)) then
-               if (ish.ne.basp%nshells_tmp)
-     $                    call die("Not enough shells")
-               ! Default values for scale factors
+          ! Optional scale factors. They MUST be reals, or else...
+          if (.not. fdf_bline(bfdf,pline)) then
+            if (ish .ne. basp%nshells_tmp)
+     $        call die("Not enough shells")
+             ! Default values for scale factors
+          else
+            if (.not. fdf_bmatch(pline,'r')) then
+              ! New shell or species
+              ! Default values for the scale factors
+              if (.not. fdf_bbackspace(bfdf,pline))
+     $          call die('repaobasis: ERROR in PAO.Basis block')
+              cycle shells
             else
-               p => digest(line)
-               if (.not.match(p,"r")) then
-                  ! New shell or species
-                  ! Default values for the scale factors
-                  call backspace(bp)
-                  cycle shells
-               else
-                  if (nreals(p).ne.s%nzeta)
-     $                 call die("Wrong number of lambda's")
-                  do i=1,s%nzeta
-                     s%lambda(i) = reals(p,i)
-                  enddo
-               endif
-               call destroy(p)
+              if (fdf_bnreals(pline) .ne. s%nzeta)
+     $          call die("Wrong number of lambda's")
+              do i=1,s%nzeta
+                s%lambda(i) = fdf_breals(pline,i)
+              enddo
             endif
+          endif
 
-         enddo shells
-         ! Clean up for this species
-      enddo loop
+        enddo shells
+        ! Clean up for this species
+      enddo
 !
 !        OK, now classify the states by l-shells
 !
-         do isp = 1, nsp
-            basp=>basis_parameters(isp)
-            if (basp%lmxo.eq.-1) cycle !! Species not in block
-                                       !! 
-            allocate (basp%lshell(0:basp%lmxo))
-            loop_l: do l=0,basp%lmxo
-               ls=>basp%lshell(l)
-               call initialize(ls)
-               ls%l = l
-               ! Search for tmp_shells with given l
-               nn = 0
-               do ish=1, basp%nshells_tmp
-                  s=>basp%tmp_shell(ish)
-                  if (s%l .eq. l) nn=nn+1
-               enddo
-               ls%nn = nn
-               if (nn.eq.0) then
-                  !! What else do we do here?
-                  cycle loop_l  
-               endif
-                                          !! 
-               allocate(ls%shell(1:nn))
-               ! Collect previously allocated shells
-               ind = 0
-               do ish=1, basp%nshells_tmp
-                  s=>basp%tmp_shell(ish)
-                  if (s%l .eq. l) then
-                     ind = ind+1
-                     call copy_shell(source=s,target=ls%shell(ind))
-                  endif
-               enddo
-               if (nn.eq.1) then
-                  ! If n was not specified, set it to ground state n
-                  if (ls%shell(1)%n.eq.-1)
-     $                 ls%shell(1)%n=basp%ground_state%n(l)
-               endif
-               !! Do we have to sort by n value????
-               !!
-            enddo loop_l
-            !! Destroy temporary shells in basp
-            !! Warning: This does seem to destroy information!!
-            call destroy(basp%tmp_shell)
-         enddo
-         call destroy(bp)
+      do isp = 1, nsp
+        basp => basis_parameters(isp)
+        if (basp%lmxo .eq. -1) cycle !! Species not in block
+                                     !!
+        allocate (basp%lshell(0:basp%lmxo))
+        loop_l: do l= 0, basp%lmxo
+          ls => basp%lshell(l)
+          call initialize(ls)
+          ls%l = l
+          ! Search for tmp_shells with given l
+          nn = 0
+          do ish= 1, basp%nshells_tmp
+            s => basp%tmp_shell(ish)
+            if (s%l .eq. l) nn=nn+1
+          enddo
+          ls%nn = nn
+          if (nn.eq.0) then
+            !! What else do we do here?
+            cycle loop_l  
+          endif
+                                     !! 
+          allocate(ls%shell(1:nn))
+          ! Collect previously allocated shells
+          ind = 0
+          do ish=1, basp%nshells_tmp
+            s => basp%tmp_shell(ish)
+            if (s%l .eq. l) then
+              ind = ind+1
+              call copy_shell(source=s,target=ls%shell(ind))
+            endif
+          enddo
+          if (nn.eq.1) then
+            ! If n was not specified, set it to ground state n
+            if (ls%shell(1)%n.eq.-1)
+     $        ls%shell(1)%n=basp%ground_state%n(l)
+          endif
+          !! Do we have to sort by n value????
+          !!
+        enddo loop_l
+        !! Destroy temporary shells in basp
+        !! Warning: This does seem to destroy information!!
+        call destroy(basp%tmp_shell)
+      enddo
 
-         end subroutine repaobasis
+      end subroutine repaobasis
 !_______________________________________________________________________
 
 
@@ -852,7 +812,7 @@ C Sanity checks on values
 
 !-----------------------------------------------------------------------
 
-      subroutine resizes
+      subroutine resizes()
 
 c Reading atomic basis sizes for different species.
 c
@@ -860,86 +820,76 @@ c Reads fdf block. Not necessarily all species have to be given. The
 c ones not given at input will be assumed to have the basis sizes
 c given by the general input PAO.BasisSize, or its default value.
 
-      type(block), pointer  :: bp
-      type(parsed_line), pointer  :: p
-      character(len=132) line
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       integer isp
 
-      nullify(bp)
-      if (.not. fdf_block('PAO.BasisSizes',bp) ) return
-      loop: DO
-         if (.not.fdf_bline(bp,line)) exit loop
-         p => digest(line)
-         if (.not. match(p,"nn"))
-     $        call die("Wrong format in PAO.BasisSizes")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
+      if (fdf_block('PAO.BasisSizes',bfdf)) then
+        do while(fdf_bline(bfdf,pline))
+          if (.not. fdf_bmatch(pline,'nn'))
+     $      call die("Wrong format in PAO.BasisSizes")
+          isp = label2species(fdf_bnames(pline,1))
+          if (isp .eq. 0) then
             write(6,'(a,1x,a)')
-     $           "WRONG species symbol in PAO.BasisSizes:",
-     $            trim(names(p,1))
-            call die
-         else
-            basp=>basis_parameters(isp)
-            basp%basis_size = names(p,2)
+     $        "WRONG species symbol in PAO.BasisSizes:",
+     $        trim(fdf_bnames(pline,1))
+            call die()
+          else
+            basp => basis_parameters(isp)
+            basp%basis_size = fdf_bnames(pline,2)
             call size_name(basp%basis_size)   !!! DEPRECATED
             write(6,'(4a)')
      .           'resizes: Read basis size for species ',
-     .             trim(names(p,1)),' = ',basp%basis_size
-         endif
-         call destroy(p)
-      enddo loop
-      call destroy(bp)
+     .            trim(fdf_bnames(pline,1)),' = ',basp%basis_size
+          endif
+        enddo
+      endif
 
       end subroutine resizes
 
 !-----------------------------------------------------------------------
 
-      subroutine relmxkb
+      subroutine relmxkb()
 
 c Reads the maximum angular momentum of the Kleinman-Bylander
 c projectors for the different species.
 c
 c Reads fdf block. Not necessarily all species have to be given.
 
-      type(block), pointer  :: bp
-      type(parsed_line), pointer  :: p
-      character(len=132) line
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       integer isp
 
-      nullify(bp)
-      if (.not. fdf_block('PS.lmax',bp) ) return
-      loop: DO
-         if (.not.fdf_bline(bp,line)) exit loop
-         p => digest(line)
-         if (.not. match(p,"ni")) call die("Wrong format in PS.lmax")
-         isp = label2species(names(p,1))
-         if (isp .eq. 0) then
+      if (fdf_block('PS.lmax',bfdf)) then
+        do while(fdf_bline(bfdf,pline))
+          if (.not. fdf_bmatch(pline,'ni'))
+     $      call die("Wrong format in PS.lmax")
+          isp = label2species(fdf_bnames(pline,1))
+          if (isp .eq. 0) then
             write(6,'(a,1x,a)') "WRONG species symbol in PS.lmax:",
-     $                          trim(names(p,1))
-            call die
-         else
-            basp=>basis_parameters(isp)
-            basp%lmxkb_requested = integers(p,1)
+     $                           trim(fdf_bnames(pline,1))
+            call die()
+          else
+            basp => basis_parameters(isp)
+            basp%lmxkb_requested = fdf_bintegers(pline,1)
             write(6,"(a, i4, 2a)")
      .            'relmxkb: Read Max KB Ang. Momentum= ',
      $             basp%lmxkb_requested,
-     .            ' for species ', trim(names(p,1))
-         endif
-         call destroy(p)
-      enddo loop
-      call destroy(bp)
+     .            ' for species ', trim(fdf_bnames(pline,1))
+          endif
+        enddo
+      endif
 
       end subroutine relmxkb
 !-----------------------------------------------------------------------
 
-      subroutine remass
+      subroutine remass()
 
 
-      type(block), pointer  :: bp
-      type(parsed_line), pointer  :: p
-      character(len=132) line
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
       integer isp
 
@@ -949,24 +899,20 @@ c Reads fdf block. Not necessarily all species have to be given. The
 c ones not given at input will be assumed to have their natural mass
 c (according to atmass subroutine).
 
-      nullify(bp)
-      if (.not. fdf_block('AtomicMass',bp) ) return
-      loop: DO
-        if (.not. fdf_bline(bp,line)) exit loop
-        p => digest(line)
-        if (.not. match(p,"iv"))
-     $       call die("Wrong format in AtomicMass")
-        isp = integers(p,1)
-        if (isp .gt. nsp .or. isp .lt. 1)
-     $       call die("Wrong specnum in AtomicMass")
-        basp=>basis_parameters(isp)
-        basp%mass = values(p,2)
-        write(6,"(a, i4, a, f12.5)")
-     .       'remass: Read atomic mass for species ', isp,
-     .       ' as ', basp%mass
-        call destroy(p)
-      enddo loop
-      call destroy(bp)
+      if (fdf_block('AtomicMass',bfdf)) then
+        do while(fdf_bline(bfdf,pline))
+          if (.not. fdf_bmatch(pline,'iv'))
+     $      call die("Wrong format in AtomicMass")
+          isp = fdf_bintegers(pline,1)                                 
+          if (isp .gt. nsp .or. isp .lt. 1)                   
+     $      call die("Wrong specnum in AtomicMass")        
+          basp => basis_parameters(isp)                         
+          basp%mass = fdf_bvalues(pline,2)                             
+          write(6,"(a, i4, a, f12.5)")                        
+     .         'remass: Read atomic mass for species ', isp,  
+     .         ' as ', basp%mass                              
+        enddo
+      endif
 
       end subroutine remass
 !-----------------------------------------------------------------------
@@ -1004,95 +950,96 @@ c (according to atmass subroutine).
       if(leqi(str,'TZ3P')) str='tzp3'
       if(leqi(str,'TZTP')) str='tzp3'
  
-      if( (str.ne.'szp').and.(str.ne.'sz').and.
+      if ( (str.ne.'szp').and.(str.ne.'sz').and.
      .     (str.ne.'dz') .and.(str.ne.'dzp') .and.
      .     (str.ne.'tz') .and.(str.ne.'tzp') .and.
      .     (str.ne.'dzp2') .and.
      .     (str.ne.'tzp2') .and. (str.ne.'tzp3') ) then
 
-         write(6,'(/,2a,/,9(a,/))')
-     .   'size_name: Incorrect basis-size option specified,',
-     .   ' active options are:',
-     .   '  SZ or MINIMAL', 
-     .   '  SZP, SZSP, SZ1P, SZP1',
-     $   '  DZ ',
-     $   '  DZP, DZSP, DZP1, DZ1P or STANDARD',
-     $   '  DZDP, DZP2, DZ2P ',
-     $   '  TZ ',
-     $   '  TZP, TZSP, TZP1, TZ1P',
-     $   '  TZDP, TZP2, TZ2P',
-     $   '  TZTP, TZP3, TZ3P'
+        write(6,'(/,2a,/,9(a,/))')
+     .    'size_name: Incorrect basis-size option specified,',
+     .    ' active options are:',
+     .    '  SZ or MINIMAL', 
+     .    '  SZP, SZSP, SZ1P, SZP1',
+     $    '  DZ ',
+     $    '  DZP, DZSP, DZP1, DZ1P or STANDARD',
+     $    '  DZDP, DZP2, DZ2P ',
+     $    '  TZ ',
+     $    '  TZP, TZSP, TZP1, TZ1P',
+     $    '  TZDP, TZP2, TZ2P',
+     $    '  TZTP, TZP3, TZ3P'
 
-         call die
+        call die()
       endif
 
       end subroutine size_name
 !-----------------------------------------------------------------------
 
-        subroutine type_name(basistype)
+      subroutine type_name(basistype)
 
-         character basistype*(*)
+      character basistype*(*)
 
-         if(leqi(basistype,'NODES')) then
-               basistype='nodes'
-         elseif(leqi(basistype,'NONODES')) then
-               basistype='nonodes'
-         elseif(leqi(basistype,'SPLIT')) then
-               basistype='split'
-         elseif(leqi(basistype,'SPLITGAUSS')) then
-               basistype='splitgauss'
-         else
-              write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')
-     .        'type_name: Incorrect basis-type option specified,',
-     .        ' active options are:',
-     .        'NODES','SPLIT','SPLITGAUSS','NONODES'
-              call die
-         endif
+      if(leqi(basistype,'NODES')) then
+        basistype='nodes'
+      elseif(leqi(basistype,'NONODES')) then
+        basistype='nonodes'
+      elseif(leqi(basistype,'SPLIT')) then
+        basistype='split'
+      elseif(leqi(basistype,'SPLITGAUSS')) then
+        basistype='splitgauss'
+      else
+        write(6,'(/,2a,(/,5(3x,a)),(/,2(3x,a)))')
+     .    'type_name: Incorrect basis-type option specified,',
+     .    ' active options are:',
+     .    'NODES','SPLIT','SPLITGAUSS','NONODES'
+        call die()
+      endif
 
-        end subroutine type_name
+      end subroutine type_name
 !-----------------------------------------------------------------------
 !
-!       Find out whether semicore states are implied by the valence
-!       charge density in the pseudopotential file.
+!     Find out whether semicore states are implied by the valence
+!     charge density in the pseudopotential file.
 !
-        subroutine semicore_check(is)
-        integer, intent(in)  :: is
+      subroutine semicore_check(is)
+      integer, intent(in)  :: is
 
-        real*8, parameter :: tiny = 1.d-5
-        integer ndiff
-        real*8 zval, zval_vps, charge_loc
+      real*8, parameter :: tiny = 1.d-5
+      integer ndiff
+      real*8 zval, zval_vps, charge_loc
 
-        basp => basis_parameters(is)
+      basp => basis_parameters(is)
 
-        basp%semic = .false.
-        if (basp%bessel) return
+      basp%semic = .false.
+      if (basp%bessel) return
 
-        zval_vps = basp%pseudopotential%zval
-        zval = basp%ground_state%z_valence
-        
-        if(abs(Zval-zval_vps).lt.tiny) return
+      zval_vps = basp%pseudopotential%zval
+      zval = basp%ground_state%z_valence
+      
+      if (abs(Zval-zval_vps).lt.tiny) return
 
-        ndiff=nint(abs(Zval-zval_vps))
-        if(abs(ndiff-abs(Zval-zval_vps)).gt.tiny) then
-              write(6,'(2a)')
-     .   'ERROR expected valence charge for species ',
-     .        basp%label
-              write(6,'(a)')
-     .  'ERROR and the value read from the vps file'
-              write(6,'(a,f6.3,a,f6.3)')
-     .  'ERROR differ:  Zval(expected)= ', Zval,' Zval(vps)= ',zval_vps
-              call die
-        endif
+      ndiff = nint(abs(Zval-zval_vps))
+      if (abs(ndiff-abs(Zval-zval_vps)).gt.tiny) then
+        write(6,'(2a)')
+     .    'ERROR expected valence charge for species ',
+     .    basp%label
+        write(6,'(a)')
+     .    'ERROR and the value read from the vps file'
+        write(6,'(a,f6.3,a,f6.3)')
+     .    'ERROR differ:  Zval(expected)= ', Zval,
+     .    ' Zval(vps)= ',zval_vps
+        call die()
+      endif
 
-        basp%semic=.true.
-        charge_loc=Zval_vps-Zval
-        write(6,'(a,i2,a)')
-     .       'Semicore shell(s) with ', nint(charge_loc),
-     $       ' electrons included in the valence for', trim(basp%label)
+      basp%semic = .true.
+      charge_loc = Zval_vps-Zval
+      write(6,'(a,i2,a)')
+     .  'Semicore shell(s) with ', nint(charge_loc),
+     $  ' electrons included in the valence for', trim(basp%label)
 
-        end subroutine semicore_check
+      end subroutine semicore_check
 !----------------------------------------------------------------------
-      subroutine autobasis
+      subroutine autobasis()
 
 !
 !     It sets the defaults if a species has not been included
@@ -1107,12 +1054,12 @@ c (according to atmass subroutine).
          if (basp%semic) then
             write(6,'(2a)') basp%label,
      $           ' must be in PAO.Basis (it has semicore states)'
-            call die
+            call die()
          endif
          if (basp%bessel) then
             write(6,'(2a)') basp%label,
      $      ' must be in PAO.Basis (it is a floating Bessel function)'
-            call die
+            call die()
          endif
          !
          ! Set the default max l 
@@ -1216,13 +1163,3 @@ c (according to atmass subroutine).
       end subroutine autobasis
 
       End module basis_specs
-
-
-
-
-
-
-
-
-
-

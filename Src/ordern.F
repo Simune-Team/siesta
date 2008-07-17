@@ -86,7 +86,6 @@ C ****************************************************************************
 
 C  Modules
       use precision, only: dp
-      use fdf
       use alloc
       use on_main
       use parallel,  only : IONode, Node, NOdes

@@ -49,7 +49,6 @@ C     Modules
       integer                 :: nsc(3), nbcell, nsd
       real(dp)                :: DStres(3,3), volume
       logical                 :: samesh, samexa
-      logical, external       :: leqi
       real(dp), external      :: volcel, ddot
 #ifdef MPI
       integer                 :: MPIerror
@@ -75,14 +74,8 @@ C     Start time counter
       if (frstme) then
         nullify( xdsp, rhopcc, Vna, rhoatm )
 C       nsm lives in module mesh in meshsubs
-        if (Node.eq.0) then
-          nsm = fdf_integer( 'MeshSubDivisions', 2 )
-          nsm = max( nsm, 1 )
-        endif
-
-#ifdef MPI
-        call MPI_Bcast( nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror )
-#endif
+        nsm = fdf_integer( 'MeshSubDivisions', 2 )
+        nsm = max( nsm, 1 )
 
 C       Set mesh sub-division variables & perform one off allocation
         nsp = nsm*nsm*nsm
@@ -610,7 +603,6 @@ C ----------------------------------------------------------------------
         call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
 #endif
       endif
-
 C ----------------------------------------------------------------------
 C Save the diffuse ionic charge and/or the total (ionic+electronic) charge
 C ----------------------------------------------------------------------

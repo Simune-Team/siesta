@@ -55,8 +55,8 @@ C  Modules
 C
       use precision,   only : dp
       use parallel,    only : Node
-      use fdf,         only : fdf_block, fdf_physical
-      use m_fdf_global, only: fdf_global_get
+      use sys,         only : die
+      use fdf
       use m_mpi_utils, only:  broadcast
       use units, only: kBar, Ang
 
@@ -81,7 +81,7 @@ C Subroutine arguments:
       real(dp), intent(inout):: xa(3,na), stress(3,3), strtol, cell(3,3)
 
 C Internal variables and arrays
-      integer             :: iu, ia, i, j, n, indi,indi1,vi,k,ndegi,ndi
+      integer             :: ia, i, j, n, indi,indi1,vi,k,ndegi,ndi
       logical             :: found
       real(dp)            :: volume, new_volume, trace
       real(dp)            :: sxx, syy, szz, sxy, sxz, syz
@@ -89,6 +89,9 @@ C Internal variables and arrays
       real(dp)            :: stress_dif(3,3)
       real(dp), pointer   :: gxa(:), gfa(:)
       real(dp)            :: force, force1
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
 
 C Saved internal variables:
       integer,       save :: ndeg, linmin
@@ -122,59 +125,68 @@ C Look for target stress and read it if found, otherwise generate it --------
         if ( varcel ) then
      
 C Check if we want a constant-volume simulation
-          call fdf_global_get(constant_volume,
-     .                        "MD.ConstantVolume", .false.)
+          constant_volume = fdf_get("MD.ConstantVolume", .false.)
 
-          if (Node.eq.0) then
-            tarstr = fdf_block('MD.TargetStress',iu)
+          tarstr = fdf_block('MD.TargetStress',bfdf)
 
-            if (tarstr) then
+          if (tarstr) then
+            if (Node.eq.0) then
               write(6,'(/a,a)')
-     $              'cgvc_zmatrix: Reading %block MD.TargetStress',
-     .                       ' (units of MD.TargetPressure).'
-              read(iu,*, end=50) sxx, syy, szz, sxy, sxz, syz
-              tstres(1,1) = - sxx * tp
-              tstres(2,2) = - syy * tp
-              tstres(3,3) = - szz * tp
-              tstres(1,2) = - sxy * tp
-              tstres(2,1) = - sxy * tp
-              tstres(1,3) = - sxz * tp
-              tstres(3,1) = - sxz * tp
-              tstres(2,3) = - syz * tp
-              tstres(3,2) = - syz * tp
-   50         continue
-            else
+     $            'cgvc_zmatrix: Reading %block MD.TargetStress',
+     .                     ' (units of MD.TargetPressure).'
+            endif
+            if (.not. fdf_bline(bfdf,pline))
+     $        call die('cgvc_zmatrix: ERROR in MD.TargetStress block')
+            sxx = fdf_bvalues(pline,1)
+            syy = fdf_bvalues(pline,2)
+            szz = fdf_bvalues(pline,3)
+            sxy = fdf_bvalues(pline,4)
+            sxz = fdf_bvalues(pline,5)
+            syz = fdf_bvalues(pline,6)
+            tstres(1,1) = - sxx * tp
+            tstres(2,2) = - syy * tp
+            tstres(3,3) = - szz * tp
+            tstres(1,2) = - sxy * tp
+            tstres(2,1) = - sxy * tp
+            tstres(1,3) = - sxz * tp
+            tstres(3,1) = - sxz * tp
+            tstres(2,3) = - syz * tp
+            tstres(3,2) = - syz * tp
+          else
+            if (Node.eq.0) then
               write(6,'(/a,a)')
-     $              'cgvc_zmatrix: No target stress found, ',
-     .              'assuming hydrostatic MD.TargetPressure.'
-              do i = 1, 3
-                do j = 1, 3
-                  tstres(i,j) = 0.0_dp
-                enddo
-                tstres(i,i) = - tp
+     $            'cgvc_zmatrix: No target stress found, ',
+     .            'assuming hydrostatic MD.TargetPressure.'
+            endif
+            do i= 1, 3
+              do j= 1, 3
+                tstres(i,j) = 0.0_dp
               enddo
-            endif
-
-C Write target stress down --------------------------------------------------
-
-            if (constant_volume) then
-               tstres(:,:) = 0.0_dp
-               write(6,"(a)") "***Target stress set to zero " //
-     $              "for constant-volume calculation"
-            endif
-            write(6,"(/a)") 'cgvc_zmatrix: Target stress (kBar)'
-            do i = 1, 3
-               write(6,"(a,2x,3f12.3)") 
-     .              'cgvc_zmatrix:', (tstres(1,j)/kBar,j=1,3)
+              tstres(i,i) = - tp
             enddo
           endif
 
-          call broadcast(tstres(1:3,1:3))
+C Write target stress down --------------------------------------------------
+
+          if (constant_volume) then
+            tstres(:,:) = 0.0_dp
+            if (Node.eq.0) then
+              write(6,"(a)") "***Target stress set to zero " //
+     $            "for constant-volume calculation"
+            endif
+          endif
+          if (Node.eq.0) then
+            write(6,"(/a)") 'cgvc_zmatrix: Target stress (kBar)'
+            do i = 1, 3
+              write(6,"(a,2x,3f12.3)") 
+     .             'cgvc_zmatrix:', (tstres(1,j)/kBar,j=1,3)
+            enddo
+          endif
 
 C Moduli of original cell vectors for fractional coor scaling back to au ---
-          do n = 1, 3
+          do n= 1, 3
             modcel(n) = 0.0_dp
-            do j = 1, 3
+            do j= 1, 3
               modcel(n) = modcel(n) + cell(j,n)*cell(j,n)
             enddo
             modcel(n) = dsqrt( modcel(n) )
@@ -183,8 +195,8 @@ C Moduli of original cell vectors for fractional coor scaling back to au ---
 C Scale factor for strain variables to share magnitude with coordinates -----
 C ---- (a length in Bohrs typical of bond lengths ..) -----------------------
 
-          call fdf_global_get(precon,'MD.PreconditionVariableCell',
-     .                           9.4486344d0,'Bohr')
+          precon = fdf_get('MD.PreconditionVariableCell',
+     .                     9.4486344d0,'Bohr')
 
 C Initialize absolute strain and save initial cell vectors -----------------
 C Initialization to 1. for numerical reasons, later substracted ------------

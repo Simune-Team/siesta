@@ -34,32 +34,20 @@ module molecularmechanics
 
    use fdf
    use units,   only : eV, Ang
-   use parsing, only : parse
    use sys,     only : die
    use parallel,only : Node
-#  ifdef MPI
-   use mpi_siesta
-#  endif
-   character(len=130) :: line
-   character(len=80)  :: names
+   character(len=80)  :: potencial
    character(len=80)  :: scale
    integer            :: il
-   integer            :: integs(4)
-   integer            :: iu
-   integer            :: lastc
-   integer            :: lc(0:3)
    integer            :: maxlin
    integer            :: ni
    integer            :: nn
    integer            :: nr
-   integer            :: nv
-#  ifdef MPI
-   integer            :: MPIerror
-#  endif
    real(dp)           :: Dscale
    real(dp)           :: Escale
-   real(dp)           :: reals(4)
-   real(dp)           :: values(4)
+
+   type(block_fdf)            :: bfdf
+   type(parsed_line), pointer :: pline
 
  ! Allocation of arrays formerly done here moved
  ! to top of module, as they are really static for now
@@ -68,159 +56,135 @@ module molecularmechanics
  !
  ! Get potential cutoff
  !
-#ifdef MPI
-  if (Node.eq.0) then
-    MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
-  endif
-
-  call MPI_Bcast(MMcutoff,1,MPI_double_precision,0,MPI_Comm_World,MPIerror)
-#else
   MMcutoff = fdf_physical('MM.Cutoff',30.0d0,'Bohr')
-#endif
 !
 ! Set MM units of energy for potential parameters
 !
-  if (Node.eq.0) then
-    scale = fdf_string( 'MM.UnitsEnergy','eV' )
-    if (scale.eq.'eV') then
-      Escale = eV
-    else
-      Escale = 1.0_dp
-    endif
-    scale = fdf_string( 'MM.UnitsDistance','Ang' )
-    if (scale.eq.'Ang') then
-      Dscale = Ang
-    else
-      Dscale = 1.0_dp
-    endif
+  scale = fdf_string( 'MM.UnitsEnergy','eV' )
+  if (scale.eq.'eV') then
+    Escale = eV
+  else
+    Escale = 1.0_dp
+  endif
+  scale = fdf_string( 'MM.UnitsDistance','Ang' )
+  if (scale.eq.'Ang') then
+    Dscale = Ang
+  else
+    Dscale = 1.0_dp
   endif
 !
 ! Read in data from block
 !
   nMMpot = 0
-#ifdef MPI
-  if (Node.eq.0) then
-    PotentialsPresent = fdf_block('MM.Potentials',iu)
-  endif
-  call MPI_Bcast(PotentialsPresent,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#else
-  PotentialsPresent = fdf_block('MM.Potentials',iu)
-#endif
+  PotentialsPresent = fdf_block('MM.Potentials',bfdf)
   if (PotentialsPresent) then
-#ifdef MPI
     if (Node.eq.0) then
-#endif
-    write(6,"(a)") "Reading two-body potentials"
+      write(6,"(a)") "Reading two-body potentials"
+    endif
     maxlin = maxMMpot
-    do il = 1,maxlin
+    do il= 1, maxlin
 !
 ! Read and parse data line
 !
-      read(iu,'(a)',end=50) line
-      if (index(line,'%endblock').ne.0) exit
-      lastc = index(line,'#') - 1
-      if (lastc .le. 0) lastc = len(line)
-      call parse( line(1:lastc), nn, lc, names, nv, values, ni, integs, nr, reals )
-!
-      if (nn.gt.0) then
-        if (index(names(1:lc(1)),'c6').gt.0.or.index(names(1:lc(1)),'C6').gt.0) then
+      if (.not. fdf_bline(bfdf,pline)) &
+        call die('inittwobody: ERROR in MM.Potentials block')
+      nn = fdf_bnnames(pline)
+      ni = fdf_bnintegers(pline)
+      nr = fdf_bnreals(pline)
+      potencial = fdf_bnames(pline,1)
+
+      if (nn .gt. 0) then
+        if (leqi(potencial,'C6')) then
           nMMpot = nMMpot + 1
-          if (nMMpot.gt.maxMMpot) then
+          if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
           endif
           nMMpottype(nMMpot) = 1
-          if (ni.lt.2) then
+          if (ni .lt. 2) then
             call die('MM: Species numbers missing in potential input!')
           endif
-          nMMpotptr(1,nMMpot) = integs(1)
-          nMMpotptr(2,nMMpot) = integs(2)
-          if (nr.ge.2) then
+          nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
+          nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          if (nr .ge. 2) then
 ! C6 : Parameter one is C6 coefficient
-            MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
 ! C6 : Parameter two is damping exponent
-            MMpotpar(2,nMMpot) = reals(2)/Dscale
-          elseif (nr.eq.1) then
+            MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Dscale
+          elseif (nr .eq. 1) then
 ! C6 : Parameter one is C6 coefficient
-            MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
-        elseif (index(names(1:lc(1)),'c8').gt.0.or.index(names(1:lc(1)),'C8').gt.0) then
+        elseif (leqi(potencial,'C8')) then
           nMMpot = nMMpot + 1
-          if (nMMpot.gt.maxMMpot) then
+          if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
           endif
           nMMpottype(nMMpot) = 2
-          if (ni.lt.2) then
+          if (ni .lt. 2) then
             call die('MM: Species numbers missing in potential input!')
           endif
-          nMMpotptr(1,nMMpot) = integs(1)
-          nMMpotptr(2,nMMpot) = integs(2)
-          if (nr.ge.2) then
+          nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
+          nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          if (nr .ge. 2) then
 ! C8 : Parameter one is C8 coefficient
-            MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
 ! C8 : Parameter two is damping exponent
-            MMpotpar(2,nMMpot) = reals(2)/Dscale
-          elseif (nr.eq.1) then
+            MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Dscale
+          elseif (nr .eq. 1) then
 ! C8 : Parameter one is C8 coefficient
-            MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
-        elseif (index(names(1:lc(1)),'c10').gt.0.or.index(names(1:lc(1)),'C10').gt.0) then
+        elseif (leqi(potencial,'C10')) then
           nMMpot = nMMpot + 1
-          if (nMMpot.gt.maxMMpot) then
+          if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
           endif
           nMMpottype(nMMpot) = 3
-          if (ni.lt.2) then
+          if (ni .lt. 2) then
             call die('MM: Species numbers missing in potential input!')
           endif
-          nMMpotptr(1,nMMpot) = integs(1)
-          nMMpotptr(2,nMMpot) = integs(2)
-          if (nr.ge.2) then
+          nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
+          nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          if (nr .ge. 2) then
 ! C10 : Parameter one is C10 coefficient
-            MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
 ! C10 : Parameter two is damping exponent
-            MMpotpar(2,nMMpot) = reals(2)/Dscale
+            MMpotpar(2,nMMpot) = fdf_breals(pline,2)/Dscale
           elseif (nr.eq.1) then
 ! C10 : Parameter one is C10 coefficient
-            MMpotpar(1,nMMpot) = reals(1)*Escale*(Dscale**6)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
-        elseif (index(names(1:lc(1)),'harm').gt.0.or.index(names(1:lc(1)),'HARM').gt.0) then
+        elseif (leqi(potencial,'HARM')) then
           nMMpot = nMMpot + 1
-          if (nMMpot.gt.maxMMpot) then
+          if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
           endif
           nMMpottype(nMMpot) = 4
-          if (ni.lt.2) then
+          if (ni .lt. 2) then
             call die('MM: Species numbers missing in potential input!')
           endif
-          nMMpotptr(1,nMMpot) = integs(1)
-          nMMpotptr(2,nMMpot) = integs(2)
-          if (nr.ge.2) then
+          nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
+          nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          if (nr .ge. 2) then
 ! Harm : Parameter one is force constant
-            MMpotpar(1,nMMpot) = reals(1)*Escale/(Dscale**2)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Dscale**2)
 ! Harm : Parameter two is r0
-            MMpotpar(2,nMMpot) = reals(2)*Dscale
-          elseif (nr.eq.1) then
+            MMpotpar(2,nMMpot) = fdf_breals(pline,2)*Dscale
+          elseif (nr .eq. 1) then
 ! Harm : Parameter one is force constant
-            MMpotpar(1,nMMpot) = reals(1)*Escale/(Dscale**2)
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Dscale**2)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
         endif
       endif
     enddo
-50  continue
-#ifdef MPI
-    endif
-    call MPI_Bcast(nMMpot,1,MPI_integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(nMMpottype,nMMpot,MPI_integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(nMMpotptr(1,1),2*nMMpot,MPI_integer,0,MPI_Comm_World,MPIerror)
-    call MPI_Bcast(MMpotpar(1,1),6*nMMpot,MPI_double_precision,0,MPI_Comm_World,MPIerror)
-#endif
+
   endif
 
-if (Node .eq. 0)  call plot_functions()
+  if (Node .eq. 0)  call plot_functions()
 
 end subroutine inittwobody
 

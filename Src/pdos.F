@@ -69,7 +69,6 @@ C **********************************************************************
       use files,        only : slabel, label_length
 #ifdef MPI
       use parallelsubs, only : GetNodeOrbs
-      use mpi_siesta,   only : MPI_logical, MPI_Comm_World
 #endif
 
       implicit none
@@ -113,24 +112,17 @@ C Internal variables ---------------------------------------------------
      .  io_assign, io_close,
      .  pdosk, timer
 
-#ifdef MPI
-      integer :: mpierror
-#endif
-
       type(xmlf_t) :: xf            ! For new XML output
 
       call timer( 'pdos', 1)
 
 C Find the intervals between the subdivisions in the energy scale ------
       delta = (E2 - E1) / (NHIST-1)
-      if (Node.eq.0) then
+      if (Nodes .eq. 1) then
+        ParallelOverK = .false.
+      else
         ParallelOverK = fdf_boolean('Diag.ParallelOverK',.false.)
-        if (Nodes.eq.1) ParallelOverK = .false.
       endif
-#ifdef MPI
-      call MPI_Bcast(ParallelOverK, 1, MPI_logical, 0,
-     .               MPI_Comm_World, MPIerror)
-#endif
 
 C Find number of orbitals per unit cell 
 #ifdef MPI

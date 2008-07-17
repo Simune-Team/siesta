@@ -37,7 +37,6 @@ C
       use precision,     only : dp
       use parallel,      only : Node, Nodes
       use parallelsubs
-      use fdf
       use files,         only : slabel, label_length
       use on_main,       only : c, cold, numc, numcold, listc, listcold
       use on_main,       only : xi, g, hg

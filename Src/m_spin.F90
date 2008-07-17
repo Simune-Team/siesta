@@ -10,7 +10,7 @@ module m_spin
 CONTAINS
 
   subroutine init_spin()
-    use m_fdf_global
+    use fdf, only : fdf_get
     use alloc, only: re_alloc
     use parallel, only: IOnode
 
@@ -18,8 +18,8 @@ CONTAINS
 
     logical  noncol, sppol
 
-    call fdf_global_get(sppol,'SpinPolarized',.false.)
-    call fdf_global_get(noncol,'NonCollinearSpin',.false.)
+    sppol  = fdf_get('SpinPolarized',.false.)
+    noncol = fdf_get('NonCollinearSpin',.false.)
 
     if (noncol) then
        nspin = 4

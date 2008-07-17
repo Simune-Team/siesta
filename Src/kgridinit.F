@@ -59,10 +59,8 @@ C
       use units,      only : Ang
       use parallel,   only : Node
       use m_minvec,   only : minvec
+      use sys,        only : die
       use fdf
-#ifdef MPI
-      use mpi_siesta
-#endif
 
       implicit          none
 
@@ -76,30 +74,26 @@ C Passed variables
       real(dp), external       ::  volcel
 
 C Internal variables
-      integer           i, ir, iu, ix, j,
+      integer           i, ir, ix, j,
      .                  kdsc(3,3), maux(3,3,2), ml(3,3), mr(3,3),
      .                  ng(3), ni, nkr(3), nktot, factor(3,3),
      $                  proj(3,3)
-#ifdef MPI
-      integer           MPIerror
-#endif
       real(dp)          defcut, dkg(3), dkx(3), dscell(3,3),
      .                  gridk(3,3), gscell(3,3), huge, pi,  
      .                  scell(3,3), scmin(3,3), tiny, vmod
       real(dp)          ctransf(3,3)
       logical           genlogic, spiral
+
+      type(block_fdf)            :: bfdf
+      type(parsed_line), pointer :: pline
+
       parameter (defcut = 0.d0)
       parameter (huge   = 1.d30)
       parameter (tiny   = 1.d-12)
 
       genlogic = .false.
 C Find out if there is spiral arrangement of spins 
-      if (Node.eq.0) then
-        spiral = fdf_block('SpinSpiral',iu)
-      endif
-#ifdef MPI
-      call MPI_Bcast(spiral,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+      spiral = fdf_block('SpinSpiral',bfdf)
 
 C Find total number of points (determinant of kscell)
       nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
@@ -111,24 +105,16 @@ C Find total number of points (determinant of kscell)
 
 C Look for kscell or cutoff in input fdf file
       if ( nktot.eq.0 .and. cutoff.lt.tiny ) then
-        if (Node.eq.0) then
-          genlogic = fdf_block('kgrid_Monkhorst_Pack',iu)
-        endif
-#ifdef MPI
-        call MPI_Bcast(genlogic,1,MPI_logical,0,MPI_Comm_World,MPIerror)
-#endif
+        genlogic = fdf_block('kgrid_Monkhorst_Pack',bfdf)
         if ( genlogic ) then
-          if (Node.eq.0) then
-            do i = 1,3
-              read(iu,*) (kscell(j,i),j=1,3), displ(i)
-            enddo
-          endif
-#ifdef MPI
-          call MPI_Bcast(kscell(1,1),9,MPI_integer,0,MPI_Comm_World,
-     .      MPIerror)
-          call MPI_Bcast(displ,3,MPI_double_precision,0,MPI_Comm_World,
-     .      MPIerror)
-#endif
+          do i= 1, 3
+            if (.not. fdf_bline(bfdf,pline))
+     .        call die('kgridinit: ERROR in kgrid_Monkhorst_Pack block')
+            kscell(1,i) = fdf_bintegers(pline,1)
+            kscell(2,i) = fdf_bintegers(pline,2)
+            kscell(3,i) = fdf_bintegers(pline,3)
+            displ(i)    = fdf_breals(pline,1)
+          enddo
           nktot = abs( kscell(1,1) * kscell(2,2) * kscell(3,3) +
      .                 kscell(2,1) * kscell(3,2) * kscell(1,3) +
      .                 kscell(3,1) * kscell(1,2) * kscell(2,3) -
@@ -137,13 +123,7 @@ C Look for kscell or cutoff in input fdf file
      .                 kscell(3,1) * kscell(2,2) * kscell(1,3) )
         else
 C The second argument is the default value
-          if (Node.eq.0) then
-            cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
-          endif
-#ifdef MPI
-          call MPI_Bcast(cutoff,1,MPI_double_precision,0,
-     .      MPI_Comm_World,MPIerror)
-#endif
+          cutoff = fdf_physical('kgrid_cutoff',defcut,'Bohr')
         endif
       endif
 
