@@ -6,6 +6,17 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-07-18  08:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-33
+
+Summary: Fix in dhscf.F . Added OUT directories int Tests/transiesta 
+
+(F.D. Novaes) 
+
+* Corrected the position of MPI #endif in dhscf.
+
+* Added output files of transiesta runs in OUT directories
+and of tbtrans runs in OUT_TBT in the tests located in Tests/transiesta
+
 2008-07-16  15:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-32
 
 Summary: Added tests for Transiesta and /Util/TBTrans (F.D. Novaes)
