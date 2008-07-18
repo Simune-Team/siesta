@@ -8,20 +8,20 @@
 ! Routine, 'digest' takes as input a string 'line' and returns a pointer
 ! to a derived type 'parsed_line':
 ! 
-!       Derived type used to build an array of pointers
-!       type ptoken
-!         integer(ip)           :: nchars
-!         character, pointer    :: token(:)
-!       end type ptoken
+!   Parsed line info (ntokens, token info and identification)
+!   Note that the token characters are stored in a single "line",
+!   and addressed using the starting and ending points.
+!   This avoids the use of dynamic memory without loss of functionality.
+!
+!  type, public :: parsed_line
+!    integer(ip)               :: ntokens
+!    character(len=MAX_LENGTH) :: line
+!    integer(ip)               :: first(MAX_NTOKENS)
+!    integer(ip)               :: last(MAX_NTOKENS)
+!    character(len=1)          :: id(MAX_NTOKENS)
+!  end type parsed_line
 ! 
-!       Parsed line info (ntokens, token array and idenfitication)
-!       type parsed_line
-!         integer(ip)           :: ntokens
-!         type(ptoken), pointer :: array(:) 
-!         character, pointer    :: id(:)
-!       end type parsed_line
-! 
-! which holds a list of tokens (array) and token tags (id). The
+! which holds a list of tokens and token tags (id). The
 ! parsing (split string into tokens) is done by a helper routine
 ! 'parses' which currently behaves according to the FDF standard.
 ! Each token is classified by helper routine 'morphol' and a token
@@ -149,9 +149,9 @@
 !       if (match(p, 'r', after=jq) energy = reals(p, 1, after=jq)
 !     endif
 ! 
-!
-! September 2007
-!
+! Alberto Garcia, 1995-2007, original implementation
+! Raul de la Cruz, September 2007
+! Alberto Garcia, July 2008
 !
 !========================================================================
 
@@ -176,6 +176,12 @@ MODULE parse
   public :: integers, reals, values, names
   public :: blocks, endblocks, labels, tokens
 
+!
+! This parameter is needed by the fdf module. It could also
+! be hidden behind a function call...
+!
+  integer(ip), parameter, public  :: MAX_LENGTH = 132
+
 ! Change morphology
   public :: setmorphol
 
@@ -188,20 +194,20 @@ MODULE parse
 ! Internal constants
   logical, private                :: parse_debug = .FALSE.
   integer(ip), private            :: parse_log   = ERROR_UNIT
-  integer(ip), parameter, private :: max_length = 132
-  integer(ip), parameter, private :: maxntokens = 50
+  integer(ip), parameter, private :: MAX_NTOKENS = 50
 
-! Derived type used to build an array of pointers
-  type, public :: ptoken
-    integer(ip)           :: nchars
-    character, pointer    :: token(:)
-  end type ptoken
 
-! Parsed line info (ntokens, token array and idenfitication)
+!   Parsed line info (ntokens, token info and identification)
+!   Note that the token characters are stored in a single "line",
+!   and addressed using the starting and ending points.
+!   This avoids the use of dynamic memory without loss of functionality.
+
   type, public :: parsed_line
-    integer(ip)           :: ntokens
-    type(ptoken), pointer :: array(:) 
-    character, pointer    :: id(:)
+    integer(ip)               :: ntokens
+    character(len=MAX_LENGTH) :: line
+    integer(ip)               :: first(MAX_NTOKENS)
+    integer(ip)               :: last(MAX_NTOKENS)
+    character(len=1)          :: id(MAX_NTOKENS)
   end type parsed_line
 
 ! Search wrapper (return index as function or subroutine)
@@ -230,8 +236,6 @@ MODULE parse
         call die('PARSE module: create', 'Error allocating pline',      &
                  __FILE__, __LINE__, rc=ierr)
       endif
-
-      NULLIFY(pline%array, pline%id)
 !--------------------------------------------------------------------------- END
     END SUBROUTINE create
 
@@ -248,18 +252,6 @@ MODULE parse
 
 !------------------------------------------------------------------------- BEGIN
       if (ASSOCIATED(pline)) then
-        if (ASSOCIATED(pline%array)) then
-
-          do i= 1, pline%ntokens
-            if (ASSOCIATED(pline%array(i)%token)) then
-              DEALLOCATE(pline%array(i)%token)
-            endif
-          enddo
-
-          DEALLOCATE(pline%array)
-        endif
-
-        if (ASSOCIATED(pline%id)) DEALLOCATE(pline%id)
         DEALLOCATE(pline)
         NULLIFY(pline)
       endif
@@ -267,7 +259,7 @@ MODULE parse
     END SUBROUTINE destroy
 
 !     
-!   Return the number of a item class in the tokens.
+!   Return the number of items of a certain class among the tokens.
 !
     FUNCTION nitems(class, pline, after)
       implicit none
@@ -509,8 +501,7 @@ MODULE parse
       do while((.not. found) .and. (i .le. pline%ntokens))
         if (leqi(pline%id(i), 'i')) j = j + 1
         if (j .eq. ind) then
-          integers = s2i(arr2s(pline%array(i)%token,                    &
-                               pline%array(i)%nchars))
+          integers = s2i(tokens(pline,i))
           found = .TRUE.
         endif
         i = i + 1
@@ -561,7 +552,7 @@ MODULE parse
       do while((.not. found) .and. (i .le. pline%ntokens))
         if (leqi(pline%id(i), 'r')) j = j + 1
         if (j .eq. ind) then
-          reals = s2r(arr2s(pline%array(i)%token, pline%array(i)%nchars))
+          reals = s2r(tokens(pline,i))
           found = .TRUE.
         endif
         i = i + 1
@@ -613,7 +604,7 @@ MODULE parse
         if ((leqi(pline%id(i), 'i')) .or. (leqi(pline%id(i), 'r')))     &
           j = j + 1
         if (j .eq. ind) then
-          values = s2r(arr2s(pline%array(i)%token, pline%array(i)%nchars))
+          values = s2r(tokens(pline,i))
           found = .TRUE.
         endif
         i = i + 1
@@ -641,7 +632,7 @@ MODULE parse
       type(parsed_line), pointer        :: pline
 
 !-------------------------------------------------------------- Output Variables
-      character(len=max_length)         :: names
+      character(len=MAX_LENGTH)         :: names
 
 !--------------------------------------------------------------- Local Variables
       logical                           :: found
@@ -664,7 +655,7 @@ MODULE parse
       do while((.not. found) .and. (i .le. pline%ntokens))
         if (leqi(pline%id(i), 'n')) j = j + 1
         if (j .eq. ind) then
-          names = arr2s(pline%array(i)%token, pline%array(i)%nchars)
+          names = trim(tokens(pline,i))
           found = .TRUE.
         endif
         i = i + 1
@@ -689,7 +680,7 @@ MODULE parse
       type(parsed_line), pointer    :: pline
 
 !-------------------------------------------------------------- Output Variables
-      character(len=max_length)     :: blocks
+      character(len=MAX_LENGTH)     :: blocks
 
 !------------------------------------------------------------------------- BEGIN
       if (match(pline, 'bl')) then
@@ -712,7 +703,7 @@ MODULE parse
       type(parsed_line), pointer    :: pline
 
 !-------------------------------------------------------------- Output Variables
-      character(len=max_length)     :: endblocks
+      character(len=MAX_LENGTH)     :: endblocks
 
 !------------------------------------------------------------------------- BEGIN
       if (match(pline, 'el')) then
@@ -735,7 +726,7 @@ MODULE parse
       type(parsed_line), pointer :: pline
 
 !-------------------------------------------------------------- Output Variables
-      character(len=max_length)  :: labels
+      character(len=MAX_LENGTH)  :: labels
 
 !------------------------------------------------------------------------- BEGIN
       if (match(pline, 'l')) then
@@ -761,10 +752,10 @@ MODULE parse
       type(parsed_line), pointer        :: pline
 
 !-------------------------------------------------------------- Output Variables
-      character(len=max_length)         :: tokens
+      character(len=MAX_LENGTH)         :: tokens
 
 !--------------------------------------------------------------- Local Variables
-      integer(ip)                       :: starting_pos
+      integer(ip)                       :: starting_pos, loc
 
 !------------------------------------------------------------------------- BEGIN
       if (PRESENT(after)) then
@@ -780,8 +771,9 @@ MODULE parse
         call die('PARSE module: tokens', 'Wrong starting position',     &
                  __FILE__, __LINE__)
 
-      tokens = arr2s(pline%array(starting_pos+ind)%token,               &
-                     pline%array(starting_pos+ind)%nchars)
+      loc = starting_pos+ind
+      tokens = pline%line(pline%first(loc):pline%last(loc))
+
       RETURN
 !--------------------------------------------------------------------------- END
     END FUNCTION tokens
@@ -799,9 +791,9 @@ MODULE parse
       type(parsed_line), pointer   :: pline
 
 !--------------------------------------------------------------- Local Variables
-      character                    :: token_id(maxntokens)
-      integer(ip)                  :: i, ierr, ntokens
-      integer(ip)                  :: first(maxntokens), last(maxntokens)
+      character                    :: token_id(MAX_NTOKENS)
+      integer(ip)                  :: i, ierr, ntokens, ncharacters
+      integer(ip)                  :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
 !------------------------------------------------------------------------- BEGIN
 !     Parse line, and get morphology
@@ -813,25 +805,17 @@ MODULE parse
       call create(pline)
       pline%ntokens = ntokens
 
-      if (ntokens .ne. 0) then
-        ALLOCATE(pline%id(ntokens), pline%array(ntokens), stat=ierr)
-        if (ierr .ne. 0) then
-          call die('PARSE module: digest', 'Error allocating id & array', &
-                   __FILE__, __LINE__, rc=ierr)
-        endif
-
-        do i= 1, ntokens
-          pline%array(i)%nchars = last(i)-first(i)+1
-          ALLOCATE(pline%array(i)%token(pline%array(i)%nchars), stat=ierr)
-          if (ierr .ne. 0) then
-            call die('PARSE module: digest', 'Error allocating token',  &
-                     __FILE__, __LINE__, rc=ierr)
-          endif
-
-          pline%array(i)%token = s2arr(line(first(i):last(i)))
-          pline%id(i)          = token_id(i)
-        enddo
+      if (ntokens .gt. MAX_NTOKENS) then
+         call die('PARSE module: digest', 'Too many tokens', &
+                   __FILE__, __LINE__, rc=666)
       endif
+
+      do i= 1, ntokens
+         pline%first(i) = first(i)
+         pline%last(i)  = last(i)
+         pline%line     = line
+         pline%id(i)    = token_id(i)
+      enddo
 
       RETURN
 !--------------------------------------------------------------------------- END
@@ -844,11 +828,11 @@ MODULE parse
     SUBROUTINE parses(ntokens, line, first, last)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(len=max_length)    :: line
+      character(len=MAX_LENGTH)    :: line
       
 !-------------------------------------------------------------- Output Variables
       integer(ip)                  :: ntokens
-      integer(ip)                  :: first(maxntokens), last(maxntokens)
+      integer(ip)                  :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
 !--------------------------------------------------------------- Local Variables
       logical                      :: intoken, instring, completed
@@ -972,15 +956,15 @@ MODULE parse
     SUBROUTINE morphol(ntokens, line, first, last, token_id)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(len=max_length) :: line
+      character(len=MAX_LENGTH) :: line
       integer(ip)               :: ntokens
-      integer(ip)               :: first(maxntokens), last(maxntokens)
+      integer(ip)               :: first(MAX_NTOKENS), last(MAX_NTOKENS)
 
 !-------------------------------------------------------------- Output Variables
-      character                 :: token_id(maxntokens)
+      character                 :: token_id(MAX_NTOKENS)
 
 !--------------------------------------------------------------- Local Variables
-      character(len=max_length) :: token, msg
+      character(len=MAX_LENGTH) :: token, msg
       integer(ip)               :: i, ierr
       real(dp)                  :: real_value
 
@@ -1031,7 +1015,7 @@ MODULE parse
       type(parsed_line), pointer :: pline
 
 !--------------------------------------------------------------- Local Variables
-      character(len=max_length)  :: msg
+      character(len=MAX_LENGTH)  :: msg
 
 !------------------------------------------------------------------------- BEGIN
 

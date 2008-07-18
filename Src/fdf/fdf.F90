@@ -101,7 +101,19 @@
 
 MODULE fdf
   USE io_fdf
-  USE parse
+  USE parse, only: MAX_LENGTH
+  USE parse, only: parsed_line
+  USE parse, only: nintegers, nreals
+  USE parse, only: nvalues, nnames, ntokens
+  USE parse, only: integers, reals
+  USE parse, only: values, names, tokens
+  USE parse, only: match
+  USE parse, only: digest, blocks, endblocks, labels
+  USE parse, only: destroy, setdebug, setlog, setmorphol
+
+  USE parse, only: search
+  USE parse, only: fdf_bsearch => search
+
   USE utils
   USE prec
   implicit none
@@ -167,7 +179,6 @@ MODULE fdf
 ! Dump function (for blocks)
   private :: fdf_dump
 
-
 ! Wrappers functions for block access, search, matching,
 ! number and elements in the block (call to parse module)
   interface fdf_bnintegers
@@ -214,11 +225,6 @@ MODULE fdf
     module procedure match
   end interface
 
-  interface fdf_bsearch
-    module procedure search_fun
-    module procedure search_sub
-  end interface
-
 ! fdf_get wrapper for label functions
   interface fdf_get
     module procedure fdf_integer
@@ -237,7 +243,6 @@ MODULE fdf
                                      fdf_started = .FALSE.
 
   integer(ip), parameter, private :: maxdepth   = 5
-  integer(ip), parameter, private :: max_length = 132
   integer(ip), private            :: ndepth
   integer(ip), private            :: fdf_in(maxdepth)
   integer(ip), private            :: fdf_out, fdf_err, fdf_log
@@ -250,13 +255,13 @@ MODULE fdf
 
 ! Structure for searching inside fdf blocks
   type, public :: block_fdf
-    character(len=max_length) :: label
+    character(len=MAX_LENGTH) :: label
     type(line_dlist), pointer :: mark
   end type block_fdf
 
 ! Dynamic list for parsed_line structures
   type, public :: line_dlist
-    character(len=max_length)  :: str
+    character(len=MAX_LENGTH)  :: str
     type(parsed_line), pointer :: pline
     type(line_dlist), pointer  :: next
     type(line_dlist), pointer  :: prev
@@ -505,14 +510,14 @@ MODULE fdf
 
 !------------------------------------------------------------------------- BEGIN
 
-      ALLOCATE(bufferFDF(file_in%nlines*max_length), stat=ierr)
+      ALLOCATE(bufferFDF(file_in%nlines*MAX_LENGTH), stat=ierr)
       if (ierr .ne. 0) then
         call die('FDF module: fdf_sendInput', 'Error allocating bufferFDF', &
                  __FILE__, __LINE__, fdf_err, rc=ierr)
       endif
 
       mark => file_in%first
-      do i= 1, file_in%nlines*max_length, max_length
+      do i= 1, file_in%nlines*MAX_LENGTH, MAX_LENGTH
         bufferFDF(i:) = s2arr(mark%str)
         mark => mark%next
       enddo
@@ -524,7 +529,7 @@ MODULE fdf
                  'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
       endif
 
-      call MPI_Bcast(bufferFDF, file_in%nlines*max_length,              &
+      call MPI_Bcast(bufferFDF, file_in%nlines*MAX_LENGTH,              &
                      MPI_CHARACTER, rank, MPI_COMM_WORLD, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_sendInput', 'Error Broadcasting bufferFDF.' // &
@@ -563,13 +568,13 @@ MODULE fdf
                  'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
       endif
 
-      ALLOCATE(bufferFDF(nlines*max_length), stat=ierr)
+      ALLOCATE(bufferFDF(nlines*MAX_LENGTH), stat=ierr)
       if (ierr .ne. 0) then
         call die('FDF module: fdf_recvInput', 'Error allocating bufferFDF', &
                  __FILE__, __LINE__, fdf_err, rc=ierr)
       endif
 
-      call MPI_Bcast(bufferFDF, nlines*max_length,                      &
+      call MPI_Bcast(bufferFDF, nlines*MAX_LENGTH,                      &
                      MPI_CHARACTER, root, MPI_COMM_WORLD, ierr)
       if (ierr .ne. MPI_SUCCESS) then
         call die('FDF module: fdf_recvInput', 'Error Broadcasting bufferFDF.' // &
@@ -580,8 +585,8 @@ MODULE fdf
       fileinTmp = filein // '.' // i2s(rank)
       open(unit=lun, file=fileinTmp, form='formatted',                  &
            status='unknown')
-      do i= 1, nlines*max_length, max_length
-        write(lun,*) bufferFDF(i:i+max_length-1)
+      do i= 1, nlines*MAX_LENGTH, MAX_LENGTH
+        write(lun,*) bufferFDF(i:i+MAX_LENGTH-1)
       enddo
       call io_close(lun)
 
@@ -647,9 +652,9 @@ MODULE fdf
 
 !--------------------------------------------------------------- Local Variables
       logical                    :: dump
-      logical, pointer           :: found(:)
+      logical, allocatable       :: found(:)
       character(80)              :: msg
-      character(len=max_length)  :: line, label, inc_file
+      character(len=MAX_LENGTH)  :: line, label, inc_file
       integer(ip)                :: i, ierr, ntok, ind_less, nlstart
       type(parsed_line), pointer :: pline
 
@@ -801,6 +806,7 @@ MODULE fdf
 !             Search label(s) in Filename
               inc_file = tokens(pline, ind_less+1)
               ALLOCATE(found(ind_less-1), stat=ierr)
+              print *, "allocated found with size: ", ind_less - 1
               if (ierr .ne. 0) then
                 call die('FDF module: fdf_read', 'Error allocating found', &
                          __FILE__, __LINE__, fdf_err, rc=ierr)
@@ -810,14 +816,14 @@ MODULE fdf
               found = .FALSE.
               if (.not. fdf_readlabel(ind_less-1, pline,                &
                                       inc_file, found)) then
-                i = 1
-                do while ((i .le. ind_less-1) .and. (found(i)))
-                  i = i + 1
-                enddo
-                label = tokens(pline, i)
-                write(msg,*) 'Label ', TRIM(label),                     &
+                 i = 1
+                 do while ((i .le. ind_less-1) .and. (found(i)))
+                    i = i + 1
+                 enddo
+                 label = tokens(pline, i)
+                 write(msg,*) 'Label ', TRIM(label),                     &
                              ' not found in ', TRIM(inc_file)
-                call die('FDF module: fdf_read', msg,                   &
+                 call die('FDF module: fdf_read', msg,                   &
                          __FILE__, __LINE__, fdf_err)
               endif
 
@@ -852,7 +858,7 @@ MODULE fdf
 !   Read an input file (and include files) searching labels to
 !   include them in memory structure that will contain the data
 !
-    RECURSIVE FUNCTION fdf_readlabel(nelem, plabel, filein, found)
+    RECURSIVE FUNCTION fdf_readlabel(nelem, plabel, filein, found) result(readlabel)
       implicit none
 !--------------------------------------------------------------- Input Variables
       character(*)               :: filein
@@ -860,14 +866,14 @@ MODULE fdf
       type(parsed_line), pointer :: plabel
 
 !-------------------------------------------------------------- Output Variables
-      logical                    :: fdf_readlabel
+      logical                    :: readlabel
       logical                    :: found(nelem)
 
 !--------------------------------------------------------------- Local Variables
       logical                    :: dump, found_elem
       logical, pointer           :: found_loc(:)
       character(80)              :: msg
-      character(len=max_length)  :: line, inc_file, label
+      character(len=MAX_LENGTH)  :: line, inc_file, label
       integer(ip)                :: i, ierr, ntok, ind_less, nlstart
       integer(ip)                :: elem, nelem_loc
       integer(ip), pointer       :: found_index(:)
@@ -1041,7 +1047,7 @@ MODULE fdf
             else
               inc_file = tokens(pline, 2)
               call destroy(pline)
-              fdf_readlabel = fdf_readlabel(nelem, plabel, inc_file, found)
+              readlabel = fdf_readlabel(nelem, plabel, inc_file, found)
             endif
 
 !         Label1 Label2 ... < Filename directive
@@ -1139,7 +1145,7 @@ MODULE fdf
 !     Close input file with labels
       call fdf_close()
 
-      fdf_readlabel = ALL(found)
+      readlabel = ALL(found)
       RETURN
 !--------------------------------------------------------------------------- END
     END FUNCTION fdf_readlabel
@@ -1244,7 +1250,7 @@ MODULE fdf
     SUBROUTINE fdf_addtoken(line, pline)
       implicit none
 !--------------------------------------------------------------- Input Variables
-      character(len=max_length)  :: line
+      character(len=MAX_LENGTH)  :: line
       type(parsed_line), pointer :: pline
 
 !--------------------------------------------------------------- Local Variables
@@ -1278,7 +1284,7 @@ MODULE fdf
         write(fdf_log,*) 'Line:', TRIM(mark%str)
         write(fdf_log,*) 'Ntokens:', mark%pline%ntokens
         do i= 1, mark%pline%ntokens
-          write(fdf_log,*) '  Token:', mark%pline%array(i)%token, &
+          write(fdf_log,*) '  Token:', trim(tokens(pline,i)), &
                            ' (', mark%pline%id(i), ')'
         enddo
         write(fdf_log,*) '**********************************************'
@@ -1486,7 +1492,7 @@ MODULE fdf
       type(line_dlist), pointer :: mark
 
 !-------------------------------------------------------------- Output Variables
-      character(len=max_length) :: fdf_getline
+      character(len=MAX_LENGTH) :: fdf_getline
 
 !------------------------------------------------------------------------- BEGIN
       if (ASSOCIATED(mark)) then
@@ -1516,7 +1522,7 @@ MODULE fdf
         write(fdf_log,*) 'Line:', TRIM(dlp%str)
         write(fdf_log,*) 'Ntokens:', dlp%pline%ntokens
         do i= 1, dlp%pline%ntokens
-          write(fdf_log,*) '  Token:', dlp%pline%array(i)%token,        &
+          write(fdf_log,*) '  Token:', tokens(dlp%pline,i),        &
                            '(', dlp%pline%id(i), ')'
         enddo
         dlp => dlp%next

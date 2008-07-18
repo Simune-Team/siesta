@@ -6,6 +6,15 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-18 14:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-36
+
+Summary: Change in internal representation of fdf lines
+
+To avoid excessive dynamic memory use, the "parsed line" derived type
+now uses a single MAX_LENGTH (currently 132) string to hold a line,
+and two integer arrays of length MAX_NTOKENS (currently 50) to index
+the positions of the tokens.
+
 2007-07-18 12:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-35
 
 Summary: Fixes in spher_harm interface and in matel
