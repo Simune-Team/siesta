@@ -2,13 +2,40 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-NOTE: The arch patches appear to be all committed by A. Garcia. That is because
-he is the person in charge of the merges. To identify the developer responsible
-for a given patch, see the "new patches" section of each log.
-
 ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
+
+2007-07-18 12:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-35
+
+Summary: Fixes in spher_harm interface and in matel
+
+Routine ylmexp in spher_harm had an old-style assumed-size
+specification for its last array argument. This was "needeed"
+in order to be able to abuse the meaning of the argument:
+the actual argument could be two-dimensional or one-dimensional
+in the calls from matel.
+
+Now, matel always calls the routine with a two-dimensional
+array, which is moreover specified as
+
+       F(:,column:)
+
+in order to avoid the creation of array temporaries by the
+compiler. 
+
+The pointer FFY in matel has thus been redeclared with a dummy
+first dimension  (typically allocated as FFY(1:1,1:ubound)).
+
+In ylmexp, the interface has been changed, from
+
+       real(dp), dimension(ir1:nr,*), intent(out)  :: flm
+
+to
+       real(dp), dimension(ir1:,:), intent(out)  :: flm
+
+The lower bound ir1 is another of the arguments of the call,
+so the proper lbound is used.
 
 2007-07-17 22:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-34
 

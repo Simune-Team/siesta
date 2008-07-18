@@ -199,7 +199,7 @@ C Internal variable types and dimensions ----------------------------
      .  DQ, DR, DRTAB, GWIDTH, PI, QMAX, RMAX
 
       real(dp), POINTER, SAVE ::
-     .  CFFR(:), DYDR(:,:), F(:,:), FFR(:,:,:), FFY(:), Y(:)
+     .  CFFR(:), DYDR(:,:), F(:,:), FFR(:,:,:), FFY(:,:), Y(:)
 
       LOGICAL ::
      .  FAR, FOUND, PROPOR
@@ -332,7 +332,7 @@ C         Reallocate arrays
 C         Expand orbital in spherical harmonics
           IF ((I.EQ.1) .OR. (IOPER.LE.3)) THEN
             CALL YLMEXP( L, RLYLM, PHIATM, IS, IO, 0, NQ, RMAX,
-     .                   NILM, ILM(NF+1:), F(0,NF+1) )
+     .                   NILM, ILM(NF+1:), F(:,NF+1:) )
             INDF(IS,IO,1) = NF+1
             INDF(IS,IO,2) = NF+1
             INDF(IS,IO,3) = NF+1
@@ -342,13 +342,13 @@ C         Expand orbital in spherical harmonics
           ELSE
             IF(IOPER.EQ.4) THEN
               CALL YLMEXP( L+1, RLYLM, XPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(0,NF+1) )
+     .                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSEIF(IOPER.EQ.5) THEN
               CALL YLMEXP( L+1, RLYLM, YPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(0,NF+1) )
+     .                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ELSE
               CALL YLMEXP( L+1, RLYLM, ZPHIATM, IS, IO, 0, NQ, RMAX,
-     .                     NILM, ILM(NF+1:), F(0,NF+1) )
+     .                     NILM, ILM(NF+1:), F(:,NF+1:) )
             ENDIF
             INDF(IS,IO,IOPER) = NF+1
             NLM(IS,IO,IOPER) = NILM
@@ -573,7 +573,7 @@ C         Reallocate some arrays
           NILM = (L1+L2+1)**2
           IF (NFFY+NILM .GT. MFFY) THEN
             MFFY = EXPAND * (NFFY+NILM)
-            CALL RE_ALLOC( FFY, 1,MFFY, 'FFY', MYNAME )
+            CALL RE_ALLOC( FFY, 1, 1, 1,MFFY, 'FFY', MYNAME )
             CALL RE_ALLOC( ILMFF, 1,MFFY, 'ILMFF', MYNAME )
             CALL RE_ALLOC( INDFFR, 1,MFFY, 'INDFFR', MYNAME )
           ENDIF
@@ -583,7 +583,7 @@ C         Reallocate some arrays
 C         Expand the product of two spherical harmonics (SH) also in SH
           CALL YLMEXP( L1+L2, RLYLM, YLMYLM, ILM(IFLM1), ILM(IFLM2),
      .                 1, 1, 1.0_dp, NILM, ILMFF(NFFY+1:),
-     .                 FFY(NFFY+1:))
+     .                 FFY(:,NFFY+1:))
 
 C         Loop on possible lm values of orbital product
           DO I = 1,NILM
@@ -591,7 +591,7 @@ C         Loop on possible lm values of orbital product
             JLM = ILMFF(NFFY)
             L3 = LOFILM( JLM )
             INDFFR(NFFY) = IFFR(L3)
-            FFY(NFFY) = FFY(NFFY) * CFFR(L3)
+            FFY(1,NFFY) = FFY(1,NFFY) * CFFR(L3)
           ENDDO
 
           NFF = NFF + 1
@@ -667,11 +667,11 @@ C         Interpolate radial functions and obtain SH expansion
             CALL SPLINT( RMAX/NRTAB, FFR(0:NRTAB,1,JFFR),
      .                   FFR(0:NRTAB,2,JFFR), NRTAB+1, R, SR, DSRDR )
             JLM = ILMFF(IFFY)
-            S12 = S12 + SR * FFY(IFFY) * Y(JLM)
+            S12 = S12 + SR * FFY(1,IFFY) * Y(JLM)
             DO IX = 1,3
               DSDR(IX) = DSDR(IX) +
-     .                   DSRDR * FFY(IFFY) * Y(JLM) * X12(IX) / R +
-     .                   SR * FFY(IFFY) * DYDR(IX,JLM)
+     .                   DSRDR * FFY(1,IFFY) * Y(JLM) * X12(IX) / R +
+     .                   SR * FFY(1,IFFY) * DYDR(IX,JLM)
             ENDDO
           ENDDO
         ENDDO

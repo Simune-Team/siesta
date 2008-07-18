@@ -322,7 +322,7 @@ C Makes a radial times spherical-harmonic expansion of a function.
 
        integer, intent(out)       :: ny
        integer, intent(out)       :: ilm(:)
-       real(dp), dimension(ir1:nr,*), intent(out)  :: flm
+       real(dp), dimension(ir1:,:), intent(out)  :: flm
 
 C Written by J.M.Soler. September 1995.
 C ************************* INPUT ***********************************
