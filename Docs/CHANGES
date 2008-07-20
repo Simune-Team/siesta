@@ -6,6 +6,16 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-20 22:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-39
+
+Summary: Clarification of INCFLAGS for fdf compilation. Basis_io fix
+
+* Removal of ionode test in basis_io.F.
+
+* INCFLAGS now adds only "-I../" to the global INCFLAGS.
+
+* Update of finisterrae.make
+
 2007-07-20 21:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-38
 
 Summary: Updated test.mk files. New finisterrae.make

@@ -87,7 +87,7 @@
          spp => species(is)
          spp%label = species_label(is)
          spp%read_from_file = .true.
-         if (IOnode) write(filename,'(a,a)') trim(spp%label), ".ion.nc"
+         write(filename,'(a,a)') trim(spp%label), ".ion.nc"
          iret = nf90_open(trim(filename),NF90_NOWRITE,ncid)
 
          iret = nf90_inq_dimid(ncid,'norbs',norbs_id)

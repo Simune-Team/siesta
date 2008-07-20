@@ -4,9 +4,9 @@
 .SUFFIXES:
 .SUFFIXES: .f .F .o .a  .f90 .F90
 #
-INCFLAGS=-I${<D} -I../       # For VPATH operation
-
+LOCAL_INCFLAGS=-I../
 include ../arch.make
+INCFLAGS:=$(INCFLAGS) $(LOCAL_INCFLAGS)
 #
 # Library module libfdf.a
 #
