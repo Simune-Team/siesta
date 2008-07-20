@@ -12,7 +12,7 @@
 
 C Subroutine to initialise the reading of the data for SIESTA 
 C
-C     It uses the FDF (Flexible Data Fromat) package 
+C     It uses the FDF (Flexible Data Format) package 
 C     of J.M.Soler and A.Garcia
 C
 C Taken from redata. Writen by P.Ordejon, December'96
@@ -24,26 +24,26 @@ C **********************************************************************
 C
 C  Modules
 C
-      use precision
       use parallel,    only : Node
       use fdf
       use files,       only : slabel
 
       implicit none
 
-      character(len=*) :: sname
-      character string*20
+      character(len=*), intent(out) :: sname
 
 C  Internal variables .................................................
-      character
-     .  filein*20, fileout*20
+      character(len=20) filein, fileout, string
 
-      character
-     .  slabel_default*59, sname_default*20
+      integer  ::  count, length, lun, lun_tmp, iostat
+      character :: slabel_default*59, sname_default*20, line*256
 
       logical debug_input, file_exists
 
 C Print Welcome and Presentation .......................................
+
+      filein = "should_not_matter"  ! For non-master nodes
+
       if (Node.eq.0) then
         write(6,'(/a)') 
      .   '                           ***********************       '
@@ -52,46 +52,62 @@ C Print Welcome and Presentation .......................................
         write(6,'(a)')
      .   '                           ***********************       '
 C ..................
-      endif
-
+!
+!       Set name of file to read from. Done only
+!       in the master node.
+!
 c
 c     Choose proper file for fdf processing
-c     (INPUT_DEBUG if exists or standard input)
+c     (INPUT_DEBUG if it exists or "standard input",
+c      processed and dumped to a temporary file)
 c
-      inquire(file='INPUT_DEBUG',exist=debug_input)
-      if (debug_input) then
-        if (Node.eq.0) then
-          write(6,'(a)') 'WARNING: ' //
-     $        'Siesta is reading its input from file INPUT_DEBUG'
+        inquire(file='INPUT_DEBUG',exist=debug_input)
+        if (debug_input) then
+           write(6,'(a)') 'WARNING: ' //
+     $          'Siesta is reading its input from file INPUT_DEBUG'
+           filein = 'INPUT_DEBUG'
+
+        else
+c
+c          Read from standard input (dumped to a temp file)
+c
+           write(6,'(/a)') 'reinit: Reading from standard input'
+           lun = 5
+           call io_assign(lun_tmp)
+           do
+              call system_clock( count )
+              write(string,*) count
+              filein = 'INPUT_TMP.'//adjustl(string)
+              inquire( file=filein, exist=file_exists )
+              if (.not.file_exists) exit
+           end do
+           open(lun_tmp,file=filein,
+     $          form='formatted',status='replace')
+           rewind(lun_tmp)
+           write(6,"(a,23('*'),a,28('*'))")
+     .          '***', ' Dump of input data file '
+c
+           do
+              read(lun,iostat=iostat,fmt='(a)') line
+              if (iostat /= 0 ) exit
+              length = len_trim(line)
+              if (length /= 0) then
+                 write(6,'(a)') line(1:length)
+                 if (.not. debug_input) then
+                    write(lun_tmp,'(a)') line(1:length)
+                 endif
+              endif
+           enddo
+           write(6,"(a,23('*'),a,29('*'))")
+     .          '***', ' End of input data file '
+c
         endif
-        filein = 'INPUT_DEBUG'
-      else
-c
-c       Read from standard input
-c
-        if (Node.eq.0) then
-          write(6,'(/a)') 'reinit: Reading from standard input'
-        endif
-        filein = 'INPUT.fdf'
       endif
 c ...
 
 C Set up fdf ...
       fileout = 'out.fdf'
       call fdf_init(filein,fileout)
-
-C Dump data file to output file
-      if (Node.eq.0) then
-        write(6,'(a,23(1h*),a,28(1h*))')
-     .      '***', ' Dump of input data file '
-
-!!!!!!!!! NEED TO BE DONE IN FDF LIBRARY !!!!!!!!!!!!!
-!        call fdf_dumpAll()
-
-        write(6,'(a,23(1h*),a,29(1h*))')
-     .      '***', ' End of input data file '
-      endif
-C ...
 
 C Define Name of the system ...
       sname_default = ' '

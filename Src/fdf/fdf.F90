@@ -82,14 +82,19 @@
 !       This option is enabled with BLOCKING macro. This option cannot be
 !       used if CLUSTER macro is enabled.
 !
-!
-! September 2007
+! Alberto Garcia, 1996-2007
+! Raul de la Cruz (BSC), September 2007
 !
 !
 !========================================================================
 
+! AG: If running under MPI (flagged by the MPI symbol, choose the CLUSTER
+!     mode of operation.
+!
+!
 #ifdef MPI
 # define _MPI_
+# define CLUSTER
 # undef MPI
 #endif
 
@@ -455,6 +460,8 @@ MODULE fdf
 !     Tests if the running node has the input file:
 !       If found: texist_send = rank
 !       Else    : texist_send = error_code (ntasks + 1)
+
+#ifdef SOPHISTICATED_SEARCH
       INQUIRE(file=filein, exist=file_exist)
       if (file_exist) then
         texist_send = rank
@@ -468,6 +475,12 @@ MODULE fdf
         call die('FDF module: fdf_readcluster', 'Error in MPI_AllReduce (task_exist).' //  &
                  'Terminating.', __FILE__, __LINE__, fdf_err, rc=ierr)
       endif
+#else
+!
+!     Simplify: Assume node 0 has the file
+!
+      texist_recv = 0
+#endif
 
 !     The node owner of the input file send the data to the other ones
 !     if none node has an input file with such name abort the application

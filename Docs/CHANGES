@@ -6,6 +6,19 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-20 18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-37
+
+Summary: FDF can now process standard input
+
+To recover the old fdf behavior, reinit now dumps
+stdin to a temporary file. 
+
+fdf_readcluster assumes that the root node is in charge of the input
+file.
+
+If MPI is enabled, the symbol CLUSTER is automatically
+defined in fdf.F90.
+
 2007-07-18 14:15:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-36
 
 Summary: Change in internal representation of fdf lines
