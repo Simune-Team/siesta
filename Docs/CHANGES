@@ -6,6 +6,14 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-20 21:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-38
+
+Summary: Updated test.mk files. New finisterrae.make
+
+Fixed test.mk files for use with standard input for fdf.
+
+New finisterrae.make file.
+
 2007-07-20 18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-37
 
 Summary: FDF can now process standard input

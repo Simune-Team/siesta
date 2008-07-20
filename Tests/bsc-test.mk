@@ -19,7 +19,7 @@ completed_$(label):
           ln ../Pseudos/$$i.psf $(label)/$$i.psf ;\
          done
 	@echo "    ==> Running SIESTA as ${SIESTA}"
-	@(cd $(label) ; cp ../$(name).fdf ./INPUT.fdf ; ${SIESTA} 2>&1 > $(name).out ) \
+	@(cd $(label) ; ${SIESTA} 2>&1 > $(name).out < ../$(name).fdf ) \
           && touch completed_$(label)
 	@if [ -f completed_$(label) ] ; then cp $(label)/$(name).out $(label)/$(name).xml .;\
            echo "    ===> SIESTA finished successfully";\
