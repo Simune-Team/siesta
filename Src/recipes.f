@@ -237,6 +237,7 @@
       IF (DX.EQ.ZERO) call die('splint: ERROR: DX=0')
       NLO=INT(X/DX)+1
       NHI=NLO+1
+      IF (NLO<1 .OR. NHI>N) call die('splint: ERROR: X out of range')
       A=NHI-X/DX-1
       B=ONE-A
       Y=A*YA(NLO)+B*YA(NHI)+

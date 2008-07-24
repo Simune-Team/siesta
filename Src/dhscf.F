@@ -150,7 +150,6 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
-
       implicit none
 
       integer
@@ -283,7 +282,6 @@ C
      .  shape
 
       external
-!     .  cellxc,
      .  cross, dfscf,  dipole, ddot,  
      .  efield, poison, 
      .  reord, rhooda, rhoofd, rhoofdsp, 
@@ -740,10 +738,8 @@ C ----------------------------------------------------------------------
 C Set uniform distribution of mesh points and find my processor mesh box
 C ----------------------------------------------------------------------
 
-      if (JDGdistr<0) then
-        call setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
-     .                     nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
-      end if
+      call setMeshDistr( distrID=JDGdistr, nMesh=ntm, 
+     .                   nNodesX=1, nNodesY=ProcessorY, nBlock=nsm )
       call myMeshBox( ntm, JDGdistr, myBox )
 
 C ----------------------------------------------------------------------

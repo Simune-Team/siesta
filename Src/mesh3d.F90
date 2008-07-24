@@ -11,7 +11,7 @@
 !******************************************************************************
 ! MODULE mesh3D
 ! Defines and handles different parallel distributions of a 3D mesh of points.
-! Written by J.M.Soler. Feb.2008
+! Written by J.M.Soler. Jan-July.2008
 !******************************************************************************
 !
 !   PUBLIC procedures available from this module:
@@ -482,7 +482,7 @@
 !   point to srcData. This allows to save memory, but it must be handled with 
 !   care in calling program.
 ! If the two distributions are equal (sameMeshDistr(srcDistr,dstDistr)==.true.)
-!   it simply (re)allocates dstDistr and copies dstDistr=srcDistr. Othewise,
+!   it simply (re)allocates dstData and copies dstData=srcData. Othewise,
 !   it calls copyMeshData after the (re)allocation of dstData.
 !--------------------------- ALGORITHMS ---------------------------------------
 ! First, the dstDistr mesh box is obtained, then dstData is (re)allocated and
@@ -505,7 +505,7 @@
 ! If ID1 and ID2 are equal, but not defined distributions, it returns .false.
 !--------------------------- ALGORITHMS ---------------------------------------
 ! In parallel execution, it looks for the distribution that own the given IDs,
-!   then it checks whether they are the same.
+!   then it checks whether all their mesh boxes are the same.
 !
 !******************************************************************************
 !
@@ -536,7 +536,7 @@
 ! integer wlDistr   : Distr. index of workload array
 ! real(gp) workload(0:,0:,0:) ! Approx. relative workload of mesh points. 
 !                     Must be nonnegative at all points and have nonzero sum.
-!----------------------------- OUTPUT -----------------------------------------
+!-------------------------- INPUT and OUTPUT ----------------------------------
 ! integer distrID : ID assigned to the mesh distrib.
 !----------------------------- USAGE ------------------------------------------
 !    Arguments box, firstNode, nNodes, nNodesXYZ, and nBlock are provided to
@@ -575,8 +575,13 @@
 !---------------------------- BEHAVIOUR ---------------------------------------
 ! In serial execution (totNodes==1) it simply returns distrID=0, irrespective
 !   of all arguments. Parameter totNodes is obtained from module parallel.
-! If the same distribution is already defined and has not been freed,
-!   its distrID is returned. Otherwise, the IDs are never repeated.
+! If the input distribution ID is still valid (i.e. consistent with the other
+!   input arguments), the same value is returned. If it points to an existing
+!   distribution that is no longer consistent, the old distribution ID is 
+!   freed before returning with a new distrID. This makes it convenient to 
+!   make succesive calls with the same distrID but different other arguments
+!   (e.g. different workloads in different iterations).
+! New IDs are never repeated, even if they identify the same distribution.
 ! If box is present, all other optional arguments are ignored. The different
 !   node mesh boxes should be a nonoverlapping partition of all the mesh 
 !   points, but this is NOT checked.
@@ -1269,7 +1274,7 @@ subroutine divideBox3D( nMesh, wlDistr, workload, box, &
     call divideBox1D( box(:,axis), nParts, partBox(:,axis,:), blockSize )
   else                    ! Divide projected workload uniformly
     call divideBox1D( box(:,axis), nParts, partBox(:,axis,:), blockSize, &
-                      prjWkld(axis,:) )
+                      prjWkld(axis,0:boxShape(axis)-1) )
   end if ! (wlSum==0._dp)
 
 ! BEGIN DEBUG
@@ -1341,6 +1346,9 @@ subroutine fftMeshDistr( nMesh, fftDistr, axisDistr )
   call optimizeNodeDistr( nMesh, totNodes, axisNodes )
 
 ! Create homogeneous 3D distribution
+! DEBUG
+  write(udebug,*) myName//'calling setMeshDistr with fftDistr'
+! END DEBUG
   call setMeshDistr( fftDistr, nMesh, nNodesX=axisNodes(1), &
                      nNodesY=axisNodes(2), nNodesZ=axisNodes(3) )
 
@@ -1955,7 +1963,8 @@ end subroutine optimizeNodeDistr
 
 subroutine optimizeTransferOrder( nNodes, node, nTrsf, trsfNode, trsfDir )
 
-! Searches an optimal order of transfer communications (still empty)
+! Searches an optimal order of transfer communications
+
 
   implicit none
   integer,intent(in) :: nNodes   ! Number of parallel processor nodes. The
@@ -2237,8 +2246,15 @@ subroutine projectMeshData( nMesh, srcDistr, srcData, prjBox, prjData, task )
   srcMesh = srcBox(2,:) - srcBox(1,:) + 1
 
 ! Check array shapes
-  if (any( shape(srcData) /= srcMesh )) &
+!  if (any( shape(srcData) /= srcMesh )) &
+!    call die( errHead//'incorrect shape of srcData array' )
+  if (any( shape(srcData) /= srcMesh )) then
+    write(udebug,'(a,i6,3(2x,2i4))') &
+      errHead//'srcDistr,srcBox =', srcDistr, srcBox
+    write(udebug,'(a,3i6,3x,3i6)') &
+      errHead//'shape(srcData),srcMesh =', shape(srcData), srcMesh
     call die( errHead//'incorrect shape of srcData array' )
+  end if
   if (size(prjData,2) < maxval(prjBox(2,:)-prjBox(1,:)+1)) &
     call die( errHead//'size of prjData array too small' )
 
@@ -2786,10 +2802,25 @@ logical function sameMeshDistr( ID1, ID2 )
   integer,intent(in):: ID1, ID2  ! Mesh distribution IDs
 
   integer:: i1, i2
+  type(distrType),pointer:: distr1, distr2
 
-  i1 = indexDistr(ID1)
-  i2 = indexDistr(ID2)
-  sameMeshDistr = ( i1==i2 .and. i1>=0 )
+  if (ID1==ID2) then           ! Same IDs => same distr.
+    sameMeshDistr = .true.
+  else                         ! Different IDs
+    i1 = indexDistr(ID1)
+    i2 = indexDistr(ID2)
+    if (i1<0 .or. i2<0) then   ! One or both distr. are not defined
+      sameMeshDistr = .false.
+    else                       ! Both distr. are defined
+      if (i1==i2) then         ! Different IDs but same distr.
+        sameMeshDistr = .true.
+      else                     ! Different but possibly equivalent distr.
+        distr1 => storedMeshDistr(i1)
+        distr2 => storedMeshDistr(i2)
+        if (all(distr1%box==distr2%box)) sameMeshDistr = .true.
+      end if ! (i1==i2)
+    end if ! (i1>0 .and. i2>0)
+  end if ! (ID1==ID2)
 
 end function sameMeshDistr
 
@@ -2801,11 +2832,11 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
 
 ! Defines a parallel distribution of mesh points among processor nodes.
 ! In serial execution (totNodes==1) it simply returns distrID=0.
-! If the same distribution is already defined and has not been freed,
-! its distrID is returned. Otherwise, the IDs are never repeated.
+! If the input distribution ID is still valid, the same value is returned.
+! Otherwise, it is freed. New IDs are never repeated.
 
   implicit none
-  integer,         intent(out):: distrID   ! ID assigned to the mesh distrib.
+  integer,       intent(inout):: distrID   ! ID assigned to the mesh distrib.
   integer,         intent(in) :: nMesh(3)  ! Mesh divisions in each axis
                                            ! (including "subpoints")
   integer,optional,intent(in) :: box(2,3)  ! Mesh box of my processor node
@@ -2842,8 +2873,8 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
             i1, i2, i3, iAxis, iBox, iDistr, iFac, iID, iNode, iPow, &
             jDistr, largerBoxSize, lastNode, &
             maxFactor, meshNodes, myGroup, myBox(2,3), myPart, &
-            nFactors, node0, nParts, nRem, nBlocks, &
-            partSize, power(maxFactors)
+            nFactors, node0, nParts, nRem, nBlocks, newDistrID, &
+            oldDistrID, partSize, power(maxFactors)
   logical:: found
 
 ! Trap the serial case (totNodes available from module parallel)
@@ -2852,28 +2883,21 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
     return
   end if
 
+! Store input distribution ID for later comparison
+  oldDistrID = distrID
+
+! Initialize new distribution
+  call initDistr( newDistrID, nMesh, node0, meshNodes )
+  iDistr = indexDistr( newDistrID )
+  distr => storedMeshDistr(iDistr)  ! Just a shorter name
+
 ! Handle box argument with priority
   if (present(box)) then
-    ! Collect all node boxes and find if this ID is already valid
+    ! Collect all node boxes and store them
     allocate( nodeBoxes(2,3,0:totNodes-1) )
     call gatherBoxes( box, nodeBoxes )
-    iDistr = indexDistr( distrID )
-    found = .false.
-    if (iDistr>0) then
-      distr => storedMeshDistr(iDistr)
-      if (all(nodeBoxes==distr%box)) found = .true.
-    end if
-    ! Free previous distribution ID and define a new one
-    if (.not.found) then
-      call freeMeshDistr( distrID )
-      call initDistr( distrID, nMesh, 0, totNodes )
-      iDistr = indexDistr( distrID )
-      distr => storedMeshDistr(iDistr)
-      distr%box = nodeBoxes
-    end if
-    deallocate( nodeBoxes )
-!    return  ! Since no other arguments must be considered in this case
-    goto 999  ! Since no other arguments must be considered in this case
+    distr%box = nodeBoxes
+    goto 999  ! Exit, since no other arguments must be considered in this case
   end if ! (present(box))
 
 ! Find number of mesh nodes
@@ -2907,11 +2931,6 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
   end if
   if (any(mod(nMesh,blockSize)/=0)) &
     call die(errHead//'nMesh inconsistent with nBlock')
-
-! Initialize new distribution
-  call initDistr( distrID, nMesh, node0, meshNodes )
-  iDistr = indexDistr( distrID )
-  distr => storedMeshDistr(iDistr)  ! Just a shorter name
 
 ! Find box sizes
   if (present(workload)) then
@@ -3037,8 +3056,16 @@ subroutine setMeshDistr( distrID, nMesh, box, firstNode, nNodes, &
 ! Exit point
 999 continue
 
-! Find if this distribution was already defined
-  call reduceDistr( distrID )
+! Find if the old (input) distrID is still valid
+  if (sameMeshDistr(oldDistrID,newDistrID)) then  ! Old distr. is still valid
+    call freeMeshDistr( newDistrID )
+    distrID = oldDistrID
+  else   ! Old distribution is no longer valid
+    call freeMeshDistr( oldDistrID )
+    ! Reset newDistrID if this distribution was already defined
+    call reduceDistr( newDistrID )
+    distrID = newDistrID
+  end if
 
 ! DEBUG
   iDistr = indexDistr( distrID )

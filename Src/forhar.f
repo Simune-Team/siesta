@@ -115,9 +115,8 @@ C ----------------------------------------------------------------------
 C Set uniform distribution of mesh points and find my processor mesh box
 C ----------------------------------------------------------------------
 
-      if (JDGdistr<0)
-     .  call setMeshDistr( distrID=JDGdistr, nMesh=NTM, 
-     .                     nNodesX=1, nNodesY=ProcessorY, nBlock=NSM )
+      call setMeshDistr( distrID=JDGdistr, nMesh=NTM, 
+     .                   nNodesX=1, nNodesY=ProcessorY, nBlock=NSM )
       call myMeshBox( NTM, JDGdistr, myBox )
 
 C ----------------------------------------------------------------------

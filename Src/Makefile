@@ -113,7 +113,8 @@ OBJS =  automatic_cell.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
-        molecularmechanics.o filter.o filter_subs.o zm_broyden_optim.o \
+        molecularmechanics.o zm_broyden_optim.o \
+        filter.o filter_subs.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         mesh1d.o m_debug.o m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o \
@@ -309,13 +310,14 @@ atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 
 
 atom.o: atmparams.o basis_specs.o basis_types.o old_atmfuncs.o periodic_table.o
-atom.o: precision.o pseudopotential.o recipes.o sys.o xcmod.o
+atom.o: precision.o pseudopotential.o recipes.o sys.o xcmod.o filter.o
 
 atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 
-atomxc.o: alloc.o precision.o sys.o xcmod.o
+atomxc.o: alloc.o filter.o ggaxc.o ldaxc.o mesh1d.o precision.o radfft.o
+atomxc.o: sys.o vdwxc.o xcmod.o
 
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 
@@ -469,6 +471,7 @@ fft3d.o: parallel.o parallelsubs.o precision.o sys.o
 
 fftr.o: alloc.o precision.o meshsubs.o fft3d.o
 
+filter.o: radfft.o precision.o sys.o
 
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 
@@ -893,7 +896,7 @@ uncell.o: precision.o
 
 units.o: precision.o
 
-vdwxc.o: ldaxc.o flib_spline.o mesh1d.o m_radfft.o m_recipes.o precision.o 
+vdwxc.o: ldaxc.o flib_spline.o mesh1d.o radfft.o recipes.o precision.o 
 
 vmat.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 vmat.o: meshsubs.o meshsubs.o parallel.o precision.o

@@ -9,8 +9,8 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
 ! *******************************************************************
-! subroutine cellxc( cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, nSpin,
-!    .               irel, dens, Ex, Ec, Dx, Dc, stress, Vxc, dVxcdD )
+! subroutine cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, 
+!    .               nSpin, dens, Ex, Ec, Dx, Dc, stress, Vxc, dVxcdD )
 ! *******************************************************************
 ! Finds total exchange-correlation energy and potential in a
 !   periodic cell.
@@ -30,9 +30,9 @@
 ! integer  irel        : Relativistic exchange? (0=>no, 1=>yes)
 ! real(dp) cell(3,3)   : Unit cell vectors cell(ixyz,ivector)
 ! integer  nMesh(3)    : Total mesh divisions of each cell vector
-! integer lb1,lb2,lb3  ! Lower bounds of arrays dens, Vxc, dVxcdD
-! integer ub1,ub2,ub3  ! Upper bounds of arrays dens, Vxc, dVxcdD
-! integer nSpin        : nSpin=1 => unpolarized; nSpin=2 => polarized;
+! integer  lb1,lb2,lb3 : Lower bounds of arrays dens, Vxc, dVxcdD
+! integer  ub1,ub2,ub3 : Upper bounds of arrays dens, Vxc, dVxcdD
+! integer  nSpin       : nSpin=1 => unpolarized; nSpin=2 => polarized;
 !                        nSpin>2 => non-collinear polarization
 ! real(grid_p) dens(lb1:ub1,lb2:ub2,lb3:ub3,nSpin) : Total (nSpin=1) or 
 !                        spin (nSpin=2) electron density at mesh points
@@ -66,6 +66,7 @@
 ! ************************ USAGE ************************************
 ! With the prototype module xcmod below, you must make a previous call
 !     CALL setXC( nFunc, XCfunc, XCauth, XCweightX, XCweightC )
+! before calling cellXC for the first time
 !
 ! A typical serial program call is:
 !
@@ -106,10 +107,10 @@
 !   end do
 !   end do
 !   call setXC( 1, (/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/) )
-!   call cellXC( 0, cell, nMesh, myBox(1,1), myBox(2,1),        &
-!                                myBox(1,2), myBox(2,2),        &
-!                                myBox(1,3), myBox(2,3), nSpin, &
-!                dens, Ex, Ex, Dx, Dc, stress, Vxc )
+!   call cellXC( 0, cell, nMesh, myBox(1,1), myBox(2,1), &
+!                                myBox(1,2), myBox(2,2), &
+!                                myBox(1,3), myBox(2,3), &
+!                nSpin, dens, Ex, Ex, Dx, Dc, stress, Vxc )
 !
 ! IMPORTANT: arrays dens, Vxc, and dVxcdD may be alternatively 
 ! allocated and initialized with indexes beginning in 0 or 1, 
@@ -217,9 +218,10 @@
 !          'DRSLL' => VDW Dion et al, PRL 92, 246401 (2004)
 ! *******************************************************************
 
+! Wrap cellxc within a module to allow for interface checking by the compiler
 MODULE m_cellxc
 
-CONTAINS
+CONTAINS ! nothing else but public routine cellxc
 
 SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
                    nSpin, dens, Ex, Ec, Dx, Dc, stress, Vxc, dVxcdD )
@@ -322,6 +324,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      my2left(3)=-1,&! ID of commun. task from myBox to left-border boxes
      my2rght(3)=-1,&! ID of commun. task from myBox to right-border boxes
      myDistr=-1,   &! ID of mesh distrib. used internally in this routine
+     oldMesh(3)=-1,&! Total number of mesh points in previous call
      rght2my(3)=-1  ! ID of commun. task from right-border boxes and myBox
   real(dp),save::  &
      myTime=1,     &! CPU time in this routine and processor in last iteration
@@ -354,8 +357,8 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      jj(3), jn, jp, js, jx, kBox(2,3), kMesh(3), kPoints, ks,  &
      l11, l12, l13, l21, l22, l23, &
      m11, m12, m13, m21, m22, m23, maxPoints, mesh(3), &
-     myBox(2,3), myMesh(3), myPoints, &
-     ndSpin, newDistr, nf, nonemptyPoints, nPoints, nq, ns, &
+     myBox(2,3), myMesh(3), myOldDistr, myPoints, &
+     ndSpin, nf, nonemptyPoints, nPoints, nq, ns, &
      r11, r12, r13, r21, r22, r23
   real(dp):: &
      beginTime, D(nSpin), dEcdD(nSpin), dEcdGD(3,nSpin), dEcidDj, &
@@ -367,6 +370,10 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      Eaux, EcuspVDW, endTime, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
      GD(3,nSpin), meshKcut, k, kcell(3,3), kcut, kvec(3),  &
      sumTime, sumTime2, VDWweightC, volcel, volume
+! DEBUG
+  integer :: iip, jjp
+  real(dp):: rmod, rvec(3)
+! END DEBUG
   logical :: &
      GGA, GGAfunctl, VDW, VDWfunctl
   character(len=80):: &
@@ -430,8 +437,11 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Get ID of the I/O distribution of mesh points
   call setMeshDistr( ioDistr, nMesh, ioBox )
 
+  ! If nMesh has changed, use input distribution also initially as myDistr
+  if (any(nMesh/=oldMesh)) call setMeshDistr( myDistr, nMesh, ioBox )
+  oldMesh = nMesh
+
   ! Find new mesh distribution, if previous iteration was too unbalanced
-  if (myDistr<0) myDistr = ioDistr ! In first call use input distrib.
   if (nodes>1 .and. timeDisp/timeAvge>maxUnbalance) then
     ! Find my node's mesh box using myDistr
     call myMeshBox( nMesh, myDistr, myBox )
@@ -462,11 +472,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     workload = workload * myTime/timeAvge
 !    workload = workload * (myTime/myPoints) / (nodes*timeAvge/nPoints)
     ! Find new distribution
-    call setMeshDistr( newDistr, nMesh, wlDistr=myDistr, workload=workload )
-    ! Free old distribution, if it was only mine
-    if (myDistr/=ioDistr) call freeMeshDistr( myDistr )
-    ! Set my new distribution
-    myDistr = newDistr
+    call setMeshDistr( myDistr, nMesh, wlDistr=myDistr, workload=workload )
     ! Deallocate temporary arrays
     call de_alloc( workload, myName//'workload' )
     call de_alloc( myDens,   myName//'myDens' )
@@ -684,17 +690,17 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !      ! Write q(r) for debugging
 !      if (i3==myBox(1,3)) then
 !        if (i1==myBox(1,1) .and. i2==myBox(1,2)) then
-!          open(unit=17,file='qvdw.out')
+!          open(unit=47,file='qvdw.out')
 !        else if (i1==myBox(2,1) .and. i2==myBox(2,2)) then
-!          close(unit=17)
+!          close(unit=47)
 !        end if
 !        Dtot = sum(D(1:ndSpin))
 !        do ix = 1,3
 !          GDtot(ix) = sum(GD(ix,1:ndSpin))
 !        end do
 !        call qofrho( Dtot, GDtot, q, dqdD, dqdGD )
-!        if (i1==myBox(1,1)) write(17,*) ' '
-!        write(17,*) q
+!        if (i1==myBox(1,1)) write(47,*) ' '
+!        write(47,*) q
 !      end if
 ! END DEBUG
 
@@ -805,7 +811,6 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 !      Ex/0.03674903_dp, Ec/0.03674903_dp, Enl/0.03674903_dp
 ! END DEBUG
 
-
     ! Fourier-tranform u_q(k) back to real space
     do iq = 1,nq
 !      uq(0:kMesh(1)-1,0:kMesh(2)-1,0:kMesh(3)-1,1) = &    ! Slower!!!
@@ -814,7 +819,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       do i3 = 0,kMesh(3)-1
       do i2 = 0,kMesh(2)-1
       do i1 = 0,kMesh(1)-1
-        ik = ik +1
+        ik = ik+1
         uq(i1,i2,i3,1) = uvdw(ik,iq)
       end do
       end do
@@ -827,14 +832,13 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       do i2 = 0,myMesh(2)-1
       do i1 = 0,myMesh(1)-1
         if (nonempty(i1,i2,i3)) then
-          ip = ip +1
+          ip = ip+1
           uvdw(ip,iq) = uq(i1,i2,i3,1)
         end if
       end do
       end do
       end do
     end do
-
 
 ! BEGIN DEBUG
     call timer( 'cellXC2.3', 2 )
@@ -852,8 +856,8 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   Ec = 0.0_dp
   Dx = 0.0_dp
   Dc = 0.0_dp
-  Vxc(:,:,:,:) = 0.0_gp
   stress(:,:) = 0.0_dp
+  Vxc(:,:,:,:) = 0.0_gp
   if (present(dVxcdD)) dVxcdD(:,:,:,:) = 0.0_gp
 
 ! BEGIN DEBUG
@@ -939,19 +943,6 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
         ! Sum nonlocal VdW contributions for debugging
         EcuspVDW = EcuspVDW + dVol * Dtot * epsCusp
         Enl = Enl + Dvol * Dtot * epsNL
-
-! BEGIN DEBUG
-!        ! Write epsnl(r) for debugging
-!        if (i3==myBox(1,3)) then
-!          if (ii1==myBox(1,1) .and. ii2==myBox(1,2)) then
-!            open(unit=18,file='EPSvdw.out')
-!          else if (ii1==myBox(2,1) .and. ii2==myBox(2,2)) then
-!            close(unit=18)
-!          end if
-!          if (ii1==myBox(1,1)) write(18,*) ' '
-!          write(18,*) epsNL
-!        end if
-! END DEBUG
 
       else if (GGAfunctl) then
         call ggaxc( XCauth(nf), irel, nSpin, D, GD, &
@@ -1149,7 +1140,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! divide by volume to get correct stress definition (dE/dStrain)/Vol
   forall(ix=1:3) stress(ix,ix) = stress(ix,ix) + Ex + Ec
   stress = stress / volume
-  
+
   ! Divide by energy unit
   Ex = Ex / Eunit
   Ec = Ec / Eunit

@@ -7,6 +7,34 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-07-24  18:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: VdW XC added to atomxc plus bug correction in cellxc
+Keywords: VdW patch 4
+
+- VdW XC added to atomxc
+- Bug correction in cellxc and its calls
+
+Modified Files:
+atomxc.f90 : Renamed from atomxc.f
+             VdW functional added but deactivated for the time being
+cellxc.f90 : Several bug corrections
+             Documentation corrections
+dhscf.F    : JDG mesh distr. redefined in every step
+filter.f90 : New filtering version added within a module
+             Old version maintained for the time being in the same file
+forhar.f   : JDG mesh distr. redefined in every step
+mesh1d.f   : Interpolation routine added
+             Several improvements in usability and algorithms
+             Several bug corrections
+             Documentation corrections
+mesh3d.F90 : Several improvements in usability and algorithms
+             Several bug corrections
+             Documentation corrections
+recipes.f  : Added a check in spline, that point is within range
+
+--------------------------------------------------------------------
+
 2008-06-18  16:45:00 GMT	Jose M Soler <jose.soler@uam.es>
 
 Summary: VdW XC minor corrections
