@@ -111,7 +111,7 @@ MODULE fdf
   USE parse, only: nintegers, nreals
   USE parse, only: nvalues, nnames, ntokens
   USE parse, only: integers, reals
-  USE parse, only: values, names, tokens
+  USE parse, only: values, names, tokens, characters
   USE parse, only: match
   USE parse, only: digest, blocks, endblocks, labels
   USE parse, only: destroy, setdebug, setlog, setmorphol
@@ -1618,12 +1618,9 @@ MODULE fdf
       endif
 
       if (fdf_locate(label, mark)) then
-        if (.not. match(mark%pline, 'ln')) then
-          write(msg,*) 'no string value for ', label
-          call die('FDF module: fdf_string', msg, __FILE__, __LINE__, fdf_err)
-        endif
-
-        fdf_string = names(mark%pline, 1, 1)
+        ! Get all the characters spanning the space from the second to
+        ! the last token
+        fdf_string = characters(mark%pline, ind_init=2, ind_final=-1)
         write(fdf_out,'(a,5x,a)') label, fdf_string
       else
         fdf_string = default

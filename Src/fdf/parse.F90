@@ -110,6 +110,7 @@
 !    These functions can take an optional keyword 'after=' (see below).
 ! 
 ! c) Extraction functions: tokens ('n|i|r|b|e|l'), names ('n'), reals ('r'),
+!                          characters,
 !                          integers ('i'), values ('i|r'), blocks ('b'),
 !                          endblocks ('e'), labels ('l')
 ! 
@@ -123,6 +124,9 @@
 !    Execution stops in the assignment cannot be made. The user should
 !    call the corresponding 'number' routine to make sure there are
 !    enough tokens of the given kind.
+!
+!    Function 'characters' returns a string of characters spanning
+!    several tokens (with the original whitespace)
 ! 
 !    These functions can take an optional keyword 'after=' (see below).
 ! 
@@ -174,7 +178,7 @@ MODULE parse
   public :: nintegers, nreals, nvalues, nnames
   public :: nblocks, nendblocks, nlabels, ntokens
   public :: integers, reals, values, names
-  public :: blocks, endblocks, labels, tokens
+  public :: blocks, endblocks, labels, tokens, characters
 
 !
 ! This parameter is needed by the fdf module. It could also
@@ -777,6 +781,62 @@ MODULE parse
       RETURN
 !--------------------------------------------------------------------------- END
     END FUNCTION tokens
+
+!
+!   Return a piece of the input line, given specifying it by the sequence
+!   numbers of the initial and final tokens. 
+!   A negative final index means that it is counted from the end, e.g.
+!   ind_final=-1 refers to the last token.
+!   It is also possible to make the sequence start after
+!   a given token number in the line.
+!
+    FUNCTION characters(pline, ind_init, ind_final, after)
+      implicit none
+!--------------------------------------------------------------- Input Variables
+      integer(ip), intent(in)           :: ind_init
+      integer(ip), intent(in)           :: ind_final
+      integer(ip), intent(in), optional :: after
+      type(parsed_line), pointer        :: pline
+
+!-------------------------------------------------------------- Output Variables
+      character(len=MAX_LENGTH)         :: characters
+
+!--------------------------------------------------------------- Local Variables
+      integer(ip)                       :: starting_pos
+      integer(ip)                       :: loc_init, loc_final
+
+!------------------------------------------------------------------------- BEGIN
+      if (PRESENT(after)) then
+        if ((after .lt. 0) .or. (after .ge. pline%ntokens))             &
+          call die('PARSE module: tokens', 'Wrong starting position',   &
+                   __FILE__, __LINE__)
+        starting_pos = after
+      else
+        starting_pos = 0
+      endif
+
+      loc_init = starting_pos+ind_init
+      if (ind_final < 0 ) then
+         loc_final = pline%ntokens + ind_final + 1
+      else
+         loc_final = starting_pos+ind_final
+      endif
+
+      if (      (loc_init .lt. 0)                   &
+           .OR. (loc_init .gt. pline%ntokens)       &
+           .OR. (loc_final .lt. 0)                  &
+           .OR. (loc_final .gt. pline%ntokens)      &
+           .OR. (loc_final .lt. loc_init)           &
+         )  then
+         call die('PARSE module: characters', 'Wrong limits',     &
+                 __FILE__, __LINE__)
+      endif
+
+      characters = pline%line(pline%first(loc_init):pline%last(loc_final))
+
+      RETURN
+!--------------------------------------------------------------------------- END
+    END FUNCTION characters
 
 !
 !   Main processing function. Digest a character line array

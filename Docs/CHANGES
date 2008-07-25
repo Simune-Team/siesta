@@ -6,6 +6,17 @@ ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
 
+2007-07-25 14:10:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-40
+
+Summary: Proper behavior of fdf_string
+
+fdf_string should return all the characters in the input line,
+apart from the label, and it should not complain if the
+return string is empty.
+
+To fix this, a new function "characters" has been implemented
+in fdf/parse.F90.
+
 2007-07-20 22:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-39
 
 Summary: Clarification of INCFLAGS for fdf compilation. Basis_io fix
