@@ -1851,6 +1851,13 @@ C If uphill: quench, reduce time step & go back to initial damping alpha
             dt = firefdec * dt
             firealf = firealf0
             firenpos = 0
+! FIXME:
+! Need to set magv and magf to avoid writing undef values.
+! Set to zero here - but does it make more sense to do the
+! double summation below for both uphill and downhill cases? 
+! AMW - 3 / 7 / 2008.
+            magv = 0.0
+            magf = 0.0
          else
 C If downhill: Compute magnitudes of v and F, and ...
             magv = 0.0

@@ -1366,7 +1366,7 @@ MODULE parse
         c = string(i:i)
         if (is_expmark(c)) exp_mark = i
       enddo
-      if (exp_mark .eq. length) return
+      if (exp_mark .eq. length) return    ! Form: XXXXXd
 
       c = string(1:1)
       if (.not. (is_digit(c) .or. is_sign(c))) then
@@ -1398,6 +1398,14 @@ MODULE parse
 !     readable as numbers. I believe this should be reported by the
 !     conversion routine, to warn the user of a mis-typed number, instead
 !     of reporting it as a string and break havoc somewhere else.
+
+!     This cases should not be accepted, since
+!     now we are scanning the whole input file blindly
+
+      if (length == 1) then
+         if (is_sign(string(1:1))) return  ! Remove '+' and '-'
+         if (string(1:1) == "."  ) return  ! Remove '.'
+      endif
 
       is_value = .TRUE.
 

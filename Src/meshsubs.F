@@ -440,7 +440,8 @@ C     requested based on arguments
       Gradients = (Forces.or.Stress)
 
 C     Initialise array to zero
-      if (.not.Gradients) vna(1:ntpl) = 0.0_dp
+!      if (.not.Gradients) vna(1:ntpl) = 0.0_dp
+      vna(1:ntpl) = 0.0_dp
       do ia = 1,na
         iua = indxua(ia)
         is = isa(ia)

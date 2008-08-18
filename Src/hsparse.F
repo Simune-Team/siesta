@@ -97,9 +97,11 @@ C
 
       logical, save :: warn1 = .false.
 
-      real(dp), dimension(:), pointer :: rckb
+      real(dp), dimension(:), pointer :: rckb => null()
       logical, dimension(:),  pointer :: conect
-      integer, dimension(:),  pointer :: index, knakb, listhtmp
+      integer, dimension(:),  pointer :: index => null()
+      integer, dimension(:),  pointer :: knakb => null()
+      integer, dimension(:),  pointer :: listhtmp
 
 C -------------------------------------
 C     Start time counter
@@ -348,6 +350,8 @@ C                   the latter might not be big enough...
 C                   We warn the user and keep the first instance
 C                   of xij (same behavior as the old xijorb, as
 C                   earlier jnats are closer)
+                         ! Do not warn if Gamma-point calculation, as
+                         ! this is harmless
                     if (.not.warn1) then
                       if (Node.eq.0) then
                         write(6,'(/,a,2i6,a,/)')

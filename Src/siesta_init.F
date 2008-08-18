@@ -62,12 +62,6 @@
       integer :: neigmin      ! Min. number of eigenstates (per k point)
       integer :: ns           ! Number of species
 
-      external :: automatic_cell, bonds,  fixed, dhscf, diagon,
-     &            dnaefs, extrapol, initatom, iodm, iozm,
-     &            mulliken, naefs, pulayx, reinit, shaper, spnvec,
-     &            timer, xijorb, memory, ioeig, iofa, iokp, iomd,
-     &            prversion, eggbox
-
 !------------------------------------------------------------------------- BEGIN
 #ifdef MPI
 C     Initialise MPI and set processor number
@@ -166,7 +160,8 @@ C     early exit if only checking the structure
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
          if (lUseZmatrix) then
-            call write_canonical_ucell_and_Zmatrix()
+            call write_canonical_ucell_and_Zmatrix(
+     $                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
@@ -202,8 +197,20 @@ C     Read simulation data
         write(6,fmt="(a,f12.6)") 'Total number of electrons: ', qtot
         write(6,fmt="(a,f12.6)") 'Total ionic charge: ', zvaltot
       endif
+!
+!     Warn the user: if not doing a direct optimization, the Zmatrix
+!     coordinates are no longer updated. Only coordinates are treated.
+!
+      if (lUseZmatrix) then
+         if (idyn .ne. 0) then
+            write(6,"(a)")
+     $      " *** WARNING: Zmatrix form will be used only for input !!"
+            write(0,"(a)")
+     $      " *** WARNING: Zmatrix form will be used only for input !!"
+         endif
+      endif
 
-C     Calculate spin populations for fixed spin case...
+! Calculate spin populations for fixed spin case...
       if (fixspin) then
         if (nspin .ne. 2)
      &    call die( 'siesta: ERROR: ' //

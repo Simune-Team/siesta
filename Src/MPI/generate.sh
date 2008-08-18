@@ -44,7 +44,7 @@ done
 sed -e "/_type/s//_logical/" -e "/type/s//logical/" \
     ${dir}/mpi__type_${tag}.f90 >> Interfaces.f90
 
-sed -e "/_type/s//_character/" -e "/type/s//character(1)/" \
+sed -e "/_type/s//_character/" -e "/type/s//character(*)/" \
     ${dir}/mpi__type_${tag}.f90  >> Interfaces.f90
 
 done

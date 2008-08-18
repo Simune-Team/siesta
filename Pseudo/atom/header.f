@@ -17,6 +17,7 @@ c
       include 'param.h'
       include 'compat.h'
       include 'input.h'
+      include 'version.h'
 c
       character*3 name
       integer i
@@ -26,7 +27,7 @@ c
 c
 c   find jobname and date and printout.
 c
-      ray(1) = 'ATM 3.2.2'
+      ray(1) = atom_id
       call cal_date(ray(2))
 c
 c   printout

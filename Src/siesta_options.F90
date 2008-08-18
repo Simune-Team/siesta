@@ -8,6 +8,7 @@ MODULE siesta_options
   logical :: chebef        ! Compute the chemical potential in ordern?
   logical :: default       ! Temporary used to pass default values in fdf reads
   logical :: dumpcharge    ! Write electron density?
+  logical :: fire_mix      ! SCF mixing with FIRE method
   logical :: fixauxcell    ! Keep the auxiliary supercell fixed?
   logical :: fixspin       ! Keep the total spin fixed?
   logical :: inspn         ! Antiferro spin ordering in initdm?
@@ -17,6 +18,7 @@ MODULE siesta_options
   logical :: mix           ! Mix first SCF step? Used in broyden_mixing
   logical :: negl          ! Neglect hamiltonian matrix elements without overlap?
   logical :: noeta         ! Use computed chemical potential instead of eta in ordern?
+  logical :: new_diagk     ! Use new diagk routine with file storage of eigenvectors?
   logical :: outlng        ! Long output?
   logical :: pulfile       ! Use file to store Pulay info in pulayx?
   logical :: RelaxCellOnly ! Relax only lattice vectors, not atomic coordinates
@@ -45,15 +47,24 @@ MODULE siesta_options
   logical :: writic        ! Write the initial atomic ccordinates?
   logical :: varcel        ! Change unit cell during relaxation or dynamics?
   logical :: do_pdos       ! Compute the projected density of states?
-  logical :: writedm       ! Write file with density of states?
+  logical :: writedm       ! Write file with density matrix?
+  logical :: writedm_cdf   ! Write file with density matrix in netCDF form?
+  logical :: writedm_cdf_history   ! Write file with SCF history of DM in netCDF form?
+  logical :: writedmhs_cdf ! Write file with DM_in, H, DM_out, and S in netCDF form?
+  logical :: writedmhs_cdf_history   ! Write file with SCF history in netCDF form?
+  logical :: read_charge_cdf   ! Read charge density from file in netCDF form?
+  logical :: read_deformation_charge_cdf   ! Read deformation charge density from file in netCDF form?
   logical :: atmonly       ! Set up pseudoatom information only?
   logical :: harrisfun     ! Use Harris functional?
   logical :: muldeb        ! Write Mulliken polpulations at every SCF step?
   logical :: require_energy_convergence ! to finish SCF iteration?
+  logical :: require_harris_convergence ! to finish SCF iteration?
   logical :: broyden_optim ! Use Broyden method to optimize geometry?
+  logical :: fire_optim    ! Use FIRE method to optimize geometry?
   logical :: struct_only   ! Output initial structure only?
   logical :: use_struct_file ! Read structural information from a special file?
   logical :: bornz          ! Calculate Born polarization charges?
+  logical :: SCFMustConverge ! Do we have to converge for each SCF calculation?
 
   integer :: ia1           ! Atom index
   integer :: ia2           ! Atom index
@@ -78,7 +89,8 @@ MODULE siesta_options
   real(dp) :: beta          ! Inverse temperature for Chebishev expansion.
   real(dp) :: bulkm         ! Bulk modulus
   real(dp) :: charnet       ! Net electric charge
-  real(dp) :: dEtol 
+  real(dp) :: Energy_tolerance
+  real(dp) :: Harris_tolerance
   real(dp) :: rijmin        ! Min. permited interatomic distance without warning
   real(dp) :: dDtol         ! Tolerance in change of DM elements to finish SCF iteration
   real(dp) :: dt            ! Time step in dynamics
@@ -103,15 +115,16 @@ MODULE siesta_options
   real(dp) :: tt            ! Target temperature. Read in redata. Used in dynamics rout.
   real(dp) :: wmix          ! Mixing weight for DM in SCF iteration
   real(dp) :: wmixkick       ! Mixing weight for DM in special 'kick' SCF steps
+  real(dp) :: maximum_runtime = 0.0_dp ! Maximum wall clock time of the run.
+                                      ! Set a default here for any checks before
+                                      ! fdf file is read.
 
   character(len=150) :: sname   ! System name, used to initialise read
 
 
-  ! na_diag      : maximum number of atoms with diagon as default method
   ! g2max_default : Mesh cutoff default, in Ry
   ! temp_default  : Electronic temperature default, in Ry
 
-  integer,  parameter :: na_diag = 100
   real(dp), parameter :: g2cut_default = 100.e0_dp
   real(dp), parameter :: temp_default  = 1.900e-3_dp 
 
@@ -122,7 +135,8 @@ MODULE siesta_options
   real(dp), parameter :: wmix_default = 0.25_dp
   real(dp), parameter :: wmixkick_default = 0.5_dp
   real(dp), parameter :: dDtol_default = 1.0e-4_dp
-  real(dp), parameter :: dEtol_default = 1.0e-4_dp * eV
+  real(dp), parameter :: Energy_tolerance_default = 1.0e-4_dp * eV
+  real(dp), parameter :: Harris_tolerance_default = 1.0e-4_dp * eV
   real(dp), parameter :: occtol_default = 1.0e-12_dp
   real(dp), parameter :: etol_default = 1.0e-8_dp
   real(dp), parameter :: rcoor_default = 9.5_dp
@@ -167,7 +181,8 @@ MODULE siesta_options
 !                            KB projectors)
 ! integer nscf             : Maximum number of SCF cycles per time step
 ! real*8 dDtol             : Maximum Density Matrix tolerance in SCF
-! real*8 dEtol             : Maximum energy tolerance in SCF
+! real*8 Energy_tolerance  : Maximum Total energy tolerance in SCF
+! real*8 Harris_tolerance  : Maximum Harris energy tolerance in SCF
 ! logical mix              : Perform mix in first SCF step
 ! real*8 wmix              : Amount of output DM for new DM
 ! integer isolve           : Method of solution.  0 = Diagonalization
@@ -270,8 +285,7 @@ MODULE siesta_options
     !----------------------------------------------------------- Local Variables
     real(dp) :: tcp
 
-    character annop*22,  dyntyp*22, &
-              method*6,  lwfopt*13, method_default*6
+    character annop*22,  dyntyp*22,  method*6,  lwfopt*13
 
     logical  ::  DaC, qnch, qnch2, usesaveddata
 
@@ -304,6 +318,16 @@ MODULE siesta_options
     outlng = fdf_get('LongOutput', .false.)
     if (ionode) then
       write(6,1) 'redata: Long output                      = ', outlng
+    endif
+
+    ! Does the user want us to bomb out after some time? 
+    maximum_runtime = fdf_get('MaximumWallClockTime', 0.0_dp, 's')
+    if (ionode) then
+      if (maximum_runtime.le.0.0_dp) then
+        write(6,'(A)') 'redata: Maximum wall-clock time          = unlimited'
+      else
+        write(6,'(A,F10.0)') 'redata: Maximum wall-clock time (s)      = ', maximum_runtime
+      endif
     endif
 
     if (cml_p) then
@@ -392,8 +416,12 @@ MODULE siesta_options
     ! SCF Loop parameters ...
     !     Maximum number of SCF iterations
     nscf = fdf_get('MaxSCFIterations',nscf_default)
+    SCFMustConverge = fdf_get('SCFMustConverge', .false.)
     if (ionode) then
       write(6,4) 'redata: Max. number of SCF Iter          = ',nscf
+      if (SCFMustConverge) then
+        write(6,4) 'redata: SCF convergence failure will abort job'
+      endif
     endif
 
     if (cml_p) then
@@ -406,9 +434,14 @@ MODULE siesta_options
 
     ! Broyden SCF mixing, number of iterations 
     broyden_maxit = fdf_get('DM.NumberBroyden',0)
+    ! FIRE SCF mixing, no parameters
+    fire_mix = fdf_get('DM.FIRE.Mixing',.false.)
     if (ionode) then
-      if (broyden_maxit .gt. 0) then
-        write(6,5) 'redata: Broyden mixing with ', broyden_maxit, &
+       if (fire_mix) then
+          write(6,*) "Fire Mixing"
+       else if (broyden_maxit .gt. 0) then
+          write(6,5) 'redata: Broyden mixing with ', &
+                    broyden_maxit, &
                    ' saved histories.'
         if (maxsav > 1) then
           write(6,2) 'redata: Broyden supersedes Pulay!'
@@ -432,6 +465,7 @@ MODULE siesta_options
     ! Mix density matrix on first SCF step
     ! (mix)
     mix = fdf_get('DM.MixSCF1',.false.)
+    !
     if (ionode) then
       write(6,1) 'redata: Mix DM in first SCF step ?       = ',mix
     endif
@@ -516,6 +550,7 @@ MODULE siesta_options
       call cmlAddParameter( xf=mainXML, name='DM.Tolerance',     &
                             value=dDtol, dictRef='siesta:dDtol' )
     endif
+!--------------------------------------
 
     ! Require Energy convergence for achieving Self-Consistency?
     require_energy_convergence = fdf_get('DM.RequireEnergyConvergence', &
@@ -532,15 +567,43 @@ MODULE siesta_options
     endif
 
     ! Energy tolerance for achieving Self-Consistency
-    dEtol = fdf_get('DM.EnergyTolerance', dEtol_default, 'Ry' )
+    Energy_tolerance = fdf_get('DM.EnergyTolerance',    &
+                         Energy_tolerance_default, 'Ry' )
     if (ionode) then
-      write(6,7) 'redata: DM Energy tolerance for SCF      = ', dEtol/eV, ' eV'
+      write(6,7) 'redata: DM Energy tolerance for SCF      = ', Energy_tolerance/eV, ' eV'
     endif
 
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='DM.EnergyTolerance', &
-                            value=dEtol, dictRef='siesta:dEtol')
+                            value=Energy_tolerance, dictRef='siesta:Energy_tolerance')
     endif
+
+!--------------------------------------
+    ! Require Harris Energy convergence for achieving Self-Consistency?
+    require_harris_convergence = fdf_get('DM.RequireHarrisConvergence', .false.)
+    if (ionode) then
+      write(6,1) 'redata: Require Harris convergence for SCF = ', &
+                  require_harris_convergence
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='DM.RequireHarrisConvergence', &
+                            value=require_harris_convergence,               &
+                            dictRef='siesta:ReqHarrisConv' )
+    endif
+
+    ! Harris energy tolerance for achieving Self-Consistency
+    Harris_tolerance = fdf_get('DM.HarrisTolerance',    &
+                         Harris_tolerance_default, 'Ry' )
+    if (ionode) then
+      write(6,7) 'redata: DM Harris energy tolerance for SCF = ', Harris_tolerance/eV, ' eV'
+    endif
+
+    if (cml_p) then
+      call cmlAddParameter( xf=mainXML, name='DM.HarrisTolerance', &
+                            value=Harris_tolerance, dictRef='siesta:Harris_tolerance')
+    endif
+!--------------------------------------
 
     ! Initial spin density: Maximum polarization, Ferro (false), AF (true)
     if (nspin.eq.2) then
@@ -583,14 +646,8 @@ MODULE siesta_options
     endif
 
     ! Method to Solve LDA Hamiltonian ...
-    if (na .le. na_diag) then
-      method_default = 'diagon'
-    else
-      method_default = 'ordern'
+    method = fdf_get('SolutionMethod','diagon')
 ! RGT      method_default = 'jacobi'
-    endif
-
-    method = fdf_get('SolutionMethod',method_default)
     if (cml_p) then
       call cmlAddParameter( xf=mainXML, name='SolutionMethod',        &
                             value=method, dictRef='siesta:SCFmethod' )
@@ -869,6 +926,9 @@ MODULE siesta_options
     else if (leqi(dyntyp,'broyden')) then
       idyn = 0
       broyden_optim = .true.
+    else if (leqi(dyntyp,'fire')) then
+      idyn = 0
+      fire_optim = .true.
     else if (leqi(dyntyp,'verlet')) then
       idyn = 1
     else if (leqi(dyntyp,'nose')) then
@@ -908,6 +968,9 @@ MODULE siesta_options
         if (broyden_optim) then
           write(6,2) 'redata: Dynamics option                  =     '//&
                      'Broyden coord. optimization'
+        elseif (fire_optim) then
+          write(6,2) 'redata: Dynamics option                  =     '//&
+                     'FIRE coord. optimization'
         else
           write(6,2) 'redata: Dynamics option                  =     '//&
                      'CG coord. optimization'
@@ -930,6 +993,10 @@ MODULE siesta_options
             call cmlAddParameter( xf   = mainXML,        &
                                   name = 'MD.TypeOfRun', &
                                   value= 'Broyden' )
+          else if (fire_optim) then
+            call cmlAddParameter( xf   = mainXML,        &
+                                  name = 'MD.TypeOfRun', &
+                                  value= 'FIRE' )
           else
             call cmlAddParameter( xf    =mainXML,        &
                                   name  ='MD.TypeOfRun', &
@@ -1291,14 +1358,17 @@ MODULE siesta_options
 
     ! Harris Forces?. Then DM.UseSaveDM should be false (use always
     ! Harris density in the first SCF step of each MD step), and
-    ! MaxSCFIter should be  2, in the second one the SCF 
-    ! Iteration are computed.
+    ! MaxSCFIter should be  2, in the second one the Harris 
+    ! forces are computed. Also, should not exit if SCF did 
+    ! not converge.
+    
     harrisfun = fdf_get('Harris_functional',.false.)
 
     if (harrisfun) then
       usesavedm = .false.
       nscf      = 2
       mix       = .false.
+      SCFMustConverge = .false.
     endif
 
     if (ionode) then
@@ -1321,6 +1391,19 @@ MODULE siesta_options
     writek =       fdf_get( 'WriteKpoints'    , outlng )
     writef =       fdf_get( 'WriteForces'     , outlng )
     writedm =      fdf_get( 'WriteDM'     , .true.)
+    writedm_cdf = fdf_get('WriteDM.NetCDF' , .true.)
+    writedm_cdf_history = fdf_get('WriteDM.History.NetCDF' , .false.)
+    writedmhs_cdf = fdf_get('WriteDMHS.NetCDF' , .true.)
+    writedmhs_cdf_history = fdf_get('WriteDMHS.History.NetCDF' , .false.)
+    read_charge_cdf = fdf_get('SCF.Read.Charge.NetCDF' , .false.)
+    read_deformation_charge_cdf = fdf_get('SCF.Read.Deformation.Charge.NetCDF' , .false.)
+
+    if (read_charge_cdf .or. read_deformation_charge_cdf) then
+       mix = .false.
+    endif
+
+    new_diagk =    fdf_get( 'UseNewDiagk'      , .false. )
+
     writb =        fdf_get( 'WriteBands'      , outlng )
     writbk =       fdf_get( 'WriteKbands'     , outlng )
     writeig =      fdf_get('WriteEigenvalues', outlng )

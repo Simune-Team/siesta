@@ -100,13 +100,14 @@ c
            enddo
            write(6,"(a,23('*'),a,29('*'))")
      .          '***', ' End of input data file '
+           close(lun_tmp)
 c
         endif
       endif
 c ...
 
 C Set up fdf ...
-      fileout = 'out.fdf'
+      fileout = 'fdf.log'
       call fdf_init(filein,fileout)
 
 C Define Name of the system ...
@@ -128,5 +129,4 @@ C Define System Label (short name to label files) ...
       endif
 C ...
 
-      return
       end

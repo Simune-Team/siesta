@@ -103,6 +103,7 @@ C ----------------------------------------------------------------------
       VHARRIS2(:)   = 0.0_grid_p
       DRHOIN(:,:)   = 0.0_grid_p
       DVXCDN(:,:,:) = 0.0_grid_p
+      STRESSL(:,:)  = 0.0_dp
 
 C ----------------------------------------------------------------------
 C Compute exchange-correlation energy and potential and

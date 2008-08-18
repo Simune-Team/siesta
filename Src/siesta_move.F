@@ -15,9 +15,15 @@
       USE siesta_options
       use parallel,        only: IOnode
       use siesta_cml
+      use sys,             only: die
+
       use m_broyden_optim, only: broyden_optimizer
+      use m_fire_optim, only: fire_optimizer
       use m_zm_broyden_optim,      only: zm_broyden_optimizer
+      use m_zm_fire_optim,      only: zm_fire_optimizer
       use m_cell_broyden_optim,      only: cell_broyden_optimizer
+      use m_cell_fire_optim,      only: cell_fire_optimizer
+
       use m_dynamics,      only: nose, verlet2, npr, anneal, pr
       use phonon,          only: phonon_setup, phonon_restore_coords,
      .                           phonon_set_coords
@@ -65,14 +71,28 @@
       case(0)
         if (nmove .ne. 0) then
           if (RelaxCellOnly) then
-             call cell_broyden_optimizer( na_u, xa, ucell,
+             if (broyden_optim) then
+                call cell_broyden_optimizer( na_u, xa, ucell,
      $            cstress, tp, strtol,
      $            varcel, relaxd)
-          else
+             elseif (fire_optim) then
+                call cell_fire_optimizer( na_u, xa, ucell,
+     $            cstress, tp, strtol,
+     $            varcel, relaxd)
+             else
+                call die("Cell-only optim needs Broyden or FIRE")
+             endif
+
+          else   ! Coordinate relaxation (and maybe cell)
+
            if (lUseZmatrix) then
              if (broyden_optim) then
                 call zm_broyden_optimizer( na_u, xa, ucell, cstress, tp,
      &                                     strtol, varcel, relaxd )
+             elseif (fire_optim) then
+                call zm_fire_optimizer( na_u, xa, cfa, ucell,
+     $               cstress, dxmax, tp, ftol, strtol,
+     $               varcel, relaxd)
              else
                 call cgvc_zmatrix( na_u, xa, cfa, ucell, cstress,
      $               dxmax, tp, ftol, strtol, varcel,
@@ -82,6 +102,10 @@
              if (broyden_optim) then
                 call broyden_optimizer( na_u, xa, cfa, ucell,
      $               cstress, tp, ftol, strtol, varcel, relaxd )
+             elseif (fire_optim) then
+                call fire_optimizer( na_u, xa, cfa, ucell,
+     $               cstress, dxmax, tp, ftol, strtol,
+     $               varcel, relaxd )
              else
                 call cgvc( na_u, xa, cfa, ucell, cstress,
      $               dxmax, tp, ftol, strtol, varcel,
@@ -200,9 +224,9 @@
           ! Save last atomic positions and velocities 
           call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
-          if (lUseZmatrix) then
-            call iozm('write',ucell,vcell,xa,foundzm)
-          endif
+!!          if (lUseZmatrix) then
+!!            call iozm('write',ucell,vcell,xa,foundzm)
+!!          endif
           call siesta_write_positions()
 
           ! Save atomic positions and velocities accumulatively and
@@ -227,7 +251,7 @@
       if (idyn.ne.6 .and. idyn.ne.7 .and. idyn.ne.8) then
         call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
-        if (lUseZmatrix)
+        if (lUseZmatrix .and. (idyn.eq.0))
      .    call iozm('write',ucell,vcell,xa,foundzm)
         call siesta_write_positions()
 
@@ -240,7 +264,9 @@
 
    60 continue
 ! Output memory use at the end of this geometry step
-      if (cml_p) call cmlEndStep(mainXML)
+      if (cml_p) then
+         call cmlEndStep(mainXML)
+      endif
       call printmemory( 6, 0 )
       call timer( 'SIMOVE', 2 )
       call timer( 'IterMD', 2 )

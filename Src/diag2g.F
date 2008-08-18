@@ -215,7 +215,7 @@ C New density and energy-density matrices of unit-cell orbitals .......
           iie = iie + 1
         endif
         qe = qo(ie)
-        if (qe.gt.occtol) then
+        if (abs(qe).gt.occtol) then
           if (Node.eq.BNode) then
             do j = 1,nuotot
               aux(1,j) = psi(1,1,j,iie)

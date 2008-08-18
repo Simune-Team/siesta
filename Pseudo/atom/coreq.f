@@ -28,6 +28,7 @@ c
       parameter (nql = 400)
 
       integer j, nrpnew
+      integer norder, iu, k
       double precision rmin, rmax, zc, q, dcq
 
       double precision divdif

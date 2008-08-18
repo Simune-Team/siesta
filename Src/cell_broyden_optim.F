@@ -32,7 +32,7 @@
 
       CONTAINS
       subroutine cell_broyden_optimizer( na, xa, cell, stress,
-     $           tp, strtol, varcel, relaxd)
+     $                tp, strtol, varcel, relaxd)
 c ***************************************************************************
 c Broyden geometry optimization (Cell Only)
 c
@@ -80,7 +80,9 @@ c Internal variables and arrays
       integer  :: iu, i, j, indi
       real(dp) ::  celli(3,3), sxx, syy, szz, sxy, sxz, syz
       real(dp) ::  stress_dif(3,3)
-      real(dp), pointer :: gxa(:), gfa(:), rnew(:)
+
+      real(dp), pointer ::  rnew(:)
+      real(dp), dimension(:), pointer  :: gxa, gfa, max_step
 
       type(block_fdf)            :: bfdf
       type(parsed_line), pointer :: pline
@@ -101,7 +103,7 @@ c Internal variables and arrays
       logical, save           :: initialization_done = .false.
       integer, save  :: numel
 
-      real(dp), save :: jinv0
+      real(dp), save :: jinv0, max_step_strain
       integer, save  :: maxit
       logical, save  :: cycle_on_maxit, variable_weight
       logical, save  :: broyden_debug
@@ -113,6 +115,7 @@ c Internal variables and arrays
 c ---------------------------------------------------------------------------
 
       volume = volcel(cell)
+
       if (.not. initialization_done) then
 
         maxit           = fdf_get("MD.Broyden.History.Steps",5)
@@ -121,6 +124,8 @@ c ---------------------------------------------------------------------------
         broyden_debug   = fdf_get("MD.Broyden.Debug",.false.)
         jinv0           = fdf_get("MD.Broyden.Initial.Inverse.Jacobian",
      $                            1.0_dp)
+        Max_step_strain = fdf_get(
+     $         "MD.MaxCGDispl",0.02_dp,"Bohr")
 
         if (ionode) then
           write(6,*) 
@@ -234,6 +239,8 @@ C Variable cell -------------------------------------------------------------
         call re_alloc( gfa, 1, numel, 'gfa', 'Broyden_optim' )
         call re_alloc( gxa, 1, numel, 'gxa', 'Broyden_optim' )
         call re_alloc( rnew, 1, numel, 'rnew', 'Broyden_optim' )
+        call re_alloc( max_step, 1, numel, 'max_step', 'Broyden_optim' )
+
 
         relaxd = .true.
 
@@ -268,6 +275,7 @@ C preconditioning: scale stress and strain so as to behave similarly to x,f -
               indi = indi + 1
               gfa(indi) = -stress_dif(i,j)*volume/precon
               gxa(indi) = strain(i,j) * precon
+              max_step(indi) = Max_step_strain
            enddo
         enddo
 
@@ -286,7 +294,7 @@ C Call Broyden step
 
         if (.not. broyden_is_setup(br)) then
            call broyden_reset(br,numel,maxit,cycle_on_maxit,
-     $                       jinv0,0.01_dp)
+     $                       jinv0,0.01_dp,max_step)
         endif
 
         weight = 1.0_dp
@@ -328,6 +336,9 @@ C Transform back if variable cell
         call de_alloc( rnew,'rnew', 'Broyden_optim' )
         call de_alloc( gxa,'gxa', 'Broyden_optim' )
         call de_alloc( gfa,'gfa', 'Broyden_optim' )
+        call de_alloc( max_step,'max_step', 'Broyden_optim' )
+
+
 
       endif ! variable cell
 

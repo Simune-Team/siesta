@@ -138,6 +138,8 @@ C  Internal variables .............................................
 C Solve eigenvalue problem
       write(23,*) 'Solve eigenvalue problem'
       write(23,*) 'nspin', nspin
+      call timer( 'r-eigvec', 1 )
+      call timer( 'r-buildHS', 1 )
       call pxfflush(23)
       do ispin = 1,nspin
         do io = 1,nuo
@@ -154,10 +156,13 @@ C Solve eigenvalue problem
             Haux(jo,io) = Haux(jo,io) + H(ind,ispin)
           enddo
         enddo
+        call timer( 'r-buildHS', 2 )
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
      .              psi(1,1,ispin), neigwanted, iscf, ierror )
-      write(23,*) 'AUTOVALORES de salida', eo(:,ispin)
-      call pxfflush(23)
+        call timer( 'r-eigvec', 2 )
+        write(23,*) 'AUTOVALORES de salida', eo(:,ispin)
+
+        call pxfflush(23)
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -225,6 +230,7 @@ C New density and energy-density matrices of unit-cell orbitals .......
       Dnew(1:nd,1:nspin) = 0.0d0
       Enew(1:nd,1:nspin) = 0.0d0
 
+      call timer( 'r-buildD', 1 )
 C Global operation to form new density matrix
       nullify( nuo_LOC )
       call re_alloc( nuo_LOC, 0, Nodes-1, 'nuo_LOC', 'diagg' )
@@ -264,7 +270,7 @@ C Global operation to form new density matrix
             do iie = 1,nuo_LOC(Bnode)
               call  LocalToGlobalOrb(iie,BNode,Nodes,ie)
               qe = qo(ie,ispin)
-              if (qe.gt.occtol) then
+              if (abs(qe).gt.occtol) then
                 paux => PSI_TMP(mm+1:mm+nuotot)
                 ee  = qe*eo(ie,ispin)
                 qei = qe*paux(iio)
@@ -281,8 +287,8 @@ C Global operation to form new density matrix
           enddo
         enddo
       enddo
-      write(23,*) 'Dnew', Dnew
-      write(23,*) 'Enew', Enew
+
+      call timer( 'r-buildD', 2 )
       call pxfflush(23)
       call de_alloc( nuo_LOC, 'nuo_LOC', 'diagg' )
       call de_alloc( PSI_TMP, 'PSI_TMP', 'diagg' )

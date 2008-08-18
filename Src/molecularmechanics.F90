@@ -3,6 +3,7 @@ module molecularmechanics
 ! Add additional interactions through pair-potentials
 ! Implementation: Julian Gale (Curtin, AU)
 ! Modified by Alberto Garcia  (stress sign fix, plots of V(r))
+! Implemented Grimme's cutoff function (A. Garcia, April 2008)
 !
 
  use precision, only: dp
@@ -15,6 +16,7 @@ module molecularmechanics
 
  integer, parameter    :: sign_change = -1
 
+ real(dp), parameter   :: d_grimme_default = 20.0_dp    ! 2006 Grimme paper
 
  private
 
@@ -24,6 +26,8 @@ module molecularmechanics
  integer, save         :: nMMpottype(maxMMpot)
  logical, save         :: PotentialsPresent = .false.
  real(dp), save        :: MMcutoff
+ real(dp), save        :: s6_grimme
+ real(dp), save        :: d_grimme
  real(dp), save        :: MMpotpar(6,maxMMpot)
 
  public :: inittwobody, twobody
@@ -36,10 +40,11 @@ module molecularmechanics
    use units,   only : eV, Ang
    use sys,     only : die
    use parallel,only : Node
-   character(len=80)  :: potencial
+   character(len=80)  :: potential
+
+   real(dp), parameter   :: s6_grimme_default = 1.66_dp    ! Fit by Roberto Peverati for DZ basis sets
+
    character(len=80)  :: scale
-   integer            :: il
-   integer            :: maxlin
    integer            :: ni
    integer            :: nn
    integer            :: nr
@@ -81,20 +86,20 @@ module molecularmechanics
     if (Node.eq.0) then
       write(6,"(a)") "Reading two-body potentials"
     endif
-    maxlin = maxMMpot
-    do il= 1, maxlin
+
+    do 
 !
 ! Read and parse data line
 !
-      if (.not. fdf_bline(bfdf,pline)) &
-        call die('inittwobody: ERROR in MM.Potentials block')
+      if (.not. fdf_bline(bfdf,pline)) exit
+
       nn = fdf_bnnames(pline)
       ni = fdf_bnintegers(pline)
       nr = fdf_bnreals(pline)
-      potencial = fdf_bnames(pline,1)
+      potential = fdf_bnames(pline,1)
 
       if (nn .gt. 0) then
-        if (leqi(potencial,'C6')) then
+        if (leqi(potential,'C6')) then
           nMMpot = nMMpot + 1
           if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
@@ -105,6 +110,8 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          write(6,"(a,i3,a,i3))") "C6 - two-body potential between ", &
+                        fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! C6 : Parameter one is C6 coefficient
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -115,7 +122,7 @@ module molecularmechanics
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
-        elseif (leqi(potencial,'C8')) then
+        elseif (leqi(potential,'C8')) then
           nMMpot = nMMpot + 1
           if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
@@ -126,6 +133,8 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          write(6,"(a,i3,a,i3))") "C8 - two-body potential between ", &
+                        fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! C8 : Parameter one is C8 coefficient
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -136,7 +145,7 @@ module molecularmechanics
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
-        elseif (leqi(potencial,'C10')) then
+        elseif (leqi(potential,'C10')) then
           nMMpot = nMMpot + 1
           if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
@@ -147,6 +156,8 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          write(6,"(a,i3,a,i3))") "C10 - two-body potential between ", &
+                        fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! C10 : Parameter one is C10 coefficient
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
@@ -157,7 +168,7 @@ module molecularmechanics
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
-        elseif (leqi(potencial,'HARM')) then
+        elseif (leqi(potential,'HARM')) then
           nMMpot = nMMpot + 1
           if (nMMpot .gt. maxMMpot) then
             call die('MM: Too many MM potentials - increase maxMMpot!')
@@ -168,6 +179,8 @@ module molecularmechanics
           endif
           nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
           nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          write(6,"(a,i3,a,i3))") "Harmonic two-body potential between ",   &
+                        fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
           if (nr .ge. 2) then
 ! Harm : Parameter one is force constant
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Dscale**2)
@@ -178,13 +191,47 @@ module molecularmechanics
             MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale/(Dscale**2)
             MMpotpar(2,nMMpot) = 0.0_dp
           endif
+        elseif (leqi(potential,'Grimme')) then
+          nMMpot = nMMpot + 1
+          if (nMMpot.gt.maxMMpot) then
+            call die('MM: Too many MM potentials - increase maxMMpot!')
+          endif
+          nMMpottype(nMMpot) = 5
+          if (ni.lt.2) then
+            call die('MM: Species numbers missing in potential input!')
+          endif
+          nMMpotptr(1,nMMpot) = fdf_bintegers(pline,1)
+          nMMpotptr(2,nMMpot) = fdf_bintegers(pline,2)
+          write(6,"(a,i3,a,i3))") "Grimme two-body potential between ", &
+                        fdf_bintegers(pline,1), " and ", fdf_bintegers(pline,2)
+          if (nr.eq.2) then
+
+! C6 : Parameter one is C6 coefficient
+            MMpotpar(1,nMMpot) = fdf_breals(pline,1)*Escale*(Dscale**6)
+
+! C6 : Parameter two is the sum of the van-der-Waals radii
+!      Note 1: This must be already appropriately corrected (i.e., factor of 1.1 ...)
+!      Note 2: This is a real length, as opposed to the damping parameters for the Tang-Toenes
+!              potentials, so note the correct application of the scale factor.
+
+            MMpotpar(2,nMMpot) = fdf_breals(pline,2) * Dscale
+
+          else
+            call die('MM: Need both C6 and R0 values in Grimme line!')
+          endif
         endif
       endif
     enddo
 
-  endif
+    if (any(nMMpottype .eq. 5)) then
+       s6_grimme = fdf_double("MM.Grimme.S6",s6_grimme_default)
+       d_grimme = fdf_double("MM.Grimme.D",d_grimme_default)
+    endif
 
   if (Node .eq. 0)  call plot_functions()
+
+  endif
+
 
 end subroutine inittwobody
 
@@ -225,6 +272,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   logical                 :: lanyvalidpot
   logical, pointer        :: lvalidpot(:)
   real(dp)                :: MMcutoff2
+  real(dp)                :: arg
   real(dp)                :: a
   real(dp)                :: b
   real(dp)                :: br6
@@ -237,6 +285,7 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   real(dp)                :: df8
   real(dp)                :: df10
   real(dp)                :: gamma
+  real(dp)                :: earg
   real(dp)                :: ebr6
   real(dp)                :: ebr8
   real(dp)                :: ebr10
@@ -245,12 +294,15 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
   real(dp)                :: f6
   real(dp)                :: f8
   real(dp)                :: f10
+  real(dp)                :: fg
+  real(dp)                :: fgprime
   real(dp)                :: ftrm
   real(dp)                :: factor
   real(dp)                :: proj1
   real(dp)                :: proj2
   real(dp)                :: proj3
   real(dp)                :: r
+  real(dp)                :: R0
   real(dp)                :: r2
   real(dp)                :: r2i
   real(dp)                :: r2j
@@ -559,6 +611,16 @@ subroutine twobody(na,xa,isa,cell,emm,ifa,fa,istr,stress)
                               etrm = MMpotpar(1,np)*(r - MMpotpar(2,np))
                               ftrm = factor*etrm/r
                               etrm = 0.5_dp*etrm*(r - MMpotpar(2,np))
+                            elseif (nMMpottype(np).eq.5) then    ! Grimme
+                              r = sqrt(r2)
+                              R0 = MMpotpar(2,np)
+                              arg = - d_grimme*(r/R0 - 1.0_dp)
+                              earg = exp(arg)
+                              fg = 1.0_dp / ( 1.0_dp + earg )
+                              etrm1 = s6_grimme * MMpotpar(1,np)/(r2**3)
+                              fgprime = (d_grimme/R0) * earg / ( 1 + earg )**2
+                              etrm = - etrm1*fg
+                              ftrm = factor*(6.0_dp*etrm1*fg - etrm1*r*fgprime)/r2
                             endif
                             emm = emm + factor*etrm
                             if (ifa.ne.0) then
@@ -688,6 +750,7 @@ integer, parameter   :: npts = 1000
 real(dp) :: rmin, rmax, delta, range
 real(dp) :: etrm, ftrm, r1, r2, factor, br6, ebr6, f6, etrm1
 real(dp) :: df6, ebr8, br8, f8, df8, br10, ebr10, f10, df10, r
+real(dp) :: fg, fgprime, arg, earg, R0
 integer  :: i, iu
 
 factor = 1.0_dp       !! ??
@@ -763,6 +826,16 @@ open(iu,file=trim(fname),form="formatted",status="replace",  &
            etrm = MMpotpar(1,np)*(r - MMpotpar(2,np))
            ftrm = factor*etrm/r
            etrm = 0.5_dp*etrm*(r - MMpotpar(2,np))
+        elseif (nMMpottype(np).eq.5) then    ! Grimme
+           r = sqrt(r2)
+           R0 = MMpotpar(2,np)
+           arg = - d_grimme*(r/R0 - 1.0_dp)
+           earg = exp(arg)
+           fg = 1.0_dp / ( 1.0_dp + earg )
+           etrm1 = s6_grimme * MMpotpar(1,np)/(r2**3)
+           fgprime = (d_grimme/R0) * earg / ( 1 + earg )**2
+           etrm = - etrm1*fg
+           ftrm = factor*(6.0_dp*etrm1*fg - etrm1*r*fgprime)/r2
         endif
 
         write(iu,*) r1/Ang, etrm/eV, ftrm*Ang/eV

@@ -43,61 +43,48 @@ C
       implicit none
 
 #ifdef MPI
-      integer
-     .  MPIerror
+      integer  MPIerror
 #endif
 
-      integer 
-     .  nat, isa(nat)
+      integer  nat, isa(nat)
 
-      real(dp)
-     .  mass(nat), ttemp, va(3,nat), xa(3,nat)
+      real(dp)  mass(nat), ttemp, va(3,nat), xa(3,nat)
 
 C Internal variables ..................
 
-      integer 
-     .  iseed, i, ix, iy, ntcon
+      integer  iseed, i, ix, iy, ntcon
 
       real(dp)
      .  cell(3,3), stress(3,3), fa(3,nat), 
-     .  massi, tempe, velo, vtot(3)
+     .  massi, tempe, velo, pcm(3), mtot,
+     .  tmpstress(3,3), tmpfa(3,nat)
 
       external velo
 C .....................
-#ifdef MPI
-      call MPI_Comm_Rank(MPI_Comm_World,Node,MPIerror)
-#else
-      Node = 0
-#endif
 
 C Only generate the velocities on one Node in case they are truely random
       if (Node.eq.0) then
 
-        do ix=1,3
-          vtot(ix)=0.0d0
-        enddo
-
-
         iseed=-17
 
-C Loop over atoms to assing velocities .................
+C Loop over atoms to assign velocities .................
+        mtot = 0.0_dp
+        pcm = 0.0_dp
         do i = 1,nat
           massi = mass(i)
+          mtot = mtot + massi
            
           va(1,i) = velo(iseed,ttemp,massi)
           va(2,i) = velo(iseed,ttemp,massi)
           va(3,i) = velo(iseed,ttemp,massi)
 
-       	  vtot(1) = vtot(1) + va(1,i)
-       	  vtot(2) = vtot(2) + va(2,i)
-       	  vtot(3) = vtot(3) + va(3,i)
+          pcm(:) = pcm(:) + massi * va(:,i)
         enddo
-C ...............
 
 C Impose constraint on zero center of mass velocity ....................
         do i = 1,nat
           do ix = 1,3
-            va(ix,i) = va(ix,i) - vtot(ix)/nat
+            va(ix,i) = va(ix,i) - pcm(ix)/mtot
           enddo
         enddo
 
@@ -119,20 +106,28 @@ C
 
 C Zero dummy matrices for stress and cell (needed in
 C call to constrains routine)
-      do ix = 1,3
-        do iy = 1,3
-          cell(ix,iy) = 0.0d0
-          stress(ix,iy) = 0.0d0
-        enddo
-      enddo
 
+      cell = 0.0_dp
+      stress = 0.0_dp
       do i = 1,nat
         do i x =1,3
           fa(ix,i) = va(ix,i)*mass(i)
         enddo
       enddo
+
+      ! NAG's F95 compiler does not like reuse of an
+      ! argument with intent(in) and intent(out), such
+      ! as stress and fa in the call to fixed. Quick 
+      ! workaround is to make the use of a temporary
+      ! variable thus:
       call fixed( cell, stress, nat, isa, mass, xa, fa,
-     &            stress, fa, ntcon )
+     .                  tmpstress, tmpfa, ntcon )
+      stress = tmpstress
+      fa = tmpfa
+      ! But is it better to use intent(inout) in fixed? 
+      ! If this is done, remember to remove the two tmp
+      ! variable definitions.
+
       do i = 1,nat
         do ix = 1,3
           va(ix,i) = fa(ix,i)/mass(i)

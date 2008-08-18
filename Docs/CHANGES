@@ -2,6 +2,827 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+
+____________________________________________________________________
+** CHANGES MERGED from siesta@uam.es--2006/siesta-devel--reference--2.5
+--------------------------------------------------------------------
+
+2008-07-08  13:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-29
+
+Summary: Patches by A. Walker: undefined variables and pointers, intents
+
+The original names of the patch files are retained for reference.
+
+* NAG-01-null.patch -- makes various undefined pointers disassociated
+(in fft3d.F, dfscf.f, pseudopotential.f, hsparse.f, optical.F,
+writewave.F and zmatrix) and wraps a pointer declaration that is only
+used under -DMPI with the ifdef in optical.F.
+
+* NAG-02-intent.patch -- attempts to deal with a couple of issues with
+the intent of variables. Intent(out) results in the variable being
+undefined at the start of the called subroutine (and in the caller, if
+it is not changed). In vmb.F there is a call to fixed with a couple of
+variables being used in two places (on intent(in) and another
+intent(out)) - I don't know what the strictly correct behavior is in
+this case, but under NAG this results in the intent(in) variable being
+undefined in fixed. I've worked around this with a pair temporary
+variables. The alternative is to rework the interface to fixed using
+intent(inout). The second issue is similar and in meshsubs.f: Vna
+ended up undefined if gradient was true. I've dealt with this by
+setting Vna to 0.0, but a reworking using intent(inout) may also be a
+better solution.
+
+* NAG-03-dhfcs.patch -- deals with a couple of pointers in
+dhscf.F. These need to have the save attribute or they will be
+undefined rather than disassociated on the second and subsequent
+calls. I've also added a comma to a data block.
+
+* NAG-04-filter.patch Changes the dimensions of f0 from nr to n so to
+avoid a mismatch in array dimensions of x in the call to the
+interpolation function at line 169. As far as I can tell this is the
+correct fix: yold is known at the xold positions and ynew will be
+calculated at the xnew positions, so ynew (which is f0) should be of
+the same dimensions as xnew (which is x), and yold (f) should be of
+the same dimensions as xold (r).
+
+* NAG-05-init -- In dynamics.f initialize magv and magf in the uphill
+case. In forhar.f initialize stressl array. In m_cell.f initialize
+celli as it is used in the case of a zmatrix molecule without a cell
+before the box size is calculated. In m_kinetic.F90 initialize
+thermostat parameters.
+
+
+2008-06-29  22:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-28
+
+Summary: Minor cosmetic fixes to avoid compilation warnings
+
+*   Fix cycle statement in m_denchar_work.f
+
+*   Fix cycle statements in pdos routines -- warning in atomlwf.F
+
+*   Some debugging support for KB generation
+
+If Atom.Debug.KB.Generation is "true", 'AtomLabel-KBproj'.index
+files are produced showing the non-interpolated projectors.
+
+*   Fixes for NAG compiler contributed by Toby White:
+
+chempot: intent of mu in numb routine.
+writewave: remove references to paste routine
+fft3d.F: explicit array-ness of trigs in calls to setup routines.
+
+2008-06-29  22:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-27
+
+Summary: Fixed bug affecting MP occupation smearing.
+
+Fixed a bug (reported by Francois Willaime of CEA/Saclay)
+which affected calculations in metals using the Hermite-Gauss
+broadening scheme proposed by Methfessel and Paxton
+(OccupationFunction MP).
+
+The following test on state occupancy was performed:
+
+if (qe.gt.occtol)
+
+where qe is the state occupancy, and occtol, the tolerance (set to
+10**-12 by default).  If one uses the Methfessel-Paxton smearing, qe
+may take negative values and this test therefore yields wrong results.
+
+The bug has be fixed by replacing the test by 
+
+if (abs(qe).gt.occtol)
+
+in all diag*.F routines.
+
+
+2008-06-29  18:20:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-26
+
+Summary: Remove residual (k,-k) pairs of k-points
+
+The original algorithm sometimes left pairs of k-points related
+by inversion. A new routine "trim_kpoint_list" in find_kgrid.F
+now takes care of them.
+
+A file NON_TRIMMED_KP_LIST is created with the "raw" list produced
+by the first part of the process, for debugging purposes.
+
+NOTE: Some pairs are *still* not removed properly. A fix is in the works.
+
+Credits: Eduardo Machado (CEA) implemented a preliminary version
+         modifying the original algorithm.
+
+* Write KP file unconditionally (regardless of WriteKpoints setting)
+
+2008-06-29  18:15:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-25
+
+Summary: Assorted geometry-related cosmetic fixes
+
+* Do not pretend to update zmatrix info during MD runs
+
+The zmatrix form of structural information is only kept up
+to date when performing geometry relaxations. In molecular
+dynamics runs, only the cartesian coordinates are updated, and
+the zmatrix variables are kept frozen at their initial values.
+
+This is potentially confusing, so a warning is now issued and
+the zmatrix "updates" are no longer printed.
+
+* Fix shape script in Utils/MD
+
+* Compute bond information for all server steps
+
+  If the server option is used, the program will compute the bond-length
+  information at every step. 
+
+  The first file has now extension ".BONDS_INITIAL", and every successive 
+  one, simply ".BONDS". The final one is still "SystemLabel.BONDS_FINAL".
+
+* More flexibility and error detection in reading of atomic coordinates
+
+(Patch by Andrew Walker)
+
+In coor.F, new logic has been implemented to detect malformed input lines
+in the AtomicCoordinatesAndAtomicSpecies block. As a by-product, comments
+and blank lines can now be present in the block.
+
+
+(Unrelated)
+
+* Temporarily move xml-pseudopotential to xmlparser directory
+  The file is not ready for production, but could interfere with the
+  automatic dependency analysis.
+
+2008-06-29  17:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-24
+
+Summary: Generalized SCF convergence criteria. Optional enforcement
+
+New criterion for SCF convergence based on the Harris energy. This
+is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+
+This new criterion joins the two already implemented:
+
+- The standard criterion is based on the convergence of the density
+matrix, with the relevant parameter being DM.Tolerance.
+
+- Optionally, one can require that the total energy changes are
+also below a prescribed tolerance:
+
+DM.RequireEnergyConvergence T
+
+In this case, DM.EnergyTolerance is the total-energy tolerance
+
+The new criterion is requested by
+
+DM.RequireHarrisConvergence  T
+
+DM.HarrisTolerance is the harris-energy tolerance (default 1e-4 eV)
+
+(Note that DM convergence is not needed in this case).
+
+The user is responsible for using the correct energies in further
+processing, e.g., the Harris energy if the Harris criterion is used.
+
+To help in basis-optimization tasks, a new file BASIS_HARRIS_ENTHALPY
+is provided, holding the same information as BASIS_ENTHALPY but using
+the Harris energy instead of the Kohn-Sham energy. 
+
+
+The energy criteria are implemented using "convergers", new objects
+defined and implemented in m_convergence.f90. It is probably overkill
+as of now, but it can be enhanced to provide new functionality.
+
+
+*  Added Andrew Walker's patch for convergence enforcement
+
+If the fdf symbol SCFMustConverge is set to 'true', the program will abort
+if convergence is not achieved after the specified number of iterations
+(set with MaxSCFIterations, or currently 50 by default).
+
+* Added explicit support for flush and abort for gfortran in pxf.F
+
+2008-06-29  17:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-23
+
+Summary:  Patch by Andrew Walker for maximum wall-clock time
+
+If MaximumWallClockTime is set (to a time specification of
+the form 
+
+     15 s
+     7  mins
+     2  hours
+     3  days 
+     ...      )
+
+the program will abort if the specific wall-time is exceeded.
+The checks are done with the granularity of the calls to 'timer' (i.e.,
+there might be some slack). If the maximum time is 0 (the default), or is
+negative, the time is unlimited.
+
+
+* Added -DFC_HAVE_FLUSH -DFC_HAVE_ABORT to the gfortran*.make files
+
+2008-06-29  16:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-22
+
+Summary: Integration of new STM-images code. Better makefiles.
+
+Util/STM/ol-stm contains the code by Pablo Ordejon and Nicolas Lorente
+that implements the Tersoff-Hamann approximation to STM images, with a
+previous step of extrapolation of wave functions from a reference
+plane. It is thus more accurate than the simple code to be found now
+in Util/STM/simple-stm.
+
+Note that for now the fftw3 library needs to be available for this
+code to work.
+
+Bug fixes found upon integration:
+
+- Bug fix in Util/STM/ol-stm/Src/extrapol.f: the interpretation of the
+layout of the lattice vectors in the "cell" array was wrong.
+
+- fftw3 "estimation" call moved outside a loop in extrapol.f (there is
+more scope for optimization here).
+
+* The makefiles for several utilities have been streamlined,
+and the compilation of the ol-stm program uses a VPATH
+functionality to avoid duplicating code in the top-level
+Src directory. The old neighb/ranger routines are retained for now.
+
+Some changes were needed to implement this correctly:
+
+iodm.F: 
+
+- Removed support for old-style control files.
+- Wrapping of LocalToGlobalOrbital call in iodm.F in a MPI preprocessor block.
+
+spher_harm.f: Used dot_product instead of ddot.
+
+* Other changes:
+
+Src/Sys/cscs-ibm-blanc.make: netcdf compilation.
+Util/Grid/makefile: more targets, FC_SERIAL support.
+Util/Macroave/Src/Makefile: FC_SERIAL support.
+
+Fix for Finisterrae .make file and .sge script in Tests/Scripts.
+
+2008-06-29  15:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-21
+
+Summary: A faster diagk with eigenvector storage
+
+The  new k-point-mode diagonalization routine diagk_file stores
+the eigenvectors on file to avoid re-computation after fermi-level
+determination. The file is in netCDF form, allowing a more
+flexible dispatching of eigenvectors to and from the master node.
+(At the time of building the new density matrix, the eigenvectors
+are read by and transferred from the root node in blocks.)
+
+This routine should be very useful for relatively large systems, but
+the speedup is noticeable for all but the very small.
+
+In order to use the new routine, netCDF support should be compiled in,
+and the symbol UseNewDiagk must be set to "true" in the fdf
+file. Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates. Note that for now, for safety, all
+eigenvectors for a given k-point and spin are computed by the
+diagonalization routine, but only that number specified by the user
+are stored. If they are insufficient, the program stops.  A rule of
+thumb to select the number of eigenvectors to store is to count the
+number of electrons and divide by two, and then apply a "safety
+factor" of around 1.1-1.2 to take into account fractional occupations
+and band overlaps.
+
+A new file "OCCS" is produced with information about the number of
+states occupied.
+
+Note that this routine is NOT yet set up to be used for band-structure
+computations, or to "write out" wavefunctions. It should only be used
+in the SCF loop, i.e., from routine "diagon". 
+
+The old diagk routine is kept, for use in smaller systems and to be
+called from driver routines which provide other functionality.
+
+The size of the transfer block is set to n_eigenvectors/Nodes (note
+that the user is responsible for setting n_eigenvectors). The loops in
+the density-matrix building section have been rearranged. Now each DM
+scan loop (with potential inefficiencies for indirection) has more
+work to do, and it is no longer cost-effective to fill the dense
+matrices Dk and Ek first.
+
+The size of the block could in principle be increased for free to
+Min(no_l), and psi_block made into a pointer to Haux. Preliminary
+tests seem to indicate a lower performance, however (?).
+
+To Do:
+
+Clarify the use of work arrays. Haux and Saux should probably be allocated
+inside the diagonalization routines, and not in diagon.
+
+Precision.F now defines the parameter "i8b" to represent eight-byte integers.
+
+* The timing sections have been split into "build HS", "eigenvalues/eigenvectors"
+and "buildD" components.
+
+2008-06-29  13:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-20
+
+Summary: NetCDF I/O of Grid magnitudes. Density re-starts
+
+New module iogrid_netcdf implements a general-purpose dumper
+of grid magnitudes in netCDF format. If netCDF support is
+enabled, files with extension .grid.nc are produced for
+whatever grid magnitude is requested to be saved (charge density 
+(Rho), deformation density (DeltaRho), potential, etc).
+
+The use of grid descriptors for each node and the addressable netCDF
+file format greatly simplify the communication needs for the
+output of grid variables.
+
+Module iogrid_netcdf implements a "grid descriptor calculator" for
+the standard uniform distribution, but the routine which outputs
+grid functions is in principle able to work with any distribution.
+C     Create the first mesh distribution
+      call initMeshDistr( nm=nm, oDistr=oDistr )
+C     Find and sets local number of Mesh points of each kind
+      call setMeshDistr( oDistr, nsm, nsp, nml, nmpl, ntml, ntpl )
+
+Util/Grid contains new utilities for conversion and analysis
+of the .grid.nc files.
+
+If the keywords SCF.Read.Charge.NetCDF or
+SCF.Read.Deformation.Charge.NetCDF are true, the charge density
+(respectively the deformation charge density) is read from file
+Rho.IN.grid.nc (respectively DeltaRho.IN.grid.nc).
+
+This feature allows the easier re-use of electronic-structure
+information from a previous run. It is not necessary that the basis
+sets are "similar" (a requirement if density-matrices are to be read
+in). The deformation charge is particularly useful to give a good
+starting point for slightly different geometries.
+
+To Do:
+     -> distribution 3: For cellxc. load : if (numphi>0) load=1 else load=0
+
+- Improve the handling of possibly conflicting features, such as the
+use of the Harris functional or the mixing of the DM after the first
+iteration.
+
+- Extend the flexibility of the reading options (to use them, for
+example, in molecular dynamics or phonon calculations). Currently the
+density is only read once, at the beginning of the run.
+
+- Support reading of charge densities in FFT boxes of different sizes
+  (via resampling). Auxiliary code for this is in Util/Grid/cdf_fft.f90.
+    call distMeshData( 2, rhoatm, 1, rhoatm_seq, +1 ) => We switch rhoatm,
+    which is in "clustered mode" and with the 2nd distribution, to sequential
+    mode and the 1st distribution.
+
+    Finally we move back to the 2nd distribution
+
+-  References to the NetCDF directory under Src and to NETCDF_INTERFACE
+   in the Makefile have been removed.
+
+    call setMeshDistr( 1 )
+    call distMeshData( 2, DRho, 1, DRho_seq, +1 )
+
+IMPLEMENTATION NOTES:
+
+The grid magnitudes are stored in single precision in the .grid.nc files.
+    call setMeshDistr( 3 )
+    call distMeshData( 2, DRho,3, DRho_gga, 0 )
+
+    call cellxc
+
+*  Added .make and script file for Finisterrae at CESGA
+    call distMeshData( 3, Vscf_gga, 2, Vscf, 0 )
+
+    call vmat
+
+2008-06-29  13:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-19
+    Now it is possible to acquire the stencils of neighboring domains
+    using different partitions
+
+Summary: Bug fix in grid2val. Added permute program to Macroave suite.
+    call gathExtMeshData -> move data from "Bvxc" to "VXC"
+
+* Fix bug in grid2val (utility to compute values of grid functions
+  at arbitrary points).
+
+The cell vectors were declared as single precision, while in fact they
+are stored as double precision by Siesta.
+
+Added also tips on compilation.
+
+* Added permute.F program to Macroave suite
+
+Sometimes it is useful to have "x" as the direction perpendicular to 
+the slab. Macroave is hard-wired to work with "z", so the program 
+"permute.F" has been written to carry out a preliminary rotation of
+the axes in the grid file. 
+
+Streamlined the compilation steps in Util/Macroave/Src.
+
+2008-06-29  12:50:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-18
+
+Summary: NetCDF I/O for DM, H, and S
+
+Experimental support for DM output in netCDF form, optionally with
+complete history of a SCF cycle.
+
+The netCDF format allows for flexible and portable I/O, and supports
+the extension of arrays into a "time-record" dimension. 
+
+A DM-only netCDF file (DM.nc) with the same information as the
+traditional DM file is created if Write.DM.NetCDF is 'true' (default
+with netCDF support). In this case, the DM values are written in
+routine mixer (as is common practice in Siesta, despite the fact that
+the resulting DM does not correspond to the last electronic structure
+computed).
+
+If WriteDMHS.NetCDF is true (default with netCDF support), a DMHS.nc
+file containing the overlap matrix S, DM_in, H, and DM_out is written
+to in compute_dm, right after the computation of DM_out.
+
+The default in both cases is not to use the optional time dimension
+and overwrite the previous SCF step's information.
+To keep the whole history of (the last) SCF cycle, use
+WriteDM.History.NetCDF  or WriteDMHS.History.NetCDF, respectively.
+The DMHS history might be useful to diagnose SCF convergence issues.
+(See new test Test/h2o_netcdf)
+
+With the new DM to netCDF (dm2cdf) and netCDF to DM (cdf2dm) converters in
+the Util/DensityMatrix directory, the information in the .nc files can be easily converted
+to and from the legacy DM format, allowing the re-use of DM information
+in computers with incompatible floating point formats.
+
+Util/SCF/dm.py is a simple example of processing of netCDF with a Python script.
+
+To use the netCDF functionality, Siesta must have been compiled with
+the appropriate netCDF libraries.  Example .make files can be found in
+the Src/Sys directory (notably gfortran-netcdf.make and
+marenostrum-mpi-netcdf-XX.make files).
+
+The .nc files can also be displayed with the shell utility "ncdump",
+installed by default when the netCDF library is compiled.
+
+
+IMPLEMENTATION NOTES:
+
+- The DM, H, and S information is stored in the .nc files in *single precision*.
+To change this in the future, an fdf symbol might be used to trigger the replacement
+of "float" by "double" in the definition of the variables in the netCDF files. Care
+should be taken to adapt all the other utilities. Single precision seems to be
+perfectly adequate, however.
+
+- No attempt has been made to optimize the memory use or allocation/deallocation
+ overhead, giving priority to clarity. The netCDF format allows a huge simplification
+of the MPI communications involved in the I/O, so this is a minor issue.
+
+- The functionality is included in the iodm_netcdf.F90 and iodmhs_netcdf.F90 files.
+  The new flags are stored and processed in the siesta_options.F90 module.
+
+2008-05-06  12:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-17
+
+Summary: Update of atom to 3.2.8: xml, optimization hooks, tutorial update.
+
+* Integrated Javier Junquera's XML-generating routines
+  Added pseudoXML.f and supporting files.
+  (Note that the XML support in Siesta itself is not yet implemented, 
+  pending retroffiting of the VCA and other enhancements. The relevant
+  files have been put in a new directory 'Src/pseudo-xml'.
+
+* Write pseudo wavefunctions in PSWFFMT
+
+* Updated version.h to include the variable "atom_id", now used
+  in various places to set the creator string.
+
+* A simpler makefile has been written when XML support is not needed
+so that no symbols from the main Siesta directory need to be
+included. The full makefile is called makefile-xml. To use it it is
+only necessary to have built libwxml.a in the Src hierarchy of Siesta
+(after creating the necessary arch.make)
+
+* ATOM now recognizes the FREE_FORMAT_RC_INPUT directive, useful
+for optimization runs.
+
+* A new estimation of ps hardness (qmax) is written to FOURIER_QMAX file.
+
+* The fourier area calculation has been moved to the "down" section,
+since the "up" potentials are not always generated.
+
+* Avoid very small numbers that might need a three-character
+exponent field in formatted output.
+
+* The Tutorial has been brought up to date, using the version employed
+in the latest Siesta schools. Note that the location of the
+scripts used to run the examples has changed. They are now in the
+Pseudo/atom/Tutorial/Utils directory.
+
+* Extended the periodic-table structures in input.f and nucl_z.f
+
+
+2008-05-06  10:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-16
+
+Summary: Make the production of small ionic files optional -- fdf.log
+
+* Files with prefix ORB, KB, CHCORE, SPLIT_SCAN, etc, and
+pseudopotential dump files, which are useful for plotting basis
+orbitals and other ion-related information, are now optional. To
+create them, the user should set
+
+ WriteIonPlotFiles T
+
+in the fdf file.
+
+Note that the same functionality is available in gen-basis.
+
+The corresponding option variable "write_ion_plot_files" is now kept
+in an "atom-specific" options module, to avoid a dependency cascade.
+
+* Fixed the makefile sections for some auxiliary programs.
+
+* The file "out.fdf" has been renamed to "fdf.log"
+
+2008-04-08  16:30:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-15
+
+Summary: Implemented a Grimme-type  molecular-mechanics potential for dispersion effects
+
+A dispersion potential of the Grimme type (similar to the C6 type but
+with a different damping function) has been implemented. See
+S. Grimme, J. Comput. Chem. Vol 27, 1787-1799 (2006)).
+
+The parameters are specified in the MM.Potentials block, using the
+"Grimme" keyword.
+
+Hooks for changing the "d" and "s6" parameters are provided
+(MM.Grimme.D and MM.Grimme.S6).
+
+A minor cosmetic addition: the kind of molecular mechanics potential
+between species is now printed upon encoutering the relevant line in
+the block.
+
+2008-04-08  15:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-14
+
+Summary: Changes for portability and cosmetics 
+
+Portability:
+
+  *  Use character(*) in MPI character modules.
+
+       Previously character(1) was used, leading to complaints by some compilers.
+
+Usability:
+
+  *  Extra fdf symbol for struct_file input specification
+
+       The manual mentions "Use.Struct.File" as the relevant alias, but
+       the code used "MD.Use.Struct.File". Both are now accepted.
+
+Makefile and makefile templates:
+
+  *  Fix mixps section in Makefile
+  *  Add .make file for snake at ICMAB
+  *  Fix tabs in eth-hreidar-mpi.make
+
+2008-03-08  23:56:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-13
+
+Summary: Remove 'multiple images' warning in gamma-point-only calculations
+
+The calculation of the xij array (vector distances to interacting
+neighbors) was enabled in 2.5.1 also for the case of gamma-point-only
+calculations. This is needed for the post-processing of COOP curves.
+In a gamma-point-only calculation several atoms might still
+see images of themselves as interacting if the cell is not that
+big. The xijorb code warned about that, even though the calculation of
+the matrix elements is of course correct, as k=0 and there are no
+phase factors to worry about. The warning has been now turned off.
+
+2008-03-08  23:55:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-12
+
+Summary: Fix the constraint of static C.M. in initial velocities
+
+Routine vmb sets the initial velocities according to an approximate
+Maxwell-Boltzmann distribution, with the extra constraint of static
+center of mass. Due to an oversight, the routine only enforced this
+constraint for the case of a single species. It has been fixed.
+
+2008-01-11  16:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-11
+
+Summary: Proper fix of cell management for zmatrix case. Enthalpy cosmetics
+
+A recent previous patch (8) broke the unit cell handling in the zmatrix case.
+It has been fixed.
+
+The assorted "enthalpy" output has been rationalized,
+reserving the use of the word "enthalpy" for the original case
+of "target enthalpy".
+
+(Fixed syntax error in std-test.mk)
+
+2008-01-11  14:05:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-10
+
+Summary: Make diagonalization the default solution method regardless of size
+
+Make diagonalization the default solution method regardless of system size.
+
+2008-01-11  14:00:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-9
+
+Summary: Fix test.mk scripts
+
+The std-test.mk script did not copy the output file to the main test directory.
+The bsc-test.mk did not remove all the scratch files.
+
+Fixed a typo in the input to the si2x1h test.
+
+2008-01-11  13:55:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-8
+
+Summary: Fix for structural supercell construction
+
+Due to the accidental mis-use of a module variable, the routine coor
+did not generate the supercell correctly when a %supercell block was used.
+
+Added and additional warning if such a block is used when the structure is
+input in Zmatrix form.
+
+2007-12-17  14:25:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-7
+
+Summary: Fix memory leak in dhscf
+
+The array dvxcdn was allocated but never deallocated in dhscf. Actually,
+it was never used in cellxc, so it has now been dimensioned trivially
+to (1,1,1). The bug was introduced in the bsc-master-2.1 branch, at 
+patch 27.
+
+2007-11-22  18:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-6
+
+Summary: New 'fdf' target in Makefile for tests
+
+(E. Anglada)
+
+New target for the test option: fdf calls. 
+Requested by BSC so they can test the new fdf.
+
+New files (new tests and missing xml output files for reference)
+A/ Tests/var_cell_stress
+A  Tests/Reference-xml/fire_benzene.xml
+A  Tests/Reference-xml/si_coop.xml
+A  Tests/var_cell_stress/.arch-ids/=id
+A  Tests/var_cell_stress/.arch-ids/makefile.id
+A  Tests/var_cell_stress/.arch-ids/var_cell_stress.fdf.id
+A  Tests/var_cell_stress/.arch-ids/var_cell_stress.pseudos.id
+A  Tests/var_cell_stress/makefile
+A  Tests/var_cell_stress/var_cell_stress.fdf
+A  Tests/var_cell_stress/var_cell_stress.pseudos
+
+
+Modified files
+M  Src/siesta_move.F : remove debug info
+M  Src/remove_intramol_pressure.f90 : remove debug info
+M  Tests/std-Makefile Xmlcheck enabled by default. New targets: fdf, all
+M  Tests/std-test.mk 
+M  Tests/si2x1h/si2x1h.fdf New option
+M  Src/atom.f  Remove debug info.
+
+2007-11-22  18:30:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
+
+Summary: xml tester update (Eduardo Anglada)
+
+New files:
+A  Src/xmlparser/corresponding_node.f90
+A  Src/xmlparser/string_utilities.f90
+
+Changes in the xml output:
+M  Src/state_analysis.F
+M  Src/siesta_move.F
+M  Src/setup_hamiltonian.F
+M  Src/siesta_forces.F
+M  Src/scfconvergence_test.F
+M  Src/post_scf_work.F
+
+Changes in the xml tester:
+M  Src/wxml/m_wxml_core.f90
+M  Src/wxml/flib_wstml.f90
+M  Src/xmlparser/makefile               
+M  Src/xmlparser/m_dom_element.f90
+M  Src/xmlparser/m_strings.f90
+M  Src/xmlparser/compare_m.f90
+M  Src/xmlparser/test.f90
+
+Changes in the tests makefiles
+M  Tests/std-Makefile
+M  Tests/std-test.mk
+
+Upgraded xml reference outputs:
+...
+
+2007-11-22  17:55:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
+
+Summary: Fixes for denchar compilation and wavefunction output
+
+* The makefile section for denchar had several errors.
+
+* siesta_analysis used maxwk as a local variable, instead of importing
+  it from writewave, thus preventing the call to wwave from working.
+
+* (NOTE: the need for a lattice constant or cell vectors in the fdf file
+   if the wavefunctions need to be output should be removed)
+
+2007-11-22  17:45:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
+
+Summary: Fixed computation of chemical potential in O(N) (P.Ordejon)
+
+* Chempot, rather than updated, has been substituted by the version
+in the "cecam" branch of the 2.0 fixes branch. However, some constructions
+have been updated to the post-BSC-cleaning structure:
+
+- Use of the smarter mneighb routine.
+- Some arrays are now pointers instead of allocatables.
+
+* A new test (Tests/h2o_4) has been added.
+
+* NOTE that the new code does not yet work in Parallel.
+
+2007-11-22  17:40:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
+
+Summary: Optimization enhancements (fire algorithm, step control).
+
+
+* Step-size control has been add to the Broyden optimizers (Standard, ZM,
+  and Cell-only). There is no theoretical justification for this procedure,
+  so the Hessian is not likely to improve very much... it is probably best
+  to combine a size-limited CG series with another small-Jinv Broyden series.
+
+* New FORCE_STRESS for direct output of the energy, forces, and stress
+  (in internal Siesta units).
+
+* Re-implemented the FIRE optimization algorithm, both for geometry
+  and (experimentally) for SCF.
+
+  The advantages for the SCF mixing are:
+
+  * Trivial algorithm (also in parallel)
+  * Initial dt can be just set to alpha. 
+  * Adaptive changes to alpha.
+  * There should be no need for kicks.
+
+  (Set DM.FIRE.Mixing to T to enable)
+  Could also set DM.Fire.Nmin  to 2, 3, 4  instead of the default 5
+  (Actually, this number could be akin to the DM.Number{Pulay,Broyden}...)
+
+* Added .make files for opterons and matgas cluster at ICMAB in parallel.
+
+* Compilation fixes(uncovered by a new version of g95)
+
+  * External statements referring to obsolete names
+  * Continuation lines.
+  * Statement order.
+
+interactions in an approximate manner (for the artificial example
+of fcc He).
+
+* Additional enthalpy-analog output.
+
+The enthalpy is computed in two ways: as the "target enthalpy" using
+the target pressure, and as the "real" enthalpy using the trace of the
+current stress tensor as an estimation of the pressure. Ideally, both
+values should be identical at convergence, but the "target enthalpy"
+might have significant errors coming from the tolerances.
+
+
+* NEW STRUCTURE OUTPUT FILES:
+
+OUT.UCELL.ZMATRIX
+
+It contains the structural information in fdf form, with
+blocks for unit-cell vectors and for Zmatrix coordinates. The
+Zmatrix block is in a ``canonical'' form with the following
+characteristics:
+
+1. No symbolic variables or constants are used.
+2. The position coordinates of the first atom in each molecule
+   are absolute cartesian coordinates.
+3. Any coordinates in ``cartesian'' blocks are also absolute cartesians.
+4. There is no provision for output of constraints.
+5. The units used are those initially specified by the user, and are
+   noted also in fdf form.
+
+Note that the geometry reported is the last one for which forces and
+stresses were computed.
+
+NEXT_ITER.UCELL.ZMATRIX
+
+In the same format but with a possibly updated geometry.
+
+Label.STRUCT_NEXT_ITER.
+
+Structure in crystallographic format (same as Label.STRUCT_OUT) for a
+possibly updated geometry.
+
+(Call performed in siesta_write_positions, which is called after the
+structure has moved after the application of forces/stress.)
+
+
+* New .make file for Hreidar at ETH Zurich.
+
+
 ____________________________________________________________________
 ** CHANGES ALONG ref@bsc--2007/siesta-bsc--master--2.3
 --------------------------------------------------------------------
@@ -581,6 +1402,7 @@ structure has moved after the application of forces/stress.)
 
 
 * New .make file for Hreidar at ETH Zurich.
+
 
 2007-06-04 16:00:00 GMT	Alberto Garcia <albertog@icmab.es>	patch-22
 

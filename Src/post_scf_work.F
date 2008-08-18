@@ -46,10 +46,10 @@
 
           if (dumpcharge) then
             call plcharge( no_s, na_s, no_u, maxnh, maxna, nspin,
-     .                      isa, iphorb, indxuo, lasto,
-     .                      scell, nsc, xa, rmaxo, datm )
+     .           isa, iphorb, indxuo, lasto,
+     .           scell, nsc, xa, rmaxo, datm )
           endif
-          if (cml_p) call cmlEndStep(mainXML)
+      
 !--------------------------------------------------------------------------- END
       END subroutine post_scf_work
 

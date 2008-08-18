@@ -365,12 +365,12 @@ C Declare internal variables ----------------------------------------
       INTEGER
      .  IM, IR, ISP, IZ, JLM, JR, JY, NLM, NSP
       REAL(DP)
-     .  DFDX(3), DDOT, DYDX(3,MAXLM), 
+     .  DFDX(3), DYDX(3,MAXLM), 
      .  F(MAXSP), FY, PHI, PI, R, RX(3), THETA, 
      .  W(MAXL+1), WSP,
      .  X(3,MAXSP), Y(MAXLM), YSP(MAXSP,MAXLM),
      .  Z(MAXL+1)
-      EXTERNAL CHKDIM, DDOT
+      EXTERNAL CHKDIM
 *     EXTERNAL TIMER
 C -------------------------------------------------------------------
 
@@ -425,7 +425,8 @@ C       Find function at points on a sphere of radius R
 
 C       Expand F(R) in spherical harmonics
         DO 70 JLM = 1,NLM
-          FY = DDOT(NSP,F,1,YSP(1,JLM),1)
+!          FY = DDOT(NSP,F,1,YSP(1,JLM),1)
+          FY = dot_product(F(1:nsp),YSP(1:nsp,JLM))
           IF ( ABS(FY) .GT. FTOL ) THEN
 C           Find JY corresponding to JLM
             DO 50 JY = 1,NY

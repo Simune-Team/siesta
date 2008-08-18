@@ -357,7 +357,7 @@
       use alloc, only: re_alloc
 
       integer lmax, lmaxkb, nzeta_max, nsemi_max, nkb_max
-      integer l, isp, n
+      integer l, isp, n, inz
 
       type(basis_def_t), pointer::   basp
       type(shell_t), pointer::  s
@@ -529,9 +529,15 @@
 !                  vcte(l+1,n,isp) = s%vcte
 !                  rinn(l+1,n,isp) = s%rinn
 !               endif
+
 !
-               rco(1:s%nzeta,l,n,isp) = s%rc(1:s%nzeta)
-               lambda(1:s%nzeta,l,n,isp) = s%lambda(1:s%nzeta)
+!              Avoid referencing s%rc and s%lambda for
+!              polarization orbitals.
+!
+               do inz = 1, s%nzeta
+                  rco(inz,l,n,isp) = s%rc(inz)
+                  lambda(inz,l,n,isp) = s%lambda(inz)
+               enddo
             enddo
 !
 !           Fix for l's without PAOs

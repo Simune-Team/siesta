@@ -1890,7 +1890,7 @@ MODULE fdf
       real(dp)               :: fdf_convfac
 
 !--------------------------------------------------------------- Local Variables
-      integer(ip), parameter :: nu = 55
+      integer(ip), parameter :: nu = 68
       character(10)          :: dimm(nu), name(nu)
       character(80)          :: msg
       integer(ip)            :: iu, ifrom, ito
@@ -1963,12 +1963,27 @@ MODULE fdf
            'efield  ', 'v/m       ', 1.d0,             &
            'efield  ', 'v/nm      ', 1.d9 /
 
-      data (dimm(iu), name(iu), unit(iu), iu=51,55) /  &
+      data (dimm(iu), name(iu), unit(iu), iu=51,60) /  &
            'efield  ', 'v/ang     ', 1.d10,            &
            'efield  ', 'v/bohr    ', 1.8897268d10,     &
            'efield  ', 'ry/bohr/e ', 2.5711273d11,     &
            'efield  ', 'har/bohr/e', 5.1422546d11,     &
-           'time    ', 'ps        ', 1.d-12 /
+           'angle   ', 'deg       ', 1.d0,             &
+           'angle   ', 'rad       ', 5.72957795d1,     &
+           'torque  ', 'eV/deg    ', 1.0d0,            &
+           'torque  ', 'eV/rad    ', 1.745533d-2,      &
+           'torque  ', 'Ry/deg    ', 13.6058d0,        &
+           'torque  ', 'Ry/rad    ', 0.237466d0 /
+      data (dimm(iu), name(iu), unit(iu), iu=61,68) /  &
+          'torque  ', 'meV/deg   ', 1.0d-3,            &
+          'torque  ', 'meV/rad   ', 1.745533d-5,       &
+          'torque  ', 'mRy/deg   ', 13.6058d-3,        &
+          'torque  ', 'mRy/rad   ', 0.237466d-3,       &
+          'time    ', 'mins    ', 60.d0,               &
+          'time    ', 'hours   ', 3600.d0,             &
+          'time    ', 'days    ', 86400.d0,            &
+          'time    ', 'ps        ', 1.d-12  /       
+
 !
       ifrom = 0
       ito   = 0

@@ -2,18 +2,23 @@ module compare_m
 use flib_dom
 use compare_tol_m, only: findTol, sp, dp
 use m_strings
+use corresponding_node
+use string_utilities
 
 implicit none
 
-logical, public :: test_debug = .false.
+
+
+public compare
+private
+
+logical, public :: compare_debug = .false.
+logical :: compare_node_debug = .false.
+logical :: compare_values_debug = .false.
+logical :: compare_node_list_debug = .false.
 logical, public :: STOP_ON_ERROR = .false.
 integer, public :: MAX_NUMBER_OF_ERRORS = huge(1)
-
-integer  :: n_errors = 0
-
-public  :: compare
-
-private
+integer         :: n_errors = 0
 
 !This is crude ....
 integer ::max_char_len = 100
@@ -28,211 +33,144 @@ type(fnode), pointer :: reference
 type(fnode), pointer :: modified
 
 !Internal vars.
-logical                  :: has_children_ref
-integer                  :: i,n_children_ref,error
-type(fnodelist),pointer  :: sub_list_ref
-type(fnode),pointer      :: sub_reference, mod_node
+type(fnodelist),pointer  :: sub_list_ref, sub_list_mod, scf_ref,scf_mod
+integer                  :: md_steps, md_ref,md_mod,i
+type(fnode),pointer      :: ref,mod !, ref_tmp, ref_mod
 
-has_children_ref = hasChildNodes(reference)
+!Parameters List
+sub_list_ref => getElementsByTagName(reference,"parameterList")
+sub_list_mod => getElementsByTagName(modified,"parameterList")
+call compareList(sub_list_ref,sub_list_mod)
 
-if (should_be_checked(reference)) then
-   !print *,"should"
-   mod_node => find_corresponding_mod_node(reference,modified,error)
-   if (.not. associated(mod_node))then
-      print*,"Error:No corresponding node in the file to be checked!"
-      stop
-   else
-      call compare_node_list(reference,mod_node)
-   endif
+sub_list_ref => getElementsByTagAttrName(reference,"module","title","Initial System")
+sub_list_mod => getElementsByTagAttrName(modified,"module","title","Initial System")
+call compareList(sub_list_ref,sub_list_mod)
 
-else
+!kpoints
+sub_list_ref => getElementsByTagAttrName(reference,"propertyList","title","k-points")
+sub_list_mod => getElementsByTagAttrName(modified,"propertyList","title","k-points")
+call compareList(sub_list_ref,sub_list_mod)
 
-   sub_list_ref   => getchildNodes(reference)
-   n_children_ref =  getLength(sub_list_ref)
-   do i=0,n_children_ref-1
-      sub_reference => item(sub_list_ref,i)      
-      call compare(sub_reference,modified) 
-   enddo
+!kpoints
+sub_list_ref => getElementsByTagAttrName(reference,"property","dictRef","siesta:kscell")
+sub_list_mod => getElementsByTagAttrName(modified,"property","dictRef","siesta:kscell")
+call compareList(sub_list_ref,sub_list_mod)
 
-endif
+!more kpoints?
+sub_list_ref => getElementsByTagAttrName(reference,"property","dictRef","siesta:kdispl")
+sub_list_mod => getElementsByTagAttrName(modified,"property","dictRef","siesta:kdispl")
+call compareList(sub_list_ref,sub_list_mod)
+
+!MD steps
+!Get the list of MD steps
+sub_list_ref => getElementsByTagAttrName(reference,"module","dictRef","MD")
+sub_list_mod => getElementsByTagAttrName(modified,"module","dictRef","MD")
+
+md_ref = getLength(sub_list_ref)
+md_mod = getLength(sub_list_mod)
+
+if (md_ref /= md_mod) print *, "Warning: the number of MD steps differs: ref, mod=",md_ref,md_mod
+md_steps = min(md_ref,md_mod)
+
+!For each MD
+do i=0,md_steps-1
+!Get step i
+   !print *,"starting md"
+   
+   ref => item(sub_list_ref,i)
+   mod => item(sub_list_mod,i)
+
+   !Geometry check
+   call checkgeometry(ref,mod)
+   
+   !Get all the scf steps of this MD step
+   scf_ref => getElementsByTagAttrName(ref,"module","dictRef","SCF")
+   scf_mod => getElementsByTagAttrName(mod,"module","dictRef","SCF")
+   !Compare them
+   call compareList(scf_ref,scf_mod)
+
+   scf_ref => getElementsByTagAttrName(reference,"module","title","SCF Finalization")
+   scf_mod => getElementsByTagAttrName(modified,"module","title","SCF Finalization")
+   call compareList(scf_ref,scf_mod)
+end do
+
+!Final things missing.
+!Forces, stress, pressure, finalization block.
+sub_list_ref => getElementsByTagAttrName(reference,"module","title","Finalization")
+sub_list_mod => getElementsByTagAttrName(modified,"module","title","Finalization")
+
+call compareList(sub_list_ref,sub_list_mod)
 
 end subroutine compare
 
-!--------------------------------------------------------------------------
-
-function should_be_checked(ref) result(should)
-type (fnode), pointer :: ref
-logical :: should 
-
-
-character(len=400)       :: tag,attr_name
-integer                  :: i,n_kind,length_attr
-type(string)             :: value
-type(fnamedNodeMap),pointer :: attr_ref
-type(fnode)         ,pointer :: attr
-
-should = .false.
-
-!Look for the properties of this node.
-if(test_debug) print *,"------------------------------------------"
-
-tag = getTagName(ref)
-
-if(test_debug) print *,"Tag: ", "|",trim(tag),"|"
-
-if (tag == "") then
-   should = .false.
-   return
-endif
-
-
-
-if (trim(tag) == "cml") then
-   should = .false.
-   !print*," should: cml false"
-   return
-elseif(trim(tag) == "metadata")then
-   should = .false.
-   !print*," should: metadata false"
-   return
-elseif(trim(tag) == "parameterList") then
-   !print*," should: paramslist true"
-   should = .true.
-   return
-endif
-
-n_kind = getNodeType(ref)
-if(test_debug) print *,"   Type:",n_kind
-value = getNodeValue(ref)
-
-if (len(trim(value)) > 0)  print *, "Value:","|",char(value),"|"
-
-if(hasAttributes(ref) )then
-   attr_ref => getAttributes(ref)
-   length_attr = getlength(attr_ref)
-   !if (length_attr > 0) print *," Has",length_attr," attr:" 
-   do i=0,length_attr-1
-      attr => item(attr_ref,i)
-      attr_name=getNodeName(attr)
-      if (len(attr_name) > 0) then
-         !print*, "  attr name:", trim(attr_name)
-         !print*, "  attr value:", trim(getNodeValue(attr))
-         should = .true.
-         return
-      endif
-   enddo
-endif
-
-end function should_be_checked
 
 !--------------------------------------------------------------------------
 
-recursive subroutine compare_node_list(reference,modified)
+recursive subroutine compareList(referenceList,modifiedList)
 use flib_dom
 ! Given two nodes lists this subroutine compares all the nodes, one by one.
-type(fnode), pointer :: reference
-type(fnode), pointer :: modified
+type(fnodeList), pointer :: referenceList
+type(fnodeList), pointer :: modifiedList
 
 !Internal vars.
-logical                  :: has_children_ref,has_children_mod
-integer                  :: i,n_children_ref, n_children_mod
-type(fnodelist),pointer  :: sub_list_ref, sub_list_mod 
-type(fnode),pointer      :: sub_reference, sub_mod
-type(string)             :: sn_ref,sn_mod
+integer                  :: i,length,length_ref,length_mod
+type(fnode),pointer      :: reference,modified
+type(string) :: sn_ref,sn_mod,sv_ref, sv_mod
 
 
-has_children_ref = hasChildNodes(reference)
-has_children_mod = hasChildNodes(modified)
+length_ref = getLength(referenceList)
+length_mod = getLength(modifiedList)
 
-call compare_node(reference,modified)
+length     = min(length_ref, length_mod)
+!print *, " number of elements in lists=",length_ref, length_mod
 
-if ( has_children_ref .and. has_children_mod) then
-   sub_list_ref   => getchildNodes(reference)
-   n_children_ref =  getLength(sub_list_ref)
+do i=0,length-1
+   reference => item(referenceList,i)
+   modified  => item(modifiedList,i)
 
-   sub_list_mod   => getchildNodes(modified)
-   n_children_mod =  getLength(sub_list_mod)
-   
-   if ( n_children_ref /= n_children_mod ) then
-      !print *, " The nodes have a different number of children!"
-      sn_ref = getNodeName(reference)
+   if (compare_node_list_debug) then
+      print *, "compare_node_list: begin element=",i,"^^^^^^^^^^^^^^^^^^^"
+      sn_ref = getNodeName(reference)      
+      print *,"1"
       sn_mod = getNodeName(modified)
-      !print *, " Ref. node name=",char(sn_ref)
-      !print *, " Mod. node name=",char(sn_mod)
-      !stop
-   else
-      do i=0,n_children_ref-1
-         sub_reference => item(sub_list_ref,i)
-         sub_mod => item(sub_list_mod,i)
-         call compare_node_list(sub_reference,sub_mod) 
-      enddo
-   endif
-endif
+      print *,"2"
+      sv_ref = getNodevalue(reference)
+      print *,"3"
+      sv_mod = getNodevalue(modified)
+      print *, " compare_node_list: names=",char(sn_ref),"|",char(sn_mod)
 
-end subroutine compare_node_list
-
-!--------------------------------------------------------------------------
-
-function find_corresponding_mod_node(ref,mod,error) result (mod_node)
-! Given a reference node this subroutine finds the corresponding node
-! in the modified list.
-type(fnode), pointer     :: ref  !The reference node 
-type(fnode), pointer     :: mod  !The list of modified nodes.
-type(fnode), pointer     :: mod_node ! The modified node corresponding to the reference node.
-integer, intent(out)     :: error !Error code.
-
-!Internal vars.
-character(len=400)       :: tag
-integer                  :: i,n_elem
-type(fnode), pointer     :: node
-type(fnodelist),pointer  :: mod_list
-logical                  :: corresponding
-
-nullify(mod_node)
-
-error = 0
-
-tag = getTagName(ref)
-if (tag /= "") then
-   mod_list => getElementsByTagName(mod,tag)
-else
-   print *,"Error in find_corresponding ..."
-   stop
-endif
-n_elem=getLength(mod_list)
-
-if (n_elem == 1) then
-   if(test_debug)print *,"find_corresponding: Only one node -> found!"
-   mod_node => item(mod_list,0)
-else
-   !Loop over the elements of the list and compare the nodes
-   !until we found the corresponding one.
-   if(test_debug) print *, "Number of elements in mod list:",n_elem
-   do i=0,n_elem-1
-      node => item(mod_list,i)
-      corresponding = check_node(ref,node)  
-      if (corresponding) then
-         mod_node => node
-         exit
+      if (len(sv_ref) > 0 .and. len(sv_mod) > 0) then
+         print *, " compare_node_list: values=",char(sv_ref),"|",char(sv_mod)
       endif
-   enddo
-endif
+   endif
 
-end function find_corresponding_mod_node
+   call compareNode(reference,modified) 
+
+   if (compare_node_list_debug) then
+      print *, "compare_node_list: finished ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"
+   endif
+
+enddo
+
+end subroutine compareList
 
 !--------------------------------------------------------------------------
- 
-recursive subroutine compare_node(ref,mod)
+
+recursive subroutine compareNode(ref,mod)
   use flib_dom
 
   type(fnode),pointer :: ref
   type(fnode),pointer :: mod
+  
 
-  integer :: i,n_type_ref, n_type_mod,length_ref,length_mod
+  integer :: i,n_type_ref, n_type_mod,length_ref,length_mod, length
+  integer :: n_children_ref, n_children_mod, n_children
   type(string) :: sn_ref,sn_mod,sv_ref, sv_mod
   character(len=50) ::  label,cn_parent_ref
   type(fnamedNodeMap),pointer :: attr_ref,attr_mod
   type(fnode), pointer :: c_node_ref, c_node_mod
+  type(fnode), pointer  :: sub_ref,sub_mod
+  type(fnodelist),pointer  :: sub_list_ref, sub_list_mod 
   logical :: same_values = .true.
   
 
@@ -240,15 +178,14 @@ recursive subroutine compare_node(ref,mod)
   sn_ref= getNodeName(ref)
   sn_mod= getNodeName(mod)
 
-  !Metada nodes hold siesta version, compiler, timer info. Skipp the comparision.
-  if (sn_ref == "metadata") return
-
-
-  !if (test_debug) print *, "  Compare node: Ref,mod node names:",trim(char(sn_ref)),trim(char(sn_mod))
-
   if (char(sn_ref) /= "" .and. char(sn_mod) /= "") then
      sn_ref = clean_string(sn_ref)
      sn_mod = clean_string(sn_mod)
+  endif
+
+  if (compare_node_debug) then
+     print *,"       1++++++++++++++++++++++++++++++++++++++++++++++++++"
+     print *,"        compare_node: Names=","|",char(sn_ref),"|", char(sn_mod),"|"
   endif
 
   if (char(sn_ref) /= char(sn_mod)) call dump_error(ref,mod,name=sn_ref)
@@ -266,17 +203,14 @@ recursive subroutine compare_node(ref,mod)
  
 
   !Check values
-  !if (test_debug) print *," compare: values:",trim(char(sv_ref))
-  
   if (len(sv_ref) > 0) then
   
   	sv_ref = clean_string(sv_ref)
   	sv_mod = clean_string(sv_mod)
 
-     if (test_debug) then
-        print *,"Name :","|",char(sn_ref),"|"
-        print *,"Value:","|",char(sv_ref),"|", char(sv_mod),"|"
-     endif
+     if (compare_node_debug) print *,"        compare_node: Value=","|",char(sv_ref),"|", char(sv_mod),"|"
+    
+
 
      !If the name is empty then look for parents name.
      if (sn_ref == "" .or. sn_ref=="#text")then
@@ -294,6 +228,9 @@ recursive subroutine compare_node(ref,mod)
      endif
   endif
 
+  if (compare_node_debug) print *,"       2++++++++++++++++++++++++++++++++++++++++++++++++++"
+
+  !Check attributes
   if (hasAttributes(ref) .and. hasAttributes(mod)) then
 
      attr_ref => getAttributes(ref)
@@ -301,139 +238,56 @@ recursive subroutine compare_node(ref,mod)
 
      length_ref = getlength(attr_ref)
      length_mod = getlength(attr_mod)
+     
+     length     = min(length_ref,length_mod)
 
-     if (test_debug) then
-        print *, "   Ref, mod, attributes length:"
-        print *, "     ",length_ref,length_mod
+     if (compare_node_debug) then
+        print *, "      compare_node: Attributes"
+        print *, &
+          "       compare_node: Ref, mod, attributes length:",length_ref,"|",length_mod
      endif
-
-     if (length_ref /= length_mod) then
-        call dump_error(ref,mod,attr=attr_ref)
-     else
-        do i=0,length_ref-1
-           c_node_ref => item(attr_ref,i)
-           c_node_mod => item(attr_mod,i)           
-           call compare_node(c_node_ref, c_node_mod)
-        enddo
-     endif
+ 
+     do i=0,length-1
+        c_node_ref => item(attr_ref,i)
+        c_node_mod => item(attr_mod,i)           
+        call compareNode(c_node_ref, c_node_mod)
+     enddo
   endif
 
-!print *,"-----------------------"
+  !Check children
+  if ( hasChildNodes(ref) .and. hasChildNodes(mod)) then
+   sub_list_ref   => getchildNodes(ref)
+   n_children_ref =  getLength(sub_list_ref)
 
-endsubroutine compare_node
+   sub_list_mod   => getchildNodes(mod)
+   n_children_mod =  getLength(sub_list_mod)
+   
+   if ( n_children_ref /= n_children_mod ) then      
+      if (compare_node_debug) then
+          print *, "      compare_node: Children"
+         print *, " compare_node: The nodes have a different number of children!"
+         print *, " compare_node: lengths=",n_children_ref,n_children_mod
+      endif
+   endif
 
-!-------------------------------------------------------------------------
+   n_children=min(n_children_ref,n_children_mod)
+ 
+   do i=0,n_children-1
+      if (compare_node_debug) then
+         print *,"   compare_node: Compairing children n:",i
+      endif
+      sub_ref => item(sub_list_ref,i)
+      sub_mod => item(sub_list_mod,i)
+      call compareNode(sub_ref,sub_mod) 
+   enddo   
+   
+endif
 
-recursive function check_node(ref,mod) result (same)
-  use flib_dom
+ 
 
-  type(fnode),pointer :: ref
-  type(fnode),pointer :: mod
-  logical :: same
+endsubroutine compareNode
 
-  integer :: i,n_type_ref, n_type_mod,length_ref,length_mod
-  type(string) :: sn_ref,sn_mod,sv_ref, sv_mod
-  type(string) :: attr_name_ref, attr_value_ref, attr_value_mod, attr_name_mod
-  type(fnamedNodeMap),pointer :: attr_ref,attr_mod
-  type(fnode), pointer ::  c_node_ref, c_node_mod
-
-  same = .true.
-
-  !Check name
-  sn_ref= getNodeName(ref)
-  sn_mod= getNodeName(mod)
-
-  if (test_debug)  print *, " Ref,mod node names:",char(sn_ref),"|",char(sn_mod)
-
-  if (char(sn_ref) /= "" .and. char(sn_mod) /= "") then
-     sn_ref = clean_string(sn_ref)
-     sn_mod = clean_string(sn_mod)
-  endif
-
-  if (char(sn_ref) /= char(sn_mod)) then
-     !print *," check nodes: different names"
-     same = .false.
-     return
-  endif
-
-  !Check node type
-  n_type_ref = getNodeType(ref)
-  n_type_mod = getNodeType(mod)
-
-  if (n_type_ref /= n_type_mod ) then 
-     !print *," check nodes: different types"
-     same = .false.
-     return
-  endif
-
-  !Compare values if they aren't numeric
-  sv_ref = getNodeValue(ref)
-  sv_mod = getNodeValue(mod)
-  
-  if (len(sv_ref) > 0 .and. len(sv_mod) > 0)then
-	
-	  if ( .not. only_numbers(sv_ref) .and. .not. only_numbers(sv_mod))then
-	     if(test_debug) print *," check: values:",char(sv_ref),char(sv_mod)
-	     if (sv_ref /= sv_mod) then
-	        same = .false.
-	        return
-	     endif
-	  endif
-  endif
-
-  if (hasAttributes(ref) .and. hasAttributes(mod)) then
-
-     attr_ref => getAttributes(ref)
-     attr_mod => getAttributes(mod)
-
-     length_ref = getlength(attr_ref)
-     length_mod = getlength(attr_mod)
-
-     if (test_debug) print *, "   Ref, mod, attributes length:",length_ref,length_mod
-
-     if (length_ref /= length_mod) then
-        same = .false.
-        return
-     endif
-
-     if (length_ref > 0)then
-        do i=0,length_ref-1
-           c_node_ref => item(attr_ref,i)
-           c_node_mod => item(attr_mod,i)           
-          
-           !Check attributes names and values.
-           attr_name_ref = getNodeName(c_node_ref)
-           attr_name_mod = getNodeName(c_node_mod)
-
-           if(test_debug) print *," check: attr names:",trim(char(attr_name_ref)),"|",trim(char(attr_name_mod))
-
-           if (attr_name_ref /= attr_name_mod) then
-              same = .false.
-              return
-           endif
-              
-           attr_value_ref = getNodeValue(c_node_ref)
-           attr_value_mod = getNodeValue(c_node_mod)
-
-            if(test_debug) print *," check: attr values:",char(attr_value_ref),char(attr_value_mod)
-
-           !if ( .not. only_numbers(attr_value_ref) .and. .not. only_numbers(attr_value_mod))then
-              if (attr_value_ref /= attr_value_mod) then
-                 same = .false.
-                 return
-              endif
-
-           !endif
-
-        enddo
-     endif
-  endif
-
-if(test_debug)print *," check: same?",same
-if(test_debug)print *,"-----------------------"
-
-end function check_node
-!----------------------------------------------
+!-----------------------------------------------------------
 
 recursive subroutine getParentNodeproperties(node,name)
 type(fnode), pointer                   :: node
@@ -444,13 +298,16 @@ integer              :: i,length
 type(fnode), pointer :: parent,attr
 type(string)         :: n_attr
 type(fnamedNodeMap),pointer :: attributes
+character(len=50), save     :: oldName
 
 parent => NULL()
 parent => getParentNode(node)
-if (associated(parent)) then
-   name = getNodeName(parent) 
-   !print*,"Begin ParentName: ",name
 
+if (.not.associated(parent)) then
+   name=""
+else
+   name = trim(getNodeName(parent))
+   
    !Not useful go up
    if (name == "" .or. name == "#text" .or. name == "scalar" .or. name == "array" &
         .or.name == "matrix")then ! .or. name == "property") then 
@@ -476,6 +333,12 @@ if (associated(parent)) then
          enddo
       endif
    endif
+endif
+
+if(name=="")then
+   name=oldName
+else
+   oldName=name
 endif
 
 end subroutine getParentNodeproperties
@@ -528,9 +391,9 @@ else
     if(sn_ref=="#text") then
     	sn_ref = n_parent_ref
     else
-		sn_ref = clean_string(sn_ref)
-		sn_mod = clean_string(sn_mod)
-	endif
+       sn_ref = clean_string(sn_ref)
+       sn_mod = clean_string(sn_mod)
+    endif
 endif
 
 !Type
@@ -550,9 +413,8 @@ endif
 attr_ref => getAttributes(ref)
 attr_mod => getAttributes(mod)
 
-
-
 if ( len(trim(sn_ref)) < 3 ) then
+   print *,"parent:",n_parent_ref
    call dump_error_heading(sn_ref,parent=n_parent_ref)
 else 
    call dump_error_heading(sn_ref)
@@ -570,9 +432,6 @@ if (name_e) then
    else
    	  print *,"  Mod: no name"
    endif
-
-   call handle_error()
-
 elseif(value_e)then
    print *, "Different values:"
    if (len(sv_ref) >0) then
@@ -585,46 +444,25 @@ elseif(value_e)then
    else
    	  print *,"  Mod: no value"
    endif
-   call handle_error()
-
 elseif(attr_e)then
    print *, "Different attr:"
    !print *, char(sn_ref),char(sn_mod)
-   call handle_error()
-
-else
-   
 endif
 
 call handle_error()
-
+print*, "---------------------------------------------------------"
 end subroutine dump_error
 
 !---------------------------------------------------
 
-subroutine dump_error_heading (str,prop,parent)
+subroutine dump_error_heading (str,parent)
 
 type(string), intent(in) :: str
-character(len=*), intent(in), optional :: prop,parent
-
+character(len=*), intent(in), optional :: parent
+print*, "---------------------------------------------------------"
 print *,"There is an error in node: ","|",trim(char(str)),"|"
 if (present(parent)) print *,"   which is a son of node: ", parent
 end subroutine dump_error_heading
-
-!---------------------------------------------------
-subroutine handle_error()
-
-if (STOP_ON_ERROR) then
-   STOP
-else
-   n_errors = n_errors + 1
-   if (n_errors == MAX_NUMBER_OF_ERRORS) then
-      STOP
-   else
-      continue
-   endif
-endif
-end subroutine handle_error
 
 !---------------------------------------------------
 
@@ -656,7 +494,8 @@ function compare_values(ref,mod,label)
 
   !check if there are numbers in the string.
   if ( only_numbers(v_ref) .and. only_numbers(v_mod) )then 
-     if (test_debug) print *, "v_ref,v_mod,label,tol",char(v_ref),char(v_mod),"|",label,"|",tol
+     if (compare_values_debug) print "(7a,f10.6)", "            compare_values: label,ref,mod,tol= ",&
+          trim(label),", |",char(v_ref),"|",char(v_mod),"|, ",tol
      compare_values = compare_only_numbers(v_ref,v_mod,label,tol)
   else
      compare_values = compare_alpha(v_ref,v_mod)
@@ -666,411 +505,72 @@ end function compare_values
 
 !---------------------------------------------------
 
-function clean_string(str) result(cstr)
-  use m_strings
-  type(string),intent(in) :: str
-  
-  type(string) ::cstr
-  
-  !Remove the new lines
+function should_be_checked(node) result(should)
+  type (fnode), pointer :: node
+  logical :: should 
 
-  cstr = str
-  
-  if (new_lines(cstr)) then
-     if (test_debug) print *,"New lines!"
-     call remove_new_lines(cstr)
-  endif
-  
-  cstr = adjustl(cstr)
-  cstr = trim(cstr)
 
-end function clean_string
-
-!---------------------------------------------------
-
-function only_numbers(str)
-  use m_strings
-  type(string),intent(in)::str
-  logical :: only_numbers
-
-  character(len=53)::letters
-  type(string) :: c_str
-  integer :: length,position
-
-  !Remove leading/trailing white spaces
-  !print *,"original:","|",char(str),"|"
-  
-  letters="abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ*"
-  !Copy, we don't want to modify the xml file.
-  c_str = str
-
-  only_numbers = .false.
-  
-  if (len(c_str) >0)then
-	  c_str = clean_string(c_str)
-	
-	  length = len_trim(c_str)
-	  if (test_debug) print *,"|",char(c_str),"|"
-	  if (test_debug) print *,"length:",length
-	  
-	  position = scan(char(c_str),letters)
-	
-	  if (position == 0)then
-	     only_numbers = .true.
-	  else
-	     only_numbers = .false.
-	  endif
-	
-	   if (test_debug) print *,"only_numbers:",only_numbers
-  endif
+  character(len=400)       :: tag
+  type(string)             :: name
  
-end function only_numbers
-!---------------------------------------------------
+  should = .true.
 
-function new_lines(str)
-  use m_strings
-  type(string),intent(in)::str
-  logical :: new_lines
-  
-  integer :: position
-  character :: nl
-  
-  nl = achar(10)
+  !Look for the properties of this node.
+  if(compare_debug) print *,"------------------------------------------"
 
-  if (len(str) > 0)then
-     position = index(str,nl)
-  else
-     position = 0
+  tag = getTagName(node)
+
+  if(compare_debug)then
+     print *,"Should be checked: Tag: ", "|",trim(tag),"|"
+     name = getNodeName(node)
+     print *,"Shoulb be checked: Name:",char(name)
   endif
 
-  if (position == 0) then
-     new_lines = .false.
-  else
-     new_lines = .true.
+  if (tag == "" .or. trim(tag) == "metadata") then
+     should = .false.
+  endif
+  
+  if(compare_debug)then
+     print *,"Should_be_checked: should?",should
+     print *,"----------------------------------"
   endif
 
-end function new_lines
+end function should_be_checked
 
-!---------------------------------------------------
-recursive subroutine remove_new_lines(str)
-  use m_strings
-  type(string),intent(inout)::str
+subroutine handle_error()
 
-  integer :: position
-  character(len=1) :: nl
-  
-  nl = achar(10)
- 
-  do
-     position = index(str,nl)
-     if (position == 0)then
-        exit
-     else
-        str = remove(str,position,position+1)
-        call remove_new_lines(str)
-     endif
-  enddo
-
-end subroutine remove_new_lines
-
-!---------------------------------------------------
-function compare_only_numbers(c_ref,c_mod,label,tol)
-  type(string), intent(in) :: c_ref,c_mod
-  character(len=*)         :: label
-  real(dp), intent(in)         :: tol
-  logical compare_only_numbers
-  
-  character :: ws
-  integer   :: position
-  real(dp)     :: r_ref,r_mod 
-  type(string) :: ref,mod
-
-
-  !Remove the new lines
-  ref = c_ref
-  mod = c_mod
-
-  if (len(ref) > 0 .and. len(mod) >0)then
-	  ref = clean_string(ref)
-	  mod = clean_string(mod)
-  endif
-
-  !Check if there are whitespaces:
-  ws = achar(32)
-  position = index(ref,ws)
-  
-  if (position == 0) then !There are no white spaces
-     r_ref = str_to_scalar(ref)
-     r_mod = str_to_scalar(mod)
-     compare_only_numbers = compare_numbers(r_ref,r_mod,tol)
-  else
-     !There are whitespaces: compare array
-     compare_only_numbers = compare_array(ref,mod,label,tol)     
-  endif
-end function compare_only_numbers
-
-!---------------------------------------------------
-
-function compare_alpha(c_ref,c_mod)
-  type(string), intent(in) :: c_ref,c_mod
-  logical compare_alpha
-  
-  
-  !TODO: maybe something more elaborate?
-
-  if (char(c_ref) /= char(c_mod)) then
-
-     !print *,"  Alphanumeric strings don't match"
-     !print *,"     Reference:",char(c_ref)
-     !print *,"     Modified:",char(c_mod)
-     !print *, "ref:",char(c_ref)
-     !print *, "mod:",char(c_mod)
-     compare_alpha = .true.
-  else
-     compare_alpha = .true.
-  endif
-
-end function compare_alpha
-
-!---------------------------------------------------
-
-function str_to_scalar(str) result(scal)
-type(string),intent(in) :: str
-real(dp) :: scal
-integer  :: int
-
-character(len=100) :: c_str
-
-c_str = char(str)
-!print*, "string:","|",char(str),"|"
-if (is_integer(str)) then
-   if (test_debug) print *,"string is integer:",c_str
-   read(c_str,"(i3)") int
-   scal = real(int)
+if (STOP_ON_ERROR) then
+   STOP
 else
-   read(c_str,"(f16.6)") scal
+   n_errors = n_errors + 1
+   if (n_errors == MAX_NUMBER_OF_ERRORS) then
+      STOP
+   else
+      continue
+   endif
 endif
-if (test_debug) print *,"Scalar:|",scal,"|"
-end function str_to_scalar
+end subroutine handle_error
 
-!---------------------------------------------------
+!---------------------------------------------------------------------------------
 
-function is_integer(str)
-  type(string), intent(in) :: str
-  logical is_integer
+subroutine checkGeometry(ref, mod)
+!For a given MD step this subroutine checks that both geometries are equivalent.
+type(fnode),pointer      :: ref,mod
 
-  integer :: position
-  character(len=2) :: po
-  po = ".*"
-  position = scan(str,po)
-  if (position == 0)then
-     is_integer = .true.
-  else
-     is_integer = .false.
-  endif
+type(fnodeList), pointer :: ref_list,mod_list
 
-end function is_integer
+ref_list => getElementsByTagName(ref,"molecule")
+mod_list => getElementsByTagName(mod,"molecule")
 
-!---------------------------------------------------
+call compareList(ref_list,mod_list)
 
-function compare_numbers(ref,mod,tol)
-  real(dp), intent(in) :: ref,mod,tol
-  logical compare_numbers
+ref_list => getElementsByTagName(ref,"crystal")
+mod_list => getElementsByTagName(mod,"crystal")
+
+call compareList(ref_list,mod_list)
+
+end subroutine
 
 
-  if (abs(abs(ref) - abs(mod)) .gt. tol)then
-     compare_numbers = .false.
-  else
-     compare_numbers = .true.
-  endif
-
-end function compare_numbers
-!---------------------------------------------------
-
-function compare_array(ref,mod,label,tol)
-  type(string), intent(in) :: ref, mod
-  character(len=*),intent(in) ::label
-  real(dp) , intent(in) :: tol
-  logical :: compare_array
-
-  integer :: i, length
-  real(dp),allocatable,dimension(:)    :: a_ref,a_mod
-  logical                          :: error
-
-  call find_array(ref,mod, a_ref,a_mod,error)
-
-  if (error) then
-     compare_array = .false.
-     return
-  endif
-
-  length = size(a_ref)
-
-  compare_array = .true.
-
-  if (length > 0)then
-     do i=1,length
-        
-        if (abs(abs(a_ref(i))-abs(a_mod(i))) > tol) then   
-           print *, "Compare array: error in array: ",trim(label)
-           !print *, trim(ref), " |", trim(mod)
-           print "(a,i4,2f10.6)"," Index, values: ",i, abs(a_ref(i)),abs(a_mod(i))
-           print *," Diff,tol: ", abs(a_ref(i))-abs(a_mod(i)),tol
-           compare_array = .false.
-           exit
-        endif
-     enddo
-  endif
-
-end function compare_array
-
-!---------------------------------------------------
-
-subroutine find_array(ref,mod,a_ref,a_mod,error)
-  type(string), intent(in) :: ref, mod
-  real(dp),allocatable,dimension(:) :: a_ref,a_mod
-  logical, intent(out)          :: error
-
-  integer      :: length = 1
-  type(string) :: l_ref,l_mod,sub_ref,sub_mod
-  integer :: pos_ref, pos_mod
-  character :: ws
-  character(len=2) ::ws2
-  real(dp)         :: r_ref,r_mod
-
-  error = .false.
-
-  l_ref = ref
-  l_mod = mod
-  
-  ws = achar(32) !\n
-  pos_ref = index(l_ref,ws)
-  pos_mod = index(l_mod,ws)
-
-  length = 0
-
-  ws2="  "
-  
-  if (test_debug) then
-  	print*,"compairing arrays:"
-  	print*,char(l_ref)
-  	print*,char(l_mod)
-  endif
-  
-  do
-     pos_ref = index(l_ref,ws2)
-     !print *,"pos_ref 2sp:",pos_ref
-     if (pos_ref == 0)then
-        exit
-     else
-        l_ref = remove(l_ref,pos_ref,pos_ref)
-        !print *,"New ref without 2ws:",char(l_ref)
-     endif
-  enddo
- 
-  do
-     pos_mod = index(l_mod,ws2)
-     !print *,"pos_mod 2sp:",pos_mod
-     if (pos_mod == 0)then
-        exit
-     else
-        l_mod = remove(l_mod,pos_mod,pos_mod)
-        !print *,"New mod without 2ws:",char(l_mod)
-     endif
-  enddo
-  
-  pos_ref = index(l_ref,ws)
-  pos_mod = index(l_mod,ws)
-
-  do
-
-     if (pos_ref == 0) exit
-
-     sub_ref = extract(l_ref,1,pos_ref-1)
-     sub_mod = extract(l_mod,1,pos_mod-1)
-     
-     !Get the scalars from the string.
-     r_ref = str_to_scalar(sub_ref)
-     r_mod = str_to_Scalar(sub_mod)
-     
-     if (test_debug) print*, "Strings ref|mod:",char(sub_ref),"|",char(sub_mod)
-     if (test_debug) print*, "New scalars ref|mod:",r_ref,"|",r_mod
-
-     !Remove the previous string
-     l_ref = remove(l_ref,1,pos_ref)
-     l_mod = remove(l_mod,1,pos_mod)
-     
-     !Store the values
-     length = length + 1
-
-     !Resize the array
-     call resize(a_ref,length)
-     call resize(a_mod,length)
-      
-     !store the new values
-     a_ref(length) = r_ref
-     a_mod(length) = r_mod
-
-     !Look for the next ws.
-     pos_ref = index(l_ref,ws)
-     pos_mod = index(l_mod,ws)
-
-     if (pos_ref > 0)then
-        sub_ref = extract(l_ref,1,pos_ref+1)
-        sub_mod = extract(l_mod,1,pos_mod+1)
-     endif
-
-  enddo
-  
-
-  if (len(sub_ref) > 0)then
-     !print *, "one missing"
-     r_ref = str_to_scalar(sub_ref)
-     r_mod = str_to_Scalar(sub_mod)
-     length = length + 1
-     call resize(a_ref,length)
-     call resize(a_mod,length)
-      
-     !store the new values
-     a_ref(length) = r_ref
-     a_mod(length) = r_mod
-  endif
-  
-  !print *,"Final ref:",a_ref
-  !print *,"Final mod:",a_mod
-
-end subroutine find_array
-
-!---------------------------------------------------
-
-subroutine resize(a,new_length) 
-
-  real(dp), dimension(:), allocatable, intent(inout) :: a
-  integer, intent(in)            :: new_length
-
-  !Internal vars
-  real(dp), dimension(:), allocatable :: old_a
-  integer                         :: length,i
-  
-  if (.not. allocated (a)) then
-     allocate(a(1:new_length))
-     a = 0.0
-  else
-     length = size(a)
-     if (length > 0) then
-        allocate(old_a(1:length))
-        old_a = a
-        deallocate(a)
-        allocate(a(1:new_length))
-        a = 0.0
-        do i=1,size(old_a)
-           a(i) = old_a(i)
-        enddo
-        deallocate(old_a)
-     endif
-  endif
-
-end subroutine resize
-!---------------------------------------------------
 
 end module compare_m

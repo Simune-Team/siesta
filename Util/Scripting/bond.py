@@ -26,7 +26,7 @@ energy = 0.0*bonds
 theta=0.5*(180.-105.0)*math.pi/180.  # Angle with the x axis, in radians
 print bonds
 
-a = Siesta(executable="/Users/ag/bin/siesta-xlf")          # Initialize object
+a = Siesta(executable="$HOME/bin/siesta-2.4-optim")          # Initialize object
 
 # create a work subdirectory
 orig_dir = os.getcwd()

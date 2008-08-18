@@ -332,11 +332,12 @@ C initialize stuff...
           enddo
  
 C loop over the neighbors of ia within rcoor
-          do  jj = 1,nna
+          do  jj = 1,nna      !!! Ends in Label 30...
             ja = jan(jj)
             norb = lasto(ja) - lasto(ja-1)
 
 C Check if ja has already been included in current lwf
+C*** AG**:  This needs to be clarified !!
             do indexa = 1,numloc
               if (ja .eq. indexloc(indexa)) goto 30
             enddo

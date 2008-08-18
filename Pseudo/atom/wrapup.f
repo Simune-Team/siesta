@@ -11,6 +11,8 @@ c
       include 'elecpot.h'
       include 'energy.h'
       include 'compat.h'
+      include 'version.h'
+      include 'pseudowave.h'
 c
 c     ecuts now set in compat_params...
 c
@@ -18,7 +20,7 @@ c
       parameter (zero=0.d0,tpfive=2.5d0, one=1.d0)
 c
       integer i, icore, j, jcut, lp, noi, npotd, npotu, ifull
-      integer nops(norbmx), position
+      integer nops(norbmx), position, iunit
       character ray(6)*10, title*70, pot_id*40, id*1
 c
       double precision zval, zratio, zion, ac, bc, cdcp, tanb, rbold,
@@ -28,11 +30,14 @@ c
       double precision rcut(10), v(nrmax)
 c
       double precision absval, minabs, maxabs, norm1, norm2
-      double precision fourier_area(5), dummy_real
+      double precision fourier_area(5), qc(5), dummy_real, dummy_qc
+      double precision fourier_eps
+      parameter (fourier_eps = 1.0d-2)
+
       integer n_channels, lun
 
-      double precision cutoff_function
-      external cutoff_function
+      double precision cutoff_function, force_underflow
+      external cutoff_function, force_underflow
 
       logical new_scheme
 c
@@ -297,7 +302,10 @@ cag               fcut = exp(-5*(r(j)-r(jcut)))
                v(j) = viod(lp,j)/r(j)
   110       continue
 c
-            call potran(lo(i)+1,v,r,nr,zion,dummy_real)
+c           Dwon potentials are  always generated
+c
+            call potran(lo(i)+1,v,r,nr,zion,fourier_area(lo(i)+1),
+     $                  fourier_eps,qc(lo(i)+1))
             call potrv(v,r,nr-120,lo(i),zion)
 c
          else
@@ -327,7 +335,10 @@ cag               fcut = exp(-5*(r(j)-r(jcut)))
                v(j) = viou(lp,j)/r(j)
   140       continue
 c
-            call potran(lo(i)+1,v,r,nr,zion,fourier_area(lo(i)+1))
+c           Up potentials are not always generated
+c
+            call potran(lo(i)+1,v,r,nr,zion,dummy_real,
+     $           fourier_eps,dummy_qc)
             call potrv(v,r,nr-120,lo(i),zion)
 c
          end if
@@ -360,6 +371,35 @@ c
       norm2 = sqrt( norm2 / n_channels)
       write(lun,"(i4)") n_channels
       write(lun,"(5f10.5)") (fourier_area(j),j=lo(ncp)+1,lo(norb)+1)
+      write(lun,"(4f10.5)") minabs, maxabs, norm1, norm2
+      close(lun)
+c
+c     Write out the Fourier threshold for each channel
+c
+      call get_unit(lun)
+      open(unit=lun,file="FOURIER_QMAX",form="formatted",
+     $     status="unknown")
+      rewind(lun)
+c
+c     Compute also the minimum, maximum, mean, and root-mean-square.
+c
+      n_channels = 0
+      maxabs = -1.0d0
+      minabs = 1.0d10
+      norm1 = 0.0d0
+      norm2 = 0.0d0
+      do j=lo(ncp) + 1, lo(norb) + 1
+         absval = qc(j)
+         if (absval .gt. maxabs) maxabs = absval
+         if (absval .lt. minabs) minabs = absval
+         norm1 = norm1 + absval
+         norm2 = norm2 + absval*absval
+         n_channels =  n_channels + 1
+      enddo
+      norm1 = norm1 / n_channels
+      norm2 = sqrt( norm2 / n_channels)
+      write(lun,"(i4)") n_channels
+      write(lun,"(5f10.5)") (qc(j),j=lo(ncp)+1,lo(norb)+1)
       write(lun,"(4f10.5)") minabs, maxabs, norm1, norm2
       close(lun)
 c
@@ -449,7 +489,7 @@ c
 c
 c  Find the jobname and date.
 c
-      ray(1) = 'ATM 3.2.2'
+      ray(1) = atom_id
       call cal_date(ray(2))
 c  
       read(pot_id,'(4a10)') (ray(i),i=3,6)
@@ -486,6 +526,10 @@ c
 c  Construct relativistic sum and difference potentials.
 c
       if (relativistic) then
+c
+c   ***  The s potential is from now on considered as "down", even
+c        though s=0.5 in the relativistic case.
+c
          if (indu(1) .eq. 0) go to 260
          indd(1) = indu(1)
          indu(1) = 0
@@ -549,15 +593,20 @@ c
       rewind 1
       open(unit=2,file='VPSFMT',status='unknown',form='formatted')
       rewind 2
+      open(unit=3,file='PSWFFMT',status='unknown',form='formatted')
+      rewind 3
+
       write(1) nameat, icorr, irel, nicore, (ray(i),i=1,6), title,
      &         npotd, npotu, nr - 1, a, b, zion
       write(1) (r(i),i=2,nr)
 c
-      write(2,8005) nameat, icorr, irel, nicore
-      write(2,8010) (ray(j),j=1,6), title
-      write(2,8015) npotd, npotu, nr-1, a, b, zion
-      write(2,8040) 'Radial grid follows' 
-      write(2,8030) (r(j),j=2,nr)
+      do 700 iunit=2,3
+         write(iunit,8005) nameat, icorr, irel, nicore
+         write(iunit,8010) (ray(j),j=1,6), title
+         write(iunit,8015) npotd, npotu, nr-1, a, b, zion
+         write(iunit,8040) 'Radial grid follows' 
+         write(iunit,8030) (r(j),j=2,nr)
+ 700  continue
 c
  8000 format(1x,i2)
  8005 format(1x,a2,1x,a2,1x,a3,1x,a4)
@@ -566,24 +615,24 @@ c
  8030 format(4(g20.12))
  8040 format(1x,a)
 c
-c  Write the potentials to file (unit=1).
+c  Write the potentials to file (unit=1, and 2).
 c
       do 300 i = 1, lmax
          if (indd(i) .eq. 0) go to 300
          write(1) i - 1, (viod(i,j),j=2,nr)
          write(2,8040) 'Down Pseudopotential follows (l on next line)'
          write(2,8000) i-1
-         write(2,8030) (viod(i,j),j=2,nr)
+         write(2,8030) (force_underflow(viod(i,j)),j=2,nr)
   300 continue
       do 310 i = 1, lmax
          if (indu(i) .eq. 0) go to 310
          write(1) i - 1, (viou(i,j),j=2,nr)
          write(2,8040) 'Up Pseudopotential follows (l on next line)'
          write(2,8000) i-1
-         write(2,8030) (viou(i,j),j=2,nr)
+         write(2,8030) (force_underflow(viou(i,j)),j=2,nr)
  310  continue
 c
-c  Write the charge densities to units 1 and 3(formatted).
+c  Write the charge densities      
 c  Note that this charge density is the "pseudo" one.
 c
       write(2,8040) 'Core charge follows'
@@ -593,14 +642,35 @@ c
          write(2,8030) (zero,i=2,nr)
       else
          write(1) (cdc(i),i=2,nr)
-         write(2,8030) (cdc(i),i=2,nr)
+         write(2,8030) (force_underflow(cdc(i)),i=2,nr)
       end if
       write(1) (zratio*(cdd(i)+cdu(i)),i=2,nr)
       write(2,8040) 'Valence charge follows'
-      write(2,8030) (zratio*(cdd(i)+cdu(i)),i=2,nr)
+      write(2,8030) (force_underflow(zratio*(cdd(i)+cdu(i))),i=2,nr)
 
       close(1)
       close(2)
+c
+c  Write the pseudo-wavefunctions (only in formatted form, in
+c  auxiliary file) 'u_n,l (r) = 1/r R_n,l (r)'
+c
+ 8045 format(1x,i2,i2)
+      do 600 i = 1, lmax
+         if (indd(i) .eq. 0) go to 600
+         write(3,8040)
+     $      'Down Pswavefunction (R/r) follows (l,n on next line)'
+         write(3,8045) i-1, no(indd(i))
+         write(3,8030) (force_underflow(pswfnrd(i,j)),j=2,nr)
+  600 continue
+      do 620 i = 1, lmax
+         if (indu(i) .eq. 0) go to 620
+         write(3,8040)
+     $      'Up Pswavefunction (R/r) follows (l,n on next line)'
+         write(3,8045) i-1, no(indu(i))
+         write(3,8030) (force_underflow(pswfnru(i,j)),j=2,nr)
+  620 continue
+c
+      close(3)
 c
       open(unit=3,file='PSCHARGE',form='formatted',status='unknown')
 c
@@ -626,6 +696,11 @@ c
  9900 format(1x,f15.10,3x,3f15.8)
 c
       close(unit=3)
+c
+c     Write the pseudopotential in XML format
+c
+      call pseudoXML( ray, npotd, npotu, zion, zratio )
+
 c
       return
 c

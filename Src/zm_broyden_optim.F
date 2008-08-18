@@ -388,7 +388,7 @@ C Set number of degrees of freedom & variables
 
       if (.not. broyden_is_setup(br)) then
          call broyden_reset(br,ndeg,maxit,cycle_on_maxit,
-     $        jinv0,0.01_dp)
+     $        jinv0,0.01_dp,dxmaxn)
       endif
 
       call re_alloc( rnew, 1, ndeg, 'rnew', 'zm_broyden_optimizer' )

@@ -36,6 +36,8 @@
       integer, intent(in) :: unit
 #if defined(F2003)
       flush(unit)
+#elif defined(GFORTRAN)
+  call flush(unit)      
 #elif defined(XLF)
       if (unit.eq.6 .or. unit.eq.0) then
         call flush_(unit)
@@ -75,6 +77,8 @@
         subroutine abort(), bind(c)
         end subroutine abort
       end interface
+  call abort()
+#elif defined(GFORTRAN)
       call abort()
 #elif defined(XLF)
       call abort_()

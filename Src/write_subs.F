@@ -135,19 +135,20 @@
      $            ps(2,3)/kbar,
      $            ps(1,3)/kbar
             Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
-            write(6,"(a,f14.4)") "Enthalpy (eV/cell)",
+            write(6,"(a,f14.4)") "(Free)E + p*V (eV/cell)",
      $           (FreeE + Press*volume_of_some_cell)/eV
 
             if (RemoveIntraMolecularPressure) then
                ps = mstress + kin_stress
                write(6,'(/,a,6f12.2)')
-     .           'Non-Molecular-Stress-Voigt (kbar):',
+     .           'Inter-Molecular-Stress-Voigt (kbar):',
      .           (ps(jx,jx)/kbar,jx=1,3),
      $            ps(1,2)/kbar,
      $            ps(2,3)/kbar,
      $            ps(1,3)/kbar
                Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
-               write(6,"(a,f14.4)") "Non-Molecular Enthalpy (eV/cell)",
+               write(6,"(a,f14.4)")
+     $              "(Free)E + p_inter_molec * V  (eV/cell)",
      $              (FreeE + Press*volume_of_some_cell)/eV
             endif
 !
@@ -518,6 +519,7 @@
       use zmatrix,    only : lUseZmatrix,
      &                       write_canonical_ucell_and_Zmatrix
       use m_iostruct, only : write_struct
+      use siesta_options, only: idyn
       use alloc,      only : re_alloc, de_alloc
 
       implicit none
@@ -529,7 +531,7 @@
 !      By now the structure might have changed in response to forces
 !      and stresses.
         call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
-        if (lUseZmatrix) then
+        if (lUseZmatrix .and. (idyn .eq. 0)) then
            call write_canonical_ucell_and_Zmatrix
      $                         (filename="NEXT_ITER.UCELL.ZMATRIX")
         endif

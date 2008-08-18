@@ -51,6 +51,7 @@
       use atom, only: atom_main, prinput
       use electrostatic, only: elec_corr_setup
       use atmparams, only: lmaxd, nkbmx, nsemx, nzetmx
+      use atom_options, only: get_atom_options
 
       implicit none
 
@@ -65,6 +66,8 @@ C Internal variables ...................................................
       
       external atm_transfer
 
+      call get_atom_options()
+c
 c Reading input for the pseudopotentials and atomic orbitals 
 
       write(6,'(/2a)') 

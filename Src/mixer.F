@@ -10,11 +10,16 @@
       use siesta_geom
       use atomlist, only: iaorb, iphorb, lasto, no_u, no_l
       use m_broyden_mixing
+      use m_fire_mixing
       use m_steps
       use m_spin,   only: nspin
       use m_pulay
+      use parallel, only: IONode
 #ifdef MPI
       use m_mpi_utils, only: globalize_max
+#endif
+#ifdef CDF
+      use iodm_netcdf, only: write_dm_netcdf
 #endif
       implicit none
 
@@ -22,6 +27,7 @@
       real(dp), intent(out) :: dDmax   ! Max. change in dens. matrix
       integer               :: iiscf
       logical               :: mmix    ! Same as mix. Used in pulayx
+      logical               :: found   ! For call to iodm
 #ifdef MPI
       real(dp)              :: buffer1
 #endif
@@ -38,7 +44,11 @@
           iiscf = 1
           if (iscf .ne. 1) mmix = .true.
         endif
-        if (broyden_maxit == 0) then
+            if (fire_mix) then
+               call fire_mixing(iscf, mix, no_l, maxnh,
+     .                 numh(1:no_l), listhptr(1:no_l), nspin,
+     $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
+            else if (broyden_maxit == 0) then
            call pulayx( pulfile, iiscf, mmix, no_l, maxnh,
      .                  numh, listhptr, nspin, maxsav, wmix, nkick, 
      .                  wmixkick, Dscf, Dold, dDmax)
@@ -63,8 +73,17 @@
      .                 lasto, iaorb, iphorb )
       endif
 
-#ifdef RGT
 !         Save density matrix on disk, after mixing ...........................
+#ifdef CDF
+          if (writedm_cdf_history) then
+             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     $                             overwrite=.false.)
+          else if (writedm_cdf) then
+             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     $                             overwrite=.true. )
+          endif
+#endif
+    
           if (writedm) then
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
               if (istp.eq.1)
@@ -75,7 +94,6 @@
      .                   numh, listhptr, listh, Dscf, found )
             endif
           endif
-#endif
 !--------------------------------------------------------------------------- END
       END subroutine mixer
 

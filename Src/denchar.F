@@ -84,7 +84,7 @@ C
 
       EXTERNAL  IODM, VOLCEL
 
-      integer narg
+      integer narg, ns
 
       DATA NORMAL /0.D0,0.D0,1.D0/
       DATA COORPO /1.D0,0.D0,0.D0,0.D0,1.D0,0.D0,0.D0,0.D0,1.D0/
@@ -224,7 +224,7 @@ C Read some variables from SIESTA --------------------------------------
      .             CELL, NSC, XA, RMAXO, DATM )
 
 C Read the information about the basis set -----------------------------
-      CALL READ_BASIS_ASCII()
+      CALL READ_BASIS_ASCII(ns)
 
 C Initialize listsc ----------------------------------------------------
       CALL LISTSC_INIT( NSC, NO_U )

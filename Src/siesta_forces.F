@@ -6,6 +6,7 @@
       CONTAINS
 
       subroutine siesta_forces(istep)
+      use siesta_cml
       use m_state_init
       use m_setup_hamiltonian
       use m_setup_H0
@@ -17,24 +18,20 @@
       use parallel,     only : IOnode
       use m_state_analysis
       use m_steps
-#ifndef RGT
-      use sparse_matrices
-      use m_spin,   only: nspin
-      use atomlist, only: no_l, no_s
-      use m_ordern
-#endif
-      use alloc
+      use sys, only : die
+      use m_convergence, only: converger_t
+      use m_convergence, only: reset, set_tolerance
+
       implicit none
 
       integer, intent(in)  :: istep
 
       integer  :: iscf
-      logical  :: first, last
+      logical  :: first, last, SCFconverged
       real(dp) :: dDmax     ! Max. change in density matrix elements
-#ifndef RGT
-      logical  :: found
-#endif
-!------------------------------------------------------------------------- BEGIN
+      type(converger_t)  ::  conv_harris, conv_etot
+      
+!---------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 10 )
 #endif
@@ -51,6 +48,15 @@ C     Start of SCF loop
       iscf  = 1
       first = .true.
       last  = .false.
+        SCFconverged = .false.
+        if (require_harris_convergence) then
+           call reset(conv_harris)
+           call set_tolerance(conv_harris,harris_tolerance)
+        endif
+        if (require_energy_convergence) then
+           call reset(conv_etot)
+           call set_tolerance(conv_etot,energy_tolerance)
+        endif
 
 C     The SCF loop is executed at least once, 
 C     except if nscf <= 0.
@@ -69,6 +75,8 @@ C     except if nscf <= 0.
         call write_debug( '  PRE setup_hamiltonian' )
 #endif
 
+          if (cml_p) 
+     $         call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
 C       Will use H0 computed above
         call setup_hamiltonian( iscf )
 
@@ -88,7 +96,11 @@ C       Will use H0 computed above
 #ifdef DEBUG
         call write_debug( '  PRE scfconvergence_test' )
 #endif
-        call scfconvergence_test( first, iscf, last, dDmax )
+        call scfconvergence_test( first, iscf, last, dDmax,
+     $                              conv_harris, conv_etot )
+        ! At this point last is true if SCF has converged. But this
+        ! changed below
+        SCFconverged = last
 
         call timer( 'IterSCF', 2 )
         if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
@@ -102,26 +114,14 @@ C       The ">" clause catches the nscf==1 case. For this,
         if (iscf >= nscf) then
           last = .true.
         endif
+        if (cml_p) call cmlEndStep(mainXML)
       ENDDO
 
-#ifndef RGT
-C
-C     RGT: Write DM and LWF files
-C
-#ifdef DEBUG
-        call write_debug( '  PRE Write DM' )
-#endif
-      call iodm( 'write', maxnh, no_l, nspin,
-     &                   numh, listhptr, listh, Dscf, found )
-
-#ifdef DEBUG
-        call write_debug( '  PRE Write LWF' )
-#endif
-      if (isolve .eq. 1) then
-        call iolwf( 'write', no_s, nbasisCloc, no_l, maxnc, 
-     &              found, nspin)
-      endif
-#endif
+        ! If we have not converged, but get to here, we are out
+        ! of steps. We may want to error out.
+        if ((SCFMustConverge).and.(.not.SCFconverged)) then
+          call die('SCF did not converge in maximum number of steps.')
+        endif
 
 C       End of standard SCF loop.
 C       Do one more pass to compute forces and stresses

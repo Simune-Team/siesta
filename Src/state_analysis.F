@@ -17,13 +17,13 @@
       use m_iostruct,    only : write_struct
       use atomlist,      only : iaorb, iphorb, iza, amass, no_u, lasto,
      &                          superx
-      use m_energies,    only : Etot
       use m_spin,        only : nspin
       use m_fixed,       only : fixed
       use sparse_matrices
       use siesta_geom
       USE siesta_options
       use m_stress
+      use m_energies, only: Etot, FreeE, Eharrs, FreeEHarris, Entropy
       use m_ntm
       use m_forces
 
@@ -38,6 +38,23 @@
       real(dp), external :: volcel
 
 !------------------------------------------------------------------------- BEGIN
+
+!     Save structural information in crystallographic format,
+!     and canonical Zmatrix (if applicable) before moving the atoms
+!
+
+      if (cml_p) then
+         call cmlStartModule(xf=mainXML, title='SCF Finalization')   
+      endif
+
+      if (IOnode) then
+         call write_struct( ucell, na_u, isa, iza, xa )
+         if (lUseZmatrix .and. (idyn.eq.0)) then
+            call write_canonical_ucell_and_Zmatrix()
+         endif
+      endif
+!
+
 ! Write final Kohn-Sham Energy 
       if (cml_p) call cmlStartPropertyList(mainXML,
      .                                   title='Final KS Energy')
@@ -61,10 +78,15 @@
       endif
       if (cml_p) call cmlEndPropertyList(mainXML)
 
+      FreeE = Etot - Temp * Entropy
+      FreeEHarris = Eharrs - Temp * Entropy
+
 ! Substract egg box effect from the forces 
       if (eggbox_block) then
         call eggbox('forces',ucell,na_u,isa,ntm,xa,fa,Etot,eggbox_block)
       endif
+
+      call write_raw_efs(stress,na_u,fa,FreeE)
 
       !  Compute stress without internal molecular pressure
       call remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
@@ -82,7 +104,7 @@ C Impose constraints to atomic movements by changing forces ...........
 C ...................
 
 ! Calculate and output Zmatrix forces
-      if (lUseZmatrix) then
+      if (lUseZmatrix .and. (idyn.eq.0)) then
         call CartesianForce_to_ZmatForce(na_u,xa,fa)
         if (IOnode) call iofaZmat()
       endif
@@ -113,21 +135,16 @@ C ...................
      .               numh, listhptr, listh, S, Dscf, isa, 
      .               lasto, iaorb, iphorb )
 !
-!     Save structural information in crystallographic format,
-!     and canonical Zmatrix (if applicable) before moving the atoms
-!
-      if (IOnode) then
-         call write_struct( ucell, na_u, isa, iza, xa )
-         if (lUseZmatrix) then
-            call write_canonical_ucell_and_Zmatrix()
-         endif
-      endif
-!
 !     Call the born effective charge routine only in those steps (even) 
 !     in which the dx  is positive.
       if (bornz .and. (mod(istep,2) .eq. 0)) then
          call born_charge()
       endif
+
+      !End the xml module corresponding to the analysis
+      if (cml_p) then
+         call cmlEndModule(mainXML)         
+      endif 
 !--------------------------------------------------------------------------- END
       END subroutine state_analysis
 

@@ -25,7 +25,7 @@ urllib.urlretrieve(URLbase + "H.psf", "H.psf")
 urllib.urlretrieve(URLbase + "H.psf", "H_test.psf") 
 urllib.urlretrieve(URLbase + "O.psf", "O.psf") 
 
-a = Siesta(executable="/Users/ag/bin/siesta-xlf")
+a = Siesta(executable="$HOME/bin/siesta-2.4-optim")
 energy = a.run(atoms,out="OUT")
 
 print "The energy is: ", energy

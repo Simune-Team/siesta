@@ -67,6 +67,7 @@ c *********** BEHAVIOUR ************************************************
 c cstress may be the same physical array as stress, and cfa the same 
 c as fa, i.e. it is allowed:
 c     call fixed( cell, stress, na, isa, amass, xa, fa, stress, fa, ntcon )
+C NOTE: This is NOT good practice, and might be flagged by some compilers
 c *********** USAGE ****************************************************
 c Example: consider a diatomic molecule (atoms 1 and 2) above a surface, 
 c represented by a slab of 5 atomic layers, with 10 atoms per layer.

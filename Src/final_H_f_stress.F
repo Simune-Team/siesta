@@ -20,7 +20,6 @@
       use m_kinefsm,    only: kinefsm
       use m_naefs,      only: naefs
       use m_dnaefs,     only: dnaefs
-      use siesta_cml
       use m_stress
       use m_energies
       use m_steps, only: istp
@@ -58,10 +57,6 @@
 
 
 !------------------------------------------------------------------------- BEGIN
-!     Do we need this here??  *****
-      if (cml_p) then
-        call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-      endif
 
 !     Normalize density matrix to exact charge
       call normalize_dm(first=.false.)

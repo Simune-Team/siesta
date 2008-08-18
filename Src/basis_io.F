@@ -18,6 +18,7 @@
       use chemical
       use sys, only: die
       use precision
+      use atom_options, only: write_ion_plot_files
 #ifdef CDF
       use atmparams, only:NTBMAX
 #endif
@@ -47,6 +48,7 @@
 
 #ifndef CDF
       integer, intent(out) :: ns
+
       call die(
      $ '*** You need netCDF to read the new user-defined basis files...'
      $ )
@@ -726,10 +728,14 @@ c
             if (spp%orbnl_ispol(i)) ispol = 1
             zeta = spp%orbnl_z(i)
             if (zeta == 1) n_series = n_series + 1
-!
-!           New: write small files with individual orbitals
-!
-!!            write(fileid,'(a,a,i2.2)') trim(spp%label), ".ORB.", i
+
+            write(lun,'(4i3,f10.6,2x,a)')
+     $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
+     $           ispol, spp%orbnl_pop(i),
+     $           " #orbital l, n, z, is_polarized, population"
+            call radial_dump_ascii(spp%orbnl(i),lun)
+
+           if (write_ion_plot_files) then
             write(fileid,'(a,i1,a,i1,a,a)') "ORB.S", n_series, ".",
      $            zeta, ".", trim(spp%label)
             call io_assign(lun2)
@@ -742,12 +748,8 @@ c
      $       "#(species label, l, n, z, is_polarized, popul)"
             call radial_dump_ascii(spp%orbnl(i),lun2,header=.false.)
             call io_close(lun2)
+           endif ! (write_ion_plot_files)
 
-            write(lun,'(4i3,f10.6,2x,a)')
-     $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
-     $           ispol, spp%orbnl_pop(i),
-     $           " #orbital l, n, z, is_polarized, population"
-            call radial_dump_ascii(spp%orbnl(i),lun)
          enddo
          
          write(lun,'(a)') "# KBs:__________________________"
@@ -755,7 +757,12 @@ c
          do i=1,spp%n_pjnl
             zeta = spp%pjnl_n(i)
             l = spp%pjnl_l(i)
-!!            write(fileid,'(a,a,i2.2)') trim(spp%label), ".KB.", i
+            write(lun,'(2i3,f22.16,2x,a)')
+     $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
+     $           " #kb l, n (sequence number), Reference energy"
+            call radial_dump_ascii(spp%pjnl(i),lun)
+
+           if (write_ion_plot_files) then
             write(fileid,'(a,i1,a,i1,a,a)') "KB.L", l , ".",
      $            zeta, ".", trim(spp%label)
             call io_assign(lun2)
@@ -767,15 +774,15 @@ c
      $           "#kb l, n (sequence number), Reference energy"
             call radial_dump_ascii(spp%pjnl(i),lun2,header=.false.)
             call io_close(lun2)
+           endif ! (write_ion_plot_files)
 
-            write(lun,'(2i3,f22.16,2x,a)')
-     $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i),
-     $           " #kb l, n (sequence number), Reference energy"
-            call radial_dump_ascii(spp%pjnl(i),lun)
 
          enddo
 
          write(lun,'(a)') "# Vna:__________________________"
+         call radial_dump_ascii(spp%vna,lun)
+
+        if (write_ion_plot_files) then
          write(fileid,'(a,a)') "VNA.", trim(spp%label)
          call io_assign(lun2)
          open(unit=lun2,file=fileid,status='replace',
@@ -783,9 +790,12 @@ c
          write(lun2,'(3a)') "# ",trim(spp%label), " Vna"
          call radial_dump_ascii(spp%vna,lun2,header=.false.)
          call io_close(lun2)
-         call radial_dump_ascii(spp%vna,lun)
+        endif ! (write_ion_plot_files)
 
          write(lun,'(a)') "# Chlocal:__________________________"
+         call radial_dump_ascii(spp%chlocal,lun)
+
+        if (write_ion_plot_files) then
          write(fileid,'(a,a)') "CHLOCAL.", trim(spp%label)
          call io_assign(lun2)
          open(unit=lun2,file=fileid,status='replace',
@@ -793,7 +803,6 @@ c
          write(lun2,'(3a)') "# ",trim(spp%label), " ChLocal"
          call radial_dump_ascii(spp%chlocal,lun2,header=.false.)
          call io_close(lun2)
-         call radial_dump_ascii(spp%chlocal,lun)
 !
 !        Vlocal does not go to the .ion file
 !
@@ -805,9 +814,14 @@ c
          call
      $    radial_dump_ascii(spp%reduced_vlocal,lun2,header=.false.)
          call io_close(lun2)
+        endif ! (write_ion_plot_files)
+
 !
          if (spp%there_is_core) then
             write(lun,'(a)') "# Core:__________________________"
+            call radial_dump_ascii(spp%core,lun)
+
+           if (write_ion_plot_files) then
             write(fileid,'(a,a)') "CHCORE.", trim(spp%label)
             call io_assign(lun2)
             open(unit=lun2,file=fileid,status='replace',
@@ -815,7 +829,8 @@ c
             write(lun2,'(3a)') "# ",trim(spp%label), " ChCore"
             call radial_dump_ascii(spp%core,lun2,header=.false.)
             call io_close(lun2)
-           call radial_dump_ascii(spp%core,lun)
+           endif ! (write_ion_plot_files)
+
          endif
          call io_close(lun)
 

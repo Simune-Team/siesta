@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, BSC--2.3.26}}
+{\Huge {\bf S I E S T A \, \, BSC+2.5.29}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 12, 2007 }
+{\Large June 29, 2008 }
 
 \vspace{1.5cm}
 
@@ -76,7 +76,7 @@
    \Large{\it Centro Mixto CSIC-UPV/EHU, San Sebasti\'an} \\ \\
 
 {\Large Jos\'e M. Soler} &
-   \Large{\it Universidad Aut\'onoma de Madrid}
+   \Large{\it Universidad Aut\'onoma de Madrid} \\ \\
 
 \end{tabular}
 }
@@ -982,6 +982,17 @@ and the Na$^+$ ion would have {\bf NetCharge} = {\tt 1}.
 Fractional charges can also be used.
 
 {\it Default value:} {\tt 0.0} 
+
+
+\item[{\bf MaximumWallClockTime}] ({\it physical}):
+\index{MaximumWallClockTime@{\bf MaximumWallClockTime}}
+Defines the maximum duration of the SIESTA run. The system
+clock is checked on a regular basis in order to profile the 
+time taken by various procedures. If more than MaximumWallClockTime
+has elapsed then the job is aborted. If the maximum time is 0, or is
+negative, the time is unlimited.
+
+{\it Default value:} {\tt 0 s}
 
 
 \end{description}
@@ -2394,7 +2405,7 @@ Harris functional in the first SCF step. Only implemented for LDA in
 the Perdew-Zunger parametrization.
 
 When this option is choosen, the values of DM.UseSaveDM,
-MaxSCFIterations, and DM.MixSCF1 are automatically set up to False, 1
+MaxSCFIterations, SCFMustConverge and DM.MixSCF1 are automatically set up to False, 1, False
 and False respectively, no matter whatever other specification are in
 the INPUT file.
 \end{itemize}
@@ -2548,6 +2559,15 @@ to save index storage on the mesh.
 Maximum number of SCF\index{SCF} iterations per time step.
 
 {\it Default value:} {\tt 50}
+
+\item[{\bf SCFMustConverge}] ({\it logical}):
+\index{SCFMustConverge@{\bf SCFMustConverge}}
+Defines the behaviour if convergence is not reached in the maximum
+number of SCF iterations. The default is to update the forces, perform
+an MD or geometry optimisation step and carry on. When set to true
+the calculation will stop on the first SCF convergence failure.
+
+{\it Default value:} {\tt .false.}
 
 \item[{\bf DM.MixingWeight}] ({\it real}):\index{SCF!mixing}
 \index{DM.MixingWeight@{\bf DM.MixingWeight}}\index{SCF!mixing!linear} 
@@ -2704,14 +2724,54 @@ the selfconsistency has been achieved.
 {\it Default value:} {${\tt 10^{-4}}$}
 
 
-\item[{\bf DM.EnergyTolerance}] ({\it real}): 
+\item[{\bf DM.Require.Energy.Convergence}] ({\it logical}):
+\index{SCF!mixing!energy convergence}
+\index{DM.Require.Energy.Convergence@{\bf DM.Require.Energy.Convergence}}
+Logical variable to request an additional requirement for
+self-consistency: it is considered achieved when the change in the total energy between cycles
+of the SCF procedure is below {\bf DM.EnergyTolerance} and the
+density matrix change criterion is also satisfied.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf DM.Energy.Tolerance}] ({\it real}): 
 \index{DM.EnergyTolerance@{\bf DM.EnergyTolerance}} 
-When the change in the total energy between cycles
+If {\bf DM.Require.Energy.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the change in the total energy between cycles
 of the SCF procedure is below this value and the
-density matrix change criterion is also satisfied
-then self-consistency has been achieved.
+density matrix change criterion is also satisfied.
 
 {\it Default value:} {${\tt 10^{-4}}$}
+
+\item[{\bf DM.Require.Harris.Convergence}] ({\it logical}):
+\index{SCF!mixing!harris energy convergence}
+\index{DM.Require.Harris.Convergence@{\bf DM.Require.Harris.Convergence}}
+Logical variable to use the Harris energy as monitor of
+self-consistency: this is considered achieved when the change in the Harris energy between cycles
+of the SCF procedure is below {\bf DM.Harris.Tolerance}. No density
+matrix change criterion is used.
+This is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+The user is responsible for using the correct energies in further
+processing, e.g., the Harris energy if the Harris criterion is used.
+
+To help in basis-optimization tasks, a new file BASIS\_HARRIS\_ENTHALPY
+is provided, holding the same information as BASIS\_ENTHALPY but using
+the Harris energy instead of the Kohn-Sham energy. 
+
+{\it Default value:} {\tt .false.}
+
+
+\item[{\bf DM.Harris.Tolerance}] ({\it real}): 
+\index{DM.Harris.Tolerance@{\bf DM.Harris.Tolerance}} 
+If {\bf DM.Require.Harris.Convergence} is {\tt .true.}, then
+self-consistency is achieved when the change in the Harris energy between cycles
+of the SCF procedure is below this value.
+This is useful if only energies are needed, as the Harris energy tends
+to converge faster than the Kohn-Sham energy.
+
+{\it Default value:} {${\tt 10^{-4}}$}
+
 
 \item[{\bf DM.InitSpinAF}] ({\it logical}):\index{spin}
 \index{spin!initialization}\index{ferromagnetic initial DM}
@@ -3257,8 +3317,7 @@ Character string to chose between
 diagonalization ({\tt diagon}) or Order-N ({\tt OrderN}) solution
 of the LDA Hamiltonian.
 
-{\it Default value:} {\tt diagon} for 100 atoms or less in the 
-{\bf unit} cell, {\tt OrderN} for more than 100 atoms.
+{\it Default value:} {\tt diagon}
 
 %Diagonalisation options
 
@@ -3276,6 +3335,31 @@ The value specified must greater than the number of occupied states
 and less than the number of basis functions.
 
 {\it Default value:} {\tt all orbitals}
+
+\item[{\bf Use.New.Diagk}] ({\it logical}): 
+\index{Use.New.Diagk@{\bf Use.New.Diagk}} 
+Selects whether a more efficient diagonalization routine (with
+intermediate storage of eigenvectors in netCDF format) is
+used for the case of k-point sampling.
+
+In order to use the new routine, netCDF support should be compiled in.
+Specifying a number of eigenvectors to store is possible through
+the symbol NumberOfEigenstates (see above). Note that for now, for safety, all
+eigenvectors for a given k-point and spin are computed by the
+diagonalization routine, but only that number specified by the user
+are stored. If they are insufficient, the program stops.  A rule of
+thumb to select the number of eigenvectors to store is to count the
+number of electrons and divide by two, and then apply a "safety
+factor" of around 1.1-1.2 to take into account fractional occupations
+and band overlaps.
+
+A new file {\tt OCCS} is produced with information about the number of
+states occupied.
+
+This is an experimental feature.
+
+{\it Default value:} {\tt .false.}
+
 
 \item[{\bf Diag.DivideAndConquer}] ({\it logical}): 
 \index{Diag.DivideAndConquer@{\bf Diag.DivideAndConquer}} 
@@ -3607,6 +3691,12 @@ available dynamics option.
   scheme). Optionally, (see variable MD.VariableCell below), the
   optimization can include the cell vectors.
 
+\item {\tt FIRE} (Coordinate optimization by Fast Inertial Relaxation
+  Engine (FIRE) (E. Bitzek et al, PRL 97, 170201, (2006)).
+  Optionally, (see variable MD.VariableCell below), the
+  optimization can include the cell vectors. The main user-variable
+  is {\tt MD.FIRE.TimeStep}.
+
 \item {\tt Verlet} (Standard Verlet algorithm MD)
 
 \item {\tt Nose}  (MD with temperature controlled  by means of a Nos\'e 
@@ -3887,8 +3977,21 @@ or atomic coordinates AND cell shape
 
 {\it Default value:} {\tt .false.}
 
+\item[{\bf MD.FIRE.TimeStep}] ({\it real time}): 
+\index{MD.FIRE.TimeStep@{\bf MD.FIRE.TimeStep}} 
+
+The (fictitious) time-step for FIRE relaxation. 
+
+SEE the new option {\tt FIRE} for {\tt MD.TypeOfRun}
+
+{\it Default value:} The molecular-dynamics time-step, as
+specified by {\tt MD.LengthTimeStep}.
+
 \item[{\bf MD.FireQuench}] ({\it logical}): 
 \index{MD.FireQuench@{\bf MD.FireQuench}} 
+
+ SEE the new option {\tt FIRE} for {\tt MD.TypeOfRun}
+
 Logical option to perform a FIRE quench during a Verlet molecular dynamics
 run, as described by Bitzek {\it et al.} in Phys. Rev. Lett. {\bf 97},
 170201 (2006). It is a relaxation algorithm, and thus the dynamics
@@ -3907,7 +4010,8 @@ including $\Delta t_{max} = 10$ fs.
 {\it Use:} Used only if {\bf MD.TypeOfRun} = {\tt Verlet}. 
 It is incompatible with Nose thermostat options. No variable
 cell option implemented for this at this stage.
-{\bf MD.FireQuench} supersedes {\bf MD.Quench}.
+{\bf MD.FireQuench} supersedes {\bf MD.Quench}.  SEE the new
+option {\tt FIRE} for {\tt MD.TypeOfRun}
 
 {\it Default value:} {\tt .false.}
 
@@ -4086,6 +4190,45 @@ atomatically sets MD.TypeOfRun to {\tt Phonon}.
 \itemsep 10pt
 \parsep 0pt
 
+\item[{\bf MM.Potentials}] ({\it data block}):
+\index{MM.Potentials@{\bf MM.Potentials}} This block allows the input
+of molecular mechanics potentials between species. The following
+potentials are currently implemented:
+\begin{itemize}
+\item C6, C8, C10 powers of the Tang-Toennes damped dispersion
+  potential.
+\item A harmonic interaction.
+\item A dispersion potential of the Grimme type (similar to the C6
+  type but with a different damping function). (See S. Grimme,
+  J. Comput. Chem. Vol 27, 1787-1799 (2006)). See also {\tt
+  MM.Grimme.D} and {\tt MM.Grimme.S6} below.
+\end{itemize}
+
+The format of the input is the two species
+numbers that are to interact, the potential name (C6, C8, C10, harm,
+or Grimme), followed by the potential parameters. For the damped dispersion
+potentials the first number is the coefficient and the second is the
+exponent of the damping term (i.e., a reciprocal length). A value of
+zero for the latter term implies no damping. For the harmonic
+potential the force constant is given first, followed by r0. For the
+Grimme potential C6 is given first, followed by the (corrected) sum of
+the van der Waals radii for the interacting species (a real length). Positive
+values of the C6, C8, and C10 coefficients imply attractive potentials.
+
+{\it Use:} Gives the input for the molecular mechanics potentials.
+
+\begin{verbatim}
+
+    %block MM.Potentials
+       1 1 C6 32.0 2.0
+       1 2 harm 3.0 1.4
+       2 3 Grimme 6.0 3.2
+    %endblock MM.Potentials
+
+\end{verbatim}
+
+{\it Default value:}  None.
+
 \item[{\bf MM.Cutoff}] ({\it physical}): \index{MM.Cutoff@{\bf
 MM.Cutoff}} Specifies the distance out to which molecular mechanics
 potential will act before being treated as going to zero.
@@ -4111,32 +4254,19 @@ molecular mechanics potentials.
 
 {\it Default value:}  {\tt Ang} (Note: Currently this the {\em only} option)
 
-\item[{\bf MM.Potentials}] ({\it data block}):
-\index{MM.Potentials@{\bf MM.Potentials}} This block allows the input
-of molecular mechanics potentials between species. At present only C6,
-C8, C10 powers of the Tang-Toennes damped dispersion potential, or a
-harmonic interaction. The format of the input is the two species
-numbers that are to interact, the potential name (C6, C8, C10 or
-harm), followed by the potential parameters. For the damped dispersion
-potentials the first number is the coefficient and the second is the
-exponent of the damping term (i.e., a reciprocal length). A value of
-zero for the latter term implies no damping. For the harmonic
-potential the force constant is given first, followed by r0. Positive
-values of the C6, C8, and C10 coefficients imply attractive
-potentials.
+\item[{\bf MM.Grimme.D}] : \index{MM.Grimme.D@{\bf
+MM.Grimme.D}} Specifies the scale factor $d$ for the scaling function
+in the Grimme dispersion potential (see above).
 
-{\it Use:} Gives the input for the molecular mechanics potentials.
+{\it Default value:}  { 20.0 } 
 
-\begin{verbatim}
+\item[{\bf MM.Grimme.S6}] : \index{MM.Grimme.S6@{\bf
+MM.Grimme.S6}} Specifies the overall fitting factor $s_6$ for the
+Grimme dispersion potential (see above). This number depends on the
+quality of the basis set, the exchange-correlation functional, and the
+fitting set. 
 
-    %block MM.Potentials
-       1 1 C6 32.0 2.0
-       1 2 harm 3.0 1.4
-    %endblock MM.Potentials
-
-\end{verbatim}
-
-{\it Default value:}  None.
+{\it Default value:}  { 1.66 } (for DZP basis sets).
 
 \end{description}
 
@@ -4395,11 +4525,51 @@ states.\index{density of states}
 
 \item[{\bf WriteDM}] ({\it logical}): \index{WriteDM@{\bf WriteDM}}
 \index{output!density matrix} It determines whether the density matrix
-is output as a {\it Systemlabel}.DM file or not. For large systems
-this file can be quite big and therefore it may be necessary to turn
-this option off to conserve disk space.
+is output as a {\it Systemlabel}.DM file or not.
 
 {\it Default value:} {\tt .true.}
+
+\item[{\bf WriteDM.NetCDF}] ({\it logical}): \index{WriteDM.NetCDF@{\bf WriteDM.NetCDF}}
+\index{output!density matrix} It determines whether the density matrix
+is output as a {\it Systemlabel}.DM.nc netCDF file or not.
+
+The file is overwritten at every SCF step, unless the {\bf
+WriteDM.History.NetCDF} option is enabled.
+
+The DM.nc and standard DM file formats can be converted at will with
+the programs in {\tt Util/DensityMatrix} directory. Note that the
+DM values in the DM.nc file are in single precision.
+
+{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
+
+\item[{\bf WriteDMHS.NetCDF}] ({\it logical}): \index{WriteDMHS.NetCDF@{\bf WriteDMHS.NetCDF}}
+\index{output!density
+  matrix}\index{output!hamiltonian}\index{output!overlap matrix} 
+It determines whether, at every SCF step, the input density matrix,
+hamiltonian, and output density matrix, are output as a {\it
+  Systemlabel}.DMHS.nc netCDF file or not.
+The file also contains the overlap matrix S. 
+
+The file is overwritten at every SCF step, unless the {\bf
+WriteDMHS.History.NetCDF} option is enabled.
+
+{\it Default value:} {\tt .true.} if netCDF support is enabled (see Appendix).
+
+\item[{\bf WriteDM.History.NetCDF}] ({\it logical}): \index{WriteDM.History.NetCDF@{\bf WriteDM.History.NetCDF}}
+\index{output!density matrix}\index{output!density matrix history} It determines whether the 
+DM.nc file (see {\bf WriteDM.NetCDF}) contains information about all
+the steps of the (last) SCF cycle or not.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf WriteDMHS.History.NetCDF}] ({\it logical}): \index{WriteDMHS.History.NetCDF@{\bf WriteDMHS.History.NetCDF}}
+\index{output!density
+  matrix history}\index{output!hamiltonian history}\index{output!overlap matrix} 
+It determines whether the 
+DMHS.nc file (see {\bf WriteDMHS.NetCDF}) contains information about all
+the steps of the (last) SCF cycle or not.
+
+{\it Default value:} {\tt .false.}
 
 \item[{\bf WriteKbands}] ({\it logical}):
 \index{WriteKbands@{\bf WriteKbands}}\index{output!band $\vec k$ points} 
@@ -4659,6 +4829,40 @@ matrix.
 {\it Default value:} {\tt .false.}
 
 
+\item[{\bf SCF.Read.Charge.NetCDF}] ({\it logical}): 
+\index{SCF.Read.Charge.NetCDF@{\bf SCF.Read.Charge.NetCDF}} 
+\index{reading saved data!charge density}
+Instructs Siesta to read the charge density stored in the
+netCDF file
+{\tt Rho.IN.grid.nc}. This feature allows the easier re-use of electronic-structure
+information from a previous run. It is not necessary that the basis
+sets are ``similar'' (a requirement if density-matrices are to be read
+in). 
+
+{\it Use:} This is an experimental feature.  Until robust checks are
+implemented, care must be taken to make sure that the FFT grids in the
+.grid.nc file and in Siesta are the same.
+
+{\it Default value:} {\tt .false.}
+
+\item[{\bf SCF.Read.Deformation.Charge.NetCDF}] ({\it logical}): 
+\index{SCF.Read.Deformation.Charge.NetCDF@{\bf SCF.Read.Deformation.Charge.NetCDF}} 
+\index{reading saved data!deformation charge density}
+Instructs Siesta to read the deformation charge density stored in the
+netCDF file
+{\tt DeltaRho.IN.grid.nc}. This feature allows the easier re-use of electronic-structure
+information from a previous run. It is not necessary that the basis
+sets are ``similar'' (a requirement if density-matrices are to be read
+in). The deformation charge is particularly useful to give a good
+starting point for slightly different geometries.
+
+{\it Use:} This is an experimental feature.  Until robust checks are
+implemented, care must be taken to make sure that the FFT grids in the
+.grid.nc file and in Siesta are the same.
+
+{\it Default value:} {\tt .false.}
+
+
 \item[{\bf ON.UseSaveLWF}] ({\it logical}): 
 \index{ON.UseSaveLWF@{\bf ON.UseSaveLWF}} 
 \index{reading saved data!localized wave functions (order-$N$)}
@@ -4736,6 +4940,8 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.RHO is only written, not read, by siesta.
 
+If netCDF support is compiled in, the file {\tt Rho.grid.nc} is produced.
+
 {\it Default value:} {\tt .false.}
         
 
@@ -4748,6 +4954,8 @@ comes in file {\tt SystemLabel}.DRHO. This file can be read by routine IORHO,
 which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.DRHO is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt DeltaRho.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
         
@@ -4763,6 +4971,9 @@ which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.VH is only written, not read, by siesta.
 
+If netCDF support is compiled in, the file {\tt
+ElectrostaticPotential.grid.nc} is produced.
+
 {\it Default value:} {\tt .false.}
         
 
@@ -4776,6 +4987,8 @@ in file {\tt SystemLabel}.VT. This file can be read by routine IORHO,
 which may be used by an application program in later versions.
 
 {\it Use:} File {\tt SystemLabel}.VT is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt TotalPotential.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
         
@@ -4792,6 +5005,8 @@ density is positive and the ionic charge density is negative.
 
 
 {\it Use:} File {\tt SystemLabel}.IOCH is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt Chlocal.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
         
@@ -5642,6 +5857,9 @@ time     & s          & 1.E0 \\
 time     & fs         & 1.E-15 \\
 time     & ps         & 1.E-12 \\
 time     & ns         & 1.E-9 \\
+time     & mins       & 60.E0 \\
+time     & hours      & 3.6E3 \\
+time     & days       & 8.64E4 \\
 energy   & J          & 1.E0 \\
 energy   & erg        & 1.E-7 \\
 energy   & eV         & 1.60219E-19 \\
@@ -5758,31 +5976,36 @@ accessibility is of great interest also.
 
 \index{NetCDF library}
 To be able to generate NetCDF files in {\sc Siesta}, the public domain
-NetCDF library (V. 3.5 or higher) must be instaled. It can be
+NetCDF library (V. 3.6.12 or higher recommended) must be installed. It can be
 downloaded from 
 
-{\tt http://www.unidata.ucar.edu/packages/netcdf/index.html}. 
+{\tt http://www.unidata.ucar.edu/software/netcdf/}.
 
-In the {\tt arch.make} file, the following lines must exist:
+In the {\tt arch.make} file, the following information must exist:
 \begin{verbatim}
-NETCDF_LIBS=-L/path/to/netcdf-3.5/library/directory -lnetcdf
-NETCDF_INTERFACE=libnetcdf_f90.a
+NETCDF_LIBS=-L/path/to/netcdf/library/directory -lnetcdf
+NETCDF_INCLUDE=-I/path/to/netcdf/include/directory
 DEFS_CDF=-DCDF
 \end{verbatim}
+{\tt \$(NETCDF\_LIBS)} must be added to the {\tt LIBS} list and
+{\tt \$(NETCDF\_INCLUDE)} must be added to the {\tt INCFLAGS} list (or
+{\tt INCFLAGS} may be set directly). See examples in the Src/Sys
+directory, particularly {\tt gfortran-netcdf.make}.
 
-({\sc Siesta} currently includes an old f90 interface to NetCDF in the
+
+({\sc Siesta} used to include an old f90 interface to NetCDF in the
 Src/NetCDF directory. Current versions of NetCDF now come with their
-own, so that directory will disappear in the near future.)
+own, so that directory has dissappeared.
 
-While it might seem a hassle to have to install the library, the added
+While it might seem a hassle to install the library, the added
 functionality is quite large, and it is set to grow in future releases
 of {\sc Siesta}. The area in which this is already beginning to be
 felt is in the visualization of atomic and molecular dynamics
 information. When a NetCDF file is accessed by means of a scripting
 language with the proper interface (Python, {\tt
 http://www.python.org} is highly recommended in this regard), one can
-explore and plot its contents very easily.  See the Utils/PyAtom and Utils/MD
-directories for some example scripts.  \index{Python language}
+explore and plot its contents very easily.  See the Utils/PyAtom, Utils/MD
+Utils/SCF, and Util/DensityMatrix directories for some example scripts.  \index{Python language}
 
 
 \newpage

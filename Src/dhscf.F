@@ -31,6 +31,7 @@ C     Modules
      &                           field, isefld, npcc, uharrs, scell,
      &                           shape, qspiral, g2mesh, nm, nml,
      &                           bcell, nmpl
+      use iogrid_netcdf, only: set_box_limits
       use cellxc_mod,     only : setGGA
 #ifdef MPI
       use mpi_siesta
@@ -163,6 +164,9 @@ C ----------------------------------------------------------------------
      &                 G2max, G2mesh, nsc, nmpl, nm,
      &                 nml, ntm, ntml, ntpl, ntopl, dvol )
 
+        ! Setup box descriptors for each processor,
+        ! held in module iogrid_netcdf
+        call set_box_limits(ntm,nsm)
 
 C       Stop time counter for mesh initialization
         call timer( 'DHSCF1', 2 )
@@ -428,6 +432,10 @@ C     Modules
 #ifdef MPI
       use mpi_siesta
 #endif
+      use iogrid_netcdf, only: write_grid_netcdf
+      use iogrid_netcdf, only: read_grid_netcdf
+      use siesta_options, only: read_charge_cdf
+      use siesta_options, only: read_deformation_charge_cdf
       implicit none
       integer
      &  maxnd, maxnh, nua, na, norb, nspin, nuo, nuotot,
@@ -495,9 +503,6 @@ C integer ntopl         : Total number of nonzero orbital points locally
 C real*4  rhoatm(ntpl)  : Harris electron density
 C real*4  rhopcc(ntpl)  : Partial-core-correction density for xc
 C real*4  DRho(ntpl)    : Selfconsistent electron density difference
-C real*4  DVxcdn(ntpl,nspin,nspin): Derivatice of exchange-correlation
-C                         potential respect charge density (see forhar.f)
-C                         DVxcdn(ip,spin1,spin2) = D Vxc(spin2) / D n(spin1)
 C real*8  rhotot        : Total density at one point
 C real*8  rmax          : Maximum orbital radius
 C logical samesh        : Same mesh of last call?
@@ -519,7 +524,7 @@ C
      &            ntpl_1, ntpl_2, ntpl_3
 
       real(dp) :: b1Xb2(3), const, DEc, DEx, DStres(3,3),
-     $            Ec, Ex, rhotot, x0(3), dummy_DVxcdn(1,1,1),
+     $            Ec, Ex, rhotot, x0(3),
      $            volume
 
 #ifdef MPI
@@ -530,6 +535,7 @@ C
 !     Dummy arrays for cellxc call
 !
       real(grid_p) ::  aux3(3,1)
+      real(grid_p), dimension(1,1,1)  :: dummy_DVxcdn
 
       real(dp), external :: volcel, ddot
 
@@ -563,6 +569,7 @@ C Allocate local memory -------------------------------------------------
 
 C-------------------------------------------------------------------------
 
+
 C Find number of diagonal spin values
       nsd = min( nspin, 2 )
 
@@ -572,13 +579,38 @@ C ----------------------------------------------------------------------
 #ifdef DEBUG
         call write_debug( '    Pre rhoofd' )
 #endif
-      if (spiral) then
-        call rhoofdsp(norb, nmpl, maxnd, numd, listdptr, listd,
+!
+!     We are now in distribution "2". We need to expand the capabilities
+!     of the reading routine to handle arbitrary distributions.
+!
+      if (read_charge_cdf .or. read_deformation_charge_cdf) then
+         read_charge_cdf = .false.
+         read_deformation_charge_cdf = .false.
+         call die("Reading of Charge for SCF not implemented yet")
+      endif
+      if (read_charge_cdf) then
+         call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"Rho")
+         do ispin = 1,nspin
+            call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
+         enddo
+         read_charge_cdf = .false.
+      else if (read_deformation_charge_cdf) then
+         call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
+         do ispin = 1,nspin
+            call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
+            DRho(:,ispin) = DRho(:,ispin) + rhoatm(:)
+         enddo
+         read_deformation_charge_cdf = .false.
+      else
+         if (spiral) then
+            call rhoofdsp(norb, nmpl, maxnd, numd, listdptr, listd,
      &                nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb,
      &                isa, qspiral)
-      else
-        call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd, nspin,
+         else
+            call rhoofd( norb, nmpl, maxnd, numd, listdptr, listd,
+     &               nspin,
      &               Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa)
+         endif
       endif
 
 C ----------------------------------------------------------------------
@@ -598,6 +630,8 @@ C ----------------------------------------------------------------------
         enddo
 
         call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, IOBuff )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl, IOBuff, "Rho")
+
         call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
 #ifdef MPI
         call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
@@ -612,24 +646,50 @@ C ----------------------------------------------------------------------
 
 C Find diffuse ionic charge on mesh
         call LocalChargeOnMesh( na, isa, ntpl, Chlocal, indxua )
-        call reord( Chlocal, Chlocal, nml, nsm, +1)
-
-
+      
 C Save diffuse ionic charge 
         if (filepsch .ne. ' ') then
-          call write_rho( filepsch, cell, ntm, nsm, ntpl,
-     &                    1, Chlocal )
+#ifdef MPI
+          call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
+          call re_alloc( IOBuff, 1, ntpl, 1, 1, name='IOBuff',
+     &                   routine='dhscf' )
+          call distMeshData( 2, Chlocal(:),
+     &                       1, IOBuff(:,1), +1 )
+
+          call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, IOBuff)
+          call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                            IOBuff, "Chlocal")
+        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
+#ifdef MPI
+        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
         endif
 
 C Save total (ionic+electronic) charge 
         if ( filetoch .ne. ' ') then
            call re_alloc( Totchar, 1, ntpl, name='Totchar',
-     &                    routine='dhscf' )
+     &          routine='dhscf' )
+        
+          Totchar(:) = 0.0_grid_p
           do ispin = 1,nsd
-            Totchar(1:ntpl) = Totchar(1:ntpl) + Chlocal(1:ntpl)/nsd +
-     &                        DRho(1:ntpl,ispin)
+            Totchar(1:ntpl) = Totchar(1:ntpl) + 
+     .                        Chlocal(1:ntpl)/nsd + DRho(1:ntpl,ispin)
           enddo
-          call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
+#ifdef MPI
+          call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
+          call re_alloc( IOBuff, 1, ntpl, 1, 1, name='IOBuff',
+     &                   routine='dhscf' )
+          call distMeshData( 2, Totchar(:),
+     &                       1, IOBuff(:,1), +1 )
+          call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, IOBuff )
+          call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                            IOBuff, "TotalCharge")
+          call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
+#ifdef MPI
+          call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
           call de_alloc( Totchar, name='Totchar', routine='dhscf' )
         endif 
 
@@ -637,6 +697,7 @@ C Save total (ionic+electronic) charge
       endif
 
 C Find difference between selfconsistent and atomic densities
+
       do ispin = 1,nsd
         do ip = 1,ntpl
           DRho(ip,ispin) = DRho(ip,ispin) -
@@ -648,9 +709,23 @@ C ----------------------------------------------------------------------
 C Save electron density difference
 C ----------------------------------------------------------------------
       if (fildrh .ne. ' ') then
-        call reord( DRho, DRho, nml, nsm, +1)
-        call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
-        call reord( DRho, DRho, nml, nsm, -1)
+#ifdef MPI
+        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
+        call re_alloc( IOBuff, 1, ntpl, 1, nspin, name='IOBuff',
+     &               routine='dhscf' )
+        do ispin = 1,nspin
+          call distMeshData( 2, DRho(:,ispin),
+     &                       1, IOBuff(:,ispin), +1 )
+        enddo
+
+        call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, IOBuff )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl,
+     $                          IOBuff, "DeltaRho")
+        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
+#ifdef MPI
+        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
       endif
 
 C Transform spin density into sum and difference
@@ -674,6 +749,7 @@ C Find center of system
         enddo
 
 C Find dipole
+        !! AG** Is this correct? Or do we need an extra transformation?
         call reord( DRho, DRho, nml, nsm, +1)
         call dipole( cell, ntm, ntml(1), ntml(2), ntml(3), nsm,
      &    DRho, x0, dipol )
@@ -757,6 +833,7 @@ C ----------------------------------------------------------------------
 C ----------------------------------------------------------------------
 C Add potential from external electric field (if present)
 C ----------------------------------------------------------------------
+      !! ** AG: Is the Efield treatment correct?
       if (IsEfld) then
         call reord( Vaux, Vaux, nml, nsm, +1)
         call efield( cell, nua, isa, xa, ntm, nsm, Vaux, field )
@@ -769,9 +846,21 @@ C Save electrostatic potential
 C ----------------------------------------------------------------------
 
       if (filevh .ne. ' ') then
-        call reord( Vaux, Vaux, nml, nsm, +1)
-        call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vaux )
-        call reord( Vaux, Vaux, nml, nsm, -1)
+#ifdef MPI
+        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
+        call re_alloc( IOBuff, 1, ntpl, 1, 1, name='IOBuff',
+     &               routine='dhscf' )
+        call distMeshData( 2, Vaux(:),
+     &                     1, IOBuff(:,1), +1 )
+
+        call write_rho( filevh, cell, ntm, nsm, ntpl, 1, IOBuff)
+        call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                          IOBuff, "ElectrostaticPotential")
+        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
+#ifdef MPI
+        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
       endif
 
 C Get back spin density from sum and difference
@@ -850,9 +939,23 @@ C ----------------------------------------------------------------------
 C     Save total potential
 C ----------------------------------------------------------------------
       if (filevt .ne. ' ') then
-        call reord( Vscf, Vscf, nml, nsm, +1)
-        call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
-        call reord( Vscf, Vscf, nml, nsm, -1)
+#ifdef MPI
+        call setMeshDistr( 1, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
+        call re_alloc( IOBuff, 1, ntpl, 1, nspin, name='IOBuff',
+     &               routine='dhscf' )
+        do ispin = 1,nspin
+          call distMeshData( 2, Vscf(:,ispin),
+     &                       1, IOBuff(:,ispin), +1 )
+        enddo
+
+        call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, IOBuff )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl,
+     $                          IOBuff, "TotalPotential")
+        call de_alloc( IOBuff, name='IOBuff', routine='dhscf' )
+#ifdef MPI
+        call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
       endif
 
 C ----------------------------------------------------------------------

@@ -69,7 +69,7 @@ DM.UseSaveDM          true          # to use continuation files
 DM.NumberBroyden        4           # Broyden mixing
 
 SolutionMethod        diagon        # OrderN or Diagon
-ElectronicTemperature  25 meV       # Temp. for Fermi smearing
+ElectronicTemperature  1000 K      # Temp. for Fermi smearing
 
 # MD options
 

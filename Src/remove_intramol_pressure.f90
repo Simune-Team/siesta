@@ -16,7 +16,6 @@ subroutine remove_intramol_pressure(ucell,stress,na_u,xa,fa,mstress)
  integer  :: ifirst, ilast, natoms_mol, imol, ix, ia
 
 ! Find intramolecular contributions to the pressure 
-
         volume = volcel(ucell)
         virial = 0.0_dp
         if (lUseZmatrix) then

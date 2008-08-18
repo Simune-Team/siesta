@@ -3,13 +3,16 @@
       public :: scfconvergence_test
       CONTAINS
 
-      subroutine scfconvergence_test( first, iscf, last, dDmax )
+      subroutine scfconvergence_test( first, iscf, last, dDmax,
+     $                                conv_harris, conv_etot)
       USE siesta_options
       use siesta_cml
       use m_wallclock, only : wallclock
       use parallel, only: IOnode
       use write_subs
       use m_energies
+      use m_convergence, only: converger_t
+      use m_convergence, only: add_value, is_converged
 
       implicit none
 
@@ -18,9 +21,7 @@
       logical :: last
 
       real(dp), intent(in) :: dDmax     ! Max. change in dens. matrix
-
-      real(dp):: dEmax
-
+      type(converger_t), intent(inout)  :: conv_harris, conv_etot
 !------------------------------------------------------------------------- BEGIN
           call timer( 'SCFconv', 1 )
           ! convergence test
@@ -28,16 +29,32 @@
           Etot = E0 + DEna + DUscf + DUext + Exc + Ecorrec+Emad+Emm+
      &           Emeta
           Eharrs = Etot + DEharr
+
+          call add_value(conv_harris, eharrs)
+          call add_value(conv_etot, etot)
+
           FreeE  = Etot - Temp * Entropy
 
           ! Recalculating the energy in the last iter (for
           ! gridcellsampling) but preserving the value of Eharrs1
           Eharrs1 = Eharrs
 
-          dEmax = abs(Etot - Elast)
           Elast = Etot
           if (require_energy_convergence) then
-            if (dDmax.lt.dDtol.and.dEmax.lt.dEtol) last = .true.
+             if (   dDmax.lt.dDtol
+     $            .and. is_converged(conv_etot)) then
+                last = .true.
+                if (IOnode) then
+                   write(6,"(a)") "SCF Convergence by Etot+DM criteria"
+                endif
+             endif
+          else if (require_harris_convergence) then
+             if (is_converged(conv_harris)) then
+                last = .true.
+                if (IOnode) then
+                   write(6,"(a)") "SCF Convergence by Harris criterion"
+                endif
+             endif
           else
             if (dDmax.lt.dDtol) last = .true.
           endif
@@ -56,7 +73,7 @@
                 call cmlEndPropertyList(mainXML)
               endif
             endif
-            if (cml_p) call cmlEndStep(mainXML)
+           
             ! flush stdout
             call pxfflush(6)
             call wallclock("-------------- end of scf step")

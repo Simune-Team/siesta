@@ -17,8 +17,12 @@
       use m_rmaxh
       use m_eo
       use m_gamma
+      use parallel, only: IONode
 #ifdef MPI
       use m_mpi_utils,     only:  globalize_sum
+#endif
+#ifdef CDF
+      use iodmhs_netcdf, only: write_dmh_netcdf
 #endif
       use m_ordern,        only : ordern
       use m_steps,         only : istp
@@ -31,21 +35,12 @@
 
       integer :: io, ispin
       real(dp):: const  ! Temporary factor used in calculation of
-      ! Harris forces e1>e2 To signal that we do not want DOS weights
+      ! Harris forces 
+      ! e1>e2 To signal that we do not want DOS weights
       real(dp), parameter  :: e1 = 1.0_dp, e2 = -1.0_dp
 #ifdef MPI
       real(dp):: buffer1
 #endif
-      external :: automatic_cell,
-     .  bonds, cgvc, cgvc_zmatrix, fixed,
-     .  dhscf, diagon, dnaefs, extrapol, initatom,
-     .  iodm, iozm,
-     .  kgrid, kgridinit, kinefsm, mulliken, naefs, 
-     .  reinit, shaper, spnvec, 
-     .  timer, xijorb,
-     .  ioeig, iofa, iokp, iomd, prversion, eggbox
-
-
 !------------------------------------------------------------------------- BEGIN
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 6 )
@@ -64,9 +59,9 @@
       elseif (isolve .eq. 1) then
         if (.not. gamma) call die("Cannot do O(N) with k-points.")
         call write_debug( '    PRE ordern' )
-        call ordern(usesavelwf,ioptlwf,na_s,no_s,no_l,lasto,isa,qa,
-     .              rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,etol,eta,
-     .              qtot,maxnh,numh,listhptr,listh,H,S,
+            call ordern(usesavelwf,ioptlwf,na_u,no_u,no_l,lasto,iaorb,
+     .                  isa,qa,rcoor,rmaxh,ucell,xa,iscf,istp,ncgmax,
+     .                  etol,eta,qtot,maxnh,numh,listhptr,listh,H,S,
      .              chebef,noeta,rcoorcp,beta,pmax,Dscf,Escf,
      .              Ecorrec,nspin,qs)
         Entrop = 0.0_dp
@@ -104,6 +99,15 @@
       DEharr = buffer1
 #endif
 ! ..................
+#ifdef CDF
+          if ( writedmhs_cdf_history) then
+             call write_dmh_netcdf( no_l, nh, nspin,
+     $                              Dold, H, Dscf)
+          else if ( writedmhs_cdf) then
+             call write_dmh_netcdf( no_l, nh, nspin,
+     $                              Dold, H, Dscf, overwrite=.true.)
+          endif
+#endif
 
 ! Print populations at each SCF step if requested before mixing ......
 

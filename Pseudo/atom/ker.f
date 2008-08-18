@@ -31,6 +31,7 @@ c
       double precision ar(nrmax), br(nrmax)
 c
       integer ist, iswtch, j, jrc, lp, ka, ll, k
+      logical spin_down
       double precision polyr, eigv, cdrc, rc2, rc3, rc4, arc, arp, 
      &                 brc, vrc, alpha, beta, gamma, delta, cdps,
      &                 fdnew, ddelta, fdold, expd, xlamda, vj
@@ -217,6 +218,15 @@ c
       if (ar(nr-85) .lt. zero) ist = -1
       call potrw(ar,r,nr-85,lo(i),0,ist,rc(lp))
       call wtrans(ar,r,nr,lo(i),ist)
+c
+c     Convention mandates that the pseudo for the s channel is
+c     "down" in a relativistic calculation. To make the wavefunctions
+c     adhere to the same convention (encoded in the indd and indu arrays)
+c     we do the same here.
+c
+      spin_down = down(i)
+      if (relativistic .and. (lo(i).eq.0)) spin_down = .true.
+      call pswf_store(ar,lo(i),spin_down)
 c
       return
 c

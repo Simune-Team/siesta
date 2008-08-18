@@ -49,10 +49,7 @@
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 13 )
 #endif
-      if (cml_p) then
-        call cmlStartStep(xf=mainXML, type='SCF', index=iscf)
-      endif
-
+      
       ! Normalize density matrix to exact charge
       ! In the first iteration we have the D already normalized
       ! by setup_H0 ... ***
@@ -109,7 +106,8 @@
      .            maxnh, H, Enaatm, Enascf, Uatm, Uscf, DUscf, DUext,
      .            Exc, Dxc, dipol, stress, fal, stressl)
 
-      call de_alloc( fal, 'fal', 'setup_hamiltonian' )
+      call de_alloc( fal, 'fal', 'setup_hamiltonian' ) 
+
 ! ..................
 !         print *, "hi despues de dhscf", Node
 !         call pxfflush(6)

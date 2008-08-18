@@ -126,8 +126,8 @@ MODULE utils
 
       if (PRESENT(logunit) .and. labeleq .and.                          &
           (.not. leqi(s1, s2))) then
-        write(logunit,'(a,/,a,/,a)')                                    &
-             '--------- Considered equivalent:', s1, s2
+  !!        write(logunit,'(a,/,a,/,a)')                                    &
+  !!           '--------- Considered equivalent:', s1, s2
       endif
 
       RETURN

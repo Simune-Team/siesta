@@ -12,7 +12,7 @@
 
 c *********************************************************************
 c Reads the unit cell (and supercell, if present) vectors from the
-c data file, or generates them automatically if absent there.
+c data file.
 c Written by J.M.Soler
 c ********* Output ****************************************************
 c real*8 alat       : Lattice constant
@@ -30,8 +30,8 @@ C
       use fdf
       implicit          none
 
-      integer           mscell(3,3)
-      real(dp)          alat, scell(3,3), ucell(3,3)
+      integer, intent(out)  ::      mscell(3,3)
+      real(dp), intent(out) ::      alat, scell(3,3), ucell(3,3)
 
 C Internal variables
       integer           i, iunit, ix, j
@@ -48,11 +48,8 @@ C Lattice vectors
 
       if ( fdf_block('LatticeParameters',bfdf) .and.
      .     fdf_block('LatticeVectors',bfdf) ) then
-        if (Node .eq. 0) then
-          write(6,'(2a)')'redcel: ERROR: Lattice vectors doubly ',
-     .      'specified: by LatticeVectors and by LatticeParameters.' 
-        endif
-        call die('redcel: ERROR: Double input for lattice vectors')
+         call die('redcel: ERROR: Lattice vectors doubly ' //
+     $       'specified: by LatticeVectors and by LatticeParameters.')
       endif
 
       if ( fdf_block('LatticeParameters',bfdf) ) then
@@ -98,17 +95,11 @@ C Lattice vectors
           cell(i,i) = 1.d0
         enddo
       endif
-C ...
 
-C Multiply cell vectors by by lattice constant ........................
-      do i = 1,3
-        do ix = 1,3
-          cell(ix,i) = alat * cell(ix,i)
-        enddo
-      enddo
-C ..................
+      cell = alat * cell
 
-C Super cell ..........................................
+C     Super cell 
+
       if ( fdf_block('SuperCell',bfdf) ) then
         if ( alat .eq. 0.d0 ) then
           call die('redcel: ERROR: LatticeConstant required' //
@@ -129,11 +120,9 @@ C Super cell ..........................................
           mscell(i,i) = 1
         enddo
       endif
-      do i = 1,3
-        do ix = 1,3
-          ucell(ix,i) = cell(ix,i)
-        enddo
-      enddo
+
+      ucell = cell
+
       do i = 1,3
         do ix = 1,3
           scell(ix,i) = ucell(ix,1) * mscell(1,i) +

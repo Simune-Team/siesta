@@ -39,6 +39,7 @@
 
       ! Find number of k-points for wavefunction printout
 
+      nullify(wfk)
 
       nwk = 0
       call initwave( no_u, nwk, wfk )
@@ -410,7 +411,7 @@ C
       real(dp)          ef, H(maxnh,nspin), kpoint(3,maxk), 
      .                  S(maxnh), xij(3,maxnh), occtol
       character(len=label_length+4) :: paste
-      external          io_assign, io_close, paste, memory
+      external          io_assign, io_close, memory
 C *********************************************************************
 
       logical
@@ -627,7 +628,7 @@ C  Internal variables .............................................
       character(len=11),             save :: fform
       real(dp),                   pointer :: aux(:,:)
 
-      external paste, io_assign, io_close
+      external io_assign, io_close
 
 C ...................
 

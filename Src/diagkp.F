@@ -315,7 +315,7 @@ C Find maximum eigenvector that is required for this k point and spin
           ie = nuog
           do while (ie.gt.0.and.neigneeded.eq.0)
             qe = qo(ie,ispin,ik)
-            if (qe.gt.occtol) neigneeded = ie
+            if (abs(qe).gt.occtol) neigneeded = ie
             ie = ie - 1
           enddo
 
@@ -377,7 +377,7 @@ C Add contribution to density matrices of unit-cell orbitals
 C Global operation to form new density matrix
           do ie = 1,nuotot
             qe = qo(ie,ispin,ik)
-            if (qe.gt.occtol) then
+            if (abs(qe).gt.occtol) then
               do j = 1,nuotot
                 aux(1,j) = psi(1,j,ie)
                 aux(2,j) = psi(2,j,ie)

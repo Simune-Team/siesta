@@ -22,6 +22,7 @@ C spin polarization).
 C Written by J.Soler and P.Ordejon, August 1997.
 C Now includes the option to parallelise run over K points.
 C Modified by J.Gale, November 1999.
+C Added new diagk_file routine, A. Garcia, June 2008.
 C **************************** INPUT **********************************
 C integer no                  : Number of basis orbitals
 C integer nspin               : Spin polarization (1 or 2)
@@ -106,6 +107,7 @@ C
       use mpi_siesta,   only : mpi_bcast, mpi_comm_world,
      &                         mpi_logical
 #endif
+      use siesta_options, only: new_diagk
 
       implicit none
 
@@ -129,6 +131,9 @@ C
       external
      .  diagg, diagk, diag2g, diag2k, io_assign, io_close,
      .  readsp, diagsprl
+#ifdef CDF
+      external diagk_file
+#endif
 
 #ifdef MPI
       integer            :: MPIerror
@@ -249,13 +254,38 @@ C Call apropriate routine
      .              nuotot, occtol, iscf )
         else
 #endif
-          call diagk( nspin, nuo, no, maxspn, maxnh, maxnd, 
+#ifndef CDF
+           if (new_diagk) then
+              if (Node == 0) then
+                 write(6,"(a)")
+     $           "** Cannot use new diagk without netCDF support"
+                 write(6,"(a)")
+     $           "** Falling back to standard diagk routine"
+              endif
+              new_diagk = .false.
+           endif
+#endif
+           if (new_diagk) then
+#ifdef CDF
+              ! Use new routine with file storage
+              call diagk_file(nspin, nuo, no, maxspn, 
+     $              maxnh, maxnd, 
+     .              maxo, numh, listhptr, listh, numd, listdptr,
+     .              listd, H, S, getD, getPSI, fixspin, qtot, qs, temp, 
+     .              e1, e2, xij, indxuo, nk, kpoint, wk,
+     .              eo, qo, Dnew, Enew, ef, efs, Entropy,
+     .              Haux, Saux, psi, Haux, Saux, aux, 
+     .              nuotot, occtol, iscf, neigwanted )
+#endif
+           else
+              call diagk( nspin, nuo, no, maxspn, maxnh, maxnd, 
      .              maxo, numh, listhptr, listh, numd, listdptr,
      .              listd, H, S, getD, getPSI, fixspin, qtot, qs, temp, 
      .              e1, e2, xij, indxuo, nk, kpoint, wk,
      .              eo, qo, Dnew, Enew, ef, efs, Entropy,
      .              Haux, Saux, psi, Haux, Saux, aux, 
      .              nuotot, occtol, iscf )
+           endif
 #ifdef MPI
         endif
 #endif

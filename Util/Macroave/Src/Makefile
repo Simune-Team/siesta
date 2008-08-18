@@ -4,7 +4,11 @@
 #
 default: macroave
 #
-include arch.make
+include ../../../Src/arch.make
+#
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 # Note that machine-specific files are now in top Src directory.
 #
@@ -22,12 +26,17 @@ ALL_OBJS=$(MOD_OBJS) $(COM_OBJS)
 $(COM_OBJS): 
 #
 macroave:  $(ALL_OBJS)
-	$(FC) -o macroave.x \
-	$(ALL_OBJS) 
+	$(FC) $(FFLAGS) $(LDFLAGS) -o macroave $(ALL_OBJS) 
+get_f2kcli:
+	ln -sf ../../../Src/f2kcli.F90 .
+#
+permute.o: f2kcli.o
+permute: get_f2kcli f2kcli.o permute.o 
+	$(FC) $(FFLAGS) $(LDFLAGS) -o permute f2kcli.o permute.o
 #
 clean: 
 	@echo "==> Cleaning object, library, and executable files"
-	rm -f macroave.x *.o  *.a *.pcl *.pc
+	rm -f macroave permute *.o  *.a *.pcl *.pc *.mod
 	rm -f *.mod
 #
 
