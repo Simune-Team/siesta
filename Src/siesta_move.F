@@ -224,9 +224,9 @@
           ! Save last atomic positions and velocities 
           call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
-          if (lUseZmatrix) then
-            call iozm('write',ucell,vcell,xa,foundzm)
-          endif
+!!          if (lUseZmatrix) then
+!!            call iozm('write',ucell,vcell,xa,foundzm)
+!!          endif
           call siesta_write_positions()
 
           ! Save atomic positions and velocities accumulatively and
@@ -251,7 +251,7 @@
       if (idyn.ne.6 .and. idyn.ne.7 .and. idyn.ne.8) then
         call ioxv( 'write', ucell, vcell, na_u, isa, iza, xa, va, 
      &             foundxv)
-        if (lUseZmatrix)
+        if (lUseZmatrix .and. (idyn.eq.0))
      .    call iozm('write',ucell,vcell,xa,foundzm)
         call siesta_write_positions()
 

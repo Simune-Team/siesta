@@ -33,6 +33,8 @@
       endif
 
       end subroutine message
+!
+!--------------------------------------------------
       subroutine die(str)
 
       use parallel, only : Node
@@ -66,6 +68,7 @@
 #endif
       end subroutine die
 
+!---------------------------------------------------------
       subroutine bye(str)
 
       use parallel, only : Node

@@ -1,5 +1,6 @@
 C
-      subroutine potran(i,vd,r,nr,zion,fourier_area)
+      subroutine potran(i,vd,r,nr,zion,fourier_area,
+     $                  fourier_eps,qc)
 c
       implicit none
 c
@@ -23,6 +24,7 @@ C     .. Parameters ..
 C     ..
 C     .. Scalar Arguments ..
       double precision zion, fourier_area
+      double precision fourier_eps, qc    
       integer i, nr
 C     ..
 C     .. Array Arguments ..
@@ -74,6 +76,17 @@ c
    20    continue
          vql(j) = vql(j)/2/zion - one
    30 continue
+c
+c     Find the largest q at which the Fourier transform is greater than the
+c     given threshold. This would be an estimate of the cutoff needed for
+c     representation
+c
+      do j = 94, 1, -1
+         if (abs(vql(j)) .gt. fourier_eps) go to 35
+      enddo
+ 35   continue
+      qc = j* one/4
+
 c
 c  Print out the transforms( really q^2/(4pi*zion)*v(q) ) to
 c  the current plot.dat file (unit=3) for latter plotting.

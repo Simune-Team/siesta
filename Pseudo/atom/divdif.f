@@ -1,19 +1,3 @@
-C $Id: divdif.f,v 1.2 2002/09/26 14:32:16 wdpgaara Exp $
-c $Log: divdif.f,v $
-c Revision 1.2  2002/09/26 14:32:16  wdpgaara
-c Replace print by write
-c
-c Revision 1.1  2000/02/10 17:56:11  wdpgaara
-c Implement Fourier transform of core charge.
-c
-c Revision 1.1.1.1  1997/01/07 08:37:19  wdpgaara
-c PS fourier transform package
-c
-c Revision 1.3  1991/12/13  23:45:02  alberto
-c More cosmetic changes
-c
-c Revision 1.2  1991/12/13  23:41:49  alberto
-c Cosmetic changes
 c
       double precision function divdif(f,x,n,z,m)
 c
@@ -43,9 +27,11 @@ C     COF     = AN ARRAY USED FOR STORING THE COEFFICIENTS IN NEWTONS
 C               INTERPOLATION FORMULA.
 C
       integer n, m
+      integer i, ipoint, il, iu, jl, ju, i1, i2, ii, j
+      integer index, jndex
       double precision z, zero
       double precision f(n), x(n)
-      integer mm, nmax
+      integer mm, mmax
 c
       common /divcof/ arg(11), val(11), cof(11)
       common /divint/ mm

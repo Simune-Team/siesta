@@ -312,7 +312,7 @@ C Loop over all the energy range
             do 170 iband = 1,nuog
               diff = (ener - eo(iband,is,ik))**2 / (sigma**2)
               if (diff .gt. 15.0d0) then
-                goto 170
+                cycle
               else
                 gauss = ( exp(-diff) )
                 dtot(ihist,is) = dtot(ihist,is) + gauss*wk(ik)

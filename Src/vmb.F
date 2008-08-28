@@ -55,7 +55,8 @@ C Internal variables ..................
 
       real(dp)
      .  cell(3,3), stress(3,3), fa(3,nat), 
-     .  massi, tempe, velo, pcm(3), mtot
+     .  massi, tempe, velo, pcm(3), mtot,
+     .  tmpstress(3,3), tmpfa(3,nat)
 
       external velo
 C .....................
@@ -112,8 +113,20 @@ C call to constrains routine)
           fa(ix,i) = va(ix,i)*mass(i)
         enddo
       enddo
+
+      ! NAG's F95 compiler does not like reuse of an
+      ! argument with intent(in) and intent(out), such
+      ! as stress and fa in the call to fixed. Quick 
+      ! workaround is to make the use of a temporary
+      ! variable thus:
       call fixed( cell, stress, nat, isa, mass, xa, fa,
-     .                  stress, fa, ntcon )
+     .                  tmpstress, tmpfa, ntcon )
+      stress = tmpstress
+      fa = tmpfa
+      ! But is it better to use intent(inout) in fixed? 
+      ! If this is done, remember to remove the two tmp
+      ! variable definitions.
+
       do i = 1,nat
         do ix = 1,3
           va(ix,i) = fa(ix,i)/mass(i)

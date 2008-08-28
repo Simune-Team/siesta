@@ -14,6 +14,7 @@
       use siesta_geom
       use atomlist, only: iphorb, iphkb, rco, rckb, indxua,no_s, rmaxkb,
      .                    rmaxo, no_u, lastkb, lasto, superc, rmaxv
+      use atomlist, only: no_s, indxuo
       use atomlist, only: no_l
       use alloc, only: re_alloc, alloc_report
       use m_hsparse,    only: hsparse
@@ -32,8 +33,13 @@
       use m_pulay, only: init_pulay_arrays
       use m_eo
       use m_gamma
+      use files,          only : slabel
 #ifdef MPI
       use m_mpi_utils, only : globalize_max
+#endif
+#ifdef CDF
+      use iodm_netcdf, only: setup_dm_netcdf_file
+      use iodmhs_netcdf, only: setup_dmhs_netcdf_file
 #endif
 
       implicit none
@@ -64,6 +70,10 @@
         case (0)
           write(6,'(28(" "),a,i6)') 'Begin CG move = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='CG', index=istp)
+          ! Print Z-matrix coordinates
+          if (lUseZmatrix) then
+             call write_Zmatrix()
+          endif
         case (1:5)
           write(6,'(28(" "),a,i6)') 'Begin MD step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='MD', index=istep)
@@ -85,15 +95,14 @@
         case (8)
           write(6,'(28(" "),a,i6)') 'Begin Server step = ',istep
           if (cml_p) call cmlStartStep(mainXML, type='FS', index=istep)
+          ! Find interatomic distances (output in file BONDS)
+          call bonds( ucell, na_u, isa, xa,
+     $                rmax_bonds, trim(slabel)// ".BONDS" )
 
         end select
         write(6,'(2a)') '                        ',
      .                    '=============================='
 
-        ! Print Z-matrix coordinates
-        if (lUseZmatrix) then
-          call write_Zmatrix()
-        endif
 
         ! Print atomic coordinates
         call outcoor( ucell, xa, na_u, ' ', writec )
@@ -266,6 +275,20 @@
       call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
      .             maxnh, lasto, iphorb, isa, 
      .             numh, listhptr, listh, S)
+
+#ifdef CDF
+      if (writedm_cdf .or. writedm_cdf_history) then
+         call setup_dm_netcdf_file( maxnh, no_l, nspin,
+     $                              no_s, indxuo,
+     $                              numh, listhptr, listh)
+      endif
+      if (writedmhs_cdf .or. writedmhs_cdf_history) then
+         call setup_dmhs_netcdf_file( maxnh, no_l, nspin,
+     $                              no_s, indxuo,
+     $                              numh, listhptr, listh,
+     $                              s )
+      endif
+#endif
 
 !--------------------------------------------------------------------------- END
       END subroutine state_init

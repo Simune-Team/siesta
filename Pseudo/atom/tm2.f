@@ -365,6 +365,15 @@ c
       write(6,9020) lp, il(lp), so(i), eigv, rc(lp), cdrc, delta
  9020 format(1x,i1,a1,f6.1,5f12.6)
 c
+c     Convention mandates that the pseudo for the s channel is
+c     "down" in a relativistic calculation. To make the wavefunctions
+c     adhere to the same convention (encoded in the indd and indu arrays)
+c     we do the same here.
+c
+      spin_down = down(i)
+      if (relativistic .and. (lo(i).eq.0)) spin_down = .true.
+      call pswf_store(ar,lo(i),spin_down)
+c
       return
 c
       end

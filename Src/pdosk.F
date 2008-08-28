@@ -232,7 +232,7 @@ C Loop over all the energy range
                 call LocalToGlobalOrb(iband,Node,Nodes,ibandg)
                 diff = (ener - EO(ibandg,ispin,IK))**2 / (sigma ** 2)
                 if (diff .gt. 15.0D0) then
-                  goto 170
+                  cycle
                 else
                   gauss = ( EXP(-diff) )
                   if (Node.eq.BNode) then
@@ -271,7 +271,7 @@ C Loop over all the energy range
             do 170 iband = 1,nuo
               diff = (ener - EO(iband,ispin,IK))**2 / (sigma ** 2)
               if (diff .gt. 15.0d0) then
-                goto 170
+                cycle
               else
                 gauss = ( EXP(-diff) )
                 dtot(ihist,ispin) = dtot(ihist,ispin) + gauss*WK(IK)

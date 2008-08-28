@@ -910,7 +910,7 @@ C Modified by Rainer Hoft, Mar'05 to include angles and torques
       CHARACTER*(*) FROM, TO
       INTEGER       IU, IFROM, ITO, NU
 
-      PARAMETER ( NU = 64 )
+      PARAMETER ( NU = 67 )
       CHARACTER         DIM(NU)*10, NAME(NU)*10
       DOUBLE PRECISION  UNIT(NU)
 c
@@ -989,11 +989,14 @@ c
      .  'torque  ', 'eV/rad    ', 1.745533d-2,
      .  'torque  ', 'Ry/deg    ', 13.6058d0,
      .  'torque  ', 'Ry/rad    ', 0.237466d0 /
-      DATA (DIM(IU), NAME(IU), UNIT(IU), IU=61,64) /
+      DATA (DIM(IU), NAME(IU), UNIT(IU), IU=61,67) /
      .  'torque  ', 'meV/deg   ', 1.0d-3,
      .  'torque  ', 'meV/rad   ', 1.745533d-5,
      .  'torque  ', 'mRy/deg   ', 13.6058d-3,
-     .  'torque  ', 'mRy/rad   ', 0.237466d-3 /
+     .  'torque  ', 'mRy/rad   ', 0.237466d-3,
+     .  'time    ', 'mins    ', 60.d0,
+     .  'time    ', 'hours   ', 3600.d0,
+     .  'time    ', 'days    ', 86400.d0 /
 
 c
       IFROM = 0

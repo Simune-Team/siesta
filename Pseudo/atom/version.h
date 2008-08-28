@@ -1,5 +1,3 @@
-c $Id: version.h,v 1.3 2002/07/25 13:56:50 wdpgaara Exp $
-
 c     Version.h
 c
 c     This file MUST be updated after every self-consistent commit,
@@ -20,7 +18,8 @@ c     of this file at the end of the declaration section, and before any
 c     other data statements.
 c
       character*60 version
+      character*4  atom_id
       data version
-     $     /"ATM Version 3.2.3 (Oct 2, 2006, 8:56 CUT)"/
-
+     $     /"ATM Version 3.2.8 (2008/04/29)"/
+      data atom_id /"ATM3"/
 

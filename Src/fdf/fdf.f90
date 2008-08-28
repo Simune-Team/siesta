@@ -1056,7 +1056,7 @@ Contains
 
     Character*(*) :: FROM, TO
     Integer(I4B)  :: IU, IFROM, ITO, NU
-    Parameter ( NU = 55 )
+    Parameter ( NU = 58 )
 
     Character ::  Dim(NU)*10, NAME(NU)*10
     Real(DP)  :: UNIT(NU)
@@ -1121,12 +1121,15 @@ Contains
          'MomInert', 'Ry*fs**2  ', 2.17991d-48, &
          'Efield  ', 'V/m       ', 1.d0, &
          'Efield  ', 'V/nm      ', 1.d9 /
-    Data (Dim(IU), NAME(IU), UNIT(IU), IU=51,55) / &
+    Data (Dim(IU), NAME(IU), UNIT(IU), IU=51,58) / &
          'Efield  ', 'V/Ang     ', 1.d10, &
          'Efield  ', 'V/Bohr    ', 1.8897268d10, &
          'Efield  ', 'Ry/Bohr/e ', 2.5711273d11, &
          'Efield  ', 'Har/Bohr/e', 5.1422546d11, &
-         'time    ', 'ps        ', 1.D-12 /
+         'time    ', 'ps        ', 1.D-12, & 
+         'time    ', 'mins      ', 60.d0, & 
+         'time    ', 'hours     ', 3600.d0, & 
+         'time    ', 'days      ', 86400.d0 /
     !
     IFROM = 0
     ITO   = 0

@@ -50,14 +50,14 @@
 \par\vspace{3cm}
 \hrulefill
 \par\vspace{3cm}
-{\Large {\bf Version 3.2.3, October 2006}}
+{\Large {\bf Version 3.2.8, 29 April 2008}}
 \par\vspace{2cm}
 \hrulefill
 
 {\Large Alberto Garc\'{\i}a \\
- Universidad del Pa\'{\i}s Vasco, Bilbao, SPAIN 
+ICMAB-CSIC, Barcelona
 
-  wdpgaara@lg.ehu.es}
+albertog@icmab.es}
 vfill
 \end{center}
 
@@ -164,7 +164,8 @@ scripts to automate the process of running {\sc ATOM} and to analyze
 the results. The file-manipulation details involved in each of the
 basic functions of all-electron calculations, generation of
 pseudopotentials, and testing of the pseudopotentias, are taken care
-of by {\tt ae.sh}, {\tt pg.sh}, and {\tt pt.sh}, respectively.  These
+of by {\tt ae.sh}, {\tt pg.sh}, and {\tt pt.sh}, respectively, all in
+the {\tt Tutorial/Utils} directory.  These
 scripts need to know where the {\sc ATOM} executable {\tt atm}
 is. If you have moved the {\tt Tutorial} directory around, or you do
 not have the source, the default location might not be right for you.
@@ -213,12 +214,12 @@ Sect.~\ref{sec:inputfile} for more details):
 
 We can run the calculation by using the {\tt ae.sh} script. Following
 the layout of the {\tt Tutorial} directory, we will assume that the
-script is in the directory directly above the current one. We run the
+script is in the {\tt Tutorial/Utils} directory. We run the
 script and go into the directory created for the calculation (named
 as the input file without the extension {\tt .inp}):
 
 \begin{verbatim}
-$ sh ../ae.sh si.ae.inp
+$ sh ../Utils/ae.sh si.ae.inp
 ==> Output data in directory si.ae
 $ cd si.ae
 $ ls
@@ -327,12 +328,12 @@ pseudopotentials.
 
 We can run the calculation by using the {\tt pg.sh} script. Following
 the layout of the {\tt Tutorial} directory, we will assume that the
-script is in the directory directly above the current one. We run the
+script is in the {\tt Tutorial/Utils} directory. We run the
 script and go into the directory created for the calculation (named
 as the input file without the extension {\tt .inp}):
 
 \begin{verbatim}
-$ sh ../pg.sh Si.tm2.inp
+$ sh ../../Utils/pg.sh Si.tm2.inp
 ==> Output data in directory Si.tm2
 ==> Pseudopotential in Si.tm2.vps and Si.tm2.psf
 $ cd Si.tm2
@@ -614,8 +615,7 @@ file containing the pseudopotential we want to test. Let's make the
 latter {\tt Si.tm2.vps}:
 
 \begin{verbatim}
-$ sh ../pt.sh Si.test.inp Si.tm2.vps
-$ sh ../pt.sh Si.test.inp Si.tm2.vps
+$ sh ../../Utils/pt.sh Si.test.inp Si.tm2.vps
 ==> Output data in directory Si.test-Si.tm2
 $ cd Si.test-Si.tm2/
 $ ls [A-Z]*
@@ -999,6 +999,12 @@ cutoff point.  Use the Soler-Balbas XC package.)
 pseudopotentials. Currently, a simple exponential tapering function is
 used, which introduces a discontinuity in the first derivative of the
 ionic pseudopotential.
+
+\item {\tt FREE\_FORMAT\_RC\_INPUT:} Use free-format for the input of
+the cutoff radii and the specification of the core-correction
+parameters. This is useful for externally-driven runs of ATOM. In this
+case the user should make sure that all six values (four rc's plus
+the two cc parameters) are present in the input line.
 
 \end{itemize}
 

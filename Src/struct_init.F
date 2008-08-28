@@ -40,7 +40,9 @@
 !------------------------------------------------------------------------- BEGIN
 
       !! Read number of atoms and coordinates, and unit cell
-      call fdf_global_get(use_struct_file,"MD.UseStructFile",.false.)
+      call fdf_global_get(use_struct_file,"UseStructFile",.false.)
+      call fdf_global_get(use_struct_file,"MD.UseStructFile",
+     $     use_struct_file)    ! For legacy symbol
       if (use_struct_file) then
          call read_struct( na_u, tmp_cell) ! Sets na_u, xa, and isa
       else

@@ -154,7 +154,8 @@
       if (IONode) then
          call write_struct( ucell, na_u, isa, iza, xa )
          if (lUseZmatrix) then
-            call write_canonical_ucell_and_Zmatrix()
+            call write_canonical_ucell_and_Zmatrix(
+     $                        filename="OUT.UCELL.ZMATRIX.INITIAL")
          endif
       endif
       if (struct_only) then
@@ -195,7 +196,18 @@
          write(6,fmt="(a,f12.6)") "Total number of electrons: ", qtot
          write(6,fmt="(a,f12.6)") "Total ionic charge: ", zvaltot
       endif
-
+!
+!     Warn the user: if not doing a direct optimization, the Zmatrix
+!     coordinates are no longer updated. Only coordinates are treated.
+!
+      if (lUseZmatrix) then
+         if (idyn .ne. 0) then
+            write(6,"(a)")
+     $      " *** WARNING: Zmatrix form will be used only for input !!"
+            write(0,"(a)")
+     $      " *** WARNING: Zmatrix form will be used only for input !!"
+         endif
+      endif
 
 ! Calculate spin populations for fixed spin case...
       if (fixspin) then

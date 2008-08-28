@@ -17,15 +17,18 @@
       use parallel, only: IOnode
       use m_state_analysis
       use m_steps
+      use sys, only : die
+      use m_convergence, only: converger_t
+      use m_convergence, only: reset, set_tolerance
 
       implicit none
 
       integer, intent(in)  :: istep
 
       integer  :: iscf
-      logical  :: first, last
+      logical  :: first, last, SCFconverged
       real(dp) :: dDmax     ! Max. change in density matrix elements
-
+      type(converger_t)  ::  conv_harris, conv_etot
 !------------------------------------------------------------------------- BEGIN
 
         ! Initialization tasks for a given geometry
@@ -39,6 +42,15 @@
         iscf  = 1
         first = .true.
         last  = .false.
+        SCFconverged = .false.
+        if (require_harris_convergence) then
+           call reset(conv_harris)
+           call set_tolerance(conv_harris,harris_tolerance)
+        endif
+        if (require_energy_convergence) then
+           call reset(conv_etot)
+           call set_tolerance(conv_etot,energy_tolerance)
+        endif
 
         ! The SCF loop is executed at least once, 
         ! except if nscf <= 0.
@@ -58,7 +70,11 @@
 
           call mixer( iscf, dDmax )
 
-          call scfconvergence_test( first, iscf, last, dDmax )
+          call scfconvergence_test( first, iscf, last, dDmax,
+     $                              conv_harris, conv_etot )
+          ! At this point last is true if SCF has converged. But this
+          ! changed below
+          SCFconverged = last
 
           call timer( 'IterSCF', 2 )
           if (istep.eq.inicoor .and. first) call timer( 'IterSCF', 3 )
@@ -77,6 +93,12 @@
           if (cml_p) call cmlEndStep(mainXML)
 
         ENDDO
+
+        ! If we have not converged, but get to here, we are out
+        ! of steps. We may want to error out.
+        if ((SCFMustConverge).and.(.not.SCFconverged)) then
+          call die('SCF did not converge in maximum number of steps.')
+        endif
 
         ! End of standard SCF loop.
         ! Do one more pass to compute forces and stresses
