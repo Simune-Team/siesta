@@ -27,8 +27,15 @@ C integer listd(maxnd)     : Control vector of DM matrix
 C                            (list of nonzero elements of each row)
 C real*8  dm(maxnd,nspin)  : Density matrix
 C ********* OUTPUT *************************************************
-C logical found : Has DM been found in disk? (Only when task='read')
+C logical found : Has DM been found in disk and does it have the right
+C                 dimensions? (Only when task='read')
 C ******************************************************************
+C NOTE: a patch was introduced (E. Artacho, Aug 08) for the run not 
+C to die when incompatible dimensions between saved and needed DM. It 
+C now returns found=.false. in such case and the calculation continues
+C disregarding the DM file. The patch is minimalistic (and includes
+C a goto, I will burn in hell for this) given the fact that a more
+C substantial revision of the handling of DM files is coming.
       
 C
 C  Modules
@@ -59,7 +66,7 @@ C
       logical, intent(out) :: found
 
 C Internal variables
-      logical   file_exists
+      logical   file_exists, okdim
       integer   im, is, unit1, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
       integer, dimension(:), allocatable, save :: numdg
@@ -96,7 +103,8 @@ C Saved internal variables:
       character(len=*), parameter :: floatfmt = '(ES22.14)'
 
 C External procedures
-      external          chkdim, memory
+C     external          chkdim, memory
+      external          memory
 
 ! We might want to use formatted DM files in order to
 ! transfer them between computers. 
@@ -152,6 +160,7 @@ C Allocate local buffer array for globalised numd
       call memory('A','I',nbasistot,'iodm')
 
       if (task.eq.'read' .or. task.eq.'READ') then
+        okdim = .true.
         if (Node.eq.0) then
           inquire (file=fnamei,  exist=file_exists)
         endif
@@ -183,9 +192,25 @@ C distributed memory before checking the dimensions
           call MPI_Bcast(ns,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-C Check dimensions
-          call chkdim( 'iodm', 'nbasis', nbasistot, nb, 0 )
-          call chkdim( 'iodm', 'nspin',  nspin,  ns, 0 )
+C Check dimensions. It will no longer stop if wrong, but continue with fresh DM
+C         call chkdim( 'iodm', 'nbasis', nbasistot, nb, 0 )
+          if ( nbasistot .ne. nb) then
+             okdim = .false.
+             write(6,"('iodm: DM continuation file not used because ',
+     .                 'of wrong dimensions.'/
+     .                 'iodm:    nbasis =',i6,' must be exactly =',
+     .                 i6)") nbasistot, nb
+             goto 1000
+          endif
+C         call chkdim( 'iodm', 'nspin',  nspin,  ns, 0 )
+          if ( nspin .ne. ns) then
+             okdim = .false.
+             write(6,"('iodm: DM continuation file not used because ',
+     .                 'of wrong dimensions.'/
+     .                 'iodm:    nspin =',i6,' must be exactly =',
+     .                 i6)") nspin, ns
+             goto 1000
+          endif
 
           if (Node.eq.0) then
             if (fmti) then
@@ -221,7 +246,15 @@ C Convert global numd pointer to local form and generate listdptr
           enddo
 
 C Check size of first dimension of dm
-          call chkdim( 'iodm', 'maxnd', maxnd, ndmax, 1 )
+C         call chkdim( 'iodm', 'maxnd', maxnd, ndmax, 1 )
+          if ( maxnd .lt. ndmax ) then
+             okdim = .false.
+             write(6,"('iodm: DM continuation file not used because ',
+     .                 'of wrong dimensions.'/
+     .                 'iodm:    maxnd =',i6,' must be at least =',
+     .                 i6)") maxnd, ndmax
+             goto 1000
+          endif
 
 #ifdef MPI
 C Create buffer arrays for transfering density matrix between nodes and lists
@@ -316,7 +349,7 @@ C Free buffer array
           call memory('D','D',size(buffer),'iodm')
           deallocate(buffer)
 #endif
-          if (Node.eq.0) then
+ 1000     if (Node.eq.0) then
             call io_close(unit1)
           endif
 
@@ -327,6 +360,10 @@ C Free buffer array
           found = .false.
 
         endif
+
+C Transmit found only if the DM found had the right dimensions.
+C Otherwise act as not found and start afresh
+        found = found .and. okdim
 
       elseif (task.eq.'write' .or. task.eq.'WRITE') then
 
