@@ -162,6 +162,5 @@ PROGRAM SAMPLE
 ! Shutdown and deallocates fdf structure
   call fdf_shutdown()
 
-  RETURN
 !----------------------------------------------------------------------------END
 END PROGRAM SAMPLE

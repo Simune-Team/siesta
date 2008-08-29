@@ -9,12 +9,12 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       subroutine diagg( nspin, nuo, maxuo, maxnh, maxnd, 
-     .                  maxo, numh, listhptr, listh, numd, 
-     .                  listdptr, listd, H, S,
-     .                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
-     .                  eo, qo, Dnew, Enew, ef, efs, Entropy,
-     .                  Haux, Saux, psi, nuotot, occtol,
-     .                  iscf, neigwanted )
+     &                  maxo, numh, listhptr, listh, numd, 
+     &                  listdptr, listd, H, S,
+     &                  getD, getPSI, fixspin, qtot, qs, temp, e1, e2,
+     &                  eo, qo, Dnew, Enew, ef, efs, Entropy,
+     &                  Haux, Saux, psi, nuotot, occtol,
+     &                  iscf, neigwanted )
 C *********************************************************************
 C Subroutine to calculate the eigenvalues and eigenvectors, density
 C and energy-density matrices, and occupation weights of each 
@@ -99,36 +99,36 @@ C
 
 #ifdef MPI
       integer 
-     .  MPIerror
+     &  MPIerror
 #endif
 
       integer
-     .  iscf, maxnd, maxnh, maxuo, maxo, nuo, nspin, nuotot,
-     .  neigwanted
+     &  iscf, maxnd, maxnh, maxuo, maxo, nuo, nspin, nuotot,
+     &  neigwanted
 
       integer 
-     .  listh(maxnh), numh(nuo), listhptr(nuo),
-     .  listd(maxnd), numd(nuo), listdptr(nuo)
+     &  listh(maxnh), numh(nuo), listhptr(nuo),
+     &  listd(maxnd), numd(nuo), listdptr(nuo)
 
       real(dp)
-     .  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
-     .  Entropy, eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
-     .  qtot, qs(nspin), S(maxnh), temp, efs(nspin), occtol
+     &  Dnew(maxnd,nspin), e1, e2, ef, Enew(maxnd,nspin), 
+     &  Entropy, eo(maxo,nspin), H(maxnh,nspin), qo(maxo,nspin), 
+     &  qtot, qs(nspin), S(maxnh), temp, efs(nspin), occtol
      
       real(dp)
-     .  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin) 
+     &  Haux(nuotot,nuo), Saux(nuotot,nuo), psi(nuotot,maxuo,nspin) 
 
       real(dp), dimension(1), parameter :: wk = (/ 1.0_dp /)
       integer, parameter                :: nk = 1
 
       logical
-     .  getD, getPSI, fixspin
+     &  getD, getPSI, fixspin
 
       external rdiag
 
 C  Internal variables .............................................
       integer           ie, io, iio, ispin, ix, j, jo, BNode, iie, ind,
-     .                  ierror, nd
+     &                  ierror, nd
       real(dp)          ee, eei, qe, qei, rt, t, k(3)
 
       integer           :: maxnuo, mm
@@ -136,9 +136,6 @@ C  Internal variables .............................................
       real(dp), pointer :: psi_tmp(:), paux(:)
 
 C Solve eigenvalue problem
-      write(23,*) 'Solve eigenvalue problem'
-      write(23,*) 'nspin', nspin
-      call pxfflush(23)
       do ispin = 1,nspin
         do io = 1,nuo
           do jo = 1,nuotot
@@ -155,9 +152,7 @@ C Solve eigenvalue problem
           enddo
         enddo
         call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     .              psi(1,1,ispin), neigwanted, iscf, ierror )
-      write(23,*) 'AUTOVALORES de salida', eo(:,ispin)
-      call pxfflush(23)
+     &              psi(1,1,ispin), neigwanted, iscf, ierror )
 
 C Check error flag and take appropriate action
         if (ierror.gt.0) then
@@ -179,7 +174,7 @@ C Repeat diagonalisation with increased memory to handle clustering
             enddo
           enddo
           call rdiag( Haux, Saux, nuotot, nuo, nuotot, eo(1,ispin), 
-     .                psi(1,1,ispin), nuotot, iscf, ierror )
+     &                psi(1,1,ispin), nuotot, iscf, ierror )
         endif
 
         if (getPSI) then
@@ -187,7 +182,7 @@ C Repeat diagonalisation with increased memory to handle clustering
             k(ix) = 0.0d0
           enddo
           call writew(nuotot,nuo,1,k,ispin,
-     .                eo(1,ispin),psi(1,1,ispin),.true.)
+     &                eo(1,ispin),psi(1,1,ispin),.true.)
         endif
 
       enddo
@@ -197,13 +192,11 @@ C Check if we are done ................................................
 C Find new Fermi energy and occupation weights ........................
       if (fixspin) then
         call fermispin( nspin, nspin, nk, wk, maxo, neigwanted, 
-     .                  eo, temp, qs, qo, efs, Entropy )
+     &                  eo, temp, qs, qo, efs, Entropy )
       else
         call fermid( nspin, nspin, nk, wk, maxo, neigwanted, eo, 
-     .               temp, qtot, qo, ef, Entropy )
+     &               temp, qtot, qo, ef, Entropy )
       endif
-      write(23,*) 'Fermi energy', ef, Entropy
-      write(23,*) 'Occupations', qo
 
 C Find weights for local density of states ............................
       if (e1 .lt. e2) then
@@ -214,8 +207,8 @@ C Find weights for local density of states ............................
         do ispin = 1,nspin
           do io = 1,nuotot
             qo(io,ispin) = ( stepf((eo(io,ispin)-e2)*rt) -
-     .                       stepf((eo(io,ispin)-e1)*rt)) * 
-     .                       2.0d0/dble(nspin)
+     &                       stepf((eo(io,ispin)-e1)*rt)) * 
+     &                       2.0d0/dble(nspin)
           enddo
         enddo
       endif
@@ -281,10 +274,7 @@ C Global operation to form new density matrix
           enddo
         enddo
       enddo
-      write(23,*) 'Dnew', Dnew
-      write(23,*) 'Enew', Enew
-      call pxfflush(23)
+
       call de_alloc( nuo_LOC, 'nuo_LOC', 'diagg' )
       call de_alloc( PSI_TMP, 'PSI_TMP', 'diagg' )
-
       end

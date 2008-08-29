@@ -124,10 +124,6 @@ C
       call mpitrace_eventandcounters( 1000, 16 )
 #endif
 
-#ifdef DEBUG
-      call write_debug( '      Pre CreateLocalDscfPointers' )
-#endif
-
       if (.not. nullified_pointers) then
         nullify( NeedDscfL )
         nullify( listdl )
@@ -164,7 +160,7 @@ C     by orbitals to data ordered by mesh.
 C     Allocate/reallocate memory for numdl and listdlptr
       call re_alloc( numdl, 1, max(1,nrowsDscfL), 'numdl', MYNAME )
       call re_alloc( listdlptr, 1, max(1,nrowsDscfL), 
-     &                 'listdlptr', MYNAME )
+     &               'listdlptr', MYNAME )
 
 C Distribute information about numd globally
       nullify( ibuffer )
@@ -322,14 +318,15 @@ C Argument types and dimensions
 
 C Internal variables and arrays
       CHARACTER(LEN=*), PARAMETER :: MYNAME =  'matrixOtoM'
-      integer
-     &  io, ispin, il
+      integer   io, ispin
 
 #ifdef MPI
       integer 
      &  i, ii, iu, mm, nn, iio, MPIerror,
      &  Status(MPI_Status_Size)
       real(dp), dimension(:), pointer ::  buffer
+#else
+      integer il
 #endif
 
 C***********************
