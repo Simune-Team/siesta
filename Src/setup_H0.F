@@ -99,7 +99,7 @@ C     Global reduction of energy terms
       call globalize_sum(Enl,buffer1)
       Enl = buffer1
 #endif
-        
+
 C     Save partial Hamiltonian (non-SCF part) ......................
       do io = 1,nh
         H0(io) = H(io,1)

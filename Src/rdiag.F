@@ -129,8 +129,6 @@ C Matrices for 2D
 
       integer,        pointer :: iclustr(:), ifail(:), iwork(:)
       real(dp),       pointer :: gap(:), work(:)
-      write(23,*) 'INSIDE rdiag'
-      call pxfflush(23)
 
 C Start time count
       call timer('rdiag',1)
@@ -146,7 +144,7 @@ C Nullify pointers
 
 C Get old allocation defaults and set new ones
       call alloc_default( old=oldDefaults, copy=.false., shrink=.true.,
-     .                    imin=1, routine='rdiag' )
+     &                    imin=1, routine='rdiag' )
 
 C*******************************************************************************
 C Setup                                                                        *
@@ -205,13 +203,13 @@ C If 2D approach is being used then setup secondary grid
             call blacs_gridinit(i2d_ctxt, 'R', np2d_row, np2d_col)
           endif
           call blacs_gridinfo(i2d_ctxt, np2d_row, np2d_col,
-     .       my2d_row, my2d_col)
+     &       my2d_row, my2d_col)
         endif
 
 C Set up blacs descriptors for parallel case
         BlacsOK = .true.
         call descinit( desch, n, n, BlockSize, BlockSize, 0, 0, 
-     .                 ictxt, n, info )
+     &                 ictxt, n, info )
         if (info.ne.0) BlacsOK = .false.
         if (.not.BlacsOK) then
           call die('ERROR : Blacs setup has failed in rdiag!')
@@ -224,7 +222,7 @@ C Enquire size of local part of 2D matices
 
 C Set up blacs descriptors for 2D case
           call descinit(desc_h2d, n, n, Blocksize, BlockSize, 0, 0,
-     .                  i2d_ctxt,  mat_2d_row, info)
+     &                  i2d_ctxt,  mat_2d_row, info)
           if (info.ne.0) BlacsOK = .false.
           if (.not.BlacsOK) then
             call die('ERROR : Blacs setup has failed in rdiag!')
@@ -295,7 +293,7 @@ C Calculate memory requirements
           mq0 = numroc(nn,BlockSize,0,0,npcol)
           if (neigvec.gt.0) then
             lwork = 5*n + max(5*nn,np0*mq0+2*BlockSize*BlockSize) +
-     .              iceil(neigvec,Nodes)*nn + maxclustersize*n
+     &              iceil(neigvec,Nodes)*nn + maxclustersize*n
             anb = pjlaenv(ictxt,3,'PDSYTTRD','L',0,0,0,0)
             sqnpc = int(sqrt(dble(Nodes)))
             nps = max(numroc(n,1,0,0,sqnpc),2*anb)
@@ -348,22 +346,22 @@ C*******************************************************************************
             call dcopy(n*n,H,1,Z,1)
           else
             call dsygvx(1,jobz,range,'U',n,H,n,S,n,vl,vu,1,neigvec,
-     .                  abstol,neigok,w,Z,n,work,lwork,iwork,ifail,
-     .                  info)
+     &                  abstol,neigok,w,Z,n,work,lwork,iwork,ifail,
+     &                  info)
           endif
 #ifdef MPI
         else 
           if (Use2D) then
             call pdsygvx(1,jobz,range,'U',n,h2d,1,1,desc_h2d,s2d,1,1,
-     .                   desc_h2d,vl,vu,1,neigvec,abstol,neigok,nz,w,
-     .                   orfac,z2d,1,1,desc_h2d,work,lwork,iwork,liwork,
-     .                   ifail,iclustr,gap,info)
+     &                   desc_h2d,vl,vu,1,neigvec,abstol,neigok,nz,w,
+     &                   orfac,z2d,1,1,desc_h2d,work,lwork,iwork,liwork,
+     &                   ifail,iclustr,gap,info)
             call pdgemr2d(n,n,z2d,1,1,desc_h2d,Z,1,1,desch,ictxt)
           else
             call pdsygvx(1,jobz,range,'U',n,H,1,1,desch,S,1,1,desch,
-     .                   vl,vu,1,neigvec,abstol,neigok,nz,w,orfac,Z,
-     .                   1,1,desch,work,lwork,iwork,liwork,ifail,
-     .                   iclustr,gap,info)
+     &                   vl,vu,1,neigvec,abstol,neigok,nz,w,orfac,Z,
+     &                   1,1,desch,work,lwork,iwork,liwork,ifail,
+     &                   iclustr,gap,info)
           endif
 
 C If there is insufficient memory due to eigenvalue clustering increase memory
@@ -392,7 +390,7 @@ C Check error flag
             if (mod(info/2,2).ne.0) then
               if (Node.eq.0) then
                 write(6,'(/,''Clustered eigenvectors not converged - '',
-     .            ''more memory required'',/)')
+     &            ''more memory required'',/)')
               endif
             endif
             call die('Failure to converge general eigenproblem')
@@ -433,10 +431,10 @@ C*******************************************************************************
         else
           if (Use2D) then
             call pdsyngst(1,'U',n,h2d,1,1,desc_h2d,s2d,1,1,
-     .                    desc_h2d,dscale,work,lwork,info)
+     &                    desc_h2d,dscale,work,lwork,info)
           else
             call pdsyngst(1,'U',n,H,1,1,desch,S,1,1,
-     .                    desch,dscale,work,lwork,info)
+     &                    desch,dscale,work,lwork,info)
           endif
 #endif
         endif
@@ -457,14 +455,14 @@ C Rotate according to eigenvectors from previous cycle
           else
             if (Use2D) then
               call pdsymm('L','U',n,n,one,h2d,1,1,desc_h2d,Zsave,1,1,
-     .                     desc_h2d,zero,z2d,1,1,desc_h2d)
+     &                     desc_h2d,zero,z2d,1,1,desc_h2d)
               call pdgemm('T','N',n,n,n,one,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desch,zero,h2d,1,1,desc_h2d)
+     &                     1,desch,zero,h2d,1,1,desc_h2d)
             else
               call pdsymm('L','U',n,n,one,H,1,1,desch,Zsave,1,1,desch,
-     .                     zero,Z,1,1,desch)
+     &                     zero,Z,1,1,desch)
               call pdgemm('T','N',n,n,n,one,Zsave,1,1,desch,Z,1,1,
-     .                     desch,zero,H,1,1,desch)
+     &                     desch,zero,H,1,1,desch)
             endif
 #endif
           endif
@@ -477,35 +475,33 @@ C*******************************************************************************
         if (Serial) then
           if (DivideConquer) then
             call dsyevds(jobz,'U',n,H,n,w,Z,n,work,lwork,iwork,liwork,
-     .                   info)
+     &                   info)
             neigok = n
           else
             call dsyevx(jobz,range,'U',n,H,n,vl,vu,1,neigvec,abstol,
-     .                  neigok,w,Z,n,work,lwork,iwork,ifail,info)
+     &                  neigok,w,Z,n,work,lwork,iwork,ifail,info)
           endif
 #ifdef MPI
         else
-        write(23,*) 'DivideConquer', DivideConquer
-        write(23,*) 'Use2D', Use2D
           if (DivideConquer) then
             if (Use2D) then
               call pdsyevd(jobz,'U',n,h2d,1,1,desc_h2d,w,z2d,1,1,
-     .                     desc_h2d,work,lwork,iwork,liwork,info)
+     &                     desc_h2d,work,lwork,iwork,liwork,info)
             else
               call pdsyevd(jobz,'U',n,H,1,1,desch,w,Z,1,1,desch,work,
-     .                     lwork,iwork,liwork,info)
+     &                     lwork,iwork,liwork,info)
             endif
             neigok = n
           else
             if (Use2D) then
               call pdsyevx(jobz,range,'U',n,h2d,1,1,desc_h2d,vl,vu,1,
-     .                     neigvec,abstol,neigok,nz,w,orfac,z2d,1,1,
-     .                     desc_h2d,work,lwork,iwork,liwork,ifail,
-     .                     iclustr,gap,info)
+     &                     neigvec,abstol,neigok,nz,w,orfac,z2d,1,1,
+     &                     desc_h2d,work,lwork,iwork,liwork,ifail,
+     &                     iclustr,gap,info)
             else
               call pdsyevx(jobz,range,'U',n,H,1,1,desch,vl,vu,1,neigvec,
-     .                     abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
-     .                     lwork,iwork,liwork,ifail,iclustr,gap,info)
+     &                     abstol,neigok,nz,w,orfac,Z,1,1,desch,work,
+     &                     lwork,iwork,liwork,ifail,iclustr,gap,info)
             endif
 
 C If there is insufficient memory due to eigenvalue clustering increase memory
@@ -535,7 +531,7 @@ C Check error flag
             if (mod(info/2,2).ne.0) then
               if (Node.eq.0) then
                 write(6,'(/,''Clustered eigenvectors not converged - '',
-     .            ''more memory required'',/)')
+     &            ''more memory required'',/)')
               endif
             endif
             call die('Failure to converge standard eigenproblem')
@@ -558,11 +554,11 @@ C*******************************************************************************
           else
             if (Use2D) then
               call pdgemm('N','N',n,n,n,one,Zsave,1,1,desc_h2d,z2d,1,
-     .                     1,desc_h2d,zero,h2d,1,1,desc_h2d)
+     &                     1,desc_h2d,zero,h2d,1,1,desc_h2d)
               call dcopy(n*nm,h2d(1,1),1,z2d(1,1),1)
             else
               call pdgemm('N','N',n,n,n,one,Zsave,1,1,desch,Z,1,1,
-     .                     desch,zero,H,1,1,desch)
+     &                     desch,zero,H,1,1,desch)
               call dcopy(n*nm,H(1,1),1,Z(1,1),1)
             endif
 #endif
@@ -595,11 +591,11 @@ C*******************************************************************************
           if (neigvec.gt.0) then
             if (Use2D) then
               call pdtrsm('Left','U','N','Non-unit',n,neigvec,one,
-     .                     s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
+     &                     s2d,1,1,desc_h2d,z2d,1,1,desc_h2d)
               call pdgemr2d(n,n,z2d,1,1,desc_h2d,Z,1,1,desch,ictxt)
             else
               call pdtrsm('Left','U','N','Non-unit',n,neigvec,one,
-     .                     S,1,1,desch,Z,1,1,desch)
+     &                     S,1,1,desch,Z,1,1,desch)
             endif
             if (dscale.ne.one) then
               call dscal(n,dscale,w,1)

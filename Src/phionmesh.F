@@ -48,9 +48,6 @@ C     Local variables
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 15 )
 #endif
-#ifdef DEBUG
-      call write_debug( '      Pre PhiOnMesh' )
-#endif
 C     On first call set the logical DirectPhi
       if (firsttime) then
         if (Node.eq.0) then

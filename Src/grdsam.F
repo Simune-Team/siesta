@@ -108,10 +108,9 @@ C Internal variables and arrays
       logical           samesh
       integer           nr, ipt, maxpt, ia,
      .                  ix, iv
-      real(dp)          reals(4), avexc,
-     .                  strold(3,3), avdipo(3), avstre(3,3), avdxc,
-     .                  avenaa, avenas, avuatm, avuscf, avdusc, anpt,
-     .                  strold2(3,3), avstre2(3,3)
+      real(dp)          avexc, strold(3,3), avdipo(3), avstre(3,3),
+     .                  avdxc, avenaa, avenas, avuatm, avuscf, avdusc,
+     .                  anpt, strold2(3,3), avstre2(3,3)
 
       parameter         (maxpt = 100)
 
