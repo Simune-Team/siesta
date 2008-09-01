@@ -81,15 +81,10 @@ C tol : tolerance for bulk components of the electric field
 C Internal variables
       logical           found, isfield, orthog
       logical,  save :: frstme = .true.
-      character         eunits*10, shape*8, line*130, names*20
-      integer           i0(3), i1, i2, i3, ia, imesh, int(1),
-     &                  is, iu, ix,
-     &                  j1, j2, j3, last, lc(0:1), 
-     &                  nbcell, ni, nn, nr, nv, meshl(3),
-     &                  Xoffset, Yoffset, Zoffset, i30, i20, i10
-#ifdef MPI
-      integer           MPIerror
-#endif
+      character         eunits*10, shape*8
+      integer           i0(3), i1, i2, i3, ia, imesh, is, ix, j1, j2,
+     &                  j3, nbcell, meshl(3), Xoffset, Yoffset, Zoffset,
+     &                  i30, i20, i10
       real(dp)          b1xb2(3), bcell(3,3), cfactor, dplane(3),
      &                  e(3), e0(3), eb1, eb2, eb3,
      &                  f(3), rc, rcell(3,3), v0,

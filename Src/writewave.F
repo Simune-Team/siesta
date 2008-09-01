@@ -119,8 +119,8 @@ C *********************************************************************
       logical       :: WaveFuncPresent
 
       integer
-     .  i, il, ix, iw, iw1, iw2, iw3,
-     .  mscell(3,3), ni, nn, nr, nv, nmk
+     .  i, ix, iw, iw1, iw2, iw3,
+     .  mscell(3,3), ni, nn, nr, nv
 
       real(dp)
      .  alat, caux(3,3), pi,

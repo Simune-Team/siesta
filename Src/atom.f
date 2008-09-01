@@ -2507,7 +2507,7 @@ C*Internal variables ****
      .     ve(nrmax)
 
            real(dp) 
-     .        ea, rpb, chgvps, ztot, zup, zdown, rc_read
+     .        ea, rpb, chgvps
 
            integer  
      .        nr, nodd, lmax, linput, npotd, npotu,
@@ -3048,8 +3048,6 @@ C****
 
                implicit none
 
-               type(basis_def_t), pointer   :: basp
-
                real(dp)
      .         a, b, rofi(nrmax), vps(nrmax,0:lmaxd),
      .         drdi(nrmax), s(nrmax), ve(nrmax),
@@ -3075,7 +3073,7 @@ C***Internal variables**
 
                real(dp)
      .           eigen(0:lmaxd), rc, split_table(nrmax),
-     .           rnrm(nrmax), dnrm, phi, frsp, dfrsp,
+     .           rnrm(nrmax), dnrm, phi,
      .           cons1, cons2, rnp, spln, eshift, 
      .           g(nrmax), r, el, ekin, rdummy,
      .           r1, r2, dfdi, d2fdi2, d2fdr2, dr,
@@ -5984,7 +5982,6 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
        real(dp), intent(out) :: cons1, cons2
        real(dp), intent(out) :: parab_norm
 
-       integer :: ir
        real(dp) :: rsp, frsp, dfrsp
 
        rsp = rofi(nsp)

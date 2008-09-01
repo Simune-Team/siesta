@@ -360,9 +360,9 @@ C     among the several processes
       maxSize = 0
       do icom= 1, ncom
         if (src(icom).ne.dst(icom)) then
-          call boxIntersection( idis%box(1,1,src(icom)),
-     &                          odis%box(1,1,dst(icom)),
-     &                          Lbox, inters )
+          Sbox => idis%box(:,:,src(icom))
+          Dbox => odis%box(:,:,dst(icom))
+          call boxIntersection( Sbox, Dbox, Lbox, inters )
           Xsize = Lbox(2,1) - Lbox(1,1) + 1
           Ysize = Lbox(2,2) - Lbox(1,2) + 1
           Zsize = Lbox(2,3) - Lbox(1,3) + 1
@@ -377,11 +377,11 @@ C     among the several processes
      &                 routine='distMeshData' )
       endif
 
-      Sbox => idis%box(1:2,1:3,ME)
+      Sbox => idis%box(:,:,ME)
       NSRC(1) = (Sbox(2,1) - Sbox(1,1) + 1)*nsm
       NSRC(2) = (Sbox(2,2) - Sbox(1,2) + 1)*nsm
       NSRC(3) = (Sbox(2,3) - Sbox(1,3) + 1)*nsm
-      Dbox => odis%box(1:2,1:3,ME)
+      Dbox => odis%box(:,:,ME)
       NDST(1) = (Dbox(2,1) - Dbox(1,1) + 1)*nsm
       NDST(2) = (Dbox(2,2) - Dbox(1,2) + 1)*nsm
       NDST(3) = (Dbox(2,3) - Dbox(1,3) + 1)*nsm
@@ -404,8 +404,8 @@ C       From clustered to sequential
           I3 = I3 + NDST(1)*NDST(2)
         ENDDO
         do icom= 1, ncom
-          Sbox => idis%box(1:2,1:3,src(icom))
-          Dbox => odis%box(1:2,1:3,dst(icom))
+          Sbox => idis%box(:,:,src(icom))
+          Dbox => odis%box(:,:,dst(icom))
           call boxIntersection( Sbox, Dbox, Lbox, inters )
           if (src(icom).eq.ME) then
             if (dst(icom).eq.ME) then
@@ -700,9 +700,8 @@ C     Local variables
       character(len=*), parameter :: myName = moduName//'distMeshData '
       character(len=*), parameter :: errMsg = myName//'ERROR: '
       integer                     :: I1, I2, I3, J1, J2, J3, K1, K2, K3,
-     &                               N1, N2, N3, NN, ind, ncom,
-     &                               icom, NSRC(3), NDST(3), ME,
-     &                               MaxSize, Xsize, Ysize, Zsize,
+     &                               ind, ncom, icom, NSRC(3), NDST(3),
+     &                               ME, MaxSize, Xsize, Ysize, Zsize,
      &                               Lbox(2,3)
       integer, pointer            :: src(:), dst(:), Sbox(:,:),
      &                               Dbox(:,:)
@@ -737,9 +736,9 @@ C     among the several processes
       maxSize = 0
       do icom= 1, ncom
         if (src(icom).ne.dst(icom)) then
-          call boxIntersection( idis%box(1,1,src(icom)),
-     &                          odis%box(1,1,dst(icom)),
-     &                          Lbox, inters )
+          Sbox => idis%box(:,:,src(icom))
+          Dbox => odis%box(:,:,dst(icom))
+          call boxIntersection( Sbox, Dbox, Lbox, inters )
           Xsize = Lbox(2,1) - Lbox(1,1) + 1
           Ysize = Lbox(2,2) - Lbox(1,2) + 1
           Zsize = Lbox(2,3) - Lbox(1,3) + 1
@@ -753,11 +752,11 @@ C     among the several processes
      &                 routine='distMeshData' )
       endif
 
-      Sbox => idis%box(1:2,1:3,ME)
+      Sbox => idis%box(:,:,ME)
       NSRC(1) = Sbox(2,1) - Sbox(1,1) + 1
       NSRC(2) = Sbox(2,2) - Sbox(1,2) + 1
       NSRC(3) = Sbox(2,3) - Sbox(1,3) + 1
-      Dbox => odis%box(1:2,1:3,ME)
+      Dbox => odis%box(:,:,ME)
       NDST(1) = Dbox(2,1) - Dbox(1,1) + 1
       NDST(2) = Dbox(2,2) - Dbox(1,2) + 1
       NDST(3) = Dbox(2,3) - Dbox(1,3) + 1
@@ -882,7 +881,7 @@ C     Passed arguments
 C     Local variables
       integer                     :: Ubox(2,3), Lbox(2,3), Ibox(2,3),
      &                               ii, iaxis, ncom, Gcom, Lcom, P1, P2
-      integer,            pointer :: src(:), dst(:)
+      integer,            pointer :: src(:), dst(:), Dbox(:,:)
       type(meshDisType),  pointer :: idis
       type(meshCommType), pointer :: mcomm
       type(COMM_T)                :: comm
@@ -911,13 +910,12 @@ C         partition
           Lbox(1,iaxis) = Lbox(2,iaxis)
 
           do P2= P1+1, Nodes
-            call boxIntersection( idis%box(1,1,P2), Ubox, Ibox,
-     &                            inters )
+            Dbox => idis%box(:,:,P2)
+            call boxIntersection( Dbox, Ubox, Ibox, inters )
             if (inters) then
               ncom = ncom + 1
             else
-              call boxIntersection( idis%box(1,1,P2), Lbox, Ibox,
-     &                              inters )
+              call boxIntersection( Dbox, Lbox, Ibox, inters )
               if (inters) ncom = ncom + 1
             endif
           enddo
@@ -946,15 +944,14 @@ C       the extencil
             Lbox(1,iaxis) = Lbox(2,iaxis)
 
             do P2= P1+1, Nodes
-              call boxIntersection( idis%box(1,1,P2), Ubox, Ibox,
-     &                              inters )
+              Dbox => idis%box(:,:,P2)
+              call boxIntersection( Dbox, Ubox, Ibox, inters )
               if (inters) then
                 ncom = ncom + 1
                 src(ncom) = P1
                 dst(ncom) = P2
               else
-                call boxIntersection( idis%box(1,1,P2), Lbox, Ibox,
-     &                                inters )
+                call boxIntersection( Dbox, Lbox, Ibox, inters )
                 if (inters) then
                   ncom = ncom + 1
                   src(ncom) = P1
@@ -1053,6 +1050,7 @@ C     Local variables
      &                               iniX, endX, iniY, endY, iniZ, endZ,
      &                               ix, iy, iz, tt, uu, dimB(3), ii, PP
       logical                     :: inter1, inter2
+      integer,            pointer :: Dbox(:,:)
       real(gp),           pointer :: SBUF(:), RBUF(:)
       type(meshDisType),  pointer :: idis
       type(meshCommType), pointer :: mcomm
@@ -1098,8 +1096,9 @@ C     Local variables
         else
           PP = mcomm%src(ii)
         endif
-        call boxIntersection(idis%box(1,1,PP), Ubox, IUbox, inter1)
-        call boxIntersection(idis%box(1,1,PP), Lbox, ILbox, inter2)
+        Dbox => idis%box(:,:,PP)
+        call boxIntersection( Dbox, Ubox, IUbox, inter1 )
+        call boxIntersection( Dbox, Lbox, ILbox, inter2 )
         if (inter1) then
           if (iaxis.eq.1) then
             iniX = 1
@@ -1469,6 +1468,7 @@ C     Local variables
      &                               iniX, endX, iniY, endY, iniZ, endZ,
      &                               ix, iy, iz, tt, uu, dimB(3), ii, PP
       logical                     :: inter1, inter2
+      integer,            pointer :: Dbox(:,:)
       real(gp),           pointer :: SBUF(:), RBUF(:)
       type(meshDisType),  pointer :: idis
       type(meshCommType), pointer :: mcomm
@@ -1503,8 +1503,9 @@ C     Local variables
         else
           PP = mcomm%src(ii)
         endif
-        call boxIntersection(idis%box(1,1,PP), Ubox, IUbox, inter1)
-        call boxIntersection(idis%box(1,1,PP), Lbox, ILbox, inter2)
+        Dbox => idis%box(:,:,PP)
+        call boxIntersection( Dbox, Ubox, IUbox, inter1 )
+        call boxIntersection( Dbox, Lbox, ILbox, inter2 )
         if (inter1) then
           if (iaxis.eq.1) then
             iniX = 1
@@ -1933,7 +1934,7 @@ C             from a 3-D array to a 1-D array.
               mLdim = Lbox(2,nAxis) - Lbox(1,nAxis) + 1
               call re_alloc( lwload, 1, mLdim, name='lwload',
      &                       routine='splitwload' )
-              call reduce3Dto1D( nAxis, iDistr%box(1:2,1:3,Node), Lbox,
+              call reduce3Dto1D( nAxis, iDistr%box(:,:,Node), Lbox,
      &                           wload, lwload )
             endif
             if (Node.eq.PP) then

@@ -301,8 +301,10 @@ MODULE fdf
 !--------------------------------------------------------------- Input Variables
       character(*) :: filein, fileout
 
+#ifndef DEBUG
 !--------------------------------------------------------------- Local Variables
       integer(ip)  :: debug_level
+#endif
 
 !------------------------------------------------------------------------- BEGIN
 !$OMP SINGLE OMP_init 

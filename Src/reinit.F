@@ -100,7 +100,7 @@ c
            enddo
            write(6,"(a,23('*'),a,29('*'))")
      .          '***', ' End of input data file '
-           close(lun_tmp)
+           call io_close(lun_tmp)
 c
         endif
       endif

@@ -26,7 +26,7 @@
          double precision cutoff         
          double precision delta
          double precision, dimension(:), pointer :: f   ! Actual data
-         double precision, dimension(:), pointer :: d2  ! Second derivative
+         double precision, dimension(:), pointer :: d2  ! 2nd derivative
       end type rad_func
 
       private :: splint, spline

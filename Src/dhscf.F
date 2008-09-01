@@ -51,9 +51,6 @@ C     Modules
       real(dp)                :: DStres(3,3), volume
       logical                 :: samesh, samexa
       real(dp), external      :: volcel, ddot
-#ifdef MPI
-      integer                 :: MPIerror
-#endif
       integer, parameter      :: vzero(3) = (/ 0, 0, 0 /)
       real(grid_p)            :: dummy_Drho(1,1), dummy_Vaux(1),
      &                           dummy_Vscf(1)
@@ -63,7 +60,7 @@ C     Modules
 
 !------------------------------------------------------------------------- BEGIN
 #ifdef DEBUG
-      call write_debug( '     PRE dhscf_init' )
+      call write_debug( '    PRE dhscf_init' )
 #endif
 C ----------------------------------------------------------------------
 C     General initialisation
@@ -158,7 +155,7 @@ C ----------------------------------------------------------------------
 C       Mesh initialization 
 C ----------------------------------------------------------------------
 #ifdef DEBUG
-        call write_debug( '     PRE InitMesh' )
+        call write_debug( '      PRE InitMesh' )
 #endif
         call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
      &                 G2max, G2mesh, nsc, nmpl, nm,
@@ -198,7 +195,7 @@ C       in each of them.
         nullify( numphi )
         call re_alloc( numphi, 1, nmpl, 'numphi', 'dhscf_init' )
 #ifdef DEBUG
-        call write_debug( '     PRE distriPhiOnMesh' )
+        call write_debug( '      PRE distriPhiOnMesh' )
 #endif
         call distriPhiOnMesh( nm, nmpl, norb, iaorb, iphorb,
      &                        isa, numphi )
@@ -229,7 +226,7 @@ C       Drho is not used here
 
 C       Calculate orbital values on mesh
 #ifdef DEBUG
-        call write_debug( '     PRE PhiOnMesh' )
+        call write_debug( '      PRE PhiOnMesh' )
 #endif
 #ifdef MPI
         call re_alloc( numphi_par, 1, nmpl, 'numphi_par', 'dhscf_init' )
@@ -270,7 +267,7 @@ C       Uharrs is computed (and saved)
 C       DStres is computed but not used later
         call distMeshData( 2, rhoatm, 1, rhoatm_seq, +1 )
 #ifdef DEBUG
-        call write_debug( '     PRE poison' )
+        call write_debug( '      PRE poison' )
 #endif
         call poison( cell, ntml(1), ntml(2), ntml(3), ntm, rhoatm_seq,
      &               Uharrs, Vscf, DStres, nsm )
@@ -300,7 +297,7 @@ C       Vscf is not used here because we pass "0,0,0" as mesh
 
       call timer( 'DHSCF', 2 )
 #ifdef DEBUG
-      call write_debug( '      Pos dhscf_init' )
+      call write_debug( '    POS dhscf_init' )
 #endif
 !--------------------------------------------------------------------------- END
       end subroutine dhscf_init
@@ -577,7 +574,7 @@ C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
 #ifdef DEBUG
-        call write_debug( '    Pre rhoofd' )
+        call write_debug( '    PRE rhoofd' )
 #endif
 !
 !     We are now in distribution "2". We need to expand the capabilities
@@ -785,7 +782,7 @@ C     Solve Poisson's equation
       call re_alloc( Vscf_seq, 1, ntpl, name='Vscf_seq',
      &               routine='dhscf' )
 #ifdef DEBUG
-        call write_debug( '    Pre Poison' )
+        call write_debug( '    PRE Poison' )
 #endif
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho_seq,
      &             DUscf, Vscf_seq, DStres, nsm )
@@ -903,7 +900,7 @@ C ----------------------------------------------------------------------
 #endif
 
 #ifdef DEBUG
-        call write_debug( '    Pre cellxc' )
+        call write_debug( '    PRE cellxc' )
 #endif
       call cellxc( 0, 0, cell, ntml, ntml, ntpl, 0, aux3, nspin,
      &             DRho_gga, Ex, Ec, DEx, DEc, Vscf_gga,
@@ -962,7 +959,7 @@ C ----------------------------------------------------------------------
 C     Find SCF contribution to hamiltonian matrix elements
 C ----------------------------------------------------------------------
 #ifdef DEBUG
-        call write_debug( '    Pre vmat' )
+        call write_debug( '    PRE vmat' )
 #endif
       if (iHmat .eq. 1) then
         if (spiral) then
@@ -986,7 +983,7 @@ C Global reduction of Uscf/DUscf/Uatm/Enaatm/Enascf
       sbuffer(7) = Dxc
 
 #ifdef DEBUG
-        call write_debug( '    Pre reduce Energies' )
+        call write_debug( '    PRE reduce Energies' )
 #endif
       call MPI_AllReduce( sbuffer, rbuffer, 7, MPI_double_precision,
      &                     MPI_Sum, MPI_Comm_World, MPIerror )

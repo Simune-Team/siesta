@@ -136,7 +136,6 @@ C
 #endif
 
 #ifdef MPI
-      integer            :: MPIerror
       external           :: diagkp
 #endif
       integer            :: io, iuo, naux, nhs, npsi, nuo
@@ -232,9 +231,6 @@ C Check indxuo
 C Call apropriate routine
       getD = .true.
       getPSI = .false.
-      write(23,*) 'nspin', nspin
-      write(23,*) 'gamma', gamma
-      call pxfflush(23)
 
       if (nspin.le.2 .and. gamma) then
         call diagg( nspin, nuo, maxuo, maxnh, maxnd, maxo,
