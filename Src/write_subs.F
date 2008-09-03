@@ -135,19 +135,20 @@
      $            ps(2,3)/kbar,
      $            ps(1,3)/kbar
             Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
-            write(6,"(a,f14.4)") "Enthalpy (eV/cell)",
+            write(6,"(a,f14.4)") "(Free)E + p*V (eV/cell)",
      $           (FreeE + Press*volume_of_some_cell)/eV
 
             if (RemoveIntraMolecularPressure) then
                ps = mstress + kin_stress
                write(6,'(/,a,6f12.2))')
-     .           'Non-Molecular-Stress-Voigt (kbar):',
+     .           'Inter-Molecular-Stress-Voigt (kbar):',
      .           (ps(jx,jx)/kbar,jx=1,3),
      $            ps(1,2)/kbar,
      $            ps(2,3)/kbar,
      $            ps(1,3)/kbar
                Press = - ((ps(1,1) + ps(2,2) + ps(3,3))/3.0_dp)
-               write(6,"(a,f14.4)") "Non-Molecular Enthalpy (eV/cell)",
+               write(6,"(a,f14.4)")
+     $              "(Free)E + p_inter_molec * V  (eV/cell)",
      $              (FreeE + Press*volume_of_some_cell)/eV
             endif
 !
@@ -296,12 +297,22 @@
       use units
       use m_energies 
       use m_spin
+#ifdef TRANSIESTA
+! TSS Begin
+! Transiesta Modules
+      use m_ts_options, only: TSinit, TSrun, TSiscf
+! TSS End
+#endif /* TRANSIESTA */
       implicit none
 
       logical :: first
       integer :: iscf
       real(dp), intent(in) :: dDmax     ! Max. change in density matrix elements
-
+#ifdef TRANSIESTA
+! TSS Begin
+      character(11) :: tmpname
+! TSS End
+#endif /* TRANSIESTA */
 
       integer :: i 
 
@@ -456,6 +467,75 @@
      .           dictRef="siesta:dDmax",  fmt="(f14.7)")
           endif
         endif !harrisfun/isolve
+
+#ifdef TRANSIESTA
+! TSS Begin
+        if (TSinit) then     !TSS
+         if (cml_p)
+     .         call cmlAddProperty(xf=mainXML, property=FreeE/eV,
+     .         units="siestaUnits:eV",
+     .         dictRef="siesta:FreeE",  fmt="(f14.7)")
+         if (fixspin) then
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=Etot/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:Etot",   fmt="(f14.7)")
+              call cmlAddProperty(xf=mainXML, property=FreeE/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:FreeE", fmt="(f14.7)")
+              call cmlAddProperty(xf=mainXML, property=dDmax/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:dDmax",  fmt="(f14.7)")
+            endif
+            if ((iscf .eq. 1).or.muldeb)
+     .           write(6,'(/,a12,3a14,a8,a7,a11)')
+     .           'siesta: iscf', '   Eharris(eV)',
+     .           '      E_KS(eV)', '   FreeEng(eV)',
+     .           '   dDmax', '  Ef_up', '  Ef_dn(eV)'
+            write(6,'(a8,i4,3f14.4,f8.4,2f9.4)')
+     .           'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV, dDmax,
+     .           (Efs(i)/eV,i=1,2)
+            if (cml_p) then
+              call cmlAddProperty(xf=mainXML, property=Efs(1)/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:Efs",    fmt="(f14.7)")
+              call cmlAddProperty(xf=mainXML, property=Efs(2)/eV,
+     .             units="siestaUnits:eV",
+     .             dictRef="siesta:Efs",    fmt="(f14.7)")
+            endif
+         else
+          if (iscf .eq. 1) write(6,'(/,a12,3a14,2a8)')
+     .             'siesta: iscf', '   Eharris(eV)',
+     .             '      E_KS(eV)', '   FreeEng(eV)',
+     .             '   dDmax', '  Ef(eV)'
+          write(6,'(a8,i4,3f14.4,2f8.4)')
+     .             'siesta: ',iscf, Eharrs/eV, Etot/eV, FreeE/eV,
+     .             dDmax, Ef/eV
+         end if !fixspin
+        endif                !TSinit
+        if (TSrun) then      !TSS
+              tmpname = 'transiesta:'
+              if (fixspin) then
+                 if (TSiscf .eq. 1)
+     .                write(6,'(/,a11,a7,3a14,a8,a7,a11)')
+     .                tmpname,' TSiscf', '   Eharris(eV)',
+     .                '      E_KS(eV)', '   FreeEng(eV)',
+     .                '   dDmax', '  Ef_up', '  Ef_dn(eV)'
+                 write(6,'(a11,i4,3f14.4,f8.4,2f9.4)')
+     .                tmpname,TSiscf, Eharrs/eV, Etot/eV, FreeE/eV,
+     .                dDmax, (Efs(i)/eV,i=1,2)
+              else
+                 if (TSiscf .eq. 1) write(6,'(/,a11,a7,3a14,2a8)')
+     .                tmpname,' TSiscf', '   Eharris(eV)',
+     .                '      E_KS(eV)', '   FreeEng(eV)',
+     .                '   dDmax', '  Ef(eV)'
+                 write(6,'(a11,i4,3f14.4,2f8.4)')
+     .                tmpname,TSiscf, Eharrs/eV, Etot/eV,
+     .                FreeE/eV, dDmax, Ef/eV
+              endif             !fixspin
+        endif                !TSrun
+! TSS End
+#endif /* TRANSIESTA */
         
         if (cml_p) then
           call cmlEndPropertyList(mainXML)
@@ -515,6 +595,7 @@
       use units, only: Ang
       use zmatrix, only: lUseZmatrix, write_canonical_ucell_and_Zmatrix
       use m_iostruct, only: write_struct
+      use siesta_options, only: idyn
 
       implicit none
 
@@ -525,7 +606,7 @@
 !      and stresses.
 
         call write_struct( ucell, na_u, isa, iza, xa, moved=.true.)
-        if (lUseZmatrix) then
+        if (lUseZmatrix .and. (idyn .eq. 0)) then
            call write_canonical_ucell_and_Zmatrix
      $                         (filename="NEXT_ITER.UCELL.ZMATRIX")
         endif

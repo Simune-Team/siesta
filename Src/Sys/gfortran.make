@@ -22,7 +22,7 @@ LDFLAGS=
 RANLIB=echo
 LIBS=  
 SYS=nag
-DEFS=-DGFORTRAN          # Note this !!
+DEFS=-DGFORTRAN -DFC_HAVE_FLUSH -DFC_HAVE_ABORT          # Note this !!
 COMP_LIBS=linalg.a
 #
 .F.o:

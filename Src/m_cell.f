@@ -12,7 +12,7 @@
         use precision, only: dp
         use siesta_geom, only: ucell
         implicit none
-        real(dp), public, save  :: celli(3,3)
+        real(dp), public, save  :: celli(3,3) = 0.0_dp
 
         public :: cart2frac, frac2cart
         public :: write_canonical_ucell

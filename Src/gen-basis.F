@@ -41,6 +41,7 @@ C
       use atom,         only : atom_main, prinput
       use xcmod,        only : setXC
       use sys,          only : die
+      use atom_options, only : get_atom_options
 C
 C     It has to be MPI-aware since it calls routines down the line...
 C
@@ -89,6 +90,8 @@ C Initialise MPI and set processor number
          filein = "stdin"
          call fdf_init(filein,'gen-basis_out.fdf')
 
+         call get_atom_options()
+
          call setXC
 
          call read_basis_specs()
@@ -104,12 +107,15 @@ C Initialise MPI and set processor number
          do is = 1,nsp
             call write_basis_specs(6,is)
             basp=>basis_parameters(is)
-            call atom_main(iz(is), lmxkb(is), nkbl(0,is), 
-     .           erefkb(1,0,is),lmxo(is), nzeta(0,1,is), rco(1,0,1,is), 
-     .           lambda(1,0,1,is),
-     .           atm_label(is), polorb(0,1,is), semic(is), nsemic(0,is),
-     .           cnfigmx(0,is),charge(is), smass(is), basistype(is), is,
-     $           rinn(0,1,is), vcte(0,1,is), split_norm(0,1,is), basp)
+            call atom_main( iz(is), lmxkb(is),
+     $           nkbl(0:,is), erefkb(1:,0:,is),lmxo(is),
+     $           nzeta(0:,1:,is), rco(1:,0:,1:,is), 
+     $           lambda(1:,0:,1:,is), atm_label(is),
+     $           polorb(0:,1:,is), semic(is), nsemic(0:,is),
+     $           cnfigmx(0:,is),charge(is),
+     $           smass(is), basistype(is), is,
+     $           rinn(0:,1:,is), vcte(0:,1:,is),
+     $           split_norm(0:,1:,is), basp)
          enddo 
 
          call prinput(nsp)

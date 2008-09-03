@@ -24,5 +24,5 @@ echo "replot \"angles.dat\" using 1:3" >> angles.gnu
 echo "replot \"angles.dat\" using 1:4" >> angles.gnu
 
 #
-gnuplot -persist < vectors.gnu &
-gnuplot -persist < angles.gnu &
+gnuplot -persist  vectors.gnu &
+gnuplot -persist  angles.gnu  &

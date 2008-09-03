@@ -36,4 +36,4 @@ xmlcheck: completed
 #
 clean:
 	@echo ">>>> Cleaning $(name) test..."
-	rm -rf $(label) completed* $(name).out $(name).xml
+	rm -rf $(label) completed* $(name).out $(name).xml *.dat *diff-xml

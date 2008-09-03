@@ -121,7 +121,7 @@ c
         endif
 
 C Set up fdf ...
-        fileout = 'out.fdf'
+        fileout = 'fdf.log'
         call fdf_init(filein,fileout)
 
 C Defile Name of the system ...

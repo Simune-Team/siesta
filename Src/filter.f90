@@ -559,7 +559,7 @@ subroutine filter( l, nr, r, f, kmax, norm_opt,emin )
   !write(6,*) "n,krmax,rmax:",n,krmax,rmax
 
 ! Allocate arrays
-  allocate( a(n,n), ar(nr,n), aux(n), e(n), f0(nr), indx(n), &
+  allocate( a(n,n), ar(nr,n), aux(n), e(n), f0(n), indx(n), &
             p(n,n), wx(n), x(n) )
 
 ! Find special points and weights for Gauss-Legendre integration

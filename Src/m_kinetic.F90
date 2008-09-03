@@ -5,13 +5,13 @@ module m_kinetic
 
   public
 
-  real(dp):: vn         ! Velocity (time derivative) of the Nose thermostat
-  real(dp):: vpr        ! Velocity (time derivative) of the PR variables
+  real(dp):: vn      = 0.0_dp   ! Velocity (time derivative) of the Nose thermostat
+  real(dp):: vpr     = 0.0_dp   ! Velocity (time derivative) of the PR variables
 
-  real(dp):: tempion=0.0_dp ! Ionic temperature
+  real(dp):: tempion = 0.0_dp   ! Ionic temperature
 
-  real(dp):: kn         ! Kinetic energy of the Nose' thermostat
-  real(dp):: kpr        ! Kinetic energy of the Parrinello-Rahman variables
+  real(dp):: kn       = 0.0_dp  ! Kinetic energy of the Nose' thermostat
+  real(dp):: kpr      = 0.0_dp  ! Kinetic energy of the Parrinello-Rahman variables
 
 end module m_kinetic
 

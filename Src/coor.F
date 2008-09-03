@@ -27,27 +27,29 @@ C integer na  : Number of atoms in unit cell
 !                     supercell used to deal with k-point sampling.
 
       use precision, only : dp
-      use sys
+      use sys, only: die
       use fdf
       use alloc
       use parallel,  only : Node
       use zmatrix
       use m_mpi_utils, only : broadcast
-      use siesta_geom
+      use siesta_geom, only : xa, isa, cisa
       implicit none
 
       integer,  intent(out) :: na
       real(dp), intent(out) :: cell(3,3)
 
 C Internal variables and arrays
+      type(block), pointer  :: fdf_bp
       character             :: acf*22, acf_default*22
-      logical               :: isdiag, leqi
+      character(len=150)    :: line
+      logical               :: isdiag, leqi, readerr
       integer               :: i, ia, ic, iscale, iua, iunit, ix,
      .                         coor_mscell(3,3), ncells, 
-     &                         coor_nsc(3), nua
+     &                         coor_nsc(3), nua, ierr
       real(dp)              :: alat, dcell(3,3), dscell(3,3), 
-     .                         origin(3),
-     .                         volcel, xac(3)
+     .                         origin(3), unit_cell(3,3),
+     .                         volcel, xac(3), super_cell(3,3)
       external          digcel, redcel, volcel
 
       logical               :: lOrigin
@@ -56,10 +58,7 @@ C Internal variables and arrays
 
       if (Node.eq.0) then
 C Read unit cell and supercell
-        call redcel( alat, ucell, scell, coor_mscell )
-
-C Set cell argument to "supercell" for use by the program
-        cell = scell
+        call redcel( alat, unit_cell, super_cell, coor_mscell )
 
 C Format of atomic coordinates
         acf_default = 'NotScaledCartesianBohr'
@@ -130,10 +129,10 @@ C Read atomic coordinates and species
 !     Check if we need more space to accommodate supercell
 !     (still a "real" supercell, specified for convenience!)
 !
-        if (volcel(ucell) .lt. 1.d-8) then
+        if (volcel(unit_cell) .lt. 1.d-8) then
           ncells = 1
         else
-          ncells = nint( volcel(scell) / volcel(ucell) )
+          ncells = nint( volcel(super_cell) / volcel(unit_cell) )
         endif
 
         nua = na
@@ -142,7 +141,9 @@ C Read atomic coordinates and species
 C Find origin with which to translate all coordinates
         lOrigin = fdf_block('AtomicCoordinatesOrigin',iunit)
         if (lOrigin) then 
-          read(iunit,*) (origin(i),i=1,3)
+          read(iunit,*, iostat=ierr) (origin(i),i=1,3)
+          if (ierr.ne.0) call die("coor: Error reading " //
+     .         "AtomicCoordinatesOrigin block")
         endif
 
       endif
@@ -157,37 +158,73 @@ C is called by all processes)
       call broadcast(nua)
       call broadcast(ncells)
       call broadcast(lOrigin)
-      call broadcast(ucell(1:3,1:3))
-      call broadcast(cell(1:3,1:3))
+      call broadcast(unit_cell(1:3,1:3))
       call broadcast(origin(1:3))
       call broadcast(alat)
 
 C Set array dimensions
-      nullify(isa,xa)
+      nullify(isa,cisa,xa)
       call re_alloc(isa,1,na,name='isa',routine='coor')
       call re_alloc(xa,1,3,1,na,name='xa',routine='coor')
+      call re_alloc(cisa,1,na,name="cisa",routine="coor")
 
 C Attempt to read a Z matrix
-      call read_Zmatrix(nua,isa,alat,ucell,lOrigin,origin)
+      call read_Zmatrix(nua,isa,alat,unit_cell,lOrigin,origin)
 
       if (lUseZmatrix) then
-C Generate Cartesian coordinates from Z-matrix
-        call Zmat_to_Cartesian(xa)
+        
+        cell = unit_cell
+        if (ncells > 1 ) call die("Cannot use SuperCell with Zmatrix")
+
+C       Generate Cartesian coordinates from Z-matrix
+        call Zmat_to_Cartesian(xa) 
 
       else
+
         if (Node.eq.0) then
 C If Z matrix hasn't been found, read regular atomic coordinates
-          if ( fdf_block('AtomicCoordinatesAndAtomicSpecies',iunit) )
+          nullify(fdf_bp)
+          if ( fdf_block('AtomicCoordinatesAndAtomicSpecies', fdf_bp) )
      .        then
-            do ia = 1,nua
-              read(iunit,*) (xa(i,ia), i=1,3), isa(ia)
-              if (lOrigin) then
-                 xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
+
+            ia = 1
+            readerr = .false.
+
+            do 
+              if (.not. fdf_bline(fdf_bp, line)) exit
+
+              read(line, *, iostat=ierr)
+     .                          (xa(i,ia), i=1,3), isa(ia)
+              if (ierr.eq.0) then ! Got the data OK
+                if (lOrigin) then
+                   xa(1:3,ia) = xa(1:3,ia) + origin(1:3)
+                endif
+                ia = ia + 1
+
+              else ! Error with the internal read, but don't die 
+                   ! until all such errors have been reported
+
+                write(6,'(a)') "coor:   Malformed input line:" 
+                write(6,'(a)') "coor:   " // trim(line)
+                readerr = .true. 
+
               endif
             enddo
 
+            call destroy(fdf_bp)
+
+            if (readerr) then ! We had some errors 
+               call die("coor:   Error reading some lines of" //
+     .                  " AtomicCoordinatesAndAtomicSpecies block")
+            elseif ((ia-1).ne.nua) then ! ia will have incremented after the
+                                        ! last atom.
+               call die("coor:   Wrong number of atoms found in" //
+     .                  " AtomicCoordinatesAndAtomicSpecies block")
+            endif 
+
+
           else
-            call die("coor: You must specify the atomic coordinates")
+            call die("coor:   You must specify the atomic coordinates")
           endif
 
 C Scale atomic coordinates
@@ -206,31 +243,31 @@ C   Coord. option = 3 => Multiply by lattice vectors
                 xac(ix) = xa(ix,ia)
               enddo
               do ix = 1,3
-                xa(ix,ia) = ucell(ix,1) * xac(1) +
-     .                      ucell(ix,2) * xac(2) +
-     .                      ucell(ix,3) * xac(3)
+                xa(ix,ia) = unit_cell(ix,1) * xac(1) +
+     .                      unit_cell(ix,2) * xac(2) +
+     .                      unit_cell(ix,3) * xac(3)
               enddo
             enddo
           endif
 
-        endif
-C end of Node.eq.0
+        endif  ! ( Node.eq.0 ?)
         
-C distribute data
+C       distribute data
+
         call broadcast(isa(1:na))
         call broadcast(xa(1:3,1:na))
-
 
 C Expand the coordinates to whole supercell
 
         if (ncells.gt.1) then
 
 C Find equivalent diagonal combination of cell/supercell
-          call digcel( ucell, coor_mscell, dcell, dscell,  
+          call digcel( unit_cell, coor_mscell, dcell, dscell,  
      &                 coor_nsc, isdiag )
 
 C Expand coordinates
           call superx_coor( dcell, coor_nsc, nua, na, xa, dscell )
+          cell = dscell
 
 C Expand index isa
           ia = 0
@@ -241,52 +278,56 @@ C Expand index isa
             enddo
           enddo
 
-        endif
+        else
 
+           cell = unit_cell
 
-      endif
-C  end of not lUseZmatrix
+        endif  ! (ncells  > 1 ?)
+
+      endif    ! (use Zmatrix?)
+
 
         ! Construct references: cannot use isa alone, since 
         ! refs may not start with a number.
-        nullify(cisa)
-        call re_alloc(cisa,1,na,name="cisa",routine="read_struct")
-        do ia=1, nua
+
+        do ia=1, na
            write(cisa(ia), '("siesta:e",i3.3)') isa(ia)
         enddo
+
       end subroutine coor
 
-      subroutine superx_coor( ucell, NSC, na, maxa, XA, scell )
+      subroutine superx_coor( unit_cell,NSC,nua,maxa,XA,super_cell)
 C **********************************************************************
 C Generates supercell vectors and atomic positions.
 C Written by J.M.Soler, August 1998
 C *************** Input ************************************************
-C Real*8  ucell(3,3)  : Unit cell vectors ucell(Ixyz,Ivector)
+C Real*8  unit_cell(3,3)  : Unit cell vectors unit_cell(Ixyz,Ivector)
 C Integer NSC(3)      : Number of cells in each supercell direction:
-C                         scell(ix,i) = ucell(ix,i) * NSC(i)
-C Integer NA          : Number of atoms in unit cell
+C                         super_cell(ix,i) = unit_cell(ix,i) * NSC(i)
+C Integer NUA          : Number of atoms in unit cell
 C Integer MAXA        : Second dimension of XA
 C *************** Input and output *************************************
 C Real*8  XA(3,MAXA)  : Atomic positions in unit cell (input) and
 C                       in supercell (output), in cartesian coord.
-C Real*8  scell(3,3)  : Supercell vectors
+C Real*8  super_cell(3,3)  : Supercell vectors
 C *********** Units ****************************************************
 C Units of CELL and XA are arbitrary but must be the same
 C *********** Behavior *************************************************
-C - If NA*NCELLS > MAXA (where NCELLS is the total number of cells),
+C - If NUA*NCELLS > MAXA (where NCELLS is the total number of cells),
 C   the supercell atomic coordinates are not generated.
 C - The first supercell atoms are those of the initial unit cell, i.e.
-C   the positions XA(i,ia) for (ia.le.NA) are not modified.
+C   the positions XA(i,ia) for (ia.le.NUA) are not modified.
 C - The remaining atoms are ordered by unit cells, i.e. the atom ia
-C   is equivalent to the unit-cell atom ja=MOD(ia-1,NA)+1
+C   is equivalent to the unit-cell atom ja=MOD(ia-1,NUA)+1
 C **********************************************************************
 
       use precision, only : dp
+      use sys, only: die
 
       implicit          none
 
-      integer           maxa, na, NSC(3)
-      real(dp)          scell(3,3), ucell(3,3), XA(3,maxa)
+      integer           maxa, nua, NSC(3)
+      real(dp)          super_cell(3,3), unit_cell(3,3), XA(3,maxa)
 
 C Internal variables
       integer           I, I1, I2, I3, IA, IX, JA, ncells
@@ -295,21 +336,22 @@ C Internal variables
 C Find supercell vectors
       do I = 1,3
         do IX = 1,3
-          scell(IX,I) = ucell(IX,I) * NSC(I)
+          super_cell(IX,I) = unit_cell(IX,I) * NSC(I)
         enddo
       enddo
 
 C Expand atomic positions to supercell
       ncells = NSC(1) * NSC(2) * NSC(3)
-      if (na*ncells .le. maxa) then
+      if (nua*ncells .le. maxa) then
         IA = 0
         do I3 = 0,NSC(3)-1
         do I2 = 0,NSC(2)-1
         do I1 = 0,NSC(1)-1
           do IX = 1,3
-            XC(IX) = ucell(IX,1)*I1 + ucell(IX,2)*I2 + ucell(IX,3)*I3
+            XC(IX) = unit_cell(IX,1)*I1 + unit_cell(IX,2)*I2 +
+     $                                    unit_cell(IX,3)*I3
           enddo
-          do JA = 1,na
+          do JA = 1,nua
             IA = IA + 1
             do IX = 1,3
               XA(IX,IA) = XA(IX,JA) + XC(IX)
@@ -318,6 +360,8 @@ C Expand atomic positions to supercell
         enddo
         enddo
         enddo
+      else
+         call die("Not enough space for supercell extension")
       endif
 
       end subroutine superx_coor

@@ -888,8 +888,8 @@ C **********************************************************************
       use precision, only : dp
 
       implicit none
-
-      real(dp) mu,Ne,numb
+      real(dp), intent(in) :: mu
+      real(dp) Ne,numb
       integer k,n
 
       call chebfd(p,mu,c) 

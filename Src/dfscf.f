@@ -93,8 +93,9 @@ C Internal variables
      .   gCi(12,nsp), grada(3,maxoa,nsp),
      .   phia(maxoa,nsp), rvol, r2sp, r2cut(nsmax), V(nsp,nspin)
 !
-      integer, pointer ::  ibc(:), iob(:)
-      real(dp), pointer :: C(:,:), D(:,:,:), gC(:,:,:), xgC(:,:,:)
+      integer, pointer, save ::  ibc(:), iob(:)
+      real(dp), pointer, save :: C(:,:), D(:,:,:),
+     .                           gC(:,:,:), xgC(:,:,:)
       logical ::           Parallel_Run, nullified=.false.
       type(allocDefaults) oldDefaults
 

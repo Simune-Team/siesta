@@ -14,9 +14,23 @@
       use m_steps
       use m_spin,   only: nspin
       use m_pulay
+      use parallel, only: IONode
 #ifdef MPI
       use m_mpi_utils, only: globalize_max
 #endif
+#ifdef CDF
+      use iodm_netcdf, only: write_dm_netcdf
+#endif
+#ifdef TRANSIESTA
+! TSS Begin
+! SIESTA Modules
+      use m_energies, only: ef
+      use m_ts_io, only: TSiodm
+! TS Module
+      use m_ts_options, only: VIn, VOut, TSrun, tsdme, TSiscf
+! TSS End
+
+#endif /* TRANSIESTA */
 
       implicit none
 
@@ -43,18 +57,39 @@
               iiscf = 1
               if (iscf .ne. 1) mmix = .true.
             endif
+#ifdef TRANSIESTA
+            if ( TSrun ) then
+               iiscf=TSiscf
+               if (maxsav .le. 0) then
+                 iiscf = 1
+                 if (TSiscf .ne. 1) mmix = .true.
+               endif
+            end if
+#endif /* TRANSIESTA */
             if (fire_mix) then
                call fire_mixing(iscf, mix, no_l, maxnh,
      .                 numh(1:no_l), listhptr(1:no_l), nspin,
+#ifndef TRANSIESTA
      $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
+#else /* TRANSIESTA */
+     $                 wmix, nkick, wmixkick, VOut, VIn, dDmax)
+#endif /* TRANSIESTA */
             else if (broyden_maxit == 0) then
                call pulayx( pulfile, iiscf, mmix, no_l, maxnh,
      .                   numh, listhptr, nspin, maxsav, wmix, nkick, 
+#ifndef TRANSIESTA
      .                   wmixkick, Dscf, Dold, dDmax)
+#else /* TRANSIESTA */
+     .                   wmixkick, VOut, VIn, dDmax)
+#endif /* TRANSIESTA */
             else
                call broyden_mixing(iscf, mix, no_l, maxnh,
      .                 numh(1:no_l), listhptr(1:no_l), nspin,
+#ifndef TRANSIESTA
      $                 wmix, nkick, wmixkick, Dscf, Dold, dDmax)
+#else /* TRANSIESTA */
+     $                 wmix, nkick, wmixkick, VOut, VIn, dDmax)
+#endif /* TRANSIESTA */
             endif
           endif
 
@@ -77,16 +112,60 @@
 ! ..................
 
 ! Save density matrix on disk, after mixing ...........................
+#ifdef CDF
+          if (writedm_cdf_history) then
+             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     $                             overwrite=.false.)
+          else if (writedm_cdf) then
+             call write_dm_netcdf( no_l, maxnh, nspin, Dscf,
+     $                             overwrite=.true. )
+          endif
+#endif
+
           if (writedm) then
+#ifndef TRANSIESTA
             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
               if (istp.eq.1)
      .        call iodm( 'write', maxnh, no_l, nspin,
+#else /* TRANSIESTA */
+! TSS Begin
+           if (.not.TSrun) then   !TSS save DM
+             if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+               if (istp.eq.1)
+     .         call iodm( 'write', maxnh, no_l, nspin,
+#endif /* TRANSIESTA */
      .                   numh, listhptr, listh, Dscf, found )
+#ifndef TRANSIESTA
             else
               call iodm( 'write', maxnh, no_l, nspin,
+#else /* TRANSIESTA */
+             else
+               call iodm( 'write', maxnh, no_l, nspin,
+#endif /* TRANSIESTA */
      .                   numh, listhptr, listh, Dscf, found )
+#ifndef TRANSIESTA
             endif
           endif
+#else /* TRANSIESTA */
+             endif
+           else
+! TSS write DME
+             if(tsdme) then
+               if ((idyn .eq. 6) .or. (idyn .eq. 7)) then
+                  if (istp .eq.1)
+     .                 call TSiodm( 'write', maxnh, no_l, nspin,
+     .                 numh, listhptr, listh, Dscf, Escf,
+     .                 ef, found)
+                  else
+                       call TSiodm( 'write', maxnh, no_l, nspin,
+     .                 numh, listhptr, listh, Dscf, Escf,
+     .                 ef, found)
+               endif            ! idyn.eq.6
+             endif               ! tsdme
+           endif
+! TSS End
+          endif ! writedm
+#endif /* TRANSIESTA */
 !--------------------------------------------------------------------------- END
       END subroutine mixer
 

@@ -9,8 +9,16 @@
 ! given in the SIESTA license, as signed by all legitimate users.
 !
       module m_find_kgrid
+
+      use precision,  only : dp
+      use alloc,      only : re_alloc
+
+      implicit none
+
       private
       public :: find_kgrid
+
+
       CONTAINS
       subroutine find_kgrid ( cell, kscell, displ, firm_displ,
      $                        time_reversal_symmetry,
@@ -32,10 +40,8 @@ c real(dp) eff_kgrid_cutoff : actual equivalent kgrid cutoff
 
 C  Modules
 
-      use precision,  only : dp
       use units,      only : pi
       use m_minvec,   only : minvec
-      use alloc,      only : re_alloc
       use parallel,   only : Node
 
       implicit          none
@@ -227,6 +233,13 @@ C Find k points and weights
       enddo
       enddo
 
+      if (time_reversal_symmetry) then
+         ! Remove the remaining (k,-k) pairs that 
+         ! are sometimes left out by the above algorithm
+         ! This could be done also for the original list
+         call trim_kpoint_list(nk,points,weight)
+      endif
+
 C Check that weight is normalised
       wtot = sum(weight(1:nk))
       if (abs(wtot-1.0d0) .gt. nk*tiny) then
@@ -235,4 +248,120 @@ C Check that weight is normalised
       endif
 
       end subroutine find_kgrid
+!
+!-------------------------------------------------------------
+      subroutine trim_kpoint_list(nkin, kpin, win)
+!
+!     Removes pairs of k-points related by inversion
+!     This version is not memory-optimized, but the
+!     needs should be small.
+
+      use precision,  only : dp
+      use parallel,   only : Node
+
+      integer, intent(inout)                :: nkin
+      real(dp), dimension(:,:), pointer     :: kpin
+      real(dp), dimension(:), pointer       :: win
+
+      integer :: i, j, iu, ik, ix
+      real(dp), dimension(3)      :: ki, kj
+  
+      integer                     :: nkout
+
+      real(dp), dimension(3,nkin) :: kpout  ! Automatic arrays
+      real(dp), dimension(nkin)   :: wout
+
+      logical, dimension(nkin)  :: removed   ! Automatic array
+
+      removed(1:nkin) = .false.
+      nkout = 0
+      do i = 1, nkin
+         if (removed(i)) cycle
+         ki = kpin(:,i)
+         !  ---- we can safely keep this point
+         !  ... we could optimize memory use here
+         nkout = nkout + 1
+         kpout(:,nkout) = ki
+         wout(nkout) = win(i) 
+         ! ----- now check for paired points
+         do j = i + 1, nkin
+            if (removed(j)) cycle
+            kj = kpin(:,j)
+            if (paired(ki,kj)) then
+               removed(j) = .true.
+               wout(nkout) = win(i) + win(j)
+!!               if (Node == 0) then
+!!                  write(6,"(a,2(3f10.6,2x))") "Trimming: ", ki(:), kj(:)
+!!               endif
+            endif
+         enddo
+      enddo
+
+      ! Keep the original list for debugging purposes for now.
+
+      if (Node == 0) then
+         write(6,*) "Kpoints in: ", nkin, ". Kpoints trimmed: ", nkout
+         call io_assign( iu )
+         open(iu,file='NON_TRIMMED_KP_LIST',
+     $        form='formatted',status='unknown') 
+         write(iu,'(i6)') nkin
+         write(iu,'(i6,3f12.6,3x,f12.6)')
+     .        (ik, (kpin(ix,ik),ix=1,3), win(ik), ik=1,nkin)
+         call io_close( iu )
+      endif
+
+      call re_alloc(kpin,1,3,1,nkout,name='points',
+     $              routine='trim_kpoint_list',copy=.false.)
+      call re_alloc(win,1,nkout,name='weight',
+     $              routine='trim_kpoint_list',copy=.false.)
+
+      kpin(:,1:nkout) = kpout(:,1:nkout)
+      win(1:nkout) = wout(1:nkout)
+      nkin = nkout
+
+      end subroutine trim_kpoint_list
+
+!--------------------- Utility functions
+      
+      function paired(a,b) result(res)
+      real(dp), dimension(3), intent(in) :: a, b
+      logical                            :: res
+
+      integer :: i
+
+      ! k and -k are reduced to [0,1) before the comparison
+
+      res = .true.
+      do i = 1, 3
+         res = res .and. 
+     $            equal_tol(reduced_01(a(i)),
+     $                      reduced_01(-b(i)),
+     $                      tol=1.0e-8_dp)
+      enddo
+      end function paired
+      
+      pure function equal_tol(x,y,tol) result(res)
+      real(dp), intent(in) :: x, y
+      real(dp), intent(in) :: tol
+      logical   :: res
+
+      res = (abs(x-y) < tol)
+
+      end function equal_tol
+
+      pure elemental function reduced_01(x) result(x_01)
+      real(dp), intent(in) :: x
+      real(dp)             :: x_01
+
+!     Reduces x to its appropriate equivalent in [0,1)
+
+      x_01  = modulo(x,1.0_dp)
+
+!     Note that:
+!
+!       mod(-0.3, 1.0) = -0.3
+!       modulo(-0.3, 1.0) = 0.7
+
+      end function reduced_01
+
       end module m_find_kgrid

@@ -16,6 +16,7 @@
       use m_recipes, only: spline, polint
       use basis_types, only: basis_parameters
       use basis_types, only: ground_state_t
+      use atom_options, only: write_ion_plot_files, debug_kb_generation
 
 !----------------------------------------------------------------
 !     old_atmfuncs arrays
@@ -61,6 +62,7 @@
 ! In Rydbergs
 
         character(len=1)     :: sym(0:4) = (/ 's','p','d','f','g' /)
+        character(len=20)    :: global_label
 
 !---------------------------------------------------------------------
        
@@ -236,6 +238,7 @@
       lmxkb = lmxkb_in
       charge = charge_in
       lambda(:,:,:) = lambda_in(:,:,:)
+      global_label = atm_label
 
 !!** AG: Symbol is not adequate. Should use the label
 
@@ -1655,8 +1658,8 @@ C* Internal variables***
             h(1)=h(2)
             g(1)=0.0d0 
 
-            e=-((zval/dble(nprin))**2)
-            dr=-1.0d6
+            e=-((zval/dble(nprin))**2)  ! Guess for eigenvalue
+            dr=-1.0d6       ! Requested logarithmic derivative at Rmax
             rmax=rofi(nrc)
             call egofv(h,s,nrc,e,g,y,l,zval,a,b,rmax,
      .        nprin,nnodes,dr)
@@ -1941,8 +1944,9 @@ C It will display a warning if Rc>4.5 a.u.or Rc < 0.5a.u.!!!!!!!!!!!!
                 vphi=vl*phi*dknrm
                 proj(ir)=vphi/r**l
 30           continue
+             ! Extrapolation of quadratic function to r=0
              proj(1)= ( proj(2)*rofi(3)**2 - proj(3)*rofi(2)**2 ) /
-     .             (      rofi(3)**2 -      rofi(2)**2 )
+     $                   ( rofi(3)**2 - rofi(2)**2 )
 
              end subroutine KBproj
 
@@ -2693,16 +2697,19 @@ C*
 
                real(dp) rc, ekb, proj(nrmax), a, b,
      .            rofi(nrmax)  
+               character(len=40) filename
 
 C****Internal variables
 C
              integer indx, itb, nr, nmax, nmin, nn, il
              real(dp) delt, r, vphi, dy, yp1, ypn
+             integer ir, nrckb
              
 ****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
 C
           integer npoint
           parameter(npoint=4)
+          integer lun
 C
              rctb(ikb,l,is)=rc 
  
@@ -2734,6 +2741,18 @@ C
              table(1,-indx,is)=delt
              table(2,-indx,is)=ekb
 
+             if (debug_kb_generation) then
+                write(filename,"(a,i1)")
+     $               trim(global_label) // "-KBProj.", indx
+                call io_assign(lun)
+                open(unit=lun,file=filename,form="formatted")
+                nrckb = nint(log(rc/b+1.0d0)/a)+1
+                do ir = 1, nrckb
+                   write(lun,*) rofi(ir), proj(ir)
+                enddo
+                call io_close(lun)
+             endif
+!
              do itb=1,ntbmax-1
                 r=delt*(itb-1)
                 nr=nint(log(r/b+1.0d0)/a)+1
@@ -2800,10 +2819,12 @@ C  calculated only inside a sphere of radius Rmax. To define the
 C  KB projectors they will not be needed very far from the nucleus,
 C  and this limitation simplifies the handling of not bound states
 C 
-         parameter (Rmax=6.0d0)
+         real(dp), parameter :: Rmax_kb_default = 6.0d0
 C
          save ighost
          data ighost / 0 /
+
+         rmax = fdf_physical("KB.Rmax", Rmax_kb_default, "Bohr")
 
          nrwf=nint(log(Rmax/b+1.0d0)/a)+1
          nrwf=min(nrwf,nrval)
@@ -2900,7 +2921,12 @@ C***
      .            'Some parameter should be changed in the '
             write(6,"(2a)")'KBgen: WARNING: ',
      .            'pseudopotential generation procedure.'
-          call die
+            if (fdf_boolean('Atom.Ignore.Ghosts',.false.)) then
+               write(6,"(a)") " KBgen: *** Warning Ignored by User"
+               ighost = 0
+            else
+               call die
+            endif
          endif
 
 
@@ -3168,7 +3194,7 @@ C and angular momentum
 
               call build_vsoft(is,l,nsm,rinn(l,nsm),vcte(l,nsm),
      $                       a, b, rco(1,l,nsm),rofi,nrval,
-     $                       vsoft,plot=.true.)
+     $                       vsoft,plot=write_ion_plot_files)
 
               do ir = 1, nrval
                 vePAOsoft(ir) = vePAO(ir) + vsoft(ir)
@@ -4753,9 +4779,9 @@ C****CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL
            write(6,"(2a)")'Vna: WARNING: ',
      .        'might be a good idea'
          endif
-
-          ve(1)= ( ve(2)*rofi(3)**2 - ve(3)*rofi(2)**2 ) /
-     .          (      rofi(3)**2 -      rofi(2)**2 )
+         ! Extrapolation of quadratic function to r=0
+         ve(1)= ( ve(2)*rofi(3)**2 - ve(3)*rofi(2)**2 ) /
+     .        ( rofi(3)**2 -  rofi(2)**2 )
          
 !Filter
                !Filter the high-k components of Vna
@@ -6031,17 +6057,19 @@ c    .                     ,'        # scaleFactor(izeta=1,Nzeta)'
           split_table(1:nrc) = split_table_raw(1:nrc)
        endif
 
-       write(fname,"(3a,i1)") "SPLIT_SCAN.", trim(label), ".", l
-       call io_assign(iu)
-       open(iu,file=trim(fname),form="formatted",
-     $      status="unknown",action="write",
-     $      position="rewind")
-       do ir = 1, nrc
-          write(iu,"(i4,5f14.8)") ir, rofi(ir), rphi(ir),
-     $         (1.0_dp - rnrm(ir)), split_table_raw(ir),
-     $         split_table(ir)
-       enddo
-       call io_close(iu)
+       if (write_ion_plot_files) then
+          write(fname,"(3a,i1)") "SPLIT_SCAN.", trim(label), ".", l
+          call io_assign(iu)
+          open(iu,file=trim(fname),form="formatted",
+     $         status="unknown",action="write",
+     $         position="rewind")
+          do ir = 1, nrc
+             write(iu,"(i4,5f14.8)") ir, rofi(ir), rphi(ir),
+     $            (1.0_dp - rnrm(ir)), split_table_raw(ir),
+     $            split_table(ir)
+          enddo
+          call io_close(iu)
+       endif
 
        end subroutine split_scan
 

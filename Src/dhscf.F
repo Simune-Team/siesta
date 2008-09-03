@@ -150,6 +150,21 @@ C
 #ifdef MPI
       use mpi_siesta
 #endif
+      use iogrid_netcdf, only: write_grid_netcdf
+      use iogrid_netcdf, only: read_grid_netcdf
+      use iogrid_netcdf, only: set_box_limits
+      use siesta_options, only: read_charge_cdf
+      use siesta_options, only: read_deformation_charge_cdf
+#ifdef TRANSIESTA
+! TSS Begin
+! SIESTA Modules
+      use siesta_options, only: isolve
+! Transiesta Modules
+      use m_ts_options, only: TSrun, UseVFix
+      use m_ts_in_siesta, only: TSVHFix, TSVoltage2
+! TSS End
+#endif /* TRANSIESTA */
+
       implicit none
 
       integer
@@ -257,9 +272,9 @@ C
 #endif
 
       real(grid_p), dimension(:), pointer, save :: rhopcc, rhoatm, Vna
-      real(grid_p), dimension(:),     pointer   :: Vaux
-      real(grid_p), dimension(:,:),   pointer   :: DRho, Vscf
-      real(grid_p), dimension(:),     pointer   :: Chlocal, Totchar
+      real(grid_p), dimension(:),     pointer, save   :: Vaux
+      real(grid_p), dimension(:,:),   pointer, save   :: DRho, Vscf
+      real(grid_p), dimension(:), pointer, save   :: Chlocal, Totchar
 
       real(dp)
      .  bcell(3,3), b1Xb2(3), cell(3,3), const,
@@ -294,10 +309,17 @@ C
      .  rmax, scell, tiny, Uharrs, volume
 
       data
-     .  G2mesh / 0.0_dp /
+     .  G2mesh / 0.0_dp /,
      .  nzero / 3*0 /,
      .  tiny  / 1.e-12_dp /,
      .  frstme /.true./
+#ifdef TRANSIESTA
+! TSS Begin
+      character(6) :: method
+      logical, save :: transmode=.false., isvolt
+! TSS End
+
+#endif /* TRANSIESTA */
 
 C ----------------------------------------------------------------------
 C General initialisation
@@ -307,8 +329,13 @@ C Start time counter
       call timer( 'DHSCF', 1 )
 
       if (frstme) then
+#ifdef TRANSIESTA
+! TSS Begin
+        if(isolve==2) transmode=.true.
+! TSS End
+#endif /* TRANSIESTA */
         nullify(Vna,rhoatm,rhopcc)
-        nullify(Vaux,Vscf,DRho)
+        nullify(vaux,vscf,DRho)
         nullify(chlocal,totchar)
         if (Node.eq.0) then
           harrisfun = fdf_boolean('Harris_functional',.false.)
@@ -321,6 +348,14 @@ C Start time counter
      .    MPIerror)
         call MPI_Bcast(nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
+#ifdef TRANSIESTA
+#ifdef MPI
+! TSS Begin
+        call MPI_Bcast(transmode,1,MPI_logical,0,MPI_Comm_World,
+     .       MPIerror)
+! TSS End
+#endif
+#endif /* TRANSIESTA */
 
 C Set mesh sub-division variables & perform one off allocation
         nsp = nsm*nsm*nsm
@@ -408,6 +443,10 @@ C ----------------------------------------------------------------------
         call InitMesh( na, cell, norb, iaorb, iphorb, isa, rmax, 
      .                 G2max, G2mesh, nsc, nmpl, nm,
      .                 nml, ntm, ntml, ntpl, ntopl, dvol)
+
+        ! Setup box descriptors for each processor,
+        ! held in module iogrid_netcdf
+        call set_box_limits(ntm,nsm)
 
 C ----------------------------------------------------------------------
 C Allocate memory that depends on the mesh
@@ -509,13 +548,28 @@ C ----------------------------------------------------------------------
 C Find SCF electron density at mesh points. Store it in array DRho
 C ----------------------------------------------------------------------
 
-      if (spiral) then
-        call rhoofdsp(norb, nmpl, maxnd, numd, listdptr, listd,
+      if (read_charge_cdf) then
+         call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"Rho")
+         do ispin = 1,nspin
+            call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
+         enddo
+         read_charge_cdf = .false.
+      else if (read_deformation_charge_cdf) then
+         call read_grid_netcdf(ntm(1:3),nspin,ntpl,DRho,"DeltaRho")
+         do ispin = 1,nspin
+            call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
+            DRho(:,ispin) = DRho(:,ispin) + rhoatm(:)
+         enddo
+         read_deformation_charge_cdf = .false.
+      else
+         if (spiral) then
+            call rhoofdsp(norb, nmpl, maxnd, numd, listdptr, listd,
      .                nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb,
      .                isa, qspiral)
-      else
-        call rhoofd(norb, nmpl, maxnd, numd, listdptr, listd,
+         else
+            call rhoofd(norb, nmpl, maxnd, numd, listdptr, listd,
      .              nspin, Dscf, DRho, nuo, nuotot, iaorb, iphorb, isa)
+         endif
       endif
 
 C ----------------------------------------------------------------------
@@ -526,6 +580,7 @@ C ----------------------------------------------------------------------
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, +1)
         enddo
         call write_rho( filrho, cell, ntm, nsm, ntpl, nspin, DRho)
+        call write_grid_netcdf( cell, ntm, nspin, ntpl, DRho, "Rho")
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
         enddo
@@ -547,6 +602,8 @@ C Save diffuse ionic charge
         if (filepsch .ne. ' ') then
           call reord( Chlocal, Chlocal, nml, nsm, +1)
           call write_rho( filepsch, cell, ntm, nsm, ntpl, 1, Chlocal)
+          call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                            Chlocal, "Chlocal")
           call reord( Chlocal, Chlocal, nml, nsm, -1)
         endif
 
@@ -562,6 +619,8 @@ C Save total (ionic+electronic) charge
           enddo
           call reord( Totchar, Totchar, nml, nsm, +1)
           call write_rho( filetoch, cell, ntm, nsm, ntpl, 1, Totchar )
+          call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                            Totchar, "TotalCharge")
           call reord( Totchar, Totchar, nml, nsm, -1)
 
           call de_alloc( Totchar, name='Totchar' )
@@ -583,6 +642,8 @@ C ----------------------------------------------------------------------
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, +1)
         enddo
         call write_rho( fildrh, cell, ntm, nsm, ntpl, nspin, DRho )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl,
+     $                          DRho, "DeltaRho")
         do ispin = 1,nspin
           call reord( DRho(1,ispin), DRho(1,ispin), nml, nsm, -1)
         enddo
@@ -638,6 +699,13 @@ C Solve Poisson's equation
       call reord( DRho, DRho, nml, nsm, +1)
       call poison( cell, ntml(1), ntml(2), ntml(3), ntm, DRho,
      .             DUscf, Vscf, DStres, nsm )
+#ifdef TRANSIESTA
+
+! TSS BEgin
+      if(transmode .and. UseVFix)
+     .     call TSVHFix( ntm, nsm, vscf )
+! TSS End
+#endif /* TRANSIESTA */
       call reord( DRho, DRho, nml, nsm, -1)
       call reord( Vscf, Vscf, nml, nsm, -1)
 
@@ -706,6 +774,42 @@ C ----------------------------------------------------------------------
         DUext = - ddot(3,field,1,dipol,1)
       endif
 
+#ifdef TRANSIESTA
+c TSS Begin
+c ---------------------------------------------------------------------
+c transiesta:
+c add the potential corresponding to the (possible) voltage-drop.
+c note that tsvoltage is not sharing the reord wih efield since
+c we should not encounter both at the same time.
+c ---------------------------------------------------------------------
+      if (transmode) then
+
+      if (frstme) then
+
+         call tsvoltage2(cell, nzero, nsm, Vscf, isvolt )
+
+         if(isvolt .and. isefld) then
+           if(Node.eq.0) then
+             write(6,*) 'WARNING: both ext. voltage and field !!'
+             write(6,*) 'WARNING: will neglect voltage !!       '
+           end if
+           isvolt = .false.
+         end if
+      endif
+
+      if(isvolt ) then
+        if(TSrun) then
+         call reord( Vscf, Vscf, nml, nsm, +1)
+         call tsvoltage2(cell, ntm, nsm, Vscf, isvolt )
+         call reord( Vscf, Vscf, nml, nsm, -1)
+        endif
+      endif
+      endif !TSS
+c TSS End
+
+
+#endif /* TRANSIESTA */
+
 C ----------------------------------------------------------------------
 C Save electrostatic potential
 C ----------------------------------------------------------------------
@@ -713,6 +817,8 @@ C ----------------------------------------------------------------------
       if (filevh .ne. ' ') then
         call reord( Vscf, Vscf, nml, nsm, +1)
         call write_rho( filevh, cell, ntm, nsm, ntpl, 1, Vscf)
+        call write_grid_netcdf( cell, ntm, 1, ntpl,
+     $                          Vscf, "ElectrostaticPotential")
         call reord( Vscf, Vscf, nml, nsm, -1)
       endif
 
@@ -788,6 +894,8 @@ C ----------------------------------------------------------------------
           call reord( Vscf(1,ispin), Vscf(1,ispin), nml, nsm, +1)
         enddo
         call write_rho( filevt, cell, ntm, nsm, ntpl, nspin, Vscf )
+        call write_grid_netcdf( cell, ntm, nspin, ntpl,
+     $                          Vscf, "TotalPotential")
         do ispin = 1,nspin
           call reord( Vscf(1,ispin), Vscf(1,ispin), nml, nsm, -1)
         enddo

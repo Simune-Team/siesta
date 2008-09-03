@@ -257,7 +257,7 @@ C Find maximum eigenvector that is required for this k point
         ie = nuotot
         do while (ie.gt.0.and.neigneeded.eq.0)
           qe = qo(ie,ik)
-          if (qe.gt.occtol) neigneeded = ie
+          if (abs(qe).gt.occtol) neigneeded = ie
           ie = ie - 1
         enddo
 
@@ -405,7 +405,7 @@ C WARNING: Dk and Ek may be EQUIVALENCE'd to Haux and Saux
             iie = iie + 1
           endif
           qe = qo(ie,ik)
-          if (qe.gt.occtol) then
+          if (abs(qe).gt.occtol) then
             if (Node.eq.BNode) then
               do j = 1,nuotot
                 aux(1,j) = psi(1,1,j,iie)

@@ -27,7 +27,8 @@ C     .. Local Arrays ..
       double precision ar(nrmax), br(nrmax)
 C     ..
 C     .. External Subroutines ..
-      external ext, wf, wrapup
+      external ext, wf, wrapup, defined
+      logical  defined
 C     ..
 c
       do 10 i = 1, 5
@@ -52,7 +53,15 @@ c  rcfac is used for the pseudocore cut off radius.  If set
 c  to less than or equal to zero cfac is used.  cfac must be
 c  set to greater than zero.
 c
-      read(5,9000) (rc_input(i),i=1,4), cfac, rcfac
+c     Optionally use free-format input here
+c     The user should make sure that all six numbers
+c     are present.
+c
+      if (defined('FREE_FORMAT_RC_INPUT')) then
+         read(5,*) (rc_input(i),i=1,4), cfac, rcfac
+      else
+         read(5,9000) (rc_input(i),i=1,4), cfac, rcfac
+      endif
  9000 format(6f10.5)
       if (cfac .eq. zero) cfac = one
 c
