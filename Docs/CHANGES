@@ -22,6 +22,7 @@ mesh1d.f   : Corrected a small bug
 vdwxc.f90  : Added documentation in header and other places
              Corrected a possible overflow
              Changed the file name for phi kernel table
+siesta.tex : Added vdW option
 
 --------------------------------------------------------------------
 
