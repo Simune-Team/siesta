@@ -2404,8 +2404,9 @@ the INPUT file.
 \item[{\bf XC.functional}] ({\it string}): 
 \index{XC.functional@{\bf XC.functional}} 
 Exchange-correlation functional type. May be {\tt LDA} 
-(local density approximation, equivalent to {\tt LSD}) or 
-{\tt GGA} (Generalized Gradient Approximation). 
+(local density approximation, equivalent to {\tt LSD}),
+{\tt GGA} (Generalized Gradient Approximation), or
+{\tt VDW} (van der Waals).
 
 {\it Use:} Spin polarization is defined by SpinPolarized label for
 both {\tt LDA} and {\tt GGA}. There is no difference between {\tt LDA}
@@ -2446,7 +2447,10 @@ correlation functional (C. Lee, W. Yang, R. G. Parr, Phys. Rev. B
 Chem. Phys. Lett. {\bf 157}, 200 (1989). See also Johnson, Gill and Pople,
 J. Chem. Phys. {\bf 98}, 5612 (1993). (Some errors were detected in this
 last paper, so not all of their expressions correspond exactly to those
-implemented in {\sc Siesta}).
+implemented in {\sc Siesta})
+\item {\tt DRSLL} Van der Waals exchange-correlation density functional of
+M. Dion, H. Rydberg, E. Schr\"{o}der, D. C. Langreth, and B. I. Lundqvist,
+Phys. Rev. Lett. {\bf 92}, 246401 (2004).
 
 \end{itemize}
 

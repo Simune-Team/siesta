@@ -155,7 +155,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 ! Module types and variables
   use alloc,     only: allocDefaults ! Derived type for allocation defaults
 ! BEGIN DEBUG
-  use m_debug,   only: udebug        ! Output file unit for debug info
+!  use m_debug,   only: udebug        ! Output file unit for debug info
 ! END DEBUG
   use precision, only: dp            ! Double precision real type
   use xcmod,     only: nXCfunc       ! Number of xc functional(s)
@@ -201,9 +201,6 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   real(dp), parameter :: EtolKc = 0.003_dp ! Ry
   real(dp), parameter :: kcmax  = 20._dp   ! Bohr^-1
 
-! dVmin is added to differential of volume to avoid division by zero
-  real(dp),  parameter   :: dVmin = 1.0d-12
-
 ! Local variables and arrays
   logical :: &
     GGA, GGAfunc, VDW, VDWfunc
@@ -241,10 +238,10 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   do nf = 1,nXCfunc
     if ( XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
 ! DEBUG
-!      VDW deactivated for the time being
-      VDW = .false.
+!      Deactivate VDW
+!      VDW = .false.
 ! END DEBUG
-!      VDW = .true.
+      VDW = .true.
       GGA = .true.
     else if ( XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
       GGA = .true.
@@ -306,8 +303,6 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
     ! Find differential of volume. Use trapezoidal integration rule
     dVol(ir) = 4.0_dp * pi * rmesh(ir)**2 * drdm(ir)
-    ! dVmin is a small number added to avoid a division by zero
-    dVol(ir) = dVol(ir) + dVmin
     if (ir==1 .or. ir==nr) dVol(ir) = 0.5_dp*dVol(ir)
 
     ! Find the weights for the derivative d(gradF(n))/d(F(m)), of
@@ -355,7 +350,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     end do
     kc = min( kc, kcmax )
 ! DEBUG
-    write(udebug,'(a,f12.6)') myName//'kc =', kc
+!    write(udebug,'(a,f12.6)') myName//'kc =', kc
 ! END DEBUG
 
     ! Set mesh cutoff to filter VdW kernel
@@ -424,10 +419,10 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
       ! Is this a GGA or VDW?
       if (XCfunc(nf).eq.'VDW' .or. XCfunc(nf).eq.'vdw') then
 ! DEBUG
-!      VDW deactivated for the time being
-        VDWfunc = .false.
+!        Deactivate VDW
+!        VDWfunc = .false.
 ! END DEBUG
-!        VDWfunc = .true.
+        VDWfunc = .true.
         GGAfunc = .true.
       else if (XCfunc(nf).eq.'GGA' .or. XCfunc(nf).eq.'gga') then
         VDWfunc = .false.
@@ -477,17 +472,17 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
       else if (GGAfunc) then
 ! DEBUG
-!       VdW functional substituted by revPBE for the time being
-        if (XCfunc(nf)=='VDW' .and. XCauth(nf)=='DRSLL') then
-          call ggaxc( 'revPBE', irel, nSpin, D(:,ir), GD(:,:,ir),  &
-                      epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
-        else
-          call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
-                      epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
-        end if
+!       Deactivate VdW functional and substitute it by revPBE
+!        if (XCfunc(nf)=='VDW' .and. XCauth(nf)=='DRSLL') then
+!          call ggaxc( 'revPBE', irel, nSpin, D(:,ir), GD(:,:,ir),  &
+!                      epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
+!        else
+!          call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
+!                      epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
+!        end if
 ! END DEBUG
-!        call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
-!                    epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
+        call ggaxc( XCauth(nf), irel, nSpin, D(:,ir), GD(:,:,ir),  &
+                    epsX, epsC, dExdD, dEcdD, dExdGD, dEcdGD )
       else
         call ldaxc( XCauth(nf), irel, nSpin, D(:,ir), epsX, epsC, &
                     dExdD, dEcdD, dVxdD, dVcdD )
@@ -527,7 +522,10 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
 ! Divide by volume element to obtain the potential (per electron)
   do is = 1,nSpin
-    Vxc(1:nr,is) = Vxc(1:nr,is) / dVol(1:nr)
+    ! Avoid ir=1 => r=0 => dVol=0
+    Vxc(2:nr,is) = Vxc(2:nr,is) / dVol(2:nr)
+    ! Extrapolate to the origin from first two points, requiring dVxc/di=0
+    Vxc(1,is) = (4*Vxc(2,is) - Vxc(3,is)) / 3
   enddo ! is
 
 ! Divide by energy unit

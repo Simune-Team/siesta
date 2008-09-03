@@ -779,7 +779,7 @@ function interpolation( nnew, xnew, n, y, x, dx )
       if (iofxnew<1-xtol .or. iofxnew>n+xtol) then
         stop 'interpolation: ERROR: xnew out of range'
       else
-        iofxnew = max( iofxnew, 1 )
+        iofxnew = max( iofxnew, 1._dp )
         iofxnew = min( iofxnew, n*(1-epsilon(iofxnew)) )
       end if
       ! Interpolate y(i) at iofxnew

@@ -2,9 +2,27 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-
 ____________________________________________________________________
+
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
+--------------------------------------------------------------------
+
+2008-09-03  15:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: Activated vdW XC in atomxc plus documentation in vdwxc
+Keywords: VdW patch 5
+
+- VdW XC added to atomxc
+- Bug correction in cellxc and its calls
+
+Modified Files:
+atom.f     : Added the VdW option
+atomxc.f90 : Activated the VdW functional
+mesh1d.f   : Corrected a small bug
+vdwxc.f90  : Added documentation in header and other places
+             Corrected a possible overflow
+             Changed the file name for phi kernel table
+
 --------------------------------------------------------------------
 
 2008-07-24  18:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>

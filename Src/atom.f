@@ -1969,6 +1969,8 @@ C Local variables
         if (icorr .eq. "rv") ps_string ="GGA revPBE"
         if (icorr .eq. "wc") ps_string ="GGA Wu-Cohen"
         if (icorr .eq. "bl") ps_string ="GGA Becke-Lee-Yang-Parr"
+        if (icorr .eq. "vf" .or. icorr .eq. "vw") 
+     $    ps_string ="VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist"
 
 C Loop over functionals
         do nf = 1,nXCfunc
@@ -2042,7 +2044,7 @@ C Loop over functionals
 
             write(6,'(a)')  
      $        'xc_check: VDW Dion-Rydberg-Schroeder-Langreth-Lundqvist'
-            if (icorr.ne.'vw'.and.nXCfunc.eq.1) 
+            if ((icorr.ne.'vf' .and. icorr.ne.'vw') .and.nXCfunc.eq.1) 
      $          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"

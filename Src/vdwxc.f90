@@ -10,23 +10,208 @@
 !
 !******************************************************************************
 ! MODULE m_vdwxc
-! Implements the van der Waals functional kernel of
-! M.Dion et al, PRL 92, 246401 (2004)
-! Written by J.M.Soler. July 2007.
+! Implements the nonlocal correlation energy part of the van der Waals density
+! functional of M.Dion et al, PRL 92, 246401 (2004):
+!   Enlc = (1/2) Int Int dr1 dr2 rho(r1) phi(q1*r12,q2*r12) rho(r2)
+! with r12=|r2-r1|, q1=q0(rho(r1),grad_rho(r1)), q2=q0(rho(r2),grad_rho(r2)),
+! where rho(r) is the electron density at point r, grad_rho(r) its gradient,
+! and q0(rho,grad_rho) and phi(d1,d2) are universal functions defined in 
+! Eqs.(11-12) and (14-16) of Dion et al.
+! Written by J.M.Soler. July 2007 - July 2008.
+!------------------------------------------------------------------------------
+! Used module procedures:
+!  use mesh1D,      only: derivative        ! Derivative of a function in a mesh
+!  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
+!  use mesh1D,      only: integral          ! Integral of a function in a mesh
+!  use mesh1D,      only: get_mesh          ! Returns the mesh points
+!  use mesh1D,      only: get_n             ! Returns the number of mesh points
+!  use m_radfft,    only: radfft            ! Radial fast Fourier transform
+!  use mesh1D,      only: set_interpolation ! Sets interpolation method
+!  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
+!  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
+!  use m_recipes,   only: splint            ! Performs spline interpolation
+!------------------------------------------------------------------------------
+! Used module parameters:
+!   use precision,  only: dp                ! Real double precision type
+!------------------------------------------------------------------------------
+! Public procedures available from this module:
+!   vdw_decusp    : Energy due to the softening of the VdW kernel cusp
+!   vdw_get_qmesh : Returns size and values of q-mesh
+!   vdw_phi       : Finds and interpolates phi(q1,q2,k)
+!   vdw_set_kcut  : Sets the planewave cutoff kc of the integration grid
+!   vdw_theta     : Finds function theta_q(rho,grad_rho)
+!------------------------------------------------------------------------------
+! Public types, parameters, variables, and arrays:
+!   None
+!------------------------------------------------------------------------------
+! Units: 
+!   All lengths and energies in atomic units (Bohr, Hartree)
 !******************************************************************************
-!
-!   PUBLIC procedures available from this module:
-!
+! subroutine vdw_decusp( nspin, rhos, grhos, eps, dedrho, dedgrho )
+!   Finds the local energy correction due to the softening of the VdW kernel
+!   cusp, defined as eps(rho,grad_rho) =
+!   (1/2) * rho * Int 4*pi*r**2*dr * (phi(q1*r,q2*r) - phi_soft(q1*r,q2*r))
+!   where q1=q2=q0(rho,grad_rho). Notice that grad_rho is included in the value 
+!   of q0 at the origin but not in the change of rho(r) in the integrand.
+!   phi_soft(d1,d2) is a softened version of the nonlocal VdW kernel phi(d1,d2)
+!   (Eq.(14) of Dion et al) in which the logarithmic divergence at d1=d2=0 is
+!   substituted by a smooth analytic function of the form defined in vdw_phi
+! Arguments:
+!   integer, intent(in) :: nspin            ! Number of spin components
+!   real(dp),intent(in) :: rhos(nspin)      ! Electron spin density
+!   real(dp),intent(in) :: grhos(3,nspin)   ! Spin density gradient
+!   real(dp),intent(out):: eps              ! Energy correction per electron
+!   real(dp),intent(out):: dedrho(nspin)    ! d(rho*eps)/d(rho)
+!   real(dp),intent(out):: dedgrho(3,nspin) ! d(rho*eps)/d(grad_rho)
+! Notes:
+! - Requires a previous call to vdw_set_kcut. Otherwise stops with an error msg.
+!------------------------------------------------------------------------------
+! subroutine vdw_get_qmesh( n, q )
+!   Returns size and values of q-mesh
+! Arguments:
+!   integer,          intent(out) :: n      ! Number of q mesh points
+!   real(dp),optional,intent(out) :: q(:)   ! Values of q mesh points
+! Sample usage:
+!   integer :: nq
+!   real(dp):: kcut
+!   real(dp),allocatable:: qmesh(:)
+!   kcut = 10._dp ! 10 Bohr^-1 => 100 Ry (this should be adapted to your mesh)
+!   call vdw_set_kcut( kcut )
+!   call vdw_get_qmesh( nq )
+!   allocate( qmesh(nq) )
+!   call vdw_get_qmesh( nq, qmesh )
+! Notes:
+! - Requires a previous call to vdw_set_kcut. Otherwise stops with an error msg.
+! - If the size of array q is smaller than that of the stored qmesh, it is 
+!   filled with the first size(q) values of qmesh
+! - The size and values of the logarithmic q mesh are set by internal
+!   parameters that can be changed only by editing them in this module:
+!     nq             : Number of q mesh points
+!     qcut=qmesh(nq) : Max. value of q mesh
+!     dqmaxdqmin     : (qmesh(nq) - qmesh(nq-1)) / (qmesh(2) - qmesh(1))
+!   Although the presently-set values have been found to yield good accuracy
+!   in preliminary calculations, more tests may be required to guarantee
+!   convergence in other systems. The value of nq is particularly important:
+!   larger nq increases accuracy but CPU time increases between nq and nq**2.
+!------------------------------------------------------------------------------
+! subroutine vdw_phi( k, phi )
+!   Finds phi_soft(q1,q2,k) (Fourier transform of phi_soft(q1,q2,r)) for all 
+!   values of q1 and q2 in qmesh. The q's are local wavevectors defined in 
+!   eqs.(11-12), and phi_soft is a smoothed version of Eq.(14) of Dion et al,
+!   defined as phi_soft(d1,d2) = phi_soft(d,a) = phi0 + phi2*d**2 + phi4*d**4, 
+!   where phi0 is a parameter, d=sqrt(d1**2+d2**2), a=atan(d2/d1), and phi2, 
+!   phi4 are chosen so that phi_soft(d,a) matches phi(d,a) in value and slope
+!   at d=dsoft (another parameter).
+! Arguments:
+!   real(dp),intent(in) :: k         ! Modulus of actual k vector
+!   real(dp),intent(out):: phi(:,:)  ! phi(q1,q2,k) at given k
+!                                    ! for all q1,q2 in qmesh
+! Sample usage:
+!   integer :: nq
+!   real(dp):: k, kcut
+!   real(dp),allocatable:: phi(:,:)
+!   kcut = 10._dp ! 10 Bohr^-1 => 100 Ry (this should be adapted to your mesh)
+!   call vdw_set_kcut( kcut )
+!   call vdw_get_qmesh( nq )
+!   allocate( phi(nq,nq) )
+!   do k points
+!     call vdw_phi( k, phi )
+! Notes:
+! - Requires a previous call to vdw_set_kcut. Otherwise stops with an error msg.
+! - Stops with an error message if size of array phi is smaller than nq*nq.
+!------------------------------------------------------------------------------
+! subroutine vdw_set_kcut( kc )
+!   Sets the reciprocal planewave cutoff kc of the integration grid, and finds 
+!   the interpolation table to be used by vdw_phi to obtain the vdW kernel phi
+!   at the reciprocal mesh wavevectors.
+! Arguments:
+!   real(dp),intent(in):: kc  ! Planewave cutoff: k>kcut => phi=0
+! Notes:
+! - An interpolation table to calculate the VdW kernel phi is read from file 
+!   'vdw_kernel.table'. If the file does not exist, the table is calculated
+!   and the file written when vdw_set_kcut is called.
+!------------------------------------------------------------------------------
+! subroutine vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
+!   Finds the value and derivatives of theta_i(rho,grad_rho) = rho*p_i(q0), 
+!   where q0(rho,grad_rho) is the local wavevector defined in eqs.(11-12) 
+!   of Dion et al, PRL 92, 246401 (2004). 
+!   p_i(q0) are the cubic polynomials such that
+!     y(q0) = Sum_i p_i(q0) * y_i
+!   is the cubic spline interpolation at q0 of (any) function y(q) with
+!   values y_i at mesh points qmesh_i
+! Arguments:
+!   integer, intent(in) :: nspin               ! Number of spin components
+!   real(dp),intent(in) :: rhos(nspin)         ! Electron spin density
+!   real(dp),intent(in) :: grhos(3,nspin)      ! Spin density gradient
+!   real(dp),intent(out):: theta(nq)           ! Expansion of rho*q in qmesh
+!   real(dp),intent(out):: dtdrho(nq,nspin)    ! dtheta(iq)/drhos
+!   real(dp),intent(out):: dtdgrho(3,nq,nspin) ! dtheta(iq)/dgrhos(ix)
+! Notes:
+! - Requires a previous call to vdw_set_kcut
+! - The value of q0(rho,grad_rho) is saturated at qmesh(nq)=qcut (a parameter)
+!   to avoid incorrect 'interpolation' of phi(q1,q2,r12) from qmesh points.
+!******************************************************************************
+! Algorithms:
+!   Although Eqs.(14-16) of Dion et al provide a straightforward definition of
+! the nonlocal VdW kernel phi(d1,d2), its direct evaluation with the required 
+! accuracy turns out to be too time consuming. In addition, the kernel has a 
+! logarithmic divergence at d1=d2=0, which prevents its direct numerical 
+! Fourier transform. Therefore, an elaborate layered procedure is followed:
+!   A smoothed version of phi(d1,d2) is defined as 
+!     phi_soft(d1,d2) = phi_soft(d,a) = phi0 + phi2*d**2 + phi4*d**4, 
+! where phi0 is a parameter, d=sqrt(d1**2+d2**2), a=atan(d2/d1), and phi2, 
+! phi4 are chosen so that phi_soft(d,a) matches phi(d,a) in value and slope
+! at d=dsoft (another parameter).
+!   The difference in energy between phi_soft and the right phi (called DEcusp) 
+! is approximated in a local-density approximation as eps(rho,grad_rho) =
+!   (1/2) * rho * Int 4*pi*r**2*dr * (phi(q1*r,q2*r) - phi_soft(q1*r,q2*r))
+! where q1=q2=q0(rho,grad_rho). Notice that grad_rho is included in the value 
+! of q0 at the origin but not in the change of rho(r) in the integrand. This
+! could be improved in the future, although preliminary tests suggest that
+! the corrections would be quite small.
+!   A one-dimensional table of phi(d,d) is first calculated and stored as a
+! function of d. Then, phi(d1,d2) is calculated as phi(dmax,dmax)+dphi(d1,d2),
+! with dmax=max(d1,d2). The reason is that dphi converges better for large d,
+! and therefore it requires smaller integration limits in Eq.(14) of Dion et al,
+! while phi(dmax,dmax) is interpolated from the stored table.
+!   Using the above methods, a two-dimensional table of phi_soft(d1,d2) is
+! calculated and stored for all values of d1 and d2 in a logarithmic dmesh
+! of size nd with a cutoff dcut (two internal parameters). This table is 
+! written on disk file 'vdw_kernel.table' for reuse in subsequent runs.  
+! If the file exists already, the table is simply read and stored in memory.
+!   Once we set the cutoff kcut (expressed as a wavevector), of the integration 
+! mesh to be used in evaluating the VdW nonlocal energy Enlc, we calculate and
+! store (in memory) another interpolation table of phi_soft(q1,q2,k) for all
+! values of q1 and q2 in qmesh, and of k in a fine radial grid of nk=nr points.
+! This is done by first calculating phi_soft(q1,q2,r)=phi_soft(q1*r,q2*r) in a
+! radial grid in real space and then Fourier-transforming it to k space.
+! This table is then used to interpolate phi_soft(q1,q2,k) for any desired k.
+!   In order to ensure that values of q are within the interpolation range,
+! they are 'saturated' smoothly to a cutoff qcut=qmesh(nq). This implies an 
+! approximation when either rho is very large (i.e. near the nucleus) or when 
+! (grad_rho/rho)**2/kF -> infinity, what tipically occurs in the tails of
+! the electron density. In the first case, Enlc is neglegible compared with
+! Ex and the local part of Ec. In the second case, it is neglegible because of
+! the factor rho in the integrand. Thus, the preliminary tests suggest that the
+! presently-set value of qcut gives sufficiently accurate values.
 !******************************************************************************
 
 MODULE m_vdwxc
 
-  use precision,   only: dp
-  use mesh1D,      only: get_mesh, get_n, set_mesh, set_interpolation, &
-                         derivative, integral
-  use m_radfft,    only: radfft
-  use flib_spline, only: generate_spline
-  use m_recipes,   only: spline, splint
+! Used module procedures
+  use mesh1D,      only: derivative        ! Derivative of a function in a mesh
+  use flib_spline, only: generate_spline   ! Sets spline in a general mesh
+  use mesh1D,      only: integral          ! Integral of a function in a mesh
+  use mesh1D,      only: get_mesh          ! Returns the mesh points
+  use mesh1D,      only: get_n             ! Returns the number of mesh points
+  use m_radfft,    only: radfft            ! Radial fast Fourier transform
+  use mesh1D,      only: set_interpolation ! Sets interpolation method
+  use mesh1D,      only: set_mesh          ! Sets a 1D mesh
+  use m_recipes,   only: spline            ! Sets spline in a uniform mesh
+  use m_recipes,   only: splint            ! Performs spline interpolation
+
+! Used module parameters
+  use precision,   only: dp                ! Real double precision type
 
 ! BEGIN DEBUG
   use m_debug,     only: udebug     ! File unit for debug output
@@ -68,7 +253,7 @@ PRIVATE  ! Nothing is declared public beyond this point
   ! Precision parameter for the integral in routine dphi
   real(dp),parameter:: ashortbyd = 2.5_dp  ! Shorter integration limit / d
 
-  ! Parameters for phi_soft
+  ! Parameters for phi_soft. Some recommended pairs of values are
   ! (dsoft,phi0_soft)=(0.5,0.8)|(0.7|0.6)|(1.0|0.4)|(1.5,0.22)|(2.0,0.12)
   real(dp),parameter:: dsoft = 1.0_dp       ! Softening matching radius
   real(dp),parameter:: phi0_soft = 0.40_dp  ! phi_soft(0,0) (depends on dsoft)
@@ -258,21 +443,27 @@ real(dp) function dphi( d1, d2 )
     a = amesh(ia)
     c(ia) = cos(a)
     s(ia) = sin(a)
-    if (d1==0._dp) then
-      nu1(ia) = a*a / 2
-    else
-      nu1(ia) = a*a / 2 / (1-exp(-gamma*(a/d1)**2))
-    end if
-    if (d2==0._dp) then
-      nu2(ia) = a*a / 2
-    else
-      nu2(ia) = a*a / 2 / (1-exp(-gamma*(a/d2)**2))
-    end if
-    if (dmax<=0._dp) then
-      nu0(ia) = a*a / 2
-    else
-      nu0(ia) = a*a / 2 / (1-exp(-gamma*(a/dmax)**2))
-    end if
+    if (a==0._dp) then
+      nu0(ia) = dmax**2 / 2 / gamma
+      nu1(ia) = d1**2 / 2 / gamma
+      nu2(ia) = d2**2 / 2 / gamma
+    else ! (a/=0)
+      if (d1==0._dp) then
+        nu1(ia) = a*a / 2
+      else
+        nu1(ia) = a*a / 2 / (1-exp(-gamma*(a/d1)**2))
+      end if
+      if (d2==0._dp) then
+        nu2(ia) = a*a / 2
+      else
+        nu2(ia) = a*a / 2 / (1-exp(-gamma*(a/d2)**2))
+      end if
+      if (dmax<=0._dp) then
+        nu0(ia) = a*a / 2
+      else
+        nu0(ia) = a*a / 2 / (1-exp(-gamma*(a/dmax)**2))
+      end if
+    end if ! (a==0)
   end do
 
 ! Make integral on variable a
@@ -564,7 +755,8 @@ end function phi_soft
 
 real(dp) function phi_val( d1, d2 )
 
-! Finds kernel phi by direct integration
+! Finds kernel phi by direct integration of Eq.(14) of 
+! Dion et al, PRL 92, 246401 (2004)
 
   real(dp),intent(in) :: d1, d2
 
@@ -599,16 +791,21 @@ real(dp) function phi_val( d1, d2 )
     a = amesh(ia)
     c(ia) = cos(a)
     s(ia) = sin(a)
-    if (d1==0._dp) then
-      nu1(ia) = a*a / 2
-    else
-      nu1(ia) = a*a / 2 / (1-exp(-gamma*(a/d1)**2))
-    end if
-    if (d2==0._dp) then
-      nu2(ia) = a*a / 2
-    else
-      nu2(ia) = a*a / 2 / (1-exp(-gamma*(a/d2)**2))
-    end if
+    if (a==0._dp) then
+      nu1(ia) = d1**2 / 2 / gamma
+      nu2(ia) = d2**2 / 2 / gamma
+    else ! (a/=0)
+      if (d1==0._dp) then
+        nu1(ia) = a*a / 2
+      else
+        nu1(ia) = a*a / 2 / (1-exp(-gamma*(a/d1)**2))
+      end if
+      if (d2==0._dp) then
+        nu2(ia) = a*a / 2
+      else
+        nu2(ia) = a*a / 2 / (1-exp(-gamma*(a/d2)**2))
+      end if
+    end if ! (a==0)
   end do
 
 ! Make integral on variable a
@@ -801,7 +998,7 @@ end subroutine saturate
 
 subroutine saturate_inverse( y, xc, x, dydx )
 
-! Finds the inverse of saturate function
+! Finds the inverse of the function defined in saturate subroutine
 
   implicit none
   real(dp),intent(in) :: y     ! Independent variable
@@ -832,7 +1029,9 @@ end subroutine saturate_inverse
 
 subroutine set_phi_table()
 
-! Finds the interpolation table (mesh points and function values) for phi(d1,d2)
+! Finds and writes in disk the interpolation table (mesh points and function 
+! values) for the kernel phi(d1,d2). If the table file already exists, it is
+! simply read and stored in memory.
 
   implicit none
 
@@ -843,9 +1042,9 @@ subroutine set_phi_table()
              phi(nd,nd), phi1, phim, phip, phimm, phimp, phipm, phipp
 
 ! Read file with table, if present
-  inquire( file='phi.table', exist=file_found )
+  inquire( file='vdw_kernel.table', exist=file_found )
   if (file_found) then
-    open( unit=1, file='phi.table', form='unformatted' )
+    open( unit=1, file='vdw_kernel.table', form='unformatted' )
     read(1,end=1) nmesh
     if (nmesh==nd) then
       read(1,end=1) dmesh
@@ -1021,7 +1220,7 @@ subroutine set_phi_table()
                phi_table )
 
 ! Save phi_table in file
-  open( unit=1, file='phi.table', form='unformatted' )
+  open( unit=1, file='vdw_kernel.table', form='unformatted' )
   write(1) nd
   write(1) dmesh
   write(1) phi_table
@@ -1063,7 +1262,11 @@ end subroutine set_qmesh
 
 subroutine vdw_decusp( nspin, rhos, grhos, eps, dedrho, dedgrho )
 
-! Finds the energy due to the softening of the VdW kernel cusp
+! Finds the local energy correction due to the softening of the VdW kernel
+! cusp, defined as DEcusp(rho,grad_rho) = 
+!   (1/2) * rho**2 * Int 4*pi*r**2*dr * (phi(q1*r,q2*r) - phi_soft(q1*r,q2*r))
+! where q1=q2=q0(rho,grad_rho). Notice that grad_rho is included in the value 
+! of q0 at the origin but not in the change of rho(r) in the integrand.
 
   implicit none
   integer, intent(in) :: nspin            ! Number of spin components
@@ -1133,8 +1336,8 @@ subroutine vdw_get_qmesh( n, q )
 ! Returns size and values of q-mesh
 
   implicit none
-  integer,          intent(out) :: n
-  real(dp),optional,intent(out) :: q(:)
+  integer,          intent(out) :: n     ! Number of qmesh points
+  real(dp),optional,intent(out) :: q(:)  ! Values of qmesh points
   integer:: nmax
   if (.not.qmesh_set) call set_qmesh()
   n = nq
@@ -1148,9 +1351,10 @@ end subroutine vdw_get_qmesh
 
 subroutine vdw_phi( k, phi )
 
-! Finds and interpolates phi(q1,q2,k) (Fourier transform of phi(q1,q2,r)) 
-! for all values of q1 and q2 in qmesh, in the first call. Then it finds
-! the interpolation at that and succesive calls
+! Finds by interpolation phi(q1,q2,k) (Fourier transform of phi(q1,q2,r)) 
+! for all values of q1 and q2 in qmesh. If the interpolation table does not
+! exist, it is calculated in the first call to vdw_phi. It requires a 
+! previous call to vdw_set_kc to set qmesh.
 
   implicit none
   real(dp),intent(in) :: k         ! Modulus of actual k vector
@@ -1318,7 +1522,12 @@ end subroutine vdw_set_kcut
 
 subroutine vdw_theta( nspin, rhos, grhos, theta, dtdrho, dtdgrho )
 
-! Finds function theta_q(rho,grad_rho)
+! Finds the value and derivatives of theta_i(rho,grad_rho) = rho*p_i(q0), 
+! where q0(rho,grad_rho) is the local wavevector defined in eqs.(11-12) 
+! of Dion et al. p_i(q0) are the cubic polynomials such that
+!     y(q0) = Sum_i p_i(q0) * y_i
+! is the cubic spline interpolation at q0 of (any) function y(q) with
+! values y_i at mesh points qmesh_i
 
   implicit none
   integer, intent(in) :: nspin               ! Number of spin components
