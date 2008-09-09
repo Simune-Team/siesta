@@ -2,6 +2,32 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+Sep 1st, 2008 
+Merge of changes by Rogeli on svn 
+
+    Removal of matmul calls in dynamics.f
+    moremeshsubs.F can now be compiled in MN with no temporaries + cosmetic changes
+
+
+modified:
+  Src/atom.f
+  Src/dhscf.F
+  Src/diagg.F
+  Src/diagon.F
+  Src/dynamics.f
+  Src/efield.F
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/sample.F90
+  Src/grdsam.F
+  Src/meshmatrix.F
+  Src/moremeshsubs.F
+  Src/phionmesh.F
+  Src/radial.f
+  Src/rdiag.F
+  Src/reinit.F
+  Src/setup_H0.F
+  Src/writewave.F
 
 ------------------------------------------------------------
 Merge of changes along development trunk (siesta-devel--reference--2.5),
