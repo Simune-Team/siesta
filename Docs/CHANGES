@@ -2,6 +2,20 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+Sep 9, 2008 
+
+Accept integers or reals in (super)cell specification
+
+The original code by Raul demanded reals for lattice
+specification and supercell description (through the
+use of fdf_breals). Now the reading is done with
+fdf_bvalues, so integers are accepted as well.
+
+modified:
+  Src/redcel.F
+
+---------------------------------------------
+
 Sep 1st, 2008 
 Merge of changes by Rogeli on svn 
 

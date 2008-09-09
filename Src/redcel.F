@@ -42,7 +42,7 @@ C Internal variables
       type(parsed_line), pointer :: pline
 
 C Lattice constant
-      alat = fdf_physical('LatticeConstant',0.d0,'Bohr')
+      alat = fdf_physical('LatticeConstant',0.0_dp,'Bohr')
 
 C Lattice vectors
 
@@ -55,26 +55,26 @@ C Lattice vectors
       if ( fdf_block('LatticeParameters',bfdf) ) then
         if (.not. fdf_bline(bfdf, pline))
      .    call die('redcel: ERROR in LatticeParameters block')
-        alp = fdf_breals(pline,1)
-        blp = fdf_breals(pline,2)
-        clp = fdf_breals(pline,3)
-        alplp = fdf_breals(pline,4)
-        betlp = fdf_breals(pline,5)
-        gamlp = fdf_breals(pline,6)
+        alp = fdf_bvalues(pline,1)
+        blp = fdf_bvalues(pline,2)
+        clp = fdf_bvalues(pline,3)
+        alplp = fdf_bvalues(pline,4)
+        betlp = fdf_bvalues(pline,5)
+        gamlp = fdf_bvalues(pline,6)
 *       write(6,'(a)')
 *    .   'redcel: Lattice Parameters (units of Lattice Constant) ='
 *       write(6,'(a,3f10.5,3f9.3)')
 *    .   'redcel: ',alp,blp,clp,alplp,betlp,gamlp
         pi = acos(-1.d0)
-        alplp = alplp * pi/180.d0
-        betlp = betlp * pi/180.d0
-        gamlp = gamlp * pi/180.d0
+        alplp = alplp * pi/180.0_dp
+        betlp = betlp * pi/180.0_dp
+        gamlp = gamlp * pi/180.0_dp
         cell(1,1) = alp
-        cell(2,1) = 0.d0
-        cell(3,1) = 0.d0
+        cell(2,1) = 0.0_dp
+        cell(3,1) = 0.0_dp
         cell(1,2) = blp * cos(gamlp)
         cell(2,2) = blp * sin(gamlp)
-        cell(3,2) = 0.d0
+        cell(3,2) = 0.0_dp
         cell(1,3) = clp * cos(betlp)
         xxx = (cos(alplp) - cos(betlp)*cos(gamlp))/sin(gamlp)
         cell(2,3) = clp * xxx
@@ -83,34 +83,37 @@ C Lattice vectors
         do i = 1,3
           if (.not. fdf_bline(bfdf, pline))
      .      call die('redcel: ERROR in LatticeVectors block')
-          cell(1,i) = fdf_breals(pline,1)
-          cell(2,i) = fdf_breals(pline,2)
-          cell(3,i) = fdf_breals(pline,3)
+          cell(1,i) = fdf_bvalues(pline,1)
+          cell(2,i) = fdf_bvalues(pline,2)
+          cell(3,i) = fdf_bvalues(pline,3)
         enddo
       else
         do i = 1,3
           do j  = 1,3
-            cell(i,j) = 0.d0
+            cell(i,j) = 0.0_dp
           enddo
-          cell(i,i) = 1.d0
+          cell(i,i) = 1.0_dp
         enddo
       endif
+
+      ! Note that cell will be zero if alat is not specified
+      ! This is not very intuitive
 
       cell = alat * cell
 
 C     Super cell 
 
       if ( fdf_block('SuperCell',bfdf) ) then
-        if ( alat .eq. 0.d0 ) then
+        if ( alat .eq. 0.0_dp ) then
           call die('redcel: ERROR: LatticeConstant required' //
      .             ' to define SuperCell')
         endif
         do i = 1,3
           if (.not. fdf_bline(bfdf, pline))
      .      call die('redcel: ERROR in SuperCell block')
-          mscell(1,i) = fdf_breals(pline,1)
-          mscell(2,i) = fdf_breals(pline,2)
-          mscell(3,i) = fdf_breals(pline,3)
+          mscell(1,i) = fdf_bvalues(pline,1)
+          mscell(2,i) = fdf_bvalues(pline,2)
+          mscell(3,i) = fdf_bvalues(pline,3)
         enddo
       else
         do i = 1,3
