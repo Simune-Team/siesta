@@ -4,6 +4,48 @@
 
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
+2008-09-11  11:50:00 Alberto Garcia <albertog@icmab.es>	 2.6.2
+Incorporate new filtering functionality
+
+Pending the merge of the new atom-clean structure, the new filtering
+functionality of Jose Soler and Eduardo Anglada has been incorporated
+temporarily into this branch.
+
+The filtering routines are in Src/m_filter.f90, a self-contained
+module with no dependencies. A new subdirectory Src/filter with
+the same code is meant to serve as a test framework for now.
+Eventually it would be turned into a "library" subdirectory, 
+and Src/m_filter.f90 removed.
+
+The old filtering routines have been removed.
+Minimal documentation has been added to Docs/siesta.tex.
+
+removed:
+  Src/filter.f90
+  Src/filter_subs.f
+added:
+  Src/filter/
+  Src/filter/README
+  Src/filter/ba-6s-orb.dat
+  Src/filter/core.dat
+  Src/filter/f2kcli.F90
+  Src/filter/m_filter.f90
+  Src/filter/m_getopts.f90
+  Src/filter/makefile
+  Src/filter/test_filter.f90
+  Src/filter/ti-3p-orb.dat
+  Src/filter/ti-4p-orb.dat
+  Src/m_filter.f90
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/atom.f
+  Src/version.F90
+  version.info
+
+
 2008-09-11  11:10:00 GMT  Alberto Garcia <albertog@icmab.es>	2.6.1
 Fix bug related to vna introduced at a previous patch
 
