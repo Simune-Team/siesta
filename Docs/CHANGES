@@ -2,6 +2,22 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+** CHANGES ALONG siesta-2.6 trunk branch 
+
+2008-09-11  11:10:00 GMT  Alberto Garcia <albertog@icmab.es>	2.6.1
+Fix bug related to vna introduced at a previous patch
+
+A patch introduced in 2.5.29 in meshsubs.F was wrong. Vna must
+be kept in "gradients" calculations. Its intent has been set 
+to "inout" and the extra initialization removed.
+
+The bug was spotted by Rogeli Grima.
+
+modified:
+  Src/meshsubs.F
+  Src/version.F90
+  version.info
+
 ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
