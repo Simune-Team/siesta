@@ -5,6 +5,23 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 ------------------------------------------------------------------
+2008-09-12  13:45:00 Alberto Garcia <albertog@icmab.es>	 2.6.4
+Extended Ordejon-Mauri ordern functional to atoms with odd number of electrons
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Sat 2008-08-30 18:38:45 +0100
+  
+In the initial assigning of LWF centers to atoms, it assigns n/2 to
+atoms with n even, and (n+1)/2 or (n-1)/2 in an alternating sequence
+to atoms with odd number. The sequence runs in the order of input in
+the atomic coordinates block; the user can control the assignment by
+defining the order there.
+  
+modified:
+  Docs/siesta.tex
+  Src/atomlwf.F
+
+------------------------------------------------------------------
 2008-09-12  13:25:00 Alberto Garcia <albertog@icmab.es>	 2.6.3
 Siesta moves on with fresh DM instead of stopping when wrong DM file
 
