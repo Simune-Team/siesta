@@ -2,6 +2,19 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+** CHANGES ALONG bsc-2.8 branch 
+
+----------------------------------------------------------------------
+2008-09-12  14:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.8.1
+Incorporate proper patchlogs from trunk merge
+
+A previous big merge from trunk was carried out without explicitly
+incorporating the patchlogs ("merge records"). They have now been
+added to facilitate the synching.
+
+Version tags have now a "siesta-bsc-2.8" prefix.
+
+----------------------------------------------------------------------
 Sep 9, 2008 
 
 Accept integers or reals in (super)cell specification
