@@ -5,6 +5,26 @@
 ** CHANGES ALONG bsc-2.8 branch 
 
 ----------------------------------------------------------------------
+2008-09-12  14:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.8.2
+Bug fixes by Rogeli: Drho reorder, Vna init (SVN 2-3)
+
+Fixed a bug in the function NeutralAtomOnMesh.  Array Vna only should
+be reset when we don't need to compute Gradients.  Vna is also
+defined as an inout variable to avoid problems under some
+architectures.
+  
+This bug shows up in test "batio3".
+  
+modified:
+  Src/meshsubs.F
+
+Fixed a bug in the sequential code of dhscf
+Array Drho needs to be reordered before calling cellxc.
+  
+modified:
+  Src/dhscf.F
+
+----------------------------------------------------------------------
 2008-09-12  14:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.8.1
 Incorporate proper patchlogs from trunk merge
 

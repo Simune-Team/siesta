@@ -422,26 +422,25 @@ C ----------------------------------------------------------------------
       use mesh,      only: dxa, idop, indexp, ipa, mop, nsp, xdop, xdsp
       implicit none
 C    Passed arguments
-      integer,       intent(in) :: na, isa(na), ntpl
-      integer,       intent(in) :: indxua(*)
-      real(dp),      intent(in) :: dvol, volume
-      real(grid_p),  intent(in) :: drho(*)
-      logical,       intent(in) :: Forces, Stress
-      real(grid_p), intent(out) :: vna(ntpl)
-      real(dp),   intent(inout) :: fal(3,*)
-      real(dp),   intent(inout) :: stressl(3,3)
+      integer,         intent(in) :: na, isa(na), ntpl
+      integer,         intent(in) :: indxua(*)
+      real(dp),        intent(in) :: dvol, volume
+      real(grid_p),    intent(in) :: drho(*)
+      logical,         intent(in) :: Forces, Stress
+      real(grid_p), intent(inout) :: vna(ntpl)
+      real(dp),     intent(inout) :: fal(3,*)
+      real(dp),     intent(inout) :: stressl(3,3)
 C     Internal variables
-      integer                   :: i, ia, iop, ip, ip0, is, isp, iua
-      real(dp)                  :: dx(3), grva(3), r, ra, va
-      logical                   :: Gradients
+      integer                     :: i, ia, iop, ip, ip0, is, isp, iua
+      real(dp)                    :: dx(3), grva(3), r, ra, va
+      logical                     :: Gradients
 
 C     Check whether forces and/or stress has been
 C     requested based on arguments
       Gradients = (Forces.or.Stress)
 
 C     Initialise array to zero
-!      if (.not.Gradients) vna(1:ntpl) = 0.0_dp
-      vna(1:ntpl) = 0.0_dp
+      if (.not.Gradients) vna(1:ntpl) = 0.0_dp
       do ia = 1,na
         iua = indxua(ia)
         is = isa(ia)

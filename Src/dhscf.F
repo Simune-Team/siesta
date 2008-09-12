@@ -884,6 +884,7 @@ C ----------------------------------------------------------------------
 #ifdef MPI
       call setMeshDistr( 3, nsm, nsp, nml, nmpl, ntml, ntpl )
       ntpl_3 = ntpl
+#endif
       call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, name='Vscf_gga',
      &               routine='dhscf' )
       call re_alloc( DRho_gga, 1, ntpl, 1, nspin, name='DRho_gga',
@@ -893,11 +894,6 @@ C ----------------------------------------------------------------------
         call distMeshData( 2, DRho(:,ispin),
      &                     3, DRho_gga(:,ispin), +1 )
       enddo
-#else
-      DRho_gga => DRho
-      call re_alloc( Vscf_gga, 1, ntpl, 1, nspin, name='Vscf_gga',
-     &               routine='dhscf' )      
-#endif
 
 #ifdef DEBUG
         call write_debug( '    PRE cellxc' )
@@ -907,6 +903,7 @@ C ----------------------------------------------------------------------
      &             dummy_DVxcdn, stressl )
 #ifdef MPI
       call setMeshDistr( 2, nsm, nsp, nml, nmpl, ntml, ntpl )
+#endif
 
       call re_alloc( Vscf, 1, ntpl, 1, nspin, name='Vscf',
      &               routine='dhscf' )
@@ -917,9 +914,6 @@ C ----------------------------------------------------------------------
       enddo
       call de_alloc( DRho_gga,   name='DRho_gga', routine='dhscf' )
       call de_alloc( Vscf_gga,   name='Vscf_gga', routine='dhscf' )
-#else
-      Vscf => Vscf_gga
-#endif
       Exc = Ex + Ec
       Dxc = DEx + DEc
       do ispin = 1,nsd
