@@ -4,6 +4,23 @@
 
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
+------------------------------------------------------------------
+2008-09-12  13:25:00 Alberto Garcia <albertog@icmab.es>	 2.6.3
+Siesta moves on with fresh DM instead of stopping when wrong DM file
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Thu 2008-08-28 15:53:19 +0100
+  
+Simple patch removing chkdim calls in iodm.F and substituting them by
+if statements. If the dimensions are wrong it sends back found=.false.
+  
+There is a 'goto' statement introduced to minimise impact on present
+structure (pending the up-and-coming revision of DM handling)
+  
+modified:
+  Src/iodm.F
+
+------------------------------------------------------------------
 2008-09-11  11:50:00 Alberto Garcia <albertog@icmab.es>	 2.6.2
 Incorporate new filtering functionality
 
