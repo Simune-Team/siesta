@@ -2,6 +2,114 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
+** CHANGES ALONG siesta-2.6 trunk branch 
+
+--------------------------------------------------------------------
+
+2008-09-12  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: New vdW-trunk merge
+Keywords: VdW trunk merge
+
+- Subroutine filter packed with used routines
+
+Modified Files:
+filter.f90      : Removed
+filter_subs.f90 : Removed
+m_filter.f90    : Added
+Src/filter      : Directory added temporarily
+Makefile        : Above changes
+
+------------------------------------------------------------------
+2008-09-12  13:45:00 Alberto Garcia <albertog@icmab.es>	 2.6.4
+Extended Ordejon-Mauri ordern functional to atoms with odd number of electrons
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Sat 2008-08-30 18:38:45 +0100
+  
+In the initial assigning of LWF centers to atoms, it assigns n/2 to
+atoms with n even, and (n+1)/2 or (n-1)/2 in an alternating sequence
+to atoms with odd number. The sequence runs in the order of input in
+the atomic coordinates block; the user can control the assignment by
+defining the order there.
+  
+modified:
+  Docs/siesta.tex
+  Src/atomlwf.F
+
+------------------------------------------------------------------
+2008-09-12  13:25:00 Alberto Garcia <albertog@icmab.es>	 2.6.3
+Siesta moves on with fresh DM instead of stopping when wrong DM file
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Thu 2008-08-28 15:53:19 +0100
+  
+Simple patch removing chkdim calls in iodm.F and substituting them by
+if statements. If the dimensions are wrong it sends back found=.false.
+  
+There is a 'goto' statement introduced to minimise impact on present
+structure (pending the up-and-coming revision of DM handling)
+  
+modified:
+  Src/iodm.F
+
+------------------------------------------------------------------
+2008-09-11  11:50:00 Alberto Garcia <albertog@icmab.es>	 2.6.2
+Incorporate new filtering functionality
+
+Pending the merge of the new atom-clean structure, the new filtering
+functionality of Jose Soler and Eduardo Anglada has been incorporated
+temporarily into this branch.
+
+The filtering routines are in Src/m_filter.f90, a self-contained
+module with no dependencies. A new subdirectory Src/filter with
+the same code is meant to serve as a test framework for now.
+Eventually it would be turned into a "library" subdirectory, 
+and Src/m_filter.f90 removed.
+
+The old filtering routines have been removed.
+Minimal documentation has been added to Docs/siesta.tex.
+
+removed:
+  Src/filter.f90
+  Src/filter_subs.f
+added:
+  Src/filter/
+  Src/filter/README
+  Src/filter/ba-6s-orb.dat
+  Src/filter/core.dat
+  Src/filter/f2kcli.F90
+  Src/filter/m_filter.f90
+  Src/filter/m_getopts.f90
+  Src/filter/makefile
+  Src/filter/test_filter.f90
+  Src/filter/ti-3p-orb.dat
+  Src/filter/ti-4p-orb.dat
+  Src/m_filter.f90
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/Makefile
+  Src/atom.f
+  Src/version.F90
+  version.info
+
+
+2008-09-11  11:10:00 GMT  Alberto Garcia <albertog@icmab.es>	2.6.1
+Fix bug related to vna introduced at a previous patch
+
+A patch introduced in 2.5.29 in meshsubs.F was wrong. Vna must
+be kept in "gradients" calculations. Its intent has been set 
+to "inout" and the extra initialization removed.
+
+The bug was spotted by Rogeli Grima.
+
+modified:
+  Src/meshsubs.F
+  Src/version.F90
+  version.info
+
 ____________________________________________________________________
 
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5

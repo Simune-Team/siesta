@@ -30,13 +30,16 @@ C      O:        4 LWF's
 C      ...
 C 2) Method of Ordejon et al: number of localized orbitals 
 C    equal to number of occupied orbitals. 
-C    Only available when each atom has an EVEN number of
-C    electrons.
+C    For the initial assignment of LWF centers to atoms, atoms
+C    with even number of electrons, n, get n/2 LWFs. Odd atoms
+C    get (n+1)/2 and (n-1)/2 in an alternating sequence, ir order
+C    of appearance (controlled by the input in the atomic coor block). 
 C
 C Written by P.Ordejon, 1993. 
 C Re-written by P.Ordejon, November'96.
 C Corrected by P.Ordejon, April'97,  May'97  
 C lmax, lmaxs and nzls erased from the input by DSP, Aug 1998.
+C Alternating sequence for odd species in Ordejon, by E.Artacho, Aug 2008.
 C ******************************* INPUT ***************************************
 C integer ioptlwf           : Build LWF's according to:
 C                             0 = Read blindly from disk
@@ -118,7 +121,7 @@ C  Internal variables .......................................................
 
       external :: ran3
 
-      logical, save :: firstcall = .true.
+      logical, save :: firstcall = .true., secondodd = .false.
 
       if (firstcall) then
 
@@ -289,7 +292,7 @@ C (or the number of electrons)
         if (abs(nelectr - qa(ia) + tiny) .gt. 1e-3) then
           if (Node.eq.0) then
             write(6,*) 'cspa: Wrong atomic charge for atom ',ia
-            write(6,*) '      qa = ',qa(ia),'  Must be an integer!!'
+            write(6,*) '      qa = ',qa(ia),' must be an integer'
           endif
           call die()
         endif
@@ -299,16 +302,29 @@ C (or the number of electrons)
           nelectr1 = nelectr - nelectr2
         else if (ioptlwf .eq. 2) then
           if ( (nelectr/2)*2 .ne. nelectr) then
-            if (Node.eq.0) then
-              write(6,*) 'cspa: Wrong Order-N functional option in ',
-     .                   'cspa.'
-              write(6,*) '      You can only use the functional of'
-              write(6,*) '      Ordejon-Mauri for atoms with an even'
-              write(6,*) '      number of electrons.'
+c EA: Instead of dying if there is any atom of odd species, use
+c an alternating scheme for assigning 1/2 more or 1/2 less, in
+c strict order of appearance. The user controls where the odd LWFs
+c go by defining the order of atoms in the AtomicSpeciesAndAtomicCoor... block
+c OLD------ if (Node.eq.0) then
+c             write(6,*) 'cspa: Wrong Order-N functional option in ',
+c    .                   'cspa.'
+c             write(6,*) '      You can only use the functional of'
+c             write(6,*) '      Ordejon-Mauri for atoms with an even'
+c             write(6,*) '      number of electrons.'
+c           endif
+c OLD------ call die()
+c give one-extra/one-less LWF to odd species in turn with flag secondodd
+            if (secondodd) then
+               indexi = ( ( nelectr - 1 ) / 2 )
+               secondodd = .false.
+            else
+               indexi = ( ( nelectr + 1 ) / 2 )
+               secondodd = .true.
             endif
-            call die()
+          else
+            indexi = ( ( nelectr ) / 2 )
           endif
-          indexi = ( ( nelectr ) / 2 )
         else
           call die('cspa: Wrong functional option in cspa')
         endif

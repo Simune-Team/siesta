@@ -101,8 +101,6 @@ OBJS =  automatic_cell.o atom_options.o \
 	fft1d.o \
 	fft3d.o \
 	fftr.o \
-        filter.o \
-	filter_subs.o \
 	fixed.o \
 	flib_spline.o \
 	ggaxc.o \
@@ -135,6 +133,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
         m_check_supercell.o \
 	m_convergence.o \
+	m_filter.o \
 	mesh3d.o moreParallelSubs.o \
 	mulliken.o minvec.o m_pulay.o naefs.o \
 	new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
@@ -275,13 +274,12 @@ GEN-BASIS_OBJS=precision.o \
           bessph.o \
           chemical.o \
           dot.o \
-          filter.o \
-	  filter_subs.o \
           flib_spline.o \
           gen-basis.o \
           ggaxc.o \
           io.o \
           ldaxc.o \
+          m_filter.o \
           m_walltime.o \
           memory.o \
           memoryinfo.o \
@@ -324,7 +322,7 @@ IONCAT_OBJS=precision.o \
           basis_specs.o memoryinfo.o  m_memory.o periodic_table.o\
           flib_spline.o atmfuncs.o spher_harm.o\
           atomxc.o ldaxc.o ggaxc.o xcmod.o\
-          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
+          sys.o xml.o m_walltime.o $(SYSOBJ)
 ioncat.o: $(FDF)
 ioncat: version $(MPI_INTERFACE) $(FDF) $(WXML) \
                  $(IONCAT_OBJS) $(COMP_LIBS)
@@ -428,8 +426,9 @@ atm_types.o: precision.o radial.o
 atmfuncs.o: atm_types.o precision.o radial.o spher_harm.o sys.o
 
 
-atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o old_atmfuncs.o
-atom.o: periodic_table.o precision.o pseudopotential.o recipes.o sys.o xcmod.o
+atom.o: atmparams.o atom_options.o basis_specs.o basis_types.o m_filter.o
+atom.o: old_atmfuncs.o periodic_table.o precision.o pseudopotential.o recipes.o
+atom.o: sys.o xcmod.o
 
 atom_options.o: sys.o
 
@@ -437,7 +436,8 @@ atomlist.o: alloc.o atm_types.o atmfuncs.o parallel.o precision.o siesta_geom.o
 
 atomlwf.o: alloc.o atmfuncs.o mneighb.o onmod.o precision.o spatial.o sys.o
 
-atomxc.o: alloc.o filter.o mesh1d.o precision.o radfft.o sys.o vdwxc.o xcmod.o
+atomxc.o: alloc.o m_filter.o mesh1d.o precision.o radfft.o sys.o vdwxc.o
+atomxc.o: xcmod.o
 
 automatic_cell.o: atmfuncs.o parallel.o precision.o units.o
 
@@ -598,7 +598,6 @@ fftr.o: alloc.o fft3d.o mesh3d.o precision.o sys.o
 
 filter.o: precision.o radfft.o sys.o
 
-
 find_kgrid.o: alloc.o minvec.o parallel.o precision.o units.o
 
 fire_optim.o: alloc.o m_fdf_global.o m_fire.o m_mpi_utils.o parallel.o
@@ -735,6 +734,7 @@ m_energies.o: precision.o
 m_eo.o: precision.o
 
 m_fdf_global.o: m_mpi_utils.o parallel.o precision.o
+
 
 m_fire.o: parallel.o precision.o
 
