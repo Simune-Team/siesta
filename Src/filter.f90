@@ -102,8 +102,11 @@ PRIVATE ! Nothing is declared public beyond this point
 
 ! Interfaces to external routines
   interface
-    DOUBLE PRECISION FUNCTION BESSPH (L,X)
-      IMPLICIT DOUBLE PRECISION (A-H,O-Z)
+    FUNCTION BESSPH (L,X)
+      use precision, only: dp
+      integer, intent(in)  :: L
+      real(dp), intent(in) :: X
+      real(dp)             :: BESSPH
     END
     subroutine rdiag(H,S,n,nm,nml,w,Z,neigvec,iscf,ierror)
       use precision, only: dp

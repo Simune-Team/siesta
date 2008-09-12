@@ -1,0 +1,46 @@
+SystemName  Ar ---  Van der Waals test
+#
+# Note the use of a large basis set. Despite this,
+# the final interatomic distance is around 3.6 Ang, a
+# bit far from the experimental 3.75 Ang.
+#
+# It uses the Ar.vdw.psf file in Tests/Pseudos
+#
+SystemLabel ar_vdw
+NumberOfAtoms       1
+NumberOfSpecies     1
+%block ChemicalSpeciesLabel
+ 1  18  Ar.vdw
+%endblock ChemicalSpeciesLabel
+#
+PAO.BasisSize      TZDP
+PAO.EnergyShift   10 meV
+#
+LatticeConstant     5.40 Ang
+%block LatticeVectors
+ 0.500  0.500  0.000
+ 0.000  0.50  0.500
+ 0.500  0.000  0.5
+%endblock LatticeVectors
+AtomicCoordinatesFormat Ang
+%block AtomicCoordinatesAndAtomicSpecies
+ 0.0000   0.0000   0.0000  1
+%endblock AtomicCoordinatesAndAtomicSpecies
+
+kgrid-cutoff 10.0 Ang
+#
+MeshCutoff         200.0 Ry
+MaxSCFIterations    60
+DM.MixingWeight      0.1
+DM.NumberPulay       3
+DM.Tolerance         1.d-4
+
+SolutionMethod       diagon
+ElectronicTemperature  25  meV
+
+xc.functional         VDW           # Exchange-correlation functional
+xc.authors            DRSLL         # Exchange-correlation version
+
+MD.Type-of-run  CG
+MD.NumCGSteps  20
+MD.Variable-cell T

@@ -224,7 +224,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     ggaxc, ldaxc, timer
 
 ! Start time counter
-  call timer( 'atomxc', 1 )
+!  call timer( 'atomxc', 1 )
 
 ! Check dimension of arrays Dens and Vxc
   if (maxr<nr) call die(errHead//'maxr<nr')
@@ -556,7 +556,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   call alloc_default( restore=prevAllocDefaults )
 
 ! Stop time counter
-  call timer( 'atomxc', 2 )
+!  call timer( 'atomxc', 2 )
 
 end subroutine atomxc
 

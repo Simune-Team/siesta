@@ -7,6 +7,22 @@ ____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
 
+2008-09-12  19:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: removed timer from atomxc
+Keywords: timer atomxc
+
+- Call to timer in atomxc removed, since timer is not able to handle
+  that atomxc is called only in Node=0
+
+Modified Files:
+atomxc.f90   : Removed call to timer
+filter.f90   : Updated interface declaration to bessph
+Makefile     : Dependencies generated with sfmakedepend
+Tests/ar_vdw : Added vdW test of Ar2
+
+--------------------------------------------------------------------
+
 2008-09-03  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: VdW merge with trunk
