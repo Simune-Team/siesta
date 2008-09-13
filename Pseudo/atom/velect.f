@@ -1,6 +1,9 @@
 c
       subroutine velect(iter,iconv,id,zelec)
 c
+      use precision, only: dp
+      use xcmod, only: setxc
+
       implicit none
 c
       include 'radial.h'
@@ -209,32 +212,32 @@ c
      $              .or. leqi(icorr,'bl')  ! BLYP
      $              .or. leqi(icorr,'rp')  ! RPBE
      $              .or. leqi(icorr,'wc')  ! WC (Wu-Cohen)
+     $              .or. leqi(icorr,'vf')  ! VDW-DRSLL
+     $              .or. leqi(icorr,'vw')  ! Alias for VDW-DRSLL
      $              .or. leqi(icorr,'rv')) ! revPBE
 
          if (icorr .eq. 'ca') then
-            call atomxc('LDA','ca',relflag,nr,nrmax,r,nspin,dens,
-     .           ex,ec,dx,dc,vxcarr)      
+            call setxc(1,(/'LDA'/), (/'CA'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'pw') then
-            call atomxc('LDA','pw92',relflag,nr,nrmax,r,nspin,dens,
-     .           ex,ec,dx,dc,vxcarr)
+            call setxc(1,(/'LDA'/), (/'PW92'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'pb') then
-            call atomxc('GGA','pbe',relflag,nr,nrmax,r,nspin,dens,   
-     .           ex,ec,dx,dc,vxcarr)
+            call setxc(1,(/'GGA'/), (/'PBE'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'rp') then
-            call atomxc('GGA','rpbe',relflag,nr,nrmax,r,nspin,dens,   
-     .           ex,ec,dx,dc,vxcarr)
+            call setxc(1,(/'GGA'/), (/'RPBE'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'rv') then
-            call atomxc('GGA','revpbe',relflag,nr,nrmax,r,nspin,dens,   
-     .           ex,ec,dx,dc,vxcarr)
+            call setxc(1,(/'GGA'/), (/'revPBE'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'wc') then
-            call atomxc('GGA','wc',relflag,nr,nrmax,r,nspin,dens,   
-     .           ex,ec,dx,dc,vxcarr)
+            call setxc(1,(/'GGA'/), (/'WC'/), (/1._dp/), (/1._dp/))
          elseif(icorr .eq. 'bl') then
-            call atomxc('GGA','lyp',relflag,nr,nrmax,r,nspin,dens,
-     .           ex,ec,dx,dc,vxcarr)
+            call setxc(1,(/'GGA'/), (/'LYP'/), (/1._dp/), (/1._dp/))
+         elseif(icorr .eq. 'vf' .or. icorr .eq. 'vw') then
+            call setxc(1,(/'VDW'/), (/'DRSLL'/), (/1._dp/), (/1._dp/))
          else
             stop 'XC'
          endif
+
+         call atomxc(relflag,nr,nrmax,r,nspin,dens,
+     .        ex,ec,dx,dc,vxcarr)      
 
 c
 c        Add vxc to total potential and energies

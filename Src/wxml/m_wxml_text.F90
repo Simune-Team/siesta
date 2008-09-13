@@ -32,7 +32,7 @@ CONTAINS
 #ifndef WXML_INIT_FIX
         character(len=int(merge(log10(real(max(abs(i),1)))+1, &
                                 log10(real(max(abs(i),1)))+2, &
-                          sign(i,1)>0))) :: s
+                          sign(1,i)>0))) :: s
 #else
 ! Some compilers have trouble with the above
         character(len=int(log10(real(max(abs(i),1)))+2))  :: s

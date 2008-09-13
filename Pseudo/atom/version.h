@@ -18,8 +18,8 @@ c     of this file at the end of the declaration section, and before any
 c     other data statements.
 c
       character*60 version
-      character*4  atom_id
+      character*10 atom_id
       data version
-     $     /"ATM Version 3.2.8 (2008/04/29)"/
-      data atom_id /"ATM3"/
+     $     /"ATM Version 3.3 (2008/09/13)"/
+      data atom_id /"ATM3.3"/
 

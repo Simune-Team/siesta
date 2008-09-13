@@ -16,7 +16,6 @@
      .                    zvaltot, superc, initatomlists, no_l
       use m_fdf_global, only: fdf_global_get
       use sys, only: die, bye
-      use xcmod, only: setXC
       use molecularmechanics, only : inittwobody
       use metaforce, only: initmeta
       use m_mpi_utils, only : broadcast
@@ -137,7 +136,7 @@
 ! ..................
 
 ! Initialise exchange-correlation functional information
-      call setXC()
+      call read_xc_info()
 
 ! Initialise force field component
       call inittwobody()

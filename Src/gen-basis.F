@@ -39,7 +39,6 @@ C
       use old_atmfuncs, only : clear_tables, allocate_old_arrays
 
       use atom,         only : atom_main, prinput
-      use xcmod,        only : setXC
       use sys,          only : die
       use atom_options, only : get_atom_options
 C
@@ -92,7 +91,7 @@ C Initialise MPI and set processor number
 
          call get_atom_options()
 
-         call setXC
+         call read_xc_info()
 
          call read_basis_specs()
          call basis_specs_transfer()

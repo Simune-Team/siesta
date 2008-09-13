@@ -8,42 +8,35 @@
 ! Use of this software constitutes agreement with the full conditions
 ! given in the SIESTA license, as signed by all legitimate users.
 !
-      module xcmod
-
-        use precision, only : dp
-        use parsing, only: parse
-
-        implicit none
-
-        integer, parameter      :: MaxFunc = 10
-        integer,           save :: nXCfunc
-        character(len=10), save :: XCauth(MaxFunc)
-        character(len=10), save :: XCfunc(MaxFunc)
-        real(dp),          save :: XCweightX(MaxFunc)
-        real(dp),          save :: XCweightC(MaxFunc)
-
-        public :: nXCfunc, XCauth, XCfunc
-        public :: XCweightX, XCweightC
-        public :: setXC
-        private
-
-      contains
-
-        subroutine setXC
+      subroutine read_xc_info()
 C
-C  This subroutine reads the exchange-correlation functional information
+C     Reads the exchange-correlation functional information
+C     and calls xcmod::setXC to store it for the use of
+C     atomxc and cellxc.
 C
-        use fdf
-        use parsing
-        use parallel,  only : Node
-        use sys,       only : die
+      use xcmod, only: setXC
+
+      use precision, only : dp
+      use parsing, only: parse
+      use fdf
+      use parallel,  only : Node
+      use sys,       only : die
 #ifdef MPI
-        use mpi_siesta
+      use mpi_siesta
 #endif
 
-        implicit none
+      implicit none
 
-C Local variables
+C     LOCAL variables
+
+      integer, parameter      :: MaxFunc = 10
+      integer                 :: nXCfunc
+      character(len=10)       :: XCauth(MaxFunc)
+      character(len=10)       :: XCfunc(MaxFunc)
+      real(dp)                :: XCweightX(MaxFunc)
+      real(dp)                :: XCweightC(MaxFunc)
+
+
         character(len=80)  :: names
 
         character(len=130) :: line
@@ -144,6 +137,10 @@ C Globalise data over all nodes
      .                 MPI_Comm_World,MPIerror)
 #endif
 
-        end subroutine setXC
+C     Store information in module
 
-      end module xcmod
+      call setXC (n=nXCfunc, func=XCfunc, auth=XCauth,
+     $            wx=XCweightX, wc=XCweightC)
+
+      end subroutine read_xc_info
+

@@ -1,0 +1,225 @@
+2008-09-13  20:00 GMT Alberto Garcia <albertog@icmab.es>  2.6.4-vdw-1
+Added vdW functional support to pseudopotential program
+
+* The code for vdw operation in ATM is "vw" or "vf" (see routine velect.f)
+
+* A number of extra routines from the Src directory have to be
+compiled in. They have been mostly copied verbatim for now. In the future
+they might be compiled directly from Src with a VPATH directive. Or perhaps
+the XC sub-system could be made into a library.
+
+Exceptions: 
+
+- The xcmod.F module has been split into "xcmod.f90", which
+contains the data and a minimal setXC routine, and a new routine "read_xc_info",
+which calls setXC. In siesta, read_xc_info is called by siesta_init.
+In atom, setXC is called directly by velect in a simple fashion. This is much clearer.
+
+- The "recipes.f" file has been renamed to "m_recipes.f". This is in line
+with its contents, and avoids a name clash with another file in Pseudo/atom.
+
+* The Makefile has been re-worked to operate even when MPI is in use in
+the top-level Siesta compilation.
+
+* The XML functionality in atom is kept by default, but a dummy pseudoXML.f
+file is retained in case it is needed.
+
+* New {ae,pg,pt}.sh scripts with the capability of using the file pointed to by the
+environmental variable VDW_KERNEL_TABLE as a table of values to speed up calculations
+with the van der Waals functional.
+
+* The ATM version has been set to 3.3. (It now appears in the psf file)
+
+Other changes:
+
+- The "maximum runtime" patch has been taken out. It was ill-conceived.
+- The Src/filter directory has been moved to Util/
+- A long-standing bug in Src/wxml/m_wxml_text.F90 has been removed (from BSC work)
+- The creation of XML files should now be more robust.
+- The Ar.vdw.psf file in Tests/Pseudos has been updated.
+
+
+2008-09-12  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: New vdW-trunk merge
+Keywords: VdW trunk merge
+
+- Subroutine filter packed with used routines
+
+Modified Files:
+filter.f90      : Removed
+filter_subs.f90 : Removed
+m_filter.f90    : Added
+Src/filter      : Directory added temporarily
+Makefile        : Above changes
+
+------------------------------------------------------------------
+
+2008-09-12  19:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: removed timer from atomxc
+Keywords: timer atomxc
+
+- Call to timer in atomxc removed, since timer is not able to handle
+  that atomxc is called only in Node=0
+
+Modified Files:
+atomxc.f90   : Removed call to timer
+filter.f90   : Updated interface declaration to bessph
+Makefile     : Dependencies generated with sfmakedepend
+Tests/ar_vdw : Added vdW test of Ar2
+
+--------------------------------------------------------------------
+
+2008-09-03  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: VdW merge with trunk
+Keywords: VdW merge
+
+- VdW XC added to atomxc
+- Bug correction in cellxc and its calls
+
+Modified Files:
+Lots of them
+
+--------------------------------------------------------------------
+
+2008-09-03  15:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: Activated vdW XC in atomxc plus documentation in vdwxc
+Keywords: VdW patch 5
+
+- VdW XC activated in atomxc
+- vdwxc documented
+
+Modified Files:
+atom.f     : Added the VdW option
+atomxc.f90 : Activated the VdW functional
+mesh1d.f   : Corrected a small bug
+vdwxc.f90  : Added documentation in header and other places
+             Corrected a possible overflow
+             Changed the file name for phi kernel table
+siesta.tex : Added vdW option
+
+--------------------------------------------------------------------
+
+2008-07-24  18:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: VdW XC added to atomxc plus bug correction in cellxc
+Keywords: VdW patch 4
+
+- VdW XC added to atomxc
+- Bug correction in cellxc and its calls
+
+Modified Files:
+atomxc.f90 : Renamed from atomxc.f
+             VdW functional added but deactivated for the time being
+cellxc.f90 : Several bug corrections
+             Documentation corrections
+dhscf.F    : JDG mesh distr. redefined in every step
+filter.f90 : New filtering version added within a module
+             Old version maintained for the time being in the same file
+forhar.f   : JDG mesh distr. redefined in every step
+mesh1d.f   : Interpolation routine added
+             Several improvements in usability and algorithms
+             Several bug corrections
+             Documentation corrections
+mesh3d.F90 : Several improvements in usability and algorithms
+             Several bug corrections
+             Documentation corrections
+recipes.f  : Added a check in spline, that point is within range
+
+--------------------------------------------------------------------
+
+2008-06-18  16:45:00 GMT	Jose M Soler <jose.soler@uam.es>
+
+Summary: VdW XC minor corrections
+Keywords: VdW patch 3
+
+- Minor changes in the implementation of the parallel VdW
+
+Modified Files:
+atom.f     : Removed call die("See manual for new split options")
+dhscf.F    : Removed all references to array DVxcdn
+mesh3d.F90 : Parmeter maxDistrTasks increased to 50
+
+--------------------------------------------------------------------
+
+2008-04-07  16:15:00 GMT	Jose M Soler <jose.soler@uam.es>
+
+Summary: VdW XC bug corrections
+Keywords: VdW patch 2
+
+- Several bugs corrected in the implementation of the parallel VdW
+
+Modified Files:
+alloc.F90          : Added threshold argument in alloc_report
+                     Improved parallel behaviour:
+                       More complete summary of all nodes
+                       Detailed report writen by peak node rather than node 0
+                       Report file open by a single node at once
+                       Warnings printed only once
+                     Improved in-line documentation
+cellxc.f90         : Corrected definition of nonempty array
+fft3d.F            : Added a condition to call copyMeshData
+fftr.f90           : Comented out declaration of udebug
+m_debug.f90        : New function myNodeString
+mesh3d.F90         : Scheduling optimizer implemented
+                     Several bugs corrected
+                     Improved inline documentation
+siesta_init.F      : Added threshold argument in call to alloc_report
+siesta_options.F90 : Added alloc_report threshold to the option list
+sorting.f          : Argument X in ordix made explicit shape
+vdwxc.f90          : Minor cosmethic changes
+siesta.tex         : Added AllocReportThreshold
+
+-------------------------------------------------------------------------------
+
+2008-02-21  17:15:00 GMT	Jose M Soler <jose.soler@uam.es>
+
+Summary: VdW XC added
+Keywords: VdW mesh3d
+
+- The Van der Waals functional of Dion et al (PRL 92, 246401 (2004)) has
+  been implemented.
+- A new module mesh3d has been implemented to handle different distributions
+  of mesh points over parallel processors, as well as routines to handle the
+  translation between them.
+- New routines fft3d and fftr have been implemented for parallel 3D FFTs of
+  complex and real functions
+- A scheme has been implemented to open files (one per processor) for
+  debugging output
+- Routines in xc.f have been spread over different files, plus a few other
+  small file rearrangements and cosmethic changes
+
+New files:
+atomxc.f   : Splitted from xc.f
+cellxc.f90 : Van der Waals functional implemented. Suffix changed from F90.
+             Interface changed. Wrapped as a module
+fft1d.F    : Splitted from fft3d.F  
+             Routine nfft moved here from poison.F
+fftr.f90   : New parallel 3D FFT routine for real functions
+ggxc.f     : Splitted from xc.f
+ldaxc.f    : Splitted from xc.f
+m_debug.f90 : Opens one file per processor, for debugging output
+mesh3d.F90 : New module for handling different parallel mesh distributions
+moreParallelSubs.F90 : Implements a routine for miscellaneous AllReduce
+vdwxc.f90  : Implements the Van der Waals XC functional
+
+Modified Files:
+alloc.F90  : Cosmethic changes
+atom.f     : Added VdW functional to xc check
+chkgmx.f   : Implemented routine meshKcut that finds mesh cutoff
+dhscf.F    : Modified call to cellxc
+fft3d.F    : New parallel 3D FFT routine for complex functions (fft3d)
+             Argument nsm of old routine fft now accessed from USE parallel
+             Wrapped as a module
+forhar.f   : Modified call to cellxc
+poison.F   : Modified call to fft
+             Routine nfft moved to fft1d.F
+siesta_init.F : Added a call to setDebugOutputUnit()
+
+Removed files:
+cellxc.F   : Changed to cellxc.f90
+xc.f       : Splitted into atomxc.f ldaxc.f and ggaxc.f
+

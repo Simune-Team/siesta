@@ -1,6 +1,8 @@
 #
 # Makefile for test_filter
 #
+# Change as needed
+#
 FC=gfortran -DGFORTRAN
 # 
 # FC = ifort
