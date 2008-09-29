@@ -4,6 +4,25 @@
 
 ** CHANGES ALONG bsc-2.8 branch 
 
+-------------------------------------------------------------------------
+2008-09-29  14:35:00 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.3
+Fixed a bug with arrays listhptrold and numhold (Rogeli)
+-------------------------------------------------------------------------
+r4 | bsc21017 | 2008-09-19 16:25:39 +0200 (Fri, 19 Sep 2008) | 11 lines
+
+Fixed a bug with arrays listhptrold and numhold.  These arrays were
+allocated in siesta_init with the same size as listhptr and numh. If
+we run with 'jacobi' as a solution method, the size of listhptr and
+numh is modified, so the size of listhptrold and numhold should
+change too.
+
+Cosmetic change in domain_decomposition.
+
+modified:
+  Src/siesta_init.F
+  Src/state_init.F
+  Src/domain_decom.F
+
 ----------------------------------------------------------------------
 2008-09-12  14:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.8.2
 Bug fixes by Rogeli: Drho reorder, Vna init (SVN 2-3)

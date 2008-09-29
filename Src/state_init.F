@@ -188,6 +188,7 @@ C     Check if any two atoms are unreasonably close
         nullify(listhold,listh)
         nullify(H,H0,S)
         nullify(xijo)
+        nullify( listhptrold, numhold )
       endif
 
 C     List of nonzero Hamiltonian matrix elements
@@ -203,6 +204,10 @@ C     nh is set by the routine also
      &              iphorb, iphKB, nh, gamma, xijo )
       maxnh = nh
 
+      call re_alloc( listhptrold, 1, no_l, 'listhptrold', 'state_init')
+      call re_alloc( numhold, 1, no_l, 'numhold', 'state_init' )
+      listhptrold = 0
+      numhold     = 0
 
 C     OBSOLETE: 
 C       safety margin for when atoms move 
@@ -211,12 +216,12 @@ C       if (nh > maxnh)  maxnh = 1.05 * nh + 40
 C     Use re_alloc regardless of whether nh is greater than 
 C     the old maxnh or not, BUT DO NOT SHRINK, as some of
 C     these arrays are later used in extrapol.
-      call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     &     routine='siesta',copy=.true.,SHRINK=.false.)
-      call re_alloc(Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
-     &     routine='siesta',copy=.true.,SHRINK=.false.)
-      call re_alloc(listhold,1,maxnh,name='listhold',
-     &     routine='siesta',copy=.true.,SHRINK=.false.)
+      call re_alloc( Dscf, 1, maxnh, 1, nspin, name='Dscf',
+     &               routine='state_init', copy=.true., SHRINK=.false.)
+      call re_alloc( Dscfsave,1,maxnh,1,nspin,name='Dscfsave',
+     &               routine='state_init', copy=.true., SHRINK=.false.)
+      call re_alloc( listhold, 1, maxnh, name='listhold',
+     &               routine='state_init', copy=.true., SHRINK=.false.)
 
       if (istp==1) then
 C       Initialise Dscfsave to avoid problems in extrapol
@@ -225,20 +230,20 @@ C       This might be superfluous, as alloc fills array with zeroes
         listhold(1:maxnh)         = 0
       endif
 
-      call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
-     &     routine='siesta',copy=.false.)
-      call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',
-     &     routine='siesta',copy=.false.)
-      call re_alloc(Escf,1,maxnh,1,nspin,name='Escf',
-     &     routine='siesta',copy=.false.)
+      call re_alloc( Dold, 1, maxnh, 1, nspin, name='Dold',
+     &               routine='state_init', copy=.false. )
+      call re_alloc( Eold, 1, maxnh, 1, nspin, name='Eold',
+     &               routine='state_init', copy=.false. )
+      call re_alloc( Escf, 1, maxnh, 1, nspin, name='Escf',
+     &               routine='state_init', copy=.false. )
 
 C     Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
-      call re_alloc(H,1,maxnh,1,nspin,name='H',
-     &              routine='siesta',shrink=.false.,copy=.false.)
-      call re_alloc(H0,1,maxnh,name='H0',routine='siesta',
-     &              shrink=.false.,copy=.false.)
-      call re_alloc(S,1,maxnh,name='S',routine='siesta',
-     &              shrink=.false.,copy=.false.)
+      call re_alloc( H, 1, maxnh, 1, nspin, name='H',
+     &               routine='state_init',shrink=.false.,copy=.false.)
+      call re_alloc( H0, 1, maxnh, name='H0', routine='state_init',
+     &               shrink=.false., copy=.false. )
+      call re_alloc( S, 1, maxnh, name='S', routine='state_init',
+     &               shrink=.false., copy=.false. )
 
 C Some printout for debugging ........................................
 *     if (IOnode) then
@@ -272,7 +277,7 @@ C     Find overlap matrix
 
 #if defined(MPI_TRACE) && defined(MPI)
       call mpitrace_eventandcounters( 1000, 0 )
-#endif
+#endif
 
 #ifdef CDF
       if (writedm_cdf .or. writedm_cdf_history) then
