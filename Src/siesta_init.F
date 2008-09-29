@@ -248,15 +248,11 @@ C     Find number of locally stored orbitals and allocated related arrays
       call GetNodeOrbs(no_u,Node,Nodes,no_l)
 
 C     Initialise arrays
-      nullify( listhptr, numh, listhptrold, numhold )
+      nullify( listhptr, numh )
       call re_alloc( listhptr, 1, no_l, 'listhptr', 'siesta_init' )
       call re_alloc( numh, 1, no_l, 'numh', 'siesta' )
-      call re_alloc( listhptrold, 1, no_l, 'listhptrold', 'siesta_init')
-      call re_alloc( numhold, 1, no_l, 'numhold', 'siesta_init' )
-      listhptr(1:no_l) = 0
-      numh(:)          = 0
-      listhptrold(:)   = 0
-      numhold(:)       = 0
+      listhptr    = 0
+      numh        = 0
 
 C     Get number of eigenstates that need to be calculated
       neigwanted = fdf_get('NumberOfEigenStates',no_u)

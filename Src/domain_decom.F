@@ -112,7 +112,7 @@ C       Set orbitals to partitions
 C     Input variables
       integer,           intent(in) :: nuotot, nuo, nnz
 C     Local variables
-      integer                       :: blocks, remain, PP, io, ind,
+      integer                       :: blocks, remain, PP, io, ind, ii,
      &                                 nnzG, nnzL
       integer,              pointer :: nuos(:)
 #ifdef MPI
@@ -135,6 +135,7 @@ C     Local variables
         nullify(listhPtrTot)
         call re_alloc( listhPtrTot, 0, nuotot, 'listhPtrTot',
      &                 'reduceGlobalMatrix' )
+
         listhPtrTot(1:nuo) = numh
         ind = nuo + 1
 #ifdef MPI
@@ -159,7 +160,8 @@ C     Local variables
 #ifdef MPI
         do PP= 1, Nodes-1
           nnzL = listhPtrTot(ind+nuos(PP)) - listhPtrTot(ind)
-          call MPI_recv( listhTot(listhPtrTot(ind)), nnzL, MPI_INTEGER,
+          ii = listhPtrTot(ind)
+          call MPI_recv( listhTot(ii), nnzL, MPI_INTEGER,
      &                   PP, 1, MPI_Comm_world, Status, MPIerror )
           ind = ind + nuos(PP)
         enddo
@@ -216,7 +218,7 @@ C     Local variables
         jja(jj) = ind
       enddo
 
-      call printmatrix( no, no, iia, jja,
+      call printMatrix( no, no, iia, jja,
      &                  'globmat2.ps', 'Global_matrix' )
 
       metis_options(1) = 0
@@ -754,10 +756,6 @@ C        call de_alloc( listh, 'listh', 'distriGlobalMatrix' )
       lnb       = l_lnb
       dd_ncom   = l_nei
       dd_ncolum = l_no + l_bou
-      write(23,*) 'l_no     ', l_no
-      write(23,*) 'l_bou    ', l_bou
-      write(23,*) 'dd_ncolum', dd_ncolum
-      call pxfflush(23)
 C      call de_alloc( listhptr, 'listhptr', 'distriGlobalMatrix' )
       call re_alloc( listhptr, 1, no, 'listhptr', 'distriGlobalMatrix' )
       ind = 0
