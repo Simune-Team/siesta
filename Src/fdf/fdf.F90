@@ -106,7 +106,7 @@
 
 MODULE fdf
   USE io_fdf
-  USE parse, only: MAX_LENGTH
+
   USE parse, only: parsed_line
   USE parse, only: nintegers, nreals
   USE parse, only: nvalues, nnames, ntokens
@@ -533,7 +533,7 @@ MODULE fdf
 
       mark => file_in%first
       do i= 1, file_in%nlines*MAX_LENGTH, MAX_LENGTH
-        bufferFDF(i:) = s2arr(mark%str)
+        bufferFDF(i:i+MAX_LENGTH-1) = s2arr(mark%str)
         mark => mark%next
       enddo
 

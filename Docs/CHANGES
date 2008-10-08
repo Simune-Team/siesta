@@ -2,7 +2,27 @@
                   SIESTA CHANGES: TOP IS MOST RECENT
 =======================================================================
 
-** CHANGES ALONG bsc-2.8 branch 
+** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
+
+-------------------------------------------------------------------------
+2008-10-08  16:50 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.4
+Fixed array bounds issue in fdf library
+
+Some compilers had trouble with the assigment to
+bufferFDF in routine fdf_SendInput. The limits
+of the assignment have now been made explicit.
+
+The MAX_LENGTH parameter is now imported from the fdf
+utils module by both fdf and parse.
+
+(Also: added a rule in .bzrignore to ignore .mod files)
+
+added:
+  .bzrignore
+modified:
+  Src/fdf/fdf.F90
+  Src/fdf/parse.F90
+  Src/fdf/utils.F90
 
 -------------------------------------------------------------------------
 2008-09-29  14:35:00 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.3

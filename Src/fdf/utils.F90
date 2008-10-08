@@ -32,9 +32,8 @@ MODULE utils
 ! Warning and Terminate functions
   public :: warn, die
 
-
 ! Maximum size of a string
-  integer(ip), parameter, private :: max_length = 132
+  integer(ip), parameter, public :: MAX_LENGTH = 132
 
   CONTAINS
 
@@ -286,11 +285,11 @@ MODULE utils
       integer(ip)               :: string_size
 
 !-------------------------------------------------------------- Output Variables
-      character(len=max_length) :: arr2s
+      character(len=MAX_LENGTH) :: arr2s
 
 !--------------------------------------------------------------- Local Variables
-      character(len=max_length) :: str
-      character                 :: str_arr(max_length)
+      character(len=MAX_LENGTH) :: str
+      character                 :: str_arr(MAX_LENGTH)
       equivalence                  (str, str_arr)
 
 !------------------------------------------------------------------------- BEGIN
@@ -310,11 +309,11 @@ MODULE utils
       character(len=*)          :: string
 
 !-------------------------------------------------------------- Output Variables
-      character                 :: s2arr(max_length)
+      character                 :: s2arr(MAX_LENGTH)
 
 !--------------------------------------------------------------- Local Variables
-      character(len=max_length) :: str
-      character                 :: str_arr(max_length)
+      character(len=MAX_LENGTH) :: str
+      character                 :: str_arr(MAX_LENGTH)
       equivalence                  (str, str_arr)
 
 !------------------------------------------------------------------------- BEGIN

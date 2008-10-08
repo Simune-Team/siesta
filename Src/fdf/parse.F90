@@ -180,12 +180,6 @@ MODULE parse
   public :: integers, reals, values, names
   public :: blocks, endblocks, labels, tokens, characters
 
-!
-! This parameter is needed by the fdf module. It could also
-! be hidden behind a function call...
-!
-  integer(ip), parameter, public  :: MAX_LENGTH = 132
-
 ! Change morphology
   public :: setmorphol
 
