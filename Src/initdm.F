@@ -239,11 +239,6 @@ C Print bad-syntax error and stop
             call die(msg)
           endif
 
-          if (nat .eq. nua) then
-            call die('initdm: ERROR: Too many' //
-     $               ' atom entries in DM.InitSpin')
-          endif
-
           if (noncol .and. nspin.lt.4) then
             if (Node.eq.0) then
               write(6,'(/,2a)') 'initdm: WARNING: noncolinear spins ',
