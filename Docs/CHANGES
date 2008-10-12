@@ -5,6 +5,27 @@
 ** CHANGES ALONG bsc-2.8 branch (bsc-trunk)
 
 -------------------------------------------------------------------------
+2008-10-12  17:50 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.5
+Fix processing of InitSpin block. Avoid writing DM nc files by default
+
+The InitSpin block was read correctly, but a superfluous check for the
+number of lines made it crash sometimes. The check has been removed.
+
+When the Jacobi-Davidson method is used, the local-to-global assigment
+of orbitals used in the netCDF DM routines needs to be re-examined.
+Write.DM.NetCDF and Write.DMHS.NetCDF are .false. by default now.
+
+Arrays involved in gather operations have been allocated (to zero-size)
+in non-master nodes in the netCDF routines. This avoids crashes when
+running with full checks.
+
+modified:
+  Src/initdm.F
+  Src/iodm_netcdf.F90
+  Src/iodmhs_netcdf.F90
+  Src/siesta_options.F90
+
+-------------------------------------------------------------------------
 2008-10-08  16:50 GMT Alberto Garcia <albertog@icmab.es>	bsc-2.8.4
 Fixed array bounds issue in fdf library
 
