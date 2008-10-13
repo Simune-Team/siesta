@@ -1,4 +1,23 @@
 -------------------------------------------------------------------------
+2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-2
+Fix errors in some zmatrix tests
+
+According to the documentation and code in zmatrix.F the
+fdf flags to control zmatrix force tolerance and optimizer
+step size are ZM.ForceTolLength, ZM.ForceTolAngle,
+ZM.MaxDisplLength and ZM.MaxDisplAngle - in some tests
+they were shortened to ...Ang and ...Len. This patch
+corrects this. The values in the tests were set to the 
+defaults so test output is not changed.
+
+modified:
+  Docs/CHANGES.awalker-trunk-fixes
+  Tests/benzene/benzene.fdf
+  Tests/fire_benzene/fire_benzene.fdf
+  Tests/h2oZ/h2oZ.fdf
+  Tests/zmatrix/zmatrix.fdf
+
+-------------------------------------------------------------------------
 2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-1
 Make obj_setup.sh executable.
 

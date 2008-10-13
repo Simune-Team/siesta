@@ -22,10 +22,10 @@ LatticeConstant 1.0 Ang
 1 2.5 8
 %endblock LatticeVectors
 
-ZM.ForceTolLen 0.04 eV/Ang
-ZM.ForceTolAng 0.0001 eV/deg
-ZM.MaxDisplLen 0.5 Ang
-ZM.MaxDisplAng 20.0 deg
+ZM.ForceTolLength 0.04 eV/Ang
+ZM.ForceTolAngle 0.0001 eV/deg
+ZM.MaxDisplLength 0.5 Ang
+ZM.MaxDisplAngle 20.0 deg
 ZM.UnitsLength Ang
 ZM.UnitsAngle deg
 
