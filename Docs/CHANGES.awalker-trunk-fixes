@@ -1,4 +1,19 @@
 -------------------------------------------------------------------------
+2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-5
+Remove use of features deleted in Fortran 95
+
+Specifically, one use of PAUSE and one GOTO an
+ENDDO statment. GOTO now jumps to the next line
+and the PAUSE is replaced to an (MPI safe) call
+to die().
+
+modified:
+  Docs/CHANGES.awalker-trunk-fixes
+  Src/atomlwf.F
+  Src/m_ts_aux_rout.F
+  version.info
+
+-------------------------------------------------------------------------
 2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-4
 Simple bugfix for fixed cell restarts.
 
