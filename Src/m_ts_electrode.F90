@@ -1266,7 +1266,7 @@ MODULE m_ts_electrode
               kxij = (k(1) * xij(1,ind) + &
                      k(2) * xij(2,ind) + &
                      k(3) * xij(3,ind) )
-              cphase = cdexp(dcmplx(0d0,1d0)*kxij)
+              cphase = exp(dcmplx(0d0,1d0)*kxij)
               inn = iuo+(juo-1)*nuo
               Hk(inn) = Hk(inn)+H(ind,ispin)*cphase
               Sk(inn) = Sk(inn)+S(ind)*cphase
@@ -1340,7 +1340,7 @@ MODULE m_ts_electrode
                       k(2) * xij(2,ind) + &
                       k(3) * xij(3,ind) - &
                       k(iprop) *xij(iprop,ind) )
-              cphase = cdexp(dcmplx(0d0,1d0)*kxij)
+              cphase = exp(dcmplx(0d0,1d0)*kxij)
 
               inn = iuo+(juo-1)*nuo
 

@@ -1484,8 +1484,8 @@ C FDN
                 kxij = (k(1)*xijg(1,ind) +
      .                 k(2)*xijg(2,ind) +
      .                 k(3)*xijg(3,ind) )
-                cphase = cdexp( dcmplx(0d0,-1.0d0)*kxij )
-                ccphase = cdexp( dcmplx(0d0,+1.0d0)*kxij )
+                cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
+                ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
 
         Dnewg(ind,ispin) = Dnewg(ind,ispin) + Dimag(
      . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
@@ -1540,8 +1540,8 @@ C FDN
                  kxij = (k(1)*xij(1,ind) +
      .                 k(2)*xij(2,ind) +
      .                 k(3)*xij(3,ind) )
-                 cphase = cdexp( dcmplx(0d0,-1.0d0)*kxij )
-                 ccphase = cdexp( dcmplx(0d0,+1.0d0)*kxij )
+                 cphase =  exp( dcmplx(0d0,-1.0d0)*kxij )
+                 ccphase = exp( dcmplx(0d0,+1.0d0)*kxij )
 
         Dnew(ind,ispin) = Dnew(ind,ispin) + Dimag(
      . dcmplx(0.5d0*wkpar(ikpar),0d0)*(
