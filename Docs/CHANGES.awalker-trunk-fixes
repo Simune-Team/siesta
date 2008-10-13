@@ -1,4 +1,21 @@
 -------------------------------------------------------------------------
+2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-4
+Simple bugfix for fixed cell restarts.
+
+In the case of a tightend ftol after a sucessful CG run, relaxed
+is set to .true. by the read from iocg. This results in the test
+for convergence being skipped within conjgr. Setting relaxed to
+.false. here avoids this. In the case of a variable cell relaxed
+is set below anyway and the converence test is always performed.
+A better solution (moving the test out into a seperate routine)
+will follow in a later version. 
+
+modified:
+  Docs/CHANGES.awalker-trunk-fixes
+  Src/cgvc.F
+  version.info
+
+-------------------------------------------------------------------------
 2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-3
 NAG issues with transiesta
 
@@ -41,4 +58,5 @@ added:
   Docs/CHANGES.awalker-trunk-fixes
 modified:
   Src/obj_setup.sh*
+  version.info
 
