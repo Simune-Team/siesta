@@ -1,0 +1,5 @@
+-------------------------------------------------------------------------
+2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-1
+Make obj_setup.sh executable.
+
+This needs to be executed in order to do VPATH make.
