@@ -5,6 +5,88 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 ------------------------------------------------------------------
+2008-10-15  10:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.5
+Assorted fixes (deprecated constructs, zmatrix, cg restarts) (A. Walker)
+
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-5
+	Remove use of features deleted in Fortran 95
+	
+	Specifically, one use of PAUSE and one GOTO an
+	ENDDO statment. GOTO now jumps to the next line
+	and the PAUSE is replaced to an (MPI safe) call
+	to die().
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/atomlwf.F
+	  Src/m_ts_aux_rout.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-4
+	Simple bugfix for fixed cell restarts.
+	
+	In the case of a tightend ftol after a sucessful CG run, relaxed
+	is set to .true. by the read from iocg. This results in the test
+	for convergence being skipped within conjgr. Setting relaxed to
+	.false. here avoids this. In the case of a variable cell relaxed
+	is set below anyway and the converence test is always performed.
+	A better solution (moving the test out into a seperate routine)
+	will follow in a later version. 
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/cgvc.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-3
+	NAG issues with transiesta
+	
+	Even with -dcfuns the NAG f95 compiler does not like the
+	"non-standard double precision complex intrinsic function"
+	dcexp. Use the generic exp instead.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/m_ts_electrode.F90
+	  Src/m_ts_in_siesta.F
+	  Src/m_ts_scattering.F
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-2
+	Fix errors in some zmatrix tests
+	
+	According to the documentation and code in zmatrix.F the
+	fdf flags to control zmatrix force tolerance and optimizer
+	step size are ZM.ForceTolLength, ZM.ForceTolAngle,
+	ZM.MaxDisplLength and ZM.MaxDisplAngle - in some tests
+	they were shortened to ...Ang and ...Len. This patch
+	corrects this. The values in the tests were set to the 
+	defaults so test output is not changed.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Tests/benzene/benzene.fdf
+	  Tests/fire_benzene/fire_benzene.fdf
+	  Tests/h2oZ/h2oZ.fdf
+	  Tests/zmatrix/zmatrix.fdf
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-1
+	Make obj_setup.sh executable.
+	
+	This needs to be executed in order to do VPATH make.
+	
+	added:
+	  Docs/CHANGES.awalker-trunk-fixes
+	modified:
+	  Src/obj_setup.sh*
+	  version.info
+	
+
+------------------------------------------------------------------
 2008-09-12  13:45:00 Alberto Garcia <albertog@icmab.es>	 2.6.4
 Extended Ordejon-Mauri ordern functional to atoms with odd number of electrons
 

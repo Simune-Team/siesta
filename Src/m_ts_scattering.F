@@ -104,7 +104,7 @@ C  ....................
             kxij = (kpoint(1) * xij(1,ind) +
      .              kpoint(2) * xij(2,ind) +
      .              kpoint(3) * xij(3,ind))
-            cphase = cdexp(dcmplx(0d0,1d0)*kxij)
+            cphase = exp(dcmplx(0d0,1d0)*kxij)
 c             write(6,*)kxij,iuo,juo
 C FDN Changed index ordering
             Sw(iuo,juo) = Sw(iuo,juo) + S(ind)*cphase
@@ -314,7 +314,7 @@ C Find eigenvalues .........................................
                    kxij = (kpoint(1) * xijg(1,ind) +
      .             kpoint(2) * xijg(2,ind) +
      .             kpoint(3) * xijg(3,ind))
-                  cphase = cdexp(dcmplx(0d0,1d0)*kxij)
+                  cphase = exp(dcmplx(0d0,1d0)*kxij)
 C FDN Changed index ordering
                   Sw(iuo,juo) = Sw(iuo,juo) + Snew(ind)*cphase
                   Hw(iuo,juo) = Hw(iuo,juo) + Hnew(ind)*cphase
@@ -1224,10 +1224,10 @@ c----------------------------------------------
                                  jo=jo+1
 
                      
-          cphase  =  cdexp(dcmplx(0d0,-2d0*Pi)  *  
+          cphase  =  exp(dcmplx(0d0,-2d0*Pi)  *  
      .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
 
-          ccphase  =  cdexp(dcmplx(0d0,2d0*Pi)  *  
+          ccphase  =  exp(dcmplx(0d0,2d0*Pi)  *  
      .      ( (ia1-ja1)*q(1,iq) + (ia2-ja2)*q(2,iq)) )    
 
 
