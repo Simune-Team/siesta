@@ -1,4 +1,28 @@
 -------------------------------------------------------------------------
+2008-10-21      Andrew Walker   2.6.4--awalker-trunk-fixes-6
+Avoid MPI deadlock when DM file is not of the correct size.
+
+Since r263.1.1 it was possible for the test 
+
+ if ( maxnd .lt. ndmax ) then
+   okdim = .false.
+   ... skip DM reading ...
+
+
+to be true on some nodes and false on others 
+as ndmax was local to the node. This condition
+leads to some nodes to wait at globalize_max
+in m_pulay.F (near line 53) and the other to wait 
+at the MPI_Wait in iodm.F (near line 293). Avoid 
+this by using the maximum value of ndmax from all 
+nodes in the test. 
+
+modified:
+  Docs/CHANGES.awalker-trunk-fixes
+  Src/iodm.F
+  version.info
+
+-------------------------------------------------------------------------
 2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-5
 Remove use of features deleted in Fortran 95
 

@@ -68,7 +68,7 @@ C Internal variables
       integer, dimension(:), allocatable, save :: numdg
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
-      integer   BNode
+      integer   BNode, global_ndmax
 #ifdef ALLOC_SAVE_BUG
       real(dp), dimension(:), allocatable :: buffer
       integer,  dimension(:), allocatable :: ibuffer
@@ -241,6 +241,14 @@ C Convert global numd pointer to local form and generate listdptr
           do m = 1,nbasistot
             ndmaxg = max(ndmaxg,numdg(m))
           enddo
+#ifdef MPI
+! For MPI jobs we need to make sure that all nodes have the maximum
+! value of ndmax from any node (or some may try and use the DM file
+! while others do not leading to a deadlock).
+          call MPI_AllReduce(ndmax, global_ndmax, 1, MPI_INTEGER,
+     .            MPI_MAX, MPI_Comm_World, MPIerror)
+          ndmax = global_ndmax
+#endif
 
 C Check size of first dimension of dm
 
