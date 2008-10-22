@@ -62,13 +62,13 @@ C
       logical, intent(out) :: found
 
 C Internal variables
-      logical   file_exists, okdim
+      logical   file_exists, okdim, dim_err
       integer   im, is, unit1, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
       integer, dimension(:), allocatable, save :: numdg
 #ifdef MPI
       integer   MPIerror, Request, Status(MPI_Status_Size)
-      integer   BNode, global_ndmax
+      integer   BNode
 #ifdef ALLOC_SAVE_BUG
       real(dp), dimension(:), allocatable :: buffer
       integer,  dimension(:), allocatable :: ibuffer
@@ -241,24 +241,34 @@ C Convert global numd pointer to local form and generate listdptr
           do m = 1,nbasistot
             ndmaxg = max(ndmaxg,numdg(m))
           enddo
+
+C Check size of first dimension of dm. If we are in parallel both maxnd 
+C and ndmax can vary from node to node: checking that the global maximum
+C maxnd is smaller than the global minimum ndmax won't work as this may 
+C miss some cases where the dimension is OK. Instead do a global .and.
+C of the result of the check. However, we then need to take case on the 
+C not OK path to report correctly.
+
 #ifdef MPI
-! For MPI jobs we need to make sure that all nodes have the maximum
-! value of ndmax from any node (or some may try and use the DM file
-! while others do not leading to a deadlock).
-          call MPI_AllReduce(ndmax, global_ndmax, 1, MPI_INTEGER,
-     .            MPI_MAX, MPI_Comm_World, MPIerror)
-          ndmax = global_ndmax
+          call MPI_AllReduce(( maxnd .lt. ndmax ), dim_err,
+     .            1, MPI_LOGICAL, MPI_LAND, MPI_Comm_World, MPIerror)
+#else 
+          dim_err = ( maxnd .lt. ndmax )
 #endif
-
-C Check size of first dimension of dm
-
-          if ( maxnd .lt. ndmax ) then
+          if ( dim_err ) then
              okdim = .false.
+#ifdef MPI
+C Could report maxnd and ndmax here, but this would need to be for 
+C all node - slow and can a user actually do anything about it?
              if (Node .eq. 0)
+     .       write(6,"('iodm: DM continuation file not used because ',
+     .                 'of wrong dimensions on at least one node.'") 
+#else 
      .       write(6,"('iodm: DM continuation file not used because ',
      .                 'of wrong dimensions.'/
      .                 'iodm:    maxnd =',i6,' must be at least =',
      .                 i6)") maxnd, ndmax
+#endif
              goto 1000
           endif
 

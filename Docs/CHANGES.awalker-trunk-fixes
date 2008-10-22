@@ -1,4 +1,17 @@
 -------------------------------------------------------------------------
+2008-10-22      Andrew Walker   2.6.4--awalker-trunk-fixes-7
+Really avoid MPI deadlock when DM file is not of the correct size.
+
+Fix last change so that we catch both maxnd and ndmax being 
+different between nodes. The test is done on all nodes and 
+all must be ok to use the .DM file.
+
+modified:
+  Docs/CHANGES.awalker-trunk-fixes
+  Src/iodm.F
+  version.info
+
+-------------------------------------------------------------------------
 2008-10-21      Andrew Walker   2.6.4--awalker-trunk-fixes-6
 Avoid MPI deadlock when DM file is not of the correct size.
 
