@@ -5,6 +5,63 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 ------------------------------------------------------------------
+2008-11-28  16:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.7
+Assorted bug fixes: iodm, pdos, fdf, cdf_fft
+
+* Fix latest patch for iodm.F (formatting, messages)
+* Fix long-standing bug in pdos XML output
+* Cosmetic fix in experimental file Util/Grid/cdf_fft.f90
+* Fix obscure bug in fdf
+
+modified:
+  Src/fdf/fdf.f
+  Src/iodm.F
+  Src/wxml/m_wxml_text.F90
+  Util/Grid/cdf_fft.f90
+
+   	------------------------------------------------------------
+   	revno: 271
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:42:54 +0100
+   	message:
+   	  Do not use volume factor in cdf_fft
+   	  
+   	  The factor only makes sense for charge-density files.
+   	  
+   	  modified:
+   	    Util/Grid/cdf_fft.f90
+   	------------------------------------------------------------
+   	revno: 270
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:37:48 +0100
+   	message:
+   	  Close the output channel in fdf_shutdown 
+   	  
+   	  If fdf is re-invoked, an error was triggered because
+   	  fdf_shutdown did not close the previous run's output channel.
+   	  Bug spotted by Eduardo Hernandez.
+   	  
+   	  modified:
+   	    Src/fdf/fdf.f
+   	------------------------------------------------------------
+   	revno: 269
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:35:55 +0100
+   	message:
+   	  Fix a long-standing bug in pdos xml output
+   	  
+   	  In Src/wxml/m_wxml_text.F90, the arguments to the sign function were
+   	  reversed, causing badly formatted records in the pdos xml file.
+   	  Thanks to Rogeli Grima for spotting the bug.
+   	  
+   	  modified:
+   	    Src/wxml/m_wxml_text.F90
+
+
+------------------------------------------------------------------
 2008-11-28  14:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.6
 Avoid MPI deadlock when DM file is not acceptable (A. Walker)
 

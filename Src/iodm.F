@@ -194,7 +194,7 @@ C Check dimensions. It will no longer stop if wrong, but continue with fresh DM
              if (Node .eq. 0)
      .       write(6,"('iodm: DM continuation file not used because ',
      .                 'of wrong dimensions.'/
-     .                 'iodm:    nbasis =',i6,' must be exactly =',
+     .                 'iodm:    nbasis =',i6,' nbasis on file =',
      .                 i6)") nbasistot, nb
              goto 1000
           endif
@@ -204,7 +204,7 @@ C Check dimensions. It will no longer stop if wrong, but continue with fresh DM
              if (Node .eq. 0)
      .       write(6,"('iodm: DM continuation file not used because ',
      .                 'of wrong dimensions.'/
-     .                 'iodm:    nspin =',i6,' must be exactly =',
+     .                 'iodm:    nspin =',i6,' nspin on file =',
      .                 i6)") nspin, ns
              goto 1000
           endif
@@ -261,13 +261,14 @@ C not OK path to report correctly.
 C Could report maxnd and ndmax here, but this would need to be for 
 C all node - slow and can a user actually do anything about it?
              if (Node .eq. 0)
-     .       write(6,"('iodm: DM continuation file not used because ',
-     .                 'of wrong dimensions on at least one node.'") 
+     .       write(6,"(a,a)")
+     $            'iodm: DM continuation file not used because ',
+     .            'of wrong dimensions on at least one node.'
 #else 
-     .       write(6,"('iodm: DM continuation file not used because ',
-     .                 'of wrong dimensions.'/
-     .                 'iodm:    maxnd =',i6,' must be at least =',
-     .                 i6)") maxnd, ndmax
+             write(6,"(a,a,a,i6,a,i6)")
+     $            'iodm: DM continuation file not used because ',
+     .            'of wrong dimensions.',
+     .            'iodm:    maxnd =', maxnd,' must be at least =', ndmax
 #endif
              goto 1000
           endif
