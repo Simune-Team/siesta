@@ -5,6 +5,30 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 ------------------------------------------------------------------
+2008-11-28  14:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.6
+Avoid MPI deadlock when DM file is not acceptable (A. Walker)
+
+        Since r263.1.1 it was possible for the test 
+    
+         if ( maxnd .lt. ndmax ) then
+           okdim = .false.
+           ... skip DM reading ...
+    
+    
+        to be true on some nodes and false on others 
+        as ndmax was local to the node. This condition
+        leads to some nodes to wait at globalize_max
+        in m_pulay.F (near line 53) and the other to wait 
+        at the MPI_Wait in iodm.F (near line 293). Avoid 
+        this by detecting whether maxnd and ndmax are
+        different between nodes. The test is done on all nodes and 
+        all must be ok to use the .DM file.
+    
+        modified:
+          Src/iodm.F
+          version.info
+
+------------------------------------------------------------------
 2008-10-15  10:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.5
 Assorted fixes (deprecated constructs, zmatrix, cg restarts) (A. Walker)
 
