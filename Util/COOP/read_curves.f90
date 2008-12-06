@@ -31,6 +31,10 @@ use orbital_set, only: get_orbital_set
         print *, "|" // trim(line) // "|"
         stop "Wrong title input"
      endif
+
+     ! Exit if emptly line or if explicit marker is used
+     if ((len_trim(line) == 0) .or. (line(1:4) == "----")) EXIT
+
      ncb=ncb+1
      if (ncb.gt.ncbmx) then
         stop "* ERROR * DOS or COOP curves limit exceeded."
@@ -38,7 +42,7 @@ use orbital_set, only: get_orbital_set
      tit(ncb)=trim(line)
 
      ! Get first orbital set for this curve
-     read(mpr_u,"(a)",iostat=iostat) line
+     read(mpr_u,fmt="(a)",iostat=iostat) line
      if (iostat /= 0) then
         print *, "|" // trim(line) // "|"
         stop "Wrong line input"
@@ -61,7 +65,7 @@ use orbital_set, only: get_orbital_set
         endif
 
         ! Get second orbital set for this curve
-        read(mpr_u,"(a)",iostat=iostat) line
+        read(mpr_u,fmt="(a)",iostat=iostat) line
         if (iostat /= 0) then
            print *, "|" // trim(line) // "|"
            stop "Wrong line input"

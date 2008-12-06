@@ -5,6 +5,36 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 ------------------------------------------------------------------
+2008-12-06  17:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.8
+Optimize and fix COOP/COHP/PDOS analysis program
+
+The mprop program in Util/COOP has been revamped to decrease
+drastically the amount of memory needed and to speed up execution.
+Now it should be competitive with, and more flexible than, Siesta's
+built-in PDOS computation.
+
+In the process of optimization several bugs were found and fixed.
+Users are advised to revise the results of old calculations,
+particularly if k-points or multiple-zeta orbital were used.
+
+(+ The OCCS file needs to be opened at the right place in diagk)
+
+
+added:
+  Tests/Reference-xml/si64_coop.xml
+  Tests/Reference/si64_coop.out
+modified:
+  Src/diagk.F
+  Tests/si64_coop/si64_coop.fdf
+  Util/COOP/Makefile
+  Util/COOP/Tests/n_chain/coo.N-N.gplot
+  Util/COOP/io_hs.f90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/read_curves.f90
+  Util/COOP/subs.f90
+
+------------------------------------------------------------------
 2008-11-28  16:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.7
 Assorted bug fixes: iodm, pdos, fdf, cdf_fft
 
