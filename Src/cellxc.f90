@@ -301,6 +301,9 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
   ! Fix density threshold below which it will be taken as zero
   real(dp),parameter :: Dmin = 1.0e-15_dp
 
+  ! Fix a minimum value of k vectors to avoid division by zero
+  real(dp),parameter :: kmin = 1.0e-15_dp
+
   ! Subroutine name
   character(len=*),parameter :: myName = 'cellxc '
   character(len=*),parameter :: errHead = myName//'ERROR: '
@@ -333,8 +336,8 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
   ! Internal pointers for dynamical allocation
   real(dp), pointer:: &
-     dtdgd(:,:,:)=>null(), dtdd(:,:)=>null(), &
-     phi(:,:)=>null(), tk(:)=>null(), tr(:)=>null(), &
+     dphidk(:,:)=>null(), dtdgd(:,:,:)=>null(), dtdd(:,:)=>null(), &
+     dudk(:)=>null(), phi(:,:)=>null(), tk(:)=>null(), tr(:)=>null(), &
      ur(:)=>null(), uk(:)=>null()
   real(gp), pointer:: &
      tvac(:)=>null(), tvdw(:,:)=>null(), uvdw(:,:)=>null(), &
@@ -361,7 +364,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      ndSpin, nf, nonemptyPoints, nPoints, nq, ns, &
      r11, r12, r13, r21, r22, r23
   real(dp):: &
-     beginTime, D(nSpin), dEcdD(nSpin), dEcdGD(3,nSpin), dEcidDj, &
+     beginTime, D(nSpin), dedk, dEcdD(nSpin), dEcdGD(3,nSpin), dEcidDj, &
      dEcuspdD(nSpin), dEcuspdGD(3,nSpin), dEdDaux(nSpin),  &
      dExdD(nSpin), dExdGD(3,nSpin), dExidDj, &
      dGdM(-nn:nn), dGidFj(3,3,-nn:nn), Dj(nSpin), &
@@ -371,7 +374,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
      GD(3,nSpin), meshKcut, k, kcell(3,3), kcut, kvec(3),  &
      sumTime, sumTime2, VDWweightC, volcel, volume
 ! DEBUG
-  integer :: iip, jjp
+  integer :: iip, jjp, jq
   real(dp):: rmod, rvec(3)
 ! END DEBUG
   logical :: &
@@ -596,6 +599,15 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
   endif ! (GGA)
 
+  ! Initialize output
+  Ex = 0.0_dp
+  Ec = 0.0_dp
+  Dx = 0.0_dp
+  Dc = 0.0_dp
+  stress(:,:) = 0.0_dp
+  Vxc(:,:,:,:) = 0.0_gp
+  if (present(dVxcdD)) dVxcdD(:,:,:,:) = 0.0_gp
+
   ! VdW initializations -------------------------------------------------------
   if (VDW) then
 
@@ -623,8 +635,10 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
     ! Allocate VdW arrays
     call vdw_get_qmesh( nq )
+    call re_alloc( dudk,  1,nq,                   myName//'dudk' )
     call re_alloc( dtdd,  1,nq, 1,nSpin,          myName//'dtdd' )
     call re_alloc( dtdgd,  1,3,    1,nq, 1,nSpin, myName//'dtdgd')
+    call re_alloc( dphidk,1,nq,    1,nq,          myName//'dphidk')
     call re_alloc( phi,   1,nq,    1,nq,          myName//'phi'  )
     call re_alloc( tk,    1,nq,                   myName//'tk'   )
     call re_alloc( tr,    1,nq,                   myName//'tr'   )
@@ -755,7 +769,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 ! END DEBUG
 
 ! BEGIN DEBUG
-    ! Initialize nonlocal correlation energy
+!    ! Initialize nonlocal correlation energy
 !    Enl = 0.0_dp
 ! END DEBUG
 
@@ -782,7 +796,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
       if (k<kcut) then
 
         ! Find Fourier transform of VdW kernel phi(r,r')
-        call vdw_phi( k, phi )
+        call vdw_phi( k, phi, dphidk )
 
         ! Find Fourier transform of Int_dr'*phi(r,r')*rho(r')
         ! Warning: tvdw and uvdw are the same array
@@ -791,9 +805,24 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
         uvdw(ik,1:nq) = uk(1:nq)
 
 ! BEGIN DEBUG
-!        ! Find contribution to Int_dr*Int_dr'*rho(r)*phi(r,r')*rho(r')
-!        Enl = Enl + 0.5_dp * volume * sum(uk*tk)
+!        ! Find contribution to 0.5*Int_dr*Int_dr'*rho(r)*phi(r,r')*rho(r')
+!        ! Factor 0.5 in the integral cancels with a factor 2 required 
+!        ! because tk and uk contain only the real or imaginary parts
+!        ! of the Fourier components (see fftr2k) 
+!        Enl = Enl + volume * sum(uk*tk)
 ! END DEBUG
+
+        ! Find contribution to stress from change of k vectors with strain
+        if (k > kmin) then
+          dudk(1:nq) = matmul( tk(1:nq), dphidk(1:nq,1:nq) )
+          ! See note above on cancelation of factors 0.5 and 2 in Enl
+          dedk = sum(dudk*tk) * (volume / k)
+          do jx = 1,3
+            do ix = 1,3
+              stress(ix,jx) = stress(ix,jx) - dedk * kvec(ix) * kvec(jx)
+            end do
+          end do
+        end if ! (k>kmin)
 
       else
         uvdw(ik,1:nq) = 0.0_gp
@@ -850,15 +879,6 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     Enl = 0.0_dp
 
   end if ! (VDW) End of VdW initializations------------------------------------
-
-  ! Initialize output
-  Ex = 0.0_dp
-  Ec = 0.0_dp
-  Dx = 0.0_dp
-  Dc = 0.0_dp
-  stress(:,:) = 0.0_dp
-  Vxc(:,:,:,:) = 0.0_gp
-  if (present(dVxcdD)) dVxcdD(:,:,:,:) = 0.0_gp
 
 ! BEGIN DEBUG
   call timer( 'cellXC3', 1 )
@@ -942,7 +962,7 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
 
         ! Sum nonlocal VdW contributions for debugging
         EcuspVDW = EcuspVDW + dVol * Dtot * epsCusp
-        Enl = Enl + Dvol * Dtot * epsNL
+        Enl = Enl + dVol * Dtot * epsNL
 
       else if (GGAfunctl) then
         call ggaxc( XCauth(nf), irel, nSpin, D, GD, &
@@ -1178,8 +1198,10 @@ SUBROUTINE cellxc( irel, cell, nMesh, lb1, ub1, lb2, ub2, lb3, ub3, &
     call de_alloc( tr,       myName//'tr' )
     call de_alloc( tk,       myName//'tk' )
     call de_alloc( phi,      myName//'phi' )
+    call de_alloc( dphidk,   myName//'dphidk' )
     call de_alloc( dtdgd,    myName//'dtdgd' )
     call de_alloc( dtdd,     myName//'dtdd' )
+    call de_alloc( dudk,     myName//'dudk' )
     call de_alloc( nonempty, myName//'nonempty' )
   end if
 

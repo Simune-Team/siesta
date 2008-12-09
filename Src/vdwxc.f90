@@ -94,7 +94,7 @@
 !   convergence in other systems. The value of nq is particularly important:
 !   larger nq increases accuracy but CPU time increases between nq and nq**2.
 !------------------------------------------------------------------------------
-! subroutine vdw_phi( k, phi )
+! subroutine vdw_phi( k, phi, dphidk )
 !   Finds phi_soft(q1,q2,k) (Fourier transform of phi_soft(q1,q2,r)) for all 
 !   values of q1 and q2 in qmesh. The q's are local wavevectors defined in 
 !   eqs.(11-12), and phi_soft is a smoothed version of Eq.(14) of Dion et al,
@@ -103,19 +103,20 @@
 !   phi4 are chosen so that phi_soft(d,a) matches phi(d,a) in value and slope
 !   at d=dsoft (another parameter).
 ! Arguments:
-!   real(dp),intent(in) :: k         ! Modulus of actual k vector
-!   real(dp),intent(out):: phi(:,:)  ! phi(q1,q2,k) at given k
-!                                    ! for all q1,q2 in qmesh
+!   real(dp),intent(in) :: k            ! Modulus of actual k vector
+!   real(dp),intent(out):: phi(:,:)     ! phi(q1,q2,k) at given k
+!                                       ! for all q1,q2 in qmesh
+!   real(dp),intent(out):: dphidk(:,:)  ! dphi(q1,q2,k)/dk at given k
 ! Sample usage:
 !   integer :: nq
 !   real(dp):: k, kcut
-!   real(dp),allocatable:: phi(:,:)
+!   real(dp),allocatable:: phi(:,:), dphidk(:,:)
 !   kcut = 10._dp ! 10 Bohr^-1 => 100 Ry (this should be adapted to your mesh)
 !   call vdw_set_kcut( kcut )
 !   call vdw_get_qmesh( nq )
-!   allocate( phi(nq,nq) )
+!   allocate( phi(nq,nq), dphidk(nq,nq) )
 !   do k points
-!     call vdw_phi( k, phi )
+!     call vdw_phi( k, phi, dphidk )
 ! Notes:
 ! - Requires a previous call to vdw_set_kcut. Otherwise stops with an error msg.
 ! - Stops with an error message if size of array phi is smaller than nq*nq.
@@ -1349,7 +1350,7 @@ end subroutine vdw_get_qmesh
 
 ! -----------------------------------------------------------------------------
 
-subroutine vdw_phi( k, phi )
+subroutine vdw_phi( k, phi, dphidk )
 
 ! Finds by interpolation phi(q1,q2,k) (Fourier transform of phi(q1,q2,r)) 
 ! for all values of q1 and q2 in qmesh. If the interpolation table does not
@@ -1357,12 +1358,13 @@ subroutine vdw_phi( k, phi )
 ! previous call to vdw_set_kc to set qmesh.
 
   implicit none
-  real(dp),intent(in) :: k         ! Modulus of actual k vector
-  real(dp),intent(out):: phi(:,:)  ! phi(q1,q2,k) at given k
-                                   ! for all q1,q2 in qmesh
+  real(dp),intent(in) :: k            ! Modulus of actual k vector
+  real(dp),intent(out):: phi(:,:)     ! phi(q1,q2,k) at given k
+                                      ! for all q1,q2 in qmesh
+  real(dp),intent(out):: dphidk(:,:)  ! dphi(q1,q2,k)/dk at given k
 
   integer :: ik, iq1, iq2
-  real(dp):: a, a3, b, b3, dphidk
+  real(dp):: a, a2, a3, b, b2, b3
 
   if (.not.kcut_set) stop 'vdw_phi: ERROR: kcut must be previously set'
 
@@ -1378,15 +1380,20 @@ subroutine vdw_phi( k, phi )
     ik = k/dk
     a = ((ik+1)*dk-k)/dk
     b = 1 - a
+    a2 = (3*a**2 -1) * dk / 6
+    b2 = (3*b**2 -1) * dk / 6
     a3 = (a**3 - a) * dk**2 / 6
     b3 = (b**3 - b) * dk**2 / 6
     do iq2 = 1,nq
       do iq1 = 1,iq2
 !        call splint( dk, phik(:,iq1,iq2), d2phidk2(:,iq1,iq2), nk+1, k, &
-!                     phi(iq1,iq2), dphidk, pr )
+!                     phi(iq1,iq2), dphidk(iq1,iq2), pr )
         phi(iq1,iq2) = a*phik(ik,iq1,iq2) + b*phik(ik+1,iq1,iq2) &
                 + a3*d2phidk2(ik,iq1,iq2) + b3*d2phidk2(ik+1,iq1,iq2)
+        dphidk(iq1,iq2) = (-phik(ik,iq1,iq2) + phik(ik+1,iq1,iq2)) / dk &
+                   - a2*d2phidk2(ik,iq1,iq2) + b2*d2phidk2(ik+1,iq1,iq2)
         phi(iq2,iq1) = phi(iq1,iq2)
+        dphidk(iq2,iq1) = dphidk(iq1,iq2)
       end do
     end do
   end if

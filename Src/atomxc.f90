@@ -215,8 +215,8 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
   real(dp), pointer :: &
     D(:,:)=>null(), dGDdD(:,:)=>null(), dVol(:)=>null(), GD(:,:,:)=>null()
   real(dp), pointer:: &
-    dtdgd(:,:,:)=>null(), dtdd(:,:)=>null(), phi(:,:)=>null(), &
-    tk(:,:)=>null(), tr(:,:)=>null(), &
+    dphidk(:,:)=>null(), dtdgd(:,:,:)=>null(), dtdd(:,:)=>null(), &
+    phi(:,:)=>null(), tk(:,:)=>null(), tr(:,:)=>null(), &
     uk(:,:)=>null(), ur(:,:)=>null()
   type(allocDefaults):: &
     prevAllocDefaults
@@ -335,13 +335,14 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
 
     ! Allocate VdW arrays
     call vdw_get_qmesh( nq )
-    call re_alloc( dtdd,       1,nq, 1,nSpin, myName//'dtdd' )
-    call re_alloc( dtdgd, 1,3, 1,nq, 1,nSpin, myName//'dtdgd')
-    call re_alloc( phi,  1,nq, 1,nq,          myName//'phi'  )
-    call re_alloc( tk,   0,nk, 1,nq,          myName//'tk'   )
-    call re_alloc( tr,   1,nr, 1,nq,          myName//'tr'   )
-    call re_alloc( uk,   0,nk, 1,nq,          myName//'uk'   )
-    call re_alloc( ur,   1,nr, 1,nq,          myName//'ur'   )
+    call re_alloc( dtdd,         1,nq, 1,nSpin, myName//'dtdd'  )
+    call re_alloc( dtdgd,   1,3, 1,nq, 1,nSpin, myName//'dtdgd' )
+    call re_alloc( dphidk, 1,nq, 1,nq,          myName//'dphidk')
+    call re_alloc( phi,    1,nq, 1,nq,          myName//'phi'   )
+    call re_alloc( tk,     0,nk, 1,nq,          myName//'tk'    )
+    call re_alloc( tr,     1,nr, 1,nq,          myName//'tr'    )
+    call re_alloc( uk,     0,nk, 1,nq,          myName//'uk'    )
+    call re_alloc( ur,     1,nr, 1,nq,          myName//'ur'    )
 
     ! Find planewave cutoff of density
     kc = 0
@@ -381,7 +382,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     ! by convolution in reciprocal space
     do ik = 0,nk
       ! Find Fourier transform of VdW kernel phi_iq_iq'(r,r')
-      call vdw_phi( k(ik), phi )
+      call vdw_phi( k(ik), phi, dphidk )
       ! Find Fourier transform of u_iq(r)
       uk(ik,1:nq) = matmul( tk(ik,1:nq), phi(1:nq,1:nq) )
     end do ! ik
@@ -542,6 +543,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     call de_alloc( tr,       myName//'tr' )
     call de_alloc( tk,       myName//'tk' )
     call de_alloc( phi,      myName//'phi' )
+    call de_alloc( dphidk,   myName//'dphidk' )
     call de_alloc( dtdgd,    myName//'dtdgd' )
     call de_alloc( dtdd,     myName//'dtdd' )
   endif ! (VDW)
