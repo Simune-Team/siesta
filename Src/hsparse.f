@@ -302,8 +302,9 @@ C Find optimum value for nlhmax
       ! (re)allocate listh, but do not shrink, as it might
       ! be used for DM extrapolation
       ! using information from different geometries.
+      ! CHANGED NOW
       call re_alloc(listh,1,nlhmax,name='listh',
-     $     routine='hsparse',SHRINK=.false.)
+     $     routine='hsparse',SHRINK=.true.)
       if (set_xijo) then
          call re_alloc(xijo,1,3,1,nlhmax,name='xijo',routine='hsparse')
       else

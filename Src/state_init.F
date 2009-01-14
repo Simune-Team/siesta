@@ -218,6 +218,7 @@
 
       ! The following has been fixed in the new new_dm, but it
       ! is kept here as a warning.
+      !!! NOW REMOVED
       ! Use re_alloc regardless of whether nh is greater than 
       ! the old maxnh or not, BUT DO NOT SHRINK, as some of
       ! these arrays are later used in extrapol.
@@ -230,8 +231,13 @@
       ! the geometry in the XV file, as this holds the "predicted"
       ! geometry after a relaxation or MD step.
 
+!! Copy = .true. means that we keep the information
+!! Check in new_dm
+
       call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
-     .     routine='siesta',copy=.true.,SHRINK=.false.)
+     .     routine='siesta',copy=.true.)
+
+!!
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='siesta',copy=.false.)
       call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',
@@ -241,11 +247,11 @@
 
       ! Allocate/reallocate storage associated with Hamiltonian/Overlap matrix
       call re_alloc(H,1,maxnh,1,nspin,name='H',
-     .              routine='siesta',shrink=.false.,copy=.false.)
+     .              routine='siesta',shrink=.true.,copy=.false.)
       call re_alloc(H0,1,maxnh,name='H0',routine='siesta',
-     .              shrink=.false.,copy=.false.)
+     .              shrink=.true.,copy=.false.)
       call re_alloc(S,1,maxnh,name='S',routine='siesta',
-     .              shrink=.false.,copy=.false.)
+     .              copy=.false.)
 
 
 ! Some printout for debugging ........................................

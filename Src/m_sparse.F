@@ -39,18 +39,20 @@
       real(dp), pointer   :: matrix(:,:)
 
       integer :: size_old, size_new, i, in, ind, j, second_dim
-      integer :: maxval_j_old, maxval_j_new, max_col
+      integer :: maxval_j_old, maxval_j_new, max_col, first_dim
 
       real(dp), pointer :: aux(:,:)
       real(dp), pointer :: m_tmp(:,:)
 
       size_old = sum(ncol_old(1:nrows))
       size_new = sum(ncol_new(1:nrows))
+      first_dim = size(matrix,dim=1)
       second_dim = size(matrix,dim=2)
 
       nullify(m_tmp)
       call re_alloc(m_tmp,1,size_new,1,second_dim)
 
+!     Maximum value of column index 
       maxval_j_old = maxval(list_old(1:size_old))
       maxval_j_new = maxval(list_new(1:size_new))
 
@@ -59,19 +61,19 @@
       nullify(aux)
       call re_alloc(aux,1,max_col,1,second_dim)
 
-      aux(1:max_col,:) = 0.0_dp
       do i=1,nrows
+         aux(1:max_col,:) = 0.0_dp
          do in=1,ncol_old(i)
             ind = listptr_old(i) + in
             j = list_old(ind)
-            aux(j,:) = matrix(ind,:)
+!! Warning: ind might overflow in the matrix access if it has shrunk
+            if (ind <= first_dim) aux(j,:) = matrix(ind,:)
          enddo
          do in=1,ncol_new(i)
             ind = listptr_new(i) + in
             j = list_new(ind)
             m_tmp(ind,:) = aux(j,:)
          enddo
-         aux(1:max_col,:) = 0.0_dp
       enddo
 
       call de_alloc(aux)
@@ -134,8 +136,8 @@
          call re_alloc(aux,1,max_col)
       endif
 
-      aux(1:max_col) = 0.0_dp
       do i=1,nrows
+         aux(1:max_col) = 0.0_dp
          do in=1,ncol_old(i)
             ind = listptr_old(i) + in
             j = list_old(ind)
@@ -146,7 +148,6 @@
             j = list_new(ind)
             m_new(ind) = aux(j)
          enddo
-         aux(1:max_col) = 0.0_dp
       enddo
 
       if (.not. present(work)) then
