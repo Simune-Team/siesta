@@ -65,7 +65,7 @@ SYSOBJ=$(SYS).o pxf.o
 OBJS =  automatic_cell.o atom_options.o \
         arw.o  atomlwf.o bands.o basis_enthalpy.o bessph.o bonds.o \
         born_charge.o cgwf.o chkdim.o chkgmx.o \
-	chempot.o coceri.o constr.o coxmol.o cross.o \
+	chempot.o coceri.o constr.o coxmol.o cross.o compute_norm.o \
 	denmat.o denmatlomem.o detover.o dfscf.o dhscf.o diagon.o digcel.o fft3d.o \
 	diagg.o diagk.o diagk_file.o diagkp.o diag2g.o diag2k.o diagpol.o \
 	diagsprl.o dipole.o dismin.o dnaefs.o dot.o  \
@@ -484,9 +484,9 @@ meshsubs.o: atm_types.o atmfuncs.o parallel.o parallelsubs.o precision.o
 meshsubs.o: radial.o siesta_cml.o
 metaforce.o: parallel.o parsing.o precision.o
 minvec.o: precision.o sorting.o sys.o
-mixer.o: atomlist.o m_broyden_mixing.o m_fire_mixing.o m_iodm.o m_mpi_utils.o
-mixer.o: m_pulay.o m_spin.o m_steps.o siesta_geom.o siesta_options.o
-mixer.o: sparse_matrices.o
+mixer.o: atomlist.o iodm_netcdf.o m_broyden_mixing.o m_fire_mixing.o m_iodm.o
+mixer.o: m_mpi_utils.o m_pulay.o m_spin.o m_steps.o parallel.o siesta_geom.o
+mixer.o: siesta_options.o sparse_matrices.o
 mixps.o: f2kcli.o flib_spline.o periodic_table.o precision.o pseudopotential.o
 mixps.o: sys.o
 mneighb.o: alloc.o precision.o sys.o
@@ -497,7 +497,6 @@ naefs.o: atmfuncs.o mneighb.o precision.o
 new_dm.o: alloc.o atomlist.o m_iodm.o m_sparse.o m_spin.o m_steps.o parallel.o
 new_dm.o: parallelsubs.o parsing.o precision.o siesta_geom.o siesta_options.o
 new_dm.o: sparse_matrices.o sys.o units.o
-new_extrapol.o: m_sparse_types.o parallel.o precision.o sys.o
 nlefsm.o: alloc.o atmfuncs.o mneighb.o parallel.o parallelsubs.o precision.o
 normalize_dm.o: atomlist.o m_mpi_utils.o m_spin.o parallel.o precision.o
 normalize_dm.o: sparse_matrices.o
@@ -667,7 +666,6 @@ m_local_dos.o: local_DOS.o
 m_minvec.o: minvec.o
 m_mixer.o: mixer.o
 m_new_dm.o: new_dm.o
-m_new_extrapol.o: new_extrapol.o
 m_nlefsm.o: nlefsm.o
 m_normalize_dm.o: normalize_dm.o
 m_ordern.o: ordern.o

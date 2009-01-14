@@ -37,6 +37,8 @@
       use precision, only: dp
       use alloc, only: re_alloc, de_alloc
       use parallel,  only: IOnode
+      use m_norm
+
 
 #ifdef MPI
       use mpi_siesta
@@ -50,6 +52,7 @@
 
       private
       public :: new_dm
+      real(dp) :: anorm
 
       CONTAINS
 
@@ -151,6 +154,9 @@
          listold = listh
          listptrold = listhptr
 
+         anorm = compute_norm(Dscf,maxnh,nspin)
+         if (IONode) print *, "DM norm after initdm: ", anorm
+
       else
 
          if (IOnode) then
@@ -159,7 +165,13 @@
 
         ! Extrapolate density matrix between steps
 
+         anorm =  compute_norm(Dscf,maxnh,nspin)
+         if (IONode) print *, "DM norm of previous geom: ", anorm
+
          call new_extrapol(no_l, numh, listhptr, listh, Dscf)
+
+         anorm =  compute_norm(Dscf,maxnh,nspin)
+         if (IONode) print *, "DM norm after extrapolation: ", anorm
 
       endif
 
@@ -415,6 +427,9 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )
+         anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
+         if (IONode) print *, "DM norm of file contents: ", anorm
+
       else
         found = .false.
       endif
@@ -756,6 +771,9 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
         endif
 
       endif
+
+      anorm =  compute_norm(Dscf,maxnh,nspin)
+      if (IONode) print *, "DM norm at end of initdm: ", anorm
 
       end subroutine initdm
 

@@ -36,7 +36,10 @@
         qsol = buffer1
 #endif
       if (IOnode) then
-        if (.not.first .and.
+         print *, "DM norm before normalization: ", qsol
+         print *, "Qtot: ", qtot
+!!        if (.not.first .and.
+        if (
      .     abs(qsol/qtot-1._dp).gt.1.d-2) write(6,'(a,2f15.6)')
      .    'siesta: WARNING: Qtot, Tr[D*S] =', qtot, qsol
       endif

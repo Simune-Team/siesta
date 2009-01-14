@@ -265,16 +265,17 @@
 *     endif
 ! ..................
 
+      ! Find overlap matrix 
+      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
+     .             maxnh, lasto, iphorb, isa, 
+     .             numh, listhptr, listh, S)
+
       ! Initialize density matrix
       call new_dm( auxchanged )
 
       ! Check for size of Pulay auxiliary matrices
       call init_pulay_arrays()
 
-      ! Find overlap matrix 
-      call overlap(na_u, na_s, no_s, scell, xa, indxua, rmaxo,
-     .             maxnh, lasto, iphorb, isa, 
-     .             numh, listhptr, listh, S)
 
 #ifdef CDF
       if (writedm_cdf .or. writedm_cdf_history) then
