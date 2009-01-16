@@ -2,6 +2,8 @@ ____________________________________________________________________
 ** CHANGES ALONG dm-checks branch
 --------------------------------------------------------------------
 
+Fri 2009-01-16:  Check that number of orbitals is the same
+                 before reading DM file (m_iodm)
 Fri 2009-01-16:  Sync with final TranSiesta
 Fri 2009-01-16:  Sync with basic TranSiesta
 

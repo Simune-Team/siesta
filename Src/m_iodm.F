@@ -123,8 +123,16 @@ C     distributed memory before checking the dimensions
       call MPI_Bcast(nspin,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-      ! This checks for equality of number of rows.
-      call chkdim( 'iodm', 'no_u', no_u, nb, 0 )
+      ! If the total number of orbitals does not match, bail out
+      if (no_u /= nb) then
+         if (Node.eq.0) then
+            write(6,"(a,i6)")
+     $           "No. of orbitals in DM on file does not match: ", nb
+            call io_close(unit1)
+         endif
+         found = .false.
+         RETURN
+      endif
 
 C     Allocate local buffer array for globalised numd
       nullify(numdg)
