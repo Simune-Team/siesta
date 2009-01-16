@@ -66,6 +66,20 @@
       use m_spin,   only: nspin
       use m_steps, only: istp
 
+#ifdef TRANSIESTA
+      !TSS Begin
+      ! SIESTA Modules
+      use parallel, only: IOnode 
+      use m_energies, only: ef
+      use sys, only : die
+
+      ! TS Modules
+      use m_ts_options, only : VIn, VOut, TSinit, TSrun, foundts
+      use m_ts_io, only : TSiodm 
+
+      ! TSS End 
+
+#endif /* TRANSIESTA */
       implicit none
 
       logical, intent(in) :: auxchanged ! Has auxiliary supercell changed?
@@ -73,6 +87,12 @@
       logical:: dminit     ! Initialize density matrix?
       logical :: found, try_to_read_from_file
 
+#ifdef TRANSIESTA
+      ! TSS Begin
+      ! Internal Variables
+      integer :: ts_alloc_stat
+      ! TSS End
+#endif /* TRANSIESTA */
 
       if (IOnode) then
          write(6,"(a,i5)") "New_DM. Step: ", istp
@@ -129,6 +149,20 @@
            write(6,"(a)") "DM reset as supercell changed."
         endif
       endif
+#ifdef TRANSIESTA
+      ! TSS Begin: Mixing arrays
+      if(.not.allocated(VIn)) then
+       allocate(VIn(maxnh,nspin), STAT=ts_alloc_stat)
+       if(ts_alloc_stat /= 0) 
+     .   call die('Failled to Allocate VIn in new_dm !!')
+       allocate(VOut(maxnh,nspin))
+       if(ts_alloc_stat /= 0) 
+     .   call die('Failled to Allocate VOut in new_dm !!')
+           endif 
+      ! TSS End
+
+#endif /* TRANSIESTA */
+
 
       if (dminit) then
          if (IOnode) then
@@ -156,6 +190,51 @@
 
          anorm = compute_norm(Dscf,maxnh,nspin)
          if (IONode) print *, "DM norm after initdm: ", anorm
+
+#ifdef TRANSIESTA
+      ! TSS Begin
+      ! TSS check of TSDM stuff
+
+      if (istp .eq. 1 .and. isolve .eq. 2) then ! try to read TSDM
+         call TSiodm('read', maxnh, no_l, nspin,
+     .        numh, listhptr, listh, Dscf, Escf, ef, foundts)
+
+         if(.not. foundts )  then ! not a TS continuation run
+            TSinit = .true.     ! start to converge a diagon run
+            TSrun = .false.
+
+            if(IONode) then
+               write(6,'(a)')
+     .              'TRANSIESTA: No TS-DensityMatrix file found'
+               write(6,'(a)')
+     .              'TRANSIESTA: Initialization runs using diagon'
+            endif
+         else
+            TSinit = .false.
+            TSrun = .true.
+
+            if(IONode) then
+               write(6,'(a)') 'TRANSIESTA: Continuation run'
+               write(6,'(/a)')
+     .              '                     ************************  '
+               write(6,'(a)')
+     .              '                     *   TRANSIESTA BEGIN   *  '
+               write(6,'(a)')
+     .              '                     ************************  '
+            endif
+
+
+      !     copy Dsfc -> Dold
+
+            Dold(1:nh,1:nspin) = Dscf(1:nh,1:nspin)
+            Eold(1:nh,1:nspin) = Escf(1:nh,1:nspin)
+
+         end if                 !found TSDM-file
+      end if                    !istp == 1  and isolve == 2
+
+      ! TSS End
+
+#endif /* TRANSIESTA */
 
       else
 
@@ -438,8 +517,9 @@ C If found, check and update, otherwise initialize with neutral atoms
         if (nspin_read /= nspin) then
            call die("Different number of DM spin components")
         endif
-        anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
-        if (IONode) print *, "DM norm of file contents: ", anorm
+
+         anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
+         if (IONode) print *, "DM norm of file contents: ", anorm
 
           same_sp = same_sparsity(no_l,num_tmp,list_tmp,
      $                                 numh,listh)
@@ -467,6 +547,7 @@ C If found, check and update, otherwise initialize with neutral atoms
            call de_alloc(D_tmp)
            call de_alloc(work)  ! Allocated by change_sparsity
         endif
+
 
       else
 
@@ -748,7 +829,7 @@ C No spin polarization
                 else
 
 C Spin polarization
-
+ 
                   i1 = 1
                   i2 = 2
 

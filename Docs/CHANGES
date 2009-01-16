@@ -3,98 +3,49 @@
 =======================================================================
 
 ____________________________________________________________________
-** CHANGES ALONG agarcia@siesta.arch--2006/siesta--dm-checks--2.5
---------------------------------------------------------------------
-
-2008-03-08 23.50 GMT	Alberto Garcia <albertog@icmab.es>	patch-5
-
-Summary: Sync to 2.5: CM fix + multiple images warning
-
-2008-02-17 18:50 GMT	Alberto Garcia <albertog@icmab.es>	patch-4
-
-Summary: New symbols for control of DM reuse and extrapolation
-
-The FDF symbols:
-
-DM.AllowReuse          (default .TRUE.)
-DM.AllowExtrapolation  (default .TRUE.)
-
-control whether the DM can be re-used from one geometry step to another, and
-whether it can be extrapolated using information from the two previous steps.
-
-If DM.AllowReuse is .false., the DM is not read from file even if DM.UseSaveDM is .true.
-
-The default for ReinitialiseDM has been changed to ".true.". Hence the DM is
-reset (and not read from file) when the auxiliary supercell shape changes, as sanity
-dictates.
-
-2008-02-15 16:55 GMT	Alberto Garcia <albertog@icmab.es>	patch-3
-
-    (Sync to 2.5.11)
-
-2008-02-15 16:37:57 GMT	Alberto Garcia <albertog@icmab.es>	patch-2
-
-    Summary:
-      Re-design of new_dm and extrapol
-    Revision:
-      siesta--dm-checks--2.5--patch-2
-
-    * Use new functionality in module m_sparse to simplify the logic and
-    hide the ---old index arrays.
-    
-    * Initdm is now part of the new_dm module.
-    
-    (* While debugging a hard-to-track zeroth allocation of DMsaved made a
-    note in alloc.F90)
-
-    new files:
-     Src/.arch-ids/m_sparse_types.f90.id Src/m_sparse_types.f90
-
-    removed files:
-     Src/.arch-ids/extrapol.F.id Src/.arch-ids/initdm.F.id
-     Src/extrapol.F Src/initdm.F
-
-    modified files:
-     Src/Makefile Src/alloc.F90 Src/m_iodm.F Src/m_sparse.F
-     Src/new_dm.F Src/siesta_init.F Src/sparse_matrices.F90
-     Src/state_init.F
-
-
-2008-02-15 16:34:56 GMT	Alberto Garcia <albertog@icmab.es>	patch-1
-
-    Summary:
-      Split of read/write functionality in iodm. Sparsity module. Input check
-    Revision:
-      siesta--dm-checks--2.5--patch-1
-
-    * A new module m_iodm based in iodm has been added (the old code remains).
-      Reading and writing are now done by separate routines, read_dm and write_dm,   
-      respectively. 
-    
-    * New module m_sparse, containing code to check for sparsity changes and
-      to re-structure a sparse matrix to conform to a new pattern (inspired by
-      code in extrapol).
-    
-    * Initdm now calls read_dynamic_dm, which generates a completely fresh
-      DM.  Then the input sparsity pattern is compared to the current one,
-      and updated if needed.
-    
-    To Do:  Clarify the DM data flow in the program, and insert sanity
-            checks at various points.
-    
-
-    new files:
-     Src/.arch-ids/m_iodm.F.id Src/.arch-ids/m_sparse.F.id
-     Src/m_iodm.F Src/m_sparse.F
-
-    modified files:
-     Src/Makefile Src/initdm.F Src/mixer.F Src/new_dm.F
-     Src/state_init.F
-
-
-____________________________________________________________________
 ** CHANGES ALONG siesta@uam.es--2006/siesta-devel--reference--2.5
 --------------------------------------------------------------------
+
+2008-07-15  08:40:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-30
+
+Summary: Merge of Transiesta code -- F. D. Novaes version
+
+Brief Description: 
+
+The TranSIESTA code consists in a a set of additional routines for the
+SIESTA package for the computation of electronic transport
+properties. It was originally developed by Mads Brandbyge, Jose-Luiz
+Mozos, Pablo Ordejon, Jeremy Taylor and Kurt Stokbro (Phys. Rev. B 65,
+165401 (02)), and first implemented in the SIESTA 1.3p version.
+
+The present distribution was adapted to the SIESTA 2.5 structure. With
+respect to the first implementation, it has the additional feature of
+allowing for the use of a k-point sampling other than the gamma point
+(for the 2D Brillouin zone perpendicular to the transport
+direction). These modifications were done by F. D. Novaes
+(fdnovaes@icmab.es)
+
+Source code Structure: 
+
+In this implementation, the original TranSIESTA routines were grouped
+in a set of modules, that all begin with m_ts (m_ts_electrode.F90,
+e.g.), together with the addition of some new subroutines. These
+modules are located in the Src directory.  The interface for
+TranSIESTA also requires the modification of some of the SIESTA
+routines. Presently, this is controlled by compilation directives
+(#ifdef TRANSIESTA), so that only when compiling with the -DTRANSIESTA
+FPPFLAGS option that the objects will contain the modifications.
+
+Compiling:
+
+Add -DTRANSIESTA to the FPPFLAGS variable in the arch.make file, and
+type 
+
+make transiesta
+
+The Makefile was modified in such a way to link the m_ts modules and
+create a binary called transiesta.
+
 
 2008-07-08  13:45:00 GMT  Alberto Garcia <albertog@icmab.es>	patch-29
 
