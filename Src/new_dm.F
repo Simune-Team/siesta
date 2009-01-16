@@ -427,9 +427,6 @@ C Try to read DM from disk if wanted (DM.UseSaveDM true) ---------------
 
          call read_dynamic_dm(nh_tmp, no_l, nspin_read, num_tmp, 
      .             listptr_tmp, list_tmp, D_tmp, found )
-         anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
-         if (IONode) print *, "DM norm of file contents: ", anorm
-
       else
         found = .false.
       endif
@@ -441,6 +438,8 @@ C If found, check and update, otherwise initialize with neutral atoms
         if (nspin_read /= nspin) then
            call die("Different number of DM spin components")
         endif
+        anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
+        if (IONode) print *, "DM norm of file contents: ", anorm
 
           same_sp = same_sparsity(no_l,num_tmp,list_tmp,
      $                                 numh,listh)
