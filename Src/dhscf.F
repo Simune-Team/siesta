@@ -344,10 +344,12 @@ C Start time counter
         call MPI_Bcast(nsm,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 #ifdef TRANSIESTA
+#ifdef MPI
 ! TSS Begin
         call MPI_Bcast(transmode,1,MPI_logical,0,MPI_Comm_World,
      .       MPIerror)
 ! TSS End
+#endif
 #endif /* TRANSIESTA */
 
 C Set mesh sub-division variables & perform one off allocation
