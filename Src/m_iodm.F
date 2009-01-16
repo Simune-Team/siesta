@@ -126,8 +126,14 @@ C     distributed memory before checking the dimensions
       ! If the total number of orbitals does not match, bail out
       if (no_u /= nb) then
          if (Node.eq.0) then
-            write(6,"(a,i6)")
-     $           "No. of orbitals in DM on file does not match: ", nb
+           write(6,"(a,i6,/,a)")
+     $      "WARNING: Wrong number of orbitals in DM file: ",
+     $       nb,
+     $      "WARNING: Falling back to atomic initialization of DM."
+           write(0,"(a,i6,/,a)")
+     $      "WARNING: Wrong number of orbitals in DM file: ",
+     $       nb,
+     $      "WARNING: Falling back to atomic initialization of DM."
             call io_close(unit1)
          endif
          found = .false.
