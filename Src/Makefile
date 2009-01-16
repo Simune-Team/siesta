@@ -75,7 +75,7 @@ OBJS =  automatic_cell.o atom_options.o \
 	iodmhs_netcdf.o iodm.o iogrid_netcdf.o iohs.o iolwf.o iozm.o ipack.o iopipes.o \
 	iowfs_netcdf.o kgrid.o kgridinit.o kinefsm.o ksv.o ksvinit.o linpack.o local_DOS.o\
 	madelung.o matel.o meshmatrix.o memory.o meshsubs.o metaforce.o \
-        m_check_supercell.o mulliken.o minvec.o m_pulay.o naefs.o \
+        m_check_supercell.o m_filter.o mulliken.o minvec.o m_pulay.o naefs.o \
 	new_dm.o normalize_dm.o ordern.o outcell.o outcoor.o \
 	paste.o pdos.o pdosg.o pdosk.o pdoskp.o phirphi.o pixmol.o plcharge.o \
 	projected_DOS.o propor.o \
@@ -110,7 +110,7 @@ OBJS =  automatic_cell.o atom_options.o \
         units.o zmatrix.o m_broyden_mixing.o forhar.o m_walltime.o m_wallclock.o m_iostruct.o \
         nlefsm.o overfsm.o overlap.o conjgr.o conjgr_old.o m_energies.o m_steps.o\
         m_broyddj_nocomm.o broyden_optim.o ioxv.o dynamics.o md_out.o \
-        molecularmechanics.o m_filter.o zm_broyden_optim.o \
+        molecularmechanics.o  zm_broyden_optim.o \
         cell_broyden_optim.o remove_intramol_pressure.o \
         m_ntm.o m_dipol.o  m_kinetic.o  m_rmaxh.o \
         m_forces.o m_stress.o m_eo.o m_spin.o m_gamma.o m_hsx.o m_fire.o \
@@ -172,9 +172,6 @@ linalg.a: Libs/blas.f Libs/lapack.f
 dc_lapack.a:  Libs/dc_lapack.f
 	@echo "==> Compiling dc_lapack.a in Libs..."
 	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" dc_lapack.a)
-zgesv_lapack.a:  Libs/zgesv_lapack.f
-	@echo "==> Compiling zgesv_lapack.a in Libs..."
-	@(cd Libs ; $(MAKE) "VPATH=$(VPATH)/Libs" zgesv_lapack.a)
 #
 
 version: version.F90
@@ -197,7 +194,7 @@ siesta: version $(MPI_INTERFACE) $(FDF) $(WXML) $(XMLPARSER) \
 GEN-BASIS_OBJS=alloc.o gen-basis.o basis_types.o precision.o recipes.o parallel.o \
           parsing.o xcmod.o basis_io.o  chemical.o atm_transfer.o atm_types.o\
           atmparams.o old_atmfuncs.o radial.o io.o \
-	  paste.o  flib_spline.o bessph.o m_filter.o \
+	  paste.o  flib_spline.o bessph.o  m_filter.o \
           basis_specs.o atom.o memoryinfo.o memory.o periodic_table.o\
           pseudopotential.o dot.o xc.o  atom_options.o arw.o  \
           sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
@@ -213,10 +210,10 @@ gen-basis: version $(MPI_INTERFACE) $(FDF) $(WXML) \
 IONCAT_OBJS=f2kcli.o m_getopts.o ioncat.o basis_types.o precision.o  parallel.o \
           parsing.o xcmod.o alloc.o atom_options.o basis_io.o  atm_types.o\
           atmparams.o radial.o io.o memory.o chkdim.o\
-	  paste.o pseudopotential.o chemical.o \
+	  paste.o pseudopotential.o chemical.o  alloc.o \
           basis_specs.o memoryinfo.o  m_memory.o periodic_table.o\
           xc.o flib_spline.o atmfuncs.o spher_harm.o\
-          sys.o  xml.o m_walltime.o $(SYSOBJ)
+          sys.o timer.o  xml.o m_walltime.o $(SYSOBJ)
 # precision must be the first one here...
 ioncat.o: $(FDF)
 ioncat: version $(MPI_INTERFACE) $(FDF) $(WXML) \
@@ -495,6 +492,7 @@ m_sparse.o: alloc.o precision.o
 m_sparse_types.o: alloc.o precision.o sys.o
 m_spin.o: alloc.o m_fdf_global.o parallel.o precision.o
 m_stress.o: precision.o
+m_ts_aux_rout.o: sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o m_ts_options.o precision.o sys.o
 m_ts_electrode.o: files.o m_ts_aux_rout.o m_ts_io.o m_ts_kpoints.o
 m_ts_electrode.o: m_ts_options.o

@@ -2,6 +2,7 @@ ____________________________________________________________________
 ** CHANGES ALONG dm-checks branch
 --------------------------------------------------------------------
 
+Fri 2009-01-16:  Fix filter issues in Makefile
 Fri 2009-01-16:  Sync with trunk up to COHP fix
 Fri 2009-01-16:  Sync with assorted checks, but turn back
                  the changes by Emilio and Andrew on iodm.f,
