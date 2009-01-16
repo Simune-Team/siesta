@@ -2,7 +2,7 @@ module subs
 
 use precision
 
-public :: ival, manual, orbital, txt2wrd, die
+public :: ival, manual, orbital, txt2wrd
 
 private
 
@@ -87,7 +87,7 @@ CONTAINS
       ntx=txt(1:i0)//repeat(' ',20-i0)
       ia=ival(ntx)
       if (ia.eq.-1) then   ! Label specified
-        if (i0.gt.2) return  ! No more stuff
+!!!AG        if (i0.gt.2) return  ! No more stuff
         ia=0
         c=txt(1:i0)
       endif
@@ -176,6 +176,8 @@ CONTAINS
       write(6,"('    |    d1 d2                   # Distance range')")
       write(6,"('    \-   Subset II of AO (*)     # Neighbour atoms or orbitals')")
       write(6,"('     (*) See below how to define subsets of AO')")
+      write(6,"('     A final line with leading chars  ----  can signal the end of the input')")
+      write(6,*)
       write(6,"('* INPUT FILES')")
       write(6,"('    [output files from SIESTA >=  2.4.1]')")
       write(6,"('    SLabel.WFSX and SLabel.HSX (new format)')")
@@ -205,7 +207,7 @@ CONTAINS
       write(6,"('               > Integer1 refers to the n quantum number')")
       write(6,"('               > Letter   refers to the l quantum number (s,p,d,f,g,h)')")
       write(6,"('               > Integer2 refers to a single AO into the n-l shell')")
-      write(6,"('                   Alternatively alphanimerical strings can be used')")
+      write(6,"('                   Alternatively, alphanumerical strings can be used')")
       write(6,"('                     p-shells   1  y    d-shells   1  xy   4  xz')")
       write(6,"('                                2  z               2  yz   5  x2-y2')")
       write(6,"('                                3  x               3  z2')")
