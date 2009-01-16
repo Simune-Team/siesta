@@ -4,6 +4,203 @@
 
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
+------------------------------------------------------------------
+2008-11-28  16:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.7
+Assorted bug fixes: iodm, pdos, fdf, cdf_fft
+
+* Fix latest patch for iodm.F (formatting, messages)
+* Fix long-standing bug in pdos XML output
+* Cosmetic fix in experimental file Util/Grid/cdf_fft.f90
+* Fix obscure bug in fdf
+
+modified:
+  Src/fdf/fdf.f
+  Src/iodm.F
+  Src/wxml/m_wxml_text.F90
+  Util/Grid/cdf_fft.f90
+
+   	------------------------------------------------------------
+   	revno: 271
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:42:54 +0100
+   	message:
+   	  Do not use volume factor in cdf_fft
+   	  
+   	  The factor only makes sense for charge-density files.
+   	  
+   	  modified:
+   	    Util/Grid/cdf_fft.f90
+   	------------------------------------------------------------
+   	revno: 270
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:37:48 +0100
+   	message:
+   	  Close the output channel in fdf_shutdown 
+   	  
+   	  If fdf is re-invoked, an error was triggered because
+   	  fdf_shutdown did not close the previous run's output channel.
+   	  Bug spotted by Eduardo Hernandez.
+   	  
+   	  modified:
+   	    Src/fdf/fdf.f
+   	------------------------------------------------------------
+   	revno: 269
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:35:55 +0100
+   	message:
+   	  Fix a long-standing bug in pdos xml output
+   	  
+   	  In Src/wxml/m_wxml_text.F90, the arguments to the sign function were
+   	  reversed, causing badly formatted records in the pdos xml file.
+   	  Thanks to Rogeli Grima for spotting the bug.
+   	  
+   	  modified:
+   	    Src/wxml/m_wxml_text.F90
+
+
+------------------------------------------------------------------
+2008-11-28  14:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.6
+Avoid MPI deadlock when DM file is not acceptable (A. Walker)
+
+        Since r263.1.1 it was possible for the test 
+    
+         if ( maxnd .lt. ndmax ) then
+           okdim = .false.
+           ... skip DM reading ...
+    
+    
+        to be true on some nodes and false on others 
+        as ndmax was local to the node. This condition
+        leads to some nodes to wait at globalize_max
+        in m_pulay.F (near line 53) and the other to wait 
+        at the MPI_Wait in iodm.F (near line 293). Avoid 
+        this by detecting whether maxnd and ndmax are
+        different between nodes. The test is done on all nodes and 
+        all must be ok to use the .DM file.
+    
+        modified:
+          Src/iodm.F
+          version.info
+
+------------------------------------------------------------------
+2008-10-15  10:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.5
+Assorted fixes (deprecated constructs, zmatrix, cg restarts) (A. Walker)
+
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-5
+	Remove use of features deleted in Fortran 95
+	
+	Specifically, one use of PAUSE and one GOTO an
+	ENDDO statment. GOTO now jumps to the next line
+	and the PAUSE is replaced to an (MPI safe) call
+	to die().
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/atomlwf.F
+	  Src/m_ts_aux_rout.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-4
+	Simple bugfix for fixed cell restarts.
+	
+	In the case of a tightend ftol after a sucessful CG run, relaxed
+	is set to .true. by the read from iocg. This results in the test
+	for convergence being skipped within conjgr. Setting relaxed to
+	.false. here avoids this. In the case of a variable cell relaxed
+	is set below anyway and the converence test is always performed.
+	A better solution (moving the test out into a seperate routine)
+	will follow in a later version. 
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/cgvc.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-3
+	NAG issues with transiesta
+	
+	Even with -dcfuns the NAG f95 compiler does not like the
+	"non-standard double precision complex intrinsic function"
+	dcexp. Use the generic exp instead.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/m_ts_electrode.F90
+	  Src/m_ts_in_siesta.F
+	  Src/m_ts_scattering.F
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-2
+	Fix errors in some zmatrix tests
+	
+	According to the documentation and code in zmatrix.F the
+	fdf flags to control zmatrix force tolerance and optimizer
+	step size are ZM.ForceTolLength, ZM.ForceTolAngle,
+	ZM.MaxDisplLength and ZM.MaxDisplAngle - in some tests
+	they were shortened to ...Ang and ...Len. This patch
+	corrects this. The values in the tests were set to the 
+	defaults so test output is not changed.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Tests/benzene/benzene.fdf
+	  Tests/fire_benzene/fire_benzene.fdf
+	  Tests/h2oZ/h2oZ.fdf
+	  Tests/zmatrix/zmatrix.fdf
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-1
+	Make obj_setup.sh executable.
+	
+	This needs to be executed in order to do VPATH make.
+	
+	added:
+	  Docs/CHANGES.awalker-trunk-fixes
+	modified:
+	  Src/obj_setup.sh*
+	  version.info
+	
+
+------------------------------------------------------------------
+2008-09-12  13:45:00 Alberto Garcia <albertog@icmab.es>	 2.6.4
+Extended Ordejon-Mauri ordern functional to atoms with odd number of electrons
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Sat 2008-08-30 18:38:45 +0100
+  
+In the initial assigning of LWF centers to atoms, it assigns n/2 to
+atoms with n even, and (n+1)/2 or (n-1)/2 in an alternating sequence
+to atoms with odd number. The sequence runs in the order of input in
+the atomic coordinates block; the user can control the assignment by
+defining the order there.
+  
+modified:
+  Docs/siesta.tex
+  Src/atomlwf.F
+
+------------------------------------------------------------------
+2008-09-12  13:25:00 Alberto Garcia <albertog@icmab.es>	 2.6.3
+Siesta moves on with fresh DM instead of stopping when wrong DM file
+
+Patch by: Emilio Artacho <emilio@esc.cam.ac.uk>
+timestamp: Thu 2008-08-28 15:53:19 +0100
+  
+Simple patch removing chkdim calls in iodm.F and substituting them by
+if statements. If the dimensions are wrong it sends back found=.false.
+  
+There is a 'goto' statement introduced to minimise impact on present
+structure (pending the up-and-coming revision of DM handling)
+  
+modified:
+  Src/iodm.F
+
+------------------------------------------------------------------
 2008-09-11  11:50:00 Alberto Garcia <albertog@icmab.es>	 2.6.2
 Incorporate new filtering functionality
 
