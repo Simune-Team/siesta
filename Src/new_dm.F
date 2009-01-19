@@ -515,13 +515,26 @@ C If found, check and update, otherwise initialize with neutral atoms
       if (found) then
         ! Various degrees of sanity checks
         if (nspin_read /= nspin) then
-           call die("Different number of DM spin components")
+           if (Node.eq.0) then
+              write(6,"(a,i6,/,a)")
+     $        "WARNING: Wrong nspin in DM file: ",
+     $             nspin_read,
+     $        "WARNING: Falling back to atomic initialization of DM."
+              write(0,"(a,i6,/,a)")
+     $        "WARNING: Wrong nspin in DM file: ",
+     $             nspin_read,
+     $        "WARNING: Falling back to atomic initialization of DM."
+           endif
+           found = .false.
         endif
+      endif
+
+      if (found) then
 
          anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
          if (IONode) print *, "DM norm of file contents: ", anorm
 
-          same_sp = same_sparsity(no_l,num_tmp,list_tmp,
+         same_sp = same_sparsity(no_l,num_tmp,list_tmp,
      $                                 numh,listh)
 #ifdef MPI
         call MPI_AllReduce(same_sp,lbuffer,1,MPI_logical,MPI_land,

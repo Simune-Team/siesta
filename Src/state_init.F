@@ -183,7 +183,6 @@
 
       rmax = max( 2._dp*rmaxv, 2._dp*rmaxo, rmaxo+rmaxkb)
 
-      ! AG: Why not use the largest range and be done with it?
       if (.not. negl) then
          rmax = max(rmax, 2.0_dp * (rmaxo+rmaxkb) )
       endif
@@ -199,45 +198,27 @@
       ! Note: We always generate xijo now, for COOP and other
       !       analyses.
 
-!!      call copy_sparsity(sparsity,old_sparsity)  ! memory leak
-
       nh = maxnh
       call hsparse( negl, scell, nsc, na_s, isa, xa, lasto, lastkb, 
      .                 iphorb, iphKB, nh, numh, listhptr, listh,
      $                 set_xijo=.true., xijo=xijo, gamma=gamma )
 
-!!      call build_sparsity(no_l,numh,listhptr,listh,sparsity)
-
       maxnh = nh
+
       !OBSOLETE, but maybe not a bad idea after all, to
       !allow reading of previous steps' DM even if the sparsity
-      !pattern has changed (see below)
+      !pattern has changed. The new logic in new_dm makes this
+      !unnecessary.
 
       !  safety margin for when atoms move 
       !!!!!!!!   if (nh > maxnh)  maxnh = 1.05 * nh + 40 
 
-      ! The following has been fixed in the new new_dm, but it
-      ! is kept here as a warning.
-      !!! NOW REMOVED
-      ! Use re_alloc regardless of whether nh is greater than 
-      ! the old maxnh or not, BUT DO NOT SHRINK, as some of
-      ! these arrays are later used in extrapol.
-      ! The problem here might be if we are in the first
-      ! iteration, we have just determined the sparsity pattern
-      ! based on the current geometry, and we attempt to read
-      ! a DM with less sparsity. This could happen in continuation
-      ! runs, if one naively uses the geometry in the XV file
-      ! and the last DM produced. This DM might not correspond to
-      ! the geometry in the XV file, as this holds the "predicted"
-      ! geometry after a relaxation or MD step.
 
-!! Copy = .true. means that we keep the information
-!! Check in new_dm
+      ! Copy = .true. means that we keep the information
 
       call re_alloc(Dscf,1,maxnh,1,nspin,name='Dscf',
      .     routine='siesta',copy=.true.)
 
-!!
       call re_alloc(Dold,1,maxnh,1,nspin,name='Dold',
      .     routine='siesta',copy=.false.)
       call re_alloc(Eold,1,maxnh,1,nspin,name='Eold',

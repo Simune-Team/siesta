@@ -2,6 +2,9 @@ ____________________________________________________________________
 ** CHANGES ALONG dm-checks branch
 --------------------------------------------------------------------
 
+Jan 2009-01-19:  Add nspin check to DM file read.
+                 Reduce verbosity of debugging output.
+                 Remove misleading docs in state_init.F
 Fri 2009-01-16:  Better warning for DM file bailout
 Fri 2009-01-16:  Fix filter issues in Makefile
 Fri 2009-01-16:  Sync with trunk up to COHP fix

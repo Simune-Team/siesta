@@ -3,7 +3,6 @@
       function compute_norm(DM,nnz,nspin) result(norm)
       use precision, only: dp
       use sparse_matrices, only: S
-      use parallel, only: node
 #ifdef MPI
       use m_mpi_utils, only: globalize_sum
 #endif
@@ -17,10 +16,6 @@
 #endif
       integer   ::  io, ispin
 
-      print *, "*node, nnz, nspin:", node, nnz, nspin
-      print *, "*node, sizeDM_1, sizeDM_2", node,
-     $     size(DM,dim=1), size(DM,dim=2)
-      print *, "*node, sizeS", node, size(S)
       norm = 0.0_dp
       do ispin = 1,min(nspin,2)
         do io = 1,nnz
