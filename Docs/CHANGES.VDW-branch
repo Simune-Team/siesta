@@ -1,5 +1,17 @@
 ------------------------------------------------------------------
 
+2009-02-05  18:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: removed unused variables
+Keywords: EcuspVDW Enl 
+
+- Removed unused variables EcuspVDW and Enl in atomxc
+
+Modified Files:
+atomxc.f90   : Removed unused variables EcuspVDW and Enl
+
+------------------------------------------------------------------
+
 2008-12-09  19:15:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: Added a missing term of stress

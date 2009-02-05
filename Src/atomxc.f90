@@ -210,7 +210,7 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
     dEcdD(nSpin), dEcdGD(3,nSpin), dEcuspdD(nSpin), dEcuspdGD(3,nSpin), &
     dExdD(nSpin), dExdGD(3,nSpin), dEdDaux(nSpin), dGdm(-nn:nn), &
     dk, dr, drdm(nr), Dtot, dVcdD(nSpin,nSpin), dVxdD(nSpin,nSpin), &
-    Eaux, EcuspVDW, Enl, epsC, epsCusp, epsNL, epsX, f1, f2, &  
+    Eaux, epsC, epsCusp, epsNL, epsX, f1, f2, &  
     k(0:nk), kc, kmax, pi, r(0:nk), rmax
   real(dp), pointer :: &
     D(:,:)=>null(), dGDdD(:,:)=>null(), dVol(:)=>null(), GD(:,:,:)=>null()
@@ -466,10 +466,6 @@ subroutine atomxc( irel, nr, maxr, rmesh, nSpin, Dens, Ex, Ec, Dx, Dc, Vxc )
                           + sum(ur(ir,1:nq)*dtdgd(ix,1:nq,is))
           end do ! ix
         end do ! is
-
-        ! Sum nonlocal VdW contributions for debugging
-        EcuspVDW = EcuspVDW + dVol(ir) * Dtot * epsCusp
-        Enl = Enl + Dvol(ir) * Dtot * epsNL
 
       else if (GGAfunc) then
 ! DEBUG
