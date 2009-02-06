@@ -1,6 +1,6 @@
 #
 # Single-test makefile
 #
-name=pb_filter_nopcc
+name=pb_filter_cutoff
 #
 include ../test.mk

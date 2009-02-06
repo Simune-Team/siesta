@@ -62,14 +62,22 @@
 ! Default energy-shift to define the cut off radius of orbitals
 ! In Rydbergs
 
-!!      Default kinetic-energy tail for filtering
-        real(dp), parameter :: EkinTolDefault = 0.003_dp
-!!      Maximum effective kmax for filtering ( approx 900 Ry)
-        real(dp), parameter :: Kmax_Limit     = 30.0_dp  
 !! --------
         character(len=1)     :: sym(0:4) = (/ 's','p','d','f','g' /)
         character(len=20)    :: global_label
 
+! Filtering variables
+
+!!      Default kinetic-energy tail for filtering
+        real(dp), parameter :: EkinTolDefault = 0.003_dp
+!!      Maximum effective kmax for filtering ( approx 900 Ry)
+        real(dp), parameter :: Kmax_Limit     = 30.0_dp  
+
+        logical              :: filtering_requested = .false.
+        logical              :: filter_cutoff_specified = .false.
+        real(dp)             :: filter_cutoff = 0.0_dp
+        real(dp)             :: filter_cutoff_orbitals = 0.0_dp
+        real(dp)             :: filter_tol    = EkinTolDefault
 !---------------------------------------------------------------------
        
       CONTAINS
@@ -234,6 +242,8 @@
    
          INTEGER is
 
+         call setup_filtering()
+
          IS = ISIN
          pi=acos(-1.0d0)
 ! 
@@ -246,6 +256,7 @@
       lambda(:,:,:) = lambda_in(:,:,:)
       global_label = atm_label
 
+      
 !!** AG: Symbol is not adequate. Should use the label
 
              if (iz.gt.200) then  
@@ -348,7 +359,7 @@ c    .          'atom: The above configuration will be used ',
 ! Common block with pseudocore information****
 ! used for non-linear-core-correction for exchange-correlation energy***
 ! 
-           call comcore(is,a,b,rofi,chcore,nrval,nicore,flting)
+! DEFERRED           call comcore(is,a,b,rofi,chcore,nrval,nicore,flting)
 
 ! CALCULATION OF THE VALENCE SCREENING POTENTIAL FROM THE READ CHARGE
 ! DENSITY*
@@ -598,6 +609,15 @@ c    .          'atom: The above configuration will be used ',
         write(6,'(a,i3)')
      .      'atom: Total number of Sankey-type orbitals:', no
       nomax(is)=no
+
+      if (filtering_requested) then
+         if (.not. filter_cutoff_specified) then
+            filter_cutoff = filter_cutoff_orbitals
+            write(6,"(a,f10.4,a)")
+     $           "Maximum filter cutoff from orbitals: ",
+     $           filter_cutoff, " Ry"
+         endif
+      endif
 ! 
       if(flting.gt.0.0d0) then 
  
@@ -626,6 +646,12 @@ c    .          'atom: The above configuration will be used ',
 ! Zero self-energy for the local pseudopotential charge****
          slfe(is)=0.0d0
       endif 
+
+! 
+! Common block with pseudocore information****
+! used for non-linear-core-correction for exchange-correlation energy***
+! 
+           call comcore(is,a,b,rofi,chcore,nrval,nicore,flting)
 
       elseif(iz.eq.-100) then
 
@@ -664,6 +690,28 @@ c    .          'atom: The above configuration will be used ',
 
 
         end subroutine atom_main
+
+!
+      subroutine setup_filtering()
+      
+      filtering_requested = .false.
+      filter_cutoff_specified = .false.
+      filter_cutoff = fdf_physical("FilterCutoff",0.0_dp,"Ry")
+      if (filter_cutoff /= 0.0_dp) then
+         filtering_requested = .true.
+         filter_cutoff_specified = .true.
+         write(6,'(a,f12.6,a)')
+     $       "Filter: Requested cutoff:", filter_cutoff,' Ry'
+      else 
+         filter_tol = fdf_physical('FilterTol',0.0_dp,'Ry')
+         if (filter_tol /= 0.0_dp) then
+            filtering_requested = .true.
+            write(6,'(a,f12.6,a)')
+     $       "Filter: kinetic energy tolerance:", filter_tol,' Ry'
+         endif
+      endif
+
+      end subroutine setup_filtering
 
 
         subroutine rc_vs_e(a,b,r,vps,
@@ -2085,7 +2133,8 @@ C
            real(dp), allocatable :: chcore_backup(:)
           
            logical   :: filterPCC
-           real(dp)  :: kmax, kmax_tol, etol, filterFactor
+           real(dp)  :: kmax2, kmax_tol, etol, pccfilterFactor,
+     $                  pcc_filter_cutoff
       
            real(dp) eps
             parameter (eps=1.0d-6)  
@@ -2150,8 +2199,8 @@ C*TABLE WITH THE PSEUDO_CORE DATA
      .            nint(Rcore/deltmax)+2 
             endif 
 
-      filterPCC = fdf_boolean("PCC.Filter",.false.)
-
+      ! Allow user to override global setting
+      filterPCC = fdf_boolean("PCC.Filter", filtering_requested)
       if (filterPCC) then
          
          !Filter the real chcore
@@ -2164,42 +2213,36 @@ C*TABLE WITH THE PSEUDO_CORE DATA
          allocate(chcore_backup(nrval))
          chcore_backup(1:nrval) = chcore(1:nrval)
 
-         filterFactor = fdf_double("PCC.FilterFactor",1.0_dp)
-         kmax = fdf_physical("PCC.FilterCutoff",0.0_dp,"Bohr^-1")
-         if (kmax .eq. 0.0_dp) then
-            etol = fdf_physical('PCC.Filter.Tol',EkinTolDefault,'Ry')
-            write(6,'(a,f12.6,a)')
-     $           "PCC Filter: kinetic energy tolerance:", etol,' Ry'
-            kmax_tol = kcPhi(l=0,nr=nrcore,r=rofi(1:nrcore),
-     $                              phi=chcore(1:nrcore),etol=etol)
-            if (kmax_tol > kmax_limit) then
-               write(6,"(2(a,f10.2))") "kmax_tol too big: ",
-     $              kmax_tol, ". Reduced to ", kmax_limit
-               kmax_tol = kmax_limit
-            endif
-            kmax = kmax_tol/filterFactor
+         ! Allow re-setting by user
+         if (filter_cutoff_specified) then
+            pccFilterFactor = fdf_double("PCC.FilterFactor",1.0_dp)
          else
-            kmax = kmax/filterFactor
+            pccFilterFactor = fdf_double("PCC.FilterFactor",
+     $                              (1.0_dp/0.7_dp)**2.0_dp)
          endif
-         write(6,'(a,f8.2,a)')
-     $    "PCC Filter: Cutoff (before filtering):",kmax**2,' Ry'
+         pcc_filter_cutoff = filter_cutoff * pccFilterFactor
+         ! Allow re-setting by user
+         kmax2 = fdf_physical("PCC.FilterCutoff",
+     $        pcc_filter_cutoff,"Ry")
 
+         ! For diagnostic only --------------
+         etol = fdf_physical('PCC.FilterTol',EkinTolDefault,'Ry')
+         write(6,'(a,f12.6,a)')
+     $        "PCC Filter: diagnostic kin energy tol:",
+     $        etol,' Ry'
+         kmax_tol = kcPhi(l=0,nr=nrcore,r=rofi(1:nrcore),
+     $                    phi=chcore(1:nrcore),etol=etol)
+         write(6,'(a,f8.2,a)')
+     $    "PCC Filter: Nominal cutoff (before filtering):",
+     $         kmax_tol**2,' Ry'
+         ! ----------------------------------
+
+         write(6,'(a,f8.2,a)') "PCC Filter: Cutoff used: ",
+     $                       kmax2,' Ry'
          call filter(l=0,nr=nrcore,r=rofi(1:nrcore),
      $                      f=chcore(1:nrcore),
-     $                      kc=kmax,norm_opt=0,n_eigen=n_eigen)
-
-         if (n_eigen > 3) then
-            kmax_tol = kcPhi(l=0,nr=nrcore,r=rofi(1:nrcore),
-     $                           phi=chcore(1:nrcore),etol=etol)
-            write(6,'(a,f8.2,a)')
-     $           "PCC Filter: Appropiate mesh cutoff is (at least):",
-     $                            kmax_tol**2*filterFactor,' Ry'  ! Why the factor?
-         else
-            chcore(1:nrval) = chcore_backup(1:nrval)
-            write(6,'(a)') "Filter: The number of eigenfunctions of the"
-            write(6,'(a)') "        filtering kernel is very small, " //
-     $                               "so there is no filtering"
-         endif
+     $                      kc=sqrt(kmax2),
+     $                      norm_opt=0,n_eigen=n_eigen)
 
 
          !Store chcore*r2
@@ -2234,7 +2277,7 @@ C****TABLE WITH THE SECOND DERIVATIVE OF THE PSEUDO_CORE***
      .      yp1,ypn,coretab(2:,2,is))
 
  
-           end  subroutine comcore
+          end  subroutine comcore
 !
            subroutine comlocal(is,a,b,rofi,chlocal,nchloc,flting)
 
@@ -3122,7 +3165,7 @@ C***Internal variables**
      .           epot, epot2, rh, dy, eorb, eps, 
      .           over(nsemx), vsoft(nrmax), vePAOsoft(nrmax),
      $           exponent, dlt, d, dn, norm(nsemx), rcsan,
-     $           kmax, kmax_tol, etol, filterFactor,
+     $           kmax, kmax_tol, etol, paofilterFactor,
      $           spln_min
       integer :: n_eigen
       real(dp),allocatable,dimension(:) :: forb !filtered orbital
@@ -3580,7 +3623,8 @@ C Potential energy after compression
             norb=norb+(2*l+1)
             indx=indx+1
 !Filter
-            filterOrbitals = fdf_boolean("PAO.Filter",.false.)
+          ! Allow re-setting 
+          filterOrbitals = fdf_boolean("PAO.Filter",filtering_requested)
 
             if (filterOrbitals) then
                      
@@ -3594,56 +3638,51 @@ C Potential energy after compression
                  endif
               enddo
 
-              filterFactor = fdf_double("PAO.FilterFactor",0.7_dp)
-              kmax = fdf_physical("PAO.FilterCutoff",0.0_dp,"Bohr^-1")
-              if (kmax .eq. 0.0_dp) then
-                 etol =
-     $            fdf_physical('PAO.Filter.Tol',EkinTolDefault,'Ry')
+              ! Allow re-setting by user
+              if (filter_cutoff_specified) then
+                 paoFilterFactor = fdf_double("PAO.FilterFactor",
+     $                (0.7_dp)**2.0_dp)
+                 kmax = sqrt(filter_cutoff * paoFilterFactor)
+                 write(6,'(a,f8.2,a)') "PAO Filter: Cutoff used:",
+     $                 kmax**2,' Ry'
+
+                 ! For diagnostic only --------------
+                 etol = fdf_physical('PAO.FilterTol',
+     $                EkinTolDefault,'Ry')
                  write(6,'(a,f12.6,a)')
-     $            "PAO Filter: kinetic energy tolerance:", etol,' Ry'
+     $                "PAO Filter: diagnostic kin energy tol:",
+     $                etol,' Ry'
                  kmax_tol = kcPhi(l=l,nr=nrc,r=rofi(1:nrc),
      $                phi=forb(1:nrc),etol=etol)
-                 if (kmax_tol > kmax_limit) then
-                    write(6,"(2(a,f10.2))") "kmax_tol too big: ",
-     $                   kmax_tol, ". Reduced to ", kmax_limit
-                    kmax_tol = kmax_limit
-                 endif
-                 kmax = kmax_tol/filterFactor
+                 write(6,'(a,f8.2,a)')
+     $                "PAO Filter: Nominal cutoff (before filtering):",
+     $                kmax_tol**2,' Ry'
+                 ! ----------------------------------
               else
-                 kmax = kmax/filterFactor
+                 kmax = kcPhi(l=l,nr=nrc,r=rofi(1:nrc),
+     $                phi=forb(1:nrc),etol=filter_tol)
+                 write(6,'(a,f8.2,a)')
+     $           "PAO Filter:" //
+     $           " Cutoff estimated from residual kin energy:",
+     $                 kmax**2,' Ry'
               endif
-              write(6,'(a,f8.2,a)')
-     $         "PAO Filter: Cutoff (before filtering):",kmax**2,' Ry'
 
               call filter(l=l,nr=nrc,r=rofi(1:nrc),f=forb(1:nrc),
      $                           kc=kmax,norm_opt=2,n_eigen=n_eigen)
 
-              if (n_eigen > 3) then
+              filter_cutoff_orbitals = max(filter_cutoff_orbitals,
+     $                                     kmax**2)
 
-                 ! Store the filtered orbital in g
-                 g = 0.0_dp                   
-                 do ir=2,nrc
-                    if(l .eq. 0)then
-                       g(ir) = forb(ir) 
-                    else
-                       g(ir) = forb(ir)/rofi(ir)**l
-                    endif
-                 enddo
-                 g(1) = g(2)    
-
-                 kmax_tol = kcPhi(l=l,nr=nrc,r=rofi(1:nrc),
-     $                           phi=forb(1:nrc),etol=etol)
-                 write(6,'(a,f8.2,a)')
-     $           "PAO Filter: Appropiate mesh cutoff is (at least):",
-     $               kmax_tol**2*filterFactor,' Ry'  ! Why the factor?
-              else
-
-                 write(6,'(a)')
-     $                "Filter: The number of eigenfunctions of the"
-                 write(6,'(a)')
-     $                "        filtering kernel is very small, " //
-     $                "so there is no filtering"
-              endif
+              ! Store the filtered orbital in g
+              g = 0.0_dp                   
+              do ir=2,nrc
+                 if(l .eq. 0)then
+                    g(ir) = forb(ir) 
+                 else
+                    g(ir) = forb(ir)/rofi(ir)**l
+                 endif
+              enddo
+              g(1) = g(2)    
 
               deallocate(forb)
                      
@@ -4745,10 +4784,11 @@ C***Internal variables****
 
          real(dp)
      .    rho(nrmax), chval, ve(nrmax), s(nrmax),eps, phi,
-     .    rcocc, dincv, rVna, kmax, kmax_tol, etol, filterfactor
+     .    rcocc, dincv, rVna,
+     $    kmax2, kmax_tol, etol, vnafilterfactor, vna_filter_cutoff
        
          logical filterVna
-  
+
          integer
      .    nrc,ir, l, ncocc
 
@@ -4841,51 +4881,43 @@ C****CUT-OFF RADIUS FOR THE LOCAL NEUTRAL-ATOM PSEUDOPOTENTIAL
          
 !Filter
 
-         filterVna = fdf_boolean("Vna.Filter",.false.)
-
+         filterVna = fdf_boolean("Vna.Filter",filtering_requested)
          if (filterVna) then
          
             allocate(ve_backup(nrval))
             ve_backup(1:nrval) = Ve(1:nrval)
 
-            filterFactor = fdf_double("Vna.FilterFactor",1.0_dp)
-            kmax = fdf_physical("Vna.FilterCutoff",0.0_dp,"Bohr^-1")
-            if (kmax .eq. 0.0_dp) then
-               etol = fdf_physical('Vna.Filter.Tol',EkinTolDefault,'Ry')
-               write(6,'(a,f12.6,a)')
-     $              "Vna Filter: kinetic energy tolerance:", etol,' Ry'
-               kmax_tol = kcPhi(l=0,nr=nVna,r=rofi(1:nVna),
-     $              phi=Ve(1:nVna),etol=etol)
-               if (kmax_tol > kmax_limit) then
-                  write(6,"(2(a,f10.2))") "kmax_tol too big: ",
-     $                 kmax_tol, ". Reduced to ", kmax_limit
-                  kmax_tol = kmax_limit
-               endif
-               kmax = kmax_tol/filterFactor
+            ! Allow re-setting by user
+            if (filter_cutoff_specified) then
+               vnaFilterFactor = fdf_double("VNA.FilterFactor",1.0_dp)
             else
-               kmax = kmax/filterFactor
+               vnaFilterFactor = fdf_double("VNA.FilterFactor",
+     $                                 (1.0_dp/0.7_dp)**2.0_dp)
             endif
-            write(6,'(a,f8.2,a)')
-     $           "Vna Filter: Cutoff (before filtering):",kmax**2,' Ry'
+            vna_filter_cutoff = filter_cutoff * vnaFilterFactor
+            ! Allow re-setting by user
+            kmax2 = fdf_physical("Vna.FilterCutoff",
+     $           vna_filter_cutoff,"Ry")
 
+            ! For diagnostic only --------------
+            etol = fdf_physical('VNA.FilterTol',EkinTolDefault,'Ry')
+            write(6,'(a,f12.6,a)')
+     $           "VNA Filter: diagnostic kinetic energy tol:",
+     $            etol,' Ry'
+            kmax_tol = kcPhi(l=0,nr=nVna,r=rofi(1:nVna),
+     $           phi=Ve(1:nVna),etol=etol)
+            write(6,'(a,f8.2,a)')
+     $           "VNA Filter: Nominal cutoff (before filtering):",
+     $            kmax_tol**2,' Ry'
+            ! ----------------------------------
+
+            write(6,'(a,f8.2,a)') "VNA Filter: Cutoff used: ",
+     $                             kmax2,' Ry'
             call filter(l=0,nr=nVna,r=rofi(1:nVna),
      $                         f=Ve(1:nVna),
-     $                         kc=kmax,norm_opt=0,n_eigen=n_eigen)
+     $                         kc=sqrt(kmax2),
+     $                         norm_opt=0,n_eigen=n_eigen)
 
-            if (n_eigen > 3) then
-               kmax_tol = kcPhi(l=0,nr=nVna,r=rofi(1:nVna),
-     $              phi=Ve(1:nVna),etol=etol)
-               write(6,'(a,f8.2,a)')
-     $              "Vna Filter: Appropiate mesh cutoff is (at least):",
-     $              kmax_tol**2*filterFactor,' Ry' ! Why the factor?
-            else
-               Ve(1:nrval) = ve_backup(1:nrval)
-               write(6,'(a)')
-     $              "Filter: The number of eigenfunctions of the"
-               write(6,'(a)')
-     $              "        filtering kernel is very small, " //
-     $              "so there is no filtering"
-            endif
          deallocate(ve_backup)
       endif
 
@@ -5063,7 +5095,7 @@ C
 
       logical::filterorbitals, new_split_code, split_tail_norm
       logical :: fix_split_table
-      real(dp)::kmax, kmax_tol, etol, filterFactor, spln_min
+      real(dp)::kmax, kmax_tol, etol, paofilterFactor, spln_min
       integer :: n_eigen
       real(dp),allocatable,dimension(:) :: forb !filtered orbital
       
@@ -5267,7 +5299,7 @@ C    Potential and kinetic energy of the orbital
             indx=indx+1
 
 !Filter
-            filterOrbitals = fdf_boolean("PAO.Filter",.false.)
+          filterOrbitals = fdf_boolean("PAO.Filter",filtering_requested)
 
             if (filterOrbitals) then
                      
@@ -5282,74 +5314,66 @@ C    Potential and kinetic energy of the orbital
                  endif
               enddo
 
-              filterFactor = fdf_double("PAO.FilterFactor",0.7_dp)
-              kmax = fdf_physical("PAO.FilterCutoff",0.0_dp,"Bohr^-1")
-              if (kmax .eq. 0.0_dp) then
-                 etol =
-     $            fdf_physical('PAO.Filter.Tol',EkinTolDefault,'Ry')
+              ! Allow re-setting by user
+              if (filter_cutoff_specified) then
+                 paoFilterFactor = fdf_double("PAO.FilterFactor",
+     $                (0.7_dp)**2.0_dp)
+                 kmax = sqrt(filter_cutoff * paoFilterFactor)
+                 ! For diagnostic only --------------
+                 etol = fdf_physical('PAO.FilterTol',
+     $                EkinTolDefault,'Ry')
                  write(6,'(a,f12.6,a)')
-     $            "PAO Filter: kinetic energy tolerance:", etol,' Ry'
+     $                "PAO Filter: diagnostic kin energy tol:",
+     $                etol,' Ry'
                  kmax_tol = kcPhi(l=l+1,nr=nrc,r=rofi(1:nrc),
      $                phi=forb(1:nrc),etol=etol)
-                 kmax = kmax_tol/filterFactor
-                 if (kmax_tol > kmax_limit) then
-                    write(6,"(2(a,f10.2))") "kmax_tol too big: ",
-     $                   kmax_tol, ". Reduced to ", kmax_limit
-                    kmax_tol = kmax_limit
-                 endif
+                 write(6,'(a,f8.2,a)')
+     $                "PAO Filter: Nominal cutoff (before filtering):",
+     $                kmax_tol**2,' Ry'
+                 ! ----------------------------------
               else
-                 kmax = kmax/filterFactor
+                 kmax = kcPhi(l=l+1,nr=nrc,r=rofi(1:nrc),
+     $                phi=forb(1:nrc),etol=filter_tol)
+                 write(6,'(a,f8.2,a)')
+     $           "PAO Filter:" //
+     $           " Cutoff estimated from residual kin energy:",
+     $                 kmax**2,' Ry'
               endif
-              write(6,'(a,f8.2,a)')
-     $         "PAO Filter: Cutoff (before filtering):",kmax**2,' Ry'
 
               call filter(l=l+1,nr=nrc,r=rofi(1:nrc),
      $             f=forb(1:nrc),
      $             kc=kmax,norm_opt=2,n_eigen=n_eigen)
 
-              if (n_eigen > 3) then
+              filter_cutoff_orbitals = max(filter_cutoff_orbitals,
+     $                                     kmax**2)
 
-                 ! Store the filtered orbital in g
-                 g = 0.0_dp                   
-                 do ir=2,nrc
-                    if(l+1 .eq. 0)then
-                       g(ir) = forb(ir) 
-                    else
-                       g(ir) = forb(ir)/rofi(ir)**(l+1)
-                    endif
-                 enddo
-                 g(1) = g(2)    
-
-                 kmax_tol = kcPhi(l=l+1,nr=nrc,r=rofi(1:nrc),
-     $                           phi=forb(1:nrc),etol=etol)
-                 write(6,'(a,f8.2,a)')
-     $           "PAO Filter: Appropiate mesh cutoff is (at least):",
-     $             kmax_tol**2*filterFactor,' Ry'  ! Why the factor?
-              else
-
-                 write(6,'(a)')
-     $                "Filter: The number of eigenfunctions of the"
-                 write(6,'(a)')
-     $                "        filtering kernel is very small, " //
-     $                "so there is no filtering"
-              endif
+              ! Store the filtered orbital in g
+              g = 0.0_dp                   
+              do ir=2,nrc
+                 if(l+1 .eq. 0)then
+                    g(ir) = forb(ir) 
+                 else
+                    g(ir) = forb(ir)/rofi(ir)**(l+1)
+                 endif
+              enddo
+              g(1) = g(2)    
 
               deallocate(forb)
                      
            endif                !End of filtering
 
 
-            call comPOL(is,a,b,rofi,g,l,
+           call comPOL(is,a,b,rofi,g,l,
      .             nsm,rcpol(ipol,l,nsm),ipol,nrc,indx)
 
-              enddo 
+        enddo 
         
 
-              endif    
-            enddo  
-          enddo 
+      endif    
+      enddo  
+      enddo 
       
-          end subroutine polgen
+      end subroutine polgen
 !
 
                subroutine comPOL(is,a,b,rofi,rphi,

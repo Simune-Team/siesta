@@ -5,6 +5,105 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 ------------------------------------------------------------------
+2009-02-06  14:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.9
+Implementation of new filtering logic
+
+See the manual for instructions on how to use the new
+FDF symbols FilterCutoff and FilterTol.
+
+* Note that there are no safeguards for failures of the filtering
+routine. In particular, if FilterTol is set to a "large" value, some
+orbitals will not be filtered correctly, and the tables will be
+corrupted.
+
+* The implementation of automatic meshcutoff is not ready yet.
+
+* Updated the "filter" tests.
+
+* In atom, moved the call to 'comcore' after orbital setup.  This is
+needed to apply an orbital-determined cutoff to the partial-core
+charge. The orbitals themselves are generated with the "raw" core
+charge from the pseudopotential file, and then filtered. Then the PCC
+is filtered.
+
+* Apart from the fdf symbols discussed in the manual, the following
+undocumented ones can be used for now: (see the code)
+
+PCC.Filter
+PAO.Filter
+VNA.Filter
+
+(booleans). Fine-tune which things are filtered.
+(make sure other options and defaults are compatible)
+
+XXX.FilterFactor: fine-tune the default factors used
+
+XXX.FilterCutoff: fine-tune the cutoff
+
+XXX.FilterTol: set the diagnostic Kin Energy tolerance
+for an estimate of the hardness of the function. This
+defaults to 0.003 Ry.
+
+removed:
+  Tests/Reference-xml/pb_filter_all.xml
+  Tests/Reference-xml/pb_filter_basis.xml
+  Tests/Reference-xml/pb_filter_pcc.xml
+  Tests/Reference-xml/pb_filter_vna.xml
+  Tests/Reference/pb_filter_all.out
+  Tests/Reference/pb_filter_basis.out
+  Tests/Reference/pb_filter_nopcc.out
+  Tests/Reference/pb_filter_pcc.out
+  Tests/Reference/pb_filter_vna.out
+  Tests/Reference/var_cell_filter.out
+  Tests/pb_filter_basis/
+  Tests/pb_filter_basis/makefile
+  Tests/pb_filter_basis/pb_filter_basis.fdf
+  Tests/pb_filter_basis/pb_filter_basis.pseudos
+  Tests/pb_filter_nopcc/
+  Tests/pb_filter_nopcc/makefile
+  Tests/pb_filter_nopcc/pb_filter_nopcc.fdf
+  Tests/pb_filter_nopcc/pb_filter_nopcc.pseudos
+  Tests/pb_filter_pcc/
+  Tests/pb_filter_pcc/makefile
+  Tests/pb_filter_pcc/pb_filter_pcc.fdf
+  Tests/pb_filter_pcc/pb_filter_pcc.pseudos
+  Tests/pb_filter_vna/
+  Tests/pb_filter_vna/makefile
+  Tests/pb_filter_vna/pb_filter_vna.fdf
+  Tests/pb_filter_vna/pb_filter_vna.pseudos
+  Tests/var_cell_filter/
+  Tests/var_cell_filter/makefile
+  Tests/var_cell_filter/var_cell_filter.fdf
+  Tests/var_cell_filter/var_cell_filter.pseudos
+  Tests/var_cell_stress/
+  Tests/var_cell_stress/makefile
+  Tests/var_cell_stress/var_cell_stress.fdf
+  Tests/var_cell_stress/var_cell_stress.pseudos
+added:
+  Docs/filtering.CHANGES
+  Tests/Reference-xml/pb_filter_cutoff.xml
+  Tests/Reference-xml/pb_filter_tol.xml
+  Tests/Reference/pb_filter_cutoff.out
+  Tests/Reference/pb_filter_tol.out
+  Tests/pb_filter_tol/
+  Tests/pb_filter_tol/makefile
+  Tests/pb_filter_tol/pb_filter_tol.fdf
+  Tests/pb_filter_tol/pb_filter_tol.pseudos
+renamed:
+  Tests/pb_filter_all => Tests/pb_filter_cutoff
+  Tests/pb_filter_all/pb_filter_all.fdf => Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+  Tests/pb_filter_all/pb_filter_all.pseudos => Tests/pb_filter_cutoff/pb_filter_cutoff.pseudos
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/atom.f
+  Tests/pb_filter_cutoff/makefile
+  Tests/std-Makefile
+  version.info
+  Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+
+------------------------------------------------------------------
 2008-12-06  17:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.8
 Optimize and fix COOP/COHP/PDOS analysis program
 

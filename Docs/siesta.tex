@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.5.28}}
+{\Huge {\bf S I E S T A \, \, 2.6.9}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large June 29, 2008 }
+{\Large Feb 6, 2009 }
 
 \vspace{1.5cm}
 
@@ -68,7 +68,9 @@
    \Large{\it University of Illinois at Urbana-Champaign} \\ \\
 
 {\Large Pablo Ordej\'on} &
-   \Large{\it Institut de Ci\`encia de Materials, CSIC, Barcelona} \\ \\
+   \Large{\it Centre de Investigaci\'o en Nanoci\`encia} \\
+                                 &
+   \Large{\it   i Nanotecnologia, (CSIC-ICN), Barcelona} \\ \\
 
 {\Large Daniel S\'anchez-Portal} &
    \Large{\it Unidad de F\'{\i}sica de Materiales,} \\ 
@@ -82,17 +84,12 @@
 }
 
 \vspace{0.5cm}
-{\Large\bf Campeones, Ooeee!}
-
 {\Large {\tt http://www.uam.es/siesta} }
-
-\vspace{2mm}
-{\Large \tt siesta@uam.es}
 
 \vspace{1cm}
 Copyright \copyright\  Fundaci\'on General Universidad Aut\'onoma de Madrid:
 E.Artacho, J.D.Gale, A.Garc\'{\i}a, J.Junquera, P.Ordej\'on,
-D.S\'anchez-Portal and J.M.Soler, 1996-2006
+D.S\'anchez-Portal and J.M.Soler, 1996-2009
 
 \end{center}
 
@@ -1517,45 +1514,61 @@ above.
 
 \subsubsection{Filtering}
 
-The boolean fdf keywords {\tt PCC.Filter}, {\tt PAO.Filter}, and {\tt
-  Vna.Filter}
-determine whether an extra filtering step is applied on, respectively,
-the partial core charge, the PAOs, and the neutral-atom potential.
-The procedure is explained in Soler and Anglada (fill in new
-  reference),
-and uses a few tuning parameters, which can be set by the
-  knowledgeable
-user by means of keywords of the form {\tt What.Parameter}, where
-{\tt What} is one of {\tt PCC}, {\tt PAO}, or {\tt Vna}, and {\tt
-  Parameter}
-represents the parameter. What follows uses the example of the
-  partial-core charge:
-
 \begin{description}
 \itemsep 10pt
 \parsep 0pt
 
-\item[{\bf PCC.FilterCutoff}] ({\it physical inverse length}):
+\item[{\bf FilterCutoff}] ({\it physical energy}):
 \index{FilterCutoff@{\bf
-    Filtercutoff}}\index{basis!filtering}
-An explicit cutoff in reciprocal space $k_c$
+    FilterCutoff}}\index{basis!filtering}
+Kinetic energy cutoff of plane waves used to filter all the 
+atomic basis functions, the pseudo-core densities 
+for partial core corrections, and the neutral-atom potentials. 
+The basis functions (which must be squared to obtain the
+valence density) are really filtered with a cutoff reduced by an
+empirical factor $0.7^2 \simeq 0.5$. The \textbf{FilterCutoff} should 
+be similar or lower than the \textbf{MeshCutoff} to avoid the
+{\it eggbox effect} on the atomic forces. 
+However, one should
+not try to converge \textbf{MeshCutoff} while simultaneously 
+changing \textbf{FilterCutoff}, since the latter in fact changes
+the used basis functions. Rather, fix a sufficiently large 
+\textbf{FilterCutoff} and converge only \textbf{MeshCutoff}.
+If \textbf{FilterCutoff} is not explicitly set, its value is 
+calculated from \textbf{FilterTol}.
 
-If $k_c$ is not explicitly set, its value is estimated from a
-residual kinetic-energy tolerance set by
-
-\item[{\bf PCC.FilterTol}] ({\it physical energy}):
+\item[{\bf FilterTol}] ({\it physical energy}):
 \index{FilterTol@{\bf
     FilterTol}}\index{basis!filtering}
+Residual kinetic-energy leaked by filtering each basis function.
+While \textbf{FilterCutoff} sets a common reciprocal-space cutoff 
+for all the basis cunctions, \textbf{FilterTol} sets a specific 
+cutoff for each basis function, much as the \textbf{EnergyShift} 
+sets their real-space cutoff. Therefore,
+it is reasonable to use similar values for both parameters.
+The maximum cutoff required to meet the \textbf{FilterTol},
+among all the basis functions, is used (multiplied by the 
+empirical factor $1/0.7^2 \simeq 2$) to filter the pseudo-core 
+densities and the neutral-atom potentials. \textbf{FilterTol} is ignored if 
+\textbf{FilterCutoff} is present in the input file.
+If neither \textbf{FilterCutoff} nor \textbf{FilterTol} are
+present, no filtering is performed.
+See Soler and Anglada, arXiv:0807.5030, for details of the 
+filtering procedure.
 
-with a default of 0.003 Rydberg.
+{\bf Warning:} If the value of \textbf{FilterCutoff} is
+made too small (or \textbf{FilterTol} too large) some of
+the filtered basis orbitals may be meaningless, leading to
+incorrect results or even a program crash.
 
-\item[{\bf PCC.FilterFactor}] ({\it real}):
-\index{FilterFactor@{\bf
-    FilterFactor}}\index{basis!filtering}
-
-determines an extra factor for $k_c$ (more information??).
+To be implemented: If \textbf{MeshCutoff} is not present in the input
+file, it can be set using the maximum filtering cutoff used for the
+given \textbf{FilterTol}. (You can use {\tt AtomSetupOnly T} to stop
+the program after basis generation, look at the maximum filtering
+cutoff used, and set the mesh-cutoff manually in a later run.)
 
 \end{description}
+
 
 
 \vspace{5pt}
