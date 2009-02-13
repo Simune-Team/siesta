@@ -1,0 +1,35 @@
+Patch 2.6.9--noncol-1, Feb 13, 2009, 18:15 GMT albertog
+Fixed non-collinear spin calculation in parallel
+  
+  * The diagonalization with mixed spins requires doubling
+  the effective blocksize for scalapack. This has been
+  fixed.
+    
+  Credits: Volodymyr Maslyuk, Alberto Garcia
+  
+  Note that the option Diag.ParallelOverK cannot yet
+  be used with non-collinear spin.
+  
+  Other fixes:
+  
+  * In non-collinear spin calculations there is no CML output.
+  Thus the relevant CML module should not be opened.
+
+  New test:  fe_noncol_kp  
+  
+added:
+  Docs/noncol.CHANGES
+  Tests/fe_noncol_kp/
+  Tests/fe_noncol_kp/fe_noncol_kp.fdf
+  Tests/fe_noncol_kp/fe_noncol_kp.pseudos
+  Tests/fe_noncol_kp/makefile
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/cdiag.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagon.F
+  Src/m_spin.F90
+  Src/mulliken.F
+  Tests/fe_clust_noncollinear/fe_clust_noncollinear.fdf
