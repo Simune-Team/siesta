@@ -337,7 +337,7 @@ broadcast_basis.o: atm_types.o parallel.o radial.o
 broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o m_mpi_utils.o
 broyden_optim.o: parallel.o precision.o units.o
 cart2frac.o: sys.o
-cdiag.o: alloc.o memoryinfo.o parallel.o precision.o sys.o
+cdiag.o: alloc.o m_spin.o memoryinfo.o parallel.o precision.o sys.o
 cell_broyden_optim.o: m_broyddj_nocomm.o m_fdf_global.o m_memory.o
 cell_broyden_optim.o: m_mpi_utils.o parallel.o precision.o sys.o units.o
 cell_broyden_optim.o: zmatrix.o
@@ -375,8 +375,8 @@ dfscf.o: meshsubs.o meshsubs.o parallel.o precision.o sys.o
 dhscf.o: alloc.o atmfuncs.o forhar.o iogrid_netcdf.o m_iorho.o m_ts_in_siesta.o
 dhscf.o: m_ts_options.o meshsubs.o parallel.o parsing.o precision.o
 dhscf.o: siesta_options.o sys.o xcmod.o
-diag2g.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
-diag2k.o: fermid.o parallel.o parallelsubs.o precision.o sys.o
+diag2g.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
+diag2k.o: fermid.o m_spin.o parallel.o parallelsubs.o precision.o sys.o
 diagg.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
 diagk.o: fermid.o parallel.o parallelsubs.o precision.o sys.o writewave.o
 diagk_file.o: fermid.o iowfs_netcdf.o parallel.o parallelsubs.o precision.o
@@ -490,6 +490,7 @@ m_pulay.o: precision.o siesta_options.o sparse_matrices.o sys.o
 m_rmaxh.o: precision.o
 m_spin.o: alloc.o m_fdf_global.o parallel.o precision.o
 m_stress.o: precision.o
+m_ts_aux_rout.o: sys.o
 m_ts_contour.o: files.o m_ts_aux_rout.o m_ts_options.o precision.o sys.o
 m_ts_electrode.o: files.o m_ts_aux_rout.o m_ts_io.o m_ts_kpoints.o
 m_ts_electrode.o: m_ts_options.o
@@ -652,6 +653,8 @@ transition_rate.o: alloc.o fermid.o parallel.o parallelsubs.o precision.o sys.o
 typecell.o: precision.o
 uncell.o: precision.o
 units.o: precision.o
+vm_diagon.o: alloc.o densematrix.o m_memory.o parallel.o parallelsubs.o
+vm_diagon.o: precision.o sys.o
 vmat.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
 vmat.o: meshsubs.o meshsubs.o parallel.o precision.o
 vmatsp.o: alloc.o atm_types.o atmfuncs.o atomlist.o listsc.o meshmatrix.o
