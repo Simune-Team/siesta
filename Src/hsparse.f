@@ -377,7 +377,7 @@ C through a KB projector
 
                    if (conect(jo)) then
 
-                      if (set_xijo) then
+                      if (set_xijo .and. .not. gamma) then
                          ! If already connected and using supercell, 
                          ! the latter might not be big enough...
                          ! We warn the user and keep the first instance
