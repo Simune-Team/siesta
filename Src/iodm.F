@@ -27,11 +27,8 @@ C integer listd(maxnd)     : Control vector of DM matrix
 C                            (list of nonzero elements of each row)
 C real*8  dm(maxnd,nspin)  : Density matrix
 C ********* OUTPUT *************************************************
-C logical found : Has DM been found in disk and does it have the right
-C                 dimensions? (Only when task='read')
+C logical found : Has DM been found in disk? (Only when task='read')
 C ******************************************************************
-C Behavior: If the dimensions of the DM on file are not compatible with
-C what is expected, the routine returns 'found=.false.'
       
 C
 C  Modules
@@ -62,7 +59,7 @@ C
       logical, intent(out) :: found
 
 C Internal variables
-      logical   file_exists, okdim, dim_err
+      logical   file_exists
       integer   im, is, unit1, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
       integer, dimension(:), allocatable, save :: numdg
@@ -99,7 +96,7 @@ C Saved internal variables:
       character(len=*), parameter :: floatfmt = '(ES22.14)'
 
 C External procedures
-      external          memory
+      external          chkdim, memory
 
 ! We might want to use formatted DM files in order to
 ! transfer them between computers. 
@@ -155,7 +152,6 @@ C Allocate local buffer array for globalised numd
       call memory('A','I',nbasistot,'iodm')
 
       if (task.eq.'read' .or. task.eq.'READ') then
-        okdim = .true.
         if (Node.eq.0) then
           inquire (file=fnamei,  exist=file_exists)
         endif
@@ -187,27 +183,9 @@ C distributed memory before checking the dimensions
           call MPI_Bcast(ns,1,MPI_integer,0,MPI_Comm_World,MPIerror)
 #endif
 
-C Check dimensions. It will no longer stop if wrong, but continue with fresh DM
-
-          if ( nbasistot .ne. nb) then
-             okdim = .false.
-             if (Node .eq. 0)
-     .       write(6,"('iodm: DM continuation file not used because ',
-     .                 'of wrong dimensions.'/
-     .                 'iodm:    nbasis =',i6,' nbasis on file =',
-     .                 i6)") nbasistot, nb
-             goto 1000
-          endif
-
-          if ( nspin .ne. ns) then
-             okdim = .false.
-             if (Node .eq. 0)
-     .       write(6,"('iodm: DM continuation file not used because ',
-     .                 'of wrong dimensions.'/
-     .                 'iodm:    nspin =',i6,' nspin on file =',
-     .                 i6)") nspin, ns
-             goto 1000
-          endif
+C Check dimensions
+          call chkdim( 'iodm', 'nbasis', nbasistot, nb, 0 )
+          call chkdim( 'iodm', 'nspin',  nspin,  ns, 0 )
 
           if (Node.eq.0) then
             if (fmti) then
@@ -242,36 +220,8 @@ C Convert global numd pointer to local form and generate listdptr
             ndmaxg = max(ndmaxg,numdg(m))
           enddo
 
-C Check size of first dimension of dm. If we are in parallel both maxnd 
-C and ndmax can vary from node to node: checking that the global maximum
-C maxnd is smaller than the global minimum ndmax won't work as this may 
-C miss some cases where the dimension is OK. Instead do a global .and.
-C of the result of the check. However, we then need to take case on the 
-C not OK path to report correctly.
-
-#ifdef MPI
-          call MPI_AllReduce(( maxnd .lt. ndmax ), dim_err,
-     .            1, MPI_LOGICAL, MPI_LAND, MPI_Comm_World, MPIerror)
-#else 
-          dim_err = ( maxnd .lt. ndmax )
-#endif
-          if ( dim_err ) then
-             okdim = .false.
-#ifdef MPI
-C Could report maxnd and ndmax here, but this would need to be for 
-C all node - slow and can a user actually do anything about it?
-             if (Node .eq. 0)
-     .       write(6,"(a,a)")
-     $            'iodm: DM continuation file not used because ',
-     .            'of wrong dimensions on at least one node.'
-#else 
-             write(6,"(a,a,a,i6,a,i6)")
-     $            'iodm: DM continuation file not used because ',
-     .            'of wrong dimensions.',
-     .            'iodm:    maxnd =', maxnd,' must be at least =', ndmax
-#endif
-             goto 1000
-          endif
+C Check size of first dimension of dm
+          call chkdim( 'iodm', 'maxnd', maxnd, ndmax, 1 )
 
 #ifdef MPI
 C Create buffer arrays for transfering density matrix between nodes and lists
@@ -366,7 +316,7 @@ C Free buffer array
           call memory('D','D',size(buffer),'iodm')
           deallocate(buffer)
 #endif
- 1000     if (Node.eq.0) then
+          if (Node.eq.0) then
             call io_close(unit1)
           endif
 
@@ -377,10 +327,6 @@ C Free buffer array
           found = .false.
 
         endif
-
-C Transmit found only if the DM found had the right dimensions.
-C Otherwise act as not found and start afresh
-        found = found .and. okdim
 
       elseif (task.eq.'write' .or. task.eq.'WRITE') then
 

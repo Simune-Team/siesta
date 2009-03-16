@@ -1392,6 +1392,13 @@ logical,       optional, intent(in)  :: shrink
 ! Internal variables and arrays
 logical want_shrink
 
+
+!! AG*****
+!  It might be worthwhile to check whether the user
+!  atttemps to use bounds which do not make sense,
+!  such as zero, or with upper<lower...
+!!***
+
 ! Find if it is a new allocation or a true reallocation,
 ! and if the contents need to be copied (saved)
 if (ASSOCIATED_ARRAY) then
