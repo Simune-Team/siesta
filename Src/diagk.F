@@ -378,8 +378,8 @@ C Global operation to form new density matrix
         enddo
       enddo
 
-      anorm =   compute_norm(Dnew,size(Dnew,dim=1),size(Dnew,dim=2))
-      if (Node.eq.0) print *, "DM norm after diagk: ", anorm
+!      anorm =   compute_norm(Dnew,size(Dnew,dim=1),size(Dnew,dim=2))
+!      if (Node.eq.0) print *, "DM norm after diagk: ", anorm
       if (Node .eq. 0) then
          call io_close(iu)
       endif

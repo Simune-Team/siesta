@@ -188,8 +188,8 @@
          listold = listh
          listptrold = listhptr
 
-         anorm = compute_norm(Dscf,maxnh,nspin)
-         if (IONode) print *, "DM norm after initdm: ", anorm
+!         anorm = compute_norm(Dscf,maxnh,nspin)
+!         if (IONode) print *, "DM norm after initdm: ", anorm
 
 #ifdef TRANSIESTA
       ! TSS Begin
@@ -244,13 +244,13 @@
 
         ! Extrapolate density matrix between steps
 
-         anorm =  compute_norm(Dscf,maxnh,nspin)
-         if (IONode) print *, "DM norm of previous geom: ", anorm
+!         anorm =  compute_norm(Dscf,maxnh,nspin)
+!         if (IONode) print *, "DM norm of previous geom: ", anorm
 
          call new_extrapol(no_l, numh, listhptr, listh, Dscf)
 
-         anorm =  compute_norm(Dscf,maxnh,nspin)
-         if (IONode) print *, "DM norm after extrapolation: ", anorm
+!         anorm =  compute_norm(Dscf,maxnh,nspin)
+!         if (IONode) print *, "DM norm after extrapolation: ", anorm
 
       endif
 
@@ -531,8 +531,8 @@ C If found, check and update, otherwise initialize with neutral atoms
 
       if (found) then
 
-         anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
-         if (IONode) print *, "DM norm of file contents: ", anorm
+!         anorm = compute_norm(D_tmp,nh_tmp,nspin_read)
+!         if (IONode) print *, "DM norm of file contents: ", anorm
 
          same_sp = same_sparsity(no_l,num_tmp,list_tmp,
      $                                 numh,listh)
@@ -865,8 +865,8 @@ C Ferro or antiferro according to DM.InitSpinAF (inspn)
 
       endif
 
-      anorm =  compute_norm(Dscf,maxnh,nspin)
-      if (IONode) print *, "DM norm at end of initdm: ", anorm
+!      anorm =  compute_norm(Dscf,maxnh,nspin)
+!      if (IONode) print *, "DM norm at end of initdm: ", anorm
 
       end subroutine initdm
 
