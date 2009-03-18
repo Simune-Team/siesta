@@ -4,6 +4,108 @@
 
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
+-----------------------------------------------------------------------
+2009-03-16  16:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.11
+Re-design of DM re-use code plus reallocation bug fix
+
+* A redesigned m_new_dm module prepares a starting density matrix for a
+new geometry iteration. This DM can be:
+
+1. Synthesized directly from atomic occupations (not idempotent)
+2. Read from file
+3. Extrapolated from (two) previous steps
+3.a The DM of the previous iteration
+
+In cases 2 and 3, a check is done to guarantee that the structure
+of the read or extrapolated DM conforms to the current sparsity.
+If it does not, the information is re-arranged.
+
+Special cases:
+       Harris: The matrix is always initialized
+       Force calculation: The DM should be written to disk
+                          at the time of the "no displacement"
+                          calculation and read from file at
+                          every subsequent step.
+       Variable-cell calculation:
+         If the auxiliary cell changes, the DM is forced to be
+         initialized (conceivably one could rescue some important
+         information from an old DM, but it is too much trouble 
+         for now). NOTE that this is a change in policy with respect
+         to previous versions of the program, in which a (blind?)
+         re-use was allowed.
+
+
+* The physical dimensions of the DM array were not allowed to shrink
+upon reallocation, thus introducing mismatches between the actual size
+and what several subroutines expected. This bug, which affected with
+particular severity spin-polarized calculations, has now been fixed.
+
+* New symbols for control of DM reuse and extrapolation
+
+The FDF symbols:
+
+DM.AllowReuse          (default .TRUE.)
+DM.AllowExtrapolation  (default .TRUE.)
+
+control whether the DM can be re-used from one geometry step to another, and
+whether it can be extrapolated using information from the two previous steps.
+
+If DM.AllowReuse is .false., the DM is not read from file even if DM.UseSaveDM is .true.
+
+The default for ReinitialiseDM has been changed to ".true.". Hence the DM is
+reset (and not read from file) when the auxiliary supercell shape changes, as sanity
+dictates.
+
+* Re-design of new_dm and extrapol
+
+    * Use new functionality in module m_sparse to simplify the logic and
+    hide the ---old index arrays.
+    
+    * Initdm is now part of the new_dm module.
+    
+    (* While debugging a hard-to-track zeroth allocation of DMsaved made a
+    note in alloc.F90)
+
+* Split of read/write functionality in iodm. Sparsity module. Input check
+
+    * A new module m_iodm based in iodm has been added (the old code remains).
+      Reading and writing are now done by separate routines, read_dm and write_dm,   
+      respectively. 
+    
+    * New module m_sparse, containing code to check for sparsity changes and
+      to re-structure a sparse matrix to conform to a new pattern (inspired by
+      code in extrapol).
+    
+    * Initdm now calls read_dynamic_dm, which generates a completely fresh
+      DM.  Then the input sparsity pattern is compared to the current one,
+      and updated if needed. If the file cannot be used, perform a proper bailout
+      (supersedes a previous patch by Emilio and Andrew on iodm.f)
+
+
+removed:
+  Src/extrapol.F
+  Src/initdm.F
+added:
+  Src/compute_norm.F
+  Src/m_iodm.F
+  Src/m_sparse.F
+modified:
+  Docs/CHANGES
+  Src/Makefile
+  Src/alloc.F90
+  Src/diagk.F
+  Src/hsparse.f
+  Src/iodm.F
+  Src/mixer.F
+  Src/new_dm.F
+  Src/post_scf_work.F
+  Src/siesta_init.F
+  Src/siesta_options.F90
+  Src/sparse_matrices.F90
+  Src/state_init.F
+  Src/version.F90
+  version.info
+
 ------------------------------------------------------------------
 2009-02-22  22:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.10
 Fixed non-collinear spin calculation in parallel
