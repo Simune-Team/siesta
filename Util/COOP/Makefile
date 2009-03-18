@@ -4,9 +4,13 @@
 # Choose compiler here.
 #
 #FC=g95 -g -O0 -fbounds-check
-FC=ifort -g -O1 -CB -ftrapuv
+#FC=ifort -g -O1 -CB -ftrapuv
+#FC=ifort -openmp -O3
+#FC=ifort  -O3
+FC=gfortran -O3 -DGFORTRAN
+#FC=gfortran  -openmp -O3 -DGFORTRAN
 #
-MPROP_OBJS=mprop.o m_getopts.o f2kcli.o subs.o precision.o units.o \
+MPROP_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
            io.o sys.o read_curves.o io_hs.o orbital_set.o main_vars.o
 #
 default: mprop
@@ -14,11 +18,11 @@ default: mprop
 dep: 
 	sfmakedepend --depend=obj --modext=o *.f *.f90 *.F *.F90
 #
-mprop: $(MPROP_OBJS)
-	$(FC) -o $@ $(MPROP_OBJS)
+mprop: $(MPROP_OBJS) mprop.o
+	$(FC) -o $@ $(MPROP_OBJS) mprop.o
 #
 clean:
-	rm -f *.o *.mod mprop
+	rm -f *.o *.mod mprop 
 
 .F.o:
 	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<

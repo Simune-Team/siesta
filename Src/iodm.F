@@ -62,7 +62,7 @@ C
       logical, intent(out) :: found
 
 C Internal variables
-      logical   file_exists, okdim
+      logical   file_exists, okdim, dim_err
       integer   im, is, unit1, m, nb, ndmax, ns
       integer   nbasistot, ml, ndmaxg
       integer, dimension(:), allocatable, save :: numdg
@@ -194,7 +194,7 @@ C Check dimensions. It will no longer stop if wrong, but continue with fresh DM
              if (Node .eq. 0)
      .       write(6,"('iodm: DM continuation file not used because ',
      .                 'of wrong dimensions.'/
-     .                 'iodm:    nbasis =',i6,' must be exactly =',
+     .                 'iodm:    nbasis =',i6,' nbasis on file =',
      .                 i6)") nbasistot, nb
              goto 1000
           endif
@@ -204,7 +204,7 @@ C Check dimensions. It will no longer stop if wrong, but continue with fresh DM
              if (Node .eq. 0)
      .       write(6,"('iodm: DM continuation file not used because ',
      .                 'of wrong dimensions.'/
-     .                 'iodm:    nspin =',i6,' must be exactly =',
+     .                 'iodm:    nspin =',i6,' nspin on file =',
      .                 i6)") nspin, ns
              goto 1000
           endif
@@ -242,15 +242,34 @@ C Convert global numd pointer to local form and generate listdptr
             ndmaxg = max(ndmaxg,numdg(m))
           enddo
 
-C Check size of first dimension of dm
+C Check size of first dimension of dm. If we are in parallel both maxnd 
+C and ndmax can vary from node to node: checking that the global maximum
+C maxnd is smaller than the global minimum ndmax won't work as this may 
+C miss some cases where the dimension is OK. Instead do a global .and.
+C of the result of the check. However, we then need to take case on the 
+C not OK path to report correctly.
 
-          if ( maxnd .lt. ndmax ) then
+#ifdef MPI
+          call MPI_AllReduce(( maxnd .lt. ndmax ), dim_err,
+     .            1, MPI_LOGICAL, MPI_LAND, MPI_Comm_World, MPIerror)
+#else 
+          dim_err = ( maxnd .lt. ndmax )
+#endif
+          if ( dim_err ) then
              okdim = .false.
+#ifdef MPI
+C Could report maxnd and ndmax here, but this would need to be for 
+C all node - slow and can a user actually do anything about it?
              if (Node .eq. 0)
-     .       write(6,"('iodm: DM continuation file not used because ',
-     .                 'of wrong dimensions.'/
-     .                 'iodm:    maxnd =',i6,' must be at least =',
-     .                 i6)") maxnd, ndmax
+     .       write(6,"(a,a)")
+     $            'iodm: DM continuation file not used because ',
+     .            'of wrong dimensions on at least one node.'
+#else 
+             write(6,"(a,a,a,i6,a,i6)")
+     $            'iodm: DM continuation file not used because ',
+     .            'of wrong dimensions.',
+     .            'iodm:    maxnd =', maxnd,' must be at least =', ndmax
+#endif
              goto 1000
           endif
 

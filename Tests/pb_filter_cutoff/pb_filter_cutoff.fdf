@@ -1,5 +1,5 @@
-SystemName      bulk Lead
-SystemLabel     pb_filter_nopcc
+SystemName      bulk Lead -- filtering by cutoff
+SystemLabel     pb_filter_cutoff
 NumberOfSpecies      1
 NumberOfAtoms	     1
 %block ChemicalSpeciesLabel
@@ -9,6 +9,8 @@ NumberOfAtoms	     1
    Pb   3
 %endblock PS.lmax
 
+FilterCutoff 150.0 Ry
+MeshCutoff   200.0 Ry
 
 LatticeConstant      4.89 Ang
 %block LatticeVectors
@@ -25,7 +27,7 @@ AtomicCoordinatesFormat	     ScaledCartesian
    0   7    0    0.5
    0    0   7    0.5
 %endblock kgrid_Monkhorst_Pack
-MeshCutoff             75  Ry
+
 DM.NumberPulay         3 
 DM.MixingWeight        0.05
 
@@ -43,6 +45,4 @@ Pb   3     -0.30296
      5.14075
      1.00000
 %EndBlock PAO.Basis
-PAO.Filter .true.
-VNA.filter .true.
-#PCC.filter .true.
+

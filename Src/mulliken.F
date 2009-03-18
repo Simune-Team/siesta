@@ -270,12 +270,14 @@ C Compute and print Mulliken Orbital and Atomic Populations ..........
           write(6,*) 
           write(6,"(a)")'mulliken: Atomic and Orbital Populations:'
         endif
-        if (cml_p) then
-          call cmlStartPropertyList(xf=mainXML, 
-     .       dictRef='siesta:mulliken',
-     .       title='Mulliken Population Analysis')
-        endif
         if (nspin .le. 2) then
+C We only write mulliken to cml file if we are unpolarized or collinear 
+C and (currently) don't bother in the non-collinear case.
+          if (cml_p) then
+             call cmlStartPropertyList(xf=mainXML, 
+     .            dictRef='siesta:mulliken',
+     .            title='Mulliken Population Analysis')
+          endif
           do is = 1,nspin
             if (nspin .eq. 2) then
               if(is .eq. 1) then

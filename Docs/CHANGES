@@ -5,6 +5,334 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 ------------------------------------------------------------------
+2009-02-22  22:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.10
+Fixed non-collinear spin calculation in parallel
+  
+  * The diagonalization with mixed spins requires doubling
+  the effective blocksize for scalapack. This has been
+  fixed.
+    
+  Credits: Volodymyr Maslyuk, Alberto Garcia
+  
+  Note that the option Diag.ParallelOverK cannot yet
+  be used with non-collinear spin.
+  
+  Other fixes:
+  
+  * In non-collinear spin calculations there is no CML output.
+  Thus the relevant CML module should not be opened.
+
+  New test:  fe_noncol_kp  
+  
+added:
+  Tests/fe_noncol_kp/
+  Tests/fe_noncol_kp/fe_noncol_kp.fdf
+  Tests/fe_noncol_kp/fe_noncol_kp.pseudos
+  Tests/fe_noncol_kp/makefile
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Src/cdiag.F
+  Src/diag2g.F
+  Src/diag2k.F
+  Src/diagon.F
+  Src/m_spin.F90
+  Src/mulliken.F
+  Tests/fe_clust_noncollinear/fe_clust_noncollinear.fdf
+
+------------------------------------------------------------------
+2009-02-06  14:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.9
+Implementation of new filtering logic
+
+See the manual for instructions on how to use the new
+FDF symbols FilterCutoff and FilterTol.
+
+* Note that there are no safeguards for failures of the filtering
+routine. In particular, if FilterTol is set to a "large" value, some
+orbitals will not be filtered correctly, and the tables will be
+corrupted.
+
+* The implementation of automatic meshcutoff is not ready yet.
+
+* Updated the "filter" tests.
+
+* In atom, moved the call to 'comcore' after orbital setup.  This is
+needed to apply an orbital-determined cutoff to the partial-core
+charge. The orbitals themselves are generated with the "raw" core
+charge from the pseudopotential file, and then filtered. Then the PCC
+is filtered.
+
+* Apart from the fdf symbols discussed in the manual, the following
+undocumented ones can be used for now: (see the code)
+
+PCC.Filter
+PAO.Filter
+VNA.Filter
+
+(booleans). Fine-tune which things are filtered.
+(make sure other options and defaults are compatible)
+
+XXX.FilterFactor: fine-tune the default factors used
+
+XXX.FilterCutoff: fine-tune the cutoff
+
+XXX.FilterTol: set the diagnostic Kin Energy tolerance
+for an estimate of the hardness of the function. This
+defaults to 0.003 Ry.
+
+removed:
+  Tests/Reference-xml/pb_filter_all.xml
+  Tests/Reference-xml/pb_filter_basis.xml
+  Tests/Reference-xml/pb_filter_pcc.xml
+  Tests/Reference-xml/pb_filter_vna.xml
+  Tests/Reference/pb_filter_all.out
+  Tests/Reference/pb_filter_basis.out
+  Tests/Reference/pb_filter_nopcc.out
+  Tests/Reference/pb_filter_pcc.out
+  Tests/Reference/pb_filter_vna.out
+  Tests/Reference/var_cell_filter.out
+  Tests/pb_filter_basis/
+  Tests/pb_filter_basis/makefile
+  Tests/pb_filter_basis/pb_filter_basis.fdf
+  Tests/pb_filter_basis/pb_filter_basis.pseudos
+  Tests/pb_filter_nopcc/
+  Tests/pb_filter_nopcc/makefile
+  Tests/pb_filter_nopcc/pb_filter_nopcc.fdf
+  Tests/pb_filter_nopcc/pb_filter_nopcc.pseudos
+  Tests/pb_filter_pcc/
+  Tests/pb_filter_pcc/makefile
+  Tests/pb_filter_pcc/pb_filter_pcc.fdf
+  Tests/pb_filter_pcc/pb_filter_pcc.pseudos
+  Tests/pb_filter_vna/
+  Tests/pb_filter_vna/makefile
+  Tests/pb_filter_vna/pb_filter_vna.fdf
+  Tests/pb_filter_vna/pb_filter_vna.pseudos
+  Tests/var_cell_filter/
+  Tests/var_cell_filter/makefile
+  Tests/var_cell_filter/var_cell_filter.fdf
+  Tests/var_cell_filter/var_cell_filter.pseudos
+  Tests/var_cell_stress/
+  Tests/var_cell_stress/makefile
+  Tests/var_cell_stress/var_cell_stress.fdf
+  Tests/var_cell_stress/var_cell_stress.pseudos
+added:
+  Docs/filtering.CHANGES
+  Tests/Reference-xml/pb_filter_cutoff.xml
+  Tests/Reference-xml/pb_filter_tol.xml
+  Tests/Reference/pb_filter_cutoff.out
+  Tests/Reference/pb_filter_tol.out
+  Tests/pb_filter_tol/
+  Tests/pb_filter_tol/makefile
+  Tests/pb_filter_tol/pb_filter_tol.fdf
+  Tests/pb_filter_tol/pb_filter_tol.pseudos
+renamed:
+  Tests/pb_filter_all => Tests/pb_filter_cutoff
+  Tests/pb_filter_all/pb_filter_all.fdf => Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+  Tests/pb_filter_all/pb_filter_all.pseudos => Tests/pb_filter_cutoff/pb_filter_cutoff.pseudos
+modified:
+  Docs/CHANGES
+  Docs/siesta.ind
+  Docs/siesta.tex
+  Src/atom.f
+  Tests/pb_filter_cutoff/makefile
+  Tests/std-Makefile
+  version.info
+  Tests/pb_filter_cutoff/pb_filter_cutoff.fdf
+
+------------------------------------------------------------------
+2008-12-06  17:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.8
+Optimize and fix COOP/COHP/PDOS analysis program
+
+The mprop program in Util/COOP has been revamped to decrease
+drastically the amount of memory needed and to speed up execution.
+Now it should be competitive with, and more flexible than, Siesta's
+built-in PDOS computation.
+
+In the process of optimization several bugs were found and fixed.
+Users are advised to revise the results of old calculations,
+particularly if k-points or multiple-zeta orbital were used.
+
+(+ The OCCS file needs to be opened at the right place in diagk)
+
+
+added:
+  Tests/Reference-xml/si64_coop.xml
+  Tests/Reference/si64_coop.out
+modified:
+  Src/diagk.F
+  Tests/si64_coop/si64_coop.fdf
+  Util/COOP/Makefile
+  Util/COOP/Tests/n_chain/coo.N-N.gplot
+  Util/COOP/io_hs.f90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/COOP/read_curves.f90
+  Util/COOP/subs.f90
+
+------------------------------------------------------------------
+2008-11-28  16:15:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.7
+Assorted bug fixes: iodm, pdos, fdf, cdf_fft
+
+* Fix latest patch for iodm.F (formatting, messages)
+* Fix long-standing bug in pdos XML output
+* Cosmetic fix in experimental file Util/Grid/cdf_fft.f90
+* Fix obscure bug in fdf
+
+modified:
+  Src/fdf/fdf.f
+  Src/iodm.F
+  Src/wxml/m_wxml_text.F90
+  Util/Grid/cdf_fft.f90
+
+   	------------------------------------------------------------
+   	revno: 271
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:42:54 +0100
+   	message:
+   	  Do not use volume factor in cdf_fft
+   	  
+   	  The factor only makes sense for charge-density files.
+   	  
+   	  modified:
+   	    Util/Grid/cdf_fft.f90
+   	------------------------------------------------------------
+   	revno: 270
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:37:48 +0100
+   	message:
+   	  Close the output channel in fdf_shutdown 
+   	  
+   	  If fdf is re-invoked, an error was triggered because
+   	  fdf_shutdown did not close the previous run's output channel.
+   	  Bug spotted by Eduardo Hernandez.
+   	  
+   	  modified:
+   	    Src/fdf/fdf.f
+   	------------------------------------------------------------
+   	revno: 269
+   	committer: Alberto Garcia <albertog@icmab.es>
+   	branch nick: trunk-ag
+   	timestamp: Mon 2008-10-27 22:35:55 +0100
+   	message:
+   	  Fix a long-standing bug in pdos xml output
+   	  
+   	  In Src/wxml/m_wxml_text.F90, the arguments to the sign function were
+   	  reversed, causing badly formatted records in the pdos xml file.
+   	  Thanks to Rogeli Grima for spotting the bug.
+   	  
+   	  modified:
+   	    Src/wxml/m_wxml_text.F90
+
+
+------------------------------------------------------------------
+2008-11-28  14:25:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.6
+Avoid MPI deadlock when DM file is not acceptable (A. Walker)
+
+        Since r263.1.1 it was possible for the test 
+    
+         if ( maxnd .lt. ndmax ) then
+           okdim = .false.
+           ... skip DM reading ...
+    
+    
+        to be true on some nodes and false on others 
+        as ndmax was local to the node. This condition
+        leads to some nodes to wait at globalize_max
+        in m_pulay.F (near line 53) and the other to wait 
+        at the MPI_Wait in iodm.F (near line 293). Avoid 
+        this by detecting whether maxnd and ndmax are
+        different between nodes. The test is done on all nodes and 
+        all must be ok to use the .DM file.
+    
+        modified:
+          Src/iodm.F
+          version.info
+
+------------------------------------------------------------------
+2008-10-15  10:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.5
+Assorted fixes (deprecated constructs, zmatrix, cg restarts) (A. Walker)
+
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-5
+	Remove use of features deleted in Fortran 95
+	
+	Specifically, one use of PAUSE and one GOTO an
+	ENDDO statment. GOTO now jumps to the next line
+	and the PAUSE is replaced to an (MPI safe) call
+	to die().
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/atomlwf.F
+	  Src/m_ts_aux_rout.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-4
+	Simple bugfix for fixed cell restarts.
+	
+	In the case of a tightend ftol after a sucessful CG run, relaxed
+	is set to .true. by the read from iocg. This results in the test
+	for convergence being skipped within conjgr. Setting relaxed to
+	.false. here avoids this. In the case of a variable cell relaxed
+	is set below anyway and the converence test is always performed.
+	A better solution (moving the test out into a seperate routine)
+	will follow in a later version. 
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/cgvc.F
+	  version.info
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-3
+	NAG issues with transiesta
+	
+	Even with -dcfuns the NAG f95 compiler does not like the
+	"non-standard double precision complex intrinsic function"
+	dcexp. Use the generic exp instead.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Src/m_ts_electrode.F90
+	  Src/m_ts_in_siesta.F
+	  Src/m_ts_scattering.F
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-2
+	Fix errors in some zmatrix tests
+	
+	According to the documentation and code in zmatrix.F the
+	fdf flags to control zmatrix force tolerance and optimizer
+	step size are ZM.ForceTolLength, ZM.ForceTolAngle,
+	ZM.MaxDisplLength and ZM.MaxDisplAngle - in some tests
+	they were shortened to ...Ang and ...Len. This patch
+	corrects this. The values in the tests were set to the 
+	defaults so test output is not changed.
+	
+	modified:
+	  Docs/CHANGES.awalker-trunk-fixes
+	  Tests/benzene/benzene.fdf
+	  Tests/fire_benzene/fire_benzene.fdf
+	  Tests/h2oZ/h2oZ.fdf
+	  Tests/zmatrix/zmatrix.fdf
+	
+	-------------------------------------------------------------------------
+	2008-10-13	Andrew Walker	2.6.4--awalker-trunk-fixes-1
+	Make obj_setup.sh executable.
+	
+	This needs to be executed in order to do VPATH make.
+	
+	added:
+	  Docs/CHANGES.awalker-trunk-fixes
+	modified:
+	  Src/obj_setup.sh*
+	  version.info
+	
+
+------------------------------------------------------------------
 2008-09-12  13:45:00 Alberto Garcia <albertog@icmab.es>	 2.6.4
 Extended Ordejon-Mauri ordern functional to atoms with odd number of electrons
 
