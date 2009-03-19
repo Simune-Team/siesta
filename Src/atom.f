@@ -2131,6 +2131,7 @@ C
      .     yp1, ypn
   
            real(dp), allocatable :: chcore_backup(:)
+           real(dp) :: cc(3)
           
            logical   :: filterPCC
            real(dp)  :: kmax2, kmax_tol, etol, pccfilterFactor,
@@ -2267,11 +2268,18 @@ C*TABLE WITH THE PSEUDO_CORE DATA
 
               coretab(itb+1,1,is)=chc/r2
             enddo
-            coretab(2,1,is)=coretab(3,1,is)
+!
+!           Be careful with this extrapolation. Use a quadratic one
+!!            coretab(2,1,is)=coretab(3,1,is)
+!
+            cc(2:3) = coretab(3:4,1,is)
+            cc(1)= ( cc(2)*rofi(3)**2 - cc(3)*rofi(2)**2 ) /
+     .        ( rofi(3)**2 -  rofi(2)**2 )
+            coretab(2,1,is) = cc(1)
 
 C****TABLE WITH THE SECOND DERIVATIVE OF THE PSEUDO_CORE***
 
-            yp1=huge(1.d0)
+            yp1=0.0d0
             ypn=huge(1.d0)
           call spline(delt,coretab(2:,1,is),ntbmax,
      .      yp1,ypn,coretab(2:,2,is))
@@ -2297,6 +2305,7 @@ C
            integer nr, nmin, nmax, nn, itb
            real(dp) chc, r, delt, Rchloc, dy,
      .     yp1, ypn
+           real(dp) :: cc(3)
   
 C****NUMBER OF POINTS USED BY POLINT FOR THE INTERPOLATION***
 C
@@ -2332,13 +2341,19 @@ C
 
              chloctab(itb+1,1,is)=chc
           enddo
+!
+!         Use quadratic extrapolation
+!!          chloctab(2,1,is)=chloctab(3,1,is)
+            cc(2:3) = chloctab(3:4,1,is)
+            cc(1)= ( cc(2)*rofi(3)**2 - cc(3)*rofi(2)**2 ) /
+     .        ( rofi(3)**2 -  rofi(2)**2 )
+            chloctab(2,1,is) = cc(1)
 
-          chloctab(2,1,is)=chloctab(3,1,is)
 
 C****TABLE WITH THE SECOND DERIVATIVE OF THE LOCAL-PSEUDOTENTIAL***
 C***CHARGE DENSITY****
 
-         yp1=huge(1.d0)
+         yp1=0.0d0
          ypn=huge(1.d0)
 
          call spline(delt,chloctab(2:,1,is),ntbmax,
@@ -2408,6 +2423,8 @@ C
 !         Note rigorous limit at r=0...
 !
           vlocaltab(2,1,is)= 2.0d0*zval
+!
+!        Use natural spline
 !
          yp1=huge(1.d0)
          ypn=huge(1.d0)
@@ -2838,7 +2855,7 @@ C****
 
 C****TABLE WITH THE SECOND DERIVATIVE ***
 C
-            yp1=huge(1.d0)
+            yp1=0.0d0
             ypn=huge(1.d0)
 
             call spline(delt,table(3:,-indx,is),ntbmax,
@@ -4279,7 +4296,7 @@ C
 !!
 C****TABLE WITH THE SECOND DERIVATIVE ***
 
-            yp1=huge(1.d0)
+            yp1=0.0d0
             ypn=huge(1.d0)
             call spline(delt,table(3:,norb,is),ntbmax,
      .        yp1,ypn,tab2(1:,norb,is))
@@ -5440,7 +5457,7 @@ C****
 C****TABLE WITH THE SECOND DERIVATIVE ***
 C
 
-            yp1=huge(1.d0)
+            yp1=0.0d0
             ypn=huge(1.d0)
 
             call spline(delt,tabpol(3:,norb,is),ntbmax,

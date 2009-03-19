@@ -5,6 +5,90 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-03-19  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.13
+Fix evaluation of atomic radial functions near r=0
+
+Spherical functions with l=0 must have a zero gradient at the
+origin. However, after a change somewhere between v0.9 and v0.11, the
+splines used have been constructed using the "natural" boundary
+condition of zero second derivative. This causes numerical problems
+stemming from the discontinuity of the gradient, notably extraneous
+forces when atoms move slightly away from exact grid-point positions.
+
+The problem has been fixed by specifying explicitly "yp1=0" in the
+construction of the splines. It has also been necessary to augment the
+rad_setup_d2 and radial_read_ascii functions with extra arguments, so
+that tables in .ion or .ion.nc files can be processed adequately.
+
+The changes affect the orbitals and the projectors (their tables
+contain R(r)/r**l, so they have zero derivative at zero for all l),
+the pseudocore charge, the local pseudopotential charge density, and
+Vna.  Only the "reduced Vlocal" function (which is not really used by
+Siesta) uses a natural spline, as it has a finite slope at r=0 (maybe
+because this is not a "volume function" but a synthetic one).
+
+A related problem is the extrapolation to r=0 of magnitudes computed
+on the radial grid. Typically the construction procedure starts or
+ends with the first non-zero value of the radius, and a final
+extrapolation is done. This can be linear, quadratic, or "flat"
+(involving just a copy of the value at the first nonzero
+radius...). In particular, a "flat" extrapolation was used for the
+pseudocore charge (which led again to extraneous contributions to
+forces) and for the effective charge density associated to the local
+pseudopotential (in this case there does not seem to be a sizable
+contribution to the forces).  A quadratic extrapolation is now used
+for those magnitudes.
+
+The gradient was not computed properly in a "danger area" with an
+approximate radius 2* r_c /500, where 500 is the number of points in
+the interpolation table and r_c is the cutoff of the function
+considered. Thus for a very localized pseudo-core charge (rc=1.5 bohr)
+the effects might be felt when the atoms move by up to around 0.006
+bohr from a grid point. 
+
+The bug might have affected phonon calculations starting from
+high-symmetry atomic positions, since a very small displacement might
+then give meaningless results. Other effects might be extra noise in
+molecular dynamics calculations when an atom falls by chance in the
+"danger area", and puzzlingly high residual forces for particular
+values of atomic coordinates, which might have complicated the analysis
+of the eggbox effect.
+
+Credits: D. Sanchez Portal found the spline issue. A. Garcia coded the
+         fix, found the extrapolation bug, and analyzed the issues involved.
+
++: The "ioncat" program has been updated to process the pseudo-core charge
+   and the local-pseudopotential charge density.
++: A new function rchlocal has been added to atmfuncs.f
+
+modified:
+  Src/atmfuncs.f
+  Src/atom.f
+  Src/basis_io.F
+  Src/electrostatic.f
+  Src/ioncat.f
+  Src/radial.f
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
+2009-03-19  10:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.12
+Fix of non-collinear-spin patch
+
+Due to an oversight, the patch leading to version 2.6.9 was missing
+two essential fdf calls relating to spin polarization in module m_spin.
+Requests for spin-polarized or non-collinear-spin calculations were
+silently ignored. 
+
+This has now been fixed and the documentation of the m_spin module
+improved.
+
+Thanks to Oswaldo Dieguez for reporting the bug.
+
+modified:
+  Src/m_spin.F90
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
 2009-03-16  16:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.11
 Re-design of DM re-use code plus reallocation bug fix
 
