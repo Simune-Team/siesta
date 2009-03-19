@@ -5,6 +5,24 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-03-19  10:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.12
+Fix of non-collinear-spin patch
+
+Due to an oversight, the patch leading to version 2.6.9 was missing
+two essential fdf calls relating to spin polarization in module m_spin.
+Requests for spin-polarized or non-collinear-spin calculations were
+silently ignored. 
+
+This has now been fixed and the documentation of the m_spin module
+improved.
+
+Thanks to Oswaldo Dieguez for reporting the bug.
+
+modified:
+  Src/m_spin.F90
+  Docs/siesta.tex
+
+-----------------------------------------------------------------------
 2009-03-16  16:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.11
 Re-design of DM re-use code plus reallocation bug fix
 
