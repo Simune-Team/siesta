@@ -231,7 +231,7 @@ c
             iret = nf90_get_var(ncid,kbdelta_id,pp%delta,
      $           start=(/i/))
             call check(iret)
-            call rad_setup_d2(pp)
+            call rad_setup_d2(pp,yp1=0.0_dp,ypn=huge(1.0_dp))
             l = spp%pjnl_l(i)
             do m = -l,l
                nk = nk+1
@@ -249,7 +249,7 @@ c
          iret = nf90_get_var(ncid,vna_id,spp%vna%f(1:),
      $        start=(/1/),count=(/NTBMAX/))
          call check(iret)
-         call rad_setup_d2(spp%vna)
+         call rad_setup_d2(spp%vna,yp1=0.0_dp,ypn=huge(1.0_dp))
 
                                 !
                                 !       Local potential charge density
@@ -258,14 +258,14 @@ c
          iret = nf90_get_var(ncid,chlocal_id,spp%chlocal%f(1:),
      $        start=(/1/),count=(/NTBMAX/))
          call check(iret)
-         call rad_setup_d2(spp%chlocal)
+         call rad_setup_d2(spp%chlocal,yp1=0.0_dp,ypn=huge(1.0_dp))
 
          if (spp%there_is_core) then
             call rad_alloc(spp%core,NTBMAX)
             iret = nf90_get_var(ncid,core_id,spp%core%f(1:),
      $           start=(/1/),count=(/NTBMAX/))
             call check(iret)
-            call rad_setup_d2(spp%core)
+            call rad_setup_d2(spp%core,yp1=0.0_dp,ypn=huge(1.0_dp))
          endif
 
          nor = 0
@@ -281,7 +281,7 @@ c
             iret = nf90_get_var(ncid,delta_id,op%delta,
      $           start=(/i/))
             call check(iret)
-            call rad_setup_d2(op)
+            call rad_setup_d2(op,yp1=0.0_dp,ypn=huge(1.0_dp))
             l = spp%orbnl_l(i)
             do m = -l,l
                nor = nor+1
@@ -356,7 +356,8 @@ c
      $           spp%orbnl_l(i), spp%orbnl_n(i), spp%orbnl_z(i),
      $           ispol, spp%orbnl_pop(i)
             spp%orbnl_ispol(i) =  ispol.eq.1
-            call radial_read_ascii(spp%orbnl(i),lun)
+            call radial_read_ascii(spp%orbnl(i),lun,
+     $                             yp1=0.0_dp,ypn=huge(1.0_dp))
          enddo
 !
 !        Update indexes
@@ -380,7 +381,8 @@ c
          do i=1,spp%n_pjnl
             read(lun,*)
      $           spp%pjnl_l(i), spp%pjnl_n(i), spp%pjnl_ekb(i)
-            call radial_read_ascii(spp%pjnl(i),lun)
+            call radial_read_ascii(spp%pjnl(i),lun,
+     $                             yp1=0.0_dp,ypn=huge(1.0_dp))
          enddo
 !
 !        Update indexes
@@ -401,16 +403,19 @@ c
 !
 !Vna
          read(lun,*)
-         call radial_read_ascii(spp%vna,lun)
+         call radial_read_ascii(spp%vna,lun,
+     $                          yp1=0.0_dp,ypn=huge(1.0_dp))
 
 !
 !Chlocal
          read(lun,*)
-         call radial_read_ascii(spp%chlocal,lun)
+         call radial_read_ascii(spp%chlocal,lun,
+     $                          yp1=0.0_dp,ypn=huge(1.0_dp))
 !
 !Core
          read(lun,*,end=9999)
-         call radial_read_ascii(spp%core,lun)
+         call radial_read_ascii(spp%core,lun,
+     $                          yp1=0.0_dp,ypn=huge(1.0_dp))
 
  9999    continue
          call io_close(lun)
