@@ -5,6 +5,35 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-03-28  17:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.14
+Added a translator for pseudopotential files in XML format
+
+Directory Util/pseudo-xml contains code by J. Junquera and A. Garcia
+to convert pseudopotential files in the XML format designed by
+Junquera, Garcia, and Verstraete (to be published) to ".psf" format.
+  
+Also:
+ - Use of "force_underflow" to avoid very small numbers in output.
+ - Use exact traditional marker messages in psf file.
+
+added:
+  Util/pseudo-xml/Fe.xml
+  Util/pseudo-xml/io.f
+  Util/pseudo-xml/makefile
+  Util/pseudo-xml/pseudopotential.f
+  Util/pseudo-xml/sys.f90
+  Util/pseudo-xml/xml2psf.f90
+  Util/pseudo-xml/xml2psf_helper.f
+renamed:
+  Src/pseudo-xml => Util/pseudo-xml
+modified:
+  Docs/siesta.tex
+  Pseudo/atom/pseudoXML.f
+  Util/README
+  Util/pseudo-xml/README
+
+
+-----------------------------------------------------------------------
 2009-03-19  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.13
 Fix evaluation of atomic radial functions near r=0
 

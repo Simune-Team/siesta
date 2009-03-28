@@ -70,6 +70,10 @@
           xcfuntype    = 'GGA'
           xcfunparam   = 'Becke-Lee-Yang-Parr'
 
+        case('wc') 
+          xcfuntype    = 'GGA'
+          xcfunparam   = 'Wu-Cohen'
+
       end select
 
 ! Digest and dump the information about the pseudopotential flavor
@@ -182,7 +186,7 @@
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"cutoff",str(rc(ivps)))
              call my_add_attribute(xf,"occupation",str(zo(indd(ivps))))
-             call my_add_attribute(xf,"spin",str(-1))
+             call my_add_attribute(xf,"spin","-1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")
@@ -209,7 +213,7 @@
              call my_add_attribute(xf,"l",il(ivps))
              call my_add_attribute(xf,"cutoff",str(rc(ivps)))
              call my_add_attribute(xf,"occupation",str(zo(indu(ivps))))
-             call my_add_attribute(xf,"spin",str(+1))
+             call my_add_attribute(xf,"spin","+1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")
@@ -244,7 +248,7 @@
            call xml_NewElement(xf,"pswf")
              call my_add_attribute(xf,"principal-n",str(no(indd(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
-             call my_add_attribute(xf,"spin",str(-1))
+             call my_add_attribute(xf,"spin","-1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")
@@ -269,7 +273,7 @@
            call xml_NewElement(xf,"pswf")
              call my_add_attribute(xf,"principal-n",str(no(indu(ivps))))
              call my_add_attribute(xf,"l",il(ivps))
-             call my_add_attribute(xf,"spin",str(+1))
+             call my_add_attribute(xf,"spin","+1")
 
              call xml_NewElement(xf,"radfunc")
                call xml_NewElement(xf,"grid")
