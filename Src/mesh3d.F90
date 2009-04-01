@@ -499,7 +499,7 @@
 ! use mesh3D, only: sameMeshDistr
 ! integer,save:: oldDistr=-1, newDistr=-1
 ! ... Find oldDistr and newDistr
-! if (.nat.sameMeshDistr(oldDistr,newDistr)) do something
+! if (.not.sameMeshDistr(oldDistr,newDistr)) do something
 !---------------------------- BEHAVIOUR ---------------------------------------
 ! In serial execution (ID1=ID2=0), it returns .true.
 ! If ID1 and ID2 are equal, but not defined distributions, it returns .false.
@@ -2817,7 +2817,11 @@ logical function sameMeshDistr( ID1, ID2 )
       else                     ! Different but possibly equivalent distr.
         distr1 => storedMeshDistr(i1)
         distr2 => storedMeshDistr(i2)
-        if (all(distr1%box==distr2%box)) sameMeshDistr = .true.
+        if (all(distr1%box==distr2%box)) then
+          sameMeshDistr = .true.
+        else
+          sameMeshDistr = .false.
+        end if ! (all(distr1%box==distr2%box))
       end if ! (i1==i2)
     end if ! (i1>0 .and. i2>0)
   end if ! (ID1==ID2)

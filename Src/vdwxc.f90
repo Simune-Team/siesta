@@ -294,7 +294,7 @@ PRIVATE  ! Nothing is declared public beyond this point
   integer, parameter:: nsat  = 12      ! xsat(x)=1-exp(-sum_n=1:nsat x**n/n)
 
   ! Parameters for saturate_inverse function
-  real(dp),parameter:: xmaxbyxc = 100._dp   ! qmax/qcut
+  real(dp),parameter:: xmaxbyxc = 1.5_dp   ! qmax/qcut
   real(dp),parameter:: ytol = 1.e-15_dp     ! Tol. for saturated q
 
   ! Private module variables and arrays

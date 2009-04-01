@@ -1,5 +1,29 @@
 ------------------------------------------------------------------
 
+2009-04-01  17:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: Two bugs in vdwxc and mesh3d corrected
+Keywords: xmaxbyxc sameMeshDistr
+
+- Parameter xmaxbyxc reduced from 100 to 1.5 in order to eliminate spikes
+  found in Al pseudos by Andrew Walker. These were apparently produced by
+  random fluctuations in the value returned by saturate_inverse function
+  in the exccessive range previously fixed by xmaxbyxc
+- An undefined return value of function sameMeshDistr in mesh3d has been set
+- A printout of the mesh distribution in routine iogrid_netcdf was commented
+  out, since this is not the most appropriate place for it.
+- Files atomxc.f90 and vdwxc.f90 in Pseudo/atom were updated with their
+  counterparts at Src
+
+Modified Files:
+iogrid_netcdf.F90       : Commented out the mesh distr. printout
+mesh3d.F90              : Set undefined return value in sameMeshDistr
+vdwxc.f90               : Parameter xmaxbyxc reduced to 1.5
+Pseudo/atom/atomxc.f90  : Updated from Src
+Pseudo/atom/vdwxc.f90   : Updated from Src
+
+------------------------------------------------------------------
+
 2009-02-05  18:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: removed unused variables
