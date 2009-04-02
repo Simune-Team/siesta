@@ -143,6 +143,7 @@ C
       use m_forhar, only : forhar
       use xcmod,    only : nXCfunc, XCauth
       use alloc,    only : re_alloc, de_alloc
+      use files,    only : slabel
       use mesh3D,   only : myMeshBox    ! Returns my processor mesh box
       use mesh3D,   only : setMeshDistr ! Sets a distribution of mesh
                                         ! points over parallel processors
@@ -154,6 +155,7 @@ C
       use iogrid_netcdf, only: read_grid_netcdf
       use iogrid_netcdf, only: set_box_limits
       use siesta_options, only: read_charge_cdf
+      use siesta_options, only: savevna
       use siesta_options, only: read_deformation_charge_cdf
 #ifdef TRANSIESTA
 ! TSS Begin
@@ -503,6 +505,13 @@ C Find neutral-atom potential
         call NeutralAtomOnMesh( na, isa, ntpl, Vna, indxua, dvol, 
      .                          volume, DRho, Fal, stressl, 
      .                          .false., .false. )
+        if (savevna) then
+           call reord( Vna, Vna, nml, nsm, +1)
+           call write_rho( trim(slabel)// ".VNA",
+     $                     cell, ntm, nsm, ntpl, 1, Vna)
+           call write_grid_netcdf( cell, ntm, 1, ntpl, Vna, "Vna")
+           call reord( Vna, Vna, nml, nsm, -1)
+        endif
 
 C Calculate orbital values on mesh
         call PhiOnMesh( nmpl, norb, iaorb, iphorb, isa )

@@ -20,7 +20,7 @@ module main_vars
   integer, allocatable :: iaorb(:), iphorb(:)
   character(len=20), allocatable :: label(:)
 
-  real(dp) :: aux1, aux2, dm, alfa, vvv
+  real(dp) :: qtot, temp_in_file, dm, alfa, vvv
   real(dp) :: qcos, qsin, w0, want
   real(dp) :: min_energy, max_energy, e_step, energy, weight, efermi
   real(dp) :: low_e, high_e, eigval

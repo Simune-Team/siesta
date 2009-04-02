@@ -27,6 +27,7 @@ MODULE siesta_options
   logical :: RemoveIntraMolecularPressure   ! Remove molecular virial contribution to p
   logical :: savehs        ! Write file with Hamiltonian electrostatic potential?
   logical :: savevh        ! Write file with Hartree electrostatic potential?
+  logical :: savevna       ! Write file with neutral-atom potential?
   logical :: savevt        ! Write file with total effective potential?
   logical :: savdrh        ! Write file with diff. between SCF and atomic density?
   logical :: savrho        ! Write file with electron density?
@@ -1439,6 +1440,7 @@ MODULE siesta_options
     call fdf_global_get(savrho,'SaveRho', dumpcharge)
     call fdf_global_get(savdrh,'SaveDeltaRho',       .false.)
     call fdf_global_get(savevh,'SaveElectrostaticPotential', .false.)
+    call fdf_global_get(savevna,'SaveNeutralAtomPotential', .false.)
     call fdf_global_get(savevt,'SaveTotalPotential', .false.)
     call fdf_global_get(savepsch,'SaveIonicCharge',  .false.)
     call fdf_global_get(savetoch,'SaveTotalCharge',  .false.)

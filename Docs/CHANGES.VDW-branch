@@ -1,5 +1,209 @@
 ------------------------------------------------------------------
 
+2009-04-02  20:45:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: merged with trunk 2.6.20
+Keywords: merge
+
+Modified Files:
++N  Src/Sys/macosx-gfortran64-atlas.make                                       
++N  Src/Sys/nano-intel-mpi.make
++N  Src/Sys/nano-intel-serial.make
++N  Src/Sys/nano-pgf95-serial.make
++N  Src/Sys/pgf95-macosx32.make
++N  Tests/pd_ice/pd_ice.pseudos
++N  Util/COOP/dm_creator.F90
++N  Util/COOP/iodm_netcdf.F90
++N  Util/COOP/write_dm.f
++N  Util/Denchar/Src/
++N  Util/Denchar/Src/Makefile
++N  Util/Denchar/Src/README
++N  Util/Denchar/Src/atompla.f
++N  Util/Denchar/Src/colinear.f
++N  Util/Denchar/Src/denchar.f
++N  Util/Denchar/Src/fdf/
++N  Util/Denchar/Src/fdf/makefile
++N  Util/Denchar/Src/itochar.f
++N  Util/Denchar/Src/length.f
++N  Util/Denchar/Src/matvect.f
++N  Util/Denchar/Src/neighb.f
++N  Util/Denchar/Src/planed.f
++N  Util/Denchar/Src/ranger.f
++N  Util/Denchar/Src/readpla.f
++N  Util/Denchar/Src/readsts.f
++N  Util/Denchar/Src/readwaves.f
++N  Util/Denchar/Src/redata_denchar.f
++N  Util/Denchar/Src/reinit.f
++N  Util/Denchar/Src/rhoofr.f
++N  Util/Denchar/Src/stsofr.f
++N  Util/Denchar/Src/wavofr.f
++N  Util/Denchar/Src/wrout.f
++N  Util/DensityMatrix/README
++N  Util/DensityMatrix/dmfilter.f90
++N  Util/Grid/average_x.m
++N  Util/Grid/average_z.m
++N  Util/HSX/
++N  Util/HSX/hsx_m.f90
++N  Util/Optimizer/
++N  Util/Optimizer/Examples/
++N  Util/Optimizer/Examples/Basis-Optim-Bond/
++N  Util/Optimizer/Examples/Basis-Optim-Bond/H.psf
++N  Util/Optimizer/Examples/Basis-Optim-Bond/O.psf
++N  Util/Optimizer/Examples/Basis-Optim-Bond/SWARM_PARAMS
++N  Util/Optimizer/Examples/Basis-Optim-Bond/TEMPLATE
++N  Util/Optimizer/Examples/Basis-Optim-Bond/VARS
++N  Util/Optimizer/Examples/Basis-Optim-Bond/run_script.sh
++N  Util/Optimizer/Examples/Basis_Harris/
++N  Util/Optimizer/Examples/Basis_Harris/DeltaRho.grid.nc
++N  Util/Optimizer/Examples/Basis_Harris/H.psf
++N  Util/Optimizer/Examples/Basis_Harris/O.psf
++N  Util/Optimizer/Examples/Basis_Harris/PARAMS
++N  Util/Optimizer/Examples/Basis_Harris/README
++N  Util/Optimizer/Examples/Basis_Harris/TEMPLATE
++N  Util/Optimizer/Examples/Basis_Harris/VARS
++N  Util/Optimizer/Examples/Basis_Harris/run_script.sh
++N  Util/Optimizer/Examples/Basis_Optim/
++N  Util/Optimizer/Examples/Basis_Optim/H.psf
++N  Util/Optimizer/Examples/Basis_Optim/O.psf
++N  Util/Optimizer/Examples/Basis_Optim/PARAMS
++N  Util/Optimizer/Examples/Basis_Optim/README
++N  Util/Optimizer/Examples/Basis_Optim/TEMPLATE
++N  Util/Optimizer/Examples/Basis_Optim/VARS
++N  Util/Optimizer/Examples/Basis_Optim/run_script.sh
++N  Util/Optimizer/Examples/Basis_Optim_Accel/
++N  Util/Optimizer/Examples/Basis_Optim_Accel/DeltaRho.grid.nc
++N  Util/Optimizer/Examples/Basis_Optim_Accel/H.psf
++N  Util/Optimizer/Examples/Basis_Optim_Accel/O.psf
++N  Util/Optimizer/Examples/Basis_Optim_Accel/PARAMS
++N  Util/Optimizer/Examples/Basis_Optim_Accel/README
++N  Util/Optimizer/Examples/Basis_Optim_Accel/TEMPLATE
++N  Util/Optimizer/Examples/Basis_Optim_Accel/VARS
++N  Util/Optimizer/Examples/Basis_Optim_Accel/run_script.sh
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PARAMS
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PSGEN.TEMPLATE
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/README
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/SWARM_PARAMS
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/Test.inp
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/VARS
++N  Util/Optimizer/Examples/Pseudo-Optim-Constrained/run_script.sh
++N  Util/Optimizer/Makefile
++N  Util/Optimizer/README
++N  Util/Optimizer/amoeba.f
++N  Util/Optimizer/io.f
++N  Util/Optimizer/minimizer.f90
++N  Util/Optimizer/parse.f
++N  Util/Optimizer/precision.f90
++N  Util/Optimizer/simplex.f90
++N  Util/Optimizer/swarm.f90
++N  Util/Optimizer/sys.f
++N  Util/Optimizer/vars_module.f90
++N  Util/Projections/
++N  Util/Projections/Example/
++N  Util/Projections/Example/Na-on-Na-4A/
++N  Util/Projections/Example/Na-on-Na-4A/Na.psf
++N  Util/Projections/Example/Na-on-Na-4A/coo.gplot
++N  Util/Projections/Example/Na-on-Na-4A/coo.mpr
++N  Util/Projections/Example/Na-on-Na-4A/molecule.fdf
++N  Util/Projections/Example/Na-on-Na-4A/orbmol.gplot
++N  Util/Projections/Example/Na-on-Na-4A/orbmol.input
++N  Util/Projections/Example/Na-on-Na-4A/pdos.mpr
++N  Util/Projections/Example/Na-on-Na-4A/system.fdf
++N  Util/Projections/Example/Na-on-Na-6A/
++N  Util/Projections/Example/Na-on-Na-6A/Na.psf
++N  Util/Projections/Example/Na-on-Na-6A/coo.gplot
++N  Util/Projections/Example/Na-on-Na-6A/coo.mpr
++N  Util/Projections/Example/Na-on-Na-6A/molecule.fdf
++N  Util/Projections/Example/Na-on-Na-6A/orbmol.gplot
++N  Util/Projections/Example/Na-on-Na-6A/orbmol.input
++N  Util/Projections/Example/Na-on-Na-6A/pdos.mpr
++N  Util/Projections/Example/Na-on-Na-6A/system.fdf
++N  Util/Projections/README
++N  Util/Projections/makefile
++N  Util/Projections/orbmol_proj.f90
++N  Util/Scripting/cutoff.py
++N  Util/WFS/
++N  Util/WFS/wfs2wfsx.f
++N  Util/WFS/wfsnc2wfsx.f90
+ M  Docs/CHANGES
+ M  Docs/siesta.ind
+ M  Docs/siesta.tex
+ M  Pseudo/atom/prdiff.f
+ M  Src/Makefile
+ M  Src/atom.f
+ M  Src/basis_specs.f
+ M  Src/chemical.f
+ M  Src/chempot.F
+ M  Src/coor.F
+-D  Src/denchar.F
+ M  Src/dhscf.F
+ M  Src/diagk_file.F
+ M  Src/hsparse.f
+ M  Src/ioncat.f
+ M  Src/iowfs_netcdf.F90
+-D  Src/m_denchar_geom.f
+-D  Src/m_denchar_init.F
+-D  Src/m_denchar_io.F
+-D  Src/m_denchar_neighb.f
+-D  Src/m_denchar_work.f
+ M  Src/pseudopotential.f
+ M  Src/redcel.F
+ M  Src/setup_hamiltonian.F
+ M  Src/siesta_init.F
+ M  Src/siesta_options.F90
+ M  Src/sys.F
+ M  Src/version.F90
+ M  Tests/h2o/h2o.fdf
+R   Tests/h3po4_atomlists_1/ => Tests/h3po4_1/
+RM  Tests/h3po4_atomlists_1/h3po4.fdf => Tests/h3po4_1/h3po4_1.fdf
+R   Tests/h3po4_atomlists_1/h3po4.pseudos => Tests/h3po4_1/h3po4_1.pseudos
+ M  Tests/h3po4_1/makefile
+R   Tests/h3po4_atomlists_2/ => Tests/h3po4_2/
+RM  Tests/h3po4_atomlists_2/h3po4.fdf => Tests/h3po4_2/h3po4_2.fdf
+R   Tests/h3po4_atomlists_2/h3po4.pseudos => Tests/h3po4_2/h3po4_2.pseudos
+ M  Tests/h3po4_2/makefile
+R   Tests/h3po4_atomlists_3/ => Tests/h3po4_3/
+RM  Tests/h3po4_atomlists_3/h3po4.fdf => Tests/h3po4_3/h3po4_3.fdf
+R   Tests/h3po4_atomlists_3/h3po4.pseudos => Tests/h3po4_3/h3po4_3.pseudos
+ M  Tests/h3po4_3/makefile
+R   Tests/pd_h2o/ => Tests/pd_ice/
+ M  Tests/pd_ice/makefile
+ M  Tests/ptcda/ptcda.fdf
+ M  Util/COOP/Makefile
+ M  Util/COOP/README
+-D  Util/COOP/f2kcli.F90
+ M  Util/COOP/io_hs.f90
+ M  Util/COOP/main_vars.f90
+ M  Util/COOP/mprop.f90
+ M  Util/COOP/subs.f90
+ M  Util/Denchar/Docs/CHANGES
+ M  Util/Denchar/Docs/denchar.tex
+-D  Util/Denchar/README-Source
+ M  Util/DensityMatrix/cdf2dm.f90
+ M  Util/DensityMatrix/dm2cdf.f90
+ M  Util/DensityMatrix/makefile
+ M  Util/Grid/grid2cube.f
+ M  Util/Grid/libfft.f
+ M  Util/Grid/makefile
+ M  Util/Scripting/Siesta/Interface.py
+ M  Util/Vibra/Vibra/Makefile
+ M  Util/Vibra/Vibra/vibrator.f
+ M  Util/pdosxml/README
+-D  Util/pdosxml/f2kcli.F90
+ M  Util/pdosxml/m_pdos.f90
+ M  Util/pdosxml/makefile
+RM  Util/pdosxml/pdos.f90 => Util/pdosxml/pdosxml.f90
+R   Util/readwf.f => Util/WFS/readwf.f
+R   Util/readwfx.f => Util/WFS/readwfx.f
+R   Util/wfsx2wfs.f => Util/WFS/wfsx2wfs.f
+ M  version.info
+Text conflict in Src/Makefile (resolved)
+Text conflict in Src/dhscf.F (resolved)
+Text conflict in Src/version.F90 (resolved)
+Text conflict in version.info (resolved)
+
+------------------------------------------------------------------
+
 2009-04-02  20:00:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: merged with trunk 2.6.14

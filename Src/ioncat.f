@@ -237,7 +237,7 @@ C Internal variables ...................................................
       endif
 
       if (process_chlocal) then
-         write(6,*) "# Core charge, rcut: ", rchlocal(1)
+         write(6,*) "# Local ps charge, rcut: ", rchlocal(1)
          rc = rchlocal(1)
          rmin = 0.0_dp
          rmax = 1.05_dp * rc

@@ -44,9 +44,9 @@ You might need to tweak the f2kcli module to suit your compiler. If
 you do not need command-line processing you could remove it and
 hard-wire the name of the input XML file in the program.
 
-3. Run the pdos program:
+3. Run the pdosxml program:
 
-	pdos file.PDOS > datafile
+	pdosxml file.PDOS > datafile
 
 You can test the program with the h2o_dos.PDOS file provided.
 

@@ -39,13 +39,13 @@
 \hrulefill
 \vspace{1cm}
 
-{\Huge {\bf S I E S T A \, \, 2.6.14}}
+{\Huge {\bf S I E S T A \, \, 2.6.16}}
 
 \vspace{1cm}
 \hrulefill
 \vspace{1cm}
 
-{\Large March 28, 2009 }
+{\Large April 2, 2009 }
 
 \vspace{1.5cm}
 
@@ -5065,6 +5065,21 @@ If netCDF support is compiled in, the file {\tt
 ElectrostaticPotential.grid.nc} is produced.
 
 {\it Default value:} {\tt .false.}
+
+\item[{\bf SaveNeutralAtomPotential}] ({\it logical}): 
+\index{SaveNeutralAtomPotential@{\bf SaveNeutralAtomPotential}}
+\index{output!electrostatic potential} 
+Instructs to write the neutral-atom potential, defined as the
+sum of the hartree potential of a ``pseudo atomic valence charge'' 
+plus the local pseudopotential, at the mesh used by DHSCF,
+in file {\tt SystemLabel}.VNA. It is written at the start of the
+self-consistency cycle, as this potential does not change.
+
+{\it Use:} File {\tt SystemLabel}.VNA is only written, not read, by siesta.
+
+If netCDF support is compiled in, the file {\tt Vna.grid.nc} is produced.
+
+{\it Default value:} {\tt .false.}
         
 
 \item[{\bf SaveTotalPotential}] ({\it logical}): 
@@ -5214,6 +5229,12 @@ contours. The information is written in file {\tt SystemLabel}.PLD.
  
 {\it Use:} File {\tt SystemLabel}.PLD is only written, not read, by siesta.
  
+Apart from the PLD file, you will need the Density-Matrix (DM) file
+and/or a wavefunction (WFS) file. For the latter, remember that Siesta
+now produces only a packed WFSX file. You will need to run the
+wfsx2wfs program to convert it to the WFS format. This will be fixed
+shortly.
+
 {\it Default value:} {\tt .false.}
 
 \end{description}
@@ -5383,15 +5404,14 @@ See the {\bf WriteKpoints} data descriptor above.
 
 
 \subsection{Charge densities and potentials}
-(files {\it SystemLabel}.{\tt RHO}, {\it SystemLabel}.{\tt DRHO}, 
-{\it SystemLabel}.{\tt VH}, {\it SystemLabel}.{\tt VT}) 
-See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf SaveElectrostaticPotential},
-and {\bf SaveTotalPotential} data descriptors above.
-3D-plots of these files can be done using the pacakges
-{\sc Plrho}\index{Plrho@{\sc Plrho}} and {\sc Grid2cube}
-\index{Grid2cube@{\sc Grid2cube}} in the Util/
-\index{output!total charge}
-directory.
+(files {\it SystemLabel}.{\tt RHO}, {\it SystemLabel}.{\tt DRHO}, {\it
+SystemLabel}.{\tt VH}, {\it SystemLabel}.{\tt VT}, {\it
+SystemLabel}.{\tt VT}) See {\bf SaveRho}, {\bf SaveDeltaRho}, {\bf
+SaveElectrostaticPotential}, {\bf SaveTotalPotential}, and {\bf
+SaveNeutralAtomPotential} data descriptors above.  3D-plots of these
+files can be produced using the pacakges {\sc Plrho}\index{Plrho@{\sc
+Plrho}} and {\sc Grid2cube} \index{Grid2cube@{\sc Grid2cube}} in the
+Util/ \index{output!total charge} directory.
 
 
 \subsection{Energy bands}
@@ -5424,23 +5444,22 @@ See the {\bf BandLines} data descriptor above for more information.
 
 \subsection{Wavefunction coefficients}\label{subsec:wf}
 (file SystemLabel.WFSX) This unformatted file has the
-information of the k-points where wavefunctions coefficients
+information of the k-points for which wavefunctions coefficients
 are written, and the energies and coefficients of each
 wavefunction which was specified in the input file
 (see {\bf WaveFuncKPoints}\index{WaveFuncKPoints@{\bf WaveFuncKPoints}}
 descriptor above).
-It also writes information on the atomic species and
+It also contains information on the atomic species and
 the orbitals for postprocessing purposes.
 
-NOTE: The WFSX file is in a more compact form than the usual WFS, and the
+NOTE: The WFSX file is in a more compact form than the old WFS, and the
 wavefunctions are output in single precision. The {\tt Util/wfsx2wfs}
 program can be used to convert to the old format.
 
-
 \noindent
-The READWF\index{READWF} postprocessing utility
-program (found in the Util/ directory) reads the {\it Systemlabel}.WFS
-file and generates a readable file.
+The readwf\index{readwf} and readwfsx\index{readwfsx} postprocessing
+utilities programs (found in the Util/ directory) read the WFS or WFSX
+files, respectively, and generate a readable file.
 
 \subsection{Eigenvalues}
 

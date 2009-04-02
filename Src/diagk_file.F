@@ -184,7 +184,7 @@ C Find eigenvalues and eigenvectors
 !
           call timer( 'c-save', 1 )
           call write_wfs_netcdf(nuotot,nuo,ik,ispin, psi,
-     $                           n_eigenvectors)
+     $                 n_eigenvectors,eo(1:n_eigenvectors,ispin,ik))
           call timer( 'c-save', 2 )
 
         enddo

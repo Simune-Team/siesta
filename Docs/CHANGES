@@ -5,6 +5,377 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-04-02  12:55:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.20
+More flexible compilation of Util code
+
+By a simple change to the makefiles (involving an OBJDIR variable that
+can be set to "Src" or to the name of the optional compiler-dependent
+object directory), the code in Util can be compiled with multiple
+options.
+
+The use of VPATH within Util also allows the re-use of common utility
+files such as f2kcli.F90.
+
+Work in progress. Really a temporary solution util Util is integrated in
+the architecture-or-compiler-dependent object directories.
+
++ The pdos program in Util/pdosxml has been renamed to pdosxml.
+
+removed:
+  Util/COOP/f2kcli.F90
+  Util/pdosxml/f2kcli.F90
+added:
+  Util/Projections/makefile
+renamed:
+  Util/pdosxml/pdos.f90 => Util/pdosxml/pdosxml.f90
+modified:
+  Util/COOP/Makefile
+  Util/Grid/makefile
+  Util/Vibra/Vibra/Makefile
+  Util/Vibra/Vibra/vibrator.f
+  Util/pdosxml/README
+  Util/pdosxml/makefile
+  Util/pdosxml/pdosxml.f90
+
+-----------------------------------------------------------------------
+2009-04-02  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.19
+New version of denchar in Util/Denchar
+
+A new version of denchar, able to process complex wavefunctions and
+multiple k-points, has been put back in the Util/Denchar/Src directory.
+It can be compiled by re-using code in the top Src directory. 
+
+(Thanks to Pablo Ordejon)
+
+removed:
+  Src/denchar.F
+  Src/m_denchar_geom.f
+  Src/m_denchar_init.F
+  Src/m_denchar_io.F
+  Src/m_denchar_neighb.f
+  Src/m_denchar_work.f
+  Util/Denchar/README-Source
+added:
+  Util/Denchar/Src/
+  Util/Denchar/Src/Makefile
+  Util/Denchar/Src/README
+  Util/Denchar/Src/atompla.f
+  Util/Denchar/Src/colinear.f
+  Util/Denchar/Src/denchar.f
+  Util/Denchar/Src/fdf/
+  Util/Denchar/Src/fdf/makefile
+  Util/Denchar/Src/itochar.f
+  Util/Denchar/Src/length.f
+  Util/Denchar/Src/matvect.f
+  Util/Denchar/Src/neighb.f
+  Util/Denchar/Src/planed.f
+  Util/Denchar/Src/ranger.f
+  Util/Denchar/Src/readpla.f
+  Util/Denchar/Src/readsts.f
+  Util/Denchar/Src/readwaves.f
+  Util/Denchar/Src/redata_denchar.f
+  Util/Denchar/Src/reinit.f
+  Util/Denchar/Src/rhoofr.f
+  Util/Denchar/Src/stsofr.f
+  Util/Denchar/Src/wavofr.f
+  Util/Denchar/Src/wrout.f
+modified:
+  Docs/siesta.tex
+  Src/Makefile
+  Util/Denchar/Docs/CHANGES
+  Util/Denchar/Docs/denchar.tex
+
+
+-----------------------------------------------------------------------
+2009-04-02  12:45:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.18
+Added general-purpose optimizer in Util/Optimizer
+
+Alpha version of the general-purpose optimization program, useful,
+among other things, for pseudopotential and basis-set generation.
+
+added:
+
+  Util/Optimizer/
+  Util/Optimizer/Examples/
+  Util/Optimizer/Examples/Basis-Optim-Bond/
+  Util/Optimizer/Examples/Basis-Optim-Bond/H.psf
+  Util/Optimizer/Examples/Basis-Optim-Bond/O.psf
+  Util/Optimizer/Examples/Basis-Optim-Bond/SWARM_PARAMS
+  Util/Optimizer/Examples/Basis-Optim-Bond/TEMPLATE
+  Util/Optimizer/Examples/Basis-Optim-Bond/VARS
+  Util/Optimizer/Examples/Basis-Optim-Bond/run_script.sh
+  Util/Optimizer/Examples/Basis_Harris/
+  Util/Optimizer/Examples/Basis_Harris/DeltaRho.grid.nc
+  Util/Optimizer/Examples/Basis_Harris/H.psf
+  Util/Optimizer/Examples/Basis_Harris/O.psf
+  Util/Optimizer/Examples/Basis_Harris/PARAMS
+  Util/Optimizer/Examples/Basis_Harris/README
+  Util/Optimizer/Examples/Basis_Harris/TEMPLATE
+  Util/Optimizer/Examples/Basis_Harris/VARS
+  Util/Optimizer/Examples/Basis_Harris/run_script.sh
+  Util/Optimizer/Examples/Basis_Optim/
+  Util/Optimizer/Examples/Basis_Optim/H.psf
+  Util/Optimizer/Examples/Basis_Optim/O.psf
+  Util/Optimizer/Examples/Basis_Optim/PARAMS
+  Util/Optimizer/Examples/Basis_Optim/README
+  Util/Optimizer/Examples/Basis_Optim/TEMPLATE
+  Util/Optimizer/Examples/Basis_Optim/VARS
+  Util/Optimizer/Examples/Basis_Optim/run_script.sh
+  Util/Optimizer/Examples/Basis_Optim_Accel/
+  Util/Optimizer/Examples/Basis_Optim_Accel/DeltaRho.grid.nc
+  Util/Optimizer/Examples/Basis_Optim_Accel/H.psf
+  Util/Optimizer/Examples/Basis_Optim_Accel/O.psf
+  Util/Optimizer/Examples/Basis_Optim_Accel/PARAMS
+  Util/Optimizer/Examples/Basis_Optim_Accel/README
+  Util/Optimizer/Examples/Basis_Optim_Accel/TEMPLATE
+  Util/Optimizer/Examples/Basis_Optim_Accel/VARS
+  Util/Optimizer/Examples/Basis_Optim_Accel/run_script.sh
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PARAMS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/PSGEN.TEMPLATE
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/README
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/SWARM_PARAMS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/Test.inp
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/VARS
+  Util/Optimizer/Examples/Pseudo-Optim-Constrained/run_script.sh
+  Util/Optimizer/Makefile
+  Util/Optimizer/README
+  Util/Optimizer/amoeba.f
+  Util/Optimizer/io.f
+  Util/Optimizer/minimizer.f90
+  Util/Optimizer/parse.f
+  Util/Optimizer/precision.f90
+  Util/Optimizer/simplex.f90
+  Util/Optimizer/swarm.f90
+  Util/Optimizer/sys.f
+  Util/Optimizer/vars_module.f90
+
+-----------------------------------------------------------------------
+2009-04-02  12:40:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.17
+New utility programs and features 
+
+* Orbital projection program
+
+Integrated a new version of the "orbmol" program, by Rurali and
+Lorente, including the k-points functionality later implemented by
+Tabares and Ordejon. The program is now called "orbmol_proj", and
+is more economical in memory and hopefully run-time. 
+
+The program uses the new WFSX wavefunction format (the new program
+wfs2wfsx.f can be used for legacy data).
+
+* New tool for creation of partial density matrices
+
+A new program 'dm_creator' has been created in Util/COOP.
+Given an HSX and a WFSX file, and an optional energy range, dm_creator
+computes a "partial density matrix" with only those states in the
+energy range. This density matrix can then be used with Denchar
+for plotting (or for other more or less devious applications...)
+
+* Scripting
+
+- New cutoff.py example script
+- Enhancements to the ASE interface:
+     - "copy" method for Atom class
+     - pseudopotential handler for ListOfAtoms
+
+* Enhanced WFS utilities
+
+The wavefunction-handling programs have been moved to Util/WFS. Added
+wfsnc2wfsx (useful for New-Diagk calculations) and wfs2wfsx.
+
+* Enhanced grid utilities in Util/Grid
+
+- Increase bounds of work array in Util/Grid/libfft.f
+- Added octave/matlab scripts for plane averages
+
+* New Util/HSX directory
+
+Up to now it only contains an experimental module hsx_m.f90 to process HSX files.
+
+* New program dm_filter in Util/DensityMatrix
+
+The DM filter program produces a new density-matrix in which only the
+contributions of specified orbitals are retained (with minor modifications it can
+delete those and keep the rest).
+
+added:
+  Util/COOP/dm_creator.F90
+  Util/COOP/iodm_netcdf.F90
+  Util/COOP/write_dm.f
+  Util/DensityMatrix/README
+  Util/DensityMatrix/dmfilter.f90
+  Util/Grid/average_x.m
+  Util/Grid/average_z.m
+  Util/HSX/
+  Util/HSX/hsx_m.f90
+  Util/Projections/
+  Util/Projections/Example/
+  Util/Projections/Example/Na-on-Na-4A/
+  Util/Projections/Example/Na-on-Na-4A/Na.psf
+  Util/Projections/Example/Na-on-Na-4A/coo.gplot
+  Util/Projections/Example/Na-on-Na-4A/coo.mpr
+  Util/Projections/Example/Na-on-Na-4A/molecule.fdf
+  Util/Projections/Example/Na-on-Na-4A/orbmol.gplot
+  Util/Projections/Example/Na-on-Na-4A/orbmol.input
+  Util/Projections/Example/Na-on-Na-4A/pdos.mpr
+  Util/Projections/Example/Na-on-Na-4A/system.fdf
+  Util/Projections/Example/Na-on-Na-6A/
+  Util/Projections/Example/Na-on-Na-6A/Na.psf
+  Util/Projections/Example/Na-on-Na-6A/coo.gplot
+  Util/Projections/Example/Na-on-Na-6A/coo.mpr
+  Util/Projections/Example/Na-on-Na-6A/molecule.fdf
+  Util/Projections/Example/Na-on-Na-6A/orbmol.gplot
+  Util/Projections/Example/Na-on-Na-6A/orbmol.input
+  Util/Projections/Example/Na-on-Na-6A/pdos.mpr
+  Util/Projections/Example/Na-on-Na-6A/system.fdf
+  Util/Projections/README
+  Util/Projections/orbmol_proj.f90
+  Util/Scripting/cutoff.py
+  Util/WFS/
+  Util/WFS/wfs2wfsx.f
+  Util/WFS/wfsnc2wfsx.f90
+renamed:
+  Util/readwf.f => Util/WFS/readwf.f
+  Util/readwfx.f => Util/WFS/readwfx.f
+  Util/wfsx2wfs.f => Util/WFS/wfsx2wfs.f
+modified:
+  Src/diagk_file.F
+  Src/iowfs_netcdf.F90
+  Util/COOP/Makefile
+  Util/COOP/README
+  Util/COOP/io_hs.f90
+  Util/COOP/mprop.f90
+  Util/COOP/subs.f90
+  Util/DensityMatrix/cdf2dm.f90
+  Util/DensityMatrix/dm2cdf.f90
+  Util/DensityMatrix/makefile
+  Util/Grid/libfft.f
+  Util/Scripting/Siesta/Interface.py
+
+
+-----------------------------------------------------------------------
+2009-04-02  11:00:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.16
+Assorted new (small) features
+
+* Write Neutral-atom potential on the grid
+
+If the fdf symbol SaveNeutralAtomPotential is set to 'True', the neutral-atom
+potential is written to file SystemLabel.VNA (and optionally to Vna.grid.nc)
+This feature is exercised in the h2o test.
+
+* Warnings for multiple images at Gamma, with optional forcing of supercell
+
+For a gamma-point calculation, it is still possible to have overlap of multiple
+images. This could be because the cell is not big enough, if the user wants
+to save CPU time and sacrifice a bit of accuracy.
+
+This is harmless for the calculation of the electronic structure, as the program
+just adds up all the relevant matrix elements, with phase factor 1.
+
+For a COOP/COHP calculation, the resulting xij array is *wrong*, as
+only the vector for one representative of the class of interactions is
+kept. Thus a warning is produced by hsparse.
+
+A new fdf symbol, "ForceAuxCell", has been introduced to allow the user to 
+request a (more expensive) "k-point" calculation with an auxiliary cell if
+needed. At this point, the very first iteration might give different results,
+since the initial normalization of the density-matrix is different.
+
+* Update the Src/ioncat.f program
+
+It can now process the core charge and the charge associated to the
+local pseudopotential
+
+* Write also a (new format) HSX file whenever an HS file is requested.
+
+* Add new .make files to Src/Sys
+
+* Show message from 'die' also on standard error
+
+* Disallow repeated species labels
+
+* Use species label instead of atomic symbol in dump files.
+
+* Set near-zero lattice vector components to zero
+
+If the LatticeParameters option is used, and due to roundoff error in the
+trigonometry, some components of the lattice vectors turned out very small
+but non-zero. Now they are set to zero for cosmetic reasons.
+
+* Disallow the use of non-diagonal supercells
+
+Their use is not well-defined in all cases.
+
+
+
+
+
+-----------------------------------------------------------------------
+2009-04-02  10:30:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.15
+Assorted fixes (hsparse warnings, xc_check...)
+
+* Fix for overzealous multiple-image detection in hsparse
+
+Hsparse raised a warning regarding connectivity of multiple images
+without actually checking that the currently considered neighbor did
+indeed overlap with the base atom.
+
+* Add missing line in Util/Grid/grid2cube.f
+  (P. Ordejon)
+
+* Initialize nspin_data in Util/pdosxml/m_pdos.f90. Update cli code.
+  (Reported by P. Ordejon)
+
+* Fix revPBE section in xc_check in atom.f
+
+* Fixed calculation of fermi level for charged systems in Util/COOP/mprop.f90
+  (Thanks to Manuel Cobian)
+
+* Fixed labels and file names in some tests.
+  (Reported by I. Silanes, IFCA)
+
+* Fix declarations in function numb in chempot
+  (Thanks to Manuel Cobian)
+
+* Increase the number of fields for energy differences in Pseudo/atom/prdiff.f
+  (Reported by V. Maslyuk)
+
+added:
+  Tests/pd_ice/pd_ice.pseudos
+renamed:
+  Tests/h3po4_atomlists_1 => Tests/h3po4_1
+  Tests/h3po4_atomlists_1/h3po4.fdf => Tests/h3po4_1/h3po4_1.fdf
+  Tests/h3po4_atomlists_1/h3po4.pseudos => Tests/h3po4_1/h3po4_1.pseudos
+  Tests/h3po4_atomlists_2 => Tests/h3po4_2
+  Tests/h3po4_atomlists_2/h3po4.fdf => Tests/h3po4_2/h3po4_2.fdf
+  Tests/h3po4_atomlists_2/h3po4.pseudos => Tests/h3po4_2/h3po4_2.pseudos
+  Tests/h3po4_atomlists_3 => Tests/h3po4_3
+  Tests/h3po4_atomlists_3/h3po4.fdf => Tests/h3po4_3/h3po4_3.fdf
+  Tests/h3po4_atomlists_3/h3po4.pseudos => Tests/h3po4_3/h3po4_3.pseudos
+  Tests/pd_h2o => Tests/pd_ice
+modified:
+  Pseudo/atom/prdiff.f
+  Src/atom.f
+  Src/chempot.F
+  Src/hsparse.f
+  Tests/h3po4_1/makefile
+  Tests/h3po4_2/makefile
+  Tests/h3po4_3/makefile
+  Tests/pd_ice/makefile
+  Tests/ptcda/ptcda.fdf
+  Util/COOP/io_hs.f90
+  Util/COOP/main_vars.f90
+  Util/COOP/mprop.f90
+  Util/Grid/grid2cube.f
+  Util/pdosxml/f2kcli.F90
+  Util/pdosxml/m_pdos.f90
+  Tests/h3po4_1/h3po4_1.fdf
+  Tests/h3po4_2/h3po4_2.fdf
+  Tests/h3po4_3/h3po4_3.fdf
+
+
+-----------------------------------------------------------------------
 2009-03-28  17:20:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.14
 Added a translator for pseudopotential files in XML format
 

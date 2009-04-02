@@ -36,7 +36,7 @@ C     ..
    10 continue
  9000 format(/' &d total energy differences in series',
      $      //,' &d',2x,9i9)
- 9010 format(' &d',1x,i2,1x,9f9.4)
+ 9010 format(' &d',1x,i2,1x,20f9.4)
       write(6,'(/,a,/)') '*----- End of series ----* spdfg &d&v'
 c
 c     Write external files for easier interfacing

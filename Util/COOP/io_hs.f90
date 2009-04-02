@@ -4,9 +4,11 @@ implicit none
 public :: read_hs_file
 
 CONTAINS
-subroutine read_hs_file()
+subroutine read_hs_file(fname)
   use main_vars
   use precision, only: sp
+
+  character(len=*), intent(in) :: fname
 
   integer, allocatable  :: ibuff(:)
   real(sp), allocatable  :: hbuff(:)
@@ -14,8 +16,8 @@ subroutine read_hs_file()
 
   integer numx, ind
 
-  write(6,"(1x,a,'.HS ...')",advance='no') trim(sflnm)
-  open(hs_u,file=trim(sflnm)//'.HSX',status='old',form='unformatted')
+  write(6,"(1x,a)",advance='no') trim(fname)
+  open(hs_u,file=trim(fname),status='old',form='unformatted')
 
   read(hs_u,iostat=iostat) nnao, no_s, nspin, nh
   print *, "nnao, no_s, nspin, nh:",  nnao, no_s, nspin, nh
@@ -94,11 +96,11 @@ subroutine read_hs_file()
      enddo
   enddo
 
-  read(hs_u,iostat=iostat) aux1, aux2                   ! qtot, temp
-  if (debug) print *, "QTOT, Temp: ", aux1, aux2
+  read(hs_u,iostat=iostat) qtot, temp_in_file 
+  if (debug) print *, "QTOT, Temp in file: ", qtot, temp_in_file
   if (iostat /= 0) then
      if (debug) print *, "iostat:", iostat
-     STOP "qtot, temp"
+     STOP "qtot, temp in file"
   endif
 
   !
