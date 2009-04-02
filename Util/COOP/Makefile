@@ -1,20 +1,30 @@
+#
+# The VPATH directive below helps to re-use f2kcli.F90 from the top Src.
+# Other points to note, until we switch to a better building system:
+#
+#  The arch.make file is supposed to be in $(OBJDIR). This is normally
+#  the top Src, but if you are using architecture-dependent build directories
+#  you might want to change this. (If you do not understand this, you do not
+#  need to change anything. Power users can do "make OBJDIR=Whatever".)
+#
+#  If your main Siesta build used an mpi compiler, you might need to
+#  define an FC_SERIAL symbol in your top arch.make, to avoid linking
+#  in the mpi libraries even if we explicitly undefine MPI below.
+#  
 .SUFFIXES:
 .SUFFIXES: .f .f90 .F .F90 .o
 #
-# Choose compiler here.
-# If you have netCDF installed, do something similar to this:
-#NETCDF_ROOT=$(HOME)/lib/netcdf-3.6.2-gfortran
-#INCFLAGS=-I$(NETCDF_ROOT)/include
+VPATH:=$(shell pwd)/../../Src
+OBJDIR=Src
 #
-#DEFS=-DGFORTRAN -DCDF 
+all: mprop dm_creator
 #
-#NETCDF_LIBS= -L$(NETCDF_ROOT)/lib -lnetcdf
+include ../../$(OBJDIR)/arch.make
 #
-#FC=gfortran -O3 $(DEFS) $(INCFLAGS)
 #
-# ---------------------
-FC=gfortran -O3 -DGFORTRAN
-# ---------------------
+FC_DEFAULT:=$(FC)
+FC_SERIAL?=$(FC_DEFAULT)
+FC:=$(FC_SERIAL)         # Make it non-recursive
 #
 MPROP_OBJS=m_getopts.o f2kcli.o subs.o precision.o units.o \
            io.o sys.o read_curves.o io_hs.o orbital_set.o main_vars.o
@@ -33,17 +43,6 @@ dm_creator: $(DM_OBJS) dm_creator.o
 #
 clean:
 	rm -f *.o *.mod mprop  dm_creator
-
-.F.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
-.f.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
-.F90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)  $(DEFS) $<
-.f90.o:
-	$(FC) -c $(FFLAGS) $(INCFLAGS)   $<
-#
-
 
 # DO NOT DELETE THIS LINE - used by make depend
 dm_creator.o: io_hs.o iodm_netcdf.o main_vars.o

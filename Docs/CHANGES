@@ -5,6 +5,39 @@
 ** CHANGES ALONG siesta-2.6 trunk branch 
 
 -----------------------------------------------------------------------
+2009-04-02  12:55:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.20
+More flexible compilation of Util code
+
+By a simple change to the makefiles (involving an OBJDIR variable that
+can be set to "Src" or to the name of the optional compiler-dependent
+object directory), the code in Util can be compiled with multiple
+options.
+
+The use of VPATH within Util also allows the re-use of common utility
+files such as f2kcli.F90.
+
+Work in progress. Really a temporary solution util Util is integrated in
+the architecture-or-compiler-dependent object directories.
+
++ The pdos program in Util/pdosxml has been renamed to pdosxml.
+
+removed:
+  Util/COOP/f2kcli.F90
+  Util/pdosxml/f2kcli.F90
+added:
+  Util/Projections/makefile
+renamed:
+  Util/pdosxml/pdos.f90 => Util/pdosxml/pdosxml.f90
+modified:
+  Util/COOP/Makefile
+  Util/Grid/makefile
+  Util/Vibra/Vibra/Makefile
+  Util/Vibra/Vibra/vibrator.f
+  Util/pdosxml/README
+  Util/pdosxml/makefile
+  Util/pdosxml/pdosxml.f90
+
+-----------------------------------------------------------------------
 2009-04-02  12:50:00 GMT Alberto Garcia <albertog@icmab.es>	 2.6.19
 New version of denchar in Util/Denchar
 
