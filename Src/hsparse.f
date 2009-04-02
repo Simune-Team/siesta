@@ -126,6 +126,7 @@ C
       integer, dimension(:),  pointer :: index => null()
       integer, dimension(:),  pointer :: knakb => null()
       integer, dimension(:),  pointer :: listhtmp
+      logical :: connected
 
 
 C -------------------------------------
@@ -247,7 +248,8 @@ C through a KB projector
                 rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
 
-C If not yet connected 
+                  !If not yet connected (we only allow one connection, and
+                  !reserve space for it)
                   if (.not.conect(jo)) then
                     js = isa(ja)
                     joa = iphorb(jo)
@@ -325,6 +327,7 @@ C Set up listhptr
 C---------------------------------
 C  Find full H sparsity pattern  -
 C---------------------------------
+
 C Loop on atoms in unit cell
         do ia = 1,nua
 
@@ -374,8 +377,37 @@ C through a KB projector
                 ja = jna(jnat)
                 rij = sqrt( r2ij(jnat) )
                 do jo = lasto(ja-1)+1,lasto(ja)
+                   connected = .false.
 
-                   if (conect(jo)) then
+                    js = isa(ja)
+                    joa = iphorb(jo)
+                    rcj = rcut(js,joa)
+C Find if there is direct overlap
+                    if (rci+rcj .gt. rij) then
+                      connected = .true.
+                    elseif (.not.negl) then
+C Find if jo overlaps with a KB projector
+                      do inkb = 1,nnkb
+                        rck = rckb(inkb)
+                        kna = knakb(inkb)
+                        rjk = sqrt( (xij(1,kna)-xij(1,jnat))**2 +
+     .                              (xij(2,kna)-xij(2,jnat))**2 +
+     .                              (xij(3,kna)-xij(3,jnat))**2 )
+                        if (rcj+rck .gt. rjk) then
+                          connected = .true.
+                          goto 55
+                        endif
+                      enddo
+   55                 continue
+                    endif
+
+                   if (connected) then
+                     if (conect(jo)) then
+
+                       ! This test is now deferred to be able
+                       ! to catch multiple images while avoiding
+                       ! false positives (i.e., we test first
+                       ! whether there is indeed a connection).
 
                       if (set_xijo .and. .not. gamma) then
                          ! If already connected and using supercell, 
@@ -395,40 +427,18 @@ C through a KB projector
                          endif
                       endif
 
-                   else         ! not conect(jo)
-
-                    js = isa(ja)
-                    joa = iphorb(jo)
-                    rcj = rcut(js,joa)
-C Find if there is direct overlap
-                    if (rci+rcj .gt. rij) then
+                   else
                       conect(jo) = .true.
-                    elseif (.not.negl) then
-C Find if jo overlaps with a KB projector
-                      do inkb = 1,nnkb
-                        rck = rckb(inkb)
-                        kna = knakb(inkb)
-                        rjk = sqrt( (xij(1,kna)-xij(1,jnat))**2 +
-     .                              (xij(2,kna)-xij(2,jnat))**2 +
-     .                              (xij(3,kna)-xij(3,jnat))**2 )
-                        if (rcj+rck .gt. rjk) then
-                          conect(jo) = .true.
-                          goto 55
-                        endif
-                      enddo
-   55                 continue
-                    endif
-                    if (conect(jo)) then
                       numh(iio) = numh(iio) + 1
                       ind = listhptr(iio)+numh(iio)
                       listh(ind) = jo
                       if (set_xijo) then
                          xijo(1:3,ind) = xij(1:3,jnat)
                       endif
-                    endif
                    endif
-                enddo
-              enddo
+                endif
+             enddo
+          enddo
 
 C Restore conect array for next orbital io
 

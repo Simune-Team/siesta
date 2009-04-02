@@ -1,6 +1,6 @@
 #
 # Single-test makefile
 #
-name=pd_h2o
+name=pd_ice
 #
 include ../test.mk

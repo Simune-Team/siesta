@@ -2081,7 +2081,7 @@ C Loop over functionals
      $                  .and.(XCfunc(nf).eq.'GGA')) then
 
             write(6,'(a)')  'xc_check: GGA revPBE'
-            if (icorr.ne.'rp'.and.nXCfunc.eq.1) 
+            if (icorr.ne.'rv'.and.nXCfunc.eq.1) 
      $          write(6,'(a,1x,2a)')
      .          'xc_check: WARNING: Pseudopotential generated with',
      $           trim(ps_string), " functional"

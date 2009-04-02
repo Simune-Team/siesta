@@ -94,11 +94,11 @@ subroutine read_hs_file()
      enddo
   enddo
 
-  read(hs_u,iostat=iostat) aux1, aux2                   ! qtot, temp
-  if (debug) print *, "QTOT, Temp: ", aux1, aux2
+  read(hs_u,iostat=iostat) qtot, temp_in_file 
+  if (debug) print *, "QTOT, Temp in file: ", qtot, temp_in_file
   if (iostat /= 0) then
      if (debug) print *, "iostat:", iostat
-     STOP "qtot, temp"
+     STOP "qtot, temp in file"
   endif
 
   !
