@@ -2595,6 +2595,13 @@ Defines the equivalent plane wave cutoff for the grid.
 
 {\it Default value:} {\tt 100 Ry}
 
+% JMS/AG. To be implemented:
+%{\it Default value:} If not present, \textbf{MeshCutoff} is made equal 
+%to \textbf{FilterCutoff}, if present. If not, it is obtained from
+%\textbf{FilterTol}, if present, as explained in that parameter.
+%If none of these parameters is present, the default value for 
+%\textbf{MeshCutoff} is {\tt 100 Ry}
+ 
 \item[{\bf MeshSubDivisions}] ({\it integer}): 
 \index{MeshSubDivisions@{\bf MeshSubDivisions}}\index{grid}\index{mesh}
 Defines the number of sub-mesh points in each direction used

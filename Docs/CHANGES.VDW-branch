@@ -1,5 +1,20 @@
 ------------------------------------------------------------------
 
+2009-04-02  11:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
+
+Summary: *.mod added to make clean in Pseudo/atom/Makefile
+Keywords: make clean
+
+- *.mod added to make clean in Pseudo/atom/Makefile
+- A commented-out description of the future intended behaviour of the
+  default value of MeshCutoff was added to the manual.
+
+Modified Files:
+Pseudo/atom/Makefile    : *.mod added to make clean
+Docs/siesta.tex         : Added a commented-out paragraph for future use
+
+------------------------------------------------------------------
+
 2009-04-01  17:30:00 GMT+1	Jose M Soler <jose.soler@uam.es>
 
 Summary: Two bugs in vdwxc and mesh3d corrected

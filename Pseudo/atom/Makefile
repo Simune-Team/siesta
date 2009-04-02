@@ -67,7 +67,7 @@ atm:  provide_wxml $(OBJS) $(AUX_OBJS)
 	$(FC) $(LDFLAGS) -o atm $(OBJS) $(AUX_OBJS) $(LIBS)
 #
 clean:	
-	rm -f *.o atm
+	rm -f *.o *.mod atm
 #
 #
 # DO NOT DELETE THIS LINE - used by make depend
